@@ -7,6 +7,8 @@ yarn.lock
 .DS_Store
 .cache
 .env
+.env.prod
+.env.local
 .vercel
 .output
 /build/
