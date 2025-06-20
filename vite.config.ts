@@ -1,15 +1,20 @@
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
+import { resolve } from "path";
 
 export default defineConfig({
 	server: {
 		port: 3005,
 	},
+	resolve: {
+		alias: [
+			{ find: "~", replacement: resolve(__dirname, "./src") },
+			{ find: "@/src", replacement: resolve(__dirname, "./src") },
+		],
+	},
 	plugins: [
-		tsConfigPaths({
-			projects: ["./tsconfig.json"],
-		}),
+		tsConfigPaths(),
 		tanstackStart(),
 	],
 });
