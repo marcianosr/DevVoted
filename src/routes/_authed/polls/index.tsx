@@ -2,7 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAllPolls } from "~/domains/polls/api/polls";
 
-export const Route = createFileRoute("/polls/")({
+export const Route = createFileRoute("/_authed/polls/")({
 	component: PollsList,
 });
 
@@ -14,7 +14,7 @@ function PollsList() {
 	} = useQuery({
 		queryKey: ["polls"],
 		queryFn: () => getAllPolls(),
-	});
+	})
 
 	if (isLoading) {
 		return (
@@ -22,7 +22,7 @@ function PollsList() {
 				<h1 className="text-2xl font-bold mb-4">Available Polls</h1>
 				<p>Loading polls...</p>
 			</div>
-		);
+		)
 	}
 
 	if (error || !pollsResponse?.success) {
@@ -33,7 +33,7 @@ function PollsList() {
 					Error loading polls: {pollsResponse?.error || String(error)}
 				</p>
 			</div>
-		);
+		)
 	}
 
 	const polls = pollsResponse.data || [];
@@ -70,5 +70,5 @@ function PollsList() {
 				</div>
 			)}
 		</div>
-	);
+	)
 }

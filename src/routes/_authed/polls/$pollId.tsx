@@ -13,7 +13,7 @@ const PollDetail: React.FC = () => {
 	} = useQuery({
 		queryKey: ["poll", pollIdNumber],
 		queryFn: () => getPollById({ data: { id: pollIdNumber } }),
-	});
+	})
 
 	if (isLoading) {
 		return (
@@ -24,7 +24,7 @@ const PollDetail: React.FC = () => {
 					<div className="h-24 rounded w-full"></div>
 				</div>
 			</div>
-		);
+		)
 	}
 
 	if (error || !pollResponse || !pollResponse.success) {
@@ -43,7 +43,7 @@ const PollDetail: React.FC = () => {
 							: "Failed to load poll data"}
 				</p>
 			</div>
-		);
+		)
 	}
 
 	const poll = pollResponse.data;
@@ -58,7 +58,7 @@ const PollDetail: React.FC = () => {
 					The requested poll could not be found.
 				</p>
 			</div>
-		);
+		)
 	}
 
 	return (
@@ -110,9 +110,9 @@ const PollDetail: React.FC = () => {
 				</p>
 			</div>
 		</div>
-	);
+	)
 };
 
-export const Route = createFileRoute("/polls/$pollId")({
+export const Route = createFileRoute("/_authed/polls/$pollId")({
 	component: PollDetail,
 });
