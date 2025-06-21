@@ -1,32 +1,74 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { getAllPolls } from "~/domains/polls/api/polls";
 
 export const Route = createFileRoute("/polls/")({
 	component: PollsList,
 });
 
 function PollsList() {
-	// Dummy poll IDs for demonstration
-	const dummyPollIds = ["1", "2", "3"];
+	const {
+		data: pollsResponse,
+		isLoading,
+		error,
+	} = useQuery({
+		queryKey: ["polls"],
+		queryFn: () => getAllPolls(),
+	});
+
+	if (isLoading) {
+		return (
+			<div className="p-4">
+				<h1 className="text-2xl font-bold mb-4">Available Polls</h1>
+				<p>Loading polls...</p>
+			</div>
+		);
+	}
+
+	if (error || !pollsResponse?.success) {
+		return (
+			<div className="p-4">
+				<h1 className="text-2xl font-bold mb-4">Available Polls</h1>
+				<p className="text-red-500">
+					Error loading polls: {pollsResponse?.error || String(error)}
+				</p>
+			</div>
+		);
+	}
+
+	const polls = pollsResponse.data || [];
 
 	return (
 		<div className="p-4">
 			<h1 className="text-2xl font-bold mb-4">Available Polls</h1>
-			<div className="space-y-4">
-				{dummyPollIds.map((id) => (
-					<div
-						key={id}
-						className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-					>
-						<Link
-							to="/polls/$pollId"
-							params={{ pollId: id }}
-							className="text-blue-600 hover:underline"
+			{polls?.length === 0 ? (
+				<p>No polls available.</p>
+			) : (
+				<div className="space-y-4">
+					{polls.map((poll) => (
+						<div
+							key={poll.id}
+							className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
 						>
-							Poll #{id}
-						</Link>
-					</div>
-				))}
-			</div>
+							<Link
+								to="/polls/$pollId"
+								params={{ pollId: String(poll.id) }}
+								className="text-blue-600 hover:text-blue-800 hover:underline"
+							>
+								<div className="font-medium">
+									{poll.question}
+								</div>
+								<div className="text-sm text-gray-500 mt-1 flex justify-between">
+									<span>Category: {poll.categoryCode}</span>
+									<span className="capitalize">
+										{poll.status}
+									</span>
+								</div>
+							</Link>
+						</div>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }

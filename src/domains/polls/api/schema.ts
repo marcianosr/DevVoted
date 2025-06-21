@@ -18,8 +18,6 @@ export type Poll = {
 export type PollRecord = InferSelectModel<typeof pollsTable>;
 
 /**
- * Poll Factory Functions
- *
  * Functions to convert between database records and frontend DTOs
  */
 

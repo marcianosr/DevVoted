@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getPollById } from "../../domains/polls/api/polls";
 import { useQuery } from "@tanstack/react-query";
+import { getPollById } from "~/domains/polls/api/polls";
 
 const PollDetail: React.FC = () => {
 	const { pollId } = Route.useParams();
@@ -19,9 +19,9 @@ const PollDetail: React.FC = () => {
 		return (
 			<div className="p-4">
 				<div className="animate-pulse flex flex-col gap-4">
-					<div className="h-8 bg-gray-200 rounded w-3/4"></div>
-					<div className="h-4 bg-gray-200 rounded w-1/2"></div>
-					<div className="h-24 bg-gray-200 rounded w-full"></div>
+					<div className="h-8 rounded w-3/4"></div>
+					<div className="h-4 rounded w-1/2"></div>
+					<div className="h-24 rounded w-full"></div>
 				</div>
 			</div>
 		);
@@ -48,12 +48,25 @@ const PollDetail: React.FC = () => {
 
 	const poll = pollResponse.data;
 
+	if (!poll) {
+		return (
+			<div className="p-4">
+				<h1 className="text-2xl font-bold mb-4 text-red-600">
+					Poll Not Found
+				</h1>
+				<p className="text-gray-600">
+					The requested poll could not be found.
+				</p>
+			</div>
+		);
+	}
+
 	return (
 		<div className="p-4">
 			<h1 className="text-2xl font-bold mb-4">{poll.question}</h1>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-				<div className="bg-white p-4 rounded-lg shadow">
+				<div className=" p-4 rounded-lg shadow">
 					<h2 className="text-lg font-semibold mb-2">Poll Details</h2>
 					<div className="space-y-2">
 						<p>
@@ -71,7 +84,7 @@ const PollDetail: React.FC = () => {
 					</div>
 				</div>
 
-				<div className="bg-white p-4 rounded-lg shadow">
+				<div className=" p-4 rounded-lg shadow">
 					<h2 className="text-lg font-semibold mb-2">Timeline</h2>
 					<div className="space-y-2">
 						<p>

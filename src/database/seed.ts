@@ -1,7 +1,11 @@
 import { db } from "@/src/database/db";
-import { pollsTable, pollCategoriesTable, usersTable } from "@/src/database/schema";
+import {
+	pollsTable,
+	pollCategoriesTable,
+	usersTable,
+} from "@/src/database/schema";
 import { eq } from "drizzle-orm";
-import type { InferInsertModel } from "drizzle-orm";
+import { createSeedPollArray } from "@/src/domains/polls/factories/pollFactory";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 
@@ -10,7 +14,7 @@ async function seedDatabase() {
 
 	// First, ensure we have a test user
 	console.log("👤 Creating test user if needed...");
-	
+
 	const testUser = {
 		id: DEV_UID,
 		display_name: "Test User",
@@ -60,153 +64,45 @@ async function seedDatabase() {
 		// Now seed the polls
 		console.log("\n📊 Seeding polls...\n");
 
-		// Define poll data with proper typing
-		const polls: Array<InferInsertModel<typeof pollsTable>> = [
-			{
-				question:
-					'In CSS, the "*" selector does exist, what effects of this selector can you list?',
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-				category_code: "css",
-				answer_type: "single" as const,
-			},
-			{
-				question:
-					"In JS, closures are there, what do you know about it, can you share?",
-				status: "draft" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "js",
-				answer_type: "multiple" as const,
-			},
-			{
-				question:
-					"In React, development goes rapid, synthetic events are built-in, do you know why they are added?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "react",
-				answer_type: "multiple" as const,
-			},
-			{
-				question:
-					"In Frontend, content-theft is real, what approach can be used to prevent visitors to steal?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "general-frontend",
-				answer_type: "single" as const,
-			},
-			{
-				question:
-					"In TS, the type system is very strict, what do you know about it, can you share?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "typescript",
-				answer_type: "multiple" as const,
-			},
-			{
-				question:
-					"For CSS devs this might be a no-brainer, but what flex property makes sure items are forced on multiple lines when they don't fit their container?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "css",
-				answer_type: "multiple" as const,
-			},
-			{
-				question:
-					"In CSS, for readability it's important to have vertical spacing for text inbetween, what property do you use that make your text look neat and clean?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "css",
-				answer_type: "multiple" as const,
-			},
-			{
-				question:
-					"In CSS, the position property was implemented long ago, which values from below remove the elements out of the document flow?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "css",
-				answer_type: "single" as const,
-			},
-			{
-				question:
-					"What is the best way to center a flex item vertically?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "css",
-				answer_type: "single" as const,
-			},
-			{
-				question:
-					"In CSS, the z-index property is used to control the stack order of elements, what is the default value?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "css",
-				answer_type: "single" as const,
-			},
-			{
-				question:
-					"In CSS, margin is a property that can be used to create space between an element and its container, what are the possible values?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "css",
-				answer_type: "single" as const,
-			},
-			{
-				question:
-					"In CSS, what is the best way to center a flex item horizontally?",
-				status: "open" as const,
-				created_by: DEV_UID,
-				updated_at: new Date(),
-				created_at: new Date(),
-				opening_time: new Date(),
-				closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-				category_code: "css",
-				answer_type: "single" as const,
-			},
+		// Generate poll data using our factory
+		// We'll create a mix of our standard questions and some domain-specific ones
+		const domainSpecificQuestions = [
+			'In CSS, the "*" selector does exist, what effects of this selector can you list?',
+			"In JS, closures are there, what do you know about it, can you share?",
+			"In React, development goes rapid, synthetic events are built-in, do you know why they are added?",
+			"In Frontend, content-theft is real, what approach can be used to prevent visitors to steal?",
+			"In TS, the type system is very strict, what do you know about it, can you share?",
+			"For CSS devs this might be a no-brainer, but what flex property makes sure items are forced on multiple lines when they don't fit their container?",
+			"In CSS, for readability it's important to have vertical spacing for text inbetween, what property do you use that make your text look neat and clean?",
+			"In CSS, the position property was implemented long ago, which values from below remove the elements out of the document flow?",
 		];
+
+		// Create 12 polls using our factory
+		const polls = createSeedPollArray(20, DEV_UID);
+
+		// Override some questions with domain-specific ones
+		domainSpecificQuestions.forEach((question, index) => {
+			if (index < polls.length) {
+				polls[index].question = question;
+			}
+		});
+
+		// Ensure we have a good mix of categories
+		const categoryDistribution = {
+			css: 5,
+			js: 2,
+			react: 2,
+			typescript: 2,
+			"general-frontend": 1,
+		};
+
+		let categoryIndex = 0;
+		for (const [category, count] of Object.entries(categoryDistribution)) {
+			for (let i = 0; i < count && categoryIndex < polls.length; i++) {
+				polls[categoryIndex].category_code = category;
+				categoryIndex++;
+			}
+		}
 
 		// Check if polls already exist to avoid duplicates
 		const existingPolls = await db.select().from(pollsTable);
