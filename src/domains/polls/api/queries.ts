@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { pollsTable } from "~/database/schema";
-import { Poll, pollFactory } from "@/src/domains/polls/api/schema";
+import { Poll, pollFactory } from "~/domains/polls/dto";
 import { db } from "~/database/db";
 
 export const fetchPollById = async (id: number) => {

@@ -1,12 +1,9 @@
 import { createMockDataFactory } from "@/src/test/createMockDataFactory";
-import { Poll, PollRecord } from "@/src/domains/polls/api/schema";
+import { Poll, PollRecord } from "~/domains/polls/dto";
 import { InferInsertModel } from "drizzle-orm";
 import { pollsTable } from "@/src/database/schema";
 
-/**
- * Factory for creating mock Poll DTOs for testing and development
- */
-export const createMockPoll = createMockDataFactory<Poll>({
+const poll: Poll = {
 	id: 1,
 	question: "What is your favorite programming language?",
 	status: "open",
@@ -17,12 +14,9 @@ export const createMockPoll = createMockDataFactory<Poll>({
 	createdAt: new Date("2025-01-01T00:00:00Z"),
 	updatedAt: new Date("2025-01-01T00:00:00Z"),
 	categoryCode: "js",
-});
+};
 
-/**
- * Factory for creating mock PollRecord objects (database format) for testing
- */
-export const createMockPollRecord = createMockDataFactory<PollRecord>({
+const pollRecord: PollRecord = {
 	id: 1,
 	question: "What is your favorite programming language?",
 	status: "open",
@@ -33,24 +27,20 @@ export const createMockPollRecord = createMockDataFactory<PollRecord>({
 	created_at: new Date("2025-01-01T00:00:00Z"),
 	updated_at: new Date("2025-01-01T00:00:00Z"),
 	category_code: "js",
-});
+};
+export const createMockPoll = createMockDataFactory<Poll>(poll);
+
+/**
+ * Factory for creating mock PollRecord objects (database format) for testing
+ */
+export const createMockPollRecord =
+	createMockDataFactory<PollRecord>(pollRecord);
 
 /**
  * Factory for creating database insert model objects for seeding
  */
-export const createSeedPoll = createMockDataFactory<
-	InferInsertModel<typeof pollsTable>
->({
-	question: "What is your favorite programming language?",
-	status: "open",
-	answer_type: "single",
-	opening_time: new Date(),
-	closing_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-	created_by: "123e4567-e89b-12d3-a456-426614174000",
-	created_at: new Date(),
-	updated_at: new Date(),
-	category_code: "js",
-});
+export const createSeedPoll =
+	createMockDataFactory<InferInsertModel<typeof pollsTable>>(pollRecord);
 
 /**
  * Common poll questions that can be used for both testing and seeding

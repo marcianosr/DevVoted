@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { pollFactory } from "@/src/domains/polls/api/schema";
+import { pollFactory } from "~/domains/polls/dto";
 import { z } from "zod";
 import {
 	fetchAllPolls,
