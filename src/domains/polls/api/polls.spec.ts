@@ -51,7 +51,6 @@ describe("getPollById", () => {
 	});
 
 	it("handles errors during fetch", async () => {
-		// Arrange
 		const errorMessage = "Database connection error";
 		vi.mocked(queries.fetchPollById).mockRejectedValue(
 			new Error(errorMessage)
