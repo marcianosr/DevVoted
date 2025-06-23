@@ -9,12 +9,6 @@ const PollDetail: React.FC = () => {
 	const { pollId } = Route.useParams();
 	const pollIdNumber = parseInt(pollId, 10);
 
-	const [selectedBet, setSelectedBet] = useState<number>();
-
-	const handleSelectedBet = (percentage: number) => {
-		setSelectedBet(percentage);
-	};
-
 	const {
 		data: pollResponse,
 		isLoading,
@@ -78,13 +72,6 @@ const PollDetail: React.FC = () => {
 						</p>
 					</div>
 				</div>
-			</div>
-
-			<div>
-				<BetOptions
-					onBetSelect={handleSelectedBet}
-					selectedBet={selectedBet}
-				/>
 			</div>
 
 			<div className="mt-6">
