@@ -1,13 +1,11 @@
 import {
 	boolean,
-	decimal,
 	integer,
 	pgEnum,
 	pgTable,
 	serial,
 	text,
 	timestamp,
-	unique,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
@@ -77,7 +75,6 @@ export const usersTable = pgTable("users", {
 	total_polls_submitted: integer("total_polls_submitted")
 		.notNull()
 		.default(0),
-	active_config: varchar("active_config", { length: 256 }), // Current active game configuration/deck
 });
 
 /**
@@ -180,33 +177,33 @@ export const pollResponsesTable = pgTable("polls_responses", {
  * User Category XP Table
  * Stands for tracking user's performance in a specific categories
  */
-export const pollUserPerformanceTable = pgTable(
-	"polls_user_performance",
-	{
-		id: serial("id").primaryKey(),
-		user_id: uuid("user_id")
-			.references(() => usersTable.id, { onDelete: "cascade" })
-			.notNull(),
-		category_code: varchar("category_code", { length: 50 })
-			.references(() => pollCategoriesTable.code)
-			.notNull(),
-		cumulative_xp: integer("cumulative_xp").notNull().default(0),
-		best_xp: integer("best_xp").notNull().default(0),
-		best_streak: integer("best_streak").notNull().default(0),
-		best_multiplier: decimal("best_multiplier", { precision: 3, scale: 1 })
-			.notNull()
-			.default("0.0"),
-		betting_average: decimal("betting_average", { precision: 4, scale: 1 }) // Allows values like 3.5, 12.6, 75.0
-			.notNull()
-			.default("0.0"),
-		created_at: timestamp("created_at").defaultNow(),
-		updated_at: timestamp("updated_at")
-			.defaultNow()
-			.$onUpdate(() => new Date()),
-	},
-	(table) => {
-		return {
-			userCategoryUnique: unique().on(table.user_id, table.category_code),
-		};
-	}
-);
+// export const pollUserPerformanceTable = pgTable(
+// 	"polls_user_performance",
+// 	{
+// 		id: serial("id").primaryKey(),
+// 		user_id: uuid("user_id")
+// 			.references(() => usersTable.id, { onDelete: "cascade" })
+// 			.notNull(),
+// 		category_code: varchar("category_code", { length: 50 })
+// 			.references(() => pollCategoriesTable.code)
+// 			.notNull(),
+// 		cumulative_xp: integer("cumulative_xp").notNull().default(0),
+// 		best_xp: integer("best_xp").notNull().default(0),
+// 		best_streak: integer("best_streak").notNull().default(0),
+// 		best_multiplier: decimal("best_multiplier", { precision: 3, scale: 1 })
+// 			.notNull()
+// 			.default("0.0"),
+// 		betting_average: decimal("betting_average", { precision: 4, scale: 1 }) // Allows values like 3.5, 12.6, 75.0
+// 			.notNull()
+// 			.default("0.0"),
+// 		created_at: timestamp("created_at").defaultNow(),
+// 		updated_at: timestamp("updated_at")
+// 			.defaultNow()
+// 			.$onUpdate(() => new Date()),
+// 	},
+// 	(table) => {
+// 		return {
+// 			userCategoryUnique: unique().on(table.user_id, table.category_code),
+// 		};
+// 	}
+// );
