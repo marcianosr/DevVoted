@@ -2,6 +2,7 @@ import { pollsTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
 
 // Type for frontend usage (camelCase)
+
 export type Poll = {
 	id: number;
 	question: string;
@@ -94,7 +95,6 @@ export const createPoll = (partial: Partial<Poll> = {}): Poll => {
 	};
 };
 
-// For backward compatibility
 export const pollFactory = {
 	toDTO: pollToDTO,
 	fromDTO: pollFromDTO,
