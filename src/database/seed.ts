@@ -3,6 +3,7 @@ import {
 	pollsTable,
 	pollCategoriesTable,
 	usersTable,
+	pollOptionsTable,
 } from "@/src/database/schema";
 import { eq } from "drizzle-orm";
 import { createSeedPollArray } from "@/src/domains/polls/factories/pollFactory";
@@ -64,28 +65,8 @@ async function seedDatabase() {
 		// Now seed the polls
 		console.log("\n📊 Seeding polls...\n");
 
-		// Generate poll data using our factory
-		// We'll create a mix of our standard questions and some domain-specific ones
-		const domainSpecificQuestions = [
-			'In CSS, the "*" selector does exist, what effects of this selector can you list?',
-			"In JS, closures are there, what do you know about it, can you share?",
-			"In React, development goes rapid, synthetic events are built-in, do you know why they are added?",
-			"In Frontend, content-theft is real, what approach can be used to prevent visitors to steal?",
-			"In TS, the type system is very strict, what do you know about it, can you share?",
-			"For CSS devs this might be a no-brainer, but what flex property makes sure items are forced on multiple lines when they don't fit their container?",
-			"In CSS, for readability it's important to have vertical spacing for text inbetween, what property do you use that make your text look neat and clean?",
-			"In CSS, the position property was implemented long ago, which values from below remove the elements out of the document flow?",
-		];
-
 		// Create 12 polls using our factory
 		const polls = createSeedPollArray(20, DEV_UID);
-
-		// Override some questions with domain-specific ones
-		domainSpecificQuestions.forEach((question, index) => {
-			if (index < polls.length) {
-				polls[index].question = question;
-			}
-		});
 
 		// Ensure we have a good mix of categories
 		const categoryDistribution = {
@@ -116,10 +97,38 @@ async function seedDatabase() {
 			);
 		} else {
 			// Insert polls one by one to ensure proper typing
+			const insertedPollIds: number[] = [];
+
 			for (const poll of polls) {
-				await db.insert(pollsTable).values(poll);
+				const result = await db
+					.insert(pollsTable)
+					.values(poll)
+					.returning({ id: pollsTable.id });
+				if (result[0]) {
+					insertedPollIds.push(result[0].id);
+				}
 			}
-			console.log(`✅ Successfully seeded ${polls.length} polls!`);
+			console.log(
+				`✅ Successfully seeded ${insertedPollIds.length} polls!`
+			);
+
+			// Now seed poll options for each poll
+			console.log("\n🔤 Seeding poll options...");
+
+			// Get all polls to create options for
+			const allPolls = await db.select().from(pollsTable);
+
+			// Create and insert options for each poll
+			let totalOptionsCreated = 0;
+			for (const poll of allPolls) {
+				const options = generatePollOptions(poll.id, poll.question);
+				await db.insert(pollOptionsTable).values(options);
+				totalOptionsCreated += options.length;
+			}
+
+			console.log(
+				`✅ Successfully seeded ${totalOptionsCreated} poll options!`
+			);
 		}
 
 		console.log("\n✨ Database seeding completed successfully!\n");
@@ -129,6 +138,289 @@ async function seedDatabase() {
 	} finally {
 		process.exit(0);
 	}
+}
+
+/**
+ * Generate appropriate options for a poll based on its question
+ * @param pollId The ID of the poll to generate options for
+ * @param question The poll question text
+ * @returns An array of poll option objects
+ */
+function generatePollOptions(pollId: number, question: string) {
+	// Default options for generic questions
+	let options = [
+		{ poll_id: pollId, option: "Option A", is_correct: true },
+		{ poll_id: pollId, option: "Option B", is_correct: false },
+		{ poll_id: pollId, option: "Option C", is_correct: false },
+		{ poll_id: pollId, option: "Option D", is_correct: false },
+	];
+
+	// Generate more specific options based on the question content
+	if (question.toLowerCase().includes("css")) {
+		if (question.includes("*") && question.includes("selector")) {
+			options = [
+				{
+					poll_id: pollId,
+					option: "Selects all elements",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "Can cause performance issues when overused",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "Has the lowest specificity of any selector",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "Only works in modern browsers",
+					is_correct: false,
+				},
+			];
+		} else if (
+			question.includes("flex") &&
+			question.includes("multiple lines")
+		) {
+			options = [
+				{
+					poll_id: pollId,
+					option: "flex-wrap: wrap",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "flex-direction: column",
+					is_correct: false,
+				},
+				{
+					poll_id: pollId,
+					option: "flex-flow: row",
+					is_correct: false,
+				},
+				{
+					poll_id: pollId,
+					option: "flex-basis: auto",
+					is_correct: false,
+				},
+			];
+		} else if (
+			question.includes("vertical spacing") &&
+			question.includes("text")
+		) {
+			options = [
+				{ poll_id: pollId, option: "line-height", is_correct: true },
+				{
+					poll_id: pollId,
+					option: "letter-spacing",
+					is_correct: false,
+				},
+				{ poll_id: pollId, option: "text-indent", is_correct: false },
+				{
+					poll_id: pollId,
+					option: "vertical-align",
+					is_correct: false,
+				},
+			];
+		} else if (
+			question.includes("position") &&
+			question.includes("document flow")
+		) {
+			options = [
+				{
+					poll_id: pollId,
+					option: "position: absolute",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "position: fixed",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "position: relative",
+					is_correct: false,
+				},
+				{
+					poll_id: pollId,
+					option: "position: static",
+					is_correct: false,
+				},
+			];
+		}
+	} else if (
+		question.toLowerCase().includes("js") ||
+		question.toLowerCase().includes("javascript")
+	) {
+		if (question.includes("closures")) {
+			options = [
+				{
+					poll_id: pollId,
+					option: "They retain access to their outer function's scope",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "They help create private variables",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "They can lead to memory leaks if not handled properly",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "They are only available in ES6 and later",
+					is_correct: false,
+				},
+			];
+		}
+	} else if (question.toLowerCase().includes("react")) {
+		if (question.includes("synthetic events")) {
+			options = [
+				{
+					poll_id: pollId,
+					option: "They provide cross-browser compatibility",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "They improve performance through event pooling",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "They follow the W3C spec",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "They only work with functional components",
+					is_correct: false,
+				},
+			];
+		}
+	} else if (
+		question.toLowerCase().includes("typescript") ||
+		question.toLowerCase().includes("ts")
+	) {
+		if (question.includes("type system")) {
+			options = [
+				{
+					poll_id: pollId,
+					option: "It provides compile-time type checking",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "It supports interfaces and type aliases",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "It allows for generic types",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "It requires a separate runtime library",
+					is_correct: false,
+				},
+			];
+		}
+	} else if (
+		question.includes("content-theft") ||
+		question.toLowerCase().includes("frontend")
+	) {
+		if (question.includes("prevent visitors to steal")) {
+			options = [
+				{
+					poll_id: pollId,
+					option: "Disable right-click context menu",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "Add watermarks to images",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "Use Content Security Policy headers",
+					is_correct: true,
+				},
+				{
+					poll_id: pollId,
+					option: "Encrypt HTML content",
+					is_correct: false,
+				},
+			];
+		}
+	}
+
+	// For questions about preferences, create appropriate options
+	if (question.includes("favorite programming language")) {
+		options = [
+			{ poll_id: pollId, option: "JavaScript", is_correct: false },
+			{ poll_id: pollId, option: "TypeScript", is_correct: false },
+			{ poll_id: pollId, option: "Python", is_correct: false },
+			{ poll_id: pollId, option: "Rust", is_correct: false },
+		];
+	} else if (question.includes("frontend framework")) {
+		options = [
+			{ poll_id: pollId, option: "React", is_correct: false },
+			{ poll_id: pollId, option: "Vue", is_correct: false },
+			{ poll_id: pollId, option: "Angular", is_correct: false },
+			{ poll_id: pollId, option: "Svelte", is_correct: false },
+		];
+	} else if (question.includes("use TypeScript")) {
+		options = [
+			{
+				poll_id: pollId,
+				option: "Yes, for all projects",
+				is_correct: false,
+			},
+			{
+				poll_id: pollId,
+				option: "Yes, for larger projects only",
+				is_correct: false,
+			},
+			{
+				poll_id: pollId,
+				option: "No, I prefer plain JavaScript",
+				is_correct: false,
+			},
+			{
+				poll_id: pollId,
+				option: "I'm still learning it",
+				is_correct: false,
+			},
+		];
+	} else if (question.includes("write tests")) {
+		options = [
+			{ poll_id: pollId, option: "For every feature", is_correct: false },
+			{
+				poll_id: pollId,
+				option: "Only for critical functionality",
+				is_correct: false,
+			},
+			{ poll_id: pollId, option: "Rarely", is_correct: false },
+			{ poll_id: pollId, option: "Never", is_correct: false },
+		];
+	} else if (question.includes("CSS solution")) {
+		options = [
+			{ poll_id: pollId, option: "Plain CSS", is_correct: false },
+			{ poll_id: pollId, option: "Tailwind CSS", is_correct: false },
+			{ poll_id: pollId, option: "CSS-in-JS", is_correct: false },
+			{ poll_id: pollId, option: "SASS/SCSS", is_correct: false },
+		];
+	}
+
+	return options;
 }
 
 // Execute the seed function
