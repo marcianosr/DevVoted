@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getPollById } from "~/domains/polls/api/polls";
-import { BetOptions } from "~/domains/polls/components/BetOptions/BetOptions";
-import { useState } from "react";
+import { getPollById, getPollByIdWithOptions } from "~/domains/polls/api/polls";
 import { ErrorComponent } from "~/components/ErrorComponent";
 
 const PollDetail: React.FC = () => {
@@ -15,7 +13,7 @@ const PollDetail: React.FC = () => {
 		error,
 	} = useQuery({
 		queryKey: ["poll", pollIdNumber],
-		queryFn: () => getPollById({ data: { id: pollIdNumber } }),
+		queryFn: () => getPollByIdWithOptions({ data: { id: pollIdNumber } }),
 	});
 
 	if (isLoading) {
@@ -26,7 +24,10 @@ const PollDetail: React.FC = () => {
 		return <ErrorComponent text="Error Loading Poll" />;
 	}
 
-	const poll = pollResponse.data;
+	const poll = pollResponse.data?.poll;
+	const options = pollResponse.data?.options;
+
+	console.log(poll, options);
 
 	if (!poll) {
 		return <ErrorComponent text="Sorry, the poll could not be found" />;

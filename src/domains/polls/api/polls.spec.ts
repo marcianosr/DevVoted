@@ -43,29 +43,6 @@ describe("getPollById", () => {
 		});
 	});
 
-	it("returns an error when ID does not match", async () => {
-		const mockPollId = 198;
-		const mismatchedId = 2;
-		const mockPoll = createMockPoll({
-			id: mockPollId,
-			categoryCode: "frontend",
-		});
-
-		vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
-
-		const result = await getPollById({
-			data: {
-				id: mismatchedId,
-			},
-		});
-
-		expect(queries.fetchPollById).toHaveBeenCalledWith(mismatchedId);
-		expect(result).toEqual({
-			success: false,
-			error: "ID mismatch",
-		});
-	});
-
 	it("returns an error when poll is not found", async () => {
 		//@ts-ignore
 		vi.mocked(queries.fetchPollById).mockResolvedValue(null);
@@ -79,7 +56,7 @@ describe("getPollById", () => {
 		expect(queries.fetchPollById).toHaveBeenCalledWith(999);
 		expect(result).toEqual({
 			success: false,
-			error: "Poll not found",
+			error: "Failed to fetch poll",
 		});
 	});
 });
@@ -121,7 +98,7 @@ describe("getPollByIdWithOptions", () => {
 		vi.resetAllMocks();
 	});
 
-	it.skip("returns all poll data", async () => {
+	it("returns all poll data with options", async () => {
 		const mockPoll = createMockPoll({ id: 2 });
 		const mockOptions = createMockPollOptionArray(4);
 
@@ -136,15 +113,32 @@ describe("getPollByIdWithOptions", () => {
 			},
 		});
 
-		console.log(result);
-
-		expect(queries.fetchPollByIdWithOptions).toHaveBeenCalledWith(123);
+		expect(queries.fetchPollByIdWithOptions).toHaveBeenCalledWith(2);
 		expect(result).toEqual({
 			success: true,
 			data: {
 				poll: mockPoll,
 				options: mockOptions,
 			},
+		});
+	});
+
+	it("returns an error when poll with options is not found", async () => {
+		//@ts-ignore
+		vi.mocked(queries.fetchPollByIdWithOptions).mockRejectedValue(
+			new Error("Poll not found")
+		);
+
+		const result = await getPollByIdWithOptions({
+			data: {
+				id: 123,
+			},
+		});
+
+		expect(queries.fetchPollByIdWithOptions).toHaveBeenCalledWith(123);
+		expect(result).toEqual({
+			success: false,
+			error: "Failed to fetch poll",
 		});
 	});
 });

@@ -1,11 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { Poll, pollFactory } from "~/domains/polls/dto";
 import { z } from "zod";
 import {
 	fetchAllPolls,
 	fetchPollById,
 	fetchPollByIdWithOptions,
-	insertPoll,
 } from "@/src/domains/polls/api/queries";
 
 export const getPollByIdWithOptions = createServerFn()
@@ -16,23 +14,10 @@ export const getPollByIdWithOptions = createServerFn()
 
 			const { poll, options } = await fetchPollByIdWithOptions(id);
 
-			if (!poll) {
-				return {
-					success: false,
-					error: "Poll not found",
-				};
-			}
-
-			return {
-				success: true,
-				data: { poll, options },
-			};
+			return toSuccess({ poll, options });
 		} catch (error) {
 			console.error("Error fetching poll:", error);
-			return {
-				success: false,
-				error: "Failed to fetch poll",
-			};
+			return toError("Failed to fetch poll");
 		}
 	});
 
@@ -42,34 +27,12 @@ export const getPollById = createServerFn()
 		try {
 			const { id } = data;
 
-			const poll = await fetchPollById(id);
+			const poll = await getPollOrError(id);
 
-			console.log("NO POLL", poll, id);
-
-			if (!poll) {
-				return {
-					success: false,
-					error: "Poll not found",
-				};
-			}
-
-			if (poll.id !== id) {
-				return {
-					success: false,
-					error: "ID mismatch",
-				};
-			}
-
-			return {
-				success: true,
-				data: poll,
-			};
+			return toSuccess(poll);
 		} catch (error) {
 			console.error("Error fetching poll:", error);
-			return {
-				success: false,
-				error: "Failed to fetch poll",
-			};
+			return toError("Failed to fetch poll");
 		}
 	});
 
@@ -90,46 +53,16 @@ export const getAllPolls = createServerFn().handler(async () => {
 	}
 });
 
-const createPollInputSchema = z.object({
-	question: z.string().min(1),
-	status: z.enum(["draft", "needs-revision", "open", "closed", "archived"]),
-	answerType: z.enum(["single", "multiple"]),
-	openingTime: z.date(),
-	closingTime: z.date(),
-	createdBy: z.string().uuid(),
-	categoryCode: z.string().min(1),
-});
+async function getPollOrError(id: number) {
+	const poll = await fetchPollById(id);
+	if (!poll) throw new Error("Poll not found");
+	return poll;
+}
 
-export const createPoll = createServerFn({ method: "POST" })
-	.validator(createPollInputSchema)
-	.handler(async ({ data }) => {
-		try {
-			const result = await insertPoll({
-				...data,
-				id: 0, // Will be assigned by database
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			});
+function toSuccess<T>(data: T) {
+	return { success: true, data };
+}
 
-			if (!result.length) {
-				return {
-					success: false,
-					error: "Failed to create poll",
-				};
-			}
-
-			// Convert the newly created record back to a DTO
-			const newPoll = pollFactory.toDTO(result[0]);
-
-			return {
-				success: true,
-				data: newPoll,
-			};
-		} catch (error) {
-			console.error("Error creating poll:", error);
-			return {
-				success: false as const,
-				error: "Failed to create poll",
-			};
-		}
-	});
+function toError(error: string) {
+	return { success: false, error };
+}
