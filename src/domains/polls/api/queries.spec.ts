@@ -21,7 +21,7 @@ vi.mock("~/database/db", () => ({
 	},
 }));
 
-describe("Queries to fetch polls and options", () => {
+describe("Query logic - DTO mapping - DB errors", () => {
 	beforeEach(() => {
 		vi.resetAllMocks();
 	});

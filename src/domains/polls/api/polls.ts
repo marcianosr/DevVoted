@@ -1,11 +1,40 @@
 import { createServerFn } from "@tanstack/react-start";
-import { pollFactory } from "~/domains/polls/dto";
+import { Poll, pollFactory } from "~/domains/polls/dto";
 import { z } from "zod";
 import {
 	fetchAllPolls,
 	fetchPollById,
+	fetchPollByIdWithOptions,
 	insertPoll,
 } from "@/src/domains/polls/api/queries";
+
+export const getPollByIdWithOptions = createServerFn()
+	.validator(z.object({ id: z.number().int().positive() }))
+	.handler(async ({ data }) => {
+		try {
+			const { id } = data;
+
+			const { poll, options } = await fetchPollByIdWithOptions(id);
+
+			if (!poll) {
+				return {
+					success: false,
+					error: "Poll not found",
+				};
+			}
+
+			return {
+				success: true,
+				data: { poll, options },
+			};
+		} catch (error) {
+			console.error("Error fetching poll:", error);
+			return {
+				success: false,
+				error: "Failed to fetch poll",
+			};
+		}
+	});
 
 export const getPollById = createServerFn()
 	.validator(z.object({ id: z.number().int().positive() }))
@@ -15,10 +44,19 @@ export const getPollById = createServerFn()
 
 			const poll = await fetchPollById(id);
 
+			console.log("NO POLL", poll, id);
+
 			if (!poll) {
 				return {
 					success: false,
 					error: "Poll not found",
+				};
+			}
+
+			if (poll.id !== id) {
+				return {
+					success: false,
+					error: "ID mismatch",
 				};
 			}
 

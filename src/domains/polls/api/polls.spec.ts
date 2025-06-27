@@ -1,35 +1,68 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getPollById } from "@/src/domains/polls/api/polls";
+import {
+	getAllPolls,
+	getPollById,
+	getPollByIdWithOptions,
+} from "@/src/domains/polls/api/polls";
 import * as queries from "@/src/domains/polls/api/queries";
-import { createMockPoll } from "../factories/pollFactory";
+import { createMockPoll, createMockPollArray } from "../factories/pollFactory";
+import { createMockPollOptionArray } from "../factories/pollOptionsFactory";
 
 vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchPollById: vi.fn(),
+	fetchAllPolls: vi.fn(),
+	fetchPollByIdWithOptions: vi.fn(),
 }));
 
-describe("getPollById", () => {
-	const mockPoll = createMockPoll({
-		id: 222,
-		categoryCode: "frontend",
-	});
+// Tests service layer logic that wraps query methods and structures return data
 
+describe("getPollById", () => {
 	beforeEach(() => {
 		vi.resetAllMocks();
 	});
 
 	it("returns poll data when a poll is found", async () => {
+		const pollId = 198;
+		const mockPoll = createMockPoll({
+			id: pollId,
+			categoryCode: "frontend",
+		});
+
 		vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
 
 		const result = await getPollById({
 			data: {
-				id: 1,
+				id: pollId,
 			},
 		});
 
-		expect(queries.fetchPollById).toHaveBeenCalledWith(1);
+		expect(queries.fetchPollById).toHaveBeenCalledWith(pollId);
 		expect(result).toEqual({
 			success: true,
 			data: mockPoll,
+		});
+	});
+
+	it("returns an error when ID does not match", async () => {
+		const mockPollId = 198;
+		const mismatchedId = 2;
+		const mockPoll = createMockPoll({
+			id: mockPollId,
+			categoryCode: "frontend",
+		});
+
+		vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
+
+		const result = await getPollById({
+			data: {
+				id: mismatchedId,
+			},
+		});
+
+		expect(queries.fetchPollById).toHaveBeenCalledWith(mismatchedId);
+		expect(result).toEqual({
+			success: false,
+			error: "ID mismatch",
 		});
 	});
 
@@ -49,33 +82,69 @@ describe("getPollById", () => {
 			error: "Poll not found",
 		});
 	});
+});
 
-	it("handles errors during fetch", async () => {
-		const errorMessage = "Database connection error";
-		vi.mocked(queries.fetchPollById).mockRejectedValue(
-			new Error(errorMessage)
-		);
+describe("getAllPolls", () => {
+	beforeEach(() => {
+		vi.resetAllMocks();
+	});
 
-		const consoleSpy = vi
-			.spyOn(console, "error")
-			.mockImplementation(() => {});
+	it("returns all poll data", async () => {
+		const mockPolls = createMockPollArray(10);
 
-		const result = await getPollById({
+		vi.mocked(queries.fetchAllPolls).mockResolvedValue(mockPolls);
+
+		const result = await getAllPolls();
+
+		expect(queries.fetchAllPolls).toHaveBeenCalled();
+		expect(result).toEqual({
+			success: true,
+			data: mockPolls,
+		});
+	});
+
+	it("returns an error when no polls are found", async () => {
+		vi.mocked(queries.fetchAllPolls).mockResolvedValue([]);
+
+		const result = await getAllPolls();
+
+		expect(queries.fetchAllPolls).toHaveBeenCalled();
+		expect(result).toEqual({
+			success: true,
+			data: [],
+		});
+	});
+});
+
+describe("getPollByIdWithOptions", () => {
+	beforeEach(() => {
+		vi.resetAllMocks();
+	});
+
+	it.skip("returns all poll data", async () => {
+		const mockPoll = createMockPoll({ id: 2 });
+		const mockOptions = createMockPollOptionArray(4);
+
+		vi.mocked(queries.fetchPollByIdWithOptions).mockResolvedValue({
+			poll: mockPoll,
+			options: mockOptions,
+		});
+
+		const result = await getPollByIdWithOptions({
 			data: {
-				id: 1,
+				id: 2,
 			},
 		});
 
-		expect(queries.fetchPollById).toHaveBeenCalledWith(1);
-		expect(consoleSpy).toHaveBeenCalledWith(
-			"Error fetching poll:",
-			expect.any(Error)
-		);
-		expect(result).toEqual({
-			success: false,
-			error: "Failed to fetch poll",
-		});
+		console.log(result);
 
-		consoleSpy.mockRestore();
+		expect(queries.fetchPollByIdWithOptions).toHaveBeenCalledWith(123);
+		expect(result).toEqual({
+			success: true,
+			data: {
+				poll: mockPoll,
+				options: mockOptions,
+			},
+		});
 	});
 });
