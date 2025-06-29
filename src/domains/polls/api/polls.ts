@@ -14,10 +14,10 @@ export const getPollByIdWithOptions = createServerFn()
 
 			const { poll, options } = await fetchPollByIdWithOptions(id);
 
-			return toSuccess({ poll, options });
+			return { success: true, data: { poll, options } };
 		} catch (error) {
 			console.error("Error fetching poll:", error);
-			return toError("Failed to fetch poll");
+			return { success: false, error: "Failed to fetch poll" };
 		}
 	});
 
@@ -29,10 +29,10 @@ export const getPollById = createServerFn()
 
 			const poll = await getPollOrError(id);
 
-			return toSuccess(poll);
+			return { success: true, data: poll };
 		} catch (error) {
 			console.error("Error fetching poll:", error);
-			return toError("Failed to fetch poll");
+			return { success: false, error: "Failed to fetch poll" };
 		}
 	});
 
@@ -57,12 +57,4 @@ async function getPollOrError(id: number) {
 	const poll = await fetchPollById(id);
 	if (!poll) throw new Error("Poll not found");
 	return poll;
-}
-
-function toSuccess<T>(data: T) {
-	return { success: true, data };
-}
-
-function toError(error: string) {
-	return { success: false, error };
 }

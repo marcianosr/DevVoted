@@ -4,38 +4,32 @@ import { Poll, pollFactory } from "~/domains/polls/dto";
 import { db } from "~/database/db";
 import { pollOptionFactory } from "../pollOptionsDto";
 
-export const fetchPollById = async (id: number): Promise<Poll> => {
-	const polls = await db
+export const fetchPollById = async (id: number): Promise<Poll | null> => {
+	const pollRecord = await db
 		.select()
 		.from(pollsTable)
 		.where(eq(pollsTable.id, id));
 
-	if (!polls.length) {
+	if (!pollRecord.length) {
 		throw new Error("Poll not found");
 	}
 
-	const poll = pollFactory.toDTO(polls[0]);
+	const poll = pollFactory.toDTO(pollRecord[0]);
 
 	return poll;
 };
 
 export const fetchPollByIdWithOptions = async (id: number) => {
-	// TODO: Improve with leftJoin
-	const polls = await db
-		.select()
-		.from(pollsTable)
-		.where(eq(pollsTable.id, id));
+	// TODO: Improve with leftJoin if ever needed. Probably need to seperate the calls again
+	const poll = await fetchPollById(id);
 
-	if (!polls.length) {
+	if (!poll) {
 		throw new Error("Poll not found");
 	}
-
 	const pollOptions = await db
 		.select()
 		.from(pollOptionsTable)
 		.where(eq(pollOptionsTable.poll_id, id));
-
-	const poll = pollFactory.toDTO(polls[0]);
 
 	const options = pollOptionFactory.toDTOs(pollOptions);
 
