@@ -1,4 +1,3 @@
-
 type ErrorComponentProps = {
 	text: string;
 };
