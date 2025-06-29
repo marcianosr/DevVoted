@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAllPolls } from "~/domains/polls/api/polls";
-import { ErrorComponent } from "~/components/ErrorComponent";
+import { ErrorComponent } from "~/ui/ErrorComponent";
 
 export const Route = createFileRoute("/_authed/polls/")({
 	component: PollsList,
