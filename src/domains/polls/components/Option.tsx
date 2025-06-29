@@ -1,0 +1,70 @@
+import { PollOption } from "@/src/domains/polls/pollOptionsDto";
+
+// Define a simplified field interface that matches what we need from TanStack Form
+type FormFieldApi = {
+	state: {
+		value: string[];
+	};
+	setValue: (value: string[]) => void;
+};
+
+type OptionProps = {
+	option: PollOption;
+	type: "radio" | "checkbox";
+	field: FormFieldApi;
+	checked: boolean;
+};
+
+type HandleOptionsChangeParams = {
+	e: React.ChangeEvent<HTMLInputElement>;
+	field: FormFieldApi;
+	type: "radio" | "checkbox";
+	optionValue: string;
+};
+export const handleOptionsChange = ({
+	e,
+	field,
+	type,
+	optionValue,
+}: HandleOptionsChangeParams) => {
+	const currentValues = [...field.state.value];
+	const isChecked = e.target.checked;
+
+	if (type === "radio" && isChecked) {
+		// For radio buttons, replace the entire selection
+		field.setValue([optionValue]);
+		return;
+	}
+
+	// For checkboxes, add or remove based on checkbox state
+	const newValues = isChecked
+		? [...currentValues, optionValue]
+		: currentValues.filter((val) => val !== optionValue);
+
+	field.setValue(newValues);
+};
+
+const Option = ({ option, type, field, checked }: OptionProps) => {
+	const inputId = `option-${option.id}`;
+	const optionValue = option.id.toString();
+
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		handleOptionsChange({ e, field, type, optionValue });
+	};
+
+	return (
+		<div className="flex items-center gap-2">
+			<input
+				type={type}
+				name="selectedOptions"
+				value={optionValue}
+				id={inputId}
+				checked={checked}
+				onChange={handleChange}
+			/>
+			<label htmlFor={inputId}>{option.option}</label>
+		</div>
+	);
+};
+
+export default Option;
