@@ -3,7 +3,7 @@ import {
 	fetchAllPolls,
 	fetchPollById,
 	fetchPollByIdWithOptions,
-} from "@/src/domains/polls/api/queries";
+} from "~/domains/polls/api/queries";
 import { db } from "~/database/db";
 import {
 	createMockPollRecordArray,

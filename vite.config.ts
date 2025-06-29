@@ -13,8 +13,10 @@ export default defineConfig({
 			{ find: "@/src", replacement: resolve(__dirname, "./src") },
 		],
 	},
-	plugins: [
-		tsConfigPaths(),
-		tanstackStart(),
-	],
+	plugins: [tsConfigPaths(), tanstackStart()],
+	test: {
+		environment: "jsdom",
+		globals: true,
+		setupFiles: ["./src/test/setup.ts"],
+	},
 });

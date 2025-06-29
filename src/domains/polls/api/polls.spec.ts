@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-	getAllPolls,
-	getPollById,
-	getPollByIdWithOptions,
-} from "@/src/domains/polls/api/polls";
-import * as queries from "@/src/domains/polls/api/queries";
+import * as queries from "~/domains/polls/api/queries";
 import { createMockPoll, createMockPollArray } from "../factories/pollFactory";
 import { createMockPollOptionArray } from "../factories/pollOptionsFactory";
+import {
+	getAllPollsHandler,
+	getPollByIdHandler,
+	getPollByIdWithOptionsHandler,
+} from "./handlers";
 
 vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchPollById: vi.fn(),
@@ -15,7 +15,6 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 }));
 
 // Tests service layer logic that wraps query methods and structures return data
-
 describe("getPollById", () => {
 	beforeEach(() => {
 		vi.resetAllMocks();
@@ -30,7 +29,7 @@ describe("getPollById", () => {
 
 		vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
 
-		const result = await getPollById({
+		const result = await getPollByIdHandler({
 			data: {
 				id: pollId,
 			},
@@ -47,7 +46,7 @@ describe("getPollById", () => {
 		//@ts-ignore
 		vi.mocked(queries.fetchPollById).mockResolvedValue(null);
 
-		const result = await getPollById({
+		const result = await getPollByIdHandler({
 			data: {
 				id: 999,
 			},
@@ -71,7 +70,7 @@ describe("getAllPolls", () => {
 
 		vi.mocked(queries.fetchAllPolls).mockResolvedValue(mockPolls);
 
-		const result = await getAllPolls();
+		const result = await getAllPollsHandler();
 
 		expect(queries.fetchAllPolls).toHaveBeenCalled();
 		expect(result).toEqual({
@@ -83,7 +82,7 @@ describe("getAllPolls", () => {
 	it("returns an error when no polls are found", async () => {
 		vi.mocked(queries.fetchAllPolls).mockResolvedValue([]);
 
-		const result = await getAllPolls();
+		const result = await getAllPollsHandler();
 
 		expect(queries.fetchAllPolls).toHaveBeenCalled();
 		expect(result).toEqual({
@@ -107,7 +106,7 @@ describe("getPollByIdWithOptions", () => {
 			options: mockOptions,
 		});
 
-		const result = await getPollByIdWithOptions({
+		const result = await getPollByIdWithOptionsHandler({
 			data: {
 				id: 2,
 			},
@@ -129,7 +128,7 @@ describe("getPollByIdWithOptions", () => {
 			new Error("Poll not found")
 		);
 
-		const result = await getPollByIdWithOptions({
+		const result = await getPollByIdWithOptionsHandler({
 			data: {
 				id: 123,
 			},
