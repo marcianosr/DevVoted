@@ -7,7 +7,7 @@ export type PollOption = {
 	id: number;
 	pollId: number;
 	option: string;
-	isCorrect: boolean;
+	correct: boolean;
 };
 
 export const pollOptionToDTO = (record: PollOptionsRecord): PollOption => {
@@ -15,7 +15,7 @@ export const pollOptionToDTO = (record: PollOptionsRecord): PollOption => {
 		id: record.id,
 		pollId: record.poll_id,
 		option: record.option,
-		isCorrect: record.is_correct,
+		correct: record.correct,
 	};
 };
 
@@ -24,7 +24,7 @@ export const pollOptionFromDTO = (dto: PollOption): PollOptionsRecord => {
 		id: dto.id,
 		poll_id: dto.pollId,
 		option: dto.option,
-		is_correct: dto.isCorrect,
+		correct: dto.correct,
 	};
 };
 
@@ -47,7 +47,7 @@ export const createPollOption = (
 		id: 0, // Will be assigned by database
 		pollId: 0, // Must be set by caller
 		option: "",
-		isCorrect: false,
+		correct: false,
 		...partial,
 	};
 };

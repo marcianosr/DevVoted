@@ -95,7 +95,7 @@ export const pollsTable = pgTable("polls", {
 	created_by: uuid("created_by")
 		.references(() => usersTable.id, { onDelete: "set null" }) // Preserves poll history even if user is deleted
 		.notNull(),
-	created_at: timestamp("created_at").notNull(),
+	created_at: timestamp("created_at").defaultNow(),
 	updated_at: timestamp("updated_at")
 		.defaultNow()
 		.$onUpdate(() => new Date()), // Automatically tracks last modification
@@ -117,7 +117,7 @@ export const pollOptionsTable = pgTable("polls_options", {
 		.references(() => pollsTable.id, { onDelete: "cascade" })
 		.notNull(),
 	option: text("option").notNull(),
-	is_correct: boolean("is_correct").notNull().default(false),
+	correct: boolean("correct").notNull().default(false),
 });
 
 /**

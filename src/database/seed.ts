@@ -149,10 +149,10 @@ async function seedDatabase() {
 function generatePollOptions(pollId: number, question: string) {
 	// Default options for generic questions
 	let options = [
-		{ poll_id: pollId, option: "Option A", is_correct: true },
-		{ poll_id: pollId, option: "Option B", is_correct: false },
-		{ poll_id: pollId, option: "Option C", is_correct: false },
-		{ poll_id: pollId, option: "Option D", is_correct: false },
+		{ poll_id: pollId, option: "Option A", correct: true },
+		{ poll_id: pollId, option: "Option B", correct: false },
+		{ poll_id: pollId, option: "Option C", correct: false },
+		{ poll_id: pollId, option: "Option D", correct: false },
 	];
 
 	// Generate more specific options based on the question content
@@ -162,22 +162,22 @@ function generatePollOptions(pollId: number, question: string) {
 				{
 					poll_id: pollId,
 					option: "Selects all elements",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "Can cause performance issues when overused",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "Has the lowest specificity of any selector",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "Only works in modern browsers",
-					is_correct: false,
+					correct: false,
 				},
 			];
 		} else if (
@@ -188,22 +188,22 @@ function generatePollOptions(pollId: number, question: string) {
 				{
 					poll_id: pollId,
 					option: "flex-wrap: wrap",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "flex-direction: column",
-					is_correct: false,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
 					option: "flex-flow: row",
-					is_correct: false,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
 					option: "flex-basis: auto",
-					is_correct: false,
+					correct: false,
 				},
 			];
 		} else if (
@@ -211,17 +211,17 @@ function generatePollOptions(pollId: number, question: string) {
 			question.includes("text")
 		) {
 			options = [
-				{ poll_id: pollId, option: "line-height", is_correct: true },
+				{ poll_id: pollId, option: "line-height", correct: true },
 				{
 					poll_id: pollId,
 					option: "letter-spacing",
-					is_correct: false,
+					correct: false,
 				},
-				{ poll_id: pollId, option: "text-indent", is_correct: false },
+				{ poll_id: pollId, option: "text-indent", correct: false },
 				{
 					poll_id: pollId,
 					option: "vertical-align",
-					is_correct: false,
+					correct: false,
 				},
 			];
 		} else if (
@@ -232,22 +232,22 @@ function generatePollOptions(pollId: number, question: string) {
 				{
 					poll_id: pollId,
 					option: "position: absolute",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "position: fixed",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "position: relative",
-					is_correct: false,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
 					option: "position: static",
-					is_correct: false,
+					correct: false,
 				},
 			];
 		}
@@ -260,22 +260,22 @@ function generatePollOptions(pollId: number, question: string) {
 				{
 					poll_id: pollId,
 					option: "They retain access to their outer function's scope",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "They help create private variables",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "They can lead to memory leaks if not handled properly",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "They are only available in ES6 and later",
-					is_correct: false,
+					correct: false,
 				},
 			];
 		}
@@ -285,22 +285,22 @@ function generatePollOptions(pollId: number, question: string) {
 				{
 					poll_id: pollId,
 					option: "They provide cross-browser compatibility",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "They improve performance through event pooling",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "They follow the W3C spec",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "They only work with functional components",
-					is_correct: false,
+					correct: false,
 				},
 			];
 		}
@@ -313,22 +313,22 @@ function generatePollOptions(pollId: number, question: string) {
 				{
 					poll_id: pollId,
 					option: "It provides compile-time type checking",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "It supports interfaces and type aliases",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "It allows for generic types",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "It requires a separate runtime library",
-					is_correct: false,
+					correct: false,
 				},
 			];
 		}
@@ -341,22 +341,22 @@ function generatePollOptions(pollId: number, question: string) {
 				{
 					poll_id: pollId,
 					option: "Disable right-click context menu",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "Add watermarks to images",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "Use Content Security Policy headers",
-					is_correct: true,
+					correct: true,
 				},
 				{
 					poll_id: pollId,
 					option: "Encrypt HTML content",
-					is_correct: false,
+					correct: false,
 				},
 			];
 		}
@@ -365,58 +365,58 @@ function generatePollOptions(pollId: number, question: string) {
 	// For questions about preferences, create appropriate options
 	if (question.includes("favorite programming language")) {
 		options = [
-			{ poll_id: pollId, option: "JavaScript", is_correct: false },
-			{ poll_id: pollId, option: "TypeScript", is_correct: false },
-			{ poll_id: pollId, option: "Python", is_correct: false },
-			{ poll_id: pollId, option: "Rust", is_correct: false },
+			{ poll_id: pollId, option: "JavaScript", correct: false },
+			{ poll_id: pollId, option: "TypeScript", correct: false },
+			{ poll_id: pollId, option: "Python", correct: false },
+			{ poll_id: pollId, option: "Rust", correct: false },
 		];
 	} else if (question.includes("frontend framework")) {
 		options = [
-			{ poll_id: pollId, option: "React", is_correct: false },
-			{ poll_id: pollId, option: "Vue", is_correct: false },
-			{ poll_id: pollId, option: "Angular", is_correct: false },
-			{ poll_id: pollId, option: "Svelte", is_correct: false },
+			{ poll_id: pollId, option: "React", correct: false },
+			{ poll_id: pollId, option: "Vue", correct: false },
+			{ poll_id: pollId, option: "Angular", correct: false },
+			{ poll_id: pollId, option: "Svelte", correct: false },
 		];
 	} else if (question.includes("use TypeScript")) {
 		options = [
 			{
 				poll_id: pollId,
 				option: "Yes, for all projects",
-				is_correct: false,
+				correct: false,
 			},
 			{
 				poll_id: pollId,
 				option: "Yes, for larger projects only",
-				is_correct: false,
+				correct: false,
 			},
 			{
 				poll_id: pollId,
 				option: "No, I prefer plain JavaScript",
-				is_correct: false,
+				correct: false,
 			},
 			{
 				poll_id: pollId,
 				option: "I'm still learning it",
-				is_correct: false,
+				correct: false,
 			},
 		];
 	} else if (question.includes("write tests")) {
 		options = [
-			{ poll_id: pollId, option: "For every feature", is_correct: false },
+			{ poll_id: pollId, option: "For every feature", correct: false },
 			{
 				poll_id: pollId,
 				option: "Only for critical functionality",
-				is_correct: false,
+				correct: false,
 			},
-			{ poll_id: pollId, option: "Rarely", is_correct: false },
-			{ poll_id: pollId, option: "Never", is_correct: false },
+			{ poll_id: pollId, option: "Rarely", correct: false },
+			{ poll_id: pollId, option: "Never", correct: false },
 		];
 	} else if (question.includes("CSS solution")) {
 		options = [
-			{ poll_id: pollId, option: "Plain CSS", is_correct: false },
-			{ poll_id: pollId, option: "Tailwind CSS", is_correct: false },
-			{ poll_id: pollId, option: "CSS-in-JS", is_correct: false },
-			{ poll_id: pollId, option: "SASS/SCSS", is_correct: false },
+			{ poll_id: pollId, option: "Plain CSS", correct: false },
+			{ poll_id: pollId, option: "Tailwind CSS", correct: false },
+			{ poll_id: pollId, option: "CSS-in-JS", correct: false },
+			{ poll_id: pollId, option: "SASS/SCSS", correct: false },
 		];
 	}
 

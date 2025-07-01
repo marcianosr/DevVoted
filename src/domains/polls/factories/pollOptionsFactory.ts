@@ -10,14 +10,14 @@ const pollOption: PollOption = {
 	id: 1,
 	pollId: 1,
 	option: "JavaScript",
-	isCorrect: true,
+	correct: true,
 };
 
 const pollOptionRecord: PollOptionsRecord = {
 	id: 1,
 	poll_id: 1,
 	option: "JavaScript",
-	is_correct: true,
+	correct: true,
 };
 
 export const createMockPollOption =
@@ -79,7 +79,7 @@ export const createMockPollOptionArray = (
 			id: i + 1,
 			pollId,
 			option,
-			isCorrect: i === 0, // First option is correct by default
+			correct: i === 0, // First option is correct by default
 		})
 	);
 };
@@ -98,7 +98,7 @@ export const createMockPollOptionRecordArray = (
 			id: i + 1,
 			poll_id: pollId,
 			option,
-			is_correct: i === 0, // First option is correct by default
+			correct: i === 0, // First option is correct by default
 		})
 	);
 };
@@ -118,7 +118,7 @@ export const createSeedPollOptionArray = (
 		createSeedPollOption({
 			poll_id: pollId,
 			option,
-			is_correct: i === 0, // First option is correct by default
+			correct: i === 0, // First option is correct by default
 		})
 	);
 };
