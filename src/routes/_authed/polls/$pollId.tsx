@@ -1,17 +1,64 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getPollById, getPollByIdWithOptions } from "~/domains/polls/api/polls";
-import { ErrorComponent } from "~/components/ErrorComponent";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
+import { ErrorComponent } from "~/ui/ErrorComponent";
+import Option from "~/domains/polls/components/Option";
+import { useForm } from "@tanstack/react-form";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
+import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
+
+type DefaultSelectedOptions = string[];
+const defaultSelectedOptions: DefaultSelectedOptions = [];
+
+export const submitPollOptions = createServerFn()
+	.validator(
+		z.object({
+			pollId: z.number().int().positive(),
+			selectedOptions: z.array(z.string()).min(1),
+		})
+	)
+	.handler(async ({ data }) => postPollOptionsHandler({ data }));
 
 const PollDetail: React.FC = () => {
 	const { pollId } = Route.useParams();
 	const pollIdNumber = parseInt(pollId, 10);
 
-	const {
-		data: pollResponse,
-		isLoading,
-		error,
-	} = useQuery({
+	const submitOptionsMutation = useMutation({
+		mutationFn: submitPollOptions,
+		onSuccess: (data) => {
+			if (data.success) {
+				console.log("Options submitted successfully");
+				// You could show a success message or redirect here
+			} else {
+				console.error("Error submitting Options:", data.error);
+				// You could show an error message here
+			}
+		},
+		onError: (error) => {
+			console.error("Mutation error:", error);
+		},
+	});
+
+	const form = useForm({
+		defaultValues: {
+			selectedOptions: defaultSelectedOptions,
+		},
+		onSubmit: async ({ value }) => {
+			const { selectedOptions } = value;
+
+			// Submit the Options using our mutation with the pollId from component scope
+			submitOptionsMutation.mutate({
+				data: {
+					pollId: pollIdNumber,
+					selectedOptions,
+				},
+			});
+		},
+	});
+
+	const { data, isLoading, error } = useQuery({
 		queryKey: ["poll", pollIdNumber],
 		queryFn: () => getPollByIdWithOptions({ data: { id: pollIdNumber } }),
 	});
@@ -20,14 +67,15 @@ const PollDetail: React.FC = () => {
 		return <LoadingSkeleton />;
 	}
 
-	if (error || !pollResponse || !pollResponse.success) {
+	if (error || !data?.data) {
 		return <ErrorComponent text="Error Loading Poll" />;
 	}
 
-	const poll = pollResponse.data?.poll;
-	const options = pollResponse.data?.options;
+	if (!data.success) {
+		return <ErrorComponent text={data.error || "Error Loading Poll"} />;
+	}
 
-	console.log(poll, options);
+	const { poll, options } = data.data;
 
 	if (!poll) {
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
@@ -55,32 +103,79 @@ const PollDetail: React.FC = () => {
 						</p>
 					</div>
 				</div>
+			</div>
 
-				<div className="p-4 rounded-lg shadow">
-					<h2 className="text-lg font-semibold mb-2">Timeline</h2>
-					<div className="space-y-2">
-						<p>
-							<span className="font-medium">Opens:</span>{" "}
-							{new Date(poll.openingTime).toLocaleString()}
-						</p>
-						<p>
-							<span className="font-medium">Closes:</span>{" "}
-							{new Date(poll.closingTime).toLocaleString()}
-						</p>
-						<p>
-							<span className="font-medium">Created:</span>{" "}
-							{new Date(poll.createdAt).toLocaleDateString()}
-						</p>
-					</div>
+			<form
+				onSubmit={(e) => {
+					e.preventDefault();
+					form.handleSubmit();
+				}}
+				method="POST"
+			>
+				<h2 className="text-xl font-semibold mb-4">Options</h2>
+				<ul className="space-y-2">
+					<form.Field
+						name="selectedOptions"
+						children={(field) => (
+							<>
+								{options.map((option) => (
+									<li key={option.id}>
+										{poll.answerType === "single" && (
+											<Option
+												option={option}
+												type="radio"
+												field={field}
+												checked={field.state.value.includes(
+													option.id.toString()
+												)}
+											/>
+										)}
+										{poll.answerType === "multiple" && (
+											<Option
+												option={option}
+												type="checkbox"
+												field={field}
+												checked={field.state.value.includes(
+													option.id.toString()
+												)}
+											/>
+										)}
+									</li>
+								))}
+							</>
+						)}
+					/>
+				</ul>
+				<div className="mt-6 space-y-4">
+					{submitOptionsMutation.isSuccess &&
+						submitOptionsMutation.data?.success && (
+							<div className="p-3 bg-green-100 text-green-800 rounded">
+								Your options has been submitted successfully!
+							</div>
+						)}
+
+					{submitOptionsMutation.isError ||
+					(submitOptionsMutation.isSuccess &&
+						!submitOptionsMutation.data?.success) ? (
+						<div className="p-3 bg-red-100 text-red-800 rounded">
+							Failed to submit your options. Please try again.
+						</div>
+					) : null}
+
+					<button
+						type="submit"
+						className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
+						disabled={
+							submitOptionsMutation.isPending ||
+							form.state.isSubmitting
+						}
+					>
+						{submitOptionsMutation.isPending
+							? "Submitting..."
+							: "Submit Options"}
+					</button>
 				</div>
-			</div>
-
-			<div className="mt-6">
-				<h2 className="text-xl font-semibold mb-4">Answer Options</h2>
-				<p className="text-gray-600 italic">
-					Options will be displayed here once implemented
-				</p>
-			</div>
+			</form>
 		</div>
 	);
 };
@@ -88,13 +183,3 @@ const PollDetail: React.FC = () => {
 export const Route = createFileRoute("/_authed/polls/$pollId")({
 	component: PollDetail,
 });
-
-const LoadingSkeleton = () => (
-	<div className="p-4">
-		<div className="animate-pulse flex flex-col gap-4">
-			<div className="h-8 rounded w-3/4"></div>
-			<div className="h-4 rounded w-1/2"></div>
-			<div className="h-24 rounded w-full"></div>
-		</div>
-	</div>
-);

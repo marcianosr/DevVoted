@@ -15,6 +15,13 @@
       "when": 1750778279016,
       "tag": "0001_numerous_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751368982836,
+      "tag": "0002_lame_ricochet",
+      "breakpoints": true
     }
   ]
 }

@@ -90,11 +90,11 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			expect(mockFrom).toHaveBeenCalled();
 			expect(mockWhere).toHaveBeenCalled();
 
-			expect(result.id).toEqual(mockPollRecord.id);
-			expect(result.question).toEqual(mockPollRecord.question);
-			expect(result.status).toEqual(mockPollRecord.status);
-			expect(result.answerType).toEqual(mockPollRecord.answer_type);
-			expect(result.categoryCode).toEqual(mockPollRecord.category_code);
+			expect(result?.id).toEqual(mockPollRecord.id);
+			expect(result?.question).toEqual(mockPollRecord.question);
+			expect(result?.status).toEqual(mockPollRecord.status);
+			expect(result?.answerType).toEqual(mockPollRecord.answer_type);
+			expect(result?.categoryCode).toEqual(mockPollRecord.category_code);
 		});
 
 		it("returns an error when poll is not found", async () => {
