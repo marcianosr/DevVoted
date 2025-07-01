@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as queries from "~/domains/polls/api/queries";
-import { createMockPoll, createMockPollArray } from "../factories/pollFactory";
-import { createMockPollOptionArray } from "../factories/pollOptionsFactory";
+import { createMockPoll, createMockPollArray } from "../factories/poll";
+import { createMockPollOptionArray } from "../factories/pollOption";
 import {
 	getAllPollsHandler,
 	getPollByIdHandler,
@@ -13,6 +13,7 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchPollById: vi.fn(),
 	fetchAllPolls: vi.fn(),
 	fetchPollByIdWithOptions: vi.fn(),
+	createPollResponse: vi.fn(),
 }));
 
 // Tests service layer logic that wraps query methods and structures return data

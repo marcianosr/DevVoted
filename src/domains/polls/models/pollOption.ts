@@ -1,7 +1,7 @@
 import { InferSelectModel } from "drizzle-orm";
 import { pollOptionsTable } from "@/src/database/schema";
 
-export type PollOptionsRecord = InferSelectModel<typeof pollOptionsTable>;
+export type PollOptionRecord = InferSelectModel<typeof pollOptionsTable>;
 
 export type PollOption = {
 	id: number;
@@ -10,7 +10,7 @@ export type PollOption = {
 	correct: boolean;
 };
 
-export const pollOptionToDTO = (record: PollOptionsRecord): PollOption => {
+export const pollOptionToDTO = (record: PollOptionRecord): PollOption => {
 	return {
 		id: record.id,
 		pollId: record.poll_id,
@@ -19,7 +19,7 @@ export const pollOptionToDTO = (record: PollOptionsRecord): PollOption => {
 	};
 };
 
-export const pollOptionFromDTO = (dto: PollOption): PollOptionsRecord => {
+export const pollOptionFromDTO = (dto: PollOption): PollOptionRecord => {
 	return {
 		id: dto.id,
 		poll_id: dto.pollId,
@@ -29,14 +29,12 @@ export const pollOptionFromDTO = (dto: PollOption): PollOptionsRecord => {
 };
 
 export const pollOptionsToDTOs = (
-	records: PollOptionsRecord[]
+	records: PollOptionRecord[]
 ): PollOption[] => {
 	return records.map(pollOptionToDTO);
 };
 
-export const pollOptionsFromDTOs = (
-	dtos: PollOption[]
-): PollOptionsRecord[] => {
+export const pollOptionsFromDTOs = (dtos: PollOption[]): PollOptionRecord[] => {
 	return dtos.map(pollOptionFromDTO);
 };
 

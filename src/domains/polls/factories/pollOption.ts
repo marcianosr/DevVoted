@@ -1,8 +1,8 @@
 import { createMockDataFactory } from "@/src/test/createMockDataFactory";
 import {
 	PollOption,
-	PollOptionsRecord,
-} from "@/src/domains/polls/pollOptionsDto";
+	PollOptionRecord,
+} from "~/domains/polls/models/pollOption";
 import { InferInsertModel } from "drizzle-orm";
 import { pollOptionsTable } from "@/src/database/schema";
 
@@ -13,7 +13,7 @@ const pollOption: PollOption = {
 	correct: true,
 };
 
-const pollOptionRecord: PollOptionsRecord = {
+const pollOptionRecord: PollOptionRecord = {
 	id: 1,
 	poll_id: 1,
 	option: "JavaScript",
@@ -24,10 +24,10 @@ export const createMockPollOption =
 	createMockDataFactory<PollOption>(pollOption);
 
 /**
- * Factory for creating mock PollOptionsRecord objects (database format) for testing
+ * Factory for creating mock PollOptionRecord objects (database format) for testing
  */
 export const createMockPollOptionRecord =
-	createMockDataFactory<PollOptionsRecord>(pollOptionRecord);
+	createMockDataFactory<PollOptionRecord>(pollOptionRecord);
 
 /**
  * Factory for creating database insert model objects for seeding
@@ -90,7 +90,7 @@ export const createMockPollOptionArray = (
 export const createMockPollOptionRecordArray = (
 	pollId: number,
 	count: number = 4
-): PollOptionsRecord[] => {
+): PollOptionRecord[] => {
 	const options = pollOptionsForLanguages.slice(0, count);
 
 	return options.map((option, i) =>

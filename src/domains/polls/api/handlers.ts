@@ -2,7 +2,8 @@ import {
 	fetchAllPolls,
 	fetchPollById,
 	fetchPollByIdWithOptions,
-} from "./queries";
+	createPollResponse,
+} from "~/domains/polls/api/queries";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -61,35 +62,41 @@ export const getAllPollsHandler = async () => {
 export const postPollOptionsHandler = async ({
 	data,
 }: {
-	data: { pollId: number; selectedOptions: string[] };
+	data: { pollId: number; selectedOptions: string[]; userId?: string };
 }) => {
 	try {
-		const { pollId, selectedOptions } = data;
+		const { pollId, selectedOptions, userId } = data;
 
 		if (selectedOptions.length === 0) {
 			throw new Error("Please select at least one option");
 		}
 
+		// Verify the poll exists
 		const poll = await fetchPollById(pollId);
 
-		console.log(poll);
 		if (!poll) {
 			throw new Error("Poll not found");
 		}
 
-		// Here you would typically save the Options to your database
-		// For example:
-		// await db.insert(pollOptionssTable).values({
-		//   poll_id: pollId,
-		//   selected_options: selectedOptions,
-		//   user_id: getUserId(), // If tracking user responses
-		// });
+		// Convert string option IDs to numbers
+		const selectedOptionIds = selectedOptions.map((option) =>
+			Number(option)
+		);
 
-		console.log("Saving poll Options:", { pollId, selectedOptions });
+		// Create the poll response and link it to the selected options
+		const result = await createPollResponse({
+			pollId,
+			userId,
+			selectedOptionIds,
+		});
 
-		return { success: true, message: "Options submitted successfully" };
+		return {
+			success: true,
+			message: "Options submitted successfully",
+			data: result,
+		};
 	} catch (error) {
-		console.error("Error submitting poll Options:", error);
+		console.error("Error submitting poll options:", error);
 		const message =
 			error instanceof Error ? error.message : "Something went wrong";
 		return { success: false, error: message };

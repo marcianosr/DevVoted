@@ -8,8 +8,8 @@ import { db } from "~/database/db";
 import {
 	createMockPollRecordArray,
 	createMockPollRecord,
-} from "@/src/domains/polls/factories/pollFactory";
-import { createMockPollOptionRecord } from "../factories/pollOptionsFactory";
+} from "~/domains/polls/factories/poll";
+import { createMockPollOptionRecord } from "../factories/pollOption";
 
 // Mock the database module
 vi.mock("~/database/db", () => ({

@@ -6,7 +6,7 @@ import {
 	pollOptionsTable,
 } from "@/src/database/schema";
 import { eq } from "drizzle-orm";
-import { createSeedPollArray } from "@/src/domains/polls/factories/pollFactory";
+import { createSeedPollArray } from "~/domains/polls/factories/poll";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 

@@ -34,7 +34,7 @@ export const pollToDTO = (record: PollRecord): Poll => {
 		openingTime: record.opening_time,
 		closingTime: record.closing_time,
 		createdBy: record.created_by,
-		createdAt: record.created_at,
+		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
 		categoryCode: record.category_code,
 	};

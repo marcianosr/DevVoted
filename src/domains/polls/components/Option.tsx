@@ -1,4 +1,4 @@
-import { PollOption } from "@/src/domains/polls/pollOptionsDto";
+import { PollOption } from "~/domains/polls/models/pollOption";
 
 // Define a simplified field interface that matches what we need from TanStack Form
 type FormFieldApi = {
