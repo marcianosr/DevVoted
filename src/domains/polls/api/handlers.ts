@@ -78,7 +78,7 @@ export const postPollOptionsHandler = async ({
 			throw new Error("Poll not found");
 		}
 
-		// Convert string option IDs to numbers
+		// Convert string option IDs to numbers for the DB
 		const selectedOptionIds = selectedOptions.map((option) =>
 			Number(option)
 		);

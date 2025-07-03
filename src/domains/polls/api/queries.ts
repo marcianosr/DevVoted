@@ -9,7 +9,7 @@ import { Poll, pollFactory } from "~/domains/polls/models/poll";
 import { db } from "~/database/db";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseFactory } from "~/domains/polls/models/pollResponses";
-import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOptions";
+import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
 
 export const fetchPollById = async (id: number): Promise<Poll | null> => {
 	const pollRecord = await db
@@ -89,56 +89,36 @@ export const insertPoll = async (data: Poll) => {
 // 	return result;
 // };
 
-/**
- * Creates a poll response for a user and links it to the selected options
- * @param pollId - The ID of the poll being responded to
- * @param userId - The ID of the user submitting the response (optional)
- * @param selectedOptionIds - Array of option IDs that the user selected
- * @returns The created poll response record and linked options
- */
+type CreatePollResponse = {
+	pollId: number;
+	userId?: string;
+	selectedOptionIds: number[];
+};
 export const createPollResponse = async ({
 	pollId,
 	userId,
 	selectedOptionIds,
-}: {
-	pollId: number;
-	userId?: string;
-	selectedOptionIds: number[];
-}) => {
-	// First, create the poll response record
-	const [pollResponseRecord] = await db
-		.insert(pollResponsesTable)
-		.values({
-			poll_id: pollId,
-			user_id: userId,
-		})
-		.returning();
+}: CreatePollResponse) => {
+	// Transaction instead of insert to ensure no orphaned records exist
+	await db.transaction(async (tx) => {
+		const [pollResponseRecord] = await tx
+			.insert(pollResponsesTable)
+			.values({ poll_id: pollId, user_id: userId })
+			.returning();
 
-	if (!pollResponseRecord) {
-		throw new Error("Failed to create poll response");
-	}
+		if (!pollResponseRecord)
+			throw new Error("Failed to create poll response");
 
-	// Convert the database record to a DTO
-	const pollResponseDto = pollResponseFactory.toDTO(pollResponseRecord);
-
-	// Only insert option links if there are options to insert
-	if (selectedOptionIds.length > 0) {
-		// Create DTOs for the response-option links
-		const responseOptionDtos = selectedOptionIds.map((optionId) => ({
-			responseId: pollResponseDto.responseId,
-			optionId,
-		}));
-
-		// Convert DTOs to database records
-		const responseOptionRecords =
-			pollResponseOptionFactory.fromDTOs(responseOptionDtos);
-
-		// Insert the records into the database
-		await db.insert(pollResponseOptionsTable).values(responseOptionRecords);
-	}
-
-	return {
-		response: pollResponseDto,
-		selectedOptions: selectedOptionIds,
-	};
+		if (selectedOptionIds.length > 0) {
+			const responseOptionRecords = pollResponseOptionFactory.fromDTOs(
+				selectedOptionIds.map((optionId) => ({
+					responseId: pollResponseRecord.response_id,
+					optionId,
+				}))
+			);
+			await tx
+				.insert(pollResponseOptionsTable)
+				.values(responseOptionRecords);
+		}
+	});
 };

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
+	createPollResponse,
 	fetchAllPolls,
 	fetchPollById,
 	fetchPollByIdWithOptions,
@@ -12,18 +13,38 @@ import {
 import { createMockPollOptionRecord } from "../factories/pollOption";
 
 // Mock the database module
-vi.mock("~/database/db", () => ({
-	db: {
-		select: vi.fn(),
-		insert: vi.fn(),
-		update: vi.fn(),
-		delete: vi.fn(),
-	},
-}));
+vi.mock("~/database/db", () => {
+	const createMockQueryBuilder = () => {
+		const returningMock = vi.fn().mockResolvedValue([{ response_id: 123 }]);
+		const valuesMock = vi.fn().mockReturnValue({
+			returning: returningMock,
+		});
+		return {
+			values: valuesMock,
+		};
+	};
+
+	const insertMock = vi.fn(() => createMockQueryBuilder());
+	const transactionMock = vi.fn((cb) =>
+		cb({
+			insert: vi.fn(() => createMockQueryBuilder()),
+		})
+	);
+
+	return {
+		db: {
+			select: vi.fn(),
+			insert: insertMock,
+			update: vi.fn(),
+			delete: vi.fn(),
+			transaction: transactionMock,
+		},
+	};
+});
 
 describe("Query logic - DTO mapping - DB errors", () => {
 	beforeEach(() => {
-		vi.resetAllMocks();
+		vi.clearAllMocks();
 	});
 
 	describe(fetchAllPolls, () => {
@@ -193,6 +214,20 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			expect(result.options).toHaveLength(2);
 			result.options.forEach((option) => {
 				expect(option.pollId).toBe(2);
+			});
+		});
+
+		describe(createPollResponse, () => {
+			it("inserts poll response and links selected option IDs", async () => {
+				const pollId = 1;
+				const userId = "user-123";
+				const selectedOptionIds = [10, 20];
+
+				await expect(
+					createPollResponse({ pollId, userId, selectedOptionIds })
+				).resolves.not.toThrow();
+
+				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(expect.any(Function));
 			});
 		});
 	});

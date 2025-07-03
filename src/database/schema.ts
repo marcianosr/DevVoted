@@ -141,6 +141,7 @@ export const pollCategoriesTable = pgTable("polls_categories", {
  * - Maintains response history for analytics
  */
 export const pollResponseOptionsTable = pgTable("polls_response_options", {
+	id: serial("id").primaryKey().notNull(),
 	response_id: integer("response_id")
 		.references(() => pollResponsesTable.response_id, {
 			onDelete: "cascade",

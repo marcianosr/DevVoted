@@ -149,6 +149,7 @@ describe("handlers", () => {
 		beforeEach(() => {
 			vi.resetAllMocks();
 		});
+
 		it("posts the selected options to the backend", async () => {
 			const mockPoll = createMockPoll({ id: 2 });
 			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
@@ -176,6 +177,7 @@ describe("handlers", () => {
 			expect(result?.success).toBe(false);
 			expect(result?.error).toBe("Please select at least one option");
 		});
+
 		it("fails to post the selected options data to the backend when poll id is invalid", async () => {
 			const mockOptions = createMockPollOptionArray(4);
 			const result = await postPollOptionsHandler({
