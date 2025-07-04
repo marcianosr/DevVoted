@@ -114,12 +114,12 @@ describe("handlers", () => {
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
 					id: 2,
-					userId: "user-123",
+					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
 			expect(queries.fetchPollByIdWithOptions).toHaveBeenCalledWith(2);
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, "user-123");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, "123e4567-e89b-12d3-a456-426614174000");
 			expect(result).toEqual({
 				success: true,
 				data: {
@@ -143,11 +143,11 @@ describe("handlers", () => {
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
 					id: 2,
-					userId: "user-123",
+					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, "user-123");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, "123e4567-e89b-12d3-a456-426614174000");
 			expect(result).toEqual({
 				success: true,
 				data: {
@@ -174,7 +174,8 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, undefined);
+			// hasUserAnsweredPoll should NOT be called when userId is undefined
+			expect(queries.hasUserAnsweredPoll).not.toHaveBeenCalled();
 			expect(result).toEqual({
 				success: true,
 				data: {
@@ -219,12 +220,12 @@ describe("handlers", () => {
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) => option.option),
-					userId: "user-123",
+					selectedOptions: mockOptions.map((option) => option.id.toString()),
+					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "user-123");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "123e4567-e89b-12d3-a456-426614174000");
 			expect(result?.success).toBe(true);
 			expect(result?.message).toBe("Options submitted successfully");
 		});
@@ -234,11 +235,12 @@ describe("handlers", () => {
 				data: {
 					pollId: 123,
 					selectedOptions: [],
+					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
 			expect(result?.success).toBe(false);
-			expect(result?.error).toBe("Please select at least one option");
+			expect(result?.error).toContain("At least one option must be selected");
 		});
 
 		it("fails to post the selected options data to the backend when poll id is invalid", async () => {
@@ -252,7 +254,8 @@ describe("handlers", () => {
 			});
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("Poll not found");
+			// Now validation catches invalid input first, so we get validation errors
+			expect(result.error).toContain("Expected number, received null");
 		});
 
 		it("fails to post when user has already answered the poll", async () => {
@@ -262,12 +265,12 @@ describe("handlers", () => {
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) => option.option),
-					userId: "user-123",
+					selectedOptions: mockOptions.map((option) => option.id.toString()),
+					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "user-123");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "123e4567-e89b-12d3-a456-426614174000");
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("You have already answered this poll");
 		});
@@ -281,12 +284,12 @@ describe("handlers", () => {
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) => option.option),
-					userId: "user-456",
+					selectedOptions: mockOptions.map((option) => option.id.toString()),
+					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "user-456");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "123e4567-e89b-12d3-a456-426614174000");
 			expect(queries.fetchPollById).toHaveBeenCalledWith(123);
 			expect(queries.createPollResponse).toHaveBeenCalled();
 			expect(result.success).toBe(true);

@@ -5,6 +5,12 @@ import {
 	createPollResponse,
 	hasUserAnsweredPoll,
 } from "~/domains/polls/api/queries";
+import { 
+	pollSubmissionSchema, 
+	pollIdParamSchema,
+	type PollSubmissionInput,
+	type PollIdParamInput 
+} from "~/domains/polls/validation/schemas";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -15,7 +21,7 @@ export const getPollByIdWithOptionsHandler = async ({
 		const { id, userId } = data;
 
 		const { poll, options } = await fetchPollByIdWithOptions(id);
-		const hasAnswered = await hasUserAnsweredPoll(id, userId);
+		const hasAnswered = userId ? await hasUserAnsweredPoll(id, userId) : false;
 
 		return { success: true, data: { poll, options, hasAnswered } };
 	} catch (error) {
@@ -64,14 +70,12 @@ export const getAllPollsHandler = async () => {
 export const postPollOptionsHandler = async ({
 	data,
 }: {
-	data: { pollId: number; selectedOptions: string[]; userId: string };
+	data: PollSubmissionInput;
 }) => {
 	try {
-		const { pollId, selectedOptions, userId } = data;
-
-		if (selectedOptions.length === 0) {
-			throw new Error("Please select at least one option");
-		}
+		// Validate input data
+		const validatedData = pollSubmissionSchema.parse(data);
+		const { pollId, selectedOptions, userId } = validatedData;
 
 		// Check if user has already answered this poll
 		const hasAnswered = await hasUserAnsweredPoll(pollId, userId);
