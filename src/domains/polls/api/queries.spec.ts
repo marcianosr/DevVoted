@@ -27,7 +27,7 @@ vi.mock("~/database/db", () => {
 	const insertMock = vi.fn(() => createMockQueryBuilder());
 	const transactionMock = vi.fn((cb) =>
 		cb({
-			insert: vi.fn(() => createMockQueryBuilder()),
+			insert: vi.fn(() => createMockQueryBuilder()) as any,
 		})
 	);
 
@@ -228,6 +228,50 @@ describe("Query logic - DTO mapping - DB errors", () => {
 				).resolves.not.toThrow();
 
 				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(expect.any(Function));
+			});
+
+			it("handles empty selectedOptionIds array", async () => {
+				const pollId = 1;
+				const userId = "user-123";
+				const selectedOptionIds: number[] = [];
+
+				await expect(
+					createPollResponse({ pollId, userId, selectedOptionIds })
+				).resolves.not.toThrow();
+
+				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(expect.any(Function));
+			});
+
+			it("throws error when poll response creation fails", async () => {
+				const pollId = 1;
+				const userId = "user-123";
+				const selectedOptionIds = [10, 20];
+
+				vi.mocked(db.transaction).mockImplementation((cb) =>
+					cb({
+						insert: vi.fn(() => ({
+							values: vi.fn().mockReturnValue({
+								returning: vi.fn().mockResolvedValue([]),
+							}),
+						})) as any,
+					})
+				);
+
+				await expect(
+					createPollResponse({ pollId, userId, selectedOptionIds })
+				).rejects.toThrow("Failed to create poll response");
+			});
+
+			it("handles database transaction failure", async () => {
+				const pollId = 1;
+				const userId = "user-123";
+				const selectedOptionIds = [10, 20];
+
+				vi.mocked(db.transaction).mockRejectedValue(new Error("Database error"));
+
+				await expect(
+					createPollResponse({ pollId, userId, selectedOptionIds })
+				).rejects.toThrow("Database error");
 			});
 		});
 	});
