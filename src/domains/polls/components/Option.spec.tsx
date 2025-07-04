@@ -68,6 +68,75 @@ describe(Option, () => {
 		fireEvent.click(screen.getByRole("checkbox"));
 		expect(mockField.setValue).toHaveBeenCalled();
 	});
+
+	it("renders disabled state correctly", () => {
+		render(
+			<Option
+				option={mockOption}
+				type="checkbox"
+				field={mockField}
+				checked={false}
+				disabled={true}
+			/>
+		);
+
+		const checkbox = screen.getByRole("checkbox");
+		expect(checkbox).toBeDisabled();
+		expect(checkbox).toHaveClass("cursor-not-allowed");
+		
+		const label = screen.getByText("JavaScript");
+		expect(label).toHaveClass("cursor-not-allowed", "text-gray-500");
+	});
+
+	it("renders enabled state correctly when disabled is false", () => {
+		render(
+			<Option
+				option={mockOption}
+				type="checkbox"
+				field={mockField}
+				checked={false}
+				disabled={false}
+			/>
+		);
+
+		const checkbox = screen.getByRole("checkbox");
+		expect(checkbox).not.toBeDisabled();
+		expect(checkbox).not.toHaveClass("cursor-not-allowed");
+		
+		const label = screen.getByText("JavaScript");
+		expect(label).toHaveClass("cursor-pointer");
+		expect(label).not.toHaveClass("cursor-not-allowed", "text-gray-500");
+	});
+
+	it("applies disabled styling to container when disabled", () => {
+		const { container } = render(
+			<Option
+				option={mockOption}
+				type="checkbox"
+				field={mockField}
+				checked={false}
+				disabled={true}
+			/>
+		);
+
+		const optionContainer = container.firstChild;
+		expect(optionContainer).toHaveClass("opacity-60");
+	});
+
+	it("does not apply disabled styling to container when enabled", () => {
+		const { container } = render(
+			<Option
+				option={mockOption}
+				type="checkbox"
+				field={mockField}
+				checked={false}
+				disabled={false}
+			/>
+		);
+
+		const optionContainer = container.firstChild;
+		expect(optionContainer).not.toHaveClass("opacity-60");
+	});
 });
 
 describe("handleOptionsChange", () => {

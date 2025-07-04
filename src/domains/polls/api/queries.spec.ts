@@ -4,6 +4,7 @@ import {
 	fetchAllPolls,
 	fetchPollById,
 	fetchPollByIdWithOptions,
+	hasUserAnsweredPoll,
 } from "~/domains/polls/api/queries";
 import { db } from "~/database/db";
 import {
@@ -273,6 +274,59 @@ describe("Query logic - DTO mapping - DB errors", () => {
 					createPollResponse({ pollId, userId, selectedOptionIds })
 				).rejects.toThrow("Database error");
 			});
+		});
+	});
+
+	describe(hasUserAnsweredPoll, () => {
+		it("returns false when userId is not provided", async () => {
+			const result = await hasUserAnsweredPoll(1);
+
+			expect(result).toBe(false);
+		});
+
+		it("returns false when userId is undefined", async () => {
+			const result = await hasUserAnsweredPoll(1, undefined);
+
+			expect(result).toBe(false);
+		});
+
+		it("returns false when user has not answered the poll", async () => {
+			const mockWhere = vi.fn().mockResolvedValue([]);
+			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+			const result = await hasUserAnsweredPoll(1, "user-123");
+
+			expect(result).toBe(false);
+			expect(db.select).toHaveBeenCalled();
+			expect(mockFrom).toHaveBeenCalled();
+			expect(mockWhere).toHaveBeenCalled();
+		});
+
+		it("returns true when user has answered the poll", async () => {
+			const mockWhere = vi.fn().mockResolvedValue([{ response_id: 1 }]);
+			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+			const result = await hasUserAnsweredPoll(1, "user-123");
+
+			expect(result).toBe(true);
+			expect(db.select).toHaveBeenCalled();
+			expect(mockFrom).toHaveBeenCalled();
+			expect(mockWhere).toHaveBeenCalled();
+		});
+
+		it("returns true when multiple responses exist for the user", async () => {
+			const mockWhere = vi.fn().mockResolvedValue([
+				{ response_id: 1 }, 
+				{ response_id: 2 }
+			]);
+			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+			const result = await hasUserAnsweredPoll(1, "user-123");
+
+			expect(result).toBe(true);
 		});
 	});
 });

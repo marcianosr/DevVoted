@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
 	pollOptionsTable,
 	pollResponseOptionsTable,
@@ -91,7 +91,7 @@ export const insertPoll = async (data: Poll) => {
 
 type CreatePollResponse = {
 	pollId: number;
-	userId?: string;
+	userId: string;
 	selectedOptionIds: number[];
 };
 export const createPollResponse = async ({
@@ -121,4 +121,25 @@ export const createPollResponse = async ({
 				.values(responseOptionRecords);
 		}
 	});
+};
+
+export const hasUserAnsweredPoll = async (
+	pollId: number,
+	userId: string
+): Promise<boolean> => {
+
+	const existingResponse = await db
+		.select()
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.poll_id, pollId),
+				eq(pollResponsesTable.user_id, userId)
+			)
+		);
+
+	console.log(userId, pollResponsesTable.user_id);
+	// console.log(existingResponse, "-");
+
+	return existingResponse.length > 0;
 };

@@ -3,19 +3,21 @@ import {
 	fetchPollById,
 	fetchPollByIdWithOptions,
 	createPollResponse,
+	hasUserAnsweredPoll,
 } from "~/domains/polls/api/queries";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
 }: {
-	data: { id: number };
+	data: { id: number; userId?: string };
 }) => {
 	try {
-		const { id } = data;
+		const { id, userId } = data;
 
 		const { poll, options } = await fetchPollByIdWithOptions(id);
+		const hasAnswered = await hasUserAnsweredPoll(id, userId);
 
-		return { success: true, data: { poll, options } };
+		return { success: true, data: { poll, options, hasAnswered } };
 	} catch (error) {
 		console.error("Error fetching poll:", error);
 		const message =
@@ -62,13 +64,19 @@ export const getAllPollsHandler = async () => {
 export const postPollOptionsHandler = async ({
 	data,
 }: {
-	data: { pollId: number; selectedOptions: string[]; userId?: string };
+	data: { pollId: number; selectedOptions: string[]; userId: string };
 }) => {
 	try {
 		const { pollId, selectedOptions, userId } = data;
 
 		if (selectedOptions.length === 0) {
 			throw new Error("Please select at least one option");
+		}
+
+		// Check if user has already answered this poll
+		const hasAnswered = await hasUserAnsweredPoll(pollId, userId);
+		if (hasAnswered) {
+			throw new Error("You have already answered this poll");
 		}
 
 		// Verify the poll exists

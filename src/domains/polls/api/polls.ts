@@ -8,7 +8,10 @@ import {
 } from "./handlers";
 
 export const getPollByIdWithOptions = createServerFn()
-	.validator(z.object({ id: z.number().int().positive() }))
+	.validator(z.object({ 
+		id: z.number().int().positive(),
+		userId: z.string().optional()
+	}))
 	.handler(async ({ data }) => getPollByIdWithOptionsHandler({ data }));
 
 export const getPollById = createServerFn()
@@ -24,6 +27,7 @@ export const postPollOptions = createServerFn()
 		z.object({
 			pollId: z.number().int().positive(),
 			selectedOptions: z.array(z.string()).min(1),
+			userId: z.string(),
 		})
 	)
 	.handler(async ({ data }) => postPollOptionsHandler({ data }));

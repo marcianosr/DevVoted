@@ -14,6 +14,7 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchAllPolls: vi.fn(),
 	fetchPollByIdWithOptions: vi.fn(),
 	createPollResponse: vi.fn(),
+	hasUserAnsweredPoll: vi.fn(),
 }));
 
 // Tests service layer logic that wraps query methods and structures return data
@@ -100,7 +101,7 @@ describe("handlers", () => {
 			vi.resetAllMocks();
 		});
 
-		it("returns all poll data with options", async () => {
+		it("returns all poll data with options and hasAnswered status", async () => {
 			const mockPoll = createMockPoll({ id: 2 });
 			const mockOptions = createMockPollOptionArray(4);
 
@@ -108,6 +109,64 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+
+			const result = await getPollByIdWithOptionsHandler({
+				data: {
+					id: 2,
+					userId: "user-123",
+				},
+			});
+
+			expect(queries.fetchPollByIdWithOptions).toHaveBeenCalledWith(2);
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, "user-123");
+			expect(result).toEqual({
+				success: true,
+				data: {
+					poll: mockPoll,
+					options: mockOptions,
+					hasAnswered: false,
+				},
+			});
+		});
+
+		it("returns hasAnswered true when user has already answered", async () => {
+			const mockPoll = createMockPoll({ id: 2 });
+			const mockOptions = createMockPollOptionArray(4);
+
+			vi.mocked(queries.fetchPollByIdWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(true);
+
+			const result = await getPollByIdWithOptionsHandler({
+				data: {
+					id: 2,
+					userId: "user-123",
+				},
+			});
+
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, "user-123");
+			expect(result).toEqual({
+				success: true,
+				data: {
+					poll: mockPoll,
+					options: mockOptions,
+					hasAnswered: true,
+				},
+			});
+		});
+
+		it("returns hasAnswered false when no userId provided", async () => {
+			const mockPoll = createMockPoll({ id: 2 });
+			const mockOptions = createMockPollOptionArray(4);
+
+			vi.mocked(queries.fetchPollByIdWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
 
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
@@ -115,12 +174,13 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(queries.fetchPollByIdWithOptions).toHaveBeenCalledWith(2);
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, undefined);
 			expect(result).toEqual({
 				success: true,
 				data: {
 					poll: mockPoll,
 					options: mockOptions,
+					hasAnswered: false,
 				},
 			});
 		});
@@ -153,15 +213,18 @@ describe("handlers", () => {
 		it("posts the selected options to the backend", async () => {
 			const mockPoll = createMockPoll({ id: 2 });
 			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
 
 			const mockOptions = createMockPollOptionArray(4);
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
 					selectedOptions: mockOptions.map((option) => option.option),
+					userId: "user-123",
 				},
 			});
 
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "user-123");
 			expect(result?.success).toBe(true);
 			expect(result?.message).toBe("Options submitted successfully");
 		});
@@ -190,6 +253,43 @@ describe("handlers", () => {
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Poll not found");
+		});
+
+		it("fails to post when user has already answered the poll", async () => {
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(true);
+
+			const mockOptions = createMockPollOptionArray(4);
+			const result = await postPollOptionsHandler({
+				data: {
+					pollId: 123,
+					selectedOptions: mockOptions.map((option) => option.option),
+					userId: "user-123",
+				},
+			});
+
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "user-123");
+			expect(result.success).toBe(false);
+			expect(result.error).toBe("You have already answered this poll");
+		});
+
+		it("allows post when user has not answered the poll yet", async () => {
+			const mockPoll = createMockPoll({ id: 123 });
+			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+
+			const mockOptions = createMockPollOptionArray(2);
+			const result = await postPollOptionsHandler({
+				data: {
+					pollId: 123,
+					selectedOptions: mockOptions.map((option) => option.option),
+					userId: "user-456",
+				},
+			});
+
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "user-456");
+			expect(queries.fetchPollById).toHaveBeenCalledWith(123);
+			expect(queries.createPollResponse).toHaveBeenCalled();
+			expect(result.success).toBe(true);
 		});
 	});
 });

@@ -17,12 +17,14 @@ export const submitPollOptions = createServerFn()
 		z.object({
 			pollId: z.number().int().positive(),
 			selectedOptions: z.array(z.string()).min(1),
+			userId: z.string(),
 		})
 	)
 	.handler(async ({ data }) => postPollOptionsHandler({ data }));
 
 const PollDetail: React.FC = () => {
 	const { pollId } = Route.useParams();
+	const { user } = Route.useRouteContext();
 	const pollIdNumber = parseInt(pollId, 10);
 
 	const submitOptionsMutation = useMutation({
@@ -48,19 +50,29 @@ const PollDetail: React.FC = () => {
 		onSubmit: async ({ value }) => {
 			const { selectedOptions } = value;
 
+			if (!user?.id) {
+				console.error("User ID is missing");
+				return;
+			}
+
 			// Submit the Options using our mutation with the pollId from component scope
 			submitOptionsMutation.mutate({
 				data: {
 					pollId: pollIdNumber,
 					selectedOptions,
+					userId: user.id,
 				},
 			});
 		},
 	});
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["poll", pollIdNumber],
-		queryFn: () => getPollByIdWithOptions({ data: { id: pollIdNumber } }),
+		queryKey: ["poll", pollIdNumber, user?.id],
+		queryFn: () =>
+			getPollByIdWithOptions({
+				data: { id: pollIdNumber, userId: user?.id },
+			}),
+		enabled: !!user?.id, // Only run query when we have a user ID
 	});
 
 	if (isLoading) {
@@ -75,7 +87,7 @@ const PollDetail: React.FC = () => {
 		return <ErrorComponent text={data.error || "Error Loading Poll"} />;
 	}
 
-	const { poll, options } = data.data;
+	const { poll, options, hasAnswered } = data.data;
 
 	if (!poll) {
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
@@ -105,6 +117,14 @@ const PollDetail: React.FC = () => {
 				</div>
 			</div>
 
+			{hasAnswered && (
+				<div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+					<p className="text-blue-800 font-medium">
+						✅ You have already answered this poll
+					</p>
+				</div>
+			)}
+
 			<form
 				onSubmit={(e) => {
 					e.preventDefault();
@@ -128,6 +148,7 @@ const PollDetail: React.FC = () => {
 												checked={field.state.value.includes(
 													option.id.toString()
 												)}
+												disabled={hasAnswered}
 											/>
 										)}
 										{poll.answerType === "multiple" && (
@@ -138,6 +159,7 @@ const PollDetail: React.FC = () => {
 												checked={field.state.value.includes(
 													option.id.toString()
 												)}
+												disabled={hasAnswered}
 											/>
 										)}
 									</li>
@@ -166,13 +188,16 @@ const PollDetail: React.FC = () => {
 						type="submit"
 						className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
 						disabled={
+							hasAnswered ||
 							submitOptionsMutation.isPending ||
 							form.state.isSubmitting
 						}
 					>
-						{submitOptionsMutation.isPending
-							? "Submitting..."
-							: "Submit Options"}
+						{hasAnswered
+							? "Already Answered"
+							: submitOptionsMutation.isPending
+								? "Submitting..."
+								: "Submit Options"}
 					</button>
 				</div>
 			</form>

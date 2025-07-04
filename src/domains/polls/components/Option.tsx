@@ -13,6 +13,7 @@ type OptionProps = {
 	type: "radio" | "checkbox";
 	field: FormFieldApi;
 	checked: boolean;
+	disabled?: boolean;
 };
 
 type HandleOptionsChangeParams = {
@@ -44,7 +45,7 @@ export const handleOptionsChange = ({
 	field.setValue(newValues);
 };
 
-const Option = ({ option, type, field, checked }: OptionProps) => {
+const Option = ({ option, type, field, checked, disabled = false }: OptionProps) => {
 	const inputId = `option-${option.id}`;
 	const optionValue = option.id.toString();
 
@@ -53,7 +54,7 @@ const Option = ({ option, type, field, checked }: OptionProps) => {
 	};
 
 	return (
-		<div className="flex items-center gap-2">
+		<div className={`flex items-center gap-2 ${disabled ? 'opacity-60' : ''}`}>
 			<input
 				type={type}
 				name="selectedOptions"
@@ -61,8 +62,15 @@ const Option = ({ option, type, field, checked }: OptionProps) => {
 				id={inputId}
 				checked={checked}
 				onChange={handleChange}
+				disabled={disabled}
+				className={disabled ? 'cursor-not-allowed' : ''}
 			/>
-			<label htmlFor={inputId}>{option.option}</label>
+			<label 
+				htmlFor={inputId}
+				className={disabled ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'}
+			>
+				{option.option}
+			</label>
 		</div>
 	);
 };
