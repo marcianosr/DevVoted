@@ -43,11 +43,12 @@ const PollDetail: React.FC = () => {
 		enabled: !!user?.id,
 	});
 
-
 	const startRunMutation = useMutation({
 		mutationFn: (userId: string) => getOrCreateRun({ data: { userId } }),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["activeRun", user?.id] });
+			queryClient.invalidateQueries({
+				queryKey: ["activeRun", user?.id],
+			});
 		},
 	});
 
@@ -56,23 +57,19 @@ const PollDetail: React.FC = () => {
 		onSuccess: (data) => {
 			if (data.success) {
 				const isCorrect = data.data?.isCorrect;
-				const runEnded = data.data?.runEnded;
-				
 				if (isCorrect) {
 					console.log("Correct answer! XP awarded.");
 				}
-				if (!isCorrect && runEnded) {
-					console.log("Wrong answer! Run ended. All XP reset to 0.");
-				}
-				if (!isCorrect && !runEnded) {
+				if (!isCorrect) {
 					console.log("Answer submitted, but incorrect.");
 				}
-				
-				// Refresh the active run data to show updated XP (or lack thereof if run ended)
-				queryClient.invalidateQueries({ queryKey: ["activeRun", user?.id] });
+				// Refresh the active run data to show updated XP
+				queryClient.invalidateQueries({
+					queryKey: ["activeRun", user?.id],
+				});
 				return;
 			}
-			
+
 			console.error("Error submitting Options:", data.error);
 		},
 		onError: (error) => {
@@ -124,7 +121,9 @@ const PollDetail: React.FC = () => {
 	}
 
 	if (runError) {
-		return <ErrorComponent text={`Error loading run: ${String(runError)}`} />;
+		return (
+			<ErrorComponent text={`Error loading run: ${String(runError)}`} />
+		);
 	}
 
 	// No active run - show start button
@@ -133,16 +132,21 @@ const PollDetail: React.FC = () => {
 			<div className="p-4">
 				<h1 className="text-2xl font-bold mb-4">Start Your Quiz Run</h1>
 				<div className="text-center py-8">
-					<h2 className="text-xl mb-4">You need an active run to answer polls</h2>
+					<h2 className="text-xl mb-4">
+						You need an active run to answer polls
+					</h2>
 					<p className="text-gray-600 mb-6">
-						Each run starts with 0 XP in all categories. Answer polls correctly to earn XP and build your streak!
+						Each run starts with 0 XP in all categories. Answer
+						polls correctly to earn XP and build your streak!
 					</p>
 					<button
 						onClick={handleStartRun}
 						disabled={startRunMutation.isPending}
 						className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{startRunMutation.isPending ? "Starting Run..." : "Start Run"}
+						{startRunMutation.isPending
+							? "Starting Run..."
+							: "Start Run"}
 					</button>
 				</div>
 			</div>
@@ -173,16 +177,28 @@ const PollDetail: React.FC = () => {
 			{/* Run Status Display */}
 			{runData && (
 				<div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-					<h3 className="text-lg font-semibold text-blue-900 mb-3">Current Run Status</h3>
+					<h3 className="text-lg font-semibold text-blue-900 mb-3">
+						Current Run Status
+					</h3>
 					<div className="text-sm text-blue-700 mb-3">
-						Started: {new Date(runData.run?.startedAt || "").toLocaleString()}
+						Started:{" "}
+						{new Date(
+							runData.run?.startedAt || ""
+						).toLocaleString()}
 					</div>
 					{runData.categoryXp && (
 						<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
 							{runData.categoryXp.map((xp) => (
-								<div key={xp.categoryCode} className="bg-white p-3 rounded border border-blue-100">
-									<div className="font-medium text-sm text-blue-900">{xp.categoryCode}</div>
-									<div className="text-lg font-bold text-blue-800">{xp.currentXp} XP</div>
+								<div
+									key={xp.categoryCode}
+									className="bg-white p-3 rounded border border-blue-100"
+								>
+									<div className="font-medium text-sm text-blue-900">
+										{xp.categoryCode}
+									</div>
+									<div className="text-lg font-bold text-blue-800">
+										{xp.currentXp} XP
+									</div>
 									<div className="text-xs text-blue-600">
 										Streak: {xp.currentStreak}
 									</div>
@@ -200,7 +216,7 @@ const PollDetail: React.FC = () => {
 
 			<PollHeader poll={poll} />
 			<PollStatus hasAnswered={hasAnswered} />
-			
+
 			<PollSubmissionForm
 				hasAnswered={hasAnswered}
 				submitMutation={submitOptionsMutation}
