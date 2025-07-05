@@ -36,6 +36,13 @@
       "when": 1751457479840,
       "tag": "0004_marvelous_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1751725217424,
+      "tag": "0005_same_meteorite",
+      "breakpoints": true
     }
   ]
 }

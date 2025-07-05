@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
+import { getActiveRun, getOrCreateRun } from "~/domains/runs/api/runs";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { useForm } from "@tanstack/react-form";
 import { createServerFn } from "@tanstack/react-start";
@@ -28,7 +29,27 @@ export const submitPollOptions = createServerFn()
 const PollDetail: React.FC = () => {
 	const { pollId } = Route.useParams();
 	const { user } = Route.useRouteContext();
+	const queryClient = useQueryClient();
 	const pollIdNumber = parseInt(pollId, 10);
+
+	// Check for active run
+	const {
+		data: activeRunResponse,
+		isLoading: isLoadingRun,
+		error: runError,
+	} = useQuery({
+		queryKey: ["activeRun", user?.id],
+		queryFn: () => getActiveRun({ data: { userId: user?.id || "" } }),
+		enabled: !!user?.id,
+	});
+
+
+	const startRunMutation = useMutation({
+		mutationFn: (userId: string) => getOrCreateRun({ data: { userId } }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["activeRun", user?.id] });
+		},
+	});
 
 	const submitOptionsMutation = useMutation({
 		mutationFn: submitPollOptions,
@@ -75,8 +96,45 @@ const PollDetail: React.FC = () => {
 			getPollByIdWithOptions({
 				data: { id: pollIdNumber, userId: user?.id },
 			}),
-		enabled: !!user?.id, // Only run query when we have a user ID
+		enabled: !!user?.id && !!activeRunResponse?.success, // Only run when we have user ID and active run
 	});
+
+	const handleStartRun = () => {
+		if (user?.id) {
+			startRunMutation.mutate(user.id);
+		}
+	};
+
+	// Show loading state for run check
+	if (isLoadingRun) {
+		return <LoadingSkeleton />;
+	}
+
+	if (runError) {
+		return <ErrorComponent text={`Error loading run: ${String(runError)}`} />;
+	}
+
+	// No active run - show start button
+	if (!activeRunResponse?.success) {
+		return (
+			<div className="p-4">
+				<h1 className="text-2xl font-bold mb-4">Start Your Quiz Run</h1>
+				<div className="text-center py-8">
+					<h2 className="text-xl mb-4">You need an active run to answer polls</h2>
+					<p className="text-gray-600 mb-6">
+						Each run starts with 0 XP in all categories. Answer polls correctly to earn XP and build your streak!
+					</p>
+					<button
+						onClick={handleStartRun}
+						disabled={startRunMutation.isPending}
+						className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{startRunMutation.isPending ? "Starting Run..." : "Start Run"}
+					</button>
+				</div>
+			</div>
+		);
+	}
 
 	if (isLoading) {
 		return <LoadingSkeleton />;

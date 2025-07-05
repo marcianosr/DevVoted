@@ -6,6 +6,8 @@ async function resetDatabase() {
 
 	try {
 		await db.execute(sql`
+            DROP TABLE IF EXISTS run_category_xp CASCADE;
+            DROP TABLE IF EXISTS runs CASCADE;
             DROP TABLE IF EXISTS polls_categories CASCADE;
             DROP TABLE IF EXISTS polls_options CASCADE;
             DROP TABLE IF EXISTS polls_response_options CASCADE;

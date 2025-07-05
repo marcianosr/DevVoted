@@ -6,6 +6,7 @@ import {
 	serial,
 	text,
 	timestamp,
+	unique,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
@@ -172,6 +173,55 @@ export const pollResponsesTable = pgTable("polls_responses", {
 	updated_at: timestamp("updated_at")
 		.defaultNow()
 		.$onUpdate(() => new Date()),
+});
+
+/**
+ * Runs Table
+ * Stores individual game runs for players
+ * - Each run represents a complete game session
+ * - Players can have multiple runs over time
+ * - Only one active run per user at a time
+ */
+export const runsTable = pgTable("runs", {
+	id: serial("id").primaryKey(),
+	user_id: uuid("user_id")
+		.references(() => usersTable.id, { onDelete: "cascade" })
+		.notNull(),
+	status: runStatus("status").notNull().default("active"),
+	started_at: timestamp("started_at").defaultNow(),
+	finished_at: timestamp("finished_at"),
+	created_at: timestamp("created_at").defaultNow(),
+	updated_at: timestamp("updated_at")
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+});
+
+/**
+ * Run Category XP Table
+ * Tracks XP earned in each category during a specific run
+ * - Each run starts with 0 XP in all categories
+ * - XP accumulates as players answer polls correctly
+ * - Enables category-specific progression within runs
+ */
+export const runCategoryXpTable = pgTable("run_category_xp", {
+	id: serial("id").primaryKey(),
+	run_id: integer("run_id")
+		.references(() => runsTable.id, { onDelete: "cascade" })
+		.notNull(),
+	category_code: varchar("category_code", { length: 50 })
+		.references(() => pollCategoriesTable.code)
+		.notNull(),
+	current_xp: integer("current_xp").notNull().default(0),
+	current_streak: integer("current_streak").notNull().default(0),
+	best_streak: integer("best_streak").notNull().default(0),
+	created_at: timestamp("created_at").defaultNow(),
+	updated_at: timestamp("updated_at")
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+}, (table) => {
+	return {
+		runCategoryUnique: unique().on(table.run_id, table.category_code),
+	};
 });
 
 /**
