@@ -149,6 +149,7 @@ const PollDetail: React.FC = () => {
 	}
 
 	const { poll, options, hasAnswered } = data.data;
+	const runData = activeRunResponse?.data;
 
 	if (!poll) {
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
@@ -156,6 +157,34 @@ const PollDetail: React.FC = () => {
 
 	return (
 		<div className="p-4">
+			{/* Run Status Display */}
+			{runData && (
+				<div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+					<h3 className="text-lg font-semibold text-blue-900 mb-3">Current Run Status</h3>
+					<div className="text-sm text-blue-700 mb-3">
+						Started: {new Date(runData.run?.startedAt || "").toLocaleString()}
+					</div>
+					{runData.categoryXp && (
+						<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+							{runData.categoryXp.map((xp) => (
+								<div key={xp.categoryCode} className="bg-white p-3 rounded border border-blue-100">
+									<div className="font-medium text-sm text-blue-900">{xp.categoryCode}</div>
+									<div className="text-lg font-bold text-blue-800">{xp.currentXp} XP</div>
+									<div className="text-xs text-blue-600">
+										Streak: {xp.currentStreak}
+									</div>
+									{xp.bestStreak > 0 && (
+										<div className="text-xs text-blue-500">
+											Best: {xp.bestStreak}
+										</div>
+									)}
+								</div>
+							))}
+						</div>
+					)}
+				</div>
+			)}
+
 			<PollHeader poll={poll} />
 			<PollStatus hasAnswered={hasAnswered} />
 			
