@@ -5,12 +5,16 @@ import {
 	createPollResponse,
 	hasUserAnsweredPoll,
 } from "~/domains/polls/api/queries";
-import { 
-	pollSubmissionSchema, 
+import {
+	pollSubmissionSchema,
 	pollIdParamSchema,
 	type PollSubmissionInput,
-	type PollIdParamInput 
+	type PollIdParamInput,
 } from "~/domains/polls/validation/schemas";
+import { getActiveRunByUserId, awardXpToRun, penalizeXpInRun } from "~/domains/runs/api/queries";
+import { db } from "~/database/db";
+import { pollOptionsTable } from "~/database/schema";
+import { eq, and, inArray } from "drizzle-orm";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -21,7 +25,9 @@ export const getPollByIdWithOptionsHandler = async ({
 		const { id, userId } = data;
 
 		const { poll, options } = await fetchPollByIdWithOptions(id);
-		const hasAnswered = userId ? await hasUserAnsweredPoll(id, userId) : false;
+		const hasAnswered = userId
+			? await hasUserAnsweredPoll(id, userId)
+			: false;
 
 		return { success: true, data: { poll, options, hasAnswered } };
 	} catch (error) {
@@ -95,17 +101,57 @@ export const postPollOptionsHandler = async ({
 			Number(option)
 		);
 
+		// Check if the answer is correct by getting all selected options
+		const selectedOptionRecords = await db
+			.select()
+			.from(pollOptionsTable)
+			.where(
+				and(
+					eq(pollOptionsTable.poll_id, pollId),
+					inArray(pollOptionsTable.id, selectedOptionIds)
+				)
+			);
+
+		// Check if all selected options are correct
+		const isCorrect =
+			selectedOptionRecords.length > 0 &&
+			selectedOptionRecords.every((option) => option.correct);
+
 		// Create the poll response and link it to the selected options
-		const result = await createPollResponse({
+		await createPollResponse({
 			pollId,
 			userId,
 			selectedOptionIds,
 		});
 
+		// Handle XP based on answer correctness
+		let runEnded = false;
+		
+		try {
+			// Get user's active run
+			const activeRun = await getActiveRunByUserId(userId);
+
+			if (activeRun) {
+				if (isCorrect) {
+					// Award XP for the poll's category
+					await awardXpToRun(activeRun.id, poll.categoryCode);
+				}
+				
+				if (!isCorrect) {
+					// Penalize by resetting category XP to 0 and ending run
+					const penaltyResult = await penalizeXpInRun(activeRun.id, poll.categoryCode);
+					runEnded = penaltyResult.runEnded;
+				}
+			}
+		} catch (xpError) {
+			console.error("Error handling XP:", xpError);
+			// Don't fail the whole operation if XP handling fails
+		}
+
 		return {
 			success: true,
 			message: "Options submitted successfully",
-			data: result,
+			data: { isCorrect, runEnded },
 		};
 	} catch (error) {
 		console.error("Error submitting poll options:", error);

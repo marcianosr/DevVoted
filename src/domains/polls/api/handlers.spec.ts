@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as queries from "~/domains/polls/api/queries";
+import * as runQueries from "~/domains/runs/api/queries";
 import { createMockPoll, createMockPollArray } from "../factories/poll";
 import { createMockPollOptionArray } from "../factories/pollOption";
+import { createMockRun } from "~/domains/runs/factories/run";
 import {
 	getAllPollsHandler,
 	getPollByIdHandler,
@@ -15,6 +17,22 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchPollByIdWithOptions: vi.fn(),
 	createPollResponse: vi.fn(),
 	hasUserAnsweredPoll: vi.fn(),
+}));
+
+vi.mock("~/domains/runs/api/queries", () => ({
+	getActiveRunByUserId: vi.fn(),
+	awardXpToRun: vi.fn(),
+	penalizeXpInRun: vi.fn(),
+}));
+
+vi.mock("~/database/db", () => ({
+	db: {
+		select: vi.fn().mockReturnValue({
+			from: vi.fn().mockReturnValue({
+				where: vi.fn().mockResolvedValue([]),
+			}),
+		}),
+	},
 }));
 
 // Tests service layer logic that wraps query methods and structures return data
@@ -119,7 +137,10 @@ describe("handlers", () => {
 			});
 
 			expect(queries.fetchPollByIdWithOptions).toHaveBeenCalledWith(2);
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, "123e4567-e89b-12d3-a456-426614174000");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+				2,
+				"123e4567-e89b-12d3-a456-426614174000"
+			);
 			expect(result).toEqual({
 				success: true,
 				data: {
@@ -147,7 +168,10 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(2, "123e4567-e89b-12d3-a456-426614174000");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+				2,
+				"123e4567-e89b-12d3-a456-426614174000"
+			);
 			expect(result).toEqual({
 				success: true,
 				data: {
@@ -217,15 +241,29 @@ describe("handlers", () => {
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
 
 			const mockOptions = createMockPollOptionArray(4);
+
+			// Mock database call for checking option correctness
+			const { db } = await import("~/database/db");
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockResolvedValue([]),
+				}),
+			} as any);
+
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) => option.id.toString()),
+					selectedOptions: mockOptions.map((option) =>
+						option.id.toString()
+					),
 					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "123e4567-e89b-12d3-a456-426614174000");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+				123,
+				"123e4567-e89b-12d3-a456-426614174000"
+			);
 			expect(result?.success).toBe(true);
 			expect(result?.message).toBe("Options submitted successfully");
 		});
@@ -240,7 +278,9 @@ describe("handlers", () => {
 			});
 
 			expect(result?.success).toBe(false);
-			expect(result?.error).toContain("At least one option must be selected");
+			expect(result?.error).toContain(
+				"At least one option must be selected"
+			);
 		});
 
 		it("fails to post the selected options data to the backend when poll id is invalid", async () => {
@@ -265,12 +305,17 @@ describe("handlers", () => {
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) => option.id.toString()),
+					selectedOptions: mockOptions.map((option) =>
+						option.id.toString()
+					),
 					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "123e4567-e89b-12d3-a456-426614174000");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+				123,
+				"123e4567-e89b-12d3-a456-426614174000"
+			);
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("You have already answered this poll");
 		});
@@ -281,18 +326,201 @@ describe("handlers", () => {
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
 
 			const mockOptions = createMockPollOptionArray(2);
+
+			// Mock database call for checking option correctness
+			const { db } = await import("~/database/db");
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockResolvedValue([]),
+				}),
+			} as any);
+
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) => option.id.toString()),
+					selectedOptions: mockOptions.map((option) =>
+						option.id.toString()
+					),
 					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
 
-			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(123, "123e4567-e89b-12d3-a456-426614174000");
+			expect(queries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+				123,
+				"123e4567-e89b-12d3-a456-426614174000"
+			);
 			expect(queries.fetchPollById).toHaveBeenCalledWith(123);
 			expect(queries.createPollResponse).toHaveBeenCalled();
 			expect(result.success).toBe(true);
+		});
+
+		it("awards XP when answer is correct", async () => {
+			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
+			const mockRun = createMockRun({ id: 1 });
+			const mockCorrectOptions = [
+				{
+					id: 1,
+					poll_id: 123,
+					option: "Correct Answer",
+					correct: true,
+				},
+				{ id: 2, poll_id: 123, option: "Also Correct", correct: true },
+			];
+
+			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.createPollResponse).mockResolvedValue(undefined);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
+
+			// Mock database call for checking option correctness
+			const { db } = await import("~/database/db");
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockResolvedValue(mockCorrectOptions),
+				}),
+			} as any);
+
+			const result = await postPollOptionsHandler({
+				data: {
+					pollId: 123,
+					selectedOptions: ["1", "2"],
+					userId: "123e4567-e89b-12d3-a456-426614174000",
+				},
+			});
+
+			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js");
+			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
+			expect(result.success).toBe(true);
+			expect(result.data?.isCorrect).toBe(true);
+			expect(result.data?.runEnded).toBe(false);
+		});
+
+		it("penalizes XP and ends run when answer is wrong", async () => {
+			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
+			const mockRun = createMockRun({ id: 1 });
+			const mockWrongOptions = [
+				{ id: 1, poll_id: 123, option: "Wrong Answer", correct: false },
+			];
+
+			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.createPollResponse).mockResolvedValue(undefined);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
+			vi.mocked(runQueries.penalizeXpInRun).mockResolvedValue({
+				runEnded: true,
+			});
+
+			// Mock database call for checking option correctness
+			const { db } = await import("~/database/db");
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockResolvedValue(mockWrongOptions),
+				}),
+			} as any);
+
+			const result = await postPollOptionsHandler({
+				data: {
+					pollId: 123,
+					selectedOptions: ["1"],
+					userId: "123e4567-e89b-12d3-a456-426614174000",
+				},
+			});
+
+			expect(runQueries.penalizeXpInRun).toHaveBeenCalledWith(1, "js");
+			expect(runQueries.awardXpToRun).not.toHaveBeenCalled();
+			expect(result.success).toBe(true);
+			expect(result.data?.isCorrect).toBe(false);
+			expect(result.data?.runEnded).toBe(true);
+		});
+
+		it("handles mixed correct/incorrect options as wrong", async () => {
+			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
+			const mockRun = createMockRun({ id: 1 });
+			const mockMixedOptions = [
+				{
+					id: 1,
+					poll_id: 123,
+					option: "Correct Answer",
+					correct: true,
+				},
+				{ id: 2, poll_id: 123, option: "Wrong Answer", correct: false },
+			];
+
+			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.createPollResponse).mockResolvedValue(undefined);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
+			vi.mocked(runQueries.penalizeXpInRun).mockResolvedValue({
+				runEnded: true,
+			});
+
+			// Mock database call for checking option correctness
+			const { db } = await import("~/database/db");
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockResolvedValue(mockMixedOptions),
+				}),
+			} as any);
+
+			const result = await postPollOptionsHandler({
+				data: {
+					pollId: 123,
+					selectedOptions: ["1", "2"],
+					userId: "123e4567-e89b-12d3-a456-426614174000",
+				},
+			});
+
+			expect(runQueries.penalizeXpInRun).toHaveBeenCalledWith(1, "js");
+			expect(result.data?.isCorrect).toBe(false);
+		});
+
+		it("continues gracefully when XP operations fail", async () => {
+			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
+			const mockRun = createMockRun({ id: 1 });
+			const mockCorrectOptions = [
+				{
+					id: 1,
+					poll_id: 123,
+					option: "Correct Answer",
+					correct: true,
+				},
+			];
+
+			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.createPollResponse).mockResolvedValue(undefined);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
+			vi.mocked(runQueries.awardXpToRun).mockRejectedValue(
+				new Error("XP system error")
+			);
+
+			// Mock database call for checking option correctness
+			const { db } = await import("~/database/db");
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockResolvedValue(mockCorrectOptions),
+				}),
+			} as any);
+
+			const result = await postPollOptionsHandler({
+				data: {
+					pollId: 123,
+					selectedOptions: ["1"],
+					userId: "123e4567-e89b-12d3-a456-426614174000",
+				},
+			});
+
+			// Poll submission should succeed even if XP awarding fails
+			expect(result.success).toBe(true);
+			expect(result.data?.isCorrect).toBe(true);
 		});
 	});
 });

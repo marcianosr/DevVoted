@@ -55,12 +55,25 @@ const PollDetail: React.FC = () => {
 		mutationFn: submitPollOptions,
 		onSuccess: (data) => {
 			if (data.success) {
-				console.log("Options submitted successfully");
-				// You could show a success message or redirect here
-			} else {
-				console.error("Error submitting Options:", data.error);
-				// You could show an error message here
+				const isCorrect = data.data?.isCorrect;
+				const runEnded = data.data?.runEnded;
+				
+				if (isCorrect) {
+					console.log("Correct answer! XP awarded.");
+				}
+				if (!isCorrect && runEnded) {
+					console.log("Wrong answer! Run ended. All XP reset to 0.");
+				}
+				if (!isCorrect && !runEnded) {
+					console.log("Answer submitted, but incorrect.");
+				}
+				
+				// Refresh the active run data to show updated XP (or lack thereof if run ended)
+				queryClient.invalidateQueries({ queryKey: ["activeRun", user?.id] });
+				return;
 			}
+			
+			console.error("Error submitting Options:", data.error);
 		},
 		onError: (error) => {
 			console.error("Mutation error:", error);

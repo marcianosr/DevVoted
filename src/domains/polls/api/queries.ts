@@ -127,7 +127,6 @@ export const hasUserAnsweredPoll = async (
 	pollId: number,
 	userId: string
 ): Promise<boolean> => {
-
 	const existingResponse = await db
 		.select()
 		.from(pollResponsesTable)
@@ -137,9 +136,6 @@ export const hasUserAnsweredPoll = async (
 				eq(pollResponsesTable.user_id, userId)
 			)
 		);
-
-	console.log(userId, pollResponsesTable.user_id);
-	// console.log(existingResponse, "-");
 
 	return existingResponse.length > 0;
 };
