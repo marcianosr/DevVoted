@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
-import { getActiveRun, getOrCreateRun } from "~/domains/runs/api/runs";
+import { useActiveRun } from "~/domains/runs/hooks";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { useForm } from "@tanstack/react-form";
 import { createServerFn } from "@tanstack/react-start";
@@ -12,6 +12,7 @@ import { PollHeader } from "~/domains/polls/components/PollHeader";
 import { PollStatus } from "~/domains/polls/components/PollStatus";
 import { PollOptions } from "~/domains/polls/components/PollOptions";
 import { PollSubmissionForm } from "~/domains/polls/components/PollSubmissionForm";
+import { pollQueryKeys } from "~/domains/shared/queryKeys";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -32,38 +33,34 @@ const PollDetail: React.FC = () => {
 	const queryClient = useQueryClient();
 	const pollIdNumber = parseInt(pollId, 10);
 
-	// Check for active run
+	// Active run management
 	const {
-		data: activeRunResponse,
+		activeRun,
+		hasActiveRun,
 		isLoading: isLoadingRun,
 		error: runError,
-	} = useQuery({
-		queryKey: ["activeRun", user?.id],
-		queryFn: () => getActiveRun({ data: { userId: user?.id || "" } }),
-		enabled: !!user?.id,
-	});
-
-	const startRunMutation = useMutation({
-		mutationFn: (userId: string) => getOrCreateRun({ data: { userId } }),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: ["activeRun", user?.id],
-			});
-		},
-	});
+		startRun,
+		isStarting,
+	} = useActiveRun(user?.id);
 
 	const submitOptionsMutation = useMutation({
 		mutationFn: submitPollOptions,
 		onSuccess: (data) => {
 			if (data.success) {
 				const isCorrect = data.data?.isCorrect;
+				const runEnded = data.data?.runEnded;
+				
 				if (isCorrect) {
 					console.log("Correct answer! XP awarded.");
 				}
-				if (!isCorrect) {
+				if (!isCorrect && runEnded) {
+					console.log("Wrong answer! Run ended. All XP reset to 0.");
+				}
+				if (!isCorrect && !runEnded) {
 					console.log("Answer submitted, but incorrect.");
 				}
-				// Refresh the active run data to show updated XP
+				
+				// Refresh the active run data to show updated XP (or lack thereof if run ended)
 				queryClient.invalidateQueries({
 					queryKey: ["activeRun", user?.id],
 				});
@@ -101,18 +98,16 @@ const PollDetail: React.FC = () => {
 	});
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["poll", pollIdNumber, user?.id],
+		queryKey: pollQueryKeys.withOptions(pollIdNumber, user?.id),
 		queryFn: () =>
 			getPollByIdWithOptions({
 				data: { id: pollIdNumber, userId: user?.id },
 			}),
-		enabled: !!user?.id && !!activeRunResponse?.success, // Only run when we have user ID and active run
+		enabled: !!user?.id && hasActiveRun, // Only run when we have user ID and active run
 	});
 
 	const handleStartRun = () => {
-		if (user?.id) {
-			startRunMutation.mutate(user.id);
-		}
+		startRun();
 	};
 
 	// Show loading state for run check
@@ -127,7 +122,7 @@ const PollDetail: React.FC = () => {
 	}
 
 	// No active run - show start button
-	if (!activeRunResponse?.success) {
+	if (!hasActiveRun) {
 		return (
 			<div className="p-4">
 				<h1 className="text-2xl font-bold mb-4">Start Your Quiz Run</h1>
@@ -141,12 +136,10 @@ const PollDetail: React.FC = () => {
 					</p>
 					<button
 						onClick={handleStartRun}
-						disabled={startRunMutation.isPending}
+						disabled={isStarting}
 						className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{startRunMutation.isPending
-							? "Starting Run..."
-							: "Start Run"}
+						{isStarting ? "Starting Run..." : "Start Run"}
 					</button>
 				</div>
 			</div>
@@ -166,7 +159,6 @@ const PollDetail: React.FC = () => {
 	}
 
 	const { poll, options, hasAnswered } = data.data;
-	const runData = activeRunResponse?.data;
 
 	if (!poll) {
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
@@ -175,7 +167,7 @@ const PollDetail: React.FC = () => {
 	return (
 		<div className="p-4">
 			{/* Run Status Display */}
-			{runData && (
+			{activeRun && (
 				<div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
 					<h3 className="text-lg font-semibold text-blue-900 mb-3">
 						Current Run Status
@@ -183,12 +175,12 @@ const PollDetail: React.FC = () => {
 					<div className="text-sm text-blue-700 mb-3">
 						Started:{" "}
 						{new Date(
-							runData.run?.startedAt || ""
+							activeRun.run?.startedAt || ""
 						).toLocaleString()}
 					</div>
-					{runData.categoryXp && (
+					{activeRun.categoryXp && (
 						<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-							{runData.categoryXp.map((xp) => (
+							{activeRun.categoryXp.map((xp) => (
 								<div
 									key={xp.categoryCode}
 									className="bg-white p-3 rounded border border-blue-100"
