@@ -22,7 +22,22 @@ export const PollSubmissionForm = ({
 			<div className="mt-6 space-y-4">
 				{submitMutation.isSuccess && submitMutation.data?.success && (
 					<div className="p-3 bg-green-100 text-green-800 rounded">
-						Your options have been submitted successfully!
+						<div className="font-semibold">Your options have been submitted successfully!</div>
+						{submitMutation.data?.data?.xpEarned !== undefined && (
+							<div className="text-sm mt-1">
+								{submitMutation.data.data.xpEarned > 0 ? (
+									<span className="text-green-700">
+										🎉 You earned {submitMutation.data.data.xpEarned} XP!
+									</span>
+								) : (
+									<span className="text-orange-700">
+										{submitMutation.data.data.runEnded ? 
+											"❌ Incorrect answer! Run ended, all XP reset to 0." : 
+											"❌ No XP earned this time."}
+									</span>
+								)}
+							</div>
+						)}
 					</div>
 				)}
 

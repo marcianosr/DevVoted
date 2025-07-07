@@ -103,7 +103,7 @@ export const awardXpToRun = async (runId: number, categoryCode: string, xpAmount
 
 		// Calculate new values
 		const newXp = currentXp.current_xp + xpAmount;
-		const newStreak = currentXp.current_streak + 1;
+		const newStreak = xpAmount > 0 ? currentXp.current_streak + 1 : currentXp.current_streak;
 		const newBestStreak = Math.max(currentXp.best_streak, newStreak);
 
 		// Update the XP record
