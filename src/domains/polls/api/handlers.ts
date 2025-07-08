@@ -9,7 +9,10 @@ import {
 	pollSubmissionSchema,
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
-import { getActiveRunByUserId, awardXpToRun, penalizeXpInRun } from "~/domains/runs/api/queries";
+import {
+	getActiveRunByUserId,
+	awardXpToRun,
+} from "~/domains/runs/api/queries";
 import { calculateMultipleChoiceXP } from "~/domains/userPerformance/constants/xpSystem";
 import { db } from "~/database/db";
 import { pollOptionsTable } from "~/database/schema";
@@ -123,13 +126,19 @@ export const postPollOptionsHandler = async ({
 			);
 
 		// Calculate XP using multiple choice formula
-		const nCorrect = selectedOptionRecords.filter(option => option.correct).length;
-		const nWrong = selectedOptionRecords.filter(option => !option.correct).length;
+		const nCorrect = selectedOptionRecords.filter(
+			(option) => option.correct
+		).length;
+		const nWrong = selectedOptionRecords.filter(
+			(option) => !option.correct
+		).length;
 		const nTotal = allCorrectOptions.length; // Total correct answers available, not selected
 		const xpEarned = calculateMultipleChoiceXP(nCorrect, nTotal, nWrong);
 
 		// Determine if answer is completely correct (all selected options are correct)
-		const isCorrect = selectedOptionRecords.length > 0 && selectedOptionRecords.every((option) => option.correct);
+		const isCorrect =
+			selectedOptionRecords.length > 0 &&
+			selectedOptionRecords.every((option) => option.correct);
 
 		// Create the poll response and link it to the selected options
 		await createPollResponse({
@@ -140,22 +149,18 @@ export const postPollOptionsHandler = async ({
 
 		// Handle XP based on answer correctness
 		let runEnded = false;
-		
+
 		try {
 			// Get user's active run
 			const activeRun = await getActiveRunByUserId(userId);
 
-			if (activeRun) {
-				if (xpEarned > 0) {
-					// Award calculated XP for the poll's category
-					await awardXpToRun(activeRun.id, poll.categoryCode, xpEarned);
-				}
-				
-				if (xpEarned === 0 || !isCorrect) {
-					// Penalize by resetting category XP to 0 and ending run
-					const penaltyResult = await penalizeXpInRun(activeRun.id, poll.categoryCode);
-					runEnded = penaltyResult.runEnded;
-				}
+			if (activeRun && xpEarned > 0) {
+				// Award calculated XP for the poll's category
+				await awardXpToRun(
+					activeRun.id,
+					poll.categoryCode,
+					xpEarned
+				);
 			}
 		} catch (xpError) {
 			console.error("Error handling XP:", xpError);

@@ -390,14 +390,14 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js");
+			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js", 5);
 			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 			expect(result.data?.isCorrect).toBe(true);
 			expect(result.data?.runEnded).toBe(false);
 		});
 
-		it("penalizes XP and ends run when answer is wrong", async () => {
+		it("does not penalize XP when answer is wrong", async () => {
 			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
 			const mockRun = createMockRun({ id: 1 });
 			const mockWrongOptions = [
@@ -430,14 +430,14 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.penalizeXpInRun).toHaveBeenCalledWith(1, "js");
+			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
 			expect(runQueries.awardXpToRun).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 			expect(result.data?.isCorrect).toBe(false);
-			expect(result.data?.runEnded).toBe(true);
+			expect(result.data?.runEnded).toBe(false);
 		});
 
-		it("handles mixed correct/incorrect options as wrong", async () => {
+		it("does not penalize mixed correct/incorrect options", async () => {
 			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
 			const mockRun = createMockRun({ id: 1 });
 			const mockMixedOptions = [
@@ -476,7 +476,7 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.penalizeXpInRun).toHaveBeenCalledWith(1, "js");
+			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
 			expect(result.data?.isCorrect).toBe(false);
 		});
 

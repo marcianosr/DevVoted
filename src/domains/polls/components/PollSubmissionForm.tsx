@@ -31,9 +31,7 @@ export const PollSubmissionForm = ({
 									</span>
 								) : (
 									<span className="text-orange-700">
-										{submitMutation.data.data.runEnded ? 
-											"❌ Incorrect answer! Run ended, all XP reset to 0." : 
-											"❌ No XP earned this time."}
+										❌ No XP earned this time.
 									</span>
 								)}
 							</div>
