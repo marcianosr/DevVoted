@@ -122,8 +122,8 @@ export const getGlobalStreakForRun = async (runId: number): Promise<number> => {
 	return Math.max(...xpRecords.map((record) => record.current_streak), 0);
 };
 
-// Helper function to get the maximum polls answered across all categories
-export const getMaxPollsAnsweredForRun = async (
+// Helper function to get the total polls answered across all categories
+export const getTotalPollsAnsweredForRun = async (
 	runId: number
 ): Promise<number> => {
 	const xpRecords = await db
@@ -131,7 +131,7 @@ export const getMaxPollsAnsweredForRun = async (
 		.from(runCategoryXpTable)
 		.where(eq(runCategoryXpTable.run_id, runId));
 
-	return Math.max(...xpRecords.map((record) => record.polls_answered), 0);
+	return xpRecords.reduce((total, record) => total + record.polls_answered, 0);
 };
 
 // Helper function to check if run meets XP threshold to continue
@@ -144,10 +144,10 @@ export const checkXpThreshold = async (
 	pollNumber: number;
 }> => {
 	const totalXp = await getTotalXpForRun(runId);
-	const maxPollsAnswered = await getMaxPollsAnsweredForRun(runId);
+	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
 
-	// Poll number is the next poll (max polls answered + 1)
-	const pollNumber = maxPollsAnswered + 1;
+	// Poll number is the current poll we just answered (total polls answered)
+	const pollNumber = totalPollsAnswered;
 	const requiredXp = calculateXpThreshold(pollNumber);
 
 	return {
@@ -168,13 +168,10 @@ export const getCurrentThresholdInfo = (
 	pollNumber: number;
 } => {
 	const totalXp = categoryXp.reduce((sum, xp) => sum + xp.currentXp, 0);
-	const maxPollsAnswered = Math.max(
-		...categoryXp.map((xp) => xp.pollsAnswered),
-		0
-	);
+	const totalPollsAnswered = categoryXp.reduce((sum, xp) => sum + xp.pollsAnswered, 0);
 
-	// Poll number is the next poll (max polls answered + 1)
-	const pollNumber = maxPollsAnswered + 1;
+	// Poll number is the next poll (total polls answered + 1)
+	const pollNumber = totalPollsAnswered + 1;
 	const requiredXp = calculateXpThreshold(pollNumber);
 
 	return {
