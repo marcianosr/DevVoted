@@ -6,7 +6,7 @@ import {
 } from "~/domains/runs/api/queries";
 import { createPollResponse } from "~/domains/polls/api/queries";
 import { calculateMultipleChoiceXP } from "~/domains/userPerformance/constants/xpSystem";
-import type { ThresholdInfo } from "~/domains/userPerformance/services/thresholdCalculator";
+import type { ThresholdInfo } from "~/domains/userPerformance/services/thresholdCalculator.service";
 
 export type PollAnswerResult = {
 	readonly xpEarned: number;

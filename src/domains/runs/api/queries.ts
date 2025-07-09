@@ -8,14 +8,12 @@ import {
 import { eq, and } from "drizzle-orm";
 import { runFactory } from "../models/run";
 import { runCategoryXpFactory } from "../models/runCategoryXp";
-import {
-	XP_AWARDS,
-} from "~/domains/userPerformance/constants/xpSystem";
+import { XP_AWARDS } from "~/domains/userPerformance/constants/xpSystem";
 import {
 	calculateThresholdInfo,
 	calculateNextPollThresholdFromCategoryData,
 	type ThresholdInfo,
-} from "~/domains/userPerformance/services/thresholdCalculator";
+} from "~/domains/userPerformance/services/thresholdCalculator.service";
 
 export const getActiveRunByUserId = async (userId: string) => {
 	const runRecord = await db
@@ -135,11 +133,16 @@ export const getTotalPollsAnsweredForRun = async (
 		.from(runCategoryXpTable)
 		.where(eq(runCategoryXpTable.run_id, runId));
 
-	return xpRecords.reduce((total, record) => total + record.polls_answered, 0);
+	return xpRecords.reduce(
+		(total, record) => total + record.polls_answered,
+		0
+	);
 };
 
 // Helper function to check if run meets XP threshold to continue
-export const checkXpThreshold = async (runId: number): Promise<ThresholdInfo> => {
+export const checkXpThreshold = async (
+	runId: number
+): Promise<ThresholdInfo> => {
 	const totalXp = await getTotalXpForRun(runId);
 	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
 
@@ -150,7 +153,7 @@ export const checkXpThreshold = async (runId: number): Promise<ThresholdInfo> =>
 export const getCurrentThresholdInfo = (
 	categoryXp: { currentXp: number; pollsAnswered: number }[]
 ): ThresholdInfo => {
-	const categoryData = categoryXp.map(xp => ({
+	const categoryData = categoryXp.map((xp) => ({
 		currentXp: xp.currentXp,
 		pollsAnswered: xp.pollsAnswered,
 	}));
