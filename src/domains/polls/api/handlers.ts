@@ -2,20 +2,13 @@ import {
 	fetchAllPolls,
 	fetchPollById,
 	fetchPollByIdWithOptions,
-	createPollResponse,
 	hasUserAnsweredPoll,
 } from "~/domains/polls/api/queries";
 import {
 	pollSubmissionSchema,
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
-import {
-	getActiveRunByUserId,
-	awardXpToRun,
-	checkXpThreshold,
-	endRunForThresholdFailure,
-} from "~/domains/runs/api/queries";
-import { calculateMultipleChoiceXP } from "~/domains/userPerformance/constants/xpSystem";
+import { processPollAnswer } from "~/services/pollAnswerService";
 import { db } from "~/database/db";
 import { pollOptionsTable } from "~/database/schema";
 import { eq, and, inArray } from "drizzle-orm";
@@ -83,29 +76,24 @@ export const postPollOptionsHandler = async ({
 	data: PollSubmissionInput;
 }) => {
 	try {
-		// Validate input data
 		const validatedData = pollSubmissionSchema.parse(data);
 		const { pollId, selectedOptions, userId } = validatedData;
 
-		// Check if user has already answered this poll
 		const hasAnswered = await hasUserAnsweredPoll(pollId, userId);
 		if (hasAnswered) {
 			throw new Error("You have already answered this poll");
 		}
 
-		// Verify the poll exists
 		const poll = await fetchPollById(pollId);
 
 		if (!poll) {
 			throw new Error("Poll not found");
 		}
 
-		// Convert string option IDs to numbers for the DB
 		const selectedOptionIds = selectedOptions.map((option) =>
 			Number(option)
 		);
 
-		// Get all correct options for this poll to calculate total possible correct answers
 		const allCorrectOptions = await db
 			.select()
 			.from(pollOptionsTable)
@@ -116,7 +104,6 @@ export const postPollOptionsHandler = async ({
 				)
 			);
 
-		// Get selected options from database to validate and calculate XP
 		const selectedOptionRecords = await db
 			.select()
 			.from(pollOptionsTable)
@@ -127,66 +114,36 @@ export const postPollOptionsHandler = async ({
 				)
 			);
 
-		// Calculate XP using multiple choice formula
 		const nCorrect = selectedOptionRecords.filter(
 			(option) => option.correct
 		).length;
 		const nWrong = selectedOptionRecords.filter(
 			(option) => !option.correct
 		).length;
-		const nTotal = allCorrectOptions.length; // Total correct answers available, not selected
-		const xpEarned = calculateMultipleChoiceXP(nCorrect, nTotal, nWrong);
+		const nTotal = allCorrectOptions.length;
 
-		// Determine if answer is completely correct (all selected options are correct)
 		const isCorrect =
 			selectedOptionRecords.length > 0 &&
 			selectedOptionRecords.every((option) => option.correct);
 
-		// Create the poll response and link it to the selected options
-		await createPollResponse({
+		const { xpEarned, runEnded, thresholdInfo } = await processPollAnswer({
 			pollId,
 			userId,
 			selectedOptionIds,
+			categoryCode: poll.categoryCode,
+			nCorrect,
+			nTotal,
+			nWrong,
 		});
-
-		// Handle XP based on answer correctness
-		let runEnded = false;
-		let thresholdInfo = null;
-
-		try {
-			// Get user's active run
-			const activeRun = await getActiveRunByUserId(userId);
-
-			if (activeRun) {
-				// Always award XP (even if 0) to increment polls_answered count
-				await awardXpToRun(
-					activeRun.id,
-					poll.categoryCode,
-					xpEarned
-				);
-
-				// Check threshold after awarding XP
-				thresholdInfo = await checkXpThreshold(activeRun.id);
-				
-				// End run if threshold is not met
-				if (!thresholdInfo.meetsThreshold) {
-					await endRunForThresholdFailure(activeRun.id);
-					runEnded = true;
-				}
-			}
-		} catch (xpError) {
-			console.error("Error handling XP:", xpError);
-			// Don't fail the whole operation if XP handling fails
-		}
 
 		return {
 			success: true,
 			message: "Options submitted successfully",
-			data: { 
-				isCorrect, 
-				runEnded, 
-				xpEarned, 
-				thresholdInfo 
+			data: {
+				isCorrect,
+				runEnded,
+				xpEarned,
+				thresholdInfo,
 			},
 		};
 	} catch (error) {
