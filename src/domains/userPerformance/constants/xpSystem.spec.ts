@@ -38,12 +38,12 @@ describe("XP Threshold System", () => {
 		});
 
 		it("calculates XP for partial answers", () => {
-			expect(calculateMultipleChoiceXP(1, 2, 0)).toBe(2.5);
-			expect(calculateMultipleChoiceXP(3, 4, 0)).toBe(3.75);
+			expect(calculateMultipleChoiceXP(1, 2, 0)).toBe(3); // Math.round(2.5) = 3
+			expect(calculateMultipleChoiceXP(3, 4, 0)).toBe(4); // Math.round(3.75) = 4
 		});
 
 		it("applies penalty for wrong answers", () => {
-			expect(calculateMultipleChoiceXP(1, 2, 1)).toBe(0.5);
+			expect(calculateMultipleChoiceXP(1, 2, 1)).toBe(1); // Math.round(0.5) = 1
 			expect(calculateMultipleChoiceXP(2, 2, 1)).toBe(3);
 		});
 

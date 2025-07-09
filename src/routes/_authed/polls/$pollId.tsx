@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
 import { useActiveRun } from "~/domains/runs/hooks";
-import { calculateXpThreshold } from "~/domains/userPerformance/constants/xpSystem";
+import { calculateNextPollThresholdFromCategoryData } from "~/domains/userPerformance/services/thresholdCalculator";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { useForm } from "@tanstack/react-form";
 import { createServerFn } from "@tanstack/react-start";
@@ -166,19 +166,14 @@ const PollDetail: React.FC = () => {
 	}
 
 	// Get threshold info for display (client-side calculation)
-	const thresholdInfo = activeRun?.categoryXp ? (() => {
-		const totalXp = activeRun.categoryXp.reduce((sum, xp) => sum + xp.currentXp, 0);
-		const globalStreak = Math.max(...activeRun.categoryXp.map(xp => xp.currentStreak), 0);
-		const pollNumber = globalStreak + 1;
-		const requiredXp = calculateXpThreshold(pollNumber);
-		
-		return {
-			meetsThreshold: totalXp >= requiredXp,
-			currentXp: totalXp,
-			requiredXp: requiredXp,
-			pollNumber: pollNumber
-		};
-	})() : null;
+	const thresholdInfo = activeRun?.categoryXp 
+		? calculateNextPollThresholdFromCategoryData(
+			activeRun.categoryXp.map(xp => ({
+				currentXp: xp.currentXp,
+				pollsAnswered: xp.pollsAnswered,
+			}))
+		) 
+		: null;
 
 	return (
 		<div className="p-4">

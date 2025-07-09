@@ -33,7 +33,7 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.meetsThreshold).toBe(false);
 		});
 
-		it("returns Poll #3 threshold (9 XP) when max polls answered is 2", () => {
+		it("returns Poll #4 threshold (11 XP) when total polls answered is 3", () => {
 			const categoryXp = [
 				{ categoryCode: "js", currentXp: 5, currentStreak: 2, bestStreak: 2, pollsAnswered: 2 },
 				{ categoryCode: "css", currentXp: 2, currentStreak: 1, bestStreak: 1, pollsAnswered: 1 },
@@ -42,8 +42,8 @@ describe("Threshold Reset Functionality", () => {
 
 			const result = getCurrentThresholdInfo(categoryXp);
 
-			expect(result.pollNumber).toBe(3);
-			expect(result.requiredXp).toBe(9);
+			expect(result.pollNumber).toBe(4); // Next poll after 3 total polls answered
+			expect(result.requiredXp).toBe(11); // Poll #4 threshold: 5 + (4-1)*2 = 11
 			expect(result.currentXp).toBe(7);
 			expect(result.meetsThreshold).toBe(false);
 		});

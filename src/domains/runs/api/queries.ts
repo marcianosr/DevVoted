@@ -10,8 +10,12 @@ import { runFactory } from "../models/run";
 import { runCategoryXpFactory } from "../models/runCategoryXp";
 import {
 	XP_AWARDS,
-	calculateXpThreshold,
 } from "~/domains/userPerformance/constants/xpSystem";
+import {
+	calculateThresholdInfo,
+	calculateNextPollThresholdFromCategoryData,
+	type ThresholdInfo,
+} from "~/domains/userPerformance/services/thresholdCalculator";
 
 export const getActiveRunByUserId = async (userId: string) => {
 	const runRecord = await db
@@ -135,51 +139,23 @@ export const getTotalPollsAnsweredForRun = async (
 };
 
 // Helper function to check if run meets XP threshold to continue
-export const checkXpThreshold = async (
-	runId: number
-): Promise<{
-	meetsThreshold: boolean;
-	currentXp: number;
-	requiredXp: number;
-	pollNumber: number;
-}> => {
+export const checkXpThreshold = async (runId: number): Promise<ThresholdInfo> => {
 	const totalXp = await getTotalXpForRun(runId);
 	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
 
-	// Poll number is the current poll we just answered (total polls answered)
-	const pollNumber = totalPollsAnswered;
-	const requiredXp = calculateXpThreshold(pollNumber);
-
-	return {
-		meetsThreshold: totalXp >= requiredXp,
-		currentXp: totalXp,
-		requiredXp: requiredXp,
-		pollNumber: pollNumber,
-	};
+	return calculateThresholdInfo(totalXp, totalPollsAnswered);
 };
 
 // Helper function to get current threshold info for display (sync version using run data)
 export const getCurrentThresholdInfo = (
-	categoryXp: any[]
-): {
-	meetsThreshold: boolean;
-	currentXp: number;
-	requiredXp: number;
-	pollNumber: number;
-} => {
-	const totalXp = categoryXp.reduce((sum, xp) => sum + xp.currentXp, 0);
-	const totalPollsAnswered = categoryXp.reduce((sum, xp) => sum + xp.pollsAnswered, 0);
+	categoryXp: { currentXp: number; pollsAnswered: number }[]
+): ThresholdInfo => {
+	const categoryData = categoryXp.map(xp => ({
+		currentXp: xp.currentXp,
+		pollsAnswered: xp.pollsAnswered,
+	}));
 
-	// Poll number is the next poll (total polls answered + 1)
-	const pollNumber = totalPollsAnswered + 1;
-	const requiredXp = calculateXpThreshold(pollNumber);
-
-	return {
-		meetsThreshold: totalXp >= requiredXp,
-		currentXp: totalXp,
-		requiredXp: requiredXp,
-		pollNumber: pollNumber,
-	};
+	return calculateNextPollThresholdFromCategoryData(categoryData);
 };
 
 export const awardXpToRun = async (
