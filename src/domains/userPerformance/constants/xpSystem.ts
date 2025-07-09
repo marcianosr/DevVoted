@@ -15,7 +15,7 @@ export const calculateMultipleChoiceXP = (
 	if (nTotal === 0) return 0;
 
 	const xp = 5 * (nCorrect / nTotal) - 2 * nWrong;
-	return Math.max(0, Math.round(xp * 100) / 100); // Round to 2 decimal places
+	return Math.max(0, Math.round(xp)); // Round to nearest integer
 };
 
 // XP Threshold System: Progressive XP requirements per poll

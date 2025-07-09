@@ -255,7 +255,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 								returning: vi.fn().mockResolvedValue([]),
 							}),
 						})) as any,
-					})
+					} as any)
 				);
 
 				await expect(
@@ -279,13 +279,13 @@ describe("Query logic - DTO mapping - DB errors", () => {
 
 	describe(hasUserAnsweredPoll, () => {
 		it("returns false when userId is not provided", async () => {
-			const result = await hasUserAnsweredPoll(1);
+			const result = await hasUserAnsweredPoll(1, "");
 
 			expect(result).toBe(false);
 		});
 
 		it("returns false when userId is undefined", async () => {
-			const result = await hasUserAnsweredPoll(1, undefined);
+			const result = await hasUserAnsweredPoll(1, "");
 
 			expect(result).toBe(false);
 		});
