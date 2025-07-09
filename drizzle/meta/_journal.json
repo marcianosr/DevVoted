@@ -43,6 +43,20 @@
       "when": 1751725217424,
       "tag": "0005_same_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1752054092251,
+      "tag": "0006_wonderful_revanche",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1752054997775,
+      "tag": "0007_gifted_titania",
+      "breakpoints": true
     }
   ]
 }

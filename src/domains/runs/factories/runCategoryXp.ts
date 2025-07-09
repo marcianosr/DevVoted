@@ -8,6 +8,7 @@ const runCategoryXp: RunCategoryXp = {
 	currentXp: 0,
 	currentStreak: 0,
 	bestStreak: 0,
+	pollsAnswered: 0,
 	createdAt: new Date("2024-01-01T00:00:00Z"),
 	updatedAt: new Date("2024-01-01T00:00:00Z"),
 };
@@ -19,6 +20,7 @@ const runCategoryXpRecord: RunCategoryXpRecord = {
 	current_xp: 0,
 	current_streak: 0,
 	best_streak: 0,
+	polls_answered: 0,
 	created_at: new Date("2024-01-01T00:00:00Z"),
 	updated_at: new Date("2024-01-01T00:00:00Z"),
 };

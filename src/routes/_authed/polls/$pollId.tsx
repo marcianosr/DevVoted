@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
 import { useActiveRun } from "~/domains/runs/hooks";
+import { calculateXpThreshold } from "~/domains/userPerformance/constants/xpSystem";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { useForm } from "@tanstack/react-form";
 import { createServerFn } from "@tanstack/react-start";
@@ -49,7 +50,7 @@ const PollDetail: React.FC = () => {
 			if (data.success) {
 				const isCorrect = data.data?.isCorrect;
 				const runEnded = data.data?.runEnded;
-				
+
 				if (isCorrect) {
 					console.log("Correct answer! XP awarded.");
 				}
@@ -59,7 +60,7 @@ const PollDetail: React.FC = () => {
 				if (!isCorrect && !runEnded) {
 					console.log("Answer submitted, but incorrect.");
 				}
-				
+
 				// Refresh the active run data to show updated XP (or lack thereof if run ended)
 				queryClient.invalidateQueries({
 					queryKey: ["activeRun", user?.id],
@@ -164,6 +165,21 @@ const PollDetail: React.FC = () => {
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
 	}
 
+	// Get threshold info for display (client-side calculation)
+	const thresholdInfo = activeRun?.categoryXp ? (() => {
+		const totalXp = activeRun.categoryXp.reduce((sum, xp) => sum + xp.currentXp, 0);
+		const globalStreak = Math.max(...activeRun.categoryXp.map(xp => xp.currentStreak), 0);
+		const pollNumber = globalStreak + 1;
+		const requiredXp = calculateXpThreshold(pollNumber);
+		
+		return {
+			meetsThreshold: totalXp >= requiredXp,
+			currentXp: totalXp,
+			requiredXp: requiredXp,
+			pollNumber: pollNumber
+		};
+	})() : null;
+
 	return (
 		<div className="p-4">
 			{/* Run Status Display */}
@@ -178,6 +194,38 @@ const PollDetail: React.FC = () => {
 							activeRun.run?.startedAt || ""
 						).toLocaleString()}
 					</div>
+
+					{thresholdInfo && (
+						<div className="mb-4 p-3 bg-white rounded-lg border border-blue-100">
+							<div className="flex items-center justify-between">
+								<div>
+									<div className="font-medium text-blue-900">
+										Poll #{thresholdInfo.pollNumber}{" "}
+										Threshold
+									</div>
+									<div className="text-sm text-blue-700">
+										{thresholdInfo.currentXp} /{" "}
+										{thresholdInfo.requiredXp} XP
+									</div>
+								</div>
+								<div className="text-right">
+									{thresholdInfo.meetsThreshold ? (
+										<span className="text-green-600 font-medium">
+											✅ Ready to continue
+										</span>
+									) : (
+										<span className="text-orange-600 font-medium">
+											⚠️ Need{" "}
+											{thresholdInfo.requiredXp -
+												thresholdInfo.currentXp}{" "}
+											more XP
+										</span>
+									)}
+								</div>
+							</div>
+						</div>
+					)}
+
 					{activeRun.categoryXp && (
 						<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
 							{activeRun.categoryXp.map((xp) => (

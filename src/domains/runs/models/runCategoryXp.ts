@@ -8,6 +8,7 @@ export type RunCategoryXp = {
 	currentXp: number;
 	currentStreak: number;
 	bestStreak: number;
+	pollsAnswered: number;
 	createdAt: Date;
 	updatedAt: Date | null;
 };
@@ -22,6 +23,7 @@ export const runCategoryXpToDTO = (record: RunCategoryXpRecord): RunCategoryXp =
 		currentXp: record.current_xp,
 		currentStreak: record.current_streak,
 		bestStreak: record.best_streak,
+		pollsAnswered: record.polls_answered,
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
 	};
@@ -35,6 +37,7 @@ export const runCategoryXpFromDTO = (dto: RunCategoryXp): RunCategoryXpRecord =>
 		current_xp: dto.currentXp,
 		current_streak: dto.currentStreak,
 		best_streak: dto.bestStreak,
+		polls_answered: dto.pollsAnswered,
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
 	};
@@ -58,6 +61,7 @@ export const createRunCategoryXp = (partial: Partial<RunCategoryXp> = {}): RunCa
 		currentXp: 0,
 		currentStreak: 0,
 		bestStreak: 0,
+		pollsAnswered: 0,
 		createdAt: now,
 		updatedAt: now,
 		...partial,

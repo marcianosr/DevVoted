@@ -12,6 +12,8 @@ import {
 import {
 	getActiveRunByUserId,
 	awardXpToRun,
+	checkXpThreshold,
+	endRunForThresholdFailure,
 } from "~/domains/runs/api/queries";
 import { calculateMultipleChoiceXP } from "~/domains/userPerformance/constants/xpSystem";
 import { db } from "~/database/db";
@@ -149,18 +151,28 @@ export const postPollOptionsHandler = async ({
 
 		// Handle XP based on answer correctness
 		let runEnded = false;
+		let thresholdInfo = null;
 
 		try {
 			// Get user's active run
 			const activeRun = await getActiveRunByUserId(userId);
 
-			if (activeRun && xpEarned > 0) {
-				// Award calculated XP for the poll's category
+			if (activeRun) {
+				// Always award XP (even if 0) to increment polls_answered count
 				await awardXpToRun(
 					activeRun.id,
 					poll.categoryCode,
 					xpEarned
 				);
+
+				// Check threshold after awarding XP
+				thresholdInfo = await checkXpThreshold(activeRun.id);
+				
+				// End run if threshold is not met
+				if (!thresholdInfo.meetsThreshold) {
+					await endRunForThresholdFailure(activeRun.id);
+					runEnded = true;
+				}
 			}
 		} catch (xpError) {
 			console.error("Error handling XP:", xpError);
@@ -170,7 +182,12 @@ export const postPollOptionsHandler = async ({
 		return {
 			success: true,
 			message: "Options submitted successfully",
-			data: { isCorrect, runEnded, xpEarned },
+			data: { 
+				isCorrect, 
+				runEnded, 
+				xpEarned, 
+				thresholdInfo 
+			},
 		};
 	} catch (error) {
 		console.error("Error submitting poll options:", error);

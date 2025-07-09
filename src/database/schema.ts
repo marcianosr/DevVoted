@@ -214,6 +214,7 @@ export const runCategoryXpTable = pgTable("run_category_xp", {
 	current_xp: integer("current_xp").notNull().default(0),
 	current_streak: integer("current_streak").notNull().default(0),
 	best_streak: integer("best_streak").notNull().default(0),
+	polls_answered: integer("polls_answered").notNull().default(0),
 	created_at: timestamp("created_at").defaultNow(),
 	updated_at: timestamp("updated_at")
 		.defaultNow()
@@ -228,33 +229,26 @@ export const runCategoryXpTable = pgTable("run_category_xp", {
  * User Category XP Table
  * Stands for tracking user's performance in a specific categories
  */
-// export const pollUserPerformanceTable = pgTable(
-// 	"polls_user_performance",
-// 	{
-// 		id: serial("id").primaryKey(),
-// 		user_id: uuid("user_id")
-// 			.references(() => usersTable.id, { onDelete: "cascade" })
-// 			.notNull(),
-// 		category_code: varchar("category_code", { length: 50 })
-// 			.references(() => pollCategoriesTable.code)
-// 			.notNull(),
-// 		cumulative_xp: integer("cumulative_xp").notNull().default(0),
-// 		best_xp: integer("best_xp").notNull().default(0),
-// 		best_streak: integer("best_streak").notNull().default(0),
-// 		best_multiplier: decimal("best_multiplier", { precision: 3, scale: 1 })
-// 			.notNull()
-// 			.default("0.0"),
-// 		betting_average: decimal("betting_average", { precision: 4, scale: 1 }) // Allows values like 3.5, 12.6, 75.0
-// 			.notNull()
-// 			.default("0.0"),
-// 		created_at: timestamp("created_at").defaultNow(),
-// 		updated_at: timestamp("updated_at")
-// 			.defaultNow()
-// 			.$onUpdate(() => new Date()),
-// 	},
-// 	(table) => {
-// 		return {
-// 			userCategoryUnique: unique().on(table.user_id, table.category_code),
-// 		};
-// 	}
-// );
+export const pollUserPerformanceTable = pgTable(
+	"polls_user_performance",
+	{
+		id: serial("id").primaryKey(),
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		category_code: varchar("category_code", { length: 50 })
+			.references(() => pollCategoriesTable.code)
+			.notNull(),
+		best_xp: integer("best_xp").notNull().default(0),
+		best_streak: integer("best_streak").notNull().default(0),
+		created_at: timestamp("created_at").defaultNow(),
+		updated_at: timestamp("updated_at")
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => {
+		return {
+			userCategoryUnique: unique().on(table.user_id, table.category_code),
+		};
+	}
+);

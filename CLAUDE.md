@@ -9,17 +9,20 @@ DevVoted is a developer quiz game built with TanStack Start, combining trivia wi
 ## Common Commands
 
 ### Development
+
 - `npm run dev` - Start development server on port 3005
 - `npm run build` - Build for production and run TypeScript checks
 - `npm run start` - Start production server
 
 ### Testing
+
 - `npm test` - Run all tests once
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:coverage` - Run tests with coverage report
 - `npm test -- --run path/to/specific.spec.ts` - Run specific test file
 
 ### Database Operations
+
 - `npm run db:push` - Push schema changes to database
 - `npm run db:generate` - Generate migration files
 - `npm run db:migrate` - Run pending migrations
@@ -30,6 +33,7 @@ DevVoted is a developer quiz game built with TanStack Start, combining trivia wi
 ## Architecture Overview
 
 ### Technology Stack
+
 - **Framework**: TanStack Start (React-based full-stack framework)
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: Supabase Auth
@@ -49,6 +53,7 @@ src/domains/polls/
 ```
 
 ### Key Database Tables
+
 - `polls` - Quiz questions with metadata (status, answer type, category)
 - `polls_options` - Answer choices for each poll
 - `polls_responses` - User submissions
@@ -56,32 +61,40 @@ src/domains/polls/
 - `users` - Player profiles and stats
 
 ### Data Flow Pattern
+
 1. **API Handlers** (`src/domains/polls/api/handlers.ts`) - Process requests and handle errors
 2. **Queries** (`src/domains/polls/api/queries.ts`) - Database operations with Drizzle
 3. **Factories** - Transform between DTOs and database records
 4. **Models** - Define TypeScript types and business rules
 
 ### Path Aliases
+
 - `~` maps to `./src`
 - `@/src` maps to `./src`
 
 ### Testing Philosophy
+
 - Tests are co-located with source files using `.spec.ts` or `.spec.tsx`
 - Database operations are mocked with Vitest for unit tests
 - Use `vi.clearAllMocks()` instead of `vi.resetAllMocks()` to preserve mock implementations
 - Mock Drizzle query builders by chaining `.values()` and `.returning()` methods
+- Clear test descriptions that doesn't use verbs like "should"
 
 ### Common Patterns
 
+- Function composition pattern. Immutability is important.
+
 #### Database Transactions
+
 ```typescript
 await db.transaction(async (tx) => {
-  const [record] = await tx.insert(table).values(data).returning();
-  // Additional operations...
+	const [record] = await tx.insert(table).values(data).returning();
+	// Additional operations...
 });
 ```
 
 #### Factory Pattern for Data Transformation
+
 ```typescript
 export const factory = {
   toDTO: (record: DatabaseRecord) => DTO,
@@ -92,13 +105,15 @@ export const factory = {
 ```
 
 #### Error Handling in Handlers
+
 ```typescript
 try {
-  const result = await someOperation();
-  return { success: true, data: result };
+	const result = await someOperation();
+	return { success: true, data: result };
 } catch (error) {
-  const message = error instanceof Error ? error.message : "Something went wrong";
-  return { success: false, error: message };
+	const message =
+		error instanceof Error ? error.message : "Something went wrong";
+	return { success: false, error: message };
 }
 ```
 

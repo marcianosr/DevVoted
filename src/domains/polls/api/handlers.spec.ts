@@ -23,6 +23,8 @@ vi.mock("~/domains/runs/api/queries", () => ({
 	getActiveRunByUserId: vi.fn(),
 	awardXpToRun: vi.fn(),
 	penalizeXpInRun: vi.fn(),
+	checkXpThreshold: vi.fn(),
+	endRunForThresholdFailure: vi.fn(),
 }));
 
 vi.mock("~/database/db", () => ({
@@ -373,6 +375,12 @@ describe("handlers", () => {
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
 				mockRun
 			);
+			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
+				meetsThreshold: true,
+				currentXp: 5,
+				requiredXp: 5,
+				pollNumber: 1
+			});
 
 			// Mock database call for checking option correctness
 			const { db } = await import("~/database/db");
@@ -413,6 +421,12 @@ describe("handlers", () => {
 			vi.mocked(runQueries.penalizeXpInRun).mockResolvedValue({
 				runEnded: true,
 			});
+			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
+				meetsThreshold: true,
+				currentXp: 5,
+				requiredXp: 5,
+				pollNumber: 1
+			});
 
 			// Mock database call for checking option correctness
 			const { db } = await import("~/database/db");
@@ -431,7 +445,7 @@ describe("handlers", () => {
 			});
 
 			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
-			expect(runQueries.awardXpToRun).not.toHaveBeenCalled();
+			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js", 0);
 			expect(result.success).toBe(true);
 			expect(result.data?.isCorrect).toBe(false);
 			expect(result.data?.runEnded).toBe(false);
@@ -458,6 +472,12 @@ describe("handlers", () => {
 			);
 			vi.mocked(runQueries.penalizeXpInRun).mockResolvedValue({
 				runEnded: true,
+			});
+			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
+				meetsThreshold: true,
+				currentXp: 5,
+				requiredXp: 5,
+				pollNumber: 1
 			});
 
 			// Mock database call for checking option correctness
@@ -521,6 +541,57 @@ describe("handlers", () => {
 			// Poll submission should succeed even if XP awarding fails
 			expect(result.success).toBe(true);
 			expect(result.data?.isCorrect).toBe(true);
+		});
+
+		it("ends run when threshold is not met", async () => {
+			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
+			const mockRun = createMockRun({ id: 1 });
+			const mockCorrectOptions = [
+				{
+					id: 1,
+					poll_id: 123,
+					option: "Correct Answer",
+					correct: true,
+				},
+			];
+
+			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.createPollResponse).mockResolvedValue(undefined);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
+			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
+				meetsThreshold: false,
+				currentXp: 3,
+				requiredXp: 5,
+				pollNumber: 1
+			});
+			vi.mocked(runQueries.endRunForThresholdFailure).mockResolvedValue({
+				runEnded: true,
+				reason: "threshold_not_met"
+			});
+
+			// Mock database call for checking option correctness
+			const { db } = await import("~/database/db");
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockResolvedValue(mockCorrectOptions),
+				}),
+			} as any);
+
+			const result = await postPollOptionsHandler({
+				data: {
+					pollId: 123,
+					selectedOptions: ["1"],
+					userId: "123e4567-e89b-12d3-a456-426614174000",
+				},
+			});
+
+			expect(runQueries.endRunForThresholdFailure).toHaveBeenCalledWith(1);
+			expect(result.success).toBe(true);
+			expect(result.data?.runEnded).toBe(true);
+			expect(result.data?.thresholdInfo?.meetsThreshold).toBe(false);
 		});
 	});
 });
