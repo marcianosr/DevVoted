@@ -28,7 +28,6 @@ export const getActiveRunByUserId = async (userId: string) => {
 
 export const createRunForUser = async (userId: string) => {
 	return await db.transaction(async (tx) => {
-		// Create the run
 		const [runRecord] = await tx
 			.insert(runsTable)
 			.values({
@@ -37,7 +36,6 @@ export const createRunForUser = async (userId: string) => {
 			})
 			.returning();
 
-		// Get all categories
 		const categories = await tx.select().from(pollCategoriesTable);
 
 		// Create XP records for each category

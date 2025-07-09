@@ -9,6 +9,7 @@ import {
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 import { db } from "~/database/db";
 import { pollOptionsTable } from "~/database/schema";
 import { eq, and, inArray } from "drizzle-orm";
@@ -18,7 +19,7 @@ export const getPollByIdWithOptionsHandler = async ({
 }: {
 	data: { id: number; userId?: string };
 }) => {
-	try {
+	return handleApiOperation(async () => {
 		const { id, userId } = data;
 
 		const { poll, options } = await fetchPollByIdWithOptions(id);
@@ -26,13 +27,8 @@ export const getPollByIdWithOptionsHandler = async ({
 			? await hasUserAnsweredPoll(id, userId)
 			: false;
 
-		return { success: true, data: { poll, options, hasAnswered } };
-	} catch (error) {
-		console.error("Error fetching poll:", error);
-		const message =
-			error instanceof Error ? error.message : "Something went wrong";
-		return { success: false, error: message };
-	}
+		return { poll, options, hasAnswered };
+	});
 };
 
 export const getPollByIdHandler = async ({
@@ -40,34 +36,15 @@ export const getPollByIdHandler = async ({
 }: {
 	data: { id: number };
 }) => {
-	try {
-		const poll = await getPollOrError(data.id);
-
-		return {
-			success: true,
-			data: poll,
-		};
-	} catch (error) {
-		const message =
-			error instanceof Error ? error.message : "Something went wrong";
-		return { success: false, error: message };
-	}
+	return handleApiOperation(async () => {
+		return await getPollOrError(data.id);
+	});
 };
 
 export const getAllPollsHandler = async () => {
-	try {
-		const polls = await fetchAllPolls();
-
-		return {
-			success: true,
-			data: polls,
-		};
-	} catch (error) {
-		console.error("Error fetching polls:", error);
-		const message =
-			error instanceof Error ? error.message : "Something went wrong";
-		return { success: false, error: message };
-	}
+	return handleApiOperation(async () => {
+		return await fetchAllPolls();
+	});
 };
 
 export const postPollOptionsHandler = async ({
@@ -148,8 +125,7 @@ export const postPollOptionsHandler = async ({
 		};
 	} catch (error) {
 		console.error("Error submitting poll options:", error);
-		const message =
-			error instanceof Error ? error.message : "Something went wrong";
+		const message = error instanceof Error ? error.message : "Something went wrong";
 		return { success: false, error: message };
 	}
 };
