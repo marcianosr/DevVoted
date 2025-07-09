@@ -49,7 +49,8 @@ src/domains/polls/
 ├── api/           # Server-side handlers and database queries
 ├── components/    # React components specific to polls
 ├── factories/     # Data transformation utilities (DTO <-> DB records)
-└── models/        # TypeScript types and business logic
+├── models/        # TypeScript types and business logic
+└── services/      # Domain-specific business logic and workflows
 ```
 
 ### Key Database Tables
@@ -63,9 +64,10 @@ src/domains/polls/
 ### Data Flow Pattern
 
 1. **API Handlers** (`src/domains/polls/api/handlers.ts`) - Process requests and handle errors
-2. **Queries** (`src/domains/polls/api/queries.ts`) - Database operations with Drizzle
-3. **Factories** - Transform between DTOs and database records
-4. **Models** - Define TypeScript types and business rules
+2. **Services** (`src/domains/polls/services/`) - Domain-specific business logic and cross-domain workflows
+3. **Queries** (`src/domains/polls/api/queries.ts`) - Database operations with Drizzle
+4. **Factories** - Transform between DTOs and database records
+5. **Models** - Define TypeScript types and business rules
 
 ### Path Aliases
 
@@ -83,6 +85,28 @@ src/domains/polls/
 ### Common Patterns
 
 - Function composition pattern. Immutability is important.
+
+#### Service Layer Organization
+
+Services should be **feature-scoped** within their domain rather than global:
+
+```typescript
+// ✅ Good: Feature-scoped service
+src/domains/polls/services/processPollAnswer.service.ts
+
+// ❌ Avoid: Global service for domain-specific logic
+src/services/pollAnswerService.ts
+```
+
+**Use global services** (`src/services/`) only for:
+- Infrastructure concerns (logging, caching, notifications)
+- Truly shared utilities (date formatting, validation helpers)
+- Cross-cutting concerns (authentication, authorization)
+
+**Use feature-scoped services** (`src/domains/*/services/`) for:
+- Domain-specific workflows and orchestration
+- Business logic that coordinates multiple subdomains
+- Complex operations that span multiple layers within a domain
 
 #### Database Transactions
 

@@ -3,7 +3,6 @@ import {
 	runsTable,
 	runCategoryXpTable,
 	pollCategoriesTable,
-	pollUserPerformanceTable,
 } from "@/src/database/schema";
 import { eq, and } from "drizzle-orm";
 import { runFactory } from "../models/run";
@@ -260,109 +259,10 @@ export const penalizeXpInRun = async (runId: number, categoryCode: string) => {
 	});
 };
 
-// Helper function to update user performance records with current run data
-export const updateUserPerformanceRecords = async (
-	runId: number,
-	userId: string
-) => {
-	return await db.transaction(async (tx) => {
-		// Get current run category XP data
-		const runCategoryXpRecords = await tx
-			.select()
-			.from(runCategoryXpTable)
-			.where(eq(runCategoryXpTable.run_id, runId));
-
-		// Update user performance records for each category
-		for (const categoryXp of runCategoryXpRecords) {
-			// Get existing user performance record for this category
-			const [existingRecord] = await tx
-				.select()
-				.from(pollUserPerformanceTable)
-				.where(
-					and(
-						eq(pollUserPerformanceTable.user_id, userId),
-						eq(
-							pollUserPerformanceTable.category_code,
-							categoryXp.category_code
-						)
-					)
-				)
-				.limit(1);
-
-			const newBestXp = Math.max(
-				existingRecord?.best_xp || 0,
-				categoryXp.current_xp
-			);
-			const newBestStreak = Math.max(
-				existingRecord?.best_streak || 0,
-				categoryXp.best_streak
-			);
-
-			if (existingRecord) {
-				// Update existing record if we have new bests
-				if (
-					newBestXp > existingRecord.best_xp ||
-					newBestStreak > existingRecord.best_streak
-				) {
-					await tx
-						.update(pollUserPerformanceTable)
-						.set({
-							best_xp: newBestXp,
-							best_streak: newBestStreak,
-						})
-						.where(
-							eq(pollUserPerformanceTable.id, existingRecord.id)
-						);
-				}
-			} else {
-				// Create new record
-				await tx.insert(pollUserPerformanceTable).values({
-					user_id: userId,
-					category_code: categoryXp.category_code,
-					best_xp: categoryXp.current_xp,
-					best_streak: categoryXp.best_streak,
-				});
-			}
-		}
-	});
-};
-
 // End run when XP threshold is not met
 export const endRunForThresholdFailure = async (runId: number) => {
-	return await db.transaction(async (tx) => {
-		// Get the run to find the user ID
-		const [run] = await tx
-			.select()
-			.from(runsTable)
-			.where(eq(runsTable.id, runId))
-			.limit(1);
-
-		if (!run) {
-			throw new Error(`Run with ID ${runId} not found`);
-		}
-
-		// Update user performance records before resetting
-		await updateUserPerformanceRecords(runId, run.user_id);
-
-		// Finish the run
-		await tx
-			.update(runsTable)
-			.set({
-				status: "finished",
-				finished_at: new Date(),
-			})
-			.where(eq(runsTable.id, runId));
-
-		// Reset all categories to 0
-		await tx
-			.update(runCategoryXpTable)
-			.set({
-				current_xp: 0,
-				current_streak: 0,
-				polls_answered: 0,
-			})
-			.where(eq(runCategoryXpTable.run_id, runId));
-
-		return { runEnded: true, reason: "threshold_not_met" };
-	});
+	const { completeRunForThresholdFailure } = await import(
+		"~/domains/runs/services/runCompletion.service"
+	);
+	return await completeRunForThresholdFailure(runId);
 };

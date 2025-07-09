@@ -8,7 +8,7 @@ import {
 	pollSubmissionSchema,
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
-import { processPollAnswer } from "~/services/processPollAnswer.service";
+import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
 import { db } from "~/database/db";
 import { pollOptionsTable } from "~/database/schema";
 import { eq, and, inArray } from "drizzle-orm";
