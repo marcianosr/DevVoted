@@ -1,5 +1,6 @@
 import { runsTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
+import { STORAGE_UNITS } from "~/lib/storage";
 
 export type Run = {
 	id: number;
@@ -55,7 +56,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		id: 0,
 		userId: "",
 		status: "active",
-		storageLimit: 1048576, // 1MB default
+		storageLimit: STORAGE_UNITS.MB, // 1MB default
 		startedAt: now,
 		finishedAt: null,
 		createdAt: now,

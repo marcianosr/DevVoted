@@ -10,6 +10,7 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { STORAGE_UNITS } from "~/lib/storage";
 
 /**
  * Database Schema for DevVoted Quiz Game
@@ -188,7 +189,7 @@ export const runsTable = pgTable("runs", {
 		.references(() => usersTable.id, { onDelete: "cascade" })
 		.notNull(),
 	status: runStatus("status").notNull().default("active"),
-	storage_limit: integer("storage_limit").notNull().default(1048576), // 1MB in bytes
+	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	started_at: timestamp("started_at").defaultNow(),
 	finished_at: timestamp("finished_at"),
 	created_at: timestamp("created_at").defaultNow(),
