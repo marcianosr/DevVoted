@@ -5,6 +5,7 @@ const run: Run = {
 	id: 1,
 	userId: "test-user-id",
 	status: "active",
+	storageLimit: 1048576, // 1MB
 	startedAt: new Date("2024-01-01T00:00:00Z"),
 	finishedAt: null,
 	createdAt: new Date("2024-01-01T00:00:00Z"),
@@ -15,6 +16,7 @@ const runRecord: RunRecord = {
 	id: 1,
 	user_id: "test-user-id",
 	status: "active",
+	storage_limit: 1048576, // 1MB
 	started_at: new Date("2024-01-01T00:00:00Z"),
 	finished_at: null,
 	created_at: new Date("2024-01-01T00:00:00Z"),

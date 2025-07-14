@@ -5,6 +5,7 @@ export type Run = {
 	id: number;
 	userId: string;
 	status: "active" | "finished";
+	storageLimit: number;
 	startedAt: Date;
 	finishedAt: Date | null;
 	createdAt: Date;
@@ -18,6 +19,7 @@ export const runToDTO = (record: RunRecord): Run => {
 		id: record.id,
 		userId: record.user_id,
 		status: record.status,
+		storageLimit: record.storage_limit,
 		startedAt: record.started_at || new Date(),
 		finishedAt: record.finished_at,
 		createdAt: record.created_at || new Date(),
@@ -30,6 +32,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		id: dto.id,
 		user_id: dto.userId,
 		status: dto.status,
+		storage_limit: dto.storageLimit,
 		started_at: dto.startedAt,
 		finished_at: dto.finishedAt,
 		created_at: dto.createdAt,
@@ -52,6 +55,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		id: 0,
 		userId: "",
 		status: "active",
+		storageLimit: 1048576, // 1MB default
 		startedAt: now,
 		finishedAt: null,
 		createdAt: now,

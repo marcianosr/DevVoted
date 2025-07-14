@@ -126,7 +126,10 @@ const PollDetail: React.FC = () => {
 	// No active run - show start button
 	if (!hasActiveRun) {
 		return (
-			<StartRunScreen isStarting={isStarting} onStartRun={handleStartRun} />
+			<StartRunScreen
+				isStarting={isStarting}
+				onStartRun={handleStartRun}
+			/>
 		);
 	}
 

@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "storage_limit" integer DEFAULT 1048576 NOT NULL;

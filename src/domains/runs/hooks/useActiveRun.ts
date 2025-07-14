@@ -4,6 +4,7 @@ import { runQueryKeys } from "~/domains/shared/queryKeys";
 import type { Run } from "~/domains/runs/models/run";
 import type { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
 
+// TODO: Why is this a seperate type, and why is categoryXp not stored in Run type?
 export type RunData = {
 	run: Run;
 	categoryXp: RunCategoryXp[];

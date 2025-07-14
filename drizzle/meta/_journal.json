@@ -57,6 +57,13 @@
       "when": 1752054997775,
       "tag": "0007_gifted_titania",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1752494104120,
+      "tag": "0008_elite_hardball",
+      "breakpoints": true
     }
   ]
 }

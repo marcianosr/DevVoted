@@ -10,21 +10,18 @@ export const CategoryXpGrid: React.FC<CategoryXpGridProps> = ({
 	return (
 		<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
 			{categoryXp.map((xp: RunCategoryXp) => (
-				<div
-					key={xp.categoryCode}
-					className="bg-white p-3 rounded border border-blue-100"
-				>
-					<div className="font-medium text-sm text-blue-900">
+				<div key={xp.categoryCode} className="p-3 border border-white">
+					<div className="font-medium text-sm text-white">
 						{xp.categoryCode}
 					</div>
-					<div className="text-lg font-bold text-blue-800">
+					<div className="text-lg font-bold text-white">
 						{xp.currentXp} XP
 					</div>
-					<div className="text-xs text-blue-600">
+					<div className="text-xs text-white">
 						Streak: {xp.currentStreak}
 					</div>
 					{xp.bestStreak > 0 && (
-						<div className="text-xs text-blue-500">
+						<div className="text-xs text-white">
 							Best: {xp.bestStreak}
 						</div>
 					)}

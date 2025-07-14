@@ -13,14 +13,15 @@ export const ThresholdDisplay: React.FC<ThresholdDisplayProps> = ({
 	thresholdInfo,
 }) => {
 	return (
-		<div className="mb-4 p-3 bg-white rounded-lg border border-blue-100">
+		<div className="mb-4 p-3 border border-white">
 			<div className="flex items-center justify-between">
 				<div>
-					<div className="font-medium text-blue-900">
+					<div className="font-medium text-white">
 						Poll #{thresholdInfo.pollNumber} Threshold
 					</div>
-					<div className="text-sm text-blue-700">
-						{thresholdInfo.currentXp} / {thresholdInfo.requiredXp} XP
+					<div className="text-sm text-white">
+						{thresholdInfo.currentXp} / {thresholdInfo.requiredXp}{" "}
+						XP
 					</div>
 				</div>
 				<div className="text-right">
