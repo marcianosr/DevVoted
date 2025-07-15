@@ -1,6 +1,7 @@
 import {
 	boolean,
 	integer,
+	json,
 	pgEnum,
 	pgTable,
 	serial,
@@ -190,6 +191,7 @@ export const runsTable = pgTable("runs", {
 		.notNull(),
 	status: runStatus("status").notNull().default("active"),
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
+	active_config_ids: json("active_config_ids").$type<string[]>().notNull().default([]), // Array of config IDs
 	started_at: timestamp("started_at").defaultNow(),
 	finished_at: timestamp("finished_at"),
 	created_at: timestamp("created_at").defaultNow(),

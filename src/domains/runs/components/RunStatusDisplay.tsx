@@ -30,15 +30,6 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 				{new Date(activeRun.run?.startedAt || "").toLocaleString()}
 			</div>
 
-			<div>
-				<label htmlFor="storage">Storage</label>
-				<meter
-					id="storage"
-					value={activeRun.run?.storageLimit || 0}
-					max={activeRun.run?.storageLimit || 0}
-				/>
-			</div>
-
 			{thresholdInfo && (
 				<ThresholdDisplay thresholdInfo={thresholdInfo} />
 			)}

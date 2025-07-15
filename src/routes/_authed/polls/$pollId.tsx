@@ -15,6 +15,7 @@ import { RunStatusDisplay } from "~/domains/runs/components/RunStatusDisplay";
 import { StartRunScreen } from "~/domains/runs/components/StartRunScreen";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
+import { StorageDeck } from "~/domains/configs/components/StorageDeck";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -153,7 +154,12 @@ const PollDetail: React.FC = () => {
 
 	return (
 		<div className="p-4">
-			{activeRun && <RunStatusDisplay activeRun={activeRun} />}
+			{activeRun && (
+				<>
+					<RunStatusDisplay activeRun={activeRun} />
+					<StorageDeck run={activeRun.run} />
+				</>
+			)}
 
 			<PollHeader poll={poll} />
 			<PollStatus hasAnswered={hasAnswered} />
