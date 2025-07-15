@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { useState } from "react";
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
 import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
+import { addConfigsToRun as addConfigsToRunQuery } from "~/domains/runs/api/queries";
 import { PollHeader } from "~/domains/polls/components/PollHeader";
 import { PollStatus } from "~/domains/polls/components/PollStatus";
 import { PollOptions } from "~/domains/polls/components/PollOptions";
@@ -16,6 +18,7 @@ import { StartRunScreen } from "~/domains/runs/components/StartRunScreen";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
 import { StorageDeck } from "~/domains/configs/components/StorageDeck";
+import { Shop } from "~/domains/configs/components/Shop";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -30,11 +33,36 @@ export const submitPollOptions = createServerFn()
 	)
 	.handler(async ({ data }) => postPollOptionsHandler({ data }));
 
+export const addConfigsToRunServerFn = createServerFn()
+	.validator(
+		z.object({
+			runId: z.number(),
+			configIds: z.array(z.string()),
+		})
+	)
+	.handler(async ({ data }) => {
+		try {
+			const result = await addConfigsToRunQuery(
+				data.runId,
+				data.configIds
+			);
+			return { success: true, data: result };
+		} catch (error) {
+			console.error("Server function: Error", error);
+			const message =
+				error instanceof Error
+					? error.message
+					: "Failed to add configs";
+			return { success: false, error: message };
+		}
+	});
+
 const PollDetail: React.FC = () => {
 	const { pollId } = Route.useParams();
 	const { user } = Route.useRouteContext();
 	const queryClient = useQueryClient();
 	const pollIdNumber = parseInt(pollId, 10);
+	const [showShop, setShowShop] = useState(false);
 
 	// Active run management
 	const {
@@ -46,15 +74,40 @@ const PollDetail: React.FC = () => {
 		isStarting,
 	} = useActiveRun(user?.id);
 
+	const addConfigsMutation = useMutation({
+		mutationFn: addConfigsToRunServerFn,
+		onSuccess: (data) => {
+			console.log("Add configs response:", data);
+			if (data.success) {
+				console.log("Configs added successfully, closing shop");
+				// Refresh the active run data to show updated storage
+				queryClient.invalidateQueries({
+					queryKey: ["activeRun", user?.id],
+				});
+				setShowShop(false);
+			} else {
+				console.error("Failed to add configs:", data.error);
+			}
+		},
+		onError: (error) => {
+			console.error("Error adding configs:", error);
+		},
+	});
+
 	const submitOptionsMutation = useMutation({
 		mutationFn: submitPollOptions,
 		onSuccess: (data) => {
 			if (data.success) {
 				const isCorrect = data.data?.isCorrect;
 				const runEnded = data.data?.runEnded;
+				const xpEarned = data.data?.xpEarned;
 
 				if (isCorrect) {
 					console.log("Correct answer! XP awarded.");
+					// Show shop if XP was earned
+					if (xpEarned > 0) {
+						setShowShop(true);
+					}
 				}
 				if (!isCorrect && runEnded) {
 					console.log("Wrong answer! Run ended. All XP reset to 0.");
@@ -111,6 +164,26 @@ const PollDetail: React.FC = () => {
 
 	const handleStartRun = () => {
 		startRun();
+	};
+
+	const handleShopSubmit = (selectedConfigIds: string[]) => {
+		console.log("Shop submit called with:", selectedConfigIds);
+		console.log("Active run ID:", activeRun?.run.id);
+		if (activeRun?.run.id) {
+			console.log("Data", activeRun, selectedConfigIds);
+			addConfigsMutation.mutate({
+				data: {
+					runId: activeRun.run.id,
+					configIds: selectedConfigIds,
+				},
+			});
+		} else {
+			console.error("No active run ID found");
+		}
+	};
+
+	const handleShopCancel = () => {
+		setShowShop(false);
 	};
 
 	// Show loading state for run check
@@ -185,6 +258,17 @@ const PollDetail: React.FC = () => {
 					)}
 				/>
 			</PollSubmissionForm>
+
+			{showShop && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div className="max-w-4xl w-full mx-4">
+						<Shop
+							onSubmit={handleShopSubmit}
+							onCancel={handleShopCancel}
+						/>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };
