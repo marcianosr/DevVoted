@@ -6,7 +6,7 @@ export const configs: Config[] = [
 		id: "vanilla-config",
 		name: "Vanilla Config",
 		image: "/configs/vanilla.png",
-		cost: STORAGE_UNITS.KB * 50, // 50KB
+		cost: STORAGE_UNITS.MB / 4, // 256KB
 		cooldown: 0,
 		description: "Shows community correctness percentage after each answer",
 		effect: (context) => {
@@ -18,9 +18,10 @@ export const configs: Config[] = [
 		id: "tree-shake-config",
 		name: "Tree Shake Config",
 		image: "/configs/treeshake.png",
-		cost: STORAGE_UNITS.KB * 75, // 75KB
+		cost: STORAGE_UNITS.MB, // 1MB
 		cooldown: 3,
-		description: "Removes 1 wrong option retroactively (only usable once per 3 polls)",
+		description:
+			"Removes 1 wrong option retroactively (only usable once per 3 polls)",
 		effect: (context) => {
 			// TODO: Implement effect - remove wrong option
 		},
@@ -30,7 +31,7 @@ export const configs: Config[] = [
 		id: "jest-config",
 		name: "Jest Config",
 		image: "/configs/jest.png",
-		cost: STORAGE_UNITS.KB * 100, // 100KB
+		cost: STORAGE_UNITS.MB / 4, // 256KB
 		cooldown: 1,
 		description: "Gain 1 XP for each other player getting it wrong",
 		effect: (context) => {
@@ -42,9 +43,10 @@ export const configs: Config[] = [
 		id: "vitest-config",
 		name: "Vitest Config",
 		image: "/configs/vitest.png",
-		cost: STORAGE_UNITS.KB * 120, // 120KB
+		cost: STORAGE_UNITS.KB * 256, // 256KB
 		cooldown: 0,
-		description: "After each answer, see % of other players who got it right",
+		description:
+			"After each answer, see % of other players who got it right",
 		effect: (context) => {
 			// TODO: Implement effect - show player statistics
 		},
@@ -58,9 +60,10 @@ export const configs: Config[] = [
 		id: "rollup-config",
 		name: "Rollup Config",
 		image: "/configs/rollup.png",
-		cost: STORAGE_UNITS.KB * 80, // 80KB
+		cost: STORAGE_UNITS.MB / 4, // 256KB
 		cooldown: 2,
-		description: "Answering 3 questions in the same category gives +2 bonus XP",
+		description:
+			"Answering 3 questions in the same category gives +2 bonus XP",
 		effect: (context) => {
 			// TODO: Implement effect - category combo bonus
 		},
@@ -73,7 +76,7 @@ export const configs: Config[] = [
 		id: "webpack-config",
 		name: "Webpack Config",
 		image: "/configs/webpack.png",
-		cost: STORAGE_UNITS.KB * 150, // 150KB
+		cost: STORAGE_UNITS.MB / 2, // 512KB
 		cooldown: 5,
 		description: "Bundle multiple correct answers for 2x XP multiplier",
 		effect: (context) => {
@@ -90,9 +93,10 @@ export const configs: Config[] = [
 		id: "prettier-config",
 		name: ".prettierrc",
 		image: "/configs/prettier.png",
-		cost: STORAGE_UNITS.KB * 30, // 30KB
+		cost: STORAGE_UNITS.MB / 2, // 512KB
 		cooldown: 0,
-		description: "Formats your streak display nicely and adds +1 XP for style points",
+		description:
+			"Formats your streak display nicely and adds +1 XP for style points",
 		effect: (context) => {
 			// TODO: Implement effect - small XP bonus and visual enhancement
 		},
@@ -102,9 +106,10 @@ export const configs: Config[] = [
 		id: "tsconfig",
 		name: "TS Config",
 		image: "/configs/typescript.png",
-		cost: STORAGE_UNITS.KB * 90, // 90KB
+		cost: STORAGE_UNITS.MB / 4, // 256KB
 		cooldown: 1,
-		description: "Type safety bonus: +50% XP for TypeScript category questions",
+		description:
+			"Type safety bonus: +50% XP for TypeScript category questions",
 		effect: (context) => {
 			// TODO: Implement effect - category-specific XP bonus
 		},

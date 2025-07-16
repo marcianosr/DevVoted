@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 DevVoted is a developer quiz game built with TanStack Start, combining trivia with roguelike mechanics and XP betting systems. See `concept.md` for the complete vision and game mechanics.
 
+Refer to `roadmap.md` for the current roadmap and MVP.
+
 ## Common Commands
 
 ### Development
@@ -59,7 +61,11 @@ src/domains/polls/
 - `polls_options` - Answer choices for each poll
 - `polls_responses` - User submissions
 - `polls_response_options` - Links responses to selected options
+- `polls_categories` - Quiz categories for organization and filtering
 - `users` - Player profiles and stats
+- `runs` - Individual game sessions with config storage and run status
+- `run_category_xp` - XP tracking per category within each run
+- `polls_user_performance` - User's best performance across all runs per category
 
 ### Data Flow Pattern
 
@@ -81,10 +87,13 @@ src/domains/polls/
 - Use `vi.clearAllMocks()` instead of `vi.resetAllMocks()` to preserve mock implementations
 - Mock Drizzle query builders by chaining `.values()` and `.returning()` methods
 - Clear test descriptions that doesn't use verbs like "should"
+- Never use function mocks, but use factory pattern for component data testing
 
 ### Common Patterns
 
 - Function composition pattern. Immutability is important.
+- Prevent usage of "else" if needed in if conditions
+- Use arrow functions over regular functions
 
 #### Service Layer Organization
 
@@ -92,18 +101,20 @@ Services should be **feature-scoped** within their domain rather than global:
 
 ```typescript
 // ✅ Good: Feature-scoped service
-src/domains/polls/services/processPollAnswer.service.ts
+src / domains / polls / services / processPollAnswer.service.ts;
 
 // ❌ Avoid: Global service for domain-specific logic
-src/services/pollAnswerService.ts
+src / services / pollAnswerService.ts;
 ```
 
 **Use global services** (`src/services/`) only for:
+
 - Infrastructure concerns (logging, caching, notifications)
 - Truly shared utilities (date formatting, validation helpers)
 - Cross-cutting concerns (authentication, authorization)
 
 **Use feature-scoped services** (`src/domains/*/services/`) for:
+
 - Domain-specific workflows and orchestration
 - Business logic that coordinates multiple subdomains
 - Complex operations that span multiple layers within a domain
@@ -148,3 +159,4 @@ try {
 - Database schema is defined in `src/database/schema.ts` with comprehensive documentation
 - Test setup includes jsdom environment and jest-dom matchers
 - Development server runs on port 3005 (configured in vite.config.ts)
+- If I disagree with something, please write this down in an ADR file

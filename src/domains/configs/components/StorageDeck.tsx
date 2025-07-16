@@ -9,8 +9,18 @@ type StorageDeckProps = {
 	onRemoveConfig?: (configId: string) => void;
 };
 
-export const StorageDeck = ({ run, onAddConfig, onRemoveConfig }: StorageDeckProps) => {
-	const { activeConfigs, storageUsed, storageAvailable, storageLimit, usagePercentage } = getStorageInfo(run);
+export const StorageDeck = ({
+	run,
+	onAddConfig,
+	onRemoveConfig,
+}: StorageDeckProps) => {
+	const {
+		activeConfigs,
+		storageUsed,
+		storageAvailable,
+		storageLimit,
+		usagePercentage,
+	} = getStorageInfo(run);
 
 	return (
 		<div className="space-y-4">
@@ -22,13 +32,13 @@ export const StorageDeck = ({ run, onAddConfig, onRemoveConfig }: StorageDeckPro
 			</div>
 
 			<div className="w-full bg-gray-200 rounded-full h-3">
-				<div 
+				<div
 					className="bg-blue-600 h-3 rounded-full transition-all duration-300"
 					style={{ width: `${Math.min(usagePercentage, 100)}%` }}
 				/>
 			</div>
 
-			<div className="grid gap-3">
+			<div className="grid grid-cols-[1fr,1fr,1fr,1fr,1fr] gap-3">
 				{activeConfigs.length === 0 ? (
 					<div className="text-center text-gray-500 py-8">
 						<p>No configs installed</p>
@@ -36,10 +46,14 @@ export const StorageDeck = ({ run, onAddConfig, onRemoveConfig }: StorageDeckPro
 					</div>
 				) : (
 					activeConfigs.map((config) => (
-						<ConfigCard 
+						<ConfigCard
 							key={config.id}
 							config={config}
-							onRemove={onRemoveConfig ? () => onRemoveConfig(config.id) : undefined}
+							onRemove={
+								onRemoveConfig
+									? () => onRemoveConfig(config.id)
+									: undefined
+							}
 						/>
 					))
 				)}
@@ -61,33 +75,39 @@ type ConfigCardProps = {
 
 const ConfigCard = ({ config, onRemove }: ConfigCardProps) => {
 	const rarityColors = {
-		common: "border-gray-300 bg-gray-50",
-		uncommon: "border-green-300 bg-green-50",
-		rare: "border-blue-300 bg-blue-50",
-		legendary: "border-purple-300 bg-purple-50",
+		common: "bg-blue-500 text-white",
+		uncommon: "bg-green-500 text-white",
+		rare: "bg-yellow-500 text-white",
+		legendary: "bg-red-800 text-white",
 	};
 
 	return (
-		<div className={`border-2 rounded-lg p-4 ${rarityColors[config.rarity]}`}>
+		<div className={`border-2 p-4`}>
 			<div className="flex items-start justify-between">
 				<div className="flex-1">
 					<div className="flex items-center gap-2 mb-2">
 						{config.image && (
-							<img 
-								src={config.image} 
+							<img
+								src={config.image}
 								alt={config.name}
 								className="w-6 h-6 object-contain"
 							/>
 						)}
 						<h4 className="font-semibold">{config.name}</h4>
-						<span className="text-xs px-2 py-1 rounded-full bg-white/60 capitalize">
+						<span
+							className={`text-xs font-bold px-2 py-1 rounded-full capitalize ${rarityColors[config.rarity]}`}
+						>
 							{config.rarity}
 						</span>
 					</div>
-					<p className="text-sm text-gray-600 mb-2">{config.description}</p>
-					<div className="flex items-center gap-4 text-xs text-gray-500">
+					<p className="text-sm text-gray-600 mb-2">
+						{config.description}
+					</p>
+					<div className="flex items-center gap-4 text-xs text-white font-bold">
 						<span>Cost: {formatStorage(config.cost)}</span>
-						{config.cooldown > 0 && <span>Cooldown: {config.cooldown} polls</span>}
+						{config.cooldown > 0 && (
+							<span>Cooldown: {config.cooldown} polls</span>
+						)}
 					</div>
 				</div>
 				{onRemove && (
