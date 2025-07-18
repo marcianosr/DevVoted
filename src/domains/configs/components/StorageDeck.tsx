@@ -2,6 +2,7 @@ import { Run } from "~/domains/runs/models/run";
 import { Config } from "~/domains/configs/models/config";
 import { getStorageInfo } from "~/domains/configs/services/configStorage.service";
 import { formatStorage } from "~/lib/storage";
+import { ConfigCard } from "./ConfigCard";
 
 type StorageDeckProps = {
 	run: Run;
@@ -64,62 +65,6 @@ export const StorageDeck = ({
 					{formatStorage(storageAvailable)} available for new configs
 				</div>
 			)}
-		</div>
-	);
-};
-
-type ConfigCardProps = {
-	config: Config;
-	onRemove?: () => void;
-};
-
-const ConfigCard = ({ config, onRemove }: ConfigCardProps) => {
-	const rarityColors = {
-		common: "bg-blue-500 text-white",
-		uncommon: "bg-green-500 text-white",
-		rare: "bg-yellow-500 text-white",
-		legendary: "bg-red-800 text-white",
-	};
-
-	return (
-		<div className={`border-2 p-4`}>
-			<div className="flex items-start justify-between">
-				<div className="flex-1">
-					<div className="flex items-center gap-2 mb-2">
-						{config.image && (
-							<img
-								src={config.image}
-								alt={config.name}
-								className="w-6 h-6 object-contain"
-							/>
-						)}
-						<h4 className="font-semibold">{config.name}</h4>
-						<span
-							className={`text-xs font-bold px-2 py-1 rounded-full capitalize ${rarityColors[config.rarity]}`}
-						>
-							{config.rarity}
-						</span>
-					</div>
-					<p className="text-sm text-gray-600 mb-2">
-						{config.description}
-					</p>
-					<div className="flex items-center gap-4 text-xs text-white font-bold">
-						<span>Cost: {formatStorage(config.cost)}</span>
-						{config.cooldown > 0 && (
-							<span>Cooldown: {config.cooldown} polls</span>
-						)}
-					</div>
-				</div>
-				{onRemove && (
-					<button
-						onClick={onRemove}
-						className="ml-2 text-red-500 hover:text-red-700 text-sm"
-						title="Remove config"
-					>
-						✕
-					</button>
-				)}
-			</div>
 		</div>
 	);
 };

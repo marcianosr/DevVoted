@@ -19,6 +19,7 @@ import { ErrorComponent } from "~/ui/ErrorComponent";
 import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
 import { StorageDeck } from "~/domains/configs/components/StorageDeck";
 import { Shop } from "~/domains/configs/components/Shop";
+import { configs } from "~/domains/configs/data/configs";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -64,7 +65,6 @@ const PollDetail: React.FC = () => {
 	const pollIdNumber = parseInt(pollId, 10);
 	const [showShop, setShowShop] = useState(false);
 
-	// Active run management
 	const {
 		activeRun,
 		hasActiveRun,
@@ -100,14 +100,9 @@ const PollDetail: React.FC = () => {
 			if (data.success) {
 				const isCorrect = data.data?.isCorrect;
 				const runEnded = data.data?.runEnded;
-				const xpEarned = data.data?.xpEarned;
 
 				if (isCorrect) {
 					console.log("Correct answer! XP awarded.");
-					// Show shop if XP was earned
-					if (xpEarned > 0) {
-						setShowShop(true);
-					}
 				}
 				if (!isCorrect && runEnded) {
 					console.log("Wrong answer! Run ended. All XP reset to 0.");
@@ -115,6 +110,11 @@ const PollDetail: React.FC = () => {
 				if (!isCorrect && !runEnded) {
 					console.log("Answer submitted, but incorrect.");
 				}
+				if (runEnded) {
+					console.log("Run ended. All XP reset to 0.");
+				}
+
+				setShowShop(true);
 
 				// Refresh the active run data to show updated XP (or lack thereof if run ended)
 				queryClient.invalidateQueries({
@@ -167,8 +167,6 @@ const PollDetail: React.FC = () => {
 	};
 
 	const handleShopSubmit = (selectedConfigIds: string[]) => {
-		console.log("Shop submit called with:", selectedConfigIds);
-		console.log("Active run ID:", activeRun?.run.id);
 		if (activeRun?.run.id) {
 			console.log("Data", activeRun, selectedConfigIds);
 			addConfigsMutation.mutate({
@@ -259,12 +257,14 @@ const PollDetail: React.FC = () => {
 				/>
 			</PollSubmissionForm>
 
-			{showShop && (
+			{activeRun && true && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 					<div className="max-w-4xl w-full mx-4">
 						<Shop
 							onSubmit={handleShopSubmit}
 							onCancel={handleShopCancel}
+							activeRun={activeRun.run}
+							availableConfigs={configs}
 						/>
 					</div>
 				</div>

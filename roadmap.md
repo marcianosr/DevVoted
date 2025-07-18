@@ -8,11 +8,17 @@
 [] Configs (come up with a few to play with) mechanics
 [] Economy mechanics (actually "pay" with storage)
 [] Shop mechanics
+[] Integrate poll "blinds"
 [] Streak bonusses mechanics
-[] Some unlockables (long lasting)
 [] Show leaderboard
+[] Create atleast 25 configs with effects
+[] Create 20 unlockables (long lasting)
 [] Traceability
 [] Old to new system
-[] Balance the game (threshold, configs)
 [] Good explanations of mechanics where needed
+[] Balance the game (threshold, configs)
+[] Authentication (Github / Google)
 [] Deployment
+
+[] New polls (in Slack)
+[] Introduce new categories: Java, AI (Talk with Guido if possible)

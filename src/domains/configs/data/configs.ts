@@ -1,6 +1,7 @@
 import { Config } from "~/domains/configs/models/config";
 import { STORAGE_UNITS } from "~/lib/storage";
 
+// These are configs used in the real game
 export const configs: Config[] = [
 	{
 		id: "vanilla-config",
@@ -18,7 +19,7 @@ export const configs: Config[] = [
 		id: "tree-shake-config",
 		name: "Tree Shake Config",
 		image: "/configs/treeshake.png",
-		cost: STORAGE_UNITS.MB, // 1MB
+		cost: STORAGE_UNITS.MB / 2, // 1MB
 		cooldown: 3,
 		description:
 			"Removes 1 wrong option retroactively (only usable once per 3 polls)",

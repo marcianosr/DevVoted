@@ -1,35 +1,24 @@
 import { useState } from "react";
-import { STORAGE_UNITS } from "~/lib/storage";
-import { createConfig } from "../factories/config";
+
 import { ConfigCard } from "./ConfigCard";
+import { Run } from "~/domains/runs/models/run";
+import { Config } from "~/domains/configs/models/config";
+import { canAddConfigToRun } from "../services/configStorage.service";
 
 type ShopProps = {
 	onSubmit: (selectedConfigIds: string[]) => void;
 	onCancel?: () => void;
+	activeRun: Run;
+	availableConfigs: Config[];
 };
 
-export const Shop = ({ onSubmit, onCancel }: ShopProps) => {
+export const Shop = ({
+	onSubmit,
+	onCancel,
+	activeRun,
+	availableConfigs,
+}: ShopProps) => {
 	const [selectedConfigIds, setSelectedConfigIds] = useState<string[]>([]);
-
-	// Get 6 random configs for the shop
-	const shopConfigs = [
-		createConfig({
-			name: "ESLint",
-			id: "eslint",
-			cost: STORAGE_UNITS.MB / 128,
-		}),
-		createConfig({
-			name: "Prettier",
-			id: "prettier",
-			cost: STORAGE_UNITS.MB / 256,
-		}),
-		createConfig({
-			name: "vanilla",
-			id: "vanilla",
-			cost: STORAGE_UNITS.MB / 256,
-		}),
-		createConfig(),
-	];
 
 	const toggleConfigSelection = (configId: string) => {
 		setSelectedConfigIds((prev) => {
@@ -37,13 +26,11 @@ export const Shop = ({ onSubmit, onCancel }: ShopProps) => {
 				return prev.filter((id) => id !== configId);
 			}
 
-			return prev;
+			return [...prev, configId];
 		});
 	};
 
-	const handleSubmit = () => {
-		onSubmit(selectedConfigIds);
-	};
+	const handleSubmit = () => onSubmit(selectedConfigIds);
 
 	return (
 		<div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
@@ -58,15 +45,17 @@ export const Shop = ({ onSubmit, onCancel }: ShopProps) => {
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-				{shopConfigs.map((config) => (
-					<ConfigCard
-						key={config.id}
-						config={config}
-						isSelected={selectedConfigIds.includes(config.id)}
-						onToggle={() => toggleConfigSelection(config.id)}
-						disabled={!selectedConfigIds.includes(config.id)}
-					/>
-				))}
+				{availableConfigs.map((config) => {
+					return (
+						<ConfigCard
+							key={config.id}
+							config={config}
+							isSelected={selectedConfigIds.includes(config.id)}
+							onToggle={() => toggleConfigSelection(config.id)}
+							disabled={!canAddConfigToRun(activeRun, config)}
+						/>
+					);
+				})}
 			</div>
 
 			<div className="flex justify-end gap-3">

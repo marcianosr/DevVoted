@@ -1,9 +1,9 @@
-import { RunCategoryXP } from "~/domains/runs/models/runCategoryXp";
+import { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
 import { Run } from "~/domains/runs/models/run";
 
 export type ConfigEffectContext = {
 	run: Run;
-	categoryXp: RunCategoryXP[];
+	categoryXp: RunCategoryXp[];
 	currentStreak: number;
 	pollsAnswered: number;
 	correctAnswers: number;
@@ -29,14 +29,8 @@ export type Config = {
 	rarity: "common" | "uncommon" | "rare" | "legendary";
 };
 
-export type ConfigInstance = {
-	config: Config;
-	lastUsed: number; // Poll number when last used
-	isOnCooldown: boolean;
-};
-
 export type ConfigInventory = {
-	configs: ConfigInstance[];
+	configs: Config[];
 	storageUsed: number;
 	storageLimit: number;
 };

@@ -1,33 +1,35 @@
 import { Config } from "~/domains/configs/models/config";
-import { formatStorage, STORAGE_UNITS } from "~/lib/storage";
+import { formatStorage } from "~/lib/storage";
 
 type ConfigCardProps = {
 	config: Config;
-	isSelected: boolean;
-	onToggle: () => void;
+	isSelected?: boolean;
+	onToggle?: () => void;
+	onRemove?: () => void;
 	disabled?: boolean;
 };
 
 export const ConfigCard = ({
 	config,
 	isSelected,
+	onRemove,
 	onToggle,
 	disabled,
 }: ConfigCardProps) => {
 	const rarityColors = {
-		common: "border-gray-300 bg-gray-50",
-		uncommon: "border-green-300 bg-green-50",
-		rare: "border-blue-300 bg-blue-50",
-		legendary: "border-purple-300 bg-purple-50",
+		common: "bg-blue-500 text-white",
+		uncommon: "bg-green-500 text-white",
+		rare: "bg-yellow-500 text-white",
+		legendary: "bg-red-800 text-white",
 	};
 
 	const selectedStyle = isSelected
 		? "ring-2 ring-blue-500 border-blue-500 bg-blue-50"
-		: rarityColors[config.rarity];
+		: "border-gray-900 bg-gray-50";
 
 	return (
 		<div
-			className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${selectedStyle} ${
+			className={`border-2 p-4 cursor-pointer  ${selectedStyle} ${
 				disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow-md"
 			}`}
 			onClick={disabled ? undefined : onToggle}
@@ -44,7 +46,9 @@ export const ConfigCard = ({
 					<h3 className="font-semibold text-gray-900">
 						{config.name}
 					</h3>
-					<span className="text-xs px-2 py-1 rounded-full bg-white/60 capitalize font-medium">
+					<span
+						className={`text-xs px-2 py-1 capitalize font-medium rounded-full ${rarityColors[config.rarity]}`}
+					>
 						{config.rarity}
 					</span>
 				</div>
@@ -65,6 +69,15 @@ export const ConfigCard = ({
 						<span>✓</span>
 						<span>Selected</span>
 					</div>
+				)}
+				{onRemove && (
+					<button
+						onClick={onRemove}
+						className="ml-2 text-red-500 hover:text-red-700 text-sm"
+						title="Remove config"
+					>
+						✕
+					</button>
 				)}
 			</div>
 		</div>

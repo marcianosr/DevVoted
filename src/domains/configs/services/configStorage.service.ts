@@ -5,7 +5,7 @@ import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
 
 export const getActiveConfigs = (run: Run): Config[] => {
 	return run.activeConfigIds
-		.map(id => configs.find(config => config.id === id))
+		.map((id) => configs.find((config) => config.id === id))
 		.filter((config): config is Config => config !== undefined);
 };
 
@@ -17,7 +17,10 @@ export const getStorageInfo = (run: Run) => {
 	const activeConfigs = getActiveConfigs(run);
 	const storageUsed = calculateStorageUsed(activeConfigs);
 	const storageAvailable = run.storageLimit - storageUsed;
-	const usagePercentage = getStorageUsagePercentage(storageUsed, run.storageLimit);
+	const usagePercentage = getStorageUsagePercentage(
+		storageUsed,
+		run.storageLimit
+	);
 
 	return {
 		activeConfigs,
@@ -42,7 +45,7 @@ export const addConfigToRun = (run: Run, configId: string): Run => {
 		return run; // Already has this config
 	}
 
-	const config = configs.find(c => c.id === configId);
+	const config = configs.find((c) => c.id === configId);
 	if (!config || !canAddConfigToRun(run, config)) {
 		return run; // Config not found or not enough storage
 	}
@@ -56,10 +59,10 @@ export const addConfigToRun = (run: Run, configId: string): Run => {
 export const removeConfigFromRun = (run: Run, configId: string): Run => {
 	return {
 		...run,
-		activeConfigIds: run.activeConfigIds.filter(id => id !== configId),
+		activeConfigIds: run.activeConfigIds.filter((id) => id !== configId),
 	};
 };
 
 export const getAvailableConfigs = (run: Run): Config[] => {
-	return configs.filter(config => !run.activeConfigIds.includes(config.id));
+	return configs.filter((config) => !run.activeConfigIds.includes(config.id));
 };
