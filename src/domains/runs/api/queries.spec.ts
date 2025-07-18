@@ -8,8 +8,8 @@ import {
 	penalizeXpInRun,
 } from "./queries";
 import { db } from "~/database/db";
-import { createMockRunRecord, createMockRunRecordArray } from "../factories/run";
-import { createMockRunCategoryXpRecord, createMockRunCategoryXpRecordArray } from "../factories/runCategoryXp";
+import { createMockRunRecord, createMockRunRecordArray } from "../models/run";
+import { createMockRunCategoryXpRecord, createMockRunCategoryXpRecordArray } from "../models/runCategoryXp";
 
 // Mock the database module
 vi.mock("~/database/db", () => {

@@ -5,8 +5,8 @@ import {
 	finishUserRun,
 } from "./handlers";
 import * as queries from "./queries";
-import { createMockRun } from "../factories/run";
-import { createMockRunCategoryXpArray } from "../factories/runCategoryXp";
+import { createMockRun } from "../models/run";
+import { createMockRunCategoryXpArray } from "../models/runCategoryXp";
 
 // Mock the queries module
 vi.mock("./queries", () => ({

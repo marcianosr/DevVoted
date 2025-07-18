@@ -3,7 +3,7 @@ import * as queries from "~/domains/polls/api/queries";
 import * as runQueries from "~/domains/runs/api/queries";
 import { createMockPoll, createMockPollArray } from "../factories/poll";
 import { createMockPollOptionArray } from "../factories/pollOption";
-import { createMockRun } from "~/domains/runs/factories/run";
+import { createMockRun } from "~/domains/runs/models/run";
 import {
 	getAllPollsHandler,
 	getPollByIdHandler,

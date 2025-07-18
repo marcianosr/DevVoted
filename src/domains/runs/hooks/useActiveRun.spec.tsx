@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useActiveRun } from "./useActiveRun";
 import * as runsApi from "~/domains/runs/api/runs";
 import { createRun } from "~/domains/runs/models/run";
-import { createMockRunCategoryXpArray } from "~/domains/runs/factories/runCategoryXp";
+import { createMockRunCategoryXpArray } from "~/domains/runs/models/runCategoryXp";
 import type { RunData } from "./useActiveRun";
 import type { ReactNode } from "react";
 

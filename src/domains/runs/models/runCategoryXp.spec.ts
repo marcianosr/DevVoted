@@ -7,7 +7,7 @@ import {
 	runCategoryXpsFromDTOs, 
 	createRunCategoryXp,
 } from "./runCategoryXp";
-import { createMockRunCategoryXp, createMockRunCategoryXpRecord } from "../factories/runCategoryXp";
+import { createMockRunCategoryXp, createMockRunCategoryXpRecord } from "./runCategoryXp";
 
 describe("RunCategoryXp Model", () => {
 	describe("runCategoryXpToDTO", () => {

@@ -68,6 +68,57 @@ export const createRunCategoryXp = (partial: Partial<RunCategoryXp> = {}): RunCa
 	};
 };
 
+// Test factory functions
+export const createMockRunCategoryXp = (overrides: Partial<RunCategoryXp> = {}): RunCategoryXp => {
+	return {
+		id: 1,
+		runId: 1,
+		categoryCode: "js",
+		currentXp: 0,
+		currentStreak: 0,
+		bestStreak: 0,
+		pollsAnswered: 0,
+		createdAt: new Date("2024-01-01T00:00:00Z"),
+		updatedAt: new Date("2024-01-01T00:00:00Z"),
+		...overrides,
+	};
+};
+
+export const createMockRunCategoryXpRecord = (overrides: Partial<RunCategoryXpRecord> = {}): RunCategoryXpRecord => {
+	return {
+		id: 1,
+		run_id: 1,
+		category_code: "js",
+		current_xp: 0,
+		current_streak: 0,
+		best_streak: 0,
+		polls_answered: 0,
+		created_at: new Date("2024-01-01T00:00:00Z"),
+		updated_at: new Date("2024-01-01T00:00:00Z"),
+		...overrides,
+	};
+};
+
+export const createMockRunCategoryXpArray = (count: number = 3): RunCategoryXp[] => {
+	const categories = ["js", "css", "react", "typescript", "general-frontend"];
+	return Array.from({ length: count }, (_, i) =>
+		createMockRunCategoryXp({
+			id: i + 1,
+			categoryCode: categories[i % categories.length],
+		})
+	);
+};
+
+export const createMockRunCategoryXpRecordArray = (count: number = 3): RunCategoryXpRecord[] => {
+	const categories = ["js", "css", "react", "typescript", "general-frontend"];
+	return Array.from({ length: count }, (_, i) =>
+		createMockRunCategoryXpRecord({
+			id: i + 1,
+			category_code: categories[i % categories.length],
+		})
+	);
+};
+
 export const runCategoryXpFactory = {
 	toDTO: runCategoryXpToDTO,
 	fromDTO: runCategoryXpFromDTO,
