@@ -56,9 +56,7 @@ export const addConfigToRun = (run: Run, configId: string): Run => {
 	};
 };
 
-export const removeConfigFromRun = (run: Run, configId: string): Run => {
-	return {
-		...run,
-		activeConfigIds: run.activeConfigIds.filter((id) => id !== configId),
-	};
-};
+export const removeConfigFromRun = (run: Run, configId: string): Run => ({
+	...run,
+	activeConfigIds: run.activeConfigIds.filter((id) => id !== configId),
+});

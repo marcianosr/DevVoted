@@ -6,7 +6,6 @@ import { z } from "zod";
 import { useState } from "react";
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
 import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
-import { addConfigsToRun as addConfigsToRunQuery } from "~/domains/runs/api/queries";
 import { PollHeader } from "~/domains/polls/components/PollHeader";
 import { PollStatus } from "~/domains/polls/components/PollStatus";
 import { PollOptions } from "~/domains/polls/components/PollOptions";
@@ -20,6 +19,10 @@ import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
 import { StorageDeck } from "~/domains/configs/components/StorageDeck";
 import { Shop } from "~/domains/configs/components/Shop";
 import { configs } from "~/domains/configs/data/configs";
+import {
+	addConfigToRunServerFn,
+	removeConfigFromRunServerFn,
+} from "~/domains/configs/api/configs";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -33,30 +36,6 @@ export const submitPollOptions = createServerFn()
 		})
 	)
 	.handler(async ({ data }) => postPollOptionsHandler({ data }));
-
-export const addConfigsToRunServerFn = createServerFn()
-	.validator(
-		z.object({
-			runId: z.number(),
-			configIds: z.array(z.string()),
-		})
-	)
-	.handler(async ({ data }) => {
-		try {
-			const result = await addConfigsToRunQuery(
-				data.runId,
-				data.configIds
-			);
-			return { success: true, data: result };
-		} catch (error) {
-			console.error("Server function: Error", error);
-			const message =
-				error instanceof Error
-					? error.message
-					: "Failed to add configs";
-			return { success: false, error: message };
-		}
-	});
 
 const PollDetail: React.FC = () => {
 	const { pollId } = Route.useParams();
@@ -75,7 +54,7 @@ const PollDetail: React.FC = () => {
 	} = useActiveRun(user?.id);
 
 	const addConfigsMutation = useMutation({
-		mutationFn: addConfigsToRunServerFn,
+		mutationFn: addConfigToRunServerFn,
 		onSuccess: (data) => {
 			console.log("Add configs response:", data);
 			if (data.success) {
@@ -87,6 +66,26 @@ const PollDetail: React.FC = () => {
 				setIsShopOpen(false);
 			} else {
 				console.error("Failed to add configs:", data.error);
+			}
+		},
+		onError: (error) => {
+			console.error("Error adding configs:", error);
+		},
+	});
+
+	const removeConfigMutation = useMutation({
+		mutationFn: removeConfigFromRunServerFn,
+		onSuccess: (data) => {
+			console.log("Remove config response:", data);
+			if (data.success) {
+				console.log("Config removed successfully, closing shop");
+				// Refresh the active run data to show updated storage
+				queryClient.invalidateQueries({
+					queryKey: ["activeRun", user?.id],
+				});
+				setIsShopOpen(false);
+			} else {
+				console.error("Failed to remove config:", data.error);
 			}
 		},
 		onError: (error) => {
@@ -180,6 +179,19 @@ const PollDetail: React.FC = () => {
 		}
 	};
 
+	const handleRemoveConfig = (configId: string) => {
+		if (activeRun?.run.id) {
+			removeConfigMutation.mutate({
+				data: {
+					runId: activeRun.run.id,
+					configIds: [configId],
+				},
+			});
+		} else {
+			console.error("No active run ID found");
+		}
+	};
+
 	const handleShopCancel = () => {
 		setIsShopOpen(false);
 	};
@@ -228,7 +240,11 @@ const PollDetail: React.FC = () => {
 			{activeRun && (
 				<>
 					<RunStatusDisplay activeRun={activeRun} />
-					<StorageDeck run={activeRun.run} isShopOpen={isShopOpen} />
+					<StorageDeck
+						run={activeRun.run}
+						isShopOpen={isShopOpen}
+						onRemoveConfig={handleRemoveConfig}
+					/>
 				</>
 			)}
 

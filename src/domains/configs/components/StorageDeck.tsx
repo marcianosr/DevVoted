@@ -1,18 +1,16 @@
 import { Run } from "~/domains/runs/models/run";
 import { Config } from "~/domains/configs/models/config";
-import {
-	getStorageInfo,
-	removeConfigFromRun,
-} from "~/domains/configs/services/configStorage.service";
+import { getStorageInfo } from "~/domains/configs/services/configStorage.service";
 import { formatStorage } from "~/lib/storage";
 import { ConfigCard } from "./ConfigCard";
 
 type StorageDeckProps = {
 	run: Run;
 	isShopOpen: boolean;
+	onRemoveConfig?: (configId: string) => void;
 };
 
-export const StorageDeck = ({ run, isShopOpen }: StorageDeckProps) => {
+export const StorageDeck = ({ run, isShopOpen, onRemoveConfig }: StorageDeckProps) => {
 	const {
 		activeConfigs,
 		storageUsed,
@@ -20,9 +18,6 @@ export const StorageDeck = ({ run, isShopOpen }: StorageDeckProps) => {
 		storageLimit,
 		usagePercentage,
 	} = getStorageInfo(run);
-
-	const onRemoveConfig = (configId: string) =>
-		removeConfigFromRun(run, configId);
 
 	return (
 		<div className="space-y-4">
@@ -52,7 +47,7 @@ export const StorageDeck = ({ run, isShopOpen }: StorageDeckProps) => {
 							<ConfigCard
 								key={config.id}
 								config={config}
-								onRemove={() => onRemoveConfig(config.id)}
+								onRemove={onRemoveConfig ? () => onRemoveConfig(config.id) : undefined}
 							/>
 						</>
 					))
