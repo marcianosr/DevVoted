@@ -30,7 +30,7 @@ export const Shop = ({
 		});
 	};
 
-	const handleSubmit = () => onSubmit(selectedConfigIds);
+	const downloadConfig = () => onSubmit(selectedConfigIds);
 
 	return (
 		<div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
@@ -68,11 +68,11 @@ export const Shop = ({
 					</button>
 				)}
 				<button
-					onClick={handleSubmit}
+					onClick={downloadConfig}
 					disabled={selectedConfigIds.length === 0}
 					className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
 				>
-					Add to Storage ({selectedConfigIds.length})
+					Download to storage ({selectedConfigIds.length})
 				</button>
 			</div>
 		</div>

@@ -1,20 +1,18 @@
 import { Run } from "~/domains/runs/models/run";
 import { Config } from "~/domains/configs/models/config";
-import { getStorageInfo } from "~/domains/configs/services/configStorage.service";
+import {
+	getStorageInfo,
+	removeConfigFromRun,
+} from "~/domains/configs/services/configStorage.service";
 import { formatStorage } from "~/lib/storage";
 import { ConfigCard } from "./ConfigCard";
 
 type StorageDeckProps = {
 	run: Run;
-	onAddConfig?: (configId: string) => void;
-	onRemoveConfig?: (configId: string) => void;
+	isShopOpen: boolean;
 };
 
-export const StorageDeck = ({
-	run,
-	onAddConfig,
-	onRemoveConfig,
-}: StorageDeckProps) => {
+export const StorageDeck = ({ run, isShopOpen }: StorageDeckProps) => {
 	const {
 		activeConfigs,
 		storageUsed,
@@ -22,6 +20,9 @@ export const StorageDeck = ({
 		storageLimit,
 		usagePercentage,
 	} = getStorageInfo(run);
+
+	const onRemoveConfig = (configId: string) =>
+		removeConfigFromRun(run, configId);
 
 	return (
 		<div className="space-y-4">
@@ -47,15 +48,13 @@ export const StorageDeck = ({
 					</div>
 				) : (
 					activeConfigs.map((config) => (
-						<ConfigCard
-							key={config.id}
-							config={config}
-							onRemove={
-								onRemoveConfig
-									? () => onRemoveConfig(config.id)
-									: undefined
-							}
-						/>
+						<>
+							<ConfigCard
+								key={config.id}
+								config={config}
+								onRemove={() => onRemoveConfig(config.id)}
+							/>
+						</>
 					))
 				)}
 			</div>

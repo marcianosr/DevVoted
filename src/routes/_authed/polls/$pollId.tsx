@@ -63,7 +63,7 @@ const PollDetail: React.FC = () => {
 	const { user } = Route.useRouteContext();
 	const queryClient = useQueryClient();
 	const pollIdNumber = parseInt(pollId, 10);
-	const [showShop, setShowShop] = useState(false);
+	const [isShopOpen, setIsShopOpen] = useState(false);
 
 	const {
 		activeRun,
@@ -84,7 +84,7 @@ const PollDetail: React.FC = () => {
 				queryClient.invalidateQueries({
 					queryKey: ["activeRun", user?.id],
 				});
-				setShowShop(false);
+				setIsShopOpen(false);
 			} else {
 				console.error("Failed to add configs:", data.error);
 			}
@@ -114,7 +114,7 @@ const PollDetail: React.FC = () => {
 					console.log("Run ended. All XP reset to 0.");
 				}
 
-				setShowShop(true);
+				setIsShopOpen(true);
 
 				// Refresh the active run data to show updated XP (or lack thereof if run ended)
 				queryClient.invalidateQueries({
@@ -181,7 +181,7 @@ const PollDetail: React.FC = () => {
 	};
 
 	const handleShopCancel = () => {
-		setShowShop(false);
+		setIsShopOpen(false);
 	};
 
 	// Show loading state for run check
@@ -228,7 +228,7 @@ const PollDetail: React.FC = () => {
 			{activeRun && (
 				<>
 					<RunStatusDisplay activeRun={activeRun} />
-					<StorageDeck run={activeRun.run} />
+					<StorageDeck run={activeRun.run} isShopOpen={isShopOpen} />
 				</>
 			)}
 
@@ -257,7 +257,7 @@ const PollDetail: React.FC = () => {
 				/>
 			</PollSubmissionForm>
 
-			{activeRun && true && (
+			{activeRun && isShopOpen && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 					<div className="max-w-4xl w-full mx-4">
 						<Shop

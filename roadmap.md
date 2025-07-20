@@ -5,17 +5,19 @@
 [x] XP threshold mechanicsn(done)  
 [] Run end mechanics (delete everything)
 [x] Storage mechanics
-[] Configs (come up with a few to play with) mechanics
-[] Economy mechanics (actually "pay" with storage)
-[] Shop mechanics
-[] Integrate poll "blinds"
+[x] Configs (come up with a few to play with) mechanics
+[x] Economy mechanics (actually "pay" with storage)
+[] Sell configs
+[x] Shop mechanics
+[] Integrate 3-poll "blinds"
 [] Streak bonusses mechanics
 [] Show leaderboard
 [] Create atleast 25 configs with effects
 [] Create 20 unlockables (long lasting)
 [] Traceability
+[] AI design soms stickers
 [] Old to new system
-[] Good explanations of mechanics where needed
+[] Good explanations of mechanics where needed. Check if the game is understandable
 [] Balance the game (threshold, configs)
 [] Authentication (Github / Google)
 [] Deployment

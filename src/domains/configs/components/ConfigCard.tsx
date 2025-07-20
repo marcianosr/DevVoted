@@ -76,7 +76,7 @@ export const ConfigCard = ({
 						className="ml-2 text-red-500 hover:text-red-700 text-sm"
 						title="Remove config"
 					>
-						✕
+						Remove✕
 					</button>
 				)}
 			</div>

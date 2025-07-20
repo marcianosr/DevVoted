@@ -60,11 +60,11 @@ describe(Shop, () => {
 			/>
 		);
 
-		await userEvent.click(screen.getByText("Add to Storage (0)"));
+		await userEvent.click(screen.getByText("Download to storage (0)"));
 
 		await userEvent.click(screen.getByText("ESLint"));
 
-		await userEvent.click(screen.getByText("Add to Storage (1)"));
+		await userEvent.click(screen.getByText("Download to storage (1)"));
 	});
 
 	it("deselects a config when clicked again", async () => {
@@ -83,17 +83,17 @@ describe(Shop, () => {
 			/>
 		);
 
-		await userEvent.click(screen.getByText("Add to Storage (0)"));
+		await userEvent.click(screen.getByText("Download to storage (0)"));
 
 		await userEvent.click(screen.getByText("ESLint"));
 
-		await userEvent.click(screen.getByText("Add to Storage (1)"));
+		await userEvent.click(screen.getByText("Download to storage (1)"));
 
 		await userEvent.click(screen.getByText("ESLint"));
 
-		await userEvent.click(screen.getByText("Add to Storage (0)"));
+		await userEvent.click(screen.getByText("Download to storage (0)"));
 	});
-	it("calls on submit when clicking on add to storage and updates the count in button", async () => {
+	it("calls on submit when clicking on Download to storage and updates the count in button", async () => {
 		const mockOnSubmit = vi.fn();
 
 		render(
@@ -109,11 +109,11 @@ describe(Shop, () => {
 			/>
 		);
 
-		await userEvent.click(screen.getByText("Add to Storage (0)"));
+		await userEvent.click(screen.getByText("Download to storage (0)"));
 
 		await userEvent.click(screen.getByText("ESLint"));
 
-		await userEvent.click(screen.getByText("Add to Storage (1)"));
+		await userEvent.click(screen.getByText("Download to storage (1)"));
 
 		expect(mockOnSubmit).toBeCalled();
 	});
@@ -134,8 +134,8 @@ describe(Shop, () => {
 			/>
 		);
 
-		expect(screen.getByText("Add to Storage (0)"));
-		await userEvent.click(screen.getByText("Add to Storage (0)"));
+		expect(screen.getByText("Download to storage (0)"));
+		await userEvent.click(screen.getByText("Download to storage (0)"));
 
 		expect(mockOnSubmit).not.toBeCalled();
 	});
