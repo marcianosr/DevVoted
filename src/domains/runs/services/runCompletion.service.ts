@@ -1,7 +1,7 @@
 import { db } from "~/database/db";
 import { runsTable, runCategoryXpTable } from "~/database/schema";
 import { eq } from "drizzle-orm";
-import { updateUserPerformanceFromRun } from "./userPerformance.service";
+import { updateUserPerformanceFromRun } from "~/domains/userPerformance/services/userPerformance.service";
 
 export type RunCompletionResult = {
 	readonly runEnded: boolean;

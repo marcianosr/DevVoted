@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-	addConfigToRun,
+	addConfigsToRun,
 	canAddConfigToRun,
 	getStorageInfo,
-	removeConfigFromRun,
+	removeConfigsFromRun,
 } from "~/domains/configs/services/configStorage.service";
 import { createMockRun } from "~/domains/runs/models/run";
 import { createConfig } from "~/domains/configs/factories/config";
@@ -38,29 +38,46 @@ describe("configStorage", () => {
 		});
 	});
 
-	describe("addToConfigRun", () => {
+	describe("addConfigsToRun", () => {
 		it("prevents adding the same config if already in storage deck", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
-			const mockConfig = createConfig({
-				id: "eslint",
-			});
+			const mockConfig = [
+				createConfig({
+					id: "eslint",
+				}),
+				createConfig({
+					id: "webpack-config",
+				}),
+			];
 
-			const result = addConfigToRun(mockRun, mockConfig.id);
+			const result = addConfigsToRun(
+				mockRun,
+				mockConfig.map((c) => c.id)
+			);
 
-			expect(result.activeConfigIds).toEqual(["eslint", "jest-config"]);
+			expect(result.activeConfigIds).toEqual([
+				"eslint",
+				"jest-config",
+				"webpack-config",
+			]);
 		});
 
 		it("adds config to storage deck if not already present", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
-			const mockConfig = createConfig({
-				id: "tsconfig",
-			});
+			const mockConfig = [
+				createConfig({
+					id: "tsconfig",
+				}),
+			];
 
-			const result = addConfigToRun(mockRun, mockConfig.id);
+			const result = addConfigsToRun(
+				mockRun,
+				mockConfig.map((c) => c.id)
+			);
 
 			expect(result.activeConfigIds).toEqual([
 				"eslint",
@@ -68,9 +85,35 @@ describe("configStorage", () => {
 				"tsconfig",
 			]);
 		});
+
+		it("adds multiple configs when given", () => {
+			const mockRun = createMockRun({
+				activeConfigIds: ["eslint", "jest-config"],
+			});
+			const mockConfig = [
+				createConfig({
+					id: "tsconfig",
+				}),
+				createConfig({
+					id: "webpack-config",
+				}),
+			];
+
+			const result = addConfigsToRun(
+				mockRun,
+				mockConfig.map((c) => c.id)
+			);
+
+			expect(result.activeConfigIds).toEqual([
+				"eslint",
+				"jest-config",
+				"tsconfig",
+				"webpack-config",
+			]);
+		});
 	});
 
-	describe("removeConfigFromRun", () => {
+	describe("removeConfigsFromRun", () => {
 		it("removes the given config", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "ts-config"],
@@ -79,9 +122,30 @@ describe("configStorage", () => {
 				id: "ts-config",
 			});
 
-			const result = removeConfigFromRun(mockRun, mockConfig.id);
+			const result = removeConfigsFromRun(mockRun, [mockConfig.id]);
 
 			expect(result.activeConfigIds).toEqual(["eslint"]);
+		});
+
+		it("removes multiple given config", () => {
+			const mockRun = createMockRun({
+				activeConfigIds: ["eslint", "ts-config"],
+			});
+			const mockConfig = [
+				createConfig({
+					id: "ts-config",
+				}),
+				createConfig({
+					id: "eslint",
+				}),
+			];
+
+			const result = removeConfigsFromRun(
+				mockRun,
+				mockConfig.map((c) => c.id)
+			);
+
+			expect(result.activeConfigIds).toEqual([]);
 		});
 	});
 

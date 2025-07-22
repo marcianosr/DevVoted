@@ -40,23 +40,35 @@ export const canAddConfigToRun = (run: Run, config: Config): boolean => {
 	return canAddToStorage(currentStorageUsed, config.cost, run.storageLimit);
 };
 
-export const addConfigToRun = (run: Run, configId: string): Run => {
-	if (run.activeConfigIds.includes(configId)) {
-		return run; // Already has this config
+export const addConfigsToRun = (run: Run, configIds: string[]): Run => {
+	// Filter out configs that are already in the run
+	const newConfigIds = configIds.filter(
+		(id) => !run.activeConfigIds.includes(id)
+	);
+
+	if (newConfigIds.length === 0) {
+		return run; // No new configs to add
 	}
 
-	const config = configs.find((c) => c.id === configId);
-	if (!config || !canAddConfigToRun(run, config)) {
-		return run; // Config not found or not enough storage
+	// Check if all new configs exist and can be added
+	const allConfigsValid = newConfigIds.every((configId) => {
+		const config = configs.find((c) => c.id === configId);
+		return config && canAddConfigToRun(run, config);
+	});
+
+	if (!allConfigsValid) {
+		return run; // Some config not found or not enough storage
 	}
 
 	return {
 		...run,
-		activeConfigIds: [...run.activeConfigIds, configId],
+		activeConfigIds: [...run.activeConfigIds, ...newConfigIds],
 	};
 };
 
-export const removeConfigFromRun = (run: Run, configId: string): Run => ({
+export const removeConfigsFromRun = (run: Run, configIds: string[]): Run => ({
 	...run,
-	activeConfigIds: run.activeConfigIds.filter((id) => id !== configId),
+	activeConfigIds: run.activeConfigIds.filter(
+		(id) => !configIds.includes(id)
+	),
 });
