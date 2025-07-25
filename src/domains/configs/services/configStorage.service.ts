@@ -72,3 +72,6 @@ export const removeConfigsFromRun = (run: Run, configIds: string[]): Run => ({
 		(id) => !configIds.includes(id)
 	),
 });
+
+export const hasConfig = (run: Run, configId: string) =>
+	run.activeConfigIds.find((aId) => configId === aId);

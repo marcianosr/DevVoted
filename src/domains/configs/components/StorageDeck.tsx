@@ -1,16 +1,15 @@
 import { Run } from "~/domains/runs/models/run";
-import { Config } from "~/domains/configs/models/config";
+
 import { getStorageInfo } from "~/domains/configs/services/configStorage.service";
 import { formatStorage } from "~/lib/storage";
 import { ConfigCard } from "./ConfigCard";
+import { useConfigCardActions } from "../hooks/useConfigCardActions";
 
 type StorageDeckProps = {
 	run: Run;
-	isShopOpen: boolean;
-	onRemoveConfig?: (configId: string) => void;
 };
 
-export const StorageDeck = ({ run, isShopOpen, onRemoveConfig }: StorageDeckProps) => {
+export const StorageDeck = ({ run }: StorageDeckProps) => {
 	const {
 		activeConfigs,
 		storageUsed,
@@ -42,15 +41,21 @@ export const StorageDeck = ({ run, isShopOpen, onRemoveConfig }: StorageDeckProp
 						<p className="text-sm">Your storage deck is empty</p>
 					</div>
 				) : (
-					activeConfigs.map((config) => (
-						<>
+					activeConfigs.map((config) => {
+						const actions = useConfigCardActions({
+							run,
+							config,
+							mode: "storage",
+						});
+
+						return (
 							<ConfigCard
 								key={config.id}
 								config={config}
-								onRemove={onRemoveConfig ? () => onRemoveConfig(config.id) : undefined}
+								{...actions}
 							/>
-						</>
-					))
+						);
+					})
 				)}
 			</div>
 

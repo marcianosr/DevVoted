@@ -5,14 +5,16 @@ type ConfigCardProps = {
 	config: Config;
 	isSelected?: boolean;
 	onToggle?: () => void;
-	onRemove?: () => void;
+	onRemoveConfig?: () => void;
+	onAddConfig?: () => void;
 	disabled?: boolean;
 };
 
 export const ConfigCard = ({
 	config,
 	isSelected,
-	onRemove,
+	onRemoveConfig,
+	onAddConfig,
 	onToggle,
 	disabled,
 }: ConfigCardProps) => {
@@ -70,13 +72,22 @@ export const ConfigCard = ({
 						<span>Selected</span>
 					</div>
 				)}
-				{onRemove && (
+				{onRemoveConfig && (
 					<button
-						onClick={onRemove}
+						onClick={onRemoveConfig}
 						className="ml-2 text-red-500 hover:text-red-700 text-sm"
 						title="Remove config"
 					>
-						Remove✕
+						Remove ✕
+					</button>
+				)}
+				{onAddConfig && (
+					<button
+						onClick={onAddConfig}
+						className="ml-2 text-green-500 hover:text-green-700 text-sm"
+						title="Add config"
+					>
+						Add to config
 					</button>
 				)}
 			</div>
