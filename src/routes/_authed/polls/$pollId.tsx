@@ -135,6 +135,9 @@ const PollContent: React.FC<{
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
 	}
 
+	if (poll.status !== "open")
+		return <ErrorComponent text="Sorry, this poll is closed today!" />;
+
 	return (
 		<>
 			<PollHeader poll={poll} />

@@ -8,7 +8,6 @@ import {
 } from "@/src/database/schema";
 import { eq } from "drizzle-orm";
 import { createSeedPollArray } from "~/domains/polls/factories/poll";
-import { configs } from "~/domains/configs/data/configs";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 
@@ -123,7 +122,11 @@ async function seedDatabase() {
 			// Create and insert options for each poll
 			let totalOptionsCreated = 0;
 			for (const poll of allPolls) {
-				const options = generatePollOptions(poll.id, poll.question, poll.answer_type);
+				const options = generatePollOptions(
+					poll.id,
+					poll.question,
+					poll.answer_type
+				);
 				await db.insert(pollOptionsTable).values(options);
 				totalOptionsCreated += options.length;
 			}
@@ -149,7 +152,11 @@ async function seedDatabase() {
  * @param answerType Whether this is a single or multiple choice poll
  * @returns An array of poll option objects
  */
-function generatePollOptions(pollId: number, question: string, answerType: "single" | "multiple") {
+function generatePollOptions(
+	pollId: number,
+	question: string,
+	answerType: "single" | "multiple"
+) {
 	// Default options for generic questions
 	let options = [
 		{ poll_id: pollId, option: "Option A", correct: true },
@@ -245,7 +252,7 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 				{
 					poll_id: pollId,
 					option: "position: fixed",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
@@ -273,12 +280,12 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 				{
 					poll_id: pollId,
 					option: "They help create private variables",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
 					option: "They can lead to memory leaks if not handled properly",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
@@ -298,12 +305,12 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 				{
 					poll_id: pollId,
 					option: "They improve performance through event pooling",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
 					option: "They follow the W3C spec",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
@@ -326,12 +333,12 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 				{
 					poll_id: pollId,
 					option: "It supports interfaces and type aliases",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
 					option: "It allows for generic types",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
@@ -354,12 +361,12 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 				{
 					poll_id: pollId,
 					option: "Add watermarks to images",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
 					option: "Use Content Security Policy headers",
-					correct: true,
+					correct: false,
 				},
 				{
 					poll_id: pollId,
@@ -373,15 +380,31 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 	// For questions about preferences, create appropriate options
 	if (question.includes("favorite programming language")) {
 		options = [
-			{ poll_id: pollId, option: "JavaScript", correct: answerType === "multiple" },
-			{ poll_id: pollId, option: "TypeScript", correct: answerType === "multiple" },
+			{
+				poll_id: pollId,
+				option: "JavaScript",
+				correct: answerType === "multiple",
+			},
+			{
+				poll_id: pollId,
+				option: "TypeScript",
+				correct: answerType === "multiple",
+			},
 			{ poll_id: pollId, option: "Python", correct: false },
 			{ poll_id: pollId, option: "Rust", correct: false },
 		];
 	} else if (question.includes("frontend framework")) {
 		options = [
-			{ poll_id: pollId, option: "React", correct: answerType === "multiple" },
-			{ poll_id: pollId, option: "Vue", correct: answerType === "multiple" },
+			{
+				poll_id: pollId,
+				option: "React",
+				correct: answerType === "multiple",
+			},
+			{
+				poll_id: pollId,
+				option: "Vue",
+				correct: answerType === "multiple",
+			},
 			{ poll_id: pollId, option: "Angular", correct: false },
 			{ poll_id: pollId, option: "Svelte", correct: false },
 		];
@@ -410,7 +433,11 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 		];
 	} else if (question.includes("write tests")) {
 		options = [
-			{ poll_id: pollId, option: "For every feature", correct: answerType === "multiple" },
+			{
+				poll_id: pollId,
+				option: "For every feature",
+				correct: answerType === "multiple",
+			},
 			{
 				poll_id: pollId,
 				option: "Only for critical functionality",
@@ -421,8 +448,16 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 		];
 	} else if (question.includes("CSS solution")) {
 		options = [
-			{ poll_id: pollId, option: "Plain CSS", correct: answerType === "multiple" },
-			{ poll_id: pollId, option: "Tailwind CSS", correct: answerType === "multiple" },
+			{
+				poll_id: pollId,
+				option: "Plain CSS",
+				correct: answerType === "multiple",
+			},
+			{
+				poll_id: pollId,
+				option: "Tailwind CSS",
+				correct: answerType === "multiple",
+			},
 			{ poll_id: pollId, option: "CSS-in-JS", correct: false },
 			{ poll_id: pollId, option: "SASS/SCSS", correct: false },
 		];
@@ -430,7 +465,6 @@ function generatePollOptions(pollId: number, question: string, answerType: "sing
 
 	return options;
 }
-
 
 // Execute the seed function
 seedDatabase();
