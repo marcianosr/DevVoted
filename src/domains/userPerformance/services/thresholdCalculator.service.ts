@@ -1,4 +1,9 @@
-import { calculateXpThreshold } from "../constants/xpSystem";
+import { 
+	shouldCheckThreshold,
+	getCurrentSetNumber,
+	getPollPositionInSet,
+	calculateSetThreshold 
+} from "../constants/xpSystem";
 
 /**
  * Threshold calculation result
@@ -8,6 +13,9 @@ export type ThresholdInfo = {
 	readonly currentXp: number;
 	readonly requiredXp: number;
 	readonly pollNumber: number;
+	readonly currentSet: number;
+	readonly pollInSet: number;
+	readonly isThresholdCheckPoll: boolean;
 };
 
 /**
@@ -19,7 +27,7 @@ export type CategoryXpData = {
 };
 
 /**
- * Core threshold calculation logic
+ * Core threshold calculation logic using 3-poll sets
  * @param totalXp - Total XP across all categories
  * @param totalPollsAnswered - Total polls answered across all categories
  * @returns Threshold information
@@ -28,14 +36,26 @@ export const calculateThresholdInfo = (
 	totalXp: number,
 	totalPollsAnswered: number
 ): ThresholdInfo => {
-	// Poll number is the current poll we just answered
-	const requiredXp = calculateXpThreshold(totalPollsAnswered);
-
+	const currentSet = getCurrentSetNumber(totalPollsAnswered);
+	const pollInSet = getPollPositionInSet(totalPollsAnswered);
+	const isThresholdCheckPoll = shouldCheckThreshold(totalPollsAnswered);
+	
+	// Always show the threshold required for the current set
+	const requiredXp = calculateSetThreshold(currentSet);
+	
+	// Only enforce threshold check on 3rd poll of each set
+	const meetsThreshold = isThresholdCheckPoll 
+		? totalXp >= requiredXp 
+		: true; // Not a threshold check poll, so always passes
+	
 	return {
-		meetsThreshold: totalXp >= requiredXp,
+		meetsThreshold,
 		currentXp: totalXp,
 		requiredXp,
 		pollNumber: totalPollsAnswered,
+		currentSet,
+		pollInSet,
+		isThresholdCheckPoll,
 	};
 };
 
@@ -63,12 +83,25 @@ export const calculateNextPollThresholdFromCategoryData = (
 	
 	// Poll number is the next poll (current + 1)
 	const pollNumber = totalPollsAnswered + 1;
-	const requiredXp = calculateXpThreshold(pollNumber);
+	const currentSet = getCurrentSetNumber(pollNumber);
+	const pollInSet = getPollPositionInSet(pollNumber);
+	const isThresholdCheckPoll = shouldCheckThreshold(pollNumber);
+	
+	// Show the threshold required for the next poll's set
+	const requiredXp = calculateSetThreshold(currentSet);
+
+	// For display purposes, show if current XP would meet the threshold
+	const meetsThreshold = isThresholdCheckPoll 
+		? totalXp >= requiredXp 
+		: true; // Not a threshold check poll, so would pass
 
 	return {
-		meetsThreshold: totalXp >= requiredXp,
+		meetsThreshold,
 		currentXp: totalXp,
 		requiredXp,
 		pollNumber,
+		currentSet,
+		pollInSet,
+		isThresholdCheckPoll,
 	};
 };

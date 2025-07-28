@@ -33,7 +33,19 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 			</div>
 
 			{thresholdInfo && (
-				<ThresholdDisplay thresholdInfo={thresholdInfo} />
+				<div className="mb-4">
+					<div className="text-sm text-white mb-2">
+						<span className="font-medium">Set {thresholdInfo.currentSet}</span>
+						{" - "}
+						<span>Poll {thresholdInfo.pollInSet}/3</span>
+						{thresholdInfo.isThresholdCheckPoll && (
+							<span className="ml-2 px-2 py-1 bg-yellow-600 text-yellow-100 rounded text-xs font-medium">
+								⚡ THRESHOLD CHECK
+							</span>
+						)}
+					</div>
+					<ThresholdDisplay thresholdInfo={thresholdInfo} />
+				</div>
 			)}
 
 			{activeRun.categoryXp && (

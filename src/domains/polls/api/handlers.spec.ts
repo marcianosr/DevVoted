@@ -379,7 +379,10 @@ describe("handlers", () => {
 				meetsThreshold: true,
 				currentXp: 5,
 				requiredXp: 5,
-				pollNumber: 1
+				pollNumber: 1,
+				currentSet: 1,
+				pollInSet: 1,
+				isThresholdCheckPoll: false
 			});
 
 			// Mock database call for checking option correctness
@@ -425,7 +428,10 @@ describe("handlers", () => {
 				meetsThreshold: true,
 				currentXp: 5,
 				requiredXp: 5,
-				pollNumber: 1
+				pollNumber: 1,
+				currentSet: 1,
+				pollInSet: 1,
+				isThresholdCheckPoll: false
 			});
 
 			// Mock database call for checking option correctness
@@ -477,7 +483,10 @@ describe("handlers", () => {
 				meetsThreshold: true,
 				currentXp: 5,
 				requiredXp: 5,
-				pollNumber: 1
+				pollNumber: 1,
+				currentSet: 1,
+				pollInSet: 1,
+				isThresholdCheckPoll: false
 			});
 
 			// Mock database call for checking option correctness
@@ -543,7 +552,7 @@ describe("handlers", () => {
 			expect(result.data?.isCorrect).toBe(true);
 		});
 
-		it("ends run when threshold is not met", async () => {
+		it("ends run when threshold is not met on threshold check poll", async () => {
 			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
 			const mockRun = createMockRun({ id: 1 });
 			const mockCorrectOptions = [
@@ -563,9 +572,12 @@ describe("handlers", () => {
 			);
 			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
 				meetsThreshold: false,
-				currentXp: 3,
-				requiredXp: 5,
-				pollNumber: 1
+				currentXp: 10,
+				requiredXp: 15,
+				pollNumber: 3,
+				currentSet: 1,
+				pollInSet: 3,
+				isThresholdCheckPoll: true // This is a threshold check poll (3rd poll)
 			});
 			vi.mocked(runQueries.endRunForThresholdFailure).mockResolvedValue({
 				runEnded: true,

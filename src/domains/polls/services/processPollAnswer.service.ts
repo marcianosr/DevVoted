@@ -69,10 +69,14 @@ const handleXpFlow = async (
 		const activeRun = await getActiveRunByUserId(userId);
 		if (!activeRun) return { runEnded, thresholdInfo };
 
+		// Always award XP regardless of set position
 		await awardXpToRun(activeRun.id, categoryCode, xpEarned);
+		
+		// Always get threshold info for display purposes
 		thresholdInfo = await checkXpThreshold(activeRun.id);
 
-		if (!thresholdInfo.meetsThreshold) {
+		// Only check threshold and potentially end run on 3rd poll of each set
+		if (thresholdInfo.isThresholdCheckPoll && !thresholdInfo.meetsThreshold) {
 			await endRunForThresholdFailure(activeRun.id);
 			runEnded = true;
 		}

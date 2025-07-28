@@ -10,7 +10,7 @@
 [x] Shop mechanics
 [] Implement rerolls
 [] Update UI Realtime
-[] Integrate 3-poll "sets": Threshold is only checked at every third poll
+[x] Integrate 3-poll "sets": Threshold is only checked at every third poll
 [] Integrate basic CSI
 [] Select random poll to "open" for today and open/close poll for the next day
 [] Check multiple choice formula
@@ -32,3 +32,4 @@
 
 [] Add new polls (currently Slack'ed to myself)
 [] Introduce new categories: Java, AI (Talk with Guido if possible)
+[] Balance treshold system: now its \* 2, should this gradually increase based on multipliers/configs/data storage?

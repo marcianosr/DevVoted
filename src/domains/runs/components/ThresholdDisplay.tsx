@@ -1,9 +1,4 @@
-interface ThresholdInfo {
-	pollNumber: number;
-	currentXp: number;
-	requiredXp: number;
-	meetsThreshold: boolean;
-}
+import type { ThresholdInfo } from "~/domains/userPerformance/services/thresholdCalculator.service";
 
 interface ThresholdDisplayProps {
 	thresholdInfo: ThresholdInfo;
@@ -17,17 +12,25 @@ export const ThresholdDisplay: React.FC<ThresholdDisplayProps> = ({
 			<div className="flex items-center justify-between">
 				<div>
 					<div className="font-medium text-white">
-						Poll #{thresholdInfo.pollNumber} Threshold
+						Set {thresholdInfo.currentSet} Threshold
 					</div>
 					<div className="text-sm text-white">
 						{thresholdInfo.currentXp} / {thresholdInfo.requiredXp}{" "}
-						XP
+						XP total for this set
 					</div>
 				</div>
 				<div className="text-right">
-					{thresholdInfo.meetsThreshold ? (
+					{thresholdInfo.isThresholdCheckPoll ? (
+						// This is a threshold check poll (3rd poll in set)
+						thresholdInfo.meetsThreshold && (
+							<span className="text-green-600 font-medium">
+								✅ Set Complete!
+							</span>
+						)
+					) : // Not a threshold check poll yet
+					thresholdInfo.meetsThreshold ? (
 						<span className="text-green-600 font-medium">
-							✅ Ready to continue
+							✅ On Track
 						</span>
 					) : (
 						<span className="text-orange-600 font-medium">

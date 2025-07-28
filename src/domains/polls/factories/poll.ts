@@ -128,7 +128,7 @@ export const createSeedPollArray = (
 			answer_type: i % 2 === 0 ? "single" : "multiple",
 			opening_time: new Date(),
 			closing_time: new Date(),
-			status: Math.random() > 0.8 ? "open" : "closed",
+			status: Math.random() < 0.8 ? "open" : "closed",
 		})
 	);
 };
