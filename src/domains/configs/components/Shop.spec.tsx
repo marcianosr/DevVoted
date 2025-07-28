@@ -44,7 +44,7 @@ describe(Shop, () => {
 		expect(button).toBeEnabled();
 	});
 
-	it.only("allows the config to be added with sufficient space in storage", async () => {
+	it("allows the config to be added with sufficient space in storage", async () => {
 		const onAddConfig = vi.fn();
 		renderWithShopProvider({ isShopOpen: true, onAddConfig });
 
