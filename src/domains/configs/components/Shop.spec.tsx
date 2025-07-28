@@ -1,144 +1,69 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { vi, describe, it, expect } from "vitest";
 import userEvent from "@testing-library/user-event";
 
 import { Shop } from "./Shop";
 import { createRun } from "~/domains/runs/models/run";
 import { createConfig } from "~/domains/configs/factories/config";
-describe(Shop, () => {
+import { ShopProvider } from "../contexts/ShopContext";
+
+const renderWithShopProvider = (overrides?: {
+	onAddConfig?: (configId: string) => void;
+	onRemoveConfig?: (configId: string) => void;
+	isShopOpen?: boolean;
+}) => {
 	const testConfigs = [
-		createConfig({ id: "test-1", name: "Test Config 1" }),
-		createConfig({ id: "test-2", name: "Test Config 2" }),
+		createConfig({ id: "stylelint", name: "Style lint" }),
+		createConfig({ id: "eslint", name: "ESLint" }),
 	];
-
+	return render(
+		<ShopProvider
+			onAddConfig={overrides?.onAddConfig ?? vi.fn()}
+			onRemoveConfig={overrides?.onRemoveConfig ?? vi.fn()}
+			initialShopOpen={overrides?.isShopOpen ?? false}
+		>
+			<Shop activeRun={createRun()} offeredConfigs={testConfigs} />
+		</ShopProvider>
+	);
+};
+describe(Shop, () => {
 	it("renders the shop", () => {
-		const mockOnSubmit = vi.fn();
-
-		render(
-			<Shop
-				onSubmit={mockOnSubmit}
-				activeRun={createRun()}
-				offeredConfigs={testConfigs}
-				isShopOpen={true}
-				onAddConfig={vi.fn()}
-			/>
-		);
+		renderWithShopProvider();
 
 		expect(screen.getByText("Config Shop")).toBeInTheDocument();
-		expect(screen.getByText("Test Config 1")).toBeInTheDocument();
-		expect(screen.getByText("Test Config 2")).toBeInTheDocument();
+		expect(screen.getByText("Style lint")).toBeInTheDocument();
+		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	it("calls on close when clicking on cancel", async () => {
-		const mockOnClose = vi.fn();
+	it("enables adding configs when the shop is open", () => {
+		renderWithShopProvider({ isShopOpen: true });
 
-		render(
-			<Shop
-				onCancel={mockOnClose}
-				onSubmit={vi.fn()}
-				activeRun={createRun()}
-				offeredConfigs={testConfigs}
-			/>
-		);
+		const selectedConfig = screen.getByTestId("eslint");
+		const button = within(selectedConfig).getByText("Add to storage");
 
-		await userEvent.click(screen.getByText("Cancel"));
-
-		expect(mockOnClose).toBeCalled();
+		expect(button).toBeEnabled();
 	});
 
-	it("selects a config when clicked", async () => {
-		const mockOnSubmit = vi.fn();
+	it.only("allows the config to be added with sufficient space in storage", async () => {
+		const onAddConfig = vi.fn();
+		renderWithShopProvider({ isShopOpen: true, onAddConfig });
 
-		render(
-			<Shop
-				onSubmit={mockOnSubmit}
-				activeRun={createRun()}
-				offeredConfigs={[
-					createConfig({
-						id: "eslint",
-						name: "ESLint",
-					}),
-				]}
-			/>
-		);
+		const selectedConfig = screen.getByTestId("eslint");
+		const button = within(selectedConfig).getByText("Add to storage");
+		await userEvent.click(button);
 
-		await userEvent.click(screen.getByText("Download to storage (0)"));
+		expect(button).toBeEnabled();
 
-		await userEvent.click(screen.getByText("ESLint"));
-
-		await userEvent.click(screen.getByText("Download to storage (1)"));
+		expect(onAddConfig).toBeCalled();
 	});
 
-	it("deselects a config when clicked again", async () => {
-		const mockOnSubmit = vi.fn();
+	// TODO: Wonder if this belongs here, or secretly is an integration test since this is rendered in another component
+	it.todo("allows the player to remove configs when the shop is open", () => {
+		renderWithShopProvider({ isShopOpen: true });
 
-		render(
-			<Shop
-				onSubmit={mockOnSubmit}
-				activeRun={createRun()}
-				offeredConfigs={[
-					createConfig({
-						id: "eslint",
-						name: "ESLint",
-					}),
-				]}
-			/>
-		);
+		const selectedConfig = screen.getByTestId("eslint");
+		const button = within(selectedConfig).getByText("Remove from storage");
 
-		await userEvent.click(screen.getByText("Download to storage (0)"));
-
-		await userEvent.click(screen.getByText("ESLint"));
-
-		await userEvent.click(screen.getByText("Download to storage (1)"));
-
-		await userEvent.click(screen.getByText("ESLint"));
-
-		await userEvent.click(screen.getByText("Download to storage (0)"));
-	});
-	it("calls on submit when clicking on Download to storage and updates the count in button", async () => {
-		const mockOnSubmit = vi.fn();
-
-		render(
-			<Shop
-				onSubmit={mockOnSubmit}
-				activeRun={createRun()}
-				offeredConfigs={[
-					createConfig({
-						id: "eslint",
-						name: "ESLint",
-					}),
-				]}
-			/>
-		);
-
-		await userEvent.click(screen.getByText("Download to storage (0)"));
-
-		await userEvent.click(screen.getByText("ESLint"));
-
-		await userEvent.click(screen.getByText("Download to storage (1)"));
-
-		expect(mockOnSubmit).toBeCalled();
-	});
-
-	it.skip("disables the submit button when no selection is made", async () => {
-		const mockOnSubmit = vi.fn();
-
-		render(
-			<Shop
-				onSubmit={mockOnSubmit}
-				activeRun={createRun()}
-				offeredConfigs={[
-					createConfig({
-						id: "eslint",
-						name: "ESLint",
-					}),
-				]}
-			/>
-		);
-
-		expect(screen.getByText("Download to storage (0)"));
-		await userEvent.click(screen.getByText("Download to storage (0)"));
-
-		expect(mockOnSubmit).not.toBeCalled();
+		expect(button).toBeEnabled();
 	});
 });

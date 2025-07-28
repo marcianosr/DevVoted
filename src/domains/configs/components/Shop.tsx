@@ -9,7 +9,7 @@ type ShopProps = {
 };
 
 export const Shop = ({ activeRun, offeredConfigs }: ShopProps) => (
-	<div className=" p-6">
+	<div className="p-6">
 		<div className="mb-6">
 			<h2 className="text-2xl font-bold text-gray-900 mb-2">
 				Config Shop

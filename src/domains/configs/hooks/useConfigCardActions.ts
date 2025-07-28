@@ -47,7 +47,6 @@ export const useConfigCardActions = ({
 				? () => addConfigToRun(config.id)
 				: undefined;
 
-		console.log(onAddConfig);
 		return {
 			onRemoveConfig: undefined,
 			onAddConfig,

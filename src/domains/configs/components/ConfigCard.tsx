@@ -35,6 +35,7 @@ export const ConfigCard = ({
 				disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow-md"
 			}`}
 			onClick={disabled ? undefined : onToggle}
+			data-testid={config.id}
 		>
 			<div className="space-y-3">
 				<div className="flex items-center gap-2">
@@ -78,7 +79,7 @@ export const ConfigCard = ({
 						className="ml-2 text-red-500 hover:text-red-700 text-sm"
 						title="Remove config"
 					>
-						Remove ✕
+						Remove from storage ✕
 					</button>
 				)}
 				{onAddConfig && (
@@ -87,7 +88,7 @@ export const ConfigCard = ({
 						className="ml-2 text-green-500 hover:text-green-700 text-sm"
 						title="Add config"
 					>
-						Add to config
+						Add to storage
 					</button>
 				)}
 			</div>
