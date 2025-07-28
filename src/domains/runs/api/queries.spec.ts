@@ -70,17 +70,28 @@ describe("Run Queries", () => {
 	describe("getActiveRunByUserId", () => {
 		it("returns active run when found", async () => {
 			const mockRun = createMockRunRecord({ status: "active" });
-			const limitMock = vi.fn().mockResolvedValue([mockRun]);
-			const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
-			const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+			const mockXpRecords = createMockRunCategoryXpRecordArray(2);
 			
-			vi.mocked(db.select).mockReturnValue({ from: fromMock } as any);
+			// Mock first query for run
+			const limitMock1 = vi.fn().mockResolvedValue([mockRun]);
+			const whereMock1 = vi.fn().mockReturnValue({ limit: limitMock1 });
+			const fromMock1 = vi.fn().mockReturnValue({ where: whereMock1 });
+			
+			// Mock second query for XP records
+			const whereMock2 = vi.fn().mockResolvedValue(mockXpRecords);
+			const fromMock2 = vi.fn().mockReturnValue({ where: whereMock2 });
+			
+			vi.mocked(db.select)
+				.mockReturnValueOnce({ from: fromMock1 } as any)
+				.mockReturnValueOnce({ from: fromMock2 } as any);
 
 			const result = await getActiveRunByUserId("test-user-id");
 
 			expect(result).toBeDefined();
 			expect(result?.status).toBe("active");
 			expect(result?.userId).toBe("test-user-id");
+			expect(result?.categoryXp).toBeDefined();
+			expect(result?.categoryXp).toHaveLength(2);
 		});
 
 		it("returns null when no active run found", async () => {
@@ -129,8 +140,9 @@ describe("Run Queries", () => {
 
 			const result = await createRunForUser("test-user-id");
 
-			expect(result.run).toBeDefined();
+			expect(result).toBeDefined();
 			expect(result.categoryXp).toHaveLength(2);
+			expect(result.userId).toBe("test-user-id");
 			expect(vi.mocked(db.transaction)).toHaveBeenCalledOnce();
 		});
 	});
@@ -157,7 +169,7 @@ describe("Run Queries", () => {
 			const result = await getRunWithCategoryXp(1);
 
 			expect(result).toBeDefined();
-			expect(result?.run).toBeDefined();
+			expect(result?.id).toBeDefined();
 			expect(result?.categoryXp).toHaveLength(3);
 		});
 

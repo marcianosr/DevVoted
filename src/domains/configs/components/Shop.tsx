@@ -2,7 +2,6 @@ import { ConfigCard } from "./ConfigCard";
 import { Run } from "~/domains/runs/models/run";
 import { Config } from "~/domains/configs/models/config";
 import { useConfigCardActions } from "../hooks/useConfigCardActions";
-import { useShopContext } from "../contexts/ShopContext";
 
 type ShopProps = {
 	activeRun: Run;

@@ -26,6 +26,7 @@ import {
 	addConfigToRunServerFn,
 	removeConfigFromRunServerFn,
 } from "~/domains/configs/api/configs";
+import { Run } from "~/domains/runs/models/run";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -43,17 +44,9 @@ export const submitPollOptions = createServerFn()
 const PollContent: React.FC<{
 	pollIdNumber: number;
 	user: any;
-	activeRun: any;
-	addConfigsMutation: any;
-	removeConfigMutation: any;
-}> = ({
-	pollIdNumber,
-	user,
-	activeRun,
-	addConfigsMutation,
-	removeConfigMutation,
-}) => {
-	const { openShop } = useShopContext();
+	activeRun: Run | null;
+}> = ({ pollIdNumber, user, activeRun }) => {
+	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
 
 	const submitOptionsMutation = useMutation({
@@ -142,15 +135,12 @@ const PollContent: React.FC<{
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
 	}
 
-	const { isShopOpen } = useShopContext();
-
 	return (
 		<>
 			<PollHeader poll={poll} />
 			<PollStatus hasAnswered={hasAnswered} />
 			<RunStatusDisplay activeRun={activeRun} />
-			<StorageDeck run={activeRun.run} />
-
+			{activeRun && <StorageDeck run={activeRun} />}
 			{!isShopOpen && (
 				<PollSubmissionForm
 					hasAnswered={hasAnswered}
@@ -175,8 +165,8 @@ const PollContent: React.FC<{
 				</PollSubmissionForm>
 			)}
 
-			{isShopOpen && (
-				<Shop activeRun={activeRun.run} offeredConfigs={configs} />
+			{isShopOpen && activeRun && (
+				<Shop activeRun={activeRun} offeredConfigs={configs} />
 			)}
 		</>
 	);
@@ -240,10 +230,10 @@ const PollDetail: React.FC = () => {
 	};
 
 	const handleAddConfig = (configId: string) => {
-		if (activeRun?.run.id) {
+		if (activeRun?.id) {
 			addConfigsMutation.mutate({
 				data: {
-					runId: activeRun.run.id,
+					runId: activeRun.id,
 					configIds: [configId],
 				},
 			});
@@ -253,10 +243,10 @@ const PollDetail: React.FC = () => {
 	};
 
 	const handleRemoveConfig = (configId: string) => {
-		if (activeRun?.run.id) {
+		if (activeRun?.id) {
 			removeConfigMutation.mutate({
 				data: {
-					runId: activeRun.run.id,
+					runId: activeRun.id,
 					configIds: [configId],
 				},
 			});
@@ -296,8 +286,6 @@ const PollDetail: React.FC = () => {
 					pollIdNumber={pollIdNumber}
 					user={user}
 					activeRun={activeRun}
-					addConfigsMutation={addConfigsMutation}
-					removeConfigMutation={removeConfigMutation}
 				/>
 			</ShopProvider>
 		</div>

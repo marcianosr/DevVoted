@@ -1,6 +1,7 @@
 import { runsTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
 import { STORAGE_UNITS } from "~/lib/storage";
+import type { RunCategoryXp } from "./runCategoryXp";
 
 export type Run = {
 	id: number;
@@ -12,11 +13,12 @@ export type Run = {
 	finishedAt: Date | null;
 	createdAt: Date;
 	updatedAt: Date | null;
+	categoryXp: RunCategoryXp[];
 };
 
 export type RunRecord = InferSelectModel<typeof runsTable>;
 
-export const runToDTO = (record: RunRecord): Run => {
+export const runToDTO = (record: RunRecord, categoryXp: RunCategoryXp[] = []): Run => {
 	return {
 		id: record.id,
 		userId: record.user_id,
@@ -27,6 +29,7 @@ export const runToDTO = (record: RunRecord): Run => {
 		finishedAt: record.finished_at,
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
+		categoryXp,
 	};
 };
 
@@ -45,7 +48,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 };
 
 export const runsToDTOs = (records: RunRecord[]): Run[] => {
-	return records.map(runToDTO);
+	return records.map(record => runToDTO(record));
 };
 
 export const runsFromDTOs = (dtos: Run[]): RunRecord[] => {
@@ -65,6 +68,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		finishedAt: null,
 		createdAt: now,
 		updatedAt: now,
+		categoryXp: [],
 		...partial,
 	};
 };
@@ -81,6 +85,7 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		finishedAt: null,
 		createdAt: new Date("2024-01-01T00:00:00Z"),
 		updatedAt: new Date("2024-01-01T00:00:00Z"),
+		categoryXp: [],
 		...overrides,
 	};
 };

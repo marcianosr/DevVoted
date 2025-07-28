@@ -1,7 +1,6 @@
 import {
 	getActiveRunByUserId,
 	createRunForUser,
-	getRunWithCategoryXp,
 	finishRun,
 	addConfigsToRun,
 } from "./queries";
@@ -13,9 +12,7 @@ export const getOrCreateActiveRun = async (userId: string) => {
 		const activeRun = await getActiveRunByUserId(userId);
 
 		if (activeRun) {
-			// Get the run with its category XP data
-			const runWithXp = await getRunWithCategoryXp(activeRun.id);
-			return runWithXp;
+			return activeRun;
 		}
 
 		// Create a new run
@@ -32,8 +29,7 @@ export const getUserActiveRun = async (userId: string) => {
 			throw new Error("No active run found");
 		}
 
-		const runWithXp = await getRunWithCategoryXp(activeRun.id);
-		return runWithXp;
+		return activeRun;
 	}, "Failed to get active run");
 };
 

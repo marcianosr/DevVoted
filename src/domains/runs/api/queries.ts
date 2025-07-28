@@ -23,7 +23,20 @@ export const getActiveRunByUserId = async (userId: string) => {
 		)
 		.limit(1);
 
-	return runRecord[0] ? runFactory.toDTO(runRecord[0]) : null;
+	if (!runRecord[0]) {
+		return null;
+	}
+
+	const xpRecords = await db
+		.select()
+		.from(runCategoryXpTable)
+		.where(eq(runCategoryXpTable.run_id, runRecord[0].id));
+
+	const categoryXp = xpRecords.map((record) =>
+		runCategoryXpFactory.toDTO(record)
+	);
+
+	return runFactory.toDTO(runRecord[0], categoryXp);
 };
 
 export const createRunForUser = async (userId: string) => {
@@ -55,12 +68,11 @@ export const createRunForUser = async (userId: string) => {
 			)
 		);
 
-		return {
-			run: runFactory.toDTO(runRecord),
-			categoryXp: xpRecords
-				.flat()
-				.map((record) => runCategoryXpFactory.toDTO(record)),
-		};
+		const categoryXp = xpRecords
+			.flat()
+			.map((record) => runCategoryXpFactory.toDTO(record));
+
+		return runFactory.toDTO(runRecord, categoryXp);
 	});
 };
 
@@ -80,12 +92,11 @@ export const getRunWithCategoryXp = async (runId: number) => {
 		.from(runCategoryXpTable)
 		.where(eq(runCategoryXpTable.run_id, runId));
 
-	return {
-		run: runFactory.toDTO(runRecord[0]),
-		categoryXp: xpRecords.map((record) =>
-			runCategoryXpFactory.toDTO(record)
-		),
-	};
+	const categoryXp = xpRecords.map((record) =>
+		runCategoryXpFactory.toDTO(record)
+	);
+
+	return runFactory.toDTO(runRecord[0], categoryXp);
 };
 
 export const finishRun = async (runId: number) => {
@@ -288,9 +299,17 @@ export const addConfigsToRun = async (runId: number, configIds: string[]) => {
 		.where(eq(runsTable.id, runId))
 		.returning();
 
-	const result = runFactory.toDTO(updatedRun);
+	// Get the run with its category XP data
+	const xpRecords = await db
+		.select()
+		.from(runCategoryXpTable)
+		.where(eq(runCategoryXpTable.run_id, runId));
 
-	return result;
+	const categoryXp = xpRecords.map((record) =>
+		runCategoryXpFactory.toDTO(record)
+	);
+
+	return runFactory.toDTO(updatedRun, categoryXp);
 };
 
 export const removeConfigsFromRun = async (
@@ -320,7 +339,15 @@ export const removeConfigsFromRun = async (
 		.where(eq(runsTable.id, runId))
 		.returning();
 
-	const result = runFactory.toDTO(updatedRun);
+	// Get the run with its category XP data
+	const xpRecords = await db
+		.select()
+		.from(runCategoryXpTable)
+		.where(eq(runCategoryXpTable.run_id, runId));
 
-	return result;
+	const categoryXp = xpRecords.map((record) =>
+		runCategoryXpFactory.toDTO(record)
+	);
+
+	return runFactory.toDTO(updatedRun, categoryXp);
 };

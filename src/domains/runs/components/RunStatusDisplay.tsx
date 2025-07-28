@@ -1,17 +1,19 @@
 import { calculateNextPollThresholdFromCategoryData } from "~/domains/userPerformance/services/thresholdCalculator.service";
 import type { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
+import type { Run } from "~/domains/runs/models/run";
 import { ThresholdDisplay } from "./ThresholdDisplay";
 import { CategoryXpGrid } from "./CategoryXpGrid";
-import { RunData } from "~/domains/runs/hooks/useActiveRun";
 
 interface RunStatusDisplayProps {
-	activeRun: RunData;
+	activeRun: Run | null;
 }
 
 export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 	activeRun,
 }) => {
-	const thresholdInfo = activeRun?.categoryXp
+	if (!activeRun) return null;
+
+	const thresholdInfo = activeRun.categoryXp
 		? calculateNextPollThresholdFromCategoryData(
 				activeRun.categoryXp.map((xp: RunCategoryXp) => ({
 					currentXp: xp.currentXp,
@@ -27,7 +29,7 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 			</h3>
 			<div className="text-sm text-white mb-3">
 				Started:{" "}
-				{new Date(activeRun.run?.startedAt || "").toLocaleString()}
+				{new Date(activeRun.startedAt).toLocaleString()}
 			</div>
 
 			{thresholdInfo && (

@@ -3,9 +3,8 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useActiveRun } from "./useActiveRun";
 import * as runsApi from "~/domains/runs/api/runs";
-import { createRun } from "~/domains/runs/models/run";
+import { createRun, Run } from "~/domains/runs/models/run";
 import { createMockRunCategoryXpArray } from "~/domains/runs/models/runCategoryXp";
-import type { RunData } from "./useActiveRun";
 import type { ReactNode } from "react";
 
 // Mock the runs API
@@ -42,9 +41,13 @@ describe("useActiveRun", () => {
 
 	describe("User has existing quiz session", () => {
 		it("loads user's current quiz session when component initializes", async () => {
-			const mockRun = createRun({ id: 1, userId: "user123", status: "active" });
 			const mockXp = createMockRunCategoryXpArray(3);
-			const mockRunData: RunData = { run: mockRun, categoryXp: mockXp };
+			const mockRunData = createRun({
+				id: 1,
+				userId: "user123",
+				status: "active",
+				categoryXp: mockXp,
+			});
 
 			vi.mocked(runsApi.getActiveRun).mockResolvedValue({
 				success: true,
@@ -52,7 +55,9 @@ describe("useActiveRun", () => {
 			});
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);
@@ -65,9 +70,13 @@ describe("useActiveRun", () => {
 		});
 
 		it("prevents starting new quiz when user already has active session", async () => {
-			const mockRun = createRun({ id: 1, userId: "user123", status: "active" });
 			const mockXp = createMockRunCategoryXpArray(3);
-			const mockRunData: RunData = { run: mockRun, categoryXp: mockXp };
+			const mockRunData = createRun({
+				id: 1,
+				userId: "user123",
+				status: "active",
+				categoryXp: mockXp,
+			});
 
 			vi.mocked(runsApi.getActiveRun).mockResolvedValue({
 				success: true,
@@ -75,7 +84,9 @@ describe("useActiveRun", () => {
 			});
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);
@@ -94,7 +105,9 @@ describe("useActiveRun", () => {
 			});
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);
@@ -107,9 +120,13 @@ describe("useActiveRun", () => {
 		});
 
 		it("creates new quiz session when user initiates run", async () => {
-			const mockRun = createRun({ id: 2, userId: "user123", status: "active" });
+			const mockRun = createRun({
+				id: 2,
+				userId: "user123",
+				status: "active",
+			});
 			const mockXp = createMockRunCategoryXpArray(3);
-			const mockNewRunData: RunData = { run: mockRun, categoryXp: mockXp };
+			const mockNewRunData: Run = { ...mockRun, categoryXp: mockXp };
 
 			vi.mocked(runsApi.getActiveRun).mockResolvedValue({
 				success: false,
@@ -122,7 +139,9 @@ describe("useActiveRun", () => {
 			});
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);
@@ -153,7 +172,10 @@ describe("useActiveRun", () => {
 							resolve({
 								success: true,
 								data: {
-									run: createRun({ id: 1, userId: "user123" }),
+									...createRun({
+										id: 1,
+										userId: "user123",
+									}),
 									categoryXp: [],
 								},
 							});
@@ -162,7 +184,9 @@ describe("useActiveRun", () => {
 			);
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);
@@ -182,7 +206,9 @@ describe("useActiveRun", () => {
 	describe("User authentication edge cases", () => {
 		it("handles unauthenticated user gracefully", () => {
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun(undefined), { wrapper });
+			const { result } = renderHook(() => useActiveRun(undefined), {
+				wrapper,
+			});
 
 			expect(result.current.hasActiveRun).toBe(false);
 			expect(result.current.activeRun).toBe(null);
@@ -192,7 +218,9 @@ describe("useActiveRun", () => {
 
 		it("prevents session creation for unauthenticated user", () => {
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun(undefined), { wrapper });
+			const { result } = renderHook(() => useActiveRun(undefined), {
+				wrapper,
+			});
 
 			result.current.startRun();
 
@@ -206,7 +234,9 @@ describe("useActiveRun", () => {
 			vi.mocked(runsApi.getActiveRun).mockRejectedValue(networkError);
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);
@@ -228,7 +258,9 @@ describe("useActiveRun", () => {
 			vi.mocked(runsApi.getOrCreateRun).mockRejectedValue(creationError);
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);
@@ -246,9 +278,13 @@ describe("useActiveRun", () => {
 
 	describe("Quiz session status detection", () => {
 		it("detects finished quiz session correctly", async () => {
-			const mockRun = createRun({ id: 1, userId: "user123", status: "finished" });
 			const mockXp = createMockRunCategoryXpArray(3);
-			const mockRunData: RunData = { run: mockRun, categoryXp: mockXp };
+			const mockRunData = createRun({
+				id: 1,
+				userId: "user123",
+				status: "finished",
+				categoryXp: mockXp,
+			});
 
 			vi.mocked(runsApi.getActiveRun).mockResolvedValue({
 				success: true,
@@ -256,7 +292,9 @@ describe("useActiveRun", () => {
 			});
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);
@@ -270,9 +308,13 @@ describe("useActiveRun", () => {
 
 	describe("Data refresh functionality", () => {
 		it("refreshes quiz session data when requested", async () => {
-			const mockRun = createRun({ id: 1, userId: "user123", status: "active" });
 			const mockXp = createMockRunCategoryXpArray(3);
-			const mockRunData: RunData = { run: mockRun, categoryXp: mockXp };
+			const mockRunData = createRun({
+				id: 1,
+				userId: "user123",
+				status: "active",
+				categoryXp: mockXp,
+			});
 
 			const getActiveRunSpy = vi
 				.mocked(runsApi.getActiveRun)
@@ -282,7 +324,9 @@ describe("useActiveRun", () => {
 				});
 
 			const wrapper = createWrapper();
-			const { result } = renderHook(() => useActiveRun("user123"), { wrapper });
+			const { result } = renderHook(() => useActiveRun("user123"), {
+				wrapper,
+			});
 
 			await waitFor(() => {
 				expect(result.current.isLoading).toBe(false);

@@ -7,9 +7,12 @@
 [x] Storage mechanics
 [x] Configs (come up with a few to play with) mechanics
 [x] Economy mechanics (actually "pay" with storage)
-[] Sell configs
+[x] Sell configs
 [x] Shop mechanics
+[] Update UI Realtime
 [] Integrate 3-poll "blinds"
+[] Integrate basic CSI
+[] Check multiple choice formula
 [] Streak bonusses mechanics
 [] Show leaderboard
 [] Create atleast 25 configs with effects

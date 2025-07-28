@@ -2,16 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getActiveRun, getOrCreateRun } from "~/domains/runs/api/runs";
 import { runQueryKeys } from "~/domains/shared/queryKeys";
 import type { Run } from "~/domains/runs/models/run";
-import type { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
-
-// TODO: Why is this a seperate type, and why is categoryXp not stored in Run type?
-export type RunData = {
-	run: Run;
-	categoryXp: RunCategoryXp[];
-};
 
 export type UseActiveRunReturn = {
-	activeRun: RunData | null;
+	activeRun: Run | null;
 	hasActiveRun: boolean;
 	isLoading: boolean;
 	isStarting: boolean;
@@ -65,7 +58,7 @@ export const useActiveRun = (
 	// Derived state
 	const hasActiveRun = activeRunResponse?.success ?? false;
 	const runData =
-		hasActiveRun && activeRunResponse?.data ? activeRunResponse.data : null;
+		hasActiveRun && activeRunResponse?.success ? activeRunResponse.data : null;
 
 	return {
 		activeRun: runData,
@@ -81,6 +74,6 @@ export const useActiveRun = (
 		refetchRun: refetch,
 
 		canStartRun: !!userId && !hasActiveRun && !startRunMutation.isPending,
-		isRunActive: hasActiveRun && runData?.run?.status === "active",
+		isRunActive: hasActiveRun && runData?.status === "active",
 	};
 };

@@ -23,26 +23,24 @@ describe("Run Handlers", () => {
 
 	describe("getOrCreateActiveRun", () => {
 		it("returns existing active run with XP data", async () => {
-			const mockRun = createMockRun();
 			const mockXp = createMockRunCategoryXpArray(3);
-			const mockRunWithXp = { run: mockRun, categoryXp: mockXp };
+			const mockRunWithXp = createMockRun({ categoryXp: mockXp });
 
-			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRun);
-			vi.mocked(queries.getRunWithCategoryXp).mockResolvedValue(mockRunWithXp);
+			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRunWithXp);
 
 			const result = await getOrCreateActiveRun("test-user-id");
 
 			expect(result.success).toBe(true);
-			expect(result.data).toEqual(mockRunWithXp);
+			if (result.success) {
+				expect(result.data).toEqual(mockRunWithXp);
+			}
 			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
-			expect(queries.getRunWithCategoryXp).toHaveBeenCalledWith(mockRun.id);
 			expect(queries.createRunForUser).not.toHaveBeenCalled();
 		});
 
 		it("creates new run when no active run exists", async () => {
-			const mockRun = createMockRun();
 			const mockXp = createMockRunCategoryXpArray(3);
-			const mockNewRunData = { run: mockRun, categoryXp: mockXp };
+			const mockNewRunData = createMockRun({ categoryXp: mockXp });
 
 			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(null);
 			vi.mocked(queries.createRunForUser).mockResolvedValue(mockNewRunData);
@@ -50,7 +48,9 @@ describe("Run Handlers", () => {
 			const result = await getOrCreateActiveRun("test-user-id");
 
 			expect(result.success).toBe(true);
-			expect(result.data).toEqual(mockNewRunData);
+			if (result.success) {
+				expect(result.data).toEqual(mockNewRunData);
+			}
 			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
 			expect(queries.createRunForUser).toHaveBeenCalledWith("test-user-id");
 			expect(queries.getRunWithCategoryXp).not.toHaveBeenCalled();
@@ -63,7 +63,9 @@ describe("Run Handlers", () => {
 			const result = await getOrCreateActiveRun("test-user-id");
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe(errorMessage);
+			if (!result.success) {
+				expect(result.error).toBe(errorMessage);
+			}
 		});
 
 		it("handles unknown errors", async () => {
@@ -72,25 +74,26 @@ describe("Run Handlers", () => {
 			const result = await getOrCreateActiveRun("test-user-id");
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("Failed to get or create run");
+			if (!result.success) {
+				expect(result.error).toBe("Failed to get or create run");
+			}
 		});
 	});
 
 	describe("getUserActiveRun", () => {
 		it("returns active run with XP data", async () => {
-			const mockRun = createMockRun();
 			const mockXp = createMockRunCategoryXpArray(3);
-			const mockRunWithXp = { run: mockRun, categoryXp: mockXp };
+			const mockRunWithXp = createMockRun({ categoryXp: mockXp });
 
-			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRun);
-			vi.mocked(queries.getRunWithCategoryXp).mockResolvedValue(mockRunWithXp);
+			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRunWithXp);
 
 			const result = await getUserActiveRun("test-user-id");
 
 			expect(result.success).toBe(true);
-			expect(result.data).toEqual(mockRunWithXp);
+			if (result.success) {
+				expect(result.data).toEqual(mockRunWithXp);
+			}
 			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
-			expect(queries.getRunWithCategoryXp).toHaveBeenCalledWith(mockRun.id);
 		});
 
 		it("returns error when no active run found", async () => {
@@ -99,7 +102,9 @@ describe("Run Handlers", () => {
 			const result = await getUserActiveRun("test-user-id");
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("No active run found");
+			if (!result.success) {
+				expect(result.error).toBe("No active run found");
+			}
 		});
 
 		it("handles errors gracefully", async () => {
@@ -109,7 +114,9 @@ describe("Run Handlers", () => {
 			const result = await getUserActiveRun("test-user-id");
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe(errorMessage);
+			if (!result.success) {
+				expect(result.error).toBe(errorMessage);
+			}
 		});
 
 		it("handles unknown errors", async () => {
@@ -118,7 +125,9 @@ describe("Run Handlers", () => {
 			const result = await getUserActiveRun("test-user-id");
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("Failed to get active run");
+			if (!result.success) {
+				expect(result.error).toBe("Failed to get active run");
+			}
 		});
 	});
 
@@ -131,7 +140,9 @@ describe("Run Handlers", () => {
 			const result = await finishUserRun(1);
 
 			expect(result.success).toBe(true);
-			expect(result.data).toEqual(mockFinishedRun);
+			if (result.success) {
+				expect(result.data).toEqual(mockFinishedRun);
+			}
 			expect(queries.finishRun).toHaveBeenCalledWith(1);
 		});
 
@@ -141,7 +152,9 @@ describe("Run Handlers", () => {
 			const result = await finishUserRun(999);
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("Run not found");
+			if (!result.success) {
+				expect(result.error).toBe("Run not found");
+			}
 		});
 
 		it("handles errors gracefully", async () => {
@@ -151,7 +164,9 @@ describe("Run Handlers", () => {
 			const result = await finishUserRun(1);
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe(errorMessage);
+			if (!result.success) {
+				expect(result.error).toBe(errorMessage);
+			}
 		});
 
 		it("handles unknown errors", async () => {
@@ -160,7 +175,9 @@ describe("Run Handlers", () => {
 			const result = await finishUserRun(1);
 
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("Failed to finish run");
+			if (!result.success) {
+				expect(result.error).toBe("Failed to finish run");
+			}
 		});
 	});
 });
