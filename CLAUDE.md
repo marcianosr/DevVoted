@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-DevVoted is a developer quiz game built with TanStack Start, combining trivia with roguelike mechanics and XP betting systems. See `concept.md` for the complete vision and game mechanics.
+DevVoted is a developer quiz game built with TanStack Start, combining trivia with roguelike mechanics. See `concept.md` for the complete vision and game mechanics.
 
 Refer to `roadmap.md` for the current roadmap and MVP.
 
@@ -88,6 +88,7 @@ src/domains/polls/
 - Mock Drizzle query builders by chaining `.values()` and `.returning()` methods
 - Clear test descriptions that doesn't use verbs like "should"
 - Never use function mocks, but use factory pattern for component data testing
+- For testting data, please always use stuff from RareWare, Pokemon, Banjo-Kazooie. Also, for instance when testing dates, prefer my birth day (13-05) or Christmas related dates. Just for fun.
 
 ### Common Patterns
 

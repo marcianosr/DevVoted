@@ -31,6 +31,7 @@
 		"@tanstack/react-router-devtools": "^1.121.24",
 		"@tanstack/react-start": "^1.121.26",
 		"@testing-library/user-event": "^14.6.1",
+		"date-fns": "^4.1.0",
 		"postgres": "^3.4.7",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",

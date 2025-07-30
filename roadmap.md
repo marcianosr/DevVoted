@@ -12,7 +12,7 @@
 [] Update UI Realtime
 [x] Integrate 3-poll "sets": Threshold is only checked at every third poll
 [] Integrate basic CSI
-[] Select random poll to "open" for today and open/close poll for the next day
+[x] Select random poll to "open" for today and open/close poll for the next day
 [] Check multiple choice formula
 [] Show XP breakdown and result feedback after each poll
 [] Streak bonusses mechanics

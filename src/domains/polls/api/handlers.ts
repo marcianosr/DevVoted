@@ -4,6 +4,7 @@ import {
 	fetchPollByIdWithOptions,
 	hasUserAnsweredPoll,
 } from "~/domains/polls/api/queries";
+import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import {
 	pollSubmissionSchema,
 	type PollSubmissionInput,
@@ -44,6 +45,23 @@ export const getPollByIdHandler = async ({
 export const getAllPollsHandler = async () => {
 	return handleApiOperation(async () => {
 		return await fetchAllPolls();
+	});
+};
+
+export const getDailyPollHandler = async ({
+	data,
+}: {
+	data: { userId?: string; date?: string };
+}) => {
+	return handleApiOperation(async () => {
+		const { userId, date } = data;
+
+		const { poll, options } = await getDailyPollWithOptions(date);
+		const hasAnswered = userId
+			? await hasUserAnsweredPoll(poll.id, userId)
+			: false;
+
+		return { poll, options, hasAnswered };
 	});
 };
 
@@ -125,7 +143,8 @@ export const postPollOptionsHandler = async ({
 		};
 	} catch (error) {
 		console.error("Error submitting poll options:", error);
-		const message = error instanceof Error ? error.message : "Something went wrong";
+		const message =
+			error instanceof Error ? error.message : "Something went wrong";
 		return { success: false, error: message };
 	}
 };
