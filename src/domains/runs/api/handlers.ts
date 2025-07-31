@@ -4,7 +4,7 @@ import {
 	finishRun,
 	addConfigsToRun,
 } from "./queries";
-import { handleApiOperation } from "~/shared/utils/errorHandling";
+import { handleApiOperation } from "~/utils/errorHandling";
 
 export const getOrCreateActiveRun = async (userId: string) => {
 	return handleApiOperation(async () => {

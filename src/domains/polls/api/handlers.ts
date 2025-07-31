@@ -10,7 +10,7 @@ import {
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
-import { handleApiOperation } from "~/shared/utils/errorHandling";
+import { handleApiOperation } from "~/utils/errorHandling";
 import { db } from "~/database/db";
 import { pollOptionsTable } from "~/database/schema";
 import { eq, and, inArray } from "drizzle-orm";

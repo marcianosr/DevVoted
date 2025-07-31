@@ -3,7 +3,7 @@ import {
 	removeConfigFromRunQuery,
 	getRunByIdQuery,
 } from "./queries";
-import { handleApiOperation } from "~/shared/utils/errorHandling";
+import { handleApiOperation } from "~/utils/errorHandling";
 import { canAddConfigToRun } from "~/domains/configs/services/configStorage.service";
 import { configs } from "~/domains/configs/data/configs";
 
