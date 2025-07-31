@@ -10,6 +10,7 @@ import { db } from "~/database/db";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseFactory } from "~/domains/polls/models/pollResponses";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
+import { selectSeededRandom } from "~/lib/seededRandom";
 
 export const fetchPollById = async (id: number): Promise<Poll | null> => {
 	const pollRecord = await db
@@ -71,20 +72,6 @@ export const insertPoll = async (data: Poll) => {
 		.returning();
 
 	return result;
-};
-
-export const openPoll = async (id: number) => {
-	await db
-		.update(pollsTable)
-		.set({ status: "open" })
-		.where(eq(pollsTable.id, id));
-};
-
-export const closePoll = async (id: number) => {
-	await db
-		.update(pollsTable)
-		.set({ status: "closed" })
-		.where(eq(pollsTable.id, id));
 };
 
 // export const insertOptionsByPollId = async (data: {
@@ -152,4 +139,59 @@ export const hasUserAnsweredPoll = async (
 		);
 
 	return existingResponse.length > 0;
+};
+
+export const openPoll = async (id: number) => {
+	await db
+		.update(pollsTable)
+		.set({ status: "open" })
+		.where(eq(pollsTable.id, id));
+};
+
+export const closePoll = async (id: number) => {
+	await db
+		.update(pollsTable)
+		.set({ status: "closed" })
+		.where(eq(pollsTable.id, id));
+};
+
+/**
+ * Efficiently manage daily poll transitions - close all open polls, open today's poll
+ * This prevents race conditions and ensures only one poll is open at a time
+ */
+export const manageDailyPollTransition = async (
+	selectPollFn: (polls: Poll[]) => Poll | null
+): Promise<Poll | null> => {
+	return await db.transaction(async (tx) => {
+		// First, close ALL open polls - simple and bulletproof
+		await tx
+			.update(pollsTable)
+			.set({ status: "closed" })
+			.where(eq(pollsTable.status, "open"));
+
+		// Get all closed polls to select from
+		const closedPollRecords = await tx
+			.select()
+			.from(pollsTable)
+			.where(eq(pollsTable.status, "closed"));
+
+		if (closedPollRecords.length === 0) {
+			return null;
+		}
+
+		const closedPolls = pollFactory.toDTOs(closedPollRecords);
+		const selectedPoll = selectPollFn(closedPolls);
+
+		if (!selectedPoll) {
+			return null;
+		}
+
+		// Open today's selected poll
+		await tx
+			.update(pollsTable)
+			.set({ status: "open" })
+			.where(eq(pollsTable.id, selectedPoll.id));
+
+		return selectedPoll;
+	});
 };

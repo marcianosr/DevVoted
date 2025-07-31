@@ -21,12 +21,15 @@
 [] Create 20 unlockables (long lasting)
 [] Run end: Show gameover and stat screen: Allow user to start a new run
 [] Implement at least 2 knowledge-based awards (e.g., CSS Connoisseur, Markup Master)
-[] Traceability
 [] Trigger & resolve at least 1 boss challenge condition (e.g., "The Enigma")
+
 [] AI design soms stickers
+
 [] Old to new system
 [] Add onboarding screen or help modal for first-time users
+[] Traceability
 [] Balance the game (threshold, configs)
+
 [] Authentication (Github / Google)
 [] Deployment
 
