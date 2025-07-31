@@ -29,7 +29,7 @@ function PollsList() {
 	if (error || !pollsResponse?.success) {
 		return (
 			<ErrorComponent
-				text={`Error loading polls: ${pollsResponse?.error || String(error)}`}
+				text={`Error loading polls: ${!pollsResponse?.success ? pollsResponse?.error : String(error)}`}
 			/>
 		);
 	}

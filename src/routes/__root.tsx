@@ -15,6 +15,7 @@ import appCss from "../styles/app.css?url";
 import { seo } from "../utils/seo";
 import { getSupabaseServerClient } from "../utils/supabase";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ensureUserExists } from "../services/userSync.service";
 
 const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();
@@ -24,10 +25,16 @@ const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 		return null;
 	}
 
-	return {
+	const user = await ensureUserExists({
 		id: data.user.id,
 		email: data.user.email,
-	};
+		displayName:
+			data.user.user_metadata?.display_name ||
+			data.user.user_metadata?.full_name,
+		photoUrl: data.user.user_metadata?.avatar_url,
+	});
+
+	return user;
 });
 
 export const Route = createRootRoute({
@@ -125,10 +132,20 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					>
 						Polls
 					</Link>
+					<Link
+						to="/daily-poll"
+						activeProps={{
+							className: "font-bold",
+						}}
+					>
+						Daily Poll
+					</Link>
 					<div className="ml-auto">
 						{user ? (
 							<>
-								<span className="mr-2">{user.email}</span>
+								<span className="mr-2">
+									{user.displayName || user.email}
+								</span>
 								<Link to="/logout">Logout</Link>
 							</>
 						) : (

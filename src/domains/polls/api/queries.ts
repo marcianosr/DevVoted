@@ -73,6 +73,20 @@ export const insertPoll = async (data: Poll) => {
 	return result;
 };
 
+export const openPoll = async (id: number) => {
+	await db
+		.update(pollsTable)
+		.set({ status: "open" })
+		.where(eq(pollsTable.id, id));
+};
+
+export const closePoll = async (id: number) => {
+	await db
+		.update(pollsTable)
+		.set({ status: "closed" })
+		.where(eq(pollsTable.id, id));
+};
+
 // export const insertOptionsByPollId = async (data: {
 // 	pollId: number;
 // 	selectedOptions: string[];
