@@ -14,11 +14,8 @@ import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthedPostsRouteImport } from './routes/_authed/posts'
 import { Route as AuthedDailyPollRouteImport } from './routes/_authed/daily-poll'
-import { Route as AuthedPostsIndexRouteImport } from './routes/_authed/posts.index'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
-import { Route as AuthedPostsPostIdRouteImport } from './routes/_authed/posts.$postId'
 import { Route as AuthedPollsPollIdRouteImport } from './routes/_authed/polls/$pollId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -45,30 +42,15 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedPostsRoute = AuthedPostsRouteImport.update({
-  id: '/posts',
-  path: '/posts',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedDailyPollRoute = AuthedDailyPollRouteImport.update({
   id: '/daily-poll',
   path: '/daily-poll',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedPostsIndexRoute = AuthedPostsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthedPostsRoute,
-} as any)
 const AuthedPollsIndexRoute = AuthedPollsIndexRouteImport.update({
   id: '/polls/',
   path: '/polls/',
   getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedPostsPostIdRoute = AuthedPostsPostIdRouteImport.update({
-  id: '/$postId',
-  path: '/$postId',
-  getParentRoute: () => AuthedPostsRoute,
 } as any)
 const AuthedPollsPollIdRoute = AuthedPollsPollIdRouteImport.update({
   id: '/polls/$pollId',
@@ -82,11 +64,8 @@ export interface FileRoutesByFullPath {
   '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
   '/daily-poll': typeof AuthedDailyPollRoute
-  '/posts': typeof AuthedPostsRouteWithChildren
   '/polls/$pollId': typeof AuthedPollsPollIdRoute
-  '/posts/$postId': typeof AuthedPostsPostIdRoute
   '/polls': typeof AuthedPollsIndexRoute
-  '/posts/': typeof AuthedPostsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -95,9 +74,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/daily-poll': typeof AuthedDailyPollRoute
   '/polls/$pollId': typeof AuthedPollsPollIdRoute
-  '/posts/$postId': typeof AuthedPostsPostIdRoute
   '/polls': typeof AuthedPollsIndexRoute
-  '/posts': typeof AuthedPostsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,11 +84,8 @@ export interface FileRoutesById {
   '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
   '/_authed/daily-poll': typeof AuthedDailyPollRoute
-  '/_authed/posts': typeof AuthedPostsRouteWithChildren
   '/_authed/polls/$pollId': typeof AuthedPollsPollIdRoute
-  '/_authed/posts/$postId': typeof AuthedPostsPostIdRoute
   '/_authed/polls/': typeof AuthedPollsIndexRoute
-  '/_authed/posts/': typeof AuthedPostsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,11 +95,8 @@ export interface FileRouteTypes {
     | '/logout'
     | '/signup'
     | '/daily-poll'
-    | '/posts'
     | '/polls/$pollId'
-    | '/posts/$postId'
     | '/polls'
-    | '/posts/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -134,9 +105,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/daily-poll'
     | '/polls/$pollId'
-    | '/posts/$postId'
     | '/polls'
-    | '/posts'
   id:
     | '__root__'
     | '/'
@@ -145,11 +114,8 @@ export interface FileRouteTypes {
     | '/logout'
     | '/signup'
     | '/_authed/daily-poll'
-    | '/_authed/posts'
     | '/_authed/polls/$pollId'
-    | '/_authed/posts/$postId'
     | '/_authed/polls/'
-    | '/_authed/posts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,13 +163,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/posts': {
-      id: '/_authed/posts'
-      path: '/posts'
-      fullPath: '/posts'
-      preLoaderRoute: typeof AuthedPostsRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/daily-poll': {
       id: '/_authed/daily-poll'
       path: '/daily-poll'
@@ -211,26 +170,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDailyPollRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/posts/': {
-      id: '/_authed/posts/'
-      path: '/'
-      fullPath: '/posts/'
-      preLoaderRoute: typeof AuthedPostsIndexRouteImport
-      parentRoute: typeof AuthedPostsRoute
-    }
     '/_authed/polls/': {
       id: '/_authed/polls/'
       path: '/polls'
       fullPath: '/polls'
       preLoaderRoute: typeof AuthedPollsIndexRouteImport
       parentRoute: typeof AuthedRoute
-    }
-    '/_authed/posts/$postId': {
-      id: '/_authed/posts/$postId'
-      path: '/$postId'
-      fullPath: '/posts/$postId'
-      preLoaderRoute: typeof AuthedPostsPostIdRouteImport
-      parentRoute: typeof AuthedPostsRoute
     }
     '/_authed/polls/$pollId': {
       id: '/_authed/polls/$pollId'
@@ -242,30 +187,14 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthedPostsRouteChildren {
-  AuthedPostsPostIdRoute: typeof AuthedPostsPostIdRoute
-  AuthedPostsIndexRoute: typeof AuthedPostsIndexRoute
-}
-
-const AuthedPostsRouteChildren: AuthedPostsRouteChildren = {
-  AuthedPostsPostIdRoute: AuthedPostsPostIdRoute,
-  AuthedPostsIndexRoute: AuthedPostsIndexRoute,
-}
-
-const AuthedPostsRouteWithChildren = AuthedPostsRoute._addFileChildren(
-  AuthedPostsRouteChildren,
-)
-
 interface AuthedRouteChildren {
   AuthedDailyPollRoute: typeof AuthedDailyPollRoute
-  AuthedPostsRoute: typeof AuthedPostsRouteWithChildren
   AuthedPollsPollIdRoute: typeof AuthedPollsPollIdRoute
   AuthedPollsIndexRoute: typeof AuthedPollsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDailyPollRoute: AuthedDailyPollRoute,
-  AuthedPostsRoute: AuthedPostsRouteWithChildren,
   AuthedPollsPollIdRoute: AuthedPollsPollIdRoute,
   AuthedPollsIndexRoute: AuthedPollsIndexRoute,
 }
