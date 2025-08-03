@@ -24,6 +24,9 @@ import {
 	removeConfigFromRunServerFn,
 } from "~/domains/configs/api/configs";
 import { Run } from "~/domains/runs/models/run";
+import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
+import { Poll } from "~/domains/polls/models/poll";
+import { PollOption } from "~/domains/polls/models/pollOption";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -38,45 +41,53 @@ export const submitPollOptions = createServerFn()
 	)
 	.handler(async ({ data }) => postPollOptionsHandler({ data }));
 
-interface PollContentProps {
+type PollContentProps = {
 	pollData: {
-		poll: {
-			id: number;
-			question: string;
-			status: "open" | "draft" | "needs-revision" | "closed" | "archived";
-			answerType: "multiple" | "single";
-			openingTime: Date;
-			closingTime: Date;
-			createdBy: string;
-			createdAt: Date;
-			updatedAt: Date;
-			categoryCode: string;
-		};
-		options: Array<{
-			id: number;
-			pollId: number;
-			option: string;
-			correct: boolean;
-		}>;
+		poll: Poll;
+		options: PollOption[];
 		hasAnswered: boolean;
 	};
 	user: any;
 	activeRun: Run | null;
 	headerContent?: React.ReactNode;
-}
+};
 
-const PollContent: React.FC<PollContentProps> = ({ 
-	pollData, 
-	user, 
+const PollContent: React.FC<PollContentProps> = ({
+	pollData,
+	user,
 	activeRun,
-	headerContent 
+	headerContent,
 }) => {
 	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
 	const { poll, options, hasAnswered } = pollData;
 
 	const submitOptionsMutation = useMutation({
+		// 1️⃣ OPTIMISTIC UPDATE (happens BEFORE server call)
+		onMutate: async () => {
+			const pollQueryKey = pollQueryKeys.withOptions(poll.id, user?.id);
+
+			await queryClient.cancelQueries({ queryKey: pollQueryKey }); // Stop background refetches!
+			const previousData = queryClient.getQueryData(pollQueryKey);
+
+			// Update UI instantly
+			queryClient.setQueryData(pollQueryKey, (old) => {
+				if (!old) {
+					console.log("No cached data to update");
+					return old;
+				}
+
+				return {
+					...old,
+					hasAnswered: true,
+				};
+			});
+
+			return { previousData, pollQueryKey };
+		},
+		// 2️⃣ SERVER CALL (happens automatically after onMutate)
 		mutationFn: submitPollOptions,
+		// 3️⃣ SUCCESS HANDLING
 		onSuccess: (data) => {
 			if (data.success) {
 				const isCorrect = data.data?.isCorrect;
@@ -97,6 +108,7 @@ const PollContent: React.FC<PollContentProps> = ({
 
 				openShop();
 
+				// This triggers a refetch:
 				// Refresh the active run data to show updated XP (or lack thereof if run ended)
 				queryClient.invalidateQueries({
 					queryKey: ["activeRun", user?.id],
@@ -106,8 +118,14 @@ const PollContent: React.FC<PollContentProps> = ({
 
 			console.error("Error submitting Options:", data.error);
 		},
-		onError: (error) => {
+		onError: (error, _variables, context) => {
 			console.error("Mutation error:", error);
+			if (context?.previousData && context?.pollQueryKey) {
+				queryClient.setQueryData(
+					context.pollQueryKey,
+					context.previousData
+				);
+			}
 		},
 	});
 
@@ -180,13 +198,13 @@ const PollContent: React.FC<PollContentProps> = ({
 	);
 };
 
-interface PollPageContainerProps {
+type PollPageContainerProps = {
 	user: any;
 	queryKey: readonly any[];
 	queryFn: () => Promise<any>;
 	errorMessage?: string;
 	headerContent?: React.ReactNode;
-}
+};
 
 export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	user,
@@ -208,39 +226,106 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 
 	const addConfigsMutation = useMutation({
 		mutationFn: addConfigToRunServerFn,
+		onMutate: async (variables) => {
+			const activeRunQueryKey = runQueryKeys.active(user?.id);
+			await queryClient.cancelQueries({ queryKey: activeRunQueryKey });
+			const previousData = queryClient.getQueryData(activeRunQueryKey);
+
+			// Optimistically update the active run to include the new config
+			queryClient.setQueryData(activeRunQueryKey, (old: any) => {
+				if (!old?.data?.activeRun) return old;
+
+				const newConfigIds = [
+					...(old.data.activeRun.configIds || []),
+					...variables.data.configIds,
+				];
+				return {
+					...old,
+					data: {
+						...old.data,
+						activeRun: {
+							...old.data.activeRun,
+							configIds: newConfigIds,
+						},
+					},
+				};
+			});
+
+			return { previousData, activeRunQueryKey };
+		},
 		onSuccess: (data) => {
 			console.log("Add configs response:", data);
-			if (data.success) {
-				console.log("Configs added successfully!");
-				// Refresh the active run data to show updated storage
-				queryClient.invalidateQueries({
-					queryKey: ["activeRun", user?.id],
-				});
-			} else {
+			if (!data.success) {
 				console.error("Failed to add configs:", data.error);
 			}
 		},
-		onError: (error) => {
+		onError: (error, _variables, context) => {
 			console.error("Error adding configs:", error);
+			if (context?.previousData && context?.activeRunQueryKey) {
+				queryClient.setQueryData(
+					context.activeRunQueryKey,
+					context.previousData
+				);
+			}
+		},
+		onSettled: () => {
+			// Always refetch to ensure consistency
+			queryClient.invalidateQueries({
+				queryKey: runQueryKeys.active(user?.id),
+			});
 		},
 	});
 
 	const removeConfigMutation = useMutation({
 		mutationFn: removeConfigFromRunServerFn,
+		onMutate: async (variables) => {
+			const activeRunQueryKey = runQueryKeys.active(user?.id);
+			await queryClient.cancelQueries({ queryKey: activeRunQueryKey });
+			const previousData = queryClient.getQueryData(activeRunQueryKey);
+
+			// Optimistically update the active run to remove the config
+			queryClient.setQueryData(activeRunQueryKey, (old: any) => {
+				if (!old?.data?.activeRun) return old;
+
+				const newConfigIds = (
+					old.data.activeRun.configIds || []
+				).filter(
+					(id: string) => !variables.data.configIds.includes(id)
+				);
+				return {
+					...old,
+					data: {
+						...old.data,
+						activeRun: {
+							...old.data.activeRun,
+							configIds: newConfigIds,
+						},
+					},
+				};
+			});
+
+			return { previousData, activeRunQueryKey };
+		},
 		onSuccess: (data) => {
 			console.log("Remove config response:", data);
-			if (data.success) {
-				console.log("Config removed successfully!");
-				// Refresh the active run data to show updated storage
-				queryClient.invalidateQueries({
-					queryKey: ["activeRun", user?.id],
-				});
-			} else {
+			if (!data.success) {
 				console.error("Failed to remove config:", data.error);
 			}
 		},
-		onError: (error) => {
-			console.error("Error adding configs:", error);
+		onError: (error, _variables, context) => {
+			console.error("Error removing configs:", error);
+			if (context?.previousData && context?.activeRunQueryKey) {
+				queryClient.setQueryData(
+					context.activeRunQueryKey,
+					context.previousData
+				);
+			}
+		},
+		onSettled: () => {
+			// Always refetch to ensure consistency
+			queryClient.invalidateQueries({
+				queryKey: runQueryKeys.active(user?.id),
+			});
 		},
 	});
 
