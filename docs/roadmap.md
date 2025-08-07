@@ -15,6 +15,7 @@
 - [x] Configs
 
 [x] Integrate 3-poll "sets": Threshold is only checked at every third poll
+[] Refactor service files
 [] Run end: Show gameover and stat screen: Allow user to start a new run
 [] Integrate basic CSI
 [x] Select random poll to "open" for today and open/close poll for the next day

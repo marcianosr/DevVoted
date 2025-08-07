@@ -21,6 +21,12 @@ yarn.lock
 /blob-report/
 /playwright/.cache/
 
+# SonarQube
+.scannerwork/
+coverage/
+test-report.xml
+test-results.json
+
 concept.md
 MVP.todo
 NON MVP.md
