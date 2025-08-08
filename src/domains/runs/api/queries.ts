@@ -8,11 +8,6 @@ import { eq, and } from "drizzle-orm";
 import { runFactory } from "../models/run";
 import { runCategoryXpFactory } from "../models/runCategoryXp";
 import { XP_AWARDS } from "~/domains/userPerformance/constants/xpSystem";
-import {
-	calculateThresholdInfo,
-	calculateNextPollThresholdFromCategoryData,
-	type ThresholdInfo,
-} from "~/domains/userPerformance/services/thresholdCalculator.service";
 
 export const getActiveRunByUserId = async (userId: string) => {
 	const runRecord = await db
@@ -147,28 +142,6 @@ export const getTotalPollsAnsweredForRun = async (
 	);
 };
 
-// Helper function to check if run meets XP threshold to continue
-export const checkXpThreshold = async (
-	runId: number
-): Promise<ThresholdInfo> => {
-	const totalXp = await getTotalXpForRun(runId);
-	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
-
-	return calculateThresholdInfo(totalXp, totalPollsAnswered);
-};
-
-// Helper function to get current threshold info for display (sync version using run data)
-export const getCurrentThresholdInfo = (
-	categoryXp: { currentXp: number; pollsAnswered: number }[]
-): ThresholdInfo => {
-	const categoryData = categoryXp.map((xp) => ({
-		currentXp: xp.currentXp,
-		pollsAnswered: xp.pollsAnswered,
-	}));
-
-	return calculateNextPollThresholdFromCategoryData(categoryData);
-};
-
 export const awardXpToRun = async (
 	runId: number,
 	categoryCode: string,
@@ -268,12 +241,39 @@ export const penalizeXpInRun = async (runId: number, categoryCode: string) => {
 	});
 };
 
-// End run when XP threshold is not met
-export const endRunForThresholdFailure = async (runId: number) => {
-	const { completeRunForThresholdFailure } = await import(
-		"~/domains/runs/services/runCompletion.service"
-	);
-	return await completeRunForThresholdFailure(runId);
+// Get run for completion processing
+export const getRunForCompletion = async (runId: number) => {
+	const [run] = await db
+		.select()
+		.from(runsTable)
+		.where(eq(runsTable.id, runId))
+		.limit(1);
+	
+	return run;
+};
+
+// Complete run and reset all category XP when threshold fails
+export const completeRunWithThresholdFailure = async (runId: number) => {
+	return await db.transaction(async (tx) => {
+		// Finish the run
+		await tx
+			.update(runsTable)
+			.set({
+				status: "finished",
+				finished_at: new Date(),
+			})
+			.where(eq(runsTable.id, runId));
+
+		// Reset all categories to 0
+		await tx
+			.update(runCategoryXpTable)
+			.set({
+				current_xp: 0,
+				current_streak: 0,
+				polls_answered: 0,
+			})
+			.where(eq(runCategoryXpTable.run_id, runId));
+	});
 };
 
 // Add configs to a run's storage deck

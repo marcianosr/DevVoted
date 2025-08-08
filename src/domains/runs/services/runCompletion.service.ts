@@ -1,50 +1,57 @@
-import { db } from "~/database/db";
-import { runsTable, runCategoryXpTable } from "~/database/schema";
-import { eq } from "drizzle-orm";
 import { updateUserPerformanceFromRun } from "~/domains/userPerformance/services/userPerformance.service";
+import {
+	getRunForCompletion,
+	completeRunWithThresholdFailure,
+	getTotalXpForRun,
+	getTotalPollsAnsweredForRun,
+} from "../api/queries";
+import {
+	calculateThresholdInfo,
+	calculateNextPollThresholdFromCategoryData,
+	type ThresholdInfo,
+} from "~/domains/userPerformance/services/thresholdCalculator.service";
 
 export type RunCompletionResult = {
 	readonly runEnded: boolean;
 	readonly reason: string;
 };
 
-export const completeRunForThresholdFailure = async (
+// End run when XP threshold is not met
+export const endRunForThresholdFailure = async (runId: number) => {
+	// Get the run to find the user ID
+	const run = await getRunForCompletion(runId);
+
+	if (!run) {
+		throw new Error(`Run with ID ${runId} not found`);
+	}
+
+	// Update user performance records before resetting
+	await updateUserPerformanceFromRun(runId, run.user_id);
+
+	// Complete the run and reset categories
+	await completeRunWithThresholdFailure(runId);
+
+	return { runEnded: true, reason: "threshold_not_met" };
+};
+
+// Helper function to check if run meets XP threshold to continue
+export const checkXpThreshold = async (
 	runId: number
-): Promise<RunCompletionResult> => {
-	return await db.transaction(async (tx) => {
-		// Get the run to find the user ID
-		const [run] = await tx
-			.select()
-			.from(runsTable)
-			.where(eq(runsTable.id, runId))
-			.limit(1);
+): Promise<ThresholdInfo> => {
+	const totalXp = await getTotalXpForRun(runId);
+	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
 
-		if (!run) {
-			throw new Error(`Run with ID ${runId} not found`);
-		}
+	return calculateThresholdInfo(totalXp, totalPollsAnswered);
+};
 
-		// Update user performance records before resetting
-		await updateUserPerformanceFromRun(runId, run.user_id);
+// Helper function to get current threshold info for display (sync version using run data)
+export const getCurrentThresholdInfo = (
+	categoryXp: { currentXp: number; pollsAnswered: number }[]
+): ThresholdInfo => {
+	const categoryData = categoryXp.map((xp) => ({
+		currentXp: xp.currentXp,
+		pollsAnswered: xp.pollsAnswered,
+	}));
 
-		// Finish the run
-		await tx
-			.update(runsTable)
-			.set({
-				status: "finished",
-				finished_at: new Date(),
-			})
-			.where(eq(runsTable.id, runId));
-
-		// Reset all categories to 0
-		await tx
-			.update(runCategoryXpTable)
-			.set({
-				current_xp: 0,
-				current_streak: 0,
-				polls_answered: 0,
-			})
-			.where(eq(runCategoryXpTable.run_id, runId));
-
-		return { runEnded: true, reason: "threshold_not_met" };
-	});
+	return calculateNextPollThresholdFromCategoryData(categoryData);
 };

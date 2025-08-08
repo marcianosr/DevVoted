@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getCurrentThresholdInfo } from "./queries";
+import { getCurrentThresholdInfo } from "../services/runCompletion.service";
 
 describe("Threshold Reset Functionality", () => {
 	describe("getCurrentThresholdInfo", () => {

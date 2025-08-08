@@ -1,9 +1,11 @@
 import {
 	getActiveRunByUserId,
 	awardXpToRun,
+} from "~/domains/runs/api/queries";
+import {
 	checkXpThreshold,
 	endRunForThresholdFailure,
-} from "~/domains/runs/api/queries";
+} from "~/domains/runs/services/runCompletion.service";
 import { createPollResponse } from "~/domains/polls/api/queries";
 import { calculateMultipleChoiceXP } from "~/domains/userPerformance/constants/xpSystem";
 import type { ThresholdInfo } from "~/domains/userPerformance/services/thresholdCalculator.service";

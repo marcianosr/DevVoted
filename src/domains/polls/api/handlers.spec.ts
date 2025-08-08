@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as queries from "~/domains/polls/api/queries";
 import * as runQueries from "~/domains/runs/api/queries";
+import * as runCompletionService from "~/domains/runs/services/runCompletion.service";
 import { createMockPoll, createMockPollArray } from "../factories/poll";
 import { createMockPollOptionArray } from "../factories/pollOption";
 import { createMockRun } from "~/domains/runs/models/run";
@@ -23,6 +24,9 @@ vi.mock("~/domains/runs/api/queries", () => ({
 	getActiveRunByUserId: vi.fn(),
 	awardXpToRun: vi.fn(),
 	penalizeXpInRun: vi.fn(),
+}));
+
+vi.mock("~/domains/runs/services/runCompletion.service", () => ({
 	checkXpThreshold: vi.fn(),
 	endRunForThresholdFailure: vi.fn(),
 }));
@@ -381,7 +385,7 @@ describe("handlers", () => {
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
 				mockRun
 			);
-			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
+			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
 				meetsThreshold: true,
 				currentXp: 5,
 				requiredXp: 5,
@@ -432,7 +436,7 @@ describe("handlers", () => {
 			vi.mocked(runQueries.penalizeXpInRun).mockResolvedValue({
 				runEnded: true,
 			});
-			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
+			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
 				meetsThreshold: true,
 				currentXp: 5,
 				requiredXp: 5,
@@ -489,7 +493,7 @@ describe("handlers", () => {
 			vi.mocked(runQueries.penalizeXpInRun).mockResolvedValue({
 				runEnded: true,
 			});
-			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
+			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
 				meetsThreshold: true,
 				currentXp: 5,
 				requiredXp: 5,
@@ -585,7 +589,7 @@ describe("handlers", () => {
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
 				mockRun
 			);
-			vi.mocked(runQueries.checkXpThreshold).mockResolvedValue({
+			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
 				meetsThreshold: false,
 				currentXp: 10,
 				requiredXp: 15,
@@ -594,7 +598,7 @@ describe("handlers", () => {
 				pollInSet: 3,
 				isThresholdCheckPoll: true // This is a threshold check poll (3rd poll)
 			});
-			vi.mocked(runQueries.endRunForThresholdFailure).mockResolvedValue({
+			vi.mocked(runCompletionService.endRunForThresholdFailure).mockResolvedValue({
 				runEnded: true,
 				reason: "threshold_not_met"
 			});
@@ -615,7 +619,7 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.endRunForThresholdFailure).toHaveBeenCalledWith(1);
+			expect(runCompletionService.endRunForThresholdFailure).toHaveBeenCalledWith(1);
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.runEnded).toBe(true);
