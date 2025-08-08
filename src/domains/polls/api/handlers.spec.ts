@@ -267,7 +267,7 @@ describe("handlers", () => {
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
 			expect(result?.success).toBe(true);
-			expect(result?.message).toBe("Options submitted successfully");
+			expect(result?.data?.message).toBe("Options submitted successfully");
 		});
 
 		it("fails to post the selected options data to the backend when no options are selected", async () => {
@@ -280,9 +280,11 @@ describe("handlers", () => {
 			});
 
 			expect(result?.success).toBe(false);
-			expect(result?.error).toContain(
-				"At least one option must be selected"
-			);
+			if (!result?.success) {
+				expect(result.error).toContain(
+					"At least one option must be selected"
+				);
+			}
 		});
 
 		it("fails to post the selected options data to the backend when poll id is invalid", async () => {
@@ -297,7 +299,9 @@ describe("handlers", () => {
 
 			expect(result.success).toBe(false);
 			// Now validation catches invalid input first, so we get validation errors
-			expect(result.error).toContain("Expected number, received null");
+			if (!result.success) {
+				expect(result.error).toContain("Expected number, received null");
+			}
 		});
 
 		it("fails to post when user has already answered the poll", async () => {
@@ -319,7 +323,9 @@ describe("handlers", () => {
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
 			expect(result.success).toBe(false);
-			expect(result.error).toBe("You have already answered this poll");
+			if (!result.success) {
+				expect(result.error).toBe("You have already answered this poll");
+			}
 		});
 
 		it("allows post when user has not answered the poll yet", async () => {
@@ -404,8 +410,10 @@ describe("handlers", () => {
 			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js", 5);
 			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
-			expect(result.data?.isCorrect).toBe(true);
-			expect(result.data?.runEnded).toBe(false);
+			if (result.success) {
+				expect(result.data.isCorrect).toBe(true);
+				expect(result.data.runEnded).toBe(false);
+			}
 		});
 
 		it("does not penalize XP when answer is wrong", async () => {
@@ -453,8 +461,10 @@ describe("handlers", () => {
 			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
 			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js", 0);
 			expect(result.success).toBe(true);
-			expect(result.data?.isCorrect).toBe(false);
-			expect(result.data?.runEnded).toBe(false);
+			if (result.success) {
+				expect(result.data.isCorrect).toBe(false);
+				expect(result.data.runEnded).toBe(false);
+			}
 		});
 
 		it("does not penalize mixed correct/incorrect options", async () => {
@@ -506,7 +516,10 @@ describe("handlers", () => {
 			});
 
 			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
-			expect(result.data?.isCorrect).toBe(false);
+			expect(result.success).toBe(true);
+			if (result.success) {
+				expect(result.data.isCorrect).toBe(false);
+			}
 		});
 
 		it("continues gracefully when XP operations fail", async () => {
@@ -549,7 +562,9 @@ describe("handlers", () => {
 
 			// Poll submission should succeed even if XP awarding fails
 			expect(result.success).toBe(true);
-			expect(result.data?.isCorrect).toBe(true);
+			if (result.success) {
+				expect(result.data.isCorrect).toBe(true);
+			}
 		});
 
 		it("ends run when threshold is not met on threshold check poll", async () => {
@@ -602,8 +617,10 @@ describe("handlers", () => {
 
 			expect(runQueries.endRunForThresholdFailure).toHaveBeenCalledWith(1);
 			expect(result.success).toBe(true);
-			expect(result.data?.runEnded).toBe(true);
-			expect(result.data?.thresholdInfo?.meetsThreshold).toBe(false);
+			if (result.success) {
+				expect(result.data.runEnded).toBe(true);
+				expect(result.data.thresholdInfo?.meetsThreshold).toBe(false);
+			}
 		});
 	});
 });

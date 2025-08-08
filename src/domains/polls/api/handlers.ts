@@ -70,87 +70,132 @@ export const postPollOptionsHandler = async ({
 }: {
 	data: PollSubmissionInput;
 }) => {
-	try {
-		const validatedData = pollSubmissionSchema.parse(data);
-		const { pollId, selectedOptions, userId } = validatedData;
-
-		const hasAnswered = await hasUserAnsweredPoll(pollId, userId);
-		if (hasAnswered) {
-			throw new Error("You have already answered this poll");
-		}
-
-		const poll = await fetchPollById(pollId);
-
-		if (!poll) {
-			throw new Error("Poll not found");
-		}
-
-		const selectedOptionIds = selectedOptions.map((option) =>
-			Number(option)
+	return handleApiOperation(async () => {
+		const validatedData = await validatePollSubmission(data);
+		const { allCorrectOptions, selectedOptionRecords } = await fetchPollOptions(
+			validatedData.pollId,
+			validatedData.selectedOptions
+		);
+		const answerMetrics = calculateAnswerMetrics(
+			allCorrectOptions,
+			selectedOptionRecords
 		);
 
-		const allCorrectOptions = await db
-			.select()
-			.from(pollOptionsTable)
-			.where(
-				and(
-					eq(pollOptionsTable.poll_id, pollId),
-					eq(pollOptionsTable.correct, true)
-				)
-			);
-
-		const selectedOptionRecords = await db
-			.select()
-			.from(pollOptionsTable)
-			.where(
-				and(
-					eq(pollOptionsTable.poll_id, pollId),
-					inArray(pollOptionsTable.id, selectedOptionIds)
-				)
-			);
-
-		const nCorrect = selectedOptionRecords.filter(
-			(option) => option.correct
-		).length;
-		const nWrong = selectedOptionRecords.filter(
-			(option) => !option.correct
-		).length;
-		const nTotal = allCorrectOptions.length;
-
-		const isCorrect =
-			selectedOptionRecords.length > 0 &&
-			selectedOptionRecords.every((option) => option.correct);
-
 		const { xpEarned, runEnded, thresholdInfo } = await processPollAnswer({
-			pollId,
-			userId,
-			selectedOptionIds,
-			categoryCode: poll.categoryCode,
-			nCorrect,
-			nTotal,
-			nWrong,
+			pollId: validatedData.pollId,
+			userId: validatedData.userId,
+			selectedOptionIds: validatedData.selectedOptionIds,
+			categoryCode: validatedData.poll.categoryCode,
+			...answerMetrics,
 		});
 
 		return {
-			success: true,
 			message: "Options submitted successfully",
-			data: {
-				isCorrect,
-				runEnded,
-				xpEarned,
-				thresholdInfo,
-			},
+			isCorrect: answerMetrics.isCorrect,
+			runEnded,
+			xpEarned,
+			thresholdInfo,
 		};
-	} catch (error) {
-		console.error("Error submitting poll options:", error);
-		const message =
-			error instanceof Error ? error.message : "Something went wrong";
-		return { success: false, error: message };
-	}
+	});
 };
 
 async function getPollOrError(id: number) {
 	const poll = await fetchPollById(id);
 	if (!poll) throw new Error("Poll not found");
 	return poll;
+}
+
+type ValidatedPollSubmission = {
+	pollId: number;
+	selectedOptions: string[];
+	userId: string;
+	selectedOptionIds: number[];
+	poll: NonNullable<Awaited<ReturnType<typeof fetchPollById>>>;
+};
+
+type PollOptions = {
+	allCorrectOptions: Array<{ id: number; correct: boolean }>;
+	selectedOptionRecords: Array<{ id: number; correct: boolean }>;
+};
+
+type AnswerMetrics = {
+	nCorrect: number;
+	nWrong: number;
+	nTotal: number;
+	isCorrect: boolean;
+};
+
+async function validatePollSubmission(
+	data: PollSubmissionInput
+): Promise<ValidatedPollSubmission> {
+	const validatedData = pollSubmissionSchema.parse(data);
+	const { pollId, selectedOptions, userId } = validatedData;
+
+	const hasAnswered = await hasUserAnsweredPoll(pollId, userId);
+	if (hasAnswered) {
+		throw new Error("You have already answered this poll");
+	}
+
+	const poll = await fetchPollById(pollId);
+	if (!poll) {
+		throw new Error("Poll not found");
+	}
+
+	const selectedOptionIds = selectedOptions.map((option) => Number(option));
+
+	return {
+		pollId,
+		selectedOptions,
+		userId,
+		selectedOptionIds,
+		poll,
+	};
+}
+
+async function fetchPollOptions(
+	pollId: number,
+	selectedOptions: string[]
+): Promise<PollOptions> {
+	const selectedOptionIds = selectedOptions.map((option) => Number(option));
+
+	const allCorrectOptions = await db
+		.select()
+		.from(pollOptionsTable)
+		.where(
+			and(
+				eq(pollOptionsTable.poll_id, pollId),
+				eq(pollOptionsTable.correct, true)
+			)
+		);
+
+	const selectedOptionRecords = await db
+		.select()
+		.from(pollOptionsTable)
+		.where(
+			and(
+				eq(pollOptionsTable.poll_id, pollId),
+				inArray(pollOptionsTable.id, selectedOptionIds)
+			)
+		);
+
+	return { allCorrectOptions, selectedOptionRecords };
+}
+
+function calculateAnswerMetrics(
+	allCorrectOptions: Array<{ correct: boolean }>,
+	selectedOptionRecords: Array<{ correct: boolean }>
+): AnswerMetrics {
+	const nCorrect = selectedOptionRecords.filter(
+		(option) => option.correct
+	).length;
+	const nWrong = selectedOptionRecords.filter(
+		(option) => !option.correct
+	).length;
+	const nTotal = allCorrectOptions.length;
+
+	const isCorrect =
+		selectedOptionRecords.length > 0 &&
+		selectedOptionRecords.every((option) => option.correct);
+
+	return { nCorrect, nWrong, nTotal, isCorrect };
 }
