@@ -5,11 +5,13 @@ import {
 	getRunWithCategoryXp,
 	finishRun,
 	awardXpToRun,
-	penalizeXpInRun,
 } from "./queries";
 import { db } from "~/database/db";
-import { createMockRunRecord, createMockRunRecordArray } from "../models/run";
-import { createMockRunCategoryXpRecord, createMockRunCategoryXpRecordArray } from "../models/runCategoryXp";
+import { createMockRunRecord } from "../models/run";
+import {
+	createMockRunCategoryXpRecord,
+	createMockRunCategoryXpRecordArray,
+} from "../models/runCategoryXp";
 
 // Mock the database module
 vi.mock("~/database/db", () => {
@@ -43,7 +45,7 @@ vi.mock("~/database/db", () => {
 
 	const insertMock = vi.fn(() => createMockQueryBuilder());
 	const updateMock = vi.fn(() => createMockQueryBuilder());
-	
+
 	const transactionMock = vi.fn((cb) =>
 		cb({
 			select: selectMock,
@@ -71,16 +73,16 @@ describe("Run Queries", () => {
 		it("returns active run when found", async () => {
 			const mockRun = createMockRunRecord({ status: "active" });
 			const mockXpRecords = createMockRunCategoryXpRecordArray(2);
-			
+
 			// Mock first query for run
 			const limitMock1 = vi.fn().mockResolvedValue([mockRun]);
 			const whereMock1 = vi.fn().mockReturnValue({ limit: limitMock1 });
 			const fromMock1 = vi.fn().mockReturnValue({ where: whereMock1 });
-			
+
 			// Mock second query for XP records
 			const whereMock2 = vi.fn().mockResolvedValue(mockXpRecords);
 			const fromMock2 = vi.fn().mockReturnValue({ where: whereMock2 });
-			
+
 			vi.mocked(db.select)
 				.mockReturnValueOnce({ from: fromMock1 } as any)
 				.mockReturnValueOnce({ from: fromMock2 } as any);
@@ -98,7 +100,7 @@ describe("Run Queries", () => {
 			const limitMock = vi.fn().mockResolvedValue([]);
 			const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
 			const fromMock = vi.fn().mockReturnValue({ where: whereMock });
-			
+
 			vi.mocked(db.select).mockReturnValue({ from: fromMock } as any);
 
 			const result = await getActiveRunByUserId("test-user-id");
@@ -136,7 +138,9 @@ describe("Run Queries", () => {
 				select: selectMock,
 			};
 
-			vi.mocked(db.transaction).mockImplementation(async (cb) => cb(txMock as any));
+			vi.mocked(db.transaction).mockImplementation(async (cb) =>
+				cb(txMock as any)
+			);
 
 			const result = await createRunForUser("test-user-id");
 
@@ -155,7 +159,7 @@ describe("Run Queries", () => {
 			const limitMock = vi.fn().mockResolvedValue([mockRun]);
 			const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
 			const fromMock = vi.fn().mockReturnValue({ where: whereMock });
-			
+
 			const selectMock = vi.fn();
 			selectMock.mockReturnValueOnce({ from: fromMock });
 			selectMock.mockReturnValueOnce({
@@ -177,7 +181,7 @@ describe("Run Queries", () => {
 			const limitMock = vi.fn().mockResolvedValue([]);
 			const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
 			const fromMock = vi.fn().mockReturnValue({ where: whereMock });
-			
+
 			vi.mocked(db.select).mockReturnValue({ from: fromMock } as any);
 
 			const result = await getRunWithCategoryXp(999);
@@ -189,11 +193,13 @@ describe("Run Queries", () => {
 	describe("finishRun", () => {
 		it("updates run status to finished", async () => {
 			const mockRun = createMockRunRecord({ status: "finished" });
-			
+
 			const returningMock = vi.fn().mockResolvedValue([mockRun]);
-			const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
+			const whereMock = vi
+				.fn()
+				.mockReturnValue({ returning: returningMock });
 			const setMock = vi.fn().mockReturnValue({ where: whereMock });
-			
+
 			vi.mocked(db.update).mockReturnValue({ set: setMock } as any);
 
 			const result = await finishRun(1);
@@ -204,9 +210,11 @@ describe("Run Queries", () => {
 
 		it("returns null when run not found", async () => {
 			const returningMock = vi.fn().mockResolvedValue([]);
-			const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
+			const whereMock = vi
+				.fn()
+				.mockReturnValue({ returning: returningMock });
 			const setMock = vi.fn().mockReturnValue({ where: whereMock });
-			
+
 			vi.mocked(db.update).mockReturnValue({ set: setMock } as any);
 
 			const result = await finishRun(999);
@@ -222,7 +230,7 @@ describe("Run Queries", () => {
 				current_streak: 2,
 				best_streak: 3,
 			});
-			
+
 			const updatedXpRecord = createMockRunCategoryXpRecord({
 				current_xp: 15, // +5 XP
 				current_streak: 3, // +1 streak
@@ -249,7 +257,9 @@ describe("Run Queries", () => {
 				update: updateMock,
 			};
 
-			vi.mocked(db.transaction).mockImplementation(async (cb) => cb(txMock as any));
+			vi.mocked(db.transaction).mockImplementation(async (cb) =>
+				cb(txMock as any)
+			);
 
 			const result = await awardXpToRun(1, "js", 5);
 
@@ -264,7 +274,7 @@ describe("Run Queries", () => {
 				current_streak: 4,
 				best_streak: 3,
 			});
-			
+
 			const updatedXpRecord = createMockRunCategoryXpRecord({
 				current_xp: 25,
 				current_streak: 5,
@@ -291,7 +301,9 @@ describe("Run Queries", () => {
 				update: updateMock,
 			};
 
-			vi.mocked(db.transaction).mockImplementation(async (cb) => cb(txMock as any));
+			vi.mocked(db.transaction).mockImplementation(async (cb) =>
+				cb(txMock as any)
+			);
 
 			const result = await awardXpToRun(1, "js", 5);
 
@@ -309,72 +321,13 @@ describe("Run Queries", () => {
 			});
 
 			const txMock = { select: selectMock };
-			vi.mocked(db.transaction).mockImplementation(async (cb) => cb(txMock as any));
+			vi.mocked(db.transaction).mockImplementation(async (cb) =>
+				cb(txMock as any)
+			);
 
-			await expect(awardXpToRun(1, "js")).rejects.toThrow("No XP record found for run 1 and category js");
-		});
-	});
-
-	describe("penalizeXpInRun", () => {
-		it("resets category XP to 0 and ends run", async () => {
-			const updatedXpRecord = createMockRunCategoryXpRecord({
-				current_xp: 0,
-				current_streak: 0,
-			});
-
-			const returningMock = vi.fn().mockResolvedValue([updatedXpRecord]);
-			const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
-			const setMock = vi.fn().mockReturnValue({ where: whereMock });
-			const updateMock = vi.fn().mockReturnValue({ set: setMock });
-
-			const txMock = {
-				update: updateMock,
-			};
-
-			vi.mocked(db.transaction).mockImplementation(async (cb) => cb(txMock as any));
-
-			const result = await penalizeXpInRun(1, "js");
-
-			expect(result.runEnded).toBe(true);
-			expect(vi.mocked(db.transaction)).toHaveBeenCalledOnce();
-		});
-
-		it("resets all categories when run ends", async () => {
-			const updatedXpRecord = createMockRunCategoryXpRecord({
-				current_xp: 0,
-				current_streak: 0,
-			});
-
-			const returningMock = vi.fn().mockResolvedValue([updatedXpRecord]);
-			const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
-			const setMock = vi.fn().mockReturnValue({ where: whereMock });
-			const updateMock = vi.fn().mockReturnValue({ set: setMock });
-
-			const txMock = {
-				update: updateMock,
-			};
-
-			vi.mocked(db.transaction).mockImplementation(async (cb) => cb(txMock as any));
-
-			await penalizeXpInRun(1, "js");
-
-			// Verify that update was called multiple times (once for specific category, once for run, once for all categories)
-			expect(updateMock).toHaveBeenCalledTimes(3);
-		});
-
-		it("throws error when XP record not found", async () => {
-			const returningMock = vi.fn().mockResolvedValue([]); // No record found
-			const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
-			const setMock = vi.fn().mockReturnValue({ where: whereMock });
-			const updateMock = vi.fn().mockReturnValue({ set: setMock });
-
-			const txMock = {
-				update: updateMock,
-			};
-
-			vi.mocked(db.transaction).mockImplementation(async (cb) => cb(txMock as any));
-
-			await expect(penalizeXpInRun(1, "js")).rejects.toThrow("No XP record found for run 1 and category js");
+			await expect(awardXpToRun(1, "js")).rejects.toThrow(
+				"No XP record found for run 1 and category js"
+			);
 		});
 	});
 });

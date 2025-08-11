@@ -6,7 +6,8 @@ import { getTodayDateString } from "~/lib/dateUtils";
 
 const DailyPoll: React.FC = () => {
 	const { user } = Route.useRouteContext();
-	const todayDateString = getTodayDateString();
+	// const todayDateString = getTodayDateString();
+	const todayDateString = "2025-10-23";
 
 	const dailyPollHeader = (
 		<div className="mb-4 p-3 bg-blue-100 border border-blue-200 rounded-lg">

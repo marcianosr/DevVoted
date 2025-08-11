@@ -13,7 +13,8 @@ Phase 1: Core Loop ✅ ship this before anything else
 [] Onboarding/help modal for first-time users [Critical]
 [] Fix refresh-to-reanswer bug [Critical]
 [] Fix immediate-run-end bug [Critical]
-[] Refactor service file architecture [Critical]
+[x] Refactor service file architecture [Critical]
+[] Remove "penalizeRun" since it's not used?
 
 Phase 2: Early Meta Layer
 [] Traceability (poll stats for balancing)
@@ -22,10 +23,10 @@ Phase 2: Early Meta Layer
 [] Deployment
 [] Leaderboard (only if trivial; else Phase 3)
 [] Old-to-new system migration
+[] Streak bonuses (beyond the basic +2 per set)
 
 Phase 3: Expansion
 [] Basic CSI (global average, no per-category complexity)
-[] Streak bonuses (beyond the basic +2 per set)
 [] Multiple choice formula refinement
 [] Knowledge-based awards (start with 2)
 [] Boss challenge (start with 1 type)
@@ -33,6 +34,9 @@ Phase 3: Expansion
 [] New categories (Java, AI, etc.)
 [] Add new polls
 [] Stickers / cosmetics
+[] Slackbot
+[] Fix low-hanging sonar issues
+[] Polish flows / UI
 
 =====================================================================
 

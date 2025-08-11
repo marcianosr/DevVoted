@@ -4,6 +4,7 @@ import {
 	completeRunWithThresholdFailure,
 	getTotalXpForRun,
 	getTotalPollsAnsweredForRun,
+	getLastRunFromUser,
 } from "../api/queries";
 import {
 	calculateThresholdInfo,
@@ -54,4 +55,8 @@ export const getCurrentThresholdInfo = (
 	}));
 
 	return calculateNextPollThresholdFromCategoryData(categoryData);
+};
+
+export const getLastRunForGameOver = async (userId: string) => {
+	return getLastRunFromUser(userId);
 };

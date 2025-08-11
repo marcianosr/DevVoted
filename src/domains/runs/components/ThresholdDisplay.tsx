@@ -1,12 +1,10 @@
 import type { ThresholdInfo } from "~/domains/userPerformance/services/thresholdCalculator.service";
 
-interface ThresholdDisplayProps {
+type ThresholdDisplayProps = {
 	thresholdInfo: ThresholdInfo;
-}
+};
 
-export const ThresholdDisplay: React.FC<ThresholdDisplayProps> = ({
-	thresholdInfo,
-}) => {
+export const ThresholdDisplay = ({ thresholdInfo }: ThresholdDisplayProps) => {
 	return (
 		<div className="mb-4 p-3 border border-white">
 			<div className="flex items-center justify-between">

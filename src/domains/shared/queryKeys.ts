@@ -7,6 +7,7 @@ export const runQueryKeys = {
   all: ['runs'] as const,
   active: (userId: string | undefined) => [...runQueryKeys.all, 'active', userId] as const,
   withCategoryXp: (runId: number) => [...runQueryKeys.all, runId, 'categoryXp'] as const,
+  lastRun: (userId: string | undefined) => [...runQueryKeys.all, 'last', userId] as const,
 };
 
 export const pollQueryKeys = {

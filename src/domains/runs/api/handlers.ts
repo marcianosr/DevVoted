@@ -3,6 +3,7 @@ import {
 	createRunForUser,
 	finishRun,
 	addConfigsToRun,
+	getLastRunFromUser,
 } from "./queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 
@@ -53,4 +54,11 @@ export const addConfigsToUserRun = async (
 		const updatedRun = await addConfigsToRun(runId, configIds);
 		return updatedRun;
 	}, "Failed to add configs to run");
+};
+
+export const getLastRunForUser = async (userId: string) => {
+	return handleApiOperation(async () => {
+		const lastRun = await getLastRunFromUser(userId);
+		return lastRun;
+	}, "Failed to get last run");
 };

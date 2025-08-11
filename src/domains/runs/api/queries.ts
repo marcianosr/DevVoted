@@ -4,7 +4,7 @@ import {
 	runCategoryXpTable,
 	pollCategoriesTable,
 } from "@/src/database/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { runFactory } from "../models/run";
 import { runCategoryXpFactory } from "../models/runCategoryXp";
 import { XP_AWARDS } from "~/domains/userPerformance/constants/xpSystem";
@@ -196,50 +196,6 @@ export const awardXpToRun = async (
 	});
 };
 
-export const penalizeXpInRun = async (runId: number, categoryCode: string) => {
-	return await db.transaction(async (tx) => {
-		// Reset XP and streak to 0 for the wrong answer category
-		const [updatedRecord] = await tx
-			.update(runCategoryXpTable)
-			.set({
-				current_xp: 0,
-				current_streak: 0,
-			})
-			.where(
-				and(
-					eq(runCategoryXpTable.run_id, runId),
-					eq(runCategoryXpTable.category_code, categoryCode)
-				)
-			)
-			.returning();
-
-		if (!updatedRecord) {
-			throw new Error(
-				`No XP record found for run ${runId} and category ${categoryCode}`
-			);
-		}
-
-		// Since any category hitting 0 ends the run, finish it and reset all categories
-		await tx
-			.update(runsTable)
-			.set({
-				status: "finished",
-				finished_at: new Date(),
-			})
-			.where(eq(runsTable.id, runId));
-
-		// Reset all categories to 0
-		await tx
-			.update(runCategoryXpTable)
-			.set({
-				current_xp: 0,
-				current_streak: 0,
-			})
-			.where(eq(runCategoryXpTable.run_id, runId));
-
-		return { runEnded: true };
-	});
-};
 
 // Get run for completion processing
 export const getRunForCompletion = async (runId: number) => {
@@ -248,13 +204,58 @@ export const getRunForCompletion = async (runId: number) => {
 		.from(runsTable)
 		.where(eq(runsTable.id, runId))
 		.limit(1);
-	
+
 	return run;
+};
+
+export const getLastRunFromUser = async (userId: string) => {
+	const lastRunRecord = await db
+		.select()
+		.from(runsTable)
+		.where(
+			and(eq(runsTable.user_id, userId), eq(runsTable.status, "finished"))
+		)
+		.orderBy(desc(runsTable.finished_at))
+		.limit(1);
+
+	if (!lastRunRecord[0]) {
+		return null;
+	}
+
+	const xpRecords = await db
+		.select({
+			categoryCode: runCategoryXpTable.category_code,
+			currentXp: sql<number>`COALESCE(${runCategoryXpTable.final_xp}, ${runCategoryXpTable.current_xp})`,
+			currentStreak: sql<number>`COALESCE(${runCategoryXpTable.final_streak}, ${runCategoryXpTable.current_streak})`,
+			bestStreak: runCategoryXpTable.best_streak,
+			pollsAnswered: runCategoryXpTable.polls_answered,
+		})
+		.from(runCategoryXpTable)
+		.where(eq(runCategoryXpTable.run_id, lastRunRecord[0].id));
+
+	return {
+		run: lastRunRecord[0],
+		categoryXp: xpRecords,
+		totalXp: xpRecords.reduce((sum, xp) => sum + xp.currentXp, 0),
+		totalPollsAnswered: xpRecords.reduce(
+			(sum, xp) => sum + xp.pollsAnswered,
+			0
+		),
+	};
 };
 
 // Complete run and reset all category XP when threshold fails
 export const completeRunWithThresholdFailure = async (runId: number) => {
 	return await db.transaction(async (tx) => {
+		// Store current values in final columns before resetting
+		await tx
+			.update(runCategoryXpTable)
+			.set({
+				final_xp: sql`current_xp`,
+				final_streak: sql`current_streak`,
+			})
+			.where(eq(runCategoryXpTable.run_id, runId));
+
 		// Finish the run
 		await tx
 			.update(runsTable)

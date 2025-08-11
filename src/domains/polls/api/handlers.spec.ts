@@ -23,7 +23,6 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 vi.mock("~/domains/runs/api/queries", () => ({
 	getActiveRunByUserId: vi.fn(),
 	awardXpToRun: vi.fn(),
-	penalizeXpInRun: vi.fn(),
 }));
 
 vi.mock("~/domains/runs/services/runCompletion.service", () => ({
@@ -412,7 +411,6 @@ describe("handlers", () => {
 			});
 
 			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js", 5);
-			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.isCorrect).toBe(true);
@@ -433,9 +431,6 @@ describe("handlers", () => {
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
 				mockRun
 			);
-			vi.mocked(runQueries.penalizeXpInRun).mockResolvedValue({
-				runEnded: true,
-			});
 			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
 				meetsThreshold: true,
 				currentXp: 5,
@@ -462,7 +457,6 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
 			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js", 0);
 			expect(result.success).toBe(true);
 			if (result.success) {
@@ -490,9 +484,6 @@ describe("handlers", () => {
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
 				mockRun
 			);
-			vi.mocked(runQueries.penalizeXpInRun).mockResolvedValue({
-				runEnded: true,
-			});
 			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
 				meetsThreshold: true,
 				currentXp: 5,
@@ -519,7 +510,6 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.penalizeXpInRun).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.isCorrect).toBe(false);

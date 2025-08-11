@@ -4,6 +4,7 @@ import {
 	getOrCreateActiveRun,
 	getUserActiveRun,
 	finishUserRun,
+	getLastRunForUser,
 } from "./handlers";
 
 export const getOrCreateRun = createServerFn()
@@ -22,4 +23,10 @@ export const finishRun = createServerFn()
 	.validator(z.object({ runId: z.number() }))
 	.handler(async ({ data }) => {
 		return await finishUserRun(data.runId);
+	});
+
+export const getLastRunForGameOver = createServerFn()
+	.validator(z.object({ userId: z.string() }))
+	.handler(async ({ data }) => {
+		return await getLastRunForUser(data.userId);
 	});

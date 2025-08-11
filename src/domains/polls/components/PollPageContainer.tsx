@@ -93,17 +93,18 @@ const PollContent: React.FC<PollContentProps> = ({
 				const isCorrect = data.data?.isCorrect;
 				const runEnded = data.data?.runEnded;
 
+				if (runEnded) {
+					console.log("Run ended. All XP reset to 0.");
+				}
+
 				if (isCorrect) {
 					console.log("Correct answer! XP awarded.");
 				}
 				if (!isCorrect && runEnded) {
-					console.log("Wrong answer! Run ended. All XP reset to 0.");
+					console.log("Wrong answer! Run ended!");
 				}
 				if (!isCorrect && !runEnded) {
 					console.log("Answer submitted, but incorrect.");
-				}
-				if (runEnded) {
-					console.log("Run ended. All XP reset to 0.");
 				}
 
 				openShop();
@@ -160,6 +161,7 @@ const PollContent: React.FC<PollContentProps> = ({
 		return <ErrorComponent text="Sorry, this poll is closed today!" />;
 	}
 
+
 	return (
 		<>
 			{headerContent}
@@ -190,7 +192,6 @@ const PollContent: React.FC<PollContentProps> = ({
 					/>
 				</PollSubmissionForm>
 			)}
-
 			{isShopOpen && activeRun && (
 				<Shop activeRun={activeRun} offeredConfigs={configs} />
 			)}
@@ -199,9 +200,9 @@ const PollContent: React.FC<PollContentProps> = ({
 };
 
 type PollPageContainerProps = {
-	user: any;
-	queryKey: readonly any[];
-	queryFn: () => Promise<any>;
+	user: any; // TODO: remove thise any
+	queryKey: readonly any[]; // TODO: remove this any
+	queryFn: () => Promise<any>; // TODO: remove this any
 	errorMessage?: string;
 	headerContent?: React.ReactNode;
 };
@@ -382,6 +383,7 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 			<StartRunScreen
 				isStarting={isStarting}
 				onStartRun={handleStartRun}
+				userId={user?.id}
 			/>
 		);
 	}

@@ -14,7 +14,7 @@ function RouteComponent() {
 	return (
 		<div className="text-center py-8">
 			<h1>Game over</h1>
-			<StartRunScreen isStarting={isStarting} onStartRun={startRun} />;
+			<StartRunScreen isStarting={isStarting} onStartRun={startRun} userId={user?.id} />;
 		</div>
 	);
 }

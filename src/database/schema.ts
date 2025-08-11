@@ -219,6 +219,8 @@ export const runCategoryXpTable = pgTable("run_category_xp", {
 	current_streak: integer("current_streak").notNull().default(0),
 	best_streak: integer("best_streak").notNull().default(0),
 	polls_answered: integer("polls_answered").notNull().default(0),
+	final_xp: integer("final_xp"),
+	final_streak: integer("final_streak"),
 	created_at: timestamp("created_at").defaultNow(),
 	updated_at: timestamp("updated_at")
 		.defaultNow()

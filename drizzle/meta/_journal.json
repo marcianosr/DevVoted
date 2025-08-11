@@ -71,6 +71,13 @@
       "when": 1752514044382,
       "tag": "0009_natural_mystique",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1754914299254,
+      "tag": "0010_big_warpath",
+      "breakpoints": true
     }
   ]
 }

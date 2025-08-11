@@ -9,6 +9,8 @@ export type RunCategoryXp = {
 	currentStreak: number;
 	bestStreak: number;
 	pollsAnswered: number;
+	finalXp: number | null;
+	finalStreak: number | null;
 	createdAt: Date;
 	updatedAt: Date | null;
 };
@@ -24,6 +26,8 @@ export const runCategoryXpToDTO = (record: RunCategoryXpRecord): RunCategoryXp =
 		currentStreak: record.current_streak,
 		bestStreak: record.best_streak,
 		pollsAnswered: record.polls_answered,
+		finalXp: record.final_xp,
+		finalStreak: record.final_streak,
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
 	};
@@ -38,6 +42,8 @@ export const runCategoryXpFromDTO = (dto: RunCategoryXp): RunCategoryXpRecord =>
 		current_streak: dto.currentStreak,
 		best_streak: dto.bestStreak,
 		polls_answered: dto.pollsAnswered,
+		final_xp: dto.finalXp,
+		final_streak: dto.finalStreak,
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
 	};
@@ -62,6 +68,8 @@ export const createRunCategoryXp = (partial: Partial<RunCategoryXp> = {}): RunCa
 		currentStreak: 0,
 		bestStreak: 0,
 		pollsAnswered: 0,
+		finalXp: null,
+		finalStreak: null,
 		createdAt: now,
 		updatedAt: now,
 		...partial,
@@ -78,6 +86,8 @@ export const createMockRunCategoryXp = (overrides: Partial<RunCategoryXp> = {}):
 		currentStreak: 0,
 		bestStreak: 0,
 		pollsAnswered: 0,
+		finalXp: null,
+		finalStreak: null,
 		createdAt: new Date("2024-01-01T00:00:00Z"),
 		updatedAt: new Date("2024-01-01T00:00:00Z"),
 		...overrides,
@@ -93,6 +103,8 @@ export const createMockRunCategoryXpRecord = (overrides: Partial<RunCategoryXpRe
 		current_streak: 0,
 		best_streak: 0,
 		polls_answered: 0,
+		final_xp: null,
+		final_streak: null,
 		created_at: new Date("2024-01-01T00:00:00Z"),
 		updated_at: new Date("2024-01-01T00:00:00Z"),
 		...overrides,
