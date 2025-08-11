@@ -9,12 +9,12 @@ Phase 1: Core Loop ✅ ship this before anything else
 [] Implement rerolls (Fibonacci cost) [Critical]
 [o] Create 6–8 configs with effects [Critical]
 [] Show XP breakdown and result feedback after each poll [Critical]
-[] Run end screen (gameover, stats, restart) [Critical]
+[x] Run end screen (gameover, stats, restart) [Critical]
 [] Onboarding/help modal for first-time users [Critical]
 [] Fix refresh-to-reanswer bug [Critical]
 [] Fix immediate-run-end bug [Critical]
 [x] Refactor service file architecture [Critical]
-[] Remove "penalizeRun" since it's not used?
+[x] Remove "penalizeRun" since it's not used?
 
 Phase 2: Early Meta Layer
 [] Traceability (poll stats for balancing)
