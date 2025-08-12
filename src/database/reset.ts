@@ -15,7 +15,6 @@ async function resetDatabase() {
             DROP TABLE IF EXISTS polls CASCADE;
             DROP TABLE IF EXISTS users CASCADE;
             DROP TABLE IF EXISTS polls_active_runs CASCADE;
-            DROP TABLE IF EXISTS polls_user_performance CASCADE;
             DROP TABLE IF EXISTS __drizzle_migrations CASCADE;
         `);
 

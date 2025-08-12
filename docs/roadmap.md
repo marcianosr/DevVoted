@@ -7,7 +7,6 @@ Phase 1: Core Loop ✅ ship this before anything else
 [x] Storage mechanics + economy (buy/sell configs, pay with storage)
 [x] Shop mechanics (3 random offers)
 [] Implement rerolls (Fibonacci cost) [Critical]
-
 [] Show XP breakdown and result feedback after each poll [Critical]
 [x] Run end screen (gameover, stats, restart) [Critical]
 [] Onboarding/help modal for first-time users [Critical]
@@ -15,9 +14,10 @@ Phase 1: Core Loop ✅ ship this before anything else
 [] Fix immediate-run-end bug [Critical]
 [x] Refactor service file architecture [Critical]
 [x] Remove "penalizeRun" since it's not used?
-[ ] Come up with Shop error; If the user accidentally refreshes, the shop is gone. I don't have routes, everything is client side.
-[] Store "phase" per player in run. This prevents accidental shop miss
 [x] Traceability (poll stats for balancing)
+[] Multiple choice formula refinement
+
+[] Traceability
 
     - [] Timestamps on answer
 
@@ -31,11 +31,12 @@ Phase 1: Core Loop ✅ ship this before anything else
 
 [] Authentication (GitHub/Google)
 [] Deployment
+[] Old-to-new system migration
 [] Some UI polish so it isn't a mess
 [] Test daily poll cycle
 
 Phase 2: Early Meta Layer
-[] Old-to-new system migration
+[] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
 [] Add 6-8 more configs with effects
@@ -44,7 +45,6 @@ Phase 2: Early Meta Layer
 Phase 3: Expansion
 [] Basic CSI (global average, no per-category complexity)
 [] 20 unlockables (cosmetic or config)
-[] Multiple choice formula refinement
 [] Knowledge-based awards (start with 2)
 [] Boss challenge (start with 1 type)
 [] New categories (Java, AI, etc.)
