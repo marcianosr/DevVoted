@@ -1,4 +1,4 @@
-import type { ThresholdInfo } from "~/domains/userPerformance/services/thresholdCalculator.service";
+import type { ThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 
 type ThresholdDisplayProps = {
 	thresholdInfo: ThresholdInfo;

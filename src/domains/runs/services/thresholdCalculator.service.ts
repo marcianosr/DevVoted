@@ -1,8 +1,8 @@
-import { 
+import {
 	shouldCheckThreshold,
 	getCurrentSetNumber,
 	getPollPositionInSet,
-	calculateSetThreshold 
+	calculateSetThreshold,
 } from "../constants/xpSystem";
 
 /**
@@ -39,15 +39,13 @@ export const calculateThresholdInfo = (
 	const currentSet = getCurrentSetNumber(totalPollsAnswered);
 	const pollInSet = getPollPositionInSet(totalPollsAnswered);
 	const isThresholdCheckPoll = shouldCheckThreshold(totalPollsAnswered);
-	
+
 	// Always show the threshold required for the current set
 	const requiredXp = calculateSetThreshold(currentSet);
-	
+
 	// Only enforce threshold check on 3rd poll of each set
-	const meetsThreshold = isThresholdCheckPoll 
-		? totalXp >= requiredXp 
-		: true; // Not a threshold check poll, so always passes
-	
+	const meetsThreshold = isThresholdCheckPoll ? totalXp >= requiredXp : true; // Not a threshold check poll, so always passes
+
 	return {
 		meetsThreshold,
 		currentXp: totalXp,
@@ -59,15 +57,19 @@ export const calculateThresholdInfo = (
 	};
 };
 
-
 /**
  * Aggregate XP data from multiple categories
  * @param categoryData - Array of category XP data
  * @returns Aggregated totals
  */
-export const aggregateCategoryXpData = (categoryData: readonly CategoryXpData[]) => {
+export const aggregateCategoryXpData = (
+	categoryData: readonly CategoryXpData[]
+) => {
 	const totalXp = categoryData.reduce((sum, data) => sum + data.currentXp, 0);
-	const totalPollsAnswered = categoryData.reduce((sum, data) => sum + data.pollsAnswered, 0);
+	const totalPollsAnswered = categoryData.reduce(
+		(sum, data) => sum + data.pollsAnswered,
+		0
+	);
 	return { totalXp, totalPollsAnswered };
 };
 
@@ -79,21 +81,20 @@ export const aggregateCategoryXpData = (categoryData: readonly CategoryXpData[])
 export const calculateNextPollThresholdFromCategoryData = (
 	categoryXpData: readonly CategoryXpData[]
 ): ThresholdInfo => {
-	const { totalXp, totalPollsAnswered } = aggregateCategoryXpData(categoryXpData);
-	
+	const { totalXp, totalPollsAnswered } =
+		aggregateCategoryXpData(categoryXpData);
+
 	// Poll number is the next poll (current + 1)
 	const pollNumber = totalPollsAnswered + 1;
 	const currentSet = getCurrentSetNumber(pollNumber);
 	const pollInSet = getPollPositionInSet(pollNumber);
 	const isThresholdCheckPoll = shouldCheckThreshold(pollNumber);
-	
+
 	// Show the threshold required for the next poll's set
 	const requiredXp = calculateSetThreshold(currentSet);
 
 	// For display purposes, show if current XP would meet the threshold
-	const meetsThreshold = isThresholdCheckPoll 
-		? totalXp >= requiredXp 
-		: true; // Not a threshold check poll, so would pass
+	const meetsThreshold = isThresholdCheckPoll ? totalXp >= requiredXp : true; // Not a threshold check poll, so would pass
 
 	return {
 		meetsThreshold,

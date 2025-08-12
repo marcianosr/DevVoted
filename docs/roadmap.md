@@ -5,7 +5,7 @@ Phase 1: Core Loop ✅ ship this before anything else
 [x] Start runs mechanics
 [x] XP threshold mechanics (3-poll sets)
 [x] Storage mechanics + economy (buy/sell configs, pay with storage)
-[o] Shop mechanics (3 random offers)
+[x] Shop mechanics (3 random offers)
 [] Implement rerolls (Fibonacci cost) [Critical]
 
 [] Show XP breakdown and result feedback after each poll [Critical]
@@ -27,7 +27,7 @@ Phase 1: Core Loop ✅ ship this before anything else
 [o] Create 6–8 configs with effects [Critical]
 
     - [] Create upgradable configs
-    - [] Offer "random" configs
+    - [] Create some effects
 
 [] Authentication (GitHub/Google)
 [] Deployment

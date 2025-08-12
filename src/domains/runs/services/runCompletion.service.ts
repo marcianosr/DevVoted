@@ -1,4 +1,3 @@
-import { updateUserPerformanceFromRun } from "~/domains/userPerformance/services/userPerformance.service";
 import {
 	getRunForCompletion,
 	completeRunWithThresholdFailure,
@@ -10,7 +9,7 @@ import {
 	calculateThresholdInfo,
 	calculateNextPollThresholdFromCategoryData,
 	type ThresholdInfo,
-} from "~/domains/userPerformance/services/thresholdCalculator.service";
+} from "~/domains/runs/services/thresholdCalculator.service";
 
 export type RunCompletionResult = {
 	readonly runEnded: boolean;
@@ -25,9 +24,6 @@ export const endRunForThresholdFailure = async (runId: number) => {
 	if (!run) {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
-
-	// Update user performance records before resetting
-	await updateUserPerformanceFromRun(runId, run.user_id);
 
 	// Complete the run and reset categories
 	await completeRunWithThresholdFailure(runId);

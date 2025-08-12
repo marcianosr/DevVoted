@@ -7,7 +7,7 @@ import {
 import { eq, and, desc, sql } from "drizzle-orm";
 import { runFactory } from "../models/run";
 import { runCategoryXpFactory } from "../models/runCategoryXp";
-import { XP_AWARDS } from "~/domains/userPerformance/constants/xpSystem";
+import { XP_AWARDS } from "~/domains/runs/constants/xpSystem";
 
 export const getActiveRunByUserId = async (userId: string) => {
 	const runRecord = await db
@@ -195,7 +195,6 @@ export const awardXpToRun = async (
 		return runCategoryXpFactory.toDTO(updatedRecord);
 	});
 };
-
 
 // Get run for completion processing
 export const getRunForCompletion = async (runId: number) => {

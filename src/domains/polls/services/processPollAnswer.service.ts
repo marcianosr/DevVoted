@@ -1,14 +1,11 @@
-import {
-	getActiveRunByUserId,
-	awardXpToRun,
-} from "~/domains/runs/api/queries";
+import { getActiveRunByUserId, awardXpToRun } from "~/domains/runs/api/queries";
 import {
 	checkXpThreshold,
 	endRunForThresholdFailure,
 } from "~/domains/runs/services/runCompletion.service";
 import { createPollResponse } from "~/domains/polls/api/queries";
-import { calculateMultipleChoiceXP } from "~/domains/userPerformance/constants/xpSystem";
-import type { ThresholdInfo } from "~/domains/userPerformance/services/thresholdCalculator.service";
+import { calculateMultipleChoiceXP } from "~/domains/runs/constants/xpSystem";
+import type { ThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 
 export type PollAnswerResult = {
 	readonly xpEarned: number;
@@ -73,12 +70,15 @@ const handleXpFlow = async (
 
 		// Always award XP regardless of set position
 		await awardXpToRun(activeRun.id, categoryCode, xpEarned);
-		
+
 		// Always get threshold info for display purposes
 		thresholdInfo = await checkXpThreshold(activeRun.id);
 
 		// Only check threshold and potentially end run on 3rd poll of each set
-		if (thresholdInfo.isThresholdCheckPoll && !thresholdInfo.meetsThreshold) {
+		if (
+			thresholdInfo.isThresholdCheckPoll &&
+			!thresholdInfo.meetsThreshold
+		) {
 			await endRunForThresholdFailure(activeRun.id);
 			runEnded = true;
 		}

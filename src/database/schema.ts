@@ -191,7 +191,10 @@ export const runsTable = pgTable("runs", {
 		.notNull(),
 	status: runStatus("status").notNull().default("active"),
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
-	active_config_ids: json("active_config_ids").$type<string[]>().notNull().default([]), // Array of config IDs
+	active_config_ids: json("active_config_ids")
+		.$type<string[]>()
+		.notNull()
+		.default([]), // Array of config IDs
 	started_at: timestamp("started_at").defaultNow(),
 	finished_at: timestamp("finished_at"),
 	created_at: timestamp("created_at").defaultNow(),
@@ -207,46 +210,22 @@ export const runsTable = pgTable("runs", {
  * - XP accumulates as players answer polls correctly
  * - Enables category-specific progression within runs
  */
-export const runCategoryXpTable = pgTable("run_category_xp", {
-	id: serial("id").primaryKey(),
-	run_id: integer("run_id")
-		.references(() => runsTable.id, { onDelete: "cascade" })
-		.notNull(),
-	category_code: varchar("category_code", { length: 50 })
-		.references(() => pollCategoriesTable.code)
-		.notNull(),
-	current_xp: integer("current_xp").notNull().default(0),
-	current_streak: integer("current_streak").notNull().default(0),
-	best_streak: integer("best_streak").notNull().default(0),
-	polls_answered: integer("polls_answered").notNull().default(0),
-	final_xp: integer("final_xp"),
-	final_streak: integer("final_streak"),
-	created_at: timestamp("created_at").defaultNow(),
-	updated_at: timestamp("updated_at")
-		.defaultNow()
-		.$onUpdate(() => new Date()),
-}, (table) => {
-	return {
-		runCategoryUnique: unique().on(table.run_id, table.category_code),
-	};
-});
-
-/**
- * User Category XP Table
- * Stands for tracking user's performance in a specific categories
- */
-export const pollUserPerformanceTable = pgTable(
-	"polls_user_performance",
+export const runCategoryXpTable = pgTable(
+	"run_category_xp",
 	{
 		id: serial("id").primaryKey(),
-		user_id: uuid("user_id")
-			.references(() => usersTable.id, { onDelete: "cascade" })
+		run_id: integer("run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
 			.notNull(),
 		category_code: varchar("category_code", { length: 50 })
 			.references(() => pollCategoriesTable.code)
 			.notNull(),
-		best_xp: integer("best_xp").notNull().default(0),
+		current_xp: integer("current_xp").notNull().default(0),
+		current_streak: integer("current_streak").notNull().default(0),
 		best_streak: integer("best_streak").notNull().default(0),
+		polls_answered: integer("polls_answered").notNull().default(0),
+		final_xp: integer("final_xp"),
+		final_streak: integer("final_streak"),
 		created_at: timestamp("created_at").defaultNow(),
 		updated_at: timestamp("updated_at")
 			.defaultNow()
@@ -254,7 +233,7 @@ export const pollUserPerformanceTable = pgTable(
 	},
 	(table) => {
 		return {
-			userCategoryUnique: unique().on(table.user_id, table.category_code),
+			runCategoryUnique: unique().on(table.run_id, table.category_code),
 		};
 	}
 );

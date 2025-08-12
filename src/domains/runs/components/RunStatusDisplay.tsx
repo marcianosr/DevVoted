@@ -1,4 +1,4 @@
-import { calculateNextPollThresholdFromCategoryData } from "~/domains/userPerformance/services/thresholdCalculator.service";
+import { calculateNextPollThresholdFromCategoryData } from "~/domains/runs/services/thresholdCalculator.service";
 import type { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
 import type { Run } from "~/domains/runs/models/run";
 import { ThresholdDisplay } from "./ThresholdDisplay";
@@ -28,14 +28,15 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 				Current Run Status
 			</h3>
 			<div className="text-sm text-white mb-3">
-				Started:{" "}
-				{new Date(activeRun.startedAt).toLocaleString()}
+				Started: {new Date(activeRun.startedAt).toLocaleString()}
 			</div>
 
 			{thresholdInfo && (
 				<div className="mb-4">
 					<div className="text-sm text-white mb-2">
-						<span className="font-medium">Set {thresholdInfo.currentSet}</span>
+						<span className="font-medium">
+							Set {thresholdInfo.currentSet}
+						</span>
 						{" - "}
 						<span>Poll {thresholdInfo.pollInSet}/3</span>
 						{thresholdInfo.isThresholdCheckPoll && (
