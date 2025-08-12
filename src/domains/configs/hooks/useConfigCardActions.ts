@@ -3,8 +3,8 @@ import { Run } from "~/domains/runs/models/run";
 import {
 	canAddConfigToRun,
 	hasConfig,
-} from "~/domains/configs/services/configStorage.service";
-import { useShopContext } from "../contexts/ShopContext";
+} from "~/domains/economy/services/configManager.service";
+import { useShopContext } from "../../economy/contexts/ShopContext";
 
 type UseConfigCardActionsOptions = {
 	run: Run;

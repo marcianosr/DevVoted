@@ -5,7 +5,7 @@ import { runFactory } from "~/domains/runs/models/run";
 import {
 	addConfigsToRun,
 	removeConfigsFromRun,
-} from "~/domains/configs/services/configStorage.service";
+} from "~/domains/economy/services/configManager.service";
 
 export const getRunByIdQuery = async (runId: number) => {
 	const [runRecord] = await db

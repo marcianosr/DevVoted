@@ -4,7 +4,7 @@ import {
 	getRunByIdQuery,
 } from "./queries";
 import { handleApiOperation } from "~/utils/errorHandling";
-import { canAddConfigToRun } from "~/domains/configs/services/configStorage.service";
+import { canAddConfigToRun } from "~/domains/economy/services/configManager.service";
 import { configs } from "~/domains/configs/data/configs";
 
 export const addConfigToRunHandler = async ({

@@ -1,9 +1,9 @@
 import { Run } from "~/domains/runs/models/run";
 
-import { getStorageInfo } from "~/domains/configs/services/configStorage.service";
+import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import { formatStorage } from "~/lib/storage";
-import { ConfigCard } from "./ConfigCard";
-import { useConfigCardActions } from "../hooks/useConfigCardActions";
+import { ConfigCard } from "../../configs/components/ConfigCard";
+import { useConfigCardActions } from "../../configs/hooks/useConfigCardActions";
 
 type StorageDeckProps = {
 	run: Run;

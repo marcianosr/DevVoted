@@ -5,7 +5,7 @@ import {
 	getRandomConfigs,
 	getStorageInfo,
 	removeConfigsFromRun,
-} from "~/domains/configs/services/configStorage.service";
+} from "~/domains/economy/services/configManager.service";
 import { createMockRun } from "~/domains/runs/models/run";
 import { createConfig } from "~/domains/configs/factories/config";
 import { STORAGE_UNITS } from "~/lib/storage";

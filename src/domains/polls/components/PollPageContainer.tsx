@@ -12,12 +12,12 @@ import { RunStatusDisplay } from "~/domains/runs/components/RunStatusDisplay";
 import { StartRunScreen } from "~/domains/runs/components/StartRunScreen";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
-import { StorageDeck } from "~/domains/configs/components/StorageDeck";
-import { Shop } from "~/domains/configs/components/Shop";
+import { StorageDeck } from "~/domains/economy/components/StorageDeck";
+import { Shop } from "~/domains/economy/components/Shop";
 import {
 	ShopProvider,
 	useShopContext,
-} from "~/domains/configs/contexts/ShopContext";
+} from "~/domains/economy/contexts/ShopContext";
 import { configs } from "~/domains/configs/data/configs";
 import {
 	addConfigToRunServerFn,
@@ -27,7 +27,7 @@ import { Run } from "~/domains/runs/models/run";
 import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
-import { getRandomConfigs } from "~/domains/configs/services/configStorage.service";
+import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
 import { useMemo } from "react";
 
 type DefaultSelectedOptions = string[];
