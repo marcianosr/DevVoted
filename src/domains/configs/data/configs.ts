@@ -8,7 +8,7 @@ export const configs: Config[] = [
 		name: "Vanilla Config",
 		image: "/configs/vanilla.png",
 		cost: STORAGE_UNITS.MB / 4, // 256KB
-		cooldown: 0,
+		level: 0,
 		description: "Shows community correctness percentage after each answer",
 		effect: (context) => {
 			// TODO: Implement effect - show community stats
@@ -20,7 +20,7 @@ export const configs: Config[] = [
 		name: "Tree Shake Config",
 		image: "/configs/treeshake.png",
 		cost: STORAGE_UNITS.MB / 2, // 1MB
-		cooldown: 3,
+		level: 3,
 		description:
 			"Removes 1 wrong option retroactively (only usable once per 3 polls)",
 		effect: (context) => {
@@ -33,7 +33,7 @@ export const configs: Config[] = [
 		name: "Jest Config",
 		image: "/configs/jest.png",
 		cost: STORAGE_UNITS.MB / 4, // 256KB
-		cooldown: 1,
+		level: 1,
 		description: "Gain 1 XP for each other player getting it wrong",
 		effect: (context) => {
 			// TODO: Implement effect - bonus XP based on other players' mistakes
@@ -45,7 +45,7 @@ export const configs: Config[] = [
 		name: "Vitest Config",
 		image: "/configs/vitest.png",
 		cost: STORAGE_UNITS.KB * 256, // 256KB
-		cooldown: 0,
+		level: 1,
 		description:
 			"After each answer, see % of other players who got it right",
 		effect: (context) => {
@@ -62,7 +62,7 @@ export const configs: Config[] = [
 		name: "Rollup Config",
 		image: "/configs/rollup.png",
 		cost: STORAGE_UNITS.MB / 4, // 256KB
-		cooldown: 2,
+		level: 2,
 		description:
 			"Answering 3 questions in the same category gives +2 bonus XP",
 		effect: (context) => {
@@ -78,7 +78,7 @@ export const configs: Config[] = [
 		name: "Webpack Config",
 		image: "/configs/webpack.png",
 		cost: STORAGE_UNITS.MB / 2, // 512KB
-		cooldown: 5,
+		level: 5,
 		description: "Bundle multiple correct answers for 2x XP multiplier",
 		effect: (context) => {
 			// TODO: Implement effect - XP multiplier for streaks
@@ -95,7 +95,7 @@ export const configs: Config[] = [
 		name: ".prettierrc",
 		image: "/configs/prettier.png",
 		cost: STORAGE_UNITS.MB / 2, // 512KB
-		cooldown: 0,
+		level: 0,
 		description:
 			"Formats your streak display nicely and adds +1 XP for style points",
 		effect: (context) => {
@@ -108,7 +108,7 @@ export const configs: Config[] = [
 		name: "TS Config",
 		image: "/configs/typescript.png",
 		cost: STORAGE_UNITS.MB / 4, // 256KB
-		cooldown: 1,
+		level: 1,
 		description:
 			"Type safety bonus: +50% XP for TypeScript category questions",
 		effect: (context) => {

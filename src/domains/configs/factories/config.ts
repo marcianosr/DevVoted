@@ -6,7 +6,7 @@ export const createConfig = (overrides: Partial<Config> = {}): Config => ({
 	name: "Test Config",
 	description: "A test configuration",
 	cost: STORAGE_UNITS.KB * 100, // 100KB
-	cooldown: 0,
+	level: 1,
 	rarity: "common",
 	effect: () => {},
 	...overrides,
@@ -26,7 +26,7 @@ export const createConfigs = (count: number = 3): Config[] => {
 			name: `Test Config ${index + 1}`,
 			description: `Test config number ${index + 1}`,
 			cost: STORAGE_UNITS.KB * (100 + index * 50), // 100KB, 150KB, 200KB, etc.
-			cooldown: index,
+			level: 1,
 			rarity: rarities[index % 4],
 		})
 	);
@@ -47,13 +47,6 @@ export const createConfigWithRarity = (rarity: Config["rarity"]): Config =>
 						: STORAGE_UNITS.KB * 500, // legendary
 	});
 
-export const createConfigWithCooldown = (cooldown: number): Config =>
-	createConfig({
-		id: `cooldown-${cooldown}-config`,
-		name: `Cooldown ${cooldown} Config`,
-		cooldown,
-	});
-
 export const createConfigWithImage = (imagePath: string): Config =>
 	createConfig({
 		id: "image-config",
@@ -65,6 +58,5 @@ export const configFactory = {
 	create: createConfig,
 	createMany: createConfigs,
 	withRarity: createConfigWithRarity,
-	withCooldown: createConfigWithCooldown,
 	withImage: createConfigWithImage,
 };

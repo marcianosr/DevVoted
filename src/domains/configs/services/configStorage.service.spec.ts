@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	addConfigsToRun,
 	canAddConfigToRun,
+	getRandomConfigs,
 	getStorageInfo,
 	removeConfigsFromRun,
 } from "~/domains/configs/services/configStorage.service";
@@ -165,7 +166,7 @@ describe("configStorage", () => {
 						name: "Vanilla Config",
 						image: "/configs/vanilla.png",
 						cost: STORAGE_UNITS.MB / 4, // 256KB
-						cooldown: 0,
+						level: 0,
 						description:
 							"Shows community correctness percentage after each answer",
 						effect: expect.any(Function),
@@ -177,6 +178,50 @@ describe("configStorage", () => {
 				storageLimit: STORAGE_UNITS.MB, // 1MB
 				usagePercentage: 25,
 			});
+		});
+	});
+
+	describe("getRandomConfigs", () => {
+		it("generates random configs but doesn't return configs the player already has", () => {
+			const configs = [
+				createConfig({
+					id: "jest-config",
+				}),
+				createConfig({
+					id: "ts-config",
+				}),
+				createConfig({
+					id: "webpack-config",
+				}),
+			];
+			const result = getRandomConfigs({
+				run: createMockRun({
+					activeConfigIds: ["eslint", "ts-config"],
+				}),
+				configs,
+				count: 2,
+			});
+
+			expect(result).toEqual([
+				{
+					id: "jest-config",
+					cost: 102400,
+					description: "A test configuration",
+					effect: expect.any(Function),
+					name: "Test Config",
+					level: 1,
+					rarity: "common",
+				},
+				{
+					id: "webpack-config",
+					cost: 102400,
+					description: "A test configuration",
+					effect: expect.any(Function),
+					name: "Test Config",
+					rarity: "common",
+					level: 1,
+				},
+			]);
 		});
 	});
 });

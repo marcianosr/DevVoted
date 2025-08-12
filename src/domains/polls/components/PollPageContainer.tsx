@@ -27,6 +27,8 @@ import { Run } from "~/domains/runs/models/run";
 import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
+import { getRandomConfigs } from "~/domains/configs/services/configStorage.service";
+import { useMemo } from "react";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -61,6 +63,15 @@ const PollContent: React.FC<PollContentProps> = ({
 	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
 	const { poll, options, hasAnswered } = pollData;
+
+	const randomConfigs = useMemo(() => {
+		if (!activeRun) return [];
+		return getRandomConfigs({
+			run: activeRun,
+			configs,
+			count: 3,
+		});
+	}, [activeRun?.id, activeRun?.activeConfigIds]);
 
 	const submitOptionsMutation = useMutation({
 		// 1️⃣ OPTIMISTIC UPDATE (happens BEFORE server call)
@@ -161,7 +172,6 @@ const PollContent: React.FC<PollContentProps> = ({
 		return <ErrorComponent text="Sorry, this poll is closed today!" />;
 	}
 
-
 	return (
 		<>
 			{headerContent}
@@ -193,7 +203,7 @@ const PollContent: React.FC<PollContentProps> = ({
 				</PollSubmissionForm>
 			)}
 			{isShopOpen && activeRun && (
-				<Shop activeRun={activeRun} offeredConfigs={configs} />
+				<Shop activeRun={activeRun} offeredConfigs={randomConfigs} />
 			)}
 		</>
 	);

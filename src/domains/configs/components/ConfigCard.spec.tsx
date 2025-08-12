@@ -6,7 +6,7 @@ import { ConfigCard } from "./ConfigCard";
 import { createConfig } from "../factories/config";
 describe(ConfigCard, () => {
 	it("renders the config card", () => {
-		const mockConfigCards = createConfig({ cooldown: 2 });
+		const mockConfigCards = createConfig();
 		render(
 			<ConfigCard
 				config={mockConfigCards}
@@ -21,11 +21,10 @@ describe(ConfigCard, () => {
 		expect(
 			screen.getByText(mockConfigCards.description)
 		).toBeInTheDocument();
-		expect(screen.getByText("Cooldown: 2")).toBeInTheDocument();
 	});
 
 	it("can be selected", () => {
-		const mockConfigCards = createConfig({ cooldown: 2 });
+		const mockConfigCards = createConfig();
 		render(
 			<ConfigCard
 				config={mockConfigCards}

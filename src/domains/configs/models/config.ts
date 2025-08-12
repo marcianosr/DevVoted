@@ -16,7 +16,7 @@ export type Config = {
 	name: string;
 	image?: string; // Optional image URL or path
 	cost: number; // Storage cost in bytes
-	cooldown: number; // Cooldown in number of polls
+	level?: number;
 	effect: ConfigEffect;
 	description: string;
 	unlockCriteria?: {

@@ -75,3 +75,18 @@ export const removeConfigsFromRun = (run: Run, configIds: string[]): Run => ({
 
 export const hasConfig = (run: Run, configId: string) =>
 	run.activeConfigIds.find((aId) => configId === aId);
+
+export const getRandomConfigs = ({
+	run,
+	configs,
+	count,
+}: {
+	run: Run;
+	configs: Config[];
+	count: number;
+}): Config[] => {
+	const filteredConfigs = configs.filter((c) => !hasConfig(run, c.id));
+
+	const shuffled = [...filteredConfigs].sort(() => Math.random() - 0.5);
+	return shuffled.slice(0, count);
+};
