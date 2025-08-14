@@ -6,24 +6,29 @@ Phase 1: Core Loop ✅ ship this before anything else
 [x] XP threshold mechanics (3-poll sets)
 [x] Storage mechanics + economy (buy/sell configs, pay with storage)
 [x] Shop mechanics (3 random offers)
-[] Implement rerolls (Fibonacci cost) [Critical]
-[] Show XP breakdown and result feedback after each poll [Critical]
 [x] Run end screen (gameover, stats, restart) [Critical]
-[] Onboarding/help modal for first-time users [Critical]
-[] Fix refresh-to-reanswer bug [Critical]
-[] Fix immediate-run-end bug [Critical]
 [x] Refactor service file architecture [Critical]
 [x] Remove "penalizeRun" since it's not used?
 [x] Traceability (poll stats for balancing)
-[] Multiple choice formula refinement
+[o] Implement rerolls (Fibonacci cost) [Critical]
+[] Very basic CSI: (correct / total) × streak)
 
+[] Show XP breakdown and result feedback after each poll [Critical]
 [] Traceability
 
     - [] Timestamps on answer
 
-[] Balancing: threshold, config values based, storage
+[] Balancing
 
-[] Leaderboard (only if trivial; else Phase 2)
+    [] Multiple choice formula refinement
+    [] Threshold formula refinement
+    [] Starting storage
+    [] Storage growth over time
+    [] Config costs
+    [] XP gain balance
+
+[] Poll correct streak
+[] Leaderboard (trivial)
 [o] Create 6–8 configs with effects [Critical]
 
     - [] Create upgradable configs
@@ -34,6 +39,9 @@ Phase 1: Core Loop ✅ ship this before anything else
 [] Old-to-new system migration
 [] Some UI polish so it isn't a mess
 [] Test daily poll cycle
+[] Onboarding/help modal for first-time users [Critical]
+[] Fix refresh-to-reanswer bug [Critical]
+[] Fix immediate-run-end bug [Critical]
 
 Phase 2: Early Meta Layer
 [] Store "phase" per player in run. This prevents accidental shop miss
@@ -57,7 +65,7 @@ Phase 3: Expansion
 
 [x] Answer polls both multiple choice and single choice (done)
 [x] Start runs mechanicsn(done)
-[x] XP threshold mechanicsn(done)  
+[x] XP threshold mechanicsn(done)
 [x] Storage mechanics
 [x] Configs (come up with a few to play with) mechanics
 [x] Economy mechanics (actually "pay" with storage)

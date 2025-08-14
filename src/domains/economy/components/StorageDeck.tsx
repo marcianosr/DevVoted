@@ -12,6 +12,8 @@ type StorageDeckProps = {
 export const StorageDeck = ({ run }: StorageDeckProps) => {
 	const {
 		activeConfigs,
+		configsStorage,
+		rerollsStorage,
 		storageUsed,
 		storageAvailable,
 		storageLimit,
@@ -59,11 +61,19 @@ export const StorageDeck = ({ run }: StorageDeckProps) => {
 				)}
 			</div>
 
-			{storageAvailable > 0 && (
-				<div className="text-sm text-green-600 font-medium">
-					{formatStorage(storageAvailable)} available for new configs
+			<div className="text-sm space-y-1">
+				{storageAvailable > 0 && (
+					<div className="text-green-600 font-medium">
+						{formatStorage(storageAvailable)} available
+					</div>
+				)}
+				<div className="flex justify-between text-gray-500">
+					<span>Configs: {formatStorage(configsStorage)}</span>
+					{rerollsStorage > 0 && (
+						<span>Rerolls: {formatStorage(rerollsStorage)}</span>
+					)}
 				</div>
-			)}
+			</div>
 		</div>
 	);
 };

@@ -62,10 +62,9 @@ export const ConfigCard = ({
 
 				<div className="flex items-center justify-between text-xs text-gray-500">
 					<span>Cost: {formatStorage(config.cost)}</span>
-					{config.cooldown > 0 && (
-						<span>Cooldown: {config.cooldown}</span>
-					)}
 				</div>
+
+				{config.level ? <div>{config.level}</div> : null}
 
 				{isSelected && (
 					<div className="flex items-center gap-1 text-blue-600 text-sm font-medium">

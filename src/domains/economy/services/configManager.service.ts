@@ -15,7 +15,10 @@ export const calculateStorageUsed = (activeConfigs: Config[]): number => {
 
 export const getStorageInfo = (run: Run) => {
 	const activeConfigs = getActiveConfigs(run);
-	const storageUsed = calculateStorageUsed(activeConfigs);
+	const configsStorage = calculateStorageUsed(activeConfigs);
+	const rerollsStorage = run.rerollStorageUsed;
+
+	const storageUsed = configsStorage + rerollsStorage;
 	const storageAvailable = run.storageLimit - storageUsed;
 	const usagePercentage = getStorageUsagePercentage(
 		storageUsed,
@@ -24,6 +27,8 @@ export const getStorageInfo = (run: Run) => {
 
 	return {
 		activeConfigs,
+		configsStorage,
+		rerollsStorage,
 		storageUsed,
 		storageAvailable,
 		storageLimit: run.storageLimit,
@@ -36,8 +41,8 @@ export const canAddConfigToRun = (run: Run, config: Config): boolean => {
 		return false; // Already has this config
 	}
 
-	const currentStorageUsed = calculateStorageUsed(getActiveConfigs(run));
-	return canAddToStorage(currentStorageUsed, config.cost, run.storageLimit);
+	const { storageUsed } = getStorageInfo(run);
+	return canAddToStorage(storageUsed, config.cost, run.storageLimit);
 };
 
 export const addConfigsToRun = (run: Run, configIds: string[]): Run => {

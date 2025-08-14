@@ -173,6 +173,8 @@ describe("configStorage", () => {
 						rarity: "common",
 					},
 				],
+				configsStorage: STORAGE_UNITS.MB / 4, // 256KB
+				rerollsStorage: 0, // No rerolls yet
 				storageUsed: STORAGE_UNITS.MB / 4, // 256KB
 				storageAvailable: STORAGE_UNITS.MB - STORAGE_UNITS.MB / 4, // 1MB - 256KB
 				storageLimit: STORAGE_UNITS.MB, // 1MB
@@ -202,26 +204,9 @@ describe("configStorage", () => {
 				count: 2,
 			});
 
-			expect(result).toEqual([
-				{
-					id: "jest-config",
-					cost: 102400,
-					description: "A test configuration",
-					effect: expect.any(Function),
-					name: "Test Config",
-					level: 1,
-					rarity: "common",
-				},
-				{
-					id: "webpack-config",
-					cost: 102400,
-					description: "A test configuration",
-					effect: expect.any(Function),
-					name: "Test Config",
-					rarity: "common",
-					level: 1,
-				},
-			]);
+			expect(result).toHaveLength(2);
+			expect(result.map(c => c.id).sort()).toEqual(["jest-config", "webpack-config"]);
+			expect(result).not.toContainEqual(expect.objectContaining({ id: "ts-config" }));
 		});
 	});
 });

@@ -23,6 +23,7 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 vi.mock("~/domains/runs/api/queries", () => ({
 	getActiveRunByUserId: vi.fn(),
 	awardXpToRun: vi.fn(),
+	resetPollRerolls: vi.fn(),
 }));
 
 vi.mock("~/domains/runs/services/runCompletion.service", () => ({
@@ -270,7 +271,9 @@ describe("handlers", () => {
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
 			expect(result?.success).toBe(true);
-			expect(result?.data?.message).toBe("Options submitted successfully");
+			if (result?.success) {
+				expect(result.data.message).toBe("Options submitted successfully");
+			}
 		});
 
 		it("fails to post the selected options data to the backend when no options are selected", async () => {

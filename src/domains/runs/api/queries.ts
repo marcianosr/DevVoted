@@ -351,3 +351,53 @@ export const removeConfigsFromRun = async (
 
 	return runFactory.toDTO(updatedRun, categoryXp);
 };
+
+// Reset current poll rerolls to 0 (called after poll submission)
+export const resetPollRerolls = async (runId: number) => {
+	const [updatedRun] = await db
+		.update(runsTable)
+		.set({
+			rerolls: 0,
+		})
+		.where(eq(runsTable.id, runId))
+		.returning();
+
+	return updatedRun ? runFactory.toDTO(updatedRun) : null;
+};
+
+
+// Process reroll shop request
+export const processRerollShop = async (runId: number) => {
+	return await db.transaction(async (tx) => {
+		// Get the current run
+		const [runRecord] = await tx
+			.select()
+			.from(runsTable)
+			.where(eq(runsTable.id, runId))
+			.limit(1);
+
+		if (!runRecord) {
+			throw new Error("Run not found");
+		}
+
+		// Calculate the cost of this specific reroll
+		const { calculateRerollCost } = await import("~/domains/economy/services/reroll.service");
+		const rerollCost = calculateRerollCost(runRecord.rerolls);
+
+		// Update the run with incremented reroll counts and storage used
+		const [updatedRun] = await tx
+			.update(runsTable)
+			.set({
+				rerolls: runRecord.rerolls + 1,
+				total_rerolls: runRecord.total_rerolls + 1,
+				reroll_storage_used: runRecord.reroll_storage_used + rerollCost,
+			})
+			.where(eq(runsTable.id, runId))
+			.returning();
+
+		return {
+			originalRun: runFactory.toDTO(runRecord),
+			updatedRun: runFactory.toDTO(updatedRun),
+		};
+	});
+};

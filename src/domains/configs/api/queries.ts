@@ -76,3 +76,7 @@ export const removeConfigFromRunQuery = async (
 
 	return runFactory.toDTO(updatedRunRecord);
 };
+
+export const upgradeConfigQuery = (configId: string) => {
+	console.log("do the query ");
+};

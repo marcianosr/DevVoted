@@ -28,7 +28,8 @@ import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -63,6 +64,7 @@ const PollContent: React.FC<PollContentProps> = ({
 	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
 	const { poll, options, hasAnswered } = pollData;
+	const [rerollKey, setRerollKey] = useState(0);
 
 	const randomConfigs = useMemo(() => {
 		if (!activeRun) return [];
@@ -71,7 +73,7 @@ const PollContent: React.FC<PollContentProps> = ({
 			configs,
 			count: 3,
 		});
-	}, [activeRun?.id, activeRun?.activeConfigIds]);
+	}, [activeRun?.id, activeRun?.activeConfigIds, rerollKey]);
 
 	const submitOptionsMutation = useMutation({
 		// 1️⃣ OPTIMISTIC UPDATE (happens BEFORE server call)
@@ -123,7 +125,7 @@ const PollContent: React.FC<PollContentProps> = ({
 				// This triggers a refetch:
 				// Refresh the active run data to show updated XP (or lack thereof if run ended)
 				queryClient.invalidateQueries({
-					queryKey: ["activeRun", user?.id],
+					queryKey: runQueryKeys.active(user?.id),
 				});
 				return;
 			}
@@ -164,6 +166,26 @@ const PollContent: React.FC<PollContentProps> = ({
 		},
 	});
 
+	const rerollMutation = useMutation({
+		mutationFn: rerollShopServerFn,
+		onSuccess: (data) => {
+			if (data.success) {
+				// Force regeneration of random configs
+				setRerollKey(prev => prev + 1);
+				// Invalidate run query to get updated reroll count and KB spent
+				queryClient.invalidateQueries({
+					queryKey: runQueryKeys.active(user?.id),
+				});
+			}
+		},
+	});
+
+	const handleReroll = () => {
+		if (activeRun?.id) {
+			rerollMutation.mutate({ data: { runId: activeRun.id } });
+		}
+	};
+
 	if (!poll) {
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
 	}
@@ -203,7 +225,11 @@ const PollContent: React.FC<PollContentProps> = ({
 				</PollSubmissionForm>
 			)}
 			{isShopOpen && activeRun && (
-				<Shop activeRun={activeRun} offeredConfigs={randomConfigs} />
+				<Shop 
+					activeRun={activeRun} 
+					offeredConfigs={randomConfigs} 
+					onReroll={handleReroll}
+				/>
 			)}
 		</>
 	);

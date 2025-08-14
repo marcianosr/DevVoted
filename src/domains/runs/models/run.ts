@@ -9,6 +9,9 @@ export type Run = {
 	status: "active" | "finished";
 	storageLimit: number;
 	activeConfigIds: string[];
+	rerolls: number;
+	totalRerolls: number;
+	rerollStorageUsed: number;
 	startedAt: Date;
 	finishedAt: Date | null;
 	createdAt: Date;
@@ -25,6 +28,9 @@ export const runToDTO = (record: RunRecord, categoryXp: RunCategoryXp[] = []): R
 		status: record.status,
 		storageLimit: record.storage_limit,
 		activeConfigIds: record.active_config_ids || [],
+		rerolls: record.rerolls,
+		totalRerolls: record.total_rerolls,
+		rerollStorageUsed: record.reroll_storage_used,
 		startedAt: record.started_at || new Date(),
 		finishedAt: record.finished_at,
 		createdAt: record.created_at || new Date(),
@@ -40,6 +46,9 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		status: dto.status,
 		storage_limit: dto.storageLimit,
 		active_config_ids: dto.activeConfigIds,
+		rerolls: dto.rerolls,
+		total_rerolls: dto.totalRerolls,
+		reroll_storage_used: dto.rerollStorageUsed,
 		started_at: dto.startedAt,
 		finished_at: dto.finishedAt,
 		created_at: dto.createdAt,
@@ -64,6 +73,9 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		status: "active",
 		storageLimit: STORAGE_UNITS.MB, // 1MB default
 		activeConfigIds: [],
+		rerolls: 0,
+		totalRerolls: 0,
+		rerollStorageUsed: 0,
 		startedAt: now,
 		finishedAt: null,
 		createdAt: now,
@@ -81,6 +93,9 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		status: "active",
 		storageLimit: STORAGE_UNITS.MB,
 		activeConfigIds: [],
+		rerolls: 0,
+		totalRerolls: 0,
+		rerollStorageUsed: 0,
 		startedAt: new Date("2024-01-01T00:00:00Z"),
 		finishedAt: null,
 		createdAt: new Date("2024-01-01T00:00:00Z"),
@@ -97,6 +112,9 @@ export const createMockRunRecord = (overrides: Partial<RunRecord> = {}): RunReco
 		status: "active",
 		storage_limit: STORAGE_UNITS.MB,
 		active_config_ids: [],
+		rerolls: 0,
+		total_rerolls: 0,
+		reroll_storage_used: 0,
 		started_at: new Date("2024-01-01T00:00:00Z"),
 		finished_at: null,
 		created_at: new Date("2024-01-01T00:00:00Z"),

@@ -6,6 +6,7 @@ import {
 import { createPollResponse } from "~/domains/polls/api/queries";
 import { calculateMultipleChoiceXP } from "~/domains/runs/constants/xpSystem";
 import type { ThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
+import { resetPollRerolls } from "~/domains/runs/api/queries";
 
 export type PollAnswerResult = {
 	readonly xpEarned: number;
@@ -70,6 +71,9 @@ const handleXpFlow = async (
 
 		// Always award XP regardless of set position
 		await awardXpToRun(activeRun.id, categoryCode, xpEarned);
+
+		// Reset reroll count for new shop session
+		await resetPollRerolls(activeRun.id);
 
 		// Always get threshold info for display purposes
 		thresholdInfo = await checkXpThreshold(activeRun.id);

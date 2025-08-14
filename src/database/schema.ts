@@ -195,6 +195,9 @@ export const runsTable = pgTable("runs", {
 		.$type<string[]>()
 		.notNull()
 		.default([]), // Array of config IDs
+	rerolls: integer("rerolls").notNull().default(0), // Current poll session rerolls (resets each poll)
+	total_rerolls: integer("total_rerolls").notNull().default(0), // Total rerolls across entire run
+	reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
 	started_at: timestamp("started_at").defaultNow(),
 	finished_at: timestamp("finished_at"),
 	created_at: timestamp("created_at").defaultNow(),
