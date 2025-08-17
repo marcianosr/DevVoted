@@ -106,3 +106,14 @@ export const calculateNextPollThresholdFromCategoryData = (
 		isThresholdCheckPoll,
 	};
 };
+
+export const getCurrentThresholdInfo = (
+	categoryXp: { currentXp: number; pollsAnswered: number }[]
+): ThresholdInfo => {
+	const categoryData = categoryXp.map((xp) => ({
+		currentXp: xp.currentXp,
+		pollsAnswered: xp.pollsAnswered,
+	}));
+
+	return calculateNextPollThresholdFromCategoryData(categoryData);
+};

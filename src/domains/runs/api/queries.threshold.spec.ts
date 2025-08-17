@@ -1,13 +1,31 @@
 import { describe, it, expect } from "vitest";
-import { getCurrentThresholdInfo } from "../services/runCompletion.service";
+import { getCurrentThresholdInfo } from "@/src/domains/runs/services/thresholdCalculator.service";
 
 describe("Threshold Reset Functionality", () => {
 	describe("getCurrentThresholdInfo", () => {
 		it("returns Set 1 threshold (15 XP) when no polls have been answered", () => {
 			const categoryXp = [
-				{ categoryCode: "js", currentXp: 0, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
-				{ categoryCode: "css", currentXp: 0, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
-				{ categoryCode: "html", currentXp: 0, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
+				{
+					categoryCode: "js",
+					currentXp: 0,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
+				{
+					categoryCode: "css",
+					currentXp: 0,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
+				{
+					categoryCode: "html",
+					currentXp: 0,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
 			];
 
 			const result = getCurrentThresholdInfo(categoryXp);
@@ -23,9 +41,27 @@ describe("Threshold Reset Functionality", () => {
 
 		it("returns Set 1 threshold (15 XP) when max polls answered is 1", () => {
 			const categoryXp = [
-				{ categoryCode: "js", currentXp: 5, currentStreak: 1, bestStreak: 1, pollsAnswered: 1 },
-				{ categoryCode: "css", currentXp: 0, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
-				{ categoryCode: "html", currentXp: 0, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
+				{
+					categoryCode: "js",
+					currentXp: 5,
+					currentStreak: 1,
+					bestStreak: 1,
+					pollsAnswered: 1,
+				},
+				{
+					categoryCode: "css",
+					currentXp: 0,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
+				{
+					categoryCode: "html",
+					currentXp: 0,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
 			];
 
 			const result = getCurrentThresholdInfo(categoryXp);
@@ -41,9 +77,27 @@ describe("Threshold Reset Functionality", () => {
 
 		it("returns Set 2 threshold (21 XP) when total polls answered is 3", () => {
 			const categoryXp = [
-				{ categoryCode: "js", currentXp: 5, currentStreak: 2, bestStreak: 2, pollsAnswered: 2 },
-				{ categoryCode: "css", currentXp: 2, currentStreak: 1, bestStreak: 1, pollsAnswered: 1 },
-				{ categoryCode: "html", currentXp: 0, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
+				{
+					categoryCode: "js",
+					currentXp: 5,
+					currentStreak: 2,
+					bestStreak: 2,
+					pollsAnswered: 2,
+				},
+				{
+					categoryCode: "css",
+					currentXp: 2,
+					currentStreak: 1,
+					bestStreak: 1,
+					pollsAnswered: 1,
+				},
+				{
+					categoryCode: "html",
+					currentXp: 0,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
 			];
 
 			const result = getCurrentThresholdInfo(categoryXp);
@@ -59,9 +113,27 @@ describe("Threshold Reset Functionality", () => {
 
 		it("meets threshold when total XP equals required XP on non-threshold poll", () => {
 			const categoryXp = [
-				{ categoryCode: "js", currentXp: 5, currentStreak: 1, bestStreak: 1, pollsAnswered: 1 },
-				{ categoryCode: "css", currentXp: 2, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
-				{ categoryCode: "html", currentXp: 0, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
+				{
+					categoryCode: "js",
+					currentXp: 5,
+					currentStreak: 1,
+					bestStreak: 1,
+					pollsAnswered: 1,
+				},
+				{
+					categoryCode: "css",
+					currentXp: 2,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
+				{
+					categoryCode: "html",
+					currentXp: 0,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
 			];
 
 			const result = getCurrentThresholdInfo(categoryXp);
@@ -77,9 +149,27 @@ describe("Threshold Reset Functionality", () => {
 
 		it("handles threshold check poll (poll 3) with sufficient XP", () => {
 			const categoryXp = [
-				{ categoryCode: "js", currentXp: 8, currentStreak: 1, bestStreak: 1, pollsAnswered: 1 },
-				{ categoryCode: "css", currentXp: 7, currentStreak: 1, bestStreak: 1, pollsAnswered: 1 },
-				{ categoryCode: "html", currentXp: 0, currentStreak: 0, bestStreak: 0, pollsAnswered: 0 },
+				{
+					categoryCode: "js",
+					currentXp: 8,
+					currentStreak: 1,
+					bestStreak: 1,
+					pollsAnswered: 1,
+				},
+				{
+					categoryCode: "css",
+					currentXp: 7,
+					currentStreak: 1,
+					bestStreak: 1,
+					pollsAnswered: 1,
+				},
+				{
+					categoryCode: "html",
+					currentXp: 0,
+					currentStreak: 0,
+					bestStreak: 0,
+					pollsAnswered: 0,
+				},
 			];
 
 			const result = getCurrentThresholdInfo(categoryXp);

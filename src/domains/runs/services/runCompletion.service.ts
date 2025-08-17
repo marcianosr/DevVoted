@@ -41,18 +41,6 @@ export const checkXpThreshold = async (
 	return calculateThresholdInfo(totalXp, totalPollsAnswered);
 };
 
-// Helper function to get current threshold info for display (sync version using run data)
-export const getCurrentThresholdInfo = (
-	categoryXp: { currentXp: number; pollsAnswered: number }[]
-): ThresholdInfo => {
-	const categoryData = categoryXp.map((xp) => ({
-		currentXp: xp.currentXp,
-		pollsAnswered: xp.pollsAnswered,
-	}));
-
-	return calculateNextPollThresholdFromCategoryData(categoryData);
-};
-
 export const getLastRunForGameOver = async (userId: string) => {
 	return getLastRunFromUser(userId);
 };
