@@ -46,16 +46,6 @@ export const finishUserRun = async (runId: number) => {
 	}, "Failed to finish run");
 };
 
-export const addConfigsToUserRun = async (
-	runId: number,
-	configIds: string[]
-) => {
-	return handleApiOperation(async () => {
-		const updatedRun = await addConfigsToRun(runId, configIds);
-		return updatedRun;
-	}, "Failed to add configs to run");
-};
-
 export const getLastRunForUser = async (userId: string) => {
 	return handleApiOperation(async () => {
 		const lastRun = await getLastRunFromUser(userId);

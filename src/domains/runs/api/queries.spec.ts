@@ -325,7 +325,7 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			await expect(awardXpToRun(1, "js")).rejects.toThrow(
+			await expect(awardXpToRun(1, "js", 10)).rejects.toThrow(
 				"No XP record found for run 1 and category js"
 			);
 		});

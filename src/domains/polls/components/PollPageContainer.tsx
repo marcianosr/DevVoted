@@ -30,6 +30,7 @@ import { PollOption } from "~/domains/polls/models/pollOption";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
+import { ScoreDisplay } from "./ScoreDisplay";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -171,7 +172,7 @@ const PollContent: React.FC<PollContentProps> = ({
 		onSuccess: (data) => {
 			if (data.success) {
 				// Force regeneration of random configs
-				setRerollKey(prev => prev + 1);
+				setRerollKey((prev) => prev + 1);
 				// Invalidate run query to get updated reroll count and KB spent
 				queryClient.invalidateQueries({
 					queryKey: runQueryKeys.active(user?.id),
@@ -200,7 +201,16 @@ const PollContent: React.FC<PollContentProps> = ({
 			<PollHeader poll={poll} />
 			<PollStatus hasAnswered={hasAnswered} />
 			<RunStatusDisplay activeRun={activeRun} />
-			{activeRun && <StorageDeck run={activeRun} />}
+
+			{activeRun && (
+				<>
+					<ScoreDisplay
+						run={activeRun}
+						category={poll.categoryCode}
+					/>
+					<StorageDeck run={activeRun} />
+				</>
+			)}
 			{!isShopOpen && (
 				<PollSubmissionForm
 					hasAnswered={hasAnswered}
@@ -225,9 +235,9 @@ const PollContent: React.FC<PollContentProps> = ({
 				</PollSubmissionForm>
 			)}
 			{isShopOpen && activeRun && (
-				<Shop 
-					activeRun={activeRun} 
-					offeredConfigs={randomConfigs} 
+				<Shop
+					activeRun={activeRun}
+					offeredConfigs={randomConfigs}
 					onReroll={handleReroll}
 				/>
 			)}

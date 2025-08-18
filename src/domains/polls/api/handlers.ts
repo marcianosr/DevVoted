@@ -11,9 +11,6 @@ import {
 } from "~/domains/polls/validation/schemas";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
 import { handleApiOperation } from "~/utils/errorHandling";
-import { db } from "~/database/db";
-import { pollOptionsTable } from "~/database/schema";
-import { eq, and, inArray } from "drizzle-orm";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -72,26 +69,19 @@ export const postPollOptionsHandler = async ({
 }) => {
 	return handleApiOperation(async () => {
 		const validatedData = await validatePollSubmission(data);
-		const { allCorrectOptions, selectedOptionRecords } = await fetchPollOptions(
-			validatedData.pollId,
-			validatedData.selectedOptions
-		);
-		const answerMetrics = calculateAnswerMetrics(
-			allCorrectOptions,
-			selectedOptionRecords
-		);
 
-		const { xpEarned, runEnded, thresholdInfo } = await processPollAnswer({
+		const { xpEarned, runEnded, thresholdInfo, selectedOptionIds, correctOptionIds, outcome } = await processPollAnswer({
 			pollId: validatedData.pollId,
 			userId: validatedData.userId,
 			selectedOptionIds: validatedData.selectedOptionIds,
 			categoryCode: validatedData.poll.categoryCode,
-			...answerMetrics,
 		});
 
 		return {
 			message: "Options submitted successfully",
-			isCorrect: answerMetrics.isCorrect,
+			selectOptions: selectedOptionIds,
+			correctOptions: correctOptionIds,
+			isCorrect: outcome === "full",
 			runEnded,
 			xpEarned,
 			thresholdInfo,
@@ -113,21 +103,9 @@ type ValidatedPollSubmission = {
 	poll: NonNullable<Awaited<ReturnType<typeof fetchPollById>>>;
 };
 
-type PollOptions = {
-	allCorrectOptions: Array<{ id: number; correct: boolean }>;
-	selectedOptionRecords: Array<{ id: number; correct: boolean }>;
-};
-
-type AnswerMetrics = {
-	nCorrect: number;
-	nWrong: number;
-	nTotal: number;
-	isCorrect: boolean;
-};
-
-async function validatePollSubmission(
+const validatePollSubmission = async (
 	data: PollSubmissionInput
-): Promise<ValidatedPollSubmission> {
+): Promise<ValidatedPollSubmission> => {
 	const validatedData = pollSubmissionSchema.parse(data);
 	const { pollId, selectedOptions, userId } = validatedData;
 
@@ -150,52 +128,5 @@ async function validatePollSubmission(
 		selectedOptionIds,
 		poll,
 	};
-}
+};
 
-async function fetchPollOptions(
-	pollId: number,
-	selectedOptions: string[]
-): Promise<PollOptions> {
-	const selectedOptionIds = selectedOptions.map((option) => Number(option));
-
-	const allCorrectOptions = await db
-		.select()
-		.from(pollOptionsTable)
-		.where(
-			and(
-				eq(pollOptionsTable.poll_id, pollId),
-				eq(pollOptionsTable.correct, true)
-			)
-		);
-
-	const selectedOptionRecords = await db
-		.select()
-		.from(pollOptionsTable)
-		.where(
-			and(
-				eq(pollOptionsTable.poll_id, pollId),
-				inArray(pollOptionsTable.id, selectedOptionIds)
-			)
-		);
-
-	return { allCorrectOptions, selectedOptionRecords };
-}
-
-function calculateAnswerMetrics(
-	allCorrectOptions: Array<{ correct: boolean }>,
-	selectedOptionRecords: Array<{ correct: boolean }>
-): AnswerMetrics {
-	const nCorrect = selectedOptionRecords.filter(
-		(option) => option.correct
-	).length;
-	const nWrong = selectedOptionRecords.filter(
-		(option) => !option.correct
-	).length;
-	const nTotal = allCorrectOptions.length;
-
-	const isCorrect =
-		selectedOptionRecords.length > 0 &&
-		selectedOptionRecords.every((option) => option.correct);
-
-	return { nCorrect, nWrong, nTotal, isCorrect };
-}

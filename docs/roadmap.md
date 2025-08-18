@@ -1,6 +1,6 @@
 ### Roadmap MVP
 
-Phase 1: Core Loop ✅ ship this before anything else
+Season 1: Core Loop ✅ ship this before anything else
 [x] Answer polls (single / multiple choice)
 [x] Start runs mechanics
 [x] XP threshold mechanics (3-poll sets)
@@ -10,29 +10,46 @@ Phase 1: Core Loop ✅ ship this before anything else
 [x] Refactor service file architecture [Critical]
 [x] Remove "penalizeRun" since it's not used?
 [x] Traceability (poll stats for balancing)
-[o] Implement rerolls (Fibonacci cost) [Critical]
-[] Very basic CSI: (correct / total) × streak)
+[x] Implement rerolls (Fibonacci cost) [Critical]
+[o] Basic XP scoring system mechanics [Critical] (and redo flow)
 
-[] Show XP breakdown and result feedback after each poll [Critical]
+| Scenario     | Correct/Total | Wrong | Score | Percentage |
+| ------------ | ------------- | ----- | ----- | ---------- |
+| Perfect      | 2/2           | 0     | 1.0   | 100%       |
+| Good         | 2/2           | 1     | 0.75  | 75%        |
+| Your case    | 1/2           | 1     | 0.625 | 62.5%      |
+| Partial only | 1/2           | 0     | 0.75  | 75%        |
+| All wrong    | 0/2           | 2     | 0.0   | 0%         |
+
+[] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Ciritical]
+[] Show XP breakdown [Critical]
+
+[] Leaderboard [Critical]
+
+    [] Best total XP overall (highest XP)
+    [] Best in category (highest XP)
+    [] Best streak (highest streak)
+    [] Best run (highest XP in a single run)
+    [] Best config (highest XP with a specific config)
+    [] Best category (highest XP in a specific category)
+    [] All by season
+
 [] Traceability
 
     - [] Timestamps on answer
 
+[o] Create 6–8 configs with effects [Critical]
+
+    - [] Create upgradable configs
+    - [] Create some effects
+
 [] Balancing
 
-    [] Multiple choice formula refinement
     [] Threshold formula refinement
     [] Starting storage
     [] Storage growth over time
     [] Config costs
     [] XP gain balance
-
-[] Poll correct streak
-[] Leaderboard (trivial)
-[o] Create 6–8 configs with effects [Critical]
-
-    - [] Create upgradable configs
-    - [] Create some effects
 
 [] Authentication (GitHub/Google)
 [] Deployment
@@ -42,15 +59,17 @@ Phase 1: Core Loop ✅ ship this before anything else
 [] Onboarding/help modal for first-time users [Critical]
 [] Fix refresh-to-reanswer bug [Critical]
 [] Fix immediate-run-end bug [Critical]
+[] Reroll bug: when rerolling it walks behind
 
-Phase 2: Early Meta Layer
+Season 2: Early Meta Layer
+[] Very basic CSI: (correct / total) × streak)
 [] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
 [] Add 6-8 more configs with effects
 [] Expand traceability
 
-Phase 3: Expansion
+Season 3: Expansion
 [] Basic CSI (global average, no per-category complexity)
 [] 20 unlockables (cosmetic or config)
 [] Knowledge-based awards (start with 2)

@@ -7,14 +7,8 @@ import {
 } from "../api/queries";
 import {
 	calculateThresholdInfo,
-	calculateNextPollThresholdFromCategoryData,
 	type ThresholdInfo,
 } from "~/domains/runs/services/thresholdCalculator.service";
-
-export type RunCompletionResult = {
-	readonly runEnded: boolean;
-	readonly reason: string;
-};
 
 // End run when XP threshold is not met
 export const endRunForThresholdFailure = async (runId: number) => {

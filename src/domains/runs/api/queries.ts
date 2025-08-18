@@ -7,7 +7,11 @@ import {
 import { eq, and, desc, sql } from "drizzle-orm";
 import { runFactory } from "../models/run";
 import { runCategoryXpFactory } from "../models/runCategoryXp";
-import { XP_AWARDS } from "~/domains/runs/constants/xpSystem";
+import {
+	calculateStreakUpdate,
+	calculateBestStreak,
+	calculateRunXP,
+} from "~/domains/score/services/score.service";
 
 export const getActiveRunByUserId = async (userId: string) => {
 	const runRecord = await db
@@ -117,16 +121,6 @@ export const getTotalXpForRun = async (runId: number): Promise<number> => {
 	return xpRecords.reduce((total, record) => total + record.current_xp, 0);
 };
 
-// Helper function to get the highest streak across all categories (global poll number)
-export const getGlobalStreakForRun = async (runId: number): Promise<number> => {
-	const xpRecords = await db
-		.select()
-		.from(runCategoryXpTable)
-		.where(eq(runCategoryXpTable.run_id, runId));
-
-	return Math.max(...xpRecords.map((record) => record.current_streak), 0);
-};
-
 // Helper function to get the total polls answered across all categories
 export const getTotalPollsAnsweredForRun = async (
 	runId: number
@@ -145,7 +139,7 @@ export const getTotalPollsAnsweredForRun = async (
 export const awardXpToRun = async (
 	runId: number,
 	categoryCode: string,
-	xpAmount: number = XP_AWARDS.CORRECT_ANSWER
+	baseXpFromCorrectness: number
 ) => {
 	return await db.transaction(async (tx) => {
 		// Get current XP record for this run and category
@@ -166,14 +160,20 @@ export const awardXpToRun = async (
 			);
 		}
 
-		// Calculate new values
-		const newXp = currentXp.current_xp + xpAmount;
-		const newStreak =
-			xpAmount > 0
-				? currentXp.current_streak + 1
-				: currentXp.current_streak;
-		const newBestStreak = Math.max(currentXp.best_streak, newStreak);
+		const newXp = currentXp.current_xp + baseXpFromCorrectness;
+		const newStreak = calculateStreakUpdate(
+			currentXp.current_streak,
+			baseXpFromCorrectness
+		);
+		const newBestStreak = calculateBestStreak(
+			currentXp.best_streak,
+			newStreak
+		);
 		const newPollsAnswered = currentXp.polls_answered + 1;
+
+		const totalXp = calculateRunXP(newPollsAnswered, newStreak);
+
+		console.log("total", totalXp);
 
 		// Update the XP record
 		const [updatedRecord] = await tx
@@ -312,46 +312,6 @@ export const addConfigsToRun = async (runId: number, configIds: string[]) => {
 	return runFactory.toDTO(updatedRun, categoryXp);
 };
 
-export const removeConfigsFromRun = async (
-	runId: number,
-	configIds: string[]
-) => {
-	const [runRecord] = await db
-		.select()
-		.from(runsTable)
-		.where(eq(runsTable.id, runId))
-		.limit(1);
-
-	if (!runRecord) {
-		throw new Error(`Run with id ${runId} not found`);
-	}
-
-	const currentConfigIds = runRecord.active_config_ids || [];
-	const updatedConfigIds = currentConfigIds.filter(
-		(id) => !configIds.includes(id)
-	);
-
-	const [updatedRun] = await db
-		.update(runsTable)
-		.set({
-			active_config_ids: updatedConfigIds,
-		})
-		.where(eq(runsTable.id, runId))
-		.returning();
-
-	// Get the run with its category XP data
-	const xpRecords = await db
-		.select()
-		.from(runCategoryXpTable)
-		.where(eq(runCategoryXpTable.run_id, runId));
-
-	const categoryXp = xpRecords.map((record) =>
-		runCategoryXpFactory.toDTO(record)
-	);
-
-	return runFactory.toDTO(updatedRun, categoryXp);
-};
-
 // Reset current poll rerolls to 0 (called after poll submission)
 export const resetPollRerolls = async (runId: number) => {
 	const [updatedRun] = await db
@@ -364,7 +324,6 @@ export const resetPollRerolls = async (runId: number) => {
 
 	return updatedRun ? runFactory.toDTO(updatedRun) : null;
 };
-
 
 // Process reroll shop request
 export const processRerollShop = async (runId: number) => {
@@ -380,8 +339,11 @@ export const processRerollShop = async (runId: number) => {
 			throw new Error("Run not found");
 		}
 
+		// TODO: Should we import it like this?
 		// Calculate the cost of this specific reroll
-		const { calculateRerollCost } = await import("~/domains/economy/services/reroll.service");
+		const { calculateRerollCost } = await import(
+			"~/domains/economy/services/reroll.service"
+		);
 		const rerollCost = calculateRerollCost(runRecord.rerolls);
 
 		// Update the run with incremented reroll counts and storage used
