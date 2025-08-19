@@ -16,6 +16,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
 import { Route as AuthedDailyPollRouteImport } from './routes/_authed/daily-poll'
+import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
 import { Route as AuthedPollsPollIdRouteImport } from './routes/_authed/polls/$pollId'
 
@@ -53,6 +54,11 @@ const AuthedDailyPollRoute = AuthedDailyPollRouteImport.update({
   path: '/daily-poll',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAdminRoute = AuthedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedPollsIndexRoute = AuthedPollsIndexRouteImport.update({
   id: '/polls/',
   path: '/polls/',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
+  '/admin': typeof AuthedAdminRoute
   '/daily-poll': typeof AuthedDailyPollRoute
   '/game-over': typeof AuthedGameOverRoute
   '/polls/$pollId': typeof AuthedPollsPollIdRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
+  '/admin': typeof AuthedAdminRoute
   '/daily-poll': typeof AuthedDailyPollRoute
   '/game-over': typeof AuthedGameOverRoute
   '/polls/$pollId': typeof AuthedPollsPollIdRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
+  '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/daily-poll': typeof AuthedDailyPollRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
   '/_authed/polls/$pollId': typeof AuthedPollsPollIdRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/signup'
+    | '/admin'
     | '/daily-poll'
     | '/game-over'
     | '/polls/$pollId'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/signup'
+    | '/admin'
     | '/daily-poll'
     | '/game-over'
     | '/polls/$pollId'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/signup'
+    | '/_authed/admin'
     | '/_authed/daily-poll'
     | '/_authed/game-over'
     | '/_authed/polls/$pollId'
@@ -189,6 +201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDailyPollRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/admin': {
+      id: '/_authed/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthedAdminRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/polls/': {
       id: '/_authed/polls/'
       path: '/polls'
@@ -207,6 +226,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedAdminRoute: typeof AuthedAdminRoute
   AuthedDailyPollRoute: typeof AuthedDailyPollRoute
   AuthedGameOverRoute: typeof AuthedGameOverRoute
   AuthedPollsPollIdRoute: typeof AuthedPollsPollIdRoute
@@ -214,6 +234,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAdminRoute: AuthedAdminRoute,
   AuthedDailyPollRoute: AuthedDailyPollRoute,
   AuthedGameOverRoute: AuthedGameOverRoute,
   AuthedPollsPollIdRoute: AuthedPollsPollIdRoute,

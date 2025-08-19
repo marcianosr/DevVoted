@@ -40,10 +40,15 @@ export const getActiveRunByUserId = async (userId: string) => {
 
 export const createRunForUser = async (userId: string) => {
 	return await db.transaction(async (tx) => {
+		// Get current season ID for the new run
+		const { getSeasonForNewRun } = await import("~/domains/seasons/services/seasonService");
+		const seasonId = await getSeasonForNewRun();
+
 		const [runRecord] = await tx
 			.insert(runsTable)
 			.values({
 				user_id: userId,
+				season_id: seasonId,
 				status: "active",
 			})
 			.returning();

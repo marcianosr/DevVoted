@@ -51,6 +51,20 @@ export const pollStatus = pgEnum("status", [
 export const runStatus = pgEnum("run_status", ["finished", "active"]);
 
 /**
+ * Season status types to manage season lifecycle
+ * - upcoming: Season scheduled but not yet started
+ * - active: Current season accepting new runs
+ * - finished: Season completed, no new runs allowed
+ * - archived: Historical season, no longer displayed
+ */
+export const seasonStatus = pgEnum("season_status", [
+	"upcoming",
+	"active", 
+	"finished",
+	"archived",
+] as const);
+
+/**
  * Poll answer type to determine if a poll accepts single or multiple answers
  * - single: Only one answer can be selected
  * - multiple: Multiple answers can be selected
@@ -189,6 +203,8 @@ export const runsTable = pgTable("runs", {
 	user_id: uuid("user_id")
 		.references(() => usersTable.id, { onDelete: "cascade" })
 		.notNull(),
+	season_id: integer("season_id")
+		.references(() => seasonsTable.id, { onDelete: "set null" }), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	active_config_ids: json("active_config_ids")
@@ -240,3 +256,23 @@ export const runCategoryXpTable = pgTable(
 		};
 	}
 );
+
+/**
+ * Seasons Table
+ * Manages game seasons for temporal organization and progression tracking
+ * - Provides context for runs, leaderboards, and events
+ * - Enables season-specific mechanics and rewards
+ * - Supports historical tracking and analytics
+ */
+export const seasonsTable = pgTable("seasons", {
+	id: serial("id").primaryKey(),
+	name: varchar("name", { length: 256 }).notNull(),
+	description: text("description"),
+	status: seasonStatus("status").notNull().default("upcoming"),
+	start_date: timestamp("start_date").notNull(),
+	end_date: timestamp("end_date").notNull(),
+	created_at: timestamp("created_at").defaultNow(),
+	updated_at: timestamp("updated_at")
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+});

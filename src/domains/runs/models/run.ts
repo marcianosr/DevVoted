@@ -6,6 +6,7 @@ import type { RunCategoryXp } from "./runCategoryXp";
 export type Run = {
 	id: number;
 	userId: string;
+	seasonId: number | null;
 	status: "active" | "finished";
 	storageLimit: number;
 	activeConfigIds: string[];
@@ -25,6 +26,7 @@ export const runToDTO = (record: RunRecord, categoryXp: RunCategoryXp[] = []): R
 	return {
 		id: record.id,
 		userId: record.user_id,
+		seasonId: record.season_id,
 		status: record.status,
 		storageLimit: record.storage_limit,
 		activeConfigIds: record.active_config_ids || [],
@@ -43,6 +45,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 	return {
 		id: dto.id,
 		user_id: dto.userId,
+		season_id: dto.seasonId,
 		status: dto.status,
 		storage_limit: dto.storageLimit,
 		active_config_ids: dto.activeConfigIds,
@@ -70,6 +73,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 	return {
 		id: 0,
 		userId: "",
+		seasonId: null,
 		status: "active",
 		storageLimit: STORAGE_UNITS.MB, // 1MB default
 		activeConfigIds: [],
@@ -90,6 +94,7 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 	return {
 		id: 1,
 		userId: "test-user-id",
+		seasonId: 1,
 		status: "active",
 		storageLimit: STORAGE_UNITS.MB,
 		activeConfigIds: [],
@@ -109,6 +114,7 @@ export const createMockRunRecord = (overrides: Partial<RunRecord> = {}): RunReco
 	return {
 		id: 1,
 		user_id: "test-user-id",
+		season_id: 1,
 		status: "active",
 		storage_limit: STORAGE_UNITS.MB,
 		active_config_ids: [],

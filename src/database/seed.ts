@@ -5,6 +5,7 @@ import {
 	usersTable,
 	pollOptionsTable,
 	runsTable,
+	seasonsTable,
 } from "@/src/database/schema";
 import { eq } from "drizzle-orm";
 import { createSeedPollArray } from "~/domains/polls/factories/poll";
@@ -134,6 +135,35 @@ async function seedDatabase() {
 			console.log(
 				`✅ Successfully seeded ${totalOptionsCreated} poll options!`
 			);
+		}
+
+		// Seed seasons for testing
+		console.log("\n🏆 Seeding test seasons...");
+		
+		const existingSeasons = await db.select().from(seasonsTable);
+		
+		if (existingSeasons.length === 0) {
+			const testSeasons = [
+				{
+					name: "Season 1: Foundation",
+					description: "The inaugural season focusing on core frontend technologies",
+					status: "active" as const,
+					start_date: new Date(Date.now() - 86400000 * 7), // Started 1 week ago
+					end_date: new Date(Date.now() + 86400000 * 30), // Ends in 30 days
+				},
+				{
+					name: "Season 2: Advanced Patterns",
+					description: "Advanced React patterns and state management",
+					status: "upcoming" as const,
+					start_date: new Date(Date.now() + 86400000 * 25), // Starts in 25 days
+					end_date: new Date(Date.now() + 86400000 * 60), // Ends in 60 days
+				}
+			];
+			
+			await db.insert(seasonsTable).values(testSeasons);
+			console.log(`✅ Successfully seeded ${testSeasons.length} test seasons!`);
+		} else {
+			console.log(`ℹ️ Found ${existingSeasons.length} existing seasons. Skipping season seeding.`);
 		}
 
 		console.log("\n✨ Database seeding completed successfully!\n");

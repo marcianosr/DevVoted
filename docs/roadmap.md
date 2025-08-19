@@ -11,7 +11,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Remove "penalizeRun" since it's not used?
 [x] Traceability (poll stats for balancing)
 [x] Implement rerolls (Fibonacci cost) [Critical]
-[o] Basic XP scoring system mechanics [Critical] (and redo flow)
+[x] Basic XP scoring system mechanics [Critical] (and redo flow)
 
 | Scenario     | Correct/Total | Wrong | Score | Percentage |
 | ------------ | ------------- | ----- | ----- | ---------- |
@@ -21,7 +21,7 @@ Season 1: Core Loop ✅ ship this before anything else
 | Partial only | 1/2           | 0     | 0.75  | 75%        |
 | All wrong    | 0/2           | 2     | 0.0   | 0%         |
 
-[] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Ciritical]
+[o] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Critical]
 [] Show XP breakdown [Critical]
 
 [] Leaderboard [Critical]
@@ -68,6 +68,8 @@ Season 2: Early Meta Layer
 [] Fix low-hanging sonar issues
 [] Add 6-8 more configs with effects
 [] Expand traceability
+[] Admin panel for polls
+[] Check system roles
 
 Season 3: Expansion
 [] Basic CSI (global average, no per-category complexity)
