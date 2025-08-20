@@ -3,6 +3,7 @@ import {
 	runsTable,
 	runCategoryXpTable,
 	pollCategoriesTable,
+	leaderboardTable,
 } from "@/src/database/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { runFactory } from "../models/run";
@@ -103,6 +104,7 @@ export const getRunWithCategoryXp = async (runId: number) => {
 	return runFactory.toDTO(runRecord[0], categoryXp);
 };
 
+// Basic run completion - only sets status and timestamp (no stats processing)
 export const finishRun = async (runId: number) => {
 	const [runRecord] = await db
 		.update(runsTable)
@@ -139,6 +141,44 @@ export const getTotalPollsAnsweredForRun = async (
 		(total, record) => total + record.polls_answered,
 		0
 	);
+};
+
+// Helper function to get the best streak across all categories in a run
+export const getBestStreakForRun = async (runId: number): Promise<number> => {
+	const xpRecords = await db
+		.select()
+		.from(runCategoryXpTable)
+		.where(eq(runCategoryXpTable.run_id, runId));
+
+	return xpRecords.reduce(
+		(maxStreak, record) => Math.max(maxStreak, record.best_streak),
+		0
+	);
+};
+
+// Create leaderboard entry for a completed run
+export const createLeaderboardEntry = async (
+	userId: string, 
+	runId: number, 
+	seasonId: number | null,
+	totalXp: number, 
+	bestStreak: number, 
+	pollsAnswered: number
+) => {
+	const [leaderboardEntry] = await db
+		.insert(leaderboardTable)
+		.values({
+			user_id: userId,
+			run_id: runId,
+			season_id: seasonId,
+			total_xp: totalXp,
+			best_streak: bestStreak,
+			polls_answered: pollsAnswered,
+			completed_at: new Date(),
+		})
+		.returning();
+
+	return leaderboardEntry;
 };
 
 export const awardXpToRun = async (
@@ -248,7 +288,7 @@ export const getLastRunFromUser = async (userId: string) => {
 	};
 };
 
-// Complete run and reset all category XP when threshold fails
+// Complete run due to threshold failure - preserves progress in final_* columns then resets current values
 export const completeRunWithThresholdFailure = async (runId: number) => {
 	return await db.transaction(async (tx) => {
 		// Store current values in final columns before resetting

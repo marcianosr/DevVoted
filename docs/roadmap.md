@@ -21,7 +21,7 @@ Season 1: Core Loop ✅ ship this before anything else
 | Partial only | 1/2           | 0     | 0.75  | 75%        |
 | All wrong    | 0/2           | 2     | 0.0   | 0%         |
 
-[o] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Critical]
+[x] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Critical]
 [] Show XP breakdown [Critical]
 
 [] Leaderboard [Critical]
@@ -51,6 +51,7 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Config costs
     [] XP gain balance
 
+[] Upgrades
 [] Authentication (GitHub/Google)
 [] Deployment
 [] Old-to-new system migration

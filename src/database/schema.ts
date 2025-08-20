@@ -276,3 +276,27 @@ export const seasonsTable = pgTable("seasons", {
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 });
+
+/**
+ * Leaderboard Table
+ * Pre-computed leaderboard entries for completed runs
+ * - Created when a run finishes to enable fast leaderboard queries
+ * - Aggregates data from run_category_xp for simplified queries
+ * - Eliminates need for complex JOINs in leaderboard displays
+ */
+export const leaderboardTable = pgTable("leaderboard", {
+	id: serial("id").primaryKey(),
+	user_id: uuid("user_id")
+		.references(() => usersTable.id, { onDelete: "cascade" })
+		.notNull(),
+	run_id: integer("run_id")
+		.references(() => runsTable.id, { onDelete: "cascade" })
+		.notNull(), // Multiple leaderboard entries allowed for run history
+	season_id: integer("season_id")
+		.references(() => seasonsTable.id, { onDelete: "set null" }), // Nullable for pre-season runs
+	total_xp: integer("total_xp").notNull().default(0),
+	best_streak: integer("best_streak").notNull().default(0),
+	polls_answered: integer("polls_answered").notNull().default(0),
+	completed_at: timestamp("completed_at").notNull(),
+	created_at: timestamp("created_at").defaultNow(),
+});

@@ -5,7 +5,9 @@ import {
 	usersTable,
 	pollOptionsTable,
 	runsTable,
+	runCategoryXpTable,
 	seasonsTable,
+	leaderboardTable,
 } from "@/src/database/schema";
 import { eq } from "drizzle-orm";
 import { createSeedPollArray } from "~/domains/polls/factories/poll";
@@ -164,6 +166,103 @@ async function seedDatabase() {
 			console.log(`✅ Successfully seeded ${testSeasons.length} test seasons!`);
 		} else {
 			console.log(`ℹ️ Found ${existingSeasons.length} existing seasons. Skipping season seeding.`);
+		}
+
+		// Seed leaderboard data with random users
+		console.log("\n🏆 Seeding leaderboard with random users...");
+		
+		const existingLeaderboard = await db.select().from(leaderboardTable);
+		
+		if (existingLeaderboard.length === 0) {
+			// Create 3 random users for leaderboard
+			const randomUsers = [
+				{
+					id: "11111111-1111-1111-1111-111111111111",
+					display_name: "Diddy Kong",
+					email: "diddy@rareware.com",
+					role: "user" as const,
+				},
+				{
+					id: "22222222-2222-2222-2222-222222222222", 
+					display_name: "Banjo Bear",
+					email: "banjo@rareware.com",
+					role: "user" as const,
+				},
+				{
+					id: "33333333-3333-3333-3333-333333333333",
+					display_name: "Kazooie Bird", 
+					email: "kazooie@rareware.com",
+					role: "user" as const,
+				}
+			];
+
+			// Insert users
+			for (const user of randomUsers) {
+				const existingUser = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
+				if (existingUser.length === 0) {
+					await db.insert(usersTable).values(user);
+					console.log(`✅ Created user: ${user.display_name}`);
+				}
+			}
+
+			// Get current season for runs
+			const currentSeason = await db.select().from(seasonsTable).limit(1);
+			const seasonId = currentSeason[0]?.id || null;
+
+			// Create completed runs and leaderboard entries
+			const leaderboardData = [
+				{ userId: randomUsers[0].id, totalXp: 2500, bestStreak: 12, pollsAnswered: 45 },
+				{ userId: randomUsers[1].id, totalXp: 1800, bestStreak: 8, pollsAnswered: 32 },
+				{ userId: randomUsers[2].id, totalXp: 1200, bestStreak: 6, pollsAnswered: 28 },
+			];
+
+			for (let i = 0; i < leaderboardData.length; i++) {
+				const data = leaderboardData[i];
+				
+				// Create a completed run
+				const [run] = await db.insert(runsTable).values({
+					user_id: data.userId,
+					season_id: seasonId,
+					status: "finished",
+					finished_at: new Date(Date.now() - (i + 1) * 86400000), // Finished 1-3 days ago
+				}).returning();
+
+				// Create run category XP data
+				const categories = ["js", "css", "react", "typescript", "general-frontend"];
+				for (const categoryCode of categories) {
+					const categoryXp = Math.floor(data.totalXp / categories.length) + Math.floor(Math.random() * 100);
+					const categoryStreak = Math.floor(data.bestStreak * 0.6) + Math.floor(Math.random() * 3);
+					const categoryPolls = Math.floor(data.pollsAnswered / categories.length) + Math.floor(Math.random() * 5);
+					
+					await db.insert(runCategoryXpTable).values({
+						run_id: run.id,
+						category_code: categoryCode,
+						current_xp: categoryXp,
+						final_xp: categoryXp,
+						current_streak: categoryStreak,
+						best_streak: categoryStreak,
+						final_streak: categoryStreak,
+						polls_answered: categoryPolls,
+					});
+				}
+
+				// Create leaderboard entry
+				await db.insert(leaderboardTable).values({
+					user_id: data.userId,
+					run_id: run.id,
+					season_id: seasonId,
+					total_xp: data.totalXp,
+					best_streak: data.bestStreak,
+					polls_answered: data.pollsAnswered,
+					completed_at: new Date(Date.now() - (i + 1) * 86400000),
+				});
+
+				console.log(`✅ Created leaderboard entry for ${randomUsers[i].display_name}: ${data.totalXp} XP`);
+			}
+
+			console.log(`✅ Successfully seeded leaderboard with ${leaderboardData.length} entries!`);
+		} else {
+			console.log(`ℹ️ Found ${existingLeaderboard.length} existing leaderboard entries. Skipping leaderboard seeding.`);
 		}
 
 		console.log("\n✨ Database seeding completed successfully!\n");

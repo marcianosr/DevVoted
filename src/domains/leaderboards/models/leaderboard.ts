@@ -4,19 +4,12 @@ export type LeaderboardEntry = {
 	totalXp: number;
 	bestStreak: number;
 	pollsAnswered: number;
-	runId: number;
+	runId: number | null; // null when aggregating across multiple runs
 	seasonId: number | null;
-	categoryCode?: string;
-};
-
-export type CategoryLeaderboardEntry = LeaderboardEntry & {
-	categoryCode: string;
-	categoryXp: number;
 };
 
 export type LeaderboardFilter = {
 	seasonId?: number | null;
-	categoryCode?: string;
 	limit?: number;
 };
 
@@ -24,11 +17,4 @@ export type SeasonalLeaderboard = {
 	seasonId: number | null;
 	seasonName: string | null;
 	entries: LeaderboardEntry[];
-};
-
-export type CategorySeasonalLeaderboard = {
-	seasonId: number | null;
-	seasonName: string | null;
-	categoryCode: string;
-	entries: CategoryLeaderboardEntry[];
 };

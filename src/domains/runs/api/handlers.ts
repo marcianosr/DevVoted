@@ -34,18 +34,6 @@ export const getUserActiveRun = async (userId: string) => {
 	}, "Failed to get active run");
 };
 
-export const finishUserRun = async (runId: number) => {
-	return handleApiOperation(async () => {
-		const finishedRun = await finishRun(runId);
-
-		if (!finishedRun) {
-			throw new Error("Run not found");
-		}
-
-		return finishedRun;
-	}, "Failed to finish run");
-};
-
 export const getLastRunForUser = async (userId: string) => {
 	return handleApiOperation(async () => {
 		const lastRun = await getLastRunFromUser(userId);

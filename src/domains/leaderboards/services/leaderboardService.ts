@@ -1,8 +1,6 @@
 import type { 
 	LeaderboardEntry, 
-	CategoryLeaderboardEntry, 
 	SeasonalLeaderboard,
-	CategorySeasonalLeaderboard,
 	LeaderboardFilter 
 } from "../models/leaderboard";
 import * as leaderboardQueries from "../api/queries";
@@ -16,11 +14,16 @@ import * as seasonQueries from "~/domains/seasons/api/queries";
  */
 
 export const getGlobalLeaderboard = async (limit: number = 10): Promise<LeaderboardEntry[]> => {
-	return await leaderboardQueries.getAllTimeLeaderboard(limit);
+	return await leaderboardQueries.getTopRunsByTotalXp({ limit });
 };
 
 export const getCurrentSeasonLeaderboard = async (limit: number = 10): Promise<LeaderboardEntry[]> => {
-	return await leaderboardQueries.getCurrentSeasonLeaderboard(limit);
+	// Get the current season ID
+	const currentSeason = await seasonQueries.findCurrentSeason();
+	return await leaderboardQueries.getTopRunsByTotalXp({ 
+		seasonId: currentSeason?.id || null,
+		limit 
+	});
 };
 
 export const getSeasonLeaderboard = async (seasonId: number | null, limit: number = 10): Promise<SeasonalLeaderboard> => {
@@ -39,33 +42,6 @@ export const getSeasonLeaderboard = async (seasonId: number | null, limit: numbe
 	};
 };
 
-export const getCategoryLeaderboard = async (
-	categoryCode: string, 
-	filter: LeaderboardFilter = {}
-): Promise<CategoryLeaderboardEntry[]> => {
-	return await leaderboardQueries.getTopRunsByCategory(categoryCode, filter);
-};
-
-export const getSeasonalCategoryLeaderboard = async (
-	categoryCode: string,
-	seasonId: number | null,
-	limit: number = 10
-): Promise<CategorySeasonalLeaderboard> => {
-	const entries = await leaderboardQueries.getTopRunsByCategory(categoryCode, { seasonId, limit });
-	
-	let seasonName: string | null = null;
-	if (seasonId) {
-		const season = await seasonQueries.findSeasonById(seasonId);
-		seasonName = season?.name || null;
-	}
-	
-	return {
-		seasonId,
-		seasonName,
-		categoryCode,
-		entries,
-	};
-};
 
 export const getStreakLeaderboard = async (filter: LeaderboardFilter = {}): Promise<LeaderboardEntry[]> => {
 	return await leaderboardQueries.getTopStreaks(filter);
@@ -98,7 +74,7 @@ export const getLeaderboardsForAllSeasons = async (limit: number = 10) => {
 	// Add pre-season leaderboard
 	const preSeasonEntries = await getPreSeasonLeaderboard(limit);
 	leaderboards.unshift({
-		seasonId: null as number | null,
+		seasonId: null,
 		seasonName: "Pre-Season",
 		entries: preSeasonEntries,
 	});

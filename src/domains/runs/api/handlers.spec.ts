@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-	getOrCreateActiveRun,
-	getUserActiveRun,
-	finishUserRun,
-} from "./handlers";
+import { getOrCreateActiveRun, getUserActiveRun } from "./handlers";
 import * as queries from "./queries";
 import { createMockRun } from "../models/run";
 import { createMockRunCategoryXpArray } from "../models/runCategoryXp";
@@ -26,7 +22,9 @@ describe("Run Handlers", () => {
 			const mockXp = createMockRunCategoryXpArray(3);
 			const mockRunWithXp = createMockRun({ categoryXp: mockXp });
 
-			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRunWithXp);
+			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(
+				mockRunWithXp
+			);
 
 			const result = await getOrCreateActiveRun("test-user-id");
 
@@ -34,7 +32,9 @@ describe("Run Handlers", () => {
 			if (result.success) {
 				expect(result.data).toEqual(mockRunWithXp);
 			}
-			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
+			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith(
+				"test-user-id"
+			);
 			expect(queries.createRunForUser).not.toHaveBeenCalled();
 		});
 
@@ -43,7 +43,9 @@ describe("Run Handlers", () => {
 			const mockNewRunData = createMockRun({ categoryXp: mockXp });
 
 			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(null);
-			vi.mocked(queries.createRunForUser).mockResolvedValue(mockNewRunData);
+			vi.mocked(queries.createRunForUser).mockResolvedValue(
+				mockNewRunData
+			);
 
 			const result = await getOrCreateActiveRun("test-user-id");
 
@@ -51,14 +53,20 @@ describe("Run Handlers", () => {
 			if (result.success) {
 				expect(result.data).toEqual(mockNewRunData);
 			}
-			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
-			expect(queries.createRunForUser).toHaveBeenCalledWith("test-user-id");
+			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith(
+				"test-user-id"
+			);
+			expect(queries.createRunForUser).toHaveBeenCalledWith(
+				"test-user-id"
+			);
 			expect(queries.getRunWithCategoryXp).not.toHaveBeenCalled();
 		});
 
 		it("handles errors gracefully", async () => {
 			const errorMessage = "Database connection failed";
-			vi.mocked(queries.getActiveRunByUserId).mockRejectedValue(new Error(errorMessage));
+			vi.mocked(queries.getActiveRunByUserId).mockRejectedValue(
+				new Error(errorMessage)
+			);
 
 			const result = await getOrCreateActiveRun("test-user-id");
 
@@ -69,7 +77,9 @@ describe("Run Handlers", () => {
 		});
 
 		it("handles unknown errors", async () => {
-			vi.mocked(queries.getActiveRunByUserId).mockRejectedValue("Unknown error");
+			vi.mocked(queries.getActiveRunByUserId).mockRejectedValue(
+				"Unknown error"
+			);
 
 			const result = await getOrCreateActiveRun("test-user-id");
 
@@ -85,7 +95,9 @@ describe("Run Handlers", () => {
 			const mockXp = createMockRunCategoryXpArray(3);
 			const mockRunWithXp = createMockRun({ categoryXp: mockXp });
 
-			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRunWithXp);
+			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(
+				mockRunWithXp
+			);
 
 			const result = await getUserActiveRun("test-user-id");
 
@@ -93,7 +105,9 @@ describe("Run Handlers", () => {
 			if (result.success) {
 				expect(result.data).toEqual(mockRunWithXp);
 			}
-			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
+			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith(
+				"test-user-id"
+			);
 		});
 
 		it("returns error when no active run found", async () => {
@@ -109,7 +123,9 @@ describe("Run Handlers", () => {
 
 		it("handles errors gracefully", async () => {
 			const errorMessage = "Database connection failed";
-			vi.mocked(queries.getActiveRunByUserId).mockRejectedValue(new Error(errorMessage));
+			vi.mocked(queries.getActiveRunByUserId).mockRejectedValue(
+				new Error(errorMessage)
+			);
 
 			const result = await getUserActiveRun("test-user-id");
 
@@ -120,63 +136,15 @@ describe("Run Handlers", () => {
 		});
 
 		it("handles unknown errors", async () => {
-			vi.mocked(queries.getActiveRunByUserId).mockRejectedValue("Unknown error");
+			vi.mocked(queries.getActiveRunByUserId).mockRejectedValue(
+				"Unknown error"
+			);
 
 			const result = await getUserActiveRun("test-user-id");
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
 				expect(result.error).toBe("Failed to get active run");
-			}
-		});
-	});
-
-	describe("finishUserRun", () => {
-		it("finishes run successfully", async () => {
-			const mockFinishedRun = createMockRun({ status: "finished" });
-
-			vi.mocked(queries.finishRun).mockResolvedValue(mockFinishedRun);
-
-			const result = await finishUserRun(1);
-
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data).toEqual(mockFinishedRun);
-			}
-			expect(queries.finishRun).toHaveBeenCalledWith(1);
-		});
-
-		it("returns error when run not found", async () => {
-			vi.mocked(queries.finishRun).mockResolvedValue(null);
-
-			const result = await finishUserRun(999);
-
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error).toBe("Run not found");
-			}
-		});
-
-		it("handles errors gracefully", async () => {
-			const errorMessage = "Database connection failed";
-			vi.mocked(queries.finishRun).mockRejectedValue(new Error(errorMessage));
-
-			const result = await finishUserRun(1);
-
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error).toBe(errorMessage);
-			}
-		});
-
-		it("handles unknown errors", async () => {
-			vi.mocked(queries.finishRun).mockRejectedValue("Unknown error");
-
-			const result = await finishUserRun(1);
-
-			expect(result.success).toBe(false);
-			if (!result.success) {
-				expect(result.error).toBe("Failed to finish run");
 			}
 		});
 	});
