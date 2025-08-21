@@ -1,0 +1,3 @@
+ALTER TABLE "leaderboard" ADD COLUMN "category_code" varchar(50) NOT NULL;--> statement-breakpoint
+ALTER TABLE "leaderboard" ADD COLUMN "category_xp" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "leaderboard" ADD CONSTRAINT "leaderboard_category_code_polls_categories_code_fk" FOREIGN KEY ("category_code") REFERENCES "public"."polls_categories"("code") ON DELETE no action ON UPDATE no action;

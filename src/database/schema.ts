@@ -12,6 +12,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 import { STORAGE_UNITS } from "~/lib/storage";
+import type { CategoryCode } from "~/domains/shared/categories";
 
 /**
  * Database Schema for DevVoted Quiz Game
@@ -294,7 +295,11 @@ export const leaderboardTable = pgTable("leaderboard", {
 		.notNull(), // Multiple leaderboard entries allowed for run history
 	season_id: integer("season_id")
 		.references(() => seasonsTable.id, { onDelete: "set null" }), // Nullable for pre-season runs
-	total_xp: integer("total_xp").notNull().default(0),
+	category_code: varchar("category_code", { length: 50 })
+		.references(() => pollCategoriesTable.code)
+		.notNull(), // Category for this leaderboard entry
+	category_xp: integer("category_xp").notNull().default(0), // XP achieved in this category for this run
+	total_xp: integer("total_xp").notNull().default(0), // Overall XP for the run (for global leaderboards)
 	best_streak: integer("best_streak").notNull().default(0),
 	polls_answered: integer("polls_answered").notNull().default(0),
 	completed_at: timestamp("completed_at").notNull(),

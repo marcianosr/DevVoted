@@ -1,14 +1,51 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { LeaderboardEntry } from "../models/leaderboard";
+import { getCategories, type CategoryCode } from "~/domains/shared/categories";
 
-interface SimpleLeaderboardProps {
+type SimpleLeaderboardProps = {
 	entries: LeaderboardEntry[];
 	title?: string;
-}
+	getCategoryLeaderboard: (opts: {
+		data: { categoryCode?: CategoryCode };
+	}) => Promise<LeaderboardEntry[]>;
+};
+
+type CategoryOption = {
+	code?: CategoryCode;
+	name: string;
+};
+
+const CATEGORIES: CategoryOption[] = [
+	{ name: "Global" }, // undefined categoryCode = global
+	...getCategories(),
+];
 
 export const SimpleLeaderboard = ({
-	entries,
+	entries: initialEntries,
 	title = "Leaderboards",
+	getCategoryLeaderboard,
 }: SimpleLeaderboardProps) => {
+	const [selectedCategory, setSelectedCategory] = useState<
+		CategoryCode | undefined
+	>(undefined);
+
+	// Query for category-specific leaderboard
+	const categoryQuery = useQuery({
+		queryKey: ["leaderboard", "category", selectedCategory],
+		queryFn: () =>
+			getCategoryLeaderboard({
+				data: { categoryCode: selectedCategory },
+			}),
+		enabled: selectedCategory !== undefined,
+		staleTime: 5 * 60 * 1000, // 5 minutes
+	});
+
+	// Use category-specific entries if available, otherwise use initial entries
+	const entries =
+		selectedCategory !== undefined && categoryQuery.data
+			? categoryQuery.data
+			: initialEntries;
 	const getRankColor = (rank: number) => {
 		switch (rank) {
 			case 1:
@@ -41,11 +78,36 @@ export const SimpleLeaderboard = ({
 			<div className="border-b border-gray-600 pb-2 mb-3">
 				<div className="text-white font-bold">{title}</div>
 			</div>
-			<div className="text-gray-400 text-xs mb-2">
-				Tabs: [ Global ] [ React ] [ CSS ] [ TS ]
+			{/* Category Tabs */}
+			<div className="flex flex-wrap gap-1 mb-2">
+				{CATEGORIES.map((category) => {
+					const isSelected = selectedCategory === category.code;
+					const isLoading =
+						selectedCategory === category.code &&
+						categoryQuery.isLoading;
+
+					return (
+						<button
+							key={category.code || "global"}
+							onClick={() => setSelectedCategory(category.code)}
+							disabled={isLoading}
+							className={`px-2 py-1 text-xs font-mono border rounded transition-colors ${
+								isSelected
+									? "bg-gray-700 border-gray-500 text-white"
+									: "bg-transparent border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+							} ${isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+						>
+							{isLoading ? "..." : `[ ${category.name} ]`}
+						</button>
+					);
+				})}
 			</div>
 			<div className="text-gray-400 text-xs mb-4">
-				Metric: XP/Poll (min 5 polls)
+				Metric:{" "}
+				{selectedCategory
+					? `${CATEGORIES.find((c) => c.code === selectedCategory)?.name} Category XP`
+					: "Total XP"}{" "}
+				(min 5 polls)
 			</div>
 			<div className="space-y-1">
 				{entries.map((entry, index) => {

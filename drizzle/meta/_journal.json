@@ -127,6 +127,13 @@
       "when": 1755685356851,
       "tag": "0017_reflective_juggernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1755689687298,
+      "tag": "0018_daily_darkhawk",
+      "breakpoints": true
     }
   ]
 }

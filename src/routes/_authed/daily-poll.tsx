@@ -6,6 +6,7 @@ import { pollQueryKeys } from "~/domains/shared/queryKeys";
 import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
 import { SimpleLeaderboard } from "~/domains/leaderboards/components/SimpleLeaderboard";
 import { getTodayDateString } from "~/lib/dateUtils";
+import type { CategoryCode } from "~/domains/shared/categories";
 
 const getSimpleLeaderboard = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -15,6 +16,15 @@ const getSimpleLeaderboard = createServerFn({ method: "GET" }).handler(
 		return await getSimpleLeaderboardHandler();
 	}
 );
+
+const getCategoryLeaderboard = createServerFn({ method: "POST" })
+	.validator((data: { categoryCode?: CategoryCode }) => data)
+	.handler(async ({ data }) => {
+		const { getCategoryLeaderboardHandler } = await import(
+			"~/domains/leaderboards/api/handlers"
+		);
+		return await getCategoryLeaderboardHandler({ categoryCode: data.categoryCode });
+	});
 
 const DailyPoll: React.FC = () => {
 	const { user } = Route.useRouteContext();
@@ -57,10 +67,11 @@ const DailyPoll: React.FC = () => {
 						</div>
 					</div>
 				)}
-				{leaderboardQuery.data?.success && (
+				{leaderboardQuery.data && (
 					<SimpleLeaderboard
-						entries={leaderboardQuery.data.entries}
+						entries={leaderboardQuery.data}
 						title="Leaderboards — Global & Category"
+						getCategoryLeaderboard={getCategoryLeaderboard}
 					/>
 				)}
 			</div>

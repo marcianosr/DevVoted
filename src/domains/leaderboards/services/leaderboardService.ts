@@ -55,9 +55,9 @@ export const getAvailableSeasons = async () => {
 	return await seasonQueries.findAllSeasons();
 };
 
-export const getLeaderboardsForAllSeasons = async (limit: number = 10) => {
+export const getLeaderboardsForAllSeasons = async (limit: number = 10): Promise<SeasonalLeaderboard[]> => {
 	const seasons = await seasonQueries.findAllSeasons();
-	const leaderboards = await Promise.all(
+	const leaderboards: SeasonalLeaderboard[] = await Promise.all(
 		seasons.map(async (season) => {
 			const entries = await leaderboardQueries.getTopRunsByTotalXp({ 
 				seasonId: season.id, 

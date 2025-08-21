@@ -11,6 +11,7 @@ import {
 } from "@/src/database/schema";
 import { eq } from "drizzle-orm";
 import { createSeedPollArray } from "~/domains/polls/factories/poll";
+import { getCategories, CATEGORY_CODES } from "~/domains/shared/categories";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 
@@ -42,13 +43,7 @@ async function seedDatabase() {
 	// Next, ensure we have the necessary categories
 	console.log("\n📋 Seeding poll categories...");
 
-	const categories = [
-		{ name: "CSS", code: "css" },
-		{ name: "JavaScript", code: "js" },
-		{ name: "React", code: "react" },
-		{ name: "TypeScript", code: "typescript" },
-		{ name: "General Frontend", code: "general-frontend" },
-	];
+	const categories = getCategories();
 
 	try {
 		// Insert categories if they don't exist
@@ -141,14 +136,15 @@ async function seedDatabase() {
 
 		// Seed seasons for testing
 		console.log("\n🏆 Seeding test seasons...");
-		
+
 		const existingSeasons = await db.select().from(seasonsTable);
-		
+
 		if (existingSeasons.length === 0) {
 			const testSeasons = [
 				{
 					name: "Season 1: Foundation",
-					description: "The inaugural season focusing on core frontend technologies",
+					description:
+						"The inaugural season focusing on core frontend technologies",
 					status: "active" as const,
 					start_date: new Date(Date.now() - 86400000 * 7), // Started 1 week ago
 					end_date: new Date(Date.now() + 86400000 * 30), // Ends in 30 days
@@ -159,46 +155,53 @@ async function seedDatabase() {
 					status: "upcoming" as const,
 					start_date: new Date(Date.now() + 86400000 * 25), // Starts in 25 days
 					end_date: new Date(Date.now() + 86400000 * 60), // Ends in 60 days
-				}
+				},
 			];
-			
+
 			await db.insert(seasonsTable).values(testSeasons);
-			console.log(`✅ Successfully seeded ${testSeasons.length} test seasons!`);
+			console.log(
+				`✅ Successfully seeded ${testSeasons.length} test seasons!`
+			);
 		} else {
-			console.log(`ℹ️ Found ${existingSeasons.length} existing seasons. Skipping season seeding.`);
+			console.log(
+				`ℹ️ Found ${existingSeasons.length} existing seasons. Skipping season seeding.`
+			);
 		}
 
 		// Seed leaderboard data with random users
 		console.log("\n🏆 Seeding leaderboard with random users...");
-		
+
 		const existingLeaderboard = await db.select().from(leaderboardTable);
-		
+
 		if (existingLeaderboard.length === 0) {
 			// Create 3 random users for leaderboard
 			const randomUsers = [
 				{
 					id: "11111111-1111-1111-1111-111111111111",
-					display_name: "Diddy Kong",
-					email: "diddy@rareware.com",
+					display_name: "matthijsgroen",
+					email: "matthijs@devvoted.nl",
 					role: "user" as const,
 				},
 				{
-					id: "22222222-2222-2222-2222-222222222222", 
-					display_name: "Banjo Bear",
-					email: "banjo@rareware.com",
+					id: "22222222-2222-2222-2222-222222222222",
+					display_name: "sandervanmaurik",
+					email: "sander@devvoted.nl",
 					role: "user" as const,
 				},
 				{
 					id: "33333333-3333-3333-3333-333333333333",
-					display_name: "Kazooie Bird", 
-					email: "kazooie@rareware.com",
+					display_name: "Nick van Eijk",
+					email: "nick@devvoted.nl",
 					role: "user" as const,
-				}
+				},
 			];
 
 			// Insert users
 			for (const user of randomUsers) {
-				const existingUser = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
+				const existingUser = await db
+					.select()
+					.from(usersTable)
+					.where(eq(usersTable.id, user.id));
 				if (existingUser.length === 0) {
 					await db.insert(usersTable).values(user);
 					console.log(`✅ Created user: ${user.display_name}`);
@@ -210,30 +213,75 @@ async function seedDatabase() {
 			const seasonId = currentSeason[0]?.id || null;
 
 			// Create completed runs and leaderboard entries
-			const leaderboardData = [
-				{ userId: randomUsers[0].id, totalXp: 2500, bestStreak: 12, pollsAnswered: 45 },
-				{ userId: randomUsers[1].id, totalXp: 1800, bestStreak: 8, pollsAnswered: 32 },
-				{ userId: randomUsers[2].id, totalXp: 1200, bestStreak: 6, pollsAnswered: 28 },
+			const globalLeaderboardData = [
+				{
+					userId: randomUsers[0].id,
+					totalXp: 2500,
+					bestStreak: 12,
+					pollsAnswered: 45,
+				},
+				{
+					userId: randomUsers[1].id,
+					totalXp: 1800,
+					bestStreak: 8,
+					pollsAnswered: 32,
+				},
+				{
+					userId: randomUsers[2].id,
+					totalXp: 1200,
+					bestStreak: 6,
+					pollsAnswered: 28,
+				},
 			];
 
-			for (let i = 0; i < leaderboardData.length; i++) {
-				const data = leaderboardData[i];
-				
+			const jsLeaderboardData = [
+				{
+					userId: randomUsers[0].id,
+					totalXp: 536,
+					bestStreak: 5,
+					pollsAnswered: 20,
+				},
+				{
+					userId: randomUsers[1].id,
+					totalXp: 298,
+					bestStreak: 4,
+					pollsAnswered: 15,
+				},
+				{
+					userId: randomUsers[2].id,
+					totalXp: 453,
+					bestStreak: 3,
+					pollsAnswered: 10,
+				},
+			];
+
+			for (let i = 0; i < globalLeaderboardData.length; i++) {
+				const data = globalLeaderboardData[i];
+				const jsData = jsLeaderboardData[i];
+
 				// Create a completed run
-				const [run] = await db.insert(runsTable).values({
-					user_id: data.userId,
-					season_id: seasonId,
-					status: "finished",
-					finished_at: new Date(Date.now() - (i + 1) * 86400000), // Finished 1-3 days ago
-				}).returning();
+				const [run] = await db
+					.insert(runsTable)
+					.values({
+						user_id: data.userId,
+						season_id: seasonId,
+						status: "finished",
+						finished_at: new Date(Date.now() - (i + 1) * 86400000), // Finished 1-3 days ago
+					})
+					.returning();
 
 				// Create run category XP data
-				const categories = ["js", "css", "react", "typescript", "general-frontend"];
-				for (const categoryCode of categories) {
-					const categoryXp = Math.floor(data.totalXp / categories.length) + Math.floor(Math.random() * 100);
-					const categoryStreak = Math.floor(data.bestStreak * 0.6) + Math.floor(Math.random() * 3);
-					const categoryPolls = Math.floor(data.pollsAnswered / categories.length) + Math.floor(Math.random() * 5);
-					
+				for (const categoryCode of CATEGORY_CODES) {
+					const categoryXp =
+						Math.floor(data.totalXp / CATEGORY_CODES.length) +
+						Math.floor(Math.random() * 100);
+					const categoryStreak =
+						Math.floor(data.bestStreak * 0.6) +
+						Math.floor(Math.random() * 3);
+					const categoryPolls =
+						Math.floor(data.pollsAnswered / CATEGORY_CODES.length) +
+						Math.floor(Math.random() * 5);
+
 					await db.insert(runCategoryXpTable).values({
 						run_id: run.id,
 						category_code: categoryCode,
@@ -246,23 +294,51 @@ async function seedDatabase() {
 					});
 				}
 
-				// Create leaderboard entry
+				// Create leaderboard entry for JS category with specific JS data
 				await db.insert(leaderboardTable).values({
-					user_id: data.userId,
+					user_id: jsData.userId,
 					run_id: run.id,
 					season_id: seasonId,
-					total_xp: data.totalXp,
-					best_streak: data.bestStreak,
-					polls_answered: data.pollsAnswered,
+					category_code: "js",
+					category_xp: jsData.totalXp, // JS-specific XP
+					total_xp: data.totalXp, // Overall run XP (for global leaderboards)
+					best_streak: jsData.bestStreak, // JS-specific streak
+					polls_answered: jsData.pollsAnswered, // JS-specific polls
 					completed_at: new Date(Date.now() - (i + 1) * 86400000),
 				});
 
-				console.log(`✅ Created leaderboard entry for ${randomUsers[i].display_name}: ${data.totalXp} XP`);
+				// Create leaderboard entries for other categories with different data
+				const otherCategories = CATEGORY_CODES.filter(code => code !== 'js');
+				for (const categoryCode of otherCategories) {
+					const categoryXp = Math.floor(Math.random() * 200) + 50; // Random XP for variety
+					const categoryStreak = Math.floor(Math.random() * 4) + 1;
+					const categoryPolls = Math.floor(Math.random() * 8) + 3;
+
+					await db.insert(leaderboardTable).values({
+						user_id: data.userId,
+						run_id: run.id,
+						season_id: seasonId,
+						category_code: categoryCode,
+						category_xp: categoryXp,
+						total_xp: data.totalXp, // Same total XP for all categories from this run
+						best_streak: categoryStreak,
+						polls_answered: categoryPolls,
+						completed_at: new Date(Date.now() - (i + 1) * 86400000),
+					});
+				}
+
+				console.log(
+					`✅ Created leaderboard entry for ${randomUsers[i].display_name}: ${data.totalXp} XP`
+				);
 			}
 
-			console.log(`✅ Successfully seeded leaderboard with ${leaderboardData.length} entries!`);
+			console.log(
+				`✅ Successfully seeded leaderboard with ${globalLeaderboardData.length} entries!`
+			);
 		} else {
-			console.log(`ℹ️ Found ${existingLeaderboard.length} existing leaderboard entries. Skipping leaderboard seeding.`);
+			console.log(
+				`ℹ️ Found ${existingLeaderboard.length} existing leaderboard entries. Skipping leaderboard seeding.`
+			);
 		}
 
 		console.log("\n✨ Database seeding completed successfully!\n");

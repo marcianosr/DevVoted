@@ -2,6 +2,7 @@ import { createMockDataFactory } from "@/src/test/createMockDataFactory";
 import { Poll, PollRecord } from "~/domains/polls/models/poll";
 import { InferInsertModel } from "drizzle-orm";
 import { pollsTable } from "@/src/database/schema";
+import { CATEGORY_CODES } from "~/domains/shared/categories";
 
 const poll: Poll = {
 	id: 1,
@@ -118,13 +119,11 @@ export const createSeedPollArray = (
 	count: number = 3,
 	userId: string = "123e4567-e89b-12d3-a456-426614174000"
 ): Array<Omit<InferInsertModel<typeof pollsTable>, "id">> => {
-	const categories = ["css", "js", "react", "typescript", "general-frontend"];
-
 	return Array.from({ length: count }, (_, i) =>
 		createSeedPoll({
 			question: pollQuestions[i % pollQuestions.length],
 			created_by: userId,
-			category_code: categories[i % categories.length],
+			category_code: CATEGORY_CODES[i % CATEGORY_CODES.length],
 			answer_type: i % 2 === 0 ? "single" : "multiple",
 			opening_time: new Date(),
 			closing_time: new Date(),

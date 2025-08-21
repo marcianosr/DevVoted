@@ -4,7 +4,7 @@ import {
 	getTotalXpForRun,
 	getTotalPollsAnsweredForRun,
 	getBestStreakForRun,
-	createLeaderboardEntry,
+	createCategoryLeaderboardEntries,
 	getLastRunFromUser,
 } from "../api/queries";
 import {
@@ -29,14 +29,14 @@ export const endRunForThresholdFailure = async (runId: number) => {
 	// Complete the run and reset categories
 	await completeRunWithThresholdFailure(runId);
 
-	// Create leaderboard entry to track this run's performance
-	await createLeaderboardEntry(
+	// Create category-specific leaderboard entries to track this run's performance
+	await createCategoryLeaderboardEntries(
 		run.user_id,
 		runId,
 		run.season_id,
 		totalXp,
-		bestStreak,
-		totalPollsAnswered
+		totalPollsAnswered,
+		bestStreak
 	);
 
 	return { runEnded: true, reason: "threshold_not_met" };

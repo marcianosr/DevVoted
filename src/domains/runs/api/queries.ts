@@ -42,7 +42,9 @@ export const getActiveRunByUserId = async (userId: string) => {
 export const createRunForUser = async (userId: string) => {
 	return await db.transaction(async (tx) => {
 		// Get current season ID for the new run
-		const { getSeasonForNewRun } = await import("~/domains/seasons/services/seasonService");
+		const { getSeasonForNewRun } = await import(
+			"~/domains/seasons/services/seasonService"
+		);
 		const seasonId = await getSeasonForNewRun();
 
 		const [runRecord] = await tx
@@ -156,29 +158,55 @@ export const getBestStreakForRun = async (runId: number): Promise<number> => {
 	);
 };
 
-// Create leaderboard entry for a completed run
-export const createLeaderboardEntry = async (
-	userId: string, 
-	runId: number, 
+// Create category-specific leaderboard entries for a completed run
+export const createCategoryLeaderboardEntries = async (
+	userId: string,
+	runId: number,
 	seasonId: number | null,
-	totalXp: number, 
-	bestStreak: number, 
-	pollsAnswered: number
+	totalXp: number,
+	totalPollsAnswered: number,
+	overallBestStreak: number
 ) => {
-	const [leaderboardEntry] = await db
-		.insert(leaderboardTable)
-		.values({
-			user_id: userId,
-			run_id: runId,
-			season_id: seasonId,
-			total_xp: totalXp,
-			best_streak: bestStreak,
-			polls_answered: pollsAnswered,
-			completed_at: new Date(),
-		})
-		.returning();
+	// Get ALL categories from database
+	const allCategories = await db.select().from(pollCategoriesTable);
 
-	return leaderboardEntry;
+	// Get category-specific XP data for this run
+	const categoryXpRecords = await db
+		.select()
+		.from(runCategoryXpTable)
+		.where(eq(runCategoryXpTable.run_id, runId));
+
+	// Create a map for quick lookup
+	const categoryXpMap = new Map(
+		categoryXpRecords.map((record) => [record.category_code, record])
+	);
+
+	const leaderboardEntries = [];
+
+	// Create one leaderboard entry per category (whether or not they have XP records)
+	for (const category of allCategories) {
+		const categoryXp = categoryXpMap.get(category.code);
+
+		const [leaderboardEntry] = await db
+			.insert(leaderboardTable)
+			.values({
+				user_id: userId,
+				run_id: runId,
+				season_id: seasonId,
+				category_code: category.code,
+				category_xp:
+					categoryXp?.final_xp ?? categoryXp?.current_xp ?? 0, // Use final_xp after threshold failure, current_xp otherwise
+				total_xp: totalXp,
+				best_streak: categoryXp?.best_streak ?? 0,
+				polls_answered: categoryXp?.polls_answered ?? 0,
+				completed_at: new Date(),
+			})
+			.returning();
+
+		leaderboardEntries.push(leaderboardEntry);
+	}
+
+	return leaderboardEntries;
 };
 
 export const awardXpToRun = async (

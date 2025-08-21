@@ -1,10 +1,11 @@
 import { runCategoryXpTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
+import { CATEGORY_CODES, type CategoryCode } from "~/domains/shared/categories";
 
 export type RunCategoryXp = {
 	id: number;
 	runId: number;
-	categoryCode: string;
+	categoryCode: CategoryCode;
 	currentXp: number;
 	currentStreak: number;
 	bestStreak: number;
@@ -21,7 +22,7 @@ export const runCategoryXpToDTO = (record: RunCategoryXpRecord): RunCategoryXp =
 	return {
 		id: record.id,
 		runId: record.run_id,
-		categoryCode: record.category_code,
+		categoryCode: record.category_code as CategoryCode,
 		currentXp: record.current_xp,
 		currentStreak: record.current_streak,
 		bestStreak: record.best_streak,
@@ -63,7 +64,7 @@ export const createRunCategoryXp = (partial: Partial<RunCategoryXp> = {}): RunCa
 	return {
 		id: 0,
 		runId: 0,
-		categoryCode: "",
+		categoryCode: "js" as CategoryCode,
 		currentXp: 0,
 		currentStreak: 0,
 		bestStreak: 0,
@@ -112,21 +113,19 @@ export const createMockRunCategoryXpRecord = (overrides: Partial<RunCategoryXpRe
 };
 
 export const createMockRunCategoryXpArray = (count: number = 3): RunCategoryXp[] => {
-	const categories = ["js", "css", "react", "typescript", "general-frontend"];
 	return Array.from({ length: count }, (_, i) =>
 		createMockRunCategoryXp({
 			id: i + 1,
-			categoryCode: categories[i % categories.length],
+			categoryCode: CATEGORY_CODES[i % CATEGORY_CODES.length],
 		})
 	);
 };
 
 export const createMockRunCategoryXpRecordArray = (count: number = 3): RunCategoryXpRecord[] => {
-	const categories = ["js", "css", "react", "typescript", "general-frontend"];
 	return Array.from({ length: count }, (_, i) =>
 		createMockRunCategoryXpRecord({
 			id: i + 1,
-			category_code: categories[i % categories.length],
+			category_code: CATEGORY_CODES[i % CATEGORY_CODES.length],
 		})
 	);
 };

@@ -1,5 +1,6 @@
 import { pollsTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
+import type { CategoryCode } from "~/domains/shared/categories";
 
 // Type for frontend usage (camelCase)
 
@@ -13,7 +14,7 @@ export type Poll = {
 	createdBy: string;
 	createdAt: Date;
 	updatedAt: Date | null;
-	categoryCode: string;
+	categoryCode: CategoryCode;
 };
 
 export type PollRecord = InferSelectModel<typeof pollsTable>;
@@ -36,7 +37,7 @@ export const pollToDTO = (record: PollRecord): Poll => {
 		createdBy: record.created_by,
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
-		categoryCode: record.category_code,
+		categoryCode: record.category_code as CategoryCode,
 	};
 };
 
@@ -90,7 +91,7 @@ export const createPoll = (partial: Partial<Poll> = {}): Poll => {
 		createdBy: "", // Must be set by caller
 		createdAt: now,
 		updatedAt: now, // Default to now, can be overridden by partial
-		categoryCode: "", // Must be set by caller
+		categoryCode: "js" as CategoryCode, // Default value, can be overridden by partial
 		...partial,
 	};
 };

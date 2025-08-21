@@ -24,15 +24,11 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Critical]
 [] Show XP breakdown [Critical]
 
-[] Leaderboard [Critical]
+[o] Leaderboard [Critical]
 
-    [] Best total XP overall (highest XP)
+    [x] Best total XP overall (highest XP)
     [] Best in category (highest XP)
     [] Best streak (highest streak)
-    [] Best run (highest XP in a single run)
-    [] Best config (highest XP with a specific config)
-    [] Best category (highest XP in a specific category)
-    [] All by season
 
 [] Traceability
 
