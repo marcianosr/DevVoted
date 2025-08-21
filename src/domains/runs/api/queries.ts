@@ -4,8 +4,10 @@ import {
 	runCategoryXpTable,
 	pollCategoriesTable,
 	leaderboardTable,
+	usersTable,
 } from "@/src/database/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import type { CategoryCode } from "~/domains/shared/categories";
 import { runFactory } from "../models/run";
 import { runCategoryXpFactory } from "../models/runCategoryXp";
 import {
@@ -396,6 +398,56 @@ export const resetPollRerolls = async (runId: number) => {
 		.returning();
 
 	return updatedRun ? runFactory.toDTO(updatedRun) : null;
+};
+
+// Get live rankings for active runs, optionally filtered by category
+export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
+	if (categoryCode) {
+		// Get category-specific live rankings
+		const categoryRankings = await db
+			.select({
+				userId: runsTable.user_id,
+				displayName: usersTable.display_name,
+				runId: runsTable.id,
+				totalXp: runCategoryXpTable.current_xp, // Category XP only
+				totalPollsAnswered: runCategoryXpTable.polls_answered, // Category polls only
+				bestStreak: runCategoryXpTable.best_streak, // Category streak only
+				categoryCode: runCategoryXpTable.category_code,
+			})
+			.from(runsTable)
+			.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+			.innerJoin(runCategoryXpTable, eq(runsTable.id, runCategoryXpTable.run_id))
+			.where(
+				and(
+					eq(runsTable.status, "active"),
+					eq(runCategoryXpTable.category_code, categoryCode)
+				)
+			)
+			.orderBy(desc(runCategoryXpTable.current_xp))
+			.limit(10);
+
+		return categoryRankings;
+	} else {
+		// Get overall live rankings (total XP across all categories)
+		const activeRuns = await db
+			.select({
+				userId: runsTable.user_id,
+				displayName: usersTable.display_name,
+				runId: runsTable.id,
+				totalXp: sql<number>`COALESCE(SUM(${runCategoryXpTable.current_xp}), 0)`,
+				totalPollsAnswered: sql<number>`COALESCE(SUM(${runCategoryXpTable.polls_answered}), 0)`,
+				bestStreak: sql<number>`COALESCE(MAX(${runCategoryXpTable.best_streak}), 0)`,
+			})
+			.from(runsTable)
+			.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+			.leftJoin(runCategoryXpTable, eq(runsTable.id, runCategoryXpTable.run_id))
+			.where(eq(runsTable.status, "active"))
+			.groupBy(runsTable.user_id, usersTable.display_name, runsTable.id)
+			.orderBy(sql`COALESCE(SUM(${runCategoryXpTable.current_xp}), 0) DESC`)
+			.limit(10);
+
+		return activeRuns;
+	}
 };
 
 // Process reroll shop request

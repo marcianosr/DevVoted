@@ -2,7 +2,7 @@ import { getGlobalLeaderboard } from "../services/leaderboardService";
 import { getCategoryLeaderboard } from "./queries";
 import type { CategoryCode } from "~/domains/shared/categories";
 
-export const getSimpleLeaderboardHandler = async () => {
+export const getGlobalLeaderboardHandler = async () => {
 	try {
 		const entries = await getGlobalLeaderboard(10);
 		return entries;

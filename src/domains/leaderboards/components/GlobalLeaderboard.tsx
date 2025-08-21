@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { LeaderboardEntry } from "../models/leaderboard";
 import { getCategories, type CategoryCode } from "~/domains/shared/categories";
 
-type SimpleLeaderboardProps = {
+type GlobalLeaderboardProps = {
 	entries: LeaderboardEntry[];
 	title?: string;
 	getCategoryLeaderboard: (opts: {
@@ -21,11 +21,11 @@ const CATEGORIES: CategoryOption[] = [
 	...getCategories(),
 ];
 
-export const SimpleLeaderboard = ({
+export const GlobalLeaderboard = ({
 	entries: initialEntries,
 	title = "Leaderboards",
 	getCategoryLeaderboard,
-}: SimpleLeaderboardProps) => {
+}: GlobalLeaderboardProps) => {
 	const [selectedCategory, setSelectedCategory] = useState<
 		CategoryCode | undefined
 	>(undefined);

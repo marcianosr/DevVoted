@@ -21,3 +21,8 @@ export const getCategories = () => CATEGORY_CODES.map(code => ({
 	code, 
 	name: CATEGORY_METADATA[code].name 
 }));
+
+/**
+ * Get metadata for a specific category code
+ */
+export const getCategoryMetadata = (categoryCode: CategoryCode) => CATEGORY_METADATA[categoryCode];
