@@ -6,7 +6,6 @@ type ScoreDisplayProps = {
 };
 
 export const ScoreDisplay = ({ run, category }: ScoreDisplayProps) => {
-	console.log(run, "run in score display");
 	const scoreFromCategory = run.categoryXp.find(
 		(xp) => xp.categoryCode === category
 	);

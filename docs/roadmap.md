@@ -24,19 +24,21 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Critical]
 [] Show XP breakdown [Critical]
 
-[o] Leaderboard [Critical]
+[x] Leaderboard [Critical]
 
     [x] Best total XP overall (highest XP)
-    [] Best in category (highest XP)
-    [] Best streak (highest streak)
+    [x] Best in category (highest XP)
+    [x] Best streak (highest streak)
+    [x] Live run leaderboard
+    [] Show who answered today
 
+[] Create a single "stake"
 [] Traceability
 
     - [] Timestamps on answer
 
 [o] Create 6–8 configs with effects [Critical]
 
-    - [] Create upgradable configs
     - [] Create some effects
 
 [] Balancing
@@ -47,7 +49,7 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Config costs
     [] XP gain balance
 
-[] Upgrades
+[] Upgrade packages
 [] Authentication (GitHub/Google)
 [] Deployment
 [] Old-to-new system migration
