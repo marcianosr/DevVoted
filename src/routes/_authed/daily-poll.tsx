@@ -25,20 +25,26 @@ const getCategoryLeaderboard = createServerFn({ method: "POST" })
 		const { getCategoryLeaderboardHandler } = await import(
 			"~/domains/leaderboards/api/handlers"
 		);
-		return await getCategoryLeaderboardHandler({ categoryCode: data.categoryCode });
+		return await getCategoryLeaderboardHandler({
+			categoryCode: data.categoryCode,
+		});
 	});
 
 const getActiveRunCategoryXp = createServerFn({ method: "POST" })
 	.validator((data: { userId: string }) => data)
 	.handler(async ({ data }) => {
-		const { getActiveRunCategoryXpHandler } = await import("~/domains/runs/api/handlers");
+		const { getActiveRunCategoryXpHandler } = await import(
+			"~/domains/runs/api/handlers"
+		);
 		return await getActiveRunCategoryXpHandler(data.userId);
 	});
 
 const getLiveLeaderboard = createServerFn({ method: "POST" })
 	.validator((data: { categoryCode?: CategoryCode }) => data)
 	.handler(async ({ data }) => {
-		const { getLiveRunRankingsHandler } = await import("~/domains/runs/api/handlers");
+		const { getLiveRunRankingsHandler } = await import(
+			"~/domains/runs/api/handlers"
+		);
 		return await getLiveRunRankingsHandler(data.categoryCode);
 	});
 
@@ -70,8 +76,6 @@ const DailyPoll: React.FC = () => {
 		staleTime: 15 * 1000, // 15 seconds
 		refetchInterval: 45 * 1000, // Auto-refresh every 45 seconds
 	});
-
-	console.log(leaderboardQuery.data, "Leaderboard Data");
 
 	const dailyPollHeader = (
 		<div className="space-y-4">
@@ -125,14 +129,15 @@ const DailyPoll: React.FC = () => {
 						</div>
 					</div>
 				)}
-				{liveLeaderboardQuery.data?.success && liveLeaderboardQuery.data.data && (
-					<LiveLeaderboard
-						entries={liveLeaderboardQuery.data.data}
-						currentUserId={user?.id}
-						className="mb-4"
-						getLiveLeaderboard={getLiveLeaderboard}
-					/>
-				)}
+				{liveLeaderboardQuery.data?.success &&
+					liveLeaderboardQuery.data.data && (
+						<LiveLeaderboard
+							entries={liveLeaderboardQuery.data.data}
+							currentUserId={user?.id}
+							className="mb-4"
+							getLiveLeaderboard={getLiveLeaderboard}
+						/>
+					)}
 			</div>
 
 			{/* Leaderboard Section */}
