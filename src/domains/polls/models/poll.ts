@@ -1,6 +1,7 @@
 import { pollsTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
 import type { CategoryCode } from "~/domains/shared/categories";
+import type { PollOption } from "./pollOption";
 
 // Type for frontend usage (camelCase)
 
@@ -18,6 +19,16 @@ export type Poll = {
 };
 
 export type PollRecord = InferSelectModel<typeof pollsTable>;
+
+/**
+ * API response type for poll with options and answer status
+ * Used by backend handlers and frontend components
+ */
+export type PollWithOptionsResponse = {
+	poll: Poll;
+	options: PollOption[];
+	hasAnswered: boolean;
+};
 
 /**
  * Functions to convert between database records and frontend DTOs

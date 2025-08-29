@@ -1,123 +1,107 @@
 import { Config } from "~/domains/configs/models/config";
+import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { Run } from "~/domains/runs/models/run";
 import { STORAGE_UNITS } from "~/lib/storage";
 
 // These are configs used in the real game
 export const configs: Config[] = [
 	{
-		id: "vanilla-config",
-		name: "Vanilla Config",
-		image: "/configs/vanilla.png",
-		cost: STORAGE_UNITS.MB / 4, // 256KB
-		level: 0,
-		description: "Shows community correctness percentage after each answer",
-		effect: (context) => {
-			// TODO: Implement effect - show community stats
-		},
-		rarity: "common",
-	},
-	{
-		id: "tree-shake-config",
-		name: "Tree Shake Config",
-		image: "/configs/treeshake.png",
+		id: "eslint-config",
+		name: "ESLint Config",
+		image: "/configs/eslint.png",
 		cost: STORAGE_UNITS.MB / 2, // 1MB
 		level: 3,
-		description:
-			"Removes 1 wrong option retroactively (only usable once per 3 polls)",
-		effect: (context) => {
-			// TODO: Implement effect - remove wrong option
-		},
+		description: "Disables 1 wrong option",
 		rarity: "uncommon",
+		effect: ["disableWrongOptions"],
 	},
-	{
-		id: "jest-config",
-		name: "Jest Config",
-		image: "/configs/jest.png",
-		cost: STORAGE_UNITS.MB / 4, // 256KB
-		level: 1,
-		description: "Gain 1 XP for each other player getting it wrong",
-		effect: (context) => {
-			// TODO: Implement effect - bonus XP based on other players' mistakes
-		},
-		rarity: "rare",
-	},
-	{
-		id: "vitest-config",
-		name: "Vitest Config",
-		image: "/configs/vitest.png",
-		cost: STORAGE_UNITS.KB * 256, // 256KB
-		level: 1,
-		description:
-			"After each answer, see % of other players who got it right",
-		effect: (context) => {
-			// TODO: Implement effect - show player statistics
-		},
-		unlockCriteria: {
-			requiredXp: 100,
-			requiredCategory: "testing",
-		},
-		rarity: "rare",
-	},
-	{
-		id: "rollup-config",
-		name: "Rollup Config",
-		image: "/configs/rollup.png",
-		cost: STORAGE_UNITS.MB / 4, // 256KB
-		level: 2,
-		description:
-			"Answering 3 questions in the same category gives +2 bonus XP",
-		effect: (context) => {
-			// TODO: Implement effect - category combo bonus
-		},
-		unlockCriteria: {
-			requiredStreak: 5,
-		},
-		rarity: "uncommon",
-	},
-	{
-		id: "webpack-config",
-		name: "Webpack Config",
-		image: "/configs/webpack.png",
-		cost: STORAGE_UNITS.MB / 2, // 512KB
-		level: 5,
-		description: "Bundle multiple correct answers for 2x XP multiplier",
-		effect: (context) => {
-			// TODO: Implement effect - XP multiplier for streaks
-		},
-		unlockCriteria: {
-			requiredXp: 200,
-			requiredPollsAnswered: 20,
-		},
-		synergies: ["rollup-config"],
-		rarity: "legendary",
-	},
-	{
-		id: "prettier-config",
-		name: ".prettierrc",
-		image: "/configs/prettier.png",
-		cost: STORAGE_UNITS.MB / 2, // 512KB
-		level: 0,
-		description:
-			"Formats your streak display nicely and adds +1 XP for style points",
-		effect: (context) => {
-			// TODO: Implement effect - small XP bonus and visual enhancement
-		},
-		rarity: "common",
-	},
-	{
-		id: "tsconfig",
-		name: "TS Config",
-		image: "/configs/typescript.png",
-		cost: STORAGE_UNITS.MB / 4, // 256KB
-		level: 1,
-		description:
-			"Type safety bonus: +50% XP for TypeScript category questions",
-		effect: (context) => {
-			// TODO: Implement effect - category-specific XP bonus
-		},
-		unlockCriteria: {
-			requiredCategory: "typescript",
-			requiredXp: 50,
-		},
-		rarity: "uncommon",
-	},
+
+	// TODO: need streak amp mechamic for this
+	// {
+	// 	id: "math-random-config",
+	// 	name: "Math Random",
+	// 	image: "/configs/math-random.png",
+	// 	cost: STORAGE_UNITS.MB / 2, // 256KB
+	// 	level: 1,
+	// 	description: "Random amp value every poll",
+	// 	rarity: "rare",
+	// 	effect: ["freeReroll"],
+	// },
 ];
+
+// Effect context extends the poll response with run data
+type EffectCtx = PollWithOptionsResponse & {
+	run: Run;
+};
+
+export type EffectRenderProps = {
+	disabledOptionIds?: number[];
+	freeReroll?: boolean;
+	multipliers?: Record<number, number>;
+};
+
+type EffectMeta = { notes?: string[]; badges?: Record<string, string> };
+type EffectOut = {
+	view: EffectCtx;
+	renderProps?: EffectRenderProps;
+	meta?: EffectMeta;
+};
+type EffectFn = (ctx: EffectCtx) => EffectOut;
+
+// Registry
+const EFFECTS: Record<string, EffectFn> = {
+	disableWrongOptions: ({ poll, options, run, hasAnswered }) => {
+		const disabledIds = options.filter((o) => !o.correct).map((o) => o.id);
+		const randomIdFromDisabled =
+			disabledIds[Math.floor(Math.random() * disabledIds.length)];
+
+		return {
+			view: { poll, options, run, hasAnswered },
+			renderProps: { disabledOptionIds: [randomIdFromDisabled] },
+			meta: { notes: ["Hid wrong options"] },
+		};
+	},
+};
+
+export function applyEffects(base: EffectCtx, activeConfigIds: string[] = []) {
+	if (!activeConfigIds?.length)
+		return { view: base, renderProps: {}, meta: {} };
+
+	const effectIds = activeConfigIds.flatMap(
+		(id) => configs.find((c) => c.id === id)?.effect ?? []
+	);
+
+	return effectIds.reduce<{
+		view: EffectCtx;
+		renderProps: EffectRenderProps;
+		meta: EffectMeta;
+	}>(
+		(acc, id) => {
+			const fn = EFFECTS[id];
+			if (!fn) return acc;
+			const out = fn(acc.view);
+			return {
+				view: out.view,
+				renderProps: {
+					...acc.renderProps,
+					...out.renderProps,
+					disabledOptionIds: [
+						...(acc.renderProps.disabledOptionIds ?? []),
+						...(out.renderProps?.disabledOptionIds ?? []),
+					],
+				},
+				meta: {
+					...acc.meta,
+					...(out.meta?.badges
+						? { badges: { ...acc.meta.badges, ...out.meta.badges } }
+						: {}),
+					notes: [
+						...(acc.meta.notes ?? []),
+						...(out.meta?.notes ?? []),
+					],
+				},
+			};
+		},
+		{ view: base, renderProps: {}, meta: {} }
+	);
+}

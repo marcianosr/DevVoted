@@ -9,15 +9,13 @@ export type ConfigEffectContext = {
 	correctAnswers: number;
 };
 
-export type ConfigEffect = (context: ConfigEffectContext) => void;
-
 export type Config = {
 	id: string;
 	name: string;
 	image?: string; // Optional image URL or path
 	cost: number; // Storage cost in bytes
 	level?: number;
-	effect: ConfigEffect;
+	effect: string[];
 	description: string;
 	unlockCriteria?: {
 		requiredXp?: number;

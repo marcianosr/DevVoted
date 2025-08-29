@@ -8,7 +8,7 @@ export const createConfig = (overrides: Partial<Config> = {}): Config => ({
 	cost: STORAGE_UNITS.KB * 100, // 100KB
 	level: 1,
 	rarity: "common",
-	effect: () => {},
+	effect: ["testEffect"],
 	...overrides,
 });
 

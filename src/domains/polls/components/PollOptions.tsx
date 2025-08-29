@@ -14,6 +14,7 @@ type PollOptionsProps = {
 	options: PollOption[];
 	field: FormFieldApi;
 	disabled: boolean;
+	disabledOptionIds?: number[]; // New prop to receive disabled option IDs
 };
 
 export const PollOptions = ({
@@ -21,6 +22,7 @@ export const PollOptions = ({
 	options,
 	field,
 	disabled,
+	disabledOptionIds,
 }: PollOptionsProps) => {
 	return (
 		<div>
@@ -40,7 +42,10 @@ export const PollOptions = ({
 							checked={field.state.value.includes(
 								option.id.toString()
 							)}
-							disabled={disabled}
+							disabled={
+								disabled ||
+								disabledOptionIds?.includes(option.id)
+							}
 						/>
 					</li>
 				))}

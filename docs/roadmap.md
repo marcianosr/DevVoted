@@ -32,6 +32,7 @@ Season 1: Core Loop ✅ ship this before anything else
     [x] Live run leaderboard
     [] Show who answered today
 
+[] Create simple linear streak bonus amp
 [] Create a single "stake"
 [] Traceability
 

@@ -18,15 +18,18 @@ import {
 	ShopProvider,
 	useShopContext,
 } from "~/domains/economy/contexts/ShopContext";
-import { configs } from "~/domains/configs/data/configs";
+import {
+	applyEffects,
+	configs,
+	type EffectRenderProps,
+} from "~/domains/configs/data/configs";
 import {
 	addConfigToRunServerFn,
 	removeConfigFromRunServerFn,
 } from "~/domains/configs/api/configs";
 import { Run } from "~/domains/runs/models/run";
 import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
-import { Poll } from "~/domains/polls/models/poll";
-import { PollOption } from "~/domains/polls/models/pollOption";
+import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
@@ -46,11 +49,8 @@ export const submitPollOptions = createServerFn()
 	.handler(async ({ data }) => postPollOptionsHandler({ data }));
 
 type PollContentProps = {
-	pollData: {
-		poll: Poll;
-		options: PollOption[];
-		hasAnswered: boolean;
-	};
+	pollData: PollWithOptionsResponse;
+	effectProps?: EffectRenderProps;
 	user: any;
 	activeRun: Run | null;
 	headerContent?: React.ReactNode;
@@ -58,6 +58,7 @@ type PollContentProps = {
 
 const PollContent: React.FC<PollContentProps> = ({
 	pollData,
+	effectProps,
 	user,
 	activeRun,
 	headerContent,
@@ -65,6 +66,7 @@ const PollContent: React.FC<PollContentProps> = ({
 	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
 	const { poll, options, hasAnswered } = pollData;
+
 	const [rerollKey, setRerollKey] = useState(0);
 
 	const randomConfigs = useMemo(() => {
@@ -229,6 +231,9 @@ const PollContent: React.FC<PollContentProps> = ({
 								options={options}
 								field={field}
 								disabled={hasAnswered}
+								disabledOptionIds={
+									effectProps?.disabledOptionIds
+								}
 							/>
 						)}
 					/>
@@ -446,6 +451,13 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 		return <ErrorComponent text={data.error || errorMessage} />;
 	}
 
+	const effectsResult = applyEffects(
+		{ ...data.data, run: activeRun! },
+		activeRun?.activeConfigIds
+	);
+
+	console.log("Effects result:", activeRun?.activeConfigIds);
+
 	return (
 		<div className="p-4">
 			<ShopProvider
@@ -453,7 +465,8 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 				onRemoveConfig={handleRemoveConfig}
 			>
 				<PollContent
-					pollData={data.data}
+					pollData={effectsResult.view}
+					effectProps={effectsResult.renderProps}
 					user={user}
 					activeRun={activeRun}
 					headerContent={headerContent}

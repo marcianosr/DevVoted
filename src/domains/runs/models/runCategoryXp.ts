@@ -2,6 +2,7 @@ import { runCategoryXpTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
 import { CATEGORY_CODES, type CategoryCode } from "~/domains/shared/categories";
 
+// TODO: Refactor to "RunMetric"
 export type RunCategoryXp = {
 	id: number;
 	runId: number;
@@ -18,7 +19,9 @@ export type RunCategoryXp = {
 
 export type RunCategoryXpRecord = InferSelectModel<typeof runCategoryXpTable>;
 
-export const runCategoryXpToDTO = (record: RunCategoryXpRecord): RunCategoryXp => {
+export const runCategoryXpToDTO = (
+	record: RunCategoryXpRecord
+): RunCategoryXp => {
 	return {
 		id: record.id,
 		runId: record.run_id,
@@ -34,7 +37,9 @@ export const runCategoryXpToDTO = (record: RunCategoryXpRecord): RunCategoryXp =
 	};
 };
 
-export const runCategoryXpFromDTO = (dto: RunCategoryXp): RunCategoryXpRecord => {
+export const runCategoryXpFromDTO = (
+	dto: RunCategoryXp
+): RunCategoryXpRecord => {
 	return {
 		id: dto.id,
 		run_id: dto.runId,
@@ -50,17 +55,23 @@ export const runCategoryXpFromDTO = (dto: RunCategoryXp): RunCategoryXpRecord =>
 	};
 };
 
-export const runCategoryXpsToDTOs = (records: RunCategoryXpRecord[]): RunCategoryXp[] => {
+export const runCategoryXpsToDTOs = (
+	records: RunCategoryXpRecord[]
+): RunCategoryXp[] => {
 	return records.map(runCategoryXpToDTO);
 };
 
-export const runCategoryXpsFromDTOs = (dtos: RunCategoryXp[]): RunCategoryXpRecord[] => {
+export const runCategoryXpsFromDTOs = (
+	dtos: RunCategoryXp[]
+): RunCategoryXpRecord[] => {
 	return dtos.map(runCategoryXpFromDTO);
 };
 
-export const createRunCategoryXp = (partial: Partial<RunCategoryXp> = {}): RunCategoryXp => {
+export const createRunCategoryXp = (
+	partial: Partial<RunCategoryXp> = {}
+): RunCategoryXp => {
 	const now = new Date();
-	
+
 	return {
 		id: 0,
 		runId: 0,
@@ -78,7 +89,9 @@ export const createRunCategoryXp = (partial: Partial<RunCategoryXp> = {}): RunCa
 };
 
 // Test factory functions
-export const createMockRunCategoryXp = (overrides: Partial<RunCategoryXp> = {}): RunCategoryXp => {
+export const createMockRunCategoryXp = (
+	overrides: Partial<RunCategoryXp> = {}
+): RunCategoryXp => {
 	return {
 		id: 1,
 		runId: 1,
@@ -95,7 +108,9 @@ export const createMockRunCategoryXp = (overrides: Partial<RunCategoryXp> = {}):
 	};
 };
 
-export const createMockRunCategoryXpRecord = (overrides: Partial<RunCategoryXpRecord> = {}): RunCategoryXpRecord => {
+export const createMockRunCategoryXpRecord = (
+	overrides: Partial<RunCategoryXpRecord> = {}
+): RunCategoryXpRecord => {
 	return {
 		id: 1,
 		run_id: 1,
@@ -112,7 +127,9 @@ export const createMockRunCategoryXpRecord = (overrides: Partial<RunCategoryXpRe
 	};
 };
 
-export const createMockRunCategoryXpArray = (count: number = 3): RunCategoryXp[] => {
+export const createMockRunCategoryXpArray = (
+	count: number = 3
+): RunCategoryXp[] => {
 	return Array.from({ length: count }, (_, i) =>
 		createMockRunCategoryXp({
 			id: i + 1,
@@ -121,7 +138,9 @@ export const createMockRunCategoryXpArray = (count: number = 3): RunCategoryXp[]
 	);
 };
 
-export const createMockRunCategoryXpRecordArray = (count: number = 3): RunCategoryXpRecord[] => {
+export const createMockRunCategoryXpRecordArray = (
+	count: number = 3
+): RunCategoryXpRecord[] => {
 	return Array.from({ length: count }, (_, i) =>
 		createMockRunCategoryXpRecord({
 			id: i + 1,

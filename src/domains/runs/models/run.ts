@@ -3,6 +3,7 @@ import { InferSelectModel } from "drizzle-orm";
 import { STORAGE_UNITS } from "~/lib/storage";
 import type { RunCategoryXp } from "./runCategoryXp";
 
+// TODO: Refactor this to ActiveRun?
 export type Run = {
 	id: number;
 	userId: string;
@@ -22,7 +23,10 @@ export type Run = {
 
 export type RunRecord = InferSelectModel<typeof runsTable>;
 
-export const runToDTO = (record: RunRecord, categoryXp: RunCategoryXp[] = []): Run => {
+export const runToDTO = (
+	record: RunRecord,
+	categoryXp: RunCategoryXp[] = []
+): Run => {
 	return {
 		id: record.id,
 		userId: record.user_id,
@@ -60,7 +64,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 };
 
 export const runsToDTOs = (records: RunRecord[]): Run[] => {
-	return records.map(record => runToDTO(record));
+	return records.map((record) => runToDTO(record));
 };
 
 export const runsFromDTOs = (dtos: Run[]): RunRecord[] => {
@@ -69,7 +73,7 @@ export const runsFromDTOs = (dtos: Run[]): RunRecord[] => {
 
 export const createRun = (partial: Partial<Run> = {}): Run => {
 	const now = new Date();
-	
+
 	return {
 		id: 0,
 		userId: "",
@@ -110,7 +114,9 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 	};
 };
 
-export const createMockRunRecord = (overrides: Partial<RunRecord> = {}): RunRecord => {
+export const createMockRunRecord = (
+	overrides: Partial<RunRecord> = {}
+): RunRecord => {
 	return {
 		id: 1,
 		user_id: "test-user-id",
