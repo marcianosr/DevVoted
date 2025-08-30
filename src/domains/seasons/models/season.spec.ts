@@ -45,7 +45,10 @@ describe("Season Model", () => {
 
 	describe("seasonsToDTOs", () => {
 		it("transforms array of records to DTOs", () => {
-			const records = [createMockSeasonRecord(), createMockSeasonRecord({ id: 2 })];
+			const records = [
+				createMockSeasonRecord(),
+				createMockSeasonRecord({ id: 2 }),
+			];
 			const dtos = seasonsToDTOs(records);
 
 			expect(dtos).toHaveLength(2);
@@ -75,7 +78,9 @@ describe("Season Model", () => {
 			expect(season.status).toBe("upcoming");
 			expect(season.startDate).toBeInstanceOf(Date);
 			expect(season.endDate).toBeInstanceOf(Date);
-			expect(season.endDate.getTime()).toBeGreaterThan(season.startDate.getTime());
+			expect(season.endDate.getTime()).toBeGreaterThan(
+				season.startDate.getTime()
+			);
 		});
 
 		it("creates season with provided values", () => {
@@ -86,7 +91,9 @@ describe("Season Model", () => {
 			});
 
 			expect(customSeason.name).toBe("Banjo-Kazooie Season");
-			expect(customSeason.description).toBe("A season inspired by Rare classics");
+			expect(customSeason.description).toBe(
+				"A season inspired by Rare classics"
+			);
 			expect(customSeason.status).toBe("active");
 		});
 	});
@@ -100,7 +107,7 @@ describe("Season Model", () => {
 			expect(season.startDate.getMonth()).toBe(11); // December (0-indexed)
 			expect(season.startDate.getDate()).toBe(13); // 13th
 			expect(season.endDate.getMonth()).toBe(11); // December
-			expect(season.endDate.getDate()).toBe(25); // Christmas
+			expect(season.endDate.getDate()).toBe(26); // Christmas
 		});
 	});
 

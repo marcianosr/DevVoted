@@ -3,9 +3,9 @@ import { Config } from "~/domains/configs/models/config";
 import { configs } from "~/domains/configs/data/configs";
 import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
 
-export const getActiveConfigs = (run: Run): Config[] => {
+export const getActiveConfigs = (run: Run, availableConfigs: Config[] = configs): Config[] => {
 	return run.activeConfigIds
-		.map((id) => configs.find((config) => config.id === id))
+		.map((id) => availableConfigs.find((config) => config.id === id))
 		.filter((config): config is Config => config !== undefined);
 };
 
@@ -13,8 +13,8 @@ export const calculateStorageUsed = (activeConfigs: Config[]): number => {
 	return activeConfigs.reduce((total, config) => total + config.cost, 0);
 };
 
-export const getStorageInfo = (run: Run) => {
-	const activeConfigs = getActiveConfigs(run);
+export const getStorageInfo = (run: Run, availableConfigs: Config[] = configs) => {
+	const activeConfigs = getActiveConfigs(run, availableConfigs);
 	const configsStorage = calculateStorageUsed(activeConfigs);
 	const rerollsStorage = run.rerollStorageUsed;
 
@@ -36,16 +36,16 @@ export const getStorageInfo = (run: Run) => {
 	};
 };
 
-export const canAddConfigToRun = (run: Run, config: Config): boolean => {
+export const canAddConfigToRun = (run: Run, config: Config, availableConfigs: Config[] = configs): boolean => {
 	if (run.activeConfigIds.includes(config.id)) {
 		return false; // Already has this config
 	}
 
-	const { storageUsed } = getStorageInfo(run);
+	const { storageUsed } = getStorageInfo(run, availableConfigs);
 	return canAddToStorage(storageUsed, config.cost, run.storageLimit);
 };
 
-export const addConfigsToRun = (run: Run, configIds: string[]): Run => {
+export const addConfigsToRun = (run: Run, configIds: string[], availableConfigs: Config[] = configs): Run => {
 	// Filter out configs that are already in the run
 	const newConfigIds = configIds.filter(
 		(id) => !run.activeConfigIds.includes(id)
@@ -57,8 +57,8 @@ export const addConfigsToRun = (run: Run, configIds: string[]): Run => {
 
 	// Check if all new configs exist and can be added
 	const allConfigsValid = newConfigIds.every((configId) => {
-		const config = configs.find((c) => c.id === configId);
-		return config && canAddConfigToRun(run, config);
+		const config = availableConfigs.find((c) => c.id === configId);
+		return config && canAddConfigToRun(run, config, availableConfigs);
 	});
 
 	if (!allConfigsValid) {

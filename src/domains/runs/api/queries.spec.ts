@@ -13,6 +13,11 @@ import {
 	createMockRunCategoryXpRecordArray,
 } from "../models/runCategoryXp";
 
+// Mock the seasons service
+vi.mock("~/domains/seasons/services/seasonService", () => ({
+	getSeasonForNewRun: vi.fn().mockResolvedValue(1),
+}));
+
 // Mock the database module
 vi.mock("~/database/db", () => {
 	const createMockQueryBuilder = () => {
@@ -21,6 +26,9 @@ vi.mock("~/database/db", () => {
 			returning: returningMock,
 		});
 		const whereMock = vi.fn().mockReturnValue({
+			orderBy: vi.fn().mockReturnValue({
+				limit: vi.fn().mockResolvedValue([]),
+			}),
 			limit: vi.fn().mockResolvedValue([]),
 		});
 		const limitMock = vi.fn().mockResolvedValue([]);

@@ -44,9 +44,12 @@ describe("configStorage", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
-			const mockConfig = [
+			const mockConfigs = [
 				createConfig({
 					id: "eslint",
+				}),
+				createConfig({
+					id: "jest-config",
 				}),
 				createConfig({
 					id: "webpack-config",
@@ -55,7 +58,8 @@ describe("configStorage", () => {
 
 			const result = addConfigsToRun(
 				mockRun,
-				mockConfig.map((c) => c.id)
+				["eslint", "webpack-config"],
+				mockConfigs
 			);
 
 			expect(result.activeConfigIds).toEqual([
@@ -69,16 +73,19 @@ describe("configStorage", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
-			const mockConfig = [
+			const mockConfigs = [
+				createConfig({
+					id: "eslint",
+				}),
+				createConfig({
+					id: "jest-config",
+				}),
 				createConfig({
 					id: "tsconfig",
 				}),
 			];
 
-			const result = addConfigsToRun(
-				mockRun,
-				mockConfig.map((c) => c.id)
-			);
+			const result = addConfigsToRun(mockRun, ["tsconfig"], mockConfigs);
 
 			expect(result.activeConfigIds).toEqual([
 				"eslint",
@@ -91,7 +98,13 @@ describe("configStorage", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
-			const mockConfig = [
+			const mockConfigs = [
+				createConfig({
+					id: "eslint",
+				}),
+				createConfig({
+					id: "jest-config",
+				}),
 				createConfig({
 					id: "tsconfig",
 				}),
@@ -102,7 +115,8 @@ describe("configStorage", () => {
 
 			const result = addConfigsToRun(
 				mockRun,
-				mockConfig.map((c) => c.id)
+				["tsconfig", "webpack-config"],
+				mockConfigs
 			);
 
 			expect(result.activeConfigIds).toEqual([
@@ -152,11 +166,25 @@ describe("configStorage", () => {
 
 	describe("getStorageInfo", () => {
 		it("initializes without configs, 1 MB of storage, storageAvailable has the same amount as storageLimit and 0 storage used", () => {
+			const mockConfigs = [
+				createConfig({
+					id: "vanilla-config",
+					name: "Vanilla Config",
+					image: "/configs/vanilla.png",
+					cost: STORAGE_UNITS.MB / 4, // 256KB
+					level: 0,
+					description: "Shows community correctness percentage after each answer",
+					effect: ["showCommunityPercentage"],
+					rarity: "common",
+				}),
+			];
+
 			const result = getStorageInfo(
 				createMockRun({
 					storageLimit: STORAGE_UNITS.MB, // 1MB
 					activeConfigIds: ["vanilla-config"],
-				})
+				}),
+				mockConfigs
 			);
 
 			expect(result).toEqual({
@@ -167,9 +195,8 @@ describe("configStorage", () => {
 						image: "/configs/vanilla.png",
 						cost: STORAGE_UNITS.MB / 4, // 256KB
 						level: 0,
-						description:
-							"Shows community correctness percentage after each answer",
-						effect: expect.any(Function),
+						description: "Shows community correctness percentage after each answer",
+						effect: ["showCommunityPercentage"],
 						rarity: "common",
 					},
 				],
@@ -205,8 +232,13 @@ describe("configStorage", () => {
 			});
 
 			expect(result).toHaveLength(2);
-			expect(result.map(c => c.id).sort()).toEqual(["jest-config", "webpack-config"]);
-			expect(result).not.toContainEqual(expect.objectContaining({ id: "ts-config" }));
+			expect(result.map((c) => c.id).sort()).toEqual([
+				"jest-config",
+				"webpack-config",
+			]);
+			expect(result).not.toContainEqual(
+				expect.objectContaining({ id: "ts-config" })
+			);
 		});
 	});
 });
