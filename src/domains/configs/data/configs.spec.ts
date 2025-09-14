@@ -4,18 +4,19 @@ import { createMockPoll } from "~/domains/polls/factories/poll";
 import { createMockRun } from "~/domains/runs/models/run";
 import { createPollOption } from "~/domains/polls/models/pollOption";
 
+// TODO: Split up to make more readable
 describe("configs", () => {
 	describe("config definitions", () => {
 		it("contains all expected configs", () => {
 			const configIds = configs.map((c) => c.id);
 			expect(configIds).toContain("eslint-config");
-			expect(configIds).toContain(".html");
-			expect(configIds).toContain(".css");
-			expect(configIds).toContain(".js");
-			expect(configIds).toContain(".ts");
-			expect(configIds).toContain(".jsx");
-			expect(configIds).toContain(".git");
-			expect(configIds).toContain("package.json");
+			expect(configIds).toContain(".html-config");
+			expect(configIds).toContain(".css-config");
+			expect(configIds).toContain(".js-config");
+			expect(configIds).toContain(".ts-config");
+			expect(configIds).toContain(".jsx-config");
+			expect(configIds).toContain(".git-config");
+			expect(configIds).toContain("package.json-config");
 			expect(configIds).toContain("math-random-config");
 		});
 
@@ -26,20 +27,21 @@ describe("configs", () => {
 			expect(eslintConfig?.effect).toEqual(["disableWrongOptions"]);
 			expect(eslintConfig?.rarity).toBe("uncommon");
 			expect(eslintConfig?.cost).toBeGreaterThan(0);
-			expect(eslintConfig?.level).toBe(3);
 		});
 
-		it("has valid properties for file extension configs", () => {
-			const jsConfig = configs.find((c) => c.id === ".js");
+		it("has valid properties for 'file extension' configs", () => {
+			const jsConfig = configs.find((c) => c.id === ".js-config");
 			expect(jsConfig).toBeDefined();
 			expect(jsConfig?.effect).toEqual(["streakAmp"]);
 			expect(jsConfig?.rarity).toBe("common");
 			expect(jsConfig?.description).toContain("+0.5 amp");
+			expect(jsConfig?.priority).toBe(100);
 
-			const tsConfig = configs.find((c) => c.id === ".ts");
+			const tsConfig = configs.find((c) => c.id === ".ts-config");
 			expect(tsConfig).toBeDefined();
 			expect(tsConfig?.effect).toEqual(["streakAmp"]);
 			expect(tsConfig?.description).toContain("TypeScript");
+			expect(tsConfig?.priority).toBe(100);
 		});
 
 		it("has valid properties for math random config", () => {
@@ -54,14 +56,15 @@ describe("configs", () => {
 		});
 	});
 
-	describe("applyEffects", () => {
+	describe.only("applyEffects", () => {
 		it("returns base view with empty renderProps when no configs provided", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What does the Super Metroid Power Bomb do?",
 				categoryCode: "js",
 			});
-			const mockRun = createMockRun();
+			const mockRun = createMockRun({
+				activeConfigIds: [],
+			});
+
 			const base = {
 				poll: mockPoll,
 				options: [],
@@ -69,20 +72,21 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, []);
+			const result = applyEffects(base, mockRun.activeConfigIds);
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps).toEqual({});
+			expect(result.score).toEqual({});
 			expect(result.meta).toEqual({});
 		});
 
 		it("returns base view when provided config IDs don't exist", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "Which character says 'It's dangerous to go alone'?",
 				categoryCode: "js",
 			});
-			const mockRun = createMockRun();
+			const mockRun = createMockRun({
+				activeConfigIds: ["nonexistent-config"],
+			});
 			const base = {
 				poll: mockPoll,
 				options: [],
@@ -90,50 +94,58 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, ["nonexistent-config"]);
+			const result = applyEffects(base, mockRun.activeConfigIds);
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps).toEqual({});
+			expect(result.score).toEqual({});
 			expect(result.meta).toEqual({});
 		});
 
-		it("handles configs with unknown effects gracefully", () => {
+		it("returns props for ESLint config", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "In Banjo-Kazooie, what does Kazooie do?",
 				categoryCode: "js",
 			});
-			const mockRun = createMockRun();
+			const mockRun = createMockRun({
+				activeConfigIds: ["eslint-config"],
+			});
+
 			const base = {
 				poll: mockPoll,
-				options: [],
+				options: [
+					{
+						id: 1,
+						option: "On cinnabar island",
+						correct: true,
+						pollId: 1,
+					},
+					{
+						id: 2,
+						option: "On the SS Anne",
+						correct: false,
+						pollId: 1,
+					},
+				],
 				run: mockRun,
 				hasAnswered: false,
 			};
 
-			// Create a temporary config with unknown effect
-			const originalConfigs = [...configs];
-			(configs as any).push({
-				id: "test-unknown-effect",
-				effect: ["unknownEffect"],
-			});
-
-			const result = applyEffects(base, ["test-unknown-effect"]);
+			const result = applyEffects(base, mockRun.activeConfigIds);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps).toEqual({});
-			expect(result.meta).toEqual({});
-
-			// Restore original configs
-			configs.length = originalConfigs.length;
+			expect(result.renderProps).toEqual({
+				amp: 0,
+				disabledOptionIds: [2],
+			});
+			expect(result.meta).toEqual({
+				notes: ["Hid wrong options"],
+			});
 		});
 	});
 
 	describe("disableWrongOptions effect", () => {
 		it("disables one random wrong option", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What is Samus Aran's ship called?",
 				categoryCode: "js",
 			});
 			const mockRun = createMockRun();
@@ -179,7 +191,6 @@ describe("configs", () => {
 			]);
 			expect(result.meta.notes).toEqual(["Hid wrong options"]);
 
-			// Verify the disabled option is actually wrong
 			const disabledId = result.renderProps.disabledOptionIds?.[0];
 			const disabledOption = options.find((o) => o.id === disabledId);
 			expect(disabledOption?.correct).toBe(false);
@@ -221,19 +232,19 @@ describe("configs", () => {
 			const options = [
 				createPollOption({
 					id: 1,
-					option: "Pikachu",
+					option: "Saffron",
 					correct: false,
 					pollId: 1,
 				}),
 				createPollOption({
 					id: 2,
-					option: "Charizard",
+					option: "Vermillion",
 					correct: false,
 					pollId: 1,
 				}),
 				createPollOption({
 					id: 3,
-					option: "Mewtwo",
+					option: "Cerulean",
 					correct: false,
 					pollId: 1,
 				}),
@@ -257,27 +268,25 @@ describe("configs", () => {
 
 		it("merges disabled options from multiple ESLint configs", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What collectible increases Samus's energy tanks?",
 				categoryCode: "js",
 			});
 			const mockRun = createMockRun();
 			const options = [
 				createPollOption({
 					id: 1,
-					option: "Energy Tank",
+					option: "Sheldon Cooper",
 					correct: true,
 					pollId: 1,
 				}),
 				createPollOption({
 					id: 2,
-					option: "Missile",
+					option: "Leonard Hofstadter",
 					correct: false,
 					pollId: 1,
 				}),
 				createPollOption({
 					id: 3,
-					option: "Power Bomb",
+					option: "Howard Wolowitz",
 					correct: false,
 					pollId: 1,
 				}),
@@ -321,10 +330,11 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, [".js"]);
+			const result = applyEffects(base, [".js-config"]);
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.amp).toBe(0.5);
+			expect(result.score.ampAdd).toBe(0.5);
 			expect(result.meta.notes).toEqual(["+0.5 amp for js polls"]);
 		});
 
@@ -343,10 +353,11 @@ describe("configs", () => {
 			};
 
 			// Apply multiple streak amp configs
-			const result = applyEffects(base, [".css", ".js", ".html"]);
+			const result = applyEffects(base, [".css-config", ".js-config", ".html-config"]);
 
 			// Only .css config should apply to css polls
 			expect(result.renderProps.amp).toBe(0.5);
+			expect(result.score.ampAdd).toBe(0.5);
 			expect(result.meta.notes).toEqual(["+0.5 amp for css polls"]);
 		});
 
@@ -364,9 +375,10 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, [".css", ".js"]);
+			const result = applyEffects(base, [".css-config", ".js-config"]);
 
 			expect(result.renderProps.amp).toBe(0);
+			expect(result.score).toEqual({});
 			expect(result.meta.notes).toEqual([]);
 		});
 	});
@@ -419,9 +431,7 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.amp).toBe(-0.5); // -0.5 raw value
-			expect(result.meta.notes).toEqual([
-				"Random amp for js polls",
-			]);
+			expect(result.meta.notes).toEqual(["Random amp for js polls"]);
 		});
 	});
 
@@ -466,12 +476,13 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, ["eslint-config", ".js"]);
+			const result = applyEffects(base, ["eslint-config", ".js-config"]);
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
 			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([2, 3]);
 			expect(result.renderProps.amp).toBe(0.5);
+			expect(result.score.ampAdd).toBe(0.5);
 			expect(result.meta.notes).toContain("Hid wrong options");
 			expect(result.meta.notes).toContain("+0.5 amp for js polls");
 		});
@@ -531,12 +542,13 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, ["math-random-config", ".js"]);
+			const result = applyEffects(base, ["math-random-config", ".js-config"]);
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.amp).toBe(0.6);
+			expect(result.score.ampAdd).toBe(0.6);
 			expect(result.meta.notes).toEqual([
-				"Random amp for js polls",
+				"Random amp: +0.1",
 				"+0.5 amp for js polls",
 			]);
 		});

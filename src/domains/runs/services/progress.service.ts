@@ -5,35 +5,7 @@ import {
 import { awardXpToRun } from "../api/queries";
 import { Run } from "../models/run";
 import { CategoryCode } from "~/domains/shared/categories";
-
-// TODO: use a single map stored somewhere as a constant
-// TODO: type this with config <Record<CondigId, CategoryCode>> for readability
-// Map config IDs to their corresponding categories
-const CONFIG_CATEGORY_MAP: Record<string, string> = {
-	".html": "html",
-	".css": "css",
-	".js": "js",
-	".ts": "ts",
-	".jsx": "react",
-	".git": "git",
-	"package.json": "general-frontend",
-};
-
-const calculateConfigAmpBonus = (
-	activeConfigIds: string[],
-	categoryCode: string
-): number => {
-	// Check if any active configs match this category
-	let totalBonus = 0;
-
-	for (const configId of activeConfigIds) {
-		if (CONFIG_CATEGORY_MAP[configId] === categoryCode) {
-			totalBonus += 0.5; // Each matching config adds 0.5 amp
-		}
-	}
-
-	return totalBonus;
-};
+import { applyEffects } from "~/domains/configs/data/configs";
 
 type IncrementProgress = {
 	categoryCode: CategoryCode;
@@ -61,11 +33,19 @@ export const incrementRunProgress = async ({
 		0
 	);
 
-	// Calculate config amp bonus for this category based on effects
-	const configAmpBonus = calculateConfigAmpBonus(
-		run.activeConfigIds,
-		categoryCode
-	);
+	// Build a minimal EffectCtx; pass the real poll if you have it here
+	const effectCtx = {
+		poll: { categoryCode },
+		options: [],
+		hasAnswered: true,
+		run,
+	};
+
+	const {
+		score: scoreMods,
+		renderProps,
+		meta,
+	} = applyEffects(effectCtx, run.activeConfigIds);
 
 	const {
 		breakdown,
@@ -79,7 +59,10 @@ export const incrementRunProgress = async ({
 		currentXP: currentCategoryXP.currentXp,
 		currentStreak: currentCategoryXP.currentStreak,
 		totalPollsAnswered,
-		configAmpBonus,
+
+		configAmpMul: scoreMods.ampMul ?? 1,
+		configAmpAdd: scoreMods.ampAdd ?? 0,
+		configXpAdd: scoreMods.xpAdd ?? 0,
 	});
 
 	//Write new values to DB

@@ -69,6 +69,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Fix refresh-to-reanswer bug [Critical]
 [] Fix immediate-run-end bug [Critical]
 [] Reroll bug: when rerolling it walks behind
+[] Check RLS
 
 Season 2: Early Meta Layer
 [] Very basic CSI: (correct / total) × streak)

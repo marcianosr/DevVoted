@@ -93,13 +93,19 @@ export type PollScoreBreakdown = {
 export const calculatePollScoreForProgression = (
 	pollsAnswered: number,
 	streak: number,
-	configAmpBonus: number = 0
+	configAmpMul: number = 1,
+	configAmpAdd: number = 0,
+	configXpAdd: number = 0
 ): PollScoreBreakdown => {
 	const round = getCurrentRoundNumber(pollsAnswered);
 	const base = getRoundXP(round);
-	const rawAmp = getStreakAmp(streak) + configAmpBonus;
-	const amp = Math.max(0, rawAmp); // Clamp to minimum of 0
-	const earnedXP = Math.round(base * amp);
+	const baseAmp = getStreakAmp(streak);
+	// Apply multiplicative first, then additive, then clamp
+	// Round to 1 decimal place to avoid floating-point precision issues
+	const rawAmp = baseAmp * configAmpMul + configAmpAdd;
+	const amp = Math.max(0, Math.round(rawAmp * 10) / 10);
+	const rawXP = Math.round(base * amp);
+	const earnedXP = Math.max(0, rawXP + configXpAdd); // Apply flat XP bonus
 	const delta = earnedXP;
 
 	return {
@@ -126,7 +132,9 @@ type OrchestrateScoreCalculationParams = {
 	currentBestStreak: number;
 	totalPollsAnswered: number;
 	correctnessFactor: number;
-	configAmpBonus?: number;
+	configAmpMul?: number;
+	configAmpAdd?: number;
+	configXpAdd?: number;
 };
 
 export const orchestrateScoreCalculation = ({
@@ -135,7 +143,9 @@ export const orchestrateScoreCalculation = ({
 	currentBestStreak,
 	totalPollsAnswered,
 	correctnessFactor,
-	configAmpBonus = 0,
+	configAmpAdd,
+	configAmpMul,
+	configXpAdd,
 }: OrchestrateScoreCalculationParams): ScoreCalculation => {
 	const newStreak = calculateStreakUpdate(currentStreak, correctnessFactor);
 	const newBestStreak = calculateBestStreak(currentBestStreak, newStreak);
@@ -145,7 +155,9 @@ export const orchestrateScoreCalculation = ({
 		calculatePollScoreForProgression(
 			newPollsAnswered,
 			newStreak,
-			configAmpBonus
+			configAmpMul,
+			configAmpAdd,
+			configXpAdd
 		);
 
 	// Apply correctness factor multiplier to earned XP
