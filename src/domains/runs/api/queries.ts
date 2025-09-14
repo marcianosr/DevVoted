@@ -10,11 +10,6 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import type { CategoryCode } from "~/domains/shared/categories";
 import { runFactory } from "../models/run";
 import { runCategoryXpFactory } from "../models/runCategoryXp";
-import {
-	calculateStreakUpdate,
-	calculateBestStreak,
-	calculateRunXP,
-} from "~/domains/score/services/score.service";
 
 export const getActiveRunByUserId = async (userId: string) => {
 	const runRecord = await db
@@ -214,43 +209,13 @@ export const createCategoryLeaderboardEntries = async (
 export const awardXpToRun = async (
 	runId: number,
 	categoryCode: string,
-	baseXpFromCorrectness: number
+	newXp: number,
+	newStreak: number,
+	newBestStreak: number,
+	newPollsAnswered: number
 ) => {
 	return await db.transaction(async (tx) => {
-		// Get current XP record for this run and category
-		const [currentXp] = await tx
-			.select()
-			.from(runCategoryXpTable)
-			.where(
-				and(
-					eq(runCategoryXpTable.run_id, runId),
-					eq(runCategoryXpTable.category_code, categoryCode)
-				)
-			)
-			.limit(1);
-
-		if (!currentXp) {
-			throw new Error(
-				`No XP record found for run ${runId} and category ${categoryCode}`
-			);
-		}
-
-		const newXp = currentXp.current_xp + baseXpFromCorrectness;
-		const newStreak = calculateStreakUpdate(
-			currentXp.current_streak,
-			baseXpFromCorrectness
-		);
-		const newBestStreak = calculateBestStreak(
-			currentXp.best_streak,
-			newStreak
-		);
-		const newPollsAnswered = currentXp.polls_answered + 1;
-
-		const totalXp = calculateRunXP(newPollsAnswered, newStreak);
-
-		console.log("total", totalXp);
-
-		// Update the XP record
+		// Update the XP record with pre-calculated values
 		const [updatedRecord] = await tx
 			.update(runCategoryXpTable)
 			.set({
@@ -416,7 +381,10 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 			})
 			.from(runsTable)
 			.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
-			.innerJoin(runCategoryXpTable, eq(runsTable.id, runCategoryXpTable.run_id))
+			.innerJoin(
+				runCategoryXpTable,
+				eq(runsTable.id, runCategoryXpTable.run_id)
+			)
 			.where(
 				and(
 					eq(runsTable.status, "active"),
@@ -440,10 +408,15 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 			})
 			.from(runsTable)
 			.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
-			.leftJoin(runCategoryXpTable, eq(runsTable.id, runCategoryXpTable.run_id))
+			.leftJoin(
+				runCategoryXpTable,
+				eq(runsTable.id, runCategoryXpTable.run_id)
+			)
 			.where(eq(runsTable.status, "active"))
 			.groupBy(runsTable.user_id, usersTable.display_name, runsTable.id)
-			.orderBy(sql`COALESCE(SUM(${runCategoryXpTable.current_xp}), 0) DESC`)
+			.orderBy(
+				sql`COALESCE(SUM(${runCategoryXpTable.current_xp}), 0) DESC`
+			)
 			.limit(10);
 
 		return activeRuns;

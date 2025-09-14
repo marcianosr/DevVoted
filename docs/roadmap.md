@@ -32,15 +32,21 @@ Season 1: Core Loop ✅ ship this before anything else
     [x] Live run leaderboard
     [] Show who answered today
 
-[] Create simple linear streak bonus amp
-[] Create a single "stake"
+[x] Create simple linear streak bonus amp
+[] Events?
+[] Rarity tiers
+[] Create a single "stake" in DB (no UI)
 [] Traceability
 
     - [] Timestamps on answer
 
-[o] Create 6–8 configs with effects [Critical]
+[o] Create 1-15 configs with effects [Critical]
 
-    - [] Create some effects
+- .js/.css/.ts/.html/.jsx/.git/.package.json- Category amps (+0.5)
+- localStorage - Extra storage
+- try/catch - Safety net for threshold
+- eslint - Disable wrong option
+- prettierrc - Round XP up
 
 [] Balancing
 
@@ -52,7 +58,7 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [] Upgrade packages
 [] Authentication (GitHub/Google)
-[] Deployment
+[] CI/CD and Deployment
 [] Old-to-new system migration
 [] Some UI polish so it isn't a mess
 [] Test daily poll cycle
@@ -118,6 +124,7 @@ Season 3: Expansion
 
 ### Phase 2:
 
+[] Config discovery system
 [] Integrate basic CSI
 [] Check multiple choice formula
 [] Streak bonusses mechanics

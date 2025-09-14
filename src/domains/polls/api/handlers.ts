@@ -70,11 +70,23 @@ export const postPollOptionsHandler = async ({
 	return handleApiOperation(async () => {
 		const validatedData = await validatePollSubmission(data);
 
-		const { xpEarned, runEnded, thresholdInfo, selectedOptionIds, correctOptionIds, outcome } = await processPollAnswer({
+		// TODO: The start of posting to the DB (answers)
+		const {
+			breakdown,
+			runEnded,
+			thresholdInfo,
+			selectedOptionIds,
+			correctOptionIds,
+			outcome,
+		} = await processPollAnswer({
 			pollId: validatedData.pollId,
 			userId: validatedData.userId,
 			selectedOptionIds: validatedData.selectedOptionIds,
 			categoryCode: validatedData.poll.categoryCode,
+		});
+
+		console.log("Poll options submitted:", {
+			breakdown,
 		});
 
 		return {
@@ -83,7 +95,7 @@ export const postPollOptionsHandler = async ({
 			correctOptions: correctOptionIds,
 			isCorrect: outcome === "full",
 			runEnded,
-			xpEarned,
+			breakdown,
 			thresholdInfo,
 		};
 	});
@@ -129,4 +141,3 @@ const validatePollSubmission = async (
 		poll,
 	};
 };
-

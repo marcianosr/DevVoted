@@ -161,6 +161,7 @@ export const getCurrentThresholdInfo = (
  */
 export const getCurrentRoundNumber = (pollsAnswered: number): number => {
 	const { POLLS_PER_SET } = XP_CALCULATION_CONSTANTS;
+
 	return Math.ceil(pollsAnswered / POLLS_PER_SET);
 };
 

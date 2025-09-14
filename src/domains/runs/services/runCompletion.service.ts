@@ -5,7 +5,6 @@ import {
 	getTotalPollsAnsweredForRun,
 	getBestStreakForRun,
 	createCategoryLeaderboardEntries,
-	getLastRunFromUser,
 } from "../api/queries";
 import {
 	calculateThresholdInfo,
@@ -51,4 +50,3 @@ export const checkXpThreshold = async (
 
 	return calculateThresholdInfo(totalXp, totalPollsAnswered);
 };
-

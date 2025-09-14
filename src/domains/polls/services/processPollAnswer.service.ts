@@ -1,14 +1,11 @@
-import { getActiveRunByUserId, awardXpToRun } from "~/domains/runs/api/queries";
-import {
-	checkXpThreshold,
-	endRunForThresholdFailure,
-} from "~/domains/runs/services/runCompletion.service";
+import { getActiveRunByUserId } from "~/domains/runs/api/queries";
+import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
 	createPollResponse,
 	fetchPollByIdWithOptions,
 } from "~/domains/polls/api/queries";
 import {
-	getCurrentRoundNumber,
+	calculateThresholdInfo,
 	type ThresholdInfo,
 } from "~/domains/runs/services/thresholdCalculator.service";
 import { resetPollRerolls } from "~/domains/runs/api/queries";
@@ -17,18 +14,19 @@ import {
 	outcomeMulti,
 	singleCorrectnessFactor,
 	multiCorrectnessFactor,
-	calculateXP,
-	getRoundXP,
 	type PollAnswerOutcome,
+	PollScoreBreakdown,
 } from "~/domains/score/services/score.service";
+import type { PollOption } from "~/domains/polls/models/pollOption";
+import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 
 export type PollAnswerResult = {
-	xpEarned: number;
 	runEnded: boolean;
 	thresholdInfo: ThresholdInfo | null;
 	selectedOptionIds: number[];
 	correctOptionIds: number[];
 	outcome: PollAnswerOutcome;
+	breakdown: PollScoreBreakdown | null;
 };
 
 export type PollAnswerInput = {
@@ -42,43 +40,31 @@ export const processPollAnswer = async (
 	params: PollAnswerInput
 ): Promise<PollAnswerResult> => {
 	const { pollId, userId, selectedOptionIds, categoryCode } = params;
-	const pollWithOptions = await fetchPollByIdWithOptions(params.pollId);
-	const selectedOptions = pollWithOptions.options.filter((option) =>
-		selectedOptionIds.includes(option.id)
-	);
-	const pollType = pollWithOptions.poll.answerType;
 
-	// Extract correct options from poll data
-	const correctOptions = pollWithOptions.options.filter(
-		(option) => option.correct
-	);
-	const correctOptionIds = correctOptions.map((option) => option.id);
+	const { correctOptionIds, outcome, correctnessFactor } =
+		await handleUserSelectedOptionsByPollType({
+			pollId,
+			selectedOptionIds,
+		});
 
-	// Calculate scoring metrics
-	const nCorrectPicked = selectedOptions.filter((option) =>
-		correctOptionIds.includes(option.id)
-	).length;
-	const nCorrectTotal = correctOptions.length;
-	const nWrongPicked = selectedOptions.length - nCorrectPicked;
+	const activeRun = await getActiveRunByUserId(userId);
 
-	// Determine outcome and calculate XP
-	let outcome: PollAnswerOutcome;
-	let correctnessFactor: number;
-
-	if (pollType === "single") {
-		const isCorrect =
-			selectedOptions.length === 1 &&
-			correctOptionIds.includes(selectedOptions[0].id);
-		outcome = outcomeSingle(isCorrect);
-		correctnessFactor = singleCorrectnessFactor(isCorrect);
-	} else {
-		outcome = outcomeMulti(nCorrectPicked, nCorrectTotal, nWrongPicked);
-		correctnessFactor = multiCorrectnessFactor(
-			nCorrectPicked,
-			nCorrectTotal,
-			nWrongPicked
-		);
+	if (!activeRun) {
+		return {
+			correctOptionIds,
+			selectedOptionIds,
+			outcome,
+			runEnded: false,
+			thresholdInfo: null,
+			breakdown: null,
+		};
 	}
+
+	const { breakdown, newPollsAnswered } = await incrementRunProgress({
+		categoryCode,
+		run: activeRun,
+		correctnessFactor,
+	});
 
 	await createPollResponse({
 		pollId,
@@ -86,64 +72,102 @@ export const processPollAnswer = async (
 		selectedOptionIds,
 	});
 
-	const { runEnded, thresholdInfo, xpEarned } = await handleXpFlow(
-		userId,
-		categoryCode,
-		correctnessFactor
+	const updatedRun = await getActiveRunByUserId(userId);
+	if (!updatedRun) throw new Error("Run not found after update");
+
+	const updatedXPAfterAnsweringPoll = updatedRun.categoryXp.reduce(
+		(sum, xp) => sum + xp.currentXp,
+		0
 	);
 
+	const thresholdInfo = calculateThresholdInfo(
+		updatedXPAfterAnsweringPoll,
+		newPollsAnswered
+	);
+
+	let runEnded = false;
+
+	if (thresholdInfo.isThresholdCheckPoll && !thresholdInfo.meetsThreshold) {
+		await endRunForThresholdFailure(activeRun.id);
+		runEnded = true;
+	}
+
+	await resetPollRerolls(activeRun.id);
+
 	return {
-		xpEarned,
+		correctOptionIds,
+		selectedOptionIds,
+		outcome,
 		runEnded,
 		thresholdInfo,
-		selectedOptionIds,
-		correctOptionIds,
-		outcome,
+		breakdown,
 	};
 };
 
-const handleXpFlow = async (
-	userId: string,
-	categoryCode: string,
-	correctnessFactor: number
-): Promise<{ runEnded: boolean; thresholdInfo: ThresholdInfo | null; xpEarned: number }> => {
-	let runEnded = false;
-	let thresholdInfo: ThresholdInfo | null = null;
-	let xpEarned = 0;
+const handleUserSelectedOptionsByPollType = async ({
+	pollId,
+	selectedOptionIds,
+}: {
+	pollId: number;
+	selectedOptionIds: number[];
+}) => {
+	const pollWithOptions = await fetchPollByIdWithOptions(pollId);
 
-	try {
-		const activeRun = await getActiveRunByUserId(userId);
-		if (!activeRun) return { runEnded, thresholdInfo, xpEarned };
+	const selectedOptions = pollWithOptions.options.filter((option) =>
+		selectedOptionIds.includes(option.id)
+	);
 
-		// Find the category XP data to get current polls answered
-		const categoryXp = activeRun.categoryXp.find(xp => xp.categoryCode === categoryCode);
-		if (!categoryXp) return { runEnded, thresholdInfo, xpEarned };
+	const correctOptions = pollWithOptions.options.filter(
+		(option) => option.correct
+	);
+	const correctOptionIds = correctOptions.map((option) => option.id);
 
-		// Calculate XP based on correctness factor and run context
-		const upcomingPollsAnswered = categoryXp.pollsAnswered + 1; // Will be incremented in awardXpToRun
-		const round = getCurrentRoundNumber(upcomingPollsAnswered);
-		xpEarned = calculateXP(correctnessFactor, getRoundXP(round));
+	const nCorrectPicked = selectedOptions.filter((option) =>
+		correctOptionIds.includes(option.id)
+	).length;
+	const nCorrectTotal = correctOptions.length;
+	const nWrongPicked = selectedOptions.length - nCorrectPicked;
 
-		// Always award XP regardless of set position
-		await awardXpToRun(activeRun.id, categoryCode, xpEarned);
+	const { outcome, correctnessFactor } =
+		pollWithOptions.poll.answerType === "single"
+			? calculateSingleOutcome(selectedOptions, correctOptionIds)
+			: calculateMultiOutcome(
+					nCorrectPicked,
+					nCorrectTotal,
+					nWrongPicked
+				);
 
-		// Reset reroll count for new shop session
-		await resetPollRerolls(activeRun.id);
-
-		// Always get threshold info for display purposes
-		thresholdInfo = await checkXpThreshold(activeRun.id);
-
-		// Only check threshold and potentially end run on 3rd poll of each set
-		if (
-			thresholdInfo.isThresholdCheckPoll &&
-			!thresholdInfo.meetsThreshold
-		) {
-			await endRunForThresholdFailure(activeRun.id);
-			runEnded = true;
-		}
-	} catch (error) {
-		console.error("Error handling XP flow:", error);
-	}
-
-	return { runEnded, thresholdInfo, xpEarned };
+	return {
+		selectedOptions,
+		correctOptionIds,
+		outcome,
+		correctnessFactor,
+	};
 };
+
+const calculateSingleOutcome = (
+	selectedOptions: PollOption[],
+	correctOptionIds: number[]
+) => {
+	const isCorrect =
+		selectedOptions.length === 1 &&
+		correctOptionIds.includes(selectedOptions[0].id);
+
+	return {
+		outcome: outcomeSingle(isCorrect),
+		correctnessFactor: singleCorrectnessFactor(isCorrect),
+	};
+};
+
+const calculateMultiOutcome = (
+	nCorrectPicked: number,
+	nCorrectTotal: number,
+	nWrongPicked: number
+) => ({
+	outcome: outcomeMulti(nCorrectPicked, nCorrectTotal, nWrongPicked),
+	correctnessFactor: multiCorrectnessFactor(
+		nCorrectPicked,
+		nCorrectTotal,
+		nWrongPicked
+	),
+});

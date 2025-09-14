@@ -69,6 +69,7 @@ const PollContent: React.FC<PollContentProps> = ({
 
 	const [rerollKey, setRerollKey] = useState(0);
 
+	// TODO: Put in a hook
 	const randomConfigs = useMemo(() => {
 		if (!activeRun) return [];
 		return getRandomConfigs({

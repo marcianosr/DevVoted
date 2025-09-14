@@ -6,14 +6,14 @@ type ScoreDisplayProps = {
 };
 
 export const ScoreDisplay = ({ run, category }: ScoreDisplayProps) => {
-	const scoreFromCategory = run.categoryXp.find(
+	const scoreFromCurrentCategory = run.categoryXp.find(
 		(xp) => xp.categoryCode === category
 	);
 
 	return (
 		<div>
-			5 x ({scoreFromCategory?.currentStreak} x{" "}
-			{scoreFromCategory?.pollsAnswered || 0})
+			5 x ({scoreFromCurrentCategory?.currentStreak} x{" "}
+			{scoreFromCurrentCategory?.pollsAnswered || 0})
 		</div>
 	);
 };
