@@ -90,11 +90,12 @@ export type PollScoreBreakdown = {
 
 export const calculatePollScoreForProgression = (
 	pollsAnswered: number,
-	streak: number
+	streak: number,
+	configAmpBonus: number = 0
 ): PollScoreBreakdown => {
 	const round = getCurrentRoundNumber(pollsAnswered);
 	const base = getRoundXP(round);
-	const amp = getStreakAmp(streak);
+	const amp = getStreakAmp(streak) + configAmpBonus; // Add config bonus to amp
 	const earnedXP = Math.round(base * amp);
 	const delta = earnedXP;
 
@@ -121,7 +122,8 @@ export const orchestrateScoreCalculation = (
 	currentStreak: number,
 	currentBestStreak: number,
 	totalPollsAnswered: number,
-	correctnessFactor: number
+	correctnessFactor: number,
+	configAmpBonus: number = 0
 ): ScoreCalculation => {
 	const newStreak = calculateStreakUpdate(
 		currentStreak,
@@ -131,7 +133,7 @@ export const orchestrateScoreCalculation = (
 	const newPollsAnswered = totalPollsAnswered + 1;
 
 	const { base, amp, round, streak, earnedXP } =
-		calculatePollScoreForProgression(newPollsAnswered, newStreak);
+		calculatePollScoreForProgression(newPollsAnswered, newStreak, configAmpBonus);
 
 	// Apply correctness factor multiplier to earned XP
 	const actualEarnedXP = Math.round(earnedXP * correctnessFactor);

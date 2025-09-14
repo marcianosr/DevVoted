@@ -15,17 +15,78 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: ["disableWrongOptions"],
 	},
-
-	// TODO: need streak amp mechamic for this
+	{
+		id: ".html",
+		name: ".html",
+		image: "/configs/html",
+		cost: STORAGE_UNITS.MB / 2, // 1MB
+		description: "+0.5 amp on category General Frontend polls",
+		rarity: "common",
+		effect: ["streakAmp"],
+	},
+	{
+		id: ".css",
+		name: ".css",
+		image: "/configs/css",
+		cost: STORAGE_UNITS.MB / 2, // 1MB
+		description: "+0.5 amp on category CSS polls",
+		rarity: "common",
+		effect: ["streakAmp"],
+	},
+	{
+		id: ".js",
+		name: ".js",
+		image: "/configs/js",
+		cost: STORAGE_UNITS.MB / 2, // 1MB
+		description: "+0.5 amp on category JavaScript polls",
+		rarity: "common",
+		effect: ["streakAmp"],
+	},
+	{
+		id: ".ts",
+		name: ".ts",
+		image: "/configs/ts",
+		cost: STORAGE_UNITS.MB / 2, // 1MB
+		description: "+0.5 amp on category TypeScript polls",
+		rarity: "common",
+		effect: ["streakAmp"],
+	},
+	{
+		id: ".jsx",
+		name: ".jsx",
+		image: "/configs/jsx",
+		cost: STORAGE_UNITS.MB / 2, // 1MB
+		description: "+0.5 amp on category React polls",
+		rarity: "common",
+		effect: ["streakAmp"],
+	},
+	{
+		id: ".git",
+		name: ".git",
+		image: "/configs/git",
+		cost: STORAGE_UNITS.MB / 2, // 1MB
+		description: "+0.5 amp on category General Frontend polls",
+		rarity: "common",
+		effect: ["streakAmp"],
+	},
+	{
+		id: "package.json",
+		name: "package.json",
+		image: "/configs/package-json.png",
+		cost: STORAGE_UNITS.MB / 2, // 1MB
+		description: "+0.5 amp on category General Frontend polls",
+		rarity: "common",
+		effect: ["streakAmp"],
+	},
 	// {
 	// 	id: "math-random-config",
 	// 	name: "Math Random",
 	// 	image: "/configs/math-random.png",
 	// 	cost: STORAGE_UNITS.MB / 2, // 256KB
 	// 	level: 1,
-	// 	description: "Random amp value every poll",
+	// 	description: "Random amp value between -0.5 and +0.5 every poll",
 	// 	rarity: "rare",
-	// 	effect: ["freeReroll"],
+	// 	effect: ["randomStreakAmp"],
 	// },
 ];
 
@@ -36,8 +97,7 @@ type EffectCtx = PollWithOptionsResponse & {
 
 export type EffectRenderProps = {
 	disabledOptionIds?: number[];
-	freeReroll?: boolean;
-	multipliers?: Record<number, number>;
+	amp?: number;
 };
 
 type EffectMeta = { notes?: string[]; badges?: Record<string, string> };
@@ -59,6 +119,31 @@ const EFFECTS: Record<string, EffectFn> = {
 			view: { poll, options, run, hasAnswered },
 			renderProps: { disabledOptionIds: [randomIdFromDisabled] },
 			meta: { notes: ["Hid wrong options"] },
+		};
+	},
+	streakAmp: ({ poll, options, run, hasAnswered }) => {
+		const additionalAmp = 0.5; // Just the bonus to add
+
+		return {
+			view: { poll, options, run, hasAnswered },
+			renderProps: { amp: additionalAmp }, // Simple number now
+			meta: {
+				notes: [`+${additionalAmp} amp for ${poll.categoryCode} polls`],
+			},
+		};
+	},
+	randomStreakAmp: ({ poll, options, run, hasAnswered }) => {
+		// TODO: Don't forget to handle negative amp.
+		// If the base amp is 0 or lower it should be clamped to 0
+		const rawValue = Math.random() - 0.5;
+		const additionalAmp = Math.round(rawValue * 10) / 10;
+
+		return {
+			view: { poll, options, run, hasAnswered },
+			renderProps: { amp: additionalAmp },
+			meta: {
+				notes: [`Random amp for ${poll.categoryCode} polls`],
+			},
 		};
 	},
 };
@@ -84,7 +169,10 @@ export function applyEffects(base: EffectCtx, activeConfigIds: string[] = []) {
 				view: out.view,
 				renderProps: {
 					...acc.renderProps,
-					...out.renderProps,
+					// Amp values are additive
+					amp:
+						(acc.renderProps.amp ?? 0) +
+						(out.renderProps?.amp ?? 0),
 					disabledOptionIds: [
 						...(acc.renderProps.disabledOptionIds ?? []),
 						...(out.renderProps?.disabledOptionIds ?? []),

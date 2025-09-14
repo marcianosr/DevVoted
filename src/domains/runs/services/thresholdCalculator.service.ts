@@ -4,7 +4,7 @@ export const XP_CALCULATION_CONSTANTS = {
 	WRONG_ANSWER_PENALTY: 2,
 	BASE_POLL_XP: 5,
 	XP_INCREMENT_PER_POLL: 2,
-	POLLS_PER_SET: 3,
+	POLLS_PER_ROUND: 3,
 } as const;
 
 /**
@@ -34,8 +34,8 @@ export type CategoryXpData = {
  * @returns true if this is the 3rd poll in a set (threshold check required)
  */
 export const shouldCheckThreshold = (pollsAnswered: number): boolean => {
-	const { POLLS_PER_SET } = XP_CALCULATION_CONSTANTS;
-	return pollsAnswered > 0 && pollsAnswered % POLLS_PER_SET === 0;
+	const { POLLS_PER_ROUND } = XP_CALCULATION_CONSTANTS;
+	return pollsAnswered > 0 && pollsAnswered % POLLS_PER_ROUND === 0;
 };
 
 /**
@@ -46,18 +46,18 @@ export const shouldCheckThreshold = (pollsAnswered: number): boolean => {
  */
 
 export const calculateSetThreshold = (setNumber: number): number => {
-	const { BASE_POLL_XP, XP_INCREMENT_PER_POLL, POLLS_PER_SET } =
+	const { BASE_POLL_XP, XP_INCREMENT_PER_POLL, POLLS_PER_ROUND } =
 		XP_CALCULATION_CONSTANTS;
-	const defaultThreshold = BASE_POLL_XP * POLLS_PER_SET;
+	const defaultThreshold = BASE_POLL_XP * POLLS_PER_ROUND;
 	if (setNumber <= 0) return defaultThreshold;
 
 	// Each set builds on previous difficulty
-	// Set 1: Average BASE_POLL_XP per poll × POLLS_PER_SET = 15 XP total
-	// Set 2: Average (BASE_POLL_XP + XP_INCREMENT_PER_POLL) per poll × POLLS_PER_SET = 21 XP total
-	// Set 3: Average (BASE_POLL_XP + 2*XP_INCREMENT_PER_POLL) per poll × POLLS_PER_SET = 27 XP total
+	// Set 1: Average BASE_POLL_XP per poll × POLLS_PER_ROUND = 15 XP total
+	// Set 2: Average (BASE_POLL_XP + XP_INCREMENT_PER_POLL) per poll × POLLS_PER_ROUND = 21 XP total
+	// Set 3: Average (BASE_POLL_XP + 2*XP_INCREMENT_PER_POLL) per poll × POLLS_PER_ROUND = 27 XP total
 	const baseXpPerPoll =
 		BASE_POLL_XP + (setNumber - 1) * XP_INCREMENT_PER_POLL;
-	return baseXpPerPoll * POLLS_PER_SET;
+	return baseXpPerPoll * POLLS_PER_ROUND;
 };
 
 /**
@@ -73,7 +73,7 @@ export const calculateThresholdInfo = (
 	totalPollsAnswered: number
 ): ThresholdInfo => {
 	const currentSet = getCurrentRoundNumber(totalPollsAnswered);
-	const pollInSet = getPollPositionInSet(totalPollsAnswered);
+	const pollInSet = getPollPositionInRound(totalPollsAnswered);
 	const isThresholdCheckPoll = shouldCheckThreshold(totalPollsAnswered);
 
 	// Always show the threshold required for the current set
@@ -123,7 +123,7 @@ export const calculateNextPollThresholdFromCategoryData = (
 	// Poll number is the next poll (current + 1)
 	const pollNumber = totalPollsAnswered + 1;
 	const currentSet = getCurrentRoundNumber(pollNumber);
-	const pollInSet = getPollPositionInSet(pollNumber);
+	const pollInSet = getPollPositionInRound(pollNumber);
 	const isThresholdCheckPoll = shouldCheckThreshold(pollNumber);
 
 	// Show the threshold required for the next poll's set
@@ -160,9 +160,9 @@ export const getCurrentThresholdInfo = (
  * @returns Current set number (Set 1, Set 2, etc.)
  */
 export const getCurrentRoundNumber = (pollsAnswered: number): number => {
-	const { POLLS_PER_SET } = XP_CALCULATION_CONSTANTS;
+	const { POLLS_PER_ROUND } = XP_CALCULATION_CONSTANTS;
 
-	return Math.ceil(pollsAnswered / POLLS_PER_SET);
+	return Math.ceil(pollsAnswered / POLLS_PER_ROUND);
 };
 
 /**
@@ -170,8 +170,8 @@ export const getCurrentRoundNumber = (pollsAnswered: number): number => {
  * @param pollsAnswered - Total polls answered in current run
  * @returns Position in current set (1 = first poll, 2 = second poll, 3 = third poll)
  */
-export const getPollPositionInSet = (pollsAnswered: number): number => {
-	const { POLLS_PER_SET } = XP_CALCULATION_CONSTANTS;
-	const position = pollsAnswered % POLLS_PER_SET;
-	return position === 0 ? POLLS_PER_SET : position;
+export const getPollPositionInRound = (pollsAnswered: number): number => {
+	const { POLLS_PER_ROUND } = XP_CALCULATION_CONSTANTS;
+	const position = pollsAnswered % POLLS_PER_ROUND;
+	return position === 0 ? POLLS_PER_ROUND : position;
 };

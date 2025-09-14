@@ -42,11 +42,15 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [o] Create 1-15 configs with effects [Critical]
 
-- .js/.css/.ts/.html/.jsx/.git/.package.json- Category amps (+0.5)
+[x] .js/.css/.ts/.html/.jsx/.git/.package.json- Category amps (+0.5)
+
 - localStorage - Extra storage
 - try/catch - Safety net for threshold
 - eslint - Disable wrong option
 - prettierrc - Round XP up
+
+[] Make sure configs are additive to each other
+[] Streak is now tied to amp directly
 
 [] Balancing
 
