@@ -113,12 +113,12 @@ describe("RunCategoryXp Model", () => {
 		it("merges partial values with defaults", () => {
 			const result = createRunCategoryXp({
 				runId: 123,
-				categoryCode: "typescript",
+				categoryCode: "ts",
 				currentXp: 50,
 			});
 
 			expect(result.runId).toBe(123);
-			expect(result.categoryCode).toBe("typescript");
+			expect(result.categoryCode).toBe("ts");
 			expect(result.currentXp).toBe(50);
 			expect(result.id).toBe(0);
 			expect(result.currentStreak).toBe(0);

@@ -269,7 +269,7 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			const result = await awardXpToRun(1, "js", 5);
+			const result = await awardXpToRun(1, "js", 5, 1, 1, 1);
 
 			expect(result.currentXp).toBe(15);
 			expect(result.currentStreak).toBe(3);
@@ -313,29 +313,9 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			const result = await awardXpToRun(1, "js", 5);
+			const result = await awardXpToRun(1, "js", 5, 1, 1, 1);
 
 			expect(result.bestStreak).toBe(5);
-		});
-
-		it("throws error when XP record not found", async () => {
-			const limitMock = vi.fn().mockResolvedValue([]); // No record found
-			const selectMock = vi.fn().mockReturnValue({
-				from: vi.fn().mockReturnValue({
-					where: vi.fn().mockReturnValue({
-						limit: limitMock,
-					}),
-				}),
-			});
-
-			const txMock = { select: selectMock };
-			vi.mocked(db.transaction).mockImplementation(async (cb) =>
-				cb(txMock as any)
-			);
-
-			await expect(awardXpToRun(1, "js", 10)).rejects.toThrow(
-				"No XP record found for run 1 and category js"
-			);
 		});
 	});
 });

@@ -4,15 +4,18 @@ import {
 } from "~/domains/score/services/score.service";
 import { awardXpToRun } from "../api/queries";
 import { Run } from "../models/run";
+import { CategoryCode } from "~/domains/shared/categories";
 
+// TODO: use a single map stored somewhere as a constant
+// TODO: type this with config <Record<CondigId, CategoryCode>> for readability
 // Map config IDs to their corresponding categories
 const CONFIG_CATEGORY_MAP: Record<string, string> = {
-	".html": "general-frontend", // No separate HTML category
+	".html": "html",
 	".css": "css",
 	".js": "js",
-	".ts": "typescript",
+	".ts": "ts",
 	".jsx": "react",
-	".git": "general-frontend", // Git goes to general frontend
+	".git": "git",
 	"package.json": "general-frontend",
 };
 
@@ -33,7 +36,7 @@ const calculateConfigAmpBonus = (
 };
 
 type IncrementProgress = {
-	categoryCode: string;
+	categoryCode: CategoryCode;
 	run: Run;
 	correctnessFactor: number;
 };
@@ -70,14 +73,14 @@ export const incrementRunProgress = async ({
 		newStreak,
 		newPollsAnswered,
 		newTotalXP,
-	} = orchestrateScoreCalculation(
-		currentCategoryXP.currentXp,
-		currentCategoryXP.currentStreak,
-		currentCategoryXP.bestStreak,
-		totalPollsAnswered,
+	} = orchestrateScoreCalculation({
 		correctnessFactor,
-		configAmpBonus
-	);
+		currentBestStreak: currentCategoryXP.bestStreak,
+		currentXP: currentCategoryXP.currentXp,
+		currentStreak: currentCategoryXP.currentStreak,
+		totalPollsAnswered,
+		configAmpBonus,
+	});
 
 	//Write new values to DB
 	await awardXpToRun(

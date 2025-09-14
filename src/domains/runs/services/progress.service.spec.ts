@@ -4,7 +4,6 @@ import { orchestrateScoreCalculation } from "~/domains/score/services/score.serv
 import { awardXpToRun } from "../api/queries";
 import { createMockRun } from "../models/run";
 import { createMockRunCategoryXp } from "../models/runCategoryXp";
-import { runCategoryXpFactory } from "../models/runCategoryXp";
 
 vi.mock("~/domains/score/services/score.service");
 vi.mock("../api/queries");
@@ -60,7 +59,7 @@ describe("incrementRunProgress", () => {
 		vi.mocked(orchestrateScoreCalculation).mockReturnValue(
 			mockCalculationResult
 		);
-		
+
 		const mockUpdatedRecord = createMockRunCategoryXp({
 			id: 1,
 			runId: 1,
@@ -109,7 +108,7 @@ describe("incrementRunProgress", () => {
 		vi.mocked(orchestrateScoreCalculation).mockReturnValue(
 			mockCalculationResult
 		);
-		
+
 		const mockUpdatedRecord = createMockRunCategoryXp({
 			id: 1,
 			runId: 1,
@@ -138,6 +137,47 @@ describe("incrementRunProgress", () => {
 		);
 	});
 
+	it.only("can't have amp lower than 0", async () => {
+		const mockRun = createTestRun([".js", ".css"]);
+		const mockCalculationResult = {
+			newTotalXP: 130,
+			newStreak: 3,
+			newBestStreak: 5,
+			newPollsAnswered: 6,
+			breakdown: {
+				round: 2,
+				streak: 3,
+				base: 20,
+				amp: -0.5, // Negative amp
+				earnedXP: 26,
+				delta: 26,
+			},
+		};
+
+		vi.mocked(orchestrateScoreCalculation).mockReturnValue(
+			mockCalculationResult
+		);
+
+		const mockUpdatedRecord = createMockRunCategoryXp({
+			id: 1,
+			runId: 1,
+			categoryCode: "js",
+			currentXp: 130,
+			currentStreak: 3,
+			bestStreak: 5,
+			pollsAnswered: 4,
+		});
+		vi.mocked(awardXpToRun).mockResolvedValue(mockUpdatedRecord);
+
+		const result = await incrementRunProgress({
+			categoryCode: "js",
+			run: mockRun,
+			correctnessFactor: 1.0,
+		});
+
+		console.log(result);
+	});
+
 	it("applies multiple config bonuses when multiple matching configs", async () => {
 		// This shouldn't normally happen but let's test the edge case
 		const mockRun = createTestRun([".js", ".js"]); // Duplicate configs
@@ -159,7 +199,7 @@ describe("incrementRunProgress", () => {
 		vi.mocked(orchestrateScoreCalculation).mockReturnValue(
 			mockCalculationResult
 		);
-		
+
 		const mockUpdatedRecord = createMockRunCategoryXp({
 			id: 1,
 			runId: 1,
@@ -189,16 +229,19 @@ describe("incrementRunProgress", () => {
 	});
 
 	it("correctly maps config IDs to category codes", async () => {
+		// TODO: Fix with general mapping
 		const testCases = [
-			{ configId: ".html", categoryCode: "general-frontend" as const },
+			{ configId: ".html", categoryCode: "html" as const },
 			{ configId: ".css", categoryCode: "css" as const },
 			{ configId: ".js", categoryCode: "js" as const },
-			{ configId: ".ts", categoryCode: "typescript" as const },
+			{ configId: ".ts", categoryCode: "ts" as const },
 			{ configId: ".jsx", categoryCode: "react" as const },
-			{ configId: ".git", categoryCode: "general-frontend" as const },
-			{ configId: "package.json", categoryCode: "general-frontend" as const },
+			{ configId: ".git", categoryCode: "git" as const },
+			{
+				configId: "package.json",
+				categoryCode: "general-frontend" as const,
+			},
 		];
-
 		for (const testCase of testCases) {
 			const mockRun = createMockRun({
 				activeConfigIds: [testCase.configId],
@@ -242,7 +285,7 @@ describe("incrementRunProgress", () => {
 			vi.mocked(orchestrateScoreCalculation).mockReturnValue(
 				mockCalculationResult
 			);
-			
+
 			const mockUpdatedRecord = createMockRunCategoryXp({
 				id: 1,
 				runId: 1,

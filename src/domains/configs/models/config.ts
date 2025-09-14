@@ -1,5 +1,6 @@
 import { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
 import { Run } from "~/domains/runs/models/run";
+import { CategoryCode } from "~/domains/shared/categories";
 
 export type ConfigEffectContext = {
 	run: Run;
@@ -25,6 +26,7 @@ export type Config = {
 	};
 	synergies?: string[]; // IDs of configs that synergize with this one
 	rarity: "common" | "uncommon" | "rare" | "legendary";
+	targetCategories?: CategoryCode[]; // Categories this config can target, e.g., ["js", "python"]
 };
 
 export type ConfigInventory = {

@@ -19,6 +19,7 @@ import {
 } from "~/domains/score/services/score.service";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
+import { CategoryCode } from "~/domains/shared/categories";
 
 export type PollAnswerResult = {
 	runEnded: boolean;
@@ -33,7 +34,7 @@ export type PollAnswerInput = {
 	pollId: number;
 	userId: string;
 	selectedOptionIds: number[];
-	categoryCode: string;
+	categoryCode: CategoryCode;
 };
 
 export const processPollAnswer = async (

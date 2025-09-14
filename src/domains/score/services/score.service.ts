@@ -1,8 +1,10 @@
 import { getCurrentRoundNumber } from "~/domains/runs/services/thresholdCalculator.service";
 
+const CAP_MULT = 3;
 export const getRoundXP = (round: number) => round * 10;
 // +10% per correct-in-a-row, capped at +80%
-export const getStreakAmp = (streak: number) => Math.min(1 + 0.1 * streak, 1.8);
+export const getStreakAmp = (streak: number) =>
+	Math.min(1 + 0.1 * streak, CAP_MULT);
 
 export type PollAnswerOutcome = "full" | "partial" | "wrong";
 
@@ -95,7 +97,8 @@ export const calculatePollScoreForProgression = (
 ): PollScoreBreakdown => {
 	const round = getCurrentRoundNumber(pollsAnswered);
 	const base = getRoundXP(round);
-	const amp = getStreakAmp(streak) + configAmpBonus; // Add config bonus to amp
+	const rawAmp = getStreakAmp(streak) + configAmpBonus;
+	const amp = Math.max(0, rawAmp); // Clamp to minimum of 0
 	const earnedXP = Math.round(base * amp);
 	const delta = earnedXP;
 
@@ -117,23 +120,33 @@ export type ScoreCalculation = {
 	breakdown: PollScoreBreakdown;
 };
 
-export const orchestrateScoreCalculation = (
-	currentXP: number,
-	currentStreak: number,
-	currentBestStreak: number,
-	totalPollsAnswered: number,
-	correctnessFactor: number,
-	configAmpBonus: number = 0
-): ScoreCalculation => {
-	const newStreak = calculateStreakUpdate(
-		currentStreak,
-		correctnessFactor
-	);
+type OrchestrateScoreCalculationParams = {
+	currentXP: number;
+	currentStreak: number;
+	currentBestStreak: number;
+	totalPollsAnswered: number;
+	correctnessFactor: number;
+	configAmpBonus?: number;
+};
+
+export const orchestrateScoreCalculation = ({
+	currentXP,
+	currentStreak,
+	currentBestStreak,
+	totalPollsAnswered,
+	correctnessFactor,
+	configAmpBonus = 0,
+}: OrchestrateScoreCalculationParams): ScoreCalculation => {
+	const newStreak = calculateStreakUpdate(currentStreak, correctnessFactor);
 	const newBestStreak = calculateBestStreak(currentBestStreak, newStreak);
 	const newPollsAnswered = totalPollsAnswered + 1;
 
 	const { base, amp, round, streak, earnedXP } =
-		calculatePollScoreForProgression(newPollsAnswered, newStreak, configAmpBonus);
+		calculatePollScoreForProgression(
+			newPollsAnswered,
+			newStreak,
+			configAmpBonus
+		);
 
 	// Apply correctness factor multiplier to earned XP
 	const actualEarnedXP = Math.round(earnedXP * correctnessFactor);

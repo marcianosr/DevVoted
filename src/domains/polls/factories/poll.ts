@@ -73,7 +73,7 @@ export const pollQuestions = [
 	"In CSS, the position property was implemented long ago, which values from below remove the elements out of the document flow?",
 	"What is your favorite programming language?",
 	"Which frontend framework do you prefer?",
-	"Do you use TypeScript?",
+	"Do you use ts?",
 	"How often do you write tests?",
 	"What is your preferred CSS solution?",
 	"What's your approach to responsive design?",
@@ -93,7 +93,7 @@ export const createMockPollArray = (count: number = 3): Poll[] => {
 		createMockPoll({
 			id: i + 1,
 			question: pollQuestions[i % pollQuestions.length],
-			categoryCode: i % 2 === 0 ? "js" : "typescript",
+			categoryCode: i % 2 === 0 ? "js" : "ts",
 		})
 	);
 };
@@ -106,7 +106,7 @@ export const createMockPollRecordArray = (count: number = 3): PollRecord[] => {
 		createMockPollRecord({
 			id: i + 1,
 			question: pollQuestions[i % pollQuestions.length],
-			category_code: i % 2 === 0 ? "js" : "typescript",
+			category_code: i % 2 === 0 ? "js" : "ts",
 		})
 	);
 };

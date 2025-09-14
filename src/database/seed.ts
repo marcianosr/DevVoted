@@ -72,7 +72,7 @@ async function seedDatabase() {
 			css: 5,
 			js: 2,
 			react: 2,
-			typescript: 2,
+			ts: 2,
 			"general-frontend": 1,
 		};
 
@@ -308,7 +308,9 @@ async function seedDatabase() {
 				});
 
 				// Create leaderboard entries for other categories with different data
-				const otherCategories = CATEGORY_CODES.filter(code => code !== 'js');
+				const otherCategories = CATEGORY_CODES.filter(
+					(code) => code !== "js"
+				);
 				for (const categoryCode of otherCategories) {
 					const categoryXp = Math.floor(Math.random() * 200) + 50; // Random XP for variety
 					const categoryStreak = Math.floor(Math.random() * 4) + 1;
@@ -471,10 +473,7 @@ function generatePollOptions(
 				},
 			];
 		}
-	} else if (
-		question.toLowerCase().includes("js") ||
-		question.toLowerCase().includes("javascript")
-	) {
+	} else if (question.toLowerCase().includes("js")) {
 		if (question.includes("closures")) {
 			options = [
 				{
@@ -524,10 +523,7 @@ function generatePollOptions(
 				},
 			];
 		}
-	} else if (
-		question.toLowerCase().includes("typescript") ||
-		question.toLowerCase().includes("ts")
-	) {
+	} else if (question.toLowerCase().includes("ts")) {
 		if (question.includes("type system")) {
 			options = [
 				{
@@ -554,7 +550,7 @@ function generatePollOptions(
 		}
 	} else if (
 		question.includes("content-theft") ||
-		question.toLowerCase().includes("frontend")
+		question.toLowerCase().includes("general-frontend")
 	) {
 		if (question.includes("prevent visitors to steal")) {
 			options = [

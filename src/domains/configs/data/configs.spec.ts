@@ -187,8 +187,6 @@ describe("configs", () => {
 
 		it("handles polls with no wrong options gracefully", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What is Link's home region?",
 				categoryCode: "js",
 			});
 			const mockRun = createMockRun();
@@ -217,8 +215,6 @@ describe("configs", () => {
 
 		it("handles polls with all wrong options", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "Which Pokemon is the first in the Pokedex?",
 				categoryCode: "js",
 			});
 			const mockRun = createMockRun();
@@ -311,13 +307,13 @@ describe("configs", () => {
 	});
 
 	describe("streakAmp effect", () => {
-		it("adds 0.5 amp bonus", () => {
+		it("adds 0.5 amp bonus when the poll category matches the config", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What is Mario's signature move?",
 				categoryCode: "js",
 			});
-			const mockRun = createMockRun();
+			const mockRun = createMockRun({
+				activeConfigIds: [".js"],
+			});
 			const base = {
 				poll: mockPoll,
 				options: [],
@@ -332,13 +328,13 @@ describe("configs", () => {
 			expect(result.meta.notes).toEqual(["+0.5 amp for js polls"]);
 		});
 
-		it("applies multiple streak amp effects with same poll category", () => {
+		it("applies multiple streak amp effects with same poll category when the player has multiple streakAmp", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What does CSS stand for?",
 				categoryCode: "css",
 			});
-			const mockRun = createMockRun();
+			const mockRun = createMockRun({
+				activeConfigIds: [".css", ".js", ".html"],
+			});
 			const base = {
 				poll: mockPoll,
 				options: [],
@@ -347,16 +343,31 @@ describe("configs", () => {
 			};
 
 			// Apply multiple streak amp configs
+			const result = applyEffects(base, [".css", ".js", ".html"]);
+
+			// Only .css config should apply to css polls
+			expect(result.renderProps.amp).toBe(0.5);
+			expect(result.meta.notes).toEqual(["+0.5 amp for css polls"]);
+		});
+
+		it("doesn't apply streak amp effects when the poll category doesn't match", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "html",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: [".css", ".js"],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
 			const result = applyEffects(base, [".css", ".js"]);
 
-			// The last amp should be in renderProps since they overwrite
-			expect(result.renderProps.amp).toBe(0.5);
-			// Both effects generate notes, but both show "css polls" since that's poll.categoryCode
-			expect(result.meta.notes).toHaveLength(2);
-			expect(result.meta.notes).toEqual([
-				"+0.5 amp for css polls",
-				"+0.5 amp for css polls",
-			]);
+			expect(result.renderProps.amp).toBe(0);
+			expect(result.meta.notes).toEqual([]);
 		});
 	});
 
@@ -373,8 +384,6 @@ describe("configs", () => {
 			vi.mocked(Math.random).mockReturnValue(0.76); // (0.76 - 0.5) = 0.26, rounds to 0.3
 
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What is the highest level in Donkey Kong?",
 				categoryCode: "js",
 			});
 			const mockRun = createMockRun();
@@ -392,14 +401,10 @@ describe("configs", () => {
 			expect(result.meta.notes).toEqual(["Random amp for js polls"]);
 		});
 
-		it("generates different rounded random values on multiple calls", () => {
-			vi.mocked(Math.random)
-				.mockReturnValueOnce(0.24) // (0.24 - 0.5) = -0.26, rounds to -0.3
-				.mockReturnValueOnce(0.86); // (0.86 - 0.5) = 0.36, rounds to 0.4
+		it("can yield negative amp", () => {
+			vi.mocked(Math.random).mockReturnValue(0); // (0 - 0.5) = -0.5
 
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "Who is the final boss in Super Metroid?",
 				categoryCode: "js",
 			});
 			const mockRun = createMockRun();
@@ -410,21 +415,27 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result1 = applyEffects(base, ["math-random-config"]);
-			expect(result1.renderProps.amp).toBe(-0.3);
-			expect(result1.meta.notes).toEqual(["Random amp for js polls"]);
+			const result = applyEffects(base, ["math-random-config"]);
 
-			const result2 = applyEffects(base, ["math-random-config"]);
-			expect(result2.renderProps.amp).toBe(0.4);
-			expect(result2.meta.notes).toEqual(["Random amp for js polls"]);
+			expect(result.view).toEqual(base);
+			expect(result.renderProps.amp).toBe(-0.5); // -0.5 raw value
+			expect(result.meta.notes).toEqual([
+				"Random amp for js polls",
+			]);
 		});
 	});
 
 	describe("effect combinations", () => {
+		beforeEach(() => {
+			vi.spyOn(Math, "random");
+		});
+
+		afterEach(() => {
+			vi.restoreAllMocks();
+		});
+
 		it("combines disableWrongOptions and streakAmp effects", () => {
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What is Banjo's companion's name?",
 				categoryCode: "js",
 			});
 			const mockRun = createMockRun();
@@ -469,8 +480,6 @@ describe("configs", () => {
 			vi.spyOn(Math, "random").mockReturnValue(0.83); // (0.83 - 0.5) = 0.33, rounds to 0.3
 
 			const mockPoll = createMockPoll({
-				id: 1,
-				question: "What color is Yoshi?",
 				categoryCode: "react",
 			});
 			const mockRun = createMockRun();
@@ -507,6 +516,30 @@ describe("configs", () => {
 
 			vi.restoreAllMocks();
 		});
+
+		it("is stackable if a category streakAmp is active", () => {
+			vi.mocked(Math.random).mockReturnValue(0.56); // (0.76 - 0.5) = 0.26, rounds to 0.3
+
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["math-random-config", ".js"]);
+
+			expect(result.view).toEqual(base);
+			expect(result.renderProps.amp).toBe(0.6);
+			expect(result.meta.notes).toEqual([
+				"Random amp for js polls",
+				"+0.5 amp for js polls",
+			]);
+		});
 	});
 
 	describe("EffectRenderProps type", () => {
@@ -526,12 +559,12 @@ describe("configs", () => {
 			expect(renderProps.amp).toBe(0.75);
 		});
 
-		it("allows empty object", () => {
+		it("is empty when no effects are applied", () => {
 			const renderProps: EffectRenderProps = {};
 			expect(renderProps).toEqual({});
 		});
 
-		it("allows all properties together", () => {
+		it("allows multiple effects to be applied", () => {
 			const renderProps: EffectRenderProps = {
 				disabledOptionIds: [1, 2],
 				amp: 1.5,

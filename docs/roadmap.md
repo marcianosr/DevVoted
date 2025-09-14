@@ -50,8 +50,7 @@ Season 1: Core Loop ✅ ship this before anything else
 - prettierrc - Round XP up
 
 [] Make sure configs are additive to each other
-[] Streak is now tied to amp directly
-
+[] Don't rerender shop when installing configs. This shows new options
 [] Balancing
 
     [] Threshold formula refinement

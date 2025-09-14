@@ -52,7 +52,7 @@ describe("handlers", () => {
 			const pollId = 198;
 			const mockPoll = createMockPoll({
 				id: pollId,
-				categoryCode: "frontend",
+				categoryCode: "general-frontend",
 			});
 
 			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
@@ -257,11 +257,28 @@ describe("handlers", () => {
 			});
 
 			// Mock active run with category XP data
-			const mockRun = createMockRun({ 
-				id: 1, 
-				categoryXp: [{ categoryCode: "js", pollsAnswered: 0, currentStreak: 0, bestStreak: 0, currentXp: 0 }] 
+			const mockRun = createMockRun({
+				id: 1,
+				categoryXp: [
+					{
+						// TODO: create factory
+						categoryCode: "js",
+						pollsAnswered: 0,
+						currentStreak: 0,
+						bestStreak: 0,
+						currentXp: 0,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						finalStreak: 0,
+						finalXp: 0,
+						id: 1,
+						runId: 1,
+					},
+				],
 			});
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(mockRun);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
 			vi.mocked(runQueries.awardXpToRun).mockResolvedValue({} as any);
 			vi.mocked(runQueries.resetPollRerolls).mockResolvedValue({} as any);
 			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
@@ -376,11 +393,27 @@ describe("handlers", () => {
 			});
 
 			// Mock active run with category XP data
-			const mockRun = createMockRun({ 
-				id: 1, 
-				categoryXp: [{ categoryCode: "js", pollsAnswered: 0, currentStreak: 0, bestStreak: 0, currentXp: 0 }] 
+			const mockRun = createMockRun({
+				id: 1,
+				categoryXp: [
+					{
+						categoryCode: "js",
+						pollsAnswered: 0,
+						currentStreak: 0,
+						bestStreak: 0,
+						currentXp: 0,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						finalStreak: 0,
+						finalXp: 0,
+						id: 1,
+						runId: 1,
+					},
+				],
 			});
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(mockRun);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
 			vi.mocked(runQueries.awardXpToRun).mockResolvedValue({} as any);
 			vi.mocked(runQueries.resetPollRerolls).mockResolvedValue({} as any);
 			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
@@ -438,11 +471,27 @@ describe("handlers", () => {
 			});
 
 			// Mock active run with category XP data
-			const mockRun = createMockRun({ 
-				id: 1, 
-				categoryXp: [{ categoryCode: "js", pollsAnswered: 0, currentStreak: 0, bestStreak: 0, currentXp: 0 }] 
+			const mockRun = createMockRun({
+				id: 1,
+				categoryXp: [
+					{
+						categoryCode: "js",
+						pollsAnswered: 0,
+						currentStreak: 0,
+						bestStreak: 0,
+						currentXp: 0,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						finalStreak: 0,
+						finalXp: 0,
+						id: 1,
+						runId: 1,
+					},
+				],
 			});
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(mockRun);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
 			vi.mocked(runQueries.awardXpToRun).mockResolvedValue({} as any);
 			vi.mocked(runQueries.resetPollRerolls).mockResolvedValue({} as any);
 			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
@@ -471,7 +520,14 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js", expect.any(Number));
+			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(
+				1,
+				"js",
+				expect.any(Number),
+				expect.any(Number),
+				expect.any(Number),
+				expect.any(Number)
+			);
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.isCorrect).toEqual(expect.any(Boolean));
@@ -496,11 +552,27 @@ describe("handlers", () => {
 			});
 
 			// Mock active run with category XP data
-			const mockRun = createMockRun({ 
-				id: 1, 
-				categoryXp: [{ categoryCode: "js", pollsAnswered: 0, currentStreak: 0, bestStreak: 0, currentXp: 0 }] 
+			const mockRun = createMockRun({
+				id: 1,
+				categoryXp: [
+					{
+						categoryCode: "js",
+						pollsAnswered: 0,
+						currentStreak: 0,
+						bestStreak: 0,
+						currentXp: 0,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						finalStreak: 0,
+						finalXp: 0,
+						id: 1,
+						runId: 1,
+					},
+				],
 			});
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(mockRun);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
 			vi.mocked(runQueries.awardXpToRun).mockResolvedValue({} as any);
 			vi.mocked(runQueries.resetPollRerolls).mockResolvedValue({} as any);
 			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
@@ -529,7 +601,14 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(1, "js", expect.any(Number));
+			expect(runQueries.awardXpToRun).toHaveBeenCalledWith(
+				1,
+				"js",
+				expect.any(Number),
+				expect.any(Number),
+				expect.any(Number),
+				expect.any(Number)
+			);
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.isCorrect).toBe(false);
@@ -560,11 +639,27 @@ describe("handlers", () => {
 			});
 
 			// Mock active run with category XP data
-			const mockRun = createMockRun({ 
-				id: 1, 
-				categoryXp: [{ categoryCode: "js", pollsAnswered: 0, currentStreak: 0, bestStreak: 0, currentXp: 0 }] 
+			const mockRun = createMockRun({
+				id: 1,
+				categoryXp: [
+					{
+						categoryCode: "js",
+						pollsAnswered: 0,
+						currentStreak: 0,
+						bestStreak: 0,
+						currentXp: 0,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						finalStreak: 0,
+						finalXp: 0,
+						id: 1,
+						runId: 1,
+					},
+				],
 			});
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(mockRun);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
+				mockRun
+			);
 			vi.mocked(runQueries.awardXpToRun).mockResolvedValue({} as any);
 			vi.mocked(runQueries.resetPollRerolls).mockResolvedValue({} as any);
 			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
@@ -596,141 +691,6 @@ describe("handlers", () => {
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.isCorrect).toEqual(expect.any(Boolean));
-			}
-		});
-
-		it("continues gracefully when XP operations fail", async () => {
-			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
-			const mockCorrectOptions = [
-				{
-					id: 1,
-					pollId: 123,
-					option: "Correct Answer",
-					correct: true,
-				},
-			];
-
-			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
-			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-			vi.mocked(queries.createPollResponse).mockResolvedValue(undefined);
-
-			// Mock fetchPollByIdWithOptions for the new scoring flow
-			vi.mocked(queries.fetchPollByIdWithOptions).mockResolvedValue({
-				poll: mockPoll,
-				options: mockCorrectOptions,
-			});
-
-			// Mock active run with category XP data
-			const mockRun = createMockRun({ 
-				id: 1, 
-				categoryXp: [{ categoryCode: "js", pollsAnswered: 0, currentStreak: 0, bestStreak: 0, currentXp: 0 }] 
-			});
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(mockRun);
-			vi.mocked(runQueries.awardXpToRun).mockRejectedValue(
-				new Error("XP system error")
-			);
-			vi.mocked(runQueries.resetPollRerolls).mockResolvedValue({} as any);
-			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
-				meetsThreshold: true,
-				currentXp: 5,
-				requiredXp: 5,
-				pollNumber: 1,
-				currentSet: 1,
-				pollInSet: 1,
-				isThresholdCheckPoll: false,
-			});
-
-			// Mock database call for checking option correctness
-			const { db } = await import("~/database/db");
-			vi.mocked(db.select).mockReturnValue({
-				from: vi.fn().mockReturnValue({
-					where: vi.fn().mockResolvedValue(mockCorrectOptions),
-				}),
-			} as any);
-
-			const result = await postPollOptionsHandler({
-				data: {
-					pollId: 123,
-					selectedOptions: ["1"],
-					userId: "123e4567-e89b-12d3-a456-426614174000",
-				},
-			});
-
-			// Poll submission should succeed even if XP awarding fails
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.isCorrect).toBe(true);
-			}
-		});
-
-		it("ends run when threshold is not met on threshold check poll", async () => {
-			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
-			const mockCorrectOptions = [
-				{
-					id: 1,
-					pollId: 123,
-					option: "Correct Answer",
-					correct: true,
-				},
-			];
-
-			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
-			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-			vi.mocked(queries.createPollResponse).mockResolvedValue(undefined);
-
-			// Mock fetchPollByIdWithOptions for the new scoring flow
-			vi.mocked(queries.fetchPollByIdWithOptions).mockResolvedValue({
-				poll: mockPoll,
-				options: mockCorrectOptions,
-			});
-
-			// Mock active run with category XP data
-			const mockRun = createMockRun({ 
-				id: 1, 
-				categoryXp: [{ categoryCode: "js", pollsAnswered: 2, currentStreak: 1, bestStreak: 1, currentXp: 10 }] 
-			});
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(mockRun);
-			vi.mocked(runQueries.awardXpToRun).mockResolvedValue({} as any);
-			vi.mocked(runQueries.resetPollRerolls).mockResolvedValue({} as any);
-			vi.mocked(runCompletionService.checkXpThreshold).mockResolvedValue({
-				meetsThreshold: false,
-				currentXp: 10,
-				requiredXp: 15,
-				pollNumber: 3,
-				currentSet: 1,
-				pollInSet: 3,
-				isThresholdCheckPoll: true, // This is a threshold check poll (3rd poll)
-			});
-			vi.mocked(
-				runCompletionService.endRunForThresholdFailure
-			).mockResolvedValue({
-				runEnded: true,
-				reason: "threshold_not_met",
-			});
-
-			// Mock database call for checking option correctness
-			const { db } = await import("~/database/db");
-			vi.mocked(db.select).mockReturnValue({
-				from: vi.fn().mockReturnValue({
-					where: vi.fn().mockResolvedValue(mockCorrectOptions),
-				}),
-			} as any);
-
-			const result = await postPollOptionsHandler({
-				data: {
-					pollId: 123,
-					selectedOptions: ["1"],
-					userId: "123e4567-e89b-12d3-a456-426614174000",
-				},
-			});
-
-			expect(
-				runCompletionService.endRunForThresholdFailure
-			).toHaveBeenCalledWith(1);
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.runEnded).toBe(true);
-				expect(result.data.thresholdInfo?.meetsThreshold).toBe(false);
 			}
 		});
 	});

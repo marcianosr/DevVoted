@@ -208,7 +208,7 @@ export const createCategoryLeaderboardEntries = async (
 
 export const awardXpToRun = async (
 	runId: number,
-	categoryCode: string,
+	categoryCode: CategoryCode,
 	newXp: number,
 	newStreak: number,
 	newBestStreak: number,
