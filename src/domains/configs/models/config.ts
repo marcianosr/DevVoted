@@ -26,6 +26,7 @@ export type Config = {
 	rarity: "common" | "uncommon" | "rare" | "legendary";
 	targetCategories?: CategoryCode[]; // Categories this config can target, e.g., ["js", "python"], if empty it targets all categories
 	priority: number;
+	storageBonus?: number; // Optional: Amount of storage this config adds (in bytes)
 };
 
 export type ConfigInventory = {

@@ -12,15 +12,6 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Traceability (poll stats for balancing)
 [x] Implement rerolls (Fibonacci cost) [Critical]
 [x] Basic XP scoring system mechanics [Critical] (and redo flow)
-
-| Scenario     | Correct/Total | Wrong | Score | Percentage |
-| ------------ | ------------- | ----- | ----- | ---------- |
-| Perfect      | 2/2           | 0     | 1.0   | 100%       |
-| Good         | 2/2           | 1     | 0.75  | 75%        |
-| Your case    | 1/2           | 1     | 0.625 | 62.5%      |
-| Partial only | 1/2           | 0     | 0.75  | 75%        |
-| All wrong    | 0/2           | 2     | 0.0   | 0%         |
-
 [x] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Critical]
 [] Show XP breakdown [Critical]
 
@@ -33,10 +24,8 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Show who answered today
 
 [x] Create simple linear streak bonus amp
-[] Events?
 [] Rarity tiers
 [] Create a single "stake" in DB (no UI)
-[] Traceability
 
     - [] Timestamps on answer
 
@@ -44,12 +33,13 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [x] .js/.css/.ts/.html/.jsx/.git/.package.json- Category amps (+0.5)
 
-- localStorage - Extra storage
-- try/catch - Safety net for threshold
-- eslint - Disable wrong option
-- prettierrc - Round XP up
+[] localStorage - Extra storage
+[] try/catch - Safety net for threshold
+[x] eslint - Disable wrong option
+[] prettierrc - Round XP up
+[] async/await - no amp on polls but extra on sets
 
-[] Make sure configs are additive to each other
+[x] Make sure configs are additive to each other
 [] Don't rerender shop when installing configs. This shows new options
 [] Balancing
 
@@ -59,6 +49,7 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Config costs
     [] XP gain balance
 
+[] Traceability
 [] Upgrade packages
 [] Authentication (GitHub/Google)
 [] CI/CD and Deployment
@@ -80,6 +71,7 @@ Season 2: Early Meta Layer
 [] Expand traceability
 [] Admin panel for polls
 [] Check system roles
+[] Event framework?
 
 Season 3: Expansion
 [] Basic CSI (global average, no per-category complexity)

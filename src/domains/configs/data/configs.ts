@@ -1,7 +1,7 @@
 import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { Run } from "~/domains/runs/models/run";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS, formatStorage } from "~/lib/storage";
 
 export const configs: Config[] = [
 	{
@@ -101,14 +101,35 @@ export const configs: Config[] = [
 		effect: ["randomStreakAmp"],
 		priority: 100,
 	},
+	{
+		id: "local-storage-config",
+		name: "Local Storage",
+		image: "/configs/local-storage.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "When held, grants 512KB of extra storage",
+		rarity: "common",
+		effect: ["expandStorage"],
+		priority: 100,
+		storageBonus: STORAGE_UNITS.KB * 512, // 512KB bonus storage
+	},
 ];
 
+/**
+ * Score modifiers that configs can apply to influence scoring.
+ * Applied in calculatePollScoreForProgression in this order:
+ * 1. Base amp = streak bonus (e.g., 1.1x)
+ * 2. Apply multiplicative: baseAmp * ampMul
+ * 3. Apply additive: result + ampAdd
+ * 4. Calculate XP: baseXP * finalAmp + xpAdd
+ */
 export type ScoreMods = {
-	ampAdd?: number; // +0.5, -0.2
-	ampMul?: number; // x1.2
-	xpAdd?: number; // flat XP (post-amp by default)
+	ampAdd?: number; // +0.5, -0.2 (additive amp bonus/penalty)
+	ampMul?: number; // x1.2 (multiplicative amp modifier)
+	xpAdd?: number; // flat XP bonus (applied after amp calculation)
 };
-
+export type StorageMods = {
+	bonus?: number; // flat storage bonus (applied to storage capacity)
+};
 type EffectCtx = PollWithOptionsResponse & {
 	run: Run;
 };
@@ -116,6 +137,7 @@ type EffectCtx = PollWithOptionsResponse & {
 export type EffectRenderProps = {
 	disabledOptionIds?: number[];
 	amp?: number;
+	expandStorage?: number;
 };
 
 type EffectMeta = { notes?: string[]; badges?: Record<string, string> };
@@ -123,6 +145,7 @@ export type EffectOut = {
 	view: EffectCtx;
 	renderProps?: EffectRenderProps; // UI-only knobs (disable options, show amp badge, etc.)
 	score?: ScoreMods;
+	storage?: StorageMods;
 	meta?: EffectMeta;
 };
 
@@ -132,11 +155,22 @@ type ApplyEffects = {
 	view: EffectCtx;
 	renderProps: EffectRenderProps;
 	score: ScoreMods;
+	storage: StorageMods;
 	meta: EffectMeta;
 };
 
-// Registry
+/**
+ * Effect registry mapping effect IDs to their implementation functions.
+ * Each effect receives the current context and config, returns modifications.
+ *
+ * Effects should return:
+ * - view: Updated context (usually unchanged)
+ * - renderProps: UI hints (amp display, disabled options, etc.)
+ * - score: Math modifiers (ampAdd, ampMul, xpAdd)
+ * - meta: Notes and badges for display
+ */
 const EFFECTS: Record<string, EffectFn> = {
+	// Disables one random wrong option (ESLint Config effect)
 	disableWrongOptions: ({ poll, options, run, hasAnswered }, config) => {
 		const disabledIds = options.filter((o) => !o.correct).map((o) => o.id);
 		const randomIdFromDisabled =
@@ -148,6 +182,7 @@ const EFFECTS: Record<string, EffectFn> = {
 			meta: { notes: ["Hid wrong options"] },
 		};
 	},
+	// Adds +0.5 amp bonus for specific categories (file extension configs)
 	streakAmp: ({ poll, options, run, hasAnswered }, config) => {
 		// Only apply if this config targets the current poll's category
 		if (!config.targetCategories?.includes(poll.categoryCode)) {
@@ -165,9 +200,8 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+	// Adds random amp between -0.5 and +0.5 (Math Random Config effect)
 	randomStreakAmp: ({ poll, options, run, hasAnswered }) => {
-		// TODO: Don't forget to handle negative amp.
-		// If the base amp is 0 or lower it should be clamped to 0
 		const rawValue = Math.random() - 0.5;
 		const bonusAmp = Math.round(rawValue * 10) / 10;
 
@@ -180,14 +214,57 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+
+	// Grants extra storage capacity (Local Storage Config effect)
+	// Note: This effect doesn't modify scoring, only storage capacity
+	expandStorage: ({ poll, options, run, hasAnswered }, config) => {
+		// Use storageBonus from config if provided, otherwise default to 512KB
+		const bonusStorage = config.storageBonus ?? STORAGE_UNITS.KB * 512;
+
+		return {
+			view: { poll, options, run, hasAnswered },
+			renderProps: {}, // No UI hints for storage
+			score: {}, // No scoring modifications
+			storage: { bonus: bonusStorage },
+			meta: {
+				notes: [`+${formatStorage(bonusStorage)} storage capacity`],
+			},
+		};
+	},
 };
 
+/**
+ * Applies config effects to generate UI hints and score modifiers.
+ *
+ * This is the entry point for the config effects system. It:
+ * 1. Finds configs by ID and filters out invalid ones
+ * 2. Sorts by priority (lower = runs first)
+ * 3. Applies each effect function and aggregates results
+ * 4. Returns combined UI props, score mods, and metadata
+ *
+ * Used by progress.service.ts to get score modifiers before calculation.
+ *
+ * @param base - The context (poll, options, run, etc.)
+ * @param activeConfigIds - Config IDs from run.activeConfigIds
+ * @returns Combined effects with UI props and score modifiers
+ *
+ * @example
+ * const { score, renderProps } = applyEffects(ctx, ['.js-config', 'math-random']);
+ * // score: { ampAdd: 0.8 }  (0.5 from .js + 0.3 from random)
+ * // renderProps: { amp: 0.8 }  (UI hint for display)
+ */
 export function applyEffects(
 	base: EffectCtx,
 	activeConfigIds: string[] = []
 ): ApplyEffects {
 	if (!activeConfigIds.length)
-		return { view: base, renderProps: {}, score: {}, meta: {} };
+		return {
+			view: base,
+			renderProps: {},
+			score: {},
+			meta: {},
+			storage: {},
+		};
 
 	const effects = activeConfigIds
 		.map((id) => configs.find((c) => c?.id === id))
@@ -214,11 +291,17 @@ export function applyEffects(
 						...(acc.renderProps.disabledOptionIds ?? []),
 						...(out.renderProps?.disabledOptionIds ?? []),
 					],
+					expandStorage:
+						(acc.renderProps.expandStorage ?? 0) +
+						(out.renderProps?.expandStorage ?? 0),
 				},
 				score: {
 					ampAdd: (acc.score.ampAdd ?? 0) + (out.score?.ampAdd ?? 0),
 					ampMul: (acc.score.ampMul ?? 1) * (out.score?.ampMul ?? 1),
 					xpAdd: (acc.score.xpAdd ?? 0) + (out.score?.xpAdd ?? 0),
+				},
+				storage: {
+					bonus: (acc.storage.bonus ?? 0) + (out.storage?.bonus ?? 0),
 				},
 				meta: {
 					...acc.meta,
@@ -232,6 +315,6 @@ export function applyEffects(
 				},
 			};
 		},
-		{ view: base, renderProps: {}, meta: {}, score: {} }
+		{ view: base, renderProps: {}, meta: {}, score: {}, storage: {} }
 	);
 }

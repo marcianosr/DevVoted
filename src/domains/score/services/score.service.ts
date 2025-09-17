@@ -90,6 +90,24 @@ export type PollScoreBreakdown = {
 	delta: number;
 };
 
+/**
+ * Calculates the score breakdown for a poll answer.
+ * 
+ * Score Pipeline:
+ * 1. Base XP = round * 10 (e.g., round 2 = 20 XP)
+ * 2. Base Amp = 1 + (0.1 * streak), capped at 3.0 (e.g., streak 1 = 1.1x)
+ * 3. Config modifiers applied: amp = baseAmp * configAmpMul + configAmpAdd
+ * 4. Raw XP = base * amp (e.g., 20 * 1.4 = 28)
+ * 5. Final XP = rawXP + configXpAdd
+ * 
+ * Note: This calculates pre-correctness XP. The correctness factor (0-1.5x) 
+ * is applied later in orchestrateScoreCalculation.
+ * 
+ * @example
+ * // Round 2, streak 1, with +0.3 amp from configs
+ * calculatePollScoreForProgression(5, 1, 1, 0.3, 0)
+ * // Returns: { base: 20, amp: 1.4, earnedXP: 28, ... }
+ */
 export const calculatePollScoreForProgression = (
 	pollsAnswered: number,
 	streak: number,
@@ -97,15 +115,21 @@ export const calculatePollScoreForProgression = (
 	configAmpAdd: number = 0,
 	configXpAdd: number = 0
 ): PollScoreBreakdown => {
+	// Step 1: Determine round and base XP (e.g., round 2 = 20 XP)
 	const round = getCurrentRoundNumber(pollsAnswered);
 	const base = getRoundXP(round);
+	
+	// Step 2: Calculate streak amp (e.g., streak 1 = 1.1x)
 	const baseAmp = getStreakAmp(streak);
-	// Apply multiplicative first, then additive, then clamp
-	// Round to 1 decimal place to avoid floating-point precision issues
+	
+	// Step 3: Apply config modifiers (multiplicative first, then additive)
 	const rawAmp = baseAmp * configAmpMul + configAmpAdd;
+	// Round to 1 decimal to avoid floating-point issues (1.0999... → 1.1)
 	const amp = Math.max(0, Math.round(rawAmp * 10) / 10);
+	
+	// Step 4: Calculate XP (base * amp + flat bonus)
 	const rawXP = Math.round(base * amp);
-	const earnedXP = Math.max(0, rawXP + configXpAdd); // Apply flat XP bonus
+	const earnedXP = Math.max(0, rawXP + configXpAdd);
 	const delta = earnedXP;
 
 	return {
@@ -137,6 +161,30 @@ type OrchestrateScoreCalculationParams = {
 	configXpAdd?: number;
 };
 
+/**
+ * Orchestrates the complete score calculation including streak updates and correctness.
+ * 
+ * Complete Score Pipeline:
+ * 1. Update streak based on correctness (correct = +1, wrong = reset to 0)
+ * 2. Calculate base score via calculatePollScoreForProgression
+ * 3. Apply correctness factor multiplier:
+ *    - Wrong answer: 0x
+ *    - Partial multi-choice: 0.5-1.0x
+ *    - Perfect single/multi: 1.0x
+ *    - Perfect multi-choice: 1.5x bonus
+ * 4. Add to running total XP
+ * 
+ * @example
+ * // Perfect multi-choice answer with configs
+ * orchestrateScoreCalculation({
+ *   currentXP: 100,
+ *   currentStreak: 0,
+ *   totalPollsAnswered: 4,
+ *   correctnessFactor: 1.5,  // Perfect multi-choice
+ *   configAmpAdd: 0.3        // From active configs
+ * })
+ * // Returns: { newTotalXP: 142, breakdown: { earnedXP: 42, ... } }
+ */
 export const orchestrateScoreCalculation = ({
 	currentXP,
 	currentStreak,
@@ -147,10 +195,12 @@ export const orchestrateScoreCalculation = ({
 	configAmpMul,
 	configXpAdd,
 }: OrchestrateScoreCalculationParams): ScoreCalculation => {
+	// Step 1: Update streak (continues on correct, resets on wrong)
 	const newStreak = calculateStreakUpdate(currentStreak, correctnessFactor);
 	const newBestStreak = calculateBestStreak(currentBestStreak, newStreak);
 	const newPollsAnswered = totalPollsAnswered + 1;
 
+	// Step 2: Calculate base score with config modifiers
 	const { base, amp, round, streak, earnedXP } =
 		calculatePollScoreForProgression(
 			newPollsAnswered,
@@ -160,7 +210,8 @@ export const orchestrateScoreCalculation = ({
 			configXpAdd
 		);
 
-	// Apply correctness factor multiplier to earned XP
+	// Step 3: Apply correctness multiplier (0-1.5x based on answer quality)
+	// Example: earnedXP=28 * correctness=1.5 (perfect multi) = 42 XP
 	const actualEarnedXP = Math.round(earnedXP * correctnessFactor);
 	const newTotalXP = currentXP + actualEarnedXP;
 

@@ -204,7 +204,8 @@ describe("configStorage", () => {
 				rerollsStorage: 0, // No rerolls yet
 				storageUsed: STORAGE_UNITS.MB / 4, // 256KB
 				storageAvailable: STORAGE_UNITS.MB - STORAGE_UNITS.MB / 4, // 1MB - 256KB
-				storageLimit: STORAGE_UNITS.MB, // 1MB
+				storageLimit: STORAGE_UNITS.MB, // 1MB (effective limit, no bonuses)
+				baseStorageLimit: STORAGE_UNITS.MB, // 1MB base
 				usagePercentage: 25,
 			});
 		});

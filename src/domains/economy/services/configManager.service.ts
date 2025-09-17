@@ -1,6 +1,6 @@
 import { Run } from "~/domains/runs/models/run";
 import { Config } from "~/domains/configs/models/config";
-import { configs } from "~/domains/configs/data/configs";
+import { configs, applyEffects } from "~/domains/configs/data/configs";
 import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
 
 export const getActiveConfigs = (run: Run, availableConfigs: Config[] = configs): Config[] => {
@@ -13,16 +13,40 @@ export const calculateStorageUsed = (activeConfigs: Config[]): number => {
 	return activeConfigs.reduce((total, config) => total + config.cost, 0);
 };
 
+/**
+ * Calculates the effective storage limit including bonuses from configs.
+ * Similar to how amp bonuses work for scoring.
+ * 
+ * @param run - The current run with active configs
+ * @returns Total storage capacity (base + bonuses)
+ */
+export const calculateEffectiveStorageLimit = (run: Run): number => {
+	const baseStorage = run.storageLimit;
+	
+	// Apply config effects to get storage modifiers
+	// Using a minimal context since storage doesn't depend on poll data
+	const { storage } = applyEffects(
+		{ poll: {} as any, options: [], hasAnswered: false, run },
+		run.activeConfigIds
+	);
+	
+	// Add bonus storage from configs to base storage
+	return baseStorage + (storage.bonus ?? 0);
+};
+
 export const getStorageInfo = (run: Run, availableConfigs: Config[] = configs) => {
 	const activeConfigs = getActiveConfigs(run, availableConfigs);
 	const configsStorage = calculateStorageUsed(activeConfigs);
 	const rerollsStorage = run.rerollStorageUsed;
+	
+	// Calculate effective storage limit with bonuses from configs
+	const effectiveStorageLimit = calculateEffectiveStorageLimit(run);
 
 	const storageUsed = configsStorage + rerollsStorage;
-	const storageAvailable = run.storageLimit - storageUsed;
+	const storageAvailable = effectiveStorageLimit - storageUsed;
 	const usagePercentage = getStorageUsagePercentage(
 		storageUsed,
-		run.storageLimit
+		effectiveStorageLimit
 	);
 
 	return {
@@ -31,7 +55,8 @@ export const getStorageInfo = (run: Run, availableConfigs: Config[] = configs) =
 		rerollsStorage,
 		storageUsed,
 		storageAvailable,
-		storageLimit: run.storageLimit,
+		storageLimit: effectiveStorageLimit, // Use effective limit with bonuses
+		baseStorageLimit: run.storageLimit,  // Keep base for reference
 		usagePercentage,
 	};
 };
@@ -41,8 +66,9 @@ export const canAddConfigToRun = (run: Run, config: Config, availableConfigs: Co
 		return false; // Already has this config
 	}
 
-	const { storageUsed } = getStorageInfo(run, availableConfigs);
-	return canAddToStorage(storageUsed, config.cost, run.storageLimit);
+	const { storageUsed, storageLimit } = getStorageInfo(run, availableConfigs);
+	// Use effective storage limit (with bonuses) for validation
+	return canAddToStorage(storageUsed, config.cost, storageLimit);
 };
 
 export const addConfigsToRun = (run: Run, configIds: string[], availableConfigs: Config[] = configs): Run => {

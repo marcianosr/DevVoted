@@ -14,6 +14,19 @@ type IncrementProgress = {
 };
 type IncrementRunProgressResult = ScoreCalculation;
 
+/**
+ * Increments run progress after answering a poll.
+ * 
+ * Complete Flow:
+ * 1. Apply config effects to get score modifiers (amp bonuses, XP bonuses)
+ * 2. Pass modifiers to score calculation along with correctness
+ * 3. Update database with new XP and streak values
+ * 
+ * @param categoryCode - The category of the answered poll
+ * @param run - Current run with active configs
+ * @param correctnessFactor - How well the poll was answered (0-1.5)
+ * @returns Score breakdown and updated totals
+ */
 export const incrementRunProgress = async ({
 	categoryCode,
 	run,
@@ -33,7 +46,8 @@ export const incrementRunProgress = async ({
 		0
 	);
 
-	// Build a minimal EffectCtx; pass the real poll if you have it here
+	// Step 1: Apply config effects to get score modifiers
+	// Effects can add/multiply amp or add flat XP bonuses
 	const effectCtx = {
 		poll: { categoryCode },
 		options: [],
@@ -42,11 +56,12 @@ export const incrementRunProgress = async ({
 	};
 
 	const {
-		score: scoreMods,
-		renderProps,
-		meta,
+		score: scoreMods,  // Contains ampAdd, ampMul, xpAdd from configs
+		renderProps,       // UI hints (not used in scoring)
+		meta,             // Metadata (not used in scoring)
 	} = applyEffects(effectCtx, run.activeConfigIds);
 
+	// Step 2: Calculate score with config modifiers and correctness
 	const {
 		breakdown,
 		newBestStreak,
@@ -60,19 +75,20 @@ export const incrementRunProgress = async ({
 		currentStreak: currentCategoryXP.currentStreak,
 		totalPollsAnswered,
 
-		configAmpMul: scoreMods.ampMul ?? 1,
-		configAmpAdd: scoreMods.ampAdd ?? 0,
-		configXpAdd: scoreMods.xpAdd ?? 0,
+		// Pass config modifiers from effects
+		configAmpMul: scoreMods.ampMul ?? 1,   // Default 1x multiplier
+		configAmpAdd: scoreMods.ampAdd ?? 0,   // Default no amp bonus
+		configXpAdd: scoreMods.xpAdd ?? 0,     // Default no flat XP
 	});
 
-	//Write new values to DB
+	// Step 3: Persist updated values to database
 	await awardXpToRun(
 		run.id,
 		categoryCode,
-		newTotalXP, // New total XP for the category
-		newStreak, // Need to add this to the calculation return
-		newBestStreak, // New best streak
-		currentCategoryXP.pollsAnswered + 1 // Category polls + 1, NOT total
+		newTotalXP,      // New total XP for the category
+		newStreak,       // Current streak (0 if wrong answer)
+		newBestStreak,   // Best streak ever achieved
+		currentCategoryXP.pollsAnswered + 1 // Increment poll count
 	);
 
 	return {
