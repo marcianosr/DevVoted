@@ -169,7 +169,7 @@ describe("score.service", () => {
 	describe("calculatePollScoreForProgression", () => {
 		it("clamps negative amp to 0", () => {
 			// Polls answered: 5, streak: 0, negative config bonus
-			const result = calculatePollScoreForProgression(5, 0, -1.5);
+			const result = calculatePollScoreForProgression(5, 0, 1, -1.5);
 
 			// Streak 0 gives 1.0 amp, -1.5 config bonus = -0.5
 			// Should be clamped to 0
@@ -179,7 +179,7 @@ describe("score.service", () => {
 
 		it("allows positive amp even with negative config bonus", () => {
 			// Polls answered: 5, streak: 5, negative config bonus
-			const result = calculatePollScoreForProgression(5, 5, -0.3);
+			const result = calculatePollScoreForProgression(5, 5, 1, -0.3);
 
 			// Streak 5 gives 1.5 amp, -0.3 config bonus = 1.2
 			expect(result.amp).toBe(1.2);
@@ -189,7 +189,7 @@ describe("score.service", () => {
 
 		it("works with positive config bonus", () => {
 			// Polls answered: 5, streak: 2, positive config bonus
-			const result = calculatePollScoreForProgression(5, 2, 0.5);
+			const result = calculatePollScoreForProgression(5, 2, 1, 0.5);
 
 			// Streak 2 gives 1.2 amp, +0.5 config bonus = 1.7
 			expect(result.amp).toBe(1.7);

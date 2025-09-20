@@ -54,9 +54,22 @@ describe("configs", () => {
 			expect(mathConfig?.rarity).toBe("rare");
 			expect(mathConfig?.description).toContain("Random amp value");
 		});
+
+		it("has valid properties for try/catch config", () => {
+			const tryCatchConfig = configs.find(
+				(c) => c.id === "try-catch-config"
+			);
+			expect(tryCatchConfig).toBeDefined();
+			expect(tryCatchConfig?.name).toBe("Try/Catch");
+			expect(tryCatchConfig?.effect).toEqual(["checkXPWithThreshold"]);
+			expect(tryCatchConfig?.rarity).toBe("rare");
+			expect(tryCatchConfig?.description).toContain(
+				"Saves your run when you have at least 80% of the XP of the threshold"
+			);
+		});
 	});
 
-	describe.only("applyEffects", () => {
+	describe("applyEffects", () => {
 		it("returns base view with empty renderProps when no configs provided", () => {
 			const mockPoll = createMockPoll({
 				categoryCode: "js",
@@ -134,7 +147,6 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps).toEqual({
-				amp: 0,
 				disabledOptionIds: [2],
 			});
 			expect(result.meta).toEqual({
@@ -353,7 +365,11 @@ describe("configs", () => {
 			};
 
 			// Apply multiple streak amp configs
-			const result = applyEffects(base, [".css-config", ".js-config", ".html-config"]);
+			const result = applyEffects(base, [
+				".css-config",
+				".js-config",
+				".html-config",
+			]);
 
 			// Only .css config should apply to css polls
 			expect(result.renderProps.amp).toBe(0.5);
@@ -377,8 +393,8 @@ describe("configs", () => {
 
 			const result = applyEffects(base, [".css-config", ".js-config"]);
 
-			expect(result.renderProps.amp).toBe(0);
-			expect(result.score).toEqual({});
+			expect(result.renderProps.amp).toBeUndefined();
+			expect(result.score.ampAdd).toBe(0);
 			expect(result.meta.notes).toEqual([]);
 		});
 	});
@@ -432,6 +448,30 @@ describe("configs", () => {
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.amp).toBe(-0.5); // -0.5 raw value
 			expect(result.meta.notes).toEqual(["Random amp for js polls"]);
+		});
+	});
+
+	describe("checkXPWithThreshold effect", () => {
+		it("returns protection object with try/catch functionality", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: ["try-catch-config"],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["try-catch-config"]);
+
+			// Test that the protection object is returned
+			expect(result.protection).toBeDefined();
+			expect(typeof result.protection.tryCatch).toBe("boolean");
+			expect(result.meta.notes).toBeDefined();
 		});
 	});
 
@@ -529,7 +569,7 @@ describe("configs", () => {
 		});
 
 		it("is stackable if a category streakAmp is active", () => {
-			vi.mocked(Math.random).mockReturnValue(0.56); // (0.76 - 0.5) = 0.26, rounds to 0.3
+			vi.mocked(Math.random).mockReturnValue(0.56); // (0.56 - 0.5) = 0.06, rounds to 0.1
 
 			const mockPoll = createMockPoll({
 				categoryCode: "js",
@@ -542,13 +582,16 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, ["math-random-config", ".js-config"]);
+			const result = applyEffects(base, [
+				"math-random-config",
+				".js-config",
+			]);
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.amp).toBe(0.6);
 			expect(result.score.ampAdd).toBe(0.6);
 			expect(result.meta.notes).toEqual([
-				"Random amp: +0.1",
+				"Random amp for js polls",
 				"+0.5 amp for js polls",
 			]);
 		});

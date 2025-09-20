@@ -33,8 +33,8 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [x] .js/.css/.ts/.html/.jsx/.git/.package.json- Category amps (+0.5)
 
-[] localStorage - Extra storage
-[] try/catch - Safety net for threshold
+[x] localStorage - Extra storage
+[x] try/catch - Safety net for threshold
 [x] eslint - Disable wrong option
 [] prettierrc - Round XP up
 [] async/await - no amp on polls but extra on sets
@@ -43,7 +43,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Don't rerender shop when installing configs. This shows new options
 [] Balancing
 
-    [] Threshold formula refinement
+    [] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;
     [] Starting storage
     [] Storage growth over time
     [] Config costs
@@ -61,6 +61,25 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Fix immediate-run-end bug [Critical]
 [] Reroll bug: when rerolling it walks behind
 [] Check RLS
+
+🔥 Show-stoppers (Fix TODAY)
+
+1. Hardcoded date in daily-poll.tsx:54 - Your daily polls are frozen on October 30, 2025. This breaks the core game mechanic.
+2. No poll data - Database has schema but likely no actual quiz questions. Game literally can't run without content.
+3. Environment variables in git - Your .env with SONAR_TOKEN is committed. Security red flag.
+
+💀 Will bite you on launch day
+
+4. Zero database indexes - Once you get users, queries on polls.category_code, runs.user_id, and poll_responses will crawl. Add indexes NOW on frequently queried columns.
+5. N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
+6. Missing roadmap.md - You reference it everywhere but it doesn't exist. Either create it or remove references.
+
+🤔 Won't kill you but will annoy users
+
+7. Generic auth errors - When login fails, users get nothing helpful. Add actual error messages.
+8. TODO comments in core handlers - Line 73 in polls/handlers.ts says "TODO: The start of posting to the DB". Is answer submission even implemented?
+
+The architecture is solid. Your problem isn't code quality - it's incomplete implementation and configuration issues. Fix items 1-6 and you can ship.
 
 Season 2: Early Meta Layer
 [] Very basic CSI: (correct / total) × streak)

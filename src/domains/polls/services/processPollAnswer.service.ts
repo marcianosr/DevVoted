@@ -20,6 +20,8 @@ import {
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { CategoryCode } from "~/domains/shared/categories";
+import { applyEffects } from "~/domains/configs/data/configs";
+import { removeConfigFromRunQuery } from "~/domains/configs/api/queries";
 
 export type PollAnswerResult = {
 	runEnded: boolean;
@@ -28,6 +30,7 @@ export type PollAnswerResult = {
 	correctOptionIds: number[];
 	outcome: PollAnswerOutcome;
 	breakdown: PollScoreBreakdown | null;
+	tryCatchUsed?: boolean;
 };
 
 export type PollAnswerInput = {
@@ -58,6 +61,7 @@ export const processPollAnswer = async (
 			runEnded: false,
 			thresholdInfo: null,
 			breakdown: null,
+			tryCatchUsed: false,
 		};
 	}
 
@@ -87,10 +91,35 @@ export const processPollAnswer = async (
 	);
 
 	let runEnded = false;
+	let tryCatchUsed = false;
 
+	// TODO: Refactor this so we can handle endless config possibilities
+	// This is done for now like so because of MVP
+	// Check if try/catch protection should prevent run failure
 	if (thresholdInfo.isThresholdCheckPoll && !thresholdInfo.meetsThreshold) {
-		await endRunForThresholdFailure(activeRun.id);
-		runEnded = true;
+		// Apply config effects to see if try/catch is active
+		const effectCtx = {
+			poll: { categoryCode },
+			options: [],
+			hasAnswered: true,
+			run: updatedRun,
+		};
+
+		const { protection } = applyEffects(
+			effectCtx,
+			updatedRun.activeConfigIds
+		);
+
+		if (protection.tryCatch) {
+			// Try/Catch saves the run! Remove the config since it's one-time use
+			await removeConfigFromRunQuery(activeRun.id, ["try-catch-config"]);
+			tryCatchUsed = true;
+			// Don't end the run - try/catch saved it
+		} else {
+			// No protection, end the run normally
+			await endRunForThresholdFailure(activeRun.id);
+			runEnded = true;
+		}
 	}
 
 	await resetPollRerolls(activeRun.id);
@@ -102,6 +131,7 @@ export const processPollAnswer = async (
 		runEnded,
 		thresholdInfo,
 		breakdown,
+		tryCatchUsed,
 	};
 };
 
