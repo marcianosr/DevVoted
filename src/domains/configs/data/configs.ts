@@ -2,7 +2,10 @@ import { check } from "drizzle-orm/gel-core";
 import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { Run } from "~/domains/runs/models/run";
-import { aggregateCategoryXpData, calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
+import {
+	aggregateCategoryXpData,
+	calculateThresholdInfo,
+} from "~/domains/runs/services/thresholdCalculator.service";
 import { STORAGE_UNITS, formatStorage } from "~/lib/storage";
 
 export const configs: Config[] = [
@@ -120,7 +123,7 @@ export const configs: Config[] = [
 		image: "/configs/try-catch.png",
 		cost: STORAGE_UNITS.MB / 2,
 		description:
-			"Saves your run when you have at least 80% of the XP of the threshold",
+			"Saves your run when you have at least 80% of the XP of the threshold. When activated, this config is consumed.",
 		rarity: "rare",
 		effect: ["checkXPWithThreshold"],
 		priority: 100,
@@ -204,10 +207,10 @@ const EFFECTS: Record<string, EffectFn> = {
 	streakAmp: ({ poll, options, run, hasAnswered }, config) => {
 		// Only apply if this config targets the current poll's category
 		if (!config.targetCategories?.includes(poll.categoryCode)) {
-			return { 
+			return {
 				view: { poll, options, run, hasAnswered },
 				score: { ampAdd: 0 },
-				meta: { notes: [] }
+				meta: { notes: [] },
 			};
 		}
 
@@ -256,31 +259,39 @@ const EFFECTS: Record<string, EffectFn> = {
 
 	checkXPWithThreshold: ({ poll, options, run, hasAnswered }, config) => {
 		// Calculate current total XP and polls answered across all categories
-		const { totalXp: currentTotalXP, totalPollsAnswered } = aggregateCategoryXpData(
-			run.categoryXp.map(cat => ({ currentXp: cat.currentXp, pollsAnswered: cat.pollsAnswered }))
-		);
-		
+		const { totalXp: currentTotalXP, totalPollsAnswered } =
+			aggregateCategoryXpData(
+				run.categoryXp.map((cat) => ({
+					currentXp: cat.currentXp,
+					pollsAnswered: cat.pollsAnswered,
+				}))
+			);
+
 		// Use current poll threshold calculation, not next poll
-		const thresholdInfo = calculateThresholdInfo(currentTotalXP, totalPollsAnswered);
+		const thresholdInfo = calculateThresholdInfo(
+			currentTotalXP,
+			totalPollsAnswered
+		);
 		const thresholdXP = thresholdInfo.requiredXp;
 		const requiredXP = thresholdXP * 0.8; // 80% of threshold
-		
+
 		// Try/Catch only activates when:
 		// 1. We're on a threshold check poll (every 3rd poll)
 		// 2. Current XP is at least 80% of threshold
 		// 3. We would actually fail the threshold
-		const isProtected = thresholdInfo.isThresholdCheckPoll && 
-		                   currentTotalXP >= requiredXP &&
-		                   !thresholdInfo.meetsThreshold; // Only if we'd actually fail
+		const isProtected =
+			thresholdInfo.isThresholdCheckPoll &&
+			currentTotalXP >= requiredXP &&
+			!thresholdInfo.meetsThreshold; // Only if we'd actually fail
 
 		// If current XP is below 80% of threshold, try/catch can't save you
 		if (currentTotalXP < requiredXP) {
-			return { 
+			return {
 				view: { poll, options, run, hasAnswered },
 				protection: { tryCatch: false },
 				meta: {
 					notes: [`Try/Catch inactive (need 80% of threshold)`],
-				}
+				},
 			};
 		}
 
@@ -288,14 +299,18 @@ const EFFECTS: Record<string, EffectFn> = {
 			view: { poll, options, run, hasAnswered },
 			renderProps: {},
 			score: {},
-			protection: { 
-				tryCatch: isProtected // True only when it would actually prevent a failure
+			protection: {
+				tryCatch: isProtected, // True only when it would actually prevent a failure
 			},
 			meta: {
-				notes: isProtected 
-					? [`Try/Catch will save your run! (have ${Math.floor((currentTotalXP / thresholdXP) * 100)}% of threshold)`]
-					: [`Try/Catch ready (have ${Math.floor((currentTotalXP / thresholdXP) * 100)}% of threshold)`],
-				badges: isProtected 
+				notes: isProtected
+					? [
+							`Try/Catch will save your run! (have ${Math.floor((currentTotalXP / thresholdXP) * 100)}% of threshold)`,
+						]
+					: [
+							`Try/Catch ready (have ${Math.floor((currentTotalXP / thresholdXP) * 100)}% of threshold)`,
+						],
+				badges: isProtected
 					? { "try-catch": "Try/Catch will activate!" }
 					: { "try-catch": "Try/Catch ready" },
 			},
@@ -351,7 +366,8 @@ export function applyEffects(
 			if (!fn) return acc;
 			const out = fn(acc.view, config);
 
-			const ampValue = (acc.renderProps.amp ?? 0) + (out.renderProps?.amp ?? 0);
+			const ampValue =
+				(acc.renderProps.amp ?? 0) + (out.renderProps?.amp ?? 0);
 			const disabledIds = [
 				...(acc.renderProps.disabledOptionIds ?? []),
 				...(out.renderProps?.disabledOptionIds ?? []),
@@ -362,7 +378,9 @@ export function applyEffects(
 				renderProps: {
 					...acc.renderProps,
 					...(ampValue !== 0 && { amp: ampValue }),
-					...(disabledIds.length > 0 && { disabledOptionIds: disabledIds }),
+					...(disabledIds.length > 0 && {
+						disabledOptionIds: disabledIds,
+					}),
 					...(out.renderProps?.expandStorage !== undefined && {
 						expandStorage:
 							(acc.renderProps.expandStorage ?? 0) +
@@ -379,7 +397,10 @@ export function applyEffects(
 				},
 				protection: {
 					// If any config provides try/catch protection, it's active
-					tryCatch: acc.protection.tryCatch || out.protection?.tryCatch || false,
+					tryCatch:
+						acc.protection.tryCatch ||
+						out.protection?.tryCatch ||
+						false,
 				},
 				meta: {
 					...acc.meta,
@@ -393,6 +414,13 @@ export function applyEffects(
 				},
 			};
 		},
-		{ view: base, renderProps: {}, meta: {}, score: {}, storage: {}, protection: {} }
+		{
+			view: base,
+			renderProps: {},
+			meta: {},
+			score: {},
+			storage: {},
+			protection: {},
+		}
 	);
 }

@@ -2,7 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { configs, applyEffects, EffectRenderProps } from "./configs";
 import { createMockPoll } from "~/domains/polls/factories/poll";
 import { createMockRun } from "~/domains/runs/models/run";
+import { createMockRunCategoryXp } from "~/domains/runs/models/runCategoryXp";
 import { createPollOption } from "~/domains/polls/models/pollOption";
+import * as thresholdService from "~/domains/runs/services/thresholdCalculator.service";
+
+// Mock the threshold calculator service
+vi.mock("~/domains/runs/services/thresholdCalculator.service", () => ({
+	aggregateCategoryXpData: vi.fn(),
+	calculateThresholdInfo: vi.fn(),
+}));
 
 // TODO: Split up to make more readable
 describe("configs", () => {
@@ -452,12 +460,17 @@ describe("configs", () => {
 	});
 
 	describe("checkXPWithThreshold effect", () => {
+		beforeEach(() => {
+			vi.clearAllMocks();
+		});
+
 		it("returns protection object with try/catch functionality", () => {
 			const mockPoll = createMockPoll({
 				categoryCode: "js",
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
+				categoryXp: [],
 			});
 			const base = {
 				poll: mockPoll,
@@ -466,12 +479,356 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
+			// Setup default mocks
+			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
+				totalXp: 0,
+				totalPollsAnswered: 0,
+			});
+			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
+				isThresholdCheckPoll: false,
+				meetsThreshold: true,
+				requiredXp: 50,
+				currentXp: 0,
+				pollNumber: 0,
+				currentSet: 1,
+				pollInSet: 0,
+			});
+
 			const result = applyEffects(base, ["try-catch-config"]);
 
 			// Test that the protection object is returned
 			expect(result.protection).toBeDefined();
 			expect(typeof result.protection.tryCatch).toBe("boolean");
 			expect(result.meta.notes).toBeDefined();
+		});
+
+		it("activates protection when at 80% threshold on check poll and failing", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: ["try-catch-config"],
+				categoryXp: [
+					createMockRunCategoryXp({
+						id: 1,
+						runId: 1,
+						categoryCode: "js",
+						currentXp: 80, // 80% of 100 threshold
+						pollsAnswered: 3,
+					}),
+				],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: true,
+			};
+
+			// Mock the threshold calculation to return failing threshold at poll 3
+			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
+				totalXp: 80,
+				totalPollsAnswered: 3,
+			});
+			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
+				isThresholdCheckPoll: true,
+				meetsThreshold: false,
+				requiredXp: 100,
+				currentXp: 80,
+				pollNumber: 3,
+				currentSet: 1,
+				pollInSet: 3,
+			});
+
+			const result = applyEffects(base, ["try-catch-config"]);
+
+			expect(result.protection.tryCatch).toBe(true);
+			expect(result.meta.notes).toContain(
+				"Try/Catch will save your run! (have 80% of threshold)"
+			);
+			expect(result.meta.badges?.["try-catch"]).toBe("Try/Catch will activate!");
+		});
+
+		it("does not activate when below 80% threshold", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: ["try-catch-config"],
+				categoryXp: [
+					createMockRunCategoryXp({
+						id: 1,
+						runId: 1,
+						categoryCode: "js",
+						currentXp: 60, // Only 60% of 100 threshold
+						pollsAnswered: 3,
+					}),
+				],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: true,
+			};
+
+			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
+				totalXp: 60,
+				totalPollsAnswered: 3,
+			});
+			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
+				isThresholdCheckPoll: true,
+				meetsThreshold: false,
+				requiredXp: 100,
+				currentXp: 60,
+				pollNumber: 3,
+				currentSet: 1,
+				pollInSet: 3,
+			});
+
+			const result = applyEffects(base, ["try-catch-config"]);
+
+			expect(result.protection.tryCatch).toBe(false);
+			expect(result.meta.notes).toContain(
+				"Try/Catch inactive (need 80% of threshold)"
+			);
+		});
+
+		it("does not activate when meeting threshold normally", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: ["try-catch-config"],
+				categoryXp: [
+					createMockRunCategoryXp({
+						id: 1,
+						runId: 1,
+						categoryCode: "js",
+						currentXp: 120, // Exceeds threshold
+						pollsAnswered: 3,
+					}),
+				],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: true,
+			};
+
+			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
+				totalXp: 120,
+				totalPollsAnswered: 3,
+			});
+			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
+				isThresholdCheckPoll: true,
+				meetsThreshold: true, // Meeting threshold
+				requiredXp: 100,
+				currentXp: 120,
+				pollNumber: 3,
+				currentSet: 1,
+				pollInSet: 3,
+			});
+
+			const result = applyEffects(base, ["try-catch-config"]);
+
+			expect(result.protection.tryCatch).toBe(false);
+			expect(result.meta.notes).toContain(
+				"Try/Catch ready (have 120% of threshold)"
+			);
+			expect(result.meta.badges?.["try-catch"]).toBe("Try/Catch ready");
+		});
+
+		it("does not activate on non-threshold check polls", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: ["try-catch-config"],
+				categoryXp: [
+					createMockRunCategoryXp({
+						id: 1,
+						runId: 1,
+						categoryCode: "js",
+						currentXp: 40,
+						pollsAnswered: 2, // Poll 2, not a threshold check
+					}),
+				],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: true,
+			};
+
+			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
+				totalXp: 40,
+				totalPollsAnswered: 2,
+			});
+			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
+				isThresholdCheckPoll: false, // Not a threshold check poll
+				meetsThreshold: true,
+				requiredXp: 50,
+				currentXp: 40,
+				pollNumber: 2,
+				currentSet: 1,
+				pollInSet: 2,
+			});
+
+			const result = applyEffects(base, ["try-catch-config"]);
+
+			expect(result.protection.tryCatch).toBe(false);
+		});
+
+		it("aggregates XP across multiple categories", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: ["try-catch-config"],
+				categoryXp: [
+					createMockRunCategoryXp({
+						id: 1,
+						runId: 1,
+						categoryCode: "js",
+						currentXp: 40,
+						pollsAnswered: 1,
+					}),
+					createMockRunCategoryXp({
+						id: 2,
+						runId: 1,
+						categoryCode: "react",
+						currentXp: 30,
+						pollsAnswered: 1,
+					}),
+					createMockRunCategoryXp({
+						id: 3,
+						runId: 1,
+						categoryCode: "css",
+						currentXp: 15,
+						pollsAnswered: 1,
+					}),
+				],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: true,
+			};
+
+			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
+				totalXp: 85, // 40 + 30 + 15
+				totalPollsAnswered: 3,
+			});
+			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
+				isThresholdCheckPoll: true,
+				meetsThreshold: false,
+				requiredXp: 100,
+				currentXp: 85,
+				pollNumber: 3,
+				currentSet: 1,
+				pollInSet: 3,
+			});
+
+			const result = applyEffects(base, ["try-catch-config"]);
+
+			expect(result.protection.tryCatch).toBe(true);
+			expect(result.meta.notes).toContain(
+				"Try/Catch will save your run! (have 85% of threshold)"
+			);
+		});
+
+		it("works at exactly 80% threshold", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: ["try-catch-config"],
+				categoryXp: [
+					createMockRunCategoryXp({
+						id: 1,
+						runId: 1,
+						categoryCode: "js",
+						currentXp: 160, // Exactly 80% of 200 threshold
+						pollsAnswered: 6,
+					}),
+				],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: true,
+			};
+
+			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
+				totalXp: 160,
+				totalPollsAnswered: 6,
+			});
+			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
+				isThresholdCheckPoll: true,
+				meetsThreshold: false,
+				requiredXp: 200,
+				currentXp: 160,
+				pollNumber: 6,
+				currentSet: 2,
+				pollInSet: 3,
+			});
+
+			const result = applyEffects(base, ["try-catch-config"]);
+
+			expect(result.protection.tryCatch).toBe(true);
+			expect(result.meta.notes).toContain(
+				"Try/Catch will save your run! (have 80% of threshold)"
+			);
+		});
+
+		it("does not work at 79% threshold", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun({
+				activeConfigIds: ["try-catch-config"],
+				categoryXp: [
+					createMockRunCategoryXp({
+						id: 1,
+						runId: 1,
+						categoryCode: "js",
+						currentXp: 79, // Just below 80% of 100 threshold
+						pollsAnswered: 3,
+					}),
+				],
+			});
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: true,
+			};
+
+			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
+				totalXp: 79,
+				totalPollsAnswered: 3,
+			});
+			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
+				isThresholdCheckPoll: true,
+				meetsThreshold: false,
+				requiredXp: 100,
+				currentXp: 79,
+				pollNumber: 3,
+				currentSet: 1,
+				pollInSet: 3,
+			});
+
+			const result = applyEffects(base, ["try-catch-config"]);
+
+			expect(result.protection.tryCatch).toBe(false);
+			expect(result.meta.notes).toContain(
+				"Try/Catch inactive (need 80% of threshold)"
+			);
 		});
 	});
 
