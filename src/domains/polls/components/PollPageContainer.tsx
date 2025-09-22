@@ -77,7 +77,7 @@ const PollContent: React.FC<PollContentProps> = ({
 			configs,
 			count: 3,
 		});
-	}, [activeRun?.id, activeRun?.activeConfigIds, rerollKey]);
+	}, [activeRun?.id, rerollKey]);
 
 	const submitOptionsMutation = useMutation({
 		// 1️⃣ OPTIMISTIC UPDATE (happens BEFORE server call)
