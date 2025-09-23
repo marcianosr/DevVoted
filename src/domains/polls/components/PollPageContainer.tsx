@@ -34,6 +34,7 @@ import { getRandomConfigs } from "~/domains/economy/services/configManager.servi
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { ScoreDisplay } from "./ScoreDisplay";
+import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -68,6 +69,7 @@ const PollContent: React.FC<PollContentProps> = ({
 	const { poll, options, hasAnswered } = pollData;
 
 	const [rerollKey, setRerollKey] = useState(0);
+	const [lastScoreBreakdown, setLastScoreBreakdown] = useState<PollScoreBreakdown | null>(null);
 
 	// TODO: Put in a hook
 	const randomConfigs = useMemo(() => {
@@ -109,6 +111,12 @@ const PollContent: React.FC<PollContentProps> = ({
 			if (data.success) {
 				const isCorrect = data.data?.isCorrect;
 				const runEnded = data.data?.runEnded;
+				const breakdown = data.data?.breakdown;
+
+				// Store the score breakdown for display in shop
+				if (breakdown) {
+					setLastScoreBreakdown(breakdown);
+				}
 
 				if (runEnded) {
 					console.log("Run ended. All XP reset to 0.");
@@ -245,6 +253,8 @@ const PollContent: React.FC<PollContentProps> = ({
 					activeRun={activeRun}
 					offeredConfigs={randomConfigs}
 					onReroll={handleReroll}
+					lastScoreBreakdown={lastScoreBreakdown}
+					categoryCode={poll.categoryCode}
 				/>
 			)}
 		</>

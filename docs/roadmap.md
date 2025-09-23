@@ -33,14 +33,12 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [x] .js/.css/.ts/.html/.jsx/.git/.package.json- Category amps (+0.5)
 
-[x] localStorage - Extra storage
+[x] localStorage - Extra storag@
 [x] try/catch - Safety net for threshold
 [x] eslint - Disable wrong option
-[] prettierrc - Round XP up
-[] async/await - no amp on polls but extra on sets
 
 [x] Make sure configs are additive to each other
-[] Don't rerender shop when installing configs. This shows new options
+[x] Don't rerender shop when installing configs. This shows new options
 [] Balancing
 
     [] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;
@@ -49,6 +47,10 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Config costs
     [] XP gain balance
 
+[] Events table
+[] Make sure questions support markdown
+[] Show clear disable button in config when storage is full on "purchase"
+[] Don't update round/threshold check right awawy after submission
 [] Traceability
 [] Upgrade packages
 [] Authentication (GitHub/Google)
@@ -58,28 +60,10 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Test daily poll cycle
 [] Onboarding/help modal for first-time users [Critical]
 [] Fix refresh-to-reanswer bug [Critical]
-[] Fix immediate-run-end bug [Critical]
 [] Reroll bug: when rerolling it walks behind
+[] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
+
 [] Check RLS
-
-🔥 Show-stoppers (Fix TODAY)
-
-1. Hardcoded date in daily-poll.tsx:54 - Your daily polls are frozen on October 30, 2025. This breaks the core game mechanic.
-2. No poll data - Database has schema but likely no actual quiz questions. Game literally can't run without content.
-3. Environment variables in git - Your .env with SONAR_TOKEN is committed. Security red flag.
-
-💀 Will bite you on launch day
-
-4. Zero database indexes - Once you get users, queries on polls.category_code, runs.user_id, and poll_responses will crawl. Add indexes NOW on frequently queried columns.
-5. N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
-6. Missing roadmap.md - You reference it everywhere but it doesn't exist. Either create it or remove references.
-
-🤔 Won't kill you but will annoy users
-
-7. Generic auth errors - When login fails, users get nothing helpful. Add actual error messages.
-8. TODO comments in core handlers - Line 73 in polls/handlers.ts says "TODO: The start of posting to the DB". Is answer submission even implemented?
-
-The architecture is solid. Your problem isn't code quality - it's incomplete implementation and configuration issues. Fix items 1-6 and you can ship.
 
 Season 2: Early Meta Layer
 [] Very basic CSI: (correct / total) × streak)
@@ -87,6 +71,9 @@ Season 2: Early Meta Layer
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
 [] Add 6-8 more configs with effects
+[] prettierrc - Round XP up
+[] async/await - no amp on polls but extra on sets
+
 [] Expand traceability
 [] Admin panel for polls
 [] Check system roles
