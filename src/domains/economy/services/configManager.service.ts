@@ -107,6 +107,74 @@ export const removeConfigsFromRun = (run: Run, configIds: string[]): Run => ({
 export const hasConfig = (run: Run, configId: string) =>
 	run.activeConfigIds.find((aId) => configId === aId);
 
+/**
+ * Rarity weights determine the relative probability of each rarity tier appearing.
+ * Higher weight = more likely to appear
+ */
+const RARITY_WEIGHTS = {
+	common: 100,      // 100/145 ≈ 69% chance
+	uncommon: 30,     // 30/145 ≈ 21% chance  
+	rare: 12,         // 12/145 ≈ 8% chance
+	legendary: 3,     // 3/145 ≈ 2% chance
+} as const;
+
+type WeightedConfig = {
+	config: Config;
+	weight: number;
+	cumulativeWeight: number;
+};
+
+/**
+ * Creates weighted config entries with cumulative weights for efficient selection
+ */
+const createWeightedConfigs = (configs: Config[]): WeightedConfig[] => {
+	let cumulativeWeight = 0;
+	
+	return configs.map(config => {
+		const weight = RARITY_WEIGHTS[config.rarity];
+		cumulativeWeight += weight;
+		return {
+			config,
+			weight,
+			cumulativeWeight
+		};
+	});
+};
+
+/**
+ * Selects a config using binary search on cumulative weights
+ */
+const selectByWeight = (weightedConfigs: WeightedConfig[], randomValue: number): Config => {
+	const selected = weightedConfigs.find(
+		weighted => randomValue <= weighted.cumulativeWeight
+	);
+	return selected?.config ?? weightedConfigs[0].config;
+};
+
+/**
+ * Performs weighted random selection without replacement
+ */
+const performWeightedSelection = (configs: Config[], count: number): Config[] => {
+	if (configs.length === 0) return [];
+	
+	const selected: Config[] = [];
+	let remainingConfigs = [...configs];
+	
+	for (let i = 0; i < count && remainingConfigs.length > 0; i++) {
+		const weightedConfigs = createWeightedConfigs(remainingConfigs);
+		const totalWeight = weightedConfigs[weightedConfigs.length - 1].cumulativeWeight;
+		const randomValue = Math.random() * totalWeight;
+		
+		const selectedConfig = selectByWeight(weightedConfigs, randomValue);
+		selected.push(selectedConfig);
+		
+		// Remove selected config for next iteration (no replacement)
+		remainingConfigs = remainingConfigs.filter(c => c.id !== selectedConfig.id);
+	}
+	
+	return selected;
+};
+
 export const getRandomConfigs = ({
 	run,
 	configs,
@@ -116,8 +184,6 @@ export const getRandomConfigs = ({
 	configs: Config[];
 	count: number;
 }): Config[] => {
-	const filteredConfigs = configs.filter((c) => !hasConfig(run, c.id));
-
-	const shuffled = [...filteredConfigs].sort(() => Math.random() - 0.5);
-	return shuffled.slice(0, count);
+	const availableConfigs = configs.filter((c) => !hasConfig(run, c.id));
+	return performWeightedSelection(availableConfigs, count);
 };

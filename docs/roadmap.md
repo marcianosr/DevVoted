@@ -13,7 +13,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Implement rerolls (Fibonacci cost) [Critical]
 [x] Basic XP scoring system mechanics [Critical] (and redo flow)
 [x] Seasons: An excuse to introduce new gameplay mechanics such as point systems, seasonal events, limited-time polls, and exclusive rewards [Critical]
-[] Show XP breakdown [Critical]
+[x] Show XP breakdown [Critical]
 
 [x] Leaderboard [Critical]
 
@@ -24,7 +24,7 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Show who answered today
 
 [x] Create simple linear streak bonus amp
-[] Rarity tiers
+[o] Rarity tiers
 [] Create a single "stake" in DB (no UI)
 
     - [] Timestamps on answer
@@ -39,6 +39,7 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [x] Make sure configs are additive to each other
 [x] Don't rerender shop when installing configs. This shows new options
+[] Remove amp cap
 [] Balancing
 
     [] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;
@@ -47,25 +48,22 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Config costs
     [] XP gain balance
 
-[] Events table
-[] Make sure questions support markdown
+[] Onboarding/help modal for first-time users [Critical]
+[] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [] Show clear disable button in config when storage is full on "purchase"
-[] Don't update round/threshold check right awawy after submission
-[] Traceability
+[] Don't update round/threshold check right away after submission
 [] Upgrade packages
 [] Authentication (GitHub/Google)
 [] CI/CD and Deployment
-[] Old-to-new system migration
 [] Some UI polish so it isn't a mess
 [] Test daily poll cycle
-[] Onboarding/help modal for first-time users [Critical]
 [] Fix refresh-to-reanswer bug [Critical]
 [] Reroll bug: when rerolling it walks behind
 [] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
-
 [] Check RLS
 
 Season 2: Early Meta Layer
+[] Events table - Traceability
 [] Very basic CSI: (correct / total) × streak)
 [] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)

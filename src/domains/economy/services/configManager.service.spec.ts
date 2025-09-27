@@ -215,18 +215,21 @@ describe("configStorage", () => {
 		it("generates random configs but doesn't return configs the player already has", () => {
 			const configs = [
 				createConfig({
-					id: "jest-config",
+					id: "package.json-config",
+					rarity: "common",
 				}),
 				createConfig({
-					id: "ts-config",
+					id: "eslint-config",
+					rarity: "uncommon",
 				}),
 				createConfig({
-					id: "webpack-config",
+					id: "local-storage-config",
+					rarity: "common",
 				}),
 			];
 			const result = getRandomConfigs({
 				run: createMockRun({
-					activeConfigIds: ["eslint", "ts-config"],
+					activeConfigIds: [".js-config", "eslint-config"],
 				}),
 				configs,
 				count: 2,
@@ -234,12 +237,100 @@ describe("configStorage", () => {
 
 			expect(result).toHaveLength(2);
 			expect(result.map((c) => c.id).sort()).toEqual([
-				"jest-config",
-				"webpack-config",
+				"local-storage-config",
+				"package.json-config",
 			]);
 			expect(result).not.toContainEqual(
-				expect.objectContaining({ id: "ts-config" })
+				expect.objectContaining({ id: "eslint-config" })
 			);
+		});
+
+		it("respects rarity weights when selecting configs", () => {
+			const configs = [
+				createConfig({ id: ".js-config", rarity: "common" }),
+				createConfig({ id: ".ts-config", rarity: "common" }),
+				createConfig({ id: "package.json-config", rarity: "common" }),
+				createConfig({ id: "local-storage-config", rarity: "common" }),
+				createConfig({ id: "eslint-config", rarity: "uncommon" }),
+				createConfig({ id: "math-random-config", rarity: "rare" }),
+				createConfig({ id: "try-catch-config", rarity: "rare" }),
+			];
+
+			// Run many iterations to verify distribution
+			const distribution = { common: 0, uncommon: 0, rare: 0, legendary: 0 };
+			const iterations = 1000;
+
+			for (let i = 0; i < iterations; i++) {
+				const result = getRandomConfigs({
+					run: createMockRun({ activeConfigIds: [] }),
+					configs,
+					count: 1,
+				});
+				distribution[result[0].rarity]++;
+			}
+
+			// Common should appear most frequently (around 69%)
+			expect(distribution.common).toBeGreaterThan(iterations * 0.5);
+			// Rare should appear less frequently (around 8%)
+			expect(distribution.rare).toBeLessThan(iterations * 0.25);
+			// Common should definitely appear more than rare
+			expect(distribution.common).toBeGreaterThan(distribution.rare);
+			// With multiple of each rarity, there's some variance in uncommon vs rare
+			// Just verify they're both less frequent than common
+			expect(distribution.common).toBeGreaterThan(distribution.uncommon);
+		});
+
+		it("handles selection when only certain rarities are available", () => {
+			const configs = [
+				createConfig({ id: "math-random-config", rarity: "rare" }),
+				createConfig({ id: "try-catch-config", rarity: "rare" }),
+			];
+
+			const result = getRandomConfigs({
+				run: createMockRun({ activeConfigIds: [] }),
+				configs,
+				count: 2,
+			});
+
+			expect(result).toHaveLength(2);
+			// Should still select from available configs even if no common ones exist
+			expect(result.map(c => c.id)).toContain("math-random-config");
+			expect(result.map(c => c.id)).toContain("try-catch-config");
+		});
+
+		it("returns fewer configs than requested when pool is exhausted", () => {
+			const configs = [
+				createConfig({ id: ".js-config", rarity: "common" }),
+				createConfig({ id: "eslint-config", rarity: "uncommon" }),
+			];
+
+			const result = getRandomConfigs({
+				run: createMockRun({ activeConfigIds: [] }),
+				configs,
+				count: 5, // Requesting more than available
+			});
+
+			expect(result).toHaveLength(2); // Should only return what's available
+		});
+
+		it("ensures no duplicates in selected configs", () => {
+			const configs = [
+				createConfig({ id: ".js-config", rarity: "common" }),
+				createConfig({ id: ".ts-config", rarity: "common" }),
+				createConfig({ id: ".css-config", rarity: "common" }),
+				createConfig({ id: ".html-config", rarity: "common" }),
+				createConfig({ id: "package.json-config", rarity: "common" }),
+			];
+
+			const result = getRandomConfigs({
+				run: createMockRun({ activeConfigIds: [] }),
+				configs,
+				count: 5,
+			});
+
+			const ids = result.map(c => c.id);
+			const uniqueIds = new Set(ids);
+			expect(uniqueIds.size).toBe(ids.length); // All IDs should be unique
 		});
 	});
 });
