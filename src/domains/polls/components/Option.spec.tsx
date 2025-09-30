@@ -83,9 +83,10 @@ describe(Option, () => {
 		const checkbox = screen.getByRole("checkbox");
 		expect(checkbox).toBeDisabled();
 		expect(checkbox).toHaveClass("cursor-not-allowed");
-		
-		const label = screen.getByText("JavaScript");
-		expect(label).toHaveClass("cursor-not-allowed", "text-gray-500");
+
+		const input = screen.getByRole("checkbox") as HTMLInputElement;
+		const labelElement = input.labels?.[0];
+		expect(labelElement).toHaveClass("cursor-not-allowed", "text-gray-500");
 	});
 
 	it("renders enabled state correctly when disabled is false", () => {
@@ -102,10 +103,11 @@ describe(Option, () => {
 		const checkbox = screen.getByRole("checkbox");
 		expect(checkbox).not.toBeDisabled();
 		expect(checkbox).not.toHaveClass("cursor-not-allowed");
-		
-		const label = screen.getByText("JavaScript");
-		expect(label).toHaveClass("cursor-pointer");
-		expect(label).not.toHaveClass("cursor-not-allowed", "text-gray-500");
+
+		const input = screen.getByRole("checkbox") as HTMLInputElement;
+		const labelElement = input.labels?.[0];
+		expect(labelElement).toHaveClass("cursor-pointer");
+		expect(labelElement).not.toHaveClass("cursor-not-allowed", "text-gray-500");
 	});
 
 	it("applies disabled styling to container when disabled", () => {

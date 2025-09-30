@@ -1,4 +1,6 @@
 import type { Poll } from "~/domains/polls/models/poll";
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 
 type PollHeaderProps = {
 	poll: Poll;
@@ -7,8 +9,12 @@ type PollHeaderProps = {
 export const PollHeader = ({ poll }: PollHeaderProps) => {
 	return (
 		<div className="mb-6">
-			<h1 className="text-2xl font-bold mb-4">{poll.question}</h1>
-			
+			<div className="markdown mb-4">
+				<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+					{poll.question}
+				</ReactMarkdown>
+			</div>
+
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<div className="p-4 rounded-lg shadow">
 					<h2 className="text-lg font-semibold mb-2">Poll Details</h2>

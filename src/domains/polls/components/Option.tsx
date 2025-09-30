@@ -1,4 +1,6 @@
 import { PollOption } from "~/domains/polls/models/pollOption";
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 
 // Define a simplified field interface that matches what we need from TanStack Form
 type FormFieldApi = {
@@ -54,7 +56,7 @@ const Option = ({ option, type, field, checked, disabled = false }: OptionProps)
 	};
 
 	return (
-		<div className={`flex items-center gap-2 ${disabled ? 'opacity-60' : ''}`}>
+		<div className={`flex items-start gap-2 ${disabled ? 'opacity-60' : ''}`}>
 			<input
 				type={type}
 				name="selectedOptions"
@@ -63,13 +65,15 @@ const Option = ({ option, type, field, checked, disabled = false }: OptionProps)
 				checked={checked}
 				onChange={handleChange}
 				disabled={disabled}
-				className={disabled ? 'cursor-not-allowed' : ''}
+				className={`mt-1 ${disabled ? 'cursor-not-allowed' : ''}`}
 			/>
-			<label 
+			<label
 				htmlFor={inputId}
-				className={disabled ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'}
+				className={`markdown flex-1 ${disabled ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'}`}
 			>
-				{option.option}
+				<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+					{option.option}
+				</ReactMarkdown>
 			</label>
 		</div>
 	);

@@ -1,3 +1,5 @@
+@import 'highlight.js/styles/github-dark.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -18,5 +20,67 @@
 
   .using-mouse * {
     outline: none !important;
+  }
+}
+
+@layer components {
+  .markdown {
+    @apply text-gray-900 dark:text-gray-200;
+  }
+
+  .markdown p {
+    @apply mb-4;
+  }
+
+  .markdown h1 {
+    @apply text-2xl font-bold mb-4 mt-6;
+  }
+
+  .markdown h2 {
+    @apply text-xl font-bold mb-3 mt-5;
+  }
+
+  .markdown h3 {
+    @apply text-lg font-semibold mb-2 mt-4;
+  }
+
+  .markdown ul {
+    @apply list-disc list-inside mb-4 ml-4;
+  }
+
+  .markdown ol {
+    @apply list-decimal list-inside mb-4 ml-4;
+  }
+
+  .markdown li {
+    @apply mb-1;
+  }
+
+  .markdown code {
+    @apply bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+
+  .markdown pre {
+    @apply bg-gray-900 dark:bg-gray-950 rounded-lg p-4 mb-4 overflow-x-auto;
+  }
+
+  .markdown pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+
+  .markdown strong {
+    @apply font-bold;
+  }
+
+  .markdown em {
+    @apply italic;
+  }
+
+  .markdown blockquote {
+    @apply border-l-4 border-gray-300 dark:border-gray-700 pl-4 italic my-4;
+  }
+
+  .markdown a {
+    @apply text-blue-600 dark:text-blue-400 hover:underline;
   }
 }
