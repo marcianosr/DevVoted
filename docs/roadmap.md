@@ -53,7 +53,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [] Show clear disable button in config when storage is full on "purchase"
 [] Don't update round/threshold check right away after submission
-[] Upgrade packages
+[x] Upgrade packages
 [] Authentication (GitHub/Google)
 [] CI/CD and Deployment
 [] Some UI polish so it isn't a mess
