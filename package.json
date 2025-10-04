@@ -6,7 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && tsc --noEmit",
+		"build": "vite build && npx tsc --noEmit",
 		"start": "vite start",
 		"test": "vitest run",
 		"test:watch": "vitest",

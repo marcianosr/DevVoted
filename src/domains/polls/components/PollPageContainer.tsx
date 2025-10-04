@@ -3,7 +3,7 @@ import { useForm } from "@tanstack/react-form";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
-import { PollHeader } from "./PollHeader";
+import { PollQuestionDisplay } from "./PollQuestionDisplay";
 import { PollStatus } from "./PollStatus";
 import { PollOptions } from "./PollOptions";
 import { PollSubmissionForm } from "./PollSubmissionForm";
@@ -54,7 +54,6 @@ type PollContentProps = {
 	effectProps?: EffectRenderProps;
 	user: any;
 	activeRun: Run | null;
-	headerContent?: React.ReactNode;
 };
 
 const PollContent: React.FC<PollContentProps> = ({
@@ -62,7 +61,6 @@ const PollContent: React.FC<PollContentProps> = ({
 	effectProps,
 	user,
 	activeRun,
-	headerContent,
 }) => {
 	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
@@ -209,8 +207,7 @@ const PollContent: React.FC<PollContentProps> = ({
 
 	return (
 		<>
-			{headerContent}
-			<PollHeader poll={poll} />
+			<PollQuestionDisplay poll={poll} />
 			<PollStatus hasAnswered={hasAnswered} />
 			{/* <RunStatusDisplay activeRun={activeRun} /> */}
 
@@ -267,7 +264,6 @@ type PollPageContainerProps = {
 	queryKey: readonly any[]; // TODO: remove this any
 	queryFn: () => Promise<any>; // TODO: remove this any
 	errorMessage?: string;
-	headerContent?: React.ReactNode;
 };
 
 export const PollPageContainer: React.FC<PollPageContainerProps> = ({
@@ -275,7 +271,6 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	queryKey,
 	queryFn,
 	errorMessage = "Error Loading Poll",
-	headerContent,
 }) => {
 	const queryClient = useQueryClient();
 
@@ -481,7 +476,6 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 					effectProps={effectsResult.renderProps}
 					user={user}
 					activeRun={activeRun}
-					headerContent={headerContent}
 				/>
 			</ShopProvider>
 		</div>

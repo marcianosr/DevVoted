@@ -77,19 +77,6 @@ const DailyPoll: React.FC = () => {
 		refetchInterval: 45 * 1000, // Auto-refresh every 45 seconds
 	});
 
-	const dailyPollHeader = (
-		<div className="space-y-4">
-			<div className="p-3 bg-blue-100 border border-blue-200 rounded-lg">
-				<h2 className="text-lg font-semibold text-blue-800 mb-1">
-					🌟 Daily Poll
-				</h2>
-				<p className="text-sm text-blue-600">
-					Today's featured question - same for everyone!
-				</p>
-			</div>
-		</div>
-	);
-
 	return (
 		<section>
 			<PollPageContainer
@@ -101,7 +88,6 @@ const DailyPoll: React.FC = () => {
 					})
 				}
 				errorMessage="Error Loading Daily Poll"
-				headerContent={dailyPollHeader}
 			/>
 
 			{/* Category Progress Section */}
