@@ -20,13 +20,16 @@ export const PollHeader = ({ poll }: PollHeaderProps) => {
 					<h2 className="text-lg font-semibold mb-2">Poll Details</h2>
 					<div className="space-y-2">
 						<p>
-							<span className="font-medium">Status:</span> {poll.status}
+							<span className="font-medium">Status:</span>{" "}
+							{poll.status}
 						</p>
 						<p>
-							<span className="font-medium">Type:</span> {poll.answerType}
+							<span className="font-medium">Type:</span>{" "}
+							{poll.answerType}
 						</p>
 						<p>
-							<span className="font-medium">Category:</span> {poll.categoryCode}
+							<span className="font-medium">Category:</span>{" "}
+							{poll.categoryCode}
 						</p>
 					</div>
 				</div>

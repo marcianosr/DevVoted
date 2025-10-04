@@ -17,12 +17,12 @@ type ShopProps = {
 	categoryCode?: CategoryCode;
 };
 
-export const Shop = ({ 
-	activeRun, 
-	offeredConfigs, 
-	onReroll, 
-	lastScoreBreakdown, 
-	categoryCode 
+export const Shop = ({
+	activeRun,
+	offeredConfigs,
+	onReroll,
+	lastScoreBreakdown,
+	categoryCode,
 }: ShopProps) => {
 	const { storageAvailable } = getStorageInfo(activeRun);
 	const rerollCost = calculateRerollCost(activeRun.rerolls);
@@ -32,7 +32,7 @@ export const Shop = ({
 		<div className="p-6">
 			{/* Score Breakdown Display */}
 			{lastScoreBreakdown && categoryCode && (
-				<ScoreBreakdownDisplay 
+				<ScoreBreakdownDisplay
 					breakdown={lastScoreBreakdown}
 					activeConfigIds={activeRun.activeConfigIds}
 					categoryCode={categoryCode}
@@ -45,7 +45,8 @@ export const Shop = ({
 						Config Shop
 					</h2>
 					<p className="text-gray-600">
-						Select up to storage limit configs to add to your storage deck
+						Select up to storage limit configs to add to your
+						storage deck
 					</p>
 				</div>
 				<button
@@ -71,7 +72,11 @@ export const Shop = ({
 					});
 
 					return (
-						<ConfigCard key={config.id} config={config} {...actions} />
+						<ConfigCard
+							key={config.id}
+							config={config}
+							{...actions}
+						/>
 					);
 				})}
 			</div>

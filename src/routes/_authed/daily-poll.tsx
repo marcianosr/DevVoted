@@ -20,7 +20,7 @@ const getGlobalLeaderboard = createServerFn({ method: "GET" }).handler(
 );
 
 const getCategoryLeaderboard = createServerFn({ method: "POST" })
-	.validator((data: { categoryCode?: CategoryCode }) => data)
+	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
 	.handler(async ({ data }) => {
 		const { getCategoryLeaderboardHandler } = await import(
 			"~/domains/leaderboards/api/handlers"
@@ -31,7 +31,7 @@ const getCategoryLeaderboard = createServerFn({ method: "POST" })
 	});
 
 const getActiveRunCategoryXp = createServerFn({ method: "POST" })
-	.validator((data: { userId: string }) => data)
+	.inputValidator((data: { userId: string }) => data)
 	.handler(async ({ data }) => {
 		const { getActiveRunCategoryXpHandler } = await import(
 			"~/domains/runs/api/handlers"
@@ -40,7 +40,7 @@ const getActiveRunCategoryXp = createServerFn({ method: "POST" })
 	});
 
 const getLiveLeaderboard = createServerFn({ method: "POST" })
-	.validator((data: { categoryCode?: CategoryCode }) => data)
+	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
 	.handler(async ({ data }) => {
 		const { getLiveRunRankingsHandler } = await import(
 			"~/domains/runs/api/handlers"
@@ -87,6 +87,22 @@ const DailyPoll: React.FC = () => {
 					Today's featured question - same for everyone!
 				</p>
 			</div>
+		</div>
+	);
+
+	return (
+		<section>
+			<PollPageContainer
+				user={user}
+				queryKey={pollQueryKeys.daily(todayDateString, user?.id)}
+				queryFn={() =>
+					getDailyPoll({
+						data: { userId: user?.id, date: todayDateString },
+					})
+				}
+				errorMessage="Error Loading Daily Poll"
+				headerContent={dailyPollHeader}
+			/>
 
 			{/* Category Progress Section */}
 			<div className="w-full max-w-md mx-auto">
@@ -164,21 +180,7 @@ const DailyPoll: React.FC = () => {
 					/>
 				)}
 			</div>
-		</div>
-	);
-
-	return (
-		<PollPageContainer
-			user={user}
-			queryKey={pollQueryKeys.daily(todayDateString, user?.id)}
-			queryFn={() =>
-				getDailyPoll({
-					data: { userId: user?.id, date: todayDateString },
-				})
-			}
-			errorMessage="Error Loading Daily Poll"
-			headerContent={dailyPollHeader}
-		/>
+		</section>
 	);
 };
 

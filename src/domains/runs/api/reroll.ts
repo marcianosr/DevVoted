@@ -5,7 +5,7 @@ import { getStorageInfo } from "~/domains/economy/services/configManager.service
 import { processRerollShop } from "./queries";
 
 export const rerollShopServerFn = createServerFn()
-	.validator(
+	.inputValidator(
 		z.object({
 			runId: z.number().int().positive(),
 		})
@@ -15,13 +15,16 @@ export const rerollShopServerFn = createServerFn()
 
 		try {
 			const { originalRun, updatedRun } = await processRerollShop(runId);
-			
+
 			const { storageAvailable } = getStorageInfo(originalRun);
 			const rerollCost = calculateRerollCost(originalRun.rerolls);
 
 			// Check if user can afford the reroll
 			if (storageAvailable < rerollCost) {
-				return { success: false, error: "Not enough storage for reroll" };
+				return {
+					success: false,
+					error: "Not enough storage for reroll",
+				};
 			}
 
 			return {
@@ -33,8 +36,9 @@ export const rerollShopServerFn = createServerFn()
 			};
 		} catch (error) {
 			const message =
-				error instanceof Error ? error.message : "Failed to reroll shop";
+				error instanceof Error
+					? error.message
+					: "Failed to reroll shop";
 			return { success: false, error: message };
 		}
 	});
-

@@ -2,6 +2,8 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 import { resolve } from "path";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
 	server: {
@@ -13,7 +15,7 @@ export default defineConfig({
 			{ find: "@/src", replacement: resolve(__dirname, "./src") },
 		],
 	},
-	plugins: [tsConfigPaths(), tanstackStart()],
+	plugins: [tsConfigPaths(), tanstackStart(), react(), tailwindcss()],
 	test: {
 		environment: "jsdom",
 		globals: true,
@@ -32,7 +34,7 @@ export default defineConfig({
 			],
 		},
 		outputFile: {
-			json: './test-results.json',
+			json: "./test-results.json",
 		},
 	},
 });

@@ -51,7 +51,7 @@ const checkAdminAccessForAction = async () => {
 };
 
 const createSeasonFn = createServerFn({ method: "POST" })
-	.validator(
+	.inputValidator(
 		(data: {
 			name: string;
 			description?: string;
@@ -87,7 +87,7 @@ const createSeasonFn = createServerFn({ method: "POST" })
 	});
 
 const startSeasonFn = createServerFn({ method: "POST" })
-	.validator((data: { seasonId: number }) => data)
+	.inputValidator((data: { seasonId: number }) => data)
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
@@ -110,7 +110,7 @@ const startSeasonFn = createServerFn({ method: "POST" })
 	});
 
 const finishSeasonFn = createServerFn({ method: "POST" })
-	.validator((data: { seasonId: number }) => data)
+	.inputValidator((data: { seasonId: number }) => data)
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 

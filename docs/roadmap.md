@@ -24,7 +24,7 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Show who answered today
 
 [x] Create simple linear streak bonus amp
-[o] Rarity tiers
+[x] Rarity tiers
 [] Create a single "stake" in DB (no UI)
 
     - [] Timestamps on answer
@@ -39,7 +39,8 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [x] Make sure configs are additive to each other
 [x] Don't rerender shop when installing configs. This shows new options
-[] Remove amp cap
+[x] Remove amp cap
+[x] Support markdown in questions (e.g code examples or just code blocks) kk
 [] Balancing
 
     [] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;

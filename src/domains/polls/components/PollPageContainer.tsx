@@ -40,7 +40,7 @@ type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
 
 export const submitPollOptions = createServerFn()
-	.validator(
+	.inputValidator(
 		z.object({
 			pollId: z.number().int().positive(),
 			selectedOptions: z.array(z.string()).min(1),
@@ -69,7 +69,8 @@ const PollContent: React.FC<PollContentProps> = ({
 	const { poll, options, hasAnswered } = pollData;
 
 	const [rerollKey, setRerollKey] = useState(0);
-	const [lastScoreBreakdown, setLastScoreBreakdown] = useState<PollScoreBreakdown | null>(null);
+	const [lastScoreBreakdown, setLastScoreBreakdown] =
+		useState<PollScoreBreakdown | null>(null);
 
 	// TODO: Put in a hook
 	const randomConfigs = useMemo(() => {
@@ -211,7 +212,7 @@ const PollContent: React.FC<PollContentProps> = ({
 			{headerContent}
 			<PollHeader poll={poll} />
 			<PollStatus hasAnswered={hasAnswered} />
-			<RunStatusDisplay activeRun={activeRun} />
+			{/* <RunStatusDisplay activeRun={activeRun} /> */}
 
 			{activeRun && (
 				<>
