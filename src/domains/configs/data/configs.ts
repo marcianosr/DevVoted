@@ -2,10 +2,8 @@ import { check } from "drizzle-orm/gel-core";
 import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { Run } from "~/domains/runs/models/run";
-import {
-	aggregateCategoryXpData,
-	calculateThresholdInfo,
-} from "~/domains/runs/services/thresholdCalculator.service";
+import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
+import { aggregateRunCategoryXp } from "~/domains/runs/utils/xpCalculations";
 import { STORAGE_UNITS, formatStorage } from "~/lib/storage";
 
 export const configs: Config[] = [
@@ -260,12 +258,7 @@ const EFFECTS: Record<string, EffectFn> = {
 	checkXPWithThreshold: ({ poll, options, run, hasAnswered }, config) => {
 		// Calculate current total XP and polls answered across all categories
 		const { totalXp: currentTotalXP, totalPollsAnswered } =
-			aggregateCategoryXpData(
-				run.categoryXp.map((cat) => ({
-					currentXp: cat.currentXp,
-					pollsAnswered: cat.pollsAnswered,
-				}))
-			);
+			aggregateRunCategoryXp(run.categoryXp);
 
 		// Use current poll threshold calculation, not next poll
 		const thresholdInfo = calculateThresholdInfo(

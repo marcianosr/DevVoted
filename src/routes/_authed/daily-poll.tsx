@@ -6,8 +6,6 @@ import { pollQueryKeys } from "~/domains/shared/queryKeys";
 import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
 import { GlobalLeaderboard } from "~/domains/leaderboards/components/GlobalLeaderboard";
 import { LiveLeaderboard } from "~/domains/leaderboards/components/LiveLeaderboard";
-import { CategoryProgressDisplay } from "~/domains/runs/components/CategoryProgressDisplay";
-import { getTodayDateString } from "~/lib/dateUtils";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 const getGlobalLeaderboard = createServerFn({ method: "GET" }).handler(
@@ -105,13 +103,6 @@ const DailyPoll: React.FC = () => {
 							No active run - start playing to see progress!
 						</div>
 					</div>
-				)}
-				{categoryXpQuery.data?.success && categoryXpQuery.data.data && (
-					<CategoryProgressDisplay
-						categoryXp={categoryXpQuery.data.data.categoryXp}
-						totalXp={categoryXpQuery.data.data.totalXp}
-						className="mb-4"
-					/>
 				)}
 			</div>
 

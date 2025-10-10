@@ -1,13 +1,12 @@
 import {
 	getActiveRunByUserId,
 	createRunForUser,
-	finishRun,
-	addConfigsToRun,
 	getLastRunFromUser,
 	getLiveRunRankings,
 } from "./queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 import type { CategoryCode } from "~/domains/shared/categories";
+import { aggregateRunCategoryXp } from "~/domains/runs/utils/xpCalculations";
 
 export const getOrCreateActiveRun = async (userId: string) => {
 	return handleApiOperation(async () => {
@@ -51,15 +50,19 @@ export const getActiveRunCategoryXpHandler = async (userId: string) => {
 			throw new Error("No active run found");
 		}
 
+		const { totalXp } = aggregateRunCategoryXp(activeRun.categoryXp);
+
 		return {
 			categoryXp: activeRun.categoryXp,
 			runId: activeRun.id,
-			totalXp: activeRun.categoryXp.reduce((sum, xp) => sum + xp.currentXp, 0)
+			totalXp,
 		};
 	}, "Failed to get active run category XP");
 };
 
-export const getLiveRunRankingsHandler = async (categoryCode?: CategoryCode) => {
+export const getLiveRunRankingsHandler = async (
+	categoryCode?: CategoryCode
+) => {
 	return handleApiOperation(async () => {
 		const rankings = await getLiveRunRankings(categoryCode);
 		return rankings;

@@ -34,8 +34,8 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
 			expect(result.currentXp).toBe(0);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentSet).toBe(1);
-			expect(result.pollInSet).toBe(1);
+			expect(result.currentRound).toBe(1);
+			expect(result.pollInRound).toBe(1);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
 
@@ -70,8 +70,8 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
 			expect(result.currentXp).toBe(5);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentSet).toBe(1);
-			expect(result.pollInSet).toBe(2);
+			expect(result.currentRound).toBe(1);
+			expect(result.pollInRound).toBe(2);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
 
@@ -106,8 +106,8 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.requiredXp).toBe(21); // Set 2 threshold
 			expect(result.currentXp).toBe(7);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentSet).toBe(2);
-			expect(result.pollInSet).toBe(1);
+			expect(result.currentRound).toBe(2);
+			expect(result.pollInRound).toBe(1);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
 
@@ -142,8 +142,8 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
 			expect(result.currentXp).toBe(7);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentSet).toBe(1);
-			expect(result.pollInSet).toBe(2);
+			expect(result.currentRound).toBe(1);
+			expect(result.pollInRound).toBe(2);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
 
@@ -178,8 +178,8 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
 			expect(result.currentXp).toBe(15);
 			expect(result.meetsThreshold).toBe(true); // 15 >= 15, threshold check passes
-			expect(result.currentSet).toBe(1);
-			expect(result.pollInSet).toBe(3);
+			expect(result.currentRound).toBe(1);
+			expect(result.pollInRound).toBe(3);
 			expect(result.isThresholdCheckPoll).toBe(true);
 		});
 
@@ -192,8 +192,8 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
 			expect(result.currentXp).toBe(0);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentSet).toBe(1);
-			expect(result.pollInSet).toBe(1);
+			expect(result.currentRound).toBe(1);
+			expect(result.pollInRound).toBe(1);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
 	});

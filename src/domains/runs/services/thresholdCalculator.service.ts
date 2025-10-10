@@ -1,3 +1,6 @@
+import type { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
+import { aggregateRunCategoryXp } from "~/domains/runs/utils/xpCalculations";
+
 // TODO: Remove this as this is now dummy data for thresholds
 export const XP_CALCULATION_CONSTANTS = {
 	BASE_XP_MULTIPLIER: 5,
@@ -18,14 +21,6 @@ export type ThresholdInfo = {
 	readonly currentRound: number;
 	readonly pollInRound: number;
 	readonly isThresholdCheckPoll: boolean;
-};
-
-/**
- * Run category XP data for threshold calculations
- */
-export type CategoryXpData = {
-	readonly currentXp: number;
-	readonly pollsAnswered: number;
 };
 
 /**
@@ -94,31 +89,15 @@ export const calculateThresholdInfo = (
 };
 
 /**
- * Aggregate XP data from multiple categories
- * @param categoryData - Array of category XP data
- * @returns Aggregated totals
- */
-export const aggregateCategoryXpData = (
-	categoryData: readonly CategoryXpData[]
-) => {
-	const totalXp = categoryData.reduce((sum, data) => sum + data.currentXp, 0);
-	const totalPollsAnswered = categoryData.reduce(
-		(sum, data) => sum + data.pollsAnswered,
-		0
-	);
-	return { totalXp, totalPollsAnswered };
-};
-
-/**
  * Calculate threshold for next poll from category data (client-side display)
  * @param categoryXpData - Array of category XP data
  * @returns Threshold information for the next poll
  */
 export const calculateNextPollThresholdFromCategoryData = (
-	categoryXpData: readonly CategoryXpData[]
+	categoryXpData: readonly RunCategoryXp[]
 ): ThresholdInfo => {
 	const { totalXp, totalPollsAnswered } =
-		aggregateCategoryXpData(categoryXpData);
+		aggregateRunCategoryXp(categoryXpData);
 
 	// Poll number is the next poll (current + 1)
 	const pollNumber = totalPollsAnswered + 1;
@@ -144,14 +123,9 @@ export const calculateNextPollThresholdFromCategoryData = (
 };
 
 export const getCurrentThresholdInfo = (
-	categoryXp: { currentXp: number; pollsAnswered: number }[]
+	categoryXp: readonly RunCategoryXp[]
 ): ThresholdInfo => {
-	const categoryData = categoryXp.map((xp) => ({
-		currentXp: xp.currentXp,
-		pollsAnswered: xp.pollsAnswered,
-	}));
-
-	return calculateNextPollThresholdFromCategoryData(categoryData);
+	return calculateNextPollThresholdFromCategoryData(categoryXp);
 };
 
 /**

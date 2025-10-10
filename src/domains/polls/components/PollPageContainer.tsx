@@ -33,12 +33,9 @@ import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
-import { ScoreDisplay } from "./ScoreDisplay";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
-import { PollMetaData } from "./PollMetaData";
-import { getCategoryMetadata } from "~/domains/shared/categories";
 import { calculateNextPollThresholdFromCategoryData } from "~/domains/runs/services/thresholdCalculator.service";
-import { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
+import { getCategories } from "~/domains/shared/categories";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -209,39 +206,43 @@ const PollContent: React.FC<PollContentProps> = ({
 		return <ErrorComponent text="Sorry, this poll is closed today!" />;
 	}
 
-	const categoryMeta = getCategoryMetadata(poll.categoryCode);
+	const categoryMeta = getCategories();
+	const currentCategory = categoryMeta.find(
+		(cat) => cat.code === poll.categoryCode
+	);
 
 	const thresholdInfo =
 		activeRun && activeRun.categoryXp
-			? calculateNextPollThresholdFromCategoryData(
-					activeRun.categoryXp.map((xp: RunCategoryXp) => ({
-						currentXp: xp.currentXp,
-						pollsAnswered: xp.pollsAnswered,
-					}))
-				)
+			? calculateNextPollThresholdFromCategoryData(activeRun.categoryXp)
 			: null;
 
-	console.log("Threshold Info:", thresholdInfo);
 	return (
 		<section
 			data-category={poll.categoryCode}
-			className={`min-h-screen p-4`}
+			className={`min-h-screen p-2`}
 		>
 			<div className="max-w-7xl mx-auto">
 				<section className="grid grid-cols-12 gap-4">
-					<div className="col-span-4">
-						{/* <div className=" text-saffron font-bold flex items-center gap-2">
-							<span>●</span> {categoryMeta.name}
-						</div> */}
-						<div className="text-saffron p-4 flex flex-col mb-4 border-b border-saffron">
-							<span className="font-extrabold text-lg mb-2">
+					<div className="col-span-4 flex flex-col gap-8">
+						<div className="text-4xl text-saffron">
+							{currentCategory?.name}
+						</div>
+						<PollStatus hasAnswered={hasAnswered} />
+
+						<div className="text-saffron flex flex-col">
+							<span className="font-bold text-xl">
 								Round {thresholdInfo?.currentRound} - Poll{" "}
 								{thresholdInfo?.pollInRound}/3
 							</span>
 
 							<div>
-								<span className="font-bold text-lg">
-									{thresholdInfo?.currentXp} XP
+								<span className="font-bold text-sm flex gap-4 justify-between">
+									<span>
+										Current: {thresholdInfo?.currentXp} XP
+									</span>
+									<span>
+										Goal: {thresholdInfo?.requiredXp} XP
+									</span>
 								</span>
 								<meter
 									min={0}
@@ -249,10 +250,6 @@ const PollContent: React.FC<PollContentProps> = ({
 									max={thresholdInfo?.requiredXp}
 								></meter>
 							</div>
-
-							<span className="font-bold text-lg text-right">
-								Round goal = {thresholdInfo?.requiredXp} XP
-							</span>
 
 							<span>
 								{thresholdInfo?.isThresholdCheckPoll && (
@@ -293,6 +290,7 @@ const PollContent: React.FC<PollContentProps> = ({
 						{activeRun && (
 							<RunStatusDisplay activeRun={activeRun} />
 						)}
+
 						{/* <ul className="text-gray-400 text-xs">
 							<li>Poll #{poll.id}</li>
 							<li>Run #{activeRun?.id}</li>

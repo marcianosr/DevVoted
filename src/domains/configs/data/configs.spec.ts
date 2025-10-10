@@ -6,9 +6,7 @@ import { createMockRunCategoryXp } from "~/domains/runs/models/runCategoryXp";
 import { createPollOption } from "~/domains/polls/models/pollOption";
 import * as thresholdService from "~/domains/runs/services/thresholdCalculator.service";
 
-// Mock the threshold calculator service
 vi.mock("~/domains/runs/services/thresholdCalculator.service", () => ({
-	aggregateCategoryXpData: vi.fn(),
 	calculateThresholdInfo: vi.fn(),
 }));
 
@@ -479,24 +477,18 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			// Setup default mocks
-			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
-				totalXp: 0,
-				totalPollsAnswered: 0,
-			});
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				isThresholdCheckPoll: false,
 				meetsThreshold: true,
 				requiredXp: 50,
 				currentXp: 0,
 				pollNumber: 0,
-				currentSet: 1,
-				pollInSet: 0,
+				currentRound: 1,
+				pollInRound: 1,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
 
-			// Test that the protection object is returned
 			expect(result.protection).toBeDefined();
 			expect(typeof result.protection.tryCatch).toBe("boolean");
 			expect(result.meta.notes).toBeDefined();
@@ -526,18 +518,14 @@ describe("configs", () => {
 			};
 
 			// Mock the threshold calculation to return failing threshold at poll 3
-			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
-				totalXp: 80,
-				totalPollsAnswered: 3,
-			});
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				isThresholdCheckPoll: true,
 				meetsThreshold: false,
 				requiredXp: 100,
 				currentXp: 80,
 				pollNumber: 3,
-				currentSet: 1,
-				pollInSet: 3,
+				currentRound: 1,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -546,7 +534,9 @@ describe("configs", () => {
 			expect(result.meta.notes).toContain(
 				"Try/Catch will save your run! (have 80% of threshold)"
 			);
-			expect(result.meta.badges?.["try-catch"]).toBe("Try/Catch will activate!");
+			expect(result.meta.badges?.["try-catch"]).toBe(
+				"Try/Catch will activate!"
+			);
 		});
 
 		it("does not activate when below 80% threshold", () => {
@@ -572,18 +562,14 @@ describe("configs", () => {
 				hasAnswered: true,
 			};
 
-			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
-				totalXp: 60,
-				totalPollsAnswered: 3,
-			});
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				isThresholdCheckPoll: true,
 				meetsThreshold: false,
 				requiredXp: 100,
 				currentXp: 60,
 				pollNumber: 3,
-				currentSet: 1,
-				pollInSet: 3,
+				currentRound: 1,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -617,18 +603,14 @@ describe("configs", () => {
 				hasAnswered: true,
 			};
 
-			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
-				totalXp: 120,
-				totalPollsAnswered: 3,
-			});
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				isThresholdCheckPoll: true,
 				meetsThreshold: true, // Meeting threshold
 				requiredXp: 100,
 				currentXp: 120,
 				pollNumber: 3,
-				currentSet: 1,
-				pollInSet: 3,
+				currentRound: 1,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -663,18 +645,14 @@ describe("configs", () => {
 				hasAnswered: true,
 			};
 
-			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
-				totalXp: 40,
-				totalPollsAnswered: 2,
-			});
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				isThresholdCheckPoll: false, // Not a threshold check poll
 				meetsThreshold: true,
 				requiredXp: 50,
 				currentXp: 40,
 				pollNumber: 2,
-				currentSet: 1,
-				pollInSet: 2,
+				currentRound: 1,
+				pollInRound: 2,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -719,18 +697,14 @@ describe("configs", () => {
 				hasAnswered: true,
 			};
 
-			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
-				totalXp: 85, // 40 + 30 + 15
-				totalPollsAnswered: 3,
-			});
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				isThresholdCheckPoll: true,
 				meetsThreshold: false,
 				requiredXp: 100,
 				currentXp: 85,
 				pollNumber: 3,
-				currentSet: 1,
-				pollInSet: 3,
+				currentRound: 1,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -764,18 +738,14 @@ describe("configs", () => {
 				hasAnswered: true,
 			};
 
-			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
-				totalXp: 160,
-				totalPollsAnswered: 6,
-			});
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				isThresholdCheckPoll: true,
 				meetsThreshold: false,
 				requiredXp: 200,
 				currentXp: 160,
 				pollNumber: 6,
-				currentSet: 2,
-				pollInSet: 3,
+				currentRound: 2,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -809,18 +779,14 @@ describe("configs", () => {
 				hasAnswered: true,
 			};
 
-			vi.mocked(thresholdService.aggregateCategoryXpData).mockReturnValue({
-				totalXp: 79,
-				totalPollsAnswered: 3,
-			});
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				isThresholdCheckPoll: true,
 				meetsThreshold: false,
 				requiredXp: 100,
 				currentXp: 79,
 				pollNumber: 3,
-				currentSet: 1,
-				pollInSet: 3,
+				currentRound: 1,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);

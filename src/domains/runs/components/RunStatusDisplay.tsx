@@ -11,7 +11,7 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 	if (!activeRun) return null;
 
 	return (
-		<div className="mb-6 p-4">
+		<div>
 			<h3 className="text-lg font-semibold text-saffron mb-2">
 				Run info
 			</h3>

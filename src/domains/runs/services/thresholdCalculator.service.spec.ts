@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
 	calculateThresholdInfo,
 	calculateNextPollThresholdFromCategoryData,
-	aggregateCategoryXpData,
-	type CategoryXpData,
 } from "./thresholdCalculator.service";
+import { aggregateRunCategoryXp } from "~/domains/runs/utils/xpCalculations";
+import { createMockRunCategoryXp } from "~/domains/runs/models/runCategoryXp";
 
 describe("ThresholdCalculator", () => {
 	describe("calculateThresholdInfo", () => {
@@ -16,8 +16,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 5,
 				requiredXp: 15, // Set 1 threshold
 				pollNumber: 1,
-				currentSet: 1,
-				pollInSet: 1,
+				currentRound: 1,
+				pollInRound: 1,
 				isThresholdCheckPoll: false,
 			});
 		});
@@ -30,8 +30,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 6,
 				requiredXp: 15, // Set 1 threshold
 				pollNumber: 2,
-				currentSet: 1,
-				pollInSet: 2,
+				currentRound: 1,
+				pollInRound: 2,
 				isThresholdCheckPoll: false,
 			});
 		});
@@ -44,8 +44,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 11,
 				requiredXp: 15, // Set 1 threshold
 				pollNumber: 3,
-				currentSet: 1,
-				pollInSet: 3,
+				currentRound: 1,
+				pollInRound: 3,
 				isThresholdCheckPoll: true,
 			});
 		});
@@ -58,8 +58,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 16,
 				requiredXp: 21, // Set 2 threshold
 				pollNumber: 4,
-				currentSet: 2,
-				pollInSet: 1,
+				currentRound: 2,
+				pollInRound: 1,
 				isThresholdCheckPoll: false,
 			});
 		});
@@ -72,8 +72,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 0,
 				requiredXp: 15, // Set 1 threshold (or 0 for no set)
 				pollNumber: 0,
-				currentSet: 0,
-				pollInSet: 3, // 0 % 3 = 0, but we show as poll 3 position
+				currentRound: 0,
+				pollInRound: 3, // 0 % 3 = 0, but we show as poll 3 position
 				isThresholdCheckPoll: false,
 			});
 		});
@@ -86,22 +86,22 @@ describe("ThresholdCalculator", () => {
 				currentXp: 25,
 				requiredXp: 21, // Set 2 threshold
 				pollNumber: 6,
-				currentSet: 2,
-				pollInSet: 3,
+				currentRound: 2,
+				pollInRound: 3,
 				isThresholdCheckPoll: true,
 			});
 		});
 	});
 
-	describe("aggregateCategoryXpData", () => {
+	describe("aggregateRunCategoryXp", () => {
 		it("aggregates XP and polls across multiple categories", () => {
-			const categoryData: CategoryXpData[] = [
-				{ currentXp: 3, pollsAnswered: 1 },
-				{ currentXp: 2, pollsAnswered: 1 },
-				{ currentXp: 0, pollsAnswered: 0 },
+			const categoryData = [
+				createMockRunCategoryXp({ currentXp: 3, pollsAnswered: 1 }),
+				createMockRunCategoryXp({ currentXp: 2, pollsAnswered: 1 }),
+				createMockRunCategoryXp({ currentXp: 0, pollsAnswered: 0 }),
 			];
 
-			const result = aggregateCategoryXpData(categoryData);
+			const result = aggregateRunCategoryXp(categoryData);
 
 			expect(result).toEqual({
 				totalXp: 5,
@@ -110,9 +110,9 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("handles empty category data", () => {
-			const categoryData: CategoryXpData[] = [];
+			const categoryData = [];
 
-			const result = aggregateCategoryXpData(categoryData);
+			const result = aggregateRunCategoryXp(categoryData);
 
 			expect(result).toEqual({
 				totalXp: 0,
@@ -123,10 +123,10 @@ describe("ThresholdCalculator", () => {
 
 	describe("calculateNextPollThresholdFromCategoryData", () => {
 		it("calculates next poll threshold from multi-category data (Set 2, Poll 1)", () => {
-			const categoryData: CategoryXpData[] = [
-				{ currentXp: 2, pollsAnswered: 1 }, // react
-				{ currentXp: 3, pollsAnswered: 1 }, // javascript
-				{ currentXp: 5, pollsAnswered: 1 }, // css
+			const categoryData = [
+				createMockRunCategoryXp({ currentXp: 2, pollsAnswered: 1 }), // react
+				createMockRunCategoryXp({ currentXp: 3, pollsAnswered: 1 }), // javascript
+				createMockRunCategoryXp({ currentXp: 5, pollsAnswered: 1 }), // css
 			];
 
 			const result =
@@ -138,19 +138,19 @@ describe("ThresholdCalculator", () => {
 				currentXp: 10,
 				requiredXp: 21, // Set 2 threshold
 				pollNumber: 4,
-				currentSet: 2,
-				pollInSet: 1,
+				currentRound: 2,
+				pollInRound: 1,
 				isThresholdCheckPoll: false,
 			});
 		});
 
 		it("handles progression to threshold check poll (Set 2, Poll 3)", () => {
-			const categoryData: CategoryXpData[] = [
-				{ currentXp: 5, pollsAnswered: 1 },
-				{ currentXp: 5, pollsAnswered: 1 },
-				{ currentXp: 5, pollsAnswered: 1 },
-				{ currentXp: 5, pollsAnswered: 1 },
-				{ currentXp: 5, pollsAnswered: 1 },
+			const categoryData = [
+				createMockRunCategoryXp({ currentXp: 5, pollsAnswered: 1 }),
+				createMockRunCategoryXp({ currentXp: 5, pollsAnswered: 1 }),
+				createMockRunCategoryXp({ currentXp: 5, pollsAnswered: 1 }),
+				createMockRunCategoryXp({ currentXp: 5, pollsAnswered: 1 }),
+				createMockRunCategoryXp({ currentXp: 5, pollsAnswered: 1 }),
 			];
 
 			const result =
@@ -162,8 +162,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 25,
 				requiredXp: 21, // Set 2 threshold
 				pollNumber: 6,
-				currentSet: 2,
-				pollInSet: 3,
+				currentRound: 2,
+				pollInRound: 3,
 				isThresholdCheckPoll: true,
 			});
 		});
@@ -179,8 +179,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 2,
 				requiredXp: 15, // Set 1 threshold
 				pollNumber: 1,
-				currentSet: 1,
-				pollInSet: 1,
+				currentRound: 1,
+				pollInRound: 1,
 				isThresholdCheckPoll: false,
 			});
 		});
@@ -195,8 +195,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 20,
 				requiredXp: 21, // Set 2 threshold
 				pollNumber: 4,
-				currentSet: 2,
-				pollInSet: 1,
+				currentRound: 2,
+				pollInRound: 1,
 				isThresholdCheckPoll: false,
 			});
 		});
@@ -210,8 +210,8 @@ describe("ThresholdCalculator", () => {
 				currentXp: 10,
 				requiredXp: 15, // Set 1 threshold
 				pollNumber: 3,
-				currentSet: 1,
-				pollInSet: 3,
+				currentRound: 1,
+				pollInRound: 3,
 				isThresholdCheckPoll: true,
 			});
 		});
