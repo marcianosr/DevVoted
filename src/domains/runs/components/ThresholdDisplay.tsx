@@ -10,14 +10,14 @@ export const ThresholdDisplay = ({ thresholdInfo }: ThresholdDisplayProps) => {
 			<div className="flex items-center justify-between">
 				<div>
 					<div className="font-medium text-white">
-						Set {thresholdInfo.currentSet} Threshold
+						Set {thresholdInfo.currentRound} Threshold
 					</div>
 					<div className="text-sm text-white">
 						{thresholdInfo.currentXp} / {thresholdInfo.requiredXp}{" "}
 						XP total for this set
 					</div>
 				</div>
-				<div className="text-right">
+				{/* <div className="text-right">
 					{thresholdInfo.isThresholdCheckPoll ? (
 						// This is a threshold check poll (3rd poll in set)
 						thresholdInfo.meetsThreshold && (
@@ -37,7 +37,7 @@ export const ThresholdDisplay = ({ thresholdInfo }: ThresholdDisplayProps) => {
 							more XP
 						</span>
 					)}
-				</div>
+				</div> */}
 			</div>
 		</div>
 	);

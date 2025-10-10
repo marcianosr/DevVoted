@@ -26,17 +26,15 @@ export const StorageDeck = ({ run }: StorageDeckProps) => {
 				<h3 className="text-lg font-semibold">Storage Deck</h3>
 				<div className="text-sm text-gray-600">
 					{formatStorage(storageUsed)} / {formatStorage(storageLimit)}
+					{storageAvailable > 0 && (
+						<div className="text-green-600 font-medium">
+							{formatStorage(storageAvailable)} available
+						</div>
+					)}
 				</div>
 			</div>
-
-			<div className="w-full bg-gray-200 rounded-full h-3">
-				<div
-					className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-					style={{ width: `${Math.min(usagePercentage, 100)}%` }}
-				/>
-			</div>
-
-			<div className="grid grid-cols-[1fr,1fr,1fr,1fr,1fr] gap-3">
+			<meter value={storageUsed} max={storageLimit} />
+			<div className="grid grid-cols-4 gap-3">
 				{activeConfigs.length === 0 ? (
 					<div className="text-center text-gray-500 py-8">
 						<p>No configs installed</p>
@@ -62,11 +60,6 @@ export const StorageDeck = ({ run }: StorageDeckProps) => {
 			</div>
 
 			<div className="text-sm space-y-1">
-				{storageAvailable > 0 && (
-					<div className="text-green-600 font-medium">
-						{formatStorage(storageAvailable)} available
-					</div>
-				)}
 				<div className="flex justify-between text-gray-500">
 					<span>Configs: {formatStorage(configsStorage)}</span>
 					{rerollsStorage > 0 && (

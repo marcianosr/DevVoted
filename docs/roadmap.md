@@ -49,6 +49,7 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Config costs
     [] XP gain balance
 
+[o] Some UI polish so it isn't a mess
 [] Onboarding/help modal for first-time users [Critical]
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [] Show clear disable button in config when storage is full on "purchase"
@@ -56,12 +57,14 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Upgrade packages
 [] Authentication (GitHub/Google)
 [] CI/CD and Deployment
-[] Some UI polish so it isn't a mess
 [] Test daily poll cycle
 [] Fix refresh-to-reanswer bug [Critical]
 [] Reroll bug: when rerolling it walks behind
 [] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
 [] Check RLS
+[] remove "correct/incorrect"
+[] remove "home" and also from navigation
+[] Auth polls list? (in navi)
 
 Season 2: Early Meta Layer
 [] Events table - Traceability

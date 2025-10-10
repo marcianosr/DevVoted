@@ -35,6 +35,10 @@ import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { ScoreDisplay } from "./ScoreDisplay";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
+import { PollMetaData } from "./PollMetaData";
+import { getCategoryMetadata } from "~/domains/shared/categories";
+import { calculateNextPollThresholdFromCategoryData } from "~/domains/runs/services/thresholdCalculator.service";
+import { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -205,57 +209,159 @@ const PollContent: React.FC<PollContentProps> = ({
 		return <ErrorComponent text="Sorry, this poll is closed today!" />;
 	}
 
-	return (
-		<>
-			<PollQuestionDisplay poll={poll} />
-			<PollStatus hasAnswered={hasAnswered} />
-			{/* <RunStatusDisplay activeRun={activeRun} /> */}
+	const categoryMeta = getCategoryMetadata(poll.categoryCode);
 
-			{activeRun && (
-				<>
-					<ScoreDisplay
-						run={activeRun}
-						category={poll.categoryCode}
-					/>
-					<StorageDeck run={activeRun} />
-				</>
-			)}
-			{!isShopOpen && (
-				<PollSubmissionForm
-					hasAnswered={hasAnswered}
-					submitMutation={submitOptionsMutation}
-					isSubmitting={form.state.isSubmitting}
-					onSubmit={(e) => {
-						e.preventDefault();
-						form.handleSubmit();
-					}}
-				>
-					<form.Field
-						name="selectedOptions"
-						children={(field) => (
-							<PollOptions
-								poll={poll}
-								options={options}
-								field={field}
-								disabled={hasAnswered}
-								disabledOptionIds={
-									effectProps?.disabledOptionIds
-								}
-							/>
+	const thresholdInfo =
+		activeRun && activeRun.categoryXp
+			? calculateNextPollThresholdFromCategoryData(
+					activeRun.categoryXp.map((xp: RunCategoryXp) => ({
+						currentXp: xp.currentXp,
+						pollsAnswered: xp.pollsAnswered,
+					}))
+				)
+			: null;
+
+	console.log("Threshold Info:", thresholdInfo);
+	return (
+		<section
+			data-category={poll.categoryCode}
+			className={`min-h-screen p-4`}
+		>
+			<div className="max-w-7xl mx-auto">
+				<section className="grid grid-cols-12 gap-4">
+					<div className="col-span-4">
+						{/* <div className=" text-saffron font-bold flex items-center gap-2">
+							<span>●</span> {categoryMeta.name}
+						</div> */}
+						<div className="text-saffron p-4 flex flex-col mb-4 border-b border-saffron">
+							<span className="font-extrabold text-lg mb-2">
+								Round {thresholdInfo?.currentRound} - Poll{" "}
+								{thresholdInfo?.pollInRound}/3
+							</span>
+
+							<div>
+								<span className="font-bold text-lg">
+									{thresholdInfo?.currentXp} XP
+								</span>
+								<meter
+									min={0}
+									value={thresholdInfo?.currentXp}
+									max={thresholdInfo?.requiredXp}
+								></meter>
+							</div>
+
+							<span className="font-bold text-lg text-right">
+								Round goal = {thresholdInfo?.requiredXp} XP
+							</span>
+
+							<span>
+								{thresholdInfo?.isThresholdCheckPoll && (
+									<span
+										className={`mt-2 inline-block px-2 py-1 text-xs font-medium ${
+											thresholdInfo?.meetsThreshold
+												? "bg-green-600 text-green-100"
+												: "bg-red-600 text-red-100"
+										}`}
+									>
+										{thresholdInfo?.meetsThreshold
+											? "You succeeded this round by meeting the XP goal!"
+											: "You failed this round by not meeting the XP goal."}
+									</span>
+								)}
+							</span>
+							{/* {thresholdInfo && (
+				<div className="mb-4">
+					<div className="text-sm text-white mb-2">
+						<span className="font-medium">
+							Set {thresholdInfo.currentSet}
+						</span>
+						{" - "}
+						<span>Poll {thresholdInfo.pollInSet}/3</span>
+						{thresholdInfo.isThresholdCheckPoll && (
+							<span className="ml-2 px-2 py-1 bg-yellow-600 text-yellow-100  text-xs font-medium">
+								THRESHOLD CHECK
+							</span>
 						)}
-					/>
-				</PollSubmissionForm>
-			)}
-			{isShopOpen && activeRun && (
-				<Shop
-					activeRun={activeRun}
-					offeredConfigs={randomConfigs}
-					onReroll={handleReroll}
-					lastScoreBreakdown={lastScoreBreakdown}
-					categoryCode={poll.categoryCode}
-				/>
-			)}
-		</>
+					</div>
+					<ThresholdDisplay thresholdInfo={thresholdInfo} />
+				</div>
+			)} */}
+
+							{/* Proceed to Round 2 → */}
+							{/* { next goal : 550 XP} */}
+						</div>
+						{activeRun && (
+							<RunStatusDisplay activeRun={activeRun} />
+						)}
+						{/* <ul className="text-gray-400 text-xs">
+							<li>Poll #{poll.id}</li>
+							<li>Run #{activeRun?.id}</li>
+							<li>Amp x1.4</li>
+						</ul> */}
+
+						{/*
+						<div className="border-t border-saffron pt-4">
+							<PollStatus hasAnswered={hasAnswered} />
+						</div>
+						 */}
+					</div>
+
+					{/* Main content area - terminal style */}
+					<div className="col-span-8">
+						<div className={`mb-4 p-4`}>
+							<div className="py-4">
+								{activeRun && (
+									<div className="text-saffron">
+										<StorageDeck run={activeRun} />
+									</div>
+								)}
+							</div>
+						</div>
+						<div className=" p-4">
+							{/* Question display with category color accent */}
+							<PollQuestionDisplay poll={poll} />
+
+							{!isShopOpen && (
+								<PollSubmissionForm
+									hasAnswered={hasAnswered}
+									submitMutation={submitOptionsMutation}
+									isSubmitting={form.state.isSubmitting}
+									onSubmit={(e) => {
+										e.preventDefault();
+										form.handleSubmit();
+									}}
+								>
+									<form.Field
+										name="selectedOptions"
+										children={(field) => (
+											<PollOptions
+												poll={poll}
+												options={options}
+												field={field}
+												disabled={hasAnswered}
+												disabledOptionIds={
+													effectProps?.disabledOptionIds
+												}
+											/>
+										)}
+									/>
+								</PollSubmissionForm>
+							)}
+
+							{isShopOpen && activeRun && (
+								<Shop
+									activeRun={activeRun}
+									offeredConfigs={randomConfigs}
+									onReroll={handleReroll}
+									lastScoreBreakdown={lastScoreBreakdown}
+									categoryCode={poll.categoryCode}
+								/>
+							)}
+						</div>
+					</div>
+				</section>
+			</div>
+		</section>
 	);
 };
 

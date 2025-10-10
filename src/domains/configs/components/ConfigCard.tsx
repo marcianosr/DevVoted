@@ -22,22 +22,22 @@ export const ConfigCard = ({
 		common: {
 			badge: "bg-gray-500 text-white",
 			border: "border-gray-400",
-			glow: ""
+			glow: "",
 		},
 		uncommon: {
 			badge: "bg-green-500 text-white",
 			border: "border-green-400",
-			glow: ""
+			glow: "",
 		},
 		rare: {
 			badge: "bg-purple-500 text-white",
 			border: "border-purple-400",
-			glow: "shadow-purple-200"
+			glow: "shadow-purple-200",
 		},
 		legendary: {
 			badge: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
 			border: "border-orange-400",
-			glow: "shadow-orange-200"
+			glow: "shadow-orange-200",
 		},
 	};
 
@@ -48,9 +48,7 @@ export const ConfigCard = ({
 
 	return (
 		<div
-			className={`border-2 p-4 cursor-pointer transition-all ${selectedStyle} ${
-				disabled ? "opacity-50 cursor-not-allowed" : `hover:shadow-lg ${rarity.glow}`
-			}`}
+			className={`border-2 p-4 cursor-pointer transition-all ${selectedStyle} ${`hover:shadow-lg ${rarity.glow}`}`}
 			onClick={disabled ? undefined : onToggle}
 			data-testid={config.id}
 		>
@@ -80,8 +78,6 @@ export const ConfigCard = ({
 				<div className="flex items-center justify-between text-xs text-gray-500">
 					<span>Cost: {formatStorage(config.cost)}</span>
 				</div>
-
-				{config.level ? <div>{config.level}</div> : null}
 
 				{isSelected && (
 					<div className="flex items-center gap-1 text-blue-600 text-sm font-medium">

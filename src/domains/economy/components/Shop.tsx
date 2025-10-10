@@ -29,7 +29,7 @@ export const Shop = ({
 	const canReroll = storageAvailable >= rerollCost;
 
 	return (
-		<div className="p-6">
+		<div>
 			{/* Score Breakdown Display */}
 			{lastScoreBreakdown && categoryCode && (
 				<ScoreBreakdownDisplay
@@ -62,7 +62,7 @@ export const Shop = ({
 				</button>
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+			<div className="grid grid-cols-3 gap-4 mb-6">
 				{/* offeredConfigs should be a filtered list of unique configs */}
 				{offeredConfigs.map((config) => {
 					const actions = useConfigCardActions({
@@ -70,6 +70,9 @@ export const Shop = ({
 						config,
 						mode: "shop",
 					});
+
+					console.log("Rendering ConfigCard for config:", config);
+					console.log("With actions:", actions);
 
 					return (
 						<ConfigCard
