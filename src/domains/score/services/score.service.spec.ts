@@ -5,6 +5,7 @@ import {
 	singleCorrectnessFactor,
 	multiCorrectnessFactor,
 	calculateXP,
+	calculateDisplayAmp,
 	orchestrateScoreCalculation,
 	calculatePollScoreForProgression,
 } from "./score.service";
@@ -87,6 +88,27 @@ describe("score.service", () => {
 			// Edge case: all options are correct and user picks all
 			const result = multiCorrectnessFactor(5, 5, 0);
 			expect(result).toBe(1.5); // Still perfect
+		});
+	});
+
+	describe("calculateDisplayAmp", () => {
+		it("returns base amp with no config bonus", () => {
+			expect(calculateDisplayAmp(0)).toBe(1.0);
+			expect(calculateDisplayAmp(5)).toBe(1.5);
+		});
+
+		it("combines streak amp with positive config bonus", () => {
+			expect(calculateDisplayAmp(2, 0.5)).toBe(1.7); // 1.2 + 0.5
+			expect(calculateDisplayAmp(5, 0.3)).toBe(1.8); // 1.5 + 0.3
+		});
+
+		it("allows negative config bonus", () => {
+			expect(calculateDisplayAmp(5, -0.3)).toBe(1.2); // 1.5 - 0.3
+			expect(calculateDisplayAmp(0, -0.5)).toBe(0.5); // 1.0 - 0.5
+		});
+
+		it("works with zero streak and positive config bonus", () => {
+			expect(calculateDisplayAmp(0, 0.5)).toBe(1.5); // 1.0 + 0.5
 		});
 	});
 

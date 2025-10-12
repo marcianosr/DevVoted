@@ -33,7 +33,10 @@ import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
-import { PollScoreBreakdown } from "~/domains/score/services/score.service";
+import {
+	PollScoreBreakdown,
+	calculateDisplayAmp,
+} from "~/domains/score/services/score.service";
 import { calculateNextPollThresholdFromCategoryData } from "~/domains/runs/services/thresholdCalculator.service";
 import { getCategories } from "~/domains/shared/categories";
 
@@ -215,6 +218,14 @@ const PollContent: React.FC<PollContentProps> = ({
 		activeRun && activeRun.categoryXp
 			? calculateNextPollThresholdFromCategoryData(activeRun.categoryXp)
 			: null;
+
+	// Calculate current amp for display
+	const currentCategoryXp = activeRun?.categoryXp.find(
+		(xp) => xp.categoryCode === poll.categoryCode
+	);
+	const currentStreak = currentCategoryXp?.currentStreak ?? 0;
+	const configAmpBonus = effectProps?.amp ?? 0;
+	const totalAmp = calculateDisplayAmp(currentStreak, configAmpBonus);
 
 	return (
 		<section

@@ -60,7 +60,7 @@ export const runStatus = pgEnum("run_status", ["finished", "active"]);
  */
 export const seasonStatus = pgEnum("season_status", [
 	"upcoming",
-	"active", 
+	"active",
 	"finished",
 	"archived",
 ] as const);
@@ -204,8 +204,9 @@ export const runsTable = pgTable("runs", {
 	user_id: uuid("user_id")
 		.references(() => usersTable.id, { onDelete: "cascade" })
 		.notNull(),
-	season_id: integer("season_id")
-		.references(() => seasonsTable.id, { onDelete: "set null" }), // Nullable for backward compatibility with pre-season runs
+	season_id: integer("season_id").references(() => seasonsTable.id, {
+		onDelete: "set null",
+	}), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	active_config_ids: json("active_config_ids")
@@ -279,6 +280,7 @@ export const seasonsTable = pgTable("seasons", {
 });
 
 /**
+ *  This is a read optimization pattern - leaderboards are read thousands of times but written once per run. The duplication is intentional and beneficial. No expensive JOINs needed when displaying leaderboards.
  * Leaderboard Table
  * Pre-computed leaderboard entries for completed runs
  * - Created when a run finishes to enable fast leaderboard queries
@@ -293,8 +295,9 @@ export const leaderboardTable = pgTable("leaderboard", {
 	run_id: integer("run_id")
 		.references(() => runsTable.id, { onDelete: "cascade" })
 		.notNull(), // Multiple leaderboard entries allowed for run history
-	season_id: integer("season_id")
-		.references(() => seasonsTable.id, { onDelete: "set null" }), // Nullable for pre-season runs
+	season_id: integer("season_id").references(() => seasonsTable.id, {
+		onDelete: "set null",
+	}), // Nullable for pre-season runs
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
 		.notNull(), // Category for this leaderboard entry

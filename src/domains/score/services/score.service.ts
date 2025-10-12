@@ -6,6 +6,21 @@ export const getRoundXP = (round: number) => round * 10;
 export const getStreakAmp = (streak: number) =>
 	Math.min(1 + 0.1 * streak, CAP_MULT);
 
+/**
+ * Calculates the total amp for display purposes
+ * Combines base streak amp with config bonuses
+ * @param streak - Current streak count
+ * @param configAmpAdd - Additional amp bonus from active configs (default: 0)
+ * @returns Total amp multiplier for display
+ */
+export const calculateDisplayAmp = (
+	streak: number,
+	configAmpAdd: number = 0
+): number => {
+	const baseAmp = getStreakAmp(streak);
+	return baseAmp + configAmpAdd;
+};
+
 export type PollAnswerOutcome = "full" | "partial" | "wrong";
 
 export const outcomeSingle = (isCorrect: boolean): PollAnswerOutcome =>
