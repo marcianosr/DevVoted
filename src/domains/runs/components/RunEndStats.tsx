@@ -1,11 +1,11 @@
 import { CategoryCode } from "~/domains/shared/categories";
 
 interface RunEndStatsProps {
-	totalXp: number;
+	totalCoverage: number;
 	totalPollsAnswered: number;
 	categoryXp: {
 		categoryCode: CategoryCode;
-		currentXp: number;
+		currentCoverage: number;
 		currentStreak: number;
 		bestStreak: number;
 		pollsAnswered: number;
@@ -15,7 +15,7 @@ interface RunEndStatsProps {
 }
 
 export const RunEndStats = ({
-	totalXp,
+	totalCoverage,
 	totalPollsAnswered,
 	categoryXp,
 	duration,
@@ -56,10 +56,10 @@ export const RunEndStats = ({
 				<div className="grid grid-cols-2 gap-4">
 					<div className="text-center">
 						<div className="text-3xl font-bold text-blue-600">
-							{totalXp}
+							{totalCoverage}%
 						</div>
 						<div className="text-sm text-gray-600">
-							Total XP Earned
+							Total Coverage Earned
 						</div>
 					</div>
 					<div className="text-center">
@@ -94,7 +94,7 @@ export const RunEndStats = ({
 							</div>
 							<div className="text-right">
 								<div className="font-bold text-lg">
-									{category.currentXp} XP
+									{category.currentCoverage}%
 								</div>
 								<div className="text-sm text-gray-600">
 									Streak: {category.currentStreak}

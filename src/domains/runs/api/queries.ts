@@ -55,7 +55,7 @@ export const createRunForUser = async (userId: string) => {
 
 		const categories = await tx.select().from(pollCategoriesTable);
 
-		// Create XP records for each category
+		// Create coverage records for each category
 		const xpRecords = await Promise.all(
 			categories.map((category) =>
 				tx
@@ -63,7 +63,7 @@ export const createRunForUser = async (userId: string) => {
 					.values({
 						run_id: runRecord.id,
 						category_code: category.code,
-						current_xp: 0,
+						current_coverage: 0,
 						current_streak: 0,
 						best_streak: 0,
 						polls_answered: 0,
@@ -117,14 +117,14 @@ export const finishRun = async (runId: number) => {
 	return runRecord ? runFactory.toDTO(runRecord) : null;
 };
 
-// Helper function to calculate total XP across all categories in a run
-export const getTotalXpForRun = async (runId: number): Promise<number> => {
+// Helper function to calculate total coverage across all categories in a run
+export const getTotalCoverageForRun = async (runId: number): Promise<number> => {
 	const xpRecords = await db
 		.select()
 		.from(runCategoryXpTable)
 		.where(eq(runCategoryXpTable.run_id, runId));
 
-	return xpRecords.reduce((total, record) => total + record.current_xp, 0);
+	return xpRecords.reduce((total, record) => total + record.current_coverage, 0);
 };
 
 // Helper function to get the total polls answered across all categories
@@ -160,14 +160,14 @@ export const createCategoryLeaderboardEntries = async (
 	userId: string,
 	runId: number,
 	seasonId: number | null,
-	totalXp: number,
+	totalCoverage: number,
 	totalPollsAnswered: number,
 	overallBestStreak: number
 ) => {
 	// Get ALL categories from database
 	const allCategories = await db.select().from(pollCategoriesTable);
 
-	// Get category-specific XP data for this run
+	// Get category-specific coverage data for this run
 	const categoryXpRecords = await db
 		.select()
 		.from(runCategoryXpTable)
@@ -180,7 +180,7 @@ export const createCategoryLeaderboardEntries = async (
 
 	const leaderboardEntries = [];
 
-	// Create one leaderboard entry per category (whether or not they have XP records)
+	// Create one leaderboard entry per category (whether or not they have coverage records)
 	for (const category of allCategories) {
 		const categoryXp = categoryXpMap.get(category.code);
 
@@ -191,9 +191,9 @@ export const createCategoryLeaderboardEntries = async (
 				run_id: runId,
 				season_id: seasonId,
 				category_code: category.code,
-				category_xp:
-					categoryXp?.final_xp ?? categoryXp?.current_xp ?? 0, // Use final_xp after threshold failure, current_xp otherwise
-				total_xp: totalXp,
+				category_coverage:
+					categoryXp?.final_coverage ?? categoryXp?.current_coverage ?? 0, // Use final_coverage after threshold failure, current_coverage otherwise
+				total_coverage: totalCoverage,
 				best_streak: categoryXp?.best_streak ?? 0,
 				polls_answered: categoryXp?.polls_answered ?? 0,
 				completed_at: new Date(),
@@ -206,20 +206,20 @@ export const createCategoryLeaderboardEntries = async (
 	return leaderboardEntries;
 };
 
-export const awardXpToRun = async (
+export const awardCoverageToRun = async (
 	runId: number,
 	categoryCode: CategoryCode,
-	newXp: number,
+	newCoverage: number,
 	newStreak: number,
 	newBestStreak: number,
 	newPollsAnswered: number
 ) => {
 	return await db.transaction(async (tx) => {
-		// Update the XP record with pre-calculated values
+		// Update the coverage record with pre-calculated values
 		const [updatedRecord] = await tx
 			.update(runCategoryXpTable)
 			.set({
-				current_xp: newXp,
+				current_coverage: newCoverage,
 				current_streak: newStreak,
 				best_streak: newBestStreak,
 				polls_answered: newPollsAnswered,
@@ -264,7 +264,7 @@ export const getLastRunFromUser = async (userId: string) => {
 	const xpRecords = await db
 		.select({
 			categoryCode: runCategoryXpTable.category_code,
-			currentXp: sql<number>`COALESCE(${runCategoryXpTable.final_xp}, ${runCategoryXpTable.current_xp})`,
+			currentCoverage: sql<number>`COALESCE(${runCategoryXpTable.final_coverage}, ${runCategoryXpTable.current_coverage})`,
 			currentStreak: sql<number>`COALESCE(${runCategoryXpTable.final_streak}, ${runCategoryXpTable.current_streak})`,
 			bestStreak: runCategoryXpTable.best_streak,
 			pollsAnswered: runCategoryXpTable.polls_answered,
@@ -275,7 +275,7 @@ export const getLastRunFromUser = async (userId: string) => {
 	return {
 		run: lastRunRecord[0],
 		categoryXp: xpRecords,
-		totalXp: xpRecords.reduce((sum, xp) => sum + xp.currentXp, 0),
+		totalCoverage: xpRecords.reduce((sum, xp) => sum + xp.currentCoverage, 0),
 		totalPollsAnswered: xpRecords.reduce(
 			(sum, xp) => sum + xp.pollsAnswered,
 			0
@@ -290,7 +290,7 @@ export const completeRunWithThresholdFailure = async (runId: number) => {
 		await tx
 			.update(runCategoryXpTable)
 			.set({
-				final_xp: sql`current_xp`,
+				final_coverage: sql`current_coverage`,
 				final_streak: sql`current_streak`,
 			})
 			.where(eq(runCategoryXpTable.run_id, runId));
@@ -308,7 +308,7 @@ export const completeRunWithThresholdFailure = async (runId: number) => {
 		await tx
 			.update(runCategoryXpTable)
 			.set({
-				current_xp: 0,
+				current_coverage: 0,
 				current_streak: 0,
 				polls_answered: 0,
 			})
@@ -374,7 +374,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				userId: runsTable.user_id,
 				displayName: usersTable.display_name,
 				runId: runsTable.id,
-				totalXp: runCategoryXpTable.current_xp, // Category XP only
+				totalCoverage: runCategoryXpTable.current_coverage, // Category coverage only
 				totalPollsAnswered: runCategoryXpTable.polls_answered, // Category polls only
 				bestStreak: runCategoryXpTable.best_streak, // Category streak only
 				categoryCode: runCategoryXpTable.category_code,
@@ -391,18 +391,18 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 					eq(runCategoryXpTable.category_code, categoryCode)
 				)
 			)
-			.orderBy(desc(runCategoryXpTable.current_xp))
+			.orderBy(desc(runCategoryXpTable.current_coverage))
 			.limit(10);
 
 		return categoryRankings;
 	} else {
-		// Get overall live rankings (total XP across all categories)
+		// Get overall live rankings (total coverage across all categories)
 		const activeRuns = await db
 			.select({
 				userId: runsTable.user_id,
 				displayName: usersTable.display_name,
 				runId: runsTable.id,
-				totalXp: sql<number>`COALESCE(SUM(${runCategoryXpTable.current_xp}), 0)`,
+				totalCoverage: sql<number>`COALESCE(SUM(${runCategoryXpTable.current_coverage}), 0)`,
 				totalPollsAnswered: sql<number>`COALESCE(SUM(${runCategoryXpTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryXpTable.best_streak}), 0)`,
 			})
@@ -415,7 +415,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 			.where(eq(runsTable.status, "active"))
 			.groupBy(runsTable.user_id, usersTable.display_name, runsTable.id)
 			.orderBy(
-				sql`COALESCE(SUM(${runCategoryXpTable.current_xp}), 0) DESC`
+				sql`COALESCE(SUM(${runCategoryXpTable.current_coverage}), 0) DESC`
 			)
 			.limit(10);
 

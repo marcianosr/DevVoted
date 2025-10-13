@@ -1,25 +1,8 @@
-import { getCurrentRoundNumber } from "~/domains/runs/services/thresholdCalculator.service";
-
-const CAP_MULT = 1000;
-export const getRoundXP = (round: number) => round * 10;
-// +10% per correct-in-a-row, capped at +80%
-export const getStreakAmp = (streak: number) =>
-	Math.min(1 + 0.1 * streak, CAP_MULT);
-
 /**
- * Calculates the total amp for display purposes
- * Combines base streak amp with config bonuses
- * @param streak - Current streak count
- * @param configAmpAdd - Additional amp bonus from active configs (default: 0)
- * @returns Total amp multiplier for display
+ * Coverage-based scoring: 1% per correct poll answer
+ * Simplified from the previous XP/amp system
  */
-export const calculateDisplayAmp = (
-	streak: number,
-	configAmpAdd: number = 0
-): number => {
-	const baseAmp = getStreakAmp(streak);
-	return baseAmp + configAmpAdd;
-};
+const COVERAGE_PER_CORRECT = 1; // 1% coverage per fully correct answer
 
 export type PollAnswerOutcome = "full" | "partial" | "wrong";
 
@@ -75,11 +58,13 @@ export const multiCorrectnessFactor = (
 	return Math.min(adjustedScore, 1.0); // Cap at 1.0 for messy partials
 };
 
-export const calculateXP = (
-	correctnessFactor: number,
-	baseXP: number
-): number => {
-	return Math.round(baseXP * correctnessFactor);
+/**
+ * Calculates coverage earned based on correctness factor
+ * @param correctnessFactor - 0-1.5 based on answer quality
+ * @returns Coverage percentage earned (0-1.5%)
+ */
+export const calculateCoverage = (correctnessFactor: number): number => {
+	return Math.round(COVERAGE_PER_CORRECT * correctnessFactor);
 };
 
 export const calculateStreakUpdate = (
@@ -97,68 +82,38 @@ export const calculateBestStreak = (
 };
 
 export type PollScoreBreakdown = {
-	round: number;
 	streak: number;
-	base: number;
-	amp: number;
-	earnedXP: number;
+	earnedCoverage: number;
 	delta: number;
 };
 
 /**
  * Calculates the score breakdown for a poll answer.
  *
- * Score Pipeline:
- * 1. Base XP = round * 10 (e.g., round 2 = 20 XP)
- * 2. Base Amp = 1 + (0.1 * streak), capped at 3.0 (e.g., streak 1 = 1.1x)
- * 3. Config modifiers applied: amp = baseAmp * configAmpMul + configAmpAdd
- * 4. Raw XP = base * amp (e.g., 20 * 1.4 = 28)
- * 5. Final XP = rawXP + configXpAdd
+ * Coverage Pipeline (Simplified):
+ * 1. Base coverage = 1% per correct answer
+ * 2. Correctness factor applied (0-1.5x based on answer quality)
  *
- * Note: This calculates pre-correctness XP. The correctness factor (0-1.5x)
- * is applied later in orchestrateScoreCalculation.
+ * Note: Streaks are tracked for display/stats but don't affect scoring
  *
- * @example
- * // Round 2, streak 1, with +0.3 amp from configs
- * calculatePollScoreForProgression(5, 1, 1, 0.3, 0)
- * // Returns: { base: 20, amp: 1.4, earnedXP: 28, ... }
+ * @param streak - Current streak count (for display only)
+ * @returns Score breakdown with earned coverage
  */
 export const calculatePollScoreForProgression = (
-	pollsAnswered: number,
-	streak: number,
-	configAmpMul: number = 1,
-	configAmpAdd: number = 0,
-	configXpAdd: number = 0
+	streak: number
 ): PollScoreBreakdown => {
-	// Step 1: Determine round and base XP (e.g., round 2 = 20 XP)
-	const round = getCurrentRoundNumber(pollsAnswered);
-	const base = getRoundXP(round);
-
-	// Step 2: Calculate streak amp (e.g., streak 1 = 1.1x)
-	const baseAmp = getStreakAmp(streak);
-
-	// Step 3: Apply config modifiers (multiplicative first, then additive)
-	const rawAmp = baseAmp * configAmpMul + configAmpAdd;
-	// Round to 1 decimal to avoid floating-point issues (1.0999... → 1.1)
-	const amp = Math.max(0, Math.round(rawAmp * 10) / 10);
-
-	// Step 4: Calculate XP (base * amp + flat bonus)
-	const rawXP = Math.round(base * amp);
-	const earnedXP = Math.max(0, rawXP + configXpAdd);
-	const delta = earnedXP;
+	// In coverage system, base is always 1% before correctness factor
+	const earnedCoverage = COVERAGE_PER_CORRECT;
 
 	return {
-		round,
 		streak,
-		base,
-		amp,
-		earnedXP,
-		delta,
+		earnedCoverage,
+		delta: earnedCoverage,
 	};
 };
 
 export type ScoreCalculation = {
-	newTotalXP: number;
+	newTotalCoverage: number;
 	newBestStreak: number;
 	newStreak: number;
 	newPollsAnswered: number;
@@ -166,82 +121,83 @@ export type ScoreCalculation = {
 };
 
 type OrchestrateScoreCalculationParams = {
-	currentXP: number;
+	currentCoverage: number;
 	currentStreak: number;
 	currentBestStreak: number;
 	totalPollsAnswered: number;
 	correctnessFactor: number;
-	configAmpMul?: number;
-	configAmpAdd?: number;
-	configXpAdd?: number;
+	coverageAdd?: number; // Additive coverage bonus from configs (e.g., +0.5%)
+	coverageMul?: number; // Multiplicative coverage modifier from configs (e.g., x1.5)
 };
 
 /**
  * Orchestrates the complete score calculation including streak updates and correctness.
  *
- * Complete Score Pipeline:
+ * Complete Coverage Pipeline:
  * 1. Update streak based on correctness (correct = +1, wrong = reset to 0)
- * 2. Calculate base score via calculatePollScoreForProgression
+ * 2. Calculate base coverage (1%)
  * 3. Apply correctness factor multiplier:
- *    - Wrong answer: 0x
- *    - Partial multi-choice: 0.5-1.0x
- *    - Perfect single/multi: 1.0x
- *    - Perfect multi-choice: 1.5x bonus
- * 4. Add to running total XP
+ *    - Wrong answer: 0x (0% coverage)
+ *    - Partial multi-choice: 0.5-1.0x (0.5-1% coverage)
+ *    - Perfect single/multi: 1.0x (1% coverage)
+ *    - Perfect multi-choice: 1.5x (1.5% coverage bonus)
+ * 4. Apply config multiplicative modifier (if present): result * coverageMul
+ * 5. Apply config additive modifier (if present): result + coverageAdd
+ * 6. Add to running total coverage
  *
  * @example
- * // Perfect multi-choice answer with configs
+ * // Perfect multi-choice answer with .js config (+0.5% coverage)
  * orchestrateScoreCalculation({
- *   currentXP: 100,
+ *   currentCoverage: 10,
  *   currentStreak: 0,
  *   totalPollsAnswered: 4,
  *   correctnessFactor: 1.5,  // Perfect multi-choice
- *   configAmpAdd: 0.3        // From active configs
+ *   coverageAdd: 0.5,        // .js config bonus
  * })
- * // Returns: { newTotalXP: 142, breakdown: { earnedXP: 42, ... } }
+ * // Returns: { newTotalCoverage: 12, breakdown: { earnedCoverage: 2, ... } }
+ * // (1% base * 1.5 correctness = 1.5%, rounds to 2%, + 0.5% config = 2.5%, rounds to 3%)
  */
 export const orchestrateScoreCalculation = ({
-	currentXP,
+	currentCoverage,
 	currentStreak,
 	currentBestStreak,
 	totalPollsAnswered,
 	correctnessFactor,
-	configAmpAdd,
-	configAmpMul,
-	configXpAdd,
+	coverageAdd = 0,
+	coverageMul = 1,
 }: OrchestrateScoreCalculationParams): ScoreCalculation => {
 	// Step 1: Update streak (continues on correct, resets on wrong)
 	const newStreak = calculateStreakUpdate(currentStreak, correctnessFactor);
 	const newBestStreak = calculateBestStreak(currentBestStreak, newStreak);
 	const newPollsAnswered = totalPollsAnswered + 1;
 
-	// Step 2: Calculate base score with config modifiers
-	const { base, amp, round, streak, earnedXP } =
-		calculatePollScoreForProgression(
-			newPollsAnswered,
-			newStreak,
-			configAmpMul,
-			configAmpAdd,
-			configXpAdd
-		);
+	// Step 2: Calculate base coverage
+	const { streak, earnedCoverage } =
+		calculatePollScoreForProgression(newStreak);
 
 	// Step 3: Apply correctness multiplier (0-1.5x based on answer quality)
-	// Example: earnedXP=28 * correctness=1.5 (perfect multi) = 42 XP
-	const actualEarnedXP = Math.round(earnedXP * correctnessFactor);
-	const newTotalXP = currentXP + actualEarnedXP;
+	// Example: earnedCoverage=1 * correctness=1.5 (perfect multi) = 1.5% coverage
+	let coverageWithCorrectness = earnedCoverage * correctnessFactor;
+
+	// Step 4: Apply config multiplicative modifier (e.g., x1.5 from config)
+	let coverageWithMul = coverageWithCorrectness * coverageMul;
+
+	// Step 5: Apply config additive modifier (e.g., +0.5% from .js config, or -0.3% from Math.random)
+	let coverageWithAdd = coverageWithMul + coverageAdd;
+
+	// Step 6: Round and add to total (avoid decimals)
+	const actualEarnedCoverage = Math.round(coverageWithAdd);
+	const newTotalCoverage = currentCoverage + actualEarnedCoverage;
 
 	return {
-		newTotalXP,
+		newTotalCoverage,
 		newBestStreak,
 		newStreak,
 		newPollsAnswered,
 		breakdown: {
-			round,
 			streak,
-			base,
-			amp,
-			earnedXP: actualEarnedXP,
-			delta: actualEarnedXP,
+			earnedCoverage: actualEarnedCoverage,
+			delta: actualEarnedCoverage,
 		},
 	};
 };

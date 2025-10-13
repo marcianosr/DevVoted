@@ -14,20 +14,20 @@ import * as seasonQueries from "~/domains/seasons/api/queries";
  */
 
 export const getGlobalLeaderboard = async (limit: number = 10): Promise<LeaderboardEntry[]> => {
-	return await leaderboardQueries.getTopRunsByTotalXp({ limit });
+	return await leaderboardQueries.getTopRunsByTotalCoverage({ limit });
 };
 
 export const getCurrentSeasonLeaderboard = async (limit: number = 10): Promise<LeaderboardEntry[]> => {
 	// Get the current season ID
 	const currentSeason = await seasonQueries.findCurrentSeason();
-	return await leaderboardQueries.getTopRunsByTotalXp({ 
+	return await leaderboardQueries.getTopRunsByTotalCoverage({ 
 		seasonId: currentSeason?.id || null,
 		limit 
 	});
 };
 
 export const getSeasonLeaderboard = async (seasonId: number | null, limit: number = 10): Promise<SeasonalLeaderboard> => {
-	const entries = await leaderboardQueries.getTopRunsByTotalXp({ seasonId, limit });
+	const entries = await leaderboardQueries.getTopRunsByTotalCoverage({ seasonId, limit });
 	
 	let seasonName: string | null = null;
 	if (seasonId) {
@@ -48,7 +48,7 @@ export const getStreakLeaderboard = async (filter: LeaderboardFilter = {}): Prom
 };
 
 export const getPreSeasonLeaderboard = async (limit: number = 10): Promise<LeaderboardEntry[]> => {
-	return await leaderboardQueries.getTopRunsByTotalXp({ seasonId: null, limit });
+	return await leaderboardQueries.getTopRunsByTotalCoverage({ seasonId: null, limit });
 };
 
 export const getAvailableSeasons = async () => {
@@ -59,7 +59,7 @@ export const getLeaderboardsForAllSeasons = async (limit: number = 10): Promise<
 	const seasons = await seasonQueries.findAllSeasons();
 	const leaderboards: SeasonalLeaderboard[] = await Promise.all(
 		seasons.map(async (season) => {
-			const entries = await leaderboardQueries.getTopRunsByTotalXp({ 
+			const entries = await leaderboardQueries.getTopRunsByTotalCoverage({ 
 				seasonId: season.id, 
 				limit 
 			});

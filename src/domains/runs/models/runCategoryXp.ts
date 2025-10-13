@@ -7,11 +7,11 @@ export type RunCategoryXp = {
 	id: number;
 	runId: number;
 	categoryCode: CategoryCode;
-	currentXp: number;
+	currentCoverage: number;
 	currentStreak: number;
 	bestStreak: number;
 	pollsAnswered: number;
-	finalXp: number | null;
+	finalCoverage: number | null;
 	finalStreak: number | null;
 	createdAt: Date;
 	updatedAt: Date | null;
@@ -26,11 +26,11 @@ export const runCategoryXpToDTO = (
 		id: record.id,
 		runId: record.run_id,
 		categoryCode: record.category_code as CategoryCode,
-		currentXp: record.current_xp,
+		currentCoverage: record.current_coverage,
 		currentStreak: record.current_streak,
 		bestStreak: record.best_streak,
 		pollsAnswered: record.polls_answered,
-		finalXp: record.final_xp,
+		finalCoverage: record.final_coverage,
 		finalStreak: record.final_streak,
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
@@ -44,11 +44,11 @@ export const runCategoryXpFromDTO = (
 		id: dto.id,
 		run_id: dto.runId,
 		category_code: dto.categoryCode,
-		current_xp: dto.currentXp,
+		current_coverage: dto.currentCoverage,
 		current_streak: dto.currentStreak,
 		best_streak: dto.bestStreak,
 		polls_answered: dto.pollsAnswered,
-		final_xp: dto.finalXp,
+		final_coverage: dto.finalCoverage,
 		final_streak: dto.finalStreak,
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
@@ -76,11 +76,11 @@ export const createRunCategoryXp = (
 		id: 0,
 		runId: 0,
 		categoryCode: "js" as CategoryCode,
-		currentXp: 0,
+		currentCoverage: 0,
 		currentStreak: 0,
 		bestStreak: 0,
 		pollsAnswered: 0,
-		finalXp: null,
+		finalCoverage: null,
 		finalStreak: null,
 		createdAt: now,
 		updatedAt: now,
@@ -96,11 +96,11 @@ export const createMockRunCategoryXp = (
 		id: 1,
 		runId: 1,
 		categoryCode: "js",
-		currentXp: 0,
+		currentCoverage: 0,
 		currentStreak: 0,
 		bestStreak: 0,
 		pollsAnswered: 0,
-		finalXp: null,
+		finalCoverage: null,
 		finalStreak: null,
 		createdAt: new Date("2024-01-01T00:00:00Z"),
 		updatedAt: new Date("2024-01-01T00:00:00Z"),
@@ -115,11 +115,11 @@ export const createMockRunCategoryXpRecord = (
 		id: 1,
 		run_id: 1,
 		category_code: "js",
-		current_xp: 0,
+		current_coverage: 0,
 		current_streak: 0,
 		best_streak: 0,
 		polls_answered: 0,
-		final_xp: null,
+		final_coverage: null,
 		final_streak: null,
 		created_at: new Date("2024-01-01T00:00:00Z"),
 		updated_at: new Date("2024-01-01T00:00:00Z"),

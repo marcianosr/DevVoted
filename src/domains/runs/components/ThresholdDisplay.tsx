@@ -10,34 +10,27 @@ export const ThresholdDisplay = ({ thresholdInfo }: ThresholdDisplayProps) => {
 			<div className="flex items-center justify-between">
 				<div>
 					<div className="font-medium text-white">
-						Set {thresholdInfo.currentRound} Threshold
+						Round {thresholdInfo.currentRound} Threshold
 					</div>
 					<div className="text-sm text-white">
-						{thresholdInfo.currentXp} / {thresholdInfo.requiredXp}{" "}
-						XP total for this set
+						{thresholdInfo.maxCoverage}% /{" "}
+						{thresholdInfo.requiredCoverage}% coverage required
 					</div>
 				</div>
-				{/* <div className="text-right">
-					{thresholdInfo.isThresholdCheckPoll ? (
-						// This is a threshold check poll (3rd poll in set)
-						thresholdInfo.meetsThreshold && (
-							<span className="text-green-600 font-medium">
-								✅ Set Complete!
-							</span>
-						)
-					) : // Not a threshold check poll yet
-					thresholdInfo.meetsThreshold ? (
-						<span className="text-green-600 font-medium">
+				<div className="text-right">
+					{thresholdInfo.meetsThreshold ? (
+						<span className="text-green-400 font-medium">
 							✅ On Track
 						</span>
 					) : (
-						<span className="text-orange-600 font-medium">
+						<span className="text-orange-400 font-medium">
 							⚠️ Need{" "}
-							{thresholdInfo.requiredXp - thresholdInfo.currentXp}{" "}
-							more XP
+							{thresholdInfo.requiredCoverage -
+								thresholdInfo.maxCoverage}
+							% more
 						</span>
 					)}
-				</div> */}
+				</div>
 			</div>
 		</div>
 	);

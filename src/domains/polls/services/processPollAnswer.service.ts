@@ -45,7 +45,7 @@ export const processPollAnswer = async (
 ): Promise<PollAnswerResult> => {
 	const { pollId, userId, selectedOptionIds, categoryCode } = params;
 
-	const { correctOptionIds, outcome, correctnessFactor } =
+	const { correctOptionIds, outcome, correctnessFactor, poll, options } =
 		await handleUserSelectedOptionsByPollType({
 			pollId,
 			selectedOptionIds,
@@ -65,10 +65,13 @@ export const processPollAnswer = async (
 		};
 	}
 
-	const { breakdown, newPollsAnswered } = await incrementRunProgress({
+	const { breakdown } = await incrementRunProgress({
 		categoryCode,
 		run: activeRun,
 		correctnessFactor,
+		poll,
+		options,
+		hasAnswered: false, // At this point, the answer is being submitted (not yet saved)
 	});
 
 	await createPollResponse({
@@ -80,15 +83,8 @@ export const processPollAnswer = async (
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
-	const updatedXPAfterAnsweringPoll = updatedRun.categoryXp.reduce(
-		(sum, xp) => sum + xp.currentXp,
-		0
-	);
-
-	const thresholdInfo = calculateThresholdInfo(
-		updatedXPAfterAnsweringPoll,
-		newPollsAnswered
-	);
+	// Calculate threshold based on category coverage data
+	const thresholdInfo = calculateThresholdInfo(updatedRun.categoryXp);
 
 	let runEnded = false;
 	let tryCatchUsed = false;
@@ -96,11 +92,11 @@ export const processPollAnswer = async (
 	// TODO: Refactor this so we can handle endless config possibilities
 	// This is done for now like so because of MVP
 	// Check if try/catch protection should prevent run failure
-	if (thresholdInfo.isThresholdCheckPoll && !thresholdInfo.meetsThreshold) {
+	if (!thresholdInfo.meetsThreshold) {
 		// Apply config effects to see if try/catch is active
 		const effectCtx = {
-			poll: { categoryCode },
-			options: [],
+			poll,
+			options,
 			hasAnswered: true,
 			run: updatedRun,
 		};
@@ -173,6 +169,8 @@ const handleUserSelectedOptionsByPollType = async ({
 		correctOptionIds,
 		outcome,
 		correctnessFactor,
+		poll: pollWithOptions.poll,
+		options: pollWithOptions.options,
 	};
 };
 

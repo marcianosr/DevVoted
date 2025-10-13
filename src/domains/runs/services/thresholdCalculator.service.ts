@@ -1,151 +1,87 @@
 import type { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
-import { aggregateRunCategoryXp } from "~/domains/runs/utils/xpCalculations";
 
-// TODO: Remove this as this is now dummy data for thresholds
-export const XP_CALCULATION_CONSTANTS = {
-	BASE_XP_MULTIPLIER: 5,
-	WRONG_ANSWER_PENALTY: 2,
-	BASE_POLL_XP: 5,
-	XP_INCREMENT_PER_POLL: 2,
-	POLLS_PER_ROUND: 3,
-} as const;
+/**
+ * Coverage threshold system
+ * Threshold increases by 10% each round (10%, 20%, 30%, etc.)
+ * Players must achieve the threshold coverage in ONE category to continue
+ */
+const COVERAGE_PER_ROUND = 10; // 10% increase per round
 
 /**
  * Threshold calculation result
  */
 export type ThresholdInfo = {
 	readonly meetsThreshold: boolean;
-	readonly currentXp: number;
-	readonly requiredXp: number;
+	readonly maxCoverage: number; // Highest coverage achieved in any category
+	readonly requiredCoverage: number; // Threshold for current round
 	readonly pollNumber: number;
 	readonly currentRound: number;
-	readonly pollInRound: number;
-	readonly isThresholdCheckPoll: boolean;
 };
 
 /**
- * Determines if current poll count requires a threshold check
- * @param pollsAnswered - Total polls answered in current run
- * @returns true if this is the 3rd poll in a set (threshold check required)
+ * Calculates the required coverage threshold for a given round
+ * @param round - Current round number (1-based)
+ * @returns Required coverage percentage (10% per round)
  */
-export const shouldCheckThreshold = (pollsAnswered: number): boolean => {
-	const { POLLS_PER_ROUND } = XP_CALCULATION_CONSTANTS;
-	return pollsAnswered > 0 && pollsAnswered % POLLS_PER_ROUND === 0;
+export const calculateRoundThreshold = (round: number): number => {
+	return round * COVERAGE_PER_ROUND;
 };
 
 /**
- * Calculates XP threshold required for a completed set
- * Each set requires progressively more total XP
- * @param setNumber - Which set (1-based)
- * @returns Total XP required to pass the set threshold
- */
-
-export const calculateSetThreshold = (setNumber: number): number => {
-	const { BASE_POLL_XP, XP_INCREMENT_PER_POLL, POLLS_PER_ROUND } =
-		XP_CALCULATION_CONSTANTS;
-	const defaultThreshold = BASE_POLL_XP * POLLS_PER_ROUND;
-	if (setNumber <= 0) return defaultThreshold;
-
-	// Each set builds on previous difficulty
-	// Set 1: Average BASE_POLL_XP per poll × POLLS_PER_ROUND = 15 XP total
-	// Set 2: Average (BASE_POLL_XP + XP_INCREMENT_PER_POLL) per poll × POLLS_PER_ROUND = 21 XP total
-	// Set 3: Average (BASE_POLL_XP + 2*XP_INCREMENT_PER_POLL) per poll × POLLS_PER_ROUND = 27 XP total
-	const baseXpPerPoll =
-		BASE_POLL_XP + (setNumber - 1) * XP_INCREMENT_PER_POLL;
-	return baseXpPerPoll * POLLS_PER_ROUND;
-};
-
-/**
- * Core threshold calculation logic using 3-poll sets
- * @param totalXp - Total XP across all categories
+ * Determines the current round based on total polls answered
  * @param totalPollsAnswered - Total polls answered across all categories
+ * @returns Current round number (1-based)
+ */
+export const getCurrentRound = (totalPollsAnswered: number): number => {
+	// Each poll advances the round (1 poll = round 1, 2 polls = round 2, etc.)
+	return Math.max(1, totalPollsAnswered + 1);
+};
+
+/**
+ * Core threshold calculation logic
+ * Checks if any category has reached the required coverage threshold
+ *
+ * @param categoryXpData - Array of category coverage data
  * @returns Threshold information
  */
-
-// TODO: refactor this function name as it is confusing
 export const calculateThresholdInfo = (
-	totalXp: number,
-	totalPollsAnswered: number
+	categoryXpData: readonly RunCategoryXp[]
 ): ThresholdInfo => {
-	const currentRound = getCurrentRoundNumber(totalPollsAnswered);
-	const pollInRound = getPollPositionInRound(totalPollsAnswered);
-	const isThresholdCheckPoll = shouldCheckThreshold(totalPollsAnswered);
+	// Find the maximum coverage across all categories
+	const maxCoverage = Math.max(
+		...categoryXpData.map((xp) => xp.currentCoverage),
+		0 // Default to 0 if no categories
+	);
 
-	// Always show the threshold required for the current set
-	const requiredXp = calculateSetThreshold(currentRound);
+	// Calculate total polls answered
+	const totalPollsAnswered = categoryXpData.reduce(
+		(sum, xp) => sum + xp.pollsAnswered,
+		0
+	);
 
-	// Only enforce threshold check on 3rd poll of each set
-	const meetsThreshold = isThresholdCheckPoll ? totalXp >= requiredXp : true; // Not a threshold check poll, so always passes
+	// Determine current round and required coverage
+	const currentRound = getCurrentRound(totalPollsAnswered);
+	const requiredCoverage = calculateRoundThreshold(currentRound);
+
+	// Threshold is met if ANY category has reached the required coverage
+	const meetsThreshold = maxCoverage >= requiredCoverage;
 
 	return {
 		meetsThreshold,
-		currentXp: totalXp,
-		requiredXp,
+		maxCoverage,
+		requiredCoverage,
 		pollNumber: totalPollsAnswered,
 		currentRound,
-		pollInRound,
-		isThresholdCheckPoll,
 	};
 };
 
 /**
- * Calculate threshold for next poll from category data (client-side display)
- * @param categoryXpData - Array of category XP data
- * @returns Threshold information for the next poll
+ * Get current threshold status from category data
+ * @param categoryXp - Array of category coverage data
+ * @returns Threshold information
  */
-export const calculateNextPollThresholdFromCategoryData = (
-	categoryXpData: readonly RunCategoryXp[]
-): ThresholdInfo => {
-	const { totalXp, totalPollsAnswered } =
-		aggregateRunCategoryXp(categoryXpData);
-
-	// Poll number is the next poll (current + 1)
-	const pollNumber = totalPollsAnswered + 1;
-	const currentRound = getCurrentRoundNumber(pollNumber);
-	const pollInRound = getPollPositionInRound(pollNumber);
-	const isThresholdCheckPoll = shouldCheckThreshold(pollNumber);
-
-	// Show the threshold required for the next poll's set
-	const requiredXp = calculateSetThreshold(currentRound);
-
-	// For display purposes, show if current XP would meet the threshold
-	const meetsThreshold = isThresholdCheckPoll ? totalXp >= requiredXp : true; // Not a threshold check poll, so would pass
-
-	return {
-		meetsThreshold,
-		currentXp: totalXp,
-		requiredXp,
-		pollNumber,
-		currentRound,
-		pollInRound,
-		isThresholdCheckPoll,
-	};
-};
-
 export const getCurrentThresholdInfo = (
 	categoryXp: readonly RunCategoryXp[]
 ): ThresholdInfo => {
-	return calculateNextPollThresholdFromCategoryData(categoryXp);
-};
-
-/**
- * Gets the current set number (1-based)
- * @param pollsAnswered - Total polls answered in current run
- * @returns Current set number (Set 1, Set 2, etc.)
- */
-export const getCurrentRoundNumber = (pollsAnswered: number): number => {
-	const { POLLS_PER_ROUND } = XP_CALCULATION_CONSTANTS;
-
-	return Math.ceil(pollsAnswered / POLLS_PER_ROUND);
-};
-
-/**
- * Gets position within current 3-poll set (1, 2, or 3)
- * @param pollsAnswered - Total polls answered in current run
- * @returns Position in current set (1 = first poll, 2 = second poll, 3 = third poll)
- */
-export const getPollPositionInRound = (pollsAnswered: number): number => {
-	const { POLLS_PER_ROUND } = XP_CALCULATION_CONSTANTS;
-	const position = pollsAnswered % POLLS_PER_ROUND;
-	return position === 0 ? POLLS_PER_ROUND : position;
+	return calculateThresholdInfo(categoryXp);
 };

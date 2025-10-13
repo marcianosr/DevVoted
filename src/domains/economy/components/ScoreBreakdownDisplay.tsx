@@ -6,12 +6,14 @@ type ScoreBreakdownDisplayProps = {
 	breakdown: PollScoreBreakdown | null;
 	activeConfigIds: string[];
 	categoryCode: string;
+	coverageBonus?: number; // Coverage bonus from configs (passed from renderProps)
 };
 
 export const ScoreBreakdownDisplay = ({
 	breakdown,
 	activeConfigIds,
 	categoryCode,
+	coverageBonus = 0,
 }: ScoreBreakdownDisplayProps) => {
 	if (!breakdown) return null;
 
@@ -24,33 +26,30 @@ export const ScoreBreakdownDisplay = ({
 		const hasRandomEffect = config.effect.includes("randomStreakAmp");
 		const targetsCategory =
 			config.targetCategories?.includes(categoryCode) ?? false;
-		return hasStreakEffect && targetsCategory || hasRandomEffect;
+		return (hasStreakEffect && targetsCategory) || hasRandomEffect;
 	});
 
-	const baseAmp = 1 + 0.1 * breakdown.streak;
-	const configAmpBonus = breakdown.amp - baseAmp;
-	const hasRelevantConfigBonus = relevantConfigs.length > 0 && Math.abs(configAmpBonus) > 0.01;
+	const hasRelevantConfigBonus =
+		relevantConfigs.length > 0 && Math.abs(coverageBonus) > 0.01;
 
 	return (
 		<div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4 border border-blue-200">
 			<h3 className="text-lg font-semibold text-gray-900 mb-3">
-				XP Breakdown - Round {breakdown.round}
+				Coverage Breakdown
 			</h3>
 
 			<div className="space-y-2">
-				{/* Base score */}
+				{/* Base coverage */}
 				<div className="flex justify-between items-center">
-					<span className="text-gray-600">Base XP (Round × 10)</span>
-					<span className="font-mono font-medium">{breakdown.base} XP</span>
+					<span className="text-gray-600">Base Coverage</span>
+					<span className="font-mono font-medium">1%</span>
 				</div>
 
-				{/* Streak amplifier */}
+				{/* Streak display */}
 				<div className="flex justify-between items-center">
-					<span className="text-gray-600">
-						Streak Bonus ({breakdown.streak} correct)
-					</span>
-					<span className="font-mono font-medium">
-						×{baseAmp.toFixed(1)}
+					<span className="text-gray-600">Current Streak</span>
+					<span className="font-mono font-medium text-indigo-600">
+						{breakdown.streak} correct
 					</span>
 				</div>
 
@@ -72,62 +71,40 @@ export const ScoreBreakdownDisplay = ({
 								<span
 									className={`font-mono ${
 										config.effect.includes("randomStreakAmp")
-											? configAmpBonus > 0
+											? coverageBonus > 0
 												? "text-green-600"
 												: "text-red-600"
 											: "text-indigo-600"
 									}`}
 								>
-									{configAmpBonus > 0 ? "+" : ""}
-									{configAmpBonus.toFixed(1)} amp
+									{coverageBonus > 0 ? "+" : ""}
+									{coverageBonus.toFixed(1)}%
 								</span>
 							</div>
 						))}
 					</div>
 				)}
 
-				{/* Total amplifier */}
-				<div className="border-t pt-2 mt-2">
-					<div className="flex justify-between items-center font-medium">
-						<span className="text-gray-700">Total Amplifier</span>
-						<span className="font-mono text-indigo-600">
-							×{breakdown.amp.toFixed(1)}
-						</span>
-					</div>
-				</div>
-
-				{/* Pre-correctness calculation */}
-				<div className="border-t pt-2 mt-2">
-					<div className="flex justify-between items-center">
-						<span className="text-gray-600 text-sm">
-							Pre-correctness: {breakdown.base} × {breakdown.amp.toFixed(1)}
-						</span>
-						<span className="font-mono text-sm text-gray-500">
-							= {Math.round(breakdown.base * breakdown.amp)} XP
-						</span>
-					</div>
-				</div>
-
 				{/* Correctness factor note */}
 				<div className="border-t pt-2 mt-2">
 					<div className="flex justify-between items-center">
 						<span className="text-gray-600 text-sm">
-							Correctness factor applied
+							Correctness factor
 						</span>
 						<span className="font-mono text-sm text-gray-500">
-							(varies by answer quality)
+							(0-1.5x based on answer quality)
 						</span>
 					</div>
 				</div>
 
-				{/* Final earned XP */}
+				{/* Final earned coverage */}
 				<div className="bg-indigo-100 rounded-md p-3 mt-3">
 					<div className="flex justify-between items-center">
 						<span className="font-semibold text-indigo-900">
-							Final XP Earned
+							Coverage Earned
 						</span>
 						<span className="font-mono font-bold text-xl text-indigo-700">
-							{breakdown.earnedXP} XP
+							{breakdown.earnedCoverage}%
 						</span>
 					</div>
 				</div>

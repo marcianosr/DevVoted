@@ -33,11 +33,8 @@ import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
-import {
-	PollScoreBreakdown,
-	calculateDisplayAmp,
-} from "~/domains/score/services/score.service";
-import { calculateNextPollThresholdFromCategoryData } from "~/domains/runs/services/thresholdCalculator.service";
+import { PollScoreBreakdown } from "~/domains/score/services/score.service";
+import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { getCategories } from "~/domains/shared/categories";
 
 type DefaultSelectedOptions = string[];
@@ -122,11 +119,11 @@ const PollContent: React.FC<PollContentProps> = ({
 				}
 
 				if (runEnded) {
-					console.log("Run ended. All XP reset to 0.");
+					console.log("Run ended. Coverage tracking reset.");
 				}
 
 				if (isCorrect) {
-					console.log("Correct answer! XP awarded.");
+					console.log("Correct answer! Coverage awarded.");
 				}
 				if (!isCorrect && runEnded) {
 					console.log("Wrong answer! Run ended!");
@@ -138,7 +135,7 @@ const PollContent: React.FC<PollContentProps> = ({
 				openShop();
 
 				// This triggers a refetch:
-				// Refresh the active run data to show updated XP (or lack thereof if run ended)
+				// Refresh the active run data to show updated coverage (or lack thereof if run ended)
 				queryClient.invalidateQueries({
 					queryKey: runQueryKeys.active(user?.id),
 				});
@@ -216,16 +213,8 @@ const PollContent: React.FC<PollContentProps> = ({
 
 	const thresholdInfo =
 		activeRun && activeRun.categoryXp
-			? calculateNextPollThresholdFromCategoryData(activeRun.categoryXp)
+			? calculateThresholdInfo(activeRun.categoryXp)
 			: null;
-
-	// Calculate current amp for display
-	const currentCategoryXp = activeRun?.categoryXp.find(
-		(xp) => xp.categoryCode === poll.categoryCode
-	);
-	const currentStreak = currentCategoryXp?.currentStreak ?? 0;
-	const configAmpBonus = effectProps?.amp ?? 0;
-	const totalAmp = calculateDisplayAmp(currentStreak, configAmpBonus);
 
 	return (
 		<section
@@ -242,61 +231,24 @@ const PollContent: React.FC<PollContentProps> = ({
 
 						<div className="text-saffron flex flex-col">
 							<span className="font-bold text-xl">
-								Round {thresholdInfo?.currentRound} - Poll{" "}
-								{thresholdInfo?.pollInRound}/3
+								Round {thresholdInfo?.currentRound}
 							</span>
 
 							<div>
 								<span className="font-bold text-sm flex gap-4 justify-between">
 									<span>
-										Current: {thresholdInfo?.currentXp} XP
+										Current: {thresholdInfo?.maxCoverage}%
 									</span>
 									<span>
-										Goal: {thresholdInfo?.requiredXp} XP
+										Goal: {thresholdInfo?.requiredCoverage}%
 									</span>
 								</span>
 								<meter
 									min={0}
-									value={thresholdInfo?.currentXp}
-									max={thresholdInfo?.requiredXp}
+									value={thresholdInfo?.maxCoverage}
+									max={thresholdInfo?.requiredCoverage}
 								></meter>
 							</div>
-
-							<span>
-								{thresholdInfo?.isThresholdCheckPoll && (
-									<span
-										className={`mt-2 inline-block px-2 py-1 text-xs font-medium ${
-											thresholdInfo?.meetsThreshold
-												? "bg-green-600 text-green-100"
-												: "bg-red-600 text-red-100"
-										}`}
-									>
-										{thresholdInfo?.meetsThreshold
-											? "You succeeded this round by meeting the XP goal!"
-											: "You failed this round by not meeting the XP goal."}
-									</span>
-								)}
-							</span>
-							{/* {thresholdInfo && (
-				<div className="mb-4">
-					<div className="text-sm text-white mb-2">
-						<span className="font-medium">
-							Set {thresholdInfo.currentSet}
-						</span>
-						{" - "}
-						<span>Poll {thresholdInfo.pollInSet}/3</span>
-						{thresholdInfo.isThresholdCheckPoll && (
-							<span className="ml-2 px-2 py-1 bg-yellow-600 text-yellow-100  text-xs font-medium">
-								THRESHOLD CHECK
-							</span>
-						)}
-					</div>
-					<ThresholdDisplay thresholdInfo={thresholdInfo} />
-				</div>
-			)} */}
-
-							{/* Proceed to Round 2 → */}
-							{/* { next goal : 550 XP} */}
 						</div>
 						{activeRun && (
 							<RunStatusDisplay activeRun={activeRun} />

@@ -1,9 +1,7 @@
-import { check } from "drizzle-orm/gel-core";
 import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { Run } from "~/domains/runs/models/run";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
-import { aggregateRunCategoryXp } from "~/domains/runs/utils/xpCalculations";
 import { STORAGE_UNITS, formatStorage } from "~/lib/storage";
 
 export const configs: Config[] = [
@@ -121,25 +119,27 @@ export const configs: Config[] = [
 		image: "/configs/try-catch.png",
 		cost: STORAGE_UNITS.MB / 2,
 		description:
-			"Saves your run when you have at least 80% of the XP of the threshold. When activated, this config is consumed.",
+			"Saves your run when you have at least 80% of the required coverage threshold. When activated, this config is consumed.",
 		rarity: "rare",
-		effect: ["checkXPWithThreshold"],
+		effect: ["checkCoverageWithThreshold"],
 		priority: 100,
 	},
 ];
 
 /**
- * Score modifiers that configs can apply to influence scoring.
- * Applied in calculatePollScoreForProgression in this order:
- * 1. Base amp = streak bonus (e.g., 1.1x)
- * 2. Apply multiplicative: baseAmp * ampMul
- * 3. Apply additive: result + ampAdd
- * 4. Calculate XP: baseXP * finalAmp + xpAdd
+ * Coverage modifiers that configs can apply to influence scoring.
+ * Applied in score calculation:
+ * 1. Base coverage = 1% per correct answer
+ * 2. Apply multiplicative: baseCoverage * coverageMul
+ * 3. Apply additive: result + coverageAdd
+ *
+ * Examples:
+ * - .js config: coverageAdd: 0.5 (adds 0.5% bonus for JS polls)
+ * - Math.random: coverageAdd: -0.5 to +0.5 (random modifier)
  */
-export type ScoreMods = {
-	ampAdd?: number; // +0.5, -0.2 (additive amp bonus/penalty)
-	ampMul?: number; // x1.2 (multiplicative amp modifier)
-	xpAdd?: number; // flat XP bonus (applied after amp calculation)
+export type CoverageMods = {
+	coverageAdd?: number; // +0.5, -0.2 (additive coverage bonus/penalty in %)
+	coverageMul?: number; // x1.5 (multiplicative coverage modifier)
 };
 export type StorageMods = {
 	bonus?: number; // flat storage bonus (applied to storage capacity)
@@ -150,7 +150,7 @@ type EffectCtx = PollWithOptionsResponse & {
 
 export type EffectRenderProps = {
 	disabledOptionIds?: number[];
-	amp?: number;
+	coverageBonus?: number; // Coverage bonus for display
 	expandStorage?: number;
 };
 
@@ -160,8 +160,8 @@ export type Protection = {
 };
 export type EffectOut = {
 	view: EffectCtx;
-	renderProps?: EffectRenderProps; // UI-only knobs (disable options, show amp badge, etc.)
-	score?: ScoreMods;
+	renderProps?: EffectRenderProps; // UI-only knobs (disable options, show coverage bonus, etc.)
+	coverage?: CoverageMods;
 	storage?: StorageMods;
 	meta?: EffectMeta;
 	protection?: Protection; // Safeguards that prevent run failure
@@ -172,7 +172,7 @@ type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
 type ApplyEffects = {
 	view: EffectCtx;
 	renderProps: EffectRenderProps;
-	score: ScoreMods;
+	coverage: CoverageMods;
 	storage: StorageMods;
 	meta: EffectMeta;
 	protection: Protection;
@@ -201,53 +201,50 @@ const EFFECTS: Record<string, EffectFn> = {
 			meta: { notes: ["Hid wrong options"] },
 		};
 	},
-	// Adds +0.5 amp bonus for specific categories (file extension configs)
+	// Adds +0.5% coverage bonus for specific categories (file extension configs)
 	streakAmp: ({ poll, options, run, hasAnswered }, config) => {
 		// Only apply if this config targets the current poll's category
 		if (!config.targetCategories?.includes(poll.categoryCode)) {
 			return {
 				view: { poll, options, run, hasAnswered },
-				score: { ampAdd: 0 },
+				coverage: { coverageAdd: 0 },
 				meta: { notes: [] },
 			};
 		}
 
-		const bonusAmp = 0.5;
+		const bonusCoverage = 0.5;
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			renderProps: { amp: bonusAmp },
-			score: { ampAdd: bonusAmp },
+			renderProps: { coverageBonus: bonusCoverage },
+			coverage: { coverageAdd: bonusCoverage },
 			meta: {
-				notes: [`+${bonusAmp} amp for ${poll.categoryCode} polls`],
+				notes: [`+${bonusCoverage}% coverage for ${poll.categoryCode} polls`],
 			},
 		};
 	},
-	// Adds random amp between -0.5 and +0.5 (Math Random Config effect)
+	// Adds random coverage between -0.5% and +0.5% (Math Random Config effect)
 	randomStreakAmp: ({ poll, options, run, hasAnswered }) => {
 		const rawValue = Math.random() - 0.5;
-		const bonusAmp = Math.round(rawValue * 10) / 10;
+		const bonusCoverage = Math.round(rawValue * 10) / 10;
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			renderProps: { amp: bonusAmp },
-			score: { ampAdd: bonusAmp },
+			renderProps: { coverageBonus: bonusCoverage },
+			coverage: { coverageAdd: bonusCoverage },
 			meta: {
-				notes: [`Random amp for ${poll.categoryCode} polls`],
+				notes: [`${bonusCoverage > 0 ? '+' : ''}${bonusCoverage}% coverage for ${poll.categoryCode} polls`],
 			},
 		};
 	},
 
 	// Grants extra storage capacity (Local Storage Config effect)
-	// Note: This effect doesn't modify scoring, only storage capacity
 	expandStorage: ({ poll, options, run, hasAnswered }, config) => {
 		// Use storageBonus from config if provided, otherwise default to 512KB
 		const bonusStorage = config.storageBonus ?? STORAGE_UNITS.KB * 512;
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			renderProps: {}, // No UI hints for storage
-			score: {}, // No scoring modifications
 			storage: { bonus: bonusStorage },
 			meta: {
 				notes: [`+${formatStorage(bonusStorage)} storage capacity`],
@@ -255,53 +252,42 @@ const EFFECTS: Record<string, EffectFn> = {
 		};
 	},
 
-	checkXPWithThreshold: ({ poll, options, run, hasAnswered }, config) => {
-		// Calculate current total XP and polls answered across all categories
-		const { totalXp: currentTotalXP, totalPollsAnswered } =
-			aggregateRunCategoryXp(run.categoryXp);
-
-		// Use current poll threshold calculation, not next poll
-		const thresholdInfo = calculateThresholdInfo(
-			currentTotalXP,
-			totalPollsAnswered
-		);
-		const thresholdXP = thresholdInfo.requiredXp;
-		const requiredXP = thresholdXP * 0.8; // 80% of threshold
+	checkCoverageWithThreshold: ({ poll, options, run, hasAnswered }) => {
+		// Calculate threshold based on category coverage data
+		const thresholdInfo = calculateThresholdInfo(run.categoryXp);
+		const requiredCoverage = thresholdInfo.requiredCoverage;
+		const requiredForProtection = requiredCoverage * 0.8; // 80% of threshold
 
 		// Try/Catch only activates when:
-		// 1. We're on a threshold check poll (every 3rd poll)
-		// 2. Current XP is at least 80% of threshold
-		// 3. We would actually fail the threshold
+		// 1. Current max coverage is at least 80% of threshold
+		// 2. We would actually fail the threshold
 		const isProtected =
-			thresholdInfo.isThresholdCheckPoll &&
-			currentTotalXP >= requiredXP &&
+			thresholdInfo.maxCoverage >= requiredForProtection &&
 			!thresholdInfo.meetsThreshold; // Only if we'd actually fail
 
-		// If current XP is below 80% of threshold, try/catch can't save you
-		if (currentTotalXP < requiredXP) {
+		// If current coverage is below 80% of threshold, try/catch can't save you
+		if (thresholdInfo.maxCoverage < requiredForProtection) {
 			return {
 				view: { poll, options, run, hasAnswered },
 				protection: { tryCatch: false },
 				meta: {
-					notes: [`Try/Catch inactive (need 80% of threshold)`],
+					notes: [`Try/Catch inactive (need 80% of ${requiredCoverage}% threshold)`],
 				},
 			};
 		}
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			renderProps: {},
-			score: {},
 			protection: {
 				tryCatch: isProtected, // True only when it would actually prevent a failure
 			},
 			meta: {
 				notes: isProtected
 					? [
-							`Try/Catch will save your run! (have ${Math.floor((currentTotalXP / thresholdXP) * 100)}% of threshold)`,
+							`Try/Catch will save your run! (have ${thresholdInfo.maxCoverage}% of ${requiredCoverage}% required)`,
 						]
 					: [
-							`Try/Catch ready (have ${Math.floor((currentTotalXP / thresholdXP) * 100)}% of threshold)`,
+							`Try/Catch ready (have ${thresholdInfo.maxCoverage}% of ${requiredCoverage}% required)`,
 						],
 				badges: isProtected
 					? { "try-catch": "Try/Catch will activate!" }
@@ -312,24 +298,24 @@ const EFFECTS: Record<string, EffectFn> = {
 };
 
 /**
- * Applies config effects to generate UI hints and score modifiers.
+ * Applies config effects to generate UI hints and coverage modifiers.
  *
  * This is the entry point for the config effects system. It:
  * 1. Finds configs by ID and filters out invalid ones
  * 2. Sorts by priority (lower = runs first)
  * 3. Applies each effect function and aggregates results
- * 4. Returns combined UI props, score mods, and metadata
+ * 4. Returns combined UI props, coverage mods, and metadata
  *
- * Used by progress.service.ts to get score modifiers before calculation.
+ * Used by progress.service.ts to get coverage modifiers before calculation.
  *
  * @param base - The context (poll, options, run, etc.)
  * @param activeConfigIds - Config IDs from run.activeConfigIds
- * @returns Combined effects with UI props and score modifiers
+ * @returns Combined effects with UI props and coverage modifiers
  *
  * @example
- * const { score, renderProps } = applyEffects(ctx, ['.js-config', 'math-random']);
- * // score: { ampAdd: 0.8 }  (0.5 from .js + 0.3 from random)
- * // renderProps: { amp: 0.8 }  (UI hint for display)
+ * const { coverage, renderProps } = applyEffects(ctx, ['.js-config', 'math-random']);
+ * // coverage: { coverageAdd: 0.8 }  (0.5% from .js + 0.3% from random)
+ * // renderProps: { coverageBonus: 0.8 }  (UI hint for display)
  */
 export function applyEffects(
 	base: EffectCtx,
@@ -339,7 +325,7 @@ export function applyEffects(
 		return {
 			view: base,
 			renderProps: {},
-			score: {},
+			coverage: {},
 			meta: {},
 			storage: {},
 			protection: {},
@@ -359,8 +345,8 @@ export function applyEffects(
 			if (!fn) return acc;
 			const out = fn(acc.view, config);
 
-			const ampValue =
-				(acc.renderProps.amp ?? 0) + (out.renderProps?.amp ?? 0);
+			const coverageBonusValue =
+				(acc.renderProps.coverageBonus ?? 0) + (out.renderProps?.coverageBonus ?? 0);
 			const disabledIds = [
 				...(acc.renderProps.disabledOptionIds ?? []),
 				...(out.renderProps?.disabledOptionIds ?? []),
@@ -370,7 +356,7 @@ export function applyEffects(
 				view: out.view,
 				renderProps: {
 					...acc.renderProps,
-					...(ampValue !== 0 && { amp: ampValue }),
+					...(coverageBonusValue !== 0 && { coverageBonus: coverageBonusValue }),
 					...(disabledIds.length > 0 && {
 						disabledOptionIds: disabledIds,
 					}),
@@ -380,10 +366,9 @@ export function applyEffects(
 							out.renderProps.expandStorage,
 					}),
 				},
-				score: {
-					ampAdd: (acc.score.ampAdd ?? 0) + (out.score?.ampAdd ?? 0),
-					ampMul: (acc.score.ampMul ?? 1) * (out.score?.ampMul ?? 1),
-					xpAdd: (acc.score.xpAdd ?? 0) + (out.score?.xpAdd ?? 0),
+				coverage: {
+					coverageAdd: (acc.coverage.coverageAdd ?? 0) + (out.coverage?.coverageAdd ?? 0),
+					coverageMul: (acc.coverage.coverageMul ?? 1) * (out.coverage?.coverageMul ?? 1),
 				},
 				storage: {
 					bonus: (acc.storage.bonus ?? 0) + (out.storage?.bonus ?? 0),
@@ -411,7 +396,7 @@ export function applyEffects(
 			view: base,
 			renderProps: {},
 			meta: {},
-			score: {},
+			coverage: {},
 			storage: {},
 			protection: {},
 		}

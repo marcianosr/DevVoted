@@ -225,10 +225,10 @@ export const runsTable = pgTable("runs", {
 });
 
 /**
- * Run Category XP Table
- * Tracks XP earned in each category during a specific run
- * - Each run starts with 0 XP in all categories
- * - XP accumulates as players answer polls correctly
+ * Run Category Coverage Table
+ * Tracks coverage score earned in each category during a specific run
+ * - Each run starts with 0% coverage in all categories
+ * - Coverage accumulates as players answer polls correctly (1% per correct answer)
  * - Enables category-specific progression within runs
  */
 export const runCategoryXpTable = pgTable(
@@ -241,11 +241,11 @@ export const runCategoryXpTable = pgTable(
 		category_code: varchar("category_code", { length: 50 })
 			.references(() => pollCategoriesTable.code)
 			.notNull(),
-		current_xp: integer("current_xp").notNull().default(0),
+		current_coverage: integer("current_coverage").notNull().default(0),
 		current_streak: integer("current_streak").notNull().default(0),
 		best_streak: integer("best_streak").notNull().default(0),
 		polls_answered: integer("polls_answered").notNull().default(0),
-		final_xp: integer("final_xp"),
+		final_coverage: integer("final_coverage"),
 		final_streak: integer("final_streak"),
 		created_at: timestamp("created_at").defaultNow(),
 		updated_at: timestamp("updated_at")
@@ -258,7 +258,6 @@ export const runCategoryXpTable = pgTable(
 		};
 	}
 );
-
 /**
  * Seasons Table
  * Manages game seasons for temporal organization and progression tracking
@@ -301,8 +300,8 @@ export const leaderboardTable = pgTable("leaderboard", {
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
 		.notNull(), // Category for this leaderboard entry
-	category_xp: integer("category_xp").notNull().default(0), // XP achieved in this category for this run
-	total_xp: integer("total_xp").notNull().default(0), // Overall XP for the run (for global leaderboards)
+	category_coverage: integer("category_coverage").notNull().default(0), // Coverage % achieved in this category for this run
+	total_coverage: integer("total_coverage").notNull().default(0), // Overall coverage % for the run (for global leaderboards)
 	best_streak: integer("best_streak").notNull().default(0),
 	polls_answered: integer("polls_answered").notNull().default(0),
 	completed_at: timestamp("completed_at").notNull(),
