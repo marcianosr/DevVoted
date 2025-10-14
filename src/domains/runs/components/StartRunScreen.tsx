@@ -35,7 +35,7 @@ export const StartRunScreen: React.FC<StartRunScreenProps> = ({
 			{hasLastRun && lastRunData && !isLoading && (
 				<div className="mb-8">
 					<RunEndStats
-						totalXp={lastRunData.totalXp}
+						totalCoverage={lastRunData.totalCoverage}
 						totalPollsAnswered={lastRunData.totalPollsAnswered}
 						categoryXp={lastRunData.categoryXp}
 						duration={formatDuration(

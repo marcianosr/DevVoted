@@ -36,6 +36,7 @@ import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { getCategories } from "~/domains/shared/categories";
+import { formatCoverage } from "~/domains/score/services/score.service";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -107,7 +108,7 @@ const PollContent: React.FC<PollContentProps> = ({
 		// 2️⃣ SERVER CALL (happens automatically after onMutate)
 		mutationFn: submitPollOptions,
 		// 3️⃣ SUCCESS HANDLING
-		onSuccess: (data) => {
+		onSuccess: async (data) => {
 			if (data.success) {
 				const isCorrect = data.data?.isCorrect;
 				const runEnded = data.data?.runEnded;
@@ -132,13 +133,12 @@ const PollContent: React.FC<PollContentProps> = ({
 					console.log("Answer submitted, but incorrect.");
 				}
 
-				openShop();
-
-				// This triggers a refetch:
-				// Refresh the active run data to show updated coverage (or lack thereof if run ended)
-				queryClient.invalidateQueries({
+				// Refetch the active run data to get updated coverage BEFORE opening shop
+				await queryClient.refetchQueries({
 					queryKey: runQueryKeys.active(user?.id),
 				});
+
+				openShop();
 				return;
 			}
 
@@ -216,6 +216,11 @@ const PollContent: React.FC<PollContentProps> = ({
 			? calculateThresholdInfo(activeRun.categoryXp)
 			: null;
 
+	// Get coverage for the current category being answered
+	const currentCategoryCoverage =
+		activeRun?.categoryXp.find((xp) => xp.categoryCode === poll.categoryCode)
+			?.currentCoverage ?? 0;
+
 	return (
 		<section
 			data-category={poll.categoryCode}
@@ -234,18 +239,27 @@ const PollContent: React.FC<PollContentProps> = ({
 								Round {thresholdInfo?.currentRound}
 							</span>
 
-							<div>
+							<span className="text-xs text-gray-400">
+								Poll {thresholdInfo?.pollInRound} of 3
+								{thresholdInfo?.isThresholdCheckPoll && (
+									<span className="ml-2 text-red-400">
+										⚠️ Checkpoint
+									</span>
+								)}
+							</span>
+
+							<div className="mt-2">
 								<span className="font-bold text-sm flex gap-4 justify-between">
 									<span>
-										Current: {thresholdInfo?.maxCoverage}%
+										Current: {formatCoverage(currentCategoryCoverage)}%
 									</span>
 									<span>
-										Goal: {thresholdInfo?.requiredCoverage}%
+										Goal: {formatCoverage(thresholdInfo?.requiredCoverage ?? 0)}%
 									</span>
 								</span>
 								<meter
 									min={0}
-									value={thresholdInfo?.maxCoverage}
+									value={currentCategoryCoverage}
 									max={thresholdInfo?.requiredCoverage}
 								></meter>
 							</div>

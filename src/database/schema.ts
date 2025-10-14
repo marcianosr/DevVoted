@@ -4,6 +4,7 @@ import {
 	json,
 	pgEnum,
 	pgTable,
+	real,
 	serial,
 	text,
 	timestamp,
@@ -241,11 +242,11 @@ export const runCategoryXpTable = pgTable(
 		category_code: varchar("category_code", { length: 50 })
 			.references(() => pollCategoriesTable.code)
 			.notNull(),
-		current_coverage: integer("current_coverage").notNull().default(0),
+		current_coverage: real("current_coverage").notNull().default(0),
 		current_streak: integer("current_streak").notNull().default(0),
 		best_streak: integer("best_streak").notNull().default(0),
 		polls_answered: integer("polls_answered").notNull().default(0),
-		final_coverage: integer("final_coverage"),
+		final_coverage: real("final_coverage"),
 		final_streak: integer("final_streak"),
 		created_at: timestamp("created_at").defaultNow(),
 		updated_at: timestamp("updated_at")
@@ -300,8 +301,8 @@ export const leaderboardTable = pgTable("leaderboard", {
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
 		.notNull(), // Category for this leaderboard entry
-	category_coverage: integer("category_coverage").notNull().default(0), // Coverage % achieved in this category for this run
-	total_coverage: integer("total_coverage").notNull().default(0), // Overall coverage % for the run (for global leaderboards)
+	category_coverage: real("category_coverage").notNull().default(0), // Coverage % achieved in this category for this run
+	total_coverage: real("total_coverage").notNull().default(0), // Overall coverage % for the run (for global leaderboards)
 	best_streak: integer("best_streak").notNull().default(0),
 	polls_answered: integer("polls_answered").notNull().default(0),
 	completed_at: timestamp("completed_at").notNull(),

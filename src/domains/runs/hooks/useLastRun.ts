@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getLastRunForGameOver } from "~/domains/runs/api/runs";
 import { runQueryKeys } from "~/domains/shared/queryKeys";
+import type { CategoryCode } from "~/domains/shared/categories";
 
 type LastRunData = {
 	run: {
@@ -9,13 +10,13 @@ type LastRunData = {
 		finished_at: Date | null;
 	};
 	categoryXp: {
-		categoryCode: string;
-		currentXp: number;
+		categoryCode: CategoryCode;
+		currentCoverage: number;
 		currentStreak: number;
 		bestStreak: number;
 		pollsAnswered: number;
 	}[];
-	totalXp: number;
+	totalCoverage: number;
 	totalPollsAnswered: number;
 };
 

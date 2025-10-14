@@ -1,6 +1,7 @@
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { Config } from "~/domains/configs/models/config";
 import { configs } from "~/domains/configs/data/configs";
+import { formatCoverage } from "~/domains/score/services/score.service";
 
 type ScoreBreakdownDisplayProps = {
 	breakdown: PollScoreBreakdown | null;
@@ -104,7 +105,7 @@ export const ScoreBreakdownDisplay = ({
 							Coverage Earned
 						</span>
 						<span className="font-mono font-bold text-xl text-indigo-700">
-							{breakdown.earnedCoverage}%
+							{formatCoverage(breakdown.earnedCoverage)}%
 						</span>
 					</div>
 				</div>

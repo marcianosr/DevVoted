@@ -4,6 +4,15 @@
  */
 const COVERAGE_PER_CORRECT = 1; // 1% coverage per fully correct answer
 
+/**
+ * Formats a coverage percentage to 1 decimal place
+ * @param coverage - The coverage value (0-100)
+ * @returns Formatted string with 1 decimal place (e.g., "25.8")
+ */
+export const formatCoverage = (coverage: number): string => {
+	return coverage.toFixed(1);
+};
+
 export type PollAnswerOutcome = "full" | "partial" | "wrong";
 
 export const outcomeSingle = (isCorrect: boolean): PollAnswerOutcome =>
