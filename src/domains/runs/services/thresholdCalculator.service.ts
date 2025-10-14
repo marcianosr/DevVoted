@@ -5,7 +5,7 @@ import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCover
  * Threshold increases by 10% each round (10%, 20%, 30%, etc.)
  * Players must achieve the threshold coverage in ONE category to continue
  */
-const COVERAGE_PER_ROUND = 2; // 10% increase per round
+const COVERAGE_PER_ROUND = 10; // 10% increase per round
 
 /**
  * Threshold calculation result

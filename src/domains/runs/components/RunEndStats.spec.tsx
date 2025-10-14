@@ -2,17 +2,17 @@ import { render, screen } from "@testing-library/react";
 import { RunEndStats } from "./RunEndStats";
 import { describe, expect, it } from "vitest";
 
-const mockCategoryXp = [
+const mockCategoryCoverage = [
 	{
 		categoryCode: "rareware",
-		currentXp: 150,
+		currentCoverage: 150,
 		currentStreak: 3,
 		bestStreak: 5,
 		pollsAnswered: 12,
 	},
 	{
 		categoryCode: "pokemon",
-		currentXp: 80,
+		currentCoverage: 80,
 		currentStreak: 0,
 		bestStreak: 2,
 		pollsAnswered: 8,
@@ -20,18 +20,18 @@ const mockCategoryXp = [
 ];
 
 describe("RunEndStats", () => {
-	it("displays total XP and questions answered", () => {
+	it("displays total coverage and questions answered", () => {
 		render(
 			<RunEndStats
-				totalXp={230}
+				totalCoverage={230}
 				totalPollsAnswered={20}
-				categoryCoverage={mockCategoryXp}
+				categoryCoverage={mockCategoryCoverage}
 				duration="2m 45s"
 			/>
 		);
 
-		expect(screen.getByText("230")).toBeInTheDocument();
-		expect(screen.getByText("Total XP Earned")).toBeInTheDocument();
+		expect(screen.getByText("230%")).toBeInTheDocument();
+		expect(screen.getByText("Total Coverage Earned")).toBeInTheDocument();
 		expect(screen.getByText("20")).toBeInTheDocument();
 		expect(screen.getByText("Questions Answered")).toBeInTheDocument();
 	});
@@ -39,9 +39,9 @@ describe("RunEndStats", () => {
 	it("displays duration", () => {
 		render(
 			<RunEndStats
-				totalXp={100}
+				totalCoverage={100}
 				totalPollsAnswered={10}
-				categoryCoverage={mockCategoryXp}
+				categoryCoverage={mockCategoryCoverage}
 				duration="1m 30s"
 			/>
 		);
@@ -52,22 +52,22 @@ describe("RunEndStats", () => {
 	it("displays category performance details", () => {
 		render(
 			<RunEndStats
-				totalXp={230}
+				totalCoverage={230}
 				totalPollsAnswered={20}
-				categoryCoverage={mockCategoryXp}
+				categoryCoverage={mockCategoryCoverage}
 				duration="2m 45s"
 			/>
 		);
 
 		expect(screen.getByText("rareware")).toBeInTheDocument();
-		expect(screen.getByText("150 XP")).toBeInTheDocument();
+		expect(screen.getByText("150%")).toBeInTheDocument();
 		expect(
 			screen.getByText("12 questions • Best streak: 5")
 		).toBeInTheDocument();
 		expect(screen.getByText("Streak: 3")).toBeInTheDocument();
 
 		expect(screen.getByText("pokemon")).toBeInTheDocument();
-		expect(screen.getByText("80 XP")).toBeInTheDocument();
+		expect(screen.getByText("80%")).toBeInTheDocument();
 		expect(
 			screen.getByText("8 questions • Best streak: 2")
 		).toBeInTheDocument();
@@ -77,9 +77,9 @@ describe("RunEndStats", () => {
 	it("shows game completion status with default reason", () => {
 		render(
 			<RunEndStats
-				totalXp={100}
+				totalCoverage={100}
 				totalPollsAnswered={10}
-				categoryCoverage={mockCategoryXp}
+				categoryCoverage={mockCategoryCoverage}
 				duration="1m 30s"
 			/>
 		);
@@ -91,9 +91,9 @@ describe("RunEndStats", () => {
 	it("shows threshold not met reason", () => {
 		render(
 			<RunEndStats
-				totalXp={100}
+				totalCoverage={100}
 				totalPollsAnswered={10}
-				categoryCoverage={mockCategoryXp}
+				categoryCoverage={mockCategoryCoverage}
 				duration="1m 30s"
 				reason="threshold_not_met"
 			/>
@@ -106,9 +106,9 @@ describe("RunEndStats", () => {
 	it("shows wrong answer reason", () => {
 		render(
 			<RunEndStats
-				totalXp={100}
+				totalCoverage={100}
 				totalPollsAnswered={10}
-				categoryCoverage={mockCategoryXp}
+				categoryCoverage={mockCategoryCoverage}
 				duration="1m 30s"
 				reason="wrong_answer"
 			/>

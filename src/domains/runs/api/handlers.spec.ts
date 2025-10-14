@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getOrCreateActiveRun, getUserActiveRun } from "./handlers";
 import * as queries from "./queries";
 import { createMockRun } from "../models/run";
-import { createMockRunCategoryCoverageArray } from "../models/runCategoryXp";
+import { createMockRunCategoryCoverageArray } from "../models/runCategoryCoverage";
 
 // Mock the queries module
 vi.mock("./queries", () => ({

@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import { vi, describe, it, expect } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -26,7 +27,7 @@ const renderWithShopProvider = (overrides?: {
 		</ShopProvider>
 	);
 };
-describe(Shop, () => {
+describe("Shop", () => {
 	it("renders the shop", () => {
 		renderWithShopProvider();
 

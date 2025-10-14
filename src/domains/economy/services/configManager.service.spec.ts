@@ -198,6 +198,7 @@ describe("configStorage", () => {
 						description: "Shows community correctness percentage after each answer",
 						effect: ["showCommunityPercentage"],
 						rarity: "common",
+					priority: 1,
 					},
 				],
 				configsStorage: STORAGE_UNITS.MB / 4, // 256KB

@@ -67,10 +67,10 @@ describe("configs", () => {
 			);
 			expect(tryCatchConfig).toBeDefined();
 			expect(tryCatchConfig?.name).toBe("Try/Catch");
-			expect(tryCatchConfig?.effect).toEqual(["checkXPWithThreshold"]);
+			expect(tryCatchConfig?.effect).toEqual(["checkCoverageWithThreshold"]);
 			expect(tryCatchConfig?.rarity).toBe("rare");
 			expect(tryCatchConfig?.description).toContain(
-				"Saves your run when you have at least 80% of the XP of the threshold"
+				"Saves your run when you have at least 80% of the coverage threshold"
 			);
 		});
 	});
@@ -432,7 +432,7 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.coverageBonus).toBe(0.3);
-			expect(result.meta.notes).toEqual(["Random amp for js polls"]);
+			expect(result.meta.notes).toEqual(["Random code coverage bonus for js polls"]);
 		});
 
 		it("can yield negative amp", () => {
@@ -453,11 +453,11 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.coverageBonus).toBe(-0.5); // -0.5 raw value
-			expect(result.meta.notes).toEqual(["Random amp for js polls"]);
+			expect(result.meta.notes).toEqual(["Random code coverage bonus for js polls"]);
 		});
 	});
 
-	describe("checkXPWithThreshold effect", () => {
+	describe("checkCoverageWithThreshold effect", () => {
 		beforeEach(() => {
 			vi.clearAllMocks();
 		});
@@ -483,6 +483,8 @@ describe("configs", () => {
 				maxCoverage: 0,
 				pollNumber: 0,
 				currentRound: 1,
+				isThresholdCheckPoll: false,
+				pollInRound: 0,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -517,11 +519,13 @@ describe("configs", () => {
 
 			// Mock the threshold calculation to return failing threshold at poll 3
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				meetsThreshold: true,
+				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				requiredCoverage: 100,
 				maxCoverage: 80,
 				pollNumber: 3,
 				currentRound: 1,
+				isThresholdCheckPoll: true,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -559,11 +563,13 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				meetsThreshold: true,
+				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				requiredCoverage: 100,
 				maxCoverage: 60,
 				pollNumber: 3,
 				currentRound: 1,
+				isThresholdCheckPoll: true,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -598,11 +604,13 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				meetsThreshold: true,
+				meetsThreshold: true, // 120 > 100, so passing
 				requiredCoverage: 100,
 				maxCoverage: 120,
 				pollNumber: 3,
 				currentRound: 1,
+				isThresholdCheckPoll: true,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -643,6 +651,8 @@ describe("configs", () => {
 				maxCoverage: 40,
 				pollNumber: 2,
 				currentRound: 1,
+				isThresholdCheckPoll: false,
+				pollInRound: 2,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -688,11 +698,13 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				meetsThreshold: true,
+				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				requiredCoverage: 100,
 				maxCoverage: 85,
 				pollNumber: 3,
 				currentRound: 1,
+				isThresholdCheckPoll: true,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -727,11 +739,13 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				meetsThreshold: true,
+				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				requiredCoverage: 200,
 				maxCoverage: 160,
 				pollNumber: 6,
 				currentRound: 2,
+				isThresholdCheckPoll: true,
+				pollInRound: 6,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -766,11 +780,13 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				meetsThreshold: true,
+				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				requiredCoverage: 100,
 				maxCoverage: 79,
 				pollNumber: 3,
 				currentRound: 1,
+				isThresholdCheckPoll: true,
+				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -870,7 +886,7 @@ describe("configs", () => {
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
 			expect(result.renderProps.coverageBonus).toBe(0.3);
 			expect(result.meta.notes).toContain("Hid wrong options");
-			expect(result.meta.notes).toContain("Random amp for react polls");
+			expect(result.meta.notes).toContain("Random code coverage bonus for react polls");
 
 			vi.restoreAllMocks();
 		});
@@ -898,7 +914,7 @@ describe("configs", () => {
 			expect(result.renderProps.coverageBonus).toBe(0.6);
 			expect(result.coverage.coverageAdd).toBe(0.6);
 			expect(result.meta.notes).toEqual([
-				"Random amp for js polls",
+				"Random code coverage bonus for js polls",
 				"+0.5 amp for js polls",
 			]);
 		});

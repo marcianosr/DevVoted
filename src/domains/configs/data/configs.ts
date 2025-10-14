@@ -119,7 +119,7 @@ export const configs: Config[] = [
 		image: "/configs/try-catch.png",
 		cost: STORAGE_UNITS.MB / 2,
 		description:
-			"Saves your run when you have at least 80% of the required coverage threshold. When activated, this config is consumed.",
+			"Saves your run when you have at least 80% of the coverage threshold. When activated, this config is consumed.",
 		rarity: "rare",
 		effect: ["checkCoverageWithThreshold"],
 		priority: 100,
@@ -212,7 +212,7 @@ const EFFECTS: Record<string, EffectFn> = {
 			};
 		}
 
-		const bonusCoverage = 5;
+		const bonusCoverage = 0.5;
 
 		return {
 			view: { poll, options, run, hasAnswered },
@@ -220,7 +220,7 @@ const EFFECTS: Record<string, EffectFn> = {
 			coverage: { coverageAdd: bonusCoverage },
 			meta: {
 				notes: [
-					`+${bonusCoverage}% coverage for ${poll.categoryCode} polls`,
+					`+${bonusCoverage} amp for ${poll.categoryCode} polls`,
 				],
 			},
 		};
@@ -236,7 +236,7 @@ const EFFECTS: Record<string, EffectFn> = {
 			coverage: { coverageAdd: bonusCoverage },
 			meta: {
 				notes: [
-					`${bonusCoverage > 0 ? "+" : ""}${bonusCoverage}% coverage for ${poll.categoryCode} polls`,
+					`Random code coverage bonus for ${poll.categoryCode} polls`,
 				],
 			},
 		};
@@ -263,11 +263,16 @@ const EFFECTS: Record<string, EffectFn> = {
 		const requiredForProtection = requiredCoverage * 0.8; // 80% of threshold
 
 		// Try/Catch only activates when:
-		// 1. Current max coverage is at least 80% of threshold
-		// 2. We would actually fail the threshold
+		// 1. It's actually a threshold check poll
+		// 2. Current max coverage is at least 80% of threshold
+		// 3. We would actually fail the threshold
 		const isProtected =
+			thresholdInfo.isThresholdCheckPoll &&
 			thresholdInfo.maxCoverage >= requiredForProtection &&
 			!thresholdInfo.meetsThreshold; // Only if we'd actually fail
+
+		// Calculate percentage for display
+		const percentageOfThreshold = Math.round((thresholdInfo.maxCoverage / requiredCoverage) * 100);
 
 		// If current coverage is below 80% of threshold, try/catch can't save you
 		if (thresholdInfo.maxCoverage < requiredForProtection) {
@@ -276,7 +281,7 @@ const EFFECTS: Record<string, EffectFn> = {
 				protection: { tryCatch: false },
 				meta: {
 					notes: [
-						`Try/Catch inactive (need 80% of ${requiredCoverage}% threshold)`,
+						`Try/Catch inactive (need 80% of threshold)`,
 					],
 				},
 			};
@@ -290,10 +295,10 @@ const EFFECTS: Record<string, EffectFn> = {
 			meta: {
 				notes: isProtected
 					? [
-							`Try/Catch will save your run! (have ${thresholdInfo.maxCoverage}% of ${requiredCoverage}% required)`,
+							`Try/Catch will save your run! (have ${percentageOfThreshold}% of threshold)`,
 						]
 					: [
-							`Try/Catch ready (have ${thresholdInfo.maxCoverage}% of ${requiredCoverage}% required)`,
+							`Try/Catch ready (have ${percentageOfThreshold}% of threshold)`,
 						],
 				badges: isProtected
 					? { "try-catch": "Try/Catch will activate!" }

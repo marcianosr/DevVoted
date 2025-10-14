@@ -6,9 +6,10 @@ export const createConfig = (overrides: Partial<Config> = {}): Config => ({
 	name: "Test Config",
 	description: "A test configuration",
 	cost: STORAGE_UNITS.KB * 100, // 100KB
-	level: 1,
 	rarity: "common",
 	effect: ["testEffect"],
+	priority: 1,
+	image: "/images/configs/default-config.png",
 	...overrides,
 });
 
@@ -26,7 +27,7 @@ export const createConfigs = (count: number = 3): Config[] => {
 			name: `Test Config ${index + 1}`,
 			description: `Test config number ${index + 1}`,
 			cost: STORAGE_UNITS.KB * (100 + index * 50), // 100KB, 150KB, 200KB, etc.
-			level: 1,
+			priority: 1,
 			rarity: rarities[index % 4],
 		})
 	);

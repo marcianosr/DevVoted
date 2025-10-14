@@ -17,6 +17,21 @@ type ShopProps = {
 	categoryCode?: CategoryCode;
 };
 
+type ShopConfigCardProps = {
+	config: Config;
+	activeRun: Run;
+};
+
+const ShopConfigCard = ({ config, activeRun }: ShopConfigCardProps) => {
+	const actions = useConfigCardActions({
+		run: activeRun,
+		config,
+		mode: "shop",
+	});
+
+	return <ConfigCard key={config.id} config={config} {...actions} />;
+};
+
 export const Shop = ({
 	activeRun,
 	offeredConfigs,
@@ -64,24 +79,13 @@ export const Shop = ({
 
 			<div className="grid grid-cols-3 gap-4 mb-6">
 				{/* offeredConfigs should be a filtered list of unique configs */}
-				{offeredConfigs.map((config) => {
-					const actions = useConfigCardActions({
-						run: activeRun,
-						config,
-						mode: "shop",
-					});
-
-					console.log("Rendering ConfigCard for config:", config);
-					console.log("With actions:", actions);
-
-					return (
-						<ConfigCard
-							key={config.id}
-							config={config}
-							{...actions}
-						/>
-					);
-				})}
+				{offeredConfigs.map((config) => (
+					<ShopConfigCard
+						key={config.id}
+						config={config}
+						activeRun={activeRun}
+					/>
+				))}
 			</div>
 		</div>
 	);

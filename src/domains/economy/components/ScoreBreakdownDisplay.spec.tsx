@@ -4,12 +4,9 @@ import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 
 describe("ScoreBreakdownDisplay", () => {
 	const mockBreakdown: PollScoreBreakdown = {
-		round: 2,
 		streak: 3,
-		base: 20,
-		amp: 1.8,
-		earnedXP: 36,
-		delta: 36,
+		earnedCoverage: 2,
+		delta: 2,
 	};
 
 	const mockActiveConfigIds = [".js-config", "math-random-config"];
@@ -21,35 +18,32 @@ describe("ScoreBreakdownDisplay", () => {
 				breakdown={mockBreakdown}
 				activeConfigIds={mockActiveConfigIds}
 				categoryCode={mockCategoryCode}
+				coverageBonus={0.5}
 			/>
 		);
 
 		// Check main heading
-		expect(screen.getByText("XP Breakdown - Round 2")).toBeInTheDocument();
+		expect(screen.getByText("Coverage Breakdown")).toBeInTheDocument();
 
-		// Check base XP calculation
-		expect(screen.getByText("Base XP (Round × 10)")).toBeInTheDocument();
-		expect(screen.getByText("20 XP")).toBeInTheDocument();
+		// Check base coverage
+		expect(screen.getByText("Base Coverage")).toBeInTheDocument();
+		expect(screen.getByText("1%")).toBeInTheDocument();
 
-		// Check streak bonus
-		expect(screen.getByText("Streak Bonus (3 correct)")).toBeInTheDocument();
-		expect(screen.getByText("×1.3")).toBeInTheDocument();
+		// Check streak display
+		expect(screen.getByText("Current Streak")).toBeInTheDocument();
+		expect(screen.getByText("3 correct")).toBeInTheDocument();
 
 		// Check config effects
 		expect(screen.getByText("Config Effects Active:")).toBeInTheDocument();
 		expect(screen.getByText(".js")).toBeInTheDocument();
 		expect(screen.getByText("Math Random")).toBeInTheDocument();
 
-		// Check pre-correctness calculation
-		expect(screen.getByText("Pre-correctness: 20 × 1.8")).toBeInTheDocument();
-		expect(screen.getByText("= 36 XP")).toBeInTheDocument();
-
 		// Check correctness factor note
-		expect(screen.getByText("Correctness factor applied")).toBeInTheDocument();
+		expect(screen.getByText("Correctness factor")).toBeInTheDocument();
 
-		// Check final earned XP
-		expect(screen.getByText("Final XP Earned")).toBeInTheDocument();
-		expect(screen.getByText("36 XP")).toBeInTheDocument();
+		// Check final earned coverage
+		expect(screen.getByText("Coverage Earned")).toBeInTheDocument();
+		expect(screen.getByText("2.0%")).toBeInTheDocument();
 	});
 
 	it("renders when no breakdown provided", () => {
@@ -62,17 +56,14 @@ describe("ScoreBreakdownDisplay", () => {
 		);
 
 		// Should not render anything
-		expect(screen.queryByText("XP Breakdown")).not.toBeInTheDocument();
+		expect(screen.queryByText("Coverage Breakdown")).not.toBeInTheDocument();
 	});
 
-	it("calculates config amp bonus correctly", () => {
+	it("calculates config coverage bonus correctly", () => {
 		const mockBreakdownWithBonus: PollScoreBreakdown = {
-			round: 3,
 			streak: 2,
-			base: 30,
-			amp: 1.7, // Base amp would be 1.2 (1 + 0.1 * 2), so config bonus is +0.5
-			earnedXP: 51,
-			delta: 51,
+			earnedCoverage: 2,
+			delta: 2,
 		};
 
 		render(
@@ -80,12 +71,13 @@ describe("ScoreBreakdownDisplay", () => {
 				breakdown={mockBreakdownWithBonus}
 				activeConfigIds={[".js-config"]}
 				categoryCode="js"
+				coverageBonus={0.5}
 			/>
 		);
 
-		// Should show +0.5 amp bonus
-		expect(screen.getByText("+0.5 amp")).toBeInTheDocument();
-		expect(screen.getByText("×1.7")).toBeInTheDocument();
+		// Should show +0.5% coverage bonus
+		expect(screen.getByText("+0.5%")).toBeInTheDocument();
+		expect(screen.getByText(".js")).toBeInTheDocument();
 	});
 
 	it("handles configs that don't affect current category", () => {

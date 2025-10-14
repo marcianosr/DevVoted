@@ -4,14 +4,14 @@ import {
 	createRunForUser,
 	getRunWithCategoryXp,
 	finishRun,
-	awardXpToRun,
+	awardCoverageToRun,
 } from "./queries";
 import { db } from "~/database/db";
 import { createMockRunRecord } from "../models/run";
 import {
 	createMockRunCategoryCoverageRecord,
 	createMockRunCategoryCoverageRecordArray,
-} from "../models/runCategoryXp";
+} from "../models/runCategoryCoverage";
 
 // Mock the seasons service
 vi.mock("~/domains/seasons/services/seasonService", () => ({
@@ -231,16 +231,16 @@ describe("Run Queries", () => {
 		});
 	});
 
-	describe("awardXpToRun", () => {
-		it("awards XP and increments streak correctly", async () => {
+	describe("awardCoverageToRun", () => {
+		it("awards coverage and increments streak correctly", async () => {
 			const currentXpRecord = createMockRunCategoryCoverageRecord({
-				current_xp: 10,
+				current_coverage: 10,
 				current_streak: 2,
 				best_streak: 3,
 			});
 
 			const updatedXpRecord = createMockRunCategoryCoverageRecord({
-				current_xp: 15, // +5 XP
+				current_coverage: 15, // +5 XP
 				current_streak: 3, // +1 streak
 				best_streak: 3, // same as before
 			});
@@ -269,22 +269,22 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			const result = await awardXpToRun(1, "js", 5, 1, 1, 1);
+			const result = await awardCoverageToRun(1, "js", 15, 3, 3, 1);
 
-			expect(result.currentXp).toBe(15);
+			expect(result.currentCoverage).toBe(15);
 			expect(result.currentStreak).toBe(3);
 			expect(result.bestStreak).toBe(3);
 		});
 
 		it("updates best streak when current streak exceeds it", async () => {
 			const currentXpRecord = createMockRunCategoryCoverageRecord({
-				current_xp: 20,
+				current_coverage: 20,
 				current_streak: 4,
 				best_streak: 3,
 			});
 
 			const updatedXpRecord = createMockRunCategoryCoverageRecord({
-				current_xp: 25,
+				current_coverage: 25,
 				current_streak: 5,
 				best_streak: 5, // updated to new best
 			});
@@ -313,7 +313,7 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			const result = await awardXpToRun(1, "js", 5, 1, 1, 1);
+			const result = await awardCoverageToRun(1, "js", 25, 5, 5, 1);
 
 			expect(result.bestStreak).toBe(5);
 		});

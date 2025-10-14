@@ -49,8 +49,8 @@ const getLiveLeaderboard = createServerFn({ method: "POST" })
 
 const DailyPoll: React.FC = () => {
 	const { user } = Route.useRouteContext();
-	const todayDateString = getTodayDateString();
-	// const todayDateString = "2025-10-30";
+	// const todayDateString = getTodayDateString();
+	const todayDateString = "2025-10-30";
 
 	// Fetch leaderboard data
 	const leaderboardQuery = useQuery({

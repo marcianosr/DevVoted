@@ -4,8 +4,7 @@ import {
 	outcomeMulti,
 	singleCorrectnessFactor,
 	multiCorrectnessFactor,
-	calculateXP,
-	calculateDisplayAmp,
+	calculateCoverage,
 	orchestrateScoreCalculation,
 	calculatePollScoreForProgression,
 } from "./score.service";
@@ -91,91 +90,50 @@ describe("score.service", () => {
 		});
 	});
 
-	describe("calculateDisplayAmp", () => {
-		it("returns base amp with no config bonus", () => {
-			expect(calculateDisplayAmp(0)).toBe(1.0);
-			expect(calculateDisplayAmp(5)).toBe(1.5);
+	describe("calculateCoverage", () => {
+		it("calculates coverage based on correctness factor", () => {
+			expect(calculateCoverage(1.0)).toBe(1); // Full correct = 1%
+			expect(calculateCoverage(0.5)).toBe(1); // Partial rounds to 1%
+			expect(calculateCoverage(0.0)).toBe(0); // Wrong = 0%
 		});
 
-		it("combines streak amp with positive config bonus", () => {
-			expect(calculateDisplayAmp(2, 0.5)).toBe(1.7); // 1.2 + 0.5
-			expect(calculateDisplayAmp(5, 0.3)).toBe(1.8); // 1.5 + 0.3
-		});
-
-		it("allows negative config bonus", () => {
-			expect(calculateDisplayAmp(5, -0.3)).toBe(1.2); // 1.5 - 0.3
-			expect(calculateDisplayAmp(0, -0.5)).toBe(0.5); // 1.0 - 0.5
-		});
-
-		it("works with zero streak and positive config bonus", () => {
-			expect(calculateDisplayAmp(0, 0.5)).toBe(1.5); // 1.0 + 0.5
-		});
-	});
-
-	describe("calculateXP", () => {
-		it("calculates XP based on correctness factor", () => {
-			expect(calculateXP(1.0, 10)).toBe(10);
-			expect(calculateXP(0.5, 10)).toBe(5);
-			expect(calculateXP(0.0, 10)).toBe(0);
-		});
-
-		it("rounds XP to nearest integer", () => {
-			expect(calculateXP(0.625, 10)).toBe(6); // 6.25 -> 6
-			expect(calculateXP(0.75, 10)).toBe(8); // 7.5 -> 8
+		it("handles perfect multi-choice bonus", () => {
+			expect(calculateCoverage(1.5)).toBe(2); // Perfect multi = 1.5% rounds to 2%
 		});
 	});
 
 	describe("orchestrateScoreCalculation", () => {
-		it("multiplies base XP by correctness factor", () => {
-			// Round 1, streak will be 2, base 10, amp 1.2 = 12 XP
-			// With 1.5x perfect multiplier = 18 XP
+		it("calculates coverage for perfect multi-choice answer", () => {
 			const result = orchestrateScoreCalculation({
-				currentXP: 100,
+				currentCoverage: 10,
 				currentStreak: 1,
 				currentBestStreak: 1,
 				totalPollsAnswered: 0,
-				correctnessFactor: 1.5,
+				correctnessFactor: 1.5, // Perfect multi-choice
 			});
 
-			expect(result.breakdown.base).toBe(10); // Round 1 base
-			expect(result.breakdown.amp).toBe(1.2); // 2 streak = 1.2x
-			expect(result.breakdown.earnedXP).toBe(18); // 10 * 1.2 * 1.5 = 18
-			expect(result.newTotalXP).toBe(118); // 100 + 18
+			expect(result.breakdown.earnedCoverage).toBe(2); // 1% * 1.5 rounds to 2%
+			expect(result.newTotalCoverage).toBe(12); // 10 + 2
+			expect(result.newStreak).toBe(2); // Streak incremented
 		});
 
 		it("applies 0.5x factor for messy partial", () => {
 			const result = orchestrateScoreCalculation({
-				currentXP: 100,
-				currentStreak: 16,
-				currentBestStreak: 0,
-				totalPollsAnswered: 0,
+				currentCoverage: 10,
+				currentStreak: 5,
+				currentBestStreak: 5,
+				totalPollsAnswered: 3,
 				correctnessFactor: 0.5,
 			});
 
-			expect(result.breakdown.base).toBe(10); // Round 1 base
-			expect(result.breakdown.amp).toBe(2.7); // 2 streak = 1.2x
-			expect(result.breakdown.earnedXP).toBe(14); // 10 * 1.2 * 0.5 = 14
-			expect(result.newTotalXP).toBe(114); // 100 + 14
+			expect(result.breakdown.earnedCoverage).toBe(1); // 1% * 0.5 rounds to 1%
+			expect(result.newTotalCoverage).toBe(11); // 10 + 1
+			expect(result.newStreak).toBe(6); // Streak incremented
 		});
 
-		it("applies 0.5x factor for messy partial", () => {
+		it("gives 0 coverage for wrong answer", () => {
 			const result = orchestrateScoreCalculation({
-				currentXP: 100,
-				currentStreak: 0,
-				currentBestStreak: 0,
-				totalPollsAnswered: 0,
-				correctnessFactor: 0.5,
-			});
-
-			expect(result.breakdown.base).toBe(10); // Round 1
-			expect(result.breakdown.amp).toBe(1.1); // 1 streak
-			expect(result.breakdown.earnedXP).toBe(6); // 10 * 1.1 * 0.5 = 5.5 → 6
-			expect(result.newTotalXP).toBe(106);
-		});
-
-		it("gives 0 XP for wrong answer", () => {
-			const result = orchestrateScoreCalculation({
-				currentXP: 100,
+				currentCoverage: 10,
 				currentStreak: 5,
 				currentBestStreak: 5,
 				totalPollsAnswered: 10,
@@ -183,40 +141,40 @@ describe("score.service", () => {
 			});
 
 			expect(result.newStreak).toBe(0); // Streak reset
-			expect(result.breakdown.earnedXP).toBe(0); // No XP earned
-			expect(result.newTotalXP).toBe(100); // No change
+			expect(result.breakdown.earnedCoverage).toBe(0); // No coverage earned
+			expect(result.newTotalCoverage).toBe(10); // No change
+		});
+
+		it("applies config coverage bonus", () => {
+			const result = orchestrateScoreCalculation({
+				currentCoverage: 10,
+				currentStreak: 2,
+				currentBestStreak: 5,
+				totalPollsAnswered: 3,
+				correctnessFactor: 1.0,
+				coverageAdd: 0.5, // +0.5% from .js config
+			});
+
+			expect(result.breakdown.earnedCoverage).toBe(2); // 1% + 0.5% config rounds to 2%
+			expect(result.newTotalCoverage).toBe(12); // 10 + 2
 		});
 	});
 
 	describe("calculatePollScoreForProgression", () => {
-		it("clamps negative amp to 0", () => {
-			// Polls answered: 5, streak: 0, negative config bonus
-			const result = calculatePollScoreForProgression(5, 0, 1, -1.5);
+		it("returns base coverage breakdown with streak", () => {
+			const result = calculatePollScoreForProgression(5);
 
-			// Streak 0 gives 1.0 amp, -1.5 config bonus = -0.5
-			// Should be clamped to 0
-			expect(result.amp).toBe(0);
-			expect(result.earnedXP).toBe(0); // 0 amp means 0 XP
+			expect(result.streak).toBe(5);
+			expect(result.earnedCoverage).toBe(1); // Always 1% base
+			expect(result.delta).toBe(1);
 		});
 
-		it("allows positive amp even with negative config bonus", () => {
-			// Polls answered: 5, streak: 5, negative config bonus
-			const result = calculatePollScoreForProgression(5, 5, 1, -0.3);
+		it("works with zero streak", () => {
+			const result = calculatePollScoreForProgression(0);
 
-			// Streak 5 gives 1.5 amp, -0.3 config bonus = 1.2
-			expect(result.amp).toBe(1.2);
-			expect(result.base).toBe(20); // Round 2 base XP (5 polls = round 2)
-			expect(result.earnedXP).toBe(24); // 20 * 1.2
-		});
-
-		it("works with positive config bonus", () => {
-			// Polls answered: 5, streak: 2, positive config bonus
-			const result = calculatePollScoreForProgression(5, 2, 1, 0.5);
-
-			// Streak 2 gives 1.2 amp, +0.5 config bonus = 1.7
-			expect(result.amp).toBe(1.7);
-			expect(result.base).toBe(20); // Round 2 base XP
-			expect(result.earnedXP).toBe(34); // 20 * 1.7
+			expect(result.streak).toBe(0);
+			expect(result.earnedCoverage).toBe(1); // Always 1% base
+			expect(result.delta).toBe(1);
 		});
 	});
 });

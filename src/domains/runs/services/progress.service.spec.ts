@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { incrementRunProgress } from "./progress.service";
 import { orchestrateScoreCalculation } from "~/domains/score/services/score.service";
-import { awardXpToRun } from "../api/queries";
+import { awardCoverageToRun } from "../api/queries";
 import { createMockRun } from "../models/run";
-import { createMockRunCategoryCoverage } from "../models/runCategoryXp";
+import { createMockRunCategoryCoverage } from "../models/runCategoryCoverage";
 
 vi.mock("~/domains/score/services/score.service");
 vi.mock("../api/queries");
@@ -21,7 +21,7 @@ describe("incrementRunProgress", () => {
 					id: 1,
 					runId: 1,
 					categoryCode: "js",
-					currentXp: 100,
+					currentCoverage: 100,
 					currentStreak: 2,
 					bestStreak: 5,
 					pollsAnswered: 3,
@@ -30,7 +30,7 @@ describe("incrementRunProgress", () => {
 					id: 2,
 					runId: 1,
 					categoryCode: "css",
-					currentXp: 50,
+					currentCoverage: 50,
 					currentStreak: 1,
 					bestStreak: 2,
 					pollsAnswered: 2,
@@ -64,12 +64,12 @@ describe("incrementRunProgress", () => {
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
-			currentXp: 150,
+			currentCoverage: 150,
 			currentStreak: 3,
 			bestStreak: 5,
 			pollsAnswered: 4,
 		});
-		vi.mocked(awardXpToRun).mockResolvedValue(mockUpdatedRecord);
+		vi.mocked(awardCoverageToRun).mockResolvedValue(mockUpdatedRecord);
 
 		await incrementRunProgress({
 			categoryCode: "js",
@@ -113,12 +113,12 @@ describe("incrementRunProgress", () => {
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
-			currentXp: 130,
+			currentCoverage: 130,
 			currentStreak: 3,
 			bestStreak: 5,
 			pollsAnswered: 4,
 		});
-		vi.mocked(awardXpToRun).mockResolvedValue(mockUpdatedRecord);
+		vi.mocked(awardCoverageToRun).mockResolvedValue(mockUpdatedRecord);
 
 		await incrementRunProgress({
 			categoryCode: "js",
@@ -162,12 +162,12 @@ describe("incrementRunProgress", () => {
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
-			currentXp: 130,
+			currentCoverage: 130,
 			currentStreak: 3,
 			bestStreak: 5,
 			pollsAnswered: 4,
 		});
-		vi.mocked(awardXpToRun).mockResolvedValue(mockUpdatedRecord);
+		vi.mocked(awardCoverageToRun).mockResolvedValue(mockUpdatedRecord);
 
 		const result = await incrementRunProgress({
 			categoryCode: "js",
@@ -204,12 +204,12 @@ describe("incrementRunProgress", () => {
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
-			currentXp: 170,
+			currentCoverage: 170,
 			currentStreak: 3,
 			bestStreak: 5,
 			pollsAnswered: 4,
 		});
-		vi.mocked(awardXpToRun).mockResolvedValue(mockUpdatedRecord);
+		vi.mocked(awardCoverageToRun).mockResolvedValue(mockUpdatedRecord);
 
 		await incrementRunProgress({
 			categoryCode: "js",
@@ -250,7 +250,7 @@ describe("incrementRunProgress", () => {
 						id: 1,
 						runId: 1,
 						categoryCode: testCase.categoryCode,
-						currentXp: 100,
+						currentCoverage: 100,
 						currentStreak: 2,
 						bestStreak: 5,
 						pollsAnswered: 3,
@@ -259,7 +259,7 @@ describe("incrementRunProgress", () => {
 						id: 2,
 						runId: 1,
 						categoryCode: "css",
-						currentXp: 50,
+						currentCoverage: 50,
 						currentStreak: 1,
 						bestStreak: 2,
 						pollsAnswered: 2,
@@ -290,12 +290,12 @@ describe("incrementRunProgress", () => {
 				id: 1,
 				runId: 1,
 				categoryCode: testCase.categoryCode,
-				currentXp: 150,
+				currentCoverage: 150,
 				currentStreak: 3,
 				bestStreak: 5,
 				pollsAnswered: 4,
 			});
-			vi.mocked(awardXpToRun).mockResolvedValue(mockUpdatedRecord);
+			vi.mocked(awardCoverageToRun).mockResolvedValue(mockUpdatedRecord);
 
 			await incrementRunProgress({
 				categoryCode: testCase.categoryCode,
