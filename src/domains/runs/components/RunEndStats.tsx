@@ -3,7 +3,7 @@ import { CategoryCode } from "~/domains/shared/categories";
 interface RunEndStatsProps {
 	totalCoverage: number;
 	totalPollsAnswered: number;
-	categoryXp: {
+	categoryCoverage: {
 		categoryCode: CategoryCode;
 		currentCoverage: number;
 		currentStreak: number;
@@ -17,7 +17,7 @@ interface RunEndStatsProps {
 export const RunEndStats = ({
 	totalCoverage,
 	totalPollsAnswered,
-	categoryXp,
+	categoryCoverage,
 	duration,
 	reason,
 }: RunEndStatsProps) => {
@@ -78,7 +78,7 @@ export const RunEndStats = ({
 					Category Performance
 				</h3>
 				<div className="space-y-3">
-					{categoryXp.map((category) => (
+					{categoryCoverage.map((category) => (
 						<div
 							key={category.categoryCode}
 							className="flex items-center justify-between p-3 bg-white rounded border"

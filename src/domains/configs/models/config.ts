@@ -1,10 +1,10 @@
-import { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
+import { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { Run } from "~/domains/runs/models/run";
 import { CategoryCode } from "~/domains/shared/categories";
 
 export type ConfigEffectContext = {
 	run: Run;
-	categoryXp: RunCategoryXp[];
+	categoryCoverage: RunCategoryCoverage[];
 	currentStreak: number;
 	pollsAnswered: number;
 	correctAnswers: number;
@@ -18,7 +18,7 @@ export type Config = {
 	effect: string[];
 	description: string;
 	unlockCriteria?: {
-		requiredXP?: number;
+		requiredCoverage?: number;
 		requiredCategory?: string;
 		requiredStreak?: number;
 		requiredPollsAnswered?: number;

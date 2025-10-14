@@ -212,14 +212,16 @@ const EFFECTS: Record<string, EffectFn> = {
 			};
 		}
 
-		const bonusCoverage = 0.5;
+		const bonusCoverage = 5;
 
 		return {
 			view: { poll, options, run, hasAnswered },
 			renderProps: { coverageBonus: bonusCoverage },
 			coverage: { coverageAdd: bonusCoverage },
 			meta: {
-				notes: [`+${bonusCoverage}% coverage for ${poll.categoryCode} polls`],
+				notes: [
+					`+${bonusCoverage}% coverage for ${poll.categoryCode} polls`,
+				],
 			},
 		};
 	},
@@ -233,7 +235,9 @@ const EFFECTS: Record<string, EffectFn> = {
 			renderProps: { coverageBonus: bonusCoverage },
 			coverage: { coverageAdd: bonusCoverage },
 			meta: {
-				notes: [`${bonusCoverage > 0 ? '+' : ''}${bonusCoverage}% coverage for ${poll.categoryCode} polls`],
+				notes: [
+					`${bonusCoverage > 0 ? "+" : ""}${bonusCoverage}% coverage for ${poll.categoryCode} polls`,
+				],
 			},
 		};
 	},
@@ -254,7 +258,7 @@ const EFFECTS: Record<string, EffectFn> = {
 
 	checkCoverageWithThreshold: ({ poll, options, run, hasAnswered }) => {
 		// Calculate threshold based on category coverage data
-		const thresholdInfo = calculateThresholdInfo(run.categoryXp);
+		const thresholdInfo = calculateThresholdInfo(run.categoryCoverage);
 		const requiredCoverage = thresholdInfo.requiredCoverage;
 		const requiredForProtection = requiredCoverage * 0.8; // 80% of threshold
 
@@ -271,7 +275,9 @@ const EFFECTS: Record<string, EffectFn> = {
 				view: { poll, options, run, hasAnswered },
 				protection: { tryCatch: false },
 				meta: {
-					notes: [`Try/Catch inactive (need 80% of ${requiredCoverage}% threshold)`],
+					notes: [
+						`Try/Catch inactive (need 80% of ${requiredCoverage}% threshold)`,
+					],
 				},
 			};
 		}
@@ -346,7 +352,8 @@ export function applyEffects(
 			const out = fn(acc.view, config);
 
 			const coverageBonusValue =
-				(acc.renderProps.coverageBonus ?? 0) + (out.renderProps?.coverageBonus ?? 0);
+				(acc.renderProps.coverageBonus ?? 0) +
+				(out.renderProps?.coverageBonus ?? 0);
 			const disabledIds = [
 				...(acc.renderProps.disabledOptionIds ?? []),
 				...(out.renderProps?.disabledOptionIds ?? []),
@@ -356,7 +363,9 @@ export function applyEffects(
 				view: out.view,
 				renderProps: {
 					...acc.renderProps,
-					...(coverageBonusValue !== 0 && { coverageBonus: coverageBonusValue }),
+					...(coverageBonusValue !== 0 && {
+						coverageBonus: coverageBonusValue,
+					}),
 					...(disabledIds.length > 0 && {
 						disabledOptionIds: disabledIds,
 					}),
@@ -367,8 +376,12 @@ export function applyEffects(
 					}),
 				},
 				coverage: {
-					coverageAdd: (acc.coverage.coverageAdd ?? 0) + (out.coverage?.coverageAdd ?? 0),
-					coverageMul: (acc.coverage.coverageMul ?? 1) * (out.coverage?.coverageMul ?? 1),
+					coverageAdd:
+						(acc.coverage.coverageAdd ?? 0) +
+						(out.coverage?.coverageAdd ?? 0),
+					coverageMul:
+						(acc.coverage.coverageMul ?? 1) *
+						(out.coverage?.coverageMul ?? 1),
 				},
 				storage: {
 					bonus: (acc.storage.bonus ?? 0) + (out.storage?.bonus ?? 0),

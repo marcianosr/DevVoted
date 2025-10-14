@@ -2,7 +2,6 @@ import { formatDistance } from "date-fns";
 import { RunEndStats } from "./RunEndStats";
 import { useLastRun } from "~/domains/runs/hooks/useLastRun";
 
-
 interface StartRunScreenProps {
 	isStarting: boolean;
 	onStartRun: () => void;
@@ -18,14 +17,14 @@ export const StartRunScreen: React.FC<StartRunScreenProps> = ({
 
 	const formatDuration = (startDate: Date | null, endDate: Date | null) => {
 		if (!startDate || !endDate) return "Unknown";
-		
+
 		return formatDistance(startDate, endDate, { includeSeconds: true });
 	};
 
 	return (
 		<div className="p-4">
 			<h1 className="text-2xl font-bold mb-4">Start Your Quiz Run</h1>
-			
+
 			{isLoading && (
 				<div className="text-center py-4">
 					<div>Loading last run...</div>
@@ -37,7 +36,7 @@ export const StartRunScreen: React.FC<StartRunScreenProps> = ({
 					<RunEndStats
 						totalCoverage={lastRunData.totalCoverage}
 						totalPollsAnswered={lastRunData.totalPollsAnswered}
-						categoryXp={lastRunData.categoryXp}
+						categoryCoverage={lastRunData.categoryCoverage}
 						duration={formatDuration(
 							lastRunData.run.started_at,
 							lastRunData.run.finished_at
@@ -48,7 +47,9 @@ export const StartRunScreen: React.FC<StartRunScreenProps> = ({
 
 			<div className="text-center py-8">
 				<h2 className="text-xl mb-4">
-					{hasLastRun ? "Ready for another run?" : "You need an active run to answer polls"}
+					{hasLastRun
+						? "Ready for another run?"
+						: "You need an active run to answer polls"}
 				</h2>
 				<p className="text-gray-600 mb-6">
 					Each run starts with 0 XP in all categories. Answer polls

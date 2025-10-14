@@ -259,7 +259,7 @@ describe("handlers", () => {
 			// Mock active run with category XP data
 			const mockRun = createMockRun({
 				id: 1,
-				categoryXp: [
+				categoryCoverage: [
 					{
 						// TODO: create factory
 						categoryCode: "js",
@@ -395,7 +395,7 @@ describe("handlers", () => {
 			// Mock active run with category XP data
 			const mockRun = createMockRun({
 				id: 1,
-				categoryXp: [
+				categoryCoverage: [
 					{
 						categoryCode: "js",
 						pollsAnswered: 0,
@@ -473,7 +473,7 @@ describe("handlers", () => {
 			// Mock active run with category XP data
 			const mockRun = createMockRun({
 				id: 1,
-				categoryXp: [
+				categoryCoverage: [
 					{
 						categoryCode: "js",
 						pollsAnswered: 0,
@@ -554,7 +554,7 @@ describe("handlers", () => {
 			// Mock active run with category XP data
 			const mockRun = createMockRun({
 				id: 1,
-				categoryXp: [
+				categoryCoverage: [
 					{
 						categoryCode: "js",
 						pollsAnswered: 0,
@@ -641,7 +641,7 @@ describe("handlers", () => {
 			// Mock active run with category XP data
 			const mockRun = createMockRun({
 				id: 1,
-				categoryXp: [
+				categoryCoverage: [
 					{
 						categoryCode: "js",
 						pollsAnswered: 0,

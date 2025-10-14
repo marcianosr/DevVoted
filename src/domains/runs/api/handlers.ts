@@ -6,7 +6,7 @@ import {
 } from "./queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 import type { CategoryCode } from "~/domains/shared/categories";
-import { aggregateRunCategoryXp } from "~/domains/runs/utils/xpCalculations";
+import { aggregateRunCategoryCoverage } from "~/domains/runs/utils/coverageCalculations";
 
 export const getOrCreateActiveRun = async (userId: string) => {
 	return handleApiOperation(async () => {
@@ -50,12 +50,12 @@ export const getActiveRunCategoryXpHandler = async (userId: string) => {
 			throw new Error("No active run found");
 		}
 
-		const { totalXp } = aggregateRunCategoryXp(activeRun.categoryXp);
+		const { totalCoverage } = aggregateRunCategoryCoverage(activeRun.categoryCoverage);
 
 		return {
-			categoryXp: activeRun.categoryXp,
+			categoryCoverage: activeRun.categoryCoverage,
 			runId: activeRun.id,
-			totalXp,
+			totalCoverage,
 		};
 	}, "Failed to get active run category XP");
 };

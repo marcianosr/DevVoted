@@ -212,14 +212,15 @@ const PollContent: React.FC<PollContentProps> = ({
 	);
 
 	const thresholdInfo =
-		activeRun && activeRun.categoryXp
-			? calculateThresholdInfo(activeRun.categoryXp)
+		activeRun && activeRun.categoryCoverage
+			? calculateThresholdInfo(activeRun.categoryCoverage)
 			: null;
 
 	// Get coverage for the current category being answered
 	const currentCategoryCoverage =
-		activeRun?.categoryXp.find((xp) => xp.categoryCode === poll.categoryCode)
-			?.currentCoverage ?? 0;
+		activeRun?.categoryCoverage.find(
+			(coverage) => coverage.categoryCode === poll.categoryCode
+		)?.currentCoverage ?? 0;
 
 	return (
 		<section
@@ -251,10 +252,18 @@ const PollContent: React.FC<PollContentProps> = ({
 							<div className="mt-2">
 								<span className="font-bold text-sm flex gap-4 justify-between">
 									<span>
-										Current: {formatCoverage(currentCategoryCoverage)}%
+										Current:{" "}
+										{formatCoverage(
+											currentCategoryCoverage
+										)}
+										%
 									</span>
 									<span>
-										Goal: {formatCoverage(thresholdInfo?.requiredCoverage ?? 0)}%
+										Goal:{" "}
+										{formatCoverage(
+											thresholdInfo?.requiredCoverage ?? 0
+										)}
+										%
 									</span>
 								</span>
 								<meter

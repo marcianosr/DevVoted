@@ -176,7 +176,7 @@ export const pollResponseOptionsTable = pgTable("polls_response_options", {
  * Records user submissions and answers
  * - Tracks who answered what and when
  * - Maintains response history even if user is deleted
- * - Enables streak and XP calculations
+ * - Enables streak and coverage calculations
  * - Automatically updates timestamps for analytics
  */
 export const pollResponsesTable = pgTable("polls_responses", {
@@ -232,8 +232,8 @@ export const runsTable = pgTable("runs", {
  * - Coverage accumulates as players answer polls correctly (1% per correct answer)
  * - Enables category-specific progression within runs
  */
-export const runCategoryXpTable = pgTable(
-	"run_category_xp",
+export const runCategoryCoverageTable = pgTable(
+	"run_category_coverage",
 	{
 		id: serial("id").primaryKey(),
 		run_id: integer("run_id")

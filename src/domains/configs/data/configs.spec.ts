@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { configs, applyEffects, EffectRenderProps } from "./configs";
 import { createMockPoll } from "~/domains/polls/factories/poll";
 import { createMockRun } from "~/domains/runs/models/run";
-import { createMockRunCategoryXp } from "~/domains/runs/models/runCategoryXp";
+import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { createPollOption } from "~/domains/polls/models/pollOption";
 import * as thresholdService from "~/domains/runs/services/thresholdCalculator.service";
 
@@ -468,7 +468,7 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [],
+				categoryCoverage: [],
 			});
 			const base = {
 				poll: mockPoll,
@@ -498,8 +498,8 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
@@ -541,8 +541,8 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
@@ -580,8 +580,8 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
@@ -620,8 +620,8 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
@@ -656,22 +656,22 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
 						currentCoverage: 40,
 						pollsAnswered: 1,
 					}),
-					createMockRunCategoryXp({
+					createMockRunCategoryCoverage({
 						id: 2,
 						runId: 1,
 						categoryCode: "react",
 						currentCoverage: 30,
 						pollsAnswered: 1,
 					}),
-					createMockRunCategoryXp({
+					createMockRunCategoryCoverage({
 						id: 3,
 						runId: 1,
 						categoryCode: "css",
@@ -709,8 +709,8 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
@@ -748,8 +748,8 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",

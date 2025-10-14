@@ -52,5 +52,5 @@ export const checkCoverageThreshold = async (
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	return calculateThresholdInfo(runWithCategoryData.categoryXp);
+	return calculateThresholdInfo(runWithCategoryData.categoryCoverage);
 };

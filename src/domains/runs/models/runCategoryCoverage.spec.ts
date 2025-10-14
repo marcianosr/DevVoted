@@ -1,27 +1,27 @@
 import { describe, it, expect } from "vitest";
 import {
-	runCategoryXpFactory,
-	runCategoryXpToDTO,
-	runCategoryXpFromDTO,
-	runCategoryXpsToDTOs,
-	runCategoryXpsFromDTOs,
-	createRunCategoryXp,
-} from "./runCategoryXp";
+	runCategoryCoverageFactory,
+	runCategoryCoverageToDTO,
+	runCategoryCoverageFromDTO,
+	runCategoryCoveragesToDTOs,
+	runCategoryCoveragesFromDTOs,
+	createRunCategoryCoverage,
+} from "./runCategoryCoverage";
 import {
-	createMockRunCategoryXp,
-	createMockRunCategoryXpRecord,
-} from "./runCategoryXp";
+	createMockRunCategoryCoverage,
+	createMockRunCategoryCoverageRecord,
+} from "./runCategoryCoverage";
 
-describe("RunCategoryXp Model", () => {
-	describe("runCategoryXpToDTO", () => {
+describe("RunCategoryCoverage Model", () => {
+	describe("runCategoryCoverageToDTO", () => {
 		it("converts database record to DTO", () => {
-			const record = createMockRunCategoryXpRecord();
-			const result = runCategoryXpToDTO(record);
+			const record = createMockRunCategoryCoverageRecord();
+			const result = runCategoryCoverageToDTO(record);
 
 			expect(result.id).toBe(record.id);
 			expect(result.runId).toBe(record.run_id);
 			expect(result.categoryCode).toBe(record.category_code);
-			expect(result.currentXp).toBe(record.current_xp);
+			expect(result.currentCoverage).toBe(record.current_coverage);
 			expect(result.currentStreak).toBe(record.current_streak);
 			expect(result.bestStreak).toBe(record.best_streak);
 			expect(result.createdAt).toBe(record.created_at);
@@ -29,26 +29,26 @@ describe("RunCategoryXp Model", () => {
 		});
 
 		it("handles null timestamps", () => {
-			const record = createMockRunCategoryXpRecord({
+			const record = createMockRunCategoryCoverageRecord({
 				created_at: null,
 				updated_at: null,
 			});
 
-			const result = runCategoryXpToDTO(record);
+			const result = runCategoryCoverageToDTO(record);
 			expect(result.createdAt).toBeInstanceOf(Date);
 			expect(result.updatedAt).toBeNull();
 		});
 	});
 
-	describe("runCategoryXpFromDTO", () => {
+	describe("runCategoryCoverageFromDTO", () => {
 		it("converts DTO to database record", () => {
-			const dto = createMockRunCategoryXp();
-			const result = runCategoryXpFromDTO(dto);
+			const dto = createMockRunCategoryCoverage();
+			const result = runCategoryCoverageFromDTO(dto);
 
 			expect(result.id).toBe(dto.id);
 			expect(result.run_id).toBe(dto.runId);
 			expect(result.category_code).toBe(dto.categoryCode);
-			expect(result.current_xp).toBe(dto.currentXp);
+			expect(result.current_coverage).toBe(dto.currentCoverage);
 			expect(result.current_streak).toBe(dto.currentStreak);
 			expect(result.best_streak).toBe(dto.bestStreak);
 			expect(result.created_at).toBe(dto.createdAt);
@@ -56,13 +56,13 @@ describe("RunCategoryXp Model", () => {
 		});
 	});
 
-	describe("runCategoryXpsToDTOs", () => {
+	describe("runCategoryCoveragesToDTOs", () => {
 		it("converts array of records to DTOs", () => {
 			const records = [
-				createMockRunCategoryXpRecord(),
-				createMockRunCategoryXpRecord({ id: 2, category_code: "css" }),
+				createMockRunCategoryCoverageRecord(),
+				createMockRunCategoryCoverageRecord({ id: 2, category_code: "css" }),
 			];
-			const result = runCategoryXpsToDTOs(records);
+			const result = runCategoryCoveragesToDTOs(records);
 
 			expect(result).toHaveLength(2);
 			expect(result[0].id).toBe(1);
@@ -71,18 +71,18 @@ describe("RunCategoryXp Model", () => {
 		});
 
 		it("handles empty array", () => {
-			const result = runCategoryXpsToDTOs([]);
+			const result = runCategoryCoveragesToDTOs([]);
 			expect(result).toEqual([]);
 		});
 	});
 
-	describe("runCategoryXpsFromDTOs", () => {
+	describe("runCategoryCoveragesFromDTOs", () => {
 		it("converts array of DTOs to records", () => {
 			const dtos = [
-				createMockRunCategoryXp(),
-				createMockRunCategoryXp({ id: 2, categoryCode: "css" }),
+				createMockRunCategoryCoverage(),
+				createMockRunCategoryCoverage({ id: 2, categoryCode: "css" }),
 			];
-			const result = runCategoryXpsFromDTOs(dtos);
+			const result = runCategoryCoveragesFromDTOs(dtos);
 
 			expect(result).toHaveLength(2);
 			expect(result[0].id).toBe(1);
@@ -91,19 +91,19 @@ describe("RunCategoryXp Model", () => {
 		});
 
 		it("handles empty array", () => {
-			const result = runCategoryXpsFromDTOs([]);
+			const result = runCategoryCoveragesFromDTOs([]);
 			expect(result).toEqual([]);
 		});
 	});
 
-	describe("createRunCategoryXp", () => {
-		it("creates a new run category XP with default values", () => {
-			const result = createRunCategoryXp();
+	describe("createRunCategoryCoverage", () => {
+		it("creates a new run category coverage with default values", () => {
+			const result = createRunCategoryCoverage();
 
 			expect(result.id).toBe(0);
 			expect(result.runId).toBe(0);
 			expect(result.categoryCode).toBe("js");
-			expect(result.currentXp).toBe(0);
+			expect(result.currentCoverage).toBe(0);
 			expect(result.currentStreak).toBe(0);
 			expect(result.bestStreak).toBe(0);
 			expect(result.createdAt).toBeInstanceOf(Date);
@@ -111,27 +111,27 @@ describe("RunCategoryXp Model", () => {
 		});
 
 		it("merges partial values with defaults", () => {
-			const result = createRunCategoryXp({
+			const result = createRunCategoryCoverage({
 				runId: 123,
 				categoryCode: "ts",
-				currentXp: 50,
+				currentCoverage: 50,
 			});
 
 			expect(result.runId).toBe(123);
 			expect(result.categoryCode).toBe("ts");
-			expect(result.currentXp).toBe(50);
+			expect(result.currentCoverage).toBe(50);
 			expect(result.id).toBe(0);
 			expect(result.currentStreak).toBe(0);
 		});
 	});
 
-	describe("runCategoryXpFactory", () => {
+	describe("runCategoryCoverageFactory", () => {
 		it("exposes all factory methods", () => {
-			expect(runCategoryXpFactory.toDTO).toBe(runCategoryXpToDTO);
-			expect(runCategoryXpFactory.fromDTO).toBe(runCategoryXpFromDTO);
-			expect(runCategoryXpFactory.toDTOs).toBe(runCategoryXpsToDTOs);
-			expect(runCategoryXpFactory.fromDTOs).toBe(runCategoryXpsFromDTOs);
-			expect(runCategoryXpFactory.create).toBe(createRunCategoryXp);
+			expect(runCategoryCoverageFactory.toDTO).toBe(runCategoryCoverageToDTO);
+			expect(runCategoryCoverageFactory.fromDTO).toBe(runCategoryCoverageFromDTO);
+			expect(runCategoryCoverageFactory.toDTOs).toBe(runCategoryCoveragesToDTOs);
+			expect(runCategoryCoverageFactory.fromDTOs).toBe(runCategoryCoveragesFromDTOs);
+			expect(runCategoryCoverageFactory.create).toBe(createRunCategoryCoverage);
 		});
 	});
 });

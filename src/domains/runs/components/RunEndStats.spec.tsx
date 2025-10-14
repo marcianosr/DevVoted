@@ -25,7 +25,7 @@ describe("RunEndStats", () => {
 			<RunEndStats
 				totalXp={230}
 				totalPollsAnswered={20}
-				categoryXp={mockCategoryXp}
+				categoryCoverage={mockCategoryXp}
 				duration="2m 45s"
 			/>
 		);
@@ -41,7 +41,7 @@ describe("RunEndStats", () => {
 			<RunEndStats
 				totalXp={100}
 				totalPollsAnswered={10}
-				categoryXp={mockCategoryXp}
+				categoryCoverage={mockCategoryXp}
 				duration="1m 30s"
 			/>
 		);
@@ -54,7 +54,7 @@ describe("RunEndStats", () => {
 			<RunEndStats
 				totalXp={230}
 				totalPollsAnswered={20}
-				categoryXp={mockCategoryXp}
+				categoryCoverage={mockCategoryXp}
 				duration="2m 45s"
 			/>
 		);
@@ -79,7 +79,7 @@ describe("RunEndStats", () => {
 			<RunEndStats
 				totalXp={100}
 				totalPollsAnswered={10}
-				categoryXp={mockCategoryXp}
+				categoryCoverage={mockCategoryXp}
 				duration="1m 30s"
 			/>
 		);
@@ -93,7 +93,7 @@ describe("RunEndStats", () => {
 			<RunEndStats
 				totalXp={100}
 				totalPollsAnswered={10}
-				categoryXp={mockCategoryXp}
+				categoryCoverage={mockCategoryXp}
 				duration="1m 30s"
 				reason="threshold_not_met"
 			/>
@@ -108,7 +108,7 @@ describe("RunEndStats", () => {
 			<RunEndStats
 				totalXp={100}
 				totalPollsAnswered={10}
-				categoryXp={mockCategoryXp}
+				categoryCoverage={mockCategoryXp}
 				duration="1m 30s"
 				reason="wrong_answer"
 			/>

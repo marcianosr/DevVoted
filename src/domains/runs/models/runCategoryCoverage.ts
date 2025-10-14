@@ -1,9 +1,9 @@
-import { runCategoryXpTable } from "@/src/database/schema";
+import { runCategoryCoverageTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
 import { CATEGORY_CODES, type CategoryCode } from "~/domains/shared/categories";
 
 // TODO: Refactor to "RunMetric"
-export type RunCategoryXp = {
+export type RunCategoryCoverage = {
 	id: number;
 	runId: number;
 	categoryCode: CategoryCode;
@@ -17,11 +17,11 @@ export type RunCategoryXp = {
 	updatedAt: Date | null;
 };
 
-export type RunCategoryXpRecord = InferSelectModel<typeof runCategoryXpTable>;
+export type RunCategoryCoverageRecord = InferSelectModel<typeof runCategoryCoverageTable>;
 
-export const runCategoryXpToDTO = (
-	record: RunCategoryXpRecord
-): RunCategoryXp => {
+export const runCategoryCoverageToDTO = (
+	record: RunCategoryCoverageRecord
+): RunCategoryCoverage => {
 	return {
 		id: record.id,
 		runId: record.run_id,
@@ -37,9 +37,9 @@ export const runCategoryXpToDTO = (
 	};
 };
 
-export const runCategoryXpFromDTO = (
-	dto: RunCategoryXp
-): RunCategoryXpRecord => {
+export const runCategoryCoverageFromDTO = (
+	dto: RunCategoryCoverage
+): RunCategoryCoverageRecord => {
 	return {
 		id: dto.id,
 		run_id: dto.runId,
@@ -55,21 +55,21 @@ export const runCategoryXpFromDTO = (
 	};
 };
 
-export const runCategoryXpsToDTOs = (
-	records: RunCategoryXpRecord[]
-): RunCategoryXp[] => {
-	return records.map(runCategoryXpToDTO);
+export const runCategoryCoveragesToDTOs = (
+	records: RunCategoryCoverageRecord[]
+): RunCategoryCoverage[] => {
+	return records.map(runCategoryCoverageToDTO);
 };
 
-export const runCategoryXpsFromDTOs = (
-	dtos: RunCategoryXp[]
-): RunCategoryXpRecord[] => {
-	return dtos.map(runCategoryXpFromDTO);
+export const runCategoryCoveragesFromDTOs = (
+	dtos: RunCategoryCoverage[]
+): RunCategoryCoverageRecord[] => {
+	return dtos.map(runCategoryCoverageFromDTO);
 };
 
-export const createRunCategoryXp = (
-	partial: Partial<RunCategoryXp> = {}
-): RunCategoryXp => {
+export const createRunCategoryCoverage = (
+	partial: Partial<RunCategoryCoverage> = {}
+): RunCategoryCoverage => {
 	const now = new Date();
 
 	return {
@@ -89,9 +89,9 @@ export const createRunCategoryXp = (
 };
 
 // Test factory functions
-export const createMockRunCategoryXp = (
-	overrides: Partial<RunCategoryXp> = {}
-): RunCategoryXp => {
+export const createMockRunCategoryCoverage = (
+	overrides: Partial<RunCategoryCoverage> = {}
+): RunCategoryCoverage => {
 	return {
 		id: 1,
 		runId: 1,
@@ -108,9 +108,9 @@ export const createMockRunCategoryXp = (
 	};
 };
 
-export const createMockRunCategoryXpRecord = (
-	overrides: Partial<RunCategoryXpRecord> = {}
-): RunCategoryXpRecord => {
+export const createMockRunCategoryCoverageRecord = (
+	overrides: Partial<RunCategoryCoverageRecord> = {}
+): RunCategoryCoverageRecord => {
 	return {
 		id: 1,
 		run_id: 1,
@@ -127,32 +127,32 @@ export const createMockRunCategoryXpRecord = (
 	};
 };
 
-export const createMockRunCategoryXpArray = (
+export const createMockRunCategoryCoverageArray = (
 	count: number = 3
-): RunCategoryXp[] => {
+): RunCategoryCoverage[] => {
 	return Array.from({ length: count }, (_, i) =>
-		createMockRunCategoryXp({
+		createMockRunCategoryCoverage({
 			id: i + 1,
 			categoryCode: CATEGORY_CODES[i % CATEGORY_CODES.length],
 		})
 	);
 };
 
-export const createMockRunCategoryXpRecordArray = (
+export const createMockRunCategoryCoverageRecordArray = (
 	count: number = 3
-): RunCategoryXpRecord[] => {
+): RunCategoryCoverageRecord[] => {
 	return Array.from({ length: count }, (_, i) =>
-		createMockRunCategoryXpRecord({
+		createMockRunCategoryCoverageRecord({
 			id: i + 1,
 			category_code: CATEGORY_CODES[i % CATEGORY_CODES.length],
 		})
 	);
 };
 
-export const runCategoryXpFactory = {
-	toDTO: runCategoryXpToDTO,
-	fromDTO: runCategoryXpFromDTO,
-	toDTOs: runCategoryXpsToDTOs,
-	fromDTOs: runCategoryXpsFromDTOs,
-	create: createRunCategoryXp,
+export const runCategoryCoverageFactory = {
+	toDTO: runCategoryCoverageToDTO,
+	fromDTO: runCategoryCoverageFromDTO,
+	toDTOs: runCategoryCoveragesToDTOs,
+	fromDTOs: runCategoryCoveragesFromDTOs,
+	create: createRunCategoryCoverage,
 };

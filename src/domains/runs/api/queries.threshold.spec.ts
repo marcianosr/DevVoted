@@ -4,7 +4,7 @@ import { getCurrentThresholdInfo } from "@/src/domains/runs/services/thresholdCa
 describe("Threshold Reset Functionality", () => {
 	describe("getCurrentThresholdInfo", () => {
 		it("returns Set 1 threshold (15 XP) when no polls have been answered", () => {
-			const categoryXp = [
+			const categoryCoverage = [
 				{
 					categoryCode: "js",
 					currentXp: 0,
@@ -28,7 +28,7 @@ describe("Threshold Reset Functionality", () => {
 				},
 			];
 
-			const result = getCurrentThresholdInfo(categoryXp);
+			const result = getCurrentThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(1);
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
@@ -40,7 +40,7 @@ describe("Threshold Reset Functionality", () => {
 		});
 
 		it("returns Set 1 threshold (15 XP) when max polls answered is 1", () => {
-			const categoryXp = [
+			const categoryCoverage = [
 				{
 					categoryCode: "js",
 					currentXp: 5,
@@ -64,7 +64,7 @@ describe("Threshold Reset Functionality", () => {
 				},
 			];
 
-			const result = getCurrentThresholdInfo(categoryXp);
+			const result = getCurrentThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(2);
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
@@ -76,7 +76,7 @@ describe("Threshold Reset Functionality", () => {
 		});
 
 		it("returns Set 2 threshold (21 XP) when total polls answered is 3", () => {
-			const categoryXp = [
+			const categoryCoverage = [
 				{
 					categoryCode: "js",
 					currentXp: 5,
@@ -100,7 +100,7 @@ describe("Threshold Reset Functionality", () => {
 				},
 			];
 
-			const result = getCurrentThresholdInfo(categoryXp);
+			const result = getCurrentThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(4); // Next poll after 3 total polls answered
 			expect(result.requiredXp).toBe(21); // Set 2 threshold
@@ -112,7 +112,7 @@ describe("Threshold Reset Functionality", () => {
 		});
 
 		it("meets threshold when total XP equals required XP on non-threshold poll", () => {
-			const categoryXp = [
+			const categoryCoverage = [
 				{
 					categoryCode: "js",
 					currentXp: 5,
@@ -136,7 +136,7 @@ describe("Threshold Reset Functionality", () => {
 				},
 			];
 
-			const result = getCurrentThresholdInfo(categoryXp);
+			const result = getCurrentThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(2);
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
@@ -148,7 +148,7 @@ describe("Threshold Reset Functionality", () => {
 		});
 
 		it("handles threshold check poll (poll 3) with sufficient XP", () => {
-			const categoryXp = [
+			const categoryCoverage = [
 				{
 					categoryCode: "js",
 					currentXp: 8,
@@ -172,7 +172,7 @@ describe("Threshold Reset Functionality", () => {
 				},
 			];
 
-			const result = getCurrentThresholdInfo(categoryXp);
+			const result = getCurrentThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(3); // Next poll after 2 total polls answered
 			expect(result.requiredXp).toBe(15); // Set 1 threshold
@@ -183,10 +183,10 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.isThresholdCheckPoll).toBe(true);
 		});
 
-		it("handles empty categoryXp array", () => {
-			const categoryXp: any[] = [];
+		it("handles empty categoryCoverage array", () => {
+			const categoryCoverage: any[] = [];
 
-			const result = getCurrentThresholdInfo(categoryXp);
+			const result = getCurrentThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(1);
 			expect(result.requiredXp).toBe(15); // Set 1 threshold

@@ -43,7 +43,7 @@ export const incrementRunProgress = async ({
 	options,
 	hasAnswered,
 }: IncrementProgress): Promise<IncrementRunProgressResult> => {
-	const currentCategoryXP = run.categoryXp.find(
+	const currentCategoryXP = run.categoryCoverage.find(
 		(xp) => xp.categoryCode === categoryCode
 	);
 
@@ -52,7 +52,7 @@ export const incrementRunProgress = async ({
 	}
 
 	// Calculate total polls answered across all categories
-	const totalPollsAnswered = run.categoryXp.reduce(
+	const totalPollsAnswered = run.categoryCoverage.reduce(
 		(sum, xp) => sum + xp.pollsAnswered,
 		0
 	);

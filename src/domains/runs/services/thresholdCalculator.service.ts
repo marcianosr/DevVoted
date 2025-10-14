@@ -1,4 +1,4 @@
-import type { RunCategoryXp } from "~/domains/runs/models/runCategoryXp";
+import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 
 /**
  * Coverage threshold system
@@ -93,20 +93,20 @@ export const isThresholdCheckPoll = (totalPollsAnswered: number): boolean => {
  * Core threshold calculation logic
  * Checks if any category has reached the required coverage threshold
  *
- * @param categoryXpData - Array of category coverage data
+ * @param categoryCoverageData - Array of category coverage data
  * @returns Threshold information
  */
 export const calculateThresholdInfo = (
-	categoryXpData: readonly RunCategoryXp[]
+	categoryCoverageData: readonly RunCategoryCoverage[]
 ): ThresholdInfo => {
 	// Find the maximum coverage across all categories
 	const maxCoverage = Math.max(
-		...categoryXpData.map((xp) => xp.currentCoverage),
+		...categoryCoverageData.map((xp) => xp.currentCoverage),
 		0 // Default to 0 if no categories
 	);
 
 	// Calculate total polls answered
-	const totalPollsAnswered = categoryXpData.reduce(
+	const totalPollsAnswered = categoryCoverageData.reduce(
 		(sum, xp) => sum + xp.pollsAnswered,
 		0
 	);
@@ -134,11 +134,11 @@ export const calculateThresholdInfo = (
 
 /**
  * Get current threshold status from category data
- * @param categoryXp - Array of category coverage data
+ * @param categoryCoverage - Array of category coverage data
  * @returns Threshold information
  */
 export const getCurrentThresholdInfo = (
-	categoryXp: readonly RunCategoryXp[]
+	categoryCoverage: readonly RunCategoryCoverage[]
 ): ThresholdInfo => {
-	return calculateThresholdInfo(categoryXp);
+	return calculateThresholdInfo(categoryCoverage);
 };

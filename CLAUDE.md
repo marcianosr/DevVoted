@@ -64,7 +64,7 @@ src/domains/polls/
 - `polls_categories` - Quiz categories for organization and filtering
 - `users` - Player profiles and stats
 - `runs` - Individual game sessions with config storage and run status
-- `run_category_xp` - XP tracking per category within each run
+- `run_category_coverage` - Coverage tracking per category within each run
 - `polls_user_performance` - User's best performance across all runs per category
 
 ### Data Flow Pattern

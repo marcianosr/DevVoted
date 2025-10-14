@@ -1,5 +1,5 @@
 import type { Run } from "~/domains/runs/models/run";
-import { CategoryXpGrid } from "./CategoryXpGrid";
+import { CategoryCoverageGrid } from "./CategoryCoverageGrid";
 
 interface RunStatusDisplayProps {
 	activeRun: Run | null;
@@ -20,8 +20,10 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 				Started: {new Date(activeRun.startedAt).toLocaleString()}
 			</div>
 
-			{activeRun.categoryXp && (
-				<CategoryXpGrid categoryXp={activeRun.categoryXp} />
+			{activeRun.categoryCoverage && (
+				<CategoryCoverageGrid
+					categoryCoverage={activeRun.categoryCoverage}
+				/>
 			)}
 		</div>
 	);

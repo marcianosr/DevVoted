@@ -7,6 +7,7 @@ import { PollPageContainer } from "~/domains/polls/components/PollPageContainer"
 import { GlobalLeaderboard } from "~/domains/leaderboards/components/GlobalLeaderboard";
 import { LiveLeaderboard } from "~/domains/leaderboards/components/LiveLeaderboard";
 import type { CategoryCode } from "~/domains/shared/categories";
+import { getTodayDateString } from "~/lib/dateUtils";
 
 const getGlobalLeaderboard = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -48,8 +49,8 @@ const getLiveLeaderboard = createServerFn({ method: "POST" })
 
 const DailyPoll: React.FC = () => {
 	const { user } = Route.useRouteContext();
-	// const todayDateString = getTodayDateString();
-	const todayDateString = "2025-10-30";
+	const todayDateString = getTodayDateString();
+	// const todayDateString = "2025-10-30";
 
 	// Fetch leaderboard data
 	const leaderboardQuery = useQuery({
@@ -59,8 +60,8 @@ const DailyPoll: React.FC = () => {
 	});
 
 	// Fetch active run category XP for real-time progress
-	const categoryXpQuery = useQuery({
-		queryKey: ["run", "categoryXp", user?.id],
+	const categoryCoverageQuery = useQuery({
+		queryKey: ["run", "categoryCoverage", user?.id],
 		queryFn: () => getActiveRunCategoryXp({ data: { userId: user?.id! } }),
 		enabled: !!user?.id,
 		staleTime: 10 * 1000, // 10 seconds - more frequent updates for real-time feel
@@ -90,14 +91,14 @@ const DailyPoll: React.FC = () => {
 
 			{/* Category Progress Section */}
 			<div className="w-full max-w-md mx-auto">
-				{categoryXpQuery.isLoading && (
+				{categoryCoverageQuery.isLoading && (
 					<div className="bg-black border border-gray-600 rounded-lg p-4 font-mono text-sm">
 						<div className="text-gray-400">
 							Loading run progress...
 						</div>
 					</div>
 				)}
-				{categoryXpQuery.error && (
+				{categoryCoverageQuery.error && (
 					<div className="bg-black border border-gray-600 rounded-lg p-4 font-mono text-sm">
 						<div className="text-yellow-400">
 							No active run - start playing to see progress!

@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { calculateThresholdInfo } from "./thresholdCalculator.service";
-import { createMockRunCategoryXp } from "~/domains/runs/models/runCategoryXp";
+import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 
 describe("ThresholdCalculator", () => {
 	describe("calculateThresholdInfo", () => {
 		it("calculates threshold for poll 1 correctly (Round 1, Poll 1)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 5,
 					pollsAnswered: 1,
 				}),
@@ -27,7 +27,7 @@ describe("ThresholdCalculator", () => {
 
 		it("calculates threshold for poll 2 correctly (Round 1, Poll 2)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 6,
 					pollsAnswered: 2,
 				}),
@@ -48,7 +48,7 @@ describe("ThresholdCalculator", () => {
 
 		it("calculates threshold for poll 3 correctly (Round 1, Poll 3 - THRESHOLD CHECK)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 8,
 					pollsAnswered: 3,
 				}),
@@ -69,7 +69,7 @@ describe("ThresholdCalculator", () => {
 
 		it("calculates threshold for poll 3 with sufficient coverage (Round 1, Poll 3 - PASSES)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 12,
 					pollsAnswered: 3,
 				}),
@@ -90,7 +90,7 @@ describe("ThresholdCalculator", () => {
 
 		it("calculates threshold for poll 4 correctly (Round 2, Poll 1)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 16,
 					pollsAnswered: 4,
 				}),
@@ -111,7 +111,7 @@ describe("ThresholdCalculator", () => {
 
 		it("handles zero polls answered (game start)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 0,
 					pollsAnswered: 0,
 				}),
@@ -132,7 +132,7 @@ describe("ThresholdCalculator", () => {
 
 		it("handles poll 6 threshold check (Round 2, Poll 3)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 22,
 					pollsAnswered: 6,
 				}),
@@ -153,7 +153,7 @@ describe("ThresholdCalculator", () => {
 
 		it("handles poll 9 threshold check (Round 3, Poll 3)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 28,
 					pollsAnswered: 9,
 				}),
@@ -176,17 +176,17 @@ describe("ThresholdCalculator", () => {
 	describe("multi-category scenarios", () => {
 		it("calculates max coverage across multiple categories", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 5,
 					pollsAnswered: 1,
 				}),
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 8,
 					pollsAnswered: 1,
 				}),
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "css",
 					currentCoverage: 3,
 					pollsAnswered: 1,
@@ -210,12 +210,12 @@ describe("ThresholdCalculator", () => {
 
 		it("passes threshold when any category meets requirement", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 15,
 					pollsAnswered: 2,
 				}),
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 3,
 					pollsAnswered: 1,
@@ -239,12 +239,12 @@ describe("ThresholdCalculator", () => {
 
 		it("handles progression to Round 2 with multi-category data", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 18,
 					pollsAnswered: 2,
 				}),
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 15,
 					pollsAnswered: 2,
@@ -268,17 +268,17 @@ describe("ThresholdCalculator", () => {
 
 		it("handles threshold failure on poll 6 (Round 2, Poll 3)", () => {
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 12,
 					pollsAnswered: 3,
 				}),
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 10,
 					pollsAnswered: 2,
 				}),
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "css",
 					currentCoverage: 8,
 					pollsAnswered: 1,
@@ -305,7 +305,7 @@ describe("ThresholdCalculator", () => {
 		it("handles user earning minimal coverage on first poll", () => {
 			// User answered 1 poll in React category, earned 5% coverage
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 5,
 					pollsAnswered: 1,
@@ -329,12 +329,12 @@ describe("ThresholdCalculator", () => {
 			// React: 2 polls (12% coverage), JavaScript: 2 polls (8% coverage)
 			// Total: 4 polls answered, checking poll 4 (Round 2, Poll 1)
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 12,
 					pollsAnswered: 2,
 				}),
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 8,
 					pollsAnswered: 2,
@@ -357,7 +357,7 @@ describe("ThresholdCalculator", () => {
 		it("handles threshold failure on poll 3 with low coverage", () => {
 			// User has only 7% coverage after 3 polls, needs 10% for Round 1
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 7,
 					pollsAnswered: 3,
 				}),
@@ -379,7 +379,7 @@ describe("ThresholdCalculator", () => {
 		it("handles perfect 10% coverage on Round 1 checkpoint", () => {
 			// User has exactly 10% coverage on poll 3
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					currentCoverage: 10,
 					pollsAnswered: 3,
 				}),
@@ -401,7 +401,7 @@ describe("ThresholdCalculator", () => {
 		it("handles high achiever with 30% coverage in Round 1", () => {
 			// User has 30% coverage after 3 polls in one category
 			const categoryData = [
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 30,
 					pollsAnswered: 3,

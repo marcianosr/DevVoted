@@ -5,7 +5,7 @@ import {
 	usersTable,
 	pollOptionsTable,
 	runsTable,
-	runCategoryXpTable,
+	runCategoryCoverageTable,
 	seasonsTable,
 	leaderboardTable,
 } from "@/src/database/schema";
@@ -64,16 +64,18 @@ async function seedDatabase() {
 		// Now seed the polls
 		console.log("\n📊 Seeding polls...\n");
 
-		// Create 12 polls using our factory
-		const polls = createSeedPollArray(20, DEV_UID);
+		// Create 70 polls using our factory for extended gameplay
+		const polls = createSeedPollArray(70, DEV_UID);
 
-		// Ensure we have a good mix of categories
+		// Ensure we have a good mix of categories across all polls
 		const categoryDistribution = {
-			css: 5,
-			js: 2,
-			react: 2,
-			ts: 2,
-			"general-frontend": 1,
+			css: 15,
+			js: 15,
+			react: 12,
+			ts: 12,
+			html: 8,
+			git: 5,
+			"general-frontend": 3,
 		};
 
 		let categoryIndex = 0;
@@ -172,8 +174,9 @@ async function seedDatabase() {
 		console.log("\n🏆 Seeding leaderboard with random users...");
 
 		const existingLeaderboard = await db.select().from(leaderboardTable);
+		const existingRuns = await db.select().from(runsTable);
 
-		if (existingLeaderboard.length === 0) {
+		if (existingLeaderboard.length === 0 && existingRuns.length === 0) {
 			// Create 3 random users for leaderboard
 			const randomUsers = [
 				{
@@ -270,7 +273,7 @@ async function seedDatabase() {
 					})
 					.returning();
 
-				// Create run category XP data
+				// Create run category coverage data
 				for (const categoryCode of CATEGORY_CODES) {
 					const categoryCoverage =
 						Math.floor(data.totalCoverage / CATEGORY_CODES.length) +
@@ -282,7 +285,7 @@ async function seedDatabase() {
 						Math.floor(data.pollsAnswered / CATEGORY_CODES.length) +
 						Math.floor(Math.random() * 5);
 
-					await db.insert(runCategoryXpTable).values({
+					await db.insert(runCategoryCoverageTable).values({
 						run_id: run.id,
 						category_code: categoryCode,
 						current_coverage: categoryCoverage,

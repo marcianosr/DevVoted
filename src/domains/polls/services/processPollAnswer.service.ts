@@ -84,7 +84,7 @@ export const processPollAnswer = async (
 	if (!updatedRun) throw new Error("Run not found after update");
 
 	// Calculate threshold based on category coverage data
-	const thresholdInfo = calculateThresholdInfo(updatedRun.categoryXp);
+	const thresholdInfo = calculateThresholdInfo(updatedRun.categoryCoverage);
 
 	let runEnded = false;
 	let tryCatchUsed = false;
