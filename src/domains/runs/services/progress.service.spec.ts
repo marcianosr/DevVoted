@@ -3,7 +3,7 @@ import { incrementRunProgress } from "./progress.service";
 import { orchestrateScoreCalculation } from "~/domains/score/services/score.service";
 import { awardXpToRun } from "../api/queries";
 import { createMockRun } from "../models/run";
-import { createMockRunCategoryXp } from "../models/runCategoryXp";
+import { createMockRunCategoryCoverage } from "../models/runCategoryXp";
 
 vi.mock("~/domains/score/services/score.service");
 vi.mock("../api/queries");
@@ -16,8 +16,8 @@ describe("incrementRunProgress", () => {
 	const createTestRun = (activeConfigIds: string[] = []) => {
 		return createMockRun({
 			activeConfigIds,
-			categoryXp: [
-				createMockRunCategoryXp({
+			categoryCoverage: [
+				createMockRunCategoryCoverage({
 					id: 1,
 					runId: 1,
 					categoryCode: "js",
@@ -26,7 +26,7 @@ describe("incrementRunProgress", () => {
 					bestStreak: 5,
 					pollsAnswered: 3,
 				}),
-				createMockRunCategoryXp({
+				createMockRunCategoryCoverage({
 					id: 2,
 					runId: 1,
 					categoryCode: "css",
@@ -60,7 +60,7 @@ describe("incrementRunProgress", () => {
 			mockCalculationResult
 		);
 
-		const mockUpdatedRecord = createMockRunCategoryXp({
+		const mockUpdatedRecord = createMockRunCategoryCoverage({
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
@@ -109,7 +109,7 @@ describe("incrementRunProgress", () => {
 			mockCalculationResult
 		);
 
-		const mockUpdatedRecord = createMockRunCategoryXp({
+		const mockUpdatedRecord = createMockRunCategoryCoverage({
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
@@ -158,7 +158,7 @@ describe("incrementRunProgress", () => {
 			mockCalculationResult
 		);
 
-		const mockUpdatedRecord = createMockRunCategoryXp({
+		const mockUpdatedRecord = createMockRunCategoryCoverage({
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
@@ -200,7 +200,7 @@ describe("incrementRunProgress", () => {
 			mockCalculationResult
 		);
 
-		const mockUpdatedRecord = createMockRunCategoryXp({
+		const mockUpdatedRecord = createMockRunCategoryCoverage({
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
@@ -245,8 +245,8 @@ describe("incrementRunProgress", () => {
 		for (const testCase of testCases) {
 			const mockRun = createMockRun({
 				activeConfigIds: [testCase.configId],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: testCase.categoryCode,
@@ -255,7 +255,7 @@ describe("incrementRunProgress", () => {
 						bestStreak: 5,
 						pollsAnswered: 3,
 					}),
-					createMockRunCategoryXp({
+					createMockRunCategoryCoverage({
 						id: 2,
 						runId: 1,
 						categoryCode: "css",
@@ -286,7 +286,7 @@ describe("incrementRunProgress", () => {
 				mockCalculationResult
 			);
 
-			const mockUpdatedRecord = createMockRunCategoryXp({
+			const mockUpdatedRecord = createMockRunCategoryCoverage({
 				id: 1,
 				runId: 1,
 				categoryCode: testCase.categoryCode,

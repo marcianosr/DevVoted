@@ -1,17 +1,18 @@
 import {
 	getRunForCompletion,
 	completeRunWithThresholdFailure,
-	getTotalXpForRun,
+	getTotalCoverageForRun,
 	getTotalPollsAnsweredForRun,
 	getBestStreakForRun,
 	createCategoryLeaderboardEntries,
+	getRunWithCategoryXp,
 } from "../api/queries";
 import {
 	calculateThresholdInfo,
 	type ThresholdInfo,
 } from "~/domains/runs/services/thresholdCalculator.service";
 
-// End run mid-game when XP threshold is not met (preserves progress in final_* columns)
+// End run mid-game when coverage threshold is not met (preserves progress in final_* columns)
 export const endRunForThresholdFailure = async (runId: number) => {
 	// Get the run to find the user ID
 	const run = await getRunForCompletion(runId);
@@ -21,7 +22,7 @@ export const endRunForThresholdFailure = async (runId: number) => {
 	}
 
 	// Get final stats before completing
-	const totalXp = await getTotalXpForRun(runId);
+	const totalCoverage = await getTotalCoverageForRun(runId);
 	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
 	const bestStreak = await getBestStreakForRun(runId);
 
@@ -33,7 +34,7 @@ export const endRunForThresholdFailure = async (runId: number) => {
 		run.user_id,
 		runId,
 		run.season_id,
-		totalXp,
+		totalCoverage,
 		totalPollsAnswered,
 		bestStreak
 	);
@@ -41,12 +42,15 @@ export const endRunForThresholdFailure = async (runId: number) => {
 	return { runEnded: true, reason: "threshold_not_met" };
 };
 
-// Helper function to check if run meets XP threshold to continue
-export const checkXpThreshold = async (
+// Helper function to check if run meets coverage threshold to continue
+export const checkCoverageThreshold = async (
 	runId: number
 ): Promise<ThresholdInfo> => {
-	const totalXp = await getTotalXpForRun(runId);
-	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
+	const runWithCategoryData = await getRunWithCategoryXp(runId);
 
-	return calculateThresholdInfo(totalXp, totalPollsAnswered);
+	if (!runWithCategoryData) {
+		throw new Error(`Run with ID ${runId} not found`);
+	}
+
+	return calculateThresholdInfo(runWithCategoryData.categoryCoverage);
 };

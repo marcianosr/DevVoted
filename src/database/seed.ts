@@ -5,7 +5,7 @@ import {
 	usersTable,
 	pollOptionsTable,
 	runsTable,
-	runCategoryXpTable,
+	runCategoryCoverageTable,
 	seasonsTable,
 	leaderboardTable,
 } from "@/src/database/schema";
@@ -64,16 +64,18 @@ async function seedDatabase() {
 		// Now seed the polls
 		console.log("\n📊 Seeding polls...\n");
 
-		// Create 12 polls using our factory
-		const polls = createSeedPollArray(20, DEV_UID);
+		// Create 70 polls using our factory for extended gameplay
+		const polls = createSeedPollArray(70, DEV_UID);
 
-		// Ensure we have a good mix of categories
+		// Ensure we have a good mix of categories across all polls
 		const categoryDistribution = {
-			css: 5,
-			js: 2,
-			react: 2,
-			ts: 2,
-			"general-frontend": 1,
+			css: 15,
+			js: 15,
+			react: 12,
+			ts: 12,
+			html: 8,
+			git: 5,
+			"general-frontend": 3,
 		};
 
 		let categoryIndex = 0;
@@ -172,8 +174,9 @@ async function seedDatabase() {
 		console.log("\n🏆 Seeding leaderboard with random users...");
 
 		const existingLeaderboard = await db.select().from(leaderboardTable);
+		const existingRuns = await db.select().from(runsTable);
 
-		if (existingLeaderboard.length === 0) {
+		if (existingLeaderboard.length === 0 && existingRuns.length === 0) {
 			// Create 3 random users for leaderboard
 			const randomUsers = [
 				{
@@ -216,19 +219,19 @@ async function seedDatabase() {
 			const globalLeaderboardData = [
 				{
 					userId: randomUsers[0].id,
-					totalXp: 2500,
+					totalCoverage: 90,
 					bestStreak: 12,
 					pollsAnswered: 45,
 				},
 				{
 					userId: randomUsers[1].id,
-					totalXp: 1800,
+					totalCoverage: 67,
 					bestStreak: 8,
 					pollsAnswered: 32,
 				},
 				{
 					userId: randomUsers[2].id,
-					totalXp: 1200,
+					totalCoverage: 35,
 					bestStreak: 6,
 					pollsAnswered: 28,
 				},
@@ -237,19 +240,19 @@ async function seedDatabase() {
 			const jsLeaderboardData = [
 				{
 					userId: randomUsers[0].id,
-					totalXp: 536,
+					totalCoverage: 85,
 					bestStreak: 5,
 					pollsAnswered: 20,
 				},
 				{
 					userId: randomUsers[1].id,
-					totalXp: 298,
+					totalCoverage: 84,
 					bestStreak: 4,
 					pollsAnswered: 15,
 				},
 				{
 					userId: randomUsers[2].id,
-					totalXp: 453,
+					totalCoverage: 79,
 					bestStreak: 3,
 					pollsAnswered: 10,
 				},
@@ -270,10 +273,10 @@ async function seedDatabase() {
 					})
 					.returning();
 
-				// Create run category XP data
+				// Create run category coverage data
 				for (const categoryCode of CATEGORY_CODES) {
-					const categoryXp =
-						Math.floor(data.totalXp / CATEGORY_CODES.length) +
+					const categoryCoverage =
+						Math.floor(data.totalCoverage / CATEGORY_CODES.length) +
 						Math.floor(Math.random() * 100);
 					const categoryStreak =
 						Math.floor(data.bestStreak * 0.6) +
@@ -282,11 +285,11 @@ async function seedDatabase() {
 						Math.floor(data.pollsAnswered / CATEGORY_CODES.length) +
 						Math.floor(Math.random() * 5);
 
-					await db.insert(runCategoryXpTable).values({
+					await db.insert(runCategoryCoverageTable).values({
 						run_id: run.id,
 						category_code: categoryCode,
-						current_xp: categoryXp,
-						final_xp: categoryXp,
+						current_coverage: categoryCoverage,
+						final_coverage: categoryCoverage,
 						current_streak: categoryStreak,
 						best_streak: categoryStreak,
 						final_streak: categoryStreak,
@@ -300,8 +303,8 @@ async function seedDatabase() {
 					run_id: run.id,
 					season_id: seasonId,
 					category_code: "js",
-					category_xp: jsData.totalXp, // JS-specific XP
-					total_xp: data.totalXp, // Overall run XP (for global leaderboards)
+					category_coverage: jsData.totalCoverage, // JS-specific XP
+					total_coverage: data.totalCoverage, // Overall run XP (for global leaderboards)
 					best_streak: jsData.bestStreak, // JS-specific streak
 					polls_answered: jsData.pollsAnswered, // JS-specific polls
 					completed_at: new Date(Date.now() - (i + 1) * 86400000),
@@ -312,7 +315,8 @@ async function seedDatabase() {
 					(code) => code !== "js"
 				);
 				for (const categoryCode of otherCategories) {
-					const categoryXp = Math.floor(Math.random() * 200) + 50; // Random XP for variety
+					const categoryCoverage =
+						Math.floor(Math.random() * 200) + 50; // Random XP for variety
 					const categoryStreak = Math.floor(Math.random() * 4) + 1;
 					const categoryPolls = Math.floor(Math.random() * 8) + 3;
 
@@ -321,8 +325,8 @@ async function seedDatabase() {
 						run_id: run.id,
 						season_id: seasonId,
 						category_code: categoryCode,
-						category_xp: categoryXp,
-						total_xp: data.totalXp, // Same total XP for all categories from this run
+						category_coverage: categoryCoverage,
+						total_coverage: data.totalCoverage, // Same total XP for all categories from this run
 						best_streak: categoryStreak,
 						polls_answered: categoryPolls,
 						completed_at: new Date(Date.now() - (i + 1) * 86400000),
@@ -330,7 +334,7 @@ async function seedDatabase() {
 				}
 
 				console.log(
-					`✅ Created leaderboard entry for ${randomUsers[i].display_name}: ${data.totalXp} XP`
+					`✅ Created leaderboard entry for ${randomUsers[i].display_name}: ${data.totalCoverage}% coverage`
 				);
 			}
 

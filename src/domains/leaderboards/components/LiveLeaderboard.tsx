@@ -7,7 +7,7 @@ type LiveLeaderboardEntry = {
 	userId: string;
 	displayName: string;
 	runId: number;
-	totalXp: number;
+	totalCoverage: number;
 	totalPollsAnswered: number;
 	bestStreak: number;
 	categoryCode?: CategoryCode; // Present for category-specific rankings
@@ -137,8 +137,8 @@ export const LiveLeaderboard = ({
 			<div className="text-gray-400 text-xs mb-4">
 				Metric:{" "}
 				{selectedCategory
-					? `${CATEGORIES.find((c) => c.code === selectedCategory)?.name} XP`
-					: "Total XP"}{" "}
+					? `${CATEGORIES.find((c) => c.code === selectedCategory)?.name} Coverage`
+					: "Total Coverage"}{" "}
 			</div>
 
 			{/* Live Rankings */}
@@ -146,10 +146,10 @@ export const LiveLeaderboard = ({
 				{entries.map((entry, index) => {
 					const rank = index + 1;
 					const isCurrentUser = entry.userId === currentUserId;
-					const accuracy =
+					const avgCoverage =
 						entry.totalPollsAnswered > 0
 							? (
-									entry.totalXp / entry.totalPollsAnswered
+									entry.totalCoverage / entry.totalPollsAnswered
 								).toFixed(1)
 							: "0.0";
 
@@ -195,7 +195,7 @@ export const LiveLeaderboard = ({
 											: "text-green-400"
 									}`}
 								>
-									{entry.totalXp} XP
+									{entry.totalCoverage}%
 								</div>
 
 								{/* Accuracy */}
@@ -206,7 +206,7 @@ export const LiveLeaderboard = ({
 											: "text-gray-400"
 									}`}
 								>
-									({accuracy})
+									({avgCoverage}%)
 								</div>
 
 								{/* Best streak */}
@@ -235,7 +235,7 @@ export const LiveLeaderboard = ({
 			{/* Footer */}
 			<div className="border-t border-gray-600 pt-2 mt-3">
 				<div className="text-gray-400 text-xs">
-					🔥 Best Streak • (accuracy) • p = polls answered
+					🔥 Best Streak • (avg coverage) • p = polls answered
 				</div>
 			</div>
 		</div>

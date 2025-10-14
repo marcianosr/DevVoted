@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { configs, applyEffects, EffectRenderProps } from "./configs";
 import { createMockPoll } from "~/domains/polls/factories/poll";
 import { createMockRun } from "~/domains/runs/models/run";
-import { createMockRunCategoryXp } from "~/domains/runs/models/runCategoryXp";
+import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { createPollOption } from "~/domains/polls/models/pollOption";
 import * as thresholdService from "~/domains/runs/services/thresholdCalculator.service";
 
@@ -95,7 +95,7 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps).toEqual({});
-			expect(result.score).toEqual({});
+			expect(result.coverage).toEqual({});
 			expect(result.meta).toEqual({});
 		});
 
@@ -117,7 +117,7 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps).toEqual({});
-			expect(result.score).toEqual({});
+			expect(result.coverage).toEqual({});
 			expect(result.meta).toEqual({});
 		});
 
@@ -351,8 +351,8 @@ describe("configs", () => {
 			const result = applyEffects(base, [".js-config"]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.amp).toBe(0.5);
-			expect(result.score.ampAdd).toBe(0.5);
+			expect(result.renderProps.coverageBonus).toBe(0.5);
+			expect(result.coverage.coverageAdd).toBe(0.5);
 			expect(result.meta.notes).toEqual(["+0.5 amp for js polls"]);
 		});
 
@@ -378,8 +378,8 @@ describe("configs", () => {
 			]);
 
 			// Only .css config should apply to css polls
-			expect(result.renderProps.amp).toBe(0.5);
-			expect(result.score.ampAdd).toBe(0.5);
+			expect(result.renderProps.coverageBonus).toBe(0.5);
+			expect(result.coverage.coverageAdd).toBe(0.5);
 			expect(result.meta.notes).toEqual(["+0.5 amp for css polls"]);
 		});
 
@@ -399,8 +399,8 @@ describe("configs", () => {
 
 			const result = applyEffects(base, [".css-config", ".js-config"]);
 
-			expect(result.renderProps.amp).toBeUndefined();
-			expect(result.score.ampAdd).toBe(0);
+			expect(result.renderProps.coverageBonus).toBeUndefined();
+			expect(result.coverage.coverageAdd).toBe(0);
 			expect(result.meta.notes).toEqual([]);
 		});
 	});
@@ -431,7 +431,7 @@ describe("configs", () => {
 			const result = applyEffects(base, ["math-random-config"]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.amp).toBe(0.3);
+			expect(result.renderProps.coverageBonus).toBe(0.3);
 			expect(result.meta.notes).toEqual(["Random amp for js polls"]);
 		});
 
@@ -452,7 +452,7 @@ describe("configs", () => {
 			const result = applyEffects(base, ["math-random-config"]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.amp).toBe(-0.5); // -0.5 raw value
+			expect(result.renderProps.coverageBonus).toBe(-0.5); // -0.5 raw value
 			expect(result.meta.notes).toEqual(["Random amp for js polls"]);
 		});
 	});
@@ -468,7 +468,7 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [],
+				categoryCoverage: [],
 			});
 			const base = {
 				poll: mockPoll,
@@ -478,13 +478,11 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				isThresholdCheckPoll: false,
-				meetsThreshold: true,
-				requiredXp: 50,
-				currentXp: 0,
+				meetsThreshold: false,
+				requiredCoverage: 50,
+				maxCoverage: 0,
 				pollNumber: 0,
 				currentRound: 1,
-				pollInRound: 1,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -500,12 +498,12 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
-						currentXp: 80, // 80% of 100 threshold
+						currentCoverage: 80, // 80% of 100 threshold
 						pollsAnswered: 3,
 					}),
 				],
@@ -519,13 +517,11 @@ describe("configs", () => {
 
 			// Mock the threshold calculation to return failing threshold at poll 3
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				isThresholdCheckPoll: true,
-				meetsThreshold: false,
-				requiredXp: 100,
-				currentXp: 80,
+				meetsThreshold: true,
+				requiredCoverage: 100,
+				maxCoverage: 80,
 				pollNumber: 3,
 				currentRound: 1,
-				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -545,12 +541,12 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
-						currentXp: 60, // Only 60% of 100 threshold
+						currentCoverage: 60, // Only 60% of 100 threshold
 						pollsAnswered: 3,
 					}),
 				],
@@ -563,13 +559,11 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				isThresholdCheckPoll: true,
-				meetsThreshold: false,
-				requiredXp: 100,
-				currentXp: 60,
+				meetsThreshold: true,
+				requiredCoverage: 100,
+				maxCoverage: 60,
 				pollNumber: 3,
 				currentRound: 1,
-				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -586,12 +580,12 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
-						currentXp: 120, // Exceeds threshold
+						currentCoverage: 120, // Exceeds threshold
 						pollsAnswered: 3,
 					}),
 				],
@@ -604,13 +598,11 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				isThresholdCheckPoll: true,
-				meetsThreshold: true, // Meeting threshold
-				requiredXp: 100,
-				currentXp: 120,
+				meetsThreshold: true,
+				requiredCoverage: 100,
+				maxCoverage: 120,
 				pollNumber: 3,
 				currentRound: 1,
-				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -628,12 +620,12 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
-						currentXp: 40,
+						currentCoverage: 40,
 						pollsAnswered: 2, // Poll 2, not a threshold check
 					}),
 				],
@@ -646,13 +638,11 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				isThresholdCheckPoll: false, // Not a threshold check poll
-				meetsThreshold: true,
-				requiredXp: 50,
-				currentXp: 40,
+				meetsThreshold: false, // Not a threshold check poll
+				requiredCoverage: 50,
+				maxCoverage: 40,
 				pollNumber: 2,
 				currentRound: 1,
-				pollInRound: 2,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -666,26 +656,26 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
-						currentXp: 40,
+						currentCoverage: 40,
 						pollsAnswered: 1,
 					}),
-					createMockRunCategoryXp({
+					createMockRunCategoryCoverage({
 						id: 2,
 						runId: 1,
 						categoryCode: "react",
-						currentXp: 30,
+						currentCoverage: 30,
 						pollsAnswered: 1,
 					}),
-					createMockRunCategoryXp({
+					createMockRunCategoryCoverage({
 						id: 3,
 						runId: 1,
 						categoryCode: "css",
-						currentXp: 15,
+						currentCoverage: 15,
 						pollsAnswered: 1,
 					}),
 				],
@@ -698,13 +688,11 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				isThresholdCheckPoll: true,
-				meetsThreshold: false,
-				requiredXp: 100,
-				currentXp: 85,
+				meetsThreshold: true,
+				requiredCoverage: 100,
+				maxCoverage: 85,
 				pollNumber: 3,
 				currentRound: 1,
-				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -721,12 +709,12 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
-						currentXp: 160, // Exactly 80% of 200 threshold
+						currentCoverage: 160, // Exactly 80% of 200 threshold
 						pollsAnswered: 6,
 					}),
 				],
@@ -739,13 +727,11 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				isThresholdCheckPoll: true,
-				meetsThreshold: false,
-				requiredXp: 200,
-				currentXp: 160,
+				meetsThreshold: true,
+				requiredCoverage: 200,
+				maxCoverage: 160,
 				pollNumber: 6,
 				currentRound: 2,
-				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -762,12 +748,12 @@ describe("configs", () => {
 			});
 			const mockRun = createMockRun({
 				activeConfigIds: ["try-catch-config"],
-				categoryXp: [
-					createMockRunCategoryXp({
+				categoryCoverage: [
+					createMockRunCategoryCoverage({
 						id: 1,
 						runId: 1,
 						categoryCode: "js",
-						currentXp: 79, // Just below 80% of 100 threshold
+						currentCoverage: 79, // Just below 80% of 100 threshold
 						pollsAnswered: 3,
 					}),
 				],
@@ -780,13 +766,11 @@ describe("configs", () => {
 			};
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				isThresholdCheckPoll: true,
-				meetsThreshold: false,
-				requiredXp: 100,
-				currentXp: 79,
+				meetsThreshold: true,
+				requiredCoverage: 100,
+				maxCoverage: 79,
 				pollNumber: 3,
 				currentRound: 1,
-				pollInRound: 3,
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -844,8 +828,8 @@ describe("configs", () => {
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
 			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([2, 3]);
-			expect(result.renderProps.amp).toBe(0.5);
-			expect(result.score.ampAdd).toBe(0.5);
+			expect(result.renderProps.coverageBonus).toBe(0.5);
+			expect(result.coverage.coverageAdd).toBe(0.5);
 			expect(result.meta.notes).toContain("Hid wrong options");
 			expect(result.meta.notes).toContain("+0.5 amp for js polls");
 		});
@@ -884,7 +868,7 @@ describe("configs", () => {
 			]);
 
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
-			expect(result.renderProps.amp).toBe(0.3);
+			expect(result.renderProps.coverageBonus).toBe(0.3);
 			expect(result.meta.notes).toContain("Hid wrong options");
 			expect(result.meta.notes).toContain("Random amp for react polls");
 
@@ -911,8 +895,8 @@ describe("configs", () => {
 			]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.amp).toBe(0.6);
-			expect(result.score.ampAdd).toBe(0.6);
+			expect(result.renderProps.coverageBonus).toBe(0.6);
+			expect(result.coverage.coverageAdd).toBe(0.6);
 			expect(result.meta.notes).toEqual([
 				"Random amp for js polls",
 				"+0.5 amp for js polls",
@@ -931,10 +915,10 @@ describe("configs", () => {
 
 		it("supports amp property", () => {
 			const renderProps: EffectRenderProps = {
-				amp: 0.75,
+				coverageBonus: 0.75,
 			};
 
-			expect(renderProps.amp).toBe(0.75);
+			expect(renderProps.coverageBonus).toBe(0.75);
 		});
 
 		it("is empty when no effects are applied", () => {
@@ -945,11 +929,11 @@ describe("configs", () => {
 		it("allows multiple effects to be applied", () => {
 			const renderProps: EffectRenderProps = {
 				disabledOptionIds: [1, 2],
-				amp: 1.5,
+				coverageBonus: 1.5,
 			};
 
 			expect(renderProps.disabledOptionIds).toEqual([1, 2]);
-			expect(renderProps.amp).toBe(1.5);
+			expect(renderProps.coverageBonus).toBe(1.5);
 		});
 	});
 });

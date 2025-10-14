@@ -105,16 +105,16 @@ export const GlobalLeaderboard = ({
 			<div className="text-gray-400 text-xs mb-4">
 				Metric:{" "}
 				{selectedCategory
-					? `${CATEGORIES.find((c) => c.code === selectedCategory)?.name} Category XP`
-					: "Total XP"}{" "}
+					? `${CATEGORIES.find((c) => c.code === selectedCategory)?.name} Category Coverage`
+					: "Total Coverage"}{" "}
 				(min 5 polls)
 			</div>
 			<div className="space-y-1">
 				{entries.map((entry, index) => {
 					const rank = index + 1;
-					const xpPerPoll =
+					const coveragePerPoll =
 						entry.pollsAnswered > 0
-							? (entry.totalXp / entry.pollsAnswered).toFixed(2)
+							? (entry.totalCoverage / entry.pollsAnswered).toFixed(2)
 							: "0.00";
 
 					return (
@@ -131,7 +131,7 @@ export const GlobalLeaderboard = ({
 								{entry.displayName || "Anonymous"}
 							</div>
 							<div className="text-green-400 font-bold mr-4 text-right min-w-[3rem]">
-								{entry.totalXp} XP ({xpPerPoll} acc.)
+								{entry.totalCoverage}% ({coveragePerPoll}% avg)
 							</div>
 							<div className="text-gray-400 text-xs whitespace-nowrap">
 								(Run #{entry.runId}: {entry.pollsAnswered}/

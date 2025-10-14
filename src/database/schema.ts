@@ -4,6 +4,7 @@ import {
 	json,
 	pgEnum,
 	pgTable,
+	real,
 	serial,
 	text,
 	timestamp,
@@ -175,7 +176,7 @@ export const pollResponseOptionsTable = pgTable("polls_response_options", {
  * Records user submissions and answers
  * - Tracks who answered what and when
  * - Maintains response history even if user is deleted
- * - Enables streak and XP calculations
+ * - Enables streak and coverage calculations
  * - Automatically updates timestamps for analytics
  */
 export const pollResponsesTable = pgTable("polls_responses", {
@@ -225,14 +226,14 @@ export const runsTable = pgTable("runs", {
 });
 
 /**
- * Run Category XP Table
- * Tracks XP earned in each category during a specific run
- * - Each run starts with 0 XP in all categories
- * - XP accumulates as players answer polls correctly
+ * Run Category Coverage Table
+ * Tracks coverage score earned in each category during a specific run
+ * - Each run starts with 0% coverage in all categories
+ * - Coverage accumulates as players answer polls correctly (1% per correct answer)
  * - Enables category-specific progression within runs
  */
-export const runCategoryXpTable = pgTable(
-	"run_category_xp",
+export const runCategoryCoverageTable = pgTable(
+	"run_category_coverage",
 	{
 		id: serial("id").primaryKey(),
 		run_id: integer("run_id")
@@ -241,11 +242,11 @@ export const runCategoryXpTable = pgTable(
 		category_code: varchar("category_code", { length: 50 })
 			.references(() => pollCategoriesTable.code)
 			.notNull(),
-		current_xp: integer("current_xp").notNull().default(0),
+		current_coverage: real("current_coverage").notNull().default(0),
 		current_streak: integer("current_streak").notNull().default(0),
 		best_streak: integer("best_streak").notNull().default(0),
 		polls_answered: integer("polls_answered").notNull().default(0),
-		final_xp: integer("final_xp"),
+		final_coverage: real("final_coverage"),
 		final_streak: integer("final_streak"),
 		created_at: timestamp("created_at").defaultNow(),
 		updated_at: timestamp("updated_at")
@@ -258,7 +259,6 @@ export const runCategoryXpTable = pgTable(
 		};
 	}
 );
-
 /**
  * Seasons Table
  * Manages game seasons for temporal organization and progression tracking
@@ -301,8 +301,8 @@ export const leaderboardTable = pgTable("leaderboard", {
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
 		.notNull(), // Category for this leaderboard entry
-	category_xp: integer("category_xp").notNull().default(0), // XP achieved in this category for this run
-	total_xp: integer("total_xp").notNull().default(0), // Overall XP for the run (for global leaderboards)
+	category_coverage: real("category_coverage").notNull().default(0), // Coverage % achieved in this category for this run
+	total_coverage: real("total_coverage").notNull().default(0), // Overall coverage % for the run (for global leaderboards)
 	best_streak: integer("best_streak").notNull().default(0),
 	polls_answered: integer("polls_answered").notNull().default(0),
 	completed_at: timestamp("completed_at").notNull(),

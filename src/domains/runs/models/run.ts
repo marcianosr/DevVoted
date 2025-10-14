@@ -1,7 +1,7 @@
 import { runsTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
 import { STORAGE_UNITS } from "~/lib/storage";
-import type { RunCategoryXp } from "./runCategoryXp";
+import type { RunCategoryCoverage } from "./runCategoryCoverage";
 
 // TODO: Refactor this to ActiveRun?
 export type Run = {
@@ -18,14 +18,14 @@ export type Run = {
 	finishedAt: Date | null;
 	createdAt: Date;
 	updatedAt: Date | null;
-	categoryXp: RunCategoryXp[];
+	categoryCoverage: RunCategoryCoverage[];
 };
 
 export type RunRecord = InferSelectModel<typeof runsTable>;
 
 export const runToDTO = (
 	record: RunRecord,
-	categoryXp: RunCategoryXp[] = []
+	categoryCoverage: RunCategoryCoverage[] = []
 ): Run => {
 	return {
 		id: record.id,
@@ -41,7 +41,7 @@ export const runToDTO = (
 		finishedAt: record.finished_at,
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
-		categoryXp,
+		categoryCoverage,
 	};
 };
 
@@ -88,7 +88,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		finishedAt: null,
 		createdAt: now,
 		updatedAt: now,
-		categoryXp: [],
+		categoryCoverage: [],
 		...partial,
 	};
 };
@@ -109,7 +109,7 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		finishedAt: null,
 		createdAt: new Date("2024-01-01T00:00:00Z"),
 		updatedAt: new Date("2024-01-01T00:00:00Z"),
-		categoryXp: [],
+		categoryCoverage: [],
 		...overrides,
 	};
 };

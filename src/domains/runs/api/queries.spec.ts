@@ -9,8 +9,8 @@ import {
 import { db } from "~/database/db";
 import { createMockRunRecord } from "../models/run";
 import {
-	createMockRunCategoryXpRecord,
-	createMockRunCategoryXpRecordArray,
+	createMockRunCategoryCoverageRecord,
+	createMockRunCategoryCoverageRecordArray,
 } from "../models/runCategoryXp";
 
 // Mock the seasons service
@@ -80,7 +80,7 @@ describe("Run Queries", () => {
 	describe("getActiveRunByUserId", () => {
 		it("returns active run when found", async () => {
 			const mockRun = createMockRunRecord({ status: "active" });
-			const mockXpRecords = createMockRunCategoryXpRecordArray(2);
+			const mockXpRecords = createMockRunCategoryCoverageRecordArray(2);
 
 			// Mock first query for run
 			const limitMock1 = vi.fn().mockResolvedValue([mockRun]);
@@ -100,8 +100,8 @@ describe("Run Queries", () => {
 			expect(result).toBeDefined();
 			expect(result?.status).toBe("active");
 			expect(result?.userId).toBe("test-user-id");
-			expect(result?.categoryXp).toBeDefined();
-			expect(result?.categoryXp).toHaveLength(2);
+			expect(result?.categoryCoverage).toBeDefined();
+			expect(result?.categoryCoverage).toHaveLength(2);
 		});
 
 		it("returns null when no active run found", async () => {
@@ -124,7 +124,7 @@ describe("Run Queries", () => {
 				{ id: 1, name: "JavaScript", code: "js" },
 				{ id: 2, name: "CSS", code: "css" },
 			];
-			const mockXpRecords = createMockRunCategoryXpRecordArray(2);
+			const mockXpRecords = createMockRunCategoryCoverageRecordArray(2);
 
 			const returningMock = vi.fn();
 			returningMock.mockResolvedValueOnce([mockRun]);
@@ -153,7 +153,7 @@ describe("Run Queries", () => {
 			const result = await createRunForUser("test-user-id");
 
 			expect(result).toBeDefined();
-			expect(result.categoryXp).toHaveLength(2);
+			expect(result.categoryCoverage).toHaveLength(2);
 			expect(result.userId).toBe("test-user-id");
 			expect(vi.mocked(db.transaction)).toHaveBeenCalledOnce();
 		});
@@ -162,7 +162,7 @@ describe("Run Queries", () => {
 	describe("getRunWithCategoryXp", () => {
 		it("returns run with category XP data", async () => {
 			const mockRun = createMockRunRecord();
-			const mockXpRecords = createMockRunCategoryXpRecordArray(3);
+			const mockXpRecords = createMockRunCategoryCoverageRecordArray(3);
 
 			const limitMock = vi.fn().mockResolvedValue([mockRun]);
 			const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
@@ -182,7 +182,7 @@ describe("Run Queries", () => {
 
 			expect(result).toBeDefined();
 			expect(result?.id).toBeDefined();
-			expect(result?.categoryXp).toHaveLength(3);
+			expect(result?.categoryCoverage).toHaveLength(3);
 		});
 
 		it("returns null when run not found", async () => {
@@ -233,13 +233,13 @@ describe("Run Queries", () => {
 
 	describe("awardXpToRun", () => {
 		it("awards XP and increments streak correctly", async () => {
-			const currentXpRecord = createMockRunCategoryXpRecord({
+			const currentXpRecord = createMockRunCategoryCoverageRecord({
 				current_xp: 10,
 				current_streak: 2,
 				best_streak: 3,
 			});
 
-			const updatedXpRecord = createMockRunCategoryXpRecord({
+			const updatedXpRecord = createMockRunCategoryCoverageRecord({
 				current_xp: 15, // +5 XP
 				current_streak: 3, // +1 streak
 				best_streak: 3, // same as before
@@ -277,13 +277,13 @@ describe("Run Queries", () => {
 		});
 
 		it("updates best streak when current streak exceeds it", async () => {
-			const currentXpRecord = createMockRunCategoryXpRecord({
+			const currentXpRecord = createMockRunCategoryCoverageRecord({
 				current_xp: 20,
 				current_streak: 4,
 				best_streak: 3,
 			});
 
-			const updatedXpRecord = createMockRunCategoryXpRecord({
+			const updatedXpRecord = createMockRunCategoryCoverageRecord({
 				current_xp: 25,
 				current_streak: 5,
 				best_streak: 5, // updated to new best

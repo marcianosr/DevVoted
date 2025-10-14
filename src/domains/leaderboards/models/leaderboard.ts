@@ -3,7 +3,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 export type LeaderboardEntry = {
 	userId: string;
 	displayName: string;
-	totalXp: number;
+	totalCoverage: number;
 	bestStreak: number;
 	pollsAnswered: number;
 	runId: number | null; // null when aggregating across multiple runs

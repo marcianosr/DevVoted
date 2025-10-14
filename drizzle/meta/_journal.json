@@ -134,6 +134,27 @@
       "when": 1755689687298,
       "tag": "0018_daily_darkhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1760295154455,
+      "tag": "0019_fast_major_mapleleaf",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1760437374212,
+      "tag": "0020_cynical_nekra",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1760441602954,
+      "tag": "0021_slow_spencer_smythe",
+      "breakpoints": true
     }
   ]
 }

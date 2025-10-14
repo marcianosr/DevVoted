@@ -1,86 +1,86 @@
-import { runCategoryXpTable } from "@/src/database/schema";
+import { runCategoryCoverageTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
 import { CATEGORY_CODES, type CategoryCode } from "~/domains/shared/categories";
 
 // TODO: Refactor to "RunMetric"
-export type RunCategoryXp = {
+export type RunCategoryCoverage = {
 	id: number;
 	runId: number;
 	categoryCode: CategoryCode;
-	currentXp: number;
+	currentCoverage: number;
 	currentStreak: number;
 	bestStreak: number;
 	pollsAnswered: number;
-	finalXp: number | null;
+	finalCoverage: number | null;
 	finalStreak: number | null;
 	createdAt: Date;
 	updatedAt: Date | null;
 };
 
-export type RunCategoryXpRecord = InferSelectModel<typeof runCategoryXpTable>;
+export type RunCategoryCoverageRecord = InferSelectModel<typeof runCategoryCoverageTable>;
 
-export const runCategoryXpToDTO = (
-	record: RunCategoryXpRecord
-): RunCategoryXp => {
+export const runCategoryCoverageToDTO = (
+	record: RunCategoryCoverageRecord
+): RunCategoryCoverage => {
 	return {
 		id: record.id,
 		runId: record.run_id,
 		categoryCode: record.category_code as CategoryCode,
-		currentXp: record.current_xp,
+		currentCoverage: record.current_coverage,
 		currentStreak: record.current_streak,
 		bestStreak: record.best_streak,
 		pollsAnswered: record.polls_answered,
-		finalXp: record.final_xp,
+		finalCoverage: record.final_coverage,
 		finalStreak: record.final_streak,
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
 	};
 };
 
-export const runCategoryXpFromDTO = (
-	dto: RunCategoryXp
-): RunCategoryXpRecord => {
+export const runCategoryCoverageFromDTO = (
+	dto: RunCategoryCoverage
+): RunCategoryCoverageRecord => {
 	return {
 		id: dto.id,
 		run_id: dto.runId,
 		category_code: dto.categoryCode,
-		current_xp: dto.currentXp,
+		current_coverage: dto.currentCoverage,
 		current_streak: dto.currentStreak,
 		best_streak: dto.bestStreak,
 		polls_answered: dto.pollsAnswered,
-		final_xp: dto.finalXp,
+		final_coverage: dto.finalCoverage,
 		final_streak: dto.finalStreak,
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
 	};
 };
 
-export const runCategoryXpsToDTOs = (
-	records: RunCategoryXpRecord[]
-): RunCategoryXp[] => {
-	return records.map(runCategoryXpToDTO);
+export const runCategoryCoveragesToDTOs = (
+	records: RunCategoryCoverageRecord[]
+): RunCategoryCoverage[] => {
+	return records.map(runCategoryCoverageToDTO);
 };
 
-export const runCategoryXpsFromDTOs = (
-	dtos: RunCategoryXp[]
-): RunCategoryXpRecord[] => {
-	return dtos.map(runCategoryXpFromDTO);
+export const runCategoryCoveragesFromDTOs = (
+	dtos: RunCategoryCoverage[]
+): RunCategoryCoverageRecord[] => {
+	return dtos.map(runCategoryCoverageFromDTO);
 };
 
-export const createRunCategoryXp = (
-	partial: Partial<RunCategoryXp> = {}
-): RunCategoryXp => {
+export const createRunCategoryCoverage = (
+	partial: Partial<RunCategoryCoverage> = {}
+): RunCategoryCoverage => {
 	const now = new Date();
 
 	return {
 		id: 0,
 		runId: 0,
 		categoryCode: "js" as CategoryCode,
-		currentXp: 0,
+		currentCoverage: 0,
 		currentStreak: 0,
 		bestStreak: 0,
 		pollsAnswered: 0,
-		finalXp: null,
+		finalCoverage: null,
 		finalStreak: null,
 		createdAt: now,
 		updatedAt: now,
@@ -89,18 +89,18 @@ export const createRunCategoryXp = (
 };
 
 // Test factory functions
-export const createMockRunCategoryXp = (
-	overrides: Partial<RunCategoryXp> = {}
-): RunCategoryXp => {
+export const createMockRunCategoryCoverage = (
+	overrides: Partial<RunCategoryCoverage> = {}
+): RunCategoryCoverage => {
 	return {
 		id: 1,
 		runId: 1,
 		categoryCode: "js",
-		currentXp: 0,
+		currentCoverage: 0,
 		currentStreak: 0,
 		bestStreak: 0,
 		pollsAnswered: 0,
-		finalXp: null,
+		finalCoverage: null,
 		finalStreak: null,
 		createdAt: new Date("2024-01-01T00:00:00Z"),
 		updatedAt: new Date("2024-01-01T00:00:00Z"),
@@ -108,18 +108,18 @@ export const createMockRunCategoryXp = (
 	};
 };
 
-export const createMockRunCategoryXpRecord = (
-	overrides: Partial<RunCategoryXpRecord> = {}
-): RunCategoryXpRecord => {
+export const createMockRunCategoryCoverageRecord = (
+	overrides: Partial<RunCategoryCoverageRecord> = {}
+): RunCategoryCoverageRecord => {
 	return {
 		id: 1,
 		run_id: 1,
 		category_code: "js",
-		current_xp: 0,
+		current_coverage: 0,
 		current_streak: 0,
 		best_streak: 0,
 		polls_answered: 0,
-		final_xp: null,
+		final_coverage: null,
 		final_streak: null,
 		created_at: new Date("2024-01-01T00:00:00Z"),
 		updated_at: new Date("2024-01-01T00:00:00Z"),
@@ -127,32 +127,32 @@ export const createMockRunCategoryXpRecord = (
 	};
 };
 
-export const createMockRunCategoryXpArray = (
+export const createMockRunCategoryCoverageArray = (
 	count: number = 3
-): RunCategoryXp[] => {
+): RunCategoryCoverage[] => {
 	return Array.from({ length: count }, (_, i) =>
-		createMockRunCategoryXp({
+		createMockRunCategoryCoverage({
 			id: i + 1,
 			categoryCode: CATEGORY_CODES[i % CATEGORY_CODES.length],
 		})
 	);
 };
 
-export const createMockRunCategoryXpRecordArray = (
+export const createMockRunCategoryCoverageRecordArray = (
 	count: number = 3
-): RunCategoryXpRecord[] => {
+): RunCategoryCoverageRecord[] => {
 	return Array.from({ length: count }, (_, i) =>
-		createMockRunCategoryXpRecord({
+		createMockRunCategoryCoverageRecord({
 			id: i + 1,
 			category_code: CATEGORY_CODES[i % CATEGORY_CODES.length],
 		})
 	);
 };
 
-export const runCategoryXpFactory = {
-	toDTO: runCategoryXpToDTO,
-	fromDTO: runCategoryXpFromDTO,
-	toDTOs: runCategoryXpsToDTOs,
-	fromDTOs: runCategoryXpsFromDTOs,
-	create: createRunCategoryXp,
+export const runCategoryCoverageFactory = {
+	toDTO: runCategoryCoverageToDTO,
+	fromDTO: runCategoryCoverageFromDTO,
+	toDTOs: runCategoryCoveragesToDTOs,
+	fromDTOs: runCategoryCoveragesFromDTOs,
+	create: createRunCategoryCoverage,
 };

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useActiveRun } from "./useActiveRun";
 import * as runsApi from "~/domains/runs/api/runs";
 import { createRun, Run } from "~/domains/runs/models/run";
-import { createMockRunCategoryXpArray } from "~/domains/runs/models/runCategoryXp";
+import { createMockRunCategoryCoverageArray } from "~/domains/runs/models/runCategoryCoverage";
 import type { ReactNode } from "react";
 
 // Mock the runs API
@@ -41,12 +41,12 @@ describe("useActiveRun", () => {
 
 	describe("User has existing quiz session", () => {
 		it("loads user's current quiz session when component initializes", async () => {
-			const mockXp = createMockRunCategoryXpArray(3);
+			const mockXp = createMockRunCategoryCoverageArray(3);
 			const mockRunData = createRun({
 				id: 1,
 				userId: "user123",
 				status: "active",
-				categoryXp: mockXp,
+				categoryCoverage: mockXp,
 			});
 
 			vi.mocked(runsApi.getActiveRun).mockResolvedValue({
@@ -70,12 +70,12 @@ describe("useActiveRun", () => {
 		});
 
 		it("prevents starting new quiz when user already has active session", async () => {
-			const mockXp = createMockRunCategoryXpArray(3);
+			const mockXp = createMockRunCategoryCoverageArray(3);
 			const mockRunData = createRun({
 				id: 1,
 				userId: "user123",
 				status: "active",
-				categoryXp: mockXp,
+				categoryCoverage: mockXp,
 			});
 
 			vi.mocked(runsApi.getActiveRun).mockResolvedValue({
@@ -125,8 +125,8 @@ describe("useActiveRun", () => {
 				userId: "user123",
 				status: "active",
 			});
-			const mockXp = createMockRunCategoryXpArray(3);
-			const mockNewRunData: Run = { ...mockRun, categoryXp: mockXp };
+			const mockXp = createMockRunCategoryCoverageArray(3);
+			const mockNewRunData: Run = { ...mockRun, categoryCoverage: mockXp };
 
 			vi.mocked(runsApi.getActiveRun).mockResolvedValue({
 				success: false,
@@ -176,7 +176,7 @@ describe("useActiveRun", () => {
 										id: 1,
 										userId: "user123",
 									}),
-									categoryXp: [],
+									categoryCoverage: [],
 								},
 							});
 						}, 1000);
@@ -278,12 +278,12 @@ describe("useActiveRun", () => {
 
 	describe("Quiz session status detection", () => {
 		it("detects finished quiz session correctly", async () => {
-			const mockXp = createMockRunCategoryXpArray(3);
+			const mockXp = createMockRunCategoryCoverageArray(3);
 			const mockRunData = createRun({
 				id: 1,
 				userId: "user123",
 				status: "finished",
-				categoryXp: mockXp,
+				categoryCoverage: mockXp,
 			});
 
 			vi.mocked(runsApi.getActiveRun).mockResolvedValue({
@@ -308,12 +308,12 @@ describe("useActiveRun", () => {
 
 	describe("Data refresh functionality", () => {
 		it("refreshes quiz session data when requested", async () => {
-			const mockXp = createMockRunCategoryXpArray(3);
+			const mockXp = createMockRunCategoryCoverageArray(3);
 			const mockRunData = createRun({
 				id: 1,
 				userId: "user123",
 				status: "active",
-				categoryXp: mockXp,
+				categoryCoverage: mockXp,
 			});
 
 			const getActiveRunSpy = vi

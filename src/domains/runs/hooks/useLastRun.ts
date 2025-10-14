@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getLastRunForGameOver } from "~/domains/runs/api/runs";
 import { runQueryKeys } from "~/domains/shared/queryKeys";
+import type { CategoryCode } from "~/domains/shared/categories";
 
 type LastRunData = {
 	run: {
@@ -8,14 +9,14 @@ type LastRunData = {
 		started_at: Date | null;
 		finished_at: Date | null;
 	};
-	categoryXp: {
-		categoryCode: string;
-		currentXp: number;
+	categoryCoverage: {
+		categoryCode: CategoryCode;
+		currentCoverage: number;
 		currentStreak: number;
 		bestStreak: number;
 		pollsAnswered: number;
 	}[];
-	totalXp: number;
+	totalCoverage: number;
 	totalPollsAnswered: number;
 };
 
@@ -29,9 +30,10 @@ export type UseLastRunReturn = {
 export const useLastRun = (userId: string | undefined): UseLastRunReturn => {
 	const { data, isLoading, error } = useQuery({
 		queryKey: runQueryKeys.lastRun(userId),
-		queryFn: () => getLastRunForGameOver({ data: { userId: userId || "" } }),
+		queryFn: () =>
+			getLastRunForGameOver({ data: { userId: userId || "" } }),
 		enabled: !!userId,
-		select: (response) => response.success ? response.data : null,
+		select: (response) => (response.success ? response.data : null),
 		staleTime: 5 * 60 * 1000, // 5 minutes - last run data doesn't change often
 		retry: 1,
 	});

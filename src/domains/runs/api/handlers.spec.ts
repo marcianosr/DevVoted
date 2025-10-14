@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getOrCreateActiveRun, getUserActiveRun } from "./handlers";
 import * as queries from "./queries";
 import { createMockRun } from "../models/run";
-import { createMockRunCategoryXpArray } from "../models/runCategoryXp";
+import { createMockRunCategoryCoverageArray } from "../models/runCategoryXp";
 
 // Mock the queries module
 vi.mock("./queries", () => ({
@@ -19,8 +19,8 @@ describe("Run Handlers", () => {
 
 	describe("getOrCreateActiveRun", () => {
 		it("returns existing active run with XP data", async () => {
-			const mockXp = createMockRunCategoryXpArray(3);
-			const mockRunWithXp = createMockRun({ categoryXp: mockXp });
+			const mockXp = createMockRunCategoryCoverageArray(3);
+			const mockRunWithXp = createMockRun({ categoryCoverage: mockXp });
 
 			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(
 				mockRunWithXp
@@ -39,8 +39,8 @@ describe("Run Handlers", () => {
 		});
 
 		it("creates new run when no active run exists", async () => {
-			const mockXp = createMockRunCategoryXpArray(3);
-			const mockNewRunData = createMockRun({ categoryXp: mockXp });
+			const mockXp = createMockRunCategoryCoverageArray(3);
+			const mockNewRunData = createMockRun({ categoryCoverage: mockXp });
 
 			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(null);
 			vi.mocked(queries.createRunForUser).mockResolvedValue(
@@ -92,8 +92,8 @@ describe("Run Handlers", () => {
 
 	describe("getUserActiveRun", () => {
 		it("returns active run with XP data", async () => {
-			const mockXp = createMockRunCategoryXpArray(3);
-			const mockRunWithXp = createMockRun({ categoryXp: mockXp });
+			const mockXp = createMockRunCategoryCoverageArray(3);
+			const mockRunWithXp = createMockRun({ categoryCoverage: mockXp });
 
 			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(
 				mockRunWithXp
