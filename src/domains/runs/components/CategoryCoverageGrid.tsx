@@ -25,7 +25,16 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 					<li key="categoryCode">
 						{CATEGORY_METADATA[coverage.categoryCode].name}
 					</li>
-					<li key="currentCoverage">{coverage.currentCoverage}%</li>
+					<li key="currentCoverage" className="flex flex-col gap-0">
+						{coverage.currentCoverage}%
+						<meter
+							key="coverageMeter"
+							className="w-full h-2"
+							min="0"
+							max="100"
+							value={coverage.currentCoverage}
+						></meter>
+					</li>
 					<li key="currentStreak" className="flex gap-2">
 						{coverage.currentStreak}
 						{coverage.bestStreak > 0 && <span>🌟</span>}

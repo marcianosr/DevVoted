@@ -479,12 +479,18 @@ describe("configs", () => {
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false,
-				requiredCoverage: 50,
+				gateDefinition: {
+				gate: 1,
+				requirements: [{ threshold: 50, requiredCategories: 1 }],
+				evaluationMode: "OR",
+			},
 				maxCoverage: 0,
 				pollNumber: 0,
 				currentRound: 1,
 				isThresholdCheckPoll: false,
 				pollInRound: 0,
+			requirementEvaluations: [],
+			qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -520,12 +526,18 @@ describe("configs", () => {
 			// Mock the threshold calculation to return failing threshold at poll 3
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
-				requiredCoverage: 100,
+				gateDefinition: {
+				gate: 1,
+				requirements: [{ threshold: 100, requiredCategories: 1 }],
+				evaluationMode: "OR",
+			},
 				maxCoverage: 80,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
+			requirementEvaluations: [],
+			qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -564,12 +576,18 @@ describe("configs", () => {
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
-				requiredCoverage: 100,
+				gateDefinition: {
+				gate: 1,
+				requirements: [{ threshold: 100, requiredCategories: 1 }],
+				evaluationMode: "OR",
+			},
 				maxCoverage: 60,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
+			requirementEvaluations: [],
+			qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -605,12 +623,18 @@ describe("configs", () => {
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: true, // 120 > 100, so passing
-				requiredCoverage: 100,
+				gateDefinition: {
+				gate: 1,
+				requirements: [{ threshold: 100, requiredCategories: 1 }],
+				evaluationMode: "OR",
+			},
 				maxCoverage: 120,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
+			requirementEvaluations: [],
+			qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -647,12 +671,18 @@ describe("configs", () => {
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Not a threshold check poll
-				requiredCoverage: 50,
+				gateDefinition: {
+				gate: 1,
+				requirements: [{ threshold: 50, requiredCategories: 1 }],
+				evaluationMode: "OR",
+			},
 				maxCoverage: 40,
 				pollNumber: 2,
 				currentRound: 1,
 				isThresholdCheckPoll: false,
 				pollInRound: 2,
+			requirementEvaluations: [],
+			qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -699,12 +729,18 @@ describe("configs", () => {
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
-				requiredCoverage: 100,
+				gateDefinition: {
+				gate: 1,
+				requirements: [{ threshold: 100, requiredCategories: 1 }],
+				evaluationMode: "OR",
+			},
 				maxCoverage: 85,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
+			requirementEvaluations: [],
+			qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -740,12 +776,18 @@ describe("configs", () => {
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
-				requiredCoverage: 200,
+				gateDefinition: {
+				gate: 1,
+				requirements: [{ threshold: 200, requiredCategories: 1 }],
+				evaluationMode: "OR",
+			},
 				maxCoverage: 160,
 				pollNumber: 6,
 				currentRound: 2,
 				isThresholdCheckPoll: true,
 				pollInRound: 6,
+			requirementEvaluations: [],
+			qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -781,12 +823,18 @@ describe("configs", () => {
 
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
-				requiredCoverage: 100,
+				gateDefinition: {
+				gate: 1,
+				requirements: [{ threshold: 100, requiredCategories: 1 }],
+				evaluationMode: "OR",
+			},
 				maxCoverage: 79,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
+			requirementEvaluations: [],
+			qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);

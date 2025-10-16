@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "required_categories_count" integer DEFAULT 1 NOT NULL;

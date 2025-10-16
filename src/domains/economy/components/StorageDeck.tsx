@@ -33,7 +33,11 @@ export const StorageDeck = ({ run }: StorageDeckProps) => {
 					)}
 				</div>
 			</div>
-			<meter value={storageUsed} max={storageLimit} />
+			<meter
+				value={storageUsed}
+				max={storageLimit}
+				className="w-full h-8"
+			/>
 			<div className="grid grid-cols-4 gap-3">
 				{activeConfigs.length === 0 ? (
 					<div className="text-center text-gray-500 py-8">

@@ -19,7 +19,7 @@ export const configs: Config[] = [
 		id: ".html-config",
 		name: ".html",
 		image: "/configs/html",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: STORAGE_UNITS.MB / 4,
 		description: "+0.5 amp on category General Frontend polls",
 		rarity: "common",
 		effect: ["streakAmp"],
@@ -30,7 +30,7 @@ export const configs: Config[] = [
 		id: ".css-config",
 		name: ".css",
 		image: "/configs/css",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: STORAGE_UNITS.MB / 4,
 		description: "+0.5 amp on category CSS polls",
 		rarity: "common",
 		effect: ["streakAmp"],
@@ -41,7 +41,7 @@ export const configs: Config[] = [
 		id: ".js-config",
 		name: ".js",
 		image: "/configs/js",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: STORAGE_UNITS.MB / 4,
 		description: "+0.5 amp on category JavaScript polls",
 		rarity: "common",
 		effect: ["streakAmp"],
@@ -52,7 +52,7 @@ export const configs: Config[] = [
 		id: ".ts-config",
 		name: ".ts",
 		image: "/configs/ts",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: STORAGE_UNITS.MB / 4,
 		description: "+0.5 amp on category TypeScript polls",
 		rarity: "common",
 		effect: ["streakAmp"],
@@ -63,7 +63,7 @@ export const configs: Config[] = [
 		id: ".jsx-config",
 		name: ".jsx",
 		image: "/configs/jsx",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: STORAGE_UNITS.MB / 4,
 		description: "+0.5 amp on category React polls",
 		rarity: "common",
 		effect: ["streakAmp"],
@@ -74,7 +74,7 @@ export const configs: Config[] = [
 		id: ".git-config",
 		name: ".git",
 		image: "/configs/git",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: STORAGE_UNITS.MB / 4,
 		description: "+0.5 amp on category General Frontend polls",
 		rarity: "common",
 		effect: ["streakAmp"],
@@ -85,7 +85,7 @@ export const configs: Config[] = [
 		id: "package.json-config",
 		name: "package.json",
 		image: "/configs/package-json.png",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: STORAGE_UNITS.MB / 4,
 		description: "+0.5 amp on category General Frontend polls",
 		rarity: "common",
 		effect: ["streakAmp"],
@@ -219,9 +219,7 @@ const EFFECTS: Record<string, EffectFn> = {
 			renderProps: { coverageBonus: bonusCoverage },
 			coverage: { coverageAdd: bonusCoverage },
 			meta: {
-				notes: [
-					`+${bonusCoverage} amp for ${poll.categoryCode} polls`,
-				],
+				notes: [`+${bonusCoverage} amp for ${poll.categoryCode} polls`],
 			},
 		};
 	},
@@ -259,7 +257,8 @@ const EFFECTS: Record<string, EffectFn> = {
 	checkCoverageWithThreshold: ({ poll, options, run, hasAnswered }) => {
 		// Calculate threshold based on category coverage data
 		const thresholdInfo = calculateThresholdInfo(run.categoryCoverage);
-		const requiredCoverage = thresholdInfo.requiredCoverage;
+		const requiredCoverage =
+			thresholdInfo.gateDefinition?.requirements[0]?.threshold ?? 0;
 		const requiredForProtection = requiredCoverage * 0.8; // 80% of threshold
 
 		// Try/Catch only activates when:
@@ -272,7 +271,12 @@ const EFFECTS: Record<string, EffectFn> = {
 			!thresholdInfo.meetsThreshold; // Only if we'd actually fail
 
 		// Calculate percentage for display
-		const percentageOfThreshold = Math.round((thresholdInfo.maxCoverage / requiredCoverage) * 100);
+		const percentageOfThreshold =
+			requiredCoverage > 0
+				? Math.round(
+						(thresholdInfo.maxCoverage / requiredCoverage) * 100
+					)
+				: 0;
 
 		// If current coverage is below 80% of threshold, try/catch can't save you
 		if (thresholdInfo.maxCoverage < requiredForProtection) {
@@ -280,9 +284,7 @@ const EFFECTS: Record<string, EffectFn> = {
 				view: { poll, options, run, hasAnswered },
 				protection: { tryCatch: false },
 				meta: {
-					notes: [
-						`Try/Catch inactive (need 80% of threshold)`,
-					],
+					notes: [`Try/Catch inactive (need 80% of threshold)`],
 				},
 			};
 		}

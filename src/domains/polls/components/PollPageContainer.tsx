@@ -34,9 +34,44 @@ import { getRandomConfigs } from "~/domains/economy/services/configManager.servi
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
-import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
+import {
+	calculateThresholdInfo,
+	type GateDefinition,
+} from "~/domains/runs/services/thresholdCalculator.service";
 import { getCategories } from "~/domains/shared/categories";
 import { formatCoverage } from "~/domains/score/services/score.service";
+
+/**
+ * Format gate requirements for display
+ * Examples:
+ * - "10% in 1 category"
+ * - "15% in 1 OR 10% in 2 categories"
+ * - "30% in 1 AND 15% in another"
+ */
+const formatGateRequirements = (
+	gateDefinition: GateDefinition | null
+): string => {
+	if (!gateDefinition) return "";
+
+	const { requirements, evaluationMode } = gateDefinition;
+
+	if (requirements.length === 1) {
+		const req = requirements[0];
+		return `${req.threshold}% in ${req.requiredCategories} ${req.requiredCategories === 1 ? "category" : "categories"}`;
+	}
+
+	const formattedReqs = requirements.map(
+		(req) =>
+			`${req.threshold}% in ${req.requiredCategories} ${req.requiredCategories === 1 ? "category" : "categories"}`
+	);
+
+	if (evaluationMode === "AND" && requirements.length === 2) {
+		// Special formatting for AND with 2 requirements
+		return `${requirements[0].threshold}% in 1 AND ${requirements[1].threshold}% in another`;
+	}
+
+	return formattedReqs.join(` ${evaluationMode} `);
+};
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -228,7 +263,7 @@ const PollContent: React.FC<PollContentProps> = ({
 			className={`min-h-screen p-2`}
 		>
 			<div className="max-w-7xl mx-auto">
-				<section className="grid grid-cols-12 gap-4">
+				<section className="md:grid grid-cols-12 gap-4">
 					<div className="col-span-4 flex flex-col gap-8">
 						<div className="text-4xl text-saffron">
 							{currentCategory?.name}
@@ -258,19 +293,55 @@ const PollContent: React.FC<PollContentProps> = ({
 										)}
 										%
 									</span>
-									<span>
-										Goal:{" "}
-										{formatCoverage(
-											thresholdInfo?.requiredCoverage ?? 0
-										)}
-										%
-									</span>
+									{thresholdInfo?.gateDefinition && (
+										<span>
+											Goal:{" "}
+											{formatCoverage(
+												thresholdInfo
+													.gateDefinition
+													.requirements[0]
+													.threshold
+											)}
+											%
+										</span>
+									)}
 								</span>
 								<meter
 									min={0}
 									value={currentCategoryCoverage}
-									max={thresholdInfo?.requiredCoverage}
+									max={
+										thresholdInfo?.gateDefinition
+											?.requirements[0].threshold ?? 100
+									}
+									className="h-8"
 								></meter>
+
+								{thresholdInfo && (
+									<div className="mt-2 text-xs text-gray-300">
+										<div>
+											CI Gate:{" "}
+											{formatGateRequirements(
+												thresholdInfo.gateDefinition
+											)}
+										</div>
+										{thresholdInfo.qualifyingCategories
+											.length > 0 && (
+											<div className="mt-1 text-green-400">
+												✓ Passing:{" "}
+												{thresholdInfo.qualifyingCategories.join(
+													", "
+												)}
+											</div>
+										)}
+										{!thresholdInfo.meetsThreshold &&
+											thresholdInfo.isThresholdCheckPoll && (
+												<div className="mt-1 text-red-400">
+													⚠️ Not meeting gate
+													requirements
+												</div>
+											)}
+									</div>
+								)}
 							</div>
 						</div>
 						{activeRun && (
