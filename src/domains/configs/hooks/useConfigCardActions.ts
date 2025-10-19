@@ -34,14 +34,12 @@ export const useConfigCardActions = ({
 			onRemoveConfig,
 			onAddConfig: undefined,
 			onToggle: undefined,
-			disabled: !canAdd,
 			isSelected: false,
 		};
 	}
 
 	if (mode === "shop") {
 		// Shop: Allow buying configs when shop is open
-
 		const onAddConfig =
 			isShopOpen && !configInRun
 				? () => addConfigToRun(config.id)

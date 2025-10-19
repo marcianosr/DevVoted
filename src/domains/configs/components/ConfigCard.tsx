@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import { Config } from "~/domains/configs/models/config";
 import { formatStorage } from "~/lib/storage";
 
@@ -46,9 +47,11 @@ export const ConfigCard = ({
 		? "ring-2 ring-blue-500 border-blue-500 bg-blue-50"
 		: `${rarity.border} bg-gray-50`;
 
+	const isDisabled = clsx(disabled && "opacity-50 cursor-not-allowed");
+
 	return (
 		<div
-			className={`border-2 p-4 cursor-pointer transition-all ${selectedStyle} ${`hover:shadow-lg ${rarity.glow}`}`}
+			className={`${isDisabled} border-2 p-4 cursor-pointer transition-all ${selectedStyle} ${`hover:shadow-lg ${rarity.glow}`}`}
 			onClick={disabled ? undefined : onToggle}
 			data-testid={config.id}
 		>
@@ -95,13 +98,25 @@ export const ConfigCard = ({
 					</button>
 				)}
 				{onAddConfig && (
-					<button
-						onClick={onAddConfig}
-						className="ml-2 text-green-500 hover:text-green-700 text-sm"
-						title="Add config"
-					>
-						Add to storage
-					</button>
+					<>
+						{disabled ? (
+							<button
+								disabled
+								className="ml-2 text-gray-400 text-sm cursor-not-allowed"
+								title="Cannot add config"
+							>
+								Add to storage
+							</button>
+						) : (
+							<button
+								onClick={onAddConfig}
+								className="ml-2 text-green-500 hover:text-green-700 text-sm"
+								title="Add config"
+							>
+								Add to storage
+							</button>
+						)}
+					</>
 				)}
 			</div>
 		</div>

@@ -260,8 +260,6 @@ const EFFECTS: Record<string, EffectFn> = {
 		const rawValue = Math.random() * 10 - 5;
 		const bonusCoverage = Math.round(rawValue * 10) / 10;
 
-		console.log("randomStreakAmp bonusCoverage", bonusCoverage);
-
 		return {
 			view: { poll, options, run, hasAnswered },
 			renderProps: { coverageBonus: bonusCoverage },
