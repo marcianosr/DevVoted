@@ -6,21 +6,11 @@ import { STORAGE_UNITS, formatStorage } from "~/lib/storage";
 
 export const configs: Config[] = [
 	{
-		id: "eslint-config",
-		name: "ESLint Config",
-		image: "/configs/eslint.png",
-		cost: STORAGE_UNITS.MB / 2,
-		description: "Disables 1 wrong option",
-		rarity: "uncommon",
-		effect: ["disableWrongOptions"],
-		priority: 100,
-	},
-	{
 		id: ".html-config",
 		name: ".html",
 		image: "/configs/html",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5 amp on category General Frontend polls",
+		description: "+2% coverage on category General Frontend polls",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["html"],
@@ -31,7 +21,7 @@ export const configs: Config[] = [
 		name: ".css",
 		image: "/configs/css",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5 amp on category CSS polls",
+		description: "+2% coverage on category CSS polls",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["css"],
@@ -42,7 +32,7 @@ export const configs: Config[] = [
 		name: ".js",
 		image: "/configs/js",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5 amp on category JavaScript polls",
+		description: "+2% coverage on category JavaScript polls",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["js"],
@@ -53,7 +43,7 @@ export const configs: Config[] = [
 		name: ".ts",
 		image: "/configs/ts",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5 amp on category TypeScript polls",
+		description: "+2% coverage on category TypeScript polls",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["ts"],
@@ -64,7 +54,7 @@ export const configs: Config[] = [
 		name: ".jsx",
 		image: "/configs/jsx",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5 amp on category React polls",
+		description: "+2% coverage on category React polls",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["react"],
@@ -75,7 +65,7 @@ export const configs: Config[] = [
 		name: ".git",
 		image: "/configs/git",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5 amp on category General Frontend polls",
+		description: "+2% coverage on category General Frontend polls",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["git"],
@@ -86,7 +76,7 @@ export const configs: Config[] = [
 		name: "package.json",
 		image: "/configs/package-json.png",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5 amp on category General Frontend polls",
+		description: "+2% coverage on category General Frontend polls",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["general-frontend"],
@@ -114,23 +104,34 @@ export const configs: Config[] = [
 		storageBonus: STORAGE_UNITS.KB * 512, // 512KB bonus storage
 	},
 	{
-		id: "try-catch-config",
-		name: "Try/Catch",
-		image: "/configs/try-catch.png",
+		id: "eslint-config",
+		name: "ESLint Config",
+		image: "/configs/eslint.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description:
-			"Saves your run when you have at least 80% of the coverage threshold. When activated, this config is consumed.",
-		rarity: "rare",
-		effect: ["checkCoverageWithThreshold"],
+		description: "Disables 1 wrong option",
+		rarity: "uncommon",
+		effect: ["disableWrongOptions"],
 		priority: 100,
 	},
+	// TODO: re-enable try/catch config when refactored
+	// {
+	// 	id: "try-catch-config",
+	// 	name: "Try/Catch",
+	// 	image: "/configs/try-catch.png",
+	// 	cost: STORAGE_UNITS.MB / 2,
+	// 	description:
+	// 		"Saves your run when you have at least 80% of the coverage threshold. When activated, this config is consumed.",
+	// 	rarity: "rare",
+	// 	effect: ["checkCoverageWithThreshold"],
+	// 	priority: 100,
+	// },
 ];
 
 /**
  * Coverage modifiers that configs can apply to influence scoring.
  * Applied in score calculation:
  * 1. Base coverage = 1% per correct answer
- * 2. Apply multiplicative: baseCoverage * coverageMul
+ * 2. Apply multiplicative: baseCoverage * coverageMult
  * 3. Apply additive: result + coverageAdd
  *
  * Examples:
@@ -139,7 +140,7 @@ export const configs: Config[] = [
  */
 export type CoverageMods = {
 	coverageAdd?: number; // +0.5, -0.2 (additive coverage bonus/penalty in %)
-	coverageMul?: number; // x1.5 (multiplicative coverage modifier)
+	coverageMult?: number; // x1.5 (multiplicative coverage modifier)
 };
 export type StorageMods = {
 	bonus?: number; // flat storage bonus (applied to storage capacity)
@@ -191,14 +192,24 @@ type ApplyEffects = {
 const EFFECTS: Record<string, EffectFn> = {
 	// Disables one random wrong option (ESLint Config effect)
 	disableWrongOptions: ({ poll, options, run, hasAnswered }, config) => {
-		const disabledIds = options.filter((o) => !o.correct).map((o) => o.id);
-		const randomIdFromDisabled =
-			disabledIds[Math.floor(Math.random() * disabledIds.length)];
+		if (poll.categoryCode === "js" || poll.categoryCode === "ts") {
+			const disabledIds = options
+				.filter((o) => !o.correct)
+				.map((o) => o.id);
+			const randomIdFromDisabled =
+				disabledIds[Math.floor(Math.random() * disabledIds.length)];
+
+			return {
+				view: { poll, options, run, hasAnswered },
+				renderProps: { disabledOptionIds: [randomIdFromDisabled] },
+				meta: { notes: ["Hid wrong options"] },
+			};
+		}
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			renderProps: { disabledOptionIds: [randomIdFromDisabled] },
-			meta: { notes: ["Hid wrong options"] },
+			renderProps: { disabledOptionIds: [] },
+			meta: { notes: ["No wrong options to hide"] },
 		};
 	},
 	// Adds +0.5% coverage bonus for specific categories (file extension configs)
@@ -212,7 +223,7 @@ const EFFECTS: Record<string, EffectFn> = {
 			};
 		}
 
-		const bonusCoverage = 0.5;
+		const bonusCoverage = 2;
 
 		return {
 			view: { poll, options, run, hasAnswered },
@@ -386,9 +397,9 @@ export function applyEffects(
 					coverageAdd:
 						(acc.coverage.coverageAdd ?? 0) +
 						(out.coverage?.coverageAdd ?? 0),
-					coverageMul:
-						(acc.coverage.coverageMul ?? 1) *
-						(out.coverage?.coverageMul ?? 1),
+					coverageMult:
+						(acc.coverage.coverageMult ?? 1) *
+						(out.coverage?.coverageMult ?? 1),
 				},
 				storage: {
 					bonus: (acc.storage.bonus ?? 0) + (out.storage?.bonus ?? 0),

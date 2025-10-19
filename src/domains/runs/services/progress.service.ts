@@ -84,7 +84,7 @@ export const incrementRunProgress = async ({
 		currentStreak: currentCategoryXP.currentStreak,
 		totalPollsAnswered,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
-		coverageMul: coverageMods.coverageMul ?? 1,
+		coverageMult: coverageMods.coverageMult ?? 1,
 	});
 
 	// Step 4: Persist updated values to database

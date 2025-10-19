@@ -7,37 +7,76 @@ import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategory
 
 describe("ThresholdCalculator", () => {
 	describe("Gate Definitions", () => {
-		it("has correct gate 1 definition (10% in 1 category)", () => {
+		it("has correct gate 1 definition (4% in 1 category)", () => {
 			const gate = getGateDefinition(1);
 
 			expect(gate).toEqual({
 				gate: 1,
-				requirements: [{ threshold: 10, requiredCategories: 1 }],
+				requirements: [{ threshold: 4, requiredCategories: 1 }],
 				evaluationMode: "OR",
 			});
 		});
 
-		it("has correct gate 2 definition (15% in 1 OR 10% in 2)", () => {
+		it("has correct gate 2 definition (4% in 1 OR 2% in 2)", () => {
 			const gate = getGateDefinition(2);
 
 			expect(gate).toEqual({
 				gate: 2,
 				requirements: [
-					{ threshold: 15, requiredCategories: 1 },
-					{ threshold: 10, requiredCategories: 2 },
+					{ threshold: 4, requiredCategories: 1 },
+					{ threshold: 2, requiredCategories: 2 },
 				],
 				evaluationMode: "OR",
 			});
 		});
 
-		it("has correct gate 5 definition (30% in 1 AND 15% in another)", () => {
+		it("has correct gate 3 definition (8% in 1 OR 4% in 2)", () => {
+			const gate = getGateDefinition(3);
+
+			expect(gate).toEqual({
+				gate: 3,
+				requirements: [
+					{ threshold: 8, requiredCategories: 1 },
+					{ threshold: 4, requiredCategories: 2 },
+				],
+				evaluationMode: "OR",
+			});
+		});
+
+		it("has correct gate 4 definition (12% in 1 OR 12% in 2)", () => {
+			const gate = getGateDefinition(4);
+
+			expect(gate).toEqual({
+				gate: 4,
+				requirements: [
+					{ threshold: 12, requiredCategories: 1 },
+					{ threshold: 12, requiredCategories: 2 },
+				],
+				evaluationMode: "OR",
+			});
+		});
+
+		it("has correct gate 5 definition (25% in 1 AND 15% in another)", () => {
 			const gate = getGateDefinition(5);
 
 			expect(gate).toEqual({
 				gate: 5,
 				requirements: [
-					{ threshold: 30, requiredCategories: 1 },
+					{ threshold: 25, requiredCategories: 1 },
 					{ threshold: 15, requiredCategories: 1 },
+				],
+				evaluationMode: "AND",
+			});
+		});
+
+		it("has correct gate 7 definition (40% in 1 AND 25% in another)", () => {
+			const gate = getGateDefinition(7);
+
+			expect(gate).toEqual({
+				gate: 7,
+				requirements: [
+					{ threshold: 40, requiredCategories: 1 },
+					{ threshold: 25, requiredCategories: 1 },
 				],
 				evaluationMode: "AND",
 			});
@@ -57,12 +96,12 @@ describe("ThresholdCalculator", () => {
 		});
 	});
 
-	describe("Gate 1: 10% in 1 category", () => {
-		it("passes when 1 category has 10% coverage at poll 3", () => {
+	describe("Gate 1: 4% in 1 category", () => {
+		it("passes when 1 category has 4% coverage at poll 3", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
-					currentCoverage: 10,
+					currentCoverage: 4,
 					pollsAnswered: 3,
 				}),
 			];
@@ -75,11 +114,11 @@ describe("ThresholdCalculator", () => {
 			expect(result.qualifyingCategories).toEqual(["js"]);
 		});
 
-		it("fails when coverage is below 10% at poll 3", () => {
+		it("fails when coverage is below 4% at poll 3", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 8,
+					currentCoverage: 3,
 					pollsAnswered: 3,
 				}),
 			];
@@ -94,7 +133,7 @@ describe("ThresholdCalculator", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
-					currentCoverage: 5,
+					currentCoverage: 2,
 					pollsAnswered: 2,
 				}),
 			];
@@ -106,12 +145,12 @@ describe("ThresholdCalculator", () => {
 		});
 	});
 
-	describe("Gate 2: 15% in 1 OR 10% in 2 categories", () => {
-		it("passes with 15% in 1 category (first requirement met)", () => {
+	describe("Gate 2: 4% in 1 OR 2% in 2 categories", () => {
+		it("passes with 4% in 1 category (first requirement met)", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
-					currentCoverage: 15,
+					currentCoverage: 4,
 					pollsAnswered: 6,
 				}),
 			];
@@ -123,16 +162,16 @@ describe("ThresholdCalculator", () => {
 			expect(result.qualifyingCategories).toEqual(["js"]);
 		});
 
-		it("passes with 10% in 2 categories (second requirement met)", () => {
+		it("passes with 2% in 2 categories (second requirement met)", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 10,
+					currentCoverage: 2,
 					pollsAnswered: 3,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
-					currentCoverage: 10,
+					currentCoverage: 2,
 					pollsAnswered: 3,
 				}),
 			];
@@ -147,8 +186,13 @@ describe("ThresholdCalculator", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 12,
-					pollsAnswered: 6,
+					currentCoverage: 3,
+					pollsAnswered: 3,
+				}),
+				createMockRunCategoryCoverage({
+					categoryCode: "js",
+					currentCoverage: 1,
+					pollsAnswered: 3,
 				}),
 			];
 
@@ -159,12 +203,12 @@ describe("ThresholdCalculator", () => {
 		});
 	});
 
-	describe("Gate 3: 20% in 1 OR 15% in 2 categories", () => {
-		it("passes with 20% in 1 category", () => {
+	describe("Gate 3: 8% in 1 OR 4% in 2 categories", () => {
+		it("passes with 8% in 1 category", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "ts",
-					currentCoverage: 20,
+					currentCoverage: 8,
 					pollsAnswered: 9,
 				}),
 			];
@@ -175,16 +219,16 @@ describe("ThresholdCalculator", () => {
 			expect(result.currentRound).toBe(3);
 		});
 
-		it("passes with 15% in 2 categories", () => {
+		it("passes with 4% in 2 categories", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 15,
+					currentCoverage: 4,
 					pollsAnswered: 5,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
-					currentCoverage: 15,
+					currentCoverage: 4,
 					pollsAnswered: 4,
 				}),
 			];
@@ -195,12 +239,12 @@ describe("ThresholdCalculator", () => {
 		});
 	});
 
-	describe("Gate 5: 30% in 1 AND 15% in another (AND logic)", () => {
+	describe("Gate 5: 25% in 1 AND 15% in another (AND logic)", () => {
 		it("passes when both requirements met by different categories", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 30,
+					currentCoverage: 25,
 					pollsAnswered: 8,
 				}),
 				createMockRunCategoryCoverage({
@@ -223,7 +267,7 @@ describe("ThresholdCalculator", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 30,
+					currentCoverage: 25,
 					pollsAnswered: 10,
 				}),
 				createMockRunCategoryCoverage({
@@ -261,7 +305,7 @@ describe("ThresholdCalculator", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 35,
+					currentCoverage: 30,
 					pollsAnswered: 15,
 				}),
 			];
@@ -373,7 +417,7 @@ describe("ThresholdCalculator", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 10,
+					currentCoverage: 4,
 					pollsAnswered: 3,
 				}),
 			];

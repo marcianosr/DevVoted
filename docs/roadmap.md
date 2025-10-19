@@ -34,7 +34,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] .js/.css/.ts/.html/.jsx/.git/.package.json- Category amps (+0.5)
 
 [x] localStorage - Extra storag@
-[x] try/catch - Safety net for threshold
+[o] try/catch - Safety net for threshold
 [x] eslint - Disable wrong option
 
 [x] Make sure configs are additive to each other

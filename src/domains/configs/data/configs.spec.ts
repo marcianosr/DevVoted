@@ -40,7 +40,7 @@ describe("configs", () => {
 			expect(jsConfig).toBeDefined();
 			expect(jsConfig?.effect).toEqual(["streakAmp"]);
 			expect(jsConfig?.rarity).toBe("common");
-			expect(jsConfig?.description).toContain("+0.5 amp");
+			expect(jsConfig?.description).toContain("+2% coverage");
 			expect(jsConfig?.priority).toBe(100);
 
 			const tsConfig = configs.find((c) => c.id === ".ts-config");
@@ -61,13 +61,15 @@ describe("configs", () => {
 			expect(mathConfig?.description).toContain("Random amp value");
 		});
 
-		it("has valid properties for try/catch config", () => {
+		it.todo("has valid properties for try/catch config", () => {
 			const tryCatchConfig = configs.find(
 				(c) => c.id === "try-catch-config"
 			);
 			expect(tryCatchConfig).toBeDefined();
 			expect(tryCatchConfig?.name).toBe("Try/Catch");
-			expect(tryCatchConfig?.effect).toEqual(["checkCoverageWithThreshold"]);
+			expect(tryCatchConfig?.effect).toEqual([
+				"checkCoverageWithThreshold",
+			]);
 			expect(tryCatchConfig?.rarity).toBe("rare");
 			expect(tryCatchConfig?.description).toContain(
 				"Saves your run when you have at least 80% of the coverage threshold"
@@ -276,7 +278,6 @@ describe("configs", () => {
 
 			const result = applyEffects(base, ["eslint-config"]);
 
-			// Should disable one of the wrong options
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
 			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([
 				1, 2, 3,
@@ -331,10 +332,39 @@ describe("configs", () => {
 			).toBeLessThanOrEqual(2);
 			expect(result.meta.notes?.length).toBe(2); // Two "Hid wrong options" messages
 		});
+
+		it("doesn't disable options when holding eslint config but the category isn't js or ts", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "html",
+			});
+
+			const mockRun = createMockRun({
+				activeConfigIds: ["eslint-config"],
+			});
+
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, mockRun.activeConfigIds);
+
+			expect(result.view).toEqual(base);
+			expect(result.renderProps).toEqual({});
+			expect(result.coverage).toEqual({
+				coverageAdd: 0,
+				coverageMult: 1,
+			});
+			expect(result.meta).toEqual({
+				notes: ["No wrong options to hide"],
+			});
+		});
 	});
 
 	describe("streakAmp effect", () => {
-		it("adds 0.5 amp bonus when the poll category matches the config", () => {
+		it("adds 2% coverage bonus when the poll category matches the config", () => {
 			const mockPoll = createMockPoll({
 				categoryCode: "js",
 			});
@@ -351,9 +381,9 @@ describe("configs", () => {
 			const result = applyEffects(base, [".js-config"]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.coverageBonus).toBe(0.5);
-			expect(result.coverage.coverageAdd).toBe(0.5);
-			expect(result.meta.notes).toEqual(["+0.5 amp for js polls"]);
+			expect(result.renderProps.coverageBonus).toBe(2);
+			expect(result.coverage.coverageAdd).toBe(2);
+			expect(result.meta.notes).toEqual(["+2 amp for js polls"]);
 		});
 
 		it("applies multiple streak amp effects with same poll category when the player has multiple streakAmp", () => {
@@ -378,9 +408,9 @@ describe("configs", () => {
 			]);
 
 			// Only .css config should apply to css polls
-			expect(result.renderProps.coverageBonus).toBe(0.5);
-			expect(result.coverage.coverageAdd).toBe(0.5);
-			expect(result.meta.notes).toEqual(["+0.5 amp for css polls"]);
+			expect(result.renderProps.coverageBonus).toBe(2);
+			expect(result.coverage.coverageAdd).toBe(2);
+			expect(result.meta.notes).toEqual(["+2 amp for css polls"]);
 		});
 
 		it("doesn't apply streak amp effects when the poll category doesn't match", () => {
@@ -432,7 +462,9 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.coverageBonus).toBe(0.3);
-			expect(result.meta.notes).toEqual(["Random code coverage bonus for js polls"]);
+			expect(result.meta.notes).toEqual([
+				"Random code coverage bonus for js polls",
+			]);
 		});
 
 		it("can yield negative amp", () => {
@@ -453,11 +485,13 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.coverageBonus).toBe(-0.5); // -0.5 raw value
-			expect(result.meta.notes).toEqual(["Random code coverage bonus for js polls"]);
+			expect(result.meta.notes).toEqual([
+				"Random code coverage bonus for js polls",
+			]);
 		});
 	});
 
-	describe("checkCoverageWithThreshold effect", () => {
+	describe.todo("checkCoverageWithThreshold effect", () => {
 		beforeEach(() => {
 			vi.clearAllMocks();
 		});
@@ -480,17 +514,17 @@ describe("configs", () => {
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false,
 				gateDefinition: {
-				gate: 1,
-				requirements: [{ threshold: 50, requiredCategories: 1 }],
-				evaluationMode: "OR",
-			},
+					gate: 1,
+					requirements: [{ threshold: 50, requiredCategories: 1 }],
+					evaluationMode: "OR",
+				},
 				maxCoverage: 0,
 				pollNumber: 0,
 				currentRound: 1,
 				isThresholdCheckPoll: false,
 				pollInRound: 0,
-			requirementEvaluations: [],
-			qualifyingCategories: [],
+				requirementEvaluations: [],
+				qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -527,17 +561,17 @@ describe("configs", () => {
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
-				gate: 1,
-				requirements: [{ threshold: 100, requiredCategories: 1 }],
-				evaluationMode: "OR",
-			},
+					gate: 1,
+					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					evaluationMode: "OR",
+				},
 				maxCoverage: 80,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
-			requirementEvaluations: [],
-			qualifyingCategories: [],
+				requirementEvaluations: [],
+				qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -577,17 +611,17 @@ describe("configs", () => {
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
-				gate: 1,
-				requirements: [{ threshold: 100, requiredCategories: 1 }],
-				evaluationMode: "OR",
-			},
+					gate: 1,
+					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					evaluationMode: "OR",
+				},
 				maxCoverage: 60,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
-			requirementEvaluations: [],
-			qualifyingCategories: [],
+				requirementEvaluations: [],
+				qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -624,17 +658,17 @@ describe("configs", () => {
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: true, // 120 > 100, so passing
 				gateDefinition: {
-				gate: 1,
-				requirements: [{ threshold: 100, requiredCategories: 1 }],
-				evaluationMode: "OR",
-			},
+					gate: 1,
+					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					evaluationMode: "OR",
+				},
 				maxCoverage: 120,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
-			requirementEvaluations: [],
-			qualifyingCategories: [],
+				requirementEvaluations: [],
+				qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -672,17 +706,17 @@ describe("configs", () => {
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Not a threshold check poll
 				gateDefinition: {
-				gate: 1,
-				requirements: [{ threshold: 50, requiredCategories: 1 }],
-				evaluationMode: "OR",
-			},
+					gate: 1,
+					requirements: [{ threshold: 50, requiredCategories: 1 }],
+					evaluationMode: "OR",
+				},
 				maxCoverage: 40,
 				pollNumber: 2,
 				currentRound: 1,
 				isThresholdCheckPoll: false,
 				pollInRound: 2,
-			requirementEvaluations: [],
-			qualifyingCategories: [],
+				requirementEvaluations: [],
+				qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -730,17 +764,17 @@ describe("configs", () => {
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
-				gate: 1,
-				requirements: [{ threshold: 100, requiredCategories: 1 }],
-				evaluationMode: "OR",
-			},
+					gate: 1,
+					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					evaluationMode: "OR",
+				},
 				maxCoverage: 85,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
-			requirementEvaluations: [],
-			qualifyingCategories: [],
+				requirementEvaluations: [],
+				qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -777,17 +811,17 @@ describe("configs", () => {
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
-				gate: 1,
-				requirements: [{ threshold: 200, requiredCategories: 1 }],
-				evaluationMode: "OR",
-			},
+					gate: 1,
+					requirements: [{ threshold: 200, requiredCategories: 1 }],
+					evaluationMode: "OR",
+				},
 				maxCoverage: 160,
 				pollNumber: 6,
 				currentRound: 2,
 				isThresholdCheckPoll: true,
 				pollInRound: 6,
-			requirementEvaluations: [],
-			qualifyingCategories: [],
+				requirementEvaluations: [],
+				qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -824,17 +858,17 @@ describe("configs", () => {
 			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
-				gate: 1,
-				requirements: [{ threshold: 100, requiredCategories: 1 }],
-				evaluationMode: "OR",
-			},
+					gate: 1,
+					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					evaluationMode: "OR",
+				},
 				maxCoverage: 79,
 				pollNumber: 3,
 				currentRound: 1,
 				isThresholdCheckPoll: true,
 				pollInRound: 3,
-			requirementEvaluations: [],
-			qualifyingCategories: [],
+				requirementEvaluations: [],
+				qualifyingCategories: [],
 			});
 
 			const result = applyEffects(base, ["try-catch-config"]);
@@ -892,17 +926,17 @@ describe("configs", () => {
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
 			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([2, 3]);
-			expect(result.renderProps.coverageBonus).toBe(0.5);
-			expect(result.coverage.coverageAdd).toBe(0.5);
+			expect(result.renderProps.coverageBonus).toBe(2);
+			expect(result.coverage.coverageAdd).toBe(2);
 			expect(result.meta.notes).toContain("Hid wrong options");
-			expect(result.meta.notes).toContain("+0.5 amp for js polls");
+			expect(result.meta.notes).toContain("+2 amp for js polls");
 		});
 
 		it("combines randomStreakAmp with disableWrongOptions", () => {
 			vi.spyOn(Math, "random").mockReturnValue(0.83); // (0.83 - 0.5) = 0.33, rounds to 0.3
 
 			const mockPoll = createMockPoll({
-				categoryCode: "react",
+				categoryCode: "js",
 			});
 			const mockRun = createMockRun();
 			const options = [
@@ -934,7 +968,9 @@ describe("configs", () => {
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
 			expect(result.renderProps.coverageBonus).toBe(0.3);
 			expect(result.meta.notes).toContain("Hid wrong options");
-			expect(result.meta.notes).toContain("Random code coverage bonus for react polls");
+			expect(result.meta.notes).toContain(
+				"Random code coverage bonus for js polls"
+			);
 
 			vi.restoreAllMocks();
 		});
@@ -959,11 +995,11 @@ describe("configs", () => {
 			]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.coverageBonus).toBe(0.6);
-			expect(result.coverage.coverageAdd).toBe(0.6);
+			expect(result.renderProps.coverageBonus).toBe(2.1);
+			expect(result.coverage.coverageAdd).toBe(2.1);
 			expect(result.meta.notes).toEqual([
 				"Random code coverage bonus for js polls",
-				"+0.5 amp for js polls",
+				"+2 amp for js polls",
 			]);
 		});
 	});

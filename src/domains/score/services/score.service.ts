@@ -1,8 +1,41 @@
 /**
- * Coverage-based scoring: 1% per correct poll answer
- * Simplified from the previous XP/amp system
+ * Coverage-based scoring with round scaling and streak bonuses
+ * Base formula: (1% + round × 0.2%) + (streak × 0.1%, capped at 1%)
  */
-const COVERAGE_PER_CORRECT = 1; // 1% coverage per fully correct answer
+const BASE_COVERAGE = 1; // Starting coverage per correct answer
+const ROUND_SCALING = 0.2; // Additional coverage per round
+const STREAK_BONUS = 0.1; // Bonus per streak point
+const MAX_STREAK_BONUS = 1.0; // Cap streak bonus at 1%
+const WRONG_ANSWER_PENALTY = -0.5; // Penalty for wrong answers
+const MAX_COVERAGE = 100; // Maximum coverage percentage
+
+/**
+ * Calculates base coverage with round scaling
+ * Formula: 1% + (round × 0.2%)
+ * @param round - Current round number (1-based)
+ * @returns Base coverage percentage
+ * @example
+ * calculateBaseCoverage(1) // 1.2%
+ * calculateBaseCoverage(5) // 2.0%
+ * calculateBaseCoverage(10) // 3.0%
+ */
+export const calculateBaseCoverage = (round: number): number => {
+	return BASE_COVERAGE + round * ROUND_SCALING;
+};
+
+/**
+ * Calculates streak bonus (capped at 1%)
+ * Formula: min(streak × 0.1%, 1.0%)
+ * @param streak - Current streak count
+ * @returns Streak bonus percentage
+ * @example
+ * calculateStreakBonus(0) // 0%
+ * calculateStreakBonus(5) // 0.5%
+ * calculateStreakBonus(15) // 1.0% (capped)
+ */
+export const calculateStreakBonus = (streak: number): number => {
+	return Math.min(streak * STREAK_BONUS, MAX_STREAK_BONUS);
+};
 
 /**
  * Formats a coverage percentage to 1 decimal place
@@ -67,13 +100,36 @@ export const multiCorrectnessFactor = (
 	return Math.min(adjustedScore, 1.0); // Cap at 1.0 for messy partials
 };
 
+type CalculateCoverageParams = {
+	correctnessFactor: number;
+	round: number;
+	streak: number;
+};
+
 /**
- * Calculates coverage earned based on correctness factor
- * @param correctnessFactor - 0-1.5 based on answer quality
- * @returns Coverage percentage earned (0-1.5%)
+ * Calculates coverage earned based on correctness factor, round, and streak
+ * Formula: (baseCoverage + streakBonus) × correctnessFactor
+ * Or WRONG_ANSWER_PENALTY if incorrect
+ * @param params - Coverage calculation parameters
+ * @param params.correctnessFactor - 0-1.5 based on answer quality
+ * @param params.round - Current round number
+ * @param params.streak - Current streak count
+ * @returns Coverage percentage earned (can be negative for wrong answers)
  */
-export const calculateCoverage = (correctnessFactor: number): number => {
-	return Math.round(COVERAGE_PER_CORRECT * correctnessFactor);
+export const calculateCoverage = ({
+	correctnessFactor,
+	round,
+	streak,
+}: CalculateCoverageParams): number => {
+	// Wrong answer gets penalty
+	if (correctnessFactor === 0) {
+		return WRONG_ANSWER_PENALTY;
+	}
+
+	// Correct answer: base + streak bonus, multiplied by correctness
+	const baseCoverage = calculateBaseCoverage(round);
+	const streakBonus = calculateStreakBonus(streak);
+	return (baseCoverage + streakBonus) * correctnessFactor;
 };
 
 export const calculateStreakUpdate = (
@@ -99,20 +155,23 @@ export type PollScoreBreakdown = {
 /**
  * Calculates the score breakdown for a poll answer.
  *
- * Coverage Pipeline (Simplified):
- * 1. Base coverage = 1% per correct answer
- * 2. Correctness factor applied (0-1.5x based on answer quality)
+ * Coverage Pipeline:
+ * 1. Base coverage = 1% + (round × 0.2%)
+ * 2. Streak bonus = streak × 0.1% (capped at 1%)
+ * 3. Combined and applied with correctness factor
  *
- * Note: Streaks are tracked for display/stats but don't affect scoring
- *
- * @param streak - Current streak count (for display only)
- * @returns Score breakdown with earned coverage
+ * @param round - Current round number
+ * @param streak - Current streak count
+ * @returns Score breakdown with base coverage before correctness
  */
 export const calculatePollScoreForProgression = (
+	round: number,
 	streak: number
 ): PollScoreBreakdown => {
-	// In coverage system, base is always 1% before correctness factor
-	const earnedCoverage = COVERAGE_PER_CORRECT;
+	// Calculate base coverage with round scaling and streak bonus
+	const baseCoverage = calculateBaseCoverage(round);
+	const streakBonus = calculateStreakBonus(streak);
+	const earnedCoverage = baseCoverage + streakBonus;
 
 	return {
 		streak,
@@ -136,7 +195,7 @@ type OrchestrateScoreCalculationParams = {
 	totalPollsAnswered: number;
 	correctnessFactor: number;
 	coverageAdd?: number; // Additive coverage bonus from configs (e.g., +0.5%)
-	coverageMul?: number; // Multiplicative coverage modifier from configs (e.g., x1.5)
+	coverageMult?: number; // Multiplicative coverage modifier from configs (e.g., x1.5)
 };
 
 /**
@@ -144,27 +203,28 @@ type OrchestrateScoreCalculationParams = {
  *
  * Complete Coverage Pipeline:
  * 1. Update streak based on correctness (correct = +1, wrong = reset to 0)
- * 2. Calculate base coverage (1%)
- * 3. Apply correctness factor multiplier:
- *    - Wrong answer: 0x (0% coverage)
- *    - Partial multi-choice: 0.5-1.0x (0.5-1% coverage)
- *    - Perfect single/multi: 1.0x (1% coverage)
- *    - Perfect multi-choice: 1.5x (1.5% coverage bonus)
- * 4. Apply config multiplicative modifier (if present): result * coverageMul
- * 5. Apply config additive modifier (if present): result + coverageAdd
- * 6. Add to running total coverage
+ * 2. Calculate base coverage with round scaling: 1% + (round × 0.2%)
+ * 3. Add streak bonus (capped at 1%): streak × 0.1%
+ * 4. Apply correctness factor:
+ *    - Wrong answer: -0.5% (penalty)
+ *    - Partial multi-choice: (base+streak) × 0.5-1.0
+ *    - Perfect single/multi: (base+streak) × 1.0
+ *    - Perfect multi-choice: (base+streak) × 1.5
+ * 5. Apply config multiplicative modifier (if present): result × coverageMult
+ * 6. Apply config additive modifier (if present): result + coverageAdd
+ * 7. Round and add to total coverage
  *
  * @example
- * // Perfect multi-choice answer with .js config (+0.5% coverage)
+ * // Round 5, streak 5, perfect answer with .js config
  * orchestrateScoreCalculation({
  *   currentCoverage: 10,
- *   currentStreak: 0,
- *   totalPollsAnswered: 4,
- *   correctnessFactor: 1.5,  // Perfect multi-choice
- *   coverageAdd: 0.5,        // .js config bonus
+ *   currentStreak: 4,
+ *   totalPollsAnswered: 14,
+ *   correctnessFactor: 1.0,
+ *   coverageAdd: 0.5,
  * })
- * // Returns: { newTotalCoverage: 12, breakdown: { earnedCoverage: 2, ... } }
- * // (1% base * 1.5 correctness = 1.5%, rounds to 2%, + 0.5% config = 2.5%, rounds to 3%)
+ * // Round 5: base = 2%, streak = 0.5%, total = 2.5%
+ * // + config 0.5% = 3%, rounds to 3%
  */
 export const orchestrateScoreCalculation = ({
 	currentCoverage,
@@ -173,30 +233,35 @@ export const orchestrateScoreCalculation = ({
 	totalPollsAnswered,
 	correctnessFactor,
 	coverageAdd = 0,
-	coverageMul = 1,
+	coverageMult = 1,
 }: OrchestrateScoreCalculationParams): ScoreCalculation => {
 	// Step 1: Update streak (continues on correct, resets on wrong)
 	const newStreak = calculateStreakUpdate(currentStreak, correctnessFactor);
 	const newBestStreak = calculateBestStreak(currentBestStreak, newStreak);
 	const newPollsAnswered = totalPollsAnswered + 1;
 
-	// Step 2: Calculate base coverage
-	const { streak, earnedCoverage } =
-		calculatePollScoreForProgression(newStreak);
+	// Calculate current round from polls answered (rounds are 1-based)
+	const currentRound = Math.floor(totalPollsAnswered / 3) + 1;
 
-	// Step 3: Apply correctness multiplier (0-1.5x based on answer quality)
-	// Example: earnedCoverage=1 * correctness=1.5 (perfect multi) = 1.5% coverage
-	let coverageWithCorrectness = earnedCoverage * correctnessFactor;
+	// Step 2-4: Calculate coverage with round scaling, streak bonus, and correctness
+	const coverageEarned = calculateCoverage({
+		correctnessFactor,
+		round: currentRound,
+		streak: newStreak,
+	});
 
-	// Step 4: Apply config multiplicative modifier (e.g., x1.5 from config)
-	let coverageWithMul = coverageWithCorrectness * coverageMul;
+	// Step 5: Apply config multiplicative modifier (e.g., x1.5 from config)
+	let coverageWithMul = coverageEarned * coverageMult;
 
-	// Step 5: Apply config additive modifier (e.g., +0.5% from .js config, or -0.3% from Math.random)
+	// Step 6: Apply config additive modifier (e.g., +0.5% from .js config, or -0.3% from Math.random)
 	let coverageWithAdd = coverageWithMul + coverageAdd;
 
-	// Step 6: Round and add to total (avoid decimals)
+	// Step 7: Round and add to total (negative coverage is allowed, but cap at MAX_COVERAGE)
 	const actualEarnedCoverage = Math.round(coverageWithAdd);
-	const newTotalCoverage = currentCoverage + actualEarnedCoverage;
+	const newTotalCoverage = Math.min(
+		MAX_COVERAGE,
+		currentCoverage + actualEarnedCoverage
+	);
 
 	return {
 		newTotalCoverage,
@@ -204,7 +269,7 @@ export const orchestrateScoreCalculation = ({
 		newStreak,
 		newPollsAnswered,
 		breakdown: {
-			streak,
+			streak: newStreak,
 			earnedCoverage: actualEarnedCoverage,
 			delta: actualEarnedCoverage,
 		},

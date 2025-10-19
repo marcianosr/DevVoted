@@ -4,6 +4,7 @@ import { orchestrateScoreCalculation } from "~/domains/score/services/score.serv
 import { awardCoverageToRun } from "../api/queries";
 import { createMockRun } from "../models/run";
 import { createMockRunCategoryCoverage } from "../models/runCategoryCoverage";
+import { createPoll } from "~/domains/polls/models/poll";
 
 vi.mock("~/domains/score/services/score.service");
 vi.mock("../api/queries");
@@ -11,6 +12,12 @@ vi.mock("../api/queries");
 describe("incrementRunProgress", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+	});
+
+	const createTestPollContext = (categoryCode: string) => ({
+		poll: createPoll({ categoryCode: categoryCode as any }),
+		options: [],
+		hasAnswered: false,
 	});
 
 	const createTestRun = (activeConfigIds: string[] = []) => {
@@ -21,7 +28,7 @@ describe("incrementRunProgress", () => {
 					id: 1,
 					runId: 1,
 					categoryCode: "js",
-					currentCoverage: 100,
+					currentCoverage: 10,
 					currentStreak: 2,
 					bestStreak: 5,
 					pollsAnswered: 3,
@@ -30,7 +37,7 @@ describe("incrementRunProgress", () => {
 					id: 2,
 					runId: 1,
 					categoryCode: "css",
-					currentCoverage: 50,
+					currentCoverage: 5,
 					currentStreak: 1,
 					bestStreak: 2,
 					pollsAnswered: 2,
@@ -39,20 +46,18 @@ describe("incrementRunProgress", () => {
 		});
 	};
 
-	it("applies config amp bonus when matching config is active", async () => {
-		const mockRun = createTestRun([".js", ".css"]);
+	it("applies config coverage bonus when matching config is active", async () => {
+		const mockRun = createTestRun([".js-config", ".css-config"]);
+		const pollContext = createTestPollContext("js");
 		const mockCalculationResult = {
-			newTotalXP: 150,
+			newTotalCoverage: 13,
 			newStreak: 3,
 			newBestStreak: 5,
 			newPollsAnswered: 6,
 			breakdown: {
-				round: 2,
 				streak: 3,
-				base: 20,
-				amp: 1.8, // 1.3 (streak) + 0.5 (config)
-				earnedXP: 36,
-				delta: 36,
+				earnedCoverage: 3,
+				delta: 3,
 			},
 		};
 
@@ -64,7 +69,7 @@ describe("incrementRunProgress", () => {
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
-			currentCoverage: 150,
+			currentCoverage: 13,
 			currentStreak: 3,
 			bestStreak: 5,
 			pollsAnswered: 4,
@@ -75,33 +80,33 @@ describe("incrementRunProgress", () => {
 			categoryCode: "js",
 			run: mockRun,
 			correctnessFactor: 1.0,
+			...pollContext,
 		});
 
 		// Verify orchestrateScoreCalculation was called with config bonus
-		expect(orchestrateScoreCalculation).toHaveBeenCalledWith(
-			100, // currentXp
-			2, // currentStreak
-			5, // bestStreak
-			5, // totalPollsAnswered (3 + 2)
-			1.0, // correctnessFactor
-			0.5 // configAmpBonus for .js config
-		);
+		expect(orchestrateScoreCalculation).toHaveBeenCalledWith({
+			currentCoverage: 10,
+			currentStreak: 2,
+			currentBestStreak: 5,
+			totalPollsAnswered: 5, // 3 + 2
+			correctnessFactor: 1.0,
+			coverageAdd: 2, // Config coverage bonus for .js config
+			coverageMult: 1,
+		});
 	});
 
-	it("applies no config amp bonus when no matching config", async () => {
-		const mockRun = createTestRun([".html", ".css"]); // No .js config
+	it("applies no config coverage bonus when no matching config", async () => {
+		const mockRun = createTestRun([".html-config", ".css-config"]); // No .js config
+		const pollContext = createTestPollContext("js");
 		const mockCalculationResult = {
-			newTotalXP: 130,
+			newTotalCoverage: 12,
 			newStreak: 3,
 			newBestStreak: 5,
 			newPollsAnswered: 6,
 			breakdown: {
-				round: 2,
 				streak: 3,
-				base: 20,
-				amp: 1.3, // Only streak bonus, no config
-				earnedXP: 26,
-				delta: 26,
+				earnedCoverage: 2,
+				delta: 2,
 			},
 		};
 
@@ -113,7 +118,7 @@ describe("incrementRunProgress", () => {
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
-			currentCoverage: 130,
+			currentCoverage: 12,
 			currentStreak: 3,
 			bestStreak: 5,
 			pollsAnswered: 4,
@@ -124,33 +129,33 @@ describe("incrementRunProgress", () => {
 			categoryCode: "js",
 			run: mockRun,
 			correctnessFactor: 1.0,
+			...pollContext,
 		});
 
 		// Verify no config bonus was applied
-		expect(orchestrateScoreCalculation).toHaveBeenCalledWith(
-			100, // currentXp
-			2, // currentStreak
-			5, // bestStreak
-			5, // totalPollsAnswered
-			1.0, // correctnessFactor
-			0 // No config bonus
-		);
+		expect(orchestrateScoreCalculation).toHaveBeenCalledWith({
+			currentCoverage: 10,
+			currentStreak: 2,
+			currentBestStreak: 5,
+			totalPollsAnswered: 5,
+			correctnessFactor: 1.0,
+			coverageAdd: 0, // No config bonus
+			coverageMult: 1,
+		});
 	});
 
-	it.only("can't have amp lower than 0", async () => {
-		const mockRun = createTestRun([".js", ".css"]);
+	it("handles negative coverage for wrong answers", async () => {
+		const mockRun = createTestRun([".js-config", ".css-config"]);
+		const pollContext = createTestPollContext("js");
 		const mockCalculationResult = {
-			newTotalXP: 130,
-			newStreak: 3,
+			newTotalCoverage: 10, // 10 + 0 = 10 (penalty rounded to 0)
+			newStreak: 0, // Streak reset on wrong answer
 			newBestStreak: 5,
 			newPollsAnswered: 6,
 			breakdown: {
-				round: 2,
-				streak: 3,
-				base: 20,
-				amp: -0.5, // Negative amp
-				earnedXP: 26,
-				delta: 26,
+				streak: 0,
+				earnedCoverage: 0, // -0.5 rounds to 0
+				delta: 0,
 			},
 		};
 
@@ -162,8 +167,8 @@ describe("incrementRunProgress", () => {
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
-			currentCoverage: 130,
-			currentStreak: 3,
+			currentCoverage: 10,
+			currentStreak: 0,
 			bestStreak: 5,
 			pollsAnswered: 4,
 		});
@@ -172,27 +177,27 @@ describe("incrementRunProgress", () => {
 		const result = await incrementRunProgress({
 			categoryCode: "js",
 			run: mockRun,
-			correctnessFactor: 1.0,
+			correctnessFactor: 0, // Wrong answer
+			...pollContext,
 		});
 
-		console.log(result);
+		expect(result.newStreak).toBe(0);
+		expect(result.breakdown.earnedCoverage).toBe(0);
 	});
 
 	it("applies multiple config bonuses when multiple matching configs", async () => {
 		// This shouldn't normally happen but let's test the edge case
-		const mockRun = createTestRun([".js", ".js"]); // Duplicate configs
+		const mockRun = createTestRun([".js-config", ".js-config"]); // Duplicate configs
+		const pollContext = createTestPollContext("js");
 		const mockCalculationResult = {
-			newTotalXP: 170,
+			newTotalCoverage: 14,
 			newStreak: 3,
 			newBestStreak: 5,
 			newPollsAnswered: 6,
 			breakdown: {
-				round: 2,
 				streak: 3,
-				base: 20,
-				amp: 2.3, // 1.3 (streak) + 1.0 (2x config)
-				earnedXP: 46,
-				delta: 46,
+				earnedCoverage: 4,
+				delta: 4,
 			},
 		};
 
@@ -204,7 +209,7 @@ describe("incrementRunProgress", () => {
 			id: 1,
 			runId: 1,
 			categoryCode: "js",
-			currentCoverage: 170,
+			currentCoverage: 14,
 			currentStreak: 3,
 			bestStreak: 5,
 			pollsAnswered: 4,
@@ -215,30 +220,32 @@ describe("incrementRunProgress", () => {
 			categoryCode: "js",
 			run: mockRun,
 			correctnessFactor: 1.0,
+			...pollContext,
 		});
 
 		// Verify double bonus was applied
-		expect(orchestrateScoreCalculation).toHaveBeenCalledWith(
-			100, // currentXp
-			2, // currentStreak
-			5, // bestStreak
-			5, // totalPollsAnswered
-			1.0, // correctnessFactor
-			1.0 // Double config bonus (0.5 + 0.5)
-		);
+		expect(orchestrateScoreCalculation).toHaveBeenCalledWith({
+			currentCoverage: 10,
+			currentStreak: 2,
+			currentBestStreak: 5,
+			totalPollsAnswered: 5,
+			correctnessFactor: 1.0,
+			coverageAdd: 4, // Double config bonus (0.5 + 0.5)
+			coverageMult: 1,
+		});
 	});
 
 	it("correctly maps config IDs to category codes", async () => {
 		// TODO: Fix with general mapping
 		const testCases = [
-			{ configId: ".html", categoryCode: "html" as const },
-			{ configId: ".css", categoryCode: "css" as const },
-			{ configId: ".js", categoryCode: "js" as const },
-			{ configId: ".ts", categoryCode: "ts" as const },
-			{ configId: ".jsx", categoryCode: "react" as const },
-			{ configId: ".git", categoryCode: "git" as const },
+			{ configId: ".html-config", categoryCode: "html" as const },
+			{ configId: ".css-config", categoryCode: "css" as const },
+			{ configId: ".js-config", categoryCode: "js" as const },
+			{ configId: ".ts-config", categoryCode: "ts" as const },
+			{ configId: ".jsx-config", categoryCode: "react" as const },
+			{ configId: ".git-config", categoryCode: "git" as const },
 			{
-				configId: "package.json",
+				configId: "package.json-config",
 				categoryCode: "general-frontend" as const,
 			},
 		];
@@ -250,7 +257,7 @@ describe("incrementRunProgress", () => {
 						id: 1,
 						runId: 1,
 						categoryCode: testCase.categoryCode,
-						currentCoverage: 100,
+						currentCoverage: 10,
 						currentStreak: 2,
 						bestStreak: 5,
 						pollsAnswered: 3,
@@ -259,7 +266,7 @@ describe("incrementRunProgress", () => {
 						id: 2,
 						runId: 1,
 						categoryCode: "css",
-						currentCoverage: 50,
+						currentCoverage: 5,
 						currentStreak: 1,
 						bestStreak: 2,
 						pollsAnswered: 2,
@@ -267,18 +274,16 @@ describe("incrementRunProgress", () => {
 				],
 			});
 
+			const pollContext = createTestPollContext(testCase.categoryCode);
 			const mockCalculationResult = {
-				newTotalXP: 150,
+				newTotalCoverage: 13,
 				newStreak: 3,
 				newBestStreak: 5,
 				newPollsAnswered: 6,
 				breakdown: {
-					round: 2,
 					streak: 3,
-					base: 20,
-					amp: 1.8,
-					earnedXP: 36,
-					delta: 36,
+					earnedCoverage: 3,
+					delta: 3,
 				},
 			};
 
@@ -290,7 +295,7 @@ describe("incrementRunProgress", () => {
 				id: 1,
 				runId: 1,
 				categoryCode: testCase.categoryCode,
-				currentCoverage: 150,
+				currentCoverage: 13,
 				currentStreak: 3,
 				bestStreak: 5,
 				pollsAnswered: 4,
@@ -301,16 +306,18 @@ describe("incrementRunProgress", () => {
 				categoryCode: testCase.categoryCode,
 				run: mockRun,
 				correctnessFactor: 1.0,
+				...pollContext,
 			});
 
-			expect(orchestrateScoreCalculation).toHaveBeenCalledWith(
-				100,
-				2,
-				5,
-				5,
-				1.0,
-				0.5 // Config bonus should be applied
-			);
+			expect(orchestrateScoreCalculation).toHaveBeenCalledWith({
+				currentCoverage: 10,
+				currentStreak: 2,
+				currentBestStreak: 5,
+				totalPollsAnswered: 5,
+				correctnessFactor: 1.0,
+				coverageAdd: 2, // Config bonus should be applied
+				coverageMult: 1,
+			});
 
 			vi.clearAllMocks();
 		}
@@ -318,12 +325,14 @@ describe("incrementRunProgress", () => {
 
 	it("throws error when category not found in run", async () => {
 		const mockRun = createTestRun();
+		const pollContext = createTestPollContext("nonexistent");
 
 		await expect(
 			incrementRunProgress({
 				categoryCode: "nonexistent" as any,
 				run: mockRun,
 				correctnessFactor: 1.0,
+				...pollContext,
 			})
 		).rejects.toThrow("Category nonexistent not found");
 	});

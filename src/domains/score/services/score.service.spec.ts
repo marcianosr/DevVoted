@@ -91,49 +91,101 @@ describe("score.service", () => {
 	});
 
 	describe("calculateCoverage", () => {
-		it("calculates coverage based on correctness factor", () => {
-			expect(calculateCoverage(1.0)).toBe(1); // Full correct = 1%
-			expect(calculateCoverage(0.5)).toBe(1); // Partial rounds to 1%
-			expect(calculateCoverage(0.0)).toBe(0); // Wrong = 0%
+		it("calculates coverage with round scaling (round 1)", () => {
+			// Round 1: base = 1.2%, streak 0
+			expect(
+				calculateCoverage({ correctnessFactor: 1.0, round: 1, streak: 0 })
+			).toBe(1.2);
+			expect(
+				calculateCoverage({ correctnessFactor: 0.5, round: 1, streak: 0 })
+			).toBe(0.6); // 1.2 × 0.5
+			expect(
+				calculateCoverage({ correctnessFactor: 0.0, round: 1, streak: 0 })
+			).toBe(-0.5); // Wrong = -0.5%
 		});
 
-		it("handles perfect multi-choice bonus", () => {
-			expect(calculateCoverage(1.5)).toBe(2); // Perfect multi = 1.5% rounds to 2%
+		it("calculates coverage with round scaling (round 5)", () => {
+			// Round 5: base = 2%, streak 0
+			expect(
+				calculateCoverage({ correctnessFactor: 1.0, round: 5, streak: 0 })
+			).toBe(2);
+			expect(
+				calculateCoverage({ correctnessFactor: 1.5, round: 5, streak: 0 })
+			).toBe(3); // 2 × 1.5
+		});
+
+		it("applies streak bonus", () => {
+			// Round 1: base = 1.2%, streak 5 = 0.5%, total = 1.7%
+			expect(
+				calculateCoverage({ correctnessFactor: 1.0, round: 1, streak: 5 })
+			).toBe(1.7);
+		});
+
+		it("caps streak bonus at 1%", () => {
+			// Round 1: base = 1.2%, streak 20 = 1% (capped), total = 2.2%
+			expect(
+				calculateCoverage({ correctnessFactor: 1.0, round: 1, streak: 20 })
+			).toBe(2.2);
+		});
+
+		it("handles perfect multi-choice with scaling", () => {
+			// Round 5: base = 2%, streak 5 = 0.5%, total = 2.5%
+			// Perfect multi (1.5x): 2.5 × 1.5 = 3.75
+			expect(
+				calculateCoverage({ correctnessFactor: 1.5, round: 5, streak: 5 })
+			).toBe(3.75);
 		});
 	});
 
 	describe("orchestrateScoreCalculation", () => {
-		it("calculates coverage for perfect multi-choice answer", () => {
+		it("calculates coverage for round 1 perfect answer", () => {
 			const result = orchestrateScoreCalculation({
 				currentCoverage: 10,
-				currentStreak: 1,
-				currentBestStreak: 1,
-				totalPollsAnswered: 0,
+				currentStreak: 0,
+				currentBestStreak: 0,
+				totalPollsAnswered: 0, // Round 1
+				correctnessFactor: 1.0,
+			});
+
+			// Round 1: base 1.2%, new streak 1 = 0.1%, total 1.3%, rounds to 1%
+			expect(result.breakdown.earnedCoverage).toBe(1);
+			expect(result.newTotalCoverage).toBe(11); // 10 + 1
+			expect(result.newStreak).toBe(1); // Streak incremented
+		});
+
+		it("calculates coverage for round 5 with streak bonus", () => {
+			const result = orchestrateScoreCalculation({
+				currentCoverage: 20,
+				currentStreak: 4,
+				currentBestStreak: 5,
+				totalPollsAnswered: 14, // Round 5
+				correctnessFactor: 1.0,
+			});
+
+			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%, rounds to 3%
+			expect(result.breakdown.earnedCoverage).toBe(3);
+			expect(result.newStreak).toBe(5);
+		});
+
+		it("handles perfect multi-choice with scaling", () => {
+			const result = orchestrateScoreCalculation({
+				currentCoverage: 15,
+				currentStreak: 4,
+				currentBestStreak: 5,
+				totalPollsAnswered: 14, // Round 5
 				correctnessFactor: 1.5, // Perfect multi-choice
 			});
 
-			expect(result.breakdown.earnedCoverage).toBe(2); // 1% * 1.5 rounds to 2%
-			expect(result.newTotalCoverage).toBe(12); // 10 + 2
-			expect(result.newStreak).toBe(2); // Streak incremented
+			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
+			// Perfect multi (1.5x): 2.5 × 1.5 = 3.75, rounds to 4%
+			expect(result.breakdown.earnedCoverage).toBe(4);
+			expect(result.newTotalCoverage).toBe(19); // 15 + 4
+			expect(result.newStreak).toBe(5);
 		});
 
-		it("applies 0.5x factor for messy partial", () => {
+		it("applies penalty for wrong answer", () => {
 			const result = orchestrateScoreCalculation({
-				currentCoverage: 10,
-				currentStreak: 5,
-				currentBestStreak: 5,
-				totalPollsAnswered: 3,
-				correctnessFactor: 0.5,
-			});
-
-			expect(result.breakdown.earnedCoverage).toBe(1); // 1% * 0.5 rounds to 1%
-			expect(result.newTotalCoverage).toBe(11); // 10 + 1
-			expect(result.newStreak).toBe(6); // Streak incremented
-		});
-
-		it("gives 0 coverage for wrong answer", () => {
-			const result = orchestrateScoreCalculation({
-				currentCoverage: 10,
+				currentCoverage: 20,
 				currentStreak: 5,
 				currentBestStreak: 5,
 				totalPollsAnswered: 10,
@@ -141,40 +193,84 @@ describe("score.service", () => {
 			});
 
 			expect(result.newStreak).toBe(0); // Streak reset
-			expect(result.breakdown.earnedCoverage).toBe(0); // No coverage earned
-			expect(result.newTotalCoverage).toBe(10); // No change
+			expect(result.breakdown.earnedCoverage).toBe(-0); // -0.5 rounds to -0
+			expect(result.newTotalCoverage).toBe(20); // 20 + (-0) = 20
 		});
 
-		it("applies config coverage bonus", () => {
+		it("applies config coverage bonus on top of scaling", () => {
 			const result = orchestrateScoreCalculation({
 				currentCoverage: 10,
-				currentStreak: 2,
+				currentStreak: 4,
 				currentBestStreak: 5,
-				totalPollsAnswered: 3,
+				totalPollsAnswered: 14, // Round 5
 				correctnessFactor: 1.0,
 				coverageAdd: 0.5, // +0.5% from .js config
 			});
 
-			expect(result.breakdown.earnedCoverage).toBe(2); // 1% + 0.5% config rounds to 2%
-			expect(result.newTotalCoverage).toBe(12); // 10 + 2
+			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
+			// + config 0.5% = 3%, rounds to 3%
+			expect(result.breakdown.earnedCoverage).toBe(3);
+			expect(result.newTotalCoverage).toBe(13); // 10 + 3
+		});
+
+		it("works with high rounds and streaks", () => {
+			const result = orchestrateScoreCalculation({
+				currentCoverage: 50,
+				currentStreak: 9,
+				currentBestStreak: 10,
+				totalPollsAnswered: 29, // Round 10
+				correctnessFactor: 1.0,
+			});
+
+			// Round 10: base 3%, new streak 10 = 1% (capped), total 4%
+			expect(result.breakdown.earnedCoverage).toBe(4);
+			expect(result.newTotalCoverage).toBe(54); // 50 + 4
+			expect(result.newStreak).toBe(10);
+		});
+
+		it("caps total coverage at 100%", () => {
+			const result = orchestrateScoreCalculation({
+				currentCoverage: 98,
+				currentStreak: 9,
+				currentBestStreak: 10,
+				totalPollsAnswered: 29, // Round 10
+				correctnessFactor: 1.0,
+			});
+
+			// Round 10: base 3%, new streak 10 = 1%, total 4%
+			// But 98 + 4 = 102, should be capped at 100
+			expect(result.breakdown.earnedCoverage).toBe(4);
+			expect(result.newTotalCoverage).toBe(100); // Capped at 100
+			expect(result.newStreak).toBe(10);
 		});
 	});
 
 	describe("calculatePollScoreForProgression", () => {
-		it("returns base coverage breakdown with streak", () => {
-			const result = calculatePollScoreForProgression(5);
+		it("returns base coverage breakdown with round scaling", () => {
+			// Round 1: base = 1.2%, streak 5 = 0.5%, total = 1.7%
+			const result = calculatePollScoreForProgression(1, 5);
 
 			expect(result.streak).toBe(5);
-			expect(result.earnedCoverage).toBe(1); // Always 1% base
-			expect(result.delta).toBe(1);
+			expect(result.earnedCoverage).toBe(1.7); // 1.2 + 0.5
+			expect(result.delta).toBe(1.7);
 		});
 
 		it("works with zero streak", () => {
-			const result = calculatePollScoreForProgression(0);
+			// Round 1: base = 1.2%, streak 0 = 0%, total = 1.2%
+			const result = calculatePollScoreForProgression(1, 0);
 
 			expect(result.streak).toBe(0);
-			expect(result.earnedCoverage).toBe(1); // Always 1% base
-			expect(result.delta).toBe(1);
+			expect(result.earnedCoverage).toBe(1.2);
+			expect(result.delta).toBe(1.2);
+		});
+
+		it("calculates for higher rounds", () => {
+			// Round 5: base = 2%, streak 3 = 0.3%, total = 2.3%
+			const result = calculatePollScoreForProgression(5, 3);
+
+			expect(result.streak).toBe(3);
+			expect(result.earnedCoverage).toBe(2.3);
+			expect(result.delta).toBe(2.3);
 		});
 	});
 });
