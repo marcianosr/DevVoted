@@ -23,6 +23,7 @@ describe("configs", () => {
 			expect(configIds).toContain(".jsx-config");
 			expect(configIds).toContain(".git-config");
 			expect(configIds).toContain("package.json-config");
+			expect(configIds).toContain("code-coverage-config");
 			expect(configIds).toContain("math-random-config");
 		});
 
@@ -48,6 +49,24 @@ describe("configs", () => {
 			expect(tsConfig?.effect).toEqual(["streakAmp"]);
 			expect(tsConfig?.description).toContain("TypeScript");
 			expect(tsConfig?.priority).toBe(100);
+			expect(tsConfig?.targetCategories).toEqual(["ts"]);
+			expect(tsConfig?.targetCategories).not.toEqual(["js"]);
+			expect(tsConfig?.coverageBonus).toBe(2);
+		});
+
+		it("has valid properties for code coverage config", () => {
+			const codeCoverageConfig = configs.find(
+				(c) => c.id === "code-coverage-config"
+			);
+			expect(codeCoverageConfig).toBeDefined();
+			expect(codeCoverageConfig?.name).toBe("Code Coverage Config");
+			expect(codeCoverageConfig?.effect).toEqual(["streakAmp"]);
+			expect(codeCoverageConfig?.rarity).toBe("common");
+			expect(codeCoverageConfig?.description).toContain(
+				"+0.5% coverage polls for every poll answered"
+			);
+			expect(codeCoverageConfig?.targetCategories).toEqual([]);
+			expect(codeCoverageConfig?.coverageBonus).toBe(0.5);
 		});
 
 		it("has valid properties for math random config", () => {
@@ -58,7 +77,9 @@ describe("configs", () => {
 			expect(mathConfig?.name).toBe("Math Random");
 			expect(mathConfig?.effect).toEqual(["randomStreakAmp"]);
 			expect(mathConfig?.rarity).toBe("rare");
-			expect(mathConfig?.description).toContain("Random amp value");
+			expect(mathConfig?.description).toContain(
+				"code coverage value between -5 and +5 every poll"
+			);
 		});
 
 		it.todo("has valid properties for try/catch config", () => {
@@ -444,9 +465,11 @@ describe("configs", () => {
 			vi.restoreAllMocks();
 		});
 
-		it("adds random amp bonus between -0.5 and +0.5, rounded to 1 decimal", () => {
-			vi.mocked(Math.random).mockReturnValue(0.76); // (0.76 - 0.5) = 0.26, rounds to 0.3
-
+		it("adds random amp bonus between -5 and +5, rounded to 1 decimal", () => {
+			// (0.5 - 0.5) = 0, rounds to 0
+			// (0.2 - 0.5) = -0.3, rounds to -0.3
+			// (0.8 - 0.5) = +0.3, rounds to +0.3
+			vi.mocked(Math.random).mockReturnValue(0.8);
 			const mockPoll = createMockPoll({
 				categoryCode: "js",
 			});
@@ -461,7 +484,7 @@ describe("configs", () => {
 			const result = applyEffects(base, ["math-random-config"]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.coverageBonus).toBe(0.3);
+			expect(result.renderProps.coverageBonus).toBe(3);
 			expect(result.meta.notes).toEqual([
 				"Random code coverage bonus for js polls",
 			]);
@@ -484,7 +507,7 @@ describe("configs", () => {
 			const result = applyEffects(base, ["math-random-config"]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.coverageBonus).toBe(-0.5); // -0.5 raw value
+			expect(result.renderProps.coverageBonus).toBe(-5); // -5 raw value
 			expect(result.meta.notes).toEqual([
 				"Random code coverage bonus for js polls",
 			]);
@@ -966,7 +989,7 @@ describe("configs", () => {
 			]);
 
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
-			expect(result.renderProps.coverageBonus).toBe(0.3);
+			expect(result.renderProps.coverageBonus).toBe(3.3);
 			expect(result.meta.notes).toContain("Hid wrong options");
 			expect(result.meta.notes).toContain(
 				"Random code coverage bonus for js polls"
@@ -995,8 +1018,8 @@ describe("configs", () => {
 			]);
 
 			expect(result.view).toEqual(base);
-			expect(result.renderProps.coverageBonus).toBe(2.1);
-			expect(result.coverage.coverageAdd).toBe(2.1);
+			expect(result.renderProps.coverageBonus).toBe(2.6);
+			expect(result.coverage.coverageAdd).toBe(2.6);
 			expect(result.meta.notes).toEqual([
 				"Random code coverage bonus for js polls",
 				"+2 amp for js polls",

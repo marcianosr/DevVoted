@@ -256,8 +256,9 @@ export const orchestrateScoreCalculation = ({
 	// Step 6: Apply config additive modifier (e.g., +0.5% from .js config, or -0.3% from Math.random)
 	let coverageWithAdd = coverageWithMul + coverageAdd;
 
-	// Step 7: Round and add to total (negative coverage is allowed, but cap at MAX_COVERAGE)
-	const actualEarnedCoverage = Math.round(coverageWithAdd);
+	// Step 7: Add to total (negative coverage is allowed, but cap at MAX_COVERAGE)
+	// Keep decimal precision for accurate coverage tracking
+	const actualEarnedCoverage = coverageWithAdd;
 	const newTotalCoverage = Math.min(
 		MAX_COVERAGE,
 		currentCoverage + actualEarnedCoverage

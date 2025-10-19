@@ -27,6 +27,7 @@ export type Config = {
 	targetCategories?: CategoryCode[]; // Categories this config can target, e.g., ["js", "python"], if empty it targets all categories
 	priority: number;
 	storageBonus?: number; // Optional: Amount of storage this config adds (in bytes)
+	coverageBonus?: number; // Optional: Flat coverage bonus this config provides (in percentage points, e.g., 0.5 for +0.5%)
 };
 
 export type ConfigInventory = {

@@ -62,7 +62,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 										"text-saffron": isCurrentCategory,
 									})}
 								>
-									{coverage.currentCoverage}%
+									{coverage.currentCoverage.toFixed(1)}%
 								</span>
 								<meter
 									className="w-full h-2"
@@ -98,7 +98,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 			</div>
 
 			<div className="mt-4 pt-4 border-t border-saffron">
-				Total: {totalCoverage}% coverage • {totalPollsAnswered} polls
+				Total: {totalCoverage.toFixed(1)}% coverage • {totalPollsAnswered} polls
 				answered
 			</div>
 		</div>

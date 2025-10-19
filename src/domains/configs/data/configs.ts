@@ -15,6 +15,7 @@ export const configs: Config[] = [
 		effect: ["streakAmp"],
 		targetCategories: ["html"],
 		priority: 100,
+		coverageBonus: 2,
 	},
 	{
 		id: ".css-config",
@@ -26,6 +27,7 @@ export const configs: Config[] = [
 		effect: ["streakAmp"],
 		targetCategories: ["css"],
 		priority: 100,
+		coverageBonus: 2,
 	},
 	{
 		id: ".js-config",
@@ -37,6 +39,7 @@ export const configs: Config[] = [
 		effect: ["streakAmp"],
 		targetCategories: ["js"],
 		priority: 100,
+		coverageBonus: 2,
 	},
 	{
 		id: ".ts-config",
@@ -48,6 +51,7 @@ export const configs: Config[] = [
 		effect: ["streakAmp"],
 		targetCategories: ["ts"],
 		priority: 100,
+		coverageBonus: 2,
 	},
 	{
 		id: ".jsx-config",
@@ -59,6 +63,7 @@ export const configs: Config[] = [
 		effect: ["streakAmp"],
 		targetCategories: ["react"],
 		priority: 100,
+		coverageBonus: 2,
 	},
 	{
 		id: ".git-config",
@@ -70,6 +75,7 @@ export const configs: Config[] = [
 		effect: ["streakAmp"],
 		targetCategories: ["git"],
 		priority: 100,
+		coverageBonus: 2,
 	},
 	{
 		id: "package.json-config",
@@ -81,16 +87,7 @@ export const configs: Config[] = [
 		effect: ["streakAmp"],
 		targetCategories: ["general-frontend"],
 		priority: 100,
-	},
-	{
-		id: "math-random-config",
-		name: "Math Random",
-		image: "/configs/math-random.png",
-		cost: STORAGE_UNITS.MB / 2,
-		description: "Random amp value between -0.5 and +0.5 every poll",
-		rarity: "rare",
-		effect: ["randomStreakAmp"],
-		priority: 100,
+		coverageBonus: 2,
 	},
 	{
 		id: "local-storage-config",
@@ -113,6 +110,18 @@ export const configs: Config[] = [
 		effect: ["disableWrongOptions"],
 		priority: 100,
 	},
+	{
+		id: "code-coverage-config",
+		name: "Code Coverage Config",
+		image: "/configs/code-coverage.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description: "+0.5% coverage polls for every poll answered",
+		rarity: "common",
+		effect: ["streakAmp"],
+		priority: 100,
+		coverageBonus: 0.5,
+		targetCategories: [],
+	},
 	// TODO: re-enable try/catch config when refactored
 	// {
 	// 	id: "try-catch-config",
@@ -125,6 +134,17 @@ export const configs: Config[] = [
 	// 	effect: ["checkCoverageWithThreshold"],
 	// 	priority: 100,
 	// },
+	// TODO: re-enable Math.random config when refactored
+	{
+		id: "math-random-config",
+		name: "Math Random",
+		image: "/configs/math-random.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "Random code coverage value between -5 and +5 every poll",
+		rarity: "rare",
+		effect: ["randomStreakAmp"],
+		priority: 100,
+	},
 ];
 
 /**
@@ -134,9 +154,6 @@ export const configs: Config[] = [
  * 2. Apply multiplicative: baseCoverage * coverageMult
  * 3. Apply additive: result + coverageAdd
  *
- * Examples:
- * - .js config: coverageAdd: 0.5 (adds 0.5% bonus for JS polls)
- * - Math.random: coverageAdd: -0.5 to +0.5 (random modifier)
  */
 export type CoverageMods = {
 	coverageAdd?: number; // +0.5, -0.2 (additive coverage bonus/penalty in %)
@@ -215,7 +232,11 @@ const EFFECTS: Record<string, EffectFn> = {
 	// Adds +0.5% coverage bonus for specific categories (file extension configs)
 	streakAmp: ({ poll, options, run, hasAnswered }, config) => {
 		// Only apply if this config targets the current poll's category
-		if (!config.targetCategories?.includes(poll.categoryCode)) {
+		const shouldApply =
+			config.targetCategories?.length === 0 ||
+			config.targetCategories?.includes(poll.categoryCode);
+
+		if (!shouldApply) {
 			return {
 				view: { poll, options, run, hasAnswered },
 				coverage: { coverageAdd: 0 },
@@ -223,7 +244,7 @@ const EFFECTS: Record<string, EffectFn> = {
 			};
 		}
 
-		const bonusCoverage = 2;
+		const bonusCoverage = config.coverageBonus ?? 0;
 
 		return {
 			view: { poll, options, run, hasAnswered },
@@ -236,8 +257,10 @@ const EFFECTS: Record<string, EffectFn> = {
 	},
 	// Adds random coverage between -0.5% and +0.5% (Math Random Config effect)
 	randomStreakAmp: ({ poll, options, run, hasAnswered }) => {
-		const rawValue = Math.random() - 0.5;
+		const rawValue = Math.random() * 10 - 5;
 		const bonusCoverage = Math.round(rawValue * 10) / 10;
+
+		console.log("randomStreakAmp bonusCoverage", bonusCoverage);
 
 		return {
 			view: { poll, options, run, hasAnswered },

@@ -38,7 +38,7 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 					<div className="text-red-400">Wrong Answer Penalty</div>
 					<div className="border-t border-red-500/50 pt-2 mt-2">
 						<div className="text-lg font-bold text-red-400">
-							{earnedCoverage}% coverage
+							{earnedCoverage.toFixed(1)}% coverage
 						</div>
 					</div>
 				</>
@@ -65,7 +65,7 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 
 					<div className="border-t border-saffron/50 pt-2 mt-2">
 						<div className="text-lg font-bold text-saffron">
-							Earned: +{earnedCoverage}% coverage
+							Earned: +{earnedCoverage.toFixed(1)}% coverage
 						</div>
 					</div>
 				</>

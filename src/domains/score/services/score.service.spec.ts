@@ -147,9 +147,9 @@ describe("score.service", () => {
 				correctnessFactor: 1.0,
 			});
 
-			// Round 1: base 1.2%, new streak 1 = 0.1%, total 1.3%, rounds to 1%
-			expect(result.breakdown.earnedCoverage).toBe(1);
-			expect(result.newTotalCoverage).toBe(11); // 10 + 1
+			// Round 1: base 1.2%, new streak 1 = 0.1%, total 1.3%
+			expect(result.breakdown.earnedCoverage).toBe(1.3);
+			expect(result.newTotalCoverage).toBe(11.3); // 10 + 1.3
 			expect(result.newStreak).toBe(1); // Streak incremented
 		});
 
@@ -162,8 +162,8 @@ describe("score.service", () => {
 				correctnessFactor: 1.0,
 			});
 
-			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%, rounds to 3%
-			expect(result.breakdown.earnedCoverage).toBe(3);
+			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
+			expect(result.breakdown.earnedCoverage).toBe(2.5);
 			expect(result.newStreak).toBe(5);
 		});
 
@@ -177,9 +177,9 @@ describe("score.service", () => {
 			});
 
 			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
-			// Perfect multi (1.5x): 2.5 × 1.5 = 3.75, rounds to 4%
-			expect(result.breakdown.earnedCoverage).toBe(4);
-			expect(result.newTotalCoverage).toBe(19); // 15 + 4
+			// Perfect multi (1.5x): 2.5 × 1.5 = 3.75
+			expect(result.breakdown.earnedCoverage).toBe(3.75);
+			expect(result.newTotalCoverage).toBe(18.75); // 15 + 3.75
 			expect(result.newStreak).toBe(5);
 		});
 
@@ -193,8 +193,8 @@ describe("score.service", () => {
 			});
 
 			expect(result.newStreak).toBe(0); // Streak reset
-			expect(result.breakdown.earnedCoverage).toBe(-0); // -0.5 rounds to -0
-			expect(result.newTotalCoverage).toBe(20); // 20 + (-0) = 20
+			expect(result.breakdown.earnedCoverage).toBe(-0.5); // Wrong answer penalty
+			expect(result.newTotalCoverage).toBe(19.5); // 20 + (-0.5) = 19.5
 		});
 
 		it("applies config coverage bonus on top of scaling", () => {
