@@ -49,6 +49,9 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Config costs
     [] XP gain balance
 
+[o] Handle polls answered this run - not sure if this is done correctly
+[] Handle "0.5" effects stacking correctly
+[] Handle Math,random config effect - also show total effect breakdown
 [o] Some UI polish so it isn't a mess
 [] Disable buy button if config doesn't fit storage
 [] Onboarding/help modal for first-time users [Critical]

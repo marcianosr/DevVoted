@@ -228,7 +228,9 @@ describe("Query logic - DTO mapping - DB errors", () => {
 					createPollResponse({ pollId, userId, selectedOptionIds })
 				).resolves.not.toThrow();
 
-				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(expect.any(Function));
+				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(
+					expect.any(Function)
+				);
 			});
 
 			it("handles empty selectedOptionIds array", async () => {
@@ -240,7 +242,9 @@ describe("Query logic - DTO mapping - DB errors", () => {
 					createPollResponse({ pollId, userId, selectedOptionIds })
 				).resolves.not.toThrow();
 
-				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(expect.any(Function));
+				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(
+					expect.any(Function)
+				);
 			});
 
 			it("throws error when poll response creation fails", async () => {
@@ -268,7 +272,9 @@ describe("Query logic - DTO mapping - DB errors", () => {
 				const userId = "user-123";
 				const selectedOptionIds = [10, 20];
 
-				vi.mocked(db.transaction).mockRejectedValue(new Error("Database error"));
+				vi.mocked(db.transaction).mockRejectedValue(
+					new Error("Database error")
+				);
 
 				await expect(
 					createPollResponse({ pollId, userId, selectedOptionIds })
@@ -303,8 +309,14 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			expect(mockWhere).toHaveBeenCalled();
 		});
 
-		it("returns true when user has answered the poll", async () => {
-			const mockWhere = vi.fn().mockResolvedValue([{ response_id: 1 }]);
+		it("returns true when user has answered the poll today", async () => {
+			const today = new Date();
+			const mockWhere = vi.fn().mockResolvedValue([
+				{
+					response_id: 1,
+					created_at: today,
+				},
+			]);
 			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
 			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
 
@@ -316,10 +328,23 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			expect(mockWhere).toHaveBeenCalled();
 		});
 
-		it("returns true when multiple responses exist for the user", async () => {
+		it("returns false when user only answered yesterday", async () => {
+			// The query filters by >= today at midnight, so yesterday's answers don't count
+			const mockWhere = vi.fn().mockResolvedValue([]);
+			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+			const result = await hasUserAnsweredPoll(1, "user-123");
+
+			expect(result).toBe(false);
+			expect(mockWhere).toHaveBeenCalled();
+		});
+
+		it("returns true when multiple responses exist today", async () => {
+			const now = new Date();
 			const mockWhere = vi.fn().mockResolvedValue([
-				{ response_id: 1 }, 
-				{ response_id: 2 }
+				{ response_id: 1, created_at: now },
+				{ response_id: 2, created_at: new Date(now.getTime() + 1000) },
 			]);
 			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
 			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
@@ -327,6 +352,64 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			const result = await hasUserAnsweredPoll(1, "user-123");
 
 			expect(result).toBe(true);
+		});
+
+		it("correctly handles midnight boundary", async () => {
+			// Test that answers at 00:00:00 today count
+			const midnight = new Date();
+			midnight.setHours(0, 0, 0, 0);
+
+			const mockWhere = vi.fn().mockResolvedValue([
+				{
+					response_id: 1,
+					created_at: midnight,
+				},
+			]);
+			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+			const result = await hasUserAnsweredPoll(1, "user-123");
+			expect(result).toBe(true);
+		});
+
+		describe("Poll re-answering mechanic verification", () => {
+			it("blocks re-answering the same poll on the same day", async () => {
+				// User answered at 10am today
+				const answeredAt10am = new Date();
+				answeredAt10am.setHours(10, 0, 0, 0);
+
+				const mockWhere = vi.fn().mockResolvedValue([
+					{
+						response_id: 1,
+						created_at: answeredAt10am,
+					},
+				]);
+				const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+				vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+				// Try to answer again at 3pm same day
+				const canAnswerAgain = await hasUserAnsweredPoll(25, "pikachu");
+
+				expect(canAnswerAgain).toBe(true); // true = already answered = blocked
+				expect(mockWhere).toHaveBeenCalled();
+			});
+
+			it("allows re-answering the same poll on a different day", async () => {
+				// Mock that the query returns empty array
+				// (because yesterday's answers are filtered out by the >= today condition)
+				const mockWhere = vi.fn().mockResolvedValue([]);
+				const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+				vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+				// Check if can answer today (no results = can answer)
+				const canAnswerToday = await hasUserAnsweredPoll(
+					6,
+					"charizard"
+				);
+
+				expect(canAnswerToday).toBe(false); // false = not answered today = allowed
+				expect(mockWhere).toHaveBeenCalled();
+			});
 		});
 	});
 });

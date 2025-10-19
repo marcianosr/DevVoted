@@ -28,6 +28,7 @@ export type PollWithOptionsResponse = {
 	poll: Poll;
 	options: PollOption[];
 	hasAnswered: boolean;
+	timesAnswered?: number; // Total times user has answered this poll across all days
 };
 
 /**

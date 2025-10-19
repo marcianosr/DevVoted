@@ -3,6 +3,8 @@ import {
 	fetchPollById,
 	fetchPollByIdWithOptions,
 	hasUserAnsweredPoll,
+	countUserPollAnswers,
+	getAllPollsWithUserStats,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import {
@@ -24,8 +26,13 @@ export const getPollByIdWithOptionsHandler = async ({
 		const hasAnswered = userId
 			? await hasUserAnsweredPoll(id, userId)
 			: false;
+		const timesAnswered = userId
+			? await countUserPollAnswers(id, userId)
+			: 0;
 
-		return { poll, options, hasAnswered };
+		console.log("timesAnswered", timesAnswered);
+
+		return { poll, options, hasAnswered, timesAnswered };
 	});
 };
 
@@ -57,8 +64,11 @@ export const getDailyPollHandler = async ({
 		const hasAnswered = userId
 			? await hasUserAnsweredPoll(poll.id, userId)
 			: false;
+		const timesAnswered = userId
+			? await countUserPollAnswers(poll.id, userId)
+			: 0;
 
-		return { poll, options, hasAnswered };
+		return { poll, options, hasAnswered, timesAnswered };
 	});
 };
 
@@ -140,4 +150,15 @@ const validatePollSubmission = async (
 		selectedOptionIds,
 		poll,
 	};
+};
+
+export const getAllPollsWithUserStatsHandler = async ({
+	data,
+}: {
+	data: { userId: string };
+}) => {
+	return handleApiOperation(async () => {
+		const { userId } = data;
+		return await getAllPollsWithUserStats(userId);
+	});
 };

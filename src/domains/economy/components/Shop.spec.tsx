@@ -23,11 +23,15 @@ const renderWithShopProvider = (overrides?: {
 			onRemoveConfig={overrides?.onRemoveConfig ?? vi.fn()}
 			initialShopOpen={overrides?.isShopOpen ?? false}
 		>
-			<Shop activeRun={createRun()} offeredConfigs={testConfigs} onReroll={vi.fn()} />
+			<Shop
+				activeRun={createRun()}
+				offeredConfigs={testConfigs}
+				onReroll={vi.fn()}
+			/>
 		</ShopProvider>
 	);
 };
-describe("Shop", () => {
+describe(Shop, () => {
 	it("renders the shop", () => {
 		renderWithShopProvider();
 

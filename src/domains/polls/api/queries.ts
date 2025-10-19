@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte, sql } from "drizzle-orm";
 import {
 	pollOptionsTable,
 	pollResponseOptionsTable,
@@ -128,7 +128,30 @@ export const hasUserAnsweredPoll = async (
 	pollId: number,
 	userId: string
 ): Promise<boolean> => {
+	// Check if user answered this poll TODAY only
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
 	const existingResponse = await db
+		.select()
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.poll_id, pollId),
+				eq(pollResponsesTable.user_id, userId),
+				gte(pollResponsesTable.created_at, today)
+			)
+		);
+
+	return existingResponse.length > 0;
+};
+
+export const countUserPollAnswers = async (
+	pollId: number,
+	userId: string
+): Promise<number> => {
+	// Count total times user has answered this poll across all days
+	const responses = await db
 		.select()
 		.from(pollResponsesTable)
 		.where(
@@ -138,7 +161,51 @@ export const hasUserAnsweredPoll = async (
 			)
 		);
 
-	return existingResponse.length > 0;
+	return responses.length;
+};
+
+export const getUserPollStats = async (userId: string) => {
+	// Get all user's poll responses grouped by poll_id
+	const responses = await db
+		.select({
+			poll_id: pollResponsesTable.poll_id,
+		})
+		.from(pollResponsesTable)
+		.where(eq(pollResponsesTable.user_id, userId));
+
+	// Count responses per poll
+	const pollStats = responses.reduce((acc, response) => {
+		const pollId = response.poll_id;
+		acc[pollId] = (acc[pollId] || 0) + 1;
+		return acc;
+	}, {} as Record<number, number>);
+
+	return pollStats;
+};
+
+export const getAllPollsWithUserStats = async (userId: string) => {
+	// Single query to get all polls with user stats, sorted by ID
+	const result = await db
+		.select({
+			poll: pollsTable,
+			timesAnswered: sql<number>`COUNT(${pollResponsesTable.response_id})::int`,
+		})
+		.from(pollsTable)
+		.leftJoin(
+			pollResponsesTable,
+			and(
+				eq(pollsTable.id, pollResponsesTable.poll_id),
+				eq(pollResponsesTable.user_id, userId)
+			)
+		)
+		.groupBy(pollsTable.id)
+		.orderBy(pollsTable.id);
+
+	return result.map(row => ({
+		poll: pollFactory.toDTO(row.poll),
+		hasAnswered: row.timesAnswered > 0,
+		timesAnswered: row.timesAnswered,
+	}));
 };
 
 export const openPoll = async (id: number) => {

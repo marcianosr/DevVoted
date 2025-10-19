@@ -132,6 +132,7 @@ describe("handlers", () => {
 					poll: mockPoll,
 					options: mockOptions,
 					hasAnswered: false,
+					timesAnswered: 0,
 				},
 			});
 		});
@@ -163,6 +164,7 @@ describe("handlers", () => {
 					poll: mockPoll,
 					options: mockOptions,
 					hasAnswered: true,
+					timesAnswered: 0,
 				},
 			});
 		});
@@ -191,6 +193,7 @@ describe("handlers", () => {
 					poll: mockPoll,
 					options: mockOptions,
 					hasAnswered: false,
+					timesAnswered: 0,
 				},
 			});
 		});

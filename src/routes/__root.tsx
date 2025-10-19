@@ -143,9 +143,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					<div className="ml-auto">
 						{user ? (
 							<>
-								<span className="mr-2">
+								<Link
+									to="/profile/$userId"
+									params={{ userId: user.id }}
+									className="mr-2"
+									activeProps={{
+										className: "font-bold",
+									}}
+								>
 									{user.displayName || user.email}
-								</span>
+								</Link>
 								<Link to="/logout">Logout</Link>
 							</>
 						) : (

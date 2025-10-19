@@ -6,6 +6,7 @@ import {
 	getPollByIdWithOptionsHandler,
 	getDailyPollHandler,
 	postPollOptionsHandler,
+	getAllPollsWithUserStatsHandler,
 } from "./handlers";
 
 export const getPollByIdWithOptions = createServerFn()
@@ -43,3 +44,11 @@ export const postPollOptions = createServerFn()
 		})
 	)
 	.handler(async ({ data }) => postPollOptionsHandler({ data }));
+
+export const getAllPollsWithUserStats = createServerFn()
+	.inputValidator(
+		z.object({
+			userId: z.string(),
+		})
+	)
+	.handler(async ({ data }) => getAllPollsWithUserStatsHandler({ data }));
