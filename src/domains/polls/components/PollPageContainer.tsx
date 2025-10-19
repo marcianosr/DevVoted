@@ -91,6 +91,8 @@ type PollContentProps = {
 	effectProps?: EffectRenderProps;
 	user: any;
 	activeRun: Run | null;
+	lastScoreBreakdown: PollScoreBreakdown | null;
+	setLastScoreBreakdown: (breakdown: PollScoreBreakdown | null) => void;
 };
 
 const PollContent: React.FC<PollContentProps> = ({
@@ -98,14 +100,14 @@ const PollContent: React.FC<PollContentProps> = ({
 	effectProps,
 	user,
 	activeRun,
+	lastScoreBreakdown,
+	setLastScoreBreakdown,
 }) => {
 	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
 	const { poll, options, hasAnswered } = pollData;
 
 	const [rerollKey, setRerollKey] = useState(0);
-	const [lastScoreBreakdown, setLastScoreBreakdown] =
-		useState<PollScoreBreakdown | null>(null);
 
 	// TODO: Put in a hook
 	const randomConfigs = useMemo(() => {
@@ -268,7 +270,6 @@ const PollContent: React.FC<PollContentProps> = ({
 						<div className="text-4xl text-saffron">
 							{currentCategory?.name}
 						</div>
-						<PollStatus hasAnswered={hasAnswered} />
 
 						<div className="text-saffron flex flex-col">
 							<span className="font-bold text-xl">
@@ -285,67 +286,45 @@ const PollContent: React.FC<PollContentProps> = ({
 							</span>
 
 							<div className="mt-2">
-								<span className="font-bold text-sm flex gap-4 justify-between">
-									<span>
-										Current:{" "}
-										{formatCoverage(
-											currentCategoryCoverage
-										)}
-										%
-									</span>
-									{thresholdInfo?.gateDefinition && (
-										<span>
-											Goal:{" "}
-											{formatCoverage(
-												thresholdInfo
-													.gateDefinition
-													.requirements[0]
-													.threshold
-											)}
-											%
-										</span>
-									)}
-								</span>
-								<meter
-									min={0}
-									value={currentCategoryCoverage}
-									max={
-										thresholdInfo?.gateDefinition
-											?.requirements[0].threshold ?? 100
-									}
-									className="h-8"
-								></meter>
-
 								{thresholdInfo && (
-									<div className="mt-2 text-xs text-gray-300">
-										<div>
-											CI Gate:{" "}
-											{formatGateRequirements(
-												thresholdInfo.gateDefinition
-											)}
-										</div>
-										{thresholdInfo.qualifyingCategories
-											.length > 0 && (
-											<div className="mt-1 text-green-400">
-												✓ Passing:{" "}
-												{thresholdInfo.qualifyingCategories.join(
-													", "
+									<>
+										<div className="border border-saffron p-2">
+											<p className="text-white underline underline-offset-4">
+												Win conditions:{" "}
+											</p>
+											<p className="text-saffron">
+												{formatGateRequirements(
+													thresholdInfo.gateDefinition
 												)}
-											</div>
-										)}
-										{!thresholdInfo.meetsThreshold &&
-											thresholdInfo.isThresholdCheckPoll && (
-												<div className="mt-1 text-red-400">
-													⚠️ Not meeting gate
-													requirements
+											</p>
+											{thresholdInfo.qualifyingCategories
+												.length > 0 && (
+												<div className="mt-1 text-green-400">
+													✓ Passing:{" "}
+													{thresholdInfo.qualifyingCategories.join(
+														", "
+													)}
 												</div>
 											)}
-									</div>
+											{!thresholdInfo.meetsThreshold &&
+												thresholdInfo.isThresholdCheckPoll && (
+													<div className="mt-1 text-red-400">
+														⚠️ Not meeting gate
+														requirements
+													</div>
+												)}
+										</div>
+									</>
 								)}
 							</div>
 						</div>
 						{activeRun && (
-							<RunStatusDisplay activeRun={activeRun} />
+							<RunStatusDisplay
+								activeRun={activeRun}
+								currentCategoryCode={poll.categoryCode}
+								lastScoreBreakdown={lastScoreBreakdown}
+								coverageBonus={effectProps?.coverageBonus}
+							/>
 						)}
 
 						{/* <ul className="text-gray-400 text-xs">
@@ -353,12 +332,6 @@ const PollContent: React.FC<PollContentProps> = ({
 							<li>Run #{activeRun?.id}</li>
 							<li>Amp x1.4</li>
 						</ul> */}
-
-						{/*
-						<div className="border-t border-saffron pt-4">
-							<PollStatus hasAnswered={hasAnswered} />
-						</div>
-						 */}
 					</div>
 
 					{/* Main content area - terminal style */}
@@ -375,6 +348,7 @@ const PollContent: React.FC<PollContentProps> = ({
 						<div className=" p-4">
 							{/* Question display with category color accent */}
 							<PollQuestionDisplay poll={poll} />
+							<PollStatus hasAnswered={hasAnswered} />
 
 							{!isShopOpen && (
 								<PollSubmissionForm
@@ -408,8 +382,6 @@ const PollContent: React.FC<PollContentProps> = ({
 									activeRun={activeRun}
 									offeredConfigs={randomConfigs}
 									onReroll={handleReroll}
-									lastScoreBreakdown={lastScoreBreakdown}
-									categoryCode={poll.categoryCode}
 								/>
 							)}
 						</div>
@@ -434,6 +406,8 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	errorMessage = "Error Loading Poll",
 }) => {
 	const queryClient = useQueryClient();
+	const [lastScoreBreakdown, setLastScoreBreakdown] =
+		useState<PollScoreBreakdown | null>(null);
 
 	const {
 		activeRun,
@@ -637,6 +611,8 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 					effectProps={effectsResult.renderProps}
 					user={user}
 					activeRun={activeRun}
+					lastScoreBreakdown={lastScoreBreakdown}
+					setLastScoreBreakdown={setLastScoreBreakdown}
 				/>
 			</ShopProvider>
 		</div>

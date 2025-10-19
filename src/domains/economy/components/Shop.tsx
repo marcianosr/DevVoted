@@ -5,7 +5,6 @@ import { useConfigCardActions } from "../../configs/hooks/useConfigCardActions";
 import { calculateRerollCost } from "../services/reroll.service";
 import { getStorageInfo } from "../services/configManager.service";
 import { formatStorage } from "~/lib/storage";
-import { ScoreBreakdownDisplay } from "./ScoreBreakdownDisplay";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 
@@ -32,28 +31,13 @@ const ShopConfigCard = ({ config, activeRun }: ShopConfigCardProps) => {
 	return <ConfigCard key={config.id} config={config} {...actions} />;
 };
 
-export const Shop = ({
-	activeRun,
-	offeredConfigs,
-	onReroll,
-	lastScoreBreakdown,
-	categoryCode,
-}: ShopProps) => {
+export const Shop = ({ activeRun, offeredConfigs, onReroll }: ShopProps) => {
 	const { storageAvailable } = getStorageInfo(activeRun);
 	const rerollCost = calculateRerollCost(activeRun.rerolls);
 	const canReroll = storageAvailable >= rerollCost;
 
 	return (
 		<div>
-			{/* Score Breakdown Display */}
-			{lastScoreBreakdown && categoryCode && (
-				<ScoreBreakdownDisplay
-					breakdown={lastScoreBreakdown}
-					activeConfigIds={activeRun.activeConfigIds}
-					categoryCode={categoryCode}
-				/>
-			)}
-
 			<div className="mb-6 flex justify-between items-start">
 				<div>
 					<h2 className="text-2xl font-bold text-gray-900 mb-2">

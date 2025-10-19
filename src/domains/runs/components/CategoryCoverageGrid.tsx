@@ -1,50 +1,106 @@
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { CATEGORY_METADATA } from "~/domains/shared/categories";
 import { aggregateRunCategoryCoverage } from "~/domains/runs/utils/coverageCalculations";
+import clsx from "clsx";
 
 type CategoryCoverageGridProps = {
 	categoryCoverage: RunCategoryCoverage[];
+	currentCategoryCode?: string;
 };
 
 export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 	categoryCoverage,
+	currentCategoryCode,
 }) => {
 	const { totalCoverage, totalPollsAnswered } =
 		aggregateRunCategoryCoverage(categoryCoverage);
 
+	const highestBestStreak = Math.max(
+		...categoryCoverage.map((c) => c.bestStreak)
+	);
+
 	return (
-		<>
-			<div className="grid grid-cols-3 gap-2 text-sm border-b border-saffron pb-2 mb-2">
+		<div className="space-y-2">
+			<div className="grid grid-cols-[3fr_3fr_1fr_1fr] gap-2 text-sm border-b border-saffron pb-2">
 				<span>Category</span>
 				<span>Coverage</span>
 				<span>Streak</span>
+				<span>Best Streak</span>
 			</div>
 
-			{categoryCoverage.map((coverage: RunCategoryCoverage) => (
-				<ul className="grid grid-cols-3 gap-2 text-sm">
-					<li key="categoryCode">
-						{CATEGORY_METADATA[coverage.categoryCode].name}
-					</li>
-					<li key="currentCoverage" className="flex flex-col gap-0">
-						{coverage.currentCoverage}%
-						<meter
-							key="coverageMeter"
-							className="w-full h-2"
-							min="0"
-							max="100"
-							value={coverage.currentCoverage}
-						></meter>
-					</li>
-					<li key="currentStreak" className="flex gap-2">
-						{coverage.currentStreak}
-						{coverage.bestStreak > 0 && <span>🌟</span>}
-					</li>
-				</ul>
-			))}
-			<div className="mt-4 pt-4 border-t-1 border-saffron">
+			<div className="space-y-1">
+				{categoryCoverage.map((coverage: RunCategoryCoverage) => {
+					const isCurrentCategory =
+						coverage.categoryCode === currentCategoryCode;
+
+					return (
+						<div
+							key={coverage.categoryCode}
+							className={clsx(
+								"grid grid-cols-[3fr_3fr_1fr_1fr] gap-2 text-sm pl-2",
+								{
+									"bg-saffron/10 border-l-4 border-saffron -ml-2":
+										isCurrentCategory,
+									"hover:bg-gray-800/50": !isCurrentCategory,
+								}
+							)}
+							aria-current={
+								isCurrentCategory ? "true" : undefined
+							}
+						>
+							<span
+								className={clsx("self-center", {
+									"text-saffron font-semibold":
+										isCurrentCategory,
+								})}
+							>
+								{CATEGORY_METADATA[coverage.categoryCode].name}
+							</span>
+							<div className="flex flex-col gap-0">
+								<span
+									className={clsx({
+										"text-saffron": isCurrentCategory,
+									})}
+								>
+									{coverage.currentCoverage}%
+								</span>
+								<meter
+									className="w-full h-2"
+									min="0"
+									max="100"
+									value={coverage.currentCoverage}
+								/>
+							</div>
+							<div className="flex gap-2">
+								<span
+									className={clsx("self-center", {
+										"text-saffron": isCurrentCategory,
+									})}
+								>
+									{coverage.currentStreak}
+								</span>
+							</div>
+							<div className="flex gap-2">
+								<span
+									className={clsx("self-center", {
+										"text-saffron": isCurrentCategory,
+									})}
+								>
+									{coverage.bestStreak ===
+										highestBestStreak &&
+										highestBestStreak > 0 && <>★</>}{" "}
+									{coverage.bestStreak}
+								</span>
+							</div>
+						</div>
+					);
+				})}
+			</div>
+
+			<div className="mt-4 pt-4 border-t border-saffron">
 				Total: {totalCoverage}% coverage • {totalPollsAnswered} polls
 				answered
 			</div>
-		</>
+		</div>
 	);
 };
