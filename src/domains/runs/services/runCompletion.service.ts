@@ -42,6 +42,33 @@ export const endRunForThresholdFailure = async (runId: number) => {
 	return { runEnded: true, reason: "threshold_not_met" };
 };
 
+// End run manually (user chose to break off via "Start New Run" button)
+// Saves stats and creates leaderboard entries like threshold failure
+export const endRunManually = async (runId: number) => {
+	const run = await getRunForCompletion(runId);
+
+	if (!run) {
+		throw new Error(`Run with ID ${runId} not found`);
+	}
+
+	const totalCoverage = await getTotalCoverageForRun(runId);
+	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
+	const bestStreak = await getBestStreakForRun(runId);
+
+	await completeRunWithThresholdFailure(runId);
+
+	await createCategoryLeaderboardEntries(
+		run.user_id,
+		runId,
+		run.season_id,
+		totalCoverage,
+		totalPollsAnswered,
+		bestStreak
+	);
+
+	return { runEnded: true, reason: "manual_break_off" };
+};
+
 // Helper function to check if run meets coverage threshold to continue
 export const checkCoverageThreshold = async (
 	runId: number

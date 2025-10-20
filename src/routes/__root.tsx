@@ -5,17 +5,27 @@ import {
 	Outlet,
 	Scripts,
 	createRootRoute,
+	useNavigate,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 import * as React from "react";
 import { DefaultCatchBoundary } from "../components/DefaultCatchBoundary";
 import { NotFound } from "../components/NotFound";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import appCss from "../styles/app.css?url";
 import { seo } from "../utils/seo";
 import { getSupabaseServerClient } from "../utils/supabase";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+	QueryClient,
+	QueryClientProvider,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { ensureUserExists } from "../services/userSync.service";
+import { finishRunFn } from "../domains/runs/api/runs";
+import { useActiveRun } from "../domains/runs/hooks/useActiveRun";
+import { runQueryKeys } from "../domains/shared/queryKeys";
 
 const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();
@@ -99,68 +109,122 @@ function RootComponent() {
 	return (
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
+				<Navigation />
 				<Outlet />
 			</QueryClientProvider>
 		</RootDocument>
 	);
 }
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function Navigation() {
 	const { user } = Route.useRouteContext();
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
+	const { hasActiveRun } = useActiveRun(user?.id);
+
+	const finishRunMutation = useMutation({
+		mutationFn: (userId: string) => finishRunFn({ data: { userId } }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: runQueryKeys.active(user?.id),
+			});
+			setIsDialogOpen(false);
+			navigate({ to: "/daily-poll" });
+		},
+	});
+
+	const handleStartNewRunClick = () => {
+		if (hasActiveRun) {
+			setIsDialogOpen(true);
+		} else {
+			navigate({ to: "/daily-poll" });
+		}
+	};
+
+	const handleConfirmFinishRun = () => {
+		if (user?.id) {
+			finishRunMutation.mutate(user.id);
+		}
+	};
+
+	const handleCancelFinishRun = () => {
+		setIsDialogOpen(false);
+	};
+
+	return (
+		<>
+			<div className="p-2 flex gap-2 text-lg">
+				<Link
+					to="/"
+					activeProps={{
+						className: "font-bold",
+					}}
+					activeOptions={{ exact: true }}
+				>
+					Home
+				</Link>{" "}
+				<Link
+					to="/polls"
+					activeProps={{
+						className: "font-bold",
+					}}
+				>
+					Polls
+				</Link>
+				<Link
+					to="/daily-poll"
+					activeProps={{
+						className: "font-bold",
+					}}
+				>
+					Daily Poll
+				</Link>
+				<div className="ml-auto flex gap-2 items-center">
+					{user ? (
+						<>
+							<button
+								onClick={handleStartNewRunClick}
+								className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+							>
+								Start New Run
+							</button>
+							<Link
+								to="/profile/$userId"
+								params={{ userId: user.id }}
+								activeProps={{
+									className: "font-bold",
+								}}
+							>
+								{user.displayName || user.email}
+							</Link>
+							<Link to="/logout">Logout</Link>
+						</>
+					) : (
+						<Link to="/login">Login</Link>
+					)}
+				</div>
+			</div>
+			<hr />
+			<ConfirmDialog
+				isOpen={isDialogOpen}
+				onConfirm={handleConfirmFinishRun}
+				onCancel={handleCancelFinishRun}
+				title="Start New Run"
+				message="Are you sure you want to break off your current run?"
+			/>
+		</>
+	);
+}
+
+function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html>
 			<head>
 				<HeadContent />
 			</head>
 			<body>
-				<div className="p-2 flex gap-2 text-lg">
-					<Link
-						to="/"
-						activeProps={{
-							className: "font-bold",
-						}}
-						activeOptions={{ exact: true }}
-					>
-						Home
-					</Link>{" "}
-					<Link
-						to="/polls"
-						activeProps={{
-							className: "font-bold",
-						}}
-					>
-						Polls
-					</Link>
-					<Link
-						to="/daily-poll"
-						activeProps={{
-							className: "font-bold",
-						}}
-					>
-						Daily Poll
-					</Link>
-					<div className="ml-auto">
-						{user ? (
-							<>
-								<Link
-									to="/profile/$userId"
-									params={{ userId: user.id }}
-									className="mr-2"
-									activeProps={{
-										className: "font-bold",
-									}}
-								>
-									{user.displayName || user.email}
-								</Link>
-								<Link to="/logout">Logout</Link>
-							</>
-						) : (
-							<Link to="/login">Login</Link>
-						)}
-					</div>
-				</div>
-				<hr />
 				{children}
 				<TanStackRouterDevtools position="bottom-right" />
 				<Scripts />

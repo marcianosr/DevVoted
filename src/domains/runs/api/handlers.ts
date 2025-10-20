@@ -3,10 +3,12 @@ import {
 	createRunForUser,
 	getLastRunFromUser,
 	getLiveRunRankings,
+	finishRun,
 } from "./queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 import type { CategoryCode } from "~/domains/shared/categories";
 import { aggregateRunCategoryCoverage } from "~/domains/runs/utils/coverageCalculations";
+import { endRunManually } from "../services/runCompletion.service";
 
 export const getOrCreateActiveRun = async (userId: string) => {
 	return handleApiOperation(async () => {
@@ -67,4 +69,28 @@ export const getLiveRunRankingsHandler = async (
 		const rankings = await getLiveRunRankings(categoryCode);
 		return rankings;
 	}, "Failed to get live run rankings");
+};
+
+/**
+ * Finishes user's active run with stats processing
+ *
+ * Used when manually breaking off runs (e.g., "Start New Run" button).
+ * Saves stats and creates leaderboard entries like threshold failure.
+ *
+ * Uses endRunManually() which:
+ * - Saves final stats (coverage, polls answered, streaks)
+ * - Creates leaderboard entries
+ * - Marks run as finished
+ */
+export const finishRunHandler = async (userId: string) => {
+	return handleApiOperation(async () => {
+		const activeRun = await getActiveRunByUserId(userId);
+
+		if (!activeRun) {
+			throw new Error("No active run found");
+		}
+
+		await endRunManually(activeRun.id);
+		return { success: true };
+	}, "Failed to finish run");
 };
