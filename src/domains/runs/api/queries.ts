@@ -118,13 +118,18 @@ export const finishRun = async (runId: number) => {
 };
 
 // Helper function to calculate total coverage across all categories in a run
-export const getTotalCoverageForRun = async (runId: number): Promise<number> => {
+export const getTotalCoverageForRun = async (
+	runId: number
+): Promise<number> => {
 	const coverageRecords = await db
 		.select()
 		.from(runCategoryCoverageTable)
 		.where(eq(runCategoryCoverageTable.run_id, runId));
 
-	return coverageRecords.reduce((total, record) => total + record.current_coverage, 0);
+	return coverageRecords.reduce(
+		(total, record) => total + record.current_coverage,
+		0
+	);
 };
 
 // Helper function to get the total polls answered across all categories
@@ -192,7 +197,9 @@ export const createCategoryLeaderboardEntries = async (
 				season_id: seasonId,
 				category_code: category.code,
 				category_coverage:
-					categoryCoverage?.final_coverage ?? categoryCoverage?.current_coverage ?? 0, // Use final_coverage after threshold failure, current_coverage otherwise
+					categoryCoverage?.final_coverage ??
+					categoryCoverage?.current_coverage ??
+					0, // Use final_coverage after threshold failure, current_coverage otherwise
 				total_coverage: totalCoverage,
 				best_streak: categoryCoverage?.best_streak ?? 0,
 				polls_answered: categoryCoverage?.polls_answered ?? 0,
@@ -278,7 +285,10 @@ export const getLastRunFromUser = async (userId: string) => {
 			...xp,
 			categoryCode: xp.categoryCode as CategoryCode,
 		})),
-		totalCoverage: coverageRecords.reduce((sum, xp) => sum + xp.currentCoverage, 0),
+		totalCoverage: coverageRecords.reduce(
+			(sum, xp) => sum + xp.currentCoverage,
+			0
+		),
 		totalPollsAnswered: coverageRecords.reduce(
 			(sum, xp) => sum + xp.pollsAnswered,
 			0

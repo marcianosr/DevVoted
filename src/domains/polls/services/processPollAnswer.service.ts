@@ -118,7 +118,10 @@ export const processPollAnswer = async (
 		}
 	}
 
-	await resetPollRerolls(activeRun.id);
+	// Only reset rerolls when reaching a CI gate (every 3rd poll)
+	if (thresholdInfo.isThresholdCheckPoll) {
+		await resetPollRerolls(activeRun.id);
+	}
 
 	return {
 		correctOptionIds,

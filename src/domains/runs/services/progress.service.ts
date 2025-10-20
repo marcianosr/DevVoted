@@ -43,17 +43,17 @@ export const incrementRunProgress = async ({
 	options,
 	hasAnswered,
 }: IncrementProgress): Promise<IncrementRunProgressResult> => {
-	const currentCategoryXP = run.categoryCoverage.find(
+	const currentCategoryCoverage = run.categoryCoverage.find(
 		(xp) => xp.categoryCode === categoryCode
 	);
 
-	if (!currentCategoryXP) {
+	if (!currentCategoryCoverage) {
 		throw new Error(`Category ${categoryCode} not found`);
 	}
 
 	// Calculate total polls answered across all categories
 	const totalPollsAnswered = run.categoryCoverage.reduce(
-		(sum, xp) => sum + xp.pollsAnswered,
+		(sum, coverage) => sum + coverage.pollsAnswered,
 		0
 	);
 
@@ -79,9 +79,9 @@ export const incrementRunProgress = async ({
 		newTotalCoverage,
 	} = orchestrateScoreCalculation({
 		correctnessFactor,
-		currentBestStreak: currentCategoryXP.bestStreak,
-		currentCoverage: currentCategoryXP.currentCoverage,
-		currentStreak: currentCategoryXP.currentStreak,
+		currentBestStreak: currentCategoryCoverage.bestStreak,
+		currentCoverage: currentCategoryCoverage.currentCoverage,
+		currentStreak: currentCategoryCoverage.currentStreak,
 		totalPollsAnswered,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
@@ -94,7 +94,7 @@ export const incrementRunProgress = async ({
 		newTotalCoverage, // New total coverage for the category
 		newStreak, // Current streak (0 if wrong answer)
 		newBestStreak, // Best streak ever achieved
-		currentCategoryXP.pollsAnswered + 1 // Increment poll count
+		currentCategoryCoverage.pollsAnswered + 1 // Increment poll count
 	);
 
 	return {
