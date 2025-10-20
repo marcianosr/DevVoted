@@ -57,12 +57,11 @@ export const Shop = ({ activeRun, offeredConfigs, onReroll }: ShopProps) => {
 							: "bg-gray-300 text-gray-500 cursor-not-allowed"
 					}`}
 				>
-					Reroll ({formatStorage(rerollCost)})
+					Rebuild ({formatStorage(rerollCost)})
 				</button>
 			</div>
 
 			<div className="grid grid-cols-3 gap-4 mb-6">
-				{/* offeredConfigs should be a filtered list of unique configs */}
 				{offeredConfigs.map((config) => (
 					<ShopConfigCard
 						key={config.id}

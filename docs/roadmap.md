@@ -47,16 +47,18 @@ Season 1: Core Loop ✅ ship this before anything else
     [] Starting storage
     [] Storage growth over time
     [] Config costs
-    [] XP gain balance
+    [] Coverage gain balance
 
-[o] Handle polls answered this run - not sure if this is done correctly
-[] Handle "0.5" effects stacking correctly
-[] Handle Math,random config effect - also show total effect breakdown
+[x] Handle polls answered this run - not sure if this is done correctly
+[x] Handle "0.5" effects stacking correctly
+[x] Handle Math,random config effect - also show total effect breakdown
 [o] Some UI polish so it isn't a mess
-[] Disable buy button if config doesn't fit storage
+[] Reset rerolls per gate instead of per poll
+[] When last win condition is met, show winning screen. Allow user to continue playing or start new run
+[] Start new run button in navigation
 [] Onboarding/help modal for first-time users [Critical]
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
-[] Show clear disable button in config when storage is full on "purchase"
+[x] Show clear disable button in config when storage is full on "purchase"
 [] Don't update round/threshold check right away after submission
 [x] Upgrade packages
 [] Authentication (GitHub/Google)
@@ -72,13 +74,10 @@ Season 1: Core Loop ✅ ship this before anything else
 
 Season 2: Early Meta Layer
 [] Events table - Traceability
-[] Very basic CSI: (correct / total) × streak)
 [] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
 [] Add 6-8 more configs with effects
-[] prettierrc - Round XP up
-[] async/await - no amp on polls but extra on sets
 
 [] Expand traceability
 [] Admin panel for polls
