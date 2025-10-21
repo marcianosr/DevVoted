@@ -35,15 +35,34 @@ export const ensureUserExists = async (userData: UserSyncData) => {
 		role: "user" as const,
 	};
 
-	const [createdUser] = await db
-		.insert(usersTable)
-		.values(newUser)
-		.returning();
+	try {
+		const [createdUser] = await db
+			.insert(usersTable)
+			.values(newUser)
+			.returning();
 
-	return {
-		id: createdUser.id,
-		email: createdUser.email,
-		displayName: createdUser.display_name,
-		photoUrl: createdUser.photo_url,
-	};
+		return {
+			id: createdUser.id,
+			email: createdUser.email,
+			displayName: createdUser.display_name,
+			photoUrl: createdUser.photo_url,
+		};
+	} catch (error) {
+		const [existingUserByEmail] = await db
+			.select()
+			.from(usersTable)
+			.where(eq(usersTable.email, email))
+			.limit(1);
+
+		if (existingUserByEmail) {
+			return {
+				id: existingUserByEmail.id,
+				email: existingUserByEmail.email,
+				displayName: existingUserByEmail.display_name,
+				photoUrl: existingUserByEmail.photo_url,
+			};
+		}
+
+		throw error;
+	}
 };
