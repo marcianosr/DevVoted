@@ -274,7 +274,7 @@ export const getLastRunFromUser = async (userId: string) => {
 			currentCoverage: sql<number>`COALESCE(${runCategoryCoverageTable.final_coverage}, ${runCategoryCoverageTable.current_coverage})`,
 			currentStreak: sql<number>`COALESCE(${runCategoryCoverageTable.final_streak}, ${runCategoryCoverageTable.current_streak})`,
 			bestStreak: runCategoryCoverageTable.best_streak,
-			pollsAnswered: runCategoryCoverageTable.polls_answered,
+			pollsAnswered: sql<number>`COALESCE(${runCategoryCoverageTable.final_polls_answered}, ${runCategoryCoverageTable.polls_answered})`,
 		})
 		.from(runCategoryCoverageTable)
 		.where(eq(runCategoryCoverageTable.run_id, lastRunRecord[0].id));
@@ -297,7 +297,10 @@ export const getLastRunFromUser = async (userId: string) => {
 };
 
 // Complete run due to threshold failure - preserves progress in final_* columns then resets current values
-export const completeRunWithThresholdFailure = async (runId: number) => {
+export const completeRunWithThresholdFailure = async (
+	runId: number,
+	reason: string
+) => {
 	return await db.transaction(async (tx) => {
 		// Store current values in final columns before resetting
 		await tx
@@ -305,15 +308,17 @@ export const completeRunWithThresholdFailure = async (runId: number) => {
 			.set({
 				final_coverage: sql`current_coverage`,
 				final_streak: sql`current_streak`,
+				final_polls_answered: sql`polls_answered`,
 			})
 			.where(eq(runCategoryCoverageTable.run_id, runId));
 
-		// Finish the run
+		// Finish the run with reason
 		await tx
 			.update(runsTable)
 			.set({
 				status: "finished",
 				finished_at: new Date(),
+				completion_reason: reason,
 			})
 			.where(eq(runsTable.id, runId));
 

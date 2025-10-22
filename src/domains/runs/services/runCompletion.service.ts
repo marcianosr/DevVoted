@@ -27,7 +27,7 @@ export const endRunForThresholdFailure = async (runId: number) => {
 	const bestStreak = await getBestStreakForRun(runId);
 
 	// Complete the run and reset categories
-	await completeRunWithThresholdFailure(runId);
+	await completeRunWithThresholdFailure(runId, "threshold_not_met");
 
 	// Create category-specific leaderboard entries to track this run's performance
 	await createCategoryLeaderboardEntries(
@@ -55,7 +55,7 @@ export const endRunManually = async (runId: number) => {
 	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
 	const bestStreak = await getBestStreakForRun(runId);
 
-	await completeRunWithThresholdFailure(runId);
+	await completeRunWithThresholdFailure(runId, "manual_break_off");
 
 	await createCategoryLeaderboardEntries(
 		run.user_id,
@@ -103,7 +103,7 @@ export const completeRunWithVictory = async (runId: number) => {
 	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
 	const bestStreak = await getBestStreakForRun(runId);
 
-	await completeRunWithThresholdFailure(runId);
+	await completeRunWithThresholdFailure(runId, "victory");
 
 	await createCategoryLeaderboardEntries(
 		run.user_id,

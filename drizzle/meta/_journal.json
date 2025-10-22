@@ -169,6 +169,13 @@
       "when": 1760620758835,
       "tag": "0023_faithful_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1761136999437,
+      "tag": "0024_thankful_reptil",
+      "breakpoints": true
     }
   ]
 }

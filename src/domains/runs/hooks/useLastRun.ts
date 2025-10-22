@@ -8,6 +8,7 @@ type LastRunData = {
 		id: number;
 		started_at: Date | null;
 		finished_at: Date | null;
+		completion_reason: string | null;
 	};
 	categoryCoverage: {
 		categoryCode: CategoryCode;

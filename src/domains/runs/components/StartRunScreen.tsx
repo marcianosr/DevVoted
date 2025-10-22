@@ -41,6 +41,7 @@ export const StartRunScreen: React.FC<StartRunScreenProps> = ({
 							lastRunData.run.started_at,
 							lastRunData.run.finished_at
 						)}
+						reason={lastRunData.run.completion_reason || undefined}
 					/>
 				</div>
 			)}

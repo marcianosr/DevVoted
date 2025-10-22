@@ -217,6 +217,7 @@ export const runsTable = pgTable("runs", {
 	rerolls: integer("rerolls").notNull().default(0), // Current poll session rerolls (resets each poll)
 	total_rerolls: integer("total_rerolls").notNull().default(0), // Total rerolls across entire run
 	reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
+	completion_reason: varchar("completion_reason", { length: 50 }), // Reason for run completion: "victory", "threshold_not_met", "wrong_answer", "manual_break_off"
 	started_at: timestamp("started_at").defaultNow(),
 	finished_at: timestamp("finished_at"),
 	created_at: timestamp("created_at").defaultNow(),
@@ -248,6 +249,7 @@ export const runCategoryCoverageTable = pgTable(
 		polls_answered: integer("polls_answered").notNull().default(0),
 		final_coverage: real("final_coverage"),
 		final_streak: integer("final_streak"),
+		final_polls_answered: integer("final_polls_answered"),
 		created_at: timestamp("created_at").defaultNow(),
 		updated_at: timestamp("updated_at")
 			.defaultNow()

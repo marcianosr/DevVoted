@@ -40,7 +40,8 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Make sure configs are additive to each other
 [x] Don't rerender shop when installing configs. This shows new options
 [x] Remove amp cap
-[x] Support markdown in questions (e.g code examples or just code blocks) kk
+[x] Support markdown in questions (e.g code examples or just code blocks)
+[] show good / wrong answers after answering poll and your current choice
 [] Balancing
 
     [] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;
