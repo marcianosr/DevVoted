@@ -81,3 +81,38 @@ export const checkCoverageThreshold = async (
 
 	return calculateThresholdInfo(runWithCategoryData.categoryCoverage);
 };
+
+// Check if player has passed all defined CI gates (victory condition)
+// Victory occurs when current round exceeds the number of defined gates
+// Example: With 7 gates defined, round 8 means gate 7 was just passed
+export const checkForVictory = (currentRound: number): boolean => {
+	const { CI_GATES } = require("~/domains/runs/services/thresholdCalculator.service");
+	return currentRound > CI_GATES.length;
+};
+
+// Complete run with victory (all defined CI gates passed)
+// Saves stats and creates leaderboard entries like other completion methods
+export const completeRunWithVictory = async (runId: number) => {
+	const run = await getRunForCompletion(runId);
+
+	if (!run) {
+		throw new Error(`Run with ID ${runId} not found`);
+	}
+
+	const totalCoverage = await getTotalCoverageForRun(runId);
+	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
+	const bestStreak = await getBestStreakForRun(runId);
+
+	await completeRunWithThresholdFailure(runId);
+
+	await createCategoryLeaderboardEntries(
+		run.user_id,
+		runId,
+		run.season_id,
+		totalCoverage,
+		totalPollsAnswered,
+		bestStreak
+	);
+
+	return { runEnded: true, reason: "victory" };
+};

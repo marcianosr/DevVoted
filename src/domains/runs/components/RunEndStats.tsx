@@ -23,6 +23,8 @@ export const RunEndStats = ({
 }: RunEndStatsProps) => {
 	const getReasonText = (reason?: string) => {
 		switch (reason) {
+			case "victory":
+				return "Victory! All Categories Mastered!";
 			case "threshold_not_met":
 				return "Threshold not met";
 			case "wrong_answer":
@@ -34,6 +36,8 @@ export const RunEndStats = ({
 
 	const getReasonEmoji = (reason?: string) => {
 		switch (reason) {
+			case "victory":
+				return "🎉";
 			case "threshold_not_met":
 				return "⚠️";
 			case "wrong_answer":

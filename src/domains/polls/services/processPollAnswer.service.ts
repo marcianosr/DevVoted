@@ -92,6 +92,21 @@ export const processPollAnswer = async (
 	// TODO: Refactor this so we can handle endless config possibilities
 	// This is done for now like so because of MVP
 	// Check if try/catch protection should prevent run failure
+	// Check for victory at CI gates (when last defined gate is passed)
+	if (
+		thresholdInfo.meetsThreshold &&
+		thresholdInfo.isThresholdCheckPoll
+	) {
+		const { checkForVictory, completeRunWithVictory } = await import(
+			"~/domains/runs/services/runCompletion.service"
+		);
+		const hasWon = checkForVictory(thresholdInfo.currentRound);
+		if (hasWon) {
+			await completeRunWithVictory(activeRun.id);
+			runEnded = true;
+		}
+	}
+
 	if (!thresholdInfo.meetsThreshold) {
 		// Apply config effects to see if try/catch is active
 		const effectCtx = {

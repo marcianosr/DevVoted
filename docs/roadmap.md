@@ -52,7 +52,8 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Handle polls answered this run - not sure if this is done correctly
 [x] Handle "0.5" effects stacking correctly
 [x] Handle Math,random config effect - also show total effect breakdown
-[o] Some UI polish so it isn't a mess
+[x] Some UI polish so it isn't a mess
+[] Kanto colors
 [] Prematurely updating round/threshold when answering on and still in shop, causing confusion and premature perks (like rerolls) availability
 [x] Reset rerolls per gate instead of per poll
 [] When last win condition is met, show winning screen. Allow user to continue playing or start new run
