@@ -3,16 +3,14 @@ import clsx from "clsx";
 
 type ScoreBreakdownSidebarProps = {
 	breakdown: PollScoreBreakdown | null;
-	coverageBonus?: number; // From config effects renderProps
 };
 
 export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 	breakdown,
-	coverageBonus = 0,
 }) => {
 	if (!breakdown) return null;
 
-	const { streak, earnedCoverage } = breakdown;
+	const { streak, earnedCoverage, baseCoverage, streakBonus, configBonus } = breakdown;
 	const isWrongAnswer = earnedCoverage < 0;
 
 	return (
@@ -46,18 +44,25 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 				<>
 					<div className="space-y-2 text-sm">
 						<div className="flex justify-between">
-							<span className="text-gray-400">Streak:</span>
-							<span className="text-white">{streak} correct</span>
+							<span className="text-gray-400">Base Coverage:</span>
+							<span className="text-white">+{baseCoverage.toFixed(1)}%</span>
 						</div>
 
-						{coverageBonus !== 0 && (
+						{streakBonus > 0 && (
 							<div className="flex justify-between">
-								<span className="text-gray-400">Config Bonus:</span>
+								<span className="text-gray-400">Streak Bonus ({streak}):</span>
+								<span className="text-green-400">+{streakBonus.toFixed(1)}%</span>
+							</div>
+						)}
+
+						{configBonus !== 0 && (
+							<div className="flex justify-between">
+								<span className="text-gray-400">Config Effects:</span>
 								<span className={clsx({
-									"text-green-400": coverageBonus > 0,
-									"text-red-400": coverageBonus < 0,
+									"text-green-400": configBonus > 0,
+									"text-red-400": configBonus < 0,
 								})}>
-									{coverageBonus > 0 ? "+" : ""}{coverageBonus.toFixed(1)}%
+									{configBonus > 0 ? "+" : ""}{configBonus.toFixed(1)}%
 								</span>
 							</div>
 						)}

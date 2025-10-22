@@ -323,7 +323,6 @@ const PollContent: React.FC<PollContentProps> = ({
 								activeRun={activeRun}
 								currentCategoryCode={poll.categoryCode}
 								lastScoreBreakdown={lastScoreBreakdown}
-								coverageBonus={effectProps?.coverageBonus}
 							/>
 						)}
 

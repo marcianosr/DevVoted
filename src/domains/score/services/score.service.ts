@@ -150,6 +150,9 @@ export type PollScoreBreakdown = {
 	streak: number;
 	earnedCoverage: number;
 	delta: number;
+	baseCoverage: number; // Base coverage from round (before bonuses)
+	streakBonus: number; // Bonus from streak
+	configBonus: number; // Bonus from configs (additive + multiplicative effects)
 };
 
 /**
@@ -177,6 +180,9 @@ export const calculatePollScoreForProgression = (
 		streak,
 		earnedCoverage,
 		delta: earnedCoverage,
+		baseCoverage,
+		streakBonus,
+		configBonus: 0, // No config bonus for progression calculation
 	};
 };
 
@@ -244,17 +250,22 @@ export const orchestrateScoreCalculation = ({
 	const currentRound = Math.floor(totalPollsAnswered / 3) + 1;
 
 	// Step 2-4: Calculate coverage with round scaling, streak bonus, and correctness
-	const coverageEarned = calculateCoverage({
+	const baseCoverage = calculateBaseCoverage(currentRound);
+	const streakBonus = calculateStreakBonus(newStreak);
+	const coverageBeforeConfigs = calculateCoverage({
 		correctnessFactor,
 		round: currentRound,
 		streak: newStreak,
 	});
 
 	// Step 5: Apply config multiplicative modifier (e.g., x1.5 from config)
-	let coverageWithMul = coverageEarned * coverageMult;
+	let coverageWithMul = coverageBeforeConfigs * coverageMult;
 
 	// Step 6: Apply config additive modifier (e.g., +0.5% from .js config, or -0.3% from Math.random)
 	let coverageWithAdd = coverageWithMul + coverageAdd;
+
+	// Calculate config bonus (difference between final coverage and coverage before configs)
+	const configBonus = coverageWithAdd - coverageBeforeConfigs;
 
 	// Step 7: Add to total (negative coverage is allowed, but cap at MAX_COVERAGE)
 	// Keep decimal precision for accurate coverage tracking
@@ -273,6 +284,9 @@ export const orchestrateScoreCalculation = ({
 			streak: newStreak,
 			earnedCoverage: actualEarnedCoverage,
 			delta: actualEarnedCoverage,
+			baseCoverage: baseCoverage * correctnessFactor, // Base after correctness applied
+			streakBonus: streakBonus * correctnessFactor, // Streak bonus after correctness applied
+			configBonus, // Config effects (mult + add)
 		},
 	};
 };

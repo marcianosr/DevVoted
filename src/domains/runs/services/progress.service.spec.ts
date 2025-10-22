@@ -58,6 +58,9 @@ describe("incrementRunProgress", () => {
 				streak: 3,
 				earnedCoverage: 3,
 				delta: 3,
+				baseCoverage: 2,
+				streakBonus: 0.5,
+				configBonus: 0.5,
 			},
 		};
 
@@ -107,6 +110,9 @@ describe("incrementRunProgress", () => {
 				streak: 3,
 				earnedCoverage: 2,
 				delta: 2,
+				baseCoverage: 1.6,
+				streakBonus: 0.4,
+				configBonus: 0,
 			},
 		};
 
@@ -156,6 +162,9 @@ describe("incrementRunProgress", () => {
 				streak: 0,
 				earnedCoverage: 0, // -0.5 rounds to 0
 				delta: 0,
+				baseCoverage: 0,
+				streakBonus: 0,
+				configBonus: 0,
 			},
 		};
 
@@ -198,6 +207,9 @@ describe("incrementRunProgress", () => {
 				streak: 3,
 				earnedCoverage: 4,
 				delta: 4,
+				baseCoverage: 2,
+				streakBonus: 0.5,
+				configBonus: 1.5,
 			},
 		};
 
@@ -284,6 +296,9 @@ describe("incrementRunProgress", () => {
 					streak: 3,
 					earnedCoverage: 3,
 					delta: 3,
+					baseCoverage: 2,
+					streakBonus: 0.5,
+					configBonus: 0.5,
 				},
 			};
 

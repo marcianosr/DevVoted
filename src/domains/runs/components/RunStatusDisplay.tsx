@@ -7,14 +7,12 @@ interface RunStatusDisplayProps {
 	activeRun: Run | null;
 	currentCategoryCode?: string;
 	lastScoreBreakdown?: PollScoreBreakdown | null;
-	coverageBonus?: number;
 }
 
 export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 	activeRun,
 	currentCategoryCode,
 	lastScoreBreakdown,
-	coverageBonus,
 }) => {
 	if (!activeRun) return null;
 
@@ -33,7 +31,6 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 			{lastScoreBreakdown && (
 				<ScoreBreakdownSidebar
 					breakdown={lastScoreBreakdown}
-					coverageBonus={coverageBonus}
 				/>
 			)}
 
