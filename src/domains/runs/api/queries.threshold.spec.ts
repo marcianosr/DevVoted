@@ -108,7 +108,7 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.maxCoverage).toBe(2);
 			expect(result.meetsThreshold).toBe(false); // Threshold check poll at 5, fails with 2 < 4
 			expect(result.currentRound).toBe(1);
-			expect(result.pollInRound).toBe(1);
+			expect(result.pollInRound).toBe(5);
 			expect(result.isThresholdCheckPoll).toBe(true);
 		});
 
@@ -180,7 +180,7 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.maxCoverage).toBe(4);
 			expect(result.meetsThreshold).toBe(true); // 4 >= 4, threshold check passes
 			expect(result.currentRound).toBe(1);
-			expect(result.pollInRound).toBe(1);
+			expect(result.pollInRound).toBe(5);
 			expect(result.isThresholdCheckPoll).toBe(true);
 		});
 
