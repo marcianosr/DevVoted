@@ -1,3 +1,5 @@
+import { POLLS_PER_ROUND } from "~/domains/runs/services/thresholdCalculator.service";
+
 /**
  * Coverage-based scoring with round scaling and streak bonuses
  * Base formula: (1% + round × 0.2%) + (streak × 0.1%, capped at 1%)
@@ -247,7 +249,7 @@ export const orchestrateScoreCalculation = ({
 	const newPollsAnswered = totalPollsAnswered + 1;
 
 	// Calculate current round from polls answered (rounds are 1-based)
-	const currentRound = Math.floor(totalPollsAnswered / 3) + 1;
+	const currentRound = Math.floor(totalPollsAnswered / POLLS_PER_ROUND) + 1;
 
 	// Step 2-4: Calculate coverage with round scaling, streak bonus, and correctness
 	const baseCoverage = calculateBaseCoverage(currentRound);

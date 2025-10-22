@@ -97,12 +97,12 @@ describe("ThresholdCalculator", () => {
 	});
 
 	describe("Gate 1: 4% in 1 category", () => {
-		it("passes when 1 category has 4% coverage at poll 3", () => {
+		it("passes when 1 category has 4% coverage at poll 5", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 4,
-					pollsAnswered: 3,
+					pollsAnswered: 5,
 				}),
 			];
 
@@ -114,12 +114,12 @@ describe("ThresholdCalculator", () => {
 			expect(result.qualifyingCategories).toEqual(["js"]);
 		});
 
-		it("fails when coverage is below 4% at poll 3", () => {
+		it("fails when coverage is below 4% at poll 5", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 3,
-					pollsAnswered: 3,
+					pollsAnswered: 5,
 				}),
 			];
 
@@ -129,12 +129,12 @@ describe("ThresholdCalculator", () => {
 			expect(result.qualifyingCategories).toEqual([]);
 		});
 
-		it("always passes on non-checkpoint polls (poll 1, 2)", () => {
+		it("always passes on non-checkpoint polls (poll 1-4)", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
 					currentCoverage: 2,
-					pollsAnswered: 2,
+					pollsAnswered: 4,
 				}),
 			];
 
@@ -151,7 +151,7 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 4,
-					pollsAnswered: 6,
+					pollsAnswered: 10,
 				}),
 			];
 
@@ -167,12 +167,12 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 2,
-					pollsAnswered: 3,
+					pollsAnswered: 5,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 2,
-					pollsAnswered: 3,
+					pollsAnswered: 5,
 				}),
 			];
 
@@ -187,12 +187,12 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 3,
-					pollsAnswered: 3,
+					pollsAnswered: 5,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 1,
-					pollsAnswered: 3,
+					pollsAnswered: 5,
 				}),
 			];
 
@@ -209,7 +209,7 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "ts",
 					currentCoverage: 8,
-					pollsAnswered: 9,
+					pollsAnswered: 15,
 				}),
 			];
 
@@ -224,12 +224,12 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 4,
-					pollsAnswered: 5,
+					pollsAnswered: 8,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
 					currentCoverage: 4,
-					pollsAnswered: 4,
+					pollsAnswered: 7,
 				}),
 			];
 
@@ -245,12 +245,12 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 25,
-					pollsAnswered: 8,
+					pollsAnswered: 13,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 15,
-					pollsAnswered: 7,
+					pollsAnswered: 12,
 				}),
 			];
 
@@ -268,12 +268,12 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 25,
-					pollsAnswered: 10,
+					pollsAnswered: 17,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 10,
-					pollsAnswered: 5,
+					pollsAnswered: 8,
 				}),
 			];
 
@@ -287,12 +287,12 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 20,
-					pollsAnswered: 10,
+					pollsAnswered: 17,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 15,
-					pollsAnswered: 5,
+					pollsAnswered: 8,
 				}),
 			];
 
@@ -306,7 +306,7 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 30,
-					pollsAnswered: 15,
+					pollsAnswered: 25,
 				}),
 			];
 
@@ -322,12 +322,12 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "ts",
 					currentCoverage: 35,
-					pollsAnswered: 10,
+					pollsAnswered: 16,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
 					currentCoverage: 20,
-					pollsAnswered: 8,
+					pollsAnswered: 14,
 				}),
 			];
 
@@ -344,17 +344,17 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 12,
-					pollsAnswered: 2,
+					pollsAnswered: 3,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 15,
-					pollsAnswered: 2,
+					pollsAnswered: 4,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
 					currentCoverage: 8,
-					pollsAnswered: 2,
+					pollsAnswered: 3,
 				}),
 			];
 
@@ -369,17 +369,17 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 32,
-					pollsAnswered: 6,
+					pollsAnswered: 10,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 30,
-					pollsAnswered: 5,
+					pollsAnswered: 8,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
 					currentCoverage: 20,
-					pollsAnswered: 4,
+					pollsAnswered: 7,
 				}),
 			];
 
@@ -434,7 +434,7 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 15,
-					pollsAnswered: 3,
+					pollsAnswered: 5,
 				}),
 			];
 
@@ -448,17 +448,17 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 10,
-					pollsAnswered: 2,
+					pollsAnswered: 3,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 12,
-					pollsAnswered: 2,
+					pollsAnswered: 4,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
 					currentCoverage: 8,
-					pollsAnswered: 2,
+					pollsAnswered: 3,
 				}),
 			];
 
@@ -473,12 +473,12 @@ describe("ThresholdCalculator", () => {
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
 					currentCoverage: 45,
-					pollsAnswered: 12,
+					pollsAnswered: 20,
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
 					currentCoverage: 8,
-					pollsAnswered: 3,
+					pollsAnswered: 5,
 				}),
 			];
 

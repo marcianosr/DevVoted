@@ -158,7 +158,7 @@ describe("score.service", () => {
 				currentCoverage: 20,
 				currentStreak: 4,
 				currentBestStreak: 5,
-				totalPollsAnswered: 14, // Round 5
+				totalPollsAnswered: 20, // Round 5 (4*5 + 0)
 				correctnessFactor: 1.0,
 			});
 
@@ -172,7 +172,7 @@ describe("score.service", () => {
 				currentCoverage: 15,
 				currentStreak: 4,
 				currentBestStreak: 5,
-				totalPollsAnswered: 14, // Round 5
+				totalPollsAnswered: 20, // Round 5 (4*5 + 0)
 				correctnessFactor: 1.5, // Perfect multi-choice
 			});
 
@@ -202,7 +202,7 @@ describe("score.service", () => {
 				currentCoverage: 10,
 				currentStreak: 4,
 				currentBestStreak: 5,
-				totalPollsAnswered: 14, // Round 5
+				totalPollsAnswered: 20, // Round 5 (4*5 + 0)
 				correctnessFactor: 1.0,
 				coverageAdd: 0.5, // +0.5% from .js config
 			});
@@ -218,7 +218,7 @@ describe("score.service", () => {
 				currentCoverage: 50,
 				currentStreak: 9,
 				currentBestStreak: 10,
-				totalPollsAnswered: 29, // Round 10
+				totalPollsAnswered: 45, // Round 10 (9*5 + 0)
 				correctnessFactor: 1.0,
 			});
 
@@ -233,7 +233,7 @@ describe("score.service", () => {
 				currentCoverage: 98,
 				currentStreak: 9,
 				currentBestStreak: 10,
-				totalPollsAnswered: 29, // Round 10
+				totalPollsAnswered: 45, // Round 10 (9*5 + 0)
 				correctnessFactor: 1.0,
 			});
 

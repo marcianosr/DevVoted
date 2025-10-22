@@ -1,6 +1,11 @@
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 
 /**
+ * Number of polls per round (CI gate interval)
+ */
+export const POLLS_PER_ROUND = 5;
+
+/**
  * Gate requirement definition
  * Specifies threshold percentage and how many categories must meet it
  */
@@ -109,35 +114,35 @@ export type ThresholdInfo = {
 
 /**
  * Determines the current round based on total polls answered
- * Rounds are organized in sets of 3 polls (CI gates at polls 3, 6, 9, etc.)
+ * Rounds are organized in sets of POLLS_PER_ROUND polls (CI gates at polls 5, 10, 15, etc.)
  *
  * @param totalPollsAnswered - Total polls answered across all categories
  * @returns Current round number (1-based, minimum 1)
  */
 export const getCurrentRound = (totalPollsAnswered: number): number => {
 	if (totalPollsAnswered === 0) return 1;
-	return Math.floor((totalPollsAnswered - 1) / 3) + 1;
+	return Math.floor((totalPollsAnswered - 1) / POLLS_PER_ROUND) + 1;
 };
 
 /**
- * Determines the position within the current round (1, 2, or 3)
+ * Determines the position within the current round (1-POLLS_PER_ROUND)
  *
  * @param totalPollsAnswered - Total polls answered across all categories
- * @returns Poll position within round (1-3)
+ * @returns Poll position within round (1-5)
  */
 export const getPollInRound = (totalPollsAnswered: number): number => {
-	if (totalPollsAnswered === 0) return 3;
-	return ((totalPollsAnswered - 1) % 3) + 1;
+	if (totalPollsAnswered === 0) return 1;
+	return ((totalPollsAnswered - 1) % POLLS_PER_ROUND) + 1;
 };
 
 /**
- * Checks if the current poll is a threshold check poll (every 3rd poll)
+ * Checks if the current poll is a threshold check poll (every POLLS_PER_ROUND poll)
  *
  * @param totalPollsAnswered - Total polls answered across all categories
- * @returns True if this is a threshold check poll (polls 3, 6, 9, etc.)
+ * @returns True if this is a threshold check poll (polls 5, 10, 15, etc.)
  */
 export const isThresholdCheckPoll = (totalPollsAnswered: number): boolean => {
-	return totalPollsAnswered > 0 && totalPollsAnswered % 3 === 0;
+	return totalPollsAnswered > 0 && totalPollsAnswered % POLLS_PER_ROUND === 0;
 };
 
 /**

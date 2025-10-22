@@ -277,10 +277,10 @@ const PollContent: React.FC<PollContentProps> = ({
 							</span>
 
 							<span className="text-xs text-gray-400">
-								Poll {thresholdInfo?.pollInRound} of 3
+								Poll {thresholdInfo?.pollInRound} of 5
 								{thresholdInfo?.isThresholdCheckPoll && (
 									<span className="ml-2 text-red-400">
-										⚠️ Checkpoint
+										CI ⚠️ Checking...
 									</span>
 								)}
 							</span>
@@ -300,7 +300,7 @@ const PollContent: React.FC<PollContentProps> = ({
 											{thresholdInfo.qualifyingCategories
 												.length > 0 && (
 												<div className="mt-1 text-green-400">
-													✓ Passing:{" "}
+													CI: ✓ Passing:{" "}
 													{thresholdInfo.qualifyingCategories.join(
 														", "
 													)}
