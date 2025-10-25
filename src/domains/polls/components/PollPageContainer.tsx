@@ -88,11 +88,12 @@ export const submitPollOptions = createServerFn()
 
 type PollContentProps = {
 	pollData: PollWithOptionsResponse;
-	effectProps?: EffectRenderProps;
+	effectProps: EffectRenderProps;
 	user: any;
 	activeRun: Run | null;
 	lastScoreBreakdown: PollScoreBreakdown | null;
 	setLastScoreBreakdown: (breakdown: PollScoreBreakdown | null) => void;
+	costReduction: number;
 };
 
 const PollContent: React.FC<PollContentProps> = ({
@@ -102,6 +103,7 @@ const PollContent: React.FC<PollContentProps> = ({
 	activeRun,
 	lastScoreBreakdown,
 	setLastScoreBreakdown,
+	costReduction,
 }) => {
 	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
@@ -381,6 +383,7 @@ const PollContent: React.FC<PollContentProps> = ({
 									activeRun={activeRun}
 									offeredConfigs={randomConfigs}
 									onReroll={handleReroll}
+									costReduction={costReduction}
 								/>
 							)}
 						</div>
@@ -612,6 +615,7 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 					activeRun={activeRun}
 					lastScoreBreakdown={lastScoreBreakdown}
 					setLastScoreBreakdown={setLastScoreBreakdown}
+					costReduction={effectsResult.reductionCost ?? 0}
 				/>
 			</ShopProvider>
 		</div>

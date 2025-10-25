@@ -3,7 +3,10 @@ import { Run } from "~/domains/runs/models/run";
 import { Config } from "~/domains/configs/models/config";
 import { useConfigCardActions } from "../../configs/hooks/useConfigCardActions";
 import { calculateRerollCost } from "../services/reroll.service";
-import { getStorageInfo } from "../services/configManager.service";
+import {
+	getShopCostReduction,
+	getStorageInfo,
+} from "../services/configManager.service";
 import { formatStorage } from "~/lib/storage";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
@@ -14,6 +17,7 @@ type ShopProps = {
 	onReroll: () => void;
 	lastScoreBreakdown?: PollScoreBreakdown | null;
 	categoryCode?: CategoryCode;
+	costReduction: number;
 };
 
 type ShopConfigCardProps = {
@@ -31,11 +35,24 @@ const ShopConfigCard = ({ config, activeRun }: ShopConfigCardProps) => {
 	return <ConfigCard key={config.id} config={config} {...actions} />;
 };
 
-export const Shop = ({ activeRun, offeredConfigs, onReroll }: ShopProps) => {
+export const Shop = ({
+	activeRun,
+	offeredConfigs,
+	onReroll,
+	costReduction,
+}: ShopProps) => {
 	const { storageAvailable } = getStorageInfo(activeRun);
 	const rerollCost = calculateRerollCost(activeRun.rerolls);
 	const canReroll = storageAvailable >= rerollCost;
 
+	const displayedConfigs =
+		costReduction > 0
+			? offeredConfigs.map((config) => ({
+					...config,
+					originalCost: config.cost,
+					cost: Math.floor(config.cost * (1 - costReduction)),
+				}))
+			: offeredConfigs;
 	return (
 		<div>
 			<div className="mb-6 flex justify-between items-start">
@@ -61,8 +78,16 @@ export const Shop = ({ activeRun, offeredConfigs, onReroll }: ShopProps) => {
 				</button>
 			</div>
 
+			<div>
+				{costReduction > 0 && (
+					<p className="text-green-600 font-semibold mt-1">
+						{costReduction * 100}% discount active!
+					</p>
+				)}
+			</div>
+
 			<div className="grid grid-cols-3 gap-4 mb-6">
-				{offeredConfigs.map((config) => (
+				{displayedConfigs.map((config) => (
 					<ShopConfigCard
 						key={config.id}
 						config={config}

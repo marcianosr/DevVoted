@@ -93,12 +93,12 @@ export const configs: Config[] = [
 		id: "local-storage-config",
 		name: "Local Storage",
 		image: "/configs/local-storage.png",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: STORAGE_UNITS.MB / 4,
 		description: "When held, grants 512KB of extra storage",
 		rarity: "common",
 		effect: ["expandStorage"],
 		priority: 100,
-		storageBonus: STORAGE_UNITS.KB * 512, // 512KB bonus storage
+		storageBonus: STORAGE_UNITS.KB * 256, // 256KB bonus storage
 	},
 	{
 		id: "eslint-config",
@@ -123,18 +123,17 @@ export const configs: Config[] = [
 		targetCategories: [],
 	},
 	// TODO: re-enable try/catch config when refactored
-	// {
-	// 	id: "try-catch-config",
-	// 	name: "Try/Catch",
-	// 	image: "/configs/try-catch.png",
-	// 	cost: STORAGE_UNITS.MB / 2,
-	// 	description:
-	// 		"Saves your run when you have at least 80% of the coverage threshold. When activated, this config is consumed.",
-	// 	rarity: "rare",
-	// 	effect: ["checkCoverageWithThreshold"],
-	// 	priority: 100,
-	// },
-	// TODO: re-enable Math.random config when refactored
+	{
+		id: "try-catch-config",
+		name: "Try/Catch",
+		image: "/configs/try-catch.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description:
+			"Saves your run when you have at least 80% of the coverage threshold. When activated, this config is consumed.",
+		rarity: "common",
+		effect: ["checkCoverageWithThreshold"],
+		priority: 100,
+	},
 	{
 		id: "math-random-config",
 		name: "Math Random",
@@ -144,6 +143,17 @@ export const configs: Config[] = [
 		rarity: "rare",
 		effect: ["randomStreakAmp"],
 		priority: 100,
+	},
+	{
+		id: "deflate-config",
+		name: "Deflate",
+		image: "/configs/deflate-config.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "Reduces the cost of all configs by 10%",
+		rarity: "uncommon",
+		effect: ["reduceConfigCost"],
+		priority: 50, // Run before other effects
+		reductionCost: 0.1, // 10% cost reduction
 	},
 ];
 
@@ -183,6 +193,7 @@ export type EffectOut = {
 	storage?: StorageMods;
 	meta?: EffectMeta;
 	protection?: Protection; // Safeguards that prevent run failure
+	reductionCost?: number;
 };
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
@@ -194,6 +205,7 @@ type ApplyEffects = {
 	storage: StorageMods;
 	meta: EffectMeta;
 	protection: Protection;
+	reductionCost: number;
 };
 
 /**
@@ -340,6 +352,19 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+
+	reduceConfigCost: ({ poll, options, run, hasAnswered }, config) => {
+		console.log("Applying reduceConfigCost effect");
+		const discountPercent = config.reductionCost ?? 0;
+
+		return {
+			view: { poll, options, run, hasAnswered },
+			reductionCost: discountPercent,
+			meta: {
+				notes: [`Shop items cost ${discountPercent * 100}% less!`],
+			},
+		};
+	},
 };
 
 /**
@@ -374,6 +399,7 @@ export function applyEffects(
 			meta: {},
 			storage: {},
 			protection: {},
+			reductionCost: 0,
 		};
 
 	const effects = activeConfigIds
@@ -432,6 +458,8 @@ export function applyEffects(
 						out.protection?.tryCatch ||
 						false,
 				},
+				reductionCost:
+					(acc.reductionCost ?? 0) + (out.reductionCost ?? 0),
 				meta: {
 					...acc.meta,
 					...(out.meta?.badges
@@ -451,6 +479,7 @@ export function applyEffects(
 			coverage: {},
 			storage: {},
 			protection: {},
+			reductionCost: 0,
 		}
 	);
 }
