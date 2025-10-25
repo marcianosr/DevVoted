@@ -42,6 +42,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Remove amp cap
 [x] Support markdown in questions (e.g code examples or just code blocks)
 [] show good / wrong answers after answering poll and your current choice
+[] Add icons (pixelated) for configs
 [] Balancing
 
     [] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;
@@ -57,12 +58,14 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Kanto colors
 [] Prematurely updating round/threshold when answering on and still in shop, causing confusion and premature perks (like rerolls) availability
 [x] Reset rerolls per gate instead of per poll
+[] Fix "require is not defined" bug before launch
 [] When last win condition is met, show winning screen. Allow user to continue playing or start new run
 [] Start new run button in navigation
 [] Onboarding/help modal for first-time users [Critical]
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [x] Show clear disable button in config when storage is full on "purchase"
 [] Don't update round/threshold check right away after submission
+[] Show current season
 [] Coverage not below zero
 [] Total coverage rounding problems
 [x] Upgrade packages

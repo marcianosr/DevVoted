@@ -7,12 +7,12 @@ import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategory
 
 describe("ThresholdCalculator", () => {
 	describe("Gate Definitions", () => {
-		it("has correct gate 1 definition (4% in 1 category)", () => {
+		it("has correct gate 1 definition (2% in 1 category)", () => {
 			const gate = getGateDefinition(1);
 
 			expect(gate).toEqual({
 				gate: 1,
-				requirements: [{ threshold: 4, requiredCategories: 1 }],
+				requirements: [{ threshold: 2, requiredCategories: 1 }],
 				evaluationMode: "OR",
 			});
 		});
@@ -43,14 +43,14 @@ describe("ThresholdCalculator", () => {
 			});
 		});
 
-		it("has correct gate 4 definition (12% in 1 OR 12% in 2)", () => {
+		it("has correct gate 4 definition (12% in 1 OR 6% in 2)", () => {
 			const gate = getGateDefinition(4);
 
 			expect(gate).toEqual({
 				gate: 4,
 				requirements: [
 					{ threshold: 12, requiredCategories: 1 },
-					{ threshold: 12, requiredCategories: 2 },
+					{ threshold: 6, requiredCategories: 2 },
 				],
 				evaluationMode: "OR",
 			});
@@ -82,12 +82,55 @@ describe("ThresholdCalculator", () => {
 			});
 		});
 
-		it("extrapolates for gates beyond defined ones", () => {
+		it("has correct gate 8 definition (45% + 30% + 15% in 3 categories)", () => {
 			const gate = getGateDefinition(8);
 
 			expect(gate).toEqual({
 				gate: 8,
 				requirements: [
+					{ threshold: 45, requiredCategories: 1 },
+					{ threshold: 30, requiredCategories: 1 },
+					{ threshold: 15, requiredCategories: 1 },
+				],
+				evaluationMode: "AND",
+			});
+		});
+
+		it("has correct gate 9 definition (50% + 35% + 20% in 3 categories)", () => {
+			const gate = getGateDefinition(9);
+
+			expect(gate).toEqual({
+				gate: 9,
+				requirements: [
+					{ threshold: 50, requiredCategories: 1 },
+					{ threshold: 35, requiredCategories: 1 },
+					{ threshold: 20, requiredCategories: 1 },
+				],
+				evaluationMode: "AND",
+			});
+		});
+
+		it("has correct gate 10 definition (55% + 40% + 25% in 3 categories)", () => {
+			const gate = getGateDefinition(10);
+
+			expect(gate).toEqual({
+				gate: 10,
+				requirements: [
+					{ threshold: 55, requiredCategories: 1 },
+					{ threshold: 40, requiredCategories: 1 },
+					{ threshold: 25, requiredCategories: 1 },
+				],
+				evaluationMode: "AND",
+			});
+		});
+
+		it("extrapolates for gates beyond defined ones (gate 11+)", () => {
+			const gate = getGateDefinition(11);
+
+			expect(gate).toEqual({
+				gate: 11,
+				requirements: [
+					{ threshold: 60, requiredCategories: 1 }, // 55 + 5
 					{ threshold: 45, requiredCategories: 1 }, // 40 + 5
 					{ threshold: 30, requiredCategories: 1 }, // 25 + 5
 				],
@@ -96,8 +139,8 @@ describe("ThresholdCalculator", () => {
 		});
 	});
 
-	describe("Gate 1: 4% in 1 category", () => {
-		it("passes when 1 category has 4% coverage at poll 5", () => {
+	describe("Gate 1: 2% in 1 category", () => {
+		it("passes when 1 category has 2% coverage at poll 5", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
@@ -114,11 +157,11 @@ describe("ThresholdCalculator", () => {
 			expect(result.qualifyingCategories).toEqual(["js"]);
 		});
 
-		it("fails when coverage is below 4% at poll 5", () => {
+		it("fails when coverage is below 2% at poll 5", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
-					currentCoverage: 3,
+					currentCoverage: 1,
 					pollsAnswered: 5,
 				}),
 			];
