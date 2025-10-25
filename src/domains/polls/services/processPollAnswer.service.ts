@@ -93,10 +93,7 @@ export const processPollAnswer = async (
 	// This is done for now like so because of MVP
 	// Check if try/catch protection should prevent run failure
 	// Check for victory at CI gates (when last defined gate is passed)
-	if (
-		thresholdInfo.meetsThreshold &&
-		thresholdInfo.isThresholdCheckPoll
-	) {
+	if (thresholdInfo.meetsThreshold && thresholdInfo.isThresholdCheckPoll) {
 		const { checkForVictory, completeRunWithVictory } = await import(
 			"~/domains/runs/services/runCompletion.service"
 		);
@@ -107,20 +104,20 @@ export const processPollAnswer = async (
 		}
 	}
 
+	// Apply config effects to see if try/catch is active
+	const effectCtx = {
+		poll,
+		options,
+		hasAnswered: true,
+		run: updatedRun,
+	};
+
+	const { protection, resetRebuild } = applyEffects(
+		effectCtx,
+		updatedRun.activeConfigIds
+	);
+
 	if (!thresholdInfo.meetsThreshold) {
-		// Apply config effects to see if try/catch is active
-		const effectCtx = {
-			poll,
-			options,
-			hasAnswered: true,
-			run: updatedRun,
-		};
-
-		const { protection } = applyEffects(
-			effectCtx,
-			updatedRun.activeConfigIds
-		);
-
 		if (protection.tryCatch) {
 			// Try/Catch saves the run! Remove the config since it's one-time use
 			await removeConfigFromRunQuery(activeRun.id, ["try-catch-config"]);
@@ -131,6 +128,14 @@ export const processPollAnswer = async (
 			await endRunForThresholdFailure(activeRun.id);
 			runEnded = true;
 		}
+
+		console.log("Reset rebuild effect:", resetRebuild);
+	}
+
+	if (resetRebuild) {
+		// Reset rebuilds after every poll if the effect is active
+		console.log("Resetting rebuilds due to config effect");
+		await resetPollRerolls(activeRun.id);
 	}
 
 	// Only reset rerolls when reaching a CI gate (every POLLS_PER_ROUND poll)

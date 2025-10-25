@@ -155,6 +155,16 @@ export const configs: Config[] = [
 		priority: 50, // Run before other effects
 		reductionCost: 0.1, // 10% cost reduction
 	},
+	{
+		id: "hot-reload-config",
+		name: "Hot Reload",
+		image: "/configs/hot-reload-config.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "Allow rebuilds to reset after every poll",
+		rarity: "rare",
+		effect: ["resetRebuild"],
+		priority: 50,
+	},
 ];
 
 /**
@@ -194,6 +204,7 @@ export type EffectOut = {
 	meta?: EffectMeta;
 	protection?: Protection; // Safeguards that prevent run failure
 	reductionCost?: number;
+	resetRebuild?: boolean;
 };
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
@@ -206,6 +217,7 @@ type ApplyEffects = {
 	meta: EffectMeta;
 	protection: Protection;
 	reductionCost: number;
+	resetRebuild: boolean;
 };
 
 /**
@@ -365,6 +377,16 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+
+	resetRebuild: ({ poll, options, run, hasAnswered }, config) => {
+		return {
+			view: { poll, options, run, hasAnswered },
+			resetRebuild: true,
+			meta: {
+				notes: [`Rebuilds will reset after every poll`],
+			},
+		};
+	},
 };
 
 /**
@@ -400,6 +422,7 @@ export function applyEffects(
 			storage: {},
 			protection: {},
 			reductionCost: 0,
+			resetRebuild: false,
 		};
 
 	const effects = activeConfigIds
@@ -460,6 +483,7 @@ export function applyEffects(
 				},
 				reductionCost:
 					(acc.reductionCost ?? 0) + (out.reductionCost ?? 0),
+				resetRebuild: acc.resetRebuild || out.resetRebuild || false,
 				meta: {
 					...acc.meta,
 					...(out.meta?.badges
@@ -480,6 +504,7 @@ export function applyEffects(
 			storage: {},
 			protection: {},
 			reductionCost: 0,
+			resetRebuild: false,
 		}
 	);
 }
