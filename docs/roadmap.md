@@ -59,8 +59,8 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Prematurely updating round/threshold when answering on and still in shop, causing confusion and premature perks (like rerolls) availability
 [x] Reset rerolls per gate instead of per poll
 [] Fix "require is not defined" bug before launch
-[] When last win condition is met, show winning screen. Allow user to continue playing or start new run
-[] Start new run button in navigation
+[x] When last win condition is met, show winning screen. Allow user to continue playing or start new run
+[x] Start new run button in navigation
 [] Onboarding/help modal for first-time users [Critical]
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [x] Show clear disable button in config when storage is full on "purchase"

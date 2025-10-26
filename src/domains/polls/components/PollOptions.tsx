@@ -30,7 +30,6 @@ export const PollOptions = ({
 			<ul className="space-y-2">
 				{options.map((option) => (
 					<li key={option.id}>
-						{option.correct ? "Correct" : "Incorrect"}
 						<Option
 							option={option}
 							type={

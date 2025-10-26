@@ -40,6 +40,7 @@ import {
 } from "~/domains/runs/services/thresholdCalculator.service";
 import { getCategories } from "~/domains/shared/categories";
 import { formatCoverage } from "~/domains/score/services/score.service";
+import { PollAnswerReview } from "./PollAnswerReview";
 
 /**
  * Format gate requirements for display
@@ -86,6 +87,12 @@ export const submitPollOptions = createServerFn()
 	)
 	.handler(async ({ data }) => postPollOptionsHandler({ data }));
 
+type SubmissionResult = {
+	selectedOptionIds: number[];
+	correctOptionIds: number[];
+	isCorrect: boolean;
+};
+
 type PollContentProps = {
 	pollData: PollWithOptionsResponse;
 	effectProps: EffectRenderProps;
@@ -110,6 +117,8 @@ const PollContent: React.FC<PollContentProps> = ({
 	const { poll, options, hasAnswered } = pollData;
 
 	const [rerollKey, setRerollKey] = useState(0);
+	const [submissionResult, setSubmissionResult] =
+		useState<SubmissionResult | null>(null);
 
 	// TODO: Put in a hook
 	const randomConfigs = useMemo(() => {
@@ -152,6 +161,15 @@ const PollContent: React.FC<PollContentProps> = ({
 				const isCorrect = data.data?.isCorrect;
 				const runEnded = data.data?.runEnded;
 				const breakdown = data.data?.breakdown;
+
+				// Store the submission result for answer review
+				if (data.data?.selectOptions && data.data?.correctOptions) {
+					setSubmissionResult({
+						selectedOptionIds: data.data.selectOptions,
+						correctOptionIds: data.data.correctOptions,
+						isCorrect: isCorrect ?? false,
+					});
+				}
 
 				// Store the score breakdown for display in shop
 				if (breakdown) {
@@ -337,21 +355,12 @@ const PollContent: React.FC<PollContentProps> = ({
 
 					{/* Main content area - terminal style */}
 					<div className="col-span-8">
-						<div className={`mb-4 p-4`}>
-							<div className="py-4">
-								{activeRun && (
-									<div className="text-saffron">
-										<StorageDeck run={activeRun} />
-									</div>
-								)}
-							</div>
-						</div>
 						<div className=" p-4">
 							{/* Question display with category color accent */}
 							<PollQuestionDisplay poll={poll} />
 							<PollStatus hasAnswered={hasAnswered} />
 
-							{!isShopOpen && (
+							{!submitOptionsMutation.isSuccess && (
 								<PollSubmissionForm
 									hasAnswered={hasAnswered}
 									submitMutation={submitOptionsMutation}
@@ -378,14 +387,39 @@ const PollContent: React.FC<PollContentProps> = ({
 								</PollSubmissionForm>
 							)}
 
-							{isShopOpen && activeRun && (
-								<Shop
-									activeRun={activeRun}
-									offeredConfigs={randomConfigs}
-									onReroll={handleReroll}
-									costReduction={costReduction}
-								/>
+							{submitOptionsMutation.isSuccess && submissionResult && (
+								<>
+									<PollAnswerReview
+										poll={poll}
+										options={options}
+										selectedOptionIds={
+											submissionResult.selectedOptionIds
+										}
+										correctOptionIds={
+											submissionResult.correctOptionIds
+										}
+										isCorrect={submissionResult.isCorrect}
+									/>
+
+									{isShopOpen && activeRun && (
+										<Shop
+											activeRun={activeRun}
+											offeredConfigs={randomConfigs}
+											onReroll={handleReroll}
+											costReduction={costReduction}
+										/>
+									)}
+								</>
 							)}
+						</div>
+						<div className={`mb-4 p-4`}>
+							<div className="py-4">
+								{activeRun && (
+									<div className="text-saffron">
+										<StorageDeck run={activeRun} />
+									</div>
+								)}
+							</div>
 						</div>
 					</div>
 				</section>
