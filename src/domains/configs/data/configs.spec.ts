@@ -25,6 +25,8 @@ describe("configs", () => {
 			expect(configIds).toContain("package.json-config");
 			expect(configIds).toContain("code-coverage-config");
 			expect(configIds).toContain("math-random-config");
+			expect(configIds).toContain("deflate-config");
+			expect(configIds).toContain("hot-reload-config");
 		});
 
 		it("has valid properties for ESLint config", () => {
@@ -80,6 +82,35 @@ describe("configs", () => {
 			expect(mathConfig?.description).toContain(
 				"code coverage value between -5 and +5 every poll"
 			);
+		});
+
+		it("has valid properties for deflate config", () => {
+			const deflateConfig = configs.find(
+				(c) => c.id === "deflate-config"
+			);
+			expect(deflateConfig).toBeDefined();
+			expect(deflateConfig?.name).toBe("Deflate");
+			expect(deflateConfig?.effect).toEqual(["reduceConfigCost"]);
+			expect(deflateConfig?.rarity).toBe("uncommon");
+			expect(deflateConfig?.description).toContain(
+				"Reduces the cost of all configs by 10%"
+			);
+			expect(deflateConfig?.reductionCost).toBe(0.1);
+			expect(deflateConfig?.priority).toBe(50);
+		});
+
+		it("has valid properties for hot reload config", () => {
+			const hotReloadConfig = configs.find(
+				(c) => c.id === "hot-reload-config"
+			);
+			expect(hotReloadConfig).toBeDefined();
+			expect(hotReloadConfig?.name).toBe("Hot Reload");
+			expect(hotReloadConfig?.effect).toEqual(["resetRebuild"]);
+			expect(hotReloadConfig?.rarity).toBe("rare");
+			expect(hotReloadConfig?.description).toContain(
+				"Allow rebuilds to reset after every poll"
+			);
+			expect(hotReloadConfig?.priority).toBe(50);
 		});
 
 		it.todo("has valid properties for try/catch config", () => {
@@ -510,6 +541,138 @@ describe("configs", () => {
 			expect(result.renderProps.coverageBonus).toBe(-5); // -5 raw value
 			expect(result.meta.notes).toEqual([
 				"Random code coverage bonus for js polls",
+			]);
+		});
+	});
+
+	describe("reduceConfigCost effect", () => {
+		it("returns 10% cost reduction", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["deflate-config"]);
+
+			expect(result.view).toEqual(base);
+			expect(result.reductionCost).toBe(0.1);
+			expect(result.meta.notes).toEqual(["Shop items cost 10% less!"]);
+		});
+
+		it("works independently without affecting other properties", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "react",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["deflate-config"]);
+
+			expect(result.view).toEqual(base);
+			expect(result.renderProps).toEqual({});
+			expect(result.coverage).toEqual({
+				coverageAdd: 0,
+				coverageMult: 1,
+			});
+			expect(result.reductionCost).toBe(0.1);
+			expect(result.resetRebuild).toBe(false);
+			expect(result.protection.tryCatch).toBe(false);
+		});
+
+		it("applies regardless of poll category", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "html",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["deflate-config"]);
+
+			expect(result.reductionCost).toBe(0.1);
+			expect(result.meta.notes).toEqual(["Shop items cost 10% less!"]);
+		});
+	});
+
+	describe("resetRebuild effect", () => {
+		it("returns resetRebuild as true", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "ts",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["hot-reload-config"]);
+
+			expect(result.view).toEqual(base);
+			expect(result.resetRebuild).toBe(true);
+			expect(result.meta.notes).toEqual([
+				"Rebuilds will reset after every poll",
+			]);
+		});
+
+		it("works independently without affecting other properties", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "css",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["hot-reload-config"]);
+
+			expect(result.view).toEqual(base);
+			expect(result.renderProps).toEqual({});
+			expect(result.coverage).toEqual({
+				coverageAdd: 0,
+				coverageMult: 1,
+			});
+			expect(result.reductionCost).toBe(0);
+			expect(result.resetRebuild).toBe(true);
+			expect(result.protection.tryCatch).toBe(false);
+		});
+
+		it("applies regardless of poll category", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "git",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["hot-reload-config"]);
+
+			expect(result.resetRebuild).toBe(true);
+			expect(result.meta.notes).toEqual([
+				"Rebuilds will reset after every poll",
 			]);
 		});
 	});
@@ -1024,6 +1187,104 @@ describe("configs", () => {
 				"Random code coverage bonus for js polls",
 				"+2 amp for js polls",
 			]);
+		});
+
+		it("combines deflate and hot-reload effects", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "react",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, [
+				"deflate-config",
+				"hot-reload-config",
+			]);
+
+			expect(result.view).toEqual(base);
+			expect(result.reductionCost).toBe(0.1);
+			expect(result.resetRebuild).toBe(true);
+			expect(result.meta.notes).toEqual([
+				"Shop items cost 10% less!",
+				"Rebuilds will reset after every poll",
+			]);
+		});
+
+		it("combines deflate with streakAmp effects", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "ts",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, [
+				"deflate-config",
+				".ts-config",
+			]);
+
+			expect(result.view).toEqual(base);
+			expect(result.reductionCost).toBe(0.1);
+			expect(result.renderProps.coverageBonus).toBe(2);
+			expect(result.coverage.coverageAdd).toBe(2);
+			expect(result.meta.notes).toContain("Shop items cost 10% less!");
+			expect(result.meta.notes).toContain("+2 amp for ts polls");
+		});
+
+		it("combines hot-reload with disableWrongOptions", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun();
+			const options = [
+				createPollOption({
+					id: 1,
+					option: "Mumbo Jumbo",
+					correct: true,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 2,
+					option: "Gruntilda",
+					correct: false,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 3,
+					option: "Klungo",
+					correct: false,
+					pollId: 1,
+				}),
+			];
+			const base = {
+				poll: mockPoll,
+				options,
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, [
+				"hot-reload-config",
+				"eslint-config",
+			]);
+
+			expect(result.view).toEqual(base);
+			expect(result.resetRebuild).toBe(true);
+			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
+			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([2, 3]);
+			expect(result.meta.notes).toContain(
+				"Rebuilds will reset after every poll"
+			);
+			expect(result.meta.notes).toContain("Hid wrong options");
 		});
 	});
 

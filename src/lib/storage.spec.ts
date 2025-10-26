@@ -28,7 +28,7 @@ describe("Storage utilities", () => {
     });
 
     it("formats GB correctly", () => {
-      expect(formatStorage(STORAGE_UNITS.GB)).toBe("1.0 GB");
+      expect(formatStorage(STORAGE_UNITS.GB)).toBe("1 GB");
       expect(formatStorage(1.5 * STORAGE_UNITS.GB)).toBe("1.5 GB");
     });
   });

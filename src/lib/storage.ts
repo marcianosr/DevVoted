@@ -19,16 +19,17 @@ export function formatStorage(bytes: number): string {
 	if (bytes === 0) return "0 B";
 
 	if (bytes >= STORAGE_UNITS.GB) {
-		return `${Math.floor(bytes / STORAGE_UNITS.GB).toFixed(1)} GB`;
+		const gb = bytes / STORAGE_UNITS.GB;
+		return gb % 1 === 0 ? `${gb} GB` : `${gb.toFixed(1)} GB`;
 	}
 
 	if (bytes >= STORAGE_UNITS.MB) {
-		const mb = Math.floor(bytes / STORAGE_UNITS.MB);
+		const mb = bytes / STORAGE_UNITS.MB;
 		return mb % 1 === 0 ? `${mb} MB` : `${mb.toFixed(1)} MB`;
 	}
 
 	if (bytes >= STORAGE_UNITS.KB) {
-		const kb = Math.floor(bytes / STORAGE_UNITS.KB);
+		const kb = bytes / STORAGE_UNITS.KB;
 		return kb % 1 === 0 ? `${kb} KB` : `${kb.toFixed(1)} KB`;
 	}
 
