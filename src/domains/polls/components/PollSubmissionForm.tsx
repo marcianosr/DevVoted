@@ -1,4 +1,5 @@
 import { UseMutationResult } from "@tanstack/react-query";
+import { PrimaryButton } from "~/ui/PrimaryButton";
 
 type PollSubmissionFormProps = {
 	hasAnswered: boolean;
@@ -121,9 +122,8 @@ export const PollSubmissionForm = ({
 					</div>
 				)}
 
-				<button
+				<PrimaryButton
 					type="submit"
-					className="bg-blue-500 text-white px-4 py-2 hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
 					disabled={
 						hasAnswered || submitMutation.isPending || isSubmitting
 					}
@@ -133,7 +133,7 @@ export const PollSubmissionForm = ({
 						: submitMutation.isPending
 							? "Submitting..."
 							: "Submit Options"}
-				</button>
+				</PrimaryButton>
 			</div>
 		</form>
 	);

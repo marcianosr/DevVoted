@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { format } from "date-fns";
 import { getSupabaseServerClient } from "../../utils/supabase";
+import { PrimaryButton } from "../../ui/PrimaryButton";
 
 const ADMIN_EMAILS = [
 	"marciano@kabisa.nl",
@@ -462,13 +463,12 @@ function AdminPanel() {
 							>
 								Create New Season
 							</button>
-							<button
-								className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+							<PrimaryButton
 								onClick={handleStartSeason}
 								disabled={isLoading || !hasUpcomingSeason}
 							>
 								Start Season
-							</button>
+							</PrimaryButton>
 							<button
 								className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50"
 								onClick={handleFinishSeason}

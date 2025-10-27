@@ -26,7 +26,9 @@ export const PollOptions = ({
 }: PollOptionsProps) => {
 	return (
 		<div>
-			<h2 className="text-xl font-semibold mb-4">Options</h2>
+			<h2 className="text-xl font-semibold mb-4">
+				Select your answer(s)!
+			</h2>
 			<ul className="space-y-2">
 				{options.map((option) => (
 					<li key={option.id}>

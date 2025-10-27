@@ -1,6 +1,7 @@
 import { formatDistance } from "date-fns";
 import { RunEndStats } from "./RunEndStats";
 import { useLastRun } from "~/domains/runs/hooks/useLastRun";
+import { PrimaryButton } from "~/ui/PrimaryButton";
 
 interface StartRunScreenProps {
 	isStarting: boolean;
@@ -56,13 +57,13 @@ export const StartRunScreen: React.FC<StartRunScreenProps> = ({
 					Each run starts with 0 XP in all categories. Answer polls
 					correctly to earn XP and build your streak!
 				</p>
-				<button
+				<PrimaryButton
 					onClick={onStartRun}
 					disabled={isStarting}
-					className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					className="px-6 py-3"
 				>
 					{isStarting ? "Starting Run..." : "Start New Run"}
-				</button>
+				</PrimaryButton>
 			</div>
 		</div>
 	);

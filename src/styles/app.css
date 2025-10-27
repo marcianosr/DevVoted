@@ -115,6 +115,34 @@
 /* Specific color utilities - no longer needed with Tailwind 4's --color-* prefix */
 /* Tailwind 4 automatically generates text-vermillion, border-cerulean, bg-saffron, etc. */
 
+/* Color cycling animation for buttons */
+@keyframes color-cycle {
+	0% { --cycle-color: var(--color-vermillion); }
+	8.33% { --cycle-color: var(--color-cerulean); }
+	16.66% { --cycle-color: var(--color-saffron); }
+	25% { --cycle-color: var(--color-lavender); }
+	33.33% { --cycle-color: var(--color-celadon); }
+	41.66% { --cycle-color: var(--color-fuchsia); }
+	50% { --cycle-color: var(--color-pewter); }
+	58.33% { --cycle-color: var(--color-viridian); }
+	66.66% { --cycle-color: var(--color-indigo); }
+	75% { --cycle-color: var(--color-seafoam); }
+	83.33% { --cycle-color: var(--color-cinnabar); }
+	91.66% { --cycle-color: var(--color-pallet); }
+	100% { --cycle-color: var(--color-vermillion); }
+}
+
+.btn-color-cycle {
+	--cycle-color: var(--color-vermillion);
+	animation: color-cycle 60s ease-in-out infinite;
+	border-color: var(--cycle-color);
+	background-color: transparent;
+}
+
+.btn-color-cycle:hover {
+	background-color: oklch(from var(--cycle-color) l c h / 0.3);
+}
+
 /* Category-based theme utilities */
 /* HTML category */
 [data-category-theme="html"] {
