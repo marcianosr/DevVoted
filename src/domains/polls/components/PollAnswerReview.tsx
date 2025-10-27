@@ -61,57 +61,51 @@ export const PollAnswerReview = ({
 
 	return (
 		<div className="mb-6">
-			<div className="p-4 bg-black/50">
-				<h3 className="text-saffron font-bold mb-4 text-lg">
-					Answer Review
-				</h3>
+			<h3 className="text-theme font-bold mb-4 text-lg">Answer Review</h3>
 
-				<div className="space-y-2">
-					{options.map((option) => {
-						const style = getOptionStyle(option);
-						const isSelected = selectedOptionIds.includes(
-							option.id
-						);
+			<div className="space-y-2">
+				{options.map((option) => {
+					const style = getOptionStyle(option);
+					const isSelected = selectedOptionIds.includes(option.id);
 
-						return (
-							<div
-								key={option.id}
-								className={`p-3 border ${style.border} ${style.bg} flex items-start gap-3`}
-							>
-								<span className="text-xl flex-shrink-0">
-									{style.icon}
-								</span>
-								<div className="flex-1">
-									<p className={`${style.text} font-mono`}>
-										{option.option}
-										{isSelected && (
-											<span className="ml-2 text-xs text-blue-400 font-bold">
-												[YOUR ANSWER]
-											</span>
-										)}
-									</p>
-								</div>
+					return (
+						<div
+							key={option.id}
+							className={`p-3 border ${style.border} ${style.bg} flex items-start gap-3`}
+						>
+							<span className="text-xl flex-shrink-0">
+								{style.icon}
+							</span>
+							<div className="flex-1">
+								<p className={`${style.text}`}>
+									{option.option}
+									{isSelected && (
+										<span className="ml-2 text-xs text-blue-400 font-bold">
+											[YOUR ANSWER]
+										</span>
+									)}
+								</p>
 							</div>
-						);
-					})}
-				</div>
+						</div>
+					);
+				})}
+			</div>
 
-				<div className="mt-4 pt-4 border-t border-saffron/30">
-					{isCorrect ? (
-						<p className="text-green-400 font-bold">
-							✨ Correct! You got all answers right!
-						</p>
-					) : correctCount > 0 ? (
-						<p className="text-yellow-400 font-bold">
-							⚠️ Partially correct ({correctCount}/
-							{correctOptionIds.length})
-						</p>
-					) : (
-						<p className="text-red-400 font-bold">
-							❌ Incorrect answer
-						</p>
-					)}
-				</div>
+			<div className="mt-4 pt-4 border-t border-theme/30">
+				{isCorrect ? (
+					<p className="text-green-400 font-bold">
+						✨ Correct! You got all answers right!
+					</p>
+				) : correctCount > 0 ? (
+					<p className="text-yellow-400 font-bold">
+						⚠️ Partially correct ({correctCount}/
+						{correctOptionIds.length})
+					</p>
+				) : (
+					<p className="text-red-400 font-bold">
+						❌ Incorrect answer
+					</p>
+				)}
 			</div>
 		</div>
 	);

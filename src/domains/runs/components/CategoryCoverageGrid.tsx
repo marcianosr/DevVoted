@@ -21,7 +21,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 
 	return (
 		<div className="space-y-2">
-			<div className="grid grid-cols-[3fr_3fr_1fr_1fr] gap-2 text-sm border-b border-saffron pb-2">
+			<div className="grid grid-cols-[3fr_3fr_1fr_1fr] gap-2 text-sm border-b border-theme pb-2">
 				<span>Category</span>
 				<span>Coverage</span>
 				<span>Streak</span>
@@ -39,7 +39,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 							className={clsx(
 								"grid grid-cols-[3fr_3fr_1fr_1fr] gap-2 text-sm pl-2",
 								{
-									"bg-saffron/10 border-l-4 border-saffron -ml-2":
+									"bg-theme/10 border-l-4 border-theme -ml-2":
 										isCurrentCategory,
 									"hover:bg-gray-800/50": !isCurrentCategory,
 								}
@@ -50,7 +50,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 						>
 							<span
 								className={clsx("self-center", {
-									"text-saffron font-semibold":
+									"text-theme font-semibold":
 										isCurrentCategory,
 								})}
 							>
@@ -59,7 +59,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 							<div className="flex flex-col gap-0">
 								<span
 									className={clsx({
-										"text-saffron": isCurrentCategory,
+										"text-theme": isCurrentCategory,
 									})}
 								>
 									{coverage.currentCoverage.toFixed(1)}%
@@ -74,7 +74,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 							<div className="flex gap-2">
 								<span
 									className={clsx("self-center", {
-										"text-saffron": isCurrentCategory,
+										"text-theme": isCurrentCategory,
 									})}
 								>
 									{coverage.currentStreak}
@@ -83,7 +83,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 							<div className="flex gap-2">
 								<span
 									className={clsx("self-center", {
-										"text-saffron": isCurrentCategory,
+										"text-theme": isCurrentCategory,
 									})}
 								>
 									{coverage.bestStreak ===
@@ -97,7 +97,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 				})}
 			</div>
 
-			<div className="mt-4 pt-4 border-t border-saffron">
+			<div className="mt-4 pt-4 border-t border-theme">
 				Total: {totalCoverage.toFixed(1)}% coverage • {totalPollsAnswered} polls
 				answered
 			</div>

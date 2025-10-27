@@ -12,7 +12,7 @@ import { STORAGE_UNITS } from "~/lib/storage";
 
 describe("configStorage", () => {
 	describe("canAddConfigToRun", () => {
-		it("returns false when config is already found in storage deck", () => {
+		it("returns false when config is already found in config deck", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
@@ -25,7 +25,7 @@ describe("configStorage", () => {
 			expect(result).toBe(false);
 		});
 
-		it("returns true when config is not found in storage deck", () => {
+		it("returns true when config is not found in config deck", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
@@ -40,7 +40,7 @@ describe("configStorage", () => {
 	});
 
 	describe("addConfigsToRun", () => {
-		it("prevents adding the same config if already in storage deck", () => {
+		it("prevents adding the same config if already in config deck", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
@@ -69,7 +69,7 @@ describe("configStorage", () => {
 			]);
 		});
 
-		it("adds config to storage deck if not already present", () => {
+		it("adds config to config deck if not already present", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
@@ -173,7 +173,8 @@ describe("configStorage", () => {
 					image: "/configs/vanilla.png",
 					cost: STORAGE_UNITS.MB / 4, // 256KB
 					level: 0,
-					description: "Shows community correctness percentage after each answer",
+					description:
+						"Shows community correctness percentage after each answer",
 					effect: ["showCommunityPercentage"],
 					rarity: "common",
 				}),
@@ -195,10 +196,11 @@ describe("configStorage", () => {
 						image: "/configs/vanilla.png",
 						cost: STORAGE_UNITS.MB / 4, // 256KB
 						level: 0,
-						description: "Shows community correctness percentage after each answer",
+						description:
+							"Shows community correctness percentage after each answer",
 						effect: ["showCommunityPercentage"],
 						rarity: "common",
-					priority: 1,
+						priority: 1,
 					},
 				],
 				configsStorage: STORAGE_UNITS.MB / 4, // 256KB
@@ -258,7 +260,12 @@ describe("configStorage", () => {
 			];
 
 			// Run many iterations to verify distribution
-			const distribution = { common: 0, uncommon: 0, rare: 0, legendary: 0 };
+			const distribution = {
+				common: 0,
+				uncommon: 0,
+				rare: 0,
+				legendary: 0,
+			};
 			const iterations = 1000;
 
 			for (let i = 0; i < iterations; i++) {
@@ -295,8 +302,8 @@ describe("configStorage", () => {
 
 			expect(result).toHaveLength(2);
 			// Should still select from available configs even if no common ones exist
-			expect(result.map(c => c.id)).toContain("math-random-config");
-			expect(result.map(c => c.id)).toContain("try-catch-config");
+			expect(result.map((c) => c.id)).toContain("math-random-config");
+			expect(result.map((c) => c.id)).toContain("try-catch-config");
 		});
 
 		it("returns fewer configs than requested when pool is exhausted", () => {
@@ -329,7 +336,7 @@ describe("configStorage", () => {
 				count: 5,
 			});
 
-			const ids = result.map(c => c.id);
+			const ids = result.map((c) => c.id);
 			const uniqueIds = new Set(ids);
 			expect(uniqueIds.size).toBe(ids.length); // All IDs should be unique
 		});

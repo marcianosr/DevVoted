@@ -287,11 +287,11 @@ const PollContent: React.FC<PollContentProps> = ({
 			<div className="max-w-7xl mx-auto">
 				<section className="md:grid grid-cols-12 gap-4">
 					<div className="col-span-4 flex flex-col gap-8">
-						<div className="text-4xl text-saffron">
+						<div className="text-4xl text-theme">
 							{currentCategory?.name}
 						</div>
 
-						<div className="text-saffron flex flex-col">
+						<div className="text-theme flex flex-col">
 							<span className="font-bold text-xl">
 								Round {thresholdInfo?.currentRound}
 							</span>
@@ -308,11 +308,11 @@ const PollContent: React.FC<PollContentProps> = ({
 							<div className="mt-2">
 								{thresholdInfo && (
 									<>
-										<div className="border border-saffron p-2">
+										<div className="border border-theme p-2">
 											<p className="text-white underline underline-offset-4">
 												Win conditions:{" "}
 											</p>
-											<p className="text-saffron">
+											<p className="text-theme">
 												{formatGateRequirements(
 													thresholdInfo.gateDefinition
 												)}
@@ -415,7 +415,7 @@ const PollContent: React.FC<PollContentProps> = ({
 						<div className={`mb-4 p-4`}>
 							<div className="py-4">
 								{activeRun && (
-									<div className="text-saffron">
+									<div className="text-theme">
 										<StorageDeck run={activeRun} />
 									</div>
 								)}
@@ -637,7 +637,7 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	console.log("Effects result:", activeRun?.activeConfigIds);
 
 	return (
-		<div className="p-4">
+		<div className="p-4" data-category-theme={data.data.poll.categoryCode}>
 			<ShopProvider
 				onAddConfig={handleAddConfig}
 				onRemoveConfig={handleRemoveConfig}

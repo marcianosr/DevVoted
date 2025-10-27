@@ -21,14 +21,14 @@ export const Polldex: React.FC<PolldexProps> = ({ pollsWithStats }) => {
 	return (
 		<div className="max-w-7xl mx-auto p-4">
 			<div className="mb-8">
-				<h1 className="text-4xl font-bold text-saffron mb-4">POLLDEX</h1>
+				<h1 className="text-4xl font-bold text-theme mb-4">POLLDEX</h1>
 				<div className="text-white">
 					<div className="text-lg mb-2">
 						Discovered: {answeredPolls}/{totalPolls} polls
 					</div>
 					<div className="w-full bg-gray-800 rounded-full h-4">
 						<div
-							className="bg-saffron h-4 rounded-full transition-all duration-300"
+							className="bg-theme h-4 rounded-full transition-all duration-300"
 							style={{ width: `${completionPercentage}%` }}
 						/>
 					</div>
@@ -67,14 +67,14 @@ const PolldexItem: React.FC<PolldexItemProps> = ({
 		<div className={clsx(
 			"border-2 rounded-lg p-4 transition-all duration-200 hover:scale-105 cursor-pointer",
 			{
-				"border-saffron bg-gray-900 hover:bg-gray-800": hasAnswered,
+				"border-theme bg-gray-900 hover:bg-gray-800": hasAnswered,
 				"border-gray-600 bg-gray-950 opacity-40 hover:opacity-60": !hasAnswered,
 			}
 		)}>
 			<div className={clsx(
 				"text-lg font-bold mb-2",
 				{
-					"text-saffron": hasAnswered,
+					"text-theme": hasAnswered,
 					"text-gray-600": !hasAnswered,
 				}
 			)}>
@@ -92,7 +92,7 @@ const PolldexItem: React.FC<PolldexItemProps> = ({
 			</div>
 
 			{hasAnswered ? (
-				<div className="text-xs text-saffron font-semibold">
+				<div className="text-xs text-theme font-semibold">
 					Seen: {timesAnswered}
 				</div>
 			) : (

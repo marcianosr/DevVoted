@@ -19,7 +19,7 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 	return (
 		<div className="space-y-4">
 			<div>
-				<h3 className="text-lg font-semibold text-saffron mb-2">
+				<h3 className="text-lg font-semibold text-theme mb-2">
 					Run info
 				</h3>
 

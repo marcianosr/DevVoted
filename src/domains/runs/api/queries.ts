@@ -334,7 +334,7 @@ export const completeRunWithThresholdFailure = async (
 	});
 };
 
-// Add configs to a run's storage deck
+// Add configs to a run's config deck
 export const addConfigsToRun = async (runId: number, configIds: string[]) => {
 	const [runRecord] = await db
 		.select()

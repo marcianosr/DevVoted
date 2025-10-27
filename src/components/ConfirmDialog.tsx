@@ -44,7 +44,7 @@ export const ConfirmDialog = ({
 		<dialog
 			ref={dialogRef}
 			onClose={handleCancel}
-			className="backdrop:bg-black backdrop:opacity-50 rounded-lg p-0 max-w-md m-auto border-1 border-saffron"
+			className="backdrop:bg-black backdrop:opacity-50 rounded-lg p-0 max-w-md m-auto border-1 border-theme"
 		>
 			<div className="p-6">
 				<h2 className="text-xl font-bold mb-4">{title}</h2>

@@ -115,6 +115,112 @@
 /* Specific color utilities - no longer needed with Tailwind 4's --color-* prefix */
 /* Tailwind 4 automatically generates text-vermillion, border-cerulean, bg-saffron, etc. */
 
+/* Category-based theme utilities */
+/* HTML category */
+[data-category-theme="html"] {
+	.text-theme {
+		color: var(--color-vermillion);
+	}
+	.bg-theme {
+		background-color: var(--color-vermillion);
+	}
+	.border-theme {
+		border-color: var(--color-vermillion);
+	}
+	--meter-fill: var(--color-vermillion);
+	--meter-bg: oklch(from var(--color-vermillion) calc(l - 0.25) c h);
+}
+
+/* CSS category */
+[data-category-theme="css"] {
+	.text-theme {
+		color: var(--color-cerulean);
+	}
+	.bg-theme {
+		background-color: var(--color-cerulean);
+	}
+	.border-theme {
+		border-color: var(--color-cerulean);
+	}
+	--meter-fill: var(--color-cerulean);
+	--meter-bg: oklch(from var(--color-cerulean) calc(l - 0.25) c h);
+}
+
+/* JavaScript category */
+[data-category-theme="js"] {
+	.text-theme {
+		color: var(--color-saffron);
+	}
+	.bg-theme {
+		background-color: var(--color-saffron);
+	}
+	.border-theme {
+		border-color: var(--color-saffron);
+	}
+	--meter-fill: var(--color-saffron);
+	--meter-bg: oklch(from var(--color-saffron) calc(l - 0.25) c h);
+}
+
+/* TypeScript category */
+[data-category-theme="ts"] {
+	.text-theme {
+		color: var(--color-lavender);
+	}
+	.bg-theme {
+		background-color: var(--color-lavender);
+	}
+	.border-theme {
+		border-color: var(--color-lavender);
+	}
+	--meter-fill: var(--color-lavender);
+	--meter-bg: oklch(from var(--color-lavender) calc(l - 0.25) c h);
+}
+
+/* General Frontend category */
+[data-category-theme="general-frontend"] {
+	.text-theme {
+		color: var(--color-fuchsia);
+	}
+	.bg-theme {
+		background-color: var(--color-fuchsia);
+	}
+	.border-theme {
+		border-color: var(--color-fuchsia);
+	}
+	--meter-fill: var(--color-fuchsia);
+	--meter-bg: oklch(from var(--color-fuchsia) calc(l - 0.25) c h);
+}
+
+/* React category */
+[data-category-theme="react"] {
+	.text-theme {
+		color: var(--color-celadon);
+	}
+	.bg-theme {
+		background-color: var(--color-celadon);
+	}
+	.border-theme {
+		border-color: var(--color-celadon);
+	}
+	--meter-fill: var(--color-celadon);
+	--meter-bg: oklch(from var(--color-celadon) calc(l - 0.25) c h);
+}
+
+/* Git category */
+[data-category-theme="git"] {
+	.text-theme {
+		color: var(--color-pewter);
+	}
+	.bg-theme {
+		background-color: var(--color-pewter);
+	}
+	.border-theme {
+		border-color: var(--color-pewter);
+	}
+	--meter-fill: var(--color-pewter);
+	--meter-bg: oklch(from var(--color-pewter) calc(l - 0.25) c h);
+}
+
 @font-face {
 	font-family: "Pixter Display";
 	src: url("/fonts/PixterDisplayBold.ttf") format("truetype");
@@ -136,8 +242,6 @@ body {
 
 meter {
 	width: 100%;
-	--meter-fill: var(--color-saffron);
-	--meter-bg: oklch(from var(--color-saffron) calc(l - 0.25) c h);
 }
 
 meter::-moz-meter-bar {

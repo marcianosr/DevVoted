@@ -23,7 +23,7 @@ export const StorageDeck = ({ run }: StorageDeckProps) => {
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
-				<h3 className="text-lg font-semibold">Storage Deck</h3>
+				<h3 className="text-lg font-semibold">Config deck</h3>
 				<div className="text-sm text-gray-600">
 					{formatStorage(storageUsed)} / {formatStorage(storageLimit)}
 					{storageAvailable > 0 && (
@@ -42,7 +42,7 @@ export const StorageDeck = ({ run }: StorageDeckProps) => {
 				{activeConfigs.length === 0 ? (
 					<div className="text-center text-gray-500 py-8">
 						<p>No configs installed</p>
-						<p className="text-sm">Your storage deck is empty</p>
+						<p className="text-sm">Your config deck is empty</p>
 					</div>
 				) : (
 					activeConfigs.map((config) => {

@@ -18,14 +18,14 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 			"border p-4 rounded",
 			{
 				"border-red-500 bg-red-900/20": isWrongAnswer,
-				"border-saffron bg-gray-900/50": !isWrongAnswer,
+				"border-theme bg-gray-900/50": !isWrongAnswer,
 			}
 		)}>
 			<h3 className={clsx(
 				"text-lg font-semibold mb-3",
 				{
 					"text-red-400": isWrongAnswer,
-					"text-saffron": !isWrongAnswer,
+					"text-theme": !isWrongAnswer,
 				}
 			)}>
 				Score Breakdown
@@ -68,8 +68,8 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 						)}
 					</div>
 
-					<div className="border-t border-saffron/50 pt-2 mt-2">
-						<div className="text-lg font-bold text-saffron">
+					<div className="border-t border-theme/50 pt-2 mt-2">
+						<div className="text-lg font-bold text-theme">
 							Earned: +{earnedCoverage.toFixed(1)}% coverage
 						</div>
 					</div>

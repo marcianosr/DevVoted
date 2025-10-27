@@ -9,7 +9,7 @@ type PollQuestionDisplayProps = {
 export const PollQuestionDisplay = ({ poll }: PollQuestionDisplayProps) => {
 	return (
 		<div className="mb-6">
-			<div className="markdown mb-4 text-saffron text-4xl">
+			<div className="markdown mb-4 text-theme text-4xl">
 				<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
 					{poll.question}
 				</ReactMarkdown>

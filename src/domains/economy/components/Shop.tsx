@@ -61,8 +61,8 @@ export const Shop = ({
 						Config Shop
 					</h2>
 					<p className="text-gray-600">
-						Select up to storage limit configs to add to your
-						storage deck
+						Select up to storage limit configs to add to your config
+						deck
 					</p>
 				</div>
 				<button
