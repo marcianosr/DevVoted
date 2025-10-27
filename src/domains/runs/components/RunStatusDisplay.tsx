@@ -2,6 +2,8 @@ import type { Run } from "~/domains/runs/models/run";
 import type { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { CategoryCoverageGrid } from "./CategoryCoverageGrid";
 import { ScoreBreakdownSidebar } from "./ScoreBreakdownSidebar";
+import { useCurrentSeason } from "~/domains/seasons/hooks/useCurrentSeason";
+import { SeasonInfo } from "~/domains/seasons/components/SeasonInfo";
 
 interface RunStatusDisplayProps {
 	activeRun: Run | null;
@@ -14,11 +16,17 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 	currentCategoryCode,
 	lastScoreBreakdown,
 }) => {
+	const { data: seasonData } = useCurrentSeason();
+
 	if (!activeRun) return null;
 
 	return (
 		<div className="space-y-4">
-			<div>
+			{seasonData?.success && seasonData.data && (
+				<SeasonInfo season={seasonData.data} />
+			)}
+
+			<div className="border-t border-theme pt-4">
 				<h3 className="text-lg font-semibold text-theme mb-2">
 					Run info
 				</h3>
@@ -29,9 +37,7 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 			</div>
 
 			{lastScoreBreakdown && (
-				<ScoreBreakdownSidebar
-					breakdown={lastScoreBreakdown}
-				/>
+				<ScoreBreakdownSidebar breakdown={lastScoreBreakdown} />
 			)}
 
 			{activeRun.categoryCoverage && (

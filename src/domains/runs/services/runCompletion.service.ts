@@ -10,6 +10,7 @@ import {
 import {
 	calculateThresholdInfo,
 	type ThresholdInfo,
+	CI_GATES,
 } from "~/domains/runs/services/thresholdCalculator.service";
 
 // End run mid-game when coverage threshold is not met (preserves progress in final_* columns)
@@ -86,7 +87,6 @@ export const checkCoverageThreshold = async (
 // Victory occurs when current round exceeds the number of defined gates
 // Example: With 7 gates defined, round 8 means gate 7 was just passed
 export const checkForVictory = (currentRound: number): boolean => {
-	const { CI_GATES } = require("~/domains/runs/services/thresholdCalculator.service");
 	return currentRound > CI_GATES.length;
 };
 

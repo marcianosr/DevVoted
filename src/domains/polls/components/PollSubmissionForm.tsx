@@ -111,7 +111,7 @@ export const PollSubmissionForm = ({
 				{(submitMutation.isError ||
 					(submitMutation.isSuccess &&
 						!submitMutation.data?.success)) && (
-					<div className="p-3 bg-red-100 text-red-800 rounded">
+					<div className="p-3 bg-red-100 text-red-800">
 						Failed to submit your options. Please try again.
 						{submitMutation.data?.error && (
 							<div className="text-sm mt-1">
@@ -123,7 +123,7 @@ export const PollSubmissionForm = ({
 
 				<button
 					type="submit"
-					className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
+					className="bg-blue-500 text-white px-4 py-2 hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
 					disabled={
 						hasAnswered || submitMutation.isPending || isSubmitting
 					}
