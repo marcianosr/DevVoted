@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 import { Config } from "~/domains/configs/models/config";
 import { formatStorage } from "~/lib/storage";
+import { TextButton } from "~/ui/TextButton";
 
 type ConfigCardProps = {
 	config: Config;
@@ -45,40 +46,37 @@ export const ConfigCard = ({
 	const rarity = rarityStyles[config.rarity];
 	const selectedStyle = isSelected
 		? "ring-2 ring-blue-500 border-blue-500 bg-blue-50"
-		: `${rarity.border} bg-gray-50`;
+		: `${rarity.border} bg-black`;
 
 	const isDisabled = clsx(disabled && "opacity-50 cursor-not-allowed");
 
 	return (
 		<div
-			className={`${isDisabled} border-2 p-4 cursor-pointer transition-all ${selectedStyle} ${`hover:shadow-lg ${rarity.glow}`}`}
+			className={`${isDisabled} bg-gray-900 border-3 p-4 cursor-pointer ${selectedStyle} ${`hover:shadow-lg ${rarity.glow}`}`}
 			onClick={disabled ? undefined : onToggle}
 			data-testid={config.id}
 		>
 			<div className="space-y-3">
 				<div className="flex items-center gap-2">
-					{config.image && (
-						<img
-							src={config.image}
-							alt={config.name}
-							className="w-6 h-6 object-contain"
-						/>
-					)}
-					<h3 className="font-semibold text-gray-900">
-						{config.name}
-					</h3>
-					<span
-						className={`text-xs px-2 py-1 capitalize font-medium rounded-full ${rarity.badge}`}
-					>
-						{config.rarity}
-					</span>
+					<h3 className={`text-white text-3xl`}>{config.name}</h3>
 				</div>
+				<span
+					className={`text-sm px-2 py-1 capitalize ${rarity.badge}`}
+				>
+					{config.rarity}
+				</span>
 
-				<p className="text-sm text-gray-600 line-clamp-2">
-					{config.description}
-				</p>
+				{config.image && (
+					<img
+						src={config.image}
+						alt={config.name}
+						className="w-6 h-6 object-contain"
+					/>
+				)}
 
-				<div className="flex items-center justify-between text-xs text-gray-500">
+				<p className="text-sm text-white">{config.description}</p>
+
+				<div className="flex items-center justify-between text-xs text-gray-300">
 					<span>Cost: {formatStorage(config.cost)}</span>
 				</div>
 
@@ -89,34 +87,25 @@ export const ConfigCard = ({
 					</div>
 				)}
 				{onRemoveConfig && (
-					<button
+					<TextButton
 						onClick={onRemoveConfig}
-						className="ml-2 text-red-500 hover:text-red-700 text-sm"
+						className="ml-2"
+						variant="danger"
 						title="Remove config"
 					>
 						Remove from storage ✕
-					</button>
+					</TextButton>
 				)}
 				{onAddConfig && (
-					<>
-						{disabled ? (
-							<button
-								disabled
-								className="ml-2 text-gray-400 text-sm cursor-not-allowed"
-								title="Cannot add config"
-							>
-								Add to storage
-							</button>
-						) : (
-							<button
-								onClick={onAddConfig}
-								className="ml-2 text-green-500 hover:text-green-700 text-sm"
-								title="Add config"
-							>
-								Add to storage
-							</button>
-						)}
-					</>
+					<TextButton
+						onClick={onAddConfig}
+						disabled={disabled}
+						className="ml-2"
+						variant="success"
+						title={disabled ? "Cannot add config" : "Add config"}
+					>
+						Add to storage
+					</TextButton>
 				)}
 			</div>
 		</div>

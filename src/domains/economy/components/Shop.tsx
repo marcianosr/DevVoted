@@ -3,13 +3,11 @@ import { Run } from "~/domains/runs/models/run";
 import { Config } from "~/domains/configs/models/config";
 import { useConfigCardActions } from "../../configs/hooks/useConfigCardActions";
 import { calculateRerollCost } from "../services/reroll.service";
-import {
-	getShopCostReduction,
-	getStorageInfo,
-} from "../services/configManager.service";
+import { getStorageInfo } from "../services/configManager.service";
 import { formatStorage } from "~/lib/storage";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
+import { SecondaryButton } from "~/ui/SecondaryButton";
 
 type ShopProps = {
 	activeRun: Run;
@@ -65,17 +63,9 @@ export const Shop = ({
 						deck
 					</p>
 				</div>
-				<button
-					onClick={onReroll}
-					disabled={!canReroll}
-					className={`px-4 py-2 rounded-md font-medium transition-colors ${
-						canReroll
-							? "bg-blue-600 text-white hover:bg-blue-700"
-							: "bg-gray-300 text-gray-500 cursor-not-allowed"
-					}`}
-				>
+				<SecondaryButton onClick={onReroll} disabled={!canReroll}>
 					Rebuild ({formatStorage(rerollCost)})
-				</button>
+				</SecondaryButton>
 			</div>
 
 			<div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { SecondaryButton } from "~/ui/SecondaryButton";
 
 export type ConfirmDialogProps = {
 	isOpen: boolean;
@@ -50,18 +51,12 @@ export const ConfirmDialog = ({
 				<h2 className="text-xl font-bold mb-4">{title}</h2>
 				<p className="text-gray-400 mb-6">{message}</p>
 				<div className="flex gap-3 justify-end">
-					<button
-						onClick={handleCancel}
-						className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-					>
+					<SecondaryButton onClick={handleCancel}>
 						{cancelText}
-					</button>
-					<button
-						onClick={handleConfirm}
-						className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-					>
+					</SecondaryButton>
+					<SecondaryButton onClick={handleConfirm} variant="danger">
 						{confirmText}
-					</button>
+					</SecondaryButton>
 				</div>
 			</div>
 		</dialog>

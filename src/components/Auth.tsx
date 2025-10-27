@@ -1,3 +1,5 @@
+import { SecondaryButton } from "~/ui/SecondaryButton";
+
 export function Auth({
   actionText,
   onSubmit,
@@ -42,13 +44,13 @@ export function Auth({
               className="px-2 py-1 w-full rounded border border-gray-500/20 bg-white dark:bg-gray-800"
             />
           </div>
-          <button
+          <SecondaryButton
             type="submit"
-            className="w-full bg-cyan-600 text-white rounded py-2 font-black uppercase"
+            className="w-full bg-cyan-600 text-white font-black uppercase"
             disabled={status === 'pending'}
           >
             {status === 'pending' ? '...' : actionText}
-          </button>
+          </SecondaryButton>
           {afterSubmit ? afterSubmit : null}
         </form>
       </div>

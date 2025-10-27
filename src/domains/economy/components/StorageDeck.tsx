@@ -17,7 +17,6 @@ export const StorageDeck = ({ run }: StorageDeckProps) => {
 		storageUsed,
 		storageAvailable,
 		storageLimit,
-		usagePercentage,
 	} = getStorageInfo(run);
 
 	return (

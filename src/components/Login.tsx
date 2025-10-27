@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { loginFn } from "../routes/_authed";
 import { signupFn } from "../routes/signup";
 import { Auth } from "./Auth";
+import { SecondaryButton } from "~/ui/SecondaryButton";
 
 export function Login() {
 	const router = useRouter();
@@ -46,7 +47,7 @@ export function Login() {
 						loginMutation.data.message ===
 							"Invalid login credentials" ? (
 							<div>
-								<button
+								<SecondaryButton
 									className="text-blue-500"
 									onClick={(e) => {
 										const formData = new FormData(
@@ -69,7 +70,7 @@ export function Login() {
 									type="button"
 								>
 									Sign up instead?
-								</button>
+								</SecondaryButton>
 							</div>
 						) : null}
 					</>

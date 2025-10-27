@@ -26,7 +26,7 @@ import { ensureUserExists } from "../services/userSync.service";
 import { finishRunFn } from "../domains/runs/api/runs";
 import { useActiveRun } from "../domains/runs/hooks/useActiveRun";
 import { runQueryKeys } from "../domains/shared/queryKeys";
-import { PrimaryButton } from "../ui/PrimaryButton";
+import { SecondaryButton } from "~/ui/SecondaryButton";
 
 const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();
@@ -185,12 +185,12 @@ function Navigation() {
 				<div className="ml-auto flex gap-2 items-center">
 					{user ? (
 						<>
-							<PrimaryButton
+							<SecondaryButton
 								onClick={handleStartNewRunClick}
 								className="px-3 py-1 text-sm"
 							>
 								Start New Run
-							</PrimaryButton>
+							</SecondaryButton>
 							<Link
 								to="/profile/$userId"
 								params={{ userId: user.id }}
