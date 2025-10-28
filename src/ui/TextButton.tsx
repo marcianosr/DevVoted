@@ -15,9 +15,8 @@ export const TextButton = ({
 	...props
 }: TextButtonProps) => {
 	const variantStyles = {
-		success:
-			"text-green-500 hover:text-green-700 disabled:text-gray-400",
-		danger: "text-red-500 hover:text-red-700 disabled:text-gray-400",
+		success: "text-green-500 hover:underline disabled:text-gray-400",
+		danger: "text-red-500 hover:underline disabled:text-gray-400",
 	};
 
 	return (
@@ -31,7 +30,7 @@ export const TextButton = ({
 			)}
 			{...props}
 		>
-			{children}
+			[ {children} ]
 		</button>
 	);
 };

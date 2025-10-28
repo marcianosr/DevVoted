@@ -47,7 +47,13 @@ export const handleOptionsChange = ({
 	field.setValue(newValues);
 };
 
-const Option = ({ option, type, field, checked, disabled = false }: OptionProps) => {
+const Option = ({
+	option,
+	type,
+	field,
+	checked,
+	disabled = false,
+}: OptionProps) => {
 	const inputId = `option-${option.id}`;
 	const optionValue = option.id.toString();
 
@@ -56,7 +62,9 @@ const Option = ({ option, type, field, checked, disabled = false }: OptionProps)
 	};
 
 	return (
-		<div className={`flex items-start gap-2 ${disabled ? 'opacity-60' : ''}`}>
+		<div
+			className={`flex items-start gap-2 ${disabled ? "opacity-50" : ""}`}
+		>
 			<input
 				type={type}
 				name="selectedOptions"
@@ -65,11 +73,11 @@ const Option = ({ option, type, field, checked, disabled = false }: OptionProps)
 				checked={checked}
 				onChange={handleChange}
 				disabled={disabled}
-				className={`mt-1 ${disabled ? 'cursor-not-allowed' : ''}`}
+				className={`mt-1 w-5 h-5 bg-gray-900 border-2 border-theme accent-theme ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
 			/>
 			<label
 				htmlFor={inputId}
-				className={`markdown flex-1 ${disabled ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'}`}
+				className={`markdown flex-1 ${disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer"}`}
 			>
 				<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
 					{option.option}

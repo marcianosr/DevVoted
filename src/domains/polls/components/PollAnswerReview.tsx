@@ -80,8 +80,8 @@ export const PollAnswerReview = ({
 								<p className={`${style.text}`}>
 									{option.option}
 									{isSelected && (
-										<span className="ml-2 text-xs text-blue-400 font-bold">
-											[YOUR ANSWER]
+										<span className="ml-2 text-md text-white">
+											[ YOUR ANSWER ]
 										</span>
 									)}
 								</p>
@@ -91,7 +91,7 @@ export const PollAnswerReview = ({
 				})}
 			</div>
 
-			<div className="mt-4 pt-4 border-t border-theme/30">
+			{/* <div className="mt-4 pt-4 border-t border-theme/30">
 				{isCorrect ? (
 					<p className="text-green-400 font-bold">
 						✨ Correct! You got all answers right!
@@ -106,7 +106,7 @@ export const PollAnswerReview = ({
 						❌ Incorrect answer
 					</p>
 				)}
-			</div>
+			</div> */}
 		</div>
 	);
 };

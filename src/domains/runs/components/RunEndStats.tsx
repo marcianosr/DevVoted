@@ -1,4 +1,4 @@
-import { CategoryCode } from "~/domains/shared/categories";
+import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
 interface RunEndStatsProps {
 	totalCoverage: number;
@@ -14,6 +14,16 @@ interface RunEndStatsProps {
 	reason?: string;
 }
 
+const getReason = (reason?: string) =>
+	({
+		victory: {
+			text: "You mastered all CI gates in this run!",
+			emoji: "🎉",
+		},
+		threshold_not_met: { text: "CI gate failed!", emoji: "⚠️" },
+		manual_break_off: { text: "Manually broke off the run", emoji: "🛑" },
+	})[reason || "default"] || { text: "Game completed", emoji: "🏆" };
+
 export const RunEndStats = ({
 	totalCoverage,
 	totalPollsAnswered,
@@ -21,86 +31,40 @@ export const RunEndStats = ({
 	duration,
 	reason,
 }: RunEndStatsProps) => {
-	const getReasonText = (reason?: string) => {
-		switch (reason) {
-			case "victory":
-				return "Victory! All Categories Mastered!";
-			case "threshold_not_met":
-				return "Threshold not met";
-			case "wrong_answer":
-				return "Wrong answer";
-			default:
-				return "Game completed";
-		}
-	};
-
-	const getReasonEmoji = (reason?: string) => {
-		switch (reason) {
-			case "victory":
-				return "🎉";
-			case "threshold_not_met":
-				return "⚠️";
-			case "wrong_answer":
-				return "❌";
-			default:
-				return "🏆";
-		}
-	};
-
 	return (
 		<div className="space-y-6 max-w-2xl mx-auto">
 			<div className="text-center space-y-2">
-				<div className="text-6xl">{getReasonEmoji(reason)}</div>
-				<h2 className="text-2xl font-bold">{getReasonText(reason)}</h2>
-				<p className="text-gray-600">Duration: {duration}</p>
+				<div className="text-6xl">{getReason(reason).emoji}</div>
+				<h2 className="text-2xl font-bold">{getReason(reason).text}</h2>
+				<p className="text-gray-400">Duration: {duration}</p>
 			</div>
 
-			<div className="bg-gray-100 rounded-lg p-6">
-				<h3 className="text-lg font-semibold mb-4">Run Summary</h3>
-				<div className="grid grid-cols-2 gap-4">
-					<div className="text-center">
-						<div className="text-3xl font-bold text-blue-600">
-							{totalCoverage}%
-						</div>
-						<div className="text-sm text-gray-600">
-							Total Coverage Earned
-						</div>
-					</div>
-					<div className="text-center">
-						<div className="text-3xl font-bold text-green-600">
-							{totalPollsAnswered}
-						</div>
-						<div className="text-sm text-gray-600">
-							Questions Answered
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div className="bg-gray-100 rounded-lg p-6">
-				<h3 className="text-lg font-semibold mb-4">
-					Category Performance
-				</h3>
+			<div className="bg-gray-900 p-6">
+				<h3 className="text-lg mb-4">Category Performance</h3>
 				<div className="space-y-3">
 					{categoryCoverage.map((category) => (
 						<div
 							key={category.categoryCode}
-							className="flex items-center justify-between p-3 bg-white rounded border"
+							className={`flex items-center justify-between p-3 bg-gray-900 border-${category.categoryCode} border-2`}
 						>
 							<div>
-								<div className="font-medium capitalize">
-									{category.categoryCode}
+								<div className="capitalize">
+									{
+										getCategoryMetadata(
+											category.categoryCode
+										).name
+									}
 								</div>
-								<div className="text-sm text-gray-600">
+								<div className="text-sm">
 									{category.pollsAnswered} questions • Best
 									streak: {category.bestStreak}
 								</div>
 							</div>
 							<div className="text-right">
-								<div className="font-bold text-lg">
+								<div className="text-lg">
 									{category.currentCoverage}%
 								</div>
-								<div className="text-sm text-gray-600">
+								<div className="text-sm">
 									Streak: {category.currentStreak}
 								</div>
 							</div>

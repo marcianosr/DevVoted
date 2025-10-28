@@ -292,12 +292,17 @@ const PollContent: React.FC<PollContentProps> = ({
 						</div>
 
 						<div className="text-theme flex flex-col">
-							<span className="font-bold text-xl">
-								Round {thresholdInfo?.currentRound}
-							</span>
+							<div className="flex flex-col">
+								<span className="text-3xl">
+									Round {thresholdInfo?.currentRound}
+								</span>
+								<small className="text-gray-400 text-lg">
+									Poll {thresholdInfo?.pollInRound} of 5
+								</small>
+							</div>
 
 							<span className="text-xs text-gray-400">
-								Poll {thresholdInfo?.pollInRound} of 5
+								{/* TODO make more CI like github actions */}
 								{thresholdInfo?.isThresholdCheckPoll && (
 									<span className="ml-2 text-red-400">
 										CI ⚠️ Checking...
@@ -355,7 +360,14 @@ const PollContent: React.FC<PollContentProps> = ({
 
 					{/* Main content area - terminal style */}
 					<div className="col-span-8">
-						<div className=" p-4">
+						<div className="p-4 bg-gray-900">
+							{activeRun && (
+								<div className="text-theme">
+									<StorageDeck run={activeRun} />
+								</div>
+							)}
+						</div>
+						<div className="p-4">
 							{/* Question display with category color accent */}
 							<PollQuestionDisplay poll={poll} />
 							<PollStatus hasAnswered={hasAnswered} />
@@ -387,39 +399,39 @@ const PollContent: React.FC<PollContentProps> = ({
 								</PollSubmissionForm>
 							)}
 
-							{submitOptionsMutation.isSuccess && submissionResult && (
-								<>
-									<PollAnswerReview
-										poll={poll}
-										options={options}
-										selectedOptionIds={
-											submissionResult.selectedOptionIds
-										}
-										correctOptionIds={
-											submissionResult.correctOptionIds
-										}
-										isCorrect={submissionResult.isCorrect}
-									/>
-
-									{isShopOpen && activeRun && (
-										<Shop
-											activeRun={activeRun}
-											offeredConfigs={randomConfigs}
-											onReroll={handleReroll}
-											costReduction={costReduction}
+							{submitOptionsMutation.isSuccess &&
+								submissionResult && (
+									<>
+										<PollAnswerReview
+											poll={poll}
+											options={options}
+											selectedOptionIds={
+												submissionResult.selectedOptionIds
+											}
+											correctOptionIds={
+												submissionResult.correctOptionIds
+											}
+											isCorrect={
+												submissionResult.isCorrect
+											}
 										/>
-									)}
-								</>
-							)}
-						</div>
-						<div className={`mb-4 p-4`}>
-							<div className="py-4">
-								{activeRun && (
-									<div className="text-theme">
-										<StorageDeck run={activeRun} />
-									</div>
+
+										{isShopOpen && activeRun && (
+											<div className="mt-4">
+												<Shop
+													activeRun={activeRun}
+													offeredConfigs={
+														randomConfigs
+													}
+													onReroll={handleReroll}
+													costReduction={
+														costReduction
+													}
+												/>
+											</div>
+										)}
+									</>
 								)}
-							</div>
 						</div>
 					</div>
 				</section>

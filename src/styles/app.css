@@ -116,31 +116,84 @@
 /* Tailwind 4 automatically generates text-vermillion, border-cerulean, bg-saffron, etc. */
 
 /* Color cycling animation for buttons */
-@keyframes color-cycle {
-	0% { --cycle-color: var(--color-vermillion); }
-	8.33% { --cycle-color: var(--color-cerulean); }
-	16.66% { --cycle-color: var(--color-saffron); }
-	25% { --cycle-color: var(--color-lavender); }
-	33.33% { --cycle-color: var(--color-celadon); }
-	41.66% { --cycle-color: var(--color-fuchsia); }
-	50% { --cycle-color: var(--color-pewter); }
-	58.33% { --cycle-color: var(--color-viridian); }
-	66.66% { --cycle-color: var(--color-indigo); }
-	75% { --cycle-color: var(--color-seafoam); }
-	83.33% { --cycle-color: var(--color-cinnabar); }
-	91.66% { --cycle-color: var(--color-pallet); }
-	100% { --cycle-color: var(--color-vermillion); }
+@keyframes color-cycle-border {
+	0% { border-color: var(--color-vermillion); }
+	8.33% { border-color: var(--color-cerulean); }
+	16.66% { border-color: var(--color-saffron); }
+	25% { border-color: var(--color-lavender); }
+	33.33% { border-color: var(--color-celadon); }
+	41.66% { border-color: var(--color-fuchsia); }
+	50% { border-color: var(--color-pewter); }
+	58.33% { border-color: var(--color-viridian); }
+	66.66% { border-color: var(--color-indigo); }
+	75% { border-color: var(--color-seafoam); }
+	83.33% { border-color: var(--color-cinnabar); }
+	91.66% { border-color: var(--color-pallet); }
+	100% { border-color: var(--color-vermillion); }
+}
+
+@keyframes color-cycle-hover {
+	0% {
+		border-color: var(--color-vermillion);
+		background-color: oklch(from var(--color-vermillion) l c h / 0.3);
+	}
+	8.33% {
+		border-color: var(--color-cerulean);
+		background-color: oklch(from var(--color-cerulean) l c h / 0.3);
+	}
+	16.66% {
+		border-color: var(--color-saffron);
+		background-color: oklch(from var(--color-saffron) l c h / 0.3);
+	}
+	25% {
+		border-color: var(--color-lavender);
+		background-color: oklch(from var(--color-lavender) l c h / 0.3);
+	}
+	33.33% {
+		border-color: var(--color-celadon);
+		background-color: oklch(from var(--color-celadon) l c h / 0.3);
+	}
+	41.66% {
+		border-color: var(--color-fuchsia);
+		background-color: oklch(from var(--color-fuchsia) l c h / 0.3);
+	}
+	50% {
+		border-color: var(--color-pewter);
+		background-color: oklch(from var(--color-pewter) l c h / 0.3);
+	}
+	58.33% {
+		border-color: var(--color-viridian);
+		background-color: oklch(from var(--color-viridian) l c h / 0.3);
+	}
+	66.66% {
+		border-color: var(--color-indigo);
+		background-color: oklch(from var(--color-indigo) l c h / 0.3);
+	}
+	75% {
+		border-color: var(--color-seafoam);
+		background-color: oklch(from var(--color-seafoam) l c h / 0.3);
+	}
+	83.33% {
+		border-color: var(--color-cinnabar);
+		background-color: oklch(from var(--color-cinnabar) l c h / 0.3);
+	}
+	91.66% {
+		border-color: var(--color-pallet);
+		background-color: oklch(from var(--color-pallet) l c h / 0.3);
+	}
+	100% {
+		border-color: var(--color-vermillion);
+		background-color: oklch(from var(--color-vermillion) l c h / 0.3);
+	}
 }
 
 .btn-color-cycle {
-	--cycle-color: var(--color-vermillion);
-	animation: color-cycle 60s ease-in-out infinite;
-	border-color: var(--cycle-color);
+	animation: color-cycle-border 60s linear infinite;
 	background-color: transparent;
 }
 
 .btn-color-cycle:hover {
-	background-color: oklch(from var(--cycle-color) l c h / 0.3);
+	animation: color-cycle-hover 60s linear infinite;
 }
 
 /* Category-based theme utilities */
@@ -154,6 +207,9 @@
 	}
 	.border-theme {
 		border-color: var(--color-vermillion);
+	}
+	.accent-theme {
+		accent-color: var(--color-vermillion);
 	}
 	--meter-fill: var(--color-vermillion);
 	--meter-bg: oklch(from var(--color-vermillion) calc(l - 0.25) c h);
@@ -170,6 +226,9 @@
 	.border-theme {
 		border-color: var(--color-cerulean);
 	}
+	.accent-theme {
+		accent-color: var(--color-cerulean);
+	}
 	--meter-fill: var(--color-cerulean);
 	--meter-bg: oklch(from var(--color-cerulean) calc(l - 0.25) c h);
 }
@@ -184,6 +243,9 @@
 	}
 	.border-theme {
 		border-color: var(--color-saffron);
+	}
+	.accent-theme {
+		accent-color: var(--color-saffron);
 	}
 	--meter-fill: var(--color-saffron);
 	--meter-bg: oklch(from var(--color-saffron) calc(l - 0.25) c h);
@@ -200,6 +262,9 @@
 	.border-theme {
 		border-color: var(--color-lavender);
 	}
+	.accent-theme {
+		accent-color: var(--color-lavender);
+	}
 	--meter-fill: var(--color-lavender);
 	--meter-bg: oklch(from var(--color-lavender) calc(l - 0.25) c h);
 }
@@ -214,6 +279,9 @@
 	}
 	.border-theme {
 		border-color: var(--color-fuchsia);
+	}
+	.accent-theme {
+		accent-color: var(--color-fuchsia);
 	}
 	--meter-fill: var(--color-fuchsia);
 	--meter-bg: oklch(from var(--color-fuchsia) calc(l - 0.25) c h);
@@ -230,6 +298,9 @@
 	.border-theme {
 		border-color: var(--color-celadon);
 	}
+	.accent-theme {
+		accent-color: var(--color-celadon);
+	}
 	--meter-fill: var(--color-celadon);
 	--meter-bg: oklch(from var(--color-celadon) calc(l - 0.25) c h);
 }
@@ -244,6 +315,9 @@
 	}
 	.border-theme {
 		border-color: var(--color-pewter);
+	}
+	.accent-theme {
+		accent-color: var(--color-pewter);
 	}
 	--meter-fill: var(--color-pewter);
 	--meter-bg: oklch(from var(--color-pewter) calc(l - 0.25) c h);

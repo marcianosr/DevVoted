@@ -27,7 +27,7 @@ export const SecondaryButton = ({
 			disabled={disabled || isLoading}
 			className={clsx(
 				variantStyles.default,
-				"px-4 py-2 border transition-colors disabled:cursor-not-allowed cursor-pointer",
+				"px-4 py-2 border-2 transition-colors disabled:cursor-not-allowed cursor-pointer",
 				className
 			)}
 			{...props}

@@ -130,7 +130,7 @@ export const configs: Config[] = [
 		cost: STORAGE_UNITS.MB / 2,
 		description:
 			"Saves your run when you have at least 80% of the coverage threshold. When activated, this config is consumed.",
-		rarity: "common",
+		rarity: "rare",
 		effect: ["checkCoverageWithThreshold"],
 		priority: 100,
 	},

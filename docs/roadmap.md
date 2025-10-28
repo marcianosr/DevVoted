@@ -66,6 +66,8 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Start new run button in navigation
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [x] Show clear disable button in config when storage is full on "purchase"
+[] Make CI gates more like Github
+[] Style category tiers?
 [] Don't update round/threshold check right away after submission
 [] Show current season
 [] Coverage not below zero

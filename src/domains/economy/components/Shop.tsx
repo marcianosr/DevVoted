@@ -52,23 +52,18 @@ export const Shop = ({
 				}))
 			: offeredConfigs;
 	return (
-		<div>
-			<div className="mb-6 flex justify-between items-start">
+		<section>
+			<div className="space-y-8 flex justify-between items-start">
 				<div>
-					<h2 className="text-2xl font-bold text-gray-900 mb-2">
-						Config Shop
-					</h2>
-					<p className="text-gray-600">
-						Select up to storage limit configs to add to your config
-						deck
+					<h2 className="text-4xl text-theme mb-2">Config Shop</h2>
+					<p>
+						Improve your run by installing new configs to your
+						storage deck!
 					</p>
 				</div>
-				<SecondaryButton onClick={onReroll} disabled={!canReroll}>
-					Rebuild ({formatStorage(rerollCost)})
-				</SecondaryButton>
 			</div>
 
-			<div>
+			<div className="mb-4">
 				{costReduction > 0 && (
 					<p className="text-green-600 font-semibold mt-1">
 						{costReduction * 100}% discount active!
@@ -85,6 +80,11 @@ export const Shop = ({
 					/>
 				))}
 			</div>
-		</div>
+			<div className="flex justify-end">
+				<SecondaryButton onClick={onReroll} disabled={!canReroll}>
+					Rebuild ({formatStorage(rerollCost)})
+				</SecondaryButton>
+			</div>
+		</section>
 	);
 };

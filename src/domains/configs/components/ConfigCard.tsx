@@ -22,24 +22,24 @@ export const ConfigCard = ({
 }: ConfigCardProps) => {
 	const rarityStyles = {
 		common: {
-			badge: "bg-gray-500 text-white",
-			border: "border-gray-400",
+			badge: "bg-zinc-400/80 text-white",
+			border: "border-zinc-400/80",
 			glow: "",
 		},
 		uncommon: {
-			badge: "bg-green-500 text-white",
-			border: "border-green-400",
+			badge: "bg-emerald-500 text-white",
+			border: "border-emerald-500",
 			glow: "",
 		},
 		rare: {
 			badge: "bg-purple-500 text-white",
 			border: "border-purple-400",
-			glow: "shadow-purple-200",
+			glow: "shadow-purple-800",
 		},
 		legendary: {
-			badge: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
-			border: "border-orange-400",
-			glow: "shadow-orange-200",
+			badge: "bg-rose-500 text-white",
+			border: "border-rose-400",
+			glow: "shadow-rose-200",
 		},
 	};
 
@@ -52,32 +52,34 @@ export const ConfigCard = ({
 
 	return (
 		<div
-			className={`${isDisabled} bg-gray-900 border-3 p-4 cursor-pointer ${selectedStyle} ${`hover:shadow-lg ${rarity.glow}`}`}
+			className={`${isDisabled} bg-gray-900 border-3 p-4 ${selectedStyle} shadow-xl ${rarity.glow}`}
 			onClick={disabled ? undefined : onToggle}
 			data-testid={config.id}
 		>
-			<div className="space-y-3">
-				<div className="flex items-center gap-2">
-					<h3 className={`text-white text-3xl`}>{config.name}</h3>
-				</div>
-				<span
-					className={`text-sm px-2 py-1 capitalize ${rarity.badge}`}
+			<div className="space-y-2">
+				<div
+					className={`border-b-2 border-b-${rarity.badge} pb-4 flex justify-between`}
 				>
-					{config.rarity}
-				</span>
-
+					<h3 className={`text-white text-xl`}>{config.name}</h3>
+					<span
+						className={`text-sm px-2 py-1 capitalize self-start ${rarity.badge}`}
+					>
+						{config.rarity}
+					</span>
+				</div>
+				{/*
 				{config.image && (
 					<img
 						src={config.image}
 						alt={config.name}
 						className="w-6 h-6 object-contain"
 					/>
-				)}
+				)} */}
 
 				<p className="text-sm text-white">{config.description}</p>
 
 				<div className="flex items-center justify-between text-xs text-gray-300">
-					<span>Cost: {formatStorage(config.cost)}</span>
+					<span>💾 Cost: {formatStorage(config.cost)}</span>
 				</div>
 
 				{isSelected && (
@@ -89,22 +91,20 @@ export const ConfigCard = ({
 				{onRemoveConfig && (
 					<TextButton
 						onClick={onRemoveConfig}
-						className="ml-2"
 						variant="danger"
 						title="Remove config"
 					>
-						Remove from storage ✕
+						Uninstall ✕
 					</TextButton>
 				)}
 				{onAddConfig && (
 					<TextButton
 						onClick={onAddConfig}
 						disabled={disabled}
-						className="ml-2"
 						variant="success"
 						title={disabled ? "Cannot add config" : "Add config"}
 					>
-						Add to storage
+						Install ✓
 					</TextButton>
 				)}
 			</div>
