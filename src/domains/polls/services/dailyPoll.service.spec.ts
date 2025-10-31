@@ -8,6 +8,7 @@ import { getTodayDateString } from "~/lib/dateUtils";
 import * as seededRandom from "~/lib/seededRandom";
 import * as queries from "~/domains/polls/api/queries";
 import type { Poll } from "~/domains/polls/models/poll";
+import { createMockPoll } from "~/domains/polls/factories/poll";
 
 // Mock dependencies
 vi.mock("~/lib/dateUtils", () => ({
@@ -180,12 +181,10 @@ describe("dailyPoll.service", () => {
 
 			await selectDailyPoll("2025-05-13");
 
-			// Verify that selectAndOpenDailyPoll was called with a function
 			expect(queries.manageDailyPollTransition).toHaveBeenCalledWith(
 				expect.any(Function)
 			);
 
-			// Get the selection function and test it uses seeded random
 			const selectionFunction = vi.mocked(queries.manageDailyPollTransition)
 				.mock.calls[0][0];
 			const mockPolls = [expectedPoll];
@@ -200,6 +199,63 @@ describe("dailyPoll.service", () => {
 				"2025-05-13"
 			);
 			expect(result).toBe(expectedPoll);
+		});
+
+		it("selects different polls for different dates", async () => {
+			const christmasPoll = createMockPoll({
+				id: 25,
+				question: "Web vitals measure user experience with precision and care, which metric tracks visual stability everywhere?",
+				categoryCode: "general-frontend",
+			});
+
+			const birthdayPoll = createMockPoll({
+				id: 13,
+				question: "Union types in TypeScript let you combine with ease, what operator joins types if you please?",
+				categoryCode: "ts",
+			});
+
+			const newYearPoll = createMockPoll({
+				id: 1,
+				question: "useState and useReducer manage state with care, when does useReducer become the better pair?",
+				categoryCode: "react",
+			});
+
+			const mockPolls = [christmasPoll, birthdayPoll, newYearPoll];
+
+			vi.mocked(queries.manageDailyPollTransition).mockImplementation(
+				async (selectFn) => {
+					return selectFn(mockPolls);
+				}
+			);
+
+			vi.mocked(seededRandom.selectSeededRandom)
+				.mockReturnValueOnce(christmasPoll)
+				.mockReturnValueOnce(birthdayPoll)
+				.mockReturnValueOnce(newYearPoll);
+
+			const result1 = await selectDailyPoll("2024-12-25");
+			const result2 = await selectDailyPoll("2025-05-13");
+			const result3 = await selectDailyPoll("2025-01-01");
+
+			expect(result1?.id).toBe(25);
+			expect(result2?.id).toBe(13);
+			expect(result3?.id).toBe(1);
+
+			expect(seededRandom.selectSeededRandom).toHaveBeenNthCalledWith(
+				1,
+				mockPolls,
+				"2024-12-25"
+			);
+			expect(seededRandom.selectSeededRandom).toHaveBeenNthCalledWith(
+				2,
+				mockPolls,
+				"2025-05-13"
+			);
+			expect(seededRandom.selectSeededRandom).toHaveBeenNthCalledWith(
+				3,
+				mockPolls,
+				"2025-01-01"
+			);
 		});
 	});
 });

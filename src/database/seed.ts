@@ -177,30 +177,66 @@ async function seedDatabase() {
 		const existingRuns = await db.select().from(runsTable);
 
 		if (existingLeaderboard.length === 0 && existingRuns.length === 0) {
-			// Create 3 random users for leaderboard
-			const randomUsers = [
+			// Create 9 users for leaderboard
+			const leaderboardUsers = [
 				{
 					id: "11111111-1111-1111-1111-111111111111",
-					display_name: "matthijsgroen",
-					email: "matthijs@devvoted.nl",
+					display_name: "Sheldon Cooper",
+					email: "sheldon@caltech.edu",
 					role: "user" as const,
 				},
 				{
 					id: "22222222-2222-2222-2222-222222222222",
-					display_name: "sandervanmaurik",
-					email: "sander@devvoted.nl",
+					display_name: "Leonard Hofstadter",
+					email: "leonard@caltech.edu",
 					role: "user" as const,
 				},
 				{
 					id: "33333333-3333-3333-3333-333333333333",
-					display_name: "Nick van Eijk",
-					email: "nick@devvoted.nl",
+					display_name: "Howard Wolowitz",
+					email: "howard@caltech.edu",
+					role: "user" as const,
+				},
+				{
+					id: "44444444-4444-4444-4444-444444444444",
+					display_name: "Rajesh Koothrapalli",
+					email: "rajesh@caltech.edu",
+					role: "user" as const,
+				},
+				{
+					id: "55555555-5555-5555-5555-555555555555",
+					display_name: "Barry Kripke",
+					email: "barry@caltech.edu",
+					role: "user" as const,
+				},
+				{
+					id: "66666666-6666-6666-6666-666666666666",
+					display_name: "Matthijs Groen",
+					email: "matthijs@devvoted.nl",
+					role: "user" as const,
+				},
+				{
+					id: "77777777-7777-7777-7777-777777777777",
+					display_name: "Sander van Maurik",
+					email: "sander@devvoted.nl",
+					role: "user" as const,
+				},
+				{
+					id: "88888888-8888-8888-8888-888888888888",
+					display_name: "Piet de Vries",
+					email: "piet@devvoted.nl",
+					role: "user" as const,
+				},
+				{
+					id: "99999999-9999-9999-9999-999999999999",
+					display_name: "Tom Schoutens",
+					email: "tom@devvoted.nl",
 					role: "user" as const,
 				},
 			];
 
 			// Insert users
-			for (const user of randomUsers) {
+			for (const user of leaderboardUsers) {
 				const existingUser = await db
 					.select()
 					.from(usersTable)
@@ -215,131 +251,79 @@ async function seedDatabase() {
 			const currentSeason = await db.select().from(seasonsTable).limit(1);
 			const seasonId = currentSeason[0]?.id || null;
 
-			// Create completed runs and leaderboard entries
-			const globalLeaderboardData = [
-				{
-					userId: randomUsers[0].id,
-					totalCoverage: 90,
-					bestStreak: 12,
-					pollsAnswered: 45,
-				},
-				{
-					userId: randomUsers[1].id,
-					totalCoverage: 67,
-					bestStreak: 8,
-					pollsAnswered: 32,
-				},
-				{
-					userId: randomUsers[2].id,
-					totalCoverage: 35,
-					bestStreak: 6,
-					pollsAnswered: 28,
-				},
-			];
+			// Generate category-specific data for each user
+			// Each user gets different stats per category to create variety in the leaderboard
+			const generateCategoryData = (userIndex: number) => {
+				const baseValues = {
+					css: { coverage: 75 + userIndex * 2, streak: 8 - userIndex, polls: 20 + userIndex },
+					js: { coverage: 85 - userIndex * 3, streak: 12 - userIndex, polls: 25 + userIndex },
+					react: { coverage: 70 + userIndex * 2.5, streak: 10 - userIndex, polls: 22 + userIndex },
+					ts: { coverage: 80 - userIndex * 2, streak: 9 - userIndex, polls: 21 + userIndex },
+					html: { coverage: 65 + userIndex * 3, streak: 7 - userIndex, polls: 18 + userIndex },
+					git: { coverage: 55 + userIndex * 4, streak: 6 - userIndex, polls: 15 + userIndex },
+					"general-frontend": { coverage: 60 + userIndex * 2, streak: 5 - userIndex, polls: 16 + userIndex },
+				};
+				return baseValues;
+			};
 
-			const jsLeaderboardData = [
-				{
-					userId: randomUsers[0].id,
-					totalCoverage: 85,
-					bestStreak: 5,
-					pollsAnswered: 20,
-				},
-				{
-					userId: randomUsers[1].id,
-					totalCoverage: 84,
-					bestStreak: 4,
-					pollsAnswered: 15,
-				},
-				{
-					userId: randomUsers[2].id,
-					totalCoverage: 79,
-					bestStreak: 3,
-					pollsAnswered: 10,
-				},
-			];
+			// Create completed runs and leaderboard entries for each user
+			for (let i = 0; i < leaderboardUsers.length; i++) {
+				const user = leaderboardUsers[i];
+				const categoryData = generateCategoryData(i);
 
-			for (let i = 0; i < globalLeaderboardData.length; i++) {
-				const data = globalLeaderboardData[i];
-				const jsData = jsLeaderboardData[i];
+				// Calculate total coverage across all categories
+				const totalCoverage =
+					Object.values(categoryData).reduce((sum, cat) => sum + cat.coverage, 0) /
+					CATEGORY_CODES.length;
 
 				// Create a completed run
 				const [run] = await db
 					.insert(runsTable)
 					.values({
-						user_id: data.userId,
+						user_id: user.id,
 						season_id: seasonId,
 						status: "finished",
-						finished_at: new Date(Date.now() - (i + 1) * 86400000), // Finished 1-3 days ago
+						finished_at: new Date(Date.now() - (i + 1) * 86400000), // Finished 1-9 days ago
 					})
 					.returning();
 
-				// Create run category coverage data
+				// Create run category coverage and leaderboard entries for each category
 				for (const categoryCode of CATEGORY_CODES) {
-					const categoryCoverage =
-						Math.floor(data.totalCoverage / CATEGORY_CODES.length) +
-						Math.floor(Math.random() * 100);
-					const categoryStreak =
-						Math.floor(data.bestStreak * 0.6) +
-						Math.floor(Math.random() * 3);
-					const categoryPolls =
-						Math.floor(data.pollsAnswered / CATEGORY_CODES.length) +
-						Math.floor(Math.random() * 5);
+					const catData = categoryData[categoryCode as keyof typeof categoryData];
 
+					// Create run category coverage data
 					await db.insert(runCategoryCoverageTable).values({
 						run_id: run.id,
 						category_code: categoryCode,
-						current_coverage: categoryCoverage,
-						final_coverage: categoryCoverage,
-						current_streak: categoryStreak,
-						best_streak: categoryStreak,
-						final_streak: categoryStreak,
-						polls_answered: categoryPolls,
+						current_coverage: catData.coverage,
+						final_coverage: catData.coverage,
+						current_streak: catData.streak,
+						best_streak: catData.streak,
+						final_streak: catData.streak,
+						polls_answered: catData.polls,
 					});
-				}
 
-				// Create leaderboard entry for JS category with specific JS data
-				await db.insert(leaderboardTable).values({
-					user_id: jsData.userId,
-					run_id: run.id,
-					season_id: seasonId,
-					category_code: "js",
-					category_coverage: jsData.totalCoverage, // JS-specific XP
-					total_coverage: data.totalCoverage, // Overall run XP (for global leaderboards)
-					best_streak: jsData.bestStreak, // JS-specific streak
-					polls_answered: jsData.pollsAnswered, // JS-specific polls
-					completed_at: new Date(Date.now() - (i + 1) * 86400000),
-				});
-
-				// Create leaderboard entries for other categories with different data
-				const otherCategories = CATEGORY_CODES.filter(
-					(code) => code !== "js"
-				);
-				for (const categoryCode of otherCategories) {
-					const categoryCoverage =
-						Math.floor(Math.random() * 200) + 50; // Random XP for variety
-					const categoryStreak = Math.floor(Math.random() * 4) + 1;
-					const categoryPolls = Math.floor(Math.random() * 8) + 3;
-
+					// Create leaderboard entry for this category
 					await db.insert(leaderboardTable).values({
-						user_id: data.userId,
+						user_id: user.id,
 						run_id: run.id,
 						season_id: seasonId,
 						category_code: categoryCode,
-						category_coverage: categoryCoverage,
-						total_coverage: data.totalCoverage, // Same total XP for all categories from this run
-						best_streak: categoryStreak,
-						polls_answered: categoryPolls,
+						category_coverage: catData.coverage,
+						total_coverage: totalCoverage,
+						best_streak: catData.streak,
+						polls_answered: catData.polls,
 						completed_at: new Date(Date.now() - (i + 1) * 86400000),
 					});
 				}
 
 				console.log(
-					`✅ Created leaderboard entry for ${randomUsers[i].display_name}: ${data.totalCoverage}% coverage`
+					`✅ Created leaderboard entries for ${user.display_name}: ${Math.round(totalCoverage)}% avg coverage`
 				);
 			}
 
 			console.log(
-				`✅ Successfully seeded leaderboard with ${globalLeaderboardData.length} entries!`
+				`✅ Successfully seeded leaderboard with ${leaderboardUsers.length} users across all categories!`
 			);
 		} else {
 			console.log(

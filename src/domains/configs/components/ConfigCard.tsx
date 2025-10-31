@@ -58,9 +58,9 @@ export const ConfigCard = ({
 		>
 			<div className="space-y-2">
 				<div
-					className={`border-b-2 border-b-${rarity.badge} pb-4 flex justify-between`}
+					className={`py-2 border-b-2 ${rarity.border} flex justify-between`}
 				>
-					<h3 className={`text-white text-xl`}>{config.name}</h3>
+					<h3 className={`text-white text-xl py-2`}>{config.name}</h3>
 					<span
 						className={`text-sm px-2 py-1 capitalize self-start ${rarity.badge}`}
 					>
@@ -76,7 +76,7 @@ export const ConfigCard = ({
 					/>
 				)} */}
 
-				<p className="text-sm text-white">{config.description}</p>
+				<p className="text-sm text-white py-2">{config.description}</p>
 
 				<div className="flex items-center justify-between text-xs text-gray-300">
 					<span>💾 Cost: {formatStorage(config.cost)}</span>

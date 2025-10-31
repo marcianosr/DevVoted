@@ -240,7 +240,8 @@ export const manageDailyPollTransition = async (
 		const closedPollRecords = await tx
 			.select()
 			.from(pollsTable)
-			.where(eq(pollsTable.status, "closed"));
+			.where(eq(pollsTable.status, "closed"))
+			.orderBy(pollsTable.id);
 
 		if (closedPollRecords.length === 0) {
 			return null;

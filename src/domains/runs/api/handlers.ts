@@ -3,7 +3,6 @@ import {
 	createRunForUser,
 	getLastRunFromUser,
 	getLiveRunRankings,
-	finishRun,
 } from "./queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 import type { CategoryCode } from "~/domains/shared/categories";
@@ -44,7 +43,7 @@ export const getLastRunForUser = async (userId: string) => {
 	}, "Failed to get last run");
 };
 
-export const getActiveRunCategoryXpHandler = async (userId: string) => {
+export const getActiveRunCategoryCoverageHandler = async (userId: string) => {
 	return handleApiOperation(async () => {
 		const activeRun = await getActiveRunByUserId(userId);
 
@@ -52,14 +51,16 @@ export const getActiveRunCategoryXpHandler = async (userId: string) => {
 			throw new Error("No active run found");
 		}
 
-		const { totalCoverage } = aggregateRunCategoryCoverage(activeRun.categoryCoverage);
+		const { totalCoverage } = aggregateRunCategoryCoverage(
+			activeRun.categoryCoverage
+		);
 
 		return {
 			categoryCoverage: activeRun.categoryCoverage,
 			runId: activeRun.id,
 			totalCoverage,
 		};
-	}, "Failed to get active run category XP");
+	}, "Failed to get active run category coverage");
 };
 
 export const getLiveRunRankingsHandler = async (

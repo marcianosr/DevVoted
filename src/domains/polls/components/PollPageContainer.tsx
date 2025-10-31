@@ -4,7 +4,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
 import { PollQuestionDisplay } from "./PollQuestionDisplay";
-import { PollStatus } from "./PollStatus";
 import { PollOptions } from "./PollOptions";
 import { PollSubmissionForm } from "./PollSubmissionForm";
 import { useActiveRun } from "~/domains/runs/hooks";
@@ -280,162 +279,150 @@ const PollContent: React.FC<PollContentProps> = ({
 		)?.currentCoverage ?? 0;
 
 	return (
-		<section
-			data-category={poll.categoryCode}
-			className={`min-h-screen p-2`}
-		>
-			<div className="max-w-7xl mx-auto">
-				<section className="md:grid grid-cols-12 gap-4">
-					<div className="col-span-4 flex flex-col gap-8">
-						<div className="text-4xl text-theme">
-							{currentCategory?.name}
+		<section className={`p-2 max-w-7xl mx-auto`}>
+			<section className="md:grid grid-cols-12 gap-4">
+				<div className="col-span-4 flex flex-col gap-8">
+					<div className="text-4xl text-theme">
+						{currentCategory?.name}
+					</div>
+
+					<div className="text-theme flex flex-col">
+						<div className="flex flex-col">
+							<span className="text-3xl">
+								Round {thresholdInfo?.currentRound}
+							</span>
+							<small className="text-white text-lg">
+								Poll {thresholdInfo?.pollInRound} of 5
+							</small>
 						</div>
 
-						<div className="text-theme flex flex-col">
-							<div className="flex flex-col">
-								<span className="text-3xl">
-									Round {thresholdInfo?.currentRound}
+						<span className="text-xs text-gray-400">
+							{/* TODO make more CI like github actions */}
+							{thresholdInfo?.isThresholdCheckPoll && (
+								<span className="ml-2 text-red-400">
+									CI ⚠️ Checking...
 								</span>
-								<small className="text-gray-400 text-lg">
-									Poll {thresholdInfo?.pollInRound} of 5
-								</small>
-							</div>
+							)}
+						</span>
 
-							<span className="text-xs text-gray-400">
-								{/* TODO make more CI like github actions */}
-								{thresholdInfo?.isThresholdCheckPoll && (
-									<span className="ml-2 text-red-400">
-										CI ⚠️ Checking...
-									</span>
-								)}
-							</span>
-
-							<div className="mt-2">
-								{thresholdInfo && (
-									<>
-										<div className="border border-theme p-2">
-											<p className="text-white underline underline-offset-4">
-												Win conditions:{" "}
-											</p>
-											<p className="text-theme">
-												{formatGateRequirements(
-													thresholdInfo.gateDefinition
+						<div className="mt-2">
+							{thresholdInfo && (
+								<>
+									<div className="border border-theme p-2">
+										<p className="text-white underline underline-offset-4">
+											Win conditions:{" "}
+										</p>
+										<p className="text-theme">
+											{formatGateRequirements(
+												thresholdInfo.gateDefinition
+											)}
+										</p>
+										{thresholdInfo.qualifyingCategories
+											.length > 0 && (
+											<div className="mt-1 text-green-400">
+												CI: ✓ Passing:{" "}
+												{thresholdInfo.qualifyingCategories.join(
+													", "
 												)}
-											</p>
-											{thresholdInfo.qualifyingCategories
-												.length > 0 && (
-												<div className="mt-1 text-green-400">
-													CI: ✓ Passing:{" "}
-													{thresholdInfo.qualifyingCategories.join(
-														", "
-													)}
+											</div>
+										)}
+										{!thresholdInfo.meetsThreshold &&
+											thresholdInfo.isThresholdCheckPoll && (
+												<div className="mt-1 text-red-400">
+													⚠️ Not meeting gate
+													requirements
 												</div>
 											)}
-											{!thresholdInfo.meetsThreshold &&
-												thresholdInfo.isThresholdCheckPoll && (
-													<div className="mt-1 text-red-400">
-														⚠️ Not meeting gate
-														requirements
-													</div>
-												)}
-										</div>
-									</>
-								)}
-							</div>
+									</div>
+								</>
+							)}
 						</div>
-						{activeRun && (
-							<RunStatusDisplay
-								activeRun={activeRun}
-								currentCategoryCode={poll.categoryCode}
-								lastScoreBreakdown={lastScoreBreakdown}
-							/>
-						)}
+					</div>
+					{activeRun && (
+						<RunStatusDisplay
+							activeRun={activeRun}
+							currentCategoryCode={poll.categoryCode}
+							lastScoreBreakdown={lastScoreBreakdown}
+						/>
+					)}
 
-						{/* <ul className="text-gray-400 text-xs">
+					{/* <ul className="text-gray-400 text-xs">
 							<li>Poll #{poll.id}</li>
 							<li>Run #{activeRun?.id}</li>
 							<li>Amp x1.4</li>
 						</ul> */}
+				</div>
+
+				{/* Main content area - terminal style */}
+				<div className="col-span-8">
+					<div className="p-4 bg-gray-900">
+						{activeRun && (
+							<div className="text-theme">
+								<StorageDeck run={activeRun} />
+							</div>
+						)}
 					</div>
+					<div className="p-4 mt-8">
+						{/* Question display with category color accent */}
+						<PollQuestionDisplay poll={poll} />
 
-					{/* Main content area - terminal style */}
-					<div className="col-span-8">
-						<div className="p-4 bg-gray-900">
-							{activeRun && (
-								<div className="text-theme">
-									<StorageDeck run={activeRun} />
-								</div>
-							)}
-						</div>
-						<div className="p-4">
-							{/* Question display with category color accent */}
-							<PollQuestionDisplay poll={poll} />
-							<PollStatus hasAnswered={hasAnswered} />
-
-							{!submitOptionsMutation.isSuccess && (
-								<PollSubmissionForm
-									hasAnswered={hasAnswered}
-									submitMutation={submitOptionsMutation}
-									isSubmitting={form.state.isSubmitting}
-									onSubmit={(e) => {
-										e.preventDefault();
-										form.handleSubmit();
-									}}
-								>
-									<form.Field
-										name="selectedOptions"
-										children={(field) => (
-											<PollOptions
-												poll={poll}
-												options={options}
-												field={field}
-												disabled={hasAnswered}
-												disabledOptionIds={
-													effectProps?.disabledOptionIds
-												}
-											/>
-										)}
-									/>
-								</PollSubmissionForm>
-							)}
-
-							{submitOptionsMutation.isSuccess &&
-								submissionResult && (
-									<>
-										<PollAnswerReview
+						{!submitOptionsMutation.isSuccess && (
+							<PollSubmissionForm
+								hasAnswered={hasAnswered}
+								submitMutation={submitOptionsMutation}
+								isSubmitting={form.state.isSubmitting}
+								onSubmit={(e) => {
+									e.preventDefault();
+									form.handleSubmit();
+								}}
+							>
+								<form.Field
+									name="selectedOptions"
+									children={(field) => (
+										<PollOptions
 											poll={poll}
 											options={options}
-											selectedOptionIds={
-												submissionResult.selectedOptionIds
-											}
-											correctOptionIds={
-												submissionResult.correctOptionIds
-											}
-											isCorrect={
-												submissionResult.isCorrect
+											field={field}
+											disabled={hasAnswered}
+											disabledOptionIds={
+												effectProps?.disabledOptionIds
 											}
 										/>
+									)}
+								/>
+							</PollSubmissionForm>
+						)}
 
-										{isShopOpen && activeRun && (
-											<div className="mt-4">
-												<Shop
-													activeRun={activeRun}
-													offeredConfigs={
-														randomConfigs
-													}
-													onReroll={handleReroll}
-													costReduction={
-														costReduction
-													}
-												/>
-											</div>
-										)}
-									</>
-								)}
-						</div>
+						{submitOptionsMutation.isSuccess &&
+							submissionResult && (
+								<>
+									<PollAnswerReview
+										poll={poll}
+										options={options}
+										selectedOptionIds={
+											submissionResult.selectedOptionIds
+										}
+										correctOptionIds={
+											submissionResult.correctOptionIds
+										}
+										isCorrect={submissionResult.isCorrect}
+									/>
+
+									{isShopOpen && activeRun && (
+										<div className="mt-4">
+											<Shop
+												activeRun={activeRun}
+												offeredConfigs={randomConfigs}
+												onReroll={handleReroll}
+												costReduction={costReduction}
+											/>
+										</div>
+									)}
+								</>
+							)}
 					</div>
-				</section>
-			</div>
+				</div>
+			</section>
 		</section>
 	);
 };
@@ -649,7 +636,7 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	console.log("Effects result:", activeRun?.activeConfigIds);
 
 	return (
-		<div className="p-4" data-category-theme={data.data.poll.categoryCode}>
+		<div className="p-4">
 			<ShopProvider
 				onAddConfig={handleAddConfig}
 				onRemoveConfig={handleRemoveConfig}

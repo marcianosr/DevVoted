@@ -18,8 +18,8 @@ export const pollQueryKeys = {
 	detail: (pollId: number) => [...pollQueryKeys.all, pollId] as const,
 	withOptions: (pollId: number, userId: string | undefined) =>
 		[...pollQueryKeys.all, pollId, "options", userId] as const,
-	daily: (date: string, userId: string | undefined) =>
-		[...pollQueryKeys.all, "daily", date, userId] as const,
+	daily: (userId: string | undefined) =>
+		[...pollQueryKeys.all, "daily", userId] as const,
 };
 
 export const userQueryKeys = {

@@ -42,7 +42,6 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Remove amp cap
 [x] Support markdown in questions (e.g code examples or just code blocks)
 [x] show good / wrong answers after answering poll and your current choice
-[] Add icons (pixelated) for configs
 [] Balancing
 
     [] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;
@@ -55,28 +54,29 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Handle "0.5" effects stacking correctly
 [x] Handle Math,random config effect - also show total effect breakdown
 [x] Some UI polish so it isn't a mess
-[] Style options better
-[] Style buttons better
-[] Style configs better
+[x] Style options better
+[x] Style buttons better
+[x] Style configs better
 [x] Kanto colors
 [] Prematurely updating round/threshold when answering on and still in shop, causing confusion and premature perks (like rerolls) availability
 [x] Reset rerolls per gate instead of per poll
-[] Fix "require is not defined" bug before launch
+[x] Fix "require is not defined" bug before launch
 [x] When last win condition is met, show winning screen. Allow user to continue playing or start new run
 [x] Start new run button in navigation
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [x] Show clear disable button in config when storage is full on "purchase"
-[] Make CI gates more like Github
-[] Style category tiers?
+
 [] Don't update round/threshold check right away after submission
-[] Show current season
+[] Show current season - shows 29 days
+[] Shop disable config issue - when buying a config that fills storage, the other configs should be disabled immediately if they can't be bought anymore
+[] Show all time leaderboard
 [] Coverage not below zero
 [] Total coverage rounding problems
 [] Onboarding/help modal for first-time users [Critical]
 [x] Upgrade packages
 [] Authentication (GitHub/Google)
 [] CI/CD and Deployment
-[] Test daily poll cycle
+[o] Test daily poll cycle
 [] Fix refresh-to-reanswer bug [Critical]
 [] Reroll bug: when rerolling it walks behind
 [] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
@@ -86,6 +86,10 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Auth polls list? (in navi)
 
 Season 2: Early Meta Layer
+[] Add icons (pixelated) for configs
+[] Make CI gates more like Github
+[] Show checks passed
+[] Style category tiers? - red for dangerous low coverage - yellow for low coverage - orange for medium coverage - green for high coverage - gold for max coverage
 [] Events table - Traceability
 [] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)

@@ -4,41 +4,19 @@ import { useQuery } from "@tanstack/react-query";
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import { pollQueryKeys } from "~/domains/shared/queryKeys";
 import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
-import { GlobalLeaderboard } from "~/domains/leaderboards/components/GlobalLeaderboard";
-import { LiveLeaderboard } from "~/domains/leaderboards/components/LiveLeaderboard";
+import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
 import type { CategoryCode } from "~/domains/shared/categories";
-import { getTodayDateString } from "~/lib/dateUtils";
 
-const getGlobalLeaderboard = createServerFn({ method: "GET" }).handler(
-	async () => {
-		const { getGlobalLeaderboardHandler } = await import(
-			"~/domains/leaderboards/api/handlers"
-		);
-		return await getGlobalLeaderboardHandler();
-	}
-);
-
-const getCategoryLeaderboard = createServerFn({ method: "POST" })
-	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
-	.handler(async ({ data }) => {
-		const { getCategoryLeaderboardHandler } = await import(
-			"~/domains/leaderboards/api/handlers"
-		);
-		return await getCategoryLeaderboardHandler({
-			categoryCode: data.categoryCode,
-		});
-	});
-
-const getActiveRunCategoryXp = createServerFn({ method: "POST" })
+const getActiveRunCategoryCoverage = createServerFn({ method: "POST" })
 	.inputValidator((data: { userId: string }) => data)
 	.handler(async ({ data }) => {
-		const { getActiveRunCategoryXpHandler } = await import(
+		const { getActiveRunCategoryCoverageHandler } = await import(
 			"~/domains/runs/api/handlers"
 		);
-		return await getActiveRunCategoryXpHandler(data.userId);
+		return await getActiveRunCategoryCoverageHandler(data.userId);
 	});
 
-const getLiveLeaderboard = createServerFn({ method: "POST" })
+const getLeaderboard = createServerFn({ method: "POST" })
 	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
 	.handler(async ({ data }) => {
 		const { getLiveRunRankingsHandler } = await import(
@@ -49,115 +27,95 @@ const getLiveLeaderboard = createServerFn({ method: "POST" })
 
 const DailyPoll: React.FC = () => {
 	const { user } = Route.useRouteContext();
-	// const todayDateString = getTodayDateString();
-	const todayDateString = "2026-08-20";
-
-	// Fetch leaderboard data
-	const leaderboardQuery = useQuery({
-		queryKey: ["leaderboard", "global"],
-		queryFn: () => getGlobalLeaderboard(),
-		staleTime: 5 * 60 * 1000, // 5 minutes
-	});
 
 	// Fetch active run category XP for real-time progress
 	const categoryCoverageQuery = useQuery({
 		queryKey: ["run", "categoryCoverage", user?.id],
-		queryFn: () => getActiveRunCategoryXp({ data: { userId: user?.id! } }),
+		queryFn: () =>
+			getActiveRunCategoryCoverage({ data: { userId: user?.id! } }),
 		enabled: !!user?.id,
 		staleTime: 10 * 1000, // 10 seconds - more frequent updates for real-time feel
 		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
 	});
 
 	// Fetch live leaderboard for competitive ranking (total XP)
-	const liveLeaderboardQuery = useQuery({
+	const leaderboardQuery = useQuery({
 		queryKey: ["leaderboard", "live", "total"],
-		queryFn: () => getLiveLeaderboard({ data: {} }), // No categoryCode = total
+		queryFn: () => getLeaderboard({ data: {} }), // No categoryCode = total
 		staleTime: 15 * 1000, // 15 seconds
 		refetchInterval: 45 * 1000, // Auto-refresh every 45 seconds
 	});
 
+	const { data, isLoading, error } = useQuery({
+		queryKey: ["poll", "daily", user?.id],
+		queryFn: () =>
+			getDailyPoll({
+				data: { userId: user?.id },
+			}),
+		enabled: !!user?.id, // Only run when we have user ID
+	});
+
+	const pollData = data?.success ? data.data : null;
+
 	return (
-		<section>
+		<section data-category-theme={pollData?.poll.categoryCode}>
 			<PollPageContainer
 				user={user}
-				queryKey={pollQueryKeys.daily(todayDateString, user?.id)}
+				queryKey={pollQueryKeys.daily(user?.id)}
 				queryFn={() =>
 					getDailyPoll({
-						data: { userId: user?.id, date: todayDateString },
+						data: { userId: user?.id },
 					})
 				}
 				errorMessage="Error Loading Daily Poll"
 			/>
 
-			{/* Category Progress Section */}
-			<div className="w-full max-w-md mx-auto">
-				{categoryCoverageQuery.isLoading && (
-					<div className="bg-black border border-gray-600 rounded-lg p-4 font-mono text-sm">
-						<div className="text-gray-400">
-							Loading run progress...
+			{/* TODO: Refactor in own component */}
+			<section className="max-w-7xl mx-auto">
+				<div className="">
+					{categoryCoverageQuery.isLoading && (
+						<div className="bg-black border border-gray-600 p-4 text-sm">
+							<div className="text-gray-400">
+								Loading run progress...
+							</div>
 						</div>
-					</div>
-				)}
-				{categoryCoverageQuery.error && (
-					<div className="bg-black border border-gray-600 rounded-lg p-4 font-mono text-sm">
-						<div className="text-yellow-400">
-							No active run - start playing to see progress!
-						</div>
-					</div>
-				)}
-			</div>
-
-			{/* Live Rankings Section */}
-			<div className="w-full max-w-md mx-auto">
-				{liveLeaderboardQuery.isLoading && (
-					<div className="bg-black border border-gray-600 rounded-lg p-4 font-mono text-sm">
-						<div className="text-gray-400">
-							Loading live rankings...
-						</div>
-					</div>
-				)}
-				{liveLeaderboardQuery.error && (
-					<div className="bg-black border border-gray-600 rounded-lg p-4 font-mono text-sm">
-						<div className="text-red-400">
-							Failed to load live rankings
-						</div>
-					</div>
-				)}
-				{liveLeaderboardQuery.data?.success &&
-					liveLeaderboardQuery.data.data && (
-						<LiveLeaderboard
-							entries={liveLeaderboardQuery.data.data}
-							currentUserId={user?.id}
-							className="mb-4"
-							getLiveLeaderboard={getLiveLeaderboard}
-						/>
 					)}
-			</div>
+					{categoryCoverageQuery.error && (
+						<div className="bg-black border border-gray-600 p-4 text-sm">
+							<div className="text-yellow-400">
+								No active run - start playing to see progress!
+							</div>
+						</div>
+					)}
+				</div>
 
-			{/* Leaderboard Section */}
-			<div className="w-full max-w-md mx-auto">
-				{leaderboardQuery.isLoading && (
-					<div className="bg-black border border-gray-600 rounded-lg p-4 font-mono text-sm">
-						<div className="text-gray-400">
-							Loading leaderboard...
+				<>
+					{leaderboardQuery.isLoading && (
+						<div className="bg-black border border-gray-600 p-4 text-sm">
+							<div className="text-gray-400">
+								Loading rankings...
+							</div>
 						</div>
-					</div>
-				)}
-				{leaderboardQuery.error && (
-					<div className="bg-black border border-gray-600 rounded-lg p-4 font-mono text-sm">
-						<div className="text-red-400">
-							Failed to load leaderboard
+					)}
+					{leaderboardQuery.error && (
+						<div className="bg-black border border-gray-600 p-4 text-sm">
+							<div className="text-red-400">
+								Failed to load live rankings
+							</div>
 						</div>
-					</div>
-				)}
-				{leaderboardQuery.data && (
-					<GlobalLeaderboard
-						entries={leaderboardQuery.data}
-						title="Leaderboards — Global & Category"
-						getCategoryLeaderboard={getCategoryLeaderboard}
-					/>
-				)}
-			</div>
+					)}
+					{leaderboardQuery.data?.success &&
+						leaderboardQuery.data.data &&
+						pollData?.poll.categoryCode && (
+							<Leaderboard
+								entries={leaderboardQuery.data.data}
+								currentUserId={user?.id}
+								getLeaderboard={getLeaderboard}
+								currentCategoryCode={pollData.poll.categoryCode}
+							/>
+						)}
+				</>
+			</section>
 		</section>
 	);
 };
