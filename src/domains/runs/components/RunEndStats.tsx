@@ -39,13 +39,13 @@ export const RunEndStats = ({
 				<p className="text-gray-400">Duration: {duration}</p>
 			</div>
 
-			<div className="bg-gray-900 p-6">
+			<div className="bg-zinc-900 p-6">
 				<h3 className="text-lg mb-4">Category Performance</h3>
 				<div className="space-y-3">
 					{categoryCoverage.map((category) => (
 						<div
 							key={category.categoryCode}
-							className={`flex items-center justify-between p-3 bg-gray-900 border-${category.categoryCode} border-2`}
+							className={`flex items-center justify-between p-3 bg-zinc-900 border-${category.categoryCode} border-2`}
 						>
 							<div>
 								<div className="capitalize">

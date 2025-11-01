@@ -39,9 +39,9 @@ export const useConfigCardActions = ({
 	}
 
 	if (mode === "shop") {
-		// Shop: Allow buying configs when shop is open
+		// Shop: Allow buying configs when shop is open and storage is available
 		const onAddConfig =
-			isShopOpen && !configInRun
+			isShopOpen && !configInRun && canAdd
 				? () => addConfigToRun(config.id)
 				: undefined;
 

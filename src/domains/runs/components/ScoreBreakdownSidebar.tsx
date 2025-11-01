@@ -18,7 +18,7 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 		<div
 			className={clsx("border p-4", {
 				"border-red-500 bg-red-900/20": isWrongAnswer,
-				"border-theme bg-gray-900": !isWrongAnswer,
+				"border-theme bg-zinc-900": !isWrongAnswer,
 			})}
 		>
 			<h3

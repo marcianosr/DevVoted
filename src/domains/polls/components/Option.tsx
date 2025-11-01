@@ -73,7 +73,7 @@ const Option = ({
 				checked={checked}
 				onChange={handleChange}
 				disabled={disabled}
-				className={`mt-1 w-5 h-5 bg-gray-900 border-2 border-theme accent-theme ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+				className={`mt-1 w-5 h-5 bg-zinc-900 border-2 border-theme accent-theme ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
 			/>
 			<label
 				htmlFor={inputId}

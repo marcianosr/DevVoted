@@ -355,7 +355,7 @@ const PollContent: React.FC<PollContentProps> = ({
 
 				{/* Main content area - terminal style */}
 				<div className="col-span-8">
-					<div className="p-4 bg-gray-900">
+					<div className="p-4 bg-zinc-900">
 						{activeRun && (
 							<div className="text-theme">
 								<StorageDeck run={activeRun} />

@@ -52,9 +52,9 @@ export const PollAnswerReview = ({
 		}
 
 		return {
-			bg: "bg-gray-900/20",
-			border: "border-gray-700",
-			text: "text-gray-500",
+			bg: "bg-zinc-900/20",
+			border: "border-zinc-700",
+			text: "text-zinc-500",
 			icon: "❌",
 		};
 	};

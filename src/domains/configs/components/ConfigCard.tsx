@@ -52,7 +52,7 @@ export const ConfigCard = ({
 
 	return (
 		<div
-			className={`${isDisabled} bg-gray-900 border-3 p-4 ${selectedStyle} shadow-xl ${rarity.glow}`}
+			className={`${isDisabled} bg-zinc-900 border-3 p-4 ${selectedStyle} shadow-xl ${rarity.glow}`}
 			onClick={disabled ? undefined : onToggle}
 			data-testid={config.id}
 		>

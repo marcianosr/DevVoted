@@ -71,7 +71,7 @@ const DailyPoll: React.FC = () => {
 			/>
 
 			{/* TODO: Refactor in own component */}
-			<section className="max-w-7xl mx-auto">
+			<section className="max-w-5xl mx-auto">
 				<div className="">
 					{categoryCoverageQuery.isLoading && (
 						<div className="bg-black border border-gray-600 p-4 text-sm">
@@ -116,6 +116,10 @@ const DailyPoll: React.FC = () => {
 						)}
 				</>
 			</section>
+			<footer className="p-4 mt-8 bg-zinc-900 text-center">
+				A crazy roguelike obsession build with craftsmanship, passion,
+				❤️ & Tanstack Query by Marciano Schildmeijer | EST may 2022
+			</footer>
 		</section>
 	);
 };
