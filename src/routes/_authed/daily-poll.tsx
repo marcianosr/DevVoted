@@ -25,6 +25,15 @@ const getLeaderboard = createServerFn({ method: "POST" })
 		return await getLiveRunRankingsHandler(data.categoryCode);
 	});
 
+const getAllTimeLeaderboard = createServerFn({ method: "POST" })
+	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
+	.handler(async ({ data }) => {
+		const { getCategoryLeaderboardHandler } = await import(
+			"~/domains/leaderboards/api/handlers"
+		);
+		return await getCategoryLeaderboardHandler(data);
+	});
+
 const DailyPoll: React.FC = () => {
 	const { user } = Route.useRouteContext();
 
@@ -111,6 +120,7 @@ const DailyPoll: React.FC = () => {
 								entries={leaderboardQuery.data.data}
 								currentUserId={user?.id}
 								getLeaderboard={getLeaderboard}
+								getAllTimeLeaderboard={getAllTimeLeaderboard}
 								currentCategoryCode={pollData.poll.categoryCode}
 							/>
 						)}

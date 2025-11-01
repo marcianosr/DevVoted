@@ -3,27 +3,23 @@ import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { getCategories, type CategoryCode } from "~/domains/shared/categories";
 import type { ApiResponse } from "~/utils/errorHandling";
-
-type LeaderboardEntry = {
-	userId: string;
-	displayName: string;
-	runId: number;
-	totalCoverage: number;
-	totalPollsAnswered: number;
-	bestStreak: number;
-	categoryCode?: CategoryCode; // Present for category-specific rankings
-};
+import type { LeaderboardEntry } from "../models/leaderboard";
 
 type CategoryOption = {
 	code: CategoryCode;
 	name: string;
 };
 
+type LeaderboardMode = "live" | "all-time";
+
 type LeaderboardProps = {
 	entries: LeaderboardEntry[];
 	currentUserId?: string;
 	currentCategoryCode: CategoryCode;
 	getLeaderboard: (opts: {
+		data: { categoryCode?: CategoryCode };
+	}) => Promise<ApiResponse<LeaderboardEntry[]>>;
+	getAllTimeLeaderboard: (opts: {
 		data: { categoryCode?: CategoryCode };
 	}) => Promise<ApiResponse<LeaderboardEntry[]>>;
 };
@@ -34,22 +30,38 @@ export const Leaderboard = ({
 	entries: initialEntries,
 	currentUserId,
 	getLeaderboard,
+	getAllTimeLeaderboard,
 	currentCategoryCode,
 }: LeaderboardProps) => {
 	const [selectedCategory, setSelectedCategory] =
 		useState<CategoryCode>(currentCategoryCode);
+	const [mode, setMode] = useState<LeaderboardMode>("live");
 
 	// Query for category-specific live leaderboard
-	const categoryQuery = useQuery({
-		queryKey: ["Leaderboard", "category", selectedCategory],
+	const liveCategoryQuery = useQuery({
+		queryKey: ["Leaderboard", "live", "category", selectedCategory],
 		queryFn: () =>
 			getLeaderboard({
 				data: { categoryCode: selectedCategory },
 			}),
-		enabled: selectedCategory !== undefined,
+		enabled: selectedCategory !== undefined && mode === "live",
 		staleTime: 15 * 1000, // 15 seconds
 		refetchInterval: 45 * 1000, // Auto-refresh every 45 seconds
 	});
+
+	// Query for category-specific all-time leaderboard
+	const allTimeCategoryQuery = useQuery({
+		queryKey: ["Leaderboard", "all-time", "category", selectedCategory],
+		queryFn: () =>
+			getAllTimeLeaderboard({
+				data: { categoryCode: selectedCategory },
+			}),
+		enabled: selectedCategory !== undefined && mode === "all-time",
+		staleTime: 60 * 1000, // 60 seconds (all-time changes less frequently)
+	});
+
+	// Use the appropriate query based on mode
+	const categoryQuery = mode === "live" ? liveCategoryQuery : allTimeCategoryQuery;
 
 	// Use category-specific entries if available, otherwise use initial entries (total)
 	const entries =
@@ -81,7 +93,7 @@ export const Leaderboard = ({
 			<div className="border-b border-theme pb-2 mb-3">
 				<h3 className="text-theme text-4xl">Rankings</h3>
 				<div className="text-white-400 text-lg">
-					{entries.length} player(s) started this run
+					{entries.length} player(s) {mode === "live" ? "currently playing" : "on all-time leaderboard"}
 					{currentUserRank > 0 && (
 						<span className="text-theme ml-2">
 							• You're #{currentUserRank}
@@ -89,6 +101,33 @@ export const Leaderboard = ({
 					)}
 				</div>
 			</div>
+
+			{/* Mode Toggle */}
+			<div className="flex gap-2 mb-4">
+				<button
+					onClick={() => setMode("live")}
+					className={clsx(
+						"px-4 py-2 border transition-colors",
+						mode === "live"
+							? "bg-theme border-theme text-white"
+							: "bg-transparent border-gray-600 text-gray-400 hover:border-theme hover:text-white"
+					)}
+				>
+					🔴 Live Rankings
+				</button>
+				<button
+					onClick={() => setMode("all-time")}
+					className={clsx(
+						"px-4 py-2 border transition-colors",
+						mode === "all-time"
+							? "bg-theme border-theme text-white"
+							: "bg-transparent border-gray-600 text-gray-400 hover:border-theme hover:text-white"
+					)}
+				>
+					🏆 All-Time Best
+				</button>
+			</div>
+
 			<nav className="flex flex-wrap gap-1 mb-2">
 				{CATEGORIES.map((category) => {
 					const isSelected = selectedCategory === category.code;
@@ -133,7 +172,7 @@ export const Leaderboard = ({
 
 					return (
 						<div
-							key={`${entry.userId}-${entry.runId}`}
+							key={`${entry.userId}-${entry.runId ?? index}`}
 							className={clsx(
 								"grid grid-cols-[50px_3fr_1fr_1fr_1fr_1fr] gap-4",
 								isCurrentUser && "bg-gray-800 py-2"
@@ -166,9 +205,9 @@ export const Leaderboard = ({
 								🔥{entry.bestStreak}
 							</div>
 							<div className="text-white">
-								{entry.totalPollsAnswered}
+								{entry.pollsAnswered}
 							</div>
-							<div>{currentRun}</div>
+							<div>{currentRun ?? "-"}</div>
 						</div>
 					);
 				})}

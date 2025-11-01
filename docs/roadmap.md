@@ -86,6 +86,9 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Auth polls list? (in navi)
 
 Season 2: Early Meta Layer
+[] Colorize tiers coverage
+[] Expand configs
+[] Expand CI gate challenges
 [] Add icons (pixelated) for configs
 [] Make CI gates more like Github
 [] Show checks passed
@@ -94,9 +97,9 @@ Season 2: Early Meta Layer
 [] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
-[] Add 6-8 more configs with effects
 
 [] Expand traceability
+[] Store most and least popular configs
 [] Admin panel for polls
 [] Check system roles
 [] Event framework?

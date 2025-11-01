@@ -392,10 +392,10 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				userId: runsTable.user_id,
 				displayName: usersTable.display_name,
 				runId: runsTable.id,
+				seasonId: runsTable.season_id,
 				totalCoverage: runCategoryCoverageTable.current_coverage, // Category coverage only
-				totalPollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
+				pollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
 				bestStreak: runCategoryCoverageTable.best_streak, // Category streak only
-				categoryCode: runCategoryCoverageTable.category_code,
 			})
 			.from(runsTable)
 			.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
@@ -410,7 +410,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				)
 			)
 			.orderBy(desc(runCategoryCoverageTable.current_coverage))
-			.limit(10);
+			.limit(25); // Top 25 for category
 
 		return categoryRankings;
 	} else {
@@ -420,8 +420,9 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				userId: runsTable.user_id,
 				displayName: usersTable.display_name,
 				runId: runsTable.id,
+				seasonId: runsTable.season_id,
 				totalCoverage: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0)`,
-				totalPollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
+				pollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryCoverageTable.best_streak}), 0)`,
 			})
 			.from(runsTable)
@@ -431,11 +432,11 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				eq(runsTable.id, runCategoryCoverageTable.run_id)
 			)
 			.where(eq(runsTable.status, "active"))
-			.groupBy(runsTable.user_id, usersTable.display_name, runsTable.id)
+			.groupBy(runsTable.user_id, usersTable.display_name, runsTable.id, runsTable.season_id)
 			.orderBy(
 				sql`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0) DESC`
 			)
-			.limit(10);
+			.limit(25); // Top 25 overall
 
 		return activeRuns;
 	}
