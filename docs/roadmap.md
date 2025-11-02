@@ -97,6 +97,8 @@ Season 2: Early Meta Layer
 [] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
+[] Change domain name. Not happy with "tamnstack" in my project name
+[] Needs to be configured in Github aswell - https://github.com/settings/apps/devvoted
 
 [] Expand traceability
 [] Store most and least popular configs
