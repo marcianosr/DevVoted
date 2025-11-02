@@ -4,6 +4,7 @@ import tsConfigPaths from "vite-tsconfig-paths";
 import { resolve } from "path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { nitro } from "nitro/vite";
 
 export default defineConfig({
 	server: {
@@ -15,7 +16,7 @@ export default defineConfig({
 			{ find: "@/src", replacement: resolve(__dirname, "./src") },
 		],
 	},
-	plugins: [tsConfigPaths(), tanstackStart(), react(), tailwindcss()],
+	plugins: [tsConfigPaths(), tanstackStart(), nitro(), react(), tailwindcss()],
 	test: {
 		environment: "jsdom",
 		globals: true,
