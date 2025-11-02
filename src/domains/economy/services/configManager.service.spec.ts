@@ -172,7 +172,6 @@ describe("configStorage", () => {
 					name: "Vanilla Config",
 					image: "/configs/vanilla.png",
 					cost: STORAGE_UNITS.MB / 4, // 256KB
-					level: 0,
 					description:
 						"Shows community correctness percentage after each answer",
 					effect: ["showCommunityPercentage"],
@@ -195,7 +194,6 @@ describe("configStorage", () => {
 						name: "Vanilla Config",
 						image: "/configs/vanilla.png",
 						cost: STORAGE_UNITS.MB / 4, // 256KB
-						level: 0,
 						description:
 							"Shows community correctness percentage after each answer",
 						effect: ["showCommunityPercentage"],
