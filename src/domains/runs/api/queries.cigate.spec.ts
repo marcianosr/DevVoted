@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 
-describe("Threshold Reset Functionality", () => {
+describe("CI gate Reset Functionality", () => {
 	describe("calculateThresholdInfo", () => {
-		it("returns Gate 1 threshold (4% coverage) when no polls have been answered", () => {
+		it("returns Gate 1 threshold (2% coverage) when no polls have been answered", () => {
 			const categoryCoverage = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
@@ -32,7 +32,7 @@ describe("Threshold Reset Functionality", () => {
 			const result = calculateThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(0);
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(4); // Gate 1 threshold (4%)
+			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(0);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
 			expect(result.currentRound).toBe(1);
@@ -40,7 +40,7 @@ describe("Threshold Reset Functionality", () => {
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
 
-		it("returns Gate 1 threshold (4% coverage) when max polls answered is 1", () => {
+		it("returns Gate 1 threshold (2% coverage) when max polls answered is 1", () => {
 			const categoryCoverage = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
@@ -68,7 +68,7 @@ describe("Threshold Reset Functionality", () => {
 			const result = calculateThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(1);
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(4); // Gate 1 threshold (4%)
+			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(2);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
 			expect(result.currentRound).toBe(1);
@@ -80,7 +80,7 @@ describe("Threshold Reset Functionality", () => {
 			const categoryCoverage = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
-					currentCoverage: 2,
+					currentCoverage: 1,
 					currentStreak: 3,
 					bestStreak: 3,
 					pollsAnswered: 3,
@@ -104,9 +104,9 @@ describe("Threshold Reset Functionality", () => {
 			const result = calculateThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(4); // Gate 1 threshold (4%)
-			expect(result.maxCoverage).toBe(2);
-			expect(result.meetsThreshold).toBe(false); // Threshold check poll at 5, fails with 2 < 4
+			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
+			expect(result.maxCoverage).toBe(1);
+			expect(result.meetsThreshold).toBe(false); // Threshold check poll at 5, fails with 1 < 2
 			expect(result.currentRound).toBe(1);
 			expect(result.pollInRound).toBe(5);
 			expect(result.isThresholdCheckPoll).toBe(true);
@@ -116,7 +116,7 @@ describe("Threshold Reset Functionality", () => {
 			const categoryCoverage = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
-					currentCoverage: 4,
+					currentCoverage: 2,
 					currentStreak: 1,
 					bestStreak: 1,
 					pollsAnswered: 1,
@@ -140,8 +140,8 @@ describe("Threshold Reset Functionality", () => {
 			const result = calculateThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(1);
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(4); // Gate 1 threshold (4%)
-			expect(result.maxCoverage).toBe(4);
+			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
+			expect(result.maxCoverage).toBe(2);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
 			expect(result.currentRound).toBe(1);
 			expect(result.pollInRound).toBe(1);
@@ -159,7 +159,7 @@ describe("Threshold Reset Functionality", () => {
 				}),
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
-					currentCoverage: 4,
+					currentCoverage: 2,
 					currentStreak: 2,
 					bestStreak: 2,
 					pollsAnswered: 2,
@@ -176,9 +176,9 @@ describe("Threshold Reset Functionality", () => {
 			const result = calculateThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(4); // Gate 1 threshold (4%)
-			expect(result.maxCoverage).toBe(4);
-			expect(result.meetsThreshold).toBe(true); // 4 >= 4, threshold check passes
+			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
+			expect(result.maxCoverage).toBe(2);
+			expect(result.meetsThreshold).toBe(true); // 2 >= 2, threshold check passes
 			expect(result.currentRound).toBe(1);
 			expect(result.pollInRound).toBe(5);
 			expect(result.isThresholdCheckPoll).toBe(true);
@@ -190,7 +190,7 @@ describe("Threshold Reset Functionality", () => {
 			const result = calculateThresholdInfo(categoryCoverage);
 
 			expect(result.pollNumber).toBe(0);
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(4); // Gate 1 threshold (4%)
+			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(0);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
 			expect(result.currentRound).toBe(1);

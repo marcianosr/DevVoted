@@ -14,6 +14,7 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchAllPolls: vi.fn(),
 	fetchPollByIdWithOptions: vi.fn(),
 	hasUserAnsweredPoll: vi.fn(),
+	countUserPollAnswers: vi.fn(),
 }));
 
 vi.mock("~/domains/polls/services/processPollAnswer.service", () => ({
@@ -113,6 +114,7 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+		vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
 
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
@@ -146,6 +148,7 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(true);
+		vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
 
 			const result = await getPollByIdWithOptionsHandler({
 				data: {

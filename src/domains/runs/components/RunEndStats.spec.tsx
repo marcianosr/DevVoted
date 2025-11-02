@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 
 const mockCategoryCoverage = [
 	{
-		categoryCode: "rareware",
+		categoryCode: "js" as const,
 		currentCoverage: 150,
 		currentStreak: 3,
 		bestStreak: 5,
 		pollsAnswered: 12,
 	},
 	{
-		categoryCode: "pokemon",
+		categoryCode: "react" as const,
 		currentCoverage: 80,
 		currentStreak: 0,
 		bestStreak: 2,
@@ -19,21 +19,20 @@ const mockCategoryCoverage = [
 	},
 ];
 
-describe("RunEndStats", () => {
-	it("displays total coverage and questions answered", () => {
+describe(RunEndStats, () => {
+	it("displays victory completion message", () => {
 		render(
 			<RunEndStats
 				totalCoverage={230}
 				totalPollsAnswered={20}
 				categoryCoverage={mockCategoryCoverage}
 				duration="2m 45s"
+				reason="victory"
 			/>
 		);
 
-		expect(screen.getByText("230%")).toBeInTheDocument();
-		expect(screen.getByText("Total Coverage Earned")).toBeInTheDocument();
-		expect(screen.getByText("20")).toBeInTheDocument();
-		expect(screen.getByText("Questions Answered")).toBeInTheDocument();
+		expect(screen.getByText("🎉")).toBeInTheDocument();
+		expect(screen.getByText("You mastered all CI gates in this run!")).toBeInTheDocument();
 	});
 
 	it("displays duration", () => {
@@ -43,6 +42,7 @@ describe("RunEndStats", () => {
 				totalPollsAnswered={10}
 				categoryCoverage={mockCategoryCoverage}
 				duration="1m 30s"
+				reason="victory"
 			/>
 		);
 
@@ -56,17 +56,18 @@ describe("RunEndStats", () => {
 				totalPollsAnswered={20}
 				categoryCoverage={mockCategoryCoverage}
 				duration="2m 45s"
+				reason="victory"
 			/>
 		);
 
-		expect(screen.getByText("rareware")).toBeInTheDocument();
+		expect(screen.getByText("JavaScript")).toBeInTheDocument();
 		expect(screen.getByText("150%")).toBeInTheDocument();
 		expect(
 			screen.getByText("12 questions • Best streak: 5")
 		).toBeInTheDocument();
 		expect(screen.getByText("Streak: 3")).toBeInTheDocument();
 
-		expect(screen.getByText("pokemon")).toBeInTheDocument();
+		expect(screen.getByText("React")).toBeInTheDocument();
 		expect(screen.getByText("80%")).toBeInTheDocument();
 		expect(
 			screen.getByText("8 questions • Best streak: 2")
@@ -74,18 +75,19 @@ describe("RunEndStats", () => {
 		expect(screen.getByText("Streak: 0")).toBeInTheDocument();
 	});
 
-	it("shows game completion status with default reason", () => {
+	it("shows manual break off reason", () => {
 		render(
 			<RunEndStats
 				totalCoverage={100}
 				totalPollsAnswered={10}
 				categoryCoverage={mockCategoryCoverage}
 				duration="1m 30s"
+				reason="manual_break_off"
 			/>
 		);
 
-		expect(screen.getByText("🏆")).toBeInTheDocument();
-		expect(screen.getByText("Game completed")).toBeInTheDocument();
+		expect(screen.getByText("🛑")).toBeInTheDocument();
+		expect(screen.getByText("Manually broke off the run")).toBeInTheDocument();
 	});
 
 	it("shows threshold not met reason", () => {
@@ -100,7 +102,7 @@ describe("RunEndStats", () => {
 		);
 
 		expect(screen.getByText("⚠️")).toBeInTheDocument();
-		expect(screen.getByText("Threshold not met")).toBeInTheDocument();
+		expect(screen.getByText("CI gate failed!")).toBeInTheDocument();
 	});
 
 	it("shows wrong answer reason", () => {

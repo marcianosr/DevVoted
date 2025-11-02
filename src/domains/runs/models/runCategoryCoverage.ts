@@ -17,7 +17,9 @@ export type RunCategoryCoverage = {
 	updatedAt: Date | null;
 };
 
-export type RunCategoryCoverageRecord = InferSelectModel<typeof runCategoryCoverageTable>;
+export type RunCategoryCoverageRecord = InferSelectModel<
+	typeof runCategoryCoverageTable
+>;
 
 export const runCategoryCoverageToDTO = (
 	record: RunCategoryCoverageRecord
@@ -52,6 +54,7 @@ export const runCategoryCoverageFromDTO = (
 		final_streak: dto.finalStreak,
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
+		final_polls_answered: 0,
 	};
 };
 
@@ -123,6 +126,7 @@ export const createMockRunCategoryCoverageRecord = (
 		final_streak: null,
 		created_at: new Date("2024-01-01T00:00:00Z"),
 		updated_at: new Date("2024-01-01T00:00:00Z"),
+		final_polls_answered: 100,
 		...overrides,
 	};
 };

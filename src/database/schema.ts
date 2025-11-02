@@ -13,7 +13,6 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 import { STORAGE_UNITS } from "~/lib/storage";
-import type { CategoryCode } from "~/domains/shared/categories";
 
 /**
  * Database Schema for DevVoted Quiz Game

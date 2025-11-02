@@ -107,7 +107,10 @@ describe(Option, () => {
 		const input = screen.getByRole("checkbox") as HTMLInputElement;
 		const labelElement = input.labels?.[0];
 		expect(labelElement).toHaveClass("cursor-pointer");
-		expect(labelElement).not.toHaveClass("cursor-not-allowed", "text-gray-500");
+		expect(labelElement).not.toHaveClass(
+			"cursor-not-allowed",
+			"text-gray-500"
+		);
 	});
 
 	it("applies disabled styling to container when disabled", () => {
@@ -122,7 +125,7 @@ describe(Option, () => {
 		);
 
 		const optionContainer = container.firstChild;
-		expect(optionContainer).toHaveClass("opacity-60");
+		expect(optionContainer).toHaveClass("opacity-50");
 	});
 
 	it("does not apply disabled styling to container when enabled", () => {

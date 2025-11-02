@@ -14,6 +14,7 @@ export type Run = {
 	rerolls: number;
 	totalRerolls: number;
 	rerollStorageUsed: number;
+	completionReason: string | null;
 	startedAt: Date;
 	finishedAt: Date | null;
 	createdAt: Date;
@@ -42,6 +43,7 @@ export const runToDTO = (
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
 		categoryCoverage,
+		completionReason: record.completion_reason,
 	};
 };
 
@@ -60,6 +62,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		finished_at: dto.finishedAt,
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
+		completion_reason: dto.completionReason || null,
 	};
 };
 
@@ -84,6 +87,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		rerolls: 0,
 		totalRerolls: 0,
 		rerollStorageUsed: 0,
+		completionReason: null,
 		startedAt: now,
 		finishedAt: null,
 		createdAt: now,
@@ -105,6 +109,7 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		rerolls: 0,
 		totalRerolls: 0,
 		rerollStorageUsed: 0,
+		completionReason: null,
 		startedAt: new Date("2024-01-01T00:00:00Z"),
 		finishedAt: null,
 		createdAt: new Date("2024-01-01T00:00:00Z"),
@@ -118,6 +123,7 @@ export const createMockRunRecord = (
 	overrides: Partial<RunRecord> = {}
 ): RunRecord => {
 	return {
+		completion_reason: null,
 		id: 1,
 		user_id: "test-user-id",
 		season_id: 1,

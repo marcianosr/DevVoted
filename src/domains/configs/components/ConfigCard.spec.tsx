@@ -16,7 +16,8 @@ describe(ConfigCard, () => {
 		);
 
 		expect(screen.getByText(mockConfigCards.name)).toBeInTheDocument();
-		expect(screen.getByText("Cost: 100 KB")).toBeInTheDocument();
+		expect(screen.getByText(/Cost:/)).toBeInTheDocument();
+		expect(screen.getByText(/100 KB/)).toBeInTheDocument();
 		expect(screen.getByText(mockConfigCards.rarity)).toBeInTheDocument();
 		expect(
 			screen.getByText(mockConfigCards.description)

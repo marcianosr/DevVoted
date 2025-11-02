@@ -1,5 +1,5 @@
 import { formatDistance } from "date-fns";
-import { RunEndStats } from "./RunEndStats";
+import { RunEndStats, type Reason } from "./RunEndStats";
 import { useLastRun } from "~/domains/runs/hooks/useLastRun";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 
@@ -42,7 +42,7 @@ export const StartRunScreen: React.FC<StartRunScreenProps> = ({
 							lastRunData.run.started_at,
 							lastRunData.run.finished_at
 						)}
-						reason={lastRunData.run.completion_reason || undefined}
+						reason={lastRunData.run.completion_reason as Reason}
 					/>
 				</div>
 			)}

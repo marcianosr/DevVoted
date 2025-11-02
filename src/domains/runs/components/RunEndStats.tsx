@@ -1,6 +1,7 @@
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
-interface RunEndStatsProps {
+export type Reason = "victory" | "threshold_not_met" | "manual_break_off" | "wrong_answer";
+type RunEndStatsProps = {
 	totalCoverage: number;
 	totalPollsAnswered: number;
 	categoryCoverage: {
@@ -11,10 +12,10 @@ interface RunEndStatsProps {
 		pollsAnswered: number;
 	}[];
 	duration: string;
-	reason?: string;
-}
+	reason: Reason;
+};
 
-const getReason = (reason?: string) =>
+const getReason = (reason: Reason) =>
 	({
 		victory: {
 			text: "You mastered all CI gates in this run!",
@@ -22,7 +23,8 @@ const getReason = (reason?: string) =>
 		},
 		threshold_not_met: { text: "CI gate failed!", emoji: "⚠️" },
 		manual_break_off: { text: "Manually broke off the run", emoji: "🛑" },
-	})[reason || "default"] || { text: "Game completed", emoji: "🏆" };
+		wrong_answer: { text: "Wrong answer", emoji: "❌" },
+	})[reason];
 
 export const RunEndStats = ({
 	totalCoverage,
