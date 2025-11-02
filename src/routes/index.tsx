@@ -1,12 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
-export const Route = createFileRoute('/')({
-  component: Home,
-})
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-function Home() {
-  return (
-    <div className="p-2">
-      <h3>Welcome Home!!!</h3>
-    </div>
-  )
-}
+export const Route = createFileRoute("/")({
+	beforeLoad: ({ context }) => {
+		// Redirect authenticated users to daily poll
+		if (context.user) {
+			throw redirect({ to: "/daily-poll" });
+		}
+
+		// Redirect unauthenticated users to login
+		throw redirect({ to: "/login" });
+	},
+});

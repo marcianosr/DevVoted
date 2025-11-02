@@ -158,30 +158,14 @@ function Navigation() {
 		<>
 			<div className="p-2 flex gap-2 text-lg">
 				<Link
-					to="/"
+					to="/daily-poll"
 					activeProps={{
-						className: "font-bold",
+						className: "underline",
 					}}
 					activeOptions={{ exact: true }}
 				>
-					Home
-				</Link>{" "}
-				<Link
-					to="/polls"
-					activeProps={{
-						className: "font-bold",
-					}}
-				>
-					Polls
-				</Link>
-				<Link
-					to="/daily-poll"
-					activeProps={{
-						className: "font-bold",
-					}}
-				>
 					Daily Poll
-				</Link>
+				</Link>{" "}
 				<div className="ml-auto flex gap-2 items-center">
 					{user ? (
 						<>

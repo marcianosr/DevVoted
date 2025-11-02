@@ -4,11 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { getSupabaseServerClient } from "../../utils/supabase";
 import { PrimaryButton } from "../../ui/PrimaryButton";
-
-const ADMIN_EMAILS = [
-	"marciano@kabisa.nl",
-	"marciano_schildmeijer@live.nl",
-] as const;
+import { ADMIN_EMAILS } from "../../utils/adminAuth";
 
 const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();

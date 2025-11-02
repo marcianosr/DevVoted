@@ -65,24 +65,23 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Start new run button in navigation
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [x] Show clear disable button in config when storage is full on "purchase"
-
 [] Don't update round/threshold check right away after submission
 [] Show current season - shows 29 days
-[] Shop disable config issue - when buying a config that fills storage, the other configs should be disabled immediately if they can't be bought anymore
-[] Show all time leaderboard
+[x] Shop disable config issue - when buying a config that fills storage, the other configs should be disabled immediately if they can't be bought anymore
+[x] Show all time leaderboard
 [] Coverage not below zero
 [] Total coverage rounding problems
 [] Onboarding/help modal for first-time users [Critical]
 [x] Upgrade packages
 [] Authentication (GitHub/Google)
 [] CI/CD and Deployment
-[o] Test daily poll cycle
+[x] Test daily poll cycle
 [] Fix refresh-to-reanswer bug [Critical]
 [] Reroll bug: when rerolling it walks behind
 [] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
 [] Check RLS
-[] remove "correct/incorrect"
-[] remove "home" and also from navigation
+[x] remove "correct/incorrect"
+[x] remove "home" and also from navigation
 [] Auth polls list? (in navi)
 
 Season 2: Early Meta Layer
