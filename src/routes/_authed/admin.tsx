@@ -385,7 +385,7 @@ function AdminPanel() {
 
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				{/* Season Management */}
-				<div className="bg-white rounded-lg shadow-md p-6">
+				<div className=" rounded-lg shadow-md p-6">
 					<h2 className="text-xl font-semibold mb-4 text-gray-900">
 						Season Management
 					</h2>
@@ -566,7 +566,7 @@ function AdminPanel() {
 				</div>
 
 				{/* System Status */}
-				<div className="bg-white rounded-lg shadow-md p-6">
+				<div className=" rounded-lg shadow-md p-6">
 					<h2 className="text-xl font-semibold mb-4 text-gray-900">
 						System Status
 					</h2>
@@ -593,7 +593,7 @@ function AdminPanel() {
 				</div>
 
 				{/* Active Polls */}
-				<div className="bg-white rounded-lg shadow-md p-6">
+				<div className=" rounded-lg shadow-md p-6">
 					<h2 className="text-xl font-semibold mb-4 text-gray-900">
 						Active Polls
 					</h2>
@@ -636,7 +636,7 @@ function AdminPanel() {
 				</div>
 
 				{/* Recent Responses */}
-				<div className="bg-white rounded-lg shadow-md p-6">
+				<div className=" rounded-lg shadow-md p-6">
 					<h2 className="text-xl font-semibold mb-4 text-gray-900">
 						Recent Responses
 					</h2>

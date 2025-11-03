@@ -12,8 +12,8 @@ export function Auth({
 	afterSubmit?: React.ReactNode;
 }) {
 	return (
-		<div className="fixed inset-0 bg-white dark:bg-black flex items-start justify-center p-8">
-			<div className="bg-white dark:bg-zinc-900 p-8 rounded-lg shadow-lg">
+		<div className="text-white fixed inset-0  dark:bg-black flex items-start justify-center p-8">
+			<div className="dark:bg-zinc-900 p-8 rounded-lg shadow-lg">
 				<h1 className="text-2xl mb-4">{actionText}</h1>
 				<form
 					onSubmit={(e) => {
@@ -30,7 +30,7 @@ export function Auth({
 							type="email"
 							name="email"
 							id="email"
-							className="px-2 py-1 w-full rounded border border-gray-500/20 bg-white dark:bg-gray-800"
+							className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
 						/>
 					</div>
 					<div>
@@ -41,7 +41,7 @@ export function Auth({
 							type="password"
 							name="password"
 							id="password"
-							className="px-2 py-1 w-full rounded border border-gray-500/20 bg-white dark:bg-gray-800"
+							className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
 						/>
 					</div>
 					<SecondaryButton
