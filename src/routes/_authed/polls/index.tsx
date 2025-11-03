@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authed/polls/")({
 			return (
 				<div className="flex items-center justify-center min-h-screen">
 					<div className="text-center">
-						<h1 className="text-2xl font-bold text-red-600 mb-4">
+						<h1 className="text-2xl text-red-600 mb-4">
 							Access Denied
 						</h1>
 						<p>This area is restricted to administrators only.</p>
@@ -59,7 +59,7 @@ function PollsList() {
 	if (isLoading) {
 		return (
 			<div className="p-4">
-				<h1 className="text-2xl font-bold mb-4">Available Polls</h1>
+				<h1 className="text-2xl mb-4">Available Polls</h1>
 				<p>Loading polls...</p>
 			</div>
 		);
@@ -77,7 +77,7 @@ function PollsList() {
 
 	return (
 		<div className="p-4">
-			<h1 className="text-2xl font-bold mb-4">Available Polls</h1>
+			<h1 className="text-2xl mb-4">Available Polls</h1>
 			{polls?.length === 0 ? (
 				<p>No polls available.</p>
 			) : (
@@ -92,9 +92,7 @@ function PollsList() {
 								params={{ pollId: String(poll.id) }}
 								className="text-blue-600 hover:text-blue-800 hover:underline"
 							>
-								<div className="font-medium">
-									{poll.question}
-								</div>
+								<div>{poll.question}</div>
 								<div className="text-sm text-gray-500 mt-1 flex justify-between">
 									<span>Category: {poll.categoryCode}</span>
 									<span className="capitalize">

@@ -221,7 +221,7 @@ export const Route = createFileRoute("/_authed/admin")({
 			return (
 				<div className="flex items-center justify-center min-h-screen">
 					<div className="text-center">
-						<h1 className="text-2xl font-bold text-red-600 mb-4">
+						<h1 className="text-2xl text-red-600 mb-4">
 							Authentication Required
 						</h1>
 						<p>Please log in to access the admin panel.</p>
@@ -234,7 +234,7 @@ export const Route = createFileRoute("/_authed/admin")({
 			return (
 				<div className="flex items-center justify-center min-h-screen">
 					<div className="text-center">
-						<h1 className="text-2xl font-bold text-red-600 mb-4">
+						<h1 className="text-2xl text-red-600 mb-4">
 							Access Denied
 						</h1>
 						<p>This area is restricted to administrators only.</p>
@@ -356,7 +356,7 @@ function AdminPanel() {
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-8">
-				<h1 className="text-3xl font-bold text-gray-900 mb-2">
+				<h1 className="text-3xl text-gray-900 mb-2">
 					DevVoted Admin Panel
 				</h1>
 				<p className="text-gray-600">

@@ -1,6 +1,10 @@
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
-export type Reason = "victory" | "threshold_not_met" | "manual_break_off" | "wrong_answer";
+export type Reason =
+	| "victory"
+	| "threshold_not_met"
+	| "manual_break_off"
+	| "wrong_answer";
 type RunEndStatsProps = {
 	totalCoverage: number;
 	totalPollsAnswered: number;
@@ -37,7 +41,7 @@ export const RunEndStats = ({
 		<div className="space-y-6 max-w-2xl mx-auto">
 			<div className="text-center space-y-2">
 				<div className="text-6xl">{getReason(reason).emoji}</div>
-				<h2 className="text-2xl font-bold">{getReason(reason).text}</h2>
+				<h2 className="text-2xl">{getReason(reason).text}</h2>
 				<p className="text-gray-400">Duration: {duration}</p>
 			</div>
 

@@ -186,7 +186,7 @@ function Navigation() {
 								to="/profile/$userId"
 								params={{ userId: user.id }}
 								activeProps={{
-									className: "font-bold",
+									className: "underline",
 								}}
 							>
 								{user.displayName || user.email}
@@ -216,7 +216,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<head>
 				<HeadContent />
 			</head>
-			<body>
+			<body className="bg-black text-white min-h-dvh">
 				{children}
 				<TanStackRouterDevtools position="bottom-right" />
 				<Scripts />

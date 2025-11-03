@@ -81,7 +81,7 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 					</div>
 
 					<div className="border-t border-theme/50 pt-2 mt-2">
-						<div className="text-lg font-bold text-theme">
+						<div className="text-lg text-theme">
 							Earned: +{earnedCoverage.toFixed(1)}% coverage
 						</div>
 					</div>

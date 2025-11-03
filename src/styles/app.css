@@ -32,11 +32,11 @@
 	}
 
 	.markdown h1 {
-		@apply text-2xl font-bold mb-4 mt-6;
+		@apply text-2xl mb-4 mt-6;
 	}
 
 	.markdown h2 {
-		@apply text-xl font-bold mb-3 mt-5;
+		@apply text-xl mb-3 mt-5;
 	}
 
 	.markdown h3 {
@@ -68,7 +68,7 @@
 	}
 
 	.markdown strong {
-		@apply font-bold;
+		@apply;
 	}
 
 	.markdown em {
@@ -117,19 +117,45 @@
 
 /* Color cycling animation for buttons */
 @keyframes color-cycle-border {
-	0% { border-color: var(--color-vermillion); }
-	8.33% { border-color: var(--color-cerulean); }
-	16.66% { border-color: var(--color-saffron); }
-	25% { border-color: var(--color-lavender); }
-	33.33% { border-color: var(--color-celadon); }
-	41.66% { border-color: var(--color-fuchsia); }
-	50% { border-color: var(--color-pewter); }
-	58.33% { border-color: var(--color-viridian); }
-	66.66% { border-color: var(--color-indigo); }
-	75% { border-color: var(--color-seafoam); }
-	83.33% { border-color: var(--color-cinnabar); }
-	91.66% { border-color: var(--color-pallet); }
-	100% { border-color: var(--color-vermillion); }
+	0% {
+		border-color: var(--color-vermillion);
+	}
+	8.33% {
+		border-color: var(--color-cerulean);
+	}
+	16.66% {
+		border-color: var(--color-saffron);
+	}
+	25% {
+		border-color: var(--color-lavender);
+	}
+	33.33% {
+		border-color: var(--color-celadon);
+	}
+	41.66% {
+		border-color: var(--color-fuchsia);
+	}
+	50% {
+		border-color: var(--color-pewter);
+	}
+	58.33% {
+		border-color: var(--color-viridian);
+	}
+	66.66% {
+		border-color: var(--color-indigo);
+	}
+	75% {
+		border-color: var(--color-seafoam);
+	}
+	83.33% {
+		border-color: var(--color-cinnabar);
+	}
+	91.66% {
+		border-color: var(--color-pallet);
+	}
+	100% {
+		border-color: var(--color-vermillion);
+	}
 }
 
 @keyframes color-cycle-hover {

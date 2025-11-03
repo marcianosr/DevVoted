@@ -20,7 +20,7 @@ export const Polldex: React.FC<PolldexProps> = ({ pollsWithStats }) => {
 	return (
 		<div className="max-w-7xl mx-auto p-4">
 			<div className="mb-8">
-				<h1 className="text-4xl font-bold text-theme mb-4">POLLDEX</h1>
+				<h1 className="text-4xl text-theme mb-4">POLLDEX</h1>
 				<div className="text-white">
 					<div className="text-lg mb-2">
 						Discovered: {answeredPolls}/{totalPolls} polls
@@ -74,7 +74,7 @@ const PolldexItem: React.FC<PolldexItemProps> = ({
 			)}
 		>
 			<div
-				className={clsx("text-lg font-bold mb-2", {
+				className={clsx("text-lg mb-2", {
 					"text-theme": hasAnswered,
 					"text-gray-600": !hasAnswered,
 				})}
@@ -92,9 +92,7 @@ const PolldexItem: React.FC<PolldexItemProps> = ({
 			</div>
 
 			{hasAnswered ? (
-				<div className="text-xs text-theme font-semibold">
-					Seen: {timesAnswered}
-				</div>
+				<div className="text-xs text-theme">Seen: {timesAnswered}</div>
 			) : (
 				<div className="text-xs text-gray-600">Not discovered</div>
 			)}

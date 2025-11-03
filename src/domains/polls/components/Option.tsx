@@ -77,7 +77,7 @@ const Option = ({
 			/>
 			<label
 				htmlFor={inputId}
-				className={`markdown flex-1 ${disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer"}`}
+				className={`markdown text-white flex-1 ${disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer"}`}
 			>
 				<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
 					{option.option}

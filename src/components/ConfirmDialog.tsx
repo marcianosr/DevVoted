@@ -45,10 +45,10 @@ export const ConfirmDialog = ({
 		<dialog
 			ref={dialogRef}
 			onClose={handleCancel}
-			className="backdrop:bg-black backdrop:opacity-50 rounded-lg p-0 max-w-md m-auto border-1 border-theme"
+			className="backdrop:bg-black backdrop:opacity-50 rounded-lg p-0 max-w-md m-auto border-1 border- bg-gray-900 text-gray-200"
 		>
 			<div className="p-6">
-				<h2 className="text-xl font-bold mb-4">{title}</h2>
+				<h2 className="text-xl mb-4 text-white">{title}</h2>
 				<p className="text-gray-400 mb-6">{message}</p>
 				<div className="flex gap-3 justify-end">
 					<SecondaryButton onClick={handleCancel}>
