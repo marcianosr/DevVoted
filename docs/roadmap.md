@@ -98,7 +98,7 @@ Season 2: Early Meta Layer
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
 [] Change domain name. Not happy with "tamnstack" in my project name
-[] Needs to be configured in Github aswell - https://github.com/settings/apps/devvoted
+[] Needs to be configured in Github aswell - https://github.com/settings/apps/devvoted and Supabase https://supabase.com/dashboard/project/smrkmigjsnhrhwrxobjc/auth/url-configuration
 
 [] Expand traceability
 [] Store most and least popular configs

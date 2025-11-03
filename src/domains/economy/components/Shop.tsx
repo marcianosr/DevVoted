@@ -53,9 +53,11 @@ export const Shop = ({
 			: offeredConfigs;
 	return (
 		<section>
-			<div className="space-y-8 flex justify-between items-start">
+			<div className="space-y-8 flex justify-between items-start mt-12">
 				<div>
-					<h2 className="text-4xl text-theme mb-2">Config Shop</h2>
+					<h2 className="text-4xl text-theme mb-2">
+						Package manager
+					</h2>
 					<p>
 						Improve your run by installing new configs to your
 						storage deck!
@@ -80,10 +82,13 @@ export const Shop = ({
 					/>
 				))}
 			</div>
-			<div className="flex justify-end">
+			<div className="flex justify-end flex-col items-end gap-4">
 				<SecondaryButton onClick={onReroll} disabled={!canReroll}>
 					Rebuild ({formatStorage(rerollCost)})
 				</SecondaryButton>
+				<small>
+					Not the config you were looking for? Try rebuilding!
+				</small>
 			</div>
 		</section>
 	);

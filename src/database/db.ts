@@ -5,6 +5,8 @@ dotenv.config({ path: ".env.local" });
 
 export const DATABASE_URL = process.env.DB_URL || "";
 
+console.log("Using DATABASE_URL:", DATABASE_URL);
+
 // Disable prefetch as it is not supported for "Transaction" pool mode
 export const client = postgres(DATABASE_URL, { prepare: false });
 
