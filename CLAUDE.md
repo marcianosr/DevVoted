@@ -153,6 +153,45 @@ try {
 }
 ```
 
+#### Authorization Pattern (CRITICAL)
+
+**Never trust client-provided userId parameters** in server functions. Always extract userId from authenticated session.
+
+```typescript
+// ❌ WRONG: Accepts userId from client (security vulnerability)
+export const getUserData = createServerFn()
+	.inputValidator(z.object({ userId: z.string() }))
+	.handler(async ({ data }) => {
+		return await fetchUserData(data.userId);
+	});
+
+// ✅ CORRECT: Gets userId from authenticated session
+export const getUserData = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const userId = await getAuthenticatedUserId();
+		return await fetchUserData(userId);
+	}
+);
+```
+
+**Authorization utilities** (`src/utils/authorization.ts`):
+
+- `getAuthenticatedUserId()` - Extracts userId from Supabase auth session
+- `ensureAuthorizedUser(authenticatedUserId, requestedUserId)` - Validates user access
+
+**When to accept userId as parameter:**
+
+- Read-only public data (profiles, leaderboards) where viewing others' data is intentional
+- Always validate the userId exists in the database
+- Never for write operations (creating, updating, deleting user data)
+
+**Development checklist for new server functions:**
+
+- [ ] Does this function modify user data? → Use `getAuthenticatedUserId()`
+- [ ] Does this function access sensitive user data? → Use `getAuthenticatedUserId()`
+- [ ] Is this public read-only data? → Can accept userId parameter with validation
+- [ ] Test unauthorized access attempts fail properly
+
 ## Development Notes
 
 - The project uses TanStack Router with file-based routing in `src/routes/`

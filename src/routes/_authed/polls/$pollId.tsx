@@ -14,7 +14,7 @@ const PollDetail: React.FC = () => {
 			queryKey={pollQueryKeys.withOptions(pollIdNumber, user?.id)}
 			queryFn={() =>
 				getPollByIdWithOptions({
-					data: { id: pollIdNumber, userId: user?.id },
+					data: { id: pollIdNumber },
 				})
 			}
 			errorMessage="Error Loading Poll"

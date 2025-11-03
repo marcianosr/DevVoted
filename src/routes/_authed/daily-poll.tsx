@@ -6,15 +6,15 @@ import { pollQueryKeys } from "~/domains/shared/queryKeys";
 import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
 import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
 import type { CategoryCode } from "~/domains/shared/categories";
+import { getAuthenticatedUserId } from "~/utils/authorization";
+import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
 
-const getActiveRunCategoryCoverage = createServerFn({ method: "POST" })
-	.inputValidator((data: { userId: string }) => data)
-	.handler(async ({ data }) => {
-		const { getActiveRunCategoryCoverageHandler } = await import(
-			"~/domains/runs/api/handlers"
-		);
-		return await getActiveRunCategoryCoverageHandler(data.userId);
-	});
+const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const userId = await getAuthenticatedUserId();
+		return await getActiveRunCategoryCoverageHandler(userId);
+	}
+);
 
 const getLeaderboard = createServerFn({ method: "POST" })
 	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
@@ -40,8 +40,7 @@ const DailyPoll: React.FC = () => {
 	// Fetch active run category XP for real-time progress
 	const categoryCoverageQuery = useQuery({
 		queryKey: ["run", "categoryCoverage", user?.id],
-		queryFn: () =>
-			getActiveRunCategoryCoverage({ data: { userId: user?.id! } }),
+		queryFn: () => getActiveRunCategoryCoverage(),
 		enabled: !!user?.id,
 		staleTime: 10 * 1000, // 10 seconds - more frequent updates for real-time feel
 		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
@@ -57,10 +56,7 @@ const DailyPoll: React.FC = () => {
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["poll", "daily", user?.id],
-		queryFn: () =>
-			getDailyPoll({
-				data: { userId: user?.id },
-			}),
+		queryFn: () => getDailyPoll({ data: {} }),
 		enabled: !!user?.id, // Only run when we have user ID
 	});
 
@@ -71,11 +67,7 @@ const DailyPoll: React.FC = () => {
 			<PollPageContainer
 				user={user}
 				queryKey={pollQueryKeys.daily(user?.id)}
-				queryFn={() =>
-					getDailyPoll({
-						data: { userId: user?.id },
-					})
-				}
+				queryFn={() => getDailyPoll({ data: {} })}
 				errorMessage="Error Loading Daily Poll"
 			/>
 

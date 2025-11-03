@@ -65,6 +65,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Start new run button in navigation
 [] Add small explanations when staring a new run (e.g., "You start with 1MB storage and need to answer 150 XP worth of polls every 3 polls to continue your run. Buy configs in the shop to help you along the way!")
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
+[] Github photo?
 [x] Show clear disable button in config when storage is full on "purchase"
 [] Don't update round/threshold check right away after submission
 [] Show current season - shows 29 days
@@ -74,7 +75,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Total coverage rounding problems
 [] Onboarding/help modal for first-time users [Critical]
 [x] Upgrade packages
-[] Authentication (GitHub/Google)
+[x] Authentication (GitHub)
 [] CI/CD and Deployment
 [x] Test daily poll cycle
 [] Fix refresh-to-reanswer bug [Critical]
@@ -86,6 +87,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Auth polls list? (in navi)
 
 Season 2: Early Meta Layer
+[] Google Auth?
 [] Colorize tiers coverage
 [] Expand configs
 [] Expand CI gate challenges

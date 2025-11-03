@@ -40,13 +40,13 @@ export const useActiveRun = (
 		refetch,
 	} = useQuery({
 		queryKey: runQueryKeys.active(userId),
-		queryFn: () => getActiveRun({ data: { userId: userId || "" } }),
+		queryFn: () => getActiveRun(),
 		enabled: !!userId,
 		staleTime: 5 * 60 * 1000, // 5 minutes - runs don't change often
 	});
 
 	const startRunMutation = useMutation({
-		mutationFn: (userId: string) => getOrCreateRun({ data: { userId } }),
+		mutationFn: () => getOrCreateRun(),
 		onSuccess: () => {
 			// Invalidate to refresh the run data
 			queryClient.invalidateQueries({
@@ -72,7 +72,7 @@ export const useActiveRun = (
 		error,
 		startError: startRunMutation.error,
 
-		startRun: () => userId && startRunMutation.mutate(userId),
+		startRun: () => userId && startRunMutation.mutate(),
 		refetchRun: refetch,
 
 		canStartRun: !!userId && !hasActiveRun && !startRunMutation.isPending,

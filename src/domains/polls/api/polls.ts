@@ -8,15 +8,18 @@ import {
 	postPollOptionsHandler,
 	getAllPollsWithUserStatsHandler,
 } from "./handlers";
+import { getAuthenticatedUserId } from "~/utils/authorization";
 
-export const getPollByIdWithOptions = createServerFn()
+export const getPollByIdWithOptions = createServerFn({ method: "GET" })
 	.inputValidator(
 		z.object({
 			id: z.number().int().positive(),
-			userId: z.string().optional(),
 		})
 	)
-	.handler(async ({ data }) => getPollByIdWithOptionsHandler({ data }));
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		return getPollByIdWithOptionsHandler({ data: { ...data, userId } });
+	});
 
 export const getPollById = createServerFn()
 	.inputValidator(z.object({ id: z.number().int().positive() }))
@@ -26,26 +29,32 @@ export const getAllPolls = createServerFn().handler(async () =>
 	getAllPollsHandler()
 );
 
-export const getDailyPoll = createServerFn()
+export const getDailyPoll = createServerFn({ method: "GET" })
 	.inputValidator(
 		z.object({
-			userId: z.string().optional(),
 			date: z.string().optional(),
 		})
 	)
-	.handler(async ({ data }) => getDailyPollHandler({ data }));
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		return getDailyPollHandler({ data: { ...data, userId } });
+	});
 
-export const postPollOptions = createServerFn()
+export const postPollOptions = createServerFn({ method: "POST" })
 	.inputValidator(
 		z.object({
 			pollId: z.number().int().positive(),
 			selectedOptions: z.array(z.string()).min(1),
-			userId: z.string(),
 		})
 	)
-	.handler(async ({ data }) => postPollOptionsHandler({ data }));
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		return postPollOptionsHandler({
+			data: { ...data, userId },
+		});
+	});
 
-export const getAllPollsWithUserStats = createServerFn()
+export const getAllPollsWithUserStats = createServerFn({ method: "GET" })
 	.inputValidator(
 		z.object({
 			userId: z.string(),

@@ -31,8 +31,7 @@ export type UseLastRunReturn = {
 export const useLastRun = (userId: string | undefined): UseLastRunReturn => {
 	const { data, isLoading, error } = useQuery({
 		queryKey: runQueryKeys.lastRun(userId),
-		queryFn: () =>
-			getLastRunForGameOver({ data: { userId: userId || "" } }),
+		queryFn: () => getLastRunForGameOver(),
 		enabled: !!userId,
 		select: (response) => (response.success ? response.data : null),
 		staleTime: 5 * 60 * 1000, // 5 minutes - last run data doesn't change often

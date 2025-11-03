@@ -40,6 +40,7 @@ import {
 import { getCategories } from "~/domains/shared/categories";
 import { formatCoverage } from "~/domains/score/services/score.service";
 import { PollAnswerReview } from "./PollAnswerReview";
+import { getAuthenticatedUserId } from "~/utils/authorization";
 
 /**
  * Format gate requirements for display
@@ -76,15 +77,17 @@ const formatGateRequirements = (
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
 
-export const submitPollOptions = createServerFn()
+export const submitPollOptions = createServerFn({ method: "POST" })
 	.inputValidator(
 		z.object({
 			pollId: z.number().int().positive(),
 			selectedOptions: z.array(z.string()).min(1),
-			userId: z.string(),
 		})
 	)
-	.handler(async ({ data }) => postPollOptionsHandler({ data }));
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		return postPollOptionsHandler({ data: { ...data, userId } });
+	});
 
 type SubmissionResult = {
 	selectedOptionIds: number[];
@@ -228,7 +231,6 @@ const PollContent: React.FC<PollContentProps> = ({
 				data: {
 					pollId: poll.id,
 					selectedOptions,
-					userId: user.id,
 				},
 			});
 		},
