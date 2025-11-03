@@ -1,5 +1,6 @@
 import { DATABASE_URL } from "./src/database/db";
 import "dotenv/config";
+
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
