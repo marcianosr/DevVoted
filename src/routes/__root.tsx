@@ -28,6 +28,15 @@ import { useActiveRun } from "../domains/runs/hooks/useActiveRun";
 import { runQueryKeys } from "../domains/shared/queryKeys";
 import { SecondaryButton } from "~/ui/SecondaryButton";
 
+import * as Sentry from "@sentry/react";
+
+Sentry.init({
+	dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
+	// Setting this option to true will send default PII data to Sentry.
+	// For example, automatic IP address collection on events
+	sendDefaultPii: true,
+});
+
 const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();
 	const { data, error: _error } = await supabase.auth.getUser();
@@ -126,7 +135,7 @@ function Navigation() {
 	const { hasActiveRun } = useActiveRun(user?.id);
 
 	const finishRunMutation = useMutation({
-		mutationFn: (userId: string) => finishRunFn({ data: { userId } }),
+		mutationFn: () => finishRunFn(),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: runQueryKeys.active(user?.id),
@@ -145,9 +154,7 @@ function Navigation() {
 	};
 
 	const handleConfirmFinishRun = () => {
-		if (user?.id) {
-			finishRunMutation.mutate(user.id);
-		}
+		finishRunMutation.mutate();
 	};
 
 	const handleCancelFinishRun = () => {
