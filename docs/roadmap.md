@@ -25,6 +25,8 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [x] Create simple linear streak bonus amp
 [x] Rarity tiers
+[] FORCE DARKMODE [Critical]
+[] How to use TOML config?
 [] Create a single "stake" in DB (no UI)
 
     - [] Timestamps on answer
