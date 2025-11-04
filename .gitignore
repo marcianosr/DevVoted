@@ -36,3 +36,9 @@ brainstorm.md
 testers
 dist
 prod.md
+polls-d8b3d-firebase-adminsdk-cos71-910d48b66d.json
+
+# Firebase sync scripts
+scripts/firebase-service-account.json
+firebase-backup*
+firebase-polls-backup-*.json
