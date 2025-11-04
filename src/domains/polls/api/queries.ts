@@ -4,6 +4,7 @@ import {
 	pollResponseOptionsTable,
 	pollResponsesTable,
 	pollsTable,
+	pollHistoryTable,
 } from "~/database/schema";
 import { Poll, pollFactory } from "~/domains/polls/models/poll";
 import { db } from "~/database/db";
@@ -262,4 +263,82 @@ export const manageDailyPollTransition = async (
 
 		return selectedPoll;
 	});
+};
+
+/**
+ * Get poll history record for a specific user and poll
+ */
+export const getPollHistory = async (
+	userId: string,
+	pollId: number
+) => {
+	const [record] = await db
+		.select()
+		.from(pollHistoryTable)
+		.where(
+			and(
+				eq(pollHistoryTable.user_id, userId),
+				eq(pollHistoryTable.poll_id, pollId)
+			)
+		);
+
+	return record || null;
+};
+
+/**
+ * Track when a user views a poll
+ * - First view: Creates new record with times_seen=1
+ * - Subsequent views: Increments times_seen, updates last_seen_at
+ */
+export const trackPollView = async (
+	userId: string,
+	pollId: number
+): Promise<void> => {
+	await db
+		.insert(pollHistoryTable)
+		.values({
+			user_id: userId,
+			poll_id: pollId,
+			times_seen: 1,
+			times_answered: 0,
+			first_seen_at: new Date(),
+			last_seen_at: new Date(),
+		})
+		.onConflictDoUpdate({
+			target: [pollHistoryTable.user_id, pollHistoryTable.poll_id],
+			set: {
+				times_seen: sql`${pollHistoryTable.times_seen} + 1`,
+				last_seen_at: new Date(),
+			},
+		});
+};
+
+/**
+ * Track when a user answers a poll
+ * - Increments times_answered counter
+ * - Updates last_answered_at timestamp
+ * - Creates record if user never viewed the poll (edge case)
+ */
+export const trackPollAnswer = async (
+	userId: string,
+	pollId: number
+): Promise<void> => {
+	await db
+		.insert(pollHistoryTable)
+		.values({
+			user_id: userId,
+			poll_id: pollId,
+			times_seen: 1,
+			times_answered: 1,
+			first_seen_at: new Date(),
+			last_seen_at: new Date(),
+			last_answered_at: new Date(),
+		})
+		.onConflictDoUpdate({
+			target: [pollHistoryTable.user_id, pollHistoryTable.poll_id],
+			set: {
+				times_answered: sql`${pollHistoryTable.times_answered} + 1`,
+				last_answered_at: new Date(),
+			},
+		});
 };

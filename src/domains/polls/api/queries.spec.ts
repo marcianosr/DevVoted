@@ -5,6 +5,9 @@ import {
 	fetchPollById,
 	fetchPollByIdWithOptions,
 	hasUserAnsweredPoll,
+	getPollHistory,
+	trackPollView,
+	trackPollAnswer,
 } from "~/domains/polls/api/queries";
 import { db } from "~/database/db";
 import {
@@ -410,6 +413,145 @@ describe("Query logic - DTO mapping - DB errors", () => {
 				expect(canAnswerToday).toBe(false); // false = not answered today = allowed
 				expect(mockWhere).toHaveBeenCalled();
 			});
+		});
+	});
+
+	describe(getPollHistory, () => {
+		it("returns poll history record when found", async () => {
+			const mockHistory = {
+				id: 1,
+				poll_id: 5,
+				user_id: "pikachu",
+				times_seen: 2,
+				times_answered: 1,
+				first_seen_at: new Date("2025-05-13"),
+				last_seen_at: new Date("2025-12-25"),
+				last_answered_at: new Date("2025-12-25"),
+			};
+
+			const mockWhere = vi.fn().mockResolvedValue([mockHistory]);
+			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+			const result = await getPollHistory("pikachu", 5);
+
+			expect(result).toEqual(mockHistory);
+			expect(db.select).toHaveBeenCalled();
+			expect(mockWhere).toHaveBeenCalled();
+		});
+
+		it("returns null when no history exists", async () => {
+			const mockWhere = vi.fn().mockResolvedValue([]);
+			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
+
+			const result = await getPollHistory("kazooie", 99);
+
+			expect(result).toBeNull();
+		});
+	});
+
+	describe(trackPollView, () => {
+		it("creates new history record on first view", async () => {
+			const mockOnConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
+			const mockValues = vi.fn().mockReturnValue({
+				onConflictDoUpdate: mockOnConflictDoUpdate,
+			});
+			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+
+			await trackPollView("banjo", 1);
+
+			expect(db.insert).toHaveBeenCalled();
+			expect(mockValues).toHaveBeenCalledWith(
+				expect.objectContaining({
+					user_id: "banjo",
+					poll_id: 1,
+					times_seen: 1,
+					times_answered: 0,
+				})
+			);
+			expect(mockOnConflictDoUpdate).toHaveBeenCalled();
+		});
+
+		it("increments times_seen on subsequent view", async () => {
+			const mockOnConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
+			const mockValues = vi.fn().mockReturnValue({
+				onConflictDoUpdate: mockOnConflictDoUpdate,
+			});
+			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+
+			await trackPollView("banjo", 1);
+
+			expect(mockOnConflictDoUpdate).toHaveBeenCalledWith(
+				expect.objectContaining({
+					target: expect.any(Array),
+					set: expect.objectContaining({
+						last_seen_at: expect.any(Date),
+					}),
+				})
+			);
+		});
+	});
+
+	describe(trackPollAnswer, () => {
+		it("increments answer count when poll is answered", async () => {
+			const mockOnConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
+			const mockValues = vi.fn().mockReturnValue({
+				onConflictDoUpdate: mockOnConflictDoUpdate,
+			});
+			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+
+			await trackPollAnswer("mumbo", 25);
+
+			expect(db.insert).toHaveBeenCalled();
+			expect(mockValues).toHaveBeenCalledWith(
+				expect.objectContaining({
+					user_id: "mumbo",
+					poll_id: 25,
+					times_answered: 1,
+				})
+			);
+			expect(mockOnConflictDoUpdate).toHaveBeenCalled();
+		});
+
+		it("updates last_answered_at timestamp", async () => {
+			const mockOnConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
+			const mockValues = vi.fn().mockReturnValue({
+				onConflictDoUpdate: mockOnConflictDoUpdate,
+			});
+			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+
+			await trackPollAnswer("bottles", 6);
+
+			expect(mockOnConflictDoUpdate).toHaveBeenCalledWith(
+				expect.objectContaining({
+					set: expect.objectContaining({
+						last_answered_at: expect.any(Date),
+					}),
+				})
+			);
+		});
+
+		it("creates record if user never viewed poll before answering", async () => {
+			const mockOnConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
+			const mockValues = vi.fn().mockReturnValue({
+				onConflictDoUpdate: mockOnConflictDoUpdate,
+			});
+			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+
+			await trackPollAnswer("tooty", 13);
+
+			expect(mockValues).toHaveBeenCalledWith(
+				expect.objectContaining({
+					user_id: "tooty",
+					poll_id: 13,
+					times_seen: 1,
+					times_answered: 1,
+					first_seen_at: expect.any(Date),
+					last_seen_at: expect.any(Date),
+					last_answered_at: expect.any(Date),
+				})
+			);
 		});
 	});
 });

@@ -176,6 +176,20 @@
       "when": 1761136999437,
       "tag": "0024_thankful_reptil",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1762274188362,
+      "tag": "0025_overrated_harpoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1762274563387,
+      "tag": "0026_hesitant_lord_tyger",
+      "breakpoints": true
     }
   ]
 }

@@ -123,6 +123,40 @@ export const pollsTable = pgTable("polls", {
 });
 
 /**
+ * Poll History Table
+ * Tracks poll viewing and answering statistics per user
+ * - One record per user per poll (enforced by unique constraint)
+ * - Counters for total views and answers
+ * - Timestamps for first/last view and last answer
+ */
+export const pollHistoryTable = pgTable(
+	"polls_history",
+	{
+		id: serial("id").primaryKey().notNull(),
+		poll_id: integer("poll_id")
+			.references(() => pollsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		times_seen: integer("times_seen").notNull().default(1),
+		times_answered: integer("times_answered").notNull().default(0),
+		first_seen_at: timestamp("first_seen_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		last_seen_at: timestamp("last_seen_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		last_answered_at: timestamp("last_answered_at", { withTimezone: true }),
+	},
+	(table) => {
+		return {
+			userPollUnique: unique().on(table.user_id, table.poll_id),
+		};
+	}
+);
+
+/**
  * Poll Options Table
  * Stores answer choices for each poll
  * - Contains all possible answers for a poll

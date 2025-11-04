@@ -5,6 +5,9 @@ import {
 	hasUserAnsweredPoll,
 	countUserPollAnswers,
 	getAllPollsWithUserStats,
+	getPollHistory,
+	trackPollView,
+	trackPollAnswer,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import {
@@ -13,6 +16,7 @@ import {
 } from "~/domains/polls/validation/schemas";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
 import { handleApiOperation } from "~/utils/errorHandling";
+import { isSameDay } from "date-fns";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -68,6 +72,18 @@ export const getDailyPollHandler = async ({
 			? await countUserPollAnswers(poll.id, userId)
 			: 0;
 
+		// Track poll view only if not seen today
+		if (userId) {
+			const history = await getPollHistory(userId, poll.id);
+			const hasSeenToday = history?.last_seen_at
+				? isSameDay(new Date(history.last_seen_at), new Date())
+				: false;
+
+			if (!hasSeenToday) {
+				await trackPollView(userId, poll.id);
+			}
+		}
+
 		return { poll, options, hasAnswered, timesAnswered };
 	});
 };
@@ -94,6 +110,9 @@ export const postPollOptionsHandler = async ({
 			selectedOptionIds: validatedData.selectedOptionIds,
 			categoryCode: validatedData.poll.categoryCode,
 		});
+
+		// Track poll answer
+		await trackPollAnswer(validatedData.userId, validatedData.pollId);
 
 		console.log("Poll options submitted:", {
 			breakdown,

@@ -25,8 +25,7 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [x] Create simple linear streak bonus amp
 [x] Rarity tiers
-[] FORCE DARKMODE [Critical]
-[] How to use TOML config?
+
 [] Create a single "stake" in DB (no UI)
 
     - [] Timestamps on answer
@@ -44,13 +43,13 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Remove amp cap
 [x] Support markdown in questions (e.g code examples or just code blocks)
 [x] show good / wrong answers after answering poll and your current choice
-[] Balancing
+[x] Balancing
 
-    [] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;
-    [] Starting storage
-    [] Storage growth over time
-    [] Config costs
-    [] Coverage gain balance
+    [x] Threshold formula refinement:   const threshold = round * 150 + (round - 1) * 25;
+    [x] Starting storage
+    [x] Storage growth over time
+    [x] Config costs
+    [x] Coverage gain balance
 
 [x] Handle polls answered this run - not sure if this is done correctly
 [x] Handle "0.5" effects stacking correctly
@@ -69,16 +68,13 @@ Season 1: Core Loop ✅ ship this before anything else
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [] Github photo?
 [x] Show clear disable button in config when storage is full on "purchase"
-[] Don't update round/threshold check right away after submission
-[] Show current season - shows 29 days
 [x] Shop disable config issue - when buying a config that fills storage, the other configs should be disabled immediately if they can't be bought anymore
 [x] Show all time leaderboard
 [] Coverage not below zero
 [] Total coverage rounding problems
-[] Onboarding/help modal for first-time users [Critical]
 [x] Upgrade packages
 [x] Authentication (GitHub)
-[] CI/CD and Deployment
+[x] CI/CD and Deployment
 [x] Test daily poll cycle
 [] Fix refresh-to-reanswer bug [Critical]
 [] Reroll bug: when rerolling it walks behind
@@ -87,8 +83,35 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] remove "correct/incorrect"
 [x] remove "home" and also from navigation
 [] Auth polls list? (in navi)
+[] Show github images
+
+BUGS:
+[x] FORCE DARKMODE [Critical]
+[x] Login is white
+[] Page Title
+[] When someone waits a day while having the shop open, the next poll comes and is "answered" automatically. Also shop[ is open]
+[] Only update the poll counter when poll is "seen" not when answered
+[] Poll status in seperate table - Poll History
+[] History table of polls: What happened with the poll?
+[] Append runs with new categories when adding a new category
+[] How to use TOML config?
+[] Slow load db queries
+[] Click on config to install
+[] Suspend leaderboards because it slows
+[] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
+
+[] Trage app - heeft vooral te maken met de database queries die geoptimaliseerd moeten worden
+[] Poll history table - how
+[] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
+[] Leaderboard query optimization?
+[] Page title is nog steeds "Tanstack blabla"
+[] Als iemand de shop open heeft en de volgende dag de pagina weer bezoekt, haal hij de nieuwe poll op maar blijft hij in beantwoorde staat
+[] De shop is weg als je de pagina refresht. Niet echt een bug, maar ik weet dat dit zo is
 
 Season 2: Early Meta Layer
+[] Show current season - shows 29 days
+
+[] Onboarding/help modal for first-time users [Critical]
 [] Google Auth?
 [] Colorize tiers coverage
 [] Expand configs
