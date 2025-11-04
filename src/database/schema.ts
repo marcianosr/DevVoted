@@ -108,13 +108,13 @@ export const pollsTable = pgTable("polls", {
 	question: text("question").notNull(),
 	status: pollStatus("status").notNull().default("draft"),
 	answer_type: pollAnswerType("answer_type").notNull().default("single"),
-	opening_time: timestamp("opening_time").notNull(),
-	closing_time: timestamp("closing_time").notNull(),
+	opening_time: timestamp("opening_time", { withTimezone: true }).notNull(),
+	closing_time: timestamp("closing_time", { withTimezone: true }).notNull(),
 	created_by: uuid("created_by")
 		.references(() => usersTable.id, { onDelete: "set null" }) // Preserves poll history even if user is deleted
 		.notNull(),
-	created_at: timestamp("created_at").defaultNow(),
-	updated_at: timestamp("updated_at")
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
 		.$onUpdate(() => new Date()), // Automatically tracks last modification
 	category_code: varchar("category_code", { length: 50 })
@@ -220,8 +220,8 @@ export const pollResponsesTable = pgTable("polls_responses", {
 	user_id: uuid("user_id").references(() => usersTable.id, {
 		onDelete: "set null",
 	}),
-	created_at: timestamp("created_at").defaultNow(),
-	updated_at: timestamp("updated_at")
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 });
@@ -251,10 +251,10 @@ export const runsTable = pgTable("runs", {
 	total_rerolls: integer("total_rerolls").notNull().default(0), // Total rerolls across entire run
 	reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
 	completion_reason: varchar("completion_reason", { length: 50 }), // Reason for run completion: "victory", "threshold_not_met", "wrong_answer", "manual_break_off"
-	started_at: timestamp("started_at").defaultNow(),
-	finished_at: timestamp("finished_at"),
-	created_at: timestamp("created_at").defaultNow(),
-	updated_at: timestamp("updated_at")
+	started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
+	finished_at: timestamp("finished_at", { withTimezone: true }),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 });
@@ -283,8 +283,8 @@ export const runCategoryCoverageTable = pgTable(
 		final_coverage: real("final_coverage"),
 		final_streak: integer("final_streak"),
 		final_polls_answered: integer("final_polls_answered"),
-		created_at: timestamp("created_at").defaultNow(),
-		updated_at: timestamp("updated_at")
+		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+		updated_at: timestamp("updated_at", { withTimezone: true })
 			.defaultNow()
 			.$onUpdate(() => new Date()),
 	},
@@ -306,10 +306,10 @@ export const seasonsTable = pgTable("seasons", {
 	name: varchar("name", { length: 256 }).notNull(),
 	description: text("description"),
 	status: seasonStatus("status").notNull().default("upcoming"),
-	start_date: timestamp("start_date").notNull(),
-	end_date: timestamp("end_date").notNull(),
-	created_at: timestamp("created_at").defaultNow(),
-	updated_at: timestamp("updated_at")
+	start_date: timestamp("start_date", { withTimezone: true }).notNull(),
+	end_date: timestamp("end_date", { withTimezone: true }).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 });
@@ -340,6 +340,6 @@ export const leaderboardTable = pgTable("leaderboard", {
 	total_coverage: real("total_coverage").notNull().default(0), // Overall coverage % for the run (for global leaderboards)
 	best_streak: integer("best_streak").notNull().default(0),
 	polls_answered: integer("polls_answered").notNull().default(0),
-	completed_at: timestamp("completed_at").notNull(),
-	created_at: timestamp("created_at").defaultNow(),
+	completed_at: timestamp("completed_at", { withTimezone: true }).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });

@@ -190,6 +190,13 @@
       "when": 1762274563387,
       "tag": "0026_hesitant_lord_tyger",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1762275133254,
+      "tag": "0027_cloudy_argent",
+      "breakpoints": true
     }
   ]
 }
