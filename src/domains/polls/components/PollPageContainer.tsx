@@ -28,7 +28,7 @@ import {
 } from "~/domains/configs/api/configs";
 import { Run } from "~/domains/runs/models/run";
 import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
-import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { Poll, PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
@@ -41,6 +41,7 @@ import { getCategories } from "~/domains/shared/categories";
 import { formatCoverage } from "~/domains/score/services/score.service";
 import { PollAnswerReview } from "./PollAnswerReview";
 import { getAuthenticatedUserId } from "~/utils/authorization";
+import { getTotalPollsSeen } from "~/domains/polls/api/polls";
 
 /**
  * Format gate requirements for display
@@ -121,6 +122,16 @@ const PollContent: React.FC<PollContentProps> = ({
 	const [rerollKey, setRerollKey] = useState(0);
 	const [submissionResult, setSubmissionResult] =
 		useState<SubmissionResult | null>(null);
+
+	// Fetch total polls seen for round calculation
+	const { data: totalPollsSeenData } = useQuery({
+		queryKey: pollQueryKeys.totalSeen(user?.id),
+		queryFn: () => getTotalPollsSeen(),
+		enabled: !!user?.id,
+	});
+	const totalPollsSeen = totalPollsSeenData?.success
+		? totalPollsSeenData.data
+		: 0;
 
 	// TODO: Put in a hook
 	const randomConfigs = useMemo(() => {
@@ -271,7 +282,7 @@ const PollContent: React.FC<PollContentProps> = ({
 
 	const thresholdInfo =
 		activeRun && activeRun.categoryCoverage
-			? calculateThresholdInfo(activeRun.categoryCoverage)
+			? calculateThresholdInfo(activeRun.categoryCoverage, totalPollsSeen)
 			: null;
 
 	// Get coverage for the current category being answered
@@ -431,16 +442,12 @@ const PollContent: React.FC<PollContentProps> = ({
 
 type PollPageContainerProps = {
 	user: any; // TODO: remove thise any
-	queryKey: readonly any[]; // TODO: remove this any
-	queryFn: () => Promise<any>; // TODO: remove this any
-	errorMessage?: string;
+	poll: PollWithOptionsResponse;
 };
 
 export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	user,
-	queryKey,
-	queryFn,
-	errorMessage = "Error Loading Poll",
+	poll,
 }) => {
 	const queryClient = useQueryClient();
 	const [lastScoreBreakdown, setLastScoreBreakdown] =
@@ -454,6 +461,8 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 		startRun,
 		isStarting,
 	} = useActiveRun(user?.id);
+
+	console.log("PollPageContainer render:", poll);
 
 	const addConfigsMutation = useMutation({
 		mutationFn: addConfigToRunServerFn,
@@ -590,12 +599,6 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 		}
 	};
 
-	const { data, isLoading, error } = useQuery({
-		queryKey,
-		queryFn,
-		enabled: !!user?.id, // Only run when we have user ID
-	});
-
 	// Show loading state for run check
 	if (isLoadingRun) {
 		return <LoadingSkeleton />;
@@ -618,20 +621,8 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 		);
 	}
 
-	if (isLoading) {
-		return <LoadingSkeleton />;
-	}
-
-	if (error || !data) {
-		return <ErrorComponent text={errorMessage} />;
-	}
-
-	if (!data.success) {
-		return <ErrorComponent text={data.error || errorMessage} />;
-	}
-
 	const effectsResult = applyEffects(
-		{ ...data.data, run: activeRun! },
+		{ ...poll, run: activeRun! },
 		activeRun?.activeConfigIds
 	);
 

@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
 	server: {
 		port: 3005,
 	},
@@ -16,7 +16,13 @@ export default defineConfig({
 			{ find: "@/src", replacement: resolve(__dirname, "./src") },
 		],
 	},
-	plugins: [tsConfigPaths(), tanstackStart(), nitro(), react(), tailwindcss()],
+	plugins: [
+		tsConfigPaths(),
+		tanstackStart(),
+		...(mode !== "test" ? [nitro()] : []),
+		react(),
+		tailwindcss(),
+	],
 	test: {
 		environment: "jsdom",
 		globals: true,
@@ -38,4 +44,4 @@ export default defineConfig({
 			json: "./test-results.json",
 		},
 	},
-});
+}));

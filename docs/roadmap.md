@@ -99,6 +99,7 @@ BUGS:
 [] Click on config to install
 [] Suspend leaderboards because it slows
 [] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
+[] When a new poll is loaded, the user sees the old poll for a split second causing two track views
 
 [] Trage app - heeft vooral te maken met de database queries die geoptimaliseerd moeten worden
 [] Poll history table - how

@@ -29,7 +29,8 @@ describe("CI gate Reset Functionality", () => {
 				}),
 			];
 
-			const result = calculateThresholdInfo(categoryCoverage);
+			const totalPollsSeen = categoryCoverage.reduce((sum, c) => sum + c.pollsAnswered, 0);
+			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
 
 			expect(result.pollNumber).toBe(0);
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
@@ -65,7 +66,8 @@ describe("CI gate Reset Functionality", () => {
 				}),
 			];
 
-			const result = calculateThresholdInfo(categoryCoverage);
+			const totalPollsSeen = categoryCoverage.reduce((sum, c) => sum + c.pollsAnswered, 0);
+			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
 
 			expect(result.pollNumber).toBe(1);
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
@@ -101,7 +103,8 @@ describe("CI gate Reset Functionality", () => {
 				}),
 			];
 
-			const result = calculateThresholdInfo(categoryCoverage);
+			const totalPollsSeen = categoryCoverage.reduce((sum, c) => sum + c.pollsAnswered, 0);
+			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
@@ -137,7 +140,8 @@ describe("CI gate Reset Functionality", () => {
 				}),
 			];
 
-			const result = calculateThresholdInfo(categoryCoverage);
+			const totalPollsSeen = categoryCoverage.reduce((sum, c) => sum + c.pollsAnswered, 0);
+			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
 
 			expect(result.pollNumber).toBe(1);
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
@@ -173,7 +177,8 @@ describe("CI gate Reset Functionality", () => {
 				}),
 			];
 
-			const result = calculateThresholdInfo(categoryCoverage);
+			const totalPollsSeen = categoryCoverage.reduce((sum, c) => sum + c.pollsAnswered, 0);
+			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
@@ -187,7 +192,8 @@ describe("CI gate Reset Functionality", () => {
 		it("handles empty categoryCoverage array", () => {
 			const categoryCoverage: any[] = [];
 
-			const result = calculateThresholdInfo(categoryCoverage);
+			const totalPollsSeen = categoryCoverage.reduce((sum, c) => sum + c.pollsAnswered, 0);
+			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
 
 			expect(result.pollNumber).toBe(0);
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)

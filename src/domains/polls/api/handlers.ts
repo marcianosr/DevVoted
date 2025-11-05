@@ -4,10 +4,10 @@ import {
 	fetchPollByIdWithOptions,
 	hasUserAnsweredPoll,
 	countUserPollAnswers,
-	getAllPollsWithUserStats,
 	getPollHistory,
 	trackPollView,
 	trackPollAnswer,
+	getTotalPollsSeenByUser,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import {
@@ -171,13 +171,13 @@ const validatePollSubmission = async (
 	};
 };
 
-export const getAllPollsWithUserStatsHandler = async ({
+export const getTotalPollsSeenHandler = async ({
 	data,
 }: {
 	data: { userId: string };
 }) => {
 	return handleApiOperation(async () => {
 		const { userId } = data;
-		return await getAllPollsWithUserStats(userId);
+		return await getTotalPollsSeenByUser(userId);
 	});
 };

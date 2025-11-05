@@ -201,6 +201,7 @@ type OrchestrateScoreCalculationParams = {
 	currentStreak: number;
 	currentBestStreak: number;
 	totalPollsAnswered: number;
+	totalPollsSeen: number;
 	correctnessFactor: number;
 	coverageAdd?: number; // Additive coverage bonus from configs (e.g., +0.5%)
 	coverageMult?: number; // Multiplicative coverage modifier from configs (e.g., x1.5)
@@ -211,23 +212,25 @@ type OrchestrateScoreCalculationParams = {
  *
  * Complete Coverage Pipeline:
  * 1. Update streak based on correctness (correct = +1, wrong = reset to 0)
- * 2. Calculate base coverage with round scaling: 1% + (round × 0.2%)
- * 3. Add streak bonus (capped at 1%): streak × 0.1%
- * 4. Apply correctness factor:
+ * 2. Calculate current round from polls SEEN (not answered)
+ * 3. Calculate base coverage with round scaling: 1% + (round × 0.2%)
+ * 4. Add streak bonus (capped at 1%): streak × 0.1%
+ * 5. Apply correctness factor:
  *    - Wrong answer: -0.5% (penalty)
  *    - Partial multi-choice: (base+streak) × 0.5-1.0
  *    - Perfect single/multi: (base+streak) × 1.0
  *    - Perfect multi-choice: (base+streak) × 1.5
- * 5. Apply config multiplicative modifier (if present): result × coverageMult
- * 6. Apply config additive modifier (if present): result + coverageAdd
- * 7. Round and add to total coverage
+ * 6. Apply config multiplicative modifier (if present): result × coverageMult
+ * 7. Apply config additive modifier (if present): result + coverageAdd
+ * 8. Round and add to total coverage
  *
  * @example
- * // Round 5, streak 5, perfect answer with .js config
+ * // Round 5 (24 polls seen), streak 5, perfect answer with .js config
  * orchestrateScoreCalculation({
  *   currentCoverage: 10,
  *   currentStreak: 4,
- *   totalPollsAnswered: 14,
+ *   totalPollsAnswered: 20,
+ *   totalPollsSeen: 24,
  *   correctnessFactor: 1.0,
  *   coverageAdd: 0.5,
  * })
@@ -239,6 +242,7 @@ export const orchestrateScoreCalculation = ({
 	currentStreak,
 	currentBestStreak,
 	totalPollsAnswered,
+	totalPollsSeen,
 	correctnessFactor,
 	coverageAdd = 0,
 	coverageMult = 1,
@@ -248,8 +252,8 @@ export const orchestrateScoreCalculation = ({
 	const newBestStreak = calculateBestStreak(currentBestStreak, newStreak);
 	const newPollsAnswered = totalPollsAnswered + 1;
 
-	// Calculate current round from polls answered (rounds are 1-based)
-	const currentRound = Math.floor(totalPollsAnswered / POLLS_PER_ROUND) + 1;
+	// Calculate current round from polls seen (rounds are 1-based)
+	const currentRound = Math.floor(totalPollsSeen / POLLS_PER_ROUND) + 1;
 
 	// Step 2-4: Calculate coverage with round scaling, streak bonus, and correctness
 	const baseCoverage = calculateBaseCoverage(currentRound);

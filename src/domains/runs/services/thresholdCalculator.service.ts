@@ -146,36 +146,36 @@ export type ThresholdInfo = {
 };
 
 /**
- * Determines the current round based on total polls answered
+ * Determines the current round based on total polls seen
  * Rounds are organized in sets of POLLS_PER_ROUND polls (CI gates at polls 5, 10, 15, etc.)
  *
- * @param totalPollsAnswered - Total polls answered across all categories
+ * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
  * @returns Current round number (1-based, minimum 1)
  */
-export const getCurrentRound = (totalPollsAnswered: number): number => {
-	if (totalPollsAnswered === 0) return 1;
-	return Math.floor((totalPollsAnswered - 1) / POLLS_PER_ROUND) + 1;
+export const getCurrentRound = (totalPollsSeen: number): number => {
+	if (totalPollsSeen === 0) return 1;
+	return Math.floor((totalPollsSeen - 1) / POLLS_PER_ROUND) + 1;
 };
 
 /**
  * Determines the position within the current round (1-POLLS_PER_ROUND)
  *
- * @param totalPollsAnswered - Total polls answered across all categories
+ * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
  * @returns Poll position within round (1-5)
  */
-export const getPollInRound = (totalPollsAnswered: number): number => {
-	if (totalPollsAnswered === 0) return 1;
-	return ((totalPollsAnswered - 1) % POLLS_PER_ROUND) + 1;
+export const getPollInRound = (totalPollsSeen: number): number => {
+	if (totalPollsSeen === 0) return 1;
+	return ((totalPollsSeen - 1) % POLLS_PER_ROUND) + 1;
 };
 
 /**
  * Checks if the current poll is a threshold check poll (every POLLS_PER_ROUND poll)
  *
- * @param totalPollsAnswered - Total polls answered across all categories
+ * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
  * @returns True if this is a threshold check poll (polls 5, 10, 15, etc.)
  */
-export const isThresholdCheckPoll = (totalPollsAnswered: number): boolean => {
-	return totalPollsAnswered > 0 && totalPollsAnswered % POLLS_PER_ROUND === 0;
+export const isThresholdCheckPoll = (totalPollsSeen: number): boolean => {
+	return totalPollsSeen > 0 && totalPollsSeen % POLLS_PER_ROUND === 0;
 };
 
 /**
@@ -243,11 +243,13 @@ const evaluateRequirement = (
  * Core threshold calculation logic
  * Evaluates gate requirements with OR/AND logic
  *
- * @param categoryCoverageData - Array of category coverage data
+ * @param categoryCoverageData - Array of category coverage data (for gate evaluation)
+ * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
  * @returns Threshold information
  */
 export const calculateThresholdInfo = (
-	categoryCoverageData: readonly RunCategoryCoverage[]
+	categoryCoverageData: readonly RunCategoryCoverage[],
+	totalPollsSeen: number
 ): ThresholdInfo => {
 	// Find the maximum coverage across all categories
 	const maxCoverage = Math.max(
@@ -255,16 +257,16 @@ export const calculateThresholdInfo = (
 		0
 	);
 
-	// Calculate total polls answered
+	// Calculate total polls answered (still used for pollNumber tracking)
 	const totalPollsAnswered = categoryCoverageData.reduce(
 		(sum, xp) => sum + xp.pollsAnswered,
 		0
 	);
 
-	// Determine current round and gate
-	const currentRound = getCurrentRound(totalPollsAnswered);
-	const pollInRound = getPollInRound(totalPollsAnswered);
-	const isThresholdCheck = isThresholdCheckPoll(totalPollsAnswered);
+	// Determine current round and gate based on SEEN polls
+	const currentRound = getCurrentRound(totalPollsSeen);
+	const pollInRound = getPollInRound(totalPollsSeen);
+	const isThresholdCheck = isThresholdCheckPoll(totalPollsSeen);
 	const gateDefinition = getGateDefinition(currentRound);
 
 	// If no gate definition or not a threshold check, always pass
@@ -348,10 +350,12 @@ export const calculateThresholdInfo = (
 /**
  * Get current threshold status from category data
  * @param categoryCoverage - Array of category coverage data
+ * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
  * @returns Threshold information
  */
 export const getCurrentThresholdInfo = (
-	categoryCoverage: readonly RunCategoryCoverage[]
+	categoryCoverage: readonly RunCategoryCoverage[],
+	totalPollsSeen: number
 ): ThresholdInfo => {
-	return calculateThresholdInfo(categoryCoverage);
+	return calculateThresholdInfo(categoryCoverage, totalPollsSeen);
 };

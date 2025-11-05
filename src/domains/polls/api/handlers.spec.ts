@@ -7,6 +7,7 @@ import {
 	getPollByIdHandler,
 	getPollByIdWithOptionsHandler,
 	postPollOptionsHandler,
+	getDailyPollHandler,
 } from "./handlers";
 
 vi.mock("@/src/domains/polls/api/queries", () => ({
@@ -15,10 +16,22 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchPollByIdWithOptions: vi.fn(),
 	hasUserAnsweredPoll: vi.fn(),
 	countUserPollAnswers: vi.fn(),
+	getPollHistory: vi.fn(),
+	trackPollView: vi.fn(),
+	trackPollAnswer: vi.fn(),
+	getTotalPollsSeenByUser: vi.fn(),
 }));
 
 vi.mock("~/domains/polls/services/processPollAnswer.service", () => ({
 	processPollAnswer: vi.fn(),
+}));
+
+vi.mock("~/domains/polls/services/dailyPoll.service", () => ({
+	getDailyPollWithOptions: vi.fn(),
+}));
+
+vi.mock("date-fns", () => ({
+	isSameDay: vi.fn(),
 }));
 
 // Tests service layer logic that wraps query methods and structures return data
@@ -224,6 +237,8 @@ describe("handlers", () => {
 	describe("postPollOptions", () => {
 		beforeEach(() => {
 			vi.resetAllMocks();
+			// Mock getTotalPollsSeenByUser (used by processPollAnswer internally)
+			vi.mocked(queries.getTotalPollsSeenByUser).mockResolvedValue(10);
 		});
 
 		it("posts the selected options to the backend", async () => {
@@ -367,6 +382,294 @@ describe("handlers", () => {
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
 			expect(queries.fetchPollById).toHaveBeenCalledWith(123);
+			expect(result.success).toBe(true);
+		});
+	});
+
+	describe("getDailyPoll - poll view tracking deduplication", () => {
+		beforeEach(() => {
+			vi.clearAllMocks();
+		});
+
+		it("tracks poll view on first view (no history)", async () => {
+			const mockPoll = createMockPoll({ id: 64 });
+			const mockOptions = createMockPollOptionArray(4);
+			const userId = "kazooi-user-13-05-1991";
+
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
+			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+			// @ts-expect-error - Mocking null return value
+			vi.mocked(queries.getPollHistory).mockResolvedValue(null);
+
+			const { isSameDay } = await import("date-fns");
+			vi.mocked(isSameDay).mockReturnValue(false);
+
+			const result = await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.getPollHistory).toHaveBeenCalledWith(userId, 64);
+			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 64);
+			expect(result.success).toBe(true);
+		});
+
+		it("tracks poll view on different day when last_seen_at is old", async () => {
+			const mockPoll = createMockPoll({ id: 100 });
+			const mockOptions = createMockPollOptionArray(4);
+			const userId = "mumbos-mountain-user";
+			const oldDate = new Date("2024-05-01T10:00:00Z");
+
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
+			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+			vi.mocked(queries.getPollHistory).mockResolvedValue({
+				id: 1,
+				user_id: userId,
+				poll_id: 100,
+				times_seen: 1,
+				first_seen_at: oldDate,
+				last_seen_at: oldDate,
+				times_answered: 0,
+				last_answered_at: null,
+			});
+
+			const { isSameDay } = await import("date-fns");
+			vi.mocked(isSameDay).mockReturnValue(false);
+
+			const result = await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.getPollHistory).toHaveBeenCalledWith(userId, 100);
+			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 100);
+			expect(result.success).toBe(true);
+		});
+
+		it("does not track poll view when already seen today (same day)", async () => {
+			const mockPoll = createMockPoll({ id: 64 });
+			const mockOptions = createMockPollOptionArray(4);
+			const userId = "christmas-user-25-12";
+
+			const christmasDay = new Date("2024-12-25T14:30:00Z");
+
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
+			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+			vi.mocked(queries.getPollHistory).mockResolvedValue({
+				id: 1,
+				user_id: userId,
+				poll_id: 64,
+				times_seen: 1,
+				first_seen_at: christmasDay,
+				last_seen_at: christmasDay,
+				times_answered: 0,
+				last_answered_at: null,
+			});
+
+			const { isSameDay } = await import("date-fns");
+			vi.mocked(isSameDay).mockReturnValue(true);
+
+			const result = await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.getPollHistory).toHaveBeenCalledWith(userId, 64);
+			expect(queries.trackPollView).not.toHaveBeenCalled();
+			expect(result.success).toBe(true);
+		});
+
+		it("tracks poll view when seen on different day (day 122)", async () => {
+			const mockPoll = createMockPoll({ id: 64 });
+			const mockOptions = createMockPollOptionArray(4);
+			const userId = "gruntilda-user";
+
+			const firstDay = new Date("2024-05-13T10:00:00Z");
+
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
+			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+			vi.mocked(queries.getPollHistory).mockResolvedValue({
+				id: 1,
+				user_id: userId,
+				poll_id: 64,
+				times_seen: 1,
+				first_seen_at: firstDay,
+				last_seen_at: firstDay,
+				times_answered: 0,
+				last_answered_at: null,
+			});
+
+			const { isSameDay } = await import("date-fns");
+			vi.mocked(isSameDay).mockReturnValue(false);
+
+			const result = await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.getPollHistory).toHaveBeenCalledWith(userId, 64);
+			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 64);
+			expect(result.success).toBe(true);
+		});
+
+		it("tracks poll view only once despite multiple refreshes on same day", async () => {
+			const mockPoll = createMockPoll({ id: 64 });
+			const mockOptions = createMockPollOptionArray(4);
+			const userId = "bottles-user";
+
+			const todayMorning = new Date("2024-12-25T08:00:00Z");
+
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
+			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+
+			const { isSameDay } = await import("date-fns");
+
+			// First call - no history
+			// @ts-expect-error - Mocking null return value
+			vi.mocked(queries.getPollHistory).mockResolvedValueOnce(null);
+			vi.mocked(isSameDay).mockReturnValueOnce(false);
+
+			await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.trackPollView).toHaveBeenCalledTimes(1);
+			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 64);
+
+			// Second call - history exists with today's date
+			vi.mocked(queries.getPollHistory).mockResolvedValueOnce({
+				id: 1,
+				user_id: userId,
+				poll_id: 64,
+				times_seen: 1,
+				first_seen_at: todayMorning,
+				last_seen_at: todayMorning,
+				times_answered: 0,
+				last_answered_at: null,
+			});
+			vi.mocked(isSameDay).mockReset().mockReturnValue(true);
+
+			await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.trackPollView).toHaveBeenCalledTimes(1);
+
+			// Third call - still today
+			vi.mocked(queries.getPollHistory).mockResolvedValueOnce({
+				id: 1,
+				user_id: userId,
+				poll_id: 64,
+				times_seen: 1,
+				first_seen_at: todayMorning,
+				last_seen_at: todayMorning,
+				times_answered: 0,
+				last_answered_at: null,
+			});
+
+			await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.trackPollView).toHaveBeenCalledTimes(1);
+		});
+
+		it("tracks different polls independently on same day", async () => {
+			const mockPoll1 = createMockPoll({ id: 64 });
+			const mockPoll2 = createMockPoll({ id: 100 });
+			const mockOptions = createMockPollOptionArray(4);
+			const userId = "banjo-kazooie-user";
+
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+
+			const { isSameDay } = await import("date-fns");
+
+			// First poll - no history
+			vi.mocked(getDailyPollWithOptions).mockResolvedValueOnce({
+				poll: mockPoll1,
+				options: mockOptions,
+			});
+			// @ts-expect-error - Mocking null return value
+			vi.mocked(queries.getPollHistory).mockResolvedValueOnce(null);
+			vi.mocked(isSameDay).mockReturnValueOnce(false);
+
+			await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 64);
+
+			// Second poll (different poll_id) - no history
+			vi.mocked(getDailyPollWithOptions).mockResolvedValueOnce({
+				poll: mockPoll2,
+				options: mockOptions,
+			});
+			// @ts-expect-error - Mocking null return value
+			vi.mocked(queries.getPollHistory).mockResolvedValueOnce(null);
+			vi.mocked(isSameDay).mockReturnValueOnce(false);
+
+			await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 100);
+			expect(queries.trackPollView).toHaveBeenCalledTimes(2);
+		});
+
+		it("does not track poll view when no userId provided", async () => {
+			const mockPoll = createMockPoll({ id: 64 });
+			const mockOptions = createMockPollOptionArray(4);
+
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
+			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
+
+			const result = await getDailyPollHandler({
+				data: {},
+			});
+
+			expect(queries.getPollHistory).not.toHaveBeenCalled();
+			expect(queries.trackPollView).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 		});
 	});

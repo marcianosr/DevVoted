@@ -5,13 +5,19 @@ import { awardCoverageToRun } from "../api/queries";
 import { createMockRun } from "../models/run";
 import { createMockRunCategoryCoverage } from "../models/runCategoryCoverage";
 import { createPoll } from "~/domains/polls/models/poll";
+import { getTotalPollsSeenByUser } from "~/domains/polls/api/queries";
 
 vi.mock("~/domains/score/services/score.service");
 vi.mock("../api/queries");
+vi.mock("~/domains/polls/api/queries", () => ({
+	getTotalPollsSeenByUser: vi.fn(),
+}));
 
 describe("incrementRunProgress", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Default mock: totalPollsSeen equals totalPollsAnswered
+		vi.mocked(getTotalPollsSeenByUser).mockResolvedValue(5);
 	});
 
 	const createTestPollContext = (categoryCode: string) => ({
@@ -92,6 +98,7 @@ describe("incrementRunProgress", () => {
 			currentStreak: 2,
 			currentBestStreak: 5,
 			totalPollsAnswered: 5, // 3 + 2
+			totalPollsSeen: 5,
 			correctnessFactor: 1.0,
 			coverageAdd: 2, // Config coverage bonus for .js config
 			coverageMult: 1,
@@ -144,6 +151,7 @@ describe("incrementRunProgress", () => {
 			currentStreak: 2,
 			currentBestStreak: 5,
 			totalPollsAnswered: 5,
+			totalPollsSeen: 5,
 			correctnessFactor: 1.0,
 			coverageAdd: 0, // No config bonus
 			coverageMult: 1,
@@ -241,6 +249,7 @@ describe("incrementRunProgress", () => {
 			currentStreak: 2,
 			currentBestStreak: 5,
 			totalPollsAnswered: 5,
+			totalPollsSeen: 5,
 			correctnessFactor: 1.0,
 			coverageAdd: 4, // Double config bonus (0.5 + 0.5)
 			coverageMult: 1,
@@ -329,6 +338,7 @@ describe("incrementRunProgress", () => {
 				currentStreak: 2,
 				currentBestStreak: 5,
 				totalPollsAnswered: 5,
+				totalPollsSeen: 5,
 				correctnessFactor: 1.0,
 				coverageAdd: 2, // Config bonus should be applied
 				coverageMult: 1,

@@ -7,6 +7,7 @@ import { Run } from "../models/run";
 import { CategoryCode } from "~/domains/shared/categories";
 import { applyEffects } from "~/domains/configs/data/configs";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { getTotalPollsSeenByUser } from "~/domains/polls/api/queries";
 
 type IncrementProgress = {
 	categoryCode: CategoryCode;
@@ -57,6 +58,9 @@ export const incrementRunProgress = async ({
 		0
 	);
 
+	// Get total polls seen by user for round calculation
+	const totalPollsSeen = await getTotalPollsSeenByUser(run.userId);
+
 	// Step 1: Apply config effects to get coverage modifiers
 	const effectCtx = {
 		poll,
@@ -83,6 +87,7 @@ export const incrementRunProgress = async ({
 		currentCoverage: currentCategoryCoverage.currentCoverage,
 		currentStreak: currentCategoryCoverage.currentStreak,
 		totalPollsAnswered,
+		totalPollsSeen,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});

@@ -8,6 +8,8 @@ import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
 import type { CategoryCode } from "~/domains/shared/categories";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
+import { ErrorComponent } from "~/ui/ErrorComponent";
+import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
 
 const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -60,16 +62,25 @@ const DailyPoll: React.FC = () => {
 		enabled: !!user?.id, // Only run when we have user ID
 	});
 
-	const pollData = data?.success ? data.data : null;
+	console.log("DailyPoll render:", { data, isLoading, error });
+
+	if (isLoading) {
+		return <LoadingSkeleton />;
+	}
+
+	if (error || !data) {
+		return <ErrorComponent text={"Error loading poll"} />;
+	}
+
+	if (!data.success) {
+		return <ErrorComponent text={data.error || "Error loading poll"} />;
+	}
+
+	const poll = data.data;
 
 	return (
-		<section data-category-theme={pollData?.poll.categoryCode}>
-			<PollPageContainer
-				user={user}
-				queryKey={pollQueryKeys.daily(user?.id)}
-				queryFn={() => getDailyPoll({ data: {} })}
-				errorMessage="Error Loading Daily Poll"
-			/>
+		<section data-category-theme={poll?.poll.categoryCode}>
+			<PollPageContainer user={user} poll={poll} />
 
 			{/* TODO: Refactor in own component */}
 			<section className="max-w-5xl mx-auto">
@@ -107,13 +118,13 @@ const DailyPoll: React.FC = () => {
 					)}
 					{leaderboardQuery.data?.success &&
 						leaderboardQuery.data.data &&
-						pollData?.poll.categoryCode && (
+						poll?.poll.categoryCode && (
 							<Leaderboard
 								entries={leaderboardQuery.data.data}
 								currentUserId={user?.id}
 								getLeaderboard={getLeaderboard}
 								getAllTimeLeaderboard={getAllTimeLeaderboard}
-								currentCategoryCode={pollData.poll.categoryCode}
+								currentCategoryCode={poll.poll.categoryCode}
 							/>
 						)}
 				</>

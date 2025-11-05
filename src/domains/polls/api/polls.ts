@@ -6,7 +6,7 @@ import {
 	getPollByIdWithOptionsHandler,
 	getDailyPollHandler,
 	postPollOptionsHandler,
-	getAllPollsWithUserStatsHandler,
+	getTotalPollsSeenHandler,
 } from "./handlers";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
@@ -54,10 +54,9 @@ export const postPollOptions = createServerFn({ method: "POST" })
 		});
 	});
 
-export const getAllPollsWithUserStats = createServerFn({ method: "GET" })
-	.inputValidator(
-		z.object({
-			userId: z.string(),
-		})
-	)
-	.handler(async ({ data }) => getAllPollsWithUserStatsHandler({ data }));
+export const getTotalPollsSeen = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const userId = await getAuthenticatedUserId();
+		return getTotalPollsSeenHandler({ data: { userId } });
+	}
+);

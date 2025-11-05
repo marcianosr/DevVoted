@@ -20,6 +20,8 @@ export const pollQueryKeys = {
 		[...pollQueryKeys.all, pollId, "options", userId] as const,
 	daily: (userId: string | undefined) =>
 		[...pollQueryKeys.all, "daily", userId] as const,
+	totalSeen: (userId: string | undefined) =>
+		[...pollQueryKeys.all, "totalSeen", userId] as const,
 };
 
 export const userQueryKeys = {

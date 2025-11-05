@@ -140,7 +140,7 @@ describe("ThresholdCalculator", () => {
 	});
 
 	describe("Gate 1: 2% in 1 category", () => {
-		it("passes when 1 category has 2% coverage at poll 5", () => {
+		it("passes when 1 category has 2% coverage at 5 polls seen", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "js",
@@ -148,8 +148,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 5,
 				}),
 			];
+			const totalPollsSeen = 5;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.currentRound).toBe(1);
@@ -157,7 +158,7 @@ describe("ThresholdCalculator", () => {
 			expect(result.qualifyingCategories).toEqual(["js"]);
 		});
 
-		it("fails when coverage is below 2% at poll 5", () => {
+		it("fails when coverage is below 2% at 5 polls seen", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "react",
@@ -165,14 +166,15 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 5,
 				}),
 			];
+			const totalPollsSeen = 5;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(false);
 			expect(result.qualifyingCategories).toEqual([]);
 		});
 
-		it("always passes on non-checkpoint polls (poll 1-4)", () => {
+		it("always passes on non-checkpoint polls (4 polls seen)", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					categoryCode: "css",
@@ -180,8 +182,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 4,
 				}),
 			];
+			const totalPollsSeen = 4;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.isThresholdCheckPoll).toBe(false);
@@ -197,8 +200,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 10,
 				}),
 			];
+			const totalPollsSeen = 10;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.currentRound).toBe(2);
@@ -218,8 +222,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 5,
 				}),
 			];
+			const totalPollsSeen = 10;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.qualifyingCategories).toEqual(["react", "js"]);
@@ -238,8 +243,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 5,
 				}),
 			];
+			const totalPollsSeen = 10;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(false);
 			expect(result.qualifyingCategories).toEqual([]);
@@ -255,8 +261,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 15,
 				}),
 			];
+			const totalPollsSeen = 15;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.currentRound).toBe(3);
@@ -275,8 +282,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 7,
 				}),
 			];
+			const totalPollsSeen = 15;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 		});
@@ -296,8 +304,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 12,
 				}),
 			];
+			const totalPollsSeen = 25;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.currentRound).toBe(5);
@@ -319,8 +328,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 8,
 				}),
 			];
+			const totalPollsSeen = 25;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(false);
 		});
@@ -338,8 +348,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 8,
 				}),
 			];
+			const totalPollsSeen = 25;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(false);
 		});
@@ -352,8 +363,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 25,
 				}),
 			];
+			const totalPollsSeen = 25;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(false);
 		});
@@ -373,8 +385,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 14,
 				}),
 			];
+			const totalPollsSeen = 30;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.currentRound).toBe(6);
@@ -400,8 +413,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 3,
 				}),
 			];
+			const totalPollsSeen = 10;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.qualifyingCategories).toContain("js");
@@ -425,8 +439,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 7,
 				}),
 			];
+			const totalPollsSeen = 25;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.qualifyingCategories).toHaveLength(2);
@@ -434,15 +449,16 @@ describe("ThresholdCalculator", () => {
 	});
 
 	describe("Edge cases", () => {
-		it("handles zero polls answered (game start)", () => {
+		it("handles zero polls seen (game start)", () => {
 			const categoryData = [
 				createMockRunCategoryCoverage({
 					currentCoverage: 0,
 					pollsAnswered: 0,
 				}),
 			];
+			const totalPollsSeen = 0;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.currentRound).toBe(1);
@@ -450,7 +466,8 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("handles empty category data", () => {
-			const result = calculateThresholdInfo([]);
+			const totalPollsSeen = 0;
+			const result = calculateThresholdInfo([], totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.maxCoverage).toBe(0);
@@ -464,8 +481,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 3,
 				}),
 			];
+			const totalPollsSeen = 3;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 		});
@@ -480,8 +498,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 5,
 				}),
 			];
+			const totalPollsSeen = 5;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 		});
@@ -504,8 +523,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 3,
 				}),
 			];
+			const totalPollsSeen = 10;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(true);
 			expect(result.currentRound).toBe(2);
@@ -524,8 +544,9 @@ describe("ThresholdCalculator", () => {
 					pollsAnswered: 5,
 				}),
 			];
+			const totalPollsSeen = 25;
 
-			const result = calculateThresholdInfo(categoryData);
+			const result = calculateThresholdInfo(categoryData, totalPollsSeen);
 
 			expect(result.meetsThreshold).toBe(false);
 		});

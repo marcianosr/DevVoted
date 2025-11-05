@@ -4,6 +4,7 @@ import { pollQueryKeys } from "~/domains/shared/queryKeys";
 import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
 
 const PollDetail: React.FC = () => {
+	return <h1>Poll id</h1>;
 	const { pollId } = Route.useParams();
 	const { user } = Route.useRouteContext();
 	const pollIdNumber = parseInt(pollId, 10);

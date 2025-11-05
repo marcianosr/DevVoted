@@ -153,9 +153,7 @@ describe("useActiveRun", () => {
 			result.current.startRun();
 
 			await waitFor(() => {
-				expect(runsApi.getOrCreateRun).toHaveBeenCalledWith({
-					data: { userId: "user123" },
-				});
+				expect(runsApi.getOrCreateRun).toHaveBeenCalledWith();
 			});
 		});
 

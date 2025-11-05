@@ -311,8 +311,15 @@ const EFFECTS: Record<string, EffectFn> = {
 	},
 
 	checkCoverageWithThreshold: ({ poll, options, run, hasAnswered }) => {
-		// Calculate threshold based on category coverage data
-		const thresholdInfo = calculateThresholdInfo(run.categoryCoverage);
+		// Calculate total polls answered from category coverage (fallback for compatibility)
+		const totalPollsAnswered = run.categoryCoverage.reduce(
+			(sum, coverage) => sum + coverage.pollsAnswered,
+			0
+		);
+
+		// Calculate threshold based on category coverage data and answered polls
+		// Note: This uses answered polls as a proxy for seen polls since we don't have access to totalPollsSeen here
+		const thresholdInfo = calculateThresholdInfo(run.categoryCoverage, totalPollsAnswered);
 		const requiredCoverage =
 			thresholdInfo.gateDefinition?.requirements[0]?.threshold ?? 0;
 		const requiredForProtection = requiredCoverage * 0.8; // 80% of threshold

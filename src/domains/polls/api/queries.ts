@@ -342,3 +342,21 @@ export const trackPollAnswer = async (
 			},
 		});
 };
+
+/**
+ * Get total number of unique polls seen by a user across all time
+ * Each unique poll counts once (regardless of times_seen value)
+ * Used for calculating current round and poll position in round
+ */
+export const getTotalPollsSeenByUser = async (
+	userId: string
+): Promise<number> => {
+	const result = await db
+		.select({
+			count: sql<number>`COUNT(DISTINCT ${pollHistoryTable.poll_id})::int`,
+		})
+		.from(pollHistoryTable)
+		.where(eq(pollHistoryTable.user_id, userId));
+
+	return result[0]?.count ?? 0;
+};

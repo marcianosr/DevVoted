@@ -92,6 +92,7 @@ function PollsList() {
 								params={{ pollId: String(poll.id) }}
 								className="text-blue-600 hover:text-blue-800 hover:underline"
 							>
+								<div>{poll.id}</div>
 								<div>{poll.question}</div>
 								<div className="text-sm text-gray-500 mt-1 flex justify-between">
 									<span>Category: {poll.categoryCode}</span>
