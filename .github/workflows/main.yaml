@@ -20,8 +20,11 @@ jobs:
               with:
                   version: latest
 
-            - run: supabase link --project-ref $SUPABASE_PROJECT_ID
-            - run: supabase db push
+            - name: Link Supabase project
+              run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+
+            - name: Push database migrations
+              run: supabase db push
 
     apply:
         runs-on: ubuntu-latest

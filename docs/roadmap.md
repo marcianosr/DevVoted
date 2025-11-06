@@ -181,6 +181,7 @@ Season 3: Expansion
 
 ### Phase 2:
 
+[] CI / CD github actions (DB migrations)
 [] Config discovery system
 [] Integrate basic CSI
 [] Check multiple choice formula
