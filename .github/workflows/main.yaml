@@ -22,7 +22,7 @@ jobs:
 
             - name: Debug environment variables
               run: |
-                  echo "Project ID length: ${#SUPABASE_PROJECT_ID}"
+                  echo "Project ID: length: ${#SUPABASE_PROJECT_ID}"
                   echo "Password length: ${#SUPABASE_DB_PASSWORD}"
                   echo "Access token length: ${#SUPABASE_ACCESS_TOKEN}"
 
