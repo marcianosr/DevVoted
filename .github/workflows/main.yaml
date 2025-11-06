@@ -34,6 +34,7 @@ jobs:
 
     apply:
         runs-on: ubuntu-latest
+        environment: Production
         env:
             SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
             TF_VAR_linked_project: ${{ secrets.SUPABASE_PROJECT_ID }}
