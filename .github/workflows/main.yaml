@@ -9,6 +9,7 @@ on:
 jobs:
     migrate:
         runs-on: ubuntu-latest
+        environment: Production
         env:
             SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
             SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -19,12 +20,6 @@ jobs:
             - uses: supabase/setup-cli@v1
               with:
                   version: latest
-
-            - name: Debug environment variables
-              run: |
-                  echo "Project ID: length: ${#SUPABASE_PROJECT_ID}"
-                  echo "Password length: ${#SUPABASE_DB_PASSWORD}"
-                  echo "Access token length: ${#SUPABASE_ACCESS_TOKEN}"
 
             - name: Link Supabase project
               run: |
