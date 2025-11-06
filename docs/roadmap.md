@@ -92,22 +92,23 @@ BUGS:
 [] When someone waits a day while having the shop open, the next poll comes and is "answered" automatically. Also shop[ is open]
 [] Only update the poll counter when poll is "seen" not when answered
 [] Poll status in seperate table - Poll History
-[] History table of polls: What happened with the poll?
+[o] History table of polls: What happened with the poll?
 [] Append runs with new categories when adding a new category
-[] How to use TOML config?
+[x] How to use TOML config?
 [] Slow load db queries
 [] Click on config to install
 [] Suspend leaderboards because it slows
 [] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
-[] When a new poll is loaded, the user sees the old poll for a split second causing two track views
+[o] When a new poll is loaded, the user sees the old poll for a split second causing two track views
 
 [] Trage app - heeft vooral te maken met de database queries die geoptimaliseerd moeten worden
-[] Poll history table - how
+[x] Poll history table - how
 [] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
 [] Leaderboard query optimization?
 [] Page title is nog steeds "Tanstack blabla"
 [] Als iemand de shop open heeft en de volgende dag de pagina weer bezoekt, haal hij de nieuwe poll op maar blijft hij in beantwoorde staat
 [] De shop is weg als je de pagina refresht. Niet echt een bug, maar ik weet dat dit zo is
+[] Start new Run button in de header werkt niet
 
 Season 2: Early Meta Layer
 [] Show current season - shows 29 days
@@ -163,9 +164,8 @@ Season 3: Expansion
 
 [x] Select random poll to "open" for today and open/close poll for the next day
 [x] Integrate 3-poll "sets": Threshold is only checked at every third poll
-[] Show XP breakdown and result feedback after each poll
-[] Refactor service files
-[] Run end: Show gameover and stat screen: Allow user to start a new run
+[] Refactor service files - userSync for example
+[x] Run end: Show gameover and stat screen: Allow user to start a new run
 [] Implement rerolls
 [] Show leaderboard
 [] Create atleast 6-8 configs with effects
