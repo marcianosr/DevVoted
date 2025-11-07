@@ -42,3 +42,6 @@ polls-d8b3d-firebase-adminsdk-cos71-910d48b66d.json
 scripts/firebase-service-account.json
 firebase-backup*
 firebase-polls-backup-*.json
+
+# Generated reports and status files
+IMPROVEMENTS_STATUS_REPORT.md
