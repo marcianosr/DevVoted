@@ -10,6 +10,10 @@ import { getAuthenticatedUserId } from "~/utils/authorization";
 import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
+import {
+	LEADERBOARD_REFRESH_INTERVAL,
+	CATEGORY_COVERAGE_REFRESH_INTERVAL,
+} from "~/config/polling";
 
 const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -45,7 +49,7 @@ const DailyPoll: React.FC = () => {
 		queryFn: () => getActiveRunCategoryCoverage(),
 		enabled: !!user?.id,
 		staleTime: 10 * 1000, // 10 seconds - more frequent updates for real-time feel
-		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+		refetchInterval: CATEGORY_COVERAGE_REFRESH_INTERVAL,
 	});
 
 	// Fetch live leaderboard for competitive ranking (total XP)
@@ -53,7 +57,7 @@ const DailyPoll: React.FC = () => {
 		queryKey: ["leaderboard", "live", "total"],
 		queryFn: () => getLeaderboard({ data: {} }), // No categoryCode = total
 		staleTime: 15 * 1000, // 15 seconds
-		refetchInterval: 45 * 1000, // Auto-refresh every 45 seconds
+		refetchInterval: LEADERBOARD_REFRESH_INTERVAL,
 	});
 
 	const { data, isLoading, error } = useQuery({

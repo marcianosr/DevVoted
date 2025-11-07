@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { getCategories, type CategoryCode } from "~/domains/shared/categories";
 import type { ApiResponse } from "~/utils/errorHandling";
 import type { LeaderboardEntry } from "../models/leaderboard";
+import { LEADERBOARD_REFRESH_INTERVAL } from "~/config/polling";
 
 type CategoryOption = {
 	code: CategoryCode;
@@ -46,7 +47,7 @@ export const Leaderboard = ({
 			}),
 		enabled: selectedCategory !== undefined && mode === "live",
 		staleTime: 15 * 1000, // 15 seconds
-		refetchInterval: 45 * 1000, // Auto-refresh every 45 seconds
+		refetchInterval: LEADERBOARD_REFRESH_INTERVAL,
 	});
 
 	// Query for category-specific all-time leaderboard
