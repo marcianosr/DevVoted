@@ -59,12 +59,12 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Style buttons better
 [x] Style configs better
 [x] Kanto colors
-[] Prematurely updating round/threshold when answering on and still in shop, causing confusion and premature perks (like rerolls) availability
+[-] Prematurely updating round/threshold when answering on and still in shop, causing confusion and premature perks (like rerolls) availability
 [x] Reset rerolls per gate instead of per poll
 [x] Fix "require is not defined" bug before launch
 [x] When last win condition is met, show winning screen. Allow user to continue playing or start new run
 [x] Start new run button in navigation
-[] Add small explanations when staring a new run (e.g., "You start with 1MB storage and need to answer 150 XP worth of polls every 3 polls to continue your run. Buy configs in the shop to help you along the way!")
+[] Add small explanations when starting a new run (e.g., "You start with 1MB storage and need to answer 150 XP worth of polls every 3 polls to continue your run. Buy configs in the shop to help you along the way!")
 [] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [] Github photo?
 [x] Show clear disable button in config when storage is full on "purchase"
@@ -88,9 +88,9 @@ Season 1: Core Loop ✅ ship this before anything else
 BUGS:
 [x] FORCE DARKMODE [Critical]
 [x] Login is white
-[] Page Title
+[x] Page Title
 [] When someone waits a day while having the shop open, the next poll comes and is "answered" automatically. Also shop[ is open]
-[] Only update the poll counter when poll is "seen" not when answered
+[x] Only update the poll counter when poll is "seen" not when answered
 [] Poll status in seperate table - Poll History
 [o] History table of polls: What happened with the poll?
 [] Append runs with new categories when adding a new category
@@ -100,6 +100,7 @@ BUGS:
 [] Suspend leaderboards because it slows
 [] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
 [o] When a new poll is loaded, the user sees the old poll for a split second causing two track views
+[] Giothub env vs Vercel env?
 
 [] Trage app - heeft vooral te maken met de database queries die geoptimaliseerd moeten worden
 [x] Poll history table - how

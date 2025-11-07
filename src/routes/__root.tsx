@@ -68,7 +68,7 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			...seo({
-				title: "DevVoted| Daily Polls with a competitive roguelike twist!",
+				title: "DevVoted | Daily Polls with a competitive roguelike twist!",
 				description: `DevVoted is a platform for daily polls with a competitive roguelike twist!`,
 			}),
 		],
