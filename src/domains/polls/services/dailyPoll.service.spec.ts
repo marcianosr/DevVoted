@@ -98,6 +98,9 @@ describe("dailyPoll.service", () => {
 				createdAt: new Date("2025-05-13"),
 				updatedAt: null,
 				categoryCode: "js",
+				codeBlock: null,
+				codeSandboxExample: null,
+				pollNumber: null,
 			};
 
 			// Mock the query layer to return the existing open poll
@@ -132,6 +135,9 @@ describe("dailyPoll.service", () => {
 				createdAt: new Date("2025-05-12"),
 				updatedAt: null,
 				categoryCode: "js",
+				codeBlock: null,
+				codeSandboxExample: null,
+				pollNumber: null,
 			};
 
 			// Mock the query layer to return the selected poll
@@ -152,7 +158,9 @@ describe("dailyPoll.service", () => {
 
 		it("returns null when no polls are available to open", async () => {
 			// Mock the query layer to return null
-			vi.mocked(queries.manageDailyPollTransition).mockResolvedValue(null);
+			vi.mocked(queries.manageDailyPollTransition).mockResolvedValue(
+				null
+			);
 
 			const result = await selectDailyPoll("2025-05-13");
 
@@ -173,6 +181,9 @@ describe("dailyPoll.service", () => {
 				createdAt: new Date("2025-05-12"),
 				updatedAt: null,
 				categoryCode: "js",
+				codeBlock: null,
+				codeSandboxExample: null,
+				pollNumber: null,
 			};
 
 			vi.mocked(queries.manageDailyPollTransition).mockResolvedValue(
@@ -185,8 +196,9 @@ describe("dailyPoll.service", () => {
 				expect.any(Function)
 			);
 
-			const selectionFunction = vi.mocked(queries.manageDailyPollTransition)
-				.mock.calls[0][0];
+			const selectionFunction = vi.mocked(
+				queries.manageDailyPollTransition
+			).mock.calls[0][0];
 			const mockPolls = [expectedPoll];
 
 			vi.mocked(seededRandom.selectSeededRandom).mockReturnValue(
@@ -204,19 +216,22 @@ describe("dailyPoll.service", () => {
 		it("selects different polls for different dates", async () => {
 			const christmasPoll = createMockPoll({
 				id: 25,
-				question: "Web vitals measure user experience with precision and care, which metric tracks visual stability everywhere?",
+				question:
+					"Web vitals measure user experience with precision and care, which metric tracks visual stability everywhere?",
 				categoryCode: "general-frontend",
 			});
 
 			const birthdayPoll = createMockPoll({
 				id: 13,
-				question: "Union types in TypeScript let you combine with ease, what operator joins types if you please?",
+				question:
+					"Union types in TypeScript let you combine with ease, what operator joins types if you please?",
 				categoryCode: "ts",
 			});
 
 			const newYearPoll = createMockPoll({
 				id: 1,
-				question: "useState and useReducer manage state with care, when does useReducer become the better pair?",
+				question:
+					"useState and useReducer manage state with care, when does useReducer become the better pair?",
 				categoryCode: "react",
 			});
 
