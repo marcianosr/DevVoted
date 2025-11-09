@@ -9,9 +9,7 @@ import {
 import { Poll, pollFactory } from "~/domains/polls/models/poll";
 import { db } from "~/database/db";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
-import { pollResponseFactory } from "~/domains/polls/models/pollResponses";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
-import { selectSeededRandom } from "~/lib/seededRandom";
 
 export const fetchPollById = async (id: number): Promise<Poll | null> => {
 	const pollRecord = await db
@@ -75,22 +73,6 @@ export const insertPoll = async (data: Poll) => {
 	return result;
 };
 
-// export const insertOptionsByPollId = async (data: {
-// 	pollId: number;
-// 	selectedOptions: string[];
-// }) => {
-// 	const optionsRecord = data.selectedOptions.map((option) => ({
-// 		poll_id: data.pollId,
-// 		option: option,
-// 	}));
-// 	const result = await db
-// 		.insert(pollOptionsTable)
-// 		.values(optionsRecord)
-// 		.returning();
-
-// 	return result;
-// };
-
 type CreatePollResponse = {
 	pollId: number;
 	userId: string;
@@ -147,82 +129,6 @@ export const hasUserAnsweredPoll = async (
 	return existingResponse.length > 0;
 };
 
-export const countUserPollAnswers = async (
-	pollId: number,
-	userId: string
-): Promise<number> => {
-	// Count total times user has answered this poll across all days
-	const responses = await db
-		.select()
-		.from(pollResponsesTable)
-		.where(
-			and(
-				eq(pollResponsesTable.poll_id, pollId),
-				eq(pollResponsesTable.user_id, userId)
-			)
-		);
-
-	return responses.length;
-};
-
-export const getUserPollStats = async (userId: string) => {
-	// Get all user's poll responses grouped by poll_id
-	const responses = await db
-		.select({
-			poll_id: pollResponsesTable.poll_id,
-		})
-		.from(pollResponsesTable)
-		.where(eq(pollResponsesTable.user_id, userId));
-
-	// Count responses per poll
-	const pollStats = responses.reduce((acc, response) => {
-		const pollId = response.poll_id;
-		acc[pollId] = (acc[pollId] || 0) + 1;
-		return acc;
-	}, {} as Record<number, number>);
-
-	return pollStats;
-};
-
-export const getAllPollsWithUserStats = async (userId: string) => {
-	// Single query to get all polls with user stats, sorted by ID
-	const result = await db
-		.select({
-			poll: pollsTable,
-			timesAnswered: sql<number>`COUNT(${pollResponsesTable.response_id})::int`,
-		})
-		.from(pollsTable)
-		.leftJoin(
-			pollResponsesTable,
-			and(
-				eq(pollsTable.id, pollResponsesTable.poll_id),
-				eq(pollResponsesTable.user_id, userId)
-			)
-		)
-		.groupBy(pollsTable.id)
-		.orderBy(pollsTable.id);
-
-	return result.map(row => ({
-		poll: pollFactory.toDTO(row.poll),
-		hasAnswered: row.timesAnswered > 0,
-		timesAnswered: row.timesAnswered,
-	}));
-};
-
-export const openPoll = async (id: number) => {
-	await db
-		.update(pollsTable)
-		.set({ status: "open" })
-		.where(eq(pollsTable.id, id));
-};
-
-export const closePoll = async (id: number) => {
-	await db
-		.update(pollsTable)
-		.set({ status: "closed" })
-		.where(eq(pollsTable.id, id));
-};
-
 /**
  * Efficiently manage daily poll transitions - close all open polls, open today's poll
  * This prevents race conditions and ensures only one poll is open at a time
@@ -268,10 +174,7 @@ export const manageDailyPollTransition = async (
 /**
  * Get poll history record for a specific user and poll
  */
-export const getPollHistory = async (
-	userId: string,
-	pollId: number
-) => {
+export const getPollHistory = async (userId: string, pollId: number) => {
 	const [record] = await db
 		.select()
 		.from(pollHistoryTable)

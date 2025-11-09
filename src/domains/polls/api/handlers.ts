@@ -3,7 +3,6 @@ import {
 	fetchPollById,
 	fetchPollByIdWithOptions,
 	hasUserAnsweredPoll,
-	countUserPollAnswers,
 	getPollHistory,
 	trackPollView,
 	trackPollAnswer,
@@ -30,11 +29,8 @@ export const getPollByIdWithOptionsHandler = async ({
 		const hasAnswered = userId
 			? await hasUserAnsweredPoll(id, userId)
 			: false;
-		const timesAnswered = userId
-			? await countUserPollAnswers(id, userId)
-			: 0;
 
-		return { poll, options, hasAnswered, timesAnswered };
+		return { poll, options, hasAnswered };
 	});
 };
 
@@ -66,9 +62,6 @@ export const getDailyPollHandler = async ({
 		const hasAnswered = userId
 			? await hasUserAnsweredPoll(poll.id, userId)
 			: false;
-		const timesAnswered = userId
-			? await countUserPollAnswers(poll.id, userId)
-			: 0;
 
 		// Track poll view only if not seen today
 		if (userId) {
@@ -82,7 +75,7 @@ export const getDailyPollHandler = async ({
 			}
 		}
 
-		return { poll, options, hasAnswered, timesAnswered };
+		return { poll, options, hasAnswered };
 	});
 };
 

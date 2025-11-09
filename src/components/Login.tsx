@@ -63,49 +63,58 @@ export function Login() {
 			}}
 			afterSubmit={
 				<>
-					{loginMutation.data && (
+					{process.env.NODE_ENV === "development" && (
 						<>
-							<div className="text-red-400">
-								{loginMutation.data.message}
-							</div>
-							{loginMutation.data.error &&
-							loginMutation.data.message ===
-								"Invalid login credentials" ? (
-								<div>
-									<SecondaryButton
-										className="text-blue-500"
-										onClick={(e) => {
-											const formData = new FormData(
-												(
-													e.target as HTMLButtonElement
-												).form!
-											);
+							{loginMutation.data && (
+								<>
+									<div className="text-red-400">
+										{loginMutation.data.message}
+									</div>
+									{loginMutation.data.error &&
+									loginMutation.data.message ===
+										"Invalid login credentials" ? (
+										<div>
+											<SecondaryButton
+												className="text-blue-500"
+												onClick={(e) => {
+													const formData =
+														new FormData(
+															(
+																e.target as HTMLButtonElement
+															).form!
+														);
 
-											signupMutation.mutate({
-												data: {
-													email: formData.get(
-														"email"
-													) as string,
-													password: formData.get(
-														"password"
-													) as string,
-												},
-											});
-										}}
-										type="button"
-									>
-										Sign up instead?
-									</SecondaryButton>
-								</div>
-							) : null}
+													signupMutation.mutate({
+														data: {
+															email: formData.get(
+																"email"
+															) as string,
+															password:
+																formData.get(
+																	"password"
+																) as string,
+														},
+													});
+												}}
+												type="button"
+											>
+												Sign up instead?
+											</SecondaryButton>
+										</div>
+									) : null}
+								</>
+							)}
+							<p className="text-center mt-4 text-sm text-gray-400">
+								Don't have an account?{" "}
+								<Link
+									to="/sign-up"
+									className="text-theme underline"
+								>
+									Sign up
+								</Link>
+							</p>
 						</>
 					)}
-					<p className="text-center mt-4 text-sm text-gray-400">
-						Don't have an account?{" "}
-						<Link to="/sign-up" className="text-theme underline">
-							Sign up
-						</Link>
-					</p>
 					<div className="mt-6 pt-6 border-t border-gray-500/20">
 						<SecondaryButton
 							onClick={handleGithubLogin}

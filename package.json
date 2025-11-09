@@ -23,7 +23,8 @@
 		"db:push": "npx drizzle-kit push",
 		"db:generate": "npx drizzle-kit generate",
 		"db:migrate": "npx drizzle-kit migrate",
-		"db:refresh": "npm run db:reset && npm run db:generate && npm run db:push && npm run db:seed"
+		"db:refresh": "npm run db:reset && npm run db:generate && npm run db:push && npm run db:seed",
+		"export:firebase": "node scripts/export-polls.js"
 	},
 	"keywords": [],
 	"author": "",
@@ -40,6 +41,7 @@
 		"clsx": "^2.1.1",
 		"date-fns": "^4.1.0",
 		"deepmerge": "^4.3.1",
+		"firebase-admin": "^13.6.0",
 		"nitro": "^3.0.1-alpha.0",
 		"postgres": "^3.4.7",
 		"react": "^19.2.0",

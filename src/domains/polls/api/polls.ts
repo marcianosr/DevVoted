@@ -29,16 +29,12 @@ export const getAllPolls = createServerFn().handler(async () =>
 	getAllPollsHandler()
 );
 
-export const getDailyPoll = createServerFn({ method: "GET" })
-	.inputValidator(
-		z.object({
-			date: z.string().optional(),
-		})
-	)
-	.handler(async ({ data }) => {
+export const getDailyPoll = createServerFn({ method: "GET" }).handler(
+	async () => {
 		const userId = await getAuthenticatedUserId();
-		return getDailyPollHandler({ data: { ...data, userId } });
-	});
+		return getDailyPollHandler({ data: { userId } });
+	}
+);
 
 export const postPollOptions = createServerFn({ method: "POST" })
 	.inputValidator(

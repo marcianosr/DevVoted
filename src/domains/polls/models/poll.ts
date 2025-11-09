@@ -16,6 +16,9 @@ export type Poll = {
 	createdAt: Date;
 	updatedAt: Date | null;
 	categoryCode: CategoryCode;
+	codeSandboxExample: string | null;
+	codeBlock: string | null;
+	pollNumber: number | null;
 };
 
 export type PollRecord = InferSelectModel<typeof pollsTable>;
@@ -28,7 +31,6 @@ export type PollWithOptionsResponse = {
 	poll: Poll;
 	options: PollOption[];
 	hasAnswered: boolean;
-	timesAnswered?: number; // Total times user has answered this poll across all days
 };
 
 /**
@@ -50,6 +52,9 @@ export const pollToDTO = (record: PollRecord): Poll => {
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
 		categoryCode: record.category_code as CategoryCode,
+		codeSandboxExample: record.code_sandbox_example,
+		codeBlock: record.code_block,
+		pollNumber: record.poll_number,
 	};
 };
 
@@ -68,6 +73,9 @@ export const pollFromDTO = (dto: Poll): PollRecord => {
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt || null, // Handle potential null values
 		category_code: dto.categoryCode,
+		code_sandbox_example: dto.codeSandboxExample,
+		code_block: dto.codeBlock,
+		poll_number: dto.pollNumber,
 	};
 };
 
@@ -104,6 +112,9 @@ export const createPoll = (partial: Partial<Poll> = {}): Poll => {
 		createdAt: now,
 		updatedAt: now, // Default to now, can be overridden by partial
 		categoryCode: "js" as CategoryCode, // Default value, can be overridden by partial
+		codeSandboxExample: null,
+		codeBlock: null,
+		pollNumber: null,
 		...partial,
 	};
 };

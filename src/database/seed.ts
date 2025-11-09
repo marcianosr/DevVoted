@@ -3,23 +3,47 @@ import {
 	pollsTable,
 	pollCategoriesTable,
 	usersTable,
-	pollOptionsTable,
 	runsTable,
 	runCategoryCoverageTable,
 	seasonsTable,
 	leaderboardTable,
 } from "@/src/database/schema";
 import { eq } from "drizzle-orm";
-import { createSeedPollArray } from "~/domains/polls/factories/poll";
 import { getCategories, CATEGORY_CODES } from "~/domains/shared/categories";
+import { readFileSync } from "fs";
+import { join } from "path";
+import postgres from "postgres";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
+const ADMIN_UID = "65ad226e-e3c1-4e7f-a96d-a84156589733";
 
 async function seedDatabase() {
 	console.log("🌱 Starting database seeding process...\n");
 
-	// First, ensure we have a test user
-	console.log("👤 Creating test user if needed...");
+	// First, create admin user for imported polls
+	console.log("👤 Creating admin user for imported polls...");
+
+	const adminUser = {
+		id: ADMIN_UID,
+		display_name: "Admin",
+		email: "admin@devvoted.com",
+		roles: "admin" as const,
+	};
+
+	const existingAdmin = await db
+		.select()
+		.from(usersTable)
+		.where(eq(usersTable.id, ADMIN_UID));
+
+	if (existingAdmin.length === 0) {
+		await db.insert(usersTable).values(adminUser);
+		console.log(`✅ Created admin user: ${adminUser.display_name}`);
+	} else {
+		console.log(`ℹ️ Admin user already exists: ${adminUser.display_name}`);
+	}
+
+	// Create test user
+	console.log("\n👤 Creating test user if needed...");
 
 	const testUser = {
 		id: DEV_UID,
@@ -61,79 +85,40 @@ async function seedDatabase() {
 			}
 		}
 
-		// Now seed the polls
-		console.log("\n📊 Seeding polls...\n");
+		// Import polls from Firebase backup using TypeScript
+		console.log("\n📊 Importing polls from Firebase migration...\n");
 
-		// Create 70 polls using our factory for extended gameplay
-		const polls = createSeedPollArray(70, DEV_UID);
-
-		// Ensure we have a good mix of categories across all polls
-		const categoryDistribution = {
-			css: 15,
-			js: 15,
-			react: 12,
-			ts: 12,
-			html: 8,
-			git: 5,
-			"general-frontend": 3,
-		};
-
-		let categoryIndex = 0;
-		for (const [category, count] of Object.entries(categoryDistribution)) {
-			for (let i = 0; i < count && categoryIndex < polls.length; i++) {
-				polls[categoryIndex].category_code = category;
-				categoryIndex++;
-			}
-		}
-
-		// Check if polls already exist to avoid duplicates
 		const existingPolls = await db.select().from(pollsTable);
 
 		if (existingPolls.length > 0) {
 			console.log(
-				`ℹ️ Found ${existingPolls.length} existing polls. Skipping poll seeding to avoid duplicates.`
-			);
-			console.log(
-				"ℹ️ If you want to re-seed polls, run the db:reset script first."
+				`ℹ️ Found ${existingPolls.length} existing polls. Skipping import.`
 			);
 		} else {
-			// Insert polls one by one to ensure proper typing
-			const insertedPollIds: number[] = [];
+			try {
+				// Dynamically import and run the Firebase importer
+				const importerPath = join(process.cwd(), "scripts", "import-firebase-polls.ts");
+				const { execSync } = await import("child_process");
 
-			for (const poll of polls) {
-				const result = await db
-					.insert(pollsTable)
-					.values(poll)
-					.returning({ id: pollsTable.id });
-				if (result[0]) {
-					insertedPollIds.push(result[0].id);
-				}
-			}
-			console.log(
-				`✅ Successfully seeded ${insertedPollIds.length} polls!`
-			);
+				console.log("🔄 Running Firebase poll importer...");
+				execSync(`tsx ${importerPath}`, {
+					stdio: "inherit",
+					cwd: process.cwd(),
+				});
 
-			// Now seed poll options for each poll
-			console.log("\n🔤 Seeding poll options...");
-
-			// Get all polls to create options for
-			const allPolls = await db.select().from(pollsTable);
-
-			// Create and insert options for each poll
-			let totalOptionsCreated = 0;
-			for (const poll of allPolls) {
-				const options = generatePollOptions(
-					poll.id,
-					poll.question,
-					poll.answer_type
+				const importedPolls = await db.select().from(pollsTable);
+				console.log(
+					`✅ Successfully imported ${importedPolls.length} polls from Firebase migration!`
 				);
-				await db.insert(pollOptionsTable).values(options);
-				totalOptionsCreated += options.length;
+			} catch (error) {
+				console.error("❌ Error importing polls:", error);
+				console.log(
+					"⚠️ Continuing without polls. You can manually import using:"
+				);
+				console.log(
+					"   tsx scripts/import-firebase-polls.ts"
+				);
 			}
-
-			console.log(
-				`✅ Successfully seeded ${totalOptionsCreated} poll options!`
-			);
 		}
 
 		// Seed seasons for testing
@@ -176,7 +161,15 @@ async function seedDatabase() {
 		const existingLeaderboard = await db.select().from(leaderboardTable);
 		const existingRuns = await db.select().from(runsTable);
 
-		if (existingLeaderboard.length === 0 && existingRuns.length === 0) {
+		// Check if we have polls before seeding leaderboard
+		const pollsForLeaderboard = await db.select().from(pollsTable);
+
+		// Only seed leaderboard if we have polls to reference
+		if (pollsForLeaderboard.length === 0) {
+			console.log(
+				"⚠️ Skipping leaderboard seeding - no polls available."
+			);
+		} else if (existingLeaderboard.length === 0 && existingRuns.length === 0) {
 			// Create 9 users for leaderboard
 			const leaderboardUsers = [
 				{
@@ -338,321 +331,6 @@ async function seedDatabase() {
 	} finally {
 		process.exit(0);
 	}
-}
-
-/**
- * Generate appropriate options for a poll based on its question
- * @param pollId The ID of the poll to generate options for
- * @param question The poll question text
- * @param answerType Whether this is a single or multiple choice poll
- * @returns An array of poll option objects
- */
-function generatePollOptions(
-	pollId: number,
-	question: string,
-	answerType: "single" | "multiple"
-) {
-	// Default options for generic questions
-	let options = [
-		{ poll_id: pollId, option: "Option A", correct: true },
-		{ poll_id: pollId, option: "Option B", correct: false },
-		{ poll_id: pollId, option: "Option C", correct: false },
-		{ poll_id: pollId, option: "Option D", correct: false },
-	];
-
-	// For multiple choice polls, ensure we have multiple correct answers
-	if (answerType === "multiple") {
-		options[1].correct = true; // Make Option B also correct
-	}
-
-	// Generate more specific options based on the question content
-	if (question.toLowerCase().includes("css")) {
-		if (question.includes("*") && question.includes("selector")) {
-			options = [
-				{
-					poll_id: pollId,
-					option: "Selects all elements",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "Can cause performance issues when overused",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "Has the lowest specificity of any selector",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "Only works in modern browsers",
-					correct: false,
-				},
-			];
-		} else if (
-			question.includes("flex") &&
-			question.includes("multiple lines")
-		) {
-			options = [
-				{
-					poll_id: pollId,
-					option: "flex-wrap: wrap",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "flex-direction: column",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "flex-flow: row",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "flex-basis: auto",
-					correct: false,
-				},
-			];
-		} else if (
-			question.includes("vertical spacing") &&
-			question.includes("text")
-		) {
-			options = [
-				{ poll_id: pollId, option: "line-height", correct: true },
-				{
-					poll_id: pollId,
-					option: "letter-spacing",
-					correct: false,
-				},
-				{ poll_id: pollId, option: "text-indent", correct: false },
-				{
-					poll_id: pollId,
-					option: "vertical-align",
-					correct: false,
-				},
-			];
-		} else if (
-			question.includes("position") &&
-			question.includes("document flow")
-		) {
-			options = [
-				{
-					poll_id: pollId,
-					option: "position: absolute",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "position: fixed",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "position: relative",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "position: static",
-					correct: false,
-				},
-			];
-		}
-	} else if (question.toLowerCase().includes("js")) {
-		if (question.includes("closures")) {
-			options = [
-				{
-					poll_id: pollId,
-					option: "They retain access to their outer function's scope",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "They help create private variables",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "They can lead to memory leaks if not handled properly",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "They are only available in ES6 and later",
-					correct: false,
-				},
-			];
-		}
-	} else if (question.toLowerCase().includes("react")) {
-		if (question.includes("synthetic events")) {
-			options = [
-				{
-					poll_id: pollId,
-					option: "They provide cross-browser compatibility",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "They improve performance through event pooling",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "They follow the W3C spec",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "They only work with functional components",
-					correct: false,
-				},
-			];
-		}
-	} else if (question.toLowerCase().includes("ts")) {
-		if (question.includes("type system")) {
-			options = [
-				{
-					poll_id: pollId,
-					option: "It provides compile-time type checking",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "It supports interfaces and type aliases",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "It allows for generic types",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "It requires a separate runtime library",
-					correct: false,
-				},
-			];
-		}
-	} else if (
-		question.includes("content-theft") ||
-		question.toLowerCase().includes("general-frontend")
-	) {
-		if (question.includes("prevent visitors to steal")) {
-			options = [
-				{
-					poll_id: pollId,
-					option: "Disable right-click context menu",
-					correct: true,
-				},
-				{
-					poll_id: pollId,
-					option: "Add watermarks to images",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "Use Content Security Policy headers",
-					correct: false,
-				},
-				{
-					poll_id: pollId,
-					option: "Encrypt HTML content",
-					correct: false,
-				},
-			];
-		}
-	}
-
-	// For questions about preferences, create appropriate options
-	if (question.includes("favorite programming language")) {
-		options = [
-			{
-				poll_id: pollId,
-				option: "JavaScript",
-				correct: answerType === "multiple",
-			},
-			{
-				poll_id: pollId,
-				option: "TypeScript",
-				correct: answerType === "multiple",
-			},
-			{ poll_id: pollId, option: "Python", correct: false },
-			{ poll_id: pollId, option: "Rust", correct: false },
-		];
-	} else if (question.includes("frontend framework")) {
-		options = [
-			{
-				poll_id: pollId,
-				option: "React",
-				correct: answerType === "multiple",
-			},
-			{
-				poll_id: pollId,
-				option: "Vue",
-				correct: answerType === "multiple",
-			},
-			{ poll_id: pollId, option: "Angular", correct: false },
-			{ poll_id: pollId, option: "Svelte", correct: false },
-		];
-	} else if (question.includes("use TypeScript")) {
-		options = [
-			{
-				poll_id: pollId,
-				option: "Yes, for all projects",
-				correct: answerType === "multiple",
-			},
-			{
-				poll_id: pollId,
-				option: "Yes, for larger projects only",
-				correct: answerType === "multiple",
-			},
-			{
-				poll_id: pollId,
-				option: "No, I prefer plain JavaScript",
-				correct: false,
-			},
-			{
-				poll_id: pollId,
-				option: "I'm still learning it",
-				correct: false,
-			},
-		];
-	} else if (question.includes("write tests")) {
-		options = [
-			{
-				poll_id: pollId,
-				option: "For every feature",
-				correct: answerType === "multiple",
-			},
-			{
-				poll_id: pollId,
-				option: "Only for critical functionality",
-				correct: answerType === "multiple",
-			},
-			{ poll_id: pollId, option: "Rarely", correct: false },
-			{ poll_id: pollId, option: "Never", correct: false },
-		];
-	} else if (question.includes("CSS solution")) {
-		options = [
-			{
-				poll_id: pollId,
-				option: "Plain CSS",
-				correct: answerType === "multiple",
-			},
-			{
-				poll_id: pollId,
-				option: "Tailwind CSS",
-				correct: answerType === "multiple",
-			},
-			{ poll_id: pollId, option: "CSS-in-JS", correct: false },
-			{ poll_id: pollId, option: "SASS/SCSS", correct: false },
-		];
-	}
-
-	return options;
 }
 
 // Execute the seed function

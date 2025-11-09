@@ -17,6 +17,7 @@ async function resetDatabase() {
             DROP TABLE IF EXISTS seasons CASCADE;
             DROP TABLE IF EXISTS leaderboard CASCADE;
             DROP TABLE IF EXISTS polls_active_runs CASCADE;
+            DROP TABLE IF EXISTS polls_history CASCADE;
             DROP TABLE IF EXISTS __drizzle_migrations CASCADE;
         `);
 

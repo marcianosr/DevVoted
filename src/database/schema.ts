@@ -106,6 +106,9 @@ export const usersTable = pgTable("users", {
 export const pollsTable = pgTable("polls", {
 	id: serial("id").primaryKey(),
 	question: text("question").notNull(),
+	poll_number: integer("poll_number"),
+	code_block: text("code_block"),
+	code_sandbox_example: text("code_sandbox_example"),
 	status: pollStatus("status").notNull().default("draft"),
 	answer_type: pollAnswerType("answer_type").notNull().default("single"),
 	opening_time: timestamp("opening_time", { withTimezone: true }).notNull(),

@@ -60,7 +60,8 @@ const DailyPoll: React.FC = () => {
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["poll", "daily", user?.id],
-		queryFn: () => getDailyPoll({ data: {} }),
+		// TODO: remove argument
+		queryFn: () => getDailyPoll(),
 		enabled: !!user?.id, // Only run when we have user ID
 	});
 

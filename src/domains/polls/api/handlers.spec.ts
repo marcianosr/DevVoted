@@ -15,7 +15,6 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchAllPolls: vi.fn(),
 	fetchPollByIdWithOptions: vi.fn(),
 	hasUserAnsweredPoll: vi.fn(),
-	countUserPollAnswers: vi.fn(),
 	getPollHistory: vi.fn(),
 	trackPollView: vi.fn(),
 	trackPollAnswer: vi.fn(),
@@ -127,7 +126,6 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-		vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
 
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
@@ -147,7 +145,6 @@ describe("handlers", () => {
 					poll: mockPoll,
 					options: mockOptions,
 					hasAnswered: false,
-					timesAnswered: 0,
 				},
 			});
 		});
@@ -161,7 +158,6 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(true);
-		vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
 
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
@@ -180,7 +176,6 @@ describe("handlers", () => {
 					poll: mockPoll,
 					options: mockOptions,
 					hasAnswered: true,
-					timesAnswered: 0,
 				},
 			});
 		});
@@ -209,7 +204,6 @@ describe("handlers", () => {
 					poll: mockPoll,
 					options: mockOptions,
 					hasAnswered: false,
-					timesAnswered: 0,
 				},
 			});
 		});
@@ -404,7 +398,7 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+
 			// @ts-expect-error - Mocking null return value
 			vi.mocked(queries.getPollHistory).mockResolvedValue(null);
 
@@ -434,7 +428,7 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+
 			vi.mocked(queries.getPollHistory).mockResolvedValue({
 				id: 1,
 				user_id: userId,
@@ -473,7 +467,7 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+
 			vi.mocked(queries.getPollHistory).mockResolvedValue({
 				id: 1,
 				user_id: userId,
@@ -512,7 +506,7 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
+
 			vi.mocked(queries.getPollHistory).mockResolvedValue({
 				id: 1,
 				user_id: userId,
@@ -551,7 +545,6 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
 
 			const { isSameDay } = await import("date-fns");
 
@@ -615,7 +608,6 @@ describe("handlers", () => {
 				"~/domains/polls/services/dailyPoll.service"
 			);
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
-			vi.mocked(queries.countUserPollAnswers).mockResolvedValue(0);
 
 			const { isSameDay } = await import("date-fns");
 

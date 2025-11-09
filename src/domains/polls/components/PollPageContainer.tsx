@@ -30,6 +30,8 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	const [lastScoreBreakdown, setLastScoreBreakdown] =
 		useState<PollScoreBreakdown | null>(null);
 
+	console.log(poll);
+
 	const {
 		activeRun,
 		hasActiveRun,

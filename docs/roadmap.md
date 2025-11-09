@@ -83,7 +83,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] remove "home" and also from navigation
 [] Auth polls list? (in navi)
 [x] Show github images
-[] Sentry logging
+[x] Sentry logging
 
 BUGS:
 [x] FORCE DARKMODE [Critical]
@@ -113,6 +113,7 @@ BUGS:
 
 Season 2: Early Meta Layer
 [] Show current season - shows 29 days
+[] Show created by (poll)
 
 [] Onboarding/help modal for first-time users [Critical]
 [] Google Auth?
