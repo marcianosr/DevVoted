@@ -209,11 +209,13 @@ function Navigation() {
 									className: "underline",
 								}}
 							>
-								<img
-									src={user.photoUrl || ""}
-									alt={user.displayName}
-									className="w-40 h-40 rounded-full inline-block mr-2"
-								/>
+								{user.photoUrl && (
+									<img
+										src={user.photoUrl}
+										alt={user.displayName}
+										className="w-[30px] h-[30px] rounded-full inline-block mr-2"
+									/>
+								)}
 								<span className="ml-2">
 									{user.displayName || user.email}
 								</span>
