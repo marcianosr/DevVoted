@@ -15,6 +15,9 @@ const poll: Poll = {
 	createdAt: new Date("2025-01-01T00:00:00Z"),
 	updatedAt: new Date("2025-01-01T00:00:00Z"),
 	categoryCode: "js",
+	codeBlock: null,
+	codeSandboxExample: null,
+	pollNumber: null,
 };
 
 const pollRecord: PollRecord = {
@@ -28,6 +31,9 @@ const pollRecord: PollRecord = {
 	created_at: new Date("2025-01-01T00:00:00Z"),
 	updated_at: new Date("2025-01-01T00:00:00Z"),
 	category_code: "js",
+	code_sandbox_example: null,
+	code_block: null,
+	poll_number: null,
 };
 
 // For seeding, we need a version without ID to let the database auto-generate it
@@ -41,6 +47,9 @@ const seedPollRecord: Omit<PollRecord, "id"> = {
 	created_at: new Date("2025-01-01T00:00:00Z"),
 	updated_at: new Date("2025-01-01T00:00:00Z"),
 	category_code: "js",
+	code_sandbox_example: null,
+	code_block: null,
+	poll_number: null,
 };
 
 export const createMockPoll = createMockDataFactory<Poll>(poll);
