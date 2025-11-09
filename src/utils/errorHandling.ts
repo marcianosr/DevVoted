@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/react";
+
 export type ApiResponse<T = unknown> =
 	| {
 			readonly success: true;
@@ -35,6 +37,13 @@ export const handleApiOperation = async <T>(
 		const result = await operation();
 		return createSuccessResponse(result);
 	} catch (error) {
+		Sentry.captureException(error, {
+			level: "warning",
+			extra: {
+				operation: fallbackErrorMessage || "handleApiOperation",
+			},
+		});
+
 		const message =
 			error instanceof Error
 				? error.message

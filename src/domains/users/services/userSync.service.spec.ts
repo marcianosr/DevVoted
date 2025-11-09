@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import type { UserSyncData } from "./userSync.service";
+import type { User } from "./userSync.service";
 
 describe("UserSyncData interface", () => {
 	it("defines the correct structure for user synchronization", () => {
-		const validUserData: UserSyncData = {
+		const validUserData: User = {
 			id: "banjo-kazooie-123",
 			email: "banjo@rareware.com",
 			displayName: "Banjo Bear",
@@ -17,7 +17,7 @@ describe("UserSyncData interface", () => {
 	});
 
 	it("allows optional fields to be undefined", () => {
-		const minimalUserData: UserSyncData = {
+		const minimalUserData: User = {
 			id: "kazooie-456",
 			email: "kazooie@rareware.com",
 		};
@@ -36,7 +36,7 @@ describe("UserSyncData interface", () => {
 			},
 		};
 
-		const extractedData: UserSyncData = {
+		const extractedData: User = {
 			id: mockOAuthUser.id,
 			email: mockOAuthUser.email,
 			displayName: mockOAuthUser.user_metadata.full_name,

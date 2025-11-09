@@ -82,6 +82,10 @@ const DailyPoll: React.FC = () => {
 
 	const poll = data.data;
 
+	if (!user) {
+		return <ErrorComponent text="User not found" />;
+	}
+
 	return (
 		<section data-category-theme={poll?.poll.categoryCode}>
 			<PollPageContainer user={user} poll={poll} />

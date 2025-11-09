@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "./supabase";
+import * as Sentry from "@sentry/react";
 
 export const getAuthenticatedUserId = async () => {
 	const supabase = getSupabaseServerClient();
@@ -8,7 +9,15 @@ export const getAuthenticatedUserId = async () => {
 	} = await supabase.auth.getUser();
 
 	if (error || !user) {
-		throw new Error("Not authenticated");
+		const authError = new Error("Not authenticated");
+		Sentry.captureException(authError, {
+			level: "warning",
+			extra: {
+				operation: "getAuthenticatedUserId",
+				supabaseError: error?.message,
+			},
+		});
+		throw authError;
 	}
 
 	return user.id;
@@ -19,6 +28,17 @@ export const ensureAuthorizedUser = (
 	requestedUserId: string
 ) => {
 	if (authenticatedUserId !== requestedUserId) {
-		throw new Error("Unauthorized: Cannot access another user's data");
+		const authError = new Error(
+			"Unauthorized: Cannot access another user's data"
+		);
+		Sentry.captureException(authError, {
+			level: "warning",
+			extra: {
+				operation: "ensureAuthorizedUser",
+				authenticatedUserId,
+				requestedUserId,
+			},
+		});
+		throw authError;
 	}
 };

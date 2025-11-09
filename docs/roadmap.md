@@ -82,7 +82,8 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] remove "correct/incorrect"
 [x] remove "home" and also from navigation
 [] Auth polls list? (in navi)
-[] Show github images
+[x] Show github images
+[] Sentry logging
 
 BUGS:
 [x] FORCE DARKMODE [Critical]

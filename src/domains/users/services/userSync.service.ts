@@ -1,12 +1,13 @@
 import { db } from "~/database/db";
 import { usersTable } from "~/database/schema";
 import { eq } from "drizzle-orm";
+import * as Sentry from "@sentry/react";
 
 export type User = {
 	id: string;
 	email: string;
 	displayName?: string;
-	photoUrl?: string;
+	photoUrl?: string | null;
 };
 
 export const ensureUserExists = async (userData: User) => {
@@ -48,6 +49,11 @@ export const ensureUserExists = async (userData: User) => {
 			photoUrl: createdUser.photo_url,
 		};
 	} catch (error) {
+		Sentry.captureException(error, {
+			level: "warning",
+			extra: { userId: id, email },
+		});
+
 		const [existingUserByEmail] = await db
 			.select()
 			.from(usersTable)
