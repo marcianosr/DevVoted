@@ -34,8 +34,6 @@ export const getPollByIdWithOptionsHandler = async ({
 			? await countUserPollAnswers(id, userId)
 			: 0;
 
-		console.log("timesAnswered", timesAnswered);
-
 		return { poll, options, hasAnswered, timesAnswered };
 	});
 };
@@ -113,10 +111,6 @@ export const postPollOptionsHandler = async ({
 
 		// Track poll answer
 		await trackPollAnswer(validatedData.userId, validatedData.pollId);
-
-		console.log("Poll options submitted:", {
-			breakdown,
-		});
 
 		return {
 			message: "Options submitted successfully",

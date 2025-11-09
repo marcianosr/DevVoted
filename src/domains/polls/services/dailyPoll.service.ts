@@ -25,12 +25,14 @@ export const selectDailyPoll = async (date?: string): Promise<Poll | null> => {
 
 	const result = await manageDailyPollTransition(selectPollForDate);
 
-	if (result) {
-		console.log("selectDailyPoll called with date:", date);
-		console.log("Final dateSeed used:", dateSeed);
-		console.log("Selected poll ID:", result.id);
-	} else {
-		console.log("No polls available to open");
+	if (process.env.NODE_ENV === "development") {
+		if (result) {
+			console.log("selectDailyPoll called with date:", date);
+			console.log("Final dateSeed used:", dateSeed);
+			console.log("Selected poll ID:", result.id);
+		} else {
+			console.log("No polls available to open");
+		}
 	}
 
 	return result;

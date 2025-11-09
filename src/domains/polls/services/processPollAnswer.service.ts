@@ -135,13 +135,10 @@ export const processPollAnswer = async (
 			await endRunForThresholdFailure(activeRun.id);
 			runEnded = true;
 		}
-
-		console.log("Reset rebuild effect:", resetRebuild);
 	}
 
 	if (resetRebuild) {
 		// Reset rebuilds after every poll if the effect is active
-		console.log("Resetting rebuilds due to config effect");
 		await resetPollRerolls(activeRun.id);
 	}
 

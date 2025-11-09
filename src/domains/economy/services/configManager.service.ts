@@ -210,12 +210,3 @@ export const getRandomConfigs = ({
 	const availableConfigs = configs.filter((c) => !hasConfig(run, c.id));
 	return performWeightedSelection(availableConfigs, count);
 };
-
-export const getShopCostReduction = (offeredConfigs: Config[]) => {
-	console.log(
-		"Calculating shop cost reduction for offeredConfigs: ",
-		offeredConfigs
-	);
-
-	return offeredConfigs;
-};

@@ -319,7 +319,10 @@ const EFFECTS: Record<string, EffectFn> = {
 
 		// Calculate threshold based on category coverage data and answered polls
 		// Note: This uses answered polls as a proxy for seen polls since we don't have access to totalPollsSeen here
-		const thresholdInfo = calculateThresholdInfo(run.categoryCoverage, totalPollsAnswered);
+		const thresholdInfo = calculateThresholdInfo(
+			run.categoryCoverage,
+			totalPollsAnswered
+		);
 		const requiredCoverage =
 			thresholdInfo.gateDefinition?.requirements[0]?.threshold ?? 0;
 		const requiredForProtection = requiredCoverage * 0.8; // 80% of threshold
@@ -373,7 +376,6 @@ const EFFECTS: Record<string, EffectFn> = {
 	},
 
 	reduceConfigCost: ({ poll, options, run, hasAnswered }, config) => {
-		console.log("Applying reduceConfigCost effect");
 		const discountPercent = config.reductionCost ?? 0;
 
 		return {
