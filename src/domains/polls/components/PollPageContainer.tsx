@@ -69,9 +69,8 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 			return { previousData, activeRunQueryKey };
 		},
 		onSuccess: (data) => {
-			console.log("Add configs response:", data);
 			if (!data.success) {
-				console.error("Failed to add configs:", data.error);
+				throw new Error(data.error);
 			}
 		},
 		onError: (error, _variables, context) => {
@@ -122,13 +121,11 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 			return { previousData, activeRunQueryKey };
 		},
 		onSuccess: (data) => {
-			console.log("Remove config response:", data);
 			if (!data.success) {
 				console.error("Failed to remove config:", data.error);
 			}
 		},
 		onError: (error, _variables, context) => {
-			console.error("Error removing configs:", error);
 			if (context?.previousData && context?.activeRunQueryKey) {
 				queryClient.setQueryData(
 					context.activeRunQueryKey,
@@ -200,8 +197,6 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 		{ ...poll, run: activeRun! },
 		activeRun?.activeConfigIds
 	);
-
-	console.log("Effects result:", activeRun?.activeConfigIds);
 
 	return (
 		<div className="p-4">

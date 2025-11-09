@@ -115,7 +115,6 @@ export const Route = createRootRoute({
 
 function RootComponent() {
 	const queryClient = new QueryClient();
-	console.log("Rendering RootComponent");
 
 	return (
 		<RootDocument>
@@ -190,6 +189,10 @@ function Navigation() {
 									className: "underline",
 								}}
 							>
+								<img
+									src={user.photoUrl || ""}
+									alt={user.displayName}
+								/>
 								{user.displayName || user.email}
 							</Link>
 							<Link to="/logout">Logout</Link>

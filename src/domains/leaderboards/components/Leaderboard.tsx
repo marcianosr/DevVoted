@@ -174,7 +174,6 @@ export const Leaderboard = ({
 					const rank = index + 1;
 					const isCurrentUser = entry.userId === currentUserId;
 
-					console.log("Rendering leaderboard entry for user:", entry);
 					const currentRun = entry.runId;
 
 					return (
