@@ -22,13 +22,13 @@ import {
 	useMutation,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { ensureUserExists } from "../services/userSync.service";
 import { finishRunFn } from "../domains/runs/api/runs";
 import { useActiveRun } from "../domains/runs/hooks/useActiveRun";
 import { runQueryKeys } from "../domains/shared/queryKeys";
 import { SecondaryButton } from "~/ui/SecondaryButton";
 
 import * as Sentry from "@sentry/react";
+import { ensureUserExists } from "~/domains/users/services/userSync.service";
 
 Sentry.init({
 	dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
@@ -115,6 +115,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
 	const queryClient = new QueryClient();
+	console.log("Rendering RootComponent");
 
 	return (
 		<RootDocument>

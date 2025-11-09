@@ -1,9 +1,7 @@
 import {
 	getRunForCompletion,
 	completeRunWithThresholdFailure,
-	getTotalCoverageForRun,
-	getTotalPollsAnsweredForRun,
-	getBestStreakForRun,
+	getRunStats,
 	createCategoryLeaderboardEntries,
 	getRunWithCategoryXp,
 } from "../api/queries";
@@ -23,10 +21,8 @@ export const endRunForThresholdFailure = async (runId: number) => {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	// Get final stats before completing
-	const totalCoverage = await getTotalCoverageForRun(runId);
-	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
-	const bestStreak = await getBestStreakForRun(runId);
+	const { bestStreak, totalCoverage, totalPollsAnswered } =
+		await getRunStats(runId);
 
 	// Complete the run and reset categories
 	await completeRunWithThresholdFailure(runId, "threshold_not_met");
@@ -53,9 +49,8 @@ export const endRunManually = async (runId: number) => {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	const totalCoverage = await getTotalCoverageForRun(runId);
-	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
-	const bestStreak = await getBestStreakForRun(runId);
+	const { totalCoverage, totalPollsAnswered, bestStreak } =
+		await getRunStats(runId);
 
 	await completeRunWithThresholdFailure(runId, "manual_break_off");
 
@@ -82,9 +77,14 @@ export const checkCoverageThreshold = async (
 	}
 
 	// Fetch total polls seen for threshold calculation
-	const totalPollsSeen = await getTotalPollsSeenByUser(runWithCategoryData.userId);
+	const totalPollsSeen = await getTotalPollsSeenByUser(
+		runWithCategoryData.userId
+	);
 
-	return calculateThresholdInfo(runWithCategoryData.categoryCoverage, totalPollsSeen);
+	return calculateThresholdInfo(
+		runWithCategoryData.categoryCoverage,
+		totalPollsSeen
+	);
 };
 
 // Check if player has passed all defined CI gates (victory condition)
@@ -103,9 +103,8 @@ export const completeRunWithVictory = async (runId: number) => {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	const totalCoverage = await getTotalCoverageForRun(runId);
-	const totalPollsAnswered = await getTotalPollsAnsweredForRun(runId);
-	const bestStreak = await getBestStreakForRun(runId);
+	const { totalCoverage, totalPollsAnswered, bestStreak } =
+		await getRunStats(runId);
 
 	await completeRunWithThresholdFailure(runId, "victory");
 

@@ -62,7 +62,8 @@ export const Leaderboard = ({
 	});
 
 	// Use the appropriate query based on mode
-	const categoryQuery = mode === "live" ? liveCategoryQuery : allTimeCategoryQuery;
+	const categoryQuery =
+		mode === "live" ? liveCategoryQuery : allTimeCategoryQuery;
 
 	// Use category-specific entries if available, otherwise use initial entries (total)
 	const entries =
@@ -94,7 +95,10 @@ export const Leaderboard = ({
 			<div className="border-b border-theme pb-2 mb-3">
 				<h3 className="text-theme text-4xl">Rankings</h3>
 				<div className="text-white-400 text-lg">
-					{entries.length} player(s) {mode === "live" ? "currently playing" : "on all-time leaderboard"}
+					{entries.length} player(s){" "}
+					{mode === "live"
+						? "currently playing"
+						: "on all-time leaderboard"}
 					{currentUserRank > 0 && (
 						<span className="text-theme ml-2">
 							• You're #{currentUserRank}
@@ -169,6 +173,8 @@ export const Leaderboard = ({
 				{entries.map((entry, index) => {
 					const rank = index + 1;
 					const isCurrentUser = entry.userId === currentUserId;
+
+					console.log("Rendering leaderboard entry for user:", entry);
 					const currentRun = entry.runId;
 
 					return (
@@ -208,7 +214,7 @@ export const Leaderboard = ({
 							<div className="text-white">
 								{entry.pollsAnswered}
 							</div>
-							<div>{currentRun ?? "-"}</div>
+							<div>#{currentRun ?? "-"}</div>
 						</div>
 					);
 				})}

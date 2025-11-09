@@ -2,14 +2,14 @@ import { db } from "~/database/db";
 import { usersTable } from "~/database/schema";
 import { eq } from "drizzle-orm";
 
-export interface UserSyncData {
+export type User = {
 	id: string;
 	email: string;
 	displayName?: string;
 	photoUrl?: string;
-}
+};
 
-export const ensureUserExists = async (userData: UserSyncData) => {
+export const ensureUserExists = async (userData: User) => {
 	const { id, email, displayName, photoUrl } = userData;
 
 	const [existingUser] = await db

@@ -78,7 +78,6 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Test daily poll cycle
 [] Fix refresh-to-reanswer bug [Critical]
 [] Reroll bug: when rerolling it walks behind
-[] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
 [] Check RLS
 [x] remove "correct/incorrect"
 [x] remove "home" and also from navigation
@@ -98,15 +97,15 @@ BUGS:
 [x] Slow load db queries
 [] Click on config to install
 [x] Suspend leaderboards because it slows
-[] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
+[x] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
 [o] When a new poll is loaded, the user sees the old poll for a split second causing two track views
-[] Giothub env vs Vercel env?
+[x] Giothub env vs Vercel env?
 
-[] Trage app - heeft vooral te maken met de database queries die geoptimaliseerd moeten worden
+[x] Trage app - heeft vooral te maken met de database queries die geoptimaliseerd moeten worden
 [x] Poll history table - how
 [] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
-[] Leaderboard query optimization?
-[] Page title is nog steeds "Tanstack blabla"
+[x] Leaderboard query optimization?
+[x] Page title is nog steeds "Tanstack blabla"
 [] Als iemand de shop open heeft en de volgende dag de pagina weer bezoekt, haal hij de nieuwe poll op maar blijft hij in beantwoorde staat
 [] De shop is weg als je de pagina refresht. Niet echt een bug, maar ik weet dat dit zo is
 [] Start new Run button in de header werkt niet

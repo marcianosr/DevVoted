@@ -117,47 +117,26 @@ export const finishRun = async (runId: number) => {
 	return runRecord ? runFactory.toDTO(runRecord) : null;
 };
 
-// Helper function to calculate total coverage across all categories in a run
-export const getTotalCoverageForRun = async (
-	runId: number
-): Promise<number> => {
-	const coverageRecords = await db
+export const getRunStats = async (runId: number) => {
+	const stats = await db
 		.select()
 		.from(runCategoryCoverageTable)
 		.where(eq(runCategoryCoverageTable.run_id, runId));
 
-	return coverageRecords.reduce(
-		(total, record) => total + record.current_coverage,
-		0
-	);
-};
-
-// Helper function to get the total polls answered across all categories
-export const getTotalPollsAnsweredForRun = async (
-	runId: number
-): Promise<number> => {
-	const coverageRecords = await db
-		.select()
-		.from(runCategoryCoverageTable)
-		.where(eq(runCategoryCoverageTable.run_id, runId));
-
-	return coverageRecords.reduce(
-		(total, record) => total + record.polls_answered,
-		0
-	);
-};
-
-// Helper function to get the best streak across all categories in a run
-export const getBestStreakForRun = async (runId: number): Promise<number> => {
-	const coverageRecords = await db
-		.select()
-		.from(runCategoryCoverageTable)
-		.where(eq(runCategoryCoverageTable.run_id, runId));
-
-	return coverageRecords.reduce(
-		(maxStreak, record) => Math.max(maxStreak, record.best_streak),
-		0
-	);
+	return {
+		totalCoverage: stats.reduce(
+			(total, record) => total + record.current_coverage,
+			0
+		),
+		totalPollsAnswered: stats.reduce(
+			(total, record) => total + record.polls_answered,
+			0
+		),
+		bestStreak: stats.reduce(
+			(maxStreak, record) => Math.max(maxStreak, record.best_streak),
+			0
+		),
+	};
 };
 
 // Create category-specific leaderboard entries for a completed run
@@ -432,7 +411,12 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				eq(runsTable.id, runCategoryCoverageTable.run_id)
 			)
 			.where(eq(runsTable.status, "active"))
-			.groupBy(runsTable.user_id, usersTable.display_name, runsTable.id, runsTable.season_id)
+			.groupBy(
+				runsTable.user_id,
+				usersTable.display_name,
+				runsTable.id,
+				runsTable.season_id
+			)
 			.orderBy(
 				sql`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0) DESC`
 			)
