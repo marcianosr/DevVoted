@@ -2,14 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getDailyPoll } from "~/domains/polls/api/polls";
-import { pollQueryKeys } from "~/domains/shared/queryKeys";
 import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
 import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
 import type { CategoryCode } from "~/domains/shared/categories";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
 import { ErrorComponent } from "~/ui/ErrorComponent";
-import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
 import {
 	LEADERBOARD_REFRESH_INTERVAL,
 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
@@ -66,10 +64,12 @@ const DailyPoll: React.FC = () => {
 		enabled: !!user?.id, // Only run when we have user ID
 	});
 
-	console.log("DailyPoll render:", { data, isLoading, error });
-
 	if (isLoading) {
-		return <LoadingSkeleton />;
+		return (
+			<div className="text-white text-4xl h-screen flex justify-center content-center">
+				Loading...
+			</div>
+		);
 	}
 
 	if (error || !data) {

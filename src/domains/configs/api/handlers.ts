@@ -6,6 +6,7 @@ import {
 import { handleApiOperation } from "~/utils/errorHandling";
 import { canAddConfigToRun } from "~/domains/economy/services/configManager.service";
 import { configs } from "~/domains/configs/data/configs";
+import { getAuthenticatedUserId } from "~/utils/authorization";
 
 export const addConfigToRunHandler = async ({
 	data,
@@ -13,14 +14,19 @@ export const addConfigToRunHandler = async ({
 	data: { runId: number; configIds: string[] };
 }) => {
 	return handleApiOperation(async () => {
+		const userId = await getAuthenticatedUserId();
 		const { runId, configIds } = data;
+
+		const currentRun = await getRunByIdQuery(runId);
+
+		if (currentRun.userId !== userId) {
+			throw new Error("Unauthorized: Cannot modify another user's run");
+		}
 
 		const config = configs.find((c) => configIds.includes(c.id));
 		if (!config) {
 			throw new Error(`Config with id ${configIds} not found`);
 		}
-
-		const currentRun = await getRunByIdQuery(runId);
 
 		if (!canAddConfigToRun(currentRun, config)) {
 			throw new Error(

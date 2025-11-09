@@ -95,9 +95,9 @@ BUGS:
 [o] History table of polls: What happened with the poll?
 [] Append runs with new categories when adding a new category
 [x] How to use TOML config?
-[] Slow load db queries
+[x] Slow load db queries
 [] Click on config to install
-[] Suspend leaderboards because it slows
+[x] Suspend leaderboards because it slows
 [] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
 [o] When a new poll is loaded, the user sees the old poll for a split second causing two track views
 [] Giothub env vs Vercel env?
