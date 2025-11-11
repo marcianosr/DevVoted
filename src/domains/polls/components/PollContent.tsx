@@ -32,6 +32,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
 import { User } from "~/domains/users/services/userSync.service";
+import { ApiResponse } from "~/utils/errorHandling";
+import { PrimaryButton } from "~/ui/PrimaryButton";
+import { Link } from "@tanstack/react-router";
 
 /**
  * Format gate requirements for display
@@ -109,6 +112,8 @@ const PollContent: React.FC<PollContentProps> = ({
 	const queryClient = useQueryClient();
 	const { poll, options, hasAnswered } = pollData;
 
+	console.log("PollContent render with poll:", pollData);
+
 	const [rerollKey, setRerollKey] = useState(0);
 	const [submissionResult, setSubmissionResult] =
 		useState<SubmissionResult | null>(null);
@@ -136,24 +141,42 @@ const PollContent: React.FC<PollContentProps> = ({
 	const submitOptionsMutation = useMutation({
 		// 1️⃣ OPTIMISTIC UPDATE (happens BEFORE server call)
 		onMutate: async () => {
-			const pollQueryKey = pollQueryKeys.withOptions(poll.id, user?.id);
+			// Use the same query key that was used to fetch the daily poll in daily-poll.tsx
+			// This ensures we're updating the correct cache entry
+			const pollQueryKey = pollQueryKeys.daily(user?.id);
 
-			await queryClient.cancelQueries({ queryKey: pollQueryKey }); // Stop background refetches!
+			console.log("Optimistically updating poll as answered:", poll.id);
+
+			// Cancel any outgoing refetches to prevent race conditions
+			await queryClient.cancelQueries({ queryKey: pollQueryKey });
+
+			// Snapshot the previous cache data for potential rollback
 			const previousData = queryClient.getQueryData(pollQueryKey);
 
-			// Update UI instantly
-			queryClient.setQueryData(pollQueryKey, (old) => {
-				if (!old) {
-					console.log("No cached data to update");
-					return old;
+			// Optimistically update the cache to show the poll as answered immediately
+			// This provides instant UI feedback before the server responds
+			queryClient.setQueryData<ApiResponse<PollWithOptionsResponse>>(
+				pollQueryKey,
+				(old) => {
+					// Guard: If cache is empty or invalid, skip update
+					if (!old?.success || !old?.data) {
+						console.log("No cached data to update");
+						return old;
+					}
+
+					// Return updated cache with hasAnswered set to true
+					// Preserve API response structure: { success: true, data: { poll, options, hasAnswered } }
+					return {
+						...old,
+						data: {
+							...old.data,
+							hasAnswered: true,
+						},
+					};
 				}
+			);
 
-				return {
-					...old,
-					hasAnswered: true,
-				};
-			});
-
+			// Return context for error rollback
 			return { previousData, pollQueryKey };
 		},
 		// 2️⃣ SERVER CALL (happens automatically after onMutate)
@@ -276,9 +299,9 @@ const PollContent: React.FC<PollContentProps> = ({
 			: null;
 
 	return (
-		<section className={`p-2 max-w-7xl mx-auto`}>
+		<section className={`max-w-4xl mx-auto`}>
 			<section className="md:grid grid-cols-12 gap-4">
-				<div className="col-span-4 flex flex-col gap-8">
+				{/* <div className="col-span-4 flex flex-col gap-8">
 					<div className="text-4xl text-theme">
 						{currentCategory?.name}
 					</div>
@@ -294,7 +317,6 @@ const PollContent: React.FC<PollContentProps> = ({
 						</div>
 
 						<span className="text-xs text-gray-400">
-							{/* TODO make more CI like github actions */}
 							{thresholdInfo?.isThresholdCheckPoll && (
 								<span className="ml-2 text-red-400">
 									CI ⚠️ Checking...
@@ -342,27 +364,24 @@ const PollContent: React.FC<PollContentProps> = ({
 							lastScoreBreakdown={lastScoreBreakdown}
 						/>
 					)}
+				</div> */}
 
-					{/* <ul className="text-gray-400 text-xs">
-							<li>Poll #{poll.id}</li>
-							<li>Run #{activeRun?.id}</li>
-							<li>Amp x1.4</li>
-						</ul> */}
-				</div>
-
-				{/* Main content area - terminal style */}
-				<div className="col-span-8">
-					<div className="p-4 bg-zinc-900">
-						{activeRun && (
+				<div className="col-span-12">
+					{/* STORAGE AND CONFIG OVERVIEW */}
+					{/* {activeRun && (
+						<div className="p-4 bg-zinc-900">
 							<div className="text-theme">
 								<StorageDeck run={activeRun} />
 							</div>
-						)}
-					</div>
-					<div className="p-4 mt-8">
-						{/* Question display with category color accent */}
-						<PollQuestionDisplay poll={poll} />
+						</div>
+					)} */}
 
+					{/* POLL CONTENT */}
+					<div className="mt-8">
+						<div className="text-5xl border-b border-theme text-theme pb-4">
+							{currentCategory?.name}
+						</div>
+						<PollQuestionDisplay poll={poll} />
 						{poll.codeSandboxExample && (
 							<div className="my-4">
 								<iframe
@@ -379,8 +398,6 @@ const PollContent: React.FC<PollContentProps> = ({
 								<code>{poll.codeBlock}</code>
 							</pre>
 						)}
-						{/* Options form */}
-
 						{!submitOptionsMutation.isSuccess && (
 							<PollSubmissionForm
 								hasAnswered={hasAnswered}
@@ -407,7 +424,13 @@ const PollContent: React.FC<PollContentProps> = ({
 								/>
 							</PollSubmissionForm>
 						)}
-
+						{hasAnswered && (
+							<Link to="/progress">
+								<PrimaryButton className="mt-4">
+									View Progress
+								</PrimaryButton>
+							</Link>
+						)}
 						{submitOptionsMutation.isSuccess &&
 							submissionResult && (
 								<>
@@ -423,7 +446,7 @@ const PollContent: React.FC<PollContentProps> = ({
 										isCorrect={submissionResult.isCorrect}
 									/>
 
-									{isShopOpen && activeRun && (
+									{/* {isShopOpen && activeRun && (
 										<div className="mt-4">
 											<Shop
 												activeRun={activeRun}
@@ -432,7 +455,7 @@ const PollContent: React.FC<PollContentProps> = ({
 												costReduction={costReduction}
 											/>
 										</div>
-									)}
+									)} */}
 								</>
 							)}
 					</div>

@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as AuthedProgressRouteImport } from './routes/_authed/progress'
 import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
 import { Route as AuthedDailyPollRouteImport } from './routes/_authed/daily-poll'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
@@ -50,6 +51,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedProgressRoute = AuthedProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedGameOverRoute = AuthedGameOverRouteImport.update({
   id: '/game-over',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthedAdminRoute
   '/daily-poll': typeof AuthedDailyPollRoute
   '/game-over': typeof AuthedGameOverRoute
+  '/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/$pollId': typeof AuthedPollsPollIdRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthedAdminRoute
   '/daily-poll': typeof AuthedDailyPollRoute
   '/game-over': typeof AuthedGameOverRoute
+  '/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/$pollId': typeof AuthedPollsPollIdRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/daily-poll': typeof AuthedDailyPollRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
+  '/_authed/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/polls/$pollId': typeof AuthedPollsPollIdRoute
   '/_authed/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/daily-poll'
     | '/game-over'
+    | '/progress'
     | '/auth/callback'
     | '/polls/$pollId'
     | '/profile/$userId'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/daily-poll'
     | '/game-over'
+    | '/progress'
     | '/auth/callback'
     | '/polls/$pollId'
     | '/profile/$userId'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/_authed/admin'
     | '/_authed/daily-poll'
     | '/_authed/game-over'
+    | '/_authed/progress'
     | '/auth/callback'
     | '/_authed/polls/$pollId'
     | '/_authed/profile/$userId'
@@ -219,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/progress': {
+      id: '/_authed/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof AuthedProgressRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/game-over': {
       id: '/_authed/game-over'
       path: '/game-over'
@@ -268,6 +287,7 @@ interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRoute
   AuthedDailyPollRoute: typeof AuthedDailyPollRoute
   AuthedGameOverRoute: typeof AuthedGameOverRoute
+  AuthedProgressRoute: typeof AuthedProgressRoute
   AuthedPollsPollIdRoute: typeof AuthedPollsPollIdRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
   AuthedPollsIndexRoute: typeof AuthedPollsIndexRoute
@@ -277,6 +297,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRoute,
   AuthedDailyPollRoute: AuthedDailyPollRoute,
   AuthedGameOverRoute: AuthedGameOverRoute,
+  AuthedProgressRoute: AuthedProgressRoute,
   AuthedPollsPollIdRoute: AuthedPollsPollIdRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,
   AuthedPollsIndexRoute: AuthedPollsIndexRoute,

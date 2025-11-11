@@ -111,10 +111,24 @@ BUGS:
 [] De shop is weg als je de pagina refresht. Niet echt een bug, maar ik weet dat dit zo is
 [] Start new Run button in de header werkt niet
 
+! Feedback [Critical]
+[] Vue category toevoegen (viridian)
+[] Fonts niet duidelijk
+[] Hub omgeving
+[] Tonen: Hoelang het duurt voor de volgende poll komt
+[] Tonen: Tijdlijn van welke polls je hebt beantwoord (misschien alleen categorie?) - en de poll van morgen in "?"
+[] Tonen: Jouw progressie richting de CI gate: Wanneer komt de CI gate?
+[] Score klopt nog niet.
+Bij Matthijs zei hij 1.95% en de score was 2%
+[] "Architecture" catregory toevoegen (pallet)
+[] HTML entities komen niet door
+[] Update eslint description -> only works with TS and JS
+[] Deflate config has bugs
+
 Season 2: Early Meta Layer
 [] Show current season - shows 29 days
 [] Show created by (poll)
-
+[] Show/Fill out explanations for polls
 [] Onboarding/help modal for first-time users [Critical]
 [] Google Auth?
 [] Colorize tiers coverage

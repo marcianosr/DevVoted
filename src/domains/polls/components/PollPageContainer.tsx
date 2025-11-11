@@ -194,7 +194,7 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	}
 
 	const effectsResult = applyEffects(
-		{ ...poll, run: activeRun! },
+		{ ...poll, run: activeRun! }, // TODO: fix non-null assertion
 		activeRun?.activeConfigIds
 	);
 
