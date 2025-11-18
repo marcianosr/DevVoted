@@ -8,14 +8,12 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { createServerFn } from "@tanstack/react-start";
 import * as React from "react";
 import { DefaultCatchBoundary } from "../components/DefaultCatchBoundary";
 import { NotFound } from "../components/NotFound";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import appCss from "../styles/app.css?url";
 import { seo } from "../utils/seo";
-import { getSupabaseServerClient } from "../utils/supabase";
 import {
 	QueryClient,
 	QueryClientProvider,
@@ -23,58 +21,18 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { finishRunFn } from "../domains/runs/api/runs";
-import { useActiveRun } from "../domains/runs/hooks/useActiveRun";
-import { runQueryKeys } from "../domains/shared/queryKeys";
+import { useActiveRun } from "~/domains/runs/hooks";
+import { runQueryKeys } from "~/domains/shared/queryKeys";
 import { SecondaryButton } from "~/ui/SecondaryButton";
 
 import * as Sentry from "@sentry/react";
-import { ensureUserExists } from "~/domains/users/services/userSync.service";
+import { fetchUser } from "~/utils/fetchUser";
 
 Sentry.init({
 	dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
 	// Setting this option to true will send default PII data to Sentry.
 	// For example, automatic IP address collection on events
 	sendDefaultPii: true,
-});
-
-const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
-	try {
-		const supabase = getSupabaseServerClient();
-		const { data, error } = await supabase.auth.getUser();
-
-		if (error) {
-			Sentry.captureException(error, {
-				level: "warning",
-				extra: {
-					operation: "fetchUser.getUser",
-				},
-			});
-			return null;
-		}
-
-		if (!data.user?.email) {
-			return null;
-		}
-
-		const user = await ensureUserExists({
-			id: data.user.id,
-			email: data.user.email,
-			displayName:
-				data.user.user_metadata?.display_name ||
-				data.user.user_metadata?.full_name,
-			photoUrl: data.user.user_metadata?.avatar_url,
-		});
-
-		return user;
-	} catch (error) {
-		Sentry.captureException(error, {
-			level: "warning",
-			extra: {
-				operation: "fetchUser.ensureUserExists",
-			},
-		});
-		return null;
-	}
 });
 
 export const Route = createRootRoute({
