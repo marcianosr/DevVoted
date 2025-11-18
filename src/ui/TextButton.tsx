@@ -3,7 +3,7 @@ import clsx from "clsx";
 
 type TextButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	children: React.ReactNode;
-	variant?: "success" | "danger";
+	variant?: "success" | "danger" | "normal";
 };
 
 export const TextButton = ({
@@ -17,6 +17,7 @@ export const TextButton = ({
 	const variantStyles = {
 		success: "text-green-500 hover:underline disabled:text-gray-400",
 		danger: "text-red-500 hover:underline disabled:text-gray-400",
+		normal: "text-white-500 hover:underline disabled:text-gray-400",
 	};
 
 	return (
