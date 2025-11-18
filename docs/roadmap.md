@@ -85,47 +85,52 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Show github images
 [x] Sentry logging
 
-BUGS:
+### BUGS:
+
 [x] FORCE DARKMODE [Critical]
 [x] Login is white
 [x] Page Title
 [] When someone waits a day while having the shop open, the next poll comes and is "answered" automatically. Also shop[ is open]
 [x] Only update the poll counter when poll is "seen" not when answered
-[] Poll status in seperate table - Poll History
-[o] History table of polls: What happened with the poll?
+[x] Poll status in seperate table - Poll History
 [] Append runs with new categories when adding a new category
 [x] How to use TOML config?
-[x] Slow load db queries
 [] Click on config to install
 [x] Suspend leaderboards because it slows
 [x] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
-[o] When a new poll is loaded, the user sees the old poll for a split second causing two track views
-[x] Giothub env vs Vercel env?
+[x] When a new poll is loaded, the user sees the old poll for a split second causing two track views
+[x] Github env vs Vercel env?
 
 [x] Trage app - heeft vooral te maken met de database queries die geoptimaliseerd moeten worden
 [x] Poll history table - how
 [] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
 [x] Leaderboard query optimization?
 [x] Page title is nog steeds "Tanstack blabla"
-[] Als iemand de shop open heeft en de volgende dag de pagina weer bezoekt, haal hij de nieuwe poll op maar blijft hij in beantwoorde staat
-[] De shop is weg als je de pagina refresht. Niet echt een bug, maar ik weet dat dit zo is
 [] Start new Run button in de header werkt niet
 
-! Feedback [Critical]
+### Feedback / BUGS [Critical]
+
 [] Vue category toevoegen (viridian)
+[] "Architecture" catregory toevoegen (pallet)
 [] Fonts niet duidelijk
-[] Hub omgeving
+[] Herzien flow: - start - daily-poll - shop - progress (hub)
 [] Tonen: Hoelang het duurt voor de volgende poll komt
 [] Tonen: Tijdlijn van welke polls je hebt beantwoord (misschien alleen categorie?) - en de poll van morgen in "?"
 [] Tonen: Jouw progressie richting de CI gate: Wanneer komt de CI gate?
 [] Score klopt nog niet.
-Bij Matthijs zei hij 1.95% en de score was 2%
-[] "Architecture" catregory toevoegen (pallet)
+[] Bij Matthijs zei hij 1.95% en de score was 2%
+[] Gekozen / foute antwoorden onderscheid niet heel duidelijk
 [] HTML entities komen niet door
 [] Update eslint description -> only works with TS and JS
-[] Deflate config has bugs
+[] Deflate config doesn't work
+[] Eslint disabled ander antwoord als je van tab wisselt
+[] When answering on CI check, end run on progress screen. Now it ends when trying to proceed to the shop
+[] Add .editorconfig file
+[] Show your place in each button so you dont have to go through the list
+[] Codam? Gebruiken C language
 
-Season 2: Early Meta Layer
+### Season 2: Early Meta Layer
+
 [] Show current season - shows 29 days
 [] Show created by (poll)
 [] Show/Fill out explanations for polls
@@ -142,7 +147,7 @@ Season 2: Early Meta Layer
 [] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
-[] Change domain name. Not happy with "tamnstack" in my project name
+[] Change domain name. Not happy with "tanstack" in my project name
 [] Needs to be configured in Github aswell - https://github.com/settings/apps/devvoted and Supabase https://supabase.com/dashboard/project/smrkmigjsnhrhwrxobjc/auth/url-configuration
 
 [] Expand traceability
@@ -151,7 +156,8 @@ Season 2: Early Meta Layer
 [] Check system roles
 [] Event framework?
 
-Season 3: Expansion
+### Season 3: Expansion
+
 [] Basic CSI (global average, no per-category complexity)
 [] 20 unlockables (cosmetic or config)
 [] Knowledge-based awards (start with 2)
@@ -162,42 +168,8 @@ Season 3: Expansion
 [] Slackbot
 [] Polish flows / UI
 
-=====================================================================
+### Phase 3:
 
-[x] Answer polls both multiple choice and single choice (done)
-[x] Start runs mechanicsn(done)
-[x] XP threshold mechanicsn(done)
-[x] Storage mechanics
-[x] Configs (come up with a few to play with) mechanics
-[x] Economy mechanics (actually "pay" with storage)
-[x] Sell configs
-[x] Shop mechanics
-
-[o] Update UI Realtime
-
-- [x] Poll answered
-- [x] Configs
-
-[x] Select random poll to "open" for today and open/close poll for the next day
-[x] Integrate 3-poll "sets": Threshold is only checked at every third poll
-[] Refactor service files - userSync for example
-[x] Run end: Show gameover and stat screen: Allow user to start a new run
-[] Implement rerolls
-[] Show leaderboard
-[] Create atleast 6-8 configs with effects
-[] Old to new system
-[] Add onboarding screen or help modal for first-time users
-[] Traceability
-
-[] Balance the game (threshold, configs)
-[] Balance treshold system: now its \* 2, should this gradually increase based on multipliers/configs/data storage?
-
-[] Authentication (Github / Google)
-[] Deployment
-
-### Phase 2:
-
-[] CI / CD github actions (DB migrations)
 [] Config discovery system
 [] Integrate basic CSI
 [] Check multiple choice formula
@@ -208,8 +180,3 @@ Season 3: Expansion
 [] AI design soms stickers
 [] Add new polls (currently Slack'ed to myself)
 [] Introduce new categories: Java, AI (Talk with Guido if possible)
-
-### Bugs
-
-[] When answering a poll, refresh, the poll can be answered again. When I switch tabs for instace, it gets refetched on the client and I see it's answered (for good) - I need to check if the user already answered on the server
-[] Show end of run immediately when 3/3 polls and threshold is not met
