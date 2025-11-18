@@ -55,7 +55,6 @@ export const useActiveRun = (
 		},
 	});
 
-	// Derived state
 	const hasActiveRun = activeRunResponse?.success ?? false;
 	const runData =
 		hasActiveRun && activeRunResponse?.success
