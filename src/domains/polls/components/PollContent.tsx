@@ -20,10 +20,7 @@ import { getRandomConfigs } from "~/domains/economy/services/configManager.servi
 import { useMemo, useState } from "react";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
-import {
-	calculateThresholdInfo,
-	type GateDefinition,
-} from "~/domains/runs/services/thresholdCalculator.service";
+import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { getCategories } from "~/domains/shared/categories";
 import { PollAnswerReview } from "./PollAnswerReview";
 import { getTotalPollsSeen } from "~/domains/polls/api/polls";
@@ -32,38 +29,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
 import { User } from "~/domains/users/services/userSync.service";
-
-/**
- * Format gate requirements for display
- * Examples:
- * - "10% in 1 category"
- * - "15% in 1 OR 10% in 2 categories"
- * - "30% in 1 AND 15% in another"
- */
-const formatGateRequirements = (
-	gateDefinition: GateDefinition | null
-): string => {
-	if (!gateDefinition) return "";
-
-	const { requirements, evaluationMode } = gateDefinition;
-
-	if (requirements.length === 1) {
-		const req = requirements[0];
-		return `${req.threshold}% in ${req.requiredCategories} ${req.requiredCategories === 1 ? "category" : "categories"}`;
-	}
-
-	const formattedReqs = requirements.map(
-		(req) =>
-			`${req.threshold}% in ${req.requiredCategories} ${req.requiredCategories === 1 ? "category" : "categories"}`
-	);
-
-	if (evaluationMode === "AND" && requirements.length === 2) {
-		// Special formatting for AND with 2 requirements
-		return `${requirements[0].threshold}% in 1 AND ${requirements[1].threshold}% in another`;
-	}
-
-	return formattedReqs.join(` ${evaluationMode} `);
-};
+import { formatGateRequirements } from "~/domains/runs/utils/gateFormatting";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
