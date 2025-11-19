@@ -56,7 +56,7 @@ export const Shop = ({
 			<div className="space-y-8 flex justify-between items-start mt-12">
 				<div>
 					<h2 className="text-4xl text-theme mb-2">
-						Package manager
+						Shop (Package manager)
 					</h2>
 					<p>
 						Improve your run by installing new configs to your

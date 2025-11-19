@@ -131,7 +131,6 @@ const PollContent: React.FC<PollContentProps> = ({
 				const runEnded = data.data?.runEnded;
 				const breakdown = data.data?.breakdown;
 
-				// Store the submission result for answer review
 				if (data.data?.selectOptions && data.data?.correctOptions) {
 					setSubmissionResult({
 						selectedOptionIds: data.data.selectOptions,

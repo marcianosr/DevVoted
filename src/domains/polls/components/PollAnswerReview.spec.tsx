@@ -106,7 +106,9 @@ describe("PollAnswerReview", () => {
 				/>
 			);
 
-			const correctOption = screen.getByText("Banjo").closest("div.border");
+			const correctOption = screen
+				.getByText("Banjo")
+				.closest("div.border");
 			expect(correctOption).toHaveClass("border-green-700");
 			expect(correctOption).toHaveClass("bg-green-900/10");
 			expect(
@@ -141,7 +143,9 @@ describe("PollAnswerReview", () => {
 				/>
 			);
 
-			const incorrectOption = screen.getByText("Klungo").closest("div.border");
+			const incorrectOption = screen
+				.getByText("Klungo")
+				.closest("div.border");
 			expect(incorrectOption).toHaveClass("border-zinc-700");
 			expect(incorrectOption).toHaveClass("bg-zinc-900/20");
 		});
@@ -346,7 +350,7 @@ describe("PollAnswerReview", () => {
 				/>
 			);
 
-			expect(screen.getByText("Answer Review")).toBeInTheDocument();
+			expect(screen.getByText("Review your answer")).toBeInTheDocument();
 			expect(
 				screen.queryByText("[ YOUR ANSWER ]")
 			).not.toBeInTheDocument();
@@ -374,7 +378,9 @@ describe("PollAnswerReview", () => {
 			);
 
 			expect(screen.getByText("The only answer")).toBeInTheDocument();
-			expect(screen.getByText("[ YOUR ANSWER ]", { exact: false })).toBeInTheDocument();
+			expect(
+				screen.getByText("[ YOUR ANSWER ]", { exact: false })
+			).toBeInTheDocument();
 		});
 	});
 });

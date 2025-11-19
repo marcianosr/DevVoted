@@ -61,7 +61,9 @@ export const PollAnswerReview = ({
 
 	return (
 		<div className="mb-6">
-			<h3 className="text-theme font-bold mb-4 text-lg">Answer Review</h3>
+			<h3 className="text-theme font-bold mb-4 text-lg">
+				Review your answer
+			</h3>
 
 			<div className="space-y-2">
 				{options.map((option) => {
