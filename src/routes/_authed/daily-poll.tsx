@@ -12,6 +12,7 @@ import {
 	LEADERBOARD_REFRESH_INTERVAL,
 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
 } from "~/config/polling";
+import { requireActiveRun } from "~/domains/runs/guards/requireActiveRun";
 
 const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -39,7 +40,7 @@ const getAllTimeLeaderboard = createServerFn({ method: "POST" })
 	});
 
 const DailyPoll: React.FC = () => {
-	const { user } = Route.useRouteContext();
+	const { user, activeRun } = Route.useRouteContext();
 
 	// Fetch active run category XP for real-time progress
 	const categoryCoverageQuery = useQuery({
@@ -89,7 +90,7 @@ const DailyPoll: React.FC = () => {
 
 	return (
 		<section data-category-theme={poll?.poll.categoryCode}>
-			<PollPageContainer user={user} poll={poll} />
+			<PollPageContainer user={user} poll={poll} activeRun={activeRun} />
 
 			{/* TODO: Refactor in own component */}
 			<section className="max-w-5xl mx-auto">
@@ -148,4 +149,8 @@ const DailyPoll: React.FC = () => {
 
 export const Route = createFileRoute("/_authed/daily-poll")({
 	component: DailyPoll,
+	beforeLoad: async () => {
+		const activeRun = await requireActiveRun();
+		return { activeRun };
+	},
 });

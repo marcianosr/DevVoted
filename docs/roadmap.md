@@ -140,6 +140,7 @@ BUGS:
 
 ### Season 2: Early Meta Layer
 
+[] Move CI gates into DB
 [] Show current season - shows 29 days
 [] Show created by (poll)
 

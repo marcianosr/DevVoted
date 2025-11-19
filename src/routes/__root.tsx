@@ -23,12 +23,12 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { finishRunFn } from "../domains/runs/api/runs";
-import { useActiveRun } from "../domains/runs/hooks/useActiveRun";
 import { runQueryKeys } from "../domains/shared/queryKeys";
 import { SecondaryButton } from "~/ui/SecondaryButton";
 
 import * as Sentry from "@sentry/react";
 import { ensureUserExists } from "~/domains/users/services/userSync.service";
+import { requireActiveRun } from "~/domains/runs/guards/requireActiveRun";
 
 Sentry.init({
 	dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
@@ -116,10 +116,12 @@ export const Route = createRootRoute({
 		],
 	}),
 	beforeLoad: async () => {
+		const activeRun = await requireActiveRun();
 		const user = await fetchUser();
 
 		return {
 			user,
+			activeRun,
 		};
 	},
 	errorComponent: (props) => {
@@ -147,12 +149,10 @@ function RootComponent() {
 }
 
 function Navigation() {
-	const { user } = Route.useRouteContext();
+	const { user, activeRun } = Route.useRouteContext();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-
-	const { hasActiveRun } = useActiveRun(user?.id);
 
 	const finishRunMutation = useMutation({
 		mutationFn: () => finishRunFn(),
@@ -161,25 +161,15 @@ function Navigation() {
 				queryKey: runQueryKeys.active(user?.id),
 			});
 			setIsDialogOpen(false);
-			navigate({ to: "/daily-poll" });
+			navigate({ to: "/start" });
 		},
 	});
 
 	const handleStartNewRunClick = () => {
-		if (hasActiveRun) {
-			setIsDialogOpen(true);
-		} else {
-			navigate({ to: "/daily-poll" });
-		}
+		if (activeRun.id) setIsDialogOpen(true);
 	};
-
-	const handleConfirmFinishRun = () => {
-		finishRunMutation.mutate();
-	};
-
-	const handleCancelFinishRun = () => {
-		setIsDialogOpen(false);
-	};
+	const handleConfirmFinishRun = () => finishRunMutation.mutate();
+	const handleCancelFinishRun = () => setIsDialogOpen(false);
 
 	return (
 		<>

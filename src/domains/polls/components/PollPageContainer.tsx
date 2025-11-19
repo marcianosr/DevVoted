@@ -1,9 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useActiveRun } from "~/domains/runs/hooks";
-import { StartRunScreen } from "~/domains/runs/components/StartRunScreen";
-import { ErrorComponent } from "~/ui/ErrorComponent";
-import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
 import { ShopProvider } from "~/domains/economy/contexts/ShopContext";
 import { applyEffects } from "~/domains/configs/data/configs";
 import {
@@ -16,28 +12,22 @@ import { useState } from "react";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import PollContent from "./PollContent";
 import { User } from "~/domains/users/services/userSync.service";
+import { Run } from "~/domains/runs/models/run";
 
 type PollPageContainerProps = {
 	user: User;
 	poll: PollWithOptionsResponse;
+	activeRun: Run;
 };
 
 export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 	user,
 	poll,
+	activeRun,
 }) => {
 	const queryClient = useQueryClient();
 	const [lastScoreBreakdown, setLastScoreBreakdown] =
 		useState<PollScoreBreakdown | null>(null);
-
-	const {
-		activeRun,
-		hasActiveRun,
-		isLoading: isLoadingRun,
-		error: runError,
-		startRun,
-		isStarting,
-	} = useActiveRun(user?.id);
 
 	const addConfigsMutation = useMutation({
 		mutationFn: addConfigToRunServerFn,
@@ -141,57 +131,23 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 		},
 	});
 
-	const handleStartRun = () => {
-		startRun();
-	};
-
 	const handleAddConfig = (configId: string) => {
-		if (activeRun?.id) {
-			addConfigsMutation.mutate({
-				data: {
-					runId: activeRun.id,
-					configIds: [configId],
-				},
-			});
-		} else {
-			console.error("No active run ID found");
-		}
+		addConfigsMutation.mutate({
+			data: {
+				runId: activeRun.id,
+				configIds: [configId],
+			},
+		});
 	};
 
 	const handleRemoveConfig = (configId: string) => {
-		if (activeRun?.id) {
-			removeConfigMutation.mutate({
-				data: {
-					runId: activeRun.id,
-					configIds: [configId],
-				},
-			});
-		} else {
-			console.error("No active run ID found");
-		}
+		removeConfigMutation.mutate({
+			data: {
+				runId: activeRun.id,
+				configIds: [configId],
+			},
+		});
 	};
-
-	// Show loading state for run check
-	if (isLoadingRun) {
-		return <LoadingSkeleton />;
-	}
-
-	if (runError) {
-		return (
-			<ErrorComponent text={`Error loading run: ${String(runError)}`} />
-		);
-	}
-
-	// No active run - show start button
-	if (!hasActiveRun) {
-		return (
-			<StartRunScreen
-				isStarting={isStarting}
-				onStartRun={handleStartRun}
-				userId={user?.id}
-			/>
-		);
-	}
 
 	const effectsResult = applyEffects(
 		{ ...poll, run: activeRun! },
