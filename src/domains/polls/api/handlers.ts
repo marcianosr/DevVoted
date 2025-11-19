@@ -6,7 +6,7 @@ import {
 	getPollHistory,
 	trackPollView,
 	trackPollAnswer,
-	getTotalPollsSeenByUser,
+	getPollsSeenInRun,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import {
@@ -16,6 +16,7 @@ import {
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
 import { handleApiOperation } from "~/utils/errorHandling";
 import { isSameDay } from "date-fns";
+import { getUserActiveRun } from "~/domains/runs/api/handlers";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -65,13 +66,18 @@ export const getDailyPollHandler = async ({
 
 		// Track poll view only if not seen today
 		if (userId) {
-			const history = await getPollHistory(userId, poll.id);
+			const activeRunResponse = await getUserActiveRun(userId);
+			if (!activeRunResponse.success) {
+				throw new Error(activeRunResponse.error);
+			}
+
+			const history = await getPollHistory(activeRunResponse.data.id, poll.id);
 			const hasSeenToday = history?.last_seen_at
 				? isSameDay(new Date(history.last_seen_at), new Date())
 				: false;
 
 			if (!hasSeenToday) {
-				await trackPollView(userId, poll.id);
+				await trackPollView(activeRunResponse.data.id, userId, poll.id);
 			}
 		}
 
@@ -86,6 +92,11 @@ export const postPollOptionsHandler = async ({
 }) => {
 	return handleApiOperation(async () => {
 		const validatedData = await validatePollSubmission(data);
+
+		const activeRunResponse = await getUserActiveRun(validatedData.userId);
+		if (!activeRunResponse.success) {
+			throw new Error(activeRunResponse.error);
+		}
 
 		// TODO: The start of posting to the DB (answers)
 		const {
@@ -103,7 +114,7 @@ export const postPollOptionsHandler = async ({
 		});
 
 		// Track poll answer
-		await trackPollAnswer(validatedData.userId, validatedData.pollId);
+		await trackPollAnswer(activeRunResponse.data.id, validatedData.userId, validatedData.pollId);
 
 		return {
 			message: "Options submitted successfully",
@@ -158,13 +169,17 @@ const validatePollSubmission = async (
 	};
 };
 
-export const getTotalPollsSeenHandler = async ({
+export const getPollsSeenInRunHandler = async ({
 	data,
 }: {
 	data: { userId: string };
 }) => {
 	return handleApiOperation(async () => {
 		const { userId } = data;
-		return await getTotalPollsSeenByUser(userId);
+		const activeRunResponse = await getUserActiveRun(userId);
+		if (!activeRunResponse.success) {
+			throw new Error(activeRunResponse.error);
+		}
+		return await getPollsSeenInRun(activeRunResponse.data.id);
 	});
 };

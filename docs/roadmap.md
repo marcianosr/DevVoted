@@ -121,7 +121,11 @@ BUGS:
 - [o] Tonen: Jouw progressie richting de CI gate: Wanneer komt de CI gate?
 
 [] White theme stuff
+
 [] HTML entities komen niet door
+
+    - [] create poll id page to test
+
 [] Update eslint description -> only works with TS and JS
 [] Deflate config doesn't work
 [] Eslint disabled ander antwoord als je van tab wisselt

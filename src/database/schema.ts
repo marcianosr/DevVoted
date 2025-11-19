@@ -127,15 +127,19 @@ export const pollsTable = pgTable("polls", {
 
 /**
  * Poll History Table
- * Tracks poll viewing and answering statistics per user
- * - One record per user per poll (enforced by unique constraint)
- * - Counters for total views and answers
+ * Tracks poll viewing and answering statistics per run
+ * - One record per run per poll (enforced by unique constraint)
+ * - Counters for views and answers within the specific run
  * - Timestamps for first/last view and last answer
+ * - Run-scoped to enable proper gate and round resets between runs
  */
 export const pollHistoryTable = pgTable(
 	"polls_history",
 	{
 		id: serial("id").primaryKey().notNull(),
+		run_id: integer("run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
+			.notNull(),
 		poll_id: integer("poll_id")
 			.references(() => pollsTable.id, { onDelete: "cascade" })
 			.notNull(),
@@ -154,7 +158,7 @@ export const pollHistoryTable = pgTable(
 	},
 	(table) => {
 		return {
-			userPollUnique: unique().on(table.user_id, table.poll_id),
+			runPollUnique: unique().on(table.run_id, table.poll_id),
 		};
 	}
 );

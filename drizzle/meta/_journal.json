@@ -204,6 +204,13 @@
       "when": 1762713750855,
       "tag": "0028_round_kingpin",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1763565210228,
+      "tag": "0029_noisy_the_executioner",
+      "breakpoints": true
     }
   ]
 }

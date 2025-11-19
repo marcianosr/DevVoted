@@ -10,7 +10,7 @@ import {
 	type ThresholdInfo,
 	CI_GATES,
 } from "~/domains/runs/services/thresholdCalculator.service";
-import { getTotalPollsSeenByUser } from "~/domains/polls/api/queries";
+import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 
 // End run mid-game when coverage threshold is not met (preserves progress in final_* columns)
 export const endRunForThresholdFailure = async (runId: number) => {
@@ -76,14 +76,12 @@ export const checkCoverageThreshold = async (
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	// Fetch total polls seen for threshold calculation
-	const totalPollsSeen = await getTotalPollsSeenByUser(
-		runWithCategoryData.userId
-	);
+	// Fetch polls seen in current run for threshold calculation
+	const pollsSeenInRun = await getPollsSeenInRun(runId);
 
 	return calculateThresholdInfo(
 		runWithCategoryData.categoryCoverage,
-		totalPollsSeen
+		pollsSeenInRun
 	);
 };
 

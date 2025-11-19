@@ -23,7 +23,7 @@ import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { getCategories } from "~/domains/shared/categories";
 import { PollAnswerReview } from "./PollAnswerReview";
-import { getTotalPollsSeen } from "~/domains/polls/api/polls";
+import { getPollsSeenInRun } from "~/domains/polls/api/polls";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -79,14 +79,14 @@ const PollContent: React.FC<PollContentProps> = ({
 	const [submissionResult, setSubmissionResult] =
 		useState<SubmissionResult | null>(null);
 
-	// Fetch total polls seen for round calculation
-	const { data: totalPollsSeenData } = useQuery({
-		queryKey: pollQueryKeys.totalSeen(user?.id),
-		queryFn: () => getTotalPollsSeen(),
-		enabled: !!user?.id,
+	// Fetch polls seen in current run for round calculation
+	const { data: pollsSeenInRunData } = useQuery({
+		queryKey: pollQueryKeys.seenInRun(activeRun?.id),
+		queryFn: () => getPollsSeenInRun(),
+		enabled: !!activeRun?.id,
 	});
-	const totalPollsSeen = totalPollsSeenData?.success
-		? totalPollsSeenData.data
+	const pollsSeenInRun = pollsSeenInRunData?.success
+		? pollsSeenInRunData.data
 		: 0;
 
 	// TODO: Put in a hook
@@ -237,7 +237,7 @@ const PollContent: React.FC<PollContentProps> = ({
 
 	const thresholdInfo =
 		activeRun && activeRun.categoryCoverage
-			? calculateThresholdInfo(activeRun.categoryCoverage, totalPollsSeen)
+			? calculateThresholdInfo(activeRun.categoryCoverage, pollsSeenInRun)
 			: null;
 
 	return (
