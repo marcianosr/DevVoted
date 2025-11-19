@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
+import { PrimaryButton } from "~/ui/PrimaryButton";
 import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
 import type { CategoryCode } from "~/domains/shared/categories";
 import { getAuthenticatedUserId } from "~/utils/authorization";
@@ -12,7 +13,6 @@ import {
 	LEADERBOARD_REFRESH_INTERVAL,
 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
 } from "~/config/polling";
-import { requireActiveRun } from "~/domains/runs/guards/requireActiveRun";
 
 const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -41,6 +41,21 @@ const getAllTimeLeaderboard = createServerFn({ method: "POST" })
 
 const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
+
+	// Handle no active run state
+	if (!activeRun.success || !activeRun.data?.id) {
+		return (
+			<div className="p-4 text-center max-w-2xl mx-auto py-8">
+				<h1 className="text-3xl mb-4">No Active Run</h1>
+				<p className="mb-6 text-gray-300">
+					Start a new run to begin playing and answering polls!
+				</p>
+				<Link to="/start">
+					<PrimaryButton>Start New Run</PrimaryButton>
+				</Link>
+			</div>
+		);
+	}
 
 	// Fetch active run category XP for real-time progress
 	const categoryCoverageQuery = useQuery({
@@ -90,7 +105,7 @@ const DailyPoll: React.FC = () => {
 
 	return (
 		<section data-category-theme={poll?.poll.categoryCode}>
-			<PollPageContainer user={user} poll={poll} activeRun={activeRun} />
+			<PollPageContainer user={user} poll={poll} activeRun={activeRun.data} />
 
 			{/* TODO: Refactor in own component */}
 			<section className="max-w-5xl mx-auto">
@@ -149,8 +164,4 @@ const DailyPoll: React.FC = () => {
 
 export const Route = createFileRoute("/_authed/daily-poll")({
 	component: DailyPoll,
-	beforeLoad: async () => {
-		const activeRun = await requireActiveRun();
-		return { activeRun };
-	},
 });

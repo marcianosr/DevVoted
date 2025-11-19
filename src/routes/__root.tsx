@@ -5,30 +5,20 @@ import {
 	Outlet,
 	Scripts,
 	createRootRoute,
-	useNavigate,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 import * as React from "react";
 import { DefaultCatchBoundary } from "../components/DefaultCatchBoundary";
 import { NotFound } from "../components/NotFound";
-import { ConfirmDialog } from "../components/ConfirmDialog";
 import appCss from "../styles/app.css?url";
 import { seo } from "../utils/seo";
 import { getSupabaseServerClient } from "../utils/supabase";
-import {
-	QueryClient,
-	QueryClientProvider,
-	useMutation,
-	useQueryClient,
-} from "@tanstack/react-query";
-import { finishRunFn } from "../domains/runs/api/runs";
-import { runQueryKeys } from "../domains/shared/queryKeys";
-import { SecondaryButton } from "~/ui/SecondaryButton";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { getActiveRun } from "../domains/runs/api/runs";
 
 import * as Sentry from "@sentry/react";
 import { ensureUserExists } from "~/domains/users/services/userSync.service";
-import { requireActiveRun } from "~/domains/runs/guards/requireActiveRun";
 
 Sentry.init({
 	dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
@@ -116,7 +106,7 @@ export const Route = createRootRoute({
 		],
 	}),
 	beforeLoad: async () => {
-		const activeRun = await requireActiveRun();
+		const activeRun = await getActiveRun();
 		const user = await fetchUser();
 
 		return {
@@ -149,27 +139,7 @@ function RootComponent() {
 }
 
 function Navigation() {
-	const { user, activeRun } = Route.useRouteContext();
-	const navigate = useNavigate();
-	const queryClient = useQueryClient();
-	const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-
-	const finishRunMutation = useMutation({
-		mutationFn: () => finishRunFn(),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: runQueryKeys.active(user?.id),
-			});
-			setIsDialogOpen(false);
-			navigate({ to: "/start" });
-		},
-	});
-
-	const handleStartNewRunClick = () => {
-		if (activeRun.id) setIsDialogOpen(true);
-	};
-	const handleConfirmFinishRun = () => finishRunMutation.mutate();
-	const handleCancelFinishRun = () => setIsDialogOpen(false);
+	const { user } = Route.useRouteContext();
 
 	return (
 		<>
@@ -186,12 +156,6 @@ function Navigation() {
 				<div className="ml-auto flex gap-2 items-center">
 					{user ? (
 						<>
-							<SecondaryButton
-								onClick={handleStartNewRunClick}
-								className="px-3 py-1 text-sm"
-							>
-								Start New Run
-							</SecondaryButton>
 							<Link
 								to="/profile/$userId"
 								params={{ userId: user.id }}
@@ -218,13 +182,6 @@ function Navigation() {
 				</div>
 			</div>
 			<hr />
-			<ConfirmDialog
-				isOpen={isDialogOpen}
-				onConfirm={handleConfirmFinishRun}
-				onCancel={handleCancelFinishRun}
-				title="Start New Run"
-				message="Are you sure you want to break off your current run?"
-			/>
 		</>
 	);
 }
