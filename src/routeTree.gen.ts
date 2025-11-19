@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StartRouteImport } from './routes/start'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
@@ -22,6 +23,11 @@ import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/ind
 import { Route as AuthedProfileUserIdRouteImport } from './routes/_authed/profile.$userId'
 import { Route as AuthedPollsPollIdRouteImport } from './routes/_authed/polls/$pollId'
 
+const StartRoute = StartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/sign-up': typeof SignUpRoute
+  '/start': typeof StartRoute
   '/admin': typeof AuthedAdminRoute
   '/daily-poll': typeof AuthedDailyPollRoute
   '/game-over': typeof AuthedGameOverRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/sign-up': typeof SignUpRoute
+  '/start': typeof StartRoute
   '/admin': typeof AuthedAdminRoute
   '/daily-poll': typeof AuthedDailyPollRoute
   '/game-over': typeof AuthedGameOverRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/sign-up': typeof SignUpRoute
+  '/start': typeof StartRoute
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/daily-poll': typeof AuthedDailyPollRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/sign-up'
+    | '/start'
     | '/admin'
     | '/daily-poll'
     | '/game-over'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/sign-up'
+    | '/start'
     | '/admin'
     | '/daily-poll'
     | '/game-over'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/sign-up'
+    | '/start'
     | '/_authed/admin'
     | '/_authed/daily-poll'
     | '/_authed/game-over'
@@ -172,11 +184,19 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   LogoutRoute: typeof LogoutRoute
   SignUpRoute: typeof SignUpRoute
+  StartRoute: typeof StartRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/start': {
+      id: '/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof StartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-up': {
       id: '/sign-up'
       path: '/sign-up'
@@ -291,6 +311,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   LogoutRoute: LogoutRoute,
   SignUpRoute: SignUpRoute,
+  StartRoute: StartRoute,
   AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
