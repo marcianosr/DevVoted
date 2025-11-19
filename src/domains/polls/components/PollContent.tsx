@@ -6,19 +6,12 @@ import { PollSubmissionForm } from "./PollSubmissionForm";
 import { RunStatusDisplay } from "~/domains/runs/components/RunStatusDisplay";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 import { StorageDeck } from "~/domains/economy/components/StorageDeck";
-import { Shop } from "~/domains/economy/components/Shop";
-import { useShopContext } from "~/domains/economy/contexts/ShopContext";
-import {
-	configs,
-	type EffectRenderProps,
-} from "~/domains/configs/data/configs";
+import { type EffectRenderProps } from "~/domains/configs/data/configs";
 
 import { Run } from "~/domains/runs/models/run";
 import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
-import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
-import { useMemo, useState } from "react";
-import { rerollShopServerFn } from "~/domains/runs/api/reroll";
+import { useState } from "react";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import {
 	calculateThresholdInfo,
@@ -36,38 +29,6 @@ import { ApiResponse } from "~/utils/errorHandling";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 import { Link } from "@tanstack/react-router";
 
-/**
- * Format gate requirements for display
- * Examples:
- * - "10% in 1 category"
- * - "15% in 1 OR 10% in 2 categories"
- * - "30% in 1 AND 15% in another"
- */
-const formatGateRequirements = (
-	gateDefinition: GateDefinition | null
-): string => {
-	if (!gateDefinition) return "";
-
-	const { requirements, evaluationMode } = gateDefinition;
-
-	if (requirements.length === 1) {
-		const req = requirements[0];
-		return `${req.threshold}% in ${req.requiredCategories} ${req.requiredCategories === 1 ? "category" : "categories"}`;
-	}
-
-	const formattedReqs = requirements.map(
-		(req) =>
-			`${req.threshold}% in ${req.requiredCategories} ${req.requiredCategories === 1 ? "category" : "categories"}`
-	);
-
-	if (evaluationMode === "AND" && requirements.length === 2) {
-		// Special formatting for AND with 2 requirements
-		return `${requirements[0].threshold}% in 1 AND ${requirements[1].threshold}% in another`;
-	}
-
-	return formattedReqs.join(` ${evaluationMode} `);
-};
-
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
 
@@ -84,7 +45,6 @@ type PollContentProps = {
 	activeRun: Run | null;
 	lastScoreBreakdown: PollScoreBreakdown | null;
 	setLastScoreBreakdown: (breakdown: PollScoreBreakdown | null) => void;
-	costReduction: number;
 };
 
 export const submitPollOptions = createServerFn({ method: "POST" })
@@ -106,15 +66,10 @@ const PollContent: React.FC<PollContentProps> = ({
 	activeRun,
 	lastScoreBreakdown,
 	setLastScoreBreakdown,
-	costReduction,
 }) => {
-	const { openShop, isShopOpen } = useShopContext();
 	const queryClient = useQueryClient();
 	const { poll, options, hasAnswered } = pollData;
 
-	console.log("PollContent render with poll:", pollData);
-
-	const [rerollKey, setRerollKey] = useState(0);
 	const [submissionResult, setSubmissionResult] =
 		useState<SubmissionResult | null>(null);
 
@@ -127,16 +82,6 @@ const PollContent: React.FC<PollContentProps> = ({
 	const totalPollsSeen = totalPollsSeenData?.success
 		? totalPollsSeenData.data
 		: 0;
-
-	// TODO: Put in a hook
-	const randomConfigs = useMemo(() => {
-		if (!activeRun) return [];
-		return getRandomConfigs({
-			run: activeRun,
-			configs,
-			count: 3,
-		});
-	}, [activeRun?.id, rerollKey]);
 
 	const submitOptionsMutation = useMutation({
 		// 1️⃣ OPTIMISTIC UPDATE (happens BEFORE server call)
@@ -221,7 +166,7 @@ const PollContent: React.FC<PollContentProps> = ({
 					queryKey: runQueryKeys.active(user?.id),
 				});
 
-				openShop();
+				// openShop();
 				return;
 			}
 
@@ -260,26 +205,6 @@ const PollContent: React.FC<PollContentProps> = ({
 		},
 	});
 
-	const rerollMutation = useMutation({
-		mutationFn: rerollShopServerFn,
-		onSuccess: (data) => {
-			if (data.success) {
-				// Force regeneration of random configs
-				setRerollKey((prev) => prev + 1);
-				// Invalidate run query to get updated reroll count and KB spent
-				queryClient.invalidateQueries({
-					queryKey: runQueryKeys.active(user?.id),
-				});
-			}
-		},
-	});
-
-	const handleReroll = () => {
-		if (activeRun?.id) {
-			rerollMutation.mutate({ data: { runId: activeRun.id } });
-		}
-	};
-
 	if (!poll) {
 		return <ErrorComponent text="Sorry, the poll could not be found" />;
 	}
@@ -293,79 +218,9 @@ const PollContent: React.FC<PollContentProps> = ({
 		(cat) => cat.code === poll.categoryCode
 	);
 
-	const thresholdInfo =
-		activeRun && activeRun.categoryCoverage
-			? calculateThresholdInfo(activeRun.categoryCoverage, totalPollsSeen)
-			: null;
-
 	return (
-		<section className={`max-w-4xl mx-auto`}>
+		<section className={`max-w-4xl mx-auto mt-16`}>
 			<section className="md:grid grid-cols-12 gap-4">
-				{/* <div className="col-span-4 flex flex-col gap-8">
-					<div className="text-4xl text-theme">
-						{currentCategory?.name}
-					</div>
-
-					<div className="text-theme flex flex-col">
-						<div className="flex flex-col">
-							<span className="text-3xl">
-								Round {thresholdInfo?.currentRound}
-							</span>
-							<small className="text-white text-lg">
-								Poll {thresholdInfo?.pollInRound} of 5
-							</small>
-						</div>
-
-						<span className="text-xs text-gray-400">
-							{thresholdInfo?.isThresholdCheckPoll && (
-								<span className="ml-2 text-red-400">
-									CI ⚠️ Checking...
-								</span>
-							)}
-						</span>
-
-						<div className="mt-2">
-							{thresholdInfo && (
-								<>
-									<div className="border border-theme p-2">
-										<p className="text-white underline underline-offset-4">
-											Win conditions:{" "}
-										</p>
-										<p className="text-theme">
-											{formatGateRequirements(
-												thresholdInfo.gateDefinition
-											)}
-										</p>
-										{thresholdInfo.qualifyingCategories
-											.length > 0 && (
-											<div className="mt-1 text-green-400">
-												CI: ✓ Passing:{" "}
-												{thresholdInfo.qualifyingCategories.join(
-													", "
-												)}
-											</div>
-										)}
-										{!thresholdInfo.meetsThreshold &&
-											thresholdInfo.isThresholdCheckPoll && (
-												<div className="mt-1 text-red-400">
-													⚠️ Not meeting gate
-													requirements
-												</div>
-											)}
-									</div>
-								</>
-							)}
-						</div>
-					</div>
-					{activeRun && (
-						<RunStatusDisplay
-							activeRun={activeRun}
-							currentCategoryCode={poll.categoryCode}
-							lastScoreBreakdown={lastScoreBreakdown}
-						/>
-					)}
-				</div> */}
-
 				<div className="col-span-12">
 					{/* STORAGE AND CONFIG OVERVIEW */}
 					{/* {activeRun && (
@@ -377,7 +232,7 @@ const PollContent: React.FC<PollContentProps> = ({
 					)} */}
 
 					{/* POLL CONTENT */}
-					<div className="mt-8">
+					<div>
 						<div className="text-5xl border-b border-theme text-theme pb-4">
 							{currentCategory?.name}
 						</div>
@@ -424,13 +279,7 @@ const PollContent: React.FC<PollContentProps> = ({
 								/>
 							</PollSubmissionForm>
 						)}
-						{hasAnswered && (
-							<Link to="/progress">
-								<PrimaryButton className="mt-4">
-									View Progress
-								</PrimaryButton>
-							</Link>
-						)}
+
 						{submitOptionsMutation.isSuccess &&
 							submissionResult && (
 								<>
@@ -445,20 +294,18 @@ const PollContent: React.FC<PollContentProps> = ({
 										}
 										isCorrect={submissionResult.isCorrect}
 									/>
-
-									{/* {isShopOpen && activeRun && (
-										<div className="mt-4">
-											<Shop
-												activeRun={activeRun}
-												offeredConfigs={randomConfigs}
-												onReroll={handleReroll}
-												costReduction={costReduction}
-											/>
-										</div>
-									)} */}
 								</>
 							)}
 					</div>
+					{hasAnswered && (
+						<div className="mt-8 flex flex-col">
+							<Link to="/progress">
+								<PrimaryButton className="mt-4">
+									Proceed to progress
+								</PrimaryButton>
+							</Link>
+						</div>
+					)}
 				</div>
 			</section>
 		</section>

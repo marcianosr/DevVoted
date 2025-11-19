@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
 import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
@@ -8,11 +8,15 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
 import { ErrorComponent } from "~/ui/ErrorComponent";
-import { pollQueryKeys } from "~/domains/shared/queryKeys";
+import { LoadingSkeleton } from "~/ui/LoadingSkeleton";
+import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
 import {
 	LEADERBOARD_REFRESH_INTERVAL,
 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
 } from "~/config/polling";
+import { requiresActiveRun } from "~/domains/runs/guards/requiresActiveRun";
+import { StartRunScreen } from "~/domains/runs/components/StartRunScreen";
+import { useRouter } from "@tanstack/react-router";
 
 const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -39,8 +43,10 @@ const getAllTimeLeaderboard = createServerFn({ method: "POST" })
 		return await getCategoryLeaderboardHandler(data);
 	});
 
-const DailyPoll: React.FC = () => {
-	const { user } = Route.useRouteContext();
+const DailyPollPage: React.FC = () => {
+	const { user, activeRun } = Route.useRouteContext();
+
+	console.log("DailyPoll render with user:", user, "activeRun:", activeRun);
 
 	// Fetch active run category XP for real-time progress
 	const categoryCoverageQuery = useQuery({
@@ -61,17 +67,12 @@ const DailyPoll: React.FC = () => {
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: pollQueryKeys.daily(user?.id),
-		// TODO: remove argument
 		queryFn: () => getDailyPoll(),
 		enabled: !!user?.id, // Only run when we have user ID
 	});
 
 	if (isLoading) {
-		return (
-			<div className="text-white text-4xl h-screen flex justify-center content-center">
-				Loading...
-			</div>
-		);
+		return <LoadingSkeleton />;
 	}
 
 	if (error || !data) {
@@ -94,10 +95,14 @@ const DailyPoll: React.FC = () => {
 			data-category-theme={poll?.poll.categoryCode}
 		>
 			<div className="flex-grow">
-				<PollPageContainer user={user} poll={poll} />
+				<PollPageContainer
+					user={user}
+					poll={poll}
+					activeRun={activeRun}
+				/>
 
 				{/* TODO: Refactor in own component */}
-				<section className="max-w-4xl mx-auto">
+				{/* <section className="max-w-4xl mx-auto">
 					<div className="">
 						{categoryCoverageQuery.isLoading && (
 							<div className="bg-black border border-gray-600 p-4 text-sm">
@@ -145,7 +150,7 @@ const DailyPoll: React.FC = () => {
 								/>
 							)}
 					</>
-				</section>
+				</section> */}
 			</div>
 			<footer className="p-4 mt-8 bg-zinc-900 text-center text-white">
 				A crazy roguelike obsession build with craftsmanship, passion,
@@ -156,5 +161,9 @@ const DailyPoll: React.FC = () => {
 };
 
 export const Route = createFileRoute("/_authed/daily-poll")({
-	component: DailyPoll,
+	beforeLoad: async () => {
+		const activeRun = await requiresActiveRun();
+		return { activeRun };
+	},
+	component: DailyPollPage,
 });

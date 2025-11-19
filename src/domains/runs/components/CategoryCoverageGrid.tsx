@@ -12,8 +12,8 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 	categoryCoverage,
 	currentCategoryCode,
 }) => {
-	const { totalCoverage, totalPollsAnswered } =
-		aggregateRunCategoryCoverage(categoryCoverage);
+	// const { totalCoverage, totalPollsAnswered } =
+	// 	aggregateRunCategoryCoverage(categoryCoverage);
 
 	const highestBestStreak = Math.max(
 		...categoryCoverage.map((c) => c.bestStreak)
@@ -97,10 +97,10 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 				})}
 			</div>
 
-			<div className="mt-4 pt-4 border-t border-theme">
+			{/* <div className="mt-4 pt-4 border-t border-theme">
 				Total: {totalCoverage.toFixed(1)}% coverage • {totalPollsAnswered} polls
 				answered
-			</div>
+			</div> */}
 		</div>
 	);
 };

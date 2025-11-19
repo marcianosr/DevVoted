@@ -253,13 +253,13 @@ export const calculateThresholdInfo = (
 ): ThresholdInfo => {
 	// Find the maximum coverage across all categories
 	const maxCoverage = Math.max(
-		...categoryCoverageData.map((xp) => xp.currentCoverage),
+		...categoryCoverageData.map((coverage) => coverage.currentCoverage),
 		0
 	);
 
 	// Calculate total polls answered (still used for pollNumber tracking)
 	const totalPollsAnswered = categoryCoverageData.reduce(
-		(sum, xp) => sum + xp.pollsAnswered,
+		(sum, coverage) => sum + coverage.pollsAnswered,
 		0
 	);
 

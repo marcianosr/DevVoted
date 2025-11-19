@@ -15,6 +15,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as AuthedStartRouteImport } from './routes/_authed/start'
+import { Route as AuthedShopRouteImport } from './routes/_authed/shop'
 import { Route as AuthedProgressRouteImport } from './routes/_authed/progress'
 import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
 import { Route as AuthedDailyPollRouteImport } from './routes/_authed/daily-poll'
@@ -51,6 +53,16 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedStartRoute = AuthedStartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedShopRoute = AuthedShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedProgressRoute = AuthedProgressRouteImport.update({
   id: '/progress',
@@ -97,6 +109,8 @@ export interface FileRoutesByFullPath {
   '/daily-poll': typeof AuthedDailyPollRoute
   '/game-over': typeof AuthedGameOverRoute
   '/progress': typeof AuthedProgressRoute
+  '/shop': typeof AuthedShopRoute
+  '/start': typeof AuthedStartRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/$pollId': typeof AuthedPollsPollIdRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -111,6 +125,8 @@ export interface FileRoutesByTo {
   '/daily-poll': typeof AuthedDailyPollRoute
   '/game-over': typeof AuthedGameOverRoute
   '/progress': typeof AuthedProgressRoute
+  '/shop': typeof AuthedShopRoute
+  '/start': typeof AuthedStartRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/$pollId': typeof AuthedPollsPollIdRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -127,6 +143,8 @@ export interface FileRoutesById {
   '/_authed/daily-poll': typeof AuthedDailyPollRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
   '/_authed/progress': typeof AuthedProgressRoute
+  '/_authed/shop': typeof AuthedShopRoute
+  '/_authed/start': typeof AuthedStartRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/polls/$pollId': typeof AuthedPollsPollIdRoute
   '/_authed/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -143,6 +161,8 @@ export interface FileRouteTypes {
     | '/daily-poll'
     | '/game-over'
     | '/progress'
+    | '/shop'
+    | '/start'
     | '/auth/callback'
     | '/polls/$pollId'
     | '/profile/$userId'
@@ -157,6 +177,8 @@ export interface FileRouteTypes {
     | '/daily-poll'
     | '/game-over'
     | '/progress'
+    | '/shop'
+    | '/start'
     | '/auth/callback'
     | '/polls/$pollId'
     | '/profile/$userId'
@@ -172,6 +194,8 @@ export interface FileRouteTypes {
     | '/_authed/daily-poll'
     | '/_authed/game-over'
     | '/_authed/progress'
+    | '/_authed/shop'
+    | '/_authed/start'
     | '/auth/callback'
     | '/_authed/polls/$pollId'
     | '/_authed/profile/$userId'
@@ -231,6 +255,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/start': {
+      id: '/_authed/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof AuthedStartRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/shop': {
+      id: '/_authed/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof AuthedShopRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/progress': {
       id: '/_authed/progress'
       path: '/progress'
@@ -288,6 +326,8 @@ interface AuthedRouteChildren {
   AuthedDailyPollRoute: typeof AuthedDailyPollRoute
   AuthedGameOverRoute: typeof AuthedGameOverRoute
   AuthedProgressRoute: typeof AuthedProgressRoute
+  AuthedShopRoute: typeof AuthedShopRoute
+  AuthedStartRoute: typeof AuthedStartRoute
   AuthedPollsPollIdRoute: typeof AuthedPollsPollIdRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
   AuthedPollsIndexRoute: typeof AuthedPollsIndexRoute
@@ -298,6 +338,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDailyPollRoute: AuthedDailyPollRoute,
   AuthedGameOverRoute: AuthedGameOverRoute,
   AuthedProgressRoute: AuthedProgressRoute,
+  AuthedShopRoute: AuthedShopRoute,
+  AuthedStartRoute: AuthedStartRoute,
   AuthedPollsPollIdRoute: AuthedPollsPollIdRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,
   AuthedPollsIndexRoute: AuthedPollsIndexRoute,

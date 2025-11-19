@@ -5,26 +5,24 @@ import { ScoreBreakdownSidebar } from "./ScoreBreakdownSidebar";
 import { useCurrentSeason } from "~/domains/seasons/hooks/useCurrentSeason";
 import { SeasonInfo } from "~/domains/seasons/components/SeasonInfo";
 
-interface RunStatusDisplayProps {
-	activeRun: Run | null;
+type RunStatusDisplayProps = {
+	activeRun: Run;
 	currentCategoryCode?: string;
-	lastScoreBreakdown?: PollScoreBreakdown | null;
-}
+	// lastScoreBreakdown?: PollScoreBreakdown | null;
+};
 
 export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 	activeRun,
 	currentCategoryCode,
-	lastScoreBreakdown,
+	// lastScoreBreakdown,
 }) => {
-	const { data: seasonData } = useCurrentSeason();
-
-	if (!activeRun) return null;
+	// const { data: seasonData } = useCurrentSeason();
 
 	return (
 		<div className="space-y-4">
-			{seasonData?.success && seasonData.data && (
+			{/* {seasonData?.success && seasonData.data && (
 				<SeasonInfo season={seasonData.data} />
-			)}
+			)} */}
 
 			<div className="border-t border-theme pt-4">
 				<h3 className="text-lg font-semibold text-theme mb-2">
@@ -36,16 +34,14 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 				</div>
 			</div>
 
-			{lastScoreBreakdown && (
+			{/* {lastScoreBreakdown && (
 				<ScoreBreakdownSidebar breakdown={lastScoreBreakdown} />
-			)}
+			)} */}
 
-			{activeRun.categoryCoverage && (
-				<CategoryCoverageGrid
-					categoryCoverage={activeRun.categoryCoverage}
-					currentCategoryCode={currentCategoryCode}
-				/>
-			)}
+			<CategoryCoverageGrid
+				categoryCoverage={activeRun.categoryCoverage}
+				currentCategoryCode={currentCategoryCode}
+			/>
 		</div>
 	);
 };
