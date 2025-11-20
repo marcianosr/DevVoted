@@ -265,10 +265,10 @@ export const orchestrateScoreCalculation = ({
 	});
 
 	// Step 5: Apply config multiplicative modifier (e.g., x1.5 from config)
-	let coverageWithMul = coverageBeforeConfigs * coverageMult;
+	const coverageWithMul = coverageBeforeConfigs * coverageMult;
 
 	// Step 6: Apply config additive modifier (e.g., +0.5% from .js config, or -0.3% from Math.random)
-	let coverageWithAdd = coverageWithMul + coverageAdd;
+	const coverageWithAdd = coverageWithMul + coverageAdd;
 
 	// Calculate config bonus (difference between final coverage and coverage before configs)
 	const configBonus = coverageWithAdd - coverageBeforeConfigs;

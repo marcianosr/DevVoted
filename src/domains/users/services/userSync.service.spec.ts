@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import type { User } from "./userSync.service";
 
 describe("UserSyncData interface", () => {

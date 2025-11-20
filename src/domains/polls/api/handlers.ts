@@ -1,3 +1,5 @@
+import { isSameDay } from "date-fns";
+
 import {
 	fetchAllPolls,
 	fetchPollById,
@@ -9,14 +11,13 @@ import {
 	getPollsSeenInRun,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
+import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
 import {
 	pollSubmissionSchema,
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
-import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
-import { handleApiOperation } from "~/utils/errorHandling";
-import { isSameDay } from "date-fns";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
+import { handleApiOperation } from "~/utils/errorHandling";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -27,9 +28,7 @@ export const getPollByIdWithOptionsHandler = async ({
 		const { id, userId } = data;
 
 		const { poll, options } = await fetchPollByIdWithOptions(id);
-		const hasAnswered = userId
-			? await hasUserAnsweredPoll(id, userId)
-			: false;
+		const hasAnswered = userId ? await hasUserAnsweredPoll(id, userId) : false;
 
 		return { poll, options, hasAnswered };
 	});
@@ -114,7 +113,11 @@ export const postPollOptionsHandler = async ({
 		});
 
 		// Track poll answer
-		await trackPollAnswer(activeRunResponse.data.id, validatedData.userId, validatedData.pollId);
+		await trackPollAnswer(
+			activeRunResponse.data.id,
+			validatedData.userId,
+			validatedData.pollId
+		);
 
 		return {
 			message: "Options submitted successfully",

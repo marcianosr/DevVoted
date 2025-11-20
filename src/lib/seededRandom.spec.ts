@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import { selectSeededRandom, createSeededRandom } from "./seededRandom";
 
 describe("seededRandom", () => {
@@ -15,7 +16,7 @@ describe("seededRandom", () => {
 
 		it("maintains deterministic behavior across different seeds", () => {
 			const items = ["item1", "item2", "item3", "item4", "item5"];
-			
+
 			// Test that each seed produces a consistent result
 			const seedResults = new Map();
 			const seeds = ["2024-01-15", "2024-01-16", "monday", "tuesday", "seed-a"];
@@ -60,17 +61,9 @@ describe("seededRandom", () => {
 			const rng2 = createSeededRandom("test-seed");
 
 			// Generate multiple values to test sequence consistency
-			const sequence1 = [
-				rng1.next(),
-				rng1.next(),
-				rng1.next(),
-			];
+			const sequence1 = [rng1.next(), rng1.next(), rng1.next()];
 
-			const sequence2 = [
-				rng2.next(),
-				rng2.next(),
-				rng2.next(),
-			];
+			const sequence2 = [rng2.next(), rng2.next(), rng2.next()];
 
 			expect(sequence1).toEqual(sequence2);
 		});
@@ -79,17 +72,9 @@ describe("seededRandom", () => {
 			const rng1 = createSeededRandom("seed1");
 			const rng2 = createSeededRandom("seed2");
 
-			const sequence1 = [
-				rng1.next(),
-				rng1.next(),
-				rng1.next(),
-			];
+			const sequence1 = [rng1.next(), rng1.next(), rng1.next()];
 
-			const sequence2 = [
-				rng2.next(),
-				rng2.next(),
-				rng2.next(),
-			];
+			const sequence2 = [rng2.next(), rng2.next(), rng2.next()];
 
 			expect(sequence1).not.toEqual(sequence2);
 		});
@@ -128,7 +113,7 @@ describe("seededRandom", () => {
 
 			// Simulate same day for multiple users
 			const today = "2024-01-15";
-			
+
 			const user1Selection = selectSeededRandom(polls, today);
 			const user2Selection = selectSeededRandom(polls, today);
 			const user3Selection = selectSeededRandom(polls, today);
@@ -141,10 +126,10 @@ describe("seededRandom", () => {
 			// (This is probabilistic, so we test the selection works correctly)
 			const tomorrow = "2024-01-16";
 			const tomorrowSelection = selectSeededRandom(polls, tomorrow);
-			
+
 			// The selection should always be valid
 			expect(polls).toContain(tomorrowSelection);
-			
+
 			// Test determinism for tomorrow as well
 			const anotherTomorrowSelection = selectSeededRandom(polls, tomorrow);
 			expect(tomorrowSelection).toBe(anotherTomorrowSelection);

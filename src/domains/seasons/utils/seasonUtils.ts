@@ -10,9 +10,11 @@ export const calculateDaysRemaining = (endDate: Date): number => {
 
 export const isSeasonActive = (season: Season): boolean => {
 	const now = new Date();
-	return season.status === "active" &&
+	return (
+		season.status === "active" &&
 		now >= season.startDate &&
-		now <= season.endDate;
+		now <= season.endDate
+	);
 };
 
 export const isSeasonExpired = (season: Season): boolean => {

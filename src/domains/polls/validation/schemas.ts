@@ -17,24 +17,23 @@ export const pollIdParamSchema = z.object({
 });
 
 // Poll creation validation
-export const createPollSchema = z.object({
-	question: z
-		.string()
-		.min(10, "Question must be at least 10 characters")
-		.max(500, "Question cannot exceed 500 characters"),
-	status: z.enum(["draft", "needs-revision", "open", "closed", "archived"]),
-	answerType: z.enum(["single", "multiple"]),
-	openingTime: z.date().min(new Date(), "Opening time must be in the future"),
-	closingTime: z.date(),
-	categoryCode: z.string().min(1, "Category is required"),
-	createdBy: z.string().uuid("Creator ID must be a valid UUID"),
-}).refine(
-	(data) => data.closingTime > data.openingTime,
-	{
+export const createPollSchema = z
+	.object({
+		question: z
+			.string()
+			.min(10, "Question must be at least 10 characters")
+			.max(500, "Question cannot exceed 500 characters"),
+		status: z.enum(["draft", "needs-revision", "open", "closed", "archived"]),
+		answerType: z.enum(["single", "multiple"]),
+		openingTime: z.date().min(new Date(), "Opening time must be in the future"),
+		closingTime: z.date(),
+		categoryCode: z.string().min(1, "Category is required"),
+		createdBy: z.string().uuid("Creator ID must be a valid UUID"),
+	})
+	.refine((data) => data.closingTime > data.openingTime, {
 		message: "Closing time must be after opening time",
 		path: ["closingTime"],
-	}
-);
+	});
 
 // Poll option validation
 export const pollOptionSchema = z.object({

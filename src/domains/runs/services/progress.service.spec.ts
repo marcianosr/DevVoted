@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { incrementRunProgress } from "./progress.service";
+
+import { getPollsSeenInRun } from "~/domains/polls/api/queries";
+import { createPoll } from "~/domains/polls/models/poll";
 import { orchestrateScoreCalculation } from "~/domains/score/services/score.service";
+
+import { incrementRunProgress } from "./progress.service";
 import { awardCoverageToRun } from "../api/queries";
 import { createMockRun } from "../models/run";
 import { createMockRunCategoryCoverage } from "../models/runCategoryCoverage";
-import { createPoll } from "~/domains/polls/models/poll";
-import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 
 vi.mock("~/domains/score/services/score.service");
 vi.mock("../api/queries");

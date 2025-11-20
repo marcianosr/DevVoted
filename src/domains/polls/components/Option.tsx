@@ -1,6 +1,7 @@
-import { PollOption } from "~/domains/polls/models/pollOption";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
+
+import { PollOption } from "~/domains/polls/models/pollOption";
 
 // Define a simplified field interface that matches what we need from TanStack Form
 type FormFieldApi = {
@@ -62,9 +63,7 @@ const Option = ({
 	};
 
 	return (
-		<div
-			className={`flex items-start gap-2 ${disabled ? "opacity-50" : ""}`}
-		>
+		<div className={`flex items-start gap-2 ${disabled ? "opacity-50" : ""}`}>
 			<input
 				type={type}
 				name="selectedOptions"

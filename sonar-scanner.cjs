@@ -2,6 +2,7 @@
 
 require("dotenv").config({ path: ".env" });
 const sonarqubeScanner = require("sonarqube-scanner").default;
+
 const path = require("path");
 
 const serverUrl = process.env.SONAR_HOST_URL || "http://localhost:9001";

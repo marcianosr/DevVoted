@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+import * as queries from "~/domains/polls/api/queries";
+import { createMockPoll } from "~/domains/polls/factories/poll";
+import type { Poll } from "~/domains/polls/models/poll";
+import { getTodayDateString } from "~/lib/dateUtils";
+import * as seededRandom from "~/lib/seededRandom";
+
 import {
 	getTodayDateSeed,
 	getDateSeed,
 	selectDailyPoll,
 } from "./dailyPoll.service";
-import { getTodayDateString } from "~/lib/dateUtils";
-import * as seededRandom from "~/lib/seededRandom";
-import * as queries from "~/domains/polls/api/queries";
-import type { Poll } from "~/domains/polls/models/poll";
-import { createMockPoll } from "~/domains/polls/factories/poll";
 
 // Mock dependencies
 vi.mock("~/lib/dateUtils", () => ({
@@ -158,9 +160,7 @@ describe("dailyPoll.service", () => {
 
 		it("returns null when no polls are available to open", async () => {
 			// Mock the query layer to return null
-			vi.mocked(queries.manageDailyPollTransition).mockResolvedValue(
-				null
-			);
+			vi.mocked(queries.manageDailyPollTransition).mockResolvedValue(null);
 
 			const result = await selectDailyPoll("2025-05-13");
 
@@ -196,14 +196,11 @@ describe("dailyPoll.service", () => {
 				expect.any(Function)
 			);
 
-			const selectionFunction = vi.mocked(
-				queries.manageDailyPollTransition
-			).mock.calls[0][0];
+			const selectionFunction = vi.mocked(queries.manageDailyPollTransition)
+				.mock.calls[0][0];
 			const mockPolls = [expectedPoll];
 
-			vi.mocked(seededRandom.selectSeededRandom).mockReturnValue(
-				expectedPoll
-			);
+			vi.mocked(seededRandom.selectSeededRandom).mockReturnValue(expectedPoll);
 			const result = selectionFunction(mockPolls);
 
 			expect(seededRandom.selectSeededRandom).toHaveBeenCalledWith(

@@ -1,18 +1,19 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { getDailyPoll } from "~/domains/polls/api/polls";
-import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
-import { PrimaryButton } from "~/ui/PrimaryButton";
-import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
-import type { CategoryCode } from "~/domains/shared/categories";
-import { getAuthenticatedUserId } from "~/utils/authorization";
-import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
-import { ErrorComponent } from "~/ui/ErrorComponent";
+
 import {
 	LEADERBOARD_REFRESH_INTERVAL,
 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
 } from "~/config/polling";
+import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
+import { getDailyPoll } from "~/domains/polls/api/polls";
+import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
+import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
+import type { CategoryCode } from "~/domains/shared/categories";
+import { ErrorComponent } from "~/ui/ErrorComponent";
+import { PrimaryButton } from "~/ui/PrimaryButton";
+import { getAuthenticatedUserId } from "~/utils/authorization";
 
 const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -42,21 +43,6 @@ const getAllTimeLeaderboard = createServerFn({ method: "POST" })
 const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
 
-	// Handle no active run state
-	if (!activeRun.success || !activeRun.data?.id) {
-		return (
-			<div className="p-4 text-center max-w-2xl mx-auto py-8">
-				<h1 className="text-3xl mb-4">No Active Run</h1>
-				<p className="mb-6 text-gray-300">
-					Start a new run to begin playing and answering polls!
-				</p>
-				<Link to="/start">
-					<PrimaryButton>Start New Run</PrimaryButton>
-				</Link>
-			</div>
-		);
-	}
-
 	// Fetch active run category XP for real-time progress
 	const categoryCoverageQuery = useQuery({
 		queryKey: ["run", "categoryCoverage", user?.id],
@@ -79,6 +65,21 @@ const DailyPoll: React.FC = () => {
 		queryFn: () => getDailyPoll(),
 		enabled: !!user?.id, // Only run when we have user ID
 	});
+
+	// Handle no active run state
+	if (!activeRun.success || !activeRun.data?.id) {
+		return (
+			<div className="p-4 text-center max-w-2xl mx-auto py-8">
+				<h1 className="text-3xl mb-4">No Active Run</h1>
+				<p className="mb-6 text-gray-300">
+					Start a new run to begin playing and answering polls!
+				</p>
+				<Link to="/start">
+					<PrimaryButton>Start New Run</PrimaryButton>
+				</Link>
+			</div>
+		);
+	}
 
 	if (isLoading) {
 		return (
@@ -111,9 +112,7 @@ const DailyPoll: React.FC = () => {
 				<div className="">
 					{categoryCoverageQuery.isLoading && (
 						<div className="bg-black border border-gray-600 p-4 text-sm">
-							<div className="text-gray-400">
-								Loading run progress...
-							</div>
+							<div className="text-gray-400">Loading run progress...</div>
 						</div>
 					)}
 					{categoryCoverageQuery.error && (
@@ -128,16 +127,12 @@ const DailyPoll: React.FC = () => {
 				<>
 					{leaderboardQuery.isLoading && (
 						<div className="bg-black border border-gray-600 p-4 text-sm">
-							<div className="text-gray-400">
-								Loading rankings...
-							</div>
+							<div className="text-gray-400">Loading rankings...</div>
 						</div>
 					)}
 					{leaderboardQuery.error && (
 						<div className="bg-black border border-gray-600 p-4 text-sm">
-							<div className="text-red-400">
-								Failed to load live rankings
-							</div>
+							<div className="text-red-400">Failed to load live rankings</div>
 						</div>
 					)}
 					{leaderboardQuery.data?.success &&
@@ -154,8 +149,8 @@ const DailyPoll: React.FC = () => {
 				</>
 			</section>
 			<footer className="p-4 mt-8 bg-zinc-900 text-center text-white">
-				A crazy roguelike obsession build with craftsmanship, passion,
-				❤️ & Tanstack Query by Marciano Schildmeijer | EST may 2022
+				A crazy roguelike obsession build with craftsmanship, passion, ❤️ &
+				Tanstack Query by Marciano Schildmeijer | EST may 2022
 			</footer>
 		</section>
 	);

@@ -1,6 +1,7 @@
+import { eq, and } from "drizzle-orm";
+
 import { db } from "~/database/db";
 import { runsTable } from "~/database/schema";
-import { eq, and } from "drizzle-orm";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 
 // Complete all active runs when a season ends
@@ -9,7 +10,9 @@ export const completeAllActiveRuns = async (seasonId: number) => {
 	const activeRuns = await db
 		.select()
 		.from(runsTable)
-		.where(and(eq(runsTable.season_id, seasonId), eq(runsTable.status, "active")));
+		.where(
+			and(eq(runsTable.season_id, seasonId), eq(runsTable.status, "active"))
+		);
 
 	const completionResults = [];
 
@@ -17,18 +20,18 @@ export const completeAllActiveRuns = async (seasonId: number) => {
 	for (const run of activeRuns) {
 		try {
 			const result = await endRunForThresholdFailure(run.id);
-			completionResults.push({ 
-				runId: run.id, 
+			completionResults.push({
+				runId: run.id,
 				userId: run.user_id,
-				success: true, 
-				result 
+				success: true,
+				result,
 			});
 		} catch (error) {
-			completionResults.push({ 
-				runId: run.id, 
+			completionResults.push({
+				runId: run.id,
 				userId: run.user_id,
-				success: false, 
-				error: error instanceof Error ? error.message : "Unknown error" 
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
 			});
 		}
 	}
@@ -36,8 +39,8 @@ export const completeAllActiveRuns = async (seasonId: number) => {
 	return {
 		seasonId,
 		totalActiveRuns: activeRuns.length,
-		completedSuccessfully: completionResults.filter(r => r.success).length,
-		failedCompletions: completionResults.filter(r => !r.success).length,
-		results: completionResults
+		completedSuccessfully: completionResults.filter((r) => r.success).length,
+		failedCompletions: completionResults.filter((r) => !r.success).length,
+		results: completionResults,
 	};
 };

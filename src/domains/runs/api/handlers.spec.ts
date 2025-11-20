@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { getOrCreateActiveRun, getUserActiveRun } from "./handlers";
 import * as queries from "./queries";
 import { createMockRun } from "../models/run";
@@ -22,9 +23,7 @@ describe("Run Handlers", () => {
 			const mockXp = createMockRunCategoryCoverageArray(3);
 			const mockRunWithXp = createMockRun({ categoryCoverage: mockXp });
 
-			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(
-				mockRunWithXp
-			);
+			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRunWithXp);
 
 			const result = await getOrCreateActiveRun("test-user-id");
 
@@ -32,9 +31,7 @@ describe("Run Handlers", () => {
 			if (result.success) {
 				expect(result.data).toEqual(mockRunWithXp);
 			}
-			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith(
-				"test-user-id"
-			);
+			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
 			expect(queries.createRunForUser).not.toHaveBeenCalled();
 		});
 
@@ -43,9 +40,7 @@ describe("Run Handlers", () => {
 			const mockNewRunData = createMockRun({ categoryCoverage: mockXp });
 
 			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(null);
-			vi.mocked(queries.createRunForUser).mockResolvedValue(
-				mockNewRunData
-			);
+			vi.mocked(queries.createRunForUser).mockResolvedValue(mockNewRunData);
 
 			const result = await getOrCreateActiveRun("test-user-id");
 
@@ -53,12 +48,8 @@ describe("Run Handlers", () => {
 			if (result.success) {
 				expect(result.data).toEqual(mockNewRunData);
 			}
-			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith(
-				"test-user-id"
-			);
-			expect(queries.createRunForUser).toHaveBeenCalledWith(
-				"test-user-id"
-			);
+			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
+			expect(queries.createRunForUser).toHaveBeenCalledWith("test-user-id");
 			expect(queries.getRunWithCategoryXp).not.toHaveBeenCalled();
 		});
 
@@ -95,9 +86,7 @@ describe("Run Handlers", () => {
 			const mockXp = createMockRunCategoryCoverageArray(3);
 			const mockRunWithXp = createMockRun({ categoryCoverage: mockXp });
 
-			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(
-				mockRunWithXp
-			);
+			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRunWithXp);
 
 			const result = await getUserActiveRun("test-user-id");
 
@@ -105,9 +94,7 @@ describe("Run Handlers", () => {
 			if (result.success) {
 				expect(result.data).toEqual(mockRunWithXp);
 			}
-			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith(
-				"test-user-id"
-			);
+			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
 		});
 
 		it("returns error when no active run found", async () => {

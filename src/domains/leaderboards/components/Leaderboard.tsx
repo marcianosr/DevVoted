@@ -1,10 +1,13 @@
 import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
-import clsx from "clsx";
+import { clsx } from "clsx";
+
+import { LEADERBOARD_REFRESH_INTERVAL } from "~/config/polling";
 import { getCategories, type CategoryCode } from "~/domains/shared/categories";
 import type { ApiResponse } from "~/utils/errorHandling";
+
 import type { LeaderboardEntry } from "../models/leaderboard";
-import { LEADERBOARD_REFRESH_INTERVAL } from "~/config/polling";
 
 type CategoryOption = {
 	code: CategoryCode;
@@ -96,12 +99,10 @@ export const Leaderboard = ({
 				<h3 className="text-theme text-4xl">Rankings</h3>
 				<div className="text-white-400 text-lg">
 					{entries.length} player(s){" "}
-					{mode === "live"
-						? "currently playing"
-						: "on all-time leaderboard"}
+					{mode === "live" ? "currently playing" : "on all-time leaderboard"}
 					{currentUserRank > 0 && (
 						<span className="text-theme ml-2">
-							• You're #{currentUserRank}
+							• You are #{currentUserRank}
 						</span>
 					)}
 				</div>
@@ -137,8 +138,7 @@ export const Leaderboard = ({
 				{CATEGORIES.map((category) => {
 					const isSelected = selectedCategory === category.code;
 					const isLoading =
-						selectedCategory === category.code &&
-						categoryQuery.isLoading;
+						selectedCategory === category.code && categoryQuery.isLoading;
 
 					return (
 						<button
@@ -150,9 +150,7 @@ export const Leaderboard = ({
 								isSelected
 									? "bg-theme border-theme"
 									: "bg-transparent border-gray-600 hover:border-red-500 hover:text-red-300",
-								isLoading
-									? "opacity-50 cursor-not-allowed"
-									: "cursor-pointer"
+								isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
 							)}
 						>
 							{isLoading ? "..." : `[ ${category.name} ]`}
@@ -184,35 +182,18 @@ export const Leaderboard = ({
 								isCurrentUser && "bg-gray-800 py-2"
 							)}
 						>
-							<div
-								className={clsx(
-									getRankColor(rank, isCurrentUser),
-									"ml-2"
-								)}
-							>
+							<div className={clsx(getRankColor(rank, isCurrentUser), "ml-2")}>
 								#{rank}
 							</div>
-							<div
-								className={
-									isCurrentUser ? "text-theme" : "text-white"
-								}
-							>
+							<div className={isCurrentUser ? "text-theme" : "text-white"}>
 								{entry.displayName || "Anonymous"}
 								{isCurrentUser && (
-									<span className="text-theme text-xs ml-1">
-										(you)
-									</span>
+									<span className="text-theme text-xs ml-1">(you)</span>
 								)}
 							</div>
-							<div className="text-white">
-								{entry.totalCoverage}%
-							</div>
-							<div className="text-orange-400">
-								🔥{entry.bestStreak}
-							</div>
-							<div className="text-white">
-								{entry.pollsAnswered}
-							</div>
+							<div className="text-white">{entry.totalCoverage}%</div>
+							<div className="text-orange-400">🔥{entry.bestStreak}</div>
+							<div className="text-white">{entry.pollsAnswered}</div>
 							<div>#{currentRun ?? "-"}</div>
 						</div>
 					);

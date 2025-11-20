@@ -1,10 +1,11 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+
 import { getAllPolls } from "~/domains/polls/api/polls";
 import { ErrorComponent } from "~/ui/ErrorComponent";
-import { getSupabaseServerClient } from "~/utils/supabase";
 import { ADMIN_EMAILS } from "~/utils/adminAuth";
+import { getSupabaseServerClient } from "~/utils/supabase";
 
 const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();
@@ -33,9 +34,7 @@ export const Route = createFileRoute("/_authed/polls/")({
 			return (
 				<div className="flex items-center justify-center min-h-screen">
 					<div className="text-center">
-						<h1 className="text-2xl text-red-600 mb-4">
-							Access Denied
-						</h1>
+						<h1 className="text-2xl text-red-600 mb-4">Access Denied</h1>
 						<p>This area is restricted to administrators only.</p>
 					</div>
 				</div>
@@ -96,9 +95,7 @@ function PollsList() {
 								<div>{poll.question}</div>
 								<div className="text-sm text-gray-500 mt-1 flex justify-between">
 									<span>Category: {poll.categoryCode}</span>
-									<span className="capitalize">
-										{poll.status}
-									</span>
+									<span className="capitalize">{poll.status}</span>
 								</div>
 							</Link>
 						</div>

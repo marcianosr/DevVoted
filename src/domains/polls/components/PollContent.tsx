@@ -1,35 +1,37 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+
 import { useForm } from "@tanstack/react-form";
-import { PollQuestionDisplay } from "./PollQuestionDisplay";
-import { PollOptions } from "./PollOptions";
-import { PollSubmissionForm } from "./PollSubmissionForm";
-import { RunStatusDisplay } from "~/domains/runs/components/RunStatusDisplay";
-import { ErrorComponent } from "~/ui/ErrorComponent";
-import { StorageDeck } from "~/domains/economy/components/StorageDeck";
-import { Shop } from "~/domains/economy/components/Shop";
-import { useShopContext } from "~/domains/economy/contexts/ShopContext";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
 import {
 	configs,
 	type EffectRenderProps,
 } from "~/domains/configs/data/configs";
-
-import { Run } from "~/domains/runs/models/run";
-import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
-import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { Shop } from "~/domains/economy/components/Shop";
+import { StorageDeck } from "~/domains/economy/components/StorageDeck";
+import { useShopContext } from "~/domains/economy/contexts/ShopContext";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
-import { useMemo, useState } from "react";
-import { rerollShopServerFn } from "~/domains/runs/api/reroll";
-import { PollScoreBreakdown } from "~/domains/score/services/score.service";
-import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
-import { getCategories } from "~/domains/shared/categories";
-import { PollAnswerReview } from "./PollAnswerReview";
-import { getPollsSeenInRun } from "~/domains/polls/api/polls";
-import { getAuthenticatedUserId } from "~/utils/authorization";
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
-import { User } from "~/domains/users/services/userSync.service";
+import { getPollsSeenInRun } from "~/domains/polls/api/polls";
+import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { rerollShopServerFn } from "~/domains/runs/api/reroll";
+import { RunStatusDisplay } from "~/domains/runs/components/RunStatusDisplay";
+import { Run } from "~/domains/runs/models/run";
+import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { formatGateRequirements } from "~/domains/runs/utils/gateFormatting";
+import { PollScoreBreakdown } from "~/domains/score/services/score.service";
+import { getCategories } from "~/domains/shared/categories";
+import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
+import { User } from "~/domains/users/services/userSync.service";
+import { ErrorComponent } from "~/ui/ErrorComponent";
+import { getAuthenticatedUserId } from "~/utils/authorization";
+
+import { PollAnswerReview } from "./PollAnswerReview";
+import { PollOptions } from "./PollOptions";
+import { PollQuestionDisplay } from "./PollQuestionDisplay";
+import { PollSubmissionForm } from "./PollSubmissionForm";
 
 type DefaultSelectedOptions = string[];
 const defaultSelectedOptions: DefaultSelectedOptions = [];
@@ -90,6 +92,7 @@ const PollContent: React.FC<PollContentProps> = ({
 		: 0;
 
 	// TODO: Put in a hook
+	// eslint-disable-next-line react-hooks/preserve-manual-memoization -- TODO: Fix memoization dependencies
 	const randomConfigs = useMemo(() => {
 		if (!activeRun) return [];
 		return getRandomConfigs({
@@ -110,7 +113,7 @@ const PollContent: React.FC<PollContentProps> = ({
 			// Update UI instantly
 			queryClient.setQueryData(pollQueryKey, (old) => {
 				if (!old) {
-					console.log("No cached data to update");
+					console.info("No cached data to update");
 					return old;
 				}
 
@@ -145,17 +148,17 @@ const PollContent: React.FC<PollContentProps> = ({
 				}
 
 				if (runEnded) {
-					console.log("Run ended. Coverage tracking reset.");
+					console.info("Run ended. Coverage tracking reset.");
 				}
 
 				if (isCorrect) {
-					console.log("Correct answer! Coverage awarded.");
+					console.info("Correct answer! Coverage awarded.");
 				}
 				if (!isCorrect && runEnded) {
-					console.log("Wrong answer! Run ended!");
+					console.info("Wrong answer! Run ended!");
 				}
 				if (!isCorrect && !runEnded) {
-					console.log("Answer submitted, but incorrect.");
+					console.info("Answer submitted, but incorrect.");
 				}
 
 				// Refetch the active run data to get updated coverage BEFORE opening shop
@@ -172,10 +175,7 @@ const PollContent: React.FC<PollContentProps> = ({
 		onError: (error, _variables, context) => {
 			console.error("Mutation error:", error);
 			if (context?.previousData && context?.pollQueryKey) {
-				queryClient.setQueryData(
-					context.pollQueryKey,
-					context.previousData
-				);
+				queryClient.setQueryData(context.pollQueryKey, context.previousData);
 			}
 		},
 	});
@@ -244,9 +244,7 @@ const PollContent: React.FC<PollContentProps> = ({
 		<section className={`p-2 max-w-7xl mx-auto`}>
 			<section className="md:grid grid-cols-12 gap-4">
 				<div className="col-span-4 flex flex-col gap-8">
-					<div className="text-4xl text-theme">
-						{currentCategory?.name}
-					</div>
+					<div className="text-4xl text-theme">{currentCategory?.name}</div>
 
 					<div className="text-theme flex flex-col">
 						<div className="flex flex-col">
@@ -261,9 +259,7 @@ const PollContent: React.FC<PollContentProps> = ({
 						<span className="text-xs text-gray-400">
 							{/* TODO make more CI like github actions */}
 							{thresholdInfo?.isThresholdCheckPoll && (
-								<span className="ml-2 text-red-400">
-									CI ⚠️ Checking...
-								</span>
+								<span className="ml-2 text-red-400">CI ⚠️ Checking...</span>
 							)}
 						</span>
 
@@ -275,24 +271,18 @@ const PollContent: React.FC<PollContentProps> = ({
 											Win conditions:{" "}
 										</p>
 										<p className="text-theme">
-											{formatGateRequirements(
-												thresholdInfo.gateDefinition
-											)}
+											{formatGateRequirements(thresholdInfo.gateDefinition)}
 										</p>
-										{thresholdInfo.qualifyingCategories
-											.length > 0 && (
+										{thresholdInfo.qualifyingCategories.length > 0 && (
 											<div className="mt-1 text-green-400">
 												CI: ✓ Passing:{" "}
-												{thresholdInfo.qualifyingCategories.join(
-													", "
-												)}
+												{thresholdInfo.qualifyingCategories.join(", ")}
 											</div>
 										)}
 										{!thresholdInfo.meetsThreshold &&
 											thresholdInfo.isThresholdCheckPoll && (
 												<div className="mt-1 text-red-400">
-													⚠️ Not meeting gate
-													requirements
+													⚠️ Not meeting gate requirements
 												</div>
 											)}
 									</div>
@@ -356,6 +346,8 @@ const PollContent: React.FC<PollContentProps> = ({
 									form.handleSubmit();
 								}}
 							>
+								{}
+								{/* eslint-disable react/no-children-prop -- TODO: Refactor to use render prop pattern */}
 								<form.Field
 									name="selectedOptions"
 									children={(field) => (
@@ -364,42 +356,36 @@ const PollContent: React.FC<PollContentProps> = ({
 											options={options}
 											field={field}
 											disabled={hasAnswered}
-											disabledOptionIds={
-												effectProps?.disabledOptionIds
-											}
+											disabledOptionIds={effectProps?.disabledOptionIds}
 										/>
 									)}
 								/>
+								{/* eslint-enable react/no-children-prop */}
 							</PollSubmissionForm>
 						)}
 
-						{submitOptionsMutation.isSuccess &&
-							submissionResult && (
-								<>
-									<PollAnswerReview
-										poll={poll}
-										options={options}
-										selectedOptionIds={
-											submissionResult.selectedOptionIds
-										}
-										correctOptionIds={
-											submissionResult.correctOptionIds
-										}
-										isCorrect={submissionResult.isCorrect}
-									/>
+						{submitOptionsMutation.isSuccess && submissionResult && (
+							<>
+								<PollAnswerReview
+									poll={poll}
+									options={options}
+									selectedOptionIds={submissionResult.selectedOptionIds}
+									correctOptionIds={submissionResult.correctOptionIds}
+									isCorrect={submissionResult.isCorrect}
+								/>
 
-									{isShopOpen && activeRun && (
-										<div className="mt-4">
-											<Shop
-												activeRun={activeRun}
-												offeredConfigs={randomConfigs}
-												onReroll={handleReroll}
-												costReduction={costReduction}
-											/>
-										</div>
-									)}
-								</>
-							)}
+								{isShopOpen && activeRun && (
+									<div className="mt-4">
+										<Shop
+											activeRun={activeRun}
+											offeredConfigs={randomConfigs}
+											onReroll={handleReroll}
+											costReduction={costReduction}
+										/>
+									</div>
+								)}
+							</>
+						)}
 					</div>
 				</div>
 			</section>

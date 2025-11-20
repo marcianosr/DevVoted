@@ -1,5 +1,6 @@
-import { seasonsTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
+
+import { seasonsTable } from "@/src/database/schema";
 
 export type Season = {
 	id: number;
@@ -50,7 +51,7 @@ export const seasonsFromDTOs = (dtos: Season[]): SeasonRecord[] => {
 
 export const createSeason = (partial: Partial<Season> = {}): Season => {
 	const now = new Date();
-	
+
 	return {
 		id: 0,
 		name: "",
@@ -79,7 +80,9 @@ export const createMockSeason = (overrides: Partial<Season> = {}): Season => {
 	};
 };
 
-export const createMockSeasonRecord = (overrides: Partial<SeasonRecord> = {}): SeasonRecord => {
+export const createMockSeasonRecord = (
+	overrides: Partial<SeasonRecord> = {}
+): SeasonRecord => {
 	return {
 		id: 1,
 		name: "Season 1: Core Loop",
@@ -102,7 +105,9 @@ export const createMockSeasonArray = (count: number = 3): Season[] => {
 	);
 };
 
-export const createMockSeasonRecordArray = (count: number = 3): SeasonRecord[] => {
+export const createMockSeasonRecordArray = (
+	count: number = 3
+): SeasonRecord[] => {
 	return Array.from({ length: count }, (_, i) =>
 		createMockSeasonRecord({
 			id: i + 1,

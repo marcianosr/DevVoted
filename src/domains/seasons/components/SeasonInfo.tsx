@@ -1,5 +1,6 @@
-import type { Season } from "../models/season";
 import { calculateDaysRemaining } from "../utils/seasonUtils";
+
+import type { Season } from "../models/season";
 
 type SeasonInfoProps = {
 	season: Season;
@@ -10,9 +11,7 @@ export const SeasonInfo = ({ season }: SeasonInfoProps) => {
 
 	return (
 		<div>
-			<h3 className="text-lg font-semibold text-theme mb-2">
-				{season.name}
-			</h3>
+			<h3 className="text-lg font-semibold text-theme mb-2">{season.name}</h3>
 			<div className="text-xs text-white">
 				{daysRemaining === 0 ? (
 					<span className="text-red-400">Ends today!</span>

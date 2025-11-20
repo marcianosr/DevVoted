@@ -1,5 +1,6 @@
 import { ButtonHTMLAttributes } from "react";
-import clsx from "clsx";
+
+import { clsx } from "clsx";
 
 type SecondaryButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	children: React.ReactNode;

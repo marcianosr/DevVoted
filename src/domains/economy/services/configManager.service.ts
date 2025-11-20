@@ -1,6 +1,6 @@
-import { Run } from "~/domains/runs/models/run";
-import { Config } from "~/domains/configs/models/config";
 import { configs, applyEffects } from "~/domains/configs/data/configs";
+import { Config } from "~/domains/configs/models/config";
+import { Run } from "~/domains/runs/models/run";
 import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
 
 export const getActiveConfigs = (
@@ -113,9 +113,7 @@ export const addConfigsToRun = (
 
 export const removeConfigsFromRun = (run: Run, configIds: string[]): Run => ({
 	...run,
-	activeConfigIds: run.activeConfigIds.filter(
-		(id) => !configIds.includes(id)
-	),
+	activeConfigIds: run.activeConfigIds.filter((id) => !configIds.includes(id)),
 });
 
 export const hasConfig = (run: Run, configId: string) =>

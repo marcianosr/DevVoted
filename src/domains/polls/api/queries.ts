@@ -1,4 +1,6 @@
 import { eq, and, gte, sql } from "drizzle-orm";
+
+import { db } from "~/database/db";
 import {
 	pollOptionsTable,
 	pollResponseOptionsTable,
@@ -7,7 +9,6 @@ import {
 	pollHistoryTable,
 } from "~/database/schema";
 import { Poll, pollFactory } from "~/domains/polls/models/poll";
-import { db } from "~/database/db";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
 
@@ -90,8 +91,7 @@ export const createPollResponse = async ({
 			.values({ poll_id: pollId, user_id: userId })
 			.returning();
 
-		if (!pollResponseRecord)
-			throw new Error("Failed to create poll response");
+		if (!pollResponseRecord) throw new Error("Failed to create poll response");
 
 		if (selectedOptionIds.length > 0) {
 			const responseOptionRecords = pollResponseOptionFactory.fromDTOs(
@@ -100,9 +100,7 @@ export const createPollResponse = async ({
 					optionId,
 				}))
 			);
-			await tx
-				.insert(pollResponseOptionsTable)
-				.values(responseOptionRecords);
+			await tx.insert(pollResponseOptionsTable).values(responseOptionRecords);
 		}
 	});
 };

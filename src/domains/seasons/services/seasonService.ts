@@ -1,5 +1,6 @@
-import type { Season } from "../models/season";
 import * as seasonQueries from "../api/queries";
+
+import type { Season } from "../models/season";
 
 /**
  * Season Service

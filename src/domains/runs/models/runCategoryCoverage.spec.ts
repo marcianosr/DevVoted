@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import {
 	runCategoryCoverageFactory,
 	runCategoryCoverageToDTO,
@@ -6,8 +7,6 @@ import {
 	runCategoryCoveragesToDTOs,
 	runCategoryCoveragesFromDTOs,
 	createRunCategoryCoverage,
-} from "./runCategoryCoverage";
-import {
 	createMockRunCategoryCoverage,
 	createMockRunCategoryCoverageRecord,
 } from "./runCategoryCoverage";
@@ -128,9 +127,15 @@ describe("RunCategoryCoverage Model", () => {
 	describe("runCategoryCoverageFactory", () => {
 		it("exposes all factory methods", () => {
 			expect(runCategoryCoverageFactory.toDTO).toBe(runCategoryCoverageToDTO);
-			expect(runCategoryCoverageFactory.fromDTO).toBe(runCategoryCoverageFromDTO);
-			expect(runCategoryCoverageFactory.toDTOs).toBe(runCategoryCoveragesToDTOs);
-			expect(runCategoryCoverageFactory.fromDTOs).toBe(runCategoryCoveragesFromDTOs);
+			expect(runCategoryCoverageFactory.fromDTO).toBe(
+				runCategoryCoverageFromDTO
+			);
+			expect(runCategoryCoverageFactory.toDTOs).toBe(
+				runCategoryCoveragesToDTOs
+			);
+			expect(runCategoryCoverageFactory.fromDTOs).toBe(
+				runCategoryCoveragesFromDTOs
+			);
 			expect(runCategoryCoverageFactory.create).toBe(createRunCategoryCoverage);
 		});
 	});

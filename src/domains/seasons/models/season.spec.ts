@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
+
 import {
-	Season,
 	seasonToDTO,
 	seasonFromDTO,
 	seasonsToDTOs,

@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
+
+import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
+
 import {
 	calculateThresholdInfo,
 	getGateDefinition,
 } from "./thresholdCalculator.service";
-import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 
 describe("ThresholdCalculator", () => {
 	describe("Gate Definitions", () => {

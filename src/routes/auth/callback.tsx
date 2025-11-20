@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+
 import { getSupabaseServerClient } from "~/utils/supabase";
 
 const exchangeCodeForSession = createServerFn({ method: "GET" })
@@ -59,7 +60,9 @@ export const Route = createFileRoute("/auth/callback")({
 			});
 		}
 
-		const result = await exchangeCodeForSession({ data: { code: search.code } });
+		const result = await exchangeCodeForSession({
+			data: { code: search.code },
+		});
 
 		if (!result.success) {
 			throw redirect({

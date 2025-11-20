@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+import { db } from "~/database/db";
 import {
 	createPollResponse,
 	fetchAllPolls,
@@ -9,11 +11,11 @@ import {
 	trackPollView,
 	trackPollAnswer,
 } from "~/domains/polls/api/queries";
-import { db } from "~/database/db";
 import {
 	createMockPollRecordArray,
 	createMockPollRecord,
 } from "~/domains/polls/factories/poll";
+
 import { createMockPollOptionRecord } from "../factories/pollOption";
 
 // Mock the database module
@@ -151,13 +153,9 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			];
 
 			const mockWherePoll = vi.fn().mockResolvedValue([mockPollRecord]);
-			const mockWhereOptions = vi
-				.fn()
-				.mockResolvedValue(mockOptionRecords);
+			const mockWhereOptions = vi.fn().mockResolvedValue(mockOptionRecords);
 
-			const mockFromPolls = vi
-				.fn()
-				.mockReturnValue({ where: mockWherePoll });
+			const mockFromPolls = vi.fn().mockReturnValue({ where: mockWherePoll });
 			const mockFromOptions = vi
 				.fn()
 				.mockReturnValue({ where: mockWhereOptions });
@@ -197,13 +195,9 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			];
 
 			const mockWherePoll = vi.fn().mockResolvedValue([mockPollRecord]);
-			const mockWhereOptions = vi
-				.fn()
-				.mockResolvedValue(mockOptionRecords);
+			const mockWhereOptions = vi.fn().mockResolvedValue(mockOptionRecords);
 
-			const mockFromPolls = vi
-				.fn()
-				.mockReturnValue({ where: mockWherePoll });
+			const mockFromPolls = vi.fn().mockReturnValue({ where: mockWherePoll });
 			const mockFromOptions = vi
 				.fn()
 				.mockReturnValue({ where: mockWhereOptions });
@@ -405,10 +399,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 				vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
 
 				// Check if can answer today (no results = can answer)
-				const canAnswerToday = await hasUserAnsweredPoll(
-					6,
-					"charizard"
-				);
+				const canAnswerToday = await hasUserAnsweredPoll(6, "charizard");
 
 				expect(canAnswerToday).toBe(false); // false = not answered today = allowed
 				expect(mockWhere).toHaveBeenCalled();

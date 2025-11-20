@@ -1,3 +1,9 @@
+import { readFileSync } from "fs";
+import { join } from "path";
+
+import { eq } from "drizzle-orm";
+import postgres from "postgres";
+
 import { db } from "@/src/database/db";
 import {
 	pollsTable,
@@ -8,11 +14,7 @@ import {
 	seasonsTable,
 	leaderboardTable,
 } from "@/src/database/schema";
-import { eq } from "drizzle-orm";
 import { getCategories, CATEGORY_CODES } from "~/domains/shared/categories";
-import { readFileSync } from "fs";
-import { join } from "path";
-import postgres from "postgres";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 const ADMIN_UID = "65ad226e-e3c1-4e7f-a96d-a84156589733";
@@ -97,7 +99,11 @@ async function seedDatabase() {
 		} else {
 			try {
 				// Dynamically import and run the Firebase importer
-				const importerPath = join(process.cwd(), "scripts", "import-firebase-polls.ts");
+				const importerPath = join(
+					process.cwd(),
+					"scripts",
+					"import-firebase-polls.ts"
+				);
 				const { execSync } = await import("child_process");
 
 				console.log("🔄 Running Firebase poll importer...");
@@ -115,9 +121,7 @@ async function seedDatabase() {
 				console.log(
 					"⚠️ Continuing without polls. You can manually import using:"
 				);
-				console.log(
-					"   tsx scripts/import-firebase-polls.ts"
-				);
+				console.log("   tsx scripts/import-firebase-polls.ts");
 			}
 		}
 
@@ -146,9 +150,7 @@ async function seedDatabase() {
 			];
 
 			await db.insert(seasonsTable).values(testSeasons);
-			console.log(
-				`✅ Successfully seeded ${testSeasons.length} test seasons!`
-			);
+			console.log(`✅ Successfully seeded ${testSeasons.length} test seasons!`);
 		} else {
 			console.log(
 				`ℹ️ Found ${existingSeasons.length} existing seasons. Skipping season seeding.`
@@ -166,9 +168,7 @@ async function seedDatabase() {
 
 		// Only seed leaderboard if we have polls to reference
 		if (pollsForLeaderboard.length === 0) {
-			console.log(
-				"⚠️ Skipping leaderboard seeding - no polls available."
-			);
+			console.log("⚠️ Skipping leaderboard seeding - no polls available.");
 		} else if (existingLeaderboard.length === 0 && existingRuns.length === 0) {
 			// Create 9 users for leaderboard
 			const leaderboardUsers = [
@@ -248,13 +248,41 @@ async function seedDatabase() {
 			// Each user gets different stats per category to create variety in the leaderboard
 			const generateCategoryData = (userIndex: number) => {
 				const baseValues = {
-					css: { coverage: 75 + userIndex * 2, streak: 8 - userIndex, polls: 20 + userIndex },
-					js: { coverage: 85 - userIndex * 3, streak: 12 - userIndex, polls: 25 + userIndex },
-					react: { coverage: 70 + userIndex * 2.5, streak: 10 - userIndex, polls: 22 + userIndex },
-					ts: { coverage: 80 - userIndex * 2, streak: 9 - userIndex, polls: 21 + userIndex },
-					html: { coverage: 65 + userIndex * 3, streak: 7 - userIndex, polls: 18 + userIndex },
-					git: { coverage: 55 + userIndex * 4, streak: 6 - userIndex, polls: 15 + userIndex },
-					"general-frontend": { coverage: 60 + userIndex * 2, streak: 5 - userIndex, polls: 16 + userIndex },
+					css: {
+						coverage: 75 + userIndex * 2,
+						streak: 8 - userIndex,
+						polls: 20 + userIndex,
+					},
+					js: {
+						coverage: 85 - userIndex * 3,
+						streak: 12 - userIndex,
+						polls: 25 + userIndex,
+					},
+					react: {
+						coverage: 70 + userIndex * 2.5,
+						streak: 10 - userIndex,
+						polls: 22 + userIndex,
+					},
+					ts: {
+						coverage: 80 - userIndex * 2,
+						streak: 9 - userIndex,
+						polls: 21 + userIndex,
+					},
+					html: {
+						coverage: 65 + userIndex * 3,
+						streak: 7 - userIndex,
+						polls: 18 + userIndex,
+					},
+					git: {
+						coverage: 55 + userIndex * 4,
+						streak: 6 - userIndex,
+						polls: 15 + userIndex,
+					},
+					"general-frontend": {
+						coverage: 60 + userIndex * 2,
+						streak: 5 - userIndex,
+						polls: 16 + userIndex,
+					},
 				};
 				return baseValues;
 			};
@@ -266,8 +294,10 @@ async function seedDatabase() {
 
 				// Calculate total coverage across all categories
 				const totalCoverage =
-					Object.values(categoryData).reduce((sum, cat) => sum + cat.coverage, 0) /
-					CATEGORY_CODES.length;
+					Object.values(categoryData).reduce(
+						(sum, cat) => sum + cat.coverage,
+						0
+					) / CATEGORY_CODES.length;
 
 				// Create a completed run
 				const [run] = await db
@@ -282,7 +312,8 @@ async function seedDatabase() {
 
 				// Create run category coverage and leaderboard entries for each category
 				for (const categoryCode of CATEGORY_CODES) {
-					const catData = categoryData[categoryCode as keyof typeof categoryData];
+					const catData =
+						categoryData[categoryCode as keyof typeof categoryData];
 
 					// Create run category coverage data
 					await db.insert(runCategoryCoverageTable).values({

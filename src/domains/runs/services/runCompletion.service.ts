@@ -1,3 +1,10 @@
+import { getPollsSeenInRun } from "~/domains/polls/api/queries";
+import {
+	calculateThresholdInfo,
+	type ThresholdInfo,
+	CI_GATES,
+} from "~/domains/runs/services/thresholdCalculator.service";
+
 import {
 	getRunForCompletion,
 	completeRunWithThresholdFailure,
@@ -5,12 +12,6 @@ import {
 	createCategoryLeaderboardEntries,
 	getRunWithCategoryXp,
 } from "../api/queries";
-import {
-	calculateThresholdInfo,
-	type ThresholdInfo,
-	CI_GATES,
-} from "~/domains/runs/services/thresholdCalculator.service";
-import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 
 // End run mid-game when coverage threshold is not met (preserves progress in final_* columns)
 export const endRunForThresholdFailure = async (runId: number) => {
