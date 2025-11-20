@@ -16,8 +16,13 @@ export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
 
 export const getActiveRun = createServerFn({ method: "GET" }).handler(
 	async () => {
-		const userId = await getAuthenticatedUserId();
-		return await getUserActiveRun(userId);
+		try {
+			const userId = await getAuthenticatedUserId();
+			return await getUserActiveRun(userId);
+		} catch (error) {
+			// Return null for unauthenticated users (e.g., on /login page)
+			return null;
+		}
 	}
 );
 

@@ -43,7 +43,7 @@ const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
 
 	// Handle no active run state
-	if (!activeRun.success || !activeRun.data?.id) {
+	if (!activeRun || !activeRun.success || !activeRun.data?.id) {
 		return (
 			<div className="p-4 text-center max-w-2xl mx-auto py-8">
 				<h1 className="text-3xl mb-4">No Active Run</h1>
