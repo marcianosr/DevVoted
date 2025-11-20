@@ -1,8 +1,10 @@
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { PollAnswerReview } from "./PollAnswerReview";
+import { describe, it, expect } from "vitest";
+
 import { createMockPoll } from "~/domains/polls/factories/poll";
 import { createPollOption } from "~/domains/polls/models/pollOption";
+
+import { PollAnswerReview } from "./PollAnswerReview";
 
 describe("PollAnswerReview", () => {
 	describe("visual feedback", () => {
@@ -23,7 +25,7 @@ describe("PollAnswerReview", () => {
 				}),
 			];
 
-			const { container } = render(
+			render(
 				<PollAnswerReview
 					poll={poll}
 					options={options}
@@ -62,7 +64,7 @@ describe("PollAnswerReview", () => {
 				}),
 			];
 
-			const { container } = render(
+			render(
 				<PollAnswerReview
 					poll={poll}
 					options={options}
@@ -106,9 +108,7 @@ describe("PollAnswerReview", () => {
 				/>
 			);
 
-			const correctOption = screen
-				.getByText("Banjo")
-				.closest("div.border");
+			const correctOption = screen.getByText("Banjo").closest("div.border");
 			expect(correctOption).toHaveClass("border-green-700");
 			expect(correctOption).toHaveClass("bg-green-900/10");
 			expect(
@@ -143,9 +143,7 @@ describe("PollAnswerReview", () => {
 				/>
 			);
 
-			const incorrectOption = screen
-				.getByText("Klungo")
-				.closest("div.border");
+			const incorrectOption = screen.getByText("Klungo").closest("div.border");
 			expect(incorrectOption).toHaveClass("border-zinc-700");
 			expect(incorrectOption).toHaveClass("bg-zinc-900/20");
 		});
@@ -351,9 +349,7 @@ describe("PollAnswerReview", () => {
 			);
 
 			expect(screen.getByText("Review your answer")).toBeInTheDocument();
-			expect(
-				screen.queryByText("[ YOUR ANSWER ]")
-			).not.toBeInTheDocument();
+			expect(screen.queryByText("[ YOUR ANSWER ]")).not.toBeInTheDocument();
 		});
 
 		it("renders with single option poll", () => {

@@ -35,10 +35,10 @@ Visit http://localhost:3005 to play!
 1. Generate migration locally: `npm run db:generate`
 2. Review the generated SQL in `drizzle/` folder
 3. Apply to production using psql:
-    ```bash
-    psql "postgresql://postgres.smrkmigjsnhrhwrxobjc:[PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres" \
-      -f drizzle/XXXX_migration_name.sql
-    ```
+   ```bash
+   psql "postgresql://postgres.smrkmigjsnhrhwrxobjc:[PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres" \
+     -f drizzle/XXXX_migration_name.sql
+   ```
 4. Push code changes to `main` branch
 
 **Note:** Replace `[PASSWORD]` with your Supabase database password and `XXXX_migration_name.sql` with the actual migration filename.

@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { configs, applyEffects, EffectRenderProps } from "./configs";
+
 import { createMockPoll } from "~/domains/polls/factories/poll";
+import { createPollOption } from "~/domains/polls/models/pollOption";
 import { createMockRun } from "~/domains/runs/models/run";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
-import { createPollOption } from "~/domains/polls/models/pollOption";
 import * as thresholdService from "~/domains/runs/services/thresholdCalculator.service";
+
+import { configs, applyEffects, EffectRenderProps } from "./configs";
 
 vi.mock("~/domains/runs/services/thresholdCalculator.service", () => ({
 	calculateThresholdInfo: vi.fn(),
@@ -72,9 +74,7 @@ describe("configs", () => {
 		});
 
 		it("has valid properties for math random config", () => {
-			const mathConfig = configs.find(
-				(c) => c.id === "math-random-config"
-			);
+			const mathConfig = configs.find((c) => c.id === "math-random-config");
 			expect(mathConfig).toBeDefined();
 			expect(mathConfig?.name).toBe("Math Random");
 			expect(mathConfig?.effect).toEqual(["randomStreakAmp"]);
@@ -85,9 +85,7 @@ describe("configs", () => {
 		});
 
 		it("has valid properties for deflate config", () => {
-			const deflateConfig = configs.find(
-				(c) => c.id === "deflate-config"
-			);
+			const deflateConfig = configs.find((c) => c.id === "deflate-config");
 			expect(deflateConfig).toBeDefined();
 			expect(deflateConfig?.name).toBe("Deflate");
 			expect(deflateConfig?.effect).toEqual(["reduceConfigCost"]);
@@ -100,9 +98,7 @@ describe("configs", () => {
 		});
 
 		it("has valid properties for hot reload config", () => {
-			const hotReloadConfig = configs.find(
-				(c) => c.id === "hot-reload-config"
-			);
+			const hotReloadConfig = configs.find((c) => c.id === "hot-reload-config");
 			expect(hotReloadConfig).toBeDefined();
 			expect(hotReloadConfig?.name).toBe("Hot Reload");
 			expect(hotReloadConfig?.effect).toEqual(["resetRebuild"]);
@@ -114,14 +110,10 @@ describe("configs", () => {
 		});
 
 		it.todo("has valid properties for try/catch config", () => {
-			const tryCatchConfig = configs.find(
-				(c) => c.id === "try-catch-config"
-			);
+			const tryCatchConfig = configs.find((c) => c.id === "try-catch-config");
 			expect(tryCatchConfig).toBeDefined();
 			expect(tryCatchConfig?.name).toBe("Try/Catch");
-			expect(tryCatchConfig?.effect).toEqual([
-				"checkCoverageWithThreshold",
-			]);
+			expect(tryCatchConfig?.effect).toEqual(["checkCoverageWithThreshold"]);
 			expect(tryCatchConfig?.rarity).toBe("rare");
 			expect(tryCatchConfig?.description).toContain(
 				"Saves your run when you have at least 80% of the coverage threshold"
@@ -258,9 +250,7 @@ describe("configs", () => {
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
-			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([
-				2, 3, 4,
-			]);
+			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([2, 3, 4]);
 			expect(result.meta.notes).toEqual(["Hid wrong options"]);
 
 			const disabledId = result.renderProps.disabledOptionIds?.[0];
@@ -331,9 +321,7 @@ describe("configs", () => {
 			const result = applyEffects(base, ["eslint-config"]);
 
 			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
-			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([
-				1, 2, 3,
-			]);
+			expect(result.renderProps.disabledOptionIds?.[0]).toBeOneOf([1, 2, 3]);
 			expect(result.meta.notes).toEqual(["Hid wrong options"]);
 		});
 
@@ -370,18 +358,15 @@ describe("configs", () => {
 			};
 
 			// Test with multiple ESLint configs
-			const result = applyEffects(base, [
-				"eslint-config",
-				"eslint-config",
-			]);
+			const result = applyEffects(base, ["eslint-config", "eslint-config"]);
 
 			// Should merge the disabled options (could be 1 or 2 depending on randomness)
 			expect(
 				result.renderProps.disabledOptionIds?.length
 			).toBeGreaterThanOrEqual(1);
-			expect(
-				result.renderProps.disabledOptionIds?.length
-			).toBeLessThanOrEqual(2);
+			expect(result.renderProps.disabledOptionIds?.length).toBeLessThanOrEqual(
+				2
+			);
 			expect(result.meta.notes?.length).toBe(2); // Two "Hid wrong options" messages
 		});
 
@@ -1175,10 +1160,7 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, [
-				"math-random-config",
-				".js-config",
-			]);
+			const result = applyEffects(base, ["math-random-config", ".js-config"]);
 
 			expect(result.view).toEqual(base);
 			expect(result.renderProps.coverageBonus).toBe(2.6);
@@ -1227,10 +1209,7 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, [
-				"deflate-config",
-				".ts-config",
-			]);
+			const result = applyEffects(base, ["deflate-config", ".ts-config"]);
 
 			expect(result.view).toEqual(base);
 			expect(result.reductionCost).toBe(0.1);
@@ -1272,10 +1251,7 @@ describe("configs", () => {
 				hasAnswered: false,
 			};
 
-			const result = applyEffects(base, [
-				"hot-reload-config",
-				"eslint-config",
-			]);
+			const result = applyEffects(base, ["hot-reload-config", "eslint-config"]);
 
 			expect(result.view).toEqual(base);
 			expect(result.resetRebuild).toBe(true);

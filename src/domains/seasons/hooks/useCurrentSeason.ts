@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
+
 import { findCurrentSeason } from "../api/queries";
 
 const getCurrentSeasonFn = createServerFn().handler(async () => {

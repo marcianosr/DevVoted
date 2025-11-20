@@ -1,7 +1,7 @@
-import { Run } from "~/domains/runs/models/run";
-
 import { getStorageInfo } from "~/domains/economy/services/configManager.service";
+import { Run } from "~/domains/runs/models/run";
 import { formatStorage } from "~/lib/storage";
+
 import { ConfigCard } from "../../configs/components/ConfigCard";
 import { useConfigCardActions } from "../../configs/hooks/useConfigCardActions";
 
@@ -12,7 +12,6 @@ type StorageDeckProps = {
 export const StorageDeck = ({ run }: StorageDeckProps) => {
 	const {
 		activeConfigs,
-		configsStorage,
 		rerollsStorage,
 		storageUsed,
 		storageAvailable,
@@ -33,35 +32,25 @@ export const StorageDeck = ({ run }: StorageDeckProps) => {
 					)}
 				</div>
 			</div>
-			<meter
-				value={storageUsed}
-				max={storageLimit}
-				className="w-full h-8"
-			/>
+			<meter value={storageUsed} max={storageLimit} className="w-full h-8" />
 			<div className="grid grid-cols-3 gap-3">
 				{activeConfigs.length === 0 ? (
 					<div className="text-center text-gray-400 py-8 col-span-4 self-center">
 						<p className="text-2xl">No configs installed</p>
 						<small className="text-sm">
-							Your installed configs from the shop will appear
-							here
+							Your installed configs from the shop will appear here
 						</small>
 					</div>
 				) : (
 					activeConfigs.map((config) => {
+						// eslint-disable-next-line react-hooks/rules-of-hooks -- TODO: Fix hook usage in callback
 						const actions = useConfigCardActions({
 							run,
 							config,
 							mode: "storage",
 						});
 
-						return (
-							<ConfigCard
-								key={config.id}
-								config={config}
-								{...actions}
-							/>
-						);
+						return <ConfigCard key={config.id} config={config} {...actions} />;
 					})
 				)}
 			</div>

@@ -1,5 +1,6 @@
+import { clsx } from "clsx";
+
 import type { Poll } from "~/domains/polls/models/poll";
-import clsx from "clsx";
 
 type PollWithStats = {
 	poll: Poll;

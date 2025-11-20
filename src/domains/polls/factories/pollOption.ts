@@ -1,10 +1,11 @@
+import { InferInsertModel } from "drizzle-orm";
+
+import { pollOptionsTable } from "@/src/database/schema";
 import { createMockDataFactory } from "@/src/test/createMockDataFactory";
 import {
 	PollOption,
 	PollOptionRecord,
 } from "~/domains/polls/models/pollOption";
-import { InferInsertModel } from "drizzle-orm";
-import { pollOptionsTable } from "@/src/database/schema";
 
 const pollOption: PollOption = {
 	id: 1,

@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
+
 import { getStorageInfo } from "~/domains/economy/services/configManager.service";
+import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
+
 import { processRerollShop } from "./queries";
 
 export const rerollShopServerFn = createServerFn()
@@ -36,9 +38,7 @@ export const rerollShopServerFn = createServerFn()
 			};
 		} catch (error) {
 			const message =
-				error instanceof Error
-					? error.message
-					: "Failed to reroll shop";
+				error instanceof Error ? error.message : "Failed to reroll shop";
 			return { success: false, error: message };
 		}
 	});

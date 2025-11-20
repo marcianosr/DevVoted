@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import Option, { handleOptionsChange } from "./Option";
+import { describe, it, expect, vi } from "vitest";
+
 import { createPollOption } from "~/domains/polls/models/pollOption";
+
+import Option, { handleOptionsChange } from "./Option";
 
 describe(Option, () => {
 	const mockOption = createPollOption({
@@ -107,10 +109,7 @@ describe(Option, () => {
 		const input = screen.getByRole("checkbox") as HTMLInputElement;
 		const labelElement = input.labels?.[0];
 		expect(labelElement).toHaveClass("cursor-pointer");
-		expect(labelElement).not.toHaveClass(
-			"cursor-not-allowed",
-			"text-gray-500"
-		);
+		expect(labelElement).not.toHaveClass("cursor-not-allowed", "text-gray-500");
 	});
 
 	it("applies disabled styling to container when disabled", () => {

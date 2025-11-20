@@ -31,8 +31,6 @@ const getReason = (reason: Reason) =>
 	})[reason];
 
 export const RunEndStats = ({
-	totalCoverage,
-	totalPollsAnswered,
 	categoryCoverage,
 	duration,
 	reason,
@@ -55,24 +53,16 @@ export const RunEndStats = ({
 						>
 							<div>
 								<div className="capitalize">
-									{
-										getCategoryMetadata(
-											category.categoryCode
-										).name
-									}
+									{getCategoryMetadata(category.categoryCode).name}
 								</div>
 								<div className="text-sm">
-									{category.pollsAnswered} questions • Best
-									streak: {category.bestStreak}
+									{category.pollsAnswered} questions • Best streak:{" "}
+									{category.bestStreak}
 								</div>
 							</div>
 							<div className="text-right">
-								<div className="text-lg">
-									{category.currentCoverage}%
-								</div>
-								<div className="text-sm">
-									Streak: {category.currentStreak}
-								</div>
+								<div className="text-lg">{category.currentCoverage}%</div>
+								<div className="text-sm">Streak: {category.currentStreak}</div>
 							</div>
 						</div>
 					))}

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { Polldex } from "~/domains/polls/components/Polldex";
 
 const ProfilePage: React.FC = () => {

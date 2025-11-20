@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
-import { RunEndStats } from "./RunEndStats";
 import { describe, expect, it } from "vitest";
+
+import { RunEndStats } from "./RunEndStats";
 
 const mockCategoryCoverage = [
 	{
@@ -32,7 +33,9 @@ describe(RunEndStats, () => {
 		);
 
 		expect(screen.getByText("🎉")).toBeInTheDocument();
-		expect(screen.getByText("You mastered all CI gates in this run!")).toBeInTheDocument();
+		expect(
+			screen.getByText("You mastered all CI gates in this run!")
+		).toBeInTheDocument();
 	});
 
 	it("displays duration", () => {

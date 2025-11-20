@@ -1,7 +1,8 @@
+import { InferInsertModel } from "drizzle-orm";
+
+import { pollsTable } from "@/src/database/schema";
 import { createMockDataFactory } from "@/src/test/createMockDataFactory";
 import { Poll, PollRecord } from "~/domains/polls/models/poll";
-import { InferInsertModel } from "drizzle-orm";
-import { pollsTable } from "@/src/database/schema";
 import { CATEGORY_CODES } from "~/domains/shared/categories";
 
 const poll: Poll = {

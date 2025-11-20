@@ -1,5 +1,6 @@
-import type { PollOption } from "~/domains/polls/models/pollOption";
 import type { Poll } from "~/domains/polls/models/poll";
+import type { PollOption } from "~/domains/polls/models/pollOption";
+
 import Option from "./Option";
 
 type FormFieldApi = {
@@ -26,27 +27,16 @@ export const PollOptions = ({
 }: PollOptionsProps) => {
 	return (
 		<div>
-			<h2 className="text-xl font-semibold mb-4">
-				Select your answer(s)!
-			</h2>
+			<h2 className="text-xl font-semibold mb-4">Select your answer(s)!</h2>
 			<ul className="space-y-2">
 				{options.map((option) => (
 					<li key={option.id}>
 						<Option
 							option={option}
-							type={
-								poll.answerType === "single"
-									? "radio"
-									: "checkbox"
-							}
+							type={poll.answerType === "single" ? "radio" : "checkbox"}
 							field={field}
-							checked={field.state.value.includes(
-								option.id.toString()
-							)}
-							disabled={
-								disabled ||
-								disabledOptionIds?.includes(option.id)
-							}
+							checked={field.state.value.includes(option.id.toString())}
+							disabled={disabled || disabledOptionIds?.includes(option.id)}
 						/>
 					</li>
 				))}

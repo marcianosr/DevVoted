@@ -1,15 +1,21 @@
-import { getActiveRunByUserId } from "~/domains/runs/api/queries";
-import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
+import { removeConfigFromRunQuery } from "~/domains/configs/api/queries";
+import { applyEffects } from "~/domains/configs/data/configs";
 import {
 	createPollResponse,
 	fetchPollByIdWithOptions,
 	getPollsSeenInRun,
 } from "~/domains/polls/api/queries";
+import type { PollOption } from "~/domains/polls/models/pollOption";
+import {
+	getActiveRunByUserId,
+	resetPollRerolls,
+} from "~/domains/runs/api/queries";
+import { incrementRunProgress } from "~/domains/runs/services/progress.service";
+import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
 	calculateThresholdInfo,
 	type ThresholdInfo,
 } from "~/domains/runs/services/thresholdCalculator.service";
-import { resetPollRerolls } from "~/domains/runs/api/queries";
 import {
 	outcomeSingle,
 	outcomeMulti,
@@ -18,11 +24,7 @@ import {
 	type PollAnswerOutcome,
 	PollScoreBreakdown,
 } from "~/domains/score/services/score.service";
-import type { PollOption } from "~/domains/polls/models/pollOption";
-import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { CategoryCode } from "~/domains/shared/categories";
-import { applyEffects } from "~/domains/configs/data/configs";
-import { removeConfigFromRunQuery } from "~/domains/configs/api/queries";
 
 export type PollAnswerResult = {
 	runEnded: boolean;
@@ -185,11 +187,7 @@ const handleUserSelectedOptionsByPollType = async ({
 	const { outcome, correctnessFactor } =
 		pollWithOptions.poll.answerType === "single"
 			? calculateSingleOutcome(selectedOptions, correctOptionIds)
-			: calculateMultiOutcome(
-					nCorrectPicked,
-					nCorrectTotal,
-					nWrongPicked
-				);
+			: calculateMultiOutcome(nCorrectPicked, nCorrectTotal, nWrongPicked);
 
 	return {
 		selectedOptions,

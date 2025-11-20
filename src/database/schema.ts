@@ -12,6 +12,7 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
+
 import { STORAGE_UNITS } from "~/lib/storage";
 
 /**
@@ -90,9 +91,7 @@ export const usersTable = pgTable("users", {
 	email: varchar("email", { length: 256 }).notNull().unique(),
 	photo_url: text("photo_url"),
 	role: userRoles("roles").notNull().default("user"),
-	total_polls_submitted: integer("total_polls_submitted")
-		.notNull()
-		.default(0),
+	total_polls_submitted: integer("total_polls_submitted").notNull().default(0),
 });
 
 /**

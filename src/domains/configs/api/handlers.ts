@@ -1,12 +1,13 @@
+import { configs } from "~/domains/configs/data/configs";
+import { canAddConfigToRun } from "~/domains/economy/services/configManager.service";
+import { getAuthenticatedUserId } from "~/utils/authorization";
+import { handleApiOperation } from "~/utils/errorHandling";
+
 import {
 	addConfigToRunQuery,
 	removeConfigFromRunQuery,
 	getRunByIdQuery,
 } from "./queries";
-import { handleApiOperation } from "~/utils/errorHandling";
-import { canAddConfigToRun } from "~/domains/economy/services/configManager.service";
-import { configs } from "~/domains/configs/data/configs";
-import { getAuthenticatedUserId } from "~/utils/authorization";
 
 export const addConfigToRunHandler = async ({
 	data,

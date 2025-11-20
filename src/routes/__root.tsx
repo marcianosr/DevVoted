@@ -1,4 +1,8 @@
 /// <reference types="vite/client" />
+import * as React from "react";
+
+import * as Sentry from "@sentry/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	HeadContent,
 	Link,
@@ -8,17 +12,15 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
-import * as React from "react";
+
+import { ensureUserExists } from "~/domains/users/services/userSync.service";
+
 import { DefaultCatchBoundary } from "../components/DefaultCatchBoundary";
 import { NotFound } from "../components/NotFound";
+import { getActiveRun } from "../domains/runs/api/runs";
 import appCss from "../styles/app.css?url";
 import { seo } from "../utils/seo";
 import { getSupabaseServerClient } from "../utils/supabase";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { getActiveRun } from "../domains/runs/api/runs";
-
-import * as Sentry from "@sentry/react";
-import { ensureUserExists } from "~/domains/users/services/userSync.service";
 
 Sentry.init({
 	dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
@@ -170,9 +172,7 @@ function Navigation() {
 										className="w-[30px] h-[30px] rounded-full inline-block mr-2"
 									/>
 								)}
-								<span className="ml-2">
-									{user.displayName || user.email}
-								</span>
+								<span className="ml-2">{user.displayName || user.email}</span>
 							</Link>
 							<Link to="/logout">Logout</Link>
 						</>

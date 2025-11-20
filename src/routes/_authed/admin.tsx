@@ -1,10 +1,12 @@
+import { useState } from "react";
+
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { useState } from "react";
 import { format } from "date-fns";
-import { getSupabaseServerClient } from "../../utils/supabase";
+
 import { PrimaryButton } from "../../ui/PrimaryButton";
 import { ADMIN_EMAILS } from "../../utils/adminAuth";
+import { getSupabaseServerClient } from "../../utils/supabase";
 
 const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();
@@ -22,9 +24,7 @@ const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
 	return {
 		hasAccess,
 		email: user.email,
-		message: hasAccess
-			? "Admin access granted"
-			: "Access denied - Admin only",
+		message: hasAccess ? "Admin access granted" : "Access denied - Admin only",
 	};
 });
 
@@ -76,9 +76,7 @@ const createSeasonFn = createServerFn({ method: "POST" })
 			return {
 				success: false,
 				error:
-					error instanceof Error
-						? error.message
-						: "Failed to create season",
+					error instanceof Error ? error.message : "Failed to create season",
 			};
 		}
 	});
@@ -99,9 +97,7 @@ const startSeasonFn = createServerFn({ method: "POST" })
 			return {
 				success: false,
 				error:
-					error instanceof Error
-						? error.message
-						: "Failed to start season",
+					error instanceof Error ? error.message : "Failed to start season",
 			};
 		}
 	});
@@ -122,9 +118,7 @@ const finishSeasonFn = createServerFn({ method: "POST" })
 			return {
 				success: false,
 				error:
-					error instanceof Error
-						? error.message
-						: "Failed to finish season",
+					error instanceof Error ? error.message : "Failed to finish season",
 			};
 		}
 	});
@@ -165,10 +159,7 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 				question: pollsTable.question,
 			})
 			.from(pollResponsesTable)
-			.innerJoin(
-				pollsTable,
-				eq(pollResponsesTable.poll_id, pollsTable.id)
-			)
+			.innerJoin(pollsTable, eq(pollResponsesTable.poll_id, pollsTable.id))
 			.leftJoin(usersTable, eq(pollResponsesTable.user_id, usersTable.id))
 			.orderBy(desc(pollResponsesTable.created_at))
 			.limit(20);
@@ -234,9 +225,7 @@ export const Route = createFileRoute("/_authed/admin")({
 			return (
 				<div className="flex items-center justify-center min-h-screen">
 					<div className="text-center">
-						<h1 className="text-2xl text-red-600 mb-4">
-							Access Denied
-						</h1>
+						<h1 className="text-2xl text-red-600 mb-4">Access Denied</h1>
 						<p>This area is restricted to administrators only.</p>
 						<p className="text-sm text-gray-600 mt-2">
 							Contact marciano@kabisa.nl if you need access.
@@ -300,9 +289,7 @@ function AdminPanel() {
 	};
 
 	const handleStartSeason = async () => {
-		const upcomingSeason = data.allSeasons.find(
-			(s) => s.status === "upcoming"
-		);
+		const upcomingSeason = data.allSeasons.find((s) => s.status === "upcoming");
 		if (!upcomingSeason) {
 			showMessage("error", "No upcoming season to start");
 			return;
@@ -329,9 +316,7 @@ function AdminPanel() {
 		}
 
 		if (
-			confirm(
-				`Are you sure you want to finish "${data.currentSeason.name}"?`
-			)
+			confirm(`Are you sure you want to finish "${data.currentSeason.name}"?`)
 		) {
 			setIsLoading(true);
 			const result = await finishSeasonFn({
@@ -356,12 +341,9 @@ function AdminPanel() {
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-8">
-				<h1 className="text-3xl text-gray-900 mb-2">
-					DevVoted Admin Panel
-				</h1>
+				<h1 className="text-3xl text-gray-900 mb-2">DevVoted Admin Panel</h1>
 				<p className="text-gray-600">
-					Manage seasons, monitor active polls, and track user
-					responses.
+					Manage seasons, monitor active polls, and track user responses.
 				</p>
 			</div>
 
@@ -392,14 +374,11 @@ function AdminPanel() {
 					<div className="space-y-4">
 						{/* Current Season */}
 						<div className="p-4 bg-blue-50 rounded-lg">
-							<h3 className="font-medium text-blue-900 mb-2">
-								Current Season
-							</h3>
+							<h3 className="font-medium text-blue-900 mb-2">Current Season</h3>
 							{data.currentSeason ? (
 								<div className="text-sm space-y-1">
 									<p>
-										<strong>Name:</strong>{" "}
-										{data.currentSeason.name}
+										<strong>Name:</strong> {data.currentSeason.name}
 									</p>
 									<p>
 										<strong>Status:</strong>{" "}
@@ -409,9 +388,7 @@ function AdminPanel() {
 									</p>
 									<p>
 										<strong>Start:</strong>{" "}
-										{formatDate(
-											data.currentSeason.startDate
-										)}
+										{formatDate(data.currentSeason.startDate)}
 									</p>
 									<p>
 										<strong>End:</strong>{" "}
@@ -419,9 +396,7 @@ function AdminPanel() {
 									</p>
 								</div>
 							) : (
-								<p className="text-sm text-blue-700">
-									No active season
-								</p>
+								<p className="text-sm text-blue-700">No active season</p>
 							)}
 						</div>
 
@@ -432,17 +407,11 @@ function AdminPanel() {
 									Upcoming Seasons
 								</h3>
 								{upcomingSeasons.map((season) => (
-									<div
-										key={season.id}
-										className="text-sm space-y-1 mb-2"
-									>
+									<div key={season.id} className="text-sm space-y-1 mb-2">
 										<p>
 											<strong>{season.name}</strong>
 										</p>
-										<p>
-											Starts:{" "}
-											{formatDate(season.startDate)}
-										</p>
+										<p>Starts: {formatDate(season.startDate)}</p>
 									</div>
 								))}
 							</div>
@@ -452,9 +421,7 @@ function AdminPanel() {
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							<button
 								className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
-								onClick={() =>
-									setShowCreateForm(!showCreateForm)
-								}
+								onClick={() => setShowCreateForm(!showCreateForm)}
 								disabled={isLoading}
 							>
 								Create New Season
@@ -474,9 +441,7 @@ function AdminPanel() {
 							</button>
 							<button
 								className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
-								onClick={() =>
-									alert("Archive functionality coming soon!")
-								}
+								onClick={() => alert("Archive functionality coming soon!")}
 								disabled={isLoading}
 							>
 								Archive Season
@@ -489,9 +454,7 @@ function AdminPanel() {
 								onSubmit={handleCreateSeason}
 								className="mt-4 p-4 border border-gray-200 rounded-lg"
 							>
-								<h3 className="font-medium mb-3">
-									Create New Season
-								</h3>
+								<h3 className="font-medium mb-3">Create New Season</h3>
 								<div className="space-y-3">
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-1">
@@ -545,15 +508,11 @@ function AdminPanel() {
 											disabled={isLoading}
 											className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
 										>
-											{isLoading
-												? "Creating..."
-												: "Create Season"}
+											{isLoading ? "Creating..." : "Create Season"}
 										</button>
 										<button
 											type="button"
-											onClick={() =>
-												setShowCreateForm(false)
-											}
+											onClick={() => setShowCreateForm(false)}
 											className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
 										>
 											Cancel
@@ -612,26 +571,16 @@ function AdminPanel() {
 											{poll.category_code}
 										</span>
 									</div>
-									<p className="text-sm text-gray-700 mb-2">
-										{poll.question}
-									</p>
+									<p className="text-sm text-gray-700 mb-2">{poll.question}</p>
 									<div className="flex justify-between text-xs text-gray-500">
-										<span>
-											Opens:{" "}
-											{formatDate(poll.opening_time)}
-										</span>
-										<span>
-											Closes:{" "}
-											{formatDate(poll.closing_time)}
-										</span>
+										<span>Opens: {formatDate(poll.opening_time)}</span>
+										<span>Closes: {formatDate(poll.closing_time)}</span>
 									</div>
 								</div>
 							))}
 						</div>
 					) : (
-						<p className="text-gray-600">
-							No active polls currently.
-						</p>
+						<p className="text-gray-600">No active polls currently.</p>
 					)}
 				</div>
 
@@ -649,21 +598,17 @@ function AdminPanel() {
 								>
 									<div className="flex justify-between items-start mb-1">
 										<span className="font-medium text-sm text-gray-900">
-											{response.display_name ||
-												"Anonymous"}
+											{response.display_name || "Anonymous"}
 										</span>
 										<span className="text-xs text-gray-500">
 											{formatDate(response.created_at!)}
 										</span>
 									</div>
 									<p className="text-xs text-gray-600 mb-1">
-										Poll #{response.poll_id}:{" "}
-										{response.question}
+										Poll #{response.poll_id}: {response.question}
 									</p>
 									{response.email && (
-										<p className="text-xs text-gray-500">
-											{response.email}
-										</p>
+										<p className="text-xs text-gray-500">{response.email}</p>
 									)}
 								</div>
 							))}

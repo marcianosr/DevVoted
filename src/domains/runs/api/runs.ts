@@ -1,11 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
+
+import { getAuthenticatedUserId } from "~/utils/authorization";
+
 import {
 	getOrCreateActiveRun,
 	getUserActiveRun,
 	getLastRunForUser,
 	finishRunHandler,
 } from "./handlers";
-import { getAuthenticatedUserId } from "~/utils/authorization";
 
 export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
 	async () => {

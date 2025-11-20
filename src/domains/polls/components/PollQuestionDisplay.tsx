@@ -1,6 +1,7 @@
-import type { Poll } from "~/domains/polls/models/poll";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
+
+import type { Poll } from "~/domains/polls/models/poll";
 
 type PollQuestionDisplayProps = {
 	poll: Poll;

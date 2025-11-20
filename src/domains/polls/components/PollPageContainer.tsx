@@ -1,18 +1,20 @@
+import { useState } from "react";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { ShopProvider } from "~/domains/economy/contexts/ShopContext";
-import { applyEffects } from "~/domains/configs/data/configs";
 import {
 	addConfigToRunServerFn,
 	removeConfigFromRunServerFn,
 } from "~/domains/configs/api/configs";
-import { runQueryKeys } from "~/domains/shared/queryKeys";
+import { applyEffects } from "~/domains/configs/data/configs";
+import { ShopProvider } from "~/domains/economy/contexts/ShopContext";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
-import { useState } from "react";
-import { PollScoreBreakdown } from "~/domains/score/services/score.service";
-import PollContent from "./PollContent";
-import { User } from "~/domains/users/services/userSync.service";
 import { Run } from "~/domains/runs/models/run";
+import { PollScoreBreakdown } from "~/domains/score/services/score.service";
+import { runQueryKeys } from "~/domains/shared/queryKeys";
+import { User } from "~/domains/users/services/userSync.service";
+
+import PollContent from "./PollContent";
 
 type PollPageContainerProps = {
 	user: User;
@@ -91,9 +93,7 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 			queryClient.setQueryData(activeRunQueryKey, (old: any) => {
 				if (!old?.data?.activeRun) return old;
 
-				const newConfigIds = (
-					old.data.activeRun.configIds || []
-				).filter(
+				const newConfigIds = (old.data.activeRun.configIds || []).filter(
 					(id: string) => !variables.data.configIds.includes(id)
 				);
 				return {
@@ -115,7 +115,7 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 				console.error("Failed to remove config:", data.error);
 			}
 		},
-		onError: (error, _variables, context) => {
+		onError: (_error, _variables, context) => {
 			if (context?.previousData && context?.activeRunQueryKey) {
 				queryClient.setQueryData(
 					context.activeRunQueryKey,

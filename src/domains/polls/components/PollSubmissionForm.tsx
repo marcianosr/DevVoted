@@ -1,4 +1,5 @@
 import { UseMutationResult } from "@tanstack/react-query";
+
 import { PrimaryButton } from "~/ui/PrimaryButton";
 
 type PollSubmissionFormProps = {
@@ -30,8 +31,7 @@ export const PollSubmissionForm = ({
 							<div className="text-sm mt-1 space-y-1">
 								{submitMutation.data.data.xpEarned > 0 ? (
 									<span className="text-green-700">
-										🎉 You earned{" "}
-										{submitMutation.data.data.xpEarned} XP!
+										🎉 You earned {submitMutation.data.data.xpEarned} XP!
 									</span>
 								) : (
 									<span className="text-orange-700">
@@ -49,8 +49,7 @@ export const PollSubmissionForm = ({
 									>
 										<div
 											className={`font-medium ${
-												submitMutation.data.data
-													.runEnded
+												submitMutation.data.data.runEnded
 													? "text-red-800"
 													: "text-blue-800"
 											}`}
@@ -61,30 +60,18 @@ export const PollSubmissionForm = ({
 										</div>
 										<div
 											className={`text-xs ${
-												submitMutation.data.data
-													.runEnded
+												submitMutation.data.data.runEnded
 													? "text-red-700"
 													: "text-blue-700"
 											}`}
 										>
-											{
-												submitMutation.data.data
-													.thresholdInfo.currentXp
-											}{" "}
-											/{" "}
-											{
-												submitMutation.data.data
-													.thresholdInfo.requiredXp
-											}{" "}
-											XP
-											{submitMutation.data.data
-												.runEnded ? (
+											{submitMutation.data.data.thresholdInfo.currentXp} /{" "}
+											{submitMutation.data.data.thresholdInfo.requiredXp} XP
+											{submitMutation.data.data.runEnded ? (
 												<span className="text-red-700 ml-2">
-													💀 Threshold not met - Run
-													reset
+													💀 Threshold not met - Run reset
 												</span>
-											) : submitMutation.data.data
-													.thresholdInfo
+											) : submitMutation.data.data.thresholdInfo
 													.meetsThreshold ? (
 												<span className="text-green-700 ml-2">
 													✅ Threshold met!
@@ -92,11 +79,8 @@ export const PollSubmissionForm = ({
 											) : (
 												<span className="text-orange-700 ml-2">
 													⚠️ Need{" "}
-													{submitMutation.data.data
-														.thresholdInfo
-														.requiredXp -
-														submitMutation.data.data
-															.thresholdInfo
+													{submitMutation.data.data.thresholdInfo.requiredXp -
+														submitMutation.data.data.thresholdInfo
 															.currentXp}{" "}
 													more XP
 												</span>
@@ -110,23 +94,18 @@ export const PollSubmissionForm = ({
 				)}
 
 				{(submitMutation.isError ||
-					(submitMutation.isSuccess &&
-						!submitMutation.data?.success)) && (
+					(submitMutation.isSuccess && !submitMutation.data?.success)) && (
 					<div className="p-3 bg-red-100 text-red-800">
 						Failed to submit your options. Please try again.
 						{submitMutation.data?.error && (
-							<div className="text-sm mt-1">
-								{submitMutation.data.error}
-							</div>
+							<div className="text-sm mt-1">{submitMutation.data.error}</div>
 						)}
 					</div>
 				)}
 
 				<PrimaryButton
 					type="submit"
-					disabled={
-						hasAnswered || submitMutation.isPending || isSubmitting
-					}
+					disabled={hasAnswered || submitMutation.isPending || isSubmitting}
 				>
 					{hasAnswered
 						? "Already Answered"
