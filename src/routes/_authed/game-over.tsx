@@ -29,12 +29,12 @@ function RouteComponent() {
 	});
 
 	const handleStartNewRunClick = () => {
-		if (activeRun.success && activeRun.data?.id) setIsDialogOpen(true);
+		if (activeRun && activeRun.success && activeRun.data?.id) setIsDialogOpen(true);
 	};
 	const handleConfirmFinishRun = () => finishRunMutation.mutate();
 	const handleCancelFinishRun = () => setIsDialogOpen(false);
 
-	if (activeRun.success && activeRun.data?.id) {
+	if (activeRun && activeRun.success && activeRun.data?.id) {
 		return (
 			<div className="text-center py-8">
 				<h1 className="text-3xl mb-4">Run is still in progress!</h1>
