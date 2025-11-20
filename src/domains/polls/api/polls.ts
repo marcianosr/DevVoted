@@ -1,5 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+
+import { getAuthenticatedUserId } from "~/utils/authorization";
+
 import {
 	getAllPollsHandler,
 	getPollByIdHandler,
@@ -8,7 +11,6 @@ import {
 	postPollOptionsHandler,
 	getPollsSeenInRunHandler,
 } from "./handlers";
-import { getAuthenticatedUserId } from "~/utils/authorization";
 
 export const getPollByIdWithOptions = createServerFn({ method: "GET" })
 	.inputValidator(

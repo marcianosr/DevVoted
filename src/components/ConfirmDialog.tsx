@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+
 import { SecondaryButton } from "~/ui/SecondaryButton";
 
 export type ConfirmDialogProps = {
@@ -51,9 +52,7 @@ export const ConfirmDialog = ({
 				<h2 className="text-xl mb-4 text-white">{title}</h2>
 				<p className="text-gray-400 mb-6">{message}</p>
 				<div className="flex gap-3 justify-end">
-					<SecondaryButton onClick={handleCancel}>
-						{cancelText}
-					</SecondaryButton>
+					<SecondaryButton onClick={handleCancel}>{cancelText}</SecondaryButton>
 					<SecondaryButton onClick={handleConfirm} variant="danger">
 						{confirmText}
 					</SecondaryButton>

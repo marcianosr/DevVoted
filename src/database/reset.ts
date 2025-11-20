@@ -1,5 +1,6 @@
-import { db } from "@/src/database/db";
 import { sql } from "drizzle-orm";
+
+import { db } from "@/src/database/db";
 
 async function resetDatabase() {
 	console.log("🗑️  Dropping all tables...");

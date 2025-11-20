@@ -1,12 +1,13 @@
+import { aggregateRunCategoryCoverage } from "~/domains/runs/utils/coverageCalculations";
+import type { CategoryCode } from "~/domains/shared/categories";
+import { handleApiOperation } from "~/utils/errorHandling";
+
 import {
 	getActiveRunByUserId,
 	createRunForUser,
 	getLastRunFromUser,
 	getLiveRunRankings,
 } from "./queries";
-import { handleApiOperation } from "~/utils/errorHandling";
-import type { CategoryCode } from "~/domains/shared/categories";
-import { aggregateRunCategoryCoverage } from "~/domains/runs/utils/coverageCalculations";
 import { endRunManually } from "../services/runCompletion.service";
 
 export const getOrCreateActiveRun = async (userId: string) => {

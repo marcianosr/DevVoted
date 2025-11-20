@@ -1,5 +1,6 @@
-import { getSupabaseServerClient } from "./supabase";
 import * as Sentry from "@sentry/react";
+
+import { getSupabaseServerClient } from "./supabase";
 
 export const getAuthenticatedUserId = async () => {
 	const supabase = getSupabaseServerClient();

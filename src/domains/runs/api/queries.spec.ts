@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+import { db } from "~/database/db";
+
 import {
 	getActiveRunByUserId,
 	createRunForUser,
@@ -6,7 +9,6 @@ import {
 	finishRun,
 	awardCoverageToRun,
 } from "./queries";
-import { db } from "~/database/db";
 import { createMockRunRecord } from "../models/run";
 import {
 	createMockRunCategoryCoverageRecord,
@@ -203,9 +205,7 @@ describe("Run Queries", () => {
 			const mockRun = createMockRunRecord({ status: "finished" });
 
 			const returningMock = vi.fn().mockResolvedValue([mockRun]);
-			const whereMock = vi
-				.fn()
-				.mockReturnValue({ returning: returningMock });
+			const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
 			const setMock = vi.fn().mockReturnValue({ where: whereMock });
 
 			vi.mocked(db.update).mockReturnValue({ set: setMock } as any);
@@ -218,9 +218,7 @@ describe("Run Queries", () => {
 
 		it("returns null when run not found", async () => {
 			const returningMock = vi.fn().mockResolvedValue([]);
-			const whereMock = vi
-				.fn()
-				.mockReturnValue({ returning: returningMock });
+			const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
 			const setMock = vi.fn().mockReturnValue({ where: whereMock });
 
 			vi.mocked(db.update).mockReturnValue({ set: setMock } as any);

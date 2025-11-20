@@ -1,6 +1,8 @@
-import { runsTable } from "@/src/database/schema";
 import { InferSelectModel } from "drizzle-orm";
+
+import { runsTable } from "@/src/database/schema";
 import { STORAGE_UNITS } from "~/lib/storage";
+
 import type { RunCategoryCoverage } from "./runCategoryCoverage";
 
 // TODO: Refactor this to ActiveRun?

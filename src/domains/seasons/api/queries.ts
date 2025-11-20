@@ -1,8 +1,11 @@
+import { eq, and, lte, gte, desc, asc } from "drizzle-orm";
+
 import { db } from "@/src/database/db";
 import { seasonsTable } from "@/src/database/schema";
-import { eq, and, lte, gte, desc, asc } from "drizzle-orm";
-import type { Season, SeasonRecord } from "../models/season";
+
 import { seasonToDTO, seasonsToDTOs } from "../models/season";
+
+import type { Season, SeasonRecord } from "../models/season";
 
 export const findAllSeasons = async (): Promise<Season[]> => {
 	const records = await db
@@ -74,10 +77,7 @@ export const findSeasonsInDateRange = async (
 export const insertSeason = async (
 	seasonData: Omit<SeasonRecord, "id" | "created_at" | "updated_at">
 ): Promise<Season> => {
-	const [record] = await db
-		.insert(seasonsTable)
-		.values(seasonData)
-		.returning();
+	const [record] = await db.insert(seasonsTable).values(seasonData).returning();
 	return seasonToDTO(record);
 };
 

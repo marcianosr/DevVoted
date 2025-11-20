@@ -1,7 +1,8 @@
+import { clsx } from "clsx";
+
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
-import { CATEGORY_METADATA } from "~/domains/shared/categories";
 import { aggregateRunCategoryCoverage } from "~/domains/runs/utils/coverageCalculations";
-import clsx from "clsx";
+import { CATEGORY_METADATA } from "~/domains/shared/categories";
 
 type CategoryCoverageGridProps = {
 	categoryCoverage: RunCategoryCoverage[];
@@ -44,14 +45,11 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 									"hover:bg-gray-800/50": !isCurrentCategory,
 								}
 							)}
-							aria-current={
-								isCurrentCategory ? "true" : undefined
-							}
+							aria-current={isCurrentCategory ? "true" : undefined}
 						>
 							<span
 								className={clsx("self-center", {
-									"text-theme font-semibold":
-										isCurrentCategory,
+									"text-theme font-semibold": isCurrentCategory,
 								})}
 							>
 								{CATEGORY_METADATA[coverage.categoryCode].name}
@@ -86,8 +84,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 										"text-theme": isCurrentCategory,
 									})}
 								>
-									{coverage.bestStreak ===
-										highestBestStreak &&
+									{coverage.bestStreak === highestBestStreak &&
 										highestBestStreak > 0 && <>★</>}{" "}
 									{coverage.bestStreak}
 								</span>

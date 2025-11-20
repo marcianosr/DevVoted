@@ -1,7 +1,8 @@
+import * as Sentry from "@sentry/react";
+import { eq } from "drizzle-orm";
+
 import { db } from "~/database/db";
 import { usersTable } from "~/database/schema";
-import { eq } from "drizzle-orm";
-import * as Sentry from "@sentry/react";
 
 export type User = {
 	id: string;

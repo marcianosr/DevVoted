@@ -1,4 +1,5 @@
-import { db } from "~/database/db";
+import { eq, and, desc, sql } from "drizzle-orm";
+
 import {
 	runsTable,
 	runCategoryCoverageTable,
@@ -6,8 +7,9 @@ import {
 	leaderboardTable,
 	usersTable,
 } from "@/src/database/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { db } from "~/database/db";
 import type { CategoryCode } from "~/domains/shared/categories";
+
 import { runFactory } from "../models/run";
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage";
 
@@ -15,9 +17,7 @@ export const getActiveRunByUserId = async (userId: string) => {
 	const runRecord = await db
 		.select()
 		.from(runsTable)
-		.where(
-			and(eq(runsTable.user_id, userId), eq(runsTable.status, "active"))
-		)
+		.where(and(eq(runsTable.user_id, userId), eq(runsTable.status, "active")))
 		.limit(1);
 
 	if (!runRecord[0]) {
@@ -144,9 +144,7 @@ export const createCategoryLeaderboardEntries = async (
 	userId: string,
 	runId: number,
 	seasonId: number | null,
-	totalCoverage: number,
-	totalPollsAnswered: number,
-	overallBestStreak: number
+	totalCoverage: number
 ) => {
 	// Get ALL categories from database
 	const allCategories = await db.select().from(pollCategoriesTable);
@@ -237,9 +235,7 @@ export const getLastRunFromUser = async (userId: string) => {
 	const lastRunRecord = await db
 		.select()
 		.from(runsTable)
-		.where(
-			and(eq(runsTable.user_id, userId), eq(runsTable.status, "finished"))
-		)
+		.where(and(eq(runsTable.user_id, userId), eq(runsTable.status, "finished")))
 		.orderBy(desc(runsTable.finished_at))
 		.limit(1);
 

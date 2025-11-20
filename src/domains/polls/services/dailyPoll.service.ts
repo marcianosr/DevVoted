@@ -1,10 +1,10 @@
-import { selectSeededRandom } from "~/lib/seededRandom";
-import { getTodayDateString } from "~/lib/dateUtils";
 import {
 	fetchPollByIdWithOptions,
 	manageDailyPollTransition,
 } from "~/domains/polls/api/queries";
 import type { Poll } from "~/domains/polls/models/poll";
+import { getTodayDateString } from "~/lib/dateUtils";
+import { selectSeededRandom } from "~/lib/seededRandom";
 
 export const getTodayDateSeed = () => getTodayDateString();
 
@@ -27,11 +27,11 @@ export const selectDailyPoll = async (date?: string): Promise<Poll | null> => {
 
 	if (process.env.NODE_ENV === "development") {
 		if (result) {
-			console.log("selectDailyPoll called with date:", date);
-			console.log("Final dateSeed used:", dateSeed);
-			console.log("Selected poll ID:", result.id);
+			console.info("selectDailyPoll called with date:", date);
+			console.info("Final dateSeed used:", dateSeed);
+			console.info("Selected poll ID:", result.id);
 		} else {
-			console.log("No polls available to open");
+			console.info("No polls available to open");
 		}
 	}
 

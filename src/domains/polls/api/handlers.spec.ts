@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import * as queries from "~/domains/polls/api/queries";
-import { createMockPoll, createMockPollArray } from "../factories/poll";
-import { createMockPollOptionArray } from "../factories/pollOption";
+
 import {
 	getAllPollsHandler,
 	getPollByIdHandler,
@@ -9,6 +9,8 @@ import {
 	postPollOptionsHandler,
 	getDailyPollHandler,
 } from "./handlers";
+import { createMockPoll, createMockPollArray } from "../factories/poll";
+import { createMockPollOptionArray } from "../factories/pollOption";
 
 vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchPollById: vi.fn(),
@@ -213,7 +215,6 @@ describe("handlers", () => {
 		});
 
 		it("returns an error when poll with options is not found", async () => {
-			//@ts-ignore
 			vi.mocked(queries.fetchPollByIdWithOptions).mockRejectedValue(
 				new Error("Poll not found")
 			);
@@ -269,9 +270,7 @@ describe("handlers", () => {
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) =>
-						option.id.toString()
-					),
+					selectedOptions: mockOptions.map((option) => option.id.toString()),
 					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
@@ -282,9 +281,7 @@ describe("handlers", () => {
 			);
 			expect(result?.success).toBe(true);
 			if (result?.success) {
-				expect(result.data.message).toBe(
-					"Options submitted successfully"
-				);
+				expect(result.data.message).toBe("Options submitted successfully");
 			}
 		});
 
@@ -299,9 +296,7 @@ describe("handlers", () => {
 
 			expect(result?.success).toBe(false);
 			if (!result?.success) {
-				expect(result.error).toContain(
-					"At least one option must be selected"
-				);
+				expect(result.error).toContain("At least one option must be selected");
 			}
 		});
 
@@ -309,7 +304,7 @@ describe("handlers", () => {
 			const mockOptions = createMockPollOptionArray(4);
 			const result = await postPollOptionsHandler({
 				data: {
-					//@ts-expect-error
+					//@ts-expect-error - testing invalid input
 					pollId: null,
 					selectedOptions: mockOptions.map((option) => option.option),
 				},
@@ -318,9 +313,7 @@ describe("handlers", () => {
 			expect(result.success).toBe(false);
 			// Now validation catches invalid input first, so we get validation errors
 			if (!result.success) {
-				expect(result.error).toContain(
-					"Expected number, received null"
-				);
+				expect(result.error).toContain("Expected number, received null");
 			}
 		});
 
@@ -331,9 +324,7 @@ describe("handlers", () => {
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) =>
-						option.id.toString()
-					),
+					selectedOptions: mockOptions.map((option) => option.id.toString()),
 					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});
@@ -344,9 +335,7 @@ describe("handlers", () => {
 			);
 			expect(result.success).toBe(false);
 			if (!result.success) {
-				expect(result.error).toBe(
-					"You have already answered this poll"
-				);
+				expect(result.error).toBe("You have already answered this poll");
 			}
 		});
 
@@ -374,9 +363,7 @@ describe("handlers", () => {
 			const result = await postPollOptionsHandler({
 				data: {
 					pollId: 123,
-					selectedOptions: mockOptions.map((option) =>
-						option.id.toString()
-					),
+					selectedOptions: mockOptions.map((option) => option.id.toString()),
 					userId: "123e4567-e89b-12d3-a456-426614174000",
 				},
 			});

@@ -232,11 +232,9 @@ type ApplyEffects = {
  */
 const EFFECTS: Record<string, EffectFn> = {
 	// Disables one random wrong option (ESLint Config effect)
-	disableWrongOptions: ({ poll, options, run, hasAnswered }, config) => {
+	disableWrongOptions: ({ poll, options, run, hasAnswered }, _config) => {
 		if (poll.categoryCode === "js" || poll.categoryCode === "ts") {
-			const disabledIds = options
-				.filter((o) => !o.correct)
-				.map((o) => o.id);
+			const disabledIds = options.filter((o) => !o.correct).map((o) => o.id);
 			const randomIdFromDisabled =
 				disabledIds[Math.floor(Math.random() * disabledIds.length)];
 
@@ -289,9 +287,7 @@ const EFFECTS: Record<string, EffectFn> = {
 			renderProps: { coverageBonus: bonusCoverage },
 			coverage: { coverageAdd: bonusCoverage },
 			meta: {
-				notes: [
-					`Random code coverage bonus for ${poll.categoryCode} polls`,
-				],
+				notes: [`Random code coverage bonus for ${poll.categoryCode} polls`],
 			},
 		};
 	},
@@ -339,9 +335,7 @@ const EFFECTS: Record<string, EffectFn> = {
 		// Calculate percentage for display
 		const percentageOfThreshold =
 			requiredCoverage > 0
-				? Math.round(
-						(thresholdInfo.maxCoverage / requiredCoverage) * 100
-					)
+				? Math.round((thresholdInfo.maxCoverage / requiredCoverage) * 100)
 				: 0;
 
 		// If current coverage is below 80% of threshold, try/catch can't save you
@@ -365,9 +359,7 @@ const EFFECTS: Record<string, EffectFn> = {
 					? [
 							`Try/Catch will save your run! (have ${percentageOfThreshold}% of threshold)`,
 						]
-					: [
-							`Try/Catch ready (have ${percentageOfThreshold}% of threshold)`,
-						],
+					: [`Try/Catch ready (have ${percentageOfThreshold}% of threshold)`],
 				badges: isProtected
 					? { "try-catch": "Try/Catch will activate!" }
 					: { "try-catch": "Try/Catch ready" },
@@ -387,7 +379,7 @@ const EFFECTS: Record<string, EffectFn> = {
 		};
 	},
 
-	resetRebuild: ({ poll, options, run, hasAnswered }, config) => {
+	resetRebuild: ({ poll, options, run, hasAnswered }, _config) => {
 		return {
 			view: { poll, options, run, hasAnswered },
 			resetRebuild: true,
@@ -474,8 +466,7 @@ export function applyEffects(
 				},
 				coverage: {
 					coverageAdd:
-						(acc.coverage.coverageAdd ?? 0) +
-						(out.coverage?.coverageAdd ?? 0),
+						(acc.coverage.coverageAdd ?? 0) + (out.coverage?.coverageAdd ?? 0),
 					coverageMult:
 						(acc.coverage.coverageMult ?? 1) *
 						(out.coverage?.coverageMult ?? 1),
@@ -486,22 +477,16 @@ export function applyEffects(
 				protection: {
 					// If any config provides try/catch protection, it's active
 					tryCatch:
-						acc.protection.tryCatch ||
-						out.protection?.tryCatch ||
-						false,
+						acc.protection.tryCatch || out.protection?.tryCatch || false,
 				},
-				reductionCost:
-					(acc.reductionCost ?? 0) + (out.reductionCost ?? 0),
+				reductionCost: (acc.reductionCost ?? 0) + (out.reductionCost ?? 0),
 				resetRebuild: acc.resetRebuild || out.resetRebuild || false,
 				meta: {
 					...acc.meta,
 					...(out.meta?.badges
 						? { badges: { ...acc.meta.badges, ...out.meta.badges } }
 						: {}),
-					notes: [
-						...(acc.meta.notes ?? []),
-						...(out.meta?.notes ?? []),
-					],
+					notes: [...(acc.meta.notes ?? []), ...(out.meta?.notes ?? [])],
 				},
 			};
 		},

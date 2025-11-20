@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { aggregateRunCategoryCoverage } from "./coverageCalculations";
+
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
+
+import { aggregateRunCategoryCoverage } from "./coverageCalculations";
 
 describe("aggregateRunCategoryCoverage", () => {
 	it("returns zero totals for empty array", () => {

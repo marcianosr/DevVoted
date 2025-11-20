@@ -1,20 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { 
-	runFactory, 
-	runToDTO, 
-	runFromDTO, 
-	runsToDTOs, 
-	runsFromDTOs, 
+
+import {
+	runFactory,
+	runToDTO,
+	runFromDTO,
+	runsToDTOs,
+	runsFromDTOs,
 	createRun,
+	createMockRun,
+	createMockRunRecord,
 } from "./run";
-import { createMockRun, createMockRunRecord } from "./run";
 
 describe("Run Model", () => {
 	describe("runToDTO", () => {
 		it("converts database record to DTO", () => {
 			const record = createMockRunRecord();
 			const result = runToDTO(record);
-			
+
 			expect(result.id).toBe(record.id);
 			expect(result.userId).toBe(record.user_id);
 			expect(result.status).toBe(record.status);
@@ -44,7 +46,7 @@ describe("Run Model", () => {
 		it("converts DTO to database record", () => {
 			const dto = createMockRun();
 			const result = runFromDTO(dto);
-			
+
 			expect(result.id).toBe(dto.id);
 			expect(result.user_id).toBe(dto.userId);
 			expect(result.status).toBe(dto.status);
@@ -57,12 +59,9 @@ describe("Run Model", () => {
 
 	describe("runsToDTOs", () => {
 		it("converts array of records to DTOs", () => {
-			const records = [
-				createMockRunRecord(),
-				createMockRunRecord({ id: 2 }),
-			];
+			const records = [createMockRunRecord(), createMockRunRecord({ id: 2 })];
 			const result = runsToDTOs(records);
-			
+
 			expect(result).toHaveLength(2);
 			expect(result[0].id).toBe(1);
 			expect(result[1].id).toBe(2);
@@ -76,12 +75,9 @@ describe("Run Model", () => {
 
 	describe("runsFromDTOs", () => {
 		it("converts array of DTOs to records", () => {
-			const dtos = [
-				createMockRun(),
-				createMockRun({ id: 2 }),
-			];
+			const dtos = [createMockRun(), createMockRun({ id: 2 })];
 			const result = runsFromDTOs(dtos);
-			
+
 			expect(result).toHaveLength(2);
 			expect(result[0].id).toBe(1);
 			expect(result[1].id).toBe(2);
@@ -96,7 +92,7 @@ describe("Run Model", () => {
 	describe("createRun", () => {
 		it("creates a new run with default values", () => {
 			const result = createRun();
-			
+
 			expect(result.id).toBe(0);
 			expect(result.userId).toBe("");
 			expect(result.status).toBe("active");
@@ -111,7 +107,7 @@ describe("Run Model", () => {
 				userId: "custom-user-id",
 				status: "finished",
 			});
-			
+
 			expect(result.userId).toBe("custom-user-id");
 			expect(result.status).toBe("finished");
 			expect(result.id).toBe(0);

@@ -1,5 +1,6 @@
+import { clsx } from "clsx";
+
 import type { PollScoreBreakdown } from "~/domains/score/services/score.service";
-import clsx from "clsx";
 
 type ScoreBreakdownSidebarProps = {
 	breakdown: PollScoreBreakdown | null;
@@ -43,19 +44,13 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 				<>
 					<div className="space-y-2 text-sm">
 						<div className="flex justify-between">
-							<span className="text-gray-400">
-								Base Coverage score:
-							</span>
-							<span className="text-white">
-								+{baseCoverage.toFixed(1)}%
-							</span>
+							<span className="text-gray-400">Base Coverage score:</span>
+							<span className="text-white">+{baseCoverage.toFixed(1)}%</span>
 						</div>
 
 						{streakBonus > 0 && (
 							<div className="flex justify-between">
-								<span className="text-gray-400">
-									Streak Bonus ({streak}):
-								</span>
+								<span className="text-gray-400">Streak Bonus ({streak}):</span>
 								<span className="text-green-400">
 									+{streakBonus.toFixed(1)}%
 								</span>
@@ -64,9 +59,7 @@ export const ScoreBreakdownSidebar: React.FC<ScoreBreakdownSidebarProps> = ({
 
 						{configBonus !== 0 && (
 							<div className="flex justify-between">
-								<span className="text-gray-400">
-									Config Effects:
-								</span>
+								<span className="text-gray-400">Config Effects:</span>
 								<span
 									className={clsx({
 										"text-green-400": configBonus > 0,

@@ -1,10 +1,13 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { SecondaryButton } from "~/ui/SecondaryButton";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+
+import { ConfirmDialog } from "~/components/ConfirmDialog";
 import { finishRunFn } from "~/domains/runs/api/runs";
 import { runQueryKeys } from "~/domains/shared/queryKeys";
-import { ConfirmDialog } from "~/components/ConfirmDialog";
+import { SecondaryButton } from "~/ui/SecondaryButton";
+
 export const Route = createFileRoute("/_authed/game-over")({
 	component: RouteComponent,
 });
@@ -29,7 +32,8 @@ function RouteComponent() {
 	});
 
 	const handleStartNewRunClick = () => {
-		if (activeRun && activeRun.success && activeRun.data?.id) setIsDialogOpen(true);
+		if (activeRun && activeRun.success && activeRun.data?.id)
+			setIsDialogOpen(true);
 	};
 	const handleConfirmFinishRun = () => finishRunMutation.mutate();
 	const handleCancelFinishRun = () => setIsDialogOpen(false);
@@ -69,7 +73,7 @@ function RouteComponent() {
 			<h1 className="text-3xl">Game over!</h1>
 
 			<p>Thank you for playing!</p>
-			<p>Your results has been saved.</p>
+			<p>Your results have been saved.</p>
 
 			<SecondaryButton
 				onClick={handleStartNewRunClick}

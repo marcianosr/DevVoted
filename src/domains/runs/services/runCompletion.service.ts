@@ -1,3 +1,10 @@
+import { getPollsSeenInRun } from "~/domains/polls/api/queries";
+import {
+	calculateThresholdInfo,
+	type ThresholdInfo,
+	CI_GATES,
+} from "~/domains/runs/services/thresholdCalculator.service";
+
 import {
 	getRunForCompletion,
 	completeRunWithThresholdFailure,
@@ -5,12 +12,6 @@ import {
 	createCategoryLeaderboardEntries,
 	getRunWithCategoryXp,
 } from "../api/queries";
-import {
-	calculateThresholdInfo,
-	type ThresholdInfo,
-	CI_GATES,
-} from "~/domains/runs/services/thresholdCalculator.service";
-import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 
 // End run mid-game when coverage threshold is not met (preserves progress in final_* columns)
 export const endRunForThresholdFailure = async (runId: number) => {
@@ -21,8 +22,7 @@ export const endRunForThresholdFailure = async (runId: number) => {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	const { bestStreak, totalCoverage, totalPollsAnswered } =
-		await getRunStats(runId);
+	const { totalCoverage } = await getRunStats(runId);
 
 	// Complete the run and reset categories
 	await completeRunWithThresholdFailure(runId, "threshold_not_met");
@@ -32,9 +32,7 @@ export const endRunForThresholdFailure = async (runId: number) => {
 		run.user_id,
 		runId,
 		run.season_id,
-		totalCoverage,
-		totalPollsAnswered,
-		bestStreak
+		totalCoverage
 	);
 
 	return { runEnded: true, reason: "threshold_not_met" };
@@ -49,8 +47,8 @@ export const endRunManually = async (runId: number) => {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	const { totalCoverage, totalPollsAnswered, bestStreak } =
-		await getRunStats(runId);
+	const { totalCoverage } = await getRunStats(runId);
+	await getRunStats(runId);
 
 	await completeRunWithThresholdFailure(runId, "manual_break_off");
 
@@ -58,9 +56,7 @@ export const endRunManually = async (runId: number) => {
 		run.user_id,
 		runId,
 		run.season_id,
-		totalCoverage,
-		totalPollsAnswered,
-		bestStreak
+		totalCoverage
 	);
 
 	return { runEnded: true, reason: "manual_break_off" };
@@ -101,8 +97,7 @@ export const completeRunWithVictory = async (runId: number) => {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	const { totalCoverage, totalPollsAnswered, bestStreak } =
-		await getRunStats(runId);
+	const { totalCoverage } = await getRunStats(runId);
 
 	await completeRunWithThresholdFailure(runId, "victory");
 
@@ -110,9 +105,7 @@ export const completeRunWithVictory = async (runId: number) => {
 		run.user_id,
 		runId,
 		run.season_id,
-		totalCoverage,
-		totalPollsAnswered,
-		bestStreak
+		totalCoverage
 	);
 
 	return { runEnded: true, reason: "victory" };

@@ -1,13 +1,14 @@
+import { applyEffects } from "~/domains/configs/data/configs";
+import { getPollsSeenInRun } from "~/domains/polls/api/queries";
+import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import {
 	orchestrateScoreCalculation,
 	ScoreCalculation,
 } from "~/domains/score/services/score.service";
+import { CategoryCode } from "~/domains/shared/categories";
+
 import { awardCoverageToRun } from "../api/queries";
 import { Run } from "../models/run";
-import { CategoryCode } from "~/domains/shared/categories";
-import { applyEffects } from "~/domains/configs/data/configs";
-import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
-import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 
 type IncrementProgress = {
 	categoryCode: CategoryCode;

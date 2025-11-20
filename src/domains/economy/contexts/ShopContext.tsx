@@ -53,9 +53,7 @@ export const ShopProvider = ({
 		removeConfigFromRun,
 	};
 
-	return (
-		<ShopContext.Provider value={value}>{children}</ShopContext.Provider>
-	);
+	return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 };
 
 export const useShopContext = () => {

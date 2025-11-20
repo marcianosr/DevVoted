@@ -1,17 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import {
 	getCurrentSeason,
-	getAllSeasons,
-	getSeasonById,
 	createSeason,
 	startSeason,
 	finishSeason,
-	archiveSeason,
 	isSeasonActive,
-	isSeasonCurrent,
 	getSeasonForNewRun,
 } from "./seasonService";
+import * as seasonQueries from "../api/queries";
 import { createMockSeason } from "../models/season";
+// Import the mocked queries
 
 // Mock the queries module
 vi.mock("../api/queries", () => ({
@@ -22,9 +21,6 @@ vi.mock("../api/queries", () => ({
 	updateSeason: vi.fn(),
 }));
 
-// Import the mocked queries
-import * as seasonQueries from "../api/queries";
-
 describe("Season Service", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -33,9 +29,7 @@ describe("Season Service", () => {
 	describe("getCurrentSeason", () => {
 		it("returns current season from queries", async () => {
 			const mockSeason = createMockSeason();
-			vi.mocked(seasonQueries.findCurrentSeason).mockResolvedValue(
-				mockSeason
-			);
+			vi.mocked(seasonQueries.findCurrentSeason).mockResolvedValue(mockSeason);
 
 			const result = await getCurrentSeason();
 
@@ -116,12 +110,8 @@ describe("Season Service", () => {
 				status: "active",
 			});
 
-			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(
-				upcomingSeason
-			);
-			vi.mocked(seasonQueries.updateSeason).mockResolvedValue(
-				activeSeason
-			);
+			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(upcomingSeason);
+			vi.mocked(seasonQueries.updateSeason).mockResolvedValue(activeSeason);
 
 			const result = await startSeason(1);
 
@@ -133,9 +123,7 @@ describe("Season Service", () => {
 
 		it("throws error when starting non-upcoming season", async () => {
 			const activeSeason = createMockSeason({ status: "active" });
-			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(
-				activeSeason
-			);
+			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(activeSeason);
 
 			await expect(startSeason(1)).rejects.toThrow(
 				"Cannot start season with status 'active'. Only upcoming seasons can be started."
@@ -147,9 +135,7 @@ describe("Season Service", () => {
 				status: "upcoming",
 				startDate: new Date(Date.now() + 86400000), // Tomorrow
 			});
-			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(
-				futureSeason
-			);
+			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(futureSeason);
 
 			await expect(startSeason(1)).rejects.toThrow(
 				"Cannot start season before its scheduled start date"
@@ -165,12 +151,8 @@ describe("Season Service", () => {
 				status: "finished",
 			});
 
-			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(
-				activeSeason
-			);
-			vi.mocked(seasonQueries.updateSeason).mockResolvedValue(
-				finishedSeason
-			);
+			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(activeSeason);
+			vi.mocked(seasonQueries.updateSeason).mockResolvedValue(finishedSeason);
 
 			const result = await finishSeason(1);
 
@@ -182,9 +164,7 @@ describe("Season Service", () => {
 
 		it("throws error when finishing non-active season", async () => {
 			const upcomingSeason = createMockSeason({ status: "upcoming" });
-			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(
-				upcomingSeason
-			);
+			vi.mocked(seasonQueries.findSeasonById).mockResolvedValue(upcomingSeason);
 
 			await expect(finishSeason(1)).rejects.toThrow(
 				"Cannot finish season with status 'upcoming'. Only active seasons can be finished."

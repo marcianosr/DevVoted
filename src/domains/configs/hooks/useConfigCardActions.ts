@@ -1,9 +1,10 @@
 import { Config } from "~/domains/configs/models/config";
-import { Run } from "~/domains/runs/models/run";
 import {
 	canAddConfigToRun,
 	hasConfig,
 } from "~/domains/economy/services/configManager.service";
+import { Run } from "~/domains/runs/models/run";
+
 import { useShopContext } from "../../economy/contexts/ShopContext";
 
 type UseConfigCardActionsOptions = {
@@ -17,8 +18,7 @@ export const useConfigCardActions = ({
 	config,
 	mode,
 }: UseConfigCardActionsOptions) => {
-	const { isShopOpen, addConfigToRun, removeConfigFromRun } =
-		useShopContext();
+	const { isShopOpen, addConfigToRun, removeConfigFromRun } = useShopContext();
 
 	const configInRun = hasConfig(run, config.id);
 	const canAdd = canAddConfigToRun(run, config);

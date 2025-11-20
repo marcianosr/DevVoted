@@ -7,13 +7,13 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Category-based theme system**: Polls now dynamically display colors based on their category
-    - HTML polls → Vermillion (orange-red)
-    - CSS polls → Cerulean (blue)
-    - JavaScript polls → Saffron (yellow)
-    - TypeScript polls → Lavender (purple)
-    - General Frontend polls → Fuchsia (pink)
-    - React polls → Celadon (green)
-    - Git polls → Pewter (gray)
+  - HTML polls → Vermillion (orange-red)
+  - CSS polls → Cerulean (blue)
+  - JavaScript polls → Saffron (yellow)
+  - TypeScript polls → Lavender (purple)
+  - General Frontend polls → Fuchsia (pink)
+  - React polls → Celadon (green)
+  - Git polls → Pewter (gray)
 - Theme utility classes (`.text-theme`, `.bg-theme`, `.border-theme`) that automatically adapt to poll category
 - Category-aware meter bars that change color based on poll category
 
@@ -41,9 +41,9 @@ All notable changes to this project will be documented in this file.
 - **Run Reset Anytime**: Reset current run without losing overall progress
 - **Smarter Shop Management**: Rebuild costs only increase on CI gate progression
 - **Enhanced Configuration System**:
-    - Improved bonus calculations with better mathematical foundations
-    - More granular tracking with decimal percentage coverage
-    - Random configuration generation with comprehensive test coverage
+  - Improved bonus calculations with better mathematical foundations
+  - More granular tracking with decimal percentage coverage
+  - Random configuration generation with comprehensive test coverage
 
 ### Changed
 

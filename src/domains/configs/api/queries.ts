@@ -1,11 +1,12 @@
+import { eq } from "drizzle-orm";
+
 import { db } from "~/database/db";
 import { runsTable } from "~/database/schema";
-import { eq } from "drizzle-orm";
-import { runFactory } from "~/domains/runs/models/run";
 import {
 	addConfigsToRun,
 	removeConfigsFromRun,
 } from "~/domains/economy/services/configManager.service";
+import { runFactory } from "~/domains/runs/models/run";
 
 export const getRunByIdQuery = async (runId: number) => {
 	const [runRecord] = await db

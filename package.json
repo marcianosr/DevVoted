@@ -22,6 +22,10 @@
 		"test:coverage": "vitest run --coverage",
 		"test:ui": "vitest --ui",
 		"test:sonar": "vitest run --coverage",
+		"lint": "eslint src --ext .ts,.tsx",
+		"lint:fix": "eslint src --ext .ts,.tsx --fix",
+		"format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+		"format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
 		"sonar:scan": "node sonar-scanner.cjs",
 		"sonar:start": "docker compose up -d",
 		"sonar:stop": "docker compose down",
@@ -33,7 +37,8 @@
 		"db:generate": "npx drizzle-kit generate",
 		"db:migrate": "npx drizzle-kit migrate",
 		"db:refresh": "npm run db:reset && npm run db:generate && npm run db:push && npm run db:seed",
-		"export:firebase": "node scripts/export-polls.js"
+		"export:firebase": "node scripts/export-polls.js",
+		"prepare": "husky"
 	},
 	"author": "marciano_schildmeijer@live.nl",
 	"license": "ISC",
@@ -59,21 +64,33 @@
 		"type-fest": "^5.0.1"
 	},
 	"devDependencies": {
+		"@eslint/eslintrc": "^3.3.1",
 		"@tailwindcss/vite": "^4.1.14",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.0",
 		"@testing-library/user-event": "^14.6.1",
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",
+		"@typescript-eslint/eslint-plugin": "^8.47.0",
+		"@typescript-eslint/parser": "^8.47.0",
 		"@vitejs/plugin-react": "^5.0.4",
 		"@vitest/coverage-v8": "^3.2.4",
 		"autoprefixer": "^10.4.20",
 		"dotenv": "^17.2.3",
 		"drizzle-kit": "^0.31.5",
 		"drizzle-orm": "^0.44.6",
+		"eslint": "^9.39.1",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-import-resolver-typescript": "^4.4.4",
+		"eslint-plugin-import": "^2.32.0",
+		"eslint-plugin-react": "^7.37.5",
+		"eslint-plugin-react-hooks": "^7.0.1",
+		"husky": "^9.1.7",
 		"jest-sonar-reporter": "^2.0.0",
 		"jsdom": "^27.0.0",
+		"lint-staged": "^16.2.7",
 		"postcss": "^8.5.1",
+		"prettier": "^3.6.2",
 		"sonarqube-scanner": "^4.3.2",
 		"tailwindcss": "^4.1.14",
 		"tsx": "^4.20.6",
@@ -81,5 +98,14 @@
 		"vite": "^7.1.9",
 		"vite-tsconfig-paths": "^5.1.4",
 		"vitest": "^3.2.4"
+	},
+	"lint-staged": {
+		"*.{ts,tsx}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{json,md}": [
+			"prettier --write"
+		]
 	}
 }

@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+
 import { getLastRunForGameOver } from "~/domains/runs/api/runs";
-import { runQueryKeys } from "~/domains/shared/queryKeys";
 import type { CategoryCode } from "~/domains/shared/categories";
+import { runQueryKeys } from "~/domains/shared/queryKeys";
 
 type LastRunData = {
 	run: {

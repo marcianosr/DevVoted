@@ -1,11 +1,12 @@
 import { InferSelectModel } from "drizzle-orm";
+
 import { pollResponseOptionsTable } from "@/src/database/schema";
 
 export type PollResponseOptionRecord = InferSelectModel<
 	typeof pollResponseOptionsTable
 >;
 
-export type PollResponseOptionInsert = Omit<PollResponseOptionRecord, 'id'>;
+export type PollResponseOptionInsert = Omit<PollResponseOptionRecord, "id">;
 
 export type PollResponseOption = {
 	responseId: number;

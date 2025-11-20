@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { calculateRerollCost } from "./reroll.service";
+
 import { STORAGE_UNITS } from "~/lib/storage";
+
+import { calculateRerollCost } from "./reroll.service";
 
 describe("reroll.service", () => {
 	describe("calculateRerollCost", () => {

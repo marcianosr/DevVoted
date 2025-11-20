@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
+
 import {
 	pollSubmissionSchema,
-	pollIdParamSchema,
 	createPollSchema,
-	pollOptionSchema,
 	userResponseSchema,
 } from "./schemas";
 

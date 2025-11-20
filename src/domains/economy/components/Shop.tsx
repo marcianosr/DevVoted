@@ -1,13 +1,14 @@
-import { ConfigCard } from "../../configs/components/ConfigCard";
-import { Run } from "~/domains/runs/models/run";
 import { Config } from "~/domains/configs/models/config";
-import { useConfigCardActions } from "../../configs/hooks/useConfigCardActions";
-import { calculateRerollCost } from "../services/reroll.service";
-import { getStorageInfo } from "../services/configManager.service";
-import { formatStorage } from "~/lib/storage";
+import { Run } from "~/domains/runs/models/run";
 import { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
+import { formatStorage } from "~/lib/storage";
 import { SecondaryButton } from "~/ui/SecondaryButton";
+
+import { ConfigCard } from "../../configs/components/ConfigCard";
+import { useConfigCardActions } from "../../configs/hooks/useConfigCardActions";
+import { getStorageInfo } from "../services/configManager.service";
+import { calculateRerollCost } from "../services/reroll.service";
 
 type ShopProps = {
 	activeRun: Run;
@@ -55,12 +56,9 @@ export const Shop = ({
 		<section>
 			<div className="space-y-8 flex justify-between items-start mt-12">
 				<div>
-					<h2 className="text-4xl text-theme mb-2">
-						Shop (Package manager)
-					</h2>
+					<h2 className="text-4xl text-theme mb-2">Shop (Package manager)</h2>
 					<p>
-						Improve your run by installing new configs to your
-						storage deck!
+						Improve your run by installing new configs to your storage deck!
 					</p>
 				</div>
 			</div>
@@ -86,9 +84,7 @@ export const Shop = ({
 				<SecondaryButton onClick={onReroll} disabled={!canReroll}>
 					Rebuild ({formatStorage(rerollCost)})
 				</SecondaryButton>
-				<small>
-					Not the config you were looking for? Try rebuilding!
-				</small>
+				<small>Not the config you were looking for? Try rebuilding!</small>
 			</div>
 		</section>
 	);

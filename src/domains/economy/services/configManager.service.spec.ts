@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+
+import { createConfig } from "~/domains/configs/factories/config";
 import {
 	addConfigsToRun,
 	canAddConfigToRun,
@@ -7,7 +9,6 @@ import {
 	removeConfigsFromRun,
 } from "~/domains/economy/services/configManager.service";
 import { createMockRun } from "~/domains/runs/models/run";
-import { createConfig } from "~/domains/configs/factories/config";
 import { STORAGE_UNITS } from "~/lib/storage";
 
 describe("configStorage", () => {

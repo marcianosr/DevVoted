@@ -10,15 +10,15 @@ type PollAnswerReviewProps = {
 };
 
 export const PollAnswerReview = ({
-	poll,
+	// poll,
 	options,
 	selectedOptionIds,
 	correctOptionIds,
-	isCorrect,
+	// isCorrect,
 }: PollAnswerReviewProps) => {
-	const correctCount = selectedOptionIds.filter((id) =>
-		correctOptionIds.includes(id)
-	).length;
+	// const correctCount = selectedOptionIds.filter((id) =>
+	// 	correctOptionIds.includes(id)
+	// ).length;
 
 	const getOptionStyle = (option: PollOption) => {
 		const isSelected = selectedOptionIds.includes(option.id);
@@ -61,9 +61,7 @@ export const PollAnswerReview = ({
 
 	return (
 		<div className="mb-6">
-			<h3 className="text-theme font-bold mb-4 text-lg">
-				Review your answer
-			</h3>
+			<h3 className="text-theme font-bold mb-4 text-lg">Review your answer</h3>
 
 			<div className="space-y-2">
 				{options.map((option) => {
@@ -75,9 +73,7 @@ export const PollAnswerReview = ({
 							key={option.id}
 							className={`p-3 border ${style.border} ${style.bg} flex items-start gap-3`}
 						>
-							<span className="text-xl flex-shrink-0">
-								{style.icon}
-							</span>
+							<span className="text-xl flex-shrink-0">{style.icon}</span>
 							<div className="flex-1">
 								<p className={`${style.text}`}>
 									{option.option}
