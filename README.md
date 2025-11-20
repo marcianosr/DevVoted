@@ -1,5 +1,48 @@
 # DevVoted
 
+A developer quiz game combining trivia with roguelike mechanics. Test your knowledge across various programming topics while strategically managing resources and building configurations.
+
+## Quick Start
+
+1. Clone the repository
+2. Copy `.env.sample` to `.env` and fill in your Supabase credentials
+3. Install dependencies: `npm install`
+4. Set up database: `npm run db:refresh`
+5. Start development server: `npm run dev`
+
+Visit http://localhost:3005 to play!
+
+## Tech Stack
+
+- TanStack Start (React-based full-stack framework)
+- PostgreSQL + Drizzle ORM
+- Supabase Auth
+- Tailwind CSS
+- Vitest + Testing Library
+
+## Database Migrations
+
+### Local Development
+
+1. Make schema changes in `src/database/schema.ts`
+2. Generate migration: `npm run db:generate`
+3. Apply migration: `npm run db:push`
+
+### Production Deployment
+
+**Manual Migration Approach** (Current):
+
+1. Generate migration locally: `npm run db:generate`
+2. Review the generated SQL in `drizzle/` folder
+3. Apply to production using psql:
+    ```bash
+    psql "postgresql://postgres.smrkmigjsnhrhwrxobjc:[PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres" \
+      -f drizzle/XXXX_migration_name.sql
+    ```
+4. Push code changes to `main` branch
+
+**Note:** Replace `[PASSWORD]` with your Supabase database password and `XXXX_migration_name.sql` with the actual migration filename.
+
 ### Production release
 
 - Update the db if changes were made by connecting to the production server and running DB scripts

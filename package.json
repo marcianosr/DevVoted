@@ -1,8 +1,17 @@
 {
-	"name": "tanstack-start-example-supabase-basic",
+	"name": "devvoted",
 	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
+	"description": "DevVoted - A developer quiz game with roguelike mechanics",
+	"keywords": [
+		"quiz",
+		"game",
+		"developer",
+		"roguelike",
+		"trivia",
+		"frontend",
+		"backend",
+		"whimsical"
+	],
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
@@ -26,8 +35,7 @@
 		"db:refresh": "npm run db:reset && npm run db:generate && npm run db:push && npm run db:seed",
 		"export:firebase": "node scripts/export-polls.js"
 	},
-	"keywords": [],
-	"author": "",
+	"author": "marciano_schildmeijer@live.nl",
 	"license": "ISC",
 	"dependencies": {
 		"@sentry/react": "^10.22.0",
