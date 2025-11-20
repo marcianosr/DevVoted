@@ -18,7 +18,7 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 	getPollHistory: vi.fn(),
 	trackPollView: vi.fn(),
 	trackPollAnswer: vi.fn(),
-	getTotalPollsSeenByUser: vi.fn(),
+	getPollsSeenInRun: vi.fn(),
 }));
 
 vi.mock("~/domains/polls/services/processPollAnswer.service", () => ({
@@ -31,6 +31,10 @@ vi.mock("~/domains/polls/services/dailyPoll.service", () => ({
 
 vi.mock("date-fns", () => ({
 	isSameDay: vi.fn(),
+}));
+
+vi.mock("~/domains/runs/api/handlers", () => ({
+	getUserActiveRun: vi.fn(),
 }));
 
 // Tests service layer logic that wraps query methods and structures return data
@@ -229,10 +233,16 @@ describe("handlers", () => {
 	});
 
 	describe("postPollOptions", () => {
-		beforeEach(() => {
+		beforeEach(async () => {
 			vi.resetAllMocks();
-			// Mock getTotalPollsSeenByUser (used by processPollAnswer internally)
-			vi.mocked(queries.getTotalPollsSeenByUser).mockResolvedValue(10);
+			// Mock getPollsSeenInRun (used by processPollAnswer internally)
+			vi.mocked(queries.getPollsSeenInRun).mockResolvedValue(10);
+			// Mock active run
+			const { getUserActiveRun } = await import("~/domains/runs/api/handlers");
+			vi.mocked(getUserActiveRun).mockResolvedValue({
+				success: true,
+				data: { id: 1 } as any,
+			});
 		});
 
 		it("posts the selected options to the backend", async () => {
@@ -381,8 +391,14 @@ describe("handlers", () => {
 	});
 
 	describe("getDailyPoll - poll view tracking deduplication", () => {
-		beforeEach(() => {
+		beforeEach(async () => {
 			vi.clearAllMocks();
+			// Mock active run for all tests
+			const { getUserActiveRun } = await import("~/domains/runs/api/handlers");
+			vi.mocked(getUserActiveRun).mockResolvedValue({
+				success: true,
+				data: { id: 1 } as any,
+			});
 		});
 
 		it("tracks poll view on first view (no history)", async () => {
@@ -409,8 +425,8 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(queries.getPollHistory).toHaveBeenCalledWith(userId, 64);
-			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 64);
+			expect(queries.getPollHistory).toHaveBeenCalledWith(1, 64);
+			expect(queries.trackPollView).toHaveBeenCalledWith(1, userId, 64);
 			expect(result.success).toBe(true);
 		});
 
@@ -431,6 +447,7 @@ describe("handlers", () => {
 
 			vi.mocked(queries.getPollHistory).mockResolvedValue({
 				id: 1,
+				run_id: 1,
 				user_id: userId,
 				poll_id: 100,
 				times_seen: 1,
@@ -447,8 +464,8 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(queries.getPollHistory).toHaveBeenCalledWith(userId, 100);
-			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 100);
+			expect(queries.getPollHistory).toHaveBeenCalledWith(1, 100);
+			expect(queries.trackPollView).toHaveBeenCalledWith(1, userId, 100);
 			expect(result.success).toBe(true);
 		});
 
@@ -470,6 +487,7 @@ describe("handlers", () => {
 
 			vi.mocked(queries.getPollHistory).mockResolvedValue({
 				id: 1,
+				run_id: 1,
 				user_id: userId,
 				poll_id: 64,
 				times_seen: 1,
@@ -486,7 +504,7 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(queries.getPollHistory).toHaveBeenCalledWith(userId, 64);
+			expect(queries.getPollHistory).toHaveBeenCalledWith(1, 64);
 			expect(queries.trackPollView).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 		});
@@ -509,6 +527,7 @@ describe("handlers", () => {
 
 			vi.mocked(queries.getPollHistory).mockResolvedValue({
 				id: 1,
+				run_id: 1,
 				user_id: userId,
 				poll_id: 64,
 				times_seen: 1,
@@ -525,8 +544,8 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(queries.getPollHistory).toHaveBeenCalledWith(userId, 64);
-			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 64);
+			expect(queries.getPollHistory).toHaveBeenCalledWith(1, 64);
+			expect(queries.trackPollView).toHaveBeenCalledWith(1, userId, 64);
 			expect(result.success).toBe(true);
 		});
 
@@ -558,11 +577,12 @@ describe("handlers", () => {
 			});
 
 			expect(queries.trackPollView).toHaveBeenCalledTimes(1);
-			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 64);
+			expect(queries.trackPollView).toHaveBeenCalledWith(1, userId, 64);
 
 			// Second call - history exists with today's date
 			vi.mocked(queries.getPollHistory).mockResolvedValueOnce({
 				id: 1,
+				run_id: 1,
 				user_id: userId,
 				poll_id: 64,
 				times_seen: 1,
@@ -582,6 +602,7 @@ describe("handlers", () => {
 			// Third call - still today
 			vi.mocked(queries.getPollHistory).mockResolvedValueOnce({
 				id: 1,
+				run_id: 1,
 				user_id: userId,
 				poll_id: 64,
 				times_seen: 1,
@@ -624,7 +645,7 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 64);
+			expect(queries.trackPollView).toHaveBeenCalledWith(1, userId, 64);
 
 			// Second poll (different poll_id) - no history
 			vi.mocked(getDailyPollWithOptions).mockResolvedValueOnce({
@@ -639,7 +660,7 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(queries.trackPollView).toHaveBeenCalledWith(userId, 100);
+			expect(queries.trackPollView).toHaveBeenCalledWith(1, userId, 100);
 			expect(queries.trackPollView).toHaveBeenCalledTimes(2);
 		});
 

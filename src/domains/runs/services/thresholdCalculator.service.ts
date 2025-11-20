@@ -149,7 +149,7 @@ export type ThresholdInfo = {
  * Determines the current round based on total polls seen
  * Rounds are organized in sets of POLLS_PER_ROUND polls (CI gates at polls 5, 10, 15, etc.)
  *
- * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
+ * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
  * @returns Current round number (1-based, minimum 1)
  */
 export const getCurrentRound = (totalPollsSeen: number): number => {
@@ -160,7 +160,7 @@ export const getCurrentRound = (totalPollsSeen: number): number => {
 /**
  * Determines the position within the current round (1-POLLS_PER_ROUND)
  *
- * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
+ * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
  * @returns Poll position within round (1-5)
  */
 export const getPollInRound = (totalPollsSeen: number): number => {
@@ -171,7 +171,7 @@ export const getPollInRound = (totalPollsSeen: number): number => {
 /**
  * Checks if the current poll is a threshold check poll (every POLLS_PER_ROUND poll)
  *
- * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
+ * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
  * @returns True if this is a threshold check poll (polls 5, 10, 15, etc.)
  */
 export const isThresholdCheckPoll = (totalPollsSeen: number): boolean => {
@@ -244,7 +244,7 @@ const evaluateRequirement = (
  * Evaluates gate requirements with OR/AND logic
  *
  * @param categoryCoverageData - Array of category coverage data (for gate evaluation)
- * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
+ * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
  * @returns Threshold information
  */
 export const calculateThresholdInfo = (

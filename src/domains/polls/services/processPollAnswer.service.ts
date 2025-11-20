@@ -3,7 +3,7 @@ import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion
 import {
 	createPollResponse,
 	fetchPollByIdWithOptions,
-	getTotalPollsSeenByUser,
+	getPollsSeenInRun,
 } from "~/domains/polls/api/queries";
 import {
 	calculateThresholdInfo,
@@ -84,8 +84,8 @@ export const processPollAnswer = async (
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
-	// Fetch total polls seen for threshold calculation
-	const totalPollsSeen = await getTotalPollsSeenByUser(userId);
+	// Fetch total polls seen in current run for threshold calculation
+	const totalPollsSeen = await getPollsSeenInRun(activeRun.id);
 
 	// Calculate threshold based on category coverage data and seen polls
 	const thresholdInfo = calculateThresholdInfo(

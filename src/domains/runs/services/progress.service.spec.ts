@@ -5,19 +5,19 @@ import { awardCoverageToRun } from "../api/queries";
 import { createMockRun } from "../models/run";
 import { createMockRunCategoryCoverage } from "../models/runCategoryCoverage";
 import { createPoll } from "~/domains/polls/models/poll";
-import { getTotalPollsSeenByUser } from "~/domains/polls/api/queries";
+import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 
 vi.mock("~/domains/score/services/score.service");
 vi.mock("../api/queries");
 vi.mock("~/domains/polls/api/queries", () => ({
-	getTotalPollsSeenByUser: vi.fn(),
+	getPollsSeenInRun: vi.fn(),
 }));
 
 describe("incrementRunProgress", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Default mock: totalPollsSeen equals totalPollsAnswered
-		vi.mocked(getTotalPollsSeenByUser).mockResolvedValue(5);
+		// Default mock: pollsSeenInRun equals totalPollsAnswered
+		vi.mocked(getPollsSeenInRun).mockResolvedValue(5);
 	});
 
 	const createTestPollContext = (categoryCode: string) => ({

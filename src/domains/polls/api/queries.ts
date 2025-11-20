@@ -172,15 +172,15 @@ export const manageDailyPollTransition = async (
 };
 
 /**
- * Get poll history record for a specific user and poll
+ * Get poll history record for a specific run and poll
  */
-export const getPollHistory = async (userId: string, pollId: number) => {
+export const getPollHistory = async (runId: number, pollId: number) => {
 	const [record] = await db
 		.select()
 		.from(pollHistoryTable)
 		.where(
 			and(
-				eq(pollHistoryTable.user_id, userId),
+				eq(pollHistoryTable.run_id, runId),
 				eq(pollHistoryTable.poll_id, pollId)
 			)
 		);
@@ -189,17 +189,19 @@ export const getPollHistory = async (userId: string, pollId: number) => {
 };
 
 /**
- * Track when a user views a poll
+ * Track when a user views a poll within a specific run
  * - First view: Creates new record with times_seen=1
  * - Subsequent views: Increments times_seen, updates last_seen_at
  */
 export const trackPollView = async (
+	runId: number,
 	userId: string,
 	pollId: number
 ): Promise<void> => {
 	await db
 		.insert(pollHistoryTable)
 		.values({
+			run_id: runId,
 			user_id: userId,
 			poll_id: pollId,
 			times_seen: 1,
@@ -208,7 +210,7 @@ export const trackPollView = async (
 			last_seen_at: new Date(),
 		})
 		.onConflictDoUpdate({
-			target: [pollHistoryTable.user_id, pollHistoryTable.poll_id],
+			target: [pollHistoryTable.run_id, pollHistoryTable.poll_id],
 			set: {
 				times_seen: sql`${pollHistoryTable.times_seen} + 1`,
 				last_seen_at: new Date(),
@@ -217,18 +219,20 @@ export const trackPollView = async (
 };
 
 /**
- * Track when a user answers a poll
+ * Track when a user answers a poll within a specific run
  * - Increments times_answered counter
  * - Updates last_answered_at timestamp
  * - Creates record if user never viewed the poll (edge case)
  */
 export const trackPollAnswer = async (
+	runId: number,
 	userId: string,
 	pollId: number
 ): Promise<void> => {
 	await db
 		.insert(pollHistoryTable)
 		.values({
+			run_id: runId,
 			user_id: userId,
 			poll_id: pollId,
 			times_seen: 1,
@@ -238,7 +242,7 @@ export const trackPollAnswer = async (
 			last_answered_at: new Date(),
 		})
 		.onConflictDoUpdate({
-			target: [pollHistoryTable.user_id, pollHistoryTable.poll_id],
+			target: [pollHistoryTable.run_id, pollHistoryTable.poll_id],
 			set: {
 				times_answered: sql`${pollHistoryTable.times_answered} + 1`,
 				last_answered_at: new Date(),
@@ -247,19 +251,17 @@ export const trackPollAnswer = async (
 };
 
 /**
- * Get total number of unique polls seen by a user across all time
+ * Get total number of unique polls seen in a specific run
  * Each unique poll counts once (regardless of times_seen value)
  * Used for calculating current round and poll position in round
  */
-export const getTotalPollsSeenByUser = async (
-	userId: string
-): Promise<number> => {
+export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 	const result = await db
 		.select({
 			count: sql<number>`COUNT(DISTINCT ${pollHistoryTable.poll_id})::int`,
 		})
 		.from(pollHistoryTable)
-		.where(eq(pollHistoryTable.user_id, userId));
+		.where(eq(pollHistoryTable.run_id, runId));
 
 	return result[0]?.count ?? 0;
 };

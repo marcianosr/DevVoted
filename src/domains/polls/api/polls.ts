@@ -6,7 +6,7 @@ import {
 	getPollByIdWithOptionsHandler,
 	getDailyPollHandler,
 	postPollOptionsHandler,
-	getTotalPollsSeenHandler,
+	getPollsSeenInRunHandler,
 } from "./handlers";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
@@ -50,9 +50,9 @@ export const postPollOptions = createServerFn({ method: "POST" })
 		});
 	});
 
-export const getTotalPollsSeen = createServerFn({ method: "GET" }).handler(
+export const getPollsSeenInRun = createServerFn({ method: "GET" }).handler(
 	async () => {
 		const userId = await getAuthenticatedUserId();
-		return getTotalPollsSeenHandler({ data: { userId } });
+		return getPollsSeenInRunHandler({ data: { userId } });
 	}
 );
