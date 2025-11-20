@@ -115,7 +115,7 @@ export const PollPageContainer: React.FC<PollPageContainerProps> = ({
 				console.error("Failed to remove config:", data.error);
 			}
 		},
-		onError: (error, _variables, context) => {
+		onError: (_error, _variables, context) => {
 			if (context?.previousData && context?.activeRunQueryKey) {
 				queryClient.setQueryData(
 					context.activeRunQueryKey,
