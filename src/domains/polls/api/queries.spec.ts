@@ -433,7 +433,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
 			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
 
-			const result = await getPollHistory("pikachu", 5);
+			const result = await getPollHistory(1, 5);
 
 			expect(result).toEqual(mockHistory);
 			expect(db.select).toHaveBeenCalled();
@@ -445,7 +445,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
 			vi.mocked(db.select).mockReturnValue({ from: mockFrom } as any);
 
-			const result = await getPollHistory("kazooie", 99);
+			const result = await getPollHistory(1, 99);
 
 			expect(result).toBeNull();
 		});
@@ -459,11 +459,12 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			});
 			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
 
-			await trackPollView("banjo", 1);
+			await trackPollView(1, "banjo", 1);
 
 			expect(db.insert).toHaveBeenCalled();
 			expect(mockValues).toHaveBeenCalledWith(
 				expect.objectContaining({
+					run_id: 1,
 					user_id: "banjo",
 					poll_id: 1,
 					times_seen: 1,
@@ -480,7 +481,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			});
 			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
 
-			await trackPollView("banjo", 1);
+			await trackPollView(1, "banjo", 1);
 
 			expect(mockOnConflictDoUpdate).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -501,11 +502,12 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			});
 			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
 
-			await trackPollAnswer("mumbo", 25);
+			await trackPollAnswer(1, "mumbo", 25);
 
 			expect(db.insert).toHaveBeenCalled();
 			expect(mockValues).toHaveBeenCalledWith(
 				expect.objectContaining({
+					run_id: 1,
 					user_id: "mumbo",
 					poll_id: 25,
 					times_answered: 1,
@@ -521,7 +523,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			});
 			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
 
-			await trackPollAnswer("bottles", 6);
+			await trackPollAnswer(1, "bottles", 6);
 
 			expect(mockOnConflictDoUpdate).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -539,10 +541,11 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			});
 			vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
 
-			await trackPollAnswer("tooty", 13);
+			await trackPollAnswer(1, "tooty", 13);
 
 			expect(mockValues).toHaveBeenCalledWith(
 				expect.objectContaining({
+					run_id: 1,
 					user_id: "tooty",
 					poll_id: 13,
 					times_seen: 1,
