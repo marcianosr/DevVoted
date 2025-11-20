@@ -9,7 +9,7 @@ import type { Poll } from "~/domains/polls/models/poll";
 export const getTodayDateSeed = () => getTodayDateString();
 
 export const getDateSeed = (date?: string): string => {
-	return "02-01-2025" || getTodayDateSeed();
+	return date || getTodayDateSeed();
 };
 
 /**
