@@ -25,3 +25,8 @@ yarn.lock
 
 # Git
 .git
+
+scripts/**
+drizzle/**
+claude/**
+*.md
