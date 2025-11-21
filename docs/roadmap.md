@@ -147,6 +147,7 @@ BUGS:
 [] Show current season - shows 29 days
 [] Show created by (poll)
 [] Fixen todo warnings eslint
+[] poll submit page
 
 [] Onboarding/help modal for first-time users [Critical]
 [] Google Auth?
@@ -171,6 +172,10 @@ BUGS:
 [] Event framework?
 
 Season 3: Expansion
+[] Add Head tags seo
+[] Add meta description
+[x] Add basic CI/CD github actions (DB migrations)
+[] Config discovery system (find new configs based on performance)
 [] Basic CSI (global average, no per-category complexity)
 [] 20 unlockables (cosmetic or config)
 [] Knowledge-based awards (start with 2)
