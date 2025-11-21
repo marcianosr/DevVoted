@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { PollCodeSandboxEmbed } from "./PollCodeSandboxEmbed";
 
-describe("PollCodeSandboxEmbed", () => {
+describe(PollCodeSandboxEmbed, () => {
 	const mockCodeSandboxUrl =
 		"https://codesandbox.io/embed/banjo-kazooie-demo-abc123";
 
