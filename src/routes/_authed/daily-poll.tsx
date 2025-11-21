@@ -42,6 +42,7 @@ const getAllTimeLeaderboard = createServerFn({ method: "POST" })
 
 const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
+	const { poll, options, hasAnswered } = Route.useLoaderData();
 
 	// Fetch active run category XP for real-time progress
 	const categoryCoverageQuery = useQuery({
@@ -60,12 +61,6 @@ const DailyPoll: React.FC = () => {
 		refetchInterval: LEADERBOARD_REFRESH_INTERVAL,
 	});
 
-	const { data, isLoading, error } = useQuery({
-		queryKey: ["poll", "daily", user?.id],
-		queryFn: () => getDailyPoll(),
-		enabled: !!user?.id, // Only run when we have user ID
-	});
-
 	if (!activeRun || !activeRun.success || !activeRun.data?.id) {
 		return (
 			<div className="p-4 text-center max-w-2xl mx-auto py-8">
@@ -79,31 +74,22 @@ const DailyPoll: React.FC = () => {
 			</div>
 		);
 	}
-	if (isLoading) {
-		return (
-			<div className="text-white text-4xl h-screen flex justify-center content-center">
-				Loading...
-			</div>
-		);
-	}
-
-	if (error || !data) {
-		return <ErrorComponent text={"Error loading poll"} />;
-	}
-
-	if (!data.success) {
-		return <ErrorComponent text={data.error || "Error loading poll"} />;
-	}
-
-	const poll = data.data;
 
 	if (!user) {
 		return <ErrorComponent text="User not found" />;
 	}
 
 	return (
-		<section data-category-theme={poll?.poll.categoryCode}>
-			<PollPageContainer user={user} poll={poll} activeRun={activeRun.data} />
+		<section data-category-theme={poll.categoryCode}>
+			<PollPageContainer
+				user={user}
+				poll={{
+					poll: poll,
+					options: options,
+					hasAnswered: hasAnswered,
+				}}
+				activeRun={activeRun.data}
+			/>
 
 			{/* TODO: Refactor in own component */}
 			<section className="max-w-5xl mx-auto">
@@ -133,17 +119,15 @@ const DailyPoll: React.FC = () => {
 							<div className="text-red-400">Failed to load live rankings</div>
 						</div>
 					)}
-					{leaderboardQuery.data?.success &&
-						leaderboardQuery.data.data &&
-						poll?.poll.categoryCode && (
-							<Leaderboard
-								entries={leaderboardQuery.data.data}
-								currentUserId={user?.id}
-								getLeaderboard={getLeaderboard}
-								getAllTimeLeaderboard={getAllTimeLeaderboard}
-								currentCategoryCode={poll.poll.categoryCode}
-							/>
-						)}
+					{leaderboardQuery.data?.success && leaderboardQuery.data.data && (
+						<Leaderboard
+							entries={leaderboardQuery.data.data}
+							currentUserId={user?.id}
+							getLeaderboard={getLeaderboard}
+							getAllTimeLeaderboard={getAllTimeLeaderboard}
+							currentCategoryCode={poll.categoryCode}
+						/>
+					)}
 				</>
 			</section>
 			<footer className="p-4 mt-8 bg-zinc-900 text-center text-white">
@@ -156,4 +140,26 @@ const DailyPoll: React.FC = () => {
 
 export const Route = createFileRoute("/_authed/daily-poll")({
 	component: DailyPoll,
+	loader: async () => {
+		const response = await getDailyPoll();
+
+		if (!response.success) {
+			throw new Error(response.error);
+		}
+
+		return response.data;
+	},
+	pendingComponent: () => (
+		<section className="max-w-5xl mx-auto p-4">
+			<div className="animate-pulse">Loading poll...</div>
+		</section>
+	),
+	pendingMs: 300,
+	errorComponent: () => {
+		return (
+			<section className="max-w-5xl mx-auto">
+				<h1 className="text-red-500 text-3xl">Error loading poll</h1>
+			</section>
+		);
+	},
 });

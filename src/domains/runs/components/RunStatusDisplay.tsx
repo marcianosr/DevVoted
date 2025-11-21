@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 import type { Run } from "~/domains/runs/models/run";
 import type { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { SeasonInfo } from "~/domains/seasons/components/SeasonInfo";
@@ -31,7 +33,8 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 				<h3 className="text-lg font-semibold text-theme mb-2">Run info</h3>
 
 				<div className="text-xs text-white mb-4">
-					Started: {new Date(activeRun.startedAt).toLocaleString()}
+					Started:{" "}
+					{format(new Date(activeRun.startedAt), "MM/dd/yyyy, HH:mm:ss")}
 				</div>
 			</div>
 
