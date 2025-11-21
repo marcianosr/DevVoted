@@ -107,7 +107,7 @@ describe("Season Model", () => {
 			expect(season.startDate.getMonth()).toBe(11); // December (0-indexed)
 			expect(season.startDate.getDate()).toBe(13); // 13th
 			expect(season.endDate.getMonth()).toBe(11); // December
-			expect(season.endDate.getDate()).toBe(26); // Christmas
+			expect(season.endDate.getDate()).toBe(25); // Christmas Day
 		});
 	});
 

@@ -72,10 +72,10 @@ export const createMockSeason = (overrides: Partial<Season> = {}): Season => {
 		name: "Season 1: Core Loop",
 		description: "The inaugural season focusing on core gameplay mechanics",
 		status: "active",
-		startDate: new Date("2024-12-13T00:00:00Z"), // Christmas themed dates per CLAUDE.md
-		endDate: new Date("2024-12-25T23:59:59Z"),
-		createdAt: new Date("2024-12-01T00:00:00Z"),
-		updatedAt: new Date("2024-12-01T00:00:00Z"),
+		startDate: new Date("2024-12-13T12:00:00Z"), // Christmas themed dates per CLAUDE.md
+		endDate: new Date("2024-12-25T12:00:00Z"), // Noon UTC to avoid timezone edge cases
+		createdAt: new Date("2024-12-01T12:00:00Z"),
+		updatedAt: new Date("2024-12-01T12:00:00Z"),
 		...overrides,
 	};
 };
@@ -88,9 +88,9 @@ export const createMockSeasonRecord = (
 		name: "Season 1: Core Loop",
 		description: "The inaugural season focusing on core gameplay mechanics",
 		status: "active",
-		start_date: new Date("2024-12-13T00:00:00Z"),
-		end_date: new Date("2024-12-25T23:59:59Z"),
-		created_at: new Date("2024-12-01T00:00:00Z"),
+		start_date: new Date("2024-12-13T12:00:00Z"),
+		end_date: new Date("2024-12-25T12:00:00Z"),
+		created_at: new Date("2024-12-01T12:00:00Z"),
 		updated_at: new Date("2024-12-01T00:00:00Z"),
 		...overrides,
 	};
