@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { clsx } from "clsx";
+import { format } from "date-fns";
 
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
@@ -14,7 +15,7 @@ const PollDetail: React.FC = () => {
 			<aside>
 				<h2>#{poll.pollNumber}</h2>
 				<p className="text-sm text-gray-400">
-					Created at: {new Date(poll.createdAt).toLocaleDateString()}
+					Created at: {format(new Date(poll.createdAt), "MM/dd/yyyy")}
 				</p>
 				<p className="text-sm text-gray-400">Created by: {poll.createdBy}</p>
 				<p>
