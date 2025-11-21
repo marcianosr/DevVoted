@@ -1,11 +1,18 @@
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { getOrCreateRun } from "~/domains/runs/api/runs";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 
 export const Route = createFileRoute("/start")({
 	component: RouteComponent,
+	beforeLoad: async ({ context }) => {
+		if (context.activeRun?.success && context.activeRun?.data?.id) {
+			throw redirect({
+				to: "/daily-poll",
+			});
+		}
+	},
 });
 
 function RouteComponent() {

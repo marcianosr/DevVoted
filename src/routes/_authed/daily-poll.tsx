@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 import {
@@ -12,7 +12,6 @@ import { PollPageContainer } from "~/domains/polls/components/PollPageContainer"
 import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
 import type { CategoryCode } from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
-import { PrimaryButton } from "~/ui/PrimaryButton";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
 const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
@@ -61,21 +60,8 @@ const DailyPoll: React.FC = () => {
 		refetchInterval: LEADERBOARD_REFRESH_INTERVAL,
 	});
 
-	if (!activeRun || !activeRun.success || !activeRun.data?.id) {
-		return (
-			<div className="p-4 text-center max-w-2xl mx-auto py-8">
-				<h1 className="text-3xl mb-4">No Active Run</h1>
-				<p className="mb-6 text-gray-300">
-					Start a new run to begin playing and answering polls!
-				</p>
-				<Link to="/start">
-					<PrimaryButton>Start New Run</PrimaryButton>
-				</Link>
-			</div>
-		);
-	}
-
-	if (!user) {
+	// Type narrowing: beforeLoad ensures activeRun exists and has success=true
+	if (!user || !activeRun?.success) {
 		return <ErrorComponent text="User not found" />;
 	}
 
@@ -140,6 +126,13 @@ const DailyPoll: React.FC = () => {
 
 export const Route = createFileRoute("/_authed/daily-poll")({
 	component: DailyPoll,
+	beforeLoad: async ({ context }) => {
+		if (!context.activeRun?.success || !context.activeRun?.data?.id) {
+			throw redirect({
+				to: "/start",
+			});
+		}
+	},
 	loader: async () => {
 		const response = await getDailyPoll();
 
