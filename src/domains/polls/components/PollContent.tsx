@@ -29,6 +29,8 @@ import { ErrorComponent } from "~/ui/ErrorComponent";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
 import { PollAnswerReview } from "./PollAnswerReview";
+import { PollCodeBlock } from "./PollCodeBlock";
+import { PollCodeSandboxEmbed } from "./PollCodeSandboxEmbed";
 import { PollOptions } from "./PollOptions";
 import { PollQuestionDisplay } from "./PollQuestionDisplay";
 import { PollSubmissionForm } from "./PollSubmissionForm";
@@ -319,21 +321,9 @@ const PollContent: React.FC<PollContentProps> = ({
 						<PollQuestionDisplay poll={poll} />
 
 						{poll.codeSandboxExample && (
-							<div className="my-4">
-								<iframe
-									src={poll.codeSandboxExample}
-									className="w-full h-96 border border-gray-600"
-									title="CodeSandbox Example"
-									allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-									sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-								></iframe>
-							</div>
+							<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
 						)}
-						{poll.codeBlock && (
-							<pre className="bg-gray-800 text-gray-100 p-4 rounded my-4 overflow-x-auto">
-								<code>{poll.codeBlock}</code>
-							</pre>
-						)}
+						{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
 						{/* Options form */}
 
 						{!submitOptionsMutation.isSuccess && (

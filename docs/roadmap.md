@@ -121,11 +121,11 @@ BUGS:
 - [o] Tonen: Jouw progressie richting de CI gate: Wanneer komt de CI gate?
 
 [] White theme stuff
-
 [] HTML entities komen niet door
 
     - [] create poll id page to test
 
+[x] eslint/prettier
 [] Update eslint description -> only works with TS and JS
 [] Deflate config doesn't work
 [] Eslint disabled ander antwoord als je van tab wisselt
@@ -140,13 +140,14 @@ BUGS:
 [] Show your place in each button so you dont have to go through the list
 [] Fonts niet duidelijk
 [] Add .editorconfig file
-[] Codam? Gebruiken C language
 
 ### Season 2: Early Meta Layer
 
 [] Move CI gates into DB
 [] Show current season - shows 29 days
 [] Show created by (poll)
+[] Fixen todo warnings eslint
+[] poll submit page
 
 [] Onboarding/help modal for first-time users [Critical]
 [] Google Auth?
@@ -171,6 +172,10 @@ BUGS:
 [] Event framework?
 
 Season 3: Expansion
+[] Add Head tags seo
+[] Add meta description
+[x] Add basic CI/CD github actions (DB migrations)
+[] Config discovery system (find new configs based on performance)
 [] Basic CSI (global average, no per-category complexity)
 [] 20 unlockables (cosmetic or config)
 [] Knowledge-based awards (start with 2)
