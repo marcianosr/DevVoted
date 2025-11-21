@@ -1,0 +1,20 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Running pre-push validation..."
+
+# Run full test suite
+echo "Running full test suite..."
+npm test -- --run || {
+  echo "❌ Tests failed. Push aborted."
+  exit 1
+}
+
+# Run build to ensure production build works
+echo "Building application..."
+npm run build || {
+  echo "❌ Build failed. Push aborted."
+  exit 1
+}
+
+echo "✅ All pre-push checks passed! Pushing to remote..."
