@@ -147,7 +147,9 @@ BUGS:
 [] Show current season - shows 29 days
 [] Show created by (poll)
 [] Fixen todo warnings eslint
-[] poll submit page
+[] Starring a poll
+[] Add explanation field to poll (shown after answering)
+
 
 [] Onboarding/help modal for first-time users [Critical]
 [] Google Auth?

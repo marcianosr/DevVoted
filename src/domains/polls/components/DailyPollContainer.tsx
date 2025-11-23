@@ -1,5 +1,7 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
 import { applyEffects } from "~/domains/configs/data/configs";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
@@ -11,9 +13,60 @@ import { PollOption } from "~/domains/polls/models/pollOption";
 import type { Run } from "~/domains/runs/models/run";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { PrimaryButton } from "~/ui/PrimaryButton";
+import { getAuthenticatedUserId } from "~/utils/authorization";
 
-import { submitPollOptions } from "./PollContent";
 import { PollQuestionDisplay } from "./PollQuestionDisplay";
+import {
+	getScoreBreakdownHandler,
+	postPollOptionsHandler,
+} from "../api/handlers";
+
+// TODO: submitPollOptions to its own file
+
+export const submitPollOptions = createServerFn({ method: "POST" })
+	.inputValidator(
+		z.object({
+			pollId: z.number().int().positive(),
+			selectedOptions: z.array(z.string()).min(1),
+		})
+	)
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+
+		// TODO: remove score calc here (only post) get score breakdown here instead of getting it from the POST IF needed?
+		return postPollOptionsHandler({ data: { ...data, userId } });
+	});
+
+export const getScoreBreakdown = createServerFn({ method: "GET" })
+	.inputValidator(
+		z.object({
+			// TODO: use types for this
+			poll: z.any({}),
+			options: z.array(z.any({})),
+			hasAnswered: z.boolean(),
+			run: z.any({}),
+			// pollId: z.number().int().positive(),
+			// categoryCode: z.enum(CATEGORY_CODES),
+			selectedOptions: z.array(z.string()).min(1),
+		})
+	)
+	.handler(async ({ data }) => {
+		const result = await getScoreBreakdownHandler({
+			data: {
+				hasAnswered: data.hasAnswered,
+				options: data.options,
+				poll: data.poll,
+				run: data.run,
+				selectedOptions: data.selectedOptions,
+			},
+		});
+
+		if (!result || !result.success) {
+			throw new Error("Failed to get score breakdown");
+		}
+
+		return result.data;
+	});
 
 type DailyPollContainerProps = {
 	poll: Poll;
@@ -33,9 +86,31 @@ const DailyPollContainer = ({
 	const router = useRouter();
 	const category = getCategoryMetadata(poll.categoryCode);
 
+	const { data: score } = useQuery({
+		queryKey: ["score"],
+		queryFn: () => {
+			return getScoreBreakdown({
+				data: {
+					poll,
+					options,
+					hasAnswered,
+					run: activeRun,
+					selectedOptions,
+				},
+			});
+		},
+		retry: false,
+		enabled: hasAnswered,
+	});
+
 	const mutation = useMutation({
 		mutationFn: submitPollOptions,
-		onSuccess: () => router.invalidate(),
+
+		onSuccess: (data) => {
+			router.invalidate();
+
+			console.info("Successfully submitted poll options", data);
+		},
 		onError: (error) => {
 			console.error("Error submitting poll options", error);
 		},
@@ -69,6 +144,7 @@ const DailyPollContainer = ({
 						<SelectedOptionsSummary
 							options={options}
 							selectedOptions={selectedOptions}
+							score={score}
 						/>
 						<PrimaryButton className="mt-4">
 							<Link to={`/daily-poll`}>See your progress!</Link>

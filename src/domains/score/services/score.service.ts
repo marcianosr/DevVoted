@@ -36,7 +36,9 @@ export const calculateBaseCoverage = (round: number): number => {
  * calculateStreakBonus(15) // 1.0% (capped)
  */
 export const calculateStreakBonus = (streak: number): number => {
-	return Math.min(streak * STREAK_BONUS, MAX_STREAK_BONUS);
+	return (
+		Math.round(Math.min(streak * STREAK_BONUS, MAX_STREAK_BONUS) * 10) / 10
+	);
 };
 
 /**

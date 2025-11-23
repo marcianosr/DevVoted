@@ -18,7 +18,12 @@ import {
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
+import { Run } from "~/domains/runs/models/run";
+import { getRunProgressProgress } from "~/domains/runs/services/progress.service";
 import { handleApiOperation } from "~/utils/errorHandling";
+
+import { Poll } from "../models/poll";
+import { PollOption } from "../models/pollOption";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -90,6 +95,32 @@ export const getDailyPollHandler = async ({
 	});
 };
 
+export const getScoreBreakdownHandler = async ({
+	data,
+}: {
+	data: {
+		selectedOptions: string[];
+		poll: Poll;
+		options: PollOption[];
+		hasAnswered: boolean;
+		run: Run;
+	};
+}) => {
+	return handleApiOperation(async () => {
+		const { poll, options, hasAnswered, run, selectedOptions } = data;
+
+		const score = await getRunProgressProgress({
+			selectedOptions,
+			run,
+			poll,
+			options,
+			hasAnswered,
+		});
+
+		return score;
+	});
+};
+
 export const postPollOptionsHandler = async ({
 	data,
 }: {
@@ -125,6 +156,7 @@ export const postPollOptionsHandler = async ({
 			validatedData.pollId
 		);
 
+		// TODO: check when score breakdown can be removed here
 		return {
 			message: "Options submitted successfully",
 			selectOptions: selectedOptionIds,

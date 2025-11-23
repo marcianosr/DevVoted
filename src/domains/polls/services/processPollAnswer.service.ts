@@ -160,7 +160,7 @@ export const processPollAnswer = async (
 	};
 };
 
-const handleUserSelectedOptionsByPollType = async ({
+export const handleUserSelectedOptionsByPollType = async ({
 	pollId,
 	selectedOptionIds,
 }: {

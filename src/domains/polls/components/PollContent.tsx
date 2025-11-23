@@ -2,8 +2,6 @@ import { useMemo, useState } from "react";
 
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 
 import {
 	configs,
@@ -13,7 +11,6 @@ import { Shop } from "~/domains/economy/components/Shop";
 import { StorageDeck } from "~/domains/economy/components/StorageDeck";
 import { useShopContext } from "~/domains/economy/contexts/ShopContext";
 import { getRandomConfigs } from "~/domains/economy/services/configManager.service";
-import { postPollOptionsHandler } from "~/domains/polls/api/handlers";
 import { getPollsSeenInRun } from "~/domains/polls/api/polls";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
@@ -26,8 +23,8 @@ import { getCategories } from "~/domains/shared/categories";
 import { pollQueryKeys, runQueryKeys } from "~/domains/shared/queryKeys";
 import { User } from "~/domains/users/services/userSync.service";
 import { ErrorComponent } from "~/ui/ErrorComponent";
-import { getAuthenticatedUserId } from "~/utils/authorization";
 
+import { submitPollOptions } from "./DailyPollContainer";
 import { PollAnswerReview } from "./PollAnswerReview";
 import { PollCodeBlock } from "./PollCodeBlock";
 import { PollCodeSandboxEmbed } from "./PollCodeSandboxEmbed";
@@ -53,20 +50,6 @@ type PollContentProps = {
 	setLastScoreBreakdown: (breakdown: PollScoreBreakdown | null) => void;
 	costReduction: number;
 };
-
-// TODO: submitPollOptions to its own file
-
-export const submitPollOptions = createServerFn({ method: "POST" })
-	.inputValidator(
-		z.object({
-			pollId: z.number().int().positive(),
-			selectedOptions: z.array(z.string()).min(1),
-		})
-	)
-	.handler(async ({ data }) => {
-		const userId = await getAuthenticatedUserId();
-		return postPollOptionsHandler({ data: { ...data, userId } });
-	});
 
 const PollContent: React.FC<PollContentProps> = ({
 	pollData,
