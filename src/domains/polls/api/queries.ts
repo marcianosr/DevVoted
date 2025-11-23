@@ -127,6 +127,41 @@ export const hasUserAnsweredPoll = async (
 	return existingResponse.length > 0;
 };
 
+export const getUserSelectedOptions = async (
+	pollId: number,
+	userId: string
+): Promise<string[]> => {
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
+	const response = await db
+		.select({
+			responseId: pollResponsesTable.response_id,
+		})
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.poll_id, pollId),
+				eq(pollResponsesTable.user_id, userId),
+				gte(pollResponsesTable.created_at, today)
+			)
+		)
+		.limit(1);
+
+	if (response.length === 0) {
+		return [];
+	}
+
+	const selectedOptions = await db
+		.select({
+			optionId: pollResponseOptionsTable.option_id,
+		})
+		.from(pollResponseOptionsTable)
+		.where(eq(pollResponseOptionsTable.response_id, response[0].responseId));
+
+	return selectedOptions.map((option) => String(option.optionId));
+};
+
 /**
  * Efficiently manage daily poll transitions - close all open polls, open today's poll
  * This prevents race conditions and ensures only one poll is open at a time

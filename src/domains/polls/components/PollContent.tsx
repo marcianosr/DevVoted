@@ -54,6 +54,8 @@ type PollContentProps = {
 	costReduction: number;
 };
 
+// TODO: submitPollOptions to its own file
+
 export const submitPollOptions = createServerFn({ method: "POST" })
 	.inputValidator(
 		z.object({

@@ -5,6 +5,7 @@ import {
 	fetchPollById,
 	fetchPollByIdWithOptions,
 	hasUserAnsweredPoll,
+	getUserSelectedOptions,
 	getPollHistory,
 	trackPollView,
 	trackPollAnswer,
@@ -63,6 +64,11 @@ export const getDailyPollHandler = async ({
 			? await hasUserAnsweredPoll(poll.id, userId)
 			: false;
 
+		const selectedOptions =
+			userId && hasAnswered
+				? await getUserSelectedOptions(poll.id, userId)
+				: [];
+
 		// Track poll view only if not seen today
 		if (userId) {
 			const activeRunResponse = await getUserActiveRun(userId);
@@ -80,7 +86,7 @@ export const getDailyPollHandler = async ({
 			}
 		}
 
-		return { poll, options, hasAnswered };
+		return { poll, options, hasAnswered, selectedOptions };
 	});
 };
 

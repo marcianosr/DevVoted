@@ -19,7 +19,7 @@ export const PrimaryButton = ({
 		type={type}
 		disabled={disabled || isLoading}
 		className={clsx(
-			"border-solid border-2 text-white px-4 py-2 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors cursor-pointer btn-color-cycle",
+			"text-2xl border-solid border-2 text-white px-4 py-4 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors cursor-pointer btn-color-cycle",
 			className
 		)}
 		{...props}

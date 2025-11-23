@@ -209,7 +209,7 @@ export type EffectOut = {
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
 
-type ApplyEffects = {
+export type ApplyEffects = {
 	view: EffectCtx;
 	renderProps: EffectRenderProps;
 	coverage: CoverageMods;

@@ -1,64 +1,64 @@
-import { useQuery } from "@tanstack/react-query";
+// import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
+// import { createServerFn } from "@tanstack/react-start";
 
-import {
-	LEADERBOARD_REFRESH_INTERVAL,
-	CATEGORY_COVERAGE_REFRESH_INTERVAL,
-} from "~/config/polling";
-import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
+// import {
+// 	LEADERBOARD_REFRESH_INTERVAL,
+// 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
+// } from "~/config/polling";
+// import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
 import { getDailyPoll } from "~/domains/polls/api/polls";
-import { PollPageContainer } from "~/domains/polls/components/PollPageContainer";
-import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
-import type { CategoryCode } from "~/domains/shared/categories";
+import DailyPollContainer from "~/domains/polls/components/DailyPollContainer";
+// import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
+// import type { CategoryCode } from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
-import { getAuthenticatedUserId } from "~/utils/authorization";
+// import { getAuthenticatedUserId } from "~/utils/authorization";
 
-const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
-	async () => {
-		const userId = await getAuthenticatedUserId();
-		return await getActiveRunCategoryCoverageHandler(userId);
-	}
-);
+// const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
+// 	async () => {
+// 		const userId = await getAuthenticatedUserId();
+// 		return await getActiveRunCategoryCoverageHandler(userId);
+// 	}
+// );
 
-const getLeaderboard = createServerFn({ method: "POST" })
-	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
-	.handler(async ({ data }) => {
-		const { getLiveRunRankingsHandler } = await import(
-			"~/domains/runs/api/handlers"
-		);
-		return await getLiveRunRankingsHandler(data.categoryCode);
-	});
+// const getLeaderboard = createServerFn({ method: "POST" })
+// 	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
+// 	.handler(async ({ data }) => {
+// 		const { getLiveRunRankingsHandler } = await import(
+// 			"~/domains/runs/api/handlers"
+// 		);
+// 		return await getLiveRunRankingsHandler(data.categoryCode);
+// 	});
 
-const getAllTimeLeaderboard = createServerFn({ method: "POST" })
-	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
-	.handler(async ({ data }) => {
-		const { getCategoryLeaderboardHandler } = await import(
-			"~/domains/leaderboards/api/handlers"
-		);
-		return await getCategoryLeaderboardHandler(data);
-	});
+// const getAllTimeLeaderboard = createServerFn({ method: "POST" })
+// 	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
+// 	.handler(async ({ data }) => {
+// 		const { getCategoryLeaderboardHandler } = await import(
+// 			"~/domains/leaderboards/api/handlers"
+// 		);
+// 		return await getCategoryLeaderboardHandler(data);
+// 	});
 
 const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
-	const { poll, options, hasAnswered } = Route.useLoaderData();
+	const { poll, options, hasAnswered, selectedOptions } = Route.useLoaderData();
 
 	// Fetch active run category XP for real-time progress
-	const categoryCoverageQuery = useQuery({
-		queryKey: ["run", "categoryCoverage", user?.id],
-		queryFn: () => getActiveRunCategoryCoverage(),
-		enabled: !!user?.id,
-		staleTime: 10 * 1000, // 10 seconds - more frequent updates for real-time feel
-		refetchInterval: CATEGORY_COVERAGE_REFRESH_INTERVAL,
-	});
+	// const categoryCoverageQuery = useQuery({
+	// 	queryKey: ["run", "categoryCoverage", user?.id],
+	// 	queryFn: () => getActiveRunCategoryCoverage(),
+	// 	enabled: !!user?.id,
+	// 	staleTime: 10 * 1000, // 10 seconds - more frequent updates for real-time feel
+	// 	refetchInterval: CATEGORY_COVERAGE_REFRESH_INTERVAL,
+	// });
 
-	// Fetch live leaderboard for competitive ranking (total XP)
-	const leaderboardQuery = useQuery({
-		queryKey: ["leaderboard", "live", "total"],
-		queryFn: () => getLeaderboard({ data: {} }), // No categoryCode = total
-		staleTime: 15 * 1000, // 15 seconds
-		refetchInterval: LEADERBOARD_REFRESH_INTERVAL,
-	});
+	// // Fetch live leaderboard for competitive ranking (total XP)
+	// const leaderboardQuery = useQuery({
+	// 	queryKey: ["leaderboard", "live", "total"],
+	// 	queryFn: () => getLeaderboard({ data: {} }), // No categoryCode = total
+	// 	staleTime: 15 * 1000, // 15 seconds
+	// 	refetchInterval: LEADERBOARD_REFRESH_INTERVAL,
+	// });
 
 	// Type narrowing: beforeLoad ensures activeRun exists and has success=true
 	if (!user || !activeRun?.success) {
@@ -67,7 +67,14 @@ const DailyPoll: React.FC = () => {
 
 	return (
 		<section data-category-theme={poll.categoryCode}>
-			<PollPageContainer
+			<DailyPollContainer
+				poll={poll}
+				options={options}
+				hasAnswered={hasAnswered}
+				activeRun={activeRun.data}
+				selectedOptions={selectedOptions}
+			/>
+			{/* <PollPageContainer
 				user={user}
 				poll={{
 					poll: poll,
@@ -75,10 +82,10 @@ const DailyPoll: React.FC = () => {
 					hasAnswered: hasAnswered,
 				}}
 				activeRun={activeRun.data}
-			/>
+			/> */}
 
 			{/* TODO: Refactor in own component */}
-			<section className="max-w-5xl mx-auto">
+			{/* <section className="max-w-5xl mx-auto">
 				<div className="">
 					{categoryCoverageQuery.isLoading && (
 						<div className="bg-black border border-gray-600 p-4 text-sm">
@@ -115,7 +122,7 @@ const DailyPoll: React.FC = () => {
 						/>
 					)}
 				</>
-			</section>
+			</section> */}
 			<footer className="p-4 mt-8 bg-zinc-900 text-center text-white">
 				A crazy roguelike obsession build with craftsmanship, passion, ❤️ &
 				Tanstack Query by Marciano Schildmeijer | EST may 2022
@@ -124,7 +131,7 @@ const DailyPoll: React.FC = () => {
 	);
 };
 
-export const Route = createFileRoute("/_authed/daily-poll")({
+export const Route = createFileRoute("/_authed/daily-poll/")({
 	component: DailyPoll,
 	beforeLoad: async ({ context }) => {
 		if (!context.activeRun?.success || !context.activeRun?.data?.id) {

@@ -27,10 +27,10 @@ export const PollOptions = ({
 }: PollOptionsProps) => {
 	return (
 		<div>
-			<h2 className="text-xl font-semibold mb-4">Select your answer(s)!</h2>
+			<h2 className="text-2xl text-theme mb-4">Select your answer(s)!</h2>
 			<ul className="space-y-2">
 				{options.map((option) => (
-					<li key={option.id}>
+					<li key={option.id} className="text-xl">
 						<Option
 							option={option}
 							type={poll.answerType === "single" ? "radio" : "checkbox"}

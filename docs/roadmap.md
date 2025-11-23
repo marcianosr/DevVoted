@@ -115,7 +115,7 @@ BUGS:
 
 [o] Herzien flow: - start - daily-poll - shop - progress (hub)
 
-- [o] Create activeRunGuard
+- [x] Create activeRunGuard
 - [o] Tonen: Hoelang het duurt voor de volgende poll komt
 - [o] Tonen: Tijdlijn van welke polls je hebt beantwoord (misschien alleen categorie?) - en de poll van morgen in "?"
 - [o] Tonen: Jouw progressie richting de CI gate: Wanneer komt de CI gate?
