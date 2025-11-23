@@ -22,7 +22,7 @@ const SelectedOptionsSummary = ({
 	return (
 		<section className="space-y-14 border-b border-theme mb-8">
 			<div>
-				<h3 className="text-4xl">Results:</h3>
+				<h3 className="text-4xl">Results</h3>
 				<section className="mt-4 pt-4 border-t border-theme space-y-2">
 					<p className="text-2xl">Your choice(s):</p>
 
@@ -59,7 +59,7 @@ const SelectedOptionsSummary = ({
 				</section>
 				{score && (
 					<section className="mt-4 py-8 border-t border-theme space-y-2">
-						<h3 className="text-4xl">Score:</h3>
+						<h3 className="text-4xl">Score</h3>
 						{score.breakdown.earnedCoverage > 0 ? (
 							<ul className="text-green-400 text-xl list-disc px-4">
 								<li>
@@ -81,7 +81,7 @@ const SelectedOptionsSummary = ({
 					</section>
 				)}
 				<section className="mt-4 py-8 border-t border-theme space-y-2">
-					<h3 className="text-4xl">👥 Community: </h3>
+					<h3 className="text-4xl">👥 Community</h3>
 					<p className="text-xl">
 						{communityStats?.totalResponses} player(s) participated in this poll
 					</p>
