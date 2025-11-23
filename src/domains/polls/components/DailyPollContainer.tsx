@@ -17,6 +17,7 @@ import { getAuthenticatedUserId } from "~/utils/authorization";
 
 import { PollQuestionDisplay } from "./PollQuestionDisplay";
 import {
+	getCommunityStatsHandler,
 	getScoreBreakdownHandler,
 	postPollOptionsHandler,
 } from "../api/handlers";
@@ -68,6 +69,18 @@ export const getScoreBreakdown = createServerFn({ method: "GET" })
 		return result.data;
 	});
 
+const getCommunityStats = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ pollId: z.number().int().positive() }))
+	.handler(async ({ data }) => {
+		const result = await getCommunityStatsHandler({ data });
+
+		if (!result || !result.success) {
+			throw new Error("Failed to get community stats");
+		}
+
+		return result.data;
+	});
+
 type DailyPollContainerProps = {
 	poll: Poll;
 	options: PollOption[];
@@ -88,8 +101,8 @@ const DailyPollContainer = ({
 
 	const { data: score } = useQuery({
 		queryKey: ["score"],
-		queryFn: () => {
-			return getScoreBreakdown({
+		queryFn: () =>
+			getScoreBreakdown({
 				data: {
 					poll,
 					options,
@@ -97,8 +110,19 @@ const DailyPollContainer = ({
 					run: activeRun,
 					selectedOptions,
 				},
-			});
-		},
+			}),
+		retry: false,
+		enabled: hasAnswered,
+	});
+
+	const { data: communityStats } = useQuery({
+		queryKey: ["communityStats", poll.id],
+		queryFn: () =>
+			getCommunityStats({
+				data: {
+					pollId: poll.id,
+				},
+			}),
 		retry: false,
 		enabled: hasAnswered,
 	});
@@ -145,9 +169,10 @@ const DailyPollContainer = ({
 							options={options}
 							selectedOptions={selectedOptions}
 							score={score}
+							communityStats={communityStats}
 						/>
 						<PrimaryButton className="mt-4">
-							<Link to={`/daily-poll`}>See your progress!</Link>
+							<Link to={`/daily-poll`}>See your run progress →</Link>
 						</PrimaryButton>
 					</>
 				) : (

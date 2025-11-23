@@ -8,12 +8,16 @@ type SelectedOptionsSummaryProps = {
 	options: PollOption[];
 	selectedOptions: string[];
 	score?: ScoreCalculation;
+	communityStats?: {
+		totalResponses: number;
+	};
 };
 
 const SelectedOptionsSummary = ({
 	options,
 	selectedOptions,
 	score,
+	communityStats,
 }: SelectedOptionsSummaryProps) => {
 	return (
 		<section className="space-y-14 border-b border-theme mb-8">
@@ -76,6 +80,12 @@ const SelectedOptionsSummary = ({
 						)}
 					</section>
 				)}
+				<section className="mt-4 py-8 border-t border-theme space-y-2">
+					<h3 className="text-4xl">👥 Community: </h3>
+					<p className="text-xl">
+						{communityStats?.totalResponses} player(s) participated in this poll
+					</p>
+				</section>
 			</div>
 		</section>
 	);

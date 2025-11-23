@@ -298,3 +298,16 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 
 	return result[0]?.count ?? 0;
 };
+
+export const getCommunityStatsForDailyPoll = async (pollId: number) => {
+	const result = await db
+		.select()
+		.from(pollResponsesTable)
+		.where(eq(pollResponsesTable.poll_id, pollId));
+
+	const totalResponses = result.length;
+
+	return {
+		totalResponses,
+	};
+};

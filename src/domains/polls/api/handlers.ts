@@ -10,6 +10,7 @@ import {
 	trackPollView,
 	trackPollAnswer,
 	getPollsSeenInRun,
+	getCommunityStatsForDailyPoll,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
@@ -222,5 +223,17 @@ export const getPollsSeenInRunHandler = async ({
 			throw new Error(activeRunResponse.error);
 		}
 		return await getPollsSeenInRun(activeRunResponse.data.id);
+	});
+};
+
+export const getCommunityStatsHandler = async ({
+	data,
+}: {
+	data: { pollId: number };
+}) => {
+	return handleApiOperation(async () => {
+		const { pollId } = data;
+
+		return await getCommunityStatsForDailyPoll(pollId);
 	});
 };
