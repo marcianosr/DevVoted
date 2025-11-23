@@ -70,7 +70,7 @@ const DailyPollContainer = ({
 							options={options}
 							selectedOptions={selectedOptions}
 						/>
-						<PrimaryButton>
+						<PrimaryButton className="mt-4">
 							<Link to={`/daily-poll`}>See your progress!</Link>
 						</PrimaryButton>
 					</>
