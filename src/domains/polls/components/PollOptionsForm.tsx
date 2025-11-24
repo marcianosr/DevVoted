@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+// import { useMutation } from "@tanstack/react-query";
 
 import type { ApplyEffects } from "~/domains/configs/data/configs";
 import { PollOptions } from "~/domains/polls/components/PollOptions";
@@ -14,6 +15,7 @@ type PollOptionsFormProps = {
 	hasAnswered: boolean;
 	effect: ApplyEffects;
 	selectedOptions: string[];
+	// mutation: ReturnType<typeof useMutation>;
 	mutation: any;
 };
 

@@ -8,7 +8,9 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 // } from "~/config/polling";
 // import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
 import { getDailyPoll } from "~/domains/polls/api/polls";
-import DailyPollContainer from "~/domains/polls/components/DailyPollContainer";
+import DailyPollContainer, {
+	getScoreBreakdown,
+} from "~/domains/polls/components/DailyPollContainer";
 // import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
 // import type { CategoryCode } from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
@@ -41,7 +43,8 @@ import { ErrorComponent } from "~/ui/ErrorComponent";
 
 const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
-	const { poll, options, hasAnswered, selectedOptions } = Route.useLoaderData();
+	const { poll, options, hasAnswered, selectedOptions, score } =
+		Route.useLoaderData();
 
 	// Fetch active run category XP for real-time progress
 	// const categoryCoverageQuery = useQuery({
@@ -73,6 +76,7 @@ const DailyPoll: React.FC = () => {
 				hasAnswered={hasAnswered}
 				activeRun={activeRun.data}
 				selectedOptions={selectedOptions}
+				score={score}
 			/>
 			{/* <PollPageContainer
 				user={user}
@@ -140,14 +144,34 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			});
 		}
 	},
-	loader: async () => {
-		const response = await getDailyPoll();
-
-		if (!response.success) {
-			throw new Error(response.error);
+	loader: async ({ context: { activeRun } }) => {
+		if (!activeRun?.success) {
+			throw new Error("No active run");
 		}
 
-		return response.data;
+		const pollResponse = await getDailyPoll();
+
+		if (!pollResponse.success) {
+			throw new Error(pollResponse.error);
+		}
+
+		const score = await getScoreBreakdown({
+			data: {
+				poll: pollResponse.data.poll,
+				options: pollResponse.data.options,
+				hasAnswered: pollResponse.data.hasAnswered,
+				run: activeRun.data,
+				selectedOptions: pollResponse.data.selectedOptions,
+			},
+		});
+
+		return {
+			poll: pollResponse.data.poll,
+			options: pollResponse.data.options,
+			hasAnswered: pollResponse.data.hasAnswered,
+			selectedOptions: pollResponse.data.selectedOptions,
+			score,
+		};
 	},
 	pendingComponent: () => (
 		<section className="max-w-5xl mx-auto p-4">

@@ -11,6 +11,7 @@ import SelectedOptionsSummary from "~/domains/polls/components/SelectedOptionsSu
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
 import type { Run } from "~/domains/runs/models/run";
+import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 import { getAuthenticatedUserId } from "~/utils/authorization";
@@ -87,6 +88,7 @@ type DailyPollContainerProps = {
 	hasAnswered: boolean;
 	activeRun: Run;
 	selectedOptions: string[];
+	score: ScoreCalculation;
 };
 
 const DailyPollContainer = ({
@@ -95,26 +97,12 @@ const DailyPollContainer = ({
 	hasAnswered,
 	activeRun,
 	selectedOptions,
+	score,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const category = getCategoryMetadata(poll.categoryCode);
 
-	const { data: score } = useQuery({
-		queryKey: ["score"],
-		queryFn: () =>
-			getScoreBreakdown({
-				data: {
-					poll,
-					options,
-					hasAnswered,
-					run: activeRun,
-					selectedOptions,
-				},
-			}),
-		retry: false,
-		enabled: hasAnswered,
-	});
-
+	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
 	const { data: communityStats } = useQuery({
 		queryKey: ["communityStats", poll.id],
 		queryFn: () =>
