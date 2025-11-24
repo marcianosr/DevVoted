@@ -20,7 +20,7 @@ import {
 } from "~/domains/polls/validation/schemas";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
 import { Run } from "~/domains/runs/models/run";
-import { getRunProgressProgress } from "~/domains/runs/services/progress.service";
+import { getRunProgress } from "~/domains/runs/services/progress.service";
 import { handleApiOperation } from "~/utils/errorHandling";
 
 import { Poll } from "../models/poll";
@@ -110,7 +110,7 @@ export const getScoreBreakdownHandler = async ({
 	return handleApiOperation(async () => {
 		const { poll, options, hasAnswered, run, selectedOptions } = data;
 
-		const score = await getRunProgressProgress({
+		const score = await getRunProgress({
 			selectedOptions,
 			run,
 			poll,

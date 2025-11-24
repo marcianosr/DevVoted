@@ -115,20 +115,20 @@ export const incrementRunProgress = async ({
 
 // NEW Progress function
 
-type GetRunProgressProgressParams = {
+type GetRunProgressParams = {
 	selectedOptions: string[];
 	poll: PollWithOptionsResponse["poll"];
 	options: PollWithOptionsResponse["options"];
 	hasAnswered: boolean;
 	run: Run;
 };
-export const getRunProgressProgress = async ({
+export const getRunProgress = async ({
 	selectedOptions,
 	poll,
 	options,
 	hasAnswered,
 	run,
-}: GetRunProgressProgressParams) => {
+}: GetRunProgressParams) => {
 	const currentCategoryCoverage = run.categoryCoverage.find(
 		(coverage) => coverage.categoryCode === poll.categoryCode
 	);
