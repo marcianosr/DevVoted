@@ -41,16 +41,13 @@ export const submitPollOptions = createServerFn({ method: "POST" })
 
 export const getScoreBreakdown = createServerFn({ method: "GET" })
 	.inputValidator(
-		z.object({
-			// TODO: use types for this
-			poll: z.any({}),
-			options: z.array(z.any({})),
-			hasAnswered: z.boolean(),
-			run: z.any({}),
-			// pollId: z.number().int().positive(),
-			// categoryCode: z.enum(CATEGORY_CODES),
-			selectedOptions: z.array(z.string()).min(1),
-		})
+		z.custom<{
+			poll: Poll;
+			options: PollOption[];
+			hasAnswered: boolean;
+			run: Run;
+			selectedOptions: string[];
+		}>()
 	)
 	.handler(async ({ data }) => {
 		const result = await getScoreBreakdownHandler({
