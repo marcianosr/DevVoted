@@ -1,11 +1,13 @@
 import { useForm } from "@tanstack/react-form";
-// import { useMutation } from "@tanstack/react-query";
 
 import type { ApplyEffects } from "~/domains/configs/data/configs";
 import { PollOptions } from "~/domains/polls/components/PollOptions";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
 import { PrimaryButton } from "~/ui/PrimaryButton";
+
+import type { submitPollOptions } from "./DailyPollContainer";
+import type { UseMutationResult } from "@tanstack/react-query";
 
 // TODO: move
 
@@ -15,8 +17,11 @@ type PollOptionsFormProps = {
 	hasAnswered: boolean;
 	effect: ApplyEffects;
 	selectedOptions: string[];
-	// mutation: ReturnType<typeof useMutation>;
-	mutation: any;
+	mutation: UseMutationResult<
+		Awaited<ReturnType<typeof submitPollOptions>>,
+		Error,
+		Parameters<typeof submitPollOptions>[0]
+	>;
 };
 
 const PollOptionsForm = ({
