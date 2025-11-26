@@ -144,17 +144,18 @@ export const configs: Config[] = [
 		effect: ["randomStreakAmp"],
 		priority: 100,
 	},
-	{
-		id: "deflate-config",
-		name: "Deflate",
-		image: "/configs/deflate-config.png",
-		cost: STORAGE_UNITS.MB / 2,
-		description: "Reduces the cost of all configs by 10%",
-		rarity: "uncommon",
-		effect: ["reduceConfigCost"],
-		priority: 50, // Run before other effects
-		reductionCost: 0.1, // 10% cost reduction
-	},
+	// TODO: re-enable deflate config when we can make it work
+	// {
+	// 	id: "deflate-config",
+	// 	name: "Deflate",
+	// 	image: "/configs/deflate-config.png",
+	// 	cost: STORAGE_UNITS.MB / 2,
+	// 	description: "Reduces the cost of all configs by 10%",
+	// 	rarity: "uncommon",
+	// 	effect: ["reduceConfigCost"],
+	// 	priority: 50, // Run before other effects
+	// 	reductionCost: 0.1, // 10% cost reduction
+	// },
 	{
 		id: "hot-reload-config",
 		name: "Hot Reload",
