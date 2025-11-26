@@ -130,6 +130,34 @@ const RARITY_WEIGHTS = {
 	legendary: 3, // 3/145 ≈ 2% chance
 } as const;
 
+/**
+ * Creates a seeded random number generator.
+ * Uses mulberry32 algorithm — fast, good distribution, deterministic.
+ */
+const createSeededRandom = (seed: number) => {
+	let state = seed;
+	return () => {
+		state |= 0;
+		state = (state + 0x6d2b79f5) | 0;
+		let t = Math.imul(state ^ (state >>> 15), 1 | state);
+		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+};
+
+/**
+ * Simple string hash for seed generation.
+ */
+const hashString = (str: string): number => {
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		const char = str.charCodeAt(i);
+		hash = (hash << 5) - hash + char;
+		hash |= 0;
+	}
+	return Math.abs(hash);
+};
+
 type WeightedConfig = {
 	config: Config;
 	weight: number;
@@ -171,7 +199,8 @@ const selectByWeight = (
  */
 const performWeightedSelection = (
 	configs: Config[],
-	count: number
+	count: number,
+	random: () => number
 ): Config[] => {
 	if (configs.length === 0) return [];
 
@@ -182,7 +211,7 @@ const performWeightedSelection = (
 		const weightedConfigs = createWeightedConfigs(remainingConfigs);
 		const totalWeight =
 			weightedConfigs[weightedConfigs.length - 1].cumulativeWeight;
-		const randomValue = Math.random() * totalWeight;
+		const randomValue = random() * totalWeight;
 
 		const selectedConfig = selectByWeight(weightedConfigs, randomValue);
 		selected.push(selectedConfig);
@@ -196,6 +225,15 @@ const performWeightedSelection = (
 	return selected;
 };
 
+/**
+ * Gets random configs for the shop using a seeded RNG.
+ * Same run + same totalRerolls = same offered configs.
+ * Configs only change when user pays to reroll (increments totalRerolls).
+ *
+ * Selection is deterministic from the full pool, then filtered to exclude
+ * already-owned configs. This ensures installing a config just removes it
+ * from the offer without shifting the other selections.
+ */
 export const getRandomConfigs = ({
 	run,
 	configs,
@@ -205,6 +243,9 @@ export const getRandomConfigs = ({
 	configs: Config[];
 	count: number;
 }): Config[] => {
-	const availableConfigs = configs.filter((c) => !hasConfig(run, c.id));
-	return performWeightedSelection(availableConfigs, count);
+	const seed = hashString(`${run.id}-${run.totalRerolls}`);
+	const random = createSeededRandom(seed);
+	// Select from full pool first (deterministic), then filter out owned
+	const selected = performWeightedSelection(configs, count, random);
+	return selected.filter((c) => !hasConfig(run, c.id));
 };

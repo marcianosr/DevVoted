@@ -132,7 +132,7 @@ const DailyPollContainer = ({
 
 	return (
 		<section className="max-w-5xl mx-auto p-4">
-			<header className="border-b-1 border-theme py-4 mb-8">
+			<header className="border-b border-theme py-4 mb-8">
 				<p className="text-4xl text-theme">{category.name}</p>
 				<p>
 					#{poll.pollNumber} · Opened at{" "}
