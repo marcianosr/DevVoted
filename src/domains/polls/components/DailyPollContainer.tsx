@@ -3,7 +3,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { applyEffects } from "~/domains/configs/data/configs";
+import { ApplyEffects } from "~/domains/configs/data/configs";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm";
@@ -86,15 +86,16 @@ type DailyPollContainerProps = {
 	activeRun: Run;
 	selectedOptions: string[];
 	score: ScoreCalculation;
+	configEffects: ApplyEffects;
 };
 
 const DailyPollContainer = ({
 	poll,
 	options,
 	hasAnswered,
-	activeRun,
 	selectedOptions,
 	score,
+	configEffects,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const category = getCategoryMetadata(poll.categoryCode);
@@ -124,11 +125,6 @@ const DailyPollContainer = ({
 			console.error("Error submitting poll options", error);
 		},
 	});
-
-	const effectsResult = applyEffects(
-		{ poll, options, hasAnswered, run: activeRun },
-		activeRun.activeConfigIds
-	);
 
 	return (
 		<section className="max-w-5xl mx-auto p-4">
@@ -165,7 +161,7 @@ const DailyPollContainer = ({
 						poll={poll}
 						options={options}
 						hasAnswered={hasAnswered}
-						effect={effectsResult}
+						effect={configEffects}
 						selectedOptions={selectedOptions}
 						mutation={mutation}
 					/>

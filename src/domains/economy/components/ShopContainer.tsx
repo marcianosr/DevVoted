@@ -17,9 +17,14 @@ import { PrimaryButton } from "~/ui/PrimaryButton";
 type ShopContainerProps = {
 	activeRun: Run;
 	offeredConfigs: ReturnType<typeof getRandomConfigs>;
+	reductionCost: number;
 };
 
-const ShopContainer = ({ activeRun, offeredConfigs }: ShopContainerProps) => {
+const ShopContainer = ({
+	activeRun,
+	offeredConfigs,
+	reductionCost,
+}: ShopContainerProps) => {
 	const router = useRouter();
 	const { storageAvailable } = getStorageInfo(activeRun);
 
@@ -60,12 +65,18 @@ const ShopContainer = ({ activeRun, offeredConfigs }: ShopContainerProps) => {
 						Skip shop (Gain 30KB storage)
 					</PrimaryButton>
 				</div>
+
+				{reductionCost > 0 && (
+					<p className="text-green-600 font-semibold mt-1">
+						{reductionCost * 100}% discount active!
+					</p>
+				)}
 				<ul className="flex gap-4">
 					{offeredConfigs.map((config) => (
 						<li key={config.id}>
 							<ShopCard
 								config={config}
-								disabled={false}
+								disabled={config.cost > storageAvailable}
 								onInstall={() => onInstallConfig(config)}
 							/>
 						</li>

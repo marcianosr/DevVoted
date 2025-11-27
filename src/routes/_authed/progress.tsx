@@ -3,21 +3,39 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 
 import { removeConfigFromRunServerFn } from "~/domains/configs/api/configs";
 import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
-import { configs } from "~/domains/configs/data/configs";
+import { applyEffects, configs } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
+import { withDiscount } from "~/domains/configs/services/discount.service";
 import ShopContainer from "~/domains/economy/components/ShopContainer";
 import {
 	getRandomConfigs,
 	getStorageInfo,
 } from "~/domains/economy/services/configManager.service";
+import { getDailyPoll } from "~/domains/polls/api/polls";
 import { formatStorage } from "~/lib/storage";
 
 export const Route = createFileRoute("/_authed/progress")({
 	component: RouteComponent,
 	loader: async ({ context: { activeRun } }) => {
+		const pollResponse = await getDailyPoll();
+
+		if (!pollResponse.success) {
+			throw new Error(pollResponse.error);
+		}
+
 		if (!activeRun?.success) {
 			throw new Error("No active run");
 		}
+
+		const configEffects = applyEffects(
+			{
+				poll: pollResponse.data.poll,
+				options: pollResponse.data.options,
+				hasAnswered: pollResponse.data.hasAnswered,
+				run: activeRun.data,
+			},
+			activeRun.data.activeConfigIds
+		);
 
 		const offeredConfigs = getRandomConfigs({
 			count: 3,
@@ -25,9 +43,14 @@ export const Route = createFileRoute("/_authed/progress")({
 			configs,
 		});
 
+		const displayedConfigs = offeredConfigs.map((c) =>
+			withDiscount(c, configEffects.reductionCost ?? 0)
+		);
+
 		return {
 			activeRun: activeRun.data,
-			offeredConfigs,
+			offeredConfigs: displayedConfigs,
+			configEffects,
 		};
 	},
 });
@@ -55,7 +78,12 @@ const Badge = ({ status }: { status: BadgeStatus }) => {
 };
 
 function RouteComponent() {
-	const { activeRun, offeredConfigs } = Route.useLoaderData();
+	const {
+		activeRun,
+		offeredConfigs,
+		configEffects: { reductionCost },
+	} = Route.useLoaderData();
+
 	const router = useRouter();
 
 	const { activeConfigs, storageAvailable, storageLimit, storageUsed } =
@@ -123,8 +151,11 @@ function RouteComponent() {
 					</div>
 				</section>
 			</div>
-
-			<ShopContainer activeRun={activeRun} offeredConfigs={offeredConfigs} />
+			<ShopContainer
+				activeRun={activeRun}
+				offeredConfigs={offeredConfigs}
+				reductionCost={reductionCost}
+			/>
 			<section>
 				<h3 className="text-3xl">Your active configs</h3>
 				<div className="text-sm text-gray-400">

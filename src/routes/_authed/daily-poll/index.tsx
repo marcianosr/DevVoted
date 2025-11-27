@@ -1,5 +1,6 @@
 // import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+
 // import { createServerFn } from "@tanstack/react-start";
 
 // import {
@@ -7,6 +8,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 // 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
 // } from "~/config/polling";
 // import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
+import { applyEffects } from "~/domains/configs/data/configs";
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
@@ -14,6 +16,7 @@ import DailyPollContainer, {
 // import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
 // import type { CategoryCode } from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
+
 // import { getAuthenticatedUserId } from "~/utils/authorization";
 
 // const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
@@ -43,7 +46,7 @@ import { ErrorComponent } from "~/ui/ErrorComponent";
 
 const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
-	const { poll, options, hasAnswered, selectedOptions, score } =
+	const { poll, options, hasAnswered, selectedOptions, score, configEffects } =
 		Route.useLoaderData();
 
 	// Fetch active run category XP for real-time progress
@@ -77,6 +80,7 @@ const DailyPoll: React.FC = () => {
 				activeRun={activeRun.data}
 				selectedOptions={selectedOptions}
 				score={score}
+				configEffects={configEffects}
 			/>
 			{/* <PollPageContainer
 				user={user}
@@ -171,6 +175,15 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			hasAnswered: pollResponse.data.hasAnswered,
 			selectedOptions: pollResponse.data.selectedOptions,
 			score,
+			configEffects: applyEffects(
+				{
+					poll: pollResponse.data.poll,
+					options: pollResponse.data.options,
+					hasAnswered: pollResponse.data.hasAnswered,
+					run: activeRun.data,
+				},
+				activeRun.data.activeConfigIds
+			),
 		};
 	},
 	pendingComponent: () => (

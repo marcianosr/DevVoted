@@ -70,15 +70,17 @@ export const getStorageInfo = (
 export const canAddConfigToRun = (
 	run: Run,
 	config: Config,
-	availableConfigs: Config[] = configs
+	availableConfigs: Config[] = configs,
+	costReduction: number = 0
 ): boolean => {
 	if (run.activeConfigIds.includes(config.id)) {
 		return false; // Already has this config
 	}
 
 	const { storageUsed, storageLimit } = getStorageInfo(run, availableConfigs);
+	const discountedCost = Math.floor(config.cost * (1 - costReduction));
 	// Use effective storage limit (with bonuses) for validation
-	return canAddToStorage(storageUsed, config.cost, storageLimit);
+	return canAddToStorage(storageUsed, discountedCost, storageLimit);
 };
 
 export const addConfigsToRun = (
