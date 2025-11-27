@@ -18,6 +18,7 @@ import {
 } from "~/domains/polls/api/polls";
 import { RunPollHistory } from "~/domains/polls/api/queries";
 import { Poll } from "~/domains/polls/models/poll";
+import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
 import {
 	CI_GATES,
 	getCurrentRound,
@@ -217,43 +218,52 @@ function RouteComponent() {
 	};
 
 	return (
-		<section className="max-w-5xl mx-auto p-4">
-			<h1 className="text-3xl mb-4">Your progress this run</h1>
+		<section className="max-w-5xl mx-auto p-4 space-y-12">
+			<h1 className="text-3xl mb-8">Your progress this run</h1>
 
-			<div className="space-y-4">
-				{CI_GATES.slice(0, currentRound).map((gate) => {
-					const status = getGateStatus(gate.gate, currentRound);
-					const isCurrent = gate.gate === currentRound;
+			<section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+				<div className="space-y-4">
+					<h3 className="text-xl">Gate Progress</h3>
+					{CI_GATES.slice(0, currentRound).map((gate) => {
+						const status = getGateStatus(gate.gate, currentRound);
+						const isCurrent = gate.gate === currentRound;
 
-					return (
-						<details
-							key={gate.gate}
-							className={`group border-b border-t border-white py-4 ${isCurrent ? "bg-white/5" : ""}`}
-							open={isCurrent}
-						>
-							<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
-								<Badge status={status} />
-								<h2 className="text-2xl">Gate #{gate.gate}</h2>
-							</summary>
-							<div className="mt-2">
-								<p className="text-gray-400">{formatGateRequirements(gate)}</p>
-							</div>
-							<ol className="mt-3 space-y-1">
-								{getPollsForGate(pollHistory, gate.gate).map((poll, idx) => (
-									<>
-										<PollHistoryItem
-											key={poll.pollId}
-											poll={poll}
-											dailyPoll={dailyPoll.poll}
-											idx={idx + (gate.gate - 1) * POLLS_PER_ROUND}
-										/>
-									</>
-								))}
-							</ol>
-						</details>
-					);
-				})}
-			</div>
+						return (
+							<details
+								key={gate.gate}
+								className={`group border-b border-t border-white py-4 ${isCurrent ? "bg-white/5" : ""}`}
+								open={isCurrent}
+							>
+								<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
+									<Badge status={status} />
+									<h2 className="text-2xl">Gate #{gate.gate}</h2>
+								</summary>
+								<div className="mt-2">
+									<p className="text-gray-400">
+										{formatGateRequirements(gate)}
+									</p>
+								</div>
+								<ol className="mt-3 space-y-1">
+									{getPollsForGate(pollHistory, gate.gate).map((poll, idx) => (
+										<>
+											<PollHistoryItem
+												key={poll.pollId}
+												poll={poll}
+												dailyPoll={dailyPoll.poll}
+												idx={idx + (gate.gate - 1) * POLLS_PER_ROUND}
+											/>
+										</>
+									))}
+								</ol>
+							</details>
+						);
+					})}
+				</div>
+				<CategoryCoverageGrid
+					categoryCoverage={activeRun.categoryCoverage}
+					currentCategoryCode={dailyPoll.poll.categoryCode}
+				/>
+			</section>
 			<ShopContainer
 				activeRun={activeRun}
 				offeredConfigs={offeredConfigs}

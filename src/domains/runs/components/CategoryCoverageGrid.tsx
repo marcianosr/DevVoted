@@ -1,7 +1,6 @@
 import { clsx } from "clsx";
 
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
-import { aggregateRunCategoryCoverage } from "~/domains/runs/utils/coverageCalculations";
 import { CATEGORY_METADATA } from "~/domains/shared/categories";
 
 type CategoryCoverageGridProps = {
@@ -13,16 +12,15 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 	categoryCoverage,
 	currentCategoryCode,
 }) => {
-	const { totalCoverage, totalPollsAnswered } =
-		aggregateRunCategoryCoverage(categoryCoverage);
-
 	const highestBestStreak = Math.max(
 		...categoryCoverage.map((c) => c.bestStreak)
 	);
 
 	return (
 		<div className="space-y-2">
-			<div className="grid grid-cols-[3fr_3fr_1fr_1fr] gap-2 text-sm border-b border-theme pb-2">
+			<h3 className="text-xl">Coverage overview</h3>
+
+			<div className="grid grid-cols-4 gap-2 text-sm border-b border-theme pb-2">
 				<span>Category</span>
 				<span>Coverage</span>
 				<span>Streak</span>
@@ -37,19 +35,15 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 					return (
 						<div
 							key={coverage.categoryCode}
-							className={clsx(
-								"grid grid-cols-[3fr_3fr_1fr_1fr] gap-2 text-sm pl-2",
-								{
-									"bg-theme/10 border-l-4 border-theme -ml-2":
-										isCurrentCategory,
-									"hover:bg-gray-800/50": !isCurrentCategory,
-								}
-							)}
+							className={clsx("grid grid-cols-4 gap-2 text-sm pl-2", {
+								"bg-theme/10 border-l-4 border-theme -ml-2": isCurrentCategory,
+								"hover:bg-gray-800/50": !isCurrentCategory,
+							})}
 							aria-current={isCurrentCategory ? "true" : undefined}
 						>
 							<span
 								className={clsx("self-center", {
-									"text-theme font-semibold": isCurrentCategory,
+									"text-theme": isCurrentCategory,
 								})}
 							>
 								{CATEGORY_METADATA[coverage.categoryCode].name}
@@ -92,11 +86,6 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 						</div>
 					);
 				})}
-			</div>
-
-			<div className="mt-4 pt-4 border-t border-theme">
-				Total: {totalCoverage.toFixed(1)}% coverage • {totalPollsAnswered} polls
-				answered
 			</div>
 		</div>
 	);

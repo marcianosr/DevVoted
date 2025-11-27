@@ -150,6 +150,7 @@ BUGS:
 [] Fixen todo warnings eslint
 [] Starring a poll
 [] Add explanation field to poll (shown after answering)
+[] Provide KB's when skipping the shop
 
 
 [] Onboarding/help modal for first-time users [Critical]

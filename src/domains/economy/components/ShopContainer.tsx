@@ -52,18 +52,34 @@ const ShopContainer = ({
 
 	return (
 		<section aria-labelledby="shop-heading">
-			<h2 id="shop-heading" className="text-3xl">
-				Shop (Package Manager)
-			</h2>
-			<p>Improve your run by installing packages!</p>
-			<div className="flex gap-4">
-				<div className="flex flex-col gap-2">
-					<PrimaryButton size="small" onClick={onReroll} disabled={!canReroll}>
-						Rebuild ({formatStorage(rerollCost)})
-					</PrimaryButton>
-					<PrimaryButton size="small">
-						Skip shop (Gain 30KB storage)
-					</PrimaryButton>
+			<header className="mb-4">
+				<h2 id="shop-heading" className="text-3xl">
+					Shop (Package Manager)
+				</h2>
+				<p>Improve your run by installing packages!</p>
+			</header>
+			<div className="grid grid-cols-8 gap-4">
+				<div className="flex flex-col gap-2 col-span-8 md:col-span-2">
+					<div className="flex flex-col col-span-4">
+						<PrimaryButton
+							size="small"
+							onClick={onReroll}
+							disabled={!canReroll}
+						>
+							Rebuild package offers
+						</PrimaryButton>
+						<small className="text-sm mt-2">
+							Cost: {formatStorage(rerollCost)}
+						</small>
+					</div>
+					<div className="flex flex-col col-span-8 md:col-span-4">
+						<PrimaryButton size="small" disabled={true}>
+							Skip shop
+						</PrimaryButton>
+						<small className="text-sm mt-2">
+							Gain +30KB storage (teaser HAH!)
+						</small>
+					</div>
 				</div>
 
 				{reductionCost > 0 && (
