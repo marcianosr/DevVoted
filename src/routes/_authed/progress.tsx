@@ -11,7 +11,23 @@ import {
 	getRandomConfigs,
 	getStorageInfo,
 } from "~/domains/economy/services/configManager.service";
-import { getDailyPoll } from "~/domains/polls/api/polls";
+import {
+	getDailyPoll,
+	getPollsSeenInRun,
+	getRunPollHistoryServerFn,
+} from "~/domains/polls/api/polls";
+import { RunPollHistory } from "~/domains/polls/api/queries";
+import { Poll } from "~/domains/polls/models/poll";
+import {
+	CI_GATES,
+	getCurrentRound,
+	POLLS_PER_ROUND,
+} from "~/domains/runs/services/thresholdCalculator.service";
+import { formatGateRequirements } from "~/domains/runs/utils/gateFormatting";
+import {
+	CATEGORY_METADATA,
+	type CategoryCode,
+} from "~/domains/shared/categories";
 import { formatStorage } from "~/lib/storage";
 
 export const Route = createFileRoute("/_authed/progress")({
@@ -26,6 +42,17 @@ export const Route = createFileRoute("/_authed/progress")({
 		if (!activeRun?.success) {
 			throw new Error("No active run");
 		}
+
+		const [pollsSeenResponse, pollHistoryResponse] = await Promise.all([
+			getPollsSeenInRun(),
+			getRunPollHistoryServerFn(),
+		]);
+
+		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
+		const pollHistory = pollHistoryResponse.success
+			? pollHistoryResponse.data
+			: [];
+		const currentRound = getCurrentRound(pollsSeen);
 
 		const configEffects = applyEffects(
 			{
@@ -48,9 +75,18 @@ export const Route = createFileRoute("/_authed/progress")({
 		);
 
 		return {
+			dailyPoll: {
+				poll: pollResponse.data.poll,
+				options: pollResponse.data.options,
+				hasAnswered: pollResponse.data.hasAnswered,
+				selectedOptions: pollResponse.data.selectedOptions,
+			},
 			activeRun: activeRun.data,
 			offeredConfigs: displayedConfigs,
 			configEffects,
+			currentRound,
+			pollsSeen,
+			pollHistory,
 		};
 	},
 });
@@ -77,11 +113,89 @@ const Badge = ({ status }: { status: BadgeStatus }) => {
 	);
 };
 
+const getGateStatus = (
+	gateNumber: number,
+	currentRound: number
+): BadgeStatus => {
+	if (gateNumber < currentRound) return "pass";
+	if (gateNumber === currentRound) return "pending";
+	return "pending";
+};
+
+const getPollsForGate = (
+	pollHistory: RunPollHistory[],
+	gateNumber: number
+): RunPollHistory[] => {
+	const startIndex = (gateNumber - 1) * POLLS_PER_ROUND;
+	const endIndex = startIndex + POLLS_PER_ROUND;
+	return pollHistory.slice(startIndex, endIndex);
+};
+
+const PollHistoryItem = ({
+	poll,
+	dailyPoll,
+	idx,
+}: {
+	poll: RunPollHistory;
+	dailyPoll: Poll;
+	idx: number;
+}) => {
+	const categoryName =
+		CATEGORY_METADATA[poll.categoryCode as CategoryCode]?.name ??
+		poll.categoryCode;
+	const isAnswered = poll.answeredAt !== null;
+
+	const isCurrentDailyPoll = dailyPoll && dailyPoll.id === poll.pollId;
+
+	if (isCurrentDailyPoll) {
+		return (
+			<li className="flex items-center gap-2 text-yellow-400">
+				<span className="w-4 text-center">{idx + 1}</span>
+				<span className="w-4 text-center">❯</span>
+				<span data-category-theme={poll.categoryCode} className="text-theme">
+					{categoryName}
+				</span>
+				<span>{isCurrentDailyPoll && <span>(Today)</span>}</span>
+			</li>
+		);
+	}
+
+	if (!isAnswered) {
+		return (
+			<li className="flex items-center gap-2 text-gray-500">
+				<span className="w-4 text-center">{idx + 1}</span>
+				<span data-category-theme={poll.categoryCode} className="text-theme">
+					{categoryName}
+				</span>
+				<span className="text-xs">(not answered)</span>
+				<span>{!isCurrentDailyPoll && <span>Missed!</span>}</span>
+			</li>
+		);
+	}
+
+	return (
+		<li className="flex items-center gap-2">
+			<span className="w-4 text-center">{idx + 1}</span>
+			<span
+				className={`w-4 text-center ${poll.isCorrect ? "text-green-400" : "text-red-400"}`}
+			>
+				{poll.isCorrect ? "✓" : "✗"}
+			</span>
+			<span data-category-theme={poll.categoryCode} className="text-theme">
+				{categoryName}
+			</span>
+		</li>
+	);
+};
+
 function RouteComponent() {
 	const {
 		activeRun,
 		offeredConfigs,
 		configEffects: { reductionCost },
+		currentRound,
+		pollHistory,
+		dailyPoll,
 	} = Route.useLoaderData();
 
 	const router = useRouter();
@@ -101,55 +215,44 @@ function RouteComponent() {
 			data: { configIds: [config.id], runId: activeRun.id },
 		});
 	};
+
 	return (
 		<section className="max-w-5xl mx-auto p-4">
 			<h1 className="text-3xl mb-4">Your progress this run</h1>
 
-			<div className="w-1/3">
-				<section className="border-b border-t border-white py-4 my-4">
-					<div className="space-y-4">
-						<div className="flex gap-4">
-							<Badge status="pending" />
-							<h2 className="text-3xl">Gate #1</h2>
-						</div>
-						<div>
-							<h2 className="text-xl">Requirement(s):</h2>
-							<ul className="space-y-1 pt-2">
-								<li className="flex items-center gap-2 before:content-['✓'] before:text-green-400 before:w-4 before:text-center text-green-400">
-									Score 4% coverage in ANY category
-								</li>
-								<li className="flex items-center gap-2 before:content-['❯'] before:text-gray-400 before:w-4 before:text-center">
-									Score 14% coverage in ANY category
-								</li>
-							</ul>
-						</div>
-						<div>
-							<h2 className="text-xl">Polls 1-5</h2>
-							<ul className="mt-2">
-								<li className="flex items-center gap-3 before:content-['✓'] before:text-green-400 before:w-4 before:text-center">
-									<span className="w-16">Poll #1</span>
-									<span className="text-lavender">TypeScript</span>
-								</li>
-								<li className="flex items-center gap-3 before:content-['✓'] before:text-green-400 before:w-4 before:text-center">
-									<span className="w-16">Poll #2</span>
-									<span className="text-saffron">JavaScript</span>
-								</li>
-								<li className="flex items-center gap-3 before:content-['✗'] before:text-red-400 before:w-4 before:text-center">
-									<span className="w-16">Poll #3</span>
-									<span className="text-saffron">JavaScript</span>
-								</li>
-								<li className="flex items-center gap-3 before:content-['❯'] before:text-yellow-400 before:w-4 before:text-center">
-									<span className="w-16">Poll #4</span>
-									<span className="text-cerulean">CSS</span>
-								</li>
-								<li className="flex items-center gap-3 before:content-['·'] before:text-gray-500 before:w-4 before:text-center">
-									<span className="w-16">Poll #5</span>
-									<span className="text-gray-500">?????</span>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</section>
+			<div className="space-y-4">
+				{CI_GATES.slice(0, currentRound).map((gate) => {
+					const status = getGateStatus(gate.gate, currentRound);
+					const isCurrent = gate.gate === currentRound;
+
+					return (
+						<details
+							key={gate.gate}
+							className={`group border-b border-t border-white py-4 ${isCurrent ? "bg-white/5" : ""}`}
+							open={isCurrent}
+						>
+							<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
+								<Badge status={status} />
+								<h2 className="text-2xl">Gate #{gate.gate}</h2>
+							</summary>
+							<div className="mt-2">
+								<p className="text-gray-400">{formatGateRequirements(gate)}</p>
+							</div>
+							<ol className="mt-3 space-y-1">
+								{getPollsForGate(pollHistory, gate.gate).map((poll, idx) => (
+									<>
+										<PollHistoryItem
+											key={poll.pollId}
+											poll={poll}
+											dailyPoll={dailyPoll.poll}
+											idx={idx + (gate.gate - 1) * POLLS_PER_ROUND}
+										/>
+									</>
+								))}
+							</ol>
+						</details>
+					);
+				})}
 			</div>
 			<ShopContainer
 				activeRun={activeRun}

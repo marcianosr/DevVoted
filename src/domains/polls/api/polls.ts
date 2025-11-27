@@ -10,6 +10,7 @@ import {
 	getDailyPollHandler,
 	postPollOptionsHandler,
 	getPollsSeenInRunHandler,
+	getRunPollHistoryHandler,
 } from "./handlers";
 
 export const getPollByIdWithOptions = createServerFn({ method: "GET" })
@@ -58,3 +59,10 @@ export const getPollsSeenInRun = createServerFn({ method: "GET" }).handler(
 		return getPollsSeenInRunHandler({ data: { userId } });
 	}
 );
+
+export const getRunPollHistoryServerFn = createServerFn({
+	method: "GET",
+}).handler(async () => {
+	const userId = await getAuthenticatedUserId();
+	return getRunPollHistoryHandler({ data: { userId } });
+});

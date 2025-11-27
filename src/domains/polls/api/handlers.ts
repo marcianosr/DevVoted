@@ -11,6 +11,7 @@ import {
 	trackPollAnswer,
 	getPollsSeenInRun,
 	getCommunityStatsForDailyPoll,
+	getRunPollHistory,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
@@ -235,5 +236,20 @@ export const getCommunityStatsHandler = async ({
 		const { pollId } = data;
 
 		return await getCommunityStatsForDailyPoll(pollId);
+	});
+};
+
+export const getRunPollHistoryHandler = async ({
+	data,
+}: {
+	data: { userId: string };
+}) => {
+	return handleApiOperation(async () => {
+		const { userId } = data;
+		const activeRunResponse = await getUserActiveRun(userId);
+		if (!activeRunResponse.success) {
+			throw new Error(activeRunResponse.error);
+		}
+		return await getRunPollHistory(activeRunResponse.data.id, userId);
 	});
 };
