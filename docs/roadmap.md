@@ -140,28 +140,30 @@ BUGS:
 [] Fonts niet duidelijk
 [] Add .editorconfig file
 [] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
-[] Show partial correct polls in list of progress
 
 ### Season 2: Early Meta Layer
 
+[] Loading state for rebuilding new configs
+[] Config: style lint
 [] Move CI gates into DB
 [] Show current season - shows 29 days
-[] Show created by (poll)
+[] Show more run info
+[x] Show created by (poll)
 [] Fixen todo warnings eslint
 [] Starring a poll
 [] Add explanation field to poll (shown after answering)
 [] Provide KB's when skipping the shop
 [] Fix "deflate" config
+[] Show partial correct polls in list of progress
+[] Tan stack "start" instead of "query" in footer
+[] Include footer everywhere
+
 
 
 [] Onboarding/help modal for first-time users [Critical]
-[] Google Auth?
 [] Colorize tiers coverage
-[] Expand configs
 [] Expand CI gate challenges
 [] Add icons (pixelated) for configs
-[] Make CI gates more like Github
-[] Show checks passed
 [] Style category tiers? - red for dangerous low coverage - yellow for low coverage - orange for medium coverage - green for high coverage - gold for max coverage
 [] Events table - Traceability
 [] Store "phase" per player in run. This prevents accidental shop miss
@@ -174,7 +176,6 @@ BUGS:
 [] Store most and least popular configs
 [] Admin panel for polls
 [] Check system roles
-[] Event framework?
 
 Season 3: Expansion
 [] Add Head tags seo

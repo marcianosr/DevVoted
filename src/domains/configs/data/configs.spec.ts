@@ -280,9 +280,8 @@ describe("configs", () => {
 
 			const result = applyEffects(base, ["eslint-config"]);
 
-			// Should still return a disabled option ID array, but with undefined value
-			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
-			expect(result.renderProps.disabledOptionIds?.[0]).toBeUndefined();
+			// No disabledOptionIds property when there are no wrong options to disable
+			expect(result.renderProps.disabledOptionIds).toBeUndefined();
 			expect(result.meta.notes).toEqual(["Hid wrong options"]);
 		});
 
