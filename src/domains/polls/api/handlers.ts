@@ -5,10 +5,13 @@ import {
 	fetchPollById,
 	fetchPollByIdWithOptions,
 	hasUserAnsweredPoll,
+	getUserSelectedOptions,
 	getPollHistory,
 	trackPollView,
 	trackPollAnswer,
 	getPollsSeenInRun,
+	getCommunityStatsForDailyPoll,
+	getRunPollHistory,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
@@ -17,7 +20,13 @@ import {
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
+import { Run } from "~/domains/runs/models/run";
+import { getRunProgress } from "~/domains/runs/services/progress.service";
+import { fetchUserDisplayName } from "~/domains/users/api/queries";
 import { handleApiOperation } from "~/utils/errorHandling";
+
+import { Poll } from "../models/poll";
+import { PollOption } from "../models/pollOption";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -63,6 +72,13 @@ export const getDailyPollHandler = async ({
 			? await hasUserAnsweredPoll(poll.id, userId)
 			: false;
 
+		const selectedOptions =
+			userId && hasAnswered
+				? await getUserSelectedOptions(poll.id, userId)
+				: [];
+
+		const creatorDisplayName = await fetchUserDisplayName(poll.createdBy);
+
 		// Track poll view only if not seen today
 		if (userId) {
 			const activeRunResponse = await getUserActiveRun(userId);
@@ -80,7 +96,33 @@ export const getDailyPollHandler = async ({
 			}
 		}
 
-		return { poll, options, hasAnswered };
+		return { poll, options, hasAnswered, selectedOptions, creatorDisplayName };
+	});
+};
+
+export const getScoreBreakdownHandler = async ({
+	data,
+}: {
+	data: {
+		selectedOptions: string[];
+		poll: Poll;
+		options: PollOption[];
+		hasAnswered: boolean;
+		run: Run;
+	};
+}) => {
+	return handleApiOperation(async () => {
+		const { poll, options, hasAnswered, run, selectedOptions } = data;
+
+		const score = await getRunProgress({
+			selectedOptions,
+			run,
+			poll,
+			options,
+			hasAnswered,
+		});
+
+		return score;
 	});
 };
 
@@ -119,6 +161,7 @@ export const postPollOptionsHandler = async ({
 			validatedData.pollId
 		);
 
+		// TODO: check when score breakdown can be removed here
 		return {
 			message: "Options submitted successfully",
 			selectOptions: selectedOptionIds,
@@ -184,5 +227,32 @@ export const getPollsSeenInRunHandler = async ({
 			throw new Error(activeRunResponse.error);
 		}
 		return await getPollsSeenInRun(activeRunResponse.data.id);
+	});
+};
+
+export const getCommunityStatsHandler = async ({
+	data,
+}: {
+	data: { pollId: number };
+}) => {
+	return handleApiOperation(async () => {
+		const { pollId } = data;
+
+		return await getCommunityStatsForDailyPoll(pollId);
+	});
+};
+
+export const getRunPollHistoryHandler = async ({
+	data,
+}: {
+	data: { userId: string };
+}) => {
+	return handleApiOperation(async () => {
+		const { userId } = data;
+		const activeRunResponse = await getUserActiveRun(userId);
+		if (!activeRunResponse.success) {
+			throw new Error(activeRunResponse.error);
+		}
+		return await getRunPollHistory(activeRunResponse.data.id, userId);
 	});
 };

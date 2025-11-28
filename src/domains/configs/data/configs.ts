@@ -105,7 +105,8 @@ export const configs: Config[] = [
 		name: "ESLint Config",
 		image: "/configs/eslint.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Disables 1 wrong option",
+		description:
+			"Disables 1 wrong option when answering JavaScript/TypeScript polls",
 		rarity: "uncommon",
 		effect: ["disableWrongOptions"],
 		priority: 100,
@@ -144,17 +145,18 @@ export const configs: Config[] = [
 		effect: ["randomStreakAmp"],
 		priority: 100,
 	},
-	{
-		id: "deflate-config",
-		name: "Deflate",
-		image: "/configs/deflate-config.png",
-		cost: STORAGE_UNITS.MB / 2,
-		description: "Reduces the cost of all configs by 10%",
-		rarity: "uncommon",
-		effect: ["reduceConfigCost"],
-		priority: 50, // Run before other effects
-		reductionCost: 0.1, // 10% cost reduction
-	},
+	// TODO: re-enable deflate config when we can make it work
+	// {
+	// 	id: "deflate-config",
+	// 	name: "Deflate",
+	// 	image: "/configs/deflate-config.png",
+	// 	cost: STORAGE_UNITS.MB / 2,
+	// 	description: "Reduces the cost of all configs by 10%",
+	// 	rarity: "uncommon",
+	// 	effect: ["reduceConfigCost"],
+	// 	priority: 50, // Run before other effects
+	// 	reductionCost: 0.1, // 10% cost reduction
+	// },
 	{
 		id: "hot-reload-config",
 		name: "Hot Reload",
@@ -209,7 +211,7 @@ export type EffectOut = {
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
 
-type ApplyEffects = {
+export type ApplyEffects = {
 	view: EffectCtx;
 	renderProps: EffectRenderProps;
 	coverage: CoverageMods;

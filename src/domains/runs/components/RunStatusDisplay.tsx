@@ -1,23 +1,19 @@
 import { format } from "date-fns";
 
 import type { Run } from "~/domains/runs/models/run";
-import type { PollScoreBreakdown } from "~/domains/score/services/score.service";
 import { SeasonInfo } from "~/domains/seasons/components/SeasonInfo";
 import { useCurrentSeason } from "~/domains/seasons/hooks/useCurrentSeason";
 
 import { CategoryCoverageGrid } from "./CategoryCoverageGrid";
-import { ScoreBreakdownSidebar } from "./ScoreBreakdownSidebar";
 
 interface RunStatusDisplayProps {
 	activeRun: Run | null;
 	currentCategoryCode?: string;
-	lastScoreBreakdown?: PollScoreBreakdown | null;
 }
 
 export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 	activeRun,
 	currentCategoryCode,
-	lastScoreBreakdown,
 }) => {
 	const { data: seasonData } = useCurrentSeason();
 
@@ -38,16 +34,10 @@ export const RunStatusDisplay: React.FC<RunStatusDisplayProps> = ({
 				</div>
 			</div>
 
-			{lastScoreBreakdown && (
-				<ScoreBreakdownSidebar breakdown={lastScoreBreakdown} />
-			)}
-
-			{activeRun.categoryCoverage && (
-				<CategoryCoverageGrid
-					categoryCoverage={activeRun.categoryCoverage}
-					currentCategoryCode={currentCategoryCode}
-				/>
-			)}
+			<CategoryCoverageGrid
+				categoryCoverage={activeRun.categoryCoverage}
+				currentCategoryCode={currentCategoryCode}
+			/>
 		</div>
 	);
 };

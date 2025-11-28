@@ -10,6 +10,7 @@ import {
 	getDailyPollHandler,
 	postPollOptionsHandler,
 	getPollsSeenInRunHandler,
+	getRunPollHistoryHandler,
 } from "./handlers";
 
 export const getPollByIdWithOptions = createServerFn({ method: "GET" })
@@ -47,6 +48,8 @@ export const postPollOptions = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
+		// TODO: remove score calc here (only post) get score breakdown here instead of getting it from the POST IF needed?
+
 		return postPollOptionsHandler({
 			data: { ...data, userId },
 		});
@@ -58,3 +61,10 @@ export const getPollsSeenInRun = createServerFn({ method: "GET" }).handler(
 		return getPollsSeenInRunHandler({ data: { userId } });
 	}
 );
+
+export const getRunPollHistoryServerFn = createServerFn({
+	method: "GET",
+}).handler(async () => {
+	const userId = await getAuthenticatedUserId();
+	return getRunPollHistoryHandler({ data: { userId } });
+});

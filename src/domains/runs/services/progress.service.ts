@@ -1,6 +1,7 @@
 import { applyEffects } from "~/domains/configs/data/configs";
 import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { handleUserSelectedOptionsByPollType } from "~/domains/polls/services/processPollAnswer.service";
 import {
 	orchestrateScoreCalculation,
 	ScoreCalculation,
@@ -46,7 +47,7 @@ export const incrementRunProgress = async ({
 	hasAnswered,
 }: IncrementProgress): Promise<IncrementRunProgressResult> => {
 	const currentCategoryCoverage = run.categoryCoverage.find(
-		(xp) => xp.categoryCode === categoryCode
+		(coverage) => coverage.categoryCode === categoryCode
 	);
 
 	if (!currentCategoryCoverage) {
@@ -110,4 +111,63 @@ export const incrementRunProgress = async ({
 		newBestStreak,
 		newPollsAnswered,
 	};
+};
+
+// NEW Progress function
+
+type GetRunProgressParams = {
+	selectedOptions: string[];
+	poll: PollWithOptionsResponse["poll"];
+	options: PollWithOptionsResponse["options"];
+	hasAnswered: boolean;
+	run: Run;
+};
+export const getRunProgress = async ({
+	selectedOptions,
+	poll,
+	options,
+	hasAnswered,
+	run,
+}: GetRunProgressParams) => {
+	const currentCategoryCoverage = run.categoryCoverage.find(
+		(coverage) => coverage.categoryCode === poll.categoryCode
+	);
+
+	const { correctnessFactor } = await handleUserSelectedOptionsByPollType({
+		pollId: poll.id,
+		selectedOptionIds: selectedOptions.map((id) => Number(id)),
+	});
+
+	const totalPollsSeen = await getPollsSeenInRun(run.id);
+
+	const effectCtx = {
+		poll,
+		options,
+		hasAnswered,
+		run,
+	};
+
+	const { coverage: coverageMods } = applyEffects(
+		effectCtx,
+		run.activeConfigIds
+	);
+
+	const result = orchestrateScoreCalculation({
+		correctnessFactor,
+		currentBestStreak: currentCategoryCoverage
+			? currentCategoryCoverage.bestStreak
+			: 0,
+		currentCoverage: currentCategoryCoverage
+			? currentCategoryCoverage.currentCoverage
+			: 0,
+		currentStreak: currentCategoryCoverage
+			? currentCategoryCoverage.currentStreak
+			: 0,
+		totalPollsAnswered: 0, // Placeholder until we fetch actual data
+		totalPollsSeen,
+		coverageAdd: coverageMods.coverageAdd ?? 0,
+		coverageMult: coverageMods.coverageMult ?? 1,
+	});
+
+	return result;
 };

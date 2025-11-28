@@ -1,4 +1,4 @@
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, gte, sql, asc } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -125,6 +125,41 @@ export const hasUserAnsweredPoll = async (
 		);
 
 	return existingResponse.length > 0;
+};
+
+export const getUserSelectedOptions = async (
+	pollId: number,
+	userId: string
+): Promise<string[]> => {
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
+	const response = await db
+		.select({
+			responseId: pollResponsesTable.response_id,
+		})
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.poll_id, pollId),
+				eq(pollResponsesTable.user_id, userId),
+				gte(pollResponsesTable.created_at, today)
+			)
+		)
+		.limit(1);
+
+	if (response.length === 0) {
+		return [];
+	}
+
+	const selectedOptions = await db
+		.select({
+			optionId: pollResponseOptionsTable.option_id,
+		})
+		.from(pollResponseOptionsTable)
+		.where(eq(pollResponseOptionsTable.response_id, response[0].responseId));
+
+	return selectedOptions.map((option) => String(option.optionId));
 };
 
 /**
@@ -262,4 +297,138 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 		.where(eq(pollHistoryTable.run_id, runId));
 
 	return result[0]?.count ?? 0;
+};
+
+export const getCommunityStatsForDailyPoll = async (pollId: number) => {
+	const result = await db
+		.select()
+		.from(pollResponsesTable)
+		.where(eq(pollResponsesTable.poll_id, pollId));
+
+	const totalResponses = result.length;
+
+	return {
+		totalResponses,
+	};
+};
+
+export type RunPollHistory = {
+	pollId: number;
+	categoryCode: string;
+	isCorrect: boolean;
+	answeredAt: Date | null;
+};
+
+const fetchUserResponseId = async (
+	pollId: number,
+	userId: string
+): Promise<number | null> => {
+	const [response] = await db
+		.select({ responseId: pollResponsesTable.response_id })
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.poll_id, pollId),
+				eq(pollResponsesTable.user_id, userId)
+			)
+		);
+
+	return response?.responseId ?? null;
+};
+
+/**
+ * Checks if user selected all correct options and no incorrect ones.
+ * For multi-answer polls: must select ALL correct options and ZERO incorrect options.
+ */
+const checkResponseCorrectness = async (
+	responseId: number,
+	pollId: number
+): Promise<boolean> => {
+	const [result] = await db
+		.select({
+			selectedCorrect: sql<number>`
+				COUNT(CASE WHEN ${pollOptionsTable.correct} = true THEN 1 END)::int
+			`,
+			selectedIncorrect: sql<number>`
+				COUNT(CASE WHEN ${pollOptionsTable.correct} = false THEN 1 END)::int
+			`,
+			totalCorrect: sql<number>`
+				(SELECT COUNT(*) FROM ${pollOptionsTable}
+				 WHERE ${pollOptionsTable.poll_id} = ${pollId}
+				 AND ${pollOptionsTable.correct} = true)::int
+			`,
+		})
+		.from(pollResponseOptionsTable)
+		.innerJoin(
+			pollOptionsTable,
+			eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
+		)
+		.where(eq(pollResponseOptionsTable.response_id, responseId));
+
+	const hasNoIncorrectSelections = result.selectedIncorrect === 0;
+	const hasAllCorrectSelections =
+		result.selectedCorrect === result.totalCorrect;
+
+	return hasNoIncorrectSelections && hasAllCorrectSelections;
+};
+
+/**
+ * Get poll history for a run with correctness info.
+ * Returns polls in the order they were first seen.
+ */
+export const getRunPollHistory = async (
+	runId: number,
+	userId: string
+): Promise<RunPollHistory[]> => {
+	const results = await db
+		.select({
+			pollId: pollHistoryTable.poll_id,
+			categoryCode: pollsTable.category_code,
+			answeredAt: pollHistoryTable.last_answered_at,
+			timesAnswered: pollHistoryTable.times_answered,
+		})
+		.from(pollHistoryTable)
+		.innerJoin(pollsTable, eq(pollHistoryTable.poll_id, pollsTable.id))
+		.where(
+			and(
+				eq(pollHistoryTable.run_id, runId),
+				eq(pollHistoryTable.user_id, userId)
+			)
+		)
+		.orderBy(asc(pollHistoryTable.first_seen_at));
+
+	const pollsWithCorrectness = await Promise.all(
+		results.map(async (row) => {
+			const wasNotAnswered = row.timesAnswered === 0;
+			if (wasNotAnswered) {
+				return {
+					pollId: row.pollId,
+					categoryCode: row.categoryCode,
+					isCorrect: false,
+					answeredAt: null,
+				};
+			}
+
+			const responseId = await fetchUserResponseId(row.pollId, userId);
+			if (!responseId) {
+				return {
+					pollId: row.pollId,
+					categoryCode: row.categoryCode,
+					isCorrect: false,
+					answeredAt: row.answeredAt,
+				};
+			}
+
+			const isCorrect = await checkResponseCorrectness(responseId, row.pollId);
+
+			return {
+				pollId: row.pollId,
+				categoryCode: row.categoryCode,
+				isCorrect,
+				answeredAt: row.answeredAt,
+			};
+		})
+	);
+
+	return pollsWithCorrectness;
 };
