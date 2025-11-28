@@ -71,9 +71,11 @@ const ShopContainer = ({
 						<PrimaryButton
 							size="small"
 							onClick={onReroll}
-							disabled={!canReroll || !isOpen}
+							disabled={!canReroll || !isOpen || onRerollMutation.isPending}
 						>
-							Rebuild package offers
+							{onRerollMutation.isPending
+								? "Rebuilding package offers..."
+								: "Rebuild package offers"}
 						</PrimaryButton>
 						<small className="text-sm mt-2">
 							Cost: {formatStorage(rerollCost)}
