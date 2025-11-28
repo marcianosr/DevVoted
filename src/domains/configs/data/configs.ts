@@ -2,6 +2,7 @@ import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { Run } from "~/domains/runs/models/run";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
+import { selectSeededRandom } from "~/lib/seededRandom";
 import { STORAGE_UNITS, formatStorage } from "~/lib/storage";
 
 export const configs: Config[] = [
@@ -107,6 +108,16 @@ export const configs: Config[] = [
 		cost: STORAGE_UNITS.MB / 2,
 		description:
 			"Disables 1 wrong option when answering JavaScript/TypeScript polls",
+		rarity: "uncommon",
+		effect: ["disableWrongOptions"],
+		priority: 100,
+	},
+	{
+		id: "stylelint-config",
+		name: "Stylelint Config",
+		image: "/configs/stylelint.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "Disables 1 wrong option when answering HTML/CSS polls",
 		rarity: "uncommon",
 		effect: ["disableWrongOptions"],
 		priority: 100,
@@ -233,16 +244,26 @@ export type ApplyEffects = {
  * - meta: Notes and badges for display
  */
 const EFFECTS: Record<string, EffectFn> = {
-	// Disables one random wrong option (ESLint Config effect)
-	disableWrongOptions: ({ poll, options, run, hasAnswered }, _config) => {
-		if (poll.categoryCode === "js" || poll.categoryCode === "ts") {
-			const disabledIds = options.filter((o) => !o.correct).map((o) => o.id);
-			const randomIdFromDisabled =
-				disabledIds[Math.floor(Math.random() * disabledIds.length)];
+	// Disables one wrong option deterministically (ESLint/Stylelint Config effect)
+	disableWrongOptions: ({ poll, options, run, hasAnswered }, config) => {
+		const shouldDisableTSJS =
+			config.id === "eslint-config" &&
+			(poll.categoryCode === "js" || poll.categoryCode === "ts");
+		const shouldDisableHTMLCSS =
+			config.id === "stylelint-config" &&
+			(poll.categoryCode === "html" || poll.categoryCode === "css");
+
+		if (shouldDisableHTMLCSS || shouldDisableTSJS) {
+			const wrongOptions = options.filter((o) => !o.correct);
+			// Use poll ID + config ID as seed for deterministic selection
+			const seed = `${poll.id}-${config.id}`;
+			const selectedOption = selectSeededRandom(wrongOptions, seed);
 
 			return {
 				view: { poll, options, run, hasAnswered },
-				renderProps: { disabledOptionIds: [randomIdFromDisabled] },
+				renderProps: {
+					disabledOptionIds: selectedOption ? [selectedOption.id] : [],
+				},
 				meta: { notes: ["Hid wrong options"] },
 			};
 		}
