@@ -3,7 +3,13 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { PollQuestionDisplay } from "~/domains//polls/components/PollQuestionDisplay";
 import { ApplyEffects } from "~/domains/configs/data/configs";
+import {
+	getCommunityStatsHandler,
+	getScoreBreakdownHandler,
+} from "~/domains/polls/api/handlers";
+import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm";
@@ -14,30 +20,6 @@ import type { Run } from "~/domains/runs/models/run";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { PrimaryButton } from "~/ui/PrimaryButton";
-import { getAuthenticatedUserId } from "~/utils/authorization";
-
-import { PollQuestionDisplay } from "./PollQuestionDisplay";
-import {
-	getCommunityStatsHandler,
-	getScoreBreakdownHandler,
-	postPollOptionsHandler,
-} from "../api/handlers";
-
-// TODO: submitPollOptions to its own file
-
-export const submitPollOptions = createServerFn({ method: "POST" })
-	.inputValidator(
-		z.object({
-			pollId: z.number().int().positive(),
-			selectedOptions: z.array(z.string()).min(1),
-		})
-	)
-	.handler(async ({ data }) => {
-		const userId = await getAuthenticatedUserId();
-
-		// TODO: remove score calc here (only post) get score breakdown here instead of getting it from the POST IF needed?
-		return postPollOptionsHandler({ data: { ...data, userId } });
-	});
 
 export const getScoreBreakdown = createServerFn({ method: "GET" })
 	.inputValidator(
@@ -114,7 +96,7 @@ const DailyPollContainer = ({
 	});
 
 	const mutation = useMutation({
-		mutationFn: submitPollOptions,
+		mutationFn: postPollOptions,
 
 		onSuccess: (data) => {
 			router.invalidate();

@@ -1,12 +1,12 @@
 import { useForm } from "@tanstack/react-form";
 
 import type { ApplyEffects } from "~/domains/configs/data/configs";
+import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollOptions } from "~/domains/polls/components/PollOptions";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 
-import type { submitPollOptions } from "./DailyPollContainer";
 import type { UseMutationResult } from "@tanstack/react-query";
 
 // TODO: move
@@ -18,9 +18,9 @@ type PollOptionsFormProps = {
 	effect: ApplyEffects;
 	selectedOptions: string[];
 	mutation: UseMutationResult<
-		Awaited<ReturnType<typeof submitPollOptions>>,
+		Awaited<ReturnType<typeof postPollOptions>>,
 		Error,
-		Parameters<typeof submitPollOptions>[0]
+		Parameters<typeof postPollOptions>[0]
 	>;
 };
 

@@ -275,13 +275,14 @@ export const orchestrateScoreCalculation = ({
 	// Calculate config bonus (difference between final coverage and coverage before configs)
 	const configBonus = coverageWithAdd - coverageBeforeConfigs;
 
-	// Step 7: Add to total (negative coverage is allowed, but cap at MAX_COVERAGE)
-	// Keep decimal precision for accurate coverage tracking
-	const actualEarnedCoverage = coverageWithAdd;
+	// Step 7: Round to 1 decimal place to avoid floating point precision issues
+	const actualEarnedCoverage = Math.round(coverageWithAdd * 10) / 10;
 	const newTotalCoverage = Math.min(
 		MAX_COVERAGE,
-		currentCoverage + actualEarnedCoverage
+		Math.round((currentCoverage + actualEarnedCoverage) * 10) / 10
 	);
+
+	const round = (n: number) => Math.round(n * 10) / 10;
 
 	return {
 		newTotalCoverage,
@@ -292,9 +293,9 @@ export const orchestrateScoreCalculation = ({
 			streak: newStreak,
 			earnedCoverage: actualEarnedCoverage,
 			delta: actualEarnedCoverage,
-			baseCoverage: baseCoverage * correctnessFactor, // Base after correctness applied
-			streakBonus: streakBonus * correctnessFactor, // Streak bonus after correctness applied
-			configBonus, // Config effects (mult + add)
+			baseCoverage: round(baseCoverage * correctnessFactor),
+			streakBonus: round(streakBonus * correctnessFactor),
+			configBonus: round(configBonus),
 		},
 	};
 };

@@ -181,9 +181,9 @@ describe("score.service", () => {
 			});
 
 			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
-			// Perfect multi (1.5x): 2.5 × 1.5 = 3.75
-			expect(result.breakdown.earnedCoverage).toBe(3.75);
-			expect(result.newTotalCoverage).toBe(18.75); // 15 + 3.75
+			// Perfect multi (1.5x): 2.5 × 1.5 = 3.75, rounded to 3.8
+			expect(result.breakdown.earnedCoverage).toBe(3.8);
+			expect(result.newTotalCoverage).toBe(18.8); // 15 + 3.8
 			expect(result.newStreak).toBe(5);
 		});
 

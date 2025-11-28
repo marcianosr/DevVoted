@@ -61,10 +61,13 @@ const SelectedOptionsSummary = ({
 					<section className="mt-4 py-8 border-t border-theme space-y-2">
 						<h3 className="text-4xl">Score</h3>
 						{score.breakdown.earnedCoverage > 0 ? (
-							<ul className="text-green-400 text-xl list-disc px-4">
+							<ul className="text-xl list-disc px-4">
 								<li>
-									Coverage earned: +{score?.breakdown.earnedCoverage}
-									<small className="ml-4">
+									Coverage earned:{" "}
+									<span className="text-green-400">
+										+{score?.breakdown.earnedCoverage}% coverage
+									</span>
+									<small className="ml-4 text-green-400 ">
 										({score?.breakdown.baseCoverage} +{" "}
 										{score?.breakdown.configBonus} +{" "}
 										{score?.breakdown.streakBonus})

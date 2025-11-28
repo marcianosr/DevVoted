@@ -48,6 +48,8 @@ export const postPollOptions = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
+		// TODO: remove score calc here (only post) get score breakdown here instead of getting it from the POST IF needed?
+
 		return postPollOptionsHandler({
 			data: { ...data, userId },
 		});
