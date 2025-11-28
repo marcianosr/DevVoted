@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { clsx } from "clsx";
 
 import { removeConfigFromRunServerFn } from "~/domains/configs/api/configs";
 import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
@@ -149,28 +150,21 @@ const PollHistoryItem = ({
 
 	const isCurrentDailyPoll = dailyPoll && dailyPoll.id === poll.pollId;
 
-	if (isCurrentDailyPoll) {
-		return (
-			<li className="flex items-center gap-2 text-yellow-400">
-				<span className="w-4 text-center">{idx + 1}</span>
-				<span className="w-4 text-center">❯</span>
-				<span data-category-theme={poll.categoryCode} className="text-theme">
-					{categoryName}
-				</span>
-				<span>{isCurrentDailyPoll && <span>(Today)</span>}</span>
-			</li>
-		);
-	}
-
 	if (!isAnswered) {
 		return (
-			<li className="flex items-center gap-2 text-gray-500">
+			<li
+				className={clsx(
+					"flex items-center gap-2",
+					isCurrentDailyPoll ? "text-yellow-400" : "text-gray-500"
+				)}
+			>
 				<span className="w-4 text-center">{idx + 1}</span>
 				<span data-category-theme={poll.categoryCode} className="text-theme">
 					{categoryName}
 				</span>
 				<span className="text-xs">(not answered)</span>
 				<span>{!isCurrentDailyPoll && <span>Missed!</span>}</span>
+				<span>{isCurrentDailyPoll && <span>(Today)</span>}</span>
 			</li>
 		);
 	}
@@ -178,14 +172,19 @@ const PollHistoryItem = ({
 	return (
 		<li className="flex items-center gap-2">
 			<span className="w-4 text-center">{idx + 1}</span>
-			<span
-				className={`w-4 text-center ${poll.isCorrect ? "text-green-400" : "text-red-400"}`}
-			>
-				{poll.isCorrect ? "✓" : "✗"}
-			</span>
+			{isAnswered ? (
+				<span
+					className={`w-4 text-center ${poll.isCorrect ? "text-green-400" : "text-red-400"}`}
+				>
+					{poll.isCorrect ? "✓" : "✗"}
+				</span>
+			) : (
+				<span className="text-yellow-400 w-4 text-center">❯</span>
+			)}
 			<span data-category-theme={poll.categoryCode} className="text-theme">
 				{categoryName}
 			</span>
+			<span>{isCurrentDailyPoll && <span>(Today)</span>}</span>
 		</li>
 	);
 };

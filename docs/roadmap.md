@@ -141,6 +141,7 @@ BUGS:
 [] Fonts niet duidelijk
 [] Add .editorconfig file
 [] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
+[] Show partial correct polls in list of progress
 
 ### Season 2: Early Meta Layer
 
