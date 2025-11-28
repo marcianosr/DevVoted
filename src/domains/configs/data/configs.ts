@@ -178,6 +178,16 @@ export const configs: Config[] = [
 		effect: ["resetRebuild"],
 		priority: 50,
 	},
+	{
+		id: "grid-template-areas-config",
+		name: "Grid Template Areas",
+		image: "/configs/grid-template-areas.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "Adds another slot in the shop",
+		rarity: "rare",
+		effect: ["addSlotToShop"],
+		priority: 100,
+	},
 ];
 
 /**
@@ -218,6 +228,7 @@ export type EffectOut = {
 	protection?: Protection; // Safeguards that prevent run failure
 	reductionCost?: number;
 	resetRebuild?: boolean;
+	extraSlot?: boolean;
 };
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
@@ -231,6 +242,7 @@ export type ApplyEffects = {
 	protection: Protection;
 	reductionCost: number;
 	resetRebuild: boolean;
+	extraSlot: boolean;
 };
 
 /**
@@ -411,6 +423,15 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+	addSlotToShop: ({ poll, options, run, hasAnswered }, _config) => {
+		return {
+			view: { poll, options, run, hasAnswered },
+			extraSlot: true,
+			meta: {
+				notes: [`Added an extra slot in the shop`],
+			},
+		};
+	},
 };
 
 /**
@@ -447,6 +468,7 @@ export function applyEffects(
 			protection: {},
 			reductionCost: 0,
 			resetRebuild: false,
+			extraSlot: false,
 		};
 
 	const effects = activeConfigIds
@@ -504,6 +526,7 @@ export function applyEffects(
 				},
 				reductionCost: (acc.reductionCost ?? 0) + (out.reductionCost ?? 0),
 				resetRebuild: acc.resetRebuild || out.resetRebuild || false,
+				extraSlot: acc.extraSlot || out.extraSlot || false,
 				meta: {
 					...acc.meta,
 					...(out.meta?.badges
@@ -522,6 +545,7 @@ export function applyEffects(
 			protection: {},
 			reductionCost: 0,
 			resetRebuild: false,
+			extraSlot: false,
 		}
 	);
 }

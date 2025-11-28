@@ -68,7 +68,7 @@ export const Route = createFileRoute("/_authed/progress")({
 		);
 
 		const offeredConfigs = getRandomConfigs({
-			count: 3,
+			count: configEffects.extraSlot ? 4 : 3,
 			run: activeRun.data,
 			configs,
 		});

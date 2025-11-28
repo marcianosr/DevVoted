@@ -94,9 +94,9 @@ const ShopContainer = ({
 						{reductionCost * 100}% discount active!
 					</p>
 				)}
-				<ul className="flex gap-4 overflow-x-auto md:overflow-visible col-span-8 md:col-span-6">
+				<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory col-span-8 md:col-span-6">
 					{offeredConfigs.map((config) => (
-						<li key={config.id} className="shrink-0 md:shrink">
+						<li key={config.id} className="shrink-0 snap-start">
 							<ShopCard
 								config={config}
 								disabled={config.cost > storageAvailable || !isOpen}

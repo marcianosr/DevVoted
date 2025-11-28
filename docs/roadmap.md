@@ -127,7 +127,7 @@ BUGS:
 
 [x] eslint/prettier
 [x] Update eslint description -> only works with TS and JS
-[] Eslint disabled ander antwoord als je van tab wisselt
+[x] Eslint disabled ander antwoord als je van tab wisselt
 [x] When answering on CI check, end run on progress screen. Now it ends when trying to proceed to the shop
 [x] Rondes resetten niet als je een nieuwe run start
 [x] Gekozen / foute antwoorden onderscheid niet heel duidelijk
@@ -144,10 +144,17 @@ BUGS:
 ### Season 2: Early Meta Layer
 
 [] Loading state for rebuilding new configs
-[] Config: style lint
+[o] Config: style lint
+[] Game over state
 [] Move CI gates into DB
 [] Show current season - shows 29 days
 [] Show more run info
+    [] rerolls used
+    [] configs bought
+    [] total polls answered
+    [] total correct answers
+    [] total incorrect answers
+    ...etc
 [x] Show created by (poll)
 [] Fixen todo warnings eslint
 [] Starring a poll

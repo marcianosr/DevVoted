@@ -247,7 +247,7 @@ export const getRandomConfigs = ({
 }): Config[] => {
 	const seed = hashString(`${run.id}-${run.totalRerolls}`);
 	const random = createSeededRandom(seed);
-	// Select from full pool first (deterministic), then filter out owned
-	const selected = performWeightedSelection(configs, count, random);
-	return selected.filter((c) => !hasConfig(run, c.id));
+
+	const availableConfigs = configs.filter((c) => !hasConfig(run, c.id));
+	return performWeightedSelection(availableConfigs, count, random);
 };
