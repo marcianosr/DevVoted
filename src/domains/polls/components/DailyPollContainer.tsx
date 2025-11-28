@@ -69,6 +69,7 @@ type DailyPollContainerProps = {
 	selectedOptions: string[];
 	score: ScoreCalculation;
 	configEffects: ApplyEffects;
+	creatorDisplayName: string | null;
 };
 
 const DailyPollContainer = ({
@@ -78,6 +79,7 @@ const DailyPollContainer = ({
 	selectedOptions,
 	score,
 	configEffects,
+	creatorDisplayName,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const category = getCategoryMetadata(poll.categoryCode);
@@ -118,7 +120,7 @@ const DailyPollContainer = ({
 						{poll.updatedAt?.toDateString()}
 					</time>
 				</p>
-				<p>Created by: {poll.createdBy}</p>
+				<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
 			</header>
 			<PollQuestionDisplay poll={poll} />
 			{poll.codeSandboxExample && (

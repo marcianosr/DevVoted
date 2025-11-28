@@ -105,7 +105,8 @@ export const configs: Config[] = [
 		name: "ESLint Config",
 		image: "/configs/eslint.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Disables 1 wrong option",
+		description:
+			"Disables 1 wrong option when answering JavaScript/TypeScript polls",
 		rarity: "uncommon",
 		effect: ["disableWrongOptions"],
 		priority: 100,

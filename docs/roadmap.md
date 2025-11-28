@@ -126,15 +126,14 @@ BUGS:
     - [] create poll id page to test
 
 [x] eslint/prettier
-[] Update eslint description -> only works with TS and JS
-[] Deflate config doesn't work
+[x] Update eslint description -> only works with TS and JS
 [] Eslint disabled ander antwoord als je van tab wisselt
-[] When answering on CI check, end run on progress screen. Now it ends when trying to proceed to the shop
-[] Rondes resetten niet als je een nieuwe run start
-[] Gekozen / foute antwoorden onderscheid niet heel duidelijk
-[] Refactor shop in progress page
-[] Score weergave klopt nog niet.
-[] Bij Matthijs zei hij 1.95% en de score was 2%
+[x] When answering on CI check, end run on progress screen. Now it ends when trying to proceed to the shop
+[x] Rondes resetten niet als je een nieuwe run start
+[x] Gekozen / foute antwoorden onderscheid niet heel duidelijk
+[x] Refactor shop in progress page
+[x] Score weergave klopt nog niet.
+[x] Bij Matthijs zei hij 1.95% en de score was 2%
 [] Vue category toevoegen (viridian)
 [] "Architecture" catregory toevoegen (pallet)
 [] Show your place in each button so you dont have to go through the list
@@ -152,6 +151,7 @@ BUGS:
 [] Starring a poll
 [] Add explanation field to poll (shown after answering)
 [] Provide KB's when skipping the shop
+[] Fix "deflate" config
 
 
 [] Onboarding/help modal for first-time users [Critical]

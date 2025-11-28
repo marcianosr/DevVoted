@@ -39,6 +39,10 @@ vi.mock("~/domains/runs/api/handlers", () => ({
 	getUserActiveRun: vi.fn(),
 }));
 
+vi.mock("~/domains/users/api/queries", () => ({
+	fetchUserDisplayName: vi.fn(),
+}));
+
 // Tests service layer logic that wraps query methods and structures return data
 describe("handlers", () => {
 	describe("getPollById", () => {

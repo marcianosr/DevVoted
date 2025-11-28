@@ -46,8 +46,15 @@ import { ErrorComponent } from "~/ui/ErrorComponent";
 
 const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
-	const { poll, options, hasAnswered, selectedOptions, score, configEffects } =
-		Route.useLoaderData();
+	const {
+		poll,
+		options,
+		hasAnswered,
+		selectedOptions,
+		creatorDisplayName,
+		score,
+		configEffects,
+	} = Route.useLoaderData();
 
 	// Fetch active run category XP for real-time progress
 	// const categoryCoverageQuery = useQuery({
@@ -81,6 +88,7 @@ const DailyPoll: React.FC = () => {
 				selectedOptions={selectedOptions}
 				score={score}
 				configEffects={configEffects}
+				creatorDisplayName={creatorDisplayName}
 			/>
 			{/* <PollPageContainer
 				user={user}
@@ -174,6 +182,7 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			options: pollResponse.data.options,
 			hasAnswered: pollResponse.data.hasAnswered,
 			selectedOptions: pollResponse.data.selectedOptions,
+			creatorDisplayName: pollResponse.data.creatorDisplayName,
 			score,
 			configEffects: applyEffects(
 				{

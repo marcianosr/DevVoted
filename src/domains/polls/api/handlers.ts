@@ -22,6 +22,7 @@ import {
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
 import { Run } from "~/domains/runs/models/run";
 import { getRunProgress } from "~/domains/runs/services/progress.service";
+import { fetchUserDisplayName } from "~/domains/users/api/queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 
 import { Poll } from "../models/poll";
@@ -76,6 +77,8 @@ export const getDailyPollHandler = async ({
 				? await getUserSelectedOptions(poll.id, userId)
 				: [];
 
+		const creatorDisplayName = await fetchUserDisplayName(poll.createdBy);
+
 		// Track poll view only if not seen today
 		if (userId) {
 			const activeRunResponse = await getUserActiveRun(userId);
@@ -93,7 +96,7 @@ export const getDailyPollHandler = async ({
 			}
 		}
 
-		return { poll, options, hasAnswered, selectedOptions };
+		return { poll, options, hasAnswered, selectedOptions, creatorDisplayName };
 	});
 };
 
