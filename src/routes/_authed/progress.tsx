@@ -17,6 +17,7 @@ import {
 	getRunPollHistoryServerFn,
 } from "~/domains/polls/api/polls";
 import { RunPollHistory } from "~/domains/polls/api/queries";
+import { PollCountdown } from "~/domains/polls/components/PollCountdown";
 import { Poll } from "~/domains/polls/models/poll";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
 import {
@@ -219,6 +220,8 @@ function RouteComponent() {
 
 	return (
 		<section className="max-w-5xl mx-auto p-4 space-y-12">
+			<PollCountdown />
+
 			<h1 className="text-3xl mb-8">Your progress this run</h1>
 
 			<section className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -240,7 +243,7 @@ function RouteComponent() {
 								</summary>
 								<div className="mt-2">
 									<p className="text-gray-400">
-										{formatGateRequirements(gate)}
+										Score atleast: {formatGateRequirements(gate)}
 									</p>
 								</div>
 								<ol className="mt-3 space-y-1">
@@ -268,6 +271,7 @@ function RouteComponent() {
 				activeRun={activeRun}
 				offeredConfigs={offeredConfigs}
 				reductionCost={reductionCost}
+				isOpen={dailyPoll.hasAnswered}
 			/>
 			<section>
 				<h3 className="text-3xl">Your active configs</h3>
@@ -289,6 +293,7 @@ function RouteComponent() {
 								key={config.id}
 								config={config}
 								onDeinstall={onDeinstallConfig}
+								disabled={!dailyPoll.hasAnswered}
 							/>
 						))
 					)}

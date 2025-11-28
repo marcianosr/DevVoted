@@ -16,6 +16,7 @@ const ActiveCard = ({ config, disabled, onDeinstall }: ActiveCardProps) => {
 			<ConfigCard config={config} disabled={disabled} />
 			<button
 				onClick={() => !disabled && onDeinstall(config)}
+				disabled={disabled}
 				className={clsx(
 					`border ${RARITY_COLORS[config.rarity].border} ${RARITY_COLORS[config.rarity].text} p-2 cursor-pointer`,
 					disabledStyles

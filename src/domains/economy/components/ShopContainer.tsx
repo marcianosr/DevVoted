@@ -18,12 +18,14 @@ type ShopContainerProps = {
 	activeRun: Run;
 	offeredConfigs: ReturnType<typeof getRandomConfigs>;
 	reductionCost: number;
+	isOpen: boolean;
 };
 
 const ShopContainer = ({
 	activeRun,
 	offeredConfigs,
 	reductionCost,
+	isOpen,
 }: ShopContainerProps) => {
 	const router = useRouter();
 	const { storageAvailable } = getStorageInfo(activeRun);
@@ -54,7 +56,12 @@ const ShopContainer = ({
 		<section aria-labelledby="shop-heading">
 			<header className="mb-4">
 				<h2 id="shop-heading" className="text-3xl">
-					Shop (Package Manager)
+					Shop (Package Manager) -{" "}
+					{isOpen ? (
+						<span className="text-green-400">OPEN</span>
+					) : (
+						<span className="text-red-400">CLOSED</span>
+					)}
 				</h2>
 				<p>Improve your run by installing packages!</p>
 			</header>
@@ -64,7 +71,7 @@ const ShopContainer = ({
 						<PrimaryButton
 							size="small"
 							onClick={onReroll}
-							disabled={!canReroll}
+							disabled={!canReroll || !isOpen}
 						>
 							Rebuild package offers
 						</PrimaryButton>
@@ -87,12 +94,12 @@ const ShopContainer = ({
 						{reductionCost * 100}% discount active!
 					</p>
 				)}
-				<ul className="flex gap-4">
+				<ul className="flex gap-4 overflow-x-auto md:overflow-visible col-span-8 md:col-span-6">
 					{offeredConfigs.map((config) => (
-						<li key={config.id}>
+						<li key={config.id} className="shrink-0 md:shrink">
 							<ShopCard
 								config={config}
-								disabled={config.cost > storageAvailable}
+								disabled={config.cost > storageAvailable || !isOpen}
 								onInstall={() => onInstallConfig(config)}
 							/>
 						</li>

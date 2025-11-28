@@ -18,7 +18,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 
 	return (
 		<div className="space-y-2">
-			<h3 className="text-xl">Coverage overview</h3>
+			<h3 className="text-xl">Coverage score overview</h3>
 
 			<div className="grid grid-cols-4 gap-2 text-sm border-b border-theme pb-2">
 				<span>Category</span>
@@ -36,7 +36,7 @@ export const CategoryCoverageGrid: React.FC<CategoryCoverageGridProps> = ({
 						<div
 							key={coverage.categoryCode}
 							className={clsx("grid grid-cols-4 gap-2 text-sm pl-2", {
-								"bg-theme/10 border-l-4 border-theme -ml-2": isCurrentCategory,
+								"bg-theme/10 border-l-4 border-theme": isCurrentCategory,
 								"hover:bg-gray-800/50": !isCurrentCategory,
 							})}
 							aria-current={isCurrentCategory ? "true" : undefined}
