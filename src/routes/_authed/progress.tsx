@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { clsx } from "clsx";
 
+import Layout from "~/components/Layout";
 import { removeConfigFromRunServerFn } from "~/domains/configs/api/configs";
 import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
 import { applyEffects, configs } from "~/domains/configs/data/configs";
@@ -159,9 +160,7 @@ const PollHistoryItem = ({
 				)}
 			>
 				<span className="w-4 text-center">{idx + 1}</span>
-				<span data-category-theme={poll.categoryCode} className="text-theme">
-					{categoryName}
-				</span>
+				<span data-category-theme={poll.categoryCode}>{categoryName}</span>
 				<span className="text-xs">(not answered)</span>
 				<span>{!isCurrentDailyPoll && <span>Missed!</span>}</span>
 				<span>{isCurrentDailyPoll && <span>(Today)</span>}</span>
@@ -181,9 +180,7 @@ const PollHistoryItem = ({
 			) : (
 				<span className="text-yellow-400 w-4 text-center">❯</span>
 			)}
-			<span data-category-theme={poll.categoryCode} className="text-theme">
-				{categoryName}
-			</span>
+			<span data-category-theme={poll.categoryCode}>{categoryName}</span>
 			<span>{isCurrentDailyPoll && <span>(Today)</span>}</span>
 		</li>
 	);
@@ -218,86 +215,90 @@ function RouteComponent() {
 	};
 
 	return (
-		<section className="max-w-5xl mx-auto p-4 space-y-12">
-			<PollCountdown />
+		<Layout poll={dailyPoll.poll}>
+			<section className="max-w-5xl mx-auto p-4 space-y-12">
+				<PollCountdown />
 
-			<h1 className="text-3xl mb-8">Your progress this run</h1>
+				<h1 className="text-3xl mb-8">Your progress this run</h1>
 
-			<section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-				<div className="space-y-4">
-					<h3 className="text-xl">Gate Progress</h3>
-					{CI_GATES.slice(0, currentRound).map((gate) => {
-						const status = getGateStatus(gate.gate, currentRound);
-						const isCurrent = gate.gate === currentRound;
+				<section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+					<div className="space-y-4">
+						<h3 className="text-xl">Gate Progress</h3>
+						{CI_GATES.slice(0, currentRound).map((gate) => {
+							const status = getGateStatus(gate.gate, currentRound);
+							const isCurrent = gate.gate === currentRound;
 
-						return (
-							<details
-								key={gate.gate}
-								className={`group border-b border-t border-white py-4 ${isCurrent ? "bg-white/5" : ""}`}
-								open={isCurrent}
-							>
-								<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
-									<Badge status={status} />
-									<h2 className="text-2xl">Gate #{gate.gate}</h2>
-								</summary>
-								<div className="mt-2">
-									<p className="text-gray-400">
-										Score atleast: {formatGateRequirements(gate)}
-									</p>
-								</div>
-								<ol className="mt-3 space-y-1">
-									{getPollsForGate(pollHistory, gate.gate).map((poll, idx) => (
-										<>
-											<PollHistoryItem
-												key={poll.pollId}
-												poll={poll}
-												dailyPoll={dailyPoll.poll}
-												idx={idx + (gate.gate - 1) * POLLS_PER_ROUND}
-											/>
-										</>
-									))}
-								</ol>
-							</details>
-						);
-					})}
-				</div>
-				<CategoryCoverageGrid
-					categoryCoverage={activeRun.categoryCoverage}
-					currentCategoryCode={dailyPoll.poll.categoryCode}
+							return (
+								<details
+									key={gate.gate}
+									className={`group border-b border-t border-white py-4 ${isCurrent ? "bg-white/5" : ""}`}
+									open={isCurrent}
+								>
+									<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
+										<Badge status={status} />
+										<h2 className="text-2xl">Gate #{gate.gate}</h2>
+									</summary>
+									<div className="mt-2">
+										<p className="text-gray-400">
+											Score atleast: {formatGateRequirements(gate)}
+										</p>
+									</div>
+									<ol className="mt-3 space-y-1">
+										{getPollsForGate(pollHistory, gate.gate).map(
+											(poll, idx) => (
+												<>
+													<PollHistoryItem
+														key={poll.pollId}
+														poll={poll}
+														dailyPoll={dailyPoll.poll}
+														idx={idx + (gate.gate - 1) * POLLS_PER_ROUND}
+													/>
+												</>
+											)
+										)}
+									</ol>
+								</details>
+							);
+						})}
+					</div>
+					<CategoryCoverageGrid
+						categoryCoverage={activeRun.categoryCoverage}
+						currentCategoryCode={dailyPoll.poll.categoryCode}
+					/>
+				</section>
+				<ShopContainer
+					activeRun={activeRun}
+					offeredConfigs={offeredConfigs}
+					reductionCost={reductionCost}
+					isOpen={dailyPoll.hasAnswered}
 				/>
+				<section>
+					<h3 className="text-3xl">Your active configs</h3>
+					<div className="text-sm text-gray-400">
+						<span>Used: </span>
+						{formatStorage(storageUsed)} / {formatStorage(storageLimit)}
+						{storageAvailable > 0 && (
+							<div className="text-green-600">
+								{formatStorage(storageAvailable)} available
+							</div>
+						)}
+					</div>
+					<ul className="flex gap-4">
+						{activeConfigs.length === 0 ? (
+							<p className="text-gray-400">No active configs installed</p>
+						) : (
+							activeConfigs.map((config) => (
+								<ActiveCard
+									key={config.id}
+									config={config}
+									onDeinstall={onDeinstallConfig}
+									disabled={!dailyPoll.hasAnswered}
+								/>
+							))
+						)}
+					</ul>
+				</section>
 			</section>
-			<ShopContainer
-				activeRun={activeRun}
-				offeredConfigs={offeredConfigs}
-				reductionCost={reductionCost}
-				isOpen={dailyPoll.hasAnswered}
-			/>
-			<section>
-				<h3 className="text-3xl">Your active configs</h3>
-				<div className="text-sm text-gray-400">
-					<span>Used: </span>
-					{formatStorage(storageUsed)} / {formatStorage(storageLimit)}
-					{storageAvailable > 0 && (
-						<div className="text-green-600">
-							{formatStorage(storageAvailable)} available
-						</div>
-					)}
-				</div>
-				<ul className="flex gap-4">
-					{activeConfigs.length === 0 ? (
-						<p className="text-gray-400">No active configs installed</p>
-					) : (
-						activeConfigs.map((config) => (
-							<ActiveCard
-								key={config.id}
-								config={config}
-								onDeinstall={onDeinstallConfig}
-								disabled={!dailyPoll.hasAnswered}
-							/>
-						))
-					)}
-				</ul>
-			</section>
-		</section>
+		</Layout>
 	);
 }
