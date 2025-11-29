@@ -3,6 +3,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 // import { createServerFn } from "@tanstack/react-start";
 
+import Layout from "~/components/Layout";
 // import {
 // 	LEADERBOARD_REFRESH_INTERVAL,
 // 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
@@ -79,7 +80,7 @@ const DailyPoll: React.FC = () => {
 	}
 
 	return (
-		<section data-category-theme={poll.categoryCode}>
+		<Layout poll={poll}>
 			<DailyPollContainer
 				poll={poll}
 				options={options}
@@ -90,15 +91,6 @@ const DailyPoll: React.FC = () => {
 				configEffects={configEffects}
 				creatorDisplayName={creatorDisplayName}
 			/>
-			{/* <PollPageContainer
-				user={user}
-				poll={{
-					poll: poll,
-					options: options,
-					hasAnswered: hasAnswered,
-				}}
-				activeRun={activeRun.data}
-			/> */}
 
 			{/* TODO: Refactor in own component */}
 			{/* <section className="max-w-5xl mx-auto">
@@ -139,11 +131,7 @@ const DailyPoll: React.FC = () => {
 					)}
 				</>
 			</section> */}
-			<footer className="p-4 mt-8 bg-zinc-900 text-center text-white">
-				A crazy roguelike obsession build with craftsmanship, passion, ❤️ &
-				Tanstack Start by Marciano Schildmeijer | EST may 2022
-			</footer>
-		</section>
+		</Layout>
 	);
 };
 
