@@ -115,12 +115,12 @@ BUGS:
 
 ### Feedback / BUGS [Critical]
 
-[o] Herzien flow: - start - daily-poll - shop - progress (hub)
+[x] Herzien flow: - start - daily-poll - shop - progress (hub)
 
 - [x] Create activeRunGuard
-- [o] Tonen: Hoelang het duurt voor de volgende poll komt
-- [o] Tonen: Tijdlijn van welke polls je hebt beantwoord (misschien alleen categorie?) - en de poll van morgen in "?"
-- [o] Tonen: Jouw progressie richting de CI gate: Wanneer komt de CI gate?
+- [x] Tonen: Hoelang het duurt voor de volgende poll komt
+- [x] Tonen: Tijdlijn van welke polls je hebt beantwoord (misschien alleen categorie?) - en de poll van morgen in "?"
+- [x] Tonen: Jouw progressie richting de CI gate: Wanneer komt de CI gate?
 
 [] White theme stuff
 [] HTML entities komen niet door
@@ -140,18 +140,18 @@ BUGS:
 [] "Architecture" catregory toevoegen (pallet)
 [-] Fonts niet duidelijk
 [] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
-[] Fail a run?
+[x] Fail a run?
 [] Mobile text bigger (question)
 [] Answers that contain code should be formatted well
-[] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
+[x] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
 [] When not logged in, the start page shouldn't show the start run button, but a login button
 [] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 
 ### Season 2: Early Meta Layer
 
 [x] Loading state for rebuilding new configs
-[o] Config: style lint
-[] Game over state
+[x] Config: style lint
+[x] Game over state
 [] Move CI gates into DB
 [] Show current season - shows 29 days
 [] Show more run info
@@ -162,6 +162,7 @@ BUGS:
     [] total incorrect answers
     ...etc
 [x] Show created by (poll)
+[] Allow endless runs
 [] Fixen todo warnings eslint
 [] Starring a poll
 [] Add explanation field to poll (shown after answering)

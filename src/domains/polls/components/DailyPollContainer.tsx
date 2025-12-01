@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -82,6 +82,7 @@ const DailyPollContainer = ({
 	creatorDisplayName,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
+	const navigate = useNavigate();
 	const category = getCategoryMetadata(poll.categoryCode);
 
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
@@ -100,10 +101,14 @@ const DailyPollContainer = ({
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
 
-		onSuccess: (data) => {
-			router.invalidate();
+		onSuccess: (response) => {
+			if (response.success && response.data.runEnded) {
+				navigate({ to: "/game-over" });
+				return;
+			}
 
-			console.info("Successfully submitted poll options", data);
+			router.invalidate();
+			console.info("Successfully submitted poll options", response);
 		},
 		onError: (error) => {
 			console.error("Error submitting poll options", error);

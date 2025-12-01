@@ -4,18 +4,37 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
 import { ConfirmDialog } from "~/components/ConfirmDialog";
-import { finishRunFn } from "~/domains/runs/api/runs";
+import Content from "~/components/Content";
+import { finishRunFn, getLastRunForGameOver } from "~/domains/runs/api/runs";
 import { runQueryKeys } from "~/domains/shared/queryKeys";
+import { PrimaryButton } from "~/ui/PrimaryButton";
 import { SecondaryButton } from "~/ui/SecondaryButton";
 
 export const Route = createFileRoute("/_authed/game-over")({
 	component: RouteComponent,
+	loader: async ({ context: { user, activeRun } }) => {
+		const lastRun = await getLastRunForGameOver();
+
+		if (!lastRun.success) {
+			return {
+				user,
+				activeRun,
+				lastRun: null,
+			};
+		}
+
+		return {
+			user,
+			activeRun,
+			lastRun: lastRun.data,
+		};
+	},
 });
 
 function RouteComponent() {
-	const { user } = Route.useRouteContext();
+	const { user, activeRun } = Route.useRouteContext();
+	const { lastRun } = Route.useLoaderData();
 
-	const { activeRun } = Route.useRouteContext();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -68,19 +87,53 @@ function RouteComponent() {
 		);
 	}
 
+	const isVictory = lastRun?.run.completion_reason === "victory" ? true : false;
+
 	return (
-		<div className="text-center py-8 space-y-4">
-			<h1 className="text-3xl">Game over!</h1>
+		<Content>
+			<div className="py-8 space-y-8">
+				<header>
+					<h1 className="text-4xl">{isVictory ? "You win!" : "Game over!"}</h1>
+					<p>Thank you for playing!</p>
+				</header>
 
-			<p>Thank you for playing!</p>
-			<p>Your results have been saved.</p>
+				<section>
+					<h2 className="text-2xl">Your performance</h2>
+					<ul>
+						{lastRun?.categoryCoverage.map((category) => (
+							<li key={category.categoryCode}>
+								{category.categoryCode} - Coverage: {category.currentCoverage}%,
+								Best Streak: {category.bestStreak}
+							</li>
+						))}
+					</ul>
+				</section>
 
-			<SecondaryButton
-				onClick={handleStartNewRunClick}
-				className="px-3 py-1 text-sm"
-			>
-				Start New Run
-			</SecondaryButton>
-		</div>
+				<section>
+					<h2 className="text-2xl">Run summary</h2>
+					<ul>
+						<li>Total polls answered: {lastRun?.totalPollsAnswered}</li>
+						<li>Total shop rebuilds: {lastRun?.run.total_rerolls}</li>
+					</ul>
+				</section>
+
+				<section className="space-y-4">
+					{!isVictory && (
+						<>
+							<p className="text-green-400">
+								Congratulations on mastering all CI gates! You can continue your
+								run and try to reach 100% coverage!
+							</p>
+							<PrimaryButton className="px-3 py-1 mr-4" disabled={true}>
+								Continue run
+							</PrimaryButton>
+						</>
+					)}
+					<PrimaryButton onClick={handleStartNewRunClick} className="px-3 py-1">
+						Start New Run
+					</PrimaryButton>
+				</section>
+			</div>
+		</Content>
 	);
 }
