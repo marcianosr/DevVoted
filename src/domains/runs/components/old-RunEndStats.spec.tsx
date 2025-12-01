@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { RunEndStats } from "./RunEndStats";
+import { RunEndStats } from "./old-RunEndStats";
 
 const mockCategoryCoverage = [
 	{
