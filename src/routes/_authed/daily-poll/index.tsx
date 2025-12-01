@@ -1,24 +1,12 @@
-// import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// import { createServerFn } from "@tanstack/react-start";
-
-import Layout from "~/components/Layout";
-// import {
-// 	LEADERBOARD_REFRESH_INTERVAL,
-// 	CATEGORY_COVERAGE_REFRESH_INTERVAL,
-// } from "~/config/polling";
-// import { Leaderboard } from "~/domains/leaderboards/components/Leaderboard";
+import Content from "~/components/Content";
 import { applyEffects } from "~/domains/configs/data/configs";
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
 } from "~/domains/polls/components/DailyPollContainer";
-// import { getActiveRunCategoryCoverageHandler } from "~/domains/runs/api/handlers";
-// import type { CategoryCode } from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
-
-// import { getAuthenticatedUserId } from "~/utils/authorization";
 
 // const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
 // 	async () => {
@@ -26,15 +14,6 @@ import { ErrorComponent } from "~/ui/ErrorComponent";
 // 		return await getActiveRunCategoryCoverageHandler(userId);
 // 	}
 // );
-
-// const getLeaderboard = createServerFn({ method: "POST" })
-// 	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
-// 	.handler(async ({ data }) => {
-// 		const { getLiveRunRankingsHandler } = await import(
-// 			"~/domains/runs/api/handlers"
-// 		);
-// 		return await getLiveRunRankingsHandler(data.categoryCode);
-// 	});
 
 // const getAllTimeLeaderboard = createServerFn({ method: "POST" })
 // 	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
@@ -80,7 +59,7 @@ const DailyPoll: React.FC = () => {
 	}
 
 	return (
-		<Layout poll={poll}>
+		<Content poll={poll}>
 			<DailyPollContainer
 				poll={poll}
 				options={options}
@@ -131,7 +110,7 @@ const DailyPoll: React.FC = () => {
 					)}
 				</>
 			</section> */}
-		</Layout>
+		</Content>
 	);
 };
 

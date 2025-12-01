@@ -385,7 +385,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				)
 			)
 			.orderBy(desc(runCategoryCoverageTable.current_coverage))
-			.limit(25); // Top 25 for category
+			.limit(15); // Top 15 for category
 
 		return categoryRankings;
 	} else {
@@ -416,7 +416,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 			.orderBy(
 				sql`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0) DESC`
 			)
-			.limit(25); // Top 25 overall
+			.limit(20); // Top 20 overall
 
 		return activeRuns;
 	}

@@ -110,6 +110,8 @@ BUGS:
 [] Als iemand de shop open heeft en de volgende dag de pagina weer bezoekt, haal hij de nieuwe poll op maar blijft hij in beantwoorde staat
 [] De shop is weg als je de pagina refresht. Niet echt een bug, maar ik weet dat dit zo is
 [] Start new Run button in de header werkt niet
+[] Slow ""See your run progress and shop →" button
+[] Show a reminder of how to remind for polls in Slack
 
 ### Feedback / BUGS [Critical]
 
@@ -136,14 +138,18 @@ BUGS:
 [x] Bij Matthijs zei hij 1.95% en de score was 2%
 [] Vue category toevoegen (viridian)
 [] "Architecture" catregory toevoegen (pallet)
-[] Show your place in each button so you dont have to go through the list
-[] Fonts niet duidelijk
-[] Add .editorconfig file
+[-] Fonts niet duidelijk
 [] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
+[] Fail a run?
+[] Mobile text bigger (question)
+[] Answers that contain code should be formatted well
+[] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
+[] When not logged in, the start page shouldn't show the start run button, but a login button
+[] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 
 ### Season 2: Early Meta Layer
 
-[] Loading state for rebuilding new configs
+[x] Loading state for rebuilding new configs
 [o] Config: style lint
 [] Game over state
 [] Move CI gates into DB
@@ -162,11 +168,9 @@ BUGS:
 [] Provide KB's when skipping the shop
 [] Fix "deflate" config
 [] Show partial correct polls in list of progress
-[] Tan stack "start" instead of "query" in footer
-[] Include footer everywhere
-
-
-
+[x] Tan stack "start" instead of "query" in footer
+[x] Include footer everywhere
+[] Config foldout
 [] Onboarding/help modal for first-time users [Critical]
 [] Colorize tiers coverage
 [] Expand CI gate challenges
@@ -178,6 +182,7 @@ BUGS:
 [] Fix low-hanging sonar issues
 [] Change domain name. Not happy with "tamnstack" in my project name
 [] Needs to be configured in Github aswell - https://github.com/settings/apps/devvoted and Supabase https://supabase.com/dashboard/project/smrkmigjsnhrhwrxobjc/auth/url-configuration
+[] Add .editorconfig file
 
 [] Expand traceability
 [] Store most and least popular configs
@@ -246,7 +251,4 @@ Season 3: Expansion
 [] Add new polls (currently Slack'ed to myself)
 [] Introduce new categories: Java, AI (Talk with Guido if possible)
 
-### Bugs
 
-[] When answering a poll, refresh, the poll can be answered again. When I switch tabs for instace, it gets refetched on the client and I see it's answered (for good) - I need to check if the user already answered on the server
-[] Show end of run immediately when 3/3 polls and threshold is not met

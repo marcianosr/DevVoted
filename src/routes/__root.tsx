@@ -13,10 +13,11 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 
+import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary";
+import { NotFound } from "~/components/NotFound";
+import PageLayout from "~/components/PageLayout";
 import { ensureUserExists } from "~/domains/users/services/userSync.service";
 
-import { DefaultCatchBoundary } from "../components/DefaultCatchBoundary";
-import { NotFound } from "../components/NotFound";
 import { getActiveRun } from "../domains/runs/api/runs";
 import appCss from "../styles/app.css?url";
 import { seo } from "../utils/seo";
@@ -134,7 +135,9 @@ function RootComponent() {
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
 				<Navigation />
-				<Outlet />
+				<PageLayout>
+					<Outlet />
+				</PageLayout>
 			</QueryClientProvider>
 		</RootDocument>
 	);

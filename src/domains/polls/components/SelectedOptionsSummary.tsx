@@ -1,6 +1,8 @@
 import { clsx } from "clsx";
 
+import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
+import { CategoryCode } from "~/domains/shared/categories";
 
 import { PollOption } from "../models/pollOption";
 
@@ -11,6 +13,7 @@ type SelectedOptionsSummaryProps = {
 	communityStats?: {
 		totalResponses: number;
 	};
+	categoryCode: CategoryCode;
 };
 
 const SelectedOptionsSummary = ({
@@ -18,6 +21,7 @@ const SelectedOptionsSummary = ({
 	selectedOptions,
 	score,
 	communityStats,
+	categoryCode,
 }: SelectedOptionsSummaryProps) => {
 	return (
 		<section className="space-y-14 border-b border-theme mb-8">
@@ -78,7 +82,7 @@ const SelectedOptionsSummary = ({
 							</ul>
 						) : (
 							<p className="text-red-400 text-xl">
-								Coverage score: {score?.breakdown.earnedCoverage}
+								Coverage score: {score?.breakdown.earnedCoverage}%
 							</p>
 						)}
 					</section>
@@ -88,6 +92,7 @@ const SelectedOptionsSummary = ({
 					<p className="text-xl">
 						{communityStats?.totalResponses} player(s) participated in this poll
 					</p>
+					<Leaderboard categoryCode={categoryCode} />
 				</section>
 			</div>
 		</section>

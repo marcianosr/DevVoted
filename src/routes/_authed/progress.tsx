@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { clsx } from "clsx";
 
-import Layout from "~/components/Layout";
+import Content from "~/components/Content";
 import { removeConfigFromRunServerFn } from "~/domains/configs/api/configs";
 import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
 import { applyEffects, configs } from "~/domains/configs/data/configs";
@@ -215,7 +215,7 @@ function RouteComponent() {
 	};
 
 	return (
-		<Layout poll={dailyPoll.poll}>
+		<Content poll={dailyPoll.poll}>
 			<section className="max-w-5xl mx-auto p-4 space-y-12">
 				<PollCountdown />
 
@@ -299,6 +299,6 @@ function RouteComponent() {
 					</ul>
 				</section>
 			</section>
-		</Layout>
+		</Content>
 	);
 }

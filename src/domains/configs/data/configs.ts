@@ -188,6 +188,17 @@ export const configs: Config[] = [
 		effect: ["addSlotToShop"],
 		priority: 100,
 	},
+	{
+		id: "negate-config",
+		name: "Negate",
+		image: "/configs/negate.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description:
+			"Negates score: correct answers give -coverage, wrong answers give +coverage",
+		rarity: "rare",
+		effect: ["negateCoverageScore"],
+		priority: 100,
+	},
 ];
 
 /**
@@ -432,6 +443,15 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+	// negateCoverageScore: ({ poll, options, run, hasAnswered }, _config) => {
+	// 	return {
+	// 		view: { poll, options, run, hasAnswered },
+	// 		meta: {
+	// 			notes: [`Coverage score will be negated for this run`],
+	// 			badges: { negate: "Coverage score negated" },
+	// 		},
+	// 	};
+	// },
 };
 
 /**
