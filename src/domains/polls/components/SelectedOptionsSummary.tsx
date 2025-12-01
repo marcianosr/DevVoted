@@ -1,4 +1,6 @@
 import { clsx } from "clsx";
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
@@ -41,11 +43,11 @@ const SelectedOptionsSummary = ({
 							if (!option) return null;
 
 							return (
-								<>
-									<li key={option.id} className={styles}>
+								<li key={option.id} className={`${styles} markdown`}>
+									<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
 										{option.option}
-									</li>
-								</>
+									</ReactMarkdown>
+								</li>
 							);
 						})}
 					</ul>
@@ -55,8 +57,10 @@ const SelectedOptionsSummary = ({
 						{options
 							.filter((opt) => opt.correct)
 							.map((opt) => (
-								<li key={opt.id} className="text-green-400 text-xl">
-									{opt.option}
+								<li key={opt.id} className="text-green-400 text-xl markdown">
+									<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+										{opt.option}
+									</ReactMarkdown>
 								</li>
 							))}
 					</ul>
