@@ -35,9 +35,12 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 
 			{error && <p className="text-red-500">Failed to load leaderboard</p>}
 
-			<h2 className="text-3xl mt-8 mb-4 text-theme">
-				{getCategoryMetadata(categoryCode).name} category rankings
-			</h2>
+			<div className="mb-6 mt-8">
+				<h2 className="text-3xl text-theme">
+					{getCategoryMetadata(categoryCode).name} category rankings
+				</h2>
+				<small>This leaderboard reflects your current run only</small>
+			</div>
 			<header>
 				<div className="grid sm:grid-cols-[30px_1fr_120px_120px_120px] gap-8 mb-2 border-b border-theme pb-4">
 					<span>Rank</span>
