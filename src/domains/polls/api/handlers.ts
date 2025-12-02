@@ -235,15 +235,10 @@ const validatePollSubmission = async (
 export const getPollsSeenInRunHandler = async ({
 	data,
 }: {
-	data: { userId: string };
+	data: { runId: number };
 }) => {
 	return handleApiOperation(async () => {
-		const { userId } = data;
-		const activeRunResponse = await getUserActiveRun(userId);
-		if (!activeRunResponse.success) {
-			throw new Error(activeRunResponse.error);
-		}
-		return await getPollsSeenInRun(activeRunResponse.data.id);
+		return await getPollsSeenInRun(data.runId);
 	});
 };
 
@@ -262,15 +257,10 @@ export const getCommunityStatsHandler = async ({
 export const getRunPollHistoryHandler = async ({
 	data,
 }: {
-	data: { userId: string };
+	data: { userId: string; runId: number };
 }) => {
 	return handleApiOperation(async () => {
-		const { userId } = data;
-		const activeRunResponse = await getUserActiveRun(userId);
-		if (!activeRunResponse.success) {
-			throw new Error(activeRunResponse.error);
-		}
-		return await getRunPollHistory(activeRunResponse.data.id, userId);
+		return await getRunPollHistory(data.runId, data.userId);
 	});
 };
 

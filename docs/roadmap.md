@@ -150,6 +150,7 @@ BUGS:
 [] Show a reminder of how to remind for polls in Slack
 [] Mobile viewport op /progress pagina isn't responsive
 [] Bug in submitting poll larger than 10 selected options
+[] Fix button clicking area
 
 
 ### Season 2: Early Meta Layer

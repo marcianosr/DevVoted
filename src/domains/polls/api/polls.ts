@@ -109,19 +109,18 @@ export const postPollOptions = createServerFn({ method: "POST" })
 		});
 	});
 
-export const getPollsSeenInRun = createServerFn({ method: "GET" }).handler(
-	async () => {
-		const userId = await getAuthenticatedUserId();
-		return getPollsSeenInRunHandler({ data: { userId } });
-	}
-);
+export const getPollsSeenInRun = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ runId: z.number().int().positive() }))
+	.handler(async ({ data }) => {
+		return getPollsSeenInRunHandler({ data: { runId: data.runId } });
+	});
 
-export const getRunPollHistoryServerFn = createServerFn({
-	method: "GET",
-}).handler(async () => {
-	const userId = await getAuthenticatedUserId();
-	return getRunPollHistoryHandler({ data: { userId } });
-});
+export const getRunPollHistoryServerFn = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ runId: z.number().int().positive() }))
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		return getRunPollHistoryHandler({ data: { userId, runId: data.runId } });
+	});
 
 // ============================================
 // Poll CRUD Server Functions (Admin Only)

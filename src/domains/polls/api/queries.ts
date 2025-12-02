@@ -1,4 +1,4 @@
-import { eq, and, gte, sql, asc } from "drizzle-orm";
+import { eq, and, gte, sql, asc, count } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -329,118 +329,102 @@ export type RunPollHistory = {
 	answeredAt: Date | null;
 };
 
-const fetchUserResponseId = async (
-	pollId: number,
-	userId: string
-): Promise<number | null> => {
-	const [response] = await db
-		.select({ responseId: pollResponsesTable.response_id })
-		.from(pollResponsesTable)
-		.where(
-			and(
-				eq(pollResponsesTable.poll_id, pollId),
-				eq(pollResponsesTable.user_id, userId)
-			)
-		);
-
-	return response?.responseId ?? null;
-};
-
-/**
- * Checks if user selected all correct options and no incorrect ones.
- * For multi-answer polls: must select ALL correct options and ZERO incorrect options.
- */
-const checkResponseCorrectness = async (
-	responseId: number,
-	pollId: number
-): Promise<boolean> => {
-	const [result] = await db
-		.select({
-			selectedCorrect: sql<number>`
-				COUNT(CASE WHEN ${pollOptionsTable.correct} = true THEN 1 END)::int
-			`,
-			selectedIncorrect: sql<number>`
-				COUNT(CASE WHEN ${pollOptionsTable.correct} = false THEN 1 END)::int
-			`,
-			totalCorrect: sql<number>`
-				(SELECT COUNT(*) FROM ${pollOptionsTable}
-				 WHERE ${pollOptionsTable.poll_id} = ${pollId}
-				 AND ${pollOptionsTable.correct} = true)::int
-			`,
-		})
-		.from(pollResponseOptionsTable)
-		.innerJoin(
-			pollOptionsTable,
-			eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
-		)
-		.where(eq(pollResponseOptionsTable.response_id, responseId));
-
-	const hasNoIncorrectSelections = result.selectedIncorrect === 0;
-	const hasAllCorrectSelections =
-		result.selectedCorrect === result.totalCorrect;
-
-	return hasNoIncorrectSelections && hasAllCorrectSelections;
-};
-
 /**
  * Get poll history for a run with correctness info.
  * Returns polls in the order they were first seen.
+ *
+ * Uses batch queries to avoid N+1 problem:
+ * - Query 1: Poll history
+ * - Query 2: User's response correctness (selected correct/incorrect counts)
+ * - Query 3: Total correct options per poll
+ * Then joins results in JS using Maps for O(1) lookup.
  */
 export const getRunPollHistory = async (
 	runId: number,
 	userId: string
 ): Promise<RunPollHistory[]> => {
-	const results = await db
-		.select({
-			pollId: pollHistoryTable.poll_id,
-			categoryCode: pollsTable.category_code,
-			answeredAt: pollHistoryTable.last_answered_at,
-			timesAnswered: pollHistoryTable.times_answered,
-		})
-		.from(pollHistoryTable)
-		.innerJoin(pollsTable, eq(pollHistoryTable.poll_id, pollsTable.id))
-		.where(
-			and(
-				eq(pollHistoryTable.run_id, runId),
-				eq(pollHistoryTable.user_id, userId)
-			)
-		)
-		.orderBy(asc(pollHistoryTable.first_seen_at));
+	// Run all queries in parallel
+	const [historyResults, correctnessResults, totalCorrectResults] =
+		await Promise.all([
+			// Query 1: Get poll history
+			db
+				.select({
+					pollId: pollHistoryTable.poll_id,
+					categoryCode: pollsTable.category_code,
+					answeredAt: pollHistoryTable.last_answered_at,
+					timesAnswered: pollHistoryTable.times_answered,
+				})
+				.from(pollHistoryTable)
+				.innerJoin(pollsTable, eq(pollHistoryTable.poll_id, pollsTable.id))
+				.where(
+					and(
+						eq(pollHistoryTable.run_id, runId),
+						eq(pollHistoryTable.user_id, userId)
+					)
+				)
+				.orderBy(asc(pollHistoryTable.first_seen_at)),
 
-	const pollsWithCorrectness = await Promise.all(
-		results.map(async (row) => {
-			const wasNotAnswered = row.timesAnswered === 0;
-			if (wasNotAnswered) {
-				return {
-					pollId: row.pollId,
-					categoryCode: row.categoryCode,
-					isCorrect: false,
-					answeredAt: null,
-				};
-			}
+			// Query 2: Get correctness data for ALL user responses in one query
+			db
+				.select({
+					pollId: pollResponsesTable.poll_id,
+					selectedCorrect: count(
+						sql`CASE WHEN ${pollOptionsTable.correct} = true THEN 1 END`
+					).mapWith(Number),
+					selectedIncorrect: count(
+						sql`CASE WHEN ${pollOptionsTable.correct} = false THEN 1 END`
+					).mapWith(Number),
+				})
+				.from(pollResponsesTable)
+				.innerJoin(
+					pollResponseOptionsTable,
+					eq(
+						pollResponsesTable.response_id,
+						pollResponseOptionsTable.response_id
+					)
+				)
+				.innerJoin(
+					pollOptionsTable,
+					eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
+				)
+				.where(eq(pollResponsesTable.user_id, userId))
+				.groupBy(pollResponsesTable.poll_id),
 
-			const responseId = await fetchUserResponseId(row.pollId, userId);
-			if (!responseId) {
-				return {
-					pollId: row.pollId,
-					categoryCode: row.categoryCode,
-					isCorrect: false,
-					answeredAt: row.answeredAt,
-				};
-			}
+			// Query 3: Get total correct options per poll
+			db
+				.select({
+					pollId: pollOptionsTable.poll_id,
+					totalCorrect: count().mapWith(Number),
+				})
+				.from(pollOptionsTable)
+				.where(eq(pollOptionsTable.correct, true))
+				.groupBy(pollOptionsTable.poll_id),
+		]);
 
-			const isCorrect = await checkResponseCorrectness(responseId, row.pollId);
-
-			return {
-				pollId: row.pollId,
-				categoryCode: row.categoryCode,
-				isCorrect,
-				answeredAt: row.answeredAt,
-			};
-		})
+	// Build Maps for O(1) lookup
+	const correctnessMap = new Map(correctnessResults.map((r) => [r.pollId, r]));
+	const totalCorrectMap = new Map(
+		totalCorrectResults.map((r) => [r.pollId, r.totalCorrect])
 	);
 
-	return pollsWithCorrectness;
+	// Join results in JS
+	return historyResults.map((row) => {
+		const correctness = correctnessMap.get(row.pollId);
+		const totalCorrect = totalCorrectMap.get(row.pollId) ?? 0;
+
+		const isCorrect =
+			row.timesAnswered > 0 &&
+			correctness !== undefined &&
+			correctness.selectedIncorrect === 0 &&
+			correctness.selectedCorrect === totalCorrect;
+
+		return {
+			pollId: row.pollId,
+			categoryCode: row.categoryCode,
+			answeredAt: row.timesAnswered === 0 ? null : row.answeredAt,
+			isCorrect,
+		};
+	});
 };
 
 // ============================================

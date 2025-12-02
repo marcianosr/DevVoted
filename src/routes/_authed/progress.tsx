@@ -47,9 +47,10 @@ export const Route = createFileRoute("/_authed/progress")({
 			throw new Error("No active run");
 		}
 
+		const runId = activeRun.data.id;
 		const [pollsSeenResponse, pollHistoryResponse] = await Promise.all([
-			getPollsSeenInRun(),
-			getRunPollHistoryServerFn(),
+			getPollsSeenInRun({ data: { runId } }),
+			getRunPollHistoryServerFn({ data: { runId } }),
 		]);
 
 		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
