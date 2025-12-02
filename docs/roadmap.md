@@ -149,6 +149,7 @@ BUGS:
 [] Slow ""See your run progress and shop →" button
 [] Show a reminder of how to remind for polls in Slack
 [] Mobile viewport op /progress pagina isn't responsive
+[] Bug in submitting poll larger than 10 selected options
 
 
 ### Season 2: Early Meta Layer
@@ -169,6 +170,7 @@ BUGS:
 [x] Config: style lint
 [x] Game over state
 [] Move CI gates into DB
+[] Show general site stats (total players, total polls answered, total runs, total configs bought, total polls, total categories, total correct answers, total incorrect answers, total polls for category)
 [] Show current season - shows 29 days
 [] Show more run info
     [] rerolls used
