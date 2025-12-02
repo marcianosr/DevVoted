@@ -211,6 +211,27 @@
       "when": 1763565210228,
       "tag": "0029_noisy_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1764665984765,
+      "tag": "0030_youthful_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1764666408500,
+      "tag": "0031_public_mandrill",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1764666499908,
+      "tag": "0032_outstanding_machine_man",
+      "breakpoints": true
     }
   ]
 }

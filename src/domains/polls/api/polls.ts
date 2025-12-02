@@ -98,7 +98,7 @@ const ensureAdminAccess = async () => {
 const createPollInputSchema = z.object({
 	poll: z.object({
 		question: z.string().min(10).max(2000),
-		status: z.enum(["draft", "needs-revision", "open", "closed", "archived"]),
+		status: z.enum(["draft", "open", "closed", "archived"]),
 		answerType: z.enum(["single", "multiple"]),
 		categoryCode: z.string().min(1),
 		codeBlock: z.string().nullable().optional(),
@@ -126,9 +126,7 @@ const updatePollInputSchema = z.object({
 	id: z.number().int().positive(),
 	poll: z.object({
 		question: z.string().min(10).max(2000).optional(),
-		status: z
-			.enum(["draft", "needs-revision", "open", "closed", "archived"])
-			.optional(),
+		status: z.enum(["draft", "open", "closed", "archived"]).optional(),
 		answerType: z.enum(["single", "multiple"]).optional(),
 		openingTime: z.coerce.date().optional(),
 		closingTime: z.coerce.date().optional(),

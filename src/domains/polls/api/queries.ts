@@ -444,7 +444,7 @@ type NewPollOption = {
 
 type NewPollData = {
 	question: string;
-	status: "draft" | "needs-revision" | "open" | "closed" | "archived";
+	status: "draft" | "open" | "closed" | "archived";
 	answerType: "single" | "multiple";
 	createdBy: string;
 	categoryCode: string;
@@ -460,6 +460,12 @@ export const createPollWithOptions = async (
 	options: NewPollOption[]
 ) => {
 	return await db.transaction(async (tx) => {
+		// Get the next poll number
+		const [maxResult] = await tx
+			.select({ maxNum: sql<number>`COALESCE(MAX(poll_number), 0)` })
+			.from(pollsTable);
+		const nextPollNumber = (maxResult?.maxNum ?? 0) + 1;
+
 		const [pollRecord] = await tx
 			.insert(pollsTable)
 			.values({
@@ -472,6 +478,7 @@ export const createPollWithOptions = async (
 				code_sandbox_example: pollData.codeSandboxExample ?? null,
 				opening_time: new Date(),
 				closing_time: new Date(),
+				poll_number: nextPollNumber,
 			})
 			.returning();
 

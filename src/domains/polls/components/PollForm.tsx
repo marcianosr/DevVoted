@@ -34,7 +34,12 @@ type PollFormProps = {
 	isSubmitting: boolean;
 };
 
-const STATUS_OPTIONS: Poll["status"][] = ["draft", "closed"];
+const STATUS_OPTIONS: Poll["status"][] = [
+	"draft",
+	"open",
+	"closed",
+	"archived",
+];
 
 const createEmptyOption = (): PollFormOption => ({
 	option: "",

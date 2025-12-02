@@ -150,6 +150,7 @@ BUGS:
 [] Show a reminder of how to remind for polls in Slack
 [] Mobile viewport op /progress pagina isn't responsive
 
+
 ### Season 2: Early Meta Layer
 [] Admin panel for polls
 [] Allow players to suggest polls

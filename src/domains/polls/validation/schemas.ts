@@ -23,7 +23,7 @@ export const createPollSchema = z
 			.string()
 			.min(10, "Question must be at least 10 characters")
 			.max(500, "Question cannot exceed 500 characters"),
-		status: z.enum(["draft", "needs-revision", "open", "closed", "archived"]),
+		status: z.enum(["draft", "open", "closed", "archived"]),
 		answerType: z.enum(["single", "multiple"]),
 		openingTime: z.date().min(new Date(), "Opening time must be in the future"),
 		closingTime: z.date(),
@@ -80,7 +80,7 @@ const basePollDataSchema = z.object({
 		.string()
 		.min(10, "Question must be at least 10 characters")
 		.max(2000, "Question cannot exceed 2000 characters"),
-	status: z.enum(["draft", "needs-revision", "open", "closed", "archived"]),
+	status: z.enum(["draft", "open", "closed", "archived"]),
 	answerType: z.enum(["single", "multiple"]),
 	categoryCode: z.string().min(1, "Category is required"),
 	codeBlock: z.string().nullable().optional(),
