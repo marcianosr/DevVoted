@@ -155,7 +155,12 @@ BUGS:
 [] Admin panel for polls
 [] Allow players to suggest polls
 
-[] Introduce moderator role - Make Piet and Matthijs moderators
+[] Introduce moderator role -
+
+    [] Make Piet and Matthijs moderators
+    [] Moderators can edit polls
+    [] Players can suggest polls, but not edit
+    [] Admins can approve/reject suggested polls
 
 [] Expand on low hanging configs
 [] Provide KB's when skipping the shop

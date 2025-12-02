@@ -9,6 +9,7 @@ import {
 	getAllPollsHandler,
 	getPollByIdHandler,
 	getPollByIdWithOptionsHandler,
+	getPollsByUserHandler,
 	getDailyPollHandler,
 	postPollOptionsHandler,
 	getPollsSeenInRunHandler,
@@ -24,8 +25,33 @@ export const getPollByIdWithOptions = createServerFn({ method: "GET" })
 		})
 	)
 	.handler(async ({ data }) => {
-		const userId = await getAuthenticatedUserId();
-		return getPollByIdWithOptionsHandler({ data: { ...data, userId } });
+		const supabase = getSupabaseServerClient();
+		const { data: authData, error } = await supabase.auth.getUser();
+
+		if (error || !authData.user) {
+			throw new Error("Authentication required");
+		}
+
+		const userId = authData.user.id;
+		const isAdmin = ADMIN_EMAILS.includes(
+			authData.user.email as (typeof ADMIN_EMAILS)[number]
+		);
+
+		const result = await getPollByIdWithOptionsHandler({
+			data: { ...data, userId },
+		});
+
+		if (!result.success) {
+			return result;
+		}
+
+		// Check ownership: only creator or admin can view
+		const isCreator = result.data.poll.createdBy === userId;
+		if (!isAdmin && !isCreator) {
+			return { success: false as const, error: "Access denied" };
+		}
+
+		return { ...result, isAdmin };
 	});
 
 export const getPollById = createServerFn()
@@ -34,6 +60,30 @@ export const getPollById = createServerFn()
 
 export const getAllPolls = createServerFn().handler(async () =>
 	getAllPollsHandler()
+);
+
+export const getUserPollsOrAll = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const supabase = getSupabaseServerClient();
+		const { data, error } = await supabase.auth.getUser();
+
+		if (error || !data.user) {
+			throw new Error("Authentication required");
+		}
+
+		const isAdmin = ADMIN_EMAILS.includes(
+			data.user.email as (typeof ADMIN_EMAILS)[number]
+		);
+
+		if (isAdmin) {
+			return { ...(await getAllPollsHandler()), isAdmin: true };
+		}
+
+		return {
+			...(await getPollsByUserHandler({ data: { userId: data.user.id } })),
+			isAdmin: false,
+		};
+	}
 );
 
 export const getDailyPoll = createServerFn({ method: "GET" }).handler(
@@ -115,9 +165,14 @@ const createPollInputSchema = z.object({
 export const createPollServerFn = createServerFn({ method: "POST" })
 	.inputValidator(createPollInputSchema)
 	.handler(async ({ data }) => {
-		const userId = await ensureAdminAccess();
+		const userId = await getAuthenticatedUserId();
+		// All user-created polls start as draft
 		return createPollWithOptionsHandler({
-			data: { ...data, createdBy: userId },
+			data: {
+				...data,
+				poll: { ...data.poll, status: "draft" },
+				createdBy: userId,
+			},
 		});
 	});
 

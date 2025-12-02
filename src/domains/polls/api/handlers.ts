@@ -4,6 +4,7 @@ import {
 	fetchAllPolls,
 	fetchPollById,
 	fetchPollByIdWithOptions,
+	fetchPollsByUser,
 	hasUserAnsweredPoll,
 	getUserSelectedOptions,
 	getPollHistory,
@@ -62,6 +63,16 @@ export const getPollByIdHandler = async ({
 export const getAllPollsHandler = async () => {
 	return handleApiOperation(async () => {
 		return await fetchAllPolls();
+	});
+};
+
+export const getPollsByUserHandler = async ({
+	data,
+}: {
+	data: { userId: string };
+}) => {
+	return handleApiOperation(async () => {
+		return await fetchPollsByUser(data.userId);
 	});
 };
 

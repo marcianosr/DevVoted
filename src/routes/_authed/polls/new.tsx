@@ -1,47 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 
 import { createPollServerFn } from "~/domains/polls/api/polls";
 import { PollForm } from "~/domains/polls/components/PollForm";
-import { ADMIN_EMAILS } from "~/utils/adminAuth";
-import { getSupabaseServerClient } from "~/utils/supabase";
-
-const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
-	const supabase = await getSupabaseServerClient();
-	const {
-		data: { user },
-		error,
-	} = await supabase.auth.getUser();
-
-	if (error || !user) {
-		return { hasAccess: false };
-	}
-
-	const hasAccess = ADMIN_EMAILS.includes(user.email as any);
-	return { hasAccess };
-});
 
 export const Route = createFileRoute("/_authed/polls/new")({
-	beforeLoad: async () => {
-		const result = await checkAdminAccess();
-		if (!result.hasAccess) {
-			throw new Error("Admin access required");
-		}
-	},
-	errorComponent: ({ error }) => {
-		if (error.message === "Admin access required") {
-			return (
-				<div className="flex items-center justify-center min-h-screen">
-					<div className="text-center">
-						<h1 className="text-2xl text-red-600 mb-4">Access Denied</h1>
-						<p>This area is restricted to administrators only.</p>
-					</div>
-				</div>
-			);
-		}
-		throw error;
-	},
 	component: CreatePoll,
 });
 

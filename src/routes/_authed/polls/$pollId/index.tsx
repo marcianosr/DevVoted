@@ -8,7 +8,7 @@ import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandbox
 import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay";
 
 const PollDetail: React.FC = () => {
-	const { poll, options } = Route.useLoaderData();
+	const { poll, options, isAdmin } = Route.useLoaderData();
 
 	return (
 		<section className="max-w-5xl mx-auto p-4">
@@ -33,13 +33,15 @@ const PollDetail: React.FC = () => {
 					</p>
 					<p className="text-theme">Category: {poll.categoryCode}</p>
 				</aside>
-				<Link
-					to="/polls/$pollId/edit"
-					params={{ pollId: String(poll.id) }}
-					className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
-				>
-					Edit Poll
-				</Link>
+				{isAdmin && (
+					<Link
+						to="/polls/$pollId/edit"
+						params={{ pollId: String(poll.id) }}
+						className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
+					>
+						Edit Poll
+					</Link>
+				)}
 			</div>
 			<PollQuestionDisplay poll={poll} />
 			{poll.codeSandboxExample && (
@@ -73,7 +75,7 @@ export const Route = createFileRoute("/_authed/polls/$pollId/")({
 			throw new Error(response.error);
 		}
 
-		return response.data;
+		return { ...response.data, isAdmin: response.isAdmin };
 	},
 	pendingComponent: () => (
 		<section className="max-w-5xl mx-auto p-4">
@@ -81,10 +83,18 @@ export const Route = createFileRoute("/_authed/polls/$pollId/")({
 		</section>
 	),
 	pendingMs: 300,
-	errorComponent: () => {
+	errorComponent: ({ error }) => {
+		const isAccessDenied = error.message === "Access denied";
 		return (
-			<section className="max-w-5xl mx-auto">
-				<h1 className="text-red-500 text-3xl">Error loading poll</h1>
+			<section className="max-w-5xl mx-auto p-4">
+				<h1 className="text-red-500 text-3xl">
+					{isAccessDenied ? "Access Denied" : "Error loading poll"}
+				</h1>
+				{isAccessDenied && (
+					<p className="text-gray-400 mt-2">
+						You can only view polls that you have created.
+					</p>
+				)}
 			</section>
 		);
 	},

@@ -54,6 +54,16 @@ export const fetchAllPolls = async () => {
 	return pollRecords.map((record) => pollFactory.toDTO(record));
 };
 
+export const fetchPollsByUser = async (userId: string) => {
+	const pollRecords = await db
+		.select()
+		.from(pollsTable)
+		.where(eq(pollsTable.created_by, userId))
+		.orderBy(pollsTable.created_at);
+
+	return pollRecords.map((record) => pollFactory.toDTO(record));
+};
+
 export const insertPoll = async (data: Poll) => {
 	const pollRecord = pollFactory.fromDTO(data);
 	const result = await db

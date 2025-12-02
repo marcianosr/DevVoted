@@ -113,6 +113,7 @@ function EditPoll() {
 				initialData={{ ...poll, options }}
 				onSubmit={handleSubmit}
 				isSubmitting={updateMutation.isPending}
+				isAdmin
 			/>
 		</div>
 	);

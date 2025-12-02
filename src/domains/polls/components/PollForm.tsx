@@ -32,6 +32,7 @@ type PollFormProps = {
 	initialData?: Poll & { options: PollOption[] };
 	onSubmit: (data: PollFormData) => Promise<void>;
 	isSubmitting: boolean;
+	isAdmin?: boolean;
 };
 
 const STATUS_OPTIONS: Poll["status"][] = [
@@ -50,6 +51,7 @@ export const PollForm = ({
 	initialData,
 	onSubmit,
 	isSubmitting,
+	isAdmin = false,
 }: PollFormProps) => {
 	const tomorrow = new Date();
 	tomorrow.setDate(tomorrow.getDate() + 1);
@@ -228,22 +230,24 @@ export const PollForm = ({
 				</div>
 			</div>
 
-			<div>
-				<label className="block text-sm font-medium text-theme mb-2">
-					Status
-				</label>
-				<select
-					value={status}
-					onChange={(e) => setStatus(e.target.value as Poll["status"])}
-					className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme"
-				>
-					{STATUS_OPTIONS.map((s) => (
-						<option key={s} value={s}>
-							{s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ")}
-						</option>
-					))}
-				</select>
-			</div>
+			{isAdmin && (
+				<div>
+					<label className="block text-sm font-medium text-theme mb-2">
+						Status
+					</label>
+					<select
+						value={status}
+						onChange={(e) => setStatus(e.target.value as Poll["status"])}
+						className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme"
+					>
+						{STATUS_OPTIONS.map((s) => (
+							<option key={s} value={s}>
+								{s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ")}
+							</option>
+						))}
+					</select>
+				</div>
+			)}
 
 			<div>
 				<label className="block text-sm font-medium text-theme mb-2">
