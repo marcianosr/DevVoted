@@ -148,7 +148,7 @@ function Navigation() {
 
 	return (
 		<>
-			<div className="p-2 flex gap-2 text-lg">
+			<div className="p-2 flex gap-2 text-lg items-center whitespace-nowrap overflow-auto">
 				<Link
 					to="/daily-poll"
 					activeProps={{
@@ -157,10 +157,21 @@ function Navigation() {
 					activeOptions={{ exact: true }}
 				>
 					Daily Poll
-				</Link>{" "}
-				<div className="ml-auto flex gap-2 items-center">
-					{user ? (
-						<>
+				</Link>
+
+				{user ? (
+					<>
+						<span className="text-white">·</span>
+						<Link
+							to="/polls/new"
+							activeProps={{
+								className: "underline",
+							}}
+							activeOptions={{ exact: true }}
+						>
+							Suggest your own poll
+						</Link>
+						<div className="ml-auto flex gap-2 items-center">
 							<Link
 								to="/profile/$userId"
 								params={{ userId: user.id }}
@@ -178,11 +189,13 @@ function Navigation() {
 								<span className="ml-2">{user.displayName || user.email}</span>
 							</Link>
 							<Link to="/logout">Logout</Link>
-						</>
-					) : (
-						<Link to="/login">Login</Link>
-					)}
-				</div>
+						</div>
+					</>
+				) : (
+					<Link to="/login" className="ml-auto">
+						Login
+					</Link>
+				)}
 			</div>
 			<hr />
 		</>
