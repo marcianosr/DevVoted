@@ -1,0 +1,101 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { clsx } from "clsx";
+import { format } from "date-fns";
+
+import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
+import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
+import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
+import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay";
+
+const PollDetail: React.FC = () => {
+	const { poll, options, isAdmin } = Route.useLoaderData();
+
+	return (
+		<section className="max-w-5xl mx-auto p-4">
+			<div className="flex justify-between items-start mb-4">
+				<aside>
+					<h2>#{poll.pollNumber}</h2>
+					<p className="text-sm text-gray-400">
+						Created at: {format(new Date(poll.createdAt), "MM/dd/yyyy")}
+					</p>
+					<p className="text-sm text-gray-400">Created by: {poll.createdBy}</p>
+					<p>
+						Status:
+						<span
+							className={clsx("ml-2 font-semibold", {
+								"text-green-400": poll.status === "open",
+								"text-red-400": poll.status === "closed",
+								"text-yellow-400": poll.status === "draft",
+							})}
+						>
+							{poll.status}
+						</span>
+					</p>
+					<p className="text-theme">Category: {poll.categoryCode}</p>
+				</aside>
+				{isAdmin && (
+					<Link
+						to="/polls/$pollId/edit"
+						params={{ pollId: String(poll.id) }}
+						className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
+					>
+						Edit Poll
+					</Link>
+				)}
+			</div>
+			<PollQuestionDisplay poll={poll} />
+			{poll.codeSandboxExample && (
+				<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+			)}
+			{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+			<ul>
+				{options.map((option) => (
+					<li
+						key={option.id}
+						className={clsx("list-disc mx-8", {
+							"text-green-400": option.correct,
+						})}
+					>
+						{option.option}
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+};
+
+export const Route = createFileRoute("/_authed/polls/$pollId/")({
+	component: PollDetail,
+	loader: async ({ params }) => {
+		const response = await getPollByIdWithOptions({
+			data: { id: Number(params.pollId) },
+		});
+
+		if (!response.success) {
+			throw new Error(response.error);
+		}
+
+		return { ...response.data, isAdmin: response.isAdmin };
+	},
+	pendingComponent: () => (
+		<section className="max-w-5xl mx-auto p-4">
+			<div className="animate-pulse">Loading poll...</div>
+		</section>
+	),
+	pendingMs: 300,
+	errorComponent: ({ error }) => {
+		const isAccessDenied = error.message === "Access denied";
+		return (
+			<section className="max-w-5xl mx-auto p-4">
+				<h1 className="text-red-500 text-3xl">
+					{isAccessDenied ? "Access Denied" : "Error loading poll"}
+				</h1>
+				{isAccessDenied && (
+					<p className="text-gray-400 mt-2">
+						You can only view polls that you have created.
+					</p>
+				)}
+			</section>
+		);
+	},
+});

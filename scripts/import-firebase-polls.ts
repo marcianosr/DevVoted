@@ -31,14 +31,14 @@ const shouldSkipCategory = (category?: string): boolean => {
 	return skipCategories.includes(category?.toLowerCase() || '');
 };
 
-const normalizePollStatus = (firebaseStatus?: string): 'draft' | 'needs-revision' | 'open' | 'closed' | 'archived' => {
-	const statusMap: Record<string, 'draft' | 'needs-revision' | 'open' | 'closed' | 'archived'> = {
+const normalizePollStatus = (firebaseStatus?: string): 'draft' | 'open' | 'closed' | 'archived' => {
+	const statusMap: Record<string, 'draft' | 'open' | 'closed' | 'archived'> = {
 		new: 'draft',
 		draft: 'draft',
 		open: 'open',
 		closed: 'closed',
 		archived: 'archived',
-		'needs-revision': 'needs-revision',
+		'needs-revision': 'draft',
 	};
 	return statusMap[firebaseStatus?.toLowerCase() || ''] || 'closed';
 };

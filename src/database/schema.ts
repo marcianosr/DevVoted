@@ -37,14 +37,12 @@ export const userRoles = pgEnum("roles", ["user", "admin"] as const);
 /**
  * Poll status types to track the lifecycle of each poll
  * - draft: Initial state, not yet published
- * - needs-revision: Reviewed but requires changes
  * - open: Currently accepting responses
  * - closed: No longer accepting responses
  * - archived: Historical poll, no longer relevant
  */
 export const pollStatus = pgEnum("status", [
 	"draft",
-	"needs-revision",
 	"open",
 	"closed",
 	"archived",

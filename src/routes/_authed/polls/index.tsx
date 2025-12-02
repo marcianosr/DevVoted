@@ -1,58 +1,36 @@
+import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 
-import { getAllPolls } from "~/domains/polls/api/polls";
+import { getUserPollsOrAll } from "~/domains/polls/api/polls";
+import type { Poll } from "~/domains/polls/models/poll";
 import { ErrorComponent } from "~/ui/ErrorComponent";
-import { ADMIN_EMAILS } from "~/utils/adminAuth";
-import { getSupabaseServerClient } from "~/utils/supabase";
-
-const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
-	const supabase = await getSupabaseServerClient();
-	const {
-		data: { user },
-		error,
-	} = await supabase.auth.getUser();
-
-	if (error || !user) {
-		return { hasAccess: false };
-	}
-
-	const hasAccess = ADMIN_EMAILS.includes(user.email as any);
-	return { hasAccess };
-});
 
 export const Route = createFileRoute("/_authed/polls/")({
-	beforeLoad: async () => {
-		const result = await checkAdminAccess();
-		if (!result.hasAccess) {
-			throw new Error("Admin access required");
-		}
-	},
-	errorComponent: ({ error }) => {
-		if (error.message === "Admin access required") {
-			return (
-				<div className="flex items-center justify-center min-h-screen">
-					<div className="text-center">
-						<h1 className="text-2xl text-red-600 mb-4">Access Denied</h1>
-						<p>This area is restricted to administrators only.</p>
-					</div>
-				</div>
-			);
-		}
-		throw error;
-	},
 	component: PollsList,
 });
 
+type StatusFilter = Poll["status"] | "all";
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+	{ value: "all", label: "All" },
+	{ value: "draft", label: "Draft" },
+	{ value: "open", label: "Open" },
+	{ value: "closed", label: "Closed" },
+	{ value: "archived", label: "Archived" },
+];
+
 function PollsList() {
+	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
 	const {
 		data: pollsResponse,
 		isLoading,
 		error,
 	} = useQuery({
-		queryKey: ["polls"],
-		queryFn: () => getAllPolls(),
+		queryKey: ["user-polls"],
+		queryFn: () => getUserPollsOrAll(),
 	});
 
 	if (isLoading) {
@@ -73,15 +51,54 @@ function PollsList() {
 	}
 
 	const polls = pollsResponse.data || [];
+	const isAdmin = pollsResponse.isAdmin;
+	const filteredPolls =
+		statusFilter === "all"
+			? polls
+			: polls.filter((poll) => poll.status === statusFilter);
 
 	return (
 		<div className="p-4">
-			<h1 className="text-2xl mb-4">Available Polls</h1>
-			{polls?.length === 0 ? (
-				<p>No polls available.</p>
+			<div className="flex justify-between items-center mb-4">
+				<h1 className="text-2xl">
+					{isAdmin ? "All Polls" : "My Poll Submissions"}
+				</h1>
+				<Link
+					to="/polls/new"
+					className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
+				>
+					Create Poll
+				</Link>
+			</div>
+
+			{/* Status Filter */}
+			<div className="flex flex-wrap gap-2 mb-4">
+				{STATUS_OPTIONS.map((option) => (
+					<button
+						key={option.value}
+						onClick={() => setStatusFilter(option.value)}
+						className={`px-3 py-1 rounded-full text-sm transition-colors ${
+							statusFilter === option.value
+								? "bg-primary text-white"
+								: "bg-gray-700 text-gray-300 hover:bg-gray-600"
+						}`}
+					>
+						{option.label}
+					</button>
+				))}
+			</div>
+
+			{filteredPolls.length === 0 ? (
+				<p>
+					No polls{" "}
+					{statusFilter !== "all"
+						? `with status "${statusFilter}"`
+						: "available"}
+					.
+				</p>
 			) : (
 				<div className="space-y-4">
-					{polls.map((poll) => (
+					{filteredPolls.map((poll) => (
 						<div
 							key={poll.id}
 							className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"

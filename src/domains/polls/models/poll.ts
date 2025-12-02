@@ -10,7 +10,7 @@ import type { PollOption } from "./pollOption";
 export type Poll = {
 	id: number;
 	question: string;
-	status: "draft" | "needs-revision" | "open" | "closed" | "archived";
+	status: "draft" | "open" | "closed" | "archived";
 	answerType: "single" | "multiple";
 	openingTime: Date;
 	closingTime: Date;

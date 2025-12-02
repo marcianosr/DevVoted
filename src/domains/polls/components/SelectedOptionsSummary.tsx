@@ -1,10 +1,12 @@
 import { clsx } from "clsx";
+import { Link } from "node_modules/@tanstack/react-router/dist/esm/link";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
+import { PrimaryButton } from "~/ui/PrimaryButton";
 
 import { PollOption } from "../models/pollOption";
 
@@ -96,7 +98,21 @@ const SelectedOptionsSummary = ({
 					<p className="text-xl">
 						{communityStats?.totalResponses} player(s) participated in this poll
 					</p>
-					<Leaderboard categoryCode={categoryCode} />
+
+					<section className="flex items-baseline flex-col">
+						<small>Be even more involved in this community!</small>
+						<PrimaryButton className="mt-4" size="small">
+							<Link
+								to="/polls/new"
+								className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
+							>
+								Suggest a poll yourself →
+							</Link>
+						</PrimaryButton>
+					</section>
+					<section className="mt-16">
+						<Leaderboard categoryCode={categoryCode} />
+					</section>
 				</section>
 			</div>
 		</section>

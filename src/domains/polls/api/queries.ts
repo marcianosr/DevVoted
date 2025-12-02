@@ -54,6 +54,16 @@ export const fetchAllPolls = async () => {
 	return pollRecords.map((record) => pollFactory.toDTO(record));
 };
 
+export const fetchPollsByUser = async (userId: string) => {
+	const pollRecords = await db
+		.select()
+		.from(pollsTable)
+		.where(eq(pollsTable.created_by, userId))
+		.orderBy(pollsTable.created_at);
+
+	return pollRecords.map((record) => pollFactory.toDTO(record));
+};
+
 export const insertPoll = async (data: Poll) => {
 	const pollRecord = pollFactory.fromDTO(data);
 	const result = await db
@@ -431,4 +441,185 @@ export const getRunPollHistory = async (
 	);
 
 	return pollsWithCorrectness;
+};
+
+// ============================================
+// Poll CRUD Operations
+// ============================================
+
+type NewPollOption = {
+	option: string;
+	correct: boolean;
+};
+
+type NewPollData = {
+	question: string;
+	status: "draft" | "open" | "closed" | "archived";
+	answerType: "single" | "multiple";
+	createdBy: string;
+	categoryCode: string;
+	codeBlock?: string | null;
+	codeSandboxExample?: string | null;
+};
+
+/**
+ * Create a poll with options in a single transaction
+ */
+export const createPollWithOptions = async (
+	pollData: NewPollData,
+	options: NewPollOption[]
+) => {
+	return await db.transaction(async (tx) => {
+		// Get the next poll number
+		const [maxResult] = await tx
+			.select({ maxNum: sql<number>`COALESCE(MAX(poll_number), 0)` })
+			.from(pollsTable);
+		const nextPollNumber = (maxResult?.maxNum ?? 0) + 1;
+
+		const [pollRecord] = await tx
+			.insert(pollsTable)
+			.values({
+				question: pollData.question,
+				status: pollData.status,
+				answer_type: pollData.answerType,
+				created_by: pollData.createdBy,
+				category_code: pollData.categoryCode,
+				code_block: pollData.codeBlock ?? null,
+				code_sandbox_example: pollData.codeSandboxExample ?? null,
+				opening_time: new Date(),
+				closing_time: new Date(),
+				poll_number: nextPollNumber,
+			})
+			.returning();
+
+		if (!pollRecord) {
+			throw new Error("Failed to create poll");
+		}
+
+		if (options.length > 0) {
+			await tx.insert(pollOptionsTable).values(
+				options.map((opt) => ({
+					poll_id: pollRecord.id,
+					option: opt.option,
+					correct: opt.correct,
+				}))
+			);
+		}
+
+		return pollFactory.toDTO(pollRecord);
+	});
+};
+
+/**
+ * Update a poll record
+ */
+export const updatePollById = async (
+	id: number,
+	data: Partial<NewPollData>
+) => {
+	const updateValues: Record<string, unknown> = {};
+
+	if (data.question !== undefined) updateValues.question = data.question;
+	if (data.status !== undefined) updateValues.status = data.status;
+	if (data.answerType !== undefined) updateValues.answer_type = data.answerType;
+	if (data.categoryCode !== undefined)
+		updateValues.category_code = data.categoryCode;
+	if (data.codeBlock !== undefined) updateValues.code_block = data.codeBlock;
+	if (data.codeSandboxExample !== undefined)
+		updateValues.code_sandbox_example = data.codeSandboxExample;
+
+	const [updatedRecord] = await db
+		.update(pollsTable)
+		.set(updateValues)
+		.where(eq(pollsTable.id, id))
+		.returning();
+
+	if (!updatedRecord) {
+		throw new Error("Poll not found");
+	}
+
+	return pollFactory.toDTO(updatedRecord);
+};
+
+/**
+ * Delete all options for a poll
+ */
+export const deletePollOptions = async (pollId: number) => {
+	await db.delete(pollOptionsTable).where(eq(pollOptionsTable.poll_id, pollId));
+};
+
+/**
+ * Insert poll options (bulk)
+ */
+export const insertPollOptions = async (
+	pollId: number,
+	options: NewPollOption[]
+) => {
+	if (options.length === 0) return [];
+
+	const records = await db
+		.insert(pollOptionsTable)
+		.values(
+			options.map((opt) => ({
+				poll_id: pollId,
+				option: opt.option,
+				correct: opt.correct,
+			}))
+		)
+		.returning();
+
+	return pollOptionFactory.toDTOs(records);
+};
+
+/**
+ * Update poll with options - replaces all options
+ */
+export const updatePollWithOptions = async (
+	pollId: number,
+	pollData: Partial<NewPollData>,
+	options: NewPollOption[]
+) => {
+	return await db.transaction(async (tx) => {
+		// Update poll
+		const updateValues: Record<string, unknown> = {};
+		if (pollData.question !== undefined)
+			updateValues.question = pollData.question;
+		if (pollData.status !== undefined) updateValues.status = pollData.status;
+		if (pollData.answerType !== undefined)
+			updateValues.answer_type = pollData.answerType;
+
+		if (pollData.categoryCode !== undefined)
+			updateValues.category_code = pollData.categoryCode;
+		if (pollData.codeBlock !== undefined)
+			updateValues.code_block = pollData.codeBlock;
+		if (pollData.codeSandboxExample !== undefined)
+			updateValues.code_sandbox_example = pollData.codeSandboxExample;
+
+		const [updatedPoll] = await tx
+			.update(pollsTable)
+			.set(updateValues)
+			.where(eq(pollsTable.id, pollId))
+			.returning();
+
+		if (!updatedPoll) {
+			throw new Error("Poll not found");
+		}
+
+		// Delete existing options and insert new ones
+		await tx
+			.delete(pollOptionsTable)
+			.where(eq(pollOptionsTable.poll_id, pollId));
+
+		if (options.length > 0) {
+			await tx.insert(pollOptionsTable).values(
+				options.map((opt) => ({
+					poll_id: pollId,
+					option: opt.option,
+					correct: opt.correct,
+				}))
+			);
+		}
+
+		return pollFactory.toDTO(updatedPoll);
+	});
 };

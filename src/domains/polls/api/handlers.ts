@@ -4,6 +4,7 @@ import {
 	fetchAllPolls,
 	fetchPollById,
 	fetchPollByIdWithOptions,
+	fetchPollsByUser,
 	hasUserAnsweredPoll,
 	getUserSelectedOptions,
 	getPollHistory,
@@ -12,12 +13,18 @@ import {
 	getPollsSeenInRun,
 	getCommunityStatsForDailyPoll,
 	getRunPollHistory,
+	createPollWithOptions,
+	updatePollWithOptions,
 } from "~/domains/polls/api/queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
 import {
 	pollSubmissionSchema,
+	createPollWithOptionsSchema,
+	updatePollSchema,
 	type PollSubmissionInput,
+	type CreatePollWithOptionsInput,
+	type UpdatePollInput,
 } from "~/domains/polls/validation/schemas";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
 import { Run } from "~/domains/runs/models/run";
@@ -56,6 +63,16 @@ export const getPollByIdHandler = async ({
 export const getAllPollsHandler = async () => {
 	return handleApiOperation(async () => {
 		return await fetchAllPolls();
+	});
+};
+
+export const getPollsByUserHandler = async ({
+	data,
+}: {
+	data: { userId: string };
+}) => {
+	return handleApiOperation(async () => {
+		return await fetchPollsByUser(data.userId);
 	});
 };
 
@@ -255,4 +272,58 @@ export const getRunPollHistoryHandler = async ({
 		}
 		return await getRunPollHistory(activeRunResponse.data.id, userId);
 	});
+};
+
+// ============================================
+// Poll CRUD Handlers
+// ============================================
+
+export const createPollWithOptionsHandler = async ({
+	data,
+}: {
+	data: CreatePollWithOptionsInput & { createdBy: string };
+}) => {
+	return handleApiOperation(async () => {
+		const validated = createPollWithOptionsSchema.parse(data);
+
+		const poll = await createPollWithOptions(
+			{
+				question: validated.poll.question,
+				status: validated.poll.status,
+				answerType: validated.poll.answerType,
+				createdBy: data.createdBy,
+				categoryCode: validated.poll.categoryCode,
+				codeBlock: validated.poll.codeBlock ?? null,
+				codeSandboxExample: validated.poll.codeSandboxExample ?? null,
+			},
+			validated.options
+		);
+
+		return poll;
+	}, "Failed to create poll");
+};
+
+export const updatePollHandler = async ({
+	data,
+}: {
+	data: UpdatePollInput;
+}) => {
+	return handleApiOperation(async () => {
+		const validated = updatePollSchema.parse(data);
+
+		const poll = await updatePollWithOptions(
+			validated.id,
+			{
+				question: validated.poll.question,
+				status: validated.poll.status,
+				answerType: validated.poll.answerType,
+				categoryCode: validated.poll.categoryCode,
+				codeBlock: validated.poll.codeBlock,
+				codeSandboxExample: validated.poll.codeSandboxExample,
+			},
+			validated.options
+		);
+
+		return poll;
+	}, "Failed to update poll");
 };
