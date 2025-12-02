@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { clsx } from "clsx";
 import { format } from "date-fns";
 
@@ -11,27 +11,36 @@ const PollDetail: React.FC = () => {
 	const { poll, options } = Route.useLoaderData();
 
 	return (
-		<section className="max-w-5xl mx-auto">
-			<aside>
-				<h2>#{poll.pollNumber}</h2>
-				<p className="text-sm text-gray-400">
-					Created at: {format(new Date(poll.createdAt), "MM/dd/yyyy")}
-				</p>
-				<p className="text-sm text-gray-400">Created by: {poll.createdBy}</p>
-				<p>
-					Status:
-					<span
-						className={clsx("ml-2 font-semibold", {
-							"text-green-400": poll.status === "open",
-							"text-red-400": poll.status === "closed",
-							"text-yellow-400": poll.status === "draft",
-						})}
-					>
-						{poll.status}
-					</span>
-				</p>
-				<p className="text-theme">Category: {poll.categoryCode}</p>
-			</aside>
+		<section className="max-w-5xl mx-auto p-4">
+			<div className="flex justify-between items-start mb-4">
+				<aside>
+					<h2>#{poll.pollNumber}</h2>
+					<p className="text-sm text-gray-400">
+						Created at: {format(new Date(poll.createdAt), "MM/dd/yyyy")}
+					</p>
+					<p className="text-sm text-gray-400">Created by: {poll.createdBy}</p>
+					<p>
+						Status:
+						<span
+							className={clsx("ml-2 font-semibold", {
+								"text-green-400": poll.status === "open",
+								"text-red-400": poll.status === "closed",
+								"text-yellow-400": poll.status === "draft",
+							})}
+						>
+							{poll.status}
+						</span>
+					</p>
+					<p className="text-theme">Category: {poll.categoryCode}</p>
+				</aside>
+				<Link
+					to="/polls/$pollId/edit"
+					params={{ pollId: String(poll.id) }}
+					className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
+				>
+					Edit Poll
+				</Link>
+			</div>
 			<PollQuestionDisplay poll={poll} />
 			{poll.codeSandboxExample && (
 				<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
@@ -53,7 +62,7 @@ const PollDetail: React.FC = () => {
 	);
 };
 
-export const Route = createFileRoute("/_authed/polls/$pollId")({
+export const Route = createFileRoute("/_authed/polls/$pollId/")({
 	component: PollDetail,
 	loader: async ({ params }) => {
 		const response = await getPollByIdWithOptions({

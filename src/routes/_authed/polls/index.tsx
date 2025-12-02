@@ -76,7 +76,15 @@ function PollsList() {
 
 	return (
 		<div className="p-4">
-			<h1 className="text-2xl mb-4">Available Polls</h1>
+			<div className="flex justify-between items-center mb-4">
+				<h1 className="text-2xl">Available Polls</h1>
+				<Link
+					to="/polls/new"
+					className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
+				>
+					Create Poll
+				</Link>
+			</div>
 			{polls?.length === 0 ? (
 				<p>No polls available.</p>
 			) : (

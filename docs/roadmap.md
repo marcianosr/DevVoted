@@ -110,8 +110,7 @@ BUGS:
 [] Als iemand de shop open heeft en de volgende dag de pagina weer bezoekt, haal hij de nieuwe poll op maar blijft hij in beantwoorde staat
 [] De shop is weg als je de pagina refresht. Niet echt een bug, maar ik weet dat dit zo is
 [] Start new Run button in de header werkt niet
-[] Slow ""See your run progress and shop →" button
-[] Show a reminder of how to remind for polls in Slack
+
 
 ### Feedback / BUGS [Critical]
 
@@ -136,7 +135,8 @@ BUGS:
 [x] Refactor shop in progress page
 [x] Score weergave klopt nog niet.
 [x] Bij Matthijs zei hij 1.95% en de score was 2%
-[] Vue category toevoegen (viridian)
+
+[] Vote for the next category (poll)
 [] "Architecture" catregory toevoegen (pallet)
 [-] Fonts niet duidelijk
 [] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
@@ -146,9 +146,19 @@ BUGS:
 [x] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
 [] When not logged in, the start page shouldn't show the start run button, but a login button
 [] UI (?) bug in gates . First poll in run shows "not answered" even when answered
+[] Slow ""See your run progress and shop →" button
+[] Show a reminder of how to remind for polls in Slack
+[] Mobile viewport op /progress pagina isn't responsive
 
 ### Season 2: Early Meta Layer
+[] Admin panel for polls
+[] Allow players to suggest polls
 
+[] Introduce moderator role - Make Piet and Matthijs moderators
+
+[] Expand on low hanging configs
+[] Provide KB's when skipping the shop
+[] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
 [x] Loading state for rebuilding new configs
 [x] Config: style lint
 [x] Game over state
@@ -166,31 +176,30 @@ BUGS:
 [] Fixen todo warnings eslint
 [] Starring a poll
 [] Add explanation field to poll (shown after answering)
-[] Provide KB's when skipping the shop
 [] Fix "deflate" config
 [] Show partial correct polls in list of progress
 [x] Tan stack "start" instead of "query" in footer
 [x] Include footer everywhere
-[] Config foldout
+[] Config foldout visible everywhere
 [] Onboarding/help modal for first-time users [Critical]
 [] Colorize tiers coverage
 [] Expand CI gate challenges
 [] Add icons (pixelated) for configs
-[] Style category tiers? - red for dangerous low coverage - yellow for low coverage - orange for medium coverage - green for high coverage - gold for max coverage
 [] Events table - Traceability
 [] Store "phase" per player in run. This prevents accidental shop miss
 [] Streak bonuses (beyond the basic +2 per set)
 [] Fix low-hanging sonar issues
-[] Change domain name. Not happy with "tamnstack" in my project name
 [] Needs to be configured in Github aswell - https://github.com/settings/apps/devvoted and Supabase https://supabase.com/dashboard/project/smrkmigjsnhrhwrxobjc/auth/url-configuration
 [] Add .editorconfig file
 
 [] Expand traceability
 [] Store most and least popular configs
-[] Admin panel for polls
+
 [] Check system roles
 
 Season 3: Expansion
+[] Think of a way to have umbrella categories - e.g., "Frontend Frameworks" that contain React, Vue, Angular and sub categories
+[] Style category tiers? - red for dangerous low coverage - yellow for low coverage - orange for medium coverage - green for high coverage - gold for max coverage
 [] Add Head tags seo
 [] Add meta description
 [x] Add basic CI/CD github actions (DB migrations)
@@ -204,7 +213,14 @@ Season 3: Expansion
 [] Stickers / cosmetics
 [] Slackbot
 [] Polish flows / UI
+[] Change domain name. Not happy with "tamnstack" in my project name
 
+
+
+Season 4: Farther away
+[] Think of merging HTML/CSS together
+[] Think of merging JS/TS together
+[] Do the same with backend categorires
 =====================================================================
 
 [x] Answer polls both multiple choice and single choice (done)

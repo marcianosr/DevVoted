@@ -35,13 +35,22 @@ export const createPollSchema = z
 		path: ["closingTime"],
 	});
 
-// Poll option validation
+// Poll option validation (for existing options with ID)
 export const pollOptionSchema = z.object({
 	pollId: z.number().int().positive(),
 	option: z
 		.string()
 		.min(1, "Option cannot be empty")
 		.max(200, "Option cannot exceed 200 characters"),
+	correct: z.boolean().default(false),
+});
+
+// New poll option (without pollId - for create/edit forms)
+export const newPollOptionSchema = z.object({
+	option: z
+		.string()
+		.min(1, "Option cannot be empty")
+		.max(500, "Option cannot exceed 500 characters"),
 	correct: z.boolean().default(false),
 });
 
@@ -59,3 +68,55 @@ export type PollIdParamInput = z.infer<typeof pollIdParamSchema>;
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 export type PollOptionInput = z.infer<typeof pollOptionSchema>;
 export type UserResponseInput = z.infer<typeof userResponseSchema>;
+export type NewPollOptionInput = z.infer<typeof newPollOptionSchema>;
+
+// ============================================
+// Poll CRUD Schemas
+// ============================================
+
+// Base poll data schema (without refinements for reuse)
+const basePollDataSchema = z.object({
+	question: z
+		.string()
+		.min(10, "Question must be at least 10 characters")
+		.max(2000, "Question cannot exceed 2000 characters"),
+	status: z.enum(["draft", "needs-revision", "open", "closed", "archived"]),
+	answerType: z.enum(["single", "multiple"]),
+	categoryCode: z.string().min(1, "Category is required"),
+	codeBlock: z.string().nullable().optional(),
+	codeSandboxExample: z.string().url().nullable().optional(),
+});
+
+// Create poll with options schema
+export const createPollWithOptionsSchema = z
+	.object({
+		poll: basePollDataSchema,
+		options: z
+			.array(newPollOptionSchema)
+			.min(3, "At least 3 options required")
+			.max(20, "Cannot exceed 20 options"),
+	})
+	.refine((data) => data.options.some((opt) => opt.correct), {
+		message: "At least one option must be marked as correct",
+		path: ["options"],
+	});
+
+// Update poll schema
+export const updatePollSchema = z
+	.object({
+		id: z.number().int().positive(),
+		poll: basePollDataSchema.partial(),
+		options: z
+			.array(newPollOptionSchema)
+			.min(3, "At least 3 options required")
+			.max(20, "Cannot exceed 20 options"),
+	})
+	.refine((data) => data.options.some((opt) => opt.correct), {
+		message: "At least one option must be marked as correct",
+		path: ["options"],
+	});
+
+export type CreatePollWithOptionsInput = z.infer<
+	typeof createPollWithOptionsSchema
+>;
+export type UpdatePollInput = z.infer<typeof updatePollSchema>;
