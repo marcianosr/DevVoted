@@ -5,6 +5,10 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { getUserPollsOrAll } from "~/domains/polls/api/polls";
 import type { Poll } from "~/domains/polls/models/poll";
+import {
+	getCategoryMetadata,
+	type CategoryCode,
+} from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 
 export const Route = createFileRoute("/_authed/polls/")({
@@ -57,11 +61,28 @@ function PollsList() {
 			? polls
 			: polls.filter((poll) => poll.status === statusFilter);
 
+	const categoryCountsMap = polls.reduce<Record<string, number>>(
+		(acc, poll) => {
+			acc[poll.categoryCode] = (acc[poll.categoryCode] || 0) + 1;
+			return acc;
+		},
+		{}
+	);
+
+	const categoryCounts = Object.entries(categoryCountsMap)
+		.map(([code, count]) => ({
+			code,
+			name: getCategoryMetadata(code as CategoryCode).name,
+			count,
+		}))
+		.sort((a, b) => b.count - a.count);
+
 	return (
 		<div className="p-4">
 			<div className="flex justify-between items-center mb-4">
 				<h1 className="text-2xl">
-					{isAdmin ? "All Polls" : "My Poll Submissions"}
+					{isAdmin ? "All Polls" : "My Poll Submissions"}{" "}
+					<span className="text-gray-400">({polls.length})</span>
 				</h1>
 				<Link
 					to="/polls/new"
@@ -70,6 +91,14 @@ function PollsList() {
 					Create Poll
 				</Link>
 			</div>
+
+			<ul className="mb-4 text-sm">
+				{categoryCounts.map((cat) => (
+					<li key={cat.code}>
+						{cat.name}: {cat.count}
+					</li>
+				))}
+			</ul>
 
 			{/* Status Filter */}
 			<div className="flex flex-wrap gap-2 mb-4">
