@@ -7,6 +7,7 @@ import {
 	createRunForUser,
 	getLastRunFromUser,
 	getLiveRunRankings,
+	skipShop,
 } from "./queries";
 import { endRunManually } from "../services/runCompletion.service";
 
@@ -95,4 +96,31 @@ export const finishRunHandler = async (userId: string) => {
 		await endRunManually(activeRun.id);
 		return { success: true };
 	}, "Failed to finish run");
+};
+
+/**
+ * Skips the shop for the current date and grants 60KB storage bonus
+ */
+export const skipShopHandler = async (
+	userId: string,
+	runId: number,
+	date: string
+) => {
+	return handleApiOperation(async () => {
+		const activeRun = await getActiveRunByUserId(userId);
+
+		if (!activeRun) {
+			throw new Error("No active run found");
+		}
+
+		if (activeRun.id !== runId) {
+			throw new Error("Run does not belong to user");
+		}
+
+		if (activeRun.shopSkippedDate === date) {
+			throw new Error("Shop already skipped for today");
+		}
+
+		return await skipShop(runId, date);
+	}, "Failed to skip shop");
 };

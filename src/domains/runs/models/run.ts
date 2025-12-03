@@ -16,6 +16,8 @@ export type Run = {
 	rerolls: number;
 	totalRerolls: number;
 	rerollStorageUsed: number;
+	shopSkippedDate: string | null;
+	shopInteractedDate: string | null;
 	completionReason: string | null;
 	startedAt: Date;
 	finishedAt: Date | null;
@@ -40,6 +42,8 @@ export const runToDTO = (
 		rerolls: record.rerolls,
 		totalRerolls: record.total_rerolls,
 		rerollStorageUsed: record.reroll_storage_used,
+		shopSkippedDate: record.shop_skipped_date,
+		shopInteractedDate: record.shop_interacted_date,
 		startedAt: record.started_at || new Date(),
 		finishedAt: record.finished_at,
 		createdAt: record.created_at || new Date(),
@@ -60,6 +64,8 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		rerolls: dto.rerolls,
 		total_rerolls: dto.totalRerolls,
 		reroll_storage_used: dto.rerollStorageUsed,
+		shop_skipped_date: dto.shopSkippedDate,
+		shop_interacted_date: dto.shopInteractedDate,
 		started_at: dto.startedAt,
 		finished_at: dto.finishedAt,
 		created_at: dto.createdAt,
@@ -89,6 +95,8 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		rerolls: 0,
 		totalRerolls: 0,
 		rerollStorageUsed: 0,
+		shopSkippedDate: null,
+		shopInteractedDate: null,
 		completionReason: null,
 		startedAt: now,
 		finishedAt: null,
@@ -111,6 +119,8 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		rerolls: 0,
 		totalRerolls: 0,
 		rerollStorageUsed: 0,
+		shopSkippedDate: null,
+		shopInteractedDate: null,
 		completionReason: null,
 		startedAt: new Date("2024-01-01T00:00:00Z"),
 		finishedAt: null,
@@ -135,6 +145,8 @@ export const createMockRunRecord = (
 		rerolls: 0,
 		total_rerolls: 0,
 		reroll_storage_used: 0,
+		shop_skipped_date: null,
+		shop_interacted_date: null,
 		started_at: new Date("2024-01-01T00:00:00Z"),
 		finished_at: null,
 		created_at: new Date("2024-01-01T00:00:00Z"),

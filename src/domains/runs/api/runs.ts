@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
@@ -7,6 +8,7 @@ import {
 	getUserActiveRun,
 	getLastRunForUser,
 	finishRunHandler,
+	skipShopHandler,
 } from "./handlers";
 
 export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
@@ -41,3 +43,15 @@ export const finishRunFn = createServerFn({ method: "POST" }).handler(
 		return await finishRunHandler(userId);
 	}
 );
+
+export const skipShopServerFn = createServerFn({ method: "POST" })
+	.inputValidator(
+		z.object({
+			runId: z.number(),
+			date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+		})
+	)
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		return await skipShopHandler(userId, data.runId, data.date);
+	});

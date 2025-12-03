@@ -10,6 +10,7 @@ import {
 } from "~/domains/economy/services/configManager.service";
 import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
+import { skipShopServerFn } from "~/domains/runs/api/runs";
 import { Run } from "~/domains/runs/models/run";
 import { formatStorage } from "~/lib/storage";
 import { PrimaryButton } from "~/ui/PrimaryButton";
@@ -21,6 +22,10 @@ type ShopContainerProps = {
 	isOpen: boolean;
 };
 
+const SKIP_REWARD_KB = 60;
+
+const getTodayDateString = () => new Date().toISOString().split("T")[0];
+
 const ShopContainer = ({
 	activeRun,
 	offeredConfigs,
@@ -29,9 +34,12 @@ const ShopContainer = ({
 }: ShopContainerProps) => {
 	const router = useRouter();
 	const { storageAvailable } = getStorageInfo(activeRun);
+	const today = getTodayDateString();
 
 	const rerollCost = calculateRerollCost(activeRun.rerolls);
 	const canReroll = storageAvailable >= rerollCost;
+	const hasSkippedShopToday = activeRun.shopSkippedDate === today;
+	const hasInteractedWithShopToday = activeRun.shopInteractedDate === today;
 
 	const installConfigMutation = useMutation({
 		mutationFn: addConfigToRunServerFn,
@@ -40,7 +48,7 @@ const ShopContainer = ({
 
 	const onInstallConfig = (config: Config) => {
 		installConfigMutation.mutate({
-			data: { configIds: [config.id], runId: activeRun.id },
+			data: { configIds: [config.id], runId: activeRun.id, date: today },
 		});
 	};
 
@@ -50,7 +58,15 @@ const ShopContainer = ({
 	});
 
 	const onReroll = () =>
-		onRerollMutation.mutate({ data: { runId: activeRun.id } });
+		onRerollMutation.mutate({ data: { runId: activeRun.id, date: today } });
+
+	const skipShopMutation = useMutation({
+		mutationFn: skipShopServerFn,
+		onSuccess: () => router.invalidate(),
+	});
+
+	const onSkipShop = () =>
+		skipShopMutation.mutate({ data: { runId: activeRun.id, date: today } });
 
 	return (
 		<section aria-labelledby="shop-heading">
@@ -82,11 +98,20 @@ const ShopContainer = ({
 						</small>
 					</div>
 					<div className="flex flex-col col-span-8 md:col-span-4">
-						<PrimaryButton size="small" disabled={true}>
-							Skip shop
+						<PrimaryButton
+							size="small"
+							disabled={
+								!isOpen ||
+								hasSkippedShopToday ||
+								hasInteractedWithShopToday ||
+								skipShopMutation.isPending
+							}
+							onClick={onSkipShop}
+						>
+							{skipShopMutation.isPending ? "Skipping shop..." : "Skip shop"}
 						</PrimaryButton>
 						<small className="text-sm mt-2">
-							Gain +30KB storage (teaser HAH!)
+							Gain +{SKIP_REWARD_KB}KB storage
 						</small>
 					</div>
 				</div>
