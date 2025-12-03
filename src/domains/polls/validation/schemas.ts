@@ -85,6 +85,11 @@ const basePollDataSchema = z.object({
 	categoryCode: z.string().min(1, "Category is required"),
 	codeBlock: z.string().nullable().optional(),
 	codeSandboxExample: z.string().url().nullable().optional(),
+	explanation: z
+		.string()
+		.max(2000, "Explanation cannot exceed 2000 characters")
+		.nullable()
+		.optional(),
 });
 
 // Create poll with options schema

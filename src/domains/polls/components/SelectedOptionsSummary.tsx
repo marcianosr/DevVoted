@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import { clsx } from "clsx";
-import { Link } from "node_modules/@tanstack/react-router/dist/esm/link";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 
@@ -18,6 +18,7 @@ type SelectedOptionsSummaryProps = {
 		totalResponses: number;
 	};
 	categoryCode: CategoryCode;
+	explanation?: string | null;
 };
 
 const SelectedOptionsSummary = ({
@@ -26,6 +27,7 @@ const SelectedOptionsSummary = ({
 	score,
 	communityStats,
 	categoryCode,
+	explanation,
 }: SelectedOptionsSummaryProps) => {
 	return (
 		<section className="space-y-14 border-b border-theme mb-8">
@@ -66,6 +68,17 @@ const SelectedOptionsSummary = ({
 								</li>
 							))}
 					</ul>
+
+					{explanation && (
+						<div className="mt-6 p-4 bg-gray-800/40 border border-gray-700">
+							<h4 className="text-xl mb-2">💡 Explanation</h4>
+							<div className="markdown text-gray-300">
+								<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+									{explanation}
+								</ReactMarkdown>
+							</div>
+						</div>
+					)}
 				</section>
 				{score && (
 					<section className="mt-4 py-8 border-t border-theme space-y-2">

@@ -20,6 +20,7 @@ export type Poll = {
 	categoryCode: CategoryCode;
 	codeSandboxExample: string | null;
 	codeBlock: string | null;
+	explanation: string | null;
 	pollNumber: number | null;
 };
 
@@ -56,6 +57,7 @@ export const pollToDTO = (record: PollRecord): Poll => {
 		categoryCode: record.category_code as CategoryCode,
 		codeSandboxExample: record.code_sandbox_example,
 		codeBlock: record.code_block,
+		explanation: record.explanation,
 		pollNumber: record.poll_number,
 	};
 };
@@ -77,6 +79,7 @@ export const pollFromDTO = (dto: Poll): PollRecord => {
 		category_code: dto.categoryCode,
 		code_sandbox_example: dto.codeSandboxExample,
 		code_block: dto.codeBlock,
+		explanation: dto.explanation,
 		poll_number: dto.pollNumber,
 	};
 };
@@ -116,6 +119,7 @@ export const createPoll = (partial: Partial<Poll> = {}): Poll => {
 		categoryCode: "js" as CategoryCode, // Default value, can be overridden by partial
 		codeSandboxExample: null,
 		codeBlock: null,
+		explanation: null,
 		pollNumber: null,
 		...partial,
 	};

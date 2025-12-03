@@ -103,6 +103,7 @@ describe("dailyPoll.service", () => {
 				codeBlock: null,
 				codeSandboxExample: null,
 				pollNumber: null,
+				explanation: null,
 			};
 
 			// Mock the query layer to return the existing open poll
@@ -140,6 +141,7 @@ describe("dailyPoll.service", () => {
 				codeBlock: null,
 				codeSandboxExample: null,
 				pollNumber: null,
+				explanation: null,
 			};
 
 			// Mock the query layer to return the selected poll
@@ -184,6 +186,7 @@ describe("dailyPoll.service", () => {
 				codeBlock: null,
 				codeSandboxExample: null,
 				pollNumber: null,
+				explanation: null,
 			};
 
 			vi.mocked(queries.manageDailyPollTransition).mockResolvedValue(

@@ -444,6 +444,7 @@ type NewPollData = {
 	categoryCode: string;
 	codeBlock?: string | null;
 	codeSandboxExample?: string | null;
+	explanation?: string | null;
 };
 
 /**
@@ -470,6 +471,7 @@ export const createPollWithOptions = async (
 				category_code: pollData.categoryCode,
 				code_block: pollData.codeBlock ?? null,
 				code_sandbox_example: pollData.codeSandboxExample ?? null,
+				explanation: pollData.explanation ?? null,
 				opening_time: new Date(),
 				closing_time: new Date(),
 				poll_number: nextPollNumber,
@@ -511,6 +513,8 @@ export const updatePollById = async (
 	if (data.codeBlock !== undefined) updateValues.code_block = data.codeBlock;
 	if (data.codeSandboxExample !== undefined)
 		updateValues.code_sandbox_example = data.codeSandboxExample;
+	if (data.explanation !== undefined)
+		updateValues.explanation = data.explanation;
 
 	const [updatedRecord] = await db
 		.update(pollsTable)

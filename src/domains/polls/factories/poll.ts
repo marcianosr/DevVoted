@@ -19,6 +19,7 @@ const poll: Poll = {
 	codeBlock: null,
 	codeSandboxExample: null,
 	pollNumber: null,
+	explanation: null,
 };
 
 const pollRecord: PollRecord = {
@@ -35,6 +36,7 @@ const pollRecord: PollRecord = {
 	code_sandbox_example: null,
 	code_block: null,
 	poll_number: null,
+	explanation: null,
 };
 
 // For seeding, we need a version without ID to let the database auto-generate it
@@ -51,6 +53,7 @@ const seedPollRecord: Omit<PollRecord, "id"> = {
 	code_sandbox_example: null,
 	code_block: null,
 	poll_number: null,
+	explanation: null,
 };
 
 export const createMockPoll = createMockDataFactory<Poll>(poll);

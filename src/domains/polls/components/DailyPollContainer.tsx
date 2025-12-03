@@ -141,6 +141,7 @@ const DailyPollContainer = ({
 							score={score}
 							communityStats={communityStats}
 							categoryCode={poll.categoryCode}
+							explanation={poll.explanation}
 						/>
 						<PrimaryButton className="mt-4">
 							<Link to={`/progress`}>See your run progress and shop →</Link>

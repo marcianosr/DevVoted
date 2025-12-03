@@ -24,6 +24,7 @@ type PollFormData = {
 		categoryCode: CategoryCode;
 		codeBlock: string | null;
 		codeSandboxExample: string | null;
+		explanation: string | null;
 	};
 	options: PollFormOption[];
 };
@@ -70,6 +71,9 @@ export const PollForm = ({
 	const [codeBlock, setCodeBlock] = useState(initialData?.codeBlock ?? "");
 	const [codeSandboxExample, setCodeSandboxExample] = useState(
 		initialData?.codeSandboxExample ?? ""
+	);
+	const [explanation, setExplanation] = useState(
+		initialData?.explanation ?? ""
 	);
 	const [options, setOptions] = useState<PollFormOption[]>(
 		initialData?.options.map((o) => ({
@@ -119,6 +123,7 @@ export const PollForm = ({
 				categoryCode,
 				codeBlock: codeBlock || null,
 				codeSandboxExample: codeSandboxExample || null,
+				explanation: explanation || null,
 			},
 			options,
 		};
@@ -248,18 +253,20 @@ export const PollForm = ({
 					</select>
 				</div>
 			)}
-
-			<div>
-				<label className="block text-sm font-medium text-theme mb-2">
-					Code Block (optional) - or just use the ```lang syntax in the question
-				</label>
-				<textarea
-					value={codeBlock}
-					onChange={(e) => setCodeBlock(e.target.value)}
-					className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme font-mono min-h-[100px]"
-					placeholder="Optional separate code block that appears below the question"
-				/>
-			</div>
+			{codeBlock && (
+				<div>
+					<label className="block text-sm font-medium text-theme mb-2">
+						Code Block (optional) - or just use the ```lang syntax in the
+						question
+					</label>
+					<textarea
+						value={codeBlock}
+						onChange={(e) => setCodeBlock(e.target.value)}
+						className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme font-mono min-h-[100px]"
+						placeholder="Optional separate code block that appears below the question"
+					/>
+				</div>
+			)}
 
 			<div>
 				<label className="block text-sm font-medium text-theme mb-2">
@@ -272,6 +279,22 @@ export const PollForm = ({
 					className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme"
 					placeholder="https://codesandbox.io/s/..."
 				/>
+			</div>
+
+			<div>
+				<label className="block text-sm font-medium text-theme mb-2">
+					Explanation (shown after answering, supports markdown)
+				</label>
+				<textarea
+					value={explanation}
+					onChange={(e) => setExplanation(e.target.value)}
+					className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme min-h-[100px]"
+					placeholder="Optional explanation of why the correct answer is correct"
+					maxLength={2000}
+				/>
+				<p className="text-sm text-gray-500 mt-1">
+					{explanation.length}/2000 characters
+				</p>
 			</div>
 
 			{/* Options */}

@@ -104,8 +104,9 @@ export const pollsTable = pgTable("polls", {
 	id: serial("id").primaryKey(),
 	question: text("question").notNull(),
 	poll_number: integer("poll_number"),
-	code_block: text("code_block"),
+	code_block: text("code_block"), // Optional code block shown in poll
 	code_sandbox_example: text("code_sandbox_example"),
+	explanation: text("explanation"), // Optional explanation shown after answering
 	status: pollStatus("status").notNull().default("draft"),
 	answer_type: pollAnswerType("answer_type").notNull().default("single"),
 	opening_time: timestamp("opening_time", { withTimezone: true }).notNull(),
