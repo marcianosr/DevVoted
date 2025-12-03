@@ -146,11 +146,14 @@ BUGS:
 [x] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
 [] When not logged in, the start page shouldn't show the start run button, but a login button
 [] UI (?) bug in gates . First poll in run shows "not answered" even when answered
-[] Slow ""See your run progress and shop →" button
+[x] Slow "See your run progress and shop →" button
 [] Show a reminder of how to remind for polls in Slack
 [] Mobile viewport op /progress pagina isn't responsive
 [] Bug in submitting poll larger than 10 selected options
 [] Fix button clicking area
+[] Remove code box field
+[] Add explanation field to suggest poll page poll (shown after answering)
+
 
 
 ### Season 2: Early Meta Layer
@@ -218,7 +221,7 @@ Season 3: Expansion
 [] Knowledge-based awards (start with 2)
 [] Boss challenge (start with 1 type)
 [] New categories (Java, AI, etc.)
-[] Add new polls
+[] Add new polls myself
 [] Stickers / cosmetics
 [] Slackbot
 [] Polish flows / UI

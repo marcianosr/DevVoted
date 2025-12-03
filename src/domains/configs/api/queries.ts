@@ -24,7 +24,8 @@ export const getRunByIdQuery = async (runId: number) => {
 
 export const addConfigToRunQuery = async (
 	runId: number,
-	configIds: string[]
+	configIds: string[],
+	date?: string
 ) => {
 	const [runRecord] = await db
 		.select()
@@ -43,6 +44,7 @@ export const addConfigToRunQuery = async (
 		.update(runsTable)
 		.set({
 			active_config_ids: updatedRun.activeConfigIds,
+			...(date !== undefined && { shop_interacted_date: date }),
 		})
 		.where(eq(runsTable.id, runId))
 		.returning();
@@ -52,7 +54,8 @@ export const addConfigToRunQuery = async (
 
 export const removeConfigFromRunQuery = async (
 	runId: number,
-	configIds: string[]
+	configIds: string[],
+	date?: string
 ) => {
 	const [runRecord] = await db
 		.select()
@@ -71,6 +74,7 @@ export const removeConfigFromRunQuery = async (
 		.update(runsTable)
 		.set({
 			active_config_ids: updatedRun.activeConfigIds,
+			...(date !== undefined && { shop_interacted_date: date }),
 		})
 		.where(eq(runsTable.id, runId))
 		.returning();

@@ -422,8 +422,35 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 	}
 };
 
+// Skip shop and grant storage bonus
+export const skipShop = async (runId: number, date: string) => {
+	const SKIP_REWARD = 60 * 1024; // 60KB in bytes
+
+	return await db.transaction(async (tx) => {
+		const [updatedRun] = await tx
+			.update(runsTable)
+			.set({
+				storage_limit: sql`${runsTable.storage_limit} + ${SKIP_REWARD}`,
+				shop_skipped_date: date,
+			})
+			.where(eq(runsTable.id, runId))
+			.returning();
+
+		const coverageRecords = await tx
+			.select()
+			.from(runCategoryCoverageTable)
+			.where(eq(runCategoryCoverageTable.run_id, runId));
+
+		const categoryCoverage = coverageRecords.map((record) =>
+			runCategoryCoverageFactory.toDTO(record)
+		);
+
+		return runFactory.toDTO(updatedRun, categoryCoverage);
+	});
+};
+
 // Process reroll shop request
-export const processRerollShop = async (runId: number) => {
+export const processRerollShop = async (runId: number, date?: string) => {
 	return await db.transaction(async (tx) => {
 		// Get the current run
 		const [runRecord] = await tx
@@ -450,6 +477,7 @@ export const processRerollShop = async (runId: number) => {
 				rerolls: runRecord.rerolls + 1,
 				total_rerolls: runRecord.total_rerolls + 1,
 				reroll_storage_used: runRecord.reroll_storage_used + rerollCost,
+				...(date !== undefined && { shop_interacted_date: date }),
 			})
 			.where(eq(runsTable.id, runId))
 			.returning();

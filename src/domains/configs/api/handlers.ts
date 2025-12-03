@@ -12,11 +12,11 @@ import {
 export const addConfigToRunHandler = async ({
 	data,
 }: {
-	data: { runId: number; configIds: string[] };
+	data: { runId: number; configIds: string[]; date?: string };
 }) => {
 	return handleApiOperation(async () => {
 		const userId = await getAuthenticatedUserId();
-		const { runId, configIds } = data;
+		const { runId, configIds, date } = data;
 
 		const currentRun = await getRunByIdQuery(runId);
 
@@ -35,17 +35,17 @@ export const addConfigToRunHandler = async ({
 			);
 		}
 
-		return await addConfigToRunQuery(runId, configIds);
+		return await addConfigToRunQuery(runId, configIds, date);
 	});
 };
 
 export const removeConfigFromRunHandler = async ({
 	data,
 }: {
-	data: { runId: number; configIds: string[] };
+	data: { runId: number; configIds: string[]; date?: string };
 }) => {
 	return handleApiOperation(async () => {
-		const { runId, configIds } = data;
-		return await removeConfigFromRunQuery(runId, configIds);
+		const { runId, configIds, date } = data;
+		return await removeConfigFromRunQuery(runId, configIds, date);
 	});
 };

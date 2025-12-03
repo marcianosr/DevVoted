@@ -209,9 +209,11 @@ function RouteComponent() {
 		},
 	});
 
+	const today = new Date().toISOString().split("T")[0];
+
 	const onDeinstallConfig = (config: Config) => {
 		deinstallConfigMutation.mutate({
-			data: { configIds: [config.id], runId: activeRun.id },
+			data: { configIds: [config.id], runId: activeRun.id, date: today },
 		});
 	};
 
@@ -271,7 +273,7 @@ function RouteComponent() {
 					activeRun={activeRun}
 					offeredConfigs={offeredConfigs}
 					reductionCost={reductionCost}
-					isOpen={dailyPoll.hasAnswered}
+					isOpen={dailyPoll.hasAnswered && activeRun.shopSkippedDate !== today}
 				/>
 				<section>
 					<h3 className="text-3xl">Your active configs</h3>

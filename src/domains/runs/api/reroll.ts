@@ -10,13 +10,17 @@ export const rerollShopServerFn = createServerFn()
 	.inputValidator(
 		z.object({
 			runId: z.number().int().positive(),
+			date: z
+				.string()
+				.regex(/^\d{4}-\d{2}-\d{2}$/)
+				.optional(),
 		})
 	)
 	.handler(async ({ data }) => {
-		const { runId } = data;
+		const { runId, date } = data;
 
 		try {
-			const { originalRun, updatedRun } = await processRerollShop(runId);
+			const { originalRun, updatedRun } = await processRerollShop(runId, date);
 
 			const { storageAvailable } = getStorageInfo(originalRun);
 			const rerollCost = calculateRerollCost(originalRun.rerolls);
