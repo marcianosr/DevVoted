@@ -191,7 +191,7 @@ function RouteComponent() {
 	const {
 		activeRun,
 		offeredConfigs,
-		configEffects: { reductionCost },
+		configEffects: { reductionCost, storage },
 		currentRound,
 		pollHistory,
 		dailyPoll,
@@ -274,6 +274,7 @@ function RouteComponent() {
 					offeredConfigs={offeredConfigs}
 					reductionCost={reductionCost}
 					isOpen={dailyPoll.hasAnswered && activeRun.shopSkippedDate !== today}
+					storageBonus={storage.bonus}
 				/>
 				<section>
 					<h3 className="text-3xl">Your active configs</h3>

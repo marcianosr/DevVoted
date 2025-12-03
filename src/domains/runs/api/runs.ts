@@ -49,9 +49,15 @@ export const skipShopServerFn = createServerFn({ method: "POST" })
 		z.object({
 			runId: z.number(),
 			date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+			storageBonus: z.number().default(0),
 		})
 	)
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
-		return await skipShopHandler(userId, data.runId, data.date);
+		return await skipShopHandler(
+			userId,
+			data.runId,
+			data.date,
+			data.storageBonus
+		);
 	});
