@@ -249,8 +249,9 @@ export const getCommunityStatsHandler = async ({
 }) => {
 	return handleApiOperation(async () => {
 		const { pollId } = data;
+		const today = new Date().toISOString().split("T")[0];
 
-		return await getCommunityStatsForDailyPoll(pollId);
+		return await getCommunityStatsForDailyPoll(pollId, today);
 	});
 };
 

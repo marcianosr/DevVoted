@@ -112,7 +112,7 @@ BUGS:
 [] Start new Run button in de header werkt niet
 
 
-### Feedback / BUGS [Critical]
+### Feedback / BUGS [Critical] (Beta test)
 
 [x] Herzien flow: - start - daily-poll - shop - progress (hub)
 
@@ -137,27 +137,40 @@ BUGS:
 [x] Bij Matthijs zei hij 1.95% en de score was 2%
 
 [] Vote for the next category (poll)
-[] "Architecture" catregory toevoegen (pallet)
 [-] Fonts niet duidelijk
-[] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
+[-] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
 [x] Fail a run?
 [] Mobile text bigger (question)
-[] Answers that contain code should be formatted well
+[x] Answers that contain code should be formatted well
 [x] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
 [] When not logged in, the start page shouldn't show the start run button, but a login button
 [] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 [x] Slow "See your run progress and shop →" button
 
 [] Bug in submitting poll larger than 10 selected options
+[x] Community stats query showing wrong data (7 votes?)
 [] Fix button clicking area
+[] Investigate slow loading times
 [x] Remove code box field
 [x] Add explanation field to suggest poll page poll (shown after answering)
+[] Make sure the rules on start screen is clear
+[] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
+[] Restore Next.js polls
+[] Expand on low hanging configs
+[] More leaderboard variants
+[] More community stats
+
+    [] Who voted on the poll of today?
 
 
 
-### Season 2: Early Meta Layer
-[] Admin panel for polls
-[] Allow players to suggest polls
+----- GO LIVE -----
+
+
+### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[x] Admin panel for polls
+[x] Allow players to suggest polls
+[] Create more polls also for backend categories
 
 [] Introduce moderator role -
 
@@ -166,11 +179,16 @@ BUGS:
     [] Players can suggest polls, but not edit
     [] Admins can approve/reject suggested polls
 
-[] Expand on low hanging configs
+
+[] Filter on category in admin panel
+[] Filter by author in admin panel
+[] Search by question in admin panel
+[] Add "Architecture" category (pallet)
+[] Add "AI" category
+[] Think about "spaces" - is everything one space or is Codam, EO a separate space like Slack?
 [x] Provide KB's when skipping the shop
 [] Show a reminder of how to remind for polls in Slack
 [] Mobile viewport op /progress pagina isn't responsive
-[] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
 [x] Loading state for rebuilding new configs
 [x] Config: style lint
 [x] Game over state
@@ -209,21 +227,20 @@ BUGS:
 [] Expand traceability
 [] Store most and least popular configs
 
-[] Check system roles
 
-Season 3: Expansion
+### Season 3: Expansion
 [] Think of a way to have umbrella categories - e.g., "Frontend Frameworks" that contain React, Vue, Angular and sub categories
 [] Style category tiers? - red for dangerous low coverage - yellow for low coverage - orange for medium coverage - green for high coverage - gold for max coverage
+[] Introduce new polls types: Guessers and puzzle grids
 [] Add Head tags seo
 [] Add meta description
+[] Profile page expansion
 [x] Add basic CI/CD github actions (DB migrations)
 [] Config discovery system (find new configs based on performance)
-[] Basic CSI (global average, no per-category complexity)
 [] 20 unlockables (cosmetic or config)
 [] Knowledge-based awards (start with 2)
 [] Boss challenge (start with 1 type)
-[] New categories (Java, AI, etc.)
-[] Add new polls myself
+[] Add new polls
 [] Stickers / cosmetics
 [] Slackbot
 [] Polish flows / UI
@@ -234,7 +251,7 @@ Season 3: Expansion
 Season 4: Farther away
 [] Think of merging HTML/CSS together
 [] Think of merging JS/TS together
-[] Do the same with backend categorires
+[] Do the same with backend categories
 =====================================================================
 
 [x] Answer polls both multiple choice and single choice (done)
@@ -255,7 +272,6 @@ Season 4: Farther away
 [x] Integrate 3-poll "sets": Threshold is only checked at every third poll
 [] Refactor service files - userSync for example
 [x] Run end: Show gameover and stat screen: Allow user to start a new run
-[] Implement rerolls
 [] Show leaderboard
 [] Create atleast 6-8 configs with effects
 [] Old to new system

@@ -1,4 +1,4 @@
-import { eq, and, gte, sql, asc, count } from "drizzle-orm";
+import { eq, and, gte, lt, sql, asc, count } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -309,16 +309,29 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 	return result[0]?.count ?? 0;
 };
 
-export const getCommunityStatsForDailyPoll = async (pollId: number) => {
-	const result = await db
-		.select()
-		.from(pollResponsesTable)
-		.where(eq(pollResponsesTable.poll_id, pollId));
+export const getCommunityStatsForDailyPoll = async (
+	pollId: number,
+	date: string
+) => {
+	const startOfDay = new Date(date);
+	startOfDay.setHours(0, 0, 0, 0);
 
-	const totalResponses = result.length;
+	const startOfNextDay = new Date(startOfDay);
+	startOfNextDay.setDate(startOfNextDay.getDate() + 1);
+
+	const result = await db
+		.select({ count: count() })
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.poll_id, pollId),
+				gte(pollResponsesTable.created_at, startOfDay),
+				lt(pollResponsesTable.created_at, startOfNextDay)
+			)
+		);
 
 	return {
-		totalResponses,
+		totalResponses: result[0]?.count ?? 0,
 	};
 };
 
