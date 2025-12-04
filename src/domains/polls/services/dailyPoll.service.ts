@@ -1,6 +1,6 @@
 import {
 	fetchPollByIdWithOptions,
-	manageDailyPollTransition,
+	getOrCreateDailyPoll,
 } from "~/domains/polls/api/queries";
 import type { Poll } from "~/domains/polls/models/poll";
 import { getTodayDateString } from "~/lib/dateUtils";
@@ -13,9 +13,9 @@ export const getDateSeed = (date?: string): string => {
 };
 
 /**
- * Select daily poll using deterministic seeded selection with race condition protection
+ * Select daily poll using deterministic seeded selection
  * The same date will always return the same poll for all users
- * Uses database transaction to prevent multiple polls from being opened simultaneously
+ * Uses daily_polls table for O(1) lookup on subsequent requests
  */
 export const selectDailyPoll = async (date?: string): Promise<Poll | null> => {
 	const dateSeed = getDateSeed(date);
@@ -23,7 +23,7 @@ export const selectDailyPoll = async (date?: string): Promise<Poll | null> => {
 	const selectPollForDate = (polls: Poll[]) =>
 		selectSeededRandom(polls, dateSeed);
 
-	const result = await manageDailyPollTransition(selectPollForDate);
+	const result = await getOrCreateDailyPoll(dateSeed, selectPollForDate);
 
 	if (process.env.NODE_ENV === "development") {
 		if (result) {

@@ -59,9 +59,8 @@ const createSeasonFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
-		const { createSeason } = await import(
-			"~/domains/seasons/services/seasonService"
-		);
+		const { createSeason } =
+			await import("~/domains/seasons/services/seasonService");
 
 		try {
 			const season = await createSeason({
@@ -86,9 +85,8 @@ const startSeasonFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
-		const { startSeason } = await import(
-			"~/domains/seasons/services/seasonService"
-		);
+		const { startSeason } =
+			await import("~/domains/seasons/services/seasonService");
 
 		try {
 			const season = await startSeason(data.seasonId);
@@ -107,9 +105,8 @@ const finishSeasonFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
-		const { finishSeason } = await import(
-			"~/domains/seasons/services/seasonService"
-		);
+		const { finishSeason } =
+			await import("~/domains/seasons/services/seasonService");
 
 		try {
 			const season = await finishSeason(data.seasonId);
@@ -124,30 +121,38 @@ const finishSeasonFn = createServerFn({ method: "POST" })
 	});
 
 const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
-	const { getAllSeasons, getCurrentSeason } = await import(
-		"~/domains/seasons/services/seasonService"
-	);
+	const { getAllSeasons, getCurrentSeason } =
+		await import("~/domains/seasons/services/seasonService");
 	const { db } = await import("~/database/db");
-	const { pollsTable, pollResponsesTable, usersTable, runsTable } =
-		await import("~/database/schema");
+	const {
+		pollsTable,
+		pollResponsesTable,
+		usersTable,
+		runsTable,
+		dailyPollsTable,
+	} = await import("~/database/schema");
 	const { eq, desc } = await import("drizzle-orm");
+	const { getTodayDateString } = await import("~/lib/dateUtils");
 
 	try {
 		const currentSeason = await getCurrentSeason();
 		const allSeasons = await getAllSeasons();
 
+		// Get today's daily poll using the new daily_polls table
+		const todayDate = getTodayDateString();
 		const activePolls = await db
 			.select({
 				id: pollsTable.id,
 				question: pollsTable.question,
-				status: pollsTable.status,
 				opening_time: pollsTable.opening_time,
 				closing_time: pollsTable.closing_time,
 				category_code: pollsTable.category_code,
+				date: dailyPollsTable.date,
 			})
-			.from(pollsTable)
-			.where(eq(pollsTable.status, "open"))
-			.orderBy(desc(pollsTable.opening_time));
+			.from(dailyPollsTable)
+			.innerJoin(pollsTable, eq(dailyPollsTable.poll_id, pollsTable.id))
+			.where(eq(dailyPollsTable.date, todayDate))
+			.orderBy(desc(dailyPollsTable.created_at));
 
 		const recentResponses = await db
 			.select({
