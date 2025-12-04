@@ -1,7 +1,8 @@
-import { eq, and, gte, lt, sql, asc, count } from "drizzle-orm";
+import { eq, and, gte, lt, sql, asc, count, inArray, or } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
+	dailyPollsTable,
 	pollOptionsTable,
 	pollResponseOptionsTable,
 	pollResponsesTable,
@@ -173,44 +174,74 @@ export const getUserSelectedOptions = async (
 };
 
 /**
- * Efficiently manage daily poll transitions - close all open polls, open today's poll
- * This prevents race conditions and ensures only one poll is open at a time
+ * Get or create the daily poll for a specific date
+ * Fast path: O(1) lookup if poll already exists for date
+ * Slow path: Seeded selection + insert (first request of the day only)
  */
-export const manageDailyPollTransition = async (
+export const getOrCreateDailyPoll = async (
+	date: string,
 	selectPollFn: (polls: Poll[]) => Poll | null
 ): Promise<Poll | null> => {
-	return await db.transaction(async (tx) => {
-		// First, close ALL open polls - simple and bulletproof
-		await tx
-			.update(pollsTable)
-			.set({ status: "closed" })
-			.where(eq(pollsTable.status, "open"));
+	// Fast path: check if daily poll already exists for this date
+	const [existingDailyPoll] = await db
+		.select()
+		.from(dailyPollsTable)
+		.where(eq(dailyPollsTable.date, date))
+		.limit(1);
 
-		// Get all closed polls to select from
-		const closedPollRecords = await tx
+	if (existingDailyPoll) {
+		const poll = await fetchPollById(existingDailyPoll.poll_id);
+		return poll;
+	}
+
+	// Slow path: first request of the day - select and insert
+	return await db.transaction(async (tx) => {
+		// Double-check in transaction to prevent race conditions
+		const [existingInTx] = await tx
 			.select()
+			.from(dailyPollsTable)
+			.where(eq(dailyPollsTable.date, date))
+			.limit(1);
+
+		if (existingInTx) {
+			const poll = await fetchPollById(existingInTx.poll_id);
+			return poll;
+		}
+
+		// Get poll IDs from the available pool (status = 'closed' or 'open')
+		// Drafts and archived polls are excluded from daily selection
+		// Include 'open' to match old behavior where open poll was closed first
+		const pollRecords = await tx
+			.select({ id: pollsTable.id })
 			.from(pollsTable)
-			.where(eq(pollsTable.status, "closed"))
+			.where(or(eq(pollsTable.status, "closed"), eq(pollsTable.status, "open")))
 			.orderBy(pollsTable.id);
 
-		if (closedPollRecords.length === 0) {
+		if (pollRecords.length === 0) {
 			return null;
 		}
 
-		const closedPolls = pollFactory.toDTOs(closedPollRecords);
-		const selectedPoll = selectPollFn(closedPolls);
+		// Create minimal Poll objects for selection (only need id for seeded random)
+		const pollsForSelection = pollRecords.map((r) => ({ id: r.id }) as Poll);
+		const selectedPoll = selectPollFn(pollsForSelection);
 
 		if (!selectedPoll) {
 			return null;
 		}
 
-		// Open today's selected poll
-		await tx
-			.update(pollsTable)
-			.set({ status: "open" })
+		// Insert into daily_polls
+		await tx.insert(dailyPollsTable).values({
+			date,
+			poll_id: selectedPoll.id,
+		});
+
+		// Fetch the full poll
+		const [fullPollRecord] = await tx
+			.select()
+			.from(pollsTable)
 			.where(eq(pollsTable.id, selectedPoll.id));
 
-		return selectedPoll;
+		return pollFactory.toDTO(fullPollRecord);
 	});
 };
 
@@ -356,63 +387,77 @@ export const getRunPollHistory = async (
 	runId: number,
 	userId: string
 ): Promise<RunPollHistory[]> => {
-	// Run all queries in parallel
-	const [historyResults, correctnessResults, totalCorrectResults] =
-		await Promise.all([
-			// Query 1: Get poll history
-			db
-				.select({
-					pollId: pollHistoryTable.poll_id,
-					categoryCode: pollsTable.category_code,
-					answeredAt: pollHistoryTable.last_answered_at,
-					timesAnswered: pollHistoryTable.times_answered,
-				})
-				.from(pollHistoryTable)
-				.innerJoin(pollsTable, eq(pollHistoryTable.poll_id, pollsTable.id))
-				.where(
-					and(
-						eq(pollHistoryTable.run_id, runId),
-						eq(pollHistoryTable.user_id, userId)
-					)
-				)
-				.orderBy(asc(pollHistoryTable.first_seen_at)),
+	// Query 1: Get poll history (must run first to get poll IDs for filtering)
+	const historyResults = await db
+		.select({
+			pollId: pollHistoryTable.poll_id,
+			categoryCode: pollsTable.category_code,
+			answeredAt: pollHistoryTable.last_answered_at,
+			timesAnswered: pollHistoryTable.times_answered,
+		})
+		.from(pollHistoryTable)
+		.innerJoin(pollsTable, eq(pollHistoryTable.poll_id, pollsTable.id))
+		.where(
+			and(
+				eq(pollHistoryTable.run_id, runId),
+				eq(pollHistoryTable.user_id, userId)
+			)
+		)
+		.orderBy(asc(pollHistoryTable.first_seen_at));
 
-			// Query 2: Get correctness data for ALL user responses in one query
-			db
-				.select({
-					pollId: pollResponsesTable.poll_id,
-					selectedCorrect: count(
-						sql`CASE WHEN ${pollOptionsTable.correct} = true THEN 1 END`
-					).mapWith(Number),
-					selectedIncorrect: count(
-						sql`CASE WHEN ${pollOptionsTable.correct} = false THEN 1 END`
-					).mapWith(Number),
-				})
-				.from(pollResponsesTable)
-				.innerJoin(
-					pollResponseOptionsTable,
-					eq(
-						pollResponsesTable.response_id,
-						pollResponseOptionsTable.response_id
-					)
-				)
-				.innerJoin(
-					pollOptionsTable,
-					eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
-				)
-				.where(eq(pollResponsesTable.user_id, userId))
-				.groupBy(pollResponsesTable.poll_id),
+	// Early return if no polls in history
+	if (historyResults.length === 0) {
+		return [];
+	}
 
-			// Query 3: Get total correct options per poll
-			db
-				.select({
-					pollId: pollOptionsTable.poll_id,
-					totalCorrect: count().mapWith(Number),
-				})
-				.from(pollOptionsTable)
-				.where(eq(pollOptionsTable.correct, true))
-				.groupBy(pollOptionsTable.poll_id),
-		]);
+	// Extract poll IDs for filtering subsequent queries
+	const pollIds = historyResults.map((r) => r.pollId);
+
+	// Run Query 2 and Query 3 in parallel, now filtered by poll IDs
+	const [correctnessResults, totalCorrectResults] = await Promise.all([
+		// Query 2: Get correctness data filtered to run's polls
+		db
+			.select({
+				pollId: pollResponsesTable.poll_id,
+				selectedCorrect: count(
+					sql`CASE WHEN ${pollOptionsTable.correct} = true THEN 1 END`
+				).mapWith(Number),
+				selectedIncorrect: count(
+					sql`CASE WHEN ${pollOptionsTable.correct} = false THEN 1 END`
+				).mapWith(Number),
+			})
+			.from(pollResponsesTable)
+			.innerJoin(
+				pollResponseOptionsTable,
+				eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
+			)
+			.innerJoin(
+				pollOptionsTable,
+				eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
+			)
+			.where(
+				and(
+					eq(pollResponsesTable.user_id, userId),
+					inArray(pollResponsesTable.poll_id, pollIds)
+				)
+			)
+			.groupBy(pollResponsesTable.poll_id),
+
+		// Query 3: Get total correct options ONLY for polls in this run
+		db
+			.select({
+				pollId: pollOptionsTable.poll_id,
+				totalCorrect: count().mapWith(Number),
+			})
+			.from(pollOptionsTable)
+			.where(
+				and(
+					eq(pollOptionsTable.correct, true),
+					inArray(pollOptionsTable.poll_id, pollIds)
+				)
+			)
+			.groupBy(pollOptionsTable.poll_id),
+	]);
 
 	// Build Maps for O(1) lookup
 	const correctnessMap = new Map(correctnessResults.map((r) => [r.pollId, r]));

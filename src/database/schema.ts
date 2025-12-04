@@ -124,6 +124,22 @@ export const pollsTable = pgTable("polls", {
 });
 
 /**
+ * Daily Polls Table
+ * Scheduling layer for daily poll selection - provides O(1) lookup by date
+ * - One poll per day (enforced by unique constraint on date)
+ * - Eliminates expensive full-table scans for poll selection
+ * - First request of day creates the record, subsequent requests just read
+ */
+export const dailyPollsTable = pgTable("daily_polls", {
+	id: serial("id").primaryKey(),
+	date: varchar("date", { length: 10 }).notNull().unique(), // "YYYY-MM-DD"
+	poll_id: integer("poll_id")
+		.references(() => pollsTable.id, { onDelete: "cascade" })
+		.notNull(),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
  * Poll History Table
  * Tracks poll viewing and answering statistics per run
  * - One record per run per poll (enforced by unique constraint)

@@ -24,6 +24,7 @@ export const getActiveRun = createServerFn({ method: "GET" }).handler(
 			const userId = await getAuthenticatedUserId();
 			return await getUserActiveRun(userId);
 		} catch (error) {
+			console.error("getActiveRun error:", error);
 			// Return null for unauthenticated users (e.g., on /login page)
 			return null;
 		}

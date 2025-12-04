@@ -239,6 +239,13 @@
       "when": 1764750963830,
       "tag": "0033_funny_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1764853795063,
+      "tag": "0034_nasty_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

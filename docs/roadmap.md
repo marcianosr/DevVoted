@@ -121,11 +121,7 @@ BUGS:
 - [x] Tonen: Tijdlijn van welke polls je hebt beantwoord (misschien alleen categorie?) - en de poll van morgen in "?"
 - [x] Tonen: Jouw progressie richting de CI gate: Wanneer komt de CI gate?
 
-[] White theme stuff
-[] HTML entities komen niet door
-
-    - [] create poll id page to test
-
+[x] HTML entities komen niet door
 [x] eslint/prettier
 [x] Update eslint description -> only works with TS and JS
 [x] Eslint disabled ander antwoord als je van tab wisselt
@@ -146,6 +142,8 @@ BUGS:
 [] When not logged in, the start page shouldn't show the start run button, but a login button
 [] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 [x] Slow "See your run progress and shop →" button
+[] Codeblocks are sometimes still white in dark mode
+
 
 [] Bug in submitting poll larger than 10 selected options
 [x] Community stats query showing wrong data (7 votes?)
