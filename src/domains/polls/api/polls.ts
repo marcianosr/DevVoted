@@ -86,12 +86,12 @@ export const getUserPollsOrAll = createServerFn({ method: "GET" }).handler(
 	}
 );
 
-export const getDailyPoll = createServerFn({ method: "GET" }).handler(
-	async () => {
+export const getDailyPoll = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ runId: z.number().int().positive().optional() }))
+	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
-		return getDailyPollHandler({ data: { userId } });
-	}
-);
+		return getDailyPollHandler({ data: { userId, runId: data?.runId } });
+	});
 
 export const postPollOptions = createServerFn({ method: "POST" })
 	.inputValidator(

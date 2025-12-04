@@ -128,7 +128,9 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			throw new Error("No active run");
 		}
 
-		const pollResponse = await getDailyPoll();
+		const pollResponse = await getDailyPoll({
+			data: { runId: activeRun.data.id },
+		});
 
 		if (!pollResponse.success) {
 			throw new Error(pollResponse.error);

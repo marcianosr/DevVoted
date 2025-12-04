@@ -79,10 +79,10 @@ export const getPollsByUserHandler = async ({
 export const getDailyPollHandler = async ({
 	data,
 }: {
-	data: { userId?: string; date?: string };
+	data: { userId?: string; date?: string; runId?: number };
 }) => {
 	return handleApiOperation(async () => {
-		const { userId, date } = data;
+		const { userId, date, runId } = data;
 
 		const { poll, options } = await getDailyPollWithOptions(date);
 		const hasAnswered = userId
@@ -98,18 +98,23 @@ export const getDailyPollHandler = async ({
 
 		// Track poll view only if not seen today
 		if (userId) {
-			const activeRunResponse = await getUserActiveRun(userId);
-			if (!activeRunResponse.success) {
-				throw new Error(activeRunResponse.error);
+			// Use provided runId if available, otherwise fetch it
+			let activeRunId = runId;
+			if (!activeRunId) {
+				const activeRunResponse = await getUserActiveRun(userId);
+				if (!activeRunResponse.success) {
+					throw new Error(activeRunResponse.error);
+				}
+				activeRunId = activeRunResponse.data.id;
 			}
 
-			const history = await getPollHistory(activeRunResponse.data.id, poll.id);
+			const history = await getPollHistory(activeRunId, poll.id);
 			const hasSeenToday = history?.last_seen_at
 				? isSameDay(new Date(history.last_seen_at), new Date())
 				: false;
 
 			if (!hasSeenToday) {
-				await trackPollView(activeRunResponse.data.id, userId, poll.id);
+				await trackPollView(activeRunId, userId, poll.id);
 			}
 		}
 

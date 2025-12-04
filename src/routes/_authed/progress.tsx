@@ -37,17 +37,16 @@ import { formatStorage } from "~/lib/storage";
 export const Route = createFileRoute("/_authed/progress")({
 	component: RouteComponent,
 	loader: async ({ context: { activeRun } }) => {
-		const pollResponse = await getDailyPoll();
-
-		if (!pollResponse.success) {
-			throw new Error(pollResponse.error);
-		}
-
 		if (!activeRun?.success) {
 			throw new Error("No active run");
 		}
 
 		const runId = activeRun.data.id;
+		const pollResponse = await getDailyPoll({ data: { runId } });
+
+		if (!pollResponse.success) {
+			throw new Error(pollResponse.error);
+		}
 		const [pollsSeenResponse, pollHistoryResponse] = await Promise.all([
 			getPollsSeenInRun({ data: { runId } }),
 			getRunPollHistoryServerFn({ data: { runId } }),

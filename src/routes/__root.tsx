@@ -109,8 +109,7 @@ export const Route = createRootRoute({
 		],
 	}),
 	beforeLoad: async () => {
-		const activeRun = await getActiveRun();
-		const user = await fetchUser();
+		const [activeRun, user] = await Promise.all([getActiveRun(), fetchUser()]);
 
 		return {
 			user,
