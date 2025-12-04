@@ -188,17 +188,43 @@ export const configs: Config[] = [
 		effect: ["addSlotToShop"],
 		priority: 100,
 	},
-	// {
-	// 	id: "negate-config",
-	// 	name: "Negate",
-	// 	image: "/configs/negate.png",
-	// 	cost: STORAGE_UNITS.MB / 2,
-	// 	description:
-	// 		"Negates score: correct answers give -coverage, wrong answers give +coverage",
-	// 	rarity: "rare",
-	// 	effect: ["negateCoverageScore"],
-	// 	priority: 100,
-	// },
+	{
+		id: "copilot-config",
+		name: "Copilot",
+		image: "/configs/copilot.png",
+		cost: STORAGE_UNITS.MB,
+		description: "×2 your coverage score in every category when held",
+		rarity: "legendary",
+		effect: ["streakAmp"],
+		priority: 100,
+		targetCategories: [],
+		coverageBonus: 2,
+		multiplier: true,
+	},
+	{
+		id: "intellisense-config",
+		name: "Intellisense",
+		image: "/configs/intellisense.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "×1.5 your coverage score in every category when held",
+		rarity: "rare",
+		effect: ["streakAmp"],
+		priority: 100,
+		targetCategories: [],
+		coverageBonus: 1.5,
+		multiplier: true,
+	},
+	{
+		id: "no-deps-config",
+		name: "No Deps",
+		image: "/configs/no-deps.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "×2 storage whem skipping the shop when held",
+		rarity: "rare",
+		effect: ["bonusShopStorage"],
+		priority: 100,
+		storageBonus: STORAGE_UNITS.KB * 60, // 60KB bonus storage
+	},
 ];
 
 /**
@@ -309,6 +335,18 @@ const EFFECTS: Record<string, EffectFn> = {
 				view: { poll, options, run, hasAnswered },
 				coverage: { coverageAdd: 0 },
 				meta: { notes: [] },
+			};
+		}
+
+		if (config.multiplier) {
+			return {
+				view: { poll, options, run, hasAnswered },
+				coverage: { coverageMult: config.coverageBonus },
+				meta: {
+					notes: [
+						`x${config.coverageBonus} coverage for ${poll.categoryCode} polls`,
+					],
+				},
 			};
 		}
 
@@ -443,15 +481,17 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
-	// negateCoverageScore: ({ poll, options, run, hasAnswered }, _config) => {
-	// 	return {
-	// 		view: { poll, options, run, hasAnswered },
-	// 		meta: {
-	// 			notes: [`Coverage score will be negated for this run`],
-	// 			badges: { negate: "Coverage score negated" },
-	// 		},
-	// 	};
-	// },
+	bonusShopStorage: ({ poll, options, run, hasAnswered }, config) => {
+		const bonusStorage = config.storageBonus ?? 0;
+
+		return {
+			view: { poll, options, run, hasAnswered },
+			storage: { bonus: bonusStorage },
+			meta: {
+				notes: [`+${formatStorage(bonusStorage)} storage when skipping shop`],
+			},
+		};
+	},
 };
 
 /**

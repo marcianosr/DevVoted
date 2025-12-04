@@ -29,6 +29,7 @@ export type Config = {
 	storageBonus?: number; // Optional: Amount of storage this config adds (in bytes)
 	coverageBonus?: number; // Optional: Flat coverage bonus this config provides (in percentage points, e.g., 0.5 for +0.5%)
 	reductionCost?: number; // Optional: Cost reduction percentage (e.g., 10 for 10%)
+	multiplier?: boolean; // Optional: Whether coverageBonus is a multiplier
 };
 
 export type ConfigInventory = {

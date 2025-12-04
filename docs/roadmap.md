@@ -147,12 +147,11 @@ BUGS:
 [] When not logged in, the start page shouldn't show the start run button, but a login button
 [] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 [x] Slow "See your run progress and shop →" button
-[] Show a reminder of how to remind for polls in Slack
-[] Mobile viewport op /progress pagina isn't responsive
+
 [] Bug in submitting poll larger than 10 selected options
 [] Fix button clicking area
-[] Remove code box field
-[] Add explanation field to suggest poll page poll (shown after answering)
+[x] Remove code box field
+[x] Add explanation field to suggest poll page poll (shown after answering)
 
 
 
@@ -168,7 +167,9 @@ BUGS:
     [] Admins can approve/reject suggested polls
 
 [] Expand on low hanging configs
-[] Provide KB's when skipping the shop
+[x] Provide KB's when skipping the shop
+[] Show a reminder of how to remind for polls in Slack
+[] Mobile viewport op /progress pagina isn't responsive
 [] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
 [x] Loading state for rebuilding new configs
 [x] Config: style lint
@@ -176,7 +177,7 @@ BUGS:
 [] Move CI gates into DB
 [] Show general site stats (total players, total polls answered, total runs, total configs bought, total polls, total categories, total correct answers, total incorrect answers, total polls for category)
 [] Show current season - shows 29 days
-[] Show more run info
+[] Show more run info on progress page
     [] rerolls used
     [] configs bought
     [] total polls answered
@@ -192,8 +193,9 @@ BUGS:
 [] Show partial correct polls in list of progress
 [x] Tan stack "start" instead of "query" in footer
 [x] Include footer everywhere
+[] Wrap Sentry for production only
 [] Config foldout visible everywhere
-[] Onboarding/help modal for first-time users [Critical]
+[] Onboarding/help modal for first-time users
 [] Colorize tiers coverage
 [] Expand CI gate challenges
 [] Add icons (pixelated) for configs

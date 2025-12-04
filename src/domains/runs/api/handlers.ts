@@ -99,12 +99,14 @@ export const finishRunHandler = async (userId: string) => {
 };
 
 /**
- * Skips the shop for the current date and grants 60KB storage bonus
+ * Skips the shop for the current date and grants storage bonus
+ * Base reward: 60KB + any storageBonus from active configs
  */
 export const skipShopHandler = async (
 	userId: string,
 	runId: number,
-	date: string
+	date: string,
+	storageBonus: number = 0
 ) => {
 	return handleApiOperation(async () => {
 		const activeRun = await getActiveRunByUserId(userId);
@@ -121,6 +123,6 @@ export const skipShopHandler = async (
 			throw new Error("Shop already skipped for today");
 		}
 
-		return await skipShop(runId, date);
+		return await skipShop(runId, date, storageBonus);
 	}, "Failed to skip shop");
 };

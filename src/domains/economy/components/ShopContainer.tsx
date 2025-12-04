@@ -20,9 +20,10 @@ type ShopContainerProps = {
 	offeredConfigs: ReturnType<typeof getRandomConfigs>;
 	reductionCost: number;
 	isOpen: boolean;
+	storageBonus?: number;
 };
 
-const SKIP_REWARD_KB = 60;
+const SKIP_REWARD_KB = 61477; // 60KB
 
 const getTodayDateString = () => new Date().toISOString().split("T")[0];
 
@@ -31,6 +32,7 @@ const ShopContainer = ({
 	offeredConfigs,
 	reductionCost,
 	isOpen,
+	storageBonus,
 }: ShopContainerProps) => {
 	const router = useRouter();
 	const { storageAvailable } = getStorageInfo(activeRun);
@@ -66,7 +68,13 @@ const ShopContainer = ({
 	});
 
 	const onSkipShop = () =>
-		skipShopMutation.mutate({ data: { runId: activeRun.id, date: today } });
+		skipShopMutation.mutate({
+			data: {
+				runId: activeRun.id,
+				date: today,
+				storageBonus: storageBonus ?? 0,
+			},
+		});
 
 	return (
 		<section aria-labelledby="shop-heading">
@@ -111,11 +119,23 @@ const ShopContainer = ({
 							{skipShopMutation.isPending ? "Skipping shop..." : "Skip shop"}
 						</PrimaryButton>
 						<small className="text-sm mt-2">
-							Gain +{SKIP_REWARD_KB}KB storage
+							Gain +{formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))}{" "}
+							storage
+							{storageBonus && (
+								<span className="text-green-400">
+									{" "}
+									(+{formatStorage(storageBonus)} bonus)
+								</span>
+							)}
 						</small>
 					</div>
 				</div>
-
+				{/* {storageBonus && (
+								<span className="text-green-400">
+									({`+${formatStorage(storageBonus)} extra`} from &quot;No
+									Deps&quot; config)
+								</span>
+							)} */}
 				{reductionCost > 0 && (
 					<p className="text-green-600 font-semibold mt-1">
 						{reductionCost * 100}% discount active!

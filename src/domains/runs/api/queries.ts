@@ -423,14 +423,19 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 };
 
 // Skip shop and grant storage bonus
-export const skipShop = async (runId: number, date: string) => {
+export const skipShop = async (
+	runId: number,
+	date: string,
+	storageBonus: number = 0
+) => {
 	const SKIP_REWARD = 60 * 1024; // 60KB in bytes
+	const totalReward = SKIP_REWARD + storageBonus;
 
 	return await db.transaction(async (tx) => {
 		const [updatedRun] = await tx
 			.update(runsTable)
 			.set({
-				storage_limit: sql`${runsTable.storage_limit} + ${SKIP_REWARD}`,
+				storage_limit: sql`${runsTable.storage_limit} + ${totalReward}`,
 				shop_skipped_date: date,
 			})
 			.where(eq(runsTable.id, runId))
