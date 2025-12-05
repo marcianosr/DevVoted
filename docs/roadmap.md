@@ -133,22 +133,25 @@ BUGS:
 [x] Bij Matthijs zei hij 1.95% en de score was 2%
 
 [] Vote for the next category (poll)
+
+    [] % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
+
 [-] Fonts niet duidelijk
 [-] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
 [x] Fail a run?
-[] Mobile text bigger (question)
 [x] Answers that contain code should be formatted well
 [x] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
 [] When not logged in, the start page shouldn't show the start run button, but a login button
-[] UI (?) bug in gates . First poll in run shows "not answered" even when answered
+[o] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 [x] Slow "See your run progress and shop →" button
-[] Codeblocks are sometimes still white in dark mode
 
 
+[] Mobile text bigger (question)
+[] Responsiveness in general (see matthijs' feedback)
 [] Bug in submitting poll larger than 10 selected options
 [x] Community stats query showing wrong data (7 votes?)
 [] Fix button clicking area
-[] Investigate slow loading times
+[x] Investigate slow loading times
 [x] Remove code box field
 [x] Add explanation field to suggest poll page poll (shown after answering)
 [] Make sure the rules on start screen is clear
@@ -159,7 +162,23 @@ BUGS:
 [] More community stats
 
     [] Who voted on the poll of today?
+    [] First to answer
+    [] Users not answered who are in a run
 
+
+[] Scroll to top on progress page
+[] Link to github issues for bug reports
+[] Tooltips for criticals
+[] Snappyness of app
+[] config purchase analytics
+[] Upgrades of packages
+[] Consider poll rating: very easy to very hard
+[] Content discovery on profile
+[] Think of what winners do next
+[] Add polls!!
+[] Basic "share" mechanism - what to share?
+[] Codeblocks are sometimes still white in dark mode
+[] Handle poll status "open" - not used as indicaor that the poll is open anymore
 
 
 ----- GO LIVE -----
@@ -193,6 +212,7 @@ BUGS:
 [] Move CI gates into DB
 [] Show general site stats (total players, total polls answered, total runs, total configs bought, total polls, total categories, total correct answers, total incorrect answers, total polls for category)
 [] Show current season - shows 29 days
+[] Cache daily poll to increase performance
 [] Show more run info on progress page
     [] rerolls used
     [] configs bought

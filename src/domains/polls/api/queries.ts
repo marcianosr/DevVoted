@@ -415,7 +415,8 @@ export const getRunPollHistory = async (
 
 	// Run Query 2 and Query 3 in parallel, now filtered by poll IDs
 	const [correctnessResults, totalCorrectResults] = await Promise.all([
-		// Query 2: Get correctness data filtered to run's polls
+		// Query 2: Get correctness data for LATEST response per poll
+		// Uses subquery to find max response_id per poll for this user
 		db
 			.select({
 				pollId: pollResponsesTable.poll_id,
@@ -438,7 +439,13 @@ export const getRunPollHistory = async (
 			.where(
 				and(
 					eq(pollResponsesTable.user_id, userId),
-					inArray(pollResponsesTable.poll_id, pollIds)
+					inArray(pollResponsesTable.poll_id, pollIds),
+					sql`${pollResponsesTable.response_id} = (
+						SELECT MAX(pr2.response_id)
+						FROM polls_responses pr2
+						WHERE pr2.poll_id = ${pollResponsesTable.poll_id}
+						AND pr2.user_id = ${userId}
+					)`
 				)
 			)
 			.groupBy(pollResponsesTable.poll_id),
