@@ -8,10 +8,12 @@ import {
 	pollResponsesTable,
 	pollsTable,
 	pollHistoryTable,
+	usersTable,
 } from "~/database/schema";
 import { Poll, pollFactory } from "~/domains/polls/models/poll";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
+import { User } from "~/domains/users/services/userSync.service";
 
 export const fetchPollById = async (id: number): Promise<Poll | null> => {
 	const pollRecord = await db
@@ -340,10 +342,22 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 	return result[0]?.count ?? 0;
 };
 
+export type CommunityStatsUser = User & {
+	answeredAt: Date | null;
+	timeTakenMs: number | null;
+};
+
+export type CommunityStats = {
+	totalResponses: number;
+	users: CommunityStatsUser[];
+	firstToAnswer: CommunityStatsUser | null;
+	fastestResponder: CommunityStatsUser | null;
+};
+
 export const getCommunityStatsForDailyPoll = async (
 	pollId: number,
 	date: string
-) => {
+): Promise<CommunityStats> => {
 	const startOfDay = new Date(date);
 	startOfDay.setHours(0, 0, 0, 0);
 
@@ -351,7 +365,7 @@ export const getCommunityStatsForDailyPoll = async (
 	startOfNextDay.setDate(startOfNextDay.getDate() + 1);
 
 	const result = await db
-		.select({ count: count() })
+		.select()
 		.from(pollResponsesTable)
 		.where(
 			and(
@@ -359,10 +373,51 @@ export const getCommunityStatsForDailyPoll = async (
 				gte(pollResponsesTable.created_at, startOfDay),
 				lt(pollResponsesTable.created_at, startOfNextDay)
 			)
+		)
+		.orderBy(asc(pollResponsesTable.created_at))
+		.leftJoin(usersTable, eq(pollResponsesTable.user_id, usersTable.id))
+		.leftJoin(
+			pollHistoryTable,
+			and(
+				eq(pollHistoryTable.poll_id, pollResponsesTable.poll_id),
+				eq(pollHistoryTable.user_id, pollResponsesTable.user_id)
+			)
 		);
 
+	const users = result.flatMap((r) => {
+		if (!r.users) return [];
+
+		const firstSeen = r.polls_history?.first_seen_at;
+		const answered = r.polls_responses.created_at;
+		const timeTakenMs =
+			firstSeen && answered ? answered.getTime() - firstSeen.getTime() : null;
+
+		return [
+			{
+				id: r.users.id,
+				email: r.users.email,
+				displayName: r.users.display_name,
+				photoUrl: r.users.photo_url,
+				answeredAt: answered,
+				timeTakenMs,
+			},
+		];
+	});
+
+	const fastestResponder = users.reduce<CommunityStatsUser | null>(
+		(fastest, user) => {
+			if (user.timeTakenMs === null) return fastest;
+			if (fastest === null || fastest.timeTakenMs === null) return user;
+			return user.timeTakenMs < fastest.timeTakenMs ? user : fastest;
+		},
+		null
+	);
+
 	return {
-		totalResponses: result[0]?.count ?? 0,
+		totalResponses: result.length,
+		users,
+		firstToAnswer: users.length > 0 ? users[0] : null,
+		fastestResponder,
 	};
 };
 
