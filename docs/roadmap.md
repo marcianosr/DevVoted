@@ -161,14 +161,14 @@ BUGS:
 [] More leaderboard variants
 [] More community stats
 
-    [] Who voted on the poll of today?
-    [] First to answer
+    [x] Who voted on the poll of today?
+    [x] First to answer
     [] Users not answered who are in a run
 
 
-[] Scroll to top on progress page
-[] Link to github issues for bug reports
-[] Tooltips for criticals
+[] Scroll to top on progress pag (on mobile)
+[x] Link to github issues for bug reports
+[] Tooltips for critical flow
 [] Snappyness of app
 [] config purchase analytics
 [] Upgrades of packages

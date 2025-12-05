@@ -1,22 +1,30 @@
 import { Link } from "@tanstack/react-router";
 import { clsx } from "clsx";
+import { formatDuration, intervalToDuration } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 
+import UserAvatar from "~/components/UserAvatar";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 
+import { CommunityStats } from "../api/queries"; // TODO: don;t import type from api, move to models
 import { PollOption } from "../models/pollOption";
+
+const formatTimeTaken = (ms: number | null): string | null => {
+	if (ms === null) return null;
+
+	const duration = intervalToDuration({ start: 0, end: ms });
+	return formatDuration(duration, { format: ["hours", "minutes", "seconds"] });
+};
 
 type SelectedOptionsSummaryProps = {
 	options: PollOption[];
 	selectedOptions: string[];
 	score?: ScoreCalculation;
-	communityStats?: {
-		totalResponses: number;
-	};
+	communityStats?: CommunityStats;
 	categoryCode: CategoryCode;
 	explanation?: string | null;
 };
@@ -109,11 +117,54 @@ const SelectedOptionsSummary = ({
 				<section className="mt-4 py-8 border-t border-theme space-y-2">
 					<h3 className="text-4xl">👥 Community</h3>
 					<p className="text-xl">
-						{communityStats?.totalResponses} player(s) participated in this poll
+						<span>
+							{communityStats?.totalResponses} player(s) participated in this
+							poll{" "}
+						</span>
+						<span className="mx-2">·</span>
+						<span>
+							{communityStats?.users.map((user) => (
+								<UserAvatar key={user.id} user={user} />
+							))}
+						</span>
 					</p>
-
-					<section className="flex items-baseline flex-col">
-						<small>Be even more involved in this community!</small>
+					{communityStats?.firstToAnswer && (
+						<div>
+							<p className="text-xl mt-4">First to answer</p>
+							<div className="flex gap-2 items-center">
+								<UserAvatar user={communityStats.firstToAnswer} />
+								<p>{communityStats.firstToAnswer.displayName}</p>
+								{communityStats.firstToAnswer.timeTakenMs !== null && (
+									<span className="text-zinc-400 text-sm">
+										in{" "}
+										{formatTimeTaken(communityStats.firstToAnswer.timeTakenMs)}
+									</span>
+								)}
+							</div>
+						</div>
+					)}
+					{communityStats?.fastestResponder && (
+						<div>
+							<p className="text-xl mt-4">Fastest responder</p>
+							<div className="flex gap-2 items-center">
+								<UserAvatar user={communityStats.fastestResponder} />
+								<p>{communityStats.fastestResponder.displayName}</p>
+								{communityStats.fastestResponder.timeTakenMs !== null && (
+									<span className="text-zinc-400 text-sm">
+										in{" "}
+										{formatTimeTaken(
+											communityStats.fastestResponder.timeTakenMs
+										)}
+									</span>
+								)}
+							</div>
+						</div>
+					)}
+					<section className="flex items-baseline flex-col mt-8">
+						<h3 className="text-2xl">
+							Be even more involved in this community!
+						</h3>
+						<small>Add a poll yourself!</small>
 						<PrimaryButton className="mt-4" size="small">
 							<Link
 								to="/polls/new"
