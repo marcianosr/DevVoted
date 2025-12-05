@@ -259,8 +259,9 @@ describe("handlers", () => {
 			mockOptions[0].correct = true;
 
 			// Mock processPollAnswer service
-			const { processPollAnswer } =
-				await import("~/domains/polls/services/processPollAnswer.service");
+			const { processPollAnswer } = await import(
+				"~/domains/polls/services/processPollAnswer.service"
+			);
 			vi.mocked(processPollAnswer).mockResolvedValue({
 				selectedOptionIds: [1, 2, 3, 4],
 				correctOptionIds: [1],
@@ -351,8 +352,9 @@ describe("handlers", () => {
 			mockOptions[0].correct = true;
 
 			// Mock processPollAnswer service
-			const { processPollAnswer } =
-				await import("~/domains/polls/services/processPollAnswer.service");
+			const { processPollAnswer } = await import(
+				"~/domains/polls/services/processPollAnswer.service"
+			);
 			vi.mocked(processPollAnswer).mockResolvedValue({
 				selectedOptionIds: [1, 2],
 				correctOptionIds: [1],
@@ -395,8 +397,9 @@ describe("handlers", () => {
 			const mockOptions = createMockPollOptionArray(4);
 			const userId = "kazooi-user-13-05-1991";
 
-			const { getDailyPollWithOptions } =
-				await import("~/domains/polls/services/dailyPoll.service");
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
 			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
 				poll: mockPoll,
 				options: mockOptions,
@@ -424,8 +427,9 @@ describe("handlers", () => {
 			const userId = "mumbos-mountain-user";
 			const oldDate = new Date("2024-05-01T10:00:00Z");
 
-			const { getDailyPollWithOptions } =
-				await import("~/domains/polls/services/dailyPoll.service");
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
 			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
 				poll: mockPoll,
 				options: mockOptions,
@@ -463,8 +467,9 @@ describe("handlers", () => {
 
 			const christmasDay = new Date("2024-12-25T14:30:00Z");
 
-			const { getDailyPollWithOptions } =
-				await import("~/domains/polls/services/dailyPoll.service");
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
 			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
 				poll: mockPoll,
 				options: mockOptions,
@@ -502,8 +507,9 @@ describe("handlers", () => {
 
 			const firstDay = new Date("2024-05-13T10:00:00Z");
 
-			const { getDailyPollWithOptions } =
-				await import("~/domains/polls/services/dailyPoll.service");
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
 			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
 				poll: mockPoll,
 				options: mockOptions,
@@ -541,8 +547,9 @@ describe("handlers", () => {
 
 			const todayMorning = new Date("2024-12-25T08:00:00Z");
 
-			const { getDailyPollWithOptions } =
-				await import("~/domains/polls/services/dailyPoll.service");
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
 			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
 				poll: mockPoll,
 				options: mockOptions,
@@ -609,8 +616,9 @@ describe("handlers", () => {
 			const mockOptions = createMockPollOptionArray(4);
 			const userId = "banjo-kazooie-user";
 
-			const { getDailyPollWithOptions } =
-				await import("~/domains/polls/services/dailyPoll.service");
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
 
 			const { isSameDay } = await import("date-fns");
@@ -651,8 +659,9 @@ describe("handlers", () => {
 			const mockPoll = createMockPoll({ id: 64 });
 			const mockOptions = createMockPollOptionArray(4);
 
-			const { getDailyPollWithOptions } =
-				await import("~/domains/polls/services/dailyPoll.service");
+			const { getDailyPollWithOptions } = await import(
+				"~/domains/polls/services/dailyPoll.service"
+			);
 			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
 				poll: mockPoll,
 				options: mockOptions,

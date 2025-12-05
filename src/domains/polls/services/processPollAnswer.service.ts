@@ -103,8 +103,9 @@ export const processPollAnswer = async (
 	// Check if try/catch protection should prevent run failure
 	// Check for victory at CI gates (when last defined gate is passed)
 	if (thresholdInfo.meetsThreshold && thresholdInfo.isThresholdCheckPoll) {
-		const { checkForVictory, completeRunWithVictory } =
-			await import("~/domains/runs/services/runCompletion.service");
+		const { checkForVictory, completeRunWithVictory } = await import(
+			"~/domains/runs/services/runCompletion.service"
+		);
 		const hasWon = checkForVictory(thresholdInfo.currentRound);
 		if (hasWon) {
 			await completeRunWithVictory(activeRun.id);
