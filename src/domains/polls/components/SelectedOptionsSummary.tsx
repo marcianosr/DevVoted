@@ -134,6 +134,12 @@ const SelectedOptionsSummary = ({
 							<div className="flex gap-2 items-center">
 								<UserAvatar user={communityStats.firstToAnswer} />
 								<p>{communityStats.firstToAnswer.displayName}</p>
+								{communityStats.firstToAnswer.timeTakenMs !== null && (
+									<span className="text-zinc-400 text-sm">
+										in{" "}
+										{formatTimeTaken(communityStats.firstToAnswer.timeTakenMs)}
+									</span>
+								)}
 							</div>
 						</div>
 					)}
