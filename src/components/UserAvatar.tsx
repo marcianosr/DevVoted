@@ -53,10 +53,7 @@ const UserAvatar = ({ user, size = "sm" }: UserAvatarProps) => {
 		? `${user.displayName} - ${timeTaken}`
 		: user.displayName;
 
-	const baseStyles = clsx("inline-block rounded-full", sizeClasses[size], {
-		"ring-2 ring-green-400": user.isCorrect,
-		"ring-2 ring-red-400": !user.isCorrect,
-	});
+	const baseStyles = clsx("inline-block rounded-full", sizeClasses[size], {});
 
 	if (user.photoUrl) {
 		return (
