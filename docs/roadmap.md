@@ -132,9 +132,7 @@ BUGS:
 [x] Score weergave klopt nog niet.
 [x] Bij Matthijs zei hij 1.95% en de score was 2%
 
-[] Vote for the next category (poll)
 
-    [] % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
 
 [-] Fonts niet duidelijk
 [-] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
@@ -146,39 +144,61 @@ BUGS:
 [x] Slow "See your run progress and shop →" button
 
 
-[] Mobile text bigger (question)
-[] Responsiveness in general (see matthijs' feedback)
-[] Bug in submitting poll larger than 10 selected options
 [x] Community stats query showing wrong data (7 votes?)
-[] Fix button clicking area
 [x] Investigate slow loading times
 [x] Remove code box field
 [x] Add explanation field to suggest poll page poll (shown after answering)
-[] Make sure the rules on start screen is clear
-[] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
-[] Restore Next.js polls
-[] Expand on low hanging configs
-[] More leaderboard variants
-[] More community stats
+[x] Link to github issues for bug reports
+
+
+[x] More community stats
 
     [x] Who voted on the poll of today?
     [x] First to answer
+    [x] Fastest to answer
+    [] Correct/incorrect for each user
     [] Users not answered who are in a run
 
 
-[] Scroll to top on progress pag (on mobile)
-[x] Link to github issues for bug reports
-[] Tooltips for critical flow
-[] Snappyness of app
-[] config purchase analytics
-[] Upgrades of packages
+
+
+**Game play**
+[] Vote for the next category (poll)
+  - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
+[] Make gates harder - they are too simple
+[] More leaderboard variants
+  - also show current gate
+  - All-time leaderboard (best runs)
+[] Expand on low hanging configs
+[] Make sure the rules on start screen is clear
 [] Consider poll rating: very easy to very hard
-[] Content discovery on profile
+[] Content discovery show on profile
 [] Think of what winners do next
 [] Add polls!!
-[] Basic "share" mechanism - what to share?
+[] Tooltips for critical flow
+[] Restore Next.js polls
+
+
+
+**Mobile responsiviness**
+[] Sticky button "See your run progress and shop →" (mobile atleast)
+[] Scroll to top on progress pag (on mobile)
+[] Mobile text bigger (question)
+[] Responsiveness in general (see matthijs' feedback)
+
+**Anayltics**
+[] config purchase analytics
+
+**Maintainability**
+[] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
+[] Upgrades of packages
+
+
+**Bugs**
 [] Codeblocks are sometimes still white in dark mode
+[] Bug in submitting poll larger than 10 selected options
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
+[] Fix button clicking area
 
 
 ----- GO LIVE -----
@@ -202,10 +222,12 @@ BUGS:
 [] Search by question in admin panel
 [] Add "Architecture" category (pallet)
 [] Add "AI" category
+[] Basic "share" mechanism - what to share?
 [] Think about "spaces" - is everything one space or is Codam, EO a separate space like Slack?
 [x] Provide KB's when skipping the shop
 [] Show a reminder of how to remind for polls in Slack
 [] Mobile viewport op /progress pagina isn't responsive
+[] Think of daily-poll table: This will grow massively. Imagine 5 years from now how 365 * 5?
 [x] Loading state for rebuilding new configs
 [x] Config: style lint
 [x] Game over state

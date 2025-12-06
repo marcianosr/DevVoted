@@ -1,6 +1,7 @@
+import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
-import { User } from "~/domains/users/services/userSync.service";
+import { CommunityStatsUser } from "~/domains/polls/api/queries";
 
 const KANTO_COLORS = [
 	"bg-pallet",
@@ -27,9 +28,8 @@ const getColorFromString = (str: string): string => {
 };
 
 type UserAvatarProps = {
-	user: User & { timeTakenMs?: number | null };
+	user: CommunityStatsUser;
 	size?: "sm" | "md" | "lg";
-	className?: string;
 };
 
 const formatTimeTaken = (ms: number | null | undefined): string | null => {
@@ -45,7 +45,7 @@ const sizeClasses = {
 	lg: "w-10 h-10 text-base",
 };
 
-const UserAvatar = ({ user, size = "sm", className = "" }: UserAvatarProps) => {
+const UserAvatar = ({ user, size = "sm" }: UserAvatarProps) => {
 	const initial = (user.displayName || user.id).charAt(0).toUpperCase();
 	const colorClass = getColorFromString(user.id);
 	const timeTaken = formatTimeTaken(user.timeTakenMs);
@@ -53,20 +53,29 @@ const UserAvatar = ({ user, size = "sm", className = "" }: UserAvatarProps) => {
 		? `${user.displayName} - ${timeTaken}`
 		: user.displayName;
 
+	const baseStyles = clsx("inline-block rounded-full", sizeClasses[size], {
+		"ring-2 ring-green-400": user.isCorrect,
+		"ring-2 ring-red-400": !user.isCorrect,
+	});
+
 	if (user.photoUrl) {
 		return (
 			<img
 				src={user.photoUrl}
 				alt={user.displayName || "User avatar"}
 				title={title}
-				className={`inline-block rounded-full ${sizeClasses[size]} ${className}`}
+				className={baseStyles}
 			/>
 		);
 	}
 
 	return (
 		<span
-			className={`inline-flex items-center justify-center rounded-full text-white ${colorClass} ${sizeClasses[size]} ${className}`}
+			className={clsx(
+				baseStyles,
+				colorClass,
+				"inline-flex items-center justify-center text-white"
+			)}
 			title={title}
 		>
 			{initial}

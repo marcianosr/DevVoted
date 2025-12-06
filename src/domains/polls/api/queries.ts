@@ -345,6 +345,7 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 export type CommunityStatsUser = User & {
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
+	isCorrect: boolean;
 };
 
 export type CommunityStats = {
@@ -382,10 +383,16 @@ export const getCommunityStatsForDailyPoll = async (
 				eq(pollHistoryTable.poll_id, pollResponsesTable.poll_id),
 				eq(pollHistoryTable.user_id, pollResponsesTable.user_id)
 			)
+		)
+		.leftJoin(
+			pollOptionsTable,
+			eq(pollHistoryTable.poll_id, pollOptionsTable.id)
 		);
 
 	const users = result.flatMap((r) => {
 		if (!r.users) return [];
+
+		const isCorrect = r.polls_options?.correct ?? false;
 
 		const firstSeen = r.polls_history?.first_seen_at;
 		const answered = r.polls_responses.created_at;
@@ -400,6 +407,7 @@ export const getCommunityStatsForDailyPoll = async (
 				photoUrl: r.users.photo_url,
 				answeredAt: answered,
 				timeTakenMs,
+				isCorrect,
 			},
 		];
 	});
