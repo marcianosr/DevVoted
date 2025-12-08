@@ -21,7 +21,7 @@ Season 1: Core Loop ✅ ship this before anything else
     [x] Best in category (highest XP)
     [x] Best streak (highest streak)
     [x] Live run leaderboard
-    [] Show who answered today
+    [x] Show who answered today
 
 [x] Create simple linear streak bonus amp
 [x] Rarity tiers
@@ -100,7 +100,7 @@ BUGS:
 [x] Suspend leaderboards because it slows
 [x] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
 [o] When a new poll is loaded, the user sees the old poll for a split second causing two track views
-[x] Giothub env vs Vercel env?
+[x] Github env vs Vercel env?
 
 [x] Trage app - heeft vooral te maken met de database queries die geoptimaliseerd moeten worden
 [x] Poll history table - how
@@ -160,8 +160,6 @@ BUGS:
     [] Users not answered who are in a run
 
 
-
-
 **Game play**
 [] Vote for the next category (poll)
   - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
@@ -169,7 +167,7 @@ BUGS:
 [] More leaderboard variants
   - also show current gate
   - All-time leaderboard (best runs)
-[] Expand on low hanging configs
+[o] Expand on low hanging configs
 [] Make sure the rules on start screen is clear
 [] Consider poll rating: very easy to very hard
 [] Content discovery show on profile
@@ -177,7 +175,6 @@ BUGS:
 [] Add polls!!
 [] Tooltips for critical flow
 [] Restore Next.js polls
-
 
 
 **Mobile responsiviness**

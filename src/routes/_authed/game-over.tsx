@@ -93,7 +93,11 @@ function RouteComponent() {
 		<Content>
 			<div className="py-8 space-y-8">
 				<header>
-					<h1 className="text-4xl">{isVictory ? "You win!" : "Game over!"}</h1>
+					<h1 className="text-4xl">
+						{isVictory
+							? "You passed all CI gates!"
+							: "You failed to pass the CI gates."}
+					</h1>
 					<p>Thank you for playing!</p>
 				</header>
 
@@ -118,15 +122,18 @@ function RouteComponent() {
 				</section>
 
 				<section className="space-y-4">
-					{!isVictory && (
+					{isVictory && (
 						<>
 							<p className="text-green-400">
 								Congratulations on mastering all CI gates! You can continue your
-								run and try to reach 100% coverage!
+								run and try to reach the perfect 100% coverage!
 							</p>
 							<PrimaryButton className="px-3 py-1 mr-4" disabled={true}>
 								Continue run
 							</PrimaryButton>
+							<span className="text-gray-400">
+								Or start a new run below with a another set of CI gates!
+							</span>
 						</>
 					)}
 					<PrimaryButton onClick={handleStartNewRunClick} className="px-3 py-1">
