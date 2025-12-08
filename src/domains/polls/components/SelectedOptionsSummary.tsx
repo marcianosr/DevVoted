@@ -6,6 +6,7 @@ import rehypeHighlight from "rehype-highlight";
 
 import UserAvatar from "~/components/UserAvatar";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
+import NextPollCategoryForm from "~/domains/polls/components/NextPollCategoryForm";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 import { PrimaryButton } from "~/ui/PrimaryButton";
@@ -173,6 +174,9 @@ const SelectedOptionsSummary = ({
 								Suggest a poll yourself →
 							</Link>
 						</PrimaryButton>
+					</section>
+					<section>
+						<NextPollCategoryForm />
 					</section>
 					<section className="mt-16">
 						<Leaderboard categoryCode={categoryCode} />

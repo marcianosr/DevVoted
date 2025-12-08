@@ -323,3 +323,21 @@ export const updatePollHandler = async ({
 		return poll;
 	}, "Failed to update poll");
 };
+
+export const postNextCategoryPollHandler = async ({
+	data,
+}: {
+	data: { userId: string; categoryCode: string };
+}) => {
+	return handleApiOperation(async () => {
+		// This is a placeholder implementation.
+		// Actual implementation would record the user's choice and
+		// influence the next poll they receive based on categoryCode.
+
+		console.log(
+			`User ${data.userId} voted for next poll category: ${data.categoryCode}`
+		);
+
+		return { message: "Category vote recorded" };
+	});
+};

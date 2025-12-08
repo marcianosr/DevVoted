@@ -16,6 +16,7 @@ import {
 	getRunPollHistoryHandler,
 	createPollWithOptionsHandler,
 	updatePollHandler,
+	postNextCategoryPollHandler,
 } from "./handlers";
 
 export const getPollByIdWithOptions = createServerFn({ method: "GET" })
@@ -201,4 +202,18 @@ export const updatePollServerFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		await ensureAdminAccess();
 		return updatePollHandler({ data });
+	});
+
+export const postNextCategoryPoll = createServerFn({ method: "POST" })
+	.inputValidator(z.object({ categoryCode: z.string().min(1) }))
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+
+		if (!userId) {
+			throw new Error("Authentication required");
+		}
+
+		return postNextCategoryPollHandler({
+			data: { userId, categoryCode: data.categoryCode },
+		});
 	});

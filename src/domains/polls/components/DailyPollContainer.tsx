@@ -100,7 +100,6 @@ const DailyPollContainer = ({
 
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
-
 		onSuccess: (response) => {
 			if (response.success && response.data.runEnded) {
 				navigate({ to: "/game-over" });
