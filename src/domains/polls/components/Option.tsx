@@ -48,6 +48,9 @@ export const handleOptionsChange = ({
 	field.setValue(newValues);
 };
 
+const escapeMarkdownSyntax = (text: string): string =>
+	text.replace(/^>/gm, "\\>");
+
 const Option = ({
 	option,
 	type,
@@ -79,7 +82,7 @@ const Option = ({
 				className={`markdown text-white flex-1 ${disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer"}`}
 			>
 				<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-					{option.option}
+					{escapeMarkdownSyntax(option.option)}
 				</ReactMarkdown>
 			</label>
 		</div>
