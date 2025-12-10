@@ -51,6 +51,7 @@ export const handleOptionsChange = ({
 const escapeMarkdownSyntax = (text: string): string =>
 	text
 		.replace(/^>/gm, "\\>") // blockquote
+		.replace(/^\+/gm, "\\+") // unordered list
 		.replace(/</g, "&lt;") // HTML tags
 		.replace(/(?<!\\)>/g, "&gt;"); // remaining > not at line start
 
