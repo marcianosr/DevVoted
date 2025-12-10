@@ -1,8 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
-import ReactMarkdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
 
 import UserAvatar from "~/components/UserAvatar";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
@@ -10,6 +8,7 @@ import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 
+import MarkdownText from "./MarkdownText";
 import { CommunityStats } from "../api/queries"; // TODO: don;t import type from api, move to models
 import { PollOption } from "../models/pollOption";
 
@@ -56,9 +55,7 @@ const SelectedOptionsSummary = ({
 
 							return (
 								<li key={option.id} className={`${styles} markdown`}>
-									<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-										{option.option}
-									</ReactMarkdown>
+									<MarkdownText>{option.option}</MarkdownText>
 								</li>
 							);
 						})}
@@ -70,9 +67,7 @@ const SelectedOptionsSummary = ({
 							.filter((opt) => opt.correct)
 							.map((opt) => (
 								<li key={opt.id} className="text-green-400 text-xl markdown">
-									<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-										{opt.option}
-									</ReactMarkdown>
+									<MarkdownText>{opt.option}</MarkdownText>
 								</li>
 							))}
 					</ul>
@@ -81,9 +76,7 @@ const SelectedOptionsSummary = ({
 						<div className="mt-6 p-4 bg-gray-800/40 border border-gray-700">
 							<h4 className="text-xl mb-2">💡 Explanation</h4>
 							<div className="markdown text-gray-300">
-								<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-									{explanation}
-								</ReactMarkdown>
+								<MarkdownText>{explanation}</MarkdownText>
 							</div>
 						</div>
 					)}

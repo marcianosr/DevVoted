@@ -1,7 +1,6 @@
-import ReactMarkdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
-
 import { PollOption } from "~/domains/polls/models/pollOption";
+
+import MarkdownText from "./MarkdownText";
 
 // Define a simplified field interface that matches what we need from TanStack Form
 type FormFieldApi = {
@@ -48,13 +47,6 @@ export const handleOptionsChange = ({
 	field.setValue(newValues);
 };
 
-const escapeMarkdownSyntax = (text: string): string =>
-	text
-		.replace(/^>/gm, "\\>") // blockquote
-		.replace(/^\+/gm, "\\+") // unordered list
-		.replace(/</g, "&lt;") // HTML tags
-		.replace(/(?<!\\)>/g, "&gt;"); // remaining > not at line start
-
 const Option = ({
 	option,
 	type,
@@ -85,9 +77,7 @@ const Option = ({
 				htmlFor={inputId}
 				className={`markdown text-white flex-1 ${disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer"}`}
 			>
-				<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-					{escapeMarkdownSyntax(option.option)}
-				</ReactMarkdown>
+				<MarkdownText>{option.option}</MarkdownText>
 			</label>
 		</div>
 	);
