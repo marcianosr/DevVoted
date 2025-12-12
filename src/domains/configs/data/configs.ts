@@ -1,5 +1,6 @@
 import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { Run } from "~/domains/runs/models/run";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { selectSeededRandom } from "~/lib/seededRandom";
@@ -397,11 +398,15 @@ const EFFECTS: Record<string, EffectFn> = {
 			0
 		);
 
+		// Get gates from challenge mode
+		const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
+
 		// Calculate threshold based on category coverage data and answered polls
 		// Note: This uses answered polls as a proxy for seen polls since we don't have access to totalPollsSeen here
 		const thresholdInfo = calculateThresholdInfo(
 			run.categoryCoverage,
-			totalPollsAnswered
+			totalPollsAnswered,
+			challengeMode.gates
 		);
 		const requiredCoverage =
 			thresholdInfo.gateDefinition?.requirements[0]?.threshold ?? 0;

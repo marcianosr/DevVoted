@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 
+import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 
@@ -34,13 +35,17 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
+			const result = calculateThresholdInfo(
+				categoryCoverage,
+				totalPollsSeen,
+				VANILLA_CI_GATES
+			);
 
 			expect(result.pollNumber).toBe(0);
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(0);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentRound).toBe(1);
+			expect(result.currentGate).toBe(1);
 			expect(result.pollInRound).toBe(1);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
@@ -74,13 +79,17 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
+			const result = calculateThresholdInfo(
+				categoryCoverage,
+				totalPollsSeen,
+				VANILLA_CI_GATES
+			);
 
 			expect(result.pollNumber).toBe(1);
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(2);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentRound).toBe(1);
+			expect(result.currentGate).toBe(1);
 			expect(result.pollInRound).toBe(1);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
@@ -114,13 +123,17 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
+			const result = calculateThresholdInfo(
+				categoryCoverage,
+				totalPollsSeen,
+				VANILLA_CI_GATES
+			);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(1);
 			expect(result.meetsThreshold).toBe(false); // Threshold check poll at 5, fails with 1 < 2
-			expect(result.currentRound).toBe(1);
+			expect(result.currentGate).toBe(1);
 			expect(result.pollInRound).toBe(5);
 			expect(result.isThresholdCheckPoll).toBe(true);
 		});
@@ -154,13 +167,17 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
+			const result = calculateThresholdInfo(
+				categoryCoverage,
+				totalPollsSeen,
+				VANILLA_CI_GATES
+			);
 
 			expect(result.pollNumber).toBe(1);
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(2);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentRound).toBe(1);
+			expect(result.currentGate).toBe(1);
 			expect(result.pollInRound).toBe(1);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});
@@ -194,13 +211,17 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
+			const result = calculateThresholdInfo(
+				categoryCoverage,
+				totalPollsSeen,
+				VANILLA_CI_GATES
+			);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(2);
 			expect(result.meetsThreshold).toBe(true); // 2 >= 2, threshold check passes
-			expect(result.currentRound).toBe(1);
+			expect(result.currentGate).toBe(1);
 			expect(result.pollInRound).toBe(5);
 			expect(result.isThresholdCheckPoll).toBe(true);
 		});
@@ -212,13 +233,17 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(categoryCoverage, totalPollsSeen);
+			const result = calculateThresholdInfo(
+				categoryCoverage,
+				totalPollsSeen,
+				VANILLA_CI_GATES
+			);
 
 			expect(result.pollNumber).toBe(0);
 			expect(result.gateDefinition?.requirements[0].threshold).toBe(2); // Gate 1 threshold (2%)
 			expect(result.maxCoverage).toBe(0);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
-			expect(result.currentRound).toBe(1);
+			expect(result.currentGate).toBe(1);
 			expect(result.pollInRound).toBe(1);
 			expect(result.isThresholdCheckPoll).toBe(false);
 		});

@@ -1,5 +1,3 @@
-import { POLLS_PER_ROUND } from "~/domains/runs/services/thresholdCalculator.service";
-
 /**
  * Coverage-based scoring with round scaling and streak bonuses
  * Base formula: (1% + round × 0.2%) + (streak × 0.1%, capped at 1%)
@@ -205,6 +203,7 @@ type OrchestrateScoreCalculationParams = {
 	totalPollsAnswered: number;
 	totalPollsSeen: number;
 	correctnessFactor: number;
+	pollsPerGate: number; // Number of polls per gate (from challenge mode)
 	coverageAdd?: number; // Additive coverage bonus from configs (e.g., +0.5%)
 	coverageMult?: number; // Multiplicative coverage modifier from configs (e.g., x1.5)
 };
@@ -246,6 +245,7 @@ export const orchestrateScoreCalculation = ({
 	totalPollsAnswered,
 	totalPollsSeen,
 	correctnessFactor,
+	pollsPerGate,
 	coverageAdd = 0,
 	coverageMult = 1,
 }: OrchestrateScoreCalculationParams): ScoreCalculation => {
@@ -255,14 +255,14 @@ export const orchestrateScoreCalculation = ({
 	const newPollsAnswered = totalPollsAnswered + 1;
 
 	// Calculate current round from polls seen (rounds are 1-based)
-	const currentRound = Math.floor(totalPollsSeen / POLLS_PER_ROUND) + 1;
+	const currentGate = Math.floor(totalPollsSeen / pollsPerGate) + 1;
 
 	// Step 2-4: Calculate coverage with round scaling, streak bonus, and correctness
-	const baseCoverage = calculateBaseCoverage(currentRound);
+	const baseCoverage = calculateBaseCoverage(currentGate);
 	const streakBonus = calculateStreakBonus(newStreak);
 	const coverageBeforeConfigs = calculateCoverage({
 		correctnessFactor,
-		round: currentRound,
+		round: currentGate,
 		streak: newStreak,
 	});
 

@@ -147,6 +147,7 @@ describe("score.service", () => {
 				totalPollsAnswered: 0,
 				totalPollsSeen: 0, // Round 1
 				correctnessFactor: 1.0,
+				pollsPerGate: 5,
 			});
 
 			// Round 1: base 1.2%, new streak 1 = 0.1%, total 1.3%
@@ -163,6 +164,7 @@ describe("score.service", () => {
 				totalPollsAnswered: 20,
 				totalPollsSeen: 20, // Round 5 (4*5 + 0)
 				correctnessFactor: 1.0,
+				pollsPerGate: 5,
 			});
 
 			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
@@ -178,6 +180,7 @@ describe("score.service", () => {
 				totalPollsAnswered: 20,
 				totalPollsSeen: 20, // Round 5 (4*5 + 0)
 				correctnessFactor: 1.5, // Perfect multi-choice
+				pollsPerGate: 5,
 			});
 
 			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
@@ -195,6 +198,7 @@ describe("score.service", () => {
 				totalPollsAnswered: 10,
 				totalPollsSeen: 10,
 				correctnessFactor: 0,
+				pollsPerGate: 5,
 			});
 
 			expect(result.newStreak).toBe(0); // Streak reset
@@ -211,6 +215,7 @@ describe("score.service", () => {
 				totalPollsSeen: 20, // Round 5 (4*5 + 0)
 				correctnessFactor: 1.0,
 				coverageAdd: 0.5, // +0.5% from .js config
+				pollsPerGate: 5,
 			});
 
 			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
@@ -227,6 +232,7 @@ describe("score.service", () => {
 				totalPollsAnswered: 45,
 				totalPollsSeen: 45, // Round 10 (9*5 + 0)
 				correctnessFactor: 1.0,
+				pollsPerGate: 5,
 			});
 
 			// Round 10: base 3%, new streak 10 = 1% (capped), total 4%
@@ -243,6 +249,7 @@ describe("score.service", () => {
 				totalPollsAnswered: 45,
 				totalPollsSeen: 45, // Round 10 (9*5 + 0)
 				correctnessFactor: 1.0,
+				pollsPerGate: 5,
 			});
 
 			// Round 10: base 3%, new streak 10 = 1%, total 4%

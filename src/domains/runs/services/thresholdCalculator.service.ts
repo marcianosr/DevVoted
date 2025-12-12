@@ -1,11 +1,6 @@
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 
 /**
- * Number of polls per round (CI gate interval)
- */
-export const POLLS_PER_ROUND = 5;
-
-/**
  * Gate requirement definition
  * Specifies threshold percentage and how many categories must meet it
  */
@@ -23,103 +18,8 @@ export type GateDefinition = {
 	gate: number;
 	requirements: GateRequirement[];
 	evaluationMode: "OR" | "AND";
+	pollsPerGate: number;
 };
-
-/**
- * CI Gate Configuration
- * Progressive difficulty system that accommodates random poll selection
- *
- * Phase 1 (Gates 1-4): OR conditions provide flexibility (specialize OR diversify)
- * Phase 2 (Gates 5-7): AND conditions require category breadth (2 categories)
- * Phase 3 (Gates 8-10): AND conditions with 3 categories for mastery
- *
- * Total Duration: 50 polls = ~7 weeks of daily play
- */
-export const CI_GATES: GateDefinition[] = [
-	// Phase 1: Learning & Strategy (Gates 1-4)
-	{
-		gate: 1,
-		requirements: [{ threshold: 2, requiredCategories: 1 }],
-		evaluationMode: "OR",
-	},
-	{
-		gate: 2,
-		requirements: [
-			{ threshold: 4, requiredCategories: 1 },
-			{ threshold: 2, requiredCategories: 2 },
-		],
-		evaluationMode: "OR",
-	},
-	{
-		gate: 3,
-		requirements: [
-			{ threshold: 8, requiredCategories: 1 },
-			{ threshold: 4, requiredCategories: 2 },
-		],
-		evaluationMode: "OR",
-	},
-	{
-		gate: 4,
-		requirements: [
-			{ threshold: 12, requiredCategories: 1 },
-			{ threshold: 6, requiredCategories: 2 }, // Fixed: was 12, now rewards diversification
-		],
-		evaluationMode: "OR",
-	},
-	// Phase 2: Mastery - Two Categories (Gates 5-7)
-	{
-		gate: 5,
-		requirements: [
-			{ threshold: 25, requiredCategories: 1 },
-			{ threshold: 15, requiredCategories: 1 },
-		],
-		evaluationMode: "AND",
-	},
-	{
-		gate: 6,
-		requirements: [
-			{ threshold: 35, requiredCategories: 1 },
-			{ threshold: 20, requiredCategories: 1 },
-		],
-		evaluationMode: "AND",
-	},
-	{
-		gate: 7,
-		requirements: [
-			{ threshold: 40, requiredCategories: 1 },
-			{ threshold: 25, requiredCategories: 1 },
-		],
-		evaluationMode: "AND",
-	},
-	// Phase 3: Ultimate Challenge - Three Categories (Gates 8-10)
-	{
-		gate: 8,
-		requirements: [
-			{ threshold: 45, requiredCategories: 1 },
-			{ threshold: 30, requiredCategories: 1 },
-			{ threshold: 15, requiredCategories: 1 },
-		],
-		evaluationMode: "AND",
-	},
-	{
-		gate: 9,
-		requirements: [
-			{ threshold: 50, requiredCategories: 1 },
-			{ threshold: 35, requiredCategories: 1 },
-			{ threshold: 20, requiredCategories: 1 },
-		],
-		evaluationMode: "AND",
-	},
-	{
-		gate: 10,
-		requirements: [
-			{ threshold: 55, requiredCategories: 1 },
-			{ threshold: 40, requiredCategories: 1 },
-			{ threshold: 25, requiredCategories: 1 },
-		],
-		evaluationMode: "AND",
-	},
-];
 
 /**
  * Result of evaluating a single gate requirement
@@ -137,7 +37,7 @@ export type ThresholdInfo = {
 	readonly meetsThreshold: boolean;
 	readonly maxCoverage: number; // Highest coverage achieved in any category
 	readonly pollNumber: number;
-	readonly currentRound: number;
+	readonly currentGate: number;
 	readonly pollInRound: number; // Position within the current round (1, 2, or 3)
 	readonly isThresholdCheckPoll: boolean; // True for every 3rd poll (polls 3, 6, 9, etc.)
 	readonly gateDefinition: GateDefinition | null; // Current gate requirements
@@ -152,9 +52,29 @@ export type ThresholdInfo = {
  * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
  * @returns Current round number (1-based, minimum 1)
  */
-export const getCurrentRound = (totalPollsSeen: number): number => {
+export const getCurrentRound = (
+	totalPollsSeen: number,
+	gate: GateDefinition
+): number => {
 	if (totalPollsSeen === 0) return 1;
-	return Math.floor((totalPollsSeen - 1) / POLLS_PER_ROUND) + 1;
+	return Math.floor((totalPollsSeen - 1) / gate.pollsPerGate) + 1;
+};
+
+export const getCurrentGate = (
+	totalPollsSeen: number,
+	gates: GateDefinition[]
+): GateDefinition => {
+	let pollsAccumulated = 0;
+
+	for (const gate of gates) {
+		pollsAccumulated += gate.pollsPerGate;
+		if (totalPollsSeen <= pollsAccumulated) {
+			return gate;
+		}
+	}
+
+	// Beyond all defined gates - return last gate
+	return gates[gates.length - 1];
 };
 
 /**
@@ -163,9 +83,12 @@ export const getCurrentRound = (totalPollsSeen: number): number => {
  * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
  * @returns Poll position within round (1-5)
  */
-export const getPollInRound = (totalPollsSeen: number): number => {
+export const getPollInRound = (
+	totalPollsSeen: number,
+	gate: GateDefinition
+): number => {
 	if (totalPollsSeen === 0) return 1;
-	return ((totalPollsSeen - 1) % POLLS_PER_ROUND) + 1;
+	return ((totalPollsSeen - 1) % gate.pollsPerGate) + 1;
 };
 
 /**
@@ -174,8 +97,11 @@ export const getPollInRound = (totalPollsSeen: number): number => {
  * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
  * @returns True if this is a threshold check poll (polls 5, 10, 15, etc.)
  */
-export const isThresholdCheckPoll = (totalPollsSeen: number): boolean => {
-	return totalPollsSeen > 0 && totalPollsSeen % POLLS_PER_ROUND === 0;
+export const isThresholdCheckPoll = (
+	totalPollsSeen: number,
+	gate: GateDefinition
+): boolean => {
+	return totalPollsSeen > 0 && totalPollsSeen % gate.pollsPerGate === 0;
 };
 
 /**
@@ -183,20 +109,24 @@ export const isThresholdCheckPoll = (totalPollsSeen: number): boolean => {
  * Returns null if round exceeds defined gates (uses last gate pattern)
  *
  * @param round - Current round number
+ * @param gates - Optional custom gates array (defaults to CI_GATES)
  * @returns Gate definition or null
  */
-export const getGateDefinition = (round: number): GateDefinition | null => {
-	if (round <= 0) return null;
+export const getGateDefinition = (
+	round: number,
+	gates: GateDefinition[]
+): GateDefinition | null => {
+	if (round <= 0 || gates.length === 0) return null;
 
 	// If we have a defined gate, return it
-	if (round <= CI_GATES.length) {
-		return CI_GATES[round - 1];
+	if (round <= gates.length) {
+		return gates[round - 1];
 	}
 
 	// For rounds beyond defined gates, extrapolate from last gate pattern
-	const lastGate = CI_GATES[CI_GATES.length - 1];
-	const roundsBeyond = round - CI_GATES.length;
-	const incrementPerRound = 5;
+	const lastGate = gates[gates.length - 1];
+	const roundsBeyond = round - gates.length;
+	const incrementPerRound = 5; // TODO: What is this value?
 
 	return {
 		gate: round,
@@ -205,6 +135,7 @@ export const getGateDefinition = (round: number): GateDefinition | null => {
 			requiredCategories: req.requiredCategories,
 		})),
 		evaluationMode: lastGate.evaluationMode,
+		pollsPerGate: lastGate.pollsPerGate,
 	};
 };
 
@@ -245,11 +176,13 @@ const evaluateRequirement = (
  *
  * @param categoryCoverageData - Array of category coverage data (for gate evaluation)
  * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
+ * @param gates - Optional custom gates array (defaults to CI_GATES)
  * @returns Threshold information
  */
 export const calculateThresholdInfo = (
 	categoryCoverageData: readonly RunCategoryCoverage[],
-	totalPollsSeen: number
+	totalPollsSeen: number,
+	gates: GateDefinition[]
 ): ThresholdInfo => {
 	// Find the maximum coverage across all categories
 	const maxCoverage = Math.max(
@@ -263,11 +196,11 @@ export const calculateThresholdInfo = (
 		0
 	);
 
+	const currentGate = getCurrentGate(totalPollsSeen, gates);
 	// Determine current round and gate based on SEEN polls
-	const currentRound = getCurrentRound(totalPollsSeen);
-	const pollInRound = getPollInRound(totalPollsSeen);
-	const isThresholdCheck = isThresholdCheckPoll(totalPollsSeen);
-	const gateDefinition = getGateDefinition(currentRound);
+	const pollInRound = getPollInRound(totalPollsSeen, currentGate);
+	const isThresholdCheck = isThresholdCheckPoll(totalPollsSeen, currentGate);
+	const gateDefinition = getGateDefinition(currentGate.gate, gates);
 
 	// If no gate definition or not a threshold check, always pass
 	if (!gateDefinition || !isThresholdCheck) {
@@ -275,7 +208,7 @@ export const calculateThresholdInfo = (
 			meetsThreshold: true,
 			maxCoverage,
 			pollNumber: totalPollsAnswered,
-			currentRound,
+			currentGate: currentGate.gate,
 			pollInRound,
 			isThresholdCheckPoll: isThresholdCheck,
 			gateDefinition,
@@ -338,24 +271,11 @@ export const calculateThresholdInfo = (
 		meetsThreshold,
 		maxCoverage,
 		pollNumber: totalPollsAnswered,
-		currentRound,
+		currentGate: currentGate.gate,
 		pollInRound,
 		isThresholdCheckPoll: isThresholdCheck,
 		gateDefinition,
 		requirementEvaluations,
 		qualifyingCategories,
 	};
-};
-
-/**
- * Get current threshold status from category data
- * @param categoryCoverage - Array of category coverage data
- * @param totalPollsSeen - Total unique polls seen by user (from polls_history)
- * @returns Threshold information
- */
-export const getCurrentThresholdInfo = (
-	categoryCoverage: readonly RunCategoryCoverage[],
-	totalPollsSeen: number
-): ThresholdInfo => {
-	return calculateThresholdInfo(categoryCoverage, totalPollsSeen);
 };

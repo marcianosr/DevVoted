@@ -104,6 +104,7 @@ describe("incrementRunProgress", () => {
 			correctnessFactor: 1.0,
 			coverageAdd: 2, // Config coverage bonus for .js config
 			coverageMult: 1,
+			pollsPerGate: 5,
 		});
 	});
 
@@ -157,6 +158,7 @@ describe("incrementRunProgress", () => {
 			correctnessFactor: 1.0,
 			coverageAdd: 0, // No config bonus
 			coverageMult: 1,
+			pollsPerGate: 5,
 		});
 	});
 
@@ -255,6 +257,7 @@ describe("incrementRunProgress", () => {
 			correctnessFactor: 1.0,
 			coverageAdd: 4, // Double config bonus (0.5 + 0.5)
 			coverageMult: 1,
+			pollsPerGate: 5,
 		});
 	});
 
@@ -344,6 +347,7 @@ describe("incrementRunProgress", () => {
 				correctnessFactor: 1.0,
 				coverageAdd: 2, // Config bonus should be applied
 				coverageMult: 1,
+				pollsPerGate: 5,
 			});
 
 			vi.clearAllMocks();

@@ -2,7 +2,7 @@ import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 import {
 	calculateThresholdInfo,
 	type ThresholdInfo,
-	CI_GATES,
+	type GateDefinition,
 } from "~/domains/runs/services/thresholdCalculator.service";
 
 import {
@@ -64,7 +64,8 @@ export const endRunManually = async (runId: number) => {
 
 // Helper function to check if run meets coverage threshold to continue
 export const checkCoverageThreshold = async (
-	runId: number
+	runId: number,
+	gates: GateDefinition[]
 ): Promise<ThresholdInfo> => {
 	const runWithCategoryData = await getRunWithCategoryXp(runId);
 
@@ -77,15 +78,19 @@ export const checkCoverageThreshold = async (
 
 	return calculateThresholdInfo(
 		runWithCategoryData.categoryCoverage,
-		pollsSeenInRun
+		pollsSeenInRun,
+		gates
 	);
 };
 
 // Check if player has passed all defined CI gates (victory condition)
 // Victory occurs when current round exceeds the number of defined gates
 // Example: With 7 gates defined, round 8 means gate 7 was just passed
-export const checkForVictory = (currentRound: number): boolean => {
-	return currentRound > CI_GATES.length;
+export const checkForVictory = (
+	currentRound: number,
+	gates: GateDefinition[]
+): boolean => {
+	return currentRound > gates.length;
 };
 
 // Complete run with victory (all defined CI gates passed)

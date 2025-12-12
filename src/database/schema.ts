@@ -263,6 +263,7 @@ export const runsTable = pgTable("runs", {
 		onDelete: "set null",
 	}), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
+	challenge_mode_id: varchar("challenge_mode_id", { length: 50 }),
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	active_config_ids: json("active_config_ids")
 		.$type<string[]>()

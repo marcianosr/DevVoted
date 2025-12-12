@@ -2,6 +2,8 @@ import { applyEffects } from "~/domains/configs/data/configs";
 import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { handleUserSelectedOptionsByPollType } from "~/domains/polls/services/processPollAnswer.service";
+import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
+import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import {
 	orchestrateScoreCalculation,
 	ScoreCalculation,
@@ -76,6 +78,11 @@ export const incrementRunProgress = async ({
 		run.activeConfigIds
 	);
 
+	// Get pollsPerGate from challenge mode
+	const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
+	const currentGate = getCurrentGate(totalPollsSeen, challengeMode.gates);
+	const pollsPerGate = currentGate.pollsPerGate;
+
 	// Step 2-3: Calculate coverage with config modifiers applied
 	const {
 		breakdown,
@@ -90,6 +97,7 @@ export const incrementRunProgress = async ({
 		currentStreak: currentCategoryCoverage.currentStreak,
 		totalPollsAnswered,
 		totalPollsSeen,
+		pollsPerGate,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});
@@ -152,6 +160,14 @@ export const getRunProgress = async ({
 		run.activeConfigIds
 	);
 
+	// Get pollsPerGate from challenge mode
+	const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
+
+	const pollsPerGate = getCurrentGate(
+		totalPollsSeen,
+		challengeMode.gates
+	).pollsPerGate;
+
 	const result = orchestrateScoreCalculation({
 		correctnessFactor,
 		currentBestStreak: currentCategoryCoverage
@@ -165,6 +181,7 @@ export const getRunProgress = async ({
 			: 0,
 		totalPollsAnswered: 0, // Placeholder until we fetch actual data
 		totalPollsSeen,
+		pollsPerGate,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});

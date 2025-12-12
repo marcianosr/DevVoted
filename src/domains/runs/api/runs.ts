@@ -11,12 +11,18 @@ import {
 	skipShopHandler,
 } from "./handlers";
 
-export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
-	async () => {
+export const getOrCreateRun = createServerFn({ method: "GET" })
+	.inputValidator(
+		z
+			.object({
+				challengeModeId: z.string(),
+			})
+			.required()
+	)
+	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
-		return await getOrCreateActiveRun(userId);
-	}
-);
+		return await getOrCreateActiveRun(userId, data.challengeModeId);
+	});
 
 export const getActiveRun = createServerFn({ method: "GET" }).handler(
 	async () => {
