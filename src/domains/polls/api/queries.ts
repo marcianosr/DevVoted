@@ -721,6 +721,8 @@ export const updatePollWithOptions = async (
 			updateValues.code_block = pollData.codeBlock;
 		if (pollData.codeSandboxExample !== undefined)
 			updateValues.code_sandbox_example = pollData.codeSandboxExample;
+		if (pollData.explanation !== undefined)
+			updateValues.explanation = pollData.explanation;
 
 		const [updatedPoll] = await tx
 			.update(pollsTable)

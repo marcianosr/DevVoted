@@ -316,6 +316,7 @@ export const updatePollHandler = async ({
 				categoryCode: validated.poll.categoryCode,
 				codeBlock: validated.poll.codeBlock,
 				codeSandboxExample: validated.poll.codeSandboxExample,
+				explanation: validated.poll.explanation,
 			},
 			validated.options
 		);

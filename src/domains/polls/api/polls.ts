@@ -187,9 +187,11 @@ const updatePollInputSchema = z.object({
 		categoryCode: z.string().min(1).optional(),
 		codeBlock: z.string().nullable().optional(),
 		codeSandboxExample: z.string().nullable().optional(),
+		explanation: z.string().max(2000).nullable().optional(),
 	}),
 	options: z.array(
 		z.object({
+			id: z.number().int().positive().optional(),
 			option: z.string().min(1).max(500),
 			correct: z.boolean(),
 		})
