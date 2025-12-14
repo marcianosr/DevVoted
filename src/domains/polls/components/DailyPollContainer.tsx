@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -85,6 +87,12 @@ const DailyPollContainer = ({
 	const navigate = useNavigate();
 	const category = getCategoryMetadata(poll.categoryCode);
 
+	// Store the score from mutation to avoid stale data after router.invalidate()
+	// The loader recalculates score with updated run data, which gives wrong values
+	const [submittedScore, setSubmittedScore] = useState<ScoreCalculation | null>(
+		null
+	);
+
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
 	const { data: communityStats } = useQuery({
 		queryKey: ["communityStats", poll.id],
@@ -102,18 +110,34 @@ const DailyPollContainer = ({
 		mutationFn: postPollOptions,
 
 		onSuccess: (response) => {
-			if (response.success && response.data.runEnded) {
-				navigate({ to: "/game-over" });
-				return;
+			if (response.success) {
+				// Store the breakdown from the mutation - this is the correct score
+				// that was actually saved to the DB
+				if (response.data.breakdown) {
+					setSubmittedScore({
+						breakdown: response.data.breakdown,
+						newTotalCoverage: 0, // Not used in display
+						newBestStreak: 0, // Not used in display
+						newStreak: response.data.breakdown.streak,
+						newPollsAnswered: 0, // Not used in display
+					});
+				}
+
+				if (response.data.runEnded) {
+					navigate({ to: "/game-over" });
+					return;
+				}
 			}
 
 			router.invalidate();
-			console.info("Successfully submitted poll options", response);
 		},
 		onError: (error) => {
 			console.error("Error submitting poll options", error);
 		},
 	});
+
+	// Use the submitted score if available (just answered), otherwise fall back to loader's score
+	const displayScore = submittedScore ?? score;
 
 	return (
 		<section>
@@ -138,7 +162,7 @@ const DailyPollContainer = ({
 						<SelectedOptionsSummary
 							options={options}
 							selectedOptions={selectedOptions}
-							score={score}
+							score={displayScore}
 							communityStats={communityStats}
 							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
