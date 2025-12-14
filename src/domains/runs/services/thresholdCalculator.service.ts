@@ -126,7 +126,7 @@ export const getGateDefinition = (
 	// For rounds beyond defined gates, extrapolate from last gate pattern
 	const lastGate = gates[gates.length - 1];
 	const roundsBeyond = round - gates.length;
-	const incrementPerRound = 5; // TODO: What is this value?
+	const incrementPerRound = 5;
 
 	return {
 		gate: round,

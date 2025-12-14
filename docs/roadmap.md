@@ -205,6 +205,7 @@ BUGS:
 
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Show polls when beyond CI gates
 [] Currently in tooltip: show your response time  - how long did it take to answer
 [x] Admin panel for polls
 [x] Allow players to suggest polls

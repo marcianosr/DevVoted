@@ -11,18 +11,17 @@ import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.serv
  * Total Duration: 50 polls = ~7 weeks of daily play
  */
 export const VANILLA_CI_GATES: GateDefinition[] = [
-	// Phase 1: Learning & Strategy (Gates 1-4)
 	{
 		gate: 1,
-		requirements: [{ threshold: 2, requiredCategories: 1 }],
+		requirements: [{ threshold: 3, requiredCategories: 1 }],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
 	},
 	{
 		gate: 2,
 		requirements: [
-			{ threshold: 4, requiredCategories: 1 },
-			{ threshold: 2, requiredCategories: 2 },
+			{ threshold: 6, requiredCategories: 1 },
+			{ threshold: 3, requiredCategories: 2 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
@@ -30,8 +29,8 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 3,
 		requirements: [
-			{ threshold: 8, requiredCategories: 1 },
-			{ threshold: 4, requiredCategories: 2 },
+			{ threshold: 12, requiredCategories: 1 },
+			{ threshold: 8, requiredCategories: 2 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
@@ -39,18 +38,18 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 4,
 		requirements: [
-			{ threshold: 12, requiredCategories: 1 },
-			{ threshold: 6, requiredCategories: 2 }, // Fixed: was 12, now rewards diversification
+			{ threshold: 24, requiredCategories: 1 },
+			{ threshold: 18, requiredCategories: 2 },
+			{ threshold: 12, requiredCategories: 3 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
 	},
-	// Phase 2: Mastery - Two Categories (Gates 5-7)
 	{
 		gate: 5,
 		requirements: [
-			{ threshold: 25, requiredCategories: 1 },
-			{ threshold: 15, requiredCategories: 1 },
+			{ threshold: 24, requiredCategories: 1 },
+			{ threshold: 24, requiredCategories: 1 },
 		],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
@@ -58,22 +57,21 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 6,
 		requirements: [
-			{ threshold: 35, requiredCategories: 1 },
-			{ threshold: 20, requiredCategories: 1 },
+			{ threshold: 45, requiredCategories: 1 },
+			{ threshold: 30, requiredCategories: 2 },
 		],
-		evaluationMode: "AND",
+		evaluationMode: "OR",
 		pollsPerGate: 5,
 	},
 	{
 		gate: 7,
 		requirements: [
-			{ threshold: 40, requiredCategories: 1 },
-			{ threshold: 25, requiredCategories: 1 },
+			{ threshold: 35, requiredCategories: 1 },
+			{ threshold: 35, requiredCategories: 1 },
 		],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
 	},
-	// Phase 3: Ultimate Challenge - Three Categories (Gates 8-10)
 	{
 		gate: 8,
 		requirements: [
@@ -97,9 +95,20 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 10,
 		requirements: [
-			{ threshold: 55, requiredCategories: 1 },
+			{ threshold: 60, requiredCategories: 1 },
 			{ threshold: 40, requiredCategories: 1 },
 			{ threshold: 25, requiredCategories: 1 },
+		],
+		evaluationMode: "AND",
+		pollsPerGate: 5,
+	},
+	{
+		gate: 11,
+		requirements: [
+			{ threshold: 60, requiredCategories: 1 },
+			{ threshold: 50, requiredCategories: 1 },
+			{ threshold: 40, requiredCategories: 1 },
+			{ threshold: 30, requiredCategories: 1 },
 		],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
