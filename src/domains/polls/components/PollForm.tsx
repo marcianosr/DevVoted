@@ -12,6 +12,7 @@ import {
 } from "~/domains/shared/categories";
 
 type PollFormOption = {
+	id?: number; // Existing options have ID, new ones don't
 	option: string;
 	correct: boolean;
 };
@@ -77,6 +78,7 @@ export const PollForm = ({
 	);
 	const [options, setOptions] = useState<PollFormOption[]>(
 		initialData?.options.map((o) => ({
+			id: o.id, // Preserve existing option IDs for upsert
 			option: o.option,
 			correct: o.correct,
 		})) ?? [createEmptyOption(), createEmptyOption(), createEmptyOption()]

@@ -54,6 +54,16 @@ export const newPollOptionSchema = z.object({
 	correct: z.boolean().default(false),
 });
 
+// Poll option for updates (with optional ID to preserve existing options)
+export const updatePollOptionSchema = z.object({
+	id: z.number().int().positive().optional(), // Existing options have ID, new ones don't
+	option: z
+		.string()
+		.min(1, "Option cannot be empty")
+		.max(500, "Option cannot exceed 500 characters"),
+	correct: z.boolean().default(false),
+});
+
 // User response validation
 export const userResponseSchema = z.object({
 	pollId: z.number().int().positive(),
@@ -69,6 +79,7 @@ export type CreatePollInput = z.infer<typeof createPollSchema>;
 export type PollOptionInput = z.infer<typeof pollOptionSchema>;
 export type UserResponseInput = z.infer<typeof userResponseSchema>;
 export type NewPollOptionInput = z.infer<typeof newPollOptionSchema>;
+export type UpdatePollOptionInput = z.infer<typeof updatePollOptionSchema>;
 
 // ============================================
 // Poll CRUD Schemas
@@ -112,7 +123,7 @@ export const updatePollSchema = z
 		id: z.number().int().positive(),
 		poll: basePollDataSchema.partial(),
 		options: z
-			.array(newPollOptionSchema)
+			.array(updatePollOptionSchema)
 			.min(3, "At least 3 options required")
 			.max(20, "Cannot exceed 20 options"),
 	})

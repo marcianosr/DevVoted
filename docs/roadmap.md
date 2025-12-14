@@ -152,7 +152,7 @@ BUGS:
 [] Half the price of uninstalling, adding "junk" to storage [idea]
 [] Vote for the next category (poll) [idea]
   - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
-[o] Make gates harder - they are too simple
+[x] Make gates harder - they are too simple
 [] More leaderboard variants
   - also show current gate
   - All-time leaderboard (best runs)
@@ -188,6 +188,7 @@ BUGS:
 
 
 **Bugs**
+[] Local storage config adds insane amounts of storage when skipping shop
 [] Show new shop items every new poll/day
 [x] Fix text encoding issues in options (e.g +, -, <, >, etc)
 [] Update explanation for todays poll with Matthijs thought pattern of Object.values
