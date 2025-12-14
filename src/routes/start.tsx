@@ -1,7 +1,10 @@
+import { useState } from "react";
+
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { getOrCreateRun } from "~/domains/runs/api/runs";
+import { CHALLENGE_MODES } from "~/domains/runs/data/challengeModes";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 
 export const Route = createFileRoute("/start")({
@@ -17,9 +20,11 @@ export const Route = createFileRoute("/start")({
 
 function RouteComponent() {
 	const navigate = useNavigate();
+	const [selectedChallenge, setSelectedChallenge] = useState("tutorial");
 
 	const startRunMutation = useMutation({
-		mutationFn: () => getOrCreateRun(),
+		mutationFn: () =>
+			getOrCreateRun({ data: { challengeModeId: selectedChallenge } }),
 		onSuccess: () => {
 			navigate({ to: "/daily-poll" });
 		},
@@ -30,9 +35,29 @@ function RouteComponent() {
 			<div className="mx-auto max-w-2xl py-8">
 				<h1 className="text-4xl mb-4">Welcome to the developer roguelike!</h1>
 
-				<h2 className="text-xl mb-4">
-					To get started, click the button below to start your run!
+				<h2 className="text-xl mb-12">
+					To get started, select a challenge and click the button below to start
+					your run!
 				</h2>
+
+				<section className="my-8">
+					<h3 className="text-xl mb-2">Select a challenge</h3>
+					{Object.values(CHALLENGE_MODES).map((mode) => (
+						<div key={mode.id} className="mb-4">
+							<label className="flex items-center space-x-2">
+								<input
+									type="radio"
+									name="challengeMode"
+									value={mode.id}
+									checked={selectedChallenge === mode.id}
+									onChange={() => setSelectedChallenge(mode.id)}
+								/>
+								<p>{mode.name}</p>
+							</label>
+							<small className="ml-6 text-gray-300">{mode.description}</small>
+						</div>
+					))}
+				</section>
 				<section className="text-white mb-6">
 					<h3 className="mt-4 text-2xl">How it works:</h3>
 					<ul>
@@ -57,7 +82,7 @@ function RouteComponent() {
 
 				<PrimaryButton
 					onClick={() => startRunMutation.mutate()}
-					disabled={startRunMutation.isPending}
+					disabled={startRunMutation.isPending || !selectedChallenge}
 				>
 					Start New Run
 				</PrimaryButton>

@@ -131,19 +131,13 @@ BUGS:
 [x] Refactor shop in progress page
 [x] Score weergave klopt nog niet.
 [x] Bij Matthijs zei hij 1.95% en de score was 2%
-
-
-
 [-] Fonts niet duidelijk
 [-] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
 [x] Fail a run?
 [x] Answers that contain code should be formatted well
 [x] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
-[] When not logged in, the start page shouldn't show the start run button, but a login button
 [o] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 [x] Slow "See your run progress and shop →" button
-
-
 [x] Community stats query showing wrong data (7 votes?)
 [x] Investigate slow loading times
 [x] Remove code box field
@@ -151,6 +145,24 @@ BUGS:
 [x] Link to github issues for bug reports
 
 
+
+
+**Game play**
+[] Return on investment config - When a config is uninstalled it adds (half of it) as junk to storage. When installing "this" config, you'll get freed up from the junk. So everytime you uninstall, holding this config, you get half of the uninstall cost back as free storage again
+[] Half the price of uninstalling, adding "junk" to storage [idea]
+[] Vote for the next category (poll) [idea]
+  - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
+[o] Make gates harder - they are too simple
+[] More leaderboard variants
+  - also show current gate
+  - All-time leaderboard (best runs)
+[o] Expand on low hanging configs
+[] Make sure the rules on start screen is clear
+[] Consider poll rating: very easy to very hard
+[] Think of what winners do next
+[] Add polls!!
+[] Tooltips for critical flow
+[] Restore Next.js polls
 [x] More community stats
 
     [x] Who voted on the poll of today?
@@ -159,22 +171,6 @@ BUGS:
     [] Correct/incorrect for each user
     [] Users not answered who are in a run
 
-
-**Game play**
-[] Vote for the next category (poll)
-  - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
-[] Make gates harder - they are too simple
-[] More leaderboard variants
-  - also show current gate
-  - All-time leaderboard (best runs)
-[o] Expand on low hanging configs
-[] Make sure the rules on start screen is clear
-[] Consider poll rating: very easy to very hard
-[] Content discovery show on profile
-[] Think of what winners do next
-[] Add polls!!
-[] Tooltips for critical flow
-[] Restore Next.js polls
 
 
 **Mobile responsiviness**
@@ -192,19 +188,30 @@ BUGS:
 
 
 **Bugs**
+[] Show new shop items every new poll/day
+[x] Fix text encoding issues in options (e.g +, -, <, >, etc)
+[] Update explanation for todays poll with Matthijs thought pattern of Object.values
+[] Shop resets when uninstalling a config
+[] Edit poll page research: doesn't save changes and somehow "fucked" up the poll and response id [Critical]
 [] Codeblocks are sometimes still white in dark mode
 [] Bug in submitting poll larger than 10 selected options
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
 [] Fix button clicking area
+[] When not logged in, the start page shouldn't show the start run button, but a login button
+[] On game over, the start run button doesn't work anymore
 
 
 ----- GO LIVE -----
 
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Show polls when beyond CI gates
+[] Currently in tooltip: show your response time  - how long did it take to answer
 [x] Admin panel for polls
 [x] Allow players to suggest polls
 [] Create more polls also for backend categories
+[] Unlocking system
+[] Content discovery show on profile
 
 [] Introduce moderator role -
 
