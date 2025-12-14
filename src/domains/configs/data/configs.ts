@@ -241,7 +241,8 @@ export type CoverageMods = {
 	coverageMult?: number; // x1.5 (multiplicative coverage modifier)
 };
 export type StorageMods = {
-	bonus?: number; // flat storage bonus (applied to storage capacity)
+	expand?: number; // Passive storage expansion (affects effective limit while config is held)
+	skipBonus?: number; // Skip shop reward (added to DB storage_limit when skipping)
 };
 type EffectCtx = PollWithOptionsResponse & {
 	run: Run;
@@ -378,13 +379,13 @@ const EFFECTS: Record<string, EffectFn> = {
 	},
 
 	// Grants extra storage capacity (Local Storage Config effect)
+	// This is a PASSIVE bonus - only affects effective limit while config is held
 	expandStorage: ({ poll, options, run, hasAnswered }, config) => {
-		// Use storageBonus from config if provided, otherwise default to 512KB
 		const bonusStorage = config.storageBonus ?? STORAGE_UNITS.KB * 512;
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			storage: { bonus: bonusStorage },
+			storage: { expand: bonusStorage },
 			meta: {
 				notes: [`+${formatStorage(bonusStorage)} storage capacity`],
 			},
@@ -486,12 +487,13 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+	// Skip shop bonus - only added to DB when skipping, not to effective limit
 	bonusShopStorage: ({ poll, options, run, hasAnswered }, config) => {
 		const bonusStorage = config.storageBonus ?? 0;
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			storage: { bonus: bonusStorage },
+			storage: { skipBonus: bonusStorage },
 			meta: {
 				notes: [`+${formatStorage(bonusStorage)} storage when skipping shop`],
 			},
@@ -582,7 +584,9 @@ export function applyEffects(
 						(out.coverage?.coverageMult ?? 1),
 				},
 				storage: {
-					bonus: (acc.storage.bonus ?? 0) + (out.storage?.bonus ?? 0),
+					expand: (acc.storage.expand ?? 0) + (out.storage?.expand ?? 0),
+					skipBonus:
+						(acc.storage.skipBonus ?? 0) + (out.storage?.skipBonus ?? 0),
 				},
 				protection: {
 					// If any config provides try/catch protection, it's active

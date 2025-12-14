@@ -33,8 +33,8 @@ export const calculateEffectiveStorageLimit = (run: Run): number => {
 		run.activeConfigIds
 	);
 
-	// Add bonus storage from configs to base storage
-	return baseStorage + (storage.bonus ?? 0);
+	// Add passive storage expansion from configs (e.g., "Local Storage" config)
+	return baseStorage + (storage.expand ?? 0);
 };
 
 export const getStorageInfo = (

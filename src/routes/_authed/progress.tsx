@@ -294,7 +294,7 @@ function RouteComponent() {
 					offeredConfigs={offeredConfigs}
 					reductionCost={reductionCost}
 					isOpen={dailyPoll.hasAnswered && activeRun.shopSkippedDate !== today}
-					storageBonus={storage.bonus}
+					storageBonus={storage.skipBonus}
 				/>
 				<section>
 					<h3 className="text-3xl">Your active configs</h3>
