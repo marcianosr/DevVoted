@@ -159,6 +159,7 @@ BUGS:
 [] Consider poll rating: very easy to very hard
 [] Think of what winners do next
 [] Restore Next.js polls
+[] Loading states - some stuff takes too long
 [x] More community stats
 
     [x] Who voted on the poll of today?
@@ -246,7 +247,7 @@ BUGS:
 [] Allow endless runs
 [] Fixen todo warnings eslint
 [] Starring a poll
-[] Add explanation field to poll (shown after answering)
+[x] Add explanation field to poll (shown after answering)
 [] Fix "deflate" config
 [] Show partial correct polls in list of progress
 [x] Tan stack "start" instead of "query" in footer

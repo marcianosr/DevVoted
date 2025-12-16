@@ -285,7 +285,7 @@ function RouteComponent() {
 					isOpen={dailyPoll.hasAnswered && activeRun.shopSkippedDate !== today}
 					storageBonus={storage.skipBonus}
 				/>
-				<section>
+				<section className="overflow-hidden">
 					<h3 className="text-3xl">Your active configs</h3>
 					<div className="text-sm text-gray-400">
 						<span>Used: </span>
@@ -296,17 +296,19 @@ function RouteComponent() {
 							</div>
 						)}
 					</div>
-					<ul className="flex gap-4">
+					<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory max-w-100 px-4">
 						{activeConfigs.length === 0 ? (
 							<p className="text-gray-400">No active configs installed</p>
 						) : (
 							activeConfigs.map((config) => (
-								<ActiveCard
-									key={config.id}
-									config={config}
-									onDeinstall={onDeinstallConfig}
-									disabled={!dailyPoll.hasAnswered}
-								/>
+								<li key={config.id} className="shrink-0 snap-start">
+									<ActiveCard
+										key={config.id}
+										config={config}
+										onDeinstall={onDeinstallConfig}
+										disabled={!dailyPoll.hasAnswered}
+									/>
+								</li>
 							))
 						)}
 					</ul>
