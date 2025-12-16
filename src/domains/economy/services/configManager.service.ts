@@ -48,7 +48,7 @@ export const getStorageInfo = (
 	// Calculate effective storage limit with bonuses from configs
 	const effectiveStorageLimit = calculateEffectiveStorageLimit(run);
 
-	const storageUsed = configsStorage + rerollsStorage;
+	const storageUsed = configsStorage + rerollsStorage + run.deinstallPenalty;
 	const storageAvailable = effectiveStorageLimit - storageUsed;
 	const usagePercentage = getStorageUsagePercentage(
 		storageUsed,

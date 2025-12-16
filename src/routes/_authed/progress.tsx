@@ -58,8 +58,6 @@ export const Route = createFileRoute("/_authed/progress")({
 
 		const currentGate = getCurrentGate(pollsSeen, gates);
 
-		console.info("Loader calculated currentGate:", currentGate);
-
 		const configEffects = applyEffects(
 			{
 				poll: pollResponse.data.poll,
@@ -218,7 +216,11 @@ function RouteComponent() {
 
 	const onDeinstallConfig = (config: Config) => {
 		deinstallConfigMutation.mutate({
-			data: { configIds: [config.id], runId: activeRun.id, date: today },
+			data: {
+				configIds: [config.id],
+				runId: activeRun.id,
+				date: today,
+			},
 		});
 	};
 
@@ -233,21 +235,8 @@ function RouteComponent() {
 					<div className="space-y-4">
 						<h3 className="text-xl">Gate Progress</h3>
 						{gates.slice(0, currentGate.gate).map((gate) => {
-							console.info(
-								"Rendering gate:",
-								gate.gate,
-								"currentGate:",
-								currentGate.gate
-							);
 							const status = getGateStatus(gate.gate, currentGate.gate);
 							const isCurrent = gate.gate === currentGate.gate;
-
-							console.info(
-								"Rendering gate:",
-								gate.gate,
-								"isCurrent:",
-								isCurrent
-							);
 
 							return (
 								<details

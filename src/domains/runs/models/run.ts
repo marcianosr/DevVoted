@@ -25,6 +25,7 @@ export type Run = {
 	createdAt: Date;
 	updatedAt: Date | null;
 	categoryCoverage: RunCategoryCoverage[];
+	deinstallPenalty: number;
 };
 
 export type RunRecord = InferSelectModel<typeof runsTable>;
@@ -52,6 +53,7 @@ export const runToDTO = (
 		updatedAt: record.updated_at,
 		categoryCoverage,
 		completionReason: record.completion_reason,
+		deinstallPenalty: record.deinstall_penalty,
 	};
 };
 
@@ -74,6 +76,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
 		completion_reason: dto.completionReason || null,
+		deinstall_penalty: dto.deinstallPenalty || 0,
 	};
 };
 
@@ -107,6 +110,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		createdAt: now,
 		updatedAt: now,
 		categoryCoverage: [],
+		deinstallPenalty: 0,
 		...partial,
 	};
 };
@@ -132,6 +136,7 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		createdAt: new Date("2024-01-01T00:00:00Z"),
 		updatedAt: new Date("2024-01-01T00:00:00Z"),
 		categoryCoverage: [],
+		deinstallPenalty: 0,
 		...overrides,
 	};
 };
@@ -157,6 +162,7 @@ export const createMockRunRecord = (
 		finished_at: null,
 		created_at: new Date("2024-01-01T00:00:00Z"),
 		updated_at: new Date("2024-01-01T00:00:00Z"),
+		deinstall_penalty: 0,
 		...overrides,
 	};
 };

@@ -274,6 +274,7 @@ export const runsTable = pgTable("runs", {
 	reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
 	shop_skipped_date: varchar("shop_skipped_date", { length: 10 }), // Date when shop was skipped "YYYY-MM-DD"
 	shop_interacted_date: varchar("shop_interacted_date", { length: 10 }), // Date when user interacted with shop
+	deinstall_penalty: integer("deinstall_penalty").notNull().default(0), // Storage penalty from deinstalling configs
 	completion_reason: varchar("completion_reason", { length: 50 }), // Reason for run completion: "victory", "threshold_not_met", "wrong_answer", "manual_break_off"
 	started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
 	finished_at: timestamp("finished_at", { withTimezone: true }),

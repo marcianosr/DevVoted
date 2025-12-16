@@ -136,7 +136,7 @@ BUGS:
 [x] Fail a run?
 [x] Answers that contain code should be formatted well
 [x] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
-[o] UI (?) bug in gates . First poll in run shows "not answered" even when answered
+[x] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 [x] Slow "See your run progress and shop →" button
 [x] Community stats query showing wrong data (7 votes?)
 [x] Investigate slow loading times
@@ -145,11 +145,9 @@ BUGS:
 [x] Link to github issues for bug reports
 
 
-
-
 **Game play**
 [] Return on investment config - When a config is uninstalled it adds (half of it) as junk to storage. When installing "this" config, you'll get freed up from the junk. So everytime you uninstall, holding this config, you get half of the uninstall cost back as free storage again
-[] Half the price of uninstalling, adding "junk" to storage [idea]
+[o] Half the price of uninstalling, adding "junk" to storage [idea]
 [] Vote for the next category (poll) [idea]
   - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
 [x] Make gates harder - they are too simple
@@ -160,8 +158,6 @@ BUGS:
 [] Make sure the rules on start screen is clear
 [] Consider poll rating: very easy to very hard
 [] Think of what winners do next
-[] Add polls!!
-[] Tooltips for critical flow
 [] Restore Next.js polls
 [x] More community stats
 
@@ -170,7 +166,6 @@ BUGS:
     [x] Fastest to answer
     [] Correct/incorrect for each user
     [] Users not answered who are in a run
-
 
 
 **Mobile responsiviness**
@@ -186,19 +181,19 @@ BUGS:
 [] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
 [] Upgrades of packages
 
-
 **Bugs**
-[] Local storage config adds insane amounts of storage when skipping shop
+[x] Local storage config adds insane amounts of storage when skipping shop
+[] Shop resets when uninstalling a config
 [] Show new shop items every new poll/day
 [x] Fix text encoding issues in options (e.g +, -, <, >, etc)
 [] Update explanation for todays poll with Matthijs thought pattern of Object.values
-[] Shop resets when uninstalling a config
-[] Edit poll page research: doesn't save changes and somehow "fucked" up the poll and response id [Critical]
+[x] Edit poll page research: doesn't save changes and somehow "fucked" up the poll and response id [Critical]
 [] Codeblocks are sometimes still white in dark mode
 [] Bug in submitting poll larger than 10 selected options
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
 [] Fix button clicking area
 [] When not logged in, the start page shouldn't show the start run button, but a login button
+[] Remove login input fields on production
 [] On game over, the start run button doesn't work anymore
 
 
