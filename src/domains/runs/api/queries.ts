@@ -42,9 +42,8 @@ export const createRunForUser = async (
 ) => {
 	return await db.transaction(async (tx) => {
 		// Get current season ID for the new run
-		const { getSeasonForNewRun } = await import(
-			"~/domains/seasons/services/seasonService"
-		);
+		const { getSeasonForNewRun } =
+			await import("~/domains/seasons/services/seasonService");
 		const seasonId = await getSeasonForNewRun();
 
 		const [runRecord] = await tx
@@ -474,9 +473,8 @@ export const processRerollShop = async (runId: number, date?: string) => {
 
 		// TODO: Should we import it like this?
 		// Calculate the cost of this specific reroll
-		const { calculateRerollCost } = await import(
-			"~/domains/economy/services/reroll.service"
-		);
+		const { calculateRerollCost } =
+			await import("~/domains/economy/services/reroll.service");
 		const rerollCost = calculateRerollCost(runRecord.rerolls);
 
 		// Update the run with incremented reroll counts and storage used

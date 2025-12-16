@@ -59,9 +59,8 @@ const createSeasonFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
-		const { createSeason } = await import(
-			"~/domains/seasons/services/seasonService"
-		);
+		const { createSeason } =
+			await import("~/domains/seasons/services/seasonService");
 
 		try {
 			const season = await createSeason({
@@ -86,9 +85,8 @@ const startSeasonFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
-		const { startSeason } = await import(
-			"~/domains/seasons/services/seasonService"
-		);
+		const { startSeason } =
+			await import("~/domains/seasons/services/seasonService");
 
 		try {
 			const season = await startSeason(data.seasonId);
@@ -107,9 +105,8 @@ const finishSeasonFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
-		const { finishSeason } = await import(
-			"~/domains/seasons/services/seasonService"
-		);
+		const { finishSeason } =
+			await import("~/domains/seasons/services/seasonService");
 
 		try {
 			const season = await finishSeason(data.seasonId);
@@ -124,9 +121,8 @@ const finishSeasonFn = createServerFn({ method: "POST" })
 	});
 
 const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
-	const { getAllSeasons, getCurrentSeason } = await import(
-		"~/domains/seasons/services/seasonService"
-	);
+	const { getAllSeasons, getCurrentSeason } =
+		await import("~/domains/seasons/services/seasonService");
 	const { db } = await import("~/database/db");
 	const {
 		pollsTable,
