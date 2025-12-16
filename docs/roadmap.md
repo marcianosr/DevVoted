@@ -146,11 +146,11 @@ BUGS:
 
 
 **Game play**
-[] Return on investment config - When a config is uninstalled it adds (half of it) as junk to storage. When installing "this" config, you'll get freed up from the junk. So everytime you uninstall, holding this config, you get half of the uninstall cost back as free storage again
-[o] Half the price of uninstalling, adding "junk" to storage [idea]
+[x] Half the price of uninstalling, adding "junk" to storage [idea]
 [] Vote for the next category (poll) [idea]
   - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
 [x] Make gates harder - they are too simple
+[] Return on investment config - When a config is uninstalled it adds (half of it) as junk to storage. When installing "this" config, you'll get freed up from the junk. So everytime you uninstall, holding this config, you get half of the uninstall cost back as free storage again
 [] More leaderboard variants
   - also show current gate
   - All-time leaderboard (best runs)
@@ -179,7 +179,7 @@ BUGS:
 
 **Maintainability**
 [] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
-[] Upgrades of packages
+[x] Upgrades of packages
 
 **Bugs**
 [x] Local storage config adds insane amounts of storage when skipping shop
@@ -189,7 +189,7 @@ BUGS:
 [] Update explanation for todays poll with Matthijs thought pattern of Object.values
 [x] Edit poll page research: doesn't save changes and somehow "fucked" up the poll and response id [Critical]
 [] Codeblocks are sometimes still white in dark mode
-[] Bug in submitting poll larger than 10 selected options
+[x] Bug in submitting poll larger than 10 selected options
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
 [] Fix button clicking area
 [] When not logged in, the start page shouldn't show the start run button, but a login button

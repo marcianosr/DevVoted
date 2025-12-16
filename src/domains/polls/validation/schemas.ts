@@ -5,8 +5,7 @@ export const pollSubmissionSchema = z.object({
 	pollId: z.number().int().positive("Poll ID must be a positive integer"),
 	selectedOptions: z
 		.array(z.string().min(1, "Option ID cannot be empty"))
-		.min(1, "At least one option must be selected")
-		.max(10, "Cannot select more than 10 options"),
+		.min(1, "At least one option must be selected"),
 	userId: z.string().uuid("User ID must be a valid UUID"),
 });
 
