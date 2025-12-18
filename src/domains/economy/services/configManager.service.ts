@@ -245,7 +245,8 @@ export const getRandomConfigs = ({
 	configs: Config[];
 	count: number;
 }): Config[] => {
-	const seed = hashString(`${run.id}-${run.totalRerolls}`);
+	const today = new Date().toISOString().split("T")[0];
+	const seed = hashString(`${run.id}-${run.totalRerolls}-${today}`);
 	const random = createSeededRandom(seed);
 
 	const availableConfigs = configs.filter((c) => !hasConfig(run, c.id));
