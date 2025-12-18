@@ -160,6 +160,18 @@ BUGS:
 [] Think of what winners do next
 [] Restore Next.js polls
 [] Loading states - some stuff takes too long
+[] Add labels to the coverage breakdown
+  +1.3% coverage
+    Base:    1.2%
+    Streak:  +0%
+    Configs: +0.1%
+[]Add a one-time shop tutorial tooltip
+   First time visiting shop: "Welcome to the Package Manager! You have 1 MB of storage to install configs. Each config uses storage and boosts your coverage. Choose wisely!"
+[] Add a mini status bar to the poll page
+  ┌─────────────────────────────────────────┐
+  │ 🎯 Gate #1: Need 2% in any category     │
+  │ Git: 1.3% ████░░░░░░ | Streak: ⚡1      │
+  └─────────────────────────────────────────┘
 [x] More community stats
 
     [x] Who voted on the poll of today?
@@ -172,7 +184,7 @@ BUGS:
 **Mobile responsiviness**
 [] Sticky button "See your run progress and shop →" (mobile atleast)
 [] Scroll to top on progress pag (on mobile)
-[] Mobile text bigger (question)
+[x] Mobile text bigger (question)
 [] Responsiveness in general (see matthijs' feedback)
 
 **Anayltics**
@@ -183,9 +195,11 @@ BUGS:
 [x] Upgrades of packages
 
 **Bugs**
+[] Active configs are small on desktop
+[] Shop changes when selling/installing configs (shouldn't)
 [x] Local storage config adds insane amounts of storage when skipping shop
 [] Shop resets when uninstalling a config
-[] Show new shop items every new poll/day
+[x] Show new shop items every new poll/day
 [x] Fix text encoding issues in options (e.g +, -, <, >, etc)
 [] Update explanation for todays poll with Matthijs thought pattern of Object.values
 [x] Edit poll page research: doesn't save changes and somehow "fucked" up the poll and response id [Critical]
@@ -223,6 +237,7 @@ BUGS:
 [] Search by question in admin panel
 [] Add "Architecture" category (pallet)
 [] Add "AI" category
+[] What happens when you have 100% coverage in a category?
 [] Basic "share" mechanism - what to share?
 [] Think about "spaces" - is everything one space or is Codam, EO a separate space like Slack?
 [x] Provide KB's when skipping the shop
