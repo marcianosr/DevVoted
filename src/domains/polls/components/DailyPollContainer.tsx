@@ -23,7 +23,6 @@ import type { Run } from "~/domains/runs/models/run";
 import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
-import { PrimaryButton } from "~/ui/PrimaryButton";
 
 export const getScoreBreakdown = createServerFn({ method: "GET" })
 	.inputValidator(
@@ -181,9 +180,14 @@ const DailyPollContainer = ({
 							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
 						/>
-						<PrimaryButton className="mt-4">
-							<Link to={`/progress`}>See your run progress and shop →</Link>
-						</PrimaryButton>
+						<div className="sticky bottom-0 bg-zinc-900 flex justify-center p-4 -mx-4 px-4">
+							<Link
+								to="/progress"
+								className="border-solid border-2 text-white text-sm px-3 py-2 w-full text-center btn-color-cycle"
+							>
+								See your run progress and shop →
+							</Link>
+						</div>
 					</>
 				) : (
 					<PollOptionsForm

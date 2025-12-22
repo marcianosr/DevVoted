@@ -155,18 +155,18 @@ BUGS:
   - also show current gate
   - All-time leaderboard (best runs)
 [o] Expand on low hanging configs
-[] Make sure the rules on start screen is clear
+[x] Make sure the rules on start screen is clear
 [] Consider poll rating: very easy to very hard
 [] Think of what winners do next
 [] Restore Next.js polls
 [] Loading states - some stuff takes too long
 [] Leaderboard showing all categories and gates of players to each other
-[] Add labels to the coverage breakdown
+[x] Add labels to the coverage breakdown
   +1.3% coverage
     Base:    1.2%
     Streak:  +0%
     Configs: +0.1%
-[]Add a one-time shop tutorial tooltip
+[] Add a one-time shop tutorial tooltip
    First time visiting shop: "Welcome to the Package Manager! You have 1 MB of storage to install configs. Each config uses storage and boosts your coverage. Choose wisely!"
 [x] Add a mini status bar to the poll page
   ┌─────────────────────────────────────────┐
@@ -183,7 +183,7 @@ BUGS:
 
 
 **Mobile responsiviness**
-[] Sticky button "See your run progress and shop →" (mobile atleast)
+[x] Sticky button "See your run progress and shop →" (mobile atleast)
 [] Scroll to top on progress pag (on mobile)
 [x] Mobile text bigger (question)
 [] Responsiveness in general (see matthijs' feedback)
