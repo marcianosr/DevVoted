@@ -160,6 +160,7 @@ BUGS:
 [] Think of what winners do next
 [] Restore Next.js polls
 [] Loading states - some stuff takes too long
+[] Leaderboard showing all categories and gates of players to each other
 [] Add labels to the coverage breakdown
   +1.3% coverage
     Base:    1.2%
@@ -167,7 +168,7 @@ BUGS:
     Configs: +0.1%
 []Add a one-time shop tutorial tooltip
    First time visiting shop: "Welcome to the Package Manager! You have 1 MB of storage to install configs. Each config uses storage and boosts your coverage. Choose wisely!"
-[] Add a mini status bar to the poll page
+[x] Add a mini status bar to the poll page
   ┌─────────────────────────────────────────┐
   │ 🎯 Gate #1: Need 2% in any category     │
   │ Git: 1.3% ████░░░░░░ | Streak: ⚡1      │
@@ -209,7 +210,17 @@ BUGS:
 [] Fix button clicking area
 [] When not logged in, the start page shouldn't show the start run button, but a login button
 [] Remove login input fields on production
-[] On game over, the start run button doesn't work anymore
+[] When answering a question poll, and the game is over:
+  - [] the start run button doesn't work anymore
+  - [] Should show also the gate you ended in the run summary
+  - [] Somehow the time of answering is weirded: it says -2min and -37 sec?
+  - [] I answered it twice for some reason
+  - [] you should be allowed to reanswer
+  - [] check: progress page says you dindt answer the last poll, but you did
+
+
+
+
 
 
 ----- GO LIVE -----

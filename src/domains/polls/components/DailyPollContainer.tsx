@@ -5,7 +5,6 @@ import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { PollQuestionDisplay } from "~/domains//polls/components/PollQuestionDisplay";
 import { ApplyEffects } from "~/domains/configs/data/configs";
 import {
 	getCommunityStatsHandler,
@@ -15,10 +14,13 @@ import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm";
+import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay";
 import SelectedOptionsSummary from "~/domains/polls/components/SelectedOptionsSummary";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
+import { GateProgressIndicator } from "~/domains/runs/components/GateProgressIndicator";
 import type { Run } from "~/domains/runs/models/run";
+import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { PrimaryButton } from "~/ui/PrimaryButton";
@@ -72,6 +74,7 @@ type DailyPollContainerProps = {
 	score: ScoreCalculation;
 	configEffects: ApplyEffects;
 	creatorDisplayName: string | null;
+	currentGate: GateDefinition;
 };
 
 const DailyPollContainer = ({
@@ -82,6 +85,8 @@ const DailyPollContainer = ({
 	score,
 	configEffects,
 	creatorDisplayName,
+	activeRun,
+	currentGate,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -142,14 +147,23 @@ const DailyPollContainer = ({
 	return (
 		<section>
 			<header className="border-b border-theme py-4 mb-8">
-				<p className="text-4xl text-theme">{category.name}</p>
-				<p>
-					#{poll.pollNumber} · Opened at{" "}
-					<time dateTime={poll.updatedAt?.toISOString()}>
-						{poll.updatedAt?.toDateString()}
-					</time>
-				</p>
-				<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
+				<section className="flex justify-between flex-wrap gap-4">
+					<div className="flex flex-col">
+						<p className="text-4xl text-theme">{category.name}</p>
+						<p>
+							#{poll.pollNumber} · Opened at{" "}
+							<time dateTime={poll.updatedAt?.toISOString()}>
+								{poll.updatedAt?.toDateString()}
+							</time>
+						</p>
+						<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
+					</div>
+
+					<GateProgressIndicator
+						gate={currentGate}
+						categoryCoverage={activeRun.categoryCoverage}
+					/>
+				</section>
 			</header>
 			<PollQuestionDisplay poll={poll} />
 			{poll.codeSandboxExample && (

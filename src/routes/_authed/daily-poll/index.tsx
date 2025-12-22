@@ -2,10 +2,12 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import Content from "~/components/Content";
 import { applyEffects } from "~/domains/configs/data/configs";
-import { getDailyPoll } from "~/domains/polls/api/polls";
+import { getDailyPoll, getPollsSeenInRun } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
 } from "~/domains/polls/components/DailyPollContainer";
+import { CHALLENGE_MODES } from "~/domains/runs/data/challengeModes";
+import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 
 // const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
@@ -34,6 +36,7 @@ const DailyPoll: React.FC = () => {
 		creatorDisplayName,
 		score,
 		configEffects,
+		currentGate,
 	} = Route.useLoaderData();
 
 	// Fetch active run category XP for real-time progress
@@ -69,6 +72,7 @@ const DailyPoll: React.FC = () => {
 				score={score}
 				configEffects={configEffects}
 				creatorDisplayName={creatorDisplayName}
+				currentGate={currentGate}
 			/>
 
 			{/* TODO: Refactor in own component */}
@@ -128,6 +132,15 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			throw new Error("No active run");
 		}
 
+		const pollsSeenResponse = await getPollsSeenInRun({
+			data: { runId: activeRun.data.id },
+		});
+
+		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
+		const challengeMode = CHALLENGE_MODES[activeRun.data.challengeModeId];
+		const gates = challengeMode.gates;
+		const currentGate = getCurrentGate(pollsSeen, gates);
+
 		const pollResponse = await getDailyPoll({
 			data: { runId: activeRun.data.id },
 		});
@@ -162,6 +175,7 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 				},
 				activeRun.data.activeConfigIds
 			),
+			currentGate,
 		};
 	},
 	pendingComponent: () => (
