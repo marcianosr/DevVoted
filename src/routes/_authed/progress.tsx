@@ -296,7 +296,7 @@ function RouteComponent() {
 							</div>
 						)}
 					</div>
-					<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory max-w-100 px-4">
+					<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-0 py-2">
 						{activeConfigs.length === 0 ? (
 							<p className="text-gray-400">No active configs installed</p>
 						) : (
