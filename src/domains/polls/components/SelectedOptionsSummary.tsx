@@ -85,25 +85,32 @@ const SelectedOptionsSummary = ({
 					<section className="mt-4 py-8 border-t border-theme space-y-2">
 						<h3 className="text-4xl">Score</h3>
 						{score.breakdown.earnedCoverage > 0 ? (
-							<ul className="text-xl list-disc px-4">
-								<li>
-									Coverage earned:{" "}
-									<span className="text-green-400">
-										+{score?.breakdown.earnedCoverage}% coverage
-									</span>
-									<small className="ml-4 text-green-400 ">
-										({score?.breakdown.baseCoverage} +{" "}
-										{score?.breakdown.configBonus} +{" "}
-										{score?.breakdown.streakBonus})
-									</small>
+							<section>
+								<ul className="ml-4 text-green-400 list-disc border-b border-white w-fit py-2">
+									<li>Base score: +{score?.breakdown.baseCoverage}%</li>
+									<li>Config bonus: +{score?.breakdown.configBonus}%</li>
+									<li>Streak bonus: +{score?.breakdown.streakBonus}%</li>
+								</ul>
+								<p className="text-3xl text-green-400 py-2 pb-6">
+									+{score?.breakdown.earnedCoverage}%{" "}
+									<span className="text-lg">coverage earned</span>
+								</p>
+
+								<ul className="text-xl list-disc px-4">
+									<li>Correct streak: ⚡️ {score?.newStreak}</li>
+									<li>Total polls answered: {score?.newPollsAnswered}</li>
+								</ul>
+							</section>
+						) : (
+							<ul>
+								<li className="text-red-400 text-xl">
+									Coverage score: {score?.breakdown.earnedCoverage}%
 								</li>
-								<li>Correct streak: ⚡️ {score?.newStreak}</li>
+								<li className="text-red-400 text-xl">
+									Correct streak: ⚡️ {score?.newStreak}
+								</li>
 								<li>Total polls answered: {score?.newPollsAnswered}</li>
 							</ul>
-						) : (
-							<p className="text-red-400 text-xl">
-								Coverage score: {score?.breakdown.earnedCoverage}%
-							</p>
 						)}
 					</section>
 				)}
