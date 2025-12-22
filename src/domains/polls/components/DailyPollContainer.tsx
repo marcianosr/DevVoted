@@ -180,7 +180,7 @@ const DailyPollContainer = ({
 							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
 						/>
-						<div className="sticky bottom-0 bg-zinc-900 flex justify-center p-4 -mx-4 px-4">
+						<div className="fixed bottom-0 left-0 right-0 bg-zinc-900 flex justify-center p-4">
 							<Link
 								to="/progress"
 								className="border-solid border-2 text-white text-sm px-3 py-2 w-full text-center btn-color-cycle"
