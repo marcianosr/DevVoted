@@ -184,19 +184,18 @@ BUGS:
 
 **Mobile responsiviness**
 [x] Sticky button "See your run progress and shop →" (mobile atleast)
-[] Scroll to top on progress pag (on mobile)
 [x] Mobile text bigger (question)
 [] Responsiveness in general (see matthijs' feedback)
 
 **Anayltics**
-[] config purchase analytics
+[] Config purchase analytics
 
 **Maintainability**
 [] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
 [x] Upgrades of packages
 
 **Bugs**
-[] Active configs are small on desktop
+[x] Active configs are small on desktop
 [] Shop changes when selling/installing configs (shouldn't)
 [x] Local storage config adds insane amounts of storage when skipping shop
 [] Shop resets when uninstalling a config
@@ -207,7 +206,7 @@ BUGS:
 [] Codeblocks are sometimes still white in dark mode
 [x] Bug in submitting poll larger than 10 selected options
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
-[] Fix button clicking area
+[x] Fix button clicking area
 [] When not logged in, the start page shouldn't show the start run button, but a login button
 [] Remove login input fields on production
 [] When answering a question poll, and the game is over:

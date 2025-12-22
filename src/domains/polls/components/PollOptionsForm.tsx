@@ -81,8 +81,13 @@ const PollOptionsForm = ({
 					</>
 				)}
 			</Field>
-			<PrimaryButton type="submit" disabled={mutation.isPending}>
-				{mutation.isPending ? "Submitting..." : "Submit answers"}
+			<PrimaryButton
+				type="submit"
+				disabled={mutation.isPending || mutation.isSuccess}
+			>
+				{mutation.isPending || mutation.isSuccess
+					? "Submitting..."
+					: "Submit answers"}
 			</PrimaryButton>
 		</form>
 	);
