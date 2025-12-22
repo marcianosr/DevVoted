@@ -104,7 +104,7 @@ const SelectedOptionsSummary = ({
 						) : (
 							<ul>
 								<li className="text-red-400 text-xl">
-									Coverage score: {score?.breakdown.earnedCoverage}%
+									Coverage score: -{score?.breakdown.earnedCoverage}%
 								</li>
 								<li className="text-red-400 text-xl">
 									Correct streak: ⚡️ {score?.newStreak}
