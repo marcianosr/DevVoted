@@ -196,6 +196,8 @@ BUGS:
 
 **Bugs**
 [x] Active configs are small on desktop
+[] Wrong score is still reflected in score breakdown and leaderboard
+[] Update poll with "month" answer
 [] Shop changes when selling/installing configs (shouldn't)
 [x] Local storage config adds insane amounts of storage when skipping shop
 [] Shop resets when uninstalling a config
@@ -226,10 +228,12 @@ BUGS:
 
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
-[] Show polls when beyond CI gates
+[] Show polls when beyond CI gates in /progress
+[] Create "groups" - e.g., Kabisa, Codam, EO, Open Source Contributors, etc
 [] Currently in tooltip: show your response time  - how long did it take to answer
 [x] Admin panel for polls
 [x] Allow players to suggest polls
+[x] Show edit poll link on daily poll for admins
 [] Create more polls also for backend categories
 [] Unlocking system
 [] Content discovery show on profile
@@ -274,6 +278,7 @@ BUGS:
 [] Starring a poll
 [x] Add explanation field to poll (shown after answering)
 [] Fix "deflate" config
+[] Leaderboard: show arrow up/down when position changed
 [] Show partial correct polls in list of progress
 [x] Tan stack "start" instead of "query" in footer
 [x] Include footer everywhere

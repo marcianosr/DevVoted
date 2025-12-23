@@ -34,6 +34,7 @@ const DailyPoll: React.FC = () => {
 		hasAnswered,
 		selectedOptions,
 		creatorDisplayName,
+		isAdmin,
 		score,
 		configEffects,
 		currentGate,
@@ -73,6 +74,7 @@ const DailyPoll: React.FC = () => {
 				configEffects={configEffects}
 				creatorDisplayName={creatorDisplayName}
 				currentGate={currentGate}
+				isAdmin={isAdmin}
 			/>
 
 			{/* TODO: Refactor in own component */}
@@ -165,6 +167,7 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			hasAnswered: pollResponse.data.hasAnswered,
 			selectedOptions: pollResponse.data.selectedOptions,
 			creatorDisplayName: pollResponse.data.creatorDisplayName,
+			isAdmin: pollResponse.isAdmin,
 			score,
 			configEffects: applyEffects(
 				{

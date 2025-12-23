@@ -74,6 +74,7 @@ type DailyPollContainerProps = {
 	configEffects: ApplyEffects;
 	creatorDisplayName: string | null;
 	currentGate: GateDefinition;
+	isAdmin: boolean;
 };
 
 const DailyPollContainer = ({
@@ -86,6 +87,7 @@ const DailyPollContainer = ({
 	creatorDisplayName,
 	activeRun,
 	currentGate,
+	isAdmin,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -145,6 +147,17 @@ const DailyPollContainer = ({
 
 	return (
 		<section>
+			{isAdmin && (
+				<div className="mb-4 pb-2 border-b border-gray-700">
+					<Link
+						to="/polls/$pollId/edit"
+						params={{ pollId: String(poll.id) }}
+						className="text-primary hover:text-primary/80 hover:underline text-sm"
+					>
+						✏️ Edit Poll
+					</Link>
+				</div>
+			)}
 			<header className="border-b border-theme py-4 mb-8">
 				<section className="flex justify-between flex-wrap gap-4">
 					<div className="flex flex-col">
