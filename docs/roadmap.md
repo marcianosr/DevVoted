@@ -161,11 +161,7 @@ BUGS:
 [] Restore Next.js polls
 [] Loading states - some stuff takes too long
 [] Leaderboard showing all categories and gates of players to each other
-[x] Add labels to the coverage breakdown
-  +1.3% coverage
-    Base:    1.2%
-    Streak:  +0%
-    Configs: +0.1%
+[x] Add clarifying labels to the coverage breakdown
 [] Add a one-time shop tutorial tooltip
    First time visiting shop: "Welcome to the Package Manager! You have 1 MB of storage to install configs. Each config uses storage and boosts your coverage. Choose wisely!"
 [x] Add a mini status bar to the poll page
@@ -199,18 +195,15 @@ BUGS:
 [] Wrong score is still reflected in score breakdown and leaderboard
 [] Update poll with "month" answer
 [] Shop changes when selling/installing configs (shouldn't)
-[x] Local storage config adds insane amounts of storage when skipping shop
 [] Shop resets when uninstalling a config
+[x] Local storage config adds insane amounts of storage when skipping shop
 [x] Show new shop items every new poll/day
 [x] Fix text encoding issues in options (e.g +, -, <, >, etc)
-[] Update explanation for todays poll with Matthijs thought pattern of Object.values
 [x] Edit poll page research: doesn't save changes and somehow "fucked" up the poll and response id [Critical]
-[] Codeblocks are sometimes still white in dark mode
 [x] Bug in submitting poll larger than 10 selected options
-[] Handle poll status "open" - not used as indicaor that the poll is open anymore
 [x] Fix button clicking area
-[] When not logged in, the start page shouldn't show the start run button, but a login button
-[] Remove login input fields on production
+[x] When not logged in, the start page shouldn't show the start run button, but a login button
+[x] Remove login input fields on production
 [] When answering a question poll, and the game is over:
   - [] the start run button doesn't work anymore
   - [] Should show also the gate you ended in the run summary
@@ -218,6 +211,9 @@ BUGS:
   - [] I answered it twice for some reason
   - [] you should be allowed to reanswer
   - [] check: progress page says you dindt answer the last poll, but you did
+[] Update explanation for todays poll with Matthijs thought pattern of Object.values
+[] Codeblocks are sometimes still white in dark mode
+[] Handle poll status "open" - not used as indicaor that the poll is open anymore
 
 
 
