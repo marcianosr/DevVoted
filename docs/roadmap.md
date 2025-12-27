@@ -194,8 +194,8 @@ BUGS:
 [x] Active configs are small on desktop
 [] Wrong score is still reflected in score breakdown and leaderboard
 [] Update poll with "month" answer
-[] Shop changes when selling/installing configs (shouldn't)
-[] Shop resets when uninstalling a config
+[?] Shop changes when selling/installing configs (shouldn't)
+[?] Shop resets when uninstalling a config
 [x] Local storage config adds insane amounts of storage when skipping shop
 [x] Show new shop items every new poll/day
 [x] Fix text encoding issues in options (e.g +, -, <, >, etc)

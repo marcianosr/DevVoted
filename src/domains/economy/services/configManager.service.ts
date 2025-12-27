@@ -249,6 +249,17 @@ export const getRandomConfigs = ({
 	const seed = hashString(`${run.id}-${run.totalRerolls}-${today}`);
 	const random = createSeededRandom(seed);
 
-	const availableConfigs = configs.filter((c) => !hasConfig(run, c.id));
-	return performWeightedSelection(availableConfigs, count, random);
+	// Select more than needed from FULL pool to ensure we have enough after filtering
+	// This keeps selection stable regardless of which configs are already owned
+	const selectionPoolSize = Math.min(configs.length, count * 3);
+	const selectedFromFullPool = performWeightedSelection(
+		configs,
+		selectionPoolSize,
+		random
+	);
+
+	// Filter out already-owned configs and take only what we need
+	return selectedFromFullPool
+		.filter((config) => !hasConfig(run, config.id))
+		.slice(0, count);
 };
