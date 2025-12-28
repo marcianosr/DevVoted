@@ -269,7 +269,7 @@ describe("configStorage", () => {
 
 			for (let i = 0; i < iterations; i++) {
 				const result = getRandomConfigs({
-					run: createMockRun({ activeConfigIds: [] }),
+					run: createMockRun({ id: i, activeConfigIds: [] }),
 					configs,
 					count: 1,
 				});
