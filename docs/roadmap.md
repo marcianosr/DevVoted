@@ -146,11 +146,12 @@ BUGS:
 
 
 **Game play**
+[] Show gate status good/failed based on polls answers
+[]Show indetermined state on multiple choice
 [x] Half the price of uninstalling, adding "junk" to storage [idea]
 [] Vote for the next category (poll) [idea]
   - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
 [x] Make gates harder - they are too simple
-[] Return on investment config - When a config is uninstalled it adds (half of it) as junk to storage. When installing "this" config, you'll get freed up from the junk. So everytime you uninstall, holding this config, you get half of the uninstall cost back as free storage again
 [] More leaderboard variants
   - also show current gate
   - All-time leaderboard (best runs)
@@ -191,6 +192,8 @@ BUGS:
 [x] Upgrades of packages
 
 **Bugs**
+[] x is shown even when requirements are met in mini header
+[] Poll header showing countdown of next poll not in sync. Make sure the poll is changing at 0:00
 [x] Active configs are small on desktop
 [] Wrong score is still reflected in score breakdown and leaderboard
 [] Update poll with "month" answer
@@ -214,6 +217,8 @@ BUGS:
 [] Update explanation for todays poll with Matthijs thought pattern of Object.values
 [] Codeblocks are sometimes still white in dark mode
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
+[] Date of opened poll isn't right
+
 
 
 
