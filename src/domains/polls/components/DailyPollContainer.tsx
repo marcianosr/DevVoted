@@ -108,8 +108,6 @@ const DailyPollContainer = ({
 					pollId: poll.id,
 				},
 			}),
-		retry: false,
-		enabled: hasAnswered,
 	});
 
 	const mutation = useMutation({
@@ -144,6 +142,8 @@ const DailyPollContainer = ({
 
 	// Use the submitted score if available (just answered), otherwise fall back to loader's score
 	const displayScore = submittedScore ?? score;
+
+	const showWhoPickedWhat = configEffects.showWhoPickedWhat ?? false;
 
 	return (
 		<section>
@@ -210,6 +210,7 @@ const DailyPollContainer = ({
 						effect={configEffects}
 						selectedOptions={selectedOptions}
 						mutation={mutation}
+						communityStats={showWhoPickedWhat ? (communityStats ?? null) : null}
 					/>
 				)}
 			</div>

@@ -226,6 +226,28 @@ export const configs: Config[] = [
 		priority: 100,
 		storageBonus: STORAGE_UNITS.KB * 60, // 60KB bonus storage
 	},
+	{
+		id: "includes-config",
+		name: ".includes",
+		image: "/configs/includes.png",
+		cost: STORAGE_UNITS.MB / 8,
+		description:
+			"Tells you if you selected at least one correct answer on multiple choice polls",
+		rarity: "rare",
+		effect: ["showCorrectOnMultipleChoice"],
+		priority: 100,
+	},
+	{
+		id: "telemetry-config",
+		name: "Telemetry",
+		image: "/configs/telemetry.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"Show answers chosen by others before answering a poll. Hover over to see who picked what.",
+		rarity: "uncommon",
+		effect: ["showWhoPickedWhat"],
+		priority: 100,
+	},
 ];
 
 /**
@@ -268,6 +290,8 @@ export type EffectOut = {
 	reductionCost?: number;
 	resetRebuild?: boolean;
 	extraSlot?: boolean;
+	countCorrect?: boolean;
+	showWhoPickedWhat?: boolean;
 };
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
@@ -282,6 +306,8 @@ export type ApplyEffects = {
 	reductionCost: number;
 	resetRebuild: boolean;
 	extraSlot: boolean;
+	countCorrect: boolean;
+	showWhoPickedWhat: boolean;
 };
 
 /**
@@ -499,6 +525,31 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+	showCorrectOnMultipleChoice: (
+		{ poll, options, run, hasAnswered },
+		_config
+	) => {
+		if (poll.answerType !== "multiple") {
+			return {
+				countCorrect: false,
+				view: { poll, options, run, hasAnswered },
+				meta: { notes: ["Not a multiple choice poll"] },
+			};
+		}
+
+		return {
+			countCorrect: options.some((o) => o.correct),
+			view: { poll, options, run, hasAnswered },
+			meta: { notes: ["Will show correct answers on multiple choice polls"] },
+		};
+	},
+	showWhoPickedWhat: ({ poll, options, run, hasAnswered }, _config) => {
+		return {
+			showWhoPickedWhat: true,
+			view: { poll, options, run, hasAnswered },
+			meta: { notes: ["Will show answers chosen by others"] },
+		};
+	},
 };
 
 /**
@@ -536,6 +587,8 @@ export function applyEffects(
 			reductionCost: 0,
 			resetRebuild: false,
 			extraSlot: false,
+			countCorrect: false,
+			showWhoPickedWhat: false,
 		};
 
 	const effects = activeConfigIds
@@ -596,6 +649,11 @@ export function applyEffects(
 				reductionCost: (acc.reductionCost ?? 0) + (out.reductionCost ?? 0),
 				resetRebuild: acc.resetRebuild || out.resetRebuild || false,
 				extraSlot: acc.extraSlot || out.extraSlot || false,
+				countCorrect:
+					(acc.countCorrect ?? false) || (out.countCorrect ?? false),
+				showWhoPickedWhat:
+					(acc.showWhoPickedWhat ?? false) || (out.showWhoPickedWhat ?? false),
+
 				meta: {
 					...acc.meta,
 					...(out.meta?.badges
@@ -615,6 +673,8 @@ export function applyEffects(
 			reductionCost: 0,
 			resetRebuild: false,
 			extraSlot: false,
+			countCorrect: false,
+			showWhoPickedWhat: false,
 		}
 	);
 }
