@@ -220,7 +220,7 @@ export const configs: Config[] = [
 		name: "No Deps",
 		image: "/configs/no-deps.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "×2 storage whem skipping the shop when held",
+		description: "×2 storage when skipping the shop when held",
 		rarity: "rare",
 		effect: ["bonusShopStorage"],
 		priority: 100,
