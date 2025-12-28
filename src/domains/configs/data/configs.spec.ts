@@ -109,6 +109,30 @@ describe("configs", () => {
 			expect(hotReloadConfig?.priority).toBe(50);
 		});
 
+		it("has valid properties for .includes config", () => {
+			const includesConfig = configs.find((c) => c.id === "includes-config");
+			expect(includesConfig).toBeDefined();
+			expect(includesConfig?.name).toBe(".includes");
+			expect(includesConfig?.effect).toEqual(["showCorrectOnMultipleChoice"]);
+			expect(includesConfig?.rarity).toBe("rare");
+			expect(includesConfig?.description).toContain(
+				"at least one correct answer"
+			);
+			expect(includesConfig?.priority).toBe(100);
+		});
+
+		it("has valid properties for telemetry config", () => {
+			const telemetryConfig = configs.find((c) => c.id === "telemetry-config");
+			expect(telemetryConfig).toBeDefined();
+			expect(telemetryConfig?.name).toBe("Telemetry");
+			expect(telemetryConfig?.effect).toEqual(["showWhoPickedWhat"]);
+			expect(telemetryConfig?.rarity).toBe("uncommon");
+			expect(telemetryConfig?.description).toContain(
+				"Show answers chosen by others"
+			);
+			expect(telemetryConfig?.priority).toBe(100);
+		});
+
 		it.todo("has valid properties for try/catch config", () => {
 			const tryCatchConfig = configs.find((c) => c.id === "try-catch-config");
 			expect(tryCatchConfig).toBeDefined();
@@ -658,6 +682,317 @@ describe("configs", () => {
 			expect(result.meta.notes).toEqual([
 				"Rebuilds will reset after every poll",
 			]);
+		});
+	});
+
+	describe("showCorrectOnMultipleChoice effect (.includes config)", () => {
+		it("returns countCorrect true for multiple choice polls with correct options", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+				answerType: "multiple",
+			});
+			const mockRun = createMockRun();
+			const options = [
+				createPollOption({
+					id: 1,
+					option: "Banjo",
+					correct: true,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 2,
+					option: "Kazooie",
+					correct: true,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 3,
+					option: "Gruntilda",
+					correct: false,
+					pollId: 1,
+				}),
+			];
+			const base = {
+				poll: mockPoll,
+				options,
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["includes-config"]);
+
+			expect(result.countCorrect).toBe(true);
+			expect(result.meta.notes).toContain(
+				"Will show correct answers on multiple choice polls"
+			);
+		});
+
+		it("returns countCorrect false for single choice polls", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+				answerType: "single",
+			});
+			const mockRun = createMockRun();
+			const options = [
+				createPollOption({
+					id: 1,
+					option: "Pikachu",
+					correct: true,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 2,
+					option: "Charizard",
+					correct: false,
+					pollId: 1,
+				}),
+			];
+			const base = {
+				poll: mockPoll,
+				options,
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["includes-config"]);
+
+			expect(result.countCorrect).toBe(false);
+			expect(result.meta.notes).toContain("Not a multiple choice poll");
+		});
+
+		it("returns countCorrect false for multiple choice polls with no correct options", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "css",
+				answerType: "multiple",
+			});
+			const mockRun = createMockRun();
+			const options = [
+				createPollOption({
+					id: 1,
+					option: "Bottles",
+					correct: false,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 2,
+					option: "Mumbo Jumbo",
+					correct: false,
+					pollId: 1,
+				}),
+			];
+			const base = {
+				poll: mockPoll,
+				options,
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["includes-config"]);
+
+			expect(result.countCorrect).toBe(false);
+		});
+
+		it("works regardless of poll category", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "html",
+				answerType: "multiple",
+			});
+			const mockRun = createMockRun();
+			const options = [
+				createPollOption({
+					id: 1,
+					option: "Jinjo",
+					correct: true,
+					pollId: 1,
+				}),
+			];
+			const base = {
+				poll: mockPoll,
+				options,
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["includes-config"]);
+
+			expect(result.countCorrect).toBe(true);
+		});
+
+		it("combines with other effects like streakAmp", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+				answerType: "multiple",
+			});
+			const mockRun = createMockRun();
+			const options = [
+				createPollOption({
+					id: 1,
+					option: "Tooty",
+					correct: true,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 2,
+					option: "Klungo",
+					correct: false,
+					pollId: 1,
+				}),
+			];
+			const base = {
+				poll: mockPoll,
+				options,
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["includes-config", ".js-config"]);
+
+			expect(result.countCorrect).toBe(true);
+			expect(result.coverage.coverageAdd).toBe(2);
+			expect(result.meta.notes).toContain(
+				"Will show correct answers on multiple choice polls"
+			);
+			expect(result.meta.notes).toContain("+2 amp for js polls");
+		});
+	});
+
+	describe("showWhoPickedWhat effect (telemetry config)", () => {
+		it("returns showWhoPickedWhat true when config is active", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun();
+			const options = [
+				createPollOption({
+					id: 1,
+					option: "Jinjo",
+					correct: true,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 2,
+					option: "Jiggy",
+					correct: false,
+					pollId: 1,
+				}),
+			];
+			const base = {
+				poll: mockPoll,
+				options,
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["telemetry-config"]);
+
+			expect(result.showWhoPickedWhat).toBe(true);
+			expect(result.meta.notes).toContain("Will show answers chosen by others");
+		});
+
+		it("works regardless of poll category", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "html",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["telemetry-config"]);
+
+			expect(result.showWhoPickedWhat).toBe(true);
+		});
+
+		it("works regardless of answer type", () => {
+			const mockPollSingle = createMockPoll({
+				categoryCode: "css",
+				answerType: "single",
+			});
+			const mockPollMultiple = createMockPoll({
+				categoryCode: "css",
+				answerType: "multiple",
+			});
+			const mockRun = createMockRun();
+
+			const resultSingle = applyEffects(
+				{ poll: mockPollSingle, options: [], run: mockRun, hasAnswered: false },
+				["telemetry-config"]
+			);
+			const resultMultiple = applyEffects(
+				{
+					poll: mockPollMultiple,
+					options: [],
+					run: mockRun,
+					hasAnswered: false,
+				},
+				["telemetry-config"]
+			);
+
+			expect(resultSingle.showWhoPickedWhat).toBe(true);
+			expect(resultMultiple.showWhoPickedWhat).toBe(true);
+		});
+
+		it("combines with other effects like disableWrongOptions", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun();
+			const options = [
+				createPollOption({
+					id: 1,
+					option: "Banjo",
+					correct: true,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 2,
+					option: "Gruntilda",
+					correct: false,
+					pollId: 1,
+				}),
+				createPollOption({
+					id: 3,
+					option: "Bottles",
+					correct: false,
+					pollId: 1,
+				}),
+			];
+			const base = {
+				poll: mockPoll,
+				options,
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["telemetry-config", "eslint-config"]);
+
+			expect(result.showWhoPickedWhat).toBe(true);
+			expect(result.renderProps.disabledOptionIds).toHaveLength(1);
+			expect(result.meta.notes).toContain("Will show answers chosen by others");
+			expect(result.meta.notes).toContain("Hid wrong options");
+		});
+
+		it("combines with streakAmp effects", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "ts",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["telemetry-config", ".ts-config"]);
+
+			expect(result.showWhoPickedWhat).toBe(true);
+			expect(result.coverage.coverageAdd).toBe(2);
+			expect(result.meta.notes).toContain("Will show answers chosen by others");
+			expect(result.meta.notes).toContain("+2 amp for ts polls");
 		});
 	});
 

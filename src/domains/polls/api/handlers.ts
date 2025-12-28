@@ -82,7 +82,7 @@ export const getDailyPollHandler = async ({
 	data: { userId?: string; date?: string; runId?: number };
 }) => {
 	return handleApiOperation(async () => {
-		const { userId, date, runId } = data;
+		const { userId, runId, date } = data;
 
 		const { poll, options } = await getDailyPollWithOptions(date);
 		const hasAnswered = userId
