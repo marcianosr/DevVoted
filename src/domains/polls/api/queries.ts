@@ -356,6 +356,12 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 export type CommunityStatsUser = User & {
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
+	responseData: {
+		userId: string | null;
+		createdAt: Date | null;
+		updatedAt: Date | null;
+		selectedOption: number | null | undefined;
+	};
 };
 
 export type CommunityStats = {
@@ -393,6 +399,10 @@ export const getCommunityStatsForDailyPoll = async (
 				eq(pollHistoryTable.poll_id, pollResponsesTable.poll_id),
 				eq(pollHistoryTable.user_id, pollResponsesTable.user_id)
 			)
+		)
+		.leftJoin(
+			pollResponseOptionsTable,
+			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
 		);
 
 	const users = result.flatMap((r) => {
@@ -411,6 +421,12 @@ export const getCommunityStatsForDailyPoll = async (
 				photoUrl: r.users.photo_url,
 				answeredAt: answered,
 				timeTakenMs,
+				responseData: {
+					userId: r.polls_responses.user_id,
+					createdAt: r.polls_responses.created_at,
+					updatedAt: r.polls_responses.updated_at,
+					selectedOption: r.polls_response_options?.option_id,
+				},
 			},
 		];
 	});
@@ -424,6 +440,7 @@ export const getCommunityStatsForDailyPoll = async (
 		null
 	);
 
+	// TODO: Is this only when users didnt respond yet?
 	return {
 		totalResponses: result.length,
 		users,

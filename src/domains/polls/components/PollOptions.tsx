@@ -1,3 +1,4 @@
+import { CommunityStats } from "~/domains/polls/api/queries";
 import type { Poll } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 
@@ -17,6 +18,7 @@ type PollOptionsProps = {
 	disabled: boolean;
 	disabledOptionIds?: number[];
 	countCorrect?: boolean;
+	communityStats: CommunityStats | null;
 };
 
 export const PollOptions = ({
@@ -26,8 +28,8 @@ export const PollOptions = ({
 	disabled,
 	disabledOptionIds,
 	countCorrect,
+	communityStats,
 }: PollOptionsProps) => {
-	// Derive correct answer count from current selection - always in sync!
 	const selectedCorrectCount = options.filter(
 		(opt) => opt.correct && field.state.value.includes(opt.id.toString())
 	).length;
@@ -50,7 +52,10 @@ export const PollOptions = ({
 			)}
 			<ul className="space-y-2">
 				{options.map((option) => (
-					<li key={option.id} className="text-xl">
+					<li
+						key={option.id}
+						className="text-xl flex flex-wrap gap-2 items-baseline"
+					>
 						<Option
 							option={option}
 							type={poll.answerType === "single" ? "radio" : "checkbox"}
@@ -58,6 +63,25 @@ export const PollOptions = ({
 							checked={field.state.value.includes(option.id.toString())}
 							disabled={disabled || disabledOptionIds?.includes(option.id)}
 						/>
+						{communityStats &&
+							(() => {
+								const usersWhoChose = communityStats.users.filter(
+									(user) => user.responseData?.selectedOption === option.id
+								);
+								return usersWhoChose.length > 0 ? (
+									<div className="text-theme flex items-center">
+										{usersWhoChose.map((user) => (
+											<span
+												className="text-xl"
+												key={user.id}
+												title={user.displayName ?? user.email}
+											>
+												👤
+											</span>
+										))}
+									</div>
+								) : null;
+							})()}
 					</li>
 				))}
 			</ul>
