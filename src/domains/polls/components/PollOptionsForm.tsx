@@ -72,6 +72,7 @@ const PollOptionsForm = ({
 							field={field}
 							disabled={hasAnswered}
 							disabledOptionIds={effect.renderProps.disabledOptionIds}
+							countCorrect={effect.countCorrect}
 						/>
 						{field.state.meta.errors.length > 0 && (
 							<div className="text-red-500 text-xl my-2">
