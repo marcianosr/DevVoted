@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type CountdownResult = {
 	hours: number;
@@ -26,17 +26,30 @@ const getTimeUntilMidnight = (): CountdownResult => {
 	return { hours, minutes, seconds, isExpired: false };
 };
 
-export const useCountdownToMidnight = (): CountdownResult => {
+export const useCountdownToMidnight = (
+	onExpire?: () => void
+): CountdownResult => {
 	const [timeLeft, setTimeLeft] =
 		useState<CountdownResult>(getTimeUntilMidnight);
+	const hasExpiredRef = useRef(false);
 
 	useEffect(() => {
 		const interval = setInterval(() => {
-			setTimeLeft(getTimeUntilMidnight());
+			const newTime = getTimeUntilMidnight();
+			setTimeLeft(newTime);
+
+			if (newTime.isExpired && !hasExpiredRef.current) {
+				hasExpiredRef.current = true;
+				onExpire?.();
+				// Reset after a short delay to start counting to next midnight
+				setTimeout(() => {
+					hasExpiredRef.current = false;
+				}, 2000);
+			}
 		}, 1000);
 
 		return () => clearInterval(interval);
-	}, []);
+	}, [onExpire]);
 
 	return timeLeft;
 };
