@@ -231,6 +231,36 @@ BUGS:
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [] Show polls when beyond CI gates in /progress
 [] Create "groups" - e.g., Kabisa, Codam, EO, Open Source Contributors, etc
+        Option A: Separate categories (current behavior)
+        React:     ████████░░ 80%
+        Vue:       ██░░░░░░░░ 20%
+        Angular:   ░░░░░░░░░░ 0%
+        ───────────────────────
+        CI Gate: Need 30% in 2 categories ❌ (only React qualifies)
+        - Each framework = its own coverage
+        - Rewards deep expertise
+        - Can be punishing if you only know React but get Vue/Angular polls
+
+        ---
+        Option B: Grouped coverage
+        Frontend Frameworks: ████████░░ 33% (average of React+Vue+Angular)
+        ───────────────────────
+        CI Gate: Need 30% in Frontend Frameworks ✅
+        - All framework polls contribute to one score
+        - More forgiving - React strength compensates Vue weakness
+        - Simpler mental model
+
+        ---
+        Option C: Hybrid (track both)
+        Frontend Frameworks: 33% overall
+          └─ React:   80%
+          └─ Vue:     20%
+          └─ Angular: 0%
+        ───────────────────────
+        CI Gate uses GROUP score (33%)
+        Leaderboard shows INDIVIDUAL breakdown
+        - Best of both: forgiving gates, detailed stats
+        - More complex to implement
 [] Currently in tooltip: show your response time  - how long did it take to answer
 [x] Admin panel for polls
 [x] Allow players to suggest polls
