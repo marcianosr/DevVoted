@@ -223,6 +223,19 @@ export const awardCoverageToRun = async (
 	});
 };
 
+/**
+ * Increments the correct polls count for a run.
+ * Called when a player answers a poll with "full" outcome (completely correct).
+ */
+export const incrementCorrectPollsCount = async (runId: number) => {
+	await db
+		.update(runsTable)
+		.set({
+			correct_polls_count: sql`${runsTable.correct_polls_count} + 1`,
+		})
+		.where(eq(runsTable.id, runId));
+};
+
 // Get run for completion processing
 export const getRunForCompletion = async (runId: number) => {
 	const [run] = await db

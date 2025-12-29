@@ -8,6 +8,7 @@ import {
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import {
 	getActiveRunByUserId,
+	incrementCorrectPollsCount,
 	resetPollRerolls,
 } from "~/domains/runs/api/queries";
 import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
@@ -77,6 +78,11 @@ export const processPollAnswer = async (
 		options,
 		hasAnswered: false, // At this point, the answer is being submitted (not yet saved)
 	});
+
+	// Track correct polls for config effects (e.g., IndexedDB dynamic storage bonus)
+	if (outcome === "full") {
+		await incrementCorrectPollsCount(activeRun.id);
+	}
 
 	await createPollResponse({
 		pollId,
