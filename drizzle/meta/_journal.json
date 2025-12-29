@@ -267,6 +267,13 @@
       "when": 1766999604349,
       "tag": "0037_chunky_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1767005508367,
+      "tag": "0038_brief_nightcrawler",
+      "breakpoints": true
     }
   ]
 }

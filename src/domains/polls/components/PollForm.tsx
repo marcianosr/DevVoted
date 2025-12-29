@@ -6,8 +6,8 @@ import rehypeHighlight from "rehype-highlight";
 import type { Poll } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import {
-	CATEGORY_CODES,
 	getCategoryMetadata,
+	getGroupedCategories,
 	type CategoryCode,
 } from "~/domains/shared/categories";
 
@@ -198,11 +198,31 @@ export const PollForm = ({
 						onChange={(e) => setCategoryCode(e.target.value as CategoryCode)}
 						className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme"
 					>
-						{CATEGORY_CODES.map((code) => (
-							<option key={code} value={code}>
-								{getCategoryMetadata(code).name}
-							</option>
-						))}
+						{(() => {
+							const { grouped, ungrouped } = getGroupedCategories();
+							return (
+								<>
+									{Object.entries(grouped).map(([group, codes]) => (
+										<optgroup key={group} label={group}>
+											{codes.map((code) => (
+												<option key={code} value={code}>
+													{getCategoryMetadata(code).name}
+												</option>
+											))}
+										</optgroup>
+									))}
+									{ungrouped.length > 0 && (
+										<optgroup label="Other">
+											{ungrouped.map((code) => (
+												<option key={code} value={code}>
+													{getCategoryMetadata(code).name}
+												</option>
+											))}
+										</optgroup>
+									)}
+								</>
+							);
+						})()}
 					</select>
 				</div>
 

@@ -311,8 +311,11 @@
 	--meter-bg: oklch(from var(--color-fuchsia) calc(l - 0.25) c h);
 }
 
-/* React category */
-[data-category-theme="react"] {
+/* Frontend frameworks */
+[data-category-theme="react"],
+[data-category-theme="angular"],
+[data-category-theme="vue"],
+[data-category-theme="nextjs"] {
 	.text-theme {
 		color: var(--color-celadon);
 	}
@@ -384,4 +387,3 @@ meter::-webkit-meter-optimum-value {
 	background: var(--meter-fill);
 	border-radius: inherit;
 }
-
