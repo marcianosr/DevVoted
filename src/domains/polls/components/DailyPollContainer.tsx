@@ -92,6 +92,7 @@ const DailyPollContainer = ({
 	const router = useRouter();
 	const navigate = useNavigate();
 	const category = getCategoryMetadata(poll.categoryCode);
+	console.log("DailyPollContainer render with poll ID:", poll);
 
 	// Store the score from mutation to avoid stale data after router.invalidate()
 	// The loader recalculates score with updated run data, which gives wrong values
@@ -161,7 +162,14 @@ const DailyPollContainer = ({
 			<header className="border-b border-theme py-4 mb-8">
 				<section className="flex justify-between flex-wrap gap-4">
 					<div className="flex flex-col">
-						<p className="text-4xl text-theme">{category.name}</p>
+						{category.group && (
+							<p className="text-4xl text-theme">
+								{category.group} - {category.name}
+							</p>
+						)}
+						{!category.group && (
+							<p className="text-4xl text-theme">{category.name}</p>
+						)}
 						<p>
 							#{poll.pollNumber} · Opened at{" "}
 							<time dateTime={poll.updatedAt?.toISOString()}>

@@ -18,7 +18,7 @@ export const getDateSeed = (date?: string): string => {
  * Uses daily_polls table for O(1) lookup on subsequent requests
  */
 export const selectDailyPoll = async (date?: string): Promise<Poll | null> => {
-	const dateSeed = getDateSeed(date);
+	const dateSeed = getDateSeed("2025-01-16" /*date*/);
 
 	const selectPollForDate = (polls: Poll[]) =>
 		selectSeededRandom(polls, dateSeed);

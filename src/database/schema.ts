@@ -204,6 +204,7 @@ export const pollCategoriesTable = pgTable("polls_categories", {
 	id: serial("id").primaryKey(),
 	name: varchar("name", { length: 256 }).notNull(),
 	code: varchar("code", { length: 256 }).notNull().unique(),
+	category_group: varchar("category_group", { length: 256 }), // Umbrella group (e.g., "Frontend Frameworks")
 });
 
 /**

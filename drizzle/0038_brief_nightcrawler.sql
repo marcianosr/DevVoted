@@ -1,0 +1,1 @@
+ALTER TABLE "polls_categories" ADD COLUMN "category_group" varchar(256);
