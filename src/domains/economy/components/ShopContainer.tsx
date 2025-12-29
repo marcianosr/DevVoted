@@ -23,7 +23,7 @@ type ShopContainerProps = {
 	storageBonus?: number;
 };
 
-const SKIP_REWARD_KB = 61477; // 60KB
+const SKIP_REWARD_KB = 65536; // 64KB
 
 const getTodayDateString = () => new Date().toISOString().split("T")[0];
 
@@ -80,14 +80,14 @@ const ShopContainer = ({
 		<section aria-labelledby="shop-heading">
 			<header className="mb-4">
 				<h2 id="shop-heading" className="text-3xl">
-					Shop (Package Manager) -{" "}
+					Shop (Config Manager) -{" "}
 					{isOpen ? (
 						<span className="text-green-400">OPEN</span>
 					) : (
 						<span className="text-red-400">CLOSED</span>
 					)}
 				</h2>
-				<p>Improve your run by installing packages!</p>
+				<p>Improve your run by installing configs!</p>
 			</header>
 			<div className="grid grid-cols-8 gap-4">
 				<div className="flex flex-col gap-2 col-span-8 md:col-span-2">

@@ -444,7 +444,7 @@ export const skipShop = async (
 	date: string,
 	storageBonus: number = 0
 ) => {
-	const SKIP_REWARD = 60 * 1024; // 60KB in bytes
+	const SKIP_REWARD = 64 * 1024; // 64KB in bytes
 	const totalReward = SKIP_REWARD + storageBonus;
 
 	return await db.transaction(async (tx) => {
