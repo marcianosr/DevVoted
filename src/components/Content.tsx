@@ -9,7 +9,7 @@ const Content = ({ poll, children }: ContentProps) => {
 	return (
 		<section
 			data-category-theme={poll?.categoryCode}
-			className="max-w-5xl mx-auto p-4"
+			className="w-full sm:max-w-5xl mx-auto p-4"
 		>
 			{children}
 		</section>

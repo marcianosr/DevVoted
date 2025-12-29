@@ -42,10 +42,23 @@ export const addConfigToRunHandler = async ({
 export const removeConfigFromRunHandler = async ({
 	data,
 }: {
-	data: { runId: number; configIds: string[]; date?: string };
+	data: {
+		runId: number;
+		configIds: string[];
+		date?: string;
+	};
 }) => {
 	return handleApiOperation(async () => {
 		const { runId, configIds, date } = data;
-		return await removeConfigFromRunQuery(runId, configIds, date);
+
+		// TODO: include other config effects in future if refundRate depends on them
+		// const { refundRate } = applyEffects(..., run.activeConfigIds);
+		const refundRate = 0.5;
+
+		// Get config cost before removing
+		const configToRemove = configs.find((c) => configIds.includes(c.id));
+		const penalty = (configToRemove?.cost ?? 0) * (1 - refundRate);
+
+		return await removeConfigFromRunQuery(runId, configIds, penalty, date);
 	});
 };

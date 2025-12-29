@@ -1,5 +1,6 @@
 import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { Run } from "~/domains/runs/models/run";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { selectSeededRandom } from "~/lib/seededRandom";
@@ -11,7 +12,7 @@ export const configs: Config[] = [
 		name: ".html",
 		image: "/configs/html",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category HTML polls",
+		description: "+2% coverage on category HTML polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["html"],
@@ -23,7 +24,7 @@ export const configs: Config[] = [
 		name: ".css",
 		image: "/configs/css",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category CSS polls",
+		description: "+2% coverage on category CSS polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["css"],
@@ -35,7 +36,7 @@ export const configs: Config[] = [
 		name: ".js",
 		image: "/configs/js",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category JavaScript polls",
+		description: "+2% coverage on category JavaScript polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["js"],
@@ -47,7 +48,7 @@ export const configs: Config[] = [
 		name: ".ts",
 		image: "/configs/ts",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category TypeScript polls",
+		description: "+2% coverage on category TypeScript polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["ts"],
@@ -59,7 +60,7 @@ export const configs: Config[] = [
 		name: ".jsx",
 		image: "/configs/jsx",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category React polls",
+		description: "+2% coverage on category React polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["react"],
@@ -71,7 +72,7 @@ export const configs: Config[] = [
 		name: ".git",
 		image: "/configs/git",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category Git polls",
+		description: "+2% coverage on category Git polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["git"],
@@ -83,7 +84,7 @@ export const configs: Config[] = [
 		name: "package.json",
 		image: "/configs/package-json.png",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category General Frontend polls",
+		description: "+2% coverage on category General Frontend polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["general-frontend"],
@@ -95,7 +96,7 @@ export const configs: Config[] = [
 		name: "Local Storage",
 		image: "/configs/local-storage.png",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "When held, grants 512KB of extra storage",
+		description: "When held, grants 512KB of extra storage.",
 		rarity: "common",
 		effect: ["expandStorage"],
 		priority: 100,
@@ -107,7 +108,7 @@ export const configs: Config[] = [
 		image: "/configs/eslint.png",
 		cost: STORAGE_UNITS.MB / 2,
 		description:
-			"Disables 1 wrong option when answering JavaScript/TypeScript polls",
+			"Disables 1 wrong option when answering JavaScript/TypeScript polls.",
 		rarity: "uncommon",
 		effect: ["disableWrongOptions"],
 		priority: 100,
@@ -117,7 +118,7 @@ export const configs: Config[] = [
 		name: "Stylelint Config",
 		image: "/configs/stylelint.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Disables 1 wrong option when answering HTML/CSS polls",
+		description: "Disables 1 wrong option when answering HTML/CSS polls.",
 		rarity: "uncommon",
 		effect: ["disableWrongOptions"],
 		priority: 100,
@@ -127,7 +128,7 @@ export const configs: Config[] = [
 		name: "Code Coverage Config",
 		image: "/configs/code-coverage.png",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5% coverage polls for every poll answered",
+		description: "+0.5% coverage polls for every poll answered.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		priority: 100,
@@ -151,7 +152,7 @@ export const configs: Config[] = [
 		name: "Math Random",
 		image: "/configs/math-random.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Random code coverage value between -5 and +5 every poll",
+		description: "Random code coverage value between -5 and +5 every poll.",
 		rarity: "rare",
 		effect: ["randomStreakAmp"],
 		priority: 100,
@@ -173,7 +174,7 @@ export const configs: Config[] = [
 		name: "Hot Reload",
 		image: "/configs/hot-reload-config.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Allow rebuilds to reset after every poll",
+		description: "Allow rebuilds to reset after every poll.",
 		rarity: "rare",
 		effect: ["resetRebuild"],
 		priority: 50,
@@ -183,7 +184,7 @@ export const configs: Config[] = [
 		name: "Grid Template Areas",
 		image: "/configs/grid-template-areas.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Adds another slot in the shop",
+		description: "Adds another slot in the shop.",
 		rarity: "rare",
 		effect: ["addSlotToShop"],
 		priority: 100,
@@ -193,7 +194,7 @@ export const configs: Config[] = [
 		name: "Copilot",
 		image: "/configs/copilot.png",
 		cost: STORAGE_UNITS.MB,
-		description: "×2 your coverage score in every category when held",
+		description: "×2 coverage score in every category.",
 		rarity: "legendary",
 		effect: ["streakAmp"],
 		priority: 100,
@@ -206,7 +207,7 @@ export const configs: Config[] = [
 		name: "Intellisense",
 		image: "/configs/intellisense.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "×1.5 your coverage score in every category when held",
+		description: "×1.5 coverage score in every category.",
 		rarity: "rare",
 		effect: ["streakAmp"],
 		priority: 100,
@@ -219,11 +220,57 @@ export const configs: Config[] = [
 		name: "No Deps",
 		image: "/configs/no-deps.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "×2 storage whem skipping the shop when held",
+		description: "×2 storage when skipping the shop when held",
 		rarity: "rare",
 		effect: ["bonusShopStorage"],
 		priority: 100,
-		storageBonus: STORAGE_UNITS.KB * 60, // 60KB bonus storage
+		storageBonus: STORAGE_UNITS.KB * 64, // 64KB bonus storage
+	},
+	{
+		id: "includes-config",
+		name: ".includes",
+		image: "/configs/includes.png",
+		cost: STORAGE_UNITS.MB / 8,
+		description:
+			"Tells you if you selected at least one correct answer on multiple choice polls",
+		rarity: "rare",
+		effect: ["showCorrectOnMultipleChoice"],
+		priority: 100,
+	},
+	{
+		id: "length-config",
+		name: ".length",
+		image: "/configs/length.png",
+		cost: STORAGE_UNITS.MB / 8,
+		description:
+			"Shows how many correct answers exist on multiple choice polls",
+		rarity: "rare",
+		effect: ["showCorrectCount"],
+		priority: 100,
+	},
+	{
+		id: "telemetry-config",
+		name: "Telemetry",
+		image: "/configs/telemetry.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"Show answers chosen by others before answering a poll. Hover over to see who picked what.",
+		rarity: "uncommon",
+		effect: ["showWhoPickedWhat"],
+		priority: 100,
+	},
+	{
+		id: "indexed-db-config",
+		name: "IndexedDB",
+		image: "/configs/indexed-db.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"+8KB for each correct poll you had and will have this run. Max 320KB.",
+		rarity: "uncommon",
+		effect: ["dynamicStorageBonus"],
+		priority: 100,
+		storagePerCorrect: STORAGE_UNITS.KB * 8,
+		maxStorageBonus: STORAGE_UNITS.KB * 320,
 	},
 ];
 
@@ -240,7 +287,8 @@ export type CoverageMods = {
 	coverageMult?: number; // x1.5 (multiplicative coverage modifier)
 };
 export type StorageMods = {
-	bonus?: number; // flat storage bonus (applied to storage capacity)
+	expand?: number; // Passive storage expansion (affects effective limit while config is held)
+	skipBonus?: number; // Skip shop reward (added to DB storage_limit when skipping)
 };
 type EffectCtx = PollWithOptionsResponse & {
 	run: Run;
@@ -266,6 +314,9 @@ export type EffectOut = {
 	reductionCost?: number;
 	resetRebuild?: boolean;
 	extraSlot?: boolean;
+	countCorrect?: boolean;
+	showCorrectCount?: boolean;
+	showWhoPickedWhat?: boolean;
 };
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
@@ -280,6 +331,9 @@ export type ApplyEffects = {
 	reductionCost: number;
 	resetRebuild: boolean;
 	extraSlot: boolean;
+	countCorrect: boolean;
+	showCorrectCount: boolean;
+	showWhoPickedWhat: boolean;
 };
 
 /**
@@ -377,15 +431,31 @@ const EFFECTS: Record<string, EffectFn> = {
 	},
 
 	// Grants extra storage capacity (Local Storage Config effect)
+	// This is a PASSIVE bonus - only affects effective limit while config is held
 	expandStorage: ({ poll, options, run, hasAnswered }, config) => {
-		// Use storageBonus from config if provided, otherwise default to 512KB
 		const bonusStorage = config.storageBonus ?? STORAGE_UNITS.KB * 512;
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			storage: { bonus: bonusStorage },
+			storage: { expand: bonusStorage },
 			meta: {
 				notes: [`+${formatStorage(bonusStorage)} storage capacity`],
+			},
+		};
+	},
+
+	dynamicStorageBonus: ({ poll, options, run, hasAnswered }, config) => {
+		const perCorrect = config.storagePerCorrect ?? STORAGE_UNITS.KB * 8;
+		const maxBonus = config.maxStorageBonus ?? STORAGE_UNITS.KB * 320;
+		const bonusStorage = Math.min(run.correctPollsCount * perCorrect, maxBonus);
+
+		return {
+			view: { poll, options, run, hasAnswered },
+			storage: { expand: bonusStorage },
+			meta: {
+				notes: [
+					`+${formatStorage(bonusStorage)} storage (${run.correctPollsCount} correct polls)`,
+				],
 			},
 		};
 	},
@@ -397,11 +467,15 @@ const EFFECTS: Record<string, EffectFn> = {
 			0
 		);
 
+		// Get gates from challenge mode
+		const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
+
 		// Calculate threshold based on category coverage data and answered polls
 		// Note: This uses answered polls as a proxy for seen polls since we don't have access to totalPollsSeen here
 		const thresholdInfo = calculateThresholdInfo(
 			run.categoryCoverage,
-			totalPollsAnswered
+			totalPollsAnswered,
+			challengeMode.gates
 		);
 		const requiredCoverage =
 			thresholdInfo.gateDefinition?.requirements[0]?.threshold ?? 0;
@@ -481,15 +555,61 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+	// Skip shop bonus - only added to DB when skipping, not to effective limit
 	bonusShopStorage: ({ poll, options, run, hasAnswered }, config) => {
 		const bonusStorage = config.storageBonus ?? 0;
 
 		return {
 			view: { poll, options, run, hasAnswered },
-			storage: { bonus: bonusStorage },
+			storage: { skipBonus: bonusStorage },
 			meta: {
 				notes: [`+${formatStorage(bonusStorage)} storage when skipping shop`],
 			},
+		};
+	},
+	showCorrectOnMultipleChoice: (
+		{ poll, options, run, hasAnswered },
+		_config
+	) => {
+		if (poll.answerType !== "multiple") {
+			return {
+				countCorrect: false,
+				view: { poll, options, run, hasAnswered },
+				meta: { notes: ["Not a multiple choice poll"] },
+			};
+		}
+
+		return {
+			countCorrect: options.some((o) => o.correct),
+			view: { poll, options, run, hasAnswered },
+			meta: { notes: ["Will show correct answers on multiple choice polls"] },
+		};
+	},
+
+	// Shows how many correct answers exist on multiple choice polls (.length Config effect)
+	showCorrectCount: ({ poll, options, run, hasAnswered }, _config) => {
+		if (poll.answerType !== "multiple") {
+			return {
+				showCorrectCount: false,
+				view: { poll, options, run, hasAnswered },
+				meta: { notes: ["Not a multiple choice poll"] },
+			};
+		}
+
+		return {
+			showCorrectCount: true,
+			view: { poll, options, run, hasAnswered },
+			meta: {
+				notes: ["Will show correct answer count on multiple choice polls"],
+			},
+		};
+	},
+
+	showWhoPickedWhat: ({ poll, options, run, hasAnswered }, _config) => {
+		return {
+			showWhoPickedWhat: true,
+			view: { poll, options, run, hasAnswered },
+			meta: { notes: ["Will show answers chosen by others"] },
 		};
 	},
 };
@@ -529,6 +649,9 @@ export function applyEffects(
 			reductionCost: 0,
 			resetRebuild: false,
 			extraSlot: false,
+			countCorrect: false,
+			showCorrectCount: false,
+			showWhoPickedWhat: false,
 		};
 
 	const effects = activeConfigIds
@@ -577,7 +700,9 @@ export function applyEffects(
 						(out.coverage?.coverageMult ?? 1),
 				},
 				storage: {
-					bonus: (acc.storage.bonus ?? 0) + (out.storage?.bonus ?? 0),
+					expand: (acc.storage.expand ?? 0) + (out.storage?.expand ?? 0),
+					skipBonus:
+						(acc.storage.skipBonus ?? 0) + (out.storage?.skipBonus ?? 0),
 				},
 				protection: {
 					// If any config provides try/catch protection, it's active
@@ -587,6 +712,13 @@ export function applyEffects(
 				reductionCost: (acc.reductionCost ?? 0) + (out.reductionCost ?? 0),
 				resetRebuild: acc.resetRebuild || out.resetRebuild || false,
 				extraSlot: acc.extraSlot || out.extraSlot || false,
+				countCorrect:
+					(acc.countCorrect ?? false) || (out.countCorrect ?? false),
+				showCorrectCount:
+					(acc.showCorrectCount ?? false) || (out.showCorrectCount ?? false),
+				showWhoPickedWhat:
+					(acc.showWhoPickedWhat ?? false) || (out.showWhoPickedWhat ?? false),
+
 				meta: {
 					...acc.meta,
 					...(out.meta?.badges
@@ -606,6 +738,9 @@ export function applyEffects(
 			reductionCost: 0,
 			resetRebuild: false,
 			extraSlot: false,
+			countCorrect: false,
+			showCorrectCount: false,
+			showWhoPickedWhat: false,
 		}
 	);
 }

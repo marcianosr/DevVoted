@@ -1,4 +1,15 @@
-import { eq, and, gte, lt, sql, asc, count, inArray, or } from "drizzle-orm";
+import {
+	eq,
+	and,
+	gte,
+	lt,
+	sql,
+	asc,
+	count,
+	inArray,
+	or,
+	not,
+} from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -345,6 +356,12 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 export type CommunityStatsUser = User & {
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
+	responseData: {
+		userId: string | null;
+		createdAt: Date | null;
+		updatedAt: Date | null;
+		selectedOption: number | null | undefined;
+	};
 };
 
 export type CommunityStats = {
@@ -382,6 +399,10 @@ export const getCommunityStatsForDailyPoll = async (
 				eq(pollHistoryTable.poll_id, pollResponsesTable.poll_id),
 				eq(pollHistoryTable.user_id, pollResponsesTable.user_id)
 			)
+		)
+		.leftJoin(
+			pollResponseOptionsTable,
+			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
 		);
 
 	const users = result.flatMap((r) => {
@@ -400,6 +421,12 @@ export const getCommunityStatsForDailyPoll = async (
 				photoUrl: r.users.photo_url,
 				answeredAt: answered,
 				timeTakenMs,
+				responseData: {
+					userId: r.polls_responses.user_id,
+					createdAt: r.polls_responses.created_at,
+					updatedAt: r.polls_responses.updated_at,
+					selectedOption: r.polls_response_options?.option_id,
+				},
 			},
 		];
 	});
@@ -413,6 +440,7 @@ export const getCommunityStatsForDailyPoll = async (
 		null
 	);
 
+	// TODO: Is this only when users didnt respond yet?
 	return {
 		totalResponses: result.length,
 		users,
@@ -556,6 +584,12 @@ type NewPollOption = {
 	correct: boolean;
 };
 
+type UpdatePollOption = {
+	id?: number; // Existing options have ID, new ones don't
+	option: string;
+	correct: boolean;
+};
+
 type NewPollData = {
 	question: string;
 	status: "draft" | "open" | "closed" | "archived";
@@ -680,12 +714,15 @@ export const insertPollOptions = async (
 };
 
 /**
- * Update poll with options - replaces all options
+ * Update poll with options using upsert logic to preserve IDs
+ * - Options with id: UPDATE existing row
+ * - Options without id: INSERT new row
+ * - Existing options not in list: DELETE
  */
 export const updatePollWithOptions = async (
 	pollId: number,
 	pollData: Partial<NewPollData>,
-	options: NewPollOption[]
+	options: UpdatePollOption[]
 ) => {
 	return await db.transaction(async (tx) => {
 		// Update poll
@@ -695,13 +732,14 @@ export const updatePollWithOptions = async (
 		if (pollData.status !== undefined) updateValues.status = pollData.status;
 		if (pollData.answerType !== undefined)
 			updateValues.answer_type = pollData.answerType;
-
 		if (pollData.categoryCode !== undefined)
 			updateValues.category_code = pollData.categoryCode;
 		if (pollData.codeBlock !== undefined)
 			updateValues.code_block = pollData.codeBlock;
 		if (pollData.codeSandboxExample !== undefined)
 			updateValues.code_sandbox_example = pollData.codeSandboxExample;
+		if (pollData.explanation !== undefined)
+			updateValues.explanation = pollData.explanation;
 
 		const [updatedPoll] = await tx
 			.update(pollsTable)
@@ -713,14 +751,40 @@ export const updatePollWithOptions = async (
 			throw new Error("Poll not found");
 		}
 
-		// Delete existing options and insert new ones
-		await tx
-			.delete(pollOptionsTable)
-			.where(eq(pollOptionsTable.poll_id, pollId));
+		// Separate options into existing (with id) and new (without id)
+		const existingOptions = options.filter((opt) => opt.id !== undefined);
+		const newOptions = options.filter((opt) => opt.id === undefined);
+		const incomingIds = existingOptions.map((opt) => opt.id as number);
 
-		if (options.length > 0) {
+		// Delete options that are no longer in the list
+		if (incomingIds.length > 0) {
+			await tx
+				.delete(pollOptionsTable)
+				.where(
+					and(
+						eq(pollOptionsTable.poll_id, pollId),
+						not(inArray(pollOptionsTable.id, incomingIds))
+					)
+				);
+		} else {
+			// No existing options to keep, delete all
+			await tx
+				.delete(pollOptionsTable)
+				.where(eq(pollOptionsTable.poll_id, pollId));
+		}
+
+		// Update existing options
+		for (const opt of existingOptions) {
+			await tx
+				.update(pollOptionsTable)
+				.set({ option: opt.option, correct: opt.correct })
+				.where(eq(pollOptionsTable.id, opt.id as number));
+		}
+
+		// Insert new options
+		if (newOptions.length > 0) {
 			await tx.insert(pollOptionsTable).values(
-				options.map((opt) => ({
+				newOptions.map((opt) => ({
 					poll_id: pollId,
 					option: opt.option,
 					correct: opt.correct,

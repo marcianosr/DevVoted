@@ -11,7 +11,10 @@ import {
 } from "./queries";
 import { endRunManually } from "../services/runCompletion.service";
 
-export const getOrCreateActiveRun = async (userId: string) => {
+export const getOrCreateActiveRun = async (
+	userId: string,
+	challengeModeId: string
+) => {
 	return handleApiOperation(async () => {
 		// Check if user has an active run
 		const activeRun = await getActiveRunByUserId(userId);
@@ -21,7 +24,7 @@ export const getOrCreateActiveRun = async (userId: string) => {
 		}
 
 		// Create a new run
-		const newRunData = await createRunForUser(userId);
+		const newRunData = await createRunForUser(userId, challengeModeId);
 		return newRunData;
 	}, "Failed to get or create run");
 };
@@ -100,7 +103,7 @@ export const finishRunHandler = async (userId: string) => {
 
 /**
  * Skips the shop for the current date and grants storage bonus
- * Base reward: 60KB + any storageBonus from active configs
+ * Base reward: 64KB + any storageBonus from active configs
  */
 export const skipShopHandler = async (
 	userId: string,

@@ -131,19 +131,13 @@ BUGS:
 [x] Refactor shop in progress page
 [x] Score weergave klopt nog niet.
 [x] Bij Matthijs zei hij 1.95% en de score was 2%
-
-
-
 [-] Fonts niet duidelijk
 [-] If poll is still open from yesterday, don't allow to answer - I think a simple check isClosed will fix
 [x] Fail a run?
 [x] Answers that contain code should be formatted well
 [x] When run is over, apparently the poll page is still visible. After answering you suddebnly end on the start page (instead of game-over)
-[] When not logged in, the start page shouldn't show the start run button, but a login button
-[o] UI (?) bug in gates . First poll in run shows "not answered" even when answered
+[x] UI (?) bug in gates . First poll in run shows "not answered" even when answered
 [x] Slow "See your run progress and shop →" button
-
-
 [x] Community stats query showing wrong data (7 votes?)
 [x] Investigate slow loading times
 [x] Remove code box field
@@ -151,6 +145,31 @@ BUGS:
 [x] Link to github issues for bug reports
 
 
+**Game play**
+[] Show indetermined state on multiple choice
+[x] Half the price of uninstalling, adding "junk" to storage [idea]
+[] Vote for the next category (poll) [idea]
+  - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
+[x] Make gates harder - they are too simple
+[] Show gate status good/failed based on polls answers on /progress [brainstorm]
+[] More leaderboard variants
+  - also show current gate
+  - All-time leaderboard (best runs)
+[o] Expand on low hanging configs
+[x] Make sure the rules on start screen is clear
+[] Consider poll rating: very easy to very hard
+[] Think of what winners do next
+[] Restore Next.js polls
+[] Loading states - some stuff takes too long
+[] Leaderboard showing all categories and gates of players to each other
+[x] Add clarifying labels to the coverage breakdown
+[] Add a one-time shop tutorial tooltip
+   First time visiting shop: "Welcome to the Package Manager! You have 1 MB of storage to install configs. Each config uses storage and boosts your coverage. Choose wisely!"
+[x] Add a mini status bar to the poll page
+  ┌─────────────────────────────────────────┐
+  │ 🎯 Gate #1: Need 2% in any category     │
+  │ Git: 1.3% ████░░░░░░ | Streak: ⚡1      │
+  └─────────────────────────────────────────┘
 [x] More community stats
 
     [x] Who voted on the poll of today?
@@ -160,51 +179,95 @@ BUGS:
     [] Users not answered who are in a run
 
 
-**Game play**
-[] Vote for the next category (poll)
-  - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
-[] Make gates harder - they are too simple
-[] More leaderboard variants
-  - also show current gate
-  - All-time leaderboard (best runs)
-[o] Expand on low hanging configs
-[] Make sure the rules on start screen is clear
-[] Consider poll rating: very easy to very hard
-[] Content discovery show on profile
-[] Think of what winners do next
-[] Add polls!!
-[] Tooltips for critical flow
-[] Restore Next.js polls
-
-
 **Mobile responsiviness**
-[] Sticky button "See your run progress and shop →" (mobile atleast)
-[] Scroll to top on progress pag (on mobile)
-[] Mobile text bigger (question)
+[x] Sticky button "See your run progress and shop →" (mobile atleast)
+[x] Mobile text bigger (question)
 [] Responsiveness in general (see matthijs' feedback)
 
 **Anayltics**
-[] config purchase analytics
+[] Config purchase analytics
 
 **Maintainability**
 [] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
-[] Upgrades of packages
-
+[x] Upgrades of packages
 
 **Bugs**
+[] x is shown even when requirements are met in mini header
+[o] Poll header showing countdown of next poll not in sync. Make sure the poll is changing at 0:00
+[x] Active configs are small on desktop
+[] Wrong score is still reflected in score breakdown and leaderboard
+[] Update poll with "month" answer
+[?] Shop changes when selling/installing configs (shouldn't)
+[?] Shop resets when uninstalling a config
+[x] Local storage config adds insane amounts of storage when skipping shop
+[x] Show new shop items every new poll/day
+[x] Fix text encoding issues in options (e.g +, -, <, >, etc)
+[x] Edit poll page research: doesn't save changes and somehow "fucked" up the poll and response id [Critical]
+[x] Bug in submitting poll larger than 10 selected options
+[x] Fix button clicking area
+[x] When not logged in, the start page shouldn't show the start run button, but a login button
+[x] Remove login input fields on production
+[] When answering a question poll, and the game is over:
+  - [] the start run button doesn't work anymore
+  - [] Should show also the gate you ended in the run summary
+  - [] Somehow the time of answering is weirded: it says -2min and -37 sec?
+  - [] I answered it twice for some reason
+  - [] you should be allowed to reanswer
+  - [] check: progress page says you dindt answer the last poll, but you did
+[] Update explanation for todays poll with Matthijs thought pattern of Object.values
 [] Codeblocks are sometimes still white in dark mode
-[] Bug in submitting poll larger than 10 selected options
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
-[] Fix button clicking area
+[] Date of opened poll isn't right
+
+
+
+
+
 
 
 ----- GO LIVE -----
 
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Show polls when beyond CI gates in /progress
+[] Create "groups" - e.g., Kabisa, Codam, EO, Open Source Contributors, etc
+        Option A: Separate categories (current behavior)
+        React:     ████████░░ 80%
+        Vue:       ██░░░░░░░░ 20%
+        Angular:   ░░░░░░░░░░ 0%
+        ───────────────────────
+        CI Gate: Need 30% in 2 categories ❌ (only React qualifies)
+        - Each framework = its own coverage
+        - Rewards deep expertise
+        - Can be punishing if you only know React but get Vue/Angular polls
+
+        ---
+        Option B: Grouped coverage
+        Frontend Frameworks: ████████░░ 33% (average of React+Vue+Angular)
+        ───────────────────────
+        CI Gate: Need 30% in Frontend Frameworks ✅
+        - All framework polls contribute to one score
+        - More forgiving - React strength compensates Vue weakness
+        - Simpler mental model
+
+        ---
+        Option C: Hybrid (track both)
+        Frontend Frameworks: 33% overall
+          └─ React:   80%
+          └─ Vue:     20%
+          └─ Angular: 0%
+        ───────────────────────
+        CI Gate uses GROUP score (33%)
+        Leaderboard shows INDIVIDUAL breakdown
+        - Best of both: forgiving gates, detailed stats
+        - More complex to implement
+[] Currently in tooltip: show your response time  - how long did it take to answer
 [x] Admin panel for polls
 [x] Allow players to suggest polls
+[x] Show edit poll link on daily poll for admins
 [] Create more polls also for backend categories
+[] Unlocking system
+[] Content discovery show on profile
 
 [] Introduce moderator role -
 
@@ -219,6 +282,7 @@ BUGS:
 [] Search by question in admin panel
 [] Add "Architecture" category (pallet)
 [] Add "AI" category
+[] What happens when you have 100% coverage in a category?
 [] Basic "share" mechanism - what to share?
 [] Think about "spaces" - is everything one space or is Codam, EO a separate space like Slack?
 [x] Provide KB's when skipping the shop
@@ -243,8 +307,9 @@ BUGS:
 [] Allow endless runs
 [] Fixen todo warnings eslint
 [] Starring a poll
-[] Add explanation field to poll (shown after answering)
+[x] Add explanation field to poll (shown after answering)
 [] Fix "deflate" config
+[] Leaderboard: show arrow up/down when position changed
 [] Show partial correct polls in list of progress
 [x] Tan stack "start" instead of "query" in footer
 [x] Include footer everywhere

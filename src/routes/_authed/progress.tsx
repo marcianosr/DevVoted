@@ -22,11 +22,8 @@ import { RunPollHistory } from "~/domains/polls/api/queries";
 import { PollCountdown } from "~/domains/polls/components/PollCountdown";
 import { Poll } from "~/domains/polls/models/poll";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
-import {
-	CI_GATES,
-	getCurrentRound,
-	POLLS_PER_ROUND,
-} from "~/domains/runs/services/thresholdCalculator.service";
+import { CHALLENGE_MODES } from "~/domains/runs/data/challengeModes";
+import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { formatGateRequirements } from "~/domains/runs/utils/gateFormatting";
 import {
 	CATEGORY_METADATA,
@@ -56,7 +53,10 @@ export const Route = createFileRoute("/_authed/progress")({
 		const pollHistory = pollHistoryResponse.success
 			? pollHistoryResponse.data
 			: [];
-		const currentRound = getCurrentRound(pollsSeen);
+		const challengeMode = CHALLENGE_MODES[activeRun.data.challengeModeId];
+		const gates = challengeMode.gates;
+
+		const currentGate = getCurrentGate(pollsSeen, gates);
 
 		const configEffects = applyEffects(
 			{
@@ -69,6 +69,7 @@ export const Route = createFileRoute("/_authed/progress")({
 		);
 
 		const offeredConfigs = getRandomConfigs({
+			// TODO: Define this in settings/config
 			count: configEffects.extraSlot ? 4 : 3,
 			run: activeRun.data,
 			configs,
@@ -88,9 +89,10 @@ export const Route = createFileRoute("/_authed/progress")({
 			activeRun: activeRun.data,
 			offeredConfigs: displayedConfigs,
 			configEffects,
-			currentRound,
+			currentGate,
 			pollsSeen,
 			pollHistory,
+			gates,
 		};
 	},
 });
@@ -128,10 +130,11 @@ const getGateStatus = (
 
 const getPollsForGate = (
 	pollHistory: RunPollHistory[],
-	gateNumber: number
+	gateNumber: number,
+	pollsPerGate: number
 ): RunPollHistory[] => {
-	const startIndex = (gateNumber - 1) * POLLS_PER_ROUND;
-	const endIndex = startIndex + POLLS_PER_ROUND;
+	const startIndex = (gateNumber - 1) * pollsPerGate;
+	const endIndex = startIndex + pollsPerGate;
 	return pollHistory.slice(startIndex, endIndex);
 };
 
@@ -191,9 +194,10 @@ function RouteComponent() {
 		activeRun,
 		offeredConfigs,
 		configEffects: { reductionCost, storage },
-		currentRound,
+		currentGate,
 		pollHistory,
 		dailyPoll,
+		gates,
 	} = Route.useLoaderData();
 
 	const router = useRouter();
@@ -212,7 +216,11 @@ function RouteComponent() {
 
 	const onDeinstallConfig = (config: Config) => {
 		deinstallConfigMutation.mutate({
-			data: { configIds: [config.id], runId: activeRun.id, date: today },
+			data: {
+				configIds: [config.id],
+				runId: activeRun.id,
+				date: today,
+			},
 		});
 	};
 
@@ -226,9 +234,9 @@ function RouteComponent() {
 				<section className="grid grid-cols-1 md:grid-cols-2 gap-8">
 					<div className="space-y-4">
 						<h3 className="text-xl">Gate Progress</h3>
-						{CI_GATES.slice(0, currentRound).map((gate) => {
-							const status = getGateStatus(gate.gate, currentRound);
-							const isCurrent = gate.gate === currentRound;
+						{gates.slice(0, currentGate.gate).map((gate) => {
+							const status = getGateStatus(gate.gate, currentGate.gate);
+							const isCurrent = gate.gate === currentGate.gate;
 
 							return (
 								<details
@@ -246,18 +254,20 @@ function RouteComponent() {
 										</p>
 									</div>
 									<ol className="mt-3 space-y-1">
-										{getPollsForGate(pollHistory, gate.gate).map(
-											(poll, idx) => (
-												<>
-													<PollHistoryItem
-														key={poll.pollId}
-														poll={poll}
-														dailyPoll={dailyPoll.poll}
-														idx={idx + (gate.gate - 1) * POLLS_PER_ROUND}
-													/>
-												</>
-											)
-										)}
+										{getPollsForGate(
+											pollHistory,
+											gate.gate,
+											gate.pollsPerGate
+										).map((poll, idx) => (
+											<>
+												<PollHistoryItem
+													key={poll.pollId}
+													poll={poll}
+													dailyPoll={dailyPoll.poll}
+													idx={idx + (gate.gate - 1) * gate.pollsPerGate}
+												/>
+											</>
+										))}
 									</ol>
 								</details>
 							);
@@ -273,9 +283,9 @@ function RouteComponent() {
 					offeredConfigs={offeredConfigs}
 					reductionCost={reductionCost}
 					isOpen={dailyPoll.hasAnswered && activeRun.shopSkippedDate !== today}
-					storageBonus={storage.bonus}
+					storageBonus={storage.skipBonus}
 				/>
-				<section>
+				<section className="overflow-hidden">
 					<h3 className="text-3xl">Your active configs</h3>
 					<div className="text-sm text-gray-400">
 						<span>Used: </span>
@@ -286,17 +296,19 @@ function RouteComponent() {
 							</div>
 						)}
 					</div>
-					<ul className="flex gap-4">
+					<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-0 py-2">
 						{activeConfigs.length === 0 ? (
 							<p className="text-gray-400">No active configs installed</p>
 						) : (
 							activeConfigs.map((config) => (
-								<ActiveCard
-									key={config.id}
-									config={config}
-									onDeinstall={onDeinstallConfig}
-									disabled={!dailyPoll.hasAnswered}
-								/>
+								<li key={config.id} className="shrink-0 snap-start">
+									<ActiveCard
+										key={config.id}
+										config={config}
+										onDeinstall={onDeinstallConfig}
+										disabled={!dailyPoll.hasAnswered}
+									/>
+								</li>
 							))
 						)}
 					</ul>

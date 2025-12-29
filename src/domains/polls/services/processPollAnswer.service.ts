@@ -8,8 +8,10 @@ import {
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import {
 	getActiveRunByUserId,
+	incrementCorrectPollsCount,
 	resetPollRerolls,
 } from "~/domains/runs/api/queries";
+import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
@@ -77,6 +79,11 @@ export const processPollAnswer = async (
 		hasAnswered: false, // At this point, the answer is being submitted (not yet saved)
 	});
 
+	// Track correct polls for config effects (e.g., IndexedDB dynamic storage bonus)
+	if (outcome === "full") {
+		await incrementCorrectPollsCount(activeRun.id);
+	}
+
 	await createPollResponse({
 		pollId,
 		userId,
@@ -86,13 +93,18 @@ export const processPollAnswer = async (
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
+	// Get challenge mode gates for this run
+	const challengeMode = getChallengeModeOrDefault(updatedRun.challengeModeId);
+	const gates = challengeMode.gates;
+
 	// Fetch total polls seen in current run for threshold calculation
 	const totalPollsSeen = await getPollsSeenInRun(activeRun.id);
 
-	// Calculate threshold based on category coverage data and seen polls
+	// Calculate threshold based on category coverage data, seen polls, and challenge mode gates
 	const thresholdInfo = calculateThresholdInfo(
 		updatedRun.categoryCoverage,
-		totalPollsSeen
+		totalPollsSeen,
+		gates
 	);
 
 	let runEnded = false;
@@ -103,10 +115,9 @@ export const processPollAnswer = async (
 	// Check if try/catch protection should prevent run failure
 	// Check for victory at CI gates (when last defined gate is passed)
 	if (thresholdInfo.meetsThreshold && thresholdInfo.isThresholdCheckPoll) {
-		const { checkForVictory, completeRunWithVictory } = await import(
-			"~/domains/runs/services/runCompletion.service"
-		);
-		const hasWon = checkForVictory(thresholdInfo.currentRound);
+		const { checkForVictory, completeRunWithVictory } =
+			await import("~/domains/runs/services/runCompletion.service");
+		const hasWon = checkForVictory(thresholdInfo.currentGate, gates);
 		if (hasWon) {
 			await completeRunWithVictory(activeRun.id);
 			runEnded = true;

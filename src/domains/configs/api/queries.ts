@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { runsTable } from "~/database/schema";
+import { configs } from "~/domains/configs/data/configs";
 import {
 	addConfigsToRun,
 	removeConfigsFromRun,
@@ -55,6 +56,7 @@ export const addConfigToRunQuery = async (
 export const removeConfigFromRunQuery = async (
 	runId: number,
 	configIds: string[],
+	deinstallPenalty?: number,
 	date?: string
 ) => {
 	const [runRecord] = await db
@@ -68,12 +70,21 @@ export const removeConfigFromRunQuery = async (
 	}
 
 	const currentRun = runFactory.toDTO(runRecord);
+	const configToRemove = configs.find((config) =>
+		configIds.includes(config.id)
+	);
+
+	if (!configToRemove) {
+		throw new Error(`Config with id ${configIds.join(", ")} not found in run`);
+	}
+
 	const updatedRun = removeConfigsFromRun(currentRun, configIds);
 
 	const [updatedRunRecord] = await db
 		.update(runsTable)
 		.set({
 			active_config_ids: updatedRun.activeConfigIds,
+			deinstall_penalty: currentRun.deinstallPenalty + (deinstallPenalty || 0),
 			...(date !== undefined && { shop_interacted_date: date }),
 		})
 		.where(eq(runsTable.id, runId))

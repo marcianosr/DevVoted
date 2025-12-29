@@ -90,8 +90,23 @@ export const getUserPollsOrAll = createServerFn({ method: "GET" }).handler(
 export const getDailyPoll = createServerFn({ method: "GET" })
 	.inputValidator(z.object({ runId: z.number().int().positive().optional() }))
 	.handler(async ({ data }) => {
-		const userId = await getAuthenticatedUserId();
-		return getDailyPollHandler({ data: { userId, runId: data?.runId } });
+		const supabase = getSupabaseServerClient();
+		const { data: authData, error } = await supabase.auth.getUser();
+
+		if (error || !authData.user) {
+			throw new Error("Authentication required");
+		}
+
+		const userId = authData.user.id;
+		const isAdmin = ADMIN_EMAILS.includes(
+			authData.user.email as (typeof ADMIN_EMAILS)[number]
+		);
+
+		const result = await getDailyPollHandler({
+			data: { userId, runId: data?.runId },
+		});
+
+		return { ...result, isAdmin };
 	});
 
 export const postPollOptions = createServerFn({ method: "POST" })
@@ -188,9 +203,11 @@ const updatePollInputSchema = z.object({
 		categoryCode: z.string().min(1).optional(),
 		codeBlock: z.string().nullable().optional(),
 		codeSandboxExample: z.string().nullable().optional(),
+		explanation: z.string().max(2000).nullable().optional(),
 	}),
 	options: z.array(
 		z.object({
+			id: z.number().int().positive().optional(),
 			option: z.string().min(1).max(500),
 			correct: z.boolean(),
 		})

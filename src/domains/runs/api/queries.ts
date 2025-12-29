@@ -36,12 +36,14 @@ export const getActiveRunByUserId = async (userId: string) => {
 	return runFactory.toDTO(runRecord[0], categoryCoverage);
 };
 
-export const createRunForUser = async (userId: string) => {
+export const createRunForUser = async (
+	userId: string,
+	challengeModeId: string
+) => {
 	return await db.transaction(async (tx) => {
 		// Get current season ID for the new run
-		const { getSeasonForNewRun } = await import(
-			"~/domains/seasons/services/seasonService"
-		);
+		const { getSeasonForNewRun } =
+			await import("~/domains/seasons/services/seasonService");
 		const seasonId = await getSeasonForNewRun();
 
 		const [runRecord] = await tx
@@ -50,6 +52,7 @@ export const createRunForUser = async (userId: string) => {
 				user_id: userId,
 				season_id: seasonId,
 				status: "active",
+				challenge_mode_id: challengeModeId,
 			})
 			.returning();
 
@@ -218,6 +221,19 @@ export const awardCoverageToRun = async (
 
 		return runCategoryCoverageFactory.toDTO(updatedRecord);
 	});
+};
+
+/**
+ * Increments the correct polls count for a run.
+ * Called when a player answers a poll with "full" outcome (completely correct).
+ */
+export const incrementCorrectPollsCount = async (runId: number) => {
+	await db
+		.update(runsTable)
+		.set({
+			correct_polls_count: sql`${runsTable.correct_polls_count} + 1`,
+		})
+		.where(eq(runsTable.id, runId));
 };
 
 // Get run for completion processing
@@ -428,7 +444,7 @@ export const skipShop = async (
 	date: string,
 	storageBonus: number = 0
 ) => {
-	const SKIP_REWARD = 60 * 1024; // 60KB in bytes
+	const SKIP_REWARD = 64 * 1024; // 64KB in bytes
 	const totalReward = SKIP_REWARD + storageBonus;
 
 	return await db.transaction(async (tx) => {
@@ -470,9 +486,8 @@ export const processRerollShop = async (runId: number, date?: string) => {
 
 		// TODO: Should we import it like this?
 		// Calculate the cost of this specific reroll
-		const { calculateRerollCost } = await import(
-			"~/domains/economy/services/reroll.service"
-		);
+		const { calculateRerollCost } =
+			await import("~/domains/economy/services/reroll.service");
 		const rerollCost = calculateRerollCost(runRecord.rerolls);
 
 		// Update the run with incremented reroll counts and storage used

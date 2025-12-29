@@ -1,5 +1,7 @@
 import { SecondaryButton } from "~/ui/SecondaryButton";
 
+const isDevelopment = process.env.NODE_ENV === "development";
+
 export function Auth({
 	actionText,
 	onSubmit,
@@ -22,35 +24,39 @@ export function Auth({
 					}}
 					className="space-y-4"
 				>
-					<div>
-						<label htmlFor="email" className="block text-xs">
-							Username
-						</label>
-						<input
-							type="email"
-							name="email"
-							id="email"
-							className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
-						/>
-					</div>
-					<div>
-						<label htmlFor="password" className="block text-xs">
-							Password
-						</label>
-						<input
-							type="password"
-							name="password"
-							id="password"
-							className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
-						/>
-					</div>
-					<SecondaryButton
-						type="submit"
-						className="w-full bg-cyan-600 text-white font-black uppercase"
-						disabled={status === "pending"}
-					>
-						{status === "pending" ? "..." : actionText}
-					</SecondaryButton>
+					{isDevelopment && (
+						<>
+							<div>
+								<label htmlFor="email" className="block text-xs">
+									Username
+								</label>
+								<input
+									type="email"
+									name="email"
+									id="email"
+									className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
+								/>
+							</div>
+							<div>
+								<label htmlFor="password" className="block text-xs">
+									Password
+								</label>
+								<input
+									type="password"
+									name="password"
+									id="password"
+									className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
+								/>
+							</div>
+							<SecondaryButton
+								type="submit"
+								className="w-full bg-cyan-600 text-white font-black uppercase"
+								disabled={status === "pending"}
+							>
+								{status === "pending" ? "..." : actionText}
+							</SecondaryButton>
+						</>
+					)}
 					{afterSubmit ? afterSubmit : null}
 				</form>
 			</div>

@@ -33,8 +33,8 @@ export const calculateEffectiveStorageLimit = (run: Run): number => {
 		run.activeConfigIds
 	);
 
-	// Add bonus storage from configs to base storage
-	return baseStorage + (storage.bonus ?? 0);
+	// Add passive storage expansion from configs (e.g., "Local Storage" config)
+	return baseStorage + (storage.expand ?? 0);
 };
 
 export const getStorageInfo = (
@@ -48,7 +48,7 @@ export const getStorageInfo = (
 	// Calculate effective storage limit with bonuses from configs
 	const effectiveStorageLimit = calculateEffectiveStorageLimit(run);
 
-	const storageUsed = configsStorage + rerollsStorage;
+	const storageUsed = configsStorage + rerollsStorage + run.deinstallPenalty;
 	const storageAvailable = effectiveStorageLimit - storageUsed;
 	const usagePercentage = getStorageUsagePercentage(
 		storageUsed,
@@ -245,9 +245,21 @@ export const getRandomConfigs = ({
 	configs: Config[];
 	count: number;
 }): Config[] => {
-	const seed = hashString(`${run.id}-${run.totalRerolls}`);
+	const today = new Date().toISOString().split("T")[0];
+	const seed = hashString(`${run.id}-${run.totalRerolls}-${today}`);
 	const random = createSeededRandom(seed);
 
-	const availableConfigs = configs.filter((c) => !hasConfig(run, c.id));
-	return performWeightedSelection(availableConfigs, count, random);
+	// Select more than needed from FULL pool to ensure we have enough after filtering
+	// This keeps selection stable regardless of which configs are already owned
+	const selectionPoolSize = Math.min(configs.length, count * 3);
+	const selectedFromFullPool = performWeightedSelection(
+		configs,
+		selectionPoolSize,
+		random
+	);
+
+	// Filter out already-owned configs and take only what we need
+	return selectedFromFullPool
+		.filter((config) => !hasConfig(run, config.id))
+		.slice(0, count);
 };

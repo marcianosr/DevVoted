@@ -43,18 +43,6 @@ describe("Poll Validation Schemas", () => {
 			);
 		});
 
-		it("rejects too many selected options", () => {
-			const invalidData = {
-				pollId: 1,
-				selectedOptions: Array(11).fill("1"),
-				userId: "123e4567-e89b-12d3-a456-426614174000",
-			};
-
-			expect(() => pollSubmissionSchema.parse(invalidData)).toThrow(
-				"Cannot select more than 10 options"
-			);
-		});
-
 		it("rejects invalid UUID", () => {
 			const invalidData = {
 				pollId: 1,

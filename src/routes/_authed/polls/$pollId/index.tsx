@@ -12,6 +12,17 @@ const PollDetail: React.FC = () => {
 
 	return (
 		<section className="max-w-5xl mx-auto p-4">
+			{isAdmin && (
+				<div className="mb-4 pb-2 border-b border-gray-700">
+					<Link
+						to="/polls/$pollId/edit"
+						params={{ pollId: String(poll.id) }}
+						className="text-primary hover:text-primary/80 hover:underline text-sm"
+					>
+						✏️ Edit Poll
+					</Link>
+				</div>
+			)}
 			<div className="flex justify-between items-start mb-4">
 				<aside>
 					<h2>#{poll.pollNumber}</h2>
@@ -33,15 +44,6 @@ const PollDetail: React.FC = () => {
 					</p>
 					<p className="text-theme">Category: {poll.categoryCode}</p>
 				</aside>
-				{isAdmin && (
-					<Link
-						to="/polls/$pollId/edit"
-						params={{ pollId: String(poll.id) }}
-						className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
-					>
-						Edit Poll
-					</Link>
-				)}
 			</div>
 			<PollQuestionDisplay poll={poll} />
 			{poll.codeSandboxExample && (

@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "correct_polls_count" integer DEFAULT 0 NOT NULL;

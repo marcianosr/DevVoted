@@ -1,7 +1,6 @@
-import ReactMarkdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
-
 import { PollOption } from "~/domains/polls/models/pollOption";
+
+import MarkdownText from "./MarkdownText";
 
 // Define a simplified field interface that matches what we need from TanStack Form
 type FormFieldApi = {
@@ -78,9 +77,7 @@ const Option = ({
 				htmlFor={inputId}
 				className={`markdown text-white flex-1 ${disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer"}`}
 			>
-				<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-					{option.option}
-				</ReactMarkdown>
+				<MarkdownText>{option.option}</MarkdownText>
 			</label>
 		</div>
 	);

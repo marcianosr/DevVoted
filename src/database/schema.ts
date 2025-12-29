@@ -263,6 +263,7 @@ export const runsTable = pgTable("runs", {
 		onDelete: "set null",
 	}), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
+	challenge_mode_id: varchar("challenge_mode_id", { length: 50 }),
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	active_config_ids: json("active_config_ids")
 		.$type<string[]>()
@@ -273,6 +274,8 @@ export const runsTable = pgTable("runs", {
 	reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
 	shop_skipped_date: varchar("shop_skipped_date", { length: 10 }), // Date when shop was skipped "YYYY-MM-DD"
 	shop_interacted_date: varchar("shop_interacted_date", { length: 10 }), // Date when user interacted with shop
+	deinstall_penalty: integer("deinstall_penalty").notNull().default(0), // Storage penalty from deinstalling configs
+	correct_polls_count: integer("correct_polls_count").notNull().default(0), // Number of correctly answered polls in this run
 	completion_reason: varchar("completion_reason", { length: 50 }), // Reason for run completion: "victory", "threshold_not_met", "wrong_answer", "manual_break_off"
 	started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
 	finished_at: timestamp("finished_at", { withTimezone: true }),

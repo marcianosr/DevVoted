@@ -1,5 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useNavigate,
+	useRouter,
+} from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 import {
@@ -70,6 +74,7 @@ export const Route = createFileRoute("/_authed/polls/$pollId/edit")({
 });
 
 function EditPoll() {
+	const router = useRouter();
 	const navigate = useNavigate();
 	const { poll, options } = Route.useLoaderData();
 
@@ -83,7 +88,8 @@ function EditPoll() {
 			}
 			return response.data;
 		},
-		onSuccess: () => {
+		onSuccess: async () => {
+			await router.invalidate();
 			navigate({ to: "/polls/$pollId", params: { pollId: String(poll.id) } });
 		},
 	});
