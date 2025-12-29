@@ -223,6 +223,19 @@ export const awardCoverageToRun = async (
 	});
 };
 
+/**
+ * Increments the correct polls count for a run.
+ * Called when a player answers a poll with "full" outcome (completely correct).
+ */
+export const incrementCorrectPollsCount = async (runId: number) => {
+	await db
+		.update(runsTable)
+		.set({
+			correct_polls_count: sql`${runsTable.correct_polls_count} + 1`,
+		})
+		.where(eq(runsTable.id, runId));
+};
+
 // Get run for completion processing
 export const getRunForCompletion = async (runId: number) => {
 	const [run] = await db
@@ -431,7 +444,7 @@ export const skipShop = async (
 	date: string,
 	storageBonus: number = 0
 ) => {
-	const SKIP_REWARD = 60 * 1024; // 60KB in bytes
+	const SKIP_REWARD = 64 * 1024; // 64KB in bytes
 	const totalReward = SKIP_REWARD + storageBonus;
 
 	return await db.transaction(async (tx) => {

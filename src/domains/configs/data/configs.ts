@@ -12,7 +12,7 @@ export const configs: Config[] = [
 		name: ".html",
 		image: "/configs/html",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category HTML polls",
+		description: "+2% coverage on category HTML polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["html"],
@@ -24,7 +24,7 @@ export const configs: Config[] = [
 		name: ".css",
 		image: "/configs/css",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category CSS polls",
+		description: "+2% coverage on category CSS polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["css"],
@@ -36,7 +36,7 @@ export const configs: Config[] = [
 		name: ".js",
 		image: "/configs/js",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category JavaScript polls",
+		description: "+2% coverage on category JavaScript polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["js"],
@@ -48,7 +48,7 @@ export const configs: Config[] = [
 		name: ".ts",
 		image: "/configs/ts",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category TypeScript polls",
+		description: "+2% coverage on category TypeScript polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["ts"],
@@ -60,7 +60,7 @@ export const configs: Config[] = [
 		name: ".jsx",
 		image: "/configs/jsx",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category React polls",
+		description: "+2% coverage on category React polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["react"],
@@ -72,7 +72,7 @@ export const configs: Config[] = [
 		name: ".git",
 		image: "/configs/git",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category Git polls",
+		description: "+2% coverage on category Git polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["git"],
@@ -84,7 +84,7 @@ export const configs: Config[] = [
 		name: "package.json",
 		image: "/configs/package-json.png",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+2% coverage on category General Frontend polls",
+		description: "+2% coverage on category General Frontend polls.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		targetCategories: ["general-frontend"],
@@ -96,7 +96,7 @@ export const configs: Config[] = [
 		name: "Local Storage",
 		image: "/configs/local-storage.png",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "When held, grants 512KB of extra storage",
+		description: "When held, grants 512KB of extra storage.",
 		rarity: "common",
 		effect: ["expandStorage"],
 		priority: 100,
@@ -108,7 +108,7 @@ export const configs: Config[] = [
 		image: "/configs/eslint.png",
 		cost: STORAGE_UNITS.MB / 2,
 		description:
-			"Disables 1 wrong option when answering JavaScript/TypeScript polls",
+			"Disables 1 wrong option when answering JavaScript/TypeScript polls.",
 		rarity: "uncommon",
 		effect: ["disableWrongOptions"],
 		priority: 100,
@@ -118,7 +118,7 @@ export const configs: Config[] = [
 		name: "Stylelint Config",
 		image: "/configs/stylelint.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Disables 1 wrong option when answering HTML/CSS polls",
+		description: "Disables 1 wrong option when answering HTML/CSS polls.",
 		rarity: "uncommon",
 		effect: ["disableWrongOptions"],
 		priority: 100,
@@ -128,7 +128,7 @@ export const configs: Config[] = [
 		name: "Code Coverage Config",
 		image: "/configs/code-coverage.png",
 		cost: STORAGE_UNITS.MB / 4,
-		description: "+0.5% coverage polls for every poll answered",
+		description: "+0.5% coverage polls for every poll answered.",
 		rarity: "common",
 		effect: ["streakAmp"],
 		priority: 100,
@@ -152,7 +152,7 @@ export const configs: Config[] = [
 		name: "Math Random",
 		image: "/configs/math-random.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Random code coverage value between -5 and +5 every poll",
+		description: "Random code coverage value between -5 and +5 every poll.",
 		rarity: "rare",
 		effect: ["randomStreakAmp"],
 		priority: 100,
@@ -174,7 +174,7 @@ export const configs: Config[] = [
 		name: "Hot Reload",
 		image: "/configs/hot-reload-config.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Allow rebuilds to reset after every poll",
+		description: "Allow rebuilds to reset after every poll.",
 		rarity: "rare",
 		effect: ["resetRebuild"],
 		priority: 50,
@@ -184,7 +184,7 @@ export const configs: Config[] = [
 		name: "Grid Template Areas",
 		image: "/configs/grid-template-areas.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "Adds another slot in the shop",
+		description: "Adds another slot in the shop.",
 		rarity: "rare",
 		effect: ["addSlotToShop"],
 		priority: 100,
@@ -194,7 +194,7 @@ export const configs: Config[] = [
 		name: "Copilot",
 		image: "/configs/copilot.png",
 		cost: STORAGE_UNITS.MB,
-		description: "×2 your coverage score in every category when held",
+		description: "×2 coverage score in every category.",
 		rarity: "legendary",
 		effect: ["streakAmp"],
 		priority: 100,
@@ -207,7 +207,7 @@ export const configs: Config[] = [
 		name: "Intellisense",
 		image: "/configs/intellisense.png",
 		cost: STORAGE_UNITS.MB / 2,
-		description: "×1.5 your coverage score in every category when held",
+		description: "×1.5 coverage score in every category.",
 		rarity: "rare",
 		effect: ["streakAmp"],
 		priority: 100,
@@ -224,7 +224,7 @@ export const configs: Config[] = [
 		rarity: "rare",
 		effect: ["bonusShopStorage"],
 		priority: 100,
-		storageBonus: STORAGE_UNITS.KB * 60, // 60KB bonus storage
+		storageBonus: STORAGE_UNITS.KB * 64, // 64KB bonus storage
 	},
 	{
 		id: "includes-config",
@@ -247,6 +247,19 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: ["showWhoPickedWhat"],
 		priority: 100,
+	},
+	{
+		id: "indexed-db-config",
+		name: "IndexedDB",
+		image: "/configs/indexed-db.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"+8KB for each correct poll you had and will have this run. Max 320KB.",
+		rarity: "uncommon",
+		effect: ["dynamicStorageBonus"],
+		priority: 100,
+		storagePerCorrect: STORAGE_UNITS.KB * 8,
+		maxStorageBonus: STORAGE_UNITS.KB * 320,
 	},
 ];
 
@@ -414,6 +427,22 @@ const EFFECTS: Record<string, EffectFn> = {
 			storage: { expand: bonusStorage },
 			meta: {
 				notes: [`+${formatStorage(bonusStorage)} storage capacity`],
+			},
+		};
+	},
+
+	dynamicStorageBonus: ({ poll, options, run, hasAnswered }, config) => {
+		const perCorrect = config.storagePerCorrect ?? STORAGE_UNITS.KB * 8;
+		const maxBonus = config.maxStorageBonus ?? STORAGE_UNITS.KB * 320;
+		const bonusStorage = Math.min(run.correctPollsCount * perCorrect, maxBonus);
+
+		return {
+			view: { poll, options, run, hasAnswered },
+			storage: { expand: bonusStorage },
+			meta: {
+				notes: [
+					`+${formatStorage(bonusStorage)} storage (${run.correctPollsCount} correct polls)`,
+				],
 			},
 		};
 	},

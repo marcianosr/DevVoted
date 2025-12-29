@@ -103,7 +103,7 @@ export const finishRunHandler = async (userId: string) => {
 
 /**
  * Skips the shop for the current date and grants storage bonus
- * Base reward: 60KB + any storageBonus from active configs
+ * Base reward: 64KB + any storageBonus from active configs
  */
 export const skipShopHandler = async (
 	userId: string,

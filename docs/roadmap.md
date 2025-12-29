@@ -146,12 +146,12 @@ BUGS:
 
 
 **Game play**
-[] Show gate status good/failed based on polls answers
-[]Show indetermined state on multiple choice
+[] Show indetermined state on multiple choice
 [x] Half the price of uninstalling, adding "junk" to storage [idea]
 [] Vote for the next category (poll) [idea]
   - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
 [x] Make gates harder - they are too simple
+[] Show gate status good/failed based on polls answers on /progress [brainstorm]
 [] More leaderboard variants
   - also show current gate
   - All-time leaderboard (best runs)
@@ -193,7 +193,7 @@ BUGS:
 
 **Bugs**
 [] x is shown even when requirements are met in mini header
-[] Poll header showing countdown of next poll not in sync. Make sure the poll is changing at 0:00
+[o] Poll header showing countdown of next poll not in sync. Make sure the poll is changing at 0:00
 [x] Active configs are small on desktop
 [] Wrong score is still reflected in score breakdown and leaderboard
 [] Update poll with "month" answer

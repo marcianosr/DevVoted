@@ -260,6 +260,13 @@
       "when": 1765803795522,
       "tag": "0036_breezy_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1766999604349,
+      "tag": "0037_chunky_greymalkin",
+      "breakpoints": true
     }
   ]
 }
