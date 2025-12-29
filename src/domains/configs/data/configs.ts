@@ -238,6 +238,17 @@ export const configs: Config[] = [
 		priority: 100,
 	},
 	{
+		id: "length-config",
+		name: ".length",
+		image: "/configs/length.png",
+		cost: STORAGE_UNITS.MB / 8,
+		description:
+			"Shows how many correct answers exist on multiple choice polls",
+		rarity: "rare",
+		effect: ["showCorrectCount"],
+		priority: 100,
+	},
+	{
 		id: "telemetry-config",
 		name: "Telemetry",
 		image: "/configs/telemetry.png",
@@ -304,6 +315,7 @@ export type EffectOut = {
 	resetRebuild?: boolean;
 	extraSlot?: boolean;
 	countCorrect?: boolean;
+	showCorrectCount?: boolean;
 	showWhoPickedWhat?: boolean;
 };
 
@@ -320,6 +332,7 @@ export type ApplyEffects = {
 	resetRebuild: boolean;
 	extraSlot: boolean;
 	countCorrect: boolean;
+	showCorrectCount: boolean;
 	showWhoPickedWhat: boolean;
 };
 
@@ -572,6 +585,26 @@ const EFFECTS: Record<string, EffectFn> = {
 			meta: { notes: ["Will show correct answers on multiple choice polls"] },
 		};
 	},
+
+	// Shows how many correct answers exist on multiple choice polls (.length Config effect)
+	showCorrectCount: ({ poll, options, run, hasAnswered }, _config) => {
+		if (poll.answerType !== "multiple") {
+			return {
+				showCorrectCount: false,
+				view: { poll, options, run, hasAnswered },
+				meta: { notes: ["Not a multiple choice poll"] },
+			};
+		}
+
+		return {
+			showCorrectCount: true,
+			view: { poll, options, run, hasAnswered },
+			meta: {
+				notes: ["Will show correct answer count on multiple choice polls"],
+			},
+		};
+	},
+
 	showWhoPickedWhat: ({ poll, options, run, hasAnswered }, _config) => {
 		return {
 			showWhoPickedWhat: true,
@@ -617,6 +650,7 @@ export function applyEffects(
 			resetRebuild: false,
 			extraSlot: false,
 			countCorrect: false,
+			showCorrectCount: false,
 			showWhoPickedWhat: false,
 		};
 
@@ -680,6 +714,8 @@ export function applyEffects(
 				extraSlot: acc.extraSlot || out.extraSlot || false,
 				countCorrect:
 					(acc.countCorrect ?? false) || (out.countCorrect ?? false),
+				showCorrectCount:
+					(acc.showCorrectCount ?? false) || (out.showCorrectCount ?? false),
 				showWhoPickedWhat:
 					(acc.showWhoPickedWhat ?? false) || (out.showWhoPickedWhat ?? false),
 
@@ -703,6 +739,7 @@ export function applyEffects(
 			resetRebuild: false,
 			extraSlot: false,
 			countCorrect: false,
+			showCorrectCount: false,
 			showWhoPickedWhat: false,
 		}
 	);

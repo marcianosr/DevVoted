@@ -18,6 +18,7 @@ type PollOptionsProps = {
 	disabled: boolean;
 	disabledOptionIds?: number[];
 	countCorrect?: boolean;
+	showCountCorrect?: boolean;
 	communityStats: CommunityStats | null;
 };
 
@@ -28,6 +29,7 @@ export const PollOptions = ({
 	disabled,
 	disabledOptionIds,
 	countCorrect,
+	showCountCorrect,
 	communityStats,
 }: PollOptionsProps) => {
 	const selectedCorrectCount = options.filter(
@@ -48,6 +50,14 @@ export const PollOptions = ({
 							You have not selected a correct answer yet.
 						</p>
 					)}
+				</div>
+			)}
+			{showCountCorrect && (
+				<div className="my-2">
+					<p className="text-xl text-green-400">
+						You have selected {selectedCorrectCount} correct answer
+						{selectedCorrectCount !== 1 ? "s" : ""}
+					</p>
 				</div>
 			)}
 			<ul className="space-y-2">

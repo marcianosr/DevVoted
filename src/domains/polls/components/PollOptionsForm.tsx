@@ -76,6 +76,7 @@ const PollOptionsForm = ({
 							disabled={hasAnswered}
 							disabledOptionIds={effect.renderProps.disabledOptionIds}
 							countCorrect={effect.countCorrect}
+							showCountCorrect={effect.showCorrectCount}
 							communityStats={communityStats}
 						/>
 						{field.state.meta.errors.length > 0 && (
