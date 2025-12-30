@@ -100,9 +100,26 @@ describe("score.service", () => {
 			expect(
 				calculateCoverage({ correctnessFactor: 0.5, round: 1, streak: 0 })
 			).toBe(0.6); // 1.2 × 0.5
-			expect(
-				calculateCoverage({ correctnessFactor: 0.0, round: 1, streak: 0 })
-			).toBe(-0.5); // Wrong = -0.5%
+		});
+
+		it("applies penalty at round 1: -0.7", () => {
+			// -0.5 × (1 + 1 × 0.4) = -0.7
+			const result = calculateCoverage({
+				correctnessFactor: 0,
+				round: 1,
+				streak: 0,
+			});
+			expect(result).toBeCloseTo(-0.7, 2);
+		});
+
+		it("applies penalty at round 10: -2.5", () => {
+			// -0.5 × (1 + 10 × 0.4) = -2.5
+			const result = calculateCoverage({
+				correctnessFactor: 0,
+				round: 10,
+				streak: 0,
+			});
+			expect(result).toBeCloseTo(-2.5, 2);
 		});
 
 		it("calculates coverage with round scaling (round 5)", () => {
@@ -196,14 +213,15 @@ describe("score.service", () => {
 				currentStreak: 5,
 				currentBestStreak: 5,
 				totalPollsAnswered: 10,
-				totalPollsSeen: 10,
+				totalPollsSeen: 10, // Round 3: floor(10/5) + 1 = 3
 				correctnessFactor: 0,
 				pollsPerGate: 5,
 			});
 
-			expect(result.newStreak).toBe(0); // Streak reset
-			expect(result.breakdown.earnedCoverage).toBe(-0.5); // Wrong answer penalty
-			expect(result.newTotalCoverage).toBe(19.5); // 20 + (-0.5) = 19.5
+			// Round 3 penalty: -0.5 × (1 + 3 × 0.4) = -1.1
+			expect(result.newStreak).toBe(0);
+			expect(result.breakdown.earnedCoverage).toBe(-1.1);
+			expect(result.newTotalCoverage).toBe(18.9);
 		});
 
 		it("applies config coverage bonus on top of scaling", () => {
