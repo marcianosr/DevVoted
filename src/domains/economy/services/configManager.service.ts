@@ -1,6 +1,10 @@
 import { configs, applyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
 import { Run } from "~/domains/runs/models/run";
+import {
+	selectMultipleWeightedSeededRandom,
+	WeightedItem,
+} from "~/lib/seededRandom";
 import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
 
 export const getActiveConfigs = (
@@ -133,101 +137,6 @@ const RARITY_WEIGHTS = {
 } as const;
 
 /**
- * Creates a seeded random number generator.
- * Uses mulberry32 algorithm — fast, good distribution, deterministic.
- */
-const createSeededRandom = (seed: number) => {
-	let state = seed;
-	return () => {
-		state |= 0;
-		state = (state + 0x6d2b79f5) | 0;
-		let t = Math.imul(state ^ (state >>> 15), 1 | state);
-		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-	};
-};
-
-/**
- * Simple string hash for seed generation.
- */
-const hashString = (str: string): number => {
-	let hash = 0;
-	for (let i = 0; i < str.length; i++) {
-		const char = str.charCodeAt(i);
-		hash = (hash << 5) - hash + char;
-		hash |= 0;
-	}
-	return Math.abs(hash);
-};
-
-type WeightedConfig = {
-	config: Config;
-	weight: number;
-	cumulativeWeight: number;
-};
-
-/**
- * Creates weighted config entries with cumulative weights for efficient selection
- */
-const createWeightedConfigs = (configs: Config[]): WeightedConfig[] => {
-	let cumulativeWeight = 0;
-
-	return configs.map((config) => {
-		const weight = RARITY_WEIGHTS[config.rarity];
-		cumulativeWeight += weight;
-		return {
-			config,
-			weight,
-			cumulativeWeight,
-		};
-	});
-};
-
-/**
- * Selects a config using binary search on cumulative weights
- */
-const selectByWeight = (
-	weightedConfigs: WeightedConfig[],
-	randomValue: number
-): Config => {
-	const selected = weightedConfigs.find(
-		(weighted) => randomValue <= weighted.cumulativeWeight
-	);
-	return selected?.config ?? weightedConfigs[0].config;
-};
-
-/**
- * Performs weighted random selection without replacement
- */
-const performWeightedSelection = (
-	configs: Config[],
-	count: number,
-	random: () => number
-): Config[] => {
-	if (configs.length === 0) return [];
-
-	const selected: Config[] = [];
-	let remainingConfigs = [...configs];
-
-	for (let i = 0; i < count && remainingConfigs.length > 0; i++) {
-		const weightedConfigs = createWeightedConfigs(remainingConfigs);
-		const totalWeight =
-			weightedConfigs[weightedConfigs.length - 1].cumulativeWeight;
-		const randomValue = random() * totalWeight;
-
-		const selectedConfig = selectByWeight(weightedConfigs, randomValue);
-		selected.push(selectedConfig);
-
-		// Remove selected config for next iteration (no replacement)
-		remainingConfigs = remainingConfigs.filter(
-			(c) => c.id !== selectedConfig.id
-		);
-	}
-
-	return selected;
-};
-
-/**
  * Gets random configs for the shop using a seeded RNG.
  * Same run + same totalRerolls = same offered configs.
  * Configs only change when user pays to reroll (increments totalRerolls).
@@ -246,16 +155,21 @@ export const getRandomConfigs = ({
 	count: number;
 }): Config[] => {
 	const today = new Date().toISOString().split("T")[0];
-	const seed = hashString(`${run.id}-${run.totalRerolls}-${today}`);
-	const random = createSeededRandom(seed);
+	const seed = `${run.id}-${run.totalRerolls}-${today}`;
+
+	// Convert configs to weighted items based on rarity
+	const weightedConfigs: WeightedItem<Config>[] = configs.map((config) => ({
+		item: config,
+		weight: RARITY_WEIGHTS[config.rarity],
+	}));
 
 	// Select more than needed from FULL pool to ensure we have enough after filtering
 	// This keeps selection stable regardless of which configs are already owned
 	const selectionPoolSize = Math.min(configs.length, count * 3);
-	const selectedFromFullPool = performWeightedSelection(
-		configs,
+	const selectedFromFullPool = selectMultipleWeightedSeededRandom(
+		weightedConfigs,
 		selectionPoolSize,
-		random
+		seed
 	);
 
 	// Filter out already-owned configs and take only what we need
