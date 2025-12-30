@@ -125,7 +125,7 @@ export const calculateCoverage = ({
 }: CalculateCoverageParams): number => {
 	// Wrong answer gets penalty
 	if (correctnessFactor === 0) {
-		return WRONG_ANSWER_PENALTY * (1 + round * 0.4); // Penalty scales with round
+		return WRONG_ANSWER_PENALTY * (1 + round * 2); // Penalty scales with round
 	}
 
 	// Correct answer: base + streak bonus, multiplied by correctness

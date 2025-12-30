@@ -146,7 +146,8 @@ BUGS:
 
 
 **Game play**
-[] Show indetermined state on multiple choice
+[x] Consider increasing penalty by round
+[] What happens when someone reaches 100% coverage in a category?
 [x] Half the price of uninstalling, adding "junk" to storage [idea]
 [] Vote for the next category (poll) [idea]
   - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
@@ -159,7 +160,6 @@ BUGS:
 [x] Make sure the rules on start screen is clear
 [] Consider poll rating: very easy to very hard
 [] Think of what winners do next
-[] Restore Next.js polls
 [] Loading states - some stuff takes too long
 [] Leaderboard showing all categories and gates of players to each other
 [x] Add clarifying labels to the coverage breakdown
@@ -189,10 +189,14 @@ BUGS:
 
 **Maintainability**
 [] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
+  [] Restore Next.js polls
 [x] Upgrades of packages
 
 **Bugs**
-[] x is shown even when requirements are met in mini header
+[] Show indetermined state on multiple choice
+[] Mini header issues:
+  [] Doesn't show the correct categories? (check gate 7)
+  [] x is shown even when requirements are met in mini header
 [o] Poll header showing countdown of next poll not in sync. Make sure the poll is changing at 0:00
 [x] Active configs are small on desktop
 [] Wrong score is still reflected in score breakdown and leaderboard
@@ -332,6 +336,36 @@ BUGS:
 
 ### Season 3: Expansion
 [] Think of a way to have umbrella categories - e.g., "Frontend Frameworks" that contain React, Vue, Angular and sub categories
+        Option A: Separate categories (current behavior)
+        React:     ████████░░ 80%
+        Vue:       ██░░░░░░░░ 20%
+        Angular:   ░░░░░░░░░░ 0%
+        ───────────────────────
+        CI Gate: Need 30% in 2 categories ❌ (only React qualifies)
+        - Each framework = its own coverage
+        - Rewards deep expertise
+        - Can be punishing if you only know React but get Vue/Angular polls
+
+        ---
+        Option B: Grouped coverage
+        Frontend Frameworks: ████████░░ 33% (average of React+Vue+Angular)
+        ───────────────────────
+        CI Gate: Need 30% in Frontend Frameworks ✅
+        - All framework polls contribute to one score
+        - More forgiving - React strength compensates Vue weakness
+        - Simpler mental model
+
+        ---
+        Option C: Hybrid (track both)
+        Frontend Frameworks: 33% overall
+          └─ React:   80%
+          └─ Vue:     20%
+          └─ Angular: 0%
+        ───────────────────────
+        CI Gate uses GROUP score (33%)
+        Leaderboard shows INDIVIDUAL breakdown
+        - Best of both: forgiving gates, detailed stats
+        - More complex to implement
 [] Style category tiers? - red for dangerous low coverage - yellow for low coverage - orange for medium coverage - green for high coverage - gold for max coverage
 [] Introduce new polls types: Guessers and puzzle grids
 [] Add Head tags seo

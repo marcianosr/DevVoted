@@ -102,24 +102,24 @@ describe("score.service", () => {
 			).toBe(0.6); // 1.2 × 0.5
 		});
 
-		it("applies penalty at round 1: -0.7", () => {
-			// -0.5 × (1 + 1 × 0.4) = -0.7
+		it("applies penalty at round 1: -1.5", () => {
+			// -0.5 × (1 + 1 × 2) = -1.5
 			const result = calculateCoverage({
 				correctnessFactor: 0,
 				round: 1,
 				streak: 0,
 			});
-			expect(result).toBeCloseTo(-0.7, 2);
+			expect(result).toBeCloseTo(-1.5, 2);
 		});
 
-		it("applies penalty at round 10: -2.5", () => {
-			// -0.5 × (1 + 10 × 0.4) = -2.5
+		it("applies penalty at round 10: -10.5", () => {
+			// -0.5 × (1 + 10 × 2) = -10.5
 			const result = calculateCoverage({
 				correctnessFactor: 0,
 				round: 10,
 				streak: 0,
 			});
-			expect(result).toBeCloseTo(-2.5, 2);
+			expect(result).toBeCloseTo(-10.5, 2);
 		});
 
 		it("calculates coverage with round scaling (round 5)", () => {
@@ -218,10 +218,10 @@ describe("score.service", () => {
 				pollsPerGate: 5,
 			});
 
-			// Round 3 penalty: -0.5 × (1 + 3 × 0.4) = -1.1
+			// Round 3 penalty: -0.5 × (1 + 3 × 2) = -3.5
 			expect(result.newStreak).toBe(0);
-			expect(result.breakdown.earnedCoverage).toBe(-1.1);
-			expect(result.newTotalCoverage).toBe(18.9);
+			expect(result.breakdown.earnedCoverage).toBe(-3.5);
+			expect(result.newTotalCoverage).toBe(16.5);
 		});
 
 		it("applies config coverage bonus on top of scaling", () => {
