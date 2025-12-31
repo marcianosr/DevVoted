@@ -470,6 +470,20 @@ export const skipShop = async (
 	});
 };
 
+/**
+ * Get all active config IDs across all active runs.
+ * Used for calculating global category weights for daily poll selection.
+ * Each active run contributes its configs to the global weight pool.
+ */
+export const getAllActiveConfigIds = async (): Promise<string[]> => {
+	const activeRuns = await db
+		.select({ activeConfigIds: runsTable.active_config_ids })
+		.from(runsTable)
+		.where(eq(runsTable.status, "active"));
+
+	return activeRuns.flatMap((run) => run.activeConfigIds);
+};
+
 // Process reroll shop request
 export const processRerollShop = async (runId: number, date?: string) => {
 	return await db.transaction(async (tx) => {

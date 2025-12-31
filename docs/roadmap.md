@@ -146,6 +146,7 @@ BUGS:
 
 
 **Game play**
+[] Rebuild Telemtry config
 [x] Consider increasing penalty by round
 [] What happens when someone reaches 100% coverage in a category?
 [x] Half the price of uninstalling, adding "junk" to storage [idea]
@@ -188,8 +189,7 @@ BUGS:
 [] Config purchase analytics
 
 **Maintainability**
-[] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
-  [] Restore Next.js polls
+[] Add e2e test for core flow
 [x] Upgrades of packages
 
 **Bugs**

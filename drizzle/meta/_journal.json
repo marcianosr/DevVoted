@@ -267,6 +267,13 @@
       "when": 1766999604349,
       "tag": "0037_chunky_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1767192585471,
+      "tag": "0038_harsh_goblin_queen",
+      "breakpoints": true
     }
   ]
 }
