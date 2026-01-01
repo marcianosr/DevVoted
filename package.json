@@ -38,7 +38,8 @@
 		"db:migrate": "npx drizzle-kit migrate",
 		"db:refresh": "npm run db:reset && npm run db:generate && npm run db:push && npm run db:seed",
 		"export:firebase": "node scripts/export-polls.js",
-		"prepare": "husky"
+		"prepare": "husky",
+		"test-category-weights": "tsx scripts/test-weights.ts"
 	},
 	"author": "marciano_schildmeijer@live.nl",
 	"license": "ISC",

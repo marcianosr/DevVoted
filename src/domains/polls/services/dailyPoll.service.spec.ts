@@ -121,6 +121,7 @@ describe("dailyPoll.service", () => {
 			expect(queries.getOrCreateDailyPoll).toHaveBeenCalledOnce();
 			expect(queries.getOrCreateDailyPoll).toHaveBeenCalledWith(
 				"2025-05-13",
+				expect.any(Function),
 				expect.any(Function)
 			);
 		});
@@ -191,10 +192,11 @@ describe("dailyPoll.service", () => {
 
 			expect(queries.getOrCreateDailyPoll).toHaveBeenCalledWith(
 				"2025-05-13",
+				expect.any(Function),
 				expect.any(Function)
 			);
 
-			// Get the selection function that was passed
+			// Get the selection function that was passed (unweighted fallback)
 			const selectionFunction = vi.mocked(queries.getOrCreateDailyPoll).mock
 				.calls[0][1];
 			const mockPolls = [expectedPoll];

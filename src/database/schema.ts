@@ -128,14 +128,16 @@ export const pollsTable = pgTable("polls", {
  * Scheduling layer for daily poll selection - provides O(1) lookup by date
  * - One poll per day (enforced by unique constraint on date)
  * - Eliminates expensive full-table scans for poll selection
- * - First request of day creates the record, subsequent requests just read
+ * - category_weights: Snapshot of global weights at end of previous day
+ * - poll_id: Selected poll (nullable until poll is chosen using weights)
  */
 export const dailyPollsTable = pgTable("daily_polls", {
 	id: serial("id").primaryKey(),
 	date: varchar("date", { length: 10 }).notNull().unique(), // "YYYY-MM-DD"
-	poll_id: integer("poll_id")
-		.references(() => pollsTable.id, { onDelete: "cascade" })
-		.notNull(),
+	poll_id: integer("poll_id").references(() => pollsTable.id, {
+		onDelete: "cascade",
+	}), // Nullable - filled when poll is selected
+	category_weights: json("category_weights").$type<Record<string, number>>(), // Weights snapshot from previous day
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 

@@ -24,6 +24,7 @@ import {
 import { Poll, pollFactory } from "~/domains/polls/models/poll";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
+import type { CategoryWeights } from "~/domains/polls/services/categoryWeight.service";
 import { User } from "~/domains/users/services/userSync.service";
 
 export const fetchPollById = async (id: number): Promise<Poll | null> => {
@@ -187,27 +188,53 @@ export const getUserSelectedOptions = async (
 };
 
 /**
+ * Snapshot category weights for a future date (typically tomorrow).
+ * Called at midnight to lock in weights based on current active configs.
+ * Creates a daily_polls record with only the weights - poll_id stays null until first request.
+ */
+export const snapshotDailyWeights = async (
+	date: string,
+	weights: CategoryWeights
+): Promise<void> => {
+	await db
+		.insert(dailyPollsTable)
+		.values({
+			date,
+			poll_id: null,
+			category_weights: weights,
+		})
+		.onConflictDoNothing(); // If record already exists, don't overwrite
+};
+
+/**
  * Get or create the daily poll for a specific date
  * Fast path: O(1) lookup if poll already exists for date
- * Slow path: Seeded selection + insert (first request of the day only)
+ * Slow path: Weighted seeded selection + update (first request of the day only)
+ *
+ * Uses category_weights from daily_polls if they were snapshotted at midnight.
+ * Falls back to unweighted selection (equal probability) if no weights exist.
  */
 export const getOrCreateDailyPoll = async (
 	date: string,
-	selectPollFn: (polls: Poll[]) => Poll | null
+	selectPollFn: (polls: Poll[]) => Poll | null,
+	selectWeightedPollFn?: (
+		polls: { id: number; categoryCode: string }[],
+		weights: CategoryWeights
+	) => { id: number; categoryCode: string } | null
 ): Promise<Poll | null> => {
-	// Fast path: check if daily poll already exists for this date
+	// Fast path: check if daily poll already exists AND has a selected poll
 	const [existingDailyPoll] = await db
 		.select()
 		.from(dailyPollsTable)
 		.where(eq(dailyPollsTable.date, date))
 		.limit(1);
 
-	if (existingDailyPoll) {
+	if (existingDailyPoll?.poll_id) {
 		const poll = await fetchPollById(existingDailyPoll.poll_id);
 		return poll;
 	}
 
-	// Slow path: first request of the day - select and insert
+	// Slow path: first request of the day - select poll and update record
 	return await db.transaction(async (tx) => {
 		// Double-check in transaction to prevent race conditions
 		const [existingInTx] = await tx
@@ -216,16 +243,14 @@ export const getOrCreateDailyPoll = async (
 			.where(eq(dailyPollsTable.date, date))
 			.limit(1);
 
-		if (existingInTx) {
+		if (existingInTx?.poll_id) {
 			const poll = await fetchPollById(existingInTx.poll_id);
 			return poll;
 		}
 
-		// Get poll IDs from the available pool (status = 'closed' or 'open')
-		// Drafts and archived polls are excluded from daily selection
-		// Include 'open' to match old behavior where open poll was closed first
+		// Get polls from the available pool with their category codes for weighted selection
 		const pollRecords = await tx
-			.select({ id: pollsTable.id })
+			.select({ id: pollsTable.id, categoryCode: pollsTable.category_code })
 			.from(pollsTable)
 			.where(or(eq(pollsTable.status, "closed"), eq(pollsTable.status, "open")))
 			.orderBy(pollsTable.id);
@@ -234,19 +259,56 @@ export const getOrCreateDailyPoll = async (
 			return null;
 		}
 
-		// Create minimal Poll objects for selection (only need id for seeded random)
-		const pollsForSelection = pollRecords.map((r) => ({ id: r.id }) as Poll);
-		const selectedPoll = selectPollFn(pollsForSelection);
+		let selectedPoll: { id: number; categoryCode: string } | null = null;
+
+		// Use weighted selection if weights exist and weighted function provided
+		const storedWeights =
+			existingInTx?.category_weights as CategoryWeights | null;
+
+		// DEBUG: Log what's happening
+		console.log("🔍 DEBUG getOrCreateDailyPoll:");
+		console.log("   existingInTx:", existingInTx ? "found" : "null");
+		console.log("   storedWeights:", storedWeights);
+		console.log(
+			"   selectWeightedPollFn:",
+			selectWeightedPollFn ? "provided" : "missing"
+		);
+
+		if (storedWeights && selectWeightedPollFn) {
+			console.log("   → Using WEIGHTED selection");
+			selectedPoll = selectWeightedPollFn(pollRecords, storedWeights);
+			console.log("   → Selected:", selectedPoll);
+		} else {
+			console.log("   → Using UNWEIGHTED selection (fallback)");
+			// Fall back to unweighted selection
+			const pollsForSelection = pollRecords.map((r) => ({ id: r.id }) as Poll);
+			const result = selectPollFn(pollsForSelection);
+			if (result) {
+				const pollWithCategory = pollRecords.find((p) => p.id === result.id);
+				if (pollWithCategory) {
+					selectedPoll = pollWithCategory;
+				}
+			}
+		}
 
 		if (!selectedPoll) {
 			return null;
 		}
 
-		// Insert into daily_polls
-		await tx.insert(dailyPollsTable).values({
-			date,
-			poll_id: selectedPoll.id,
-		});
+		// Insert or update daily_polls with selected poll
+		if (existingInTx) {
+			// Update existing record (was snapshot-only, now add poll_id)
+			await tx
+				.update(dailyPollsTable)
+				.set({ poll_id: selectedPoll.id })
+				.where(eq(dailyPollsTable.date, date));
+		} else {
+			// Insert new record (no snapshot existed)
+			await tx.insert(dailyPollsTable).values({
+				date,
+				poll_id: selectedPoll.id,
+			});
+		}
 
 		// Fetch the full poll
 		const [fullPollRecord] = await tx

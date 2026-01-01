@@ -146,11 +146,11 @@ BUGS:
 
 
 **Game play**
+[] Rebuild Telemetry config
+[x] Decide next category on next poll based on configs
 [x] Consider increasing penalty by round
 [] What happens when someone reaches 100% coverage in a category?
 [x] Half the price of uninstalling, adding "junk" to storage [idea]
-[] Vote for the next category (poll) [idea]
-  - % based on who has an active run (f.i 5 users with active run, 3 voted for React, 2 for Vue -> React wins)
 [x] Make gates harder - they are too simple
 [] Show gate status good/failed based on polls answers on /progress [brainstorm]
 [] More leaderboard variants
@@ -188,8 +188,7 @@ BUGS:
 [] Config purchase analytics
 
 **Maintainability**
-[] Vue/Angular categorieen - behuizen onder "frontend frameworks" tesamen met React
-  [] Restore Next.js polls
+[] Add e2e test for core flow
 [x] Upgrades of packages
 
 **Bugs**

@@ -10,7 +10,9 @@
 			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_pages",
 			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot",
 			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__evaluate_script",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__wait_for"
+			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__wait_for",
+			"Skill(Notion:notion-database-query)",
+			"Skill(Notion:notion-search)"
 		],
 		"deny": []
 	}
