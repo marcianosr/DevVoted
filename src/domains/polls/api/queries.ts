@@ -264,9 +264,22 @@ export const getOrCreateDailyPoll = async (
 		// Use weighted selection if weights exist and weighted function provided
 		const storedWeights =
 			existingInTx?.category_weights as CategoryWeights | null;
+
+		// DEBUG: Log what's happening
+		console.log("🔍 DEBUG getOrCreateDailyPoll:");
+		console.log("   existingInTx:", existingInTx ? "found" : "null");
+		console.log("   storedWeights:", storedWeights);
+		console.log(
+			"   selectWeightedPollFn:",
+			selectWeightedPollFn ? "provided" : "missing"
+		);
+
 		if (storedWeights && selectWeightedPollFn) {
+			console.log("   → Using WEIGHTED selection");
 			selectedPoll = selectWeightedPollFn(pollRecords, storedWeights);
+			console.log("   → Selected:", selectedPoll);
 		} else {
+			console.log("   → Using UNWEIGHTED selection (fallback)");
 			// Fall back to unweighted selection
 			const pollsForSelection = pollRecords.map((r) => ({ id: r.id }) as Poll);
 			const result = selectPollFn(pollsForSelection);
