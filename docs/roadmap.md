@@ -150,18 +150,18 @@ BUGS:
 [x] Decide next category on next poll based on configs
 [x] Consider increasing penalty by round
 [] What happens when someone reaches 100% coverage in a category?
+  - For now cap at 100%, reset to 0% and upgrade tier (L2). Edge case: shoudln't impact gate checks
 [x] Half the price of uninstalling, adding "junk" to storage [idea]
 [x] Make gates harder - they are too simple
-[] Show gate status good/failed based on polls answers on /progress [brainstorm]
 [] More leaderboard variants
   - also show current gate
   - All-time leaderboard (best runs)
 [o] Expand on low hanging configs
 [x] Make sure the rules on start screen is clear
-[] Consider poll rating: very easy to very hard
-[] Think of what winners do next
-[] Loading states - some stuff takes too long
 [] Leaderboard showing all categories and gates of players to each other
+[] Consider poll rating: very easy to very hard [brainstorm]
+[] Show gate status good/failed based on polls answers on /progress [brainstorm]
+[] Loading states - some stuff takes too long
 [x] Add clarifying labels to the coverage breakdown
 [] Add a one-time shop tutorial tooltip
    First time visiting shop: "Welcome to the Package Manager! You have 1 MB of storage to install configs. Each config uses storage and boosts your coverage. Choose wisely!"

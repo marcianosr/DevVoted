@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 
 import type { ApplyEffects } from "~/domains/configs/data/configs";
 import { postPollOptions } from "~/domains/polls/api/polls";
-import { CommunityStats } from "~/domains/polls/api/queries";
+import { RandomDailyAnswer } from "~/domains/polls/api/queries";
 import { PollOptions } from "~/domains/polls/components/PollOptions";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
@@ -23,7 +23,7 @@ type PollOptionsFormProps = {
 		Error,
 		Parameters<typeof postPollOptions>[0]
 	>;
-	communityStats: CommunityStats | null;
+	randomAnswer: RandomDailyAnswer | null;
 };
 
 const PollOptionsForm = ({
@@ -33,7 +33,7 @@ const PollOptionsForm = ({
 	effect,
 	selectedOptions,
 	mutation,
-	communityStats,
+	randomAnswer,
 }: PollOptionsFormProps) => {
 	const { Field, handleSubmit } = useForm({
 		defaultValues: {
@@ -77,7 +77,7 @@ const PollOptionsForm = ({
 							disabledOptionIds={effect.renderProps.disabledOptionIds}
 							countCorrect={effect.countCorrect}
 							showCountCorrect={effect.showCorrectCount}
-							communityStats={communityStats}
+							randomAnswer={randomAnswer}
 						/>
 						{field.state.meta.errors.length > 0 && (
 							<div className="text-red-500 text-xl my-2">

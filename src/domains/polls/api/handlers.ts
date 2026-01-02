@@ -12,6 +12,7 @@ import {
 	trackPollAnswer,
 	getPollsSeenInRun,
 	getCommunityStatsForDailyPoll,
+	getRandomAnswerForDailyPoll,
 	getRunPollHistory,
 	createPollWithOptions,
 	updatePollWithOptions,
@@ -257,6 +258,19 @@ export const getCommunityStatsHandler = async ({
 		const today = new Date().toISOString().split("T")[0];
 
 		return await getCommunityStatsForDailyPoll(pollId, today);
+	});
+};
+
+export const getRandomAnswerHandler = async ({
+	data,
+}: {
+	data: { pollId: number };
+}) => {
+	return handleApiOperation(async () => {
+		const { pollId } = data;
+		const today = new Date().toISOString().split("T")[0];
+
+		return await getRandomAnswerForDailyPoll(pollId, today);
 	});
 };
 

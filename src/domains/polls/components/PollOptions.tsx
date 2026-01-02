@@ -1,4 +1,4 @@
-import { CommunityStats } from "~/domains/polls/api/queries";
+import { RandomDailyAnswer } from "~/domains/polls/api/queries";
 import type { Poll } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 
@@ -19,7 +19,7 @@ type PollOptionsProps = {
 	disabledOptionIds?: number[];
 	countCorrect?: boolean;
 	showCountCorrect?: boolean;
-	communityStats: CommunityStats | null;
+	randomAnswer: RandomDailyAnswer | null;
 };
 
 export const PollOptions = ({
@@ -30,7 +30,7 @@ export const PollOptions = ({
 	disabledOptionIds,
 	countCorrect,
 	showCountCorrect,
-	communityStats,
+	randomAnswer,
 }: PollOptionsProps) => {
 	const selectedCorrectCount = options.filter(
 		(opt) => opt.correct && field.state.value.includes(opt.id.toString())
@@ -73,25 +73,14 @@ export const PollOptions = ({
 							checked={field.state.value.includes(option.id.toString())}
 							disabled={disabled || disabledOptionIds?.includes(option.id)}
 						/>
-						{communityStats &&
-							(() => {
-								const usersWhoChose = communityStats.users.filter(
-									(user) => user.responseData?.selectedOption === option.id
-								);
-								return usersWhoChose.length > 0 ? (
-									<div className="text-theme flex items-center">
-										{usersWhoChose.map((user) => (
-											<span
-												className="text-xl"
-												key={user.id}
-												title={user.displayName ?? user.email}
-											>
-												👤
-											</span>
-										))}
-									</div>
-								) : null;
-							})()}
+						{randomAnswer?.selectedOptionId === option.id && (
+							<span
+								className="text-xl text-theme"
+								title={`${randomAnswer.user.displayName ?? "Someone"} picked this`}
+							>
+								👤
+							</span>
+						)}
 					</li>
 				))}
 			</ul>

@@ -511,6 +511,58 @@ export const getCommunityStatsForDailyPoll = async (
 	};
 };
 
+export type RandomDailyAnswer = {
+	user: User;
+	selectedOptionId: number;
+};
+
+/**
+ * Get a single random user's answer for a daily poll.
+ * Used for "telemetry-config" hints to show what others answered.
+ */
+export const getRandomAnswerForDailyPoll = async (
+	pollId: number,
+	date: string
+): Promise<RandomDailyAnswer | null> => {
+	const startOfDay = new Date(date);
+	startOfDay.setHours(0, 0, 0, 0);
+	const startOfNextDay = new Date(startOfDay);
+	startOfNextDay.setDate(startOfNextDay.getDate() + 1);
+
+	const [result] = await db
+		.select({
+			user: usersTable,
+			selectedOptionId: pollResponseOptionsTable.option_id,
+		})
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.poll_id, pollId),
+				gte(pollResponsesTable.created_at, startOfDay),
+				lt(pollResponsesTable.created_at, startOfNextDay)
+			)
+		)
+		.leftJoin(usersTable, eq(pollResponsesTable.user_id, usersTable.id))
+		.leftJoin(
+			pollResponseOptionsTable,
+			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
+		)
+		.orderBy(sql`md5(${pollResponsesTable.user_id} || ${date})`)
+		.limit(1);
+
+	if (!result?.user || !result.selectedOptionId) return null;
+
+	return {
+		user: {
+			id: result.user.id,
+			email: result.user.email,
+			displayName: result.user.display_name,
+			photoUrl: result.user.photo_url,
+		},
+		selectedOptionId: result.selectedOptionId,
+	};
+};
+
 export type RunPollHistory = {
 	pollId: number;
 	categoryCode: string;

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { ApplyEffects } from "~/domains/configs/data/configs";
 import {
 	getCommunityStatsHandler,
+	getRandomAnswerHandler,
 	getScoreBreakdownHandler,
 } from "~/domains/polls/api/handlers";
 import { postPollOptions } from "~/domains/polls/api/polls";
@@ -64,6 +65,18 @@ const getCommunityStats = createServerFn({ method: "GET" })
 		return result.data;
 	});
 
+const getRandomAnswer = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ pollId: z.number().int().positive() }))
+	.handler(async ({ data }) => {
+		const result = await getRandomAnswerHandler({ data });
+
+		if (!result || !result.success) {
+			return null;
+		}
+
+		return result.data;
+	});
+
 type DailyPollContainerProps = {
 	poll: Poll;
 	options: PollOption[];
@@ -110,6 +123,14 @@ const DailyPollContainer = ({
 			}),
 	});
 
+	// Fetch random answer for telemetry hint (only when config is active and user hasn't answered)
+	const showWhoPickedWhat = configEffects.showWhoPickedWhat ?? false;
+	const { data: randomAnswer } = useQuery({
+		queryKey: ["randomAnswer", poll.id],
+		queryFn: () => getRandomAnswer({ data: { pollId: poll.id } }),
+		enabled: showWhoPickedWhat && !hasAnswered,
+	});
+
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
 
@@ -142,8 +163,6 @@ const DailyPollContainer = ({
 
 	// Use the submitted score if available (just answered), otherwise fall back to loader's score
 	const displayScore = submittedScore ?? score;
-
-	const showWhoPickedWhat = configEffects.showWhoPickedWhat ?? false;
 
 	return (
 		<section>
@@ -210,7 +229,7 @@ const DailyPollContainer = ({
 						effect={configEffects}
 						selectedOptions={selectedOptions}
 						mutation={mutation}
-						communityStats={showWhoPickedWhat ? (communityStats ?? null) : null}
+						randomAnswer={randomAnswer ?? null}
 					/>
 				)}
 			</div>
