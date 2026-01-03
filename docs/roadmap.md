@@ -146,7 +146,11 @@ BUGS:
 
 
 **Game play**
-[] Rebuild Telemetry config
+[] Cap at 100% - how to do this best?
+[] Implement levels for coverages
+[] Answers you missed are hard to see
+[] Show CI gate in leaderboard
+[x] Rebuild Telemetry config
 [x] Decide next category on next poll based on configs
 [x] Consider increasing penalty by round
 [] What happens when someone reaches 100% coverage in a category?
@@ -192,6 +196,9 @@ BUGS:
 [x] Upgrades of packages
 
 **Bugs**
+[] Multiple choice responses are bugged: i answered 7 times
+[] Remove “0” in shop
+[] Remove extra minus
 [] Show indetermined state on multiple choice
 [] Mini header issues:
   [] Doesn't show the correct categories? (check gate 7)
@@ -423,9 +430,6 @@ Season 4: Farther away
 
 [] CI / CD github actions (DB migrations)
 [] Config discovery system
-[] Integrate basic CSI
-[] Check multiple choice formula
-[] Streak bonusses mechanics
 [] Create 20 unlockables (long lasting)
 [] Implement at least 2 knowledge-based awards (e.g., CSS Connoisseur, Markup Master)
 [] Trigger & resolve at least 1 boss challenge condition (e.g., "The Enigma")

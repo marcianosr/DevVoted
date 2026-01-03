@@ -83,9 +83,9 @@ export const getDailyPollHandler = async ({
 	data: { userId?: string; date?: string; runId?: number };
 }) => {
 	return handleApiOperation(async () => {
-		const { userId, runId, date } = data;
+		const { userId, runId, date: _date } = data;
 
-		const { poll, options } = await getDailyPollWithOptions(date);
+		const { poll, options } = await getDailyPollWithOptions("2025-02-20");
 		const hasAnswered = userId
 			? await hasUserAnsweredPoll(poll.id, userId)
 			: false;

@@ -8,6 +8,8 @@ export type PollResponse = {
 	responseId: number;
 	pollId: number;
 	userId: string | null;
+	runId: number | null;
+	answerDate: string;
 	createdAt: Date | null;
 	updatedAt: Date | null;
 };
@@ -17,6 +19,8 @@ export const pollResponseToDTO = (record: PollResponseRecord): PollResponse => {
 		responseId: record.response_id,
 		pollId: record.poll_id,
 		userId: record.user_id ?? null,
+		runId: record.run_id ?? null,
+		answerDate: record.answer_date,
 		createdAt: record.created_at ?? null,
 		updatedAt: record.updated_at ?? null,
 	};
@@ -27,6 +31,8 @@ export const pollResponseFromDTO = (dto: PollResponse): PollResponseRecord => {
 		response_id: dto.responseId,
 		poll_id: dto.pollId,
 		user_id: dto.userId ?? null,
+		run_id: dto.runId ?? null,
+		answer_date: dto.answerDate,
 		created_at: dto.createdAt ?? null,
 		updated_at: dto.updatedAt ?? null,
 	};

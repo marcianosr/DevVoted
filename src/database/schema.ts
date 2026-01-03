@@ -231,23 +231,39 @@ export const pollResponseOptionsTable = pgTable("polls_response_options", {
  * Poll Responses Table
  * Records user submissions and answers
  * - Tracks who answered what and when
+ * - Scoped to runs for game session tracking
+ * - Daily unique constraint prevents race condition duplicates
  * - Maintains response history even if user is deleted
- * - Enables streak and coverage calculations
- * - Automatically updates timestamps for analytics
  */
-export const pollResponsesTable = pgTable("polls_responses", {
-	response_id: serial("response_id").primaryKey(),
-	poll_id: integer("poll_id")
-		.references(() => pollsTable.id, { onDelete: "cascade" })
-		.notNull(),
-	user_id: uuid("user_id").references(() => usersTable.id, {
-		onDelete: "set null",
-	}),
-	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-	updated_at: timestamp("updated_at", { withTimezone: true })
-		.defaultNow()
-		.$onUpdate(() => new Date()),
-});
+export const pollResponsesTable = pgTable(
+	"polls_responses",
+	{
+		response_id: serial("response_id").primaryKey(),
+		poll_id: integer("poll_id")
+			.references(() => pollsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		user_id: uuid("user_id").references(() => usersTable.id, {
+			onDelete: "set null",
+		}),
+		run_id: integer("run_id").references(() => runsTable.id, {
+			onDelete: "cascade",
+		}), // Nullable for legacy responses before this column existed
+		// Intentionally redundant with created_at — derived date used solely for unique constraint.
+		// Drizzle doesn't support unique constraints on expressions like DATE(created_at).
+		answer_date: varchar("answer_date", { length: 10 }).notNull(),
+		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+		updated_at: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => ({
+		uniquePollUserDaily: unique().on(
+			table.poll_id,
+			table.user_id,
+			table.answer_date
+		),
+	})
+);
 
 /**
  * Runs Table
