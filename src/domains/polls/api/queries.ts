@@ -9,6 +9,7 @@ import {
 	inArray,
 	or,
 	not,
+	isNull,
 } from "drizzle-orm";
 
 import { db } from "~/database/db";
@@ -468,7 +469,10 @@ export const getCommunityStatsForDailyPoll = async (
 			and(
 				eq(pollHistoryTable.poll_id, pollResponsesTable.poll_id),
 				eq(pollHistoryTable.user_id, pollResponsesTable.user_id),
-				eq(pollHistoryTable.run_id, pollResponsesTable.run_id)
+				or(
+					eq(pollHistoryTable.run_id, pollResponsesTable.run_id),
+					isNull(pollResponsesTable.run_id)
+				)
 			)
 		);
 
