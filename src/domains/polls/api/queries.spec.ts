@@ -219,10 +219,18 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			it("inserts poll response and links selected option IDs", async () => {
 				const pollId = 1;
 				const userId = "user-123";
+				const runId = 42;
+				const answerDate = "2025-12-25";
 				const selectedOptionIds = [10, 20];
 
 				await expect(
-					createPollResponse({ pollId, userId, selectedOptionIds })
+					createPollResponse({
+						pollId,
+						userId,
+						runId,
+						answerDate,
+						selectedOptionIds,
+					})
 				).resolves.not.toThrow();
 
 				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(
@@ -233,10 +241,18 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			it("handles empty selectedOptionIds array", async () => {
 				const pollId = 1;
 				const userId = "user-123";
+				const runId = 42;
+				const answerDate = "2025-12-25";
 				const selectedOptionIds: number[] = [];
 
 				await expect(
-					createPollResponse({ pollId, userId, selectedOptionIds })
+					createPollResponse({
+						pollId,
+						userId,
+						runId,
+						answerDate,
+						selectedOptionIds,
+					})
 				).resolves.not.toThrow();
 
 				expect(vi.mocked(db.transaction)).toHaveBeenCalledWith(
@@ -247,6 +263,8 @@ describe("Query logic - DTO mapping - DB errors", () => {
 			it("throws error when poll response creation fails", async () => {
 				const pollId = 1;
 				const userId = "user-123";
+				const runId = 42;
+				const answerDate = "2025-12-25";
 				const selectedOptionIds = [10, 20];
 
 				vi.mocked(db.transaction).mockImplementation((cb) =>
@@ -260,13 +278,21 @@ describe("Query logic - DTO mapping - DB errors", () => {
 				);
 
 				await expect(
-					createPollResponse({ pollId, userId, selectedOptionIds })
+					createPollResponse({
+						pollId,
+						userId,
+						runId,
+						answerDate,
+						selectedOptionIds,
+					})
 				).rejects.toThrow("Failed to create poll response");
 			});
 
 			it("handles database transaction failure", async () => {
 				const pollId = 1;
 				const userId = "user-123";
+				const runId = 42;
+				const answerDate = "2025-12-25";
 				const selectedOptionIds = [10, 20];
 
 				vi.mocked(db.transaction).mockRejectedValue(
@@ -274,7 +300,13 @@ describe("Query logic - DTO mapping - DB errors", () => {
 				);
 
 				await expect(
-					createPollResponse({ pollId, userId, selectedOptionIds })
+					createPollResponse({
+						pollId,
+						userId,
+						runId,
+						answerDate,
+						selectedOptionIds,
+					})
 				).rejects.toThrow("Database error");
 			});
 		});

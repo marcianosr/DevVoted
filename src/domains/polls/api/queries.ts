@@ -102,18 +102,27 @@ export const insertPoll = async (data: Poll) => {
 type CreatePollResponse = {
 	pollId: number;
 	userId: string;
+	runId: number;
+	answerDate: string; // "YYYY-MM-DD"
 	selectedOptionIds: number[];
 };
 export const createPollResponse = async ({
 	pollId,
 	userId,
+	runId,
+	answerDate,
 	selectedOptionIds,
 }: CreatePollResponse) => {
 	// Transaction instead of insert to ensure no orphaned records exist
 	await db.transaction(async (tx) => {
 		const [pollResponseRecord] = await tx
 			.insert(pollResponsesTable)
-			.values({ poll_id: pollId, user_id: userId })
+			.values({
+				poll_id: pollId,
+				user_id: userId,
+				run_id: runId,
+				answer_date: answerDate,
+			})
 			.returning();
 
 		if (!pollResponseRecord) throw new Error("Failed to create poll response");
@@ -422,7 +431,6 @@ export type CommunityStatsUser = User & {
 		userId: string | null;
 		createdAt: Date | null;
 		updatedAt: Date | null;
-		selectedOption: number | null | undefined;
 	};
 };
 
@@ -459,12 +467,9 @@ export const getCommunityStatsForDailyPoll = async (
 			pollHistoryTable,
 			and(
 				eq(pollHistoryTable.poll_id, pollResponsesTable.poll_id),
-				eq(pollHistoryTable.user_id, pollResponsesTable.user_id)
+				eq(pollHistoryTable.user_id, pollResponsesTable.user_id),
+				eq(pollHistoryTable.run_id, pollResponsesTable.run_id)
 			)
-		)
-		.leftJoin(
-			pollResponseOptionsTable,
-			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
 		);
 
 	const users = result.flatMap((r) => {
@@ -487,7 +492,6 @@ export const getCommunityStatsForDailyPoll = async (
 					userId: r.polls_responses.user_id,
 					createdAt: r.polls_responses.created_at,
 					updatedAt: r.polls_responses.updated_at,
-					selectedOption: r.polls_response_options?.option_id,
 				},
 			},
 		];

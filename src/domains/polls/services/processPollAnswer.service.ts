@@ -27,6 +27,7 @@ import {
 	PollScoreBreakdown,
 } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
+import { getTodayDateString } from "~/lib/dateUtils";
 
 export type PollAnswerResult = {
 	runEnded: boolean;
@@ -87,6 +88,8 @@ export const processPollAnswer = async (
 	await createPollResponse({
 		pollId,
 		userId,
+		runId: activeRun.id,
+		answerDate: getTodayDateString(),
 		selectedOptionIds,
 	});
 
