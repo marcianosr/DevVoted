@@ -9,6 +9,7 @@ import { applyEffects, configs } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
 import { withDiscount } from "~/domains/configs/services/discount.service";
 import ShopContainer from "~/domains/economy/components/ShopContainer";
+import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
 import {
 	getRandomConfigs,
 	getStorageInfo,
@@ -29,7 +30,6 @@ import {
 	CATEGORY_METADATA,
 	type CategoryCode,
 } from "~/domains/shared/categories";
-import { formatStorage } from "~/lib/storage";
 
 export const Route = createFileRoute("/_authed/progress")({
 	component: RouteComponent,
@@ -212,10 +212,14 @@ function RouteComponent() {
 
 	const router = useRouter();
 
-	const { activeConfigs, storageAvailable, storageLimit, storageUsed } =
-		getStorageInfo(activeRun);
-
-	console.log("activeRun", activeRun);
+	const {
+		activeConfigs,
+		storageAvailable,
+		storageLimit,
+		storageUsed,
+		configsStorage,
+		rerollsStorage,
+	} = getStorageInfo(activeRun);
 
 	const deinstallConfigMutation = useMutation({
 		mutationFn: removeConfigFromRunServerFn,
@@ -297,55 +301,38 @@ function RouteComponent() {
 					isOpen={dailyPoll.hasAnswered && activeRun.shopSkippedDate !== today}
 					storageBonus={storage.skipBonus}
 				/>
-				<section className="overflow-hidden">
-					<h3 className="text-3xl">Your active configs</h3>
-					<div className="text-sm text-gray-400">
-						<span className="text-white">Storage</span>
-						<div className="grid grid-cols-2">
-							<span>what</span>
-							<span>size</span>
-						</div>
-						<div className="grid grid-cols-2">
-							<span>Configs:</span>
-							<span> {formatStorage(storageUsed)}</span>
-							<span>Rebuilds:</span>
-							<span> {formatStorage(activeRun.rerollStorageUsed)}</span>
-							{/* TODO  make sure this also reflects junk from future configs (managed in configManager) */}
-
-							<span>Junk: </span>
-							<span> {formatStorage(activeRun.deinstallPenalty)}</span>
-						</div>
-						<div className="flex gap-2 text-xl">
-							<span className="text-white">
-								Total: {formatStorage(storageUsed)} /{" "}
-								{formatStorage(storageLimit)}
-							</span>
-							<span>·</span>
-							{storageAvailable > 0 && (
-								<span className="text-green-600">
-									{formatStorage(storageAvailable)} available
-								</span>
-							)}
-						</div>
+				<section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+					<div className="col-span-1">
+						<StorageBreakdown
+							storageUsed={storageUsed}
+							storageLimit={storageLimit}
+							storageAvailable={storageAvailable}
+							configsStorage={configsStorage}
+							rerollsStorage={rerollsStorage}
+							deinstallPenalty={activeRun.deinstallPenalty}
+						/>
 					</div>
-					<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-0 py-2">
-						{activeConfigs.length === 0 ? (
-							<p className="text-gray-400">
-								No active configs installed. Your run is unconfigured.
-							</p>
-						) : (
-							activeConfigs.map((config) => (
-								<li key={config.id} className="shrink-0 snap-start">
-									<ActiveCard
-										key={config.id}
-										config={config}
-										onDeinstall={onDeinstallConfig}
-										disabled={!dailyPoll.hasAnswered}
-									/>
-								</li>
-							))
-						)}
-					</ul>
+
+					<div className="space-y-4  col-span-2">
+						<h3 className="text-xl">Your active configs</h3>
+						<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory py-2">
+							{activeConfigs.length === 0 ? (
+								<p className="text-gray-400">
+									No active configs installed. Your run is unconfigured.
+								</p>
+							) : (
+								activeConfigs.map((config) => (
+									<li key={config.id} className="shrink-0 snap-start">
+										<ActiveCard
+											config={config}
+											onDeinstall={onDeinstallConfig}
+											disabled={!dailyPoll.hasAnswered}
+										/>
+									</li>
+								))
+							)}
+						</ul>
+					</div>
 				</section>
 			</section>
 		</Content>
