@@ -156,6 +156,7 @@ const SelectedOptionsSummary = ({
 							<div className="flex gap-2 items-center">
 								<UserAvatar user={communityStats.firstToAnswer} />
 								<p>{communityStats.firstToAnswer.displayName}</p>
+								<span>·</span>
 								{communityStats.firstToAnswer.timeTakenMs !== null && (
 									<span className="text-zinc-400 text-sm">
 										in{" "}
@@ -171,6 +172,7 @@ const SelectedOptionsSummary = ({
 							<div className="flex gap-2 items-center">
 								<UserAvatar user={communityStats.fastestResponder} />
 								<p>{communityStats.fastestResponder.displayName}</p>
+								<span>·</span>
 								{communityStats.fastestResponder.timeTakenMs !== null && (
 									<span className="text-zinc-400 text-sm">
 										in{" "}
