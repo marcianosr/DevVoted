@@ -26,6 +26,10 @@ import { Poll, pollFactory } from "~/domains/polls/models/poll";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
 import type { CategoryWeights } from "~/domains/polls/services/categoryWeight.service";
+import {
+	PollAnswerOutcome,
+	outcomeMulti,
+} from "~/domains/score/services/score.service";
 import { User } from "~/domains/users/services/userSync.service";
 
 export const fetchPollById = async (id: number): Promise<Poll | null> => {
@@ -574,7 +578,7 @@ export const getRandomAnswerForDailyPoll = async (
 export type RunPollHistory = {
 	pollId: number;
 	categoryCode: string;
-	isCorrect: boolean;
+	outcome: PollAnswerOutcome;
 	answeredAt: Date | null;
 };
 
@@ -682,17 +686,20 @@ export const getRunPollHistory = async (
 		const correctness = correctnessMap.get(row.pollId);
 		const totalCorrect = totalCorrectMap.get(row.pollId) ?? 0;
 
-		const isCorrect =
-			row.timesAnswered > 0 &&
-			correctness !== undefined &&
-			correctness.selectedIncorrect === 0 &&
-			correctness.selectedCorrect === totalCorrect;
+		const outcome: PollAnswerOutcome =
+			row.timesAnswered === 0 || correctness === undefined
+				? "wrong"
+				: outcomeMulti(
+						correctness.selectedCorrect,
+						totalCorrect,
+						correctness.selectedIncorrect
+					);
 
 		return {
 			pollId: row.pollId,
 			categoryCode: row.categoryCode,
 			answeredAt: row.timesAnswered === 0 ? null : row.answeredAt,
-			isCorrect,
+			outcome,
 		};
 	});
 };

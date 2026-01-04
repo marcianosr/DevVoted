@@ -171,14 +171,24 @@ const PollHistoryItem = ({
 		);
 	}
 
+	const outcomeStyles = {
+		full: "text-green-400",
+		partial: "text-amber-400",
+		wrong: "text-red-400",
+	};
+
+	const outcomeIcons = {
+		full: "✓",
+		partial: "~",
+		wrong: "✗",
+	};
+
 	return (
 		<li className="flex items-center gap-2">
 			<span className="w-4 text-center">{idx + 1}</span>
 			{isAnswered ? (
-				<span
-					className={`w-4 text-center ${poll.isCorrect ? "text-green-400" : "text-red-400"}`}
-				>
-					{poll.isCorrect ? "✓" : "✗"}
+				<span className={`w-4 text-center ${outcomeStyles[poll.outcome]}`}>
+					{outcomeIcons[poll.outcome]}
 				</span>
 			) : (
 				<span className="text-yellow-400 w-4 text-center">❯</span>

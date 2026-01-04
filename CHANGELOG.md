@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - **Power-Down Telemetry Config**: New config that affects poll selection
 
 ### Fixed
-
+- **Multiple Choice Indeterminate State**: Correctly shows indeterminate state when some correct answers are selected
 - **Duplicate Poll Responses**: Added database-level unique constraint to prevent race condition duplicates
 - **Fastest Responder Stats**: Fixed NULL run_id handling in community stats query
 - **Shop "0" Display Bug**: Fixed React rendering issue where `0 && <JSX>` rendered "0"

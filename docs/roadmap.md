@@ -129,22 +129,20 @@ BUGS:
 **Game play**
 [] More challenges?
 [] Cap at 100% - how to do this best? What happens when someone reaches 100% coverage in a category?
-  [] Implement levels for coverages
+  [] Implement levels for coverages: to 0% and upgrade tier (L2). Edge case: shoudln't impact gate checks
 [x] Answers you missed are hard to see
 [x] Show CI gate in leaderboard
 [x] Rebuild Telemetry config
 [x] Decide next category on next poll based on configs
 [x] Consider increasing penalty by round
-  - For now cap at 100%, reset
-  - to 0% and upgrade tier (L2). Edge case: shoudln't impact gate checks
 [x] Half the price of uninstalling, adding "junk" to storage [idea]
 [x] Make gates harder - they are too simple
-[] More leaderboard variants
-  - also show current gate
-  - All-time leaderboard (best runs)
+[o] More leaderboard variants
+  [x] also show current gate
+  [] - All-time leaderboard (best runs)
+  [] - Show all category specific leaderboards
 [o] Expand on low hanging configs
 [x] Make sure the rules on start screen is clear
-[] Leaderboard showing all categories and gates of players to each other
 [] Consider poll rating: very easy to very hard [brainstorm]
 [] Show gate status good/failed based on polls answers on /progress [brainstorm]
 [] Loading states - some stuff takes too long
@@ -181,7 +179,7 @@ BUGS:
 [x] Multiple choice responses are bugged: i answered 7 times
 [x] Remove “0” in shop
 [x] Remove extra minus
-[] Show indetermined state on multiple choice
+[x] Show indetermined state on multiple choice
 [] Mini header issues:
   [] Doesn't show the correct categories? (check gate 7)
   [] x is shown even when requirements are met in mini header
