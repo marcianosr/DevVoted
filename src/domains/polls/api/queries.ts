@@ -25,7 +25,11 @@ import {
 import { Poll, pollFactory } from "~/domains/polls/models/poll";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
-import type { CategoryWeights } from "~/domains/polls/services/categoryWeight.service";
+import {
+	calculateCategoryWeights,
+	type CategoryWeights,
+} from "~/domains/polls/services/categoryWeight.service";
+import { getAllActiveConfigIds } from "~/domains/runs/api/queries";
 import {
 	PollAnswerOutcome,
 	outcomeMulti,
@@ -275,9 +279,20 @@ export const getOrCreateDailyPoll = async (
 
 		let selectedPoll: { id: number; categoryCode: string } | null = null;
 
-		// Use weighted selection if weights exist and weighted function provided
-		const storedWeights =
+		// Use stored weights if they exist, otherwise calculate them on-the-fly
+		let storedWeights =
 			existingInTx?.category_weights as CategoryWeights | null;
+
+		// If no weights were snapshotted, calculate them now based on active configs
+		if (!storedWeights) {
+			const allActiveConfigIds = await getAllActiveConfigIds();
+			storedWeights = calculateCategoryWeights(allActiveConfigIds);
+			console.log(
+				"   → Calculated weights on-the-fly from",
+				allActiveConfigIds.length,
+				"active configs"
+			);
+		}
 
 		// DEBUG: Log what's happening
 		console.log("🔍 DEBUG getOrCreateDailyPoll:");
@@ -288,12 +303,14 @@ export const getOrCreateDailyPoll = async (
 			selectWeightedPollFn ? "provided" : "missing"
 		);
 
-		if (storedWeights && selectWeightedPollFn) {
+		if (selectWeightedPollFn) {
 			console.log("   → Using WEIGHTED selection");
 			selectedPoll = selectWeightedPollFn(pollRecords, storedWeights);
 			console.log("   → Selected:", selectedPoll);
 		} else {
-			console.log("   → Using UNWEIGHTED selection (fallback)");
+			console.log(
+				"   → Using UNWEIGHTED selection (no weighted function provided)"
+			);
 			// Fall back to unweighted selection
 			const pollsForSelection = pollRecords.map((r) => ({ id: r.id }) as Poll);
 			const result = selectPollFn(pollsForSelection);
@@ -309,18 +326,22 @@ export const getOrCreateDailyPoll = async (
 			return null;
 		}
 
-		// Insert or update daily_polls with selected poll
+		// Insert or update daily_polls with selected poll and weights
 		if (existingInTx) {
-			// Update existing record (was snapshot-only, now add poll_id)
+			// Update existing record - add poll_id and weights if missing
 			await tx
 				.update(dailyPollsTable)
-				.set({ poll_id: selectedPoll.id })
+				.set({
+					poll_id: selectedPoll.id,
+					category_weights: existingInTx.category_weights ?? storedWeights,
+				})
 				.where(eq(dailyPollsTable.date, date));
 		} else {
-			// Insert new record (no snapshot existed)
+			// Insert new record with poll_id and calculated weights
 			await tx.insert(dailyPollsTable).values({
 				date,
 				poll_id: selectedPoll.id,
+				category_weights: storedWeights,
 			});
 		}
 
