@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 ## January 2026
 
 ### Added
-
+- **Leaderboard CI Gate Column**: Displays current CI gate in leaderboard
 - **Show Missed Correct Answers**: After answering, see which correct options you didn't pick
 - **Category Weights for Polls**: Configs can now influence which category appears next
 - **Power-Down Telemetry Config**: New config that affects poll selection

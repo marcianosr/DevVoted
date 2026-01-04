@@ -127,10 +127,11 @@ BUGS:
 
 
 **Game play**
+[] More challenges?
 [] Cap at 100% - how to do this best? What happens when someone reaches 100% coverage in a category?
   [] Implement levels for coverages
 [x] Answers you missed are hard to see
-[] Show CI gate in leaderboard
+[x] Show CI gate in leaderboard
 [x] Rebuild Telemetry config
 [x] Decide next category on next poll based on configs
 [x] Consider increasing penalty by round
