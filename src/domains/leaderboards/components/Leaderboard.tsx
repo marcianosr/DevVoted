@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
 import { getLeaderboard } from "../api/leaderboards";
 
 type LeaderboardProps = {
 	categoryCode: CategoryCode;
+	currentGate: GateDefinition;
 };
 
 /**
@@ -17,7 +19,7 @@ type LeaderboardProps = {
  */
 export const LEADERBOARD_REFRESH_INTERVAL = 3 * 60 * 1000;
 
-const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
+const Leaderboard = ({ categoryCode, currentGate }: LeaderboardProps) => {
 	const { data, isLoading, error } = useQuery({
 		queryKey: [categoryCode],
 		queryFn: () =>
@@ -42,12 +44,13 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 				<small>This leaderboard reflects your current run only</small>
 			</div>
 			<header>
-				<div className="grid sm:grid-cols-[30px_1fr_120px_120px_120px] gap-8 mb-2 border-b border-theme pb-4">
+				<div className="grid sm:grid-cols-[30px_1fr_120px_120px_120px_120px] gap-8 mb-2 border-b border-theme pb-4">
 					<span>Rank</span>
 					<span>Player</span>
 					<span>Coverage</span>
 					<span>Best Streak</span>
 					<span>Polls</span>
+					<span>Gate</span>
 				</div>
 			</header>
 			<ol>
@@ -55,13 +58,14 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 					data.data.map((entry, idx) => (
 						<li
 							key={entry.userId}
-							className="grid sm:grid-cols-[30px_1fr_120px_120px_120px] gap-8 pt-4"
+							className="grid sm:grid-cols-[30px_1fr_120px_120px_120px_120px] gap-8 pt-4"
 						>
 							<span>{idx + 1}.</span>{" "}
 							<span className="truncate">{entry.displayName}</span>{" "}
 							<span>{entry.totalCoverage}% </span>
 							<span>{entry.bestStreak} </span>
 							<span>{entry.pollsAnswered} </span>
+							<span>{currentGate.gate}</span>
 						</li>
 					))}
 			</ol>
