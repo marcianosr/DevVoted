@@ -148,7 +148,7 @@ BUGS:
 **Game play**
 [] Cap at 100% - how to do this best?
 [] Implement levels for coverages
-[] Answers you missed are hard to see
+[x] Answers you missed are hard to see
 [] Show CI gate in leaderboard
 [x] Rebuild Telemetry config
 [x] Decide next category on next poll based on configs
@@ -196,9 +196,9 @@ BUGS:
 [x] Upgrades of packages
 
 **Bugs**
-[] Multiple choice responses are bugged: i answered 7 times
-[] Remove “0” in shop
-[] Remove extra minus
+[x] Multiple choice responses are bugged: i answered 7 times
+[x] Remove “0” in shop
+[x] Remove extra minus
 [] Show indetermined state on multiple choice
 [] Mini header issues:
   [] Doesn't show the correct categories? (check gate 7)

@@ -36,13 +36,18 @@ const SelectedOptionsSummary = ({
 	categoryCode,
 	explanation,
 }: SelectedOptionsSummaryProps) => {
+	const hasMissedCorrectAnswers = selectedOptions.every((optionId) => {
+		const option = options.find((opt) => opt.id === Number(optionId));
+
+		return option?.correct;
+	});
+
 	return (
 		<section className="space-y-14 border-b border-theme mb-8">
 			<div>
 				<h3 className="text-4xl">Results</h3>
 				<section className="mt-4 pt-4 border-t border-theme space-y-2">
 					<p className="text-2xl">Your choice(s):</p>
-
 					<ul className="list-disc px-4">
 						{selectedOptions.map((optionId) => {
 							const option = options.find((opt) => opt.id === Number(optionId));
@@ -61,6 +66,24 @@ const SelectedOptionsSummary = ({
 						})}
 					</ul>
 
+					{!hasMissedCorrectAnswers && (
+						<>
+							<h3 className="text-2xl">Correct answer(s) you missed:</h3>
+							<ul className="list-disc px-4">
+								{options.map((opt) =>
+									!selectedOptions.includes(opt.id.toString()) &&
+									opt.correct ? (
+										<li
+											key={opt.id}
+											className="text-green-400 text-xl markdown"
+										>
+											<MarkdownText>{opt.option}</MarkdownText>
+										</li>
+									) : null
+								)}
+							</ul>
+						</>
+					)}
 					<h3 className="text-2xl">Correct answer(s):</h3>
 					<ul className="list-disc px-4">
 						{options
@@ -71,7 +94,6 @@ const SelectedOptionsSummary = ({
 								</li>
 							))}
 					</ul>
-
 					{explanation && (
 						<div className="mt-6 p-4 bg-gray-800/40 border border-gray-700">
 							<h4 className="text-xl mb-2">💡 Explanation</h4>
