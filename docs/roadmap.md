@@ -25,15 +25,8 @@ Season 1: Core Loop ✅ ship this before anything else
 
 [x] Create simple linear streak bonus amp
 [x] Rarity tiers
-
-[] Create a single "stake" in DB (no UI)
-
-    - [] Timestamps on answer
-
 [x] Create 10-15 configs with effects [Critical]
-
 [x] .js/.css/.ts/.html/.jsx/.git/.package.json- Category amps (+0.5)
-
 [x] localStorage - Extra storag@
 [o] try/catch - Safety net for threshold
 [x] eslint - Disable wrong option
@@ -64,24 +57,18 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Fix "require is not defined" bug before launch
 [x] When last win condition is met, show winning screen. Allow user to continue playing or start new run
 [x] Start new run button in navigation
-[] Add small explanations when starting a new run (e.g., "You start with 1MB storage and need to answer 150 XP worth of polls every 3 polls to continue your run. Buy configs in the shop to help you along the way!")
-[] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
-[] Github photo?
+[x] Old-to-new system migration - Make sure questions support markdown in questions (e.g code examples or just code blocks)
 [x] Show clear disable button in config when storage is full on "purchase"
 [x] Shop disable config issue - when buying a config that fills storage, the other configs should be disabled immediately if they can't be bought anymore
 [x] Show all time leaderboard
 [] Coverage not below zero
-[] Total coverage rounding problems
 [x] Upgrade packages
 [x] Authentication (GitHub)
 [x] CI/CD and Deployment
 [x] Test daily poll cycle
-[] Fix refresh-to-reanswer bug [Critical]
-[] Reroll bug: when rerolling it walks behind
 [] Check RLS
 [x] remove "correct/incorrect"
 [x] remove "home" and also from navigation
-[] Auth polls list? (in navi)
 [x] Show github images
 [x] Sentry logging
 
@@ -91,12 +78,9 @@ BUGS:
 [x] Page Title
 [] When someone waits a day while having the shop open, the next poll comes and is "answered" automatically. Also shop[ is open]
 [x] Only update the poll counter when poll is "seen" not when answered
-[] Poll status in seperate table - Poll History
 [o] History table of polls: What happened with the poll?
-[] Append runs with new categories when adding a new category
 [x] How to use TOML config?
 [x] Slow load db queries
-[] Click on config to install
 [x] Suspend leaderboards because it slows
 [x] Run in leaderboard is wrong: it shows the total runs, not the current run of the user
 [o] When a new poll is loaded, the user sees the old poll for a split second causing two track views
@@ -107,9 +91,6 @@ BUGS:
 [] N+1 query in getActiveRunByUserId - Every page load hits DB twice unnecessarily. Use a join.
 [x] Leaderboard query optimization?
 [x] Page title is nog steeds "Tanstack blabla"
-[] Als iemand de shop open heeft en de volgende dag de pagina weer bezoekt, haal hij de nieuwe poll op maar blijft hij in beantwoorde staat
-[] De shop is weg als je de pagina refresht. Niet echt een bug, maar ik weet dat dit zo is
-[] Start new Run button in de header werkt niet
 
 
 ### Feedback / BUGS [Critical] (Beta test)
@@ -146,15 +127,15 @@ BUGS:
 
 
 **Game play**
-[] Cap at 100% - how to do this best?
-[] Implement levels for coverages
+[] Cap at 100% - how to do this best? What happens when someone reaches 100% coverage in a category?
+  [] Implement levels for coverages
 [x] Answers you missed are hard to see
 [] Show CI gate in leaderboard
 [x] Rebuild Telemetry config
 [x] Decide next category on next poll based on configs
 [x] Consider increasing penalty by round
-[] What happens when someone reaches 100% coverage in a category?
-  - For now cap at 100%, reset to 0% and upgrade tier (L2). Edge case: shoudln't impact gate checks
+  - For now cap at 100%, reset
+  - to 0% and upgrade tier (L2). Edge case: shoudln't impact gate checks
 [x] Half the price of uninstalling, adding "junk" to storage [idea]
 [x] Make gates harder - they are too simple
 [] More leaderboard variants
@@ -207,8 +188,8 @@ BUGS:
 [x] Active configs are small on desktop
 [] Wrong score is still reflected in score breakdown and leaderboard
 [] Update poll with "month" answer
-[?] Shop changes when selling/installing configs (shouldn't)
-[?] Shop resets when uninstalling a config
+[x] Shop changes when selling/installing configs (shouldn't)
+[x] Shop resets when uninstalling a config
 [x] Local storage config adds insane amounts of storage when skipping shop
 [x] Show new shop items every new poll/day
 [x] Fix text encoding issues in options (e.g +, -, <, >, etc)
@@ -230,12 +211,8 @@ BUGS:
 [] Date of opened poll isn't right
 
 
-
-
-
-
-
------ GO LIVE -----
+[] Make sure to create a git tag on every release
+----- GO LIVE 1.0 -----
 
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
@@ -292,7 +269,6 @@ BUGS:
 [] Search by question in admin panel
 [] Add "Architecture" category (pallet)
 [] Add "AI" category
-[] What happens when you have 100% coverage in a category?
 [] Basic "share" mechanism - what to share?
 [] Think about "spaces" - is everything one space or is Codam, EO a separate space like Slack?
 [x] Provide KB's when skipping the shop
@@ -338,6 +314,8 @@ BUGS:
 
 [] Expand traceability
 [] Store most and least popular configs
+[] CI / CD github actions (DB migrations)
+
 
 
 ### Season 3: Expansion
@@ -382,59 +360,22 @@ BUGS:
 [] 20 unlockables (cosmetic or config)
 [] Knowledge-based awards (start with 2)
 [] Boss challenge (start with 1 type)
-[] Add new polls
 [] Stickers / cosmetics
 [] Slackbot
 [] Polish flows / UI
 [] Change domain name. Not happy with "tamnstack" in my project name
-
+[] Implement at least 2 knowledge-based awards (e.g., CSS Connoisseur, Markup Master)
+[] Trigger & resolve at least 1 boss challenge condition (e.g., "The Enigma")
+[] AI design soms stickers
+[] Add new polls (currently Slack'ed to myself)
+[] Introduce new categories: Java, AI (Talk with Guido if possible)
 
 
 Season 4: Farther away
 [] Think of merging HTML/CSS together
 [] Think of merging JS/TS together
 [] Do the same with backend categories
-=====================================================================
 
-[x] Answer polls both multiple choice and single choice (done)
-[x] Start runs mechanicsn(done)
-[x] XP threshold mechanicsn(done)
-[x] Storage mechanics
-[x] Configs (come up with a few to play with) mechanics
-[x] Economy mechanics (actually "pay" with storage)
-[x] Sell configs
-[x] Shop mechanics
 
-[o] Update UI Realtime
-
-- [x] Poll answered
-- [x] Configs
-
-[x] Select random poll to "open" for today and open/close poll for the next day
-[x] Integrate 3-poll "sets": Threshold is only checked at every third poll
-[] Refactor service files - userSync for example
-[x] Run end: Show gameover and stat screen: Allow user to start a new run
-[] Show leaderboard
-[] Create atleast 6-8 configs with effects
-[] Old to new system
-[] Add onboarding screen or help modal for first-time users
-[] Traceability
-
-[] Balance the game (threshold, configs)
-[] Balance treshold system: now its \* 2, should this gradually increase based on multipliers/configs/data storage?
-
-[] Authentication (Github / Google)
-[] Deployment
-
-### Phase 2:
-
-[] CI / CD github actions (DB migrations)
-[] Config discovery system
-[] Create 20 unlockables (long lasting)
-[] Implement at least 2 knowledge-based awards (e.g., CSS Connoisseur, Markup Master)
-[] Trigger & resolve at least 1 boss challenge condition (e.g., "The Enigma")
-[] AI design soms stickers
-[] Add new polls (currently Slack'ed to myself)
-[] Introduce new categories: Java, AI (Talk with Guido if possible)
 
 
