@@ -127,7 +127,14 @@ BUGS:
 
 
 **Game play**
+[]  Detailed storage breakdown in shop
+  Storage: 256 KB / 1 MB
+    └─ Configs: 200 KB
+    └─ Rerolls: 48 KB
+    └─ Penalties: 8 KB
 [] More challenges?
+[] Include correct polls in leaderboard
+[] Show which challenge is active
 [] Cap at 100% - how to do this best? What happens when someone reaches 100% coverage in a category?
   [] Implement levels for coverages: to 0% and upgrade tier (L2). Edge case: shoudln't impact gate checks
 [x] Answers you missed are hard to see
@@ -212,6 +219,7 @@ BUGS:
 [] Nalopen alle schermen: zijn ze duidelijk?
 [] Challenges: weghalen tutorial: meerdere opties tonen, maar disabled
 [] Make sure to create a git tag on every release
+
 ----- GO LIVE 1.0 -----
 
 

@@ -23,12 +23,12 @@ import appCss from "../styles/app.css?url";
 import { seo } from "../utils/seo";
 import { getSupabaseServerClient } from "../utils/supabase";
 
-Sentry.init({
-	dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
-	// Setting this option to true will send default PII data to Sentry.
-	// For example, automatic IP address collection on events
-	sendDefaultPii: true,
-});
+if (import.meta.env.PROD) {
+	Sentry.init({
+		dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
+		sendDefaultPii: true,
+	});
+}
 
 const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 	try {

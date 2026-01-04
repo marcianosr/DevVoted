@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useMutation } from "@tanstack/react-query";
-import { useRouter, Link } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
 import { SecondaryButton } from "~/ui/SecondaryButton";
@@ -53,6 +53,7 @@ export function Login() {
 	return (
 		<Auth
 			actionText="Login"
+			subTitle="Signup or login with your Github account to continue!"
 			status={loginMutation.status}
 			onSubmit={(e) => {
 				const formData = new FormData(e.target as HTMLFormElement);
@@ -98,15 +99,15 @@ export function Login() {
 									) : null}
 								</>
 							)}
-							<p className="text-center mt-4 text-sm text-gray-400">
+							{/* <p className="text-center mt-4 text-sm text-gray-400">
 								Don&apos;t have an account?{" "}
 								<Link to="/sign-up" className="text-theme underline">
 									Sign up
 								</Link>
-							</p>
+							</p> */}
 						</>
 					)}
-					<div className="mt-6 pt-6 border-t border-gray-500/20">
+					<div className="mt-6 pt-6">
 						<SecondaryButton
 							onClick={handleGithubLogin}
 							disabled={githubLoading}

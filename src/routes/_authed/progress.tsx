@@ -308,7 +308,9 @@ function RouteComponent() {
 					</div>
 					<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-0 py-2">
 						{activeConfigs.length === 0 ? (
-							<p className="text-gray-400">No active configs installed</p>
+							<p className="text-gray-400">
+								No active configs installed. Your run is unconfigured.
+							</p>
 						) : (
 							activeConfigs.map((config) => (
 								<li key={config.id} className="shrink-0 snap-start">

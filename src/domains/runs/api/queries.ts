@@ -388,6 +388,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				totalCoverage: runCategoryCoverageTable.current_coverage, // Category coverage only
 				pollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
 				bestStreak: runCategoryCoverageTable.best_streak, // Category streak only
+				correctPolls: runsTable.correct_polls_count,
 				pollsSeen: sql<number>`(
 					SELECT COUNT(DISTINCT ph.poll_id)::int
 					FROM polls_history ph
@@ -422,6 +423,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				totalCoverage: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0)`,
 				pollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryCoverageTable.best_streak}), 0)`,
+				correctPolls: runsTable.correct_polls_count,
 				pollsSeen: sql<number>`(
 					SELECT COUNT(DISTINCT ph.poll_id)::int
 					FROM polls_history ph
@@ -440,7 +442,8 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				usersTable.display_name,
 				runsTable.id,
 				runsTable.season_id,
-				runsTable.challenge_mode_id
+				runsTable.challenge_mode_id,
+				runsTable.correct_polls_count
 			)
 			.orderBy(
 				sql`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0) DESC`

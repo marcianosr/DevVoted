@@ -4,19 +4,22 @@ const isDevelopment = process.env.NODE_ENV === "development";
 
 export function Auth({
 	actionText,
+	subTitle,
 	onSubmit,
 	status,
 	afterSubmit,
 }: {
 	actionText: string;
-	onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+	subTitle?: string;
+	onSubmit: (e: React.FormEvent) => void;
 	status: "pending" | "idle" | "success" | "error";
 	afterSubmit?: React.ReactNode;
 }) {
 	return (
-		<div className="text-white fixed inset-0  dark:bg-black flex items-start justify-center p-8">
-			<div className="dark:bg-zinc-900 p-8 rounded-lg shadow-lg">
-				<h1 className="text-2xl mb-4">{actionText}</h1>
+		<div className="text-white inset-0 flex items-start justify-center p-8 ">
+			<div className="p-8 rounded-lg shadow-lg">
+				<h1 className="text-2xl">{actionText}</h1>
+				<h2 className="text-gray-400 mb-4">{subTitle}</h2>
 				<form
 					onSubmit={(e) => {
 						e.preventDefault();
