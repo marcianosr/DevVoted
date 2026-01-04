@@ -80,14 +80,16 @@ const ShopContainer = ({
 		<section aria-labelledby="shop-heading">
 			<header className="mb-4">
 				<h2 id="shop-heading" className="text-3xl">
-					Shop (Config Manager) -{" "}
+					Config Manager Shop -{" "}
 					{isOpen ? (
 						<span className="text-green-400">OPEN</span>
 					) : (
 						<span className="text-red-400">CLOSED</span>
 					)}
 				</h2>
-				<p>Improve your run by installing configs!</p>
+				<p className="text-gray-300">
+					Improve your run by installing configs from the Config Manager Shop!
+				</p>
 			</header>
 			<div className="grid grid-cols-8 gap-4">
 				<div className="flex flex-col gap-2 col-span-8 md:col-span-2">
