@@ -80,7 +80,10 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 							<span>{entry.bestStreak} </span>
 							<span>{entry.pollsAnswered} </span>
 							<span>
-								{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}
+								{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}{" "}
+								<small className="text-gray-300 text-xs">
+									({entry.challengeModeId ?? "vanilla"})
+								</small>
 							</span>
 						</li>
 					))}
