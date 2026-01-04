@@ -14,13 +14,13 @@ type LeaderboardProps = {
 };
 
 const getPlayerGateNumber = (
-	pollsAnswered: number,
+	pollsSeen: number,
 	challengeModeId: string | null
 ): number => {
 	const mode =
 		CHALLENGE_MODES[(challengeModeId as ChallengeModeId) ?? "vanilla"];
 	const gates = mode?.gates ?? [];
-	const currentGate = getCurrentGate(pollsAnswered, gates);
+	const currentGate = getCurrentGate(pollsSeen, gates);
 	return currentGate.gate;
 };
 
@@ -80,10 +80,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 							<span>{entry.bestStreak} </span>
 							<span>{entry.pollsAnswered} </span>
 							<span>
-								{getPlayerGateNumber(
-									entry.pollsAnswered,
-									entry.challengeModeId
-								)}
+								{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}
 							</span>
 						</li>
 					))}

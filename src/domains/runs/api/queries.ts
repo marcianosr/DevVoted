@@ -388,6 +388,11 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				totalCoverage: runCategoryCoverageTable.current_coverage, // Category coverage only
 				pollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
 				bestStreak: runCategoryCoverageTable.best_streak, // Category streak only
+				pollsSeen: sql<number>`(
+					SELECT COUNT(DISTINCT ph.poll_id)::int
+					FROM polls_history ph
+					WHERE ph.run_id = ${runsTable.id}
+				)`,
 			})
 			.from(runsTable)
 			.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
@@ -417,6 +422,11 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				totalCoverage: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0)`,
 				pollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryCoverageTable.best_streak}), 0)`,
+				pollsSeen: sql<number>`(
+					SELECT COUNT(DISTINCT ph.poll_id)::int
+					FROM polls_history ph
+					WHERE ph.run_id = ${runsTable.id}
+				)`,
 			})
 			.from(runsTable)
 			.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
