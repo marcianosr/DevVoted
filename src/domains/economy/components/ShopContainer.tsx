@@ -121,7 +121,7 @@ const ShopContainer = ({
 						<small className="text-sm mt-2">
 							Gain +{formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))}{" "}
 							storage
-							{storageBonus && (
+							{storageBonus && storageBonus > 0 && (
 								<span className="text-green-400">
 									{" "}
 									(+{formatStorage(storageBonus)} bonus)
@@ -130,12 +130,6 @@ const ShopContainer = ({
 						</small>
 					</div>
 				</div>
-				{/* {storageBonus && (
-								<span className="text-green-400">
-									({`+${formatStorage(storageBonus)} extra`} from &quot;No
-									Deps&quot; config)
-								</span>
-							)} */}
 				{reductionCost > 0 && (
 					<p className="text-green-600 font-semibold mt-1">
 						{reductionCost * 100}% discount active!
