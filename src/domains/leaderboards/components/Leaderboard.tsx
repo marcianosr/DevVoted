@@ -1,13 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
+import {
+	CHALLENGE_MODES,
+	ChallengeModeId,
+} from "~/domains/runs/data/challengeModes";
+import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
 import { getLeaderboard } from "../api/leaderboards";
 
 type LeaderboardProps = {
 	categoryCode: CategoryCode;
-	currentGate: GateDefinition;
+};
+
+const getPlayerGateNumber = (
+	pollsAnswered: number,
+	challengeModeId: string | null
+): number => {
+	const mode =
+		CHALLENGE_MODES[(challengeModeId as ChallengeModeId) ?? "vanilla"];
+	const gates = mode?.gates ?? [];
+	const currentGate = getCurrentGate(pollsAnswered, gates);
+	return currentGate.gate;
 };
 
 /**
@@ -19,7 +33,7 @@ type LeaderboardProps = {
  */
 export const LEADERBOARD_REFRESH_INTERVAL = 3 * 60 * 1000;
 
-const Leaderboard = ({ categoryCode, currentGate }: LeaderboardProps) => {
+const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 	const { data, isLoading, error } = useQuery({
 		queryKey: [categoryCode],
 		queryFn: () =>
@@ -65,7 +79,12 @@ const Leaderboard = ({ categoryCode, currentGate }: LeaderboardProps) => {
 							<span>{entry.totalCoverage}% </span>
 							<span>{entry.bestStreak} </span>
 							<span>{entry.pollsAnswered} </span>
-							<span>{currentGate.gate}</span>
+							<span>
+								{getPlayerGateNumber(
+									entry.pollsAnswered,
+									entry.challengeModeId
+								)}
+							</span>
 						</li>
 					))}
 			</ol>

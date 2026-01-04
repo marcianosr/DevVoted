@@ -209,7 +209,8 @@ BUGS:
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
 [] Date of opened poll isn't right
 
-
+[] Nalopen alle schermen: zijn ze duidelijk?
+[] Challenges: weghalen tutorial: meerdere opties tonen, maar disabled
 [] Make sure to create a git tag on every release
 ----- GO LIVE 1.0 -----
 
@@ -254,7 +255,7 @@ BUGS:
 [] Create more polls also for backend categories
 [] Unlocking system
 [] Content discovery show on profile
-
+[] Rapid polls
 [] Introduce moderator role -
 
     [] Make Piet and Matthijs moderators

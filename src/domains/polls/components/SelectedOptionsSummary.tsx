@@ -4,7 +4,6 @@ import { formatDuration, intervalToDuration } from "date-fns";
 
 import UserAvatar from "~/components/UserAvatar";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
-import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 import { PrimaryButton } from "~/ui/PrimaryButton";
@@ -27,7 +26,6 @@ type SelectedOptionsSummaryProps = {
 	communityStats?: CommunityStats;
 	categoryCode: CategoryCode;
 	explanation?: string | null;
-	currentGate: GateDefinition;
 };
 
 const SelectedOptionsSummary = ({
@@ -37,7 +35,6 @@ const SelectedOptionsSummary = ({
 	communityStats,
 	categoryCode,
 	explanation,
-	currentGate,
 }: SelectedOptionsSummaryProps) => {
 	const hasMissedCorrectAnswers = selectedOptions.every((optionId) => {
 		const option = options.find((opt) => opt.id === Number(optionId));
@@ -200,10 +197,7 @@ const SelectedOptionsSummary = ({
 						</PrimaryButton>
 					</section>
 					<section className="mt-16">
-						<Leaderboard
-							categoryCode={categoryCode}
-							currentGate={currentGate}
-						/>
+						<Leaderboard categoryCode={categoryCode} />
 					</section>
 				</section>
 			</div>

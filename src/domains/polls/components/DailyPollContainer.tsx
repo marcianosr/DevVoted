@@ -211,7 +211,6 @@ const DailyPollContainer = ({
 							communityStats={communityStats}
 							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
-							currentGate={currentGate}
 						/>
 						<div className="fixed bottom-0 left-0 right-0 bg-zinc-900 flex justify-center p-4">
 							<Link
