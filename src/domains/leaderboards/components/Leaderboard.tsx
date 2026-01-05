@@ -58,7 +58,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 				<small>This leaderboard reflects your current run only</small>
 			</div>
 			<header>
-				<div className="grid sm:grid-cols-[30px_1fr_120px_120px_120px_120px_120px] gap-8 mb-2 border-b border-theme pb-4">
+				<div className="grid sm:grid-cols-[30px_1fr_75px_50px_50px_50px_120px] gap-8 mb-2 border-b border-theme pb-4">
 					<span>Rank</span>
 					<span>Player</span>
 					<span>Coverage</span>
@@ -73,7 +73,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 					data.data.map((entry, idx) => (
 						<li
 							key={entry.userId}
-							className="grid sm:grid-cols-[30px_1fr_120px_120px_120px_120px_120px] gap-8 pt-4"
+							className="grid sm:grid-cols-[30px_1fr_75px_50px_50px_50px_120px] gap-8 pt-4"
 						>
 							<span>{idx + 1}.</span>{" "}
 							<span className="truncate">{entry.displayName}</span>{" "}
