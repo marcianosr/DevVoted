@@ -182,7 +182,7 @@ function Navigation() {
 									<img
 										src={user.photoUrl}
 										alt={user.displayName}
-										className="w-[30px] h-[30px] rounded-full inline-block mr-2"
+										className="w-7.5 h-7.5 rounded-full inline-block mr-2"
 									/>
 								)}
 								<span className="ml-2">{user.displayName || user.email}</span>

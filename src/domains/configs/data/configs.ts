@@ -118,7 +118,7 @@ export const configs: Config[] = [
 	},
 	{
 		id: "eslint-config",
-		name: "ESLint Config",
+		name: "ESLint",
 		image: "/configs/eslint.png",
 		cost: STORAGE_UNITS.MB / 2,
 		description:
@@ -129,7 +129,7 @@ export const configs: Config[] = [
 	},
 	{
 		id: "stylelint-config",
-		name: "Stylelint Config",
+		name: "Stylelint",
 		image: "/configs/stylelint.png",
 		cost: STORAGE_UNITS.MB / 2,
 		description: "Disables 1 wrong option when answering HTML/CSS polls.",
@@ -139,7 +139,7 @@ export const configs: Config[] = [
 	},
 	{
 		id: "code-coverage-config",
-		name: "Code Coverage Config",
+		name: "Code Coverage",
 		image: "/configs/code-coverage.png",
 		cost: STORAGE_UNITS.MB / 4,
 		description: "+0.5% coverage polls for every poll answered.",

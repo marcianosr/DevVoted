@@ -1,5 +1,6 @@
 import { configs, applyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
+import { withDiscount } from "~/domains/configs/services/discount.service";
 import { Run } from "~/domains/runs/models/run";
 import {
 	selectMultipleWeightedSeededRandom,
@@ -7,6 +8,7 @@ import {
 } from "~/lib/seededRandom";
 import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
 
+const DEFAULT_OFFERED_CONFIGS_COUNT = 3;
 export const getActiveConfigs = (
 	run: Run,
 	availableConfigs: Config[] = configs
@@ -176,4 +178,33 @@ export const getRandomConfigs = ({
 	return selectedFromFullPool
 		.filter((config) => !hasConfig(run, config.id))
 		.slice(0, count);
+};
+
+type ShopEffects = {
+	extraSlot?: boolean;
+	reductionCost?: number;
+};
+
+/**
+ * Gets offered configs for the shop with discounts applied.
+ * Combines config selection and discount logic in one place.
+ */
+export const getOfferedConfigs = (
+	run: Run,
+	effects: ShopEffects,
+	availableConfigs: Config[] = configs
+): (Config & { originalCost?: number })[] => {
+	const count = effects.extraSlot
+		? DEFAULT_OFFERED_CONFIGS_COUNT + 1
+		: DEFAULT_OFFERED_CONFIGS_COUNT;
+
+	const selectedConfigs = getRandomConfigs({
+		run,
+		configs: availableConfigs,
+		count,
+	});
+
+	return selectedConfigs.map((config) =>
+		withDiscount(config, effects.reductionCost ?? 0)
+	);
 };
