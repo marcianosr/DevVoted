@@ -24,18 +24,20 @@ export const ShopPreview = ({ offeredConfigs }: ShopPreviewProps) => (
 					</span>
 				</section>
 			</summary>
-			<div className="flex gap-2 overflow-auto">
-				{offeredConfigs.map((config) => (
-					<ActiveCard key={config.id} config={config} size="small" />
-				))}
-			</div>
-			<div className="mt-4">
-				<Link
-					to="/progress"
-					className="border-solid border-2 text-white text-sm px-1 py-1 md:px-2 md:py-2 w-full md:w-1/3 text-center btn-color-cycle mt-4 block"
-				>
-					Go to progress & shop →
-				</Link>
+			<div className="flex gap-2 flex-wrap">
+				<div className="flex gap-2 overflow-auto">
+					{offeredConfigs.map((config) => (
+						<ActiveCard key={config.id} config={config} size="small" />
+					))}
+				</div>
+				<div className="mt-4 sm:mt-0 w-full md:flex md:justify-end">
+					<Link
+						to="/progress"
+						className="border-solid border-2 text-white text-sm px-2 py-2 w-full md:w-auto text-center btn-color-cycle block"
+					>
+						Go to progress & shop →
+					</Link>
+				</div>
 			</div>
 		</details>
 	</div>

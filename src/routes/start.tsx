@@ -27,7 +27,7 @@ export const Route = createFileRoute("/start")({
 function RouteComponent() {
 	const { user } = Route.useRouteContext();
 	const navigate = useNavigate();
-	const [selectedChallenge, setSelectedChallenge] = useState("tutorial");
+	const [selectedChallenge, setSelectedChallenge] = useState("vanilla");
 
 	const startRunMutation = useMutation({
 		mutationFn: () =>

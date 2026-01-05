@@ -129,10 +129,8 @@ BUGS:
 **Game play**
 [] Show “back to results” in fixed header
 [x] Weights aren't working on production
-[] Show weights per category
 [] Quick profile page
-[] Show coverage bar on score result page to show impact
-[] Responsive leaderboard issue
+[x] Responsive leaderboard issue
 [x] Show shop preview on /results
 [x]  Detailed storage breakdown in shop
 [] More challenges - remove tutorial challenge
@@ -227,6 +225,8 @@ BUGS:
 
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Show coverage bar on score result page to show impact
+[] Show weight probabilty per category (maybe behind a config?)
 [] Show polls when beyond CI gates in /progress
 [] Create "groups" - e.g., Kabisa, Codam, EO, Open Source Contributors, etc
         Option A: Separate categories (current behavior)

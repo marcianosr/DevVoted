@@ -7,7 +7,7 @@ import { getDailyPoll, getPollsSeenInRun } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
 } from "~/domains/polls/components/DailyPollContainer";
-import { CHALLENGE_MODES } from "~/domains/runs/data/challengeModes";
+import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 
@@ -141,7 +141,9 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 		});
 
 		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
-		const challengeMode = CHALLENGE_MODES[activeRun.data.challengeModeId];
+		const challengeMode = getChallengeModeOrDefault(
+			activeRun.data.challengeModeId
+		);
 		const gates = challengeMode.gates;
 		const currentGate = getCurrentGate(pollsSeen, gates);
 

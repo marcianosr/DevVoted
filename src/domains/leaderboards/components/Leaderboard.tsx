@@ -1,9 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import {
-	CHALLENGE_MODES,
-	ChallengeModeId,
-} from "~/domains/runs/data/challengeModes";
+import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
@@ -17,9 +14,8 @@ const getPlayerGateNumber = (
 	pollsSeen: number,
 	challengeModeId: string | null
 ): number => {
-	const mode =
-		CHALLENGE_MODES[(challengeModeId as ChallengeModeId) ?? "vanilla"];
-	const gates = mode?.gates ?? [];
+	const mode = getChallengeModeOrDefault(challengeModeId ?? "vanilla");
+	const gates = mode.gates;
 	const currentGate = getCurrentGate(pollsSeen, gates);
 	return currentGate.gate;
 };

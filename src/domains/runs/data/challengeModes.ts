@@ -1,4 +1,5 @@
-import { TUTORIAL_CI_GATES } from "~/domains/runs/data/gates/tutorial";
+import { SPECIALIST_CI_GATES } from "~/domains/runs/data/gates/specialist";
+import { SPRINT_CI_GATES } from "~/domains/runs/data/gates/sprint";
 import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
 import { type GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 
@@ -13,7 +14,7 @@ export type ChallengeMode = {
 	gates: GateDefinition[];
 };
 
-export type ChallengeModeId = "vanilla" | "tutorial";
+export type ChallengeModeId = "vanilla" | "sprint" | "specialist";
 
 /**
  * Available challenge modes
@@ -26,13 +27,20 @@ export const CHALLENGE_MODES: Record<ChallengeModeId, ChallengeMode> = {
 		description: "Standard, easy progression with all categories",
 		gates: VANILLA_CI_GATES,
 	},
-	tutorial: {
-		id: "tutorial",
-		name: "Tutorial",
-		description:
-			"Introductory mode with simplified gates to learn the mechanics",
-		gates: TUTORIAL_CI_GATES,
+	sprint: {
+		id: "sprint",
+		name: "Sprint",
+		description: "Quick and easy mode for short play sessions",
+		gates: SPRINT_CI_GATES,
 	},
+	specialist: {
+		id: "specialist",
+		name: "Specialist",
+		description:
+			"Focus on excelling in a single category with tougher requirements",
+		gates: SPECIALIST_CI_GATES,
+	},
+
 	// Future modes can be added here:
 	// frontend_only: { ... }
 	// hardcore: { ... }
@@ -42,8 +50,8 @@ export const getChallengeModeById = (
 	id: ChallengeModeId
 ): ChallengeMode | undefined => CHALLENGE_MODES[id];
 
-export const getChallengeModeOrDefault = (id: ChallengeModeId): ChallengeMode =>
-	CHALLENGE_MODES[id] ?? CHALLENGE_MODES["vanilla"];
+export const getChallengeModeOrDefault = (id: string): ChallengeMode =>
+	CHALLENGE_MODES[id as ChallengeModeId] ?? CHALLENGE_MODES["vanilla"];
 
 export const getAllChallengeModes = (): ChallengeMode[] =>
 	Object.values(CHALLENGE_MODES);

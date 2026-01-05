@@ -22,7 +22,7 @@ import { RunPollHistory } from "~/domains/polls/api/queries";
 import { PollCountdown } from "~/domains/polls/components/PollCountdown";
 import { Poll } from "~/domains/polls/models/poll";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
-import { CHALLENGE_MODES } from "~/domains/runs/data/challengeModes";
+import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { formatGateRequirements } from "~/domains/runs/utils/gateFormatting";
 import {
@@ -52,7 +52,9 @@ export const Route = createFileRoute("/_authed/progress")({
 		const pollHistory = pollHistoryResponse.success
 			? pollHistoryResponse.data
 			: [];
-		const challengeMode = CHALLENGE_MODES[activeRun.data.challengeModeId];
+		const challengeMode = getChallengeModeOrDefault(
+			activeRun.data.challengeModeId
+		);
 		const gates = challengeMode.gates;
 
 		const currentGate = getCurrentGate(pollsSeen, gates);
@@ -252,7 +254,9 @@ function RouteComponent() {
 								>
 									<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
 										<Badge status={status} />
-										<h2 className="text-2xl">Gate #{gate.gate}</h2>
+										<h2 className="text-2xl">
+											Gate #{gate.gate} - {gate.pollsPerGate} polls
+										</h2>
 									</summary>
 									<div className="mt-2">
 										<p className="text-gray-400">
