@@ -13,7 +13,7 @@ const ShopCard = ({ config, disabled, onInstall }: ShopConfigProps) => {
 	const disabledStyles = clsx(disabled && "opacity-50 cursor-not-allowed");
 	return (
 		<div className="flex flex-col gap-2 hover:scale-105 transition-transform cursor-pointer">
-			<ConfigCard config={config} disabled={disabled} />
+			<ConfigCard config={config} disabled={disabled} size="large" />
 			<button
 				onClick={() => !disabled && onInstall(config)}
 				className={clsx(

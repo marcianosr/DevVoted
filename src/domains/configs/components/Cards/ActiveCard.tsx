@@ -6,24 +6,38 @@ import { Config } from "~/domains/configs/models/config";
 type ActiveCardProps = {
 	config: Config;
 	disabled?: boolean;
-	onDeinstall: (config: Config) => void;
+	onDeinstall?: (config: Config) => void;
+	size?: "small" | "large";
 };
 
-const ActiveCard = ({ config, disabled, onDeinstall }: ActiveCardProps) => {
+const ActiveCard = ({
+	config,
+	disabled,
+	onDeinstall,
+	size = "large",
+}: ActiveCardProps) => {
 	const disabledStyles = clsx(disabled && "opacity-50 cursor-not-allowed");
+	const largeStyles = clsx("hover:scale-105 transition-transform");
 	return (
-		<div className="flex flex-col gap-2 hover:scale-105 transition-transform cursor-pointer">
-			<ConfigCard config={config} disabled={disabled} />
-			<button
-				onClick={() => !disabled && onDeinstall(config)}
-				disabled={disabled}
-				className={clsx(
-					`border ${RARITY_COLORS[config.rarity].border} ${RARITY_COLORS[config.rarity].text} p-2 cursor-pointer`,
-					disabledStyles
-				)}
-			>
-				Deinstall
-			</button>
+		<div
+			className={clsx(
+				"flex flex-col gap-2 cursor-pointer",
+				size === "large" && largeStyles
+			)}
+		>
+			<ConfigCard config={config} disabled={disabled} size={size} />
+			{onDeinstall && (
+				<button
+					onClick={() => !disabled && onDeinstall(config)}
+					disabled={disabled}
+					className={clsx(
+						`border ${RARITY_COLORS[config.rarity].border} ${RARITY_COLORS[config.rarity].text} p-2 cursor-pointer`,
+						disabledStyles
+					)}
+				>
+					Deinstall
+				</button>
+			)}
 		</div>
 	);
 };

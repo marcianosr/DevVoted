@@ -6,6 +6,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { ApplyEffects } from "~/domains/configs/data/configs";
+import { Config } from "~/domains/configs/models/config";
+import { ShopPreview } from "~/domains/economy/components/ShopPreview";
 import {
 	getCommunityStatsHandler,
 	getRandomAnswerHandler,
@@ -88,6 +90,7 @@ type DailyPollContainerProps = {
 	creatorDisplayName: string | null;
 	currentGate: GateDefinition;
 	isAdmin: boolean;
+	offeredConfigs: (Config & { originalCost?: number })[];
 };
 
 const DailyPollContainer = ({
@@ -101,6 +104,7 @@ const DailyPollContainer = ({
 	activeRun,
 	currentGate,
 	isAdmin,
+	offeredConfigs,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -212,14 +216,7 @@ const DailyPollContainer = ({
 							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
 						/>
-						<div className="fixed bottom-0 left-0 right-0 bg-zinc-900 flex justify-center p-4">
-							<Link
-								to="/progress"
-								className="border-solid border-2 text-white text-sm px-3 py-2 w-full text-center btn-color-cycle"
-							>
-								See your run progress and shop →
-							</Link>
-						</div>
+						<ShopPreview offeredConfigs={offeredConfigs} />
 					</>
 				) : (
 					<PollOptionsForm

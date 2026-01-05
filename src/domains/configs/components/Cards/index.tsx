@@ -4,25 +4,56 @@ import { Config } from "~/domains/configs/models/config";
 import { formatStorage } from "~/lib/storage";
 
 export const RARITY_COLORS = {
-	common: { border: "border-cerulean", text: "text-cerulean" },
-	uncommon: { border: "border-celadon", text: "text-celadon" },
-	rare: { border: "border-cinnabar", text: "text-cinnabar" },
-	legendary: { border: "border-indigo", text: "text-indigo" },
+	common: {
+		border: "border-cerulean",
+		text: "text-cerulean",
+		bg: "bg-cerulean/15",
+	},
+	uncommon: {
+		border: "border-celadon",
+		text: "text-celadon",
+		bg: "bg-celadon/15",
+	},
+	rare: {
+		border: "border-cinnabar",
+		text: "text-cinnabar",
+		bg: "bg-cinnabar/15",
+	},
+	legendary: {
+		border: "border-indigo",
+		text: "text-indigo",
+		bg: "bg-indigo/15",
+	},
 } as const;
 
 type ConfigProps = {
 	config: Config;
 	disabled?: boolean;
+	size?: "small" | "large";
 };
 
-const ConfigCard = ({ config, disabled }: ConfigProps) => {
+const ConfigCard = ({ config, disabled, size = "large" }: ConfigProps) => {
 	const rarityColor = RARITY_COLORS[config.rarity];
 
-	return (
+	return size === "small" ? (
+		<>
+			<article
+				className={clsx(
+					"border p-2 min-w-40",
+					rarityColor.border,
+					rarityColor.bg
+				)}
+			>
+				<span className={`text-xs ${rarityColor.text}`}>({config.rarity})</span>
+				<h3 className={clsx("text-md", rarityColor.text)}>{config.name}</h3>
+			</article>
+		</>
+	) : (
 		<article
 			className={clsx(
 				"border p-4 w-52 min-h-52",
 				rarityColor.border,
+				rarityColor.bg,
 				disabled && "opacity-50 cursor-not-allowed"
 			)}
 		>

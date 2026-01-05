@@ -34,7 +34,7 @@ describe("configs", () => {
 		it("has valid properties for ESLint config", () => {
 			const eslintConfig = configs.find((c) => c.id === "eslint-config");
 			expect(eslintConfig).toBeDefined();
-			expect(eslintConfig?.name).toBe("ESLint Config");
+			expect(eslintConfig?.name).toBe("ESLint");
 			expect(eslintConfig?.effect).toEqual(["disableWrongOptions"]);
 			expect(eslintConfig?.rarity).toBe("uncommon");
 			expect(eslintConfig?.cost).toBeGreaterThan(0);
@@ -63,7 +63,7 @@ describe("configs", () => {
 				(c) => c.id === "code-coverage-config"
 			);
 			expect(codeCoverageConfig).toBeDefined();
-			expect(codeCoverageConfig?.name).toBe("Code Coverage Config");
+			expect(codeCoverageConfig?.name).toBe("Code Coverage");
 			expect(codeCoverageConfig?.effect).toEqual(["streakAmp"]);
 			expect(codeCoverageConfig?.rarity).toBe("common");
 			expect(codeCoverageConfig?.description).toContain(

@@ -5,13 +5,12 @@ import { clsx } from "clsx";
 import Content from "~/components/Content";
 import { removeConfigFromRunServerFn } from "~/domains/configs/api/configs";
 import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
-import { applyEffects, configs } from "~/domains/configs/data/configs";
+import { applyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
-import { withDiscount } from "~/domains/configs/services/discount.service";
 import ShopContainer from "~/domains/economy/components/ShopContainer";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
 import {
-	getRandomConfigs,
+	getOfferedConfigs,
 	getStorageInfo,
 } from "~/domains/economy/services/configManager.service";
 import {
@@ -68,16 +67,7 @@ export const Route = createFileRoute("/_authed/progress")({
 			activeRun.data.activeConfigIds
 		);
 
-		const offeredConfigs = getRandomConfigs({
-			// TODO: Define this in settings/config
-			count: configEffects.extraSlot ? 4 : 3,
-			run: activeRun.data,
-			configs,
-		});
-
-		const displayedConfigs = offeredConfigs.map((c) =>
-			withDiscount(c, configEffects.reductionCost ?? 0)
-		);
+		const offeredConfigs = getOfferedConfigs(activeRun.data, configEffects);
 
 		return {
 			dailyPoll: {
@@ -87,7 +77,7 @@ export const Route = createFileRoute("/_authed/progress")({
 				selectedOptions: pollResponse.data.selectedOptions,
 			},
 			activeRun: activeRun.data,
-			offeredConfigs: displayedConfigs,
+			offeredConfigs,
 			configEffects,
 			currentGate,
 			pollsSeen,
@@ -327,6 +317,7 @@ function RouteComponent() {
 											config={config}
 											onDeinstall={onDeinstallConfig}
 											disabled={!dailyPoll.hasAnswered}
+											size="large"
 										/>
 									</li>
 								))

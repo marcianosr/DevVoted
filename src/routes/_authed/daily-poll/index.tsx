@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import Content from "~/components/Content";
 import { applyEffects } from "~/domains/configs/data/configs";
+import { getOfferedConfigs } from "~/domains/economy/services/configManager.service";
 import { getDailyPoll, getPollsSeenInRun } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
@@ -38,9 +39,9 @@ const DailyPoll: React.FC = () => {
 		score,
 		configEffects,
 		currentGate,
+		offeredConfigs,
 	} = Route.useLoaderData();
 
-	// Fetch active run category XP for real-time progress
 	// const categoryCoverageQuery = useQuery({
 	// 	queryKey: ["run", "categoryCoverage", user?.id],
 	// 	queryFn: () => getActiveRunCategoryCoverage(),
@@ -75,6 +76,7 @@ const DailyPoll: React.FC = () => {
 				creatorDisplayName={creatorDisplayName}
 				currentGate={currentGate}
 				isAdmin={isAdmin}
+				offeredConfigs={offeredConfigs}
 			/>
 
 			{/* TODO: Refactor in own component */}
@@ -151,6 +153,18 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			throw new Error(pollResponse.error);
 		}
 
+		const configEffects = applyEffects(
+			{
+				poll: pollResponse.data.poll,
+				options: pollResponse.data.options,
+				hasAnswered: pollResponse.data.hasAnswered,
+				run: activeRun.data,
+			},
+			activeRun.data.activeConfigIds
+		);
+
+		const offeredConfigs = getOfferedConfigs(activeRun.data, configEffects);
+
 		const score = await getScoreBreakdown({
 			data: {
 				poll: pollResponse.data.poll,
@@ -169,16 +183,9 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			creatorDisplayName: pollResponse.data.creatorDisplayName,
 			isAdmin: pollResponse.isAdmin,
 			score,
-			configEffects: applyEffects(
-				{
-					poll: pollResponse.data.poll,
-					options: pollResponse.data.options,
-					hasAnswered: pollResponse.data.hasAnswered,
-					run: activeRun.data,
-				},
-				activeRun.data.activeConfigIds
-			),
+			configEffects,
 			currentGate,
+			offeredConfigs,
 		};
 	},
 	pendingComponent: () => (
