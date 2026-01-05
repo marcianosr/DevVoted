@@ -149,14 +149,13 @@ export const configs: Config[] = [
 		coverageBonus: 0.5,
 		targetCategories: [],
 	},
-	// TODO: re-enable try/catch config when refactored
 	{
 		id: "try-catch-config",
 		name: "Try/Catch",
 		image: "/configs/try-catch.png",
 		cost: STORAGE_UNITS.MB / 2,
 		description:
-			"Saves your run when you have at least 80% of the coverage threshold. When activated, this config is consumed.",
+			"Saves your run when you have at least 80% of the coverage threshold. Can activate multiple times per run.",
 		rarity: "rare",
 		effect: ["checkCoverageWithThreshold"],
 		priority: 100,

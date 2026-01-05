@@ -1,4 +1,3 @@
-import { removeConfigFromRunQuery } from "~/domains/configs/api/queries";
 import { applyEffects } from "~/domains/configs/data/configs";
 import {
 	createPollResponse,
@@ -142,8 +141,7 @@ export const processPollAnswer = async (
 
 	if (!thresholdInfo.meetsThreshold) {
 		if (protection.tryCatch) {
-			// Try/Catch saves the run! Remove the config since it's one-time use
-			await removeConfigFromRunQuery(activeRun.id, ["try-catch-config"]);
+			// Try/Catch saves the run! Config persists for future use
 			tryCatchUsed = true;
 			// Don't end the run - try/catch saved it
 		} else {
