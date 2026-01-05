@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
@@ -6,7 +5,6 @@ import UserAvatar from "~/components/UserAvatar";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
-import { PrimaryButton } from "~/ui/PrimaryButton";
 
 import MarkdownText from "./MarkdownText";
 import { CommunityStats } from "../api/queries"; // TODO: don;t import type from api, move to models
@@ -184,7 +182,7 @@ const SelectedOptionsSummary = ({
 							</div>
 						</div>
 					)}
-					<section className="flex items-baseline flex-col mt-8">
+					{/* <section className="flex items-baseline flex-col mt-8">
 						<h3 className="text-2xl">
 							Be even more involved in this community!
 						</h3>
@@ -197,7 +195,7 @@ const SelectedOptionsSummary = ({
 								Suggest a poll yourself →
 							</Link>
 						</PrimaryButton>
-					</section>
+					</section> */}
 					<section className="mt-16">
 						<Leaderboard categoryCode={categoryCode} />
 					</section>

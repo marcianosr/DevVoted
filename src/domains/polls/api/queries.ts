@@ -287,30 +287,11 @@ export const getOrCreateDailyPoll = async (
 		if (!storedWeights) {
 			const allActiveConfigIds = await getAllActiveConfigIds();
 			storedWeights = calculateCategoryWeights(allActiveConfigIds);
-			console.log(
-				"   → Calculated weights on-the-fly from",
-				allActiveConfigIds.length,
-				"active configs"
-			);
 		}
 
-		// DEBUG: Log what's happening
-		console.log("🔍 DEBUG getOrCreateDailyPoll:");
-		console.log("   existingInTx:", existingInTx ? "found" : "null");
-		console.log("   storedWeights:", storedWeights);
-		console.log(
-			"   selectWeightedPollFn:",
-			selectWeightedPollFn ? "provided" : "missing"
-		);
-
 		if (selectWeightedPollFn) {
-			console.log("   → Using WEIGHTED selection");
 			selectedPoll = selectWeightedPollFn(pollRecords, storedWeights);
-			console.log("   → Selected:", selectedPoll);
 		} else {
-			console.log(
-				"   → Using UNWEIGHTED selection (no weighted function provided)"
-			);
 			// Fall back to unweighted selection
 			const pollsForSelection = pollRecords.map((r) => ({ id: r.id }) as Poll);
 			const result = selectPollFn(pollsForSelection);
