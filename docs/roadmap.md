@@ -133,6 +133,7 @@ BUGS:
 [] Quick profile page
 [] Show coverage bar on score result page to show impact
 [] Responsive leaderboard issue
+[x] Show shop preview on /results
 [x]  Detailed storage breakdown in shop
 [] More challenges - remove tutorial challenge
 [x] Include correct polls in leaderboard
