@@ -17,13 +17,12 @@ const ActiveCard = ({
 	size = "large",
 }: ActiveCardProps) => {
 	const disabledStyles = clsx(disabled && "opacity-50 cursor-not-allowed");
-	const largeStyles = clsx("hover:scale-105 transition-transform");
+	const largeStyles = clsx(
+		"hover:scale-105 transition-transform cursor-pointer"
+	);
 	return (
 		<div
-			className={clsx(
-				"flex flex-col gap-2 cursor-pointer",
-				size === "large" && largeStyles
-			)}
+			className={clsx("flex flex-col gap-2", size === "large" && largeStyles)}
 		>
 			<ConfigCard config={config} disabled={disabled} size={size} />
 			{onDeinstall && (
