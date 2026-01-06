@@ -6,6 +6,7 @@ import {
 	pollCategoriesTable,
 	leaderboardTable,
 	usersTable,
+	userCategoryProgressionTable,
 } from "@/src/database/schema";
 import { db } from "~/database/db";
 import type { CategoryCode } from "~/domains/shared/categories";
@@ -537,4 +538,52 @@ export const processRerollShop = async (runId: number, date?: string) => {
 			updatedRun: runFactory.toDTO(updatedRun),
 		};
 	});
+};
+
+/**
+ * Get user's best category progression records
+ * Returns all categories where the user has recorded progression
+ */
+export const getUserCategoryProgression = async (userId: string) => {
+	return await db
+		.select()
+		.from(userCategoryProgressionTable)
+		.where(eq(userCategoryProgressionTable.user_id, userId));
+};
+
+/**
+ * Update user's best level for a category if this run achieved a new personal best
+ * Uses upsert pattern: inserts if no record exists, updates if current level is higher
+ */
+export const updateUserCategoryProgressionIfBetter = async (
+	userId: string,
+	categoryCode: CategoryCode,
+	newLevel: number,
+	newEffectiveCoverage: number
+) => {
+	const now = new Date();
+
+	// PostgreSQL upsert: insert or update if new level is better
+	await db
+		.insert(userCategoryProgressionTable)
+		.values({
+			user_id: userId,
+			category_code: categoryCode,
+			best_level: newLevel,
+			best_effective_coverage: newEffectiveCoverage,
+			achieved_at: now,
+			updated_at: now,
+		})
+		.onConflictDoUpdate({
+			target: [
+				userCategoryProgressionTable.user_id,
+				userCategoryProgressionTable.category_code,
+			],
+			set: {
+				best_level: sql`CASE WHEN ${newLevel} > ${userCategoryProgressionTable.best_level} THEN ${newLevel} ELSE ${userCategoryProgressionTable.best_level} END`,
+				best_effective_coverage: sql`CASE WHEN ${newEffectiveCoverage} > ${userCategoryProgressionTable.best_effective_coverage} THEN ${newEffectiveCoverage} ELSE ${userCategoryProgressionTable.best_effective_coverage} END`,
+				achieved_at: sql`CASE WHEN ${newLevel} > ${userCategoryProgressionTable.best_level} THEN ${now} ELSE ${userCategoryProgressionTable.achieved_at} END`,
+				updated_at: now,
+			},
+		});
 };

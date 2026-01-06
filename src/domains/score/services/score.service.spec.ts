@@ -259,7 +259,7 @@ describe("score.service", () => {
 			expect(result.newStreak).toBe(10);
 		});
 
-		it("caps total coverage at 100%", () => {
+		it("allows coverage to exceed 100% (level system)", () => {
 			const result = orchestrateScoreCalculation({
 				currentCoverage: 98,
 				currentStreak: 9,
@@ -271,9 +271,9 @@ describe("score.service", () => {
 			});
 
 			// Round 10: base 3%, new streak 10 = 1%, total 4%
-			// But 98 + 4 = 102, should be capped at 100
+			// 98 + 4 = 102% (L2 at 2%)
 			expect(result.breakdown.earnedCoverage).toBe(4);
-			expect(result.newTotalCoverage).toBe(100); // Capped at 100
+			expect(result.newTotalCoverage).toBe(102); // No cap - level system
 			expect(result.newStreak).toBe(10);
 		});
 	});

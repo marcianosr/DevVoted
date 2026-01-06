@@ -7,7 +7,8 @@ const ROUND_SCALING = 0.2; // Additional coverage per round
 const STREAK_BONUS = 0.1; // Bonus per streak point
 const MAX_STREAK_BONUS = 1.0; // Cap streak bonus at 1%
 const WRONG_ANSWER_PENALTY = -0.5; // Penalty for wrong answers
-const MAX_COVERAGE = 100; // Maximum coverage percentage
+// Coverage can exceed 100% - each 100% = one "level" (L1, L2, L3...)
+// See: levelCalculations.ts for display/level math
 
 /**
  * Calculates base coverage with round scaling
@@ -37,15 +38,6 @@ export const calculateStreakBonus = (streak: number): number => {
 	return (
 		Math.round(Math.min(streak * STREAK_BONUS, MAX_STREAK_BONUS) * 10) / 10
 	);
-};
-
-/**
- * Formats a coverage percentage to 1 decimal place
- * @param coverage - The coverage value (0-100)
- * @returns Formatted string with 1 decimal place (e.g., "25.8")
- */
-export const formatCoverage = (coverage: number): string => {
-	return coverage.toFixed(1);
 };
 
 export type PollAnswerOutcome = "full" | "partial" | "wrong";
@@ -276,11 +268,10 @@ export const orchestrateScoreCalculation = ({
 	const configBonus = coverageWithAdd - coverageBeforeConfigs;
 
 	// Step 7: Round to 1 decimal place to avoid floating point precision issues
+	// Coverage can exceed 100% - no cap applied (level system)
 	const actualEarnedCoverage = Math.round(coverageWithAdd * 10) / 10;
-	const newTotalCoverage = Math.min(
-		MAX_COVERAGE,
-		Math.round((currentCoverage + actualEarnedCoverage) * 10) / 10
-	);
+	const newTotalCoverage =
+		Math.round((currentCoverage + actualEarnedCoverage) * 10) / 10;
 
 	const round = (n: number) => Math.round(n * 10) / 10;
 
