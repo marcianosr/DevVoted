@@ -5,12 +5,32 @@ import { getCategoryMetadata } from "~/domains/shared/categories";
 type GateProgressIndicatorProps = {
 	gate: GateDefinition;
 	categoryCoverage: RunCategoryCoverage[];
+	victoryAchievedAt?: Date | null;
 };
 
 const GateProgressIndicator = ({
 	gate,
 	categoryCoverage,
+	victoryAchievedAt,
 }: GateProgressIndicatorProps) => {
+	// Post-victory mode: show completion status instead of next gate requirements
+	if (victoryAchievedAt) {
+		const totalCoverage = categoryCoverage.reduce(
+			(sum, cat) => sum + cat.currentCoverage,
+			0
+		);
+
+		return (
+			<div className="text-right">
+				<p className="text-green-400 text-xl font-bold">All Gates Complete!</p>
+				<p className="text-gray-300 text-sm">
+					Total coverage: {totalCoverage.toFixed(1)}%
+				</p>
+				<p className="text-gray-400 text-xs">Post-victory mode</p>
+			</div>
+		);
+	}
+
 	const sortedCategories = [...categoryCoverage].sort(
 		(a, b) => b.currentCoverage - a.currentCoverage
 	);

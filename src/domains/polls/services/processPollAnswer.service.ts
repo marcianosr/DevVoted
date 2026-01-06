@@ -36,6 +36,7 @@ export type PollAnswerResult = {
 	outcome: PollAnswerOutcome;
 	breakdown: PollScoreBreakdown | null;
 	tryCatchUsed?: boolean;
+	victoryJustAchieved?: boolean;
 };
 
 export type PollAnswerInput = {
@@ -111,18 +112,24 @@ export const processPollAnswer = async (
 
 	let runEnded = false;
 	let tryCatchUsed = false;
+	let victoryJustAchieved = false;
 
 	// TODO: Refactor this so we can handle endless config possibilities
 	// This is done for now like so because of MVP
 	// Check if try/catch protection should prevent run failure
 	// Check for victory at CI gates (when last defined gate is passed)
+	// Victory no longer ends the run - player enters post-victory mode and can continue playing
 	if (thresholdInfo.meetsThreshold && thresholdInfo.isThresholdCheckPoll) {
-		const { checkForVictory, completeRunWithVictory } =
+		const { checkForVictory } =
 			await import("~/domains/runs/services/runCompletion.service");
 		const hasWon = checkForVictory(thresholdInfo.currentGate, gates);
-		if (hasWon) {
-			await completeRunWithVictory(activeRun.id);
-			runEnded = true;
+		if (hasWon && !updatedRun.victoryAchievedAt) {
+			// Mark victory but don't end the run - player can continue in post-victory mode
+			const { markVictoryAchieved } =
+				await import("~/domains/runs/api/queries");
+			await markVictoryAchieved(activeRun.id);
+			victoryJustAchieved = true;
+			// runEnded stays false - player continues playing
 		}
 	}
 
@@ -169,6 +176,7 @@ export const processPollAnswer = async (
 		thresholdInfo,
 		breakdown,
 		tryCatchUsed,
+		victoryJustAchieved,
 	};
 };
 

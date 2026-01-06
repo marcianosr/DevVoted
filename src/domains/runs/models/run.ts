@@ -20,6 +20,7 @@ export type Run = {
 	shopSkippedDate: string | null;
 	shopInteractedDate: string | null;
 	completionReason: string | null;
+	victoryAchievedAt: Date | null;
 	startedAt: Date;
 	finishedAt: Date | null;
 	createdAt: Date;
@@ -54,6 +55,7 @@ export const runToDTO = (
 		updatedAt: record.updated_at,
 		categoryCoverage,
 		completionReason: record.completion_reason,
+		victoryAchievedAt: record.victory_achieved_at,
 		deinstallPenalty: record.deinstall_penalty,
 		correctPollsCount: record.correct_polls_count,
 	};
@@ -78,6 +80,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
 		completion_reason: dto.completionReason || null,
+		victory_achieved_at: dto.victoryAchievedAt || null,
 		deinstall_penalty: dto.deinstallPenalty || 0,
 		correct_polls_count: dto.correctPollsCount || 0,
 	};
@@ -108,6 +111,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		shopSkippedDate: null,
 		shopInteractedDate: null,
 		completionReason: null,
+		victoryAchievedAt: null,
 		startedAt: now,
 		finishedAt: null,
 		createdAt: now,
@@ -135,6 +139,7 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		shopSkippedDate: null,
 		shopInteractedDate: null,
 		completionReason: null,
+		victoryAchievedAt: null,
 		startedAt: new Date("2024-01-01T00:00:00Z"),
 		finishedAt: null,
 		createdAt: new Date("2024-01-01T00:00:00Z"),
@@ -151,6 +156,7 @@ export const createMockRunRecord = (
 ): RunRecord => {
 	return {
 		completion_reason: null,
+		victory_achieved_at: null,
 		id: 1,
 		user_id: "test-user-id",
 		season_id: 1,
