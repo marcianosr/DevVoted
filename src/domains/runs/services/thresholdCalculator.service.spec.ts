@@ -69,10 +69,7 @@ describe("ThresholdCalculator", () => {
 
 			expect(gate).toEqual({
 				gate: 5,
-				requirements: [
-					{ threshold: 24, requiredCategories: 1 },
-					{ threshold: 24, requiredCategories: 1 },
-				],
+				requirements: [{ threshold: 24, requiredCategories: 2 }],
 				evaluationMode: "AND",
 				pollsPerGate: 5,
 			});
@@ -97,10 +94,7 @@ describe("ThresholdCalculator", () => {
 
 			expect(gate).toEqual({
 				gate: 7,
-				requirements: [
-					{ threshold: 35, requiredCategories: 1 },
-					{ threshold: 35, requiredCategories: 1 },
-				],
+				requirements: [{ threshold: 35, requiredCategories: 2 }],
 				evaluationMode: "AND",
 				pollsPerGate: 5,
 			});

@@ -19,7 +19,7 @@ export const configs: Config[] = [
 		targetCategories: ["html"],
 		priority: 100,
 		coverageBonus: 2,
-		categoryWeightBonus: 0.1,
+		categoryWeightBonus: 0.3,
 	},
 	{
 		id: ".css-config",
@@ -33,7 +33,7 @@ export const configs: Config[] = [
 		targetCategories: ["css"],
 		priority: 100,
 		coverageBonus: 2,
-		categoryWeightBonus: 0.1,
+		categoryWeightBonus: 0.3,
 	},
 	{
 		id: ".js-config",
@@ -47,7 +47,7 @@ export const configs: Config[] = [
 		targetCategories: ["js"],
 		priority: 100,
 		coverageBonus: 2,
-		categoryWeightBonus: 0.1,
+		categoryWeightBonus: 0.3,
 	},
 	{
 		id: ".ts-config",
@@ -61,7 +61,7 @@ export const configs: Config[] = [
 		targetCategories: ["ts"],
 		priority: 100,
 		coverageBonus: 2,
-		categoryWeightBonus: 0.1,
+		categoryWeightBonus: 0.3,
 	},
 	{
 		id: ".jsx-config",
@@ -75,7 +75,7 @@ export const configs: Config[] = [
 		targetCategories: ["react"],
 		priority: 100,
 		coverageBonus: 2,
-		categoryWeightBonus: 0.1,
+		categoryWeightBonus: 0.3,
 	},
 	{
 		id: ".git-config",
@@ -89,7 +89,7 @@ export const configs: Config[] = [
 		targetCategories: ["git"],
 		priority: 100,
 		coverageBonus: 2,
-		categoryWeightBonus: 0.1,
+		categoryWeightBonus: 0.3,
 	},
 	{
 		id: "package.json-config",
@@ -103,7 +103,7 @@ export const configs: Config[] = [
 		targetCategories: ["general-frontend"],
 		priority: 100,
 		coverageBonus: 2,
-		categoryWeightBonus: 0.1,
+		categoryWeightBonus: 0.3,
 	},
 	{
 		id: "local-storage-config",
@@ -149,14 +149,13 @@ export const configs: Config[] = [
 		coverageBonus: 0.5,
 		targetCategories: [],
 	},
-	// TODO: re-enable try/catch config when refactored
 	{
 		id: "try-catch-config",
 		name: "Try/Catch",
 		image: "/configs/try-catch.png",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: (STORAGE_UNITS.MB / 2) * 1.5,
 		description:
-			"Saves your run when you have at least 80% of the coverage threshold. When activated, this config is consumed.",
+			"Saves your run when you have at least 80% of the coverage threshold.",
 		rarity: "rare",
 		effect: ["checkCoverageWithThreshold"],
 		priority: 100,
@@ -296,7 +295,7 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: [],
 		priority: 100,
-		categoryWeightBonus: 0.5,
+		categoryWeightBonus: 1.1,
 		targetCategories: ["html"],
 	},
 	{
@@ -308,7 +307,7 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: [],
 		priority: 100,
-		categoryWeightBonus: 0.5,
+		categoryWeightBonus: 1.1,
 		targetCategories: ["css"],
 	},
 	{
@@ -321,7 +320,7 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: [],
 		priority: 100,
-		categoryWeightBonus: 0.5,
+		categoryWeightBonus: 1.1,
 		targetCategories: ["js"],
 	},
 	{
@@ -333,7 +332,7 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: [],
 		priority: 100,
-		categoryWeightBonus: 0.5,
+		categoryWeightBonus: 1.1,
 		targetCategories: ["git"],
 	},
 	{
@@ -346,7 +345,7 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: [],
 		priority: 100,
-		categoryWeightBonus: 0.5,
+		categoryWeightBonus: 1.1,
 		targetCategories: ["react"],
 	},
 	{
@@ -359,7 +358,7 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: [],
 		priority: 100,
-		categoryWeightBonus: 0.5,
+		categoryWeightBonus: 1.1,
 		targetCategories: ["ts"],
 	},
 	{
@@ -372,7 +371,7 @@ export const configs: Config[] = [
 		rarity: "uncommon",
 		effect: [],
 		priority: 100,
-		categoryWeightBonus: 0.5,
+		categoryWeightBonus: 1.1,
 		targetCategories: ["general-frontend"],
 	},
 ];

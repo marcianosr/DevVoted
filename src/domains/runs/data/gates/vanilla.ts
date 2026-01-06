@@ -47,10 +47,7 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	},
 	{
 		gate: 5,
-		requirements: [
-			{ threshold: 24, requiredCategories: 1 },
-			{ threshold: 24, requiredCategories: 1 },
-		],
+		requirements: [{ threshold: 24, requiredCategories: 2 }],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
 	},
@@ -65,10 +62,7 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	},
 	{
 		gate: 7,
-		requirements: [
-			{ threshold: 35, requiredCategories: 1 },
-			{ threshold: 35, requiredCategories: 1 },
-		],
+		requirements: [{ threshold: 35, requiredCategories: 2 }],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
 	},
