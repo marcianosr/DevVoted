@@ -127,9 +127,7 @@ BUGS:
 
 
 **Game play**
-[] Show “back to results” in fixed header
 [x] Weights aren't working on production
-[] Quick profile page - show best stats
 [x] Responsive leaderboard issue
 [x] Show shop preview on /results
 [x]  Detailed storage breakdown in shop
@@ -174,7 +172,7 @@ BUGS:
 **Mobile responsiviness**
 [x] Sticky button "See your run progress and shop →" (mobile atleast)
 [x] Mobile text bigger (question)
-[] Responsiveness in general (see matthijs' feedback)
+[x] Responsiveness in general (see matthijs' feedback)
 
 **Anayltics**
 [] Config purchase analytics
@@ -224,7 +222,13 @@ BUGS:
 ----- GO LIVE 1.0 -----
 
 
+BUGS:
+[] correct streak is +1 ahead
+
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Show correct/incorrect answers per user (simple circle)
+[] Show “back to results” in fixed header
+[] Quick profile page - show best stats
 [] Show coverage bar on score result page to show impact
 [] Show weight probabilty per category (maybe behind a config?)
 [] Show polls when beyond CI gates in /progress

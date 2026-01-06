@@ -168,6 +168,12 @@ export const getRunProgress = async ({
 		challengeMode.gates
 	).pollsPerGate;
 
+	// When already answered, the DB has been updated with the new values.
+	// Use the previous streak (before the answer) to avoid double-incrementing.
+	const streakBeforeAnswer = hasAnswered
+		? Math.max(0, (currentCategoryCoverage?.currentStreak ?? 1) - 1)
+		: (currentCategoryCoverage?.currentStreak ?? 0);
+
 	const result = orchestrateScoreCalculation({
 		correctnessFactor,
 		currentBestStreak: currentCategoryCoverage
@@ -176,9 +182,7 @@ export const getRunProgress = async ({
 		currentCoverage: currentCategoryCoverage
 			? currentCategoryCoverage.currentCoverage
 			: 0,
-		currentStreak: currentCategoryCoverage
-			? currentCategoryCoverage.currentStreak
-			: 0,
+		currentStreak: streakBeforeAnswer,
 		totalPollsAnswered: 0, // Placeholder until we fetch actual data
 		totalPollsSeen,
 		pollsPerGate,
