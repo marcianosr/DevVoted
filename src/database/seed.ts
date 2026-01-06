@@ -288,6 +288,11 @@ async function seedDatabase() {
 						streak: 4 - userIndex,
 						polls: 12 + userIndex,
 					},
+					python: {
+						coverage: 50 + userIndex * 2.5,
+						streak: 5 - userIndex,
+						polls: 14 + userIndex,
+					},
 				};
 				return baseValues;
 			};

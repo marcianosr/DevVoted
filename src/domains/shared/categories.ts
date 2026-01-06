@@ -12,6 +12,7 @@ export const CATEGORY_CODES = [
 	"git",
 	"general-frontend",
 	"java",
+	"python",
 ] as const;
 export type CategoryCode = (typeof CATEGORY_CODES)[number];
 
@@ -24,6 +25,7 @@ export const CATEGORY_METADATA = {
 	html: { name: "HTML" },
 	java: { name: "Java" },
 	"general-frontend": { name: "General Frontend" },
+	python: { name: "Python" },
 } as const satisfies Record<CategoryCode, { name: string }>;
 
 /**
