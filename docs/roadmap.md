@@ -133,11 +133,11 @@ BUGS:
 [x] Responsive leaderboard issue
 [x] Show shop preview on /results
 [x]  Detailed storage breakdown in shop
-[] More challenges - remove tutorial challenge
+[x] More challenges - remove tutorial challenge
 [x] Include correct polls in leaderboard
 [x] Show which challenge is active
-[] Cap at 100% - how to do this best? What happens when someone reaches 100% coverage in a category?
-  [] Implement levels for coverages: to 0% and upgrade tier (L2). Edge case: shoudln't impact gate checks
+[x] Cap at 100% - how to do this best? What happens when someone reaches 100% coverage in a category?
+  [x] Implement levels for coverages: to 0% and upgrade tier (L2). Edge case: shoudln't impact gate checks
 [x] Answers you missed are hard to see
 [x] Show CI gate in leaderboard
 [x] Rebuild Telemetry config

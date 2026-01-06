@@ -185,12 +185,7 @@ const DailyPollContainer = ({
 				<section className="flex justify-between flex-wrap gap-4">
 					<div className="flex flex-col">
 						<p className="text-4xl text-theme">{category.name}</p>
-						<p>
-							#{poll.pollNumber} · Opened at{" "}
-							<time dateTime={poll.updatedAt?.toISOString()}>
-								{poll.updatedAt?.toDateString()}
-							</time>
-						</p>
+
 						<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
 					</div>
 
