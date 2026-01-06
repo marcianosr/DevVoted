@@ -106,6 +106,34 @@ export const configs: Config[] = [
 		categoryWeightBonus: 0.3,
 	},
 	{
+		id: ".java-config",
+		name: ".java",
+		image: "/configs/java.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"+2% coverage on category Java polls. Slightly boosts the probability of Java polls appearing.",
+		rarity: "common",
+		effect: ["streakAmp"],
+		targetCategories: ["java"],
+		priority: 100,
+		coverageBonus: 2,
+		categoryWeightBonus: 0.3,
+	},
+	{
+		id: ".py-config",
+		name: ".py",
+		image: "/configs/py.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"+2% coverage on category Python polls. Slightly boosts the probability of Python polls appearing.",
+		rarity: "common",
+		effect: ["streakAmp"],
+		targetCategories: ["python"],
+		priority: 100,
+		coverageBonus: 2,
+		categoryWeightBonus: 0.3,
+	},
+	{
 		id: "local-storage-config",
 		name: "Local Storage",
 		image: "/configs/local-storage.png",
@@ -373,6 +401,32 @@ export const configs: Config[] = [
 		priority: 100,
 		categoryWeightBonus: 1.1,
 		targetCategories: ["general-frontend"],
+	},
+	{
+		id: "override-config",
+		name: "@Override",
+		image: "/configs/override.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"Significantly boosts the probability of Java polls appearing.",
+		rarity: "uncommon",
+		effect: [],
+		priority: 100,
+		categoryWeightBonus: 1.1,
+		targetCategories: ["java"],
+	},
+	{
+		id: "virtual-env-config",
+		name: "Virtual Env",
+		image: "/configs/virtual-env.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"Significantly boosts the probability of Python polls appearing.",
+		rarity: "uncommon",
+		effect: [],
+		priority: 100,
+		categoryWeightBonus: 1.1,
+		targetCategories: ["python"],
 	},
 ];
 
