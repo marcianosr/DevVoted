@@ -281,6 +281,13 @@
       "when": 1767691973015,
       "tag": "0039_hot_silver_surfer",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1767696198158,
+      "tag": "0040_fast_chimera",
+      "breakpoints": true
     }
   ]
 }

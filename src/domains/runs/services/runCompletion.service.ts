@@ -4,7 +4,6 @@ import {
 	type ThresholdInfo,
 	type GateDefinition,
 } from "~/domains/runs/services/thresholdCalculator.service";
-import { updateUserProgressionFromRun } from "~/domains/runs/services/updateCategoryProgression.service";
 
 import {
 	completeRunWithThresholdFailure,
@@ -24,10 +23,6 @@ export const endRunForThresholdFailure = async (runId: number) => {
 
 	const { totalCoverage } = await getRunStats(runId);
 
-	// Update user's global best levels from this run's coverage
-	await updateUserProgressionFromRun(run.userId, run.categoryCoverage);
-
-	// Complete the run and reset categories
 	await completeRunWithThresholdFailure(runId, "threshold_not_met");
 
 	// Create category-specific leaderboard entries to track this run's performance
@@ -51,9 +46,6 @@ export const endRunManually = async (runId: number) => {
 	}
 
 	const { totalCoverage } = await getRunStats(runId);
-
-	// Update user's global best levels from this run's coverage
-	await updateUserProgressionFromRun(run.userId, run.categoryCoverage);
 
 	await completeRunWithThresholdFailure(runId, "manual_break_off");
 
@@ -108,9 +100,6 @@ export const completeRunWithVictory = async (runId: number) => {
 	}
 
 	const { totalCoverage } = await getRunStats(runId);
-
-	// Update user's global best levels from this run's coverage
-	await updateUserProgressionFromRun(run.userId, run.categoryCoverage);
 
 	await completeRunWithThresholdFailure(runId, "victory");
 

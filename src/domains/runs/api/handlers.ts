@@ -44,6 +44,7 @@ export const getUserActiveRun = async (userId: string) => {
 export const getLastRunForUser = async (userId: string) => {
 	return handleApiOperation(async () => {
 		const lastRun = await getLastRunFromUser(userId);
+
 		return lastRun;
 	}, "Failed to get last run");
 };

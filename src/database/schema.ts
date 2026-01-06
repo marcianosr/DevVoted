@@ -387,36 +387,3 @@ export const leaderboardTable = pgTable("leaderboard", {
 	completed_at: timestamp("completed_at", { withTimezone: true }).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
-
-/**
- * User Category Progression Table
- * Tracks lifetime best levels per category across all runs (global progression)
- * - Updated when a run achieves a new personal best level in a category
- * - Used for unlocking achievements and titles
- * - One record per user per category
- */
-export const userCategoryProgressionTable = pgTable(
-	"user_category_progression",
-	{
-		id: serial("id").primaryKey(),
-		user_id: uuid("user_id")
-			.references(() => usersTable.id, { onDelete: "cascade" })
-			.notNull(),
-		category_code: varchar("category_code", { length: 50 })
-			.references(() => pollCategoriesTable.code)
-			.notNull(),
-		best_level: integer("best_level").notNull().default(1),
-		best_effective_coverage: real("best_effective_coverage")
-			.notNull()
-			.default(0),
-		achieved_at: timestamp("achieved_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updated_at: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date()),
-	},
-	(table) => ({
-		userCategoryUnique: unique().on(table.user_id, table.category_code),
-	})
-);

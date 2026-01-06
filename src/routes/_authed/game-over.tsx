@@ -40,13 +40,22 @@ function RouteComponent() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 
 	const finishRunMutation = useMutation({
-		mutationFn: () => finishRunFn(),
+		mutationFn: async () => {
+			const result = await finishRunFn();
+			if (!result.success) {
+				throw new Error(result.error);
+			}
+			return result;
+		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: runQueryKeys.active(user?.id),
 			});
 			setIsDialogOpen(false);
 			navigate({ to: "/start" });
+		},
+		onError: (error) => {
+			console.error("Failed to finish run:", error.message);
 		},
 	});
 
