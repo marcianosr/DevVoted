@@ -223,7 +223,7 @@ BUGS:
 
 
 BUGS:
-[] correct streak is +1 ahead
+[x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [] Show correct/incorrect answers per user (simple circle)
@@ -263,7 +263,6 @@ BUGS:
         Leaderboard shows INDIVIDUAL breakdown
         - Best of both: forgiving gates, detailed stats
         - More complex to implement
-[] Currently in tooltip: show your response time  - how long did it take to answer
 [x] Admin panel for polls
 [x] Allow players to suggest polls
 [x] Show edit poll link on daily poll for admins
@@ -288,8 +287,6 @@ BUGS:
 [] Think about "spaces" - is everything one space or is Codam, EO a separate space like Slack?
 [x] Provide KB's when skipping the shop
 [] Show a reminder of how to remind for polls in Slack
-[] Mobile viewport op /progress pagina isn't responsive
-[] Think of daily-poll table: This will grow massively. Imagine 5 years from now how 365 * 5?
 [x] Loading state for rebuilding new configs
 [x] Config: style lint
 [x] Game over state
@@ -310,7 +307,7 @@ BUGS:
 [] Starring a poll
 [x] Add explanation field to poll (shown after answering)
 [] Fix "deflate" config
-[] Leaderboard: show arrow up/down when position changed
+[] Leaderboard: show arrow up/down when position changed (delta)
 [] Show partial correct polls in list of progress
 [x] Tan stack "start" instead of "query" in footer
 [x] Include footer everywhere

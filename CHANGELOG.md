@@ -2,20 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+---
 
-## January 2026
+## [1.0.0] - January 2026 ❄️
+
+🎉 **DevVoted is officially released!** The core gameplay loop is complete with all MVP features.
 
 ### Added
+- **Levels Past 100**: Coverage can now exceed 100% with tier progression (L2, L3, etc.)
+- **Shop Preview on Results**: See upcoming shop items after answering polls
+- **Challenge Mode Expansion**: More varied CI gate challenges with persistent configs
+- **Probability-Based Configs**: Configs that influence category selection weights
 - **Leaderboard CI Gate Column**: Displays current CI gate in leaderboard
 - **Show Missed Correct Answers**: After answering, see which correct options you didn't pick
 - **Category Weights for Polls**: Configs can now influence which category appears next
 - **Power-Down Telemetry Config**: New config that affects poll selection
 
 ### Fixed
+- **Streak Display**: Streak now shows correct value instead of being +1 ahead
+- **Category Weights Calculation**: Weights calculated on-the-fly when no snapshot exists
+- **Gate Requirements**: Cleaned up gate challenge requirements
 - **Multiple Choice Indeterminate State**: Correctly shows indeterminate state when some correct answers are selected
 - **Duplicate Poll Responses**: Added database-level unique constraint to prevent race condition duplicates
 - **Fastest Responder Stats**: Fixed NULL run_id handling in community stats query
 - **Shop "0" Display Bug**: Fixed React rendering issue where `0 && <JSX>` rendered "0"
+
+### Changed
+- **Try/Catch Config**: Now persistent across gates
+- **Leaderboard Responsiveness**: Improved mobile display
 
 ---
 
