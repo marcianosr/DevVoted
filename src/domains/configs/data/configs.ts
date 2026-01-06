@@ -153,9 +153,9 @@ export const configs: Config[] = [
 		id: "try-catch-config",
 		name: "Try/Catch",
 		image: "/configs/try-catch.png",
-		cost: STORAGE_UNITS.MB / 2,
+		cost: (STORAGE_UNITS.MB / 2) * 1.5,
 		description:
-			"Saves your run when you have at least 80% of the coverage threshold. Can activate multiple times per run.",
+			"Saves your run when you have at least 80% of the coverage threshold.",
 		rarity: "rare",
 		effect: ["checkCoverageWithThreshold"],
 		priority: 100,
