@@ -5,7 +5,7 @@ import { db } from "~/database/db";
 import {
 	getActiveRunByUserId,
 	createRunForUser,
-	getRunWithCategoryXp,
+	getRunWithCategoryCoverage,
 	finishRun,
 	awardCoverageToRun,
 } from "./queries";
@@ -161,7 +161,7 @@ describe("Run Queries", () => {
 		});
 	});
 
-	describe("getRunWithCategoryXp", () => {
+	describe("getRunWithCategoryCoverage", () => {
 		it("returns run with category XP data", async () => {
 			const mockRun = createMockRunRecord();
 			const mockXpRecords = createMockRunCategoryCoverageRecordArray(3);
@@ -180,7 +180,7 @@ describe("Run Queries", () => {
 
 			vi.mocked(db.select).mockImplementation(selectMock);
 
-			const result = await getRunWithCategoryXp(1);
+			const result = await getRunWithCategoryCoverage(1);
 
 			expect(result).toBeDefined();
 			expect(result?.id).toBeDefined();
@@ -194,7 +194,7 @@ describe("Run Queries", () => {
 
 			vi.mocked(db.select).mockReturnValue({ from: fromMock } as any);
 
-			const result = await getRunWithCategoryXp(999);
+			const result = await getRunWithCategoryCoverage(999);
 
 			expect(result).toBeNull();
 		});
