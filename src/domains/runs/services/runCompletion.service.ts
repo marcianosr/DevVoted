@@ -6,17 +6,16 @@ import {
 } from "~/domains/runs/services/thresholdCalculator.service";
 
 import {
-	getRunForCompletion,
 	completeRunWithThresholdFailure,
 	getRunStats,
 	createCategoryLeaderboardEntries,
-	getRunWithCategoryXp,
+	getRunWithCategoryCoverage,
 } from "../api/queries";
 
 // End run mid-game when coverage threshold is not met (preserves progress in final_* columns)
 export const endRunForThresholdFailure = async (runId: number) => {
-	// Get the run to find the user ID
-	const run = await getRunForCompletion(runId);
+	// Get the run with category coverage data
+	const run = await getRunWithCategoryCoverage(runId);
 
 	if (!run) {
 		throw new Error(`Run with ID ${runId} not found`);
@@ -24,14 +23,13 @@ export const endRunForThresholdFailure = async (runId: number) => {
 
 	const { totalCoverage } = await getRunStats(runId);
 
-	// Complete the run and reset categories
 	await completeRunWithThresholdFailure(runId, "threshold_not_met");
 
 	// Create category-specific leaderboard entries to track this run's performance
 	await createCategoryLeaderboardEntries(
-		run.user_id,
+		run.userId,
 		runId,
-		run.season_id,
+		run.seasonId,
 		totalCoverage
 	);
 
@@ -41,21 +39,20 @@ export const endRunForThresholdFailure = async (runId: number) => {
 // End run manually (user chose to break off via "Start New Run" button)
 // Saves stats and creates leaderboard entries like threshold failure
 export const endRunManually = async (runId: number) => {
-	const run = await getRunForCompletion(runId);
+	const run = await getRunWithCategoryCoverage(runId);
 
 	if (!run) {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
 	const { totalCoverage } = await getRunStats(runId);
-	await getRunStats(runId);
 
 	await completeRunWithThresholdFailure(runId, "manual_break_off");
 
 	await createCategoryLeaderboardEntries(
-		run.user_id,
+		run.userId,
 		runId,
-		run.season_id,
+		run.seasonId,
 		totalCoverage
 	);
 
@@ -67,7 +64,7 @@ export const checkCoverageThreshold = async (
 	runId: number,
 	gates: GateDefinition[]
 ): Promise<ThresholdInfo> => {
-	const runWithCategoryData = await getRunWithCategoryXp(runId);
+	const runWithCategoryData = await getRunWithCategoryCoverage(runId);
 
 	if (!runWithCategoryData) {
 		throw new Error(`Run with ID ${runId} not found`);
@@ -96,7 +93,7 @@ export const checkForVictory = (
 // Complete run with victory (all defined CI gates passed)
 // Saves stats and creates leaderboard entries like other completion methods
 export const completeRunWithVictory = async (runId: number) => {
-	const run = await getRunForCompletion(runId);
+	const run = await getRunWithCategoryCoverage(runId);
 
 	if (!run) {
 		throw new Error(`Run with ID ${runId} not found`);
@@ -107,9 +104,9 @@ export const completeRunWithVictory = async (runId: number) => {
 	await completeRunWithThresholdFailure(runId, "victory");
 
 	await createCategoryLeaderboardEntries(
-		run.user_id,
+		run.userId,
 		runId,
-		run.season_id,
+		run.seasonId,
 		totalCoverage
 	);
 

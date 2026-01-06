@@ -40,6 +40,7 @@ export const getActiveRun = createServerFn({ method: "GET" }).handler(
 export const getLastRunForGameOver = createServerFn({ method: "GET" }).handler(
 	async () => {
 		const userId = await getAuthenticatedUserId();
+
 		return await getLastRunForUser(userId);
 	}
 );

@@ -9,7 +9,7 @@ import { createMockRunCategoryCoverageArray } from "../models/runCategoryCoverag
 vi.mock("./queries", () => ({
 	getActiveRunByUserId: vi.fn(),
 	createRunForUser: vi.fn(),
-	getRunWithCategoryXp: vi.fn(),
+	getRunWithCategoryCoverage: vi.fn(),
 	finishRun: vi.fn(),
 }));
 
@@ -53,7 +53,7 @@ describe("Run Handlers", () => {
 				"test-user-id",
 				"vanilla"
 			);
-			expect(queries.getRunWithCategoryXp).not.toHaveBeenCalled();
+			expect(queries.getRunWithCategoryCoverage).not.toHaveBeenCalled();
 		});
 
 		it("handles errors gracefully", async () => {

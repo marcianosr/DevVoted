@@ -129,7 +129,7 @@ BUGS:
 **Game play**
 [] Show “back to results” in fixed header
 [x] Weights aren't working on production
-[] Quick profile page
+[] Quick profile page - show best stats
 [x] Responsive leaderboard issue
 [x] Show shop preview on /results
 [x]  Detailed storage breakdown in shop
@@ -218,7 +218,7 @@ BUGS:
 [] Date of opened poll isn't right
 
 [] Nalopen alle schermen: zijn ze duidelijk?
-[] Challenges: weghalen tutorial: meerdere opties tonen, maar disabled
+[x] Challenges: weghalen tutorial: meerdere opties tonen, maar disabled
 [] Make sure to create a git tag on every release
 
 ----- GO LIVE 1.0 -----

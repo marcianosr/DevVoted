@@ -83,7 +83,7 @@ export const createRunForUser = async (
 	});
 };
 
-export const getRunWithCategoryXp = async (runId: number) => {
+export const getRunWithCategoryCoverage = async (runId: number) => {
 	const runRecord = await db
 		.select()
 		.from(runsTable)

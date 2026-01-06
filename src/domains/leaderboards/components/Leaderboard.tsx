@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
+import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
 import { getLeaderboard } from "../api/leaderboards";
@@ -54,7 +55,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 				<small>This leaderboard reflects your current run only</small>
 			</div>
 			<header>
-				<div className="grid sm:grid-cols-[30px_1fr_75px_50px_50px_50px_120px] gap-8 mb-2 border-b border-theme pb-4">
+				<div className="grid sm:grid-cols-[30px_1fr_90px_50px_50px_50px_120px] gap-8 mb-2 border-b border-theme pb-4">
 					<span>Rank</span>
 					<span>Player</span>
 					<span>Coverage</span>
@@ -66,25 +67,39 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 			</header>
 			<ol>
 				{data?.success &&
-					data.data.map((entry, idx) => (
-						<li
-							key={entry.userId}
-							className="grid sm:grid-cols-[30px_1fr_75px_50px_50px_50px_120px] gap-8 pt-4"
-						>
-							<span>{idx + 1}.</span>{" "}
-							<span className="truncate">{entry.displayName}</span>{" "}
-							<span>{entry.totalCoverage}% </span>
-							<span>{entry.bestStreak} </span>
-							<span>{entry.correctPolls} </span>
-							<span>{entry.pollsAnswered} </span>
-							<span>
-								{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}{" "}
-								<small className="text-gray-300 text-xs">
-									({entry.challengeModeId ?? "vanilla"})
-								</small>
-							</span>
-						</li>
-					))}
+					data.data.map((entry, idx) => {
+						const { displayCoverage, level } = calculateLevelAndCoverage(
+							entry.totalCoverage
+						);
+
+						return (
+							<li
+								key={entry.userId}
+								className="grid sm:grid-cols-[30px_1fr_90px_50px_50px_50px_120px] gap-8 pt-4"
+							>
+								<span>{idx + 1}.</span>{" "}
+								<span className="truncate">{entry.displayName}</span>{" "}
+								<span className="flex gap-1">
+									{level > 1 && (
+										<span className="flex gap-1">
+											<span className="text-rose-500">L{level}</span>
+											<span>·</span>
+										</span>
+									)}{" "}
+									{displayCoverage}%
+								</span>
+								<span>{entry.bestStreak} </span>
+								<span>{entry.correctPolls} </span>
+								<span>{entry.pollsAnswered} </span>
+								<span>
+									{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}{" "}
+									<small className="text-gray-300 text-xs">
+										({entry.challengeModeId ?? "vanilla"})
+									</small>
+								</span>
+							</li>
+						);
+					})}
 			</ol>
 		</section>
 	);
