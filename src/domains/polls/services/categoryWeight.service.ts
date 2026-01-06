@@ -11,6 +11,7 @@ const DEFAULT_CATEGORY_WEIGHTS: CategoryWeights = {
 	html: 1.0,
 	git: 1.0,
 	"general-frontend": 1.0,
+	java: 1.0,
 };
 
 /**

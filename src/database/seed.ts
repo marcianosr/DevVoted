@@ -283,6 +283,11 @@ async function seedDatabase() {
 						streak: 5 - userIndex,
 						polls: 16 + userIndex,
 					},
+					java: {
+						coverage: 45 + userIndex * 3,
+						streak: 4 - userIndex,
+						polls: 12 + userIndex,
+					},
 				};
 				return baseValues;
 			};

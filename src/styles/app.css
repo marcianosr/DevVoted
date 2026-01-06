@@ -347,6 +347,23 @@
 	--meter-bg: oklch(from var(--color-pewter) calc(l - 0.25) c h);
 }
 
+[data-category-theme="java"] {
+	.text-theme {
+		color: var(--color-indigo);
+	}
+	.bg-theme {
+		background-color: var(--color-indigo);
+	}
+	.border-theme {
+		border-color: var(--color-indigo);
+	}
+	.accent-theme {
+		accent-color: var(--color-indigo);
+	}
+	--meter-fill: var(--color-indigo);
+	--meter-bg: oklch(from var(--color-indigo) calc(l - 0.25) c h);
+}
+
 @font-face {
 	font-family: "Pixter Display";
 	src: url("/fonts/PixterDisplayBold.ttf") format("truetype");
@@ -384,4 +401,3 @@ meter::-webkit-meter-optimum-value {
 	background: var(--meter-fill);
 	border-radius: inherit;
 }
-
