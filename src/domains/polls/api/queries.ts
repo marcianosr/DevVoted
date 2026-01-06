@@ -23,6 +23,7 @@ import {
 	usersTable,
 } from "~/database/schema";
 import { Poll, pollFactory } from "~/domains/polls/models/poll";
+import type { PollCreator } from "~/domains/polls/models/pollCreator";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
 import {
@@ -86,6 +87,19 @@ export const fetchPollsByUser = async (userId: string) => {
 		.orderBy(pollsTable.created_at);
 
 	return pollRecords.map((record) => pollFactory.toDTO(record));
+};
+
+export const fetchPollCreators = async (): Promise<PollCreator[]> => {
+	const creators = await db
+		.selectDistinctOn([pollsTable.created_by], {
+			id: usersTable.id,
+			displayName: usersTable.display_name,
+		})
+		.from(pollsTable)
+		.innerJoin(usersTable, eq(pollsTable.created_by, usersTable.id))
+		.orderBy(pollsTable.created_by, usersTable.display_name);
+
+	return creators;
 };
 
 export const insertPoll = async (data: Poll) => {

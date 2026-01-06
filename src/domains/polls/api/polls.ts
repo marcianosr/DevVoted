@@ -10,6 +10,7 @@ import {
 	getPollByIdHandler,
 	getPollByIdWithOptionsHandler,
 	getPollsByUserHandler,
+	getPollCreatorsHandler,
 	getDailyPollHandler,
 	postPollOptionsHandler,
 	getPollsSeenInRunHandler,
@@ -83,6 +84,27 @@ export const getUserPollsOrAll = createServerFn({ method: "GET" }).handler(
 			...(await getPollsByUserHandler({ data: { userId: data.user.id } })),
 			isAdmin: false,
 		};
+	}
+);
+
+export const getPollCreators = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const supabase = getSupabaseServerClient();
+		const { data, error } = await supabase.auth.getUser();
+
+		if (error || !data.user) {
+			throw new Error("Authentication required");
+		}
+
+		const isAdmin = ADMIN_EMAILS.includes(
+			data.user.email as (typeof ADMIN_EMAILS)[number]
+		);
+
+		if (!isAdmin) {
+			throw new Error("Admin access required");
+		}
+
+		return getPollCreatorsHandler();
 	}
 );
 

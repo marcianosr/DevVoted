@@ -3,10 +3,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
-import { getUserPollsOrAll } from "~/domains/polls/api/polls";
+import { getUserPollsOrAll, getPollCreators } from "~/domains/polls/api/polls";
 import type { Poll } from "~/domains/polls/models/poll";
 import {
 	getCategoryMetadata,
+	getCategories,
 	type CategoryCode,
 } from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/_authed/polls/")({
 });
 
 type StatusFilter = Poll["status"] | "all";
+type CategoryFilter = CategoryCode | "all";
+type UserFilter = string | "all";
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
 	{ value: "all", label: "All" },
@@ -25,8 +28,15 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
 	{ value: "archived", label: "Archived" },
 ];
 
+const CATEGORY_OPTIONS: { value: CategoryFilter; label: string }[] = [
+	{ value: "all", label: "All" },
+	...getCategories().map((cat) => ({ value: cat.code, label: cat.name })),
+];
+
 function PollsList() {
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+	const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+	const [userFilter, setUserFilter] = useState<UserFilter>("all");
 
 	const {
 		data: pollsResponse,
@@ -36,6 +46,16 @@ function PollsList() {
 		queryKey: ["user-polls"],
 		queryFn: () => getUserPollsOrAll(),
 	});
+
+	const isAdmin = pollsResponse?.isAdmin ?? false;
+
+	const { data: creatorsResponse } = useQuery({
+		queryKey: ["poll-creators"],
+		queryFn: () => getPollCreators(),
+		enabled: isAdmin,
+	});
+
+	const pollCreators = creatorsResponse?.success ? creatorsResponse.data : [];
 
 	if (isLoading) {
 		return (
@@ -55,11 +75,14 @@ function PollsList() {
 	}
 
 	const polls = pollsResponse.data || [];
-	const isAdmin = pollsResponse.isAdmin;
-	const filteredPolls =
-		statusFilter === "all"
-			? polls
-			: polls.filter((poll) => poll.status === statusFilter);
+	const filteredPolls = polls.filter((poll) => {
+		const matchesStatus =
+			statusFilter === "all" || poll.status === statusFilter;
+		const matchesCategory =
+			categoryFilter === "all" || poll.categoryCode === categoryFilter;
+		const matchesUser = userFilter === "all" || poll.createdBy === userFilter;
+		return matchesStatus && matchesCategory && matchesUser;
+	});
 
 	const categoryCountsMap = polls.reduce<Record<string, number>>(
 		(acc, poll) => {
@@ -101,7 +124,8 @@ function PollsList() {
 			</ul>
 
 			{/* Status Filter */}
-			<div className="flex flex-wrap gap-2 mb-4">
+			<div className="flex flex-wrap gap-2 mb-2">
+				<span className="text-sm text-gray-400 self-center w-20">Status:</span>
 				{STATUS_OPTIONS.map((option) => (
 					<button
 						key={option.value}
@@ -117,14 +141,60 @@ function PollsList() {
 				))}
 			</div>
 
+			{/* Category Filter */}
+			<div className="flex flex-wrap gap-2 mb-2">
+				<span className="text-sm text-gray-400 self-center w-20">
+					Category:
+				</span>
+				{CATEGORY_OPTIONS.map((option) => (
+					<button
+						key={option.value}
+						onClick={() => setCategoryFilter(option.value)}
+						className={`px-3 py-1 rounded-full text-sm transition-colors ${
+							categoryFilter === option.value
+								? "bg-primary text-white"
+								: "bg-gray-700 text-gray-300 hover:bg-gray-600"
+						}`}
+					>
+						{option.label}
+					</button>
+				))}
+			</div>
+
+			{/* User Filter (Admin only) */}
+			{isAdmin && pollCreators.length > 0 && (
+				<div className="flex flex-wrap gap-2 mb-4">
+					<span className="text-sm text-gray-400 self-center w-20">
+						Creator:
+					</span>
+					<button
+						onClick={() => setUserFilter("all")}
+						className={`px-3 py-1 rounded-full text-sm transition-colors ${
+							userFilter === "all"
+								? "bg-primary text-white"
+								: "bg-gray-700 text-gray-300 hover:bg-gray-600"
+						}`}
+					>
+						All
+					</button>
+					{pollCreators.map((creator) => (
+						<button
+							key={creator.id}
+							onClick={() => setUserFilter(creator.id)}
+							className={`px-3 py-1 rounded-full text-sm transition-colors ${
+								userFilter === creator.id
+									? "bg-primary text-white"
+									: "bg-gray-700 text-gray-300 hover:bg-gray-600"
+							}`}
+						>
+							{creator.displayName}
+						</button>
+					))}
+				</div>
+			)}
+
 			{filteredPolls.length === 0 ? (
-				<p>
-					No polls{" "}
-					{statusFilter !== "all"
-						? `with status "${statusFilter}"`
-						: "available"}
-					.
-				</p>
+				<p>No polls matching the selected filters.</p>
 			) : (
 				<div className="space-y-4">
 					{filteredPolls.map((poll) => (
