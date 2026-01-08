@@ -128,7 +128,7 @@ describe("configs", () => {
 			expect(telemetryConfig?.effect).toEqual(["showWhoPickedWhat"]);
 			expect(telemetryConfig?.rarity).toBe("uncommon");
 			expect(telemetryConfig?.description).toContain(
-				"Show answers chosen by others"
+				"Show an answer chosen by another player"
 			);
 			expect(telemetryConfig?.priority).toBe(100);
 		});

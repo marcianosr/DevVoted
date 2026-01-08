@@ -215,9 +215,9 @@ BUGS:
 [] Handle poll status "open" - not used as indicaor that the poll is open anymore
 [] Date of opened poll isn't right
 
-[] Nalopen alle schermen: zijn ze duidelijk?
+[x] Nalopen alle schermen: zijn ze duidelijk?
 [x] Challenges: weghalen tutorial: meerdere opties tonen, maar disabled
-[] Make sure to create a git tag on every release
+[x] Make sure to create a git tag on every release
 
 ----- GO LIVE 1.0 -----
 
@@ -227,12 +227,14 @@ BUGS:
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [] Show storage of each other? [brainstorm]
+[] Show deinstall costs
+[] What happens when you have overflow in storage and sell local storage config?
 [] Show correct/incorrect answers per user (simple circle)
 [] Show “back to results” in fixed header
 [] Quick profile page - show best stats
 [] Show coverage bar on score result page to show impact
 [] Show weight probabilty per category (maybe behind a config?)
-[] Show polls when beyond CI gates in /progress
+[x] Show polls when beyond CI gates in /progress
 [] Create "groups" - e.g., Kabisa, Codam, EO, Open Source Contributors, etc
         Option A: Separate categories (current behavior)
         React:     ████████░░ 80%
@@ -303,7 +305,7 @@ BUGS:
     [] total incorrect answers
     ...etc
 [x] Show created by (poll)
-[] Allow endless runs
+[x] Allow endless runs
 [] Fixen todo warnings eslint
 [] Starring a poll
 [x] Add explanation field to poll (shown after answering)

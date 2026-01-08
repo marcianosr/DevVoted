@@ -295,7 +295,7 @@ export const configs: Config[] = [
 		image: "/configs/telemetry.png",
 		cost: STORAGE_UNITS.MB / 4,
 		description:
-			"Show answers chosen by others before answering a poll. Hover over to see who picked what.",
+			"Show an answer chosen by another player (randomly selected). Hover over to see who picked what.",
 		rarity: "uncommon",
 		effect: ["showWhoPickedWhat"],
 		priority: 100,
