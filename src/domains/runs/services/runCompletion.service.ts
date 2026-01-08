@@ -81,13 +81,13 @@ export const checkCoverageThreshold = async (
 };
 
 // Check if player has passed all defined CI gates (victory condition)
-// Victory occurs when current round exceeds the number of defined gates
-// Example: With 7 gates defined, round 8 means gate 7 was just passed
+// Victory occurs when player passes the threshold check of the last gate
+// Example: With 7 gates defined, victory triggers when gate 7's threshold is met
 export const checkForVictory = (
-	currentRound: number,
+	currentGate: number,
 	gates: GateDefinition[]
 ): boolean => {
-	return currentRound > gates.length;
+	return currentGate >= gates.length;
 };
 
 // Complete run with victory (all defined CI gates passed)

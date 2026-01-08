@@ -21,6 +21,30 @@ export type GateDefinition = {
 	pollsPerGate: number;
 };
 
+const POST_VICTORY_THRESHOLD_INCREMENT = 5;
+
+/**
+ * Generates a virtual gate for post-victory mode
+ * Uses linear scaling: each gate beyond victory adds +5 to all thresholds
+ */
+export const generatePostVictoryGate = (
+	lastDefinedGate: GateDefinition,
+	gateNumber: number
+): GateDefinition => {
+	const gatesBeyondLast = gateNumber - lastDefinedGate.gate;
+	const thresholdIncrease = gatesBeyondLast * POST_VICTORY_THRESHOLD_INCREMENT;
+
+	return {
+		gate: gateNumber,
+		requirements: lastDefinedGate.requirements.map((req) => ({
+			...req,
+			threshold: Math.min(req.threshold + thresholdIncrease, 100),
+		})),
+		evaluationMode: lastDefinedGate.evaluationMode,
+		pollsPerGate: lastDefinedGate.pollsPerGate,
+	};
+};
+
 /**
  * Result of evaluating a single gate requirement
  */
@@ -73,8 +97,13 @@ export const getCurrentGate = (
 		}
 	}
 
-	// Beyond all defined gates - return last gate
-	return gates[gates.length - 1];
+	// Beyond all defined gates - generate post-victory gate
+	const lastGate = gates[gates.length - 1];
+	const pollsBeyondDefined = totalPollsSeen - pollsAccumulated;
+	const postVictoryGateNumber =
+		lastGate.gate + Math.floor(pollsBeyondDefined / lastGate.pollsPerGate) + 1;
+
+	return generatePostVictoryGate(lastGate, postVictoryGateNumber);
 };
 
 /**

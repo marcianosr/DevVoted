@@ -168,8 +168,21 @@ const DailyPollContainer = ({
 	// Use the submitted score if available (just answered), otherwise fall back to loader's score
 	const displayScore = submittedScore ?? score;
 
+	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
+
 	return (
 		<section>
+			{isInPostVictoryMode && (
+				<div className="mb-6 p-4 border-2 border-green-500 bg-green-500/10">
+					<p className="text-green-400 text-lg font-bold">
+						You passed all CI gates!
+					</p>
+					<p className="text-gray-300 text-sm">
+						You&apos;re now in post-victory mode. Keep playing to reach 100%
+						coverage or start a new run anytime.
+					</p>
+				</div>
+			)}
 			{isAdmin && (
 				<div className="mb-4 pb-2 border-b border-gray-700">
 					<Link
@@ -177,7 +190,7 @@ const DailyPollContainer = ({
 						params={{ pollId: String(poll.id) }}
 						className="text-primary hover:text-primary/80 hover:underline text-sm"
 					>
-						✏️ Edit Poll
+						Edit Poll
 					</Link>
 				</div>
 			)}
@@ -192,6 +205,7 @@ const DailyPollContainer = ({
 					<GateProgressIndicator
 						gate={currentGate}
 						categoryCoverage={activeRun.categoryCoverage}
+						victoryAchievedAt={activeRun.victoryAchievedAt}
 					/>
 				</section>
 			</header>

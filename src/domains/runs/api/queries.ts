@@ -120,6 +120,19 @@ export const finishRun = async (runId: number) => {
 	return runRecord ? runFactory.toDTO(runRecord) : null;
 };
 
+// Mark victory achieved without ending the run (post-victory mode)
+export const markVictoryAchieved = async (runId: number) => {
+	const [runRecord] = await db
+		.update(runsTable)
+		.set({
+			victory_achieved_at: new Date(),
+		})
+		.where(eq(runsTable.id, runId))
+		.returning();
+
+	return runRecord ? runFactory.toDTO(runRecord) : null;
+};
+
 export const getRunStats = async (runId: number) => {
 	const stats = await db
 		.select()
