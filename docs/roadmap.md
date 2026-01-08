@@ -226,6 +226,7 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Show storage of each other? [brainstorm]
 [] Show correct/incorrect answers per user (simple circle)
 [] Show “back to results” in fixed header
 [] Quick profile page - show best stats
@@ -266,7 +267,7 @@ BUGS:
 [x] Admin panel for polls
 [x] Allow players to suggest polls
 [x] Show edit poll link on daily poll for admins
-[] Create more polls also for backend categories
+[o] Create more polls also for backend categories
 [] Unlocking system
 [] Content discovery show on profile
 [] Rapid polls
@@ -278,8 +279,8 @@ BUGS:
     [] Admins can approve/reject suggested polls
 
 
-[] Filter on category in admin panel
-[] Filter by author in admin panel
+[x] Filter on category in admin panel
+[x] Filter by author in admin panel
 [] Search by question in admin panel
 [] Add "Architecture" category (pallet)
 [] Add "AI" category

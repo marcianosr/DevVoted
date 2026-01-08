@@ -4,12 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { getUserPollsOrAll, getPollCreators } from "~/domains/polls/api/polls";
+import PollCategoryCount from "~/domains/polls/components/PollCategoryCount";
 import type { Poll } from "~/domains/polls/models/poll";
-import {
-	getCategoryMetadata,
-	getCategories,
-	type CategoryCode,
-} from "~/domains/shared/categories";
+import { getCategories, type CategoryCode } from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 
 export const Route = createFileRoute("/_authed/polls/")({
@@ -84,22 +81,6 @@ function PollsList() {
 		return matchesStatus && matchesCategory && matchesUser;
 	});
 
-	const categoryCountsMap = polls.reduce<Record<string, number>>(
-		(acc, poll) => {
-			acc[poll.categoryCode] = (acc[poll.categoryCode] || 0) + 1;
-			return acc;
-		},
-		{}
-	);
-
-	const categoryCounts = Object.entries(categoryCountsMap)
-		.map(([code, count]) => ({
-			code,
-			name: getCategoryMetadata(code as CategoryCode).name,
-			count,
-		}))
-		.sort((a, b) => b.count - a.count);
-
 	return (
 		<div className="p-4">
 			<div className="flex justify-between items-center mb-4">
@@ -115,13 +96,9 @@ function PollsList() {
 				</Link>
 			</div>
 
-			<ul className="mb-4 text-sm">
-				{categoryCounts.map((cat) => (
-					<li key={cat.code}>
-						{cat.name}: {cat.count}
-					</li>
-				))}
-			</ul>
+			<div className="mb-4 text-sm">
+				<PollCategoryCount polls={polls} />
+			</div>
 
 			{/* Status Filter */}
 			<div className="flex flex-wrap gap-2 mb-2">
