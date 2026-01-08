@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 
 import { Config } from "~/domains/configs/models/config";
-import { formatStorage } from "~/lib/storage";
+import { calculateRefund, formatStorage } from "~/lib/storage";
 
 export const RARITY_COLORS = {
 	common: {
@@ -59,6 +59,7 @@ const ConfigCard = ({ config, disabled, size = "large" }: ConfigProps) => {
 		>
 			<h3 className={clsx("text-2xl", rarityColor.text)}>{config.name}</h3>
 			<p>Cost: {formatStorage(config.cost)}</p>
+			<p>Refund: {formatStorage(calculateRefund(config.cost))}</p>
 			<p>
 				Rarity: <span className={rarityColor.text}>{config.rarity}</span>
 			</p>
