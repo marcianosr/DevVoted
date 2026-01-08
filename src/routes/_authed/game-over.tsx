@@ -137,8 +137,8 @@ function RouteComponent() {
 								Congratulations on mastering all CI gates! You can continue your
 								run and try to reach the perfect 100% coverage!
 							</p>
-							<PrimaryButton className="px-3 py-1 mr-4" disabled={true}>
-								Continue run
+							<PrimaryButton className="px-3 py-1 mr-4">
+								<Link to="/daily-poll">Continue Run</Link>
 							</PrimaryButton>
 							<span className="text-gray-400">
 								Or start a new run below with a another set of CI gates!
