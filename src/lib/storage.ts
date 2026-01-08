@@ -11,6 +11,20 @@ export const STORAGE_UNITS = {
 } as const;
 
 /**
+ * Rate at which configs are refunded when deinstalled.
+ * Player gets back REFUND_RATE * cost, loses (1 - REFUND_RATE) * cost as penalty.
+ */
+export const REFUND_RATE = 0.5;
+
+/**
+ * Calculates the refund amount when deinstalling a config
+ * @param cost - Original config cost in bytes
+ * @returns Refund amount in bytes
+ */
+export const calculateRefund = (cost: number): number =>
+	Math.round(cost * REFUND_RATE);
+
+/**
  * Formats storage size in bytes to human-readable format
  * @param bytes - Storage size in bytes
  * @returns Formatted string (e.g., "1.5 MB", "512 KB")

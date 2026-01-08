@@ -1,5 +1,6 @@
 import { configs } from "~/domains/configs/data/configs";
 import { canAddConfigToRun } from "~/domains/economy/services/configManager.service";
+import { REFUND_RATE } from "~/lib/storage";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 import { handleApiOperation } from "~/utils/errorHandling";
 
@@ -53,11 +54,10 @@ export const removeConfigFromRunHandler = async ({
 
 		// TODO: include other config effects in future if refundRate depends on them
 		// const { refundRate } = applyEffects(..., run.activeConfigIds);
-		const refundRate = 0.5;
 
 		// Get config cost before removing
 		const configToRemove = configs.find((c) => configIds.includes(c.id));
-		const penalty = (configToRemove?.cost ?? 0) * (1 - refundRate);
+		const penalty = (configToRemove?.cost ?? 0) * (1 - REFUND_RATE);
 
 		return await removeConfigFromRunQuery(runId, configIds, penalty, date);
 	});
