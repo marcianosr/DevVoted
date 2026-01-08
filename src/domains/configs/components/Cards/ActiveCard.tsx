@@ -27,21 +27,16 @@ const ActiveCard = ({
 		>
 			<ConfigCard config={config} disabled={disabled} size={size} />
 			{onDeinstall && (
-				<div className="flex flex-col items-center">
-					<button
-						onClick={() => !disabled && onDeinstall(config)}
-						disabled={disabled}
-						className={clsx(
-							`border ${RARITY_COLORS[config.rarity].border} ${RARITY_COLORS[config.rarity].text} p-2 cursor-pointer w-full`,
-							disabledStyles
-						)}
-					>
-						Deinstall
-					</button>
-					<span className="text-celadon text-sm mt-1">
-						+{formatStorage(calculateRefund(config.cost))}
-					</span>
-				</div>
+				<button
+					onClick={() => !disabled && onDeinstall(config)}
+					disabled={disabled}
+					className={clsx(
+						`border ${RARITY_COLORS[config.rarity].border} ${RARITY_COLORS[config.rarity].text} p-2 cursor-pointer w-full`,
+						disabledStyles
+					)}
+				>
+					Deinstall (+{formatStorage(calculateRefund(config.cost))})
+				</button>
 			)}
 		</div>
 	);
