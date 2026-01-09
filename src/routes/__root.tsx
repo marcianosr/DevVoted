@@ -170,6 +170,16 @@ function Navigation() {
 						>
 							Suggest your own poll
 						</Link>
+						<span className="text-white">·</span>
+						<Link
+							to="/polls"
+							activeProps={{
+								className: "underline",
+							}}
+							activeOptions={{ exact: true }}
+						>
+							My Polls
+						</Link>
 						<div className="ml-auto flex gap-2 items-center">
 							<Link
 								to="/profile/$userId"
