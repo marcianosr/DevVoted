@@ -140,7 +140,7 @@ function PollsList() {
 							className={`px-3 py-1 rounded-full text-sm transition-colors ${
 								isSelected
 									? isCategory
-										? "bg-theme text-black"
+										? "bg-theme text-white"
 										: "bg-primary text-white"
 									: "bg-gray-700 text-gray-300 hover:bg-gray-600"
 							}`}
