@@ -226,6 +226,7 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[x] Show active config counter
 [] Show storage of each other? [brainstorm]
 [] Show deinstall costs
 [] What happens when you have overflow in storage and sell local storage config?
