@@ -8,6 +8,7 @@ import {
 	getLastRunFromUser,
 	getLiveRunRankings,
 	skipShop,
+	getAllRuns,
 } from "./queries";
 import { endRunManually } from "../services/runCompletion.service";
 
@@ -129,4 +130,10 @@ export const skipShopHandler = async (
 
 		return await skipShop(runId, date, storageBonus);
 	}, "Failed to skip shop");
+};
+
+export const getAllRunsHandler = async () => {
+	return handleApiOperation(async () => {
+		return await getAllRuns();
+	}, "Failed to get all runs");
 };

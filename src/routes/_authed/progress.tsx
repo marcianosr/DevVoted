@@ -263,7 +263,7 @@ function RouteComponent() {
 										<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
 											<Badge status={status} />
 											<h2 className="text-2xl">
-												Gate #{gate.gate} - {gate.pollsPerGate} polls
+												Gate #{gate.gate} · {gate.pollsPerGate} polls
 												{isVirtual && (
 													<span className="ml-2 text-sm text-purple-400">
 														(Post-Victory)

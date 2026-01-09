@@ -5,4 +5,5 @@
 export type PollCreator = {
 	id: string;
 	displayName: string;
+	amountOfPolls: number;
 };
