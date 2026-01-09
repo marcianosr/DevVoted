@@ -228,7 +228,7 @@ BUGS:
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [x] Show active config counter
 [] Show storage of each other? [brainstorm]
-[] Show deinstall costs
+[x] Show deinstall costs
 [] What happens when you have overflow in storage and sell local storage config?
 [] Show correct/incorrect answers per user (simple circle)
 [] Show “back to results” in fixed header
