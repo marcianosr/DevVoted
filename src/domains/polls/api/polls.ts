@@ -96,14 +96,6 @@ export const getPollCreators = createServerFn({ method: "GET" }).handler(
 			throw new Error("Authentication required");
 		}
 
-		const isAdmin = ADMIN_EMAILS.includes(
-			data.user.email as (typeof ADMIN_EMAILS)[number]
-		);
-
-		if (!isAdmin) {
-			throw new Error("Admin access required");
-		}
-
 		return getPollCreatorsHandler();
 	}
 );
