@@ -231,6 +231,17 @@ export const configs: Config[] = [
 		priority: 100,
 	},
 	{
+		id: "yarn.lock-config",
+		name: "yarn.lock",
+		image: "/configs/yarn-lock.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"Shop items stay the same even when the poll changes. Only rerolls change the shop.",
+		rarity: "uncommon",
+		effect: ["lockShop"],
+		priority: 100,
+	},
+	{
 		id: "copilot-config",
 		name: "Copilot",
 		image: "/configs/copilot.png",
@@ -592,6 +603,7 @@ export type EffectOut = {
 	countCorrect?: boolean;
 	showCorrectCount?: boolean;
 	showWhoPickedWhat?: boolean;
+	lockShop?: boolean; // Shop items persist across poll changes
 };
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
@@ -609,6 +621,7 @@ export type ApplyEffects = {
 	countCorrect: boolean;
 	showCorrectCount: boolean;
 	showWhoPickedWhat: boolean;
+	lockShop: boolean;
 };
 
 /**
@@ -830,6 +843,16 @@ const EFFECTS: Record<string, EffectFn> = {
 			},
 		};
 	},
+	// Locks shop items so they persist across poll changes (yarn.lock effect)
+	lockShop: ({ poll, options, run, hasAnswered }, _config) => {
+		return {
+			view: { poll, options, run, hasAnswered },
+			lockShop: true,
+			meta: {
+				notes: [`Shop items locked until reroll`],
+			},
+		};
+	},
 	// Skip shop bonus - only added to DB when skipping, not to effective limit
 	bonusShopStorage: ({ poll, options, run, hasAnswered }, config) => {
 		const bonusStorage = config.storageBonus ?? 0;
@@ -927,6 +950,7 @@ export function applyEffects(
 			countCorrect: false,
 			showCorrectCount: false,
 			showWhoPickedWhat: false,
+			lockShop: false,
 		};
 
 	const effects = activeConfigIds
@@ -993,6 +1017,7 @@ export function applyEffects(
 					(acc.showCorrectCount ?? false) || (out.showCorrectCount ?? false),
 				showWhoPickedWhat:
 					(acc.showWhoPickedWhat ?? false) || (out.showWhoPickedWhat ?? false),
+				lockShop: acc.lockShop || out.lockShop || false,
 
 				meta: {
 					...acc.meta,
@@ -1016,6 +1041,7 @@ export function applyEffects(
 			countCorrect: false,
 			showCorrectCount: false,
 			showWhoPickedWhat: false,
+			lockShop: false,
 		}
 	);
 }
