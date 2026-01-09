@@ -91,13 +91,15 @@ export const fetchPollsByUser = async (userId: string) => {
 
 export const fetchPollCreators = async (): Promise<PollCreator[]> => {
 	const creators = await db
-		.selectDistinctOn([pollsTable.created_by], {
+		.select({
 			id: usersTable.id,
 			displayName: usersTable.display_name,
+			amountOfPolls: count().mapWith(Number),
 		})
 		.from(pollsTable)
 		.innerJoin(usersTable, eq(pollsTable.created_by, usersTable.id))
-		.orderBy(pollsTable.created_by, usersTable.display_name);
+		.groupBy(usersTable.id, usersTable.display_name)
+		.orderBy(usersTable.display_name);
 
 	return creators;
 };

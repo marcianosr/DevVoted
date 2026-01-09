@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StatsRouteImport } from './routes/stats'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as LogoutRouteImport } from './routes/logout'
@@ -26,6 +27,11 @@ import { Route as AuthedPollsNewRouteImport } from './routes/_authed/polls/new'
 import { Route as AuthedPollsPollIdIndexRouteImport } from './routes/_authed/polls/$pollId/index'
 import { Route as AuthedPollsPollIdEditRouteImport } from './routes/_authed/polls/$pollId/edit'
 
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StartRoute = StartRouteImport.update({
   id: '/start',
   path: '/start',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/logout': typeof LogoutRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
+  '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/game-over': typeof AuthedGameOverRoute
   '/progress': typeof AuthedProgressRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/logout': typeof LogoutRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
+  '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/game-over': typeof AuthedGameOverRoute
   '/progress': typeof AuthedProgressRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/logout': typeof LogoutRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
+  '/stats': typeof StatsRoute
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
   '/_authed/progress': typeof AuthedProgressRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/sign-up'
     | '/start'
+    | '/stats'
     | '/admin'
     | '/game-over'
     | '/progress'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/sign-up'
     | '/start'
+    | '/stats'
     | '/admin'
     | '/game-over'
     | '/progress'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/sign-up'
     | '/start'
+    | '/stats'
     | '/_authed/admin'
     | '/_authed/game-over'
     | '/_authed/progress'
@@ -221,11 +233,19 @@ export interface RootRouteChildren {
   LogoutRoute: typeof LogoutRoute
   SignUpRoute: typeof SignUpRoute
   StartRoute: typeof StartRoute
+  StatsRoute: typeof StatsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/start': {
       id: '/start'
       path: '/start'
@@ -375,6 +395,7 @@ const rootRouteChildren: RootRouteChildren = {
   LogoutRoute: LogoutRoute,
   SignUpRoute: SignUpRoute,
   StartRoute: StartRoute,
+  StatsRoute: StatsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport

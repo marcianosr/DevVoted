@@ -26,18 +26,13 @@ const PollCategoryCount = ({ polls }: PollCategoryCountProps) => {
 		.sort((a, b) => b.count - a.count);
 
 	return (
-		<div className="flex flex-wrap items-center gap-y-1">
-			{categoryCounts.map((cat, index) => (
-				<span
-					key={cat.code}
-					className="flex items-center"
-					data-category-theme={cat.code}
-				>
-					{index > 0 && <span className="mx-3">•</span>}
+		<ul className="list-disc px-4 text-2xl mt-4">
+			{categoryCounts.map((cat) => (
+				<li key={cat.code} data-category-theme={cat.code}>
 					<span className="text-theme">{cat.name}</span>: {cat.count}
-				</span>
+				</li>
 			))}
-		</div>
+		</ul>
 	);
 };
 
