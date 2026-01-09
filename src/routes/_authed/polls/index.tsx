@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { getUserPollsOrAll, getPollCreators } from "~/domains/polls/api/polls";
-import PollCategoryCount from "~/domains/polls/components/PollCategoryCount";
 import type { Poll } from "~/domains/polls/models/poll";
 import { getCategories, type CategoryCode } from "~/domains/shared/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent";
@@ -72,6 +71,12 @@ function PollsList() {
 	}
 
 	const polls = pollsResponse.data || [];
+
+	const categoryCounts = polls.reduce<Record<string, number>>((acc, poll) => {
+		acc[poll.categoryCode] = (acc[poll.categoryCode] || 0) + 1;
+		return acc;
+	}, {});
+
 	const filteredPolls = polls.filter((poll) => {
 		const matchesStatus =
 			statusFilter === "all" || poll.status === statusFilter;
@@ -94,10 +99,6 @@ function PollsList() {
 				>
 					Create Poll
 				</Link>
-			</div>
-
-			<div className="mb-4 text-sm">
-				<PollCategoryCount polls={polls} />
 			</div>
 
 			{/* Status Filter */}
@@ -123,19 +124,31 @@ function PollsList() {
 				<span className="text-sm text-gray-400 self-center w-20">
 					Category:
 				</span>
-				{CATEGORY_OPTIONS.map((option) => (
-					<button
-						key={option.value}
-						onClick={() => setCategoryFilter(option.value)}
-						className={`px-3 py-1 rounded-full text-sm transition-colors ${
-							categoryFilter === option.value
-								? "bg-primary text-white"
-								: "bg-gray-700 text-gray-300 hover:bg-gray-600"
-						}`}
-					>
-						{option.label}
-					</button>
-				))}
+				{CATEGORY_OPTIONS.map((option) => {
+					const count =
+						option.value === "all"
+							? polls.length
+							: (categoryCounts[option.value] ?? 0);
+					const isSelected = categoryFilter === option.value;
+					const isCategory = option.value !== "all";
+
+					return (
+						<button
+							key={option.value}
+							onClick={() => setCategoryFilter(option.value)}
+							data-category-theme={isCategory ? option.value : undefined}
+							className={`px-3 py-1 rounded-full text-sm transition-colors ${
+								isSelected
+									? isCategory
+										? "bg-theme text-black"
+										: "bg-primary text-white"
+									: "bg-gray-700 text-gray-300 hover:bg-gray-600"
+							}`}
+						>
+							{option.label} ({count})
+						</button>
+					);
+				})}
 			</div>
 
 			{/* User Filter (Admin only) */}
