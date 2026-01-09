@@ -226,9 +226,10 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
-[] Introduce configs that decrease catefgory weights
+[x] Introduce configs that decrease catefgory weights
+[x] Show active config counter
 [] Show storage of each other? [brainstorm]
-[] Show deinstall costs
+[x] Show deinstall costs
 [] What happens when you have overflow in storage and sell local storage config?
 [] Show correct/incorrect answers per user (simple circle)
 [] Show “back to results” in fixed header
@@ -285,7 +286,7 @@ BUGS:
 [x] Filter on category in admin panel
 [x] Filter by author in admin panel
 [] Search by question in admin panel
-[o] Show site game stats
+[x] Show site game stats
 [] Add "Architecture" category (pallet)
 [] Add "AI" category
 [] Basic "share" mechanism - what to share?

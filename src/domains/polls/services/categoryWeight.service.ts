@@ -35,7 +35,10 @@ export const calculateCategoryWeights = (
 			: [...CATEGORY_CODES];
 
 		for (const category of targets) {
-			weights[category] += config.categoryWeightBonus;
+			weights[category] = Math.max(
+				0.1,
+				weights[category] + config.categoryWeightBonus
+			);
 		}
 	}
 

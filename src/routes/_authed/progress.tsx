@@ -320,7 +320,9 @@ function RouteComponent() {
 					</div>
 
 					<div className="space-y-4  col-span-2">
-						<h3 className="text-xl">Your active configs</h3>
+						<h3 className="text-xl">
+							Your active configs ({activeConfigs.length})
+						</h3>
 						<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory py-2">
 							{activeConfigs.length === 0 ? (
 								<p className="text-gray-400">
