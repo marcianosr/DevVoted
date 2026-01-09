@@ -88,6 +88,7 @@ export const usersTable = pgTable("users", {
 	display_name: varchar("display_name", { length: 256 }).notNull(),
 	email: varchar("email", { length: 256 }).notNull().unique(),
 	photo_url: text("photo_url"),
+	github_username: varchar("github_username", { length: 100 }),
 	role: userRoles("roles").notNull().default("user"),
 	total_polls_submitted: integer("total_polls_submitted").notNull().default(0),
 });

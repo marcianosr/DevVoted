@@ -155,6 +155,11 @@ export const getRunStats = async (runId: number) => {
 	};
 };
 
+export const getAllRuns = () => {
+	const runs = db.select().from(runsTable).orderBy(desc(runsTable.created_at));
+	return runs;
+};
+
 // Create category-specific leaderboard entries for a completed run
 export const createCategoryLeaderboardEntries = async (
 	userId: string,

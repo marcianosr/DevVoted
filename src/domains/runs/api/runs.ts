@@ -9,6 +9,7 @@ import {
 	getLastRunForUser,
 	finishRunHandler,
 	skipShopHandler,
+	getAllRunsHandler,
 } from "./handlers";
 
 export const getOrCreateRun = createServerFn({ method: "GET" })
@@ -69,3 +70,9 @@ export const skipShopServerFn = createServerFn({ method: "POST" })
 			data.storageBonus
 		);
 	});
+
+export const getAllRunsServerFn = createServerFn({ method: "GET" }).handler(
+	async () => {
+		return await getAllRunsHandler();
+	}
+);
