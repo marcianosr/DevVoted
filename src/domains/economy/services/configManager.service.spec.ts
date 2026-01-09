@@ -339,5 +339,78 @@ describe("configStorage", () => {
 			const uniqueIds = new Set(ids);
 			expect(uniqueIds.size).toBe(ids.length); // All IDs should be unique
 		});
+
+		it("returns same configs on different days when lockShop is true (yarn.lock effect)", () => {
+			const configs = [
+				createConfig({ id: "rare-candy", rarity: "common" }),
+				createConfig({ id: "master-ball", rarity: "common" }),
+				createConfig({ id: "pokeball", rarity: "common" }),
+			];
+
+			const run = createMockRun({
+				id: 25,
+				activeConfigIds: [],
+				totalRerolls: 0,
+			});
+
+			// With lockShop, seed is just run.id-totalRerolls (no date)
+			const resultLocked = getRandomConfigs({
+				run,
+				configs,
+				count: 2,
+				lockShop: true,
+			});
+
+			// Same run + same reroll count + lockShop = same result
+			const resultLockedAgain = getRandomConfigs({
+				run,
+				configs,
+				count: 2,
+				lockShop: true,
+			});
+
+			expect(resultLocked.map((c) => c.id)).toEqual(
+				resultLockedAgain.map((c) => c.id)
+			);
+		});
+
+		it("returns different configs when lockShop is false and date changes", () => {
+			const configs = [
+				createConfig({ id: "rare-candy", rarity: "common" }),
+				createConfig({ id: "master-ball", rarity: "common" }),
+				createConfig({ id: "pokeball", rarity: "common" }),
+				createConfig({ id: "great-ball", rarity: "common" }),
+				createConfig({ id: "ultra-ball", rarity: "common" }),
+			];
+
+			// Without lockShop, seed includes date - different run IDs simulate different seeds
+			const run1 = createMockRun({
+				id: 1205,
+				activeConfigIds: [],
+				totalRerolls: 0,
+			});
+			const run2 = createMockRun({
+				id: 2512,
+				activeConfigIds: [],
+				totalRerolls: 0,
+			});
+
+			const result1 = getRandomConfigs({
+				run: run1,
+				configs,
+				count: 3,
+				lockShop: false,
+			});
+
+			const result2 = getRandomConfigs({
+				run: run2,
+				configs,
+				count: 3,
+				lockShop: false,
+			});
+
+			// Different run IDs should produce different selections
+			expect(result1.map((c) => c.id)).not.toEqual(result2.map((c) => c.id));
+		});
 	});
 });

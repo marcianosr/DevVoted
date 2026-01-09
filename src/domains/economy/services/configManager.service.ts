@@ -146,18 +146,25 @@ const RARITY_WEIGHTS = {
  * Selection is deterministic from the full pool, then filtered to exclude
  * already-owned configs. This ensures installing a config just removes it
  * from the offer without shifting the other selections.
+ *
+ * When lockShop is true (yarn.lock config), the date is excluded from the seed,
+ * making shop items persist across poll/day changes until the user rerolls.
  */
 export const getRandomConfigs = ({
 	run,
 	configs,
 	count,
+	lockShop = false,
 }: {
 	run: Run;
 	configs: Config[];
 	count: number;
+	lockShop?: boolean;
 }): Config[] => {
 	const today = new Date().toISOString().split("T")[0];
-	const seed = `${run.id}-${run.totalRerolls}-${today}`;
+	const seed = lockShop
+		? `${run.id}-${run.totalRerolls}`
+		: `${run.id}-${run.totalRerolls}-${today}`;
 
 	// Convert configs to weighted items based on rarity
 	const weightedConfigs: WeightedItem<Config>[] = configs.map((config) => ({
@@ -183,6 +190,7 @@ export const getRandomConfigs = ({
 type ShopEffects = {
 	extraSlot?: boolean;
 	reductionCost?: number;
+	lockShop?: boolean;
 };
 
 /**
@@ -202,6 +210,7 @@ export const getOfferedConfigs = (
 		run,
 		configs: availableConfigs,
 		count,
+		lockShop: effects.lockShop,
 	});
 
 	return selectedConfigs.map((config) =>
