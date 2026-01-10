@@ -419,6 +419,28 @@
 	--meter-bg: oklch(from var(--color-viridian) calc(l - 0.25) c h);
 }
 
+/* Ruby category */
+[data-category-theme="ruby"] {
+	.text-theme,
+	&.text-theme {
+		color: var(--color-cinnabar);
+	}
+	.bg-theme,
+	&.bg-theme {
+		background-color: var(--color-cinnabar);
+	}
+	.border-theme,
+	&.border-theme {
+		border-color: var(--color-cinnabar);
+	}
+	.accent-theme,
+	&.accent-theme {
+		accent-color: var(--color-cinnabar);
+	}
+	--meter-fill: var(--color-cinnabar);
+	--meter-bg: oklch(from var(--color-cinnabar) calc(l - 0.25) c h);
+}
+
 @font-face {
 	font-family: "Pixter Display";
 	src: url("/fonts/PixterDisplayBold.ttf") format("truetype");
