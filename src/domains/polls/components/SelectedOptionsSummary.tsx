@@ -7,6 +7,7 @@ import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 
 import MarkdownText from "./MarkdownText";
+import PollAccuracyRatio from "./PollAccuracyRatio";
 import { CommunityStats } from "../api/queries"; // TODO: don;t import type from api, move to models
 import { PollOption } from "../models/pollOption";
 
@@ -181,6 +182,9 @@ const SelectedOptionsSummary = ({
 								)}
 							</div>
 						</div>
+					)}
+					{communityStats?.accuracyStats && (
+						<PollAccuracyRatio accuracyStats={communityStats.accuracyStats} />
 					)}
 					{/* <section className="flex items-baseline flex-col mt-8">
 						<h3 className="text-2xl">

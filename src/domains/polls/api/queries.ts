@@ -457,11 +457,19 @@ export type CommunityStatsUser = User & {
 	};
 };
 
+export type PollAccuracyStats = {
+	full: number; // Count of fully correct answers
+	partial: number; // Count of partial answers
+	wrong: number; // Count of wrong answers
+	total: number; // Total responses
+};
+
 export type CommunityStats = {
 	totalResponses: number;
 	users: CommunityStatsUser[];
 	firstToAnswer: CommunityStatsUser | null;
 	fastestResponder: CommunityStatsUser | null;
+	accuracyStats: PollAccuracyStats;
 };
 
 export const getCommunityStatsForDailyPoll = async (
@@ -532,13 +540,96 @@ export const getCommunityStatsForDailyPoll = async (
 		null
 	);
 
-	// TODO: Is this only when users didnt respond yet?
+	// Calculate accuracy stats for all responses
+	const accuracyStats = await calculatePollAccuracyStats(
+		pollId,
+		result.map((r) => r.polls_responses.response_id)
+	);
+
 	return {
 		totalResponses: result.length,
 		users,
 		firstToAnswer: users.length > 0 ? users[0] : null,
 		fastestResponder,
+		accuracyStats,
 	};
+};
+
+/**
+ * Calculate accuracy stats for a poll based on responses.
+ * Determines if each response was full, partial, or wrong.
+ */
+const calculatePollAccuracyStats = async (
+	pollId: number,
+	responseIds: number[]
+): Promise<PollAccuracyStats> => {
+	if (responseIds.length === 0) {
+		return { full: 0, partial: 0, wrong: 0, total: 0 };
+	}
+
+	// Get correct options for the poll
+	const correctOptions = await db
+		.select({ id: pollOptionsTable.id })
+		.from(pollOptionsTable)
+		.where(
+			and(
+				eq(pollOptionsTable.poll_id, pollId),
+				eq(pollOptionsTable.correct, true)
+			)
+		);
+
+	const correctOptionIds = new Set(correctOptions.map((o) => o.id));
+	const totalCorrect = correctOptionIds.size;
+
+	// Get selected options for each response
+	const selectedOptionsPerResponse = await db
+		.select({
+			responseId: pollResponseOptionsTable.response_id,
+			optionId: pollResponseOptionsTable.option_id,
+			isCorrect: pollOptionsTable.correct,
+		})
+		.from(pollResponseOptionsTable)
+		.innerJoin(
+			pollOptionsTable,
+			eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
+		)
+		.where(inArray(pollResponseOptionsTable.response_id, responseIds));
+
+	// Group by response
+	const responseMap = new Map<
+		number,
+		{ correctPicked: number; wrongPicked: number }
+	>();
+	for (const row of selectedOptionsPerResponse) {
+		const current = responseMap.get(row.responseId) ?? {
+			correctPicked: 0,
+			wrongPicked: 0,
+		};
+		if (row.isCorrect) {
+			current.correctPicked++;
+		} else {
+			current.wrongPicked++;
+		}
+		responseMap.set(row.responseId, current);
+	}
+
+	// Calculate outcomes
+	let full = 0;
+	let partial = 0;
+	let wrong = 0;
+
+	for (const responseId of responseIds) {
+		const data = responseMap.get(responseId);
+		if (!data || data.correctPicked === 0) {
+			wrong++;
+		} else if (data.correctPicked === totalCorrect && data.wrongPicked === 0) {
+			full++;
+		} else {
+			partial++;
+		}
+	}
+
+	return { full, partial, wrong, total: responseIds.length };
 };
 
 export type RandomDailyAnswer = {
