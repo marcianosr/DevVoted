@@ -3,6 +3,7 @@ import { formatDuration, intervalToDuration } from "date-fns";
 
 import UserAvatar from "~/components/UserAvatar";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
+import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 
@@ -196,6 +197,7 @@ const SelectedOptionsSummary = ({
 							</Link>
 						</PrimaryButton>
 					</section> */}
+					<CategoryWeightsDisplay />
 					<section className="mt-16">
 						<Leaderboard categoryCode={categoryCode} />
 					</section>
