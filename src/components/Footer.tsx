@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { format } from "date-fns";
 
 import { configs } from "~/domains/configs/data/configs";
 import { getAllPolls } from "~/domains/polls/api/polls";
 import { getCategories } from "~/domains/shared/categories";
+
+declare const __LAST_COMMIT_DATE__: string;
 
 const Footer = () => {
 	const { data, error, isLoading } = useQuery({
@@ -32,7 +35,8 @@ const Footer = () => {
 			<section className="">
 				<p>
 					A crazy roguelike obsession build with craftsmanship, passion, ❤️ &
-					Tanstack Start by Marciano Schildmeijer | EST may 2022
+					Tanstack Start by Marciano Schildmeijer | EST may 2022 | Last updated:{" "}
+					{format(new Date(__LAST_COMMIT_DATE__), "d MMM yyyy")}
 				</p>
 				<p className="mt-2 text-zinc-400">
 					Found a bug?{" "}
