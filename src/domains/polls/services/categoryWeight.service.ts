@@ -13,6 +13,7 @@ const DEFAULT_CATEGORY_WEIGHTS: CategoryWeights = {
 	"general-frontend": 1.0,
 	java: 1.0,
 	python: 1.0,
+	ruby: 1.0,
 };
 
 /**
