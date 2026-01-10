@@ -293,6 +293,11 @@ async function seedDatabase() {
 						streak: 5 - userIndex,
 						polls: 14 + userIndex,
 					},
+					ruby: {
+						coverage: 48 + userIndex * 2,
+						streak: 4 - userIndex,
+						polls: 10 + userIndex,
+					},
 				};
 				return baseValues;
 			};
