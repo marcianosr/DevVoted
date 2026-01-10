@@ -55,12 +55,8 @@ const CategoryWeightsDisplay = () => {
 	if (isLoading) {
 		return (
 			<div className="animate-pulse">
-				<div className="h-6 bg-gray-700 rounded w-48 mb-4" />
-				<div className="space-y-2">
-					{[...Array(5)].map((_, i) => (
-						<div key={i} className="h-4 bg-gray-700 rounded w-full" />
-					))}
-				</div>
+				<div className="h-6 bg-gray-700 w-48 mb-4" />
+				<div className="h-6 bg-gray-700 w-full" />
 			</div>
 		);
 	}
@@ -70,47 +66,38 @@ const CategoryWeightsDisplay = () => {
 	}
 
 	const categoryItems = calculatePercentages(weights);
-	const highestWeight = categoryItems[0];
 
 	return (
 		<section className="mt-8 py-8 border-t border-gray-700">
 			<h3 className="text-2xl mb-4">Tomorrow&apos;s Category Chances</h3>
-			<p className="text-gray-400 text-sm mb-4">
-				Based on all active configs across the community
-			</p>
-			<div className="space-y-3">
+
+			{/* Stacked bar */}
+			<div className="flex h-6 w-full overflow-hidden">
 				{categoryItems.map((item) => (
 					<div
 						key={item.code}
 						data-category-theme={item.code}
-						className="flex items-center gap-3"
+						className="h-full bg-theme"
+						style={{ width: `${item.percentage}%` }}
+						title={`${item.name}: ${item.percentage.toFixed(1)}%`}
+					/>
+				))}
+			</div>
+
+			{/* Legend */}
+			<div className="flex flex-wrap gap-x-4 gap-y-2 mt-4">
+				{categoryItems.map((item) => (
+					<div
+						key={item.code}
+						data-category-theme={item.code}
+						className="flex items-center gap-1.5 text-sm"
 					>
-						<span className="text-theme w-32 truncate text-sm">
-							{item.name}
-						</span>
-						<div className="flex-1 h-4 bg-gray-800 rounded overflow-hidden">
-							<div
-								className="h-full bg-theme transition-all duration-300"
-								style={{ width: `${item.percentage}%` }}
-							/>
-						</div>
-						<span className="text-gray-300 w-14 text-right text-sm">
-							{item.percentage.toFixed(1)}%
-						</span>
+						<span className="w-3 h-3 bg-theme inline-block" />
+						<span className="text-theme">{item.name}</span>
+						<span className="text-gray-400">{item.percentage.toFixed(1)}%</span>
 					</div>
 				))}
 			</div>
-			{highestWeight && highestWeight.percentage > 10 && (
-				<p className="mt-4 text-sm text-gray-400">
-					<span
-						data-category-theme={highestWeight.code}
-						className="text-theme font-semibold"
-					>
-						{highestWeight.name}
-					</span>{" "}
-					has the highest chance of appearing tomorrow
-				</p>
-			)}
 		</section>
 	);
 };
