@@ -198,18 +198,17 @@ export const configs: Config[] = [
 		effect: ["randomStreakAmp"],
 		priority: 100,
 	},
-	// TODO: re-enable deflate config when we can make it work
-	// {
-	// 	id: "deflate-config",
-	// 	name: "Deflate",
-	// 	image: "/configs/deflate-config.png",
-	// 	cost: STORAGE_UNITS.MB / 2,
-	// 	description: "Reduces the cost of all configs by 10%",
-	// 	rarity: "uncommon",
-	// 	effect: ["reduceConfigCost"],
-	// 	priority: 50, // Run before other effects
-	// 	reductionCost: 0.1, // 10% cost reduction
-	// },
+	{
+		id: "deflate-config",
+		name: "Deflate",
+		image: "/configs/deflate-config.png",
+		cost: STORAGE_UNITS.MB / 2,
+		description: "Reduces the cost of all configs by 10%",
+		rarity: "uncommon",
+		effect: ["reduceConfigCost"],
+		priority: 50,
+		reductionCost: 0.1,
+	},
 	{
 		id: "hot-reload-config",
 		name: "Hot Reload",
@@ -324,6 +323,8 @@ export const configs: Config[] = [
 		storagePerCorrect: STORAGE_UNITS.KB * 8,
 		maxStorageBonus: STORAGE_UNITS.KB * 320,
 	},
+
+	// Increased category weight configs
 	{
 		id: "html-doctype-config",
 		name: "<!DOCTYPE html>",

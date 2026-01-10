@@ -312,7 +312,7 @@ BUGS:
 [] Fixen todo warnings eslint
 [] Starring a poll
 [x] Add explanation field to poll (shown after answering)
-[] Fix "deflate" config
+[x] Fix "deflate" config
 [] Leaderboard: show arrow up/down when position changed (delta)
 [] Show partial correct polls in list of progress
 [x] Tan stack "start" instead of "query" in footer
@@ -373,6 +373,7 @@ BUGS:
 [] Add Head tags seo
 [] Add meta description
 [] Profile page expansion
+[x] Show updated at in footer to show when the last feature has been added
 [x] Add basic CI/CD github actions (DB migrations)
 [] Config discovery system (find new configs based on performance)
 [] 20 unlockables (cosmetic or config)

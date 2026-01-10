@@ -1,4 +1,4 @@
-import { configs } from "~/domains/configs/data/configs";
+import { configs, applyEffects } from "~/domains/configs/data/configs";
 import { canAddConfigToRun } from "~/domains/economy/services/configManager.service";
 import { REFUND_RATE } from "~/lib/storage";
 import { getAuthenticatedUserId } from "~/utils/authorization";
@@ -30,7 +30,12 @@ export const addConfigToRunHandler = async ({
 			throw new Error(`Config with id ${configIds} not found`);
 		}
 
-		if (!canAddConfigToRun(currentRun, config)) {
+		const { reductionCost } = applyEffects(
+			{ poll: null as never, options: [], run: currentRun, hasAnswered: false },
+			currentRun.activeConfigIds
+		);
+
+		if (!canAddConfigToRun(currentRun, config, configs, reductionCost)) {
 			throw new Error(
 				"Cannot add config: insufficient storage or already exists"
 			);
