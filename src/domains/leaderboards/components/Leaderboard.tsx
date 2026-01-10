@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 
 import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
@@ -30,6 +32,14 @@ const getPlayerGateNumber = (
  */
 export const LEADERBOARD_REFRESH_INTERVAL = 3 * 60 * 1000;
 
+const leaderboardFilters = {
+	totalCoverage: "Coverage",
+	correctPolls: "Correct Polls",
+	bestStreak: "Best Streak",
+} as const;
+
+type LeaderboardFilters = keyof typeof leaderboardFilters;
+
 const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 	const { data, isLoading, error } = useQuery({
 		queryKey: [categoryCode],
@@ -41,6 +51,46 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 		staleTime: 15 * 1000, // 15 seconds
 		refetchInterval: LEADERBOARD_REFRESH_INTERVAL,
 	});
+
+	const [filter, setFilter] = useState<LeaderboardFilters>("totalCoverage");
+
+	return (
+		<section>
+			{Object.entries(leaderboardFilters).map(([key, label]) => (
+				<button
+					key={key}
+					className={`mr-4 mb-4 px-4 py-2 ${
+						filter === key ? "bg-blue-600 text-black" : "bg-red-500"
+					}`}
+					onClick={() => setFilter(key as LeaderboardFilters)}
+				>
+					{label}
+				</button>
+			))}
+			<ol>
+				{data?.success && data.data && (
+					<>
+						{data.data.map((entry, idx) => {
+							const { displayCoverage, level } = calculateLevelAndCoverage(
+								entry.totalCoverage
+							);
+
+							return (
+								<li key={entry.userId} className="flex gap-3">
+									<span>{idx + 1}.</span>{" "}
+									<span className="truncate">{entry.displayName}</span>{" "}
+									<span>
+										{entry[filter]}
+										{filter === "totalCoverage" && "%"}
+									</span>
+								</li>
+							);
+						})}
+					</>
+				)}
+			</ol>
+		</section>
+	);
 
 	return (
 		<section className="hidden sm:block">
