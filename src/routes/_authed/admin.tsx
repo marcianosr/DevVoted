@@ -4,9 +4,27 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 
+import { configs as allConfigs } from "~/domains/configs/data/configs";
+import { Config } from "~/domains/configs/models/config";
+import { formatStorage } from "~/lib/storage";
+
 import { PrimaryButton } from "../../ui/PrimaryButton";
 import { ADMIN_EMAILS } from "../../utils/adminAuth";
 import { getSupabaseServerClient } from "../../utils/supabase";
+
+const RARITY_ORDER: Record<Config["rarity"], number> = {
+	legendary: 0,
+	rare: 1,
+	uncommon: 2,
+	common: 3,
+};
+
+const RARITY_COLORS: Record<Config["rarity"], { bg: string; text: string }> = {
+	common: { bg: "bg-blue-100", text: "text-blue-800" },
+	uncommon: { bg: "bg-green-100", text: "text-green-800" },
+	rare: { bg: "bg-red-100", text: "text-red-800" },
+	legendary: { bg: "bg-purple-100", text: "text-purple-800" },
+};
 
 const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();
@@ -245,6 +263,8 @@ export const Route = createFileRoute("/_authed/admin")({
 	component: AdminPanel,
 });
 
+type ConfigSortOption = "rarity" | "cost";
+
 function AdminPanel() {
 	const data = Route.useLoaderData();
 	const router = useRouter();
@@ -254,6 +274,16 @@ function AdminPanel() {
 		type: "success" | "error";
 		text: string;
 	} | null>(null);
+	const [configSort, setConfigSort] = useState<ConfigSortOption>("rarity");
+
+	const sortedConfigs = [...allConfigs].sort((a, b) => {
+		if (configSort === "rarity") {
+			const rarityDiff = RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity];
+			if (rarityDiff !== 0) return rarityDiff;
+			return b.cost - a.cost; // Secondary sort by cost (descending) within same rarity
+		}
+		return b.cost - a.cost; // Cost descending (highest first)
+	});
 
 	const formatDate = (date: Date | string) => {
 		const d = typeof date === "string" ? new Date(date) : date;
@@ -621,6 +651,94 @@ function AdminPanel() {
 					) : (
 						<p className="text-gray-600">No recent responses.</p>
 					)}
+				</div>
+			</div>
+
+			{/* All Configs Section */}
+			<div className="mt-8 rounded-lg shadow-md p-6">
+				<div className="flex justify-between items-center mb-4">
+					<h2 className="text-xl font-semibold text-gray-900">
+						All Configs ({allConfigs.length})
+					</h2>
+					<div className="flex gap-2">
+						<button
+							onClick={() => setConfigSort("rarity")}
+							className={`px-3 py-1 rounded text-sm ${
+								configSort === "rarity"
+									? "bg-blue-600 text-white"
+									: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+							}`}
+						>
+							Sort by Rarity
+						</button>
+						<button
+							onClick={() => setConfigSort("cost")}
+							className={`px-3 py-1 rounded text-sm ${
+								configSort === "cost"
+									? "bg-blue-600 text-white"
+									: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+							}`}
+						>
+							Sort by Cost
+						</button>
+					</div>
+				</div>
+				<div className="overflow-x-auto">
+					<table className="w-full text-sm">
+						<thead>
+							<tr className="border-b border-gray-200">
+								<th className="text-left py-2 px-3 font-medium text-gray-700">
+									Name
+								</th>
+								<th className="text-left py-2 px-3 font-medium text-gray-700">
+									Rarity
+								</th>
+								<th className="text-left py-2 px-3 font-medium text-gray-700">
+									Cost
+								</th>
+								<th className="text-left py-2 px-3 font-medium text-gray-700">
+									Description
+								</th>
+								<th className="text-left py-2 px-3 font-medium text-gray-700">
+									Effects
+								</th>
+								<th className="text-left py-2 px-3 font-medium text-gray-700">
+									Categories
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{sortedConfigs.map((config) => (
+								<tr
+									key={config.id}
+									className="border-b border-gray-100 hover:bg-gray-50"
+								>
+									<td className="py-2 px-3 font-medium text-gray-900">
+										{config.name}
+									</td>
+									<td className="py-2 px-3">
+										<span
+											className={`px-2 py-1 rounded text-xs capitalize ${RARITY_COLORS[config.rarity].bg} ${RARITY_COLORS[config.rarity].text}`}
+										>
+											{config.rarity}
+										</span>
+									</td>
+									<td className="py-2 px-3 text-gray-600">
+										{formatStorage(config.cost)}
+									</td>
+									<td className="py-2 px-3 text-gray-600 max-w-xs truncate">
+										{config.description}
+									</td>
+									<td className="py-2 px-3 text-gray-500 text-xs">
+										{config.effect.join(", ") || "-"}
+									</td>
+									<td className="py-2 px-3 text-gray-500 text-xs">
+										{config.targetCategories?.join(", ") || "All"}
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
