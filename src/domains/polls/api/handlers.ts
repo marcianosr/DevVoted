@@ -18,6 +18,7 @@ import {
 	createPollWithOptions,
 	updatePollWithOptions,
 } from "~/domains/polls/api/queries";
+import { calculateCategoryWeights } from "~/domains/polls/services/categoryWeight.service";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
 import {
@@ -29,6 +30,7 @@ import {
 	type UpdatePollInput,
 } from "~/domains/polls/validation/schemas";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
+import { getAllActiveConfigIds } from "~/domains/runs/api/queries";
 import { Run } from "~/domains/runs/models/run";
 import { getRunProgress } from "~/domains/runs/services/progress.service";
 import { fetchUserDisplayName } from "~/domains/users/api/queries";
@@ -344,4 +346,15 @@ export const updatePollHandler = async ({
 
 		return poll;
 	}, "Failed to update poll");
+};
+
+/**
+ * Get current category weights based on all active configs across active runs.
+ * These weights represent tomorrow's poll selection probabilities.
+ */
+export const getCategoryWeightsHandler = async () => {
+	return handleApiOperation(async () => {
+		const allActiveConfigIds = await getAllActiveConfigIds();
+		return calculateCategoryWeights(allActiveConfigIds);
+	});
 };
