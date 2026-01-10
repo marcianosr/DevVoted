@@ -657,7 +657,7 @@ function AdminPanel() {
 			{/* All Configs Section */}
 			<div className="mt-8 rounded-lg shadow-md p-6">
 				<div className="flex justify-between items-center mb-4">
-					<h2 className="text-xl font-semibold text-gray-900">
+					<h2 className="text-xl font-semibold text-white">
 						All Configs ({allConfigs.length})
 					</h2>
 					<div className="flex gap-2">
@@ -666,7 +666,7 @@ function AdminPanel() {
 							className={`px-3 py-1 rounded text-sm ${
 								configSort === "rarity"
 									? "bg-blue-600 text-white"
-									: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+									: "bg-gray-700 text-gray-200 hover:bg-gray-600"
 							}`}
 						>
 							Sort by Rarity
@@ -676,7 +676,7 @@ function AdminPanel() {
 							className={`px-3 py-1 rounded text-sm ${
 								configSort === "cost"
 									? "bg-blue-600 text-white"
-									: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+									: "bg-gray-700 text-gray-200 hover:bg-gray-600"
 							}`}
 						>
 							Sort by Cost
@@ -686,23 +686,23 @@ function AdminPanel() {
 				<div className="overflow-x-auto">
 					<table className="w-full text-sm">
 						<thead>
-							<tr className="border-b border-gray-200">
-								<th className="text-left py-2 px-3 font-medium text-gray-700">
+							<tr className="border-b border-gray-600">
+								<th className="text-left py-2 px-3 font-medium text-gray-300">
 									Name
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-700">
+								<th className="text-left py-2 px-3 font-medium text-gray-300">
 									Rarity
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-700">
+								<th className="text-left py-2 px-3 font-medium text-gray-300">
 									Cost
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-700">
+								<th className="text-left py-2 px-3 font-medium text-gray-300">
 									Description
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-700">
+								<th className="text-left py-2 px-3 font-medium text-gray-300">
 									Effects
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-700">
+								<th className="text-left py-2 px-3 font-medium text-gray-300">
 									Categories
 								</th>
 							</tr>
@@ -711,9 +711,9 @@ function AdminPanel() {
 							{sortedConfigs.map((config) => (
 								<tr
 									key={config.id}
-									className="border-b border-gray-100 hover:bg-gray-50"
+									className="border-b border-gray-700 hover:bg-gray-800"
 								>
-									<td className="py-2 px-3 font-medium text-gray-900">
+									<td className="py-2 px-3 font-medium text-white">
 										{config.name}
 									</td>
 									<td className="py-2 px-3">
@@ -723,16 +723,16 @@ function AdminPanel() {
 											{config.rarity}
 										</span>
 									</td>
-									<td className="py-2 px-3 text-gray-600">
+									<td className="py-2 px-3 text-gray-300">
 										{formatStorage(config.cost)}
 									</td>
-									<td className="py-2 px-3 text-gray-600 max-w-xs truncate">
+									<td className="py-2 px-3 text-gray-300 max-w-xs truncate">
 										{config.description}
 									</td>
-									<td className="py-2 px-3 text-gray-500 text-xs">
+									<td className="py-2 px-3 text-gray-400 text-xs">
 										{config.effect.join(", ") || "-"}
 									</td>
-									<td className="py-2 px-3 text-gray-500 text-xs">
+									<td className="py-2 px-3 text-gray-400 text-xs">
 										{config.targetCategories?.join(", ") || "All"}
 									</td>
 								</tr>
