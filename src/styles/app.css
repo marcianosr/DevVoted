@@ -223,24 +223,24 @@
 /* Category-based theme utilities */
 /* HTML category */
 [data-category-theme="html"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-vermillion);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-vermillion);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-vermillion);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-vermillion);
-	}
 	--meter-fill: var(--color-vermillion);
 	--meter-bg: oklch(from var(--color-vermillion) calc(l - 0.25) c h);
+}
+[data-category-theme="html"] .text-theme,
+[data-category-theme="html"].text-theme {
+	color: var(--color-vermillion);
+}
+[data-category-theme="html"] .bg-theme,
+[data-category-theme="html"].bg-theme {
+	background-color: var(--color-vermillion);
+}
+[data-category-theme="html"] .border-theme,
+[data-category-theme="html"].border-theme {
+	border-color: var(--color-vermillion);
+}
+[data-category-theme="html"] .accent-theme,
+[data-category-theme="html"].accent-theme {
+	accent-color: var(--color-vermillion);
 }
 
 /* CSS category */
