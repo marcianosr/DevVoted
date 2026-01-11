@@ -221,224 +221,59 @@
 }
 
 /* Category-based theme utilities */
-/* HTML category */
+/* Set --theme-color on each category, then use it in theme utilities */
 [data-category-theme="html"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-vermillion);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-vermillion);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-vermillion);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-vermillion);
-	}
-	--meter-fill: var(--color-vermillion);
-	--meter-bg: oklch(from var(--color-vermillion) calc(l - 0.25) c h);
+	--theme-color: var(--color-vermillion);
 }
-
-/* CSS category */
 [data-category-theme="css"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-cerulean);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-cerulean);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-cerulean);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-cerulean);
-	}
-	--meter-fill: var(--color-cerulean);
-	--meter-bg: oklch(from var(--color-cerulean) calc(l - 0.25) c h);
+	--theme-color: var(--color-cerulean);
 }
-
-/* JavaScript category */
 [data-category-theme="js"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-saffron);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-saffron);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-saffron);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-saffron);
-	}
-	--meter-fill: var(--color-saffron);
-	--meter-bg: oklch(from var(--color-saffron) calc(l - 0.25) c h);
+	--theme-color: var(--color-saffron);
 }
-
-/* TypeScript category */
 [data-category-theme="ts"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-lavender);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-lavender);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-lavender);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-lavender);
-	}
-	--meter-fill: var(--color-lavender);
-	--meter-bg: oklch(from var(--color-lavender) calc(l - 0.25) c h);
+	--theme-color: var(--color-lavender);
 }
-
-/* General Frontend category */
 [data-category-theme="general-frontend"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-fuchsia);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-fuchsia);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-fuchsia);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-fuchsia);
-	}
-	--meter-fill: var(--color-fuchsia);
-	--meter-bg: oklch(from var(--color-fuchsia) calc(l - 0.25) c h);
+	--theme-color: var(--color-fuchsia);
 }
-
-/* React category */
 [data-category-theme="react"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-celadon);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-celadon);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-celadon);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-celadon);
-	}
-	--meter-fill: var(--color-celadon);
-	--meter-bg: oklch(from var(--color-celadon) calc(l - 0.25) c h);
+	--theme-color: var(--color-celadon);
 }
-
-/* Git category */
 [data-category-theme="git"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-pewter);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-pewter);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-pewter);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-pewter);
-	}
-	--meter-fill: var(--color-pewter);
-	--meter-bg: oklch(from var(--color-pewter) calc(l - 0.25) c h);
+	--theme-color: var(--color-pewter);
 }
-
-/* Java category */
 [data-category-theme="java"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-indigo);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-indigo);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-indigo);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-indigo);
-	}
-	--meter-fill: var(--color-indigo);
-	--meter-bg: oklch(from var(--color-indigo) calc(l - 0.25) c h);
+	--theme-color: var(--color-indigo);
 }
-
-/* Python category */
 [data-category-theme="python"] {
-	.text-theme,
-	&.text-theme {
-		color: var(--color-viridian);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--color-viridian);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--color-viridian);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--color-viridian);
-	}
-	--meter-fill: var(--color-viridian);
-	--meter-bg: oklch(from var(--color-viridian) calc(l - 0.25) c h);
+	--theme-color: var(--color-viridian);
+}
+[data-category-theme="ruby"] {
+	--theme-color: var(--color-cinnabar);
 }
 
-/* Ruby category */
-[data-category-theme="ruby"] {
+/* Theme utilities - use inherited --theme-color */
+[data-category-theme] {
+	--meter-fill: var(--theme-color);
+	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
+
 	.text-theme,
 	&.text-theme {
-		color: var(--color-cinnabar);
+		color: var(--theme-color);
 	}
 	.bg-theme,
 	&.bg-theme {
-		background-color: var(--color-cinnabar);
+		background-color: var(--theme-color);
 	}
 	.border-theme,
 	&.border-theme {
-		border-color: var(--color-cinnabar);
+		border-color: var(--theme-color);
 	}
 	.accent-theme,
 	&.accent-theme {
-		accent-color: var(--color-cinnabar);
+		accent-color: var(--theme-color);
 	}
-	--meter-fill: var(--color-cinnabar);
-	--meter-bg: oklch(from var(--color-cinnabar) calc(l - 0.25) c h);
 }
 
 @font-face {
