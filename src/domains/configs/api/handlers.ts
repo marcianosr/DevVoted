@@ -1,4 +1,4 @@
-import { configs, applyEffects } from "~/domains/configs/data/configs";
+import { configs } from "~/domains/configs/data/configs";
 import { canAddConfigToRun } from "~/domains/economy/services/configManager.service";
 import { REFUND_RATE } from "~/lib/storage";
 import { getAuthenticatedUserId } from "~/utils/authorization";
@@ -9,6 +9,21 @@ import {
 	removeConfigFromRunQuery,
 	getRunByIdQuery,
 } from "./queries";
+
+const DEFLATE_CONFIG_ID = "deflate-config";
+
+/**
+ * Gets the cost reduction from active configs without running poll-dependent effects.
+ * Currently only the "Deflate" config provides cost reduction.
+ */
+const getReductionCost = (activeConfigIds: string[]): number => {
+	if (!activeConfigIds.includes(DEFLATE_CONFIG_ID)) {
+		return 0;
+	}
+
+	const deflateConfig = configs.find((c) => c.id === DEFLATE_CONFIG_ID);
+	return deflateConfig?.reductionCost ?? 0;
+};
 
 export const addConfigToRunHandler = async ({
 	data,
@@ -30,10 +45,7 @@ export const addConfigToRunHandler = async ({
 			throw new Error(`Config with id ${configIds} not found`);
 		}
 
-		const { reductionCost } = applyEffects(
-			{ poll: null as never, options: [], run: currentRun, hasAnswered: false },
-			currentRun.activeConfigIds
-		);
+		const reductionCost = getReductionCost(currentRun.activeConfigIds);
 
 		if (!canAddConfigToRun(currentRun, config, configs, reductionCost)) {
 			throw new Error(
