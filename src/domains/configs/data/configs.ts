@@ -962,11 +962,28 @@ export function applyEffects(
 			config.effect.map((effectId) => ({ config, effectId }))
 		);
 
+	const runEffect = (
+		fn: EffectFn,
+		ctx: EffectCtx,
+		config: Config,
+		effectId: string
+	): EffectOut => {
+		try {
+			return fn(ctx, config);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			throw new Error(
+				`Effect "${effectId}" from config "${config.id}" failed: ${message}`
+			);
+		}
+	};
+
 	return effects.reduce<ApplyEffects>(
 		(acc, { config, effectId }) => {
 			const fn = EFFECTS[effectId];
 			if (!fn) return acc;
-			const out = fn(acc.view, config);
+
+			const out = runEffect(fn, acc.view, config, effectId);
 
 			const coverageBonusValue =
 				(acc.renderProps.coverageBonus ?? 0) +
