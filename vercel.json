@@ -1,5 +1,11 @@
 {
 	"buildCommand": "npm run build",
 	"installCommand": "npm ci --include=optional",
-	"framework": null
+	"framework": null,
+	"crons": [
+		{
+			"path": "/api/cron/daily-reminder",
+			"schedule": "0 9 * * *"
+		}
+	]
 }
