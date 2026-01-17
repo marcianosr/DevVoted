@@ -183,6 +183,21 @@ const SelectedOptionsSummary = ({
 							</div>
 						</div>
 					)}
+					{communityStats?.firstGood && (
+						<div>
+							<p className="text-xl mt-4">First good</p>
+							<div className="flex gap-2 items-center">
+								<UserAvatar user={communityStats.firstGood} />
+								<p>{communityStats.firstGood.displayName}</p>
+								<span>·</span>
+								{communityStats.firstGood.timeTakenMs !== null && (
+									<span className="text-zinc-400 text-sm">
+										in {formatTimeTaken(communityStats.firstGood.timeTakenMs)}
+									</span>
+								)}
+							</div>
+						</div>
+					)}
 					{/* <section className="flex items-baseline flex-col mt-8">
 						<h3 className="text-2xl">
 							Be even more involved in this community!

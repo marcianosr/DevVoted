@@ -226,6 +226,7 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Get 50KB when answering first, 75KB when first good
 [] Use tailwinds "tints" for L1, L2, L3 colors
 [x] Introduce configs that decrease catefgory weights
 [x] Show active config counter
@@ -233,7 +234,7 @@ BUGS:
 [x] Show deinstall costs
 [] Show which configs have impact on your score
 [] IndexedDB: show a little counter of storage added compared to the limit
-[] Add "general-backend" category
+[x] Add "general-backend" category
 [] What happens when you have overflow in storage and sell local storage config?
 [] Show "First Good"
 [] Show correct/incorrect answers per user (simple circle)

@@ -462,6 +462,7 @@ export type CommunityStats = {
 	users: CommunityStatsUser[];
 	firstToAnswer: CommunityStatsUser | null;
 	fastestResponder: CommunityStatsUser | null;
+	firstGood: CommunityStatsUser | null;
 };
 
 export const getCommunityStatsForDailyPoll = async (
@@ -496,6 +497,14 @@ export const getCommunityStatsForDailyPoll = async (
 					isNull(pollResponsesTable.run_id)
 				)
 			)
+		)
+		.leftJoin(
+			pollResponseOptionsTable,
+			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
+		)
+		.leftJoin(
+			pollOptionsTable,
+			eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
 		);
 
 	const users = result.flatMap((r) => {
@@ -532,12 +541,25 @@ export const getCommunityStatsForDailyPoll = async (
 		null
 	);
 
-	// TODO: Is this only when users didnt respond yet?
+	const firstGood = () => {
+		const goodResponders = result.filter(
+			(r) => r.polls_options?.correct === true
+		);
+		if (goodResponders.length === 0) return null;
+		const firstGoodRecord = goodResponders[0];
+		if (!firstGoodRecord.users) return null;
+
+		return users.find((u) => u.id === firstGoodRecord.users!.id) ?? null;
+	};
+
+	const getFirstGoodUser = firstGood();
+
 	return {
 		totalResponses: result.length,
 		users,
 		firstToAnswer: users.length > 0 ? users[0] : null,
 		fastestResponder,
+		firstGood: getFirstGoodUser,
 	};
 };
 
