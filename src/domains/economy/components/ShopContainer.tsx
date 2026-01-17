@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 
 import { addConfigToRunServerFn } from "~/domains/configs/api/configs";
+import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
 import ShopCard from "~/domains/configs/components/Cards/ShopCard";
 import { Config } from "~/domains/configs/models/config";
 import {
@@ -18,9 +19,11 @@ import { PrimaryButton } from "~/ui/PrimaryButton";
 type ShopContainerProps = {
 	activeRun: Run;
 	offeredConfigs: ReturnType<typeof getRandomConfigs>;
+	nextOfferedConfigs: ReturnType<typeof getRandomConfigs>;
+	storageBonus?: number;
 	reductionCost: number;
 	isOpen: boolean;
-	storageBonus?: number;
+	showNextConfigs?: boolean;
 };
 
 const SKIP_REWARD_KB = 65536; // 64KB
@@ -30,6 +33,7 @@ const getTodayDateString = () => new Date().toISOString().split("T")[0];
 const ShopContainer = ({
 	activeRun,
 	offeredConfigs,
+	nextOfferedConfigs,
 	reductionCost,
 	isOpen,
 	storageBonus,
@@ -77,7 +81,7 @@ const ShopContainer = ({
 		});
 
 	return (
-		<section aria-labelledby="shop-heading">
+		<section aria-labelledby="shop-heading" className="bg-zinc-900 p-4">
 			<header className="mb-4">
 				<h2 id="shop-heading" className="text-3xl">
 					Config Manager Shop -{" "}
@@ -88,7 +92,8 @@ const ShopContainer = ({
 					)}
 				</h2>
 				<p className="text-gray-300">
-					Improve your run by installing configs from the Config Manager Shop!
+					Improve your run by installing configs from the Config Manager
+					Shop!{" "}
 				</p>
 			</header>
 			<div className="grid grid-cols-8 gap-4">
@@ -148,6 +153,25 @@ const ShopContainer = ({
 						</li>
 					))}
 				</ul>
+
+				{nextOfferedConfigs.length > 0 && (
+					<section className="col-span-8 mt-8 ">
+						<header className="mb-4">
+							<h3 className="text-2xl">Next package offers</h3>
+							<p className="text-gray-300">
+								These packages will be installable after you rebuild the shop
+								offers.
+							</p>
+						</header>
+						<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory col-span-8 md:col-span-6">
+							{nextOfferedConfigs.map((config) => (
+								<li key={config.id} className="shrink-0 snap-start">
+									<ActiveCard key={config.id} config={config} size="small" />
+								</li>
+							))}
+						</ul>
+					</section>
+				)}
 			</div>
 		</section>
 	);

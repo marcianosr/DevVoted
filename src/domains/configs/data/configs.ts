@@ -560,6 +560,17 @@ export const configs: Config[] = [
 		categoryWeightBonus: -1.1,
 		targetCategories: ["python"],
 	},
+	{
+		id: "prefetch-config",
+		name: "<link rel='prefetch'>",
+		image: "/configs/prefetch.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description: "See the next 3 configs that would appear if you rerolled",
+		rarity: "rare",
+		effect: ["showNextConfigs"],
+		priority: 100,
+		showNextConfigs: true,
+	},
 ];
 
 /**
@@ -606,6 +617,7 @@ export type EffectOut = {
 	showCorrectCount?: boolean;
 	showWhoPickedWhat?: boolean;
 	lockShop?: boolean; // Shop items persist across poll changes
+	showNextConfigs?: boolean;
 };
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
@@ -624,6 +636,7 @@ export type ApplyEffects = {
 	showCorrectCount: boolean;
 	showWhoPickedWhat: boolean;
 	lockShop: boolean;
+	showNextConfigs: boolean;
 };
 
 /**
@@ -912,6 +925,14 @@ const EFFECTS: Record<string, EffectFn> = {
 			meta: { notes: ["Will show answers chosen by others"] },
 		};
 	},
+
+	showNextConfigs: ({ poll, options, run, hasAnswered }, _config) => {
+		return {
+			showNextConfigs: true,
+			view: { poll, options, run, hasAnswered },
+			meta: { notes: ["Will show next 3 configs on reroll"] },
+		};
+	},
 };
 
 /**
@@ -953,6 +974,7 @@ export function applyEffects(
 			showCorrectCount: false,
 			showWhoPickedWhat: false,
 			lockShop: false,
+			showNextConfigs: false,
 		};
 
 	const effects = activeConfigIds
@@ -1037,6 +1059,8 @@ export function applyEffects(
 				showWhoPickedWhat:
 					(acc.showWhoPickedWhat ?? false) || (out.showWhoPickedWhat ?? false),
 				lockShop: acc.lockShop || out.lockShop || false,
+				showNextConfigs:
+					(acc.showNextConfigs ?? false) || (out.showNextConfigs ?? false),
 
 				meta: {
 					...acc.meta,
@@ -1061,6 +1085,7 @@ export function applyEffects(
 			showCorrectCount: false,
 			showWhoPickedWhat: false,
 			lockShop: false,
+			showNextConfigs: false,
 		}
 	);
 }

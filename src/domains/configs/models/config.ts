@@ -33,6 +33,7 @@ export type Config = {
 	storagePerCorrect?: number; // Optional: Storage bonus per correct poll (in bytes)
 	maxStorageBonus?: number; // Optional: Maximum storage bonus cap (in bytes)
 	categoryWeightBonus?: number; // Optional: Weight bonus for poll category selection (e.g., 0.25 for +25% chance)
+	showNextConfigs?: boolean;
 };
 
 export type ConfigInventory = {

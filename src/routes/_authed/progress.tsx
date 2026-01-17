@@ -10,6 +10,7 @@ import { Config } from "~/domains/configs/models/config";
 import ShopContainer from "~/domains/economy/components/ShopContainer";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
 import {
+	getNextOfferedConfigs,
 	getOfferedConfigs,
 	getStorageInfo,
 } from "~/domains/economy/services/configManager.service";
@@ -71,6 +72,10 @@ export const Route = createFileRoute("/_authed/progress")({
 
 		const offeredConfigs = getOfferedConfigs(activeRun.data, configEffects);
 
+		const nextOfferedConfigs = configEffects.showNextConfigs
+			? getNextOfferedConfigs(activeRun.data, configEffects)
+			: [];
+
 		return {
 			dailyPoll: {
 				poll: pollResponse.data.poll,
@@ -80,6 +85,7 @@ export const Route = createFileRoute("/_authed/progress")({
 			},
 			activeRun: activeRun.data,
 			offeredConfigs,
+			nextOfferedConfigs,
 			configEffects,
 			currentGate,
 			pollsSeen,
@@ -195,6 +201,7 @@ function RouteComponent() {
 	const {
 		activeRun,
 		offeredConfigs,
+		nextOfferedConfigs,
 		configEffects: { reductionCost, storage },
 		currentGate,
 		pollHistory,
@@ -303,6 +310,7 @@ function RouteComponent() {
 				<ShopContainer
 					activeRun={activeRun}
 					offeredConfigs={offeredConfigs}
+					nextOfferedConfigs={nextOfferedConfigs}
 					reductionCost={reductionCost}
 					isOpen={dailyPoll.hasAnswered && activeRun.shopSkippedDate !== today}
 					storageBonus={storage.skipBonus}

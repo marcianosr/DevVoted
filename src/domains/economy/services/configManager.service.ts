@@ -217,3 +217,13 @@ export const getOfferedConfigs = (
 		withDiscount(config, effects.reductionCost ?? 0)
 	);
 };
+
+export const getNextOfferedConfigs = (
+	run: Run,
+	effects: ShopEffects,
+	availableConfigs: Config[] = configs
+): (Config & { originalCost?: number })[] => {
+	// Simulate next reroll by incrementing totalRerolls
+	const simulatedRun = { ...run, totalRerolls: run.totalRerolls + 1 };
+	return getOfferedConfigs(simulatedRun, effects, availableConfigs);
+};

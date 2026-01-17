@@ -226,16 +226,22 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Use tailwinds "tints" for L1, L2, L3 colors
 [x] Introduce configs that decrease catefgory weights
 [x] Show active config counter
 [] Show storage of each other? [brainstorm]
 [x] Show deinstall costs
+[] Show which configs have impact on your score
+[] IndexedDB: show a little counter of storage added compared to the limit
+[] Add "general-backend" category
 [] What happens when you have overflow in storage and sell local storage config?
+[] Show "First Good"
 [] Show correct/incorrect answers per user (simple circle)
 [] Show “back to results” in fixed header
 [] Quick profile page - show best stats
 [] Show coverage bar on score result page to show impact
 [] Show weight probabilty per category (maybe behind a config?)
+[] Fix deflate config
 [x] Show polls when beyond CI gates in /progress
 [] Create "groups" - e.g., Kabisa, Codam, EO, Open Source Contributors, etc
         Option A: Separate categories (current behavior)
