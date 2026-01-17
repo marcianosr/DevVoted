@@ -14,6 +14,7 @@ const DEFAULT_CATEGORY_WEIGHTS: CategoryWeights = {
 	java: 1.0,
 	python: 1.0,
 	ruby: 1.0,
+	"general-backend": 1.0,
 };
 
 /**

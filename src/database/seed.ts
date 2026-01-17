@@ -298,6 +298,11 @@ async function seedDatabase() {
 						streak: 4 - userIndex,
 						polls: 10 + userIndex,
 					},
+					"general-backend": {
+						coverage: 48 + userIndex * 2,
+						streak: 4 - userIndex,
+						polls: 10 + userIndex,
+					},
 				};
 				return baseValues;
 			};

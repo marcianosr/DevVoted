@@ -252,6 +252,9 @@
 [data-category-theme="ruby"] {
 	--theme-color: var(--color-cinnabar);
 }
+[data-category-theme="general-backend"] {
+	--theme-color: var(--color-seafoam);
+}
 
 /* Theme utilities - use inherited --theme-color */
 [data-category-theme] {
