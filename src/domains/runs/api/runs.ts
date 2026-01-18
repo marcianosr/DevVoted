@@ -10,6 +10,7 @@ import {
 	finishRunHandler,
 	skipShopHandler,
 	getAllRunsHandler,
+	getRandomExposedConfigDeckHandler,
 } from "./handlers";
 
 export const getOrCreateRun = createServerFn({ method: "GET" })
@@ -76,3 +77,10 @@ export const getAllRunsServerFn = createServerFn({ method: "GET" }).handler(
 		return await getAllRunsHandler();
 	}
 );
+
+export const getExposedConfigDeck = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }))
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		return await getRandomExposedConfigDeckHandler(userId, data.date);
+	});

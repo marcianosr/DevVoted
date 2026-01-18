@@ -21,6 +21,7 @@ import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisp
 import SelectedOptionsSummary from "~/domains/polls/components/SelectedOptionsSummary";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
+import { getExposedConfigDeck } from "~/domains/runs/api/runs";
 import { GateProgressIndicator } from "~/domains/runs/components/GateProgressIndicator";
 import type { Run } from "~/domains/runs/models/run";
 import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
@@ -135,6 +136,21 @@ const DailyPollContainer = ({
 		enabled: showWhoPickedWhat && !hasAnswered,
 	});
 
+	// Fetch exposed config deck (only when config is active and user has answered)
+	const exposeConfigDeck = configEffects.exposeConfigDeck ?? false;
+
+	const today = new Date().toISOString().split("T")[0];
+	const { data: exposedConfigDeckResult } = useQuery({
+		queryKey: ["exposedConfigDeck", today],
+		queryFn: () => getExposedConfigDeck({ data: { date: today } }),
+		enabled: exposeConfigDeck && hasAnswered,
+	});
+
+	const exposedConfigDeck =
+		exposedConfigDeckResult?.success && exposedConfigDeckResult.data
+			? exposedConfigDeckResult.data
+			: null;
+
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
 
@@ -224,6 +240,7 @@ const DailyPollContainer = ({
 							communityStats={communityStats}
 							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
+							exposedConfigDeck={exposedConfigDeck}
 						/>
 						<ShopPreview offeredConfigs={offeredConfigs} />
 					</>

@@ -856,6 +856,112 @@ describe("configs", () => {
 		});
 	});
 
+	describe("exposeConfigDeck effect (public config)", () => {
+		it("has valid properties for public config", () => {
+			const publicConfig = configs.find((c) => c.id === "public-config");
+			expect(publicConfig).toBeDefined();
+			expect(publicConfig?.name).toBe("public");
+			expect(publicConfig?.effect).toEqual(["exposeConfigDeck"]);
+			expect(publicConfig?.rarity).toBe("uncommon");
+			expect(publicConfig?.description).toContain("config deck");
+		});
+
+		it("returns exposeConfigDeck true when config is active", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["public-config"]);
+
+			expect(result.exposeConfigDeck).toBe(true);
+			expect(result.meta.notes).toContain(
+				"Your config deck may be exposed to other players"
+			);
+		});
+
+		it("returns exposeConfigDeck false when config is not active", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, []);
+
+			expect(result.exposeConfigDeck).toBe(false);
+		});
+
+		it("works regardless of poll category", () => {
+			const categories = ["js", "css", "html", "ts", "react"] as const;
+
+			for (const categoryCode of categories) {
+				const mockPoll = createMockPoll({ categoryCode });
+				const mockRun = createMockRun();
+				const base = {
+					poll: mockPoll,
+					options: [],
+					run: mockRun,
+					hasAnswered: false,
+				};
+
+				const result = applyEffects(base, ["public-config"]);
+				expect(result.exposeConfigDeck).toBe(true);
+			}
+		});
+
+		it("combines with other effects like streakAmp", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "js",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["public-config", ".js-config"]);
+
+			expect(result.exposeConfigDeck).toBe(true);
+			expect(result.coverage.coverageAdd).toBe(2);
+			expect(result.meta.notes).toContain(
+				"Your config deck may be exposed to other players"
+			);
+			expect(result.meta.notes).toContain("+2 amp for js polls");
+		});
+
+		it("combines with telemetry config", () => {
+			const mockPoll = createMockPoll({
+				categoryCode: "css",
+			});
+			const mockRun = createMockRun();
+			const base = {
+				poll: mockPoll,
+				options: [],
+				run: mockRun,
+				hasAnswered: false,
+			};
+
+			const result = applyEffects(base, ["public-config", "telemetry-config"]);
+
+			expect(result.exposeConfigDeck).toBe(true);
+			expect(result.showWhoPickedWhat).toBe(true);
+		});
+	});
+
 	describe("showWhoPickedWhat effect (telemetry config)", () => {
 		it("returns showWhoPickedWhat true when config is active", () => {
 			const mockPoll = createMockPoll({

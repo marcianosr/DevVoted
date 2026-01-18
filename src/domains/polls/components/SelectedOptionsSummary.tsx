@@ -2,8 +2,10 @@ import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
 import UserAvatar from "~/components/UserAvatar";
+import ExposedConfigDeckDisplay from "~/domains/configs/components/ExposedConfigDeckDisplay";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay";
+import type { ExposedConfigDeck } from "~/domains/runs/api/queries";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 
@@ -25,6 +27,7 @@ type SelectedOptionsSummaryProps = {
 	communityStats?: CommunityStats;
 	categoryCode: CategoryCode;
 	explanation?: string | null;
+	exposedConfigDeck?: ExposedConfigDeck | null;
 };
 
 const SelectedOptionsSummary = ({
@@ -34,6 +37,7 @@ const SelectedOptionsSummary = ({
 	communityStats,
 	categoryCode,
 	explanation,
+	exposedConfigDeck,
 }: SelectedOptionsSummaryProps) => {
 	const hasMissedCorrectAnswers = selectedOptions.every((optionId) => {
 		const option = options.find((opt) => opt.id === Number(optionId));
@@ -187,7 +191,7 @@ const SelectedOptionsSummary = ({
 						<div>
 							<p className="text-xl mt-4">First good</p>
 							<div className="flex gap-2 items-center">
-								<UserAvatar user={communityStats.firstGood} withCircle={true} />
+								<UserAvatar user={communityStats.firstGood} />
 								<p>{communityStats.firstGood.displayName}</p>
 								<span>·</span>
 								{communityStats.firstGood.timeTakenMs !== null && (
@@ -212,6 +216,9 @@ const SelectedOptionsSummary = ({
 							</Link>
 						</PrimaryButton>
 					</section> */}
+					{exposedConfigDeck && (
+						<ExposedConfigDeckDisplay deck={exposedConfigDeck} />
+					)}
 					<CategoryWeightsDisplay />
 					<section className="mt-16">
 						<Leaderboard categoryCode={categoryCode} />

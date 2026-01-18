@@ -571,6 +571,17 @@ export const configs: Config[] = [
 		priority: 100,
 		showNextConfigs: true,
 	},
+	{
+		id: "public-config",
+		name: "public",
+		image: "/configs/public.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"When held, a random players config deck is exposed! All holders see the same deck daily.",
+		rarity: "uncommon",
+		effect: ["exposeConfigDeck"],
+		priority: 100,
+	},
 ];
 
 /**
@@ -618,6 +629,7 @@ export type EffectOut = {
 	showWhoPickedWhat?: boolean;
 	lockShop?: boolean; // Shop items persist across poll changes
 	showNextConfigs?: boolean;
+	exposeConfigDeck?: boolean; // Shows a random player's config deck
 };
 
 type EffectFn = (ctx: EffectCtx, config: Config) => EffectOut;
@@ -637,6 +649,7 @@ export type ApplyEffects = {
 	showWhoPickedWhat: boolean;
 	lockShop: boolean;
 	showNextConfigs: boolean;
+	exposeConfigDeck: boolean;
 };
 
 /**
@@ -933,6 +946,14 @@ const EFFECTS: Record<string, EffectFn> = {
 			meta: { notes: ["Will show next 3 configs on reroll"] },
 		};
 	},
+
+	exposeConfigDeck: ({ poll, options, run, hasAnswered }, _config) => {
+		return {
+			view: { poll, options, run, hasAnswered },
+			exposeConfigDeck: true,
+			meta: { notes: ["Your config deck may be exposed to other players"] },
+		};
+	},
 };
 
 /**
@@ -975,6 +996,7 @@ export function applyEffects(
 			showWhoPickedWhat: false,
 			lockShop: false,
 			showNextConfigs: false,
+			exposeConfigDeck: false,
 		};
 
 	const effects = activeConfigIds
@@ -1061,6 +1083,8 @@ export function applyEffects(
 				lockShop: acc.lockShop || out.lockShop || false,
 				showNextConfigs:
 					(acc.showNextConfigs ?? false) || (out.showNextConfigs ?? false),
+				exposeConfigDeck:
+					(acc.exposeConfigDeck ?? false) || (out.exposeConfigDeck ?? false),
 
 				meta: {
 					...acc.meta,
@@ -1086,6 +1110,7 @@ export function applyEffects(
 			showWhoPickedWhat: false,
 			lockShop: false,
 			showNextConfigs: false,
+			exposeConfigDeck: false,
 		}
 	);
 }

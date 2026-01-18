@@ -9,6 +9,7 @@ import {
 	getLiveRunRankings,
 	skipShop,
 	getAllRuns,
+	getRandomExposedConfigDeck,
 } from "./queries";
 import { endRunManually } from "../services/runCompletion.service";
 
@@ -136,4 +137,17 @@ export const getAllRunsHandler = async () => {
 	return handleApiOperation(async () => {
 		return await getAllRuns();
 	}, "Failed to get all runs");
+};
+
+/**
+ * Gets a random exposed config deck from another player.
+ * Only returns decks from active runs that have "public-config" installed.
+ */
+export const getRandomExposedConfigDeckHandler = async (
+	excludeUserId: string,
+	date: string
+) => {
+	return handleApiOperation(async () => {
+		return await getRandomExposedConfigDeck(excludeUserId, date);
+	}, "Failed to get exposed config deck");
 };
