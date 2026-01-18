@@ -109,7 +109,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 					</select>
 				</label>
 			</header>
-			<ol className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+			<ol className="grid grid-cols-2 md:grid-cols-4 gap-2">
 				{sortMap[sortOption](data.data).map((entry, idx) => {
 					const { displayCoverage, level } = calculateLevelAndCoverage(
 						entry.totalCoverage
