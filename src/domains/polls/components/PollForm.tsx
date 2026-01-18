@@ -175,7 +175,7 @@ export const PollForm = ({
 					<textarea
 						value={question}
 						onChange={(e) => setQuestion(e.target.value)}
-						className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme min-h-37.5 font-mono"
+						className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme min-h-37.5 font-mono placeholder:text-white"
 						placeholder="Enter your question here, preferred in rhyme. Use ```lang for code blocks"
 						required
 						minLength={10}
@@ -264,7 +264,7 @@ export const PollForm = ({
 					<textarea
 						value={codeBlock}
 						onChange={(e) => setCodeBlock(e.target.value)}
-						className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme font-mono min-h-25"
+						className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme font-mono min-h-25 placeholder:text-white"
 						placeholder="Optional separate code block that appears below the question"
 					/>
 				</div>
@@ -278,7 +278,7 @@ export const PollForm = ({
 					type="url"
 					value={codeSandboxExample}
 					onChange={(e) => setCodeSandboxExample(e.target.value)}
-					className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme"
+					className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme placeholder:text-white"
 					placeholder="https://codesandbox.io/s/..."
 				/>
 			</div>
@@ -290,7 +290,7 @@ export const PollForm = ({
 				<textarea
 					value={explanation}
 					onChange={(e) => setExplanation(e.target.value)}
-					className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme min-h-25"
+					className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-theme min-h-25 placeholder:text-white"
 					placeholder="Optional explanation of why the correct answer is correct"
 					maxLength={2000}
 				/>
@@ -334,7 +334,7 @@ export const PollForm = ({
 							<textarea
 								value={opt.option}
 								onChange={(e) => handleOptionChange(index, e.target.value)}
-								className="flex-1 bg-gray-700 border border-gray-600 rounded p-2 text-theme min-h-15 font-mono text-sm"
+								className="flex-1 bg-gray-700 border border-gray-600 rounded p-2 text-theme min-h-15 font-mono text-sm placeholder:text-white"
 								placeholder={`Option ${index + 1} (supports markdown)`}
 								required
 								maxLength={500}
