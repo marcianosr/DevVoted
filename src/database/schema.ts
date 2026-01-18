@@ -32,7 +32,11 @@ import { STORAGE_UNITS } from "~/lib/storage";
  * - user: Regular player with standard permissions
  * - admin: Administrative user with extended capabilities
  */
-export const userRoles = pgEnum("roles", ["user", "admin"] as const);
+export const userRoles = pgEnum("roles", [
+	"user",
+	"poll-editor",
+	"admin",
+] as const);
 
 /**
  * Poll status types to track the lifecycle of each poll

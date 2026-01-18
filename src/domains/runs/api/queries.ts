@@ -400,6 +400,8 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 			.select({
 				userId: runsTable.user_id,
 				displayName: usersTable.display_name,
+				photoUrl: usersTable.photo_url,
+				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
 				challengeModeId: runsTable.challenge_mode_id,
@@ -407,6 +409,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				pollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
 				bestStreak: runCategoryCoverageTable.best_streak, // Category streak only
 				correctPolls: runsTable.correct_polls_count,
+				currentStreak: runCategoryCoverageTable.current_streak,
 				pollsSeen: sql<number>`(
 					SELECT COUNT(DISTINCT ph.poll_id)::int
 					FROM polls_history ph
@@ -435,6 +438,8 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 			.select({
 				userId: runsTable.user_id,
 				displayName: usersTable.display_name,
+				photoUrl: usersTable.photo_url,
+				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
 				challengeModeId: runsTable.challenge_mode_id,
@@ -442,6 +447,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				pollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryCoverageTable.best_streak}), 0)`,
 				correctPolls: runsTable.correct_polls_count,
+				currentStreak: runCategoryCoverageTable.current_streak,
 				pollsSeen: sql<number>`(
 					SELECT COUNT(DISTINCT ph.poll_id)::int
 					FROM polls_history ph

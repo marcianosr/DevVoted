@@ -316,3 +316,71 @@ meter::-webkit-meter-optimum-value {
 	background: var(--meter-fill);
 	border-radius: inherit;
 }
+
+/* Prismatic border for #1 leaderboard position */
+@keyframes prismatic-border {
+	0% {
+		border-color: var(--color-vermillion);
+	}
+	14% {
+		border-color: var(--color-saffron);
+	}
+	28% {
+		border-color: var(--color-celadon);
+	}
+	42% {
+		border-color: var(--color-cerulean);
+	}
+	57% {
+		border-color: var(--color-indigo);
+	}
+	71% {
+		border-color: var(--color-lavender);
+	}
+	85% {
+		border-color: var(--color-fuchsia);
+	}
+	100% {
+		border-color: var(--color-vermillion);
+	}
+}
+
+.border-prismatic-first {
+	animation: prismatic-border 4s linear infinite;
+	border-width: 2px;
+}
+
+.border-b-prismatic {
+	animation: prismatic-border 4s linear infinite;
+}
+
+@keyframes prismatic-text {
+	0% {
+		color: var(--color-vermillion);
+	}
+	14% {
+		color: var(--color-saffron);
+	}
+	28% {
+		color: var(--color-celadon);
+	}
+	42% {
+		color: var(--color-cerulean);
+	}
+	57% {
+		color: var(--color-indigo);
+	}
+	71% {
+		color: var(--color-lavender);
+	}
+	85% {
+		color: var(--color-fuchsia);
+	}
+	100% {
+		color: var(--color-vermillion);
+	}
+}
+
+.prismatic-text {
+	animation: prismatic-text 4s linear infinite;
+}

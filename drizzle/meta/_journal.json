@@ -309,6 +309,13 @@
       "when": 1768744353618,
       "tag": "0043_perpetual_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1768746566238,
+      "tag": "0044_curly_fixer",
+      "breakpoints": true
     }
   ]
 }

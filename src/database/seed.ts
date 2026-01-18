@@ -375,6 +375,146 @@ async function seedDatabase() {
 			);
 		}
 
+		// Seed players with active runs (currently playing)
+		console.log("\n🎮 Seeding players with active runs...");
+
+		const activeRunUsers = [
+			{
+				id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				display_name: "Matthijs Groen",
+				email: "matthijs@kabisa.nl",
+				role: "poll-editor" as const,
+			},
+			{
+				id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+				display_name: "Piet de Vries",
+				email: "piet@kabisa.nl",
+				role: "poll-editor" as const,
+			},
+			{
+				id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+				display_name: "Tom Schoutens",
+				email: "tom@mastatombah.com",
+				role: "poll-editor" as const,
+			},
+			{
+				id: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+				display_name: "Rajesh Koothrapalli",
+				email: "rajesh@caltech.com",
+				role: "user" as const,
+			},
+			{
+				id: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+				display_name: "Howard Wolowitz",
+				email: "howard@caltech.com",
+				role: "user" as const,
+			},
+			{
+				id: "12121212-1212-1212-1212-121212121212",
+				display_name: "Leonard Hofstadter",
+				email: "leonard@caltech.com",
+				role: "user" as const,
+			},
+			{
+				id: "13131313-1313-1313-1313-131313131313",
+				display_name: "Sheldon Cooper",
+				email: "sheldon@caltech.com",
+				role: "user" as const,
+			},
+		];
+
+		// Check if active run users already exist
+		const existingActiveUser = await db
+			.select()
+			.from(usersTable)
+			.where(eq(usersTable.id, activeRunUsers[0].id));
+
+		if (existingActiveUser.length === 0) {
+			// Insert active run users
+			for (const user of activeRunUsers) {
+				await db.insert(usersTable).values(user);
+				console.log(`✅ Created active player: ${user.display_name}`);
+			}
+
+			// Get current season
+			const currentSeason = await db.select().from(seasonsTable).limit(1);
+			const seasonId = currentSeason[0]?.id || null;
+
+			// Generate varied active run data for each player
+			const generateActiveRunData = (userIndex: number) => {
+				// Different progress levels for variety
+				const progressLevels = [
+					{ polls: 5, coverage: 25, streak: 2 }, // Just started
+					{ polls: 12, coverage: 45, streak: 4 }, // Early game
+					{ polls: 25, coverage: 60, streak: 6 }, // Mid game
+					{ polls: 40, coverage: 75, streak: 8 }, // Late game
+					{ polls: 8, coverage: 35, streak: 3 }, // Early game
+					{ polls: 18, coverage: 52, streak: 5 }, // Mid game
+					{ polls: 32, coverage: 68, streak: 7 }, // Late game
+					{ polls: 3, coverage: 15, streak: 1 }, // Very early
+				];
+				return progressLevels[userIndex % progressLevels.length];
+			};
+
+			// Create active runs for each player
+			for (let i = 0; i < activeRunUsers.length; i++) {
+				const user = activeRunUsers[i];
+				const progress = generateActiveRunData(i);
+
+				// Create an active run
+				const [run] = await db
+					.insert(runsTable)
+					.values({
+						user_id: user.id,
+						season_id: seasonId,
+						status: "active",
+						correct_polls_count: progress.polls,
+						started_at: new Date(Date.now() - (i + 1) * 3600000), // Started 1-8 hours ago
+					})
+					.returning();
+
+				// Create run category coverage for a subset of categories
+				const activeCategories = CATEGORY_CODES.slice(
+					0,
+					Math.min(3 + i, CATEGORY_CODES.length)
+				);
+
+				for (const categoryCode of activeCategories) {
+					const variation = Math.random() * 20 - 10; // +/- 10% variation
+					await db.insert(runCategoryCoverageTable).values({
+						run_id: run.id,
+						category_code: categoryCode,
+						current_coverage: Math.max(
+							0,
+							Math.min(100, progress.coverage + variation)
+						),
+						current_streak: Math.max(
+							0,
+							progress.streak + Math.floor(variation / 5)
+						),
+						best_streak: Math.max(
+							0,
+							progress.streak + Math.floor(variation / 5)
+						),
+						polls_answered: Math.max(
+							1,
+							progress.polls + Math.floor(variation / 2)
+						),
+					});
+				}
+
+				console.log(
+					`✅ Created active run for ${user.display_name}: ${progress.polls} polls, ${progress.coverage}% coverage`
+				);
+			}
+
+			console.log(
+				`✅ Successfully seeded ${activeRunUsers.length} players with active runs!`
+			);
+		} else {
+			console.log(`ℹ️ Active run players already exist. Skipping.`);
+		}
+
 		console.log("\n✨ Database seeding completed successfully!\n");
 	} catch (error) {
 		console.error("❌ Error seeding database:", error);
