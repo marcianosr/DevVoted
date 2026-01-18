@@ -187,7 +187,7 @@ const SelectedOptionsSummary = ({
 						<div>
 							<p className="text-xl mt-4">First good</p>
 							<div className="flex gap-2 items-center">
-								<UserAvatar user={communityStats.firstGood} />
+								<UserAvatar user={communityStats.firstGood} withCircle={true} />
 								<p>{communityStats.firstGood.displayName}</p>
 								<span>·</span>
 								{communityStats.firstGood.timeTakenMs !== null && (

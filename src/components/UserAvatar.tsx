@@ -30,6 +30,7 @@ const getColorFromString = (str: string): string => {
 type UserAvatarProps = {
 	user: CommunityStatsUser;
 	size?: "sm" | "md" | "lg";
+	withCircle?: boolean;
 };
 
 const formatTimeTaken = (ms: number | null | undefined): string | null => {
@@ -45,7 +46,7 @@ const sizeClasses = {
 	lg: "w-10 h-10 text-base",
 };
 
-const UserAvatar = ({ user, size = "sm" }: UserAvatarProps) => {
+const UserAvatar = ({ user, size = "sm", withCircle }: UserAvatarProps) => {
 	const initial = (user.displayName || user.id).charAt(0).toUpperCase();
 	const colorClass = getColorFromString(user.id);
 	const timeTaken = formatTimeTaken(user.timeTakenMs);
@@ -54,6 +55,7 @@ const UserAvatar = ({ user, size = "sm" }: UserAvatarProps) => {
 		: user.displayName;
 
 	const baseStyles = clsx("inline-block rounded-full", sizeClasses[size], {});
+	const withCircleStyles = withCircle ? "border-2 border-green-400" : "";
 
 	if (user.photoUrl) {
 		return (
@@ -61,7 +63,9 @@ const UserAvatar = ({ user, size = "sm" }: UserAvatarProps) => {
 				src={user.photoUrl}
 				alt={user.displayName || "User avatar"}
 				title={title}
-				className={baseStyles}
+				className={clsx(baseStyles, {
+					withCircle: withCircleStyles,
+				})}
 			/>
 		);
 	}
@@ -71,7 +75,10 @@ const UserAvatar = ({ user, size = "sm" }: UserAvatarProps) => {
 			className={clsx(
 				baseStyles,
 				colorClass,
-				"inline-flex items-center justify-center text-white"
+				"inline-flex items-center justify-center text-white",
+				{
+					withCircle: withCircleStyles,
+				}
 			)}
 			title={title}
 		>
