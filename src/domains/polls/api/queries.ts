@@ -507,7 +507,7 @@ export const getCommunityStatsForDailyPoll = async (
 			eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
 		);
 
-	const users = result.flatMap((r) => {
+	const usersWithDuplicates = result.flatMap((r) => {
 		if (!r.users) return [];
 
 		const firstSeen = r.polls_history?.first_seen_at;
@@ -532,6 +532,11 @@ export const getCommunityStatsForDailyPoll = async (
 		];
 	});
 
+	// Deduplicate by user ID - Map keeps first occurrence (earliest due to ORDER BY)
+	const users = [
+		...new Map(usersWithDuplicates.map((u) => [u.id, u])).values(),
+	];
+
 	const fastestResponder = users.reduce<CommunityStatsUser | null>(
 		(fastest, user) => {
 			if (user.timeTakenMs === null) return fastest;
@@ -555,7 +560,7 @@ export const getCommunityStatsForDailyPoll = async (
 	const getFirstGoodUser = firstGood();
 
 	return {
-		totalResponses: result.length,
+		totalResponses: users.length,
 		users,
 		firstToAnswer: users.length > 0 ? users[0] : null,
 		fastestResponder,
