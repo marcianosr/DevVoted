@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
 
@@ -7,6 +9,10 @@ import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculation
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
 import { getLeaderboard } from "../api/leaderboards";
+
+type LeaderboardResponse = Awaited<ReturnType<typeof getLeaderboard>>;
+type SuccessResponse = Extract<LeaderboardResponse, { success: true }>;
+type LeaderboardEntry = SuccessResponse["data"][number];
 
 type LeaderboardProps = {
 	categoryCode: CategoryCode;
@@ -31,7 +37,41 @@ const getPlayerGateNumber = (
  */
 export const LEADERBOARD_REFRESH_INTERVAL = 3 * 60 * 1000;
 
+const sortOptions = [
+	{ value: "coverage", label: "Coverage" },
+	{ value: "gate-number", label: "Gate Number" },
+	{ value: "best-streak", label: "Best Streak" },
+] as const;
+
+type SortOption = (typeof sortOptions)[number]["value"];
+
+const sortByCoverage = (data: LeaderboardEntry[]): LeaderboardEntry[] => {
+	return [...data].sort((a, b) => b.totalCoverage - a.totalCoverage);
+};
+
+const sortyByBestStreak = (data: LeaderboardEntry[]): LeaderboardEntry[] => {
+	return [...data].sort((a, b) => b.bestStreak - a.bestStreak);
+};
+
+const sortByGateNumber = (data: LeaderboardEntry[]): LeaderboardEntry[] => {
+	return [...data].sort((a, b) => {
+		const gateA = getPlayerGateNumber(a.pollsSeen, a.challengeModeId);
+		const gateB = getPlayerGateNumber(b.pollsSeen, b.challengeModeId);
+		return gateB - gateA;
+	});
+};
+
+const sortMap: Record<
+	SortOption,
+	(data: LeaderboardEntry[]) => LeaderboardEntry[]
+> = {
+	coverage: sortByCoverage,
+	"gate-number": sortByGateNumber,
+	"best-streak": sortyByBestStreak,
+};
+
 const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
+	const [sortOption, setSortOption] = useState<SortOption>("coverage");
 	const { data, isLoading, error } = useQuery({
 		queryKey: [categoryCode],
 		queryFn: () =>
@@ -54,9 +94,23 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 					{getCategoryMetadata(categoryCode).name} category rankings
 				</h2>
 				<small>This leaderboard reflects your current run only</small>
+				<label className="flex items-center gap-2 mt-2">
+					<span>Sort by:</span>
+					<select
+						className="p-2 bg-gray-900 border border-theme"
+						value={sortOption}
+						onChange={(e) => setSortOption(e.target.value as SortOption)}
+					>
+						{sortOptions.map((option) => (
+							<option key={option.value} value={option.value}>
+								{option.label}
+							</option>
+						))}
+					</select>
+				</label>
 			</header>
 			<ol className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-				{data.data.map((entry, idx) => {
+				{sortMap[sortOption](data.data).map((entry, idx) => {
 					const { displayCoverage, level } = calculateLevelAndCoverage(
 						entry.totalCoverage
 					);
@@ -111,14 +165,17 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 								<img
 									src={entry.photoUrl || ""}
 									alt={`photo of ${entry.displayName}`}
-									className="w-16 h-16 mb-2"
+									className="w-full mb-2"
 								/>
 							</section>
 							<section
-								className={clsx("border-b text-sm flex gap-2 py-2", {
-									"border-b-prismatic": isFirstPlace,
-									"border-theme": !isFirstPlace,
-								})}
+								className={clsx(
+									"border-b text-sm gap-2 py-2 flex justify-center",
+									{
+										"border-b-prismatic": isFirstPlace,
+										"border-theme": !isFirstPlace,
+									}
+								)}
 							>
 								{level > 1 && (
 									<>
