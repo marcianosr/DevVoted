@@ -48,7 +48,7 @@ function RouteComponent() {
 				<div>
 					<h1 className="text-3xl underline">Poll Editors</h1>
 					{creators.success && (
-						<ul className="list-disc pl-5 text-2xl mt-4">
+						<ul className="flex flex-wrap gap-6 mt-4">
 							{creators.data.map((creator) => (
 								<li key={creator.id} className="flex items-center gap-3">
 									<ProfileAvatar user={creator} />
