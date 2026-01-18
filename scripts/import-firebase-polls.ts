@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../src/database/db';
 import { pollsTable, pollOptionsTable } from '../src/database/schema';
+import type { PollStatus } from '../src/domains/polls/models/poll';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,16 +32,16 @@ const shouldSkipCategory = (category?: string): boolean => {
 	return skipCategories.includes(category?.toLowerCase() || '');
 };
 
-const normalizePollStatus = (firebaseStatus?: string): 'draft' | 'open' | 'closed' | 'archived' => {
-	const statusMap: Record<string, 'draft' | 'open' | 'closed' | 'archived'> = {
+const normalizePollStatus = (firebaseStatus?: string): PollStatus => {
+	const statusMap: Record<string, PollStatus> = {
 		new: 'draft',
 		draft: 'draft',
-		open: 'open',
-		closed: 'closed',
+		open: 'published',
+		closed: 'published',
 		archived: 'archived',
 		'needs-revision': 'draft',
 	};
-	return statusMap[firebaseStatus?.toLowerCase() || ''] || 'closed';
+	return statusMap[firebaseStatus?.toLowerCase() || ''] || 'published';
 };
 
 async function importFirebasePolls() {

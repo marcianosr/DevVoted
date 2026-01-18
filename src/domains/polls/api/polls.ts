@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { POLL_STATUSES } from "~/domains/polls/models/poll";
 import { ADMIN_EMAILS } from "~/utils/adminAuth";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 import { getSupabaseServerClient } from "~/utils/supabase";
@@ -176,7 +177,7 @@ const ensureAdminAccess = async () => {
 const createPollInputSchema = z.object({
 	poll: z.object({
 		question: z.string().min(10).max(2000),
-		status: z.enum(["draft", "open", "closed", "archived"]),
+		status: z.enum(POLL_STATUSES),
 		answerType: z.enum(["single", "multiple"]),
 		categoryCode: z.string().min(1),
 		codeBlock: z.string().nullable().optional(),
@@ -209,7 +210,7 @@ const updatePollInputSchema = z.object({
 	id: z.number().int().positive(),
 	poll: z.object({
 		question: z.string().min(10).max(2000).optional(),
-		status: z.enum(["draft", "open", "closed", "archived"]).optional(),
+		status: z.enum(POLL_STATUSES).optional(),
 		answerType: z.enum(["single", "multiple"]).optional(),
 		openingTime: z.coerce.date().optional(),
 		closingTime: z.coerce.date().optional(),

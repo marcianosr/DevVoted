@@ -8,7 +8,7 @@ import { CATEGORY_CODES } from "~/domains/shared/categories";
 const poll: Poll = {
 	id: 1,
 	question: "What is your favorite programming language?",
-	status: "open",
+	status: "published",
 	answerType: "single",
 	openingTime: new Date("2025-01-01T00:00:00Z"),
 	closingTime: new Date("2025-01-31T23:59:59Z"),
@@ -25,7 +25,7 @@ const poll: Poll = {
 const pollRecord: PollRecord = {
 	id: 1,
 	question: "What is your favorite programming language?",
-	status: "open",
+	status: "published",
 	answer_type: "single",
 	opening_time: new Date("2025-01-01T00:00:00Z"),
 	closing_time: new Date("2025-01-31T23:59:59Z"),
@@ -42,7 +42,7 @@ const pollRecord: PollRecord = {
 // For seeding, we need a version without ID to let the database auto-generate it
 const seedPollRecord: Omit<PollRecord, "id"> = {
 	question: "What is your favorite programming language?",
-	status: "open",
+	status: "published",
 	answer_type: "single",
 	opening_time: new Date("2025-01-01T00:00:00Z"),
 	closing_time: new Date("2025-01-31T23:59:59Z"),
@@ -217,7 +217,7 @@ export const createSeedPollArray = (
 			answer_type: i % 2 === 0 ? "single" : "multiple",
 			opening_time: new Date(),
 			closing_time: new Date(),
-			status: "closed",
+			status: "published",
 		})
 	);
 };

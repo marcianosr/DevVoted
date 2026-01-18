@@ -34,9 +34,9 @@ const PollDetail: React.FC = () => {
 						Status:
 						<span
 							className={clsx("ml-2 font-semibold", {
-								"text-green-400": poll.status === "open",
-								"text-red-400": poll.status === "closed",
+								"text-green-400": poll.status === "published",
 								"text-yellow-400": poll.status === "draft",
+								"text-gray-400": poll.status === "archived",
 							})}
 						>
 							{poll.status}

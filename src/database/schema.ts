@@ -41,12 +41,7 @@ export const userRoles = pgEnum("roles", ["user", "admin"] as const);
  * - closed: No longer accepting responses
  * - archived: Historical poll, no longer relevant
  */
-export const pollStatus = pgEnum("status", [
-	"draft",
-	"open",
-	"closed",
-	"archived",
-]);
+export const pollStatus = pgEnum("status", ["draft", "published", "archived"]);
 
 export const runStatus = pgEnum("run_status", ["finished", "active"]);
 

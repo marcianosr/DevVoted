@@ -19,8 +19,7 @@ type UserFilter = string | "all";
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
 	{ value: "all", label: "All" },
 	{ value: "draft", label: "Draft" },
-	{ value: "open", label: "Open" },
-	{ value: "closed", label: "Closed" },
+	{ value: "published", label: "Published" },
 	{ value: "archived", label: "Archived" },
 ];
 

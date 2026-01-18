@@ -7,10 +7,17 @@ import type { PollOption } from "./pollOption";
 
 // Type for frontend usage (camelCase)
 
+/**
+ * Poll status values - derived from database schema enum
+ * Use this constant for Zod schemas and UI dropdowns
+ */
+export const POLL_STATUSES = ["draft", "published", "archived"] as const;
+export type PollStatus = (typeof POLL_STATUSES)[number];
+
 export type Poll = {
 	id: number;
 	question: string;
-	status: "draft" | "open" | "closed" | "archived";
+	status: PollStatus;
 	answerType: "single" | "multiple";
 	openingTime: Date;
 	closingTime: Date;

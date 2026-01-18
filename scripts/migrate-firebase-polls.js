@@ -52,7 +52,7 @@ const generatePollInserts = (polls) => {
 		}
 
 		const questionEscaped = escapeSQL(poll.question);
-		const status = poll.status || 'closed';
+		const status = normalizePollStatus(poll.status);
 		const answerType = mapAnswerType(poll.type);
 		const openingTime = formatTimestamp(poll.openingTime);
 		const closingTime = openingTime; // Same as opening time per user preference
@@ -114,6 +114,18 @@ const normalizeCategoryCode = (firebaseCategory) => {
 		javascript: 'js',
 	};
 	return categoryMap[firebaseCategory] || firebaseCategory;
+};
+
+const normalizePollStatus = (firebaseStatus) => {
+	const statusMap = {
+		new: 'draft',
+		draft: 'draft',
+		open: 'published',
+		closed: 'published',
+		archived: 'archived',
+		'needs-revision': 'draft',
+	};
+	return statusMap[firebaseStatus?.toLowerCase() || ''] || 'published';
 };
 
 const main = () => {

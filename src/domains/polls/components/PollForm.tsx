@@ -3,7 +3,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 
-import type { Poll } from "~/domains/polls/models/poll";
+import { POLL_STATUSES, type Poll } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import {
 	CATEGORY_CODES,
@@ -37,12 +37,7 @@ type PollFormProps = {
 	isAdmin?: boolean;
 };
 
-const STATUS_OPTIONS: Poll["status"][] = [
-	"draft",
-	"open",
-	"closed",
-	"archived",
-];
+const STATUS_OPTIONS = POLL_STATUSES;
 
 const createEmptyOption = (): PollFormOption => ({
 	option: "",
