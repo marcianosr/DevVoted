@@ -182,7 +182,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 										<span className="text-rose-500">[L{level})]</span>
 									</>
 								)}
-								<p className="text-xl flex gap-2 items-center">
+								<p className="text-2xl flex gap-2 items-center">
 									{displayCoverage}% <span className="text-sm">coverage</span>
 								</p>
 							</section>
