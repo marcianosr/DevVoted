@@ -158,7 +158,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 							</section>
 							<section
 								className={clsx("border-b text-sm flex gap-2 py-2", {
-									"border-b-prismatic": isFirstPlace,
+									"border-b-prismatic border-b-4": isFirstPlace,
 									"border-theme": !isFirstPlace,
 								})}
 							>
@@ -172,7 +172,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 								className={clsx(
 									"border-b text-sm gap-2 py-2 flex justify-center",
 									{
-										"border-b-prismatic": isFirstPlace,
+										"border-b-prismatic border-b-4": isFirstPlace,
 										"border-theme": !isFirstPlace,
 									}
 								)}

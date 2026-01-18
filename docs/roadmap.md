@@ -228,8 +228,10 @@ BUGS:
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [] Get 50KB when answering first, 75KB when first good
 [] Use tailwinds "tints" for L1, L2, L3 colors
+[] Add more shop items (+2) but they hidden. Also atleast uncommon rarity
 [] Add General Backend configs
-[] Add public/private configs
+[x] Add public config
+[] Add private config
 [] Config that hides shop items for others
 [x] Introduce configs that decrease catefgory weights
 [x] Show active config counter
@@ -239,7 +241,7 @@ BUGS:
 [] IndexedDB: show a little counter of storage added compared to the limit
 [x] Add "general-backend" category
 [] What happens when you have overflow in storage and sell local storage config?
-[] Show "First Good"
+[x] Show "First Good"
 [] Show correct/incorrect answers per user (simple circle)
 [] Show “back to results” in fixed header
 [] Quick profile page - show best stats
