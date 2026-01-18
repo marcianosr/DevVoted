@@ -228,6 +228,9 @@ BUGS:
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [] Get 50KB when answering first, 75KB when first good
 [] Use tailwinds "tints" for L1, L2, L3 colors
+[] Add General Backend configs
+[] Add public/private configs
+[] Config that hides shop items for others
 [x] Introduce configs that decrease catefgory weights
 [x] Show active config counter
 [] Show storage of each other? [brainstorm]
