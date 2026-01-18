@@ -6,4 +6,6 @@ export type PollCreator = {
 	id: string;
 	displayName: string;
 	amountOfPolls: number;
+	photoUrl: string | null;
+	githubUsername: string | null;
 };

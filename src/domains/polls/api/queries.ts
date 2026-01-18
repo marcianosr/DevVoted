@@ -94,6 +94,8 @@ export const fetchPollCreators = async (): Promise<PollCreator[]> => {
 		.select({
 			id: usersTable.id,
 			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+			githubUsername: usersTable.github_username,
 			amountOfPolls: count().mapWith(Number),
 		})
 		.from(pollsTable)

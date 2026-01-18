@@ -46,12 +46,12 @@ function RouteComponent() {
 					{polls.success && <PollCategoryCount polls={polls.data} />}
 				</div>
 				<div>
-					<h1 className="text-3xl underline">Poll Creators</h1>
+					<h1 className="text-3xl underline">Poll Editors</h1>
 					{creators.success && (
 						<ul className="list-disc pl-5 text-2xl mt-4">
 							{creators.data.map((creator) => (
-								<li key={creator.id}>
-									{creator.displayName} ({creator.amountOfPolls})
+								<li key={creator.id} className="flex items-center gap-3">
+									<ProfileAvatar user={creator} />
 								</li>
 							))}
 						</ul>
@@ -71,34 +71,48 @@ function RouteComponent() {
 
 				<div>
 					<h1 className="text-3xl underline">Special thanks to</h1>
-					<div className="flex flex-wrap gap-6 mt-4">
+					<ul className="flex flex-wrap gap-6 mt-4">
 						{specialThanks.map((user) => (
-							<div key={user.id} className="flex items-center gap-3">
-								{user.photoUrl && (
-									<img
-										src={user.photoUrl}
-										alt={user.displayName}
-										className="w-12 h-12 rounded-full"
-									/>
-								)}
-								<div>
-									<p className="text-xl">{user.displayName}</p>
-									{user.githubUsername && (
-										<a
-											href={`https://github.com/${user.githubUsername}`}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-sm text-blue-400 hover:underline"
-										>
-											@{user.githubUsername}
-										</a>
-									)}
-								</div>
-							</div>
+							<li key={user.id} className="flex items-center gap-3">
+								<ProfileAvatar user={user} />
+							</li>
 						))}
-					</div>
+					</ul>
 				</div>
 			</section>
 		</Content>
 	);
 }
+
+type ProfileAvatarProps = {
+	user: {
+		displayName: string;
+		photoUrl: string | null;
+		githubUsername: string | null;
+	};
+};
+
+const ProfileAvatar = ({ user }: ProfileAvatarProps) => (
+	<>
+		{user.photoUrl && (
+			<img
+				src={user.photoUrl}
+				alt={user.displayName}
+				className="w-12 h-12 rounded-full"
+			/>
+		)}
+		<div>
+			<p className="text-xl">{user.displayName}</p>
+			{user.githubUsername && (
+				<a
+					href={`https://github.com/${user.githubUsername}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="text-sm text-blue-400 hover:underline"
+				>
+					@{user.githubUsername}
+				</a>
+			)}
+		</div>
+	</>
+);
