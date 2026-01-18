@@ -32,6 +32,11 @@ vi.mock("~/domains/configs/data/configs", () => ({
 			targetCategories: ["html"],
 			// No categoryWeightBonus - should be skipped
 		},
+		{
+			id: "load-balancer-config",
+			targetCategories: [],
+			categoryWeightBonus: 1.0,
+		},
 	],
 }));
 
@@ -110,6 +115,58 @@ describe("categoryWeight.service", () => {
 			expect(weights.html).toBe(1.25);
 			expect(weights.css).toBe(1.25);
 			expect(weights.js).toBe(1.0);
+		});
+
+		describe("load-balancer-config", () => {
+			it("normalizes all weights to 1.0 when active", () => {
+				const weights = calculateCategoryWeights(["load-balancer-config"]);
+
+				for (const code of CATEGORY_CODES) {
+					expect(weights[code]).toBe(1.0);
+				}
+			});
+
+			it("overrides other weight modifiers when active", () => {
+				// Even with .js-config (+0.5) and .html-config (+0.25), load-balancer resets all to 1.0
+				const weights = calculateCategoryWeights([
+					".js-config",
+					".html-config",
+					"load-balancer-config",
+				]);
+
+				expect(weights.js).toBe(1.0); // Would be 1.5 without load-balancer
+				expect(weights.html).toBe(1.0); // Would be 1.25 without load-balancer
+				expect(weights.css).toBe(1.0);
+			});
+
+			it("overrides copilot-config global bonus", () => {
+				// copilot-config adds +0.1 to all, but load-balancer overrides
+				const weights = calculateCategoryWeights([
+					"copilot-config",
+					"load-balancer-config",
+				]);
+
+				for (const code of CATEGORY_CODES) {
+					expect(weights[code]).toBe(1.0); // Would be 1.1 without load-balancer
+				}
+			});
+
+			it("works regardless of config order in array", () => {
+				// Load balancer first
+				const weights1 = calculateCategoryWeights([
+					"load-balancer-config",
+					".js-config",
+				]);
+
+				// Load balancer last
+				const weights2 = calculateCategoryWeights([
+					".js-config",
+					"load-balancer-config",
+				]);
+
+				expect(weights1.js).toBe(1.0);
+				expect(weights2.js).toBe(1.0);
+			});
 		});
 	});
 });

@@ -26,6 +26,12 @@ export const calculateCategoryWeights = (
 	activeConfigIds: string[]
 ): CategoryWeights => {
 	const weights = { ...DEFAULT_CATEGORY_WEIGHTS };
+
+	const hasLoadBalancer = activeConfigIds.includes("load-balancer-config");
+	if (hasLoadBalancer) {
+		// Return equal weights, ignoring all other bonuses
+		return { ...DEFAULT_CATEGORY_WEIGHTS };
+	}
 	// Apply bonuses from active configs
 	for (const configId of activeConfigIds) {
 		const config = configs.find((c) => c.id === configId);

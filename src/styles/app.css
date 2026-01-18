@@ -350,23 +350,6 @@ meter::-webkit-meter-optimum-value {
 	border-width: 5px;
 }
 
-
-
-.bg-prismatic {
-	linear-gradient(
-			to right,
-			var(--color-vermillion),
-			var(--color-saffron),
-			var(--color-celadon),
-			var(--color-cerulean),
-			var(--color-indigo),
-			var(--color-lavender),
-			var(--color-fuchsia),
-			var(--color-vermillion)
-		)
-		0% 100% / 800% 800% no-repeat;
-}
-
 @keyframes prismatic-text {
 	0% {
 		color: var(--color-vermillion);

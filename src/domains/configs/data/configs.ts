@@ -582,6 +582,17 @@ export const configs: Config[] = [
 		effect: ["exposeConfigDeck"],
 		priority: 100,
 	},
+	{
+		id: "load-balancer-config",
+		name: "Load Balancer",
+		image: "/configs/load-balancer.png",
+		cost: (STORAGE_UNITS.MB / 2) * 1.5,
+		description:
+			"Normalizes all category weights towards equal distribution (overrides other weight modifiers).",
+		rarity: "legendary",
+		effect: [],
+		priority: 100,
+	},
 ];
 
 /**
