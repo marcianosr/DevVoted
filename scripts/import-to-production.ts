@@ -15,6 +15,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import postgres from 'postgres';
+import type { PollStatus } from '../src/domains/polls/models/poll';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,6 +42,18 @@ const normalizeCategoryCode = (firebaseCategory: string): string => {
 const shouldSkipCategory = (category?: string): boolean => {
 	const skipCategories = ['next', 'nextjs', 'next.js', 'flutter'];
 	return skipCategories.includes(category?.toLowerCase() || '');
+};
+
+const normalizePollStatus = (firebaseStatus?: string): PollStatus => {
+	const statusMap: Record<string, PollStatus> = {
+		new: 'draft',
+		draft: 'draft',
+		open: 'published',
+		closed: 'published',
+		archived: 'archived',
+		'needs-revision': 'draft',
+	};
+	return statusMap[firebaseStatus?.toLowerCase() || ''] || 'published';
 };
 
 async function importToProduction() {
@@ -109,7 +122,7 @@ async function importToProduction() {
 						${poll.pollNumber || null},
 						${poll.codeBlock || null},
 						${poll.codeSandboxExample || null},
-						${poll.status || 'closed'},
+						${normalizePollStatus(poll.status)},
 						${mapAnswerType(poll.type)},
 						${openingTime},
 						${openingTime},
