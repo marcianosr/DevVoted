@@ -95,7 +95,7 @@ describe("dailyPoll.service", () => {
 				id: 1,
 				question:
 					"See the code on your screen, what should the output have been?",
-				status: "open",
+				status: "published",
 				answerType: "single",
 				openingTime: new Date("2025-05-13"),
 				closingTime: new Date("2025-05-14"),
@@ -131,7 +131,7 @@ describe("dailyPoll.service", () => {
 				id: 1,
 				question:
 					"See the code on your screen, what should the output have been?",
-				status: "closed",
+				status: "published",
 				answerType: "single",
 				openingTime: new Date("2025-05-12"),
 				closingTime: new Date("2025-05-13"),
@@ -172,7 +172,7 @@ describe("dailyPoll.service", () => {
 				id: 1,
 				question:
 					"See the code on your screen, what should the output have been?",
-				status: "closed",
+				status: "published",
 				answerType: "single",
 				openingTime: new Date("2025-05-12"),
 				closingTime: new Date("2025-05-13"),

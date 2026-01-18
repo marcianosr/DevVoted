@@ -22,7 +22,7 @@ import {
 	pollHistoryTable,
 	usersTable,
 } from "~/database/schema";
-import { Poll, pollFactory } from "~/domains/polls/models/poll";
+import { Poll, PollStatus, pollFactory } from "~/domains/polls/models/poll";
 import type { PollCreator } from "~/domains/polls/models/pollCreator";
 import { pollOptionFactory } from "~/domains/polls/models/pollOption";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption";
@@ -286,7 +286,7 @@ export const getOrCreateDailyPoll = async (
 		const pollRecords = await tx
 			.select({ id: pollsTable.id, categoryCode: pollsTable.category_code })
 			.from(pollsTable)
-			.where(or(eq(pollsTable.status, "closed"), eq(pollsTable.status, "open")))
+			.where(or(eq(pollsTable.status, "published")))
 			.orderBy(pollsTable.id);
 
 		if (pollRecords.length === 0) {
@@ -766,8 +766,8 @@ type UpdatePollOption = {
 
 type NewPollData = {
 	question: string;
-	status: "draft" | "open" | "closed" | "archived";
-	answerType: "single" | "multiple";
+	status: PollStatus;
+	answerType: Poll["answerType"];
 	createdBy: string;
 	categoryCode: string;
 	codeBlock?: string | null;
