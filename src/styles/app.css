@@ -348,6 +348,15 @@ meter::-webkit-meter-optimum-value {
 .border-prismatic-first {
 	animation: prismatic-border 4s linear infinite;
 	border-width: 5px;
+	background-color: prismatic-bg;
+}
+
+.bg-prismatic {
+	animation: prismatic-border 4s linear infinite;
+}
+
+.border-b-prismatic {
+	animation: prismatic-border 4s linear infinite;
 }
 
 @keyframes prismatic-text {

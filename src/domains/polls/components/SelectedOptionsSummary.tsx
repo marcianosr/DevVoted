@@ -107,7 +107,7 @@ const SelectedOptionsSummary = ({
 					)}
 				</section>
 				{score && (
-					<section className="mt-4 py-8 border-t border-theme space-y-2">
+					<section className="py-8 border-t border-theme space-y-2">
 						<h3 className="text-4xl">Score</h3>
 						{score.breakdown.earnedCoverage > 0 ? (
 							<section>
@@ -134,12 +134,14 @@ const SelectedOptionsSummary = ({
 								<li className="text-red-400 text-xl">
 									Correct streak: ⚡️ {score?.newStreak}
 								</li>
-								<li>Total polls answered: {score?.newPollsAnswered}</li>
+								<li className="text-xl">
+									Total polls answered: {score?.newPollsAnswered}
+								</li>
 							</ul>
 						)}
 					</section>
 				)}
-				<section className="mt-4 py-8 border-t border-theme space-y-2">
+				<section className="py-8 border-t border-theme space-y-2">
 					<h3 className="text-4xl">👥 Community</h3>
 					<p className="text-xl">
 						<span>
@@ -220,7 +222,7 @@ const SelectedOptionsSummary = ({
 						<ExposedConfigDeckDisplay deck={exposedConfigDeck} />
 					)}
 					<CategoryWeightsDisplay />
-					<section className="mt-16">
+					<section className="mt-8">
 						<Leaderboard categoryCode={categoryCode} />
 					</section>
 				</section>
