@@ -25,7 +25,7 @@ const PollDetail: React.FC = () => {
 			)}
 			<div className="flex justify-between items-start mb-4">
 				<aside>
-					<h2>#{poll.pollNumber}</h2>
+					<h2>#{poll.id}</h2>
 					<p className="text-sm text-gray-400">
 						Created at: {format(new Date(poll.createdAt), "MM/dd/yyyy")}
 					</p>
