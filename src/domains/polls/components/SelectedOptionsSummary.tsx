@@ -109,8 +109,35 @@ const SelectedOptionsSummary = ({
 							<section>
 								<ul className="ml-4 text-green-400 list-disc border-b border-white w-fit py-2">
 									<li>Base score: +{score?.breakdown.baseCoverage}%</li>
-									<li>Config bonus: +{score?.breakdown.configBonus}%</li>
 									<li>Streak bonus: +{score?.breakdown.streakBonus}%</li>
+									{score.breakdown.configInfluences.length > 0 ? (
+										<li>
+											Config bonus: +{score?.breakdown.configBonus}%
+											<ul className="ml-4 mt-1 text-sm text-green-300 list-none">
+												{score.breakdown.configInfluences.map((influence) => (
+													<li
+														key={influence.configId}
+														className="flex items-center gap-1"
+													>
+														<span className="text-gray-400">└</span>
+														<span className="font-mono">
+															{influence.configName}
+														</span>
+														<span>
+															{influence.coverageMult &&
+															influence.coverageMult !== 1
+																? `×${influence.coverageMult}`
+																: influence.coverageAdd !== undefined
+																	? `${influence.coverageAdd >= 0 ? "+" : ""}${influence.coverageAdd}%`
+																	: ""}
+														</span>
+													</li>
+												))}
+											</ul>
+										</li>
+									) : (
+										<li>Config bonus: +{score?.breakdown.configBonus}%</li>
+									)}
 								</ul>
 								<p className="text-3xl text-green-400 py-2 pb-6">
 									+{score?.breakdown.earnedCoverage}%{" "}

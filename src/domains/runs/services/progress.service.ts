@@ -73,7 +73,7 @@ export const incrementRunProgress = async ({
 		run,
 	};
 
-	const { coverage: coverageMods } = applyEffects(
+	const { coverage: coverageMods, configInfluences } = applyEffects(
 		effectCtx,
 		run.activeConfigIds
 	);
@@ -100,6 +100,7 @@ export const incrementRunProgress = async ({
 		pollsPerGate,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
+		configInfluences,
 	});
 
 	// Step 4: Persist updated values to database
@@ -155,7 +156,7 @@ export const getRunProgress = async ({
 		run,
 	};
 
-	const { coverage: coverageMods } = applyEffects(
+	const { coverage: coverageMods, configInfluences } = applyEffects(
 		effectCtx,
 		run.activeConfigIds
 	);
@@ -188,6 +189,7 @@ export const getRunProgress = async ({
 		pollsPerGate,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
+		configInfluences,
 	});
 
 	return result;

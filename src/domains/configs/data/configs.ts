@@ -585,6 +585,17 @@ export type CoverageMods = {
 	coverageAdd?: number; // +0.5, -0.2 (additive coverage bonus/penalty in %)
 	coverageMult?: number; // x1.5 (multiplicative coverage modifier)
 };
+
+/**
+ * Tracks an individual config's contribution to the score.
+ * Used to show the player which configs influenced their score.
+ */
+export type ConfigInfluence = {
+	configId: string;
+	configName: string;
+	coverageAdd?: number; // Additive bonus this config contributed
+	coverageMult?: number; // Multiplicative bonus this config contributed (1 = no effect)
+};
 export type StorageMods = {
 	expand?: number; // Passive storage expansion (affects effective limit while config is held)
 	skipBonus?: number; // Skip shop reward (added to DB storage_limit when skipping)
@@ -626,6 +637,7 @@ export type ApplyEffects = {
 	view: EffectCtx;
 	renderProps: EffectRenderProps;
 	coverage: CoverageMods;
+	configInfluences: ConfigInfluence[]; // Individual config contributions for display
 	storage: StorageMods;
 	meta: EffectMeta;
 	protection: Protection;
@@ -964,6 +976,7 @@ export function applyEffects(
 			view: base,
 			renderProps: {},
 			coverage: {},
+			configInfluences: [],
 			meta: {},
 			storage: {},
 			protection: {},
@@ -1016,6 +1029,22 @@ export function applyEffects(
 				...(out.renderProps?.disabledOptionIds ?? []),
 			];
 
+			// Track individual config contributions for coverage
+			const hasCoverageEffect =
+				(out.coverage?.coverageAdd !== undefined &&
+					out.coverage.coverageAdd !== 0) ||
+				(out.coverage?.coverageMult !== undefined &&
+					out.coverage.coverageMult !== 1);
+
+			const newInfluence: ConfigInfluence | null = hasCoverageEffect
+				? {
+						configId: config.id,
+						configName: config.name,
+						coverageAdd: out.coverage?.coverageAdd,
+						coverageMult: out.coverage?.coverageMult,
+					}
+				: null;
+
 			return {
 				view: out.view,
 				renderProps: {
@@ -1039,6 +1068,9 @@ export function applyEffects(
 						(acc.coverage.coverageMult ?? 1) *
 						(out.coverage?.coverageMult ?? 1),
 				},
+				configInfluences: newInfluence
+					? [...acc.configInfluences, newInfluence]
+					: acc.configInfluences,
 				storage: {
 					expand: (acc.storage.expand ?? 0) + (out.storage?.expand ?? 0),
 					skipBonus:
@@ -1076,6 +1108,7 @@ export function applyEffects(
 			renderProps: {},
 			meta: {},
 			coverage: {},
+			configInfluences: [],
 			storage: {},
 			protection: {},
 			reductionCost: 0,

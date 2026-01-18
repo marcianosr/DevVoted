@@ -69,6 +69,7 @@ describe("incrementRunProgress", () => {
 				baseCoverage: 2,
 				streakBonus: 0.5,
 				configBonus: 0.5,
+				configInfluences: [],
 			},
 		};
 
@@ -105,6 +106,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 2, // Config coverage bonus for .js config
 			coverageMult: 1,
 			pollsPerGate: 5,
+			configInfluences: expect.any(Array),
 		});
 	});
 
@@ -123,6 +125,7 @@ describe("incrementRunProgress", () => {
 				baseCoverage: 1.6,
 				streakBonus: 0.4,
 				configBonus: 0,
+				configInfluences: [],
 			},
 		};
 
@@ -159,6 +162,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 0, // No config bonus
 			coverageMult: 1,
 			pollsPerGate: 5,
+			configInfluences: expect.any(Array),
 		});
 	});
 
@@ -177,6 +181,7 @@ describe("incrementRunProgress", () => {
 				baseCoverage: 0,
 				streakBonus: 0,
 				configBonus: 0,
+				configInfluences: [],
 			},
 		};
 
@@ -222,6 +227,7 @@ describe("incrementRunProgress", () => {
 				baseCoverage: 2,
 				streakBonus: 0.5,
 				configBonus: 1.5,
+				configInfluences: [],
 			},
 		};
 
@@ -258,6 +264,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 4, // Double config bonus (0.5 + 0.5)
 			coverageMult: 1,
 			pollsPerGate: 5,
+			configInfluences: expect.any(Array),
 		});
 	});
 
@@ -313,6 +320,7 @@ describe("incrementRunProgress", () => {
 					baseCoverage: 2,
 					streakBonus: 0.5,
 					configBonus: 0.5,
+					configInfluences: [],
 				},
 			};
 
@@ -348,6 +356,7 @@ describe("incrementRunProgress", () => {
 				coverageAdd: 2, // Config bonus should be applied
 				coverageMult: 1,
 				pollsPerGate: 5,
+				configInfluences: expect.any(Array),
 			});
 
 			vi.clearAllMocks();

@@ -1,3 +1,5 @@
+import { ConfigInfluence } from "~/domains/configs/data/configs";
+
 /**
  * Coverage-based scoring with round scaling and streak bonuses
  * Base formula: (1% + round × 0.2%) + (streak × 0.1%, capped at 1%)
@@ -147,6 +149,7 @@ export type PollScoreBreakdown = {
 	baseCoverage: number; // Base coverage from round (before bonuses)
 	streakBonus: number; // Bonus from streak
 	configBonus: number; // Bonus from configs (additive + multiplicative effects)
+	configInfluences: ConfigInfluence[]; // Individual config contributions for display
 };
 
 /**
@@ -177,6 +180,7 @@ export const calculatePollScoreForProgression = (
 		baseCoverage,
 		streakBonus,
 		configBonus: 0, // No config bonus for progression calculation
+		configInfluences: [], // No config influences for progression calculation
 	};
 };
 
@@ -198,6 +202,7 @@ type OrchestrateScoreCalculationParams = {
 	pollsPerGate: number; // Number of polls per gate (from challenge mode)
 	coverageAdd?: number; // Additive coverage bonus from configs (e.g., +0.5%)
 	coverageMult?: number; // Multiplicative coverage modifier from configs (e.g., x1.5)
+	configInfluences?: ConfigInfluence[]; // Individual config contributions for display
 };
 
 /**
@@ -240,6 +245,7 @@ export const orchestrateScoreCalculation = ({
 	pollsPerGate,
 	coverageAdd = 0,
 	coverageMult = 1,
+	configInfluences = [],
 }: OrchestrateScoreCalculationParams): ScoreCalculation => {
 	// Step 1: Update streak (continues on correct, resets on wrong)
 	const newStreak = calculateStreakUpdate(currentStreak, correctnessFactor);
@@ -287,6 +293,7 @@ export const orchestrateScoreCalculation = ({
 			baseCoverage: round(baseCoverage * correctnessFactor),
 			streakBonus: round(streakBonus * correctnessFactor),
 			configBonus: round(configBonus),
+			configInfluences,
 		},
 	};
 };
