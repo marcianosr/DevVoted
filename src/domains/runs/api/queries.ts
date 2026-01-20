@@ -299,16 +299,16 @@ export const getLastRunFromUser = async (userId: string) => {
 
 	return {
 		run: lastRunRecord[0],
-		categoryCoverage: coverageRecords.map((xp) => ({
-			...xp,
-			categoryCode: xp.categoryCode as CategoryCode,
+		categoryCoverage: coverageRecords.map((coverage) => ({
+			...coverage,
+			categoryCode: coverage.categoryCode as CategoryCode,
 		})),
 		totalCoverage: coverageRecords.reduce(
-			(sum, xp) => sum + xp.currentCoverage,
+			(sum, coverage) => sum + coverage.currentCoverage,
 			0
 		),
 		totalPollsAnswered: coverageRecords.reduce(
-			(sum, xp) => sum + xp.pollsAnswered,
+			(sum, coverage) => sum + coverage.pollsAnswered,
 			0
 		),
 	};

@@ -102,7 +102,12 @@ export const getPollCreators = createServerFn({ method: "GET" }).handler(
 );
 
 export const getDailyPoll = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ runId: z.number().int().positive().optional() }))
+	.inputValidator(
+		z.object({
+			runId: z.number().int().positive().optional(),
+			date: z.string().optional(),
+		})
+	)
 	.handler(async ({ data }) => {
 		const supabase = getSupabaseServerClient();
 		const { data: authData, error } = await supabase.auth.getUser();
@@ -117,7 +122,7 @@ export const getDailyPoll = createServerFn({ method: "GET" })
 		);
 
 		const result = await getDailyPollHandler({
-			data: { userId, runId: data?.runId },
+			data: { userId, runId: data?.runId, date: data?.date },
 		});
 
 		return { ...result, isAdmin };

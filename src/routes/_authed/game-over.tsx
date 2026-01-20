@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import clsx from "clsx";
 
 import { ConfirmDialog } from "~/components/ConfirmDialog";
 import Content from "~/components/Content";
@@ -62,6 +63,7 @@ function RouteComponent() {
 	const handleStartNewRunClick = () => {
 		if (activeRun && activeRun.success && activeRun.data?.id)
 			setIsDialogOpen(true);
+		else navigate({ to: "/start" });
 	};
 	const handleConfirmFinishRun = () => finishRunMutation.mutate();
 	const handleCancelFinishRun = () => setIsDialogOpen(false);
@@ -105,18 +107,26 @@ function RouteComponent() {
 					<h1 className="text-4xl">
 						{isVictory
 							? "You passed all CI gates!"
-							: "You failed to pass the CI gates."}
+							: "You failed to pass the CI gates!"}
 					</h1>
 					<p>Thank you for playing!</p>
 				</header>
 
 				<section>
-					<h2 className="text-2xl">Your performance</h2>
-					<ul>
+					<h2 className="text-2xl">Your last performance</h2>
+					<ul
+						className={clsx("mb-4 border p-4", {
+							"border-prismatic-first": true,
+						})}
+					>
 						{lastRun?.categoryCoverage.map((category) => (
-							<li key={category.categoryCode}>
-								{category.categoryCode} - Coverage: {category.currentCoverage}%,
-								Best Streak: {category.bestStreak}
+							<li
+								key={category.categoryCode}
+								data-category-theme={category.categoryCode}
+							>
+								<span className="text-theme">{category.categoryCode}</span> -
+								Coverage: {category.currentCoverage}%, Best Streak:{" "}
+								{category.bestStreak}
 							</li>
 						))}
 					</ul>
