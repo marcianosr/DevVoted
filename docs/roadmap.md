@@ -226,7 +226,7 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
-[] Make boosters cheaper 256 -> 128
+[x] Make boosters cheaper 256 -> 128
 [] Shop bug: when 3 items in the shop, and deinstalling one, one of the shop items dissapears because it goes back in the store  (example what if you have a legendary that vanishes)
 [] Eerst bepalen welk type rarity - daarna pas random item kiezen (per slot) getallen van alle rarities (20x common)
   - eerst op basis van de gewichten een random rarity kiezen
