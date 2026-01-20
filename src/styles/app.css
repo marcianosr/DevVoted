@@ -13,6 +13,12 @@
 	html,
 	body {
 		@apply text-gray-900 bg-gray-50 dark:bg-gray-950 dark:text-gray-200;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		text-rendering: optimizeLegibility;
+		line-height: 1.5; /* 1.4-1.6 for body text */
+		letter-spacing: 0.01em; /* Slight spacing helps readability */
+		word-spacing: 0.05em;
 	}
 
 	.using-mouse * {

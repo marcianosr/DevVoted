@@ -234,9 +234,11 @@ BUGS:
 [] See question you failed on run end screen
 [] Onboarding: Allow the player to do a "practice run" - answering three polls until a gate.
 [] End run "start-run" button not working
+[] If player didn't answer polls for 5 days consec. stop the run
 [] Get 50KB when answering first, 75KB when first good
 [] Use tailwinds "tints" for L1, L2, L3 colors
 [] Add more shop items (+2) but they hidden. Also atleast uncommon rarity
+[] Out of office - Turn on on profile page. Your run get's paused until you turn it back off. Paused means that you keep your run data, but won't influence with your config decks.
 [] Add General Backend configs
 [x] Add public config
 [] Add private config
