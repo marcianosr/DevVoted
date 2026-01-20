@@ -330,7 +330,7 @@ export const configs: Config[] = [
 		id: "html-doctype-config",
 		name: "<!DOCTYPE html>",
 		image: "/configs/html-doctype.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly boosts the probability of HTML polls appearing.",
 		rarity: "uncommon",
@@ -343,7 +343,7 @@ export const configs: Config[] = [
 		id: "!important-config",
 		name: "!important",
 		image: "/configs/important.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description: "Significantly boosts the probability of CSS polls appearing.",
 		rarity: "uncommon",
 		effect: [],
@@ -355,7 +355,7 @@ export const configs: Config[] = [
 		id: "use-strict-config",
 		name: '"use strict"',
 		image: "/configs/use-strict.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly boosts the probability of JavaScript polls appearing.",
 		rarity: "uncommon",
@@ -368,7 +368,7 @@ export const configs: Config[] = [
 		id: "git-commit-config",
 		name: "Git Commit",
 		image: "/configs/git-commit.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description: "Significantly boosts the probability of Git polls appearing.",
 		rarity: "uncommon",
 		effect: [],
@@ -380,7 +380,7 @@ export const configs: Config[] = [
 		id: "use-react-config",
 		name: "useReact()",
 		image: "/configs/use-react.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly boosts the probability of React polls appearing.",
 		rarity: "uncommon",
@@ -393,7 +393,7 @@ export const configs: Config[] = [
 		id: "pick-polls-ts-config",
 		name: "Pick<Polls, 'TS'>",
 		image: "/configs/pick-polls-ts.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly boosts the probability of TypeScript polls appearing.",
 		rarity: "uncommon",
@@ -406,7 +406,7 @@ export const configs: Config[] = [
 		id: "devtools-config",
 		name: "Devtools",
 		image: "/configs/devtools.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly boosts the probability of General Frontend polls appearing.",
 		rarity: "uncommon",
@@ -419,7 +419,7 @@ export const configs: Config[] = [
 		id: "override-config",
 		name: "@Override",
 		image: "/configs/override.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly boosts the probability of Java polls appearing.",
 		rarity: "uncommon",
@@ -432,7 +432,7 @@ export const configs: Config[] = [
 		id: "virtual-env-config",
 		name: "Virtual Env",
 		image: "/configs/virtual-env.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly boosts the probability of Python polls appearing.",
 		rarity: "uncommon",
@@ -446,7 +446,7 @@ export const configs: Config[] = [
 		id: "small-config",
 		name: "<small>",
 		image: "/configs/small.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of HTML polls appearing.",
 		rarity: "uncommon",
@@ -459,7 +459,7 @@ export const configs: Config[] = [
 		id: "display-none-config",
 		name: "display: none",
 		image: "/configs/display-none.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of CSS polls appearing.",
 		rarity: "uncommon",
@@ -472,7 +472,7 @@ export const configs: Config[] = [
 		id: "no-script-config",
 		name: "<no script>",
 		image: "/configs/no-script.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of JavaScript polls appearing.",
 		rarity: "uncommon",
@@ -486,7 +486,7 @@ export const configs: Config[] = [
 		id: ".gitignore-config",
 		name: ".gitignore",
 		image: "/configs/gitignore.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of Git polls appearing.",
 		rarity: "uncommon",
@@ -499,7 +499,7 @@ export const configs: Config[] = [
 		id: "fragment-config",
 		name: "<></>",
 		image: "/configs/fragment.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of React polls appearing.",
 		rarity: "uncommon",
@@ -512,7 +512,7 @@ export const configs: Config[] = [
 		id: "ts-ignore-config",
 		name: "@ts-ignore",
 		image: "/configs/ts-ignore.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of TypeScript polls appearing.",
 		rarity: "uncommon",
@@ -525,7 +525,7 @@ export const configs: Config[] = [
 		id: "about:blank-config",
 		name: "about:blank",
 		image: "/configs/about-blank.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of General Frontend polls appearing.",
 		rarity: "uncommon",
@@ -538,7 +538,7 @@ export const configs: Config[] = [
 		id: "deprecated-config",
 		name: "@Deprecated",
 		image: "/configs/deprecated.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of Java polls appearing.",
 		rarity: "uncommon",
@@ -551,7 +551,7 @@ export const configs: Config[] = [
 		id: "pass-config",
 		name: "Pass",
 		image: "/configs/pass.png",
-		cost: STORAGE_UNITS.MB / 4,
+		cost: STORAGE_UNITS.MB / 8,
 		description:
 			"Significantly decreases the probability of Python polls appearing.",
 		rarity: "uncommon",

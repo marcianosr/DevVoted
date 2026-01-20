@@ -226,6 +226,14 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+[] Make boosters cheaper 256 -> 128
+[] Shop bug: when 3 items in the shop, and deinstalling one, one of the shop items dissapears because it goes back in the store  (example what if you have a legendary that vanishes)
+[] Eerst bepalen welk type rarity - daarna pas random item kiezen (per slot) getallen van alle rarities (20x common)
+  - eerst op basis van de gewichten een random rarity kiezen
+  - DAN pas een random item van die rarity kiezen
+[] See question you failed on run end screen
+[] Onboarding: Allow the player to do a "practice run" - answering three polls until a gate.
+[] End run "start-run" button not working
 [] Get 50KB when answering first, 75KB when first good
 [] Use tailwinds "tints" for L1, L2, L3 colors
 [] Add more shop items (+2) but they hidden. Also atleast uncommon rarity
@@ -244,7 +252,7 @@ BUGS:
 [x] Show "First Good"
 [] Show correct/incorrect answers per user (simple circle)
 [] Show “back to results” in fixed header
-[] Quick profile page - show best stats
+[] Quick profile page - show best stats - https://typehero.dev/@matthijsgroen
 [] Show coverage bar on score result page to show impact
 [] Show weight probabilty per category (maybe behind a config?)
 [] Fix deflate config
