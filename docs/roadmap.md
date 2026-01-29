@@ -227,6 +227,8 @@ BUGS:
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [x] Make boosters cheaper 256 -> 128
+[] Poll editors should be able edit their own polls
+[] When adding a new category, make sure it is appended to the run_cart3egory_coverage table with 0 coverage for all existing runs, otherwise it breaks the app
 [] Shop bug: when 3 items in the shop, and deinstalling one, one of the shop items dissapears because it goes back in the store  (example what if you have a legendary that vanishes)
 [] Eerst bepalen welk type rarity - daarna pas random item kiezen (per slot) getallen van alle rarities (20x common)
   - eerst op basis van de gewichten een random rarity kiezen
