@@ -1,17 +1,17 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { format } from "date-fns";
 import { z } from "zod";
 
 import Content from "~/components/Content";
 import { DevPollNavigator } from "~/components/DevPollNavigator";
 import { applyEffects } from "~/domains/configs/data/configs";
-import { getOfferedConfigs } from "~/domains/economy/services/configManager.service";
+import { getShopOfferingsServerFn } from "~/domains/economy/api/shopOfferings";
 import { getDailyPoll, getPollsSeenInRun } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
 } from "~/domains/polls/components/DailyPollContainer";
 import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
+import { getTodayDateString } from "~/lib/dateUtils";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 
 // const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
@@ -148,7 +148,7 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			throw new Error("No active run");
 		}
 
-		const currentDate = deps.date || format(new Date(), "yyyy-MM-dd");
+		const currentDate = deps.date || getTodayDateString();
 
 		const pollsSeenResponse = await getPollsSeenInRun({
 			data: { runId: activeRun.data.id },
@@ -179,7 +179,12 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			activeRun.data.activeConfigIds
 		);
 
-		const offeredConfigs = getOfferedConfigs(activeRun.data, configEffects);
+		const shopOfferingsResult = await getShopOfferingsServerFn({
+			data: { runId: activeRun.data.id, date: currentDate },
+		});
+		const offeredConfigs = shopOfferingsResult.success
+			? shopOfferingsResult.data
+			: [];
 
 		const score = await getScoreBreakdown({
 			data: {

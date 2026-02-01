@@ -1,14 +1,10 @@
 import { configs, applyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
-import { withDiscount } from "~/domains/configs/services/discount.service";
 import { Run } from "~/domains/runs/models/run";
-import {
-	selectMultipleWeightedSeededRandom,
-	WeightedItem,
-} from "~/lib/seededRandom";
 import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
 
-const DEFAULT_OFFERED_CONFIGS_COUNT = 3;
+import { previewNextShopOfferings } from "./configSelection";
+
 export const getActiveConfigs = (
 	run: Run,
 	availableConfigs: Config[] = configs
@@ -127,66 +123,6 @@ export const removeConfigsFromRun = (run: Run, configIds: string[]): Run => ({
 export const hasConfig = (run: Run, configId: string) =>
 	run.activeConfigIds.find((aId) => configId === aId);
 
-/**
- * Rarity weights determine the relative probability of each rarity tier appearing.
- * Higher weight = more likely to appear
- */
-const RARITY_WEIGHTS = {
-	common: 100, // 100/145 ≈ 69% chance
-	uncommon: 30, // 30/145 ≈ 21% chance
-	rare: 12, // 12/145 ≈ 8% chance
-	legendary: 3, // 3/145 ≈ 2% chance
-} as const;
-
-/**
- * Gets random configs for the shop using a seeded RNG.
- * Same run + same totalRerolls = same offered configs.
- * Configs only change when user pays to reroll (increments totalRerolls).
- *
- * Selection is deterministic from the full pool, then filtered to exclude
- * already-owned configs. This ensures installing a config just removes it
- * from the offer without shifting the other selections.
- *
- * When lockShop is true (yarn.lock config), the date is excluded from the seed,
- * making shop items persist across poll/day changes until the user rerolls.
- */
-export const getRandomConfigs = ({
-	run,
-	configs,
-	count,
-	lockShop = false,
-}: {
-	run: Run;
-	configs: Config[];
-	count: number;
-	lockShop?: boolean;
-}): Config[] => {
-	const today = new Date().toISOString().split("T")[0];
-	const seed = lockShop
-		? `${run.id}-${run.totalRerolls}`
-		: `${run.id}-${run.totalRerolls}-${today}`;
-
-	// Convert configs to weighted items based on rarity
-	const weightedConfigs: WeightedItem<Config>[] = configs.map((config) => ({
-		item: config,
-		weight: RARITY_WEIGHTS[config.rarity],
-	}));
-
-	// Select more than needed from FULL pool to ensure we have enough after filtering
-	// This keeps selection stable regardless of which configs are already owned
-	const selectionPoolSize = Math.min(configs.length, count * 3);
-	const selectedFromFullPool = selectMultipleWeightedSeededRandom(
-		weightedConfigs,
-		selectionPoolSize,
-		seed
-	);
-
-	// Filter out already-owned configs and take only what we need
-	return selectedFromFullPool
-		.filter((config) => !hasConfig(run, config.id))
-		.slice(0, count);
-};
-
 type ShopEffects = {
 	extraSlot?: boolean;
 	reductionCost?: number;
@@ -194,36 +130,17 @@ type ShopEffects = {
 };
 
 /**
- * Gets offered configs for the shop with discounts applied.
- * Combines config selection and discount logic in one place.
+ * Preview the next reroll's shop offerings without persisting.
+ * Re-exports from shopOfferings.service for backward compatibility.
  */
-export const getOfferedConfigs = (
-	run: Run,
-	effects: ShopEffects,
-	availableConfigs: Config[] = configs
-): (Config & { originalCost?: number })[] => {
-	const count = effects.extraSlot
-		? DEFAULT_OFFERED_CONFIGS_COUNT + 1
-		: DEFAULT_OFFERED_CONFIGS_COUNT;
-
-	const selectedConfigs = getRandomConfigs({
-		run,
-		configs: availableConfigs,
-		count,
-		lockShop: effects.lockShop,
-	});
-
-	return selectedConfigs.map((config) =>
-		withDiscount(config, effects.reductionCost ?? 0)
-	);
-};
-
 export const getNextOfferedConfigs = (
 	run: Run,
 	effects: ShopEffects,
 	availableConfigs: Config[] = configs
 ): (Config & { originalCost?: number })[] => {
-	// Simulate next reroll by incrementing totalRerolls
-	const simulatedRun = { ...run, totalRerolls: run.totalRerolls + 1 };
-	return getOfferedConfigs(simulatedRun, effects, availableConfigs);
+	return previewNextShopOfferings(
+		run.activeConfigIds,
+		effects,
+		availableConfigs
+	);
 };

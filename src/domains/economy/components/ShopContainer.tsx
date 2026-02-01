@@ -5,21 +5,19 @@ import { addConfigToRunServerFn } from "~/domains/configs/api/configs";
 import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
 import ShopCard from "~/domains/configs/components/Cards/ShopCard";
 import { Config } from "~/domains/configs/models/config";
-import {
-	getRandomConfigs,
-	getStorageInfo,
-} from "~/domains/economy/services/configManager.service";
+import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { skipShopServerFn } from "~/domains/runs/api/runs";
 import { Run } from "~/domains/runs/models/run";
+import { getTodayDateString } from "~/lib/dateUtils";
 import { formatStorage } from "~/lib/storage";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 
 type ShopContainerProps = {
 	activeRun: Run;
-	offeredConfigs: ReturnType<typeof getRandomConfigs>;
-	nextOfferedConfigs: ReturnType<typeof getRandomConfigs>;
+	offeredConfigs: (Config & { originalCost?: number })[];
+	nextOfferedConfigs: (Config & { originalCost?: number })[];
 	storageBonus?: number;
 	reductionCost: number;
 	isOpen: boolean;
@@ -27,8 +25,6 @@ type ShopContainerProps = {
 };
 
 const SKIP_REWARD_KB = 65536; // 64KB
-
-const getTodayDateString = () => new Date().toISOString().split("T")[0];
 
 const ShopContainer = ({
 	activeRun,

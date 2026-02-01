@@ -1,8 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { applyEffects } from "~/domains/configs/data/configs";
 import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
+import { createRerolledShopOfferings } from "~/domains/economy/services/shopOfferings.service";
+import { getTodayDateString } from "~/lib/dateUtils";
 
 import { processRerollShop } from "./queries";
 
@@ -18,9 +21,10 @@ export const rerollShopServerFn = createServerFn()
 	)
 	.handler(async ({ data }) => {
 		const { runId, date } = data;
+		const today = date || getTodayDateString();
 
 		try {
-			const { originalRun, updatedRun } = await processRerollShop(runId, date);
+			const { originalRun, updatedRun } = await processRerollShop(runId, today);
 
 			const { storageAvailable } = getStorageInfo(originalRun);
 			const rerollCost = calculateRerollCost(originalRun.rerolls);
@@ -32,6 +36,19 @@ export const rerollShopServerFn = createServerFn()
 					error: "Not enough storage for reroll",
 				};
 			}
+
+			// Generate and store new shop offerings in DB
+			const configEffects = applyEffects(
+				{ poll: {} as any, options: [], hasAnswered: false, run: updatedRun },
+				updatedRun.activeConfigIds
+			);
+
+			await createRerolledShopOfferings(
+				runId,
+				today,
+				updatedRun.activeConfigIds,
+				configEffects
+			);
 
 			return {
 				success: true,

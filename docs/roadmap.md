@@ -227,10 +227,15 @@ BUGS:
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [x] Make boosters cheaper 256 -> 128
+[] Challenge: Afslagen nemen: beginnen als generalist, bij mid game misschien kiezen voor een specialist pad
+- [] Challenge: Specialist pad - hogere gate requirements, maar hogere coverage boosts per correct answer
+- [] Challenge: Generalist pad - lagere gate requirements, maar lagere coverage boosts per correct answer
+.length aanpassen: Ik dacht dat het alleen statisch aangeeft "er zijn 3 goede antwoorden" bij een vraag
+[] Meta progress: get disk space or free rerolls
 [] Poll editors should be able edit their own polls
 [] When adding a new category, make sure it is appended to the run_cart3egory_coverage table with 0 coverage for all existing runs, otherwise it breaks the app
-[] Shop bug: when 3 items in the shop, and deinstalling one, one of the shop items dissapears because it goes back in the store  (example what if you have a legendary that vanishes)
-[] Eerst bepalen welk type rarity - daarna pas random item kiezen (per slot) getallen van alle rarities (20x common)
+[x] Shop bug: when 3 items in the shop, and deinstalling one, one of the shop items dissapears because it goes back in the store  (example what if you have a legendary that vanishes)
+[x] Eerst bepalen welk type rarity - daarna pas random item kiezen (per slot) getallen van alle rarities (20x common)
   - eerst op basis van de gewichten een random rarity kiezen
   - DAN pas een random item van die rarity kiezen
 [] See question you failed on run end screen
@@ -314,7 +319,9 @@ BUGS:
 [] Add "Architecture" category (pallet)
 [] Add "AI" category
 [] Basic "share" mechanism - what to share?
+[] Challenge toevoegen die rekent met "total" coverage - dus alle categories bij elkaar opgeteld
 [] Think about "spaces" - is everything one space or is Codam, EO a separate space like Slack?
+[] Early-mid-late game gates. Configs die daar iets mee doen?
 [x] Provide KB's when skipping the shop
 [] Show a reminder of how to remind for polls in Slack
 [x] Loading state for rebuilding new configs

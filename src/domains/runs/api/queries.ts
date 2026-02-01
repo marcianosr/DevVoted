@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, ne } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 import {
 	runsTable,
@@ -9,7 +9,6 @@ import {
 } from "@/src/database/schema";
 import { db } from "~/database/db";
 import type { CategoryCode } from "~/domains/shared/categories";
-import { selectSeededRandom } from "~/lib/seededRandom";
 
 import { runFactory } from "../models/run";
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage";
@@ -570,48 +569,4 @@ export const processRerollShop = async (runId: number, date?: string) => {
 			updatedRun: runFactory.toDTO(updatedRun),
 		};
 	});
-};
-
-/**
- * Get a random active run's config deck, excluding the current user.
- * Any active player can be selected - the "public-config" check happens on the viewer's side.
- * Uses date-based seeded randomness for daily consistency.
- */
-export const getRandomExposedConfigDeck = async (
-	excludeUserId: string,
-	date: string
-): Promise<ExposedConfigDeck | null> => {
-	// Find any active run excluding current user
-	const activeRuns = await db
-		.select({
-			userId: runsTable.user_id,
-			displayName: usersTable.display_name,
-			photoUrl: usersTable.photo_url,
-			configIds: runsTable.active_config_ids,
-			runId: runsTable.id,
-		})
-		.from(runsTable)
-		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
-		.where(
-			and(eq(runsTable.status, "active"), ne(runsTable.user_id, excludeUserId))
-		);
-
-	if (activeRuns.length === 0) {
-		return null;
-	}
-
-	// Use date as seed for consistent daily selection
-	const selected = selectSeededRandom(activeRuns, date);
-
-	if (!selected) {
-		return null;
-	}
-
-	return {
-		userId: selected.userId,
-		displayName: selected.displayName,
-		photoUrl: selected.photoUrl,
-		configIds: selected.configIds,
-		runId: selected.runId,
-	};
 };

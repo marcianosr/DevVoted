@@ -388,3 +388,51 @@ export const leaderboardTable = pgTable("leaderboard", {
 	completed_at: timestamp("completed_at", { withTimezone: true }).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+/**
+ * Run Shop Offerings Table
+ * Stores randomly generated shop configs per run per day
+ * - Replaces seed-based deterministic generation with persisted random selection
+ * - One offering per run + date + reroll combination
+ * - is_locked: When true (yarn.lock config), offering persists across days until reroll
+ */
+export const runShopOfferingsTable = pgTable(
+	"run_shop_offerings",
+	{
+		id: serial("id").primaryKey(),
+		run_id: integer("run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		date: varchar("date", { length: 10 }).notNull(), // "YYYY-MM-DD"
+		reroll_number: integer("reroll_number").notNull().default(0),
+		config_ids: json("config_ids").$type<string[]>().notNull(),
+		is_locked: boolean("is_locked").notNull().default(false),
+		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	},
+	(table) => ({
+		runDateRerollUnique: unique().on(
+			table.run_id,
+			table.date,
+			table.reroll_number
+		),
+	})
+);
+
+/**
+ * Daily Exposed Deck Table
+ * Stores the randomly selected player's deck exposed to public-config holders each day
+ * - One row per day (enforced by unique date)
+ * - All users with public-config see the same player's deck
+ * - Replaces seed-based selection with persisted random choice
+ */
+export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
+	id: serial("id").primaryKey(),
+	date: varchar("date", { length: 10 }).notNull().unique(), // "YYYY-MM-DD"
+	run_id: integer("run_id")
+		.references(() => runsTable.id, { onDelete: "cascade" })
+		.notNull(),
+	user_id: uuid("user_id")
+		.references(() => usersTable.id, { onDelete: "cascade" })
+		.notNull(),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});

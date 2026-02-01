@@ -7,13 +7,13 @@ import { removeConfigFromRunServerFn } from "~/domains/configs/api/configs";
 import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
 import { applyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
+import {
+	getNextShopOfferingsServerFn,
+	getShopOfferingsServerFn,
+} from "~/domains/economy/api/shopOfferings";
 import ShopContainer from "~/domains/economy/components/ShopContainer";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
-import {
-	getNextOfferedConfigs,
-	getOfferedConfigs,
-	getStorageInfo,
-} from "~/domains/economy/services/configManager.service";
+import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import {
 	getDailyPoll,
 	getPollsSeenInRun,
@@ -30,6 +30,7 @@ import {
 	CATEGORY_METADATA,
 	type CategoryCode,
 } from "~/domains/shared/categories";
+import { getTodayDateString } from "~/lib/dateUtils";
 
 export const Route = createFileRoute("/_authed/progress")({
 	component: RouteComponent,
@@ -70,10 +71,22 @@ export const Route = createFileRoute("/_authed/progress")({
 			activeRun.data.activeConfigIds
 		);
 
-		const offeredConfigs = getOfferedConfigs(activeRun.data, configEffects);
+		const today = getTodayDateString();
+		const shopOfferingsResult = await getShopOfferingsServerFn({
+			data: { runId: activeRun.data.id, date: today },
+		});
+		const offeredConfigs = shopOfferingsResult.success
+			? shopOfferingsResult.data
+			: [];
 
-		const nextOfferedConfigs = configEffects.showNextConfigs
-			? getNextOfferedConfigs(activeRun.data, configEffects)
+		// Fetch pre-generated next offerings from DB (only if showNextConfigs is enabled)
+		const nextOfferingsResult = configEffects.showNextConfigs
+			? await getNextShopOfferingsServerFn({
+					data: { runId: activeRun.data.id, date: today },
+				})
+			: null;
+		const nextOfferedConfigs = nextOfferingsResult?.success
+			? nextOfferingsResult.data
 			: [];
 
 		return {
@@ -227,7 +240,7 @@ function RouteComponent() {
 		},
 	});
 
-	const today = new Date().toISOString().split("T")[0];
+	const today = getTodayDateString();
 
 	const onDeinstallConfig = (config: Config) => {
 		deinstallConfigMutation.mutate({
