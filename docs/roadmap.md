@@ -227,11 +227,23 @@ BUGS:
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 [x] Make boosters cheaper 256 -> 128
+[] Disable acquired config in shop
+[] Allow the player to choose their paths - specialist vs generalist after each gate
 [] Challenge: Afslagen nemen: beginnen als generalist, bij mid game misschien kiezen voor een specialist pad
 - [] Challenge: Specialist pad - hogere gate requirements, maar hogere coverage boosts per correct answer
 - [] Challenge: Generalist pad - lagere gate requirements, maar lagere coverage boosts per correct answer
 .length aanpassen: Ik dacht dat het alleen statisch aangeeft "er zijn 3 goede antwoorden" bij een vraag
 [] Meta progress: get disk space or free rerolls
+[] Sub cat architecture
+  - [] Create sub-categories (e.g., React, Vue, Angular under Frontend Frameworks)
+  - [] Replace React with Frontend Frameworks
+  - [] Update existing polls to belong to sub-categories
+  - [] Make sub categories score for tehir belonging main category (e.g., React polls contribute to Frontend Frameworks coverage)
+  - [] CI checks frontend frameworks only
+  - [] Display sub-category breakdown on profile and run results pages to maintaince visibility into strengths/weaknesses
+  - [] Update configs to target main categories (e.g., Frontend Frameworks) instead of sub-categories
+  - [] [brainstorm] COnsider adding .vue, .jsx filetype configs that specifically boost sub-categories with relative more impact
+  - [] Keep frontend frameworks category as 2% - the safer option. Consider adding .vue (rarer polls) to increase coveage bonusses.
 [] Poll editors should be able edit their own polls
 [] When adding a new category, make sure it is appended to the run_cart3egory_coverage table with 0 coverage for all existing runs, otherwise it breaks the app
 [x] Shop bug: when 3 items in the shop, and deinstalling one, one of the shop items dissapears because it goes back in the store  (example what if you have a legendary that vanishes)

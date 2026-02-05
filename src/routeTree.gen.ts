@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as PresentationRouteImport } from './routes/presentation'
 import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
@@ -40,6 +41,11 @@ const StartRoute = StartRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PresentationRoute = PresentationRouteImport.update({
+  id: '/presentation',
+  path: '/presentation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LogoutRoute = LogoutRouteImport.update({
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
+  '/presentation': typeof PresentationRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
   '/stats': typeof StatsRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
+  '/presentation': typeof PresentationRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
   '/stats': typeof StatsRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
+  '/presentation': typeof PresentationRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
   '/stats': typeof StatsRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/logout'
+    | '/presentation'
     | '/sign-up'
     | '/start'
     | '/stats'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/logout'
+    | '/presentation'
     | '/sign-up'
     | '/start'
     | '/stats'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/login'
     | '/logout'
+    | '/presentation'
     | '/sign-up'
     | '/start'
     | '/stats'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
   LogoutRoute: typeof LogoutRoute
+  PresentationRoute: typeof PresentationRoute
   SignUpRoute: typeof SignUpRoute
   StartRoute: typeof StartRoute
   StatsRoute: typeof StatsRoute
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/presentation': {
+      id: '/presentation'
+      path: '/presentation'
+      fullPath: '/presentation'
+      preLoaderRoute: typeof PresentationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logout': {
@@ -393,6 +413,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
   LogoutRoute: LogoutRoute,
+  PresentationRoute: PresentationRoute,
   SignUpRoute: SignUpRoute,
   StartRoute: StartRoute,
   StatsRoute: StatsRoute,
