@@ -91,6 +91,7 @@ export const slides: Slide[] = [
 		title: "Itereren (runs)",
 		bullets: [
 			"Brainstorm → nah",
+			"Brainstorm → gamen",
 			"Brainstorm → schets → nah → twijfel-twijfel",
 			"Schets → nadenken → schrappen",
 			"?????????????????",
@@ -324,9 +325,10 @@ export const slides: Slide[] = [
 		title: "Zou ik het anders doen?",
 		subtitle: "Takeaways",
 		bullets: [
-			"Snelle iteratie is key - zowel in development als in game design",
+			"Ontwikkel een gevoel voor wat je leuk vindt",
 			"Gevoel is een valide ontwerpsignaal",
 			"Documenteer je ideeën en beslissingen",
+			"Snelle iteratie is key - zowel in development als in game design",
 			"'Perfecte' code schrijven - ook beschouwen als iteratief proces",
 			"Beta testers zijn goud waard: Feedback!",
 			"Een spel maken is echt moeilijk",

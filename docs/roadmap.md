@@ -234,6 +234,8 @@ BUGS:
 - [] Challenge: Generalist pad - lagere gate requirements, maar lagere coverage boosts per correct answer
 .length aanpassen: Ik dacht dat het alleen statisch aangeeft "er zijn 3 goede antwoorden" bij een vraag
 [] Meta progress: get disk space or free rerolls
+[] Bug: HTML question wasn't showing up in the gate requirements (matthijs, specialist)
+[] Game-over flow - atlwast show the question you failed and the correct answer, so you can learn from it
 [] Sub cat architecture
   - [] Create sub-categories (e.g., React, Vue, Angular under Frontend Frameworks)
   - [] Replace React with Frontend Frameworks
@@ -414,6 +416,7 @@ BUGS:
 [] Style category tiers? - red for dangerous low coverage - yellow for low coverage - orange for medium coverage - green for high coverage - gold for max coverage
 [] Introduce new polls types: Guessers and puzzle grids
 [] Add Head tags seo
+[] Open Graph tags for better sharing on social media (see Vercels tool)
 [] Add meta description
 [] Profile page expansion
 [x] Show updated at in footer to show when the last feature has been added
