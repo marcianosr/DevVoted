@@ -226,15 +226,33 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+- Gate progression:
+  - Defeat a gate to get more storage
+  - Get a free config
+- Customise config deck before starting a run
+  - I can easilty use my already existing "titles" for this.
+    - Stardew valley - community center bundles style
+    - Polls - if you hgave 5 polls in Js correct gain something
+- Wat als je de komende polls geen vragen hebt in ee ncategorie die jij nodig hebt
 [x] Make boosters cheaper 256 -> 128
+[] See what others answered
 [] Disable acquired config in shop
+[] Give gates more "personality" - e.g., "The Git Gatekeeper demands 2% coverage in Git category to pass"
+[] On start run - user not found
+[] Build more tension for gates - e.g., "The Git Gatekeeper is approaching... Prepare to answer questions about Git to pass!"
 [] Allow the player to choose their paths - specialist vs generalist after each gate
-[] Challenge: Afslagen nemen: beginnen als generalist, bij mid game misschien kiezen voor een specialist pad
+[] Challenge: Afslagen nemen: beginnen als generalist, bij mid game misschien kiezen voor een specialist pad (starfox 64 style?)
 - [] Challenge: Specialist pad - hogere gate requirements, maar hogere coverage boosts per correct answer
 - [] Challenge: Generalist pad - lagere gate requirements, maar lagere coverage boosts per correct answer
 .length aanpassen: Ik dacht dat het alleen statisch aangeeft "er zijn 3 goede antwoorden" bij een vraag
-[] Meta progress: get disk space or free rerolls
+[] Meta progress:
+  [] get disk space or free rerolls
+  [] get more shop items
+  [] Increase droprate of legendary items
+  [] Allow players to keep 2 configs after a game over
+  [] Increase diskspace shop when skipping
 [] Bug: HTML question wasn't showing up in the gate requirements (matthijs, specialist)
+[] Out of office timer
 [] Game-over flow - atlwast show the question you failed and the correct answer, so you can learn from it
 [] Sub cat architecture
   - [] Create sub-categories (e.g., React, Vue, Angular under Frontend Frameworks)

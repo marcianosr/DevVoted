@@ -17,6 +17,7 @@ vi.mock("@/src/domains/polls/api/queries", () => ({
 	fetchAllPolls: vi.fn(),
 	fetchPollByIdWithOptions: vi.fn(),
 	hasUserAnsweredPoll: vi.fn(),
+	getUserSelectedOptions: vi.fn(),
 	getPollHistory: vi.fn(),
 	trackPollView: vi.fn(),
 	trackPollAnswer: vi.fn(),
@@ -645,6 +646,36 @@ describe("handlers", () => {
 
 			expect(queries.trackPollView).toHaveBeenCalledWith(1, userId, 100);
 			expect(queries.trackPollView).toHaveBeenCalledTimes(2);
+		});
+
+		it("does not track poll view when poll was already answered in a previous run", async () => {
+			const mockPoll = createMockPoll({ id: 64 });
+			const mockOptions = createMockPollOptionArray(4);
+			const userId = "gruntilda-lair-user";
+
+			const { getDailyPollWithOptions } =
+				await import("~/domains/polls/services/dailyPoll.service");
+			vi.mocked(getDailyPollWithOptions).mockResolvedValue({
+				poll: mockPoll,
+				options: mockOptions,
+			});
+			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(true);
+			vi.mocked(queries.getUserSelectedOptions).mockResolvedValue(["option-1"]);
+
+			// New run has no history for this poll
+			// @ts-expect-error - Mocking null return value
+			vi.mocked(queries.getPollHistory).mockResolvedValue(null);
+
+			const { isSameDay } = await import("date-fns");
+			vi.mocked(isSameDay).mockReturnValue(false);
+
+			const result = await getDailyPollHandler({
+				data: { userId },
+			});
+
+			expect(queries.getPollHistory).toHaveBeenCalledWith(1, 64);
+			expect(queries.trackPollView).not.toHaveBeenCalled();
+			expect(result.success).toBe(true);
 		});
 
 		it("does not track poll view when no userId provided", async () => {

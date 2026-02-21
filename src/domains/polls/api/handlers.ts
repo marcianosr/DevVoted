@@ -123,7 +123,7 @@ export const getDailyPollHandler = async ({
 				? isSameDay(new Date(history.last_seen_at), new Date())
 				: false;
 
-			if (!hasSeenToday) {
+			if (!hasSeenToday && !hasAnswered) {
 				await trackPollView(activeRunId, userId, poll.id);
 			}
 		}
