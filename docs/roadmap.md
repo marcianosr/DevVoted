@@ -236,6 +236,7 @@ BUGS:
 - Wat als je de komende polls geen vragen hebt in ee ncategorie die jij nodig hebt
 [x] Make boosters cheaper 256 -> 128
 [] See what others answered
+[x] Bug: When game-over, first poll should not count in gate
 [] Disable acquired config in shop
 [] Give gates more "personality" - e.g., "The Git Gatekeeper demands 2% coverage in Git category to pass"
 [] On start run - user not found
@@ -270,7 +271,6 @@ BUGS:
 [x] Eerst bepalen welk type rarity - daarna pas random item kiezen (per slot) getallen van alle rarities (20x common)
   - eerst op basis van de gewichten een random rarity kiezen
   - DAN pas een random item van die rarity kiezen
-[] See question you failed on run end screen
 [] Onboarding: Allow the player to do a "practice run" - answering three polls until a gate.
 [] End run "start-run" button not working
 [] If player didn't answer polls for 5 days consec. stop the run
