@@ -40,23 +40,60 @@ Refer to `roadmap.md` for the current roadmap and MVP.
 ### Technology Stack
 
 - **Framework**: TanStack Start (React-based full-stack framework)
+- **Routing**: TanStack Router (file-based routing)
+- **Data Fetching**: TanStack Query
+- **Forms**: TanStack React Form
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: Supabase Auth
 - **Testing**: Vitest with Testing Library
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS v4
+- **Error Monitoring**: Sentry
+- **Utilities**: date-fns, clsx, deepmerge
+
+### Directory Structure
+
+```
+src/
+├── components/     # Global shared React components (layouts, navigation, auth)
+├── config/         # Application configuration constants
+├── database/       # Drizzle ORM setup, schema, migrations, seeds
+├── domains/        # Feature-oriented domain modules (DDD approach)
+├── hooks/          # Global custom React hooks
+├── lib/            # Pure utility functions (date utils, storage helpers)
+├── presentation/   # Presentation mode feature (slides)
+├── routes/         # TanStack Router file-based routes
+├── styles/         # Global CSS (Tailwind)
+├── test/           # Test setup and utilities (mock factories)
+├── ui/             # Reusable UI primitives (buttons, skeletons)
+└── utils/          # Application utilities (auth, error handling, SEO)
+```
 
 ### Domain-Driven Architecture
 
-The codebase follows a domain-driven structure under `src/domains/`:
+The codebase follows a domain-driven structure under `src/domains/`. For the complete architecture documentation including the server function flow, see [ADR-002: Domain Architecture](docs/adr/002-domain-architecture.md).
 
 ```
-src/domains/polls/
-├── api/           # Server-side handlers and database queries
-├── components/    # React components specific to polls
-├── factories/     # Data transformation utilities (DTO <-> DB records)
-├── models/        # TypeScript types and business logic
-└── services/      # Domain-specific business logic and workflows
+src/domains/{domain}/
+├── api/
+│   ├── {domain}.ts     # Server functions (createServerFn) - entry point
+│   ├── handlers.ts     # Business logic handlers (pure functions)
+│   └── queries.ts      # Database operations (Drizzle ORM)
+├── components/         # Domain-specific React components
+├── factories/          # Test data factories + seed data factories
+├── hooks/              # Domain-specific custom hooks
+├── models/             # TypeScript types + DTO conversion functions (toDTO/fromDTO)
+├── services/           # Complex business logic, orchestration
+├── utils/              # Domain-specific utility functions
+└── validation/         # Zod schemas for input validation
 ```
+
+### UI vs Components
+
+| Location | Purpose |
+|----------|---------|
+| `src/ui/` | Pure presentational primitives (buttons, skeletons) - no business logic |
+| `src/components/` | Global shared components with logic (layouts, auth, navigation) |
+| `src/domains/*/components/` | Domain-specific components |
 
 ### Key Database Tables
 
@@ -65,6 +102,7 @@ src/domains/polls/
 - `polls_responses` - User submissions
 - `polls_response_options` - Links responses to selected options
 - `polls_categories` - Quiz categories for organization and filtering
+- `daily_polls` - Pre-computed daily poll selection (O(1) lookup by date)
 - `users` - Player profiles and stats
 - `runs` - Individual game sessions with config storage and run status
 - `run_category_coverage` - Coverage tracking per category within each run
@@ -72,11 +110,13 @@ src/domains/polls/
 
 ### Data Flow Pattern
 
-1. **API Handlers** (`src/domains/polls/api/handlers.ts`) - Process requests and handle errors
-2. **Services** (`src/domains/polls/services/`) - Domain-specific business logic and cross-domain workflows
-3. **Queries** (`src/domains/polls/api/queries.ts`) - Database operations with Drizzle
-4. **Factories** - Transform between DTOs and database records
-5. **Models** - Define TypeScript types and business rules
+The API layer follows a three-tier pattern. See [ADR-002](docs/adr/002-domain-architecture.md) for detailed examples.
+
+1. **Server Functions** (`api/{domain}.ts`) - Authentication, authorization, input validation
+2. **Handlers** (`api/handlers.ts`) - Business logic orchestration, error handling
+3. **Queries** (`api/queries.ts`) - Database operations with Drizzle
+4. **Models** (`models/`) - TypeScript types + DTO conversion functions
+5. **Services** (`services/`) - Complex business logic spanning multiple queries
 
 ### Path Aliases
 
@@ -91,7 +131,7 @@ src/domains/polls/
 - Mock Drizzle query builders by chaining `.values()` and `.returning()` methods
 - Clear test descriptions that doesn't use verbs like "should"
 - Never use function mocks, but use factory pattern for component data testing
-- For testting data, please always use stuff from RareWare, Pokemon, Banjo-Kazooie. Also, for instance when testing dates, prefer my birth day (13-05) or Christmas related dates. Just for fun.
+- For testing data, please always use stuff from RareWare, Pokemon, Banjo-Kazooie. Also, for instance when testing dates, prefer my birth day (13-05) or Christmas related dates. Just for fun.
 
 ### Common Patterns
 
@@ -99,16 +139,48 @@ src/domains/polls/
 - Prevent usage of "else" if needed in if conditions
 - Use arrow functions over regular functions
 
+#### Query Keys Pattern
+
+Centralized query keys in `src/domains/shared/queryKeys.ts` for consistent TanStack Query cache management:
+
+```typescript
+export const pollQueryKeys = {
+  all: ["polls"] as const,
+  detail: (pollId: number) => [...pollQueryKeys.all, pollId] as const,
+  daily: (userId: string | undefined) =>
+    [...pollQueryKeys.all, "daily", userId] as const,
+};
+```
+
+#### Mock Data Factory Pattern
+
+Use `src/test/createMockDataFactory.ts` for creating test data with sensible defaults:
+
+```typescript
+import { createMockDataFactory } from "~/test/createMockDataFactory";
+
+const defaultPoll: Poll = {
+  id: 1,
+  question: "What method returns the last element of an array?",
+  // ... other defaults
+};
+
+export const createMockPoll = createMockDataFactory<Poll>(defaultPoll);
+
+// Usage in tests:
+const poll = createMockPoll({ id: 64, question: "Banjo's sister name?" });
+```
+
 #### Service Layer Organization
 
 Services should be **feature-scoped** within their domain rather than global:
 
 ```typescript
 // ✅ Good: Feature-scoped service
-src / domains / polls / services / processPollAnswer.service.ts;
+src/domains/polls/services/processPollAnswer.service.ts
 
 // ❌ Avoid: Global service for domain-specific logic
-src / services / pollAnswerService.ts;
+src/services/pollAnswerService.ts
 ```
 
 **Use global services** (`src/services/`) only for:
@@ -132,28 +204,42 @@ await db.transaction(async (tx) => {
 });
 ```
 
-#### Factory Pattern for Data Transformation
+#### DTO Conversion in Models
+
+Models contain TypeScript types and conversion functions (not in factories/):
 
 ```typescript
-export const factory = {
-  toDTO: (record: DatabaseRecord) => DTO,
-  fromDTO: (dto: DTO) => DatabaseRecord,
-  toDTOs: (records: DatabaseRecord[]) => DTO[],
-  fromDTOs: (dtos: DTO[]) => DatabaseRecord[]
+// src/domains/polls/models/poll.ts
+export const pollFactory = {
+  toDTO: (record: PollRecord): Poll => ({...}),
+  fromDTO: (dto: Poll): PollRecord => ({...}),
+  toDTOs: (records: PollRecord[]): Poll[] => records.map(pollFactory.toDTO),
+  fromDTOs: (dtos: Poll[]): PollRecord[] => dtos.map(pollFactory.fromDTO),
 };
 ```
 
 #### Error Handling in Handlers
 
+Use `handleApiOperation` wrapper from `src/utils/errorHandling.ts`:
+
 ```typescript
-try {
-	const result = await someOperation();
-	return { success: true, data: result };
-} catch (error) {
-	const message =
-		error instanceof Error ? error.message : "Something went wrong";
-	return { success: false, error: message };
-}
+import { handleApiOperation } from "~/utils/errorHandling";
+
+export const getPollByIdHandler = async ({ data }: { data: { id: number } }) => {
+  return handleApiOperation(async () => {
+    const poll = await fetchPollById(data.id);
+    if (!poll) throw new Error("Poll not found");
+    return poll;
+  });
+};
+```
+
+This returns a typed `ApiResponse<T>`:
+
+```typescript
+type ApiResponse<T> =
+  | { success: true; data: T; message?: string }
+  | { success: false; error: string };
 ```
 
 #### Authorization Pattern (CRITICAL)
@@ -202,4 +288,5 @@ export const getUserData = createServerFn({ method: "GET" }).handler(
 - Database schema is defined in `src/database/schema.ts` with comprehensive documentation
 - Test setup includes jsdom environment and jest-dom matchers
 - Development server runs on port 3005 (configured in vite.config.ts)
+- Architecture Decision Records are stored in `docs/adr/`
 - If I disagree with something, please write this down in an ADR file
