@@ -95,10 +95,20 @@ describe("score.service", () => {
 		it("calculates coverage with round scaling (round 1)", () => {
 			// Round 1: base = 1.2%, streak 0
 			expect(
-				calculateCoverage({ correctnessFactor: 1.0, round: 1, streak: 0 })
+				calculateCoverage({
+					correctnessFactor: 1.0,
+					round: 1,
+					streak: 0,
+					wrongAnswerCoverageRate: 1,
+				})
 			).toBe(1.2);
 			expect(
-				calculateCoverage({ correctnessFactor: 0.5, round: 1, streak: 0 })
+				calculateCoverage({
+					correctnessFactor: 0.5,
+					round: 1,
+					streak: 0,
+					wrongAnswerCoverageRate: 1,
+				})
 			).toBe(0.6); // 1.2 × 0.5
 		});
 
@@ -108,6 +118,7 @@ describe("score.service", () => {
 				correctnessFactor: 0,
 				round: 1,
 				streak: 0,
+				wrongAnswerCoverageRate: 1,
 			});
 			expect(result).toBeCloseTo(-1.5, 2);
 		});
@@ -118,31 +129,74 @@ describe("score.service", () => {
 				correctnessFactor: 0,
 				round: 10,
 				streak: 0,
+				wrongAnswerCoverageRate: 1,
 			});
 			expect(result).toBeCloseTo(-10.5, 2);
+		});
+
+		it("returns zero penalty when wrongAnswerCoverageRate is 0 (Comeback)", () => {
+			const result = calculateCoverage({
+				correctnessFactor: 0,
+				round: 5,
+				streak: 0,
+				wrongAnswerCoverageRate: 0,
+			});
+			expect(result).toBeCloseTo(0, 5);
+		});
+
+		it("applies wrongAnswerCoverageRate multiplier to penalty", () => {
+			// Round 5 penalty: -0.5 × (1 + 5 × 2) = -5.5
+			// With 0.5 rate: -5.5 × 0.5 = -2.75
+			const result = calculateCoverage({
+				correctnessFactor: 0,
+				round: 5,
+				streak: 0,
+				wrongAnswerCoverageRate: 0.5,
+			});
+			expect(result).toBeCloseTo(-2.75, 2);
 		});
 
 		it("calculates coverage with round scaling (round 5)", () => {
 			// Round 5: base = 2%, streak 0
 			expect(
-				calculateCoverage({ correctnessFactor: 1.0, round: 5, streak: 0 })
+				calculateCoverage({
+					correctnessFactor: 1.0,
+					round: 5,
+					streak: 0,
+					wrongAnswerCoverageRate: 1,
+				})
 			).toBe(2);
 			expect(
-				calculateCoverage({ correctnessFactor: 1.5, round: 5, streak: 0 })
+				calculateCoverage({
+					correctnessFactor: 1.5,
+					round: 5,
+					streak: 0,
+					wrongAnswerCoverageRate: 1,
+				})
 			).toBe(3); // 2 × 1.5
 		});
 
 		it("applies streak bonus", () => {
 			// Round 1: base = 1.2%, streak 5 = 0.5%, total = 1.7%
 			expect(
-				calculateCoverage({ correctnessFactor: 1.0, round: 1, streak: 5 })
+				calculateCoverage({
+					correctnessFactor: 1.0,
+					round: 1,
+					streak: 5,
+					wrongAnswerCoverageRate: 1,
+				})
 			).toBe(1.7);
 		});
 
 		it("caps streak bonus at 1%", () => {
 			// Round 1: base = 1.2%, streak 20 = 1% (capped), total = 2.2%
 			expect(
-				calculateCoverage({ correctnessFactor: 1.0, round: 1, streak: 20 })
+				calculateCoverage({
+					correctnessFactor: 1.0,
+					round: 1,
+					streak: 20,
+					wrongAnswerCoverageRate: 1,
+				})
 			).toBe(2.2);
 		});
 
@@ -150,7 +204,12 @@ describe("score.service", () => {
 			// Round 5: base = 2%, streak 5 = 0.5%, total = 2.5%
 			// Perfect multi (1.5x): 2.5 × 1.5 = 3.75
 			expect(
-				calculateCoverage({ correctnessFactor: 1.5, round: 5, streak: 5 })
+				calculateCoverage({
+					correctnessFactor: 1.5,
+					round: 5,
+					streak: 5,
+					wrongAnswerCoverageRate: 1,
+				})
 			).toBe(3.75);
 		});
 	});
@@ -165,6 +224,7 @@ describe("score.service", () => {
 				totalPollsSeen: 0, // Round 1
 				correctnessFactor: 1.0,
 				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 1,
 			});
 
 			// Round 1: base 1.2%, new streak 1 = 0.1%, total 1.3%
@@ -182,6 +242,7 @@ describe("score.service", () => {
 				totalPollsSeen: 20, // Round 5 (4*5 + 0)
 				correctnessFactor: 1.0,
 				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 1,
 			});
 
 			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
@@ -198,6 +259,7 @@ describe("score.service", () => {
 				totalPollsSeen: 20, // Round 5 (4*5 + 0)
 				correctnessFactor: 1.5, // Perfect multi-choice
 				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 1,
 			});
 
 			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
@@ -216,12 +278,31 @@ describe("score.service", () => {
 				totalPollsSeen: 10, // Round 3: floor(10/5) + 1 = 3
 				correctnessFactor: 0,
 				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 1,
 			});
 
 			// Round 3 penalty: -0.5 × (1 + 3 × 2) = -3.5
 			expect(result.newStreak).toBe(0);
 			expect(result.breakdown.earnedCoverage).toBe(-3.5);
 			expect(result.newTotalCoverage).toBe(16.5);
+		});
+
+		it("applies zero penalty for wrong answer with Comeback gate (wrongAnswerCoverageRate: 0)", () => {
+			const result = orchestrateScoreCalculation({
+				currentCoverage: 20,
+				currentStreak: 5,
+				currentBestStreak: 5,
+				totalPollsAnswered: 10,
+				totalPollsSeen: 10, // Round 3
+				correctnessFactor: 0,
+				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 0, // Comeback gate
+			});
+
+			// Comeback: no penalty, coverage stays the same
+			expect(result.newStreak).toBe(0);
+			expect(result.breakdown.earnedCoverage).toBe(0);
+			expect(result.newTotalCoverage).toBe(20);
 		});
 
 		it("applies config coverage bonus on top of scaling", () => {
@@ -234,6 +315,7 @@ describe("score.service", () => {
 				correctnessFactor: 1.0,
 				coverageAdd: 0.5, // +0.5% from .js config
 				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 1,
 			});
 
 			// Round 5: base 2%, new streak 5 = 0.5%, total 2.5%
@@ -251,6 +333,7 @@ describe("score.service", () => {
 				totalPollsSeen: 45, // Round 10 (9*5 + 0)
 				correctnessFactor: 1.0,
 				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 1,
 			});
 
 			// Round 10: base 3%, new streak 10 = 1% (capped), total 4%
@@ -268,6 +351,7 @@ describe("score.service", () => {
 				totalPollsSeen: 45, // Round 10 (9*5 + 0)
 				correctnessFactor: 1.0,
 				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 1,
 			});
 
 			// Round 10: base 3%, new streak 10 = 1%, total 4%

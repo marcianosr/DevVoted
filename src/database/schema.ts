@@ -9,6 +9,7 @@ import {
 	text,
 	timestamp,
 	unique,
+	uniqueIndex,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
@@ -271,6 +272,7 @@ export const pollResponsesTable = pgTable(
  * - Each run represents a complete game session
  * - Players can have multiple runs over time
  * - Only one active run per user at a time
+ * - Gate progression is tracked via run_gate_history table
  */
 export const runsTable = pgTable("runs", {
 	id: serial("id").primaryKey(),
@@ -281,7 +283,9 @@ export const runsTable = pgTable("runs", {
 		onDelete: "set null",
 	}), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
-	challenge_mode_id: varchar("challenge_mode_id", { length: 50 }),
+	awaiting_gate_selection: boolean("awaiting_gate_selection")
+		.notNull()
+		.default(false), // True when player needs to choose next gate
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	active_config_ids: json("active_config_ids")
 		.$type<string[]>()
@@ -436,3 +440,67 @@ export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
 		.notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+/**
+ * Gate stake level for difficulty indication
+ * - very_easy: Green border, forgiving requirements
+ * - easy: Green border, standard requirements
+ * - medium: Orange border, moderate challenge
+ * - hard: Red border, difficult
+ * - very_hard: Red border, extreme challenge
+ */
+export const gateStake = pgEnum("gate_stake", [
+	"very_easy",
+	"easy",
+	"medium",
+	"hard",
+	"very_hard",
+] as const);
+
+/**
+ * Gate Types Table
+ * Defines the different types of gates players can encounter
+ * - Each gate type has unique mechanics and difficulty
+ * - modifier_config stores type-specific behavior (e.g., Comeback's partial coverage on wrong answers)
+ * - Players choose their next gate type after passing each gate
+ */
+export const gateTypesTable = pgTable("gate_types", {
+	id: serial("id").primaryKey(),
+	code: varchar("code", { length: 50 }).notNull().unique(),
+	name: varchar("name", { length: 100 }).notNull(),
+	description: text("description"),
+	stake: gateStake("stake").notNull().default("easy"),
+	polls_per_gate: integer("polls_per_gate").notNull().default(5),
+	modifier_config: json("modifier_config").$type<Record<string, unknown>>(), // e.g., { "wrongAnswerCoverageRate": 0.5 }
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true })
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+});
+
+/**
+ * Run Gate History Table
+ * Tracks the sequence of gates a player took during a run
+ * - Enables dynamic gate selection after each gate pass
+ * - Stores the path visualization (Star Fox 64 style)
+ * - One record per gate per run (enforced by unique constraint)
+ */
+export const runGateHistoryTable = pgTable(
+	"run_gate_history",
+	{
+		id: serial("id").primaryKey(),
+		run_id: integer("run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		gate_number: integer("gate_number").notNull(), // 1, 2, 3...
+		gate_type_code: varchar("gate_type_code", { length: 50 })
+			.references(() => gateTypesTable.code)
+			.notNull(),
+		passed: boolean("passed"), // null = in progress, true = passed, false = failed
+		started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
+		completed_at: timestamp("completed_at", { withTimezone: true }),
+	},
+	(table) => [
+		uniqueIndex("run_gate_unique").on(table.run_id, table.gate_number),
+	]
+);

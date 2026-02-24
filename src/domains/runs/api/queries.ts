@@ -44,11 +44,9 @@ export const getActiveRunByUserId = async (userId: string) => {
 	return runFactory.toDTO(runRecord[0], categoryCoverage);
 };
 
-export const createRunForUser = async (
-	userId: string,
-	challengeModeId: string
-) => {
-	return await db.transaction(async (tx) => {
+export const createRunForUser = async (userId: string) => {
+	// Create run and coverage records in a transaction
+	const result = await db.transaction(async (tx) => {
 		// Get current season ID for the new run
 		const { getSeasonForNewRun } =
 			await import("~/domains/seasons/services/seasonService");
@@ -60,7 +58,7 @@ export const createRunForUser = async (
 				user_id: userId,
 				season_id: seasonId,
 				status: "active",
-				challenge_mode_id: challengeModeId,
+				awaiting_gate_selection: false,
 			})
 			.returning();
 
@@ -89,6 +87,15 @@ export const createRunForUser = async (
 
 		return runFactory.toDTO(runRecord, categoryCoverage);
 	});
+
+	// Initialize the first gate AFTER transaction commits
+	// This must be outside the transaction because initializeFirstGate uses
+	// the global db connection, which can't see uncommitted transaction data
+	const { initializeFirstGate } =
+		await import("~/domains/gates/services/gateSelection.service");
+	await initializeFirstGate(result.id);
+
+	return result;
 };
 
 export const getRunWithCategoryCoverage = async (runId: number) => {
@@ -412,7 +419,6 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
-				challengeModeId: runsTable.challenge_mode_id,
 				totalCoverage: runCategoryCoverageTable.current_coverage, // Category coverage only
 				pollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
 				bestStreak: runCategoryCoverageTable.best_streak, // Category streak only
@@ -450,7 +456,6 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
-				challengeModeId: runsTable.challenge_mode_id,
 				totalCoverage: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0)`,
 				pollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryCoverageTable.best_streak}), 0)`,
@@ -474,7 +479,6 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				usersTable.display_name,
 				runsTable.id,
 				runsTable.season_id,
-				runsTable.challenge_mode_id,
 				runsTable.correct_polls_count
 			)
 			.orderBy(

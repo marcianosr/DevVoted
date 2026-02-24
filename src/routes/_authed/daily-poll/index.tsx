@@ -5,12 +5,12 @@ import Content from "~/components/Content";
 import { DevPollNavigator } from "~/components/DevPollNavigator";
 import { applyEffects } from "~/domains/configs/data/configs";
 import { getShopOfferingsServerFn } from "~/domains/economy/api/shopOfferings";
-import { getDailyPoll, getPollsSeenInRun } from "~/domains/polls/api/polls";
+import { getCurrentGate as getCurrentGateServerFn } from "~/domains/gates/api/gates";
+import { getCurrentGateDefinition } from "~/domains/gates/services/gateDefinition.service";
+import { getDailyPoll } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
 } from "~/domains/polls/components/DailyPollContainer";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 
@@ -42,6 +42,8 @@ const DailyPoll: React.FC = () => {
 		score,
 		configEffects,
 		currentGate,
+		currentGateTypeCode,
+		currentGateNumber,
 		offeredConfigs,
 		currentDate,
 	} = Route.useLoaderData();
@@ -81,6 +83,8 @@ const DailyPoll: React.FC = () => {
 				configEffects={configEffects}
 				creatorDisplayName={creatorDisplayName}
 				currentGate={currentGate}
+				currentGateTypeCode={currentGateTypeCode}
+				currentGateNumber={currentGateNumber}
 				isAdmin={isAdmin}
 				offeredConfigs={offeredConfigs}
 			/>
@@ -150,16 +154,16 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 
 		const currentDate = deps.date || getTodayDateString();
 
-		const pollsSeenResponse = await getPollsSeenInRun({
+		// Fetch current gate info from database (includes gate type)
+		const currentGateInfo = await getCurrentGateServerFn({
 			data: { runId: activeRun.data.id },
 		});
 
-		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
-		const challengeMode = getChallengeModeOrDefault(
-			activeRun.data.challengeModeId
+		// Build gate definition from current gate type
+		const currentGate = getCurrentGateDefinition(
+			currentGateInfo.gateType,
+			currentGateInfo.gateNumber
 		);
-		const gates = challengeMode.gates;
-		const currentGate = getCurrentGate(pollsSeen, gates);
 
 		const pollResponse = await getDailyPoll({
 			data: { runId: activeRun.data.id, date: deps.date },
@@ -206,6 +210,8 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			score,
 			configEffects,
 			currentGate,
+			currentGateTypeCode: currentGateInfo.gateType.code,
+			currentGateNumber: currentGateInfo.gateNumber,
 			offeredConfigs,
 			currentDate,
 		};

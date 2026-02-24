@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { getCurrentGateWithType } from "~/domains/gates/api/queries";
 import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 import { createPoll } from "~/domains/polls/models/poll";
 import { orchestrateScoreCalculation } from "~/domains/score/services/score.service";
@@ -14,12 +15,31 @@ vi.mock("../api/queries");
 vi.mock("~/domains/polls/api/queries", () => ({
 	getPollsSeenInRun: vi.fn(),
 }));
+vi.mock("~/domains/gates/api/queries", () => ({
+	getCurrentGateWithType: vi.fn(),
+}));
 
 describe("incrementRunProgress", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// Default mock: pollsSeenInRun equals totalPollsAnswered
 		vi.mocked(getPollsSeenInRun).mockResolvedValue(5);
+		// Default mock: current gate with default gate type
+		vi.mocked(getCurrentGateWithType).mockResolvedValue({
+			gateNumber: 1,
+			passed: null,
+			gateType: {
+				id: 1,
+				code: "generalist",
+				name: "Generalist",
+				description: "Standard CI pipeline.",
+				stake: "easy",
+				pollsPerGate: 5,
+				modifierConfig: { wrongAnswerCoverageRate: 1 },
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			},
+		});
 	});
 
 	const createTestPollContext = (categoryCode: string) => ({
@@ -105,6 +125,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 2, // Config coverage bonus for .js config
 			coverageMult: 1,
 			pollsPerGate: 5,
+			wrongAnswerCoverageRate: 1,
 		});
 	});
 
@@ -159,6 +180,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 0, // No config bonus
 			coverageMult: 1,
 			pollsPerGate: 5,
+			wrongAnswerCoverageRate: 1,
 		});
 	});
 
@@ -258,6 +280,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 4, // Double config bonus (0.5 + 0.5)
 			coverageMult: 1,
 			pollsPerGate: 5,
+			wrongAnswerCoverageRate: 1,
 		});
 	});
 
@@ -348,6 +371,7 @@ describe("incrementRunProgress", () => {
 				coverageAdd: 2, // Config bonus should be applied
 				coverageMult: 1,
 				pollsPerGate: 5,
+				wrongAnswerCoverageRate: 1,
 			});
 
 			vi.clearAllMocks();

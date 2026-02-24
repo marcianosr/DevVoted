@@ -1,8 +1,6 @@
-import { readFileSync } from "fs";
 import { join } from "path";
 
 import { eq } from "drizzle-orm";
-import postgres from "postgres";
 
 import { db } from "@/src/database/db";
 import {
@@ -13,7 +11,9 @@ import {
 	runCategoryCoverageTable,
 	seasonsTable,
 	leaderboardTable,
+	gateTypesTable,
 } from "@/src/database/schema";
+import { GATE_TYPES_SEED } from "~/domains/gates/data/gateTypes.seed";
 import { getCategories, CATEGORY_CODES } from "~/domains/shared/categories";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
@@ -84,6 +84,30 @@ async function seedDatabase() {
 				console.log(`✅ Added category: ${category.name}`);
 			} else {
 				console.log(`ℹ️ Category already exists: ${category.name}`);
+			}
+		}
+
+		// Seed gate types
+		console.log("\n🚪 Seeding gate types...");
+
+		for (const gateType of GATE_TYPES_SEED) {
+			const existingGateType = await db
+				.select()
+				.from(gateTypesTable)
+				.where(eq(gateTypesTable.code, gateType.code));
+
+			if (existingGateType.length === 0) {
+				await db.insert(gateTypesTable).values({
+					code: gateType.code,
+					name: gateType.name,
+					description: gateType.description,
+					stake: gateType.stake,
+					polls_per_gate: gateType.pollsPerGate,
+					modifier_config: gateType.modifierConfig,
+				});
+				console.log(`✅ Added gate type: ${gateType.name}`);
+			} else {
+				console.log(`ℹ️ Gate type already exists: ${gateType.name}`);
 			}
 		}
 

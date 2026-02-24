@@ -15,16 +15,19 @@ import ShopContainer from "~/domains/economy/components/ShopContainer";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
 import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import {
+	getCurrentGate as getCurrentGateServerFn,
+	getGatePath,
+} from "~/domains/gates/api/gates";
+import { RunPathDisplayCompact } from "~/domains/gates/components/RunPathDisplay";
+import { getCurrentGateDefinition } from "~/domains/gates/services/gateDefinition.service";
+import {
 	getDailyPoll,
-	getPollsSeenInRun,
 	getRunPollHistoryServerFn,
 } from "~/domains/polls/api/polls";
 import { RunPollHistory } from "~/domains/polls/api/queries";
 import { PollCountdown } from "~/domains/polls/components/PollCountdown";
 import { Poll } from "~/domains/polls/models/poll";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { formatGateRequirements } from "~/domains/runs/utils/gateFormatting";
 import {
 	CATEGORY_METADATA,
@@ -45,21 +48,23 @@ export const Route = createFileRoute("/_authed/progress")({
 		if (!pollResponse.success) {
 			throw new Error(pollResponse.error);
 		}
-		const [pollsSeenResponse, pollHistoryResponse] = await Promise.all([
-			getPollsSeenInRun({ data: { runId } }),
+
+		// Fetch gate info from database and poll history
+		const [currentGateInfo, gatePath, pollHistoryResponse] = await Promise.all([
+			getCurrentGateServerFn({ data: { runId } }),
+			getGatePath({ data: { runId } }),
 			getRunPollHistoryServerFn({ data: { runId } }),
 		]);
 
-		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
 		const pollHistory = pollHistoryResponse.success
 			? pollHistoryResponse.data
 			: [];
-		const challengeMode = getChallengeModeOrDefault(
-			activeRun.data.challengeModeId
-		);
-		const gates = challengeMode.gates;
 
-		const currentGate = getCurrentGate(pollsSeen, gates);
+		// Build gate definition from current gate type
+		const currentGate = getCurrentGateDefinition(
+			currentGateInfo.gateType,
+			currentGateInfo.gateNumber
+		);
 
 		const configEffects = applyEffects(
 			{
@@ -101,9 +106,9 @@ export const Route = createFileRoute("/_authed/progress")({
 			nextOfferedConfigs,
 			configEffects,
 			currentGate,
-			pollsSeen,
+			currentGateNumber: currentGateInfo.gateNumber,
+			gatePath,
 			pollHistory,
-			gates,
 		};
 	},
 });
@@ -217,9 +222,10 @@ function RouteComponent() {
 		nextOfferedConfigs,
 		configEffects: { reductionCost, storage },
 		currentGate,
+		currentGateNumber,
+		gatePath,
 		pollHistory,
 		dailyPoll,
-		gates,
 	} = Route.useLoaderData();
 
 	const router = useRouter();
@@ -261,59 +267,68 @@ function RouteComponent() {
 
 				<section className="grid grid-cols-1 md:grid-cols-2 gap-8">
 					<div className="space-y-4">
-						<h3 className="text-xl">Gate Progress</h3>
-						{(() => {
-							// Include post-victory gate if we're beyond defined gates
-							const isPostVictory = currentGate.gate > gates.length;
-							const displayGates = isPostVictory
-								? [...gates, currentGate]
-								: gates.slice(0, currentGate.gate);
+						<div className="flex items-center justify-between">
+							<h3 className="text-xl">Gate Progress</h3>
+							<RunPathDisplayCompact
+								gatePath={gatePath}
+								currentGateNumber={currentGateNumber}
+							/>
+						</div>
+						{gatePath.map((gateHistory) => {
+							const gate = getCurrentGateDefinition(
+								{
+									id: 0,
+									code: gateHistory.gateTypeCode,
+									name: gateHistory.gateTypeName,
+									description: null,
+									stake: gateHistory.stake,
+									pollsPerGate: currentGate.pollsPerGate,
+									modifierConfig: { wrongAnswerCoverageRate: 1 },
+									createdAt: new Date(),
+									updatedAt: null,
+								},
+								gateHistory.gateNumber
+							);
+							const status = getGateStatus(gate.gate, currentGateNumber);
+							const isCurrent = gate.gate === currentGateNumber;
 
-							return displayGates.map((gate) => {
-								const status = getGateStatus(gate.gate, currentGate.gate);
-								const isCurrent = gate.gate === currentGate.gate;
-								const isVirtual = gate.gate > gates.length;
-
-								return (
-									<details
-										key={gate.gate}
-										className={`group border-b border-t border-white py-4 ${isCurrent ? "bg-white/5" : ""}`}
-										open={isCurrent}
-									>
-										<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
-											<Badge status={status} />
-											<h2 className="text-2xl">
-												Gate #{gate.gate} · {gate.pollsPerGate} polls
-												{isVirtual && (
-													<span className="ml-2 text-sm text-purple-400">
-														(Post-Victory)
-													</span>
-												)}
-											</h2>
-										</summary>
-										<div className="mt-2">
-											<p className="text-gray-400">
-												Score atleast: {formatGateRequirements(gate)}
-											</p>
-										</div>
-										<ol className="mt-3 space-y-1">
-											{getPollsForGate(
-												pollHistory,
-												gate.gate,
-												gate.pollsPerGate
-											).map((poll, idx) => (
-												<PollHistoryItem
-													key={poll.pollId}
-													poll={poll}
-													dailyPoll={dailyPoll.poll}
-													idx={idx + (gate.gate - 1) * gate.pollsPerGate}
-												/>
-											))}
-										</ol>
-									</details>
-								);
-							});
-						})()}
+							return (
+								<details
+									key={gate.gate}
+									className={`group border-b border-t border-white py-4 ${isCurrent ? "bg-white/5" : ""}`}
+									open={isCurrent}
+								>
+									<summary className="list-none flex gap-4 items-center cursor-pointer before:content-['▸'] before:text-2xl before:w-6 group-open:before:content-['▾']">
+										<Badge status={status} />
+										<h2 className="text-2xl">
+											Gate #{gate.gate} · {gate.pollsPerGate} polls
+											<span className="ml-2 text-sm text-gray-400">
+												({gateHistory.gateTypeName})
+											</span>
+										</h2>
+									</summary>
+									<div className="mt-2">
+										<p className="text-gray-400">
+											Score atleast: {formatGateRequirements(gate)}
+										</p>
+									</div>
+									<ol className="mt-3 space-y-1">
+										{getPollsForGate(
+											pollHistory,
+											gate.gate,
+											gate.pollsPerGate
+										).map((poll, idx) => (
+											<PollHistoryItem
+												key={poll.pollId}
+												poll={poll}
+												dailyPoll={dailyPoll.poll}
+												idx={idx + (gate.gate - 1) * gate.pollsPerGate}
+											/>
+										))}
+									</ol>
+								</details>
+							);
+						})}
 					</div>
 					<CategoryCoverageGrid
 						categoryCoverage={activeRun.categoryCoverage}

@@ -8,6 +8,8 @@ import { z } from "zod";
 import { ApplyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
 import { ShopPreview } from "~/domains/economy/components/ShopPreview";
+import { getGateOptions, selectGate } from "~/domains/gates/api/gates";
+import { GateSelectionModal } from "~/domains/gates/components/GateSelectionModal";
 import {
 	getCommunityStatsHandler,
 	getRandomAnswerHandler,
@@ -90,6 +92,8 @@ type DailyPollContainerProps = {
 	configEffects: ApplyEffects;
 	creatorDisplayName: string | null;
 	currentGate: GateDefinition;
+	currentGateTypeCode: string;
+	currentGateNumber: number;
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
 };
@@ -104,6 +108,8 @@ const DailyPollContainer = ({
 	creatorDisplayName,
 	activeRun,
 	currentGate,
+	currentGateTypeCode,
+	currentGateNumber,
 	isAdmin,
 	offeredConfigs,
 }: DailyPollContainerProps) => {
@@ -150,6 +156,30 @@ const DailyPollContainer = ({
 		exposedConfigDeckResult?.success && exposedConfigDeckResult.data
 			? exposedConfigDeckResult.data
 			: null;
+
+	// Gate selection: Fetch options when run is awaiting gate selection
+	const { data: gateOptions, isLoading: isLoadingGateOptions } = useQuery({
+		queryKey: ["gateOptions", currentGateTypeCode],
+		queryFn: () => getGateOptions({ data: { currentGateTypeCode } }),
+		enabled: activeRun.awaitingGateSelection,
+	});
+
+	// Gate selection mutation
+	const gateSelectionMutation = useMutation({
+		mutationFn: (gateTypeCode: string) =>
+			selectGate({ data: { runId: activeRun.id, gateTypeCode } }),
+		onSuccess: () => {
+			// Refresh the route to get the updated run data
+			router.invalidate();
+		},
+		onError: (error) => {
+			console.error("Error selecting gate", error);
+		},
+	});
+
+	const handleGateSelect = (gateTypeCode: string) => {
+		gateSelectionMutation.mutate(gateTypeCode);
+	};
 
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
@@ -256,6 +286,16 @@ const DailyPollContainer = ({
 					/>
 				)}
 			</div>
+
+			{/* Gate Selection Modal - shown when awaiting gate selection */}
+			<GateSelectionModal
+				isOpen={activeRun.awaitingGateSelection && !isLoadingGateOptions}
+				options={gateOptions ?? []}
+				currentGateTypeCode={currentGateTypeCode}
+				gateNumber={currentGateNumber}
+				onSelect={handleGateSelect}
+				isLoading={gateSelectionMutation.isPending}
+			/>
 		</section>
 	);
 };

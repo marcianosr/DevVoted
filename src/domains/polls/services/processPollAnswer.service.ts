@@ -1,5 +1,13 @@
 import { applyEffects } from "~/domains/configs/data/configs";
 import {
+	getCurrentGateWithType,
+	getRunGateHistoryWithTypes,
+} from "~/domains/gates/api/queries";
+import {
+	buildGatesFromHistory,
+	generateGateDefinition,
+} from "~/domains/gates/services/gateDefinition.service";
+import {
 	createPollResponse,
 	fetchPollByIdWithOptions,
 	getPollsSeenInRun,
@@ -10,7 +18,7 @@ import {
 	incrementCorrectPollsCount,
 	resetPollRerolls,
 } from "~/domains/runs/api/queries";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
+import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
@@ -96,14 +104,40 @@ export const processPollAnswer = async (
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
-	// Get challenge mode gates for this run
-	const challengeMode = getChallengeModeOrDefault(updatedRun.challengeModeId);
-	const gates = challengeMode.gates;
+	// Build gates from run's gate history
+	const gateHistory = await getRunGateHistoryWithTypes(activeRun.id);
+	const gates = buildGatesFromHistory(
+		gateHistory.map((h) => ({
+			gateNumber: h.gateNumber,
+			gateType: {
+				id: 0, // Not used in generation
+				code: h.gateTypeCode,
+				name: h.gateTypeName,
+				description: null,
+				stake: h.stake,
+				pollsPerGate: 5, // Will be overridden by actual gate type
+				modifierConfig: { wrongAnswerCoverageRate: 1 },
+				createdAt: new Date(),
+				updatedAt: null,
+			},
+		}))
+	);
+
+	// If no gate history, create a default Generalist gate
+	if (gates.length === 0) {
+		const currentGateInfo = await getCurrentGateWithType(activeRun.id);
+		gates.push(
+			generateGateDefinition(
+				currentGateInfo.gateType,
+				currentGateInfo.gateNumber
+			)
+		);
+	}
 
 	// Fetch total polls seen in current run for threshold calculation
 	const totalPollsSeen = await getPollsSeenInRun(activeRun.id);
 
-	// Calculate threshold based on category coverage data, seen polls, and challenge mode gates
+	// Calculate threshold based on category coverage data, seen polls, and dynamic gates
 	const thresholdInfo = calculateThresholdInfo(
 		updatedRun.categoryCoverage,
 		totalPollsSeen,
@@ -122,7 +156,8 @@ export const processPollAnswer = async (
 	if (thresholdInfo.meetsThreshold && thresholdInfo.isThresholdCheckPoll) {
 		const { checkForVictory } =
 			await import("~/domains/runs/services/runCompletion.service");
-		const hasWon = checkForVictory(thresholdInfo.currentGate, gates);
+		// Use VANILLA_CI_GATES for victory check - gates array only contains history, not full progression
+		const hasWon = checkForVictory(thresholdInfo.currentGate, VANILLA_CI_GATES);
 		if (hasWon && !updatedRun.victoryAchievedAt) {
 			// Mark victory but don't end the run - player can continue in post-victory mode
 			const { markVictoryAchieved } =
@@ -130,6 +165,14 @@ export const processPollAnswer = async (
 			await markVictoryAchieved(activeRun.id);
 			victoryJustAchieved = true;
 			// runEnded stays false - player continues playing
+		} else if (!hasWon) {
+			// Gate passed but not victory - trigger gate selection for next gate
+			const { completeCurrentGateAndAwaitSelection } =
+				await import("~/domains/gates/services/gateSelection.service");
+			await completeCurrentGateAndAwaitSelection(
+				activeRun.id,
+				thresholdInfo.currentGate
+			);
 		}
 	}
 

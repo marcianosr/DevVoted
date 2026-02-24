@@ -1,9 +1,8 @@
 import { applyEffects } from "~/domains/configs/data/configs";
+import { getCurrentGateWithType } from "~/domains/gates/api/queries";
 import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { handleUserSelectedOptionsByPollType } from "~/domains/polls/services/processPollAnswer.service";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import {
 	orchestrateScoreCalculation,
 	ScoreCalculation,
@@ -78,10 +77,11 @@ export const incrementRunProgress = async ({
 		run.activeConfigIds
 	);
 
-	// Get pollsPerGate from challenge mode
-	const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
-	const currentGate = getCurrentGate(totalPollsSeen, challengeMode.gates);
-	const pollsPerGate = currentGate.pollsPerGate;
+	// Get pollsPerGate from current gate
+	const currentGate = await getCurrentGateWithType(run.id);
+	const pollsPerGate = currentGate.gateType.pollsPerGate;
+	const wrongAnswerCoverageRate =
+		currentGate.gateType.modifierConfig.wrongAnswerCoverageRate;
 
 	// Step 2-3: Calculate coverage with config modifiers applied
 	const {
@@ -98,6 +98,7 @@ export const incrementRunProgress = async ({
 		totalPollsAnswered,
 		totalPollsSeen,
 		pollsPerGate,
+		wrongAnswerCoverageRate,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});
@@ -160,13 +161,11 @@ export const getRunProgress = async ({
 		run.activeConfigIds
 	);
 
-	// Get pollsPerGate from challenge mode
-	const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
-
-	const pollsPerGate = getCurrentGate(
-		totalPollsSeen,
-		challengeMode.gates
-	).pollsPerGate;
+	// Get pollsPerGate from current gate
+	const currentGate = await getCurrentGateWithType(run.id);
+	const pollsPerGate = currentGate.gateType.pollsPerGate;
+	const wrongAnswerCoverageRate =
+		currentGate.gateType.modifierConfig.wrongAnswerCoverageRate;
 
 	// When already answered, the DB has been updated with the new values.
 	// Use the previous streak (before the answer) to avoid double-incrementing.
@@ -186,6 +185,7 @@ export const getRunProgress = async ({
 		totalPollsAnswered: 0, // Placeholder until we fetch actual data
 		totalPollsSeen,
 		pollsPerGate,
+		wrongAnswerCoverageRate,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});

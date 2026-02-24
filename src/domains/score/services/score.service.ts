@@ -98,26 +98,29 @@ type CalculateCoverageParams = {
 	correctnessFactor: number;
 	round: number;
 	streak: number;
+	wrongAnswerCoverageRate: number;
 };
 
 /**
  * Calculates coverage earned based on correctness factor, round, and streak
  * Formula: (baseCoverage + streakBonus) × correctnessFactor
- * Or WRONG_ANSWER_PENALTY if incorrect
+ * Or WRONG_ANSWER_PENALTY × wrongAnswerCoverageRate if incorrect
  * @param params - Coverage calculation parameters
  * @param params.correctnessFactor - 0-1.5 based on answer quality
  * @param params.round - Current round number
  * @param params.streak - Current streak count
+ * @param params.wrongAnswerCoverageRate - Multiplier for wrong answer penalty (0 = neutral, 1 = normal)
  * @returns Coverage percentage earned (can be negative for wrong answers)
  */
 export const calculateCoverage = ({
 	correctnessFactor,
 	round,
 	streak,
+	wrongAnswerCoverageRate,
 }: CalculateCoverageParams): number => {
-	// Wrong answer gets penalty
+	// Wrong answer gets penalty (scaled by wrongAnswerCoverageRate)
 	if (correctnessFactor === 0) {
-		return WRONG_ANSWER_PENALTY * (1 + round * 2); // Penalty scales with round
+		return WRONG_ANSWER_PENALTY * (1 + round * 2) * wrongAnswerCoverageRate;
 	}
 
 	// Correct answer: base + streak bonus, multiplied by correctness
@@ -196,6 +199,7 @@ type OrchestrateScoreCalculationParams = {
 	totalPollsSeen: number;
 	correctnessFactor: number;
 	pollsPerGate: number; // Number of polls per gate (from challenge mode)
+	wrongAnswerCoverageRate: number; // Multiplier for wrong answer penalty (0 = neutral, 1 = normal)
 	coverageAdd?: number; // Additive coverage bonus from configs (e.g., +0.5%)
 	coverageMult?: number; // Multiplicative coverage modifier from configs (e.g., x1.5)
 };
@@ -209,7 +213,7 @@ type OrchestrateScoreCalculationParams = {
  * 3. Calculate base coverage with round scaling: 1% + (round × 0.2%)
  * 4. Add streak bonus (capped at 1%): streak × 0.1%
  * 5. Apply correctness factor:
- *    - Wrong answer: -0.5% (penalty)
+ *    - Wrong answer: -0.5% × wrongAnswerCoverageRate (0 = neutral, 1 = normal penalty)
  *    - Partial multi-choice: (base+streak) × 0.5-1.0
  *    - Perfect single/multi: (base+streak) × 1.0
  *    - Perfect multi-choice: (base+streak) × 1.5
@@ -225,6 +229,7 @@ type OrchestrateScoreCalculationParams = {
  *   totalPollsAnswered: 20,
  *   totalPollsSeen: 24,
  *   correctnessFactor: 1.0,
+ *   wrongAnswerCoverageRate: 1,
  *   coverageAdd: 0.5,
  * })
  * // Round 5: base = 2%, streak = 0.5%, total = 2.5%
@@ -238,6 +243,7 @@ export const orchestrateScoreCalculation = ({
 	totalPollsSeen,
 	correctnessFactor,
 	pollsPerGate,
+	wrongAnswerCoverageRate,
 	coverageAdd = 0,
 	coverageMult = 1,
 }: OrchestrateScoreCalculationParams): ScoreCalculation => {
@@ -256,6 +262,7 @@ export const orchestrateScoreCalculation = ({
 		correctnessFactor,
 		round: currentGate,
 		streak: newStreak,
+		wrongAnswerCoverageRate,
 	});
 
 	// Step 5: Apply config multiplicative modifier (e.g., x1.5 from config)

@@ -20,6 +20,19 @@ vi.mock("~/domains/seasons/services/seasonService", () => ({
 	getSeasonForNewRun: vi.fn().mockResolvedValue(1),
 }));
 
+// Mock the gate selection service
+vi.mock("~/domains/gates/services/gateSelection.service", () => ({
+	initializeFirstGate: vi.fn().mockResolvedValue({
+		id: 1,
+		runId: 1,
+		gateNumber: 1,
+		gateTypeCode: "generalist",
+		passed: null,
+		startedAt: new Date(),
+		completedAt: null,
+	}),
+}));
+
 // Mock the database module
 vi.mock("~/database/db", () => {
 	const createMockQueryBuilder = () => {
@@ -152,7 +165,7 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			const result = await createRunForUser("test-user-id", "vanilla");
+			const result = await createRunForUser("test-user-id");
 
 			expect(result).toBeDefined();
 			expect(result.categoryCoverage).toHaveLength(2);

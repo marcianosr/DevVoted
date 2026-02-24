@@ -7,13 +7,18 @@ async function resetDatabase() {
 
 	try {
 		await db.execute(sql`
+            DROP TABLE IF EXISTS run_gate_history CASCADE;
+            DROP TABLE IF EXISTS run_shop_offerings CASCADE;
             DROP TABLE IF EXISTS run_category_coverage CASCADE;
             DROP TABLE IF EXISTS runs CASCADE;
+            DROP TABLE IF EXISTS gate_types CASCADE;
             DROP TABLE IF EXISTS polls_categories CASCADE;
             DROP TABLE IF EXISTS polls_options CASCADE;
             DROP TABLE IF EXISTS polls_response_options CASCADE;
             DROP TABLE IF EXISTS polls_responses CASCADE;
+            DROP TABLE IF EXISTS polls_user_performance CASCADE;
             DROP TABLE IF EXISTS polls CASCADE;
+            DROP TABLE IF EXISTS daily_polls CASCADE;
             DROP TABLE IF EXISTS users CASCADE;
             DROP TABLE IF EXISTS seasons CASCADE;
             DROP TABLE IF EXISTS leaderboard CASCADE;

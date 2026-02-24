@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "run_gate_unique" ON "run_gate_history" USING btree ("run_id","gate_number");
