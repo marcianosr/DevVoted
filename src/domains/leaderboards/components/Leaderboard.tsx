@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
 
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { GATE_PROGRESSION } from "~/domains/runs/data/gates/gate-progression";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
@@ -19,7 +19,7 @@ type LeaderboardProps = {
 };
 
 const getPlayerGateNumber = (pollsSeen: number): number => {
-	const currentGate = getCurrentGate(pollsSeen, VANILLA_CI_GATES);
+	const currentGate = getCurrentGate(pollsSeen, GATE_PROGRESSION);
 	return currentGate.gate;
 };
 

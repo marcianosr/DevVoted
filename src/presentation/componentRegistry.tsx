@@ -6,8 +6,7 @@ import ConfigCard from "~/domains/configs/components/Cards";
 import type { Config } from "~/domains/configs/models/config";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { GATE_PROGRESSION } from "~/domains/runs/data/gates/gate-progression";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import type { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
@@ -216,7 +215,6 @@ type DemoLeaderboardEntry = {
 	displayName: string;
 	photoUrl: string | null;
 	role: string | null;
-	challengeModeId: string | null;
 	totalCoverage: number;
 	pollsSeen: number;
 	bestStreak: number;
@@ -230,7 +228,6 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Matthijs Groen",
 		photoUrl: null,
 		role: "poll-editor",
-		challengeModeId: "vanilla",
 		totalCoverage: 142.5,
 		pollsSeen: 28,
 		bestStreak: 8,
@@ -242,7 +239,6 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Piet de Vries",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "vanilla",
 		totalCoverage: 118.3,
 		pollsSeen: 24,
 		bestStreak: 6,
@@ -254,7 +250,6 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Sander van Maurik",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "specialist",
 		totalCoverage: 95.7,
 		pollsSeen: 20,
 		bestStreak: 5,
@@ -266,7 +261,6 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Tom Schoutens",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "vanilla",
 		totalCoverage: 82.4,
 		pollsSeen: 18,
 		bestStreak: 4,
@@ -278,7 +272,6 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "nickve28",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "generalist",
 		totalCoverage: 67.2,
 		pollsSeen: 15,
 		bestStreak: 3,
@@ -290,7 +283,6 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Ruud Schroen",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "vanilla",
 		totalCoverage: 45.8,
 		pollsSeen: 12,
 		bestStreak: 2,
@@ -299,13 +291,8 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 	},
 ];
 
-const getPlayerGateNumber = (
-	pollsSeen: number,
-	challengeModeId: string | null
-): number => {
-	const mode = getChallengeModeOrDefault(challengeModeId ?? "vanilla");
-	const gates = mode.gates;
-	const currentGate = getCurrentGate(pollsSeen, gates);
+const getPlayerGateNumber = (pollsSeen: number): number => {
+	const currentGate = getCurrentGate(pollsSeen, GATE_PROGRESSION);
 	return currentGate.gate;
 };
 
@@ -337,8 +324,7 @@ const LeaderboardDemo = () => (
 							<header className="flex gap-2 justify-between">
 								<span className="text-xl">#{idx + 1}</span>
 								<span className="text-sm text-gray-400">
-									Gate{" "}
-									{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}
+									Gate {getPlayerGateNumber(entry.pollsSeen)}
 								</span>
 							</header>
 							<section
@@ -470,7 +456,7 @@ const DailyPollDemo = () => {
 };
 
 // Demo data for CI Gates - showing progression from easy to hard
-const DEMO_CI_GATES: GateDefinition[] = VANILLA_CI_GATES.slice(0, 6);
+const DEMO_CI_GATES: GateDefinition[] = GATE_PROGRESSION.slice(0, 6);
 
 // Helper to format gate requirements
 const formatRequirement = (

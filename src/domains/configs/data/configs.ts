@@ -1,6 +1,6 @@
 import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { GATE_PROGRESSION } from "~/domains/runs/data/gates/gate-progression";
 import { Run } from "~/domains/runs/models/run";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { selectSeededRandom } from "~/lib/seededRandom";
@@ -796,7 +796,7 @@ const EFFECTS: Record<string, EffectFn> = {
 
 		// Use vanilla gates as default for config effect (sync function can't fetch from DB)
 		// This provides reasonable threshold calculation for try/catch protection
-		const gates = VANILLA_CI_GATES;
+		const gates = GATE_PROGRESSION;
 
 		// Calculate threshold based on category coverage data and answered polls
 		// Note: This uses answered polls as a proxy for seen polls since we don't have access to totalPollsSeen here

@@ -1,43 +1,43 @@
 import type { GateType } from "~/domains/gates/models/gateType";
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { GATE_PROGRESSION } from "~/domains/runs/data/gates/gate-progression";
 import type { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 
 /**
  * Generates a GateDefinition based on gate type and gate number.
  *
- * For now, uses vanilla scaling as a placeholder.
- * Later: each gate type can have its own scaling formula.
+ * Uses the universal GATE_PROGRESSION for threshold requirements.
+ * Gate types only modify behavior (pollsPerGate, modifiers), not thresholds.
  */
 export const generateGateDefinition = (
 	gateType: GateType,
 	gateNumber: number
 ): GateDefinition => {
-	// Use vanilla gate if available, otherwise extrapolate
-	const vanillaGate = VANILLA_CI_GATES[gateNumber - 1];
+	// Use progression gate if available, otherwise extrapolate
+	const progressionGate = GATE_PROGRESSION[gateNumber - 1];
 
-	if (vanillaGate) {
+	if (progressionGate) {
 		return {
-			...vanillaGate,
+			...progressionGate,
 			gate: gateNumber,
 			pollsPerGate: gateType.pollsPerGate,
 		};
 	}
 
-	// Extrapolate from last vanilla gate for gates beyond defined
-	const lastVanillaGate = VANILLA_CI_GATES[VANILLA_CI_GATES.length - 1];
-	const gatesBeyond = gateNumber - VANILLA_CI_GATES.length;
+	// Extrapolate from last defined gate for gates beyond progression
+	const lastDefinedGate = GATE_PROGRESSION[GATE_PROGRESSION.length - 1];
+	const gatesBeyond = gateNumber - GATE_PROGRESSION.length;
 	const thresholdIncrement = 5;
 
 	return {
 		gate: gateNumber,
-		requirements: lastVanillaGate.requirements.map((req) => ({
+		requirements: lastDefinedGate.requirements.map((req) => ({
 			...req,
 			threshold: Math.min(
 				req.threshold + gatesBeyond * thresholdIncrement,
 				100
 			),
 		})),
-		evaluationMode: lastVanillaGate.evaluationMode,
+		evaluationMode: lastDefinedGate.evaluationMode,
 		pollsPerGate: gateType.pollsPerGate,
 	};
 };

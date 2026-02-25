@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { GATE_PROGRESSION } from "~/domains/runs/data/gates/gate-progression";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 
@@ -38,7 +38,7 @@ describe("CI gate Reset Functionality", () => {
 			const result = calculateThresholdInfo(
 				categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.pollNumber).toBe(0);
@@ -82,7 +82,7 @@ describe("CI gate Reset Functionality", () => {
 			const result = calculateThresholdInfo(
 				categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.pollNumber).toBe(1);
@@ -126,7 +126,7 @@ describe("CI gate Reset Functionality", () => {
 			const result = calculateThresholdInfo(
 				categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
@@ -170,7 +170,7 @@ describe("CI gate Reset Functionality", () => {
 			const result = calculateThresholdInfo(
 				categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.pollNumber).toBe(1);
@@ -214,7 +214,7 @@ describe("CI gate Reset Functionality", () => {
 			const result = calculateThresholdInfo(
 				categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
@@ -236,7 +236,7 @@ describe("CI gate Reset Functionality", () => {
 			const result = calculateThresholdInfo(
 				categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.pollNumber).toBe(0);

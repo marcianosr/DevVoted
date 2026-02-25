@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { GATE_PROGRESSION } from "~/domains/runs/data/gates/gate-progression";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 
 import {
@@ -11,7 +11,7 @@ import {
 describe("ThresholdCalculator", () => {
 	describe("Gate Definitions", () => {
 		it("has correct gate 1 definition (3% in 1 category)", () => {
-			const gate = getGateDefinition(1, VANILLA_CI_GATES);
+			const gate = getGateDefinition(1, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 1,
@@ -22,7 +22,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 2 definition (6% in 1 OR 3% in 2)", () => {
-			const gate = getGateDefinition(2, VANILLA_CI_GATES);
+			const gate = getGateDefinition(2, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 2,
@@ -36,7 +36,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 3 definition (12% in 1 OR 8% in 2)", () => {
-			const gate = getGateDefinition(3, VANILLA_CI_GATES);
+			const gate = getGateDefinition(3, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 3,
@@ -50,7 +50,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 4 definition (24% in 1 OR 18% in 2 OR 12% in 3)", () => {
-			const gate = getGateDefinition(4, VANILLA_CI_GATES);
+			const gate = getGateDefinition(4, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 4,
@@ -65,7 +65,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 5 definition (24% in 1 AND 24% in another)", () => {
-			const gate = getGateDefinition(5, VANILLA_CI_GATES);
+			const gate = getGateDefinition(5, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 5,
@@ -76,7 +76,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 6 definition (45% in 1 OR 30% in 2)", () => {
-			const gate = getGateDefinition(6, VANILLA_CI_GATES);
+			const gate = getGateDefinition(6, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 6,
@@ -90,7 +90,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 7 definition (35% in 1 AND 35% in another)", () => {
-			const gate = getGateDefinition(7, VANILLA_CI_GATES);
+			const gate = getGateDefinition(7, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 7,
@@ -101,7 +101,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 8 definition (45% + 30% + 15% in 3 categories)", () => {
-			const gate = getGateDefinition(8, VANILLA_CI_GATES);
+			const gate = getGateDefinition(8, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 8,
@@ -116,7 +116,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 9 definition (50% + 35% + 20% in 3 categories)", () => {
-			const gate = getGateDefinition(9, VANILLA_CI_GATES);
+			const gate = getGateDefinition(9, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 9,
@@ -131,7 +131,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 10 definition (60% + 40% + 25% in 3 categories)", () => {
-			const gate = getGateDefinition(10, VANILLA_CI_GATES);
+			const gate = getGateDefinition(10, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 10,
@@ -146,7 +146,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("has correct gate 11 definition (60% + 50% + 40% + 30% in 4 categories)", () => {
-			const gate = getGateDefinition(11, VANILLA_CI_GATES);
+			const gate = getGateDefinition(11, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 11,
@@ -162,7 +162,7 @@ describe("ThresholdCalculator", () => {
 		});
 
 		it("extrapolates for gates beyond defined ones (gate 12+)", () => {
-			const gate = getGateDefinition(12, VANILLA_CI_GATES);
+			const gate = getGateDefinition(12, GATE_PROGRESSION);
 
 			expect(gate).toEqual({
 				gate: 12,
@@ -192,7 +192,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -214,7 +214,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(false);
@@ -234,7 +234,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -256,7 +256,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -282,7 +282,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -307,7 +307,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(false);
@@ -329,7 +329,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -354,7 +354,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -380,7 +380,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -408,7 +408,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(false);
@@ -432,7 +432,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(false);
@@ -451,7 +451,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(false);
@@ -472,7 +472,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -504,7 +504,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -534,7 +534,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -555,7 +555,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -568,7 +568,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				[],
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -588,7 +588,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -609,7 +609,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -638,7 +638,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(true);
@@ -663,7 +663,7 @@ describe("ThresholdCalculator", () => {
 			const result = calculateThresholdInfo(
 				categoryData,
 				totalPollsSeen,
-				VANILLA_CI_GATES
+				GATE_PROGRESSION
 			);
 
 			expect(result.meetsThreshold).toBe(false);

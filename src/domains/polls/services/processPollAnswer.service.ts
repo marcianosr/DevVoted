@@ -18,7 +18,7 @@ import {
 	incrementCorrectPollsCount,
 	resetPollRerolls,
 } from "~/domains/runs/api/queries";
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { GATE_PROGRESSION } from "~/domains/runs/data/gates/gate-progression";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
@@ -156,8 +156,8 @@ export const processPollAnswer = async (
 	if (thresholdInfo.meetsThreshold && thresholdInfo.isThresholdCheckPoll) {
 		const { checkForVictory } =
 			await import("~/domains/runs/services/runCompletion.service");
-		// Use VANILLA_CI_GATES for victory check - gates array only contains history, not full progression
-		const hasWon = checkForVictory(thresholdInfo.currentGate, VANILLA_CI_GATES);
+		// Use GATE_PROGRESSION for victory check - gates array only contains history, not full progression
+		const hasWon = checkForVictory(thresholdInfo.currentGate, GATE_PROGRESSION);
 		if (hasWon && !updatedRun.victoryAchievedAt) {
 			// Mark victory but don't end the run - player can continue in post-victory mode
 			const { markVictoryAchieved } =

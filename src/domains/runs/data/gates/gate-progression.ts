@@ -1,8 +1,11 @@
 import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 
 /**
- * CI Gate Configuration
- * Progressive difficulty system that accommodates random poll selection
+ * Universal Gate Progression Curve
+ *
+ * Defines the threshold requirements for each gate number.
+ * All gate types (Generalist, Comeback, Sprint, etc.) share this progression —
+ * they only differ in behavior modifiers, not in threshold requirements.
  *
  * Phase 1 (Gates 1-4): OR conditions provide flexibility (specialize OR diversify)
  * Phase 2 (Gates 5-7): AND conditions require category breadth (2 categories)
@@ -10,7 +13,7 @@ import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.serv
  *
  * Total Duration: 50 polls = ~7 weeks of daily play
  */
-export const VANILLA_CI_GATES: GateDefinition[] = [
+export const GATE_PROGRESSION: GateDefinition[] = [
 	{
 		gate: 1,
 		requirements: [{ threshold: 3, requiredCategories: 1 }],
