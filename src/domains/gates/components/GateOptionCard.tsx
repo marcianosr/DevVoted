@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { clsx } from "clsx";
 
 import type { GateType, GateStake } from "~/domains/gates/models/gateType";
 import { STAKE_LABELS } from "~/domains/gates/models/gateType";
@@ -73,12 +73,9 @@ export const GateOptionCard = ({
 			<p className="text-sm text-gray-300 mb-3">{gateType.description}</p>
 			<div className="text-xs text-gray-400">
 				{gateType.pollsPerGate} polls per gate
-				{gateType.modifierConfig?.wrongAnswerCoverageRate && (
-					<span className="ml-2 text-green-400">
-						+{Math.round(gateType.modifierConfig.wrongAnswerCoverageRate * 100)}
-						% coverage on wrong answers
-					</span>
-				)}
+				{/* {gateType.modifierConfig?.wrongAnswerCoverageRate && (
+					<span className="ml-2 text-green-400"></span>
+				)} */}
 			</div>
 		</button>
 	);

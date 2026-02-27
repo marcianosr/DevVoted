@@ -289,6 +289,7 @@ const DailyPollContainer = ({
 
 			{/* Gate Selection Modal - shown when awaiting gate selection */}
 			<GateSelectionModal
+				key={currentGateTypeCode}
 				isOpen={activeRun.awaitingGateSelection && !isLoadingGateOptions}
 				options={gateOptions ?? []}
 				currentGateTypeCode={currentGateTypeCode}

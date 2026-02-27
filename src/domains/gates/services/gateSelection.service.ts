@@ -1,21 +1,21 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@/src/database/db";
-import { runsTable } from "@/src/database/schema";
+import { runGateHistoryTable, runsTable } from "@/src/database/schema";
 import {
 	getAllGateTypes,
+	createRunGateHistoryEntry,
 	getGateTypeByCode,
 	getCurrentGateForRun,
 	getRunGateHistoryWithTypes,
-	createRunGateHistoryEntry,
-	markGateAsPassed,
 	getLatestGateNumber,
 } from "~/domains/gates/api/queries";
 import { DEFAULT_GATE_TYPE_CODE } from "~/domains/gates/data/gateTypes.seed";
 import type { GateType } from "~/domains/gates/models/gateType";
-import type {
-	RunGateHistory,
-	RunGateHistoryWithType,
+import {
+	runGateHistoryToDTO,
+	type RunGateHistory,
+	type RunGateHistoryWithType,
 } from "~/domains/gates/models/runGateHistory";
 
 /**
@@ -56,35 +56,56 @@ export const getAvailableGatesForSelection = async (
 /**
  * Select the next gate type for a run.
  * Creates a new gate history entry and clears the awaiting_gate_selection flag.
+ * Both writes are atomic: if either fails the run stays in its current state.
  */
 export const selectNextGate = async (
 	runId: number,
 	gateTypeCode: string
 ): Promise<RunGateHistory> => {
-	// Validate gate type exists
+	// Validate gate type exists before opening a transaction
 	const gateType = await getGateTypeByCode(gateTypeCode);
 	if (!gateType) {
 		throw new Error(`Invalid gate type: ${gateTypeCode}`);
 	}
 
-	// Get next gate number
 	const latestGateNumber = await getLatestGateNumber(runId);
 	const nextGateNumber = latestGateNumber + 1;
 
-	// Create new gate history entry
-	const newGateEntry = await createRunGateHistoryEntry(
-		runId,
-		nextGateNumber,
-		gateTypeCode
-	);
+	return db.transaction(async (tx) => {
+		const [existing] = await tx
+			.select()
+			.from(runGateHistoryTable)
+			.where(
+				and(
+					eq(runGateHistoryTable.run_id, runId),
+					eq(runGateHistoryTable.gate_number, nextGateNumber)
+				)
+			)
+			.limit(1);
 
-	// Clear awaiting_gate_selection flag
-	await db
-		.update(runsTable)
-		.set({ awaiting_gate_selection: false })
-		.where(eq(runsTable.id, runId));
+		const newGateEntry = existing
+			? runGateHistoryToDTO(existing)
+			: runGateHistoryToDTO(
+					(
+						await tx
+							.insert(runGateHistoryTable)
+							.values({
+								run_id: runId,
+								gate_number: nextGateNumber,
+								gate_type_code: gateTypeCode,
+								passed: null,
+							})
+							.returning()
+					)[0]
+				);
 
-	return newGateEntry;
+		await tx
+			.update(runsTable)
+			.set({ awaiting_gate_selection: false })
+			.where(eq(runsTable.id, runId));
+
+		return newGateEntry;
+	});
 };
 
 /**
@@ -100,19 +121,28 @@ export const initializeFirstGate = async (
 /**
  * Complete the current gate and set awaiting_gate_selection flag.
  * Called when a player passes a gate check.
+ * Both writes are atomic: if either fails the gate remains in progress.
  */
 export const completeCurrentGateAndAwaitSelection = async (
 	runId: number,
 	gateNumber: number
 ): Promise<void> => {
-	// Mark current gate as passed
-	await markGateAsPassed(runId, gateNumber);
+	await db.transaction(async (tx) => {
+		await tx
+			.update(runGateHistoryTable)
+			.set({ passed: true, completed_at: new Date() })
+			.where(
+				and(
+					eq(runGateHistoryTable.run_id, runId),
+					eq(runGateHistoryTable.gate_number, gateNumber)
+				)
+			);
 
-	// Set awaiting_gate_selection flag
-	await db
-		.update(runsTable)
-		.set({ awaiting_gate_selection: true })
-		.where(eq(runsTable.id, runId));
+		await tx
+			.update(runsTable)
+			.set({ awaiting_gate_selection: true })
+			.where(eq(runsTable.id, runId));
+	});
 };
 
 /**

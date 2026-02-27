@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { getActiveRunByUserId } from "~/domains/runs/api/queries";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
 import {
@@ -65,9 +66,13 @@ export const selectGate = createServerFn({ method: "POST" })
 		})
 	)
 	.handler(async ({ data }) => {
-		// We should verify that the run belongs to the authenticated user
-		// For now we just check authentication
-		await getAuthenticatedUserId();
+		const userId = await getAuthenticatedUserId();
+		const activeRun = await getActiveRunByUserId(userId);
+		if (!activeRun || activeRun.id !== data.runId) {
+			throw new Error(
+				"Unauthorized: Run does not belong to the authenticated user"
+			);
+		}
 		return selectNextGate(data.runId, data.gateTypeCode);
 	});
 
