@@ -19,6 +19,14 @@ export type RunGateHistoryWithType = RunGateHistory & {
 	stake: GateStake;
 };
 
+export type CommunityGatePath = {
+	userId: string;
+	displayName: string | null;
+	photoUrl: string | null;
+	gatePath: RunGateHistoryWithType[];
+	currentGateNumber: number;
+};
+
 export type RunGateHistoryRecord = InferSelectModel<typeof runGateHistoryTable>;
 
 export const runGateHistoryToDTO = (

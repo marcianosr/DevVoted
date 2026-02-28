@@ -11,27 +11,27 @@ type GateOptionCardProps = {
 };
 
 const STAKE_BG_CLASSES: Record<GateStake, string> = {
-	very_easy: "border-green-600 bg-green-900/20",
-	easy: "border-green-500 bg-green-900/10",
-	medium: "border-orange-500 bg-orange-900/20",
-	hard: "border-red-500 bg-red-900/20",
-	very_hard: "border-red-600 bg-red-900/30",
+	very_easy: "border-cerulean bg-cerulean",
+	easy: "border-celadon bg-celadon",
+	medium: "border-saffron bg-saffron",
+	hard: "border-cinnabar bg-cinnabar",
+	very_hard: "border-lavender bg-lavender",
 };
 
 const STAKE_SELECTED_CLASSES: Record<GateStake, string> = {
-	very_easy: "border-green-400 bg-green-800/40 ring-2 ring-green-400",
-	easy: "border-green-400 bg-green-800/30 ring-2 ring-green-400",
-	medium: "border-orange-400 bg-orange-800/40 ring-2 ring-orange-400",
-	hard: "border-red-400 bg-red-800/40 ring-2 ring-red-400",
-	very_hard: "border-red-300 bg-red-800/50 ring-2 ring-red-300",
+	very_easy: "border-cerulean bg-cerulean ring-2 ring-cerulean",
+	easy: "border-celadon bg-celadon ring-2 ring-celadon",
+	medium: "border-saffron bg-saffron ring-2 ring-saffron",
+	hard: "border-cinnabar bg-cinnabar ring-2 ring-cinnabar",
+	very_hard: "border-lavender bg-lavender ring-2 ring-lavender",
 };
 
 const STAKE_TEXT_CLASSES: Record<GateStake, string> = {
-	very_easy: "text-green-400",
-	easy: "text-green-400",
-	medium: "text-orange-400",
-	hard: "text-red-400",
-	very_hard: "text-red-300",
+	very_easy: "text-cerulean",
+	easy: "text-celadon",
+	medium: "text-saffron",
+	hard: "text-cinnabar",
+	very_hard: "text-lavender",
 };
 
 export const GateOptionCard = ({

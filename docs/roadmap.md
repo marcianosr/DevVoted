@@ -227,11 +227,12 @@ BUGS:
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 - [] Prefetch config kapot
-- [] Show indicator of 'gate' test while answering the poll
+- [x] Show indicator of 'gate' test while answering the poll
+- [ ] simplify scoire card (remove gates)
 - Gates redesign
   - [] Wrong "rate" not changed. Don't see difference in gates (comeback gate, specialist gate, generalist gate, vanilla gate)
   - [] Everyone starts with "vanilla" after the first gate, choose your path after that
-  - [] Offer gate types: vanilla, generalist, specialist, masters, comeback
+  - [] Offer gate types: generalist, specialist, masters, comeback
   - [] Show path taken for each player - Path display to show how good someone is
 
 - Give gates more "personality" - e.g., "The Git Gatekeeper demands 2% coverage in Git category to pass"
@@ -256,7 +257,7 @@ BUGS:
 [] Out of office timer
 [] Game-over flow - atlwast show the question you failed and the correct answer, so you can learn from it
 [] Sub cat architecture
-  - [] Create sub-categories (e.g., React, Vue, Angular under Frontend Frameworks)
+- [] Create sub-categories (e.g., React, Vue, Angular under Frontend Frameworks)
   - [] Replace React with Frontend Frameworks
   - [] Update existing polls to belong to sub-categories
   - [] Make sub categories score for tehir belonging main category (e.g., React polls contribute to Frontend Frameworks coverage)

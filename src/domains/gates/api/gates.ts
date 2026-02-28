@@ -6,6 +6,7 @@ import { getAuthenticatedUserId } from "~/utils/authorization";
 
 import {
 	getAllGateTypes,
+	getActiveRunsGatePaths,
 	getCurrentGateWithType,
 	getRunGateHistoryWithTypes,
 } from "./queries";
@@ -75,6 +76,17 @@ export const selectGate = createServerFn({ method: "POST" })
 		}
 		return selectNextGate(data.runId, data.gateTypeCode);
 	});
+
+/**
+ * Get gate paths for all users with active runs, sorted by gate number desc.
+ * Used for the "Today's Paths" community section in post-answer results.
+ */
+export const getCommunityGatePaths = createServerFn({ method: "GET" }).handler(
+	async () => {
+		await getAuthenticatedUserId();
+		return getActiveRunsGatePaths();
+	}
+);
 
 /**
  * Check if a run is awaiting gate selection

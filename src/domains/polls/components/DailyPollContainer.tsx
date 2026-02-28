@@ -8,7 +8,11 @@ import { z } from "zod";
 import { ApplyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
 import { ShopPreview } from "~/domains/economy/components/ShopPreview";
-import { getGateOptions, selectGate } from "~/domains/gates/api/gates";
+import {
+	getCommunityGatePaths,
+	getGateOptions,
+	selectGate,
+} from "~/domains/gates/api/gates";
 import { GateSelectionModal } from "~/domains/gates/components/GateSelectionModal";
 import {
 	getCommunityStatsHandler,
@@ -157,6 +161,13 @@ const DailyPollContainer = ({
 			? exposedConfigDeckResult.data
 			: null;
 
+	// Fetch community gate paths after the user has answered
+	const { data: communityGatePaths } = useQuery({
+		queryKey: ["communityGatePaths"],
+		queryFn: () => getCommunityGatePaths(),
+		enabled: hasAnswered,
+	});
+
 	// Gate selection: Fetch options when run is awaiting gate selection
 	const { data: gateOptions, isLoading: isLoadingGateOptions } = useQuery({
 		queryKey: ["gateOptions", currentGateTypeCode],
@@ -268,6 +279,7 @@ const DailyPollContainer = ({
 							selectedOptions={selectedOptions}
 							score={displayScore}
 							communityStats={communityStats}
+							communityGatePaths={communityGatePaths}
 							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
 							exposedConfigDeck={exposedConfigDeck}

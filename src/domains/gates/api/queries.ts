@@ -1,7 +1,12 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 import { db } from "@/src/database/db";
-import { gateTypesTable, runGateHistoryTable } from "@/src/database/schema";
+import {
+	gateTypesTable,
+	runGateHistoryTable,
+	runsTable,
+	usersTable,
+} from "@/src/database/schema";
 import {
 	gateTypeToDTO,
 	gateTypesToDTOs,
@@ -12,6 +17,7 @@ import {
 	runGateHistoryToDTOs,
 	type RunGateHistory,
 	type RunGateHistoryWithType,
+	type CommunityGatePath,
 } from "~/domains/gates/models/runGateHistory";
 
 // === Gate Types Queries ===
@@ -257,6 +263,79 @@ export const getLatestGateNumber = async (runId: number): Promise<number> => {
 		.limit(1);
 
 	return record?.gateNumber ?? 0;
+};
+
+// === Community Queries ===
+
+const COMMUNITY_PATHS_LIMIT = 15;
+
+export const getActiveRunsGatePaths = async (): Promise<
+	CommunityGatePath[]
+> => {
+	const rows = await db
+		.select({
+			userId: usersTable.id,
+			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+			runId: runsTable.id,
+			gateId: runGateHistoryTable.id,
+			gateNumber: runGateHistoryTable.gate_number,
+			gateTypeCode: runGateHistoryTable.gate_type_code,
+			passed: runGateHistoryTable.passed,
+			startedAt: runGateHistoryTable.started_at,
+			completedAt: runGateHistoryTable.completed_at,
+			gateTypeName: gateTypesTable.name,
+			stake: gateTypesTable.stake,
+		})
+		.from(runsTable)
+		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+		.innerJoin(
+			runGateHistoryTable,
+			eq(runGateHistoryTable.run_id, runsTable.id)
+		)
+		.innerJoin(
+			gateTypesTable,
+			eq(runGateHistoryTable.gate_type_code, gateTypesTable.code)
+		)
+		.where(eq(runsTable.status, "active"))
+		.orderBy(asc(usersTable.id), asc(runGateHistoryTable.gate_number));
+
+	const byUser = rows.reduce<Map<string, CommunityGatePath>>((acc, row) => {
+		if (!acc.has(row.userId)) {
+			acc.set(row.userId, {
+				userId: row.userId,
+				displayName: row.displayName,
+				photoUrl: row.photoUrl,
+				gatePath: [],
+				currentGateNumber: 1,
+			});
+		}
+
+		acc.get(row.userId)!.gatePath.push({
+			id: row.gateId,
+			runId: row.runId,
+			gateNumber: row.gateNumber,
+			gateTypeCode: row.gateTypeCode,
+			passed: row.passed,
+			startedAt: row.startedAt ?? new Date(),
+			completedAt: row.completedAt,
+			gateTypeName: row.gateTypeName,
+			stake: row.stake,
+		});
+
+		return acc;
+	}, new Map());
+
+	const paths = [...byUser.values()].map((entry) => ({
+		...entry,
+		currentGateNumber:
+			entry.gatePath.find((g) => g.passed === null)?.gateNumber ??
+			Math.max(...entry.gatePath.map((g) => g.gateNumber)),
+	}));
+
+	return paths
+		.sort((a, b) => b.currentGateNumber - a.currentGateNumber)
+		.slice(0, COMMUNITY_PATHS_LIMIT);
 };
 
 // === Seed Helpers ===

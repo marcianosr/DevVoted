@@ -3,6 +3,8 @@ import { formatDuration, intervalToDuration } from "date-fns";
 
 import UserAvatar from "~/components/UserAvatar";
 import ExposedConfigDeckDisplay from "~/domains/configs/components/ExposedConfigDeckDisplay";
+import { CommunityGatePaths } from "~/domains/gates/components/CommunityGatePaths";
+import type { CommunityGatePath } from "~/domains/gates/models/runGateHistory";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay";
 import type { ExposedConfigDeck } from "~/domains/runs/api/queries";
@@ -25,6 +27,7 @@ type SelectedOptionsSummaryProps = {
 	selectedOptions: string[];
 	score?: ScoreCalculation;
 	communityStats?: CommunityStats;
+	communityGatePaths?: CommunityGatePath[];
 	categoryCode: CategoryCode;
 	explanation?: string | null;
 	exposedConfigDeck?: ExposedConfigDeck | null;
@@ -35,6 +38,7 @@ const SelectedOptionsSummary = ({
 	selectedOptions,
 	score,
 	communityStats,
+	communityGatePaths,
 	categoryCode,
 	explanation,
 	exposedConfigDeck,
@@ -218,6 +222,9 @@ const SelectedOptionsSummary = ({
 							</Link>
 						</PrimaryButton>
 					</section> */}
+					{communityGatePaths && (
+						<CommunityGatePaths paths={communityGatePaths} />
+					)}
 					{exposedConfigDeck && (
 						<ExposedConfigDeckDisplay deck={exposedConfigDeck} />
 					)}

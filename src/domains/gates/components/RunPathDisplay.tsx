@@ -9,19 +9,19 @@ type RunPathDisplayProps = {
 };
 
 const STAKE_DOT_COLORS: Record<GateStake, string> = {
-	very_easy: "bg-green-400",
-	easy: "bg-green-500",
-	medium: "bg-orange-500",
-	hard: "bg-red-500",
-	very_hard: "bg-red-600",
+	very_easy: "bg-cerulean",
+	easy: "bg-celadon",
+	medium: "bg-saffron",
+	hard: "bg-cinnabar",
+	very_hard: "bg-lavender",
 };
 
 const STAKE_DOT_GLOW: Record<GateStake, string> = {
-	very_easy: "shadow-green-400/50",
-	easy: "shadow-green-500/50",
-	medium: "shadow-orange-500/50",
-	hard: "shadow-red-500/50",
-	very_hard: "shadow-red-600/50",
+	very_easy: "shadow-cerulean/50",
+	easy: "shadow-celadon/50",
+	medium: "shadow-saffron/50",
+	hard: "shadow-cinnabar/50",
+	very_hard: "shadow-lavender/50",
 };
 
 export const RunPathDisplay = ({

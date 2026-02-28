@@ -9,6 +9,7 @@ import {
 	usersTable,
 	runsTable,
 	runCategoryCoverageTable,
+	runGateHistoryTable,
 	seasonsTable,
 	leaderboardTable,
 	gateTypesTable,
@@ -480,6 +481,71 @@ async function seedDatabase() {
 				return progressLevels[userIndex % progressLevels.length];
 			};
 
+			// Gate paths per player — reflect their progress level and give variety
+			// passed=true: gate cleared; passed=null: currently in progress
+			const gatePathsPerUser: Array<
+				Array<{
+					gate: number;
+					type: "generalist" | "comeback";
+					passed: boolean | null;
+				}>
+			> = [
+				// Matthijs (5 polls) — just passed gate 1, on gate 2
+				[
+					{ gate: 1, type: "generalist", passed: true },
+					{ gate: 2, type: "generalist", passed: null },
+				],
+				// Piet (12 polls) — two gates cleared, working on gate 3
+				[
+					{ gate: 1, type: "generalist", passed: true },
+					{ gate: 2, type: "generalist", passed: true },
+					{ gate: 3, type: "generalist", passed: null },
+				],
+				// Tom (25 polls) — five gates cleared, switched path twice, on gate 6
+				[
+					{ gate: 1, type: "generalist", passed: true },
+					{ gate: 2, type: "comeback", passed: true },
+					{ gate: 3, type: "comeback", passed: true },
+					{ gate: 4, type: "generalist", passed: true },
+					{ gate: 5, type: "generalist", passed: true },
+					{ gate: 6, type: "comeback", passed: null },
+				],
+				// Rajesh (40 polls) — deep run, on gate 9
+				[
+					{ gate: 1, type: "generalist", passed: true },
+					{ gate: 2, type: "generalist", passed: true },
+					{ gate: 3, type: "comeback", passed: true },
+					{ gate: 4, type: "comeback", passed: true },
+					{ gate: 5, type: "comeback", passed: true },
+					{ gate: 6, type: "generalist", passed: true },
+					{ gate: 7, type: "generalist", passed: true },
+					{ gate: 8, type: "generalist", passed: true },
+					{ gate: 9, type: "generalist", passed: null },
+				],
+				// Howard (8 polls) — passed gate 1, switched to comeback for gate 2
+				[
+					{ gate: 1, type: "generalist", passed: true },
+					{ gate: 2, type: "comeback", passed: null },
+				],
+				// Leonard (18 polls) — three gates cleared, on gate 4
+				[
+					{ gate: 1, type: "generalist", passed: true },
+					{ gate: 2, type: "generalist", passed: true },
+					{ gate: 3, type: "generalist", passed: true },
+					{ gate: 4, type: "generalist", passed: null },
+				],
+				// Sheldon (32 polls) — six gates cleared, zigzag path, on gate 7
+				[
+					{ gate: 1, type: "generalist", passed: true },
+					{ gate: 2, type: "generalist", passed: true },
+					{ gate: 3, type: "comeback", passed: true },
+					{ gate: 4, type: "comeback", passed: true },
+					{ gate: 5, type: "generalist", passed: true },
+					{ gate: 6, type: "generalist", passed: true },
+					{ gate: 7, type: "comeback", passed: null },
+				],
+			];
+
 			// Create active runs for each player
 			for (let i = 0; i < activeRunUsers.length; i++) {
 				const user = activeRunUsers[i];
@@ -524,6 +590,29 @@ async function seedDatabase() {
 							1,
 							progress.polls + Math.floor(variation / 2)
 						),
+					});
+				}
+
+				// Seed gate history for this run
+				const gatePath = gatePathsPerUser[i] ?? [];
+				const runStartedAt = new Date(Date.now() - (i + 1) * 3600000);
+
+				for (const gate of gatePath) {
+					const gateStartedAt = new Date(
+						runStartedAt.getTime() + (gate.gate - 1) * 20 * 60000
+					);
+					const gateCompletedAt =
+						gate.passed === true
+							? new Date(gateStartedAt.getTime() + 15 * 60000)
+							: null;
+
+					await db.insert(runGateHistoryTable).values({
+						run_id: run.id,
+						gate_number: gate.gate,
+						gate_type_code: gate.type,
+						passed: gate.passed,
+						started_at: gateStartedAt,
+						completed_at: gateCompletedAt,
 					});
 				}
 

@@ -153,7 +153,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 							>
 								<img
 									src={entry.photoUrl || ""}
-									alt={`photo of ${entry.displayName}`}
+									alt={`${entry.displayName}`}
 									className="w-full mb-2"
 								/>
 							</section>
