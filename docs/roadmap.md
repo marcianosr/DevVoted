@@ -226,9 +226,19 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
-- Gate progression:
-  - Defeat a gate to get more storage
-  - Get a free config
+- [] Fix code examples
+- [] Game over - then on result page it shows configs, but the configs are different on the shop page. When navigating back, the configs are updated agani
+- [] Prefetch config kapot
+- [x] Show indicator of 'gate' test while answering the poll
+- [ ] simplify scoire card (remove gates)
+- Gates redesign
+  - [] Wrong "rate" not changed. Don't see difference in gates (comeback gate, specialist gate, generalist gate, vanilla gate)
+  - [] Everyone starts with "vanilla" after the first gate, choose your path after that
+  - [] Offer gate types: generalist, specialist, masters, comeback
+  - [] Show path taken for each player - Path display to show how good someone is
+
+- Give gates more "personality" - e.g., "The Git Gatekeeper demands 2% coverage in Git category to pass"
+- Implement meta-progression bundle system
 - Customise config deck before starting a run
   - I can easilty use my already existing "titles" for this.
     - Stardew valley - community center bundles style

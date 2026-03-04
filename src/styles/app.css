@@ -60,7 +60,7 @@
 	}
 
 	.markdown code {
-		@apply bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
+		@apply bg-gray-900 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
 	}
 
 	.markdown pre {
