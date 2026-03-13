@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import clsx from "clsx";
+import { clsx } from "clsx";
 
 import { ConfirmDialog } from "~/components/ConfirmDialog";
 import Content from "~/components/Content";
