@@ -44,10 +44,7 @@ export const getActiveRunByUserId = async (userId: string) => {
 	return runFactory.toDTO(runRecord[0], categoryCoverage);
 };
 
-export const createRunForUser = async (
-	userId: string,
-	challengeModeId: string
-) => {
+export const createRunForUser = async (userId: string) => {
 	return await db.transaction(async (tx) => {
 		// Get current season ID for the new run
 		const { getSeasonForNewRun } =
@@ -60,7 +57,6 @@ export const createRunForUser = async (
 				user_id: userId,
 				season_id: seasonId,
 				status: "active",
-				challenge_mode_id: challengeModeId,
 			})
 			.returning();
 

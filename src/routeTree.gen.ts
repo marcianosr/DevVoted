@@ -132,10 +132,10 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
-  '/daily-poll': typeof AuthedDailyPollIndexRoute
-  '/polls': typeof AuthedPollsIndexRoute
+  '/daily-poll/': typeof AuthedDailyPollIndexRoute
+  '/polls/': typeof AuthedPollsIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
-  '/polls/$pollId': typeof AuthedPollsPollIdIndexRoute
+  '/polls/$pollId/': typeof AuthedPollsPollIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -193,10 +193,10 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/polls/new'
     | '/profile/$userId'
-    | '/daily-poll'
-    | '/polls'
+    | '/daily-poll/'
+    | '/polls/'
     | '/polls/$pollId/edit'
-    | '/polls/$pollId'
+    | '/polls/$pollId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -297,7 +297,7 @@ declare module '@tanstack/react-router' {
     '/_authed': {
       id: '/_authed'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -339,14 +339,14 @@ declare module '@tanstack/react-router' {
     '/_authed/polls/': {
       id: '/_authed/polls/'
       path: '/polls'
-      fullPath: '/polls'
+      fullPath: '/polls/'
       preLoaderRoute: typeof AuthedPollsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/daily-poll/': {
       id: '/_authed/daily-poll/'
       path: '/daily-poll'
-      fullPath: '/daily-poll'
+      fullPath: '/daily-poll/'
       preLoaderRoute: typeof AuthedDailyPollIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
@@ -367,7 +367,7 @@ declare module '@tanstack/react-router' {
     '/_authed/polls/$pollId/': {
       id: '/_authed/polls/$pollId/'
       path: '/polls/$pollId'
-      fullPath: '/polls/$pollId'
+      fullPath: '/polls/$pollId/'
       preLoaderRoute: typeof AuthedPollsPollIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }

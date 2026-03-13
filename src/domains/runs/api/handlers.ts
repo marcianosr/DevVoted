@@ -12,21 +12,15 @@ import {
 } from "./queries";
 import { endRunManually } from "../services/runCompletion.service";
 
-export const getOrCreateActiveRun = async (
-	userId: string,
-	challengeModeId: string
-) => {
+export const getOrCreateActiveRun = async (userId: string) => {
 	return handleApiOperation(async () => {
-		// Check if user has an active run
 		const activeRun = await getActiveRunByUserId(userId);
 
 		if (activeRun) {
 			return activeRun;
 		}
 
-		// Create a new run
-		const newRunData = await createRunForUser(userId, challengeModeId);
-		return newRunData;
+		return await createRunForUser(userId);
 	}, "Failed to get or create run");
 };
 

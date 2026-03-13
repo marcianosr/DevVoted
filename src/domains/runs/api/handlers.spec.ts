@@ -25,7 +25,7 @@ describe("Run Handlers", () => {
 
 			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(mockRunWithXp);
 
-			const result = await getOrCreateActiveRun("test-user-id", "vanilla");
+			const result = await getOrCreateActiveRun("test-user-id");
 
 			expect(result.success).toBe(true);
 			if (result.success) {
@@ -42,17 +42,14 @@ describe("Run Handlers", () => {
 			vi.mocked(queries.getActiveRunByUserId).mockResolvedValue(null);
 			vi.mocked(queries.createRunForUser).mockResolvedValue(mockNewRunData);
 
-			const result = await getOrCreateActiveRun("test-user-id", "vanilla");
+			const result = await getOrCreateActiveRun("test-user-id");
 
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data).toEqual(mockNewRunData);
 			}
 			expect(queries.getActiveRunByUserId).toHaveBeenCalledWith("test-user-id");
-			expect(queries.createRunForUser).toHaveBeenCalledWith(
-				"test-user-id",
-				"vanilla"
-			);
+			expect(queries.createRunForUser).toHaveBeenCalledWith("test-user-id");
 			expect(queries.getRunWithCategoryCoverage).not.toHaveBeenCalled();
 		});
 
@@ -62,7 +59,7 @@ describe("Run Handlers", () => {
 				new Error(errorMessage)
 			);
 
-			const result = await getOrCreateActiveRun("test-user-id", "vanilla");
+			const result = await getOrCreateActiveRun("test-user-id");
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
@@ -75,7 +72,7 @@ describe("Run Handlers", () => {
 				"Unknown error"
 			);
 
-			const result = await getOrCreateActiveRun("test-user-id", "vanilla");
+			const result = await getOrCreateActiveRun("test-user-id");
 
 			expect(result.success).toBe(false);
 			if (!result.success) {

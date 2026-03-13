@@ -226,6 +226,9 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+- [] Gates redesign
+- [] Metaprogress design - stacks (like Pokopia habitats or Stardew Valley bundles)
+- [] Fix Prefetch config
 - [] Fix code examples
 - [] Game over - then on result page it shows configs, but the configs are different on the shop page. When navigating back, the configs are updated agani
 - [] Prefetch config kapot
@@ -256,12 +259,6 @@ BUGS:
 - [] Challenge: Specialist pad - hogere gate requirements, maar hogere coverage boosts per correct answer
 - [] Challenge: Generalist pad - lagere gate requirements, maar lagere coverage boosts per correct answer
 .length aanpassen: Ik dacht dat het alleen statisch aangeeft "er zijn 3 goede antwoorden" bij een vraag
-[] Meta progress:
-  [] get disk space or free rerolls
-  [] get more shop items
-  [] Increase droprate of legendary items
-  [] Allow players to keep 2 configs after a game over
-  [] Increase diskspace shop when skipping
 [] Bug: HTML question wasn't showing up in the gate requirements (matthijs, specialist)
 [] Out of office timer
 [] Game-over flow - atlwast show the question you failed and the correct answer, so you can learn from it
@@ -466,7 +463,7 @@ BUGS:
 
 Season 4: Farther away
 [] Think of merging HTML/CSS together
-[] Think of merging JS/TS together
+[] Think of merging JS/TS together≠
 [] Do the same with backend categories
 
 
