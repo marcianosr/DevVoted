@@ -3,6 +3,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/src/database/db";
 import {
 	gateTypesTable,
+	gateUnlocksTable,
 	runGateHistoryTable,
 	runsTable,
 	usersTable,
@@ -62,6 +63,7 @@ export const getRunGateHistoryWithTypes = async (
 			gate_number: runGateHistoryTable.gate_number,
 			gate_type_code: runGateHistoryTable.gate_type_code,
 			passed: runGateHistoryTable.passed,
+			gate_state: runGateHistoryTable.gate_state,
 			started_at: runGateHistoryTable.started_at,
 			completed_at: runGateHistoryTable.completed_at,
 			gate_type_name: gateTypesTable.name,
@@ -81,6 +83,7 @@ export const getRunGateHistoryWithTypes = async (
 		gateNumber: r.gate_number,
 		gateTypeCode: r.gate_type_code,
 		passed: r.passed,
+		gateState: r.gate_state as RunGateHistoryWithType["gateState"],
 		startedAt: r.started_at || new Date(),
 		completedAt: r.completed_at,
 		gateTypeName: r.gate_type_name,
@@ -142,6 +145,9 @@ export const getCurrentGateWithType = async (
 			gateTypeStake: gateTypesTable.stake,
 			gateTypePollsPerGate: gateTypesTable.polls_per_gate,
 			gateTypeModifierConfig: gateTypesTable.modifier_config,
+			gateTypeUnlockCondition: gateTypesTable.unlock_condition,
+			gateTypeConstraintText: gateTypesTable.constraint_text,
+			gateTypeRewardText: gateTypesTable.reward_text,
 			gateTypeCreatedAt: gateTypesTable.created_at,
 			gateTypeUpdatedAt: gateTypesTable.updated_at,
 		})
@@ -154,15 +160,15 @@ export const getCurrentGateWithType = async (
 		.orderBy(desc(runGateHistoryTable.gate_number))
 		.limit(1);
 
-	// If no gate history exists, return default Generalist gate
+	// If no gate history exists, return default 200 OK gate
 	if (!record) {
-		const generalistType = await getGateTypeByCode("generalist");
-		if (!generalistType) {
-			throw new Error("Generalist gate type not found in database");
+		const defaultGateType = await getGateTypeByCode("200-ok");
+		if (!defaultGateType) {
+			throw new Error("Default gate type (200-ok) not found in database");
 		}
 		return {
 			gateNumber: 1,
-			gateType: generalistType,
+			gateType: defaultGateType,
 			passed: null,
 		};
 	}
@@ -177,6 +183,9 @@ export const getCurrentGateWithType = async (
 			stake: record.gateTypeStake,
 			polls_per_gate: record.gateTypePollsPerGate,
 			modifier_config: record.gateTypeModifierConfig,
+			unlock_condition: record.gateTypeUnlockCondition,
+			constraint_text: record.gateTypeConstraintText,
+			reward_text: record.gateTypeRewardText,
 			created_at: record.gateTypeCreatedAt,
 			updated_at: record.gateTypeUpdatedAt,
 		}),
@@ -317,6 +326,7 @@ export const getActiveRunsGatePaths = async (): Promise<
 			gateNumber: row.gateNumber,
 			gateTypeCode: row.gateTypeCode,
 			passed: row.passed,
+			gateState: null, // Community paths don't need gate state details
 			startedAt: row.startedAt ?? new Date(),
 			completedAt: row.completedAt,
 			gateTypeName: row.gateTypeName,
@@ -338,6 +348,50 @@ export const getActiveRunsGatePaths = async (): Promise<
 		.slice(0, COMMUNITY_PATHS_LIMIT);
 };
 
+// === Gate Unlock Queries ===
+
+export const fetchUnlockedGates = async (userId: string): Promise<string[]> => {
+	const records = await db
+		.select({ gateTypeCode: gateUnlocksTable.gate_type_code })
+		.from(gateUnlocksTable)
+		.where(eq(gateUnlocksTable.user_id, userId));
+
+	return records.map((r) => r.gateTypeCode);
+};
+
+export const unlockGate = async (
+	userId: string,
+	gateTypeCode: string,
+	runId?: number
+): Promise<void> => {
+	await db
+		.insert(gateUnlocksTable)
+		.values({
+			user_id: userId,
+			gate_type_code: gateTypeCode,
+			run_id: runId ?? null,
+		})
+		.onConflictDoNothing();
+};
+
+export const isGateUnlocked = async (
+	userId: string,
+	gateTypeCode: string
+): Promise<boolean> => {
+	const [record] = await db
+		.select({ id: gateUnlocksTable.id })
+		.from(gateUnlocksTable)
+		.where(
+			and(
+				eq(gateUnlocksTable.user_id, userId),
+				eq(gateUnlocksTable.gate_type_code, gateTypeCode)
+			)
+		)
+		.limit(1);
+
+	return !!record;
+};
+
 // === Seed Helpers ===
 
 export const insertGateType = async (gateType: {
@@ -347,6 +401,9 @@ export const insertGateType = async (gateType: {
 	stake: "very_easy" | "easy" | "medium" | "hard" | "very_hard";
 	pollsPerGate: number;
 	modifierConfig: Record<string, unknown>;
+	unlockCondition?: string | null;
+	constraintText?: string | null;
+	rewardText?: string | null;
 }): Promise<GateType> => {
 	const [record] = await db
 		.insert(gateTypesTable)
@@ -357,6 +414,9 @@ export const insertGateType = async (gateType: {
 			stake: gateType.stake,
 			polls_per_gate: gateType.pollsPerGate,
 			modifier_config: gateType.modifierConfig,
+			unlock_condition: gateType.unlockCondition ?? null,
+			constraint_text: gateType.constraintText ?? null,
+			reward_text: gateType.rewardText ?? null,
 		})
 		.returning();
 

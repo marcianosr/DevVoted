@@ -1,5 +1,6 @@
 import { applyEffects } from "~/domains/configs/data/configs";
 import { getCurrentGateWithType } from "~/domains/gates/api/queries";
+import type { GateModifierConfig } from "~/domains/gates/models/gateType";
 import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { handleUserSelectedOptionsByPollType } from "~/domains/polls/services/processPollAnswer.service";
@@ -23,21 +24,26 @@ type IncrementProgress = {
 type IncrementRunProgressResult = ScoreCalculation;
 
 /**
+ * Checks if a category is allowed to earn coverage based on gate modifiers.
+ * If categoryWhitelist is set, only listed categories earn coverage.
+ */
+const isCategoryAllowedByGate = (
+	categoryCode: CategoryCode,
+	modifierConfig: GateModifierConfig
+): boolean => {
+	if (!modifierConfig.categoryWhitelist) return true;
+	return modifierConfig.categoryWhitelist.includes(categoryCode);
+};
+
+/**
  * Increments run progress after answering a poll.
  *
  * Complete Flow:
- * 1. Apply config effects to get coverage modifiers (e.g., +0.5% from .js config)
- * 2. Calculate coverage earned based on correctness (1% per correct, up to 1.5% for perfect multi-choice)
- * 3. Apply coverage modifiers from configs (multiplicative then additive)
- * 4. Update database with new coverage and streak values
- *
- * @param categoryCode - The category of the answered poll
- * @param run - Current run with category data and active configs
- * @param correctnessFactor - How well the poll was answered (0-1.5)
- * @param poll - The poll that was answered
- * @param options - The poll's options
- * @param hasAnswered - Whether the user has already answered
- * @returns Score breakdown and updated totals
+ * 1. Check if category is allowed by gate modifiers (e.g., 418 teapot whitelist)
+ * 2. Apply config effects to get coverage modifiers (e.g., +0.5% from .js config)
+ * 3. Calculate coverage earned based on correctness (1% per correct, up to 1.5% for perfect multi-choice)
+ * 4. Apply gate modifiers (correctAnswerCoverageMult, extendedStreak bonuses)
+ * 5. Update database with new coverage and streak values
  */
 export const incrementRunProgress = async ({
 	categoryCode,
@@ -77,13 +83,15 @@ export const incrementRunProgress = async ({
 		run.activeConfigIds
 	);
 
-	// Get pollsPerGate from current gate
+	// Get gate info including all modifier config
 	const currentGate = await getCurrentGateWithType(run.id);
+	const { modifierConfig } = currentGate.gateType;
 	const pollsPerGate = currentGate.gateType.pollsPerGate;
-	const wrongAnswerCoverageRate =
-		currentGate.gateType.modifierConfig.wrongAnswerCoverageRate;
 
-	// Step 2-3: Calculate coverage with config modifiers applied
+	// Check category whitelist — if category is blocked, zero out the coverage
+	const categoryAllowed = isCategoryAllowedByGate(categoryCode, modifierConfig);
+
+	// Calculate coverage with config modifiers applied
 	const {
 		breakdown,
 		newBestStreak,
@@ -91,19 +99,19 @@ export const incrementRunProgress = async ({
 		newPollsAnswered,
 		newTotalCoverage,
 	} = orchestrateScoreCalculation({
-		correctnessFactor,
+		correctnessFactor: categoryAllowed ? correctnessFactor : 0,
 		currentBestStreak: currentCategoryCoverage.bestStreak,
 		currentCoverage: currentCategoryCoverage.currentCoverage,
 		currentStreak: currentCategoryCoverage.currentStreak,
 		totalPollsAnswered,
 		totalPollsSeen,
 		pollsPerGate,
-		wrongAnswerCoverageRate,
+		gateModifiers: modifierConfig,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});
 
-	// Step 4: Persist updated values to database
+	// Persist updated values to database
 	await awardCoverageToRun(
 		run.id,
 		categoryCode,
@@ -161,11 +169,16 @@ export const getRunProgress = async ({
 		run.activeConfigIds
 	);
 
-	// Get pollsPerGate from current gate
+	// Get gate info including all modifier config
 	const currentGate = await getCurrentGateWithType(run.id);
+	const { modifierConfig } = currentGate.gateType;
 	const pollsPerGate = currentGate.gateType.pollsPerGate;
-	const wrongAnswerCoverageRate =
-		currentGate.gateType.modifierConfig.wrongAnswerCoverageRate;
+
+	// Check category whitelist
+	const categoryAllowed = isCategoryAllowedByGate(
+		poll.categoryCode as CategoryCode,
+		modifierConfig
+	);
 
 	// When already answered, the DB has been updated with the new values.
 	// Use the previous streak (before the answer) to avoid double-incrementing.
@@ -174,7 +187,7 @@ export const getRunProgress = async ({
 		: (currentCategoryCoverage?.currentStreak ?? 0);
 
 	const result = orchestrateScoreCalculation({
-		correctnessFactor,
+		correctnessFactor: categoryAllowed ? correctnessFactor : 0,
 		currentBestStreak: currentCategoryCoverage
 			? currentCategoryCoverage.bestStreak
 			: 0,
@@ -185,7 +198,7 @@ export const getRunProgress = async ({
 		totalPollsAnswered: 0, // Placeholder until we fetch actual data
 		totalPollsSeen,
 		pollsPerGate,
-		wrongAnswerCoverageRate,
+		gateModifiers: modifierConfig,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});

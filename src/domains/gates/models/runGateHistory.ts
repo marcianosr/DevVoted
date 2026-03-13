@@ -9,6 +9,7 @@ export type RunGateHistory = {
 	gateNumber: number;
 	gateTypeCode: string;
 	passed: boolean | null; // null = in progress
+	gateState: Record<string, string | number | boolean | null> | null;
 	startedAt: Date;
 	completedAt: Date | null;
 };
@@ -37,6 +38,7 @@ export const runGateHistoryToDTO = (
 	gateNumber: record.gate_number,
 	gateTypeCode: record.gate_type_code,
 	passed: record.passed,
+	gateState: record.gate_state as RunGateHistory["gateState"],
 	startedAt: record.started_at || new Date(),
 	completedAt: record.completed_at,
 });
@@ -48,6 +50,7 @@ export const runGateHistoryFromDTO = (
 	gate_number: dto.gateNumber,
 	gate_type_code: dto.gateTypeCode,
 	passed: dto.passed,
+	gate_state: dto.gateState,
 });
 
 export const runGateHistoryToDTOs = (
@@ -61,8 +64,9 @@ export const createMockRunGateHistory = (
 	id: 1,
 	runId: 1,
 	gateNumber: 1,
-	gateTypeCode: "generalist",
+	gateTypeCode: "200-ok",
 	passed: null,
+	gateState: null,
 	startedAt: new Date("2024-12-25T00:00:00Z"),
 	completedAt: null,
 	...overrides,
@@ -74,8 +78,9 @@ export const createMockRunGateHistoryRecord = (
 	id: 1,
 	run_id: 1,
 	gate_number: 1,
-	gate_type_code: "generalist",
+	gate_type_code: "200-ok",
 	passed: null,
+	gate_state: null,
 	started_at: new Date("2024-12-25T00:00:00Z"),
 	completed_at: null,
 	...overrides,

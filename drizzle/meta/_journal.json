@@ -337,6 +337,13 @@
       "when": 1771784515561,
       "tag": "0047_parched_marvex",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1772976536234,
+      "tag": "0048_green_rafael_vega",
+      "breakpoints": true
     }
   ]
 }

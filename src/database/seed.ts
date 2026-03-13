@@ -105,6 +105,9 @@ async function seedDatabase() {
 					stake: gateType.stake,
 					polls_per_gate: gateType.pollsPerGate,
 					modifier_config: gateType.modifierConfig,
+					unlock_condition: gateType.unlockCondition,
+					constraint_text: gateType.constraintText,
+					reward_text: gateType.rewardText,
 				});
 				console.log(`✅ Added gate type: ${gateType.name}`);
 			} else {
@@ -486,63 +489,63 @@ async function seedDatabase() {
 			const gatePathsPerUser: Array<
 				Array<{
 					gate: number;
-					type: "generalist" | "comeback";
+					type: string;
 					passed: boolean | null;
 				}>
 			> = [
 				// Matthijs (5 polls) — just passed gate 1, on gate 2
 				[
-					{ gate: 1, type: "generalist", passed: true },
-					{ gate: 2, type: "generalist", passed: null },
+					{ gate: 1, type: "200-ok", passed: true },
+					{ gate: 2, type: "200-ok", passed: null },
 				],
 				// Piet (12 polls) — two gates cleared, working on gate 3
 				[
-					{ gate: 1, type: "generalist", passed: true },
-					{ gate: 2, type: "generalist", passed: true },
-					{ gate: 3, type: "generalist", passed: null },
+					{ gate: 1, type: "200-ok", passed: true },
+					{ gate: 2, type: "200-ok", passed: true },
+					{ gate: 3, type: "200-ok", passed: null },
 				],
-				// Tom (25 polls) — five gates cleared, switched path twice, on gate 6
+				// Tom (25 polls) — five gates cleared, specialist path, on gate 6
 				[
-					{ gate: 1, type: "generalist", passed: true },
-					{ gate: 2, type: "comeback", passed: true },
-					{ gate: 3, type: "comeback", passed: true },
-					{ gate: 4, type: "generalist", passed: true },
-					{ gate: 5, type: "generalist", passed: true },
-					{ gate: 6, type: "comeback", passed: null },
+					{ gate: 1, type: "200-ok", passed: true },
+					{ gate: 2, type: "206-partial", passed: true },
+					{ gate: 3, type: "206-partial", passed: true },
+					{ gate: 4, type: "301-moved", passed: true },
+					{ gate: 5, type: "200-ok", passed: true },
+					{ gate: 6, type: "418-teapot", passed: null },
 				],
-				// Rajesh (40 polls) — deep run, on gate 9
+				// Rajesh (40 polls) — deep run, mixed path, on gate 9
 				[
-					{ gate: 1, type: "generalist", passed: true },
-					{ gate: 2, type: "generalist", passed: true },
-					{ gate: 3, type: "comeback", passed: true },
-					{ gate: 4, type: "comeback", passed: true },
-					{ gate: 5, type: "comeback", passed: true },
-					{ gate: 6, type: "generalist", passed: true },
-					{ gate: 7, type: "generalist", passed: true },
-					{ gate: 8, type: "generalist", passed: true },
-					{ gate: 9, type: "generalist", passed: null },
+					{ gate: 1, type: "200-ok", passed: true },
+					{ gate: 2, type: "200-ok", passed: true },
+					{ gate: 3, type: "301-moved", passed: true },
+					{ gate: 4, type: "418-teapot", passed: true },
+					{ gate: 5, type: "206-partial", passed: true },
+					{ gate: 6, type: "200-ok", passed: true },
+					{ gate: 7, type: "200-ok", passed: true },
+					{ gate: 8, type: "301-moved", passed: true },
+					{ gate: 9, type: "200-ok", passed: null },
 				],
 				// Howard (8 polls) — passed gate 1, switched to comeback for gate 2
 				[
-					{ gate: 1, type: "generalist", passed: true },
-					{ gate: 2, type: "comeback", passed: null },
+					{ gate: 1, type: "200-ok", passed: true },
+					{ gate: 2, type: "418-teapot", passed: null },
 				],
 				// Leonard (18 polls) — three gates cleared, on gate 4
 				[
-					{ gate: 1, type: "generalist", passed: true },
-					{ gate: 2, type: "generalist", passed: true },
-					{ gate: 3, type: "generalist", passed: true },
-					{ gate: 4, type: "generalist", passed: null },
+					{ gate: 1, type: "200-ok", passed: true },
+					{ gate: 2, type: "200-ok", passed: true },
+					{ gate: 3, type: "200-ok", passed: true },
+					{ gate: 4, type: "200-ok", passed: null },
 				],
 				// Sheldon (32 polls) — six gates cleared, zigzag path, on gate 7
 				[
-					{ gate: 1, type: "generalist", passed: true },
-					{ gate: 2, type: "generalist", passed: true },
-					{ gate: 3, type: "comeback", passed: true },
-					{ gate: 4, type: "comeback", passed: true },
-					{ gate: 5, type: "generalist", passed: true },
-					{ gate: 6, type: "generalist", passed: true },
-					{ gate: 7, type: "comeback", passed: null },
+					{ gate: 1, type: "200-ok", passed: true },
+					{ gate: 2, type: "206-partial", passed: true },
+					{ gate: 3, type: "206-partial", passed: true },
+					{ gate: 4, type: "418-teapot", passed: true },
+					{ gate: 5, type: "200-ok", passed: true },
+					{ gate: 6, type: "301-moved", passed: true },
+					{ gate: 7, type: "418-teapot", passed: null },
 				],
 			];
 

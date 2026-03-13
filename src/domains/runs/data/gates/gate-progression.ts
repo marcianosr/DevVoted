@@ -18,7 +18,7 @@ export const GATE_PROGRESSION: GateDefinition[] = [
 		gate: 1,
 		requirements: [{ threshold: 3, requiredCategories: 1 }],
 		evaluationMode: "OR",
-		pollsPerGate: 5,
+		pollsPerGate: 2,
 	},
 	{
 		gate: 2,

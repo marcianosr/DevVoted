@@ -47,13 +47,14 @@ export const getGatePath = createServerFn({ method: "GET" })
 	});
 
 /**
- * Get available gate options after passing a gate
+ * Get available gate options after passing a gate.
+ * Returns 3 options from the player's unlocked gate pool.
  */
 export const getGateOptions = createServerFn({ method: "GET" })
 	.inputValidator(z.object({ currentGateTypeCode: z.string() }))
 	.handler(async ({ data }) => {
-		await getAuthenticatedUserId();
-		return getAvailableGatesForSelection(data.currentGateTypeCode);
+		const userId = await getAuthenticatedUserId();
+		return getAvailableGatesForSelection(data.currentGateTypeCode, userId);
 	});
 
 /**

@@ -472,6 +472,9 @@ export const gateTypesTable = pgTable("gate_types", {
 	stake: gateStake("stake").notNull().default("easy"),
 	polls_per_gate: integer("polls_per_gate").notNull().default(5),
 	modifier_config: json("modifier_config").$type<Record<string, unknown>>(), // e.g., { "wrongAnswerCoverageRate": 0.5 }
+	unlock_condition: text("unlock_condition"), // Human-readable unlock requirement (null = starter gate)
+	constraint_text: text("constraint_text"), // Short constraint description for UI
+	reward_text: text("reward_text"), // Short reward description for UI
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
@@ -497,10 +500,43 @@ export const runGateHistoryTable = pgTable(
 			.references(() => gateTypesTable.code)
 			.notNull(),
 		passed: boolean("passed"), // null = in progress, true = passed, false = failed
+		gate_state: json("gate_state").$type<Record<string, unknown>>(), // Per-gate rolls (e.g., 503 shop availability)
 		started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
 		completed_at: timestamp("completed_at", { withTimezone: true }),
 	},
 	(table) => [
 		uniqueIndex("run_gate_unique").on(table.run_id, table.gate_number),
+	]
+);
+
+/**
+ * Gate Unlocks Table
+ * Tracks which gate types each user has unlocked
+ * - Simple fact table: "user X has unlocked gate Y at time Z"
+ * - Any system can write to it (run milestones, Stack completion, etc.)
+ * - Starter gates don't need records here (they're always available)
+ */
+export const gateUnlocksTable = pgTable(
+	"gate_unlocks",
+	{
+		id: serial("id").primaryKey(),
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		gate_type_code: varchar("gate_type_code", { length: 50 })
+			.references(() => gateTypesTable.code)
+			.notNull(),
+		run_id: integer("run_id").references(() => runsTable.id, {
+			onDelete: "set null",
+		}), // Nullable — Stack completions and other non-run sources won't have a run
+		unlocked_at: timestamp("unlocked_at", {
+			withTimezone: true,
+		}).defaultNow(),
+	},
+	(table) => [
+		uniqueIndex("user_gate_unlock_unique").on(
+			table.user_id,
+			table.gate_type_code
+		),
 	]
 );

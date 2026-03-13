@@ -30,12 +30,15 @@ describe("incrementRunProgress", () => {
 			passed: null,
 			gateType: {
 				id: 1,
-				code: "generalist",
-				name: "Generalist",
-				description: "Standard CI pipeline.",
+				code: "200-ok",
+				name: "200 OK",
+				description: "Normal rules, no modifiers.",
 				stake: "easy",
 				pollsPerGate: 5,
 				modifierConfig: { wrongAnswerCoverageRate: 1 },
+				unlockCondition: null,
+				constraint: null,
+				reward: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			},
@@ -125,7 +128,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 2, // Config coverage bonus for .js config
 			coverageMult: 1,
 			pollsPerGate: 5,
-			wrongAnswerCoverageRate: 1,
+			gateModifiers: { wrongAnswerCoverageRate: 1 },
 		});
 	});
 
@@ -180,7 +183,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 0, // No config bonus
 			coverageMult: 1,
 			pollsPerGate: 5,
-			wrongAnswerCoverageRate: 1,
+			gateModifiers: { wrongAnswerCoverageRate: 1 },
 		});
 	});
 
@@ -280,7 +283,7 @@ describe("incrementRunProgress", () => {
 			coverageAdd: 4, // Double config bonus (0.5 + 0.5)
 			coverageMult: 1,
 			pollsPerGate: 5,
-			wrongAnswerCoverageRate: 1,
+			gateModifiers: { wrongAnswerCoverageRate: 1 },
 		});
 	});
 
@@ -371,7 +374,7 @@ describe("incrementRunProgress", () => {
 				coverageAdd: 2, // Config bonus should be applied
 				coverageMult: 1,
 				pollsPerGate: 5,
-				wrongAnswerCoverageRate: 1,
+				gateModifiers: { wrongAnswerCoverageRate: 1 },
 			});
 
 			vi.clearAllMocks();

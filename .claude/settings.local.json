@@ -13,7 +13,9 @@
 			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__wait_for",
 			"Skill(Notion:notion-database-query)",
 			"Skill(Notion:notion-search)",
-			"mcp__plugin_Notion_notion__notion-fetch"
+			"mcp__plugin_Notion_notion__notion-fetch",
+			"mcp__claude_ai_Notion__notion-search",
+			"mcp__claude_ai_Notion__notion-fetch"
 		],
 		"deny": []
 	}

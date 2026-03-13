@@ -117,6 +117,9 @@ export const processPollAnswer = async (
 				stake: h.stake,
 				pollsPerGate: 5, // Will be overridden by actual gate type
 				modifierConfig: { wrongAnswerCoverageRate: 1 },
+				unlockCondition: null,
+				constraint: null,
+				reward: null,
 				createdAt: new Date(),
 				updatedAt: null,
 			},

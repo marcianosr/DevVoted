@@ -227,9 +227,12 @@ BUGS:
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 - [] Prefetch config kapot
+
 - [x] Show indicator of 'gate' test while answering the poll
 - [ ] simplify scoire card (remove gates)
 - Gates redesign
+  - [] Gates shoudlnt change on refresh
+  - [] Show current gate
   - [] Wrong "rate" not changed. Don't see difference in gates (comeback gate, specialist gate, generalist gate, vanilla gate)
   - [] Everyone starts with "vanilla" after the first gate, choose your path after that
   - [] Offer gate types: generalist, specialist, masters, comeback

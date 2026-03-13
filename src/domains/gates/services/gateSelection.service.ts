@@ -6,51 +6,98 @@ import {
 	getAllGateTypes,
 	createRunGateHistoryEntry,
 	getGateTypeByCode,
-	getCurrentGateForRun,
 	getRunGateHistoryWithTypes,
 	getLatestGateNumber,
+	fetchUnlockedGates,
 } from "~/domains/gates/api/queries";
 import { DEFAULT_GATE_TYPE_CODE } from "~/domains/gates/data/gateTypes.seed";
-import type { GateType } from "~/domains/gates/models/gateType";
+import {
+	STARTER_GATE_CODES,
+	type GateType,
+} from "~/domains/gates/models/gateType";
 import {
 	runGateHistoryToDTO,
 	type RunGateHistory,
 	type RunGateHistoryWithType,
 } from "~/domains/gates/models/runGateHistory";
 
+const GATE_SELECTION_COUNT = 3;
+
+/**
+ * Picks `count` random elements from an array (Fisher-Yates partial shuffle).
+ */
+const pickRandom = <T>(items: T[], count: number): T[] => {
+	const pool = [...items];
+	const result: T[] = [];
+
+	for (let i = 0; i < Math.min(count, pool.length); i++) {
+		const randomIndex = Math.floor(Math.random() * (pool.length - i)) + i;
+		[pool[i], pool[randomIndex]] = [pool[randomIndex], pool[i]];
+		result.push(pool[i]);
+	}
+
+	return result;
+};
+
 /**
  * Get available gate types for selection after passing a gate.
- * Returns 2 options: current gate type + 1 random other type.
+ * Returns 3 options: current gate type + 2 from unlocked pool.
+ *
+ * Selection rules:
+ * 1. Always offer the current gate type as one option (safety/consistency)
+ * 2. Fill remaining slots from the player's unlocked gate pool
+ * 3. Starter gates (200-ok, 206-partial, 301-moved, 418-teapot) are always available
+ * 4. Other gates require a record in the gate_unlocks table
  */
 export const getAvailableGatesForSelection = async (
-	currentGateTypeCode: string
+	currentGateTypeCode: string,
+	userId: string
 ): Promise<GateType[]> => {
 	const allGateTypes = await getAllGateTypes();
+	const unlockedCodes = await fetchUnlockedGates(userId);
+	const unlockedSet = new Set(unlockedCodes);
 
-	// Find current gate type
+	// A gate is available if it's a starter gate OR explicitly unlocked
+	const isAvailable = (code: string): boolean =>
+		STARTER_GATE_CODES.has(code as never) || unlockedSet.has(code);
+
 	const currentGateType = allGateTypes.find(
 		(g) => g.code === currentGateTypeCode
 	);
 
-	// Get other gate types
-	const otherGateTypes = allGateTypes.filter(
-		(g) => g.code !== currentGateTypeCode
+	// Pool of other available gates (excluding current)
+	const otherAvailable = allGateTypes.filter(
+		(g) => g.code !== currentGateTypeCode && isAvailable(g.code)
 	);
 
-	// Pick 1 random other gate type
-	const randomOther =
-		otherGateTypes[Math.floor(Math.random() * otherGateTypes.length)];
+	// Pick 2 random from available pool
+	const randomPicks = pickRandom(otherAvailable, GATE_SELECTION_COUNT - 1);
 
-	// Return current + 1 random (if available)
 	const options: GateType[] = [];
 	if (currentGateType) {
 		options.push(currentGateType);
 	}
-	if (randomOther) {
-		options.push(randomOther);
-	}
+	options.push(...randomPicks);
 
 	return options;
+};
+
+/**
+ * Get all gate types for display, annotated with availability info.
+ * Used to show locked gates with unlock hints in the UI.
+ */
+export const getGateTypesWithAvailability = async (
+	userId: string
+): Promise<Array<GateType & { isUnlocked: boolean }>> => {
+	const allGateTypes = await getAllGateTypes();
+	const unlockedCodes = await fetchUnlockedGates(userId);
+	const unlockedSet = new Set(unlockedCodes);
+
+	return allGateTypes.map((gate) => ({
+		...gate,
+		isUnlocked:
+			STARTER_GATE_CODES.has(gate.code as never) || unlockedSet.has(gate.code),
+	}));
 };
 
 /**
@@ -110,7 +157,7 @@ export const selectNextGate = async (
 
 /**
  * Initialize the first gate for a new run.
- * Always starts with the default gate type (Generalist).
+ * Always starts with 200 OK (the default gate type).
  */
 export const initializeFirstGate = async (
 	runId: number
@@ -154,6 +201,7 @@ export const getCurrentGateInfo = async (
 	gateHistory: RunGateHistory | null;
 	gateType: GateType | null;
 }> => {
+	const { getCurrentGateForRun } = await import("~/domains/gates/api/queries");
 	const gateHistory = await getCurrentGateForRun(runId);
 	if (!gateHistory) {
 		return { gateHistory: null, gateType: null };

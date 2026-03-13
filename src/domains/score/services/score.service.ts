@@ -1,3 +1,5 @@
+import type { GateModifierConfig } from "~/domains/gates/models/gateType";
+
 /**
  * Coverage-based scoring with round scaling and streak bonuses
  * Base formula: (1% + round × 0.2%) + (streak × 0.1%, capped at 1%)
@@ -198,8 +200,8 @@ type OrchestrateScoreCalculationParams = {
 	totalPollsAnswered: number;
 	totalPollsSeen: number;
 	correctnessFactor: number;
-	pollsPerGate: number; // Number of polls per gate (from challenge mode)
-	wrongAnswerCoverageRate: number; // Multiplier for wrong answer penalty (0 = neutral, 1 = normal)
+	pollsPerGate: number;
+	gateModifiers: GateModifierConfig;
 	coverageAdd?: number; // Additive coverage bonus from configs (e.g., +0.5%)
 	coverageMult?: number; // Multiplicative coverage modifier from configs (e.g., x1.5)
 };
@@ -243,7 +245,7 @@ export const orchestrateScoreCalculation = ({
 	totalPollsSeen,
 	correctnessFactor,
 	pollsPerGate,
-	wrongAnswerCoverageRate,
+	gateModifiers,
 	coverageAdd = 0,
 	coverageMult = 1,
 }: OrchestrateScoreCalculationParams): ScoreCalculation => {
@@ -262,19 +264,36 @@ export const orchestrateScoreCalculation = ({
 		correctnessFactor,
 		round: currentGate,
 		streak: newStreak,
-		wrongAnswerCoverageRate,
+		wrongAnswerCoverageRate: gateModifiers.wrongAnswerCoverageRate,
 	});
 
-	// Step 5: Apply config multiplicative modifier (e.g., x1.5 from config)
-	const coverageWithMul = coverageBeforeConfigs * coverageMult;
+	// Step 5a: Apply gate correctAnswerCoverageMult (e.g., 401 gives +10% on correct)
+	const gateCorrectMult =
+		correctnessFactor > 0 && gateModifiers.correctAnswerCoverageMult
+			? gateModifiers.correctAnswerCoverageMult
+			: 1;
+	const coverageWithGateMult = coverageBeforeConfigs * gateCorrectMult;
 
-	// Step 6: Apply config additive modifier (e.g., +0.5% from .js config, or -0.3% from Math.random)
+	// Step 5b: Apply extended streak bonus (e.g., 500-error: streak 3+ gives +0.5%)
+	const extendedBonus =
+		gateModifiers.extendedStreakThreshold &&
+		gateModifiers.extendedStreakBonus &&
+		newStreak >= gateModifiers.extendedStreakThreshold &&
+		correctnessFactor > 0
+			? gateModifiers.extendedStreakBonus
+			: 0;
+	const coverageWithStreakBonus = coverageWithGateMult + extendedBonus;
+
+	// Step 6: Apply config multiplicative modifier (e.g., x1.5 from config)
+	const coverageWithMul = coverageWithStreakBonus * coverageMult;
+
+	// Step 7: Apply config additive modifier (e.g., +0.5% from .js config, or -0.3% from Math.random)
 	const coverageWithAdd = coverageWithMul + coverageAdd;
 
 	// Calculate config bonus (difference between final coverage and coverage before configs)
 	const configBonus = coverageWithAdd - coverageBeforeConfigs;
 
-	// Step 7: Round to 1 decimal place to avoid floating point precision issues
+	// Step 8: Round to 1 decimal place to avoid floating point precision issues
 	// Coverage can exceed 100% - no cap applied (level system)
 	const actualEarnedCoverage = Math.round(coverageWithAdd * 10) / 10;
 	const newTotalCoverage =
