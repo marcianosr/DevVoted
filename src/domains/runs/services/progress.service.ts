@@ -2,7 +2,7 @@ import { applyEffects } from "~/domains/configs/data/configs";
 import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { handleUserSelectedOptionsByPollType } from "~/domains/polls/services/processPollAnswer.service";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
+import { DEFAULT_GATE_PROGRESSION } from "~/domains/runs/data/defaultGateProgression";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import {
 	orchestrateScoreCalculation,
@@ -78,9 +78,7 @@ export const incrementRunProgress = async ({
 		run.activeConfigIds
 	);
 
-	// Get pollsPerGate from challenge mode
-	const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
-	const currentGate = getCurrentGate(totalPollsSeen, challengeMode.gates);
+	const currentGate = getCurrentGate(totalPollsSeen, DEFAULT_GATE_PROGRESSION);
 	const pollsPerGate = currentGate.pollsPerGate;
 
 	// Step 2-3: Calculate coverage with config modifiers applied
@@ -160,12 +158,9 @@ export const getRunProgress = async ({
 		run.activeConfigIds
 	);
 
-	// Get pollsPerGate from challenge mode
-	const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
-
 	const pollsPerGate = getCurrentGate(
 		totalPollsSeen,
-		challengeMode.gates
+		DEFAULT_GATE_PROGRESSION
 	).pollsPerGate;
 
 	// When already answered, the DB has been updated with the new values.

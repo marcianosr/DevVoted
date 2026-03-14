@@ -1,6 +1,6 @@
 import { SPECIALIST_CI_GATES } from "~/domains/runs/data/gates/specialist";
 import { SPRINT_CI_GATES } from "~/domains/runs/data/gates/sprint";
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { DEFAULT_GATE_PROGRESSION } from "~/domains/runs/data/defaultGateProgression";
 import { type GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 
 /**
@@ -25,7 +25,7 @@ export const CHALLENGE_MODES: Record<ChallengeModeId, ChallengeMode> = {
 		id: "vanilla",
 		name: "Vanilla",
 		description: "Standard, easy progression with all categories",
-		gates: VANILLA_CI_GATES,
+		gates: DEFAULT_GATE_PROGRESSION,
 	},
 	sprint: {
 		id: "sprint",

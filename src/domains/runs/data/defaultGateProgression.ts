@@ -1,16 +1,18 @@
-import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
+import type { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 
 /**
- * CI Gate Configuration
- * Progressive difficulty system that accommodates random poll selection
+ * The default gate progression used for all runs.
+ * Defines coverage requirements per gate position — independent of which
+ * HttpGate flavor the player chose. Constraints and rewards sit on top of this;
+ * the thresholds here are fixed by position.
  *
- * Phase 1 (Gates 1-4): OR conditions provide flexibility (specialize OR diversify)
- * Phase 2 (Gates 5-7): AND conditions require category breadth (2 categories)
- * Phase 3 (Gates 8-10): AND conditions with 3 categories for mastery
+ * Phase 1 (Gates 1-4): OR conditions — specialize or diversify
+ * Phase 2 (Gates 5-7): AND conditions — requires breadth across 2 categories
+ * Phase 3 (Gates 8-11): AND conditions — 3+ category mastery
  *
- * Total Duration: 50 polls = ~7 weeks of daily play
+ * Total duration: 55 polls = ~7 weeks of daily play
  */
-export const VANILLA_CI_GATES: GateDefinition[] = [
+export const DEFAULT_GATE_PROGRESSION: GateDefinition[] = [
 	{
 		gate: 1,
 		requirements: [{ threshold: 3, requiredCategories: 1 }],

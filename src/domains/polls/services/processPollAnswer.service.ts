@@ -10,7 +10,7 @@ import {
 	incrementCorrectPollsCount,
 	resetPollRerolls,
 } from "~/domains/runs/api/queries";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
+import { DEFAULT_GATE_PROGRESSION } from "~/domains/runs/data/defaultGateProgression";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
@@ -96,18 +96,13 @@ export const processPollAnswer = async (
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
-	// Get challenge mode gates for this run
-	const challengeMode = getChallengeModeOrDefault(updatedRun.challengeModeId);
-	const gates = challengeMode.gates;
-
 	// Fetch total polls seen in current run for threshold calculation
 	const totalPollsSeen = await getPollsSeenInRun(activeRun.id);
 
-	// Calculate threshold based on category coverage data, seen polls, and challenge mode gates
 	const thresholdInfo = calculateThresholdInfo(
 		updatedRun.categoryCoverage,
 		totalPollsSeen,
-		gates
+		DEFAULT_GATE_PROGRESSION
 	);
 
 	let runEnded = false;
@@ -122,7 +117,10 @@ export const processPollAnswer = async (
 	if (thresholdInfo.meetsThreshold && thresholdInfo.isThresholdCheckPoll) {
 		const { checkForVictory } =
 			await import("~/domains/runs/services/runCompletion.service");
-		const hasWon = checkForVictory(thresholdInfo.currentGate, gates);
+		const hasWon = checkForVictory(
+			thresholdInfo.currentGate,
+			DEFAULT_GATE_PROGRESSION
+		);
 		if (hasWon && !updatedRun.victoryAchievedAt) {
 			// Mark victory but don't end the run - player can continue in post-victory mode
 			const { markVictoryAchieved } =

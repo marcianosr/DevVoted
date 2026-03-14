@@ -6,8 +6,7 @@ import ConfigCard from "~/domains/configs/components/Cards";
 import type { Config } from "~/domains/configs/models/config";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
+import { DEFAULT_GATE_PROGRESSION } from "~/domains/runs/data/defaultGateProgression";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import type { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
@@ -299,15 +298,8 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 	},
 ];
 
-const getPlayerGateNumber = (
-	pollsSeen: number,
-	challengeModeId: string | null
-): number => {
-	const mode = getChallengeModeOrDefault(challengeModeId ?? "vanilla");
-	const gates = mode.gates;
-	const currentGate = getCurrentGate(pollsSeen, gates);
-	return currentGate.gate;
-};
+const getPlayerGateNumber = (pollsSeen: number): number =>
+	getCurrentGate(pollsSeen, DEFAULT_GATE_PROGRESSION).gate;
 
 // Demo component: Static Leaderboard with mock data
 const LeaderboardDemo = () => (
@@ -337,8 +329,7 @@ const LeaderboardDemo = () => (
 							<header className="flex gap-2 justify-between">
 								<span className="text-xl">#{idx + 1}</span>
 								<span className="text-sm text-gray-400">
-									Gate{" "}
-									{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}
+									Gate {getPlayerGateNumber(entry.pollsSeen)}
 								</span>
 							</header>
 							<section
@@ -470,7 +461,7 @@ const DailyPollDemo = () => {
 };
 
 // Demo data for CI Gates - showing progression from easy to hard
-const DEMO_CI_GATES: GateDefinition[] = VANILLA_CI_GATES.slice(0, 6);
+const DEMO_CI_GATES: GateDefinition[] = DEFAULT_GATE_PROGRESSION.slice(0, 6);
 
 // Helper to format gate requirements
 const formatRequirement = (
