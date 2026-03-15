@@ -512,6 +512,28 @@ export const skipShop = async (
 	});
 };
 
+export const appendToGatePath = async (runId: number, httpCode: number) => {
+	const [runRecord] = await db
+		.select({ gate_path: runsTable.gate_path })
+		.from(runsTable)
+		.where(eq(runsTable.id, runId))
+		.limit(1);
+
+	if (!runRecord) {
+		throw new Error(`Run ${runId} not found`);
+	}
+
+	const currentPath = runRecord.gate_path ?? [200];
+
+	const [updated] = await db
+		.update(runsTable)
+		.set({ gate_path: [...currentPath, httpCode] })
+		.where(eq(runsTable.id, runId))
+		.returning();
+
+	return updated ? runFactory.toDTO(updated) : null;
+};
+
 /**
  * Get all active config IDs across all active runs.
  * Used for calculating global category weights for daily poll selection.

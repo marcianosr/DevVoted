@@ -226,6 +226,12 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+- [] Check on "gate" types
+- [] Refactor:
+  - [] zero usages of code
+  - [] Simple architecture stuff
+  - [] Split up polls/queries
+  - [] See claude refactor chat
 - [] Gates redesign
 - [] Metaprogress design - stacks (like Pokopia habitats or Stardew Valley bundles)
 - [] Fix Prefetch config

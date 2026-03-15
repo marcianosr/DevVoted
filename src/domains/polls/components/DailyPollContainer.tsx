@@ -21,8 +21,15 @@ import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisp
 import SelectedOptionsSummary from "~/domains/polls/components/SelectedOptionsSummary";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
-import { getExposedConfigDeck } from "~/domains/runs/api/runs";
+import {
+	getExposedConfigDeck,
+	selectNextGateServerFn,
+} from "~/domains/runs/api/runs";
+import { GateChoiceDialog } from "~/domains/runs/components/GateChoiceDialog";
 import { GateProgressIndicator } from "~/domains/runs/components/GateProgressIndicator";
+import { RunPath } from "~/domains/runs/components/RunPath";
+import { getRandomGateOptions } from "~/domains/runs/data/httpGates";
+import type { HttpGate } from "~/domains/runs/models/httpGate";
 import type { Run } from "~/domains/runs/models/run";
 import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
@@ -117,6 +124,18 @@ const DailyPollContainer = ({
 		null
 	);
 
+	const [gateChoiceOptions, setGateChoiceOptions] = useState<
+		[HttpGate, HttpGate] | null
+	>(null);
+
+	const selectNextGateMutation = useMutation({
+		mutationFn: selectNextGateServerFn,
+		onSuccess: () => {
+			setGateChoiceOptions(null);
+			router.invalidate();
+		},
+	});
+
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
 	const { data: communityStats } = useQuery({
 		queryKey: ["communityStats", poll.id],
@@ -172,6 +191,15 @@ const DailyPollContainer = ({
 					navigate({ to: "/game-over" });
 					return;
 				}
+
+				const gateJustPassed =
+					response.data.thresholdInfo?.isThresholdCheckPoll === true &&
+					response.data.thresholdInfo.meetsThreshold === true;
+
+				if (gateJustPassed) {
+					setGateChoiceOptions(getRandomGateOptions());
+					return; // invalidate happens after gate selection
+				}
 			}
 
 			router.invalidate();
@@ -186,8 +214,25 @@ const DailyPollContainer = ({
 
 	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
 
+	const onGateSelect = (gate: HttpGate) => {
+		selectNextGateMutation.mutate({ data: { httpCode: gate.httpCode } });
+	};
+
+	const onGateDialogClose = () => {
+		setGateChoiceOptions(null);
+		router.invalidate();
+	};
+
 	return (
 		<section>
+			{gateChoiceOptions !== null && (
+				<GateChoiceDialog
+					isOpen
+					options={gateChoiceOptions}
+					onSelect={onGateSelect}
+					onClose={onGateDialogClose}
+				/>
+			)}
 			{isInPostVictoryMode && (
 				<div className="mb-6 p-4 border-2 border-green-500 bg-green-500/10">
 					<p className="text-green-400 text-lg font-bold">
@@ -224,6 +269,7 @@ const DailyPollContainer = ({
 						victoryAchievedAt={activeRun.victoryAchievedAt}
 					/>
 				</section>
+				<RunPath gatePath={activeRun.gatePath} />
 			</header>
 			<PollQuestionDisplay poll={poll} />
 			{poll.codeSandboxExample && (

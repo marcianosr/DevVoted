@@ -23,6 +23,7 @@ import { RunPollHistory } from "~/domains/polls/api/queries";
 import { PollCountdown } from "~/domains/polls/components/PollCountdown";
 import { Poll } from "~/domains/polls/models/poll";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
+import { RunPath } from "~/domains/runs/components/RunPath";
 import { DEFAULT_GATE_PROGRESSION } from "~/domains/runs/data/defaultGateProgression";
 import {
 	getCurrentGate,
@@ -257,6 +258,7 @@ function RouteComponent() {
 				<PollCountdown />
 
 				<h1 className="text-3xl mb-8">Your progress this run</h1>
+				<RunPath gatePath={activeRun.gatePath} />
 
 				<section className="grid grid-cols-1 md:grid-cols-2 gap-8">
 					<div className="space-y-4">

@@ -11,6 +11,7 @@ import {
 	getOrCreateActiveRun,
 	getUserActiveRun,
 	skipShopHandler,
+	selectNextGateHandler,
 } from "./handlers";
 
 export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
@@ -71,6 +72,13 @@ export const getAllRunsServerFn = createServerFn({ method: "GET" }).handler(
 		return await getAllRunsHandler();
 	}
 );
+
+export const selectNextGateServerFn = createServerFn({ method: "POST" })
+	.inputValidator(z.object({ httpCode: z.number().int().positive() }))
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		return await selectNextGateHandler(userId, data.httpCode);
+	});
 
 export const getExposedConfigDeck = createServerFn({ method: "GET" })
 	.inputValidator(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }))

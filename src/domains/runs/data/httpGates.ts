@@ -59,7 +59,7 @@ const EASIER_GATES: HttpGate[] = [
 	},
 ];
 
-/**Yes
+/**
  * Harder gate options: have a constraint, but also a bigger reward.
  * Randomly picked as the "riskier" choice shown to the player.
  */
@@ -143,6 +143,19 @@ const HARDER_GATES: HttpGate[] = [
 		},
 	},
 ];
+
+/**
+ * Lookup map from HTTP code to its gate definition.
+ * Used by RunPath to resolve difficulty styling for each code in gate_path.
+ */
+export const GATE_BY_HTTP_CODE: Record<number, HttpGate> = [
+	STARTING_GATE,
+	...EASIER_GATES,
+	...HARDER_GATES,
+].reduce<Record<number, HttpGate>>((acc, gate) => {
+	acc[gate.httpCode] = gate;
+	return acc;
+}, {});
 
 const pickRandom = <T>(arr: T[]): T =>
 	arr[Math.floor(Math.random() * arr.length)];

@@ -2,6 +2,7 @@ import { clsx } from "clsx";
 
 import { Config } from "~/domains/configs/models/config";
 import { calculateRefund, formatStorage } from "~/lib/storage";
+import { Card } from "~/ui/Card";
 
 export const RARITY_COLORS = {
 	common: {
@@ -36,26 +37,19 @@ const ConfigCard = ({ config, disabled, size = "large" }: ConfigProps) => {
 	const rarityColor = RARITY_COLORS[config.rarity];
 
 	return size === "small" ? (
-		<>
-			<article
-				className={clsx(
-					"border p-2 min-w-40",
-					rarityColor.border,
-					rarityColor.bg
-				)}
-			>
-				<span className={`text-xs ${rarityColor.text}`}>({config.rarity})</span>
-				<h3 className={clsx("text-md", rarityColor.text)}>{config.name}</h3>
-			</article>
-		</>
+		<Card
+			borderClass={rarityColor.border}
+			bgClass={rarityColor.bg}
+			size="small"
+		>
+			<span className={`text-xs ${rarityColor.text}`}>({config.rarity})</span>
+			<h3 className={clsx("text-md", rarityColor.text)}>{config.name}</h3>
+		</Card>
 	) : (
-		<article
-			className={clsx(
-				"border p-4 w-52 min-h-52",
-				rarityColor.border,
-				rarityColor.bg,
-				disabled && "opacity-50 cursor-not-allowed"
-			)}
+		<Card
+			borderClass={rarityColor.border}
+			bgClass={rarityColor.bg}
+			disabled={disabled}
 		>
 			<h3 className={clsx("text-2xl", rarityColor.text)}>{config.name}</h3>
 			<p>Cost: {formatStorage(config.cost)}</p>
@@ -64,7 +58,7 @@ const ConfigCard = ({ config, disabled, size = "large" }: ConfigProps) => {
 				Rarity: <span className={rarityColor.text}>{config.rarity}</span>
 			</p>
 			<p className="border-t border-t-white mt-2 pt-2">{config.description}</p>
-		</article>
+		</Card>
 	);
 };
 

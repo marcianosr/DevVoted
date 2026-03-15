@@ -9,6 +9,7 @@ import {
 	getLiveRunRankings,
 	skipShop,
 	getAllRuns,
+	appendToGatePath,
 } from "./queries";
 import { endRunManually } from "../services/runCompletion.service";
 
@@ -130,4 +131,19 @@ export const getAllRunsHandler = async () => {
 	return handleApiOperation(async () => {
 		return await getAllRuns();
 	}, "Failed to get all runs");
+};
+
+export const selectNextGateHandler = async (
+	userId: string,
+	httpCode: number
+) => {
+	return handleApiOperation(async () => {
+		const activeRun = await getActiveRunByUserId(userId);
+
+		if (!activeRun) {
+			throw new Error("No active run found");
+		}
+
+		return await appendToGatePath(activeRun.id, httpCode);
+	}, "Failed to select next gate");
 };
