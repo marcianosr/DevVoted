@@ -233,6 +233,9 @@ BUGS:
   - [] Split up polls/queries
   - [] See claude refactor chat
 - [] Gates redesign
+  - [] when refreshing the gate selection, it should occur again until chosen
+  - [] Start implementing actual effects
+  - [] Rethink progress model? As in, gate 1 = score 3% in ANY category, while gate 10 might be, score x % in a single category.
 - [] Metaprogress design - stacks (like Pokopia habitats or Stardew Valley bundles)
 - [] Fix Prefetch config
 - [] Fix code examples

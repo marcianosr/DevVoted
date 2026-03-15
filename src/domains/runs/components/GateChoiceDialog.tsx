@@ -1,6 +1,7 @@
 import { Dialog } from "~/components/Dialog";
 import type { HttpGate } from "~/domains/runs/models/httpGate";
 import { GateCard } from "~/domains/runs/components/GateCard";
+import { PrimaryButton } from "~/ui/PrimaryButton";
 
 type GateChoiceDialogProps = {
 	isOpen: boolean;
@@ -23,12 +24,9 @@ export const GateChoiceDialog = ({
 				{options.map((gate) => (
 					<div key={gate.httpCode} className="flex flex-col gap-2">
 						<GateCard gate={gate} />
-						<button
-							onClick={() => onSelect(gate)}
-							className="border border-white py-2 px-4 hover:bg-white hover:text-black transition-colors"
-						>
-							Choose
-						</button>
+						<PrimaryButton onClick={() => onSelect(gate)}>
+							Select gate {gate.httpCode}
+						</PrimaryButton>
 					</div>
 				))}
 			</div>

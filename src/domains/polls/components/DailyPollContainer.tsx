@@ -126,7 +126,7 @@ const DailyPollContainer = ({
 
 	const [gateChoiceOptions, setGateChoiceOptions] = useState<
 		[HttpGate, HttpGate] | null
-	>(null);
+	>(getRandomGateOptions());
 
 	const selectNextGateMutation = useMutation({
 		mutationFn: selectNextGateServerFn,
