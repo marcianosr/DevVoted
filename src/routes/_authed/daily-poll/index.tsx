@@ -9,7 +9,7 @@ import { getDailyPoll, getPollsSeenInRun } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
 } from "~/domains/polls/components/DailyPollContainer";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
+import { DEFAULT_GATE_PROGRESSION } from "~/domains/runs/data/defaultGateProgression";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { ErrorComponent } from "~/ui/ErrorComponent";
@@ -155,11 +155,7 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 		});
 
 		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
-		const challengeMode = getChallengeModeOrDefault(
-			activeRun.data.challengeModeId
-		);
-		const gates = challengeMode.gates;
-		const currentGate = getCurrentGate(pollsSeen, gates);
+		const currentGate = getCurrentGate(pollsSeen, DEFAULT_GATE_PROGRESSION);
 
 		const pollResponse = await getDailyPoll({
 			data: { runId: activeRun.data.id, date: deps.date },

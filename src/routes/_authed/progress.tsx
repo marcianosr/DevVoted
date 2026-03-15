@@ -23,8 +23,11 @@ import { RunPollHistory } from "~/domains/polls/api/queries";
 import { PollCountdown } from "~/domains/polls/components/PollCountdown";
 import { Poll } from "~/domains/polls/models/poll";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
+import { DEFAULT_GATE_PROGRESSION } from "~/domains/runs/data/defaultGateProgression";
+import {
+	getCurrentGate,
+	type GateDefinition,
+} from "~/domains/runs/services/thresholdCalculator.service";
 import { formatGateRequirements } from "~/domains/runs/utils/gateFormatting";
 import {
 	CATEGORY_METADATA,
@@ -54,12 +57,8 @@ export const Route = createFileRoute("/_authed/progress")({
 		const pollHistory = pollHistoryResponse.success
 			? pollHistoryResponse.data
 			: [];
-		const challengeMode = getChallengeModeOrDefault(
-			activeRun.data.challengeModeId
-		);
-		const gates = challengeMode.gates;
-
-		const currentGate = getCurrentGate(pollsSeen, gates);
+		const gates = DEFAULT_GATE_PROGRESSION;
+		const currentGate = getCurrentGate(pollsSeen, DEFAULT_GATE_PROGRESSION);
 
 		const configEffects = applyEffects(
 			{
@@ -269,7 +268,7 @@ function RouteComponent() {
 								? [...gates, currentGate]
 								: gates.slice(0, currentGate.gate);
 
-							return displayGates.map((gate) => {
+							return displayGates.map((gate: GateDefinition) => {
 								const status = getGateStatus(gate.gate, currentGate.gate);
 								const isCurrent = gate.gate === currentGate.gate;
 								const isVirtual = gate.gate > gates.length;

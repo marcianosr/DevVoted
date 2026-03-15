@@ -57,6 +57,7 @@ export const createRunForUser = async (userId: string) => {
 				user_id: userId,
 				season_id: seasonId,
 				status: "active",
+				gate_path: [200],
 			})
 			.returning();
 
@@ -408,7 +409,6 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
-				challengeModeId: runsTable.challenge_mode_id,
 				totalCoverage: runCategoryCoverageTable.current_coverage, // Category coverage only
 				pollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
 				bestStreak: runCategoryCoverageTable.best_streak, // Category streak only
@@ -446,7 +446,6 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
-				challengeModeId: runsTable.challenge_mode_id,
 				totalCoverage: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0)`,
 				pollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryCoverageTable.best_streak}), 0)`,
@@ -470,7 +469,6 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				usersTable.display_name,
 				runsTable.id,
 				runsTable.season_id,
-				runsTable.challenge_mode_id,
 				runsTable.correct_polls_count
 			)
 			.orderBy(
