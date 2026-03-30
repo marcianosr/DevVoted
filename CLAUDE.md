@@ -5,11 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 DevVoted is a developer quiz game built with TanStack Start, combining trivia with roguelike mechanics.
-For a thorough understanding of the game's vision, mechanics, and design decisions, please refer to [Concept](https://www.notion.so/Concept-26407387629780e3b753e50c417a7901?source=copy_link)
+For a thorough understanding of the game's vision, mechanics, and design decisions, please refer to [Concept](https://www.notion.so/Concept-26407387629780e3b753e50c417a7901?source=copy_link) and [Brainstorming](docs/brainstorm)
 
-See `concept.md` for the complete vision and game mechanics.
 
-Refer to `roadmap.md` for the current roadmap and MVP.
+Refer to `roadmap.md` for the current roadmap and MVP. Currently we are past MVP stage.
 
 ## Common Commands
 

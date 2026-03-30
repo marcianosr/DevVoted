@@ -230,25 +230,12 @@ BUGS:
 - [] Game over - then on result page it shows configs, but the configs are different on the shop page. When navigating back, the configs are updated agani
 - [] Prefetch config kapot
 - [x] Show indicator of 'gate' test while answering the poll
-- [ ] simplify scoire card (remove gates)
-- Gates redesign
-  - [] Wrong "rate" not changed. Don't see difference in gates (comeback gate, specialist gate, generalist gate, vanilla gate)
-  - [] Everyone starts with "vanilla" after the first gate, choose your path after that
-  - [] Offer gate types: generalist, specialist, masters, comeback
-  - [] Show path taken for each player - Path display to show how good someone is
 
-- Give gates more "personality" - e.g., "The Git Gatekeeper demands 2% coverage in Git category to pass"
-- Implement meta-progression bundle system
-- Customise config deck before starting a run
-  - I can easilty use my already existing "titles" for this.
-    - Stardew valley - community center bundles style
-    - Polls - if you hgave 5 polls in Js correct gain something
 - Wat als je de komende polls geen vragen hebt in ee ncategorie die jij nodig hebt
 [x] Make boosters cheaper 256 -> 128
 [] See what others answered
 [x] Bug: When game-over, first poll should not count in gate
 [] Disable acquired config in shop
-[] Give gates more "personality" - e.g., "The Git Gatekeeper demands 2% coverage in Git category to pass"
 [] On start run - user not found
 [] Build more tension for gates - e.g., "The Git Gatekeeper is approaching... Prepare to answer questions about Git to pass!"
 [] Allow the player to choose their paths - specialist vs generalist after each gate

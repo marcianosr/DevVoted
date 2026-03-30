@@ -4,11 +4,11 @@ import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.serv
  * CI Gate Configuration
  * Progressive difficulty system that accommodates random poll selection
  *
- * Phase 1 (Gates 1-4): OR conditions provide flexibility (specialize OR diversify)
- * Phase 2 (Gates 5-7): AND conditions require category breadth (2 categories)
- * Phase 3 (Gates 8-10): AND conditions with 3 categories for mastery
+ * Phase 1 (Gates 1-6): OR conditions provide flexibility (specialize OR diversify)
+ * Phase 2 (Gates 7-8): AND conditions require category breadth (2 categories)
+ * Phase 3 (Gates 9-11): AND conditions with 3 categories for mastery
  *
- * Total Duration: 50 polls = ~7 weeks of daily play
+ * Total Duration: 55 polls = ~7-8 weeks of daily play
  */
 export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
@@ -47,15 +47,22 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	},
 	{
 		gate: 5,
-		requirements: [{ threshold: 24, requiredCategories: 2 }],
-		evaluationMode: "AND",
+		requirements: [
+			{ threshold: 30, requiredCategories: 1 },
+			{ threshold: 18, requiredCategories: 2 },
+			{ threshold: 12, requiredCategories: 3 },
+			{ threshold: 6, requiredCategories: 4 },
+		],
+		evaluationMode: "OR",
 		pollsPerGate: 5,
 	},
 	{
 		gate: 6,
 		requirements: [
-			{ threshold: 45, requiredCategories: 1 },
-			{ threshold: 30, requiredCategories: 2 },
+			{ threshold: 41, requiredCategories: 1 },
+			{ threshold: 32, requiredCategories: 2 },
+			{ threshold: 24, requiredCategories: 3 },
+			{ threshold: 18, requiredCategories: 4 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
