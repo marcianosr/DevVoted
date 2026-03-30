@@ -263,6 +263,7 @@ describe("handlers", () => {
 			const { processPollAnswer } =
 				await import("~/domains/polls/services/processPollAnswer.service");
 			vi.mocked(processPollAnswer).mockResolvedValue({
+				runId: 1,
 				selectedOptionIds: [1, 2, 3, 4],
 				correctOptionIds: [1],
 				outcome: "full",
@@ -344,8 +345,6 @@ describe("handlers", () => {
 		});
 
 		it("allows post when user has not answered the poll yet", async () => {
-			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
-			vi.mocked(queries.fetchPollById).mockResolvedValue(mockPoll);
 			vi.mocked(queries.hasUserAnsweredPoll).mockResolvedValue(false);
 
 			const mockOptions = createMockPollOptionArray(2);
@@ -355,6 +354,7 @@ describe("handlers", () => {
 			const { processPollAnswer } =
 				await import("~/domains/polls/services/processPollAnswer.service");
 			vi.mocked(processPollAnswer).mockResolvedValue({
+				runId: 1,
 				selectedOptionIds: [1, 2],
 				correctOptionIds: [1],
 				outcome: "full",
@@ -375,7 +375,6 @@ describe("handlers", () => {
 				123,
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
-			expect(queries.fetchPollById).toHaveBeenCalledWith(123);
 			expect(result.success).toBe(true);
 		});
 	});

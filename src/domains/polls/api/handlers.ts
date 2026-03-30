@@ -166,13 +166,9 @@ export const postPollOptionsHandler = async ({
 	return handleApiOperation(async () => {
 		const validatedData = await validatePollSubmission(data);
 
-		const activeRunResponse = await getUserActiveRun(validatedData.userId);
-		if (!activeRunResponse.success) {
-			throw new Error(activeRunResponse.error);
-		}
-
 		// TODO: The start of posting to the DB (answers)
 		const {
+			runId,
 			breakdown,
 			runEnded,
 			thresholdInfo,
@@ -183,15 +179,12 @@ export const postPollOptionsHandler = async ({
 			pollId: validatedData.pollId,
 			userId: validatedData.userId,
 			selectedOptionIds: validatedData.selectedOptionIds,
-			categoryCode: validatedData.poll.categoryCode,
 		});
 
-		// Track poll answer
-		await trackPollAnswer(
-			activeRunResponse.data.id,
-			validatedData.userId,
-			validatedData.pollId
-		);
+		// Track poll answer — runId is null when no active run exists
+		if (runId) {
+			await trackPollAnswer(runId, validatedData.userId, validatedData.pollId);
+		}
 
 		// TODO: check when score breakdown can be removed here
 		return {
@@ -217,7 +210,6 @@ type ValidatedPollSubmission = {
 	selectedOptions: string[];
 	userId: string;
 	selectedOptionIds: number[];
-	poll: NonNullable<Awaited<ReturnType<typeof fetchPollById>>>;
 };
 
 const validatePollSubmission = async (
@@ -231,11 +223,6 @@ const validatePollSubmission = async (
 		throw new Error("You have already answered this poll");
 	}
 
-	const poll = await fetchPollById(pollId);
-	if (!poll) {
-		throw new Error("Poll not found");
-	}
-
 	const selectedOptionIds = selectedOptions.map((option) => Number(option));
 
 	return {
@@ -243,7 +230,6 @@ const validatePollSubmission = async (
 		selectedOptions,
 		userId,
 		selectedOptionIds,
-		poll,
 	};
 };
 

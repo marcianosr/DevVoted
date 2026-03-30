@@ -25,10 +25,10 @@ import {
 	type PollAnswerOutcome,
 	PollScoreBreakdown,
 } from "~/domains/score/services/score.service";
-import { CategoryCode } from "~/domains/shared/categories";
 import { getTodayDateString } from "~/lib/dateUtils";
 
 export type PollAnswerResult = {
+	runId: number | null;
 	runEnded: boolean;
 	thresholdInfo: ThresholdInfo | null;
 	selectedOptionIds: number[];
@@ -43,13 +43,12 @@ export type PollAnswerInput = {
 	pollId: number;
 	userId: string;
 	selectedOptionIds: number[];
-	categoryCode: CategoryCode;
 };
 
 export const processPollAnswer = async (
 	params: PollAnswerInput
 ): Promise<PollAnswerResult> => {
-	const { pollId, userId, selectedOptionIds, categoryCode } = params;
+	const { pollId, userId, selectedOptionIds } = params;
 
 	const { correctOptionIds, outcome, correctnessFactor, poll, options } =
 		await handleUserSelectedOptionsByPollType({
@@ -61,6 +60,7 @@ export const processPollAnswer = async (
 
 	if (!activeRun) {
 		return {
+			runId: null,
 			correctOptionIds,
 			selectedOptionIds,
 			outcome,
@@ -72,7 +72,7 @@ export const processPollAnswer = async (
 	}
 
 	const { breakdown } = await incrementRunProgress({
-		categoryCode,
+		categoryCode: poll.categoryCode,
 		run: activeRun,
 		correctnessFactor,
 		poll,
@@ -169,6 +169,7 @@ export const processPollAnswer = async (
 	}
 
 	return {
+		runId: activeRun.id,
 		correctOptionIds,
 		selectedOptionIds,
 		outcome,
