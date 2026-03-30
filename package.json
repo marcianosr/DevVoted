@@ -2,6 +2,9 @@
 	"name": "devvoted",
 	"version": "1.0.0",
 	"description": "DevVoted - A developer quiz game with roguelike mechanics",
+	"engines": {
+		"node": ">=24"
+	},
 	"keywords": [
 		"quiz",
 		"game",
@@ -13,6 +16,9 @@
 		"whimsical"
 	],
 	"type": "module",
+	"engines": {
+		"node": ">=2"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build && npx tsc --noEmit",
