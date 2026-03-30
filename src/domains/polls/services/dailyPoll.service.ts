@@ -1,14 +1,9 @@
 import {
 	fetchPollByIdWithOptions,
 	getOrCreateDailyPoll,
-	snapshotDailyWeights,
 } from "~/domains/polls/api/queries";
 import type { Poll } from "~/domains/polls/models/poll";
-import {
-	calculateCategoryWeights,
-	type CategoryWeights,
-} from "~/domains/polls/services/categoryWeight.service";
-import { getAllActiveConfigIds } from "~/domains/runs/api/queries";
+import { type CategoryWeights } from "~/domains/polls/services/categoryWeight.service";
 import { getTodayDateString } from "~/lib/dateUtils";
 import {
 	selectSeededRandom,
@@ -81,31 +76,4 @@ export const getDailyPollWithOptions = async (date?: string) => {
 	const pollWithOptions = await fetchPollByIdWithOptions(dailyPoll.id);
 
 	return pollWithOptions;
-};
-
-/**
- * Snapshot global category weights for a specific date.
- * Intended to be called at midnight (via cron) for the next day.
- *
- * Aggregates all active configs across all active runs and calculates
- * combined category weights. These weights affect poll selection probability.
- *
- * @param targetDate - The date to snapshot weights for (format: "YYYY-MM-DD")
- * @returns The calculated weights that were stored
- */
-export const snapshotGlobalWeightsForDate = async (
-	targetDate: string
-): Promise<CategoryWeights> => {
-	const allActiveConfigIds = await getAllActiveConfigIds();
-	const weights = calculateCategoryWeights(allActiveConfigIds);
-
-	await snapshotDailyWeights(targetDate, weights);
-
-	if (process.env.NODE_ENV === "development") {
-		console.info("Snapshotted weights for date:", targetDate);
-		console.info("Active configs count:", allActiveConfigIds.length);
-		console.info("Calculated weights:", weights);
-	}
-
-	return weights;
 };

@@ -270,6 +270,8 @@ describe("handlers", () => {
 				runEnded: false,
 				thresholdInfo: null,
 				breakdown: null,
+				tryCatchUsed: false,
+				victoryJustAchieved: false,
 			});
 
 			const result = await postPollOptionsHandler({
@@ -361,6 +363,8 @@ describe("handlers", () => {
 				runEnded: false,
 				thresholdInfo: null,
 				breakdown: null,
+				tryCatchUsed: false,
+				victoryJustAchieved: false,
 			});
 
 			const result = await postPollOptionsHandler({

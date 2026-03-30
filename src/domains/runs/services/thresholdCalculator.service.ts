@@ -69,21 +69,6 @@ export type ThresholdInfo = {
 	readonly qualifyingCategories: readonly string[]; // All categories that helped pass the gate
 };
 
-/**
- * Determines the current round based on total polls seen
- * Rounds are organized in sets of POLLS_PER_ROUND polls (CI gates at polls 5, 10, 15, etc.)
- *
- * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
- * @returns Current round number (1-based, minimum 1)
- */
-export const getCurrentRound = (
-	totalPollsSeen: number,
-	gate: GateDefinition
-): number => {
-	if (totalPollsSeen === 0) return 1;
-	return Math.floor((totalPollsSeen - 1) / gate.pollsPerGate) + 1;
-};
-
 export const getCurrentGate = (
 	totalPollsSeen: number,
 	gates: GateDefinition[]

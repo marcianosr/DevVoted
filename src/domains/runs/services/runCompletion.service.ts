@@ -89,26 +89,3 @@ export const checkForVictory = (
 ): boolean => {
 	return currentGate >= gates.length;
 };
-
-// Complete run with victory (all defined CI gates passed)
-// Saves stats and creates leaderboard entries like other completion methods
-export const completeRunWithVictory = async (runId: number) => {
-	const run = await getRunWithCategoryCoverage(runId);
-
-	if (!run) {
-		throw new Error(`Run with ID ${runId} not found`);
-	}
-
-	const { totalCoverage } = await getRunStats(runId);
-
-	await completeRunWithThresholdFailure(runId, "victory");
-
-	await createCategoryLeaderboardEntries(
-		run.userId,
-		runId,
-		run.seasonId,
-		totalCoverage
-	);
-
-	return { runEnded: true, reason: "victory" };
-};

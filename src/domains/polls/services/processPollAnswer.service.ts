@@ -37,8 +37,8 @@ export type PollAnswerResult = {
 	correctOptionIds: number[];
 	outcome: PollAnswerOutcome;
 	breakdown: PollScoreBreakdown | null;
-	tryCatchUsed?: boolean;
-	victoryJustAchieved?: boolean;
+	tryCatchUsed: boolean;
+	victoryJustAchieved: boolean;
 };
 
 export type PollAnswerInput = {
@@ -206,6 +206,7 @@ export const processPollAnswer = async (
 			thresholdInfo: null,
 			breakdown: null,
 			tryCatchUsed: false,
+			victoryJustAchieved: false,
 		};
 	}
 

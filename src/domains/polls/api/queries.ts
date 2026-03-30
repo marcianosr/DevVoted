@@ -106,26 +106,6 @@ export const fetchPollCreators = async (): Promise<PollCreator[]> => {
 	return creators;
 };
 
-export const insertPoll = async (data: Poll) => {
-	const pollRecord = pollFactory.fromDTO(data);
-	const result = await db
-		.insert(pollsTable)
-		.values({
-			question: pollRecord.question,
-			status: pollRecord.status,
-			answer_type: pollRecord.answer_type,
-			opening_time: pollRecord.opening_time,
-			closing_time: pollRecord.closing_time,
-			created_by: pollRecord.created_by,
-			created_at: pollRecord.created_at,
-			updated_at: pollRecord.updated_at,
-			category_code: pollRecord.category_code,
-		})
-		.returning();
-
-	return result;
-};
-
 type CreatePollResponse = {
 	pollId: number;
 	userId: string;
@@ -824,69 +804,6 @@ export const createPollWithOptions = async (
 
 		return pollFactory.toDTO(pollRecord);
 	});
-};
-
-/**
- * Update a poll record
- */
-export const updatePollById = async (
-	id: number,
-	data: Partial<NewPollData>
-) => {
-	const updateValues: Record<string, unknown> = {};
-
-	if (data.question !== undefined) updateValues.question = data.question;
-	if (data.status !== undefined) updateValues.status = data.status;
-	if (data.answerType !== undefined) updateValues.answer_type = data.answerType;
-	if (data.categoryCode !== undefined)
-		updateValues.category_code = data.categoryCode;
-	if (data.codeBlock !== undefined) updateValues.code_block = data.codeBlock;
-	if (data.codeSandboxExample !== undefined)
-		updateValues.code_sandbox_example = data.codeSandboxExample;
-	if (data.explanation !== undefined)
-		updateValues.explanation = data.explanation;
-
-	const [updatedRecord] = await db
-		.update(pollsTable)
-		.set(updateValues)
-		.where(eq(pollsTable.id, id))
-		.returning();
-
-	if (!updatedRecord) {
-		throw new Error("Poll not found");
-	}
-
-	return pollFactory.toDTO(updatedRecord);
-};
-
-/**
- * Delete all options for a poll
- */
-export const deletePollOptions = async (pollId: number) => {
-	await db.delete(pollOptionsTable).where(eq(pollOptionsTable.poll_id, pollId));
-};
-
-/**
- * Insert poll options (bulk)
- */
-export const insertPollOptions = async (
-	pollId: number,
-	options: NewPollOption[]
-) => {
-	if (options.length === 0) return [];
-
-	const records = await db
-		.insert(pollOptionsTable)
-		.values(
-			options.map((opt) => ({
-				poll_id: pollId,
-				option: opt.option,
-				correct: opt.correct,
-			}))
-		)
-		.returning();
-
-	return pollOptionFactory.toDTOs(records);
 };
 
 /**
