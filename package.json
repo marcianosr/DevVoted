@@ -16,9 +16,6 @@
 		"whimsical"
 	],
 	"type": "module",
-	"engines": {
-		"node": ">=2"
-	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build && npx tsc --noEmit",

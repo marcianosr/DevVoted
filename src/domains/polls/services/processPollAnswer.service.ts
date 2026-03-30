@@ -4,6 +4,7 @@ import {
 	fetchPollByIdWithOptions,
 	getPollsSeenInRun,
 } from "~/domains/polls/api/queries";
+import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import {
 	getActiveRunByUserId,
@@ -11,6 +12,7 @@ import {
 	resetPollRerolls,
 } from "~/domains/runs/api/queries";
 import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
+import type { Run } from "~/domains/runs/models/run";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
@@ -45,16 +47,152 @@ export type PollAnswerInput = {
 	selectedOptionIds: number[];
 };
 
+// ─── Stage types ─────────────────────────────────────────────────────────────
+
+type PollContext = {
+	poll: PollWithOptionsResponse["poll"];
+	options: PollWithOptionsResponse["options"];
+};
+
+type CommitAnswerProgressParams = PollContext & {
+	activeRun: Run;
+	correctnessFactor: number;
+	outcome: PollAnswerOutcome;
+	userId: string;
+	pollId: number;
+	selectedOptionIds: number[];
+};
+
+type EvaluateGateStateParams = {
+	activeRunId: number;
+	updatedRun: Run;
+};
+
+type GateStateResult = {
+	thresholdInfo: ThresholdInfo;
+	victoryJustAchieved: boolean;
+};
+
+type ResolveRunStateParams = PollContext & {
+	activeRunId: number;
+	updatedRun: Run;
+	thresholdInfo: ThresholdInfo;
+};
+
+type RunStateResult = {
+	runEnded: boolean;
+	tryCatchUsed: boolean;
+};
+
+// ─── Pipeline stages ──────────────────────────────────────────────────────────
+
+const commitAnswerProgress = async ({
+	activeRun,
+	poll,
+	options,
+	correctnessFactor,
+	outcome,
+	userId,
+	pollId,
+	selectedOptionIds,
+}: CommitAnswerProgressParams): Promise<{ breakdown: PollScoreBreakdown }> => {
+	const { breakdown } = await incrementRunProgress({
+		categoryCode: poll.categoryCode,
+		run: activeRun,
+		correctnessFactor,
+		poll,
+		options,
+		hasAnswered: false,
+	});
+
+	if (outcome === "full") {
+		await incrementCorrectPollsCount(activeRun.id);
+	}
+
+	await createPollResponse({
+		pollId,
+		userId,
+		runId: activeRun.id,
+		answerDate: getTodayDateString(),
+		selectedOptionIds,
+	});
+
+	return { breakdown };
+};
+
+const evaluateGateState = async ({
+	activeRunId,
+	updatedRun,
+}: EvaluateGateStateParams): Promise<GateStateResult> => {
+	const challengeMode = getChallengeModeOrDefault(updatedRun.challengeModeId);
+	const gates = challengeMode.gates;
+	const totalPollsSeen = await getPollsSeenInRun(activeRunId);
+
+	const thresholdInfo = calculateThresholdInfo(
+		updatedRun.categoryCoverage,
+		totalPollsSeen,
+		gates
+	);
+
+	if (!thresholdInfo.meetsThreshold || !thresholdInfo.isThresholdCheckPoll) {
+		return { thresholdInfo, victoryJustAchieved: false };
+	}
+
+	const { checkForVictory } =
+		await import("~/domains/runs/services/runCompletion.service");
+	const hasWon = checkForVictory(thresholdInfo.currentGate, gates);
+
+	if (!hasWon || updatedRun.victoryAchievedAt) {
+		return { thresholdInfo, victoryJustAchieved: false };
+	}
+
+	const { markVictoryAchieved } = await import("~/domains/runs/api/queries");
+	await markVictoryAchieved(activeRunId);
+
+	return { thresholdInfo, victoryJustAchieved: true };
+};
+
+const resolveRunState = async ({
+	activeRunId,
+	updatedRun,
+	poll,
+	options,
+	thresholdInfo,
+}: ResolveRunStateParams): Promise<RunStateResult> => {
+	const { protection, resetRebuild } = applyEffects(
+		{ poll, options, hasAnswered: true, run: updatedRun },
+		updatedRun.activeConfigIds
+	);
+
+	if (resetRebuild) {
+		await resetPollRerolls(activeRunId);
+	}
+
+	if (thresholdInfo.isThresholdCheckPoll) {
+		await resetPollRerolls(activeRunId);
+	}
+
+	if (thresholdInfo.meetsThreshold) {
+		return { runEnded: false, tryCatchUsed: false };
+	}
+
+	if (protection.tryCatch) {
+		return { runEnded: false, tryCatchUsed: true };
+	}
+
+	await endRunForThresholdFailure(activeRunId);
+	return { runEnded: true, tryCatchUsed: false };
+};
+
+// ─── Orchestrator ─────────────────────────────────────────────────────────────
+
 export const processPollAnswer = async (
 	params: PollAnswerInput
 ): Promise<PollAnswerResult> => {
 	const { pollId, userId, selectedOptionIds } = params;
 
 	const { correctOptionIds, outcome, correctnessFactor, poll, options } =
-		await handleUserSelectedOptionsByPollType({
-			pollId,
-			selectedOptionIds,
-		});
+		await handleUserSelectedOptionsByPollType({ pollId, selectedOptionIds });
 
 	const activeRun = await getActiveRunByUserId(userId);
 
@@ -71,102 +209,32 @@ export const processPollAnswer = async (
 		};
 	}
 
-	const { breakdown } = await incrementRunProgress({
-		categoryCode: poll.categoryCode,
-		run: activeRun,
-		correctnessFactor,
+	const { breakdown } = await commitAnswerProgress({
+		activeRun,
 		poll,
 		options,
-		hasAnswered: false, // At this point, the answer is being submitted (not yet saved)
-	});
-
-	// Track correct polls for config effects (e.g., IndexedDB dynamic storage bonus)
-	if (outcome === "full") {
-		await incrementCorrectPollsCount(activeRun.id);
-	}
-
-	await createPollResponse({
-		pollId,
+		correctnessFactor,
+		outcome,
 		userId,
-		runId: activeRun.id,
-		answerDate: getTodayDateString(),
+		pollId,
 		selectedOptionIds,
 	});
 
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
-	// Get challenge mode gates for this run
-	const challengeMode = getChallengeModeOrDefault(updatedRun.challengeModeId);
-	const gates = challengeMode.gates;
+	const { thresholdInfo, victoryJustAchieved } = await evaluateGateState({
+		activeRunId: activeRun.id,
+		updatedRun,
+	});
 
-	// Fetch total polls seen in current run for threshold calculation
-	const totalPollsSeen = await getPollsSeenInRun(activeRun.id);
-
-	// Calculate threshold based on category coverage data, seen polls, and challenge mode gates
-	const thresholdInfo = calculateThresholdInfo(
-		updatedRun.categoryCoverage,
-		totalPollsSeen,
-		gates
-	);
-
-	let runEnded = false;
-	let tryCatchUsed = false;
-	let victoryJustAchieved = false;
-
-	// TODO: Refactor this so we can handle endless config possibilities
-	// This is done for now like so because of MVP
-	// Check if try/catch protection should prevent run failure
-	// Check for victory at CI gates (when last defined gate is passed)
-	// Victory no longer ends the run - player enters post-victory mode and can continue playing
-	if (thresholdInfo.meetsThreshold && thresholdInfo.isThresholdCheckPoll) {
-		const { checkForVictory } =
-			await import("~/domains/runs/services/runCompletion.service");
-		const hasWon = checkForVictory(thresholdInfo.currentGate, gates);
-		if (hasWon && !updatedRun.victoryAchievedAt) {
-			// Mark victory but don't end the run - player can continue in post-victory mode
-			const { markVictoryAchieved } =
-				await import("~/domains/runs/api/queries");
-			await markVictoryAchieved(activeRun.id);
-			victoryJustAchieved = true;
-			// runEnded stays false - player continues playing
-		}
-	}
-
-	// Apply config effects to see if try/catch is active
-	const effectCtx = {
+	const { runEnded, tryCatchUsed } = await resolveRunState({
+		activeRunId: activeRun.id,
+		updatedRun,
 		poll,
 		options,
-		hasAnswered: true,
-		run: updatedRun,
-	};
-
-	const { protection, resetRebuild } = applyEffects(
-		effectCtx,
-		updatedRun.activeConfigIds
-	);
-
-	if (!thresholdInfo.meetsThreshold) {
-		if (protection.tryCatch) {
-			// Try/Catch saves the run! Config persists for future use
-			tryCatchUsed = true;
-			// Don't end the run - try/catch saved it
-		} else {
-			// No protection, end the run normally
-			await endRunForThresholdFailure(activeRun.id);
-			runEnded = true;
-		}
-	}
-
-	if (resetRebuild) {
-		// Reset rebuilds after every poll if the effect is active
-		await resetPollRerolls(activeRun.id);
-	}
-
-	// Only reset rerolls when reaching a CI gate (every POLLS_PER_ROUND poll)
-	if (thresholdInfo.isThresholdCheckPoll) {
-		await resetPollRerolls(activeRun.id);
-	}
+		thresholdInfo,
+	});
 
 	return {
 		runId: activeRun.id,
@@ -180,6 +248,8 @@ export const processPollAnswer = async (
 		victoryJustAchieved,
 	};
 };
+
+// ─── Answer evaluation ────────────────────────────────────────────────────────
 
 export const handleUserSelectedOptionsByPollType = async ({
 	pollId,
