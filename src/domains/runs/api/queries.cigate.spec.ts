@@ -2,7 +2,17 @@ import { describe, it, expect } from "vitest";
 
 import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
-import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
+import {
+	calculateThresholdInfo,
+	type EvaluationContext,
+} from "~/domains/runs/services/thresholdCalculator.service";
+
+const getFirstCoverageThreshold = (
+	result: ReturnType<typeof calculateThresholdInfo>
+): number => {
+	const req = result.gateDefinition?.requirements[0];
+	return req?.type === "coverage" ? req.threshold : 0;
+};
 
 describe("CI gate Reset Functionality", () => {
 	describe("calculateThresholdInfo", () => {
@@ -35,14 +45,15 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(
-				categoryCoverage,
+			const context: EvaluationContext = {
+				categoryCoverageData: categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
-			);
+				correctPollsCount: 0,
+			};
+			const result = calculateThresholdInfo(context, VANILLA_CI_GATES);
 
 			expect(result.pollNumber).toBe(0);
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(3); // Gate 1 threshold (3%)
+			expect(getFirstCoverageThreshold(result)).toBe(3); // Gate 1 threshold (3%)
 			expect(result.maxCoverage).toBe(0);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
 			expect(result.currentGate).toBe(1);
@@ -79,14 +90,15 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(
-				categoryCoverage,
+			const context: EvaluationContext = {
+				categoryCoverageData: categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
-			);
+				correctPollsCount: 1,
+			};
+			const result = calculateThresholdInfo(context, VANILLA_CI_GATES);
 
 			expect(result.pollNumber).toBe(1);
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(3); // Gate 1 threshold (3%)
+			expect(getFirstCoverageThreshold(result)).toBe(3); // Gate 1 threshold (3%)
 			expect(result.maxCoverage).toBe(3);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
 			expect(result.currentGate).toBe(1);
@@ -123,14 +135,15 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(
-				categoryCoverage,
+			const context: EvaluationContext = {
+				categoryCoverageData: categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
-			);
+				correctPollsCount: 2,
+			};
+			const result = calculateThresholdInfo(context, VANILLA_CI_GATES);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(3); // Gate 1 threshold (3%)
+			expect(getFirstCoverageThreshold(result)).toBe(3); // Gate 1 threshold (3%)
 			expect(result.maxCoverage).toBe(2);
 			expect(result.meetsThreshold).toBe(false); // Threshold check poll at 5, fails with 2 < 3
 			expect(result.currentGate).toBe(1);
@@ -167,14 +180,15 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(
-				categoryCoverage,
+			const context: EvaluationContext = {
+				categoryCoverageData: categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
-			);
+				correctPollsCount: 1,
+			};
+			const result = calculateThresholdInfo(context, VANILLA_CI_GATES);
 
 			expect(result.pollNumber).toBe(1);
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(3); // Gate 1 threshold (3%)
+			expect(getFirstCoverageThreshold(result)).toBe(3); // Gate 1 threshold (3%)
 			expect(result.maxCoverage).toBe(3);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
 			expect(result.currentGate).toBe(1);
@@ -211,14 +225,15 @@ describe("CI gate Reset Functionality", () => {
 				(sum, c) => sum + c.pollsAnswered,
 				0
 			);
-			const result = calculateThresholdInfo(
-				categoryCoverage,
+			const context: EvaluationContext = {
+				categoryCoverageData: categoryCoverage,
 				totalPollsSeen,
-				VANILLA_CI_GATES
-			);
+				correctPollsCount: 3,
+			};
+			const result = calculateThresholdInfo(context, VANILLA_CI_GATES);
 
 			expect(result.pollNumber).toBe(5); // Total polls answered
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(3); // Gate 1 threshold (3%)
+			expect(getFirstCoverageThreshold(result)).toBe(3); // Gate 1 threshold (3%)
 			expect(result.maxCoverage).toBe(3);
 			expect(result.meetsThreshold).toBe(true); // 3 >= 3, threshold check passes
 			expect(result.currentGate).toBe(1);
@@ -227,20 +242,15 @@ describe("CI gate Reset Functionality", () => {
 		});
 
 		it("handles empty categoryCoverage array", () => {
-			const categoryCoverage: any[] = [];
-
-			const totalPollsSeen = categoryCoverage.reduce(
-				(sum, c) => sum + c.pollsAnswered,
-				0
-			);
-			const result = calculateThresholdInfo(
-				categoryCoverage,
-				totalPollsSeen,
-				VANILLA_CI_GATES
-			);
+			const context: EvaluationContext = {
+				categoryCoverageData: [],
+				totalPollsSeen: 0,
+				correctPollsCount: 0,
+			};
+			const result = calculateThresholdInfo(context, VANILLA_CI_GATES);
 
 			expect(result.pollNumber).toBe(0);
-			expect(result.gateDefinition?.requirements[0].threshold).toBe(3); // Gate 1 threshold (3%)
+			expect(getFirstCoverageThreshold(result)).toBe(3); // Gate 1 threshold (3%)
 			expect(result.maxCoverage).toBe(0);
 			expect(result.meetsThreshold).toBe(true); // Not a threshold check poll
 			expect(result.currentGate).toBe(1);

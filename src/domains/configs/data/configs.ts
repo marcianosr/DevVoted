@@ -800,12 +800,16 @@ const EFFECTS: Record<string, EffectFn> = {
 		// Calculate threshold based on category coverage data and answered polls
 		// Note: This uses answered polls as a proxy for seen polls since we don't have access to totalPollsSeen here
 		const thresholdInfo = calculateThresholdInfo(
-			run.categoryCoverage,
-			totalPollsAnswered,
+			{
+				categoryCoverageData: run.categoryCoverage,
+				totalPollsSeen: totalPollsAnswered,
+				correctPollsCount: run.correctPollsCount,
+			},
 			challengeMode.gates
 		);
+		const firstRequirement = thresholdInfo.gateDefinition?.requirements[0];
 		const requiredCoverage =
-			thresholdInfo.gateDefinition?.requirements[0]?.threshold ?? 0;
+			firstRequirement?.type === "coverage" ? firstRequirement.threshold : 0;
 		const requiredForProtection = requiredCoverage * 0.8; // 80% of threshold
 
 		// Try/Catch only activates when:

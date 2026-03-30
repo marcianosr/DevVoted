@@ -74,8 +74,11 @@ export const checkCoverageThreshold = async (
 	const pollsSeenInRun = await getPollsSeenInRun(runId);
 
 	return calculateThresholdInfo(
-		runWithCategoryData.categoryCoverage,
-		pollsSeenInRun,
+		{
+			categoryCoverageData: runWithCategoryData.categoryCoverage,
+			totalPollsSeen: pollsSeenInRun,
+			correctPollsCount: runWithCategoryData.correctPollsCount,
+		},
 		gates
 	);
 };

@@ -1126,7 +1126,9 @@ describe("configs", () => {
 				meetsThreshold: false,
 				gateDefinition: {
 					gate: 1,
-					requirements: [{ threshold: 50, requiredCategories: 1 }],
+					requirements: [
+						{ type: "coverage", threshold: 50, requiredCategories: 1 },
+					],
 					evaluationMode: "OR",
 					pollsPerGate: 5,
 				},
@@ -1174,7 +1176,9 @@ describe("configs", () => {
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
 					gate: 1,
-					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					requirements: [
+						{ type: "coverage", threshold: 100, requiredCategories: 1 },
+					],
 					evaluationMode: "OR",
 					pollsPerGate: 5,
 				},
@@ -1225,7 +1229,9 @@ describe("configs", () => {
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
 					gate: 1,
-					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					requirements: [
+						{ type: "coverage", threshold: 100, requiredCategories: 1 },
+					],
 					evaluationMode: "OR",
 					pollsPerGate: 5,
 				},
@@ -1273,7 +1279,9 @@ describe("configs", () => {
 				meetsThreshold: true, // 120 > 100, so passing
 				gateDefinition: {
 					gate: 1,
-					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					requirements: [
+						{ type: "coverage", threshold: 100, requiredCategories: 1 },
+					],
 					evaluationMode: "OR",
 					pollsPerGate: 5,
 				},
@@ -1322,7 +1330,9 @@ describe("configs", () => {
 				meetsThreshold: false, // Not a threshold check poll
 				gateDefinition: {
 					gate: 1,
-					requirements: [{ threshold: 50, requiredCategories: 1 }],
+					requirements: [
+						{ type: "coverage", threshold: 50, requiredCategories: 1 },
+					],
 					evaluationMode: "OR",
 					pollsPerGate: 5,
 				},
@@ -1381,7 +1391,9 @@ describe("configs", () => {
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
 					gate: 1,
-					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					requirements: [
+						{ type: "coverage", threshold: 100, requiredCategories: 1 },
+					],
 					evaluationMode: "OR",
 					pollsPerGate: 5,
 				},
@@ -1429,7 +1441,9 @@ describe("configs", () => {
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
 					gate: 1,
-					requirements: [{ threshold: 200, requiredCategories: 1 }],
+					requirements: [
+						{ type: "coverage", threshold: 200, requiredCategories: 1 },
+					],
 					evaluationMode: "OR",
 					pollsPerGate: 5,
 				},
@@ -1477,7 +1491,9 @@ describe("configs", () => {
 				meetsThreshold: false, // Fixed: maxCoverage < requiredCoverage means failing
 				gateDefinition: {
 					gate: 1,
-					requirements: [{ threshold: 100, requiredCategories: 1 }],
+					requirements: [
+						{ type: "coverage", threshold: 100, requiredCategories: 1 },
+					],
 					evaluationMode: "OR",
 					pollsPerGate: 5,
 				},

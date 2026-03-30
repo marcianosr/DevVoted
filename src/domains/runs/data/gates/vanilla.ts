@@ -13,15 +13,18 @@ import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.serv
 export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 1,
-		requirements: [{ threshold: 3, requiredCategories: 1 }],
+		requirements: [
+			{ type: "correct-answers", count: 3 },
+			{ type: "coverage", threshold: 3, requiredCategories: 1 },
+		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
 	},
 	{
 		gate: 2,
 		requirements: [
-			{ threshold: 6, requiredCategories: 1 },
-			{ threshold: 3, requiredCategories: 2 },
+			{ type: "coverage", threshold: 6, requiredCategories: 1 },
+			{ type: "coverage", threshold: 3, requiredCategories: 2 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
@@ -29,8 +32,8 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 3,
 		requirements: [
-			{ threshold: 12, requiredCategories: 1 },
-			{ threshold: 8, requiredCategories: 2 },
+			{ type: "coverage", threshold: 12, requiredCategories: 1 },
+			{ type: "coverage", threshold: 8, requiredCategories: 2 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
@@ -38,9 +41,9 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 4,
 		requirements: [
-			{ threshold: 24, requiredCategories: 1 },
-			{ threshold: 18, requiredCategories: 2 },
-			{ threshold: 12, requiredCategories: 3 },
+			{ type: "coverage", threshold: 24, requiredCategories: 1 },
+			{ type: "coverage", threshold: 18, requiredCategories: 2 },
+			{ type: "coverage", threshold: 12, requiredCategories: 3 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
@@ -48,10 +51,10 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 5,
 		requirements: [
-			{ threshold: 30, requiredCategories: 1 },
-			{ threshold: 18, requiredCategories: 2 },
-			{ threshold: 12, requiredCategories: 3 },
-			{ threshold: 6, requiredCategories: 4 },
+			{ type: "coverage", threshold: 30, requiredCategories: 1 },
+			{ type: "coverage", threshold: 18, requiredCategories: 2 },
+			{ type: "coverage", threshold: 12, requiredCategories: 3 },
+			{ type: "coverage", threshold: 6, requiredCategories: 4 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
@@ -59,26 +62,26 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 6,
 		requirements: [
-			{ threshold: 41, requiredCategories: 1 },
-			{ threshold: 32, requiredCategories: 2 },
-			{ threshold: 24, requiredCategories: 3 },
-			{ threshold: 18, requiredCategories: 4 },
+			{ type: "coverage", threshold: 41, requiredCategories: 1 },
+			{ type: "coverage", threshold: 32, requiredCategories: 2 },
+			{ type: "coverage", threshold: 24, requiredCategories: 3 },
+			{ type: "coverage", threshold: 18, requiredCategories: 4 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 5,
 	},
 	{
 		gate: 7,
-		requirements: [{ threshold: 35, requiredCategories: 2 }],
+		requirements: [{ type: "coverage", threshold: 35, requiredCategories: 2 }],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
 	},
 	{
 		gate: 8,
 		requirements: [
-			{ threshold: 45, requiredCategories: 1 },
-			{ threshold: 30, requiredCategories: 1 },
-			{ threshold: 15, requiredCategories: 1 },
+			{ type: "coverage", threshold: 45, requiredCategories: 1 },
+			{ type: "coverage", threshold: 30, requiredCategories: 1 },
+			{ type: "coverage", threshold: 15, requiredCategories: 1 },
 		],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
@@ -86,9 +89,9 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 9,
 		requirements: [
-			{ threshold: 50, requiredCategories: 1 },
-			{ threshold: 35, requiredCategories: 1 },
-			{ threshold: 20, requiredCategories: 1 },
+			{ type: "coverage", threshold: 50, requiredCategories: 1 },
+			{ type: "coverage", threshold: 35, requiredCategories: 1 },
+			{ type: "coverage", threshold: 20, requiredCategories: 1 },
 		],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
@@ -96,9 +99,9 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 10,
 		requirements: [
-			{ threshold: 60, requiredCategories: 1 },
-			{ threshold: 40, requiredCategories: 1 },
-			{ threshold: 25, requiredCategories: 1 },
+			{ type: "coverage", threshold: 60, requiredCategories: 1 },
+			{ type: "coverage", threshold: 40, requiredCategories: 1 },
+			{ type: "coverage", threshold: 25, requiredCategories: 1 },
 		],
 		evaluationMode: "AND",
 		pollsPerGate: 5,
@@ -106,10 +109,10 @@ export const VANILLA_CI_GATES: GateDefinition[] = [
 	{
 		gate: 11,
 		requirements: [
-			{ threshold: 60, requiredCategories: 1 },
-			{ threshold: 50, requiredCategories: 1 },
-			{ threshold: 40, requiredCategories: 1 },
-			{ threshold: 30, requiredCategories: 1 },
+			{ type: "coverage", threshold: 60, requiredCategories: 1 },
+			{ type: "coverage", threshold: 50, requiredCategories: 1 },
+			{ type: "coverage", threshold: 40, requiredCategories: 1 },
+			{ type: "coverage", threshold: 30, requiredCategories: 1 },
 		],
 		evaluationMode: "AND",
 		pollsPerGate: 5,

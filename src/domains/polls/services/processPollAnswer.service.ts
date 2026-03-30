@@ -129,8 +129,11 @@ const evaluateGateState = async ({
 	const totalPollsSeen = await getPollsSeenInRun(activeRunId);
 
 	const thresholdInfo = calculateThresholdInfo(
-		updatedRun.categoryCoverage,
-		totalPollsSeen,
+		{
+			categoryCoverageData: updatedRun.categoryCoverage,
+			totalPollsSeen,
+			correctPollsCount: updatedRun.correctPollsCount,
+		},
 		gates
 	);
 

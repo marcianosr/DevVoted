@@ -3,7 +3,7 @@ import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.serv
 export const SPRINT_CI_GATES: GateDefinition[] = [
 	{
 		gate: 1,
-		requirements: [{ threshold: 5, requiredCategories: 1 }],
+		requirements: [{ type: "coverage", threshold: 5, requiredCategories: 1 }],
 		evaluationMode: "OR",
 		pollsPerGate: 3,
 	},
@@ -12,21 +12,21 @@ export const SPRINT_CI_GATES: GateDefinition[] = [
 	// - Get 2 categories to 2%
 	{
 		gate: 2,
-		requirements: [{ threshold: 10, requiredCategories: 1 }],
+		requirements: [{ type: "coverage", threshold: 10, requiredCategories: 1 }],
 		evaluationMode: "OR",
 		pollsPerGate: 2,
 	},
 	{
 		gate: 3,
-		requirements: [{ threshold: 20, requiredCategories: 1 }],
+		requirements: [{ type: "coverage", threshold: 20, requiredCategories: 1 }],
 		evaluationMode: "OR",
 		pollsPerGate: 2,
 	},
 	{
 		gate: 4,
 		requirements: [
-			{ threshold: 30, requiredCategories: 1 },
-			{ threshold: 15, requiredCategories: 2 },
+			{ type: "coverage", threshold: 30, requiredCategories: 1 },
+			{ type: "coverage", threshold: 15, requiredCategories: 2 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 2,
@@ -34,8 +34,8 @@ export const SPRINT_CI_GATES: GateDefinition[] = [
 	{
 		gate: 5,
 		requirements: [
-			{ threshold: 40, requiredCategories: 1 },
-			{ threshold: 25, requiredCategories: 2 },
+			{ type: "coverage", threshold: 40, requiredCategories: 1 },
+			{ type: "coverage", threshold: 25, requiredCategories: 2 },
 		],
 		evaluationMode: "OR",
 		pollsPerGate: 2,

@@ -221,6 +221,7 @@ const DailyPollContainer = ({
 					<GateProgressIndicator
 						gate={currentGate}
 						categoryCoverage={activeRun.categoryCoverage}
+						correctPollsCount={activeRun.correctPollsCount}
 						victoryAchievedAt={activeRun.victoryAchievedAt}
 					/>
 				</section>

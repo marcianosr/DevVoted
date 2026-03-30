@@ -1,18 +1,26 @@
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 
-/**
- * Gate requirement definition
- * Specifies threshold percentage and how many categories must meet it
- */
-export type GateRequirement = {
+// ─── Requirement types ────────────────────────────────────────────────────────
+
+export type CoverageRequirement = {
+	type: "coverage";
 	threshold: number;
 	requiredCategories: number;
 };
 
+export type CorrectAnswersRequirement = {
+	type: "correct-answers";
+	count: number; // minimum total correct polls in the run
+};
+
+export type GateRequirement = CoverageRequirement | CorrectAnswersRequirement;
+
+// ─── Gate definition ──────────────────────────────────────────────────────────
+
 /**
  * CI Gate definition with flexible OR/AND conditions
  * - OR mode: At least one requirement must be met
- * - AND mode: All requirements must be met (using different categories)
+ * - AND mode: All requirements must be met (using different categories for coverage requirements)
  */
 export type GateDefinition = {
 	gate: number;
@@ -21,11 +29,44 @@ export type GateDefinition = {
 	pollsPerGate: number;
 };
 
+// ─── Evaluation context ───────────────────────────────────────────────────────
+
+export type EvaluationContext = {
+	readonly categoryCoverageData: readonly RunCategoryCoverage[];
+	readonly totalPollsSeen: number;
+	readonly correctPollsCount: number;
+};
+
+// ─── Evaluation results ───────────────────────────────────────────────────────
+
+type RequirementEvaluation = {
+	requirement: GateRequirement;
+	met: boolean;
+	qualifyingCategories: readonly string[]; // populated only for coverage type
+};
+
+/**
+ * Threshold calculation result
+ */
+export type ThresholdInfo = {
+	readonly meetsThreshold: boolean;
+	readonly maxCoverage: number;
+	readonly pollNumber: number;
+	readonly currentGate: number;
+	readonly pollInRound: number;
+	readonly isThresholdCheckPoll: boolean;
+	readonly gateDefinition: GateDefinition | null;
+	readonly requirementEvaluations: readonly RequirementEvaluation[];
+	readonly qualifyingCategories: readonly string[];
+};
+
+// ─── Post-victory scaling ─────────────────────────────────────────────────────
+
 const POST_VICTORY_THRESHOLD_INCREMENT = 5;
 
 /**
- * Generates a virtual gate for post-victory mode
- * Uses linear scaling: each gate beyond victory adds +5 to all thresholds
+ * Generates a virtual gate for post-victory mode.
+ * Only scales `coverage` requirement thresholds — other requirement types pass through unchanged.
  */
 export const generatePostVictoryGate = (
 	lastDefinedGate: GateDefinition,
@@ -36,38 +77,21 @@ export const generatePostVictoryGate = (
 
 	return {
 		gate: gateNumber,
-		requirements: lastDefinedGate.requirements.map((req) => ({
-			...req,
-			threshold: Math.min(req.threshold + thresholdIncrease, 100),
-		})),
+		requirements: lastDefinedGate.requirements.map((req): GateRequirement => {
+			if (req.type === "coverage") {
+				return {
+					...req,
+					threshold: Math.min(req.threshold + thresholdIncrease, 100),
+				};
+			}
+			return req;
+		}),
 		evaluationMode: lastDefinedGate.evaluationMode,
 		pollsPerGate: lastDefinedGate.pollsPerGate,
 	};
 };
 
-/**
- * Result of evaluating a single gate requirement
- */
-type RequirementEvaluation = {
-	requirement: GateRequirement;
-	met: boolean;
-	qualifyingCategories: readonly string[];
-};
-
-/**
- * Threshold calculation result
- */
-export type ThresholdInfo = {
-	readonly meetsThreshold: boolean;
-	readonly maxCoverage: number; // Highest coverage achieved in any category
-	readonly pollNumber: number;
-	readonly currentGate: number;
-	readonly pollInRound: number; // Position within the current round (1, 2, or 3)
-	readonly isThresholdCheckPoll: boolean; // True for every 3rd poll (polls 3, 6, 9, etc.)
-	readonly gateDefinition: GateDefinition | null; // Current gate requirements
-	readonly requirementEvaluations: readonly RequirementEvaluation[]; // Detailed evaluation of each requirement
-	readonly qualifyingCategories: readonly string[]; // All categories that helped pass the gate
-};
+// ─── Gate lookup ──────────────────────────────────────────────────────────────
 
 export const getCurrentGate = (
 	totalPollsSeen: number,
@@ -82,7 +106,6 @@ export const getCurrentGate = (
 		}
 	}
 
-	// Beyond all defined gates - generate post-victory gate
 	const lastGate = gates[gates.length - 1];
 	const pollsBeyondDefined = totalPollsSeen - pollsAccumulated;
 	const postVictoryGateNumber =
@@ -91,12 +114,6 @@ export const getCurrentGate = (
 	return generatePostVictoryGate(lastGate, postVictoryGateNumber);
 };
 
-/**
- * Determines the position within the current round (1-POLLS_PER_ROUND)
- *
- * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
- * @returns Poll position within round (1-5)
- */
 export const getPollInRound = (
 	totalPollsSeen: number,
 	gate: GateDefinition
@@ -105,12 +122,6 @@ export const getPollInRound = (
 	return ((totalPollsSeen - 1) % gate.pollsPerGate) + 1;
 };
 
-/**
- * Checks if the current poll is a threshold check poll (every POLLS_PER_ROUND poll)
- *
- * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
- * @returns True if this is a threshold check poll (polls 5, 10, 15, etc.)
- */
 export const isThresholdCheckPoll = (
 	totalPollsSeen: number,
 	gate: GateDefinition
@@ -118,105 +129,111 @@ export const isThresholdCheckPoll = (
 	return totalPollsSeen > 0 && totalPollsSeen % gate.pollsPerGate === 0;
 };
 
-/**
- * Gets the gate definition for a given round
- * Returns null if round exceeds defined gates (uses last gate pattern)
- *
- * @param round - Current round number
- * @param gates - Optional custom gates array (defaults to CI_GATES)
- * @returns Gate definition or null
- */
 export const getGateDefinition = (
 	round: number,
 	gates: GateDefinition[]
 ): GateDefinition | null => {
 	if (round <= 0 || gates.length === 0) return null;
 
-	// If we have a defined gate, return it
 	if (round <= gates.length) {
 		return gates[round - 1];
 	}
 
-	// For rounds beyond defined gates, extrapolate from last gate pattern
 	const lastGate = gates[gates.length - 1];
 	const roundsBeyond = round - gates.length;
 	const incrementPerRound = 5;
 
 	return {
 		gate: round,
-		requirements: lastGate.requirements.map((req) => ({
-			threshold: req.threshold + roundsBeyond * incrementPerRound,
-			requiredCategories: req.requiredCategories,
-		})),
+		requirements: lastGate.requirements.map((req): GateRequirement => {
+			if (req.type === "coverage") {
+				return {
+					...req,
+					threshold: req.threshold + roundsBeyond * incrementPerRound,
+				};
+			}
+			return req;
+		}),
 		evaluationMode: lastGate.evaluationMode,
 		pollsPerGate: lastGate.pollsPerGate,
 	};
 };
 
-/**
- * Evaluates a single gate requirement against category coverage data
- *
- * @param requirement - The requirement to evaluate
- * @param categoryCoverageData - Array of category coverage data
- * @param excludeCategories - Categories to exclude (for AND evaluation)
- * @returns Requirement evaluation result
- */
-const evaluateRequirement = (
-	requirement: GateRequirement,
-	categoryCoverageData: readonly RunCategoryCoverage[],
-	excludeCategories: Set<string> = new Set()
+// ─── Per-type evaluators ──────────────────────────────────────────────────────
+
+const evaluateCoverageRequirement = (
+	req: CoverageRequirement,
+	context: EvaluationContext,
+	excludeCategories: Set<string>
 ): RequirementEvaluation => {
-	// Find categories that meet the threshold and aren't excluded
-	const qualifyingCategories = categoryCoverageData
+	const qualifyingCategories = context.categoryCoverageData
 		.filter(
 			(coverage) =>
-				coverage.currentCoverage >= requirement.threshold &&
+				coverage.currentCoverage >= req.threshold &&
 				!excludeCategories.has(coverage.categoryCode)
 		)
 		.map((coverage) => coverage.categoryCode);
 
-	const met = qualifyingCategories.length >= requirement.requiredCategories;
-
 	return {
-		requirement,
-		met,
+		requirement: req,
+		met: qualifyingCategories.length >= req.requiredCategories,
 		qualifyingCategories,
 	};
 };
 
+const evaluateCorrectAnswersRequirement = (
+	req: CorrectAnswersRequirement,
+	context: EvaluationContext
+): RequirementEvaluation => ({
+	requirement: req,
+	met: context.correctPollsCount >= req.count,
+	qualifyingCategories: [],
+});
+
+const evaluateRequirement = (
+	requirement: GateRequirement,
+	context: EvaluationContext,
+	excludeCategories: Set<string> = new Set()
+): RequirementEvaluation => {
+	switch (requirement.type) {
+		case "coverage":
+			return evaluateCoverageRequirement(
+				requirement,
+				context,
+				excludeCategories
+			);
+		case "correct-answers":
+			return evaluateCorrectAnswersRequirement(requirement, context);
+	}
+};
+
+// ─── Core threshold calculation ───────────────────────────────────────────────
+
 /**
- * Core threshold calculation logic
- * Evaluates gate requirements with OR/AND logic
- *
- * @param categoryCoverageData - Array of category coverage data (for gate evaluation)
- * @param totalPollsSeen - Total unique polls seen in current run (from run_poll_history)
- * @param gates - Optional custom gates array (defaults to CI_GATES)
- * @returns Threshold information
+ * Core threshold calculation logic.
+ * Evaluates gate requirements with OR/AND logic.
  */
 export const calculateThresholdInfo = (
-	categoryCoverageData: readonly RunCategoryCoverage[],
-	totalPollsSeen: number,
+	context: EvaluationContext,
 	gates: GateDefinition[]
 ): ThresholdInfo => {
-	// Find the maximum coverage across all categories
+	const { categoryCoverageData, totalPollsSeen } = context;
+
 	const maxCoverage = Math.max(
 		...categoryCoverageData.map((xp) => xp.currentCoverage),
 		0
 	);
 
-	// Calculate total polls answered (still used for pollNumber tracking)
 	const totalPollsAnswered = categoryCoverageData.reduce(
 		(sum, xp) => sum + xp.pollsAnswered,
 		0
 	);
 
 	const currentGate = getCurrentGate(totalPollsSeen, gates);
-	// Determine current round and gate based on SEEN polls
 	const pollInRound = getPollInRound(totalPollsSeen, currentGate);
 	const isThresholdCheck = isThresholdCheckPoll(totalPollsSeen, currentGate);
 	const gateDefinition = getGateDefinition(currentGate.gate, gates);
 
-	// If no gate definition or not a threshold check, always pass
 	if (!gateDefinition || !isThresholdCheck) {
 		return {
 			meetsThreshold: true,
@@ -236,16 +253,14 @@ export const calculateThresholdInfo = (
 	let qualifyingCategories: string[] = [];
 
 	if (gateDefinition.evaluationMode === "OR") {
-		// OR mode: At least one requirement must be met
 		requirementEvaluations = gateDefinition.requirements.map((req) =>
-			evaluateRequirement(req, categoryCoverageData)
+			evaluateRequirement(req, context)
 		);
 
 		meetsThreshold = requirementEvaluations.some(
 			(evaluation) => evaluation.met
 		);
 
-		// Collect qualifying categories from the first met requirement
 		const firstMetRequirement = requirementEvaluations.find(
 			(evaluation) => evaluation.met
 		);
@@ -253,19 +268,20 @@ export const calculateThresholdInfo = (
 			? [...firstMetRequirement.qualifyingCategories]
 			: [];
 	} else {
-		// AND mode: All requirements must be met using different categories
+		// AND mode: all requirements must be met.
+		// For coverage requirements, categories are excluded once used.
+		// Non-coverage requirements evaluate independently.
 		const usedCategories = new Set<string>();
 
 		for (const requirement of gateDefinition.requirements) {
 			const evaluation = evaluateRequirement(
 				requirement,
-				categoryCoverageData,
+				context,
 				usedCategories
 			);
 			requirementEvaluations.push(evaluation);
 
-			if (evaluation.met) {
-				// Mark the first N qualifying categories as used
+			if (evaluation.met && requirement.type === "coverage") {
 				const categoriesToUse = evaluation.qualifyingCategories.slice(
 					0,
 					requirement.requiredCategories
@@ -275,7 +291,6 @@ export const calculateThresholdInfo = (
 			}
 		}
 
-		// All requirements must be met for AND mode
 		meetsThreshold = requirementEvaluations.every(
 			(evaluation) => evaluation.met
 		);

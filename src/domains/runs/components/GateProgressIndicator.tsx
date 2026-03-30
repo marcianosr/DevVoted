@@ -1,19 +1,35 @@
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
-import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
+import {
+	GateDefinition,
+	GateRequirement,
+} from "~/domains/runs/services/thresholdCalculator.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 
 type GateProgressIndicatorProps = {
 	gate: GateDefinition;
 	categoryCoverage: RunCategoryCoverage[];
+	correctPollsCount: number;
 	victoryAchievedAt?: Date | null;
+};
+
+const isCoverageRequirementMet = (
+	req: Extract<GateRequirement, { type: "coverage" }>,
+	categoryCoverage: RunCategoryCoverage[]
+): boolean => {
+	const sorted = [...categoryCoverage].sort(
+		(a, b) => b.currentCoverage - a.currentCoverage
+	);
+	return sorted
+		.slice(0, req.requiredCategories)
+		.every((cat) => cat.currentCoverage >= req.threshold);
 };
 
 const GateProgressIndicator = ({
 	gate,
 	categoryCoverage,
+	correctPollsCount,
 	victoryAchievedAt,
 }: GateProgressIndicatorProps) => {
-	// Post-victory mode: show completion status instead of next gate requirements
 	if (victoryAchievedAt) {
 		const totalCoverage = categoryCoverage.reduce(
 			(sum, cat) => sum + cat.currentCoverage,
@@ -35,14 +51,14 @@ const GateProgressIndicator = ({
 		(a, b) => b.currentCoverage - a.currentCoverage
 	);
 
-	const requirementsMet = gate.requirements.filter((requirement) => {
-		const topCategories = sortedCategories.slice(
-			0,
-			requirement.requiredCategories
-		);
-		return topCategories.every(
-			(category) => category.currentCoverage >= requirement.threshold
-		);
+	const requirementsMet = gate.requirements.filter((req) => {
+		if (req.type === "coverage") {
+			return isCoverageRequirementMet(req, categoryCoverage);
+		}
+		if (req.type === "correct-answers") {
+			return correctPollsCount >= req.count;
+		}
+		return false;
 	});
 
 	const metCount = requirementsMet.length;
@@ -68,42 +84,89 @@ const GateProgressIndicator = ({
 				)}
 			</summary>
 			<ul className="flex gap-4">
-				{gate.requirements.map((requirement, index) => {
-					const displayCount = requirement.requiredCategories;
-
-					const topCategories = sortedCategories.slice(0, displayCount);
-
-					return (
-						<li key={index} className="mb-2">
-							<div>
-								<strong className="underline">
-									{requirement.threshold}% in {requirement.requiredCategories}{" "}
-									categories
-								</strong>
-								{topCategories.map((category) => {
-									const { name } = getCategoryMetadata(category.categoryCode);
-
-									return (
-										<div key={category.categoryCode} className="mb-1">
-											<span>{name}</span>
-											<div className="flex gap-2 items-center">
-												<span>0</span>
-												<meter
-													min="0"
-													max={requirement.threshold}
-													value={category.currentCoverage}
-												></meter>
-												<span>{requirement.threshold}%</span>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						</li>
-					);
-				})}
+				{gate.requirements.map((requirement, index) => (
+					<li key={index} className="mb-2">
+						{requirement.type === "coverage" ? (
+							<CoverageRequirementDisplay
+								requirement={requirement}
+								sortedCategories={sortedCategories}
+							/>
+						) : (
+							<CorrectAnswersRequirementDisplay
+								requirement={requirement}
+								correctPollsCount={correctPollsCount}
+							/>
+						)}
+					</li>
+				))}
 			</ul>
 		</details>
+	);
+};
+
+type CoverageRequirementDisplayProps = {
+	requirement: Extract<GateRequirement, { type: "coverage" }>;
+	sortedCategories: RunCategoryCoverage[];
+};
+
+const CoverageRequirementDisplay = ({
+	requirement,
+	sortedCategories,
+}: CoverageRequirementDisplayProps) => {
+	const topCategories = sortedCategories.slice(
+		0,
+		requirement.requiredCategories
+	);
+
+	return (
+		<div>
+			<strong className="underline">
+				{requirement.threshold}% in {requirement.requiredCategories} categories
+			</strong>
+			{topCategories.map((category) => {
+				const { name } = getCategoryMetadata(category.categoryCode);
+
+				return (
+					<div key={category.categoryCode} className="mb-1">
+						<span>{name}</span>
+						<div className="flex gap-2 items-center">
+							<span>0</span>
+							<meter
+								min="0"
+								max={requirement.threshold}
+								value={category.currentCoverage}
+							></meter>
+							<span>{requirement.threshold}%</span>
+						</div>
+					</div>
+				);
+			})}
+		</div>
+	);
+};
+
+type CorrectAnswersRequirementDisplayProps = {
+	requirement: Extract<GateRequirement, { type: "correct-answers" }>;
+	correctPollsCount: number;
+};
+
+const CorrectAnswersRequirementDisplay = ({
+	requirement,
+	correctPollsCount,
+}: CorrectAnswersRequirementDisplayProps) => {
+	const met = correctPollsCount >= requirement.count;
+
+	return (
+		<div>
+			<strong className="underline">
+				Answer {requirement.count} polls correctly
+			</strong>
+			<div className="flex gap-2 items-center">
+				<span className={met ? "text-green-400" : "text-gray-300"}>
+					{correctPollsCount} / {requirement.count}
+				</span>
+			</div>
+		</div>
 	);
 };
 

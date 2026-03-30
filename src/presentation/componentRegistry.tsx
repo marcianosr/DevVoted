@@ -10,7 +10,10 @@ import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
-import type { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
+import type {
+	GateDefinition,
+	GateRequirement,
+} from "~/domains/runs/services/thresholdCalculator.service";
 import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
 import { STORAGE_UNITS } from "~/lib/storage";
 import { GameLoopExplainer } from "~/ui/GameLoopExplainer";
@@ -472,15 +475,13 @@ const DailyPollDemo = () => {
 // Demo data for CI Gates - showing progression from easy to hard
 const DEMO_CI_GATES: GateDefinition[] = VANILLA_CI_GATES.slice(0, 6);
 
-// Helper to format gate requirements
-const formatRequirement = (
-	threshold: number,
-	requiredCategories: number
-): string => {
-	if (requiredCategories === 1) {
-		return `${threshold}% in 1 category`;
+const formatRequirement = (req: GateRequirement): string => {
+	if (req.type === "coverage") {
+		return req.requiredCategories === 1
+			? `${req.threshold}% in 1 category`
+			: `${req.threshold}% in ${req.requiredCategories} categories`;
 	}
-	return `${threshold}% in ${requiredCategories} categories`;
+	return `Answer ${req.count} polls correctly`;
 };
 
 // Demo component: CI Gates progression
@@ -532,9 +533,7 @@ const CIGatesDemo = () => (
 											"before:content-['○']": gate.evaluationMode === "OR",
 										})}
 									>
-										<span>
-											{formatRequirement(req.threshold, req.requiredCategories)}
-										</span>
+										<span>{formatRequirement(req)}</span>
 									</li>
 								))}
 							</ul>
