@@ -83,6 +83,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		victory_achieved_at: dto.victoryAchievedAt || null,
 		deinstall_penalty: dto.deinstallPenalty || 0,
 		correct_polls_count: dto.correctPollsCount || 0,
+		pipeline_slots: [], // wired up in Phase 2
 	};
 };
 
@@ -175,6 +176,7 @@ export const createMockRunRecord = (
 		updated_at: new Date("2024-01-01T00:00:00Z"),
 		deinstall_penalty: 0,
 		correct_polls_count: 0,
+		pipeline_slots: [],
 		...overrides,
 	};
 };
