@@ -9,6 +9,8 @@ import {
 } from "@/src/database/schema";
 import { db } from "~/database/db";
 import type { CategoryCode } from "~/domains/shared/categories";
+import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
+import type { PipelineSlot } from "~/domains/runs/models/pipeline";
 
 import { runFactory } from "../models/run";
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage";
@@ -61,6 +63,7 @@ export const createRunForUser = async (
 				season_id: seasonId,
 				status: "active",
 				challenge_mode_id: challengeModeId,
+				pipeline_slots: getInitialPipelineSlots(),
 			})
 			.returning();
 
@@ -385,6 +388,19 @@ export const addConfigsToRun = async (runId: number, configIds: string[]) => {
 	);
 
 	return runFactory.toDTO(updatedRun, categoryCoverage);
+};
+
+export const savePipelineSlots = async (
+	runId: number,
+	slots: PipelineSlot[]
+) => {
+	const [updatedRun] = await db
+		.update(runsTable)
+		.set({ pipeline_slots: slots })
+		.where(eq(runsTable.id, runId))
+		.returning();
+
+	return updatedRun ? runFactory.toDTO(updatedRun) : null;
 };
 
 // Reset current poll rerolls to 0 (called after poll submission)

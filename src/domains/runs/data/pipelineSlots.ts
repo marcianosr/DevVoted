@@ -236,6 +236,17 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 	},
 };
 
+// ─── Starter pool ─────────────────────────────────────────────────────────────
+
+export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
+	"coverage-gain",
+	"correct-answers",
+	"no-wrong-answers",
+	"storage-drain",
+	"disabled-config",
+	"short-window",
+] as const;
+
 // ─── Lookup helpers ───────────────────────────────────────────────────────────
 
 export const getSlotDefinition = (

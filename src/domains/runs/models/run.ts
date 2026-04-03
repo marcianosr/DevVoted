@@ -3,6 +3,7 @@ import { InferSelectModel } from "drizzle-orm";
 import { runsTable } from "@/src/database/schema";
 import { ChallengeModeId } from "~/domains/runs/data/challengeModes";
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
+import type { PipelineSlot } from "~/domains/runs/models/pipeline";
 import { STORAGE_UNITS } from "~/lib/storage";
 
 // TODO: Refactor this to ActiveRun?
@@ -28,6 +29,7 @@ export type Run = {
 	categoryCoverage: RunCategoryCoverage[];
 	deinstallPenalty: number;
 	correctPollsCount: number;
+	pipelineSlots: PipelineSlot[];
 };
 
 export type RunRecord = InferSelectModel<typeof runsTable>;
@@ -58,6 +60,9 @@ export const runToDTO = (
 		victoryAchievedAt: record.victory_achieved_at,
 		deinstallPenalty: record.deinstall_penalty,
 		correctPollsCount: record.correct_polls_count,
+		// pipeline_slots is stored as JSON. We trust our own write path (savePipelineSlots)
+		// to guarantee valid PipelineSlot[] — this cast is safe at the DB boundary.
+		pipelineSlots: (record.pipeline_slots ?? []) as PipelineSlot[],
 	};
 };
 
@@ -83,7 +88,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		victory_achieved_at: dto.victoryAchievedAt || null,
 		deinstall_penalty: dto.deinstallPenalty || 0,
 		correct_polls_count: dto.correctPollsCount || 0,
-		pipeline_slots: [], // wired up in Phase 2
+		pipeline_slots: dto.pipelineSlots,
 	};
 };
 
@@ -120,12 +125,14 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		categoryCoverage: [],
 		deinstallPenalty: 0,
 		correctPollsCount: 0,
+		pipelineSlots: [],
 		...partial,
 	};
 };
 
 // Test factory functions
 export const createMockRun = (overrides: Partial<Run> = {}): Run => {
+	const { pipelineSlots = [], ...rest } = overrides;
 	return {
 		id: 1,
 		userId: "test-user-id",
@@ -148,7 +155,8 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		categoryCoverage: [],
 		deinstallPenalty: 0,
 		correctPollsCount: 0,
-		...overrides,
+		pipelineSlots,
+		...rest,
 	};
 };
 
