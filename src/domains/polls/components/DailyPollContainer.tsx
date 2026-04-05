@@ -22,7 +22,9 @@ import SelectedOptionsSummary from "~/domains/polls/components/SelectedOptionsSu
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
 import { getExposedConfigDeck } from "~/domains/runs/api/runs";
-import { GateProgressIndicator } from "~/domains/runs/components/GateProgressIndicator";
+import { PipelineDisplay } from "~/domains/runs/components/PipelineDisplay";
+import { UpgradeCardModal } from "~/domains/runs/components/UpgradeCardModal";
+import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
 import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
@@ -103,7 +105,6 @@ const DailyPollContainer = ({
 	configEffects,
 	creatorDisplayName,
 	activeRun,
-	currentGate,
 	isAdmin,
 	offeredConfigs,
 }: DailyPollContainerProps) => {
@@ -116,6 +117,15 @@ const DailyPollContainer = ({
 	const [submittedScore, setSubmittedScore] = useState<ScoreCalculation | null>(
 		null
 	);
+
+	const [pendingUpgradeCard, setPendingUpgradeCard] =
+		useState<UpgradeCard | null>(null);
+
+	const handleUpgradeAccepted = (_card: UpgradeCard) => {
+		// TODO: persist applied card to run via server mutation (Phase 6)
+		setPendingUpgradeCard(null);
+		router.invalidate();
+	};
 
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
 	const { data: communityStats } = useQuery({
@@ -218,12 +228,7 @@ const DailyPollContainer = ({
 						<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
 					</div>
 
-					<GateProgressIndicator
-						gate={currentGate}
-						categoryCoverage={activeRun.categoryCoverage}
-						correctPollsCount={activeRun.correctPollsCount}
-						victoryAchievedAt={activeRun.victoryAchievedAt}
-					/>
+					<PipelineDisplay slots={activeRun.pipelineSlots} />
 				</section>
 			</header>
 			<PollQuestionDisplay poll={poll} />
@@ -257,6 +262,11 @@ const DailyPollContainer = ({
 					/>
 				)}
 			</div>
+
+			<UpgradeCardModal
+				card={pendingUpgradeCard}
+				onAccept={handleUpgradeAccepted}
+			/>
 		</section>
 	);
 };

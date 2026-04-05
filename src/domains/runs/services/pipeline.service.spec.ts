@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { STORAGE_UNITS } from "~/lib/storage";
 import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
 import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
 import {
 	applyUpgradeCard,
 	generateUpgradeCard,
 	getInitialPipelineSlots,
+	getStorageDrain,
 	isMaxPipeline,
 } from "./pipeline.service";
 
@@ -153,6 +155,43 @@ describe("applyUpgradeCard", () => {
 
 			expect(slots[0].difficulty).toBe("easy");
 		});
+	});
+});
+
+// ─── getStorageDrain ──────────────────────────────────────────────────────────
+
+describe("getStorageDrain", () => {
+	const drainSlot = getSlotDefinition("storage-drain", "normal"); // 10kb/wrong
+
+	it("returns 0 on a correct answer regardless of pipeline", () => {
+		expect(getStorageDrain([drainSlot], false)).toBe(0);
+	});
+
+	it("returns 0 on wrong answer when no drain slot is active", () => {
+		const slots = [getSlotDefinition("correct-answers", "easy")];
+		expect(getStorageDrain(slots, true)).toBe(0);
+	});
+
+	it("returns 0 on wrong answer when pipeline is empty", () => {
+		expect(getStorageDrain([], true)).toBe(0);
+	});
+
+	it("returns drainPerWrong amount on wrong answer when drain slot is active", () => {
+		const expectedDrain = 10 * STORAGE_UNITS.KB; // normal tier: 10kb per wrong
+		expect(getStorageDrain([drainSlot], true)).toBe(expectedDrain);
+	});
+
+	it("returns the correct drain per difficulty tier", () => {
+		const easy = getSlotDefinition("storage-drain", "easy"); // 5kb
+		const hard = getSlotDefinition("storage-drain", "hard"); // 20kb
+		const intense = getSlotDefinition("storage-drain", "intense"); // 40kb
+
+		expect(getStorageDrain([easy], true)).toBeLessThan(
+			getStorageDrain([hard], true)
+		);
+		expect(getStorageDrain([hard], true)).toBeLessThan(
+			getStorageDrain([intense], true)
+		);
 	});
 });
 

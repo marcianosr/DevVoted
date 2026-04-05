@@ -10,8 +10,9 @@ import {
 } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 
-import { awardCoverageToRun } from "../api/queries";
+import { awardCoverageToRun, drainStorage } from "../api/queries";
 import { Run } from "../models/run";
+import { getStorageDrain } from "./pipeline.service";
 
 type IncrementProgress = {
 	categoryCode: CategoryCode;
@@ -21,7 +22,9 @@ type IncrementProgress = {
 	options: PollWithOptionsResponse["options"];
 	hasAnswered: boolean;
 };
-type IncrementRunProgressResult = ScoreCalculation;
+type IncrementRunProgressResult = ScoreCalculation & {
+	storageDrained: number;
+};
 
 /**
  * Increments run progress after answering a poll.
@@ -112,12 +115,23 @@ export const incrementRunProgress = async ({
 		currentCategoryCoverage.pollsAnswered + 1 // Increment poll count
 	);
 
+	// Step 5: Apply storage drain if wrong answer and drain slot is active
+	const storageDrained = getStorageDrain(
+		run.pipelineSlots,
+		correctnessFactor === 0
+	);
+
+	if (storageDrained > 0) {
+		await drainStorage(run.id, storageDrained);
+	}
+
 	return {
 		breakdown,
 		newTotalCoverage,
 		newStreak,
 		newBestStreak,
 		newPollsAnswered,
+		storageDrained,
 	};
 };
 
