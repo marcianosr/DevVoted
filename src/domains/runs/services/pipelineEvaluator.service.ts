@@ -9,7 +9,6 @@ import type {
 
 export type PipelineEvaluationContext = {
 	readonly correctAnswersInWindow: number;
-	readonly wrongAnswersInWindow: number;
 	readonly coverageGainedInWindow: number; // percentage points gained this window
 	readonly currentStreakAtWindowEnd: number; // consecutive correct answers ending this window
 	readonly pollsInWindow: number;
@@ -80,15 +79,6 @@ const evaluateSlot = (
 						ctx.currentStreakAtWindowEnd >= req.streakRequired),
 			};
 
-		case "no-wrong-answers":
-			return {
-				slot,
-				passed:
-					ctx.wrongAnswersInWindow <= req.maxWrong &&
-					(!req.streakRequired ||
-						ctx.currentStreakAtWindowEnd >= req.streakRequired),
-			};
-
 		case "disabled-config":
 			return {
 				slot,
@@ -101,7 +91,7 @@ const evaluateSlot = (
 				passed:
 					(!req.correctRequired ||
 						ctx.correctAnswersInWindow >= req.correctRequired) &&
-					(!req.noWrongRequired || ctx.wrongAnswersInWindow === 0),
+					!req.noWrongRequired,
 			};
 	}
 };

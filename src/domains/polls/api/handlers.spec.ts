@@ -272,6 +272,8 @@ describe("handlers", () => {
 				breakdown: null,
 				tryCatchUsed: false,
 				victoryJustAchieved: false,
+				pipelineEvaluation: null,
+				upgradeCards: [],
 			});
 
 			const result = await postPollOptionsHandler({
@@ -365,6 +367,8 @@ describe("handlers", () => {
 				breakdown: null,
 				tryCatchUsed: false,
 				victoryJustAchieved: false,
+				pipelineEvaluation: null,
+				upgradeCards: [],
 			});
 
 			const result = await postPollOptionsHandler({

@@ -1,6 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
+import type {
+	GateDifficulty,
+	GateTypeId,
+	UpgradeCard,
+} from "~/domains/runs/models/pipeline";
+import { applyUpgradeCard } from "~/domains/runs/services/pipeline.service";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
 import { getRandomExposedConfigDeckHandler } from "./exposedDeck.handler";
@@ -12,6 +19,12 @@ import {
 	getUserActiveRun,
 	skipShopHandler,
 } from "./handlers";
+import {
+	appendPipelineSlotSnapshot,
+	clearPendingUpgradeCards,
+	getActiveRunByUserId,
+	savePipelineSlots,
+} from "./queries";
 
 export const getOrCreateRun = createServerFn({ method: "GET" })
 	.inputValidator(
@@ -83,4 +96,71 @@ export const getExposedConfigDeck = createServerFn({ method: "GET" })
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
 		return await getRandomExposedConfigDeckHandler(userId, data.date);
+	});
+
+const gateTypeIdSchema = z.enum([
+	"coverage-gain",
+	"correct-answers",
+	"storage-drain",
+	"disabled-config",
+	"short-window",
+] as const);
+
+const difficultySchema = z.enum(["easy", "normal", "hard", "intense"] as const);
+
+const upgradeCardInputSchema = z.discriminatedUnion("kind", [
+	z.object({
+		kind: z.literal("add-slot"),
+		gateTypeId: gateTypeIdSchema,
+		difficulty: difficultySchema,
+	}),
+	z.object({
+		kind: z.literal("upgrade-slot"),
+		gateTypeId: gateTypeIdSchema,
+		from: difficultySchema,
+		to: difficultySchema,
+	}),
+]);
+
+/**
+ * Applies a pipeline upgrade card to the player's active run.
+ * Reconstructs the full slot definition server-side from the card intent,
+ * so clients only need to send minimal data (no complex PipelineSlot payload).
+ */
+export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
+	.inputValidator(upgradeCardInputSchema)
+	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
+		const activeRun = await getActiveRunByUserId(userId);
+
+		if (!activeRun) throw new Error("No active run found");
+
+		const card: UpgradeCard =
+			data.kind === "add-slot"
+				? {
+						kind: "add-slot",
+						slot: getSlotDefinition(
+							data.gateTypeId as GateTypeId,
+							data.difficulty as GateDifficulty
+						),
+					}
+				: {
+						kind: "upgrade-slot",
+						gateTypeId: data.gateTypeId as GateTypeId,
+						from: data.from as GateDifficulty,
+						to: data.to as GateDifficulty,
+						slot: getSlotDefinition(
+							data.gateTypeId as GateTypeId,
+							data.to as GateDifficulty
+						),
+					};
+
+		const newSlots = applyUpgradeCard(activeRun.pipelineSlots, card);
+		await Promise.all([
+			appendPipelineSlotSnapshot(activeRun.id, activeRun.pipelineSlots),
+			savePipelineSlots(activeRun.id, newSlots),
+			clearPendingUpgradeCards(activeRun.id),
+		]);
+
+		return { applied: true };
 	});

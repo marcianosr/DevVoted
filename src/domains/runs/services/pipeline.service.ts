@@ -63,49 +63,54 @@ export const isMaxPipeline = (slots: PipelineSlot[]): boolean =>
 	slots.length === STARTER_GATE_TYPE_IDS.length &&
 	slots.every((s) => s.difficulty === "intense");
 
-export const generateUpgradeCard = (
+/**
+ * Generates a hand of upgrade cards for the player to choose from.
+ * Always offers 2 add-slot cards (randomly drawn gate types) plus
+ * 1 upgrade-slot card if any existing slot can be upgraded.
+ */
+export const generateUpgradeCards = (
 	slots: PipelineSlot[],
 	gateNumber: number
-): UpgradeCard => {
-	const availableTypes = getAvailableGateTypes(slots);
-	const upgradeableSlots = getUpgradeableSlots(slots);
+): UpgradeCard[] => {
+	const cards: UpgradeCard[] = [];
 	const weights = getDifficultyWeights(gateNumber);
 
-	const canAdd = availableTypes.length > 0;
-	const canUpgrade = upgradeableSlots.length > 0;
+	// 2 add-slot cards from randomly drawn available gate types
+	const availableTypes = getAvailableGateTypes(slots);
+	const shuffledTypes = [...availableTypes].sort(() => Math.random() - 0.5);
+	const typesToOffer = shuffledTypes.slice(0, 2);
 
-	const shouldAdd = canAdd && (!canUpgrade || Math.random() < 0.5);
-
-	if (shouldAdd) {
-		const gateTypeId =
-			availableTypes[Math.floor(Math.random() * availableTypes.length)];
-		const difficulty = pickWeightedDifficulty(weights);
-
-		return {
+	for (const gateTypeId of typesToOffer) {
+		cards.push({
 			kind: "add-slot",
-			slot: getSlotDefinition(gateTypeId, difficulty),
-		};
+			slot: getSlotDefinition(gateTypeId, pickWeightedDifficulty(weights)),
+		});
 	}
 
-	const slot =
-		upgradeableSlots[Math.floor(Math.random() * upgradeableSlots.length)];
-	const nextDifficulty = getNextDifficulty(slot.difficulty);
+	// 1 upgrade-slot card if any existing slot is not yet at max difficulty
+	const upgradeableSlots = getUpgradeableSlots(slots);
+	if (upgradeableSlots.length > 0) {
+		const slot =
+			upgradeableSlots[Math.floor(Math.random() * upgradeableSlots.length)];
+		const nextDifficulty = getNextDifficulty(slot.difficulty);
 
-	// nextDifficulty is always defined here — getUpgradeableSlots filters out
-	// slots already at Intense, so getNextDifficulty will never return null.
-	if (!nextDifficulty) {
-		throw new Error(
-			`Slot ${slot.gateTypeId} is already at max difficulty but was included in upgradeable slots`
-		);
+		// nextDifficulty is always defined — getUpgradeableSlots filters out Intense slots.
+		if (!nextDifficulty) {
+			throw new Error(
+				`Slot ${slot.gateTypeId} is already at max difficulty but was included in upgradeable slots`
+			);
+		}
+
+		cards.push({
+			kind: "upgrade-slot",
+			gateTypeId: slot.gateTypeId,
+			from: slot.difficulty,
+			to: nextDifficulty,
+			slot: getSlotDefinition(slot.gateTypeId, nextDifficulty),
+		});
 	}
 
-	return {
-		kind: "upgrade-slot",
-		gateTypeId: slot.gateTypeId,
-		from: slot.difficulty,
-		to: nextDifficulty,
-		slot: getSlotDefinition(slot.gateTypeId, nextDifficulty),
-	};
+	return cards;
 };
 
 export const getStorageDrain = (

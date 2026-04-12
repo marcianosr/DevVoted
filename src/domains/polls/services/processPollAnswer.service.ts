@@ -2,18 +2,34 @@ import { applyEffects } from "~/domains/configs/data/configs";
 import {
 	createPollResponse,
 	fetchPollByIdWithOptions,
+	getAnsweredPollsCountInRun,
 	getPollsSeenInRun,
+	getWindowResults,
 } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import {
+	awardStorage,
+	clearPendingUpgradeCards,
 	getActiveRunByUserId,
 	incrementCorrectPollsCount,
 	resetPollRerolls,
+	savePendingUpgradeCards,
 } from "~/domains/runs/api/queries";
 import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
+import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
+import {
+	generateUpgradeCards,
+	isMaxPipeline,
+} from "~/domains/runs/services/pipeline.service";
+import {
+	evaluatePipeline,
+	getWindowSize,
+	type PipelineEvaluation,
+	type PipelineEvaluationContext,
+} from "~/domains/runs/services/pipelineEvaluator.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
 	calculateThresholdInfo,
@@ -39,6 +55,8 @@ export type PollAnswerResult = {
 	breakdown: PollScoreBreakdown | null;
 	tryCatchUsed: boolean;
 	victoryJustAchieved: boolean;
+	pipelineEvaluation: PipelineEvaluation | null;
+	upgradeCards: UpgradeCard[];
 };
 
 export type PollAnswerInput = {
@@ -66,6 +84,20 @@ type CommitAnswerProgressParams = PollContext & {
 type EvaluateGateStateParams = {
 	activeRunId: number;
 	updatedRun: Run;
+	totalPollsSeen: number;
+};
+
+type EvaluatePipelineParams = {
+	activeRunId: number;
+	updatedRun: Run;
+	userId: string;
+	totalPollsAnswered: number;
+	gateNumber: number;
+};
+
+type PipelineStageResult = {
+	pipelineEvaluation: PipelineEvaluation | null;
+	upgradeCards: UpgradeCard[];
 };
 
 type GateStateResult = {
@@ -123,10 +155,10 @@ const commitAnswerProgress = async ({
 const evaluateGateState = async ({
 	activeRunId,
 	updatedRun,
+	totalPollsSeen,
 }: EvaluateGateStateParams): Promise<GateStateResult> => {
 	const challengeMode = getChallengeModeOrDefault(updatedRun.challengeModeId);
 	const gates = challengeMode.gates;
-	const totalPollsSeen = await getPollsSeenInRun(activeRunId);
 
 	const thresholdInfo = calculateThresholdInfo(
 		{
@@ -187,6 +219,60 @@ const resolveRunState = async ({
 	return { runEnded: true, tryCatchUsed: false };
 };
 
+const evaluatePipelineStage = async ({
+	activeRunId,
+	updatedRun,
+	userId,
+	totalPollsAnswered,
+	gateNumber,
+}: EvaluatePipelineParams): Promise<PipelineStageResult> => {
+	const { pipelineSlots } = updatedRun;
+	const windowSize = getWindowSize(pipelineSlots);
+	const isPipelineCheckPoll =
+		totalPollsAnswered > 0 && totalPollsAnswered % windowSize === 0;
+
+	if (!isPipelineCheckPoll) {
+		return { pipelineEvaluation: null, upgradeCards: [] };
+	}
+
+	const windowResults = await getWindowResults(activeRunId, userId, windowSize);
+
+	const ctx: PipelineEvaluationContext = {
+		correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
+		// TODO: track per-window coverage delta for coverage-gain gate evaluation
+		coverageGainedInWindow: 0,
+		currentStreakAtWindowEnd: Math.max(
+			...updatedRun.categoryCoverage.map((c) => c.currentStreak),
+			0
+		),
+		pollsInWindow: windowSize,
+		// TODO: track disabled configs per window for disabled-config gate evaluation
+		disabledConfigCount: 0,
+	};
+
+	const pipelineEvaluation = evaluatePipeline(ctx, pipelineSlots);
+
+	if (!pipelineEvaluation.passed) {
+		// Clear any stale cards from a previous window so they don't resurface.
+		await clearPendingUpgradeCards(activeRunId);
+		return { pipelineEvaluation, upgradeCards: [] };
+	}
+
+	if (pipelineEvaluation.totalReward > 0) {
+		await awardStorage(activeRunId, pipelineEvaluation.totalReward);
+	}
+
+	const upgradeCards = isMaxPipeline(pipelineSlots)
+		? []
+		: generateUpgradeCards(pipelineSlots, gateNumber);
+
+	if (upgradeCards.length > 0) {
+		await savePendingUpgradeCards(activeRunId, upgradeCards);
+	}
+
+	return { pipelineEvaluation, upgradeCards };
+};
+
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
 export const processPollAnswer = async (
@@ -210,6 +296,8 @@ export const processPollAnswer = async (
 			breakdown: null,
 			tryCatchUsed: false,
 			victoryJustAchieved: false,
+			pipelineEvaluation: null,
+			upgradeCards: [],
 		};
 	}
 
@@ -227,9 +315,24 @@ export const processPollAnswer = async (
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
+	const [totalPollsSeen, totalPollsAnswered] = await Promise.all([
+		getPollsSeenInRun(activeRun.id),
+		getAnsweredPollsCountInRun(activeRun.id),
+	]);
+
 	const { thresholdInfo, victoryJustAchieved } = await evaluateGateState({
 		activeRunId: activeRun.id,
 		updatedRun,
+		totalPollsSeen,
+	});
+
+	const windowSize = getWindowSize(updatedRun.pipelineSlots);
+	const { pipelineEvaluation, upgradeCards } = await evaluatePipelineStage({
+		activeRunId: activeRun.id,
+		updatedRun,
+		userId,
+		totalPollsAnswered,
+		gateNumber: Math.floor(totalPollsAnswered / windowSize),
 	});
 
 	const { runEnded, tryCatchUsed } = await resolveRunState({
@@ -250,6 +353,8 @@ export const processPollAnswer = async (
 		breakdown,
 		tryCatchUsed,
 		victoryJustAchieved,
+		pipelineEvaluation,
+		upgradeCards,
 	};
 };
 

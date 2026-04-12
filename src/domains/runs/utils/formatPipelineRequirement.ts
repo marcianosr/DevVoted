@@ -14,16 +14,6 @@ export const formatRequirement = (req: PipelineSlotRequirement): string => {
 				? `Answer ${req.count} correctly (streak ×${req.streakRequired})`
 				: `Answer ${req.count} correctly`;
 
-		case "no-wrong-answers":
-			if (req.maxWrong === 0) {
-				return req.streakRequired
-					? `No wrong answers (streak ×${req.streakRequired})`
-					: "No wrong answers";
-			}
-			return req.streakRequired
-				? `Max ${req.maxWrong} wrong (streak ×${req.streakRequired})`
-				: `Max ${req.maxWrong} wrong`;
-
 		case "storage-drain":
 			return `−${formatStorage(req.drainPerWrong)} per wrong answer`;
 
@@ -44,7 +34,6 @@ export const formatRequirement = (req: PipelineSlotRequirement): string => {
 const SLOT_LABELS: Record<GateTypeId, string> = {
 	"coverage-gain": "Coverage",
 	"correct-answers": "Accuracy",
-	"no-wrong-answers": "Precision",
 	"storage-drain": "Memory Leak",
 	"disabled-config": "Config Lock",
 	"short-window": "Sprint",

@@ -305,6 +305,28 @@ export const runsTable = pgTable("runs", {
 		>()
 		.notNull()
 		.default([]), // Active pipeline slots for the current run
+	pipeline_slot_snapshots: json("pipeline_slot_snapshots")
+		.$type<
+			Array<
+				Array<{
+					gateTypeId: string;
+					difficulty: string;
+					requirement: object;
+					reward: number;
+				}>
+			>
+		>()
+		.notNull()
+		.default([]), // Per-gate slot snapshots: index 0 = slots active during gate 1, index 1 = gate 2, etc.
+	pending_upgrade_cards: json("pending_upgrade_cards").$type<
+		Array<{
+			kind: string;
+			slot: object;
+			gateTypeId?: string;
+			from?: string;
+			to?: string;
+		}>
+	>(), // Upgrade cards pending player decision — null when no decision is pending
 	completion_reason: varchar("completion_reason", { length: 50 }), // Reason for run completion: "victory", "threshold_not_met", "wrong_answer", "manual_break_off"
 	victory_achieved_at: timestamp("victory_achieved_at", { withTimezone: true }), // When player passed all gates (run continues in post-victory mode)
 	started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),

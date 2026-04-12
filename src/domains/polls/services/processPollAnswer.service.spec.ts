@@ -8,6 +8,10 @@ import * as progressService from "~/domains/runs/services/progress.service";
 import * as runCompletionService from "~/domains/runs/services/runCompletion.service";
 import * as thresholdService from "~/domains/runs/services/thresholdCalculator.service";
 import { createMockRun } from "~/domains/runs/models/run";
+import {
+	getSlotDefinition,
+	SLOT_REWARDS,
+} from "~/domains/runs/data/pipelineSlots";
 import * as configs from "~/domains/configs/data/configs";
 import type { ApplyEffects } from "~/domains/configs/data/configs";
 import type { ThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
@@ -22,6 +26,8 @@ vi.mock("~/domains/polls/api/queries", () => ({
 	fetchPollByIdWithOptions: vi.fn(),
 	createPollResponse: vi.fn(),
 	getPollsSeenInRun: vi.fn(),
+	getAnsweredPollsCountInRun: vi.fn(),
+	getWindowResults: vi.fn(),
 }));
 
 vi.mock("~/domains/runs/api/queries", () => ({
@@ -29,6 +35,9 @@ vi.mock("~/domains/runs/api/queries", () => ({
 	incrementCorrectPollsCount: vi.fn(),
 	resetPollRerolls: vi.fn(),
 	markVictoryAchieved: vi.fn(),
+	awardStorage: vi.fn(),
+	savePendingUpgradeCards: vi.fn(),
+	clearPendingUpgradeCards: vi.fn(),
 }));
 
 vi.mock("~/domains/runs/services/progress.service", () => ({
@@ -167,6 +176,8 @@ describe("processPollAnswer", () => {
 			mockScoreCalculation
 		);
 		vi.mocked(pollQueries.getPollsSeenInRun).mockResolvedValue(3);
+		vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(3);
+		vi.mocked(pollQueries.getWindowResults).mockResolvedValue([]);
 		vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue(
 			mockThresholdInfo
 		);
@@ -336,6 +347,93 @@ describe("processPollAnswer", () => {
 			await processPollAnswer(defaultInput);
 
 			expect(runQueries.resetPollRerolls).toHaveBeenCalledWith(1);
+		});
+	});
+
+	describe("pipeline evaluation", () => {
+		const runWithSlot = createMockRun({
+			id: 1,
+			userId: BANJO_USER_ID,
+			pipelineSlots: [getSlotDefinition("correct-answers", "easy")], // needs 3/5
+		});
+
+		// 3 correct, 1 wrong, 1 partial — meets the easy correct-answers requirement
+		const windowWith3Correct = [
+			{ isCorrect: true, isWrong: false },
+			{ isCorrect: true, isWrong: false },
+			{ isCorrect: true, isWrong: false },
+			{ isCorrect: false, isWrong: true },
+			{ isCorrect: false, isWrong: false },
+		];
+
+		it("does not evaluate pipeline between windows", async () => {
+			// Default: getAnsweredPollsCountInRun returns 3, windowSize 5 → 3 % 5 ≠ 0
+			const result = await processPollAnswer(defaultInput);
+
+			expect(result.pipelineEvaluation).toBeNull();
+			expect(result.upgradeCards).toHaveLength(0);
+			expect(pollQueries.getWindowResults).not.toHaveBeenCalled();
+		});
+
+		it("evaluates pipeline at window boundary and passes", async () => {
+			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+				windowWith3Correct
+			);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
+
+			const result = await processPollAnswer(defaultInput);
+
+			expect(result.pipelineEvaluation).not.toBeNull();
+			expect(result.pipelineEvaluation?.passed).toBe(true);
+			expect(result.upgradeCards.length).toBeGreaterThan(0);
+		});
+
+		it("awards storage when pipeline passes", async () => {
+			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+				windowWith3Correct
+			);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
+
+			await processPollAnswer(defaultInput);
+
+			expect(runQueries.awardStorage).toHaveBeenCalledWith(
+				1,
+				SLOT_REWARDS.easy
+			);
+		});
+
+		it("does not award storage when pipeline fails", async () => {
+			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+				// Only 2 correct — fails easy correct-answers (needs 3)
+				Array(5).fill({ isCorrect: false, isWrong: true })
+			);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
+
+			const result = await processPollAnswer(defaultInput);
+
+			expect(result.pipelineEvaluation?.passed).toBe(false);
+			expect(runQueries.awardStorage).not.toHaveBeenCalled();
+			expect(result.upgradeCards).toHaveLength(0);
+		});
+
+		it("includes an upgrade-slot card alongside add-slot cards when only one slot exists", async () => {
+			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+				windowWith3Correct
+			);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
+
+			const result = await processPollAnswer(defaultInput);
+
+			expect(
+				result.upgradeCards.filter((c) => c.kind === "add-slot").length
+			).toBe(2);
+			expect(
+				result.upgradeCards.filter((c) => c.kind === "upgrade-slot").length
+			).toBe(1);
 		});
 	});
 });

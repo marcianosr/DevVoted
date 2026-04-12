@@ -79,6 +79,8 @@ const Option = ({
 			>
 				<MarkdownText>{option.option}</MarkdownText>
 			</label>
+			{/* TODO: REMOVE BEFORE DEPLOY */}
+			{option.correct.toString()}
 		</div>
 	);
 };

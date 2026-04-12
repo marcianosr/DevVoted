@@ -16,7 +16,6 @@ const makeContext = (
 	overrides: Partial<PipelineEvaluationContext> = {}
 ): PipelineEvaluationContext => ({
 	correctAnswersInWindow: 5,
-	wrongAnswersInWindow: 0,
 	coverageGainedInWindow: 10,
 	currentStreakAtWindowEnd: 5,
 	pollsInWindow: 5,
@@ -116,66 +115,13 @@ describe("evaluatePipeline — correct-answers", () => {
 	});
 });
 
-// ─── evaluatePipeline — no-wrong-answers ─────────────────────────────────────
-
-describe("evaluatePipeline — no-wrong-answers", () => {
-	const easySlot = getSlotDefinition("no-wrong-answers", "easy"); // maxWrong: 2
-	const normalSlot = getSlotDefinition("no-wrong-answers", "normal"); // maxWrong: 1
-	const hardSlot = getSlotDefinition("no-wrong-answers", "hard"); // maxWrong: 0
-	const intenseSlot = getSlotDefinition("no-wrong-answers", "intense"); // maxWrong: 0, streak: 2
-
-	it("passes when wrong answers are within the limit", () => {
-		const result = evaluatePipeline(makeContext({ wrongAnswersInWindow: 2 }), [
-			easySlot,
-		]);
-		expect(result.passed).toBe(true);
-	});
-
-	it("fails when wrong answers exceed the limit", () => {
-		const result = evaluatePipeline(makeContext({ wrongAnswersInWindow: 3 }), [
-			easySlot,
-		]);
-		expect(result.passed).toBe(false);
-	});
-
-	it("passes with exactly 1 wrong on normal", () => {
-		const result = evaluatePipeline(makeContext({ wrongAnswersInWindow: 1 }), [
-			normalSlot,
-		]);
-		expect(result.passed).toBe(true);
-	});
-
-	it("fails with any wrong answer on hard", () => {
-		const result = evaluatePipeline(makeContext({ wrongAnswersInWindow: 1 }), [
-			hardSlot,
-		]);
-		expect(result.passed).toBe(false);
-	});
-
-	it("passes with no wrong answers and streak met on intense", () => {
-		const result = evaluatePipeline(
-			makeContext({ wrongAnswersInWindow: 0, currentStreakAtWindowEnd: 2 }),
-			[intenseSlot]
-		);
-		expect(result.passed).toBe(true);
-	});
-
-	it("fails with no wrong answers but streak unmet on intense", () => {
-		const result = evaluatePipeline(
-			makeContext({ wrongAnswersInWindow: 0, currentStreakAtWindowEnd: 1 }),
-			[intenseSlot]
-		);
-		expect(result.passed).toBe(false);
-	});
-});
-
 // ─── evaluatePipeline — storage-drain ────────────────────────────────────────
 
 describe("evaluatePipeline — storage-drain", () => {
 	it("always passes regardless of context (permanent modifier)", () => {
 		const slot = getSlotDefinition("storage-drain", "intense");
 		const result = evaluatePipeline(
-			makeContext({ wrongAnswersInWindow: 5, correctAnswersInWindow: 0 }),
+			makeContext({ correctAnswersInWindow: 0 }),
 			[slot]
 		);
 		expect(result.passed).toBe(true);
@@ -215,7 +161,6 @@ describe("evaluatePipeline — disabled-config", () => {
 describe("evaluatePipeline — short-window", () => {
 	const easySlot = getSlotDefinition("short-window", "easy"); // pollCount: 4, no extra
 	const hardSlot = getSlotDefinition("short-window", "hard"); // pollCount: 3, correctRequired: 3
-	const intenseSlot = getSlotDefinition("short-window", "intense"); // pollCount: 3, noWrongRequired: true
 
 	it("passes easy with no extra conditions", () => {
 		const result = evaluatePipeline(makeContext({ pollsInWindow: 4 }), [
@@ -239,22 +184,6 @@ describe("evaluatePipeline — short-window", () => {
 		);
 		expect(result.passed).toBe(false);
 	});
-
-	it("passes intense with no wrong answers", () => {
-		const result = evaluatePipeline(
-			makeContext({ pollsInWindow: 3, wrongAnswersInWindow: 0 }),
-			[intenseSlot]
-		);
-		expect(result.passed).toBe(true);
-	});
-
-	it("fails intense when any wrong answer is given", () => {
-		const result = evaluatePipeline(
-			makeContext({ pollsInWindow: 3, wrongAnswersInWindow: 1 }),
-			[intenseSlot]
-		);
-		expect(result.passed).toBe(false);
-	});
 });
 
 // ─── evaluatePipeline — multi-slot ───────────────────────────────────────────
@@ -262,7 +191,6 @@ describe("evaluatePipeline — short-window", () => {
 describe("evaluatePipeline — multiple active slots", () => {
 	const slots: PipelineSlot[] = [
 		getSlotDefinition("correct-answers", "normal"), // count: 4
-		getSlotDefinition("no-wrong-answers", "easy"), // maxWrong: 2
 		getSlotDefinition("coverage-gain", "easy"), // threshold: 3%
 	];
 
@@ -270,7 +198,6 @@ describe("evaluatePipeline — multiple active slots", () => {
 		const result = evaluatePipeline(
 			makeContext({
 				correctAnswersInWindow: 4,
-				wrongAnswersInWindow: 1,
 				coverageGainedInWindow: 5,
 			}),
 			slots
@@ -282,7 +209,6 @@ describe("evaluatePipeline — multiple active slots", () => {
 		const result = evaluatePipeline(
 			makeContext({
 				correctAnswersInWindow: 3, // fails correct-answers (needs 4)
-				wrongAnswersInWindow: 0,
 				coverageGainedInWindow: 5,
 			}),
 			slots
@@ -294,7 +220,6 @@ describe("evaluatePipeline — multiple active slots", () => {
 		const result = evaluatePipeline(
 			makeContext({
 				correctAnswersInWindow: 3, // fails
-				wrongAnswersInWindow: 0,
 				coverageGainedInWindow: 5,
 			}),
 			slots
@@ -308,7 +233,6 @@ describe("evaluatePipeline — multiple active slots", () => {
 		const result = evaluatePipeline(
 			makeContext({
 				correctAnswersInWindow: 4,
-				wrongAnswersInWindow: 0,
 				coverageGainedInWindow: 5,
 			}),
 			slots

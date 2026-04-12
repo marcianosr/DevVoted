@@ -25,7 +25,10 @@ import { Poll } from "~/domains/polls/models/poll";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
 import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
-import { formatGateRequirements } from "~/domains/runs/utils/gateFormatting";
+import {
+	formatRequirement,
+	getSlotLabel,
+} from "~/domains/runs/utils/formatPipelineRequirement";
 import {
 	CATEGORY_METADATA,
 	type CategoryCode,
@@ -291,11 +294,28 @@ function RouteComponent() {
 												)}
 											</h2>
 										</summary>
-										<div className="mt-2">
-											<p className="text-gray-400">
-												Score atleast: {formatGateRequirements(gate)}
-											</p>
-										</div>
+										{(() => {
+											const slots = isCurrent
+												? activeRun.pipelineSlots
+												: (activeRun.pipelineSlotSnapshots[gate.gate - 1] ??
+													[]);
+											return (
+												<div className="mt-2 flex flex-wrap gap-3">
+													{slots.map((slot) => (
+														<span
+															key={slot.gateTypeId}
+															className="text-xs text-gray-400 font-mono"
+														>
+															<span className="text-theme">
+																{getSlotLabel(slot.gateTypeId)}
+															</span>
+															{" · "}
+															{formatRequirement(slot.requirement)}
+														</span>
+													))}
+												</div>
+											);
+										})()}
 										<ol className="mt-3 space-y-1">
 											{getPollsForGate(
 												pollHistory,

@@ -5,7 +5,6 @@ export type GateDifficulty = "easy" | "normal" | "hard" | "intense";
 export type GateTypeId =
 	| "coverage-gain"
 	| "correct-answers"
-	| "no-wrong-answers"
 	| "storage-drain"
 	| "disabled-config"
 	| "short-window";
@@ -23,12 +22,6 @@ export type CorrectAnswersRequirement = {
 	type: "correct-answers";
 	count: number; // minimum correct answers in the window
 	streakRequired?: number; // consecutive correct answers also required (Intense)
-};
-
-export type NoWrongAnswersRequirement = {
-	type: "no-wrong-answers";
-	maxWrong: number; // 0 = no wrong answers allowed
-	streakRequired?: number;
 };
 
 export type StorageDrainRequirement = {
@@ -54,7 +47,6 @@ export type ShortWindowRequirement = {
 export type PassFailRequirement =
 	| CoverageGainRequirement
 	| CorrectAnswersRequirement
-	| NoWrongAnswersRequirement
 	| DisabledConfigRequirement
 	| ShortWindowRequirement;
 

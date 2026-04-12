@@ -5,7 +5,7 @@ import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
 import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
 import {
 	applyUpgradeCard,
-	generateUpgradeCard,
+	generateUpgradeCards,
 	getInitialPipelineSlots,
 	getStorageDrain,
 	isMaxPipeline,
@@ -16,7 +16,6 @@ import {
 const allSixTypesAtNormal: PipelineSlot[] = [
 	getSlotDefinition("coverage-gain", "normal"),
 	getSlotDefinition("correct-answers", "normal"),
-	getSlotDefinition("no-wrong-answers", "normal"),
 	getSlotDefinition("storage-drain", "normal"),
 	getSlotDefinition("disabled-config", "normal"),
 	getSlotDefinition("short-window", "normal"),
@@ -195,9 +194,9 @@ describe("getStorageDrain", () => {
 	});
 });
 
-// ─── generateUpgradeCard ──────────────────────────────────────────────────────
+// ─── generateUpgradeCards ─────────────────────────────────────────────────────
 
-describe("generateUpgradeCard", () => {
+describe("generateUpgradeCards", () => {
 	beforeEach(() => {
 		vi.spyOn(Math, "random").mockReturnValue(0);
 	});
@@ -206,60 +205,64 @@ describe("generateUpgradeCard", () => {
 		vi.clearAllMocks();
 	});
 
-	it("generates an add-slot card when pipeline is empty", () => {
-		const card = generateUpgradeCard([], 1);
-		expect(card.kind).toBe("add-slot");
+	it("returns 2 add-slot cards when pipeline is empty", () => {
+		const cards = generateUpgradeCards([], 1);
+		expect(cards.length).toBe(2);
+		expect(cards.every((c) => c.kind === "add-slot")).toBe(true);
 	});
 
-	it("generates an upgrade-slot card when all types are already active", () => {
-		const card = generateUpgradeCard(allSixTypesAtNormal, 8);
-		expect(card.kind).toBe("upgrade-slot");
+	it("returns only the upgrade-slot card when all types are already active", () => {
+		const cards = generateUpgradeCards(allSixTypesAtNormal, 8);
+		expect(cards.length).toBe(1);
+		expect(cards[0].kind).toBe("upgrade-slot");
 	});
 
-	it("add-slot card contains a valid slot definition", () => {
-		const card = generateUpgradeCard([], 1);
-		if (card.kind !== "add-slot") throw new Error("Expected add-slot");
-
-		expect(card.slot.gateTypeId).toBeDefined();
-		expect(card.slot.difficulty).toBeDefined();
-		expect(card.slot.reward).toBeGreaterThan(0);
+	it("add-slot cards each contain a valid slot definition", () => {
+		const cards = generateUpgradeCards([], 1);
+		for (const card of cards) {
+			if (card.kind !== "add-slot") throw new Error("Expected add-slot");
+			expect(card.slot.gateTypeId).toBeDefined();
+			expect(card.slot.difficulty).toBeDefined();
+			expect(card.slot.reward).toBeGreaterThan(0);
+		}
 	});
 
 	it("upgrade-slot card increments difficulty by one tier", () => {
-		const slots = [getSlotDefinition("correct-answers", "easy")];
-		const card = generateUpgradeCard(slots, 1);
-
-		if (card.kind !== "upgrade-slot") {
-			// With Math.random = 0, shouldAdd = true (only upgrade is possible
-			// if we have all types). For a single slot, both are possible —
-			// shouldAdd = Math.random() < 0.5 = 0 < 0.5 = true → add-slot.
-			// So we test upgrade explicitly with all types active.
-		}
-
-		const upgradeCard = generateUpgradeCard(allSixTypesAtNormal, 8);
-		if (upgradeCard.kind !== "upgrade-slot")
+		const cards = generateUpgradeCards(allSixTypesAtNormal, 8);
+		const upgradeCard = cards.find((c) => c.kind === "upgrade-slot");
+		if (!upgradeCard || upgradeCard.kind !== "upgrade-slot")
 			throw new Error("Expected upgrade-slot");
 
 		expect(upgradeCard.from).toBe("normal");
 		expect(upgradeCard.to).toBe("hard");
 	});
 
-	it("generated add-slot card type is not already in the pipeline", () => {
+	it("add-slot cards only offer gate types not already in the pipeline", () => {
 		const existing = [getSlotDefinition("correct-answers", "easy")];
-		const card = generateUpgradeCard(existing, 1);
+		const cards = generateUpgradeCards(existing, 1);
+		const addSlotCards = cards.filter((c) => c.kind === "add-slot");
 
-		if (card.kind !== "add-slot") throw new Error("Expected add-slot");
-
-		expect(card.slot.gateTypeId).not.toBe("correct-answers");
+		for (const card of addSlotCards) {
+			if (card.kind !== "add-slot") continue;
+			expect(card.slot.gateTypeId).not.toBe("correct-answers");
+		}
 	});
 
-	it("uses difficulty distribution weights for gate number", () => {
+	it("respects difficulty distribution weights for gate number", () => {
 		// At gate 16+, only hard and intense are available (easy/normal weight = 0).
-		// With Math.random = 0, weighted pick returns the first eligible difficulty.
-		// hard: 30, intense: 70 → random=0, 0-30=-30 ≤ 0 → hard
-		const card = generateUpgradeCard([], 16);
-		if (card.kind !== "add-slot") throw new Error("Expected add-slot");
+		const cards = generateUpgradeCards([], 16);
+		for (const card of cards) {
+			if (card.kind !== "add-slot") continue;
+			expect(["hard", "intense"]).toContain(card.slot.difficulty);
+		}
+	});
 
-		expect(["hard", "intense"]).toContain(card.slot.difficulty);
+	it("includes an upgrade-slot card alongside add-slot cards when upgrades are possible", () => {
+		const singleSlot = [getSlotDefinition("correct-answers", "easy")];
+		const cards = generateUpgradeCards(singleSlot, 1);
+		// 2 add-slot (5 available types) + 1 upgrade-slot
+		expect(cards.length).toBe(3);
+		expect(cards.filter((c) => c.kind === "add-slot").length).toBe(2);
+		expect(cards.filter((c) => c.kind === "upgrade-slot").length).toBe(1);
 	});
 });

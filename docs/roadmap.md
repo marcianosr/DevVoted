@@ -226,6 +226,9 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+- [] Several configs broken:
+  - [] yarn.lock - nogt sure, but doesnt lock when installing
+  - [] Prefetch - doesn't work
 - [] Linkify explanations
 - [] Poll difficulty? Possible with amount of answers it has?
 - Get coverage based on how much space you have left?
@@ -235,7 +238,6 @@ BUGS:
   - when a player hits 100% total coverage, what happens?
   - Show notification when reaching 100%?
 - [] Game over - then on result page it shows configs, but the configs are different on the shop page. When navigating back, the configs are updated agani
-- [] Prefetch config kapot
 - [x] Show indicator of 'gate' test while answering the poll
 - [ ] PNPM instead of npm?
 

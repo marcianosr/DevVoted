@@ -110,31 +110,6 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 			},
 		},
 	},
-	"no-wrong-answers": {
-		family: "accuracy",
-		difficulties: {
-			easy: {
-				requirement: { type: "no-wrong-answers", maxWrong: 2 },
-				reward: SLOT_REWARDS.easy,
-			},
-			normal: {
-				requirement: { type: "no-wrong-answers", maxWrong: 1 },
-				reward: SLOT_REWARDS.normal,
-			},
-			hard: {
-				requirement: { type: "no-wrong-answers", maxWrong: 0 },
-				reward: SLOT_REWARDS.hard,
-			},
-			intense: {
-				requirement: {
-					type: "no-wrong-answers",
-					maxWrong: 0,
-					streakRequired: 2,
-				},
-				reward: SLOT_REWARDS.intense,
-			},
-		},
-	},
 	"storage-drain": {
 		family: "economy",
 		difficulties: {
@@ -241,7 +216,6 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
 	"coverage-gain",
 	"correct-answers",
-	"no-wrong-answers",
 	"storage-drain",
 	"disabled-config",
 	"short-window",

@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "pending_upgrade_card" json;

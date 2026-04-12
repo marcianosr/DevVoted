@@ -10,7 +10,7 @@ import {
 import { db } from "~/database/db";
 import type { CategoryCode } from "~/domains/shared/categories";
 import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
-import type { PipelineSlot } from "~/domains/runs/models/pipeline";
+import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
 
 import { runFactory } from "../models/run";
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage";
@@ -402,6 +402,37 @@ export const drainStorage = async (
 		.where(eq(runsTable.id, runId));
 };
 
+export const awardStorage = async (
+	runId: number,
+	amount: number
+): Promise<void> => {
+	await db
+		.update(runsTable)
+		.set({
+			storage_limit: sql`${runsTable.storage_limit} + ${amount}`,
+		})
+		.where(eq(runsTable.id, runId));
+};
+
+export const savePendingUpgradeCards = async (
+	runId: number,
+	cards: UpgradeCard[]
+): Promise<void> => {
+	await db
+		.update(runsTable)
+		.set({ pending_upgrade_cards: cards })
+		.where(eq(runsTable.id, runId));
+};
+
+export const clearPendingUpgradeCards = async (
+	runId: number
+): Promise<void> => {
+	await db
+		.update(runsTable)
+		.set({ pending_upgrade_cards: [] })
+		.where(eq(runsTable.id, runId));
+};
+
 export const savePipelineSlots = async (
 	runId: number,
 	slots: PipelineSlot[]
@@ -413,6 +444,17 @@ export const savePipelineSlots = async (
 		.returning();
 
 	return updatedRun ? runFactory.toDTO(updatedRun) : null;
+};
+
+export const appendPipelineSlotSnapshot = async (
+	runId: number,
+	snapshot: PipelineSlot[]
+): Promise<void> => {
+	await db.execute(
+		sql`UPDATE ${runsTable}
+		    SET pipeline_slot_snapshots = pipeline_slot_snapshots || ${JSON.stringify([snapshot])}::jsonb
+		    WHERE ${runsTable.id} = ${runId}`
+	);
 };
 
 // Reset current poll rerolls to 0 (called after poll submission)

@@ -3,7 +3,7 @@ import { InferSelectModel } from "drizzle-orm";
 import { runsTable } from "@/src/database/schema";
 import { ChallengeModeId } from "~/domains/runs/data/challengeModes";
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
-import type { PipelineSlot } from "~/domains/runs/models/pipeline";
+import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
 import { STORAGE_UNITS } from "~/lib/storage";
 
 // TODO: Refactor this to ActiveRun?
@@ -30,6 +30,8 @@ export type Run = {
 	deinstallPenalty: number;
 	correctPollsCount: number;
 	pipelineSlots: PipelineSlot[];
+	pipelineSlotSnapshots: PipelineSlot[][];
+	pendingUpgradeCards: UpgradeCard[];
 };
 
 export type RunRecord = InferSelectModel<typeof runsTable>;
@@ -63,6 +65,13 @@ export const runToDTO = (
 		// pipeline_slots is stored as JSON. We trust our own write path (savePipelineSlots)
 		// to guarantee valid PipelineSlot[] — this cast is safe at the DB boundary.
 		pipelineSlots: (record.pipeline_slots ?? []) as PipelineSlot[],
+		// Snapshot of slots active at the end of each gate (index 0 = gate 1, etc.).
+		// No default in schema — normalise to [].
+		pipelineSlotSnapshots: (record.pipeline_slot_snapshots ??
+			[]) as PipelineSlot[][],
+		// pending_upgrade_cards is empty when no upgrade is awaiting a decision.
+		// The schema column has no default, so Drizzle may return undefined — normalise to [].
+		pendingUpgradeCards: (record.pending_upgrade_cards ?? []) as UpgradeCard[],
 	};
 };
 
@@ -89,6 +98,8 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		deinstall_penalty: dto.deinstallPenalty || 0,
 		correct_polls_count: dto.correctPollsCount || 0,
 		pipeline_slots: dto.pipelineSlots,
+		pipeline_slot_snapshots: dto.pipelineSlotSnapshots,
+		pending_upgrade_cards: dto.pendingUpgradeCards,
 	};
 };
 
@@ -102,6 +113,11 @@ export const runsFromDTOs = (dtos: Run[]): RunRecord[] => {
 
 export const createRun = (partial: Partial<Run> = {}): Run => {
 	const now = new Date();
+	const {
+		pendingUpgradeCards = [],
+		pipelineSlotSnapshots = [],
+		...rest
+	} = partial;
 
 	return {
 		id: 0,
@@ -126,13 +142,20 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		deinstallPenalty: 0,
 		correctPollsCount: 0,
 		pipelineSlots: [],
-		...partial,
+		pipelineSlotSnapshots,
+		pendingUpgradeCards,
+		...rest,
 	};
 };
 
 // Test factory functions
 export const createMockRun = (overrides: Partial<Run> = {}): Run => {
-	const { pipelineSlots = [], ...rest } = overrides;
+	const {
+		pipelineSlots = [],
+		pipelineSlotSnapshots = [],
+		pendingUpgradeCards = [],
+		...rest
+	} = overrides;
 	return {
 		id: 1,
 		userId: "test-user-id",
@@ -156,6 +179,8 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		deinstallPenalty: 0,
 		correctPollsCount: 0,
 		pipelineSlots,
+		pipelineSlotSnapshots,
+		pendingUpgradeCards,
 		...rest,
 	};
 };
@@ -185,6 +210,8 @@ export const createMockRunRecord = (
 		deinstall_penalty: 0,
 		correct_polls_count: 0,
 		pipeline_slots: [],
+		pipeline_slot_snapshots: [],
+		pending_upgrade_cards: [],
 		...overrides,
 	};
 };

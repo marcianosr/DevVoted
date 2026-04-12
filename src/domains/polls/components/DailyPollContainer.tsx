@@ -21,11 +21,15 @@ import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisp
 import SelectedOptionsSummary from "~/domains/polls/components/SelectedOptionsSummary";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
-import { getExposedConfigDeck } from "~/domains/runs/api/runs";
+import {
+	applyPipelineUpgradeFn,
+	getExposedConfigDeck,
+} from "~/domains/runs/api/runs";
 import { PipelineDisplay } from "~/domains/runs/components/PipelineDisplay";
 import { UpgradeCardModal } from "~/domains/runs/components/UpgradeCardModal";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
+import type { PipelineEvaluation } from "~/domains/runs/services/pipelineEvaluator.service";
 import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
@@ -94,6 +98,7 @@ type DailyPollContainerProps = {
 	currentGate: GateDefinition;
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
+	initialPendingUpgradeCards: UpgradeCard[];
 };
 
 const DailyPollContainer = ({
@@ -107,6 +112,7 @@ const DailyPollContainer = ({
 	activeRun,
 	isAdmin,
 	offeredConfigs,
+	initialPendingUpgradeCards,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -118,13 +124,40 @@ const DailyPollContainer = ({
 		null
 	);
 
-	const [pendingUpgradeCard, setPendingUpgradeCard] =
-		useState<UpgradeCard | null>(null);
+	// Seeded from the run's persisted state so it survives page refreshes.
+	const [pendingUpgradeCards, setPendingUpgradeCards] = useState<UpgradeCard[]>(
+		initialPendingUpgradeCards
+	);
+	const [lastPipelineEvaluation, setLastPipelineEvaluation] =
+		useState<PipelineEvaluation | null>(null);
 
-	const handleUpgradeAccepted = (_card: UpgradeCard) => {
-		// TODO: persist applied card to run via server mutation (Phase 6)
-		setPendingUpgradeCard(null);
-		router.invalidate();
+	const applyUpgradeMutation = useMutation({
+		mutationFn: applyPipelineUpgradeFn,
+		onSuccess: () => {
+			setPendingUpgradeCards([]);
+			router.invalidate();
+		},
+	});
+
+	const handleUpgradeAccepted = (card: UpgradeCard) => {
+		if (applyUpgradeMutation.isPending) return;
+
+		const input =
+			card.kind === "add-slot"
+				? ({
+						kind: "add-slot",
+						gateTypeId: card.slot.gateTypeId,
+						difficulty: card.slot.difficulty,
+					} as const)
+				: ({
+						kind: "upgrade-slot",
+						gateTypeId: card.gateTypeId,
+						from: card.from,
+						to: card.to,
+					} as const);
+
+		setPendingUpgradeCards([]);
+		applyUpgradeMutation.mutate({ data: input });
 	};
 
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
@@ -178,6 +211,14 @@ const DailyPollContainer = ({
 					});
 				}
 
+				if (response.data.pipelineEvaluation) {
+					setLastPipelineEvaluation(response.data.pipelineEvaluation);
+				}
+
+				if (response.data.upgradeCards?.length) {
+					setPendingUpgradeCards(response.data.upgradeCards);
+				}
+
 				if (response.data.runEnded) {
 					navigate({ to: "/game-over" });
 					return;
@@ -228,7 +269,10 @@ const DailyPollContainer = ({
 						<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
 					</div>
 
-					<PipelineDisplay slots={activeRun.pipelineSlots} />
+					<PipelineDisplay
+						slots={activeRun.pipelineSlots}
+						evaluation={lastPipelineEvaluation ?? undefined}
+					/>
 				</section>
 			</header>
 			<PollQuestionDisplay poll={poll} />
@@ -264,8 +308,9 @@ const DailyPollContainer = ({
 			</div>
 
 			<UpgradeCardModal
-				card={pendingUpgradeCard}
+				cards={pendingUpgradeCards}
 				onAccept={handleUpgradeAccepted}
+				isPending={applyUpgradeMutation.isPending}
 			/>
 		</section>
 	);

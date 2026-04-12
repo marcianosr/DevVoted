@@ -83,6 +83,7 @@ const DailyPoll: React.FC = () => {
 				currentGate={currentGate}
 				isAdmin={isAdmin}
 				offeredConfigs={offeredConfigs}
+				initialPendingUpgradeCards={activeRun.data.pendingUpgradeCards}
 			/>
 
 			{/* TODO: Refactor in own component */}
