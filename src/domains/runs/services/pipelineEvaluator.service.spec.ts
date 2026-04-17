@@ -161,6 +161,7 @@ describe("evaluatePipeline — disabled-config", () => {
 describe("evaluatePipeline — short-window", () => {
 	const easySlot = getSlotDefinition("short-window", "easy"); // pollCount: 4, no extra
 	const hardSlot = getSlotDefinition("short-window", "hard"); // pollCount: 3, correctRequired: 3
+	const intenseSlot = getSlotDefinition("short-window", "intense"); // pollCount: 2, noWrongRequired: true
 
 	it("passes easy with no extra conditions", () => {
 		const result = evaluatePipeline(makeContext({ pollsInWindow: 4 }), [
@@ -181,6 +182,22 @@ describe("evaluatePipeline — short-window", () => {
 		const result = evaluatePipeline(
 			makeContext({ pollsInWindow: 3, correctAnswersInWindow: 2 }),
 			[hardSlot]
+		);
+		expect(result.passed).toBe(false);
+	});
+
+	it("passes intense when every poll in the window is correct", () => {
+		const result = evaluatePipeline(
+			makeContext({ pollsInWindow: 2, correctAnswersInWindow: 2 }),
+			[intenseSlot]
+		);
+		expect(result.passed).toBe(true);
+	});
+
+	it("fails intense when any poll in the window is wrong", () => {
+		const result = evaluatePipeline(
+			makeContext({ pollsInWindow: 2, correctAnswersInWindow: 1 }),
+			[intenseSlot]
 		);
 		expect(result.passed).toBe(false);
 	});
@@ -219,14 +236,13 @@ describe("evaluatePipeline — multiple active slots", () => {
 	it("reports individual slot evaluations", () => {
 		const result = evaluatePipeline(
 			makeContext({
-				correctAnswersInWindow: 3, // fails
+				correctAnswersInWindow: 3, // fails correct-answers (needs 4)
 				coverageGainedInWindow: 5,
 			}),
 			slots
 		);
 		expect(result.slotEvaluations[0].passed).toBe(false);
 		expect(result.slotEvaluations[1].passed).toBe(true);
-		expect(result.slotEvaluations[2].passed).toBe(true);
 	});
 
 	it("returns total reward as sum of all slot rewards when passed", () => {
@@ -239,7 +255,6 @@ describe("evaluatePipeline — multiple active slots", () => {
 		);
 		const expectedReward =
 			120 * STORAGE_UNITS.KB + // correct-answers normal
-			60 * STORAGE_UNITS.KB + // no-wrong-answers easy
 			60 * STORAGE_UNITS.KB; // coverage-gain easy
 		expect(result.totalReward).toBe(expectedReward);
 	});

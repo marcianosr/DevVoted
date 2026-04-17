@@ -13,7 +13,7 @@ import {
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-const allSixTypesAtNormal: PipelineSlot[] = [
+const allTypesAtNormal: PipelineSlot[] = [
 	getSlotDefinition("coverage-gain", "normal"),
 	getSlotDefinition("correct-answers", "normal"),
 	getSlotDefinition("storage-drain", "normal"),
@@ -21,7 +21,7 @@ const allSixTypesAtNormal: PipelineSlot[] = [
 	getSlotDefinition("short-window", "normal"),
 ];
 
-const allSixTypesAtIntense: PipelineSlot[] = allSixTypesAtNormal.map((slot) =>
+const allTypesAtIntense: PipelineSlot[] = allTypesAtNormal.map((slot) =>
 	getSlotDefinition(slot.gateTypeId, "intense")
 );
 
@@ -54,7 +54,7 @@ describe("isMaxPipeline", () => {
 		expect(isMaxPipeline([])).toBe(false);
 	});
 
-	it("returns false when fewer than 6 slots are active", () => {
+	it("returns false when fewer than all slot types are active", () => {
 		const partial = [
 			getSlotDefinition("correct-answers", "intense"),
 			getSlotDefinition("coverage-gain", "intense"),
@@ -62,12 +62,12 @@ describe("isMaxPipeline", () => {
 		expect(isMaxPipeline(partial)).toBe(false);
 	});
 
-	it("returns false when all 6 types active but not all at intense", () => {
-		expect(isMaxPipeline(allSixTypesAtNormal)).toBe(false);
+	it("returns false when all types are active but not all at intense", () => {
+		expect(isMaxPipeline(allTypesAtNormal)).toBe(false);
 	});
 
-	it("returns true when all 6 types are active and all at intense", () => {
-		expect(isMaxPipeline(allSixTypesAtIntense)).toBe(true);
+	it("returns true when all types are active and all at intense", () => {
+		expect(isMaxPipeline(allTypesAtIntense)).toBe(true);
 	});
 });
 
@@ -211,10 +211,11 @@ describe("generateUpgradeCards", () => {
 		expect(cards.every((c) => c.kind === "add-slot")).toBe(true);
 	});
 
-	it("returns only the upgrade-slot card when all types are already active", () => {
-		const cards = generateUpgradeCards(allSixTypesAtNormal, 8);
-		expect(cards.length).toBe(1);
-		expect(cards[0].kind).toBe("upgrade-slot");
+	it("returns one upgrade-slot card per upgradeable slot when all types are active", () => {
+		const cards = generateUpgradeCards(allTypesAtNormal, 8);
+		// all 5 types at normal are upgradeable — one card each, no add-slot cards
+		expect(cards.length).toBe(5);
+		expect(cards.every((c) => c.kind === "upgrade-slot")).toBe(true);
 	});
 
 	it("add-slot cards each contain a valid slot definition", () => {
@@ -228,7 +229,7 @@ describe("generateUpgradeCards", () => {
 	});
 
 	it("upgrade-slot card increments difficulty by one tier", () => {
-		const cards = generateUpgradeCards(allSixTypesAtNormal, 8);
+		const cards = generateUpgradeCards(allTypesAtNormal, 8);
 		const upgradeCard = cards.find((c) => c.kind === "upgrade-slot");
 		if (!upgradeCard || upgradeCard.kind !== "upgrade-slot")
 			throw new Error("Expected upgrade-slot");

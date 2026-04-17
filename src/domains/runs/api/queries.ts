@@ -46,10 +46,7 @@ export const getActiveRunByUserId = async (userId: string) => {
 	return runFactory.toDTO(runRecord[0], categoryCoverage);
 };
 
-export const createRunForUser = async (
-	userId: string,
-	challengeModeId: string
-) => {
+export const createRunForUser = async (userId: string) => {
 	return await db.transaction(async (tx) => {
 		// Get current season ID for the new run
 		const { getSeasonForNewRun } =
@@ -62,7 +59,6 @@ export const createRunForUser = async (
 				user_id: userId,
 				season_id: seasonId,
 				status: "active",
-				challenge_mode_id: challengeModeId,
 				pipeline_slots: getInitialPipelineSlots(),
 			})
 			.returning();
@@ -482,7 +478,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
-				challengeModeId: runsTable.challenge_mode_id,
+
 				totalCoverage: runCategoryCoverageTable.current_coverage, // Category coverage only
 				pollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
 				bestStreak: runCategoryCoverageTable.best_streak, // Category streak only
@@ -520,7 +516,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
-				challengeModeId: runsTable.challenge_mode_id,
+
 				totalCoverage: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0)`,
 				pollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryCoverageTable.best_streak}), 0)`,
@@ -544,7 +540,6 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				usersTable.display_name,
 				runsTable.id,
 				runsTable.season_id,
-				runsTable.challenge_mode_id,
 				runsTable.correct_polls_count
 			)
 			.orderBy(

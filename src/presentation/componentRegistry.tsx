@@ -6,14 +6,8 @@ import ConfigCard from "~/domains/configs/components/Cards";
 import type { Config } from "~/domains/configs/models/config";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { VANILLA_CI_GATES } from "~/domains/runs/data/gates/vanilla";
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
-import type {
-	GateDefinition,
-	GateRequirement,
-} from "~/domains/runs/services/thresholdCalculator.service";
+import { DEFAULT_WINDOW_SIZE } from "~/domains/runs/services/pipelineEvaluator.service";
 import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
 import { STORAGE_UNITS } from "~/lib/storage";
 import { GameLoopExplainer } from "~/ui/GameLoopExplainer";
@@ -219,7 +213,6 @@ type DemoLeaderboardEntry = {
 	displayName: string;
 	photoUrl: string | null;
 	role: string | null;
-	challengeModeId: string | null;
 	totalCoverage: number;
 	pollsSeen: number;
 	bestStreak: number;
@@ -233,7 +226,7 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Matthijs Groen",
 		photoUrl: null,
 		role: "poll-editor",
-		challengeModeId: "vanilla",
+
 		totalCoverage: 142.5,
 		pollsSeen: 28,
 		bestStreak: 8,
@@ -245,7 +238,7 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Piet de Vries",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "vanilla",
+
 		totalCoverage: 118.3,
 		pollsSeen: 24,
 		bestStreak: 6,
@@ -257,7 +250,7 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Sander van Maurik",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "specialist",
+
 		totalCoverage: 95.7,
 		pollsSeen: 20,
 		bestStreak: 5,
@@ -269,7 +262,7 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Tom Schoutens",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "vanilla",
+
 		totalCoverage: 82.4,
 		pollsSeen: 18,
 		bestStreak: 4,
@@ -281,7 +274,7 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "nickve28",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "generalist",
+
 		totalCoverage: 67.2,
 		pollsSeen: 15,
 		bestStreak: 3,
@@ -293,7 +286,7 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 		displayName: "Ruud Schroen",
 		photoUrl: null,
 		role: null,
-		challengeModeId: "vanilla",
+
 		totalCoverage: 45.8,
 		pollsSeen: 12,
 		bestStreak: 2,
@@ -302,15 +295,8 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 	},
 ];
 
-const getPlayerGateNumber = (
-	pollsSeen: number,
-	challengeModeId: string | null
-): number => {
-	const mode = getChallengeModeOrDefault(challengeModeId ?? "vanilla");
-	const gates = mode.gates;
-	const currentGate = getCurrentGate(pollsSeen, gates);
-	return currentGate.gate;
-};
+const getPlayerGateNumber = (pollsSeen: number): number =>
+	Math.max(1, Math.ceil(pollsSeen / DEFAULT_WINDOW_SIZE));
 
 // Demo component: Static Leaderboard with mock data
 const LeaderboardDemo = () => (
@@ -340,8 +326,7 @@ const LeaderboardDemo = () => (
 							<header className="flex gap-2 justify-between">
 								<span className="text-xl">#{idx + 1}</span>
 								<span className="text-sm text-gray-400">
-									Gate{" "}
-									{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}
+									Gate {getPlayerGateNumber(entry.pollsSeen)}
 								</span>
 							</header>
 							<section
@@ -472,17 +457,72 @@ const DailyPollDemo = () => {
 	);
 };
 
-// Demo data for CI Gates - showing progression from easy to hard
-const DEMO_CI_GATES: GateDefinition[] = VANILLA_CI_GATES.slice(0, 6);
-
-const formatRequirement = (req: GateRequirement): string => {
-	if (req.type === "coverage") {
-		return req.requiredCategories === 1
-			? `${req.threshold}% in 1 category`
-			: `${req.threshold}% in ${req.requiredCategories} categories`;
-	}
-	return `Answer ${req.count} polls correctly`;
+type DemoGate = {
+	gate: number;
+	evaluationMode: "OR" | "AND";
+	pollsPerGate: number;
+	requirements: { label: string }[];
 };
+
+// Demo data for CI Gates — legacy presentation slide, not tied to the live system
+const DEMO_CI_GATES: DemoGate[] = [
+	{
+		gate: 1,
+		evaluationMode: "OR",
+		pollsPerGate: 5,
+		requirements: [{ label: "3/5 correct" }, { label: "3% in 1 category" }],
+	},
+	{
+		gate: 2,
+		evaluationMode: "OR",
+		pollsPerGate: 5,
+		requirements: [
+			{ label: "6% in 1 category" },
+			{ label: "3% in 2 categories" },
+		],
+	},
+	{
+		gate: 3,
+		evaluationMode: "OR",
+		pollsPerGate: 5,
+		requirements: [
+			{ label: "12% in 1 category" },
+			{ label: "8% in 2 categories" },
+		],
+	},
+	{
+		gate: 4,
+		evaluationMode: "OR",
+		pollsPerGate: 5,
+		requirements: [
+			{ label: "24% in 1 category" },
+			{ label: "18% in 2 categories" },
+			{ label: "12% in 3 categories" },
+		],
+	},
+	{
+		gate: 5,
+		evaluationMode: "OR",
+		pollsPerGate: 5,
+		requirements: [
+			{ label: "30% in 1 category" },
+			{ label: "18% in 2 categories" },
+			{ label: "12% in 3 categories" },
+			{ label: "6% in 4 categories" },
+		],
+	},
+	{
+		gate: 6,
+		evaluationMode: "OR",
+		pollsPerGate: 5,
+		requirements: [
+			{ label: "41% in 1 category" },
+			{ label: "32% in 2 categories" },
+			{ label: "24% in 3 categories" },
+			{ label: "18% in 4 categories" },
+		],
+	},
+];
 
 // Demo component: CI Gates progression
 const CIGatesDemo = () => (
@@ -533,7 +573,7 @@ const CIGatesDemo = () => (
 											"before:content-['○']": gate.evaluationMode === "OR",
 										})}
 									>
-										<span>{formatRequirement(req)}</span>
+										<span>{req.label}</span>
 									</li>
 								))}
 							</ul>

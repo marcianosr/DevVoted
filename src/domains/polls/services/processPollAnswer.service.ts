@@ -3,7 +3,6 @@ import {
 	createPollResponse,
 	fetchPollByIdWithOptions,
 	getAnsweredPollsCountInRun,
-	getPollsSeenInRun,
 	getWindowResults,
 } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
@@ -16,7 +15,6 @@ import {
 	resetPollRerolls,
 	savePendingUpgradeCards,
 } from "~/domains/runs/api/queries";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
@@ -32,10 +30,6 @@ import {
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
-	calculateThresholdInfo,
-	type ThresholdInfo,
-} from "~/domains/runs/services/thresholdCalculator.service";
-import {
 	outcomeSingle,
 	outcomeMulti,
 	singleCorrectnessFactor,
@@ -48,13 +42,11 @@ import { getTodayDateString } from "~/lib/dateUtils";
 export type PollAnswerResult = {
 	runId: number | null;
 	runEnded: boolean;
-	thresholdInfo: ThresholdInfo | null;
 	selectedOptionIds: number[];
 	correctOptionIds: number[];
 	outcome: PollAnswerOutcome;
 	breakdown: PollScoreBreakdown | null;
 	tryCatchUsed: boolean;
-	victoryJustAchieved: boolean;
 	pipelineEvaluation: PipelineEvaluation | null;
 	upgradeCards: UpgradeCard[];
 };
@@ -81,12 +73,6 @@ type CommitAnswerProgressParams = PollContext & {
 	selectedOptionIds: number[];
 };
 
-type EvaluateGateStateParams = {
-	activeRunId: number;
-	updatedRun: Run;
-	totalPollsSeen: number;
-};
-
 type EvaluatePipelineParams = {
 	activeRunId: number;
 	updatedRun: Run;
@@ -100,15 +86,10 @@ type PipelineStageResult = {
 	upgradeCards: UpgradeCard[];
 };
 
-type GateStateResult = {
-	thresholdInfo: ThresholdInfo;
-	victoryJustAchieved: boolean;
-};
-
 type ResolveRunStateParams = PollContext & {
 	activeRunId: number;
 	updatedRun: Run;
-	thresholdInfo: ThresholdInfo;
+	pipelineEvaluation: PipelineEvaluation | null;
 };
 
 type RunStateResult = {
@@ -152,47 +133,12 @@ const commitAnswerProgress = async ({
 	return { breakdown };
 };
 
-const evaluateGateState = async ({
-	activeRunId,
-	updatedRun,
-	totalPollsSeen,
-}: EvaluateGateStateParams): Promise<GateStateResult> => {
-	const challengeMode = getChallengeModeOrDefault(updatedRun.challengeModeId);
-	const gates = challengeMode.gates;
-
-	const thresholdInfo = calculateThresholdInfo(
-		{
-			categoryCoverageData: updatedRun.categoryCoverage,
-			totalPollsSeen,
-			correctPollsCount: updatedRun.correctPollsCount,
-		},
-		gates
-	);
-
-	if (!thresholdInfo.meetsThreshold || !thresholdInfo.isThresholdCheckPoll) {
-		return { thresholdInfo, victoryJustAchieved: false };
-	}
-
-	const { checkForVictory } =
-		await import("~/domains/runs/services/runCompletion.service");
-	const hasWon = checkForVictory(thresholdInfo.currentGate, gates);
-
-	if (!hasWon || updatedRun.victoryAchievedAt) {
-		return { thresholdInfo, victoryJustAchieved: false };
-	}
-
-	const { markVictoryAchieved } = await import("~/domains/runs/api/queries");
-	await markVictoryAchieved(activeRunId);
-
-	return { thresholdInfo, victoryJustAchieved: true };
-};
-
 const resolveRunState = async ({
 	activeRunId,
 	updatedRun,
 	poll,
 	options,
-	thresholdInfo,
+	pipelineEvaluation,
 }: ResolveRunStateParams): Promise<RunStateResult> => {
 	const { protection, resetRebuild } = applyEffects(
 		{ poll, options, hasAnswered: true, run: updatedRun },
@@ -203,11 +149,11 @@ const resolveRunState = async ({
 		await resetPollRerolls(activeRunId);
 	}
 
-	if (thresholdInfo.isThresholdCheckPoll) {
+	if (pipelineEvaluation !== null) {
 		await resetPollRerolls(activeRunId);
 	}
 
-	if (thresholdInfo.meetsThreshold) {
+	if (pipelineEvaluation === null || pipelineEvaluation.passed) {
 		return { runEnded: false, tryCatchUsed: false };
 	}
 
@@ -215,7 +161,14 @@ const resolveRunState = async ({
 		return { runEnded: false, tryCatchUsed: true };
 	}
 
-	await endRunForThresholdFailure(activeRunId);
+	const failedSlots = pipelineEvaluation.slotEvaluations
+		.filter((e) => !e.passed)
+		.map((e) => ({
+			gateTypeId: e.slot.gateTypeId,
+			difficulty: e.slot.difficulty,
+		}));
+
+	await endRunForThresholdFailure(activeRunId, failedSlots);
 	return { runEnded: true, tryCatchUsed: false };
 };
 
@@ -292,10 +245,8 @@ export const processPollAnswer = async (
 			selectedOptionIds,
 			outcome,
 			runEnded: false,
-			thresholdInfo: null,
 			breakdown: null,
 			tryCatchUsed: false,
-			victoryJustAchieved: false,
 			pipelineEvaluation: null,
 			upgradeCards: [],
 		};
@@ -315,16 +266,7 @@ export const processPollAnswer = async (
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
-	const [totalPollsSeen, totalPollsAnswered] = await Promise.all([
-		getPollsSeenInRun(activeRun.id),
-		getAnsweredPollsCountInRun(activeRun.id),
-	]);
-
-	const { thresholdInfo, victoryJustAchieved } = await evaluateGateState({
-		activeRunId: activeRun.id,
-		updatedRun,
-		totalPollsSeen,
-	});
+	const totalPollsAnswered = await getAnsweredPollsCountInRun(activeRun.id);
 
 	const windowSize = getWindowSize(updatedRun.pipelineSlots);
 	const { pipelineEvaluation, upgradeCards } = await evaluatePipelineStage({
@@ -340,7 +282,7 @@ export const processPollAnswer = async (
 		updatedRun,
 		poll,
 		options,
-		thresholdInfo,
+		pipelineEvaluation,
 	});
 
 	return {
@@ -349,10 +291,8 @@ export const processPollAnswer = async (
 		selectedOptionIds,
 		outcome,
 		runEnded,
-		thresholdInfo,
 		breakdown,
 		tryCatchUsed,
-		victoryJustAchieved,
 		pipelineEvaluation,
 		upgradeCards,
 	};

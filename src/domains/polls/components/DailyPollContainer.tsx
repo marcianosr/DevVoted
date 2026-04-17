@@ -30,7 +30,6 @@ import { UpgradeCardModal } from "~/domains/runs/components/UpgradeCardModal";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
 import type { PipelineEvaluation } from "~/domains/runs/services/pipelineEvaluator.service";
-import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 
@@ -95,7 +94,6 @@ type DailyPollContainerProps = {
 	score: ScoreCalculation;
 	configEffects: ApplyEffects;
 	creatorDisplayName: string | null;
-	currentGate: GateDefinition;
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
 	initialPendingUpgradeCards: UpgradeCard[];

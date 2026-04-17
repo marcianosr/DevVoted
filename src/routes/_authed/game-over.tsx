@@ -7,9 +7,34 @@ import { clsx } from "clsx";
 import { ConfirmDialog } from "~/components/ConfirmDialog";
 import Content from "~/components/Content";
 import { finishRunFn, getLastRunForGameOver } from "~/domains/runs/api/runs";
+import type { PipelineFailureSlot } from "~/domains/runs/services/runCompletion.service";
+import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
+import {
+	formatRequirement,
+	getSlotLabel,
+} from "~/domains/runs/utils/formatPipelineRequirement";
 import { runQueryKeys } from "~/domains/shared/queryKeys";
 import { PrimaryButton } from "~/ui/PrimaryButton";
 import { SecondaryButton } from "~/ui/SecondaryButton";
+
+type ParsedCompletion =
+	| { type: "victory" }
+	| { type: "pipeline_failure"; failedSlots: PipelineFailureSlot[] }
+	| { type: "manual" }
+	| { type: "unknown" };
+
+const parseCompletionReason = (reason: string | null): ParsedCompletion => {
+	if (reason === "victory") return { type: "victory" };
+	if (reason === "manual_break_off") return { type: "manual" };
+	try {
+		const parsed = JSON.parse(reason ?? "");
+		if (parsed.type === "pipeline_failure")
+			return { type: "pipeline_failure", failedSlots: parsed.failedSlots };
+	} catch {
+		throw new Error(`Unknown completion reason: ${reason}`);
+	}
+	return { type: "unknown" };
+};
 
 export const Route = createFileRoute("/_authed/game-over")({
 	component: RouteComponent,
@@ -98,19 +123,41 @@ function RouteComponent() {
 		);
 	}
 
-	const isVictory = lastRun?.run.completion_reason === "victory" ? true : false;
+	const completion = parseCompletionReason(
+		lastRun?.run.completion_reason ?? null
+	);
 
 	return (
 		<Content>
 			<div className="py-8 space-y-8">
 				<header>
 					<h1 className="text-4xl">
-						{isVictory
+						{completion.type === "victory"
 							? "You passed all CI gates!"
-							: "You failed to pass the CI gates!"}
+							: "Pipeline failed."}
 					</h1>
 					<p>Thank you for playing!</p>
 				</header>
+
+				{completion.type === "pipeline_failure" && (
+					<section>
+						<h2 className="text-2xl mb-2">Failure reason</h2>
+						<ul className="space-y-1">
+							{completion.failedSlots.map((slot) => {
+								const definition = getSlotDefinition(
+									slot.gateTypeId,
+									slot.difficulty
+								);
+								return (
+									<li key={slot.gateTypeId} className="text-red-400">
+										✗ {getSlotLabel(slot.gateTypeId)} {slot.difficulty} —{" "}
+										{formatRequirement(definition.requirement)}
+									</li>
+								);
+							})}
+						</ul>
+					</section>
+				)}
 
 				<section>
 					<h2 className="text-2xl">Your last performance</h2>
@@ -141,7 +188,7 @@ function RouteComponent() {
 				</section>
 
 				<section className="space-y-4">
-					{isVictory && (
+					{completion.type === "victory" && (
 						<>
 							<p className="text-green-400">
 								Congratulations on mastering all CI gates! You can continue your

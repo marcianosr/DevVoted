@@ -1,7 +1,6 @@
 import { InferSelectModel } from "drizzle-orm";
 
 import { runsTable } from "@/src/database/schema";
-import { ChallengeModeId } from "~/domains/runs/data/challengeModes";
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
 import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
 import { STORAGE_UNITS } from "~/lib/storage";
@@ -12,7 +11,6 @@ export type Run = {
 	userId: string;
 	seasonId: number | null;
 	status: "active" | "finished";
-	challengeModeId: ChallengeModeId;
 	storageLimit: number;
 	activeConfigIds: string[];
 	rerolls: number;
@@ -45,7 +43,6 @@ export const runToDTO = (
 		userId: record.user_id,
 		seasonId: record.season_id,
 		status: record.status,
-		challengeModeId: (record.challenge_mode_id ?? "vanilla") as ChallengeModeId,
 		storageLimit: record.storage_limit,
 		activeConfigIds: record.active_config_ids || [],
 		rerolls: record.rerolls,
@@ -81,7 +78,6 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		user_id: dto.userId,
 		season_id: dto.seasonId,
 		status: dto.status,
-		challenge_mode_id: dto.challengeModeId,
 		storage_limit: dto.storageLimit,
 		active_config_ids: dto.activeConfigIds,
 		rerolls: dto.rerolls,
@@ -124,7 +120,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		userId: "",
 		seasonId: null,
 		status: "active",
-		challengeModeId: "vanilla",
+
 		storageLimit: STORAGE_UNITS.MB, // 1MB default
 		activeConfigIds: [],
 		rerolls: 0,
@@ -161,7 +157,7 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		userId: "test-user-id",
 		seasonId: 1,
 		status: "active",
-		challengeModeId: "vanilla",
+
 		storageLimit: STORAGE_UNITS.MB,
 		activeConfigIds: [],
 		rerolls: 0,
@@ -195,7 +191,7 @@ export const createMockRunRecord = (
 		user_id: "test-user-id",
 		season_id: 1,
 		status: "active",
-		challenge_mode_id: "vanilla",
+
 		storage_limit: STORAGE_UNITS.MB,
 		active_config_ids: [],
 		rerolls: 0,

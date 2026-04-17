@@ -171,7 +171,6 @@ export const postPollOptionsHandler = async ({
 			runId,
 			breakdown,
 			runEnded,
-			thresholdInfo,
 			selectedOptionIds,
 			correctOptionIds,
 			outcome,
@@ -196,7 +195,6 @@ export const postPollOptionsHandler = async ({
 			isCorrect: outcome === "full",
 			runEnded,
 			breakdown,
-			thresholdInfo,
 			pipelineEvaluation,
 			upgradeCards,
 		};

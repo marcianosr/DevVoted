@@ -6,7 +6,6 @@ import { createMockPollOption } from "~/domains/polls/factories/pollOption";
 import * as runQueries from "~/domains/runs/api/queries";
 import * as progressService from "~/domains/runs/services/progress.service";
 import * as runCompletionService from "~/domains/runs/services/runCompletion.service";
-import * as thresholdService from "~/domains/runs/services/thresholdCalculator.service";
 import { createMockRun } from "~/domains/runs/models/run";
 import {
 	getSlotDefinition,
@@ -14,7 +13,6 @@ import {
 } from "~/domains/runs/data/pipelineSlots";
 import * as configs from "~/domains/configs/data/configs";
 import type { ApplyEffects } from "~/domains/configs/data/configs";
-import type { ThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import type {
 	PollScoreBreakdown,
 	ScoreCalculation,
@@ -34,7 +32,6 @@ vi.mock("~/domains/runs/api/queries", () => ({
 	getActiveRunByUserId: vi.fn(),
 	incrementCorrectPollsCount: vi.fn(),
 	resetPollRerolls: vi.fn(),
-	markVictoryAchieved: vi.fn(),
 	awardStorage: vi.fn(),
 	savePendingUpgradeCards: vi.fn(),
 	clearPendingUpgradeCards: vi.fn(),
@@ -45,12 +42,9 @@ vi.mock("~/domains/runs/services/progress.service", () => ({
 }));
 
 vi.mock("~/domains/runs/services/runCompletion.service", () => ({
-	endRunForThresholdFailure: vi.fn(),
-	checkForVictory: vi.fn(),
-}));
-
-vi.mock("~/domains/runs/services/thresholdCalculator.service", () => ({
-	calculateThresholdInfo: vi.fn(),
+	endRunForThresholdFailure: vi
+		.fn()
+		.mockResolvedValue({ runEnded: true, reason: "pipeline_failure" }),
 }));
 
 vi.mock("~/domains/configs/data/configs", () => ({
@@ -143,18 +137,6 @@ const mockEffects: ApplyEffects = {
 	exposeConfigDeck: false,
 };
 
-const mockThresholdInfo: ThresholdInfo = {
-	meetsThreshold: true,
-	maxCoverage: 20,
-	pollNumber: 3,
-	currentGate: 1,
-	pollInRound: 3,
-	isThresholdCheckPoll: false,
-	gateDefinition: null,
-	requirementEvaluations: [],
-	qualifyingCategories: [],
-};
-
 const defaultInput = {
 	pollId: BANJO_POLL_ID,
 	userId: BANJO_USER_ID,
@@ -175,12 +157,8 @@ describe("processPollAnswer", () => {
 		vi.mocked(progressService.incrementRunProgress).mockResolvedValue(
 			mockScoreCalculation
 		);
-		vi.mocked(pollQueries.getPollsSeenInRun).mockResolvedValue(3);
 		vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(3);
 		vi.mocked(pollQueries.getWindowResults).mockResolvedValue([]);
-		vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue(
-			mockThresholdInfo
-		);
 		vi.mocked(configs.applyEffects).mockReturnValue(mockEffects);
 	});
 
@@ -192,7 +170,6 @@ describe("processPollAnswer", () => {
 
 			expect(result.runId).toBeNull();
 			expect(result.runEnded).toBe(false);
-			expect(result.thresholdInfo).toBeNull();
 			expect(result.breakdown).toBeNull();
 			expect(result.tryCatchUsed).toBe(false);
 		});
@@ -222,118 +199,27 @@ describe("processPollAnswer", () => {
 		});
 	});
 
-	describe("wrong answer without tryCatch", () => {
-		it("ends the run when threshold is not met", async () => {
-			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				...mockThresholdInfo,
-				meetsThreshold: false,
-			});
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
-				createMockRun({ id: 1, userId: BANJO_USER_ID })
-			);
-
+	describe("wrong answer", () => {
+		it("does not end the run between gate checks", async () => {
+			// Default: answered 3 polls, window is 5 — no gate check fires
 			const result = await processPollAnswer({
 				...defaultInput,
 				selectedOptionIds: [wrongOptions[0].id],
 			});
 
-			expect(result.runEnded).toBe(true);
+			expect(result.runEnded).toBe(false);
 			expect(
 				runCompletionService.endRunForThresholdFailure
-			).toHaveBeenCalledWith(1);
+			).not.toHaveBeenCalled();
 		});
 
 		it("does not increment correct polls count", async () => {
-			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				...mockThresholdInfo,
-				meetsThreshold: false,
-			});
-
 			await processPollAnswer({
 				...defaultInput,
 				selectedOptionIds: [wrongOptions[0].id],
 			});
 
 			expect(runQueries.incrementCorrectPollsCount).not.toHaveBeenCalled();
-		});
-	});
-
-	describe("wrong answer with tryCatch protection", () => {
-		it("does not end the run and marks tryCatchUsed", async () => {
-			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				...mockThresholdInfo,
-				meetsThreshold: false,
-			});
-			vi.mocked(configs.applyEffects).mockReturnValue({
-				...mockEffects,
-				protection: { tryCatch: true },
-			});
-
-			const result = await processPollAnswer({
-				...defaultInput,
-				selectedOptionIds: [wrongOptions[0].id],
-			});
-
-			expect(result.runEnded).toBe(false);
-			expect(result.tryCatchUsed).toBe(true);
-			expect(
-				runCompletionService.endRunForThresholdFailure
-			).not.toHaveBeenCalled();
-		});
-	});
-
-	describe("threshold check poll", () => {
-		it("marks victory when last gate is cleared and victory not yet achieved", async () => {
-			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				...mockThresholdInfo,
-				meetsThreshold: true,
-				isThresholdCheckPoll: true,
-				currentGate: 3,
-			});
-			vi.mocked(runCompletionService.checkForVictory).mockReturnValue(true);
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
-				createMockRun({ id: 1, userId: BANJO_USER_ID, victoryAchievedAt: null })
-			);
-
-			const result = await processPollAnswer(defaultInput);
-
-			expect(result.victoryJustAchieved).toBe(true);
-			expect(result.runEnded).toBe(false);
-			expect(runQueries.markVictoryAchieved).toHaveBeenCalledWith(1);
-		});
-
-		it("does not mark victory again when already achieved", async () => {
-			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				...mockThresholdInfo,
-				meetsThreshold: true,
-				isThresholdCheckPoll: true,
-				currentGate: 3,
-			});
-			vi.mocked(runCompletionService.checkForVictory).mockReturnValue(true);
-			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(
-				createMockRun({
-					id: 1,
-					userId: BANJO_USER_ID,
-					victoryAchievedAt: new Date("2025-12-25"),
-				})
-			);
-
-			const result = await processPollAnswer(defaultInput);
-
-			expect(result.victoryJustAchieved).toBe(false);
-			expect(runQueries.markVictoryAchieved).not.toHaveBeenCalled();
-		});
-
-		it("resets rerolls at every threshold check poll", async () => {
-			vi.mocked(thresholdService.calculateThresholdInfo).mockReturnValue({
-				...mockThresholdInfo,
-				isThresholdCheckPoll: true,
-			});
-			vi.mocked(runCompletionService.checkForVictory).mockReturnValue(false);
-
-			await processPollAnswer(defaultInput);
-
-			expect(runQueries.resetPollRerolls).toHaveBeenCalledWith(1);
 		});
 	});
 
@@ -434,6 +320,55 @@ describe("processPollAnswer", () => {
 			expect(
 				result.upgradeCards.filter((c) => c.kind === "upgrade-slot").length
 			).toBe(1);
+		});
+
+		it("ends the run when pipeline fails at a gate check", async () => {
+			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+				Array(5).fill({ isCorrect: false, isWrong: true }) // 0/5 correct — fails
+			);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
+
+			const result = await processPollAnswer(defaultInput);
+
+			expect(result.runEnded).toBe(true);
+			expect(
+				runCompletionService.endRunForThresholdFailure
+			).toHaveBeenCalledWith(1, [
+				{ gateTypeId: "correct-answers", difficulty: "easy" },
+			]);
+		});
+
+		it("does not end the run when pipeline fails but tryCatch is active", async () => {
+			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+				Array(5).fill({ isCorrect: false, isWrong: true })
+			);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
+			vi.mocked(configs.applyEffects).mockReturnValue({
+				...mockEffects,
+				protection: { tryCatch: true },
+			});
+
+			const result = await processPollAnswer(defaultInput);
+
+			expect(result.runEnded).toBe(false);
+			expect(result.tryCatchUsed).toBe(true);
+			expect(
+				runCompletionService.endRunForThresholdFailure
+			).not.toHaveBeenCalled();
+		});
+
+		it("resets rerolls at every gate check", async () => {
+			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+				windowWith3Correct
+			);
+			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
+
+			await processPollAnswer(defaultInput);
+
+			expect(runQueries.resetPollRerolls).toHaveBeenCalledWith(1);
 		});
 	});
 });

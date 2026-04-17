@@ -87,19 +87,12 @@ export const generateUpgradeCards = (
 		});
 	}
 
-	// 1 upgrade-slot card if any existing slot is not yet at max difficulty
-	const upgradeableSlots = getUpgradeableSlots(slots);
-	if (upgradeableSlots.length > 0) {
-		const slot =
-			upgradeableSlots[Math.floor(Math.random() * upgradeableSlots.length)];
+	// One upgrade card per upgradeable slot — player sees all options, picks one
+	for (const slot of getUpgradeableSlots(slots)) {
 		const nextDifficulty = getNextDifficulty(slot.difficulty);
 
-		// nextDifficulty is always defined — getUpgradeableSlots filters out Intense slots.
-		if (!nextDifficulty) {
-			throw new Error(
-				`Slot ${slot.gateTypeId} is already at max difficulty but was included in upgradeable slots`
-			);
-		}
+		// nextDifficulty is always defined — getUpgradeableSlots filters out intense slots.
+		if (!nextDifficulty) continue;
 
 		cards.push({
 			kind: "upgrade-slot",

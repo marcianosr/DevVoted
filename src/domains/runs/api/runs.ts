@@ -26,18 +26,12 @@ import {
 	savePipelineSlots,
 } from "./queries";
 
-export const getOrCreateRun = createServerFn({ method: "GET" })
-	.inputValidator(
-		z
-			.object({
-				challengeModeId: z.string(),
-			})
-			.required()
-	)
-	.handler(async ({ data }) => {
+export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
+	async () => {
 		const userId = await getAuthenticatedUserId();
-		return await getOrCreateActiveRun(userId, data.challengeModeId);
-	});
+		return await getOrCreateActiveRun(userId);
+	}
+);
 
 export const getActiveRun = createServerFn({ method: "GET" }).handler(
 	async () => {

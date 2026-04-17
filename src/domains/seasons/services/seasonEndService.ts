@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { runsTable } from "~/database/schema";
-import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
+import { endRunManually } from "~/domains/runs/services/runCompletion.service";
 
 // Complete all active runs when a season ends
 export const completeAllActiveRuns = async (seasonId: number) => {
@@ -19,7 +19,7 @@ export const completeAllActiveRuns = async (seasonId: number) => {
 	// Complete each run with stats tracking and leaderboard entry
 	for (const run of activeRuns) {
 		try {
-			const result = await endRunForThresholdFailure(run.id);
+			const result = await endRunManually(run.id);
 			completionResults.push({
 				runId: run.id,
 				userId: run.user_id,

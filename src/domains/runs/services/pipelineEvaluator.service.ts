@@ -91,7 +91,8 @@ const evaluateSlot = (
 				passed:
 					(!req.correctRequired ||
 						ctx.correctAnswersInWindow >= req.correctRequired) &&
-					!req.noWrongRequired,
+					(!req.noWrongRequired ||
+						ctx.correctAnswersInWindow === ctx.pollsInWindow),
 			};
 	}
 };

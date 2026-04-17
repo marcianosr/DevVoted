@@ -5,12 +5,10 @@ import Content from "~/components/Content";
 import { DevPollNavigator } from "~/components/DevPollNavigator";
 import { applyEffects } from "~/domains/configs/data/configs";
 import { getShopOfferingsServerFn } from "~/domains/economy/api/shopOfferings";
-import { getDailyPoll, getPollsSeenInRun } from "~/domains/polls/api/polls";
+import { getDailyPoll } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
 } from "~/domains/polls/components/DailyPollContainer";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 
@@ -41,7 +39,6 @@ const DailyPoll: React.FC = () => {
 		isAdmin,
 		score,
 		configEffects,
-		currentGate,
 		offeredConfigs,
 		currentDate,
 	} = Route.useLoaderData();
@@ -80,7 +77,6 @@ const DailyPoll: React.FC = () => {
 				score={score}
 				configEffects={configEffects}
 				creatorDisplayName={creatorDisplayName}
-				currentGate={currentGate}
 				isAdmin={isAdmin}
 				offeredConfigs={offeredConfigs}
 				initialPendingUpgradeCards={activeRun.data.pendingUpgradeCards}
@@ -151,17 +147,6 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 
 		const currentDate = deps.date || getTodayDateString();
 
-		const pollsSeenResponse = await getPollsSeenInRun({
-			data: { runId: activeRun.data.id },
-		});
-
-		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
-		const challengeMode = getChallengeModeOrDefault(
-			activeRun.data.challengeModeId
-		);
-		const gates = challengeMode.gates;
-		const currentGate = getCurrentGate(pollsSeen, gates);
-
 		const pollResponse = await getDailyPoll({
 			data: { runId: activeRun.data.id, date: deps.date },
 		});
@@ -206,7 +191,6 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			isAdmin: pollResponse.isAdmin,
 			score,
 			configEffects,
-			currentGate,
 			offeredConfigs,
 			currentDate,
 		};

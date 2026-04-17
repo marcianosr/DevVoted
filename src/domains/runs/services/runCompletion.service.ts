@@ -1,9 +1,7 @@
-import { getPollsSeenInRun } from "~/domains/polls/api/queries";
-import {
-	calculateThresholdInfo,
-	type ThresholdInfo,
-	type GateDefinition,
-} from "~/domains/runs/services/thresholdCalculator.service";
+import type {
+	GateDifficulty,
+	GateTypeId,
+} from "~/domains/runs/models/pipeline";
 
 import {
 	completeRunWithThresholdFailure,
@@ -12,9 +10,19 @@ import {
 	getRunWithCategoryCoverage,
 } from "../api/queries";
 
-// End run mid-game when coverage threshold is not met (preserves progress in final_* columns)
-export const endRunForThresholdFailure = async (runId: number) => {
-	// Get the run with category coverage data
+export type PipelineFailureSlot = {
+	gateTypeId: GateTypeId;
+	difficulty: GateDifficulty;
+};
+
+const encodePipelineFailure = (failedSlots: PipelineFailureSlot[]): string =>
+	JSON.stringify({ type: "pipeline_failure", failedSlots });
+
+// End run mid-game when a pipeline slot fails (preserves progress in final_* columns)
+export const endRunForThresholdFailure = async (
+	runId: number,
+	failedSlots: PipelineFailureSlot[]
+) => {
 	const run = await getRunWithCategoryCoverage(runId);
 
 	if (!run) {
@@ -23,9 +31,11 @@ export const endRunForThresholdFailure = async (runId: number) => {
 
 	const { totalCoverage } = await getRunStats(runId);
 
-	await completeRunWithThresholdFailure(runId, "threshold_not_met");
+	await completeRunWithThresholdFailure(
+		runId,
+		encodePipelineFailure(failedSlots)
+	);
 
-	// Create category-specific leaderboard entries to track this run's performance
 	await createCategoryLeaderboardEntries(
 		run.userId,
 		runId,
@@ -33,7 +43,7 @@ export const endRunForThresholdFailure = async (runId: number) => {
 		totalCoverage
 	);
 
-	return { runEnded: true, reason: "threshold_not_met" };
+	return { runEnded: true, reason: "pipeline_failure" };
 };
 
 // End run manually (user chose to break off via "Start New Run" button)
@@ -57,38 +67,4 @@ export const endRunManually = async (runId: number) => {
 	);
 
 	return { runEnded: true, reason: "manual_break_off" };
-};
-
-// Helper function to check if run meets coverage threshold to continue
-export const checkCoverageThreshold = async (
-	runId: number,
-	gates: GateDefinition[]
-): Promise<ThresholdInfo> => {
-	const runWithCategoryData = await getRunWithCategoryCoverage(runId);
-
-	if (!runWithCategoryData) {
-		throw new Error(`Run with ID ${runId} not found`);
-	}
-
-	// Fetch polls seen in current run for threshold calculation
-	const pollsSeenInRun = await getPollsSeenInRun(runId);
-
-	return calculateThresholdInfo(
-		{
-			categoryCoverageData: runWithCategoryData.categoryCoverage,
-			totalPollsSeen: pollsSeenInRun,
-			correctPollsCount: runWithCategoryData.correctPollsCount,
-		},
-		gates
-	);
-};
-
-// Check if player has passed all defined CI gates (victory condition)
-// Victory occurs when player passes the threshold check of the last gate
-// Example: With 7 gates defined, victory triggers when gate 7's threshold is met
-export const checkForVictory = (
-	currentGate: number,
-	gates: GateDefinition[]
-): boolean => {
-	return currentGate >= gates.length;
 };

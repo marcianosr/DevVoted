@@ -351,6 +351,13 @@
       "when": 1775977572041,
       "tag": "0049_curious_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1776072377303,
+      "tag": "0050_happy_mac_gargan",
+      "breakpoints": true
     }
   ]
 }
