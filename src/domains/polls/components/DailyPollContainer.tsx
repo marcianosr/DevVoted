@@ -32,25 +32,24 @@ import type { Run } from "~/domains/runs/models/run";
 import type { PipelineEvaluation } from "~/domains/runs/services/pipelineEvaluator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
+import { getAuthenticatedUserId } from "~/utils/authorization";
 
 export const getScoreBreakdown = createServerFn({ method: "GET" })
 	.inputValidator(
-		z.custom<{
-			poll: Poll;
-			options: PollOption[];
-			hasAnswered: boolean;
-			run: Run;
-			selectedOptions: string[];
-		}>()
+		z.object({
+			pollId: z.number().int().positive(),
+			selectedOptions: z.array(z.string()),
+			hasAnswered: z.boolean(),
+		})
 	)
 	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
 		const result = await getScoreBreakdownHandler({
 			data: {
-				hasAnswered: data.hasAnswered,
-				options: data.options,
-				poll: data.poll,
-				run: data.run,
+				pollId: data.pollId,
 				selectedOptions: data.selectedOptions,
+				hasAnswered: data.hasAnswered,
+				userId,
 			},
 		});
 

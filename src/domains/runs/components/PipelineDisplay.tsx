@@ -49,7 +49,7 @@ const PipelineSlotRow = ({ slot, passed }: PipelineSlotRowProps) => {
 	const isPermanentModifier = slot.requirement.type === "storage-drain";
 
 	return (
-		<li className="flex items-center gap-2 font-mono text-sm">
+		<li className="flex items-center gap-2 text-sm">
 			<SlotStatusIcon
 				passed={passed}
 				isPermanentModifier={isPermanentModifier}
@@ -85,7 +85,7 @@ export const PipelineDisplay = ({
 
 	return (
 		<div>
-			<p className="text-gray-500 text-xs font-mono mb-2 uppercase tracking-widest">
+			<p className="text-gray-500 text-xs mb-2 uppercase tracking-widest">
 				CI Pipeline
 			</p>
 			<ul className="flex flex-col gap-2">
@@ -105,7 +105,7 @@ export const PipelineDisplay = ({
 			</ul>
 			{evaluation && (
 				<p
-					className={`mt-3 text-xs font-mono ${
+					className={`mt-3 text-xs ${
 						evaluation.passed ? "text-green-400" : "text-red-400"
 					}`}
 				>

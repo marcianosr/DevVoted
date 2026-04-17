@@ -69,6 +69,7 @@ const DailyPoll: React.FC = () => {
 		<Content poll={poll}>
 			<DevPollNavigator currentDate={currentDate} hasCustomDate={!!date} />
 			<DailyPollContainer
+				key={poll.id}
 				poll={poll}
 				options={options}
 				hasAnswered={hasAnswered}
@@ -174,11 +175,9 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 
 		const score = await getScoreBreakdown({
 			data: {
-				poll: pollResponse.data.poll,
-				options: pollResponse.data.options,
-				hasAnswered: pollResponse.data.hasAnswered,
-				run: activeRun.data,
+				pollId: pollResponse.data.poll.id,
 				selectedOptions: pollResponse.data.selectedOptions,
+				hasAnswered: pollResponse.data.hasAnswered,
 			},
 		});
 
