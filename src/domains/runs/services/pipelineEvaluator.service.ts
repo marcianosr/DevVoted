@@ -9,7 +9,6 @@ export type PipelineEvaluationContext = {
 	readonly coverageGainedInWindow: number; // percentage points gained this window
 	readonly currentStreakAtWindowEnd: number; // consecutive correct answers ending this window
 	readonly pollsInWindow: number; // total window size (fixed)
-	readonly disabledConfigCount: number; // configs forcibly disabled this window
 };
 
 export type SlotEvaluation = {
@@ -57,12 +56,6 @@ const evaluateSlot = (
 					ctx.correctAnswersInWindow >= req.count &&
 					(!req.streakRequired ||
 						ctx.currentStreakAtWindowEnd >= req.streakRequired),
-			};
-
-		case "disabled-config":
-			return {
-				slot,
-				passed: ctx.disabledConfigCount >= req.count,
 			};
 
 		case "short-window":

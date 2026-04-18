@@ -207,8 +207,6 @@ const evaluatePipelineStage = async ({
 			0
 		),
 		pollsInWindow: windowSize,
-		// TODO: track disabled configs per window for disabled-config gate evaluation
-		disabledConfigCount: 0,
 	};
 
 	if (!isPipelineCheckPoll) {

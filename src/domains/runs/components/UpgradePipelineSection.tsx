@@ -41,8 +41,6 @@ const formatCurrentStat = (
 			return `${ctx.correctAnswersInWindow} correct`;
 		case "coverage-gain":
 			return `+${ctx.coverageGainedInWindow.toFixed(1)}%`;
-		case "disabled-config":
-			return `${ctx.disabledConfigCount} disabled`;
 		case "short-window":
 			return `${ctx.correctAnswersInWindow}/${ctx.pollsInWindow} correct`;
 	}

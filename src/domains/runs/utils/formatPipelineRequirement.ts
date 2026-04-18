@@ -20,11 +20,6 @@ export const formatRequirement = (
 				: `${countStr} correct`;
 		}
 
-		case "disabled-config":
-			return req.requiresRarePlus
-				? `Disable ${req.count} rare+ config${req.count > 1 ? "s" : ""}`
-				: `Disable ${req.count} config${req.count > 1 ? "s" : ""}`;
-
 		case "short-window":
 			if (req.correctRequired)
 				return `${req.pollCount} polls, ${req.correctRequired}/${req.pollCount} correct`;
@@ -35,7 +30,6 @@ export const formatRequirement = (
 const SLOT_LABELS: Record<GateTypeId, string> = {
 	"coverage-gain": "Coverage",
 	"correct-answers": "Accuracy",
-	"disabled-config": "Config Lock",
 	"short-window": "Sprint",
 };
 

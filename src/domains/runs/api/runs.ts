@@ -104,7 +104,6 @@ export const getExposedConfigDeck = createServerFn({ method: "GET" })
 const gateTypeIdSchema = z.enum([
 	"coverage-gain",
 	"correct-answers",
-	"disabled-config",
 	"short-window",
 ] as const);
 
@@ -154,7 +153,6 @@ export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 				0
 			),
 			pollsInWindow: windowSize,
-			disabledConfigCount: 0,
 		};
 	}
 );

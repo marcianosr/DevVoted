@@ -14,7 +14,6 @@ import {
 const allTypesAtNormal: PipelineSlot[] = [
 	getSlotDefinition("coverage-gain", "normal"),
 	getSlotDefinition("correct-answers", "normal"),
-	getSlotDefinition("disabled-config", "normal"),
 	getSlotDefinition("short-window", "normal"),
 ];
 

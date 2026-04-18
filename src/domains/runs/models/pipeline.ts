@@ -2,11 +2,7 @@
 
 export type GateDifficulty = "easy" | "normal" | "hard" | "intense";
 
-export type GateTypeId =
-	| "coverage-gain"
-	| "correct-answers"
-	| "disabled-config"
-	| "short-window";
+export type GateTypeId = "coverage-gain" | "correct-answers" | "short-window";
 
 export type GateFamily = "coverage" | "accuracy" | "economy" | "pipeline";
 
@@ -23,12 +19,6 @@ export type CorrectAnswersRequirement = {
 	streakRequired?: number; // consecutive correct answers also required (Intense)
 };
 
-export type DisabledConfigRequirement = {
-	type: "disabled-config";
-	count: number;
-	requiresRarePlus: boolean;
-};
-
 export type ShortWindowRequirement = {
 	type: "short-window";
 	pollCount: number; // reduced window size (3 or 4 instead of 5)
@@ -40,7 +30,6 @@ export type ShortWindowRequirement = {
 export type PassFailRequirement =
 	| CoverageGainRequirement
 	| CorrectAnswersRequirement
-	| DisabledConfigRequirement
 	| ShortWindowRequirement;
 
 export type PipelineSlotRequirement = PassFailRequirement;

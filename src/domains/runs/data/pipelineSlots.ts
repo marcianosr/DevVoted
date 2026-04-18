@@ -110,43 +110,6 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 			},
 		},
 	},
-	"disabled-config": {
-		family: "pipeline",
-		difficulties: {
-			easy: {
-				requirement: {
-					type: "disabled-config",
-					count: 1,
-					requiresRarePlus: false,
-				},
-				reward: SLOT_REWARDS.easy,
-			},
-			normal: {
-				requirement: {
-					type: "disabled-config",
-					count: 1,
-					requiresRarePlus: true,
-				},
-				reward: SLOT_REWARDS.normal,
-			},
-			hard: {
-				requirement: {
-					type: "disabled-config",
-					count: 2,
-					requiresRarePlus: false,
-				},
-				reward: SLOT_REWARDS.hard,
-			},
-			intense: {
-				requirement: {
-					type: "disabled-config",
-					count: 2,
-					requiresRarePlus: true,
-				},
-				reward: SLOT_REWARDS.intense,
-			},
-		},
-	},
 	"short-window": {
 		family: "pipeline",
 		difficulties: {
@@ -182,7 +145,6 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
 	"coverage-gain",
 	"correct-answers",
-	"disabled-config",
 	"short-window",
 ] as const;
 

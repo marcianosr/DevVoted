@@ -20,7 +20,6 @@ const makeContext = (
 	coverageGainedInWindow: 10,
 	currentStreakAtWindowEnd: 5,
 	pollsInWindow: 5,
-	disabledConfigCount: 0,
 	...overrides,
 });
 
@@ -113,34 +112,6 @@ describe("evaluatePipeline — correct-answers", () => {
 			[intenseSlot]
 		);
 		expect(result.passed).toBe(false);
-	});
-});
-
-// ─── evaluatePipeline — disabled-config ──────────────────────────────────────
-
-describe("evaluatePipeline — disabled-config", () => {
-	const easySlot = getSlotDefinition("disabled-config", "easy"); // count: 1
-	const hardSlot = getSlotDefinition("disabled-config", "hard"); // count: 2
-
-	it("passes when the required number of configs are disabled", () => {
-		const result = evaluatePipeline(makeContext({ disabledConfigCount: 1 }), [
-			easySlot,
-		]);
-		expect(result.passed).toBe(true);
-	});
-
-	it("fails when fewer configs are disabled than required", () => {
-		const result = evaluatePipeline(makeContext({ disabledConfigCount: 0 }), [
-			easySlot,
-		]);
-		expect(result.passed).toBe(false);
-	});
-
-	it("passes when more configs are disabled than required", () => {
-		const result = evaluatePipeline(makeContext({ disabledConfigCount: 3 }), [
-			hardSlot,
-		]);
-		expect(result.passed).toBe(true);
 	});
 });
 
