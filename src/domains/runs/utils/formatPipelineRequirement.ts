@@ -1,4 +1,3 @@
-import { formatStorage } from "~/lib/storage";
 import type {
 	GateTypeId,
 	PipelineSlotRequirement,
@@ -21,9 +20,6 @@ export const formatRequirement = (
 				: `${countStr} correct`;
 		}
 
-		case "storage-drain":
-			return `−${formatStorage(req.drainPerWrong)} per wrong answer`;
-
 		case "disabled-config":
 			return req.requiresRarePlus
 				? `Disable ${req.count} rare+ config${req.count > 1 ? "s" : ""}`
@@ -39,7 +35,6 @@ export const formatRequirement = (
 const SLOT_LABELS: Record<GateTypeId, string> = {
 	"coverage-gain": "Coverage",
 	"correct-answers": "Accuracy",
-	"storage-drain": "Memory Leak",
 	"disabled-config": "Config Lock",
 	"short-window": "Sprint",
 };

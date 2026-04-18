@@ -5,7 +5,6 @@ export type GateDifficulty = "easy" | "normal" | "hard" | "intense";
 export type GateTypeId =
 	| "coverage-gain"
 	| "correct-answers"
-	| "storage-drain"
 	| "disabled-config"
 	| "short-window";
 
@@ -22,11 +21,6 @@ export type CorrectAnswersRequirement = {
 	type: "correct-answers";
 	count: number; // minimum correct answers in the window
 	streakRequired?: number; // consecutive correct answers also required (Intense)
-};
-
-export type StorageDrainRequirement = {
-	type: "storage-drain";
-	drainPerWrong: number; // bytes drained per wrong answer — permanent run modifier
 };
 
 export type DisabledConfigRequirement = {
@@ -49,11 +43,7 @@ export type PassFailRequirement =
 	| DisabledConfigRequirement
 	| ShortWindowRequirement;
 
-export type PermanentModifierRequirement = StorageDrainRequirement;
-
-export type PipelineSlotRequirement =
-	| PassFailRequirement
-	| PermanentModifierRequirement;
+export type PipelineSlotRequirement = PassFailRequirement;
 
 // ─── Pipeline slot ────────────────────────────────────────────────────────────
 

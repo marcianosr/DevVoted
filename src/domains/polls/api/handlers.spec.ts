@@ -271,6 +271,7 @@ describe("handlers", () => {
 				breakdown: null,
 				tryCatchUsed: false,
 				pipelineEvaluation: null,
+				evaluationContext: null,
 				upgradeCards: [],
 			});
 
@@ -364,6 +365,7 @@ describe("handlers", () => {
 				breakdown: null,
 				tryCatchUsed: false,
 				pipelineEvaluation: null,
+				evaluationContext: null,
 				upgradeCards: [],
 			});
 

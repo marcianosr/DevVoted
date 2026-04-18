@@ -1,15 +1,14 @@
 import type {
-	PassFailRequirement,
 	PipelineSlot,
-	PipelineSlotRequirement,
 	ShortWindowRequirement,
 } from "~/domains/runs/models/pipeline";
 
 export type PipelineEvaluationContext = {
 	readonly correctAnswersInWindow: number;
+	readonly pollsAnsweredInWindow: number; // how many polls have been answered so far this window
 	readonly coverageGainedInWindow: number; // percentage points gained this window
 	readonly currentStreakAtWindowEnd: number; // consecutive correct answers ending this window
-	readonly pollsInWindow: number;
+	readonly pollsInWindow: number; // total window size (fixed)
 	readonly disabledConfigCount: number; // configs forcibly disabled this window
 };
 
@@ -38,20 +37,11 @@ export const getWindowSize = (slots: PipelineSlot[]): number => {
 	return req.pollCount;
 };
 
-const isPassFailRequirement = (
-	req: PipelineSlotRequirement
-): req is PassFailRequirement => req.type !== "storage-drain";
-
 const evaluateSlot = (
 	slot: PipelineSlot,
 	ctx: PipelineEvaluationContext
 ): SlotEvaluation => {
 	const { requirement: req } = slot;
-
-	if (!isPassFailRequirement(req)) {
-		// storage-drain is a permanent run modifier — no pass/fail condition.
-		return { slot, passed: true };
-	}
 
 	switch (req.type) {
 		case "coverage-gain":

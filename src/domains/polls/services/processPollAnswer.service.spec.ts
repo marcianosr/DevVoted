@@ -103,13 +103,12 @@ const mockBreakdown: PollScoreBreakdown = {
 	configBonus: 0,
 };
 
-const mockScoreCalculation: ScoreCalculation & { storageDrained: number } = {
+const mockScoreCalculation: ScoreCalculation = {
 	breakdown: mockBreakdown,
 	newStreak: 1,
 	newBestStreak: 1,
 	newPollsAnswered: 1,
 	newTotalCoverage: 1.2,
-	storageDrained: 0,
 };
 
 const mockRun = createMockRun({ id: 1, userId: BANJO_USER_ID });

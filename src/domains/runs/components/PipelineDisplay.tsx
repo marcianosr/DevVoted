@@ -25,14 +25,9 @@ const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
 
 type SlotStatusIconProps = {
 	passed?: boolean;
-	isPermanentModifier: boolean;
 };
 
-const SlotStatusIcon = ({
-	passed,
-	isPermanentModifier,
-}: SlotStatusIconProps) => {
-	if (isPermanentModifier) return <span className="text-purple-400">◈</span>;
+const SlotStatusIcon = ({ passed }: SlotStatusIconProps) => {
 	if (passed === undefined)
 		return (
 			<span className="inline-flex items-center justify-center w-4 h-4">
@@ -57,14 +52,9 @@ const PipelineSlotRow = ({
 	passed,
 	windowSize,
 }: PipelineSlotRowProps) => {
-	const isPermanentModifier = slot.requirement.type === "storage-drain";
-
 	return (
 		<li className="flex items-center gap-2 text-sm">
-			<SlotStatusIcon
-				passed={passed}
-				isPermanentModifier={isPermanentModifier}
-			/>
+			<SlotStatusIcon passed={passed} />
 			<span className="text-gray-200 w-28 shrink-0">
 				{getSlotLabel(slot.gateTypeId)}
 			</span>
@@ -76,14 +66,6 @@ const PipelineSlotRow = ({
 			<span className="text-gray-400 flex-1 text-xs">
 				{formatRequirement(slot.requirement, windowSize)}
 			</span>
-			{!isPermanentModifier && (
-				<span className="text-yellow-400 text-xs shrink-0">
-					+{formatStorage(slot.reward)}
-				</span>
-			)}
-			{isPermanentModifier && (
-				<span className="text-purple-400 text-xs shrink-0">modifier</span>
-			)}
 		</li>
 	);
 };
@@ -99,13 +81,14 @@ export const PipelineDisplay = ({
 	const pollsInWindow = totalPollsAnswered % windowSize;
 	const pollsRemaining = windowSize - pollsInWindow;
 
+	console.log(pollsInWindow);
+
 	return (
 		<div>
-			<p className="text-gray-500 text-xs mb-2 uppercase tracking-widest">
-				CI Pipeline · {windowSize}-poll window
+			<p>
 				{!evaluation && (
-					<span className="text-yellow-400 ml-2">
-						· {pollsRemaining} until check
+					<span className="text-white text-md">
+						{pollsRemaining} polls left until gate evaluation
 					</span>
 				)}
 			</p>

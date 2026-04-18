@@ -386,18 +386,6 @@ export const addConfigsToRun = async (runId: number, configIds: string[]) => {
 	return runFactory.toDTO(updatedRun, categoryCoverage);
 };
 
-export const drainStorage = async (
-	runId: number,
-	amount: number
-): Promise<void> => {
-	await db
-		.update(runsTable)
-		.set({
-			storage_limit: sql`GREATEST(0, ${runsTable.storage_limit} - ${amount})`,
-		})
-		.where(eq(runsTable.id, runId));
-};
-
 export const awardStorage = async (
 	runId: number,
 	amount: number

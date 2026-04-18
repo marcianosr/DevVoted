@@ -20,6 +20,15 @@ import {
 	skipShopHandler,
 } from "./handlers";
 import {
+	getAnsweredPollsCountInRun,
+	getWindowResults,
+} from "~/domains/polls/api/queries";
+import {
+	getWindowSize,
+	type PipelineEvaluationContext,
+} from "~/domains/runs/services/pipelineEvaluator.service";
+
+import {
 	appendPipelineSlotSnapshot,
 	clearPendingUpgradeCards,
 	getActiveRunByUserId,
@@ -95,7 +104,6 @@ export const getExposedConfigDeck = createServerFn({ method: "GET" })
 const gateTypeIdSchema = z.enum([
 	"coverage-gain",
 	"correct-answers",
-	"storage-drain",
 	"disabled-config",
 	"short-window",
 ] as const);
@@ -121,6 +129,36 @@ const upgradeCardInputSchema = z.discriminatedUnion("kind", [
  * Reconstructs the full slot definition server-side from the card intent,
  * so clients only need to send minimal data (no complex PipelineSlot payload).
  */
+export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
+	async (): Promise<PipelineEvaluationContext | null> => {
+		const userId = await getAuthenticatedUserId();
+		const activeRun = await getActiveRunByUserId(userId);
+
+		if (!activeRun) return null;
+
+		const windowSize = getWindowSize(activeRun.pipelineSlots);
+		const totalPollsAnswered = await getAnsweredPollsCountInRun(activeRun.id);
+		const pollsInCurrentWindow = totalPollsAnswered % windowSize;
+
+		const windowResults =
+			pollsInCurrentWindow > 0
+				? await getWindowResults(activeRun.id, userId, pollsInCurrentWindow)
+				: [];
+
+		return {
+			correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
+			pollsAnsweredInWindow: windowResults.length,
+			coverageGainedInWindow: 0,
+			currentStreakAtWindowEnd: Math.max(
+				...activeRun.categoryCoverage.map((c) => c.currentStreak),
+				0
+			),
+			pollsInWindow: windowSize,
+			disabledConfigCount: 0,
+		};
+	}
+);
+
 export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
 	.inputValidator(upgradeCardInputSchema)
 	.handler(async ({ data }) => {

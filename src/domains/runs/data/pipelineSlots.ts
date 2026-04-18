@@ -110,39 +110,6 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 			},
 		},
 	},
-	"storage-drain": {
-		family: "economy",
-		difficulties: {
-			easy: {
-				requirement: {
-					type: "storage-drain",
-					drainPerWrong: 5 * STORAGE_UNITS.KB,
-				},
-				reward: SLOT_REWARDS.easy,
-			},
-			normal: {
-				requirement: {
-					type: "storage-drain",
-					drainPerWrong: 10 * STORAGE_UNITS.KB,
-				},
-				reward: SLOT_REWARDS.normal,
-			},
-			hard: {
-				requirement: {
-					type: "storage-drain",
-					drainPerWrong: 20 * STORAGE_UNITS.KB,
-				},
-				reward: SLOT_REWARDS.hard,
-			},
-			intense: {
-				requirement: {
-					type: "storage-drain",
-					drainPerWrong: 40 * STORAGE_UNITS.KB,
-				},
-				reward: SLOT_REWARDS.intense,
-			},
-		},
-	},
 	"disabled-config": {
 		family: "pipeline",
 		difficulties: {
@@ -215,7 +182,6 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
 	"coverage-gain",
 	"correct-answers",
-	"storage-drain",
 	"disabled-config",
 	"short-window",
 ] as const;

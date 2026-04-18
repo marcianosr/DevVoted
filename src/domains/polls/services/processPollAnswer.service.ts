@@ -48,6 +48,7 @@ export type PollAnswerResult = {
 	breakdown: PollScoreBreakdown | null;
 	tryCatchUsed: boolean;
 	pipelineEvaluation: PipelineEvaluation | null;
+	evaluationContext: PipelineEvaluationContext | null;
 	upgradeCards: UpgradeCard[];
 };
 
@@ -83,6 +84,7 @@ type EvaluatePipelineParams = {
 
 type PipelineStageResult = {
 	pipelineEvaluation: PipelineEvaluation | null;
+	evaluationContext: PipelineEvaluationContext | null;
 	upgradeCards: UpgradeCard[];
 };
 
@@ -184,14 +186,20 @@ const evaluatePipelineStage = async ({
 	const isPipelineCheckPoll =
 		totalPollsAnswered > 0 && totalPollsAnswered % windowSize === 0;
 
-	if (!isPipelineCheckPoll) {
-		return { pipelineEvaluation: null, upgradeCards: [] };
-	}
+	// At a gate boundary, evaluate the window that just ended (full windowSize).
+	// Mid-window, only fetch the polls answered so far in the current window.
+	const pollsInCurrentWindow = isPipelineCheckPoll
+		? windowSize
+		: totalPollsAnswered % windowSize;
 
-	const windowResults = await getWindowResults(activeRunId, userId, windowSize);
+	const windowResults =
+		pollsInCurrentWindow > 0
+			? await getWindowResults(activeRunId, userId, pollsInCurrentWindow)
+			: [];
 
 	const ctx: PipelineEvaluationContext = {
 		correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
+		pollsAnsweredInWindow: windowResults.length,
 		// TODO: track per-window coverage delta for coverage-gain gate evaluation
 		coverageGainedInWindow: 0,
 		currentStreakAtWindowEnd: Math.max(
@@ -203,12 +211,20 @@ const evaluatePipelineStage = async ({
 		disabledConfigCount: 0,
 	};
 
+	if (!isPipelineCheckPoll) {
+		return {
+			pipelineEvaluation: null,
+			evaluationContext: ctx,
+			upgradeCards: [],
+		};
+	}
+
 	const pipelineEvaluation = evaluatePipeline(ctx, pipelineSlots);
 
 	if (!pipelineEvaluation.passed) {
 		// Clear any stale cards from a previous window so they don't resurface.
 		await clearPendingUpgradeCards(activeRunId);
-		return { pipelineEvaluation, upgradeCards: [] };
+		return { pipelineEvaluation, evaluationContext: ctx, upgradeCards: [] };
 	}
 
 	if (pipelineEvaluation.totalReward > 0) {
@@ -223,7 +239,7 @@ const evaluatePipelineStage = async ({
 		await savePendingUpgradeCards(activeRunId, upgradeCards);
 	}
 
-	return { pipelineEvaluation, upgradeCards };
+	return { pipelineEvaluation, evaluationContext: ctx, upgradeCards };
 };
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
@@ -248,6 +264,7 @@ export const processPollAnswer = async (
 			breakdown: null,
 			tryCatchUsed: false,
 			pipelineEvaluation: null,
+			evaluationContext: null,
 			upgradeCards: [],
 		};
 	}
@@ -269,13 +286,14 @@ export const processPollAnswer = async (
 	const totalPollsAnswered = await getAnsweredPollsCountInRun(activeRun.id);
 
 	const windowSize = getWindowSize(updatedRun.pipelineSlots);
-	const { pipelineEvaluation, upgradeCards } = await evaluatePipelineStage({
-		activeRunId: activeRun.id,
-		updatedRun,
-		userId,
-		totalPollsAnswered,
-		gateNumber: Math.floor(totalPollsAnswered / windowSize),
-	});
+	const { pipelineEvaluation, evaluationContext, upgradeCards } =
+		await evaluatePipelineStage({
+			activeRunId: activeRun.id,
+			updatedRun,
+			userId,
+			totalPollsAnswered,
+			gateNumber: Math.floor(totalPollsAnswered / windowSize),
+		});
 
 	const { runEnded, tryCatchUsed } = await resolveRunState({
 		activeRunId: activeRun.id,
@@ -294,6 +312,7 @@ export const processPollAnswer = async (
 		breakdown,
 		tryCatchUsed,
 		pipelineEvaluation,
+		evaluationContext,
 		upgradeCards,
 	};
 };

@@ -16,6 +16,7 @@ const makeContext = (
 	overrides: Partial<PipelineEvaluationContext> = {}
 ): PipelineEvaluationContext => ({
 	correctAnswersInWindow: 5,
+	pollsAnsweredInWindow: 5,
 	coverageGainedInWindow: 10,
 	currentStreakAtWindowEnd: 5,
 	pollsInWindow: 5,
@@ -112,19 +113,6 @@ describe("evaluatePipeline — correct-answers", () => {
 			[intenseSlot]
 		);
 		expect(result.passed).toBe(false);
-	});
-});
-
-// ─── evaluatePipeline — storage-drain ────────────────────────────────────────
-
-describe("evaluatePipeline — storage-drain", () => {
-	it("always passes regardless of context (permanent modifier)", () => {
-		const slot = getSlotDefinition("storage-drain", "intense");
-		const result = evaluatePipeline(
-			makeContext({ correctAnswersInWindow: 0 }),
-			[slot]
-		);
-		expect(result.passed).toBe(true);
 	});
 });
 

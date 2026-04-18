@@ -106,21 +106,6 @@ export const generateUpgradeCards = (
 	return cards;
 };
 
-export const getStorageDrain = (
-	slots: PipelineSlot[],
-	isWrongAnswer: boolean
-): number => {
-	if (!isWrongAnswer) return 0;
-
-	for (const slot of slots) {
-		if (slot.requirement.type === "storage-drain") {
-			return slot.requirement.drainPerWrong;
-		}
-	}
-
-	return 0;
-};
-
 export const applyUpgradeCard = (
 	slots: PipelineSlot[],
 	card: UpgradeCard

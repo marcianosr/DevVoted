@@ -7,7 +7,6 @@ import { z } from "zod";
 
 import { ApplyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
-import { ShopPreview } from "~/domains/economy/components/ShopPreview";
 import {
 	getCommunityStatsHandler,
 	getRandomAnswerHandler,
@@ -18,18 +17,18 @@ import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm";
 import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay";
-import SelectedOptionsSummary from "~/domains/polls/components/SelectedOptionsSummary";
+import { PollResultsSection } from "~/domains/polls/components/PollResultsSection";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
 import {
 	applyPipelineUpgradeFn,
 	getExposedConfigDeck,
 } from "~/domains/runs/api/runs";
-import { PipelineDisplay } from "~/domains/runs/components/PipelineDisplay";
-import { UpgradeCardModal } from "~/domains/runs/components/UpgradeCardModal";
+import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer";
+import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
-import type { PipelineEvaluation } from "~/domains/runs/services/pipelineEvaluator.service";
+import type { PipelineEvaluationContext } from "~/domains/runs/services/pipelineEvaluator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { getAuthenticatedUserId } from "~/utils/authorization";
@@ -96,6 +95,7 @@ type DailyPollContainerProps = {
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
 	initialPendingUpgradeCards: UpgradeCard[];
+	initialWindowContext: PipelineEvaluationContext | null;
 };
 
 const DailyPollContainer = ({
@@ -110,6 +110,7 @@ const DailyPollContainer = ({
 	isAdmin,
 	offeredConfigs,
 	initialPendingUpgradeCards,
+	initialWindowContext,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -125,8 +126,8 @@ const DailyPollContainer = ({
 	const [pendingUpgradeCards, setPendingUpgradeCards] = useState<UpgradeCard[]>(
 		initialPendingUpgradeCards
 	);
-	const [lastPipelineEvaluation, setLastPipelineEvaluation] =
-		useState<PipelineEvaluation | null>(null);
+	const [lastEvaluationContext, setLastEvaluationContext] =
+		useState<PipelineEvaluationContext | null>(initialWindowContext);
 
 	// Sync local state when the server-side cards update via router.invalidate().
 	// useState only uses its argument on mount — when the context refreshes with new
@@ -137,6 +138,12 @@ const DailyPollContainer = ({
 			setPendingUpgradeCards(initialPendingUpgradeCards);
 		}
 	}, [initialPendingUpgradeCards]);
+
+	useEffect(() => {
+		if (initialWindowContext) {
+			setLastEvaluationContext(initialWindowContext);
+		}
+	}, [initialWindowContext]);
 
 	const applyUpgradeMutation = useMutation({
 		mutationFn: applyPipelineUpgradeFn,
@@ -218,8 +225,8 @@ const DailyPollContainer = ({
 					});
 				}
 
-				if (response.data.pipelineEvaluation) {
-					setLastPipelineEvaluation(response.data.pipelineEvaluation);
+				if (response.data.evaluationContext) {
+					setLastEvaluationContext(response.data.evaluationContext);
 				}
 
 				if (response.data.upgradeCards?.length) {
@@ -244,6 +251,37 @@ const DailyPollContainer = ({
 
 	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
 
+	const adminLink = isAdmin && (
+		<div className="mb-4 pb-2 border-b border-gray-700">
+			<Link
+				to="/polls/$pollId/edit"
+				params={{ pollId: String(poll.id) }}
+				className="text-primary hover:text-primary/80 hover:underline text-sm"
+			>
+				Edit Poll
+			</Link>
+		</div>
+	);
+
+	const header = (
+		<header className="border-b border-theme py-4 mb-8">
+			<section className="flex justify-between flex-wrap gap-4">
+				<div className="flex flex-col">
+					<p className="text-4xl text-theme">{category.name}</p>
+					<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
+				</div>
+				{/* <PipelineDisplay
+					slots={activeRun.pipelineSlots}
+					evaluation={lastPipelineEvaluation ?? undefined}
+					totalPollsAnswered={activeRun.categoryCoverage.reduce(
+						(sum, c) => sum + c.pollsAnswered,
+						0
+					)}
+				/> */}
+			</section>
+		</header>
+	);
+
 	return (
 		<section>
 			{isInPostVictoryMode && (
@@ -257,54 +295,45 @@ const DailyPollContainer = ({
 					</p>
 				</div>
 			)}
-			{isAdmin && (
-				<div className="mb-4 pb-2 border-b border-gray-700">
-					<Link
-						to="/polls/$pollId/edit"
-						params={{ pollId: String(poll.id) }}
-						className="text-primary hover:text-primary/80 hover:underline text-sm"
-					>
-						Edit Poll
-					</Link>
-				</div>
+			{adminLink}
+			{pendingUpgradeCards.length === 0 && (
+				<>
+					{header}
+					<PollQuestionDisplay poll={poll} />
+					{poll.codeSandboxExample && (
+						<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+					)}
+					{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+				</>
 			)}
-			<header className="border-b border-theme py-4 mb-8">
-				<section className="flex justify-between flex-wrap gap-4">
-					<div className="flex flex-col">
-						<p className="text-4xl text-theme">{category.name}</p>
-
-						<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
-					</div>
-
-					<PipelineDisplay
-						slots={activeRun.pipelineSlots}
-						evaluation={lastPipelineEvaluation ?? undefined}
-						totalPollsAnswered={activeRun.categoryCoverage.reduce(
-							(sum, c) => sum + c.pollsAnswered,
-							0
-						)}
+			<div className="mt-4 mb-4">
+				{pendingUpgradeCards.length > 0 ? (
+					<PipelineUpgradeContainer
+						cards={pendingUpgradeCards}
+						currentSlots={activeRun.pipelineSlots}
+						onAccept={handleUpgradeAccepted}
+						isPending={applyUpgradeMutation.isPending}
+						hasAnswered={hasAnswered}
+						options={options}
+						selectedOptions={selectedOptions}
+						score={displayScore}
+						communityStats={communityStats}
+						categoryCode={poll.categoryCode}
+						explanation={poll.explanation}
+						exposedConfigDeck={exposedConfigDeck}
+						evaluationContext={lastEvaluationContext ?? undefined}
 					/>
-				</section>
-			</header>
-			<PollQuestionDisplay poll={poll} />
-			{poll.codeSandboxExample && (
-				<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
-			)}
-			{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
-			<div className="mt-6">
-				{hasAnswered ? (
-					<>
-						<SelectedOptionsSummary
-							options={options}
-							selectedOptions={selectedOptions}
-							score={displayScore}
-							communityStats={communityStats}
-							categoryCode={poll.categoryCode}
-							explanation={poll.explanation}
-							exposedConfigDeck={exposedConfigDeck}
-						/>
-						<ShopPreview offeredConfigs={offeredConfigs} />
-					</>
+				) : hasAnswered ? (
+					<PollResultsSection
+						options={options}
+						selectedOptions={selectedOptions}
+						score={displayScore}
+						communityStats={communityStats}
+						categoryCode={poll.categoryCode}
+						explanation={poll.explanation}
+						exposedConfigDeck={exposedConfigDeck}
+						offeredConfigs={offeredConfigs}
+					/>
 				) : (
 					<PollOptionsForm
 						poll={poll}
@@ -317,13 +346,14 @@ const DailyPollContainer = ({
 					/>
 				)}
 			</div>
-
-			<UpgradeCardModal
-				cards={pendingUpgradeCards}
-				currentSlots={activeRun.pipelineSlots}
-				onAccept={handleUpgradeAccepted}
-				isPending={applyUpgradeMutation.isPending}
-			/>
+			{pendingUpgradeCards.length === 0 && (
+				<div className="mt-8">
+					<CurrentPipeline
+						slots={activeRun.pipelineSlots}
+						evaluationContext={lastEvaluationContext ?? undefined}
+					/>
+				</div>
+			)}
 		</section>
 	);
 };

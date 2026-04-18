@@ -177,6 +177,7 @@ export const postPollOptionsHandler = async ({
 			correctOptionIds,
 			outcome,
 			pipelineEvaluation,
+			evaluationContext,
 			upgradeCards,
 		} = await processPollAnswer({
 			pollId: validatedData.pollId,
@@ -198,6 +199,7 @@ export const postPollOptionsHandler = async ({
 			runEnded,
 			breakdown,
 			pipelineEvaluation,
+			evaluationContext,
 			upgradeCards,
 		};
 	});
