@@ -39,7 +39,6 @@ export type ShortWindowRequirement = {
 	type: "short-window";
 	pollCount: number; // reduced window size (3 or 4 instead of 5)
 	correctRequired?: number; // all polls in window must be correct (Hard)
-	noWrongRequired?: boolean; // no wrong answers allowed in window (Intense)
 };
 
 // Storage drain is a permanent modifier — not evaluated as pass/fail.

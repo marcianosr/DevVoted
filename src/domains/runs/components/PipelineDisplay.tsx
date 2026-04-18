@@ -4,6 +4,7 @@ import type {
 	PipelineSlot,
 } from "~/domains/runs/models/pipeline";
 import type { PipelineEvaluation } from "~/domains/runs/services/pipelineEvaluator.service";
+import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -12,6 +13,7 @@ import {
 type PipelineDisplayProps = {
 	slots: PipelineSlot[];
 	evaluation?: PipelineEvaluation;
+	totalPollsAnswered: number;
 };
 
 const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
@@ -32,7 +34,11 @@ const SlotStatusIcon = ({
 }: SlotStatusIconProps) => {
 	if (isPermanentModifier) return <span className="text-purple-400">◈</span>;
 	if (passed === undefined)
-		return <span className="text-gray-500 animate-pulse">⏳</span>;
+		return (
+			<span className="inline-flex items-center justify-center w-4 h-4">
+				<span className="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse" />
+			</span>
+		);
 	return passed ? (
 		<span className="text-green-400">✓</span>
 	) : (
@@ -43,9 +49,14 @@ const SlotStatusIcon = ({
 type PipelineSlotRowProps = {
 	slot: PipelineSlot;
 	passed?: boolean;
+	windowSize: number;
 };
 
-const PipelineSlotRow = ({ slot, passed }: PipelineSlotRowProps) => {
+const PipelineSlotRow = ({
+	slot,
+	passed,
+	windowSize,
+}: PipelineSlotRowProps) => {
 	const isPermanentModifier = slot.requirement.type === "storage-drain";
 
 	return (
@@ -63,7 +74,7 @@ const PipelineSlotRow = ({ slot, passed }: PipelineSlotRowProps) => {
 				{slot.difficulty}
 			</span>
 			<span className="text-gray-400 flex-1 text-xs">
-				{formatRequirement(slot.requirement)}
+				{formatRequirement(slot.requirement, windowSize)}
 			</span>
 			{!isPermanentModifier && (
 				<span className="text-yellow-400 text-xs shrink-0">
@@ -80,13 +91,23 @@ const PipelineSlotRow = ({ slot, passed }: PipelineSlotRowProps) => {
 export const PipelineDisplay = ({
 	slots,
 	evaluation,
+	totalPollsAnswered,
 }: PipelineDisplayProps) => {
 	if (slots.length === 0) return null;
+
+	const windowSize = getWindowSize(slots);
+	const pollsInWindow = totalPollsAnswered % windowSize;
+	const pollsRemaining = windowSize - pollsInWindow;
 
 	return (
 		<div>
 			<p className="text-gray-500 text-xs mb-2 uppercase tracking-widest">
-				CI Pipeline
+				CI Pipeline · {windowSize}-poll window
+				{!evaluation && (
+					<span className="text-yellow-400 ml-2">
+						· {pollsRemaining} until check
+					</span>
+				)}
 			</p>
 			<ul className="flex flex-col gap-2">
 				{slots.map((slot, index) => {
@@ -99,6 +120,7 @@ export const PipelineDisplay = ({
 							key={`${slot.gateTypeId}-${index}`}
 							slot={slot}
 							passed={slotEval?.passed}
+							windowSize={windowSize}
 						/>
 					);
 				})}

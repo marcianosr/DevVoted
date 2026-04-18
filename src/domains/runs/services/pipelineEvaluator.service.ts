@@ -5,8 +5,6 @@ import type {
 	ShortWindowRequirement,
 } from "~/domains/runs/models/pipeline";
 
-// ─── Evaluation context ───────────────────────────────────────────────────────
-
 export type PipelineEvaluationContext = {
 	readonly correctAnswersInWindow: number;
 	readonly coverageGainedInWindow: number; // percentage points gained this window
@@ -14,8 +12,6 @@ export type PipelineEvaluationContext = {
 	readonly pollsInWindow: number;
 	readonly disabledConfigCount: number; // configs forcibly disabled this window
 };
-
-// ─── Evaluation results ───────────────────────────────────────────────────────
 
 export type SlotEvaluation = {
 	readonly slot: PipelineSlot;
@@ -27,8 +23,6 @@ export type PipelineEvaluation = {
 	readonly slotEvaluations: readonly SlotEvaluation[];
 	readonly totalReward: number; // bytes — 0 if any slot failed
 };
-
-// ─── Window size ──────────────────────────────────────────────────────────────
 
 export const DEFAULT_WINDOW_SIZE = 5;
 
@@ -44,13 +38,9 @@ export const getWindowSize = (slots: PipelineSlot[]): number => {
 	return req.pollCount;
 };
 
-// ─── Type guard ───────────────────────────────────────────────────────────────
-
 const isPassFailRequirement = (
 	req: PipelineSlotRequirement
 ): req is PassFailRequirement => req.type !== "storage-drain";
-
-// ─── Per-type evaluators ──────────────────────────────────────────────────────
 
 const evaluateSlot = (
 	slot: PipelineSlot,
@@ -89,10 +79,8 @@ const evaluateSlot = (
 			return {
 				slot,
 				passed:
-					(!req.correctRequired ||
-						ctx.correctAnswersInWindow >= req.correctRequired) &&
-					(!req.noWrongRequired ||
-						ctx.correctAnswersInWindow === ctx.pollsInWindow),
+					!req.correctRequired ||
+					ctx.correctAnswersInWindow >= req.correctRequired,
 			};
 	}
 };

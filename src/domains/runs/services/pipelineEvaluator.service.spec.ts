@@ -161,7 +161,7 @@ describe("evaluatePipeline — disabled-config", () => {
 describe("evaluatePipeline — short-window", () => {
 	const easySlot = getSlotDefinition("short-window", "easy"); // pollCount: 4, no extra
 	const hardSlot = getSlotDefinition("short-window", "hard"); // pollCount: 3, correctRequired: 3
-	const intenseSlot = getSlotDefinition("short-window", "intense"); // pollCount: 2, noWrongRequired: true
+	const intenseSlot = getSlotDefinition("short-window", "intense"); // pollCount: 2
 
 	it("passes easy with no extra conditions", () => {
 		const result = evaluatePipeline(makeContext({ pollsInWindow: 4 }), [

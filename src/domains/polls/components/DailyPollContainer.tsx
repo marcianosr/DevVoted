@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
@@ -127,6 +127,16 @@ const DailyPollContainer = ({
 	);
 	const [lastPipelineEvaluation, setLastPipelineEvaluation] =
 		useState<PipelineEvaluation | null>(null);
+
+	// Sync local state when the server-side cards update via router.invalidate().
+	// useState only uses its argument on mount — when the context refreshes with new
+	// cards (e.g., after a gate pass), the prop changes but state doesn't unless we
+	// explicitly sync here.
+	useEffect(() => {
+		if (initialPendingUpgradeCards.length > 0) {
+			setPendingUpgradeCards(initialPendingUpgradeCards);
+		}
+	}, [initialPendingUpgradeCards]);
 
 	const applyUpgradeMutation = useMutation({
 		mutationFn: applyPipelineUpgradeFn,
@@ -269,6 +279,10 @@ const DailyPollContainer = ({
 					<PipelineDisplay
 						slots={activeRun.pipelineSlots}
 						evaluation={lastPipelineEvaluation ?? undefined}
+						totalPollsAnswered={activeRun.categoryCoverage.reduce(
+							(sum, c) => sum + c.pollsAnswered,
+							0
+						)}
 					/>
 				</section>
 			</header>
@@ -306,6 +320,7 @@ const DailyPollContainer = ({
 
 			<UpgradeCardModal
 				cards={pendingUpgradeCards}
+				currentSlots={activeRun.pipelineSlots}
 				onAccept={handleUpgradeAccepted}
 				isPending={applyUpgradeMutation.isPending}
 			/>

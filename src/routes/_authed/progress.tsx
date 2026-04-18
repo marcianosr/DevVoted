@@ -294,13 +294,20 @@ function RouteComponent() {
 												{slots.map((slot) => (
 													<span
 														key={slot.gateTypeId}
-														className="text-xs text-gray-400 font-mono"
+														className="text-xs text-gray-400 font-mono flex items-center gap-1"
 													>
 														<span className="text-theme">
 															{getSlotLabel(slot.gateTypeId)}
 														</span>
-														{" · "}
-														{formatRequirement(slot.requirement)}
+														<span className="border border-gray-600 px-1 text-gray-500">
+															{slot.difficulty}
+														</span>
+														<span>
+															{formatRequirement(
+																slot.requirement,
+																gate.pollsPerGate
+															)}
+														</span>
 													</span>
 												))}
 											</div>

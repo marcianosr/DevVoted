@@ -203,7 +203,6 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 				requirement: {
 					type: "short-window",
 					pollCount: 3,
-					noWrongRequired: true,
 				},
 				reward: SLOT_REWARDS.intense,
 			},

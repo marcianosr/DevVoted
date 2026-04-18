@@ -4,15 +4,22 @@ import type {
 	PipelineSlotRequirement,
 } from "~/domains/runs/models/pipeline";
 
-export const formatRequirement = (req: PipelineSlotRequirement): string => {
+export const formatRequirement = (
+	req: PipelineSlotRequirement,
+	windowSize?: number
+): string => {
 	switch (req.type) {
 		case "coverage-gain":
 			return `Gain ${req.threshold}% coverage`;
 
-		case "correct-answers":
+		case "correct-answers": {
+			const countStr = windowSize
+				? `${req.count}/${windowSize}`
+				: `${req.count}`;
 			return req.streakRequired
-				? `Answer ${req.count} correctly (streak ×${req.streakRequired})`
-				: `Answer ${req.count} correctly`;
+				? `${countStr} correct (streak ×${req.streakRequired})`
+				: `${countStr} correct`;
+		}
 
 		case "storage-drain":
 			return `−${formatStorage(req.drainPerWrong)} per wrong answer`;
@@ -23,8 +30,6 @@ export const formatRequirement = (req: PipelineSlotRequirement): string => {
 				: `Disable ${req.count} config${req.count > 1 ? "s" : ""}`;
 
 		case "short-window":
-			if (req.noWrongRequired)
-				return `${req.pollCount} polls, no wrong answers`;
 			if (req.correctRequired)
 				return `${req.pollCount} polls, ${req.correctRequired}/${req.pollCount} correct`;
 			return `${req.pollCount} polls`;
