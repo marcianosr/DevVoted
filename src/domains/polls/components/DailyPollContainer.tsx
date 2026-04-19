@@ -25,7 +25,6 @@ import {
 	getExposedConfigDeck,
 } from "~/domains/runs/api/runs";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer";
-import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
 import type {
@@ -343,6 +342,11 @@ const DailyPollContainer = ({
 						explanation={poll.explanation}
 						exposedConfigDeck={exposedConfigDeck}
 						offeredConfigs={offeredConfigs}
+						pipeline={{
+							slots: activeRun.pipelineSlots,
+							evaluationContext: lastEvaluationContext ?? undefined,
+							evaluation: lastPipelineEvaluation ?? undefined,
+						}}
 					/>
 				) : (
 					<PollOptionsForm
@@ -356,14 +360,6 @@ const DailyPollContainer = ({
 					/>
 				)}
 			</div>
-			{pendingUpgradeCards.length === 0 && (
-				<div className="mt-8">
-					<CurrentPipeline
-						slots={activeRun.pipelineSlots}
-						evaluationContext={lastEvaluationContext ?? undefined}
-					/>
-				</div>
-			)}
 		</section>
 	);
 };

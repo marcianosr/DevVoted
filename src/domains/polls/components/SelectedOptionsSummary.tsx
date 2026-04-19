@@ -6,6 +6,12 @@ import ExposedConfigDeckDisplay from "~/domains/configs/components/ExposedConfig
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay";
 import type { ExposedConfigDeck } from "~/domains/runs/api/queries";
+import type { PipelineSlot } from "~/domains/runs/models/pipeline";
+import type {
+	PipelineEvaluation,
+	PipelineEvaluationContext,
+} from "~/domains/runs/services/pipelineEvaluator.service";
+import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 
@@ -20,6 +26,12 @@ const formatTimeTaken = (ms: number | null): string | null => {
 	return formatDuration(duration, { format: ["hours", "minutes", "seconds"] });
 };
 
+type PipelineResultProps = {
+	slots: PipelineSlot[];
+	evaluationContext?: PipelineEvaluationContext;
+	evaluation?: PipelineEvaluation;
+};
+
 type SelectedOptionsSummaryProps = {
 	options: PollOption[];
 	selectedOptions: string[];
@@ -28,6 +40,7 @@ type SelectedOptionsSummaryProps = {
 	categoryCode: CategoryCode;
 	explanation?: string | null;
 	exposedConfigDeck?: ExposedConfigDeck | null;
+	pipeline?: PipelineResultProps;
 };
 
 const SelectedOptionsSummary = ({
@@ -38,6 +51,7 @@ const SelectedOptionsSummary = ({
 	categoryCode,
 	explanation,
 	exposedConfigDeck,
+	pipeline,
 }: SelectedOptionsSummaryProps) => {
 	const hasMissedCorrectAnswers = selectedOptions.every((optionId) => {
 		const option = options.find((opt) => opt.id === Number(optionId));
@@ -106,6 +120,15 @@ const SelectedOptionsSummary = ({
 						</div>
 					)}
 				</section>
+				{pipeline && pipeline.slots.length > 0 && (
+					<section className="py-8 border-t border-theme">
+						<CurrentPipeline
+							slots={pipeline.slots}
+							evaluationContext={pipeline.evaluationContext}
+							evaluation={pipeline.evaluation}
+						/>
+					</section>
+				)}
 				{score && (
 					<section className="py-8 border-t border-theme space-y-2">
 						<h3 className="text-4xl">Score</h3>
