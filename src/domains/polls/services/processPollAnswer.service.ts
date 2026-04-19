@@ -210,6 +210,7 @@ const evaluatePipelineStage = async ({
 			0
 		),
 		pollsInWindow: windowSize,
+		currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
 	};
 
 	if (!isPipelineCheckPoll) {

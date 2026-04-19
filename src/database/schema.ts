@@ -327,7 +327,7 @@ export const runsTable = pgTable("runs", {
 			to?: string;
 		}>
 	>(), // Upgrade cards pending player decision — null when no decision is pending
-	completion_reason: varchar("completion_reason", { length: 50 }), // Reason for run completion: "victory", "threshold_not_met", "wrong_answer", "manual_break_off"
+	completion_reason: text("completion_reason"), // Reason for run completion — stores JSON for pipeline failures, plain strings for others
 	victory_achieved_at: timestamp("victory_achieved_at", { withTimezone: true }), // When player passed all gates (run continues in post-victory mode)
 	started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
 	finished_at: timestamp("finished_at", { withTimezone: true }),

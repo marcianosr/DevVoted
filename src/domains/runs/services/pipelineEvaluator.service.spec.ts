@@ -20,6 +20,7 @@ const makeContext = (
 	coverageGainedInWindow: 10,
 	currentStreakAtWindowEnd: 5,
 	pollsInWindow: 5,
+	currentGate: 1,
 	...overrides,
 });
 

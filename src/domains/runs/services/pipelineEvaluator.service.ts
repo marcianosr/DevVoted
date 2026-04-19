@@ -9,6 +9,7 @@ export type PipelineEvaluationContext = {
 	readonly coverageGainedInWindow: number; // percentage points gained this window
 	readonly currentStreakAtWindowEnd: number; // consecutive correct answers ending this window
 	readonly pollsInWindow: number; // total window size (fixed)
+	readonly currentGate: number; // 1-indexed gate number currently being worked toward
 };
 
 export type SlotEvaluation = {
@@ -39,7 +40,7 @@ export const getWindowSize = (slots: PipelineSlot[]): number => {
 const evaluateSlot = (
 	slot: PipelineSlot,
 	ctx: PipelineEvaluationContext
-): SlotEvaluation => {
+): SlotEvaluation | null => {
 	const { requirement: req } = slot;
 
 	switch (req.type) {
@@ -62,6 +63,16 @@ const evaluateSlot = (
 					!req.correctRequired ||
 					ctx.correctAnswersInWindow >= req.correctRequired,
 			};
+
+		default:
+			// Stale gate type in DB (e.g. a removed gate type like "disabled-config").
+			// Without this guard, slots.map(evaluateSlot) returns undefined for unknown
+			// types → Array.every() reads undefined.passed → TypeError → handleApiOperation
+			// swallows it silently → run never ends despite gate failure.
+			console.error(
+				`[evaluateSlot] Unknown gate type "${(req as { type: string }).type}" — skipping stale slot`
+			);
+			return null;
 	}
 };
 
@@ -71,7 +82,9 @@ export const evaluatePipeline = (
 	ctx: PipelineEvaluationContext,
 	slots: PipelineSlot[]
 ): PipelineEvaluation => {
-	const slotEvaluations = slots.map((slot) => evaluateSlot(slot, ctx));
+	const slotEvaluations = slots
+		.map((slot) => evaluateSlot(slot, ctx))
+		.filter((e): e is SlotEvaluation => e !== null);
 	const passed = slotEvaluations.every((e) => e.passed);
 	const totalReward = passed
 		? slots.reduce((sum, slot) => sum + slot.reward, 0)

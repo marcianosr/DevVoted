@@ -136,7 +136,10 @@ export const CurrentPipeline = ({
 }) => (
 	<div className="border border-white">
 		<div className="border-b border-white px-4 py-3">
-			<p className="text-white uppercase tracking-widest">CI Pipeline</p>
+			<p className="text-white text-2xl">CI Pipelines</p>
+			{evaluationContext && (
+				<span className="text-lg">Gate #{evaluationContext.currentGate}</span>
+			)}
 			<p className="text-gray-300">
 				{evaluationContext && (
 					<>

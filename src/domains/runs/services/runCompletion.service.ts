@@ -36,12 +36,22 @@ export const endRunForThresholdFailure = async (
 		encodePipelineFailure(failedSlots)
 	);
 
-	await createCategoryLeaderboardEntries(
-		run.userId,
-		runId,
-		run.seasonId,
-		totalCoverage
-	);
+	try {
+		await createCategoryLeaderboardEntries(
+			run.userId,
+			runId,
+			run.seasonId,
+			totalCoverage
+		);
+	} catch (err) {
+		// Non-critical — run is already marked finished. Don't let leaderboard
+		// failures propagate and cause handleApiOperation to return { success: false },
+		// which would prevent the game-over signal from reaching the client.
+		console.error(
+			"[endRunForThresholdFailure] Leaderboard creation failed:",
+			err
+		);
+	}
 
 	return { runEnded: true, reason: "pipeline_failure" };
 };

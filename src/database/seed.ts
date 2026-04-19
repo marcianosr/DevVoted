@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import postgres from "postgres";
 
 import { db } from "@/src/database/db";
+import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
 import {
 	pollsTable,
 	pollCategoriesTable,
@@ -470,6 +471,7 @@ async function seedDatabase() {
 						status: "active",
 						correct_polls_count: progress.polls,
 						started_at: new Date(Date.now() - (i + 1) * 3600000), // Started 1-8 hours ago
+						pipeline_slots: getInitialPipelineSlots(),
 					})
 					.returning();
 

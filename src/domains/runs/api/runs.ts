@@ -156,6 +156,7 @@ export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 				0
 			),
 			pollsInWindow: windowSize,
+			currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
 		};
 	}
 );
