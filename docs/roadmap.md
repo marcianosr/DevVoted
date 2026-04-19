@@ -240,8 +240,13 @@ BUGS:
 - [] Game over - then on result page it shows configs, but the configs are different on the shop page. When navigating back, the configs are updated agani
 - [x] Show indicator of 'gate' test while answering the poll
 - [ ] PNPM instead of npm?
+- [ ] Score against:
+      - Most correct polls overall
+      - Most correct polls in category
+      - Highest accuracy
+      - Highest coverage
+      - Most difficult gates passed (gates have difficulty ratings based on how many people pass them)
 
-- Wat als je de komende polls geen vragen hebt in ee ncategorie die jij nodig hebt
 [x] Make boosters cheaper 256 -> 128
 [] See what others answered
 [x] Bug: When game-over, first poll should not count in gate

@@ -45,9 +45,7 @@ function RouteComponent() {
 
 				<section className="text-white mb-6">
 					<p className="text-gray-300">
-						Each run starts at 0% coverage. Answer polls, pass checkpoints, and
-						compete on the leaderboard. Can you reach{" "}
-						<span className="text-yellow-500 font-bold">100%</span> coverage?
+						Can you survive and succeed all pipelines?
 					</p>
 				</section>
 
