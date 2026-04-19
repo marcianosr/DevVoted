@@ -13,25 +13,31 @@ const GAME_LOOP_STEPS: Step[] = [
 		icon: "1.",
 		title: "Answer Polls",
 		description:
-			"Each day, a new developer quiz appears in a category. Pick the right answer!",
+			"Each day a new developer quiz drops. Answer it to earn coverage and keep your run alive.",
 	},
 	{
 		icon: "2.",
 		title: "Build Coverage",
 		description:
-			"Correct answers earn coverage %. Wrong answers lose %. Track your score per category.",
+			"Correct answers earn coverage %. Wrong answers lose %. Streak bonuses multiply your gains.",
 	},
 	{
 		icon: "3.",
-		title: "Pass Checkpoints",
+		title: "Survive CI Pipelines",
 		description:
-			"CI Gates are checkpoints throughout your run. Meet the coverage target to continue!",
+			"Every few polls your pipeline is evaluated. All checks must pass — fail one and the run ends.",
 	},
 	{
 		icon: "4.",
+		title: "Upgrade Your Pipeline",
+		description:
+			"Pass a pipeline to pick an upgrade card: add a new check or raise the difficulty for a higher storage reward.",
+	},
+	{
+		icon: "5.",
 		title: "Shop for Power-ups",
 		description:
-			"After each poll, visit the Package Manager to install configs that boost your coverage.",
+			"After each poll, visit the Package Manager to install configs that boost your coverage or bend the rules.",
 	},
 ];
 
