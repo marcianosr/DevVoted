@@ -43,8 +43,10 @@ const formatCurrentStat = (
 	switch (req.type) {
 		case "correct-answers":
 			return `${ctx.correctAnswersInWindow} correct`;
-		case "coverage-gain":
-			return `+${ctx.coverageGainedInWindow.toFixed(1)}%`;
+		case "coverage-gain": {
+			const val = ctx.coverageGainedInWindow.toFixed(1);
+			return ctx.coverageGainedInWindow >= 0 ? `+${val}%` : `${val}%`;
+		}
 		case "short-window":
 			return `${ctx.pollsAnsweredInWindow}/${ctx.pollsInWindow} answered`;
 		case "cold-start":
