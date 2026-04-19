@@ -47,6 +47,8 @@ const formatCurrentStat = (
 			return `+${ctx.coverageGainedInWindow.toFixed(1)}%`;
 		case "short-window":
 			return `${ctx.pollsAnsweredInWindow}/${ctx.pollsInWindow} answered`;
+		case "cold-start":
+			return `${ctx.firstConsecutiveCorrectFromWindowStart}/${req.count} correct start`;
 	}
 };
 

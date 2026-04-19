@@ -15,12 +15,14 @@ import {
 const allTypesAtMedium: PipelineSlot[] = [
 	getSlotDefinition("coverage-gain", "medium")!,
 	getSlotDefinition("correct-answers", "medium")!,
+	getSlotDefinition("cold-start", "medium")!,
 	getSlotDefinition("short-window", "low")!,
 ];
 
 const allTypesAtCritical: PipelineSlot[] = [
 	getSlotDefinition("coverage-gain", "critical")!,
 	getSlotDefinition("correct-answers", "critical")!,
+	getSlotDefinition("cold-start", "critical")!,
 	getSlotDefinition("short-window", "low")!,
 ];
 
@@ -172,8 +174,8 @@ describe("generateUpgradeCards", () => {
 
 	it("returns one upgrade-slot card per upgradeable slot when all types are active", () => {
 		const cards = generateUpgradeCards(allTypesAtMedium, 8);
-		// coverage-gain + correct-answers upgradeable; short-window is fixed at low (no upgrade defined)
-		expect(cards.length).toBe(2);
+		// coverage-gain + correct-answers + cold-start upgradeable; short-window is fixed at low (no upgrade defined)
+		expect(cards.length).toBe(3);
 		expect(cards.every((c) => c.kind === "upgrade-slot")).toBe(true);
 	});
 
@@ -220,9 +222,9 @@ describe("generateUpgradeCards", () => {
 	it("includes an upgrade-slot card alongside add-slot cards when upgrades are possible", () => {
 		const singleSlot = [getSlotDefinition("correct-answers", "low")!];
 		const cards = generateUpgradeCards(singleSlot, 1);
-		// 1 add-slot (coverage-gain is the only remaining selectable type) + 1 upgrade-slot
-		expect(cards.length).toBe(2);
-		expect(cards.filter((c) => c.kind === "add-slot").length).toBe(1);
+		// 2 add-slot (coverage-gain + cold-start are the remaining selectable types) + 1 upgrade-slot
+		expect(cards.length).toBe(3);
+		expect(cards.filter((c) => c.kind === "add-slot").length).toBe(2);
 		expect(cards.filter((c) => c.kind === "upgrade-slot").length).toBe(1);
 	});
 });

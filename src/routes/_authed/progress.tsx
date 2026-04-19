@@ -1,7 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { clsx } from "clsx";
-
 import Content from "~/components/Content";
 import { removeConfigFromRunServerFn } from "~/domains/configs/api/configs";
 import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
@@ -19,19 +17,10 @@ import {
 	getPollsSeenInRun,
 	getRunPollHistoryServerFn,
 } from "~/domains/polls/api/polls";
-import { RunPollHistory } from "~/domains/polls/api/queries";
 import { PollCountdown } from "~/domains/polls/components/PollCountdown";
-import { Poll } from "~/domains/polls/models/poll";
 import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
-import {
-	formatRequirement,
-	getSlotLabel,
-} from "~/domains/runs/utils/formatPipelineRequirement";
-import {
-	CATEGORY_METADATA,
-	type CategoryCode,
-} from "~/domains/shared/categories";
+
 import { getTodayDateString } from "~/lib/dateUtils";
 
 export const Route = createFileRoute("/_authed/progress")({
@@ -115,118 +104,13 @@ export const Route = createFileRoute("/_authed/progress")({
 	},
 });
 
-type BadgeStatus = "pass" | "fail" | "pending";
-
-const BADGE_CONFIG: Record<
-	BadgeStatus,
-	{ icon: string; label: string; className: string }
-> = {
-	pass: { icon: "✓", label: "PASS", className: "bg-green-400" },
-	fail: { icon: "✗", label: "FAIL", className: "bg-red-400" },
-	pending: { icon: "❯", label: "PENDING", className: "bg-yellow-400" },
-};
-
-const Badge = ({ status }: { status: BadgeStatus }) => {
-	const config = BADGE_CONFIG[status];
-	if (!config) return null;
-
-	return (
-		<span className={`${config.className} p-2 text-black`}>
-			{config.icon} {config.label}
-		</span>
-	);
-};
-
-const getGateStatus = (
-	gateNumber: number,
-	currentRound: number
-): BadgeStatus => {
-	if (gateNumber < currentRound) return "pass";
-	if (gateNumber === currentRound) return "pending";
-	return "pending";
-};
-
-const getPollsForGate = (
-	pollHistory: RunPollHistory[],
-	gateNumber: number,
-	pollsPerGate: number
-): RunPollHistory[] => {
-	const startIndex = (gateNumber - 1) * pollsPerGate;
-	const endIndex = startIndex + pollsPerGate;
-	return pollHistory.slice(startIndex, endIndex);
-};
-
-const PollHistoryItem = ({
-	poll,
-	dailyPoll,
-	idx,
-}: {
-	poll: RunPollHistory;
-	dailyPoll: Poll;
-	idx: number;
-}) => {
-	const categoryName =
-		CATEGORY_METADATA[poll.categoryCode as CategoryCode]?.name ??
-		poll.categoryCode;
-	const isAnswered = poll.answeredAt !== null;
-
-	const isCurrentDailyPoll = dailyPoll && dailyPoll.id === poll.pollId;
-
-	if (!isAnswered) {
-		return (
-			<li
-				className={clsx(
-					"flex items-center gap-2",
-					isCurrentDailyPoll ? "text-yellow-400" : "text-gray-500"
-				)}
-			>
-				<span className="w-4 text-center">{idx + 1}</span>
-				<span data-category-theme={poll.categoryCode}>{categoryName}</span>
-				<span className="text-xs">(not answered)</span>
-				<span>{!isCurrentDailyPoll && <span>Missed!</span>}</span>
-				<span>{isCurrentDailyPoll && <span>(Today)</span>}</span>
-			</li>
-		);
-	}
-
-	const outcomeStyles = {
-		full: "text-green-400",
-		partial: "text-amber-400",
-		wrong: "text-red-400",
-	};
-
-	const outcomeIcons = {
-		full: "✓",
-		partial: "~",
-		wrong: "✗",
-	};
-
-	return (
-		<li className="flex items-center gap-2">
-			<span className="w-4 text-center">{idx + 1}</span>
-			{isAnswered ? (
-				<span className={`w-4 text-center ${outcomeStyles[poll.outcome]}`}>
-					{outcomeIcons[poll.outcome]}
-				</span>
-			) : (
-				<span className="text-yellow-400 w-4 text-center">❯</span>
-			)}
-			<span data-category-theme={poll.categoryCode}>{categoryName}</span>
-			<span>{isCurrentDailyPoll && <span>(Today)</span>}</span>
-		</li>
-	);
-};
-
 function RouteComponent() {
 	const {
 		activeRun,
 		offeredConfigs,
 		nextOfferedConfigs,
 		configEffects: { reductionCost, storage },
-		currentGate,
-		pollHistory,
 		dailyPoll,
-		gates,
 	} = Route.useLoaderData();
 
 	const router = useRouter();
@@ -267,7 +151,7 @@ function RouteComponent() {
 				<h1 className="text-3xl mb-8">Your progress this run</h1>
 
 				<section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-					<div className="space-y-4">
+					{/* <div className="space-y-4">
 						<h3 className="text-xl">Gate Progress</h3>
 						{gates.map((gate) => {
 							const status = getGateStatus(gate.gate, currentGate.gate);
@@ -285,34 +169,6 @@ function RouteComponent() {
 											Gate #{gate.gate} · {gate.pollsPerGate} polls
 										</h2>
 									</summary>
-									{(() => {
-										const slots = isCurrent
-											? activeRun.pipelineSlots
-											: (activeRun.pipelineSlotSnapshots[gate.gate - 1] ?? []);
-										return (
-											<div className="mt-2 flex flex-wrap gap-3">
-												{slots.map((slot) => (
-													<span
-														key={slot.gateTypeId}
-														className="text-xs text-gray-400 font-mono flex items-center gap-1"
-													>
-														<span className="text-theme">
-															{getSlotLabel(slot.gateTypeId)}
-														</span>
-														<span className="border border-gray-600 px-1 text-gray-500">
-															{slot.difficulty}
-														</span>
-														<span>
-															{formatRequirement(
-																slot.requirement,
-																gate.pollsPerGate
-															)}
-														</span>
-													</span>
-												))}
-											</div>
-										);
-									})()}
 									<ol className="mt-3 space-y-1">
 										{getPollsForGate(
 											pollHistory,
@@ -330,7 +186,7 @@ function RouteComponent() {
 								</details>
 							);
 						})}
-					</div>
+					</div> */}
 					<CategoryCoverageGrid
 						categoryCoverage={activeRun.categoryCoverage}
 						currentCategoryCode={dailyPoll.poll.categoryCode}

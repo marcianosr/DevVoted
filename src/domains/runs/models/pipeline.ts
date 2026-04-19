@@ -1,5 +1,9 @@
 export type GateDifficulty = "low" | "medium" | "high" | "critical";
-export type GateTypeId = "coverage-gain" | "correct-answers" | "short-window";
+export type GateTypeId =
+	| "coverage-gain"
+	| "correct-answers"
+	| "short-window"
+	| "cold-start";
 
 export type CoverageGainRequirement = {
 	type: "coverage-gain";
@@ -18,12 +22,18 @@ export type ShortWindowRequirement = {
 	correctRequired?: number; // all polls in window must be correct (Hard)
 };
 
+export type ColdStartRequirement = {
+	type: "cold-start";
+	count: number; // how many of the first N polls in the window must be correct
+};
+
 // Storage drain is a permanent modifier — not evaluated as pass/fail.
 // All other requirement types are evaluated at the end of each window.
 export type PassFailRequirement =
 	| CoverageGainRequirement
 	| CorrectAnswersRequirement
-	| ShortWindowRequirement;
+	| ShortWindowRequirement
+	| ColdStartRequirement;
 
 export type PipelineSlotRequirement = PassFailRequirement;
 

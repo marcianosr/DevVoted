@@ -105,6 +105,7 @@ const gateTypeIdSchema = z.enum([
 	"coverage-gain",
 	"correct-answers",
 	"short-window",
+	"cold-start",
 ] as const);
 
 const difficultySchema = z.enum(["low", "medium", "high", "critical"] as const);
@@ -144,6 +145,13 @@ export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 				? await getWindowResults(activeRun.id, userId, pollsInCurrentWindow)
 				: [];
 
+		const chronologicalWindowResults = [...windowResults].reverse();
+		let firstConsecutiveCorrectFromWindowStart = 0;
+		for (const r of chronologicalWindowResults) {
+			if (!r.isCorrect) break;
+			firstConsecutiveCorrectFromWindowStart++;
+		}
+
 		return {
 			correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
 			pollsAnsweredInWindow: windowResults.length,
@@ -157,6 +165,7 @@ export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 			),
 			pollsInWindow: windowSize,
 			currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
+			firstConsecutiveCorrectFromWindowStart,
 		};
 	}
 );

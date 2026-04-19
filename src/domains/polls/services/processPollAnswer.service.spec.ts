@@ -311,9 +311,10 @@ describe("processPollAnswer", () => {
 
 			const result = await processPollAnswer(defaultInput);
 
+			// 2 add-slot cards (coverage-gain + cold-start are the remaining selectable types) + 1 upgrade-slot
 			expect(
 				result.upgradeCards.filter((c) => c.kind === "add-slot").length
-			).toBe(1);
+			).toBe(2);
 			expect(
 				result.upgradeCards.filter((c) => c.kind === "upgrade-slot").length
 			).toBe(1);

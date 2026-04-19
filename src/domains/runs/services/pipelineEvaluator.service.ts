@@ -10,6 +10,7 @@ export type PipelineEvaluationContext = {
 	readonly currentStreakAtWindowEnd: number; // consecutive correct answers ending this window
 	readonly pollsInWindow: number; // total window size (fixed)
 	readonly currentGate: number; // 1-indexed gate number currently being worked toward
+	readonly firstConsecutiveCorrectFromWindowStart: number; // leading correct-answer streak from poll #1 of the window
 };
 
 export type SlotEvaluation = {
@@ -62,6 +63,12 @@ const evaluateSlot = (
 				passed:
 					!req.correctRequired ||
 					ctx.correctAnswersInWindow >= req.correctRequired,
+			};
+
+		case "cold-start":
+			return {
+				slot,
+				passed: ctx.firstConsecutiveCorrectFromWindowStart >= req.count,
 			};
 
 		default:

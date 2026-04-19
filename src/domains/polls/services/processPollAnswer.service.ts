@@ -198,6 +198,13 @@ const evaluatePipelineStage = async ({
 			? await getWindowResults(activeRunId, userId, pollsInCurrentWindow)
 			: [];
 
+	const chronologicalWindowResults = [...windowResults].reverse();
+	let firstConsecutiveCorrectFromWindowStart = 0;
+	for (const r of chronologicalWindowResults) {
+		if (!r.isCorrect) break;
+		firstConsecutiveCorrectFromWindowStart++;
+	}
+
 	const ctx: PipelineEvaluationContext = {
 		correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
 		pollsAnsweredInWindow: windowResults.length,
@@ -211,6 +218,7 @@ const evaluatePipelineStage = async ({
 		),
 		pollsInWindow: windowSize,
 		currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
+		firstConsecutiveCorrectFromWindowStart,
 	};
 
 	if (!isPipelineCheckPoll) {

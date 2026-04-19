@@ -106,6 +106,26 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 			},
 		},
 	},
+	"cold-start": {
+		difficulties: {
+			low: {
+				requirement: { type: "cold-start", count: 1 },
+				reward: SLOT_REWARDS.low,
+			},
+			medium: {
+				requirement: { type: "cold-start", count: 2 },
+				reward: SLOT_REWARDS.medium,
+			},
+			high: {
+				requirement: { type: "cold-start", count: 3 },
+				reward: SLOT_REWARDS.high,
+			},
+			critical: {
+				requirement: { type: "cold-start", count: 4 },
+				reward: SLOT_REWARDS.critical,
+			},
+		},
+	},
 	"short-window": {
 		difficulties: {
 			low: {
@@ -140,6 +160,7 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
 	"coverage-gain",
 	"correct-answers",
+	"cold-start",
 ] as const;
 
 // ─── Lookup helpers ───────────────────────────────────────────────────────────
