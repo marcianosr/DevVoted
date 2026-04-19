@@ -151,7 +151,9 @@ function RouteComponent() {
 								return (
 									<li key={slot.gateTypeId} className="text-red-400">
 										✗ {getSlotLabel(slot.gateTypeId)} {slot.difficulty} —{" "}
-										{formatRequirement(definition.requirement)}
+										{definition
+											? formatRequirement(definition.requirement)
+											: null}
 									</li>
 								);
 							})}

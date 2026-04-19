@@ -52,10 +52,7 @@ const evaluateSlot = (
 		case "correct-answers":
 			return {
 				slot,
-				passed:
-					ctx.correctAnswersInWindow >= req.count &&
-					(!req.streakRequired ||
-						ctx.currentStreakAtWindowEnd >= req.streakRequired),
+				passed: ctx.correctAnswersInWindow >= req.count,
 			};
 
 		case "short-window":

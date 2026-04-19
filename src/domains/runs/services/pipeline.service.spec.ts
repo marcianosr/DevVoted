@@ -11,15 +11,18 @@ import {
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
+// short-window is fixed at low — not player-selectable
 const allTypesAtMedium: PipelineSlot[] = [
-	getSlotDefinition("coverage-gain", "medium"),
-	getSlotDefinition("correct-answers", "medium"),
-	getSlotDefinition("short-window", "medium"),
+	getSlotDefinition("coverage-gain", "medium")!,
+	getSlotDefinition("correct-answers", "medium")!,
+	getSlotDefinition("short-window", "low")!,
 ];
 
-const allTypesAtCritical: PipelineSlot[] = allTypesAtMedium.map((slot) =>
-	getSlotDefinition(slot.gateTypeId, "critical")
-);
+const allTypesAtCritical: PipelineSlot[] = [
+	getSlotDefinition("coverage-gain", "critical")!,
+	getSlotDefinition("correct-answers", "critical")!,
+	getSlotDefinition("short-window", "low")!,
+];
 
 // ─── getInitialPipelineSlots ──────────────────────────────────────────────────
 
@@ -51,10 +54,7 @@ describe("isMaxPipeline", () => {
 	});
 
 	it("returns false when fewer than all slot types are active", () => {
-		const partial = [
-			getSlotDefinition("correct-answers", "critical"),
-			getSlotDefinition("coverage-gain", "critical"),
-		];
+		const partial = [getSlotDefinition("correct-answers", "critical")!];
 		expect(isMaxPipeline(partial)).toBe(false);
 	});
 
@@ -72,10 +72,10 @@ describe("isMaxPipeline", () => {
 describe("applyUpgradeCard", () => {
 	describe("add-slot card", () => {
 		it("appends the new slot to the pipeline", () => {
-			const slots = [getSlotDefinition("correct-answers", "low")];
+			const slots = [getSlotDefinition("correct-answers", "low")!];
 			const card: UpgradeCard = {
 				kind: "add-slot",
-				slot: getSlotDefinition("coverage-gain", "medium"),
+				slot: getSlotDefinition("coverage-gain", "medium")!,
 			};
 
 			const result = applyUpgradeCard(slots, card);
@@ -85,10 +85,10 @@ describe("applyUpgradeCard", () => {
 		});
 
 		it("does not mutate the original array", () => {
-			const slots = [getSlotDefinition("correct-answers", "low")];
+			const slots = [getSlotDefinition("correct-answers", "low")!];
 			const card: UpgradeCard = {
 				kind: "add-slot",
-				slot: getSlotDefinition("coverage-gain", "medium"),
+				slot: getSlotDefinition("coverage-gain", "medium")!,
 			};
 
 			applyUpgradeCard(slots, card);
@@ -100,15 +100,15 @@ describe("applyUpgradeCard", () => {
 	describe("upgrade-slot card", () => {
 		it("replaces the matching slot with the upgraded version", () => {
 			const slots = [
-				getSlotDefinition("correct-answers", "low"),
-				getSlotDefinition("coverage-gain", "low"),
+				getSlotDefinition("correct-answers", "low")!,
+				getSlotDefinition("coverage-gain", "low")!,
 			];
 			const card: UpgradeCard = {
 				kind: "upgrade-slot",
 				gateTypeId: "correct-answers",
 				from: "low",
 				to: "medium",
-				slot: getSlotDefinition("correct-answers", "medium"),
+				slot: getSlotDefinition("correct-answers", "medium")!,
 			};
 
 			const result = applyUpgradeCard(slots, card);
@@ -119,15 +119,15 @@ describe("applyUpgradeCard", () => {
 
 		it("leaves other slots unchanged", () => {
 			const slots = [
-				getSlotDefinition("correct-answers", "low"),
-				getSlotDefinition("coverage-gain", "low"),
+				getSlotDefinition("correct-answers", "low")!,
+				getSlotDefinition("coverage-gain", "low")!,
 			];
 			const card: UpgradeCard = {
 				kind: "upgrade-slot",
 				gateTypeId: "correct-answers",
 				from: "low",
 				to: "medium",
-				slot: getSlotDefinition("correct-answers", "medium"),
+				slot: getSlotDefinition("correct-answers", "medium")!,
 			};
 
 			const result = applyUpgradeCard(slots, card);
@@ -137,13 +137,13 @@ describe("applyUpgradeCard", () => {
 		});
 
 		it("does not mutate the original array", () => {
-			const slots = [getSlotDefinition("correct-answers", "low")];
+			const slots = [getSlotDefinition("correct-answers", "low")!];
 			const card: UpgradeCard = {
 				kind: "upgrade-slot",
 				gateTypeId: "correct-answers",
 				from: "low",
 				to: "medium",
-				slot: getSlotDefinition("correct-answers", "medium"),
+				slot: getSlotDefinition("correct-answers", "medium")!,
 			};
 
 			applyUpgradeCard(slots, card);
@@ -172,8 +172,8 @@ describe("generateUpgradeCards", () => {
 
 	it("returns one upgrade-slot card per upgradeable slot when all types are active", () => {
 		const cards = generateUpgradeCards(allTypesAtMedium, 8);
-		// all 3 types at medium are upgradeable — one card each, no add-slot cards
-		expect(cards.length).toBe(3);
+		// coverage-gain + correct-answers upgradeable; short-window is fixed at low (no upgrade defined)
+		expect(cards.length).toBe(2);
 		expect(cards.every((c) => c.kind === "upgrade-slot")).toBe(true);
 	});
 
@@ -198,7 +198,7 @@ describe("generateUpgradeCards", () => {
 	});
 
 	it("add-slot cards only offer gate types not already in the pipeline", () => {
-		const existing = [getSlotDefinition("correct-answers", "low")];
+		const existing = [getSlotDefinition("correct-answers", "low")!];
 		const cards = generateUpgradeCards(existing, 1);
 		const addSlotCards = cards.filter((c) => c.kind === "add-slot");
 
@@ -218,11 +218,11 @@ describe("generateUpgradeCards", () => {
 	});
 
 	it("includes an upgrade-slot card alongside add-slot cards when upgrades are possible", () => {
-		const singleSlot = [getSlotDefinition("correct-answers", "low")];
+		const singleSlot = [getSlotDefinition("correct-answers", "low")!];
 		const cards = generateUpgradeCards(singleSlot, 1);
-		// 2 add-slot (2 remaining types) + 1 upgrade-slot
-		expect(cards.length).toBe(3);
-		expect(cards.filter((c) => c.kind === "add-slot").length).toBe(2);
+		// 1 add-slot (coverage-gain is the only remaining selectable type) + 1 upgrade-slot
+		expect(cards.length).toBe(2);
+		expect(cards.filter((c) => c.kind === "add-slot").length).toBe(1);
 		expect(cards.filter((c) => c.kind === "upgrade-slot").length).toBe(1);
 	});
 });

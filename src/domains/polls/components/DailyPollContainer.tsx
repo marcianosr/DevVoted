@@ -216,7 +216,7 @@ const DailyPollContainer = ({
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
 
-		onSuccess: (response) => {
+		onSuccess: async (response) => {
 			if (response.success) {
 				// Store the breakdown from the mutation - this is the correct score
 				// that was actually saved to the DB
@@ -243,6 +243,7 @@ const DailyPollContainer = ({
 				}
 
 				if (response.data.runEnded) {
+					await router.invalidate();
 					navigate({ to: "/game-over" });
 					return;
 				}
@@ -257,7 +258,6 @@ const DailyPollContainer = ({
 
 	// Use the submitted score if available (just answered), otherwise fall back to loader's score
 	const displayScore = submittedScore ?? score;
-
 	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
 
 	const adminLink = isAdmin && (

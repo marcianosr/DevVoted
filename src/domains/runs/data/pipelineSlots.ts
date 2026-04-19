@@ -59,7 +59,7 @@ type SlotVariant = {
 };
 
 type PipelineSlotDefinition = {
-	difficulties: Record<GateDifficulty, SlotVariant>;
+	difficulties: Partial<Record<GateDifficulty, SlotVariant>>;
 };
 
 export const STARTER_SLOT_DEFINITIONS: Record<
@@ -112,24 +112,25 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 				requirement: { type: "short-window", pollCount: 5 },
 				reward: SLOT_REWARDS.low,
 			},
-			medium: {
-				requirement: { type: "short-window", pollCount: 4 },
-				reward: SLOT_REWARDS.medium,
-			},
-			high: {
-				requirement: {
-					type: "short-window",
-					pollCount: 3,
-				},
-				reward: SLOT_REWARDS.high,
-			},
-			critical: {
-				requirement: {
-					type: "short-window",
-					pollCount: 2,
-				},
-				reward: SLOT_REWARDS.critical,
-			},
+			// TODO: doesn't work yet in combinarion with correct-answers req, need to decide how to handle the interaction of "all polls must be correct" vs "need X correct answers in window"
+			// medium: {
+			// 	requirement: { type: "short-window", pollCount: 4 },
+			// 	reward: SLOT_REWARDS.medium,
+			// },
+			// high: {
+			// 	requirement: {
+			// 		type: "short-window",
+			// 		pollCount: 3,
+			// 	},
+			// 	reward: SLOT_REWARDS.high,
+			// },
+			// critical: {
+			// 	requirement: {
+			// 		type: "short-window",
+			// 		pollCount: 2,
+			// 	},
+			// 	reward: SLOT_REWARDS.critical,
+			// },
 		},
 	},
 };
@@ -139,7 +140,6 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
 	"coverage-gain",
 	"correct-answers",
-	"short-window",
 ] as const;
 
 // ─── Lookup helpers ───────────────────────────────────────────────────────────
@@ -147,8 +147,10 @@ export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
 export const getSlotDefinition = (
 	gateTypeId: GateTypeId,
 	difficulty: GateDifficulty
-): PipelineSlot => {
+): PipelineSlot | null => {
 	const variant = STARTER_SLOT_DEFINITIONS[gateTypeId].difficulties[difficulty];
+
+	if (!variant) return null;
 
 	return {
 		gateTypeId,

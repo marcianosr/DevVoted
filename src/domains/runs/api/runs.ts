@@ -168,24 +168,22 @@ export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
 
 		if (!activeRun) throw new Error("No active run found");
 
+		const slotDifficulty = data.kind === "add-slot" ? data.difficulty : data.to;
+		const slot = getSlotDefinition(
+			data.gateTypeId as GateTypeId,
+			slotDifficulty as GateDifficulty
+		);
+		if (!slot) throw new Error("Invalid slot combination");
+
 		const card: UpgradeCard =
 			data.kind === "add-slot"
-				? {
-						kind: "add-slot",
-						slot: getSlotDefinition(
-							data.gateTypeId as GateTypeId,
-							data.difficulty as GateDifficulty
-						),
-					}
+				? { kind: "add-slot", slot }
 				: {
 						kind: "upgrade-slot",
 						gateTypeId: data.gateTypeId as GateTypeId,
 						from: data.from as GateDifficulty,
 						to: data.to as GateDifficulty,
-						slot: getSlotDefinition(
-							data.gateTypeId as GateTypeId,
-							data.to as GateDifficulty
-						),
+						slot,
 					};
 
 		const newSlots = applyUpgradeCard(activeRun.pipelineSlots, card);

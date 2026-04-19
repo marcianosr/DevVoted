@@ -49,12 +49,13 @@ const getUpgradeableSlots = (slots: PipelineSlot[]): PipelineSlot[] =>
 	slots.filter((s) => getNextDifficulty(s.difficulty) !== null);
 
 export const getInitialPipelineSlots = (): PipelineSlot[] => [
-	getSlotDefinition("short-window", "low"),
+	getSlotDefinition("short-window", "low")!,
 ];
 
 export const isMaxPipeline = (slots: PipelineSlot[]): boolean =>
-	slots.length === STARTER_GATE_TYPE_IDS.length &&
-	slots.every((s) => s.difficulty === "critical");
+	STARTER_GATE_TYPE_IDS.every((id) =>
+		slots.some((s) => s.gateTypeId === id && s.difficulty === "critical")
+	);
 
 /**
  * Generates a hand of upgrade cards for the player to choose from.
@@ -74,25 +75,25 @@ export const generateUpgradeCards = (
 	const typesToOffer = shuffledTypes.slice(0, 2);
 
 	for (const gateTypeId of typesToOffer) {
-		cards.push({
-			kind: "add-slot",
-			slot: getSlotDefinition(gateTypeId, pickWeightedDifficulty(weights)),
-		});
+		const slot = getSlotDefinition(gateTypeId, pickWeightedDifficulty(weights));
+		if (!slot) continue;
+		cards.push({ kind: "add-slot", slot });
 	}
 
 	// One upgrade card per upgradeable slot — player sees all options, picks one
 	for (const slot of getUpgradeableSlots(slots)) {
 		const nextDifficulty = getNextDifficulty(slot.difficulty);
-
-		// nextDifficulty is always defined — getUpgradeableSlots filters out intense slots.
 		if (!nextDifficulty) continue;
+
+		const nextSlot = getSlotDefinition(slot.gateTypeId, nextDifficulty);
+		if (!nextSlot) continue;
 
 		cards.push({
 			kind: "upgrade-slot",
 			gateTypeId: slot.gateTypeId,
 			from: slot.difficulty,
 			to: nextDifficulty,
-			slot: getSlotDefinition(slot.gateTypeId, nextDifficulty),
+			slot: nextSlot,
 		});
 	}
 

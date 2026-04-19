@@ -239,7 +239,7 @@ describe("processPollAnswer", () => {
 		const runWithSlot = createMockRun({
 			id: 1,
 			userId: BANJO_USER_ID,
-			pipelineSlots: [getSlotDefinition("correct-answers", "low")], // needs 2/5
+			pipelineSlots: [getSlotDefinition("correct-answers", "low")!], // needs 2/5
 		});
 
 		// 3 correct, 1 wrong, 1 partial — meets the low correct-answers requirement (needs 2)
@@ -313,7 +313,7 @@ describe("processPollAnswer", () => {
 
 			expect(
 				result.upgradeCards.filter((c) => c.kind === "add-slot").length
-			).toBe(2);
+			).toBe(1);
 			expect(
 				result.upgradeCards.filter((c) => c.kind === "upgrade-slot").length
 			).toBe(1);

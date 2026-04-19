@@ -27,28 +27,13 @@ const makeContext = (
 
 describe("getWindowSize", () => {
 	it(`returns ${DEFAULT_WINDOW_SIZE} when no short-window slot is active`, () => {
-		const slots = [getSlotDefinition("correct-answers", "low")];
+		const slots = [getSlotDefinition("correct-answers", "low")!];
 		expect(getWindowSize(slots)).toBe(DEFAULT_WINDOW_SIZE);
 	});
 
-	it("returns 4 for short-window medium", () => {
-		const slots = [getSlotDefinition("short-window", "medium")]; // pollCount: 4
-		expect(getWindowSize(slots)).toBe(4);
-	});
-
 	it("returns 5 for short-window low", () => {
-		const slots = [getSlotDefinition("short-window", "low")]; // pollCount: 5
+		const slots = [getSlotDefinition("short-window", "low")!]; // pollCount: 5
 		expect(getWindowSize(slots)).toBe(5);
-	});
-
-	it("returns 3 for short-window high", () => {
-		const slots = [getSlotDefinition("short-window", "high")]; // pollCount: 3
-		expect(getWindowSize(slots)).toBe(3);
-	});
-
-	it("returns 2 for short-window critical", () => {
-		const slots = [getSlotDefinition("short-window", "critical")]; // pollCount: 2
-		expect(getWindowSize(slots)).toBe(2);
 	});
 
 	it("returns default when pipeline is empty", () => {
@@ -59,7 +44,7 @@ describe("getWindowSize", () => {
 // ─── evaluatePipeline — coverage-gain ────────────────────────────────────────
 
 describe("evaluatePipeline — coverage-gain", () => {
-	const slot = getSlotDefinition("coverage-gain", "medium"); // threshold: 5%
+	const slot = getSlotDefinition("coverage-gain", "medium")!; // threshold: 5%
 
 	it("passes when coverage gained meets the threshold", () => {
 		const result = evaluatePipeline(
@@ -89,8 +74,8 @@ describe("evaluatePipeline — coverage-gain", () => {
 // ─── evaluatePipeline — correct-answers ──────────────────────────────────────
 
 describe("evaluatePipeline — correct-answers", () => {
-	const lowSlot = getSlotDefinition("correct-answers", "low"); // count: 2
-	const criticalSlot = getSlotDefinition("correct-answers", "critical"); // count: 5
+	const lowSlot = getSlotDefinition("correct-answers", "low")!; // count: 2
+	const criticalSlot = getSlotDefinition("correct-answers", "critical")!; // count: 5
 
 	it("passes when correct answers meet the count", () => {
 		const result = evaluatePipeline(
@@ -128,22 +113,13 @@ describe("evaluatePipeline — correct-answers", () => {
 // ─── evaluatePipeline — short-window ─────────────────────────────────────────
 
 describe("evaluatePipeline — short-window", () => {
-	// short-window is purely a window-size modifier at all tiers — no pass/fail conditions
-	const lowSlot = getSlotDefinition("short-window", "low"); // pollCount: 5
-	const criticalSlot = getSlotDefinition("short-window", "critical"); // pollCount: 2
+	// short-window is a fixed window-size modifier — no pass/fail conditions
+	const lowSlot = getSlotDefinition("short-window", "low")!; // pollCount: 5
 
-	it("passes low regardless of answers", () => {
+	it("passes regardless of answers", () => {
 		const result = evaluatePipeline(
 			makeContext({ correctAnswersInWindow: 0 }),
 			[lowSlot]
-		);
-		expect(result.passed).toBe(true);
-	});
-
-	it("passes critical regardless of answers", () => {
-		const result = evaluatePipeline(
-			makeContext({ correctAnswersInWindow: 0 }),
-			[criticalSlot]
 		);
 		expect(result.passed).toBe(true);
 	});
@@ -153,8 +129,8 @@ describe("evaluatePipeline — short-window", () => {
 
 describe("evaluatePipeline — multiple active slots", () => {
 	const slots: PipelineSlot[] = [
-		getSlotDefinition("correct-answers", "medium"), // count: 3
-		getSlotDefinition("coverage-gain", "low"), // threshold: 3%
+		getSlotDefinition("correct-answers", "medium")!, // count: 3
+		getSlotDefinition("coverage-gain", "low")!, // threshold: 3%
 	];
 
 	it("passes when all slots pass", () => {
