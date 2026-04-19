@@ -248,6 +248,7 @@ export const pollResponsesTable = pgTable(
 		run_id: integer("run_id").references(() => runsTable.id, {
 			onDelete: "cascade",
 		}), // Nullable for legacy responses before this column existed
+		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows)
 		// Intentionally redundant with created_at — derived date used solely for unique constraint.
 		// Drizzle doesn't support unique constraints on expressions like DATE(created_at).
 		answer_date: varchar("answer_date", { length: 10 }).notNull(),

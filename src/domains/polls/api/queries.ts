@@ -113,6 +113,7 @@ type CreatePollResponse = {
 	runId: number;
 	answerDate: string; // "YYYY-MM-DD"
 	selectedOptionIds: number[];
+	coverageDelta: number;
 };
 export const createPollResponse = async ({
 	pollId,
@@ -120,6 +121,7 @@ export const createPollResponse = async ({
 	runId,
 	answerDate,
 	selectedOptionIds,
+	coverageDelta,
 }: CreatePollResponse) => {
 	// Transaction instead of insert to ensure no orphaned records exist
 	await db.transaction(async (tx) => {
@@ -130,6 +132,7 @@ export const createPollResponse = async ({
 				user_id: userId,
 				run_id: runId,
 				answer_date: answerDate,
+				coverage_delta: coverageDelta,
 			})
 			.returning();
 
@@ -912,6 +915,7 @@ export const updatePollWithOptions = async (
 export type WindowResult = {
 	isCorrect: boolean; // selected all correct options and no incorrect ones
 	isWrong: boolean; // selected at least one incorrect option
+	coverageDelta: number; // coverage % awarded for this response
 };
 
 /**
@@ -930,6 +934,7 @@ export const getWindowResults = async (
 		.select({
 			responseId: pollResponsesTable.response_id,
 			pollId: pollResponsesTable.poll_id,
+			coverageDelta: pollResponsesTable.coverage_delta,
 		})
 		.from(pollResponsesTable)
 		.where(
@@ -987,16 +992,22 @@ export const getWindowResults = async (
 		totalCorrectResults.map((r) => [r.pollId, r.totalCorrect])
 	);
 
-	return recentResponses.map(({ responseId, pollId }) => {
+	return recentResponses.map(({ responseId, pollId, coverageDelta }) => {
 		const sel = selectednessMap.get(responseId);
 		const totalCorrect = totalCorrectMap.get(pollId) ?? 0;
 
-		if (!sel || totalCorrect === 0) return { isCorrect: false, isWrong: false };
+		if (!sel || totalCorrect === 0)
+			return {
+				isCorrect: false,
+				isWrong: false,
+				coverageDelta: coverageDelta ?? 0,
+			};
 
 		return {
 			isCorrect:
 				sel.selectedCorrect === totalCorrect && sel.selectedIncorrect === 0,
 			isWrong: sel.selectedIncorrect > 0,
+			coverageDelta: coverageDelta ?? 0,
 		};
 	});
 };

@@ -130,6 +130,7 @@ const commitAnswerProgress = async ({
 		runId: activeRun.id,
 		answerDate: getTodayDateString(),
 		selectedOptionIds,
+		coverageDelta: breakdown.delta,
 	});
 
 	return { breakdown };
@@ -200,8 +201,10 @@ const evaluatePipelineStage = async ({
 	const ctx: PipelineEvaluationContext = {
 		correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
 		pollsAnsweredInWindow: windowResults.length,
-		// TODO: track per-window coverage delta for coverage-gain gate evaluation
-		coverageGainedInWindow: 0,
+		coverageGainedInWindow: windowResults.reduce(
+			(sum, r) => sum + r.coverageDelta,
+			0
+		),
 		currentStreakAtWindowEnd: Math.max(
 			...updatedRun.categoryCoverage.map((c) => c.currentStreak),
 			0

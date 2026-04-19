@@ -147,7 +147,10 @@ export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 		return {
 			correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
 			pollsAnsweredInWindow: windowResults.length,
-			coverageGainedInWindow: 0,
+			coverageGainedInWindow: windowResults.reduce(
+				(sum, r) => sum + r.coverageDelta,
+				0
+			),
 			currentStreakAtWindowEnd: Math.max(
 				...activeRun.categoryCoverage.map((c) => c.currentStreak),
 				0
