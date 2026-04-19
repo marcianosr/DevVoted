@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.0] - April 2026
+
+### Added
+- **CI Pipelines**: Redesigned gate system — every few polls your pipeline is evaluated and all checks must pass or the run ends
+- **Pipeline check types**: correct answers, coverage gain, short window, cold start — each with difficulty tiers (low → medium → high → critical)
+- **Upgrade cards**: pass a pipeline to choose a new check or raise the difficulty of an existing one for a higher storage reward
+- **Post-victory / endless mode**: keep playing after all pipelines are passed, aiming for 100% coverage
+- **"First good"** community stat: tracks who was first to answer correctly
+- **New categories**: Ruby, Python, Java, General Backend
+- **New configs**: legendary config, public config, decreasing category weight configs
+- **Stats page**: personal run statistics
+- **Category weights display**: shows tomorrow's poll category distribution
+- **Admin configs table**: usage stats and popularity sorting
+- **Active config counter** shown in-run
+- **`/polls` search**: filter by category with poll counts per category
+- **My Polls** link in navigation
+- **Leaderboard cards** UI
+- **Last updated** timestamp in footer
+- **Presentation mode**
+
+### Fixed
+- Game-over navigation reliability
+- HTTP 414 error on large poll submissions
+- Shop bug: deinstalling one of 3 items caused another to disappear
+- Deflate config synergy
+- Poll filter buttons now use category theme colors
+- Unreadable placeholder text
+- Duplicate poll response dedup
+
+### Changed
+- Pipeline evaluation live progress shown during a window
+- Shop item prices and booster sizes rebalanced
+- Refund amount shown directly on the deinstall button
+- Shop items persist across poll changes
+- Migrated from ESLint to oxlint
+- Refactored poll answer orchestrator into pipeline stages
+
+---
+
 ## [1.0.0] - January 2026 ❄️
 
 🎉 **DevVoted is officially released!** The core gameplay loop is complete with all MVP features.
