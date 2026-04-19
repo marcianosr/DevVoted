@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
@@ -7,7 +7,6 @@ import { z } from "zod";
 
 import { ApplyEffects } from "~/domains/configs/data/configs";
 import { Config } from "~/domains/configs/models/config";
-import { ShopPreview } from "~/domains/economy/components/ShopPreview";
 import {
 	getCommunityStatsHandler,
 	getRandomAnswerHandler,
@@ -18,34 +17,40 @@ import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm";
 import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay";
-import SelectedOptionsSummary from "~/domains/polls/components/SelectedOptionsSummary";
+import { PollResultsSection } from "~/domains/polls/components/PollResultsSection";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
-import { getExposedConfigDeck } from "~/domains/runs/api/runs";
-import { GateProgressIndicator } from "~/domains/runs/components/GateProgressIndicator";
+import {
+	applyPipelineUpgradeFn,
+	getExposedConfigDeck,
+} from "~/domains/runs/api/runs";
+import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer";
+import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
-import { GateDefinition } from "~/domains/runs/services/thresholdCalculator.service";
+import type {
+	PipelineEvaluation,
+	PipelineEvaluationContext,
+} from "~/domains/runs/services/pipelineEvaluator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
+import { getAuthenticatedUserId } from "~/utils/authorization";
 
 export const getScoreBreakdown = createServerFn({ method: "GET" })
 	.inputValidator(
-		z.custom<{
-			poll: Poll;
-			options: PollOption[];
-			hasAnswered: boolean;
-			run: Run;
-			selectedOptions: string[];
-		}>()
+		z.object({
+			pollId: z.number().int().positive(),
+			selectedOptions: z.array(z.string()),
+			hasAnswered: z.boolean(),
+		})
 	)
 	.handler(async ({ data }) => {
+		const userId = await getAuthenticatedUserId();
 		const result = await getScoreBreakdownHandler({
 			data: {
-				hasAnswered: data.hasAnswered,
-				options: data.options,
-				poll: data.poll,
-				run: data.run,
+				pollId: data.pollId,
 				selectedOptions: data.selectedOptions,
+				hasAnswered: data.hasAnswered,
+				userId,
 			},
 		});
 
@@ -89,9 +94,10 @@ type DailyPollContainerProps = {
 	score: ScoreCalculation;
 	configEffects: ApplyEffects;
 	creatorDisplayName: string | null;
-	currentGate: GateDefinition;
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
+	initialPendingUpgradeCards: UpgradeCard[];
+	initialWindowContext: PipelineEvaluationContext | null;
 };
 
 const DailyPollContainer = ({
@@ -103,9 +109,10 @@ const DailyPollContainer = ({
 	configEffects,
 	creatorDisplayName,
 	activeRun,
-	currentGate,
 	isAdmin,
 	offeredConfigs,
+	initialPendingUpgradeCards,
+	initialWindowContext,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -116,6 +123,60 @@ const DailyPollContainer = ({
 	const [submittedScore, setSubmittedScore] = useState<ScoreCalculation | null>(
 		null
 	);
+
+	// Seeded from the run's persisted state so it survives page refreshes.
+	const [pendingUpgradeCards, setPendingUpgradeCards] = useState<UpgradeCard[]>(
+		initialPendingUpgradeCards
+	);
+	const [lastEvaluationContext, setLastEvaluationContext] =
+		useState<PipelineEvaluationContext | null>(initialWindowContext);
+	const [lastPipelineEvaluation, setLastPipelineEvaluation] =
+		useState<PipelineEvaluation | null>(null);
+
+	// Sync local state when the server-side cards update via router.invalidate().
+	// useState only uses its argument on mount — when the context refreshes with new
+	// cards (e.g., after a gate pass), the prop changes but state doesn't unless we
+	// explicitly sync here.
+	useEffect(() => {
+		if (initialPendingUpgradeCards.length > 0) {
+			setPendingUpgradeCards(initialPendingUpgradeCards);
+		}
+	}, [initialPendingUpgradeCards]);
+
+	useEffect(() => {
+		if (initialWindowContext) {
+			setLastEvaluationContext(initialWindowContext);
+		}
+	}, [initialWindowContext]);
+
+	const applyUpgradeMutation = useMutation({
+		mutationFn: applyPipelineUpgradeFn,
+		onSuccess: () => {
+			setPendingUpgradeCards([]);
+			router.invalidate();
+		},
+	});
+
+	const handleUpgradeAccepted = (card: UpgradeCard) => {
+		if (applyUpgradeMutation.isPending) return;
+
+		const input =
+			card.kind === "add-slot"
+				? ({
+						kind: "add-slot",
+						gateTypeId: card.slot.gateTypeId,
+						difficulty: card.slot.difficulty,
+					} as const)
+				: ({
+						kind: "upgrade-slot",
+						gateTypeId: card.gateTypeId,
+						from: card.from,
+						to: card.to,
+					} as const);
+
+		setPendingUpgradeCards([]);
+		applyUpgradeMutation.mutate({ data: input });
+	};
 
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
 	const { data: communityStats } = useQuery({
@@ -154,7 +215,7 @@ const DailyPollContainer = ({
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
 
-		onSuccess: (response) => {
+		onSuccess: async (response) => {
 			if (response.success) {
 				// Store the breakdown from the mutation - this is the correct score
 				// that was actually saved to the DB
@@ -168,7 +229,20 @@ const DailyPollContainer = ({
 					});
 				}
 
+				if (response.data.evaluationContext) {
+					setLastEvaluationContext(response.data.evaluationContext);
+				}
+
+				if (response.data.pipelineEvaluation) {
+					setLastPipelineEvaluation(response.data.pipelineEvaluation);
+				}
+
+				if (response.data.upgradeCards?.length) {
+					setPendingUpgradeCards(response.data.upgradeCards);
+				}
+
 				if (response.data.runEnded) {
+					await router.invalidate();
 					navigate({ to: "/game-over" });
 					return;
 				}
@@ -183,8 +257,38 @@ const DailyPollContainer = ({
 
 	// Use the submitted score if available (just answered), otherwise fall back to loader's score
 	const displayScore = submittedScore ?? score;
-
 	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
+
+	const adminLink = isAdmin && (
+		<div className="mb-4 pb-2 border-b border-gray-700">
+			<Link
+				to="/polls/$pollId/edit"
+				params={{ pollId: String(poll.id) }}
+				className="text-primary hover:text-primary/80 hover:underline text-sm"
+			>
+				Edit Poll
+			</Link>
+		</div>
+	);
+
+	const header = (
+		<header className="border-b border-theme py-4 mb-8">
+			<section className="flex justify-between flex-wrap gap-4">
+				<div className="flex flex-col">
+					<p className="text-4xl text-theme">{category.name}</p>
+					<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
+				</div>
+				{/* <PipelineDisplay
+					slots={activeRun.pipelineSlots}
+					evaluation={lastPipelineEvaluation ?? undefined}
+					totalPollsAnswered={activeRun.categoryCoverage.reduce(
+						(sum, c) => sum + c.pollsAnswered,
+						0
+					)}
+				/> */}
+			</section>
+		</header>
+	);
 
 	return (
 		<section>
@@ -199,51 +303,51 @@ const DailyPollContainer = ({
 					</p>
 				</div>
 			)}
-			{isAdmin && (
-				<div className="mb-4 pb-2 border-b border-gray-700">
-					<Link
-						to="/polls/$pollId/edit"
-						params={{ pollId: String(poll.id) }}
-						className="text-primary hover:text-primary/80 hover:underline text-sm"
-					>
-						Edit Poll
-					</Link>
-				</div>
+			{adminLink}
+			{pendingUpgradeCards.length === 0 && (
+				<>
+					{header}
+					<PollQuestionDisplay poll={poll} />
+					{poll.codeSandboxExample && (
+						<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+					)}
+					{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+				</>
 			)}
-			<header className="border-b border-theme py-4 mb-8">
-				<section className="flex justify-between flex-wrap gap-4">
-					<div className="flex flex-col">
-						<p className="text-4xl text-theme">{category.name}</p>
-
-						<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
-					</div>
-
-					<GateProgressIndicator
-						gate={currentGate}
-						categoryCoverage={activeRun.categoryCoverage}
-						victoryAchievedAt={activeRun.victoryAchievedAt}
+			<div className="mt-4 mb-4">
+				{pendingUpgradeCards.length > 0 ? (
+					<PipelineUpgradeContainer
+						cards={pendingUpgradeCards}
+						currentSlots={activeRun.pipelineSlots}
+						onAccept={handleUpgradeAccepted}
+						isPending={applyUpgradeMutation.isPending}
+						hasAnswered={hasAnswered}
+						options={options}
+						selectedOptions={selectedOptions}
+						score={displayScore}
+						communityStats={communityStats}
+						categoryCode={poll.categoryCode}
+						explanation={poll.explanation}
+						exposedConfigDeck={exposedConfigDeck}
+						evaluationContext={lastEvaluationContext ?? undefined}
+						evaluation={lastPipelineEvaluation ?? undefined}
 					/>
-				</section>
-			</header>
-			<PollQuestionDisplay poll={poll} />
-			{poll.codeSandboxExample && (
-				<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
-			)}
-			{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
-			<div className="mt-6">
-				{hasAnswered ? (
-					<>
-						<SelectedOptionsSummary
-							options={options}
-							selectedOptions={selectedOptions}
-							score={displayScore}
-							communityStats={communityStats}
-							categoryCode={poll.categoryCode}
-							explanation={poll.explanation}
-							exposedConfigDeck={exposedConfigDeck}
-						/>
-						<ShopPreview offeredConfigs={offeredConfigs} />
-					</>
+				) : hasAnswered ? (
+					<PollResultsSection
+						options={options}
+						selectedOptions={selectedOptions}
+						score={displayScore}
+						communityStats={communityStats}
+						categoryCode={poll.categoryCode}
+						explanation={poll.explanation}
+						exposedConfigDeck={exposedConfigDeck}
+						offeredConfigs={offeredConfigs}
+						pipeline={{
+							slots: activeRun.pipelineSlots,
+							evaluationContext: lastEvaluationContext ?? undefined,
+							evaluation: lastPipelineEvaluation ?? undefined,
+						}}
+					/>
 				) : (
 					<PollOptionsForm
 						poll={poll}

@@ -152,7 +152,7 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			const result = await createRunForUser("test-user-id", "vanilla");
+			const result = await createRunForUser("test-user-id");
 
 			expect(result).toBeDefined();
 			expect(result.categoryCoverage).toHaveLength(2);

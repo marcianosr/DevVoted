@@ -31,13 +31,9 @@ import {
 } from "~/domains/polls/validation/schemas";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
 import { getAllActiveConfigIds } from "~/domains/runs/api/queries";
-import { Run } from "~/domains/runs/models/run";
 import { getRunProgress } from "~/domains/runs/services/progress.service";
 import { fetchUserDisplayName } from "~/domains/users/api/queries";
 import { handleApiOperation } from "~/utils/errorHandling";
-
-import { Poll } from "../models/poll";
-import { PollOption } from "../models/pollOption";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,
@@ -136,19 +132,25 @@ export const getScoreBreakdownHandler = async ({
 	data,
 }: {
 	data: {
+		pollId: number;
 		selectedOptions: string[];
-		poll: Poll;
-		options: PollOption[];
 		hasAnswered: boolean;
-		run: Run;
+		userId: string;
 	};
 }) => {
 	return handleApiOperation(async () => {
-		const { poll, options, hasAnswered, run, selectedOptions } = data;
+		const { pollId, selectedOptions, hasAnswered, userId } = data;
+
+		const activeRunResponse = await getUserActiveRun(userId);
+		if (!activeRunResponse.success) {
+			throw new Error(activeRunResponse.error);
+		}
+
+		const { poll, options } = await fetchPollByIdWithOptions(pollId);
 
 		const score = await getRunProgress({
 			selectedOptions,
-			run,
+			run: activeRunResponse.data,
 			poll,
 			options,
 			hasAnswered,
@@ -171,10 +173,12 @@ export const postPollOptionsHandler = async ({
 			runId,
 			breakdown,
 			runEnded,
-			thresholdInfo,
 			selectedOptionIds,
 			correctOptionIds,
 			outcome,
+			pipelineEvaluation,
+			evaluationContext,
+			upgradeCards,
 		} = await processPollAnswer({
 			pollId: validatedData.pollId,
 			userId: validatedData.userId,
@@ -194,7 +198,9 @@ export const postPollOptionsHandler = async ({
 			isCorrect: outcome === "full",
 			runEnded,
 			breakdown,
-			thresholdInfo,
+			pipelineEvaluation,
+			evaluationContext,
+			upgradeCards,
 		};
 	});
 };

@@ -3,8 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
 
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
+import { DEFAULT_WINDOW_SIZE } from "~/domains/runs/services/pipelineEvaluator.service";
 import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
@@ -18,15 +17,8 @@ type LeaderboardProps = {
 	categoryCode: CategoryCode;
 };
 
-const getPlayerGateNumber = (
-	pollsSeen: number,
-	challengeModeId: string | null
-): number => {
-	const mode = getChallengeModeOrDefault(challengeModeId ?? "vanilla");
-	const gates = mode.gates;
-	const currentGate = getCurrentGate(pollsSeen, gates);
-	return currentGate.gate;
-};
+const getPlayerGateNumber = (pollsSeen: number): number =>
+	Math.max(1, Math.ceil(pollsSeen / DEFAULT_WINDOW_SIZE));
 
 /**
  * Leaderboard refresh interval (3 minutes)
@@ -55,8 +47,8 @@ const sortyByBestStreak = (data: LeaderboardEntry[]): LeaderboardEntry[] => {
 
 const sortByGateNumber = (data: LeaderboardEntry[]): LeaderboardEntry[] => {
 	return [...data].sort((a, b) => {
-		const gateA = getPlayerGateNumber(a.pollsSeen, a.challengeModeId);
-		const gateB = getPlayerGateNumber(b.pollsSeen, b.challengeModeId);
+		const gateA = getPlayerGateNumber(a.pollsSeen);
+		const gateB = getPlayerGateNumber(b.pollsSeen);
 		return gateB - gateA;
 	});
 };
@@ -126,13 +118,7 @@ const Leaderboard = ({ categoryCode }: LeaderboardProps) => {
 						>
 							<header className="flex gap-2 justify-between">
 								<span className="text-xl">#{idx + 1}</span>
-								<span>
-									Gate{" "}
-									{getPlayerGateNumber(entry.pollsSeen, entry.challengeModeId)}{" "}
-									<small className="text-gray-300 text-xs block">
-										({entry.challengeModeId ?? "vanilla"})
-									</small>
-								</span>
+								<span>Gate {getPlayerGateNumber(entry.pollsSeen)}</span>
 							</header>
 							<section
 								className={clsx("pb-1", {

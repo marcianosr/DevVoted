@@ -248,6 +248,7 @@ export const pollResponsesTable = pgTable(
 		run_id: integer("run_id").references(() => runsTable.id, {
 			onDelete: "cascade",
 		}), // Nullable for legacy responses before this column existed
+		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows)
 		// Intentionally redundant with created_at — derived date used solely for unique constraint.
 		// Drizzle doesn't support unique constraints on expressions like DATE(created_at).
 		answer_date: varchar("answer_date", { length: 10 }).notNull(),
@@ -281,7 +282,6 @@ export const runsTable = pgTable("runs", {
 		onDelete: "set null",
 	}), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
-	challenge_mode_id: varchar("challenge_mode_id", { length: 50 }),
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	active_config_ids: json("active_config_ids")
 		.$type<string[]>()
@@ -294,7 +294,40 @@ export const runsTable = pgTable("runs", {
 	shop_interacted_date: varchar("shop_interacted_date", { length: 10 }), // Date when user interacted with shop
 	deinstall_penalty: integer("deinstall_penalty").notNull().default(0), // Storage penalty from deinstalling configs
 	correct_polls_count: integer("correct_polls_count").notNull().default(0), // Number of correctly answered polls in this run
-	completion_reason: varchar("completion_reason", { length: 50 }), // Reason for run completion: "victory", "threshold_not_met", "wrong_answer", "manual_break_off"
+	pipeline_slots: json("pipeline_slots")
+		.$type<
+			Array<{
+				gateTypeId: string;
+				difficulty: string;
+				requirement: object;
+				reward: number;
+			}>
+		>()
+		.notNull()
+		.default([]), // Active pipeline slots for the current run
+	pipeline_slot_snapshots: json("pipeline_slot_snapshots")
+		.$type<
+			Array<
+				Array<{
+					gateTypeId: string;
+					difficulty: string;
+					requirement: object;
+					reward: number;
+				}>
+			>
+		>()
+		.notNull()
+		.default([]), // Per-gate slot snapshots: index 0 = slots active during gate 1, index 1 = gate 2, etc.
+	pending_upgrade_cards: json("pending_upgrade_cards").$type<
+		Array<{
+			kind: string;
+			slot: object;
+			gateTypeId?: string;
+			from?: string;
+			to?: string;
+		}>
+	>(), // Upgrade cards pending player decision — null when no decision is pending
+	completion_reason: text("completion_reason"), // Reason for run completion — stores JSON for pipeline failures, plain strings for others
 	victory_achieved_at: timestamp("victory_achieved_at", { withTimezone: true }), // When player passed all gates (run continues in post-victory mode)
 	started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
 	finished_at: timestamp("finished_at", { withTimezone: true }),

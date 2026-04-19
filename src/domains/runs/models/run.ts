@@ -1,8 +1,8 @@
 import { InferSelectModel } from "drizzle-orm";
 
 import { runsTable } from "@/src/database/schema";
-import { ChallengeModeId } from "~/domains/runs/data/challengeModes";
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
+import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
 import { STORAGE_UNITS } from "~/lib/storage";
 
 // TODO: Refactor this to ActiveRun?
@@ -11,7 +11,6 @@ export type Run = {
 	userId: string;
 	seasonId: number | null;
 	status: "active" | "finished";
-	challengeModeId: ChallengeModeId;
 	storageLimit: number;
 	activeConfigIds: string[];
 	rerolls: number;
@@ -28,6 +27,9 @@ export type Run = {
 	categoryCoverage: RunCategoryCoverage[];
 	deinstallPenalty: number;
 	correctPollsCount: number;
+	pipelineSlots: PipelineSlot[];
+	pipelineSlotSnapshots: PipelineSlot[][];
+	pendingUpgradeCards: UpgradeCard[];
 };
 
 export type RunRecord = InferSelectModel<typeof runsTable>;
@@ -41,7 +43,6 @@ export const runToDTO = (
 		userId: record.user_id,
 		seasonId: record.season_id,
 		status: record.status,
-		challengeModeId: (record.challenge_mode_id ?? "vanilla") as ChallengeModeId,
 		storageLimit: record.storage_limit,
 		activeConfigIds: record.active_config_ids || [],
 		rerolls: record.rerolls,
@@ -58,6 +59,16 @@ export const runToDTO = (
 		victoryAchievedAt: record.victory_achieved_at,
 		deinstallPenalty: record.deinstall_penalty,
 		correctPollsCount: record.correct_polls_count,
+		// pipeline_slots is stored as JSON. We trust our own write path (savePipelineSlots)
+		// to guarantee valid PipelineSlot[] — this cast is safe at the DB boundary.
+		pipelineSlots: (record.pipeline_slots ?? []) as PipelineSlot[],
+		// Snapshot of slots active at the end of each gate (index 0 = gate 1, etc.).
+		// No default in schema — normalise to [].
+		pipelineSlotSnapshots: (record.pipeline_slot_snapshots ??
+			[]) as PipelineSlot[][],
+		// pending_upgrade_cards is empty when no upgrade is awaiting a decision.
+		// The schema column has no default, so Drizzle may return undefined — normalise to [].
+		pendingUpgradeCards: (record.pending_upgrade_cards ?? []) as UpgradeCard[],
 	};
 };
 
@@ -67,7 +78,6 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		user_id: dto.userId,
 		season_id: dto.seasonId,
 		status: dto.status,
-		challenge_mode_id: dto.challengeModeId,
 		storage_limit: dto.storageLimit,
 		active_config_ids: dto.activeConfigIds,
 		rerolls: dto.rerolls,
@@ -83,6 +93,9 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		victory_achieved_at: dto.victoryAchievedAt || null,
 		deinstall_penalty: dto.deinstallPenalty || 0,
 		correct_polls_count: dto.correctPollsCount || 0,
+		pipeline_slots: dto.pipelineSlots,
+		pipeline_slot_snapshots: dto.pipelineSlotSnapshots,
+		pending_upgrade_cards: dto.pendingUpgradeCards,
 	};
 };
 
@@ -96,13 +109,18 @@ export const runsFromDTOs = (dtos: Run[]): RunRecord[] => {
 
 export const createRun = (partial: Partial<Run> = {}): Run => {
 	const now = new Date();
+	const {
+		pendingUpgradeCards = [],
+		pipelineSlotSnapshots = [],
+		...rest
+	} = partial;
 
 	return {
 		id: 0,
 		userId: "",
 		seasonId: null,
 		status: "active",
-		challengeModeId: "vanilla",
+
 		storageLimit: STORAGE_UNITS.MB, // 1MB default
 		activeConfigIds: [],
 		rerolls: 0,
@@ -119,18 +137,27 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		categoryCoverage: [],
 		deinstallPenalty: 0,
 		correctPollsCount: 0,
-		...partial,
+		pipelineSlots: [],
+		pipelineSlotSnapshots,
+		pendingUpgradeCards,
+		...rest,
 	};
 };
 
 // Test factory functions
 export const createMockRun = (overrides: Partial<Run> = {}): Run => {
+	const {
+		pipelineSlots = [],
+		pipelineSlotSnapshots = [],
+		pendingUpgradeCards = [],
+		...rest
+	} = overrides;
 	return {
 		id: 1,
 		userId: "test-user-id",
 		seasonId: 1,
 		status: "active",
-		challengeModeId: "vanilla",
+
 		storageLimit: STORAGE_UNITS.MB,
 		activeConfigIds: [],
 		rerolls: 0,
@@ -147,7 +174,10 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		categoryCoverage: [],
 		deinstallPenalty: 0,
 		correctPollsCount: 0,
-		...overrides,
+		pipelineSlots,
+		pipelineSlotSnapshots,
+		pendingUpgradeCards,
+		...rest,
 	};
 };
 
@@ -161,7 +191,7 @@ export const createMockRunRecord = (
 		user_id: "test-user-id",
 		season_id: 1,
 		status: "active",
-		challenge_mode_id: "vanilla",
+
 		storage_limit: STORAGE_UNITS.MB,
 		active_config_ids: [],
 		rerolls: 0,
@@ -175,6 +205,9 @@ export const createMockRunRecord = (
 		updated_at: new Date("2024-01-01T00:00:00Z"),
 		deinstall_penalty: 0,
 		correct_polls_count: 0,
+		pipeline_slots: [],
+		pipeline_slot_snapshots: [],
+		pending_upgrade_cards: [],
 		...overrides,
 	};
 };

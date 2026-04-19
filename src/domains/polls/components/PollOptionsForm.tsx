@@ -91,10 +91,17 @@ const PollOptionsForm = ({
 				type="submit"
 				disabled={mutation.isPending || mutation.isSuccess}
 			>
-				{mutation.isPending || mutation.isSuccess
-					? "Submitting..."
-					: "Submit answers"}
+				{mutation.isSuccess
+					? "Submitted!"
+					: mutation.isPending
+						? "Submitting..."
+						: "Submit answers"}
 			</PrimaryButton>
+			{mutation.isError && (
+				<div className="text-red-500 text-xl my-2">
+					Error submitting answers: {mutation.error.message}
+				</div>
+			)}
 		</form>
 	);
 };

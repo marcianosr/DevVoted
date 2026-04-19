@@ -5,6 +5,7 @@ import {
 	lt,
 	sql,
 	asc,
+	desc,
 	count,
 	inArray,
 	or,
@@ -112,6 +113,7 @@ type CreatePollResponse = {
 	runId: number;
 	answerDate: string; // "YYYY-MM-DD"
 	selectedOptionIds: number[];
+	coverageDelta: number;
 };
 export const createPollResponse = async ({
 	pollId,
@@ -119,6 +121,7 @@ export const createPollResponse = async ({
 	runId,
 	answerDate,
 	selectedOptionIds,
+	coverageDelta,
 }: CreatePollResponse) => {
 	// Transaction instead of insert to ensure no orphaned records exist
 	await db.transaction(async (tx) => {
@@ -129,6 +132,7 @@ export const createPollResponse = async ({
 				user_id: userId,
 				run_id: runId,
 				answer_date: answerDate,
+				coverage_delta: coverageDelta,
 			})
 			.returning();
 
@@ -425,6 +429,25 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 		})
 		.from(pollHistoryTable)
 		.where(eq(pollHistoryTable.run_id, runId));
+
+	return result[0]?.count ?? 0;
+};
+
+/**
+ * Get total number of unique polls answered in a specific run.
+ * Counts from pollResponsesTable, so the current poll's response is
+ * included immediately after commitAnswerProgress writes it.
+ * Used for pipeline window evaluation — "answered" polls, not just viewed.
+ */
+export const getAnsweredPollsCountInRun = async (
+	runId: number
+): Promise<number> => {
+	const result = await db
+		.select({
+			count: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
+		})
+		.from(pollResponsesTable)
+		.where(eq(pollResponsesTable.run_id, runId));
 
 	return result[0]?.count ?? 0;
 };
@@ -886,5 +909,105 @@ export const updatePollWithOptions = async (
 		}
 
 		return pollFactory.toDTO(updatedPoll);
+	});
+};
+
+export type WindowResult = {
+	isCorrect: boolean; // selected all correct options and no incorrect ones
+	isWrong: boolean; // selected at least one incorrect option
+	coverageDelta: number; // coverage % awarded for this response
+};
+
+/**
+ * Get correctness results for the last N poll responses in a run.
+ * Used to build the PipelineEvaluationContext at window boundaries.
+ *
+ * Queries pollResponsesTable (written during commitAnswerProgress) so
+ * the current poll's response is included even before trackPollAnswer runs.
+ */
+export const getWindowResults = async (
+	runId: number,
+	userId: string,
+	windowSize: number
+): Promise<WindowResult[]> => {
+	const recentResponses = await db
+		.select({
+			responseId: pollResponsesTable.response_id,
+			pollId: pollResponsesTable.poll_id,
+			coverageDelta: pollResponsesTable.coverage_delta,
+		})
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.run_id, runId),
+				eq(pollResponsesTable.user_id, userId)
+			)
+		)
+		.orderBy(desc(pollResponsesTable.created_at))
+		.limit(windowSize);
+
+	if (recentResponses.length === 0) return [];
+
+	const responseIds = recentResponses.map((r) => r.responseId);
+	const pollIds = recentResponses.map((r) => r.pollId);
+
+	const [selectednessResults, totalCorrectResults] = await Promise.all([
+		db
+			.select({
+				responseId: pollResponseOptionsTable.response_id,
+				selectedCorrect: count(
+					sql`CASE WHEN ${pollOptionsTable.correct} = true THEN 1 END`
+				).mapWith(Number),
+				selectedIncorrect: count(
+					sql`CASE WHEN ${pollOptionsTable.correct} = false THEN 1 END`
+				).mapWith(Number),
+			})
+			.from(pollResponseOptionsTable)
+			.innerJoin(
+				pollOptionsTable,
+				eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
+			)
+			.where(inArray(pollResponseOptionsTable.response_id, responseIds))
+			.groupBy(pollResponseOptionsTable.response_id),
+
+		db
+			.select({
+				pollId: pollOptionsTable.poll_id,
+				totalCorrect: count().mapWith(Number),
+			})
+			.from(pollOptionsTable)
+			.where(
+				and(
+					eq(pollOptionsTable.correct, true),
+					inArray(pollOptionsTable.poll_id, pollIds)
+				)
+			)
+			.groupBy(pollOptionsTable.poll_id),
+	]);
+
+	const selectednessMap = new Map(
+		selectednessResults.map((r) => [r.responseId, r])
+	);
+	const totalCorrectMap = new Map(
+		totalCorrectResults.map((r) => [r.pollId, r.totalCorrect])
+	);
+
+	return recentResponses.map(({ responseId, pollId, coverageDelta }) => {
+		const sel = selectednessMap.get(responseId);
+		const totalCorrect = totalCorrectMap.get(pollId) ?? 0;
+
+		if (!sel || totalCorrect === 0)
+			return {
+				isCorrect: false,
+				isWrong: false,
+				coverageDelta: coverageDelta ?? 0,
+			};
+
+		return {
+			isCorrect:
+				sel.selectedCorrect === totalCorrect && sel.selectedIncorrect === 0,
+			isWrong: sel.selectedIncorrect > 0,
+			coverageDelta: coverageDelta ?? 0,
+		};
 	});
 };

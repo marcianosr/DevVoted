@@ -268,10 +268,11 @@ describe("handlers", () => {
 				correctOptionIds: [1],
 				outcome: "full",
 				runEnded: false,
-				thresholdInfo: null,
 				breakdown: null,
 				tryCatchUsed: false,
-				victoryJustAchieved: false,
+				pipelineEvaluation: null,
+				evaluationContext: null,
+				upgradeCards: [],
 			});
 
 			const result = await postPollOptionsHandler({
@@ -361,10 +362,11 @@ describe("handlers", () => {
 				correctOptionIds: [1],
 				outcome: "full",
 				runEnded: false,
-				thresholdInfo: null,
 				breakdown: null,
 				tryCatchUsed: false,
-				victoryJustAchieved: false,
+				pipelineEvaluation: null,
+				evaluationContext: null,
+				upgradeCards: [],
 			});
 
 			const result = await postPollOptionsHandler({

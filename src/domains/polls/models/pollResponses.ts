@@ -33,6 +33,7 @@ export const pollResponseFromDTO = (dto: PollResponse): PollResponseRecord => {
 		user_id: dto.userId ?? null,
 		run_id: dto.runId ?? null,
 		answer_date: dto.answerDate,
+		coverage_delta: null,
 		created_at: dto.createdAt ?? null,
 		updated_at: dto.updatedAt ?? null,
 	};

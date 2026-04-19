@@ -5,12 +5,11 @@ import Content from "~/components/Content";
 import { DevPollNavigator } from "~/components/DevPollNavigator";
 import { applyEffects } from "~/domains/configs/data/configs";
 import { getShopOfferingsServerFn } from "~/domains/economy/api/shopOfferings";
-import { getDailyPoll, getPollsSeenInRun } from "~/domains/polls/api/polls";
+import { getDailyPoll } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
 } from "~/domains/polls/components/DailyPollContainer";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
+import { getWindowContextFn } from "~/domains/runs/api/runs";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { ErrorComponent } from "~/ui/ErrorComponent";
 
@@ -41,9 +40,9 @@ const DailyPoll: React.FC = () => {
 		isAdmin,
 		score,
 		configEffects,
-		currentGate,
 		offeredConfigs,
 		currentDate,
+		initialWindowContext,
 	} = Route.useLoaderData();
 	const { date } = Route.useSearch();
 
@@ -72,6 +71,7 @@ const DailyPoll: React.FC = () => {
 		<Content poll={poll}>
 			<DevPollNavigator currentDate={currentDate} hasCustomDate={!!date} />
 			<DailyPollContainer
+				key={poll.id}
 				poll={poll}
 				options={options}
 				hasAnswered={hasAnswered}
@@ -80,9 +80,10 @@ const DailyPoll: React.FC = () => {
 				score={score}
 				configEffects={configEffects}
 				creatorDisplayName={creatorDisplayName}
-				currentGate={currentGate}
 				isAdmin={isAdmin}
 				offeredConfigs={offeredConfigs}
+				initialPendingUpgradeCards={activeRun.data.pendingUpgradeCards}
+				initialWindowContext={initialWindowContext}
 			/>
 
 			{/* TODO: Refactor in own component */}
@@ -150,17 +151,6 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 
 		const currentDate = deps.date || getTodayDateString();
 
-		const pollsSeenResponse = await getPollsSeenInRun({
-			data: { runId: activeRun.data.id },
-		});
-
-		const pollsSeen = pollsSeenResponse.success ? pollsSeenResponse.data : 0;
-		const challengeMode = getChallengeModeOrDefault(
-			activeRun.data.challengeModeId
-		);
-		const gates = challengeMode.gates;
-		const currentGate = getCurrentGate(pollsSeen, gates);
-
 		const pollResponse = await getDailyPoll({
 			data: { runId: activeRun.data.id, date: deps.date },
 		});
@@ -186,15 +176,16 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			? shopOfferingsResult.data
 			: [];
 
-		const score = await getScoreBreakdown({
-			data: {
-				poll: pollResponse.data.poll,
-				options: pollResponse.data.options,
-				hasAnswered: pollResponse.data.hasAnswered,
-				run: activeRun.data,
-				selectedOptions: pollResponse.data.selectedOptions,
-			},
-		});
+		const [score, windowContext] = await Promise.all([
+			getScoreBreakdown({
+				data: {
+					pollId: pollResponse.data.poll.id,
+					selectedOptions: pollResponse.data.selectedOptions,
+					hasAnswered: pollResponse.data.hasAnswered,
+				},
+			}),
+			getWindowContextFn(),
+		]);
 
 		return {
 			poll: pollResponse.data.poll,
@@ -205,9 +196,9 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			isAdmin: pollResponse.isAdmin,
 			score,
 			configEffects,
-			currentGate,
 			offeredConfigs,
 			currentDate,
+			initialWindowContext: windowContext,
 		};
 	},
 	pendingComponent: () => (

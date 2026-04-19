@@ -353,18 +353,4 @@ describe("incrementRunProgress", () => {
 			vi.clearAllMocks();
 		}
 	});
-
-	it("throws error when category not found in run", async () => {
-		const mockRun = createTestRun();
-		const pollContext = createTestPollContext("nonexistent");
-
-		await expect(
-			incrementRunProgress({
-				categoryCode: "nonexistent" as any,
-				run: mockRun,
-				correctnessFactor: 1.0,
-				...pollContext,
-			})
-		).rejects.toThrow("Category nonexistent not found");
-	});
 });

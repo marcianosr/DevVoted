@@ -226,10 +226,20 @@ BUGS:
 [x] correct streak is +1 ahead
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
+- [] Several configs broken:
+  - [] yarn.lock - nogt sure, but doesnt lock when installing
+  - [] Prefetch - doesn't work
+- [] Linkify explanations
+- [] Poll difficulty? Possible with amount of answers it has?
+- Get coverage based on how much space you have left?
 - [] Fix code examples
+- [] Gate redesign
+  - Win titles (e.g 70% in CSS yields CSS connoisseur)
+  - when a player hits 100% total coverage, what happens?
+  - Show notification when reaching 100%?
 - [] Game over - then on result page it shows configs, but the configs are different on the shop page. When navigating back, the configs are updated agani
-- [] Prefetch config kapot
 - [x] Show indicator of 'gate' test while answering the poll
+- [ ] PNPM instead of npm?
 
 - Wat als je de komende polls geen vragen hebt in ee ncategorie die jij nodig hebt
 [x] Make boosters cheaper 256 -> 128
@@ -397,6 +407,7 @@ BUGS:
 
 
 ### Season 3: Expansion
+[] Sander now has the legendary that equals all category chances. Make sure to allow people to see this is happening
 [] Think of a way to have umbrella categories - e.g., "Frontend Frameworks" that contain React, Vue, Angular and sub categories
         Option A: Separate categories (current behavior)
         React:     ████████░░ 80%

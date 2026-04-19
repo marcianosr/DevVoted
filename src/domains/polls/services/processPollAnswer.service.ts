@@ -2,23 +2,33 @@ import { applyEffects } from "~/domains/configs/data/configs";
 import {
 	createPollResponse,
 	fetchPollByIdWithOptions,
-	getPollsSeenInRun,
+	getAnsweredPollsCountInRun,
+	getWindowResults,
 } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import {
+	awardStorage,
+	clearPendingUpgradeCards,
 	getActiveRunByUserId,
 	incrementCorrectPollsCount,
 	resetPollRerolls,
+	savePendingUpgradeCards,
 } from "~/domains/runs/api/queries";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
+import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
-import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
-	calculateThresholdInfo,
-	type ThresholdInfo,
-} from "~/domains/runs/services/thresholdCalculator.service";
+	generateUpgradeCards,
+	isMaxPipeline,
+} from "~/domains/runs/services/pipeline.service";
+import {
+	evaluatePipeline,
+	getWindowSize,
+	type PipelineEvaluation,
+	type PipelineEvaluationContext,
+} from "~/domains/runs/services/pipelineEvaluator.service";
+import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
 	outcomeSingle,
 	outcomeMulti,
@@ -32,13 +42,14 @@ import { getTodayDateString } from "~/lib/dateUtils";
 export type PollAnswerResult = {
 	runId: number | null;
 	runEnded: boolean;
-	thresholdInfo: ThresholdInfo | null;
 	selectedOptionIds: number[];
 	correctOptionIds: number[];
 	outcome: PollAnswerOutcome;
 	breakdown: PollScoreBreakdown | null;
 	tryCatchUsed: boolean;
-	victoryJustAchieved: boolean;
+	pipelineEvaluation: PipelineEvaluation | null;
+	evaluationContext: PipelineEvaluationContext | null;
+	upgradeCards: UpgradeCard[];
 };
 
 export type PollAnswerInput = {
@@ -63,20 +74,24 @@ type CommitAnswerProgressParams = PollContext & {
 	selectedOptionIds: number[];
 };
 
-type EvaluateGateStateParams = {
+type EvaluatePipelineParams = {
 	activeRunId: number;
 	updatedRun: Run;
+	userId: string;
+	totalPollsAnswered: number;
+	gateNumber: number;
 };
 
-type GateStateResult = {
-	thresholdInfo: ThresholdInfo;
-	victoryJustAchieved: boolean;
+type PipelineStageResult = {
+	pipelineEvaluation: PipelineEvaluation | null;
+	evaluationContext: PipelineEvaluationContext | null;
+	upgradeCards: UpgradeCard[];
 };
 
 type ResolveRunStateParams = PollContext & {
 	activeRunId: number;
 	updatedRun: Run;
-	thresholdInfo: ThresholdInfo;
+	pipelineEvaluation: PipelineEvaluation | null;
 };
 
 type RunStateResult = {
@@ -115,41 +130,10 @@ const commitAnswerProgress = async ({
 		runId: activeRun.id,
 		answerDate: getTodayDateString(),
 		selectedOptionIds,
+		coverageDelta: breakdown.delta,
 	});
 
 	return { breakdown };
-};
-
-const evaluateGateState = async ({
-	activeRunId,
-	updatedRun,
-}: EvaluateGateStateParams): Promise<GateStateResult> => {
-	const challengeMode = getChallengeModeOrDefault(updatedRun.challengeModeId);
-	const gates = challengeMode.gates;
-	const totalPollsSeen = await getPollsSeenInRun(activeRunId);
-
-	const thresholdInfo = calculateThresholdInfo(
-		updatedRun.categoryCoverage,
-		totalPollsSeen,
-		gates
-	);
-
-	if (!thresholdInfo.meetsThreshold || !thresholdInfo.isThresholdCheckPoll) {
-		return { thresholdInfo, victoryJustAchieved: false };
-	}
-
-	const { checkForVictory } =
-		await import("~/domains/runs/services/runCompletion.service");
-	const hasWon = checkForVictory(thresholdInfo.currentGate, gates);
-
-	if (!hasWon || updatedRun.victoryAchievedAt) {
-		return { thresholdInfo, victoryJustAchieved: false };
-	}
-
-	const { markVictoryAchieved } = await import("~/domains/runs/api/queries");
-	await markVictoryAchieved(activeRunId);
-
-	return { thresholdInfo, victoryJustAchieved: true };
 };
 
 const resolveRunState = async ({
@@ -157,7 +141,7 @@ const resolveRunState = async ({
 	updatedRun,
 	poll,
 	options,
-	thresholdInfo,
+	pipelineEvaluation,
 }: ResolveRunStateParams): Promise<RunStateResult> => {
 	const { protection, resetRebuild } = applyEffects(
 		{ poll, options, hasAnswered: true, run: updatedRun },
@@ -168,11 +152,11 @@ const resolveRunState = async ({
 		await resetPollRerolls(activeRunId);
 	}
 
-	if (thresholdInfo.isThresholdCheckPoll) {
+	if (pipelineEvaluation !== null) {
 		await resetPollRerolls(activeRunId);
 	}
 
-	if (thresholdInfo.meetsThreshold) {
+	if (pipelineEvaluation === null || pipelineEvaluation.passed) {
 		return { runEnded: false, tryCatchUsed: false };
 	}
 
@@ -180,8 +164,92 @@ const resolveRunState = async ({
 		return { runEnded: false, tryCatchUsed: true };
 	}
 
-	await endRunForThresholdFailure(activeRunId);
+	const failedSlots = pipelineEvaluation.slotEvaluations
+		.filter((e) => !e.passed)
+		.map((e) => ({
+			gateTypeId: e.slot.gateTypeId,
+			difficulty: e.slot.difficulty,
+		}));
+
+	await endRunForThresholdFailure(activeRunId, failedSlots);
 	return { runEnded: true, tryCatchUsed: false };
+};
+
+const evaluatePipelineStage = async ({
+	activeRunId,
+	updatedRun,
+	userId,
+	totalPollsAnswered,
+	gateNumber,
+}: EvaluatePipelineParams): Promise<PipelineStageResult> => {
+	const { pipelineSlots } = updatedRun;
+	const windowSize = getWindowSize(pipelineSlots);
+	const isPipelineCheckPoll =
+		totalPollsAnswered > 0 && totalPollsAnswered % windowSize === 0;
+
+	// At a gate boundary, evaluate the window that just ended (full windowSize).
+	// Mid-window, only fetch the polls answered so far in the current window.
+	const pollsInCurrentWindow = isPipelineCheckPoll
+		? windowSize
+		: totalPollsAnswered % windowSize;
+
+	const windowResults =
+		pollsInCurrentWindow > 0
+			? await getWindowResults(activeRunId, userId, pollsInCurrentWindow)
+			: [];
+
+	const chronologicalWindowResults = [...windowResults].reverse();
+	let firstConsecutiveCorrectFromWindowStart = 0;
+	for (const r of chronologicalWindowResults) {
+		if (!r.isCorrect) break;
+		firstConsecutiveCorrectFromWindowStart++;
+	}
+
+	const ctx: PipelineEvaluationContext = {
+		correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
+		pollsAnsweredInWindow: windowResults.length,
+		coverageGainedInWindow: windowResults.reduce(
+			(sum, r) => sum + r.coverageDelta,
+			0
+		),
+		currentStreakAtWindowEnd: Math.max(
+			...updatedRun.categoryCoverage.map((c) => c.currentStreak),
+			0
+		),
+		pollsInWindow: windowSize,
+		currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
+		firstConsecutiveCorrectFromWindowStart,
+	};
+
+	if (!isPipelineCheckPoll) {
+		return {
+			pipelineEvaluation: null,
+			evaluationContext: ctx,
+			upgradeCards: [],
+		};
+	}
+
+	const pipelineEvaluation = evaluatePipeline(ctx, pipelineSlots);
+
+	if (!pipelineEvaluation.passed) {
+		// Clear any stale cards from a previous window so they don't resurface.
+		await clearPendingUpgradeCards(activeRunId);
+		return { pipelineEvaluation, evaluationContext: ctx, upgradeCards: [] };
+	}
+
+	if (pipelineEvaluation.totalReward > 0) {
+		await awardStorage(activeRunId, pipelineEvaluation.totalReward);
+	}
+
+	const upgradeCards = isMaxPipeline(pipelineSlots)
+		? []
+		: generateUpgradeCards(pipelineSlots, gateNumber);
+
+	if (upgradeCards.length > 0) {
+		await savePendingUpgradeCards(activeRunId, upgradeCards);
+	}
+
+	return { pipelineEvaluation, evaluationContext: ctx, upgradeCards };
 };
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
@@ -203,10 +271,11 @@ export const processPollAnswer = async (
 			selectedOptionIds,
 			outcome,
 			runEnded: false,
-			thresholdInfo: null,
 			breakdown: null,
 			tryCatchUsed: false,
-			victoryJustAchieved: false,
+			pipelineEvaluation: null,
+			evaluationContext: null,
+			upgradeCards: [],
 		};
 	}
 
@@ -224,17 +293,24 @@ export const processPollAnswer = async (
 	const updatedRun = await getActiveRunByUserId(userId);
 	if (!updatedRun) throw new Error("Run not found after update");
 
-	const { thresholdInfo, victoryJustAchieved } = await evaluateGateState({
-		activeRunId: activeRun.id,
-		updatedRun,
-	});
+	const totalPollsAnswered = await getAnsweredPollsCountInRun(activeRun.id);
+
+	const windowSize = getWindowSize(updatedRun.pipelineSlots);
+	const { pipelineEvaluation, evaluationContext, upgradeCards } =
+		await evaluatePipelineStage({
+			activeRunId: activeRun.id,
+			updatedRun,
+			userId,
+			totalPollsAnswered,
+			gateNumber: Math.floor(totalPollsAnswered / windowSize),
+		});
 
 	const { runEnded, tryCatchUsed } = await resolveRunState({
 		activeRunId: activeRun.id,
 		updatedRun,
 		poll,
 		options,
-		thresholdInfo,
+		pipelineEvaluation,
 	});
 
 	return {
@@ -243,10 +319,11 @@ export const processPollAnswer = async (
 		selectedOptionIds,
 		outcome,
 		runEnded,
-		thresholdInfo,
 		breakdown,
 		tryCatchUsed,
-		victoryJustAchieved,
+		pipelineEvaluation,
+		evaluationContext,
+		upgradeCards,
 	};
 };
 

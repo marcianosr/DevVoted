@@ -2,8 +2,7 @@ import { applyEffects } from "~/domains/configs/data/configs";
 import { getPollsSeenInRun } from "~/domains/polls/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import { handleUserSelectedOptionsByPollType } from "~/domains/polls/services/processPollAnswer.service";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
-import { getCurrentGate } from "~/domains/runs/services/thresholdCalculator.service";
+import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import {
 	orchestrateScoreCalculation,
 	ScoreCalculation,
@@ -22,7 +21,6 @@ type IncrementProgress = {
 	hasAnswered: boolean;
 };
 type IncrementRunProgressResult = ScoreCalculation;
-
 /**
  * Increments run progress after answering a poll.
  *
@@ -78,10 +76,7 @@ export const incrementRunProgress = async ({
 		run.activeConfigIds
 	);
 
-	// Get pollsPerGate from challenge mode
-	const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
-	const currentGate = getCurrentGate(totalPollsSeen, challengeMode.gates);
-	const pollsPerGate = currentGate.pollsPerGate;
+	const pollsPerGate = getWindowSize(run.pipelineSlots);
 
 	// Step 2-3: Calculate coverage with config modifiers applied
 	const {
@@ -160,13 +155,7 @@ export const getRunProgress = async ({
 		run.activeConfigIds
 	);
 
-	// Get pollsPerGate from challenge mode
-	const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
-
-	const pollsPerGate = getCurrentGate(
-		totalPollsSeen,
-		challengeMode.gates
-	).pollsPerGate;
+	const pollsPerGate = getWindowSize(run.pipelineSlots);
 
 	// When already answered, the DB has been updated with the new values.
 	// Use the previous streak (before the answer) to avoid double-incrementing.

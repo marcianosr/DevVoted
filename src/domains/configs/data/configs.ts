@@ -1,8 +1,6 @@
 import { Config } from "~/domains/configs/models/config";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll";
-import { getChallengeModeOrDefault } from "~/domains/runs/data/challengeModes";
 import { Run } from "~/domains/runs/models/run";
-import { calculateThresholdInfo } from "~/domains/runs/services/thresholdCalculator.service";
 import { selectSeededRandom } from "~/lib/seededRandom";
 import { STORAGE_UNITS, formatStorage } from "~/lib/storage";
 
@@ -788,66 +786,15 @@ const EFFECTS: Record<string, EffectFn> = {
 	},
 
 	checkCoverageWithThreshold: ({ poll, options, run, hasAnswered }) => {
-		// Calculate total polls answered from category coverage (fallback for compatibility)
-		const totalPollsAnswered = run.categoryCoverage.reduce(
-			(sum, coverage) => sum + coverage.pollsAnswered,
-			0
-		);
-
-		// Get gates from challenge mode
-		const challengeMode = getChallengeModeOrDefault(run.challengeModeId);
-
-		// Calculate threshold based on category coverage data and answered polls
-		// Note: This uses answered polls as a proxy for seen polls since we don't have access to totalPollsSeen here
-		const thresholdInfo = calculateThresholdInfo(
-			run.categoryCoverage,
-			totalPollsAnswered,
-			challengeMode.gates
-		);
-		const requiredCoverage =
-			thresholdInfo.gateDefinition?.requirements[0]?.threshold ?? 0;
-		const requiredForProtection = requiredCoverage * 0.8; // 80% of threshold
-
-		// Try/Catch only activates when:
-		// 1. It's actually a threshold check poll
-		// 2. Current max coverage is at least 80% of threshold
-		// 3. We would actually fail the threshold
-		const isProtected =
-			thresholdInfo.isThresholdCheckPoll &&
-			thresholdInfo.maxCoverage >= requiredForProtection &&
-			!thresholdInfo.meetsThreshold; // Only if we'd actually fail
-
-		// Calculate percentage for display
-		const percentageOfThreshold =
-			requiredCoverage > 0
-				? Math.round((thresholdInfo.maxCoverage / requiredCoverage) * 100)
-				: 0;
-
-		// If current coverage is below 80% of threshold, try/catch can't save you
-		if (thresholdInfo.maxCoverage < requiredForProtection) {
-			return {
-				view: { poll, options, run, hasAnswered },
-				protection: { tryCatch: false },
-				meta: {
-					notes: [`Try/Catch inactive (need 80% of threshold)`],
-				},
-			};
-		}
-
+		// Protection is always available when this config is active.
+		// Whether it actually fires is determined by resolveRunState, which gates it
+		// on an actual pipeline gate check failing.
 		return {
 			view: { poll, options, run, hasAnswered },
-			protection: {
-				tryCatch: isProtected, // True only when it would actually prevent a failure
-			},
+			protection: { tryCatch: true },
 			meta: {
-				notes: isProtected
-					? [
-							`Try/Catch will save your run! (have ${percentageOfThreshold}% of threshold)`,
-						]
-					: [`Try/Catch ready (have ${percentageOfThreshold}% of threshold)`],
-				badges: isProtected
-					? { "try-catch": "Try/Catch will activate!" }
-					: { "try-catch": "Try/Catch ready" },
+				notes: ["Try/Catch active — saves you from one pipeline failure"],
+				badges: { "try-catch": "Try/Catch ready" },
 			},
 		};
 	},

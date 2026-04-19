@@ -230,6 +230,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 						runId,
 						answerDate,
 						selectedOptionIds,
+						coverageDelta: 1.2,
 					})
 				).resolves.not.toThrow();
 
@@ -252,6 +253,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 						runId,
 						answerDate,
 						selectedOptionIds,
+						coverageDelta: 1.2,
 					})
 				).resolves.not.toThrow();
 
@@ -284,6 +286,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 						runId,
 						answerDate,
 						selectedOptionIds,
+						coverageDelta: 1.2,
 					})
 				).rejects.toThrow("Failed to create poll response");
 			});
@@ -306,6 +309,7 @@ describe("Query logic - DTO mapping - DB errors", () => {
 						runId,
 						answerDate,
 						selectedOptionIds,
+						coverageDelta: 1.2,
 					})
 				).rejects.toThrow("Database error");
 			});

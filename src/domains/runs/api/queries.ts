@@ -9,6 +9,8 @@ import {
 } from "@/src/database/schema";
 import { db } from "~/database/db";
 import type { CategoryCode } from "~/domains/shared/categories";
+import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
+import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
 
 import { runFactory } from "../models/run";
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage";
@@ -44,10 +46,7 @@ export const getActiveRunByUserId = async (userId: string) => {
 	return runFactory.toDTO(runRecord[0], categoryCoverage);
 };
 
-export const createRunForUser = async (
-	userId: string,
-	challengeModeId: string
-) => {
+export const createRunForUser = async (userId: string) => {
 	return await db.transaction(async (tx) => {
 		// Get current season ID for the new run
 		const { getSeasonForNewRun } =
@@ -60,7 +59,7 @@ export const createRunForUser = async (
 				user_id: userId,
 				season_id: seasonId,
 				status: "active",
-				challenge_mode_id: challengeModeId,
+				pipeline_slots: getInitialPipelineSlots(),
 			})
 			.returning();
 
@@ -387,6 +386,61 @@ export const addConfigsToRun = async (runId: number, configIds: string[]) => {
 	return runFactory.toDTO(updatedRun, categoryCoverage);
 };
 
+export const awardStorage = async (
+	runId: number,
+	amount: number
+): Promise<void> => {
+	await db
+		.update(runsTable)
+		.set({
+			storage_limit: sql`${runsTable.storage_limit} + ${amount}`,
+		})
+		.where(eq(runsTable.id, runId));
+};
+
+export const savePendingUpgradeCards = async (
+	runId: number,
+	cards: UpgradeCard[]
+): Promise<void> => {
+	await db
+		.update(runsTable)
+		.set({ pending_upgrade_cards: cards })
+		.where(eq(runsTable.id, runId));
+};
+
+export const clearPendingUpgradeCards = async (
+	runId: number
+): Promise<void> => {
+	await db
+		.update(runsTable)
+		.set({ pending_upgrade_cards: [] })
+		.where(eq(runsTable.id, runId));
+};
+
+export const savePipelineSlots = async (
+	runId: number,
+	slots: PipelineSlot[]
+) => {
+	const [updatedRun] = await db
+		.update(runsTable)
+		.set({ pipeline_slots: slots })
+		.where(eq(runsTable.id, runId))
+		.returning();
+
+	return updatedRun ? runFactory.toDTO(updatedRun) : null;
+};
+
+export const appendPipelineSlotSnapshot = async (
+	runId: number,
+	snapshot: PipelineSlot[]
+): Promise<void> => {
+	await db.execute(
+		sql`UPDATE ${runsTable}
+		    SET pipeline_slot_snapshots = pipeline_slot_snapshots || ${JSON.stringify([snapshot])}::jsonb
+		    WHERE ${runsTable.id} = ${runId}`
+	);
+};
+
 // Reset current poll rerolls to 0 (called after poll submission)
 export const resetPollRerolls = async (runId: number) => {
 	const [updatedRun] = await db
@@ -412,7 +466,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
-				challengeModeId: runsTable.challenge_mode_id,
+
 				totalCoverage: runCategoryCoverageTable.current_coverage, // Category coverage only
 				pollsAnswered: runCategoryCoverageTable.polls_answered, // Category polls only
 				bestStreak: runCategoryCoverageTable.best_streak, // Category streak only
@@ -450,7 +504,7 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				role: usersTable.role,
 				runId: runsTable.id,
 				seasonId: runsTable.season_id,
-				challengeModeId: runsTable.challenge_mode_id,
+
 				totalCoverage: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.current_coverage}), 0)`,
 				pollsAnswered: sql<number>`COALESCE(SUM(${runCategoryCoverageTable.polls_answered}), 0)`,
 				bestStreak: sql<number>`COALESCE(MAX(${runCategoryCoverageTable.best_streak}), 0)`,
@@ -474,7 +528,6 @@ export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 				usersTable.display_name,
 				runsTable.id,
 				runsTable.season_id,
-				runsTable.challenge_mode_id,
 				runsTable.correct_polls_count
 			)
 			.orderBy(
