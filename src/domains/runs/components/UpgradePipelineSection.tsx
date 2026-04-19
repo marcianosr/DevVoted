@@ -4,7 +4,10 @@ import type {
 	PipelineSlotRequirement,
 	UpgradeCard,
 } from "~/domains/runs/models/pipeline";
-import type { PipelineEvaluationContext } from "~/domains/runs/services/pipelineEvaluator.service";
+import type {
+	PipelineEvaluation,
+	PipelineEvaluationContext,
+} from "~/domains/runs/services/pipelineEvaluator.service";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -16,20 +19,21 @@ type UpgradePipelineSectionProps = {
 	onAccept: (card: UpgradeCard) => void;
 	isPending?: boolean;
 	evaluationContext?: PipelineEvaluationContext;
+	evaluation?: PipelineEvaluation;
 };
 
 const DIFFICULTY_LABEL: Record<GateDifficulty, string> = {
-	easy: "Easy",
-	normal: "Normal",
-	hard: "Hard",
-	intense: "Intense",
+	low: "low",
+	medium: "medium",
+	high: "high",
+	critical: "critical",
 };
 
 const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
-	easy: "text-green-400 border-green-400",
-	normal: "text-blue-400 border-blue-400",
-	hard: "text-orange-400 border-orange-400",
-	intense: "text-red-500 border-red-500",
+	low: "text-blue-400 border-blue-400",
+	medium: "text-green-400 border-green-400",
+	high: "text-orange-400 border-orange-400",
+	critical: "text-red-500 border-red-500",
 };
 
 const formatCurrentStat = (
@@ -42,7 +46,7 @@ const formatCurrentStat = (
 		case "coverage-gain":
 			return `+${ctx.coverageGainedInWindow.toFixed(1)}%`;
 		case "short-window":
-			return `${ctx.correctAnswersInWindow}/${ctx.pollsInWindow} correct`;
+			return `${ctx.pollsAnsweredInWindow}/${ctx.pollsInWindow} answered`;
 	}
 };
 
@@ -124,51 +128,69 @@ const DifficultyLabel = ({
 export const CurrentPipeline = ({
 	slots,
 	evaluationContext,
+	evaluation,
 }: {
 	slots: PipelineSlot[];
 	evaluationContext?: PipelineEvaluationContext;
+	evaluation?: PipelineEvaluation;
 }) => (
 	<div className="border border-white">
 		<div className="border-b border-white px-4 py-3">
 			<p className="text-white uppercase tracking-widest">CI Pipeline</p>
-			<p className="text-gray-500 text-sm mt-0.5">
+			<p className="text-gray-300">
 				{evaluationContext && (
 					<>
 						<span className="text-gray-300">
-							{evaluationContext.pollsAnsweredInWindow}/
-							{evaluationContext.pollsInWindow}
+							{evaluationContext.pollsInWindow -
+								evaluationContext.pollsAnsweredInWindow}{" "}
+							polls left until next gate check
 						</span>
-						{" polls · "}
+						{" · "}
 					</>
 				)}
 				{slots.length} active {slots.length === 1 ? "check" : "checks"} · all
-				must pass
+				checks must pass
 			</p>
 		</div>
-		{slots.map((slot) => (
-			<div
-				key={slot.gateTypeId}
-				className="border-b border-white last:border-b-0 px-4 py-3"
-			>
-				<p className="flex items-center gap-2">
-					<span className="text-green-400">✓</span>
-					<span className="text-white">{getSlotLabel(slot.gateTypeId)}</span>
-				</p>
-				<p className="pl-6 text-gray-400 text-sm mt-1">
-					<DifficultyLabel difficulty={slot.difficulty} />
-					{" · "}
-					{formatRequirement(slot.requirement)}
-				</p>
-				{evaluationContext && (
-					<p className="pl-6 text-gray-500 text-sm mt-0.5">
-						Current:{" "}
-						<span className="text-gray-300">
-							{formatCurrentStat(slot.requirement, evaluationContext)}
+		{slots.map((slot) => {
+			const slotEval = evaluation?.slotEvaluations.find(
+				(e) => e.slot.gateTypeId === slot.gateTypeId
+			);
+			return (
+				<section
+					key={slot.gateTypeId}
+					className="flex align-items gap-2 border-b border-white last:border-b-0 px-4 py-3"
+				>
+					{slotEval !== undefined && (
+						<span
+							className={`text-lg ${slotEval.passed ? "text-green-400" : "text-red-400"}`}
+						>
+							{slotEval.passed ? "✓" : "✗"}
 						</span>
-					</p>
-				)}
-			</div>
-		))}
+					)}
+					<div>
+						<p>
+							<span className={DIFFICULTY_CLASSES[slot.difficulty]}>
+								{getSlotLabel(slot.gateTypeId)}
+							</span>
+						</p>
+						<>
+							<DifficultyLabel text="Risk:" difficulty={slot.difficulty} />
+							{" · "}
+							Requirement: {formatRequirement(slot.requirement)}
+						</>
+						{evaluationContext && (
+							<p>
+								Current:{" "}
+								<span className="text-gray-300">
+									{formatCurrentStat(slot.requirement, evaluationContext)}
+								</span>
+							</p>
+						)}
+					</div>
+				</section>
+			);
+		})}
 	</div>
 );
 
@@ -178,6 +200,7 @@ export const UpgradePipelineSection = ({
 	onAccept,
 	isPending = false,
 	evaluationContext,
+	evaluation,
 }: UpgradePipelineSectionProps) => {
 	const upgradeCards = cards.filter(
 		(c): c is Extract<UpgradeCard, { kind: "upgrade-slot" }> =>
@@ -193,6 +216,7 @@ export const UpgradePipelineSection = ({
 			<CurrentPipeline
 				slots={currentSlots}
 				evaluationContext={evaluationContext}
+				evaluation={evaluation}
 			/>
 
 			<section className="flex flex-wrap gap-4">

@@ -239,10 +239,10 @@ describe("processPollAnswer", () => {
 		const runWithSlot = createMockRun({
 			id: 1,
 			userId: BANJO_USER_ID,
-			pipelineSlots: [getSlotDefinition("correct-answers", "easy")], // needs 3/5
+			pipelineSlots: [getSlotDefinition("correct-answers", "low")], // needs 2/5
 		});
 
-		// 3 correct, 1 wrong, 1 partial — meets the easy correct-answers requirement
+		// 3 correct, 1 wrong, 1 partial — meets the low correct-answers requirement (needs 2)
 		const windowWith3Correct = [
 			{ isCorrect: true, isWrong: false },
 			{ isCorrect: true, isWrong: false },
@@ -257,7 +257,8 @@ describe("processPollAnswer", () => {
 
 			expect(result.pipelineEvaluation).toBeNull();
 			expect(result.upgradeCards).toHaveLength(0);
-			expect(pollQueries.getWindowResults).not.toHaveBeenCalled();
+			// getWindowResults IS called to compute the evaluation context (live progress),
+			// but no pipeline evaluation occurs between windows
 		});
 
 		it("evaluates pipeline at window boundary and passes", async () => {
@@ -283,10 +284,7 @@ describe("processPollAnswer", () => {
 
 			await processPollAnswer(defaultInput);
 
-			expect(runQueries.awardStorage).toHaveBeenCalledWith(
-				1,
-				SLOT_REWARDS.easy
-			);
+			expect(runQueries.awardStorage).toHaveBeenCalledWith(1, SLOT_REWARDS.low);
 		});
 
 		it("does not award storage when pipeline fails", async () => {
@@ -334,7 +332,7 @@ describe("processPollAnswer", () => {
 			expect(
 				runCompletionService.endRunForThresholdFailure
 			).toHaveBeenCalledWith(1, [
-				{ gateTypeId: "correct-answers", difficulty: "easy" },
+				{ gateTypeId: "correct-answers", difficulty: "low" },
 			]);
 		});
 

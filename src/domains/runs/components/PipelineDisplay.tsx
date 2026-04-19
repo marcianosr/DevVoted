@@ -17,10 +17,10 @@ type PipelineDisplayProps = {
 };
 
 const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
-	easy: "text-green-400 border-green-400",
-	normal: "text-blue-400 border-blue-400",
-	hard: "text-orange-400 border-orange-400",
-	intense: "text-red-500 border-red-500",
+	low: "text-green-400 border-green-400",
+	medium: "text-blue-400 border-blue-400",
+	high: "text-orange-400 border-orange-400",
+	critical: "text-red-500 border-red-500",
 };
 
 type SlotStatusIconProps = {

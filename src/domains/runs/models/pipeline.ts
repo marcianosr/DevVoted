@@ -1,12 +1,5 @@
-// ─── Difficulty & gate identity ───────────────────────────────────────────────
-
-export type GateDifficulty = "easy" | "normal" | "hard" | "intense";
-
+export type GateDifficulty = "low" | "medium" | "high" | "critical";
 export type GateTypeId = "coverage-gain" | "correct-answers" | "short-window";
-
-export type GateFamily = "coverage" | "accuracy" | "economy" | "pipeline";
-
-// ─── Per-type requirement shapes ──────────────────────────────────────────────
 
 export type CoverageGainRequirement = {
 	type: "coverage-gain";
@@ -34,16 +27,12 @@ export type PassFailRequirement =
 
 export type PipelineSlotRequirement = PassFailRequirement;
 
-// ─── Pipeline slot ────────────────────────────────────────────────────────────
-
 export type PipelineSlot = {
 	gateTypeId: GateTypeId;
 	difficulty: GateDifficulty;
 	requirement: PipelineSlotRequirement;
 	reward: number; // storage payout in bytes awarded on passing the window
 };
-
-// ─── Upgrade card ─────────────────────────────────────────────────────────────
 
 export type AddSlotCard = {
 	kind: "add-slot";

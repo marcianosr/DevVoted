@@ -28,7 +28,10 @@ import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgr
 import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
-import type { PipelineEvaluationContext } from "~/domains/runs/services/pipelineEvaluator.service";
+import type {
+	PipelineEvaluation,
+	PipelineEvaluationContext,
+} from "~/domains/runs/services/pipelineEvaluator.service";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { getAuthenticatedUserId } from "~/utils/authorization";
@@ -128,6 +131,8 @@ const DailyPollContainer = ({
 	);
 	const [lastEvaluationContext, setLastEvaluationContext] =
 		useState<PipelineEvaluationContext | null>(initialWindowContext);
+	const [lastPipelineEvaluation, setLastPipelineEvaluation] =
+		useState<PipelineEvaluation | null>(null);
 
 	// Sync local state when the server-side cards update via router.invalidate().
 	// useState only uses its argument on mount — when the context refreshes with new
@@ -229,6 +234,10 @@ const DailyPollContainer = ({
 					setLastEvaluationContext(response.data.evaluationContext);
 				}
 
+				if (response.data.pipelineEvaluation) {
+					setLastPipelineEvaluation(response.data.pipelineEvaluation);
+				}
+
 				if (response.data.upgradeCards?.length) {
 					setPendingUpgradeCards(response.data.upgradeCards);
 				}
@@ -322,6 +331,7 @@ const DailyPollContainer = ({
 						explanation={poll.explanation}
 						exposedConfigDeck={exposedConfigDeck}
 						evaluationContext={lastEvaluationContext ?? undefined}
+						evaluation={lastPipelineEvaluation ?? undefined}
 					/>
 				) : hasAnswered ? (
 					<PollResultsSection

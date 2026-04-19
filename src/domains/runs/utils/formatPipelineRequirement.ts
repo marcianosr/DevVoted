@@ -28,9 +28,9 @@ export const formatRequirement = (
 };
 
 const SLOT_LABELS: Record<GateTypeId, string> = {
-	"coverage-gain": "Coverage",
-	"correct-answers": "Accuracy",
-	"short-window": "Sprint",
+	"coverage-gain": "Coverage gain pipeline",
+	"correct-answers": "Correct answer pipeline",
+	"short-window": "Short window pipeline",
 };
 
 export const getSlotLabel = (gateTypeId: GateTypeId): string =>

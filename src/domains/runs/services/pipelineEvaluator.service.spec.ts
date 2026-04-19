@@ -27,18 +27,28 @@ const makeContext = (
 
 describe("getWindowSize", () => {
 	it(`returns ${DEFAULT_WINDOW_SIZE} when no short-window slot is active`, () => {
-		const slots = [getSlotDefinition("correct-answers", "easy")];
+		const slots = [getSlotDefinition("correct-answers", "low")];
 		expect(getWindowSize(slots)).toBe(DEFAULT_WINDOW_SIZE);
 	});
 
-	it("returns the short-window slot's poll count", () => {
-		const slots = [getSlotDefinition("short-window", "normal")]; // pollCount: 3
+	it("returns 4 for short-window medium", () => {
+		const slots = [getSlotDefinition("short-window", "medium")]; // pollCount: 4
+		expect(getWindowSize(slots)).toBe(4);
+	});
+
+	it("returns 5 for short-window low", () => {
+		const slots = [getSlotDefinition("short-window", "low")]; // pollCount: 5
+		expect(getWindowSize(slots)).toBe(5);
+	});
+
+	it("returns 3 for short-window high", () => {
+		const slots = [getSlotDefinition("short-window", "high")]; // pollCount: 3
 		expect(getWindowSize(slots)).toBe(3);
 	});
 
-	it("returns 4 for short-window easy", () => {
-		const slots = [getSlotDefinition("short-window", "easy")]; // pollCount: 4
-		expect(getWindowSize(slots)).toBe(4);
+	it("returns 2 for short-window critical", () => {
+		const slots = [getSlotDefinition("short-window", "critical")]; // pollCount: 2
+		expect(getWindowSize(slots)).toBe(2);
 	});
 
 	it("returns default when pipeline is empty", () => {
@@ -49,7 +59,7 @@ describe("getWindowSize", () => {
 // ─── evaluatePipeline — coverage-gain ────────────────────────────────────────
 
 describe("evaluatePipeline — coverage-gain", () => {
-	const slot = getSlotDefinition("coverage-gain", "normal"); // threshold: 5%
+	const slot = getSlotDefinition("coverage-gain", "medium"); // threshold: 5%
 
 	it("passes when coverage gained meets the threshold", () => {
 		const result = evaluatePipeline(
@@ -79,37 +89,37 @@ describe("evaluatePipeline — coverage-gain", () => {
 // ─── evaluatePipeline — correct-answers ──────────────────────────────────────
 
 describe("evaluatePipeline — correct-answers", () => {
-	const easySlot = getSlotDefinition("correct-answers", "easy"); // count: 3
-	const intenseSlot = getSlotDefinition("correct-answers", "intense"); // count: 5, streakRequired: 2
+	const lowSlot = getSlotDefinition("correct-answers", "low"); // count: 2
+	const criticalSlot = getSlotDefinition("correct-answers", "critical"); // count: 5
 
 	it("passes when correct answers meet the count", () => {
 		const result = evaluatePipeline(
-			makeContext({ correctAnswersInWindow: 3 }),
-			[easySlot]
+			makeContext({ correctAnswersInWindow: 2 }),
+			[lowSlot]
 		);
 		expect(result.passed).toBe(true);
 	});
 
 	it("fails when correct answers are below the count", () => {
 		const result = evaluatePipeline(
-			makeContext({ correctAnswersInWindow: 2 }),
-			[easySlot]
+			makeContext({ correctAnswersInWindow: 1 }),
+			[lowSlot]
 		);
 		expect(result.passed).toBe(false);
 	});
 
-	it("passes when count and streak are both met (intense)", () => {
+	it("passes when correct answers meet the critical count", () => {
 		const result = evaluatePipeline(
-			makeContext({ correctAnswersInWindow: 5, currentStreakAtWindowEnd: 2 }),
-			[intenseSlot]
+			makeContext({ correctAnswersInWindow: 5 }),
+			[criticalSlot]
 		);
 		expect(result.passed).toBe(true);
 	});
 
-	it("fails when count is met but streak is not (intense)", () => {
+	it("fails when correct answers are below the critical count", () => {
 		const result = evaluatePipeline(
-			makeContext({ correctAnswersInWindow: 5, currentStreakAtWindowEnd: 1 }),
-			[intenseSlot]
+			makeContext({ correctAnswersInWindow: 4 }),
+			[criticalSlot]
 		);
 		expect(result.passed).toBe(false);
 	});
@@ -118,47 +128,24 @@ describe("evaluatePipeline — correct-answers", () => {
 // ─── evaluatePipeline — short-window ─────────────────────────────────────────
 
 describe("evaluatePipeline — short-window", () => {
-	const easySlot = getSlotDefinition("short-window", "easy"); // pollCount: 4, no extra
-	const hardSlot = getSlotDefinition("short-window", "hard"); // pollCount: 3, correctRequired: 3
-	const intenseSlot = getSlotDefinition("short-window", "intense"); // pollCount: 2
+	// short-window is purely a window-size modifier at all tiers — no pass/fail conditions
+	const lowSlot = getSlotDefinition("short-window", "low"); // pollCount: 5
+	const criticalSlot = getSlotDefinition("short-window", "critical"); // pollCount: 2
 
-	it("passes easy with no extra conditions", () => {
-		const result = evaluatePipeline(makeContext({ pollsInWindow: 4 }), [
-			easySlot,
-		]);
-		expect(result.passed).toBe(true);
-	});
-
-	it("passes hard when all polls in window are correct", () => {
+	it("passes low regardless of answers", () => {
 		const result = evaluatePipeline(
-			makeContext({ pollsInWindow: 3, correctAnswersInWindow: 3 }),
-			[hardSlot]
+			makeContext({ correctAnswersInWindow: 0 }),
+			[lowSlot]
 		);
 		expect(result.passed).toBe(true);
 	});
 
-	it("fails hard when not all polls are correct", () => {
+	it("passes critical regardless of answers", () => {
 		const result = evaluatePipeline(
-			makeContext({ pollsInWindow: 3, correctAnswersInWindow: 2 }),
-			[hardSlot]
-		);
-		expect(result.passed).toBe(false);
-	});
-
-	it("passes intense when every poll in the window is correct", () => {
-		const result = evaluatePipeline(
-			makeContext({ pollsInWindow: 2, correctAnswersInWindow: 2 }),
-			[intenseSlot]
+			makeContext({ correctAnswersInWindow: 0 }),
+			[criticalSlot]
 		);
 		expect(result.passed).toBe(true);
-	});
-
-	it("fails intense when any poll in the window is wrong", () => {
-		const result = evaluatePipeline(
-			makeContext({ pollsInWindow: 2, correctAnswersInWindow: 1 }),
-			[intenseSlot]
-		);
-		expect(result.passed).toBe(false);
 	});
 });
 
@@ -166,14 +153,14 @@ describe("evaluatePipeline — short-window", () => {
 
 describe("evaluatePipeline — multiple active slots", () => {
 	const slots: PipelineSlot[] = [
-		getSlotDefinition("correct-answers", "normal"), // count: 4
-		getSlotDefinition("coverage-gain", "easy"), // threshold: 3%
+		getSlotDefinition("correct-answers", "medium"), // count: 3
+		getSlotDefinition("coverage-gain", "low"), // threshold: 3%
 	];
 
 	it("passes when all slots pass", () => {
 		const result = evaluatePipeline(
 			makeContext({
-				correctAnswersInWindow: 4,
+				correctAnswersInWindow: 3,
 				coverageGainedInWindow: 5,
 			}),
 			slots
@@ -184,7 +171,7 @@ describe("evaluatePipeline — multiple active slots", () => {
 	it("fails when any single slot fails", () => {
 		const result = evaluatePipeline(
 			makeContext({
-				correctAnswersInWindow: 3, // fails correct-answers (needs 4)
+				correctAnswersInWindow: 2, // fails correct-answers (needs 3)
 				coverageGainedInWindow: 5,
 			}),
 			slots
@@ -195,7 +182,7 @@ describe("evaluatePipeline — multiple active slots", () => {
 	it("reports individual slot evaluations", () => {
 		const result = evaluatePipeline(
 			makeContext({
-				correctAnswersInWindow: 3, // fails correct-answers (needs 4)
+				correctAnswersInWindow: 2, // fails correct-answers (needs 3)
 				coverageGainedInWindow: 5,
 			}),
 			slots
@@ -207,14 +194,14 @@ describe("evaluatePipeline — multiple active slots", () => {
 	it("returns total reward as sum of all slot rewards when passed", () => {
 		const result = evaluatePipeline(
 			makeContext({
-				correctAnswersInWindow: 4,
+				correctAnswersInWindow: 3,
 				coverageGainedInWindow: 5,
 			}),
 			slots
 		);
 		const expectedReward =
-			120 * STORAGE_UNITS.KB + // correct-answers normal
-			60 * STORAGE_UNITS.KB; // coverage-gain easy
+			120 * STORAGE_UNITS.KB + // correct-answers medium
+			60 * STORAGE_UNITS.KB; // coverage-gain low
 		expect(result.totalReward).toBe(expectedReward);
 	});
 
@@ -227,7 +214,7 @@ describe("evaluatePipeline — multiple active slots", () => {
 	});
 });
 
-// ─── evaluatePipeline — empty pipeline ───────────────────────────────────────
+// ─── evaluatePipeline — edge cases ───────────────────────────────────────────
 
 describe("evaluatePipeline — edge cases", () => {
 	it("passes with no slots active", () => {

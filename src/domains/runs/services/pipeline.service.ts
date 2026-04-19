@@ -10,13 +10,11 @@ import type {
 	UpgradeCard,
 } from "~/domains/runs/models/pipeline";
 
-// ─── Difficulty ordering ──────────────────────────────────────────────────────
-
 const DIFFICULTY_ORDER: readonly GateDifficulty[] = [
-	"easy",
-	"normal",
-	"hard",
-	"intense",
+	"low",
+	"medium",
+	"high",
+	"critical",
 ] as const;
 
 const getNextDifficulty = (current: GateDifficulty): GateDifficulty | null => {
@@ -27,7 +25,6 @@ const getNextDifficulty = (current: GateDifficulty): GateDifficulty | null => {
 };
 
 // ─── Weighted random selection ────────────────────────────────────────────────
-
 const pickWeightedDifficulty = (
 	weights: Record<GateDifficulty, number>
 ): GateDifficulty => {
@@ -43,8 +40,6 @@ const pickWeightedDifficulty = (
 	return eligible[eligible.length - 1];
 };
 
-// ─── Pipeline slot helpers ────────────────────────────────────────────────────
-
 const getAvailableGateTypes = (slots: PipelineSlot[]): GateTypeId[] => {
 	const activeTypes = new Set(slots.map((s) => s.gateTypeId));
 	return STARTER_GATE_TYPE_IDS.filter((id) => !activeTypes.has(id));
@@ -53,15 +48,13 @@ const getAvailableGateTypes = (slots: PipelineSlot[]): GateTypeId[] => {
 const getUpgradeableSlots = (slots: PipelineSlot[]): PipelineSlot[] =>
 	slots.filter((s) => getNextDifficulty(s.difficulty) !== null);
 
-// ─── Public API ───────────────────────────────────────────────────────────────
-
 export const getInitialPipelineSlots = (): PipelineSlot[] => [
-	getSlotDefinition("correct-answers", "easy"),
+	getSlotDefinition("short-window", "low"),
 ];
 
 export const isMaxPipeline = (slots: PipelineSlot[]): boolean =>
 	slots.length === STARTER_GATE_TYPE_IDS.length &&
-	slots.every((s) => s.difficulty === "intense");
+	slots.every((s) => s.difficulty === "critical");
 
 /**
  * Generates a hand of upgrade cards for the player to choose from.

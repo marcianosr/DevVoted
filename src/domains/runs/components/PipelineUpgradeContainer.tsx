@@ -1,6 +1,9 @@
 import type { ExposedConfigDeck } from "~/domains/runs/api/queries";
 import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
-import type { PipelineEvaluationContext } from "~/domains/runs/services/pipelineEvaluator.service";
+import type {
+	PipelineEvaluation,
+	PipelineEvaluationContext,
+} from "~/domains/runs/services/pipelineEvaluator.service";
 import type { ScoreCalculation } from "~/domains/score/services/score.service";
 import type { CategoryCode } from "~/domains/shared/categories";
 import type { CommunityStats } from "~/domains/polls/api/queries";
@@ -15,6 +18,7 @@ type PipelineUpgradeContainerProps = {
 	onAccept: (card: UpgradeCard) => void;
 	isPending: boolean;
 	evaluationContext?: PipelineEvaluationContext;
+	evaluation?: PipelineEvaluation;
 	// Poll result props — shown above the upgrade section when the user has answered
 	hasAnswered: boolean;
 	options: PollOption[];
@@ -32,6 +36,7 @@ export const PipelineUpgradeContainer = ({
 	onAccept,
 	isPending,
 	evaluationContext,
+	evaluation,
 	hasAnswered,
 	options,
 	selectedOptions,
@@ -63,6 +68,7 @@ export const PipelineUpgradeContainer = ({
 				onAccept={onAccept}
 				isPending={isPending}
 				evaluationContext={evaluationContext}
+				evaluation={evaluation}
 			/>
 		</div>
 	</div>

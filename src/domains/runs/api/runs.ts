@@ -107,7 +107,7 @@ const gateTypeIdSchema = z.enum([
 	"short-window",
 ] as const);
 
-const difficultySchema = z.enum(["easy", "normal", "hard", "intense"] as const);
+const difficultySchema = z.enum(["low", "medium", "high", "critical"] as const);
 
 const upgradeCardInputSchema = z.discriminatedUnion("kind", [
 	z.object({

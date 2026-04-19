@@ -1,7 +1,6 @@
 import { STORAGE_UNITS } from "~/lib/storage";
 import type {
 	GateDifficulty,
-	GateFamily,
 	GateTypeId,
 	PipelineSlot,
 	PipelineSlotRequirement,
@@ -10,10 +9,10 @@ import type {
 // ─── Rewards ──────────────────────────────────────────────────────────────────
 
 export const SLOT_REWARDS: Record<GateDifficulty, number> = {
-	easy: 60 * STORAGE_UNITS.KB,
-	normal: 120 * STORAGE_UNITS.KB,
-	hard: 240 * STORAGE_UNITS.KB,
-	intense: 480 * STORAGE_UNITS.KB,
+	low: 60 * STORAGE_UNITS.KB,
+	medium: 120 * STORAGE_UNITS.KB,
+	high: 240 * STORAGE_UNITS.KB,
+	critical: 480 * STORAGE_UNITS.KB,
 };
 
 // ─── Difficulty distribution ──────────────────────────────────────────────────
@@ -28,27 +27,27 @@ export type DifficultyDistributionEntry = {
 export const DIFFICULTY_DISTRIBUTION: readonly DifficultyDistributionEntry[] = [
 	{
 		gateRange: [1, 3],
-		weights: { easy: 80, normal: 15, hard: 4, intense: 1 },
+		weights: { low: 80, medium: 15, high: 4, critical: 1 },
 	},
 	{
 		gateRange: [4, 6],
-		weights: { easy: 20, normal: 60, hard: 15, intense: 5 },
+		weights: { low: 20, medium: 60, high: 15, critical: 5 },
 	},
 	{
 		gateRange: [7, 9],
-		weights: { easy: 5, normal: 20, hard: 60, intense: 15 },
+		weights: { low: 5, medium: 20, high: 60, critical: 15 },
 	},
 	{
 		gateRange: [10, 12],
-		weights: { easy: 0, normal: 10, hard: 55, intense: 35 },
+		weights: { low: 0, medium: 10, high: 55, critical: 35 },
 	},
 	{
 		gateRange: [13, 15],
-		weights: { easy: 0, normal: 5, hard: 40, intense: 55 },
+		weights: { low: 0, medium: 5, high: 40, critical: 55 },
 	},
 	{
 		gateRange: [16, null],
-		weights: { easy: 0, normal: 0, hard: 30, intense: 70 },
+		weights: { low: 0, medium: 0, high: 30, critical: 70 },
 	},
 ];
 
@@ -60,7 +59,6 @@ type SlotVariant = {
 };
 
 type PipelineSlotDefinition = {
-	family: GateFamily;
 	difficulties: Record<GateDifficulty, SlotVariant>;
 };
 
@@ -69,72 +67,68 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 	PipelineSlotDefinition
 > = {
 	"coverage-gain": {
-		family: "coverage",
 		difficulties: {
-			easy: {
+			low: {
 				requirement: { type: "coverage-gain", threshold: 3 },
-				reward: SLOT_REWARDS.easy,
+				reward: SLOT_REWARDS.low,
 			},
-			normal: {
+			medium: {
 				requirement: { type: "coverage-gain", threshold: 5 },
-				reward: SLOT_REWARDS.normal,
+				reward: SLOT_REWARDS.medium,
 			},
-			hard: {
+			high: {
 				requirement: { type: "coverage-gain", threshold: 8 },
-				reward: SLOT_REWARDS.hard,
+				reward: SLOT_REWARDS.high,
 			},
-			intense: {
+			critical: {
 				requirement: { type: "coverage-gain", threshold: 12 },
-				reward: SLOT_REWARDS.intense,
+				reward: SLOT_REWARDS.critical,
 			},
 		},
 	},
 	"correct-answers": {
-		family: "accuracy",
 		difficulties: {
-			easy: {
+			low: {
+				requirement: { type: "correct-answers", count: 2 },
+				reward: SLOT_REWARDS.low,
+			},
+			medium: {
 				requirement: { type: "correct-answers", count: 3 },
-				reward: SLOT_REWARDS.easy,
+				reward: SLOT_REWARDS.medium,
 			},
-			normal: {
+			high: {
 				requirement: { type: "correct-answers", count: 4 },
-				reward: SLOT_REWARDS.normal,
+				reward: SLOT_REWARDS.high,
 			},
-			hard: {
+			critical: {
 				requirement: { type: "correct-answers", count: 5 },
-				reward: SLOT_REWARDS.hard,
-			},
-			intense: {
-				requirement: { type: "correct-answers", count: 5, streakRequired: 2 },
-				reward: SLOT_REWARDS.intense,
+				reward: SLOT_REWARDS.critical,
 			},
 		},
 	},
 	"short-window": {
-		family: "pipeline",
 		difficulties: {
-			easy: {
+			low: {
+				requirement: { type: "short-window", pollCount: 5 },
+				reward: SLOT_REWARDS.low,
+			},
+			medium: {
 				requirement: { type: "short-window", pollCount: 4 },
-				reward: SLOT_REWARDS.easy,
+				reward: SLOT_REWARDS.medium,
 			},
-			normal: {
-				requirement: { type: "short-window", pollCount: 3 },
-				reward: SLOT_REWARDS.normal,
-			},
-			hard: {
-				requirement: {
-					type: "short-window",
-					pollCount: 3,
-					correctRequired: 3, // all polls in window must be correct
-				},
-				reward: SLOT_REWARDS.hard,
-			},
-			intense: {
+			high: {
 				requirement: {
 					type: "short-window",
 					pollCount: 3,
 				},
-				reward: SLOT_REWARDS.intense,
+				reward: SLOT_REWARDS.high,
+			},
+			critical: {
+				requirement: {
+					type: "short-window",
+					pollCount: 2,
+				},
+				reward: SLOT_REWARDS.critical,
 			},
 		},
 	},
