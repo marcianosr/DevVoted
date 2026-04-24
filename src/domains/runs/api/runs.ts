@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
-import type {
-	GateDifficulty,
-	GateTypeId,
-	UpgradeCard,
-} from "~/domains/runs/models/pipeline";
+import {
+	getCategoryMasterySlot,
+	getSlotDefinition,
+} from "~/domains/runs/data/pipelineSlots";
+import { CATEGORY_CODES } from "~/domains/shared/categories";
+import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import { applyUpgradeCard } from "~/domains/runs/services/pipeline.service";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
@@ -24,6 +24,7 @@ import {
 	getWindowResults,
 } from "~/domains/polls/api/queries";
 import {
+	buildCategoryPollResults,
 	getWindowSize,
 	type PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
@@ -101,7 +102,7 @@ export const getExposedConfigDeck = createServerFn({ method: "GET" })
 		return await getRandomExposedConfigDeckHandler(userId, data.date);
 	});
 
-const gateTypeIdSchema = z.enum([
+const staticGateTypeIdSchema = z.enum([
 	"coverage-gain",
 	"correct-answers",
 	"short-window",
@@ -109,16 +110,28 @@ const gateTypeIdSchema = z.enum([
 ] as const);
 
 const difficultySchema = z.enum(["low", "medium", "high", "critical"] as const);
+const categoryCodeSchema = z.enum(CATEGORY_CODES);
 
 const upgradeCardInputSchema = z.discriminatedUnion("kind", [
 	z.object({
 		kind: z.literal("add-slot"),
-		gateTypeId: gateTypeIdSchema,
+		gateTypeId: staticGateTypeIdSchema,
+		difficulty: difficultySchema,
+	}),
+	z.object({
+		kind: z.literal("add-category-mastery-slot"),
+		category: categoryCodeSchema,
 		difficulty: difficultySchema,
 	}),
 	z.object({
 		kind: z.literal("upgrade-slot"),
-		gateTypeId: gateTypeIdSchema,
+		gateTypeId: staticGateTypeIdSchema,
+		from: difficultySchema,
+		to: difficultySchema,
+	}),
+	z.object({
+		kind: z.literal("upgrade-category-mastery-slot"),
+		category: categoryCodeSchema,
 		from: difficultySchema,
 		to: difficultySchema,
 	}),
@@ -166,6 +179,7 @@ export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 			pollsInWindow: windowSize,
 			currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
 			firstConsecutiveCorrectFromWindowStart,
+			categoryPollResults: buildCategoryPollResults(windowResults),
 		};
 	}
 );
@@ -178,23 +192,36 @@ export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
 
 		if (!activeRun) throw new Error("No active run found");
 
-		const slotDifficulty = data.kind === "add-slot" ? data.difficulty : data.to;
-		const slot = getSlotDefinition(
-			data.gateTypeId as GateTypeId,
-			slotDifficulty as GateDifficulty
-		);
-		if (!slot) throw new Error("Invalid slot combination");
+		let card: UpgradeCard;
 
-		const card: UpgradeCard =
-			data.kind === "add-slot"
-				? { kind: "add-slot", slot }
-				: {
-						kind: "upgrade-slot",
-						gateTypeId: data.gateTypeId as GateTypeId,
-						from: data.from as GateDifficulty,
-						to: data.to as GateDifficulty,
-						slot,
-					};
+		if (data.kind === "add-slot") {
+			const slot = getSlotDefinition(data.gateTypeId, data.difficulty);
+			if (!slot) throw new Error("Invalid slot combination");
+			card = { kind: "add-slot", slot };
+		} else if (data.kind === "add-category-mastery-slot") {
+			card = {
+				kind: "add-slot",
+				slot: getCategoryMasterySlot(data.category, data.difficulty),
+			};
+		} else if (data.kind === "upgrade-category-mastery-slot") {
+			card = {
+				kind: "upgrade-category-mastery-slot",
+				category: data.category,
+				from: data.from,
+				to: data.to,
+				slot: getCategoryMasterySlot(data.category, data.to),
+			};
+		} else {
+			const slot = getSlotDefinition(data.gateTypeId, data.to);
+			if (!slot) throw new Error("Invalid slot combination");
+			card = {
+				kind: "upgrade-slot",
+				gateTypeId: data.gateTypeId,
+				from: data.from,
+				to: data.to,
+				slot,
+			};
+		}
 
 		const newSlots = applyUpgradeCard(activeRun.pipelineSlots, card);
 		await Promise.all([

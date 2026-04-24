@@ -18,15 +18,13 @@ import {
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
-import {
-	generateUpgradeCards,
-	isMaxPipeline,
-} from "~/domains/runs/services/pipeline.service";
+import { generateUpgradeCards } from "~/domains/runs/services/pipeline.service";
 import {
 	evaluatePipeline,
 	getWindowSize,
 	type PipelineEvaluation,
 	type PipelineEvaluationContext,
+	buildCategoryPollResults,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
@@ -169,6 +167,7 @@ const resolveRunState = async ({
 		.map((e) => ({
 			gateTypeId: e.slot.gateTypeId,
 			difficulty: e.slot.difficulty,
+			requirement: e.slot.requirement,
 		}));
 
 	await endRunForThresholdFailure(activeRunId, failedSlots);
@@ -219,6 +218,7 @@ const evaluatePipelineStage = async ({
 		pollsInWindow: windowSize,
 		currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
 		firstConsecutiveCorrectFromWindowStart,
+		categoryPollResults: buildCategoryPollResults(windowResults),
 	};
 
 	if (!isPipelineCheckPoll) {
@@ -241,9 +241,14 @@ const evaluatePipelineStage = async ({
 		await awardStorage(activeRunId, pipelineEvaluation.totalReward);
 	}
 
-	const upgradeCards = isMaxPipeline(pipelineSlots)
-		? []
-		: generateUpgradeCards(pipelineSlots, gateNumber);
+	const availableCategories = updatedRun.categoryCoverage.map(
+		(c) => c.categoryCode
+	);
+	const upgradeCards = generateUpgradeCards(
+		pipelineSlots,
+		gateNumber,
+		availableCategories
+	);
 
 	if (upgradeCards.length > 0) {
 		await savePendingUpgradeCards(activeRunId, upgradeCards);

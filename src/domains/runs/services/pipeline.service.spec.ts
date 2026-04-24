@@ -166,17 +166,17 @@ describe("generateUpgradeCards", () => {
 		vi.clearAllMocks();
 	});
 
-	it("returns 2 add-slot cards when pipeline is empty", () => {
+	it("returns 3 add-slot cards when pipeline is empty (no upgrades available)", () => {
 		const cards = generateUpgradeCards([], 1);
-		expect(cards.length).toBe(2);
+		expect(cards.length).toBe(3);
 		expect(cards.every((c) => c.kind === "add-slot")).toBe(true);
 	});
 
-	it("returns one upgrade-slot card per upgradeable slot when all types are active", () => {
+	it("returns exactly 1 upgrade-slot card when all types are active and no adds available", () => {
 		const cards = generateUpgradeCards(allTypesAtMedium, 8);
-		// coverage-gain + correct-answers + cold-start upgradeable; short-window is fixed at low (no upgrade defined)
-		expect(cards.length).toBe(3);
-		expect(cards.every((c) => c.kind === "upgrade-slot")).toBe(true);
+		// no add pool (all static types installed), 1 random upgrade from upgradeable slots
+		expect(cards.length).toBe(1);
+		expect(cards[0].kind).toBe("upgrade-slot");
 	});
 
 	it("add-slot cards each contain a valid slot definition", () => {
@@ -191,7 +191,7 @@ describe("generateUpgradeCards", () => {
 
 	it("upgrade-slot card increments difficulty by one tier", () => {
 		const cards = generateUpgradeCards(allTypesAtMedium, 8);
-		const upgradeCard = cards.find((c) => c.kind === "upgrade-slot");
+		const upgradeCard = cards[0];
 		if (!upgradeCard || upgradeCard.kind !== "upgrade-slot")
 			throw new Error("Expected upgrade-slot");
 

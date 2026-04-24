@@ -7,6 +7,7 @@ import type {
 import type {
 	PipelineEvaluation,
 	PipelineEvaluationContext,
+	SlotEvaluationStatus,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import {
 	formatRequirement,
@@ -51,6 +52,11 @@ const formatCurrentStat = (
 			return `${ctx.pollsAnsweredInWindow}/${ctx.pollsInWindow} answered`;
 		case "cold-start":
 			return `${ctx.firstConsecutiveCorrectFromWindowStart}/${req.count} correct start`;
+		case "category-mastery": {
+			const results = ctx.categoryPollResults?.[req.category];
+			if (!results || results.appeared === 0) return "no polls seen yet";
+			return `${results.correct}/${results.appeared} correct`;
+		}
 	}
 };
 
@@ -129,6 +135,51 @@ const DifficultyLabel = ({
 	</span>
 );
 
+type StatusWithInProgress = SlotEvaluationStatus | "in-progress";
+
+const STATUS_ICON: Record<StatusWithInProgress, React.ReactNode> = {
+	"in-progress": (
+		<span className="inline-block w-3 h-3 rounded-full bg-yellow-400 animate-pulse" />
+	),
+	passed: <span className="text-green-400">✓</span>,
+	failed: <span className="text-red-400">✗</span>,
+	skipped: <span className="inline-block w-3 h-3 rounded-full bg-gray-400" />,
+};
+
+const STATUS_GROUP_LABEL: Record<StatusWithInProgress, string> = {
+	"in-progress": "in progress",
+	passed: "successful",
+	failed: "failing",
+	skipped: "skipped",
+};
+
+const CheckGroupHeader = ({
+	status,
+	count,
+}: {
+	status: StatusWithInProgress;
+	count: number;
+}) => (
+	<div className="px-4 py-2 border-b border-white bg-white/5 flex items-center gap-2 text-sm text-gray-400">
+		{STATUS_ICON[status]}
+		<span>
+			{count} {STATUS_GROUP_LABEL[status]} {count === 1 ? "check" : "checks"}
+		</span>
+	</div>
+);
+
+const getLiveStatus = (
+	slot: PipelineSlot,
+	ctx?: PipelineEvaluationContext
+): StatusWithInProgress => {
+	if (!ctx) return "in-progress";
+	if (slot.requirement.type === "category-mastery") {
+		const results = ctx.categoryPollResults?.[slot.requirement.category];
+		if (!results || results.appeared === 0) return "skipped";
+	}
+	return "in-progress";
+};
+
 export const CurrentPipeline = ({
 	slots,
 	evaluationContext,
@@ -137,69 +188,85 @@ export const CurrentPipeline = ({
 	slots: PipelineSlot[];
 	evaluationContext?: PipelineEvaluationContext;
 	evaluation?: PipelineEvaluation;
-}) => (
-	<div className="border border-white">
-		<div className="border-b border-white px-4 py-3">
-			<p className="text-white text-2xl">CI Pipelines</p>
-			{evaluationContext && (
-				<span className="text-lg">Gate #{evaluationContext.currentGate}</span>
-			)}
-			<p className="text-gray-300">
+}) => {
+	const slotsWithStatus = slots.map((slot, i) => ({
+		slot,
+		status: evaluation
+			? ((evaluation.slotEvaluations[i]?.status ??
+					"in-progress") as StatusWithInProgress)
+			: getLiveStatus(slot, evaluationContext),
+	}));
+
+	const groups = (
+		["in-progress", "passed", "failed", "skipped"] as StatusWithInProgress[]
+	)
+		.map((status) => ({
+			status,
+			entries: slotsWithStatus.filter((s) => s.status === status),
+		}))
+		.filter((g) => g.entries.length > 0);
+
+	return (
+		<div className="border border-white">
+			<div className="border-b border-white px-4 py-3">
+				<p className="text-white text-2xl">CI Pipelines</p>
 				{evaluationContext && (
-					<>
-						<span className="text-gray-300">
-							{evaluationContext.pollsInWindow -
-								evaluationContext.pollsAnsweredInWindow}{" "}
-							polls left until next gate check
-						</span>
-						{" · "}
-					</>
+					<span className="text-lg">Gate #{evaluationContext.currentGate}</span>
 				)}
-				{slots.length} active {slots.length === 1 ? "check" : "checks"} · all
-				checks must pass
-			</p>
-		</div>
-		{slots.map((slot) => {
-			const slotEval = evaluation?.slotEvaluations.find(
-				(e) => e.slot.gateTypeId === slot.gateTypeId
-			);
-			return (
-				<section
-					key={slot.gateTypeId}
-					className="flex align-items gap-2 border-b border-white last:border-b-0 px-4 py-3"
-				>
-					{slotEval !== undefined && (
-						<span
-							className={`text-lg ${slotEval.passed ? "text-green-400" : "text-red-400"}`}
-						>
-							{slotEval.passed ? "✓" : "✗"}
-						</span>
-					)}
-					<div>
-						<p>
-							<span className={DIFFICULTY_CLASSES[slot.difficulty]}>
-								{getSlotLabel(slot.gateTypeId)}
-							</span>
-						</p>
+				<p className="text-gray-300">
+					{evaluationContext && (
 						<>
-							<DifficultyLabel text="Risk:" difficulty={slot.difficulty} />
+							<span className="text-gray-300">
+								{evaluationContext.pollsInWindow -
+									evaluationContext.pollsAnsweredInWindow}{" "}
+								polls left until next gate check
+							</span>
 							{" · "}
-							Requirement: {formatRequirement(slot.requirement)}
 						</>
-						{evaluationContext && (
-							<p>
-								Current:{" "}
-								<span className="text-gray-300">
-									{formatCurrentStat(slot.requirement, evaluationContext)}
-								</span>
-							</p>
-						)}
-					</div>
-				</section>
-			);
-		})}
-	</div>
-);
+					)}
+					{slots.length} active {slots.length === 1 ? "check" : "checks"} · all
+					checks must pass
+				</p>
+			</div>
+
+			{groups.map(({ status, entries }) => (
+				<div key={status}>
+					{evaluation && (
+						<CheckGroupHeader status={status} count={entries.length} />
+					)}
+					{entries.map(({ slot }, i) => (
+						<section
+							key={`${slot.gateTypeId}-${i}`}
+							className="flex items-start gap-3 border-b border-white last:border-b-0 px-4 py-3"
+						>
+							<span className="mt-0.5 shrink-0">{STATUS_ICON[status]}</span>
+							<div>
+								<p>
+									<span className={DIFFICULTY_CLASSES[slot.difficulty]}>
+										{getSlotLabel(slot.gateTypeId)}
+									</span>
+								</p>
+								<>
+									<DifficultyLabel text="Risk:" difficulty={slot.difficulty} />
+									{" · "}
+									Requirement: {formatRequirement(slot.requirement)}
+								</>
+								{evaluationContext && (
+									<p>
+										Current:{" "}
+										<span className="text-gray-300">
+											{formatCurrentStat(slot.requirement, evaluationContext)}
+										</span>
+									</p>
+								)}
+							</div>
+						</section>
+					))}
+				</div>
+			))}
+		</div>
+	);
+};
 
 export const UpgradePipelineSection = ({
 	cards,

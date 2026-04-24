@@ -78,6 +78,7 @@ const Option = ({
 				className={`markdown text-white flex-1 ${disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer"}`}
 			>
 				<MarkdownText>{option.option}</MarkdownText>
+				Correct: {option.correct ? "Yes" : "No"}
 			</label>
 		</div>
 	);

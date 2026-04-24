@@ -26,6 +26,7 @@ import {
 } from "~/domains/runs/api/runs";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
+import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
 import type { Run } from "~/domains/runs/models/run";
 import type {
 	PipelineEvaluation,
@@ -160,21 +161,47 @@ const DailyPollContainer = ({
 	const handleUpgradeAccepted = (card: UpgradeCard) => {
 		if (applyUpgradeMutation.isPending) return;
 
+		setPendingUpgradeCards([]);
+
+		if (card.kind === "upgrade-category-mastery-slot") {
+			applyUpgradeMutation.mutate({
+				data: {
+					kind: "upgrade-category-mastery-slot",
+					category: card.category,
+					from: card.from,
+					to: card.to,
+				} as const,
+			});
+			return;
+		}
+
+		const req = card.slot.requirement;
+
+		if (req.type === "category-mastery") {
+			applyUpgradeMutation.mutate({
+				data: {
+					kind: "add-category-mastery-slot",
+					category: req.category,
+					difficulty: card.slot.difficulty,
+				} as const,
+			});
+			return;
+		}
+
 		const input =
 			card.kind === "add-slot"
 				? ({
 						kind: "add-slot",
-						gateTypeId: card.slot.gateTypeId,
+						gateTypeId: card.slot.gateTypeId as StaticGateTypeId,
 						difficulty: card.slot.difficulty,
 					} as const)
 				: ({
 						kind: "upgrade-slot",
-						gateTypeId: card.gateTypeId,
+						gateTypeId: card.gateTypeId as StaticGateTypeId,
 						from: card.from,
 						to: card.to,
 					} as const);
 
-		setPendingUpgradeCards([]);
 		applyUpgradeMutation.mutate({ data: input });
 	};
 

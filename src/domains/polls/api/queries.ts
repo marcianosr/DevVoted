@@ -31,6 +31,7 @@ import {
 	calculateCategoryWeights,
 	type CategoryWeights,
 } from "~/domains/polls/services/categoryWeight.service";
+import type { CategoryCode } from "~/domains/shared/categories";
 import { getAllActiveConfigIds } from "~/domains/runs/api/queries";
 import {
 	PollAnswerOutcome,
@@ -916,6 +917,7 @@ export type WindowResult = {
 	isCorrect: boolean; // selected all correct options and no incorrect ones
 	isWrong: boolean; // selected at least one incorrect option
 	coverageDelta: number; // coverage % awarded for this response
+	categoryCode: CategoryCode; // category of the poll answered
 };
 
 /**
@@ -935,8 +937,10 @@ export const getWindowResults = async (
 			responseId: pollResponsesTable.response_id,
 			pollId: pollResponsesTable.poll_id,
 			coverageDelta: pollResponsesTable.coverage_delta,
+			categoryCode: pollsTable.category_code,
 		})
 		.from(pollResponsesTable)
+		.innerJoin(pollsTable, eq(pollResponsesTable.poll_id, pollsTable.id))
 		.where(
 			and(
 				eq(pollResponsesTable.run_id, runId),
@@ -992,22 +996,27 @@ export const getWindowResults = async (
 		totalCorrectResults.map((r) => [r.pollId, r.totalCorrect])
 	);
 
-	return recentResponses.map(({ responseId, pollId, coverageDelta }) => {
-		const sel = selectednessMap.get(responseId);
-		const totalCorrect = totalCorrectMap.get(pollId) ?? 0;
+	return recentResponses.map(
+		({ responseId, pollId, coverageDelta, categoryCode }) => {
+			const sel = selectednessMap.get(responseId);
+			const totalCorrect = totalCorrectMap.get(pollId) ?? 0;
+			const category = (categoryCode ?? "general-frontend") as CategoryCode;
 
-		if (!sel || totalCorrect === 0)
+			if (!sel || totalCorrect === 0)
+				return {
+					isCorrect: false,
+					isWrong: false,
+					coverageDelta: coverageDelta ?? 0,
+					categoryCode: category,
+				};
+
 			return {
-				isCorrect: false,
-				isWrong: false,
+				isCorrect:
+					sel.selectedCorrect === totalCorrect && sel.selectedIncorrect === 0,
+				isWrong: sel.selectedIncorrect > 0,
 				coverageDelta: coverageDelta ?? 0,
+				categoryCode: category,
 			};
-
-		return {
-			isCorrect:
-				sel.selectedCorrect === totalCorrect && sel.selectedIncorrect === 0,
-			isWrong: sel.selectedIncorrect > 0,
-			coverageDelta: coverageDelta ?? 0,
-		};
-	});
+		}
+	);
 };

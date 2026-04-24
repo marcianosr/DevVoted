@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { STORAGE_UNITS } from "~/lib/storage";
-import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
+import {
+	getCategoryMasterySlot,
+	getSlotDefinition,
+} from "~/domains/runs/data/pipelineSlots";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline";
 import {
 	DEFAULT_WINDOW_SIZE,
@@ -261,6 +264,83 @@ describe("evaluatePipeline — cold-start", () => {
 			[lowSlot]
 		);
 		expect(result.totalReward).toBe(0);
+	});
+});
+
+// ─── evaluatePipeline — category-mastery ─────────────────────────────────────
+
+describe("evaluatePipeline — category-mastery", () => {
+	const cssPollResult = (appeared: number, correct: number) =>
+		makeContext({ categoryPollResults: { css: { appeared, correct } } });
+
+	describe("low tier (≥1 correct)", () => {
+		const slot = getCategoryMasterySlot("css", "low");
+
+		it("passes when 1 CSS poll appeared and was correct", () => {
+			const result = evaluatePipeline(cssPollResult(1, 1), [slot]);
+			expect(result.passed).toBe(true);
+		});
+
+		it("passes when 1 out of 3 CSS polls was correct", () => {
+			const result = evaluatePipeline(cssPollResult(3, 1), [slot]);
+			expect(result.passed).toBe(true);
+		});
+
+		it("fails when 0 CSS polls were correct", () => {
+			const result = evaluatePipeline(cssPollResult(3, 0), [slot]);
+			expect(result.passed).toBe(false);
+		});
+	});
+
+	describe("medium tier (≥2 correct)", () => {
+		const slot = getCategoryMasterySlot("css", "medium");
+
+		it("passes when 2 CSS polls appeared and both were correct", () => {
+			const result = evaluatePipeline(cssPollResult(2, 2), [slot]);
+			expect(result.passed).toBe(true);
+		});
+
+		it("passes when 2 out of 4 CSS polls were correct", () => {
+			const result = evaluatePipeline(cssPollResult(4, 2), [slot]);
+			expect(result.passed).toBe(true);
+		});
+
+		it("fails when only 1 CSS poll was correct", () => {
+			const result = evaluatePipeline(cssPollResult(4, 1), [slot]);
+			expect(result.passed).toBe(false);
+		});
+	});
+
+	describe("critical tier (all must be correct)", () => {
+		const slot = getCategoryMasterySlot("css", "critical");
+
+		it("passes when all 2 appearing CSS polls were correct", () => {
+			const result = evaluatePipeline(cssPollResult(2, 2), [slot]);
+			expect(result.passed).toBe(true);
+		});
+
+		it("fails when 1 out of 3 CSS polls was wrong", () => {
+			const result = evaluatePipeline(cssPollResult(3, 2), [slot]);
+			expect(result.passed).toBe(false);
+		});
+	});
+
+	describe("skipped when category does not appear", () => {
+		const slot = getCategoryMasterySlot("css", "low");
+
+		it("is skipped when no CSS polls appeared", () => {
+			const result = evaluatePipeline(
+				makeContext({ categoryPollResults: {} }),
+				[slot]
+			);
+			expect(result.passed).toBe(true); // skipped = neutral
+			expect(result.slotEvaluations[0].status).toBe("skipped");
+		});
+
+		it("is skipped when categoryPollResults is absent", () => {
+			const result = evaluatePipeline(makeContext(), [slot]);
+			expect(result.slotEvaluations[0].status).toBe("skipped");
+		});
 	});
 });
 
