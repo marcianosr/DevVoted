@@ -18,10 +18,7 @@ import {
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { Run } from "~/domains/runs/models/run";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
-import {
-	generateUpgradeCards,
-	isMaxPipeline,
-} from "~/domains/runs/services/pipeline.service";
+import { generateUpgradeCards } from "~/domains/runs/services/pipeline.service";
 import {
 	evaluatePipeline,
 	getWindowSize,
@@ -247,9 +244,11 @@ const evaluatePipelineStage = async ({
 	const availableCategories = updatedRun.categoryCoverage.map(
 		(c) => c.categoryCode
 	);
-	const upgradeCards = isMaxPipeline(pipelineSlots)
-		? []
-		: generateUpgradeCards(pipelineSlots, gateNumber, availableCategories);
+	const upgradeCards = generateUpgradeCards(
+		pipelineSlots,
+		gateNumber,
+		availableCategories
+	);
 
 	if (upgradeCards.length > 0) {
 		await savePendingUpgradeCards(activeRunId, upgradeCards);

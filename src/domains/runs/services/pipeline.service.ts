@@ -60,6 +60,13 @@ export const isMaxPipeline = (slots: PipelineSlot[]): boolean =>
 		slots.some((s) => s.gateTypeId === id && s.difficulty === "critical")
 	);
 
+// TODO: No polls yet for these categories
+const CATEGORIES_WITHOUT_POLLS: readonly CategoryCode[] = [
+	"general-backend",
+	"ruby",
+	"python",
+];
+
 const getAvailableCategoryMasteryCategories = (
 	slots: PipelineSlot[],
 	availableCategories: CategoryCode[]
@@ -69,14 +76,14 @@ const getAvailableCategoryMasteryCategories = (
 			.filter((s) => s.requirement.type === "category-mastery")
 			.map((s) => (s.requirement as { category: CategoryCode }).category)
 	);
-	return availableCategories.filter((c) => !activeCategories.has(c));
+	return availableCategories.filter(
+		(c) => !activeCategories.has(c) && !CATEGORIES_WITHOUT_POLLS.includes(c)
+	);
 };
 
 /**
- * Generates a hand of upgrade cards for the player to choose from.
- * Always offers 2 add-slot cards (randomly drawn gate types) plus
- * 1 upgrade-slot card if any existing slot can be upgraded.
- * If availableCategories is provided, may also offer a category mastery card.
+ * Generates a hand of up to 3 cards: 2 random add-slot offers + 1 randomly
+ * selected upgrade. Returns fewer when the pool is exhausted.
  */
 export const generateUpgradeCards = (
 	slots: PipelineSlot[],
@@ -86,17 +93,17 @@ export const generateUpgradeCards = (
 	const cards: UpgradeCard[] = [];
 	const weights = getDifficultyWeights(gateNumber);
 
-	// Pool: static gate types + one random category mastery (if available)
 	const availableTypes = getAvailableGateTypes(slots);
 	const availableCategoryTypes = getAvailableCategoryMasteryCategories(
 		slots,
 		availableCategories
 	);
 
-	const staticPool: Array<
+	type PoolEntry =
 		| { kind: "static"; gateTypeId: StaticGateTypeId }
-		| { kind: "category"; category: CategoryCode }
-	> = [
+		| { kind: "category"; category: CategoryCode };
+
+	const addPool: PoolEntry[] = [
 		...availableTypes.map((gateTypeId) => ({
 			kind: "static" as const,
 			gateTypeId,
@@ -107,10 +114,12 @@ export const generateUpgradeCards = (
 		})),
 	];
 
-	const shuffledPool = [...staticPool].sort(() => Math.random() - 0.5);
-	const toOffer = shuffledPool.slice(0, 2);
+	const upgradeableSlots = getUpgradeableSlots(slots);
+	const addCount = upgradeableSlots.length > 0 ? 2 : 3;
 
-	for (const entry of toOffer) {
+	for (const entry of [...addPool]
+		.sort(() => Math.random() - 0.5)
+		.slice(0, addCount)) {
 		if (entry.kind === "static") {
 			const slot = getSlotDefinition(
 				entry.gateTypeId,
@@ -119,44 +128,45 @@ export const generateUpgradeCards = (
 			if (!slot) continue;
 			cards.push({ kind: "add-slot", slot });
 		} else {
-			const slot = getCategoryMasterySlot(entry.category);
-			cards.push({ kind: "add-slot", slot });
+			cards.push({
+				kind: "add-slot",
+				slot: getCategoryMasterySlot(
+					entry.category,
+					pickWeightedDifficulty(weights)
+				),
+			});
 		}
 	}
 
-	for (const slot of getUpgradeableSlots(slots)) {
-		const nextDifficulty = getNextDifficulty(slot.difficulty);
-		if (!nextDifficulty) continue;
+	if (upgradeableSlots.length > 0) {
+		const slot =
+			upgradeableSlots[Math.floor(Math.random() * upgradeableSlots.length)];
+		const nextDifficulty = getNextDifficulty(slot.difficulty)!;
 
 		if (slot.requirement.type === "category-mastery") {
-			const nextSlot = getCategoryMasterySlot(
-				slot.requirement.category,
-				nextDifficulty
-			);
 			const card: UpgradeCategoryMasterySlotCard = {
 				kind: "upgrade-category-mastery-slot",
 				category: slot.requirement.category,
 				from: slot.difficulty,
 				to: nextDifficulty,
-				slot: nextSlot,
+				slot: getCategoryMasterySlot(slot.requirement.category, nextDifficulty),
 			};
 			cards.push(card);
-			continue;
+		} else {
+			const nextSlot = getSlotDefinition(
+				slot.gateTypeId as StaticGateTypeId,
+				nextDifficulty
+			);
+			if (nextSlot) {
+				cards.push({
+					kind: "upgrade-slot",
+					gateTypeId: slot.gateTypeId,
+					from: slot.difficulty,
+					to: nextDifficulty,
+					slot: nextSlot,
+				});
+			}
 		}
-
-		const nextSlot = getSlotDefinition(
-			slot.gateTypeId as StaticGateTypeId,
-			nextDifficulty
-		);
-		if (!nextSlot) continue;
-
-		cards.push({
-			kind: "upgrade-slot",
-			gateTypeId: slot.gateTypeId,
-			from: slot.difficulty,
-			to: nextDifficulty,
-			slot: nextSlot,
-		});
 	}
 
 	return cards;
