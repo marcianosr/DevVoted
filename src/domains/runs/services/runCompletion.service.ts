@@ -1,6 +1,7 @@
 import type {
 	GateDifficulty,
 	GateTypeId,
+	PipelineSlotRequirement,
 } from "~/domains/runs/models/pipeline";
 
 import {
@@ -13,6 +14,7 @@ import {
 export type PipelineFailureSlot = {
 	gateTypeId: GateTypeId;
 	difficulty: GateDifficulty;
+	requirement: PipelineSlotRequirement;
 };
 
 const encodePipelineFailure = (failedSlots: PipelineFailureSlot[]): string =>

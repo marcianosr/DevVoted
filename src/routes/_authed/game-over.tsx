@@ -8,7 +8,6 @@ import { ConfirmDialog } from "~/components/ConfirmDialog";
 import Content from "~/components/Content";
 import { finishRunFn, getLastRunForGameOver } from "~/domains/runs/api/runs";
 import type { PipelineFailureSlot } from "~/domains/runs/services/runCompletion.service";
-import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -143,20 +142,12 @@ function RouteComponent() {
 					<section>
 						<h2 className="text-2xl mb-2">Failure reason</h2>
 						<ul className="space-y-1">
-							{completion.failedSlots.map((slot) => {
-								const definition = getSlotDefinition(
-									slot.gateTypeId,
-									slot.difficulty
-								);
-								return (
-									<li key={slot.gateTypeId} className="text-red-400">
-										✗ {getSlotLabel(slot.gateTypeId)} {slot.difficulty} —{" "}
-										{definition
-											? formatRequirement(definition.requirement)
-											: null}
-									</li>
-								);
-							})}
+							{completion.failedSlots.map((slot) => (
+								<li key={slot.gateTypeId} className="text-red-400">
+									✗ {getSlotLabel(slot.gateTypeId)} {slot.difficulty} —{" "}
+									{formatRequirement(slot.requirement)}
+								</li>
+							))}
 						</ul>
 					</section>
 				)}

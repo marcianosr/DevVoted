@@ -1,3 +1,4 @@
+import { CATEGORY_METADATA } from "~/domains/shared/categories";
 import type {
 	GateTypeId,
 	PipelineSlotRequirement,
@@ -29,6 +30,13 @@ export const formatRequirement = (
 			return req.count === 1
 				? "First poll must be correct"
 				: `First ${req.count} polls must be correct`;
+
+		case "category-mastery": {
+			const name = CATEGORY_METADATA[req.category].name;
+			return req.minCorrect === null
+				? `All ${name} polls correct`
+				: `≥${req.minCorrect} ${name} polls correct`;
+		}
 	}
 };
 
@@ -37,6 +45,7 @@ const SLOT_LABELS: Record<GateTypeId, string> = {
 	"correct-answers": "Correct answer pipeline",
 	"short-window": "Short window pipeline",
 	"cold-start": "Cold start pipeline",
+	"category-mastery": "Category mastery pipeline",
 };
 
 export const getSlotLabel = (gateTypeId: GateTypeId): string =>

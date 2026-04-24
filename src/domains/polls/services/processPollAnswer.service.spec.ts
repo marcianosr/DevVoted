@@ -244,11 +244,36 @@ describe("processPollAnswer", () => {
 
 		// 3 correct, 1 wrong, 1 partial — meets the low correct-answers requirement (needs 2)
 		const windowWith3Correct = [
-			{ isCorrect: true, isWrong: false, coverageDelta: 1.2 },
-			{ isCorrect: true, isWrong: false, coverageDelta: 1.2 },
-			{ isCorrect: true, isWrong: false, coverageDelta: 1.2 },
-			{ isCorrect: false, isWrong: true, coverageDelta: -0.5 },
-			{ isCorrect: false, isWrong: false, coverageDelta: 0 },
+			{
+				isCorrect: true,
+				isWrong: false,
+				coverageDelta: 1.2,
+				categoryCode: "js" as const,
+			},
+			{
+				isCorrect: true,
+				isWrong: false,
+				coverageDelta: 1.2,
+				categoryCode: "js" as const,
+			},
+			{
+				isCorrect: true,
+				isWrong: false,
+				coverageDelta: 1.2,
+				categoryCode: "css" as const,
+			},
+			{
+				isCorrect: false,
+				isWrong: true,
+				coverageDelta: -0.5,
+				categoryCode: "css" as const,
+			},
+			{
+				isCorrect: false,
+				isWrong: false,
+				coverageDelta: 0,
+				categoryCode: "ts" as const,
+			},
 		];
 
 		it("does not evaluate pipeline between windows", async () => {
@@ -291,7 +316,12 @@ describe("processPollAnswer", () => {
 			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
 			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
 				// Only 2 correct — fails easy correct-answers (needs 3)
-				Array(5).fill({ isCorrect: false, isWrong: true, coverageDelta: -0.5 })
+				Array(5).fill({
+					isCorrect: false,
+					isWrong: true,
+					coverageDelta: -0.5,
+					categoryCode: "js" as const,
+				})
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 
@@ -323,7 +353,12 @@ describe("processPollAnswer", () => {
 		it("ends the run when pipeline fails at a gate check", async () => {
 			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
 			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
-				Array(5).fill({ isCorrect: false, isWrong: true, coverageDelta: -0.5 }) // 0/5 correct — fails
+				Array(5).fill({
+					isCorrect: false,
+					isWrong: true,
+					coverageDelta: -0.5,
+					categoryCode: "js" as const,
+				}) // 0/5 correct — fails
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 
@@ -333,14 +368,23 @@ describe("processPollAnswer", () => {
 			expect(
 				runCompletionService.endRunForThresholdFailure
 			).toHaveBeenCalledWith(1, [
-				{ gateTypeId: "correct-answers", difficulty: "low" },
+				{
+					gateTypeId: "correct-answers",
+					difficulty: "low",
+					requirement: { type: "correct-answers", count: 2 },
+				},
 			]);
 		});
 
 		it("does not end the run when pipeline fails but tryCatch is active", async () => {
 			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
 			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
-				Array(5).fill({ isCorrect: false, isWrong: true, coverageDelta: -0.5 })
+				Array(5).fill({
+					isCorrect: false,
+					isWrong: true,
+					coverageDelta: -0.5,
+					categoryCode: "js" as const,
+				})
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 			vi.mocked(configs.applyEffects).mockReturnValue({

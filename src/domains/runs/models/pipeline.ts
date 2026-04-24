@@ -1,9 +1,12 @@
+import type { CategoryCode } from "~/domains/shared/categories";
+
 export type GateDifficulty = "low" | "medium" | "high" | "critical";
 export type GateTypeId =
 	| "coverage-gain"
 	| "correct-answers"
 	| "short-window"
-	| "cold-start";
+	| "cold-start"
+	| "category-mastery";
 
 export type CoverageGainRequirement = {
 	type: "coverage-gain";
@@ -27,13 +30,20 @@ export type ColdStartRequirement = {
 	count: number; // how many of the first N polls in the window must be correct
 };
 
+export type CategoryMasteryRequirement = {
+	type: "category-mastery";
+	category: CategoryCode;
+	minCorrect: number | null; // null = all appearing polls must be correct (critical tier)
+};
+
 // Storage drain is a permanent modifier — not evaluated as pass/fail.
 // All other requirement types are evaluated at the end of each window.
 export type PassFailRequirement =
 	| CoverageGainRequirement
 	| CorrectAnswersRequirement
 	| ShortWindowRequirement
-	| ColdStartRequirement;
+	| ColdStartRequirement
+	| CategoryMasteryRequirement;
 
 export type PipelineSlotRequirement = PassFailRequirement;
 
@@ -57,4 +67,15 @@ export type UpgradeSlotCard = {
 	slot: PipelineSlot; // the upgraded slot definition
 };
 
-export type UpgradeCard = AddSlotCard | UpgradeSlotCard;
+export type UpgradeCategoryMasterySlotCard = {
+	kind: "upgrade-category-mastery-slot";
+	category: CategoryCode;
+	from: GateDifficulty;
+	to: GateDifficulty;
+	slot: PipelineSlot;
+};
+
+export type UpgradeCard =
+	| AddSlotCard
+	| UpgradeSlotCard
+	| UpgradeCategoryMasterySlotCard;

@@ -1,7 +1,13 @@
+import type { CategoryCode } from "~/domains/shared/categories";
 import type {
 	PipelineSlot,
 	ShortWindowRequirement,
 } from "~/domains/runs/models/pipeline";
+
+export type CategoryPollResult = {
+	readonly appeared: number;
+	readonly correct: number;
+};
 
 export type PipelineEvaluationContext = {
 	readonly correctAnswersInWindow: number;
@@ -11,11 +17,34 @@ export type PipelineEvaluationContext = {
 	readonly pollsInWindow: number; // total window size (fixed)
 	readonly currentGate: number; // 1-indexed gate number currently being worked toward
 	readonly firstConsecutiveCorrectFromWindowStart: number; // leading correct-answer streak from poll #1 of the window
+	readonly categoryPollResults?: Partial<
+		Record<CategoryCode, CategoryPollResult>
+	>;
 };
+
+export const buildCategoryPollResults = (
+	windowResults: Array<{ isCorrect: boolean; categoryCode: CategoryCode }>
+): Partial<Record<CategoryCode, CategoryPollResult>> =>
+	windowResults.reduce<Partial<Record<CategoryCode, CategoryPollResult>>>(
+		(acc, { isCorrect, categoryCode }) => {
+			const existing = acc[categoryCode] ?? { appeared: 0, correct: 0 };
+			return {
+				...acc,
+				[categoryCode]: {
+					appeared: existing.appeared + 1,
+					correct: existing.correct + (isCorrect ? 1 : 0),
+				},
+			};
+		},
+		{}
+	);
+
+export type SlotEvaluationStatus = "passed" | "failed" | "skipped";
 
 export type SlotEvaluation = {
 	readonly slot: PipelineSlot;
-	readonly passed: boolean;
+	readonly passed: boolean; // false only when status === "failed"; skipped counts as passing
+	readonly status: SlotEvaluationStatus;
 };
 
 export type PipelineEvaluation = {
@@ -38,6 +67,15 @@ export const getWindowSize = (slots: PipelineSlot[]): number => {
 	return req.pollCount;
 };
 
+const makeResult = (
+	slot: PipelineSlot,
+	status: SlotEvaluationStatus
+): SlotEvaluation => ({
+	slot,
+	status,
+	passed: status !== "failed",
+});
+
 const evaluateSlot = (
 	slot: PipelineSlot,
 	ctx: PipelineEvaluationContext
@@ -46,30 +84,44 @@ const evaluateSlot = (
 
 	switch (req.type) {
 		case "coverage-gain":
-			return {
+			return makeResult(
 				slot,
-				passed: ctx.coverageGainedInWindow >= req.threshold,
-			};
+				ctx.coverageGainedInWindow >= req.threshold ? "passed" : "failed"
+			);
 
 		case "correct-answers":
-			return {
+			return makeResult(
 				slot,
-				passed: ctx.correctAnswersInWindow >= req.count,
-			};
+				ctx.correctAnswersInWindow >= req.count ? "passed" : "failed"
+			);
 
 		case "short-window":
-			return {
+			return makeResult(
 				slot,
-				passed:
-					!req.correctRequired ||
-					ctx.correctAnswersInWindow >= req.correctRequired,
-			};
+				!req.correctRequired ||
+					ctx.correctAnswersInWindow >= req.correctRequired
+					? "passed"
+					: "failed"
+			);
 
 		case "cold-start":
-			return {
+			return makeResult(
 				slot,
-				passed: ctx.firstConsecutiveCorrectFromWindowStart >= req.count,
-			};
+				ctx.firstConsecutiveCorrectFromWindowStart >= req.count
+					? "passed"
+					: "failed"
+			);
+
+		case "category-mastery": {
+			const results = ctx.categoryPollResults?.[req.category];
+			if (!results || results.appeared === 0)
+				return makeResult(slot, "skipped");
+			const passed =
+				req.minCorrect === null
+					? results.correct === results.appeared
+					: results.correct >= req.minCorrect;
+			return makeResult(slot, passed ? "passed" : "failed");
+		}
 
 		default:
 			// Stale gate type in DB (e.g. a removed gate type like "disabled-config").
@@ -94,7 +146,9 @@ export const evaluatePipeline = (
 		.filter((e): e is SlotEvaluation => e !== null);
 	const passed = slotEvaluations.every((e) => e.passed);
 	const totalReward = passed
-		? slots.reduce((sum, slot) => sum + slot.reward, 0)
+		? slotEvaluations
+				.filter((e) => e.status === "passed")
+				.reduce((sum, e) => sum + e.slot.reward, 0)
 		: 0;
 
 	return { passed, slotEvaluations, totalReward };

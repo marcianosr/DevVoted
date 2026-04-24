@@ -27,6 +27,7 @@ import {
 	getWindowSize,
 	type PipelineEvaluation,
 	type PipelineEvaluationContext,
+	buildCategoryPollResults,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
@@ -169,6 +170,7 @@ const resolveRunState = async ({
 		.map((e) => ({
 			gateTypeId: e.slot.gateTypeId,
 			difficulty: e.slot.difficulty,
+			requirement: e.slot.requirement,
 		}));
 
 	await endRunForThresholdFailure(activeRunId, failedSlots);
@@ -219,6 +221,7 @@ const evaluatePipelineStage = async ({
 		pollsInWindow: windowSize,
 		currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
 		firstConsecutiveCorrectFromWindowStart,
+		categoryPollResults: buildCategoryPollResults(windowResults),
 	};
 
 	if (!isPipelineCheckPoll) {
@@ -241,9 +244,12 @@ const evaluatePipelineStage = async ({
 		await awardStorage(activeRunId, pipelineEvaluation.totalReward);
 	}
 
+	const availableCategories = updatedRun.categoryCoverage.map(
+		(c) => c.categoryCode
+	);
 	const upgradeCards = isMaxPipeline(pipelineSlots)
 		? []
-		: generateUpgradeCards(pipelineSlots, gateNumber);
+		: generateUpgradeCards(pipelineSlots, gateNumber, availableCategories);
 
 	if (upgradeCards.length > 0) {
 		await savePendingUpgradeCards(activeRunId, upgradeCards);

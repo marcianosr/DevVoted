@@ -1,4 +1,5 @@
 import { STORAGE_UNITS } from "~/lib/storage";
+import type { CategoryCode } from "~/domains/shared/categories";
 import type {
 	GateDifficulty,
 	GateTypeId,
@@ -62,8 +63,10 @@ type PipelineSlotDefinition = {
 	difficulties: Partial<Record<GateDifficulty, SlotVariant>>;
 };
 
+export type StaticGateTypeId = Exclude<GateTypeId, "category-mastery">;
+
 export const STARTER_SLOT_DEFINITIONS: Record<
-	GateTypeId,
+	StaticGateTypeId,
 	PipelineSlotDefinition
 > = {
 	"coverage-gain": {
@@ -155,9 +158,32 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 	},
 };
 
+// ─── Category mastery ─────────────────────────────────────────────────────────
+
+const CATEGORY_MASTERY_MIN_CORRECT: Record<GateDifficulty, number | null> = {
+	low: 1,
+	medium: 2,
+	high: 3,
+	critical: null, // all that appear must be correct
+};
+
+export const getCategoryMasterySlot = (
+	category: CategoryCode,
+	difficulty: GateDifficulty = "low"
+): PipelineSlot => ({
+	gateTypeId: "category-mastery",
+	difficulty,
+	requirement: {
+		type: "category-mastery",
+		category,
+		minCorrect: CATEGORY_MASTERY_MIN_CORRECT[difficulty],
+	},
+	reward: SLOT_REWARDS[difficulty],
+});
+
 // ─── Starter pool ─────────────────────────────────────────────────────────────
 
-export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
+export const STARTER_GATE_TYPE_IDS: readonly StaticGateTypeId[] = [
 	"coverage-gain",
 	"correct-answers",
 	"cold-start",
@@ -166,7 +192,7 @@ export const STARTER_GATE_TYPE_IDS: readonly GateTypeId[] = [
 // ─── Lookup helpers ───────────────────────────────────────────────────────────
 
 export const getSlotDefinition = (
-	gateTypeId: GateTypeId,
+	gateTypeId: StaticGateTypeId,
 	difficulty: GateDifficulty
 ): PipelineSlot | null => {
 	const variant = STARTER_SLOT_DEFINITIONS[gateTypeId].difficulties[difficulty];
