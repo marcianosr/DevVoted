@@ -8,7 +8,9 @@ setup("authenticate", async ({ page }) => {
 	await page.fill("#password", process.env.LOCAL_PASS ?? "");
 	await page.getByRole("button", { name: "Login" }).click();
 
-	await page.waitForURL(/\/(start|daily-poll)/);
+	await page.screenshot({ path: "e2e/.auth/post-login.png", fullPage: true });
+
+	await page.waitForURL(/\/(start|daily-poll)/, { timeout: 30000 });
 	await expect(page).not.toHaveURL(/login/);
 
 	await page.context().storageState({ path: "e2e/.auth/user.json" });
