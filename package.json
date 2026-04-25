@@ -42,7 +42,9 @@
 		"db:refresh": "npm run db:reset && npm run db:generate && npm run db:push && npm run db:seed",
 		"export:firebase": "node scripts/export-polls.js",
 		"prepare": "husky",
-		"test-category-weights": "tsx scripts/test-weights.ts"
+		"test-category-weights": "tsx scripts/test-weights.ts",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui"
 	},
 	"author": "marciano_schildmeijer@live.nl",
 	"license": "ISC",
@@ -68,6 +70,7 @@
 		"type-fest": "^5.3.1"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.59.1",
 		"@tailwindcss/vite": "^4.1.18",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.1",
