@@ -186,9 +186,6 @@ BUGS:
 [x] Remove “0” in shop
 [x] Remove extra minus
 [x] Show indetermined state on multiple choice
-[] Mini header issues:
-  [] Doesn't show the correct categories? (check gate 7)
-  [] x is shown even when requirements are met in mini header
 [o] Poll header showing countdown of next poll not in sync. Make sure the poll is changing at 0:00
 [x] Active configs are small on desktop
 [] Wrong score is still reflected in score breakdown and leaderboard

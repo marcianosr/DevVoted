@@ -10,8 +10,21 @@ setup("authenticate", async ({ page }) => {
 
 	await page.screenshot({ path: "e2e/.auth/post-login.png", fullPage: true });
 
-	await page.waitForURL(/\/(start|daily-poll)/, { timeout: 30000 });
-	await expect(page).not.toHaveURL(/login/);
+	const errorMessage = page.locator(".text-red-400");
+	const navigated = page
+		.waitForURL(/\/(start|daily-poll)/, { timeout: 15000 })
+		.then(() => "navigated");
+	const errored = errorMessage.waitFor({ timeout: 15000 }).then(async () => {
+		const msg = await errorMessage.textContent();
+		return `login-error: ${msg}`;
+	});
 
+	const result = await Promise.race([navigated, errored]);
+
+	if (result !== "navigated") {
+		throw new Error(`Login failed — ${result}`);
+	}
+
+	await expect(page).not.toHaveURL(/login/);
 	await page.context().storageState({ path: "e2e/.auth/user.json" });
 });
