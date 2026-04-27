@@ -12,7 +12,7 @@ const getCategoryWeights = createServerFn({ method: "GET" }).handler(
 	async () => {
 		const result = await getCategoryWeightsHandler();
 
-		if (!result || !result.success) {
+		if (!result?.success) {
 			throw new Error("Failed to get category weights");
 		}
 

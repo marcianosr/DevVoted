@@ -233,7 +233,7 @@ BUGS:
 - [] Poll difficulty? Possible with amount of answers it has?
 - Get coverage based on how much space you have left?
 - [] Fix code examples
-- [] Gate redesign
+- [x] Gate redesign
   - Win titles (e.g 70% in CSS yields CSS connoisseur)
   - when a player hits 100% total coverage, what happens?
   - Show notification when reaching 100%?
@@ -253,18 +253,11 @@ BUGS:
 [] Disable acquired config in shop
 [] On start run - user not found
 [] Build more tension for gates - e.g., "The Git Gatekeeper is approaching... Prepare to answer questions about Git to pass!"
-[] Allow the player to choose their paths - specialist vs generalist after each gate
-[] Challenge: Afslagen nemen: beginnen als generalist, bij mid game misschien kiezen voor een specialist pad (starfox 64 style?)
-- [] Challenge: Specialist pad - hogere gate requirements, maar hogere coverage boosts per correct answer
-- [] Challenge: Generalist pad - lagere gate requirements, maar lagere coverage boosts per correct answer
+[x] Allow the player to choose their paths - specialist vs generalist after each gate
+[x] Challenge: Afslagen nemen: beginnen als generalist, bij mid game misschien kiezen voor een specialist pad (starfox 64 style?)
+- [x] Challenge: Specialist pad - hogere gate requirements, maar hogere coverage boosts per correct answer
+- [x] Challenge: Generalist pad - lagere gate requirements, maar lagere coverage boosts per correct answer
 .length aanpassen: Ik dacht dat het alleen statisch aangeeft "er zijn 3 goede antwoorden" bij een vraag
-[] Meta progress:
-  [] get disk space or free rerolls
-  [] get more shop items
-  [] Increase droprate of legendary items
-  [] Allow players to keep 2 configs after a game over
-  [] Increase diskspace shop when skipping
-[] Bug: HTML question wasn't showing up in the gate requirements (matthijs, specialist)
 [] Out of office timer
 [] Game-over flow - atlwast show the question you failed and the correct answer, so you can learn from it
 [] Sub cat architecture

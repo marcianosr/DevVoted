@@ -246,11 +246,9 @@ export const CurrentPipeline = ({
 										{getSlotLabel(slot.gateTypeId)}
 									</span>
 								</p>
-								<>
-									<DifficultyLabel text="Risk:" difficulty={slot.difficulty} />
-									{" · "}
-									Requirement: {formatRequirement(slot.requirement)}
-								</>
+								<DifficultyLabel text="Risk:" difficulty={slot.difficulty} />
+								{" · "}
+								Requirement: {formatRequirement(slot.requirement)}
 								{evaluationContext && (
 									<p>
 										Current:{" "}

@@ -63,7 +63,6 @@ export const isMaxPipeline = (slots: PipelineSlot[]): boolean =>
 // TODO: No polls yet for these categories
 const CATEGORIES_WITHOUT_POLLS: readonly CategoryCode[] = [
 	"general-backend",
-	"ruby",
 	"python",
 ];
 
