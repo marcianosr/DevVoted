@@ -276,7 +276,6 @@ BUGS:
 [x] Eerst bepalen welk type rarity - daarna pas random item kiezen (per slot) getallen van alle rarities (20x common)
   - eerst op basis van de gewichten een random rarity kiezen
   - DAN pas een random item van die rarity kiezen
-[] Onboarding: Allow the player to do a "practice run" - answering three polls until a gate.
 [] End run "start-run" button not working
 [] If player didn't answer polls for 5 days consec. stop the run
 [] Get 50KB when answering first, 75KB when first good
