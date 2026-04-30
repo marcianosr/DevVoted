@@ -17,14 +17,13 @@ import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm";
 import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay";
-import { PollResultsSection } from "~/domains/polls/components/PollResultsSection";
+import PostAnswerFlow from "~/domains/polls/components/PostAnswerFlow";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";
 import {
 	applyPipelineUpgradeFn,
 	getExposedConfigDeck,
 } from "~/domains/runs/api/runs";
-import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
 import type { Run } from "~/domains/runs/models/run";
@@ -331,24 +330,21 @@ const DailyPollContainer = ({
 				</div>
 			)}
 			{adminLink}
-			{pendingUpgradeCards.length === 0 && (
-				<>
-					{header}
-					<PollQuestionDisplay poll={poll} />
-					{poll.codeSandboxExample && (
-						<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
-					)}
-					{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
-				</>
-			)}
+			<>
+				{header}
+				<PollQuestionDisplay poll={poll} />
+				{poll.codeSandboxExample && (
+					<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+				)}
+				{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+			</>
 			<div className="mt-4 mb-4">
-				{pendingUpgradeCards.length > 0 ? (
-					<PipelineUpgradeContainer
-						cards={pendingUpgradeCards}
-						currentSlots={activeRun.pipelineSlots}
-						onAccept={handleUpgradeAccepted}
-						isPending={applyUpgradeMutation.isPending}
-						hasAnswered={hasAnswered}
+				{hasAnswered ? (
+					<PostAnswerFlow
+						pendingUpgradeCards={pendingUpgradeCards}
+						onUpgradeAccepted={handleUpgradeAccepted}
+						isUpgradePending={applyUpgradeMutation.isPending}
+						activeRun={activeRun}
 						options={options}
 						selectedOptions={selectedOptions}
 						score={displayScore}
@@ -356,24 +352,10 @@ const DailyPollContainer = ({
 						categoryCode={poll.categoryCode}
 						explanation={poll.explanation}
 						exposedConfigDeck={exposedConfigDeck}
-						evaluationContext={lastEvaluationContext ?? undefined}
-						evaluation={lastPipelineEvaluation ?? undefined}
-					/>
-				) : hasAnswered ? (
-					<PollResultsSection
-						options={options}
-						selectedOptions={selectedOptions}
-						score={displayScore}
-						communityStats={communityStats}
-						categoryCode={poll.categoryCode}
-						explanation={poll.explanation}
-						exposedConfigDeck={exposedConfigDeck}
+						lastEvaluationContext={lastEvaluationContext}
+						lastPipelineEvaluation={lastPipelineEvaluation}
 						offeredConfigs={offeredConfigs}
-						pipeline={{
-							slots: activeRun.pipelineSlots,
-							evaluationContext: lastEvaluationContext ?? undefined,
-							evaluation: lastPipelineEvaluation ?? undefined,
-						}}
+						configEffects={configEffects}
 					/>
 				) : (
 					<PollOptionsForm

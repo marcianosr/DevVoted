@@ -119,7 +119,9 @@ const ShopContainer = ({
 							}
 							onClick={onSkipShop}
 						>
-							{skipShopMutation.isPending ? "Skipping shop..." : "Skip shop"}
+							{skipShopMutation.isPending
+								? "Skipping shop..."
+								: `Skip (+${formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))})`}
 						</PrimaryButton>
 						<small className="text-sm mt-2">
 							Gain +{formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))}{" "}
