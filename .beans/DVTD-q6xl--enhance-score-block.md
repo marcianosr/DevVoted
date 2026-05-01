@@ -1,0 +1,26 @@
+---
+# DVTD-q6xl
+title: Enhance score block
+status: draft
+type: feature
+priority: normal
+created_at: 2026-05-01T08:14:23Z
+updated_at: 2026-05-01T08:18:37Z
+---
+
+UI wise it can be improved to look more juiced and informative.
+
+## Score Breakdown Concept
+
+Show more of a breakdown, like:
+
+SCORE PIPELINE
+✗ Wrong answer
+accessibility · easy  −7.5%
+🔧 Config: Stack Overflow
+wrong answer dampener  +2.3%
+📋 Answer streak
+3 answered in a row  +0.3%
+⚡ Correct streak
+broken  +0.0%
+▶ Total  −4.9%
