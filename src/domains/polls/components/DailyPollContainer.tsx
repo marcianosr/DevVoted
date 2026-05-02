@@ -369,6 +369,7 @@ const DailyPollContainer = ({
 						explanation={poll.explanation}
 						exposedConfigDeck={exposedConfigDeck}
 						offeredConfigs={offeredConfigs}
+						perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
 						pipeline={{
 							slots: activeRun.pipelineSlots,
 							evaluationContext: lastEvaluationContext ?? undefined,

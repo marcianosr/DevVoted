@@ -659,6 +659,12 @@ export type ApplyEffects = {
 	lockShop: boolean;
 	showNextConfigs: boolean;
 	exposeConfigDeck: boolean;
+	coverageContributingConfigIds: string[];
+	perConfigCoverageEffects: {
+		configId: string;
+		coverageAdd: number;
+		coverageMult: number;
+	}[];
 };
 
 /**
@@ -955,6 +961,8 @@ export function applyEffects(
 			lockShop: false,
 			showNextConfigs: false,
 			exposeConfigDeck: false,
+			coverageContributingConfigIds: [],
+			perConfigCoverageEffects: [],
 		};
 
 	const effects = activeConfigIds
@@ -1044,6 +1052,25 @@ export function applyEffects(
 				exposeConfigDeck:
 					(acc.exposeConfigDeck ?? false) || (out.exposeConfigDeck ?? false),
 
+				coverageContributingConfigIds:
+					(out.coverage?.coverageAdd ?? 0) !== 0 ||
+					(out.coverage?.coverageMult ?? 1) !== 1
+						? [...acc.coverageContributingConfigIds, config.id]
+						: acc.coverageContributingConfigIds,
+
+				perConfigCoverageEffects:
+					(out.coverage?.coverageAdd ?? 0) !== 0 ||
+					(out.coverage?.coverageMult ?? 1) !== 1
+						? [
+								...acc.perConfigCoverageEffects,
+								{
+									configId: config.id,
+									coverageAdd: out.coverage?.coverageAdd ?? 0,
+									coverageMult: out.coverage?.coverageMult ?? 1,
+								},
+							]
+						: acc.perConfigCoverageEffects,
+
 				meta: {
 					...acc.meta,
 					...(out.meta?.badges
@@ -1069,6 +1096,8 @@ export function applyEffects(
 			lockShop: false,
 			showNextConfigs: false,
 			exposeConfigDeck: false,
+			coverageContributingConfigIds: [],
+			perConfigCoverageEffects: [],
 		}
 	);
 }

@@ -28,6 +28,11 @@ type PollResultsSectionProps = {
 	explanation?: string | null;
 	exposedConfigDeck?: ExposedConfigDeck | null;
 	offeredConfigs: (Config & { originalCost?: number })[];
+	perConfigCoverageEffects?: {
+		configId: string;
+		coverageAdd: number;
+		coverageMult: number;
+	}[];
 	pipeline?: PipelineResultProps;
 };
 
@@ -40,6 +45,7 @@ export const PollResultsSection = ({
 	explanation,
 	exposedConfigDeck,
 	offeredConfigs,
+	perConfigCoverageEffects,
 	pipeline,
 }: PollResultsSectionProps) => (
 	<>
@@ -51,6 +57,7 @@ export const PollResultsSection = ({
 			categoryCode={categoryCode}
 			explanation={explanation}
 			exposedConfigDeck={exposedConfigDeck}
+			perConfigCoverageEffects={perConfigCoverageEffects}
 			pipeline={pipeline}
 		/>
 		<ShopPreview offeredConfigs={offeredConfigs} />

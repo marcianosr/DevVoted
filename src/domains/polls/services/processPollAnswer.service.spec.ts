@@ -134,6 +134,8 @@ const mockEffects: ApplyEffects = {
 	lockShop: false,
 	showNextConfigs: false,
 	exposeConfigDeck: false,
+	coverageContributingConfigIds: [],
+	perConfigCoverageEffects: [],
 };
 
 const defaultInput = {
