@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.3.0] - May 2026
+## [1.2.0] - May 2026
 
 ### Added
 - **Post-answer tabbed carousel**: Answers, score, and shop are now split into three tabs — "Today's Poll", "Score & Pipelines", "Shop" — eliminating the long scroll after answering
@@ -21,14 +21,6 @@ All notable changes to this project will be documented in this file.
 - **Pipeline upgrade as full-page takeover**: When a pipeline upgrade is available, the entire screen is replaced by the upgrade selection UI — no other content is visible until a choice is made
 - **Score & Pipelines layout**: ScoreBlock (1/3 width) and CI Pipelines are side-by-side; CategoryCoverageGrid sits full-width below
 - **CI Pipelines header**: Demoted to secondary label style so ScoreBlock reads as the primary element
-
----
-
-## [1.2.0] - May 2026
-
-### Added
-- **Pipelines per category**: Each category now has its own pipeline — checks are scoped per category rather than globally
-- **3 upgrade options**: After passing a pipeline, players now choose from 3 upgrade cards instead of a fixed set
 
 ---
 
