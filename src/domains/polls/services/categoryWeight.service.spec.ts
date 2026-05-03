@@ -2,7 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { CATEGORY_CODES } from "~/domains/shared/categories";
 
-import { calculateCategoryWeights } from "./categoryWeight.service";
+import {
+	calculateCategoryWeights,
+	DEFAULT_CATEGORY_WEIGHTS,
+} from "./categoryWeight.service";
+
+const ENABLED_CATEGORY_CODES = CATEGORY_CODES.filter(
+	(code) => DEFAULT_CATEGORY_WEIGHTS[code] > 0
+);
 
 // Mock the configs module
 vi.mock("~/domains/configs/data/configs", () => ({
@@ -49,7 +56,7 @@ describe("categoryWeight.service", () => {
 		it("returns base weight (1.0) for all categories when no configs active", () => {
 			const weights = calculateCategoryWeights([]);
 
-			for (const code of CATEGORY_CODES) {
+			for (const code of ENABLED_CATEGORY_CODES) {
 				expect(weights[code]).toBe(1.0);
 			}
 		});
@@ -73,9 +80,9 @@ describe("categoryWeight.service", () => {
 		it("applies bonus to all categories when targetCategories is empty", () => {
 			const weights = calculateCategoryWeights(["copilot-config"]);
 
-			// All categories should get +0.1 bonus
-			for (const code of CATEGORY_CODES) {
-				expect(weights[code]).toBe(1.1);
+			// All enabled categories should get +0.1 bonus
+			for (const code of ENABLED_CATEGORY_CODES) {
+				expect(weights[code]).toBe(DEFAULT_CATEGORY_WEIGHTS[code] + 0.1);
 			}
 		});
 
@@ -100,7 +107,7 @@ describe("categoryWeight.service", () => {
 		it("skips config IDs that do not exist", () => {
 			const weights = calculateCategoryWeights(["nonexistent-config"]);
 
-			for (const code of CATEGORY_CODES) {
+			for (const code of ENABLED_CATEGORY_CODES) {
 				expect(weights[code]).toBe(1.0);
 			}
 		});
@@ -121,7 +128,7 @@ describe("categoryWeight.service", () => {
 			it("normalizes all weights to 1.0 when active", () => {
 				const weights = calculateCategoryWeights(["load-balancer-config"]);
 
-				for (const code of CATEGORY_CODES) {
+				for (const code of ENABLED_CATEGORY_CODES) {
 					expect(weights[code]).toBe(1.0);
 				}
 			});
@@ -146,7 +153,7 @@ describe("categoryWeight.service", () => {
 					"load-balancer-config",
 				]);
 
-				for (const code of CATEGORY_CODES) {
+				for (const code of ENABLED_CATEGORY_CODES) {
 					expect(weights[code]).toBe(1.0); // Would be 1.1 without load-balancer
 				}
 			});

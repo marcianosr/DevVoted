@@ -44,6 +44,7 @@ export type PollAnswerResult = {
 	correctOptionIds: number[];
 	outcome: PollAnswerOutcome;
 	breakdown: PollScoreBreakdown | null;
+	newTotalCoverage: number | null;
 	tryCatchUsed: boolean;
 	pipelineEvaluation: PipelineEvaluation | null;
 	evaluationContext: PipelineEvaluationContext | null;
@@ -108,8 +109,11 @@ const commitAnswerProgress = async ({
 	userId,
 	pollId,
 	selectedOptionIds,
-}: CommitAnswerProgressParams): Promise<{ breakdown: PollScoreBreakdown }> => {
-	const { breakdown } = await incrementRunProgress({
+}: CommitAnswerProgressParams): Promise<{
+	breakdown: PollScoreBreakdown;
+	newTotalCoverage: number;
+}> => {
+	const { breakdown, newTotalCoverage } = await incrementRunProgress({
 		categoryCode: poll.categoryCode,
 		run: activeRun,
 		correctnessFactor,
@@ -131,7 +135,7 @@ const commitAnswerProgress = async ({
 		coverageDelta: breakdown.delta,
 	});
 
-	return { breakdown };
+	return { breakdown, newTotalCoverage };
 };
 
 const resolveRunState = async ({
@@ -277,6 +281,7 @@ export const processPollAnswer = async (
 			outcome,
 			runEnded: false,
 			breakdown: null,
+			newTotalCoverage: null,
 			tryCatchUsed: false,
 			pipelineEvaluation: null,
 			evaluationContext: null,
@@ -284,7 +289,7 @@ export const processPollAnswer = async (
 		};
 	}
 
-	const { breakdown } = await commitAnswerProgress({
+	const { breakdown, newTotalCoverage } = await commitAnswerProgress({
 		activeRun,
 		poll,
 		options,
@@ -325,6 +330,7 @@ export const processPollAnswer = async (
 		outcome,
 		runEnded,
 		breakdown,
+		newTotalCoverage,
 		tryCatchUsed,
 		pipelineEvaluation,
 		evaluationContext,

@@ -172,6 +172,7 @@ export const postPollOptionsHandler = async ({
 		const {
 			runId,
 			breakdown,
+			newTotalCoverage,
 			runEnded,
 			selectedOptionIds,
 			correctOptionIds,
@@ -198,6 +199,7 @@ export const postPollOptionsHandler = async ({
 			isCorrect: outcome === "full",
 			runEnded,
 			breakdown,
+			newTotalCoverage,
 			pipelineEvaluation,
 			evaluationContext,
 			upgradeCards,

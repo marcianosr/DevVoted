@@ -24,6 +24,7 @@ import {
 	applyPipelineUpgradeFn,
 	getExposedConfigDeck,
 } from "~/domains/runs/api/runs";
+import { ConfigDeckFooter } from "~/domains/configs/components/ConfigDeckFooter";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
@@ -97,6 +98,7 @@ type DailyPollContainerProps = {
 	creatorDisplayName: string | null;
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
+	nextOfferedConfigs: (Config & { originalCost?: number })[];
 	initialPendingUpgradeCards: UpgradeCard[];
 	initialWindowContext: PipelineEvaluationContext | null;
 };
@@ -112,6 +114,7 @@ const DailyPollContainer = ({
 	activeRun,
 	isAdmin,
 	offeredConfigs,
+	nextOfferedConfigs,
 	initialPendingUpgradeCards,
 	initialWindowContext,
 }: DailyPollContainerProps) => {
@@ -249,10 +252,10 @@ const DailyPollContainer = ({
 				if (response.data.breakdown) {
 					setSubmittedScore({
 						breakdown: response.data.breakdown,
-						newTotalCoverage: 0, // Not used in display
-						newBestStreak: 0, // Not used in display
+						newTotalCoverage: response.data.newTotalCoverage ?? 0,
+						newBestStreak: 0,
 						newStreak: response.data.breakdown.streak,
-						newPollsAnswered: 0, // Not used in display
+						newPollsAnswered: 0,
 					});
 				}
 
@@ -300,22 +303,25 @@ const DailyPollContainer = ({
 
 	const header = (
 		<header className="border-b border-theme py-4 mb-8">
-			<section className="flex justify-between flex-wrap gap-4">
-				<div className="flex flex-col">
-					<p className="text-4xl text-theme">{category.name}</p>
-					<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
-				</div>
-				{/* <PipelineDisplay
-					slots={activeRun.pipelineSlots}
-					evaluation={lastPipelineEvaluation ?? undefined}
-					totalPollsAnswered={activeRun.categoryCoverage.reduce(
-						(sum, c) => sum + c.pollsAnswered,
-						0
-					)}
-				/> */}
-			</section>
+			<div className="flex flex-col">
+				<p className="text-4xl text-theme">{category.name}</p>
+				<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
+			</div>
 		</header>
 	);
+
+	if (pendingUpgradeCards.length > 0) {
+		return (
+			<PipelineUpgradeContainer
+				cards={pendingUpgradeCards}
+				currentSlots={activeRun.pipelineSlots}
+				onAccept={handleUpgradeAccepted}
+				isPending={applyUpgradeMutation.isPending}
+				evaluationContext={lastEvaluationContext ?? undefined}
+				evaluation={lastPipelineEvaluation ?? undefined}
+			/>
+		);
+	}
 
 	return (
 		<section>
@@ -331,36 +337,11 @@ const DailyPollContainer = ({
 				</div>
 			)}
 			{adminLink}
-			{pendingUpgradeCards.length === 0 && (
-				<>
-					{header}
-					<PollQuestionDisplay poll={poll} />
-					{poll.codeSandboxExample && (
-						<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
-					)}
-					{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
-				</>
-			)}
+			{header}
 			<div className="mt-4 mb-4">
-				{pendingUpgradeCards.length > 0 ? (
-					<PipelineUpgradeContainer
-						cards={pendingUpgradeCards}
-						currentSlots={activeRun.pipelineSlots}
-						onAccept={handleUpgradeAccepted}
-						isPending={applyUpgradeMutation.isPending}
-						hasAnswered={hasAnswered}
-						options={options}
-						selectedOptions={selectedOptions}
-						score={displayScore}
-						communityStats={communityStats}
-						categoryCode={poll.categoryCode}
-						explanation={poll.explanation}
-						exposedConfigDeck={exposedConfigDeck}
-						evaluationContext={lastEvaluationContext ?? undefined}
-						evaluation={lastPipelineEvaluation ?? undefined}
-					/>
-				) : hasAnswered ? (
+				{hasAnswered ? (
 					<PollResultsSection
+						poll={poll}
 						options={options}
 						selectedOptions={selectedOptions}
 						score={displayScore}
@@ -369,6 +350,11 @@ const DailyPollContainer = ({
 						explanation={poll.explanation}
 						exposedConfigDeck={exposedConfigDeck}
 						offeredConfigs={offeredConfigs}
+						nextOfferedConfigs={nextOfferedConfigs}
+						activeRun={activeRun}
+						reductionCost={configEffects.reductionCost}
+						storageBonus={configEffects.storage?.skipBonus}
+						perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
 						pipeline={{
 							slots: activeRun.pipelineSlots,
 							evaluationContext: lastEvaluationContext ?? undefined,
@@ -376,17 +362,25 @@ const DailyPollContainer = ({
 						}}
 					/>
 				) : (
-					<PollOptionsForm
-						poll={poll}
-						options={options}
-						hasAnswered={hasAnswered}
-						effect={configEffects}
-						selectedOptions={selectedOptions}
-						mutation={mutation}
-						randomAnswer={randomAnswer ?? null}
-					/>
+					<>
+						<PollQuestionDisplay poll={poll} />
+						{poll.codeSandboxExample && (
+							<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+						)}
+						{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+						<PollOptionsForm
+							poll={poll}
+							options={options}
+							hasAnswered={hasAnswered}
+							effect={configEffects}
+							selectedOptions={selectedOptions}
+							mutation={mutation}
+							randomAnswer={randomAnswer ?? null}
+						/>
+					</>
 				)}
 			</div>
+			<ConfigDeckFooter activeRun={activeRun} />
 		</section>
 	);
 };
