@@ -99,8 +99,19 @@ const ShopContainer = ({
 				</p>
 			</header>
 
-			<div className="flex gap-6 items-start">
-				<div className="flex flex-col gap-2 shrink-0 w-44">
+			<div className="flex flex-col gap-4">
+				<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
+					{offeredConfigs.map((config) => (
+						<li key={config.id} className="shrink-0 snap-start">
+							<ShopCard
+								config={config}
+								disabled={config.cost > storageAvailable || !isOpen}
+								onInstall={() => onInstallConfig(config)}
+							/>
+						</li>
+					))}
+				</ul>
+				<div className="flex gap-6 items-start bg-zinc-900 p-4">
 					<div className="flex flex-col">
 						<PrimaryButton
 							size="small"
@@ -129,34 +140,25 @@ const ShopContainer = ({
 							{skipShopMutation.isPending ? "Skipping..." : "Skip shop"}
 						</PrimaryButton>
 						<small className="text-sm mt-2">
-							Gain +{formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))}{" "}
+							Gain{" "}
+							<span className="text-yellow-400">
+								+{formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))}
+							</span>{" "}
 							storage
-							{storageBonus && storageBonus > 0 && (
+							{(storageBonus ?? 0) > 0 && (
 								<span className="text-green-400">
 									{" "}
-									(+{formatStorage(storageBonus)} bonus)
+									(+{formatStorage(storageBonus ?? 0)} bonus)
 								</span>
 							)}
 						</small>
 					</div>
 					{reductionCost > 0 && (
-						<p className="text-green-600 font-semibold text-sm mt-1">
+						<p className="text-green-600 font-semibold text-sm mt-1 self-center">
 							{reductionCost * 100}% discount active!
 						</p>
 					)}
 				</div>
-
-				<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory flex-1 pb-2">
-					{offeredConfigs.map((config) => (
-						<li key={config.id} className="shrink-0 snap-start">
-							<ShopCard
-								config={config}
-								disabled={config.cost > storageAvailable || !isOpen}
-								onInstall={() => onInstallConfig(config)}
-							/>
-						</li>
-					))}
-				</ul>
 			</div>
 
 			<div className="mt-8 max-w-xs">
