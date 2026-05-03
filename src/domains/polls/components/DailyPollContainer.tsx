@@ -310,6 +310,19 @@ const DailyPollContainer = ({
 		</header>
 	);
 
+	if (pendingUpgradeCards.length > 0) {
+		return (
+			<PipelineUpgradeContainer
+				cards={pendingUpgradeCards}
+				currentSlots={activeRun.pipelineSlots}
+				onAccept={handleUpgradeAccepted}
+				isPending={applyUpgradeMutation.isPending}
+				evaluationContext={lastEvaluationContext ?? undefined}
+				evaluation={lastPipelineEvaluation ?? undefined}
+			/>
+		);
+	}
+
 	return (
 		<section>
 			{isInPostVictoryMode && (
@@ -324,26 +337,9 @@ const DailyPollContainer = ({
 				</div>
 			)}
 			{adminLink}
-			{pendingUpgradeCards.length === 0 && header}
+			{header}
 			<div className="mt-4 mb-4">
-				{pendingUpgradeCards.length > 0 ? (
-					<PipelineUpgradeContainer
-						cards={pendingUpgradeCards}
-						currentSlots={activeRun.pipelineSlots}
-						onAccept={handleUpgradeAccepted}
-						isPending={applyUpgradeMutation.isPending}
-						hasAnswered={hasAnswered}
-						options={options}
-						selectedOptions={selectedOptions}
-						score={displayScore}
-						communityStats={communityStats}
-						categoryCode={poll.categoryCode}
-						explanation={poll.explanation}
-						exposedConfigDeck={exposedConfigDeck}
-						evaluationContext={lastEvaluationContext ?? undefined}
-						evaluation={lastPipelineEvaluation ?? undefined}
-					/>
-				) : hasAnswered ? (
+				{hasAnswered ? (
 					<PollResultsSection
 						poll={poll}
 						options={options}

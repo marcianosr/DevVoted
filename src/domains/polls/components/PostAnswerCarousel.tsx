@@ -90,6 +90,23 @@ export const PostAnswerCarousel = ({
 		return option?.correct;
 	});
 
+	const today = new Date().toISOString().split("T")[0];
+	const isShopOpen =
+		activeRun.shopSkippedDate !== today &&
+		activeRun.shopInteractedDate !== today;
+
+	const stepLabel = (label: string) => {
+		if (label !== "Shop") return label;
+		return (
+			<span className="flex items-center gap-1.5">
+				{label}
+				<span className={isShopOpen ? "text-green-400" : "text-red-400"}>
+					{isShopOpen ? "(open)" : "(closed)"}
+				</span>
+			</span>
+		);
+	};
+
 	return (
 		<div>
 			<nav className="flex items-center justify-between py-4 border-b border-theme mb-8">
@@ -110,7 +127,7 @@ export const PostAnswerCarousel = ({
 								i === step ? "text-white" : "text-zinc-600"
 							)}
 						>
-							{label}
+							{stepLabel(label)}
 						</button>
 					))}
 				</div>
