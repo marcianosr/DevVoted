@@ -24,6 +24,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0] - May 2026
+
+### Added
+- **Pipelines per category**: Each category now has its own pipeline — checks are scoped per category rather than globally
+- **3 upgrade options**: After passing a pipeline, players now choose from 3 upgrade cards instead of a fixed set
+
+---
+
 ## [1.1.0] - April 2026
 
 ### Added
