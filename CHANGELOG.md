@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.3.0] - May 2026
+
+### Added
+- **Post-answer tabbed carousel**: Answers, score, and shop are now split into three tabs — "Today's Poll", "Score & Pipelines", "Shop" — eliminating the long scroll after answering
+- **Shop open/closed nudge**: The "Shop" tab label now shows a green "(open)" or red "(closed)" indicator so players know at a glance whether the shop is available
+- **StorageBreakdown in Shop**: Storage usage is now displayed inline in the shop using the existing StorageBreakdown component
+
+### Fixed
+- **Question invisible pre-answer**: Poll question, code block, and sandbox embed were missing from the pre-answer screen
+- **"Bonusses" typo**: Corrected to "Bonuses" in ScoreBlock
+- **Shop card cut off**: Third card was clipped with no visible scroll affordance — layout now allows full horizontal scrolling
+- **Page height gap**: Post-answer carousel had a large blank space below content caused by all steps rendering simultaneously; fixed by switching to conditional step rendering
+
+### Changed
+- **Pipeline upgrade as full-page takeover**: When a pipeline upgrade is available, the entire screen is replaced by the upgrade selection UI — no other content is visible until a choice is made
+- **Score & Pipelines layout**: ScoreBlock (1/3 width) and CI Pipelines are side-by-side; CategoryCoverageGrid sits full-width below
+- **CI Pipelines header**: Demoted to secondary label style so ScoreBlock reads as the primary element
+
+---
+
 ## [1.1.0] - April 2026
 
 ### Added
