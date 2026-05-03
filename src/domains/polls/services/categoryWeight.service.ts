@@ -4,7 +4,7 @@ import { CATEGORY_CODES, CategoryCode } from "~/domains/shared/categories";
 export type CategoryWeights = Record<CategoryCode, number>;
 
 // TODO: enable categories again whenever we have polls for them
-const DEFAULT_CATEGORY_WEIGHTS: CategoryWeights = {
+export const DEFAULT_CATEGORY_WEIGHTS: CategoryWeights = {
 	css: 1,
 	js: 1,
 	react: 1,
