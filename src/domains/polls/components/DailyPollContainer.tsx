@@ -24,6 +24,7 @@ import {
 	applyPipelineUpgradeFn,
 	getExposedConfigDeck,
 } from "~/domains/runs/api/runs";
+import { ConfigDeckFooter } from "~/domains/configs/components/ConfigDeckFooter";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline";
 import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
@@ -97,6 +98,7 @@ type DailyPollContainerProps = {
 	creatorDisplayName: string | null;
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
+	nextOfferedConfigs: (Config & { originalCost?: number })[];
 	initialPendingUpgradeCards: UpgradeCard[];
 	initialWindowContext: PipelineEvaluationContext | null;
 };
@@ -112,6 +114,7 @@ const DailyPollContainer = ({
 	activeRun,
 	isAdmin,
 	offeredConfigs,
+	nextOfferedConfigs,
 	initialPendingUpgradeCards,
 	initialWindowContext,
 }: DailyPollContainerProps) => {
@@ -249,10 +252,10 @@ const DailyPollContainer = ({
 				if (response.data.breakdown) {
 					setSubmittedScore({
 						breakdown: response.data.breakdown,
-						newTotalCoverage: 0, // Not used in display
-						newBestStreak: 0, // Not used in display
+						newTotalCoverage: response.data.newTotalCoverage ?? 0,
+						newBestStreak: 0,
 						newStreak: response.data.breakdown.streak,
-						newPollsAnswered: 0, // Not used in display
+						newPollsAnswered: 0,
 					});
 				}
 
@@ -369,6 +372,10 @@ const DailyPollContainer = ({
 						explanation={poll.explanation}
 						exposedConfigDeck={exposedConfigDeck}
 						offeredConfigs={offeredConfigs}
+						nextOfferedConfigs={nextOfferedConfigs}
+						activeRun={activeRun}
+						reductionCost={configEffects.reductionCost}
+						storageBonus={configEffects.storage?.skipBonus}
 						perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
 						pipeline={{
 							slots: activeRun.pipelineSlots,
@@ -388,6 +395,7 @@ const DailyPollContainer = ({
 					/>
 				)}
 			</div>
+			<ConfigDeckFooter activeRun={activeRun} />
 		</section>
 	);
 };

@@ -11,6 +11,7 @@ import type {
 	PipelineEvaluation,
 	PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
+import { GateHealth } from "~/domains/runs/components/GateHealth";
 import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection";
 import { ScoreCalculation } from "~/domains/score/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
@@ -71,12 +72,21 @@ const SelectedOptionsSummary = ({
 			<div className="flex flex-col gap-8 md:flex-row md:gap-12">
 				{score && (
 					<aside className="w-full md:w-72 md:shrink-0 md:pb-16">
-						<div className="md:sticky md:top-8">
+						<div className="md:sticky md:top-8 space-y-4">
 							<h3 className="text-4xl mb-4">Score</h3>
 							<ScoreBlock
 								score={score}
 								perConfigCoverageEffects={perConfigCoverageEffects}
 							/>
+							{pipeline &&
+								pipeline.slots.length > 0 &&
+								pipeline.evaluationContext && (
+									<GateHealth
+										slots={pipeline.slots}
+										evaluationContext={pipeline.evaluationContext}
+										evaluation={pipeline.evaluation}
+									/>
+								)}
 						</div>
 					</aside>
 				)}

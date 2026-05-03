@@ -4,7 +4,10 @@ import { z } from "zod";
 import Content from "~/components/Content";
 import { DevPollNavigator } from "~/components/DevPollNavigator";
 import { applyEffects } from "~/domains/configs/data/configs";
-import { getShopOfferingsServerFn } from "~/domains/economy/api/shopOfferings";
+import {
+	getNextShopOfferingsServerFn,
+	getShopOfferingsServerFn,
+} from "~/domains/economy/api/shopOfferings";
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
@@ -41,6 +44,7 @@ const DailyPoll: React.FC = () => {
 		score,
 		configEffects,
 		offeredConfigs,
+		nextOfferedConfigs,
 		currentDate,
 		initialWindowContext,
 	} = Route.useLoaderData();
@@ -82,6 +86,7 @@ const DailyPoll: React.FC = () => {
 				creatorDisplayName={creatorDisplayName}
 				isAdmin={isAdmin}
 				offeredConfigs={offeredConfigs}
+				nextOfferedConfigs={nextOfferedConfigs}
 				initialPendingUpgradeCards={activeRun.data.pendingUpgradeCards}
 				initialWindowContext={initialWindowContext}
 			/>
@@ -176,6 +181,15 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			? shopOfferingsResult.data
 			: [];
 
+		const nextOfferingsResult = configEffects.showNextConfigs
+			? await getNextShopOfferingsServerFn({
+					data: { runId: activeRun.data.id, date: currentDate },
+				})
+			: null;
+		const nextOfferedConfigs = nextOfferingsResult?.success
+			? nextOfferingsResult.data
+			: [];
+
 		const [score, windowContext] = await Promise.all([
 			getScoreBreakdown({
 				data: {
@@ -197,6 +211,7 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			score,
 			configEffects,
 			offeredConfigs,
+			nextOfferedConfigs,
 			currentDate,
 			initialWindowContext: windowContext,
 		};

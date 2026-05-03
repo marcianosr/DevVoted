@@ -1,5 +1,4 @@
 import { Config } from "~/domains/configs/models/config";
-import { ShopPreview } from "~/domains/economy/components/ShopPreview";
 import type { ExposedConfigDeck } from "~/domains/runs/api/queries";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline";
 import type {
@@ -8,10 +7,11 @@ import type {
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import type { ScoreCalculation } from "~/domains/score/services/score.service";
 import type { CategoryCode } from "~/domains/shared/categories";
+import type { Run } from "~/domains/runs/models/run";
 
 import type { CommunityStats } from "../api/queries";
 import type { PollOption } from "../models/pollOption";
-import SelectedOptionsSummary from "./SelectedOptionsSummary";
+import { PostAnswerCarousel } from "./PostAnswerCarousel";
 
 type PipelineResultProps = {
 	slots: PipelineSlot[];
@@ -28,6 +28,10 @@ type PollResultsSectionProps = {
 	explanation?: string | null;
 	exposedConfigDeck?: ExposedConfigDeck | null;
 	offeredConfigs: (Config & { originalCost?: number })[];
+	nextOfferedConfigs: (Config & { originalCost?: number })[];
+	activeRun: Run;
+	reductionCost: number;
+	storageBonus?: number;
 	perConfigCoverageEffects?: {
 		configId: string;
 		coverageAdd: number;
@@ -36,30 +40,6 @@ type PollResultsSectionProps = {
 	pipeline?: PipelineResultProps;
 };
 
-export const PollResultsSection = ({
-	options,
-	selectedOptions,
-	score,
-	communityStats,
-	categoryCode,
-	explanation,
-	exposedConfigDeck,
-	offeredConfigs,
-	perConfigCoverageEffects,
-	pipeline,
-}: PollResultsSectionProps) => (
-	<>
-		<SelectedOptionsSummary
-			options={options}
-			selectedOptions={selectedOptions}
-			score={score}
-			communityStats={communityStats}
-			categoryCode={categoryCode}
-			explanation={explanation}
-			exposedConfigDeck={exposedConfigDeck}
-			perConfigCoverageEffects={perConfigCoverageEffects}
-			pipeline={pipeline}
-		/>
-		<ShopPreview offeredConfigs={offeredConfigs} />
-	</>
+export const PollResultsSection = (props: PollResultsSectionProps) => (
+	<PostAnswerCarousel {...props} />
 );
