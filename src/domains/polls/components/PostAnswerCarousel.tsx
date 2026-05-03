@@ -9,6 +9,9 @@ import { Config } from "~/domains/configs/models/config";
 import ShopContainer from "~/domains/economy/components/ShopContainer";
 import Leaderboard from "~/domains/leaderboards/components/Leaderboard";
 import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay";
+import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
+import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
+import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay";
 import type { ExposedConfigDeck } from "~/domains/runs/api/queries";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline";
 import type {
@@ -24,6 +27,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import MarkdownText from "./MarkdownText";
 import { ScoreBlock } from "./ScoreBlock";
 import type { CommunityStats } from "../api/queries";
+import type { Poll } from "../models/poll";
 import type { PollOption } from "../models/pollOption";
 
 type PipelineProps = {
@@ -33,6 +37,7 @@ type PipelineProps = {
 };
 
 type PostAnswerCarouselProps = {
+	poll: Poll;
 	options: PollOption[];
 	selectedOptions: string[];
 	score?: ScoreCalculation;
@@ -53,7 +58,7 @@ type PostAnswerCarouselProps = {
 	storageBonus?: number;
 };
 
-const STEPS = ["Results", "Score", "Shop"] as const;
+const STEPS = ["Today's Poll", "Score & Pipelines", "Shop"] as const;
 
 const formatTimeTaken = (ms: number | null): string | null => {
 	if (ms === null) return null;
@@ -62,6 +67,7 @@ const formatTimeTaken = (ms: number | null): string | null => {
 };
 
 export const PostAnswerCarousel = ({
+	poll,
 	options,
 	selectedOptions,
 	score,
@@ -79,7 +85,7 @@ export const PostAnswerCarousel = ({
 }: PostAnswerCarouselProps) => {
 	const [step, setStep] = useState(0);
 
-	const hasMissedCorrectAnswers = selectedOptions.every((optionId) => {
+	const allAnswersCorrect = selectedOptions.every((optionId) => {
 		const option = options.find((opt) => opt.id === Number(optionId));
 		return option?.correct;
 	});
@@ -100,7 +106,7 @@ export const PostAnswerCarousel = ({
 							key={label}
 							onClick={() => setStep(i)}
 							className={clsx(
-								"text-base cursor-pointer",
+								"cursor-pointer",
 								i === step ? "text-white" : "text-zinc-600"
 							)}
 						>
@@ -117,13 +123,17 @@ export const PostAnswerCarousel = ({
 				</button>
 			</nav>
 
-			<div className="overflow-hidden">
-				<div
-					className="flex transition-transform duration-300 ease-in-out"
-					style={{ transform: `translateX(-${step * 100}%)` }}
-				>
-					{/* Step 1: Results */}
-					<div className="w-full shrink-0 space-y-8">
+			<div>
+				{step === 0 && (
+					<div className="space-y-8">
+						<section className="space-y-4">
+							<PollQuestionDisplay poll={poll} />
+							{poll.codeSandboxExample && (
+								<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+							)}
+							{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+						</section>
+
 						<section className="space-y-2">
 							<p className="text-2xl">Your choice(s):</p>
 							<ul className="list-disc px-4">
@@ -146,7 +156,7 @@ export const PostAnswerCarousel = ({
 								})}
 							</ul>
 
-							{!hasMissedCorrectAnswers && (
+							{!allAnswersCorrect && (
 								<>
 									<h3 className="text-2xl">Correct answer(s) you missed:</h3>
 									<ul className="list-disc px-4">
@@ -263,11 +273,12 @@ export const PostAnswerCarousel = ({
 							</section>
 						</section>
 					</div>
+				)}
 
-					{/* Step 2: Score + CI Pipelines */}
-					<div className="w-full shrink-0">
+				{step === 1 && (
+					<div className="space-y-8">
 						<div className="flex flex-col gap-8 md:flex-row md:gap-12">
-							<div className="space-y-8">
+							<div className="md:w-1/3 shrink-0">
 								{score ? (
 									<ScoreBlock
 										score={score}
@@ -276,35 +287,36 @@ export const PostAnswerCarousel = ({
 								) : (
 									<p className="text-zinc-500 text-xl">No score available.</p>
 								)}
-								{pipeline && pipeline.slots.length > 0 && (
+							</div>
+							{pipeline && pipeline.slots.length > 0 && (
+								<div className="flex-1 min-w-0">
 									<CurrentPipeline
 										slots={pipeline.slots}
 										evaluationContext={pipeline.evaluationContext}
 										evaluation={pipeline.evaluation}
 									/>
-								)}
-							</div>
-							<div className="flex-1 min-w-0">
-								<CategoryCoverageGrid
-									categoryCoverage={activeRun.categoryCoverage}
-									currentCategoryCode={categoryCode}
-								/>
-							</div>
+								</div>
+							)}
 						</div>
+						<section className="md:w-1/2">
+							<CategoryCoverageGrid
+								categoryCoverage={activeRun.categoryCoverage}
+								currentCategoryCode={categoryCode}
+							/>
+						</section>
 					</div>
+				)}
 
-					{/* Step 3: Shop */}
-					<div className="w-full shrink-0">
-						<ShopContainer
-							activeRun={activeRun}
-							offeredConfigs={offeredConfigs}
-							nextOfferedConfigs={nextOfferedConfigs}
-							reductionCost={reductionCost}
-							storageBonus={storageBonus}
-							isOpen
-						/>
-					</div>
-				</div>
+				{step === 2 && (
+					<ShopContainer
+						activeRun={activeRun}
+						offeredConfigs={offeredConfigs}
+						nextOfferedConfigs={nextOfferedConfigs}
+						reductionCost={reductionCost}
+						storageBonus={storageBonus}
+						isOpen
+					/>
+				)}
 			</div>
 		</div>
 	);

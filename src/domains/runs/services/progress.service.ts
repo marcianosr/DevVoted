@@ -163,21 +163,26 @@ export const getRunProgress = async ({
 		? Math.max(0, (currentCategoryCoverage?.currentStreak ?? 1) - 1)
 		: (currentCategoryCoverage?.currentStreak ?? 0);
 
+	const dbCoverage = currentCategoryCoverage?.currentCoverage ?? 0;
+
 	const result = orchestrateScoreCalculation({
 		correctnessFactor,
-		currentBestStreak: currentCategoryCoverage
-			? currentCategoryCoverage.bestStreak
-			: 0,
-		currentCoverage: currentCategoryCoverage
-			? currentCategoryCoverage.currentCoverage
-			: 0,
+		currentBestStreak: currentCategoryCoverage?.bestStreak ?? 0,
+		// When already answered, the DB value is post-answer. Pass 0 so orchestrate
+		// doesn't add coverage on top of an already-updated value; we override
+		// newTotalCoverage below.
+		currentCoverage: hasAnswered ? 0 : dbCoverage,
 		currentStreak: streakBeforeAnswer,
-		totalPollsAnswered: 0, // Placeholder until we fetch actual data
+		totalPollsAnswered: 0, // TODO: is this used?
 		totalPollsSeen,
 		pollsPerGate,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});
+
+	if (hasAnswered) {
+		return { ...result, newTotalCoverage: dbCoverage };
+	}
 
 	return result;
 };

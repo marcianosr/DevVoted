@@ -209,14 +209,18 @@ export const CurrentPipeline = ({
 	return (
 		<div className="border border-white">
 			<div className="border-b border-white px-4 py-3">
-				<p className="text-white text-2xl">CI Pipelines</p>
-				{evaluationContext && (
-					<span className="text-lg">Gate #{evaluationContext.currentGate}</span>
-				)}
-				<p className="text-gray-300">
+				<div className="flex items-baseline justify-between">
+					<p className="text-2xl">CI Pipelines</p>
+					{evaluationContext && (
+						<span className="text-xl">
+							Gate #{evaluationContext.currentGate}
+						</span>
+					)}
+				</div>
+				<p className="text-zinc-300 text-sm mt-0.5">
 					{evaluationContext && (
 						<>
-							<span className="text-gray-300">
+							<span>
 								{evaluationContext.pollsInWindow -
 									evaluationContext.pollsAnsweredInWindow}{" "}
 								polls left until next gate check
@@ -225,7 +229,7 @@ export const CurrentPipeline = ({
 						</>
 					)}
 					{slots.length} active {slots.length === 1 ? "check" : "checks"} · all
-					checks must pass
+					<span className="text-yellow-400"> pending</span> checks must pass
 				</p>
 			</div>
 

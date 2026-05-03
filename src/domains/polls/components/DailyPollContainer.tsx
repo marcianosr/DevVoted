@@ -303,20 +303,10 @@ const DailyPollContainer = ({
 
 	const header = (
 		<header className="border-b border-theme py-4 mb-8">
-			<section className="flex justify-between flex-wrap gap-4">
-				<div className="flex flex-col">
-					<p className="text-4xl text-theme">{category.name}</p>
-					<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
-				</div>
-				{/* <PipelineDisplay
-					slots={activeRun.pipelineSlots}
-					evaluation={lastPipelineEvaluation ?? undefined}
-					totalPollsAnswered={activeRun.categoryCoverage.reduce(
-						(sum, c) => sum + c.pollsAnswered,
-						0
-					)}
-				/> */}
-			</section>
+			<div className="flex flex-col">
+				<p className="text-4xl text-theme">{category.name}</p>
+				<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
+			</div>
 		</header>
 	);
 
@@ -334,16 +324,7 @@ const DailyPollContainer = ({
 				</div>
 			)}
 			{adminLink}
-			{pendingUpgradeCards.length === 0 && (
-				<>
-					{header}
-					<PollQuestionDisplay poll={poll} />
-					{poll.codeSandboxExample && (
-						<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
-					)}
-					{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
-				</>
-			)}
+			{pendingUpgradeCards.length === 0 && header}
 			<div className="mt-4 mb-4">
 				{pendingUpgradeCards.length > 0 ? (
 					<PipelineUpgradeContainer
@@ -364,6 +345,7 @@ const DailyPollContainer = ({
 					/>
 				) : hasAnswered ? (
 					<PollResultsSection
+						poll={poll}
 						options={options}
 						selectedOptions={selectedOptions}
 						score={displayScore}
@@ -384,15 +366,22 @@ const DailyPollContainer = ({
 						}}
 					/>
 				) : (
-					<PollOptionsForm
-						poll={poll}
-						options={options}
-						hasAnswered={hasAnswered}
-						effect={configEffects}
-						selectedOptions={selectedOptions}
-						mutation={mutation}
-						randomAnswer={randomAnswer ?? null}
-					/>
+					<>
+						<PollQuestionDisplay poll={poll} />
+						{poll.codeSandboxExample && (
+							<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+						)}
+						{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+						<PollOptionsForm
+							poll={poll}
+							options={options}
+							hasAnswered={hasAnswered}
+							effect={configEffects}
+							selectedOptions={selectedOptions}
+							mutation={mutation}
+							randomAnswer={randomAnswer ?? null}
+						/>
+					</>
 				)}
 			</div>
 			<ConfigDeckFooter activeRun={activeRun} />

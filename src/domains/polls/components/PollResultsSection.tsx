@@ -10,6 +10,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import type { Run } from "~/domains/runs/models/run";
 
 import type { CommunityStats } from "../api/queries";
+import type { Poll } from "../models/poll";
 import type { PollOption } from "../models/pollOption";
 import { PostAnswerCarousel } from "./PostAnswerCarousel";
 
@@ -20,6 +21,7 @@ type PipelineResultProps = {
 };
 
 type PollResultsSectionProps = {
+	poll: Poll;
 	options: PollOption[];
 	selectedOptions: string[];
 	score?: ScoreCalculation;

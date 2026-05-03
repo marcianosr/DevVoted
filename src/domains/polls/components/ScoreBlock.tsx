@@ -77,57 +77,63 @@ export const ScoreBlock = ({
 	const prevCoverage =
 		Math.round((score.newTotalCoverage - breakdown.earnedCoverage) * 10) / 10;
 
-	const hasModifiers =
+	const hasBonuses =
 		perConfigCoverageEffects.length > 0 || breakdown.streakBonus !== 0;
 
 	return (
-		<div className="border border-theme p-2">
-			<BreakdownRow
-				label={isCorrect ? "Correct answer" : "Wrong answer"}
-				sublabel="base coverage"
-				value={baseScore}
-			/>
+		<div className="space-y-2">
+			<div className="">
+				<BreakdownRow
+					label={isCorrect ? "Correct answer" : "Wrong answer"}
+					sublabel="base coverage"
+					value={baseScore}
+				/>
 
-			{hasModifiers && (
-				<div className="border-t border-theme pt-2">
-					<p className="text-xl pb-1">Modifiers</p>
-					{perConfigCoverageEffects.map((effect) => {
-						const name =
-							configs.find((c) => c.id === effect.configId)?.name ??
-							effect.configId;
-						const value = resolveConfigContribution(
-							effect,
-							coverageBeforeConfigs
-						);
-						return (
-							<div key={effect.configId} className="flex items-center py-1">
-								<p className="flex-1 text-base">{name}</p>
-								<span className={clsx("text-base", valueColor(value))}>
-									{formatValue(value)}
+				{hasBonuses && (
+					<div className="border-t border-theme pt-2">
+						<p className="text-xl">Bonuses</p>
+
+						{perConfigCoverageEffects.map((effect) => {
+							const name =
+								configs.find((c) => c.id === effect.configId)?.name ??
+								effect.configId;
+							const value = resolveConfigContribution(
+								effect,
+								coverageBeforeConfigs
+							);
+							return (
+								<div key={effect.configId} className="flex items-center py-1">
+									<p className="flex-1 text-zinc-400">{name}</p>
+									<span className={clsx("text-base", valueColor(value))}>
+										{formatValue(value)}
+									</span>
+								</div>
+							);
+						})}
+						{breakdown.streakBonus !== 0 && (
+							<div className="flex items-center py-1">
+								<p className="flex-1 text-zinc-400">
+									{streakBroken ? "Broken streak" : `Streak ${newStreak}×`}
+								</p>
+								<span
+									className={clsx(
+										"text-base",
+										valueColor(breakdown.streakBonus)
+									)}
+								>
+									{formatValue(breakdown.streakBonus)}
 								</span>
 							</div>
-						);
-					})}
-					{breakdown.streakBonus !== 0 && (
-						<div className="flex items-center py-1">
-							<p className="flex-1 text-base">
-								{streakBroken ? "Streak · broken" : `Streak · ${newStreak}×`}
-							</p>
-							<span
-								className={clsx("text-base", valueColor(breakdown.streakBonus))}
-							>
-								{formatValue(breakdown.streakBonus)}
-							</span>
-						</div>
-					)}
-				</div>
-			)}
+						)}
+					</div>
+				)}
+			</div>
 
-			<div className="flex items-center gap-3 border-t border-theme pt-3 pb-2 mt-2">
+			<div className="flex items-center gap-3 border-t border-theme pt-2 pb-1">
 				<p className="flex-1 text-xl">Total</p>
 				<span
 					className={clsx(
-						"text-2xl font-bold",
+						"text-2xl tabular-nums",
 						isCorrect ? "text-green-400" : "text-red-400"
 					)}
 				>
@@ -135,9 +141,11 @@ export const ScoreBlock = ({
 				</span>
 			</div>
 
-			<div className="pt-3 space-y-1">
+			<div className="border-t border-theme pt-3 space-y-1">
+				<p className="text-xl">Category score</p>
+
 				<div className="flex items-baseline justify-between">
-					<p className="text-zinc-400">Category coverage</p>
+					<p className="text-zinc-400">Coverage</p>
 					<p>
 						<span className="text-zinc-400">{prevCoverage.toFixed(1)}%</span>
 						<span className="text-zinc-500 mx-1">→</span>
