@@ -22,7 +22,7 @@ import {
 import {
 	getAnsweredPollsCountInRun,
 	getWindowResults,
-} from "~/domains/polls/api/queries";
+} from "~/domains/runs/api/queries";
 import {
 	buildCategoryPollResults,
 	getWindowSize,

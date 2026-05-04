@@ -1,7 +1,7 @@
 import { applyEffects } from "~/domains/configs/data/configs";
-import { getPollsSeenInRun } from "~/domains/polls/api/queries";
+import { getPollsSeenInRun } from "~/domains/runs/api/queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
-import { handleUserSelectedOptionsByPollType } from "~/domains/polls/services/processPollAnswer.service";
+import { handleUserSelectedOptionsByPollType } from "~/domains/runs/services/turn.service";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import {
 	orchestrateScoreCalculation,

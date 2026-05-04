@@ -1,13 +1,11 @@
 import { applyEffects } from "~/domains/configs/data/configs";
-import {
-	createPollResponse,
-	fetchPollByIdWithOptions,
-	getAnsweredPollsCountInRun,
-	getWindowResults,
-} from "~/domains/polls/api/queries";
+import { fetchPollByIdWithOptions } from "~/domains/polls/api/poll.queries";
 import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 import {
+	createPollResponse,
+	getAnsweredPollsCountInRun,
+	getWindowResults,
 	awardStorage,
 	clearPendingUpgradeCards,
 	getActiveRunByUserId,
@@ -190,8 +188,6 @@ const evaluatePipelineStage = async ({
 	const isPipelineCheckPoll =
 		totalPollsAnswered > 0 && totalPollsAnswered % windowSize === 0;
 
-	// At a gate boundary, evaluate the window that just ended (full windowSize).
-	// Mid-window, only fetch the polls answered so far in the current window.
 	const pollsInCurrentWindow = isPipelineCheckPoll
 		? windowSize
 		: totalPollsAnswered % windowSize;
@@ -236,7 +232,6 @@ const evaluatePipelineStage = async ({
 	const pipelineEvaluation = evaluatePipeline(ctx, pipelineSlots);
 
 	if (!pipelineEvaluation.passed) {
-		// Clear any stale cards from a previous window so they don't resurface.
 		await clearPendingUpgradeCards(activeRunId);
 		return { pipelineEvaluation, evaluationContext: ctx, upgradeCards: [] };
 	}
@@ -263,7 +258,7 @@ const evaluatePipelineStage = async ({
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
-export const processPollAnswer = async (
+export const processTurn = async (
 	params: PollAnswerInput
 ): Promise<PollAnswerResult> => {
 	const { pollId, userId, selectedOptionIds } = params;

@@ -6,21 +6,25 @@ import {
 	fetchPollByIdWithOptions,
 	fetchPollsByUser,
 	fetchPollCreators,
+	createPollWithOptions,
+	updatePollWithOptions,
+} from "~/domains/polls/api/poll.queries";
+import {
+	getCommunityStatsForDailyPoll,
+	getRandomAnswerForDailyPoll,
+} from "~/domains/polls/daily/communityStats.queries";
+import { calculateCategoryWeights } from "~/domains/polls/services/categoryWeight.service";
+import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
+import {
 	hasUserAnsweredPoll,
 	getUserSelectedOptions,
 	getPollHistory,
 	trackPollView,
 	trackPollAnswer,
 	getPollsSeenInRun,
-	getCommunityStatsForDailyPoll,
-	getRandomAnswerForDailyPoll,
 	getRunPollHistory,
-	createPollWithOptions,
-	updatePollWithOptions,
-} from "~/domains/polls/api/queries";
-import { calculateCategoryWeights } from "~/domains/polls/services/categoryWeight.service";
-import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
-import { processPollAnswer } from "~/domains/polls/services/processPollAnswer.service";
+} from "~/domains/runs/api/queries";
+import { processTurn } from "~/domains/runs/services/turn.service";
 import {
 	pollSubmissionSchema,
 	createPollWithOptionsSchema,
@@ -180,7 +184,7 @@ export const postPollOptionsHandler = async ({
 			pipelineEvaluation,
 			evaluationContext,
 			upgradeCards,
-		} = await processPollAnswer({
+		} = await processTurn({
 			pollId: validatedData.pollId,
 			userId: validatedData.userId,
 			selectedOptionIds: validatedData.selectedOptionIds,

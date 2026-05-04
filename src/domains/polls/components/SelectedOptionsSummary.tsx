@@ -18,7 +18,7 @@ import { CategoryCode } from "~/domains/shared/categories";
 
 import MarkdownText from "./MarkdownText";
 import { ScoreBlock } from "./ScoreBlock";
-import { CommunityStats } from "../api/queries"; // TODO: don;t import type from api, move to models
+import type { CommunityStats } from "~/domains/polls/daily/communityStats.queries";
 import { PollOption } from "../models/pollOption";
 
 const formatTimeTaken = (ms: number | null): string | null => {

@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 
 import type { ApplyEffects } from "~/domains/configs/data/configs";
 import { postPollOptions } from "~/domains/polls/api/polls";
-import { RandomDailyAnswer } from "~/domains/polls/api/queries";
+import { RandomDailyAnswer } from "~/domains/polls/daily/communityStats.queries";
 import { PollOptions } from "~/domains/polls/components/PollOptions";
 import { Poll } from "~/domains/polls/models/poll";
 import { PollOption } from "~/domains/polls/models/pollOption";

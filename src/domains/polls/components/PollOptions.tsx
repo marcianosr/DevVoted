@@ -1,4 +1,4 @@
-import { RandomDailyAnswer } from "~/domains/polls/api/queries";
+import { RandomDailyAnswer } from "~/domains/polls/daily/communityStats.queries";
 import type { Poll } from "~/domains/polls/models/poll";
 import type { PollOption } from "~/domains/polls/models/pollOption";
 

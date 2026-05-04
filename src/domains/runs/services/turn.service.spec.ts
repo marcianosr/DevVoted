@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import * as pollQueries from "~/domains/polls/api/queries";
+import * as pollQueries from "~/domains/polls/api/poll.queries";
 import { createMockPoll } from "~/domains/polls/factories/poll";
 import { createMockPollOption } from "~/domains/polls/factories/pollOption";
 import * as runQueries from "~/domains/runs/api/queries";
@@ -18,14 +18,10 @@ import type {
 	ScoreCalculation,
 } from "~/domains/score/services/score.service";
 
-import { processPollAnswer } from "./processPollAnswer.service";
+import { processTurn } from "./turn.service";
 
-vi.mock("~/domains/polls/api/queries", () => ({
+vi.mock("~/domains/polls/api/poll.queries", () => ({
 	fetchPollByIdWithOptions: vi.fn(),
-	createPollResponse: vi.fn(),
-	getPollsSeenInRun: vi.fn(),
-	getAnsweredPollsCountInRun: vi.fn(),
-	getWindowResults: vi.fn(),
 }));
 
 vi.mock("~/domains/runs/api/queries", () => ({
@@ -35,6 +31,9 @@ vi.mock("~/domains/runs/api/queries", () => ({
 	awardStorage: vi.fn(),
 	savePendingUpgradeCards: vi.fn(),
 	clearPendingUpgradeCards: vi.fn(),
+	createPollResponse: vi.fn(),
+	getAnsweredPollsCountInRun: vi.fn(),
+	getWindowResults: vi.fn(),
 }));
 
 vi.mock("~/domains/runs/services/progress.service", () => ({
@@ -144,7 +143,7 @@ const defaultInput = {
 	selectedOptionIds: [correctOption.id],
 };
 
-describe("processPollAnswer", () => {
+describe("processTurn", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
@@ -158,8 +157,8 @@ describe("processPollAnswer", () => {
 		vi.mocked(progressService.incrementRunProgress).mockResolvedValue(
 			mockScoreCalculation
 		);
-		vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(3);
-		vi.mocked(pollQueries.getWindowResults).mockResolvedValue([]);
+		vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(3);
+		vi.mocked(runQueries.getWindowResults).mockResolvedValue([]);
 		vi.mocked(configs.applyEffects).mockReturnValue(mockEffects);
 	});
 
@@ -167,7 +166,7 @@ describe("processPollAnswer", () => {
 		it("returns safe defaults without throwing", async () => {
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(null);
 
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
 			expect(result.runId).toBeNull();
 			expect(result.runEnded).toBe(false);
@@ -178,7 +177,7 @@ describe("processPollAnswer", () => {
 
 	describe("correct answer", () => {
 		it("returns outcome full and does not end the run", async () => {
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
 			expect(result.outcome).toBe("full");
 			expect(result.runEnded).toBe(false);
@@ -188,13 +187,13 @@ describe("processPollAnswer", () => {
 		});
 
 		it("increments correct polls count", async () => {
-			await processPollAnswer(defaultInput);
+			await processTurn(defaultInput);
 
 			expect(runQueries.incrementCorrectPollsCount).toHaveBeenCalledWith(1);
 		});
 
 		it("returns the score breakdown", async () => {
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
 			expect(result.breakdown).toEqual(mockBreakdown);
 		});
@@ -202,8 +201,7 @@ describe("processPollAnswer", () => {
 
 	describe("wrong answer", () => {
 		it("does not end the run between gate checks", async () => {
-			// Default: answered 3 polls, window is 5 — no gate check fires
-			const result = await processPollAnswer({
+			const result = await processTurn({
 				...defaultInput,
 				selectedOptionIds: [wrongOptions[0].id],
 			});
@@ -215,7 +213,7 @@ describe("processPollAnswer", () => {
 		});
 
 		it("does not increment correct polls count", async () => {
-			await processPollAnswer({
+			await processTurn({
 				...defaultInput,
 				selectedOptionIds: [wrongOptions[0].id],
 			});
@@ -231,7 +229,7 @@ describe("processPollAnswer", () => {
 				resetRebuild: true,
 			});
 
-			await processPollAnswer(defaultInput);
+			await processTurn(defaultInput);
 
 			expect(runQueries.resetPollRerolls).toHaveBeenCalledWith(1);
 		});
@@ -241,10 +239,9 @@ describe("processPollAnswer", () => {
 		const runWithSlot = createMockRun({
 			id: 1,
 			userId: BANJO_USER_ID,
-			pipelineSlots: [getSlotDefinition("correct-answers", "low")!], // needs 2/5
+			pipelineSlots: [getSlotDefinition("correct-answers", "low")!],
 		});
 
-		// 3 correct, 1 wrong, 1 partial — meets the low correct-answers requirement (needs 2)
 		const windowWith3Correct = [
 			{
 				isCorrect: true,
@@ -279,23 +276,20 @@ describe("processPollAnswer", () => {
 		];
 
 		it("does not evaluate pipeline between windows", async () => {
-			// Default: getAnsweredPollsCountInRun returns 3, windowSize 5 → 3 % 5 ≠ 0
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
 			expect(result.pipelineEvaluation).toBeNull();
 			expect(result.upgradeCards).toHaveLength(0);
-			// getWindowResults IS called to compute the evaluation context (live progress),
-			// but no pipeline evaluation occurs between windows
 		});
 
 		it("evaluates pipeline at window boundary and passes", async () => {
-			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
 				windowWith3Correct
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
 			expect(result.pipelineEvaluation).not.toBeNull();
 			expect(result.pipelineEvaluation?.passed).toBe(true);
@@ -303,21 +297,20 @@ describe("processPollAnswer", () => {
 		});
 
 		it("awards storage when pipeline passes", async () => {
-			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
 				windowWith3Correct
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 
-			await processPollAnswer(defaultInput);
+			await processTurn(defaultInput);
 
 			expect(runQueries.awardStorage).toHaveBeenCalledWith(1, SLOT_REWARDS.low);
 		});
 
 		it("does not award storage when pipeline fails", async () => {
-			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
-				// Only 2 correct — fails easy correct-answers (needs 3)
+			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
 				Array(5).fill({
 					isCorrect: false,
 					isWrong: true,
@@ -327,7 +320,7 @@ describe("processPollAnswer", () => {
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
 			expect(result.pipelineEvaluation?.passed).toBe(false);
 			expect(runQueries.awardStorage).not.toHaveBeenCalled();
@@ -335,15 +328,14 @@ describe("processPollAnswer", () => {
 		});
 
 		it("includes an upgrade-slot card alongside add-slot cards when only one slot exists", async () => {
-			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
 				windowWith3Correct
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
-			// 2 add-slot cards (coverage-gain + cold-start are the remaining selectable types) + 1 upgrade-slot
 			expect(
 				result.upgradeCards.filter((c) => c.kind === "add-slot").length
 			).toBe(2);
@@ -353,18 +345,18 @@ describe("processPollAnswer", () => {
 		});
 
 		it("ends the run when pipeline fails at a gate check", async () => {
-			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
 				Array(5).fill({
 					isCorrect: false,
 					isWrong: true,
 					coverageDelta: -0.5,
 					categoryCode: "js" as const,
-				}) // 0/5 correct — fails
+				})
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
 			expect(result.runEnded).toBe(true);
 			expect(
@@ -379,8 +371,8 @@ describe("processPollAnswer", () => {
 		});
 
 		it("does not end the run when pipeline fails but tryCatch is active", async () => {
-			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
 				Array(5).fill({
 					isCorrect: false,
 					isWrong: true,
@@ -394,7 +386,7 @@ describe("processPollAnswer", () => {
 				protection: { tryCatch: true },
 			});
 
-			const result = await processPollAnswer(defaultInput);
+			const result = await processTurn(defaultInput);
 
 			expect(result.runEnded).toBe(false);
 			expect(result.tryCatchUsed).toBe(true);
@@ -404,13 +396,13 @@ describe("processPollAnswer", () => {
 		});
 
 		it("resets rerolls at every gate check", async () => {
-			vi.mocked(pollQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(pollQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
+			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
 				windowWith3Correct
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
 
-			await processPollAnswer(defaultInput);
+			await processTurn(defaultInput);
 
 			expect(runQueries.resetPollRerolls).toHaveBeenCalledWith(1);
 		});

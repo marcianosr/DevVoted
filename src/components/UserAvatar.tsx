@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
-import { CommunityStatsUser } from "~/domains/polls/api/queries";
+import { CommunityStatsUser } from "~/domains/polls/daily/communityStats.queries";
 
 const KANTO_COLORS = [
 	"bg-pallet",

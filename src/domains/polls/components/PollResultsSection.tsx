@@ -9,7 +9,7 @@ import type { ScoreCalculation } from "~/domains/score/services/score.service";
 import type { CategoryCode } from "~/domains/shared/categories";
 import type { Run } from "~/domains/runs/models/run";
 
-import type { CommunityStats } from "../api/queries";
+import type { CommunityStats } from "~/domains/polls/daily/communityStats.queries";
 import type { Poll } from "../models/poll";
 import type { PollOption } from "../models/pollOption";
 import { PostAnswerCarousel } from "./PostAnswerCarousel";

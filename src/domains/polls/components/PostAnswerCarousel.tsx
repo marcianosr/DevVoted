@@ -26,7 +26,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 
 import MarkdownText from "./MarkdownText";
 import { ScoreBlock } from "./ScoreBlock";
-import type { CommunityStats } from "../api/queries";
+import type { CommunityStats } from "~/domains/polls/daily/communityStats.queries";
 import type { Poll } from "../models/poll";
 import type { PollOption } from "../models/pollOption";
 
