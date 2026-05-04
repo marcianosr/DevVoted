@@ -331,7 +331,7 @@ export const PostAnswerCarousel = ({
 						nextOfferedConfigs={nextOfferedConfigs}
 						reductionCost={reductionCost}
 						storageBonus={storageBonus}
-						isOpen
+						isOpen={isShopOpen}
 					/>
 				)}
 			</div>
