@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { applyEffects } from "~/domains/configs/data/configs";
-import { getRunWithCategoryCoverage } from "~/domains/runs/api/queries";
+import { applyEffects } from "~/domains/economy/data/configs";
+import { getRunWithCategoryCoverage } from "~/domains/runs/api/run.queries";
 
 import {
 	createRerolledShopOfferings as createRerolledShopOfferingsService,

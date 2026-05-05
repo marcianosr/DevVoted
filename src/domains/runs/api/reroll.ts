@@ -1,13 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { applyEffects } from "~/domains/configs/data/configs";
+import { applyEffects } from "~/domains/economy/data/configs";
 import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { createRerolledShopOfferings } from "~/domains/economy/services/shopOfferings.service";
 import { getTodayDateString } from "~/lib/dateUtils";
 
-import { processRerollShop } from "./queries";
+import { processRerollShop } from "./shop.queries";
 
 export const rerollShopServerFn = createServerFn()
 	.inputValidator(

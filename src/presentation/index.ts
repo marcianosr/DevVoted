@@ -2,7 +2,7 @@ export { Presentation } from "./Presentation";
 export { Slide } from "./Slide";
 export { SlideCounter } from "./SlideCounter";
 export { slides } from "./slides";
-export { usePresentationKeys } from "./usePresentationKeys";
+export { usePresentationKeys } from "./usePresentationKeys.hook";
 export { COMPONENT_REGISTRY, getComponent } from "./componentRegistry";
 export type {
 	BaseSlide,

@@ -2,7 +2,7 @@ import { CATEGORY_METADATA } from "~/domains/shared/categories";
 import type {
 	GateTypeId,
 	PipelineSlotRequirement,
-} from "~/domains/runs/models/pipeline";
+} from "~/domains/runs/models/pipeline.model";
 
 export const formatRequirement = (
 	req: PipelineSlotRequirement,

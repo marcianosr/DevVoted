@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { POLL_STATUSES } from "~/domains/polls/models/poll";
+import { POLL_STATUSES } from "~/domains/polls/models/poll.model";
 import { ADMIN_EMAILS } from "~/utils/adminAuth";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 import { getSupabaseServerClient } from "~/utils/supabase";
@@ -12,13 +12,17 @@ import {
 	getPollByIdWithOptionsHandler,
 	getPollsByUserHandler,
 	getPollCreatorsHandler,
+} from "./poll.handlers";
+import {
 	getDailyPollHandler,
 	postPollOptionsHandler,
 	getPollsSeenInRunHandler,
 	getRunPollHistoryHandler,
+} from "./dailyPoll.handlers";
+import {
 	createPollWithOptionsHandler,
 	updatePollHandler,
-} from "./handlers";
+} from "./admin.handlers";
 
 export const getPollByIdWithOptions = createServerFn({ method: "GET" })
 	.inputValidator(

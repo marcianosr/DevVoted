@@ -7,16 +7,16 @@ import {
 	createRunForUser,
 	getRunWithCategoryCoverage,
 	finishRun,
-	awardCoverageToRun,
-} from "./queries";
-import { createMockRunRecord } from "../models/run";
+} from "./run.queries";
+import { awardCoverageToRun } from "./coverage.queries";
+import { createMockRunRecord } from "../models/run.mock";
 import {
 	createMockRunCategoryCoverageRecord,
 	createMockRunCategoryCoverageRecordArray,
-} from "../models/runCategoryCoverage";
+} from "../models/runCategoryCoverage.mock";
 
 // Mock the seasons service
-vi.mock("~/domains/seasons/services/seasonService", () => ({
+vi.mock("~/domains/ranking/services/seasonService", () => ({
 	getSeasonForNewRun: vi.fn().mockResolvedValue(1),
 }));
 

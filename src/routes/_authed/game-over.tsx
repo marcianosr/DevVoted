@@ -4,8 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { clsx } from "clsx";
 
-import { ConfirmDialog } from "~/components/ConfirmDialog";
-import Content from "~/components/Content";
+import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
+import Content from "~/components/Content.component";
 import { finishRunFn, getLastRunForGameOver } from "~/domains/runs/api/runs";
 import type { PipelineFailureSlot } from "~/domains/runs/services/runCompletion.service";
 import {
@@ -13,8 +13,8 @@ import {
 	getSlotLabel,
 } from "~/domains/runs/utils/formatPipelineRequirement";
 import { runQueryKeys } from "~/domains/shared/queryKeys";
-import { PrimaryButton } from "~/ui/PrimaryButton";
-import { SecondaryButton } from "~/ui/SecondaryButton";
+import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { SecondaryButton } from "~/ui/SecondaryButton.component";
 
 type ParsedCompletion =
 	| { type: "victory" }

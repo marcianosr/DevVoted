@@ -6,7 +6,7 @@ import {
 	getSlotDefinition,
 } from "~/domains/runs/data/pipelineSlots";
 import { CATEGORY_CODES } from "~/domains/shared/categories";
-import type { UpgradeCard } from "~/domains/runs/models/pipeline";
+import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
 import { applyUpgradeCard } from "~/domains/runs/services/pipeline.service";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
@@ -19,22 +19,19 @@ import {
 	getUserActiveRun,
 	skipShopHandler,
 } from "./handlers";
-import {
-	getAnsweredPollsCountInRun,
-	getWindowResults,
-} from "~/domains/runs/api/queries";
+import { getAnsweredPollsCountInRun } from "~/domains/polls/api/pollResponse.queries";
+import { getWindowResults } from "~/domains/runs/api/window.queries";
 import {
 	buildCategoryPollResults,
 	getWindowSize,
 	type PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-
 import {
 	appendPipelineSlotSnapshot,
 	clearPendingUpgradeCards,
 	getActiveRunByUserId,
 	savePipelineSlots,
-} from "./queries";
+} from "./run.queries";
 
 export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
 	async () => {

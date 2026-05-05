@@ -13,9 +13,9 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 
-import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary";
-import { NotFound } from "~/components/NotFound";
-import PageLayout from "~/components/PageLayout";
+import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
+import { NotFound } from "~/components/NotFound.component";
+import PageLayout from "~/components/PageLayout.component";
 import { ensureUserExists } from "~/domains/users/services/userSync.service";
 
 import { getActiveRun } from "../domains/runs/api/runs";

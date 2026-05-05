@@ -1,4 +1,4 @@
-import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
+import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.model";
 
 /**
  * Aggregates total coverage and polls answered from category coverage data

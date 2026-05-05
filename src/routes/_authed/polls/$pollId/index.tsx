@@ -3,9 +3,9 @@ import { clsx } from "clsx";
 import { format } from "date-fns";
 
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
-import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock";
-import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed";
-import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay";
+import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
+import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
+import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay.component";
 
 const PollDetail: React.FC = () => {
 	const { poll, options, isAdmin } = Route.useLoaderData();

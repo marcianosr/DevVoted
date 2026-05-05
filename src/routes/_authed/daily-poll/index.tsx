@@ -1,9 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
-import Content from "~/components/Content";
-import { DevPollNavigator } from "~/components/DevPollNavigator";
-import { applyEffects } from "~/domains/configs/data/configs";
+import Content from "~/components/Content.component";
+import { DevPollNavigator } from "~/components/DevPollNavigator.component";
+import { applyEffects } from "~/domains/economy/data/configs";
 import {
 	getNextShopOfferingsServerFn,
 	getShopOfferingsServerFn,
@@ -11,10 +11,10 @@ import {
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import DailyPollContainer, {
 	getScoreBreakdown,
-} from "~/domains/polls/components/DailyPollContainer";
+} from "~/domains/polls/components/DailyPollContainer.component";
 import { getWindowContextFn } from "~/domains/runs/api/runs";
 import { getTodayDateString } from "~/lib/dateUtils";
-import { ErrorComponent } from "~/ui/ErrorComponent";
+import { ErrorComponent } from "~/ui/ErrorComponent.component";
 
 // const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
 // 	async () => {
@@ -27,7 +27,7 @@ import { ErrorComponent } from "~/ui/ErrorComponent";
 // 	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
 // 	.handler(async ({ data }) => {
 // 		const { getCategoryLeaderboardHandler } = await import(
-// 			"~/domains/leaderboards/api/handlers"
+// 			"~/domains/ranking/api/handlers"
 // 		);
 // 		return await getCategoryLeaderboardHandler(data);
 // 	});

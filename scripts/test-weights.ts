@@ -6,7 +6,7 @@ import { db } from "../src/database/db";
 import { dailyPollsTable, runsTable } from "../src/database/schema";
 import {  eq } from "drizzle-orm";
 import { calculateCategoryWeights } from "../src/domains/polls/services/categoryWeight.service";
-import { getAllActiveConfigIds } from "../src/domains/runs/api/queries";
+import { getAllActiveConfigIds } from "../src/domains/runs/api/shop.queries";
 
 const TARGET_DATE = "2026-01-08"; // Use a fresh date!
 

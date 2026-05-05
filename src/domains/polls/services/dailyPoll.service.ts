@@ -1,6 +1,6 @@
 import { fetchPollByIdWithOptions } from "~/domains/polls/api/poll.queries";
-import { getOrCreateDailyPoll } from "~/domains/polls/daily/dailyPoll.queries";
-import type { Poll } from "~/domains/polls/models/poll";
+import { getOrCreateDailyPoll } from "~/domains/polls/api/dailyPoll.queries";
+import type { Poll } from "~/domains/polls/models/poll.model";
 import { type CategoryWeights } from "~/domains/polls/services/categoryWeight.service";
 import { getTodayDateString } from "~/lib/dateUtils";
 import {

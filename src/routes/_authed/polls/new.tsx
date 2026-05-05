@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { createPollServerFn } from "~/domains/polls/api/polls";
-import { PollForm } from "~/domains/polls/components/PollForm";
+import { PollForm } from "~/domains/polls/components/PollForm.component";
 
 export const Route = createFileRoute("/_authed/polls/new")({
 	component: CreatePoll,

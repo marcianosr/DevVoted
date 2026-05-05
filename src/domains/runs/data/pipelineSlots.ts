@@ -5,7 +5,7 @@ import type {
 	GateTypeId,
 	PipelineSlot,
 	PipelineSlotRequirement,
-} from "~/domains/runs/models/pipeline";
+} from "~/domains/runs/models/pipeline.model";
 
 // ─── Rewards ──────────────────────────────────────────────────────────────────
 

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { createConfig } from "~/domains/configs/factories/config";
+import { createMockConfig } from "~/domains/economy/models/config.mock";
 import {
 	addConfigsToRun,
 	canAddConfigToRun,
 	getStorageInfo,
 	removeConfigsFromRun,
 } from "~/domains/economy/services/configManager.service";
-import { createMockRun } from "~/domains/runs/models/run";
+import { createMockRun } from "~/domains/runs/models/run.mock";
 import { STORAGE_UNITS } from "~/lib/storage";
 
 describe("configStorage", () => {
@@ -16,7 +16,7 @@ describe("configStorage", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
-			const mockConfig = createConfig({
+			const mockConfig = createMockConfig({
 				id: "jest-config",
 			});
 
@@ -29,7 +29,7 @@ describe("configStorage", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "jest-config"],
 			});
-			const mockConfig = createConfig({
+			const mockConfig = createMockConfig({
 				id: "tsconfig",
 			});
 
@@ -45,13 +45,13 @@ describe("configStorage", () => {
 				activeConfigIds: ["eslint", "jest-config"],
 			});
 			const mockConfigs = [
-				createConfig({
+				createMockConfig({
 					id: "eslint",
 				}),
-				createConfig({
+				createMockConfig({
 					id: "jest-config",
 				}),
-				createConfig({
+				createMockConfig({
 					id: "webpack-config",
 				}),
 			];
@@ -74,13 +74,13 @@ describe("configStorage", () => {
 				activeConfigIds: ["eslint", "jest-config"],
 			});
 			const mockConfigs = [
-				createConfig({
+				createMockConfig({
 					id: "eslint",
 				}),
-				createConfig({
+				createMockConfig({
 					id: "jest-config",
 				}),
-				createConfig({
+				createMockConfig({
 					id: "tsconfig",
 				}),
 			];
@@ -99,16 +99,16 @@ describe("configStorage", () => {
 				activeConfigIds: ["eslint", "jest-config"],
 			});
 			const mockConfigs = [
-				createConfig({
+				createMockConfig({
 					id: "eslint",
 				}),
-				createConfig({
+				createMockConfig({
 					id: "jest-config",
 				}),
-				createConfig({
+				createMockConfig({
 					id: "tsconfig",
 				}),
-				createConfig({
+				createMockConfig({
 					id: "webpack-config",
 				}),
 			];
@@ -133,7 +133,7 @@ describe("configStorage", () => {
 			const mockRun = createMockRun({
 				activeConfigIds: ["eslint", "ts-config"],
 			});
-			const mockConfig = createConfig({
+			const mockConfig = createMockConfig({
 				id: "ts-config",
 			});
 
@@ -147,10 +147,10 @@ describe("configStorage", () => {
 				activeConfigIds: ["eslint", "ts-config"],
 			});
 			const mockConfig = [
-				createConfig({
+				createMockConfig({
 					id: "ts-config",
 				}),
-				createConfig({
+				createMockConfig({
 					id: "eslint",
 				}),
 			];
@@ -167,7 +167,7 @@ describe("configStorage", () => {
 	describe("getStorageInfo", () => {
 		it("initializes without configs, 1 MB of storage, storageAvailable has the same amount as storageLimit and 0 storage used", () => {
 			const mockConfigs = [
-				createConfig({
+				createMockConfig({
 					id: "vanilla-config",
 					name: "Vanilla Config",
 					image: "/configs/vanilla.png",

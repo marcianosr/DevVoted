@@ -7,8 +7,8 @@ import {
 } from "@tanstack/react-router";
 
 import { getOrCreateRun } from "~/domains/runs/api/runs";
-import { GameLoopExplainer } from "~/ui/GameLoopExplainer";
-import { PrimaryButton } from "~/ui/PrimaryButton";
+import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
+import { PrimaryButton } from "~/ui/PrimaryButton.component";
 
 export const Route = createFileRoute("/start")({
 	component: RouteComponent,

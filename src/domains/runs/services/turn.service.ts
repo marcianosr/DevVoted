@@ -1,20 +1,22 @@
-import { applyEffects } from "~/domains/configs/data/configs";
+import { applyEffects } from "~/domains/economy/data/configs";
 import { fetchPollByIdWithOptions } from "~/domains/polls/api/poll.queries";
-import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
-import type { PollOption } from "~/domains/polls/models/pollOption";
+import type { PollWithOptionsResponse } from "~/domains/polls/models/poll.model";
+import type { PollOption } from "~/domains/polls/models/pollOption.model";
 import {
 	createPollResponse,
 	getAnsweredPollsCountInRun,
-	getWindowResults,
+} from "~/domains/polls/api/pollResponse.queries";
+import { getWindowResults } from "~/domains/runs/api/window.queries";
+import {
 	awardStorage,
 	clearPendingUpgradeCards,
 	getActiveRunByUserId,
-	incrementCorrectPollsCount,
 	resetPollRerolls,
 	savePendingUpgradeCards,
-} from "~/domains/runs/api/queries";
-import type { UpgradeCard } from "~/domains/runs/models/pipeline";
-import type { Run } from "~/domains/runs/models/run";
+} from "~/domains/runs/api/run.queries";
+import { incrementCorrectPollsCount } from "~/domains/runs/api/coverage.queries";
+import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
+import type { Run } from "~/domains/runs/models/run.model";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { generateUpgradeCards } from "~/domains/runs/services/pipeline.service";
 import {
@@ -32,7 +34,7 @@ import {
 	multiCorrectnessFactor,
 	type PollAnswerOutcome,
 	PollScoreBreakdown,
-} from "~/domains/score/services/score.service";
+} from "~/domains/runs/services/score.service";
 import { getTodayDateString } from "~/lib/dateUtils";
 
 export type PollAnswerResult = {

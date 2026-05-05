@@ -1,24 +1,24 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import Content from "~/components/Content";
-import { removeConfigFromRunServerFn } from "~/domains/configs/api/configs";
-import ActiveCard from "~/domains/configs/components/Cards/ActiveCard";
-import { applyEffects } from "~/domains/configs/data/configs";
-import { Config } from "~/domains/configs/models/config";
+import Content from "~/components/Content.component";
+import { removeConfigFromRunServerFn } from "~/domains/economy/api/configs";
+import ActiveCard from "~/domains/economy/components/Cards/ActiveCard.component";
+import { applyEffects } from "~/domains/economy/data/configs";
+import { Config } from "~/domains/economy/models/config.model";
 import {
 	getNextShopOfferingsServerFn,
 	getShopOfferingsServerFn,
 } from "~/domains/economy/api/shopOfferings";
-import ShopContainer from "~/domains/economy/components/ShopContainer";
-import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
+import ShopContainer from "~/domains/economy/components/ShopContainer.component";
+import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown.component";
 import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import {
 	getDailyPoll,
 	getPollsSeenInRun,
 	getRunPollHistoryServerFn,
 } from "~/domains/polls/api/polls";
-import { PollCountdown } from "~/domains/polls/components/PollCountdown";
-import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
+import { PollCountdown } from "~/domains/polls/components/PollCountdown.component";
+import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid.component";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 
 import { getTodayDateString } from "~/lib/dateUtils";

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import * as dailyPollQueries from "~/domains/polls/daily/dailyPoll.queries";
-import { createMockPoll } from "~/domains/polls/factories/poll";
-import type { Poll } from "~/domains/polls/models/poll";
+import * as dailyPollQueries from "~/domains/polls/api/dailyPoll.queries";
+import type { Poll } from "~/domains/polls/models/poll.model";
+import { createMockPoll } from "~/domains/polls/models/poll.mock";
 import { getTodayDateString } from "~/lib/dateUtils";
 import * as seededRandom from "~/lib/seededRandom";
 
@@ -17,7 +17,7 @@ vi.mock("~/lib/dateUtils", () => ({
 	getTodayDateString: vi.fn(),
 }));
 vi.mock("~/lib/seededRandom");
-vi.mock("~/domains/polls/daily/dailyPoll.queries", () => ({
+vi.mock("~/domains/polls/api/dailyPoll.queries", () => ({
 	getOrCreateDailyPoll: vi.fn(),
 }));
 

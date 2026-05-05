@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { PollCodeBlock } from "./PollCodeBlock";
+import { PollCodeBlock } from "./PollCodeBlock.component";
 
 describe(PollCodeBlock, () => {
 	it("renders code snippet correctly", () => {

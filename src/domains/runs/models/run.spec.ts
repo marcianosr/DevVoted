@@ -7,9 +7,8 @@ import {
 	runsToDTOs,
 	runsFromDTOs,
 	createRun,
-	createMockRun,
-	createMockRunRecord,
-} from "./run";
+} from "./run.model";
+import { createMockRun, createMockRunRecord } from "./run.mock";
 
 describe("Run Model", () => {
 	describe("runToDTO", () => {

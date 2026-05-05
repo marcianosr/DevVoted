@@ -1,17 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import * as pollQueries from "~/domains/polls/api/poll.queries";
-import * as runQueries from "~/domains/runs/api/queries";
+import * as pollResponseQueries from "~/domains/polls/api/pollResponse.queries";
 
 import {
 	getAllPollsHandler,
 	getPollByIdHandler,
 	getPollByIdWithOptionsHandler,
+} from "./poll.handlers";
+import {
 	postPollOptionsHandler,
 	getDailyPollHandler,
-} from "./handlers";
-import { createMockPoll, createMockPollArray } from "../factories/poll";
-import { createMockPollOptionArray } from "../factories/pollOption";
+} from "./dailyPoll.handlers";
+import { createMockPoll, createMockPollArray } from "../models/poll.mock";
+import { createMockPollOptionArray } from "../models/pollOption.mock";
 
 vi.mock("~/domains/polls/api/poll.queries", () => ({
 	fetchPollById: vi.fn(),
@@ -21,7 +23,7 @@ vi.mock("~/domains/polls/api/poll.queries", () => ({
 	updatePollWithOptions: vi.fn(),
 }));
 
-vi.mock("~/domains/runs/api/queries", () => ({
+vi.mock("~/domains/polls/api/pollResponse.queries", () => ({
 	hasUserAnsweredPoll: vi.fn(),
 	getUserSelectedOptions: vi.fn(),
 	getPollHistory: vi.fn(),
@@ -143,7 +145,9 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
@@ -153,7 +157,7 @@ describe("handlers", () => {
 			});
 
 			expect(pollQueries.fetchPollByIdWithOptions).toHaveBeenCalledWith(2);
-			expect(runQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+			expect(pollResponseQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
 				2,
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
@@ -175,7 +179,9 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(true);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				true
+			);
 
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
@@ -184,7 +190,7 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+			expect(pollResponseQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
 				2,
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
@@ -206,7 +212,9 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
 			const result = await getPollByIdWithOptionsHandler({
 				data: {
@@ -215,7 +223,7 @@ describe("handlers", () => {
 			});
 
 			// hasUserAnsweredPoll should NOT be called when userId is undefined
-			expect(runQueries.hasUserAnsweredPoll).not.toHaveBeenCalled();
+			expect(pollResponseQueries.hasUserAnsweredPoll).not.toHaveBeenCalled();
 			expect(result).toEqual({
 				success: true,
 				data: {
@@ -249,7 +257,7 @@ describe("handlers", () => {
 		beforeEach(async () => {
 			vi.resetAllMocks();
 			// Mock getPollsSeenInRun (used by processPollAnswer internally)
-			vi.mocked(runQueries.getPollsSeenInRun).mockResolvedValue(10);
+			vi.mocked(pollResponseQueries.getPollsSeenInRun).mockResolvedValue(10);
 			// Mock active run
 			const { getUserActiveRun } = await import("~/domains/runs/api/handlers");
 			vi.mocked(getUserActiveRun).mockResolvedValue({
@@ -261,7 +269,9 @@ describe("handlers", () => {
 		it("posts the selected options to the backend", async () => {
 			const mockPoll = createMockPoll({ id: 123, categoryCode: "js" });
 			vi.mocked(pollQueries.fetchPollById).mockResolvedValue(mockPoll);
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
 			const mockOptions = createMockPollOptionArray(4);
 			mockOptions[0].correct = true;
@@ -291,7 +301,7 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+			expect(pollResponseQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
 				123,
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
@@ -334,7 +344,9 @@ describe("handlers", () => {
 		});
 
 		it("fails to post when user has already answered the poll", async () => {
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(true);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				true
+			);
 
 			const mockOptions = createMockPollOptionArray(4);
 			const result = await postPollOptionsHandler({
@@ -345,7 +357,7 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+			expect(pollResponseQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
 				123,
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
@@ -356,7 +368,9 @@ describe("handlers", () => {
 		});
 
 		it("allows post when user has not answered the poll yet", async () => {
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
 			const mockOptions = createMockPollOptionArray(2);
 			mockOptions[0].correct = true;
@@ -386,7 +400,7 @@ describe("handlers", () => {
 				},
 			});
 
-			expect(runQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
+			expect(pollResponseQueries.hasUserAnsweredPoll).toHaveBeenCalledWith(
 				123,
 				"123e4567-e89b-12d3-a456-426614174000"
 			);
@@ -416,10 +430,12 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
 			// @ts-expect-error - Mocking null return value
-			vi.mocked(runQueries.getPollHistory).mockResolvedValue(null);
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValue(null);
 
 			const { isSameDay } = await import("date-fns");
 			vi.mocked(isSameDay).mockReturnValue(false);
@@ -428,8 +444,12 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(runQueries.getPollHistory).toHaveBeenCalledWith(1, 64);
-			expect(runQueries.trackPollView).toHaveBeenCalledWith(1, userId, 64);
+			expect(pollResponseQueries.getPollHistory).toHaveBeenCalledWith(1, 64);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledWith(
+				1,
+				userId,
+				64
+			);
 			expect(result.success).toBe(true);
 		});
 
@@ -445,9 +465,11 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
-			vi.mocked(runQueries.getPollHistory).mockResolvedValue({
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValue({
 				id: 1,
 				run_id: 1,
 				user_id: userId,
@@ -466,8 +488,12 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(runQueries.getPollHistory).toHaveBeenCalledWith(1, 100);
-			expect(runQueries.trackPollView).toHaveBeenCalledWith(1, userId, 100);
+			expect(pollResponseQueries.getPollHistory).toHaveBeenCalledWith(1, 100);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledWith(
+				1,
+				userId,
+				100
+			);
 			expect(result.success).toBe(true);
 		});
 
@@ -484,9 +510,11 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
-			vi.mocked(runQueries.getPollHistory).mockResolvedValue({
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValue({
 				id: 1,
 				run_id: 1,
 				user_id: userId,
@@ -505,8 +533,8 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(runQueries.getPollHistory).toHaveBeenCalledWith(1, 64);
-			expect(runQueries.trackPollView).not.toHaveBeenCalled();
+			expect(pollResponseQueries.getPollHistory).toHaveBeenCalledWith(1, 64);
+			expect(pollResponseQueries.trackPollView).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 		});
 
@@ -523,9 +551,11 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
-			vi.mocked(runQueries.getPollHistory).mockResolvedValue({
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValue({
 				id: 1,
 				run_id: 1,
 				user_id: userId,
@@ -544,8 +574,12 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(runQueries.getPollHistory).toHaveBeenCalledWith(1, 64);
-			expect(runQueries.trackPollView).toHaveBeenCalledWith(1, userId, 64);
+			expect(pollResponseQueries.getPollHistory).toHaveBeenCalledWith(1, 64);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledWith(
+				1,
+				userId,
+				64
+			);
 			expect(result.success).toBe(true);
 		});
 
@@ -562,24 +596,30 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
 			const { isSameDay } = await import("date-fns");
 
 			// First call - no history
 			// @ts-expect-error - Mocking null return value
-			vi.mocked(runQueries.getPollHistory).mockResolvedValueOnce(null);
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValueOnce(null);
 			vi.mocked(isSameDay).mockReturnValueOnce(false);
 
 			await getDailyPollHandler({
 				data: { userId },
 			});
 
-			expect(runQueries.trackPollView).toHaveBeenCalledTimes(1);
-			expect(runQueries.trackPollView).toHaveBeenCalledWith(1, userId, 64);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledTimes(1);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledWith(
+				1,
+				userId,
+				64
+			);
 
 			// Second call - history exists with today's date
-			vi.mocked(runQueries.getPollHistory).mockResolvedValueOnce({
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValueOnce({
 				id: 1,
 				run_id: 1,
 				user_id: userId,
@@ -596,10 +636,10 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(runQueries.trackPollView).toHaveBeenCalledTimes(1);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledTimes(1);
 
 			// Third call - still today
-			vi.mocked(runQueries.getPollHistory).mockResolvedValueOnce({
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValueOnce({
 				id: 1,
 				run_id: 1,
 				user_id: userId,
@@ -615,7 +655,7 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(runQueries.trackPollView).toHaveBeenCalledTimes(1);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledTimes(1);
 		});
 
 		it("tracks different polls independently on same day", async () => {
@@ -626,7 +666,9 @@ describe("handlers", () => {
 
 			const { getDailyPollWithOptions } =
 				await import("~/domains/polls/services/dailyPoll.service");
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
 			const { isSameDay } = await import("date-fns");
 
@@ -636,14 +678,18 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			// @ts-expect-error - Mocking null return value
-			vi.mocked(runQueries.getPollHistory).mockResolvedValueOnce(null);
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValueOnce(null);
 			vi.mocked(isSameDay).mockReturnValueOnce(false);
 
 			await getDailyPollHandler({
 				data: { userId },
 			});
 
-			expect(runQueries.trackPollView).toHaveBeenCalledWith(1, userId, 64);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledWith(
+				1,
+				userId,
+				64
+			);
 
 			// Second poll (different poll_id) - no history
 			vi.mocked(getDailyPollWithOptions).mockResolvedValueOnce({
@@ -651,15 +697,19 @@ describe("handlers", () => {
 				options: mockOptions,
 			});
 			// @ts-expect-error - Mocking null return value
-			vi.mocked(runQueries.getPollHistory).mockResolvedValueOnce(null);
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValueOnce(null);
 			vi.mocked(isSameDay).mockReturnValueOnce(false);
 
 			await getDailyPollHandler({
 				data: { userId },
 			});
 
-			expect(runQueries.trackPollView).toHaveBeenCalledWith(1, userId, 100);
-			expect(runQueries.trackPollView).toHaveBeenCalledTimes(2);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledWith(
+				1,
+				userId,
+				100
+			);
+			expect(pollResponseQueries.trackPollView).toHaveBeenCalledTimes(2);
 		});
 
 		it("does not track poll view when poll was already answered in a previous run", async () => {
@@ -673,14 +723,16 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(true);
-			vi.mocked(runQueries.getUserSelectedOptions).mockResolvedValue([
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				true
+			);
+			vi.mocked(pollResponseQueries.getUserSelectedOptions).mockResolvedValue([
 				"option-1",
 			]);
 
 			// New run has no history for this poll
 			// @ts-expect-error - Mocking null return value
-			vi.mocked(runQueries.getPollHistory).mockResolvedValue(null);
+			vi.mocked(pollResponseQueries.getPollHistory).mockResolvedValue(null);
 
 			const { isSameDay } = await import("date-fns");
 			vi.mocked(isSameDay).mockReturnValue(false);
@@ -689,8 +741,8 @@ describe("handlers", () => {
 				data: { userId },
 			});
 
-			expect(runQueries.getPollHistory).toHaveBeenCalledWith(1, 64);
-			expect(runQueries.trackPollView).not.toHaveBeenCalled();
+			expect(pollResponseQueries.getPollHistory).toHaveBeenCalledWith(1, 64);
+			expect(pollResponseQueries.trackPollView).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 		});
 
@@ -704,14 +756,16 @@ describe("handlers", () => {
 				poll: mockPoll,
 				options: mockOptions,
 			});
-			vi.mocked(runQueries.hasUserAnsweredPoll).mockResolvedValue(false);
+			vi.mocked(pollResponseQueries.hasUserAnsweredPoll).mockResolvedValue(
+				false
+			);
 
 			const result = await getDailyPollHandler({
 				data: {},
 			});
 
-			expect(runQueries.getPollHistory).not.toHaveBeenCalled();
-			expect(runQueries.trackPollView).not.toHaveBeenCalled();
+			expect(pollResponseQueries.getPollHistory).not.toHaveBeenCalled();
+			expect(pollResponseQueries.trackPollView).not.toHaveBeenCalled();
 			expect(result.success).toBe(true);
 		});
 	});

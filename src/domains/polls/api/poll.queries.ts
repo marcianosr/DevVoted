@@ -2,9 +2,13 @@ import { eq, and, not, inArray, sql, count } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { pollOptionsTable, pollsTable, usersTable } from "~/database/schema";
-import { Poll, PollStatus, pollFactory } from "~/domains/polls/models/poll";
-import type { PollCreator } from "~/domains/polls/models/pollCreator";
-import { pollOptionFactory } from "~/domains/polls/models/pollOption";
+import {
+	Poll,
+	PollStatus,
+	pollFactory,
+} from "~/domains/polls/models/poll.model";
+import type { PollCreator } from "~/domains/polls/models/pollCreator.model";
+import { pollOptionFactory } from "~/domains/polls/models/pollOption.model";
 
 export const fetchPollById = async (id: number): Promise<Poll | null> => {
 	const pollRecord = await db

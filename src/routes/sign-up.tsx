@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { redirect, createFileRoute } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 
-import { Auth } from "../components/Auth";
+import { Auth } from "../domains/users/components/Auth.component";
 import { getSupabaseServerClient } from "../utils/supabase";
 
 export const signupFn = createServerFn({ method: "POST" })

@@ -1,22 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import * as pollQueries from "~/domains/polls/api/poll.queries";
-import { createMockPoll } from "~/domains/polls/factories/poll";
-import { createMockPollOption } from "~/domains/polls/factories/pollOption";
-import * as runQueries from "~/domains/runs/api/queries";
+import { createMockPoll } from "~/domains/polls/models/poll.mock";
+import { createMockPollOption } from "~/domains/polls/models/pollOption.mock";
+import * as runQueries from "~/domains/runs/api/run.queries";
+import * as coverageQueries from "~/domains/runs/api/coverage.queries";
+import * as windowQueries from "~/domains/runs/api/window.queries";
+import * as pollResponseQueries from "~/domains/polls/api/pollResponse.queries";
 import * as progressService from "~/domains/runs/services/progress.service";
 import * as runCompletionService from "~/domains/runs/services/runCompletion.service";
-import { createMockRun } from "~/domains/runs/models/run";
+import { createMockRun } from "~/domains/runs/models/run.mock";
 import {
 	getSlotDefinition,
 	SLOT_REWARDS,
 } from "~/domains/runs/data/pipelineSlots";
-import * as configs from "~/domains/configs/data/configs";
-import type { ApplyEffects } from "~/domains/configs/data/configs";
+import * as configs from "~/domains/economy/data/configs";
+import type { ApplyEffects } from "~/domains/economy/data/configs";
 import type {
 	PollScoreBreakdown,
 	ScoreCalculation,
-} from "~/domains/score/services/score.service";
+} from "~/domains/runs/services/score.service";
 
 import { processTurn } from "./turn.service";
 
@@ -24,16 +27,25 @@ vi.mock("~/domains/polls/api/poll.queries", () => ({
 	fetchPollByIdWithOptions: vi.fn(),
 }));
 
-vi.mock("~/domains/runs/api/queries", () => ({
+vi.mock("~/domains/runs/api/run.queries", () => ({
 	getActiveRunByUserId: vi.fn(),
-	incrementCorrectPollsCount: vi.fn(),
 	resetPollRerolls: vi.fn(),
 	awardStorage: vi.fn(),
 	savePendingUpgradeCards: vi.fn(),
 	clearPendingUpgradeCards: vi.fn(),
+}));
+
+vi.mock("~/domains/runs/api/coverage.queries", () => ({
+	incrementCorrectPollsCount: vi.fn(),
+}));
+
+vi.mock("~/domains/runs/api/window.queries", () => ({
+	getWindowResults: vi.fn(),
+}));
+
+vi.mock("~/domains/polls/api/pollResponse.queries", () => ({
 	createPollResponse: vi.fn(),
 	getAnsweredPollsCountInRun: vi.fn(),
-	getWindowResults: vi.fn(),
 }));
 
 vi.mock("~/domains/runs/services/progress.service", () => ({
@@ -46,7 +58,7 @@ vi.mock("~/domains/runs/services/runCompletion.service", () => ({
 		.mockResolvedValue({ runEnded: true, reason: "pipeline_failure" }),
 }));
 
-vi.mock("~/domains/configs/data/configs", () => ({
+vi.mock("~/domains/economy/data/configs", () => ({
 	applyEffects: vi.fn(),
 }));
 
@@ -157,8 +169,10 @@ describe("processTurn", () => {
 		vi.mocked(progressService.incrementRunProgress).mockResolvedValue(
 			mockScoreCalculation
 		);
-		vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(3);
-		vi.mocked(runQueries.getWindowResults).mockResolvedValue([]);
+		vi.mocked(pollResponseQueries.getAnsweredPollsCountInRun).mockResolvedValue(
+			3
+		);
+		vi.mocked(windowQueries.getWindowResults).mockResolvedValue([]);
 		vi.mocked(configs.applyEffects).mockReturnValue(mockEffects);
 	});
 
@@ -189,7 +203,9 @@ describe("processTurn", () => {
 		it("increments correct polls count", async () => {
 			await processTurn(defaultInput);
 
-			expect(runQueries.incrementCorrectPollsCount).toHaveBeenCalledWith(1);
+			expect(coverageQueries.incrementCorrectPollsCount).toHaveBeenCalledWith(
+				1
+			);
 		});
 
 		it("returns the score breakdown", async () => {
@@ -218,7 +234,7 @@ describe("processTurn", () => {
 				selectedOptionIds: [wrongOptions[0].id],
 			});
 
-			expect(runQueries.incrementCorrectPollsCount).not.toHaveBeenCalled();
+			expect(coverageQueries.incrementCorrectPollsCount).not.toHaveBeenCalled();
 		});
 	});
 
@@ -283,8 +299,10 @@ describe("processTurn", () => {
 		});
 
 		it("evaluates pipeline at window boundary and passes", async () => {
-			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(
+				pollResponseQueries.getAnsweredPollsCountInRun
+			).mockResolvedValue(5);
+			vi.mocked(windowQueries.getWindowResults).mockResolvedValue(
 				windowWith3Correct
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
@@ -297,8 +315,10 @@ describe("processTurn", () => {
 		});
 
 		it("awards storage when pipeline passes", async () => {
-			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(
+				pollResponseQueries.getAnsweredPollsCountInRun
+			).mockResolvedValue(5);
+			vi.mocked(windowQueries.getWindowResults).mockResolvedValue(
 				windowWith3Correct
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
@@ -309,8 +329,10 @@ describe("processTurn", () => {
 		});
 
 		it("does not award storage when pipeline fails", async () => {
-			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(
+				pollResponseQueries.getAnsweredPollsCountInRun
+			).mockResolvedValue(5);
+			vi.mocked(windowQueries.getWindowResults).mockResolvedValue(
 				Array(5).fill({
 					isCorrect: false,
 					isWrong: true,
@@ -328,8 +350,10 @@ describe("processTurn", () => {
 		});
 
 		it("includes an upgrade-slot card alongside add-slot cards when only one slot exists", async () => {
-			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(
+				pollResponseQueries.getAnsweredPollsCountInRun
+			).mockResolvedValue(5);
+			vi.mocked(windowQueries.getWindowResults).mockResolvedValue(
 				windowWith3Correct
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);
@@ -345,8 +369,10 @@ describe("processTurn", () => {
 		});
 
 		it("ends the run when pipeline fails at a gate check", async () => {
-			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(
+				pollResponseQueries.getAnsweredPollsCountInRun
+			).mockResolvedValue(5);
+			vi.mocked(windowQueries.getWindowResults).mockResolvedValue(
 				Array(5).fill({
 					isCorrect: false,
 					isWrong: true,
@@ -371,8 +397,10 @@ describe("processTurn", () => {
 		});
 
 		it("does not end the run when pipeline fails but tryCatch is active", async () => {
-			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(
+				pollResponseQueries.getAnsweredPollsCountInRun
+			).mockResolvedValue(5);
+			vi.mocked(windowQueries.getWindowResults).mockResolvedValue(
 				Array(5).fill({
 					isCorrect: false,
 					isWrong: true,
@@ -396,8 +424,10 @@ describe("processTurn", () => {
 		});
 
 		it("resets rerolls at every gate check", async () => {
-			vi.mocked(runQueries.getAnsweredPollsCountInRun).mockResolvedValue(5);
-			vi.mocked(runQueries.getWindowResults).mockResolvedValue(
+			vi.mocked(
+				pollResponseQueries.getAnsweredPollsCountInRun
+			).mockResolvedValue(5);
+			vi.mocked(windowQueries.getWindowResults).mockResolvedValue(
 				windowWith3Correct
 			);
 			vi.mocked(runQueries.getActiveRunByUserId).mockResolvedValue(runWithSlot);

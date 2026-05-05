@@ -1,0 +1,109 @@
+import { useForm } from "@tanstack/react-form";
+
+import type { ApplyEffects } from "~/domains/economy/data/configs";
+import { postPollOptions } from "~/domains/polls/api/polls";
+import { RandomDailyAnswer } from "~/domains/polls/api/communityStats.queries";
+import { PollOptions } from "~/domains/polls/components/PollOptions.component";
+import { Poll } from "~/domains/polls/models/poll.model";
+import { PollOption } from "~/domains/polls/models/pollOption.model";
+import { PrimaryButton } from "~/ui/PrimaryButton.component";
+
+import type { UseMutationResult } from "@tanstack/react-query";
+
+// TODO: move
+
+type PollOptionsFormProps = {
+	poll: Poll;
+	options: PollOption[];
+	hasAnswered: boolean;
+	effect: ApplyEffects;
+	selectedOptions: string[];
+	mutation: UseMutationResult<
+		Awaited<ReturnType<typeof postPollOptions>>,
+		Error,
+		Parameters<typeof postPollOptions>[0]
+	>;
+	randomAnswer: RandomDailyAnswer | null;
+};
+
+const PollOptionsForm = ({
+	poll,
+	options,
+	hasAnswered,
+	effect,
+	selectedOptions,
+	mutation,
+	randomAnswer,
+}: PollOptionsFormProps) => {
+	const { Field, handleSubmit } = useForm({
+		defaultValues: {
+			selectedOptions: (selectedOptions ?? []) as Array<string>,
+		},
+		onSubmit: async ({ value }) => {
+			mutation.mutate({
+				data: {
+					pollId: poll.id,
+					selectedOptions: value.selectedOptions,
+				},
+			});
+		},
+	});
+
+	return (
+		<form
+			onSubmit={(e) => {
+				e.preventDefault();
+				handleSubmit();
+			}}
+		>
+			<Field
+				name="selectedOptions"
+				validators={{
+					onSubmit: ({ value }) => {
+						if (!value || value.length === 0) {
+							return "Please select at least one answer";
+						}
+						return undefined;
+					},
+				}}
+			>
+				{(field) => (
+					<>
+						<PollOptions
+							poll={poll}
+							options={options}
+							field={field}
+							disabled={hasAnswered}
+							disabledOptionIds={effect.renderProps.disabledOptionIds}
+							countCorrect={effect.countCorrect}
+							showCountCorrect={effect.showCorrectCount}
+							randomAnswer={randomAnswer}
+						/>
+						{field.state.meta.errors.length > 0 && (
+							<div className="text-red-500 text-xl my-2">
+								{field.state.meta.errors[0]}
+							</div>
+						)}
+					</>
+				)}
+			</Field>
+			<PrimaryButton
+				type="submit"
+				disabled={mutation.isPending || mutation.isSuccess}
+			>
+				{mutation.isSuccess
+					? "Submitted!"
+					: mutation.isPending
+						? "Submitting..."
+						: "Submit answers"}
+			</PrimaryButton>
+			{mutation.isError && (
+				<div className="text-red-500 text-xl my-2">
+					Error submitting answers: {mutation.error.message}
+				</div>
+			)}
+		</form>
+	);
+};
+
+export default PollOptionsForm;

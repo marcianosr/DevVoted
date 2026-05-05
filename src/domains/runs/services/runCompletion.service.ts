@@ -2,14 +2,14 @@ import type {
 	GateDifficulty,
 	GateTypeId,
 	PipelineSlotRequirement,
-} from "~/domains/runs/models/pipeline";
+} from "~/domains/runs/models/pipeline.model";
 
 import {
 	completeRunWithThresholdFailure,
 	getRunStats,
-	createCategoryLeaderboardEntries,
 	getRunWithCategoryCoverage,
-} from "../api/queries";
+} from "../api/run.queries";
+import { createCategoryLeaderboardEntries } from "../api/ranking.queries";
 
 export type PipelineFailureSlot = {
 	gateTypeId: GateTypeId;

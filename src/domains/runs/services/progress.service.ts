@@ -1,16 +1,16 @@
-import { applyEffects } from "~/domains/configs/data/configs";
-import { getPollsSeenInRun } from "~/domains/runs/api/queries";
-import type { PollWithOptionsResponse } from "~/domains/polls/models/poll";
+import { applyEffects } from "~/domains/economy/data/configs";
+import { getPollsSeenInRun } from "~/domains/polls/api/pollResponse.queries";
+import type { PollWithOptionsResponse } from "~/domains/polls/models/poll.model";
 import { handleUserSelectedOptionsByPollType } from "~/domains/runs/services/turn.service";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import {
 	orchestrateScoreCalculation,
 	ScoreCalculation,
-} from "~/domains/score/services/score.service";
+} from "~/domains/runs/services/score.service";
 import { CategoryCode } from "~/domains/shared/categories";
 
-import { awardCoverageToRun } from "../api/queries";
-import { Run } from "../models/run";
+import { awardCoverageToRun } from "../api/coverage.queries";
+import { Run } from "../models/run.model";
 
 type IncrementProgress = {
 	categoryCode: CategoryCode;

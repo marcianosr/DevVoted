@@ -7,9 +7,11 @@ import {
 	runCategoryCoveragesToDTOs,
 	runCategoryCoveragesFromDTOs,
 	createRunCategoryCoverage,
+} from "./runCategoryCoverage.model";
+import {
 	createMockRunCategoryCoverage,
 	createMockRunCategoryCoverageRecord,
-} from "./runCategoryCoverage";
+} from "./runCategoryCoverage.mock";
 
 describe("RunCategoryCoverage Model", () => {
 	describe("runCategoryCoverageToDTO", () => {
