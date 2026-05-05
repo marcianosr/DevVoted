@@ -1,7 +1,8 @@
 import { clsx } from "clsx";
 
 import { Config } from "~/domains/economy/models/config.model";
-import { calculateRefund, formatStorage } from "~/lib/storage";
+import { calculateRefund } from "~/domains/economy/services/configManager.service";
+import { formatStorage } from "~/lib/storage";
 
 export const RARITY_COLORS = {
 	common: {

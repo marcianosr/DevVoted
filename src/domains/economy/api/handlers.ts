@@ -1,6 +1,6 @@
 import { configs } from "~/domains/economy/data/configs";
 import { canAddConfigToRun } from "~/domains/economy/services/configManager.service";
-import { REFUND_RATE } from "~/lib/storage";
+import { REFUND_RATE } from "~/domains/economy/services/configManager.service";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 import { handleApiOperation } from "~/utils/errorHandling";
 

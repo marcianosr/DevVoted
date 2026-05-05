@@ -4,7 +4,8 @@ import ConfigCard, {
 	RARITY_COLORS,
 } from "~/domains/economy/components/Cards/ConfigCard.component";
 import { Config } from "~/domains/economy/models/config.model";
-import { calculateRefund, formatStorage } from "~/lib/storage";
+import { calculateRefund } from "~/domains/economy/services/configManager.service";
+import { formatStorage } from "~/lib/storage";
 
 type ActiveCardProps = {
 	config: Config;
