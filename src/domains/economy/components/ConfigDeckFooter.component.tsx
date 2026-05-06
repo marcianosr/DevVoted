@@ -5,14 +5,19 @@ import {
 	getActiveConfigs,
 	getStorageInfo,
 } from "~/domains/economy/services/configManager.service";
+import type { Config } from "~/domains/economy/models/config.model";
 import type { Run } from "~/domains/runs/models/run.model";
 import { formatStorage } from "~/lib/storage";
 
 type ConfigDeckFooterProps = {
 	activeRun: Run;
+	onDeinstall?: (config: Config) => void;
 };
 
-export const ConfigDeckFooter = ({ activeRun }: ConfigDeckFooterProps) => {
+export const ConfigDeckFooter = ({
+	activeRun,
+	onDeinstall,
+}: ConfigDeckFooterProps) => {
 	const [expanded, setExpanded] = useState(false);
 	const activeConfigs = getActiveConfigs(activeRun);
 	const { storageUsed, storageLimit } = getStorageInfo(activeRun);
@@ -48,7 +53,11 @@ export const ConfigDeckFooter = ({ activeRun }: ConfigDeckFooterProps) => {
 				<ul className="flex gap-3 overflow-x-auto">
 					{activeConfigs.map((config) => (
 						<li key={config.id} className="shrink-0">
-							<ActiveCard config={config} size={expanded ? "large" : "small"} />
+							<ActiveCard
+								config={config}
+								size={expanded ? "large" : "small"}
+								onDeinstall={onDeinstall}
+							/>
 						</li>
 					))}
 				</ul>

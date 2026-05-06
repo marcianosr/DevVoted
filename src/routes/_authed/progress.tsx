@@ -199,6 +199,7 @@ function RouteComponent() {
 					reductionCost={reductionCost}
 					isOpen={dailyPoll.hasAnswered && activeRun.shopSkippedDate !== today}
 					storageBonus={storage.skipBonus}
+					date={today}
 				/>
 				<section className="grid grid-cols-1 md:grid-cols-3 gap-8">
 					<div className="col-span-1">

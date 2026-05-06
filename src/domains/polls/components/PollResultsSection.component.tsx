@@ -40,6 +40,7 @@ type PollResultsSectionProps = {
 		coverageMult: number;
 	}[];
 	pipeline?: PipelineResultProps;
+	date: string;
 };
 
 export const PollResultsSection = (props: PollResultsSectionProps) => (

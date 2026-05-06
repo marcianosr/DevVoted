@@ -104,6 +104,28 @@ export const storeShopOfferings = async (
 };
 
 /**
+ * Pre-generate the "next" slot offering — silently skips if already exists.
+ */
+export const storeNextShopOfferings = async (
+	runId: number,
+	date: string,
+	rerollNumber: number,
+	configIds: string[],
+	isLocked: boolean = false
+): Promise<void> => {
+	await db
+		.insert(runShopOfferingsTable)
+		.values({
+			run_id: runId,
+			date,
+			reroll_number: rerollNumber,
+			config_ids: configIds,
+			is_locked: isLocked,
+		})
+		.onConflictDoNothing();
+};
+
+/**
  * Get the latest reroll number for a run on a specific date.
  * Returns -1 if no offerings exist for that date.
  */

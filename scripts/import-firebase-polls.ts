@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../src/database/db';
@@ -8,7 +8,17 @@ import type { PollStatus } from '../src/domains/polls/models/poll.model';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const INPUT_FILE = join(__dirname, 'firebase-polls-backup-2025-11-09.json');
+const latestBackup = readdirSync(__dirname)
+	.filter((f) => f.startsWith('firebase-polls-backup-') && f.endsWith('.json'))
+	.sort()
+	.at(-1);
+
+if (!latestBackup) {
+	console.error('❌ No firebase-polls-backup-*.json found in scripts/. Run: node scripts/export-polls.js');
+	process.exit(1);
+}
+
+const INPUT_FILE = join(__dirname, latestBackup);
 const USER_ID = '65ad226e-e3c1-4e7f-a96d-a84156589733';
 
 const mapAnswerType = (firebaseType: string): 'single' | 'multiple' => {

@@ -56,6 +56,7 @@ type PostAnswerCarouselProps = {
 	activeRun: Run;
 	reductionCost: number;
 	storageBonus?: number;
+	date: string;
 };
 
 const STEPS = ["Today's Poll", "Score & Pipelines", "Shop"] as const;
@@ -82,6 +83,7 @@ export const PostAnswerCarousel = ({
 	activeRun,
 	reductionCost,
 	storageBonus,
+	date,
 }: PostAnswerCarouselProps) => {
 	const [step, setStep] = useState(0);
 
@@ -90,10 +92,7 @@ export const PostAnswerCarousel = ({
 		return option?.correct;
 	});
 
-	const today = new Date().toISOString().split("T")[0];
-	const isShopOpen =
-		activeRun.shopSkippedDate !== today &&
-		activeRun.shopInteractedDate !== today;
+	const isShopOpen = activeRun.shopSkippedDate !== date;
 
 	const stepLabel = (label: string) => {
 		if (label !== "Shop") return label;
@@ -332,6 +331,7 @@ export const PostAnswerCarousel = ({
 						reductionCost={reductionCost}
 						storageBonus={storageBonus}
 						isOpen={isShopOpen}
+						date={date}
 					/>
 				)}
 			</div>

@@ -46,6 +46,7 @@ export const rerollShopServerFn = createServerFn()
 			await createRerolledShopOfferings(
 				runId,
 				today,
+				updatedRun.rerolls,
 				updatedRun.activeConfigIds,
 				configEffects
 			);

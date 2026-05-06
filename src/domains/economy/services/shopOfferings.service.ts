@@ -15,11 +15,10 @@ import {
 	type ExposedDeckWithDetails,
 	getActiveRunsExcludingUser,
 	getDailyExposedDeckWithDetails,
-	getLatestRerollNumber,
-	getLatestShopOfferingsForDate,
 	getLockedShopOffering,
 	getShopOfferings,
 	storeDailyExposedDeck,
+	storeNextShopOfferings,
 	storeShopOfferings,
 } from "../api/shopOfferings.queries";
 
@@ -63,8 +62,8 @@ const generateAndStoreOfferings = async (
 	);
 	const nextConfigIds = nextConfigs.map((c) => c.id);
 
-	// Store next offerings with rerollNumber + 1
-	await storeShopOfferings(
+	// Pre-generate next offerings — skip if already exists (unique constraint)
+	await storeNextShopOfferings(
 		runId,
 		date,
 		rerollNumber + 1,
@@ -83,6 +82,7 @@ const generateAndStoreOfferings = async (
 export const getOrCreateShopOfferings = async (
 	runId: number,
 	date: string,
+	rerollNumber: number,
 	ownedConfigIds: string[],
 	effects: ShopEffects,
 	availableConfigs: Config[] = configs
@@ -103,8 +103,9 @@ export const getOrCreateShopOfferings = async (
 		}
 	}
 
-	// Check for existing offering for this date
-	const existingOffering = await getLatestShopOfferingsForDate(runId, date);
+	// Check for the exact current reroll slot — never the latest/max,
+	// because the pre-generated "next" slot is always stored at rerollNumber+1.
+	const existingOffering = await getShopOfferings(runId, date, rerollNumber);
 	if (existingOffering) {
 		return applyDiscountsToConfigIds(
 			existingOffering.config_ids,
@@ -113,11 +114,11 @@ export const getOrCreateShopOfferings = async (
 		);
 	}
 
-	// Generate and store both current (reroll 0) and next (reroll 1) offerings
+	// First visit for this date: generate current (rerollNumber) and pre-generate next (rerollNumber+1).
 	const configIds = await generateAndStoreOfferings(
 		runId,
 		date,
-		0,
+		rerollNumber,
 		ownedConfigIds,
 		count,
 		effects.lockShop ?? false,
@@ -138,6 +139,7 @@ export const getOrCreateShopOfferings = async (
 export const createRerolledShopOfferings = async (
 	runId: number,
 	date: string,
+	newRerollNumber: number,
 	ownedConfigIds: string[],
 	effects: ShopEffects,
 	availableConfigs: Config[] = configs
@@ -145,10 +147,6 @@ export const createRerolledShopOfferings = async (
 	const count = effects.extraSlot
 		? DEFAULT_OFFERED_CONFIGS_COUNT + 1
 		: DEFAULT_OFFERED_CONFIGS_COUNT;
-
-	// Get current reroll number
-	const currentRerollNumber = await getLatestRerollNumber(runId, date);
-	const newRerollNumber = currentRerollNumber + 1;
 
 	// Check if we already have pre-generated offerings for this reroll number
 	const preGeneratedOffering = await getShopOfferings(
@@ -166,8 +164,8 @@ export const createRerolledShopOfferings = async (
 		);
 		const nextConfigIds = nextConfigs.map((c) => c.id);
 
-		// Store next offerings with rerollNumber + 1
-		await storeShopOfferings(
+		// Pre-generate next offerings — skip if already exists (unique constraint)
+		await storeNextShopOfferings(
 			runId,
 			date,
 			newRerollNumber + 1,
@@ -207,13 +205,10 @@ export const createRerolledShopOfferings = async (
 export const getNextShopOfferings = async (
 	runId: number,
 	date: string,
+	nextRerollNumber: number,
 	effects: ShopEffects,
 	availableConfigs: Config[] = configs
 ): Promise<(Config & { originalCost?: number })[] | null> => {
-	// Get current reroll number
-	const currentRerollNumber = await getLatestRerollNumber(runId, date);
-	const nextRerollNumber = currentRerollNumber + 1;
-
 	// Fetch pre-generated next offerings
 	const nextOffering = await getShopOfferings(runId, date, nextRerollNumber);
 

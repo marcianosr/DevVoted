@@ -38,6 +38,7 @@ export const getShopOfferingsServerFn = createServerFn({ method: "GET" })
 		const offerings = await getOrCreateShopOfferingsService(
 			runId,
 			date,
+			run.rerolls,
 			run.activeConfigIds,
 			configEffects
 		);
@@ -73,6 +74,7 @@ export const createRerolledShopOfferingsServerFn = createServerFn({
 		const offerings = await createRerolledShopOfferingsService(
 			runId,
 			date,
+			run.rerolls,
 			run.activeConfigIds,
 			configEffects
 		);
@@ -106,6 +108,7 @@ export const getNextShopOfferingsServerFn = createServerFn({ method: "GET" })
 		const offerings = await getNextShopOfferingsService(
 			runId,
 			date,
+			run.rerolls + 1,
 			configEffects
 		);
 

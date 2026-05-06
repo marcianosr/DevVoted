@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { ApplyEffects } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
+import { removeConfigFromRunServerFn } from "~/domains/economy/api/configs";
 import {
 	getCommunityStatsHandler,
 	getRandomAnswerHandler,
@@ -101,6 +102,7 @@ type DailyPollContainerProps = {
 	nextOfferedConfigs: (Config & { originalCost?: number })[];
 	initialPendingUpgradeCards: UpgradeCard[];
 	initialWindowContext: PipelineEvaluationContext | null;
+	date: string;
 };
 
 const DailyPollContainer = ({
@@ -117,6 +119,7 @@ const DailyPollContainer = ({
 	nextOfferedConfigs,
 	initialPendingUpgradeCards,
 	initialWindowContext,
+	date,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -152,6 +155,11 @@ const DailyPollContainer = ({
 			setLastEvaluationContext(initialWindowContext);
 		}
 	}, [initialWindowContext]);
+
+	const deinstallConfigMutation = useMutation({
+		mutationFn: removeConfigFromRunServerFn,
+		onSuccess: () => router.invalidate(),
+	});
 
 	const applyUpgradeMutation = useMutation({
 		mutationFn: applyPipelineUpgradeFn,
@@ -230,7 +238,14 @@ const DailyPollContainer = ({
 	// Fetch exposed config deck (only when config is active and user has answered)
 	const exposeConfigDeck = configEffects.exposeConfigDeck ?? false;
 
-	const today = new Date().toISOString().split("T")[0];
+	const today = date;
+	const isShopOpen = hasAnswered && activeRun.shopSkippedDate !== today;
+	const onDeinstallConfig = (config: Config) => {
+		deinstallConfigMutation.mutate({
+			data: { configIds: [config.id], runId: activeRun.id, date: today },
+		});
+	};
+
 	const { data: exposedConfigDeckResult } = useQuery({
 		queryKey: ["exposedConfigDeck", today],
 		queryFn: () => getExposedConfigDeck({ data: { date: today } }),
@@ -360,6 +375,7 @@ const DailyPollContainer = ({
 							evaluationContext: lastEvaluationContext ?? undefined,
 							evaluation: lastPipelineEvaluation ?? undefined,
 						}}
+						date={today}
 					/>
 				) : (
 					<>
@@ -380,7 +396,10 @@ const DailyPollContainer = ({
 					</>
 				)}
 			</div>
-			<ConfigDeckFooter activeRun={activeRun} />
+			<ConfigDeckFooter
+				activeRun={activeRun}
+				onDeinstall={isShopOpen ? onDeinstallConfig : undefined}
+			/>
 		</section>
 	);
 };

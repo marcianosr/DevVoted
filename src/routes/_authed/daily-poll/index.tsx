@@ -89,6 +89,7 @@ const DailyPoll: React.FC = () => {
 				nextOfferedConfigs={nextOfferedConfigs}
 				initialPendingUpgradeCards={activeRun.data.pendingUpgradeCards}
 				initialWindowContext={initialWindowContext}
+				date={currentDate}
 			/>
 
 			{/* TODO: Refactor in own component */}

@@ -11,7 +11,6 @@ import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { skipShopServerFn } from "~/domains/runs/api/runs";
 import { Run } from "~/domains/runs/models/run.model";
-import { getTodayDateString } from "~/lib/dateUtils";
 import { formatStorage } from "~/lib/storage";
 import { PrimaryButton } from "~/ui/PrimaryButton.component";
 
@@ -23,6 +22,7 @@ type ShopContainerProps = {
 	reductionCost: number;
 	isOpen: boolean;
 	showNextConfigs?: boolean;
+	date: string;
 };
 
 const SKIP_REWARD_KB = 65536; // 64KB
@@ -34,6 +34,7 @@ const ShopContainer = ({
 	reductionCost,
 	isOpen,
 	storageBonus,
+	date,
 }: ShopContainerProps) => {
 	const router = useRouter();
 	const {
@@ -43,7 +44,7 @@ const ShopContainer = ({
 		configsStorage,
 		rerollsStorage,
 	} = getStorageInfo(activeRun);
-	const today = getTodayDateString();
+	const today = date;
 
 	const rerollCost = calculateRerollCost(activeRun.rerolls);
 	const canReroll = storageAvailable >= rerollCost;
