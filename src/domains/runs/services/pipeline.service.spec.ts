@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
-import type { PipelineSlot, UpgradeCard } from "~/domains/runs/models/pipeline";
+import type {
+	PipelineSlot,
+	UpgradeCard,
+} from "~/domains/runs/models/pipeline.model";
 import {
 	applyUpgradeCard,
 	generateUpgradeCards,

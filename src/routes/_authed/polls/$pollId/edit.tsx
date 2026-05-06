@@ -10,7 +10,7 @@ import {
 	getPollByIdWithOptions,
 	updatePollServerFn,
 } from "~/domains/polls/api/polls";
-import { PollForm } from "~/domains/polls/components/PollForm";
+import { PollForm } from "~/domains/polls/components/PollForm.component";
 import { ADMIN_EMAILS } from "~/utils/adminAuth";
 import { getSupabaseServerClient } from "~/utils/supabase";
 

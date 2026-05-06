@@ -1,7 +1,12 @@
-import { configs, applyEffects } from "~/domains/configs/data/configs";
-import { Config } from "~/domains/configs/models/config";
-import { Run } from "~/domains/runs/models/run";
+import { configs, applyEffects } from "~/domains/economy/data/configs";
+import { Config } from "~/domains/economy/models/config.model";
+import { Run } from "~/domains/runs/models/run.model";
 import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
+
+// Player gets back REFUND_RATE * cost on deinstall; the rest becomes a penalty.
+export const REFUND_RATE = 0.5;
+export const calculateRefund = (cost: number): number =>
+	Math.round(cost * REFUND_RATE);
 
 import { previewNextShopOfferings } from "./configSelection";
 

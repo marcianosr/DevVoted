@@ -1,9 +1,9 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 
-import { createPollOption } from "~/domains/polls/models/pollOption";
+import { createPollOption } from "~/domains/polls/models/pollOption.model";
 
-import Option, { handleOptionsChange } from "./Option";
+import Option, { handleOptionsChange } from "./Option.component";
 
 describe(Option, () => {
 	const mockOption = createPollOption({

@@ -2,9 +2,9 @@
  * Pure config selection logic - no database dependencies.
  * Safe to import from routes and components.
  */
-import { configs } from "~/domains/configs/data/configs";
-import { Config } from "~/domains/configs/models/config";
-import { withDiscount } from "~/domains/configs/services/discount.service";
+import { configs } from "~/domains/economy/data/configs";
+import { Config } from "~/domains/economy/models/config.model";
+import { withDiscount } from "~/domains/economy/services/discount.service";
 
 type ConfigRarity = Config["rarity"];
 

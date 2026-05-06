@@ -2,7 +2,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import type {
 	PipelineSlot,
 	ShortWindowRequirement,
-} from "~/domains/runs/models/pipeline";
+} from "~/domains/runs/models/pipeline.model";
 
 export type CategoryPollResult = {
 	readonly appeared: number;

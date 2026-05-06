@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { PollCodeSandboxEmbed } from "./PollCodeSandboxEmbed";
+import { PollCodeSandboxEmbed } from "./PollCodeSandboxEmbed.component";
 
 describe(PollCodeSandboxEmbed, () => {
 	const mockCodeSandboxUrl =

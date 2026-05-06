@@ -12,7 +12,7 @@ const ENABLED_CATEGORY_CODES = CATEGORY_CODES.filter(
 );
 
 // Mock the configs module
-vi.mock("~/domains/configs/data/configs", () => ({
+vi.mock("~/domains/economy/data/configs", () => ({
 	configs: [
 		{
 			id: ".html-config",

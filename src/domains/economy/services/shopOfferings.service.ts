@@ -3,8 +3,8 @@
  * This file contains functions that interact with the database.
  * For pure selection logic (no DB), see configSelection.ts
  */
-import { configs } from "~/domains/configs/data/configs";
-import { Config } from "~/domains/configs/models/config";
+import { configs } from "~/domains/economy/data/configs";
+import { Config } from "~/domains/economy/models/config.model";
 
 import {
 	applyDiscountsToConfigIds,
@@ -21,7 +21,7 @@ import {
 	getShopOfferings,
 	storeDailyExposedDeck,
 	storeShopOfferings,
-} from "../api/queries";
+} from "../api/shopOfferings.queries";
 
 const DEFAULT_OFFERED_CONFIGS_COUNT = 3;
 

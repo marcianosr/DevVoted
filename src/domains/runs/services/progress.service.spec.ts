@@ -1,19 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import { getPollsSeenInRun } from "~/domains/polls/api/queries";
-import { createPoll } from "~/domains/polls/models/poll";
-import { orchestrateScoreCalculation } from "~/domains/score/services/score.service";
+import { getPollsSeenInRun } from "~/domains/polls/api/pollResponse.queries";
+import { createPoll } from "~/domains/polls/models/poll.model";
+import { orchestrateScoreCalculation } from "~/domains/runs/services/score.service";
 
 import { incrementRunProgress } from "./progress.service";
-import { awardCoverageToRun } from "../api/queries";
-import { createMockRun } from "../models/run";
-import { createMockRunCategoryCoverage } from "../models/runCategoryCoverage";
+import { awardCoverageToRun } from "../api/coverage.queries";
+import { createMockRun } from "../models/run.mock";
+import { createMockRunCategoryCoverage } from "../models/runCategoryCoverage.mock";
 
-vi.mock("~/domains/score/services/score.service");
-vi.mock("../api/queries");
-vi.mock("~/domains/polls/api/queries", () => ({
-	getPollsSeenInRun: vi.fn(),
-}));
+vi.mock("~/domains/runs/services/score.service");
+vi.mock("~/domains/polls/api/pollResponse.queries");
+vi.mock("~/domains/runs/api/coverage.queries");
 
 describe("incrementRunProgress", () => {
 	beforeEach(() => {

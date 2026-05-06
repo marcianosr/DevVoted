@@ -6,10 +6,10 @@ import {
 	getActiveRunByUserId,
 	createRunForUser,
 	getLastRunFromUser,
-	getLiveRunRankings,
-	skipShop,
 	getAllRuns,
-} from "./queries";
+} from "./run.queries";
+import { getLiveRunRankings } from "./ranking.queries";
+import { skipShop } from "./shop.queries";
 import { endRunManually } from "../services/runCompletion.service";
 
 export const getOrCreateActiveRun = async (userId: string) => {

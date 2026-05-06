@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
+import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.mock";
 
 import { aggregateRunCategoryCoverage } from "./coverageCalculations";
 

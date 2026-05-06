@@ -2,15 +2,15 @@ import { useState, type ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import ConfigCard from "~/domains/configs/components/Cards";
-import type { Config } from "~/domains/configs/models/config";
-import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown";
-import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid";
-import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage";
+import ConfigCard from "~/domains/economy/components/Cards/ConfigCard.component";
+import type { Config } from "~/domains/economy/models/config.model";
+import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown.component";
+import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid.component";
+import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.mock";
 import { DEFAULT_WINDOW_SIZE } from "~/domains/runs/services/pipelineEvaluator.service";
 import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
 import { STORAGE_UNITS } from "~/lib/storage";
-import { GameLoopExplainer } from "~/ui/GameLoopExplainer";
+import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
 
 // Demo data for ConfigCards
 const DEMO_CONFIGS: Config[] = [

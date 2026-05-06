@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { POLL_STATUSES } from "~/domains/polls/models/poll";
+import { POLL_STATUSES } from "~/domains/polls/models/poll.model";
 
 // Poll submission validation
 export const pollSubmissionSchema = z.object({

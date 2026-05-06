@@ -4,11 +4,11 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 
-import { configs as allConfigs } from "~/domains/configs/data/configs";
-import { Config } from "~/domains/configs/models/config";
+import { configs as allConfigs } from "~/domains/economy/data/configs";
+import { Config } from "~/domains/economy/models/config.model";
 import { formatStorage } from "~/lib/storage";
 
-import { PrimaryButton } from "../../ui/PrimaryButton";
+import { PrimaryButton } from "../../ui/PrimaryButton.component";
 import { ADMIN_EMAILS } from "../../utils/adminAuth";
 import { getSupabaseServerClient } from "../../utils/supabase";
 
@@ -78,7 +78,7 @@ const createSeasonFn = createServerFn({ method: "POST" })
 		await checkAdminAccessForAction();
 
 		const { createSeason } =
-			await import("~/domains/seasons/services/seasonService");
+			await import("~/domains/ranking/services/seasonService");
 
 		try {
 			const season = await createSeason({
@@ -104,7 +104,7 @@ const startSeasonFn = createServerFn({ method: "POST" })
 		await checkAdminAccessForAction();
 
 		const { startSeason } =
-			await import("~/domains/seasons/services/seasonService");
+			await import("~/domains/ranking/services/seasonService");
 
 		try {
 			const season = await startSeason(data.seasonId);
@@ -124,7 +124,7 @@ const finishSeasonFn = createServerFn({ method: "POST" })
 		await checkAdminAccessForAction();
 
 		const { finishSeason } =
-			await import("~/domains/seasons/services/seasonService");
+			await import("~/domains/ranking/services/seasonService");
 
 		try {
 			const season = await finishSeason(data.seasonId);
@@ -140,7 +140,7 @@ const finishSeasonFn = createServerFn({ method: "POST" })
 
 const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 	const { getAllSeasons, getCurrentSeason } =
-		await import("~/domains/seasons/services/seasonService");
+		await import("~/domains/ranking/services/seasonService");
 	const { db } = await import("~/database/db");
 	const {
 		pollsTable,

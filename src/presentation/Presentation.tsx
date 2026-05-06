@@ -1,7 +1,7 @@
 import { Slide } from "./Slide";
 import { SlideCounter } from "./SlideCounter";
 import { slides } from "./slides";
-import { usePresentationKeys } from "./usePresentationKeys";
+import { usePresentationKeys } from "./usePresentationKeys.hook";
 
 import type { Slide as SlideType } from "./types";
 

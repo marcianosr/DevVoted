@@ -1,4 +1,4 @@
-import { configs } from "~/domains/configs/data/configs";
+import { configs } from "~/domains/economy/data/configs";
 import { CATEGORY_CODES, CategoryCode } from "~/domains/shared/categories";
 
 export type CategoryWeights = Record<CategoryCode, number>;

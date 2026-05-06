@@ -10,7 +10,7 @@ import type {
 	PipelineSlot,
 	UpgradeCard,
 	UpgradeCategoryMasterySlotCard,
-} from "~/domains/runs/models/pipeline";
+} from "~/domains/runs/models/pipeline.model";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 const DIFFICULTY_ORDER: readonly GateDifficulty[] = [
