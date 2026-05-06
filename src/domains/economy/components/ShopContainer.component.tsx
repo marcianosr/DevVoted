@@ -107,6 +107,7 @@ const ShopContainer = ({
 							<ShopCard
 								config={config}
 								disabled={config.cost > storageAvailable || !isOpen}
+								isInstalled={activeRun.activeConfigIds.includes(config.id)}
 								onInstall={() => onInstallConfig(config)}
 							/>
 						</li>

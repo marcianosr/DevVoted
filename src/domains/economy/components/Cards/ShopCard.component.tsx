@@ -8,22 +8,47 @@ import { Config } from "~/domains/economy/models/config.model";
 type ShopConfigProps = {
 	config: Config;
 	disabled?: boolean;
+	isInstalled?: boolean;
 	onInstall: (config: Config) => void;
 };
 
-const ShopCard = ({ config, disabled, onInstall }: ShopConfigProps) => {
-	const disabledStyles = clsx(disabled && "opacity-50 cursor-not-allowed");
+const ShopCard = ({
+	config,
+	disabled,
+	isInstalled,
+	onInstall,
+}: ShopConfigProps) => {
+	const rarityColors = RARITY_COLORS[config.rarity];
+	const isInteractive = !disabled && !isInstalled;
+
+	const buttonStyles = clsx("border p-2 w-full", {
+		"border-green-600 text-green-400 opacity-70 cursor-not-allowed":
+			isInstalled,
+		"opacity-50 cursor-not-allowed": disabled && !isInstalled,
+		[`${rarityColors.border} ${rarityColors.text} cursor-pointer`]:
+			isInteractive,
+	});
+
+	const buttonLabel = isInstalled
+		? "✓ Installed"
+		: disabled
+			? "Not enough storage"
+			: "Install";
+
 	return (
-		<div className="flex flex-col gap-2 hover:scale-105 transition-transform cursor-pointer">
-			<ConfigCard config={config} disabled={disabled} size="large" />
+		<div
+			className={clsx(
+				"flex flex-col gap-2 transition-transform",
+				isInteractive && "hover:scale-105 cursor-pointer"
+			)}
+		>
+			<ConfigCard config={config} disabled={!isInteractive} size="large" />
 			<button
-				onClick={() => !disabled && onInstall(config)}
-				className={clsx(
-					`border ${RARITY_COLORS[config.rarity].border} ${RARITY_COLORS[config.rarity].text} p-2 cursor-pointer`,
-					disabledStyles
-				)}
+				onClick={() => isInteractive && onInstall(config)}
+				disabled={!isInteractive}
+				className={buttonStyles}
 			>
-				Install
+				{buttonLabel}
 			</button>
 		</div>
 	);
