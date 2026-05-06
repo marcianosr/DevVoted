@@ -335,6 +335,24 @@ export const appendPipelineSlotSnapshot = async (
 	);
 };
 
+export const applyPipelineUpgrade = async (
+	runId: number,
+	currentSlots: PipelineSlot[],
+	newSlots: PipelineSlot[]
+) => {
+	const [updatedRun] = await db
+		.update(runsTable)
+		.set({
+			pipeline_slots: newSlots,
+			pending_upgrade_cards: [],
+			pipeline_slot_snapshots: sql`pipeline_slot_snapshots || ${JSON.stringify([currentSlots])}::jsonb`,
+		})
+		.where(eq(runsTable.id, runId))
+		.returning();
+
+	return updatedRun ? runFactory.toDTO(updatedRun) : null;
+};
+
 export const resetPollRerolls = async (runId: number) => {
 	const [updatedRun] = await db
 		.update(runsTable)

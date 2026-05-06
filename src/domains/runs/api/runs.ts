@@ -26,12 +26,7 @@ import {
 	getWindowSize,
 	type PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import {
-	appendPipelineSlotSnapshot,
-	clearPendingUpgradeCards,
-	getActiveRunByUserId,
-	savePipelineSlots,
-} from "./run.queries";
+import { applyPipelineUpgrade, getActiveRunByUserId } from "./run.queries";
 
 export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -221,11 +216,7 @@ export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
 		}
 
 		const newSlots = applyUpgradeCard(activeRun.pipelineSlots, card);
-		await Promise.all([
-			appendPipelineSlotSnapshot(activeRun.id, activeRun.pipelineSlots),
-			savePipelineSlots(activeRun.id, newSlots),
-			clearPendingUpgradeCards(activeRun.id),
-		]);
+		await applyPipelineUpgrade(activeRun.id, activeRun.pipelineSlots, newSlots);
 
 		return { applied: true };
 	});
