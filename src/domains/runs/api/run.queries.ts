@@ -338,14 +338,15 @@ export const appendPipelineSlotSnapshot = async (
 export const applyPipelineUpgrade = async (
 	runId: number,
 	currentSlots: PipelineSlot[],
-	newSlots: PipelineSlot[]
+	newSlots: PipelineSlot[],
+	currentSnapshots: PipelineSlot[][]
 ) => {
 	const [updatedRun] = await db
 		.update(runsTable)
 		.set({
 			pipeline_slots: newSlots,
 			pending_upgrade_cards: [],
-			pipeline_slot_snapshots: sql`pipeline_slot_snapshots || ${JSON.stringify([currentSlots])}::jsonb`,
+			pipeline_slot_snapshots: [...currentSnapshots, currentSlots],
 		})
 		.where(eq(runsTable.id, runId))
 		.returning();

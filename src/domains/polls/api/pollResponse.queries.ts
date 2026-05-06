@@ -11,6 +11,7 @@ import { db } from "~/database/db";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption.model";
 import {
 	type PollAnswerOutcome,
+	type ScoreCalculation,
 	outcomeMulti,
 } from "~/domains/runs/services/score.service";
 
@@ -21,6 +22,7 @@ type CreatePollResponse = {
 	answerDate: string;
 	selectedOptionIds: number[];
 	coverageDelta: number;
+	scoreBreakdown: ScoreCalculation;
 };
 
 export const createPollResponse = async ({
@@ -30,6 +32,7 @@ export const createPollResponse = async ({
 	answerDate,
 	selectedOptionIds,
 	coverageDelta,
+	scoreBreakdown,
 }: CreatePollResponse) => {
 	await db.transaction(async (tx) => {
 		const [pollResponseRecord] = await tx
@@ -40,6 +43,7 @@ export const createPollResponse = async ({
 				run_id: runId,
 				answer_date: answerDate,
 				coverage_delta: coverageDelta,
+				score_breakdown: scoreBreakdown,
 			})
 			.returning();
 
@@ -55,6 +59,26 @@ export const createPollResponse = async ({
 			await tx.insert(pollResponseOptionsTable).values(responseOptionRecords);
 		}
 	});
+};
+
+export const getPollResponseScoreBreakdown = async (
+	pollId: number,
+	userId: string,
+	runId: number
+): Promise<ScoreCalculation | null> => {
+	const [response] = await db
+		.select({ score_breakdown: pollResponsesTable.score_breakdown })
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.poll_id, pollId),
+				eq(pollResponsesTable.user_id, userId),
+				eq(pollResponsesTable.run_id, runId)
+			)
+		)
+		.limit(1);
+
+	return response?.score_breakdown ?? null;
 };
 
 export const hasUserAnsweredPoll = async (

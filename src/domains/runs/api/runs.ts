@@ -216,7 +216,12 @@ export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
 		}
 
 		const newSlots = applyUpgradeCard(activeRun.pipelineSlots, card);
-		await applyPipelineUpgrade(activeRun.id, activeRun.pipelineSlots, newSlots);
+		await applyPipelineUpgrade(
+			activeRun.id,
+			activeRun.pipelineSlots,
+			newSlots,
+			activeRun.pipelineSlotSnapshots
+		);
 
 		return { applied: true };
 	});

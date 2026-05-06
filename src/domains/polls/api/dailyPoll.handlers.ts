@@ -14,6 +14,7 @@ import {
 	trackPollAnswer,
 	getPollsSeenInRun,
 	getRunPollHistory,
+	getPollResponseScoreBreakdown,
 } from "~/domains/polls/api/pollResponse.queries";
 import { processTurn } from "~/domains/runs/services/turn.service";
 import {
@@ -87,6 +88,15 @@ export const getScoreBreakdownHandler = async ({
 			throw new Error(activeRunResponse.error);
 		}
 
+		if (hasAnswered) {
+			const stored = await getPollResponseScoreBreakdown(
+				pollId,
+				userId,
+				activeRunResponse.data.id
+			);
+			if (stored) return stored;
+		}
+
 		const { poll, options } = await fetchPollByIdWithOptions(pollId);
 
 		return await getRunProgress({
@@ -94,7 +104,6 @@ export const getScoreBreakdownHandler = async ({
 			run: activeRunResponse.data,
 			poll,
 			options,
-			hasAnswered,
 		});
 	});
 };

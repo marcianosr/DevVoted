@@ -113,7 +113,7 @@ const commitAnswerProgress = async ({
 	breakdown: PollScoreBreakdown;
 	newTotalCoverage: number;
 }> => {
-	const { breakdown, newTotalCoverage } = await incrementRunProgress({
+	const scoreCalculation = await incrementRunProgress({
 		categoryCode: poll.categoryCode,
 		run: activeRun,
 		correctnessFactor,
@@ -121,6 +121,8 @@ const commitAnswerProgress = async ({
 		options,
 		hasAnswered: false,
 	});
+
+	const { breakdown, newTotalCoverage } = scoreCalculation;
 
 	if (outcome === "full") {
 		await incrementCorrectPollsCount(activeRun.id);
@@ -133,6 +135,7 @@ const commitAnswerProgress = async ({
 		answerDate: getTodayDateString(),
 		selectedOptionIds,
 		coverageDelta: breakdown.delta,
+		scoreBreakdown: scoreCalculation,
 	});
 
 	return { breakdown, newTotalCoverage };

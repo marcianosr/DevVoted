@@ -122,14 +122,13 @@ type GetRunProgressParams = {
 	selectedOptions: string[];
 	poll: PollWithOptionsResponse["poll"];
 	options: PollWithOptionsResponse["options"];
-	hasAnswered: boolean;
 	run: Run;
 };
+
 export const getRunProgress = async ({
 	selectedOptions,
 	poll,
 	options,
-	hasAnswered,
 	run,
 }: GetRunProgressParams) => {
 	const currentCategoryCoverage = run.categoryCoverage.find(
@@ -143,46 +142,22 @@ export const getRunProgress = async ({
 
 	const totalPollsSeen = await getPollsSeenInRun(run.id);
 
-	const effectCtx = {
-		poll,
-		options,
-		hasAnswered,
-		run,
-	};
-
 	const { coverage: coverageMods } = applyEffects(
-		effectCtx,
+		{ poll, options, hasAnswered: false, run },
 		run.activeConfigIds
 	);
 
 	const pollsPerGate = getWindowSize(run.pipelineSlots);
 
-	// When already answered, the DB has been updated with the new values.
-	// Use the previous streak (before the answer) to avoid double-incrementing.
-	const streakBeforeAnswer = hasAnswered
-		? Math.max(0, (currentCategoryCoverage?.currentStreak ?? 1) - 1)
-		: (currentCategoryCoverage?.currentStreak ?? 0);
-
-	const dbCoverage = currentCategoryCoverage?.currentCoverage ?? 0;
-
-	const result = orchestrateScoreCalculation({
+	return orchestrateScoreCalculation({
 		correctnessFactor,
 		currentBestStreak: currentCategoryCoverage?.bestStreak ?? 0,
-		// When already answered, the DB value is post-answer. Pass 0 so orchestrate
-		// doesn't add coverage on top of an already-updated value; we override
-		// newTotalCoverage below.
-		currentCoverage: hasAnswered ? 0 : dbCoverage,
-		currentStreak: streakBeforeAnswer,
-		totalPollsAnswered: 0, // TODO: is this used?
+		currentCoverage: currentCategoryCoverage?.currentCoverage ?? 0,
+		currentStreak: currentCategoryCoverage?.currentStreak ?? 0,
+		totalPollsAnswered: 0,
 		totalPollsSeen,
 		pollsPerGate,
 		coverageAdd: coverageMods.coverageAdd ?? 0,
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});
-
-	if (hasAnswered) {
-		return { ...result, newTotalCoverage: dbCoverage };
-	}
-
-	return result;
 };
