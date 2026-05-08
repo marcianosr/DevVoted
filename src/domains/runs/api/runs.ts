@@ -26,7 +26,11 @@ import {
 	getWindowSize,
 	type PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import { applyPipelineUpgrade, getActiveRunByUserId } from "./run.queries";
+import {
+	applyPipelineUpgrade,
+	getAllRunsByUserId,
+	getActiveRunByUserId,
+} from "./run.queries";
 
 export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -86,6 +90,10 @@ export const getAllRunsServerFn = createServerFn({ method: "GET" }).handler(
 		return await getAllRunsHandler();
 	}
 );
+
+export const getRunsByUserIdFn = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ userId: z.string() }))
+	.handler(async ({ data }) => getAllRunsByUserId(data.userId));
 
 export const getExposedConfigDeck = createServerFn({ method: "GET" })
 	.inputValidator(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }))

@@ -163,6 +163,16 @@ export const getAllRuns = () => {
 	return db.select().from(runsTable).orderBy(desc(runsTable.created_at));
 };
 
+export const getAllRunsByUserId = async (userId: string) => {
+	const records = await db
+		.select()
+		.from(runsTable)
+		.where(eq(runsTable.user_id, userId))
+		.orderBy(desc(runsTable.created_at));
+
+	return runFactory.toDTOs(records);
+};
+
 export const getRunForCompletion = async (runId: number) => {
 	const [run] = await db
 		.select()

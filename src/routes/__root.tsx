@@ -157,6 +157,16 @@ function Navigation() {
 				>
 					Daily Poll
 				</Link>
+				<span className="text-white">·</span>
+				<Link
+					to="/community"
+					activeProps={{
+						className: "underline",
+					}}
+					activeOptions={{ exact: true }}
+				>
+					Community
+				</Link>
 
 				{user ? (
 					<>

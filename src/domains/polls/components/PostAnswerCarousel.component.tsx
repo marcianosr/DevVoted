@@ -29,6 +29,10 @@ import { ScoreBlock } from "./ScoreBlock.component";
 import type { CommunityStats } from "~/domains/polls/api/communityStats.queries";
 import type { Poll } from "../models/poll.model";
 import type { PollOption } from "../models/pollOption.model";
+import {
+	DevCard,
+	MOCK_COMMUNITY,
+} from "~/domains/users/components/DevCard.component";
 
 type PipelineProps = {
 	slots: PipelineSlot[];
@@ -217,17 +221,20 @@ export const PostAnswerCarousel = ({
 
 						<section className="border-t border-theme pt-8 space-y-2">
 							<h3 className="text-4xl">👥 Community</h3>
-							<p className="text-xl">
-								<span>
-									{communityStats?.totalResponses} player(s) participated
-								</span>
-								<span className="mx-2">·</span>
-								<span>
-									{communityStats?.users.map((user) => (
-										<UserAvatar key={user.id} user={user} />
-									))}
-								</span>
+							<p className="text-xl mb-4">
+								{communityStats?.totalResponses} player(s) participated
 							</p>
+
+							<div className="flex flex-wrap gap-3">
+								{MOCK_COMMUNITY.map((player) => (
+									<DevCard
+										key={player.displayName}
+										data={player}
+										size="small"
+									/>
+								))}
+							</div>
+
 							{communityStats?.firstToAnswer && (
 								<div>
 									<p className="text-xl mt-4">First to answer</p>
