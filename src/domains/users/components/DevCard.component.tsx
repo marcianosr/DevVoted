@@ -18,6 +18,36 @@ export type DevCardData = {
 	totalRuns: number;
 };
 
+// ─── Corner ornament ──────────────────────────────────────────────────────────
+
+const CornerOrnament = ({
+	position,
+}: {
+	position: "tl" | "tr" | "bl" | "br";
+}) => {
+	const pos: Record<string, string> = {
+		tl: "top-0 left-0",
+		tr: "top-0 right-0",
+		bl: "bottom-0 left-0",
+		br: "bottom-0 right-0",
+	};
+	const flip: Record<string, string> = {
+		tl: "",
+		tr: "scale-x-[-1]",
+		bl: "scale-y-[-1]",
+		br: "scale-x-[-1] scale-y-[-1]",
+	};
+	return (
+		<div
+			className={`absolute ${pos[position]} ${flip[position]} w-5 h-5 pointer-events-none`}
+		>
+			<div className="absolute top-0 left-0 w-full h-[2px] bg-theme" />
+			<div className="absolute top-0 left-0 h-full w-[2px] bg-theme" />
+			<div className="absolute top-[5px] left-[5px] w-[5px] h-[5px] rotate-45 border border-theme" />
+		</div>
+	);
+};
+
 // ─── DevCard ──────────────────────────────────────────────────────────────────
 
 type DevCardSize = "default" | "small";
@@ -27,9 +57,30 @@ type DevCardProps = {
 	size?: DevCardSize;
 };
 
-const SIZE_DIMS: Record<DevCardSize, { card: string; initials: string; name: string; award: string; footer: string }> = {
-	default: { card: "w-44", initials: "text-6xl", name: "text-sm", award: "text-xs", footer: "text-xs" },
-	small:   { card: "w-28", initials: "text-4xl", name: "text-xs", award: "text-xs", footer: "hidden" },
+const SIZE_DIMS: Record<
+	DevCardSize,
+	{
+		width: string;
+		height: string;
+		initials: string;
+		name: string;
+		award: string;
+	}
+> = {
+	default: {
+		width: "w-40",
+		height: "h-60",
+		initials: "text-7xl",
+		name: "text-sm",
+		award: "text-xs",
+	},
+	small: {
+		width: "w-28",
+		height: "h-40",
+		initials: "text-5xl",
+		name: "text-xs",
+		award: "text-xs",
+	},
 };
 
 export const DevCard = ({ data, size = "default" }: DevCardProps) => {
@@ -42,64 +93,71 @@ export const DevCard = ({ data, size = "default" }: DevCardProps) => {
 	return (
 		<div
 			data-category-theme={data.dominantCategory ?? undefined}
-			className={`${d.card} relative flex flex-col bg-gray-950 border-2 border-theme select-none`}
+			className={`${d.width} ${d.height} relative flex flex-col overflow-hidden bg-gray-950 border border-theme/40 select-none`}
 		>
-			{/* Top banner — category label */}
-			<div className="bg-theme/15 border-b border-theme px-2 py-1 flex items-center justify-center">
-				<span className="text-theme text-xs font-bold tracking-[0.2em] uppercase">
-					{categoryName ?? "UNKNOWN"}
-				</span>
-			</div>
+			{/* Corner ornaments */}
+			<CornerOrnament position="tl" />
+			<CornerOrnament position="tr" />
+			<CornerOrnament position="bl" />
+			<CornerOrnament position="br" />
 
-			{/* Art area — initials with radial glow */}
+			{/* Top gem — category indicator */}
 			<div
-				className="relative flex items-center justify-center py-8 overflow-hidden"
+				className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-3.5 h-3.5 rotate-45 bg-theme border border-theme/60"
+				style={{ boxShadow: "0 0 8px var(--theme-color)" }}
+			/>
+
+			{/* Art area — fills card, initials with deep radial glow */}
+			<div
+				className="flex-1 relative flex items-center justify-center overflow-hidden"
 				style={{
 					background:
-						"radial-gradient(ellipse 70% 60% at 50% 50%, color-mix(in oklch, var(--theme-color) 20%, transparent), transparent 80%)",
+						"radial-gradient(ellipse 80% 70% at 50% 50%, color-mix(in oklch, var(--theme-color) 18%, #0a0a0f), #0a0a0f)",
 				}}
 			>
 				{data.photoUrl ? (
 					<img
 						src={data.photoUrl}
 						alt={data.displayName}
-						className="w-20 h-20 object-cover"
+						className="w-full h-full object-cover"
 					/>
 				) : (
 					<span
 						className={`${d.initials} font-bold text-theme leading-none`}
 						style={{
 							textShadow:
-								"0 0 24px var(--theme-color), 0 0 8px var(--theme-color)",
+								"0 0 40px var(--theme-color), 0 0 12px var(--theme-color)",
 						}}
 					>
 						{initials}
 					</span>
 				)}
+
+				{/* Bottom gradient overlay — fades art into the info strip */}
+				<div
+					className="absolute inset-x-0 bottom-0 h-16"
+					style={{
+						background: "linear-gradient(to top, #0a0a0f, transparent)",
+					}}
+				/>
 			</div>
 
-			{/* Info area */}
-			<div className="px-3 pb-1 flex flex-col gap-1 border-t border-theme">
-				<p className={`text-white font-bold leading-tight truncate mt-2 ${d.name}`}>
+			{/* Info strip — overlaid on bottom */}
+			<div className="relative z-10 px-3 pt-1 pb-2 flex flex-col gap-0.5">
+				<p className={`text-white font-bold leading-tight truncate ${d.name}`}>
 					{data.displayName}
 				</p>
-				{data.pinnacleAward && (
-					<p className={`text-theme font-bold ${d.award}`}>
+				{data.pinnacleAward ? (
+					<p className={`text-theme leading-tight truncate ${d.award}`}>
 						{data.pinnacleAward.name}
 					</p>
+				) : (
+					categoryName && (
+						<p className={`text-theme/60 leading-tight ${d.award}`}>
+							{categoryName}
+						</p>
+					)
 				)}
-			</div>
-
-			{/* Footer stats + ticket notch row */}
-			<div className="relative flex items-center px-3 py-1.5 border-t border-dashed border-theme mt-1">
-				{/* Left notch */}
-				<div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-black border border-theme" />
-				<div className={`flex justify-between w-full text-gray-600 ${d.footer}`}>
-					<span>{data.awardsEarned} awards</span>
-					<span>{data.totalRuns} runs</span>
-				</div>
-				{/* Right notch */}
-				<div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-black border border-theme" />
 			</div>
 		</div>
 	);
@@ -173,7 +231,8 @@ export const MOCK_COMMUNITY: DevCardData[] = [
 		dominantCategory: "js",
 		pinnacleAward: {
 			name: "Script Sage",
-			description: "Reached critical mastery in JavaScript across your pipelines",
+			description:
+				"Reached critical mastery in JavaScript across your pipelines",
 			earned: true,
 		},
 		awardsEarned: 5,
