@@ -7,7 +7,8 @@ priority: normal
 tags:
     - brainstorm
 created_at: 2026-04-27T13:51:06Z
-updated_at: 2026-04-27T13:59:35Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-f147
 ---
 
 Add new pipeline variants that introduce different gameplay constraints:

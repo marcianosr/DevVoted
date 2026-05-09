@@ -3,8 +3,10 @@
 title: Juice the UI
 status: draft
 type: feature
+priority: normal
 created_at: 2026-04-27T15:08:09Z
-updated_at: 2026-04-27T15:08:09Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-3q23
 ---
 
 Add game feel and polish to the UI through visual and audio feedback:

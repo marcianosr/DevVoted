@@ -7,7 +7,8 @@ priority: normal
 tags:
     - brainstorm
 created_at: 2026-04-27T12:11:52Z
-updated_at: 2026-04-27T13:59:35Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-f147
 ---
 
 Expand beyond the current poll format with new question types inspired by 'De Slimste Mens':

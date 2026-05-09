@@ -7,7 +7,8 @@ priority: normal
 tags:
     - brainstorm
 created_at: 2026-04-27T13:52:21Z
-updated_at: 2026-04-27T13:54:34Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-f147
 ---
 
 Currently the game has 11 categories. This brainstorm should decide how to expand the category set to include more specific framework and platform topics.

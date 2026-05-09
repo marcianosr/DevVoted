@@ -7,13 +7,8 @@ priority: critical
 tags:
     - brainstorm
 created_at: 2026-04-27T11:55:46Z
-updated_at: 2026-05-08T00:00:00Z
-parent: DVTD-4
-children:
-    - DVTD-r4gx
-    - DVTD-k9mw
-    - DVTD-j2tn
-    - DVTD-w5pb
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-lwvx
 ---
 
 Brainstorm completed May 2026. Full session notes in `docs/brainstorm/08-05-2026-pipeline-rewards.md`.

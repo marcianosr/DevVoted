@@ -3,10 +3,12 @@
 title: Add more social layer
 status: draft
 type: feature
+priority: normal
 tags:
     - brainstorm
 created_at: 2026-04-27T15:08:09Z
-updated_at: 2026-04-27T15:08:09Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-3wpy
 ---
 
 Brainstorm how to deepen the social layer of DevVoted. Goal: connect players with each other through cooperation, competition, or sabotage mechanics.
