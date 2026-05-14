@@ -13,6 +13,8 @@ import {
 	getRandomAnswerHandler,
 	getScoreBreakdownHandler,
 } from "~/domains/polls/api/dailyPoll.handlers";
+import { getCategoryAwards } from "~/domains/awards/api/awards.queries";
+import type { CategoryAwardWithHolder } from "~/domains/awards/models/award";
 import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
@@ -86,6 +88,17 @@ const getRandomAnswer = createServerFn({ method: "GET" })
 		}
 
 		return result.data;
+	});
+
+const getCategoryAward = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ categoryCode: z.string() }))
+	.handler(async ({ data }) => {
+		const categoryCode = data.categoryCode as Parameters<
+			typeof getCategoryAwards
+		>[0];
+		const userId = await getAuthenticatedUserId();
+		const awards = await getCategoryAwards(categoryCode, userId);
+		return awards satisfies CategoryAwardWithHolder[];
 	});
 
 type DailyPollContainerProps = {
@@ -227,6 +240,13 @@ const DailyPollContainer = ({
 			}),
 	});
 
+	const { data: categoryAwards } = useQuery({
+		queryKey: ["categoryAwards", poll.categoryCode],
+		queryFn: () =>
+			getCategoryAward({ data: { categoryCode: poll.categoryCode } }),
+		enabled: hasAnswered,
+	});
+
 	// Fetch random answer for telemetry hint (only when config is active and user hasn't answered)
 	const showWhoPickedWhat = configEffects.showWhoPickedWhat ?? false;
 	const { data: randomAnswer } = useQuery({
@@ -361,6 +381,7 @@ const DailyPollContainer = ({
 						selectedOptions={selectedOptions}
 						score={displayScore}
 						communityStats={communityStats}
+						categoryAwards={categoryAwards ?? []}
 						categoryCode={poll.categoryCode}
 						explanation={poll.explanation}
 						exposedConfigDeck={exposedConfigDeck}

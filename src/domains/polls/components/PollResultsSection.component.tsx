@@ -10,6 +10,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import type { Run } from "~/domains/runs/models/run.model";
 
 import type { CommunityStats } from "~/domains/polls/api/communityStats.queries";
+import type { CategoryAwardWithHolder } from "~/domains/awards/models/award";
 import type { Poll } from "../models/poll.model";
 import type { PollOption } from "../models/pollOption.model";
 import { PostAnswerCarousel } from "./PostAnswerCarousel.component";
@@ -26,6 +27,7 @@ type PollResultsSectionProps = {
 	selectedOptions: string[];
 	score?: ScoreCalculation;
 	communityStats?: CommunityStats;
+	categoryAwards?: CategoryAwardWithHolder[];
 	categoryCode: CategoryCode;
 	explanation?: string | null;
 	exposedConfigDeck?: ExposedConfigDeck | null;

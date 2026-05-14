@@ -473,3 +473,35 @@ export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
 		.notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+/**
+ * User Awards Table
+ * Permanent record of category run awards ever held by a player.
+ * Once a player first holds a living-record award (e.g. "CSS Connoisseur"),
+ * it is saved here permanently — re-earning it updates nothing, but the record stands.
+ */
+export const userAwardsTable = pgTable(
+	"user_awards",
+	{
+		id: serial("id").primaryKey(),
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		category_code: varchar("category_code", { length: 50 })
+			.references(() => pollCategoriesTable.code)
+			.notNull(),
+		metric: varchar("metric", { length: 50 }).notNull(),
+		first_earned_at: timestamp("first_earned_at", {
+			withTimezone: true,
+		})
+			.defaultNow()
+			.notNull(),
+	},
+	(table) => ({
+		uniqueUserAward: unique().on(
+			table.user_id,
+			table.category_code,
+			table.metric
+		),
+	})
+);

@@ -27,6 +27,8 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import MarkdownText from "./MarkdownText.component";
 import { ScoreBlock } from "./ScoreBlock.component";
 import type { CommunityStats } from "~/domains/polls/api/communityStats.queries";
+import type { CategoryAwardWithHolder } from "~/domains/awards/models/award";
+import { CategoryAwardDisplay } from "~/domains/awards/components/CategoryAwardDisplay.component";
 import type { Poll } from "../models/poll.model";
 import type { PollOption } from "../models/pollOption.model";
 
@@ -47,6 +49,7 @@ type PostAnswerCarouselProps = {
 		coverageMult: number;
 	}[];
 	communityStats?: CommunityStats;
+	categoryAwards?: CategoryAwardWithHolder[];
 	categoryCode: CategoryCode;
 	explanation?: string | null;
 	exposedConfigDeck?: ExposedConfigDeck | null;
@@ -59,7 +62,7 @@ type PostAnswerCarouselProps = {
 	date: string;
 };
 
-const STEPS = ["Today's Poll", "Score & Pipelines", "Shop"] as const;
+type CarouselStep = "Today's Poll" | "Awards" | "Score & Pipelines" | "Shop";
 
 const formatTimeTaken = (ms: number | null): string | null => {
 	if (ms === null) return null;
@@ -74,6 +77,7 @@ export const PostAnswerCarousel = ({
 	score,
 	perConfigCoverageEffects,
 	communityStats,
+	categoryAwards,
 	categoryCode,
 	explanation,
 	exposedConfigDeck,
@@ -94,7 +98,11 @@ export const PostAnswerCarousel = ({
 
 	const isShopOpen = activeRun.shopSkippedDate !== date;
 
-	const stepLabel = (label: string) => {
+	const steps: CarouselStep[] = ["Today's Poll", "Score & Pipelines", "Shop"];
+
+	const currentStep = steps[step];
+
+	const stepLabel = (label: CarouselStep) => {
 		if (label !== "Shop") return label;
 		return (
 			<span className="flex items-center gap-1.5">
@@ -117,7 +125,7 @@ export const PostAnswerCarousel = ({
 					← Back
 				</button>
 				<div className="flex gap-3">
-					{STEPS.map((label, i) => (
+					{steps.map((label, i) => (
 						<button
 							key={label}
 							onClick={() => setStep(i)}
@@ -132,7 +140,7 @@ export const PostAnswerCarousel = ({
 				</div>
 				<button
 					onClick={() => setStep((s) => s + 1)}
-					disabled={step === STEPS.length - 1}
+					disabled={step === steps.length - 1}
 					className="text-xl disabled:opacity-20 cursor-pointer disabled:cursor-default"
 				>
 					Next →
@@ -140,7 +148,7 @@ export const PostAnswerCarousel = ({
 			</nav>
 
 			<div>
-				{step === 0 && (
+				{currentStep === "Today's Poll" && (
 					<div className="space-y-8">
 						<section className="space-y-4">
 							<PollQuestionDisplay poll={poll} />
@@ -280,6 +288,18 @@ export const PostAnswerCarousel = ({
 									</div>
 								</div>
 							)}
+							{categoryAwards?.map(
+								({ award, holder, runnerUp, isNewlyUnlocked }) => (
+									<CategoryAwardDisplay
+										key={award.metric}
+										award={award}
+										holder={holder}
+										runnerUp={runnerUp}
+										isCurrentUser={holder.userId === activeRun.userId}
+										isNewlyUnlocked={isNewlyUnlocked}
+									/>
+								)
+							)}
 							{exposedConfigDeck && (
 								<ExposedConfigDeckDisplay deck={exposedConfigDeck} />
 							)}
@@ -291,7 +311,7 @@ export const PostAnswerCarousel = ({
 					</div>
 				)}
 
-				{step === 1 && (
+				{currentStep === "Score & Pipelines" && (
 					<div className="space-y-8">
 						<div className="flex flex-col gap-8 md:flex-row md:gap-12">
 							<div className="md:w-1/3 shrink-0">
@@ -323,7 +343,7 @@ export const PostAnswerCarousel = ({
 					</div>
 				)}
 
-				{step === 2 && (
+				{currentStep === "Shop" && (
 					<ShopContainer
 						activeRun={activeRun}
 						offeredConfigs={offeredConfigs}
