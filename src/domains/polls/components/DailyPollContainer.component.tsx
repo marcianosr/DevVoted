@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -123,6 +123,7 @@ const DailyPollContainer = ({
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const category = getCategoryMetadata(poll.categoryCode);
 
 	// Store the score from mutation to avoid stale data after router.invalidate()
@@ -293,6 +294,9 @@ const DailyPollContainer = ({
 				}
 			}
 
+			await queryClient.invalidateQueries({
+				queryKey: ["communityStats", poll.id],
+			});
 			router.invalidate();
 		},
 		onError: (error) => {
