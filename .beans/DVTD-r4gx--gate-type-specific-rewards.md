@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-05-08T00:00:00Z
-updated_at: 2026-05-08T00:00:00Z
-parent: DVTD-1
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-lwvx
 ---
 
 Replace the flat storage-only reward with gate-type-specific rewards. Each gate type earns a thematically tied reward so gate choice becomes a build decision.

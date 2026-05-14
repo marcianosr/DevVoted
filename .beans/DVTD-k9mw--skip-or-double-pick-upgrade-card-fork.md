@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-05-08T00:00:00Z
-updated_at: 2026-05-08T00:00:00Z
-parent: DVTD-1
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-lwvx
 ---
 
 After passing a gate, give the player a fork instead of always offering 1 upgrade card:

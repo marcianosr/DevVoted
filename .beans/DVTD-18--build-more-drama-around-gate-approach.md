@@ -3,8 +3,10 @@
 title: Build more drama around gate approach
 status: draft
 type: feature
+priority: normal
 created_at: 2026-04-27T15:09:20Z
-updated_at: 2026-04-27T15:09:20Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-3q23
 ---
 
 The current experience of approaching a CI gate lacks tension. Make it feel like a boss encounter is coming:

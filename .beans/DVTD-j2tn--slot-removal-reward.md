@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-05-08T00:00:00Z
-updated_at: 2026-05-08T00:00:00Z
-parent: DVTD-1
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-lwvx
 ---
 
 After surviving a gate where the player chose double-pick (DVTD-k9mw), reward them with a slot removal — permanently delete one slot from the pipeline.

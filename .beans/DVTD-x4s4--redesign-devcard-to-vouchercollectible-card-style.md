@@ -1,11 +1,12 @@
 ---
 # DVTD-x4s4
 title: Redesign DevCard to voucher/collectible card style
-status: completed
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-08T11:41:37Z
-updated_at: 2026-05-08T11:43:24Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-3wpy
 ---
 
 Redesign the DevCard component to feel like a collectible game card (inspired by voucher card aesthetic):\n\n- [x] Category as top banner label (like 'VOUCHER' label)\n- [x] Large initials as central art with radial glow in category color\n- [x] Ticket-style notch cutouts at the bottom corners\n- [x] Award title as the card's 'name' at the bottom\n- [x] Overall: identity-first, achievement as the hero

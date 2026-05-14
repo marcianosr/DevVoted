@@ -1,12 +1,14 @@
 ---
 # DVTD-24
-title: "Pipeline: inverted scoring — wrong answers score points"
+title: 'Pipeline: inverted scoring — wrong answers score points'
 status: draft
 type: feature
+priority: normal
 tags:
     - brainstorm
 created_at: 2026-04-30T11:04:31Z
-updated_at: 2026-04-30T11:04:31Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-1eqf
 ---
 
 An inverted pipeline variant where selecting wrong answers is how you gain coverage. Flips the core game loop entirely.

@@ -1,10 +1,12 @@
 ---
 # DVTD-22
-title: "IndexedDB config: show feedback when effect triggers and drains"
+title: 'IndexedDB config: show feedback when effect triggers and drains'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-04-28T09:42:32Z
-updated_at: 2026-04-28T09:42:32Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-3q23
 ---
 
 The IndexedDB config gives KB over time but currently has no visible feedback. Inspired by Balatro's ice cream melt mechanic:

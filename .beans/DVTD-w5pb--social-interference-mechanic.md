@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-05-08T00:00:00Z
-updated_at: 2026-05-08T00:00:00Z
-parent: DVTD-1
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-lwvx
 ---
 
 When passing certain gates, player can choose to send interference to another active player instead of taking a standard reward.

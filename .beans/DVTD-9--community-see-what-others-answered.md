@@ -5,7 +5,8 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-04-27T12:10:38Z
-updated_at: 2026-04-27T13:52:26Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-3wpy
 ---
 
 Expand community visibility so players feel connected to others. Potential stat types to show:

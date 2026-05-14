@@ -1,10 +1,12 @@
 ---
 # DVTD-21
-title: "More config interactivity: show effects happening live"
+title: 'More config interactivity: show effects happening live'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-04-28T09:42:32Z
-updated_at: 2026-04-28T09:42:32Z
+updated_at: 2026-05-09T08:10:15Z
+parent: DVTD-3q23
 ---
 
 Configs should feel alive when their effects trigger. Inspired by Balatro's ice cream melt animation — instead of a silent stat update, the player should *see* the effect happen.

@@ -5,10 +5,18 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-05-08T11:46:32Z
-updated_at: 2026-05-08T11:48:45Z
+updated_at: 2026-05-11T10:42:59Z
 ---
 
 Each category has a collection of distinct awards, each earned for a specific condition. Not a progression — more like achievements/badges. You can earn multiple awards in one category.
+
+## Metrics per category award
+
+Each category supports up to 4 living-record awards:
+- **Coverage** — highest category coverage % achieved in any run
+- **Streak** — longest correct-answer streak in this category across runs
+- **Participation** — most polls answered in this category
+- **Correct answers** — most correct answers in this category (requires dedicated  column in  — not yet tracked; currently only  exists)
 
 ## Award Registry
 
@@ -81,3 +89,11 @@ Each category has a collection of distinct awards, each earned for a specific co
 - pinnacleAward on DevCard shows the rarest / most interesting earned award for the dominant category
 - Conditions mix coverage, streaks, and run-specific achievements
 - Award names should feel developer-flavored and slightly playful
+
+## Meta progress
+- Titles are earnable as **permanent meta progress** — unlocking one persists to your profile across runs
+- Each title has a threshold condition (e.g. reach 75% HTML coverage, answer 5 HTML polls correctly in a row)
+- Once unlocked, the title stays — it is not lost if someone else overtakes the leaderboard record
+- The community section shows the *current record holder* (living record); the profile shows *your earned titles*
+- Unlocking a title should trigger a special moment in the run UI (dedicated carousel step or overlay)
+- Earning a title can optionally yield a one-time meta reward (score multiplier, cosmetic, shop token)
