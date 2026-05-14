@@ -12,8 +12,11 @@ export type RunCategoryCoverage = {
 	currentStreak: number;
 	bestStreak: number;
 	pollsAnswered: number;
+	correctPollsAnswered: number;
 	finalCoverage: number | null;
 	finalStreak: number | null;
+	finalPollsAnswered: number | null;
+	finalCorrectPollsAnswered: number | null;
 	createdAt: Date;
 	updatedAt: Date | null;
 };
@@ -33,8 +36,11 @@ export const runCategoryCoverageToDTO = (
 		currentStreak: record.current_streak,
 		bestStreak: record.best_streak,
 		pollsAnswered: record.polls_answered,
+		correctPollsAnswered: record.correct_polls_answered,
 		finalCoverage: record.final_coverage,
 		finalStreak: record.final_streak,
+		finalPollsAnswered: record.final_polls_answered,
+		finalCorrectPollsAnswered: record.final_correct_polls_answered,
 		createdAt: record.created_at || new Date(),
 		updatedAt: record.updated_at,
 	};
@@ -51,11 +57,13 @@ export const runCategoryCoverageFromDTO = (
 		current_streak: dto.currentStreak,
 		best_streak: dto.bestStreak,
 		polls_answered: dto.pollsAnswered,
+		correct_polls_answered: dto.correctPollsAnswered,
 		final_coverage: dto.finalCoverage,
 		final_streak: dto.finalStreak,
+		final_polls_answered: dto.finalPollsAnswered,
+		final_correct_polls_answered: dto.finalCorrectPollsAnswered,
 		created_at: dto.createdAt,
 		updated_at: dto.updatedAt,
-		final_polls_answered: 0,
 	};
 };
 
@@ -84,8 +92,11 @@ export const createRunCategoryCoverage = (
 		currentStreak: 0,
 		bestStreak: 0,
 		pollsAnswered: 0,
+		correctPollsAnswered: 0,
 		finalCoverage: null,
 		finalStreak: null,
+		finalPollsAnswered: null,
+		finalCorrectPollsAnswered: null,
 		createdAt: now,
 		updatedAt: now,
 		...partial,

@@ -192,6 +192,7 @@ export const getLastRunFromUser = async (userId: string) => {
 			currentStreak: sql<number>`COALESCE(${runCategoryCoverageTable.final_streak}, ${runCategoryCoverageTable.current_streak})`,
 			bestStreak: runCategoryCoverageTable.best_streak,
 			pollsAnswered: sql<number>`COALESCE(${runCategoryCoverageTable.final_polls_answered}, ${runCategoryCoverageTable.polls_answered})`,
+			correctPollsAnswered: sql<number>`COALESCE(${runCategoryCoverageTable.final_correct_polls_answered}, ${runCategoryCoverageTable.correct_polls_answered})`,
 		})
 		.from(runCategoryCoverageTable)
 		.where(eq(runCategoryCoverageTable.run_id, lastRunRecord[0].id));
@@ -225,6 +226,7 @@ export const completeRunWithThresholdFailure = async (
 				final_coverage: sql`current_coverage`,
 				final_streak: sql`current_streak`,
 				final_polls_answered: sql`polls_answered`,
+				final_correct_polls_answered: sql`correct_polls_answered`,
 			})
 			.where(eq(runCategoryCoverageTable.run_id, runId));
 

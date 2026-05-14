@@ -267,7 +267,7 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			const result = await awardCoverageToRun(1, "js", 15, 3, 3, 1);
+			const result = await awardCoverageToRun(1, "js", 15, 3, 3, 1, 1);
 
 			expect(result.currentCoverage).toBe(15);
 			expect(result.currentStreak).toBe(3);
@@ -311,7 +311,7 @@ describe("Run Queries", () => {
 				cb(txMock as any)
 			);
 
-			const result = await awardCoverageToRun(1, "js", 25, 5, 5, 1);
+			const result = await awardCoverageToRun(1, "js", 25, 5, 5, 1, 1);
 
 			expect(result.bestStreak).toBe(5);
 		});

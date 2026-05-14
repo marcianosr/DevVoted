@@ -362,9 +362,13 @@ export const runCategoryCoverageTable = pgTable(
 		current_streak: integer("current_streak").notNull().default(0),
 		best_streak: integer("best_streak").notNull().default(0),
 		polls_answered: integer("polls_answered").notNull().default(0),
+		correct_polls_answered: integer("correct_polls_answered")
+			.notNull()
+			.default(0),
 		final_coverage: real("final_coverage"),
 		final_streak: integer("final_streak"),
 		final_polls_answered: integer("final_polls_answered"),
+		final_correct_polls_answered: integer("final_correct_polls_answered"),
 		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 		updated_at: timestamp("updated_at", { withTimezone: true })
 			.defaultNow()

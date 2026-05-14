@@ -12,7 +12,8 @@ export const awardCoverageToRun = async (
 	newCoverage: number,
 	newStreak: number,
 	newBestStreak: number,
-	newPollsAnswered: number
+	newPollsAnswered: number,
+	newCorrectPollsAnswered: number
 ) => {
 	return await db.transaction(async (tx) => {
 		const [updatedRecord] = await tx
@@ -22,6 +23,7 @@ export const awardCoverageToRun = async (
 				current_streak: newStreak,
 				best_streak: newBestStreak,
 				polls_answered: newPollsAnswered,
+				correct_polls_answered: newCorrectPollsAnswered,
 			})
 			.where(
 				and(

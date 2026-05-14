@@ -97,14 +97,17 @@ export const incrementRunProgress = async ({
 		coverageMult: coverageMods.coverageMult ?? 1,
 	});
 
+	const isCorrect = correctnessFactor > 0;
+
 	// Step 4: Persist updated values to database
 	await awardCoverageToRun(
 		run.id,
 		categoryCode,
-		newTotalCoverage, // New total coverage for the category
-		newStreak, // Current streak (0 if wrong answer)
-		newBestStreak, // Best streak ever achieved
-		currentCategoryCoverage.pollsAnswered + 1 // Increment poll count
+		newTotalCoverage,
+		newStreak,
+		newBestStreak,
+		currentCategoryCoverage.pollsAnswered + 1,
+		currentCategoryCoverage.correctPollsAnswered + (isCorrect ? 1 : 0)
 	);
 
 	return {
