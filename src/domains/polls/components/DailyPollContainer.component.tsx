@@ -13,7 +13,7 @@ import {
 	getRandomAnswerHandler,
 	getScoreBreakdownHandler,
 } from "~/domains/polls/api/dailyPoll.handlers";
-import { getCategoryAwards } from "~/domains/awards/api/awards.queries";
+import { getAllCategoryAwards } from "~/domains/awards/api/awards.queries";
 import type { CategoryAwardWithHolder } from "~/domains/awards/models/award";
 import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
@@ -90,16 +90,11 @@ const getRandomAnswer = createServerFn({ method: "GET" })
 		return result.data;
 	});
 
-const getCategoryAward = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ categoryCode: z.string() }))
-	.handler(async ({ data }) => {
-		const categoryCode = data.categoryCode as Parameters<
-			typeof getCategoryAwards
-		>[0];
-		const userId = await getAuthenticatedUserId();
-		const awards = await getCategoryAwards(categoryCode, userId);
-		return awards satisfies CategoryAwardWithHolder[];
-	});
+const getCategoryAward = createServerFn({ method: "GET" }).handler(async () => {
+	const userId = await getAuthenticatedUserId();
+	const awards = await getAllCategoryAwards(userId);
+	return awards satisfies CategoryAwardWithHolder[];
+});
 
 type DailyPollContainerProps = {
 	poll: Poll;
@@ -241,9 +236,8 @@ const DailyPollContainer = ({
 	});
 
 	const { data: categoryAwards } = useQuery({
-		queryKey: ["categoryAwards", poll.categoryCode],
-		queryFn: () =>
-			getCategoryAward({ data: { categoryCode: poll.categoryCode } }),
+		queryKey: ["categoryAwards"],
+		queryFn: () => getCategoryAward(),
 		enabled: hasAnswered,
 	});
 

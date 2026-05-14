@@ -22,7 +22,11 @@ import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverage
 import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
 import type { Run } from "~/domains/runs/models/run.model";
 import type { ScoreCalculation } from "~/domains/runs/services/score.service";
-import type { CategoryCode } from "~/domains/shared/categories";
+import {
+	CATEGORY_CODES,
+	CATEGORY_METADATA,
+	type CategoryCode,
+} from "~/domains/shared/categories";
 
 import MarkdownText from "./MarkdownText.component";
 import { ScoreBlock } from "./ScoreBlock.component";
@@ -288,18 +292,94 @@ export const PostAnswerCarousel = ({
 									</div>
 								</div>
 							)}
-							{categoryAwards?.map(
-								({ award, holder, runnerUp, isNewlyUnlocked }) => (
-									<CategoryAwardDisplay
-										key={award.metric}
-										award={award}
-										holder={holder}
-										runnerUp={runnerUp}
-										isCurrentUser={holder.userId === activeRun.userId}
-										isNewlyUnlocked={isNewlyUnlocked}
-									/>
-								)
-							)}
+							{categoryAwards &&
+								categoryAwards.length > 0 &&
+								(() => {
+									const currentAwards = categoryAwards.filter(
+										(a) => a.award.categoryCode === categoryCode
+									);
+									const otherCodes = CATEGORY_CODES.filter(
+										(code) => code !== categoryCode
+									);
+									const otherAwardsByCategory = otherCodes
+										.map((code) => ({
+											code,
+											name: CATEGORY_METADATA[code].name,
+											awards: categoryAwards.filter(
+												(a) => a.award.categoryCode === code
+											),
+										}))
+										.filter((g) => g.awards.length > 0);
+
+									return (
+										<>
+											{currentAwards.length > 0 && (
+												<div className="mt-4">
+													<h4 className="text-lg text-zinc-400 uppercase tracking-wide mb-1">
+														{CATEGORY_METADATA[categoryCode].name} Awards
+													</h4>
+													{currentAwards.map(
+														({ award, holder, runnerUp, isNewlyUnlocked }) => (
+															<CategoryAwardDisplay
+																key={award.metric}
+																award={award}
+																holder={holder}
+																runnerUp={runnerUp}
+																isCurrentUser={
+																	holder.userId === activeRun.userId
+																}
+																isNewlyUnlocked={isNewlyUnlocked}
+															/>
+														)
+													)}
+												</div>
+											)}
+											{otherAwardsByCategory.length > 0 && (
+												<div className="mt-6 space-y-1">
+													<p className="text-zinc-500 text-sm uppercase tracking-wide mb-2">
+														Other category records
+													</p>
+													{otherAwardsByCategory.map(
+														({ code, name, awards }) => (
+															<details
+																key={code}
+																className="group border-l border-zinc-800 pl-3"
+															>
+																<summary className="cursor-pointer text-zinc-500 hover:text-zinc-300 text-sm py-1 list-none flex items-center gap-2">
+																	<span className="text-zinc-700 group-open:text-zinc-400 transition-colors">
+																		▶
+																	</span>
+																	{name} Awards
+																</summary>
+																<div className="pt-1 pb-2">
+																	{awards.map(
+																		({
+																			award,
+																			holder,
+																			runnerUp,
+																			isNewlyUnlocked,
+																		}) => (
+																			<CategoryAwardDisplay
+																				key={award.metric}
+																				award={award}
+																				holder={holder}
+																				runnerUp={runnerUp}
+																				isCurrentUser={
+																					holder.userId === activeRun.userId
+																				}
+																				isNewlyUnlocked={isNewlyUnlocked}
+																			/>
+																		)
+																	)}
+																</div>
+															</details>
+														)
+													)}
+												</div>
+											)}
+										</>
+									);
+								})()}
 							{exposedConfigDeck && (
 								<ExposedConfigDeckDisplay deck={exposedConfigDeck} />
 							)}
