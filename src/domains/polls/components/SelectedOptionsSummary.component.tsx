@@ -3,7 +3,6 @@ import { formatDuration, intervalToDuration } from "date-fns";
 
 import UserAvatar from "~/domains/users/components/UserAvatar.component";
 import ExposedConfigDeckDisplay from "~/domains/economy/components/ExposedConfigDeckDisplay.component";
-import Leaderboard from "~/domains/ranking/components/Leaderboard.component";
 import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay.component";
 import type { ExposedConfigDeck } from "~/domains/runs/api/run.queries";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
@@ -55,7 +54,6 @@ const SelectedOptionsSummary = ({
 	selectedOptions,
 	score,
 	communityStats,
-	categoryCode,
 	explanation,
 	exposedConfigDeck,
 	perConfigCoverageEffects,
@@ -251,9 +249,6 @@ const SelectedOptionsSummary = ({
 					</section>
 				</div>
 			</div>
-			<section className="py-8 border-t border-theme">
-				<Leaderboard categoryCode={categoryCode} />
-			</section>
 		</section>
 	);
 };

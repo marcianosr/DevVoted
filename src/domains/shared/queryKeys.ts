@@ -24,6 +24,11 @@ export const pollQueryKeys = {
 		[...pollQueryKeys.all, "seenInRun", runId] as const,
 };
 
+export const awardQueryKeys = {
+	all: ["awards"] as const,
+	byContext: (context: string) => [...awardQueryKeys.all, context] as const,
+};
+
 export const userQueryKeys = {
 	all: ["users"] as const,
 	profile: (userId: string) =>

@@ -7,7 +7,6 @@ import UserAvatar from "~/domains/users/components/UserAvatar.component";
 import ExposedConfigDeckDisplay from "~/domains/economy/components/ExposedConfigDeckDisplay.component";
 import { Config } from "~/domains/economy/models/config.model";
 import ShopContainer from "~/domains/economy/components/ShopContainer.component";
-import Leaderboard from "~/domains/ranking/components/Leaderboard.component";
 import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay.component";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
@@ -284,9 +283,6 @@ export const PostAnswerCarousel = ({
 								<ExposedConfigDeckDisplay deck={exposedConfigDeck} />
 							)}
 							<CategoryWeightsDisplay />
-							<section className="mt-8">
-								<Leaderboard categoryCode={categoryCode} />
-							</section>
 						</section>
 					</div>
 				)}

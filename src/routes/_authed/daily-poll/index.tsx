@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import Content from "~/components/Content.component";
 import { DevPollNavigator } from "~/components/DevPollNavigator.component";
+import { AwardsGrid } from "~/domains/awards/components/AwardsGrid.component";
 import { applyEffects } from "~/domains/economy/data/configs";
 import {
 	getNextShopOfferingsServerFn,
@@ -15,22 +16,6 @@ import DailyPollContainer, {
 import { getWindowContextFn } from "~/domains/runs/api/runs";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { ErrorComponent } from "~/ui/ErrorComponent.component";
-
-// const getActiveRunCategoryCoverage = createServerFn({ method: "GET" }).handler(
-// 	async () => {
-// 		const userId = await getAuthenticatedUserId();
-// 		return await getActiveRunCategoryCoverageHandler(userId);
-// 	}
-// );
-
-// const getAllTimeLeaderboard = createServerFn({ method: "POST" })
-// 	.inputValidator((data: { categoryCode?: CategoryCode }) => data)
-// 	.handler(async ({ data }) => {
-// 		const { getCategoryLeaderboardHandler } = await import(
-// 			"~/domains/ranking/api/handlers"
-// 		);
-// 		return await getCategoryLeaderboardHandler(data);
-// 	});
 
 const DailyPoll: React.FC = () => {
 	const { user, activeRun } = Route.useRouteContext();
@@ -49,22 +34,6 @@ const DailyPoll: React.FC = () => {
 		initialWindowContext,
 	} = Route.useLoaderData();
 	const { date } = Route.useSearch();
-
-	// const categoryCoverageQuery = useQuery({
-	// 	queryKey: ["run", "categoryCoverage", user?.id],
-	// 	queryFn: () => getActiveRunCategoryCoverage(),
-	// 	enabled: !!user?.id,
-	// 	staleTime: 10 * 1000, // 10 seconds - more frequent updates for real-time feel
-	// 	refetchInterval: CATEGORY_COVERAGE_REFRESH_INTERVAL,
-	// });
-
-	// // Fetch live leaderboard for competitive ranking (total XP)
-	// const leaderboardQuery = useQuery({
-	// 	queryKey: ["leaderboard", "live", "total"],
-	// 	queryFn: () => getLeaderboard({ data: {} }), // No categoryCode = total
-	// 	staleTime: 15 * 1000, // 15 seconds
-	// 	refetchInterval: LEADERBOARD_REFRESH_INTERVAL,
-	// });
 
 	// Type narrowing: beforeLoad ensures activeRun exists and has success=true
 	if (!user || !activeRun?.success) {
@@ -92,45 +61,9 @@ const DailyPoll: React.FC = () => {
 				date={currentDate}
 			/>
 
-			{/* TODO: Refactor in own component */}
-			{/* <section className="max-w-5xl mx-auto">
-				<div className="">
-					{categoryCoverageQuery.isLoading && (
-						<div className="bg-black border border-gray-600 p-4 text-sm">
-							<div className="text-gray-400">Loading run progress...</div>
-						</div>
-					)}
-					{categoryCoverageQuery.error && (
-						<div className="bg-black border border-gray-600 p-4 text-sm">
-							<div className="text-yellow-400">
-								No active run - start playing to see progress!
-							</div>
-						</div>
-					)}
-				</div>
-
-				<>
-					{leaderboardQuery.isLoading && (
-						<div className="bg-black border border-gray-600 p-4 text-sm">
-							<div className="text-gray-400">Loading rankings...</div>
-						</div>
-					)}
-					{leaderboardQuery.error && (
-						<div className="bg-black border border-gray-600 p-4 text-sm">
-							<div className="text-red-400">Failed to load live rankings</div>
-						</div>
-					)}
-					{leaderboardQuery.data?.success && leaderboardQuery.data.data && (
-						<Leaderboard
-							entries={leaderboardQuery.data.data}
-							currentUserId={user?.id}
-							getLeaderboard={getLeaderboard}
-							getAllTimeLeaderboard={getAllTimeLeaderboard}
-							currentCategoryCode={poll.categoryCode}
-						/>
-					)}
-				</>
-			</section> */}
+			<section className="max-w-5xl mx-auto mt-12">
+				<AwardsGrid />
+			</section>
 		</Content>
 	);
 };
