@@ -23,15 +23,29 @@ type ParsedCompletion =
 	| { type: "unknown" };
 
 const parseCompletionReason = (reason: string | null): ParsedCompletion => {
+	if (!reason) return { type: "unknown" };
 	if (reason === "victory") return { type: "victory" };
 	if (reason === "manual_break_off") return { type: "manual" };
+
 	try {
-		const parsed = JSON.parse(reason ?? "");
-		if (parsed.type === "pipeline_failure")
-			return { type: "pipeline_failure", failedSlots: parsed.failedSlots };
+		const parsed: unknown = JSON.parse(reason);
+		if (
+			typeof parsed === "object" &&
+			parsed !== null &&
+			(parsed as { type?: unknown }).type === "pipeline_failure" &&
+			Array.isArray((parsed as { failedSlots?: unknown }).failedSlots)
+		) {
+			return {
+				type: "pipeline_failure",
+				failedSlots: (parsed as { failedSlots: PipelineFailureSlot[] })
+					.failedSlots,
+			};
+		}
 	} catch {
-		throw new Error(`Unknown completion reason: ${reason}`);
+		// Fall through to unknown
 	}
+
+	console.warn("[game-over] unrecognized completion_reason:", reason);
 	return { type: "unknown" };
 };
 
@@ -131,9 +145,10 @@ function RouteComponent() {
 			<div className="py-8 space-y-8">
 				<header>
 					<h1 className="text-4xl">
-						{completion.type === "victory"
-							? "You passed all CI gates!"
-							: "Pipeline failed."}
+						{completion.type === "victory" && "You passed all CI gates!"}
+						{completion.type === "pipeline_failure" && "Pipeline failed."}
+						{(completion.type === "manual" || completion.type === "unknown") &&
+							"Run ended."}
 					</h1>
 					<p>Thank you for playing!</p>
 				</header>
@@ -159,7 +174,7 @@ function RouteComponent() {
 							"border-prismatic-first": true,
 						})}
 					>
-						{lastRun?.categoryCoverage.map((category) => (
+						{(lastRun?.categoryCoverage ?? []).map((category) => (
 							<li
 								key={category.categoryCode}
 								data-category-theme={category.categoryCode}
