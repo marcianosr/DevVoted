@@ -1,4 +1,4 @@
-import { eq, and, gte, lt, asc, sql, or, isNull, inArray } from "drizzle-orm";
+import { eq, and, gte, lt, asc, sql, or, isNull } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -14,7 +14,6 @@ import type { User } from "~/domains/users/services/userSync.service";
 export type CommunityStatsUser = User & {
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
-	hasActiveRun: boolean;
 	responseData: {
 		userId: string | null;
 		createdAt: Date | null;
@@ -28,7 +27,23 @@ export type CommunityStats = {
 	firstToAnswer: CommunityStatsUser | null;
 	fastestResponder: CommunityStatsUser | null;
 	firstGood: CommunityStatsUser | null;
+	playersInActiveRun: CommunityStatsUser[];
 };
+
+const emptyCommunityUser = (
+	id: string,
+	email: string,
+	displayName: string,
+	photoUrl: string | null
+): CommunityStatsUser => ({
+	id,
+	email,
+	displayName,
+	photoUrl,
+	answeredAt: null,
+	timeTakenMs: null,
+	responseData: { userId: null, createdAt: null, updatedAt: null },
+});
 
 export type RandomDailyAnswer = {
 	user: User;
@@ -93,7 +108,6 @@ export const getCommunityStatsForDailyPoll = async (
 				photoUrl: r.users.photo_url,
 				answeredAt: answered,
 				timeTakenMs,
-				hasActiveRun: false,
 				responseData: {
 					userId: r.polls_responses.user_id,
 					createdAt: r.polls_responses.created_at,
@@ -103,33 +117,24 @@ export const getCommunityStatsForDailyPoll = async (
 		];
 	});
 
-	const uniqueUsers = [
+	const users = [
 		...new Map(usersWithDuplicates.map((u) => [u.id, u])).values(),
 	];
 
-	const activeRunUserIds = uniqueUsers.length
-		? new Set(
-				(
-					await db
-						.select({ userId: runsTable.user_id })
-						.from(runsTable)
-						.where(
-							and(
-								eq(runsTable.status, "active"),
-								inArray(
-									runsTable.user_id,
-									uniqueUsers.map((u) => u.id)
-								)
-							)
-						)
-				).map((r) => r.userId)
-			)
-		: new Set<string>();
+	const activeRunPlayers = await db
+		.selectDistinct({
+			id: usersTable.id,
+			email: usersTable.email,
+			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+		})
+		.from(runsTable)
+		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+		.where(eq(runsTable.status, "active"));
 
-	const users = uniqueUsers.map((u) => ({
-		...u,
-		hasActiveRun: activeRunUserIds.has(u.id),
-	}));
+	const playersInActiveRun = activeRunPlayers.map((u) =>
+		emptyCommunityUser(u.id, u.email, u.displayName, u.photoUrl)
+	);
 
 	const fastestResponder = users.reduce<CommunityStatsUser | null>(
 		(fastest, user) => {
@@ -156,6 +161,7 @@ export const getCommunityStatsForDailyPoll = async (
 		firstToAnswer: users.length > 0 ? users[0] : null,
 		fastestResponder,
 		firstGood: firstGood(),
+		playersInActiveRun,
 	};
 };
 

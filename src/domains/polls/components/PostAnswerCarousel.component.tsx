@@ -216,17 +216,18 @@ export const PostAnswerCarousel = ({
 
 						<section className="border-t border-theme pt-8 space-y-2">
 							<h3 className="text-4xl">👥 Community</h3>
-							<p className="text-xl">
+							<div className="flex items-center gap-2 text-xl">
 								<span>
-									{communityStats?.totalResponses} player(s) participated
+									{communityStats?.totalResponses} player(s) participated in
+									today&apos;s poll
 								</span>
-								<span className="mx-2">·</span>
-								<span>
+								<span>·</span>
+								<div className="flex -space-x-2">
 									{communityStats?.users.map((user) => (
 										<UserAvatar key={user.id} user={user} />
 									))}
-								</span>
-							</p>
+								</div>
+							</div>
 							{communityStats?.firstToAnswer && (
 								<div>
 									<p className="text-xl mt-4">First to answer</p>
@@ -279,21 +280,20 @@ export const PostAnswerCarousel = ({
 									</div>
 								</div>
 							)}
-							{(() => {
-								const activeRunPlayers =
-									communityStats?.users.filter((u) => u.hasActiveRun) ?? [];
-								if (activeRunPlayers.length === 0) return null;
-								return (
+							{communityStats?.playersInActiveRun &&
+								communityStats.playersInActiveRun.length > 0 && (
 									<div className="mt-4">
-										<p className="text-xl">Players currently in a run</p>
-										<div className="flex flex-wrap gap-2 items-center mt-1">
-											{activeRunPlayers.map((user) => (
+										<p className="text-xl">
+											{communityStats.playersInActiveRun.length} player(s)
+											currently in a run
+										</p>
+										<div className="flex -space-x-2 items-center mt-1">
+											{communityStats.playersInActiveRun.map((user) => (
 												<UserAvatar key={user.id} user={user} />
 											))}
 										</div>
 									</div>
-								);
-							})()}
+								)}
 							{exposedConfigDeck && (
 								<ExposedConfigDeckDisplay deck={exposedConfigDeck} />
 							)}
