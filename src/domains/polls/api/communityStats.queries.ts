@@ -21,6 +21,13 @@ export type CommunityStatsUser = User & {
 	};
 };
 
+export type CommunityOptionBreakdown = {
+	optionId: number;
+	optionText: string;
+	isCorrect: boolean;
+	voters: CommunityStatsUser[];
+};
+
 export type CommunityStats = {
 	totalResponses: number;
 	users: CommunityStatsUser[];
@@ -28,6 +35,7 @@ export type CommunityStats = {
 	fastestResponder: CommunityStatsUser | null;
 	firstGood: CommunityStatsUser | null;
 	playersInActiveRun: CommunityStatsUser[];
+	optionBreakdown: CommunityOptionBreakdown[];
 };
 
 const emptyCommunityUser = (
@@ -155,6 +163,38 @@ export const getCommunityStatsForDailyPoll = async (
 		return users.find((u) => u.id === firstGoodRecord.users!.id) ?? null;
 	};
 
+	const allOptions = await db
+		.select()
+		.from(pollOptionsTable)
+		.where(eq(pollOptionsTable.poll_id, pollId))
+		.orderBy(asc(pollOptionsTable.id));
+
+	const usersById = new Map(users.map((u) => [u.id, u]));
+	const votersByOptionId = result.reduce<Map<number, Set<string>>>(
+		(acc, row) => {
+			const optionId = row.polls_options?.id;
+			const userId = row.users?.id;
+			if (optionId === undefined || !userId) return acc;
+			const existing = acc.get(optionId) ?? new Set<string>();
+			existing.add(userId);
+			acc.set(optionId, existing);
+			return acc;
+		},
+		new Map()
+	);
+
+	const optionBreakdown: CommunityOptionBreakdown[] = allOptions.map((opt) => ({
+		optionId: opt.id,
+		optionText: opt.option,
+		isCorrect: opt.correct,
+		voters: [...(votersByOptionId.get(opt.id) ?? new Set<string>())].flatMap(
+			(userId) => {
+				const user = usersById.get(userId);
+				return user ? [user] : [];
+			}
+		),
+	}));
+
 	return {
 		totalResponses: users.length,
 		users,
@@ -162,6 +202,7 @@ export const getCommunityStatsForDailyPoll = async (
 		fastestResponder,
 		firstGood: firstGood(),
 		playersInActiveRun,
+		optionBreakdown,
 	};
 };
 

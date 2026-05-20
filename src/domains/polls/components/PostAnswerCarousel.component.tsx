@@ -26,6 +26,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import MarkdownText from "./MarkdownText.component";
 import { ScoreBlock } from "./ScoreBlock.component";
 import type { CommunityStats } from "~/domains/polls/api/communityStats.queries";
+import { sortCommunityOptions } from "~/domains/polls/utils/sortCommunityOptions";
 import type { Poll } from "../models/poll.model";
 import type { PollOption } from "../models/pollOption.model";
 
@@ -292,6 +293,69 @@ export const PostAnswerCarousel = ({
 												<UserAvatar key={user.id} user={user} />
 											))}
 										</div>
+									</div>
+								)}
+							{communityStats?.optionBreakdown &&
+								communityStats.optionBreakdown.length > 0 &&
+								communityStats.totalResponses > 0 && (
+									<div className="mt-6">
+										<p className="text-xl mb-2">
+											How the {communityStats.totalResponses} voter(s) split
+										</p>
+										<ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+											{sortCommunityOptions(communityStats.optionBreakdown).map(
+												(opt) => {
+													const hasVotes = opt.voters.length > 0;
+													const isWideOption = opt.optionText.length > 60;
+													return (
+														<li
+															key={opt.optionId}
+															className={clsx(
+																"border border-gray-800 p-3",
+																isWideOption && "sm:col-span-2 lg:col-span-3"
+															)}
+														>
+															<div className="flex items-start gap-2">
+																<span
+																	className={clsx(
+																		"shrink-0 text-lg leading-none",
+																		opt.isCorrect
+																			? "text-green-400"
+																			: "text-gray-600"
+																	)}
+																	aria-label={
+																		opt.isCorrect
+																			? "Correct option"
+																			: "Incorrect option"
+																	}
+																>
+																	{opt.isCorrect ? "✓" : "·"}
+																</span>
+																<div className="markdown flex-1 min-w-0 break-words">
+																	<MarkdownText>{opt.optionText}</MarkdownText>
+																</div>
+															</div>
+															<div className="mt-2 flex items-center gap-2 text-sm text-zinc-400">
+																<span>
+																	{opt.voters.length} pick
+																	{opt.voters.length === 1 ? "" : "s"}
+																</span>
+																{hasVotes && (
+																	<>
+																		<span>·</span>
+																		<div className="flex -space-x-2 items-center">
+																			{opt.voters.map((user) => (
+																				<UserAvatar key={user.id} user={user} />
+																			))}
+																		</div>
+																	</>
+																)}
+															</div>
+														</li>
+													);
+												}
+											)}
+										</ul>
 									</div>
 								)}
 							{exposedConfigDeck && (
