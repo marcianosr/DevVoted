@@ -1,4 +1,4 @@
-import { eq, and, gte, lt, asc, sql, or, isNull } from "drizzle-orm";
+import { eq, and, gte, lt, asc, sql, or, isNull, inArray } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -6,6 +6,7 @@ import {
 	pollOptionsTable,
 	pollResponseOptionsTable,
 	pollResponsesTable,
+	runsTable,
 	usersTable,
 } from "~/database/schema";
 import type { User } from "~/domains/users/services/userSync.service";
@@ -13,6 +14,7 @@ import type { User } from "~/domains/users/services/userSync.service";
 export type CommunityStatsUser = User & {
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
+	hasActiveRun: boolean;
 	responseData: {
 		userId: string | null;
 		createdAt: Date | null;
@@ -91,6 +93,7 @@ export const getCommunityStatsForDailyPoll = async (
 				photoUrl: r.users.photo_url,
 				answeredAt: answered,
 				timeTakenMs,
+				hasActiveRun: false,
 				responseData: {
 					userId: r.polls_responses.user_id,
 					createdAt: r.polls_responses.created_at,
@@ -100,9 +103,33 @@ export const getCommunityStatsForDailyPoll = async (
 		];
 	});
 
-	const users = [
+	const uniqueUsers = [
 		...new Map(usersWithDuplicates.map((u) => [u.id, u])).values(),
 	];
+
+	const activeRunUserIds = uniqueUsers.length
+		? new Set(
+				(
+					await db
+						.select({ userId: runsTable.user_id })
+						.from(runsTable)
+						.where(
+							and(
+								eq(runsTable.status, "active"),
+								inArray(
+									runsTable.user_id,
+									uniqueUsers.map((u) => u.id)
+								)
+							)
+						)
+				).map((r) => r.userId)
+			)
+		: new Set<string>();
+
+	const users = uniqueUsers.map((u) => ({
+		...u,
+		hasActiveRun: activeRunUserIds.has(u.id),
+	}));
 
 	const fastestResponder = users.reduce<CommunityStatsUser | null>(
 		(fastest, user) => {

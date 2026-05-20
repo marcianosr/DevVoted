@@ -37,25 +37,46 @@ const CategorySection = ({
 }: {
 	categoryCode: CategoryCode;
 	awards: Award[];
-}) => (
-	<section data-category-theme={categoryCode} className="space-y-3">
-		<h2 className="text-2xl text-theme">
-			{getCategoryMetadata(categoryCode).name}
-		</h2>
-		<ol className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
-			{awards.map((award) => (
-				<li key={award.id} className="flex flex-col">
-					<AwardCard award={award} />
-					<RunnersUp
-						earners={award.earners.slice(1)}
-						type={award.type}
-						categoryCode={award.categoryCode}
-					/>
-				</li>
-			))}
-		</ol>
-	</section>
-);
+}) => {
+	const [isExpanded, setIsExpanded] = useState(false);
+	const hasRunnersUp = awards.some((a) => a.earners.length > 1);
+
+	return (
+		<section data-category-theme={categoryCode} className="space-y-3">
+			<div className="flex items-baseline gap-3">
+				<h2 className="text-2xl text-theme">
+					{getCategoryMetadata(categoryCode).name}
+				</h2>
+			</div>
+			<ol className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
+				{awards.map((award) => (
+					<li key={award.id} className="flex flex-col">
+						<AwardCard award={award} />
+						{isExpanded && (
+							<RunnersUp
+								earners={award.earners.slice(1)}
+								type={award.type}
+								categoryCode={award.categoryCode}
+							/>
+						)}
+					</li>
+				))}
+			</ol>
+			<button
+				type="button"
+				onClick={() => setIsExpanded((v) => !v)}
+				disabled={!hasRunnersUp}
+				className="flex items-baseline gap-3 text-left disabled:cursor-default"
+			>
+				{hasRunnersUp && (
+					<span className="text-md">
+						{isExpanded ? "▾ Hide" : `▸ Show runners-up`}
+					</span>
+				)}
+			</button>
+		</section>
+	);
+};
 
 const groupAwardsByCategory = (awards: Award[]) => {
 	const groups = new Map<CategoryCode, Award[]>();

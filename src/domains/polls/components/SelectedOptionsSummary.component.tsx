@@ -228,6 +228,21 @@ const SelectedOptionsSummary = ({
 								</div>
 							</div>
 						)}
+						{(() => {
+							const activeRunPlayers =
+								communityStats?.users.filter((u) => u.hasActiveRun) ?? [];
+							if (activeRunPlayers.length === 0) return null;
+							return (
+								<div className="mt-4">
+									<p className="text-xl">Players currently in a run</p>
+									<div className="flex flex-wrap gap-2 items-center mt-1">
+										{activeRunPlayers.map((user) => (
+											<UserAvatar key={user.id} user={user} />
+										))}
+									</div>
+								</div>
+							);
+						})()}
 						{/* <section className="flex items-baseline flex-col mt-8">
 						<h3 className="text-2xl">
 							Be even more involved in this community!
