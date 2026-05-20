@@ -1,4 +1,4 @@
-import { eq, inArray, sum } from "drizzle-orm";
+import { and, eq, inArray, max, sum } from "drizzle-orm";
 
 import { db } from "@/src/database/db";
 import {
@@ -19,6 +19,7 @@ const AWARD_CATEGORY_CODES: CategoryCode[] = [
 	"react",
 	"git",
 	"general-frontend",
+	"java",
 ];
 
 const TOP_N = 5;
@@ -29,7 +30,7 @@ const getTopNPerCategory = (
 		displayName: string;
 		photoUrl: string | null;
 		categoryCode: string;
-		score: string | null;
+		score: string | number | null;
 	}[]
 ): CategoryWinner[] => {
 	const byCategory = new Map<string, typeof results>();
@@ -67,20 +68,23 @@ export const getCategoryMasteryWinners = async (): Promise<
 > => {
 	const results = await db
 		.select({
-			userId: leaderboardTable.user_id,
+			userId: runsTable.user_id,
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
-			categoryCode: leaderboardTable.category_code,
-			score: sum(leaderboardTable.category_coverage),
+			categoryCode: runCategoryCoverageTable.category_code,
+			score: sum(runCategoryCoverageTable.correct_polls_answered),
 		})
-		.from(leaderboardTable)
-		.innerJoin(usersTable, eq(leaderboardTable.user_id, usersTable.id))
-		.where(inArray(leaderboardTable.category_code, AWARD_CATEGORY_CODES))
+		.from(runCategoryCoverageTable)
+		.innerJoin(runsTable, eq(runCategoryCoverageTable.run_id, runsTable.id))
+		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+		.where(
+			inArray(runCategoryCoverageTable.category_code, AWARD_CATEGORY_CODES)
+		)
 		.groupBy(
-			leaderboardTable.user_id,
+			runsTable.user_id,
 			usersTable.display_name,
 			usersTable.photo_url,
-			leaderboardTable.category_code
+			runCategoryCoverageTable.category_code
 		);
 
 	return getTopNPerCategory(results);
@@ -119,13 +123,16 @@ export const getCurrentRunMasteryWinners = async (): Promise<
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
 			categoryCode: runCategoryCoverageTable.category_code,
-			score: sum(runCategoryCoverageTable.current_coverage),
+			score: sum(runCategoryCoverageTable.correct_polls_answered),
 		})
 		.from(runCategoryCoverageTable)
 		.innerJoin(runsTable, eq(runCategoryCoverageTable.run_id, runsTable.id))
 		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
 		.where(
-			inArray(runCategoryCoverageTable.category_code, AWARD_CATEGORY_CODES)
+			and(
+				inArray(runCategoryCoverageTable.category_code, AWARD_CATEGORY_CODES),
+				eq(runsTable.status, "active")
+			)
 		)
 		.groupBy(
 			runsTable.user_id,
@@ -152,7 +159,67 @@ export const getCurrentRunParticipationWinners = async (): Promise<
 		.innerJoin(runsTable, eq(runCategoryCoverageTable.run_id, runsTable.id))
 		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
 		.where(
+			and(
+				inArray(runCategoryCoverageTable.category_code, AWARD_CATEGORY_CODES),
+				eq(runsTable.status, "active")
+			)
+		)
+		.groupBy(
+			runsTable.user_id,
+			usersTable.display_name,
+			usersTable.photo_url,
+			runCategoryCoverageTable.category_code
+		);
+
+	return getTopNPerCategory(results);
+};
+
+export const getCategoryMaxCoverageWinners = async (): Promise<
+	CategoryWinner[]
+> => {
+	const results = await db
+		.select({
+			userId: runsTable.user_id,
+			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+			categoryCode: runCategoryCoverageTable.category_code,
+			score: max(runCategoryCoverageTable.current_coverage),
+		})
+		.from(runCategoryCoverageTable)
+		.innerJoin(runsTable, eq(runCategoryCoverageTable.run_id, runsTable.id))
+		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+		.where(
 			inArray(runCategoryCoverageTable.category_code, AWARD_CATEGORY_CODES)
+		)
+		.groupBy(
+			runsTable.user_id,
+			usersTable.display_name,
+			usersTable.photo_url,
+			runCategoryCoverageTable.category_code
+		);
+
+	return getTopNPerCategory(results);
+};
+
+export const getCurrentRunMaxCoverageWinners = async (): Promise<
+	CategoryWinner[]
+> => {
+	const results = await db
+		.select({
+			userId: runsTable.user_id,
+			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+			categoryCode: runCategoryCoverageTable.category_code,
+			score: max(runCategoryCoverageTable.current_coverage),
+		})
+		.from(runCategoryCoverageTable)
+		.innerJoin(runsTable, eq(runCategoryCoverageTable.run_id, runsTable.id))
+		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+		.where(
+			and(
+				inArray(runCategoryCoverageTable.category_code, AWARD_CATEGORY_CODES),
+				eq(runsTable.status, "active")
+			)
 		)
 		.groupBy(
 			runsTable.user_id,

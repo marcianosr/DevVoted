@@ -61,9 +61,11 @@ const DailyPoll: React.FC = () => {
 				date={currentDate}
 			/>
 
-			<section className="max-w-5xl mx-auto mt-12">
-				<AwardsGrid />
-			</section>
+			{hasAnswered && (
+				<section className="max-w-5xl mx-auto mt-12">
+					<AwardsGrid />
+				</section>
+			)}
 		</Content>
 	);
 };

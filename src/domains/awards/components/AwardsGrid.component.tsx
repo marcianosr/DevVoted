@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
 
 import { getAwards } from "~/domains/awards/api/awards";
-import type { AwardContext } from "~/domains/awards/models/award.model";
+import type { Award, AwardContext } from "~/domains/awards/models/award.model";
+import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 import { awardQueryKeys } from "~/domains/shared/queryKeys";
 
-import type { Award } from "../models/award.model";
 import { AwardCard, RunnersUp } from "./AwardCard.component";
 
 const CONTEXTS: { value: AwardContext; label: string; description: string }[] =
@@ -25,21 +25,24 @@ const CONTEXTS: { value: AwardContext; label: string; description: string }[] =
 		},
 	];
 
-const AwardSection = ({
-	title,
-	subtitle,
+const TYPE_ORDER: Record<Award["type"], number> = {
+	mastery: 0,
+	coverage: 1,
+	participation: 2,
+};
+
+const CategorySection = ({
+	categoryCode,
 	awards,
 }: {
-	title: string;
-	subtitle: string;
+	categoryCode: CategoryCode;
 	awards: Award[];
 }) => (
-	<section className="space-y-4">
-		<header>
-			<h2 className="text-2xl text-theme">{title}</h2>
-			<p className="text-sm text-gray-400">{subtitle}</p>
-		</header>
-		<ol className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+	<section data-category-theme={categoryCode} className="space-y-3">
+		<h2 className="text-2xl text-theme">
+			{getCategoryMetadata(categoryCode).name}
+		</h2>
+		<ol className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
 			{awards.map((award) => (
 				<li key={award.id} className="flex flex-col">
 					<AwardCard award={award} />
@@ -54,6 +57,22 @@ const AwardSection = ({
 	</section>
 );
 
+const groupAwardsByCategory = (awards: Award[]) => {
+	const groups = new Map<CategoryCode, Award[]>();
+
+	for (const award of awards) {
+		const existing = groups.get(award.categoryCode) ?? [];
+		existing.push(award);
+		groups.set(award.categoryCode, existing);
+	}
+
+	for (const [, list] of groups) {
+		list.sort((a, b) => TYPE_ORDER[a.type] - TYPE_ORDER[b.type]);
+	}
+
+	return Array.from(groups.entries());
+};
+
 export const AwardsGrid = () => {
 	const [context, setContext] = useState<AwardContext>("current-runs");
 
@@ -64,8 +83,7 @@ export const AwardsGrid = () => {
 	});
 
 	const awards = data?.success ? data.data : [];
-	const masteryAwards = awards.filter((a) => a.type === "mastery");
-	const participationAwards = awards.filter((a) => a.type === "participation");
+	const groupedAwards = groupAwardsByCategory(awards);
 	const activeContext = CONTEXTS.find((c) => c.value === context)!;
 
 	return (
@@ -96,17 +114,14 @@ export const AwardsGrid = () => {
 			)}
 
 			{data?.success && (
-				<div className="space-y-12">
-					<AwardSection
-						title="Mastery Awards"
-						subtitle="Most correct answers per category"
-						awards={masteryAwards}
-					/>
-					<AwardSection
-						title="Participation Awards"
-						subtitle="Most polls answered per category"
-						awards={participationAwards}
-					/>
+				<div className="space-y-10">
+					{groupedAwards.map(([categoryCode, categoryAwards]) => (
+						<CategorySection
+							key={categoryCode}
+							categoryCode={categoryCode}
+							awards={categoryAwards}
+						/>
+					))}
 				</div>
 			)}
 		</div>

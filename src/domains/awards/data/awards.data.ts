@@ -86,6 +86,13 @@ export const AWARD_DEFINITIONS: AwardDefinition[] = [
 		categoryCode: "git",
 	},
 	{
+		id: "javalin",
+		name: "Javalin",
+		description: "Most correct Java answers across all runs",
+		type: "mastery",
+		categoryCode: "java",
+	},
+	{
 		id: "forza-frontend",
 		name: "Forza Frontend",
 		description: "Most correct General Frontend answers across all runs",
@@ -99,4 +106,62 @@ export const AWARD_DEFINITIONS: AwardDefinition[] = [
 		type: "participation",
 		categoryCode: "general-frontend",
 	},
+	// TODO: Coverage awards — re-enable once names are finalized.
+	// Also re-enable the coverage winners fetch in api/handlers.ts when uncommenting these.
+	// {
+	// 	id: "tag-perfectionist",
+	// 	name: "Tag Perfectionist",
+	// 	description: "Highest HTML coverage score across all runs",
+	// 	type: "coverage",
+	// 	categoryCode: "html",
+	// },
+	// {
+	// 	id: "pixel-perfect",
+	// 	name: "Pixel Perfect",
+	// 	description: "Highest CSS coverage score across all runs",
+	// 	type: "coverage",
+	// 	categoryCode: "css",
+	// },
+	// {
+	// 	id: "fully-covered",
+	// 	name: "Fully Covered",
+	// 	description: "Highest JavaScript coverage score across all runs",
+	// 	type: "coverage",
+	// 	categoryCode: "js",
+	// },
+	// {
+	// 	id: "type-safe",
+	// 	name: "Type Safe",
+	// 	description: "Highest TypeScript coverage score across all runs",
+	// 	type: "coverage",
+	// 	categoryCode: "ts",
+	// },
+	// {
+	// 	id: "react-100",
+	// 	name: "React 100",
+	// 	description: "Highest React coverage score across all runs",
+	// 	type: "coverage",
+	// 	categoryCode: "react",
+	// },
+	// {
+	// 	id: "clean-commits",
+	// 	name: "Clean Commits",
+	// 	description: "Highest Git coverage score across all runs",
+	// 	type: "coverage",
+	// 	categoryCode: "git",
+	// },
+	// {
+	// 	id: "frontend-polished",
+	// 	name: "Frontend Polished",
+	// 	description: "Highest General Frontend coverage score across all runs",
+	// 	type: "coverage",
+	// 	categoryCode: "general-frontend",
+	// },
+	// {
+	// 	id: "java-polished",
+	// 	name: "Java Polished",
+	// 	description: "Highest Java coverage score across all runs",
+	// 	type: "coverage",
+	// 	categoryCode: "java",
+	// },
 ];

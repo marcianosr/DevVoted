@@ -1,6 +1,6 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 
-export type AwardType = "mastery" | "participation";
+export type AwardType = "mastery" | "participation" | "coverage";
 
 export type AwardContext = "all-time" | "current-runs";
 

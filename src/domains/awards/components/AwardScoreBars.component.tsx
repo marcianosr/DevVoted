@@ -3,8 +3,9 @@ import { clsx } from "clsx";
 import type { Award, AwardEarner } from "../models/award.model";
 
 const formatScore = (score: number, type: Award["type"]): string => {
-	const count = Math.round(score);
-	return type === "participation" ? `${count}p` : `${count}`;
+	if (type === "participation") return `${Math.round(score)} polls`;
+	if (type === "coverage") return `${score.toFixed(1)}%`;
+	return `${Math.round(score)} correct`;
 };
 
 const Avatar = ({
