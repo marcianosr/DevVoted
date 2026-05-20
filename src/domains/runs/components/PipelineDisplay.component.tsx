@@ -70,6 +70,9 @@ const PipelineSlotRow = ({
 		<span className="text-gray-400 flex-1 text-xs">
 			{formatRequirement(slot.requirement, windowSize)}
 		</span>
+		<span className="text-emerald-400 text-xs whitespace-nowrap shrink-0">
+			+{formatStorage(slot.reward)}
+		</span>
 	</li>
 );
 

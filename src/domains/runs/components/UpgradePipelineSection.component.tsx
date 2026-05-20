@@ -13,6 +13,13 @@ import {
 	formatRequirement,
 	getSlotLabel,
 } from "~/domains/runs/utils/formatPipelineRequirement";
+import { formatStorage } from "~/lib/storage";
+
+const RewardBadge = ({ reward }: { reward: number }) => (
+	<span className="text-emerald-400 text-xs whitespace-nowrap">
+		+{formatStorage(reward)} storage
+	</span>
+);
 
 type UpgradePipelineSectionProps = {
 	cards: UpgradeCard[];
@@ -101,6 +108,9 @@ const CardEntry = ({
 				<span className="text-gray-200">
 					{formatRequirement(slot.requirement)}
 				</span>
+			</p>
+			<p className="text-gray-400 text-sm pl-4">
+				Reward on pass: <RewardBadge reward={slot.reward} />
 			</p>
 
 			<div className="pl-4 pt-2">
@@ -206,6 +216,8 @@ export const CurrentPipeline = ({
 		}))
 		.filter((g) => g.entries.length > 0);
 
+	const totalPotentialReward = slots.reduce((sum, s) => sum + s.reward, 0);
+
 	return (
 		<div className="border border-white">
 			<div className="border-b border-white px-4 py-3">
@@ -231,7 +243,22 @@ export const CurrentPipeline = ({
 					{slots.length} active {slots.length === 1 ? "check" : "checks"} · all
 					<span className="text-yellow-400"> pending</span> checks must pass
 				</p>
+				{!evaluation && totalPotentialReward > 0 && (
+					<p className="text-sm mt-1">
+						Total reward if all pass:{" "}
+						<RewardBadge reward={totalPotentialReward} />
+					</p>
+				)}
 			</div>
+
+			{evaluation?.passed && evaluation.totalReward > 0 && (
+				<div className="bg-emerald-950/40 border-b border-emerald-500/50 px-4 py-3">
+					<p className="text-emerald-300 text-lg">
+						✓ Pipeline cleared — +{formatStorage(evaluation.totalReward)}{" "}
+						storage added to your limit
+					</p>
+				</div>
+			)}
 
 			{groups.map(({ status, entries }) => (
 				<div key={status}>
@@ -253,6 +280,8 @@ export const CurrentPipeline = ({
 								<DifficultyLabel text="Risk:" difficulty={slot.difficulty} />
 								{" · "}
 								Requirement: {formatRequirement(slot.requirement)}
+								{" · "}
+								Reward: <RewardBadge reward={slot.reward} />
 								{evaluationContext && (
 									<p>
 										Current:{" "}

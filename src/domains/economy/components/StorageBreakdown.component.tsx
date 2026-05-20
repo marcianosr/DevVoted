@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 import { formatStorage } from "~/lib/storage";
 
 type StorageBreakdownProps = {
@@ -7,6 +9,29 @@ type StorageBreakdownProps = {
 	configsStorage: number;
 	rerollsStorage: number;
 	deinstallPenalty: number;
+};
+
+const GAIN_HIGHLIGHT_DURATION_MS = 6000;
+
+const useRecentLimitGain = (storageLimit: number) => {
+	const previousLimitRef = useRef<number | null>(null);
+	const [recentGain, setRecentGain] = useState<number | null>(null);
+
+	useEffect(() => {
+		const previous = previousLimitRef.current;
+		previousLimitRef.current = storageLimit;
+
+		if (previous === null || storageLimit <= previous) return;
+
+		setRecentGain(storageLimit - previous);
+		const timer = setTimeout(
+			() => setRecentGain(null),
+			GAIN_HIGHLIGHT_DURATION_MS
+		);
+		return () => clearTimeout(timer);
+	}, [storageLimit]);
+
+	return recentGain;
 };
 
 export const StorageBreakdown = ({
@@ -19,21 +44,32 @@ export const StorageBreakdown = ({
 }: StorageBreakdownProps) => {
 	const usagePercentage =
 		storageLimit > 0 ? (storageUsed / storageLimit) * 100 : 0;
+	const recentGain = useRecentLimitGain(storageLimit);
 
 	return (
 		<div className="space-y-4">
-			<h3 className="text-xl text-cyan-400">Storage</h3>
+			<div className="flex items-baseline justify-between gap-2">
+				<h3 className="text-xl text-cyan-400">Storage</h3>
+				{recentGain !== null && (
+					<span className="text-emerald-300 text-sm border border-emerald-400 px-2 py-0.5 animate-pulse">
+						+{formatStorage(recentGain)} just earned
+					</span>
+				)}
+			</div>
 
 			<div className="space-y-1">
 				<div className="flex items-center gap-4">
 					<div className="flex-1 h-4 border border-white/50 relative">
 						<div
-							className="h-full bg-white/80 transition-all duration-300"
+							className="h-full bg-white/80 transition-all duration-500"
 							style={{ width: `${Math.min(usagePercentage, 100)}%` }}
 						/>
 					</div>
 					<span className="text-sm whitespace-nowrap">
-						{formatStorage(storageUsed)} / {formatStorage(storageLimit)}
+						{formatStorage(storageUsed)} /{" "}
+						<span className={recentGain !== null ? "text-emerald-300" : ""}>
+							{formatStorage(storageLimit)}
+						</span>
 					</span>
 				</div>
 
