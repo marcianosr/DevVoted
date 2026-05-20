@@ -111,20 +111,12 @@ export const STARTER_SLOT_DEFINITIONS: Record<
 	},
 	"cold-start": {
 		difficulties: {
-			low: {
-				requirement: { type: "cold-start", count: 1 },
-				reward: SLOT_REWARDS.low,
-			},
-			medium: {
-				requirement: { type: "cold-start", count: 2 },
-				reward: SLOT_REWARDS.medium,
-			},
 			high: {
-				requirement: { type: "cold-start", count: 3 },
+				requirement: { type: "cold-start", count: 1 },
 				reward: SLOT_REWARDS.high,
 			},
 			critical: {
-				requirement: { type: "cold-start", count: 4 },
+				requirement: { type: "cold-start", count: 2 },
 				reward: SLOT_REWARDS.critical,
 			},
 		},
