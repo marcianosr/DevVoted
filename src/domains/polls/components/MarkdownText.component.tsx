@@ -8,7 +8,7 @@ type MarkdownTextProps = {
 const escapeMarkdownSyntax = (text: string): string =>
 	text
 		.replace(/^>/gm, "\\>") // blockquote
-		.replace(/^\+/gm, "\\+") // unordered list
+		.replace(/^([-+*])\s*$/gm, "\\$1") // standalone list markers (no content after)
 		.replace(/</g, "&lt;") // HTML tags
 		.replace(/(?<!\\)>/g, "&gt;"); // remaining > not at line start
 
