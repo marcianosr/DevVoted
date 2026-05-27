@@ -5,7 +5,7 @@ type PollLastSeenBadgeProps = {
 };
 
 const formatLastSeen = (lastSeenAt: Date | null): string => {
-	if (!lastSeenAt) return "Never";
+	if (!lastSeenAt) return "Last seen: Never";
 	return `Last seen ${formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true })}`;
 };
 
