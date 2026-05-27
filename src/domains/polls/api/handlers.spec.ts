@@ -27,6 +27,7 @@ vi.mock("~/domains/polls/api/pollResponse.queries", () => ({
 	hasUserAnsweredPoll: vi.fn(),
 	getUserSelectedOptions: vi.fn(),
 	getPollHistory: vi.fn(),
+	getLastSeenBeforeCurrentRun: vi.fn(),
 	trackPollView: vi.fn(),
 	trackPollAnswer: vi.fn(),
 	getPollsSeenInRun: vi.fn(),

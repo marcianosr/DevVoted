@@ -16,6 +16,7 @@ import {
 import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
+import { PollLastSeenBadge } from "~/domains/polls/components/PollLastSeenBadge.component";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm.component";
 import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay.component";
 import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
@@ -103,6 +104,7 @@ type DailyPollContainerProps = {
 	initialPendingUpgradeCards: UpgradeCard[];
 	initialWindowContext: PipelineEvaluationContext | null;
 	date: string;
+	lastSeenAt: Date | null;
 };
 
 const DailyPollContainer = ({
@@ -120,6 +122,7 @@ const DailyPollContainer = ({
 	initialPendingUpgradeCards,
 	initialWindowContext,
 	date,
+	lastSeenAt,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -325,6 +328,7 @@ const DailyPollContainer = ({
 			<div className="flex flex-col">
 				<p className="text-4xl text-theme">{category.name}</p>
 				<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
+				<PollLastSeenBadge lastSeenAt={lastSeenAt} />
 			</div>
 		</header>
 	);

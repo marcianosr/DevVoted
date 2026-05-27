@@ -10,6 +10,7 @@ import {
 	hasUserAnsweredPoll,
 	getUserSelectedOptions,
 	getPollHistory,
+	getLastSeenBeforeCurrentRun,
 	trackPollView,
 	trackPollAnswer,
 	getPollsSeenInRun,
@@ -46,6 +47,8 @@ export const getDailyPollHandler = async ({
 
 		const creatorDisplayName = await fetchUserDisplayName(poll.createdBy);
 
+		let lastSeenAt: Date | null = null;
+
 		if (userId) {
 			const resolvedRunId = await (async (): Promise<number> => {
 				if (runId !== undefined) return runId;
@@ -55,6 +58,12 @@ export const getDailyPollHandler = async ({
 				}
 				return activeRunResponse.data.id;
 			})();
+
+			lastSeenAt = await getLastSeenBeforeCurrentRun(
+				userId,
+				poll.id,
+				resolvedRunId
+			);
 
 			const history = await getPollHistory(resolvedRunId, poll.id);
 			const hasSeenToday = history?.last_seen_at
@@ -66,7 +75,14 @@ export const getDailyPollHandler = async ({
 			}
 		}
 
-		return { poll, options, hasAnswered, selectedOptions, creatorDisplayName };
+		return {
+			poll,
+			options,
+			hasAnswered,
+			selectedOptions,
+			creatorDisplayName,
+			lastSeenAt,
+		};
 	});
 };
 

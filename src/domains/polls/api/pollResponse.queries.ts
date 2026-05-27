@@ -1,4 +1,4 @@
-import { eq, and, gte, sql, count, inArray } from "drizzle-orm";
+import { eq, and, gte, ne, sql, count, inArray } from "drizzle-orm";
 
 import {
 	pollHistoryTable,
@@ -143,6 +143,27 @@ export const getPollHistory = async (runId: number, pollId: number) => {
 		);
 
 	return record || null;
+};
+
+export const getLastSeenBeforeCurrentRun = async (
+	userId: string,
+	pollId: number,
+	currentRunId: number
+): Promise<Date | null> => {
+	const [record] = await db
+		.select({
+			lastSeenAt: sql<Date | null>`MAX(${pollHistoryTable.last_seen_at})`,
+		})
+		.from(pollHistoryTable)
+		.where(
+			and(
+				eq(pollHistoryTable.user_id, userId),
+				eq(pollHistoryTable.poll_id, pollId),
+				ne(pollHistoryTable.run_id, currentRunId)
+			)
+		);
+
+	return record?.lastSeenAt ?? null;
 };
 
 export const trackPollView = async (
