@@ -1,11 +1,11 @@
 ---
 # DVTD-r4gx
 title: Gate-type specific rewards
-status: todo
+status: scrapped
 type: feature
 priority: high
 created_at: 2026-05-08T00:00:00Z
-updated_at: 2026-05-09T08:10:15Z
+updated_at: 2026-05-29T07:57:56Z
 parent: DVTD-lwvx
 ---
 

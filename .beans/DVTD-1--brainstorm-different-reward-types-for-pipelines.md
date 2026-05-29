@@ -1,13 +1,13 @@
 ---
 # DVTD-1
 title: Different reward types for pipelines
-status: parked
+status: scrapped
 type: task
 priority: critical
 tags:
     - brainstorm
 created_at: 2026-04-27T11:55:46Z
-updated_at: 2026-05-09T08:10:15Z
+updated_at: 2026-05-29T07:58:56Z
 parent: DVTD-lwvx
 ---
 
