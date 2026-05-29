@@ -5,6 +5,7 @@ import {
 	addConfigsToRun,
 	canAddConfigToRun,
 	getStorageInfo,
+	isConfigInstalled,
 	removeConfigsFromRun,
 } from "~/domains/economy/services/configManager.service";
 import { createMockRun } from "~/domains/runs/models/run.mock";
@@ -36,6 +37,59 @@ describe("configStorage", () => {
 			const result = canAddConfigToRun(mockRun, mockConfig);
 
 			expect(result).toBe(true);
+		});
+
+		it("returns false when one of the config's variants is already installed", () => {
+			const mockRun = createMockRun({
+				activeConfigIds: ["cookies-accept-all-config"],
+			});
+			const shellConfig = createMockConfig({
+				id: "cookies-config",
+				variants: [
+					{ id: "cookies-accept-all-config", label: "Accept", description: "" },
+					{ id: "cookies-reject-all-config", label: "Reject", description: "" },
+				],
+			});
+
+			const result = canAddConfigToRun(mockRun, shellConfig);
+
+			expect(result).toBe(false);
+		});
+	});
+
+	describe("isConfigInstalled", () => {
+		it("returns true when the config id is in activeConfigIds", () => {
+			const mockRun = createMockRun({ activeConfigIds: ["banjo-config"] });
+			const config = createMockConfig({ id: "banjo-config" });
+
+			expect(isConfigInstalled(mockRun, config)).toBe(true);
+		});
+
+		it("returns true for a shell when one of its variants is in activeConfigIds", () => {
+			const mockRun = createMockRun({
+				activeConfigIds: ["cookies-reject-all-config"],
+			});
+			const shellConfig = createMockConfig({
+				id: "cookies-config",
+				variants: [
+					{ id: "cookies-accept-all-config", label: "Accept", description: "" },
+					{ id: "cookies-reject-all-config", label: "Reject", description: "" },
+				],
+			});
+
+			expect(isConfigInstalled(mockRun, shellConfig)).toBe(true);
+		});
+
+		it("returns false for a shell when no variants are installed", () => {
+			const mockRun = createMockRun({ activeConfigIds: ["kazooie-config"] });
+			const shellConfig = createMockConfig({
+				id: "cookies-config",
+				variants: [
+					{ id: "cookies-accept-all-config", label: "Accept", description: "" },
+				],
+			});
+
+			expect(isConfigInstalled(mockRun, shellConfig)).toBe(false);
 		});
 	});
 

@@ -74,14 +74,22 @@ export const getStorageInfo = (
 	};
 };
 
+// True if the run holds this config — or, for a shell config with variants,
+// holds any of its variants.
+export const isConfigInstalled = (run: Run, config: Config): boolean => {
+	if (run.activeConfigIds.includes(config.id)) return true;
+	const variantIds = config.variants?.map((v) => v.id) ?? [];
+	return variantIds.some((id) => run.activeConfigIds.includes(id));
+};
+
 export const canAddConfigToRun = (
 	run: Run,
 	config: Config,
 	availableConfigs: Config[] = configs,
 	costReduction: number = 0
 ): boolean => {
-	if (run.activeConfigIds.includes(config.id)) {
-		return false; // Already has this config
+	if (isConfigInstalled(run, config)) {
+		return false; // Already has this config (or one of its variants)
 	}
 
 	const { storageUsed, storageLimit } = getStorageInfo(run, availableConfigs);

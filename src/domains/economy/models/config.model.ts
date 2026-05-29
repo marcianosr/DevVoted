@@ -10,6 +10,12 @@ export type ConfigEffectContext = {
 	correctAnswers: number;
 };
 
+export type ConfigVariant = {
+	id: string; // Real config id that will be installed when chosen
+	label: string;
+	description: string;
+};
+
 export type Config = {
 	id: string;
 	name: string;
@@ -34,6 +40,12 @@ export type Config = {
 	maxStorageBonus?: number; // Optional: Maximum storage bonus cap (in bytes)
 	categoryWeightBonus?: number; // Optional: Weight bonus for poll category selection (e.g., 0.25 for +25% chance)
 	showNextConfigs?: boolean;
+	// Shell config that opens a variant picker on install. The chosen variant's id
+	// is what gets stored in activeConfigIds — the shell itself is never installed.
+	variants?: ConfigVariant[];
+	// Marks this config as a variant target reachable only through a shell card.
+	// Variants are filtered out of shop offerings so they can only be installed via their shell.
+	variantOf?: string;
 };
 
 export type ConfigInventory = {

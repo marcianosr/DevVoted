@@ -1,12 +1,18 @@
+import { useState } from "react";
+
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 
 import { addConfigToRunServerFn } from "~/domains/economy/api/configs";
 import ActiveCard from "~/domains/economy/components/Cards/ActiveCard.component";
 import ShopCard from "~/domains/economy/components/Cards/ShopCard.component";
+import { ConfigVariantDialog } from "~/domains/economy/components/ConfigVariantDialog.component";
 import { Config } from "~/domains/economy/models/config.model";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown.component";
-import { getStorageInfo } from "~/domains/economy/services/configManager.service";
+import {
+	getStorageInfo,
+	isConfigInstalled,
+} from "~/domains/economy/services/configManager.service";
 import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { skipShopServerFn } from "~/domains/runs/api/runs";
@@ -51,15 +57,30 @@ const ShopContainer = ({
 	const hasSkippedShopToday = activeRun.shopSkippedDate === today;
 	const hasInteractedWithShopToday = activeRun.shopInteractedDate === today;
 
+	const [pendingVariantConfig, setPendingVariantConfig] =
+		useState<Config | null>(null);
+
 	const installConfigMutation = useMutation({
 		mutationFn: addConfigToRunServerFn,
 		onSuccess: () => router.invalidate(),
 	});
 
-	const onInstallConfig = (config: Config) => {
+	const installConfigById = (configId: string) =>
 		installConfigMutation.mutate({
-			data: { configIds: [config.id], runId: activeRun.id, date: today },
+			data: { configIds: [configId], runId: activeRun.id, date: today },
 		});
+
+	const onInstallConfig = (config: Config) => {
+		if (config.variants?.length) {
+			setPendingVariantConfig(config);
+			return;
+		}
+		installConfigById(config.id);
+	};
+
+	const onChooseVariant = (variantId: string) => {
+		setPendingVariantConfig(null);
+		installConfigById(variantId);
 	};
 
 	const onRerollMutation = useMutation({
@@ -107,7 +128,7 @@ const ShopContainer = ({
 							<ShopCard
 								config={config}
 								disabled={config.cost > storageAvailable || !isOpen}
-								isInstalled={activeRun.activeConfigIds.includes(config.id)}
+								isInstalled={isConfigInstalled(activeRun, config)}
 								onInstall={() => onInstallConfig(config)}
 							/>
 						</li>
@@ -173,6 +194,15 @@ const ShopContainer = ({
 					deinstallPenalty={activeRun.deinstallPenalty}
 				/>
 			</div>
+
+			{pendingVariantConfig && (
+				<ConfigVariantDialog
+					isOpen={pendingVariantConfig !== null}
+					config={pendingVariantConfig}
+					onChoose={onChooseVariant}
+					onCancel={() => setPendingVariantConfig(null)}
+				/>
+			)}
 
 			{nextOfferedConfigs.length > 0 && (
 				<section className="mt-8">

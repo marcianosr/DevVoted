@@ -84,9 +84,19 @@ export const selectRandomConfigs = (
 	ownedConfigIds: string[],
 	count: number
 ): Config[] => {
-	// Filter out owned configs
+	// Variants are only reachable through their shell — never offer them directly.
+	// A shell is considered owned if any of its variants is already in activeConfigIds.
+	const ownedShellIds = new Set(
+		availableConfigs
+			.filter((c) => c.variantOf && ownedConfigIds.includes(c.id))
+			.map((c) => c.variantOf as string)
+	);
+
 	const eligibleConfigs = availableConfigs.filter(
-		(config) => !ownedConfigIds.includes(config.id)
+		(config) =>
+			!config.variantOf &&
+			!ownedConfigIds.includes(config.id) &&
+			!ownedShellIds.has(config.id)
 	);
 
 	if (eligibleConfigs.length === 0) {
