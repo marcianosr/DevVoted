@@ -27,6 +27,12 @@ export type ActiveRunPlayer = User & {
 	currentGate: number;
 };
 
+export type FallenRunPlayer = User & {
+	currentGate: number;
+	finishedAt: Date;
+	completionReason: string | null;
+};
+
 export type CommunityOptionBreakdown = {
 	optionId: number;
 	optionText: string;
@@ -41,6 +47,7 @@ export type CommunityStats = {
 	fastestResponder: CommunityStatsUser | null;
 	firstGood: CommunityStatsUser | null;
 	playersInActiveRun: ActiveRunPlayer[];
+	playersFallenOnDate: FallenRunPlayer[];
 	optionBreakdown: CommunityOptionBreakdown[];
 };
 
@@ -147,6 +154,57 @@ export const getCommunityStatsForDailyPoll = async (
 		};
 	});
 
+	const fallenRunPlayers = await db
+		.select({
+			id: usersTable.id,
+			email: usersTable.email,
+			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+			pipelineSlots: runsTable.pipeline_slots,
+			finishedAt: runsTable.finished_at,
+			completionReason: runsTable.completion_reason,
+			pollsAnswered: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
+		})
+		.from(runsTable)
+		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+		.leftJoin(pollResponsesTable, eq(pollResponsesTable.run_id, runsTable.id))
+		.where(
+			and(
+				eq(runsTable.status, "finished"),
+				isNull(runsTable.victory_achieved_at),
+				gte(runsTable.finished_at, startOfDay),
+				lt(runsTable.finished_at, startOfNextDay)
+			)
+		)
+		.groupBy(
+			usersTable.id,
+			runsTable.id,
+			runsTable.finished_at,
+			runsTable.completion_reason
+		);
+
+	const playersFallenOnDate: FallenRunPlayer[] = fallenRunPlayers.flatMap(
+		(row) => {
+			if (!row.finishedAt) return [];
+			const windowSize = getWindowSize(row.pipelineSlots as PipelineSlot[]);
+			const currentGate = Math.max(
+				1,
+				Math.ceil(row.pollsAnswered / windowSize)
+			);
+			return [
+				{
+					id: row.id,
+					email: row.email,
+					displayName: row.displayName,
+					photoUrl: row.photoUrl,
+					currentGate,
+					finishedAt: row.finishedAt,
+					completionReason: row.completionReason,
+				},
+			];
+		}
+	);
+
 	const fastestResponder = users.reduce<CommunityStatsUser | null>(
 		(fastest, user) => {
 			if (user.timeTakenMs === null) return fastest;
@@ -205,6 +263,7 @@ export const getCommunityStatsForDailyPoll = async (
 		fastestResponder,
 		firstGood: firstGood(),
 		playersInActiveRun,
+		playersFallenOnDate,
 		optionBreakdown,
 	};
 };

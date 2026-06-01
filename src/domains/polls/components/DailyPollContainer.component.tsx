@@ -22,14 +22,11 @@ import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisp
 import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
 import { Poll } from "~/domains/polls/models/poll.model";
 import { PollOption } from "~/domains/polls/models/pollOption.model";
-import {
-	applyPipelineUpgradeFn,
-	getExposedConfigDeck,
-} from "~/domains/runs/api/runs";
+import { getExposedConfigDeck } from "~/domains/runs/api/runs";
 import { ConfigDeckFooter } from "~/domains/economy/components/ConfigDeckFooter.component";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer.component";
+import { useApplyPipelineUpgrade } from "~/domains/runs/hooks/useApplyPipelineUpgrade";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
-import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
 import type { Run } from "~/domains/runs/models/run.model";
 import type {
 	PipelineEvaluation,
@@ -165,59 +162,14 @@ const DailyPollContainer = ({
 		onSuccess: () => router.invalidate(),
 	});
 
-	const applyUpgradeMutation = useMutation({
-		mutationFn: applyPipelineUpgradeFn,
-		onSuccess: () => {
-			setPendingUpgradeCards([]);
-			router.invalidate();
-		},
-	});
+	const { apply: applyUpgrade, isPending: isUpgradePending } =
+		useApplyPipelineUpgrade({
+			onApplied: () => setPendingUpgradeCards([]),
+		});
 
 	const handleUpgradeAccepted = (card: UpgradeCard) => {
-		if (applyUpgradeMutation.isPending) return;
-
 		setPendingUpgradeCards([]);
-
-		if (card.kind === "upgrade-category-mastery-slot") {
-			applyUpgradeMutation.mutate({
-				data: {
-					kind: "upgrade-category-mastery-slot",
-					category: card.category,
-					from: card.from,
-					to: card.to,
-				} as const,
-			});
-			return;
-		}
-
-		const req = card.slot.requirement;
-
-		if (req.type === "category-mastery") {
-			applyUpgradeMutation.mutate({
-				data: {
-					kind: "add-category-mastery-slot",
-					category: req.category,
-					difficulty: card.slot.difficulty,
-				} as const,
-			});
-			return;
-		}
-
-		const input =
-			card.kind === "add-slot"
-				? ({
-						kind: "add-slot",
-						gateTypeId: card.slot.gateTypeId as StaticGateTypeId,
-						difficulty: card.slot.difficulty,
-					} as const)
-				: ({
-						kind: "upgrade-slot",
-						gateTypeId: card.gateTypeId as StaticGateTypeId,
-						from: card.from,
-						to: card.to,
-					} as const);
-
-		applyUpgradeMutation.mutate({ data: input });
+		applyUpgrade(card);
 	};
 
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
@@ -333,13 +285,15 @@ const DailyPollContainer = ({
 		</header>
 	);
 
-	if (pendingUpgradeCards.length > 0) {
+	const hasPendingUpgrade = pendingUpgradeCards.length > 0;
+
+	if (hasPendingUpgrade && !hasAnswered) {
 		return (
 			<PipelineUpgradeContainer
 				cards={pendingUpgradeCards}
 				currentSlots={activeRun.pipelineSlots}
 				onAccept={handleUpgradeAccepted}
-				isPending={applyUpgradeMutation.isPending}
+				isPending={isUpgradePending}
 				evaluationContext={lastEvaluationContext ?? undefined}
 				evaluation={lastPipelineEvaluation ?? undefined}
 			/>
@@ -361,6 +315,22 @@ const DailyPollContainer = ({
 			)}
 			{adminLink}
 			{header}
+			{hasPendingUpgrade && hasAnswered && (
+				<div className="mb-6 p-4 border border-green-500 bg-green-500/10 flex items-center justify-between">
+					<div>
+						<p className="text-green-400 font-bold">Pipeline upgrade ready</p>
+						<p className="text-gray-300 text-sm">
+							You cleared a gate — pick your reward before tomorrow&apos;s poll.
+						</p>
+					</div>
+					<Link
+						to="/pipelines"
+						className="text-green-400 underline whitespace-nowrap"
+					>
+						Pick now
+					</Link>
+				</div>
+			)}
 			<div className="mt-4 mb-4">
 				{hasAnswered ? (
 					<PollResultsSection

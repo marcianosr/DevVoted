@@ -20,6 +20,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthedProgressRouteImport } from './routes/_authed/progress'
+import { Route as AuthedPipelinesRouteImport } from './routes/_authed/pipelines'
 import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
@@ -83,6 +84,11 @@ const AuthedProgressRoute = AuthedProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPipelinesRoute = AuthedPipelinesRouteImport.update({
+  id: '/pipelines',
+  path: '/pipelines',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedGameOverRoute = AuthedGameOverRouteImport.update({
   id: '/game-over',
   path: '/game-over',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/game-over': typeof AuthedGameOverRoute
+  '/pipelines': typeof AuthedPipelinesRoute
   '/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/game-over': typeof AuthedGameOverRoute
+  '/pipelines': typeof AuthedPipelinesRoute
   '/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/stats': typeof StatsRoute
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
+  '/_authed/pipelines': typeof AuthedPipelinesRoute
   '/_authed/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/polls/new': typeof AuthedPollsNewRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/admin'
     | '/game-over'
+    | '/pipelines'
     | '/progress'
     | '/auth/callback'
     | '/polls/new'
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/admin'
     | '/game-over'
+    | '/pipelines'
     | '/progress'
     | '/auth/callback'
     | '/polls/new'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/_authed/admin'
     | '/_authed/game-over'
+    | '/_authed/pipelines'
     | '/_authed/progress'
     | '/auth/callback'
     | '/_authed/polls/new'
@@ -342,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProgressRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/pipelines': {
+      id: '/_authed/pipelines'
+      path: '/pipelines'
+      fullPath: '/pipelines'
+      preLoaderRoute: typeof AuthedPipelinesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/game-over': {
       id: '/_authed/game-over'
       path: '/game-over'
@@ -404,6 +423,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRoute
   AuthedGameOverRoute: typeof AuthedGameOverRoute
+  AuthedPipelinesRoute: typeof AuthedPipelinesRoute
   AuthedProgressRoute: typeof AuthedProgressRoute
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
@@ -416,6 +436,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRoute,
   AuthedGameOverRoute: AuthedGameOverRoute,
+  AuthedPipelinesRoute: AuthedPipelinesRoute,
   AuthedProgressRoute: AuthedProgressRoute,
   AuthedPollsNewRoute: AuthedPollsNewRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,

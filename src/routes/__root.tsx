@@ -143,7 +143,10 @@ function RootComponent() {
 }
 
 function Navigation() {
-	const { user } = Route.useRouteContext();
+	const { user, activeRun } = Route.useRouteContext();
+	const hasPendingPipelineUpgrade =
+		activeRun?.success === true &&
+		activeRun.data.pendingUpgradeCards.length > 0;
 
 	return (
 		<>
@@ -160,6 +163,29 @@ function Navigation() {
 
 				{user ? (
 					<>
+						<span className="text-white">·</span>
+						<Link
+							to="/progress"
+							activeProps={{
+								className: "underline",
+							}}
+							activeOptions={{ exact: true }}
+						>
+							Scores
+						</Link>
+						<span className="text-white">·</span>
+						<Link
+							to="/pipelines"
+							activeProps={{
+								className: "underline",
+							}}
+							activeOptions={{ exact: true }}
+						>
+							Pipelines
+							{hasPendingPipelineUpgrade && (
+								<span className="ml-1 text-green-400 text-sm">(new)</span>
+							)}
+						</Link>
 						<span className="text-white">·</span>
 						<Link
 							to="/polls/new"

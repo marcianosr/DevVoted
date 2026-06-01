@@ -283,8 +283,12 @@ export const PostAnswerCarousel = ({
 								</div>
 							)}
 							{communityStats?.playersInActiveRun &&
-								communityStats.playersInActiveRun.length > 0 && (
-									<GatesMinimap players={communityStats.playersInActiveRun} />
+								(communityStats.playersInActiveRun.length > 0 ||
+									(communityStats.playersFallenOnDate?.length ?? 0) > 0) && (
+									<GatesMinimap
+										players={communityStats.playersInActiveRun}
+										fallenPlayers={communityStats.playersFallenOnDate}
+									/>
 								)}
 							{communityStats?.optionBreakdown &&
 								communityStats.optionBreakdown.length > 0 &&
