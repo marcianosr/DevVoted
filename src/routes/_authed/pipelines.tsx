@@ -1,6 +1,7 @@
-import { Link, createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { getWindowContextFn } from "~/domains/runs/api/runs";
+import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer.component";
 import { useApplyPipelineUpgrade } from "~/domains/runs/hooks/useApplyPipelineUpgrade";
 
@@ -46,33 +47,11 @@ function PipelinesRoute() {
 	}
 
 	return (
-		<section className="max-w-5xl mx-auto p-4 space-y-6">
-			<header>
-				<h1 className="text-3xl">Pipelines</h1>
-				<p className="text-gray-400">
-					No pipeline upgrades pending. Keep clearing gates to earn new cards.
-				</p>
-			</header>
-			<div className="border border-theme p-4">
-				<h2 className="text-xl mb-2">
-					Active slots ({activeRun.pipelineSlots.length})
-				</h2>
-				{activeRun.pipelineSlots.length === 0 ? (
-					<p className="text-gray-500">No pipeline slots yet.</p>
-				) : (
-					<ul className="space-y-2">
-						{activeRun.pipelineSlots.map((slot, i) => (
-							<li key={`${slot.gateTypeId}-${i}`} className="text-sm">
-								<span className="text-theme">{slot.gateTypeId}</span>
-								<span className="text-gray-500"> · {slot.difficulty}</span>
-							</li>
-						))}
-					</ul>
-				)}
-			</div>
-			<Link to="/daily-poll" className="inline-block underline">
-				Back to today&apos;s poll
-			</Link>
+		<section className="max-w-5xl mx-auto p-4">
+			<CurrentPipeline
+				slots={activeRun.pipelineSlots}
+				evaluationContext={windowContext ?? undefined}
+			/>
 		</section>
 	);
 }

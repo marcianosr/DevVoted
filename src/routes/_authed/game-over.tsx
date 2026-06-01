@@ -7,47 +7,14 @@ import { clsx } from "clsx";
 import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
 import Content from "~/components/Content.component";
 import { finishRunFn, getLastRunForGameOver } from "~/domains/runs/api/runs";
-import type { PipelineFailureSlot } from "~/domains/runs/services/runCompletion.service";
 import {
 	formatRequirement,
 	getSlotLabel,
 } from "~/domains/runs/utils/formatPipelineRequirement";
+import { parseCompletionReason } from "~/domains/runs/utils/parseCompletionReason";
 import { runQueryKeys } from "~/domains/shared/queryKeys";
 import { PrimaryButton } from "~/ui/PrimaryButton.component";
 import { SecondaryButton } from "~/ui/SecondaryButton.component";
-
-type ParsedCompletion =
-	| { type: "victory" }
-	| { type: "pipeline_failure"; failedSlots: PipelineFailureSlot[] }
-	| { type: "manual" }
-	| { type: "unknown" };
-
-const parseCompletionReason = (reason: string | null): ParsedCompletion => {
-	if (!reason) return { type: "unknown" };
-	if (reason === "victory") return { type: "victory" };
-	if (reason === "manual_break_off") return { type: "manual" };
-
-	try {
-		const parsed: unknown = JSON.parse(reason);
-		if (
-			typeof parsed === "object" &&
-			parsed !== null &&
-			(parsed as { type?: unknown }).type === "pipeline_failure" &&
-			Array.isArray((parsed as { failedSlots?: unknown }).failedSlots)
-		) {
-			return {
-				type: "pipeline_failure",
-				failedSlots: (parsed as { failedSlots: PipelineFailureSlot[] })
-					.failedSlots,
-			};
-		}
-	} catch {
-		// Fall through to unknown
-	}
-
-	console.warn("[game-over] unrecognized completion_reason:", reason);
-	return { type: "unknown" };
-};
 
 export const Route = createFileRoute("/_authed/game-over")({
 	component: RouteComponent,
