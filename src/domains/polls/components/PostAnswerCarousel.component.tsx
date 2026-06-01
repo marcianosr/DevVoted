@@ -322,7 +322,7 @@ export const PostAnswerCarousel = ({
 																>
 																	{opt.isCorrect ? "✓" : "·"}
 																</span>
-																<div className="markdown flex-1 min-w-0 break-words">
+																<div className="markdown flex-1 min-w-0 wrap-break-word">
 																	<MarkdownText>{opt.optionText}</MarkdownText>
 																</div>
 															</div>
