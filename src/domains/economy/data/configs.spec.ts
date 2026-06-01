@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockPoll } from "~/domains/polls/models/poll.mock";
 import { createPollOption } from "~/domains/polls/models/pollOption.model";
 import { createMockRun } from "~/domains/runs/models/run.mock";
-import { STORAGE_UNITS } from "~/lib/storage";
 import { configs, applyEffects, EffectRenderProps } from "./configs";
 
 // TODO: Split up to make more readable
@@ -847,68 +846,6 @@ describe("configs", () => {
 				"Will show correct answers on multiple choice polls"
 			);
 			expect(result.meta.notes).toContain("+2 amp for js polls");
-		});
-	});
-
-	describe("cookies config (shell + variants)", () => {
-		it("exposes a shell with two variants", () => {
-			const shell = configs.find((c) => c.id === "cookies-config");
-			expect(shell).toBeDefined();
-			expect(shell?.effect).toEqual([]);
-			expect(shell?.variants).toHaveLength(2);
-			expect(shell?.variants?.map((v) => v.id)).toEqual([
-				"cookies-accept-all-config",
-				"cookies-reject-all-config",
-			]);
-		});
-
-		it("accept-all variant grants +512KB storage and exposes deck", () => {
-			const accept = configs.find((c) => c.id === "cookies-accept-all-config");
-			expect(accept).toBeDefined();
-			expect(accept?.variantOf).toBe("cookies-config");
-			expect(accept?.effect).toEqual(["expandStorage", "exposeConfigDeck"]);
-			expect(accept?.storageBonus).toBe(STORAGE_UNITS.KB * 512);
-		});
-
-		it("reject-all variant grants +128KB storage and stays private", () => {
-			const reject = configs.find((c) => c.id === "cookies-reject-all-config");
-			expect(reject).toBeDefined();
-			expect(reject?.variantOf).toBe("cookies-config");
-			expect(reject?.effect).toEqual(["expandStorage"]);
-			expect(reject?.effect).not.toContain("exposeConfigDeck");
-			expect(reject?.storageBonus).toBe(STORAGE_UNITS.KB * 128);
-		});
-
-		it("accept-all variant's exposeConfigDeck effect activates when installed", () => {
-			const mockPoll = createMockPoll({ categoryCode: "js" });
-			const mockRun = createMockRun();
-			const base = {
-				poll: mockPoll,
-				options: [],
-				run: mockRun,
-				hasAnswered: false,
-			};
-
-			const result = applyEffects(base, ["cookies-accept-all-config"]);
-
-			expect(result.exposeConfigDeck).toBe(true);
-			expect(result.storage.expand).toBe(STORAGE_UNITS.KB * 512);
-		});
-
-		it("reject-all variant does not expose the deck", () => {
-			const mockPoll = createMockPoll({ categoryCode: "js" });
-			const mockRun = createMockRun();
-			const base = {
-				poll: mockPoll,
-				options: [],
-				run: mockRun,
-				hasAnswered: false,
-			};
-
-			const result = applyEffects(base, ["cookies-reject-all-config"]);
-
-			expect(result.exposeConfigDeck).toBe(false);
-			expect(result.storage.expand).toBe(STORAGE_UNITS.KB * 128);
 		});
 	});
 

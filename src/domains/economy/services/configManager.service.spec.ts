@@ -41,13 +41,13 @@ describe("configStorage", () => {
 
 		it("returns false when one of the config's variants is already installed", () => {
 			const mockRun = createMockRun({
-				activeConfigIds: ["cookies-accept-all-config"],
+				activeConfigIds: ["shell-variant-a"],
 			});
 			const shellConfig = createMockConfig({
-				id: "cookies-config",
+				id: "shell-config",
 				variants: [
-					{ id: "cookies-accept-all-config", label: "Accept", description: "" },
-					{ id: "cookies-reject-all-config", label: "Reject", description: "" },
+					{ id: "shell-variant-a", label: "Variant A", description: "" },
+					{ id: "shell-variant-b", label: "Variant B", description: "" },
 				],
 			});
 
@@ -67,13 +67,13 @@ describe("configStorage", () => {
 
 		it("returns true for a shell when one of its variants is in activeConfigIds", () => {
 			const mockRun = createMockRun({
-				activeConfigIds: ["cookies-reject-all-config"],
+				activeConfigIds: ["shell-variant-b"],
 			});
 			const shellConfig = createMockConfig({
-				id: "cookies-config",
+				id: "shell-config",
 				variants: [
-					{ id: "cookies-accept-all-config", label: "Accept", description: "" },
-					{ id: "cookies-reject-all-config", label: "Reject", description: "" },
+					{ id: "shell-variant-a", label: "Variant A", description: "" },
+					{ id: "shell-variant-b", label: "Variant B", description: "" },
 				],
 			});
 
@@ -83,9 +83,9 @@ describe("configStorage", () => {
 		it("returns false for a shell when no variants are installed", () => {
 			const mockRun = createMockRun({ activeConfigIds: ["kazooie-config"] });
 			const shellConfig = createMockConfig({
-				id: "cookies-config",
+				id: "shell-config",
 				variants: [
-					{ id: "cookies-accept-all-config", label: "Accept", description: "" },
+					{ id: "shell-variant-a", label: "Variant A", description: "" },
 				],
 			});
 
