@@ -195,56 +195,37 @@ describe("evaluatePipeline — multiple active slots", () => {
 	});
 });
 
-// ─── evaluatePipeline — cold-start ───────────────────────────────────────────
-
 describe("evaluatePipeline — cold-start", () => {
-	const lowSlot = getSlotDefinition("cold-start", "low")!; // count: 1
-	const mediumSlot = getSlotDefinition("cold-start", "medium")!; // count: 2
-	const criticalSlot = getSlotDefinition("cold-start", "critical")!; // count: 4
+	const highSlot = getSlotDefinition("cold-start", "high")!; // count: 1
+	const criticalSlot = getSlotDefinition("cold-start", "critical")!; // count: 2
 
-	it("passes when the first poll of the window is correct (low)", () => {
+	it("passes when the first poll of the window is correct (high)", () => {
 		const result = evaluatePipeline(
 			makeContext({ firstConsecutiveCorrectFromWindowStart: 1 }),
-			[lowSlot]
+			[highSlot]
 		);
 		expect(result.passed).toBe(true);
 	});
 
-	it("fails when the first poll of the window is wrong (low)", () => {
+	it("fails when the first poll of the window is wrong (high)", () => {
 		const result = evaluatePipeline(
 			makeContext({ firstConsecutiveCorrectFromWindowStart: 0 }),
-			[lowSlot]
+			[highSlot]
 		);
 		expect(result.passed).toBe(false);
 	});
 
-	it("passes when the first 2 polls are correct (medium)", () => {
+	it("passes when the first 2 polls are correct (critical)", () => {
 		const result = evaluatePipeline(
 			makeContext({ firstConsecutiveCorrectFromWindowStart: 2 }),
-			[mediumSlot]
-		);
-		expect(result.passed).toBe(true);
-	});
-
-	it("fails when only the first poll is correct but 2 are required (medium)", () => {
-		const result = evaluatePipeline(
-			makeContext({ firstConsecutiveCorrectFromWindowStart: 1 }),
-			[mediumSlot]
-		);
-		expect(result.passed).toBe(false);
-	});
-
-	it("passes when first 4 polls are correct (critical)", () => {
-		const result = evaluatePipeline(
-			makeContext({ firstConsecutiveCorrectFromWindowStart: 4 }),
 			[criticalSlot]
 		);
 		expect(result.passed).toBe(true);
 	});
 
-	it("fails when fewer than 4 consecutive correct at start (critical)", () => {
+	it("fails when only the first poll is correct but 2 are required (critical)", () => {
 		const result = evaluatePipeline(
-			makeContext({ firstConsecutiveCorrectFromWindowStart: 3 }),
+			makeContext({ firstConsecutiveCorrectFromWindowStart: 1 }),
 			[criticalSlot]
 		);
 		expect(result.passed).toBe(false);
@@ -253,15 +234,15 @@ describe("evaluatePipeline — cold-start", () => {
 	it("returns the slot reward on pass", () => {
 		const result = evaluatePipeline(
 			makeContext({ firstConsecutiveCorrectFromWindowStart: 2 }),
-			[mediumSlot]
+			[criticalSlot]
 		);
-		expect(result.totalReward).toBe(120 * STORAGE_UNITS.KB);
+		expect(result.totalReward).toBe(480 * STORAGE_UNITS.KB);
 	});
 
 	it("returns 0 reward on fail", () => {
 		const result = evaluatePipeline(
 			makeContext({ firstConsecutiveCorrectFromWindowStart: 0 }),
-			[lowSlot]
+			[highSlot]
 		);
 		expect(result.totalReward).toBe(0);
 	});

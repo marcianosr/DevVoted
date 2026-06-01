@@ -9,6 +9,8 @@ import {
 	runsTable,
 	usersTable,
 } from "~/database/schema";
+import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
+import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import type { User } from "~/domains/users/services/userSync.service";
 
 export type CommunityStatsUser = User & {
@@ -19,6 +21,10 @@ export type CommunityStatsUser = User & {
 		createdAt: Date | null;
 		updatedAt: Date | null;
 	};
+};
+
+export type ActiveRunPlayer = User & {
+	currentGate: number;
 };
 
 export type CommunityOptionBreakdown = {
@@ -34,24 +40,9 @@ export type CommunityStats = {
 	firstToAnswer: CommunityStatsUser | null;
 	fastestResponder: CommunityStatsUser | null;
 	firstGood: CommunityStatsUser | null;
-	playersInActiveRun: CommunityStatsUser[];
+	playersInActiveRun: ActiveRunPlayer[];
 	optionBreakdown: CommunityOptionBreakdown[];
 };
-
-const emptyCommunityUser = (
-	id: string,
-	email: string,
-	displayName: string,
-	photoUrl: string | null
-): CommunityStatsUser => ({
-	id,
-	email,
-	displayName,
-	photoUrl,
-	answeredAt: null,
-	timeTakenMs: null,
-	responseData: { userId: null, createdAt: null, updatedAt: null },
-});
 
 export type RandomDailyAnswer = {
 	user: User;
@@ -130,19 +121,31 @@ export const getCommunityStatsForDailyPoll = async (
 	];
 
 	const activeRunPlayers = await db
-		.selectDistinct({
+		.select({
 			id: usersTable.id,
 			email: usersTable.email,
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
+			pipelineSlots: runsTable.pipeline_slots,
+			pollsAnswered: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
 		})
 		.from(runsTable)
 		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
-		.where(eq(runsTable.status, "active"));
+		.leftJoin(pollResponsesTable, eq(pollResponsesTable.run_id, runsTable.id))
+		.where(eq(runsTable.status, "active"))
+		.groupBy(usersTable.id, runsTable.id);
 
-	const playersInActiveRun = activeRunPlayers.map((u) =>
-		emptyCommunityUser(u.id, u.email, u.displayName, u.photoUrl)
-	);
+	const playersInActiveRun: ActiveRunPlayer[] = activeRunPlayers.map((row) => {
+		const windowSize = getWindowSize(row.pipelineSlots as PipelineSlot[]);
+		const currentGate = Math.max(1, Math.ceil(row.pollsAnswered / windowSize));
+		return {
+			id: row.id,
+			email: row.email,
+			displayName: row.displayName,
+			photoUrl: row.photoUrl,
+			currentGate,
+		};
+	});
 
 	const fastestResponder = users.reduce<CommunityStatsUser | null>(
 		(fastest, user) => {

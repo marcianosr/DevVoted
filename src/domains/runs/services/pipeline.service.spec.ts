@@ -14,11 +14,12 @@ import {
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-// short-window is fixed at low — not player-selectable
-const allTypesAtMedium: PipelineSlot[] = [
+// short-window is fixed at low — not player-selectable.
+// cold-start has no low/medium variants — high is its floor.
+const allTypesActive: PipelineSlot[] = [
 	getSlotDefinition("coverage-gain", "medium")!,
 	getSlotDefinition("correct-answers", "medium")!,
-	getSlotDefinition("cold-start", "medium")!,
+	getSlotDefinition("cold-start", "high")!,
 	getSlotDefinition("short-window", "low")!,
 ];
 
@@ -64,7 +65,7 @@ describe("isMaxPipeline", () => {
 	});
 
 	it("returns false when all types are active but not all at critical", () => {
-		expect(isMaxPipeline(allTypesAtMedium)).toBe(false);
+		expect(isMaxPipeline(allTypesActive)).toBe(false);
 	});
 
 	it("returns true when all types are active and all at critical", () => {
@@ -176,7 +177,7 @@ describe("generateUpgradeCards", () => {
 	});
 
 	it("returns exactly 1 upgrade-slot card when all types are active and no adds available", () => {
-		const cards = generateUpgradeCards(allTypesAtMedium, 8);
+		const cards = generateUpgradeCards(allTypesActive, 8);
 		// no add pool (all static types installed), 1 random upgrade from upgradeable slots
 		expect(cards.length).toBe(1);
 		expect(cards[0].kind).toBe("upgrade-slot");
@@ -193,7 +194,7 @@ describe("generateUpgradeCards", () => {
 	});
 
 	it("upgrade-slot card increments difficulty by one tier", () => {
-		const cards = generateUpgradeCards(allTypesAtMedium, 8);
+		const cards = generateUpgradeCards(allTypesActive, 8);
 		const upgradeCard = cards[0];
 		if (!upgradeCard || upgradeCard.kind !== "upgrade-slot")
 			throw new Error("Expected upgrade-slot");

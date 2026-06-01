@@ -1,7 +1,12 @@
 import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
-import { CommunityStatsUser } from "~/domains/polls/api/communityStats.queries";
+type AvatarUser = {
+	id: string;
+	displayName?: string;
+	photoUrl?: string | null;
+	timeTakenMs?: number | null;
+};
 
 const KANTO_COLORS = [
 	"bg-pallet",
@@ -28,7 +33,7 @@ const getColorFromString = (str: string): string => {
 };
 
 type UserAvatarProps = {
-	user: CommunityStatsUser;
+	user: AvatarUser;
 	size?: "sm" | "md" | "lg";
 };
 

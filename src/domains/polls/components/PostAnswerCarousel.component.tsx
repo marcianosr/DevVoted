@@ -8,6 +8,7 @@ import ExposedConfigDeckDisplay from "~/domains/economy/components/ExposedConfig
 import { Config } from "~/domains/economy/models/config.model";
 import ShopContainer from "~/domains/economy/components/ShopContainer.component";
 import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay.component";
+import GatesMinimap from "~/domains/polls/components/GatesMinimap.component";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
 import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay.component";
@@ -283,17 +284,7 @@ export const PostAnswerCarousel = ({
 							)}
 							{communityStats?.playersInActiveRun &&
 								communityStats.playersInActiveRun.length > 0 && (
-									<div className="mt-4">
-										<p className="text-xl">
-											{communityStats.playersInActiveRun.length} player(s)
-											currently in a run
-										</p>
-										<div className="flex -space-x-2 items-center mt-1">
-											{communityStats.playersInActiveRun.map((user) => (
-												<UserAvatar key={user.id} user={user} />
-											))}
-										</div>
-									</div>
+									<GatesMinimap players={communityStats.playersInActiveRun} />
 								)}
 							{communityStats?.optionBreakdown &&
 								communityStats.optionBreakdown.length > 0 &&
@@ -311,7 +302,7 @@ export const PostAnswerCarousel = ({
 														<li
 															key={opt.optionId}
 															className={clsx(
-																"border border-gray-800 p-3",
+																"border border-gray-800 p-1",
 																isWideOption && "sm:col-span-2 lg:col-span-3"
 															)}
 														>

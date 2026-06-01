@@ -1,5 +1,6 @@
 import {
 	STARTER_GATE_TYPE_IDS,
+	STARTER_SLOT_DEFINITIONS,
 	getCategoryMasterySlot,
 	getDifficultyWeights,
 	getSlotDefinition,
@@ -48,8 +49,34 @@ const getAvailableGateTypes = (slots: PipelineSlot[]): StaticGateTypeId[] => {
 	return STARTER_GATE_TYPE_IDS.filter((id) => !activeTypes.has(id));
 };
 
+const eligibleDifficultiesFor = (
+	gateTypeId: StaticGateTypeId
+): GateDifficulty[] =>
+	DIFFICULTY_ORDER.filter(
+		(d) => STARTER_SLOT_DEFINITIONS[gateTypeId].difficulties[d] !== undefined
+	);
+
+const filterWeightsTo = (
+	weights: Record<GateDifficulty, number>,
+	eligible: GateDifficulty[]
+): Record<GateDifficulty, number> => {
+	const eligibleSet = new Set(eligible);
+	return DIFFICULTY_ORDER.reduce(
+		(acc, d) => ({ ...acc, [d]: eligibleSet.has(d) ? weights[d] : 0 }),
+		{} as Record<GateDifficulty, number>
+	);
+};
+
+const nextDifficultyExists = (slot: PipelineSlot): boolean => {
+	const next = getNextDifficulty(slot.difficulty);
+	if (next === null) return false;
+	if (slot.requirement.type === "category-mastery") return true;
+	const def = STARTER_SLOT_DEFINITIONS[slot.gateTypeId as StaticGateTypeId];
+	return def?.difficulties[next] !== undefined;
+};
+
 const getUpgradeableSlots = (slots: PipelineSlot[]): PipelineSlot[] =>
-	slots.filter((s) => getNextDifficulty(s.difficulty) !== null);
+	slots.filter(nextDifficultyExists);
 
 export const getInitialPipelineSlots = (): PipelineSlot[] => [
 	getSlotDefinition("short-window", "low")!,
@@ -120,10 +147,11 @@ export const generateUpgradeCards = (
 		.sort(() => Math.random() - 0.5)
 		.slice(0, addCount)) {
 		if (entry.kind === "static") {
-			const slot = getSlotDefinition(
-				entry.gateTypeId,
-				pickWeightedDifficulty(weights)
+			const eligible = eligibleDifficultiesFor(entry.gateTypeId);
+			const difficulty = pickWeightedDifficulty(
+				filterWeightsTo(weights, eligible)
 			);
+			const slot = getSlotDefinition(entry.gateTypeId, difficulty);
 			if (!slot) continue;
 			cards.push({ kind: "add-slot", slot });
 		} else {
