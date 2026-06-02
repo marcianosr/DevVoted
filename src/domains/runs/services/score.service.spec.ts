@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 
 import {
 	outcomeSingle,
-	outcomeMulti,
 	singleCorrectnessFactor,
 	multiCorrectnessFactor,
 	calculateCoverage,
@@ -18,24 +17,6 @@ describe("score.service", () => {
 
 		it("returns wrong for incorrect answer", () => {
 			expect(outcomeSingle(false)).toBe("wrong");
-		});
-	});
-
-	describe("outcomeMulti", () => {
-		it("returns full for all correct, no wrong", () => {
-			expect(outcomeMulti(2, 2, 0)).toBe("full");
-		});
-
-		it("returns partial for some correct, some wrong", () => {
-			expect(outcomeMulti(1, 2, 1)).toBe("partial");
-		});
-
-		it("returns partial for some correct, no wrong", () => {
-			expect(outcomeMulti(1, 2, 0)).toBe("partial");
-		});
-
-		it("returns wrong for no correct answers", () => {
-			expect(outcomeMulti(0, 2, 2)).toBe("wrong");
 		});
 	});
 

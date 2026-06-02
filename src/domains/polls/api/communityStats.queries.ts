@@ -9,6 +9,7 @@ import {
 	runsTable,
 	usersTable,
 } from "~/database/schema";
+import { evaluatePollAnswer } from "~/domains/polls/services/pollAnswerEvaluation.service";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import type { User } from "~/domains/users/services/userSync.service";
@@ -214,21 +215,38 @@ export const getCommunityStatsForDailyPoll = async (
 		null
 	);
 
-	const firstGood = () => {
-		const goodResponders = result.filter(
-			(r) => r.polls_options?.correct === true
-		);
-		if (goodResponders.length === 0) return null;
-		const firstGoodRecord = goodResponders[0];
-		if (!firstGoodRecord.users) return null;
-		return users.find((u) => u.id === firstGoodRecord.users!.id) ?? null;
-	};
-
 	const allOptions = await db
 		.select()
 		.from(pollOptionsTable)
 		.where(eq(pollOptionsTable.poll_id, pollId))
 		.orderBy(asc(pollOptionsTable.id));
+
+	const totalCorrect = allOptions.filter((o) => o.correct).length;
+
+	const selectionsByUserId = result.reduce<
+		Map<string, { correct: number; incorrect: number }>
+	>((acc, row) => {
+		const userId = row.users?.id;
+		const option = row.polls_options;
+		if (!userId || !option) return acc;
+		const existing = acc.get(userId) ?? { correct: 0, incorrect: 0 };
+		if (option.correct) existing.correct += 1;
+		else existing.incorrect += 1;
+		acc.set(userId, existing);
+		return acc;
+	}, new Map());
+
+	const isFullyCorrect = (userId: string) => {
+		const sel = selectionsByUserId.get(userId);
+		if (!sel) return false;
+		return evaluatePollAnswer({
+			selectedCorrect: sel.correct,
+			selectedIncorrect: sel.incorrect,
+			totalCorrect,
+		}).isFullyCorrect;
+	};
+
+	const firstGood = () => users.find((u) => isFullyCorrect(u.id)) ?? null;
 
 	const usersById = new Map(users.map((u) => [u.id, u]));
 	const votersByOptionId = result.reduce<Map<number, Set<string>>>(

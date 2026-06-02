@@ -28,11 +28,13 @@ import {
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { endRunForThresholdFailure } from "~/domains/runs/services/runCompletion.service";
 import {
+	evaluatePollAnswer,
+	type PollAnswerOutcome,
+} from "~/domains/polls/services/pollAnswerEvaluation.service";
+import {
 	outcomeSingle,
-	outcomeMulti,
 	singleCorrectnessFactor,
 	multiCorrectnessFactor,
-	type PollAnswerOutcome,
 	PollScoreBreakdown,
 } from "~/domains/runs/services/score.service";
 import { getTodayDateString } from "~/lib/dateUtils";
@@ -398,7 +400,11 @@ const calculateMultiOutcome = (
 	nCorrectTotal: number,
 	nWrongPicked: number
 ) => ({
-	outcome: outcomeMulti(nCorrectPicked, nCorrectTotal, nWrongPicked),
+	outcome: evaluatePollAnswer({
+		selectedCorrect: nCorrectPicked,
+		selectedIncorrect: nWrongPicked,
+		totalCorrect: nCorrectTotal,
+	}).outcome,
 	correctnessFactor: multiCorrectnessFactor(
 		nCorrectPicked,
 		nCorrectTotal,

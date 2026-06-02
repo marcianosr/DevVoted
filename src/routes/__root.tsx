@@ -164,7 +164,6 @@ function Navigation() {
 				{user ? (
 					<>
 						<span className="text-white">·</span>
-						<span className="text-white">·</span>
 						<Link
 							to="/pipelines"
 							activeProps={{

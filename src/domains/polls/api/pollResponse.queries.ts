@@ -10,10 +10,10 @@ import {
 import { db } from "~/database/db";
 import { pollResponseOptionFactory } from "~/domains/polls/models/pollResponseOption.model";
 import {
+	evaluatePollAnswer,
 	type PollAnswerOutcome,
-	type ScoreCalculation,
-	outcomeMulti,
-} from "~/domains/runs/services/score.service";
+} from "~/domains/polls/services/pollAnswerEvaluation.service";
+import type { ScoreCalculation } from "~/domains/runs/services/score.service";
 
 type CreatePollResponse = {
 	pollId: number;
@@ -334,11 +334,11 @@ export const getRunPollHistory = async (
 		const outcome: PollAnswerOutcome =
 			row.timesAnswered === 0 || correctness === undefined
 				? "wrong"
-				: outcomeMulti(
-						correctness.selectedCorrect,
+				: evaluatePollAnswer({
+						selectedCorrect: correctness.selectedCorrect,
+						selectedIncorrect: correctness.selectedIncorrect,
 						totalCorrect,
-						correctness.selectedIncorrect
-					);
+					}).outcome;
 
 		return {
 			pollId: row.pollId,

@@ -1,3 +1,5 @@
+import type { PollAnswerOutcome } from "~/domains/polls/services/pollAnswerEvaluation.service";
+
 /**
  * Coverage-based scoring with round scaling and streak bonuses
  * Base formula: (1% + round × 0.2%) + (streak × 0.1%, capped at 1%)
@@ -40,20 +42,8 @@ export const calculateStreakBonus = (streak: number): number => {
 	);
 };
 
-export type PollAnswerOutcome = "full" | "partial" | "wrong";
-
 export const outcomeSingle = (isCorrect: boolean): PollAnswerOutcome =>
 	isCorrect ? "full" : "wrong";
-
-export const outcomeMulti = (
-	nCorrectPicked: number,
-	nCorrectTotal: number,
-	nWrongPicked: number
-): PollAnswerOutcome => {
-	if (nCorrectPicked === 0) return "wrong";
-	if (nCorrectPicked === nCorrectTotal && nWrongPicked === 0) return "full";
-	return "partial";
-};
 
 export const singleCorrectnessFactor = (isCorrect: boolean) => {
 	return isCorrect ? 1.0 : 0.0;

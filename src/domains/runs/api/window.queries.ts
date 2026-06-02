@@ -7,6 +7,7 @@ import {
 	pollsTable,
 } from "@/src/database/schema";
 import { db } from "~/database/db";
+import { evaluatePollAnswer } from "~/domains/polls/services/pollAnswerEvaluation.service";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 export type WindowResult = {
@@ -99,9 +100,14 @@ export const getWindowResults = async (
 					categoryCode: category,
 				};
 
+			const evaluation = evaluatePollAnswer({
+				selectedCorrect: sel.selectedCorrect,
+				selectedIncorrect: sel.selectedIncorrect,
+				totalCorrect,
+			});
+
 			return {
-				isCorrect:
-					sel.selectedCorrect === totalCorrect && sel.selectedIncorrect === 0,
+				isCorrect: evaluation.isFullyCorrect,
 				isWrong: sel.selectedIncorrect > 0,
 				coverageDelta: coverageDelta ?? 0,
 				categoryCode: category,
