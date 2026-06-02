@@ -7,6 +7,7 @@ import type {
 	PipelineEvaluationContext,
 	SlotEvaluationStatus,
 } from "~/domains/runs/services/pipelineEvaluator.service";
+import { formatCurrentStat } from "~/domains/runs/utils/formatCurrentStat";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -49,31 +50,6 @@ const getLiveStatus = (
 		if (!results || results.appeared === 0) return "skipped";
 	}
 	return "in-progress";
-};
-
-const formatCurrentStat = (
-	slot: PipelineSlot,
-	ctx: PipelineEvaluationContext
-): string => {
-	const req = slot.requirement;
-	switch (req.type) {
-		case "correct-answers":
-			return `${ctx.correctAnswersInWindow}/${req.count} correct`;
-		case "coverage-gain": {
-			const val = ctx.coverageGainedInWindow.toFixed(1);
-			const gained = ctx.coverageGainedInWindow >= 0 ? `+${val}%` : `${val}%`;
-			return `${gained} of ${req.threshold}% needed`;
-		}
-		case "short-window":
-			return `${ctx.pollsAnsweredInWindow}/${req.pollCount} answered`;
-		case "cold-start":
-			return `${ctx.firstConsecutiveCorrectFromWindowStart}/${req.count} correct start`;
-		case "category-mastery": {
-			const results = ctx.categoryPollResults?.[req.category];
-			if (!results || results.appeared === 0) return "no polls seen yet";
-			return `${results.correct}/${results.appeared} correct`;
-		}
-	}
 };
 
 type GateHealthProps = {
@@ -131,7 +107,7 @@ export const GateHealth = ({
 								status !== "passed" &&
 								status !== "failed" && (
 									<p className="text-base text-zinc-300">
-										{formatCurrentStat(slot, evaluationContext)}
+										{formatCurrentStat(slot.requirement, evaluationContext)}
 									</p>
 								)}
 						</div>

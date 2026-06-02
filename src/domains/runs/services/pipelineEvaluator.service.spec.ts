@@ -323,6 +323,48 @@ describe("evaluatePipeline — category-mastery", () => {
 			expect(result.slotEvaluations[0].status).toBe("skipped");
 		});
 	});
+
+	describe("skipped when window cannot satisfy the requirement", () => {
+		it("medium slot is skipped when only 1 CSS poll appeared (needs 2)", () => {
+			const slot = getCategoryMasterySlot("css", "medium");
+			const result = evaluatePipeline(cssPollResult(1, 1), [slot]);
+			expect(result.slotEvaluations[0].status).toBe("skipped");
+			expect(result.passed).toBe(true);
+		});
+
+		it("high slot is skipped when only 2 JS polls appeared (needs 3)", () => {
+			const slot = getCategoryMasterySlot("js", "high");
+			const result = evaluatePipeline(
+				makeContext({
+					categoryPollResults: { js: { appeared: 2, correct: 2 } },
+				}),
+				[slot]
+			);
+			expect(result.slotEvaluations[0].status).toBe("skipped");
+			expect(result.passed).toBe(true);
+		});
+
+		it("contributes 0 reward when skipped", () => {
+			const slot = getCategoryMasterySlot("css", "medium");
+			const result = evaluatePipeline(cssPollResult(1, 1), [slot]);
+			expect(result.totalReward).toBe(0);
+		});
+
+		it("critical slot is skipped when no polls of the category appeared", () => {
+			const slot = getCategoryMasterySlot("css", "critical");
+			const result = evaluatePipeline(
+				makeContext({ categoryPollResults: {} }),
+				[slot]
+			);
+			expect(result.slotEvaluations[0].status).toBe("skipped");
+		});
+
+		it("critical slot still evaluates when at least 1 poll appeared", () => {
+			const slot = getCategoryMasterySlot("css", "critical");
+			const result = evaluatePipeline(cssPollResult(1, 0), [slot]);
+			expect(result.slotEvaluations[0].status).toBe("failed");
+		});
+	});
 });
 
 // ─── evaluatePipeline — edge cases ───────────────────────────────────────────

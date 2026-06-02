@@ -113,13 +113,21 @@ const evaluateSlot = (
 			);
 
 		case "category-mastery": {
-			const results = ctx.categoryPollResults?.[req.category];
-			if (!results || results.appeared === 0)
-				return makeResult(slot, "skipped");
+			const appeared = ctx.categoryPollResults?.[req.category]?.appeared ?? 0;
+			const correct = ctx.categoryPollResults?.[req.category]?.correct ?? 0;
+
+			// Skip if the window can't supply enough polls of this category to satisfy
+			// the requirement — otherwise a player who answers every available poll
+			// correctly still fails (e.g. minCorrect=2 but only 1 css poll appeared).
+			// For critical (minCorrect=null = "all that appear must be correct"), we
+			// still need at least 1 poll to evaluate.
+			const minToEvaluate = req.minCorrect ?? 1;
+			if (appeared < minToEvaluate) return makeResult(slot, "skipped");
+
 			const passed =
 				req.minCorrect === null
-					? results.correct === results.appeared
-					: results.correct >= req.minCorrect;
+					? correct === appeared
+					: correct >= req.minCorrect;
 			return makeResult(slot, passed ? "passed" : "failed");
 		}
 

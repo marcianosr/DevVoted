@@ -1,7 +1,6 @@
 import type {
 	GateDifficulty,
 	PipelineSlot,
-	PipelineSlotRequirement,
 	UpgradeCard,
 } from "~/domains/runs/models/pipeline.model";
 import type {
@@ -9,6 +8,7 @@ import type {
 	PipelineEvaluationContext,
 	SlotEvaluationStatus,
 } from "~/domains/runs/services/pipelineEvaluator.service";
+import { formatCurrentStat } from "~/domains/runs/utils/formatCurrentStat";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -42,29 +42,6 @@ const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
 	medium: "text-green-400 border-green-400",
 	high: "text-orange-400 border-orange-400",
 	critical: "text-red-500 border-red-500",
-};
-
-const formatCurrentStat = (
-	req: PipelineSlotRequirement,
-	ctx: PipelineEvaluationContext
-): string => {
-	switch (req.type) {
-		case "correct-answers":
-			return `${ctx.correctAnswersInWindow} correct`;
-		case "coverage-gain": {
-			const val = ctx.coverageGainedInWindow.toFixed(1);
-			return ctx.coverageGainedInWindow >= 0 ? `+${val}%` : `${val}%`;
-		}
-		case "short-window":
-			return `${ctx.pollsAnsweredInWindow}/${ctx.pollsInWindow} answered`;
-		case "cold-start":
-			return `${ctx.firstConsecutiveCorrectFromWindowStart}/${req.count} correct start`;
-		case "category-mastery": {
-			const results = ctx.categoryPollResults?.[req.category];
-			if (!results || results.appeared === 0) return "no polls seen yet";
-			return `${results.correct}/${results.appeared} correct`;
-		}
-	}
 };
 
 const SelectButton = ({
