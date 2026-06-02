@@ -12,6 +12,7 @@ import UserAvatar from "~/domains/users/components/UserAvatar.component";
 type GatesMinimapProps = {
 	players: ActiveRunPlayer[];
 	fallenPlayers?: FallenRunPlayer[];
+	viewerUserId?: string | null;
 };
 
 const MAX_VISIBLE_AVATARS = 4;
@@ -42,34 +43,50 @@ type FallenAvatarProps = {
 	onSelect: (player: FallenRunPlayer) => void;
 };
 
-const FallenAvatar = ({ player, onSelect }: FallenAvatarProps) => (
-	<button
-		type="button"
-		onClick={() => onSelect(player)}
-		className="relative cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-red-500"
-		title={`${player.displayName} fell at Gate ${player.currentGate} · ${formatTimeOfDay(player.finishedAt)}`}
-		aria-label={`See why ${player.displayName} died`}
-	>
-		<div className="grayscale opacity-60">
-			<UserAvatar user={player} size="sm" />
-		</div>
-		<span
-			className={clsx(
-				"absolute -bottom-1 -right-1 inline-flex h-4 w-4",
-				"items-center justify-center rounded-full bg-red-600",
-				"text-[10px] leading-none ring-2 ring-zinc-900"
-			)}
-			aria-hidden="true"
+const FallenAvatar = ({ player, onSelect }: FallenAvatarProps) => {
+	const isLooted = player.lootedBy !== null;
+	return (
+		<button
+			type="button"
+			onClick={() => onSelect(player)}
+			className="relative cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-red-500"
+			title={`${player.displayName} fell at Gate ${player.currentGate} · ${formatTimeOfDay(player.finishedAt)}${isLooted ? ` · looted by ${player.lootedBy?.displayName}` : ""}`}
+			aria-label={`See why ${player.displayName} died`}
 		>
-			💀
-		</span>
-	</button>
-);
-
-const GatesMinimap = ({ players, fallenPlayers = [] }: GatesMinimapProps) => {
-	const [selectedFallen, setSelectedFallen] = useState<FallenRunPlayer | null>(
-		null
+			<div className="grayscale opacity-60">
+				<UserAvatar user={player} size="sm" />
+			</div>
+			{isLooted && player.lootedBy ? (
+				<span
+					className="absolute -bottom-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-zinc-900 overflow-hidden bg-zinc-800"
+					aria-hidden="true"
+				>
+					<UserAvatar user={player.lootedBy} size="xs" />
+				</span>
+			) : (
+				<span
+					className={clsx(
+						"absolute -bottom-1 -right-1 inline-flex h-4 w-4",
+						"items-center justify-center rounded-full bg-red-600",
+						"text-[10px] leading-none ring-2 ring-zinc-900"
+					)}
+					aria-hidden="true"
+				>
+					💀
+				</span>
+			)}
+		</button>
 	);
+};
+
+const GatesMinimap = ({
+	players,
+	fallenPlayers = [],
+	viewerUserId = null,
+}: GatesMinimapProps) => {
+	const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
+	const selectedFallen =
+		fallenPlayers.find((p) => p.runId === selectedRunId) ?? null;
 
 	if (players.length === 0 && fallenPlayers.length === 0) return null;
 
@@ -141,7 +158,7 @@ const GatesMinimap = ({ players, fallenPlayers = [] }: GatesMinimapProps) => {
 										<FallenAvatar
 											key={player.id}
 											player={player}
-											onSelect={setSelectedFallen}
+											onSelect={(p) => setSelectedRunId(p.runId)}
 										/>
 									))}
 									{fallenOverflow > 0 && (
@@ -163,7 +180,8 @@ const GatesMinimap = ({ players, fallenPlayers = [] }: GatesMinimapProps) => {
 			</div>
 			<FallenPlayerModal
 				player={selectedFallen}
-				onClose={() => setSelectedFallen(null)}
+				viewerUserId={viewerUserId}
+				onClose={() => setSelectedRunId(null)}
 			/>
 		</>
 	);

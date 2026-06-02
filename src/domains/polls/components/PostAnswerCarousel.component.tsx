@@ -288,6 +288,7 @@ export const PostAnswerCarousel = ({
 									<GatesMinimap
 										players={communityStats.playersInActiveRun}
 										fallenPlayers={communityStats.playersFallenOnDate}
+										viewerUserId={activeRun.userId}
 									/>
 								)}
 							{communityStats?.optionBreakdown &&

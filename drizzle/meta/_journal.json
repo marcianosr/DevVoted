@@ -386,6 +386,13 @@
       "when": 1778752640004,
       "tag": "0054_young_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1780326785695,
+      "tag": "0055_fat_barracuda",
+      "breakpoints": true
     }
   ]
 }

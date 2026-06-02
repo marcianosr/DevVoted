@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { formatStorage } from "~/lib/storage";
+import { formatStorage, formatStorageDetailed } from "~/lib/storage";
 
 type StorageBreakdownProps = {
 	storageUsed: number;
@@ -68,14 +68,14 @@ export const StorageBreakdown = ({
 					<span className="text-sm whitespace-nowrap">
 						{formatStorage(storageUsed)} /{" "}
 						<span className={recentGain !== null ? "text-emerald-300" : ""}>
-							{formatStorage(storageLimit)}
+							{formatStorageDetailed(storageLimit)}
 						</span>
 					</span>
 				</div>
 
 				{storageAvailable > 0 && (
 					<p className="text-green-500 text-sm">
-						{formatStorage(storageAvailable)} available
+						{formatStorageDetailed(storageAvailable)} available
 					</p>
 				)}
 			</div>

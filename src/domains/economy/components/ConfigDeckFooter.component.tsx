@@ -50,7 +50,7 @@ export const ConfigDeckFooter = ({
 						</span>
 					</div>
 				</div>
-				<ul className="flex gap-3 overflow-x-auto">
+				<ul className="flex gap-3 overflow-x-auto pb-2">
 					{activeConfigs.map((config) => (
 						<li key={config.id} className="shrink-0">
 							<ActiveCard

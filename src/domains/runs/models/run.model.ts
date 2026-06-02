@@ -23,6 +23,9 @@ export type Run = {
 	shopInteractedDate: string | null;
 	completionReason: string | null;
 	victoryAchievedAt: Date | null;
+	lootedByUserId: string | null;
+	lootedAt: Date | null;
+	lootAmount: number | null;
 	startedAt: Date;
 	finishedAt: Date | null;
 	createdAt: Date;
@@ -60,6 +63,9 @@ export const runToDTO = (
 		categoryCoverage,
 		completionReason: record.completion_reason,
 		victoryAchievedAt: record.victory_achieved_at,
+		lootedByUserId: record.looted_by_user_id,
+		lootedAt: record.looted_at,
+		lootAmount: record.loot_amount,
 		deinstallPenalty: record.deinstall_penalty,
 		correctPollsCount: record.correct_polls_count,
 		// pipeline_slots is stored as JSON. We trust our own write path (savePipelineSlots)
@@ -94,6 +100,9 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		updated_at: dto.updatedAt,
 		completion_reason: dto.completionReason || null,
 		victory_achieved_at: dto.victoryAchievedAt || null,
+		looted_by_user_id: dto.lootedByUserId || null,
+		looted_at: dto.lootedAt || null,
+		loot_amount: dto.lootAmount ?? null,
 		deinstall_penalty: dto.deinstallPenalty || 0,
 		correct_polls_count: dto.correctPollsCount || 0,
 		pipeline_slots: dto.pipelineSlots,
@@ -133,6 +142,9 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		shopInteractedDate: null,
 		completionReason: null,
 		victoryAchievedAt: null,
+		lootedByUserId: null,
+		lootedAt: null,
+		lootAmount: null,
 		startedAt: now,
 		finishedAt: null,
 		createdAt: now,

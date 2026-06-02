@@ -1,14 +1,19 @@
-import { readFileSync } from "fs";
 import { join } from "path";
 
 import { eq } from "drizzle-orm";
-import postgres from "postgres";
 
 import { db } from "@/src/database/db";
 import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
+import { getSlotDefinition } from "~/domains/runs/data/pipelineSlots";
+import type {
+	GateDifficulty,
+	PipelineSlot,
+} from "~/domains/runs/models/pipeline.model";
+import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
 import {
 	pollsTable,
 	pollCategoriesTable,
+	pollResponsesTable,
 	usersTable,
 	runsTable,
 	runCategoryCoverageTable,
@@ -19,6 +24,156 @@ import { getCategories, CATEGORY_CODES } from "~/domains/shared/categories";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 const ADMIN_UID = "65ad226e-e3c1-4e7f-a96d-a84156589733";
+
+// ─── FFI World Cup roster (English dub) ───────────────────────────────────────
+// Players drawn from the five FFI teams the user nominated: Inazuma Japan,
+// Unicorn (USA), Orpheus (Italy), Little Gigant (Cotarl), and Mac Roniejo.
+// Inazuma Japan is the most populated since the dub names there are the most
+// recognisable in local dev.
+const INAZUMA_ROSTER: readonly string[] = [
+	// Inazuma Japan
+	"Mark Evans",
+	"Jude Sharp",
+	"Axel Blaze",
+	"Shawn Froste",
+	"Nathan Swift",
+	"Kevin Dragonfly",
+	"Archer Hawkins",
+	"Hurley Kane",
+	"Jack Wallside",
+	"Joseph King",
+	"Tod Ironside",
+	"Steve Grim",
+	"Jim Wraith",
+	"Xavier Foster",
+	"Bryce Withingale",
+	"Jordan Greenway",
+	"Byron Love",
+	// Unicorn (USA)
+	"Erik Eagle",
+	"Tim Saunders",
+	"Dylan Keith",
+	"Mark Kruger",
+	"Bobby Shultz",
+	"Edgar Valtinas",
+	"Wesley Cooper",
+	"Jacob Hardy",
+	// Orpheus (Italy)
+	"Fideo Ardena",
+	"Marco Maseratti",
+	"Hide Nakata",
+	"Donatello Verboni",
+	"Bruno Bellanca",
+	"Roberto Rondellini",
+	"Cario Stretti",
+	"Antonio Tucci",
+	// Little Gigant (Cotarl)
+	"Rococo Urupa",
+	"Teres Tolue",
+	"Bombchi Bombelo",
+	"Pin Pirua",
+	"Sergeant Cervantes",
+	"Bomber Grande",
+	// Mac Roniejo
+	"Mac Roniejo",
+	"Pablo Diaz",
+	"Carlos Mendoza",
+	"Hector Vargas",
+	"Luis Castillo",
+	"Diego Ramirez",
+] as const;
+
+// Distribution of target gates — front-loaded toward early game so the minimap
+// has natural density on the left and a thinning tail of veterans on the right.
+const INAZUMA_TARGET_GATES: readonly number[] = [
+	1,
+	1,
+	1,
+	1,
+	2,
+	2,
+	2,
+	2,
+	3,
+	3,
+	3,
+	3, // 12 in gates 1–3
+	4,
+	4,
+	4,
+	4,
+	5,
+	5,
+	5,
+	5,
+	6,
+	6,
+	6,
+	6, // 12 in gates 4–6
+	7,
+	7,
+	7,
+	8,
+	8,
+	8,
+	9,
+	9,
+	9,
+	10, // 10 in gates 7–10
+	11,
+	11,
+	11,
+	12,
+	12,
+	13,
+	13, // 7 in gates 11–13
+	14,
+	14,
+	15,
+	16, // 4 in gates 14–16
+] as const;
+
+const inazumaUUID = (index: number): string => {
+	const tail = index.toString(16).padStart(12, "0");
+	return `1ea1ea1e-1ea1-4ea1-8ea1-${tail}`;
+};
+
+const slugifyEmail = (name: string): string =>
+	`${name.toLowerCase().replace(/\s+/g, ".")}@raimon.jp`;
+
+// Difficulties intentionally limited to what getSlotDefinition can return non-null.
+const PIPELINE_CANDIDATES: ReadonlyArray<{
+	type: StaticGateTypeId;
+	difficulties: readonly GateDifficulty[];
+}> = [
+	{
+		type: "coverage-gain",
+		difficulties: ["low", "medium", "high", "critical"],
+	},
+	{
+		type: "correct-answers",
+		difficulties: ["low", "medium", "high", "critical"],
+	},
+	{ type: "cold-start", difficulties: ["high", "critical"] },
+];
+
+const pickRandom = <T>(items: readonly T[]): T =>
+	items[Math.floor(Math.random() * items.length)];
+
+const buildRandomPipelineSlots = (): PipelineSlot[] => {
+	const slots: PipelineSlot[] = [...getInitialPipelineSlots()];
+	const extraCount = 1 + Math.floor(Math.random() * PIPELINE_CANDIDATES.length);
+	const shuffled = [...PIPELINE_CANDIDATES].sort(() => Math.random() - 0.5);
+
+	for (const { type, difficulties } of shuffled.slice(0, extraCount)) {
+		const slot = getSlotDefinition(type, pickRandom(difficulties));
+		if (slot) slots.push(slot);
+	}
+
+	return slots;
+};
+
+const todayDateString = (): string => new Date().toISOString().slice(0, 10);
 
 async function seedDatabase() {
 	console.log("🌱 Starting database seeding process...\n");
@@ -515,6 +670,103 @@ async function seedDatabase() {
 			);
 		} else {
 			console.log(`ℹ️ Active run players already exist. Skipping.`);
+		}
+
+		// Seed Inazuma Eleven roster across various gates
+		console.log("\n⚽ Seeding Inazuma Eleven players across gates...");
+
+		const firstInazumaId = inazumaUUID(1);
+		const existingInazuma = await db
+			.select()
+			.from(usersTable)
+			.where(eq(usersTable.id, firstInazumaId));
+
+		if (existingInazuma.length > 0) {
+			console.log("ℹ️ Inazuma Eleven players already exist. Skipping.");
+		} else {
+			const availablePolls = await db
+				.select({ id: pollsTable.id })
+				.from(pollsTable);
+
+			if (availablePolls.length === 0) {
+				console.log(
+					"⚠️ No polls found — Inazuma players will be created but won't progress past gate 1."
+				);
+			}
+
+			const inaSeason = await db.select().from(seasonsTable).limit(1);
+			const inaSeasonId = inaSeason[0]?.id || null;
+			const today = todayDateString();
+
+			for (let i = 0; i < INAZUMA_ROSTER.length; i++) {
+				const displayName = INAZUMA_ROSTER[i];
+				const targetGate = INAZUMA_TARGET_GATES[i] ?? 1;
+				const userId = inazumaUUID(i + 1);
+
+				await db.insert(usersTable).values({
+					id: userId,
+					display_name: displayName,
+					email: slugifyEmail(displayName),
+					role: "user",
+				});
+
+				const pipelineSlots = buildRandomPipelineSlots();
+				const startedAt = new Date(Date.now() - (i + 1) * 600_000); // 10-min stagger
+
+				const [run] = await db
+					.insert(runsTable)
+					.values({
+						user_id: userId,
+						season_id: inaSeasonId,
+						status: "active",
+						started_at: startedAt,
+						pipeline_slots: pipelineSlots,
+					})
+					.returning();
+
+				// windowSize is always 5 here because getInitialPipelineSlots seeds
+				// the short-window low slot — keep it derived to stay honest.
+				const windowSize = 5;
+				const minPolls = (targetGate - 1) * windowSize + 1;
+				const maxPolls = targetGate * windowSize;
+				const desired =
+					minPolls + Math.floor(Math.random() * (maxPolls - minPolls + 1));
+				const responseCount = Math.min(desired, availablePolls.length);
+
+				if (responseCount > 0) {
+					const chosen = [...availablePolls]
+						.sort(() => Math.random() - 0.5)
+						.slice(0, responseCount);
+
+					await db.insert(pollResponsesTable).values(
+						chosen.map((poll) => ({
+							poll_id: poll.id,
+							user_id: userId,
+							run_id: run.id,
+							answer_date: today,
+						}))
+					);
+				}
+
+				// Light coverage tracking so progress.service has something to read.
+				const categoryCode = CATEGORY_CODES[i % CATEGORY_CODES.length];
+				await db.insert(runCategoryCoverageTable).values({
+					run_id: run.id,
+					category_code: categoryCode,
+					current_coverage: Math.min(95, targetGate * 6 + Math.random() * 8),
+					current_streak: Math.floor(Math.random() * 5),
+					best_streak: Math.floor(Math.random() * 8),
+					polls_answered: responseCount,
+				});
+
+				console.log(
+					`⚽ ${displayName} → Gate ${targetGate} (${responseCount} polls, ${pipelineSlots.length} slots)`
+				);
+			}
+
+			console.log(
+				`✅ Seeded ${INAZUMA_ROSTER.length} Inazuma Eleven players across the pipeline!`
+			);
 		}
 
 		console.log("\n✨ Database seeding completed successfully!\n");

@@ -26,7 +26,12 @@ import {
 	getWindowSize,
 	type PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import { applyPipelineUpgrade, getActiveRunByUserId } from "./run.queries";
+import {
+	applyPipelineUpgrade,
+	getActiveRunByUserId,
+	lootRun,
+} from "./run.queries";
+import { handleApiOperation } from "~/utils/errorHandling";
 
 export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -62,6 +67,26 @@ export const finishRunFn = createServerFn({ method: "POST" }).handler(
 		return await finishRunHandler(userId);
 	}
 );
+
+export const lootFallenRunFn = createServerFn({ method: "POST" })
+	.inputValidator(z.object({ runId: z.number() }))
+	.handler(async ({ data }) => {
+		return handleApiOperation(async () => {
+			const userId = await getAuthenticatedUserId();
+			const looterRun = await getActiveRunByUserId(userId);
+			if (!looterRun) throw new Error("You need an active run to loot.");
+
+			const result = await lootRun(data.runId, userId, looterRun.id);
+			if (!result.ok) {
+				if (result.reason === "already_looted")
+					throw new Error("This run has already been looted.");
+				if (result.reason === "self_loot")
+					throw new Error("You can't loot your own run.");
+				throw new Error("This run can no longer be looted.");
+			}
+			return { amount: result.amount };
+		});
+	});
 
 export const skipShopServerFn = createServerFn({ method: "POST" })
 	.inputValidator(

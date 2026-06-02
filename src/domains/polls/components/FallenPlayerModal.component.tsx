@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import type { FallenRunPlayer } from "~/domains/polls/api/communityStats.queries";
+import { useLootFallenRun } from "~/domains/runs/hooks/useLootFallenRun";
+import { calculateLootAmount } from "~/domains/runs/services/lootCalculator.service";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -10,10 +12,13 @@ import {
 	type ParsedCompletion,
 } from "~/domains/runs/utils/parseCompletionReason";
 import UserAvatar from "~/domains/users/components/UserAvatar.component";
+import { formatStorage } from "~/lib/storage";
+import { PrimaryButton } from "~/ui/PrimaryButton.component";
 import { SecondaryButton } from "~/ui/SecondaryButton.component";
 
 export type FallenPlayerModalProps = {
 	player: FallenRunPlayer | null;
+	viewerUserId?: string | null;
 	onClose: () => void;
 };
 
@@ -40,9 +45,11 @@ const renderDeathReason = (completion: ParsedCompletion) => {
 
 export const FallenPlayerModal = ({
 	player,
+	viewerUserId = null,
 	onClose,
 }: FallenPlayerModalProps) => {
 	const dialogRef = useRef<HTMLDialogElement>(null);
+	const lootMutation = useLootFallenRun();
 
 	useEffect(() => {
 		const dialog = dialogRef.current;
@@ -58,6 +65,10 @@ export const FallenPlayerModal = ({
 	if (!player) return null;
 
 	const completion = parseCompletionReason(player.completionReason);
+	const isLooted = player.lootedBy !== null;
+	const canLoot =
+		!isLooted && viewerUserId !== null && viewerUserId !== player.id;
+	const previewLootAmount = calculateLootAmount(player.currentGate);
 
 	return (
 		<dialog
@@ -87,7 +98,43 @@ export const FallenPlayerModal = ({
 					{renderDeathReason(completion)}
 				</section>
 
-				<div className="flex justify-end">
+				{isLooted && player.lootedBy && (
+					<section className="border border-emerald-500/50 bg-emerald-950/40 p-3 flex items-center gap-3">
+						<UserAvatar user={player.lootedBy} size="sm" />
+						<p className="text-emerald-200 text-sm">
+							Looted by{" "}
+							<span className="text-white">{player.lootedBy.displayName}</span>
+							{player.lootAmount !== null && (
+								<>
+									{" · "}
+									<span className="text-emerald-300">
+										+{formatStorage(player.lootAmount)}
+									</span>
+								</>
+							)}
+						</p>
+					</section>
+				)}
+
+				{lootMutation.isError && (
+					<p className="text-red-400 text-sm">
+						{lootMutation.error instanceof Error
+							? lootMutation.error.message
+							: "Looting failed."}
+					</p>
+				)}
+
+				<div className="flex justify-end gap-2">
+					{canLoot && (
+						<PrimaryButton
+							onClick={() => lootMutation.mutate(player.runId)}
+							disabled={lootMutation.isPending}
+						>
+							{lootMutation.isPending
+								? "Looting…"
+								: `Loot +${formatStorage(previewLootAmount)}`}
+						</PrimaryButton>
+					)}
 					<SecondaryButton onClick={onClose}>Close</SecondaryButton>
 				</div>
 			</div>

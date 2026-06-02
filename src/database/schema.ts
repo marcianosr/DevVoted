@@ -333,6 +333,11 @@ export const runsTable = pgTable("runs", {
 	>(), // Upgrade cards pending player decision — null when no decision is pending
 	completion_reason: text("completion_reason"), // Reason for run completion — stores JSON for pipeline failures, plain strings for others
 	victory_achieved_at: timestamp("victory_achieved_at", { withTimezone: true }), // When player passed all gates (run continues in post-victory mode)
+	looted_by_user_id: uuid("looted_by_user_id").references(() => usersTable.id, {
+		onDelete: "set null",
+	}),
+	looted_at: timestamp("looted_at", { withTimezone: true }),
+	loot_amount: integer("loot_amount"),
 	started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
 	finished_at: timestamp("finished_at", { withTimezone: true }),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),

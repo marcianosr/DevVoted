@@ -26,6 +26,30 @@ export function formatStorage(bytes: number): string {
 	return `${bytes} B`;
 }
 
+/**
+ * Like formatStorage, but appends the next-smaller unit when rounding to the
+ * primary unit hides meaningful precision — e.g. 1153024 B → "1.1 MB · 1,126 KB".
+ * For values below 1 MB the KB display is already precise enough; for round
+ * values like exactly 1 MB or 2 GB the secondary is omitted.
+ */
+export function formatStorageDetailed(bytes: number): string {
+	const primary = formatStorage(bytes);
+
+	if (bytes >= STORAGE_UNITS.GB && bytes % STORAGE_UNITS.GB !== 0) {
+		const mb = Math.round(bytes / STORAGE_UNITS.MB);
+		return `${primary} · ${mb.toLocaleString()} MB`;
+	}
+	if (
+		bytes >= STORAGE_UNITS.MB &&
+		bytes < STORAGE_UNITS.GB &&
+		bytes % STORAGE_UNITS.MB !== 0
+	) {
+		const kb = Math.round(bytes / STORAGE_UNITS.KB);
+		return `${primary} · ${kb.toLocaleString()} KB`;
+	}
+	return primary;
+}
+
 export function parseStorage(storageString: string): number {
 	const normalized = storageString.toUpperCase().trim();
 	const match = normalized.match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)?$/);

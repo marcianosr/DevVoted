@@ -4,9 +4,12 @@ import {
 	runsTable,
 	runCategoryCoverageTable,
 	pollCategoriesTable,
+	pollResponsesTable,
 } from "@/src/database/schema";
 import { db } from "~/database/db";
+import { calculateLootAmount } from "~/domains/runs/services/lootCalculator.service";
 import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
+import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import type {
 	PipelineSlot,
 	UpgradeCard,
@@ -364,4 +367,60 @@ export const resetPollRerolls = async (runId: number) => {
 		.returning();
 
 	return updatedRun ? runFactory.toDTO(updatedRun) : null;
+};
+
+export type LootRunResult =
+	| { ok: true; amount: number }
+	| { ok: false; reason: "already_looted" | "not_fallen" | "self_loot" };
+
+export const lootRun = async (
+	targetRunId: number,
+	looterUserId: string,
+	looterRunId: number
+): Promise<LootRunResult> => {
+	return db.transaction(async (tx) => {
+		const [target] = await tx
+			.select()
+			.from(runsTable)
+			.where(eq(runsTable.id, targetRunId))
+			.for("update");
+
+		if (!target) return { ok: false, reason: "not_fallen" } as const;
+		if (target.user_id === looterUserId)
+			return { ok: false, reason: "self_loot" } as const;
+		if (target.looted_by_user_id !== null)
+			return { ok: false, reason: "already_looted" } as const;
+		if (target.status !== "finished" || target.victory_achieved_at !== null)
+			return { ok: false, reason: "not_fallen" } as const;
+
+		const [{ pollsAnswered }] = await tx
+			.select({
+				pollsAnswered: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
+			})
+			.from(pollResponsesTable)
+			.where(eq(pollResponsesTable.run_id, targetRunId));
+
+		const slots = (target.pipeline_slots ?? []) as PipelineSlot[];
+		const windowSize = getWindowSize(slots);
+		const gateReached = Math.max(1, Math.ceil(pollsAnswered / windowSize));
+		const amount = calculateLootAmount(gateReached);
+
+		await tx
+			.update(runsTable)
+			.set({
+				looted_by_user_id: looterUserId,
+				looted_at: new Date(),
+				loot_amount: amount,
+			})
+			.where(eq(runsTable.id, targetRunId));
+
+		await tx
+			.update(runsTable)
+			.set({
+				storage_limit: sql`${runsTable.storage_limit} + ${amount}`,
+			})
+			.where(eq(runsTable.id, looterRunId));
+
+		return { ok: true, amount } as const;
+	});
 };

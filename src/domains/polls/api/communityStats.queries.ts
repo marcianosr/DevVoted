@@ -1,4 +1,5 @@
 import { eq, and, gte, lt, asc, sql, or, isNull } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "~/database/db";
 import {
@@ -29,9 +30,13 @@ export type ActiveRunPlayer = User & {
 };
 
 export type FallenRunPlayer = User & {
+	runId: number;
 	currentGate: number;
 	finishedAt: Date;
 	completionReason: string | null;
+	lootedBy: User | null;
+	lootedAt: Date | null;
+	lootAmount: number | null;
 };
 
 export type CommunityOptionBreakdown = {
@@ -155,8 +160,11 @@ export const getCommunityStatsForDailyPoll = async (
 		};
 	});
 
+	const looterUsers = alias(usersTable, "looter_users");
+
 	const fallenRunPlayers = await db
 		.select({
+			runId: runsTable.id,
 			id: usersTable.id,
 			email: usersTable.email,
 			displayName: usersTable.display_name,
@@ -164,10 +172,17 @@ export const getCommunityStatsForDailyPoll = async (
 			pipelineSlots: runsTable.pipeline_slots,
 			finishedAt: runsTable.finished_at,
 			completionReason: runsTable.completion_reason,
+			lootedAt: runsTable.looted_at,
+			lootAmount: runsTable.loot_amount,
+			looterId: looterUsers.id,
+			looterEmail: looterUsers.email,
+			looterDisplayName: looterUsers.display_name,
+			looterPhotoUrl: looterUsers.photo_url,
 			pollsAnswered: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
 		})
 		.from(runsTable)
 		.innerJoin(usersTable, eq(runsTable.user_id, usersTable.id))
+		.leftJoin(looterUsers, eq(runsTable.looted_by_user_id, looterUsers.id))
 		.leftJoin(pollResponsesTable, eq(pollResponsesTable.run_id, runsTable.id))
 		.where(
 			and(
@@ -181,7 +196,13 @@ export const getCommunityStatsForDailyPoll = async (
 			usersTable.id,
 			runsTable.id,
 			runsTable.finished_at,
-			runsTable.completion_reason
+			runsTable.completion_reason,
+			runsTable.looted_at,
+			runsTable.loot_amount,
+			looterUsers.id,
+			looterUsers.email,
+			looterUsers.display_name,
+			looterUsers.photo_url
 		);
 
 	const playersFallenOnDate: FallenRunPlayer[] = fallenRunPlayers.flatMap(
@@ -192,8 +213,17 @@ export const getCommunityStatsForDailyPoll = async (
 				1,
 				Math.ceil(row.pollsAnswered / windowSize)
 			);
+			const lootedBy: User | null = row.looterId
+				? {
+						id: row.looterId,
+						email: row.looterEmail ?? "",
+						displayName: row.looterDisplayName ?? "",
+						photoUrl: row.looterPhotoUrl,
+					}
+				: null;
 			return [
 				{
+					runId: row.runId,
 					id: row.id,
 					email: row.email,
 					displayName: row.displayName,
@@ -201,6 +231,9 @@ export const getCommunityStatsForDailyPoll = async (
 					currentGate,
 					finishedAt: row.finishedAt,
 					completionReason: row.completionReason,
+					lootedBy,
+					lootedAt: row.lootedAt,
+					lootAmount: row.lootAmount,
 				},
 			];
 		}
