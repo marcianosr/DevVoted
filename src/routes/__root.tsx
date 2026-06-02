@@ -164,15 +164,6 @@ function Navigation() {
 				{user ? (
 					<>
 						<span className="text-white">·</span>
-						<Link
-							to="/progress"
-							activeProps={{
-								className: "underline",
-							}}
-							activeOptions={{ exact: true }}
-						>
-							Scores
-						</Link>
 						<span className="text-white">·</span>
 						<Link
 							to="/pipelines"
