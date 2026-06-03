@@ -324,15 +324,22 @@ describe("evaluatePipeline — category-mastery", () => {
 		});
 	});
 
-	describe("skipped when window cannot satisfy the requirement", () => {
-		it("medium slot is skipped when only 1 CSS poll appeared (needs 2)", () => {
+	describe("threshold caps at appeared count", () => {
+		it("medium slot passes when 1 CSS poll appeared and was correct (min capped to 1)", () => {
 			const slot = getCategoryMasterySlot("css", "medium");
 			const result = evaluatePipeline(cssPollResult(1, 1), [slot]);
-			expect(result.slotEvaluations[0].status).toBe("skipped");
+			expect(result.slotEvaluations[0].status).toBe("passed");
 			expect(result.passed).toBe(true);
 		});
 
-		it("high slot is skipped when only 2 JS polls appeared (needs 3)", () => {
+		it("medium slot fails when 1 CSS poll appeared and was wrong", () => {
+			const slot = getCategoryMasterySlot("css", "medium");
+			const result = evaluatePipeline(cssPollResult(1, 0), [slot]);
+			expect(result.slotEvaluations[0].status).toBe("failed");
+			expect(result.passed).toBe(false);
+		});
+
+		it("high slot passes when 2 JS polls appeared and both were correct (min capped to 2)", () => {
 			const slot = getCategoryMasterySlot("js", "high");
 			const result = evaluatePipeline(
 				makeContext({
@@ -340,14 +347,8 @@ describe("evaluatePipeline — category-mastery", () => {
 				}),
 				[slot]
 			);
-			expect(result.slotEvaluations[0].status).toBe("skipped");
+			expect(result.slotEvaluations[0].status).toBe("passed");
 			expect(result.passed).toBe(true);
-		});
-
-		it("contributes 0 reward when skipped", () => {
-			const slot = getCategoryMasterySlot("css", "medium");
-			const result = evaluatePipeline(cssPollResult(1, 1), [slot]);
-			expect(result.totalReward).toBe(0);
 		});
 
 		it("critical slot is skipped when no polls of the category appeared", () => {

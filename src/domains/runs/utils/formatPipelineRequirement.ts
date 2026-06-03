@@ -35,7 +35,7 @@ export const formatRequirement = (
 			const name = CATEGORY_METADATA[req.category].name;
 			return req.minCorrect === null
 				? `All ${name} polls correct`
-				: `≥${req.minCorrect} ${name} polls correct`;
+				: `≥${req.minCorrect} ${name} correct (or all, if fewer)`;
 		}
 	}
 };
