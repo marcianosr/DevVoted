@@ -7,10 +7,12 @@ import {
 	createRunForUser,
 	getLastRunFromUser,
 	getAllRuns,
+	getRunStats,
 } from "./run.queries";
 import { getLiveRunRankings } from "./ranking.queries";
 import { skipShop } from "./shop.queries";
 import { endRunManually } from "../services/runCompletion.service";
+import { getCurrentGate } from "../services/pipelineEvaluator.service";
 
 export const getOrCreateActiveRun = async (userId: string) => {
 	return handleApiOperation(async () => {
@@ -93,6 +95,18 @@ export const finishRunHandler = async (userId: string) => {
 
 		if (!activeRun) {
 			throw new Error("No active run found");
+		}
+
+		// Anti-farm: manual quit is only allowed once the player has reached
+		// gate 5. Early-quit harvesting of the 1MB starting capacity is impossible.
+		// Death (involuntary) keeps the tiered conversion (20/25/50/100 at gates
+		// 2/3/4/5+) — see archive.service.ts.
+		const { totalPollsAnswered } = await getRunStats(activeRun.id);
+		const gate = getCurrentGate(totalPollsAnswered, activeRun.pipelineSlots);
+		if (gate < 5) {
+			throw new Error(
+				"You need to reach gate 5 before ending a run. Keep playing!"
+			);
 		}
 
 		await endRunManually(activeRun.id);

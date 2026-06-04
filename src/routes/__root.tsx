@@ -13,10 +13,20 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 
+import { useState } from "react";
+
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
 import PageLayout from "~/components/PageLayout.component";
+import { useFinishRun } from "~/domains/runs/hooks/useFinishRun";
+import { deriveNavRunState } from "~/domains/runs/utils/deriveNavRunState";
 import { ensureUserExists } from "~/domains/users/services/userSync.service";
+import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
+import {
+	Dropdown,
+	DropdownDivider,
+	DropdownItem,
+} from "~/ui/Dropdown.component";
 
 import { getActiveRun } from "../domains/runs/api/runs";
 import appCss from "../styles/app.css?url";
@@ -144,77 +154,143 @@ function RootComponent() {
 
 function Navigation() {
 	const { user, activeRun } = Route.useRouteContext();
-	const hasPendingPipelineUpgrade =
-		activeRun?.success === true &&
-		activeRun.data.pendingUpgradeCards.length > 0;
+	const { hasActiveRun, hasPendingPipelineUpgrade, canEndRun } =
+		deriveNavRunState(activeRun);
+
+	const [isEndRunDialogOpen, setIsEndRunDialogOpen] = useState(false);
+	const finishRun = useFinishRun({
+		userId: user?.id,
+		redirectTo: "/game-over",
+	});
+
+	const handleEndRunConfirm = () => {
+		finishRun.mutate(undefined, {
+			onSuccess: () => setIsEndRunDialogOpen(false),
+		});
+	};
 
 	return (
 		<>
-			<div className="p-2 flex gap-2 text-lg items-center whitespace-nowrap overflow-auto">
-				<Link
-					to="/daily-poll"
-					activeProps={{
-						className: "underline",
-					}}
-					activeOptions={{ exact: true }}
-				>
-					Daily Poll
-				</Link>
+			<div className="p-2 flex gap-2 text-lg items-center whitespace-nowrap">
+				<div className="flex gap-2 items-center min-w-0 overflow-auto">
+					<Link
+						to="/daily-poll"
+						activeProps={{ className: "underline" }}
+						activeOptions={{ exact: true }}
+					>
+						Daily Poll
+					</Link>
+
+					{user && (
+						<>
+							<span className="text-white">·</span>
+							<Link
+								to="/pipelines"
+								activeProps={{ className: "underline" }}
+								activeOptions={{ exact: true }}
+							>
+								Pipelines
+								{hasPendingPipelineUpgrade && (
+									<span className="ml-1 text-green-400 text-sm">(new)</span>
+								)}
+							</Link>
+							<span className="text-white">·</span>
+							<Link
+								to="/polls/new"
+								activeProps={{ className: "underline" }}
+								activeOptions={{ exact: true }}
+							>
+								Suggest your own poll
+							</Link>
+						</>
+					)}
+				</div>
 
 				{user ? (
 					<>
-						<span className="text-white">·</span>
-						<Link
-							to="/pipelines"
-							activeProps={{
-								className: "underline",
-							}}
-							activeOptions={{ exact: true }}
-						>
-							Pipelines
-							{hasPendingPipelineUpgrade && (
-								<span className="ml-1 text-green-400 text-sm">(new)</span>
-							)}
-						</Link>
-						<span className="text-white">·</span>
-						<Link
-							to="/polls/new"
-							activeProps={{
-								className: "underline",
-							}}
-							activeOptions={{ exact: true }}
-						>
-							Suggest your own poll
-						</Link>
-						<span className="text-white">·</span>
-						<Link
-							to="/polls"
-							activeProps={{
-								className: "underline",
-							}}
-							activeOptions={{ exact: true }}
-						>
-							My Polls
-						</Link>
-						<div className="ml-auto flex gap-2 items-center">
-							<Link
-								to="/profile/$userId"
-								params={{ userId: user.id }}
-								activeProps={{
-									className: "underline",
-								}}
-							>
-								{user.photoUrl && (
-									<img
-										src={user.photoUrl}
-										alt={user.displayName}
-										className="w-7.5 h-7.5 rounded-full inline-block mr-2"
-									/>
+						<div className="ml-auto flex items-center">
+							<Dropdown
+								trigger={({ isOpen }) => (
+									<span className="flex items-center gap-2 text-base">
+										{user.photoUrl && (
+											<img
+												src={user.photoUrl}
+												alt={user.displayName}
+												className="w-8 h-8 rounded-full"
+											/>
+										)}
+										<span>{user.displayName || user.email}</span>
+										<span
+											className={`text-xs transition-transform ${
+												isOpen ? "rotate-180" : ""
+											}`}
+											aria-hidden="true"
+										>
+											▾
+										</span>
+									</span>
 								)}
-								<span className="ml-2">{user.displayName || user.email}</span>
-							</Link>
-							<Link to="/logout">Logout</Link>
+							>
+								{({ close }) => (
+									<>
+										<Link
+											to="/profile/$userId"
+											params={{ userId: user.id }}
+											className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800"
+											onClick={close}
+										>
+											Profile
+										</Link>
+										<Link
+											to="/polls"
+											className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800"
+											onClick={close}
+										>
+											My Polls
+										</Link>
+										{hasActiveRun && (
+											<>
+												<DropdownDivider />
+												<DropdownItem
+													variant="danger"
+													disabled={!canEndRun}
+													onClick={() => {
+														close();
+														setIsEndRunDialogOpen(true);
+													}}
+												>
+													{canEndRun
+														? "End Run"
+														: "End Run (reach gate 5 first)"}
+												</DropdownItem>
+											</>
+										)}
+										<DropdownDivider />
+										<Link
+											to="/logout"
+											className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800"
+											onClick={close}
+										>
+											Logout
+										</Link>
+									</>
+								)}
+							</Dropdown>
 						</div>
+
+						<ConfirmDialog
+							isOpen={isEndRunDialogOpen}
+							onConfirm={handleEndRunConfirm}
+							onCancel={() => setIsEndRunDialogOpen(false)}
+							title="End current run"
+							message="Your remaining storage will be archived in full. Ready to wrap up this run?"
+							confirmText="End run"
+						/>
+						{finishRun.error && (
+							<span className="ml-2 text-sm text-red-400">
+								{finishRun.error.message}
+							</span>
+						)}
 					</>
 				) : (
 					<Link to="/login" className="ml-auto">

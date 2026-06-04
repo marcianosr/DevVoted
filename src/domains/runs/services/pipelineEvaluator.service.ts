@@ -67,6 +67,14 @@ export const getWindowSize = (slots: PipelineSlot[]): number => {
 	return req.pollCount;
 };
 
+export const getCurrentGate = (
+	pollsAnswered: number,
+	slots: PipelineSlot[]
+): number => {
+	const windowSize = getWindowSize(slots);
+	return Math.max(1, Math.ceil(pollsAnswered / windowSize));
+};
+
 const makeResult = (
 	slot: PipelineSlot,
 	status: SlotEvaluationStatus
