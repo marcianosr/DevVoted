@@ -10,9 +10,9 @@ type AvatarWithBorderProps = {
 };
 
 // Wrapper holds both the avatar and the border. The border art fills the
-// wrapper exactly (no scale-up), so it never bleeds into adjacent content.
-// The avatar itself sits inset so the border decoration has room to "surround"
-// it visually within the same bounding box.
+// wrapper exactly and layers on top of the avatar — border art is expected to
+// have a transparent center, so the avatar shows through and only the painted
+// frame is visible at the edges.
 const sizeClasses = {
 	xs: "w-6 h-6 text-[10px]",
 	sm: "w-10 h-10 text-xs",
@@ -20,8 +20,6 @@ const sizeClasses = {
 	lg: "w-24 h-24 text-2xl",
 	xl: "w-32 h-32 text-3xl",
 };
-
-const avatarInsetClass = "inset-[12%]";
 
 export const AvatarWithBorder = ({
 	photoUrl,
@@ -32,17 +30,9 @@ export const AvatarWithBorder = ({
 	const border = borderId ? findBorderById(borderId) : undefined;
 	const initial = displayName.charAt(0).toUpperCase();
 
-	// Inset box wraps the avatar so absolute-positioning insets actually constrain
-	// the size. Cannot apply inset directly to <img> — replaced elements fall
-	// back to intrinsic dimensions, ignoring the right/bottom insets (CSS 2.1
-	// §10.3.8) and bleeding out of the wrapper at full resolution.
-	const avatarBoxClass = border
-		? clsx("absolute", avatarInsetClass)
-		: "absolute inset-0";
-
 	return (
 		<div className={clsx("relative inline-block shrink-0", sizeClasses[size])}>
-			<div className={clsx(avatarBoxClass, "overflow-hidden")}>
+			<div className="absolute inset-0 overflow-hidden">
 				{photoUrl ? (
 					<img
 						src={photoUrl}

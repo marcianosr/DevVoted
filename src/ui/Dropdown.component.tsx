@@ -55,7 +55,7 @@ export const Dropdown = ({
 				<div
 					role="menu"
 					className={clsx(
-						"absolute top-full mt-2 min-w-[180px] border border-theme bg-gray-900 shadow-lg py-1 z-50",
+						"absolute top-full mt-2 min-w-[320px] border border-theme bg-gray-900 shadow-lg py-1 z-50",
 						align === "right" ? "right-0" : "left-0",
 						panelClassName
 					)}
@@ -87,7 +87,7 @@ export const DropdownItem = ({
 			onClick={onClick}
 			disabled={disabled}
 			className={clsx(
-				"w-full text-left px-4 py-2 text-sm cursor-pointer hover:bg-gray-800 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed",
+				"w-full text-left px-4 py-2 cursor-pointer hover:bg-gray-800 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed",
 				variant === "danger" ? "text-red-300" : "text-gray-200"
 			)}
 		>

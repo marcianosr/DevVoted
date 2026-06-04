@@ -15,8 +15,11 @@ import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import type { User } from "~/domains/users/services/userSync.service";
 
+export type UserRole = "user" | "poll-editor" | "admin";
+
 export type CommunityStatsUser = User & {
 	equippedBorderId: string | null;
+	role: UserRole;
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
 	responseData: {
@@ -122,6 +125,7 @@ export const getCommunityStatsForDailyPoll = async (
 				displayName: r.users.display_name,
 				photoUrl: r.users.photo_url,
 				equippedBorderId: r.users.equipped_border_id,
+				role: r.users.role as UserRole,
 				answeredAt: answered,
 				timeTakenMs,
 				responseData: {

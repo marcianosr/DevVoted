@@ -177,8 +177,63 @@ function Navigation() {
 
 	return (
 		<>
-			<div className="p-2 flex gap-2 text-lg items-center whitespace-nowrap">
-				<div className="flex gap-2 items-center min-w-0 overflow-auto">
+			<div className="p-2 flex gap-2 text-lg items-center">
+				{user && (
+					<div className="md:hidden">
+						<Dropdown
+							align="left"
+							trigger={({ isOpen }) => (
+								<span
+									className="inline-flex items-center justify-center w-9 h-9 border border-gray-700 text-gray-200"
+									aria-label="Open menu"
+								>
+									{isOpen ? "✕" : "☰"}
+								</span>
+							)}
+						>
+							{({ close }) => (
+								<>
+									<Link
+										to="/daily-poll"
+										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										onClick={close}
+									>
+										Daily Poll
+									</Link>
+									<Link
+										to="/pipelines"
+										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										onClick={close}
+									>
+										Pipelines
+										{hasPendingPipelineUpgrade && (
+											<span className="ml-1 text-green-400 text-xs">(new)</span>
+										)}
+									</Link>
+									<Link
+										to="/polls/new"
+										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										onClick={close}
+									>
+										Suggest your own poll
+									</Link>
+									<Link
+										to="/profile/$userId"
+										params={{ userId: user.id }}
+										hash="border-shop"
+										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										onClick={close}
+									>
+										Border Shop
+										<span className="ml-1 text-green-400 text-xs">(new)</span>
+									</Link>
+								</>
+							)}
+						</Dropdown>
+					</div>
+				)}
+
+				<div className="hidden md:flex gap-2 items-center min-w-0">
 					<Link
 						to="/daily-poll"
 						activeProps={{ className: "underline" }}
@@ -253,14 +308,14 @@ function Navigation() {
 										<Link
 											to="/profile/$userId"
 											params={{ userId: user.id }}
-											className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
 											onClick={close}
 										>
 											Profile
 										</Link>
 										<Link
 											to="/polls"
-											className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
 											onClick={close}
 										>
 											My Polls
@@ -285,7 +340,7 @@ function Navigation() {
 										<DropdownDivider />
 										<Link
 											to="/logout"
-											className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
 											onClick={close}
 										>
 											Logout

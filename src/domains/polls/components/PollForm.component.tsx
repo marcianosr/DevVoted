@@ -296,19 +296,9 @@ export const PollForm = ({
 
 			{/* Options */}
 			<div>
-				<div className="flex justify-between items-center mb-2">
-					<label className="block text-sm font-medium text-theme">
-						Options ({options.length}/20, min 3)
-					</label>
-					<button
-						type="button"
-						onClick={handleAddOption}
-						disabled={options.length >= 20}
-						className="px-3 py-1 text-sm bg-primary text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						+ Add Option
-					</button>
-				</div>
+				<label className="block text-sm font-medium text-theme mb-2">
+					Options ({options.length}/20, min 3)
+				</label>
 
 				<div className="space-y-3">
 					{options.map((opt, index) => (
@@ -345,6 +335,15 @@ export const PollForm = ({
 						</div>
 					))}
 				</div>
+
+				<button
+					type="button"
+					onClick={handleAddOption}
+					disabled={options.length >= 20}
+					className="mt-3 px-3 py-1 text-sm bg-primary text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					+ Add Option
+				</button>
 
 				{!hasCorrectOption && (
 					<p className="text-red-500 text-sm mt-2">

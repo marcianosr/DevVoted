@@ -63,6 +63,21 @@ type PostAnswerCarouselProps = {
 
 const STEPS = ["Today's Poll", "Score & Pipelines", "Shop"] as const;
 
+const ROLE_LABELS: Partial<Record<string, string>> = {
+	"poll-editor": "Poll Editor",
+	admin: "Admin",
+};
+
+const UserTitle = ({ role }: { role: string }) => {
+	const label = ROLE_LABELS[role];
+	if (!label) return null;
+	return (
+		<p className="text-xs uppercase tracking-wide text-zinc-400 text-center">
+			{label}
+		</p>
+	);
+};
+
 const formatTimeTaken = (ms: number | null): string | null => {
 	if (ms === null) return null;
 	const duration = intervalToDuration({ start: 0, end: ms });
@@ -173,7 +188,7 @@ export const PostAnswerCarousel = ({
 														>
 															<span
 																className={clsx(
-																	"shrink-0 text-lg leading-none",
+																	"shrink-0 inline-flex items-center justify-center w-5 h-5 text-lg",
 																	opt.isCorrect
 																		? "text-green-400"
 																		: "text-red-400"
@@ -290,6 +305,7 @@ export const PostAnswerCarousel = ({
 											>
 												{communityStats.firstToAnswer.displayName}
 											</p>
+											<UserTitle role={communityStats.firstToAnswer.role} />
 										</div>
 									</div>
 								)}
@@ -322,6 +338,7 @@ export const PostAnswerCarousel = ({
 											>
 												{communityStats.fastestResponder.displayName}
 											</p>
+											<UserTitle role={communityStats.fastestResponder.role} />
 										</div>
 									</div>
 								)}
@@ -350,6 +367,7 @@ export const PostAnswerCarousel = ({
 											>
 												{communityStats.firstGood.displayName}
 											</p>
+											<UserTitle role={communityStats.firstGood.role} />
 										</div>
 									</div>
 								)}
