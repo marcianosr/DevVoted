@@ -4,6 +4,7 @@ import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
 import UserAvatar from "~/domains/users/components/UserAvatar.component";
+import { UserTitle } from "~/domains/users/components/UserTitle.component";
 import { AwardsGrid } from "~/domains/awards/components/AwardsGrid.component";
 import { AvatarPopover } from "~/domains/economy/components/AvatarPopover.component";
 import { AvatarWithBorder } from "~/domains/economy/components/AvatarWithBorder.component";
@@ -62,21 +63,6 @@ type PostAnswerCarouselProps = {
 };
 
 const STEPS = ["Today's Poll", "Score & Pipelines", "Shop"] as const;
-
-const ROLE_LABELS: Partial<Record<string, string>> = {
-	"poll-editor": "Poll Editor",
-	admin: "Admin",
-};
-
-const UserTitle = ({ role }: { role: string }) => {
-	const label = ROLE_LABELS[role];
-	if (!label) return null;
-	return (
-		<p className="text-xs uppercase tracking-wide text-zinc-400 text-center">
-			{label}
-		</p>
-	);
-};
 
 const formatTimeTaken = (ms: number | null): string | null => {
 	if (ms === null) return null;
