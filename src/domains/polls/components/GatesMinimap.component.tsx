@@ -107,7 +107,7 @@ const GatesMinimap = ({
 				<p className="text-xl">
 					{players.length} player(s) currently in a run
 					{fallenPlayers.length > 0 && (
-						<span className="text-zinc-400 text-base ml-2">
+						<span className="text-zinc-400 ml-2">
 							· {fallenPlayers.length} fell today
 						</span>
 					)}

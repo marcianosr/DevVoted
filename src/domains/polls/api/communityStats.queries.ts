@@ -16,6 +16,7 @@ import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service
 import type { User } from "~/domains/users/services/userSync.service";
 
 export type CommunityStatsUser = User & {
+	equippedBorderId: string | null;
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
 	responseData: {
@@ -118,6 +119,7 @@ export const getCommunityStatsForDailyPoll = async (
 				email: r.users.email,
 				displayName: r.users.display_name,
 				photoUrl: r.users.photo_url,
+				equippedBorderId: r.users.equipped_border_id,
 				answeredAt: answered,
 				timeTakenMs,
 				responseData: {

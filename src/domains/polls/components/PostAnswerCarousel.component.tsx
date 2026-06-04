@@ -4,6 +4,8 @@ import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
 import UserAvatar from "~/domains/users/components/UserAvatar.component";
+import { AwardsGrid } from "~/domains/awards/components/AwardsGrid.component";
+import { AvatarWithBorder } from "~/domains/economy/components/AvatarWithBorder.component";
 import ExposedConfigDeckDisplay from "~/domains/economy/components/ExposedConfigDeckDisplay.component";
 import { Config } from "~/domains/economy/models/config.model";
 import ShopContainer from "~/domains/economy/components/ShopContainer.component";
@@ -29,7 +31,6 @@ import { ScoreBlock } from "./ScoreBlock.component";
 import type { CommunityStats } from "~/domains/polls/api/communityStats.queries";
 import { sortCommunityOptions } from "~/domains/polls/utils/sortCommunityOptions";
 import type { Poll } from "../models/poll.model";
-import type { PollOption } from "../models/pollOption.model";
 
 type PipelineProps = {
 	slots: PipelineSlot[];
@@ -39,7 +40,6 @@ type PipelineProps = {
 
 type PostAnswerCarouselProps = {
 	poll: Poll;
-	options: PollOption[];
 	selectedOptions: string[];
 	score?: ScoreCalculation;
 	perConfigCoverageEffects?: {
@@ -70,7 +70,6 @@ const formatTimeTaken = (ms: number | null): string | null => {
 
 export const PostAnswerCarousel = ({
 	poll,
-	options,
 	selectedOptions,
 	score,
 	perConfigCoverageEffects,
@@ -87,11 +86,6 @@ export const PostAnswerCarousel = ({
 	date,
 }: PostAnswerCarouselProps) => {
 	const [step, setStep] = useState(0);
-
-	const allAnswersCorrect = selectedOptions.every((optionId) => {
-		const option = options.find((opt) => opt.id === Number(optionId));
-		return option?.correct;
-	});
 
 	const isShopOpen = activeRun.shopSkippedDate !== date;
 
@@ -113,7 +107,7 @@ export const PostAnswerCarousel = ({
 				<button
 					onClick={() => setStep((s) => s - 1)}
 					disabled={step === 0}
-					className="text-xl disabled:opacity-20 cursor-pointer disabled:cursor-default"
+					className="text-md disabled:opacity-20 cursor-pointer disabled:cursor-default"
 				>
 					← Back
 				</button>
@@ -134,7 +128,7 @@ export const PostAnswerCarousel = ({
 				<button
 					onClick={() => setStep((s) => s + 1)}
 					disabled={step === STEPS.length - 1}
-					className="text-xl disabled:opacity-20 cursor-pointer disabled:cursor-default"
+					className="text-md disabled:opacity-20 cursor-pointer disabled:cursor-default"
 				>
 					Next →
 				</button>
@@ -152,59 +146,81 @@ export const PostAnswerCarousel = ({
 						</section>
 
 						<section className="space-y-2">
-							<p className="text-2xl">Your choice(s):</p>
-							<ul className="list-disc px-4">
-								{selectedOptions.map((optionId) => {
-									const option = options.find(
-										(opt) => opt.id === Number(optionId)
-									);
-									if (!option) return null;
-									return (
-										<li
-											key={option.id}
-											className={clsx(
-												"text-xl markdown",
-												option.correct ? "text-green-400" : "text-red-400"
+							{communityStats?.optionBreakdown &&
+								communityStats.optionBreakdown.length > 0 && (
+									<>
+										<p className="text-2xl">
+											{communityStats.totalResponses} other player
+											{communityStats.totalResponses === 1 ? "" : "s"} answered:
+										</p>
+										<ul className="flex flex-col gap-2">
+											{sortCommunityOptions(communityStats.optionBreakdown).map(
+												(opt) => {
+													const hasVotes = opt.voters.length > 0;
+													const isYourPick = selectedOptions.includes(
+														opt.optionId.toString()
+													);
+													return (
+														<li
+															key={opt.optionId}
+															className={clsx(
+																"flex items-center gap-3 border-l-4 pl-3 py-2",
+																isYourPick
+																	? "border-cyan-500 bg-cyan-950/30"
+																	: "border-transparent"
+															)}
+														>
+															<span
+																className={clsx(
+																	"shrink-0 text-lg leading-none",
+																	opt.isCorrect
+																		? "text-green-400"
+																		: "text-red-400"
+																)}
+																aria-label={
+																	opt.isCorrect
+																		? "Correct option"
+																		: "Incorrect option"
+																}
+															>
+																{opt.isCorrect ? "✓" : "✗"}
+															</span>
+															<div className="text-white markdown flex-1 min-w-0 wrap-break-word">
+																<MarkdownText>{opt.optionText}</MarkdownText>
+															</div>
+															<div className="shrink-0 flex items-center gap-2 text-sm">
+																{isYourPick && (
+																	<span className="px-1.5 py-0.5 text-xs uppercase tracking-wide bg-cyan-500 text-black">
+																		Your pick
+																	</span>
+																)}
+																<span>
+																	{opt.voters.length} pick
+																	{opt.voters.length === 1 ? "" : "s"}
+																</span>
+																{hasVotes && (
+																	<div className="flex -space-x-2 items-center">
+																		{opt.voters.map((user) => (
+																			<AvatarWithBorder
+																				key={user.id}
+																				photoUrl={user.photoUrl}
+																				displayName={
+																					user.displayName ?? user.id
+																				}
+																				borderId={user.equippedBorderId}
+																				size="xs"
+																			/>
+																		))}
+																	</div>
+																)}
+															</div>
+														</li>
+													);
+												}
 											)}
-										>
-											<MarkdownText>{option.option}</MarkdownText>
-										</li>
-									);
-								})}
-							</ul>
-
-							{!allAnswersCorrect && (
-								<>
-									<h3 className="text-2xl">Correct answer(s) you missed:</h3>
-									<ul className="list-disc px-4">
-										{options.map((opt) =>
-											!selectedOptions.includes(opt.id.toString()) &&
-											opt.correct ? (
-												<li
-													key={opt.id}
-													className="text-green-400 text-xl markdown"
-												>
-													<MarkdownText>{opt.option}</MarkdownText>
-												</li>
-											) : null
-										)}
-									</ul>
-								</>
-							)}
-
-							<h3 className="text-2xl">Correct answer(s):</h3>
-							<ul className="list-disc px-4">
-								{options
-									.filter((opt) => opt.correct)
-									.map((opt) => (
-										<li
-											key={opt.id}
-											className="text-green-400 text-xl markdown"
-										>
-											<MarkdownText>{opt.option}</MarkdownText>
-										</li>
-									))}
-							</ul>
+										</ul>
+									</>
+								)}
 
 							{explanation && (
 								<div className="mt-6 p-4 bg-gray-800/40 border border-gray-700">
@@ -230,58 +246,98 @@ export const PostAnswerCarousel = ({
 									))}
 								</div>
 							</div>
-							{communityStats?.firstToAnswer && (
-								<div>
-									<p className="text-xl mt-4">First to answer</p>
-									<div className="flex gap-2 items-center">
-										<UserAvatar user={communityStats.firstToAnswer} />
-										<p>{communityStats.firstToAnswer.displayName}</p>
-										<span>·</span>
+							<div className="flex flex-wrap gap-8 mt-4">
+								{communityStats?.firstToAnswer && (
+									<div>
+										<p className="text-xl">First to answer</p>
 										{communityStats.firstToAnswer.timeTakenMs !== null && (
-											<span className="text-zinc-400 text-sm">
+											<p className="text-sm text-zinc-400">
 												in{" "}
 												{formatTimeTaken(
 													communityStats.firstToAnswer.timeTakenMs
 												)}
-											</span>
+											</p>
 										)}
+										<div className="flex flex-col items-start gap-2 mt-2 w-32">
+											<AvatarWithBorder
+												photoUrl={communityStats.firstToAnswer.photoUrl}
+												displayName={
+													communityStats.firstToAnswer.displayName ??
+													communityStats.firstToAnswer.id
+												}
+												borderId={communityStats.firstToAnswer.equippedBorderId}
+												size="xl"
+											/>
+											<p
+												className="w-full truncate text-sm"
+												title={communityStats.firstToAnswer.displayName}
+											>
+												{communityStats.firstToAnswer.displayName}
+											</p>
+										</div>
 									</div>
-								</div>
-							)}
-							{communityStats?.fastestResponder && (
-								<div>
-									<p className="text-xl mt-4">Fastest responder</p>
-									<div className="flex gap-2 items-center">
-										<UserAvatar user={communityStats.fastestResponder} />
-										<p>{communityStats.fastestResponder.displayName}</p>
-										<span>·</span>
+								)}
+								{communityStats?.fastestResponder && (
+									<div>
+										<p className="text-xl">Fastest responder</p>
 										{communityStats.fastestResponder.timeTakenMs !== null && (
-											<span className="text-zinc-400 text-sm">
+											<p className="text-sm text-zinc-400">
 												in{" "}
 												{formatTimeTaken(
 													communityStats.fastestResponder.timeTakenMs
 												)}
-											</span>
+											</p>
 										)}
+										<div className="flex flex-col items-start gap-2 mt-2 w-32">
+											<AvatarWithBorder
+												photoUrl={communityStats.fastestResponder.photoUrl}
+												displayName={
+													communityStats.fastestResponder.displayName ??
+													communityStats.fastestResponder.id
+												}
+												borderId={
+													communityStats.fastestResponder.equippedBorderId
+												}
+												size="xl"
+											/>
+											<p
+												className="w-full truncate text-sm"
+												title={communityStats.fastestResponder.displayName}
+											>
+												{communityStats.fastestResponder.displayName}
+											</p>
+										</div>
 									</div>
-								</div>
-							)}
-							{communityStats?.firstGood && (
-								<div>
-									<p className="text-xl mt-4">First good</p>
-									<div className="flex gap-2 items-center">
-										<UserAvatar user={communityStats.firstGood} />
-										<p>{communityStats.firstGood.displayName}</p>
-										<span>·</span>
+								)}
+								{communityStats?.firstGood && (
+									<div>
+										<p className="text-xl">First good</p>
 										{communityStats.firstGood.timeTakenMs !== null && (
-											<span className="text-zinc-400 text-sm">
+											<p className="text-sm text-zinc-400">
 												in{" "}
 												{formatTimeTaken(communityStats.firstGood.timeTakenMs)}
-											</span>
+											</p>
 										)}
+										<div className="flex flex-col items-start gap-2 mt-2 w-32">
+											<AvatarWithBorder
+												photoUrl={communityStats.firstGood.photoUrl}
+												displayName={
+													communityStats.firstGood.displayName ??
+													communityStats.firstGood.id
+												}
+												borderId={communityStats.firstGood.equippedBorderId}
+												size="xl"
+											/>
+											<p
+												className="w-full truncate text-sm"
+												title={communityStats.firstGood.displayName}
+											>
+												{communityStats.firstGood.displayName}
+											</p>
+										</div>
 									</div>
-								</div>
-							)}
+								)}
+							</div>
 							{communityStats?.playersInActiveRun &&
 								(communityStats.playersInActiveRun.length > 0 ||
 									(communityStats.playersFallenOnDate?.length ?? 0) > 0) && (
@@ -290,69 +346,6 @@ export const PostAnswerCarousel = ({
 										fallenPlayers={communityStats.playersFallenOnDate}
 										viewerUserId={activeRun.userId}
 									/>
-								)}
-							{communityStats?.optionBreakdown &&
-								communityStats.optionBreakdown.length > 0 &&
-								communityStats.totalResponses > 0 && (
-									<div className="mt-6">
-										<p className="text-xl mb-2">
-											How the {communityStats.totalResponses} voter(s) split
-										</p>
-										<ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-											{sortCommunityOptions(communityStats.optionBreakdown).map(
-												(opt) => {
-													const hasVotes = opt.voters.length > 0;
-													const isWideOption = opt.optionText.length > 60;
-													return (
-														<li
-															key={opt.optionId}
-															className={clsx(
-																"border border-gray-800 p-1",
-																isWideOption && "sm:col-span-2 lg:col-span-3"
-															)}
-														>
-															<div className="flex items-start gap-2">
-																<span
-																	className={clsx(
-																		"shrink-0 text-lg leading-none",
-																		opt.isCorrect
-																			? "text-green-400"
-																			: "text-gray-600"
-																	)}
-																	aria-label={
-																		opt.isCorrect
-																			? "Correct option"
-																			: "Incorrect option"
-																	}
-																>
-																	{opt.isCorrect ? "✓" : "·"}
-																</span>
-																<div className="markdown flex-1 min-w-0 wrap-break-word">
-																	<MarkdownText>{opt.optionText}</MarkdownText>
-																</div>
-															</div>
-															<div className="mt-2 flex items-center gap-2 text-sm text-zinc-400">
-																<span>
-																	{opt.voters.length} pick
-																	{opt.voters.length === 1 ? "" : "s"}
-																</span>
-																{hasVotes && (
-																	<>
-																		<span>·</span>
-																		<div className="flex -space-x-2 items-center">
-																			{opt.voters.map((user) => (
-																				<UserAvatar key={user.id} user={user} />
-																			))}
-																		</div>
-																	</>
-																)}
-															</div>
-														</li>
-													);
-												}
-											)}
-										</ul>
-									</div>
 								)}
 							{exposedConfigDeck && (
 								<ExposedConfigDeckDisplay deck={exposedConfigDeck} />
@@ -390,6 +383,10 @@ export const PostAnswerCarousel = ({
 								categoryCoverage={activeRun.categoryCoverage}
 								currentCategoryCode={categoryCode}
 							/>
+						</section>
+
+						<section className="border-t border-theme pt-8">
+							<AwardsGrid />
 						</section>
 					</div>
 				)}
