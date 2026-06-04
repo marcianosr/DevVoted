@@ -32,31 +32,29 @@ export const AvatarWithBorder = ({
 	const border = borderId ? findBorderById(borderId) : undefined;
 	const initial = displayName.charAt(0).toUpperCase();
 
-	// Either way the avatar fills the full bounding box so unbordered and
-	// bordered tiles occupy the same visible footprint side-by-side. With a
-	// border, the avatar is inset so the frame art can surround it.
-	const avatarPositionClass = border
+	// Inset box wraps the avatar so absolute-positioning insets actually constrain
+	// the size. Cannot apply inset directly to <img> — replaced elements fall
+	// back to intrinsic dimensions, ignoring the right/bottom insets (CSS 2.1
+	// §10.3.8) and bleeding out of the wrapper at full resolution.
+	const avatarBoxClass = border
 		? clsx("absolute", avatarInsetClass)
 		: "absolute inset-0";
 
 	return (
 		<div className={clsx("relative inline-block shrink-0", sizeClasses[size])}>
-			{photoUrl ? (
-				<img
-					src={photoUrl}
-					alt={displayName}
-					className={clsx(avatarPositionClass, "object-cover")}
-				/>
-			) : (
-				<span
-					className={clsx(
-						avatarPositionClass,
-						"bg-cyan-700 inline-flex items-center justify-center text-white"
-					)}
-				>
-					{initial}
-				</span>
-			)}
+			<div className={clsx(avatarBoxClass, "overflow-hidden")}>
+				{photoUrl ? (
+					<img
+						src={photoUrl}
+						alt={displayName}
+						className="w-full h-full object-cover"
+					/>
+				) : (
+					<span className="w-full h-full bg-cyan-700 inline-flex items-center justify-center text-white">
+						{initial}
+					</span>
+				)}
+			</div>
 			{border && (
 				<img
 					src={border.image}
