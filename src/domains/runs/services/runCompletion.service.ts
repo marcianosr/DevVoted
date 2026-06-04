@@ -1,3 +1,4 @@
+import { archiveLeftoverStorage } from "~/domains/economy/services/archive.service";
 import type {
 	GateDifficulty,
 	GateTypeId,
@@ -38,6 +39,10 @@ export const endRunForThresholdFailure = async (
 		encodePipelineFailure(failedSlots)
 	);
 
+	// Non-critical writes — same swallow-and-log pattern as the leaderboard
+	// call so a failure here can't block the client's game-over signal.
+	await archiveLeftoverStorage(run);
+
 	try {
 		await createCategoryLeaderboardEntries(
 			run.userId,
@@ -70,6 +75,8 @@ export const endRunManually = async (runId: number) => {
 	const { totalCoverage } = await getRunStats(runId);
 
 	await completeRunWithThresholdFailure(runId, "manual_break_off");
+
+	await archiveLeftoverStorage(run);
 
 	await createCategoryLeaderboardEntries(
 		run.userId,

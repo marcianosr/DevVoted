@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+	bigint,
 	boolean,
 	integer,
 	json,
@@ -90,6 +92,17 @@ export const usersTable = pgTable("users", {
 	github_username: varchar("github_username", { length: 100 }),
 	role: userRoles("roles").notNull().default("user"),
 	total_polls_submitted: integer("total_polls_submitted").notNull().default(0),
+	// Persistent meta-progression currency in bytes. Credited at run end from
+	// unused in-run storage (storageLimit - storageUsed). bigint because
+	// long-tail accounts can accumulate beyond int32 max (2.1GB).
+	archived_storage: bigint("archived_storage", { mode: "number" })
+		.notNull()
+		.default(0),
+	owned_border_ids: text("owned_border_ids")
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
+	equipped_border_id: text("equipped_border_id"),
 });
 
 /**
