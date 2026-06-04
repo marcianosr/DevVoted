@@ -164,9 +164,15 @@ function Navigation() {
 	});
 
 	const handleEndRunConfirm = () => {
+		finishRun.reset();
 		finishRun.mutate(undefined, {
 			onSuccess: () => setIsEndRunDialogOpen(false),
 		});
+	};
+
+	const handleEndRunCancel = () => {
+		finishRun.reset();
+		setIsEndRunDialogOpen(false);
 	};
 
 	return (
@@ -201,6 +207,17 @@ function Navigation() {
 								activeOptions={{ exact: true }}
 							>
 								Suggest your own poll
+							</Link>
+							<span className="text-white">·</span>
+							{/* TEMP: surface the new border shop until it gets a real home */}
+							<Link
+								to="/profile/$userId"
+								params={{ userId: user.id }}
+								hash="border-shop"
+								activeProps={{ className: "underline" }}
+							>
+								Border Shop
+								<span className="ml-1 text-green-400 text-sm">(new)</span>
 							</Link>
 						</>
 					)}
@@ -281,16 +298,13 @@ function Navigation() {
 						<ConfirmDialog
 							isOpen={isEndRunDialogOpen}
 							onConfirm={handleEndRunConfirm}
-							onCancel={() => setIsEndRunDialogOpen(false)}
+							onCancel={handleEndRunCancel}
 							title="End current run"
 							message="Your remaining storage will be archived in full. Ready to wrap up this run?"
 							confirmText="End run"
+							errorMessage={finishRun.error?.message ?? null}
+							isConfirming={finishRun.isPending}
 						/>
-						{finishRun.error && (
-							<span className="ml-2 text-sm text-red-400">
-								{finishRun.error.message}
-							</span>
-						)}
 					</>
 				) : (
 					<Link to="/login" className="ml-auto">

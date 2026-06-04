@@ -12,7 +12,10 @@ import {
 import { getLiveRunRankings } from "./ranking.queries";
 import { skipShop } from "./shop.queries";
 import { endRunManually } from "../services/runCompletion.service";
-import { getCurrentGate } from "../services/pipelineEvaluator.service";
+import {
+	MIN_GATE_FOR_MANUAL_END,
+	getCurrentGate,
+} from "../services/pipelineEvaluator.service";
 
 export const getOrCreateActiveRun = async (userId: string) => {
 	return handleApiOperation(async () => {
@@ -103,9 +106,9 @@ export const finishRunHandler = async (userId: string) => {
 		// 2/3/4/5+) — see archive.service.ts.
 		const { totalPollsAnswered } = await getRunStats(activeRun.id);
 		const gate = getCurrentGate(totalPollsAnswered, activeRun.pipelineSlots);
-		if (gate < 5) {
+		if (gate < MIN_GATE_FOR_MANUAL_END) {
 			throw new Error(
-				"You need to reach gate 5 before ending a run. Keep playing!"
+				`You need to reach gate ${MIN_GATE_FOR_MANUAL_END} before ending a run. Keep playing!`
 			);
 		}
 

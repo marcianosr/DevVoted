@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-06-04T08:05:40Z
-updated_at: 2026-06-04T08:23:06Z
+updated_at: 2026-06-04T11:56:33Z
 blocked_by:
     - DVTD-enj5
 ---
@@ -30,7 +30,7 @@ Math check: at 20% gate-2 quit with full 1MB leftover, player nets 200KB — les
 - src/domains/runs/services/runCompletion.service.ts — endRunManually
 - src/domains/economy/services/archive.service.ts — conversion rate becomes gate-dependent
 - UI: 'Start New Run' button disabled or warning shown before gate 5
-- Death path (endRunForThresholdFailure) should keep full credit — not an exploit vector
+- Death path (endRunForThresholdFailure) uses the same tiered conversion — symmetric anti-farm. Early-death is a (weak) farm vector since starting capacity is free.
 
 ## Blocked by
 DVTD-enj5 (foundation merged)

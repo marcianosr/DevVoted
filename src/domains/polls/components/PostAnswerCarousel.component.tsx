@@ -5,6 +5,7 @@ import { formatDuration, intervalToDuration } from "date-fns";
 
 import UserAvatar from "~/domains/users/components/UserAvatar.component";
 import { AwardsGrid } from "~/domains/awards/components/AwardsGrid.component";
+import { AvatarPopover } from "~/domains/economy/components/AvatarPopover.component";
 import { AvatarWithBorder } from "~/domains/economy/components/AvatarWithBorder.component";
 import ExposedConfigDeckDisplay from "~/domains/economy/components/ExposedConfigDeckDisplay.component";
 import { Config } from "~/domains/economy/models/config.model";
@@ -166,7 +167,7 @@ export const PostAnswerCarousel = ({
 															className={clsx(
 																"flex items-center gap-3 border-l-4 pl-3 py-2",
 																isYourPick
-																	? "border-cyan-500 bg-cyan-950/30"
+																	? "border-theme bg-theme/30"
 																	: "border-transparent"
 															)}
 														>
@@ -190,7 +191,7 @@ export const PostAnswerCarousel = ({
 															</div>
 															<div className="shrink-0 flex items-center gap-2 text-sm">
 																{isYourPick && (
-																	<span className="px-1.5 py-0.5 text-xs uppercase tracking-wide bg-cyan-500 text-black">
+																	<span className="px-1.5 py-0.5 text-xs uppercase tracking-wide bg-theme text-black">
 																		Your pick
 																	</span>
 																)}
@@ -201,15 +202,23 @@ export const PostAnswerCarousel = ({
 																{hasVotes && (
 																	<div className="flex -space-x-2 items-center">
 																		{opt.voters.map((user) => (
-																			<AvatarWithBorder
+																			<AvatarPopover
 																				key={user.id}
-																				photoUrl={user.photoUrl}
 																				displayName={
 																					user.displayName ?? user.id
 																				}
+																				photoUrl={user.photoUrl}
 																				borderId={user.equippedBorderId}
-																				size="xs"
-																			/>
+																			>
+																				<AvatarWithBorder
+																					photoUrl={user.photoUrl}
+																					displayName={
+																						user.displayName ?? user.id
+																					}
+																					borderId={user.equippedBorderId}
+																					size="xs"
+																				/>
+																			</AvatarPopover>
 																		))}
 																	</div>
 																)}
@@ -242,7 +251,14 @@ export const PostAnswerCarousel = ({
 								<span>·</span>
 								<div className="flex -space-x-2">
 									{communityStats?.users.map((user) => (
-										<UserAvatar key={user.id} user={user} />
+										<AvatarPopover
+											key={user.id}
+											displayName={user.displayName ?? user.id}
+											photoUrl={user.photoUrl}
+											borderId={user.equippedBorderId}
+										>
+											<UserAvatar user={user} />
+										</AvatarPopover>
 									))}
 								</div>
 							</div>
@@ -258,7 +274,7 @@ export const PostAnswerCarousel = ({
 												)}
 											</p>
 										)}
-										<div className="flex flex-col items-start gap-2 mt-2 w-32">
+										<div className="flex flex-col items-center gap-2 mt-2 w-32">
 											<AvatarWithBorder
 												photoUrl={communityStats.firstToAnswer.photoUrl}
 												displayName={
@@ -269,7 +285,7 @@ export const PostAnswerCarousel = ({
 												size="xl"
 											/>
 											<p
-												className="w-full truncate text-sm"
+												className="w-full truncate text-sm text-center"
 												title={communityStats.firstToAnswer.displayName}
 											>
 												{communityStats.firstToAnswer.displayName}
@@ -288,7 +304,7 @@ export const PostAnswerCarousel = ({
 												)}
 											</p>
 										)}
-										<div className="flex flex-col items-start gap-2 mt-2 w-32">
+										<div className="flex flex-col items-center gap-2 mt-2 w-32">
 											<AvatarWithBorder
 												photoUrl={communityStats.fastestResponder.photoUrl}
 												displayName={
@@ -301,7 +317,7 @@ export const PostAnswerCarousel = ({
 												size="xl"
 											/>
 											<p
-												className="w-full truncate text-sm"
+												className="w-full truncate text-sm text-center"
 												title={communityStats.fastestResponder.displayName}
 											>
 												{communityStats.fastestResponder.displayName}
@@ -318,7 +334,7 @@ export const PostAnswerCarousel = ({
 												{formatTimeTaken(communityStats.firstGood.timeTakenMs)}
 											</p>
 										)}
-										<div className="flex flex-col items-start gap-2 mt-2 w-32">
+										<div className="flex flex-col items-center gap-2 mt-2 w-32">
 											<AvatarWithBorder
 												photoUrl={communityStats.firstGood.photoUrl}
 												displayName={
@@ -329,7 +345,7 @@ export const PostAnswerCarousel = ({
 												size="xl"
 											/>
 											<p
-												className="w-full truncate text-sm"
+												className="w-full truncate text-sm text-center"
 												title={communityStats.firstGood.displayName}
 											>
 												{communityStats.firstGood.displayName}

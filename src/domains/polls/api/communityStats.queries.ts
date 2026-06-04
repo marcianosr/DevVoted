@@ -27,15 +27,17 @@ export type CommunityStatsUser = User & {
 };
 
 export type ActiveRunPlayer = User & {
+	equippedBorderId: string | null;
 	currentGate: number;
 };
 
 export type FallenRunPlayer = User & {
+	equippedBorderId: string | null;
 	runId: number;
 	currentGate: number;
 	finishedAt: Date;
 	completionReason: string | null;
-	lootedBy: User | null;
+	lootedBy: (User & { equippedBorderId: string | null }) | null;
 	lootedAt: Date | null;
 	lootAmount: number | null;
 };
@@ -141,6 +143,7 @@ export const getCommunityStatsForDailyPoll = async (
 			email: usersTable.email,
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
+			equippedBorderId: usersTable.equipped_border_id,
 			pipelineSlots: runsTable.pipeline_slots,
 			pollsAnswered: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
 		})
@@ -158,6 +161,7 @@ export const getCommunityStatsForDailyPoll = async (
 			email: row.email,
 			displayName: row.displayName,
 			photoUrl: row.photoUrl,
+			equippedBorderId: row.equippedBorderId,
 			currentGate,
 		};
 	});
@@ -171,6 +175,7 @@ export const getCommunityStatsForDailyPoll = async (
 			email: usersTable.email,
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
+			equippedBorderId: usersTable.equipped_border_id,
 			pipelineSlots: runsTable.pipeline_slots,
 			finishedAt: runsTable.finished_at,
 			completionReason: runsTable.completion_reason,
@@ -180,6 +185,7 @@ export const getCommunityStatsForDailyPoll = async (
 			looterEmail: looterUsers.email,
 			looterDisplayName: looterUsers.display_name,
 			looterPhotoUrl: looterUsers.photo_url,
+			looterEquippedBorderId: looterUsers.equipped_border_id,
 			pollsAnswered: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
 		})
 		.from(runsTable)
@@ -204,7 +210,8 @@ export const getCommunityStatsForDailyPoll = async (
 			looterUsers.id,
 			looterUsers.email,
 			looterUsers.display_name,
-			looterUsers.photo_url
+			looterUsers.photo_url,
+			looterUsers.equipped_border_id
 		);
 
 	const playersFallenOnDate: FallenRunPlayer[] = fallenRunPlayers.flatMap(
@@ -215,12 +222,13 @@ export const getCommunityStatsForDailyPoll = async (
 				1,
 				Math.ceil(row.pollsAnswered / windowSize)
 			);
-			const lootedBy: User | null = row.looterId
+			const lootedBy = row.looterId
 				? {
 						id: row.looterId,
 						email: row.looterEmail ?? "",
 						displayName: row.looterDisplayName ?? "",
 						photoUrl: row.looterPhotoUrl,
+						equippedBorderId: row.looterEquippedBorderId,
 					}
 				: null;
 			return [
@@ -230,6 +238,7 @@ export const getCommunityStatsForDailyPoll = async (
 					email: row.email,
 					displayName: row.displayName,
 					photoUrl: row.photoUrl,
+					equippedBorderId: row.equippedBorderId,
 					currentGate,
 					finishedAt: row.finishedAt,
 					completionReason: row.completionReason,

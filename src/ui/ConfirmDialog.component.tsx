@@ -10,6 +10,8 @@ export type ConfirmDialogProps = {
 	message: string;
 	confirmText?: string;
 	cancelText?: string;
+	errorMessage?: string | null;
+	isConfirming?: boolean;
 };
 
 export const ConfirmDialog = ({
@@ -20,6 +22,8 @@ export const ConfirmDialog = ({
 	message,
 	confirmText = "Yes",
 	cancelText = "No",
+	errorMessage,
+	isConfirming = false,
 }: ConfirmDialogProps) => {
 	const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -51,9 +55,23 @@ export const ConfirmDialog = ({
 			<div className="p-6">
 				<h2 className="text-xl mb-4 text-white">{title}</h2>
 				<p className="text-gray-400 mb-6 text-pretty break-words">{message}</p>
+				{errorMessage && (
+					<p
+						role="alert"
+						className="mb-4 border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+					>
+						{errorMessage}
+					</p>
+				)}
 				<div className="flex gap-3 justify-end">
-					<SecondaryButton onClick={handleCancel}>{cancelText}</SecondaryButton>
-					<SecondaryButton onClick={handleConfirm} variant="danger">
+					<SecondaryButton onClick={handleCancel} disabled={isConfirming}>
+						{cancelText}
+					</SecondaryButton>
+					<SecondaryButton
+						onClick={handleConfirm}
+						variant="danger"
+						disabled={isConfirming}
+					>
 						{confirmText}
 					</SecondaryButton>
 				</div>

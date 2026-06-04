@@ -6,6 +6,7 @@ import type {
 	ActiveRunPlayer,
 	FallenRunPlayer,
 } from "~/domains/polls/api/communityStats.queries";
+import { AvatarPopover } from "~/domains/economy/components/AvatarPopover.component";
 import FallenPlayerModal from "~/domains/polls/components/FallenPlayerModal.component";
 import UserAvatar from "~/domains/users/components/UserAvatar.component";
 
@@ -149,7 +150,14 @@ const GatesMinimap = ({
 										</span>
 									)}
 									{visibleLive.map((player) => (
-										<UserAvatar key={player.id} user={player} size="sm" />
+										<AvatarPopover
+											key={player.id}
+											displayName={player.displayName ?? player.id}
+											photoUrl={player.photoUrl}
+											borderId={player.equippedBorderId}
+										>
+											<UserAvatar user={player} size="sm" />
+										</AvatarPopover>
 									))}
 								</div>
 								<span className="mt-2 text-xs text-zinc-400">Gate {gate}</span>

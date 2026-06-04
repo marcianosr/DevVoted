@@ -1,0 +1,23 @@
+<svg viewBox="0 0 140 140" width="224" height="224" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <symbol id="react-mark" viewBox="0 0 20 20">
+      <g fill="none" stroke="#ACE1AF" stroke-width="1">
+        <ellipse cx="10" cy="10" rx="8" ry="3"/>
+        <ellipse cx="10" cy="10" rx="8" ry="3" transform="rotate(60 10 10)"/>
+        <ellipse cx="10" cy="10" rx="8" ry="3" transform="rotate(120 10 10)"/>
+      </g>
+      <circle cx="10" cy="10" r="1.5" fill="#D4F5D6"/>
+    </symbol>
+  </defs>
+  <rect x="3" y="3" width="134" height="134" rx="7" fill="none" stroke="#4A8A4D" stroke-width="4"/>
+  <rect x="10" y="10" width="120" height="120" rx="4" fill="none" stroke="#ACE1AF" stroke-width="1"/>
+  <use href="#react-mark" x="0" y="0" width="14" height="14"/>
+  <use href="#react-mark" x="126" y="0" width="14" height="14"/>
+  <use href="#react-mark" x="0" y="126" width="14" height="14"/>
+  <use href="#react-mark" x="126" y="126" width="14" height="14"/>
+  <circle cx="70" cy="2" r="3.5" fill="#4A8A4D" stroke="#ACE1AF" stroke-width="1"/>
+  <circle cx="70" cy="2" r="1.5" fill="#D4F5D6"/>
+  <circle cx="2" cy="70" r="2.5" fill="#ACE1AF" opacity="0.7"/>
+  <circle cx="138" cy="70" r="2.5" fill="#ACE1AF" opacity="0.7"/>
+  <circle cx="70" cy="138" r="2.5" fill="#ACE1AF" opacity="0.7"/>
+</svg>

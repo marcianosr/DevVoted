@@ -32,13 +32,12 @@ export const AvatarWithBorder = ({
 	const border = borderId ? findBorderById(borderId) : undefined;
 	const initial = displayName.charAt(0).toUpperCase();
 
-	// Without a border: circular avatar fills the wrapper (classic style).
-	// With a border: the border art defines the outer shape, so the avatar
-	// becomes a square inset that fills the frame's interior — no rounding.
+	// Either way the avatar fills the full bounding box so unbordered and
+	// bordered tiles occupy the same visible footprint side-by-side. With a
+	// border, the avatar is inset so the frame art can surround it.
 	const avatarPositionClass = border
 		? clsx("absolute", avatarInsetClass)
-		: "w-full h-full";
-	const avatarShapeClass = border ? "" : "rounded-full";
+		: "absolute inset-0";
 
 	return (
 		<div className={clsx("relative inline-block shrink-0", sizeClasses[size])}>
@@ -46,17 +45,12 @@ export const AvatarWithBorder = ({
 				<img
 					src={photoUrl}
 					alt={displayName}
-					className={clsx(
-						avatarPositionClass,
-						avatarShapeClass,
-						"object-cover"
-					)}
+					className={clsx(avatarPositionClass, "object-cover")}
 				/>
 			) : (
 				<span
 					className={clsx(
 						avatarPositionClass,
-						avatarShapeClass,
 						"bg-cyan-700 inline-flex items-center justify-center text-white"
 					)}
 				>
