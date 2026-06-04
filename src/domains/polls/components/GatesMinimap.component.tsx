@@ -155,6 +155,7 @@ const GatesMinimap = ({
 											displayName={player.displayName ?? player.id}
 											photoUrl={player.photoUrl}
 											borderId={player.equippedBorderId}
+											pipelineSlots={player.pipelineSlots}
 										>
 											<UserAvatar user={player} size="sm" />
 										</AvatarPopover>

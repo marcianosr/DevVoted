@@ -105,15 +105,24 @@ export const PostAnswerCarousel = ({
 
 	return (
 		<div>
-			<nav className="flex items-center justify-between py-4 border-b border-theme mb-8">
-				<button
-					onClick={() => setStep((s) => s - 1)}
-					disabled={step === 0}
-					className="text-md disabled:opacity-20 cursor-pointer disabled:cursor-default"
-				>
-					← Back
-				</button>
-				<div className="flex gap-3">
+			<nav className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0 py-4 border-b border-theme mb-8">
+				<div className="flex justify-between md:contents">
+					<button
+						onClick={() => setStep((s) => s - 1)}
+						disabled={step === 0}
+						className="text-md disabled:opacity-20 cursor-pointer disabled:cursor-default"
+					>
+						← Back
+					</button>
+					<button
+						onClick={() => setStep((s) => s + 1)}
+						disabled={step === STEPS.length - 1}
+						className="text-md disabled:opacity-20 cursor-pointer disabled:cursor-default md:order-last"
+					>
+						Next →
+					</button>
+				</div>
+				<div className="flex gap-3 justify-center">
 					{STEPS.map((label, i) => (
 						<button
 							key={label}
@@ -127,13 +136,6 @@ export const PostAnswerCarousel = ({
 						</button>
 					))}
 				</div>
-				<button
-					onClick={() => setStep((s) => s + 1)}
-					disabled={step === STEPS.length - 1}
-					className="text-md disabled:opacity-20 cursor-pointer disabled:cursor-default"
-				>
-					Next →
-				</button>
 			</nav>
 
 			<div>
@@ -210,6 +212,10 @@ export const PostAnswerCarousel = ({
 																				}
 																				photoUrl={user.photoUrl}
 																				borderId={user.equippedBorderId}
+																				role={user.role}
+																				pipelineSlots={
+																					user.activeRunPipelineSlots
+																				}
 																			>
 																				<AvatarWithBorder
 																					photoUrl={user.photoUrl}
@@ -257,6 +263,8 @@ export const PostAnswerCarousel = ({
 											displayName={user.displayName ?? user.id}
 											photoUrl={user.photoUrl}
 											borderId={user.equippedBorderId}
+											role={user.role}
+											pipelineSlots={user.activeRunPipelineSlots}
 										>
 											<UserAvatar user={user} />
 										</AvatarPopover>

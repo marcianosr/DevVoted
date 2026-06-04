@@ -1,4 +1,4 @@
-import { eq, and, gte, lt, asc, sql, or, isNull } from "drizzle-orm";
+import { eq, and, gte, lt, asc, sql, or, isNull, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "~/database/db";
@@ -20,6 +20,7 @@ export type UserRole = "user" | "poll-editor" | "admin";
 export type CommunityStatsUser = User & {
 	equippedBorderId: string | null;
 	role: UserRole;
+	activeRunPipelineSlots: PipelineSlot[] | null;
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
 	responseData: {
@@ -32,6 +33,7 @@ export type CommunityStatsUser = User & {
 export type ActiveRunPlayer = User & {
 	equippedBorderId: string | null;
 	currentGate: number;
+	pipelineSlots: PipelineSlot[];
 };
 
 export type FallenRunPlayer = User & {
@@ -137,9 +139,35 @@ export const getCommunityStatsForDailyPoll = async (
 		];
 	});
 
-	const users = [
+	const usersDeduped = [
 		...new Map(usersWithDuplicates.map((u) => [u.id, u])).values(),
 	];
+
+	// Enrich with each user's *active-run* pipeline. Users without an active run
+	// get null — meaning the pipeline strip in the AvatarPopover is hidden.
+	const userIds = usersDeduped.map((u) => u.id);
+	const activeRunPipelines = userIds.length
+		? await db
+				.select({
+					userId: runsTable.user_id,
+					pipelineSlots: runsTable.pipeline_slots,
+				})
+				.from(runsTable)
+				.where(
+					and(
+						eq(runsTable.status, "active"),
+						inArray(runsTable.user_id, userIds)
+					)
+				)
+		: [];
+	const pipelineByUserId = new Map(
+		activeRunPipelines.map((r) => [r.userId, r.pipelineSlots as PipelineSlot[]])
+	);
+
+	const users: CommunityStatsUser[] = usersDeduped.map((u) => ({
+		...u,
+		activeRunPipelineSlots: pipelineByUserId.get(u.id) ?? null,
+	}));
 
 	const activeRunPlayers = await db
 		.select({
@@ -158,7 +186,8 @@ export const getCommunityStatsForDailyPoll = async (
 		.groupBy(usersTable.id, runsTable.id);
 
 	const playersInActiveRun: ActiveRunPlayer[] = activeRunPlayers.map((row) => {
-		const windowSize = getWindowSize(row.pipelineSlots as PipelineSlot[]);
+		const pipelineSlots = (row.pipelineSlots ?? []) as PipelineSlot[];
+		const windowSize = getWindowSize(pipelineSlots);
 		const currentGate = Math.max(1, Math.ceil(row.pollsAnswered / windowSize));
 		return {
 			id: row.id,
@@ -167,6 +196,7 @@ export const getCommunityStatsForDailyPoll = async (
 			photoUrl: row.photoUrl,
 			equippedBorderId: row.equippedBorderId,
 			currentGate,
+			pipelineSlots,
 		};
 	});
 
