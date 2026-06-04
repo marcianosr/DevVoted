@@ -1,4 +1,5 @@
-<svg viewBox="0 0 140 140" width="224" height="224" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="3 3 134 134" width="224" height="224" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="120" height="120" rx="4" fill="#7B68C8" opacity="0.5"/>
   <rect x="3" y="3" width="134" height="134" rx="7" fill="none" stroke="#3A2E8A" stroke-width="4"/>
   <rect x="10" y="10" width="120" height="120" rx="4" fill="none" stroke="#7B68C8" stroke-width="1"/>
   <text x="14" y="8.5" font-family="monospace" font-size="6" fill="#9B8EE0" opacity="0.6">interface</text>

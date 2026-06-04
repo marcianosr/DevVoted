@@ -1,4 +1,5 @@
-<svg viewBox="0 0 140 140" width="224" height="224" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="3 3 134 134" width="224" height="224" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="120" height="120" rx="4" fill="#C2387A" opacity="0.5"/>
   <rect x="3" y="3" width="134" height="134" rx="7" fill="none" stroke="#5A0F36" stroke-width="4"/>
   <rect x="10" y="10" width="120" height="120" rx="4" fill="none" stroke="#C2387A" stroke-width="1"/>
   <g fill="none" stroke="#C2387A" stroke-width="2" opacity="0.7">
