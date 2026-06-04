@@ -34,3 +34,9 @@ export const userQueryKeys = {
 	profile: (userId: string) =>
 		[...userQueryKeys.all, userId, "profile"] as const,
 };
+
+export const archiveQueryKeys = {
+	all: ["archive"] as const,
+	state: (userId: string | undefined) =>
+		[...archiveQueryKeys.all, userId] as const,
+};

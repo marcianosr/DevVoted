@@ -1,0 +1,28 @@
+<svg viewBox="0 0 140 140" width="224" height="224" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="3" width="134" height="134" rx="7" fill="none" stroke="#3A2E8A" stroke-width="4"/>
+  <rect x="10" y="10" width="120" height="120" rx="4" fill="none" stroke="#7B68C8" stroke-width="1"/>
+  <text x="14" y="8.5" font-family="monospace" font-size="6" fill="#9B8EE0" opacity="0.6">interface</text>
+  <text x="14" y="135" font-family="monospace" font-size="6" fill="#9B8EE0" opacity="0.6">type</text>
+  <g stroke="#5A4BAD" stroke-width="1.5" stroke-linecap="round" opacity="0.7">
+    <line x1="3" y1="36" x2="10" y2="36"/>
+    <line x1="3" y1="46" x2="10" y2="46"/>
+    <line x1="3" y1="56" x2="10" y2="56"/>
+    <line x1="3" y1="84" x2="10" y2="84"/>
+    <line x1="3" y1="94" x2="10" y2="94"/>
+    <line x1="3" y1="104" x2="10" y2="104"/>
+    <line x1="137" y1="36" x2="130" y2="36"/>
+    <line x1="137" y1="46" x2="130" y2="46"/>
+    <line x1="137" y1="56" x2="130" y2="56"/>
+    <line x1="137" y1="84" x2="130" y2="84"/>
+    <line x1="137" y1="94" x2="130" y2="94"/>
+    <line x1="137" y1="104" x2="130" y2="104"/>
+  </g>
+  <rect x="36" y="1" width="68" height="8" rx="4" fill="#3A2E8A" opacity="0.8"/>
+  <text x="70" y="7.5" text-anchor="middle" font-family="monospace" font-size="5.5" fill="#D4CEFF" opacity="0.9">string | number | boolean</text>
+  <rect x="36" y="131" width="68" height="8" rx="4" fill="#3A2E8A" opacity="0.8"/>
+  <text x="70" y="137.5" text-anchor="middle" font-family="monospace" font-size="5.5" fill="#D4CEFF" opacity="0.9">Record&lt;K, T&gt; | void</text>
+  <rect x="3" y="3" width="6" height="6" rx="1" fill="#7B68C8" opacity="0.7"/>
+  <rect x="131" y="3" width="6" height="6" rx="1" fill="#7B68C8" opacity="0.7"/>
+  <rect x="3" y="131" width="6" height="6" rx="1" fill="#7B68C8" opacity="0.7"/>
+  <rect x="131" y="131" width="6" height="6" rx="1" fill="#7B68C8" opacity="0.7"/>
+</svg>

@@ -1,8 +1,10 @@
+import { archiveLeftoverStorage } from "~/domains/economy/services/archive.service";
 import type {
 	GateDifficulty,
 	GateTypeId,
 	PipelineSlotRequirement,
 } from "~/domains/runs/models/pipeline.model";
+import { getCurrentGate } from "~/domains/runs/services/pipelineEvaluator.service";
 
 import {
 	completeRunWithThresholdFailure,
@@ -31,12 +33,17 @@ export const endRunForThresholdFailure = async (
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	const { totalCoverage } = await getRunStats(runId);
+	const { totalCoverage, totalPollsAnswered } = await getRunStats(runId);
 
 	await completeRunWithThresholdFailure(
 		runId,
 		encodePipelineFailure(failedSlots)
 	);
+
+	// Non-critical writes — same swallow-and-log pattern as the leaderboard
+	// call so a failure here can't block the client's game-over signal.
+	const gateAtDeath = getCurrentGate(totalPollsAnswered, run.pipelineSlots);
+	await archiveLeftoverStorage(run, gateAtDeath);
 
 	try {
 		await createCategoryLeaderboardEntries(
@@ -67,9 +74,12 @@ export const endRunManually = async (runId: number) => {
 		throw new Error(`Run with ID ${runId} not found`);
 	}
 
-	const { totalCoverage } = await getRunStats(runId);
+	const { totalCoverage, totalPollsAnswered } = await getRunStats(runId);
 
 	await completeRunWithThresholdFailure(runId, "manual_break_off");
+
+	const gateAtQuit = getCurrentGate(totalPollsAnswered, run.pipelineSlots);
+	await archiveLeftoverStorage(run, gateAtQuit);
 
 	await createCategoryLeaderboardEntries(
 		run.userId,

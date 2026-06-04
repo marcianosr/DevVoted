@@ -55,6 +55,11 @@ export type PipelineEvaluation = {
 
 export const DEFAULT_WINDOW_SIZE = 5;
 
+// Minimum gate a player must reach before they're allowed to manually end the
+// run (anti-farm — see archive.service.ts). Shared between server enforcement
+// (finishRunHandler) and client nav state (deriveNavRunState).
+export const MIN_GATE_FOR_MANUAL_END = 5;
+
 export const getWindowSize = (slots: PipelineSlot[]): number => {
 	const shortWindowSlot = slots.find(
 		(s) => s.requirement.type === "short-window"
@@ -65,6 +70,14 @@ export const getWindowSize = (slots: PipelineSlot[]): number => {
 	// Safe — we just confirmed the type above
 	const req = shortWindowSlot.requirement as ShortWindowRequirement;
 	return req.pollCount;
+};
+
+export const getCurrentGate = (
+	pollsAnswered: number,
+	slots: PipelineSlot[]
+): number => {
+	const windowSize = getWindowSize(slots);
+	return Math.max(1, Math.ceil(pollsAnswered / windowSize));
 };
 
 const makeResult = (

@@ -1,20 +1,14 @@
-import { useState } from "react";
-
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { clsx } from "clsx";
 
-import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
 import Content from "~/components/Content.component";
-import { finishRunFn, getLastRunForGameOver } from "~/domains/runs/api/runs";
+import { getLastRunForGameOver } from "~/domains/runs/api/runs";
 import {
 	formatRequirement,
 	getSlotLabel,
 } from "~/domains/runs/utils/formatPipelineRequirement";
 import { parseCompletionReason } from "~/domains/runs/utils/parseCompletionReason";
-import { runQueryKeys } from "~/domains/shared/queryKeys";
 import { PrimaryButton } from "~/ui/PrimaryButton.component";
-import { SecondaryButton } from "~/ui/SecondaryButton.component";
 
 export const Route = createFileRoute("/_authed/game-over")({
 	component: RouteComponent,
@@ -38,67 +32,22 @@ export const Route = createFileRoute("/_authed/game-over")({
 });
 
 function RouteComponent() {
-	const { user, activeRun } = Route.useRouteContext();
+	const { activeRun } = Route.useRouteContext();
 	const { lastRun } = Route.useLoaderData();
-
 	const navigate = useNavigate();
-	const queryClient = useQueryClient();
-	const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-	const finishRunMutation = useMutation({
-		mutationFn: async () => {
-			const result = await finishRunFn();
-			if (!result.success) {
-				throw new Error(result.error);
-			}
-			return result;
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: runQueryKeys.active(user?.id),
-			});
-			setIsDialogOpen(false);
-			navigate({ to: "/start" });
-		},
-		onError: (error) => {
-			console.error("Failed to finish run:", error.message);
-		},
-	});
-
-	const handleStartNewRunClick = () => {
-		if (activeRun && activeRun.success && activeRun.data?.id)
-			setIsDialogOpen(true);
-		else navigate({ to: "/start" });
-	};
-	const handleConfirmFinishRun = () => finishRunMutation.mutate();
-	const handleCancelFinishRun = () => setIsDialogOpen(false);
 
 	if (activeRun && activeRun.success && activeRun.data?.id) {
 		return (
 			<div className="text-center py-8">
 				<h1 className="text-3xl mb-4">Run is still in progress!</h1>
 				<p className="mb-4 text-gray-300">
-					Finish your run before viewing game over or reset your run.
+					You can continue your active run, or end it from the menu in the
+					top-right (available once you&apos;ve reached gate 5).
 				</p>
 
-				<div className="flex gap-2 justify-center items-center">
-					<Link to="/daily-poll" className="underline text-blue-400">
-						Continue Run
-					</Link>
-					<SecondaryButton
-						onClick={handleStartNewRunClick}
-						className="px-3 py-1 text-sm"
-					>
-						Start New Run
-					</SecondaryButton>
-					<ConfirmDialog
-						isOpen={isDialogOpen}
-						onConfirm={handleConfirmFinishRun}
-						onCancel={handleCancelFinishRun}
-						title="Start New Run"
-						message="Are you sure you want to break off your current run?"
-					/>
-				</div>
+				<Link to="/daily-poll" className="underline text-blue-400">
+					Continue Run
+				</Link>
 			</div>
 		);
 	}
@@ -177,7 +126,10 @@ function RouteComponent() {
 							</span>
 						</>
 					)}
-					<PrimaryButton onClick={handleStartNewRunClick} className="px-3 py-1">
+					<PrimaryButton
+						onClick={() => navigate({ to: "/start" })}
+						className="px-3 py-1"
+					>
 						Start New Run
 					</PrimaryButton>
 				</section>

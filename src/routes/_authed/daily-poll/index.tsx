@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import Content from "~/components/Content.component";
 import { DevPollNavigator } from "~/components/DevPollNavigator.component";
-import { AwardsGrid } from "~/domains/awards/components/AwardsGrid.component";
 import { applyEffects } from "~/domains/economy/data/configs";
 import {
 	getNextShopOfferingsServerFn,
@@ -62,12 +61,6 @@ const DailyPoll: React.FC = () => {
 				date={currentDate}
 				lastSeenAt={lastSeenAt}
 			/>
-
-			{hasAnswered && (
-				<section className="max-w-5xl mx-auto mt-12">
-					<AwardsGrid />
-				</section>
-			)}
 		</Content>
 	);
 };
