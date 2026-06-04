@@ -30,14 +30,7 @@ export const AvatarWithBorder = ({
 	const border = borderId ? findBorderById(borderId) : undefined;
 	const initial = displayName.charAt(0).toUpperCase();
 
-	// When a border is equipped, inset the avatar so the painted frame can
-	// overlap the photo's outer edge. Without an inset, the photo extends past
-	// where most border art paints its frame and you see naked image edges.
-	// 6% is the tightest value that hides edges for both thin-frame SVGs and
-	// thicker PNG frames in the current catalog.
-	const avatarBoxClass = border
-		? "absolute inset-[6%] overflow-hidden"
-		: "absolute inset-0 overflow-hidden";
+	const avatarBoxClass = "absolute inset-0 overflow-hidden";
 
 	return (
 		<div className={clsx("relative inline-block shrink-0", sizeClasses[size])}>
@@ -59,7 +52,7 @@ export const AvatarWithBorder = ({
 					src={border.image}
 					alt=""
 					aria-hidden="true"
-					className="absolute inset-0 w-full h-full pointer-events-none"
+					className="absolute inset-0 scale-120 w-full h-full pointer-events-none"
 				/>
 			)}
 		</div>
