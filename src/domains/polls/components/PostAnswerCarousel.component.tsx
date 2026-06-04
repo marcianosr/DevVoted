@@ -155,7 +155,7 @@ export const PostAnswerCarousel = ({
 											{communityStats.totalResponses} other player
 											{communityStats.totalResponses === 1 ? "" : "s"} answered:
 										</p>
-										<ul className="flex flex-col gap-2">
+										<ul className="flex flex-col gap-4">
 											{sortCommunityOptions(communityStats.optionBreakdown).map(
 												(opt) => {
 													const hasVotes = opt.voters.length > 0;
@@ -166,7 +166,7 @@ export const PostAnswerCarousel = ({
 														<li
 															key={opt.optionId}
 															className={clsx(
-																"flex items-center gap-3 border-l-4 pl-3 py-2",
+																"flex items-center gap-3 border-l-4",
 																isYourPick
 																	? "border-theme bg-theme/30"
 																	: "border-transparent"
@@ -187,7 +187,7 @@ export const PostAnswerCarousel = ({
 															>
 																{opt.isCorrect ? "✓" : "✗"}
 															</span>
-															<div className="text-white markdown flex-1 min-w-0 wrap-break-word">
+															<div className="text-white markdown flex-1 min-w-0 wrap-break-word [&_p]:m-0">
 																<MarkdownText>{opt.optionText}</MarkdownText>
 															</div>
 															<div className="shrink-0 flex items-center gap-2 text-sm">
