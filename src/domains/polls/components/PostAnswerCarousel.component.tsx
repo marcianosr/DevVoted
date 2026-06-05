@@ -84,12 +84,12 @@ const CommunityAwardCard = ({
 	subtitle,
 	user,
 }: CommunityAwardCardProps) => (
-	<div className="w-48 flex flex-col h-full">
-		<div className="space-y-1">
+	<div className="w-48 flex flex-col items-center text-center">
+		<div className="space-y-1 min-h-[6rem] w-full">
 			<p className="text-xl">{title}</p>
 			{subtitle && <p className="text-sm text-zinc-400">{subtitle}</p>}
 		</div>
-		<div className="flex flex-col items-start gap-4 w-32 mx-auto mt-auto pt-6">
+		<div className="flex flex-col items-center gap-3 w-32 mt-6">
 			<AvatarWithBorder
 				photoUrl={user.photoUrl}
 				displayName={user.displayName ?? user.id}
@@ -256,6 +256,9 @@ export const PostAnswerCarousel = ({
 																				pipelineSlots={
 																					user.activeRunPipelineSlots
 																				}
+																				activeRunProgress={
+																					user.activeRunProgress
+																				}
 																			>
 																				<AvatarWithBorder
 																					photoUrl={user.photoUrl}
@@ -304,13 +307,14 @@ export const PostAnswerCarousel = ({
 											borderId={user.equippedBorderId}
 											role={user.role}
 											pipelineSlots={user.activeRunPipelineSlots}
+											activeRunProgress={user.activeRunProgress}
 										>
 											<UserAvatar user={user} />
 										</AvatarPopover>
 									))}
 								</div>
 							</div>
-							<div className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-6 mt-4">
+							<div className="flex flex-wrap gap-6 mt-4">
 								{communityStats?.firstToAnswer && (
 									<CommunityAwardCard
 										title="First to answer"
@@ -343,6 +347,13 @@ export const PostAnswerCarousel = ({
 										title={`Most polls in ${CATEGORY_METADATA[communityStats.mostPollsInCategory.categoryCode].name}`}
 										subtitle={`Answered the most polls in ${CATEGORY_METADATA[communityStats.mostPollsInCategory.categoryCode].name} with ${communityStats.mostPollsInCategory.count} poll${communityStats.mostPollsInCategory.count === 1 ? "" : "s"}!`}
 										user={communityStats.mostPollsInCategory.user}
+									/>
+								)}
+								{communityStats?.mostCorrectInCategory && (
+									<CommunityAwardCard
+										title={`Most correct in ${CATEGORY_METADATA[communityStats.mostCorrectInCategory.categoryCode].name}`}
+										subtitle={`Answered the most polls correctly in ${CATEGORY_METADATA[communityStats.mostCorrectInCategory.categoryCode].name} with ${communityStats.mostCorrectInCategory.count} poll${communityStats.mostCorrectInCategory.count === 1 ? "" : "s"}!`}
+										user={communityStats.mostCorrectInCategory.user}
 									/>
 								)}
 							</div>

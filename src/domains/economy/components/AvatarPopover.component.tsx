@@ -1,4 +1,5 @@
 import { AvatarWithBorder } from "~/domains/economy/components/AvatarWithBorder.component";
+import type { ActiveRunProgress } from "~/domains/polls/api/communityStats.queries";
 import type {
 	GateTypeId,
 	PipelineSlot,
@@ -18,6 +19,7 @@ type AvatarPopoverProps = {
 	borderId: string | null;
 	role?: UserRole | string | null;
 	pipelineSlots?: PipelineSlot[] | null;
+	activeRunProgress?: ActiveRunProgress | null;
 	children: React.ReactNode;
 };
 
@@ -38,13 +40,29 @@ const getSlotName = (slot: PipelineSlot): string => {
 	return SLOT_NAME[slot.gateTypeId];
 };
 
-const PipelineStrip = ({ slots }: { slots: PipelineSlot[] }) => {
+const PipelineStrip = ({
+	slots,
+	progress,
+}: {
+	slots: PipelineSlot[];
+	progress?: ActiveRunProgress | null;
+}) => {
 	if (slots.length === 0) return null;
 	return (
 		<div className="w-full pt-2 border-t border-gray-800 space-y-1">
-			<p className="text-[10px] uppercase tracking-wide text-gray-500">
-				Pipeline
-			</p>
+			<div className="flex items-center justify-between gap-2">
+				<p className="text-[10px] uppercase tracking-wide text-gray-500">
+					Pipeline
+				</p>
+				{progress && (
+					<p className="text-[10px] text-gray-400">
+						Gate {progress.currentGate} ·{" "}
+						<span className="text-white">
+							{progress.pollsInWindow}/{progress.windowSize}
+						</span>
+					</p>
+				)}
+			</div>
 			<ul className="space-y-0.5">
 				{slots.map((slot, i) => (
 					<li
@@ -71,6 +89,7 @@ export const AvatarPopover = ({
 	borderId,
 	role,
 	pipelineSlots,
+	activeRunProgress,
 	children,
 }: AvatarPopoverProps) => (
 	<Popover
@@ -88,7 +107,7 @@ export const AvatarPopover = ({
 				</span>
 				<UserTitle role={role} />
 				{pipelineSlots && pipelineSlots.length > 0 && (
-					<PipelineStrip slots={pipelineSlots} />
+					<PipelineStrip slots={pipelineSlots} progress={activeRunProgress} />
 				)}
 			</div>
 		}

@@ -19,10 +19,17 @@ import type { User } from "~/domains/users/services/userSync.service";
 
 export type UserRole = "user" | "poll-editor" | "admin";
 
+export type ActiveRunProgress = {
+	pollsInWindow: number;
+	windowSize: number;
+	currentGate: number;
+};
+
 export type CommunityStatsUser = User & {
 	equippedBorderId: string | null;
 	role: UserRole;
 	activeRunPipelineSlots: PipelineSlot[] | null;
+	activeRunProgress: ActiveRunProgress | null;
 	answeredAt: Date | null;
 	timeTakenMs: number | null;
 	responseData: {
@@ -62,6 +69,12 @@ export type MostPollsInCategoryAward = {
 	categoryCode: CategoryCode;
 };
 
+export type MostCorrectInCategoryAward = {
+	user: CommunityStatsUser;
+	count: number;
+	categoryCode: CategoryCode;
+};
+
 export type CommunityStats = {
 	totalResponses: number;
 	users: CommunityStatsUser[];
@@ -69,6 +82,7 @@ export type CommunityStats = {
 	fastestResponder: CommunityStatsUser | null;
 	firstGood: CommunityStatsUser | null;
 	mostPollsInCategory: MostPollsInCategoryAward | null;
+	mostCorrectInCategory: MostCorrectInCategoryAward | null;
 	playersInActiveRun: ActiveRunPlayer[];
 	playersFallenOnDate: FallenRunPlayer[];
 	optionBreakdown: CommunityOptionBreakdown[];
@@ -152,31 +166,54 @@ export const getCommunityStatsForDailyPoll = async (
 		...new Map(usersWithDuplicates.map((u) => [u.id, u])).values(),
 	];
 
-	// Enrich with each user's *active-run* pipeline. Users without an active run
-	// get null — meaning the pipeline strip in the AvatarPopover is hidden.
+	// Enrich with each user's *active-run* pipeline + window progress. Users
+	// without an active run get null — meaning the pipeline strip and progress
+	// in the AvatarPopover are hidden.
 	const userIds = usersDeduped.map((u) => u.id);
 	const activeRunPipelines = userIds.length
 		? await db
 				.select({
 					userId: runsTable.user_id,
 					pipelineSlots: runsTable.pipeline_slots,
+					pollsAnswered: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
 				})
 				.from(runsTable)
+				.leftJoin(
+					pollResponsesTable,
+					eq(pollResponsesTable.run_id, runsTable.id)
+				)
 				.where(
 					and(
 						eq(runsTable.status, "active"),
 						inArray(runsTable.user_id, userIds)
 					)
 				)
+				.groupBy(runsTable.user_id, runsTable.id)
 		: [];
-	const pipelineByUserId = new Map(
-		activeRunPipelines.map((r) => [r.userId, r.pipelineSlots as PipelineSlot[]])
+	const progressByUserId = new Map(
+		activeRunPipelines.map((r) => {
+			const slots = r.pipelineSlots as PipelineSlot[];
+			const windowSize = getWindowSize(slots);
+			const pollsInWindow = r.pollsAnswered % windowSize;
+			const currentGate = Math.max(1, Math.ceil(r.pollsAnswered / windowSize));
+			return [
+				r.userId,
+				{
+					slots,
+					progress: { pollsInWindow, windowSize, currentGate },
+				},
+			] as const;
+		})
 	);
 
-	const users: CommunityStatsUser[] = usersDeduped.map((u) => ({
-		...u,
-		activeRunPipelineSlots: pipelineByUserId.get(u.id) ?? null,
-	}));
+	const users: CommunityStatsUser[] = usersDeduped.map((u) => {
+		const entry = progressByUserId.get(u.id);
+		return {
+			...u,
+			activeRunPipelineSlots: entry?.slots ?? null,
+			activeRunProgress: entry?.progress ?? null,
+		};
+	});
 
 	const activeRunPlayers = await db
 		.select({
@@ -335,6 +372,101 @@ export const getCommunityStatsForDailyPoll = async (
 				}
 			: null;
 
+	// "Most correct in category": fetch each response's selected options vs. the
+	// poll's full option set (filtered to active runs in today's category) and
+	// reuse evaluatePollAnswer so the correctness rule stays in one place.
+	const correctnessRows =
+		dailyPoll && userIds.length
+			? await db
+					.select({
+						userId: runsTable.user_id,
+						responseId: pollResponsesTable.response_id,
+						pollId: pollResponsesTable.poll_id,
+						optionId: pollOptionsTable.id,
+						optionCorrect: pollOptionsTable.correct,
+						optionSelected: pollResponseOptionsTable.option_id,
+					})
+					.from(runsTable)
+					.innerJoin(
+						pollResponsesTable,
+						eq(pollResponsesTable.run_id, runsTable.id)
+					)
+					.innerJoin(pollsTable, eq(pollsTable.id, pollResponsesTable.poll_id))
+					.innerJoin(
+						pollOptionsTable,
+						eq(pollOptionsTable.poll_id, pollsTable.id)
+					)
+					.leftJoin(
+						pollResponseOptionsTable,
+						and(
+							eq(
+								pollResponseOptionsTable.response_id,
+								pollResponsesTable.response_id
+							),
+							eq(pollResponseOptionsTable.option_id, pollOptionsTable.id)
+						)
+					)
+					.where(
+						and(
+							eq(runsTable.status, "active"),
+							inArray(runsTable.user_id, userIds),
+							eq(pollsTable.category_code, dailyPoll.categoryCode)
+						)
+					)
+			: [];
+
+	type ResponseCounts = {
+		userId: string;
+		selectedCorrect: number;
+		selectedIncorrect: number;
+		totalCorrect: number;
+	};
+	const responseCountsById = new Map<number, ResponseCounts>();
+	for (const row of correctnessRows) {
+		const existing = responseCountsById.get(row.responseId) ?? {
+			userId: row.userId,
+			selectedCorrect: 0,
+			selectedIncorrect: 0,
+			totalCorrect: 0,
+		};
+		if (row.optionCorrect) existing.totalCorrect += 1;
+		if (row.optionSelected !== null) {
+			if (row.optionCorrect) existing.selectedCorrect += 1;
+			else existing.selectedIncorrect += 1;
+		}
+		responseCountsById.set(row.responseId, existing);
+	}
+
+	const correctCountByUserId = new Map<string, number>();
+	for (const counts of responseCountsById.values()) {
+		if (!evaluatePollAnswer(counts).isFullyCorrect) continue;
+		correctCountByUserId.set(
+			counts.userId,
+			(correctCountByUserId.get(counts.userId) ?? 0) + 1
+		);
+	}
+
+	const topCorrectEntry = [...correctCountByUserId.entries()].reduce<
+		[string, number] | null
+	>(
+		(best, entry) => (best === null || entry[1] > best[1] ? entry : best),
+		null
+	);
+	const topCorrectUser = topCorrectEntry
+		? usersById.get(topCorrectEntry[0])
+		: undefined;
+	const mostCorrectInCategory: MostCorrectInCategoryAward | null =
+		topCorrectEntry &&
+		topCorrectUser &&
+		dailyPoll &&
+		isCategoryCode(dailyPoll.categoryCode)
+			? {
+					user: topCorrectUser,
+					count: topCorrectEntry[1],
+					categoryCode: dailyPoll.categoryCode,
+				}
+			: null;
+
 	const fastestResponder = users.reduce<CommunityStatsUser | null>(
 		(fastest, user) => {
 			if (user.timeTakenMs === null) return fastest;
@@ -409,6 +541,7 @@ export const getCommunityStatsForDailyPoll = async (
 		fastestResponder,
 		firstGood: firstGood(),
 		mostPollsInCategory,
+		mostCorrectInCategory,
 		playersInActiveRun,
 		playersFallenOnDate,
 		optionBreakdown,
