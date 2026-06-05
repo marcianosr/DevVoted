@@ -26,7 +26,10 @@ import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverage
 import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
 import type { Run } from "~/domains/runs/models/run.model";
 import type { ScoreCalculation } from "~/domains/runs/services/score.service";
-import type { CategoryCode } from "~/domains/shared/categories";
+import {
+	CATEGORY_METADATA,
+	type CategoryCode,
+} from "~/domains/shared/categories";
 
 import MarkdownText from "./MarkdownText.component";
 import { ScoreBlock } from "./ScoreBlock.component";
@@ -72,20 +75,21 @@ const formatTimeTaken = (ms: number | null): string | null => {
 
 type CommunityAwardCardProps = {
 	title: string;
+	subtitle?: React.ReactNode;
 	user: NonNullable<CommunityStats["firstToAnswer"]>;
 };
 
-const CommunityAwardCard = ({ title, user }: CommunityAwardCardProps) => (
-	<div className="space-y-4">
+const CommunityAwardCard = ({
+	title,
+	subtitle,
+	user,
+}: CommunityAwardCardProps) => (
+	<div className="w-48 flex flex-col h-full">
 		<div className="space-y-1">
 			<p className="text-xl">{title}</p>
-			{user.timeTakenMs !== null && (
-				<p className="text-sm text-zinc-400">
-					in {formatTimeTaken(user.timeTakenMs)}
-				</p>
-			)}
+			{subtitle && <p className="text-sm text-zinc-400">{subtitle}</p>}
 		</div>
-		<div className="flex flex-col items-center gap-4 w-32 mx-auto">
+		<div className="flex flex-col items-start gap-4 w-32 mx-auto mt-auto pt-6">
 			<AvatarWithBorder
 				photoUrl={user.photoUrl}
 				displayName={user.displayName ?? user.id}
@@ -93,7 +97,7 @@ const CommunityAwardCard = ({ title, user }: CommunityAwardCardProps) => (
 				size="xl"
 			/>
 			<p
-				className="w-full truncate text-sm text-center"
+				className="w-full truncate text-sm"
 				title={user.displayName ?? undefined}
 			>
 				{user.displayName}
@@ -102,6 +106,9 @@ const CommunityAwardCard = ({ title, user }: CommunityAwardCardProps) => (
 		</div>
 	</div>
 );
+
+const timeTakenSubtitle = (ms: number | null) =>
+	ms !== null ? `in ${formatTimeTaken(ms)}` : null;
 
 export const PostAnswerCarousel = ({
 	poll,
@@ -303,23 +310,39 @@ export const PostAnswerCarousel = ({
 									))}
 								</div>
 							</div>
-							<div className="flex flex-wrap gap-8 mt-4">
+							<div className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-6 mt-4">
 								{communityStats?.firstToAnswer && (
 									<CommunityAwardCard
 										title="First to answer"
+										subtitle={timeTakenSubtitle(
+											communityStats.firstToAnswer.timeTakenMs
+										)}
 										user={communityStats.firstToAnswer}
 									/>
 								)}
 								{communityStats?.fastestResponder && (
 									<CommunityAwardCard
 										title="Fastest responder"
+										subtitle={timeTakenSubtitle(
+											communityStats.fastestResponder.timeTakenMs
+										)}
 										user={communityStats.fastestResponder}
 									/>
 								)}
 								{communityStats?.firstGood && (
 									<CommunityAwardCard
 										title="First good"
+										subtitle={timeTakenSubtitle(
+											communityStats.firstGood.timeTakenMs
+										)}
 										user={communityStats.firstGood}
+									/>
+								)}
+								{communityStats?.mostPollsInCategory && (
+									<CommunityAwardCard
+										title={`Most polls in ${CATEGORY_METADATA[communityStats.mostPollsInCategory.categoryCode].name}`}
+										subtitle={`Answered the most polls in ${CATEGORY_METADATA[communityStats.mostPollsInCategory.categoryCode].name} with ${communityStats.mostPollsInCategory.count} poll${communityStats.mostPollsInCategory.count === 1 ? "" : "s"}!`}
+										user={communityStats.mostPollsInCategory.user}
 									/>
 								)}
 							</div>

@@ -18,6 +18,9 @@ export const CATEGORY_CODES = [
 ] as const;
 export type CategoryCode = (typeof CATEGORY_CODES)[number];
 
+export const isCategoryCode = (value: string): value is CategoryCode =>
+	(CATEGORY_CODES as readonly string[]).includes(value);
+
 export const CATEGORY_METADATA = {
 	css: { name: "CSS" },
 	js: { name: "JavaScript" },

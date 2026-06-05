@@ -7,12 +7,14 @@ import {
 	pollOptionsTable,
 	pollResponseOptionsTable,
 	pollResponsesTable,
+	pollsTable,
 	runsTable,
 	usersTable,
 } from "~/database/schema";
 import { evaluatePollAnswer } from "~/domains/polls/services/pollAnswerEvaluation.service";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
+import { isCategoryCode, type CategoryCode } from "~/domains/shared/categories";
 import type { User } from "~/domains/users/services/userSync.service";
 
 export type UserRole = "user" | "poll-editor" | "admin";
@@ -54,12 +56,19 @@ export type CommunityOptionBreakdown = {
 	voters: CommunityStatsUser[];
 };
 
+export type MostPollsInCategoryAward = {
+	user: CommunityStatsUser;
+	count: number;
+	categoryCode: CategoryCode;
+};
+
 export type CommunityStats = {
 	totalResponses: number;
 	users: CommunityStatsUser[];
 	firstToAnswer: CommunityStatsUser | null;
 	fastestResponder: CommunityStatsUser | null;
 	firstGood: CommunityStatsUser | null;
+	mostPollsInCategory: MostPollsInCategoryAward | null;
 	playersInActiveRun: ActiveRunPlayer[];
 	playersFallenOnDate: FallenRunPlayer[];
 	optionBreakdown: CommunityOptionBreakdown[];
@@ -284,6 +293,48 @@ export const getCommunityStatsForDailyPoll = async (
 		}
 	);
 
+	const [dailyPoll] = await db
+		.select({ categoryCode: pollsTable.category_code })
+		.from(pollsTable)
+		.where(eq(pollsTable.id, pollId));
+
+	const mostPollsInCategoryRows =
+		dailyPoll && userIds.length
+			? await db
+					.select({
+						userId: runsTable.user_id,
+						count: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
+					})
+					.from(runsTable)
+					.innerJoin(
+						pollResponsesTable,
+						eq(pollResponsesTable.run_id, runsTable.id)
+					)
+					.innerJoin(pollsTable, eq(pollResponsesTable.poll_id, pollsTable.id))
+					.where(
+						and(
+							eq(runsTable.status, "active"),
+							inArray(runsTable.user_id, userIds),
+							eq(pollsTable.category_code, dailyPoll.categoryCode)
+						)
+					)
+					.groupBy(runsTable.user_id)
+					.orderBy(sql`count DESC`)
+					.limit(1)
+			: [];
+
+	const usersById = new Map(users.map((u) => [u.id, u]));
+	const topRow = mostPollsInCategoryRows[0];
+	const topUser = topRow ? usersById.get(topRow.userId) : undefined;
+	const mostPollsInCategory: MostPollsInCategoryAward | null =
+		topRow && topUser && dailyPoll && isCategoryCode(dailyPoll.categoryCode)
+			? {
+					user: topUser,
+					count: topRow.count,
+					categoryCode: dailyPoll.categoryCode,
+				}
+			: null;
+
 	const fastestResponder = users.reduce<CommunityStatsUser | null>(
 		(fastest, user) => {
 			if (user.timeTakenMs === null) return fastest;
@@ -326,7 +377,6 @@ export const getCommunityStatsForDailyPoll = async (
 
 	const firstGood = () => users.find((u) => isFullyCorrect(u.id)) ?? null;
 
-	const usersById = new Map(users.map((u) => [u.id, u]));
 	const votersByOptionId = result.reduce<Map<number, Set<string>>>(
 		(acc, row) => {
 			const optionId = row.polls_options?.id;
@@ -358,6 +408,7 @@ export const getCommunityStatsForDailyPoll = async (
 		firstToAnswer: users.length > 0 ? users[0] : null,
 		fastestResponder,
 		firstGood: firstGood(),
+		mostPollsInCategory,
 		playersInActiveRun,
 		playersFallenOnDate,
 		optionBreakdown,
