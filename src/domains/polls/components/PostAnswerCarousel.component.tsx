@@ -70,6 +70,39 @@ const formatTimeTaken = (ms: number | null): string | null => {
 	return formatDuration(duration, { format: ["hours", "minutes", "seconds"] });
 };
 
+type CommunityAwardCardProps = {
+	title: string;
+	user: NonNullable<CommunityStats["firstToAnswer"]>;
+};
+
+const CommunityAwardCard = ({ title, user }: CommunityAwardCardProps) => (
+	<div className="space-y-4">
+		<div className="space-y-1">
+			<p className="text-xl">{title}</p>
+			{user.timeTakenMs !== null && (
+				<p className="text-sm text-zinc-400">
+					in {formatTimeTaken(user.timeTakenMs)}
+				</p>
+			)}
+		</div>
+		<div className="flex flex-col items-center gap-4 w-32 mx-auto">
+			<AvatarWithBorder
+				photoUrl={user.photoUrl}
+				displayName={user.displayName ?? user.id}
+				borderId={user.equippedBorderId}
+				size="xl"
+			/>
+			<p
+				className="w-full truncate text-sm text-center"
+				title={user.displayName ?? undefined}
+			>
+				{user.displayName}
+			</p>
+			<UserTitle role={user.role} />
+		</div>
+	</div>
+);
+
 export const PostAnswerCarousel = ({
 	poll,
 	selectedOptions,
@@ -250,12 +283,11 @@ export const PostAnswerCarousel = ({
 
 						<section className="border-t border-theme pt-8 space-y-2">
 							<h3 className="text-4xl">👥 Community</h3>
-							<div className="flex items-center gap-2 text-xl">
+							<div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xl">
 								<span>
 									{communityStats?.totalResponses} player(s) participated in
 									today&apos;s poll
 								</span>
-								<span>·</span>
 								<div className="flex -space-x-2">
 									{communityStats?.users.map((user) => (
 										<AvatarPopover
@@ -273,97 +305,22 @@ export const PostAnswerCarousel = ({
 							</div>
 							<div className="flex flex-wrap gap-8 mt-4">
 								{communityStats?.firstToAnswer && (
-									<div>
-										<p className="text-xl">First to answer</p>
-										{communityStats.firstToAnswer.timeTakenMs !== null && (
-											<p className="text-sm text-zinc-400">
-												in{" "}
-												{formatTimeTaken(
-													communityStats.firstToAnswer.timeTakenMs
-												)}
-											</p>
-										)}
-										<div className="flex flex-col items-center gap-2 mt-2 w-32">
-											<AvatarWithBorder
-												photoUrl={communityStats.firstToAnswer.photoUrl}
-												displayName={
-													communityStats.firstToAnswer.displayName ??
-													communityStats.firstToAnswer.id
-												}
-												borderId={communityStats.firstToAnswer.equippedBorderId}
-												size="xl"
-											/>
-											<p
-												className="w-full truncate text-sm text-center"
-												title={communityStats.firstToAnswer.displayName}
-											>
-												{communityStats.firstToAnswer.displayName}
-											</p>
-											<UserTitle role={communityStats.firstToAnswer.role} />
-										</div>
-									</div>
+									<CommunityAwardCard
+										title="First to answer"
+										user={communityStats.firstToAnswer}
+									/>
 								)}
 								{communityStats?.fastestResponder && (
-									<div>
-										<p className="text-xl">Fastest responder</p>
-										{communityStats.fastestResponder.timeTakenMs !== null && (
-											<p className="text-sm text-zinc-400">
-												in{" "}
-												{formatTimeTaken(
-													communityStats.fastestResponder.timeTakenMs
-												)}
-											</p>
-										)}
-										<div className="flex flex-col items-center gap-2 mt-2 w-32">
-											<AvatarWithBorder
-												photoUrl={communityStats.fastestResponder.photoUrl}
-												displayName={
-													communityStats.fastestResponder.displayName ??
-													communityStats.fastestResponder.id
-												}
-												borderId={
-													communityStats.fastestResponder.equippedBorderId
-												}
-												size="xl"
-											/>
-											<p
-												className="w-full truncate text-sm text-center"
-												title={communityStats.fastestResponder.displayName}
-											>
-												{communityStats.fastestResponder.displayName}
-											</p>
-											<UserTitle role={communityStats.fastestResponder.role} />
-										</div>
-									</div>
+									<CommunityAwardCard
+										title="Fastest responder"
+										user={communityStats.fastestResponder}
+									/>
 								)}
 								{communityStats?.firstGood && (
-									<div>
-										<p className="text-xl">First good</p>
-										{communityStats.firstGood.timeTakenMs !== null && (
-											<p className="text-sm text-zinc-400">
-												in{" "}
-												{formatTimeTaken(communityStats.firstGood.timeTakenMs)}
-											</p>
-										)}
-										<div className="flex flex-col items-center gap-2 mt-2 w-32">
-											<AvatarWithBorder
-												photoUrl={communityStats.firstGood.photoUrl}
-												displayName={
-													communityStats.firstGood.displayName ??
-													communityStats.firstGood.id
-												}
-												borderId={communityStats.firstGood.equippedBorderId}
-												size="xl"
-											/>
-											<p
-												className="w-full truncate text-sm text-center"
-												title={communityStats.firstGood.displayName}
-											>
-												{communityStats.firstGood.displayName}
-											</p>
-											<UserTitle role={communityStats.firstGood.role} />
-										</div>
-									</div>
+									<CommunityAwardCard
+										title="First good"
+										user={communityStats.firstGood}
+									/>
 								)}
 							</div>
 							{communityStats?.playersInActiveRun &&

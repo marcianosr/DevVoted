@@ -9,6 +9,7 @@ import type {
 	SlotEvaluationStatus,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { formatCurrentStat } from "~/domains/runs/utils/formatCurrentStat";
+import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -28,20 +29,6 @@ type UpgradePipelineSectionProps = {
 	isPending?: boolean;
 	evaluationContext?: PipelineEvaluationContext;
 	evaluation?: PipelineEvaluation;
-};
-
-const DIFFICULTY_LABEL: Record<GateDifficulty, string> = {
-	low: "low",
-	medium: "medium",
-	high: "high",
-	critical: "critical",
-};
-
-const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
-	low: "text-blue-400 border-blue-400",
-	medium: "text-green-400 border-green-400",
-	high: "text-orange-400 border-orange-400",
-	critical: "text-red-500 border-red-500",
 };
 
 const SelectButton = ({
@@ -118,7 +105,7 @@ const DifficultyLabel = ({
 	text?: string;
 }) => (
 	<span className={DIFFICULTY_CLASSES[difficulty]}>
-		<span className="text-white">{text}</span> {DIFFICULTY_LABEL[difficulty]}
+		<span className="text-white">{text}</span> {difficulty}
 	</span>
 );
 

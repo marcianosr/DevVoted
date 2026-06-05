@@ -1,13 +1,11 @@
 import { formatStorage } from "~/lib/storage";
-import type {
-	GateDifficulty,
-	PipelineSlot,
-} from "~/domains/runs/models/pipeline.model";
+import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
 import type {
 	PipelineEvaluation,
 	SlotEvaluationStatus,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
+import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -17,13 +15,6 @@ type PipelineDisplayProps = {
 	slots: PipelineSlot[];
 	evaluation?: PipelineEvaluation;
 	totalPollsAnswered: number;
-};
-
-const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
-	low: "text-green-400 border-green-400",
-	medium: "text-blue-400 border-blue-400",
-	high: "text-orange-400 border-orange-400",
-	critical: "text-red-500 border-red-500",
 };
 
 type StatusWithInProgress = SlotEvaluationStatus | "in-progress";

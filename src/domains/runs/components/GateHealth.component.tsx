@@ -1,13 +1,11 @@
-import type {
-	GateDifficulty,
-	PipelineSlot,
-} from "~/domains/runs/models/pipeline.model";
+import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
 import type {
 	PipelineEvaluation,
 	PipelineEvaluationContext,
 	SlotEvaluationStatus,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { formatCurrentStat } from "~/domains/runs/utils/formatCurrentStat";
+import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
 import {
 	formatRequirement,
 	getSlotLabel,
@@ -24,13 +22,6 @@ const STATUS_ICON: Record<StatusWithInProgress, React.ReactNode> = {
 	skipped: (
 		<span className="inline-block w-3 h-3 rounded-full bg-gray-400 shrink-0 mt-1" />
 	),
-};
-
-const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
-	low: "text-blue-400",
-	medium: "text-green-400",
-	high: "text-orange-400",
-	critical: "text-red-500",
 };
 
 const STATUS_LABEL: Record<StatusWithInProgress, React.ReactNode> = {

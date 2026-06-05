@@ -68,7 +68,7 @@ const CategoryWeightsDisplay = () => {
 	const categoryItems = calculatePercentages(weights);
 
 	return (
-		<section className="mt-8 py-8 border-t border-gray-700">
+		<section className="py-8 border-t border-theme">
 			<h3 className="text-2xl mb-4">Tomorrow&apos;s Category Chances</h3>
 
 			{/* Stacked bar */}

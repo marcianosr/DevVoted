@@ -1,9 +1,9 @@
 import { AvatarWithBorder } from "~/domains/economy/components/AvatarWithBorder.component";
 import type {
-	GateDifficulty,
 	GateTypeId,
 	PipelineSlot,
 } from "~/domains/runs/models/pipeline.model";
+import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
 import { formatRequirement } from "~/domains/runs/utils/formatPipelineRequirement";
 import { CATEGORY_METADATA } from "~/domains/shared/categories";
 import {
@@ -38,20 +38,6 @@ const getSlotName = (slot: PipelineSlot): string => {
 	return SLOT_NAME[slot.gateTypeId];
 };
 
-const DIFFICULTY_LABEL: Record<GateDifficulty, string> = {
-	low: "Easy",
-	medium: "Med",
-	high: "Hard",
-	critical: "Crit",
-};
-
-const DIFFICULTY_COLOR: Record<GateDifficulty, string> = {
-	low: "text-emerald-400",
-	medium: "text-cyan-400",
-	high: "text-amber-300",
-	critical: "text-red-400",
-};
-
 const PipelineStrip = ({ slots }: { slots: PipelineSlot[] }) => {
 	if (slots.length === 0) return null;
 	return (
@@ -68,9 +54,9 @@ const PipelineStrip = ({ slots }: { slots: PipelineSlot[] }) => {
 					>
 						<span className="text-gray-300 truncate">{getSlotName(slot)}</span>
 						<span
-							className={`${DIFFICULTY_COLOR[slot.difficulty]} text-[10px] uppercase tracking-wide`}
+							className={`${DIFFICULTY_CLASSES[slot.difficulty]} text-[10px] uppercase tracking-wide`}
 						>
-							{DIFFICULTY_LABEL[slot.difficulty]}
+							{slot.difficulty}
 						</span>
 					</li>
 				))}

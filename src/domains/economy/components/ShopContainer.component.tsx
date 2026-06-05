@@ -182,6 +182,10 @@ const ShopContainer = ({
 						</p>
 					)}
 				</div>
+				<p className="text-white text-sm">
+					Left-over storage can be accumulated and saved to your profile when
+					your run is over — spend it on a cool border for instance!
+				</p>
 			</div>
 
 			<div className="mt-8 max-w-xs">
