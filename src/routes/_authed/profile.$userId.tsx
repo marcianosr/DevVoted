@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ArchiveSummary } from "~/domains/economy/components/ArchiveSummary.component";
-import { AvatarWithBorder } from "~/domains/economy/components/AvatarWithBorder.component";
+import { Avatar } from "~/domains/users/components/Avatar.component";
 import { BorderShop } from "~/domains/economy/components/BorderShop.component";
 import { useArchiveState } from "~/domains/economy/hooks/useArchiveState";
 import { Polldex } from "~/domains/polls/components/Polldex.component";
@@ -17,11 +17,15 @@ const ProfilePage: React.FC = () => {
 		<section className="min-h-screen">
 			<div className="max-w-7xl mx-auto p-4 space-y-8">
 				<header className="flex items-center gap-4">
-					<AvatarWithBorder
-						photoUrl={user?.photoUrl ?? null}
-						displayName={user?.displayName ?? userId}
-						borderId={archive?.equippedBorderId ?? null}
-						size="xl"
+					<Avatar
+						user={{
+							id: userId,
+							displayName: user?.displayName ?? userId,
+							photoUrl: user?.photoUrl,
+							equippedBorderId: archive?.equippedBorderId ?? null,
+						}}
+						size="2xl"
+						shape="square"
 					/>
 					<div>
 						<h1 className="text-3xl text-theme">

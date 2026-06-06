@@ -11,7 +11,7 @@ import {
 	parseCompletionReason,
 	type ParsedCompletion,
 } from "~/domains/runs/utils/parseCompletionReason";
-import UserAvatar from "~/domains/users/components/UserAvatar.component";
+import { Avatar } from "~/domains/users/components/Avatar.component";
 import { formatStorage } from "~/lib/storage";
 import { PrimaryButton } from "~/ui/PrimaryButton.component";
 import { SecondaryButton } from "~/ui/SecondaryButton.component";
@@ -79,7 +79,7 @@ export const FallenPlayerModal = ({
 			<div className="p-6 space-y-4">
 				<header className="flex items-center gap-3">
 					<div className="grayscale opacity-80">
-						<UserAvatar user={player} size="sm" />
+						<Avatar user={player} size="sm" />
 					</div>
 					<div>
 						<h2 className="text-xl text-white">
@@ -100,7 +100,7 @@ export const FallenPlayerModal = ({
 
 				{isLooted && player.lootedBy && (
 					<section className="border border-emerald-500/50 bg-emerald-950/40 p-3 flex items-center gap-3">
-						<UserAvatar user={player.lootedBy} size="sm" />
+						<Avatar user={player.lootedBy} size="sm" />
 						<p className="text-emerald-200 text-sm">
 							Looted by{" "}
 							<span className="text-white">{player.lootedBy.displayName}</span>

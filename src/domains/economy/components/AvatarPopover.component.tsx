@@ -1,4 +1,3 @@
-import { AvatarWithBorder } from "~/domains/economy/components/AvatarWithBorder.component";
 import type { ActiveRunProgress } from "~/domains/polls/api/communityStats.queries";
 import type {
 	GateTypeId,
@@ -8,15 +7,17 @@ import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
 import { formatRequirement } from "~/domains/runs/utils/formatPipelineRequirement";
 import { CATEGORY_METADATA } from "~/domains/shared/categories";
 import {
+	Avatar,
+	type AvatarUser,
+} from "~/domains/users/components/Avatar.component";
+import {
 	UserTitle,
 	type UserRole,
 } from "~/domains/users/components/UserTitle.component";
 import { Popover } from "~/ui/Popover.component";
 
 type AvatarPopoverProps = {
-	displayName: string;
-	photoUrl: string | null | undefined;
-	borderId: string | null;
+	user: AvatarUser & { displayName?: string | null };
 	role?: UserRole | string | null;
 	pipelineSlots?: PipelineSlot[] | null;
 	activeRunProgress?: ActiveRunProgress | null;
@@ -84,34 +85,30 @@ const PipelineStrip = ({
 };
 
 export const AvatarPopover = ({
-	displayName,
-	photoUrl,
-	borderId,
+	user,
 	role,
 	pipelineSlots,
 	activeRunProgress,
 	children,
-}: AvatarPopoverProps) => (
-	<Popover
-		ariaLabel={`Show ${displayName}'s avatar`}
-		content={
-			<div className="flex flex-col items-center gap-2 w-40">
-				<AvatarWithBorder
-					photoUrl={photoUrl}
-					displayName={displayName}
-					borderId={borderId}
-					size="lg"
-				/>
-				<span className="text-sm text-white text-center w-full truncate">
-					{displayName}
-				</span>
-				<UserTitle role={role} />
-				{pipelineSlots && pipelineSlots.length > 0 && (
-					<PipelineStrip slots={pipelineSlots} progress={activeRunProgress} />
-				)}
-			</div>
-		}
-	>
-		{children}
-	</Popover>
-);
+}: AvatarPopoverProps) => {
+	const displayName = user.displayName ?? user.id;
+	return (
+		<Popover
+			ariaLabel={`Show ${displayName}'s avatar`}
+			content={
+				<div className="flex flex-col items-center gap-2 w-40">
+					<Avatar user={user} size="xl" shape="square" />
+					<span className="text-sm text-white text-center w-full truncate">
+						{displayName}
+					</span>
+					<UserTitle role={role} />
+					{pipelineSlots && pipelineSlots.length > 0 && (
+						<PipelineStrip slots={pipelineSlots} progress={activeRunProgress} />
+					)}
+				</div>
+			}
+		>
+			{children}
+		</Popover>
+	);
+};

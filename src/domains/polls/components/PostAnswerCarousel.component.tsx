@@ -3,11 +3,9 @@ import { useState } from "react";
 import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
-import UserAvatar from "~/domains/users/components/UserAvatar.component";
-import { UserTitle } from "~/domains/users/components/UserTitle.component";
+import { Avatar } from "~/domains/users/components/Avatar.component";
 import { AwardsGrid } from "~/domains/awards/components/AwardsGrid.component";
 import { AvatarPopover } from "~/domains/economy/components/AvatarPopover.component";
-import { AvatarWithBorder } from "~/domains/economy/components/AvatarWithBorder.component";
 import ExposedConfigDeckDisplay from "~/domains/economy/components/ExposedConfigDeckDisplay.component";
 import { Config } from "~/domains/economy/models/config.model";
 import ShopContainer from "~/domains/economy/components/ShopContainer.component";
@@ -73,38 +71,23 @@ const formatTimeTaken = (ms: number | null): string | null => {
 	return formatDuration(duration, { format: ["hours", "minutes", "seconds"] });
 };
 
-type CommunityAwardCardProps = {
+type CommunityAwardRowProps = {
 	title: string;
-	subtitle?: React.ReactNode;
+	meta?: React.ReactNode;
 	user: NonNullable<CommunityStats["firstToAnswer"]>;
 };
 
-const CommunityAwardCard = ({
-	title,
-	subtitle,
-	user,
-}: CommunityAwardCardProps) => (
-	<div className="w-48 flex flex-col items-center text-center">
-		<div className="space-y-1 min-h-[6rem] w-full">
-			<p className="text-xl">{title}</p>
-			{subtitle && <p className="text-sm text-zinc-400">{subtitle}</p>}
-		</div>
-		<div className="flex flex-col items-center gap-3 w-32 mt-6">
-			<AvatarWithBorder
-				photoUrl={user.photoUrl}
-				displayName={user.displayName ?? user.id}
-				borderId={user.equippedBorderId}
-				size="xl"
-			/>
-			<p
-				className="w-full truncate text-sm"
-				title={user.displayName ?? undefined}
-			>
-				{user.displayName}
+const CommunityAwardRow = ({ title, meta, user }: CommunityAwardRowProps) => (
+	<li className="flex items-center gap-4 py-3">
+		<Avatar user={user} size="lg" shape="square" />
+		<div className="min-w-0 flex-1">
+			<p className="text-lg text-amber-200">{title}</p>
+			<p className="text-base text-white truncate">
+				<span>{user.displayName ?? user.id}</span>
+				{meta && <span className="text-zinc-300"> · {meta}</span>}
 			</p>
-			<UserTitle role={user.role} />
 		</div>
-	</div>
+	</li>
 );
 
 const timeTakenSubtitle = (ms: number | null) =>
@@ -247,11 +230,7 @@ export const PostAnswerCarousel = ({
 																		{opt.voters.map((user) => (
 																			<AvatarPopover
 																				key={user.id}
-																				displayName={
-																					user.displayName ?? user.id
-																				}
-																				photoUrl={user.photoUrl}
-																				borderId={user.equippedBorderId}
+																				user={user}
 																				role={user.role}
 																				pipelineSlots={
 																					user.activeRunPipelineSlots
@@ -260,13 +239,10 @@ export const PostAnswerCarousel = ({
 																					user.activeRunProgress
 																				}
 																			>
-																				<AvatarWithBorder
-																					photoUrl={user.photoUrl}
-																					displayName={
-																						user.displayName ?? user.id
-																					}
-																					borderId={user.equippedBorderId}
-																					size="xs"
+																				<Avatar
+																					user={user}
+																					size="sm"
+																					shape="square"
 																				/>
 																			</AvatarPopover>
 																		))}
@@ -296,66 +272,68 @@ export const PostAnswerCarousel = ({
 							<div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xl">
 								<span>
 									{communityStats?.totalResponses} player(s) participated in
-									today&apos;s poll
+									today&apos;s poll ·
 								</span>
 								<div className="flex -space-x-2">
 									{communityStats?.users.map((user) => (
 										<AvatarPopover
 											key={user.id}
-											displayName={user.displayName ?? user.id}
-											photoUrl={user.photoUrl}
-											borderId={user.equippedBorderId}
+											user={user}
 											role={user.role}
 											pipelineSlots={user.activeRunPipelineSlots}
 											activeRunProgress={user.activeRunProgress}
 										>
-											<UserAvatar user={user} />
+											<Avatar user={user} />
 										</AvatarPopover>
 									))}
 								</div>
 							</div>
-							<div className="flex flex-wrap gap-6 mt-4">
-								{communityStats?.firstToAnswer && (
-									<CommunityAwardCard
-										title="First to answer"
-										subtitle={timeTakenSubtitle(
-											communityStats.firstToAnswer.timeTakenMs
-										)}
-										user={communityStats.firstToAnswer}
-									/>
-								)}
-								{communityStats?.fastestResponder && (
-									<CommunityAwardCard
-										title="Fastest responder"
-										subtitle={timeTakenSubtitle(
-											communityStats.fastestResponder.timeTakenMs
-										)}
-										user={communityStats.fastestResponder}
-									/>
-								)}
-								{communityStats?.firstGood && (
-									<CommunityAwardCard
-										title="First good"
-										subtitle={timeTakenSubtitle(
-											communityStats.firstGood.timeTakenMs
-										)}
-										user={communityStats.firstGood}
-									/>
-								)}
-								{communityStats?.mostPollsInCategory && (
-									<CommunityAwardCard
-										title={`Most polls in ${CATEGORY_METADATA[communityStats.mostPollsInCategory.categoryCode].name}`}
-										subtitle={`Answered the most polls in ${CATEGORY_METADATA[communityStats.mostPollsInCategory.categoryCode].name} with ${communityStats.mostPollsInCategory.count} poll${communityStats.mostPollsInCategory.count === 1 ? "" : "s"}!`}
-										user={communityStats.mostPollsInCategory.user}
-									/>
-								)}
-								{communityStats?.mostCorrectInCategory && (
-									<CommunityAwardCard
-										title={`Most correct in ${CATEGORY_METADATA[communityStats.mostCorrectInCategory.categoryCode].name}`}
-										subtitle={`Answered the most polls correctly in ${CATEGORY_METADATA[communityStats.mostCorrectInCategory.categoryCode].name} with ${communityStats.mostCorrectInCategory.count} poll${communityStats.mostCorrectInCategory.count === 1 ? "" : "s"}!`}
-										user={communityStats.mostCorrectInCategory.user}
-									/>
-								)}
+							<div className="pt-2">
+								<h4 className="text-2xl text-amber-200">Top Committers</h4>
+								<p className="text-zinc-300">Players who stood out today</p>
+								<ul>
+									{communityStats?.firstToAnswer && (
+										<CommunityAwardRow
+											title="First to answer"
+											meta={timeTakenSubtitle(
+												communityStats.firstToAnswer.timeTakenMs
+											)}
+											user={communityStats.firstToAnswer}
+										/>
+									)}
+									{communityStats?.fastestResponder && (
+										<CommunityAwardRow
+											title="Fastest responder"
+											meta={timeTakenSubtitle(
+												communityStats.fastestResponder.timeTakenMs
+											)}
+											user={communityStats.fastestResponder}
+										/>
+									)}
+									{communityStats?.firstGood && (
+										<CommunityAwardRow
+											title="First good"
+											meta={timeTakenSubtitle(
+												communityStats.firstGood.timeTakenMs
+											)}
+											user={communityStats.firstGood}
+										/>
+									)}
+									{communityStats?.mostPollsInCategory && (
+										<CommunityAwardRow
+											title={`Highest participation in ${CATEGORY_METADATA[communityStats.mostPollsInCategory.categoryCode].name}`}
+											meta={`${communityStats.mostPollsInCategory.count} poll${communityStats.mostPollsInCategory.count === 1 ? "" : "s"}`}
+											user={communityStats.mostPollsInCategory.user}
+										/>
+									)}
+									{communityStats?.mostCorrectInCategory && (
+										<CommunityAwardRow
+											title={`Highest correctly answered polls in ${CATEGORY_METADATA[communityStats.mostCorrectInCategory.categoryCode].name}`}
+											meta={`${communityStats.mostCorrectInCategory.count} poll${communityStats.mostCorrectInCategory.count === 1 ? "" : "s"}`}
+											user={communityStats.mostCorrectInCategory.user}
+										/>
+									)}
+								</ul>
 							</div>
 							{communityStats?.playersInActiveRun &&
 								(communityStats.playersInActiveRun.length > 0 ||

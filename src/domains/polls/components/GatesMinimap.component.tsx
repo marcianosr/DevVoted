@@ -8,7 +8,7 @@ import type {
 } from "~/domains/polls/api/communityStats.queries";
 import { AvatarPopover } from "~/domains/economy/components/AvatarPopover.component";
 import FallenPlayerModal from "~/domains/polls/components/FallenPlayerModal.component";
-import UserAvatar from "~/domains/users/components/UserAvatar.component";
+import { Avatar } from "~/domains/users/components/Avatar.component";
 
 type GatesMinimapProps = {
 	players: ActiveRunPlayer[];
@@ -55,14 +55,14 @@ const FallenAvatar = ({ player, onSelect }: FallenAvatarProps) => {
 			aria-label={`See why ${player.displayName} died`}
 		>
 			<div className="grayscale opacity-60">
-				<UserAvatar user={player} size="sm" />
+				<Avatar user={player} size="sm" />
 			</div>
 			{isLooted && player.lootedBy ? (
 				<span
 					className="absolute -bottom-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-zinc-900 overflow-hidden bg-zinc-800"
 					aria-hidden="true"
 				>
-					<UserAvatar user={player.lootedBy} size="xs" />
+					<Avatar user={player.lootedBy} size="xs" />
 				</span>
 			) : (
 				<span
@@ -152,12 +152,10 @@ const GatesMinimap = ({
 									{visibleLive.map((player) => (
 										<AvatarPopover
 											key={player.id}
-											displayName={player.displayName ?? player.id}
-											photoUrl={player.photoUrl}
-											borderId={player.equippedBorderId}
+											user={player}
 											pipelineSlots={player.pipelineSlots}
 										>
-											<UserAvatar user={player} size="sm" />
+											<Avatar user={player} size="sm" />
 										</AvatarPopover>
 									))}
 								</div>
