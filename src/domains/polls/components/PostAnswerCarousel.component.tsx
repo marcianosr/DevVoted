@@ -4,7 +4,6 @@ import { clsx } from "clsx";
 import { formatDuration, intervalToDuration } from "date-fns";
 
 import { Avatar } from "~/domains/users/components/Avatar.component";
-import { AwardsGrid } from "~/domains/awards/components/AwardsGrid.component";
 import { AvatarPopover } from "~/domains/economy/components/AvatarPopover.component";
 import ExposedConfigDeckDisplay from "~/domains/economy/components/ExposedConfigDeckDisplay.component";
 import { Config } from "~/domains/economy/models/config.model";
@@ -63,7 +62,7 @@ type PostAnswerCarouselProps = {
 	date: string;
 };
 
-const STEPS = ["Today's Poll", "Score & Pipelines", "Shop"] as const;
+const STEPS = ["Today's Poll", "Coverage", "Pipelines", "Shop"] as const;
 
 const formatTimeTaken = (ms: number | null): string | null => {
 	if (ms === null) return null;
@@ -81,7 +80,7 @@ const CommunityAwardRow = ({ title, meta, user }: CommunityAwardRowProps) => (
 	<li className="flex items-center gap-4 py-3">
 		<Avatar user={user} size="lg" shape="square" />
 		<div className="min-w-0 flex-1">
-			<p className="text-lg text-amber-200">{title}</p>
+			<p className="text-lg text-theme">{title}</p>
 			<p className="text-base text-white truncate">
 				<span>{user.displayName ?? user.id}</span>
 				{meta && <span className="text-zinc-300"> · {meta}</span>}
@@ -173,89 +172,103 @@ export const PostAnswerCarousel = ({
 						</section>
 
 						<section className="space-y-2">
-							{communityStats?.optionBreakdown &&
-								communityStats.optionBreakdown.length > 0 && (
-									<>
-										<p className="text-2xl">
-											{communityStats.totalResponses} other player
-											{communityStats.totalResponses === 1 ? "" : "s"} answered:
-										</p>
-										<ul className="flex flex-col gap-4">
-											{sortCommunityOptions(communityStats.optionBreakdown).map(
-												(opt) => {
-													const hasVotes = opt.voters.length > 0;
-													const isYourPick = selectedOptions.includes(
-														opt.optionId.toString()
-													);
-													return (
-														<li
-															key={opt.optionId}
-															className={clsx(
-																"flex items-center gap-3 border-l-4",
-																isYourPick
-																	? "border-theme bg-theme/30"
-																	: "border-transparent"
-															)}
-														>
-															<span
-																className={clsx(
-																	"shrink-0 inline-flex items-center justify-center w-5 h-5 text-lg",
-																	opt.isCorrect
-																		? "text-green-400"
-																		: "text-red-400"
-																)}
-																aria-label={
-																	opt.isCorrect
-																		? "Correct option"
-																		: "Incorrect option"
-																}
-															>
-																{opt.isCorrect ? "✓" : "✗"}
-															</span>
-															<div className="text-white markdown flex-1 min-w-0 wrap-break-word [&_p]:m-0">
-																<MarkdownText>{opt.optionText}</MarkdownText>
-															</div>
-															<div className="shrink-0 flex items-center gap-2 text-sm">
-																{isYourPick && (
-																	<span className="px-1.5 py-0.5 text-xs uppercase tracking-wide bg-theme text-black">
-																		Your pick
-																	</span>
-																)}
-																<span>
-																	{opt.voters.length} pick
-																	{opt.voters.length === 1 ? "" : "s"}
-																</span>
-																{hasVotes && (
-																	<div className="flex -space-x-2 items-center">
-																		{opt.voters.map((user) => (
-																			<AvatarPopover
-																				key={user.id}
-																				user={user}
-																				role={user.role}
-																				pipelineSlots={
-																					user.activeRunPipelineSlots
-																				}
-																				activeRunProgress={
-																					user.activeRunProgress
-																				}
-																			>
-																				<Avatar
-																					user={user}
-																					size="sm"
-																					shape="square"
-																				/>
-																			</AvatarPopover>
-																		))}
-																	</div>
-																)}
-															</div>
-														</li>
-													);
-												}
-											)}
-										</ul>
-									</>
+							<h2 className="text-4xl">Review your answer</h2>
+							<div className="flex flex-col lg:flex-row gap-8">
+								{score && (
+									<aside className="lg:w-80 shrink-0 bg-zinc-900 p-4">
+										<ScoreBlock
+											score={score}
+											perConfigCoverageEffects={perConfigCoverageEffects}
+										/>
+									</aside>
 								)}
+								<div className="flex-1 min-w-0 space-y-2">
+									{communityStats?.optionBreakdown &&
+										communityStats.optionBreakdown.length > 0 && (
+											<>
+												<p className="text-xl text-zinc-300">
+													{communityStats.totalResponses} other player
+													{communityStats.totalResponses === 1 ? "" : "s"}{" "}
+													answered:
+												</p>
+												<ul className="flex flex-col gap-4">
+													{sortCommunityOptions(
+														communityStats.optionBreakdown
+													).map((opt) => {
+														const hasVotes = opt.voters.length > 0;
+														const isYourPick = selectedOptions.includes(
+															opt.optionId.toString()
+														);
+														return (
+															<li
+																key={opt.optionId}
+																className={clsx(
+																	"flex items-center gap-3 border-l-4",
+																	isYourPick
+																		? "border-theme bg-theme/30"
+																		: "border-transparent"
+																)}
+															>
+																<span
+																	className={clsx(
+																		"shrink-0 inline-flex items-center justify-center w-5 h-5 text-lg",
+																		opt.isCorrect
+																			? "text-green-400"
+																			: "text-red-400"
+																	)}
+																	aria-label={
+																		opt.isCorrect
+																			? "Correct option"
+																			: "Incorrect option"
+																	}
+																>
+																	{opt.isCorrect ? "✓" : "✗"}
+																</span>
+																<div className="text-white markdown flex-1 min-w-0 wrap-break-word [&_p]:m-0">
+																	<MarkdownText>{opt.optionText}</MarkdownText>
+																</div>
+																<div className="shrink-0 flex items-center gap-2 text-sm">
+																	{isYourPick && (
+																		<span className="px-1.5 py-0.5 text-xs uppercase tracking-wide bg-theme text-black">
+																			Your pick
+																		</span>
+																	)}
+																	<span>
+																		{opt.voters.length} pick
+																		{opt.voters.length === 1 ? "" : "s"}
+																	</span>
+																	{hasVotes && (
+																		<div className="flex -space-x-2 items-center">
+																			{opt.voters.map((user) => (
+																				<AvatarPopover
+																					key={user.id}
+																					user={user}
+																					role={user.role}
+																					pipelineSlots={
+																						user.activeRunPipelineSlots
+																					}
+																					activeRunProgress={
+																						user.activeRunProgress
+																					}
+																				>
+																					<Avatar
+																						user={user}
+																						size="sm"
+																						shape="square"
+																					/>
+																				</AvatarPopover>
+																			))}
+																		</div>
+																	)}
+																</div>
+															</li>
+														);
+													})}
+												</ul>
+											</>
+										)}
+								</div>
+							</div>
 
 							{explanation && (
 								<div className="mt-6 p-4 bg-gray-800/40 border border-gray-700">
@@ -289,7 +302,7 @@ export const PostAnswerCarousel = ({
 								</div>
 							</div>
 							<div className="pt-2">
-								<h4 className="text-2xl text-amber-200">Top Committers</h4>
+								<h4 className="text-2xl text-theme">Top Committers</h4>
 								<p className="text-zinc-300">Players who stood out today</p>
 								<ul>
 									{communityStats?.firstToAnswer && (
@@ -353,42 +366,29 @@ export const PostAnswerCarousel = ({
 				)}
 
 				{step === 1 && (
-					<div className="space-y-8">
-						<div className="flex flex-col gap-8 md:flex-row md:gap-12">
-							<div className="md:w-1/3 shrink-0">
-								{score ? (
-									<ScoreBlock
-										score={score}
-										perConfigCoverageEffects={perConfigCoverageEffects}
-									/>
-								) : (
-									<p className="text-zinc-500 text-xl">No score available.</p>
-								)}
-							</div>
-							{pipeline && pipeline.slots.length > 0 && (
-								<div className="flex-1 min-w-0">
-									<CurrentPipeline
-										slots={pipeline.slots}
-										evaluationContext={pipeline.evaluationContext}
-										evaluation={pipeline.evaluation}
-									/>
-								</div>
-							)}
-						</div>
-						<section className="md:w-1/2">
-							<CategoryCoverageGrid
-								categoryCoverage={activeRun.categoryCoverage}
-								currentCategoryCode={categoryCode}
-							/>
-						</section>
-
-						<section className="border-t border-theme pt-8">
-							<AwardsGrid />
-						</section>
-					</div>
+					<section>
+						<CategoryCoverageGrid
+							categoryCoverage={activeRun.categoryCoverage}
+							currentCategoryCode={categoryCode}
+						/>
+					</section>
 				)}
 
 				{step === 2 && (
+					<div>
+						{pipeline && pipeline.slots.length > 0 ? (
+							<CurrentPipeline
+								slots={pipeline.slots}
+								evaluationContext={pipeline.evaluationContext}
+								evaluation={pipeline.evaluation}
+							/>
+						) : (
+							<p className="text-zinc-500 text-xl">No pipeline available.</p>
+						)}
+					</div>
+				)}
+
+				{step === 3 && (
 					<ShopContainer
 						activeRun={activeRun}
 						offeredConfigs={offeredConfigs}

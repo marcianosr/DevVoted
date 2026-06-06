@@ -125,9 +125,15 @@ const GatesMinimap = ({
 					{sortedGates.map((gate) => {
 						const live = liveGroups.get(gate) ?? [];
 						const fallen = fallenGroups.get(gate) ?? [];
-						const visibleLive = live.slice(0, MAX_VISIBLE_AVATARS);
+						const liveHasOverflow = live.length > MAX_VISIBLE_AVATARS;
+						const visibleLive = liveHasOverflow
+							? live.slice(0, MAX_VISIBLE_AVATARS - 1)
+							: live;
 						const liveOverflow = live.length - visibleLive.length;
-						const visibleFallen = fallen.slice(0, MAX_VISIBLE_AVATARS);
+						const fallenHasOverflow = fallen.length > MAX_VISIBLE_AVATARS;
+						const visibleFallen = fallenHasOverflow
+							? fallen.slice(0, MAX_VISIBLE_AVATARS - 1)
+							: fallen;
 						const fallenOverflow = fallen.length - visibleFallen.length;
 						const leftPercent = computeTrackPosition(gate, leaderGate);
 
@@ -154,6 +160,7 @@ const GatesMinimap = ({
 											key={player.id}
 											user={player}
 											pipelineSlots={player.pipelineSlots}
+											activeRunProgress={player.activeRunProgress}
 										>
 											<Avatar user={player} size="sm" />
 										</AvatarPopover>

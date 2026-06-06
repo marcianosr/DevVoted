@@ -43,6 +43,7 @@ export type ActiveRunPlayer = User & {
 	equippedBorderId: string | null;
 	currentGate: number;
 	pipelineSlots: PipelineSlot[];
+	activeRunProgress: ActiveRunProgress;
 };
 
 export type FallenRunPlayer = User & {
@@ -235,6 +236,7 @@ export const getCommunityStatsForDailyPoll = async (
 		const pipelineSlots = (row.pipelineSlots ?? []) as PipelineSlot[];
 		const windowSize = getWindowSize(pipelineSlots);
 		const currentGate = Math.max(1, Math.ceil(row.pollsAnswered / windowSize));
+		const pollsInWindow = row.pollsAnswered % windowSize;
 		return {
 			id: row.id,
 			email: row.email,
@@ -243,6 +245,7 @@ export const getCommunityStatsForDailyPoll = async (
 			equippedBorderId: row.equippedBorderId,
 			currentGate,
 			pipelineSlots,
+			activeRunProgress: { pollsInWindow, windowSize, currentGate },
 		};
 	});
 
