@@ -19,7 +19,6 @@ import type {
 	PipelineEvaluation,
 	PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid.component";
 import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
 import type { Run } from "~/domains/runs/models/run.model";
 import type { ScoreCalculation } from "~/domains/runs/services/score.service";
@@ -62,7 +61,7 @@ type PostAnswerCarouselProps = {
 	date: string;
 };
 
-const STEPS = ["Today's Poll", "Coverage", "Pipelines", "Shop"] as const;
+const STEPS = ["Today's Poll", "Pipeline", "Shop"] as const;
 
 const formatTimeTaken = (ms: number | null): string | null => {
 	if (ms === null) return null;
@@ -98,7 +97,6 @@ export const PostAnswerCarousel = ({
 	score,
 	perConfigCoverageEffects,
 	communityStats,
-	categoryCode,
 	explanation,
 	exposedConfigDeck,
 	pipeline,
@@ -174,14 +172,6 @@ export const PostAnswerCarousel = ({
 						<section className="space-y-2">
 							<h2 className="text-4xl">Review your answer</h2>
 							<div className="flex flex-col lg:flex-row gap-8">
-								{score && (
-									<aside className="lg:w-80 shrink-0 bg-zinc-900 p-4">
-										<ScoreBlock
-											score={score}
-											perConfigCoverageEffects={perConfigCoverageEffects}
-										/>
-									</aside>
-								)}
 								<div className="flex-1 min-w-0 space-y-2">
 									{communityStats?.optionBreakdown &&
 										communityStats.optionBreakdown.length > 0 && (
@@ -366,29 +356,30 @@ export const PostAnswerCarousel = ({
 				)}
 
 				{step === 1 && (
-					<section>
-						<CategoryCoverageGrid
-							categoryCoverage={activeRun.categoryCoverage}
-							currentCategoryCode={categoryCode}
-						/>
-					</section>
-				)}
-
-				{step === 2 && (
-					<div>
-						{pipeline && pipeline.slots.length > 0 ? (
-							<CurrentPipeline
-								slots={pipeline.slots}
-								evaluationContext={pipeline.evaluationContext}
-								evaluation={pipeline.evaluation}
-							/>
-						) : (
-							<p className="text-zinc-500 text-xl">No pipeline available.</p>
+					<div className="flex flex-col lg:flex-row gap-8">
+						{score && (
+							<aside className="lg:w-80 shrink-0 bg-zinc-900 p-4">
+								<ScoreBlock
+									score={score}
+									perConfigCoverageEffects={perConfigCoverageEffects}
+								/>
+							</aside>
 						)}
+						<div className="flex-1 min-w-0">
+							{pipeline && pipeline.slots.length > 0 ? (
+								<CurrentPipeline
+									slots={pipeline.slots}
+									evaluationContext={pipeline.evaluationContext}
+									evaluation={pipeline.evaluation}
+								/>
+							) : (
+								<p className="text-zinc-500 text-xl">No pipeline available.</p>
+							)}
+						</div>
 					</div>
 				)}
 
-				{step === 3 && (
+				{step === 2 && (
 					<ShopContainer
 						activeRun={activeRun}
 						offeredConfigs={offeredConfigs}
