@@ -62,18 +62,18 @@ const CardEntry = ({
 	return (
 		<div className="border border-white p-4 space-y-1">
 			<div className="flex items-center gap-2 mb-2">
-				<span className="text-gray-500">{isUpgrade ? "↑" : "+"}</span>
+				<span className="text-zinc-300">{isUpgrade ? "↑" : "+"}</span>
 				<span>{getSlotLabel(slot.gateTypeId)} · </span>
 				<DifficultyLabel difficulty={isUpgrade ? card.from : slot.difficulty} />
 				{isUpgrade && <DifficultyLabel text={"→"} difficulty={card.to} />}
 			</div>
-			<p className="text-gray-400 text-sm pl-4">
+			<p className="text-zinc-300 text-sm pl-4">
 				Requirement:{" "}
 				<span className="text-gray-200">
 					{formatRequirement(slot.requirement)}
 				</span>
 			</p>
-			<p className="text-gray-400 text-sm pl-4">
+			<p className="text-zinc-300 text-sm pl-4">
 				Reward on pass: <RewardBadge reward={slot.reward} />
 			</p>
 
@@ -92,8 +92,8 @@ const SectionHeader = ({
 	subtitle: string;
 }) => (
 	<div className="border border-white px-4 py-3">
-		<p className="text-gray-200 text-sm uppercase tracking-widest">{title}</p>
-		<p className="text-gray-500 text-xs mt-0.5">{subtitle}</p>
+		<h1 className="text-2xl">{title}</h1>
+		<p className="text-zinc-300 text-xs mt-0.5">{subtitle}</p>
 	</div>
 );
 
@@ -117,7 +117,7 @@ const STATUS_ICON: Record<StatusWithInProgress, React.ReactNode> = {
 	),
 	passed: <span className="text-green-400">✓</span>,
 	failed: <span className="text-red-400">✗</span>,
-	skipped: <span className="inline-block w-3 h-3 rounded-full bg-gray-400" />,
+	skipped: <span className="inline-block w-3 h-3 rounded-full bg-zinc-300" />,
 };
 
 const STATUS_GROUP_LABEL: Record<StatusWithInProgress, string> = {
@@ -288,9 +288,9 @@ export const UpgradePipelineSection = ({
 				evaluation={evaluation}
 			/>
 
-			<section className="flex flex-wrap gap-4">
+			<section className="flex flex-col gap-6">
 				{upgradeCards.length > 0 && (
-					<div>
+					<div className="space-y-4">
 						<SectionHeader
 							title="Modify Existing Slots"
 							subtitle="Increase difficulty, higher reward, higher risk"
@@ -307,12 +307,12 @@ export const UpgradePipelineSection = ({
 				)}
 
 				{addSlotCards.length > 0 && (
-					<div>
+					<div className="space-y-4">
 						<SectionHeader
 							title="Add New Slot"
 							subtitle="More constraints, harder to pass all"
 						/>
-						<div className="flex">
+						<div className="grid grid-cols-1 gap-4">
 							{addSlotCards.map((card, i) => (
 								<CardEntry
 									key={i}
