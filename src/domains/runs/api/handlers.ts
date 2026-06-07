@@ -14,7 +14,7 @@ import { skipShop } from "./shop.queries";
 import { endRunManually } from "../services/runCompletion.service";
 import {
 	MIN_GATE_FOR_MANUAL_END,
-	getCurrentGate,
+	getActiveGate,
 } from "../services/pipelineEvaluator.service";
 
 export const getOrCreateActiveRun = async (userId: string) => {
@@ -105,7 +105,7 @@ export const finishRunHandler = async (userId: string) => {
 		// Death (involuntary) keeps the tiered conversion (20/25/50/100 at gates
 		// 2/3/4/5+) — see archive.service.ts.
 		const { totalPollsAnswered } = await getRunStats(activeRun.id);
-		const gate = getCurrentGate(totalPollsAnswered, activeRun.pipelineSlots);
+		const gate = getActiveGate(totalPollsAnswered, activeRun.pipelineSlots);
 		if (gate < MIN_GATE_FOR_MANUAL_END) {
 			throw new Error(
 				`You need to reach gate ${MIN_GATE_FOR_MANUAL_END} before ending a run. Keep playing!`

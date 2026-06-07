@@ -72,6 +72,20 @@ export const getWindowSize = (slots: PipelineSlot[]): number => {
 	return req.pollCount;
 };
 
+// Gate the player is currently working toward. After clearing gate N (answering
+// N * windowSize polls), the next poll belongs to gate N+1, so this returns N+1.
+// Use for live UI: avatar popovers, nav state, pipeline header.
+export const getActiveGate = (
+	pollsAnswered: number,
+	slots: PipelineSlot[]
+): number => {
+	const windowSize = getWindowSize(slots);
+	return Math.floor(pollsAnswered / windowSize) + 1;
+};
+
+// Gate the player was attempting at the moment a poll was recorded. If they
+// failed gate N's last poll they died ON gate N (not N+1). Use for retrospective
+// semantics: death/quit reward tier, fallen-player display.
 export const getCurrentGate = (
 	pollsAnswered: number,
 	slots: PipelineSlot[]

@@ -13,7 +13,11 @@ import {
 } from "~/database/schema";
 import { evaluatePollAnswer } from "~/domains/polls/services/pollAnswerEvaluation.service";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
-import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
+import {
+	getActiveGate,
+	getCurrentGate,
+	getWindowSize,
+} from "~/domains/runs/services/pipelineEvaluator.service";
 import { isCategoryCode, type CategoryCode } from "~/domains/shared/categories";
 import type { User } from "~/domains/users/services/userSync.service";
 
@@ -196,7 +200,7 @@ export const getCommunityStatsForDailyPoll = async (
 			const slots = r.pipelineSlots as PipelineSlot[];
 			const windowSize = getWindowSize(slots);
 			const pollsInWindow = r.pollsAnswered % windowSize;
-			const currentGate = Math.max(1, Math.ceil(r.pollsAnswered / windowSize));
+			const currentGate = getActiveGate(r.pollsAnswered, slots);
 			return [
 				r.userId,
 				{
@@ -235,7 +239,7 @@ export const getCommunityStatsForDailyPoll = async (
 	const playersInActiveRun: ActiveRunPlayer[] = activeRunPlayers.map((row) => {
 		const pipelineSlots = (row.pipelineSlots ?? []) as PipelineSlot[];
 		const windowSize = getWindowSize(pipelineSlots);
-		const currentGate = Math.max(1, Math.ceil(row.pollsAnswered / windowSize));
+		const currentGate = getActiveGate(row.pollsAnswered, pipelineSlots);
 		const pollsInWindow = row.pollsAnswered % windowSize;
 		return {
 			id: row.id,
@@ -300,11 +304,8 @@ export const getCommunityStatsForDailyPoll = async (
 	const playersFallenOnDate: FallenRunPlayer[] = fallenRunPlayers.flatMap(
 		(row) => {
 			if (!row.finishedAt) return [];
-			const windowSize = getWindowSize(row.pipelineSlots as PipelineSlot[]);
-			const currentGate = Math.max(
-				1,
-				Math.ceil(row.pollsAnswered / windowSize)
-			);
+			const slots = row.pipelineSlots as PipelineSlot[];
+			const currentGate = getCurrentGate(row.pollsAnswered, slots);
 			const lootedBy = row.looterId
 				? {
 						id: row.looterId,

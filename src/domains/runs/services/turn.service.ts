@@ -21,6 +21,7 @@ import { incrementRunProgress } from "~/domains/runs/services/progress.service";
 import { generateUpgradeCards } from "~/domains/runs/services/pipeline.service";
 import {
 	evaluatePipeline,
+	getActiveGate,
 	getWindowSize,
 	type PipelineEvaluation,
 	type PipelineEvaluationContext,
@@ -223,7 +224,7 @@ const evaluatePipelineStage = async ({
 			0
 		),
 		pollsInWindow: windowSize,
-		currentGate: Math.floor(totalPollsAnswered / windowSize) + 1,
+		currentGate: getActiveGate(totalPollsAnswered, pipelineSlots),
 		firstConsecutiveCorrectFromWindowStart,
 		categoryPollResults: buildCategoryPollResults(windowResults),
 	};

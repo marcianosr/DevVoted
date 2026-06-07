@@ -1,7 +1,7 @@
 import type { Run } from "~/domains/runs/models/run.model";
 import {
 	MIN_GATE_FOR_MANUAL_END,
-	getCurrentGate,
+	getActiveGate,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import type { ApiResponse } from "~/utils/errorHandling";
 
@@ -34,7 +34,7 @@ export const deriveNavRunState = (
 		(sum, c) => sum + c.pollsAnswered,
 		0
 	);
-	const currentGate = getCurrentGate(totalPollsAnswered, run.pipelineSlots);
+	const currentGate = getActiveGate(totalPollsAnswered, run.pipelineSlots);
 
 	return {
 		hasActiveRun: true,

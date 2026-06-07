@@ -23,6 +23,7 @@ import { getAnsweredPollsCountInRun } from "~/domains/polls/api/pollResponse.que
 import { getWindowResults } from "~/domains/runs/api/window.queries";
 import {
 	buildCategoryPollResults,
+	getActiveGate,
 	getWindowSize,
 	type PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
@@ -194,7 +195,7 @@ export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 				0
 			),
 			pollsInWindow: windowSize,
-			currentGate: Math.floor(totalPollsAnswered / windowSize) + 1,
+			currentGate: getActiveGate(totalPollsAnswered, activeRun.pipelineSlots),
 			firstConsecutiveCorrectFromWindowStart,
 			categoryPollResults: buildCategoryPollResults(windowResults),
 		};

@@ -64,6 +64,7 @@ describe("deriveNavRunState", () => {
 	});
 
 	it("blocks End Run before gate 5 (anti-farm rule)", () => {
+		// 10 polls answered → cleared gates 1 & 2, currently working toward gate 3
 		const run = createMockRun({
 			id: 1,
 			categoryCoverage: [createMockRunCategoryCoverage({ pollsAnswered: 10 })],
@@ -71,14 +72,15 @@ describe("deriveNavRunState", () => {
 
 		const result = deriveNavRunState(buildActiveRunResponse(run));
 
-		expect(result.currentGate).toBe(2);
+		expect(result.currentGate).toBe(3);
 		expect(result.canEndRun).toBe(false);
 	});
 
 	it("allows End Run at gate 5+", () => {
+		// 20 polls answered → cleared gates 1-4, currently working toward gate 5
 		const run = createMockRun({
 			id: 1,
-			categoryCoverage: [createMockRunCategoryCoverage({ pollsAnswered: 25 })],
+			categoryCoverage: [createMockRunCategoryCoverage({ pollsAnswered: 20 })],
 		});
 
 		const result = deriveNavRunState(buildActiveRunResponse(run));
