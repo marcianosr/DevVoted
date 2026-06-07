@@ -223,7 +223,7 @@ const evaluatePipelineStage = async ({
 			0
 		),
 		pollsInWindow: windowSize,
-		currentGate: Math.max(1, Math.ceil(totalPollsAnswered / windowSize)),
+		currentGate: Math.floor(totalPollsAnswered / windowSize) + 1,
 		firstConsecutiveCorrectFromWindowStart,
 		categoryPollResults: buildCategoryPollResults(windowResults),
 	};
