@@ -7,6 +7,7 @@ type MarkdownTextProps = {
 
 const escapeMarkdownSyntax = (text: string): string =>
 	text
+		.replace(/&/g, "&amp;") // must run first so pre-existing entities (e.g. "&lt;") survive markdown's entity-decoding step
 		.replace(/^>/gm, "\\>") // blockquote
 		.replace(/^([-+*])\s*$/gm, "\\$1") // standalone list markers (no content after)
 		.replace(/</g, "&lt;") // HTML tags
