@@ -9,6 +9,10 @@ type StorageBreakdownProps = {
 	configsStorage: number;
 	rerollsStorage: number;
 	deinstallPenalty: number;
+	// Bytes the player spent from their archive at run-start to front-load
+	// storage_limit. Shown as a dedicated breakdown line so the source is
+	// distinct from gate-earned storage.
+	injectedArchive?: number;
 };
 
 const GAIN_HIGHLIGHT_DURATION_MS = 6000;
@@ -41,6 +45,7 @@ export const StorageBreakdown = ({
 	configsStorage,
 	rerollsStorage,
 	deinstallPenalty,
+	injectedArchive = 0,
 }: StorageBreakdownProps) => {
 	const usagePercentage =
 		storageLimit > 0 ? (storageUsed / storageLimit) * 100 : 0;
@@ -83,6 +88,12 @@ export const StorageBreakdown = ({
 			<div className="space-y-2">
 				<h4 className="text-sm text-gray-400">Breakdown</h4>
 				<dl className="space-y-1 text-sm">
+					{injectedArchive > 0 && (
+						<div className="flex justify-between text-amber-300">
+							<dt>Injected from archive</dt>
+							<dd>+{formatStorage(injectedArchive)}</dd>
+						</div>
+					)}
 					<div className="flex justify-between">
 						<dt>Active configs</dt>
 						<dd>{formatStorage(configsStorage)}</dd>

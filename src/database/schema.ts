@@ -300,6 +300,9 @@ export const runsTable = pgTable("runs", {
 	}), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
+	injected_archive_bytes: integer("injected_archive_bytes")
+		.notNull()
+		.default(0), // Archive bytes spent at run-start to front-load storage_limit. Tracked separately so the breakdown UI can attribute it.
 	active_config_ids: json("active_config_ids")
 		.$type<string[]>()
 		.notNull()

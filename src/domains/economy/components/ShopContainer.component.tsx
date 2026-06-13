@@ -196,6 +196,7 @@ const ShopContainer = ({
 					configsStorage={configsStorage}
 					rerollsStorage={rerollsStorage}
 					deinstallPenalty={activeRun.deinstallPenalty}
+					injectedArchive={activeRun.injectedArchiveBytes}
 				/>
 			</div>
 

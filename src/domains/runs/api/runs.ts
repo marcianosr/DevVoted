@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { isValidInjectionAmount } from "~/domains/economy/data/storageInjectionTiers";
 import {
 	getCategoryMasterySlot,
 	getSlotDefinition,
@@ -34,12 +35,25 @@ import {
 } from "./run.queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 
-export const getOrCreateRun = createServerFn({ method: "GET" }).handler(
-	async () => {
+export const getOrCreateRun = createServerFn({ method: "POST" })
+	.inputValidator(
+		z
+			.object({
+				injectFromArchive: z
+					.number()
+					.int()
+					.min(0)
+					.refine(isValidInjectionAmount, {
+						message: "Injection amount must be 0 or a defined tier.",
+					})
+					.optional(),
+			})
+			.optional()
+	)
+	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
-		return await getOrCreateActiveRun(userId);
-	}
-);
+		return await getOrCreateActiveRun(userId, data?.injectFromArchive ?? 0);
+	});
 
 export const getActiveRun = createServerFn({ method: "GET" }).handler(
 	async () => {

@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "injected_archive_bytes" integer DEFAULT 0 NOT NULL;

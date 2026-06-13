@@ -7,6 +7,7 @@ import {
 	pollResponsesTable,
 } from "@/src/database/schema";
 import { db } from "~/database/db";
+import { STORAGE_UNITS } from "~/lib/storage";
 import { calculateLootAmount } from "~/domains/runs/services/lootCalculator.service";
 import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
@@ -16,8 +17,17 @@ import type {
 } from "~/domains/runs/models/pipeline.model";
 import type { CategoryCode } from "~/domains/shared/categories";
 
+import { debitArchivedStorageGuarded } from "~/domains/economy/api/archive.queries";
+
 import { runFactory } from "../models/run.model";
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage.model";
+
+export class InsufficientArchiveError extends Error {
+	constructor() {
+		super("Not enough archived storage to inject into this run.");
+		this.name = "InsufficientArchiveError";
+	}
+}
 
 export type ExposedConfigDeck = {
 	userId: string;
@@ -50,8 +60,22 @@ export const getActiveRunByUserId = async (userId: string) => {
 	return runFactory.toDTO(runRecord[0], categoryCoverage);
 };
 
-export const createRunForUser = async (userId: string) => {
+export const createRunForUser = async (
+	userId: string,
+	injectFromArchive: number = 0
+) => {
 	return await db.transaction(async (tx) => {
+		// Debit first so an under-funded user fails before any run rows exist.
+		// The whole tx rolls back if the insert later throws — archive is safe.
+		if (injectFromArchive > 0) {
+			const newBalance = await debitArchivedStorageGuarded(
+				userId,
+				injectFromArchive,
+				tx
+			);
+			if (newBalance === null) throw new InsufficientArchiveError();
+		}
+
 		const { getSeasonForNewRun } =
 			await import("~/domains/ranking/services/seasonService");
 		const seasonId = await getSeasonForNewRun();
@@ -62,6 +86,8 @@ export const createRunForUser = async (userId: string) => {
 				user_id: userId,
 				season_id: seasonId,
 				status: "active",
+				storage_limit: STORAGE_UNITS.MB + injectFromArchive,
+				injected_archive_bytes: injectFromArchive,
 				pipeline_slots: getInitialPipelineSlots(),
 			})
 			.returning();

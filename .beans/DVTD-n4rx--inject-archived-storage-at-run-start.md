@@ -1,11 +1,11 @@
 ---
 # DVTD-n4rx
 title: Inject archived storage at run start
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-13T08:51:00Z
-updated_at: 2026-06-13T08:51:00Z
+updated_at: 2026-06-13T09:16:34Z
 parent: DVTD-lwvx
 ---
 
@@ -38,3 +38,56 @@ Before starting a new run, the player can choose to inject some of their accumul
 - [[DVTD-enj5]] — the archive system this feature draws from; archive must exist and be credited correctly before injection makes sense.
 - [[DVTD-annw]] — both features add pre-run decisions to the run-start screen; should be designed together to avoid a cluttered loadout step.
 - [[DVTD-lwvx]] — parent epic for meta-progression.
+
+## Decisions (2026-06-13)
+
+- **Granularity**: Fixed tiers — 64 KB / 256 KB / 1024 KB
+- **Cap**: Hard cap at 1 MB (top tier already equals the cap)
+- **Conversion rate**: 1:1 (spend X archive → +X starting storage)
+- **UI placement**: New 'loadout' step before run start (designed to also host [[DVTD-annw]] later)
+
+## Todos
+
+- [ ] Locate archived_storage source of truth and read path
+- [ ] Locate run-start flow and how storage_limit is initialised
+- [ ] Add loadout step route/component between new-run intent and run creation
+- [ ] Tier selector UI (3 buttons + 0/skip) with archive balance + remaining preview
+- [ ] Server: deduct archive + bump run.storage_limit atomically (single transaction)
+- [ ] Validate tier ≤ player archive balance; reject otherwise
+- [ ] Show injected amount in StorageBreakdown during run (separate line)
+- [ ] Tests: factory + handler tests; insufficient-archive, cancel-after-select, atomicity
+- [ ] Manual verify in dev
+
+## Additional decisions (2026-06-13)
+
+- **Insufficient archive**: Disable unaffordable tier buttons in the UI (greyed out with required-amount label). Server still validates as defence in depth.
+- **Skippability**: Loadout step always shown; 'no inject' is the default selection so a fast-clicker isn't forced to think about it.
+- **Atomicity**: Archive debit + run insert wrapped in a single `db.transaction`. Debit guarded with `WHERE archived_storage >= amount` so an under-funded debit returns 0 rows and the transaction aborts.
+
+
+## Summary of work so far
+
+**Schema**
+- New column runs.injected_archive_bytes (integer, NOT NULL, default 0) — migration drizzle/0057_hard_retro_girl.sql
+- Run model: added injectedArchiveBytes to DTO + factory + mock
+
+**Server**
+- debitArchivedStorageGuarded(userId, bytes, executor?) in archive.queries.ts — single atomic guarded UPDATE, accepts DbExecutor (db or tx). Returns null on insufficient archive.
+- createRunForUser(userId, injectFromArchive?) debits first inside its tx, throws InsufficientArchiveError on insufficient funds, sets storage_limit = 1 MB + injection and injected_archive_bytes on insert.
+- getOrCreateRun server fn switched to POST, accepts { injectFromArchive } validated via Zod.
+
+**Constants**
+- storageInjectionTiers.ts — tiers [64 KB, 256 KB, 1024 KB], helper isValidInjectionAmount reused by Zod validator.
+
+**UI**
+- /start: new loadout section with 4 tier buttons. Default no-inject. Unaffordable tiers disabled. Button label reflects selected boost.
+- StorageBreakdown: new optional injectedArchive prop, renders amber line when > 0. Real callers wired.
+
+**Verification**
+- tsc --noEmit clean, lint clean.
+
+## Todos remaining
+
+- [ ] npm run db:push to apply migration in dev
+- [ ] Manual verify
+- [ ] Tests: insufficient-archive, atomicity, model field

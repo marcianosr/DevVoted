@@ -1,7 +1,14 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { usersTable } from "~/database/schema";
+
+// Either the global db handle or a transaction handle from db.transaction.
+// Derived directly from the transaction callback's parameter so we don't
+// have to import drizzle's internal PgTransaction type.
+export type DbExecutor =
+	| typeof db
+	| Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type UserArchiveState = {
 	archivedStorage: number;
@@ -29,6 +36,39 @@ export const fetchUserArchiveState = async (
 		ownedBorderIds: row.ownedBorderIds,
 		equippedBorderId: row.equippedBorderId,
 	};
+};
+
+// Atomic guarded debit: subtracts `bytes` from archived_storage only if the
+// user has enough. Returns the new balance on success, or `null` when the
+// user has insufficient archive (no rows affected). Used by run-start
+// injection where archive must be spent atomically with run creation.
+//
+// Design note: a guarded UPDATE (WHERE archived_storage >= bytes) is preferred
+// over SELECT-then-UPDATE — Postgres evaluates the predicate atomically,
+// removing the TOCTOU race under READ COMMITTED. The caller is expected to
+// run this inside an outer transaction when bundling with other writes (e.g.
+// run insert), so that a downstream failure rolls the debit back too.
+export const debitArchivedStorageGuarded = async (
+	userId: string,
+	bytes: number,
+	executor: DbExecutor = db
+): Promise<number | null> => {
+	if (bytes <= 0) {
+		const current = await fetchUserArchiveState(userId);
+		return current?.archivedStorage ?? null;
+	}
+
+	const [row] = await executor
+		.update(usersTable)
+		.set({
+			archived_storage: sql`${usersTable.archived_storage} - ${bytes}`,
+		})
+		.where(
+			and(eq(usersTable.id, userId), gte(usersTable.archived_storage, bytes))
+		)
+		.returning({ archivedStorage: usersTable.archived_storage });
+
+	return row?.archivedStorage ?? null;
 };
 
 // Atomic credit using SQL expression — safe under concurrency (two finishing

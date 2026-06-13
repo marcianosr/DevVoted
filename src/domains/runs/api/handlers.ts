@@ -17,18 +17,18 @@ import {
 	getActiveGate,
 } from "../services/pipelineEvaluator.service";
 
-export const getOrCreateActiveRun = async (userId: string) => {
+export const getOrCreateActiveRun = async (
+	userId: string,
+	injectFromArchive: number = 0
+) => {
 	return handleApiOperation(async () => {
-		// Check if user has an active run
+		// Returning the existing active run silently ignores injectFromArchive.
+		// That's intentional: a player can only spend archive at run-start.
+		// Once a run exists, the loadout step is no-op.
 		const activeRun = await getActiveRunByUserId(userId);
+		if (activeRun) return activeRun;
 
-		if (activeRun) {
-			return activeRun;
-		}
-
-		// Create a new run
-		const newRunData = await createRunForUser(userId);
-		return newRunData;
+		return await createRunForUser(userId, injectFromArchive);
 	}, "Failed to get or create run");
 };
 

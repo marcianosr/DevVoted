@@ -15,6 +15,7 @@ export type Run = {
 	seasonId: number | null;
 	status: "active" | "finished";
 	storageLimit: number;
+	injectedArchiveBytes: number;
 	activeConfigIds: string[];
 	rerolls: number;
 	totalRerolls: number;
@@ -50,6 +51,7 @@ export const runToDTO = (
 		seasonId: record.season_id,
 		status: record.status,
 		storageLimit: record.storage_limit,
+		injectedArchiveBytes: record.injected_archive_bytes,
 		activeConfigIds: record.active_config_ids || [],
 		rerolls: record.rerolls,
 		totalRerolls: record.total_rerolls,
@@ -88,6 +90,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		season_id: dto.seasonId,
 		status: dto.status,
 		storage_limit: dto.storageLimit,
+		injected_archive_bytes: dto.injectedArchiveBytes,
 		active_config_ids: dto.activeConfigIds,
 		rerolls: dto.rerolls,
 		total_rerolls: dto.totalRerolls,
@@ -134,6 +137,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		status: "active",
 
 		storageLimit: STORAGE_UNITS.MB, // 1MB default
+		injectedArchiveBytes: 0,
 		activeConfigIds: [],
 		rerolls: 0,
 		totalRerolls: 0,
