@@ -228,12 +228,17 @@ export const getPollsSeenInRun = async (runId: number): Promise<number> => {
 	return result[0]?.count ?? 0;
 };
 
+// Counts every response row, not distinct poll_id. Each answer is a unit of
+// progress toward the next gate (turn.service.ts:evaluatePipelineStage uses
+// `n % windowSize === 0`); re-answering the same poll within a run is allowed
+// gameplay and must still advance the counter, otherwise the same gate would
+// re-trigger on the duplicate answer.
 export const getAnsweredPollsCountInRun = async (
 	runId: number
 ): Promise<number> => {
 	const result = await db
 		.select({
-			count: sql<number>`COUNT(DISTINCT ${pollResponsesTable.poll_id})::int`,
+			count: sql<number>`COUNT(*)::int`,
 		})
 		.from(pollResponsesTable)
 		.where(eq(pollResponsesTable.run_id, runId));
