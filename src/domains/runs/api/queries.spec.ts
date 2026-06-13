@@ -2,11 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { db } from "~/database/db";
 
+import { debitArchivedStorageGuarded } from "~/domains/economy/api/archive.queries";
+import { STORAGE_UNITS } from "~/lib/storage";
+
 import {
 	getActiveRunByUserId,
 	createRunForUser,
 	getRunWithCategoryCoverage,
 	finishRun,
+	InsufficientArchiveError,
 } from "./run.queries";
 import { awardCoverageToRun } from "./coverage.queries";
 import { createMockRunRecord } from "../models/run.mock";
@@ -18,6 +22,10 @@ import {
 // Mock the seasons service
 vi.mock("~/domains/ranking/services/seasonService", () => ({
 	getSeasonForNewRun: vi.fn().mockResolvedValue(1),
+}));
+
+vi.mock("~/domains/economy/api/archive.queries", () => ({
+	debitArchivedStorageGuarded: vi.fn(),
 }));
 
 // Mock the database module
@@ -158,6 +166,106 @@ describe("Run Queries", () => {
 			expect(result.categoryCoverage).toHaveLength(2);
 			expect(result.userId).toBe("test-user-id");
 			expect(vi.mocked(db.transaction)).toHaveBeenCalledOnce();
+		});
+
+		it("does not debit archive when injectFromArchive is zero", async () => {
+			const mockRun = createMockRunRecord();
+			const returningMock = vi.fn().mockResolvedValueOnce([mockRun]);
+			returningMock.mockResolvedValue([createMockRunCategoryCoverageRecord()]);
+
+			const insertMock = vi.fn().mockReturnValue({
+				values: vi.fn().mockReturnValue({ returning: returningMock }),
+			});
+			const selectMock = vi.fn().mockReturnValue({
+				from: vi.fn().mockResolvedValue([{ id: 1, name: "JS", code: "js" }]),
+			});
+
+			vi.mocked(db.transaction).mockImplementation(async (cb) =>
+				cb({ insert: insertMock, select: selectMock } as any)
+			);
+
+			await createRunForUser("kazooie-user-id", 0);
+
+			expect(vi.mocked(debitArchivedStorageGuarded)).not.toHaveBeenCalled();
+		});
+
+		it("debits archive and sets storage_limit + injected_archive_bytes on injection", async () => {
+			const injection = 256 * STORAGE_UNITS.KB;
+			vi.mocked(debitArchivedStorageGuarded).mockResolvedValueOnce(744_000);
+
+			const mockRun = createMockRunRecord({
+				storage_limit: STORAGE_UNITS.MB + injection,
+				injected_archive_bytes: injection,
+			});
+			const returningMock = vi.fn().mockResolvedValueOnce([mockRun]);
+			returningMock.mockResolvedValue([createMockRunCategoryCoverageRecord()]);
+
+			const valuesSpy = vi.fn().mockReturnValue({ returning: returningMock });
+			const insertMock = vi.fn().mockReturnValue({ values: valuesSpy });
+			const selectMock = vi.fn().mockReturnValue({
+				from: vi.fn().mockResolvedValue([{ id: 1, name: "JS", code: "js" }]),
+			});
+
+			vi.mocked(db.transaction).mockImplementation(async (cb) =>
+				cb({ insert: insertMock, select: selectMock } as any)
+			);
+
+			const result = await createRunForUser("banjo-user-id", injection);
+
+			expect(debitArchivedStorageGuarded).toHaveBeenCalledWith(
+				"banjo-user-id",
+				injection,
+				expect.anything()
+			);
+			// First insert call writes the run row — verify storage_limit + injection.
+			const insertedRunValues = valuesSpy.mock.calls[0][0];
+			expect(insertedRunValues.storage_limit).toBe(
+				STORAGE_UNITS.MB + injection
+			);
+			expect(insertedRunValues.injected_archive_bytes).toBe(injection);
+			expect(result.injectedArchiveBytes).toBe(injection);
+			expect(result.storageLimit).toBe(STORAGE_UNITS.MB + injection);
+		});
+
+		it("throws InsufficientArchiveError when debit returns null", async () => {
+			vi.mocked(debitArchivedStorageGuarded).mockResolvedValueOnce(null);
+
+			const insertMock = vi.fn();
+			const selectMock = vi.fn();
+
+			vi.mocked(db.transaction).mockImplementation(async (cb) =>
+				cb({ insert: insertMock, select: selectMock } as any)
+			);
+
+			await expect(
+				createRunForUser("broke-user-id", 1024 * STORAGE_UNITS.KB)
+			).rejects.toBeInstanceOf(InsufficientArchiveError);
+
+			// Insert must not have happened — the whole tx aborts before it.
+			expect(insertMock).not.toHaveBeenCalled();
+		});
+
+		it("does not commit the debit when run insert fails (transaction rollback)", async () => {
+			// Simulate a successful debit followed by an insert failure.
+			vi.mocked(debitArchivedStorageGuarded).mockResolvedValueOnce(500_000);
+
+			const returningMock = vi
+				.fn()
+				.mockRejectedValueOnce(new Error("DB exploded"));
+			const insertMock = vi.fn().mockReturnValue({
+				values: vi.fn().mockReturnValue({ returning: returningMock }),
+			});
+			const selectMock = vi.fn();
+
+			// The mock transaction wrapper propagates the throw — in real Postgres,
+			// this rejection is what triggers the rollback.
+			vi.mocked(db.transaction).mockImplementation(async (cb) =>
+				cb({ insert: insertMock, select: selectMock } as any)
+			);
+
+			await expect(
+				createRunForUser("luigi-user-id", 64 * STORAGE_UNITS.KB)
+			).rejects.toThrow("DB exploded");
 		});
 	});
 

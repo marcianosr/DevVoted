@@ -59,7 +59,10 @@ describe("Run Handlers", () => {
 			expect(runQueries.getActiveRunByUserId).toHaveBeenCalledWith(
 				"test-user-id"
 			);
-			expect(runQueries.createRunForUser).toHaveBeenCalledWith("test-user-id");
+			expect(runQueries.createRunForUser).toHaveBeenCalledWith(
+				"test-user-id",
+				0
+			);
 		});
 
 		it("handles errors gracefully", async () => {

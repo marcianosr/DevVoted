@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-13T08:51:00Z
-updated_at: 2026-06-13T09:16:34Z
+updated_at: 2026-06-13T09:22:30Z
 parent: DVTD-lwvx
 ---
 
@@ -91,3 +91,14 @@ Before starting a new run, the player can choose to inject some of their accumul
 - [ ] npm run db:push to apply migration in dev
 - [ ] Manual verify
 - [ ] Tests: insufficient-archive, atomicity, model field
+
+## Test summary
+
+New files:
+- src/domains/economy/api/archive.queries.spec.ts — debitArchivedStorageGuarded (5 cases: happy path, insufficient archive returns null, bytes=0 no-op, negative no-op, missing user returns null)
+
+Extended:
+- src/domains/runs/api/queries.spec.ts — createRunForUser injection (no-debit when 0, debit+inject sets storage_limit and injected_archive_bytes, InsufficientArchiveError when debit returns null, transaction rollback when insert throws)
+- src/domains/runs/api/handlers.spec.ts — updated assertion for new createRunForUser(userId, 0) signature
+
+Full suite: 32 files, 399 passed, 6 skipped, 1 todo.
