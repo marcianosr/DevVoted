@@ -42,7 +42,9 @@
 		"db:refresh": "npm run db:reset && npm run db:generate && npm run db:push && npm run db:seed",
 		"export:firebase": "node scripts/export-polls.js",
 		"prepare": "husky",
-		"test-category-weights": "tsx scripts/test-weights.ts"
+		"test-category-weights": "tsx scripts/test-weights.ts",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
 	},
 	"author": "marciano_schildmeijer@live.nl",
 	"license": "ISC",
@@ -68,7 +70,11 @@
 		"type-fest": "^5.3.1"
 	},
 	"devDependencies": {
+		"@storybook/addon-themes": "^10.4.5",
+		"@storybook/react": "^10.4.5",
+		"@storybook/react-vite": "^10.4.5",
 		"@tailwindcss/vite": "^4.1.18",
+		"@testing-library/dom": "^10.4.1",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.1",
 		"@testing-library/user-event": "^14.6.1",
@@ -88,6 +94,7 @@
 		"postcss": "^8.5.1",
 		"prettier": "^3.7.4",
 		"sonarqube-scanner": "^4.3.2",
+		"storybook": "^10.4.5",
 		"tailwindcss": "^4.1.18",
 		"tsx": "^4.20.6",
 		"typescript": "^5.9.3",
