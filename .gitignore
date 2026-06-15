@@ -2,6 +2,7 @@ node_modules
 # Keep environment variables out of version control
 !.env
 yarn.lock
+.yarn/
 
 .DS_Store
 .cache
