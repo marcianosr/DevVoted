@@ -407,6 +407,20 @@
       "when": 1781342153969,
       "tag": "0057_hard_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1781446748396,
+      "tag": "0058_mixed_firedrake",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1781466284766,
+      "tag": "0059_complete_cyclops",
+      "breakpoints": true
     }
   ]
 }

@@ -5,10 +5,8 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-06-14T07:37:22Z
-updated_at: 2026-06-14T07:37:40Z
+updated_at: 2026-06-14T15:29:37Z
 parent: DVTD-fapc
-blocked_by:
-    - DVTD-1cbu
 ---
 
 Once Flaky Suite is shipped and the system is proven, implement the other 5 TDs.

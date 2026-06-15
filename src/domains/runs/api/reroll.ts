@@ -5,6 +5,8 @@ import { applyEffects } from "~/domains/economy/data/configs";
 import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { createRerolledShopOfferings } from "~/domains/economy/services/shopOfferings.service";
+import { fetchActiveTechDebtsByRun } from "~/domains/techDebt/api/queries";
+import { isShopLockedByTechDebt } from "~/domains/techDebt/services/debuffEffects.service";
 import { getTodayDateString } from "~/lib/dateUtils";
 
 import { processRerollShop } from "./shop.queries";
@@ -24,6 +26,14 @@ export const rerollShopServerFn = createServerFn()
 		const today = date || getTodayDateString();
 
 		try {
+			const activeTechDebts = await fetchActiveTechDebtsByRun(runId);
+			if (isShopLockedByTechDebt(activeTechDebts)) {
+				return {
+					success: false,
+					error: "Shop is locked by an active Tech Debt",
+				};
+			}
+
 			const { originalRun, updatedRun } = await processRerollShop(runId, today);
 
 			const { storageAvailable } = getStorageInfo(originalRun);

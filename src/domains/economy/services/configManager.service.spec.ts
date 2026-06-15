@@ -3,11 +3,15 @@ import { describe, expect, it } from "vitest";
 import { createMockConfig } from "~/domains/economy/models/config.mock";
 import {
 	addConfigsToRun,
+	addDiscountedConfigsToRun,
+	calculateStorageUsed,
 	canAddConfigToRun,
+	canAddDiscountedConfigToRun,
 	getStorageInfo,
 	isConfigInstalled,
 	removeConfigsFromRun,
 } from "~/domains/economy/services/configManager.service";
+import { TECH_DEBT_DISCOUNT_RATIO } from "~/domains/techDebt/config";
 import { createMockRun } from "~/domains/runs/models/run.mock";
 import { STORAGE_UNITS } from "~/lib/storage";
 
@@ -262,6 +266,122 @@ describe("configStorage", () => {
 				storageLimit: STORAGE_UNITS.MB, // 1MB (effective limit, no bonuses)
 				baseStorageLimit: STORAGE_UNITS.MB, // 1MB base
 				usagePercentage: 25,
+			});
+		});
+	});
+
+	describe("Tech Debt discount variant", () => {
+		const fullPriceConfig = createMockConfig({
+			id: "kazooie-config",
+			cost: 200 * STORAGE_UNITS.KB,
+		});
+
+		describe("calculateStorageUsed with discountedConfigIds", () => {
+			it("charges full cost for configs that were not discount-purchased", () => {
+				const used = calculateStorageUsed([fullPriceConfig], []);
+				expect(used).toBe(200 * STORAGE_UNITS.KB);
+			});
+
+			it("applies the Tech Debt discount ratio to configs in the discount list", () => {
+				const used = calculateStorageUsed(
+					[fullPriceConfig],
+					["kazooie-config"]
+				);
+				expect(used).toBe(
+					Math.floor(200 * STORAGE_UNITS.KB * TECH_DEBT_DISCOUNT_RATIO)
+				);
+			});
+
+			it("mixes discounted and full-price configs in the same total", () => {
+				const otherConfig = createMockConfig({
+					id: "banjo-config",
+					cost: 100 * STORAGE_UNITS.KB,
+				});
+				const used = calculateStorageUsed(
+					[fullPriceConfig, otherConfig],
+					["banjo-config"]
+				);
+				expect(used).toBe(
+					200 * STORAGE_UNITS.KB +
+						Math.floor(100 * STORAGE_UNITS.KB * TECH_DEBT_DISCOUNT_RATIO)
+				);
+			});
+		});
+
+		describe("canAddDiscountedConfigToRun", () => {
+			it("permits a discount purchase that would not fit at full price", () => {
+				// Run has 1MB total; 700KB already used, so 300KB free.
+				const occupant = createMockConfig({
+					id: "tooie-config",
+					cost: 700 * STORAGE_UNITS.KB,
+				});
+				const run = createMockRun({ activeConfigIds: ["tooie-config"] });
+				const expensive = createMockConfig({
+					id: "grunty-config",
+					cost: 500 * STORAGE_UNITS.KB, // 250KB at half off — fits in 300KB
+				});
+
+				expect(
+					canAddDiscountedConfigToRun(run, expensive, [occupant, expensive])
+				).toBe(true);
+				expect(canAddConfigToRun(run, expensive, [occupant, expensive])).toBe(
+					false
+				);
+			});
+		});
+
+		describe("addDiscountedConfigsToRun", () => {
+			it("adds the config to both activeConfigIds and discountedConfigIds", () => {
+				const run = createMockRun({
+					activeConfigIds: [],
+					discountedConfigIds: [],
+				});
+
+				const result = addDiscountedConfigsToRun(
+					run,
+					["kazooie-config"],
+					[fullPriceConfig]
+				);
+
+				expect(result.activeConfigIds).toEqual(["kazooie-config"]);
+				expect(result.discountedConfigIds).toEqual(["kazooie-config"]);
+			});
+
+			it("does not mutate when the config is already installed", () => {
+				const run = createMockRun({
+					activeConfigIds: ["kazooie-config"],
+					discountedConfigIds: [],
+				});
+
+				const result = addDiscountedConfigsToRun(
+					run,
+					["kazooie-config"],
+					[fullPriceConfig]
+				);
+
+				expect(result).toBe(run);
+			});
+
+			it("preserves existing discountedConfigIds when adding new ones", () => {
+				const run = createMockRun({
+					activeConfigIds: ["banjo-config"],
+					discountedConfigIds: ["banjo-config"],
+				});
+				const newConfig = createMockConfig({
+					id: "tooty-config",
+					cost: 10 * STORAGE_UNITS.KB,
+				});
+
+				const result = addDiscountedConfigsToRun(
+					run,
+					["tooty-config"],
+					[newConfig]
+				);
+
+				expect(result.discountedConfigIds).toEqual([
+					"banjo-config",
+					"tooty-config",
+				]);
 			});
 		});
 	});

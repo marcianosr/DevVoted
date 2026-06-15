@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "discounted_config_ids" json DEFAULT '[]'::json NOT NULL;

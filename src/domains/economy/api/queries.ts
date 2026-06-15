@@ -5,9 +5,12 @@ import { runsTable } from "~/database/schema";
 import { configs } from "~/domains/economy/data/configs";
 import {
 	addConfigsToRun,
+	addDiscountedConfigsToRun,
 	removeConfigsFromRun,
 } from "~/domains/economy/services/configManager.service";
 import { runFactory } from "~/domains/runs/models/run.model";
+
+export type PurchaseVariant = "normal" | "discount";
 
 export const getRunByIdQuery = async (runId: number) => {
 	const [runRecord] = await db
@@ -26,7 +29,8 @@ export const getRunByIdQuery = async (runId: number) => {
 export const addConfigToRunQuery = async (
 	runId: number,
 	configIds: string[],
-	date?: string
+	date?: string,
+	purchaseVariant: PurchaseVariant = "normal"
 ) => {
 	const [runRecord] = await db
 		.select()
@@ -39,12 +43,16 @@ export const addConfigToRunQuery = async (
 	}
 
 	const currentRun = runFactory.toDTO(runRecord);
-	const updatedRun = addConfigsToRun(currentRun, configIds);
+	const updatedRun =
+		purchaseVariant === "discount"
+			? addDiscountedConfigsToRun(currentRun, configIds)
+			: addConfigsToRun(currentRun, configIds);
 
 	const [updatedRunRecord] = await db
 		.update(runsTable)
 		.set({
 			active_config_ids: updatedRun.activeConfigIds,
+			discounted_config_ids: updatedRun.discountedConfigIds,
 			...(date !== undefined && { shop_interacted_date: date }),
 		})
 		.where(eq(runsTable.id, runId))

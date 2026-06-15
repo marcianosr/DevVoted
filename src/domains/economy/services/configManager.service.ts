@@ -1,6 +1,7 @@
 import { configs, applyEffects } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
 import { Run } from "~/domains/runs/models/run.model";
+import { TECH_DEBT_DISCOUNT_RATIO } from "~/domains/techDebt/config";
 import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
 
 // Player gets back REFUND_RATE * cost on deinstall; the rest becomes a penalty.
@@ -19,8 +20,23 @@ export const getActiveConfigs = (
 		.filter((config): config is Config => config !== undefined);
 };
 
-export const calculateStorageUsed = (activeConfigs: Config[]): number => {
-	return activeConfigs.reduce((total, config) => total + config.cost, 0);
+/**
+ * Sums storage cost across configs, applying the Tech Debt discount ratio to
+ * any config whose id is in discountedConfigIds. Discounted configs were
+ * purchased via the shop's TD-trade variant — they paid storage at the
+ * reduced rate and the player took on a Tech Debt in exchange.
+ */
+export const calculateStorageUsed = (
+	activeConfigs: Config[],
+	discountedConfigIds: string[] = []
+): number => {
+	const discountedSet = new Set(discountedConfigIds);
+	return activeConfigs.reduce((total, config) => {
+		const effectiveCost = discountedSet.has(config.id)
+			? Math.floor(config.cost * TECH_DEBT_DISCOUNT_RATIO)
+			: config.cost;
+		return total + effectiveCost;
+	}, 0);
 };
 
 /**
@@ -49,7 +65,10 @@ export const getStorageInfo = (
 	availableConfigs: Config[] = configs
 ) => {
 	const activeConfigs = getActiveConfigs(run, availableConfigs);
-	const configsStorage = calculateStorageUsed(activeConfigs);
+	const configsStorage = calculateStorageUsed(
+		activeConfigs,
+		run.discountedConfigIds
+	);
 	const rerollsStorage = run.rerollStorageUsed;
 
 	// Calculate effective storage limit with bonuses from configs
@@ -98,6 +117,24 @@ export const canAddConfigToRun = (
 	return canAddToStorage(storageUsed, discountedCost, storageLimit);
 };
 
+/**
+ * Pre-purchase check for the Tech Debt discount variant: charges the config
+ * at TECH_DEBT_DISCOUNT_RATIO * cost. Soft-cap and pool-availability
+ * enforcement live in the Tech Debt acquire service — this check only
+ * answers "does the run have room for a discounted cost".
+ */
+export const canAddDiscountedConfigToRun = (
+	run: Run,
+	config: Config,
+	availableConfigs: Config[] = configs
+): boolean =>
+	canAddConfigToRun(
+		run,
+		config,
+		availableConfigs,
+		1 - TECH_DEBT_DISCOUNT_RATIO
+	);
+
 export const addConfigsToRun = (
 	run: Run,
 	configIds: string[],
@@ -125,6 +162,39 @@ export const addConfigsToRun = (
 	return {
 		...run,
 		activeConfigIds: [...run.activeConfigIds, ...newConfigIds],
+	};
+};
+
+/**
+ * Like addConfigsToRun, but marks the new ids as discount-purchased — their
+ * storage cost will be applied at TECH_DEBT_DISCOUNT_RATIO going forward.
+ *
+ * Storage validation uses the discounted cost so a config that wouldn't fit
+ * at full price may still be purchasable here. Acquiring the Tech Debt is
+ * the caller's responsibility — this function does not spawn it.
+ */
+export const addDiscountedConfigsToRun = (
+	run: Run,
+	configIds: string[],
+	availableConfigs: Config[] = configs
+): Run => {
+	const newConfigIds = configIds.filter(
+		(id) => !run.activeConfigIds.includes(id)
+	);
+
+	if (newConfigIds.length === 0) return run;
+
+	const allConfigsValid = newConfigIds.every((configId) => {
+		const config = availableConfigs.find((c) => c.id === configId);
+		return config && canAddDiscountedConfigToRun(run, config, availableConfigs);
+	});
+
+	if (!allConfigsValid) return run;
+
+	return {
+		...run,
+		activeConfigIds: [...run.activeConfigIds, ...newConfigIds],
+		discountedConfigIds: [...run.discountedConfigIds, ...newConfigIds],
 	};
 };
 

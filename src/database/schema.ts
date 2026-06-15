@@ -307,6 +307,12 @@ export const runsTable = pgTable("runs", {
 		.$type<string[]>()
 		.notNull()
 		.default([]), // Array of config IDs
+	// Subset of active_config_ids that were purchased via Tech Debt discount variant.
+	// getStorageInfo applies TECH_DEBT_DISCOUNT_RATIO to each entry's cost when summing.
+	discounted_config_ids: json("discounted_config_ids")
+		.$type<string[]>()
+		.notNull()
+		.default([]),
 	rerolls: integer("rerolls").notNull().default(0), // Current poll session rerolls (resets each poll)
 	total_rerolls: integer("total_rerolls").notNull().default(0), // Total rerolls across entire run
 	reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
@@ -497,4 +503,26 @@ export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
 		.references(() => usersTable.id, { onDelete: "cascade" })
 		.notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
+ * Active Tech Debts Table
+ * Stores Tech Debt instances attached to an active run.
+ * - Templates (catalog) live in code (src/domains/techDebt/data/techDebtTemplates.ts)
+ *   so adding/tweaking a TD doesn't require a migration. Only instances persist here.
+ * - template_id references the code-defined template id; not a foreign key.
+ * - progress_state is a JSON blob whose shape mirrors the template's clear-condition kind.
+ *   Discriminated union ClearProgress in the techDebt model documents the variants.
+ * - Cascades on run deletion: TD is strictly run-scoped, no meta-persistence.
+ */
+export const activeTechDebtsTable = pgTable("active_tech_debts", {
+	id: serial("id").primaryKey(),
+	run_id: integer("run_id")
+		.references(() => runsTable.id, { onDelete: "cascade" })
+		.notNull(),
+	template_id: varchar("template_id", { length: 64 }).notNull(),
+	acquired_at: timestamp("acquired_at", { withTimezone: true })
+		.notNull()
+		.defaultNow(),
+	progress_state: json("progress_state").notNull(),
 });

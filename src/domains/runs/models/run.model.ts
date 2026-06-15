@@ -17,6 +17,9 @@ export type Run = {
 	storageLimit: number;
 	injectedArchiveBytes: number;
 	activeConfigIds: string[];
+	// Subset of activeConfigIds purchased via Tech Debt discount variant.
+	// Each entry's storage cost is multiplied by TECH_DEBT_DISCOUNT_RATIO when summing.
+	discountedConfigIds: string[];
 	rerolls: number;
 	totalRerolls: number;
 	rerollStorageUsed: number;
@@ -53,6 +56,7 @@ export const runToDTO = (
 		storageLimit: record.storage_limit,
 		injectedArchiveBytes: record.injected_archive_bytes,
 		activeConfigIds: record.active_config_ids || [],
+		discountedConfigIds: record.discounted_config_ids || [],
 		rerolls: record.rerolls,
 		totalRerolls: record.total_rerolls,
 		rerollStorageUsed: record.reroll_storage_used,
@@ -92,6 +96,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		storage_limit: dto.storageLimit,
 		injected_archive_bytes: dto.injectedArchiveBytes,
 		active_config_ids: dto.activeConfigIds,
+		discounted_config_ids: dto.discountedConfigIds,
 		rerolls: dto.rerolls,
 		total_rerolls: dto.totalRerolls,
 		reroll_storage_used: dto.rerollStorageUsed,
@@ -139,6 +144,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		storageLimit: STORAGE_UNITS.MB, // 1MB default
 		injectedArchiveBytes: 0,
 		activeConfigIds: [],
+		discountedConfigIds: [],
 		rerolls: 0,
 		totalRerolls: 0,
 		rerollStorageUsed: 0,

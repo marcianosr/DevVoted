@@ -12,6 +12,7 @@ export const addConfigToRunServerFn = createServerFn()
 				.string()
 				.regex(/^\d{4}-\d{2}-\d{2}$/)
 				.optional(),
+			purchaseVariant: z.enum(["normal", "discount"]).optional(),
 		})
 	)
 	.handler(async ({ data }) => addConfigToRunHandler({ data }));

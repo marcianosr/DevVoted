@@ -15,6 +15,7 @@ import {
 	savePendingUpgradeCards,
 } from "~/domains/runs/api/run.queries";
 import { incrementCorrectPollsCount } from "~/domains/runs/api/coverage.queries";
+import { handlePollAnswerForTechDebt } from "~/domains/techDebt/services/handlePollAnswer.service";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
 import type { Run } from "~/domains/runs/models/run.model";
 import { incrementRunProgress } from "~/domains/runs/services/progress.service";
@@ -130,6 +131,11 @@ const commitAnswerProgress = async ({
 	if (outcome === "full") {
 		await incrementCorrectPollsCount(activeRun.id);
 	}
+
+	await handlePollAnswerForTechDebt(activeRun.id, {
+		kind: "pollAnswer",
+		isCorrect: outcome === "full",
+	});
 
 	await createPollResponse({
 		pollId,

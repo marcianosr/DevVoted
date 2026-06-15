@@ -66,6 +66,12 @@ vi.mock("~/lib/dateUtils", () => ({
 	getTodayDateString: vi.fn().mockReturnValue("2025-05-13"),
 }));
 
+vi.mock("~/domains/techDebt/services/handlePollAnswer.service", () => ({
+	handlePollAnswerForTechDebt: vi.fn().mockResolvedValue({
+		clearedTemplateIds: [],
+	}),
+}));
+
 // Banjo-Kazooie themed test data
 const BANJO_POLL_ID = 64;
 const BANJO_USER_ID = "b4nj0-k4z00ie-test-user-id";
