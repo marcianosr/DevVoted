@@ -1,12 +1,8 @@
 import Footer from "~/components/Footer.component";
+import { PageLayoutUI } from "~/ui/PageLayoutUI.component";
 
-const PageLayout = ({ children }: { children: React.ReactNode }) => {
-	return (
-		<main className="flex flex-col min-h-screen pb-24">
-			{children}
-			<Footer />
-		</main>
-	);
-};
+const PageLayout = ({ children }: { children: React.ReactNode }) => (
+	<PageLayoutUI footer={<Footer />}>{children}</PageLayoutUI>
+);
 
 export default PageLayout;
