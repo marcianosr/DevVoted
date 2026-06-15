@@ -91,9 +91,9 @@ src/domains/{domain}/
 | Location | Purpose |
 |----------|---------|
 | `src/ui/` | Pure presentational primitives (buttons, skeletons) - no business logic, no data fetching |
-| `src/domains/*/ui/` | Domain-specific presentational components - compose `src/ui/` primitives, no data fetching or state |
+| `src/ui/{domain}/` | Domain-specific presentational components - compose `src/ui/` primitives, no data fetching or state |
 | `src/components/` | Global shared components with logic (layouts, auth, navigation) |
-| `src/domains/*/components/` | Domain composition layer - wires data and logic to domain UI components, no HTML/CSS |
+| `src/domains/*/components/` | Domain composition layer - wires data and logic to UI components, no HTML/CSS |
 | `src/routes/` | Route composition layer - wires loader data and mutations to components, no HTML/CSS |
 
 ### UI Layer Architecture (CRITICAL)
@@ -102,10 +102,12 @@ The app enforces a strict two-tier UI separation to keep all visual code indepen
 
 **Tier 1 — Presentational (design system)**
 - `src/ui/` — global primitives: `Button`, `Card`, `Badge`, `Skeleton`, etc.
-- `src/domains/*/ui/` — domain-specific visuals: `PollCard`, `RunHeader`, `UpgradeCardSlot`, etc.
+- `src/ui/{domain}/` — domain-specific visuals: `src/ui/polls/PollCard.ui.tsx`, `src/ui/runs/RunHeader.ui.tsx`, etc.
 - These files contain **all HTML tags and Tailwind CSS classes** in the codebase.
 - They accept only plain data props (no hooks, no server functions, no TanStack Query).
 - They are fully renderable from mock factory data in Storybook without a running server.
+
+`src/domains/` is the application and business logic layer. It must not contain any UI (React components, HTML, CSS). Domain-specific UI belongs in `src/ui/{domain}/` so the domain stays portable across interfaces (CLI, API, web).
 
 **Tier 2 — Composition (app layer)**
 - `src/domains/*/components/` — domain smart components
@@ -122,7 +124,7 @@ export const PollSection = ({ poll }: { poll: Poll }) => (
 );
 
 // ✅ CORRECT: domain component is pure composition
-// src/domains/polls/ui/PollSection.ui.tsx  ← owns the HTML/CSS
+// src/ui/polls/PollSection.ui.tsx  ← owns the HTML/CSS
 export const PollSection = ({ question }: { question: string }) => (
   <div className="flex flex-col gap-4 p-6 rounded-xl bg-surface">
     <h2 className="text-lg font-bold">{question}</h2>
@@ -139,11 +141,11 @@ export const PollSection = () => {
 
 **File naming conventions:**
 - `src/ui/Button.component.tsx` — global primitive
-- `src/domains/{domain}/ui/PollCard.ui.tsx` — domain UI component
+- `src/ui/{domain}/PollCard.ui.tsx` — domain-scoped UI component
 - `src/domains/{domain}/components/PollSection.component.tsx` — domain composition component
 
 **Rules enforced on every new file:**
-- [ ] Does this file render HTML or use Tailwind classes? → It belongs in `src/ui/` or `src/domains/*/ui/`, receives only plain props, has a Story.
+- [ ] Does this file render HTML or use Tailwind classes? → It belongs in `src/ui/` (or `src/ui/{domain}/`), receives only plain props, has a Story.
 - [ ] Does this file call a hook, query, or server function? → It belongs in `src/domains/*/components/` or `src/routes/`, contains zero HTML/CSS.
 - [ ] Never mix both in the same file.
 
