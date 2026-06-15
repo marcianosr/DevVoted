@@ -90,9 +90,62 @@ src/domains/{domain}/
 
 | Location | Purpose |
 |----------|---------|
-| `src/ui/` | Pure presentational primitives (buttons, skeletons) - no business logic |
+| `src/ui/` | Pure presentational primitives (buttons, skeletons) - no business logic, no data fetching |
+| `src/domains/*/ui/` | Domain-specific presentational components - compose `src/ui/` primitives, no data fetching or state |
 | `src/components/` | Global shared components with logic (layouts, auth, navigation) |
-| `src/domains/*/components/` | Domain-specific components |
+| `src/domains/*/components/` | Domain composition layer - wires data and logic to domain UI components, no HTML/CSS |
+| `src/routes/` | Route composition layer - wires loader data and mutations to components, no HTML/CSS |
+
+### UI Layer Architecture (CRITICAL)
+
+The app enforces a strict two-tier UI separation to keep all visual code independently testable in Storybook:
+
+**Tier 1 — Presentational (design system)**
+- `src/ui/` — global primitives: `Button`, `Card`, `Badge`, `Skeleton`, etc.
+- `src/domains/*/ui/` — domain-specific visuals: `PollCard`, `RunHeader`, `UpgradeCardSlot`, etc.
+- These files contain **all HTML tags and Tailwind CSS classes** in the codebase.
+- They accept only plain data props (no hooks, no server functions, no TanStack Query).
+- They are fully renderable from mock factory data in Storybook without a running server.
+
+**Tier 2 — Composition (app layer)**
+- `src/domains/*/components/` — domain smart components
+- `src/routes/` — route files
+- These files contain **zero HTML tags and zero CSS classes**.
+- Their only job is: read data (from loader, hook, or query), call mutations, and pass results as props to Tier 1 components.
+
+```tsx
+// ❌ WRONG: HTML/CSS in a domain component
+export const PollSection = ({ poll }: { poll: Poll }) => (
+  <div className="flex flex-col gap-4 p-6 rounded-xl bg-surface">
+    <h2 className="text-lg font-bold">{poll.question}</h2>
+  </div>
+);
+
+// ✅ CORRECT: domain component is pure composition
+// src/domains/polls/ui/PollSection.ui.tsx  ← owns the HTML/CSS
+export const PollSection = ({ question }: { question: string }) => (
+  <div className="flex flex-col gap-4 p-6 rounded-xl bg-surface">
+    <h2 className="text-lg font-bold">{question}</h2>
+  </div>
+);
+
+// src/domains/polls/components/PollSection.component.tsx  ← owns the wiring
+export const PollSection = () => {
+  const { poll } = Route.useLoaderData();
+  const submit = useSubmitPoll();
+  return <PollSectionUI question={poll.question} onSubmit={submit} />;
+};
+```
+
+**File naming conventions:**
+- `src/ui/Button.component.tsx` — global primitive
+- `src/domains/{domain}/ui/PollCard.ui.tsx` — domain UI component
+- `src/domains/{domain}/components/PollSection.component.tsx` — domain composition component
+
+**Rules enforced on every new file:**
+- [ ] Does this file render HTML or use Tailwind classes? → It belongs in `src/ui/` or `src/domains/*/ui/`, receives only plain props, has a Story.
+- [ ] Does this file call a hook, query, or server function? → It belongs in `src/domains/*/components/` or `src/routes/`, contains zero HTML/CSS.
+- [ ] Never mix both in the same file.
 
 ### Key Database Tables
 
