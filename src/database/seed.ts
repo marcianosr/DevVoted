@@ -25,6 +25,34 @@ import { getCategories, CATEGORY_CODES } from "~/domains/shared/categories";
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 const ADMIN_UID = "65ad226e-e3c1-4e7f-a96d-a84156589733";
 
+const LOCAL_SUPABASE_URL = process.env.SUPABASE_URL ?? "http://localhost:54321";
+const LOCAL_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+
+const createLocalAuthUser = async (
+	id: string,
+	email: string,
+	password: string
+): Promise<void> => {
+	const res = await fetch(`${LOCAL_SUPABASE_URL}/auth/v1/admin/users`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			apikey: LOCAL_SERVICE_ROLE_KEY,
+			Authorization: `Bearer ${LOCAL_SERVICE_ROLE_KEY}`,
+		},
+		body: JSON.stringify({ id, email, password, email_confirm: true }),
+	});
+
+	if (!res.ok) {
+		const body = (await res.json()) as { error_code?: string; msg?: string };
+		const alreadyExists =
+			body.error_code === "user_already_exists" ||
+			body.msg?.toLowerCase().includes("already");
+		if (alreadyExists) return;
+		console.warn(`⚠️  Could not create auth user ${email}: ${body.msg}`);
+	}
+};
+
 // ─── FFI World Cup roster (English dub) ───────────────────────────────────────
 // Players drawn from the five FFI teams the user nominated: Inazuma Japan,
 // Unicorn (USA), Orpheus (Italy), Little Gigant (Cotarl), and Mac Roniejo.
@@ -200,14 +228,19 @@ async function seedDatabase() {
 		console.log(`ℹ️ Admin user already exists: ${adminUser.display_name}`);
 	}
 
-	// Create test user
-	console.log("\n👤 Creating test user if needed...");
+	// Create local dev auth + profile user
+	console.log("\n👤 Creating local dev user...");
+
+	const devEmail = "dev@devvoted.local";
+	const devPassword = "devvoted123";
+
+	await createLocalAuthUser(DEV_UID, devEmail, devPassword);
 
 	const testUser = {
 		id: DEV_UID,
-		display_name: "Test User",
-		email: "test@example.com",
-		role: "user" as const,
+		display_name: "Dev User",
+		email: devEmail,
+		roles: "user" as const,
 	};
 
 	const existingUser = await db
@@ -217,9 +250,9 @@ async function seedDatabase() {
 
 	if (existingUser.length === 0) {
 		await db.insert(usersTable).values(testUser);
-		console.log(`✅ Created test user: ${testUser.display_name}`);
+		console.log(`✅ Created dev user: ${testUser.email} / ${devPassword}`);
 	} else {
-		console.log(`ℹ️ Test user already exists: ${testUser.display_name}`);
+		console.log(`ℹ️ Dev user already exists: ${testUser.email}`);
 	}
 
 	// Next, ensure we have the necessary categories
