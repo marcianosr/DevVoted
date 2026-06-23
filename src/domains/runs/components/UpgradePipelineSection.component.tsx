@@ -1,146 +1,22 @@
-import type {
-	GateDifficulty,
-	PipelineSlot,
-	UpgradeCard,
-} from "~/domains/runs/models/pipeline.model";
+import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
 import type {
 	PipelineEvaluation,
 	PipelineEvaluationContext,
 	SlotEvaluationStatus,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { formatCurrentStat } from "~/domains/runs/utils/formatCurrentStat";
-import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
 import {
 	formatRequirement,
 	getSlotLabel,
 } from "~/domains/runs/utils/formatPipelineRequirement";
 import { formatStorage } from "~/lib/storage";
-
-const RewardBadge = ({ reward }: { reward: number }) => (
-	<span className="text-emerald-400 text-xs whitespace-nowrap">
-		+{formatStorage(reward)} storage
-	</span>
-);
-
-type UpgradePipelineSectionProps = {
-	cards: UpgradeCard[];
-	currentSlots: PipelineSlot[];
-	onAccept: (card: UpgradeCard) => void;
-	isPending?: boolean;
-	evaluationContext?: PipelineEvaluationContext;
-	evaluation?: PipelineEvaluation;
-};
-
-const SelectButton = ({
-	onClick,
-	disabled,
-}: {
-	onClick: () => void;
-	disabled: boolean;
-}) => (
-	<button
-		onClick={onClick}
-		disabled={disabled}
-		className="border border-white px-4 py-2 text-lg text-white hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-	>
-		Select
-	</button>
-);
-
-const CardEntry = ({
-	card,
-	onAccept,
-	isPending,
-}: {
-	card: UpgradeCard;
-	onAccept: (card: UpgradeCard) => void;
-	isPending: boolean;
-}) => {
-	const { slot } = card;
-	const isUpgrade = card.kind === "upgrade-slot";
-
-	return (
-		<div className="border border-white p-4 space-y-1">
-			<div className="flex items-center gap-2 mb-2">
-				<span className="text-zinc-300">{isUpgrade ? "↑" : "+"}</span>
-				<span>{getSlotLabel(slot.gateTypeId)} · </span>
-				<DifficultyLabel difficulty={isUpgrade ? card.from : slot.difficulty} />
-				{isUpgrade && <DifficultyLabel text={"→"} difficulty={card.to} />}
-			</div>
-			<p className="text-zinc-300 text-sm pl-4">
-				Requirement:{" "}
-				<span className="text-gray-200">
-					{formatRequirement(slot.requirement)}
-				</span>
-			</p>
-			<p className="text-zinc-300 text-sm pl-4">
-				Reward on pass: <RewardBadge reward={slot.reward} />
-			</p>
-
-			<div className="pl-4 pt-2">
-				<SelectButton onClick={() => onAccept(card)} disabled={isPending} />
-			</div>
-		</div>
-	);
-};
-
-const SectionHeader = ({
-	title,
-	subtitle,
-}: {
-	title: string;
-	subtitle: string;
-}) => (
-	<div className="border border-white px-4 py-3">
-		<h1 className="text-2xl">{title}</h1>
-		<p className="text-zinc-300 text-xs mt-0.5">{subtitle}</p>
-	</div>
-);
-
-const DifficultyLabel = ({
-	difficulty,
-	text,
-}: {
-	difficulty: GateDifficulty;
-	text?: string;
-}) => (
-	<span className={DIFFICULTY_CLASSES[difficulty]}>
-		<span className="text-white">{text}</span> {difficulty}
-	</span>
-);
+import {
+	CurrentPipelineUI,
+	type CurrentPipelineSlot,
+} from "~/ui/runs/PipelineUpgrade.ui";
+import type { SlotStatus } from "~/ui/runs/pipelineStyles";
 
 type StatusWithInProgress = SlotEvaluationStatus | "in-progress";
-
-const STATUS_ICON: Record<StatusWithInProgress, React.ReactNode> = {
-	"in-progress": (
-		<span className="inline-block w-3 h-3 rounded-full bg-yellow-400 animate-pulse" />
-	),
-	passed: <span className="text-green-400">✓</span>,
-	failed: <span className="text-red-400">✗</span>,
-	skipped: <span className="inline-block w-3 h-3 rounded-full bg-zinc-300" />,
-};
-
-const STATUS_GROUP_LABEL: Record<StatusWithInProgress, string> = {
-	"in-progress": "in progress",
-	passed: "successful",
-	failed: "failing",
-	skipped: "skipped",
-};
-
-const CheckGroupHeader = ({
-	status,
-	count,
-}: {
-	status: StatusWithInProgress;
-	count: number;
-}) => (
-	<div className="px-4 py-2 border-b border-white bg-white/5 flex items-center gap-2 text-sm text-gray-400">
-		{STATUS_ICON[status]}
-		<span>
-			{count} {STATUS_GROUP_LABEL[status]} {count === 1 ? "check" : "checks"}
-		</span>
-	</div>
-);
 
 const getLiveStatus = (
 	slot: PipelineSlot,
@@ -154,6 +30,29 @@ const getLiveStatus = (
 	return "in-progress";
 };
 
+export const toCurrentPipelineSlots = (
+	slots: PipelineSlot[],
+	evaluationContext?: PipelineEvaluationContext,
+	evaluation?: PipelineEvaluation
+): CurrentPipelineSlot[] =>
+	slots.map((slot, i) => {
+		const status = evaluation
+			? ((evaluation.slotEvaluations[i]?.status ?? "in-progress") as SlotStatus)
+			: getLiveStatus(slot, evaluationContext);
+		return {
+			id: `${slot.gateTypeId}-${i}`,
+			status,
+			label: getSlotLabel(slot.gateTypeId),
+			difficulty: slot.difficulty,
+			requirement: formatRequirement(slot.requirement),
+			reward: `+${formatStorage(slot.reward)}`,
+			currentStat:
+				status === "in-progress" && evaluationContext
+					? formatCurrentStat(slot.requirement, evaluationContext)
+					: undefined,
+		};
+	});
+
 export const CurrentPipeline = ({
 	slots,
 	evaluationContext,
@@ -163,168 +62,31 @@ export const CurrentPipeline = ({
 	evaluationContext?: PipelineEvaluationContext;
 	evaluation?: PipelineEvaluation;
 }) => {
-	const slotsWithStatus = slots.map((slot, i) => ({
-		slot,
-		status: evaluation
-			? ((evaluation.slotEvaluations[i]?.status ??
-					"in-progress") as StatusWithInProgress)
-			: getLiveStatus(slot, evaluationContext),
-	}));
-
-	const groups = (
-		["in-progress", "passed", "failed", "skipped"] as StatusWithInProgress[]
-	)
-		.map((status) => ({
-			status,
-			entries: slotsWithStatus.filter((s) => s.status === status),
-		}))
-		.filter((g) => g.entries.length > 0);
-
 	const totalPotentialReward = slots.reduce((sum, s) => sum + s.reward, 0);
 
 	return (
-		<div className="border border-white">
-			<div className="border-b border-white px-4 py-3">
-				<div className="flex items-baseline justify-between">
-					<p className="text-2xl">CI Pipelines</p>
-					{evaluationContext && (
-						<span className="text-xl">
-							Gate #{evaluationContext.currentGate}
-						</span>
-					)}
-				</div>
-				<p className="text-zinc-300 text-sm mt-0.5">
-					{evaluationContext && (
-						<>
-							<span>
-								{evaluationContext.pollsInWindow -
-									evaluationContext.pollsAnsweredInWindow}{" "}
-								polls left until next gate check
-							</span>
-							{" · "}
-						</>
-					)}
-					{slots.length} active {slots.length === 1 ? "check" : "checks"} · all
-					<span className="text-yellow-400"> pending</span> checks must pass
-				</p>
-				{!evaluation && totalPotentialReward > 0 && (
-					<p className="text-sm mt-1">
-						Total reward if all pass:{" "}
-						<RewardBadge reward={totalPotentialReward} />
-					</p>
-				)}
-			</div>
-
-			{evaluation?.passed && evaluation.totalReward > 0 && (
-				<div className="bg-emerald-950/40 border-b border-emerald-500/50 px-4 py-3">
-					<p className="text-emerald-300 text-lg">
-						✓ Pipeline cleared — +{formatStorage(evaluation.totalReward)}{" "}
-						storage added to your limit
-					</p>
-				</div>
-			)}
-
-			{groups.map(({ status, entries }) => (
-				<div key={status}>
-					{evaluation && (
-						<CheckGroupHeader status={status} count={entries.length} />
-					)}
-					{entries.map(({ slot }, i) => (
-						<section
-							key={`${slot.gateTypeId}-${i}`}
-							className="flex items-start gap-3 border-b border-white last:border-b-0 px-4 py-3"
-						>
-							<span className="mt-0.5 shrink-0">{STATUS_ICON[status]}</span>
-							<div>
-								<p>
-									<span className={DIFFICULTY_CLASSES[slot.difficulty]}>
-										{getSlotLabel(slot.gateTypeId)}
-									</span>
-								</p>
-								<DifficultyLabel text="Risk:" difficulty={slot.difficulty} />
-								{" · "}
-								Requirement: {formatRequirement(slot.requirement)}
-								{" · "}
-								Reward: <RewardBadge reward={slot.reward} />
-								{evaluationContext && (
-									<p>
-										Current:{" "}
-										<span className="text-gray-300">
-											{formatCurrentStat(slot.requirement, evaluationContext)}
-										</span>
-									</p>
-								)}
-							</div>
-						</section>
-					))}
-				</div>
-			))}
-		</div>
-	);
-};
-
-export const UpgradePipelineSection = ({
-	cards,
-	currentSlots,
-	onAccept,
-	isPending = false,
-	evaluationContext,
-	evaluation,
-}: UpgradePipelineSectionProps) => {
-	const upgradeCards = cards.filter(
-		(c): c is Extract<UpgradeCard, { kind: "upgrade-slot" }> =>
-			c.kind === "upgrade-slot"
-	);
-	const addSlotCards = cards.filter(
-		(c): c is Extract<UpgradeCard, { kind: "add-slot" }> =>
-			c.kind === "add-slot"
-	);
-
-	return (
-		<div className="space-y-6">
-			<CurrentPipeline
-				slots={currentSlots}
-				evaluationContext={evaluationContext}
-				evaluation={evaluation}
-			/>
-
-			<section className="flex flex-col gap-6">
-				{upgradeCards.length > 0 && (
-					<div className="space-y-4">
-						<SectionHeader
-							title="Modify Existing Slots"
-							subtitle="Increase difficulty, higher reward, higher risk"
-						/>
-						{upgradeCards.map((card, i) => (
-							<CardEntry
-								key={i}
-								card={card}
-								onAccept={onAccept}
-								isPending={isPending}
-							/>
-						))}
-					</div>
-				)}
-
-				{addSlotCards.length > 0 && (
-					<div className="space-y-4">
-						<SectionHeader
-							title="Add New Slot"
-							subtitle="More constraints, harder to pass all"
-						/>
-						<div className="grid grid-cols-1 gap-4">
-							{addSlotCards.map((card, i) => (
-								<CardEntry
-									key={i}
-									card={card}
-									onAccept={onAccept}
-									isPending={isPending}
-								/>
-							))}
-						</div>
-					</div>
-				)}
-			</section>
-		</div>
+		<CurrentPipelineUI
+			gateNumber={evaluationContext?.currentGate}
+			pollsLeft={
+				evaluationContext
+					? evaluationContext.pollsInWindow -
+						evaluationContext.pollsAnsweredInWindow
+					: undefined
+			}
+			totalPotentialReward={
+				!evaluation && totalPotentialReward > 0
+					? `+${formatStorage(totalPotentialReward)}`
+					: undefined
+			}
+			evaluation={
+				evaluation
+					? {
+							passed: evaluation.passed,
+							totalReward: `+${formatStorage(evaluation.totalReward)}`,
+						}
+					: undefined
+			}
+			slots={toCurrentPipelineSlots(slots, evaluationContext, evaluation)}
+		/>
 	);
 };
