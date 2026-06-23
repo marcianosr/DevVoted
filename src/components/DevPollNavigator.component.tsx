@@ -1,6 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { addDays, format } from "date-fns";
 
+import { DevPollNavigatorUI } from "~/ui/DevPollNavigatorUI.component";
+
 type DevPollNavigatorProps = {
 	currentDate: string;
 	hasCustomDate: boolean;
@@ -36,24 +38,11 @@ export const DevPollNavigator = ({
 	};
 
 	return (
-		<div className="max-w-5xl mx-auto mb-4 flex gap-2 items-center">
-			<button
-				type="button"
-				onClick={handleRandomPoll}
-				className="px-3 py-1 text-xs bg-yellow-600 hover:bg-yellow-500 text-black rounded"
-			>
-				Random Poll
-			</button>
-			{hasCustomDate && (
-				<button
-					type="button"
-					onClick={handleResetToToday}
-					className="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded"
-				>
-					Today
-				</button>
-			)}
-			<span className="text-xs text-gray-500">Viewing: {currentDate}</span>
-		</div>
+		<DevPollNavigatorUI
+			currentDate={currentDate}
+			hasCustomDate={hasCustomDate}
+			onRandomPoll={handleRandomPoll}
+			onResetToToday={handleResetToToday}
+		/>
 	);
 };

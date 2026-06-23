@@ -5,52 +5,33 @@ import { format } from "date-fns";
 import { configs } from "~/domains/economy/data/configs";
 import { getAllPolls } from "~/domains/polls/api/polls";
 import { getCategories } from "~/domains/shared/categories";
+import { FooterUI } from "~/ui/FooterUI.component";
 
 declare const __LAST_COMMIT_DATE__: string;
 
 const Footer = () => {
-	const { data, error, isLoading } = useQuery({
+	const { data, isLoading } = useQuery({
 		queryKey: ["all-polls"],
 		queryFn: () => getAllPolls(),
-		staleTime: 1000 * 60 * 30, // Cache for 30 min
+		staleTime: 1000 * 60 * 30,
 	});
 
+	const pollCount = !isLoading && data?.success ? data.data.length : null;
+
 	return (
-		<footer className="p-4 mt-auto bg-zinc-900 text-white flex flex-col items-center">
-			<section className="flex gap-2 items-center">
-				{!isLoading && !error && data?.success && (
-					<div>{data.data.length} polls</div>
-				)}
-				<span>·</span>
-				<div>{getCategories().length} categories</div>
-				<span>·</span>
-				<div>{configs.length} configs</div>
-				<span>·</span>
+		<FooterUI
+			pollCount={pollCount}
+			isLoading={isLoading}
+			categoryCount={getCategories().length}
+			configCount={configs.length}
+			lastCommitDate={format(new Date(__LAST_COMMIT_DATE__), "d MMM yyyy")}
+			statsLink={
 				<Link to="/stats" className="underline">
 					See all game info stats
 				</Link>
-			</section>
-
-			<hr className="border-theme my-4" />
-			<section className="">
-				<p>
-					A crazy roguelike obsession build with craftsmanship, passion, ❤️ &
-					Tanstack Start by Marciano Schildmeijer | EST may 2022 | Last updated:{" "}
-					{format(new Date(__LAST_COMMIT_DATE__), "d MMM yyyy")}
-				</p>
-				<p className="mt-2 text-zinc-400">
-					Found a bug?{" "}
-					<a
-						href="https://github.com/marcianosr/DevVoted/issues"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="text-blue-400 hover:text-blue-300 underline"
-					>
-						Report it on GitHub
-					</a>
-				</p>
-			</section>
-		</footer>
+			}
+		/>
 	);
 };
+
 export default Footer;

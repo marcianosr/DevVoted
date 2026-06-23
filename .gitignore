@@ -1,7 +1,6 @@
 node_modules
 # Keep environment variables out of version control
 !.env
-yarn.lock
 
 .DS_Store
 .cache
@@ -42,3 +41,4 @@ polls-d8b3d-firebase-adminsdk-cos71-910d48b66d.json
 scripts/firebase-service-account.json
 firebase-backup*
 firebase-polls-backup-*.json
+storybook-static/
