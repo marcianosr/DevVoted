@@ -3,7 +3,7 @@ import { ContentSection } from "./ContentSection.component";
 
 const meta: Meta<typeof ContentSection> = {
 	component: ContentSection,
-	title: "UI/ContentSection",
+	title: "Atoms/Content Section",
 };
 export default meta;
 

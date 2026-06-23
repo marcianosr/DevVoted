@@ -3,7 +3,7 @@ import { TextButton } from "./TextButton.component";
 
 const meta: Meta<typeof TextButton> = {
 	component: TextButton,
-	title: "UI/TextButton",
+	title: "Atoms/Buttons/Text",
 };
 export default meta;
 

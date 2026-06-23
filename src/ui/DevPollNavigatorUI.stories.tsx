@@ -3,7 +3,7 @@ import { DevPollNavigatorUI } from "./DevPollNavigatorUI.component";
 
 const meta: Meta<typeof DevPollNavigatorUI> = {
 	component: DevPollNavigatorUI,
-	title: "UI/DevPollNavigatorUI",
+	title: "Molecules/Dev Poll Navigator",
 };
 export default meta;
 

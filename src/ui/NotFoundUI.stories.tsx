@@ -3,7 +3,7 @@ import { NotFoundUI } from "./NotFoundUI.component";
 
 const meta: Meta<typeof NotFoundUI> = {
 	component: NotFoundUI,
-	title: "UI/NotFoundUI",
+	title: "Pages/Not Found",
 };
 export default meta;
 

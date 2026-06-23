@@ -3,7 +3,7 @@ import { GameLoopExplainer } from "./GameLoopExplainer.component";
 
 const meta: Meta<typeof GameLoopExplainer> = {
 	component: GameLoopExplainer,
-	title: "UI/GameLoopExplainer",
+	title: "Organisms/Game Loop Explainer",
 };
 export default meta;
 

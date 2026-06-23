@@ -3,7 +3,7 @@ import { LoadingSkeleton } from "./LoadingSkeleton.component";
 
 const meta: Meta<typeof LoadingSkeleton> = {
 	component: LoadingSkeleton,
-	title: "UI/LoadingSkeleton",
+	title: "Atoms/Loading Skeleton",
 };
 export default meta;
 

@@ -3,7 +3,7 @@ import { Dropdown, DropdownItem, DropdownDivider } from "./Dropdown.component";
 
 const meta: Meta<typeof Dropdown> = {
 	component: Dropdown,
-	title: "UI/Dropdown",
+	title: "Molecules/Dropdown",
 };
 export default meta;
 
