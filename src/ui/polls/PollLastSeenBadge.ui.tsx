@@ -6,9 +6,18 @@ type PollLastSeenBadgeProps = {
 	timesEncountered: number;
 };
 
+const toDate = (date: Date | string): Date => {
+	if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+		// Date-only strings parse as midnight UTC, causing off-by-one-day errors in
+		// non-UTC timezones. Noon UTC keeps us well clear of both day boundaries.
+		return new Date(`${date}T12:00:00Z`);
+	}
+	return new Date(date);
+};
+
 const formatDate = (date: Date | string | null): string => {
 	if (!date) return "Never";
-	return formatDistanceToNow(new Date(date), { addSuffix: true });
+	return formatDistanceToNow(toDate(date), { addSuffix: true });
 };
 
 export const PollLastSeenBadge = ({

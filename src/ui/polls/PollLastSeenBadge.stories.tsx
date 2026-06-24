@@ -20,7 +20,7 @@ export const NeverSeen: Story = {
 export const SeenBefore: Story = {
 	args: {
 		lastSeenAt: "2026-06-17",
-		lastEncounteredAt: new Date("2026-03-13T10:00:00Z"),
+		lastEncounteredAt: new Date("2026-06-17T14:00:00Z"),
 		timesEncountered: 3,
 	},
 };
