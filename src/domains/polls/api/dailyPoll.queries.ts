@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { dailyPollsTable, pollsTable } from "~/database/schema";
@@ -9,6 +9,25 @@ import {
 	type CategoryWeights,
 } from "~/domains/polls/services/categoryWeight.service";
 import { getAllActiveConfigIds } from "~/domains/runs/api/shop.queries";
+
+export const getLastGlobalDailyPollDate = async (
+	pollId: number,
+	currentDate: string
+): Promise<string | null> => {
+	const [record] = await db
+		.select({ date: dailyPollsTable.date })
+		.from(dailyPollsTable)
+		.where(
+			and(
+				eq(dailyPollsTable.poll_id, pollId),
+				lt(dailyPollsTable.date, currentDate)
+			)
+		)
+		.orderBy(desc(dailyPollsTable.date))
+		.limit(1);
+
+	return record?.date ?? null;
+};
 
 export const snapshotDailyWeights = async (
 	date: string,

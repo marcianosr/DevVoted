@@ -5,12 +5,14 @@ import {
 	getCommunityStatsForDailyPoll,
 	getRandomAnswerForDailyPoll,
 } from "~/domains/polls/api/communityStats.queries";
+import { getLastGlobalDailyPollDate } from "~/domains/polls/api/dailyPoll.queries";
 import { getDailyPollWithOptions } from "~/domains/polls/services/dailyPoll.service";
 import {
 	hasUserAnsweredPoll,
 	getUserSelectedOptions,
 	getPollHistory,
 	getLastSeenBeforeCurrentRun,
+	getTimesEncountered,
 	trackPollView,
 	trackPollAnswer,
 	getPollsSeenInRun,
@@ -35,6 +37,7 @@ export const getDailyPollHandler = async ({
 	return handleApiOperation(async () => {
 		const { userId, runId, date } = data;
 
+		const currentDate = date ?? new Date().toISOString().split("T")[0];
 		const { poll, options } = await getDailyPollWithOptions(date);
 		const hasAnswered = userId
 			? await hasUserAnsweredPoll(poll.id, userId)
@@ -47,7 +50,10 @@ export const getDailyPollHandler = async ({
 
 		const creatorDisplayName = await fetchUserDisplayName(poll.createdBy);
 
-		let lastSeenAt: Date | null = null;
+		const lastSeenAt = await getLastGlobalDailyPollDate(poll.id, currentDate);
+
+		let lastEncounteredAt: Date | null = null;
+		let timesEncountered = 0;
 
 		if (userId) {
 			const resolvedRunId = await (async (): Promise<number> => {
@@ -59,11 +65,10 @@ export const getDailyPollHandler = async ({
 				return activeRunResponse.data.id;
 			})();
 
-			lastSeenAt = await getLastSeenBeforeCurrentRun(
-				userId,
-				poll.id,
-				resolvedRunId
-			);
+			[lastEncounteredAt, timesEncountered] = await Promise.all([
+				getLastSeenBeforeCurrentRun(userId, poll.id, resolvedRunId),
+				getTimesEncountered(userId, poll.id),
+			]);
 
 			const history = await getPollHistory(resolvedRunId, poll.id);
 			const hasSeenToday = history?.last_seen_at
@@ -82,6 +87,8 @@ export const getDailyPollHandler = async ({
 			selectedOptions,
 			creatorDisplayName,
 			lastSeenAt,
+			lastEncounteredAt,
+			timesEncountered,
 		};
 	});
 };

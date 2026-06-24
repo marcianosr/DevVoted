@@ -145,6 +145,25 @@ export const getPollHistory = async (runId: number, pollId: number) => {
 	return record || null;
 };
 
+export const getTimesEncountered = async (
+	userId: string,
+	pollId: number
+): Promise<number> => {
+	const [record] = await db
+		.select({
+			total: sql<number>`COALESCE(SUM(${pollHistoryTable.times_seen}), 0)::int`,
+		})
+		.from(pollHistoryTable)
+		.where(
+			and(
+				eq(pollHistoryTable.user_id, userId),
+				eq(pollHistoryTable.poll_id, pollId)
+			)
+		);
+
+	return record?.total ?? 0;
+};
+
 export const getLastSeenBeforeCurrentRun = async (
 	userId: string,
 	pollId: number,

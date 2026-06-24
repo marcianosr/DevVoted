@@ -32,6 +32,8 @@ const DailyPoll: React.FC = () => {
 		currentDate,
 		initialWindowContext,
 		lastSeenAt,
+		lastEncounteredAt,
+		timesEncountered,
 	} = Route.useLoaderData();
 	const { date } = Route.useSearch();
 
@@ -60,6 +62,8 @@ const DailyPoll: React.FC = () => {
 				initialWindowContext={initialWindowContext}
 				date={currentDate}
 				lastSeenAt={lastSeenAt}
+				lastEncounteredAt={lastEncounteredAt}
+				timesEncountered={timesEncountered}
 			/>
 		</Content>
 	);
@@ -146,6 +150,8 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			currentDate,
 			initialWindowContext: windowContext,
 			lastSeenAt: pollResponse.data.lastSeenAt ?? null,
+			lastEncounteredAt: pollResponse.data.lastEncounteredAt ?? null,
+			timesEncountered: pollResponse.data.timesEncountered,
 		};
 	},
 	pendingComponent: () => (

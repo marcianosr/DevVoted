@@ -101,7 +101,9 @@ type DailyPollContainerProps = {
 	initialPendingUpgradeCards: UpgradeCard[];
 	initialWindowContext: PipelineEvaluationContext | null;
 	date: string;
-	lastSeenAt: Date | null;
+	lastSeenAt: string | null;
+	lastEncounteredAt: Date | null;
+	timesEncountered: number;
 };
 
 const DailyPollContainer = ({
@@ -120,6 +122,8 @@ const DailyPollContainer = ({
 	initialWindowContext,
 	date,
 	lastSeenAt,
+	lastEncounteredAt,
+	timesEncountered,
 }: DailyPollContainerProps) => {
 	const router = useRouter();
 	const navigate = useNavigate();
@@ -280,7 +284,11 @@ const DailyPollContainer = ({
 			<div className="flex flex-col">
 				<p className="text-4xl text-theme">{category.name}</p>
 				<p>Created by: {creatorDisplayName ?? "Unknown"}</p>
-				<PollLastSeenBadge lastSeenAt={lastSeenAt} />
+				<PollLastSeenBadge
+					lastSeenAt={lastSeenAt}
+					lastEncounteredAt={lastEncounteredAt}
+					timesEncountered={timesEncountered}
+				/>
 			</div>
 		</header>
 	);
@@ -301,84 +309,87 @@ const DailyPollContainer = ({
 	}
 
 	return (
-		<section>
-			{isInPostVictoryMode && (
-				<div className="mb-6 p-4 border-2 border-green-500 bg-green-500/10">
-					<p className="text-green-400 text-lg font-bold">
-						You passed all CI gates!
-					</p>
-					<p className="text-gray-300 text-sm">
-						You&apos;re now in post-victory mode. Keep playing to reach 100%
-						coverage or start a new run anytime.
-					</p>
-				</div>
-			)}
-			{adminLink}
-			{header}
-			{hasPendingUpgrade && hasAnswered && (
-				<div className="mb-6 p-4 border border-green-500 bg-green-500/10 flex items-center justify-between">
-					<div>
-						<p className="text-green-400 font-bold">Pipeline upgrade ready</p>
+		<div className="flex gap-6 items-start">
+			<section className="flex-1 min-w-0">
+				{isInPostVictoryMode && (
+					<div className="mb-6 p-4 border-2 border-green-500 bg-green-500/10">
+						<p className="text-green-400 text-lg font-bold">
+							You passed all CI gates!
+						</p>
 						<p className="text-gray-300 text-sm">
-							You cleared a gate — pick your reward before tomorrow&apos;s poll.
+							You&apos;re now in post-victory mode. Keep playing to reach 100%
+							coverage or start a new run anytime.
 						</p>
 					</div>
-					<Link
-						to="/pipelines"
-						className="text-green-400 underline whitespace-nowrap"
-					>
-						Pick now
-					</Link>
-				</div>
-			)}
-			<div className="mt-4 mb-4">
-				{hasAnswered ? (
-					<PollResultsSection
-						poll={poll}
-						options={options}
-						selectedOptions={selectedOptions}
-						score={displayScore}
-						communityStats={communityStats}
-						categoryCode={poll.categoryCode}
-						explanation={poll.explanation}
-						exposedConfigDeck={exposedConfigDeck}
-						offeredConfigs={offeredConfigs}
-						nextOfferedConfigs={nextOfferedConfigs}
-						activeRun={activeRun}
-						reductionCost={configEffects.reductionCost}
-						storageBonus={configEffects.storage?.skipBonus}
-						perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
-						pipeline={{
-							slots: activeRun.pipelineSlots,
-							evaluationContext: lastEvaluationContext ?? undefined,
-							evaluation: lastPipelineEvaluation ?? undefined,
-						}}
-						date={today}
-					/>
-				) : (
-					<>
-						<PollQuestionDisplay poll={poll} />
-						{poll.codeSandboxExample && (
-							<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
-						)}
-						{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
-						<PollOptionsForm
+				)}
+				{adminLink}
+				{header}
+				{hasPendingUpgrade && hasAnswered && (
+					<div className="mb-6 p-4 border border-green-500 bg-green-500/10 flex items-center justify-between">
+						<div>
+							<p className="text-green-400 font-bold">Pipeline upgrade ready</p>
+							<p className="text-gray-300 text-sm">
+								You cleared a gate — pick your reward before tomorrow&apos;s
+								poll.
+							</p>
+						</div>
+						<Link
+							to="/pipelines"
+							className="text-green-400 underline whitespace-nowrap"
+						>
+							Pick now
+						</Link>
+					</div>
+				)}
+				<div className="mt-4 mb-4">
+					{hasAnswered ? (
+						<PollResultsSection
 							poll={poll}
 							options={options}
-							hasAnswered={hasAnswered}
-							effect={configEffects}
 							selectedOptions={selectedOptions}
-							mutation={mutation}
-							randomAnswer={randomAnswer ?? null}
+							score={displayScore}
+							communityStats={communityStats}
+							categoryCode={poll.categoryCode}
+							explanation={poll.explanation}
+							exposedConfigDeck={exposedConfigDeck}
+							offeredConfigs={offeredConfigs}
+							nextOfferedConfigs={nextOfferedConfigs}
+							activeRun={activeRun}
+							reductionCost={configEffects.reductionCost}
+							storageBonus={configEffects.storage?.skipBonus}
+							perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
+							pipeline={{
+								slots: activeRun.pipelineSlots,
+								evaluationContext: lastEvaluationContext ?? undefined,
+								evaluation: lastPipelineEvaluation ?? undefined,
+							}}
+							date={today}
 						/>
-					</>
-				)}
-			</div>
-			<ConfigDeckFooter
-				activeRun={activeRun}
-				onDeinstall={isShopOpen ? onDeinstallConfig : undefined}
-			/>
-		</section>
+					) : (
+						<>
+							<PollQuestionDisplay poll={poll} />
+							{poll.codeSandboxExample && (
+								<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+							)}
+							{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+							<PollOptionsForm
+								poll={poll}
+								options={options}
+								hasAnswered={hasAnswered}
+								effect={configEffects}
+								selectedOptions={selectedOptions}
+								mutation={mutation}
+								randomAnswer={randomAnswer ?? null}
+							/>
+						</>
+					)}
+				</div>
+				<ConfigDeckFooter
+					activeRun={activeRun}
+					onDeinstall={isShopOpen ? onDeinstallConfig : undefined}
+				/>
+			</section>
+		</div>
 	);
 };
 
