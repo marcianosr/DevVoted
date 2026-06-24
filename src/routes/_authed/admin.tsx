@@ -149,7 +149,7 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 		runsTable,
 		dailyPollsTable,
 	} = await import("~/database/schema");
-	const { eq, desc } = await import("drizzle-orm");
+	const { eq, desc, lt, sql, count } = await import("drizzle-orm");
 	const { getTodayDateString } = await import("~/lib/dateUtils");
 
 	try {
@@ -171,6 +171,27 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 			.innerJoin(pollsTable, eq(dailyPollsTable.poll_id, pollsTable.id))
 			.where(eq(dailyPollsTable.date, todayDate))
 			.orderBy(desc(dailyPollsTable.created_at));
+
+		const pastPolls = await db
+			.select({
+				poll_id: dailyPollsTable.poll_id,
+				question: pollsTable.question,
+				category_code: pollsTable.category_code,
+				occurrences: count(dailyPollsTable.id),
+				last_date: sql<string>`max(${dailyPollsTable.date})`,
+				all_dates: sql<
+					string[]
+				>`array_agg(${dailyPollsTable.date} order by ${dailyPollsTable.date} desc)`,
+			})
+			.from(dailyPollsTable)
+			.innerJoin(pollsTable, eq(dailyPollsTable.poll_id, pollsTable.id))
+			.where(lt(dailyPollsTable.date, todayDate))
+			.groupBy(
+				dailyPollsTable.poll_id,
+				pollsTable.question,
+				pollsTable.category_code
+			)
+			.orderBy(desc(sql`max(${dailyPollsTable.date})`));
 
 		const recentResponses = await db
 			.select({
@@ -223,6 +244,7 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 			currentSeason,
 			allSeasons,
 			activePolls,
+			pastPolls,
 			recentResponses,
 			configUsage,
 			stats: {
@@ -236,6 +258,7 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 			currentSeason: null,
 			allSeasons: [],
 			activePolls: [],
+			pastPolls: [],
 			recentResponses: [],
 			configUsage: {},
 			stats: { totalUsers: 0, activeRuns: 0 },
@@ -693,6 +716,80 @@ function AdminPanel() {
 						<p className="text-gray-600">No recent responses.</p>
 					)}
 				</div>
+			</div>
+
+			{/* Past Polls Section */}
+			<div className="mt-8 rounded-lg shadow-md p-6">
+				<h2 className="text-xl font-semibold mb-4 text-white">
+					Past Daily Polls ({data.pastPolls.length})
+				</h2>
+				{data.pastPolls.length > 0 ? (
+					<div className="overflow-x-auto">
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="border-b border-gray-600">
+									<th className="text-left py-2 px-3 font-medium text-gray-300">
+										Poll ID
+									</th>
+									<th className="text-left py-2 px-3 font-medium text-gray-300">
+										Question
+									</th>
+									<th className="text-left py-2 px-3 font-medium text-gray-300">
+										Category
+									</th>
+									<th className="text-left py-2 px-3 font-medium text-gray-300">
+										Times used
+									</th>
+									<th className="text-left py-2 px-3 font-medium text-gray-300">
+										Last shown
+									</th>
+									<th className="text-left py-2 px-3 font-medium text-gray-300">
+										All dates
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{data.pastPolls.map((poll) => (
+									<tr
+										key={poll.poll_id}
+										className="border-b border-gray-700 hover:bg-gray-800"
+									>
+										<td className="py-2 px-3 text-gray-400 text-xs">
+											#{poll.poll_id}
+										</td>
+										<td className="py-2 px-3 text-white max-w-sm">
+											{poll.question}
+										</td>
+										<td className="py-2 px-3">
+											<span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+												{poll.category_code}
+											</span>
+										</td>
+										<td className="py-2 px-3 text-center">
+											<span
+												className={`px-2 py-1 rounded text-xs font-medium ${
+													poll.occurrences > 1
+														? "bg-orange-100 text-orange-800"
+														: "bg-gray-700 text-gray-300"
+												}`}
+											>
+												{poll.occurrences}×
+											</span>
+										</td>
+										<td className="py-2 px-3 text-gray-300 text-xs whitespace-nowrap">
+											{poll.last_date}
+										</td>
+										<td className="py-2 px-3 text-gray-400 text-xs">
+											{poll.all_dates.join(", ")}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				) : (
+					<p className="text-gray-400">No past polls yet.</p>
+				)}
 			</div>
 
 			{/* All Configs Section */}
