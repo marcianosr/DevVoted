@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, isNotNull, lt, notInArray } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { dailyPollsTable, pollsTable } from "~/database/schema";
@@ -72,11 +72,42 @@ export const getOrCreateDailyPoll = async (
 			return fetchPollById(existingInTx.poll_id);
 		}
 
-		const pollRecords = await tx
+		const usedPollRows = await tx
+			.select({ poll_id: dailyPollsTable.poll_id })
+			.from(dailyPollsTable)
+			.where(
+				and(lt(dailyPollsTable.date, date), isNotNull(dailyPollsTable.poll_id))
+			);
+
+		const usedPollIds = usedPollRows
+			.map((r) => r.poll_id)
+			.filter((id): id is number => id !== null);
+
+		const unusedPollRecords = await tx
 			.select({ id: pollsTable.id, categoryCode: pollsTable.category_code })
 			.from(pollsTable)
-			.where(eq(pollsTable.status, "published"))
+			.where(
+				usedPollIds.length > 0
+					? and(
+							eq(pollsTable.status, "published"),
+							notInArray(pollsTable.id, usedPollIds)
+						)
+					: eq(pollsTable.status, "published")
+			)
 			.orderBy(pollsTable.id);
+
+		// All polls exhausted — reset and pick from the full pool
+		const pollRecords =
+			unusedPollRecords.length > 0
+				? unusedPollRecords
+				: await tx
+						.select({
+							id: pollsTable.id,
+							categoryCode: pollsTable.category_code,
+						})
+						.from(pollsTable)
+						.where(eq(pollsTable.status, "published"))
+						.orderBy(pollsTable.id);
 
 		if (pollRecords.length === 0) {
 			return null;
