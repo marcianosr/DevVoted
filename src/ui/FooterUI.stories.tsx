@@ -3,7 +3,7 @@ import { FooterUI } from "./FooterUI.component";
 
 const meta: Meta<typeof FooterUI> = {
 	component: FooterUI,
-	title: "UI/FooterUI",
+	title: "Organisms/Footer",
 };
 export default meta;
 

@@ -3,7 +3,7 @@ import { SecondaryButton } from "./SecondaryButton.component";
 
 const meta: Meta<typeof SecondaryButton> = {
 	component: SecondaryButton,
-	title: "UI/SecondaryButton",
+	title: "Atoms/Buttons/Secondary",
 };
 export default meta;
 

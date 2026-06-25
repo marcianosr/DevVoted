@@ -3,7 +3,7 @@ import { PrimaryButton } from "./PrimaryButton.component";
 
 const meta: Meta<typeof PrimaryButton> = {
 	component: PrimaryButton,
-	title: "UI/PrimaryButton",
+	title: "Atoms/Buttons/Primary",
 };
 export default meta;
 

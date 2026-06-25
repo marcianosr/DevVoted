@@ -3,7 +3,7 @@ import { PageLayoutUI } from "./PageLayoutUI.component";
 
 const meta: Meta<typeof PageLayoutUI> = {
 	component: PageLayoutUI,
-	title: "UI/PageLayoutUI",
+	title: "Templates/Page Layout",
 };
 export default meta;
 

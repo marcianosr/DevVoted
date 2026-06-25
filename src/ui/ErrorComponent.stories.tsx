@@ -3,7 +3,7 @@ import { ErrorComponent } from "./ErrorComponent.component";
 
 const meta: Meta<typeof ErrorComponent> = {
 	component: ErrorComponent,
-	title: "UI/ErrorComponent",
+	title: "Pages/Error",
 };
 export default meta;
 

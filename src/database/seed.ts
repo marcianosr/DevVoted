@@ -28,6 +28,33 @@ const ADMIN_UID = "65ad226e-e3c1-4e7f-a96d-a84156589733";
 const LOCAL_SUPABASE_URL = process.env.SUPABASE_URL ?? "http://localhost:54321";
 const LOCAL_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
+const authHeaders = () => ({
+	"Content-Type": "application/json",
+	apikey: LOCAL_SERVICE_ROLE_KEY,
+	Authorization: `Bearer ${LOCAL_SERVICE_ROLE_KEY}`,
+});
+
+const findAuthUserByEmail = async (
+	email: string
+): Promise<string | undefined> => {
+	const res = await fetch(
+		`${LOCAL_SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
+		{ headers: authHeaders() }
+	);
+	if (!res.ok) return undefined;
+	const body = (await res.json()) as {
+		users?: Array<{ id: string; email: string }>;
+	};
+	return body.users?.find((u) => u.email === email)?.id;
+};
+
+const deleteAuthUser = async (userId: string): Promise<void> => {
+	await fetch(`${LOCAL_SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+		method: "DELETE",
+		headers: authHeaders(),
+	});
+};
+
 const createLocalAuthUser = async (
 	id: string,
 	email: string,
@@ -35,21 +62,43 @@ const createLocalAuthUser = async (
 ): Promise<void> => {
 	const res = await fetch(`${LOCAL_SUPABASE_URL}/auth/v1/admin/users`, {
 		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			apikey: LOCAL_SERVICE_ROLE_KEY,
-			Authorization: `Bearer ${LOCAL_SERVICE_ROLE_KEY}`,
-		},
+		headers: authHeaders(),
 		body: JSON.stringify({ id, email, password, email_confirm: true }),
 	});
 
-	if (!res.ok) {
-		const body = (await res.json()) as { error_code?: string; msg?: string };
-		const alreadyExists =
-			body.error_code === "user_already_exists" ||
-			body.msg?.toLowerCase().includes("already");
-		if (alreadyExists) return;
+	if (res.ok) return;
+
+	const body = (await res.json()) as { error_code?: string; msg?: string };
+	const alreadyExists =
+		body.error_code === "user_already_exists" ||
+		body.msg?.toLowerCase().includes("already");
+
+	if (!alreadyExists) {
 		console.warn(`⚠️  Could not create auth user ${email}: ${body.msg}`);
+		return;
+	}
+
+	// User with this email exists — check if it has the right UUID
+	const existingId = await findAuthUserByEmail(email);
+	if (existingId === id) return; // correct UUID, nothing to do
+
+	if (existingId) {
+		// Stale user with wrong UUID — delete and recreate with correct UUID
+		console.log(
+			`🔄  Auth user ${email} exists with wrong UUID (${existingId}), replacing with ${id}…`
+		);
+		await deleteAuthUser(existingId);
+		const retry = await fetch(`${LOCAL_SUPABASE_URL}/auth/v1/admin/users`, {
+			method: "POST",
+			headers: authHeaders(),
+			body: JSON.stringify({ id, email, password, email_confirm: true }),
+		});
+		if (!retry.ok) {
+			const retryBody = (await retry.json()) as { msg?: string };
+			console.warn(
+				`⚠️  Could not recreate auth user ${email}: ${retryBody.msg}`
+			);
+		}
 	}
 };
 

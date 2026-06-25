@@ -3,7 +3,7 @@ import { CatchBoundaryUI } from "./CatchBoundaryUI.component";
 
 const meta: Meta<typeof CatchBoundaryUI> = {
 	component: CatchBoundaryUI,
-	title: "UI/CatchBoundaryUI",
+	title: "Pages/Catch Boundary",
 };
 export default meta;
 

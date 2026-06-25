@@ -3,7 +3,7 @@ import { Popover } from "./Popover.component";
 
 const meta: Meta<typeof Popover> = {
 	component: Popover,
-	title: "UI/Popover",
+	title: "Molecules/Popover",
 };
 export default meta;
 

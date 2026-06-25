@@ -3,7 +3,7 @@ import { ConfirmDialog } from "./ConfirmDialog.component";
 
 const meta: Meta<typeof ConfirmDialog> = {
 	component: ConfirmDialog,
-	title: "UI/ConfirmDialog",
+	title: "Molecules/Confirm Dialog",
 };
 export default meta;
 
