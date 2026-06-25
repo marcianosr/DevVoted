@@ -35,6 +35,13 @@ import {
 } from "./run.queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 
+const staticGateTypeIdSchema = z.enum([
+	"coverage-gain",
+	"correct-answers",
+	"short-window",
+	"cold-start",
+] as const);
+
 export const getOrCreateRun = createServerFn({ method: "POST" })
 	.inputValidator(
 		z
@@ -47,12 +54,17 @@ export const getOrCreateRun = createServerFn({ method: "POST" })
 						message: "Injection amount must be 0 or a defined tier.",
 					})
 					.optional(),
+				extraPipelineSlotIds: z.array(staticGateTypeIdSchema).optional(),
 			})
 			.optional()
 	)
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
-		return await getOrCreateActiveRun(userId, data?.injectFromArchive ?? 0);
+		return await getOrCreateActiveRun(
+			userId,
+			data?.injectFromArchive ?? 0,
+			data?.extraPipelineSlotIds ?? []
+		);
 	});
 
 export const getActiveRun = createServerFn({ method: "GET" }).handler(
@@ -133,13 +145,6 @@ export const getExposedConfigDeck = createServerFn({ method: "GET" })
 		const userId = await getAuthenticatedUserId();
 		return await getRandomExposedConfigDeckHandler(userId, data.date);
 	});
-
-const staticGateTypeIdSchema = z.enum([
-	"coverage-gain",
-	"correct-answers",
-	"short-window",
-	"cold-start",
-] as const);
 
 const difficultySchema = z.enum(["low", "medium", "high", "critical"] as const);
 const categoryCodeSchema = z.enum(CATEGORY_CODES);

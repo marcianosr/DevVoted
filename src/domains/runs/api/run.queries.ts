@@ -10,6 +10,8 @@ import { db } from "~/database/db";
 import { STORAGE_UNITS } from "~/lib/storage";
 import { calculateLootAmount } from "~/domains/runs/services/lootCalculator.service";
 import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
+import { getPreRunSlot } from "~/domains/runs/data/pipelineSlots";
+import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
 import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
 import type {
 	PipelineSlot,
@@ -62,7 +64,8 @@ export const getActiveRunByUserId = async (userId: string) => {
 
 export const createRunForUser = async (
 	userId: string,
-	injectFromArchive: number = 0
+	injectFromArchive: number = 0,
+	extraPreRunSlotIds: StaticGateTypeId[] = []
 ) => {
 	return await db.transaction(async (tx) => {
 		// Debit first so an under-funded user fails before any run rows exist.
@@ -80,6 +83,10 @@ export const createRunForUser = async (
 			await import("~/domains/ranking/services/seasonService");
 		const seasonId = await getSeasonForNewRun();
 
+		const extraSlots = extraPreRunSlotIds
+			.map(getPreRunSlot)
+			.filter((s): s is NonNullable<typeof s> => s !== null);
+
 		const [runRecord] = await tx
 			.insert(runsTable)
 			.values({
@@ -88,7 +95,7 @@ export const createRunForUser = async (
 				status: "active",
 				storage_limit: STORAGE_UNITS.MB + injectFromArchive,
 				injected_archive_bytes: injectFromArchive,
-				pipeline_slots: getInitialPipelineSlots(),
+				pipeline_slots: [...getInitialPipelineSlots(), ...extraSlots],
 			})
 			.returning();
 

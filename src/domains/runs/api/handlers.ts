@@ -9,6 +9,7 @@ import {
 	getAllRuns,
 	getRunStats,
 } from "./run.queries";
+import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
 import { getLiveRunRankings } from "./ranking.queries";
 import { skipShop } from "./shop.queries";
 import { endRunManually } from "../services/runCompletion.service";
@@ -19,7 +20,8 @@ import {
 
 export const getOrCreateActiveRun = async (
 	userId: string,
-	injectFromArchive: number = 0
+	injectFromArchive: number = 0,
+	extraPreRunSlotIds: StaticGateTypeId[] = []
 ) => {
 	return handleApiOperation(async () => {
 		// Returning the existing active run silently ignores injectFromArchive.
@@ -28,7 +30,11 @@ export const getOrCreateActiveRun = async (
 		const activeRun = await getActiveRunByUserId(userId);
 		if (activeRun) return activeRun;
 
-		return await createRunForUser(userId, injectFromArchive);
+		return await createRunForUser(
+			userId,
+			injectFromArchive,
+			extraPreRunSlotIds
+		);
 	}, "Failed to get or create run");
 };
 

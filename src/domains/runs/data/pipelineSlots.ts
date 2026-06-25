@@ -181,6 +181,19 @@ export const STARTER_GATE_TYPE_IDS: readonly StaticGateTypeId[] = [
 	"cold-start",
 ] as const;
 
+// The difficulty each static gate type starts at for a pre-run selection.
+// cold-start has no low/medium variant, so it starts at high.
+export const PRE_RUN_SLOT_DIFFICULTY: Record<StaticGateTypeId, GateDifficulty> =
+	{
+		"coverage-gain": "low",
+		"correct-answers": "low",
+		"short-window": "low",
+		"cold-start": "high",
+	};
+
+export const getPreRunSlot = (id: StaticGateTypeId): PipelineSlot | null =>
+	getSlotDefinition(id, PRE_RUN_SLOT_DIFFICULTY[id]);
+
 // ─── Lookup helpers ───────────────────────────────────────────────────────────
 
 export const getSlotDefinition = (

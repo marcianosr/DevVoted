@@ -31,7 +31,7 @@ export const FooterUI = ({
 		<hr className="border-theme my-4" />
 		<section>
 			<p>
-				A crazy roguelike obsession build with craftsmanship, passion, ❤️ &
+				A crazy roguelite obsession build with craftsmanship, passion, ❤️ &
 				Tanstack Start by Marciano Schildmeijer | EST may 2022 | Last updated:{" "}
 				{lastCommitDate}
 			</p>
