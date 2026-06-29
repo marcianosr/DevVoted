@@ -294,17 +294,17 @@ const sendReminderEmailFn = createServerFn({ method: "POST" })
 
 		const resend = new Resend(process.env.RESEND_API_KEY);
 
-		const from = "DevVoted <onboarding@resend.dev>";
+		const from = "DevVoted <noreply@devvoted.dev>";
 
 		const { error } = await resend.emails.send({
 			from,
-			to: "marciano_schildmeijer@live.nl",
+			to: data.email,
 			subject: `Reminder: Don't forget to vote today!`,
 			html: `
 				<p>Hey ${data.displayName}!,</p>
 				<p>Just a small reminder for you to vote on the poll of today!</p>
 				<br />
-				<a href='https://devvoted-tanstack.vercel.app/daily-poll'>Cast your vote!</a>
+				<a href='https://www.devvoted.dev/daily-poll'>Cast your vote!</a>
 				<p>Team DevVoted</p>
 			`,
 		});
