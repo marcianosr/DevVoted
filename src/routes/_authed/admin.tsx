@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
+import { Resend } from "resend";
 
 import { configs as allConfigs } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
@@ -149,7 +150,7 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 		runsTable,
 		dailyPollsTable,
 	} = await import("~/database/schema");
-	const { eq, desc, lt, sql, count } = await import("drizzle-orm");
+	const { eq, desc, lt, sql, count, and } = await import("drizzle-orm");
 	const { getTodayDateString } = await import("~/lib/dateUtils");
 
 	try {
@@ -208,7 +209,24 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 			.orderBy(desc(pollResponsesTable.created_at))
 			.limit(20);
 
-		const totalUsers = await db.select().from(usersTable);
+		const allUsers = await db
+			.select({
+				id: usersTable.id,
+				display_name: usersTable.display_name,
+				email: usersTable.email,
+				total_polls_submitted: usersTable.total_polls_submitted,
+				run_id: runsTable.id,
+			})
+			.from(usersTable)
+			.leftJoin(
+				runsTable,
+				and(
+					eq(runsTable.user_id, usersTable.id),
+					eq(runsTable.status, "active")
+				)
+			)
+			.orderBy(desc(usersTable.total_polls_submitted));
+
 		const activeRuns = await db
 			.select({
 				id: runsTable.id,
@@ -247,8 +265,9 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 			pastPolls,
 			recentResponses,
 			configUsage,
+			allUsers,
 			stats: {
-				totalUsers: totalUsers.length,
+				totalUsers: allUsers.length,
 				activeRuns: activeRuns.length,
 			},
 		};
@@ -261,11 +280,39 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 			pastPolls: [],
 			recentResponses: [],
 			configUsage: {},
+			allUsers: [],
 			stats: { totalUsers: 0, activeRuns: 0 },
 			error: "Failed to load admin data",
 		};
 	}
 });
+
+const sendReminderEmailFn = createServerFn({ method: "POST" })
+	.inputValidator((data: { email: string; displayName: string }) => data)
+	.handler(async ({ data }) => {
+		await checkAdminAccessForAction();
+
+		const resend = new Resend(process.env.RESEND_API_KEY);
+
+		const from = "DevVoted <onboarding@resend.dev>";
+
+		const { error } = await resend.emails.send({
+			from,
+			to: "marciano_schildmeijer@live.nl",
+			subject: `Reminder: Don't forget to vote today!`,
+			html: `
+				<p>Hey ${data.displayName}!,</p>
+				<p>Just a small reminder for you to vote on the poll of today!</p>
+				<br />
+				<a href='https://devvoted-tanstack.vercel.app/daily-poll'>Cast your vote!</a>
+				<p>Team DevVoted</p>
+			`,
+		});
+
+		if (error) throw new Error(error.message);
+
+		return { success: true };
+	});
 
 export const Route = createFileRoute("/_authed/admin")({
 	beforeLoad: async ({ context }) => {
@@ -301,7 +348,7 @@ export const Route = createFileRoute("/_authed/admin")({
 					<div className="text-center">
 						<h1 className="text-2xl text-red-600 mb-4">Access Denied</h1>
 						<p>This area is restricted to administrators only.</p>
-						<p className="text-sm text-gray-600 mt-2">
+						<p className="text-sm text-white mt-2">
 							Contact marciano@kabisa.nl if you need access.
 						</p>
 					</div>
@@ -313,6 +360,14 @@ export const Route = createFileRoute("/_authed/admin")({
 	},
 	component: AdminPanel,
 });
+
+type UserRow = {
+	id: string;
+	display_name: string;
+	email: string;
+	total_polls_submitted: number;
+	run_id: number | null;
+};
 
 type ConfigSortOption = "rarity" | "cost" | "popularity";
 
@@ -326,6 +381,8 @@ function AdminPanel() {
 		text: string;
 	} | null>(null);
 	const [configSort, setConfigSort] = useState<ConfigSortOption>("rarity");
+	const [emailSending, setEmailSending] = useState<string | null>(null);
+	const [emailSent, setEmailSent] = useState<Set<string>>(new Set());
 
 	const configUsage = data.configUsage as Record<
 		string,
@@ -432,6 +489,20 @@ function AdminPanel() {
 		}
 	};
 
+	const handleSendReminder = async (user: UserRow) => {
+		setEmailSending(user.id);
+		try {
+			await sendReminderEmailFn({
+				data: { email: user.email, displayName: user.display_name },
+			});
+			setEmailSent((prev) => new Set(prev).add(user.id));
+		} catch {
+			showMessage("error", `Failed to send email to ${user.email}`);
+		} finally {
+			setEmailSending(null);
+		}
+	};
+
 	const upcomingSeasons = data.allSeasons.filter(
 		(s) => s.status === "upcoming"
 	);
@@ -440,8 +511,8 @@ function AdminPanel() {
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-8">
-				<h1 className="text-3xl text-gray-900 mb-2">DevVoted Admin Panel</h1>
-				<p className="text-gray-600">
+				<h1 className="text-3xl text-white mb-2">DevVoted Admin Panel</h1>
+				<p className="text-white">
 					Manage seasons, monitor active polls, and track user responses.
 				</p>
 			</div>
@@ -467,7 +538,7 @@ function AdminPanel() {
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				{/* Season Management */}
 				<div className=" rounded-lg shadow-md p-6">
-					<h2 className="text-xl font-semibold mb-4 text-gray-900">
+					<h2 className="text-xl font-semibold mb-4 text-white">
 						Season Management
 					</h2>
 					<div className="space-y-4">
@@ -556,7 +627,7 @@ function AdminPanel() {
 								<h3 className="font-medium mb-3">Create New Season</h3>
 								<div className="space-y-3">
 									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">
+										<label className="block text-sm font-medium text-white mb-1">
 											Season Name
 										</label>
 										<input
@@ -568,7 +639,7 @@ function AdminPanel() {
 										/>
 									</div>
 									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">
+										<label className="block text-sm font-medium text-white mb-1">
 											Description
 										</label>
 										<textarea
@@ -579,7 +650,7 @@ function AdminPanel() {
 									</div>
 									<div className="grid grid-cols-2 gap-3">
 										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">
+											<label className="block text-sm font-medium text-white mb-1">
 												Start Date
 											</label>
 											<input
@@ -590,7 +661,7 @@ function AdminPanel() {
 											/>
 										</div>
 										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">
+											<label className="block text-sm font-medium text-white mb-1">
 												End Date
 											</label>
 											<input
@@ -612,7 +683,7 @@ function AdminPanel() {
 										<button
 											type="button"
 											onClick={() => setShowCreateForm(false)}
-											className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+											className="px-4 py-2 bg-gray-300 text-white rounded-md hover:bg-gray-400"
 										>
 											Cancel
 										</button>
@@ -625,25 +696,25 @@ function AdminPanel() {
 
 				{/* System Status */}
 				<div className=" rounded-lg shadow-md p-6">
-					<h2 className="text-xl font-semibold mb-4 text-gray-900">
+					<h2 className="text-xl font-semibold mb-4 text-white">
 						System Status
 					</h2>
 					<div className="space-y-3">
 						<div className="flex justify-between items-center">
-							<span className="text-gray-600">Database</span>
+							<span className="text-white">Database</span>
 							<span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
 								Connected
 							</span>
 						</div>
 						<div className="flex justify-between items-center">
-							<span className="text-gray-600">Active Runs</span>
-							<span className="text-gray-900 font-medium">
+							<span className="text-white">Active Runs</span>
+							<span className="text-white font-medium">
 								{data.stats.activeRuns}
 							</span>
 						</div>
 						<div className="flex justify-between items-center">
-							<span className="text-gray-600">Total Users</span>
-							<span className="text-gray-900 font-medium">
+							<span className="text-white">Total Users</span>
+							<span className="text-white font-medium">
 								{data.stats.totalUsers}
 							</span>
 						</div>
@@ -652,7 +723,7 @@ function AdminPanel() {
 
 				{/* Active Polls */}
 				<div className=" rounded-lg shadow-md p-6">
-					<h2 className="text-xl font-semibold mb-4 text-gray-900">
+					<h2 className="text-xl font-semibold mb-4 text-white">
 						Active Polls
 					</h2>
 					{data.activePolls.length > 0 ? (
@@ -663,15 +734,13 @@ function AdminPanel() {
 									className="p-3 border border-gray-200 rounded-lg"
 								>
 									<div className="flex justify-between items-start mb-2">
-										<h3 className="font-medium text-gray-900">
-											Poll #{poll.id}
-										</h3>
+										<h3 className="font-medium text-white">Poll #{poll.id}</h3>
 										<span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
 											{poll.category_code}
 										</span>
 									</div>
-									<p className="text-sm text-gray-700 mb-2">{poll.question}</p>
-									<div className="flex justify-between text-xs text-gray-500">
+									<p className="text-sm text-white mb-2">{poll.question}</p>
+									<div className="flex justify-between text-xs text-white">
 										<span>Opens: {formatDate(poll.opening_time)}</span>
 										<span>Closes: {formatDate(poll.closing_time)}</span>
 									</div>
@@ -679,13 +748,13 @@ function AdminPanel() {
 							))}
 						</div>
 					) : (
-						<p className="text-gray-600">No active polls currently.</p>
+						<p className="text-white">No active polls currently.</p>
 					)}
 				</div>
 
 				{/* Recent Responses */}
 				<div className=" rounded-lg shadow-md p-6">
-					<h2 className="text-xl font-semibold mb-4 text-gray-900">
+					<h2 className="text-xl font-semibold mb-4 text-white">
 						Recent Responses
 					</h2>
 					{data.recentResponses.length > 0 ? (
@@ -696,24 +765,24 @@ function AdminPanel() {
 									className="p-3 bg-gray-50 rounded-lg"
 								>
 									<div className="flex justify-between items-start mb-1">
-										<span className="font-medium text-sm text-gray-900">
+										<span className="font-medium text-sm text-white">
 											{response.display_name || "Anonymous"}
 										</span>
-										<span className="text-xs text-gray-500">
+										<span className="text-xs text-white">
 											{formatDate(response.created_at!)}
 										</span>
 									</div>
-									<p className="text-xs text-gray-600 mb-1">
+									<p className="text-xs text-white mb-1">
 										Poll #{response.poll_id}: {response.question}
 									</p>
 									{response.email && (
-										<p className="text-xs text-gray-500">{response.email}</p>
+										<p className="text-xs text-white">{response.email}</p>
 									)}
 								</div>
 							))}
 						</div>
 					) : (
-						<p className="text-gray-600">No recent responses.</p>
+						<p className="text-white">No recent responses.</p>
 					)}
 				</div>
 			</div>
@@ -728,22 +797,22 @@ function AdminPanel() {
 						<table className="w-full text-sm">
 							<thead>
 								<tr className="border-b border-gray-600">
-									<th className="text-left py-2 px-3 font-medium text-gray-300">
+									<th className="text-left py-2 px-3 font-medium text-white">
 										Poll ID
 									</th>
-									<th className="text-left py-2 px-3 font-medium text-gray-300">
+									<th className="text-left py-2 px-3 font-medium text-white">
 										Question
 									</th>
-									<th className="text-left py-2 px-3 font-medium text-gray-300">
+									<th className="text-left py-2 px-3 font-medium text-white">
 										Category
 									</th>
-									<th className="text-left py-2 px-3 font-medium text-gray-300">
+									<th className="text-left py-2 px-3 font-medium text-white">
 										Times used
 									</th>
-									<th className="text-left py-2 px-3 font-medium text-gray-300">
+									<th className="text-left py-2 px-3 font-medium text-white">
 										Last shown
 									</th>
-									<th className="text-left py-2 px-3 font-medium text-gray-300">
+									<th className="text-left py-2 px-3 font-medium text-white">
 										All dates
 									</th>
 								</tr>
@@ -754,7 +823,7 @@ function AdminPanel() {
 										key={poll.poll_id}
 										className="border-b border-gray-700 hover:bg-gray-800"
 									>
-										<td className="py-2 px-3 text-gray-400 text-xs">
+										<td className="py-2 px-3 text-white text-xs">
 											#{poll.poll_id}
 										</td>
 										<td className="py-2 px-3 text-white max-w-sm">
@@ -770,16 +839,16 @@ function AdminPanel() {
 												className={`px-2 py-1 rounded text-xs font-medium ${
 													poll.occurrences > 1
 														? "bg-orange-100 text-orange-800"
-														: "bg-gray-700 text-gray-300"
+														: "bg-gray-700 text-white"
 												}`}
 											>
 												{poll.occurrences}×
 											</span>
 										</td>
-										<td className="py-2 px-3 text-gray-300 text-xs whitespace-nowrap">
+										<td className="py-2 px-3 text-white text-xs whitespace-nowrap">
 											{poll.last_date}
 										</td>
-										<td className="py-2 px-3 text-gray-400 text-xs">
+										<td className="py-2 px-3 text-white text-xs">
 											{poll.all_dates.join(", ")}
 										</td>
 									</tr>
@@ -788,7 +857,7 @@ function AdminPanel() {
 						</table>
 					</div>
 				) : (
-					<p className="text-gray-400">No past polls yet.</p>
+					<p className="text-white">No past polls yet.</p>
 				)}
 			</div>
 
@@ -804,7 +873,7 @@ function AdminPanel() {
 							className={`px-3 py-1 rounded text-sm ${
 								configSort === "rarity"
 									? "bg-blue-600 text-white"
-									: "bg-gray-700 text-gray-200 hover:bg-gray-600"
+									: "bg-gray-700 text-white hover:bg-gray-600"
 							}`}
 						>
 							Sort by Rarity
@@ -814,7 +883,7 @@ function AdminPanel() {
 							className={`px-3 py-1 rounded text-sm ${
 								configSort === "cost"
 									? "bg-blue-600 text-white"
-									: "bg-gray-700 text-gray-200 hover:bg-gray-600"
+									: "bg-gray-700 text-white hover:bg-gray-600"
 							}`}
 						>
 							Sort by Cost
@@ -824,7 +893,7 @@ function AdminPanel() {
 							className={`px-3 py-1 rounded text-sm ${
 								configSort === "popularity"
 									? "bg-blue-600 text-white"
-									: "bg-gray-700 text-gray-200 hover:bg-gray-600"
+									: "bg-gray-700 text-white hover:bg-gray-600"
 							}`}
 						>
 							Sort by Popularity
@@ -835,22 +904,22 @@ function AdminPanel() {
 					<table className="w-full text-sm">
 						<thead>
 							<tr className="border-b border-gray-600">
-								<th className="text-left py-2 px-3 font-medium text-gray-300">
+								<th className="text-left py-2 px-3 font-medium text-white">
 									Name
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-300">
+								<th className="text-left py-2 px-3 font-medium text-white">
 									Rarity
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-300">
+								<th className="text-left py-2 px-3 font-medium text-white">
 									Cost
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-300">
+								<th className="text-left py-2 px-3 font-medium text-white">
 									Users
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-300">
+								<th className="text-left py-2 px-3 font-medium text-white">
 									Description
 								</th>
-								<th className="text-left py-2 px-3 font-medium text-gray-300">
+								<th className="text-left py-2 px-3 font-medium text-white">
 									Categories
 								</th>
 							</tr>
@@ -876,7 +945,7 @@ function AdminPanel() {
 												{config.rarity}
 											</span>
 										</td>
-										<td className="py-2 px-3 text-gray-300">
+										<td className="py-2 px-3 text-white">
 											{formatStorage(config.cost)}
 										</td>
 										<td className="py-2 px-3">
@@ -886,12 +955,12 @@ function AdminPanel() {
 														{userCount} user{userCount !== 1 ? "s" : ""}
 													</span>
 													<div className="absolute left-0 top-full mt-1 hidden group-hover:block bg-gray-900 border border-gray-600 rounded p-2 z-10 min-w-48 shadow-lg">
-														<div className="text-xs text-gray-300 space-y-1">
+														<div className="text-xs text-white space-y-1">
 															{users.map((user, idx: number) => (
 																<div key={idx}>
 																	{user.displayName}
 																	{user.email && (
-																		<span className="text-gray-500 ml-1">
+																		<span className="text-white ml-1">
 																			({user.email})
 																		</span>
 																	)}
@@ -901,13 +970,13 @@ function AdminPanel() {
 													</div>
 												</div>
 											) : (
-												<span className="text-gray-500">0</span>
+												<span className="text-white">0</span>
 											)}
 										</td>
-										<td className="py-2 px-3 text-gray-300 max-w-xs truncate">
+										<td className="py-2 px-3 text-white max-w-xs truncate">
 											{config.description}
 										</td>
-										<td className="py-2 px-3 text-gray-400 text-xs">
+										<td className="py-2 px-3 text-white text-xs">
 											{config.targetCategories?.join(", ") || "All"}
 										</td>
 									</tr>
@@ -917,6 +986,107 @@ function AdminPanel() {
 					</table>
 				</div>
 			</div>
+			{/* Users Section */}
+			<UsersSection
+				users={data.allUsers as UserRow[]}
+				emailSending={emailSending}
+				emailSent={emailSent}
+				onSendReminder={handleSendReminder}
+			/>
+		</div>
+	);
+}
+
+function UsersSection({
+	users,
+	emailSending,
+	emailSent,
+	onSendReminder,
+}: {
+	users: UserRow[];
+	emailSending: string | null;
+	emailSent: Set<string>;
+	onSendReminder: (user: UserRow) => void;
+}) {
+	const inRun = users.filter((u) => u.run_id !== null);
+	const notInRun = users.filter((u) => u.run_id === null);
+
+	return (
+		<div className="mt-8 rounded-lg shadow-md p-6">
+			<h2 className="text-xl font-semibold mb-6 text-white">
+				Users ({users.length})
+			</h2>
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+				<UserGroup
+					title="In Active Run"
+					users={inRun}
+					emailSending={emailSending}
+					emailSent={emailSent}
+					onSendReminder={onSendReminder}
+				/>
+				<UserGroup
+					title="No Active Run"
+					users={notInRun}
+					emailSending={emailSending}
+					emailSent={emailSent}
+					onSendReminder={onSendReminder}
+				/>
+			</div>
+		</div>
+	);
+}
+
+function UserGroup({
+	title,
+	users,
+	emailSending,
+	emailSent,
+	onSendReminder,
+}: {
+	title: string;
+	users: UserRow[];
+	emailSending: string | null;
+	emailSent: Set<string>;
+	onSendReminder: (user: UserRow) => void;
+}) {
+	return (
+		<div>
+			<h3 className="text-sm font-semibold uppercase tracking-wide text-white mb-3">
+				{title} ({users.length})
+			</h3>
+			{users.length === 0 ? (
+				<p className="text-white text-sm">None</p>
+			) : (
+				<ul className="space-y-2">
+					{users.map((user) => (
+						<li
+							key={user.id}
+							className="flex items-center justify-between gap-3 p-3 bg-gray-800 rounded-lg"
+						>
+							<div className="min-w-0">
+								<p className="text-sm font-medium text-white truncate">
+									{user.display_name}
+								</p>
+								<p className="text-xs text-white truncate">{user.email}</p>
+								<p className="text-xs text-white">
+									{user.total_polls_submitted} polls submitted
+								</p>
+							</div>
+							<button
+								onClick={() => onSendReminder(user)}
+								disabled={emailSending === user.id || emailSent.has(user.id)}
+								className="shrink-0 px-3 py-1.5 text-xs rounded-md transition-colors disabled:opacity-50 bg-indigo-600 hover:bg-indigo-700 text-white disabled:cursor-not-allowed"
+							>
+								{emailSending === user.id
+									? "Sending..."
+									: emailSent.has(user.id)
+										? "Sent ✓"
+										: "Send reminder"}
+							</button>
+						</li>
+					))}
+				</ul>
+			)}
 		</div>
 	);
 }

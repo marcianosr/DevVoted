@@ -67,6 +67,7 @@
 		"react-dom": "^19.2.3",
 		"react-markdown": "^10.1.0",
 		"rehype-highlight": "^7.0.2",
+		"resend": "^6.16.0",
 		"type-fest": "^5.3.1"
 	},
 	"devDependencies": {
