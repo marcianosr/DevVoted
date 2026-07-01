@@ -14,11 +14,13 @@ import type { PollOption } from "./pollOption.model";
 export const POLL_STATUSES = ["draft", "published", "archived"] as const;
 export type PollStatus = (typeof POLL_STATUSES)[number];
 
+export type AnswerType = "single" | "multiple";
+
 export type Poll = {
 	id: number;
 	question: string;
 	status: PollStatus;
-	answerType: "single" | "multiple";
+	answerType: AnswerType;
 	openingTime: Date;
 	closingTime: Date;
 	createdBy: string;

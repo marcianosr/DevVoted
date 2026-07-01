@@ -7,23 +7,21 @@ import { z } from "zod";
 
 import { ApplyEffects } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
-import { removeConfigFromRunServerFn } from "~/domains/economy/api/configs";
 import {
 	getCommunityStatsHandler,
 	getRandomAnswerHandler,
 	getScoreBreakdownHandler,
 } from "~/domains/polls/api/dailyPoll.handlers";
 import { postPollOptions } from "~/domains/polls/api/polls";
-import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
-import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
 import { PollLastSeenBadge } from "~/domains/polls/components/PollLastSeenBadge.component";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm.component";
-import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay.component";
 import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
+import { getActiveConfigs } from "~/domains/economy/services/configManager.service";
+import { getConfigsApplyingToPollCategory } from "~/domains/polls/utils/pollConfigs";
+import type { ActivePollConfig } from "~/ui/polls/PollActiveConfigStrip.ui";
 import { Poll } from "~/domains/polls/models/poll.model";
 import { PollOption } from "~/domains/polls/models/pollOption.model";
 import { getExposedConfigDeck } from "~/domains/runs/api/runs";
-import { ConfigDeckFooter } from "~/domains/economy/components/ConfigDeckFooter.component";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer.component";
 import { useApplyPipelineUpgrade } from "~/domains/runs/hooks/useApplyPipelineUpgrade";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
@@ -130,6 +128,18 @@ const DailyPollContainer = ({
 	const queryClient = useQueryClient();
 	const category = getCategoryMetadata(poll.categoryCode);
 
+	// Installed configs that can act on THIS poll, shown as the "active configs"
+	// strip on the answering screen.
+	const activePollConfigs: ActivePollConfig[] =
+		getConfigsApplyingToPollCategory(
+			getActiveConfigs(activeRun),
+			poll.categoryCode
+		).map((config) => ({
+			id: config.id,
+			name: config.name,
+			rarity: config.rarity,
+		}));
+
 	// Store the score from mutation to avoid stale data after router.invalidate()
 	// The loader recalculates score with updated run data, which gives wrong values
 	const [submittedScore, setSubmittedScore] = useState<ScoreCalculation | null>(
@@ -160,11 +170,6 @@ const DailyPollContainer = ({
 			setLastEvaluationContext(initialWindowContext);
 		}
 	}, [initialWindowContext]);
-
-	const deinstallConfigMutation = useMutation({
-		mutationFn: removeConfigFromRunServerFn,
-		onSuccess: () => router.invalidate(),
-	});
 
 	const { apply: applyUpgrade, isPending: isUpgradePending } =
 		useApplyPipelineUpgrade({
@@ -199,13 +204,6 @@ const DailyPollContainer = ({
 	const exposeConfigDeck = configEffects.exposeConfigDeck ?? false;
 
 	const today = date;
-	const isShopOpen = hasAnswered && activeRun.shopSkippedDate !== today;
-	const onDeinstallConfig = (config: Config) => {
-		deinstallConfigMutation.mutate({
-			data: { configIds: [config.id], runId: activeRun.id, date: today },
-		});
-	};
-
 	const { data: exposedConfigDeckResult } = useQuery({
 		queryKey: ["exposedConfigDeck", today],
 		queryFn: () => getExposedConfigDeck({ data: { date: today } }),
@@ -366,28 +364,18 @@ const DailyPollContainer = ({
 							date={today}
 						/>
 					) : (
-						<>
-							<PollQuestionDisplay poll={poll} />
-							{poll.codeSandboxExample && (
-								<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
-							)}
-							{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
-							<PollOptionsForm
-								poll={poll}
-								options={options}
-								hasAnswered={hasAnswered}
-								effect={configEffects}
-								selectedOptions={selectedOptions}
-								mutation={mutation}
-								randomAnswer={randomAnswer ?? null}
-							/>
-						</>
+						<PollOptionsForm
+							poll={poll}
+							options={options}
+							hasAnswered={hasAnswered}
+							effect={configEffects}
+							selectedOptions={selectedOptions}
+							activeConfigs={activePollConfigs}
+							mutation={mutation}
+							randomAnswer={randomAnswer ?? null}
+						/>
 					)}
 				</div>
-				<ConfigDeckFooter
-					activeRun={activeRun}
-					onDeinstall={isShopOpen ? onDeinstallConfig : undefined}
-				/>
 			</section>
 		</div>
 	);

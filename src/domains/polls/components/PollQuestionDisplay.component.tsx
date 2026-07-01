@@ -1,40 +1,10 @@
-import css from "highlight.js/lib/languages/css";
-import java from "highlight.js/lib/languages/java";
-import javascript from "highlight.js/lib/languages/javascript";
-import typescript from "highlight.js/lib/languages/typescript";
-import xml from "highlight.js/lib/languages/xml";
-import ReactMarkdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
-
 import type { Poll } from "~/domains/polls/models/poll.model";
-
-const rehypeHighlightOptions = {
-	detect: true,
-	languages: {
-		css,
-		java,
-		javascript,
-		js: javascript,
-		typescript,
-		ts: typescript,
-		html: xml,
-		vue: xml,
-		xml,
-	},
-};
+import { PollQuestionHeading } from "~/ui/polls/PollQuestionHeading.ui";
 
 type PollQuestionDisplayProps = {
 	poll: Poll;
 };
 
-export const PollQuestionDisplay = ({ poll }: PollQuestionDisplayProps) => {
-	return (
-		<div className="markdown mb-4 text-theme text-3xl md:text-5xl">
-			<ReactMarkdown
-				rehypePlugins={[[rehypeHighlight, rehypeHighlightOptions]]}
-			>
-				{poll.question}
-			</ReactMarkdown>
-		</div>
-	);
-};
+export const PollQuestionDisplay = ({ poll }: PollQuestionDisplayProps) => (
+	<PollQuestionHeading question={poll.question} />
+);
