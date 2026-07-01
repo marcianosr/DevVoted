@@ -4,6 +4,7 @@ import { createMockConfig } from "~/domains/economy/models/config.mock";
 
 import {
 	configAppliesToPollCategory,
+	findWrongOptionConfig,
 	getConfigsApplyingToPollCategory,
 } from "./pollConfigs";
 
@@ -51,5 +52,22 @@ describe(getConfigsApplyingToPollCategory.name, () => {
 	it("returns an empty list when nothing applies", () => {
 		const jsOnly = createMockConfig({ targetCategories: ["js"] });
 		expect(getConfigsApplyingToPollCategory([jsOnly], "python")).toEqual([]);
+	});
+});
+
+describe(findWrongOptionConfig.name, () => {
+	it("finds the config whose effect removes a wrong option", () => {
+		const eslint = createMockConfig({
+			id: "eslint-config",
+			effect: ["disableWrongOptions"],
+		});
+		const includes = createMockConfig({ id: "includes-config" });
+
+		expect(findWrongOptionConfig([includes, eslint])?.id).toBe("eslint-config");
+	});
+
+	it("returns undefined when no installed config removes a wrong option", () => {
+		const includes = createMockConfig({ id: "includes-config" });
+		expect(findWrongOptionConfig([includes])).toBeUndefined();
 	});
 });

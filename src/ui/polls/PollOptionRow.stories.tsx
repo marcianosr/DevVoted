@@ -36,6 +36,19 @@ export const Disabled: Story = {
 	args: { disabled: true, text: "`Array.prototype.pop()`" },
 };
 
+export const RemovedByConfig: Story = {
+	args: {
+		disabled: true,
+		removedByConfig: {
+			name: "ESLint",
+			rarity: "uncommon",
+			description:
+				"Disables 1 wrong option when answering JavaScript/TypeScript polls.",
+		},
+		text: "`Array.prototype.pop()`",
+	},
+};
+
 export const WithPeerMarker: Story = {
 	args: { markerEmoji: "👤", markerTitle: "Tooie picked this" },
 };

@@ -11,7 +11,6 @@ const meta: Meta<typeof PollSubmitBar> = {
 		canSubmit: false,
 		isSubmitting: false,
 		submitted: false,
-		eslintActive: false,
 		hint: "Pick an option to continue.",
 		onSubmit: () => {},
 	},
@@ -24,10 +23,6 @@ export const NothingSelected: Story = {};
 
 export const Ready: Story = {
 	args: { canSubmit: true },
-};
-
-export const EslintActive: Story = {
-	args: { canSubmit: true, eslintActive: true },
 };
 
 export const Submitting: Story = {

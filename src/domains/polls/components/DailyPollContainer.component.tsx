@@ -17,8 +17,12 @@ import { PollLastSeenBadge } from "~/domains/polls/components/PollLastSeenBadge.
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm.component";
 import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
 import { getActiveConfigs } from "~/domains/economy/services/configManager.service";
-import { getConfigsApplyingToPollCategory } from "~/domains/polls/utils/pollConfigs";
+import {
+	findWrongOptionConfig,
+	getConfigsApplyingToPollCategory,
+} from "~/domains/polls/utils/pollConfigs";
 import type { ActivePollConfig } from "~/ui/polls/PollActiveConfigStrip.ui";
+import type { RemovedByConfig } from "~/ui/polls/PollOptionRow.ui";
 import { Poll } from "~/domains/polls/models/poll.model";
 import { PollOption } from "~/domains/polls/models/pollOption.model";
 import { getExposedConfigDeck } from "~/domains/runs/api/runs";
@@ -130,16 +134,28 @@ const DailyPollContainer = ({
 
 	// Installed configs that can act on THIS poll, shown as the "active configs"
 	// strip on the answering screen.
-	const activePollConfigs: ActivePollConfig[] =
-		getConfigsApplyingToPollCategory(
-			getActiveConfigs(activeRun),
-			poll.categoryCode
-		).map((config) => ({
+	const applyingConfigs = getConfigsApplyingToPollCategory(
+		getActiveConfigs(activeRun),
+		poll.categoryCode
+	);
+	const activePollConfigs: ActivePollConfig[] = applyingConfigs.map(
+		(config) => ({
 			id: config.id,
 			name: config.name,
 			description: config.description,
 			rarity: config.rarity,
-		}));
+		})
+	);
+	// The config (ESLint/Stylelint) that removed a wrong option, shown as a card
+	// beside the disabled answer.
+	const wrongOptionConfig = findWrongOptionConfig(applyingConfigs);
+	const removalConfig: RemovedByConfig | undefined = wrongOptionConfig
+		? {
+				name: wrongOptionConfig.name,
+				rarity: wrongOptionConfig.rarity,
+				description: wrongOptionConfig.description,
+			}
+		: undefined;
 
 	// Store the score from mutation to avoid stale data after router.invalidate()
 	// The loader recalculates score with updated run data, which gives wrong values
@@ -372,6 +388,7 @@ const DailyPollContainer = ({
 							effect={configEffects}
 							selectedOptions={selectedOptions}
 							activeConfigs={activePollConfigs}
+							removalConfig={removalConfig}
 							mutation={mutation}
 							randomAnswer={randomAnswer ?? null}
 						/>

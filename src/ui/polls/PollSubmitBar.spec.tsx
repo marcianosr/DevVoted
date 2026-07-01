@@ -7,7 +7,6 @@ const baseProps = {
 	canSubmit: true,
 	isSubmitting: false,
 	submitted: false,
-	eslintActive: false,
 	onSubmit: vi.fn(),
 };
 
@@ -43,12 +42,6 @@ describe(PollSubmitBar.name, () => {
 		render(<PollSubmitBar {...baseProps} submitted={true} />);
 		expect(screen.getByText("Submitted!")).toBeInTheDocument();
 		expect(screen.getByRole("button")).toBeDisabled();
-	});
-
-	it("surfaces the ESLint chip when a wrong option was removed", () => {
-		render(<PollSubmitBar {...baseProps} eslintActive={true} />);
-		expect(screen.getByText("ESLint")).toBeInTheDocument();
-		expect(screen.getByText("−1 wrong option")).toBeInTheDocument();
 	});
 
 	it("renders a submission error", () => {

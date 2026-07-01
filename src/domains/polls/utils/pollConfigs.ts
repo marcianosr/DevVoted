@@ -23,3 +23,15 @@ export const getConfigsApplyingToPollCategory = (
 	categoryCode: CategoryCode
 ): Config[] =>
 	configs.filter((config) => configAppliesToPollCategory(config, categoryCode));
+
+const DISABLE_WRONG_OPTIONS_EFFECT = "disableWrongOptions";
+
+/**
+ * The config responsible for removing a wrong answer on this poll (ESLint on
+ * JS/TS polls, Stylelint on HTML/CSS), or undefined when none is installed.
+ * Used to label the removed option with the config that caused it.
+ */
+export const findWrongOptionConfig = (configs: Config[]): Config | undefined =>
+	configs.find((config) =>
+		config.effect.includes(DISABLE_WRONG_OPTIONS_EFFECT)
+	);

@@ -72,4 +72,30 @@ describe(PollOptionList.name, () => {
 		);
 		expect(screen.getByLabelText("Banjo")).toBeChecked();
 	});
+
+	it("shows the removing config's card beside a removed option", () => {
+		const removedOptions: PollAnsweringOption[] = [
+			{ id: "1", text: "Banjo" },
+			{
+				id: "2",
+				text: "Kazooie",
+				disabled: true,
+				removedByConfig: {
+					name: "ESLint",
+					rarity: "uncommon",
+					description: "Disables 1 wrong option.",
+				},
+			},
+		];
+		render(
+			<PollOptionList
+				options={removedOptions}
+				selectedIds={[]}
+				answerType="single"
+				onToggle={vi.fn()}
+			/>
+		);
+		expect(screen.getByText("ESLint")).toBeInTheDocument();
+		expect(screen.getByText("(uncommon)")).toBeInTheDocument();
+	});
 });

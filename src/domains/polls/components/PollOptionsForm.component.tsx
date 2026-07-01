@@ -12,6 +12,7 @@ import { PollAnsweringScreen } from "~/ui/polls/PollAnsweringScreen.ui";
 import type { ActivePollConfig } from "~/ui/polls/PollActiveConfigStrip.ui";
 import type { PollAnsweringLiveHint } from "~/ui/polls/PollAnsweringScreen.ui";
 import type { PollAnsweringOption } from "~/ui/polls/PollOptionList.ui";
+import type { RemovedByConfig } from "~/ui/polls/PollOptionRow.ui";
 
 import type { UseMutationResult } from "@tanstack/react-query";
 
@@ -22,6 +23,7 @@ type PollOptionsFormProps = {
 	effect: ApplyEffects;
 	selectedOptions: string[];
 	activeConfigs: ActivePollConfig[];
+	removalConfig?: RemovedByConfig;
 	mutation: UseMutationResult<
 		Awaited<ReturnType<typeof postPollOptions>>,
 		Error,
@@ -58,6 +60,7 @@ const PollOptionsForm = ({
 	effect,
 	selectedOptions,
 	activeConfigs,
+	removalConfig,
 	mutation,
 	randomAnswer,
 }: PollOptionsFormProps) => {
@@ -73,7 +76,6 @@ const PollOptionsForm = ({
 	});
 
 	const disabledOptionIds = effect.renderProps.disabledOptionIds ?? [];
-	const eslintActive = disabledOptionIds.length > 0;
 
 	const codeSlot = (
 		<>
@@ -88,6 +90,9 @@ const PollOptionsForm = ({
 		id: option.id.toString(),
 		text: option.option,
 		disabled: hasAnswered || disabledOptionIds.includes(option.id),
+		removedByConfig: disabledOptionIds.includes(option.id)
+			? removalConfig
+			: undefined,
 		markerEmoji:
 			randomAnswer?.selectedOptionId === option.id ? "👤" : undefined,
 		markerTitle:
@@ -130,7 +135,6 @@ const PollOptionsForm = ({
 							canSubmit: selectedIds.length > 0,
 							isSubmitting: mutation.isPending,
 							submitted: mutation.isSuccess,
-							eslintActive,
 							hint: "Pick an option to continue.",
 							error:
 								field.state.meta.errors[0]?.toString() ??

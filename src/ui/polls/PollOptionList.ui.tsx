@@ -1,11 +1,13 @@
 import type { AnswerType } from "~/domains/polls/models/poll.model";
 
 import { PollOptionRow } from "./PollOptionRow.ui";
+import type { RemovedByConfig } from "./PollOptionRow.ui";
 
 export type PollAnsweringOption = {
 	id: string;
 	text: string;
 	disabled?: boolean;
+	removedByConfig?: RemovedByConfig;
 	markerEmoji?: string;
 	markerTitle?: string;
 };
@@ -41,6 +43,7 @@ export const PollOptionList = ({
 						text={option.text}
 						checked={selectedIds.includes(option.id)}
 						disabled={option.disabled}
+						removedByConfig={option.removedByConfig}
 						markerEmoji={option.markerEmoji}
 						markerTitle={option.markerTitle}
 						onToggle={() => onToggle(option.id)}

@@ -18,7 +18,6 @@ export type PollAnsweringSubmit = {
 	canSubmit: boolean;
 	isSubmitting: boolean;
 	submitted: boolean;
-	eslintActive: boolean;
 	hint?: string;
 	error?: string;
 	onSubmit: () => void;
@@ -76,7 +75,6 @@ export const PollAnsweringScreen = ({
 			canSubmit={submit.canSubmit}
 			isSubmitting={submit.isSubmitting}
 			submitted={submit.submitted}
-			eslintActive={submit.eslintActive}
 			hint={submit.hint}
 			error={submit.error}
 			onSubmit={submit.onSubmit}

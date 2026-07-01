@@ -15,14 +15,29 @@ export default meta;
 
 type Story = StoryObj<typeof PollAnsweringScreen>;
 
-const options: PollAnsweringOption[] = [
+const baseOptions: PollAnsweringOption[] = [
 	{ id: "1", text: "`Array.prototype.at(-1)`" },
 	{ id: "2", text: "`Array.prototype.slice(-1)[0]`" },
-	{ id: "3", text: "`Array.prototype.pop()`", disabled: true },
+	{ id: "3", text: "`Array.prototype.pop()`" },
 	{ id: "4", text: "`Array.prototype.last()`" },
 ];
 
-const InteractiveScreen = ({ eslintActive }: { eslintActive: boolean }) => {
+const eslintOptions: PollAnsweringOption[] = baseOptions.map((option) =>
+	option.id === "3"
+		? {
+				...option,
+				disabled: true,
+				removedByConfig: {
+					name: "ESLint",
+					rarity: "uncommon",
+					description:
+						"Disables 1 wrong option when answering JavaScript/TypeScript polls.",
+				},
+			}
+		: option
+);
+
+const InteractiveScreen = ({ options }: { options: PollAnsweringOption[] }) => {
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	return (
 		<PollAnsweringScreen
@@ -43,7 +58,6 @@ const InteractiveScreen = ({ eslintActive }: { eslintActive: boolean }) => {
 				canSubmit: selectedIds.length > 0,
 				isSubmitting: false,
 				submitted: false,
-				eslintActive,
 				hint: "Pick an option to continue.",
 				onSubmit: () => {},
 			}}
@@ -52,9 +66,9 @@ const InteractiveScreen = ({ eslintActive }: { eslintActive: boolean }) => {
 };
 
 export const Default: Story = {
-	render: () => <InteractiveScreen eslintActive={false} />,
+	render: () => <InteractiveScreen options={baseOptions} />,
 };
 
 export const WithEslint: Story = {
-	render: () => <InteractiveScreen eslintActive={true} />,
+	render: () => <InteractiveScreen options={eslintOptions} />,
 };
