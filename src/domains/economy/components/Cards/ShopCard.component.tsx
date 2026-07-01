@@ -1,9 +1,8 @@
 import { clsx } from "clsx";
 
-import ConfigCard, {
-	RARITY_COLORS,
-} from "~/domains/economy/components/Cards/ConfigCard.component";
+import ConfigCard from "~/domains/economy/components/Cards/ConfigCard.component";
 import { Config } from "~/domains/economy/models/config.model";
+import { RARITY_COLORS } from "~/ui/rarityColors";
 
 type ShopConfigProps = {
 	config: Config;

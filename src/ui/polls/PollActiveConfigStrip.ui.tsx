@@ -1,8 +1,8 @@
 import { clsx } from "clsx";
 
-import { RARITY_COLORS } from "~/domains/economy/components/Cards/ConfigCard.component";
 import type { Config } from "~/domains/economy/models/config.model";
 import { Popover } from "~/ui/Popover.component";
+import { RARITY_COLORS } from "~/ui/rarityColors";
 
 export type ActivePollConfig = {
 	id: string;
