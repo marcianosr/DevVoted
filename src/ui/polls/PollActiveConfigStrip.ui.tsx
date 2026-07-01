@@ -2,10 +2,12 @@ import { clsx } from "clsx";
 
 import { RARITY_COLORS } from "~/domains/economy/components/Cards/ConfigCard.component";
 import type { Config } from "~/domains/economy/models/config.model";
+import { Popover } from "~/ui/Popover.component";
 
 export type ActivePollConfig = {
 	id: string;
 	name: string;
+	description: string;
 	rarity: Config["rarity"];
 };
 
@@ -34,21 +36,31 @@ export const PollActiveConfigStrip = ({
 				{configs.map((config) => {
 					const rarity = RARITY_COLORS[config.rarity];
 					return (
-						<div
+						<Popover
 							key={config.id}
-							className={clsx(
-								"shrink-0 border px-3 py-1.5 min-w-28 transition-transform hover:scale-105 hover:-rotate-1",
-								rarity.border,
-								rarity.bg
-							)}
+							ariaLabel={`${config.name} config details`}
+							content={<p className="max-w-xs text-sm">{config.description}</p>}
 						>
 							<div
-								className={clsx("font-mono text-[10px] lowercase", rarity.text)}
+								className={clsx(
+									"shrink-0 border px-3 py-1.5 min-w-28 transition-transform hover:scale-105 hover:-rotate-1",
+									rarity.border,
+									rarity.bg
+								)}
 							>
-								({config.rarity})
+								<div
+									className={clsx(
+										"font-mono text-[10px] lowercase",
+										rarity.text
+									)}
+								>
+									({config.rarity})
+								</div>
+								<div className={clsx("text-sm", rarity.text)}>
+									{config.name}
+								</div>
 							</div>
-							<div className={clsx("text-sm", rarity.text)}>{config.name}</div>
-						</div>
+						</Popover>
 					);
 				})}
 			</div>

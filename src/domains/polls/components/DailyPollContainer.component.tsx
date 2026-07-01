@@ -137,6 +137,7 @@ const DailyPollContainer = ({
 		).map((config) => ({
 			id: config.id,
 			name: config.name,
+			description: config.description,
 			rarity: config.rarity,
 		}));
 

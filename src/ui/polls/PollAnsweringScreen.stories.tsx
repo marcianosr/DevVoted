@@ -28,7 +28,14 @@ const InteractiveScreen = ({ eslintActive }: { eslintActive: boolean }) => {
 		<PollAnsweringScreen
 			question="Which method returns the last element of an array?"
 			answerType="single"
-			activeConfigs={[{ id: "prettier", name: "Prettier", rarity: "rare" }]}
+			activeConfigs={[
+				{
+					id: "prettier",
+					name: "Prettier",
+					description: "Reveals how many correct answers you have selected.",
+					rarity: "rare",
+				},
+			]}
 			options={options}
 			selectedIds={selectedIds}
 			onToggle={(id) => setSelectedIds([id])}
