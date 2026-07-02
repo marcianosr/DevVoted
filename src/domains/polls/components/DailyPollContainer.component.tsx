@@ -25,7 +25,6 @@ import type { ActivePollConfig } from "~/ui/polls/PollActiveConfigStrip.ui";
 import type { RemovedByConfig } from "~/ui/polls/PollOptionRow.ui";
 import { Poll } from "~/domains/polls/models/poll.model";
 import { PollOption } from "~/domains/polls/models/pollOption.model";
-import { getExposedConfigDeck } from "~/domains/runs/api/runs";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer.component";
 import { useApplyPipelineUpgrade } from "~/domains/runs/hooks/useApplyPipelineUpgrade";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
@@ -118,11 +117,8 @@ const DailyPollContainer = ({
 	creatorDisplayName,
 	activeRun,
 	isAdmin,
-	offeredConfigs,
-	nextOfferedConfigs,
 	initialPendingUpgradeCards,
 	initialWindowContext,
-	date,
 	lastSeenAt,
 	lastEncounteredAt,
 	timesEncountered,
@@ -216,21 +212,6 @@ const DailyPollContainer = ({
 		queryFn: () => getRandomAnswer({ data: { pollId: poll.id } }),
 		enabled: showWhoPickedWhat && !hasAnswered,
 	});
-
-	// Fetch exposed config deck (only when config is active and user has answered)
-	const exposeConfigDeck = configEffects.exposeConfigDeck ?? false;
-
-	const today = date;
-	const { data: exposedConfigDeckResult } = useQuery({
-		queryKey: ["exposedConfigDeck", today],
-		queryFn: () => getExposedConfigDeck({ data: { date: today } }),
-		enabled: exposeConfigDeck && hasAnswered,
-	});
-
-	const exposedConfigDeck =
-		exposedConfigDeckResult?.success && exposedConfigDeckResult.data
-			? exposedConfigDeckResult.data
-			: null;
 
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
@@ -360,25 +341,11 @@ const DailyPollContainer = ({
 					{hasAnswered ? (
 						<PollResultsSection
 							poll={poll}
-							options={options}
 							selectedOptions={selectedOptions}
 							score={displayScore}
 							communityStats={communityStats}
-							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
-							exposedConfigDeck={exposedConfigDeck}
-							offeredConfigs={offeredConfigs}
-							nextOfferedConfigs={nextOfferedConfigs}
-							activeRun={activeRun}
-							reductionCost={configEffects.reductionCost}
-							storageBonus={configEffects.storage?.skipBonus}
 							perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
-							pipeline={{
-								slots: activeRun.pipelineSlots,
-								evaluationContext: lastEvaluationContext ?? undefined,
-								evaluation: lastPipelineEvaluation ?? undefined,
-							}}
-							date={today}
 						/>
 					) : (
 						<PollOptionsForm
