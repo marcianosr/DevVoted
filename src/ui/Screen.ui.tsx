@@ -6,7 +6,11 @@ import { PrimaryButton } from "./PrimaryButton.component";
 
 export type ScreenWidth = "narrow" | "default" | "wide";
 export type ScreenTransition = "none" | "fade" | "slide-up";
-export type ScreenAction = { label: string; onClick: () => void };
+export type ScreenAction = {
+	label: string;
+	onClick: () => void;
+	disabled?: boolean;
+};
 
 const WIDTH_CLASSES: Record<ScreenWidth, string> = {
 	narrow: "sm:max-w-2xl",
@@ -64,12 +68,18 @@ export const Screen = ({
 				className={`mt-8 flex items-center ${footerJustify(leftAction, rightAction)}`}
 			>
 				{leftAction && (
-					<PrimaryButton onClick={leftAction.onClick}>
+					<PrimaryButton
+						onClick={leftAction.onClick}
+						disabled={leftAction.disabled}
+					>
 						{leftAction.label}
 					</PrimaryButton>
 				)}
 				{rightAction && (
-					<PrimaryButton onClick={rightAction.onClick}>
+					<PrimaryButton
+						onClick={rightAction.onClick}
+						disabled={rightAction.disabled}
+					>
 						{rightAction.label}
 					</PrimaryButton>
 				)}

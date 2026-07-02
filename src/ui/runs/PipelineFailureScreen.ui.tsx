@@ -1,12 +1,27 @@
 import type { ReactNode } from "react";
 
+import { formatStorage } from "~/lib/storage";
+import { ConfigCard } from "~/ui/economy/ConfigCard.ui";
+import type { Rarity } from "~/ui/rarityColors";
+
 export type RunSummaryData = {
 	pollsAnswered: number;
 	pollsCorrect: number;
 	totalCoverage: number;
 	bestStreak: number;
 	shopRebuilds: number;
+	/** Left-over storage this run banked into the persistent meta archive. */
+	archivedCredit: number;
 };
+
+export type InstalledConfig = {
+	id: string;
+	name: string;
+	rarity: Rarity;
+};
+
+const formatPercentage = (value: number): string =>
+	`${Math.round(value * 10) / 10}%`;
 
 export type CategoryCoverageRow = {
 	categoryCode: string;
@@ -21,6 +36,7 @@ type PipelineFailureScreenProps = {
 	pipelineSlot: ReactNode; // the pipeline layout (CurrentPipeline) with pass/fail status
 	runSummary: RunSummaryData;
 	categoryCoverage: CategoryCoverageRow[];
+	installedConfigs: InstalledConfig[];
 };
 
 const SummaryStat = ({ label, value }: { label: string; value: string }) => (
@@ -39,6 +55,7 @@ export const PipelineFailureScreen = ({
 	pipelineSlot,
 	runSummary,
 	categoryCoverage,
+	installedConfigs,
 }: PipelineFailureScreenProps) => (
 	<div className="flex flex-col gap-8 py-8">
 		<header className="flex flex-col gap-1">
@@ -52,7 +69,7 @@ export const PipelineFailureScreen = ({
 
 		<section className="flex flex-col gap-3">
 			<h2 className="text-2xl">Run summary</h2>
-			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
 				<SummaryStat
 					label="Polls answered"
 					value={String(runSummary.pollsAnswered)}
@@ -63,15 +80,40 @@ export const PipelineFailureScreen = ({
 				/>
 				<SummaryStat
 					label="Total coverage"
-					value={`${runSummary.totalCoverage}%`}
+					value={formatPercentage(runSummary.totalCoverage)}
 				/>
 				<SummaryStat label="Best streak" value={`${runSummary.bestStreak}×`} />
 				<SummaryStat
 					label="Shop rebuilds"
 					value={String(runSummary.shopRebuilds)}
 				/>
+				<SummaryStat
+					label="Storage banked"
+					value={`+${formatStorage(runSummary.archivedCredit)}`}
+				/>
 			</div>
+			<p className="text-sm text-zinc-400">
+				Left-over storage is banked into your meta archive — spend it on a cool
+				border on your next run!
+			</p>
 		</section>
+
+		{installedConfigs.length > 0 && (
+			<section className="flex flex-col gap-3">
+				<h2 className="text-2xl">Configs installed</h2>
+				<ul className="flex flex-wrap gap-3">
+					{installedConfigs.map((config) => (
+						<li key={config.id}>
+							<ConfigCard
+								name={config.name}
+								rarity={config.rarity}
+								size="small"
+							/>
+						</li>
+					))}
+				</ul>
+			</section>
+		)}
 
 		{categoryCoverage.length > 0 && (
 			<section className="flex flex-col gap-3">

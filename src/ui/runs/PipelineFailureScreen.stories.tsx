@@ -15,6 +15,7 @@ const meta: Meta<typeof PipelineFailureScreen> = {
 			totalCoverage: 42,
 			bestStreak: 5,
 			shopRebuilds: 3,
+			archivedCredit: 131072,
 		},
 		categoryCoverage: [
 			{
@@ -41,6 +42,11 @@ const meta: Meta<typeof PipelineFailureScreen> = {
 				pollsCorrect: 3,
 				pollsAnswered: 4,
 			},
+		],
+		installedConfigs: [
+			{ id: "js-config", name: ".js", rarity: "common" },
+			{ id: "local-storage", name: "Local Storage", rarity: "uncommon" },
+			{ id: "telemetry-config", name: "Telemetry", rarity: "rare" },
 		],
 	},
 };

@@ -10,7 +10,7 @@ export const ArchiveSummary = ({ userId }: ArchiveSummaryProps) => {
 
 	if (isLoading) {
 		return (
-			<div className="border border-cyan-900 p-4">
+			<div className="border border-theme p-4">
 				<p>Loading storage…</p>
 			</div>
 		);

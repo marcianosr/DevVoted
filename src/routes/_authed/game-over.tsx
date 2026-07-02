@@ -2,12 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { clsx } from "clsx";
 
 import Content from "~/components/Content.component";
+import { useArchiveState } from "~/domains/economy/hooks/useArchiveState";
 import { getLastRunForGameOver } from "~/domains/runs/api/runs";
 import {
 	formatRequirement,
 	getSlotLabel,
 } from "~/domains/runs/utils/formatPipelineRequirement";
 import { parseCompletionReason } from "~/domains/runs/utils/parseCompletionReason";
+import { formatStorage } from "~/lib/storage";
 import { PrimaryButton } from "~/ui/PrimaryButton.component";
 
 export const Route = createFileRoute("/_authed/game-over")({
@@ -33,8 +35,10 @@ export const Route = createFileRoute("/_authed/game-over")({
 
 function RouteComponent() {
 	const { activeRun } = Route.useRouteContext();
-	const { lastRun } = Route.useLoaderData();
+	const { user, lastRun } = Route.useLoaderData();
 	const navigate = useNavigate();
+	const archiveQuery = useArchiveState(user?.id);
+	const archivedStorage = archiveQuery.data?.archivedStorage ?? 0;
 
 	if (activeRun && activeRun.success && activeRun.data?.id) {
 		return (
@@ -45,7 +49,7 @@ function RouteComponent() {
 					top-right (available once you&apos;ve reached gate 5).
 				</p>
 
-				<Link to="/daily-poll" className="underline text-blue-400">
+				<Link to="/daily-poll" className="underline text-theme">
 					Continue Run
 				</Link>
 			</div>
@@ -109,6 +113,19 @@ function RouteComponent() {
 						<li>Total polls answered: {lastRun?.totalPollsAnswered}</li>
 						<li>Total shop rebuilds: {lastRun?.run.total_rerolls}</li>
 					</ul>
+				</section>
+
+				<section>
+					<h2 className="text-2xl">Archived storage</h2>
+					<p className="text-gray-300">
+						This run banked{" "}
+						<span className="text-theme">
+							+{formatStorage(lastRun?.archivedCredit ?? 0)}
+						</span>{" "}
+						of left-over storage into your profile. You now have{" "}
+						<span className="text-theme">{formatStorage(archivedStorage)}</span>{" "}
+						archived — spend it on a cool border for instance!
+					</p>
 				</section>
 
 				<section className="space-y-4">

@@ -282,6 +282,11 @@
 .bg-theme {
 	background-color: var(--theme-color);
 }
+/* Translucent theme fill for selected/hover surfaces (opacity modifiers can't
+   apply to the custom .bg-theme class, so we derive the alpha here). */
+.bg-theme-soft {
+	background-color: oklch(from var(--theme-color) l c h / 0.1);
+}
 .border-theme {
 	border-color: var(--theme-color);
 }

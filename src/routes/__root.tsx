@@ -154,8 +154,7 @@ function RootComponent() {
 
 function Navigation() {
 	const { user, activeRun } = Route.useRouteContext();
-	const { hasActiveRun, hasPendingPipelineUpgrade, canEndRun } =
-		deriveNavRunState(activeRun);
+	const { hasActiveRun, canEndRun } = deriveNavRunState(activeRun);
 
 	const [isEndRunDialogOpen, setIsEndRunDialogOpen] = useState(false);
 	const finishRun = useFinishRun({
@@ -200,16 +199,7 @@ function Navigation() {
 									>
 										Daily Poll
 									</Link>
-									<Link
-										to="/pipelines"
-										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
-										onClick={close}
-									>
-										Pipelines
-										{hasPendingPipelineUpgrade && (
-											<span className="ml-1 text-green-400 text-xs">(new)</span>
-										)}
-									</Link>
+
 									<Link
 										to="/polls/new"
 										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
@@ -244,17 +234,6 @@ function Navigation() {
 
 					{user && (
 						<>
-							<span className="text-white">·</span>
-							<Link
-								to="/pipelines"
-								activeProps={{ className: "underline" }}
-								activeOptions={{ exact: true }}
-							>
-								Pipelines
-								{hasPendingPipelineUpgrade && (
-									<span className="ml-1 text-green-400 text-sm">(new)</span>
-								)}
-							</Link>
 							<span className="text-white">·</span>
 							<Link
 								to="/polls/new"

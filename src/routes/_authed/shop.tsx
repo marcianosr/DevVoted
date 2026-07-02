@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import Content from "~/components/Content.component";
 import {
 	getNextShopOfferingsServerFn,
 	getShopOfferingsServerFn,
@@ -9,6 +8,7 @@ import ShopContainer from "~/domains/economy/components/ShopContainer.component"
 import { applyEffects } from "~/domains/economy/data/configs";
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import { getTodayDateString } from "~/lib/dateUtils";
+import { Screen } from "~/ui/Screen.ui";
 
 export const Route = createFileRoute("/_authed/shop")({
 	component: ShopRoute,
@@ -70,9 +70,22 @@ function ShopRoute() {
 		hasAnswered,
 		today,
 	} = Route.useLoaderData();
+	const navigate = useNavigate();
 
 	return (
-		<Content poll={poll} transition="fade" center>
+		<Screen
+			categoryCode={poll.categoryCode}
+			transition="fade"
+			center
+			leftAction={{
+				label: "← Back to pipelines",
+				onClick: () => navigate({ to: "/pipelines" }),
+			}}
+			rightAction={{
+				label: "Go to community →",
+				onClick: () => navigate({ to: "/community" }),
+			}}
+		>
 			<ShopContainer
 				activeRun={activeRun}
 				offeredConfigs={offeredConfigs}
@@ -82,6 +95,6 @@ function ShopRoute() {
 				storageBonus={storageBonus}
 				date={today}
 			/>
-		</Content>
+		</Screen>
 	);
 }

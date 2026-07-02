@@ -219,7 +219,7 @@ const StorageInjectionLoadout = ({
 	return (
 		<section className="mb-6 border border-white/20 p-4">
 			<header className="mb-3 flex items-baseline justify-between gap-3">
-				<h3 className="text-lg text-cyan-400">Inject archived storage</h3>
+				<h3 className="text-lg text-theme">Inject archived storage</h3>
 				<span className="text-sm text-gray-400">
 					Archive: {formatStorage(archiveBalance)}
 				</span>
@@ -271,7 +271,7 @@ const TierButton = ({
 	const baseClasses =
 		"p-3 text-left border transition-colors disabled:cursor-not-allowed";
 	const stateClasses = isSelected
-		? "border-cyan-400 bg-cyan-400/10 text-cyan-100"
+		? "border-theme bg-theme-soft text-white"
 		: isAffordable
 			? "border-white/40 hover:border-white/80 text-white"
 			: "border-white/10 text-white/30";

@@ -6,6 +6,7 @@ import { Screen } from "~/ui/Screen.ui";
 import { getCommunityStats } from "~/domains/polls/api/communityStats";
 import { getDailyPoll } from "~/domains/polls/api/polls";
 import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
+import { getActiveConfigs } from "~/domains/economy/services/configManager.service";
 import { getLastRunForGameOver } from "~/domains/runs/api/runs";
 import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
 import { getCategoryMetadata } from "~/domains/shared/categories";
@@ -90,7 +91,15 @@ function PipelineFailureRoute() {
 	);
 	const failedSlots =
 		completion.type === "pipeline_failure" ? completion.failedSlots : [];
-	const allSlots = lastRun ? runFactory.toDTO(lastRun.run).pipelineSlots : [];
+	const runDTO = lastRun ? runFactory.toDTO(lastRun.run) : null;
+	const allSlots = runDTO?.pipelineSlots ?? [];
+	const installedConfigs = runDTO
+		? getActiveConfigs(runDTO).map((config) => ({
+				id: config.id,
+				name: config.name,
+				rarity: config.rarity,
+			}))
+		: [];
 
 	const coverage = lastRun?.categoryCoverage ?? [];
 	const runSummary: RunSummaryData = {
@@ -99,6 +108,7 @@ function PipelineFailureRoute() {
 		totalCoverage: lastRun?.totalCoverage ?? 0,
 		bestStreak: Math.max(0, ...coverage.map((c) => c.bestStreak)),
 		shopRebuilds: lastRun?.run.total_rerolls ?? 0,
+		archivedCredit: lastRun?.archivedCredit ?? 0,
 	};
 
 	const categoryCoverage = coverage.map((c) => ({
@@ -132,6 +142,7 @@ function PipelineFailureRoute() {
 					/>
 				}
 				runSummary={runSummary}
+				installedConfigs={installedConfigs}
 			/>
 		</Screen>
 	);

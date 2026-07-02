@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { describe, expect, it } from "vitest";
 
 import { PipelineFailureScreen } from "./PipelineFailureScreen.ui";
 
-const baseProps = {
+const baseProps: ComponentProps<typeof PipelineFailureScreen> = {
 	pipelineSlot: <div>CI Pipelines layout</div>,
 	runSummary: {
 		pollsAnswered: 18,
@@ -11,6 +12,7 @@ const baseProps = {
 		totalCoverage: 42,
 		bestStreak: 5,
 		shopRebuilds: 3,
+		archivedCredit: 131072,
 	},
 	categoryCoverage: [
 		{
@@ -29,6 +31,10 @@ const baseProps = {
 			pollsCorrect: 4,
 			pollsAnswered: 6,
 		},
+	],
+	installedConfigs: [
+		{ id: "js-config", name: ".js", rarity: "common" },
+		{ id: "local-storage", name: "Local Storage", rarity: "uncommon" },
 	],
 };
 
@@ -56,5 +62,30 @@ describe(PipelineFailureScreen.name, () => {
 		render(<PipelineFailureScreen {...baseProps} />);
 		expect(screen.getByText("JavaScript")).toBeInTheDocument();
 		expect(screen.getByText("Banjo-Kazooie")).toBeInTheDocument();
+	});
+
+	it("shows the left-over storage banked into the meta archive", () => {
+		render(<PipelineFailureScreen {...baseProps} />);
+		expect(screen.getByText("+128 KB")).toBeInTheDocument();
+		expect(screen.getByText(/meta archive/)).toBeInTheDocument();
+	});
+
+	it("lists the configs the player had installed", () => {
+		render(<PipelineFailureScreen {...baseProps} />);
+		expect(screen.getByText("Local Storage")).toBeInTheDocument();
+		expect(screen.getByText(".js")).toBeInTheDocument();
+	});
+
+	it("rounds a floating-point total coverage for display", () => {
+		render(
+			<PipelineFailureScreen
+				{...baseProps}
+				runSummary={{
+					...baseProps.runSummary,
+					totalCoverage: -2.9000000000000004,
+				}}
+			/>
+		);
+		expect(screen.getByText("-2.9%")).toBeInTheDocument();
 	});
 });
