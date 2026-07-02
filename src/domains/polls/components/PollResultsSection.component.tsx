@@ -24,6 +24,7 @@ type PollResultsSectionProps = {
 		coverageAdd: number;
 		coverageMult: number;
 	}[];
+	continueAction?: { label: string; onClick: () => void };
 };
 
 export const PollResultsSection = ({
@@ -33,6 +34,7 @@ export const PollResultsSection = ({
 	communityStats,
 	explanation,
 	perConfigCoverageEffects,
+	continueAction,
 }: PollResultsSectionProps) => {
 	const optionBreakdown = communityStats?.optionBreakdown ?? [];
 	const coverageEffects = perConfigCoverageEffects ?? [];
@@ -46,6 +48,7 @@ export const PollResultsSection = ({
 				score ? buildScoreSummary(score, coverageEffects, configs) : undefined
 			}
 			explanation={explanation}
+			continueAction={continueAction}
 			codeSlot={
 				<>
 					{poll.codeSandboxExample && (

@@ -51,6 +51,7 @@ export const Correct: Story = {
 		options,
 		scoreSummary,
 		explanation: "`at(-1)` reads from the end without copying the array.",
+		continueAction: { label: "See pipelines →", onClick: () => {} },
 	},
 };
 

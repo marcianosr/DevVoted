@@ -43,7 +43,7 @@ const DailyPoll: React.FC = () => {
 	}
 
 	return (
-		<Content poll={poll}>
+		<Content poll={poll} transition="fade">
 			<DevPollNavigator currentDate={currentDate} hasCustomDate={!!date} />
 			<DailyPollContainer
 				key={poll.id}

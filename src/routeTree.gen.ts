@@ -21,6 +21,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthedProgressRouteImport } from './routes/_authed/progress'
 import { Route as AuthedPipelinesRouteImport } from './routes/_authed/pipelines'
+import { Route as AuthedPipelineSuccessRouteImport } from './routes/_authed/pipeline-success'
+import { Route as AuthedPipelineFailureRouteImport } from './routes/_authed/pipeline-failure'
 import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
@@ -89,6 +91,16 @@ const AuthedPipelinesRoute = AuthedPipelinesRouteImport.update({
   path: '/pipelines',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPipelineSuccessRoute = AuthedPipelineSuccessRouteImport.update({
+  id: '/pipeline-success',
+  path: '/pipeline-success',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPipelineFailureRoute = AuthedPipelineFailureRouteImport.update({
+  id: '/pipeline-failure',
+  path: '/pipeline-failure',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedGameOverRoute = AuthedGameOverRouteImport.update({
   id: '/game-over',
   path: '/game-over',
@@ -141,6 +153,8 @@ export interface FileRoutesByFullPath {
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/game-over': typeof AuthedGameOverRoute
+  '/pipeline-failure': typeof AuthedPipelineFailureRoute
+  '/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/pipelines': typeof AuthedPipelinesRoute
   '/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -162,6 +176,8 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/game-over': typeof AuthedGameOverRoute
+  '/pipeline-failure': typeof AuthedPipelineFailureRoute
+  '/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/pipelines': typeof AuthedPipelinesRoute
   '/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -185,6 +201,8 @@ export interface FileRoutesById {
   '/stats': typeof StatsRoute
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
+  '/_authed/pipeline-failure': typeof AuthedPipelineFailureRoute
+  '/_authed/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/_authed/pipelines': typeof AuthedPipelinesRoute
   '/_authed/progress': typeof AuthedProgressRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -208,6 +226,8 @@ export interface FileRouteTypes {
     | '/stats'
     | '/admin'
     | '/game-over'
+    | '/pipeline-failure'
+    | '/pipeline-success'
     | '/pipelines'
     | '/progress'
     | '/auth/callback'
@@ -229,6 +249,8 @@ export interface FileRouteTypes {
     | '/stats'
     | '/admin'
     | '/game-over'
+    | '/pipeline-failure'
+    | '/pipeline-success'
     | '/pipelines'
     | '/progress'
     | '/auth/callback'
@@ -251,6 +273,8 @@ export interface FileRouteTypes {
     | '/stats'
     | '/_authed/admin'
     | '/_authed/game-over'
+    | '/_authed/pipeline-failure'
+    | '/_authed/pipeline-success'
     | '/_authed/pipelines'
     | '/_authed/progress'
     | '/auth/callback'
@@ -361,6 +385,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPipelinesRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/pipeline-success': {
+      id: '/_authed/pipeline-success'
+      path: '/pipeline-success'
+      fullPath: '/pipeline-success'
+      preLoaderRoute: typeof AuthedPipelineSuccessRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/pipeline-failure': {
+      id: '/_authed/pipeline-failure'
+      path: '/pipeline-failure'
+      fullPath: '/pipeline-failure'
+      preLoaderRoute: typeof AuthedPipelineFailureRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/game-over': {
       id: '/_authed/game-over'
       path: '/game-over'
@@ -423,6 +461,8 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRoute
   AuthedGameOverRoute: typeof AuthedGameOverRoute
+  AuthedPipelineFailureRoute: typeof AuthedPipelineFailureRoute
+  AuthedPipelineSuccessRoute: typeof AuthedPipelineSuccessRoute
   AuthedPipelinesRoute: typeof AuthedPipelinesRoute
   AuthedProgressRoute: typeof AuthedProgressRoute
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
@@ -436,6 +476,8 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRoute,
   AuthedGameOverRoute: AuthedGameOverRoute,
+  AuthedPipelineFailureRoute: AuthedPipelineFailureRoute,
+  AuthedPipelineSuccessRoute: AuthedPipelineSuccessRoute,
   AuthedPipelinesRoute: AuthedPipelinesRoute,
   AuthedProgressRoute: AuthedProgressRoute,
   AuthedPollsNewRoute: AuthedPollsNewRoute,

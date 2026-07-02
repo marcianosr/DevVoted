@@ -244,7 +244,7 @@ const DailyPollContainer = ({
 
 				if (response.data.runEnded) {
 					await router.invalidate();
-					navigate({ to: "/game-over" });
+					navigate({ to: "/pipeline-failure" });
 					return;
 				}
 			}
@@ -261,6 +261,21 @@ const DailyPollContainer = ({
 
 	// Use the submitted score if available (just answered), otherwise fall back to loader's score
 	const displayScore = submittedScore ?? score;
+
+	// The review-screen forward button depends on whether this poll closed a
+	// pipeline window. A pass routes to the reward screen; otherwise it just links
+	// to the current pipeline. Failures never reach the review screen — they
+	// redirect straight to /pipeline-failure from the mutation below. Both target
+	// screens derive their own data server-side, so no params are passed.
+	const reviewContinueAction = lastPipelineEvaluation?.passed
+		? {
+				label: "Go to pipeline check →",
+				onClick: () => navigate({ to: "/pipeline-success" }),
+			}
+		: {
+				label: "See pipelines →",
+				onClick: () => navigate({ to: "/pipelines" }),
+			};
 	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
 
 	const adminLink = isAdmin && (
@@ -320,23 +335,6 @@ const DailyPollContainer = ({
 				)}
 				{adminLink}
 				{header}
-				{hasPendingUpgrade && hasAnswered && (
-					<div className="mb-6 p-4 border border-green-500 bg-green-500/10 flex items-center justify-between">
-						<div>
-							<p className="text-green-400 font-bold">Pipeline upgrade ready</p>
-							<p className="text-gray-300 text-sm">
-								You cleared a gate — pick your reward before tomorrow&apos;s
-								poll.
-							</p>
-						</div>
-						<Link
-							to="/pipelines"
-							className="text-green-400 underline whitespace-nowrap"
-						>
-							Pick now
-						</Link>
-					</div>
-				)}
 				<div className="mt-4 mb-4">
 					{hasAnswered ? (
 						<PollResultsSection
@@ -346,6 +344,7 @@ const DailyPollContainer = ({
 							communityStats={communityStats}
 							explanation={poll.explanation}
 							perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
+							continueAction={reviewContinueAction}
 						/>
 					) : (
 						<PollOptionsForm

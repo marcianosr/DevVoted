@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { MarkdownText } from "./PollMarkdown.ui";
+import { PollActionButton } from "./PollActionButton.ui";
 import { PollAnswerReview } from "./PollAnswerReview.ui";
 import type { AnswerReviewOption } from "./PollAnswerReview.ui";
 import { PollQuestionHeading } from "./PollQuestionHeading.ui";
@@ -14,6 +15,7 @@ type PollResultScreenProps = {
 	scoreSummary?: PollScoreSummaryData;
 	explanation?: string | null;
 	codeSlot?: ReactNode;
+	continueAction?: { label: string; onClick: () => void };
 };
 
 export const PollResultScreen = ({
@@ -23,6 +25,7 @@ export const PollResultScreen = ({
 	scoreSummary,
 	explanation,
 	codeSlot,
+	continueAction,
 }: PollResultScreenProps) => {
 	const totalCorrect = options.filter((option) => option.correct).length;
 	const selectedCorrect = options.filter(
@@ -64,6 +67,13 @@ export const PollResultScreen = ({
 					<div className="markdown text-gray-300">
 						<MarkdownText>{explanation}</MarkdownText>
 					</div>
+				</div>
+			)}
+			{continueAction && (
+				<div className="mt-6 flex justify-end">
+					<PollActionButton onClick={continueAction.onClick}>
+						{continueAction.label}
+					</PollActionButton>
 				</div>
 			)}
 		</div>

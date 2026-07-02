@@ -395,3 +395,34 @@ meter::-webkit-meter-optimum-value {
 .prismatic-text {
 	animation: prismatic-text 4s linear infinite;
 }
+
+/* ─── Screen mount-in transitions ──────────────────────────────────────────────
+   Applied by the Screen primitive via data-screen-transition. @starting-style
+   defines the pre-mount state; the browser animates to the settled state the
+   first time the element renders. Respects reduced-motion. */
+[data-screen-transition="fade"] {
+	opacity: 1;
+	transition: opacity 200ms ease-out;
+	@starting-style {
+		opacity: 0;
+	}
+}
+
+[data-screen-transition="slide-up"] {
+	opacity: 1;
+	translate: 0 0;
+	transition:
+		opacity 220ms ease-out,
+		translate 220ms ease-out;
+	@starting-style {
+		opacity: 0;
+		translate: 0 8px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-screen-transition="fade"],
+	[data-screen-transition="slide-up"] {
+		transition: none;
+	}
+}

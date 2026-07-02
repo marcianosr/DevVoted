@@ -16,6 +16,7 @@ type PipelineUpgradeContainerProps = {
 	isPending: boolean;
 	evaluationContext?: PipelineEvaluationContext;
 	evaluation?: PipelineEvaluation;
+	showHeading?: boolean; // false when rendered under the success screen's own hero
 };
 
 export const PipelineUpgradeContainer = ({
@@ -25,10 +26,13 @@ export const PipelineUpgradeContainer = ({
 	isPending,
 	evaluationContext,
 	evaluation,
+	showHeading = true,
 }: PipelineUpgradeContainerProps) => (
 	<div>
 		<div className="mb-4">
-			<h2 className="text-green-400 text-4xl">Pipeline check passed!</h2>
+			{showHeading && (
+				<h2 className="text-green-400 text-4xl">Pipeline check passed!</h2>
+			)}
 			<span>Select a new pipeline or upgrade an existing one.</span>
 		</div>
 		<UpgradePipelineSection
