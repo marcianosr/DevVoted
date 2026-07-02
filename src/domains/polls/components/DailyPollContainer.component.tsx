@@ -25,9 +25,6 @@ import type { ActivePollConfig } from "~/ui/polls/PollActiveConfigStrip.ui";
 import type { RemovedByConfig } from "~/ui/polls/PollOptionRow.ui";
 import { Poll } from "~/domains/polls/models/poll.model";
 import { PollOption } from "~/domains/polls/models/pollOption.model";
-import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer.component";
-import { useApplyPipelineUpgrade } from "~/domains/runs/hooks/useApplyPipelineUpgrade";
-import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
 import type { Run } from "~/domains/runs/models/run.model";
 import type {
 	PipelineEvaluation,
@@ -87,7 +84,6 @@ type DailyPollContainerProps = {
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
 	nextOfferedConfigs: (Config & { originalCost?: number })[];
-	initialPendingUpgradeCards: UpgradeCard[];
 	initialWindowContext: PipelineEvaluationContext | null;
 	date: string;
 	lastSeenAt: string | null;
@@ -105,7 +101,6 @@ const DailyPollContainer = ({
 	creatorDisplayName,
 	activeRun,
 	isAdmin,
-	initialPendingUpgradeCards,
 	initialWindowContext,
 	lastSeenAt,
 	lastEncounteredAt,
@@ -147,40 +142,16 @@ const DailyPollContainer = ({
 		null
 	);
 
-	// Seeded from the run's persisted state so it survives page refreshes.
-	const [pendingUpgradeCards, setPendingUpgradeCards] = useState<UpgradeCard[]>(
-		initialPendingUpgradeCards
-	);
 	const [lastEvaluationContext, setLastEvaluationContext] =
 		useState<PipelineEvaluationContext | null>(initialWindowContext);
 	const [lastPipelineEvaluation, setLastPipelineEvaluation] =
 		useState<PipelineEvaluation | null>(null);
-
-	// Sync local state when the server-side cards update via router.invalidate().
-	// useState only uses its argument on mount — when the context refreshes with new
-	// cards (e.g., after a gate pass), the prop changes but state doesn't unless we
-	// explicitly sync here.
-	useEffect(() => {
-		if (initialPendingUpgradeCards.length > 0) {
-			setPendingUpgradeCards(initialPendingUpgradeCards);
-		}
-	}, [initialPendingUpgradeCards]);
 
 	useEffect(() => {
 		if (initialWindowContext) {
 			setLastEvaluationContext(initialWindowContext);
 		}
 	}, [initialWindowContext]);
-
-	const { applyMany: applyUpgrades, isPending: isUpgradePending } =
-		useApplyPipelineUpgrade({
-			onApplied: () => setPendingUpgradeCards([]),
-		});
-
-	const handleUpgradesConfirmed = (upgradeCards: UpgradeCard[]) => {
-		setPendingUpgradeCards([]);
-		applyUpgrades(upgradeCards);
-	};
 
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
 	const { data: communityStats } = useQuery({
@@ -224,10 +195,6 @@ const DailyPollContainer = ({
 
 				if (response.data.pipelineEvaluation) {
 					setLastPipelineEvaluation(response.data.pipelineEvaluation);
-				}
-
-				if (response.data.upgradeCards?.length) {
-					setPendingUpgradeCards(response.data.upgradeCards);
 				}
 
 				if (response.data.runEnded) {
@@ -299,21 +266,6 @@ const DailyPollContainer = ({
 			</div>
 		</header>
 	);
-
-	const hasPendingUpgrade = pendingUpgradeCards.length > 0;
-
-	if (hasPendingUpgrade && !hasAnswered) {
-		return (
-			<PipelineUpgradeContainer
-				cards={pendingUpgradeCards}
-				currentSlots={activeRun.pipelineSlots}
-				onConfirm={handleUpgradesConfirmed}
-				isPending={isUpgradePending}
-				evaluationContext={lastEvaluationContext ?? undefined}
-				evaluation={lastPipelineEvaluation ?? undefined}
-			/>
-		);
-	}
 
 	return (
 		<div className="flex gap-6 items-start">

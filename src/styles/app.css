@@ -429,9 +429,38 @@ meter::-webkit-meter-optimum-value {
 	}
 }
 
+/* Directional slides for flow navigation: slide-right settles from the left
+   (used when proceeding), slide-left settles from the right (used when going
+   back). The @starting-style offset's sign is the travel direction. */
+[data-screen-transition="slide-right"] {
+	opacity: 1;
+	translate: 0 0;
+	transition:
+		opacity 220ms ease-out,
+		translate 220ms ease-out;
+	@starting-style {
+		opacity: 0;
+		translate: -24px 0;
+	}
+}
+
+[data-screen-transition="slide-left"] {
+	opacity: 1;
+	translate: 0 0;
+	transition:
+		opacity 220ms ease-out,
+		translate 220ms ease-out;
+	@starting-style {
+		opacity: 0;
+		translate: 24px 0;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	[data-screen-transition="fade"],
-	[data-screen-transition="slide-up"] {
+	[data-screen-transition="slide-up"],
+	[data-screen-transition="slide-right"],
+	[data-screen-transition="slide-left"] {
 		transition: none;
 	}
 }

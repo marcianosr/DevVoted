@@ -30,6 +30,10 @@ export const FadeIn: Story = { args: { transition: "fade" } };
 
 export const SlideUp: Story = { args: { transition: "slide-up" } };
 
+export const SlideRight: Story = { args: { transition: "slide-right" } };
+
+export const SlideLeft: Story = { args: { transition: "slide-left" } };
+
 export const EdgeActions: Story = {
 	args: {
 		leftAction: { label: "← Review answer", onClick: () => {} },

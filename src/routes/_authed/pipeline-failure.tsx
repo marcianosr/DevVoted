@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { Screen } from "~/ui/Screen.ui";
 import { getCommunityStats } from "~/domains/polls/api/communityStats";
@@ -17,13 +17,20 @@ import type {
 	SlotEvaluation,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import type { PipelineFailureSlot } from "~/domains/runs/services/runCompletion.service";
+import { deriveNavRunState } from "~/domains/runs/utils/deriveNavRunState";
 import { parseCompletionReason } from "~/domains/runs/utils/parseCompletionReason";
 import { PipelineFailureScreen } from "~/ui/runs/PipelineFailureScreen.ui";
 import type { RunSummaryData } from "~/ui/runs/PipelineFailureScreen.ui";
 
 export const Route = createFileRoute("/_authed/pipeline-failure")({
 	component: PipelineFailureRoute,
-	loader: async () => {
+	loader: async ({ context: { activeRun } }) => {
+		// The failure screen renders the last finished run. A run still in
+		// progress must not land here — send the player back to their run.
+		if (deriveNavRunState(activeRun).hasActiveRun) {
+			throw redirect({ to: "/daily-poll" });
+		}
+
 		const lastRunResult = await getLastRunForGameOver();
 		const lastRun = lastRunResult.success ? lastRunResult.data : null;
 		if (!lastRun) return { lastRun: null, review: null };
@@ -69,6 +76,7 @@ function PipelineFailureRoute() {
 	if (showReview && review) {
 		return (
 			<Screen
+				key="review"
 				categoryCode={review.poll.categoryCode}
 				transition="fade"
 				rightAction={{
@@ -122,6 +130,7 @@ function PipelineFailureRoute() {
 
 	return (
 		<Screen
+			key="summary"
 			transition="fade"
 			leftAction={
 				review

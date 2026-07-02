@@ -1,9 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Screen } from "./Screen.ui";
+import { clearScreenNavDirection } from "./screenNavDirection";
+
+const transitionOf = (container: HTMLElement) =>
+	container.querySelector("section")?.getAttribute("data-screen-transition");
 
 describe(Screen.name, () => {
+	// Module-level nav direction leaks between tests otherwise.
+	afterEach(() => clearScreenNavDirection());
+
 	it("renders its children", () => {
 		render(
 			<Screen>
@@ -57,5 +64,36 @@ describe(Screen.name, () => {
 			</Screen>
 		);
 		expect(container.querySelector(".justify-end")).toBeInTheDocument();
+	});
+
+	it("slides the next screen in from the right after a right action fires", () => {
+		const { unmount } = render(
+			<Screen rightAction={{ label: "Go to shop →", onClick: () => {} }}>
+				content
+			</Screen>
+		);
+		fireEvent.click(screen.getByRole("button", { name: /Go to shop/ }));
+		unmount();
+
+		const { container } = render(<Screen>next</Screen>);
+		expect(transitionOf(container)).toBe("slide-right");
+	});
+
+	it("slides the next screen in from the left after a left action fires", () => {
+		const { unmount } = render(
+			<Screen leftAction={{ label: "← Back", onClick: () => {} }}>
+				content
+			</Screen>
+		);
+		fireEvent.click(screen.getByRole("button", { name: /Back/ }));
+		unmount();
+
+		const { container } = render(<Screen>prev</Screen>);
+		expect(transitionOf(container)).toBe("slide-left");
+	});
+
+	it("falls back to the transition prop when no action preceded the mount", () => {
+		const { container } = render(<Screen transition="fade">content</Screen>);
+		expect(transitionOf(container)).toBe("fade");
 	});
 });

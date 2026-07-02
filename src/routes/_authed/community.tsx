@@ -57,7 +57,7 @@ function CommunityRoute() {
 	return (
 		<Screen
 			categoryCode={categoryCode}
-			transition="fade"
+			transition="slide-up"
 			leftAction={{
 				label: "← Back to shop",
 				onClick: () => navigate({ to: "/shop" }),

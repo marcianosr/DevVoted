@@ -180,7 +180,7 @@ const ShopContainer = ({
 						</PrimaryButton>
 						<small className="text-sm mt-2">
 							Gain{" "}
-							<span className="text-yellow-400">
+							<span className="text-theme">
 								+{formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))}
 							</span>{" "}
 							storage
