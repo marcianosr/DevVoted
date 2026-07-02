@@ -1,4 +1,4 @@
-import { PollActionButton } from "./PollActionButton.ui";
+import { PrimaryButton } from "~/ui/PrimaryButton.component";
 
 type PollSubmitBarProps = {
 	canSubmit: boolean;
@@ -26,9 +26,9 @@ export const PollSubmitBar = ({
 	const disabled = !canSubmit || isSubmitting || submitted;
 	return (
 		<div className="mt-6 flex flex-col items-end gap-2">
-			<PollActionButton disabled={disabled} onClick={onSubmit}>
+			<PrimaryButton disabled={disabled} onClick={onSubmit}>
 				{submitLabel(isSubmitting, submitted)}
-			</PollActionButton>
+			</PrimaryButton>
 			{!canSubmit && hint && (
 				<span className="text-xs text-gray-500">{hint}</span>
 			)}

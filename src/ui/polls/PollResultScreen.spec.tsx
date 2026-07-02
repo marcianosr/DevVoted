@@ -41,4 +41,37 @@ describe(PollResultScreen.name, () => {
 		render(<PollResultScreen {...baseProps} />);
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 	});
+
+	it("shows how many polls remain before the next gate check", () => {
+		render(<PollResultScreen {...baseProps} pollsUntilGate={4} />);
+		expect(
+			screen.getByText("4 polls until the next gate check")
+		).toBeInTheDocument();
+	});
+
+	it("singularises the gate countdown for the last poll", () => {
+		render(<PollResultScreen {...baseProps} pollsUntilGate={1} />);
+		expect(
+			screen.getByText("1 poll until the next gate check")
+		).toBeInTheDocument();
+	});
+
+	it("hides the gate countdown on a gate-check poll", () => {
+		render(<PollResultScreen {...baseProps} pollsUntilGate={0} />);
+		expect(
+			screen.queryByText(/until the next gate check/)
+		).not.toBeInTheDocument();
+	});
+
+	it("renders the secondary shop action", () => {
+		render(
+			<PollResultScreen
+				{...baseProps}
+				secondaryAction={{ label: "Go to shop →", onClick: vi.fn() }}
+			/>
+		);
+		expect(
+			screen.getByRole("button", { name: /Go to shop/ })
+		).toBeInTheDocument();
+	});
 });

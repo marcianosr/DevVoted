@@ -227,6 +227,13 @@
 }
 
 /* Category-based theme utilities */
+/* Default theme color for un-themed screens (pipelines, shop, run screens).
+   Category ancestors below override it; the theme utilities inherit whichever
+   value is nearest, so bg-theme/text-theme render everywhere. */
+:root {
+	--theme-color: var(--color-cerulean);
+}
+
 /* Set --theme-color on each category, then use it in theme utilities */
 [data-category-theme="html"] {
 	--theme-color: var(--color-vermillion);
@@ -262,27 +269,24 @@
 	--theme-color: var(--color-seafoam);
 }
 
-/* Theme utilities - use inherited --theme-color */
+/* Theme utilities - use inherited --theme-color (category color, or the root
+   default on un-themed screens) */
 [data-category-theme] {
 	--meter-fill: var(--theme-color);
 	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
+}
 
-	.text-theme,
-	&.text-theme {
-		color: var(--theme-color);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--theme-color);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--theme-color);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--theme-color);
-	}
+.text-theme {
+	color: var(--theme-color);
+}
+.bg-theme {
+	background-color: var(--theme-color);
+}
+.border-theme {
+	border-color: var(--theme-color);
+}
+.accent-theme {
+	accent-color: var(--theme-color);
 }
 
 @font-face {

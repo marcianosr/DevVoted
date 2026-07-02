@@ -9,10 +9,15 @@ type PrimaryButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const SIZE_CLASSES = {
-	default: "text-2xl px-4 py-4",
+	default: "text-base px-6 py-3.5",
 	small: "text-sm px-3 py-2",
 } as const;
 
+/**
+ * The app's primary action button: a solid, theme-colored fill (bg-theme
+ * resolves to the surrounding category, or the default cyan on un-themed
+ * screens). Greys out when disabled or loading.
+ */
 export const PrimaryButton = ({
 	children,
 	disabled,
@@ -24,10 +29,11 @@ export const PrimaryButton = ({
 }: PrimaryButtonProps) => {
 	const isDisabled = disabled || isLoading;
 	const buttonClass = clsx(
-		"border-solid border-2 text-white transition-colors btn-color-cycle",
+		"font-semibold transition-colors",
 		SIZE_CLASSES[size],
-		isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-		isLoading && "bg-blue-300",
+		isDisabled
+			? "bg-zinc-800 text-gray-500 cursor-not-allowed"
+			: "bg-theme text-black cursor-pointer hover:opacity-90",
 		className
 	);
 

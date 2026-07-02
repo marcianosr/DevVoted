@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 
 import { MarkdownText } from "./PollMarkdown.ui";
-import { PollActionButton } from "./PollActionButton.ui";
+import { PrimaryButton } from "~/ui/PrimaryButton.component";
 import { PollAnswerReview } from "./PollAnswerReview.ui";
 import type { AnswerReviewOption } from "./PollAnswerReview.ui";
 import { PollQuestionHeading } from "./PollQuestionHeading.ui";
 import { PollScoreSummary } from "./PollScoreSummary.ui";
 import type { PollScoreSummaryData } from "./PollScoreSummary.ui";
+
+type ScreenAction = { label: string; onClick: () => void };
 
 type PollResultScreenProps = {
 	question: string;
@@ -15,8 +17,13 @@ type PollResultScreenProps = {
 	scoreSummary?: PollScoreSummaryData;
 	explanation?: string | null;
 	codeSlot?: ReactNode;
-	continueAction?: { label: string; onClick: () => void };
+	continueAction?: ScreenAction;
+	secondaryAction?: ScreenAction;
+	pollsUntilGate?: number;
 };
+
+const gateCountdownLabel = (pollsUntilGate: number) =>
+	`${pollsUntilGate} poll${pollsUntilGate === 1 ? "" : "s"} until the next gate check`;
 
 export const PollResultScreen = ({
 	question,
@@ -26,12 +33,15 @@ export const PollResultScreen = ({
 	explanation,
 	codeSlot,
 	continueAction,
+	secondaryAction,
+	pollsUntilGate,
 }: PollResultScreenProps) => {
 	const totalCorrect = options.filter((option) => option.correct).length;
 	const selectedCorrect = options.filter(
 		(option) => option.correct && option.isYours
 	).length;
 	const isMultipleChoice = totalCorrect > 1;
+	const showGateCountdown = pollsUntilGate !== undefined && pollsUntilGate > 0;
 
 	return (
 		<div>
@@ -69,11 +79,23 @@ export const PollResultScreen = ({
 					</div>
 				</div>
 			)}
-			{continueAction && (
-				<div className="mt-6 flex justify-end">
-					<PollActionButton onClick={continueAction.onClick}>
-						{continueAction.label}
-					</PollActionButton>
+			{(continueAction || secondaryAction || showGateCountdown) && (
+				<div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
+					<span className="text-sm text-gray-400">
+						{showGateCountdown ? gateCountdownLabel(pollsUntilGate) : null}
+					</span>
+					<div className="flex gap-3">
+						{secondaryAction && (
+							<PrimaryButton onClick={secondaryAction.onClick}>
+								{secondaryAction.label}
+							</PrimaryButton>
+						)}
+						{continueAction && (
+							<PrimaryButton onClick={continueAction.onClick}>
+								{continueAction.label}
+							</PrimaryButton>
+						)}
+					</div>
 				</div>
 			)}
 		</div>

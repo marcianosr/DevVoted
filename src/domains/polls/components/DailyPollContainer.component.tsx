@@ -276,6 +276,18 @@ const DailyPollContainer = ({
 				label: "See pipelines →",
 				onClick: () => navigate({ to: "/pipelines" }),
 			};
+	const reviewShopAction = {
+		label: "Go to shop →",
+		onClick: () => navigate({ to: "/shop" }),
+	};
+	// Polls remaining in the current window before the next gate is evaluated.
+	const pollsUntilGate = lastEvaluationContext
+		? Math.max(
+				0,
+				lastEvaluationContext.pollsInWindow -
+					lastEvaluationContext.pollsAnsweredInWindow
+			)
+		: undefined;
 	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
 
 	const adminLink = isAdmin && (
@@ -345,6 +357,8 @@ const DailyPollContainer = ({
 							explanation={poll.explanation}
 							perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
 							continueAction={reviewContinueAction}
+							secondaryAction={reviewShopAction}
+							pollsUntilGate={pollsUntilGate}
 						/>
 					) : (
 						<PollOptionsForm
