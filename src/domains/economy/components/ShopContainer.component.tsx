@@ -3,13 +3,17 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 
-import { addConfigToRunServerFn } from "~/domains/economy/api/configs";
+import {
+	addConfigToRunServerFn,
+	removeConfigFromRunServerFn,
+} from "~/domains/economy/api/configs";
 import ActiveCard from "~/domains/economy/components/Cards/ActiveCard.component";
 import ShopCard from "~/domains/economy/components/Cards/ShopCard.component";
 import { ConfigVariantDialog } from "~/domains/economy/components/ConfigVariantDialog.component";
 import { Config } from "~/domains/economy/models/config.model";
 import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown.component";
 import {
+	getActiveConfigs,
 	getStorageInfo,
 	isConfigInstalled,
 } from "~/domains/economy/services/configManager.service";
@@ -82,6 +86,18 @@ const ShopContainer = ({
 		setPendingVariantConfig(null);
 		installConfigById(variantId);
 	};
+
+	const deinstallConfigMutation = useMutation({
+		mutationFn: removeConfigFromRunServerFn,
+		onSuccess: () => router.invalidate(),
+	});
+
+	const onDeinstallConfig = (config: Config) =>
+		deinstallConfigMutation.mutate({
+			data: { configIds: [config.id], runId: activeRun.id, date: today },
+		});
+
+	const activeConfigs = getActiveConfigs(activeRun);
 
 	const onRerollMutation = useMutation({
 		mutationFn: rerollShopServerFn,
@@ -164,7 +180,7 @@ const ShopContainer = ({
 						</PrimaryButton>
 						<small className="text-sm mt-2">
 							Gain{" "}
-							<span className="text-yellow-400">
+							<span className="text-theme">
 								+{formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))}
 							</span>{" "}
 							storage
@@ -188,16 +204,43 @@ const ShopContainer = ({
 				</p>
 			</div>
 
-			<div className="mt-8 max-w-xs">
-				<StorageBreakdown
-					storageUsed={storageUsed}
-					storageLimit={storageLimit}
-					storageAvailable={storageAvailable}
-					configsStorage={configsStorage}
-					rerollsStorage={rerollsStorage}
-					deinstallPenalty={activeRun.deinstallPenalty}
-					injectedArchive={activeRun.injectedArchiveBytes}
-				/>
+			<div className="mt-8 flex flex-col gap-8 md:flex-row md:items-start">
+				<div className="max-w-xs shrink-0">
+					<StorageBreakdown
+						storageUsed={storageUsed}
+						storageLimit={storageLimit}
+						storageAvailable={storageAvailable}
+						configsStorage={configsStorage}
+						rerollsStorage={rerollsStorage}
+						deinstallPenalty={activeRun.deinstallPenalty}
+						injectedArchive={activeRun.injectedArchiveBytes}
+					/>
+				</div>
+
+				<section className="flex-1 min-w-0">
+					<header className="mb-4">
+						<h3 className="text-2xl">Installed configs</h3>
+						<p className="text-gray-300">
+							Deinstall a config to reclaim storage, minus a refund penalty.
+						</p>
+					</header>
+					{activeConfigs.length === 0 ? (
+						<p className="text-gray-400">No configs installed yet.</p>
+					) : (
+						<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
+							{activeConfigs.map((config) => (
+								<li key={config.id} className="shrink-0 snap-start">
+									<ActiveCard
+										config={config}
+										size="small"
+										onDeinstall={onDeinstallConfig}
+										disabled={!isOpen || deinstallConfigMutation.isPending}
+									/>
+								</li>
+							))}
+						</ul>
+					)}
+				</section>
 			</div>
 
 			{pendingVariantConfig && (

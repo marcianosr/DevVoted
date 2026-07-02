@@ -54,7 +54,7 @@ export const StorageBreakdown = ({
 	return (
 		<div className="space-y-4">
 			<div className="flex items-baseline justify-between gap-2">
-				<h3 className="text-xl text-cyan-400">Storage</h3>
+				<h3 className="text-xl text-theme">Storage</h3>
 				{recentGain !== null && (
 					<span className="text-emerald-300 text-sm border border-emerald-400 px-2 py-0.5 animate-pulse">
 						+{formatStorage(recentGain)} just earned
@@ -63,20 +63,18 @@ export const StorageBreakdown = ({
 			</div>
 
 			<div className="space-y-1">
-				<div className="flex items-center gap-4">
-					<div className="flex-1 h-4 border border-white/50 relative">
-						<div
-							className="h-full bg-white/80 transition-all duration-500"
-							style={{ width: `${Math.min(usagePercentage, 100)}%` }}
-						/>
-					</div>
-					<span className="text-sm whitespace-nowrap">
-						{formatStorage(storageUsed)} /{" "}
-						<span className={recentGain !== null ? "text-emerald-300" : ""}>
-							{formatStorageDetailed(storageLimit)}
-						</span>
-					</span>
+				<div className="h-4 border border-white/50 relative">
+					<div
+						className="h-full bg-white/80 transition-all duration-500"
+						style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+					/>
 				</div>
+				<p className="text-sm whitespace-nowrap">
+					{formatStorage(storageUsed)} /{" "}
+					<span className={recentGain !== null ? "text-emerald-300" : ""}>
+						{formatStorageDetailed(storageLimit)}
+					</span>
+				</p>
 
 				{storageAvailable > 0 && (
 					<p className="text-green-500 text-sm">

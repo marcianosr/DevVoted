@@ -9,63 +9,58 @@ type UseApplyPipelineUpgradeOptions = {
 	onApplied?: () => void;
 };
 
+const toUpgradeInput = (card: UpgradeCard) => {
+	if (card.kind === "upgrade-category-mastery-slot") {
+		return {
+			kind: "upgrade-category-mastery-slot",
+			category: card.category,
+			from: card.from,
+			to: card.to,
+		} as const;
+	}
+
+	const req = card.slot.requirement;
+	if (req.type === "category-mastery") {
+		return {
+			kind: "add-category-mastery-slot",
+			category: req.category,
+			difficulty: card.slot.difficulty,
+		} as const;
+	}
+
+	return card.kind === "add-slot"
+		? ({
+				kind: "add-slot",
+				gateTypeId: card.slot.gateTypeId as StaticGateTypeId,
+				difficulty: card.slot.difficulty,
+			} as const)
+		: ({
+				kind: "upgrade-slot",
+				gateTypeId: card.gateTypeId as StaticGateTypeId,
+				from: card.from,
+				to: card.to,
+			} as const);
+};
+
 export const useApplyPipelineUpgrade = ({
 	onApplied,
 }: UseApplyPipelineUpgradeOptions = {}) => {
 	const router = useRouter();
 
-	const mutation = useMutation({
-		mutationFn: applyPipelineUpgradeFn,
-		onSuccess: () => {
-			onApplied?.();
-			router.invalidate();
-		},
-	});
+	const mutation = useMutation({ mutationFn: applyPipelineUpgradeFn });
 
-	const apply = (card: UpgradeCard) => {
-		if (mutation.isPending) return;
+	// Apply each selected card in sequence — the server re-reads the run's slots
+	// per call, so awaited applies compound correctly — then finalize once.
+	const applyMany = async (cards: UpgradeCard[]) => {
+		if (mutation.isPending || cards.length === 0) return;
 
-		if (card.kind === "upgrade-category-mastery-slot") {
-			mutation.mutate({
-				data: {
-					kind: "upgrade-category-mastery-slot",
-					category: card.category,
-					from: card.from,
-					to: card.to,
-				} as const,
-			});
-			return;
+		for (const card of cards) {
+			await mutation.mutateAsync({ data: toUpgradeInput(card) });
 		}
 
-		const req = card.slot.requirement;
-
-		if (req.type === "category-mastery") {
-			mutation.mutate({
-				data: {
-					kind: "add-category-mastery-slot",
-					category: req.category,
-					difficulty: card.slot.difficulty,
-				} as const,
-			});
-			return;
-		}
-
-		const input =
-			card.kind === "add-slot"
-				? ({
-						kind: "add-slot",
-						gateTypeId: card.slot.gateTypeId as StaticGateTypeId,
-						difficulty: card.slot.difficulty,
-					} as const)
-				: ({
-						kind: "upgrade-slot",
-						gateTypeId: card.gateTypeId as StaticGateTypeId,
-						from: card.from,
-						to: card.to,
-					} as const);
-
-		mutation.mutate({ data: input });
+		onApplied?.();
+		await router.invalidate();
 	};
 
-	return { apply, isPending: mutation.isPending };
+	return { applyMany, isPending: mutation.isPending };
 };

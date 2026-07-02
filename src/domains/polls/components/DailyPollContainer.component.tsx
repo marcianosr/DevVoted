@@ -7,26 +7,24 @@ import { z } from "zod";
 
 import { ApplyEffects } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
-import { removeConfigFromRunServerFn } from "~/domains/economy/api/configs";
 import {
-	getCommunityStatsHandler,
 	getRandomAnswerHandler,
 	getScoreBreakdownHandler,
 } from "~/domains/polls/api/dailyPoll.handlers";
+import { getCommunityStats } from "~/domains/polls/api/communityStats";
 import { postPollOptions } from "~/domains/polls/api/polls";
-import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
-import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
 import { PollLastSeenBadge } from "~/domains/polls/components/PollLastSeenBadge.component";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm.component";
-import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay.component";
 import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
+import { getActiveConfigs } from "~/domains/economy/services/configManager.service";
+import {
+	findWrongOptionConfig,
+	getConfigsApplyingToPollCategory,
+} from "~/domains/polls/utils/pollConfigs";
+import type { ActivePollConfig } from "~/ui/polls/PollActiveConfigStrip.ui";
+import type { RemovedByConfig } from "~/ui/polls/PollOptionRow.ui";
 import { Poll } from "~/domains/polls/models/poll.model";
 import { PollOption } from "~/domains/polls/models/pollOption.model";
-import { getExposedConfigDeck } from "~/domains/runs/api/runs";
-import { ConfigDeckFooter } from "~/domains/economy/components/ConfigDeckFooter.component";
-import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer.component";
-import { useApplyPipelineUpgrade } from "~/domains/runs/hooks/useApplyPipelineUpgrade";
-import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
 import type { Run } from "~/domains/runs/models/run.model";
 import type {
 	PipelineEvaluation,
@@ -62,18 +60,6 @@ export const getScoreBreakdown = createServerFn({ method: "GET" })
 		return result.data;
 	});
 
-const getCommunityStats = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ pollId: z.number().int().positive() }))
-	.handler(async ({ data }) => {
-		const result = await getCommunityStatsHandler({ data });
-
-		if (!result || !result.success) {
-			throw new Error("Failed to get community stats");
-		}
-
-		return result.data;
-	});
-
 const getRandomAnswer = createServerFn({ method: "GET" })
 	.inputValidator(z.object({ pollId: z.number().int().positive() }))
 	.handler(async ({ data }) => {
@@ -98,7 +84,6 @@ type DailyPollContainerProps = {
 	isAdmin: boolean;
 	offeredConfigs: (Config & { originalCost?: number })[];
 	nextOfferedConfigs: (Config & { originalCost?: number })[];
-	initialPendingUpgradeCards: UpgradeCard[];
 	initialWindowContext: PipelineEvaluationContext | null;
 	date: string;
 	lastSeenAt: string | null;
@@ -116,11 +101,7 @@ const DailyPollContainer = ({
 	creatorDisplayName,
 	activeRun,
 	isAdmin,
-	offeredConfigs,
-	nextOfferedConfigs,
-	initialPendingUpgradeCards,
 	initialWindowContext,
-	date,
 	lastSeenAt,
 	lastEncounteredAt,
 	timesEncountered,
@@ -130,51 +111,47 @@ const DailyPollContainer = ({
 	const queryClient = useQueryClient();
 	const category = getCategoryMetadata(poll.categoryCode);
 
+	// Installed configs that can act on THIS poll, shown as the "active configs"
+	// strip on the answering screen.
+	const applyingConfigs = getConfigsApplyingToPollCategory(
+		getActiveConfigs(activeRun),
+		poll.categoryCode
+	);
+	const activePollConfigs: ActivePollConfig[] = applyingConfigs.map(
+		(config) => ({
+			id: config.id,
+			name: config.name,
+			description: config.description,
+			rarity: config.rarity,
+		})
+	);
+	// The config (ESLint/Stylelint) that removed a wrong option, shown as a card
+	// beside the disabled answer.
+	const wrongOptionConfig = findWrongOptionConfig(applyingConfigs);
+	const removalConfig: RemovedByConfig | undefined = wrongOptionConfig
+		? {
+				name: wrongOptionConfig.name,
+				rarity: wrongOptionConfig.rarity,
+				description: wrongOptionConfig.description,
+			}
+		: undefined;
+
 	// Store the score from mutation to avoid stale data after router.invalidate()
 	// The loader recalculates score with updated run data, which gives wrong values
 	const [submittedScore, setSubmittedScore] = useState<ScoreCalculation | null>(
 		null
 	);
 
-	// Seeded from the run's persisted state so it survives page refreshes.
-	const [pendingUpgradeCards, setPendingUpgradeCards] = useState<UpgradeCard[]>(
-		initialPendingUpgradeCards
-	);
 	const [lastEvaluationContext, setLastEvaluationContext] =
 		useState<PipelineEvaluationContext | null>(initialWindowContext);
 	const [lastPipelineEvaluation, setLastPipelineEvaluation] =
 		useState<PipelineEvaluation | null>(null);
-
-	// Sync local state when the server-side cards update via router.invalidate().
-	// useState only uses its argument on mount — when the context refreshes with new
-	// cards (e.g., after a gate pass), the prop changes but state doesn't unless we
-	// explicitly sync here.
-	useEffect(() => {
-		if (initialPendingUpgradeCards.length > 0) {
-			setPendingUpgradeCards(initialPendingUpgradeCards);
-		}
-	}, [initialPendingUpgradeCards]);
 
 	useEffect(() => {
 		if (initialWindowContext) {
 			setLastEvaluationContext(initialWindowContext);
 		}
 	}, [initialWindowContext]);
-
-	const deinstallConfigMutation = useMutation({
-		mutationFn: removeConfigFromRunServerFn,
-		onSuccess: () => router.invalidate(),
-	});
-
-	const { apply: applyUpgrade, isPending: isUpgradePending } =
-		useApplyPipelineUpgrade({
-			onApplied: () => setPendingUpgradeCards([]),
-		});
-
-	const handleUpgradeAccepted = (card: UpgradeCard) => {
-		setPendingUpgradeCards([]);
-		applyUpgrade(card);
-	};
 
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
 	const { data: communityStats } = useQuery({
@@ -194,28 +171,6 @@ const DailyPollContainer = ({
 		queryFn: () => getRandomAnswer({ data: { pollId: poll.id } }),
 		enabled: showWhoPickedWhat && !hasAnswered,
 	});
-
-	// Fetch exposed config deck (only when config is active and user has answered)
-	const exposeConfigDeck = configEffects.exposeConfigDeck ?? false;
-
-	const today = date;
-	const isShopOpen = hasAnswered && activeRun.shopSkippedDate !== today;
-	const onDeinstallConfig = (config: Config) => {
-		deinstallConfigMutation.mutate({
-			data: { configIds: [config.id], runId: activeRun.id, date: today },
-		});
-	};
-
-	const { data: exposedConfigDeckResult } = useQuery({
-		queryKey: ["exposedConfigDeck", today],
-		queryFn: () => getExposedConfigDeck({ data: { date: today } }),
-		enabled: exposeConfigDeck && hasAnswered,
-	});
-
-	const exposedConfigDeck =
-		exposedConfigDeckResult?.success && exposedConfigDeckResult.data
-			? exposedConfigDeckResult.data
-			: null;
 
 	const mutation = useMutation({
 		mutationFn: postPollOptions,
@@ -242,13 +197,9 @@ const DailyPollContainer = ({
 					setLastPipelineEvaluation(response.data.pipelineEvaluation);
 				}
 
-				if (response.data.upgradeCards?.length) {
-					setPendingUpgradeCards(response.data.upgradeCards);
-				}
-
 				if (response.data.runEnded) {
 					await router.invalidate();
-					navigate({ to: "/game-over" });
+					navigate({ to: "/pipeline-failure" });
 					return;
 				}
 			}
@@ -265,6 +216,29 @@ const DailyPollContainer = ({
 
 	// Use the submitted score if available (just answered), otherwise fall back to loader's score
 	const displayScore = submittedScore ?? score;
+
+	// The review-screen forward button depends on whether this poll closed a
+	// pipeline window. A pass routes to the reward screen; otherwise it just links
+	// to the current pipeline. Failures never reach the review screen — they
+	// redirect straight to /pipeline-failure from the mutation below. Both target
+	// screens derive their own data server-side, so no params are passed.
+	const reviewContinueAction = lastPipelineEvaluation?.passed
+		? {
+				label: "Go to pipeline check →",
+				onClick: () => navigate({ to: "/pipeline-success" }),
+			}
+		: {
+				label: "See pipelines →",
+				onClick: () => navigate({ to: "/pipelines" }),
+			};
+	// Polls remaining in the current window before the next gate is evaluated.
+	const pollsUntilGate = lastEvaluationContext
+		? Math.max(
+				0,
+				lastEvaluationContext.pollsInWindow -
+					lastEvaluationContext.pollsAnsweredInWindow
+			)
+		: undefined;
 	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
 
 	const adminLink = isAdmin && (
@@ -293,21 +267,6 @@ const DailyPollContainer = ({
 		</header>
 	);
 
-	const hasPendingUpgrade = pendingUpgradeCards.length > 0;
-
-	if (hasPendingUpgrade && !hasAnswered) {
-		return (
-			<PipelineUpgradeContainer
-				cards={pendingUpgradeCards}
-				currentSlots={activeRun.pipelineSlots}
-				onAccept={handleUpgradeAccepted}
-				isPending={isUpgradePending}
-				evaluationContext={lastEvaluationContext ?? undefined}
-				evaluation={lastPipelineEvaluation ?? undefined}
-			/>
-		);
-	}
-
 	return (
 		<div className="flex gap-6 items-start">
 			<section className="flex-1 min-w-0">
@@ -324,70 +283,32 @@ const DailyPollContainer = ({
 				)}
 				{adminLink}
 				{header}
-				{hasPendingUpgrade && hasAnswered && (
-					<div className="mb-6 p-4 border border-green-500 bg-green-500/10 flex items-center justify-between">
-						<div>
-							<p className="text-green-400 font-bold">Pipeline upgrade ready</p>
-							<p className="text-gray-300 text-sm">
-								You cleared a gate — pick your reward before tomorrow&apos;s
-								poll.
-							</p>
-						</div>
-						<Link
-							to="/pipelines"
-							className="text-green-400 underline whitespace-nowrap"
-						>
-							Pick now
-						</Link>
-					</div>
-				)}
 				<div className="mt-4 mb-4">
 					{hasAnswered ? (
 						<PollResultsSection
 							poll={poll}
-							options={options}
 							selectedOptions={selectedOptions}
 							score={displayScore}
 							communityStats={communityStats}
-							categoryCode={poll.categoryCode}
 							explanation={poll.explanation}
-							exposedConfigDeck={exposedConfigDeck}
-							offeredConfigs={offeredConfigs}
-							nextOfferedConfigs={nextOfferedConfigs}
-							activeRun={activeRun}
-							reductionCost={configEffects.reductionCost}
-							storageBonus={configEffects.storage?.skipBonus}
 							perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
-							pipeline={{
-								slots: activeRun.pipelineSlots,
-								evaluationContext: lastEvaluationContext ?? undefined,
-								evaluation: lastPipelineEvaluation ?? undefined,
-							}}
-							date={today}
+							continueAction={reviewContinueAction}
+							pollsUntilGate={pollsUntilGate}
 						/>
 					) : (
-						<>
-							<PollQuestionDisplay poll={poll} />
-							{poll.codeSandboxExample && (
-								<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
-							)}
-							{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
-							<PollOptionsForm
-								poll={poll}
-								options={options}
-								hasAnswered={hasAnswered}
-								effect={configEffects}
-								selectedOptions={selectedOptions}
-								mutation={mutation}
-								randomAnswer={randomAnswer ?? null}
-							/>
-						</>
+						<PollOptionsForm
+							poll={poll}
+							options={options}
+							hasAnswered={hasAnswered}
+							effect={configEffects}
+							selectedOptions={selectedOptions}
+							activeConfigs={activePollConfigs}
+							removalConfig={removalConfig}
+							mutation={mutation}
+							randomAnswer={randomAnswer ?? null}
+						/>
 					)}
 				</div>
-				<ConfigDeckFooter
-					activeRun={activeRun}
-					onDeinstall={isShopOpen ? onDeinstallConfig : undefined}
-				/>
 			</section>
 		</div>
 	);

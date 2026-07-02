@@ -1,13 +1,9 @@
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Popover } from "./Popover.component";
 
-// jsdom does not implement the native Popover API
-beforeAll(() => {
-	HTMLElement.prototype.showPopover = vi.fn();
-	HTMLElement.prototype.hidePopover = vi.fn();
-});
+// The native Popover API is polyfilled for jsdom in src/test/setup.ts
 
 const TestPopover = () => (
 	<Popover ariaLabel="Show info" content={<p>Rare game info</p>}>

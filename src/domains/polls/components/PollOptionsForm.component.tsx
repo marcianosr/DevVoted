@@ -3,14 +3,18 @@ import { useForm } from "@tanstack/react-form";
 import type { ApplyEffects } from "~/domains/economy/data/configs";
 import { postPollOptions } from "~/domains/polls/api/polls";
 import { RandomDailyAnswer } from "~/domains/polls/api/communityStats.queries";
-import { PollOptions } from "~/domains/polls/components/PollOptions.component";
+import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
+import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
 import { Poll } from "~/domains/polls/models/poll.model";
 import { PollOption } from "~/domains/polls/models/pollOption.model";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { toggleOptionSelection } from "~/domains/polls/utils/optionSelection";
+import { PollAnsweringScreen } from "~/ui/polls/PollAnsweringScreen.ui";
+import type { ActivePollConfig } from "~/ui/polls/PollActiveConfigStrip.ui";
+import type { PollAnsweringLiveHint } from "~/ui/polls/PollAnsweringScreen.ui";
+import type { PollAnsweringOption } from "~/ui/polls/PollOptionList.ui";
+import type { RemovedByConfig } from "~/ui/polls/PollOptionRow.ui";
 
 import type { UseMutationResult } from "@tanstack/react-query";
-
-// TODO: move
 
 type PollOptionsFormProps = {
 	poll: Poll;
@@ -18,6 +22,8 @@ type PollOptionsFormProps = {
 	hasAnswered: boolean;
 	effect: ApplyEffects;
 	selectedOptions: string[];
+	activeConfigs: ActivePollConfig[];
+	removalConfig?: RemovedByConfig;
 	mutation: UseMutationResult<
 		Awaited<ReturnType<typeof postPollOptions>>,
 		Error,
@@ -26,12 +32,35 @@ type PollOptionsFormProps = {
 	randomAnswer: RandomDailyAnswer | null;
 };
 
+const buildLiveHint = (
+	effect: ApplyEffects,
+	selectedCorrectCount: number
+): PollAnsweringLiveHint | undefined => {
+	if (effect.showCorrectCount) {
+		return {
+			tone: "correct",
+			text: `You have selected ${selectedCorrectCount} correct answer${selectedCorrectCount === 1 ? "" : "s"}`,
+		};
+	}
+	if (effect.countCorrect) {
+		return selectedCorrectCount > 0
+			? { tone: "correct", text: "You selected at least one correct answer!" }
+			: {
+					tone: "incorrect",
+					text: "You have not selected a correct answer yet.",
+				};
+	}
+	return undefined;
+};
+
 const PollOptionsForm = ({
 	poll,
 	options,
 	hasAnswered,
 	effect,
 	selectedOptions,
+	activeConfigs,
+	removalConfig,
 	mutation,
 	randomAnswer,
 }: PollOptionsFormProps) => {
@@ -41,68 +70,84 @@ const PollOptionsForm = ({
 		},
 		onSubmit: async ({ value }) => {
 			mutation.mutate({
-				data: {
-					pollId: poll.id,
-					selectedOptions: value.selectedOptions,
-				},
+				data: { pollId: poll.id, selectedOptions: value.selectedOptions },
 			});
 		},
 	});
 
+	const disabledOptionIds = effect.renderProps.disabledOptionIds ?? [];
+
+	const codeSlot = (
+		<>
+			{poll.codeSandboxExample && (
+				<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
+			)}
+			{poll.codeBlock && <PollCodeBlock code={poll.codeBlock} />}
+		</>
+	);
+
+	const answeringOptions: PollAnsweringOption[] = options.map((option) => ({
+		id: option.id.toString(),
+		text: option.option,
+		disabled: hasAnswered || disabledOptionIds.includes(option.id),
+		removedByConfig: disabledOptionIds.includes(option.id)
+			? removalConfig
+			: undefined,
+		markerEmoji:
+			randomAnswer?.selectedOptionId === option.id ? "👤" : undefined,
+		markerTitle:
+			randomAnswer?.selectedOptionId === option.id
+				? `${randomAnswer.user.displayName ?? "Someone"} picked this`
+				: undefined,
+	}));
+
 	return (
-		<form
-			onSubmit={(e) => {
-				e.preventDefault();
-				handleSubmit();
+		<Field
+			name="selectedOptions"
+			validators={{
+				onSubmit: ({ value }) =>
+					!value || value.length === 0
+						? "Please select at least one answer"
+						: undefined,
 			}}
 		>
-			<Field
-				name="selectedOptions"
-				validators={{
-					onSubmit: ({ value }) => {
-						if (!value || value.length === 0) {
-							return "Please select at least one answer";
+			{(field) => {
+				const selectedIds = field.state.value;
+				const selectedCorrectCount = options.filter(
+					(option) =>
+						option.correct && selectedIds.includes(option.id.toString())
+				).length;
+
+				return (
+					<PollAnsweringScreen
+						question={poll.question}
+						answerType={poll.answerType}
+						activeConfigs={activeConfigs}
+						options={answeringOptions}
+						selectedIds={selectedIds}
+						liveHint={buildLiveHint(effect, selectedCorrectCount)}
+						onToggle={(optionId) =>
+							field.setValue(
+								toggleOptionSelection(selectedIds, optionId, poll.answerType)
+							)
 						}
-						return undefined;
-					},
-				}}
-			>
-				{(field) => (
-					<>
-						<PollOptions
-							poll={poll}
-							options={options}
-							field={field}
-							disabled={hasAnswered}
-							disabledOptionIds={effect.renderProps.disabledOptionIds}
-							countCorrect={effect.countCorrect}
-							showCountCorrect={effect.showCorrectCount}
-							randomAnswer={randomAnswer}
-						/>
-						{field.state.meta.errors.length > 0 && (
-							<div className="text-red-500 text-xl my-2">
-								{field.state.meta.errors[0]}
-							</div>
-						)}
-					</>
-				)}
-			</Field>
-			<PrimaryButton
-				type="submit"
-				disabled={mutation.isPending || mutation.isSuccess}
-			>
-				{mutation.isSuccess
-					? "Submitted!"
-					: mutation.isPending
-						? "Submitting..."
-						: "Submit answers"}
-			</PrimaryButton>
-			{mutation.isError && (
-				<div className="text-red-500 text-xl my-2">
-					Error submitting answers: {mutation.error.message}
-				</div>
-			)}
-		</form>
+						submit={{
+							canSubmit: selectedIds.length > 0,
+							isSubmitting: mutation.isPending,
+							submitted: mutation.isSuccess,
+							hint: "Pick an option to continue.",
+							error:
+								field.state.meta.errors[0]?.toString() ??
+								(mutation.isError
+									? `Error submitting answers: ${mutation.error.message}`
+									: undefined),
+							onSubmit: handleSubmit,
+						}}
+						codeSlot={codeSlot}
+					/>
+				);
+			}}
+		</Field>
 	);
 };
 

@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 import { configs } from "~/domains/economy/data/configs";
 import type { ExposedConfigDeck } from "~/domains/runs/api/run.queries";
 
-import { RARITY_COLORS } from "./Cards/ConfigCard.component";
+import { RARITY_COLORS } from "~/ui/rarityColors";
 
 type ExposedConfigDeckDisplayProps = {
 	deck: ExposedConfigDeck;

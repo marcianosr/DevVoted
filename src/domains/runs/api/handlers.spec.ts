@@ -61,7 +61,8 @@ describe("Run Handlers", () => {
 			);
 			expect(runQueries.createRunForUser).toHaveBeenCalledWith(
 				"test-user-id",
-				0
+				0,
+				[]
 			);
 		});
 

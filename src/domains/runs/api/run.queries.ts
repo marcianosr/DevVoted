@@ -12,7 +12,10 @@ import { calculateLootAmount } from "~/domains/runs/services/lootCalculator.serv
 import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
 import { getPreRunSlot } from "~/domains/runs/data/pipelineSlots";
 import type { StaticGateTypeId } from "~/domains/runs/data/pipelineSlots";
-import { getWindowSize } from "~/domains/runs/services/pipelineEvaluator.service";
+import {
+	getCurrentGate,
+	getWindowSize,
+} from "~/domains/runs/services/pipelineEvaluator.service";
 import type {
 	PipelineSlot,
 	UpgradeCard,
@@ -20,6 +23,7 @@ import type {
 import type { CategoryCode } from "~/domains/shared/categories";
 
 import { debitArchivedStorageGuarded } from "~/domains/economy/api/archive.queries";
+import { calculateArchiveCredit } from "~/domains/economy/services/archive.service";
 
 import { runFactory } from "../models/run.model";
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage.model";
@@ -233,6 +237,19 @@ export const getLastRunFromUser = async (userId: string) => {
 		.from(runCategoryCoverageTable)
 		.where(eq(runCategoryCoverageTable.run_id, lastRunRecord[0].id));
 
+	const totalPollsAnswered = coverageRecords.reduce(
+		(sum, coverage) => sum + coverage.pollsAnswered,
+		0
+	);
+
+	// Recompute the leftover-storage credit this run banked into the persistent
+	// archive. completeRunWithThresholdFailure leaves storage_limit and configs
+	// untouched, so the same inputs reproduce the value archiveLeftoverStorage
+	// credited at run-end — no need to persist it separately.
+	const runDTO = runFactory.toDTO(lastRunRecord[0]);
+	const gateReached = getCurrentGate(totalPollsAnswered, runDTO.pipelineSlots);
+	const archivedCredit = calculateArchiveCredit(runDTO, gateReached);
+
 	return {
 		run: lastRunRecord[0],
 		categoryCoverage: coverageRecords.map((coverage) => ({
@@ -243,10 +260,8 @@ export const getLastRunFromUser = async (userId: string) => {
 			(sum, coverage) => sum + coverage.currentCoverage,
 			0
 		),
-		totalPollsAnswered: coverageRecords.reduce(
-			(sum, coverage) => sum + coverage.pollsAnswered,
-			0
-		),
+		totalPollsAnswered,
+		archivedCredit,
 	};
 };
 

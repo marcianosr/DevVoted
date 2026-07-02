@@ -15,13 +15,15 @@ import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as PresentationRouteImport } from './routes/presentation'
 import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AwardsRouteImport } from './routes/awards'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
-import { Route as AuthedProgressRouteImport } from './routes/_authed/progress'
+import { Route as AuthedShopRouteImport } from './routes/_authed/shop'
 import { Route as AuthedPipelinesRouteImport } from './routes/_authed/pipelines'
+import { Route as AuthedPipelineSuccessRouteImport } from './routes/_authed/pipeline-success'
+import { Route as AuthedPipelineFailureRouteImport } from './routes/_authed/pipeline-failure'
 import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
+import { Route as AuthedCommunityRouteImport } from './routes/_authed/community'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
 import { Route as AuthedDailyPollIndexRouteImport } from './routes/_authed/daily-poll/index'
@@ -60,11 +62,6 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AwardsRoute = AwardsRouteImport.update({
-  id: '/awards',
-  path: '/awards',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
@@ -79,9 +76,9 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedProgressRoute = AuthedProgressRouteImport.update({
-  id: '/progress',
-  path: '/progress',
+const AuthedShopRoute = AuthedShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedPipelinesRoute = AuthedPipelinesRouteImport.update({
@@ -89,9 +86,24 @@ const AuthedPipelinesRoute = AuthedPipelinesRouteImport.update({
   path: '/pipelines',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPipelineSuccessRoute = AuthedPipelineSuccessRouteImport.update({
+  id: '/pipeline-success',
+  path: '/pipeline-success',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPipelineFailureRoute = AuthedPipelineFailureRouteImport.update({
+  id: '/pipeline-failure',
+  path: '/pipeline-failure',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedGameOverRoute = AuthedGameOverRouteImport.update({
   id: '/game-over',
   path: '/game-over',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCommunityRoute = AuthedCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminRoute = AuthedAdminRouteImport.update({
@@ -132,7 +144,6 @@ const AuthedPollsPollIdEditRoute = AuthedPollsPollIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/awards': typeof AwardsRoute
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
@@ -140,9 +151,12 @@ export interface FileRoutesByFullPath {
   '/start': typeof StartRoute
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
+  '/community': typeof AuthedCommunityRoute
   '/game-over': typeof AuthedGameOverRoute
+  '/pipeline-failure': typeof AuthedPipelineFailureRoute
+  '/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/pipelines': typeof AuthedPipelinesRoute
-  '/progress': typeof AuthedProgressRoute
+  '/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -153,7 +167,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/awards': typeof AwardsRoute
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
@@ -161,9 +174,12 @@ export interface FileRoutesByTo {
   '/start': typeof StartRoute
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
+  '/community': typeof AuthedCommunityRoute
   '/game-over': typeof AuthedGameOverRoute
+  '/pipeline-failure': typeof AuthedPipelineFailureRoute
+  '/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/pipelines': typeof AuthedPipelinesRoute
-  '/progress': typeof AuthedProgressRoute
+  '/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -176,7 +192,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
-  '/awards': typeof AwardsRoute
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
@@ -184,9 +199,12 @@ export interface FileRoutesById {
   '/start': typeof StartRoute
   '/stats': typeof StatsRoute
   '/_authed/admin': typeof AuthedAdminRoute
+  '/_authed/community': typeof AuthedCommunityRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
+  '/_authed/pipeline-failure': typeof AuthedPipelineFailureRoute
+  '/_authed/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/_authed/pipelines': typeof AuthedPipelinesRoute
-  '/_authed/progress': typeof AuthedProgressRoute
+  '/_authed/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/polls/new': typeof AuthedPollsNewRoute
   '/_authed/profile/$userId': typeof AuthedProfileUserIdRoute
@@ -199,7 +217,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/awards'
     | '/login'
     | '/logout'
     | '/presentation'
@@ -207,9 +224,12 @@ export interface FileRouteTypes {
     | '/start'
     | '/stats'
     | '/admin'
+    | '/community'
     | '/game-over'
+    | '/pipeline-failure'
+    | '/pipeline-success'
     | '/pipelines'
-    | '/progress'
+    | '/shop'
     | '/auth/callback'
     | '/polls/new'
     | '/profile/$userId'
@@ -220,7 +240,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/awards'
     | '/login'
     | '/logout'
     | '/presentation'
@@ -228,9 +247,12 @@ export interface FileRouteTypes {
     | '/start'
     | '/stats'
     | '/admin'
+    | '/community'
     | '/game-over'
+    | '/pipeline-failure'
+    | '/pipeline-success'
     | '/pipelines'
-    | '/progress'
+    | '/shop'
     | '/auth/callback'
     | '/polls/new'
     | '/profile/$userId'
@@ -242,7 +264,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authed'
-    | '/awards'
     | '/login'
     | '/logout'
     | '/presentation'
@@ -250,9 +271,12 @@ export interface FileRouteTypes {
     | '/start'
     | '/stats'
     | '/_authed/admin'
+    | '/_authed/community'
     | '/_authed/game-over'
+    | '/_authed/pipeline-failure'
+    | '/_authed/pipeline-success'
     | '/_authed/pipelines'
-    | '/_authed/progress'
+    | '/_authed/shop'
     | '/auth/callback'
     | '/_authed/polls/new'
     | '/_authed/profile/$userId'
@@ -265,7 +289,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
-  AwardsRoute: typeof AwardsRoute
   LoginRoute: typeof LoginRoute
   LogoutRoute: typeof LogoutRoute
   PresentationRoute: typeof PresentationRoute
@@ -319,13 +342,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/awards': {
-      id: '/awards'
-      path: '/awards'
-      fullPath: '/awards'
-      preLoaderRoute: typeof AwardsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -347,11 +363,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/progress': {
-      id: '/_authed/progress'
-      path: '/progress'
-      fullPath: '/progress'
-      preLoaderRoute: typeof AuthedProgressRouteImport
+    '/_authed/shop': {
+      id: '/_authed/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof AuthedShopRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/pipelines': {
@@ -361,11 +377,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPipelinesRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/pipeline-success': {
+      id: '/_authed/pipeline-success'
+      path: '/pipeline-success'
+      fullPath: '/pipeline-success'
+      preLoaderRoute: typeof AuthedPipelineSuccessRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/pipeline-failure': {
+      id: '/_authed/pipeline-failure'
+      path: '/pipeline-failure'
+      fullPath: '/pipeline-failure'
+      preLoaderRoute: typeof AuthedPipelineFailureRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/game-over': {
       id: '/_authed/game-over'
       path: '/game-over'
       fullPath: '/game-over'
       preLoaderRoute: typeof AuthedGameOverRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/community': {
+      id: '/_authed/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof AuthedCommunityRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin': {
@@ -422,9 +459,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRoute
+  AuthedCommunityRoute: typeof AuthedCommunityRoute
   AuthedGameOverRoute: typeof AuthedGameOverRoute
+  AuthedPipelineFailureRoute: typeof AuthedPipelineFailureRoute
+  AuthedPipelineSuccessRoute: typeof AuthedPipelineSuccessRoute
   AuthedPipelinesRoute: typeof AuthedPipelinesRoute
-  AuthedProgressRoute: typeof AuthedProgressRoute
+  AuthedShopRoute: typeof AuthedShopRoute
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
   AuthedDailyPollIndexRoute: typeof AuthedDailyPollIndexRoute
@@ -435,9 +475,12 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRoute,
+  AuthedCommunityRoute: AuthedCommunityRoute,
   AuthedGameOverRoute: AuthedGameOverRoute,
+  AuthedPipelineFailureRoute: AuthedPipelineFailureRoute,
+  AuthedPipelineSuccessRoute: AuthedPipelineSuccessRoute,
   AuthedPipelinesRoute: AuthedPipelinesRoute,
-  AuthedProgressRoute: AuthedProgressRoute,
+  AuthedShopRoute: AuthedShopRoute,
   AuthedPollsNewRoute: AuthedPollsNewRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,
   AuthedDailyPollIndexRoute: AuthedDailyPollIndexRoute,
@@ -452,7 +495,6 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
-  AwardsRoute: AwardsRoute,
   LoginRoute: LoginRoute,
   LogoutRoute: LogoutRoute,
   PresentationRoute: PresentationRoute,

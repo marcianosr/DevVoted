@@ -227,6 +227,13 @@
 }
 
 /* Category-based theme utilities */
+/* Default theme color for un-themed screens (pipelines, shop, run screens).
+   Category ancestors below override it; the theme utilities inherit whichever
+   value is nearest, so bg-theme/text-theme render everywhere. */
+:root {
+	--theme-color: var(--color-cerulean);
+}
+
 /* Set --theme-color on each category, then use it in theme utilities */
 [data-category-theme="html"] {
 	--theme-color: var(--color-vermillion);
@@ -262,27 +269,29 @@
 	--theme-color: var(--color-seafoam);
 }
 
-/* Theme utilities - use inherited --theme-color */
+/* Theme utilities - use inherited --theme-color (category color, or the root
+   default on un-themed screens) */
 [data-category-theme] {
 	--meter-fill: var(--theme-color);
 	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
+}
 
-	.text-theme,
-	&.text-theme {
-		color: var(--theme-color);
-	}
-	.bg-theme,
-	&.bg-theme {
-		background-color: var(--theme-color);
-	}
-	.border-theme,
-	&.border-theme {
-		border-color: var(--theme-color);
-	}
-	.accent-theme,
-	&.accent-theme {
-		accent-color: var(--theme-color);
-	}
+.text-theme {
+	color: var(--theme-color);
+}
+.bg-theme {
+	background-color: var(--theme-color);
+}
+/* Translucent theme fill for selected/hover surfaces (opacity modifiers can't
+   apply to the custom .bg-theme class, so we derive the alpha here). */
+.bg-theme-soft {
+	background-color: oklch(from var(--theme-color) l c h / 0.1);
+}
+.border-theme {
+	border-color: var(--theme-color);
+}
+.accent-theme {
+	accent-color: var(--theme-color);
 }
 
 @font-face {
@@ -394,4 +403,64 @@ meter::-webkit-meter-optimum-value {
 
 .prismatic-text {
 	animation: prismatic-text 4s linear infinite;
+}
+
+/* ─── Screen mount-in transitions ──────────────────────────────────────────────
+   Applied by the Screen primitive via data-screen-transition. @starting-style
+   defines the pre-mount state; the browser animates to the settled state the
+   first time the element renders. Respects reduced-motion. */
+[data-screen-transition="fade"] {
+	opacity: 1;
+	transition: opacity 200ms ease-out;
+	@starting-style {
+		opacity: 0;
+	}
+}
+
+[data-screen-transition="slide-up"] {
+	opacity: 1;
+	translate: 0 0;
+	transition:
+		opacity 220ms ease-out,
+		translate 220ms ease-out;
+	@starting-style {
+		opacity: 0;
+		translate: 0 8px;
+	}
+}
+
+/* Directional slides for flow navigation: slide-right settles from the left
+   (used when proceeding), slide-left settles from the right (used when going
+   back). The @starting-style offset's sign is the travel direction. */
+[data-screen-transition="slide-right"] {
+	opacity: 1;
+	translate: 0 0;
+	transition:
+		opacity 220ms ease-out,
+		translate 220ms ease-out;
+	@starting-style {
+		opacity: 0;
+		translate: -24px 0;
+	}
+}
+
+[data-screen-transition="slide-left"] {
+	opacity: 1;
+	translate: 0 0;
+	transition:
+		opacity 220ms ease-out,
+		translate 220ms ease-out;
+	@starting-style {
+		opacity: 0;
+		translate: 24px 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-screen-transition="fade"],
+	[data-screen-transition="slide-up"],
+	[data-screen-transition="slide-right"],
+	[data-screen-transition="slide-left"] {
+		transition: none;
+	}
 }

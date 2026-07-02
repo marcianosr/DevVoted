@@ -43,7 +43,7 @@ const DailyPoll: React.FC = () => {
 	}
 
 	return (
-		<Content poll={poll}>
+		<Content poll={poll} transition="fade">
 			<DevPollNavigator currentDate={currentDate} hasCustomDate={!!date} />
 			<DailyPollContainer
 				key={poll.id}
@@ -58,7 +58,6 @@ const DailyPoll: React.FC = () => {
 				isAdmin={isAdmin}
 				offeredConfigs={offeredConfigs}
 				nextOfferedConfigs={nextOfferedConfigs}
-				initialPendingUpgradeCards={activeRun.data.pendingUpgradeCards}
 				initialWindowContext={initialWindowContext}
 				date={currentDate}
 				lastSeenAt={lastSeenAt}
@@ -97,6 +96,16 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 
 		if (!pollResponse.success) {
 			throw new Error(pollResponse.error);
+		}
+
+		// Pending upgrade cards mean the player passed a gate but hasn't applied
+		// their reward yet. If they've navigated back to an unanswered poll, send
+		// them to resolve the upgrade first — /pipeline-success owns that flow.
+		if (
+			activeRun.data.pendingUpgradeCards.length > 0 &&
+			!pollResponse.data.hasAnswered
+		) {
+			throw redirect({ to: "/pipeline-success" });
 		}
 
 		const configEffects = applyEffects(
