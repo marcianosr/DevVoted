@@ -28,10 +28,16 @@ vi.mock("~/domains/polls/api/pollResponse.queries", () => ({
 	getUserSelectedOptions: vi.fn(),
 	getPollHistory: vi.fn(),
 	getLastSeenBeforeCurrentRun: vi.fn(),
+	getTimesEncountered: vi.fn(),
 	trackPollView: vi.fn(),
 	trackPollAnswer: vi.fn(),
 	getPollsSeenInRun: vi.fn(),
 	getRunPollHistory: vi.fn(),
+	getPollResponseScoreBreakdown: vi.fn(),
+}));
+
+vi.mock("~/domains/polls/api/dailyPoll.queries", () => ({
+	getLastGlobalDailyPollDate: vi.fn(),
 }));
 
 vi.mock("~/domains/runs/services/turn.service", () => ({
