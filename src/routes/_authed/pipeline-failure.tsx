@@ -1,46 +1,138 @@
+import { useState } from "react";
+
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import Content from "~/components/Content.component";
+import { Screen } from "~/ui/Screen.ui";
+import { getCommunityStats } from "~/domains/polls/api/communityStats";
+import { getDailyPoll } from "~/domains/polls/api/polls";
+import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
 import { getLastRunForGameOver } from "~/domains/runs/api/runs";
-import {
-	formatRequirement,
-	getSlotLabel,
-} from "~/domains/runs/utils/formatPipelineRequirement";
+import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
+import { getCategoryMetadata } from "~/domains/shared/categories";
+import { runFactory } from "~/domains/runs/models/run.model";
+import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
+import type {
+	PipelineEvaluation,
+	SlotEvaluation,
+} from "~/domains/runs/services/pipelineEvaluator.service";
+import type { PipelineFailureSlot } from "~/domains/runs/services/runCompletion.service";
 import { parseCompletionReason } from "~/domains/runs/utils/parseCompletionReason";
 import { PipelineFailureScreen } from "~/ui/runs/PipelineFailureScreen.ui";
-import type { FailedSlotSummary } from "~/ui/runs/PipelineFailureScreen.ui";
+import type { RunSummaryData } from "~/ui/runs/PipelineFailureScreen.ui";
 
 export const Route = createFileRoute("/_authed/pipeline-failure")({
 	component: PipelineFailureRoute,
 	loader: async () => {
-		const lastRun = await getLastRunForGameOver();
-		return { lastRun: lastRun.success ? lastRun.data : null };
+		const lastRunResult = await getLastRunForGameOver();
+		const lastRun = lastRunResult.success ? lastRunResult.data : null;
+		if (!lastRun) return { lastRun: null, review: null };
+
+		// The failing poll is the run's most recent (today's) daily poll.
+		const pollResult = await getDailyPoll({ data: { runId: lastRun.run.id } });
+		if (!pollResult.success || !pollResult.data.hasAnswered) {
+			return { lastRun, review: null };
+		}
+
+		const { poll, selectedOptions } = pollResult.data;
+		const communityStats = await getCommunityStats({
+			data: { pollId: poll.id },
+		});
+
+		return { lastRun, review: { poll, selectedOptions, communityStats } };
 	},
 });
 
+const sameSlot = (slot: PipelineSlot, failed: PipelineFailureSlot) =>
+	failed.gateTypeId === slot.gateTypeId &&
+	failed.difficulty === slot.difficulty &&
+	JSON.stringify(failed.requirement) === JSON.stringify(slot.requirement);
+
+// Reconstruct a per-slot evaluation from the persisted failed slots so the
+// pipeline layout can render every check's pass/fail outcome.
+const buildEvaluation = (
+	slots: PipelineSlot[],
+	failedSlots: PipelineFailureSlot[]
+): PipelineEvaluation => {
+	const slotEvaluations: SlotEvaluation[] = slots.map((slot) => {
+		const failed = failedSlots.some((f) => sameSlot(slot, f));
+		return { slot, passed: !failed, status: failed ? "failed" : "passed" };
+	});
+	return { passed: false, slotEvaluations, totalReward: 0 };
+};
+
 function PipelineFailureRoute() {
-	const { lastRun } = Route.useLoaderData();
+	const { lastRun, review } = Route.useLoaderData();
 	const navigate = useNavigate();
+	const [showReview, setShowReview] = useState(false);
+
+	if (showReview && review) {
+		return (
+			<Screen
+				categoryCode={review.poll.categoryCode}
+				transition="fade"
+				rightAction={{
+					label: "Back to summary →",
+					onClick: () => setShowReview(false),
+				}}
+			>
+				<PollResultsSection
+					poll={review.poll}
+					selectedOptions={review.selectedOptions}
+					communityStats={review.communityStats}
+					explanation={review.poll.explanation}
+				/>
+			</Screen>
+		);
+	}
 
 	const completion = parseCompletionReason(
 		lastRun?.run.completion_reason ?? null
 	);
+	const failedSlots =
+		completion.type === "pipeline_failure" ? completion.failedSlots : [];
+	const allSlots = lastRun ? runFactory.toDTO(lastRun.run).pipelineSlots : [];
 
-	const failedSlots: FailedSlotSummary[] =
-		completion.type === "pipeline_failure"
-			? completion.failedSlots.map((slot) => ({
-					label: `${getSlotLabel(slot.gateTypeId)} · ${slot.difficulty}`,
-					requirement: formatRequirement(slot.requirement),
-				}))
-			: [];
+	const coverage = lastRun?.categoryCoverage ?? [];
+	const runSummary: RunSummaryData = {
+		pollsAnswered: lastRun?.totalPollsAnswered ?? 0,
+		pollsCorrect: coverage.reduce((sum, c) => sum + c.correctPollsAnswered, 0),
+		totalCoverage: lastRun?.totalCoverage ?? 0,
+		bestStreak: Math.max(0, ...coverage.map((c) => c.bestStreak)),
+		shopRebuilds: lastRun?.run.total_rerolls ?? 0,
+	};
+
+	const categoryCoverage = coverage.map((c) => ({
+		categoryCode: c.categoryCode,
+		categoryName: getCategoryMetadata(c.categoryCode).name,
+		coverage: c.currentCoverage,
+		bestStreak: c.bestStreak,
+		pollsCorrect: c.correctPollsAnswered,
+		pollsAnswered: c.pollsAnswered,
+	}));
 
 	return (
-		<Content transition="fade">
+		<Screen
+			transition="fade"
+			leftAction={
+				review
+					? { label: "Review answer", onClick: () => setShowReview(true) }
+					: undefined
+			}
+			rightAction={{
+				label: "Start new run →",
+				onClick: () => navigate({ to: "/start" }),
+			}}
+		>
 			<PipelineFailureScreen
-				failedSlots={failedSlots}
-				onStartNewRun={() => navigate({ to: "/start" })}
-				onViewSummary={() => navigate({ to: "/game-over" })}
+				categoryCoverage={categoryCoverage}
+				pipelineSlot={
+					<CurrentPipeline
+						slots={allSlots}
+						evaluation={buildEvaluation(allSlots, failedSlots)}
+					/>
+				}
+				runSummary={runSummary}
 			/>
-		</Content>
+		</Screen>
 	);
 }

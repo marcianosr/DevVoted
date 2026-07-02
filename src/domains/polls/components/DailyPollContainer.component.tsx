@@ -8,10 +8,10 @@ import { z } from "zod";
 import { ApplyEffects } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
 import {
-	getCommunityStatsHandler,
 	getRandomAnswerHandler,
 	getScoreBreakdownHandler,
 } from "~/domains/polls/api/dailyPoll.handlers";
+import { getCommunityStats } from "~/domains/polls/api/communityStats";
 import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollLastSeenBadge } from "~/domains/polls/components/PollLastSeenBadge.component";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm.component";
@@ -58,18 +58,6 @@ export const getScoreBreakdown = createServerFn({ method: "GET" })
 
 		if (!result || !result.success) {
 			throw new Error("Failed to get score breakdown");
-		}
-
-		return result.data;
-	});
-
-const getCommunityStats = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ pollId: z.number().int().positive() }))
-	.handler(async ({ data }) => {
-		const result = await getCommunityStatsHandler({ data });
-
-		if (!result || !result.success) {
-			throw new Error("Failed to get community stats");
 		}
 
 		return result.data;

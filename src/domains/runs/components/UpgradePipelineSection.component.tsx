@@ -183,7 +183,7 @@ export const CurrentPipeline = ({
 					{entries.map(({ slot }, i) => (
 						<section
 							key={`${slot.gateTypeId}-${i}`}
-							className="flex items-start gap-3 border-b border-white last:border-b-0 px-4 py-3"
+							className="flex items-start gap-3 border-b border-white px-4 py-3"
 						>
 							<span className="mt-0.5 shrink-0">{STATUS_ICON[status]}</span>
 							<div>

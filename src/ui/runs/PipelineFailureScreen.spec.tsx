@@ -1,20 +1,35 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
 import { PipelineFailureScreen } from "./PipelineFailureScreen.ui";
-import type { FailedSlotSummary } from "./PipelineFailureScreen.ui";
-
-const failedSlots: FailedSlotSummary[] = [
-	{
-		label: "Category Mastery · critical",
-		requirement: "all Banjo-Kazooie polls correct",
-	},
-];
 
 const baseProps = {
-	failedSlots,
-	onStartNewRun: vi.fn(),
-	onViewSummary: vi.fn(),
+	pipelineSlot: <div>CI Pipelines layout</div>,
+	runSummary: {
+		pollsAnswered: 18,
+		pollsCorrect: 13,
+		totalCoverage: 42,
+		bestStreak: 5,
+		shopRebuilds: 3,
+	},
+	categoryCoverage: [
+		{
+			categoryCode: "js",
+			categoryName: "JavaScript",
+			coverage: 44,
+			bestStreak: 5,
+			pollsCorrect: 6,
+			pollsAnswered: 8,
+		},
+		{
+			categoryCode: "css",
+			categoryName: "Banjo-Kazooie",
+			coverage: 30,
+			bestStreak: 3,
+			pollsCorrect: 4,
+			pollsAnswered: 6,
+		},
+	],
 };
 
 describe(PipelineFailureScreen.name, () => {
@@ -25,26 +40,21 @@ describe(PipelineFailureScreen.name, () => {
 		).toBeInTheDocument();
 	});
 
-	it("lists each failed requirement", () => {
+	it("renders the pipeline layout passed in", () => {
 		render(<PipelineFailureScreen {...baseProps} />);
-		expect(
-			screen.getByText(/all Banjo-Kazooie polls correct/)
-		).toBeInTheDocument();
+		expect(screen.getByText("CI Pipelines layout")).toBeInTheDocument();
 	});
 
-	it("falls back to a message when no failing requirements are recorded", () => {
-		render(<PipelineFailureScreen {...baseProps} failedSlots={[]} />);
-		expect(
-			screen.getByText("No failing requirements recorded.")
-		).toBeInTheDocument();
+	it("shows the run summary", () => {
+		render(<PipelineFailureScreen {...baseProps} />);
+		expect(screen.getByText("Polls answered")).toBeInTheDocument();
+		expect(screen.getByText("18")).toBeInTheDocument();
+		expect(screen.getByText("42%")).toBeInTheDocument();
 	});
 
-	it("starts a new run when the primary action is clicked", () => {
-		const onStartNewRun = vi.fn();
-		render(
-			<PipelineFailureScreen {...baseProps} onStartNewRun={onStartNewRun} />
-		);
-		fireEvent.click(screen.getByRole("button", { name: /Start new run/ }));
-		expect(onStartNewRun).toHaveBeenCalledOnce();
+	it("shows coverage per category", () => {
+		render(<PipelineFailureScreen {...baseProps} />);
+		expect(screen.getByText("JavaScript")).toBeInTheDocument();
+		expect(screen.getByText("Banjo-Kazooie")).toBeInTheDocument();
 	});
 });
