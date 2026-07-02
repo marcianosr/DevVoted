@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { Screen } from "./Screen.ui";
 
@@ -31,5 +31,31 @@ describe(Screen.name, () => {
 			"data-screen-transition",
 			"none"
 		);
+	});
+
+	it("renders both edge actions and fires their handlers", () => {
+		const onLeft = vi.fn();
+		const onRight = vi.fn();
+		render(
+			<Screen
+				leftAction={{ label: "← Review answer", onClick: onLeft }}
+				rightAction={{ label: "Go to shop →", onClick: onRight }}
+			>
+				content
+			</Screen>
+		);
+		fireEvent.click(screen.getByRole("button", { name: /Review answer/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Go to shop/ }));
+		expect(onLeft).toHaveBeenCalledOnce();
+		expect(onRight).toHaveBeenCalledOnce();
+	});
+
+	it("pins a lone action to the right edge", () => {
+		const { container } = render(
+			<Screen rightAction={{ label: "Continue →", onClick: () => {} }}>
+				content
+			</Screen>
+		);
+		expect(container.querySelector(".justify-end")).toBeInTheDocument();
 	});
 });

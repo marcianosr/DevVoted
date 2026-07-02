@@ -24,7 +24,7 @@ function PipelineSuccessRoute() {
 	const { activeRun } = Route.useRouteContext();
 	const { windowContext } = Route.useLoaderData();
 	const navigate = useNavigate();
-	const { apply, isPending } = useApplyPipelineUpgrade({
+	const { applyMany, isPending } = useApplyPipelineUpgrade({
 		onApplied: () => navigate({ to: "/daily-poll" }),
 	});
 
@@ -58,7 +58,7 @@ function PipelineSuccessRoute() {
 					<PipelineUpgradeContainer
 						cards={pendingCards}
 						currentSlots={run.pipelineSlots}
-						onAccept={apply}
+						onConfirm={applyMany}
 						isPending={isPending}
 						evaluationContext={windowContext ?? undefined}
 						showHeading={false}

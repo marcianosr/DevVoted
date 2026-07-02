@@ -29,3 +29,14 @@ export const Wide: Story = { args: { width: "wide" } };
 export const FadeIn: Story = { args: { transition: "fade" } };
 
 export const SlideUp: Story = { args: { transition: "slide-up" } };
+
+export const EdgeActions: Story = {
+	args: {
+		leftAction: { label: "← Review answer", onClick: () => {} },
+		rightAction: { label: "Go to shop →", onClick: () => {} },
+	},
+};
+
+export const OnlyRightAction: Story = {
+	args: { rightAction: { label: "Continue →", onClick: () => {} } },
+};

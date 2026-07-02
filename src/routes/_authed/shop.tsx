@@ -72,7 +72,7 @@ function ShopRoute() {
 	} = Route.useLoaderData();
 
 	return (
-		<Content poll={poll} transition="fade">
+		<Content poll={poll} transition="fade" center>
 			<ShopContainer
 				activeRun={activeRun}
 				offeredConfigs={offeredConfigs}

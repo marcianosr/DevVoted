@@ -7,6 +7,7 @@ type ContentSectionProps = {
 	categoryCode?: string;
 	width?: ScreenWidth;
 	transition?: ScreenTransition;
+	center?: boolean;
 	children: ReactNode;
 };
 
@@ -14,9 +15,15 @@ export const ContentSection = ({
 	categoryCode,
 	width,
 	transition,
+	center,
 	children,
 }: ContentSectionProps) => (
-	<Screen categoryCode={categoryCode} width={width} transition={transition}>
+	<Screen
+		categoryCode={categoryCode}
+		width={width}
+		transition={transition}
+		center={center}
+	>
 		{children}
 	</Screen>
 );

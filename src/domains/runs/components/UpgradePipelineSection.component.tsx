@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import type {
 	GateDifficulty,
 	PipelineSlot,
@@ -15,6 +17,21 @@ import {
 	getSlotLabel,
 } from "~/domains/runs/utils/formatPipelineRequirement";
 import { formatStorage } from "~/lib/storage";
+import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { PipelineUpgradeCard } from "~/ui/runs/PipelineUpgradeCard.ui";
+
+const cardBadge = (card: UpgradeCard) =>
+	card.kind === "add-slot" ? "Add pipeline" : "Upgrade";
+
+const cardDescription = (card: UpgradeCard) =>
+	card.kind === "add-slot"
+		? "Add a new check — every check must pass at the next gate."
+		: "Strengthen an existing check for a bigger payout.";
+
+const confirmLabel = (count: number) => {
+	if (count === 0) return "Select at least one pipeline";
+	return `Continue with ${count} pipeline${count === 1 ? "" : "s"} →`;
+};
 
 const RewardBadge = ({ reward }: { reward: number }) => (
 	<span className="text-emerald-400 text-xs whitespace-nowrap">
@@ -25,77 +42,11 @@ const RewardBadge = ({ reward }: { reward: number }) => (
 type UpgradePipelineSectionProps = {
 	cards: UpgradeCard[];
 	currentSlots: PipelineSlot[];
-	onAccept: (card: UpgradeCard) => void;
+	onConfirm: (cards: UpgradeCard[]) => void;
 	isPending?: boolean;
 	evaluationContext?: PipelineEvaluationContext;
 	evaluation?: PipelineEvaluation;
 };
-
-const SelectButton = ({
-	onClick,
-	disabled,
-}: {
-	onClick: () => void;
-	disabled: boolean;
-}) => (
-	<button
-		onClick={onClick}
-		disabled={disabled}
-		className="border border-white px-4 py-2 text-lg text-white hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-	>
-		Select
-	</button>
-);
-
-const CardEntry = ({
-	card,
-	onAccept,
-	isPending,
-}: {
-	card: UpgradeCard;
-	onAccept: (card: UpgradeCard) => void;
-	isPending: boolean;
-}) => {
-	const { slot } = card;
-	const isUpgrade = card.kind === "upgrade-slot";
-
-	return (
-		<div className="border border-white p-4 space-y-1">
-			<div className="flex items-center gap-2 mb-2">
-				<span className="text-zinc-300">{isUpgrade ? "↑" : "+"}</span>
-				<span>{getSlotLabel(slot.gateTypeId)} · </span>
-				<DifficultyLabel difficulty={isUpgrade ? card.from : slot.difficulty} />
-				{isUpgrade && <DifficultyLabel text={"→"} difficulty={card.to} />}
-			</div>
-			<p className="text-zinc-300 text-sm pl-4">
-				Requirement:{" "}
-				<span className="text-gray-200">
-					{formatRequirement(slot.requirement)}
-				</span>
-			</p>
-			<p className="text-zinc-300 text-sm pl-4">
-				Reward on pass: <RewardBadge reward={slot.reward} />
-			</p>
-
-			<div className="pl-4 pt-2">
-				<SelectButton onClick={() => onAccept(card)} disabled={isPending} />
-			</div>
-		</div>
-	);
-};
-
-const SectionHeader = ({
-	title,
-	subtitle,
-}: {
-	title: string;
-	subtitle: string;
-}) => (
-	<div className="border border-white px-4 py-3">
-		<h1 className="text-2xl">{title}</h1>
-		<p className="text-zinc-300 text-xs mt-0.5">{subtitle}</p>
-	</div>
-);
 
 const DifficultyLabel = ({
 	difficulty,
@@ -266,19 +217,25 @@ export const CurrentPipeline = ({
 export const UpgradePipelineSection = ({
 	cards,
 	currentSlots,
-	onAccept,
+	onConfirm,
 	isPending = false,
 	evaluationContext,
 	evaluation,
 }: UpgradePipelineSectionProps) => {
-	const upgradeCards = cards.filter(
-		(c): c is Extract<UpgradeCard, { kind: "upgrade-slot" }> =>
-			c.kind === "upgrade-slot"
-	);
-	const addSlotCards = cards.filter(
-		(c): c is Extract<UpgradeCard, { kind: "add-slot" }> =>
-			c.kind === "add-slot"
-	);
+	const [selected, setSelected] = useState<Set<number>>(new Set());
+
+	const toggle = (index: number) =>
+		setSelected((prev) => {
+			const next = new Set(prev);
+			if (next.has(index)) {
+				next.delete(index);
+				return next;
+			}
+			next.add(index);
+			return next;
+		});
+
+	const selectedCards = cards.filter((_, i) => selected.has(i));
 
 	return (
 		<div className="space-y-6">
@@ -288,42 +245,39 @@ export const UpgradePipelineSection = ({
 				evaluation={evaluation}
 			/>
 
-			<section className="flex flex-col gap-6">
-				{upgradeCards.length > 0 && (
-					<div className="space-y-4">
-						<SectionHeader
-							title="Modify Existing Slots"
-							subtitle="Increase difficulty, higher reward, higher risk"
+			<section className="space-y-4">
+				<div>
+					<h2 className="text-2xl">Add or upgrade a pipeline</h2>
+					<p className="text-zinc-300 text-sm">
+						More pipelines = more reward, but every one must pass at the next
+						gate. Add a new check, or strengthen one you trust.
+					</p>
+				</div>
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					{cards.map((card, i) => (
+						<PipelineUpgradeCard
+							key={i}
+							badge={cardBadge(card)}
+							title={getSlotLabel(card.slot.gateTypeId)}
+							slug={card.slot.gateTypeId}
+							reward={card.slot.reward}
+							needs={formatRequirement(card.slot.requirement)}
+							description={cardDescription(card)}
+							riskClassName={DIFFICULTY_CLASSES[card.slot.difficulty]}
+							selected={selected.has(i)}
+							onToggle={() => toggle(i)}
+							disabled={isPending}
 						/>
-						{upgradeCards.map((card, i) => (
-							<CardEntry
-								key={i}
-								card={card}
-								onAccept={onAccept}
-								isPending={isPending}
-							/>
-						))}
-					</div>
-				)}
-
-				{addSlotCards.length > 0 && (
-					<div className="space-y-4">
-						<SectionHeader
-							title="Add New Slot"
-							subtitle="More constraints, harder to pass all"
-						/>
-						<div className="grid grid-cols-1 gap-4">
-							{addSlotCards.map((card, i) => (
-								<CardEntry
-									key={i}
-									card={card}
-									onAccept={onAccept}
-									isPending={isPending}
-								/>
-							))}
-						</div>
-					</div>
-				)}
+					))}
+				</div>
+				<div className="flex justify-end">
+					<PrimaryButton
+						onClick={() => onConfirm(selectedCards)}
+						disabled={selectedCards.length === 0 || isPending}
+					>
+						{confirmLabel(selectedCards.length)}
+					</PrimaryButton>
+				</div>
 			</section>
 		</div>
 	);

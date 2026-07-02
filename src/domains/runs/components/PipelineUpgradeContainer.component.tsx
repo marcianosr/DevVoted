@@ -12,7 +12,7 @@ import { UpgradePipelineSection } from "./UpgradePipelineSection.component";
 type PipelineUpgradeContainerProps = {
 	cards: UpgradeCard[];
 	currentSlots: PipelineSlot[];
-	onAccept: (card: UpgradeCard) => void;
+	onConfirm: (cards: UpgradeCard[]) => void;
 	isPending: boolean;
 	evaluationContext?: PipelineEvaluationContext;
 	evaluation?: PipelineEvaluation;
@@ -22,7 +22,7 @@ type PipelineUpgradeContainerProps = {
 export const PipelineUpgradeContainer = ({
 	cards,
 	currentSlots,
-	onAccept,
+	onConfirm,
 	isPending,
 	evaluationContext,
 	evaluation,
@@ -38,7 +38,7 @@ export const PipelineUpgradeContainer = ({
 		<UpgradePipelineSection
 			cards={cards}
 			currentSlots={currentSlots}
-			onAccept={onAccept}
+			onConfirm={onConfirm}
 			isPending={isPending}
 			evaluationContext={evaluationContext}
 			evaluation={evaluation}

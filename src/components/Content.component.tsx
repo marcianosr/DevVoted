@@ -6,14 +6,22 @@ type ContentProps = {
 	poll?: Poll;
 	width?: ScreenWidth;
 	transition?: ScreenTransition;
+	center?: boolean;
 	children: React.ReactNode;
 };
 
-const Content = ({ poll, width, transition, children }: ContentProps) => (
+const Content = ({
+	poll,
+	width,
+	transition,
+	center,
+	children,
+}: ContentProps) => (
 	<ContentSection
 		categoryCode={poll?.categoryCode}
 		width={width}
 		transition={transition}
+		center={center}
 	>
 		{children}
 	</ContentSection>

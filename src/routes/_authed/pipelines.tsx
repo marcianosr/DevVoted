@@ -2,7 +2,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { getWindowContextFn } from "~/domains/runs/api/runs";
 import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { Screen } from "~/ui/Screen.ui";
 
 export const Route = createFileRoute("/_authed/pipelines")({
 	component: PipelinesRoute,
@@ -35,19 +35,22 @@ function PipelinesRoute() {
 	const navigate = useNavigate();
 
 	return (
-		<section className="max-w-5xl mx-auto p-4 space-y-6">
+		<Screen
+			transition="fade"
+			center
+			leftAction={{
+				label: "← Review answer",
+				onClick: () => navigate({ to: "/daily-poll" }),
+			}}
+			rightAction={{
+				label: "Go to shop →",
+				onClick: () => navigate({ to: "/shop" }),
+			}}
+		>
 			<CurrentPipeline
 				slots={activeRun.pipelineSlots}
 				evaluationContext={windowContext ?? undefined}
 			/>
-			<div className="flex gap-3">
-				<PrimaryButton onClick={() => navigate({ to: "/daily-poll" })}>
-					← Review answer
-				</PrimaryButton>
-				<PrimaryButton onClick={() => navigate({ to: "/shop" })}>
-					Go to shop →
-				</PrimaryButton>
-			</div>
-		</section>
+		</Screen>
 	);
 }

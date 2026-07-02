@@ -184,14 +184,14 @@ const DailyPollContainer = ({
 		}
 	}, [initialWindowContext]);
 
-	const { apply: applyUpgrade, isPending: isUpgradePending } =
+	const { applyMany: applyUpgrades, isPending: isUpgradePending } =
 		useApplyPipelineUpgrade({
 			onApplied: () => setPendingUpgradeCards([]),
 		});
 
-	const handleUpgradeAccepted = (card: UpgradeCard) => {
+	const handleUpgradesConfirmed = (upgradeCards: UpgradeCard[]) => {
 		setPendingUpgradeCards([]);
-		applyUpgrade(card);
+		applyUpgrades(upgradeCards);
 	};
 
 	// Stays as query: would be nice to have real-time community stats after answering, see it update over time
@@ -276,10 +276,6 @@ const DailyPollContainer = ({
 				label: "See pipelines →",
 				onClick: () => navigate({ to: "/pipelines" }),
 			};
-	const reviewShopAction = {
-		label: "Go to shop →",
-		onClick: () => navigate({ to: "/shop" }),
-	};
 	// Polls remaining in the current window before the next gate is evaluated.
 	const pollsUntilGate = lastEvaluationContext
 		? Math.max(
@@ -323,7 +319,7 @@ const DailyPollContainer = ({
 			<PipelineUpgradeContainer
 				cards={pendingUpgradeCards}
 				currentSlots={activeRun.pipelineSlots}
-				onAccept={handleUpgradeAccepted}
+				onConfirm={handleUpgradesConfirmed}
 				isPending={isUpgradePending}
 				evaluationContext={lastEvaluationContext ?? undefined}
 				evaluation={lastPipelineEvaluation ?? undefined}
@@ -357,7 +353,6 @@ const DailyPollContainer = ({
 							explanation={poll.explanation}
 							perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
 							continueAction={reviewContinueAction}
-							secondaryAction={reviewShopAction}
 							pollsUntilGate={pollsUntilGate}
 						/>
 					) : (
