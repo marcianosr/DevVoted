@@ -12,11 +12,7 @@ import {
 
 export type ScreenWidth = "narrow" | "default" | "wide";
 export type ScreenTransition =
-	| "none"
-	| "fade"
-	| "slide-up"
-	| "slide-right"
-	| "slide-left";
+	"none" | "fade" | "slide-up" | "slide-right" | "slide-left";
 export type ScreenAction = {
 	label: string;
 	onClick: () => void;

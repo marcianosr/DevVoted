@@ -7,8 +7,7 @@ import { usersTable } from "~/database/schema";
 // Derived directly from the transaction callback's parameter so we don't
 // have to import drizzle's internal PgTransaction type.
 export type DbExecutor =
-	| typeof db
-	| Parameters<Parameters<typeof db.transaction>[0]>[0];
+	typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type UserArchiveState = {
 	archivedStorage: number;
