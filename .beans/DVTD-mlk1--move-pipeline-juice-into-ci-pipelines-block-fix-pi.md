@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-03T09:32:44Z
-updated_at: 2026-07-03T11:48:03Z
+updated_at: 2026-07-03T12:05:11Z
 ---
 
 Dedup the /pipelines score view: the animated per-slot bars currently live in a separate 'Applied to N pipeline checks' list inside PipelineScoreSummary, duplicating the CI Pipelines (CurrentPipeline) list. Move the animated progress bars into the CI Pipelines rows (proper Tier-1 UI extraction), shrink the score block to just the coverage equation. Also fix the pipelines screen theme defaulting to cerulean by threading the last-answered poll's categoryCode to Screen.
@@ -51,3 +51,9 @@ The score block streak line showed run-wide polls answered (newPollsAnswered = t
 ## Follow-up: page-level Pipeline status header
 
 Added PipelineStatusHeader.ui (+story) — page title "Pipeline status", the active gate as a large themed accent beside it, and muted "N polls left until gate check" subline — plus PipelineStatusHeader.component mapping the window context. /pipelines route renders it above the Columns grid (wrapped with CurrentPipeline in a Stack). CurrentPipeline gained showWindowStatus (default true); /pipelines passes false so the gate + polls-left no longer duplicate in the CI Pipelines block. Upgrade/failure screens keep the block window status unchanged. tsc/lint/build clean, 528 tests pass.
+
+## Follow-up: extract RunSummary + new stats
+
+Extracted the failure-screen run summary section into RunSummary.ui (Tier-1, +story +spec). PipelineFailureScreen.ui now renders <RunSummary data={...}/>; RunSummaryData type moved to RunSummary.ui (re-exported from failure screen for existing importers).
+
+New/changed stats: Correct answers now a plain count (was 3/5 fraction); added Wrong answers (derived answered-correct), Gates cleared (getCurrentGate(pollsAnswered, slots)-1), and Pipelines fought (allSlots.length). Failure route populates gatesCleared + pipelinesFought. game-over.tsx run summary left as-is (different minimal block). tsc/lint/build clean, 532 tests pass.

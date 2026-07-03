@@ -11,6 +11,8 @@ const baseProps: ComponentProps<typeof PipelineFailureScreen> = {
 		pollsCorrect: 13,
 		totalCoverage: 42,
 		bestStreak: 5,
+		gatesCleared: 3,
+		pipelinesFought: 4,
 		shopRebuilds: 3,
 		archivedCredit: 131072,
 	},

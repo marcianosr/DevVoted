@@ -12,9 +12,10 @@ import { CurrentPipeline } from "~/domains/runs/components/CurrentPipeline.compo
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { runFactory } from "~/domains/runs/models/run.model";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";
-import type {
-	PipelineEvaluation,
-	SlotEvaluation,
+import {
+	getCurrentGate,
+	type PipelineEvaluation,
+	type SlotEvaluation,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import type { PipelineFailureSlot } from "~/domains/runs/services/runCompletion.service";
 import { deriveNavRunState } from "~/domains/runs/utils/deriveNavRunState";
@@ -110,11 +111,16 @@ function PipelineFailureRoute() {
 		: [];
 
 	const coverage = lastRun?.categoryCoverage ?? [];
+	const pollsAnswered = lastRun?.totalPollsAnswered ?? 0;
+	// The run ended on the gate it reached, so every gate below it was cleared.
+	const gatesCleared = Math.max(0, getCurrentGate(pollsAnswered, allSlots) - 1);
 	const runSummary: RunSummaryData = {
-		pollsAnswered: lastRun?.totalPollsAnswered ?? 0,
+		pollsAnswered,
 		pollsCorrect: coverage.reduce((sum, c) => sum + c.correctPollsAnswered, 0),
 		totalCoverage: lastRun?.totalCoverage ?? 0,
 		bestStreak: Math.max(0, ...coverage.map((c) => c.bestStreak)),
+		gatesCleared,
+		pipelinesFought: allSlots.length,
 		shopRebuilds: lastRun?.run.total_rerolls ?? 0,
 		archivedCredit: lastRun?.archivedCredit ?? 0,
 	};
