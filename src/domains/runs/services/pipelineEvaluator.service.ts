@@ -3,6 +3,7 @@ import type {
 	PipelineSlot,
 	ShortWindowRequirement,
 } from "~/domains/runs/models/pipeline.model";
+import type { WindowResult } from "~/domains/runs/api/window.queries";
 
 export type CategoryPollResult = {
 	readonly appeared: number;
@@ -38,6 +39,43 @@ export const buildCategoryPollResults = (
 		},
 		{}
 	);
+
+/**
+ * Aggregates a window's poll results into the evaluation context the pipeline
+ * checks read. Pure so it can be called twice — once for the current window and
+ * once for the window minus its most recent answer — to derive a previous→new
+ * delta for the pipeline score animation. `windowResults` is newest-first (see
+ * getWindowResults); `maxStreak` is the run's best current category streak,
+ * which isn't reconstructible from window results alone.
+ */
+export const buildWindowContext = (
+	windowResults: WindowResult[],
+	windowSize: number,
+	totalPollsAnswered: number,
+	slots: PipelineSlot[],
+	maxStreak: number
+): PipelineEvaluationContext => {
+	const chronologicalWindowResults = [...windowResults].reverse();
+	let firstConsecutiveCorrectFromWindowStart = 0;
+	for (const r of chronologicalWindowResults) {
+		if (!r.isCorrect) break;
+		firstConsecutiveCorrectFromWindowStart++;
+	}
+
+	return {
+		correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
+		pollsAnsweredInWindow: windowResults.length,
+		coverageGainedInWindow: windowResults.reduce(
+			(sum, r) => sum + r.coverageDelta,
+			0
+		),
+		currentStreakAtWindowEnd: maxStreak,
+		pollsInWindow: windowSize,
+		currentGate: getActiveGate(totalPollsAnswered, slots),
+		firstConsecutiveCorrectFromWindowStart,
+		categoryPollResults: buildCategoryPollResults(windowResults),
+	};
+};
 
 export type SlotEvaluationStatus = "passed" | "failed" | "skipped";
 

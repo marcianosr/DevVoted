@@ -8,7 +8,7 @@ import { getDailyPoll } from "~/domains/polls/api/polls";
 import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
 import { getActiveConfigs } from "~/domains/economy/services/configManager.service";
 import { getLastRunForGameOver } from "~/domains/runs/api/runs";
-import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
+import { CurrentPipeline } from "~/domains/runs/components/CurrentPipeline.component";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { runFactory } from "~/domains/runs/models/run.model";
 import type { PipelineSlot } from "~/domains/runs/models/pipeline.model";

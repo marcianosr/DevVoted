@@ -9,9 +9,7 @@ import {
 	getShopOfferingsServerFn,
 } from "~/domains/economy/api/shopOfferings";
 import { getDailyPoll } from "~/domains/polls/api/polls";
-import DailyPollContainer, {
-	getScoreBreakdown,
-} from "~/domains/polls/components/DailyPollContainer.component";
+import DailyPollContainer from "~/domains/polls/components/DailyPollContainer.component";
 import { getWindowContextFn } from "~/domains/runs/api/runs";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { ErrorComponent } from "~/ui/ErrorComponent.component";
@@ -25,7 +23,6 @@ const DailyPoll: React.FC = () => {
 		selectedOptions,
 		creatorDisplayName,
 		isAdmin,
-		score,
 		configEffects,
 		offeredConfigs,
 		nextOfferedConfigs,
@@ -52,7 +49,6 @@ const DailyPoll: React.FC = () => {
 				hasAnswered={hasAnswered}
 				activeRun={activeRun.data}
 				selectedOptions={selectedOptions}
-				score={score}
 				configEffects={configEffects}
 				creatorDisplayName={creatorDisplayName}
 				isAdmin={isAdmin}
@@ -134,16 +130,7 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			? nextOfferingsResult.data
 			: [];
 
-		const [score, windowContext] = await Promise.all([
-			getScoreBreakdown({
-				data: {
-					pollId: pollResponse.data.poll.id,
-					selectedOptions: pollResponse.data.selectedOptions,
-					hasAnswered: pollResponse.data.hasAnswered,
-				},
-			}),
-			getWindowContextFn(),
-		]);
+		const windowContext = await getWindowContextFn();
 
 		return {
 			poll: pollResponse.data.poll,
@@ -152,7 +139,6 @@ export const Route = createFileRoute("/_authed/daily-poll/")({
 			selectedOptions: pollResponse.data.selectedOptions,
 			creatorDisplayName: pollResponse.data.creatorDisplayName,
 			isAdmin: pollResponse.isAdmin,
-			score,
 			configEffects,
 			offeredConfigs,
 			nextOfferedConfigs,

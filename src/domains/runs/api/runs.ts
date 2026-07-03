@@ -6,7 +6,10 @@ import {
 	getCategoryMasterySlot,
 	getSlotDefinition,
 } from "~/domains/runs/data/pipelineSlots";
-import { CATEGORY_CODES } from "~/domains/shared/categories";
+import {
+	CATEGORY_CODES,
+	getCategoryMetadata,
+} from "~/domains/shared/categories";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
 import { applyUpgradeCard } from "~/domains/runs/services/pipeline.service";
 import { getAuthenticatedUserId } from "~/utils/authorization";
@@ -20,11 +23,16 @@ import {
 	getUserActiveRun,
 	skipShopHandler,
 } from "./handlers";
-import { getAnsweredPollsCountInRun } from "~/domains/polls/api/pollResponse.queries";
+import {
+	getAnsweredPollsCountInRun,
+	getLastAnsweredPollInRun,
+} from "~/domains/polls/api/pollResponse.queries";
+import { fetchPollByIdWithOptions } from "~/domains/polls/api/poll.queries";
+import { applyEffects, configs } from "~/domains/economy/data/configs";
+import { buildScoreSummary } from "~/domains/polls/utils/pollResult";
 import { getWindowResults } from "~/domains/runs/api/window.queries";
 import {
-	buildCategoryPollResults,
-	getActiveGate,
+	buildWindowContext,
 	getWindowSize,
 	type PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
@@ -179,47 +187,130 @@ const upgradeCardInputSchema = z.discriminatedUnion("kind", [
  * Reconstructs the full slot definition server-side from the card intent,
  * so clients only need to send minimal data (no complex PipelineSlot payload).
  */
+const resolveWindowState = async (userId: string) => {
+	const activeRun = await getActiveRunByUserId(userId);
+	if (!activeRun) return null;
+
+	const windowSize = getWindowSize(activeRun.pipelineSlots);
+	const totalPollsAnswered = await getAnsweredPollsCountInRun(activeRun.id);
+	const pollsInCurrentWindow = totalPollsAnswered % windowSize;
+
+	const windowResults =
+		pollsInCurrentWindow > 0
+			? await getWindowResults(activeRun.id, userId, pollsInCurrentWindow)
+			: [];
+
+	const maxStreak = Math.max(
+		...activeRun.categoryCoverage.map((c) => c.currentStreak),
+		0
+	);
+
+	return {
+		windowResults,
+		windowSize,
+		totalPollsAnswered,
+		slots: activeRun.pipelineSlots,
+		maxStreak,
+	};
+};
+
 export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 	async (): Promise<PipelineEvaluationContext | null> => {
 		const userId = await getAuthenticatedUserId();
-		const activeRun = await getActiveRunByUserId(userId);
+		const state = await resolveWindowState(userId);
+		if (!state) return null;
 
-		if (!activeRun) return null;
+		return buildWindowContext(
+			state.windowResults,
+			state.windowSize,
+			state.totalPollsAnswered,
+			state.slots,
+			state.maxStreak
+		);
+	}
+);
 
-		const windowSize = getWindowSize(activeRun.pipelineSlots);
-		const totalPollsAnswered = await getAnsweredPollsCountInRun(activeRun.id);
-		const pollsInCurrentWindow = totalPollsAnswered % windowSize;
+/**
+ * The current window context plus the state it held before the most recent
+ * answer, so /pipelines can animate each check's progress from previous→new.
+ * `previous` drops the newest result (windowResults is newest-first); when the
+ * window has 0–1 answers there's no meaningful "before", so previous mirrors
+ * current and the UI renders a static (un-juiced) state.
+ */
+export const getWindowContextWithPreviousFn = createServerFn({
+	method: "GET",
+}).handler(
+	async (): Promise<{
+		current: PipelineEvaluationContext;
+		previous: PipelineEvaluationContext;
+	} | null> => {
+		const userId = await getAuthenticatedUserId();
+		const state = await resolveWindowState(userId);
+		if (!state) return null;
 
-		const windowResults =
-			pollsInCurrentWindow > 0
-				? await getWindowResults(activeRun.id, userId, pollsInCurrentWindow)
-				: [];
-
-		const chronologicalWindowResults = [...windowResults].reverse();
-		let firstConsecutiveCorrectFromWindowStart = 0;
-		for (const r of chronologicalWindowResults) {
-			if (!r.isCorrect) break;
-			firstConsecutiveCorrectFromWindowStart++;
-		}
+		const { windowResults, windowSize, totalPollsAnswered, slots, maxStreak } =
+			state;
 
 		return {
-			correctAnswersInWindow: windowResults.filter((r) => r.isCorrect).length,
-			pollsAnsweredInWindow: windowResults.length,
-			coverageGainedInWindow: windowResults.reduce(
-				(sum, r) => sum + r.coverageDelta,
-				0
+			current: buildWindowContext(
+				windowResults,
+				windowSize,
+				totalPollsAnswered,
+				slots,
+				maxStreak
 			),
-			currentStreakAtWindowEnd: Math.max(
-				...activeRun.categoryCoverage.map((c) => c.currentStreak),
-				0
+			previous: buildWindowContext(
+				windowResults.slice(1),
+				windowSize,
+				Math.max(0, totalPollsAnswered - 1),
+				slots,
+				maxStreak
 			),
-			pollsInWindow: windowSize,
-			currentGate: getActiveGate(totalPollsAnswered, activeRun.pipelineSlots),
-			firstConsecutiveCorrectFromWindowStart,
-			categoryPollResults: buildCategoryPollResults(windowResults),
 		};
 	}
 );
+
+/**
+ * The "how your last answer scored" equation for the /pipelines header: base +
+ * config/streak bonuses = earned coverage, plus the category coverage delta.
+ * Reuses the stored score breakdown and recomputes per-config coverage effects
+ * so the chip breakdown matches the review screen. Null before the first answer.
+ */
+export const getPipelineScoreHeaderFn = createServerFn({
+	method: "GET",
+}).handler(async () => {
+	const userId = await getAuthenticatedUserId();
+	const activeRun = await getActiveRunByUserId(userId);
+	if (!activeRun) return null;
+
+	const lastAnswered = await getLastAnsweredPollInRun(activeRun.id, userId);
+	if (!lastAnswered) return null;
+
+	const { poll, options } = await fetchPollByIdWithOptions(lastAnswered.pollId);
+	const effects = applyEffects(
+		{ poll, options, hasAnswered: true, run: activeRun },
+		activeRun.activeConfigIds
+	);
+
+	const summary = buildScoreSummary(
+		lastAnswered.scoreBreakdown,
+		effects.perConfigCoverageEffects,
+		configs
+	);
+
+	// The score block is scoped to one category, so the streak line reports polls
+	// answered in that category — not the run-wide total the score breakdown carries.
+	const categoryCoverage = activeRun.categoryCoverage.find(
+		(coverage) => coverage.categoryCode === poll.categoryCode
+	);
+
+	return {
+		...summary,
+		pollsAnswered: categoryCoverage?.pollsAnswered ?? summary.pollsAnswered,
+		categoryName: getCategoryMetadata(poll.categoryCode).name,
+		categoryCode: poll.categoryCode,
+	};
+});
 
 export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
 	.validator(upgradeCardInputSchema)

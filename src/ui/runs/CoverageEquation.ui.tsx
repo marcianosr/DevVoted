@@ -2,6 +2,7 @@ import { Fragment } from "react";
 
 import { clsx } from "clsx";
 
+import { useCountUp } from "~/ui/hooks/useCountUp";
 import { ConfigCard } from "~/ui/economy/ConfigCard.ui";
 import { Popover } from "~/ui/Popover.component";
 import { RARITY_COLORS } from "~/ui/rarityColors";
@@ -14,7 +15,7 @@ export type ScoreBonusRow = {
 	description?: string;
 };
 
-export type PollScoreSummaryData = {
+export type CoverageEquationData = {
 	isCorrect: boolean;
 	baseCoverage: number;
 	bonuses: ScoreBonusRow[];
@@ -26,7 +27,7 @@ export type PollScoreSummaryData = {
 	pollsAnswered: number;
 };
 
-type PollScoreSummaryProps = PollScoreSummaryData & {
+type CoverageEquationProps = CoverageEquationData & {
 	categoryName: string;
 };
 
@@ -44,12 +45,13 @@ const chipTone = (value: number) =>
 			: "border-zinc-700 text-zinc-400";
 
 /**
- * The score card shown beside the answer review: how this poll's coverage was
- * earned expressed as a one-line chip equation (base answer + each active
- * modifier = total), the resulting category coverage with a progress bar, and a
- * compact stats line. No surrounding box — flat rows separated by rules.
+ * How the last answer's coverage was earned — a one-line chip equation
+ * (base answer + each active modifier = total) — followed by the category
+ * coverage bar animating from the previous total to the new one, and a compact
+ * streak line. Lifted from the old review-screen score block; now heads the
+ * /pipelines score view.
  */
-export const PollScoreSummary = ({
+export const CoverageEquation = ({
 	isCorrect,
 	baseCoverage,
 	bonuses,
@@ -60,9 +62,12 @@ export const PollScoreSummary = ({
 	bestStreak,
 	pollsAnswered,
 	categoryName,
-}: PollScoreSummaryProps) => {
+}: CoverageEquationProps) => {
 	// Coverage can be negative or exceed 100% (levels); the bar shows progress
 	// toward the next 100% level.
+	const animatedTotal = useCountUp(newTotalCoverage, {
+		from: previousCoverage,
+	});
 	const coverageFill = Math.max(0, Math.min(100, newTotalCoverage));
 	const modifiers = [
 		{ label: baseCoverage >= 0 ? "correct" : "wrong", value: baseCoverage },
@@ -71,14 +76,7 @@ export const PollScoreSummary = ({
 
 	return (
 		<div className="text-sm">
-			<div className="flex items-center gap-2 pb-2">
-				<span className="inline-block w-2 h-2 bg-theme" />
-				<span className="text-sm text-white">
-					Poll score for <span className="text-theme">{categoryName}</span>
-				</span>
-			</div>
-
-			<div className="border-t border-theme py-2">
+			<div className="pb-2">
 				{modifiers.length > 1 ? (
 					<div className="flex items-center gap-2 flex-wrap">
 						{modifiers.map((modifier, index) => (
@@ -162,15 +160,15 @@ export const PollScoreSummary = ({
 							{previousCoverage.toFixed(1)}%
 						</span>
 						<span className="text-zinc-500 mx-1">→</span>
-						<span className={totalTone(isCorrect)}>
-							{newTotalCoverage.toFixed(1)}%
+						<span className={clsx("tabular-nums", totalTone(isCorrect))}>
+							{animatedTotal.toFixed(1)}%
 						</span>
 					</p>
 				</div>
 				<div className="mt-1 h-2 bg-zinc-800 overflow-hidden">
 					<div
 						className={clsx(
-							"h-full transition-all duration-500",
+							"h-full transition-all duration-700 ease-out",
 							isCorrect ? "bg-green-400" : "bg-red-400"
 						)}
 						style={{ width: `${coverageFill}%` }}

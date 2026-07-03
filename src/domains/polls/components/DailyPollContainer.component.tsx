@@ -7,10 +7,7 @@ import { z } from "zod";
 
 import { ApplyEffects } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
-import {
-	getRandomAnswerHandler,
-	getScoreBreakdownHandler,
-} from "~/domains/polls/api/dailyPoll.handlers";
+import { getRandomAnswerHandler } from "~/domains/polls/api/dailyPoll.handlers";
 import { getCommunityStats } from "~/domains/polls/api/communityStats";
 import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollLastSeenBadge } from "~/domains/polls/components/PollLastSeenBadge.component";
@@ -30,35 +27,7 @@ import type {
 	PipelineEvaluation,
 	PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import { ScoreCalculation } from "~/domains/runs/services/score.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
-import { getAuthenticatedUserId } from "~/utils/authorization";
-
-export const getScoreBreakdown = createServerFn({ method: "GET" })
-	.validator(
-		z.object({
-			pollId: z.number().int().positive(),
-			selectedOptions: z.array(z.string()),
-			hasAnswered: z.boolean(),
-		})
-	)
-	.handler(async ({ data }) => {
-		const userId = await getAuthenticatedUserId();
-		const result = await getScoreBreakdownHandler({
-			data: {
-				pollId: data.pollId,
-				selectedOptions: data.selectedOptions,
-				hasAnswered: data.hasAnswered,
-				userId,
-			},
-		});
-
-		if (!result || !result.success) {
-			throw new Error("Failed to get score breakdown");
-		}
-
-		return result.data;
-	});
 
 const getRandomAnswer = createServerFn({ method: "GET" })
 	.validator(z.object({ pollId: z.number().int().positive() }))
@@ -78,7 +47,6 @@ type DailyPollContainerProps = {
 	hasAnswered: boolean;
 	activeRun: Run;
 	selectedOptions: string[];
-	score: ScoreCalculation;
 	configEffects: ApplyEffects;
 	creatorDisplayName: string | null;
 	isAdmin: boolean;
@@ -96,7 +64,6 @@ const DailyPollContainer = ({
 	options,
 	hasAnswered,
 	selectedOptions,
-	score,
 	configEffects,
 	creatorDisplayName,
 	activeRun,
@@ -136,12 +103,6 @@ const DailyPollContainer = ({
 			}
 		: undefined;
 
-	// Store the score from mutation to avoid stale data after router.invalidate()
-	// The loader recalculates score with updated run data, which gives wrong values
-	const [submittedScore, setSubmittedScore] = useState<ScoreCalculation | null>(
-		null
-	);
-
 	const [lastEvaluationContext, setLastEvaluationContext] =
 		useState<PipelineEvaluationContext | null>(initialWindowContext);
 	const [lastPipelineEvaluation, setLastPipelineEvaluation] =
@@ -177,18 +138,6 @@ const DailyPollContainer = ({
 
 		onSuccess: async (response) => {
 			if (response.success) {
-				// Store the breakdown from the mutation - this is the correct score
-				// that was actually saved to the DB
-				if (response.data.breakdown) {
-					setSubmittedScore({
-						breakdown: response.data.breakdown,
-						newTotalCoverage: response.data.newTotalCoverage ?? 0,
-						newBestStreak: 0,
-						newStreak: response.data.breakdown.streak,
-						newPollsAnswered: 0,
-					});
-				}
-
 				if (response.data.evaluationContext) {
 					setLastEvaluationContext(response.data.evaluationContext);
 				}
@@ -213,9 +162,6 @@ const DailyPollContainer = ({
 			console.error("Error submitting poll options", error);
 		},
 	});
-
-	// Use the submitted score if available (just answered), otherwise fall back to loader's score
-	const displayScore = submittedScore ?? score;
 
 	// The review-screen forward button depends on whether this poll closed a
 	// pipeline window. A pass routes to the reward screen; otherwise it just links
@@ -288,10 +234,8 @@ const DailyPollContainer = ({
 						<PollResultsSection
 							poll={poll}
 							selectedOptions={selectedOptions}
-							score={displayScore}
 							communityStats={communityStats}
 							explanation={poll.explanation}
-							perConfigCoverageEffects={configEffects.perConfigCoverageEffects}
 							continueAction={reviewContinueAction}
 							pollsUntilGate={pollsUntilGate}
 						/>

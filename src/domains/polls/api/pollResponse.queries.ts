@@ -1,4 +1,4 @@
-import { eq, and, gte, ne, sql, count, inArray } from "drizzle-orm";
+import { eq, and, gte, ne, sql, count, inArray, desc } from "drizzle-orm";
 
 import {
 	pollHistoryTable,
@@ -79,6 +79,56 @@ export const getPollResponseScoreBreakdown = async (
 		.limit(1);
 
 	return response?.score_breakdown ?? null;
+};
+
+export type LastAnsweredPoll = {
+	pollId: number;
+	categoryCode: string;
+	selectedOptions: string[];
+	scoreBreakdown: ScoreCalculation;
+};
+
+/**
+ * The most recent answer in a run, with its stored score breakdown and selected
+ * options — the source for the /pipelines "how your last answer scored" header.
+ * Null when the run has no answers yet. Ordered by created_at so re-answers of
+ * the same poll still resolve to the latest one.
+ */
+export const getLastAnsweredPollInRun = async (
+	runId: number,
+	userId: string
+): Promise<LastAnsweredPoll | null> => {
+	const [response] = await db
+		.select({
+			responseId: pollResponsesTable.response_id,
+			pollId: pollResponsesTable.poll_id,
+			scoreBreakdown: pollResponsesTable.score_breakdown,
+			categoryCode: pollsTable.category_code,
+		})
+		.from(pollResponsesTable)
+		.innerJoin(pollsTable, eq(pollResponsesTable.poll_id, pollsTable.id))
+		.where(
+			and(
+				eq(pollResponsesTable.run_id, runId),
+				eq(pollResponsesTable.user_id, userId)
+			)
+		)
+		.orderBy(desc(pollResponsesTable.created_at))
+		.limit(1);
+
+	if (!response || !response.scoreBreakdown) return null;
+
+	const selectedOptions = await db
+		.select({ optionId: pollResponseOptionsTable.option_id })
+		.from(pollResponseOptionsTable)
+		.where(eq(pollResponseOptionsTable.response_id, response.responseId));
+
+	return {
+		pollId: response.pollId,
+		categoryCode: response.categoryCode ?? "general-frontend",
+		selectedOptions: selectedOptions.map((o) => String(o.optionId)),
+		scoreBreakdown: response.scoreBreakdown,
+	};
 };
 
 export const hasUserAnsweredPoll = async (

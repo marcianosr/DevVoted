@@ -1,6 +1,5 @@
 import { isSameDay } from "date-fns";
 
-import { fetchPollByIdWithOptions } from "~/domains/polls/api/poll.queries";
 import {
 	getCommunityStatsForDailyPoll,
 	getRandomAnswerForDailyPoll,
@@ -17,7 +16,6 @@ import {
 	trackPollAnswer,
 	getPollsSeenInRun,
 	getRunPollHistory,
-	getPollResponseScoreBreakdown,
 } from "~/domains/polls/api/pollResponse.queries";
 import { processTurn } from "~/domains/runs/services/turn.service";
 import {
@@ -25,7 +23,6 @@ import {
 	type PollSubmissionInput,
 } from "~/domains/polls/validation/schemas";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
-import { getRunProgress } from "~/domains/runs/services/progress.service";
 import { fetchUserDisplayName } from "~/domains/users/api/queries";
 import { handleApiOperation } from "~/utils/errorHandling";
 
@@ -90,44 +87,6 @@ export const getDailyPollHandler = async ({
 			lastEncounteredAt,
 			timesEncountered,
 		};
-	});
-};
-
-export const getScoreBreakdownHandler = async ({
-	data,
-}: {
-	data: {
-		pollId: number;
-		selectedOptions: string[];
-		hasAnswered: boolean;
-		userId: string;
-	};
-}) => {
-	return handleApiOperation(async () => {
-		const { pollId, selectedOptions, hasAnswered, userId } = data;
-
-		const activeRunResponse = await getUserActiveRun(userId);
-		if (!activeRunResponse.success) {
-			throw new Error(activeRunResponse.error);
-		}
-
-		if (hasAnswered) {
-			const stored = await getPollResponseScoreBreakdown(
-				pollId,
-				userId,
-				activeRunResponse.data.id
-			);
-			if (stored) return stored;
-		}
-
-		const { poll, options } = await fetchPollByIdWithOptions(pollId);
-
-		return await getRunProgress({
-			selectedOptions,
-			run: activeRunResponse.data,
-			poll,
-			options,
-		});
 	});
 };
 

@@ -1,18 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { PollScoreSummary } from "./PollScoreSummary.ui";
-import { withCategoryTheme } from "./story-utils";
+import { CoverageEquation } from "./CoverageEquation.ui";
 
-const meta: Meta<typeof PollScoreSummary> = {
-	component: PollScoreSummary,
-	title: "Polls/PollScoreSummary",
-	decorators: [withCategoryTheme("js")],
+const meta: Meta<typeof CoverageEquation> = {
+	component: CoverageEquation,
+	title: "Runs/CoverageEquation",
 };
 export default meta;
 
-type Story = StoryObj<typeof PollScoreSummary>;
+type Story = StoryObj<typeof CoverageEquation>;
 
-export const CorrectWithBonuses: Story = {
+export const Correct: Story = {
 	args: {
 		categoryName: "JavaScript",
 		isCorrect: true,
@@ -21,7 +19,7 @@ export const CorrectWithBonuses: Story = {
 			{
 				label: "Code Coverage",
 				value: 0.4,
-				rarity: "common" as const,
+				rarity: "common",
 				description: "+0.5% coverage for every poll answered.",
 			},
 			{ label: "Streak 3×", value: 0.3 },
@@ -37,15 +35,13 @@ export const CorrectWithBonuses: Story = {
 
 export const Missed: Story = {
 	args: {
-		categoryName: "JavaScript",
+		...Correct.args,
 		isCorrect: false,
 		baseCoverage: -5.5,
 		bonuses: [],
 		earnedCoverage: -5.5,
-		previousCoverage: -0.6,
-		newTotalCoverage: -6.1,
+		previousCoverage: 6.1,
+		newTotalCoverage: 0.6,
 		currentStreak: 0,
-		bestStreak: 2,
-		pollsAnswered: 7,
 	},
 };

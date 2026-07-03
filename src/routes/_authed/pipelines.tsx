@@ -1,8 +1,15 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
-import { getWindowContextFn } from "~/domains/runs/api/runs";
-import { CurrentPipeline } from "~/domains/runs/components/UpgradePipelineSection.component";
+import {
+	getPipelineScoreHeaderFn,
+	getWindowContextWithPreviousFn,
+} from "~/domains/runs/api/runs";
+import { CurrentPipeline } from "~/domains/runs/components/CurrentPipeline.component";
+import { PipelineScoreSection } from "~/domains/runs/components/PipelineScoreSection.component";
+import { PipelineStatusHeader } from "~/domains/runs/components/PipelineStatusHeader.component";
+import { Columns } from "~/ui/Columns.ui";
 import { Screen } from "~/ui/Screen.ui";
+import { Stack } from "~/ui/Stack.ui";
 
 export const Route = createFileRoute("/_authed/pipelines")({
 	component: PipelinesRoute,
@@ -21,23 +28,28 @@ export const Route = createFileRoute("/_authed/pipelines")({
 			throw new Error("No active run");
 		}
 
-		const windowContext = await getWindowContextFn();
+		const [windowContext, scoreHeader] = await Promise.all([
+			getWindowContextWithPreviousFn(),
+			getPipelineScoreHeaderFn(),
+		]);
 
 		return {
 			activeRun: activeRun.data,
 			windowContext,
+			scoreHeader,
 		};
 	},
 });
 
 function PipelinesRoute() {
-	const { activeRun, windowContext } = Route.useLoaderData();
+	const { activeRun, windowContext, scoreHeader } = Route.useLoaderData();
 	const navigate = useNavigate();
 
 	return (
 		<Screen
 			transition="fade"
 			center
+			categoryCode={scoreHeader?.categoryCode}
 			leftAction={{
 				label: "← Review answer",
 				onClick: () => navigate({ to: "/daily-poll" }),
@@ -47,10 +59,20 @@ function PipelinesRoute() {
 				onClick: () => navigate({ to: "/shop" }),
 			}}
 		>
-			<CurrentPipeline
-				slots={activeRun.pipelineSlots}
-				evaluationContext={windowContext ?? undefined}
-			/>
+			<Stack gap="8">
+				<PipelineStatusHeader context={windowContext?.current} />
+				<Columns
+					aside={scoreHeader && <PipelineScoreSection equation={scoreHeader} />}
+					main={
+						<CurrentPipeline
+							slots={activeRun.pipelineSlots}
+							current={windowContext?.current}
+							previous={windowContext?.previous}
+							showWindowStatus={false}
+						/>
+					}
+				/>
+			</Stack>
 		</Screen>
 	);
 }

@@ -11,7 +11,6 @@ const options: AnswerReviewOption[] = [
 
 const baseProps = {
 	question: "What species is Banjo",
-	categoryName: "JavaScript",
 	options,
 };
 
