@@ -6,7 +6,11 @@ import { getDailyPoll } from "~/domains/polls/api/polls";
 import CategoryWeightsDisplay from "~/domains/polls/components/CategoryWeightsDisplay.component";
 import { CommunitySection } from "~/domains/polls/components/CommunitySection.component";
 import { useCountdownToNextPoll } from "~/domains/polls/hooks/useCountdownToNextPoll";
-import { getExposedConfigDeck } from "~/domains/runs/api/runs";
+import {
+	getExposedConfigDeck,
+	getWindowContextFn,
+} from "~/domains/runs/api/runs";
+import { RunJeopardy } from "~/domains/runs/components/RunJeopardy.component";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { Screen } from "~/ui/Screen.ui";
 
@@ -31,10 +35,14 @@ export const Route = createFileRoute("/_authed/community")({
 			run.activeConfigIds
 		);
 
-		const [communityStats, exposedDeckResult] = await Promise.all([
-			getCommunityStats({ data: { pollId: poll.id } }),
-			exposeConfigDeck ? getExposedConfigDeck({ data: { date: today } }) : null,
-		]);
+		const [communityStats, exposedDeckResult, windowContext] =
+			await Promise.all([
+				getCommunityStats({ data: { pollId: poll.id } }),
+				exposeConfigDeck
+					? getExposedConfigDeck({ data: { date: today } })
+					: null,
+				getWindowContextFn(),
+			]);
 		const exposedConfigDeck = exposedDeckResult?.success
 			? exposedDeckResult.data
 			: null;
@@ -44,13 +52,23 @@ export const Route = createFileRoute("/_authed/community")({
 			exposedConfigDeck,
 			viewerUserId: run.userId,
 			categoryCode: poll.categoryCode,
+			windowContext,
+			categoryCoverage: run.categoryCoverage,
+			pipelineSlots: run.pipelineSlots,
 		};
 	},
 });
 
 function CommunityRoute() {
-	const { communityStats, exposedConfigDeck, viewerUserId, categoryCode } =
-		Route.useLoaderData();
+	const {
+		communityStats,
+		exposedConfigDeck,
+		viewerUserId,
+		categoryCode,
+		windowContext,
+		categoryCoverage,
+		pipelineSlots,
+	} = Route.useLoaderData();
 	const navigate = useNavigate();
 	const nextPoll = useCountdownToNextPoll();
 
@@ -63,7 +81,7 @@ function CommunityRoute() {
 				onClick: () => navigate({ to: "/shop" }),
 			}}
 			rightAction={{
-				label: nextPoll.label,
+				label: nextPoll.actionLabel,
 				onClick: () => navigate({ to: "/daily-poll" }),
 				disabled: !nextPoll.isOpen,
 			}}
@@ -74,6 +92,12 @@ function CommunityRoute() {
 				viewerUserId={viewerUserId}
 			/>
 			<CategoryWeightsDisplay />
+			<RunJeopardy
+				windowContext={windowContext}
+				categoryCoverage={categoryCoverage}
+				pipelineSlots={pipelineSlots}
+				countdownLabel={nextPoll.countdown}
+			/>
 		</Screen>
 	);
 }

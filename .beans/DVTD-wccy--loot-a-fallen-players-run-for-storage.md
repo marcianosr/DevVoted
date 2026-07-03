@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-06-01T15:06:17Z
-updated_at: 2026-06-02T08:33:59Z
+updated_at: 2026-07-03T14:15:11Z
 ---
 
 When a player dies, one active-run player can loot their corpse for storage. Amount scales with the gate they reached: min(gate * 20, 100) KB. First click wins (DB-transaction race-safe). Looted state is visible to everyone via the death-mark UI + modal.
