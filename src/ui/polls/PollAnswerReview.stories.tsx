@@ -37,3 +37,26 @@ export const WrongPick: Story = {
 		],
 	},
 };
+
+// The optional `voters` slot — used on the community page to show who picked
+// each option. Stand-in circles here; the app renders hoverable avatars.
+const voterDots = (count: number) => (
+	<div className="flex -space-x-2">
+		{Array.from({ length: count }, (_, i) => (
+			<span
+				key={i}
+				className="w-6 h-6 rounded-full bg-zinc-600 border border-black"
+			/>
+		))}
+	</div>
+);
+
+export const WithVoters: Story = {
+	args: {
+		options: [
+			{ ...options[0], voters: voterDots(4) },
+			{ ...options[1], isYours: true, voters: voterDots(2) },
+			{ ...options[2], voters: voterDots(1) },
+		],
+	},
+};

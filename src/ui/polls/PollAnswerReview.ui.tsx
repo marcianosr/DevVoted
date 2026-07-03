@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { clsx } from "clsx";
 
 import { MarkdownText } from "./PollMarkdown.ui";
@@ -7,6 +9,8 @@ export type AnswerReviewOption = {
 	text: string;
 	correct: boolean;
 	isYours: boolean;
+	/** Optional right-aligned slot (e.g. avatars of who picked this option). */
+	voters?: ReactNode;
 };
 
 type PollAnswerReviewProps = {
@@ -34,7 +38,7 @@ const VARIANT_STYLES: Record<
 		mark: "✗",
 	},
 	muted: {
-		card: "opacity-60",
+		card: "",
 		text: "text-zinc-400",
 		box: "border-zinc-600",
 		fill: "",
@@ -50,34 +54,44 @@ type OptionProps = {
 	variant: OptionVariant;
 	selected: boolean;
 	text: string;
+	voters?: ReactNode;
 };
 
-const Option = ({ variant, selected, text }: OptionProps) => {
+const Option = ({ variant, selected, text, voters }: OptionProps) => {
 	const style = VARIANT_STYLES[variant];
 	return (
 		<li
 			className={clsx(
-				"text-xl flex items-start gap-2 px-3.5 py-2.5",
+				"text-xl flex items-start gap-3 px-3.5 py-2.5",
 				style.card
 			)}
 		>
-			<span
-				className={clsx(
-					"shrink-0 mt-1 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold",
-					style.box,
-					selected && style.fill
-				)}
-			>
-				{selected ? style.mark : ""}
-			</span>
+			{/* Dim only the option content when muted, so any voter avatars stay crisp. */}
 			<div
 				className={clsx(
-					"markdown flex-1 min-w-0 wrap-break-word [&_p]:m-0",
-					style.text
+					"flex items-start gap-2 flex-1 min-w-0",
+					variant === "muted" && "opacity-60"
 				)}
 			>
-				<MarkdownText>{text}</MarkdownText>
+				<span
+					className={clsx(
+						"shrink-0 mt-1 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold",
+						style.box,
+						selected && style.fill
+					)}
+				>
+					{selected ? style.mark : ""}
+				</span>
+				<div
+					className={clsx(
+						"markdown flex-1 min-w-0 wrap-break-word [&_p]:m-0",
+						style.text
+					)}
+				>
+					<MarkdownText>{text}</MarkdownText>
+				</div>
 			</div>
+			{voters && <div className="shrink-0 self-center">{voters}</div>}
 		</li>
 	);
 };
@@ -90,6 +104,7 @@ export const PollAnswerReview = ({ options }: PollAnswerReviewProps) => (
 				variant={optionVariant(option)}
 				selected={option.isYours}
 				text={option.text}
+				voters={option.voters}
 			/>
 		))}
 	</ul>
