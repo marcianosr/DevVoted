@@ -10,7 +10,7 @@ import { getTodayDateString } from "~/lib/dateUtils";
 import { processRerollShop } from "./shop.queries";
 
 export const rerollShopServerFn = createServerFn()
-	.inputValidator(
+	.validator(
 		z.object({
 			runId: z.number().int().positive(),
 			date: z

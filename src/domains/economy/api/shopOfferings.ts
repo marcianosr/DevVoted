@@ -15,7 +15,7 @@ import {
  * This wraps the service function to ensure DB code only runs server-side.
  */
 export const getShopOfferingsServerFn = createServerFn({ method: "GET" })
-	.inputValidator(
+	.validator(
 		z.object({
 			runId: z.number(),
 			date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -52,7 +52,7 @@ export const getShopOfferingsServerFn = createServerFn({ method: "GET" })
 export const createRerolledShopOfferingsServerFn = createServerFn({
 	method: "POST",
 })
-	.inputValidator(
+	.validator(
 		z.object({
 			runId: z.number(),
 			date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -86,7 +86,7 @@ export const createRerolledShopOfferingsServerFn = createServerFn({
  * Server function to get pre-generated next shop offerings for preview.
  */
 export const getNextShopOfferingsServerFn = createServerFn({ method: "GET" })
-	.inputValidator(
+	.validator(
 		z.object({
 			runId: z.number(),
 			date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),

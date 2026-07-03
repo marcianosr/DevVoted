@@ -6,7 +6,7 @@ import { Auth } from "../domains/users/components/Auth.component";
 import { getSupabaseServerClient } from "../utils/supabase";
 
 export const signupFn = createServerFn({ method: "POST" })
-	.inputValidator(
+	.validator(
 		(d: { email: string; password: string; redirectUrl?: string }) => d
 	)
 	.handler(async ({ data }) => {

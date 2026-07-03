@@ -35,7 +35,7 @@ import { getCategoryMetadata } from "~/domains/shared/categories";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
 export const getScoreBreakdown = createServerFn({ method: "GET" })
-	.inputValidator(
+	.validator(
 		z.object({
 			pollId: z.number().int().positive(),
 			selectedOptions: z.array(z.string()),
@@ -61,7 +61,7 @@ export const getScoreBreakdown = createServerFn({ method: "GET" })
 	});
 
 const getRandomAnswer = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ pollId: z.number().int().positive() }))
+	.validator(z.object({ pollId: z.number().int().positive() }))
 	.handler(async ({ data }) => {
 		const result = await getRandomAnswerHandler({ data });
 

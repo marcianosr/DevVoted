@@ -5,7 +5,7 @@ import { Login } from "../domains/users/components/Login.component";
 import { getSupabaseServerClient } from "../utils/supabase";
 
 export const loginFn = createServerFn({ method: "POST" })
-	.inputValidator((d: { email: string; password: string }) => d)
+	.validator((d: { email: string; password: string }) => d)
 	.handler(async ({ data }) => {
 		const supabase = await getSupabaseServerClient();
 		const { error } = await supabase.auth.signInWithPassword({

@@ -346,7 +346,7 @@ describe("handlers", () => {
 			expect(result.success).toBe(false);
 			// Now validation catches invalid input first, so we get validation errors
 			if (!result.success) {
-				expect(result.error).toContain("Expected number, received null");
+				expect(result.error).toContain("expected number, received null");
 			}
 		});
 

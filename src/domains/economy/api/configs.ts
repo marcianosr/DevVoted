@@ -4,7 +4,7 @@ import { z } from "zod";
 import { addConfigToRunHandler, removeConfigFromRunHandler } from "./handlers";
 
 export const addConfigToRunServerFn = createServerFn()
-	.inputValidator(
+	.validator(
 		z.object({
 			runId: z.number().int().positive(),
 			configIds: z.array(z.string().min(1)),
@@ -17,7 +17,7 @@ export const addConfigToRunServerFn = createServerFn()
 	.handler(async ({ data }) => addConfigToRunHandler({ data }));
 
 export const removeConfigFromRunServerFn = createServerFn()
-	.inputValidator(
+	.validator(
 		z.object({
 			runId: z.number().int().positive(),
 			configIds: z.array(z.string().min(1)),

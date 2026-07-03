@@ -303,7 +303,7 @@ type ApiResponse<T> =
 ```typescript
 // ❌ WRONG: Accepts userId from client (security vulnerability)
 export const getUserData = createServerFn()
-	.inputValidator(z.object({ userId: z.string() }))
+	.validator(z.object({ userId: z.string() }))
 	.handler(async ({ data }) => {
 		return await fetchUserData(data.userId);
 	});

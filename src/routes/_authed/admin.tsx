@@ -67,7 +67,7 @@ const checkAdminAccessForAction = async () => {
 };
 
 const createSeasonFn = createServerFn({ method: "POST" })
-	.inputValidator(
+	.validator(
 		(data: {
 			name: string;
 			description?: string;
@@ -100,7 +100,7 @@ const createSeasonFn = createServerFn({ method: "POST" })
 	});
 
 const startSeasonFn = createServerFn({ method: "POST" })
-	.inputValidator((data: { seasonId: number }) => data)
+	.validator((data: { seasonId: number }) => data)
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
@@ -120,7 +120,7 @@ const startSeasonFn = createServerFn({ method: "POST" })
 	});
 
 const finishSeasonFn = createServerFn({ method: "POST" })
-	.inputValidator((data: { seasonId: number }) => data)
+	.validator((data: { seasonId: number }) => data)
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 
@@ -288,7 +288,7 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 const sendReminderEmailFn = createServerFn({ method: "POST" })
-	.inputValidator((data: { email: string; displayName: string }) => data)
+	.validator((data: { email: string; displayName: string }) => data)
 	.handler(async ({ data }) => {
 		await checkAdminAccessForAction();
 

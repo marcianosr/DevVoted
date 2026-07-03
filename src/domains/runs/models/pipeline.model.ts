@@ -76,6 +76,4 @@ export type UpgradeCategoryMasterySlotCard = {
 };
 
 export type UpgradeCard =
-	| AddSlotCard
-	| UpgradeSlotCard
-	| UpgradeCategoryMasterySlotCard;
+	AddSlotCard | UpgradeSlotCard | UpgradeCategoryMasterySlotCard;
