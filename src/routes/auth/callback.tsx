@@ -4,7 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getSupabaseServerClient } from "~/utils/supabase";
 
 const exchangeCodeForSession = createServerFn({ method: "GET" })
-	.inputValidator((data: { code: string }) => data)
+	.validator((data: { code: string }) => data)
 	.handler(async ({ data }) => {
 		const { code } = data;
 

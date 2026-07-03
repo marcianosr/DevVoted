@@ -43,7 +43,7 @@ const staticGateTypeIdSchema = z.enum([
 ] as const);
 
 export const getOrCreateRun = createServerFn({ method: "POST" })
-	.inputValidator(
+	.validator(
 		z
 			.object({
 				injectFromArchive: z
@@ -96,7 +96,7 @@ export const finishRunFn = createServerFn({ method: "POST" }).handler(
 );
 
 export const lootFallenRunFn = createServerFn({ method: "POST" })
-	.inputValidator(z.object({ runId: z.number() }))
+	.validator(z.object({ runId: z.number() }))
 	.handler(async ({ data }) => {
 		return handleApiOperation(async () => {
 			const userId = await getAuthenticatedUserId();
@@ -116,7 +116,7 @@ export const lootFallenRunFn = createServerFn({ method: "POST" })
 	});
 
 export const skipShopServerFn = createServerFn({ method: "POST" })
-	.inputValidator(
+	.validator(
 		z.object({
 			runId: z.number(),
 			date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -140,7 +140,7 @@ export const getAllRunsServerFn = createServerFn({ method: "GET" }).handler(
 );
 
 export const getExposedConfigDeck = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }))
+	.validator(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }))
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
 		return await getRandomExposedConfigDeckHandler(userId, data.date);
@@ -222,7 +222,7 @@ export const getWindowContextFn = createServerFn({ method: "GET" }).handler(
 );
 
 export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
-	.inputValidator(upgradeCardInputSchema)
+	.validator(upgradeCardInputSchema)
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
 		const activeRun = await getActiveRunByUserId(userId);

@@ -25,7 +25,7 @@ import {
 } from "./admin.handlers";
 
 export const getPollByIdWithOptions = createServerFn({ method: "GET" })
-	.inputValidator(
+	.validator(
 		z.object({
 			id: z.number().int().positive(),
 		})
@@ -61,7 +61,7 @@ export const getPollByIdWithOptions = createServerFn({ method: "GET" })
 	});
 
 export const getPollById = createServerFn()
-	.inputValidator(z.object({ id: z.number().int().positive() }))
+	.validator(z.object({ id: z.number().int().positive() }))
 	.handler(async ({ data }) => getPollByIdHandler({ data }));
 
 export const getAllPolls = createServerFn().handler(async () =>
@@ -106,7 +106,7 @@ export const getPollCreators = createServerFn({ method: "GET" }).handler(
 );
 
 export const getDailyPoll = createServerFn({ method: "GET" })
-	.inputValidator(
+	.validator(
 		z.object({
 			runId: z.number().int().positive().optional(),
 			date: z.string().optional(),
@@ -133,7 +133,7 @@ export const getDailyPoll = createServerFn({ method: "GET" })
 	});
 
 export const postPollOptions = createServerFn({ method: "POST" })
-	.inputValidator(
+	.validator(
 		z.object({
 			pollId: z.number().int().positive(),
 			selectedOptions: z.array(z.string()).min(1),
@@ -149,13 +149,13 @@ export const postPollOptions = createServerFn({ method: "POST" })
 	});
 
 export const getPollsSeenInRun = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ runId: z.number().int().positive() }))
+	.validator(z.object({ runId: z.number().int().positive() }))
 	.handler(async ({ data }) => {
 		return getPollsSeenInRunHandler({ data: { runId: data.runId } });
 	});
 
 export const getRunPollHistoryServerFn = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ runId: z.number().int().positive() }))
+	.validator(z.object({ runId: z.number().int().positive() }))
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
 		return getRunPollHistoryHandler({ data: { userId, runId: data.runId } });
@@ -201,7 +201,7 @@ const createPollInputSchema = z.object({
 });
 
 export const createPollServerFn = createServerFn({ method: "POST" })
-	.inputValidator(createPollInputSchema)
+	.validator(createPollInputSchema)
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
 		// All user-created polls start as draft
@@ -238,7 +238,7 @@ const updatePollInputSchema = z.object({
 });
 
 export const updatePollServerFn = createServerFn({ method: "POST" })
-	.inputValidator(updatePollInputSchema)
+	.validator(updatePollInputSchema)
 	.handler(async ({ data }) => {
 		await ensureAdminAccess();
 		return updatePollHandler({ data });
