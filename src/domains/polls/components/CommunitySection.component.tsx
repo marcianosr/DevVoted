@@ -55,25 +55,27 @@ export const CommunitySection = ({
 	);
 
 	return (
-		<section className="space-y-2">
-			<h3 className="text-4xl">👥 Community</h3>
-			<div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xl">
-				<span>
-					{communityStats.totalResponses} player(s) participated in today&apos;s
-					poll ·
-				</span>
-				<div className="flex -space-x-2">
-					{communityStats.users.map((user) => (
-						<AvatarPopover
-							key={user.id}
-							user={user}
-							role={user.role}
-							pipelineSlots={user.activeRunPipelineSlots}
-							activeRunProgress={user.activeRunProgress}
-						>
-							<Avatar user={user} />
-						</AvatarPopover>
-					))}
+		<section className="space-y-6">
+			<div>
+				<h3 className="text-4xl">👥 Community</h3>
+				<div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xl">
+					<span>
+						{communityStats.totalResponses} player(s) participated in
+						today&apos;s poll ·
+					</span>
+					<div className="flex -space-x-2">
+						{communityStats.users.map((user) => (
+							<AvatarPopover
+								key={user.id}
+								user={user}
+								role={user.role}
+								pipelineSlots={user.activeRunPipelineSlots}
+								activeRunProgress={user.activeRunProgress}
+							>
+								<Avatar user={user} />
+							</AvatarPopover>
+						))}
+					</div>
 				</div>
 			</div>
 
