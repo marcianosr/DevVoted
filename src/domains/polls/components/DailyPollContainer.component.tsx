@@ -13,6 +13,8 @@ import { postPollOptions } from "~/domains/polls/api/polls";
 import { PollLastSeenBadge } from "~/domains/polls/components/PollLastSeenBadge.component";
 import PollOptionsForm from "~/domains/polls/components/PollOptionsForm.component";
 import { PollResultsSection } from "~/domains/polls/components/PollResultsSection.component";
+import { evaluateSelectionOutcome } from "~/domains/polls/utils/pollResult";
+import { DailyResultShare } from "~/domains/runs/components/DailyResultShare.component";
 import { getActiveConfigs } from "~/domains/economy/services/configManager.service";
 import {
 	findWrongOptionConfig,
@@ -69,6 +71,7 @@ const DailyPollContainer = ({
 	activeRun,
 	isAdmin,
 	initialWindowContext,
+	date,
 	lastSeenAt,
 	lastEncounteredAt,
 	timesEncountered,
@@ -231,14 +234,32 @@ const DailyPollContainer = ({
 				{header}
 				<div className="mt-4 mb-4">
 					{hasAnswered ? (
-						<PollResultsSection
-							poll={poll}
-							selectedOptions={selectedOptions}
-							communityStats={communityStats}
-							explanation={poll.explanation}
-							continueAction={reviewContinueAction}
-							pollsUntilGate={pollsUntilGate}
-						/>
+						<>
+							<PollResultsSection
+								poll={poll}
+								selectedOptions={selectedOptions}
+								communityStats={communityStats}
+								explanation={poll.explanation}
+								continueAction={reviewContinueAction}
+								pollsUntilGate={pollsUntilGate}
+							/>
+							{communityStats && lastEvaluationContext && (
+								<DailyResultShare
+									currentDate={date}
+									categoryCoverage={activeRun.categoryCoverage}
+									windowContext={lastEvaluationContext}
+									gateCleared={lastPipelineEvaluation?.passed ?? false}
+									community={communityStats}
+									viewerIsCorrect={
+										evaluateSelectionOutcome(
+											communityStats.optionBreakdown,
+											selectedOptions
+										) === "full"
+									}
+									todayCategoryName={category.name}
+								/>
+							)}
+						</>
 					) : (
 						<PollOptionsForm
 							poll={poll}
