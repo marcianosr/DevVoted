@@ -19,11 +19,6 @@ import {
 	createMockRunCategoryCoverageRecordArray,
 } from "../models/runCategoryCoverage.mock";
 
-// Mock the seasons service
-vi.mock("~/domains/ranking/services/seasonService", () => ({
-	getSeasonForNewRun: vi.fn().mockResolvedValue(1),
-}));
-
 vi.mock("~/domains/economy/api/archive.queries", () => ({
 	debitArchivedStorageGuarded: vi.fn(),
 }));

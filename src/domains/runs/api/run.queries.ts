@@ -83,10 +83,6 @@ export const createRunForUser = async (
 			if (newBalance === null) throw new InsufficientArchiveError();
 		}
 
-		const { getSeasonForNewRun } =
-			await import("~/domains/ranking/services/seasonService");
-		const seasonId = await getSeasonForNewRun();
-
 		const extraSlots = extraPreRunSlotIds
 			.map(getPreRunSlot)
 			.filter((s): s is NonNullable<typeof s> => s !== null);
@@ -95,7 +91,7 @@ export const createRunForUser = async (
 			.insert(runsTable)
 			.values({
 				user_id: userId,
-				season_id: seasonId,
+				season_id: null, // Seasons not in use; column kept nullable for pre-season runs
 				status: "active",
 				storage_limit: STORAGE_UNITS.MB + injectFromArchive,
 				injected_archive_bytes: injectFromArchive,

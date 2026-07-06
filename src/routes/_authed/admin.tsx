@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 import { Resend } from "resend";
@@ -9,7 +9,6 @@ import { configs as allConfigs } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
 import { formatStorage } from "~/lib/storage";
 
-import { PrimaryButton } from "../../ui/PrimaryButton.component";
 import { ADMIN_EMAILS } from "../../utils/adminAuth";
 import { getSupabaseServerClient } from "../../utils/supabase";
 
@@ -66,82 +65,7 @@ const checkAdminAccessForAction = async () => {
 	return user;
 };
 
-const createSeasonFn = createServerFn({ method: "POST" })
-	.validator(
-		(data: {
-			name: string;
-			description?: string;
-			startDate: string;
-			endDate: string;
-		}) => data
-	)
-	.handler(async ({ data }) => {
-		await checkAdminAccessForAction();
-
-		const { createSeason } =
-			await import("~/domains/ranking/services/seasonService");
-
-		try {
-			const season = await createSeason({
-				name: data.name,
-				description: data.description,
-				startDate: new Date(data.startDate),
-				endDate: new Date(data.endDate),
-			});
-
-			return { success: true, season };
-		} catch (error) {
-			return {
-				success: false,
-				error:
-					error instanceof Error ? error.message : "Failed to create season",
-			};
-		}
-	});
-
-const startSeasonFn = createServerFn({ method: "POST" })
-	.validator((data: { seasonId: number }) => data)
-	.handler(async ({ data }) => {
-		await checkAdminAccessForAction();
-
-		const { startSeason } =
-			await import("~/domains/ranking/services/seasonService");
-
-		try {
-			const season = await startSeason(data.seasonId);
-			return { success: true, season };
-		} catch (error) {
-			return {
-				success: false,
-				error:
-					error instanceof Error ? error.message : "Failed to start season",
-			};
-		}
-	});
-
-const finishSeasonFn = createServerFn({ method: "POST" })
-	.validator((data: { seasonId: number }) => data)
-	.handler(async ({ data }) => {
-		await checkAdminAccessForAction();
-
-		const { finishSeason } =
-			await import("~/domains/ranking/services/seasonService");
-
-		try {
-			const season = await finishSeason(data.seasonId);
-			return { success: true, season };
-		} catch (error) {
-			return {
-				success: false,
-				error:
-					error instanceof Error ? error.message : "Failed to finish season",
-			};
-		}
-	});
-
 const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
-	const { getAllSeasons, getCurrentSeason } =
-		await import("~/domains/ranking/services/seasonService");
 	const { db } = await import("~/database/db");
 	const {
 		pollsTable,
@@ -154,9 +78,6 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 	const { getTodayDateString } = await import("~/lib/dateUtils");
 
 	try {
-		const currentSeason = await getCurrentSeason();
-		const allSeasons = await getAllSeasons();
-
 		// Get today's daily poll using the new daily_polls table
 		const todayDate = getTodayDateString();
 		const activePolls = await db
@@ -259,8 +180,6 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 		}
 
 		return {
-			currentSeason,
-			allSeasons,
 			activePolls,
 			pastPolls,
 			recentResponses,
@@ -274,8 +193,6 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 	} catch (error) {
 		console.error("Error fetching admin data:", error);
 		return {
-			currentSeason: null,
-			allSeasons: [],
 			activePolls: [],
 			pastPolls: [],
 			recentResponses: [],
@@ -373,9 +290,6 @@ type ConfigSortOption = "rarity" | "cost" | "popularity";
 
 function AdminPanel() {
 	const data = Route.useLoaderData();
-	const router = useRouter();
-	const [showCreateForm, setShowCreateForm] = useState(false);
-	const [isLoading, setIsLoading] = useState(false);
 	const [message, setMessage] = useState<{
 		type: "success" | "error";
 		text: string;
@@ -416,79 +330,6 @@ function AdminPanel() {
 		setTimeout(() => setMessage(null), 5000);
 	};
 
-	const handleCreateSeason = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		setIsLoading(true);
-
-		const formData = new FormData(e.currentTarget);
-		const result = await createSeasonFn({
-			data: {
-				name: formData.get("name") as string,
-				description: formData.get("description") as string,
-				startDate: formData.get("startDate") as string,
-				endDate: formData.get("endDate") as string,
-			},
-		});
-
-		setIsLoading(false);
-
-		if (result.success) {
-			showMessage(
-				"success",
-				`Season "${result.season?.name || "New season"}" created successfully!`
-			);
-			setShowCreateForm(false);
-			router.invalidate();
-		} else {
-			showMessage("error", result.error || "Failed to create season");
-		}
-	};
-
-	const handleStartSeason = async () => {
-		const upcomingSeason = data.allSeasons.find((s) => s.status === "upcoming");
-		if (!upcomingSeason) {
-			showMessage("error", "No upcoming season to start");
-			return;
-		}
-
-		setIsLoading(true);
-		const result = await startSeasonFn({
-			data: { seasonId: upcomingSeason.id },
-		});
-		setIsLoading(false);
-
-		if (result.success) {
-			showMessage("success", "Season started successfully!");
-			router.invalidate();
-		} else {
-			showMessage("error", result.error || "Failed to start season");
-		}
-	};
-
-	const handleFinishSeason = async () => {
-		if (!data.currentSeason) {
-			showMessage("error", "No active season to finish");
-			return;
-		}
-
-		if (
-			confirm(`Are you sure you want to finish "${data.currentSeason.name}"?`)
-		) {
-			setIsLoading(true);
-			const result = await finishSeasonFn({
-				data: { seasonId: data.currentSeason.id },
-			});
-			setIsLoading(false);
-
-			if (result.success) {
-				showMessage("success", "Season finished successfully!");
-				await router.invalidate();
-			} else {
-				showMessage("error", result.error || "Failed to finish season");
-			}
-		}
-	};
-
 	const handleSendReminder = async (user: UserRow) => {
 		setEmailSending(user.id);
 		try {
@@ -503,17 +344,12 @@ function AdminPanel() {
 		}
 	};
 
-	const upcomingSeasons = data.allSeasons.filter(
-		(s) => s.status === "upcoming"
-	);
-	const hasUpcomingSeason = upcomingSeasons.length > 0;
-
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-8">
 				<h1 className="text-3xl text-white mb-2">DevVoted Admin Panel</h1>
 				<p className="text-white">
-					Manage seasons, monitor active polls, and track user responses.
+					Monitor active polls and track user responses.
 				</p>
 			</div>
 
@@ -536,164 +372,6 @@ function AdminPanel() {
 			)}
 
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-				{/* Season Management */}
-				<div className=" rounded-lg shadow-md p-6">
-					<h2 className="text-xl font-semibold mb-4 text-white">
-						Season Management
-					</h2>
-					<div className="space-y-4">
-						{/* Current Season */}
-						<div className="p-4 bg-blue-50 rounded-lg">
-							<h3 className="font-medium text-blue-900 mb-2">Current Season</h3>
-							{data.currentSeason ? (
-								<div className="text-sm space-y-1">
-									<p>
-										<strong>Name:</strong> {data.currentSeason.name}
-									</p>
-									<p>
-										<strong>Status:</strong>{" "}
-										<span className="capitalize">
-											{data.currentSeason.status}
-										</span>
-									</p>
-									<p>
-										<strong>Start:</strong>{" "}
-										{formatDate(data.currentSeason.startDate)}
-									</p>
-									<p>
-										<strong>End:</strong>{" "}
-										{formatDate(data.currentSeason.endDate)}
-									</p>
-								</div>
-							) : (
-								<p className="text-sm text-blue-700">No active season</p>
-							)}
-						</div>
-
-						{/* Upcoming Seasons */}
-						{hasUpcomingSeason && (
-							<div className="p-4 bg-yellow-50 rounded-lg">
-								<h3 className="font-medium text-yellow-900 mb-2">
-									Upcoming Seasons
-								</h3>
-								{upcomingSeasons.map((season) => (
-									<div key={season.id} className="text-sm space-y-1 mb-2">
-										<p>
-											<strong>{season.name}</strong>
-										</p>
-										<p>Starts: {formatDate(season.startDate)}</p>
-									</div>
-								))}
-							</div>
-						)}
-
-						{/* Actions */}
-						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-							<button
-								className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
-								onClick={() => setShowCreateForm(!showCreateForm)}
-								disabled={isLoading}
-							>
-								Create New Season
-							</button>
-							<PrimaryButton
-								onClick={handleStartSeason}
-								disabled={isLoading || !hasUpcomingSeason}
-							>
-								Start Season
-							</PrimaryButton>
-							<button
-								className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50"
-								onClick={handleFinishSeason}
-								disabled={isLoading || !data.currentSeason}
-							>
-								Finish Season
-							</button>
-							<button
-								className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
-								onClick={() => alert("Archive functionality coming soon!")}
-								disabled={isLoading}
-							>
-								Archive Season
-							</button>
-						</div>
-
-						{/* Create Season Form */}
-						{showCreateForm && (
-							<form
-								onSubmit={handleCreateSeason}
-								className="mt-4 p-4 border border-gray-200 rounded-lg"
-							>
-								<h3 className="font-medium mb-3">Create New Season</h3>
-								<div className="space-y-3">
-									<div>
-										<label className="block text-sm font-medium text-white mb-1">
-											Season Name
-										</label>
-										<input
-											name="name"
-											type="text"
-											required
-											placeholder="e.g., Season 2: Meta Layer"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-										/>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-white mb-1">
-											Description
-										</label>
-										<textarea
-											name="description"
-											placeholder="Optional description"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-										/>
-									</div>
-									<div className="grid grid-cols-2 gap-3">
-										<div>
-											<label className="block text-sm font-medium text-white mb-1">
-												Start Date
-											</label>
-											<input
-												name="startDate"
-												type="datetime-local"
-												required
-												className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-											/>
-										</div>
-										<div>
-											<label className="block text-sm font-medium text-white mb-1">
-												End Date
-											</label>
-											<input
-												name="endDate"
-												type="datetime-local"
-												required
-												className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-											/>
-										</div>
-									</div>
-									<div className="flex gap-2">
-										<button
-											type="submit"
-											disabled={isLoading}
-											className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-										>
-											{isLoading ? "Creating..." : "Create Season"}
-										</button>
-										<button
-											type="button"
-											onClick={() => setShowCreateForm(false)}
-											className="px-4 py-2 bg-gray-300 text-white rounded-md hover:bg-gray-400"
-										>
-											Cancel
-										</button>
-									</div>
-								</div>
-							</form>
-						)}
-					</div>
-				</div>
-
 				{/* System Status */}
 				<div className=" rounded-lg shadow-md p-6">
 					<h2 className="text-xl font-semibold mb-4 text-white">
