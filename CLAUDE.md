@@ -344,3 +344,4 @@ export const getUserData = createServerFn({ method: "GET" }).handler(
 - Development server runs on port 3005 (configured in vite.config.ts)
 - Architecture Decision Records are stored in `docs/adr/`
 - If I disagree with something, please write this down in an ADR file
+- When making player-visible changes, follow `docs/changelog-maintenance.md` to update `CHANGELOG.md`
