@@ -17,6 +17,7 @@ export type ScreenAction = {
 	label: string;
 	onClick: () => void;
 	disabled?: boolean;
+	hint?: ReactNode;
 };
 
 const WIDTH_CLASSES: Record<ScreenWidth, string> = {
@@ -108,12 +109,17 @@ export const Screen = ({
 						</PrimaryButton>
 					)}
 					{rightAction && (
-						<PrimaryButton
-							onClick={() => runAction(rightAction, "forward")}
-							disabled={rightAction.disabled}
-						>
-							{rightAction.label}
-						</PrimaryButton>
+						<div className="flex flex-col items-end gap-1">
+							{rightAction.hint && (
+								<small className="text-sm">{rightAction.hint}</small>
+							)}
+							<PrimaryButton
+								onClick={() => runAction(rightAction, "forward")}
+								disabled={rightAction.disabled}
+							>
+								{rightAction.label}
+							</PrimaryButton>
+						</div>
 					)}
 				</div>
 			)}

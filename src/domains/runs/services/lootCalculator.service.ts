@@ -1,3 +1,4 @@
+import { LOOT_CAP_KB, LOOT_PER_GATE_KB } from "~/config/economy";
 import { STORAGE_UNITS } from "~/lib/storage";
 
 /**
@@ -8,8 +9,6 @@ import { STORAGE_UNITS } from "~/lib/storage";
  * - Capped at 100 KB so a single loot can never trivialise normal earning.
  * - Returned value is in BYTES so it can be added directly to storage_limit.
  */
-const LOOT_PER_GATE_KB = 20;
-const LOOT_CAP_KB = 100;
 
 export const calculateLootAmount = (gateReached: number): number => {
 	if (gateReached < 1) return 0;

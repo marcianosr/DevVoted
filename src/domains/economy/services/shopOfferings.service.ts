@@ -3,6 +3,7 @@
  * This file contains functions that interact with the database.
  * For pure selection logic (no DB), see configSelection.ts
  */
+import { DEFAULT_OFFERED_CONFIGS_COUNT } from "~/config/economy";
 import { configs } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
 
@@ -21,8 +22,6 @@ import {
 	storeNextShopOfferings,
 	storeShopOfferings,
 } from "../api/shopOfferings.queries";
-
-const DEFAULT_OFFERED_CONFIGS_COUNT = 3;
 
 /**
  * Helper to generate and store both current and next offerings.
