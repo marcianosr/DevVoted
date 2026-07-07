@@ -40,9 +40,6 @@ const playerXPx = (p: GatePathmapPlayer) =>
 	(p.currentGate + (p.windowSize > 0 ? p.pollsInWindow / p.windowSize : 0)) *
 		GATE_W;
 
-const hardPlusCount = (slots: GatePathmapSlotDifficulty[]) =>
-	slots.filter((s) => s === "high" || s === "critical").length;
-
 const DIFFICULTIES: GatePathmapSlotDifficulty[] = [
 	"low",
 	"medium",
@@ -121,9 +118,6 @@ const PlayerPin = ({ players, xPx }: PlayerPinProps) => {
 						/>
 					))}
 				</div>
-				<span className="text-[9px] text-zinc-300 whitespace-nowrap">
-					{hardPlusCount(primary.slots)}/{primary.slots.length} hard+
-				</span>
 			</div>
 		</div>
 	);
