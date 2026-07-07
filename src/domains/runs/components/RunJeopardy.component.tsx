@@ -38,7 +38,7 @@ export const RunJeopardy = ({
 
 	return (
 		<RunJeopardyUI
-			gate={windowContext.currentGate}
+			gate={windowContext.currentGate + 1}
 			pollsUntilGate={
 				windowContext.pollsInWindow - windowContext.pollsAnsweredInWindow
 			}

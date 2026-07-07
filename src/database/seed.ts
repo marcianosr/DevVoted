@@ -53,13 +53,8 @@ const createLocalAuthUser = async (
 	}
 };
 
-// ─── FFI World Cup roster (English dub) ───────────────────────────────────────
-// Players drawn from the five FFI teams the user nominated: Inazuma Japan,
-// Unicorn (USA), Orpheus (Italy), Little Gigant (Cotarl), and Mac Roniejo.
-// Inazuma Japan is the most populated since the dub names there are the most
-// recognisable in local dev.
+// ─── Inazuma Japan roster (English dub) ──────────────────────────────────────
 const INAZUMA_ROSTER: readonly string[] = [
-	// Inazuma Japan
 	"Mark Evans",
 	"Jude Sharp",
 	"Axel Blaze",
@@ -75,40 +70,6 @@ const INAZUMA_ROSTER: readonly string[] = [
 	"Jim Wraith",
 	"Xavier Foster",
 	"Bryce Withingale",
-	"Jordan Greenway",
-	"Byron Love",
-	// Unicorn (USA)
-	"Erik Eagle",
-	"Tim Saunders",
-	"Dylan Keith",
-	"Mark Kruger",
-	"Bobby Shultz",
-	"Edgar Valtinas",
-	"Wesley Cooper",
-	"Jacob Hardy",
-	// Orpheus (Italy)
-	"Fideo Ardena",
-	"Marco Maseratti",
-	"Hide Nakata",
-	"Donatello Verboni",
-	"Bruno Bellanca",
-	"Roberto Rondellini",
-	"Cario Stretti",
-	"Antonio Tucci",
-	// Little Gigant (Cotarl)
-	"Rococo Urupa",
-	"Teres Tolue",
-	"Bombchi Bombelo",
-	"Pin Pirua",
-	"Sergeant Cervantes",
-	"Bomber Grande",
-	// Mac Roniejo
-	"Mac Roniejo",
-	"Pablo Diaz",
-	"Carlos Mendoza",
-	"Hector Vargas",
-	"Luis Castillo",
-	"Diego Ramirez",
 ] as const;
 
 // Distribution of target gates — front-loaded toward early game so the minimap
@@ -116,49 +77,19 @@ const INAZUMA_ROSTER: readonly string[] = [
 const INAZUMA_TARGET_GATES: readonly number[] = [
 	1,
 	1,
-	1,
-	1,
+	1, // 3 in gate 1
 	2,
 	2,
-	2,
-	2,
+	2, // 3 in gate 2
 	3,
-	3,
-	3,
-	3, // 12 in gates 1–3
+	3, // 2 in gate 3
 	4,
-	4,
-	4,
-	4,
+	4, // 2 in gate 4
 	5,
-	5,
-	5,
-	5,
-	6,
-	6,
-	6,
-	6, // 12 in gates 4–6
-	7,
-	7,
-	7,
-	8,
-	8,
-	8,
-	9,
-	9,
-	9,
-	10, // 10 in gates 7–10
-	11,
-	11,
-	11,
-	12,
-	12,
-	13,
-	13, // 7 in gates 11–13
-	14,
-	14,
-	15,
-	16, // 4 in gates 14–16
+	5, // 2 in gate 5
+	6, // 1 in gate 6
+	7, // 1 in gate 7
+	8, // 1 in gate 8
 ] as const;
 
 const inazumaUUID = (index: number): string => {
