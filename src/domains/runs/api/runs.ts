@@ -42,6 +42,7 @@ import {
 	lootRun,
 } from "./run.queries";
 import { handleApiOperation } from "~/utils/errorHandling";
+import { getAllTimeHighestGate } from "~/domains/runs/api/ranking.queries";
 
 const staticGateTypeIdSchema = z.enum([
 	"coverage-gain",
@@ -361,3 +362,7 @@ export const applyPipelineUpgradeFn = createServerFn({ method: "POST" })
 
 		return { applied: true };
 	});
+
+export const getAllTimeHighestGateFn = createServerFn({
+	method: "GET",
+}).handler(async (): Promise<number> => getAllTimeHighestGate());

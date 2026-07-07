@@ -3,7 +3,7 @@ import { formatDuration, intervalToDuration } from "date-fns";
 import type { CommunityStats } from "~/domains/polls/api/communityStats.queries";
 import { AvatarPopover } from "~/domains/economy/components/AvatarPopover.component";
 import ExposedConfigDeckDisplay from "~/domains/economy/components/ExposedConfigDeckDisplay.component";
-import GatesMinimap from "~/domains/polls/components/GatesMinimap.component";
+import { GatePathmapComponent } from "~/domains/polls/components/GatePathmap.component";
 import { PollAnswerBreakdown } from "~/domains/polls/components/PollAnswerBreakdown.component";
 import type { ExposedConfigDeck } from "~/domains/runs/api/run.queries";
 import { CATEGORY_METADATA } from "~/domains/shared/categories";
@@ -137,14 +137,7 @@ export const CommunitySection = ({
 				</ul>
 			</div>
 
-			{(communityStats.playersInActiveRun.length > 0 ||
-				communityStats.playersFallenOnDate.length > 0) && (
-				<GatesMinimap
-					players={communityStats.playersInActiveRun}
-					fallenPlayers={communityStats.playersFallenOnDate}
-					viewerUserId={viewerUserId}
-				/>
-			)}
+			<GatePathmapComponent players={communityStats.playersInActiveRun} />
 
 			{exposedConfigDeck && (
 				<ExposedConfigDeckDisplay deck={exposedConfigDeck} />

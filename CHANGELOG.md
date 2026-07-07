@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 - Refactor shop design flow when skipping a shop
 - Added Ruby configs
+- Improve gate pathing visualizations
 
 ## 1.3.0 - 2026-07-06
 ### Added
