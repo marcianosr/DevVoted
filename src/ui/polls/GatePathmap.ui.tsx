@@ -160,7 +160,7 @@ const ScrollButton = ({ direction, visible, onClick }: ScrollButtonProps) => (
 			onClick={onClick}
 			className={clsx(
 				"relative z-10 flex flex-col items-center gap-0.5",
-				"text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors",
+				"text-sm text-white hover:text-zinc-200 transition-colors cursor-pointer",
 				direction === "left" ? "pl-2" : "pr-2 ml-auto"
 			)}
 			aria-label={direction === "left" ? "Scroll back" : "Scroll ahead"}
@@ -279,7 +279,7 @@ export const GatePathmap = ({ players }: GatePathmapProps) => {
 									"linear-gradient(to right, oklch(from var(--theme-color) l c h / 0.06), oklch(from var(--theme-color) l c h / 0.18))",
 							}}
 						>
-							<span className="absolute top-1 left-2 text-[9px] text-theme italic tracking-wide uppercase opacity-60">
+							<span className="absolute top-1 left-2 text-sm text-theme tracking-wide uppercase opacity-60">
 								Uncharted
 							</span>
 						</div>
