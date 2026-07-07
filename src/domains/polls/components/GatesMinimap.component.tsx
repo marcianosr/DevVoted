@@ -17,8 +17,8 @@ type GatesMinimapProps = {
 };
 
 const MAX_VISIBLE_AVATARS = 4;
-const TRACK_LEFT_MARGIN = 5;
-const TRACK_RIGHT_MARGIN = 5;
+const GATE_PX = 160; // px per gate — fixed spacing so adjacent gates never overlap
+const TRACK_OFFSET_X = 80; // px from left edge to gate-1 center
 
 const groupByGate = <T extends { currentGate: number }>(
 	items: T[]
@@ -29,12 +29,7 @@ const groupByGate = <T extends { currentGate: number }>(
 		return acc;
 	}, new Map());
 
-const computeTrackPosition = (gate: number, leaderGate: number): number => {
-	const usableRange = 100 - TRACK_LEFT_MARGIN - TRACK_RIGHT_MARGIN;
-	const denom = Math.max(leaderGate - 1, 1);
-	const fraction = (gate - 1) / denom;
-	return TRACK_LEFT_MARGIN + fraction * usableRange;
-};
+const gateXPx = (gate: number) => TRACK_OFFSET_X + (gate - 1) * GATE_PX;
 
 const formatTimeOfDay = (date: Date): string =>
 	date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
@@ -102,6 +97,9 @@ const GatesMinimap = ({
 		...new Set([...liveGroups.keys(), ...fallenGroups.keys()]),
 	].sort((a, b) => a - b);
 
+	const totalWidth =
+		TRACK_OFFSET_X + (leaderGate - 1) * GATE_PX + TRACK_OFFSET_X;
+
 	return (
 		<>
 			<div className="mt-4">
@@ -113,83 +111,90 @@ const GatesMinimap = ({
 						</span>
 					)}
 				</p>
-				<div className="relative mt-4 h-52">
+				<div
+					className="mt-4 overflow-x-auto"
+					style={{ scrollbarWidth: "none" }}
+				>
 					<div
-						className={clsx(
-							"absolute left-0 right-0 top-24 h-1",
-							"rounded-full bg-gradient-to-r",
-							"from-zinc-700 via-zinc-500 to-zinc-700"
-						)}
-					/>
+						className="relative h-52"
+						style={{ width: totalWidth, minWidth: "100%" }}
+					>
+						{/* Track line */}
+						<div
+							className="absolute top-24 h-px bg-zinc-600"
+							style={{ left: TRACK_OFFSET_X, right: TRACK_OFFSET_X }}
+						/>
 
-					{sortedGates.map((gate) => {
-						const live = liveGroups.get(gate) ?? [];
-						const fallen = fallenGroups.get(gate) ?? [];
-						const liveHasOverflow = live.length > MAX_VISIBLE_AVATARS;
-						const visibleLive = liveHasOverflow
-							? live.slice(0, MAX_VISIBLE_AVATARS - 1)
-							: live;
-						const liveOverflow = live.length - visibleLive.length;
-						const fallenHasOverflow = fallen.length > MAX_VISIBLE_AVATARS;
-						const visibleFallen = fallenHasOverflow
-							? fallen.slice(0, MAX_VISIBLE_AVATARS - 1)
-							: fallen;
-						const fallenOverflow = fallen.length - visibleFallen.length;
-						const leftPercent = computeTrackPosition(gate, leaderGate);
+						{sortedGates.map((gate) => {
+							const live = liveGroups.get(gate) ?? [];
+							const fallen = fallenGroups.get(gate) ?? [];
+							const liveHasOverflow = live.length > MAX_VISIBLE_AVATARS;
+							const visibleLive = liveHasOverflow
+								? live.slice(0, MAX_VISIBLE_AVATARS - 1)
+								: live;
+							const liveOverflow = live.length - visibleLive.length;
+							const fallenHasOverflow = fallen.length > MAX_VISIBLE_AVATARS;
+							const visibleFallen = fallenHasOverflow
+								? fallen.slice(0, MAX_VISIBLE_AVATARS - 1)
+								: fallen;
+							const fallenOverflow = fallen.length - visibleFallen.length;
 
-						return (
-							<div
-								key={gate}
-								className="absolute top-0 bottom-0 flex -translate-x-1/2 flex-col items-center"
-								style={{ left: `${leftPercent}%` }}
-							>
-								<div className="h-24 flex flex-col-reverse items-center justify-start -space-y-1 -space-y-reverse">
-									{liveOverflow > 0 && (
-										<span
-											className={clsx(
-												"inline-flex h-6 w-6 items-center justify-center",
-												"rounded-full bg-zinc-700 text-xs text-white",
-												"ring-2 ring-zinc-900"
-											)}
-										>
-											+{liveOverflow}
-										</span>
-									)}
-									{visibleLive.map((player) => (
-										<AvatarPopover
-											key={player.id}
-											user={player}
-											pipelineSlots={player.pipelineSlots}
-											activeRunProgress={player.activeRunProgress}
-										>
-											<Avatar user={player} size="sm" />
-										</AvatarPopover>
-									))}
+							return (
+								<div
+									key={gate}
+									className="absolute top-0 bottom-0 flex -translate-x-1/2 flex-col items-center"
+									style={{ left: gateXPx(gate) }}
+								>
+									<div className="h-24 flex flex-col-reverse items-center justify-start -space-y-1 -space-y-reverse">
+										{liveOverflow > 0 && (
+											<span
+												className={clsx(
+													"inline-flex h-6 w-6 items-center justify-center",
+													"rounded-full bg-zinc-700 text-xs text-white",
+													"ring-2 ring-zinc-900"
+												)}
+											>
+												+{liveOverflow}
+											</span>
+										)}
+										{visibleLive.map((player) => (
+											<AvatarPopover
+												key={player.id}
+												user={player}
+												pipelineSlots={player.pipelineSlots}
+												activeRunProgress={player.activeRunProgress}
+											>
+												<Avatar user={player} size="sm" />
+											</AvatarPopover>
+										))}
+									</div>
+									<span className="mt-2 text-xs text-zinc-400">
+										Gate {gate}
+									</span>
+									<div className="mt-2 flex flex-col items-center space-y-1">
+										{visibleFallen.map((player) => (
+											<FallenAvatar
+												key={player.id}
+												player={player}
+												onSelect={(p) => setSelectedRunId(p.runId)}
+											/>
+										))}
+										{fallenOverflow > 0 && (
+											<span
+												className={clsx(
+													"inline-flex h-6 w-6 items-center justify-center",
+													"rounded-full bg-red-900/70 text-xs text-white",
+													"ring-2 ring-zinc-900"
+												)}
+											>
+												+{fallenOverflow}
+											</span>
+										)}
+									</div>
 								</div>
-								<span className="mt-2 text-xs text-zinc-400">Gate {gate}</span>
-								<div className="mt-2 flex flex-col items-center space-y-1">
-									{visibleFallen.map((player) => (
-										<FallenAvatar
-											key={player.id}
-											player={player}
-											onSelect={(p) => setSelectedRunId(p.runId)}
-										/>
-									))}
-									{fallenOverflow > 0 && (
-										<span
-											className={clsx(
-												"inline-flex h-6 w-6 items-center justify-center",
-												"rounded-full bg-red-900/70 text-xs text-white",
-												"ring-2 ring-zinc-900"
-											)}
-										>
-											+{fallenOverflow}
-										</span>
-									)}
-								</div>
-							</div>
-						);
-					})}
+							);
+						})}
+					</div>
 				</div>
 			</div>
 			<FallenPlayerModal
