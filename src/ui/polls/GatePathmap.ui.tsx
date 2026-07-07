@@ -29,7 +29,7 @@ const GATE_W = 140; // px per gate segment
 const TRACK_OFFSET_X = 60; // px from left edge to gate 1 center
 const UNCHARTED_EXTRA = GATE_W * 1.5; // px of uncharted zone past leaderGate
 const TRACK_Y = 96; // px from container top to track line (room for 3 stacked avatars)
-const CONTAINER_H = 150; // px total container height
+const CONTAINER_H = 175; // px total container height
 const MAX_STACK = 3; // max avatars shown stacked before overflow badge
 const SCROLL_BY = GATE_W * 2; // px scrolled per button press
 
@@ -51,11 +51,16 @@ type GateMarkerProps = { gate: number };
 
 const GateMarker = ({ gate }: GateMarkerProps) => (
 	<div
-		className="absolute flex flex-col items-center -translate-x-1/2"
-		style={{ left: gateXPx(gate), top: TRACK_Y - 4 }}
+		className="absolute -translate-x-1/2"
+		style={{ left: gateXPx(gate), top: TRACK_Y }}
 	>
-		<div className="w-px h-3 bg-zinc-500" />
-		<span className="mt-1 text-sm text-zinc-300 whitespace-nowrap">
+		{/* tick on the track line */}
+		<div className="w-px h-2 bg-zinc-500 mx-auto" />
+		{/* label sits below difficulty blocks (which end at TRACK_Y + 20) */}
+		<span
+			className="absolute -translate-x-1/2 text-[10px] text-zinc-500 whitespace-nowrap"
+			style={{ top: 24, left: 0 }}
+		>
 			Gate {gate}
 		</span>
 	</div>
