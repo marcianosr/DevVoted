@@ -117,6 +117,20 @@ export const configs: Config[] = [
 		coverageBonus: 2,
 		categoryWeightBonus: 0.3,
 	},
+	{
+		id: ".rb-config",
+		name: ".rb",
+		image: "/configs/ruby.png",
+		cost: STORAGE_UNITS.MB / 4,
+		description:
+			"+2% coverage on category Ruby polls. Slightly boosts the probability of Ruby polls appearing.",
+		rarity: "common",
+		effect: ["streakAmp"],
+		targetCategories: ["ruby"],
+		priority: 100,
+		coverageBonus: 2,
+		categoryWeightBonus: 0.3,
+	},
 	// {
 	// 	id: ".py-config",
 	// 	name: ".py",
@@ -425,6 +439,19 @@ export const configs: Config[] = [
 		priority: 100,
 		categoryWeightBonus: 1.1,
 		targetCategories: ["java"],
+	},
+	{
+		id: "gemfile-config",
+		name: "Gemfile",
+		image: "/configs/gemfile.png",
+		cost: (STORAGE_UNITS.MB / 16) * 1.5,
+		description:
+			"Significantly boosts the probability of Ruby polls appearing.",
+		rarity: "uncommon",
+		effect: [],
+		priority: 100,
+		categoryWeightBonus: 1.1,
+		targetCategories: ["ruby"],
 	},
 	// {
 	// 	id: "virtual-env-config",
