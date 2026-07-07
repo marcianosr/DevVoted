@@ -25,7 +25,7 @@ export type GatePathmapProps = {
 	players: GatePathmapPlayer[];
 };
 
-const GATE_W = 140; // px per gate segment
+const GATE_W = 200; // px per gate segment
 const TRACK_OFFSET_X = 60; // px from left edge to gate 1 center
 const UNCHARTED_EXTRA = GATE_W * 1.5; // px of uncharted zone past leaderGate
 const TRACK_Y = 96; // px from container top to track line (room for 3 stacked avatars)
@@ -66,6 +66,23 @@ const GateMarker = ({ gate }: GateMarkerProps) => (
 	</div>
 );
 
+type PollMarkerProps = { gate: number; poll: number; windowSize: number };
+
+const PollMarker = ({ gate, poll, windowSize }: PollMarkerProps) => {
+	const x = gateXPx(gate) + (poll / windowSize) * GATE_W;
+	return (
+		<div
+			className="absolute -translate-x-1/2"
+			style={{ left: x, top: TRACK_Y - 2 }}
+		>
+			<div className="w-px h-1.5 bg-zinc-700 mx-auto" />
+			<span className="block text-center text-[8px] text-zinc-600 leading-none mt-0.5">
+				{poll}
+			</span>
+		</div>
+	);
+};
+
 type PlayerPinProps = {
 	players: GatePathmapPlayer[];
 	xPx: number;
@@ -74,7 +91,6 @@ type PlayerPinProps = {
 const PlayerPin = ({ players, xPx }: PlayerPinProps) => {
 	const visible = players.slice(0, MAX_STACK);
 	const overflow = players.length - visible.length;
-	const primary = players.find((p) => p.isViewer) ?? players[0];
 
 	return (
 		<div
@@ -108,22 +124,6 @@ const PlayerPin = ({ players, xPx }: PlayerPinProps) => {
 					</div>
 				);
 			})}
-
-			{/* Difficulty blocks for the primary player */}
-			<div
-				className="absolute -translate-x-1/2 flex flex-col items-center gap-0.5"
-				style={{ top: TRACK_Y + 8, left: 0 }}
-			>
-				<div className="flex gap-0.5">
-					{primary.slots.map((d, i) => (
-						<div
-							key={i}
-							className={clsx("w-3 h-3 rounded-sm", DIFFICULTY_BG[d])}
-							title={DIFFICULTY_LABEL[d]}
-						/>
-					))}
-				</div>
-			</div>
 		</div>
 	);
 };
@@ -214,6 +214,11 @@ export const GatePathmap = ({ players }: GatePathmapProps) => {
 		scrollRef.current?.scrollBy({ left: SCROLL_BY, behavior: "smooth" });
 	}, []);
 
+	const windowSize = Math.max(
+		...players.map((p) => p.windowSize).filter((w) => w > 0),
+		1
+	);
+
 	// Group by exact position: same gate + same poll = stacked avatars
 	const grouped = players.reduce<Map<string, GatePathmapPlayer[]>>(
 		(acc, player) => {
@@ -287,6 +292,22 @@ export const GatePathmap = ({ players }: GatePathmapProps) => {
 						{Array.from({ length: leaderGate }, (_, i) => i + 1).map((gate) => (
 							<GateMarker key={gate} gate={gate} />
 						))}
+
+						{/* Poll position markers within each gate */}
+						{windowSize > 1 &&
+							Array.from({ length: leaderGate }, (_, i) => i + 1).flatMap(
+								(gate) =>
+									Array.from({ length: windowSize - 1 }, (_, j) => j + 1).map(
+										(poll) => (
+											<PollMarker
+												key={`${gate}_${poll}`}
+												gate={gate}
+												poll={poll}
+												windowSize={windowSize}
+											/>
+										)
+									)
+							)}
 
 						{/* Player pins */}
 						{Array.from(grouped.entries()).map(([key, group]) => (
