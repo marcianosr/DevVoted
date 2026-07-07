@@ -51,6 +51,26 @@ jobs:
           git commit -m "chore: release v${VERSION}"
           git push
 
+      - name: Publish GitHub release
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          # Extract this version's section from CHANGELOG.md into a file. Using a file
+          # (not an inline --notes string) keeps changelog backticks from being run as
+          # shell command substitution.
+          awk -v ver="$VERSION" '
+            $0 ~ "^## " ver " " { collecting = 1; next }
+            collecting && /^## / { exit }
+            collecting { print }
+          ' CHANGELOG.md > release-notes.md
+          gh release create "v${VERSION}" \
+            --target main \
+            --title "v${VERSION}" \
+            --latest \
+            --notes-file release-notes.md
+
       # A push authored by GITHUB_TOKEN does not trigger other workflows, so the
       # migration deploy is dispatched explicitly rather than relying on the push.
       - name: Trigger production deploy
