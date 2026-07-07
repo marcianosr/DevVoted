@@ -1,12 +1,11 @@
 import { eq, sql } from "drizzle-orm";
 
 import { runsTable, runCategoryCoverageTable } from "@/src/database/schema";
+import { SKIP_SHOP_REWARD } from "~/config/economy";
 import { db } from "~/database/db";
 
 import { runFactory } from "../models/run.model";
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage.model";
-
-const SKIP_SHOP_REWARD = 64 * 1024; // 64KB in bytes
 
 export const skipShop = async (
 	runId: number,

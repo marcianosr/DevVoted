@@ -2,13 +2,12 @@
  * Pure config selection logic - no database dependencies.
  * Safe to import from routes and components.
  */
+import { DEFAULT_OFFERED_CONFIGS_COUNT } from "~/config/economy";
 import { configs } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
 import { withDiscount } from "~/domains/economy/services/discount.service";
 
 type ConfigRarity = Config["rarity"];
-
-const DEFAULT_OFFERED_CONFIGS_COUNT = 3;
 
 /**
  * Rarity weights determine the relative probability of each rarity tier appearing.

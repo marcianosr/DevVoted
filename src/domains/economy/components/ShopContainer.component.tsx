@@ -19,7 +19,6 @@ import {
 } from "~/domains/economy/services/configManager.service";
 import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
-import { skipShopServerFn } from "~/domains/runs/api/runs";
 import { Run } from "~/domains/runs/models/run.model";
 import { formatStorage } from "~/lib/storage";
 import { PrimaryButton } from "~/ui/PrimaryButton.component";
@@ -28,14 +27,11 @@ type ShopContainerProps = {
 	activeRun: Run;
 	offeredConfigs: (Config & { originalCost?: number })[];
 	nextOfferedConfigs: (Config & { originalCost?: number })[];
-	storageBonus?: number;
 	reductionCost: number;
 	isOpen: boolean;
 	showNextConfigs?: boolean;
 	date: string;
 };
-
-const SKIP_REWARD_KB = 65536; // 64KB
 
 const ShopContainer = ({
 	activeRun,
@@ -43,7 +39,6 @@ const ShopContainer = ({
 	nextOfferedConfigs,
 	reductionCost,
 	isOpen,
-	storageBonus,
 	date,
 }: ShopContainerProps) => {
 	const router = useRouter();
@@ -58,8 +53,6 @@ const ShopContainer = ({
 
 	const rerollCost = calculateRerollCost(activeRun.rerolls);
 	const canReroll = storageAvailable >= rerollCost;
-	const hasSkippedShopToday = activeRun.shopSkippedDate === today;
-	const hasInteractedWithShopToday = activeRun.shopInteractedDate === today;
 
 	const [pendingVariantConfig, setPendingVariantConfig] =
 		useState<Config | null>(null);
@@ -107,20 +100,6 @@ const ShopContainer = ({
 	const onReroll = () =>
 		onRerollMutation.mutate({ data: { runId: activeRun.id, date: today } });
 
-	const skipShopMutation = useMutation({
-		mutationFn: skipShopServerFn,
-		onSuccess: () => router.invalidate(),
-	});
-
-	const onSkipShop = () =>
-		skipShopMutation.mutate({
-			data: {
-				runId: activeRun.id,
-				date: today,
-				storageBonus: storageBonus ?? 0,
-			},
-		});
-
 	return (
 		<section aria-labelledby="shop-heading">
 			<header className="mb-6">
@@ -165,43 +144,12 @@ const ShopContainer = ({
 							Cost: {formatStorage(rerollCost)}
 						</small>
 					</div>
-					<div className="flex flex-col">
-						<PrimaryButton
-							size="small"
-							disabled={
-								!isOpen ||
-								hasSkippedShopToday ||
-								hasInteractedWithShopToday ||
-								skipShopMutation.isPending
-							}
-							onClick={onSkipShop}
-						>
-							{skipShopMutation.isPending ? "Skipping..." : "Skip shop"}
-						</PrimaryButton>
-						<small className="text-sm mt-2">
-							Gain{" "}
-							<span className="text-theme">
-								+{formatStorage(SKIP_REWARD_KB + (storageBonus ?? 0))}
-							</span>{" "}
-							storage
-							{(storageBonus ?? 0) > 0 && (
-								<span className="text-green-400">
-									{" "}
-									(+{formatStorage(storageBonus ?? 0)} bonus)
-								</span>
-							)}
-						</small>
-					</div>
 					{reductionCost > 0 && (
 						<p className="text-green-600 font-semibold text-sm mt-1 self-center">
 							{reductionCost * 100}% discount active!
 						</p>
 					)}
 				</div>
-				<p className="text-white text-sm">
-					Left-over storage can be accumulated and saved to your profile when
-					your run is over — spend it on a cool border for instance!
-				</p>
 			</div>
 
 			<div className="mt-8 flex flex-col gap-8 md:flex-row md:items-start">

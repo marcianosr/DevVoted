@@ -1,5 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
+import {
+	createFileRoute,
+	useNavigate,
+	useRouter,
+} from "@tanstack/react-router";
 
+import { SKIP_SHOP_REWARD } from "~/config/economy";
 import {
 	getNextShopOfferingsServerFn,
 	getShopOfferingsServerFn,
@@ -7,7 +13,9 @@ import {
 import ShopContainer from "~/domains/economy/components/ShopContainer.component";
 import { applyEffects } from "~/domains/economy/data/configs";
 import { getDailyPoll } from "~/domains/polls/api/polls";
+import { skipShopServerFn } from "~/domains/runs/api/runs";
 import { getTodayDateString } from "~/lib/dateUtils";
+import { formatStorage } from "~/lib/storage";
 import { Screen } from "~/ui/Screen.ui";
 
 export const Route = createFileRoute("/_authed/shop")({
@@ -71,6 +79,52 @@ function ShopRoute() {
 		today,
 	} = Route.useLoaderData();
 	const navigate = useNavigate();
+	const router = useRouter();
+
+	const isOpen = hasAnswered && activeRun.shopSkippedDate !== today;
+	const hasSkippedShopToday = activeRun.shopSkippedDate === today;
+	const hasInteractedWithShopToday = activeRun.shopInteractedDate === today;
+
+	const skipShopMutation = useMutation({
+		mutationFn: skipShopServerFn,
+		onSuccess: () => {
+			router.invalidate();
+			navigate({ to: "/community" });
+		},
+	});
+
+	const onSkipShop = () =>
+		skipShopMutation.mutate({
+			data: {
+				runId: activeRun.id,
+				date: today,
+				storageBonus: storageBonus ?? 0,
+			},
+		});
+
+	const canSkip = isOpen && !hasSkippedShopToday && !hasInteractedWithShopToday;
+
+	const rightAction = canSkip
+		? {
+				label: skipShopMutation.isPending
+					? "Skipping..."
+					: "Skip shop and go to community",
+				onClick: onSkipShop,
+				disabled: skipShopMutation.isPending,
+				hint: (
+					<>
+						Gain{" "}
+						<span className="text-theme">
+							+{formatStorage(SKIP_SHOP_REWARD + (storageBonus ?? 0))}
+						</span>{" "}
+						storage
+					</>
+				),
+			}
+		: {
+				label: "Go to community →",
+				onClick: () => navigate({ to: "/community" }),
+			};
 
 	return (
 		<Screen
@@ -81,18 +135,14 @@ function ShopRoute() {
 				label: "← Back to pipelines",
 				onClick: () => navigate({ to: "/pipelines" }),
 			}}
-			rightAction={{
-				label: "Go to community →",
-				onClick: () => navigate({ to: "/community" }),
-			}}
+			rightAction={rightAction}
 		>
 			<ShopContainer
 				activeRun={activeRun}
 				offeredConfigs={offeredConfigs}
 				nextOfferedConfigs={nextOfferedConfigs}
 				reductionCost={reductionCost}
-				isOpen={hasAnswered && activeRun.shopSkippedDate !== today}
-				storageBonus={storageBonus}
+				isOpen={isOpen}
 				date={today}
 			/>
 		</Screen>
