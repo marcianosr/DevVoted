@@ -6,3 +6,17 @@ export const DIFFICULTY_CLASSES: Record<GateDifficulty, string> = {
 	high: "text-orange-400 border-orange-400",
 	critical: "text-red-500 border-red-500",
 };
+
+export const DIFFICULTY_BG: Record<GateDifficulty, string> = {
+	low: "bg-blue-400",
+	medium: "bg-green-400",
+	high: "bg-orange-400",
+	critical: "bg-red-500",
+};
+
+export const DIFFICULTY_LABEL: Record<GateDifficulty, string> = {
+	low: "Low",
+	medium: "Normal",
+	high: "Hard",
+	critical: "Critical",
+};

@@ -131,3 +131,14 @@ export const createCategoryLeaderboardEntries = async (
 
 	return leaderboardEntries;
 };
+
+export const getAllTimeHighestGate = async (): Promise<number> => {
+	const result = await db
+		.select({
+			maxGate: sql<number>`coalesce(max(jsonb_array_length(${runsTable.pipeline_slot_snapshots}::jsonb)), 0)`,
+		})
+		.from(runsTable)
+		.where(eq(runsTable.status, "finished"));
+
+	return result[0]?.maxGate ?? 1;
+};

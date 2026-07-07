@@ -15,7 +15,10 @@ import {
 	PRE_RUN_SLOT_DIFFICULTY,
 	type StaticGateTypeId,
 } from "~/domains/runs/data/pipelineSlots";
-import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
+import {
+	DIFFICULTY_CLASSES,
+	DIFFICULTY_LABEL,
+} from "~/domains/runs/utils/difficultyStyles";
 import { formatStorage } from "~/lib/storage";
 import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
 import { PrimaryButton } from "~/ui/PrimaryButton.component";
@@ -148,13 +151,6 @@ const SLOT_META: Record<
 		label: "Cold Start",
 		description: "First poll in gate must be correct",
 	},
-};
-
-const DIFFICULTY_LABEL: Record<string, string> = {
-	low: "low risk",
-	medium: "medium risk",
-	high: "high risk",
-	critical: "critical risk",
 };
 
 const PipelineCustomizationLoadout = ({
