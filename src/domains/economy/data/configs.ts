@@ -189,17 +189,21 @@ export const configs: Config[] = [
 		coverageBonus: 0.5,
 		targetCategories: [],
 	},
-	{
-		id: "try-catch-config",
-		name: "Try/Catch",
-		image: "/configs/try-catch.png",
-		cost: (STORAGE_UNITS.MB / 2) * 1.5,
-		description:
-			"Saves your run when you have at least 80% of the coverage threshold.",
-		rarity: "rare",
-		effect: ["checkCoverageWithThreshold"],
-		priority: 100,
-	},
+	// TEMPORARILY DISABLED: incompatible with the current pipeline model.
+	// protection.tryCatch only fires on a pipeline gate failure
+	// (see resolveRunState in turn.service.ts), which the pipeline system no
+	// longer routes through as expected. Re-enable once the config system is reworked.
+	// {
+	// 	id: "try-catch-config",
+	// 	name: "Try/Catch",
+	// 	image: "/configs/try-catch.png",
+	// 	cost: (STORAGE_UNITS.MB / 2) * 1.5,
+	// 	description:
+	// 		"Saves your run when you have at least 80% of the coverage threshold.",
+	// 	rarity: "rare",
+	// 	effect: ["checkCoverageWithThreshold"],
+	// 	priority: 100,
+	// },
 	{
 		id: "math-random-config",
 		name: "Math Random",

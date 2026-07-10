@@ -1096,7 +1096,9 @@ describe("configs", () => {
 	});
 
 	describe("checkCoverageWithThreshold effect", () => {
-		it("returns tryCatch true whenever config is active", () => {
+		// Parked while try-catch-config is disabled in configs.ts (incompatible
+		// with the current pipeline model). Re-enable with the config.
+		it.todo("returns tryCatch true whenever config is active", () => {
 			const result = applyEffects(
 				{
 					poll: createMockPoll({ categoryCode: "js" }),
