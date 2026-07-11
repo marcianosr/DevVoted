@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
@@ -28,6 +28,17 @@ import type {
 	PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { getCategoryMetadata } from "~/domains/shared/categories";
+import {
+	nextSnippetProgress,
+	SNIPPET_MILESTONE_STEP,
+} from "~/domains/runs/utils/snippetEarning";
+import {
+	snippetForMilestone,
+	snippetTypeByIndex,
+	type SnippetEffectKind,
+	type SnippetType,
+} from "~/domains/polls/data/snippets";
+import { SnippetBar } from "~/ui/polls/SnippetBar.ui";
 
 const getRandomAnswer = createServerFn({ method: "GET" })
 	.validator(z.object({ pollId: z.number().int().positive() }))
@@ -133,8 +144,16 @@ const DailyPollContainer = ({
 		enabled: showWhoPickedWhat && !hasAnswered,
 	});
 
+	// Snippet-prototype state the answer mutation reads (full block further down).
+	const [earnMessage, setEarnMessage] = useState<string | null>(null);
+	const [tryCatchArmed, setTryCatchArmed] = useState(false);
+	const armedTryCatchRef = useRef(false);
+
 	const mutation = useMutation({
-		mutationFn: postPollOptions,
+		mutationFn: (vars: Parameters<typeof postPollOptions>[0]) =>
+			postPollOptions({
+				data: { ...vars.data, armedTryCatch: armedTryCatchRef.current },
+			}),
 
 		onSuccess: async (response) => {
 			if (response.success) {
@@ -144,6 +163,19 @@ const DailyPollContainer = ({
 
 				if (response.data.pipelineEvaluation) {
 					setLastPipelineEvaluation(response.data.pipelineEvaluation);
+				}
+
+				if (response.data.tryCatchUsed) {
+					armedTryCatchRef.current = false;
+					setTryCatchArmed(false);
+					setEarnMessage("try/catch caught a gate failure — run survives!");
+				} else if (
+					response.data.pipelineEvaluation &&
+					armedTryCatchRef.current
+				) {
+					armedTryCatchRef.current = false;
+					setTryCatchArmed(false);
+					setEarnMessage("try/catch went unused this window — spent.");
 				}
 
 				if (response.data.runEnded) {
@@ -187,6 +219,109 @@ const DailyPollContainer = ({
 		: undefined;
 	const isInPostVictoryMode = activeRun.victoryAchievedAt !== null;
 
+	// --- Snippet prototype (Model A) -----------------------------------------
+	// Earn typed snippets by crossing coverage milestones; spend them on a poll.
+	// State is in-memory (survives answer refreshes, resets on hard reload) —
+	// deliberately no persistence for this slice.
+	const progress = nextSnippetProgress(activeRun.categoryCoverage);
+	const [heldSnippets, setHeldSnippets] = useState<SnippetType[]>([]);
+	// Snippets spent on the current poll, and which poll they apply to.
+	const [spentPollId, setSpentPollId] = useState<number | null>(null);
+	const [spentEffects, setSpentEffects] = useState<SnippetEffectKind[]>([]);
+
+	// Debug "+1": grant a rotating snippet without gaining coverage first.
+	const grantedCountRef = useRef(0);
+	const grantDebugSnippet = () => {
+		const snippet = snippetTypeByIndex(grantedCountRef.current);
+		grantedCountRef.current += 1;
+		setHeldSnippets((current) => [...current, snippet]);
+	};
+
+	const milestoneCount = (coverage: number) =>
+		Math.floor(Math.max(0, coverage) / SNIPPET_MILESTONE_STEP);
+
+	// Per-category milestones already reached, so only FUTURE crossings grant
+	// snippets (avoids flooding the belt on a mid-run reload).
+	const prevMilestonesRef = useRef<Record<string, number>>(
+		Object.fromEntries(
+			activeRun.categoryCoverage.map((category) => [
+				category.categoryCode,
+				milestoneCount(category.currentCoverage),
+			])
+		)
+	);
+
+	// When a category crosses another milestone, grant the snippet for that
+	// category + tier — deep tiers (75%+) yield the category's signature snippet.
+	useEffect(() => {
+		const earned: SnippetType[] = [];
+		activeRun.categoryCoverage.forEach((category) => {
+			const current = milestoneCount(category.currentCoverage);
+			const prev = prevMilestonesRef.current[category.categoryCode] ?? 0;
+			for (let tier = prev + 1; tier <= current; tier += 1) {
+				earned.push(snippetForMilestone(category.categoryCode, tier));
+			}
+			prevMilestonesRef.current[category.categoryCode] = current;
+		});
+		if (earned.length === 0) return;
+		setHeldSnippets((current) => [...current, ...earned]);
+		const last = earned[earned.length - 1];
+		setEarnMessage(`Earned ${last.name} — coverage milestone reached.`);
+		const timer = setTimeout(() => setEarnMessage(null), 4000);
+		return () => clearTimeout(timer);
+	}, [activeRun.categoryCoverage]);
+
+	// Effects active on THIS poll (reset when the poll changes or after answering).
+	const activeEffects =
+		spentPollId === poll.id && !hasAnswered ? spentEffects : [];
+	const wrongOptionIds = options
+		.filter((option) => !option.correct)
+		.map((option) => option.id);
+	const removesTwo = activeEffects.includes("removeTwoWrong");
+	const removesAll = activeEffects.includes("removeAllWrong");
+	const removedOptionIds = removesAll
+		? wrongOptionIds
+		: removesTwo
+			? wrongOptionIds.slice(0, 2)
+			: [];
+	const showsCorrectCount = activeEffects.includes("revealCorrectCount");
+
+	const effectForForm: ApplyEffects = {
+		...configEffects,
+		showCorrectCount: configEffects.showCorrectCount || showsCorrectCount,
+		renderProps: {
+			...configEffects.renderProps,
+			disabledOptionIds: [
+				...(configEffects.renderProps.disabledOptionIds ?? []),
+				...removedOptionIds,
+			],
+		},
+	};
+
+	const removalForForm: RemovedByConfig | undefined = removedOptionIds.length
+		? {
+				name: "Snippet",
+				rarity: "rare",
+				description: "You spent a snippet to remove wrong answers.",
+			}
+		: removalConfig;
+
+	const spendSnippet = (index: number) => {
+		const snippet = heldSnippets[index];
+		if (!snippet || hasAnswered) return;
+		if (snippet.effect === "armTryCatch") {
+			armedTryCatchRef.current = true;
+			setTryCatchArmed(true);
+			setHeldSnippets((current) => current.filter((_, i) => i !== index));
+			return;
+		}
+		const carried = spentPollId === poll.id ? spentEffects : [];
+		setSpentPollId(poll.id);
+		setSpentEffects([...carried, snippet.effect]);
+		setHeldSnippets((current) => current.filter((_, i) => i !== index));
+	};
+	// -------------------------------------------------------------------------
+
 	const adminLink = isAdmin && (
 		<div className="mb-4 pb-2 border-b border-gray-700">
 			<Link
@@ -229,6 +364,19 @@ const DailyPollContainer = ({
 				)}
 				{adminLink}
 				{header}
+				<SnippetBar
+					held={heldSnippets}
+					canSpend={!hasAnswered}
+					onSpend={spendSnippet}
+					onDebugEarn={grantDebugSnippet}
+					earnMessage={earnMessage}
+					tryCatchArmed={tryCatchArmed}
+					progress={{
+						toGo: progress.toGo,
+						label: progress.categoryCode,
+						pct: progress.pct,
+					}}
+				/>
 				<div className="mt-4 mb-4">
 					{hasAnswered ? (
 						<PollResultsSection
@@ -244,10 +392,10 @@ const DailyPollContainer = ({
 							poll={poll}
 							options={options}
 							hasAnswered={hasAnswered}
-							effect={configEffects}
+							effect={effectForForm}
 							selectedOptions={selectedOptions}
 							activeConfigs={activePollConfigs}
-							removalConfig={removalConfig}
+							removalConfig={removalForForm}
 							mutation={mutation}
 							randomAnswer={randomAnswer ?? null}
 						/>

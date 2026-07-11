@@ -106,6 +106,7 @@ export const postPollOptionsHandler = async ({
 			selectedOptionIds,
 			correctOptionIds,
 			outcome,
+			tryCatchUsed,
 			pipelineEvaluation,
 			evaluationContext,
 			upgradeCards,
@@ -113,6 +114,7 @@ export const postPollOptionsHandler = async ({
 			pollId: validatedData.pollId,
 			userId: validatedData.userId,
 			selectedOptionIds: validatedData.selectedOptionIds,
+			armedTryCatch: validatedData.armedTryCatch,
 		});
 
 		if (runId) {
@@ -125,6 +127,7 @@ export const postPollOptionsHandler = async ({
 			correctOptions: correctOptionIds,
 			isCorrect: outcome === "full",
 			runEnded,
+			tryCatchUsed,
 			breakdown,
 			newTotalCoverage,
 			pipelineEvaluation,
@@ -181,13 +184,14 @@ type ValidatedPollSubmission = {
 	selectedOptions: string[];
 	userId: string;
 	selectedOptionIds: number[];
+	armedTryCatch: boolean;
 };
 
 const validatePollSubmission = async (
 	data: PollSubmissionInput
 ): Promise<ValidatedPollSubmission> => {
 	const validatedData = pollSubmissionSchema.parse(data);
-	const { pollId, selectedOptions, userId } = validatedData;
+	const { pollId, selectedOptions, userId, armedTryCatch } = validatedData;
 
 	const hasAnswered = await hasUserAnsweredPoll(pollId, userId);
 	if (hasAnswered) {
@@ -199,5 +203,6 @@ const validatePollSubmission = async (
 		selectedOptions,
 		userId,
 		selectedOptionIds: selectedOptions.map(Number),
+		armedTryCatch: armedTryCatch ?? false,
 	};
 };

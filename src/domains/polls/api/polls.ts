@@ -137,6 +137,7 @@ export const postPollOptions = createServerFn({ method: "POST" })
 		z.object({
 			pollId: z.number().int().positive(),
 			selectedOptions: z.array(z.string()).min(1),
+			armedTryCatch: z.boolean().optional(),
 		})
 	)
 	.handler(async ({ data }) => {

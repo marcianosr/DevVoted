@@ -9,6 +9,8 @@ export const pollSubmissionSchema = z.object({
 		.array(z.string().min(1, "Option ID cannot be empty"))
 		.min(1, "At least one option must be selected"),
 	userId: z.string().uuid("User ID must be a valid UUID"),
+	// Snippet prototype: a try/catch snippet armed by the player for this window.
+	armedTryCatch: z.boolean().optional(),
 });
 
 // Poll ID parameter validation

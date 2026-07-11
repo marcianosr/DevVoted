@@ -58,6 +58,8 @@ export type PollAnswerInput = {
 	pollId: number;
 	userId: string;
 	selectedOptionIds: number[];
+	// Snippet prototype: player armed a try/catch for this window.
+	armedTryCatch?: boolean;
 };
 
 // ─── Stage types ─────────────────────────────────────────────────────────────
@@ -94,6 +96,7 @@ type ResolveRunStateParams = PollContext & {
 	activeRunId: number;
 	updatedRun: Run;
 	pipelineEvaluation: PipelineEvaluation | null;
+	armedTryCatch: boolean;
 };
 
 type RunStateResult = {
@@ -150,6 +153,7 @@ const resolveRunState = async ({
 	poll,
 	options,
 	pipelineEvaluation,
+	armedTryCatch,
 }: ResolveRunStateParams): Promise<RunStateResult> => {
 	const { protection, resetRebuild } = applyEffects(
 		{ poll, options, hasAnswered: true, run: updatedRun },
@@ -168,7 +172,8 @@ const resolveRunState = async ({
 		return { runEnded: false, tryCatchUsed: false };
 	}
 
-	if (protection.tryCatch) {
+	// The catch: a config's protection OR a player-armed try/catch snippet.
+	if (protection.tryCatch || armedTryCatch) {
 		return { runEnded: false, tryCatchUsed: true };
 	}
 
@@ -269,7 +274,7 @@ const evaluatePipelineStage = async ({
 export const processTurn = async (
 	params: PollAnswerInput
 ): Promise<PollAnswerResult> => {
-	const { pollId, userId, selectedOptionIds } = params;
+	const { pollId, userId, selectedOptionIds, armedTryCatch = false } = params;
 
 	const { correctOptionIds, outcome, correctnessFactor, poll, options } =
 		await handleUserSelectedOptionsByPollType({ pollId, selectedOptionIds });
@@ -324,6 +329,7 @@ export const processTurn = async (
 		poll,
 		options,
 		pipelineEvaluation,
+		armedTryCatch,
 	});
 
 	return {
