@@ -1,4 +1,5 @@
-import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/domains/shared/categories";
+import { getCategoryMetadata } from "~/domains/shared/categories";
 
 export type ConfigFamily =
 	"focus" | "defense" | "risk" | "amplify" | "economy" | "check";
@@ -32,6 +33,9 @@ export const focusCoverageMultiplier = (level: number): number =>
 	1 + 0.5 * level;
 
 export const focusDemand = (config: Config): number => config.level ?? 1;
+
+/** Storage (KB) to level a focus config up from its current level. Climbs so deeper mastery costs more. */
+export const upgradeCost = (currentLevel: number): number => 60 * currentLevel;
 
 /** The config's description at its *current* level. Focus configs scale with level; others are static. */
 export const describeConfig = (config: Config): string => {

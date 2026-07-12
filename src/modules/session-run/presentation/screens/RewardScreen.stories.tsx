@@ -14,6 +14,10 @@ type Story = StoryObj<typeof RewardScreen>;
 export const Default: Story = {
 	args: {
 		storage: 440,
+		demands: ["1 correct answer", "+4% coverage this window"],
+		rewardMultiplier: 1.5,
+		configs: [CONFIGS.js, CONFIGS.coverageGain],
+		newConfigIds: ["coverage-gain"],
 		draftOptions: [CONFIGS.eslint, CONFIGS.copilot, CONFIGS.speed],
 		onDraft: () => {},
 		rebuildCost: 1,
@@ -24,5 +28,6 @@ export const Default: Story = {
 		onAddSlot: () => {},
 		upgradeable: [CONFIGS.js],
 		onUpgrade: () => {},
+		onNext: () => {},
 	},
 };

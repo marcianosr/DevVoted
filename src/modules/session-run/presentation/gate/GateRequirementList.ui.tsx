@@ -3,38 +3,82 @@ import type {
 	CheckStatus,
 } from "~/modules/session-run/configs/effect.model";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
+import { Title } from "~/ui/typography/Title.component";
 
-/** GitHub-style check indicators: running = orange dot, skipped = grey, success = green, failed = cross. */
-const STATE_STYLE: Record<CheckState, { icon: string; className: string }> = {
-	running: { icon: "●", className: "text-vermillion" },
-	skipped: { icon: "⊘", className: "text-pewter" },
-	success: { icon: "✓", className: "text-viridian" },
-	failed: { icon: "✕", className: "text-cinnabar" },
+const STATE_COLOR: Record<CheckState, string> = {
+	running: "bg-vermillion",
+	skipped: "bg-pewter",
+	success: "bg-viridian",
+	failed: "bg-cinnabar",
 };
 
+const STATE_TEXT: Record<CheckState, string> = {
+	running: "text-vermillion",
+	skipped: "text-pewter",
+	success: "text-viridian",
+	failed: "text-cinnabar",
+};
+
+type GateRequirementListProps = {
+	checks: readonly CheckStatus[];
+	gateNumber: number;
+	pollsToGate: number;
+	gateReward: number;
+};
+
+/** The gate as a CI-Pipelines panel: a header summary + one bar-tracked check per row. */
 export const GateRequirementList = ({
 	checks,
-}: {
-	checks: readonly CheckStatus[];
-}) => (
-	<div className="rounded-lg bg-zinc-900 p-4">
-		<Subtitle className="mb-2">This gate needs (all must pass)</Subtitle>
-		<div className="flex flex-col gap-1">
+	gateNumber,
+	pollsToGate,
+	gateReward,
+}: GateRequirementListProps) => (
+	<div className="overflow-hidden rounded-xl border border-zinc-700">
+		<header className="flex flex-col gap-1 border-b border-zinc-700 p-4">
+			<div className="flex items-baseline justify-between">
+				<Title as="h2">Pipelines</Title>
+				<Subtitle>Gate #{gateNumber}</Subtitle>
+			</div>
+			<Subtitle>
+				{pollsToGate} poll{pollsToGate === 1 ? "" : "s"} left · {checks.length}{" "}
+				active check{checks.length === 1 ? "" : "s"} · all must pass
+			</Subtitle>
+			<Subtitle>
+				Total reward if all pass:{" "}
+				<span className="font-bold text-viridian">
+					+{gateReward} KB storage
+				</span>
+			</Subtitle>
+		</header>
+		<ul>
 			{checks.map((check) => {
-				const style = STATE_STYLE[check.state];
+				const pct =
+					check.target > 0
+						? Math.min(100, Math.round((check.current / check.target) * 100))
+						: 0;
 				return (
-					<div
+					<li
 						key={check.label}
-						className="flex items-center justify-between text-sm"
+						className="border-b border-zinc-800 p-4 last:border-b-0"
 					>
-						<span className="text-white">
-							<span className={style.className}>{style.icon}</span>{" "}
-							{check.label}
-						</span>
-						<span className={style.className}>{check.progress}</span>
-					</div>
+						<div className="mb-2 flex items-center justify-between">
+							<span className="flex items-center gap-2 font-bold text-cerulean">
+								<span
+									className={`inline-block h-2.5 w-2.5 rounded-full ${STATE_COLOR[check.state]}`}
+								/>
+								{check.label}
+							</span>
+							<span className={STATE_TEXT[check.state]}>{check.progress}</span>
+						</div>
+						<div className="h-2 overflow-hidden rounded bg-zinc-800">
+							<div
+								className={`h-full rounded ${STATE_COLOR[check.state]}`}
+								style={{ width: `${pct}%` }}
+							/>
+						</div>
+					</li>
 				);
 			})}
-		</div>
+		</ul>
 	</div>
 );

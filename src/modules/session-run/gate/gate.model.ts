@@ -35,6 +35,8 @@ export const checkStatuses = (
 		{
 			label: "Correct",
 			progress: `${window.correct}/${baseline}`,
+			current: window.correct,
+			target: baseline,
 			state: checkState(window.correct >= baseline, window),
 		},
 		...contributed,

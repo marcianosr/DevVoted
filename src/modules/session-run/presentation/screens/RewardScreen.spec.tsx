@@ -6,6 +6,10 @@ import { RewardScreen } from "./RewardScreen.ui";
 
 const base = {
 	storage: 440,
+	demands: ["1 correct answer"],
+	rewardMultiplier: 1,
+	configs: [],
+	newConfigIds: [],
 	draftOptions: [CONFIGS.eslint, CONFIGS.speed],
 	onDraft: vi.fn(),
 	rebuildCost: 1,
@@ -16,13 +20,14 @@ const base = {
 	onAddSlot: vi.fn(),
 	upgradeable: [CONFIGS.js],
 	onUpgrade: vi.fn(),
+	onNext: vi.fn(),
 };
 
 describe("RewardScreen", () => {
 	it("renders the reward header and draft options", () => {
 		render(<RewardScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: /take one reward/ })
+			screen.getByRole("heading", { name: /build your pipeline/ })
 		).toBeInTheDocument();
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
@@ -32,5 +37,12 @@ describe("RewardScreen", () => {
 		render(<RewardScreen {...base} onDraft={onDraft} />);
 		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
 		expect(onDraft).toHaveBeenCalledWith("eslint");
+	});
+
+	it("advances only on the explicit Next button", () => {
+		const onNext = vi.fn();
+		render(<RewardScreen {...base} onNext={onNext} />);
+		fireEvent.click(screen.getByRole("button", { name: /Next/ }));
+		expect(onNext).toHaveBeenCalledTimes(1);
 	});
 });

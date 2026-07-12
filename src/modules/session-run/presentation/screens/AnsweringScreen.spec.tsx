@@ -12,7 +12,16 @@ const base = {
 	storage: 440,
 	configs: [CONFIGS.js],
 	slots: 3,
-	checks: [{ label: "Correct", progress: "1/2", state: "running" as const }],
+	checks: [
+		{
+			label: "Correct",
+			progress: "1/2",
+			current: 1,
+			target: 2,
+			state: "running" as const,
+		},
+	],
+	gateReward: 120,
 	category: "react" as const,
 	question: "Which key?",
 	options: [

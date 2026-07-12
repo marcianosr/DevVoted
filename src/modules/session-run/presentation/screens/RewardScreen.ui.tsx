@@ -1,92 +1,132 @@
-import type { Config } from "~/modules/session-run/configs/config.model";
+import {
+	Config,
+	upgradeCost,
+} from "~/modules/session-run/configs/config.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { ConfigRow } from "../configs/ConfigRow.ui";
+import { BuildSummary } from "../gate/BuildSummary.ui";
+import { Pipeline } from "../pipeline/Pipeline.ui";
 
 type RewardScreenProps = {
 	storage: number;
+	demands: readonly string[];
+	rewardMultiplier: number;
+	configs: readonly Config[];
+	slots: number;
+	newConfigIds: readonly string[];
 	draftOptions: readonly Config[];
 	onDraft: (configId: string) => void;
 	rebuildCost: number;
 	canRebuild: boolean;
 	onRebuild: () => void;
-	slots: number;
 	canAddSlot: boolean;
 	onAddSlot: () => void;
 	upgradeable: readonly Config[];
 	onUpgrade: (configId: string) => void;
+	onNext: () => void;
 };
 
 export const RewardScreen = ({
 	storage,
+	demands,
+	rewardMultiplier,
+	configs,
+	slots,
+	newConfigIds,
 	draftOptions,
 	onDraft,
 	rebuildCost,
 	canRebuild,
 	onRebuild,
-	slots,
 	canAddSlot,
 	onAddSlot,
 	upgradeable,
 	onUpgrade,
-}: RewardScreenProps) => (
-	<div className="flex flex-col gap-6">
-		<div className="rounded-xl border border-viridian bg-viridian/10 p-6">
-			<Title>Gate cleared — take one reward</Title>
-			<Paragraph>
-				Storage: <span className="font-bold text-saffron">{storage}KB</span>
-			</Paragraph>
-		</div>
+	onNext,
+}: RewardScreenProps) => {
+	const isFull = configs.length >= slots;
+	const isOwnedFocus = (config: Config) =>
+		configs.some(
+			(equipped) => equipped.id === config.id && equipped.focusCategory
+		);
+	return (
+		<div className="flex flex-col gap-6">
+			<div className="rounded-xl border border-viridian bg-viridian/10 p-6">
+				<Title>Gate cleared — build your pipeline</Title>
+				<Paragraph>
+					Storage: <span className="font-bold text-saffron">{storage}KB</span>
+				</Paragraph>
+			</div>
 
-		<section className="flex flex-col gap-4">
-			<Title>Configure your pipeline</Title>
-			<section className="flex gap-2">
-				{draftOptions.map((config) => (
-					<ConfigRow
-						key={config.id}
-						config={config}
-						action="draft ＋"
-						onClick={() => onDraft(config.id)}
-					/>
-				))}
-			</section>
-		</section>
+			<Pipeline configs={configs} slots={slots} newConfigIds={newConfigIds} />
 
-		<section className="flex gap-2">
-			<button
-				type="button"
-				disabled={!canRebuild}
-				onClick={onRebuild}
-				className="rounded-lg border border-theme px-4 py-2 text-sm text-theme transition enabled:hover:bg-theme enabled:hover:text-black disabled:opacity-40 cursor-pointer"
-			>
-				Rebuild draft ({rebuildCost}KB)
-			</button>
-			{canAddSlot ? (
-				<button
-					type="button"
-					onClick={onAddSlot}
-					className="rounded-lg border border-theme px-3 py-2 text-sm text-theme transition hover:bg-theme hover:text-black cursor-pointer"
-				>
-					Add a slot: {slots} → {slots + 1}
-				</button>
-			) : null}
-		</section>
+			<BuildSummary demands={demands} rewardMultiplier={rewardMultiplier} />
 
-		{upgradeable.length > 0 ? (
-			<section className="flex flex-col gap-2">
-				<Paragraph>Or upgrade a Focus config</Paragraph>
-				<div className="flex flex-wrap gap-2">
-					{upgradeable.map((config) => (
+			<section className="flex flex-col gap-4">
+				<Title as="h2" className="text-xl">
+					Draft configs
+				</Title>
+				<div className="flex flex-wrap gap-3">
+					{draftOptions.map((config) => (
 						<ConfigChip
 							key={config.id}
 							config={config}
-							action={`→ L${(config.level ?? 1) + 1}`}
-							onClick={() => onUpgrade(config.id)}
+							action={isOwnedFocus(config) ? "upgrade ＋" : "draft ＋"}
+							disabled={isFull && !isOwnedFocus(config)}
+							onClick={() => onDraft(config.id)}
 						/>
 					))}
 				</div>
 			</section>
-		) : null}
-	</div>
-);
+
+			<section className="flex gap-2">
+				<button
+					type="button"
+					disabled={!canRebuild}
+					onClick={onRebuild}
+					className="cursor-pointer rounded-lg border border-theme px-4 py-2 text-sm text-theme transition enabled:hover:bg-theme enabled:hover:text-black disabled:opacity-40"
+				>
+					Rebuild draft ({rebuildCost}KB)
+				</button>
+				{canAddSlot ? (
+					<button
+						type="button"
+						onClick={onAddSlot}
+						className="cursor-pointer rounded-lg border border-theme px-3 py-2 text-sm text-theme transition hover:bg-theme hover:text-black"
+					>
+						Add a slot: {slots} → {slots + 1}
+					</button>
+				) : null}
+			</section>
+
+			{upgradeable.length > 0 ? (
+				<section className="flex flex-col gap-3">
+					<Paragraph>Or upgrade a Focus config</Paragraph>
+					<div className="flex flex-wrap gap-3">
+						{upgradeable.map((config) => {
+							const cost = upgradeCost(config.level ?? 1);
+							return (
+								<ConfigChip
+									key={config.id}
+									config={config}
+									action={`→ L${(config.level ?? 1) + 1} · ${cost}KB`}
+									disabled={storage < cost}
+									onClick={() => onUpgrade(config.id)}
+								/>
+							);
+						})}
+					</div>
+				</section>
+			) : null}
+
+			<button
+				type="button"
+				onClick={onNext}
+				className="cursor-pointer self-start rounded-lg bg-cerulean px-6 py-3 font-bold text-black transition hover:brightness-110"
+			>
+				Next →
+			</button>
+		</div>
+	);
+};

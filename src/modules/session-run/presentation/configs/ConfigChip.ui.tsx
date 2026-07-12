@@ -3,30 +3,57 @@ import {
 	describeConfig,
 } from "~/modules/session-run/configs/config.model";
 import { RARITY_COLORS } from "~/ui/rarityColors";
+import { Tooltip } from "~/ui/Tooltip.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 type ConfigChipProps = {
 	config: Config;
-	/** Trailing label, e.g. "✕" or "draft ＋". Presence of onClick makes the chip interactive. */
+	/** Trailing label, e.g. "✕", "draft ＋", "→ L2 · 60KB". */
 	action?: string;
+	/** Interactive but currently unavailable (can't afford / no room). */
+	disabled?: boolean;
 	onClick?: () => void;
 };
 
-/** A single config, styled entirely by its rarity: border + tint + text (RARITY_COLORS). */
-export const ConfigChip = ({ config, action, onClick }: ConfigChipProps) => {
+/** The one config token everywhere: rarity-styled, with a hover tooltip of its family + description. */
+export const ConfigChip = ({
+	config,
+	action,
+	disabled,
+	onClick,
+}: ConfigChipProps) => {
 	const rarity = RARITY_COLORS[config.rarity ?? "common"];
-	return (
-		<button
-			type="button"
-			title={describeConfig(config)}
-			onClick={onClick}
-			disabled={!onClick}
-			className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition enabled:hover:brightness-125 ${rarity.border} ${rarity.bg} ${rarity.text}`}
-		>
+	const level = config.level ?? 1;
+	const style = `rounded-lg border-2 px-3 py-2 text-sm font-semibold ${rarity.border} ${rarity.bg} ${rarity.text}`;
+	const body = (
+		<>
 			{config.label}
-			{(config.level ?? 1) > 1 ? (
-				<span className="ml-1 opacity-70">L{config.level}</span>
-			) : null}
+			{level > 1 ? <span className="ml-1 opacity-70">L{level}</span> : null}
 			{action ? <span className="ml-2 opacity-70">{action}</span> : null}
-		</button>
+		</>
+	);
+	const tip = (
+		<>
+			<span className="text-xs uppercase tracking-wide text-pewter">
+				{config.family}
+			</span>
+			<Paragraph className="mt-1 text-sm">{describeConfig(config)}</Paragraph>
+		</>
+	);
+	return (
+		<Tooltip content={tip}>
+			{onClick ? (
+				<button
+					type="button"
+					onClick={onClick}
+					disabled={disabled}
+					className={`${style} cursor-pointer transition enabled:hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40`}
+				>
+					{body}
+				</button>
+			) : (
+				<span className={style}>{body}</span>
+			)}
+		</Tooltip>
 	);
 };

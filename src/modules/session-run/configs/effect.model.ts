@@ -27,7 +27,11 @@ export type CheckState = "success" | "running" | "skipped" | "failed";
 
 export type CheckStatus = {
 	readonly label: string;
+	/** Human-readable progress, e.g. "8%/4%" or "not seen". */
 	readonly progress: string;
+	/** Numeric progress toward the requirement, for a progress bar. */
+	readonly current: number;
+	readonly target: number;
 	readonly state: CheckState;
 };
 
@@ -75,6 +79,8 @@ const focusEffect = (config: Config, focusCategory: CategoryCode): Effect => {
 			return {
 				label: `${config.label} mastery`,
 				progress: seen ? `${tally.correct}/${level}` : "not seen",
+				current: tally.correct,
+				target: level,
 				state: checkState(tally.correct >= level, window, !seen),
 			};
 		},
@@ -91,6 +97,8 @@ const checkEffect = (config: Config): Effect => {
 				return {
 					label: "Coverage",
 					progress: `${window.coverageGained}%/${threshold}%`,
+					current: window.coverageGained,
+					target: threshold,
 					state: checkState(window.coverageGained >= threshold, window),
 				};
 			},
@@ -102,6 +110,8 @@ const checkEffect = (config: Config): Effect => {
 			gateCheck: ({ window }) => ({
 				label: "Cold start",
 				progress: `${window.leadingCorrect}/${amount}`,
+				current: window.leadingCorrect,
+				target: amount,
 				state: checkState(window.leadingCorrect >= amount, window),
 			}),
 			demand: () => `your first ${amount} answers correct`,
@@ -110,6 +120,8 @@ const checkEffect = (config: Config): Effect => {
 		gateCheck: ({ window }) => ({
 			label: "Speed",
 			progress: `${window.fast}/${amount} fast`,
+			current: window.fast,
+			target: amount,
 			state: checkState(window.fast >= amount, window),
 		}),
 		demand: () => `${amount} fast answers`,

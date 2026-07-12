@@ -21,9 +21,22 @@ export const Default: Story = {
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
 		slots: 3,
 		checks: [
-			{ label: "Correct", progress: "1/2", state: "running" },
-			{ label: "Coverage", progress: "2%/4%", state: "running" },
+			{
+				label: "Correct",
+				progress: "1/2",
+				current: 1,
+				target: 2,
+				state: "running",
+			},
+			{
+				label: "Coverage",
+				progress: "2%/4%",
+				current: 2,
+				target: 4,
+				state: "running",
+			},
 		],
+		gateReward: 180,
 		category: "react",
 		question: "What is the correct key to give list items in React?",
 		options: [

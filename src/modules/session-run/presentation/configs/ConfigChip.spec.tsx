@@ -17,14 +17,26 @@ describe("ConfigChip", () => {
 		expect(onClick).toHaveBeenCalledTimes(1);
 	});
 
+	it("renders a static, non-interactive token when no onClick is given", () => {
+		render(<ConfigChip config={CONFIGS.js} />);
+		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+	});
+
+	it("does not fire while disabled", () => {
+		const onClick = vi.fn();
+		render(<ConfigChip config={CONFIGS.js} disabled onClick={onClick} />);
+		fireEvent.click(screen.getByRole("button"));
+		expect(onClick).not.toHaveBeenCalled();
+	});
+
 	it("colors the label in the rarity text color (common → pewter)", () => {
 		render(<ConfigChip config={CONFIGS.js} />);
-		expect(screen.getByRole("button")).toHaveClass("text-pewter");
+		expect(screen.getByText(".js")).toHaveClass("text-pewter");
 	});
 
 	it("wears the rarity border + text (legendary → indigo)", () => {
 		render(<ConfigChip config={CONFIGS.deployFriday} />);
-		expect(screen.getByRole("button")).toHaveClass(
+		expect(screen.getByText("Deploy on Friday")).toHaveClass(
 			"border-indigo",
 			"text-indigo"
 		);
@@ -33,5 +45,13 @@ describe("ConfigChip", () => {
 	it("shows the level once upgraded", () => {
 		render(<ConfigChip config={{ ...CONFIGS.js, level: 2 }} />);
 		expect(screen.getByText("L2")).toBeInTheDocument();
+	});
+
+	it("exposes its family and description in a tooltip", () => {
+		render(<ConfigChip config={CONFIGS.coverageGain} />);
+		expect(screen.getByText("check")).toBeInTheDocument();
+		expect(
+			screen.getByText(CONFIGS.coverageGain.description)
+		).toBeInTheDocument();
 	});
 });

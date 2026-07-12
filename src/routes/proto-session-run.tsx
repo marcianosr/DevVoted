@@ -192,6 +192,7 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 					configs={view.configs}
 					slots={view.slots}
 					checks={view.checks}
+					gateReward={view.gateReward}
 					category={view.poll.category}
 					question={view.poll.question}
 					options={view.poll.options}
@@ -209,6 +210,10 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 			{state.status === "rewarding" && (
 				<RewardScreen
 					storage={view.storage}
+					demands={view.demands}
+					rewardMultiplier={view.rewardMultiplier}
+					configs={view.configs}
+					newConfigIds={view.newConfigIds}
 					draftOptions={view.draftOptions}
 					onDraft={(id) => dispatch({ type: "draft", configId: id })}
 					rebuildCost={cost}
@@ -219,6 +224,7 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 					onAddSlot={() => dispatch({ type: "add-slot" })}
 					upgradeable={upgradeable}
 					onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
+					onNext={() => dispatch({ type: "finish-reward" })}
 				/>
 			)}
 

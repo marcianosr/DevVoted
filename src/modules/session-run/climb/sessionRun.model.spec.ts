@@ -91,16 +91,54 @@ describe("gates and rewards", () => {
 		expect(state.storage).toBe(180);
 	});
 
-	it("drafts, adds a slot, and upgrades a Focus config", () => {
+	it("takes several rewards (upgrade + slot + draft) and stays until finish", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("rewarding");
+
 		state = sessionReducer(state, { type: "upgrade", configId: "js" });
 		expect(state.pipeline.configs[0].level).toBe(2);
-		expect(state.status).toBe("answering");
+		expect(state.status).toBe("rewarding");
 
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		state = sessionReducer(state, { type: "add-slot" });
 		expect(state.pipeline.slots).toBe(4);
+		expect(state.status).toBe("rewarding");
+
+		const pick = state.draftOptions.find((config) => config.id !== "js")!;
+		state = sessionReducer(state, { type: "draft", configId: pick.id });
+		expect(state.pipeline.configs.map((config) => config.id)).toContain(
+			pick.id
+		);
+		expect(state.status).toBe("rewarding");
+
+		state = sessionReducer(state, { type: "finish-reward" });
+		expect(state.status).toBe("answering");
+	});
+
+	it("charges storage to upgrade and refuses when it can't be paid", () => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.storage).toBe(120);
+
+		state = sessionReducer(state, { type: "upgrade", configId: "js" }); // L1→L2 costs 60
+		expect(state.pipeline.configs[0].level).toBe(2);
+		expect(state.storage).toBe(60);
+
+		state = sessionReducer(state, { type: "upgrade", configId: "js" }); // L2→L3 costs 120, only 60 left
+		expect(state.pipeline.configs[0].level).toBe(2);
+		expect(state.storage).toBe(60);
+	});
+
+	it("flags newly drafted configs and clears the flag on finish", () => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+
+		const pick = state.draftOptions.find((config) => config.id !== "js")!;
+		state = sessionReducer(state, { type: "draft", configId: pick.id });
+		expect(state.draftedThisGate).toEqual([pick.id]);
+
+		state = sessionReducer(state, { type: "finish-reward" });
+		expect(state.draftedThisGate).toEqual([]);
 	});
 });
 
@@ -151,7 +189,7 @@ describe("the summit", () => {
 		for (let gate = 0; gate < VICTORY_GATE; gate++) {
 			for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 			if (state.status === "rewarding")
-				state = sessionReducer(state, { type: "skip-reward" });
+				state = sessionReducer(state, { type: "finish-reward" });
 		}
 		expect(state.status).toBe("won");
 		expect(state.gatesCleared).toBe(VICTORY_GATE);

@@ -16,6 +16,7 @@ type AnsweringScreenProps = {
 	configs: readonly Config[];
 	slots: number;
 	checks: readonly CheckStatus[];
+	gateReward: number;
 	category: CategoryCode;
 	question: string;
 	options: readonly PollOption[];
@@ -38,6 +39,7 @@ export const AnsweringScreen = ({
 	configs,
 	slots,
 	checks,
+	gateReward,
 	category,
 	question,
 	options,
@@ -67,7 +69,12 @@ export const AnsweringScreen = ({
 			<StatBadge label="Storage" value={`${storage}KB`} category={category} />
 		</div>
 		<Pipeline configs={configs} slots={slots} />
-		<GateRequirementList checks={checks} />
+		<GateRequirementList
+			checks={checks}
+			gateNumber={gatesCleared + 1}
+			pollsToGate={pollsToGate}
+			gateReward={gateReward}
+		/>
 		<PollCard
 			category={category}
 			question={question}

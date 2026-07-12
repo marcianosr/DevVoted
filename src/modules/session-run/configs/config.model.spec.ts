@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { focusCoverageMultiplier, focusDemand, rarityOf } from "./config.model";
+import {
+	focusCoverageMultiplier,
+	focusDemand,
+	rarityOf,
+	upgradeCost,
+} from "./config.model";
 import { CONFIGS } from "./configRoster.model";
 
 describe("rarityOf", () => {
@@ -26,5 +31,13 @@ describe("focusDemand", () => {
 	it("demands `level` correct answers (default 1)", () => {
 		expect(focusDemand(CONFIGS.js)).toBe(1);
 		expect(focusDemand({ ...CONFIGS.js, level: 3 })).toBe(3);
+	});
+});
+
+describe("upgradeCost", () => {
+	it("climbs with the current level: 60 at L1, 120 at L2, 180 at L3", () => {
+		expect(upgradeCost(1)).toBe(60);
+		expect(upgradeCost(2)).toBe(120);
+		expect(upgradeCost(3)).toBe(180);
 	});
 });

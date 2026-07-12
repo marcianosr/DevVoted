@@ -11,18 +11,18 @@ import {
 	rewardMultiplierFor,
 	stripConfig,
 } from "../pipeline/pipeline.model";
-import { Config } from "../configs/config.model";
+import { Config, upgradeCost } from "../configs/config.model";
 import { EMPTY_WINDOW, GateWindow } from "../configs/effect.model";
 import { DRAFT_SIZE, rebuildCost, rollDraft } from "../draft/draft.model";
 import { gateDemands, gatePassed } from "../gate/gate.model";
 import {
 	dropCount,
+	GATE_REWARD_KB,
 	SLICE_WINDOW,
 	SPEED_MS,
 	VICTORY_GATE,
 } from "../rules.model";
 
-const GATE_REWARD_KB = 120;
 export const LINT_COST = 40;
 
 export type SessionOption = {
@@ -70,6 +70,8 @@ export type SessionState = {
 	readonly available: readonly Config[];
 	readonly draftOptions: readonly Config[];
 	readonly rebuildsUsed: number;
+	/** Ids drafted since this reward screen opened — surfaced as "new" pipeline rows. */
+	readonly draftedThisGate: readonly string[];
 	/** Configs still to peel on the current failure. */
 	readonly stripsRemaining: number;
 	readonly polls: readonly SessionPoll[];
@@ -98,7 +100,7 @@ export type SessionAction =
 	| { readonly type: "draft"; readonly configId: string }
 	| { readonly type: "upgrade"; readonly configId: string }
 	| { readonly type: "rebuild-draft" }
-	| { readonly type: "skip-reward" }
+	| { readonly type: "finish-reward" }
 	| { readonly type: "drop"; readonly configId: string };
 
 export const createSession = (
@@ -110,6 +112,7 @@ export const createSession = (
 	available: handed,
 	draftOptions: [],
 	rebuildsUsed: 0,
+	draftedThisGate: [],
 	stripsRemaining: 0,
 	polls,
 	currentIndex: 0,
@@ -220,6 +223,7 @@ const closeWindow = (state: SessionState, nextIndex: number): SessionState => {
 		...cleared,
 		draftOptions: rollDraft(gateNumber, state.pipeline.configs),
 		rebuildsUsed: 0,
+		draftedThisGate: [],
 		status: "rewarding",
 		log: withLog(
 			state,
@@ -328,16 +332,16 @@ const strip = (state: SessionState, configId: string): SessionState => {
 	};
 };
 
-const resumeFromReward = (
+/** A reward action that keeps the player on the reward screen so they can take several. */
+const stayReward = (
 	state: SessionState,
 	pipeline: Pipeline,
+	draftOptions: readonly Config[],
 	line: string
 ): SessionState => ({
 	...state,
 	pipeline,
-	draftOptions: [],
-	rebuildsUsed: 0,
-	status: "answering",
+	draftOptions,
 	log: withLog(state, line),
 });
 
@@ -348,9 +352,10 @@ const levelUp = (config: Config): Config => ({
 
 const addSlot = (state: SessionState): SessionState => {
 	if (state.pipeline.slots >= MAX_SLOTS) return state;
-	return resumeFromReward(
+	return stayReward(
 		state,
 		{ ...state.pipeline, slots: state.pipeline.slots + 1 },
+		state.draftOptions,
 		`Widened the pipeline to ${state.pipeline.slots + 1} slots.`
 	);
 };
@@ -363,8 +368,11 @@ const draft = (state: SessionState, configId: string): SessionState => {
 	const owned = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
+	const remaining = state.draftOptions.filter(
+		(candidate) => candidate.id !== configId
+	);
 	if (owned?.focusCategory)
-		return resumeFromReward(
+		return stayReward(
 			state,
 			withPipeline(
 				state.pipeline,
@@ -372,14 +380,19 @@ const draft = (state: SessionState, configId: string): SessionState => {
 					config.id === configId ? levelUp(config) : config
 				)
 			),
+			remaining,
 			`Upgraded ${chosen.label} to L${(owned.level ?? 1) + 1}.`
 		);
 	if (!owned && state.pipeline.configs.length < state.pipeline.slots)
-		return resumeFromReward(
-			state,
-			withPipeline(state.pipeline, [...state.pipeline.configs, chosen]),
-			`Drafted ${chosen.label}.`
-		);
+		return {
+			...stayReward(
+				state,
+				withPipeline(state.pipeline, [...state.pipeline.configs, chosen]),
+				remaining,
+				`Drafted ${chosen.label}.`
+			),
+			draftedThisGate: [...state.draftedThisGate, chosen.id],
+		};
 	return state;
 };
 
@@ -388,20 +401,33 @@ const upgrade = (state: SessionState, configId: string): SessionState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!owned || !owned.focusCategory) return state;
-	return resumeFromReward(
-		state,
-		withPipeline(
-			state.pipeline,
-			state.pipeline.configs.map((config) =>
-				config.id === configId ? levelUp(config) : config
-			)
+	const cost = upgradeCost(owned.level ?? 1);
+	if (state.storage < cost) return state;
+	return {
+		...stayReward(
+			state,
+			withPipeline(
+				state.pipeline,
+				state.pipeline.configs.map((config) =>
+					config.id === configId ? levelUp(config) : config
+				)
+			),
+			state.draftOptions,
+			`Upgraded ${owned.label} to L${(owned.level ?? 1) + 1} (-${cost}KB).`
 		),
-		`Upgraded ${owned.label} to L${(owned.level ?? 1) + 1}.`
-	);
+		storage: state.storage - cost,
+	};
 };
 
-const skipReward = (state: SessionState): SessionState =>
-	resumeFromReward(state, state.pipeline, "Skipped the reward.");
+/** Leave the reward screen and climb on — the explicit "Next" step. */
+const finishReward = (state: SessionState): SessionState => ({
+	...state,
+	draftOptions: [],
+	rebuildsUsed: 0,
+	draftedThisGate: [],
+	status: "answering",
+	log: withLog(state, "Climbing on."),
+});
 
 const rebuildDraft = (state: SessionState): SessionState => {
 	const cost = rebuildCost(state.rebuildsUsed);
@@ -456,8 +482,8 @@ export const sessionReducer = (
 		return upgrade(state, action.configId);
 	if (action.type === "rebuild-draft" && state.status === "rewarding")
 		return rebuildDraft(state);
-	if (action.type === "skip-reward" && state.status === "rewarding")
-		return skipReward(state);
+	if (action.type === "finish-reward" && state.status === "rewarding")
+		return finishReward(state);
 	if (action.type === "drop" && state.status === "rewarding")
 		return drop(state, action.configId);
 	return state;

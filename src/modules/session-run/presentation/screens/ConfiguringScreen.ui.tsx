@@ -1,6 +1,6 @@
 import type { Config } from "~/modules/session-run/configs/config.model";
 import { Title } from "~/ui/typography/Title.component";
-import { ConfigRow } from "../configs/ConfigRow.ui";
+import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RarityLegend } from "../configs/RarityLegend.ui";
 import { BuildSummary } from "../gate/BuildSummary.ui";
 import { Pipeline } from "../pipeline/Pipeline.ui";
@@ -33,9 +33,9 @@ export const ConfiguringScreen = ({
 			<Pipeline configs={configs} slots={slots} onRemove={onUnslot} />
 			<BuildSummary demands={demands} rewardMultiplier={rewardMultiplier} />
 			<RarityLegend />
-			<div className="flex flex-col gap-2">
+			<div className="flex flex-wrap gap-2">
 				{bench.map((config) => (
-					<ConfigRow
+					<ConfigChip
 						key={config.id}
 						config={config}
 						action={full ? undefined : "＋"}
@@ -46,9 +46,10 @@ export const ConfiguringScreen = ({
 			<button
 				type="button"
 				onClick={onStart}
-				className="self-start rounded-lg bg-cerulean px-6 py-3 font-bold text-black transition hover:brightness-110"
+				disabled={configs.length === 0}
+				className="cursor-pointer self-start rounded-lg bg-cerulean px-6 py-3 font-bold text-black transition enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
 			>
-				Start the climb →
+				{configs.length === 0 ? "Slot a config to start" : "Start the climb →"}
 			</button>
 		</div>
 	);

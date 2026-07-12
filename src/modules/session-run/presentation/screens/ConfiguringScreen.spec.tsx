@@ -25,6 +25,13 @@ describe("ConfiguringScreen", () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
+	it("disables Start until at least one config is slotted", () => {
+		render(<ConfiguringScreen {...base} configs={[]} />);
+		expect(
+			screen.getByRole("button", { name: /Slot a config to start/ })
+		).toBeDisabled();
+	});
+
 	it("slots a bench config and starts the climb", () => {
 		const onSlot = vi.fn();
 		const onStart = vi.fn();
