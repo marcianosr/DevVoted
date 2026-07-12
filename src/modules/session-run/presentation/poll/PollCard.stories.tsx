@@ -1,0 +1,65 @@
+import type { Meta, StoryObj } from "@storybook/react";
+
+import { PollCard } from "./PollCard.ui";
+
+const meta: Meta<typeof PollCard> = {
+	component: PollCard,
+	title: "Session Run/PollCard",
+};
+export default meta;
+
+type Story = StoryObj<typeof PollCard>;
+
+const options = [
+	{ id: "a", label: "A stable unique id" },
+	{ id: "b", label: "The array index, always" },
+	{ id: "c", label: "Math.random()" },
+];
+
+export const SingleChoice: Story = {
+	args: {
+		category: "react",
+		question: "What is the correct key to give list items in React?",
+		options,
+		answerType: "single",
+		onSelect: () => {},
+	},
+};
+
+export const MultipleChoice: Story = {
+	args: {
+		category: "ts",
+		question: "Which of these are TypeScript utility types?",
+		options,
+		answerType: "multiple",
+		selectedOptionIds: ["a"],
+		onSelect: () => {},
+		onSubmit: () => {},
+	},
+};
+
+export const WithLinter: Story = {
+	args: {
+		category: "js",
+		question: "Which coerces to true?",
+		options,
+		answerType: "single",
+		disabledOptionIds: ["c"],
+		onSelect: () => {},
+		canLint: true,
+		onLint: () => {},
+		lintCost: 40,
+	},
+};
+
+export const Revealed: Story = {
+	args: {
+		category: "react",
+		question: "What is the correct key to give list items in React?",
+		options,
+		answerType: "single",
+		onSelect: () => {},
+		correctOptionIds: ["a"],
+		chosenOptionIds: ["b"],
+	},
+};

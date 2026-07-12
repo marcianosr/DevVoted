@@ -30,17 +30,19 @@ The prototype proved the loop is fun (ADR-006). We now rebuild the **run fronten
 The pixel font (`Pixter Display`) is already the global `body` font; components inherit it. Three presentational primitives, in `src/ui/typography/`, each with a Storybook story under a **new container** titled `"Design System/…"`:
 
 - **`Title`** — `text-3xl`, bold. White by default; accepts an optional `category` prop that self-themes the heading in that category's Kanto color (via `data-category-theme` + `.text-theme`).
-- **`Subtitle`** — `text-lg`, `text-zinc-300`.
+- **`Subtitle`** — `text-lg`, `text-zinc-300` (lead text and section/eyebrow labels, e.g. "This gate needs", stat captions).
 - **`Paragraph`** — base size, white.
 
-All app-facing run text uses these — no ad-hoc `<h1>`/`<p>` with inline sizes.
+Three primitives only — `Title`, `Subtitle`, `Paragraph`. All app-facing run text uses these — **no ad-hoc `<h1>`/`<p>`/`<span>` with inline sizes, and no extra label primitive.** Category-accented values (stats, titles) use `.text-theme` so they wear the active category's color.
 
-### 3. Architecture — DDD, screaming, two-tier UI preserved
+### 3. Architecture — DDD bounded context with its own layers
 
 - **`modules/` = new, `domains/` = classic.** Rebuilt bounded contexts live in `src/modules/` (e.g. `src/modules/session-run/`). Everything under `src/domains/` is the legacy app being replaced. **`modules/` may import `domains/shared/` (the schema-adjacent kernel — e.g. `categories`) but never a classic feature domain (`domains/runs`, `domains/polls`, …).** This makes the "don't extend old code" rule physical, not just intended.
 - **Screaming structure**: a module's subfolders name the *concepts* (`gate/`, `pipeline/`, `configs/`, `draft/`, `climb/`), not technical layers. Opening the folder should say "this is a roguelike run," not "this is React."
-- **Two-tier UI split is kept** (per CLAUDE.md and because we want Storybook): business/logic in `src/modules/session-run/` (no HTML/CSS), presentational components in `src/ui/session-run/` (all HTML/Tailwind, Storybook-backed, plain props only). The prototype broke this deliberately; the rebuild honors it.
-- **Pure engine first**: the ADR-006 mechanics port as pure, tested reducers/functions in the module before any UI wires to them.
+- **The module owns its layers.** Domain logic lives in the concept folders (pure, no HTML/CSS). Presentational UI lives in **`src/modules/session-run/presentation/{concept}/`** (all HTML/Tailwind, Storybook-backed, plain props + callbacks only) — colocated with the bounded context, mirroring the domain concept folders. The application layer (routes) is figured out with TanStack Start later.
+- **`src/ui/` is the shared design system only** — cross-cutting primitives (`typography/`, `theme/`, `rarityColors`). Module-specific visuals do **not** live there.
+- **Pure engine first**: the ADR-006 mechanics port as pure, tested reducers/functions before any presentation wires to them.
+- **No index barrels.** Import from the specific module file (`.../configs/config`, `.../gate/gate`), not a re-exporting `index.ts`. Barrels obscure the real dependency graph and invite import cycles.
 
 ### 4. Comments explain *why*, never *what*
 
@@ -58,4 +60,4 @@ Code is self-documenting through naming. Add a comment **only** when it captures
 
 - **Positive**: a clean, consistent, Storybook-testable run frontend with one type system for color and text; the old app keeps working during the rebuild; no data risk.
 - **Negative**: temporary duplication (new `session-run` domain alongside the old `runs` domain) until the old run UI is retired. Accepted — parallel is safer than in-place rewrite.
-- Screaming + two-tier means each concept spans two folders (`modules/session-run/gate/` logic, `ui/session-run/gate/` visuals). The concept name is the link.
+- Each concept spans two folders inside the module — `modules/session-run/gate/` (logic) and `modules/session-run/presentation/gate/` (visuals). The concept name is the link, and both live in the bounded context.

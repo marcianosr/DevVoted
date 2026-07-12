@@ -1,0 +1,38 @@
+import { describe, expect, it, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+
+import { CONFIGS } from "~/modules/session-run/configs/configRoster";
+import { ConfigChip } from "./ConfigChip.ui";
+
+describe("ConfigChip", () => {
+	it("renders the config label", () => {
+		render(<ConfigChip config={CONFIGS.js} />);
+		expect(screen.getByText(".js")).toBeInTheDocument();
+	});
+
+	it("calls onClick when interactive", () => {
+		const onClick = vi.fn();
+		render(<ConfigChip config={CONFIGS.eslint} action="✕" onClick={onClick} />);
+		fireEvent.click(screen.getByRole("button"));
+		expect(onClick).toHaveBeenCalledTimes(1);
+	});
+
+	it("themes a Focus config's label by its category", () => {
+		render(<ConfigChip config={CONFIGS.js} />);
+		expect(screen.getByRole("button")).toHaveAttribute(
+			"data-category-theme",
+			"js"
+		);
+		expect(screen.getByText(".js")).toHaveClass("text-theme");
+	});
+
+	it("wears the rarity border (legendary → indigo)", () => {
+		render(<ConfigChip config={CONFIGS.deployFriday} />);
+		expect(screen.getByRole("button")).toHaveClass("border-indigo");
+	});
+
+	it("shows the level once upgraded", () => {
+		render(<ConfigChip config={{ ...CONFIGS.js, level: 2 }} />);
+		expect(screen.getByText("L2")).toBeInTheDocument();
+	});
+});

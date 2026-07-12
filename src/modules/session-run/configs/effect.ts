@@ -1,6 +1,6 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 
-import { escalation } from "../rules";
+import { escalation, SLICE_WINDOW } from "../rules";
 import { Config, focusCoverageMultiplier } from "./config";
 
 export type CategoryTally = { readonly seen: number; readonly correct: number };
@@ -23,11 +23,26 @@ export const EMPTY_WINDOW: GateWindow = {
 	byCategory: {},
 };
 
+export type CheckState = "success" | "running" | "skipped" | "failed";
+
 export type CheckStatus = {
 	readonly label: string;
 	readonly progress: string;
-	readonly met: boolean;
+	readonly state: CheckState;
 };
+
+export const checkState = (
+	met: boolean,
+	window: GateWindow,
+	skipped = false
+): CheckState =>
+	skipped
+		? "skipped"
+		: met
+			? "success"
+			: window.answered >= SLICE_WINDOW
+				? "failed"
+				: "running";
 
 export type Coverage = { readonly mult: number; readonly add: number };
 
@@ -36,11 +51,6 @@ export type EffectContext = {
 	readonly gatesCleared: number;
 };
 
-/**
- * A config's behaviour as a set of phase hooks. Only the hooks it participates in are set.
- * The engine folds these generically (see pipeline/ and gate/), so a config never needs a
- * bespoke function like the old `hasLinter`, and a new effect only touches `effectOf`.
- */
 export type Effect = {
 	requirementDelta?: number;
 	locksBar?: boolean;
@@ -61,10 +71,11 @@ const focusEffect = (config: Config, focusCategory: CategoryCode): Effect => {
 		}),
 		gateCheck: ({ window }) => {
 			const tally = window.byCategory[focusCategory] ?? { seen: 0, correct: 0 };
+			const seen = tally.seen > 0;
 			return {
 				label: `${config.label} mastery`,
-				progress: tally.seen === 0 ? "not seen" : `${tally.correct}/${level}`,
-				met: tally.seen === 0 || tally.correct >= level,
+				progress: seen ? `${tally.correct}/${level}` : "not seen",
+				state: checkState(tally.correct >= level, window, !seen),
 			};
 		},
 		demand: () => `${config.label}: get one right if ${focusCategory} appears`,
@@ -80,7 +91,7 @@ const checkEffect = (config: Config): Effect => {
 				return {
 					label: "Coverage",
 					progress: `${window.coverageGained}%/${threshold}%`,
-					met: window.coverageGained >= threshold,
+					state: checkState(window.coverageGained >= threshold, window),
 				};
 			},
 			demand: (gatesCleared) =>
@@ -91,7 +102,7 @@ const checkEffect = (config: Config): Effect => {
 			gateCheck: ({ window }) => ({
 				label: "Cold start",
 				progress: `${window.leadingCorrect}/${amount}`,
-				met: window.leadingCorrect >= amount,
+				state: checkState(window.leadingCorrect >= amount, window),
 			}),
 			demand: () => `your first ${amount} answers correct`,
 		};
@@ -99,13 +110,12 @@ const checkEffect = (config: Config): Effect => {
 		gateCheck: ({ window }) => ({
 			label: "Speed",
 			progress: `${window.fast}/${amount} fast`,
-			met: window.fast >= amount,
+			state: checkState(window.fast >= amount, window),
 		}),
 		demand: () => `${amount} fast answers`,
 	};
 };
 
-/** The single place a config's data becomes behaviour. Add a new effect here and nowhere else. */
 export const effectOf = (config: Config): Effect => {
 	if (config.focusCategory) return focusEffect(config, config.focusCategory);
 	if (config.check)

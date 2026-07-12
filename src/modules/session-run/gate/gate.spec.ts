@@ -51,7 +51,7 @@ describe("checkStatuses", () => {
 			0
 		);
 		expect(first.label).toBe("Correct");
-		expect(first.met).toBe(true);
+		expect(first.state).toBe("success");
 	});
 
 	it("adds a Coverage check that can fail while Correct passes", () => {
@@ -64,8 +64,8 @@ describe("checkStatuses", () => {
 			"Correct",
 			"Coverage",
 		]);
-		expect(statuses[0].met).toBe(true);
-		expect(statuses[1].met).toBe(false); // 3% < 4%
+		expect(statuses[0].state).toBe("success");
+		expect(statuses[1].state).toBe("failed"); // 3% < 4%, window closed
 	});
 
 	it("counts fast answers for Speed", () => {
@@ -75,7 +75,7 @@ describe("checkStatuses", () => {
 			0
 		);
 		expect(speed.label).toBe("Speed");
-		expect(speed.met).toBe(false); // 1 fast < 2
+		expect(speed.state).toBe("failed"); // 1 fast < 2, window closed
 	});
 
 	it("ignores a Focus mastery until its category appears", () => {
@@ -84,9 +84,9 @@ describe("checkStatuses", () => {
 			win({ correct: 1, answered: 5 }),
 			0
 		);
-		expect(unseen.find((check) => check.label === ".js mastery")?.met).toBe(
-			true
-		); // not seen → met
+		expect(unseen.find((check) => check.label === ".js mastery")?.state).toBe(
+			"skipped"
+		); // not seen → skipped (still passes)
 		const seenMissed = checkStatuses(
 			pipelineWith([CONFIGS.js]),
 			win({
@@ -96,9 +96,9 @@ describe("checkStatuses", () => {
 			}),
 			0
 		);
-		expect(seenMissed.find((check) => check.label === ".js mastery")?.met).toBe(
-			false
-		);
+		expect(
+			seenMissed.find((check) => check.label === ".js mastery")?.state
+		).toBe("failed");
 	});
 });
 

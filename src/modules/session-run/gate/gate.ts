@@ -1,4 +1,5 @@
 import {
+	checkState,
 	CheckStatus,
 	EffectContext,
 	effectOf,
@@ -6,6 +7,9 @@ import {
 } from "../configs/effect";
 import { Pipeline, effectiveRequirement } from "../pipeline/pipeline";
 import { CLIMB_BASE_REQUIREMENT, escalation } from "../rules";
+
+const passes = (state: CheckStatus["state"]): boolean =>
+	state === "success" || state === "skipped";
 
 export const currentRequirement = (
 	pipeline: Pipeline,
@@ -31,7 +35,7 @@ export const checkStatuses = (
 		{
 			label: "Correct",
 			progress: `${window.correct}/${baseline}`,
-			met: window.correct >= baseline,
+			state: checkState(window.correct >= baseline, window),
 		},
 		...contributed,
 	];
@@ -42,7 +46,9 @@ export const gatePassed = (
 	window: GateWindow,
 	gatesCleared: number
 ): boolean =>
-	checkStatuses(pipeline, window, gatesCleared).every((check) => check.met);
+	checkStatuses(pipeline, window, gatesCleared).every((check) =>
+		passes(check.state)
+	);
 
 export const gateDemands = (
 	pipeline: Pipeline,

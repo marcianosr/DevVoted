@@ -15,5 +15,9 @@ export const Default: Story = {
 };
 
 export const CategoryAccent: Story = {
-	args: { children: "JavaScript", category: "js" },
+	args: {
+		children: "JavaScript",
+		category: "js",
+		as: "h1",
+	},
 };

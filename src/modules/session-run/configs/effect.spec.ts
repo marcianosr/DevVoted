@@ -25,15 +25,15 @@ describe("effectOf — Focus", () => {
 		});
 	});
 
-	it("adds a mastery gate-check that is met until the category appears, then demands it", () => {
+	it("adds a mastery gate-check: skipped until the category appears, then running/success", () => {
 		const check = effectOf(CONFIGS.js).gateCheck;
-		expect(check?.(ctx()).met).toBe(true); // not seen
+		expect(check?.(ctx()).state).toBe("skipped"); // not seen
 		expect(
-			check?.(ctx({ byCategory: { js: { seen: 1, correct: 0 } } })).met
-		).toBe(false);
+			check?.(ctx({ byCategory: { js: { seen: 1, correct: 0 } } })).state
+		).toBe("running");
 		expect(
-			check?.(ctx({ byCategory: { js: { seen: 1, correct: 1 } } })).met
-		).toBe(true);
+			check?.(ctx({ byCategory: { js: { seen: 1, correct: 1 } } })).state
+		).toBe("success");
 	});
 });
 
@@ -41,25 +41,29 @@ describe("effectOf — Check configs", () => {
 	it("Coverage contributes a threshold gate-check, a demand, and its reward multiplier", () => {
 		const effect = effectOf(CONFIGS.coverageGain);
 		expect(effect.rewardMultiplier).toBe(1.5);
-		expect(effect.gateCheck?.(ctx({ coverageGained: 3 })).met).toBe(false); // 3% < 4%
-		expect(effect.gateCheck?.(ctx({ coverageGained: 4 })).met).toBe(true);
+		expect(effect.gateCheck?.(ctx({ coverageGained: 3 })).state).toBe(
+			"running"
+		); // 3% < 4%, window open
+		expect(effect.gateCheck?.(ctx({ coverageGained: 4 })).state).toBe(
+			"success"
+		);
 		expect(effect.demand?.(0)).toBe("+4% coverage this window");
 	});
 
 	it("Speed reads fast answers", () => {
-		expect(effectOf(CONFIGS.speed).gateCheck?.(ctx({ fast: 2 })).met).toBe(
-			true
+		expect(effectOf(CONFIGS.speed).gateCheck?.(ctx({ fast: 2 })).state).toBe(
+			"success"
 		);
-		expect(effectOf(CONFIGS.speed).gateCheck?.(ctx({ fast: 1 })).met).toBe(
-			false
+		expect(effectOf(CONFIGS.speed).gateCheck?.(ctx({ fast: 1 })).state).toBe(
+			"running"
 		);
 	});
 
 	it("escalates the Coverage threshold deeper in the climb", () => {
 		expect(
 			effectOf(CONFIGS.coverageGain).gateCheck?.(ctx({ coverageGained: 4 }, 2))
-				.met
-		).toBe(false); // needs 4+1
+				.state
+		).toBe("running"); // needs 4+1
 	});
 });
 
