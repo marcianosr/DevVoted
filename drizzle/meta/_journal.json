@@ -407,6 +407,13 @@
       "when": 1781342153969,
       "tag": "0057_hard_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1783798466310,
+      "tag": "0058_common_lady_ursula",
+      "breakpoints": true
     }
   ]
 }

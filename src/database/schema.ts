@@ -299,6 +299,10 @@ export const runsTable = pgTable("runs", {
 		onDelete: "set null",
 	}), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
+	mode: varchar("mode", { length: 16 })
+		.notNull()
+		.default("calendar")
+		.$type<"calendar" | "session">(), // Run cadence (two-loop model, ADR-005): 'calendar' = legacy one-poll-per-day; 'session' = self-paced session run
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	injected_archive_bytes: integer("injected_archive_bytes")
 		.notNull()
