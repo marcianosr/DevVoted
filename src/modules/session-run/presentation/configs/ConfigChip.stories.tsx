@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { CONFIGS } from "~/modules/session-run/configs/configRoster";
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { ConfigChip } from "./ConfigChip.ui";
 
 const meta: Meta<typeof ConfigChip> = {

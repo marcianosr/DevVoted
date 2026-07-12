@@ -1,4 +1,4 @@
-import type { Rarity } from "~/modules/session-run/configs/config";
+import type { Rarity } from "~/modules/session-run/configs/config.model";
 import { RARITY_COLORS } from "~/ui/rarityColors";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 

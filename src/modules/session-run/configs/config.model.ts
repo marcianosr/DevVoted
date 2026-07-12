@@ -1,4 +1,4 @@
-import type { CategoryCode } from "~/domains/shared/categories";
+import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 
 export type ConfigFamily =
 	"focus" | "defense" | "risk" | "amplify" | "economy" | "check";
@@ -32,3 +32,11 @@ export const focusCoverageMultiplier = (level: number): number =>
 	1 + 0.5 * level;
 
 export const focusDemand = (config: Config): number => config.level ?? 1;
+
+/** The config's description at its *current* level. Focus configs scale with level; others are static. */
+export const describeConfig = (config: Config): string => {
+	if (!config.focusCategory) return config.description;
+	const name = getCategoryMetadata(config.focusCategory).name;
+	const level = config.level ?? 1;
+	return `${name} polls pay ${focusCoverageMultiplier(level)}× — but if ${name} shows, you must get ${level} right.`;
+};

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { focusCoverageMultiplier, focusDemand, rarityOf } from "./config";
-import { CONFIGS } from "./configRoster";
+import { focusCoverageMultiplier, focusDemand, rarityOf } from "./config.model";
+import { CONFIGS } from "./configRoster.model";
 
 describe("rarityOf", () => {
 	it("defaults an unset rarity to common", () => {

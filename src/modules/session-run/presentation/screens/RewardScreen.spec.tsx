@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-import { CONFIGS } from "~/modules/session-run/configs/configRoster";
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { RewardScreen } from "./RewardScreen.ui";
 
 const base = {
@@ -16,7 +16,6 @@ const base = {
 	onAddSlot: vi.fn(),
 	upgradeable: [CONFIGS.js],
 	onUpgrade: vi.fn(),
-	onSkip: vi.fn(),
 };
 
 describe("RewardScreen", () => {
@@ -28,13 +27,10 @@ describe("RewardScreen", () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	it("drafts a config and skips the reward", () => {
+	it("drafts a config", () => {
 		const onDraft = vi.fn();
-		const onSkip = vi.fn();
-		render(<RewardScreen {...base} onDraft={onDraft} onSkip={onSkip} />);
+		render(<RewardScreen {...base} onDraft={onDraft} />);
 		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
 		expect(onDraft).toHaveBeenCalledWith("eslint");
-		fireEvent.click(screen.getByRole("button", { name: /Skip reward/ }));
-		expect(onSkip).toHaveBeenCalledTimes(1);
 	});
 });

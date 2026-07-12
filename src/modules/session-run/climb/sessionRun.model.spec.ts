@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import type { CategoryCode } from "~/domains/shared/categories";
 
-import { CONFIGS } from "../configs/configRoster";
-import { SLICE_WINDOW, VICTORY_GATE } from "../rules";
+import { CONFIGS } from "../configs/configRoster.model";
+import { SLICE_WINDOW, VICTORY_GATE } from "../rules.model";
 import {
 	createSession,
 	sessionReducer,
 	SessionPoll,
 	SessionState,
 	SPEED_MS,
-} from "./sessionRun";
+} from "./sessionRun.model";
 
 const poll = (
 	id: string,
@@ -20,6 +20,7 @@ const poll = (
 	id,
 	category,
 	question: `Does ${id} beat Banjo?`,
+	answerType: "single",
 	options: [
 		{ id: `${id}-a`, label: "Yes", correct },
 		{ id: `${id}-b`, label: "No", correct: !correct },
@@ -54,7 +55,7 @@ const answerWith = (
 	if (!option) throw new Error("no matching option");
 	return sessionReducer(state, {
 		type: "answer",
-		optionId: option.id,
+		optionIds: [option.id],
 		elapsedMs,
 	});
 };
@@ -172,6 +173,7 @@ describe("economy", () => {
 			id: "tri",
 			category: "css",
 			question: "Pick",
+			answerType: "single",
 			options: [
 				{ id: "a", label: "A", correct: true },
 				{ id: "b", label: "B", correct: false },
@@ -196,5 +198,53 @@ describe("economy", () => {
 		};
 		const unchanged = sessionReducer(noLinter, { type: "lint-poll" });
 		expect(unchanged.storage).toBe(100);
+	});
+});
+
+describe("answer judging", () => {
+	const multiPoll = (): SessionPoll => ({
+		id: "m",
+		category: "ts",
+		question: "Which are TS utility types?",
+		answerType: "multiple",
+		options: [
+			{ id: "a", label: "Partial", correct: true },
+			{ id: "b", label: "Pick", correct: true },
+			{ id: "c", label: "Banjo", correct: false },
+		],
+	});
+	const answering = (): SessionState => ({
+		...createSession([multiPoll(), ...pool(5)], handed),
+		status: "answering",
+	});
+
+	it("marks multiple-choice correct only for the exact correct set", () => {
+		expect(
+			sessionReducer(answering(), { type: "answer", optionIds: ["a", "b"] })
+				.window.correct
+		).toBe(1);
+	});
+
+	it("marks a subset of the correct set wrong", () => {
+		expect(
+			sessionReducer(answering(), { type: "answer", optionIds: ["a"] }).window
+				.correct
+		).toBe(0);
+	});
+
+	it("marks the correct set plus a wrong option wrong", () => {
+		expect(
+			sessionReducer(answering(), {
+				type: "answer",
+				optionIds: ["a", "b", "c"],
+			}).window.correct
+		).toBe(0);
+	});
+
+	it("ignores an empty answer", () => {
+		const before = answering();
+		expect(sessionReducer(before, { type: "answer", optionIds: [] })).toBe(
+			before
+		);
 	});
 });

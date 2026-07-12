@@ -1,12 +1,12 @@
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
+import type { AnswerType } from "~/modules/session-run/climb/sessionRun.model";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
 
+export type { AnswerType };
+
 /** A poll option as the client sees it — no `correct` flag (the server judges). */
 export type PollOption = { readonly id: string; readonly label: string };
-
-/** Mirrors the schema's `answer_type`. */
-export type AnswerType = "single" | "multiple";
 
 type PollCardProps = {
 	category: CategoryCode;

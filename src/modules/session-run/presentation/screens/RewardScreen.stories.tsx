@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { CONFIGS } from "~/modules/session-run/configs/configRoster";
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { RewardScreen } from "./RewardScreen.ui";
 
 const meta: Meta<typeof RewardScreen> = {
@@ -24,6 +24,5 @@ export const Default: Story = {
 		onAddSlot: () => {},
 		upgradeable: [CONFIGS.js],
 		onUpgrade: () => {},
-		onSkip: () => {},
 	},
 };

@@ -1,7 +1,7 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 
-import { escalation, SLICE_WINDOW } from "../rules";
-import { Config, focusCoverageMultiplier } from "./config";
+import { escalation, SLICE_WINDOW } from "../rules.model";
+import { Config, focusCoverageMultiplier } from "./config.model";
 
 export type CategoryTally = { readonly seen: number; readonly correct: number };
 

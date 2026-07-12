@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { Config } from "../configs/config";
-import { CONFIGS } from "../configs/configRoster";
-import { DRAFT_SIZE, rebuildCost, rollDraft } from "./draft";
+import { Config } from "../configs/config.model";
+import { CONFIGS } from "../configs/configRoster.model";
+import { DRAFT_SIZE, rebuildCost, rollDraft } from "./draft.model";
 
 const ids = (configs: readonly Config[]): string[] =>
 	configs.map((config) => config.id);

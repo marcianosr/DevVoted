@@ -13,9 +13,9 @@ export const RARITY_COLORS: Record<
 	{ border: string; text: string; bg: string }
 > = {
 	common: {
-		border: "border-cerulean",
-		text: "text-cerulean",
-		bg: "bg-cerulean/15",
+		border: "border-pewter",
+		text: "text-pewter",
+		bg: "bg-pewter/15",
 	},
 	uncommon: {
 		border: "border-celadon",

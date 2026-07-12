@@ -276,21 +276,22 @@
 	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
 }
 
-.text-theme {
+/* Registered as @utility (not plain classes) so Tailwind variants — hover:, focus:,
+   enabled:hover:, etc — attach to them the same as any built-in utility. */
+@utility text-theme {
 	color: var(--theme-color);
 }
-.bg-theme {
+@utility bg-theme {
 	background-color: var(--theme-color);
 }
-/* Translucent theme fill for selected/hover surfaces (opacity modifiers can't
-   apply to the custom .bg-theme class, so we derive the alpha here). */
-.bg-theme-soft {
+/* Translucent theme fill for selected/hover surfaces. */
+@utility bg-theme-soft {
 	background-color: oklch(from var(--theme-color) l c h / 0.1);
 }
-.border-theme {
+@utility border-theme {
 	border-color: var(--theme-color);
 }
-.accent-theme {
+@utility accent-theme {
 	accent-color: var(--theme-color);
 }
 

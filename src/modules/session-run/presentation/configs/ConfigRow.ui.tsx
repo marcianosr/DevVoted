@@ -1,6 +1,7 @@
-import type { Config } from "~/modules/session-run/configs/config";
+import type { Config } from "~/modules/session-run/configs/config.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { ConfigChip } from "./ConfigChip.ui";
+import { RARITY_COLORS } from "~/ui/rarityColors";
 
 type ConfigRowProps = {
 	config: Config;
@@ -8,10 +9,13 @@ type ConfigRowProps = {
 	onClick?: () => void;
 };
 
-/** A config chip alongside its description — for bench, draft, and strip lists. */
-export const ConfigRow = ({ config, action, onClick }: ConfigRowProps) => (
-	<div className="flex items-center gap-3">
-		<ConfigChip config={config} action={action} onClick={onClick} />
-		<Paragraph>{config.description}</Paragraph>
-	</div>
-);
+export const ConfigRow = ({ config, action, onClick }: ConfigRowProps) => {
+	const rarity = RARITY_COLORS[config.rarity ?? "common"];
+
+	return (
+		<div className="flex flex-col items-center gap-3">
+			<ConfigChip config={config} action={action} onClick={onClick} />
+			<Paragraph className={`text-${rarity}`}>{config.description}</Paragraph>
+		</div>
+	);
+};

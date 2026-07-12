@@ -1,6 +1,8 @@
-import type { Config } from "~/modules/session-run/configs/config";
+import {
+	Config,
+	describeConfig,
+} from "~/modules/session-run/configs/config.model";
 import { RARITY_COLORS } from "~/ui/rarityColors";
-import { categoryTheme } from "~/ui/theme/categoryTheme";
 
 type ConfigChipProps = {
 	config: Config;
@@ -9,28 +11,22 @@ type ConfigChipProps = {
 	onClick?: () => void;
 };
 
-/** A single config: rarity border + tint (RARITY_COLORS), category-colored label for Focus configs. */
+/** A single config, styled entirely by its rarity: border + tint + text (RARITY_COLORS). */
 export const ConfigChip = ({ config, action, onClick }: ConfigChipProps) => {
 	const rarity = RARITY_COLORS[config.rarity ?? "common"];
-	const themed = config.focusCategory
-		? categoryTheme(config.focusCategory)
-		: {};
 	return (
 		<button
 			type="button"
-			title={config.description}
+			title={describeConfig(config)}
 			onClick={onClick}
 			disabled={!onClick}
-			{...themed}
-			className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition enabled:hover:brightness-125 ${rarity.border} ${rarity.bg}`}
+			className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition enabled:hover:brightness-125 ${rarity.border} ${rarity.bg} ${rarity.text}`}
 		>
-			<span className={config.focusCategory ? "text-theme" : "text-white"}>
-				{config.label}
-			</span>
+			{config.label}
 			{(config.level ?? 1) > 1 ? (
-				<span className="ml-1 text-pewter">L{config.level}</span>
+				<span className="ml-1 opacity-70">L{config.level}</span>
 			) : null}
-			{action ? <span className="ml-2 text-pewter">{action}</span> : null}
+			{action ? <span className="ml-2 opacity-70">{action}</span> : null}
 		</button>
 	);
 };

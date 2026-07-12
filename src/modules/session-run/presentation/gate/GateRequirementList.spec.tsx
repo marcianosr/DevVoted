@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import type { CheckStatus } from "~/modules/session-run/configs/effect";
+import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { GateRequirementList } from "./GateRequirementList.ui";
 
 const checks: CheckStatus[] = [

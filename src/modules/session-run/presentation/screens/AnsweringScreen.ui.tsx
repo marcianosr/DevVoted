@@ -1,6 +1,6 @@
 import type { CategoryCode } from "~/domains/shared/categories";
-import type { Config } from "~/modules/session-run/configs/config";
-import type { CheckStatus } from "~/modules/session-run/configs/effect";
+import type { Config } from "~/modules/session-run/configs/config.model";
+import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { GateRequirementList } from "../gate/GateRequirementList.ui";
 import { GateTracker } from "../gate/GateTracker.ui";
 import { Pipeline } from "../pipeline/Pipeline.ui";

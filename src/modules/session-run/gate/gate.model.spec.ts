@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { Pipeline } from "../pipeline/pipeline";
-import { Config } from "../configs/config";
-import { CONFIGS } from "../configs/configRoster";
-import { EMPTY_WINDOW, GateWindow } from "../configs/effect";
-import { dropCount, escalation } from "../rules";
+import { Pipeline } from "../pipeline/pipeline.model";
+import { Config } from "../configs/config.model";
+import { CONFIGS } from "../configs/configRoster.model";
+import { EMPTY_WINDOW, GateWindow } from "../configs/effect.model";
+import { dropCount, escalation } from "../rules.model";
 import {
 	checkStatuses,
 	currentRequirement,
 	gateDemands,
 	gatePassed,
-} from "./gate";
+} from "./gate.model";
 
 const pipelineWith = (configs: Config[]): Pipeline => ({
 	id: "pipeline",

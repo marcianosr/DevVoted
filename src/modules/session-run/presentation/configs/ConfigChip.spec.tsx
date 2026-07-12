@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-import { CONFIGS } from "~/modules/session-run/configs/configRoster";
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { ConfigChip } from "./ConfigChip.ui";
 
 describe("ConfigChip", () => {
@@ -17,18 +17,17 @@ describe("ConfigChip", () => {
 		expect(onClick).toHaveBeenCalledTimes(1);
 	});
 
-	it("themes a Focus config's label by its category", () => {
+	it("colors the label in the rarity text color (common → pewter)", () => {
 		render(<ConfigChip config={CONFIGS.js} />);
-		expect(screen.getByRole("button")).toHaveAttribute(
-			"data-category-theme",
-			"js"
-		);
-		expect(screen.getByText(".js")).toHaveClass("text-theme");
+		expect(screen.getByRole("button")).toHaveClass("text-pewter");
 	});
 
-	it("wears the rarity border (legendary → indigo)", () => {
+	it("wears the rarity border + text (legendary → indigo)", () => {
 		render(<ConfigChip config={CONFIGS.deployFriday} />);
-		expect(screen.getByRole("button")).toHaveClass("border-indigo");
+		expect(screen.getByRole("button")).toHaveClass(
+			"border-indigo",
+			"text-indigo"
+		);
 	});
 
 	it("shows the level once upgraded", () => {

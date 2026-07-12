@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-import { CONFIGS } from "~/modules/session-run/configs/configRoster";
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { StripScreen } from "./StripScreen.ui";
 
 describe("StripScreen", () => {

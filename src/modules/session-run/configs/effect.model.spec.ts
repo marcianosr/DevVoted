@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { CONFIGS } from "./configRoster";
-import { EMPTY_WINDOW, effectOf, EffectContext } from "./effect";
+import { CONFIGS } from "./configRoster.model";
+import { EMPTY_WINDOW, effectOf, EffectContext } from "./effect.model";
 
 const ctx = (
 	overrides: Partial<EffectContext["window"]> = {},

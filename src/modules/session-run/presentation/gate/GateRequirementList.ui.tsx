@@ -1,7 +1,7 @@
 import type {
 	CheckState,
 	CheckStatus,
-} from "~/modules/session-run/configs/effect";
+} from "~/modules/session-run/configs/effect.model";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 
 /** GitHub-style check indicators: running = orange dot, skipped = grey, success = green, failed = cross. */

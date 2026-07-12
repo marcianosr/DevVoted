@@ -13,6 +13,7 @@ import { Route as StatsRouteImport } from './routes/stats'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as ProtoSessionSliceRouteImport } from './routes/proto-session-slice'
+import { Route as ProtoSessionRunRouteImport } from './routes/proto-session-run'
 import { Route as PresentationRouteImport } from './routes/presentation'
 import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
@@ -51,6 +52,11 @@ const SignUpRoute = SignUpRouteImport.update({
 const ProtoSessionSliceRoute = ProtoSessionSliceRouteImport.update({
   id: '/proto-session-slice',
   path: '/proto-session-slice',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtoSessionRunRoute = ProtoSessionRunRouteImport.update({
+  id: '/proto-session-run',
+  path: '/proto-session-run',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PresentationRoute = PresentationRouteImport.update({
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
+  '/proto-session-run': typeof ProtoSessionRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
+  '/proto-session-run': typeof ProtoSessionRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
+  '/proto-session-run': typeof ProtoSessionRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/presentation'
+    | '/proto-session-run'
     | '/proto-session-slice'
     | '/sign-up'
     | '/start'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/presentation'
+    | '/proto-session-run'
     | '/proto-session-slice'
     | '/sign-up'
     | '/start'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/presentation'
+    | '/proto-session-run'
     | '/proto-session-slice'
     | '/sign-up'
     | '/start'
@@ -304,6 +316,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   LogoutRoute: typeof LogoutRoute
   PresentationRoute: typeof PresentationRoute
+  ProtoSessionRunRoute: typeof ProtoSessionRunRoute
   ProtoSessionSliceRoute: typeof ProtoSessionSliceRoute
   SignUpRoute: typeof SignUpRoute
   StartRoute: typeof StartRoute
@@ -339,6 +352,13 @@ declare module '@tanstack/react-router' {
       path: '/proto-session-slice'
       fullPath: '/proto-session-slice'
       preLoaderRoute: typeof ProtoSessionSliceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/proto-session-run': {
+      id: '/proto-session-run'
+      path: '/proto-session-run'
+      fullPath: '/proto-session-run'
+      preLoaderRoute: typeof ProtoSessionRunRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/presentation': {
@@ -518,6 +538,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   LogoutRoute: LogoutRoute,
   PresentationRoute: PresentationRoute,
+  ProtoSessionRunRoute: ProtoSessionRunRoute,
   ProtoSessionSliceRoute: ProtoSessionSliceRoute,
   SignUpRoute: SignUpRoute,
   StartRoute: StartRoute,

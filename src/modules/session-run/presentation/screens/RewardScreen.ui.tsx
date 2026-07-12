@@ -1,4 +1,4 @@
-import type { Config } from "~/modules/session-run/configs/config";
+import type { Config } from "~/modules/session-run/configs/config.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
@@ -16,7 +16,6 @@ type RewardScreenProps = {
 	onAddSlot: () => void;
 	upgradeable: readonly Config[];
 	onUpgrade: (configId: string) => void;
-	onSkip: () => void;
 };
 
 export const RewardScreen = ({
@@ -31,7 +30,6 @@ export const RewardScreen = ({
 	onAddSlot,
 	upgradeable,
 	onUpgrade,
-	onSkip,
 }: RewardScreenProps) => (
 	<div className="flex flex-col gap-6">
 		<div className="rounded-xl border border-viridian bg-viridian/10 p-6">
@@ -41,35 +39,39 @@ export const RewardScreen = ({
 			</Paragraph>
 		</div>
 
-		<section className="flex flex-col gap-2">
-			<Paragraph>Draft a config</Paragraph>
-			{draftOptions.map((config) => (
-				<ConfigRow
-					key={config.id}
-					config={config}
-					action="draft ＋"
-					onClick={() => onDraft(config.id)}
-				/>
-			))}
+		<section className="flex flex-col gap-4">
+			<Title>Configure your pipeline</Title>
+			<section className="flex gap-2">
+				{draftOptions.map((config) => (
+					<ConfigRow
+						key={config.id}
+						config={config}
+						action="draft ＋"
+						onClick={() => onDraft(config.id)}
+					/>
+				))}
+			</section>
+		</section>
+
+		<section className="flex gap-2">
 			<button
 				type="button"
 				disabled={!canRebuild}
 				onClick={onRebuild}
-				className="mt-1 self-start rounded-lg border border-cerulean px-4 py-2 text-sm font-bold text-cerulean transition enabled:hover:bg-cerulean enabled:hover:text-black disabled:opacity-40"
+				className="rounded-lg border border-theme px-4 py-2 text-sm text-theme transition enabled:hover:bg-theme enabled:hover:text-black disabled:opacity-40 cursor-pointer"
 			>
 				Rebuild draft ({rebuildCost}KB)
 			</button>
+			{canAddSlot ? (
+				<button
+					type="button"
+					onClick={onAddSlot}
+					className="rounded-lg border border-theme px-3 py-2 text-sm text-theme transition hover:bg-theme hover:text-black cursor-pointer"
+				>
+					Add a slot: {slots} → {slots + 1}
+				</button>
+			) : null}
 		</section>
-
-		{canAddSlot ? (
-			<button
-				type="button"
-				onClick={onAddSlot}
-				className="self-start rounded-lg border border-viridian px-3 py-2 text-sm text-viridian transition hover:bg-viridian hover:text-black"
-			>
-				Add a slot: {slots} → {slots + 1}
-			</button>
-		) : null}
 
 		{upgradeable.length > 0 ? (
 			<section className="flex flex-col gap-2">
@@ -86,13 +88,5 @@ export const RewardScreen = ({
 				</div>
 			</section>
 		) : null}
-
-		<button
-			type="button"
-			onClick={onSkip}
-			className="self-start rounded-lg bg-zinc-800 px-6 py-3 font-bold text-white transition hover:brightness-125"
-		>
-			Skip reward →
-		</button>
 	</div>
 );

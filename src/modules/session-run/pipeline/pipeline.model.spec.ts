@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { Config } from "../configs/config";
-import { CONFIGS } from "../configs/configRoster";
+import { Config } from "../configs/config.model";
+import { CONFIGS } from "../configs/configRoster.model";
 import {
 	Pipeline,
 	coverageForAnswer,
@@ -11,7 +11,7 @@ import {
 	isBare,
 	rewardMultiplierFor,
 	stripConfig,
-} from "./pipeline";
+} from "./pipeline.model";
 
 const pipelineWith = (configs: Config[]): Pipeline => ({
 	id: "hyrule-ci",

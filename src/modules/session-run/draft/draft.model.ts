@@ -1,5 +1,5 @@
-import { Config } from "../configs/config";
-import { CONFIG_LIST } from "../configs/configRoster";
+import { Config } from "../configs/config.model";
+import { CONFIG_LIST } from "../configs/configRoster.model";
 
 export const DRAFT_SIZE = 3;
 

@@ -1,7 +1,7 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 
-import { Config } from "../configs/config";
-import { Coverage, effectOf } from "../configs/effect";
+import { Config } from "../configs/config.model";
+import { Coverage, effectOf } from "../configs/effect.model";
 
 export type Pipeline = {
 	readonly id: string;

@@ -1,4 +1,4 @@
-import type { Config } from "~/modules/session-run/configs/config";
+import type { Config } from "~/modules/session-run/configs/config.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";

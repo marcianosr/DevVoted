@@ -4,9 +4,9 @@ import {
 	EffectContext,
 	effectOf,
 	GateWindow,
-} from "../configs/effect";
-import { Pipeline, effectiveRequirement } from "../pipeline/pipeline";
-import { CLIMB_BASE_REQUIREMENT, escalation } from "../rules";
+} from "../configs/effect.model";
+import { Pipeline, effectiveRequirement } from "../pipeline/pipeline.model";
+import { CLIMB_BASE_REQUIREMENT, escalation } from "../rules.model";
 
 const passes = (state: CheckStatus["state"]): boolean =>
 	state === "success" || state === "skipped";

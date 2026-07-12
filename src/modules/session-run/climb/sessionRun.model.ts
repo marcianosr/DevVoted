@@ -10,12 +10,17 @@ import {
 	MAX_SLOTS,
 	rewardMultiplierFor,
 	stripConfig,
-} from "../pipeline/pipeline";
-import { Config } from "../configs/config";
-import { EMPTY_WINDOW, GateWindow } from "../configs/effect";
-import { DRAFT_SIZE, rebuildCost, rollDraft } from "../draft/draft";
-import { gateDemands, gatePassed } from "../gate/gate";
-import { dropCount, SLICE_WINDOW, SPEED_MS, VICTORY_GATE } from "../rules";
+} from "../pipeline/pipeline.model";
+import { Config } from "../configs/config.model";
+import { EMPTY_WINDOW, GateWindow } from "../configs/effect.model";
+import { DRAFT_SIZE, rebuildCost, rollDraft } from "../draft/draft.model";
+import { gateDemands, gatePassed } from "../gate/gate.model";
+import {
+	dropCount,
+	SLICE_WINDOW,
+	SPEED_MS,
+	VICTORY_GATE,
+} from "../rules.model";
 
 const GATE_REWARD_KB = 120;
 export const LINT_COST = 40;
@@ -25,11 +30,35 @@ export type SessionOption = {
 	readonly label: string;
 	readonly correct: boolean;
 };
+/** Mirrors the schema's `answer_type`. */
+export type AnswerType = "single" | "multiple";
+
 export type SessionPoll = {
 	readonly id: string;
 	readonly category: CategoryCode;
 	readonly question: string;
+	readonly answerType: AnswerType;
 	readonly options: readonly SessionOption[];
+};
+
+/**
+ * The server's verdict on an answer. Single: exactly the one correct option.
+ * Multiple: the selected set must equal the correct set exactly (all correct, no extras).
+ */
+const isCorrect = (
+	poll: SessionPoll,
+	optionIds: readonly string[]
+): boolean => {
+	const selected = new Set(optionIds);
+	const correctIds = poll.options
+		.filter((option) => option.correct)
+		.map((option) => option.id);
+	if (poll.answerType === "single")
+		return optionIds.length === 1 && correctIds.includes(optionIds[0]);
+	return (
+		correctIds.length === selected.size &&
+		correctIds.every((id) => selected.has(id))
+	);
 };
 
 export type SessionStatus =
@@ -60,7 +89,7 @@ export type SessionAction =
 	| { readonly type: "start" }
 	| {
 			readonly type: "answer";
-			readonly optionId: string;
+			readonly optionIds: readonly string[];
 			readonly elapsedMs?: number;
 	  }
 	| { readonly type: "lint-poll" }
@@ -93,7 +122,7 @@ export const createSession = (
 });
 
 export { gateDemands, canLint, disabledOptionIds, rebuildCost };
-export { SPEED_MS } from "../rules";
+export { SPEED_MS } from "../rules.model";
 
 const withLog = (
 	state: SessionState,
@@ -201,15 +230,14 @@ const closeWindow = (state: SessionState, nextIndex: number): SessionState => {
 
 const answer = (
 	state: SessionState,
-	optionId: string,
+	optionIds: readonly string[],
 	elapsedMs?: number
 ): SessionState => {
+	if (optionIds.length === 0) return state;
 	const poll = state.polls[state.currentIndex];
-	const option = poll.options.find((candidate) => candidate.id === optionId);
-	if (!option) return state;
 
 	const configs = state.pipeline.configs;
-	const correct = option.correct;
+	const correct = isCorrect(poll, optionIds);
 	const fast = elapsedMs !== undefined && elapsedMs <= SPEED_MS;
 	const openingClean = state.window.leadingCorrect === state.window.answered;
 	const earned = coverageForAnswer(configs, poll.category, correct);
@@ -415,7 +443,7 @@ export const sessionReducer = (
 	if (action.type === "start" && state.status === "configuring")
 		return { ...state, status: "answering" };
 	if (action.type === "answer" && state.status === "answering")
-		return answer(state, action.optionId, action.elapsedMs);
+		return answer(state, action.optionIds, action.elapsedMs);
 	if (action.type === "lint-poll" && state.status === "answering")
 		return spendLint(state);
 	if (action.type === "strip" && state.status === "awaiting-strip")
@@ -435,4 +463,4 @@ export const sessionReducer = (
 	return state;
 };
 
-export { checkStatuses, currentRequirement } from "../gate/gate";
+export { checkStatuses, currentRequirement } from "../gate/gate.model";

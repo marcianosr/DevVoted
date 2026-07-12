@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { CONFIGS } from "~/modules/session-run/configs/configRoster";
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { ConfiguringScreen } from "./ConfiguringScreen.ui";
 
 const meta: Meta<typeof ConfiguringScreen> = {

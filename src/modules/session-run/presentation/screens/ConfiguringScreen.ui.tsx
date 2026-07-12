@@ -1,4 +1,4 @@
-import type { Config } from "~/modules/session-run/configs/config";
+import type { Config } from "~/modules/session-run/configs/config.model";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigRow } from "../configs/ConfigRow.ui";
 import { RarityLegend } from "../configs/RarityLegend.ui";

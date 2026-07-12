@@ -1,4 +1,4 @@
-import type { Config } from "~/modules/session-run/configs/config";
+import type { Config } from "~/modules/session-run/configs/config.model";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 
 type PipelineProps = {
