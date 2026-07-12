@@ -1,261 +1,61 @@
-# ADR 002: Domain Architecture
+# Agent Instructions — SPA Frontend
 
-**Status:** Accepted  
-**Deciders:** Marciano  
-**Date:** 2025-02-14  
-**Updated:** 2026-02-21
+This document is a template for a project-level `CLAUDE.md` (or equivalent agent instruction file). Copy it into the root of a project and adjust the specifics. It encodes the rules from the [SPA Reference Architecture](./reference-architecture-spa.md).
 
 ---
 
-## Context and Problem Statement
+## Validation
 
-We aim to establish a file structure that is future-proof and scalable:
+- All data entering the system from outside must be parsed through a Zod schema before use. This includes API responses, form submissions, URL parameters, and any browser storage reads.
+- Never use `as SomeType` or type assertions to bypass unknown data — parse it instead.
+- Zod schemas live in `src/domain/schemas/`. The inferred TypeScript types from those schemas are the domain types.
 
-- Low cognitive load
-- Clearly separated by architectural layers
-- Optimized for developer experience (DX)
-- Supports full-stack TanStack Start patterns
+## Domain layer
 
----
+- `src/domain/` is framework-agnostic. No React imports, no hooks, no JSX.
+- Business logic lives here as pure functions: data in, data out.
+- Mutations of domain objects use `produce` from immer. Never mutate objects directly.
+- A function that changes domain state belongs in `src/domain/functions/`, not in a component or hook.
+- If you find yourself writing the same transformation in two places, it belongs here.
 
-## Decision Drivers
+## Application layer
 
-- Minimize complexity
-- Ensure adaptability to future requirements
-- Enable clear architectural boundaries
-- Support server functions with clean separation of concerns
+- `src/modules/` is where React-specific logic lives: hooks, state, routing, feature composition.
+- Never write raw HTML or CSS in a module component. All visual output comes from `src/ui/`.
+- Extract distinct behavior topics into custom hooks. One hook, one concern.
+- Data fetching, form state, and domain mutations each belong in their own hook.
+- A component that imports more than one or two hooks is a signal to split it.
 
----
+## UI layer
 
-## Decision Outcome
+- `src/ui/` components are stateless. They receive data and emit events via props. No internal state, no domain knowledge, no API calls.
+- When you need a stateful version of a UI component, wrap it in a module-level component that owns the state and passes it down.
+- Props express intent, not implementation. Use named variants: `size="sm"` not `width={14}`. Use `intent="primary"` not `color="blue"`.
+- Use CVA (`cva`) to define component variants. Do not concatenate class strings with conditional logic.
 
-We adopt a combination of **Domain-Driven Design (DDD)** and **Screaming Architecture**.
+## Theming and dark mode
 
-### Top-Level Structure
+- Do not use `dark:` modifier classes on individual UI components.
+- Define semantic color names in `@theme` (e.g. `--color-surface`, `--color-on-surface`, `--color-primary`).
+- Override those variables under a `[data-theme="dark"]` selector in one place.
+- Components use `bg-surface`, `text-on-surface`, etc. — never hardcoded color values.
 
-```
-src/
-├── components/     # Global shared React components (layouts, navigation, auth)
-├── config/         # Application configuration constants
-├── database/       # Drizzle ORM setup, schema, migrations, seeds
-├── domains/        # Feature-oriented domain modules (DDD approach)
-├── hooks/          # Global custom React hooks
-├── lib/            # Pure utility functions (date utils, storage helpers)
-├── presentation/   # Presentation mode feature (slides)
-├── routes/         # TanStack Router file-based routes
-├── styles/         # Global CSS (Tailwind)
-├── test/           # Test setup and utilities (mock factories)
-├── ui/             # Reusable UI primitives (buttons, skeletons)
-└── utils/          # Application utilities (auth, error handling, SEO)
-```
+## Testing
 
-### Domain Internal Structure
+- Domain functions in `src/domain/` must have near-100% unit test coverage. They are pure functions — tests are straightforward.
+- Use Vitest as the test runner. Use React Testing Library for component tests.
+- Test from the user's perspective: find elements by role, label, or text — not by class names or test IDs.
+- UI components should have Storybook stories covering all variants and interactive states.
 
-Each domain follows this structure:
+## File placement
 
-```
-src/domains/{domain}/
-├── api/
-│   ├── {domain}.ts       # Server functions (createServerFn) - entry point
-│   ├── handlers.ts       # Business logic handlers (pure functions)
-│   ├── handlers.spec.ts  # Handler unit tests
-│   ├── queries.ts        # Database operations (Drizzle ORM)
-│   └── queries.spec.ts   # Query unit tests
-├── components/           # Domain-specific React components
-├── data/                 # Static data, constants, fixtures
-├── factories/            # Test data factories + seed data factories
-├── hooks/                # Domain-specific custom hooks
-├── models/               # TypeScript types + DTO conversion functions
-├── services/             # Complex business logic, orchestration
-│   ├── *.service.ts
-│   └── *.service.spec.ts
-├── utils/                # Domain-specific utility functions
-└── validation/           # Zod schemas for input validation
-    ├── schemas.ts
-    └── schemas.spec.ts
-```
+When adding new code, follow this decision tree:
 
-### Positive Consequences
+1. Is it a pure transformation or validation of domain data? → `src/domain/`
+2. Is it an API call or adapter? → `src/api/`
+3. Is it a reusable, stateless UI component? → `src/ui/`
+4. Is it a behavior hook for a specific feature? → `src/modules/[feature]/hooks/`
+5. Is it a composed screen or feature component? → `src/modules/[feature]/components/`
+6. Is it a cross-cutting React concern (provider, layout)? → `src/application/`
 
-- Code is grouped by business domain, making it easy to find
-- Clear separation between server-side and client-side code
-- Testable architecture with mocked database queries
-- Supports TanStack Start's full-stack patterns
-
----
-
-## Server Function Flow
-
-The API layer follows a three-tier pattern for clean separation of concerns:
-
-```mermaid
-flowchart TD
-    A[Route Loader/Action] --> B[Server Function]
-    B --> C[Handler]
-    C --> D[Query]
-    D --> E[(Database)]
-    
-    subgraph "api/{domain}.ts"
-        B
-    end
-    
-    subgraph "api/handlers.ts"
-        C
-    end
-    
-    subgraph "api/queries.ts"
-        D
-    end
-```
-
-### Layer Responsibilities
-
-| Layer | File | Purpose | Testability |
-|-------|------|---------|-------------|
-| **Server Function** | `{domain}.ts` | Authentication, authorization, input validation | Integration tests |
-| **Handler** | `handlers.ts` | Business logic orchestration, error handling | Unit tests (mock queries) |
-| **Query** | `queries.ts` | Database operations with Drizzle ORM | Unit tests (mock db) |
-
-### Example Flow
-
-**1. Server Function** (`api/polls.ts`) - Handles auth and delegates to handler:
-
-```typescript
-export const getDailyPoll = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ runId: z.number().optional() }))
-  .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
-    return getDailyPollHandler({ data: { userId, ...data } });
-  });
-```
-
-**2. Handler** (`api/handlers.ts`) - Contains business logic:
-
-```typescript
-export const getDailyPollHandler = async ({
-  data,
-}: {
-  data: { userId: string; runId?: number };
-}) => {
-  return handleApiOperation(async () => {
-    const poll = await getDailyPollWithOptions(data.userId);
-    const run = data.runId 
-      ? await fetchRunById(data.runId) 
-      : await getUserActiveRun(data.userId);
-    
-    return { poll, run };
-  });
-};
-```
-
-**3. Query** (`api/queries.ts`) - Database operations:
-
-```typescript
-export const fetchPollById = async (id: number): Promise<Poll | null> => {
-  const pollRecord = await db
-    .select()
-    .from(pollsTable)
-    .where(eq(pollsTable.id, id));
-
-  if (!pollRecord.length) {
-    throw new Error("Poll not found");
-  }
-
-  return pollFactory.toDTO(pollRecord[0]);
-};
-```
-
-### Why This Separation?
-
-1. **Server functions** are hard to unit test (require auth mocking)
-2. **Handlers** are pure functions - easy to test with mocked queries
-3. **Queries** isolate database logic - easy to test with mocked Drizzle
-4. Each layer has a single responsibility
-
----
-
-## File Responsibilities
-
-### Files in Domain Root
-
-| File Pattern | Purpose | When to Use |
-|--------------|---------|-------------|
-| N/A | DevVoted uses folders, not root-level files | See folder structure below |
-
-### Folder Responsibilities
-
-| Folder | Purpose |
-|--------|---------|
-| `api/` | Server functions, handlers, and database queries |
-| `components/` | React components specific to this domain |
-| `data/` | Static configuration, constants, default values |
-| `factories/` | Test data factories and database seed factories |
-| `hooks/` | Domain-specific React hooks (TanStack Query wrappers) |
-| `models/` | TypeScript types + `toDTO`/`fromDTO` conversion functions |
-| `services/` | Complex business logic spanning multiple queries |
-| `utils/` | Domain-specific helper functions |
-| `validation/` | Zod schemas for input validation |
-
-### Naming Conventions
-
-- Components: `{Name}.tsx` (no suffix)
-- Hooks: `use{Name}.ts`
-- Services: `{name}.service.ts`
-- Models: `{name}.ts` in `models/` folder
-- Validation: `schemas.ts` in `validation/` folder
-- Factories: `{name}.ts` in `factories/` folder
-
----
-
-## Shared Code
-
-### Cross-Domain Utilities (`src/domains/shared/`)
-
-For utilities used across multiple domains:
-
-```typescript
-// src/domains/shared/queryKeys.ts
-export const pollQueryKeys = {
-  all: ["polls"] as const,
-  detail: (pollId: number) => [...pollQueryKeys.all, pollId] as const,
-  daily: (userId: string | undefined) => 
-    [...pollQueryKeys.all, "daily", userId] as const,
-};
-```
-
-### Global vs Domain Services
-
-| Location | Use For |
-|----------|---------|
-| `src/services/` | Infrastructure (logging, caching), truly shared utilities |
-| `src/domains/*/services/` | Domain-specific business logic |
-
----
-
-## UI Component Organization
-
-### `src/ui/` - Pure Presentational Primitives
-
-- No business logic
-- Highly reusable across domains
-- Examples: `PrimaryButton`, `LoadingSkeleton`, `ErrorComponent`
-
-### `src/components/` - Global Shared Components
-
-- May contain some logic (auth, navigation)
-- Used across routes/domains
-- Examples: `PageLayout`, `Auth`, `DefaultCatchBoundary`
-
-### `src/domains/*/components/` - Domain Components
-
-- Specific to one domain
-- May use domain hooks and services
-- Co-located with domain logic
-
----
-
-## Links
-
-- [Screaming Architecture](https://blog.cleancoder.com/uncle-bob/2011/11/22/screaming-architecture.html)
-- [TanStack Start Server Functions](https://tanstack.com/start/latest/docs/framework/react/server-functions)
-- [Domain-Driven Design](https://martinfowler.com/bliki/DomainDrivenDesign.html)
+If it doesn't fit any of the above, ask before creating a new top-level folder.

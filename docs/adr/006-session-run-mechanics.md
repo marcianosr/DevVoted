@@ -1,4 +1,4 @@
-# ADR-006: Session-run mechanics — the config board, composed gates, and failure model
+# ADR-006: Session-run mechanics — the config pipeline, composed gates, and failure model
 
 ## Status
 
@@ -10,15 +10,15 @@ ADR-005 established *where* a session run lives (a `mode: "session"` row on `run
 
 The prototype deliberately broke the `src/ui` vs `src/domains` split (it is throwaway). Its **value is the decisions below, not its code** — those port; the code is deleted.
 
-A prior iteration tried **multiple pipelines** (each a different lens on the window, all must pass). It was scrapped: the "which pipeline does this config go on?" choice was mostly meaningless (most config effects are global), and adding a pipeline was pure downside (a new demand with no reward). Both problems dissolved by collapsing to one board — see Decision 1.
+A prior iteration tried **multiple pipelines** (each a different lens on the window, all must pass). It was scrapped: the "which pipeline does this config go on?" choice was mostly meaningless (most config effects are global), and adding a pipeline was pure downside (a new demand with no reward). Both problems dissolved by collapsing to one pipeline — see Decision 1.
 
 ## Decision
 
-### 1. One board, not multiple pipelines
+### 1. One pipeline, not many
 
-The player stacks **all** configs onto a single pipeline ("the board"). It starts at **3 slots** and can grow to **5**. Slots are the scarcity that makes every config a real cut.
+The player stacks **all** configs onto a single pipeline. It starts at **3 slots** and can grow to **5**. Slots are the scarcity that makes every config a real cut.
 
-*Rationale:* difficulty and variety come from *which configs you stack*, not from routing configs across parallel containers. One board removes a meaningless decision layer and matches the original "stack to make your run richer/harder" fantasy.
+*Rationale:* difficulty and variety come from *which configs you stack*, not from routing configs across parallel containers. One pipeline removes a meaningless decision layer and matches the original "stack to make your run richer/harder" fantasy.
 
 ### 2. The gate is a composed checklist ("checks-as-configs")
 
@@ -36,7 +36,7 @@ The player's build literally *composes* the gate. The UI shows this as a live ch
 
 Two config families are "voluntary difficulty for a bigger payout," and they are the *same concept*:
 
-- **Check-configs** add a gate condition **and** a storage reward multiplier: Coverage (`+4%` this window, ×1.5), Cold Start (first 2 answers correct, ×1.5), Speed (2 fast answers, ×2), Mirrored (2 *wrong* answers — inverted, ×2).
+- **Check-configs** add a gate condition **and** a storage reward multiplier: Coverage (`+4%` this window, ×1.5), Cold Start (first 2 answers correct, ×1.5), Speed (2 fast answers, ×2). Mirrored (2 *wrong* answers — inverted, ×2) is designed but **parked** for the initial rebuild (DVTD-5o4d).
 - **Risk-configs** raise the baseline correct requirement for a multiplier: push --force (`+1`, ×2), Deploy on Friday (`+2`, ×3).
 
 On a pass, storage reward = `GATE_REWARD_KB (120) × product(reward multipliers)`. This fixes the earlier "why would anyone take a harder condition?" hole: harder = richer, always.
@@ -56,7 +56,7 @@ Coverage on a correct answer is driven by the **whole build** (all equipped conf
 
 ### 6. Failure model: strip-on-fail, drop N (N climbs)
 
-Miss a gate → the player **peels N configs of their choice** off the board, where `N = 1 + floor(gatesCleared / 2)`. Then the run resumes on a fresh window. **Death happens only when a bare build (0 configs) misses a gate.** A drop quota larger than the build strips it bare rather than instantly killing.
+Miss a gate → the player **peels N configs of their choice** off the pipeline, where `N = 1 + floor(gatesCleared / 2)`. Then the run resumes on a fresh window. **Death happens only when a bare build (0 configs) misses a gate.** A drop quota larger than the build strips it bare rather than instantly killing.
 
 *Rationale:* deeper gates bleed you faster (bigger drop), pushing you toward the bare-and-fragile state where death lives — without cheap one-shot deaths early.
 
@@ -65,7 +65,7 @@ Miss a gate → the player **peels N configs of their choice** off the board, wh
 Clearing a non-final gate grants **one** reward:
 
 - **Draft a config** — 3 offered, slot one (a Focus dupe becomes an upgrade instead).
-- **Add a slot** — widen the board (cap 5).
+- **Add a slot** — widen the pipeline (cap 5).
 - **Upgrade a Focus config** — level up one you already run (no draft needed).
 - plus **Rebuild draft** (re-roll the 3 offers, see Decision 9) and **Skip**.
 
@@ -90,7 +90,7 @@ Cheap to nudge, brutal to abuse.
 
 ## Consequences
 
-- **Positive**: a small, coherent rule set (one board, one composed gate, one failure rule) that reuses ADR-005's poll-count-based engine. The proven logic ports into `src/domains/runs` (engine) + `src/ui/runs` (presentation), respecting the split the prototype broke.
+- **Positive**: a small, coherent rule set (one pipeline, one composed gate, one failure rule) that reuses ADR-005's poll-count-based engine. The proven logic ports into `src/domains/session-run` (engine) + `src/ui/session-run` (presentation), respecting the split the prototype broke.
 - **Negative**: "every check must pass" can feel swingy — one missed condition sinks a whole gate. The strip-N model is the pressure valve, but it needs live tuning.
 - The composed-gate model means the UI **must** always surface the full live checklist; a hidden condition reads as an unfair loss.
 
