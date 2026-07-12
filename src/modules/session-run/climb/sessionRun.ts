@@ -3,25 +3,19 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import {
 	Pipeline,
 	BASE_SLOTS,
+	canLint,
 	coverageForAnswer,
 	disabledOptionIds,
-	hasLinter,
 	isBare,
 	MAX_SLOTS,
 	rewardMultiplierFor,
 	stripConfig,
 } from "../pipeline/pipeline";
 import { Config } from "../configs/config";
+import { EMPTY_WINDOW, GateWindow } from "../configs/effect";
 import { DRAFT_SIZE, rebuildCost, rollDraft } from "../draft/draft";
-import {
-	dropCount,
-	EMPTY_WINDOW,
-	gateDemands,
-	gatePassed,
-	GateWindow,
-	SLICE_WINDOW,
-	VICTORY_GATE,
-} from "../gate/gate";
+import { gateDemands, gatePassed } from "../gate/gate";
+import { dropCount, SLICE_WINDOW, SPEED_MS, VICTORY_GATE } from "../rules";
 
 const GATE_REWARD_KB = 120;
 export const LINT_COST = 40;
@@ -78,8 +72,6 @@ export type SessionAction =
 	| { readonly type: "skip-reward" }
 	| { readonly type: "drop"; readonly configId: string };
 
-export const SPEED_MS = 4000;
-
 export const createSession = (
 	polls: readonly SessionPoll[],
 	handed: readonly Config[]
@@ -100,7 +92,8 @@ export const createSession = (
 	log: [],
 });
 
-export { gateDemands, hasLinter, disabledOptionIds, rebuildCost };
+export { gateDemands, canLint, disabledOptionIds, rebuildCost };
+export { SPEED_MS } from "../rules";
 
 const withLog = (
 	state: SessionState,
@@ -265,7 +258,7 @@ const answer = (
 };
 
 const spendLint = (state: SessionState): SessionState => {
-	if (!hasLinter(state.pipeline.configs) || state.storage < LINT_COST)
+	if (!canLint(state.pipeline.configs) || state.storage < LINT_COST)
 		return state;
 	const poll = state.polls[state.currentIndex];
 	const alreadyOff = new Set<string>([

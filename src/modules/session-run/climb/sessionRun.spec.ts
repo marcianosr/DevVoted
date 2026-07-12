@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 import { CONFIGS } from "../configs/configRoster";
-import { SLICE_WINDOW, VICTORY_GATE } from "../gate/gate";
+import { SLICE_WINDOW, VICTORY_GATE } from "../rules";
 import {
 	createSession,
 	sessionReducer,

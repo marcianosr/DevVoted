@@ -3,15 +3,13 @@ import { describe, expect, it } from "vitest";
 import { Pipeline } from "../pipeline/pipeline";
 import { Config } from "../configs/config";
 import { CONFIGS } from "../configs/configRoster";
+import { EMPTY_WINDOW, GateWindow } from "../configs/effect";
+import { dropCount, escalation } from "../rules";
 import {
 	checkStatuses,
 	currentRequirement,
-	dropCount,
-	EMPTY_WINDOW,
-	escalation,
 	gateDemands,
 	gatePassed,
-	GateWindow,
 } from "./gate";
 
 const pipelineWith = (configs: Config[]): Pipeline => ({

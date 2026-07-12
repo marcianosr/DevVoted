@@ -90,7 +90,7 @@ Cheap to nudge, brutal to abuse.
 
 ## Consequences
 
-- **Positive**: a small, coherent rule set (one pipeline, one composed gate, one failure rule) that reuses ADR-005's poll-count-based engine. The proven logic ports into `src/domains/session-run` (engine) + `src/ui/session-run` (presentation), respecting the split the prototype broke.
+- **Positive**: a small, coherent rule set (one pipeline, one composed gate, one failure rule) that reuses ADR-005's poll-count-based engine. The proven logic ports into `src/modules/session-run` (engine) + `src/ui/session-run` (presentation), respecting the split the prototype broke.
 - **Negative**: "every check must pass" can feel swingy — one missed condition sinks a whole gate. The strip-N model is the pressure valve, but it needs live tuning.
 - The composed-gate model means the UI **must** always surface the full live checklist; a hidden condition reads as an unfair loss.
 

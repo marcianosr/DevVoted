@@ -37,9 +37,10 @@ All app-facing run text uses these — no ad-hoc `<h1>`/`<p>` with inline sizes.
 
 ### 3. Architecture — DDD, screaming, two-tier UI preserved
 
-- **Screaming structure**: a new bounded context `src/domains/session-run/` whose subfolders name the *concepts* (`gate/`, `pipeline/`, `configs/`, `draft/`, `climb/`), not technical layers. Opening the folder should say "this is a roguelike run," not "this is React."
-- **Two-tier UI split is kept** (per CLAUDE.md and because we want Storybook): business/logic in `src/domains/session-run/` (no HTML/CSS), presentational components in `src/ui/session-run/` (all HTML/Tailwind, Storybook-backed, plain props only). The prototype broke this deliberately; the rebuild honors it.
-- **Pure engine first**: the ADR-006 mechanics port as pure, tested reducers/functions in the domain layer before any UI wires to them.
+- **`modules/` = new, `domains/` = classic.** Rebuilt bounded contexts live in `src/modules/` (e.g. `src/modules/session-run/`). Everything under `src/domains/` is the legacy app being replaced. **`modules/` may import `domains/shared/` (the schema-adjacent kernel — e.g. `categories`) but never a classic feature domain (`domains/runs`, `domains/polls`, …).** This makes the "don't extend old code" rule physical, not just intended.
+- **Screaming structure**: a module's subfolders name the *concepts* (`gate/`, `pipeline/`, `configs/`, `draft/`, `climb/`), not technical layers. Opening the folder should say "this is a roguelike run," not "this is React."
+- **Two-tier UI split is kept** (per CLAUDE.md and because we want Storybook): business/logic in `src/modules/session-run/` (no HTML/CSS), presentational components in `src/ui/session-run/` (all HTML/Tailwind, Storybook-backed, plain props only). The prototype broke this deliberately; the rebuild honors it.
+- **Pure engine first**: the ADR-006 mechanics port as pure, tested reducers/functions in the module before any UI wires to them.
 
 ### 4. Comments explain *why*, never *what*
 
@@ -57,4 +58,4 @@ Code is self-documenting through naming. Add a comment **only** when it captures
 
 - **Positive**: a clean, consistent, Storybook-testable run frontend with one type system for color and text; the old app keeps working during the rebuild; no data risk.
 - **Negative**: temporary duplication (new `session-run` domain alongside the old `runs` domain) until the old run UI is retired. Accepted — parallel is safer than in-place rewrite.
-- Screaming + two-tier means each concept spans two folders (`domains/session-run/gate/` logic, `ui/session-run/gate/` visuals). The concept name is the link.
+- Screaming + two-tier means each concept spans two folders (`modules/session-run/gate/` logic, `ui/session-run/gate/` visuals). The concept name is the link.

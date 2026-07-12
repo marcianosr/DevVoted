@@ -7,7 +7,7 @@ import {
 	coverageForAnswer,
 	disabledOptionIds,
 	effectiveRequirement,
-	hasLinter,
+	canLint,
 	isBare,
 	rewardMultiplierFor,
 	stripConfig,
@@ -88,10 +88,10 @@ describe("coverageForAnswer", () => {
 	});
 });
 
-describe("hasLinter", () => {
+describe("canLint", () => {
 	it("is true only when a linter config is equipped", () => {
-		expect(hasLinter([CONFIGS.eslint])).toBe(true);
-		expect(hasLinter([CONFIGS.js, CONFIGS.copilot])).toBe(false);
+		expect(canLint([CONFIGS.eslint])).toBe(true);
+		expect(canLint([CONFIGS.js, CONFIGS.copilot])).toBe(false);
 	});
 });
 
