@@ -1,7 +1,9 @@
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 import type { AnswerType } from "~/modules/session-run/climb/sessionRun.model";
+import type { Config } from "~/modules/session-run/configs/config.model";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
+import { ConfigChip } from "../configs/ConfigChip.ui";
 
 export type { AnswerType };
 
@@ -25,6 +27,10 @@ type PollCardProps = {
 	/** Multiple only: submit the current selection. */
 	onSubmit?: () => void;
 	canLint?: boolean;
+	/** Whether the lint action can be run now (false = shown but disabled, e.g. can't afford it). */
+	lintReady?: boolean;
+	/** The linter config powering the lint action — shown as a chip on the button. */
+	linter?: Config;
 	onLint?: () => void;
 	lintCost?: number;
 };
@@ -41,6 +47,8 @@ export const PollCard = ({
 	onSelect,
 	onSubmit,
 	canLint = false,
+	lintReady = true,
+	linter,
 	onLint,
 	lintCost,
 }: PollCardProps) => {
@@ -64,10 +72,14 @@ export const PollCard = ({
 				<button
 					type="button"
 					onClick={onLint}
-					className="self-start rounded border border-viridian px-3 py-1 text-xs text-viridian transition hover:bg-viridian hover:text-black"
+					disabled={!lintReady}
+					className="flex items-center gap-2 self-start rounded border border-viridian px-3 py-1 text-xs text-viridian transition enabled:cursor-pointer enabled:hover:bg-viridian enabled:hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
 				>
-					Run linter · cross out a wrong answer
-					{lintCost === undefined ? "" : ` (${lintCost}KB)`}
+					{linter ? <ConfigChip config={linter} /> : null}
+					<span>
+						Run linter · cross out a wrong answer
+						{lintCost === undefined ? "" : ` (${lintCost}KB)`}
+					</span>
 				</button>
 			) : null}
 
@@ -79,12 +91,12 @@ export const PollCard = ({
 						revealed && chosen.has(option.id) && !correct.has(option.id);
 					const isSelected = !revealed && selected.has(option.id);
 					const row = isCorrect
-						? "border-viridian bg-viridian/15 text-viridian"
+						? "bg-viridian/15 text-viridian"
 						: isChosenWrong
-							? "border-cinnabar bg-cinnabar/15 text-cinnabar"
+							? "bg-cinnabar/15 text-cinnabar"
 							: isSelected
-								? "border-theme bg-theme-soft text-white"
-								: "border-zinc-700 text-white";
+								? "bg-theme-soft text-white"
+								: "text-white";
 					const box = isCorrect
 						? "border-viridian bg-viridian text-black"
 						: isChosenWrong
@@ -99,7 +111,7 @@ export const PollCard = ({
 							type="button"
 							disabled={off || revealed}
 							onClick={() => onSelect(option.id)}
-							className={`flex items-center gap-3 rounded-lg border-2 px-4 py-3 text-left transition ${row} ${off ? "cursor-not-allowed opacity-40 line-through" : revealed ? "" : "hover:bg-white/5"}`}
+							className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left transition ${row} ${off ? "cursor-not-allowed opacity-40 line-through" : revealed ? "" : "cursor-pointer hover:bg-white/5"}`}
 						>
 							<span
 								className={`flex h-5 w-5 items-center justify-center rounded border-2 text-xs ${box}`}

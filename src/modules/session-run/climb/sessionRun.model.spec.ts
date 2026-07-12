@@ -9,7 +9,6 @@ import {
 	sessionReducer,
 	SessionPoll,
 	SessionState,
-	SPEED_MS,
 } from "./sessionRun.model";
 
 const poll = (
@@ -34,7 +33,6 @@ const handed = [
 	CONFIGS.js,
 	CONFIGS.eslint,
 	CONFIGS.pushForce,
-	CONFIGS.speed,
 	CONFIGS.coverageGain,
 	CONFIGS.coldStart,
 	CONFIGS.indexedDb,
@@ -43,11 +41,7 @@ const handed = [
 const configIds = (state: SessionState): string[] =>
 	state.pipeline.configs.map((config) => config.id);
 
-const answerWith = (
-	state: SessionState,
-	correct: boolean,
-	elapsedMs?: number
-): SessionState => {
+const answerWith = (state: SessionState, correct: boolean): SessionState => {
 	const current = state.polls[state.currentIndex];
 	const option = current.options.find(
 		(candidate) => candidate.correct === correct
@@ -56,7 +50,6 @@ const answerWith = (
 	return sessionReducer(state, {
 		type: "answer",
 		optionIds: [option.id],
-		elapsedMs,
 	});
 };
 
@@ -70,7 +63,7 @@ const started = (slotIds: string[], size = 60): SessionState => {
 describe("configuring", () => {
 	it("refuses to slot beyond the pipeline's slots", () => {
 		let state = createSession(pool(60), handed);
-		for (const id of ["js", "eslint", "push-force", "speed"])
+		for (const id of ["js", "eslint", "push-force", "cold-start"])
 			state = sessionReducer(state, { type: "slot", configId: id });
 		expect(state.pipeline.configs).toHaveLength(3);
 	});
@@ -150,12 +143,9 @@ describe("check-configs on one pipeline", () => {
 		expect(state.status).toBe("awaiting-strip");
 	});
 
-	it("passes a Speed check with enough fast answers", () => {
-		let state = started(["speed"]);
-		state = answerWith(state, true, SPEED_MS - 100);
-		state = answerWith(state, true, SPEED_MS - 100);
-		for (let i = 0; i < 3; i++)
-			state = answerWith(state, true, SPEED_MS + 5000);
+	it("passes a Cold Start check when the first answers are correct", () => {
+		let state = started(["cold-start"]); // needs first 2 correct
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.gatesCleared).toBe(1);
 	});
 });
@@ -206,16 +196,17 @@ describe("economy", () => {
 	});
 
 	it("gates the lint action behind a linter config", () => {
-		// CSS poll: ESLint is equipped (so lint is unlocked) but doesn't auto-disable here, leaving two wrong for the manual lint.
+		// JS poll: ESLint covers JS/TS, so the lint action is unlocked; two wrong options remain for the manual lint.
 		const triPoll: SessionPoll = {
 			id: "tri",
-			category: "css",
+			category: "js",
 			question: "Pick",
 			answerType: "single",
 			options: [
 				{ id: "a", label: "A", correct: true },
 				{ id: "b", label: "B", correct: false },
 				{ id: "c", label: "C", correct: false },
+				{ id: "d", label: "D", correct: false },
 			],
 		};
 		const withLinter: SessionState = {

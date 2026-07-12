@@ -21,8 +21,6 @@ export const effectiveRequirement = (
 	pipeline: Pipeline,
 	base: number
 ): number => {
-	if (effects(pipeline).some((effect) => effect.locksBar))
-		return Math.max(1, base);
 	const raised = effects(pipeline).reduce(
 		(total, effect) => total + (effect.requirementDelta ?? 0),
 		0
@@ -51,26 +49,18 @@ export const coverageForAnswer = (
 };
 
 /** Whether the manual lint action is available — any equipped config that masks wrong options. */
-export const canLint = (configs: readonly Config[]): boolean =>
-	configs.some((config) => effectOf(config).maskWrongOn !== undefined);
-
-/** Wrong-option ids masked by config effects, always leaving ≥1 wrong so the poll stays a real choice. */
-export const disabledOptionIds = (
+/** The equipped linter that covers this poll's category, if any (ESLint → JS/TS, Stylelint → CSS). */
+export const linterFor = (
 	configs: readonly Config[],
-	category: CategoryCode,
-	options: readonly { id: string; correct: boolean }[]
-): ReadonlySet<string> => {
-	const masks = configs.filter((config) =>
-		effectOf(config).maskWrongOn?.(category)
-	).length;
-	if (masks === 0) return new Set();
-	const wrongIds = options
-		.filter((option) => !option.correct)
-		.map((option) => option.id);
-	return new Set(
-		wrongIds.slice(0, Math.min(masks, Math.max(0, wrongIds.length - 1)))
-	);
-};
+	category: CategoryCode
+): Config | undefined =>
+	configs.find((config) => effectOf(config).maskWrongOn?.(category) === true);
+
+/** A linter can be run only on a poll in a category it covers. */
+export const canLint = (
+	configs: readonly Config[],
+	category: CategoryCode
+): boolean => linterFor(configs, category) !== undefined;
 
 export const stripConfig = (
 	pipeline: Pipeline,

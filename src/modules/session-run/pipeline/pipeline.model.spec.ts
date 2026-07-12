@@ -5,7 +5,6 @@ import { CONFIGS } from "../configs/configRoster.model";
 import {
 	Pipeline,
 	coverageForAnswer,
-	disabledOptionIds,
 	effectiveRequirement,
 	canLint,
 	isBare,
@@ -18,12 +17,6 @@ const pipelineWith = (configs: Config[]): Pipeline => ({
 	slots: 3,
 	configs,
 });
-
-const triOptions = [
-	{ id: "a", correct: true },
-	{ id: "b", correct: false },
-	{ id: "c", correct: false },
-];
 
 describe("effectiveRequirement", () => {
 	it("returns the base for a bare pipeline", () => {
@@ -38,15 +31,6 @@ describe("effectiveRequirement", () => {
 				1
 			)
 		).toBe(4);
-	});
-
-	it("cancels all raises when yarn.lock is equipped", () => {
-		expect(
-			effectiveRequirement(
-				pipelineWith([CONFIGS.deployFriday, CONFIGS.yarnLock]),
-				1
-			)
-		).toBe(1);
 	});
 
 	it("floors at 1", () => {
@@ -89,30 +73,11 @@ describe("coverageForAnswer", () => {
 });
 
 describe("canLint", () => {
-	it("is true only when a linter config is equipped", () => {
-		expect(canLint([CONFIGS.eslint])).toBe(true);
-		expect(canLint([CONFIGS.js, CONFIGS.copilot])).toBe(false);
-	});
-});
-
-describe("disabledOptionIds", () => {
-	it("disables one wrong option on a matching category, keeping a correct one alive", () => {
-		const off = disabledOptionIds([CONFIGS.eslint], "js", triOptions);
-		expect(off.size).toBe(1);
-		expect(off.has("a")).toBe(false); // never the correct option
-	});
-
-	it("disables nothing off-category", () => {
-		expect(disabledOptionIds([CONFIGS.eslint], "css", triOptions).size).toBe(0);
-	});
-
-	it("keeps at least one wrong option on a 2-option poll", () => {
-		expect(
-			disabledOptionIds([CONFIGS.eslint], "js", [
-				{ id: "a", correct: true },
-				{ id: "b", correct: false },
-			]).size
-		).toBe(0);
+	it("is true only for a linter that covers the poll's category", () => {
+		expect(canLint([CONFIGS.eslint], "js")).toBe(true);
+		expect(canLint([CONFIGS.eslint], "css")).toBe(false); // ESLint is JS/TS only
+		expect(canLint([CONFIGS.stylelint], "css")).toBe(true);
+		expect(canLint([CONFIGS.js, CONFIGS.copilot], "js")).toBe(false); // no linter
 	});
 });
 

@@ -4,7 +4,7 @@
  * fine for local feel-testing; the server-authoritative version (DVTD-ay5e) comes later.
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 
 import {
 	createSession,
@@ -14,11 +14,7 @@ import {
 } from "~/modules/session-run/climb/sessionRun.model";
 import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/session-run/draft/draft.model";
-import {
-	canLint,
-	disabledOptionIds,
-	MAX_SLOTS,
-} from "~/modules/session-run/pipeline/pipeline.model";
+import { MAX_SLOTS } from "~/modules/session-run/pipeline/pipeline.model";
 import { AnsweringScreen } from "~/modules/session-run/presentation/screens/AnsweringScreen.ui";
 import { ConfiguringScreen } from "~/modules/session-run/presentation/screens/ConfiguringScreen.ui";
 import { RewardScreen } from "~/modules/session-run/presentation/screens/RewardScreen.ui";
@@ -117,10 +113,14 @@ const POOLS: SessionPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 
 const HANDED = [
 	CONFIGS.js,
+	CONFIGS.ts,
+	CONFIGS.css,
 	CONFIGS.eslint,
 	CONFIGS.copilot,
+	CONFIGS.codeCoverage,
+	CONFIGS.indexedDb,
 	CONFIGS.coverageGain,
-	CONFIGS.speed,
+	CONFIGS.coldStart,
 	CONFIGS.pushForce,
 ];
 
@@ -129,35 +129,20 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 		createSession(POOLS, HANDED)
 	);
 	const [selected, setSelected] = useState<readonly string[]>([]);
-	const shownAt = useRef<number>(Date.now());
 	useEffect(() => {
-		shownAt.current = Date.now();
 		setSelected([]);
 	}, [state.currentIndex]);
 
 	const view = toSessionView(state);
-	const currentPoll = state.polls[state.currentIndex];
-	const disabled = currentPoll
-		? [
-				...disabledOptionIds(
-					state.pipeline.configs,
-					currentPoll.category,
-					currentPoll.options
-				),
-				...state.manualDisabled,
-			]
-		: [];
+	// Only options the player paid to lint off are crossed out — no automatic masking.
+	const disabled = state.manualDisabled;
 	const cost = rebuildCost(state.rebuildsUsed);
 	const upgradeable = state.pipeline.configs.filter(
 		(config) => config.focusCategory
 	);
 
 	const answer = (optionIds: readonly string[]) =>
-		dispatch({
-			type: "answer",
-			optionIds,
-			elapsedMs: Date.now() - shownAt.current,
-		});
+		dispatch({ type: "answer", optionIds });
 	const onSelect = (optionId: string) => {
 		if (view.poll?.answerType === "single") return answer([optionId]);
 		setSelected((current) =>
@@ -174,8 +159,10 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 					configs={view.configs}
 					slots={view.slots}
 					bench={view.available}
-					demands={view.demands}
-					rewardMultiplier={view.rewardMultiplier}
+					checks={view.checks}
+					gateNumber={view.gatesCleared + 1}
+					pollsToGate={view.pollsToGate}
+					gateReward={view.gateReward}
 					onSlot={(id) => dispatch({ type: "slot", configId: id })}
 					onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
 					onStart={() => dispatch({ type: "start" })}
@@ -190,7 +177,6 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 					coverage={view.coverage}
 					storage={view.storage}
 					configs={view.configs}
-					slots={view.slots}
 					checks={view.checks}
 					gateReward={view.gateReward}
 					category={view.poll.category}
@@ -199,7 +185,9 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 					answerType={view.poll.answerType}
 					selectedOptionIds={selected}
 					disabledOptionIds={disabled}
-					canLint={canLint(state.pipeline.configs)}
+					canLint={view.canLint}
+					lintReady={view.lintReady}
+					linter={view.linter ?? undefined}
 					lintCost={LINT_COST}
 					onSelect={onSelect}
 					onSubmit={() => answer(selected)}
@@ -210,8 +198,10 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 			{state.status === "rewarding" && (
 				<RewardScreen
 					storage={view.storage}
-					demands={view.demands}
-					rewardMultiplier={view.rewardMultiplier}
+					checks={view.checks}
+					gateNumber={view.gatesCleared + 1}
+					pollsToGate={view.pollsToGate}
+					gateReward={view.gateReward}
 					configs={view.configs}
 					newConfigIds={view.newConfigIds}
 					draftOptions={view.draftOptions}
@@ -232,6 +222,7 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 				<StripScreen
 					stripsRemaining={view.stripsRemaining}
 					configs={view.configs}
+					checks={view.checks}
 					onStrip={(id) => dispatch({ type: "strip", configId: id })}
 				/>
 			)}
@@ -261,9 +252,6 @@ function RouteComponent() {
 	const [seed, setSeed] = useState(0);
 	return (
 		<div className="min-h-screen bg-[#141221] text-white">
-			<div className="mx-auto max-w-2xl px-8 pt-8 text-xs text-pewter">
-				DEVVOTED · REBUILD · session-run
-			</div>
 			<SessionGame
 				key={seed}
 				onRestart={() => setSeed((current) => current + 1)}

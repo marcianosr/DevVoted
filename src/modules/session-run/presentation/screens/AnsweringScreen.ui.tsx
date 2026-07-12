@@ -2,8 +2,6 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import type { Config } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { GateRequirementList } from "../gate/GateRequirementList.ui";
-import { GateTracker } from "../gate/GateTracker.ui";
-import { Pipeline } from "../pipeline/Pipeline.ui";
 import { AnswerType, PollCard, PollOption } from "../poll/PollCard.ui";
 import { StatBadge } from "../run/StatBadge.ui";
 
@@ -14,7 +12,6 @@ type AnsweringScreenProps = {
 	coverage: number;
 	storage: number;
 	configs: readonly Config[];
-	slots: number;
 	checks: readonly CheckStatus[];
 	gateReward: number;
 	category: CategoryCode;
@@ -24,6 +21,8 @@ type AnsweringScreenProps = {
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
 	canLint?: boolean;
+	lintReady?: boolean;
+	linter?: Config;
 	lintCost?: number;
 	onSelect: (optionId: string) => void;
 	onSubmit?: () => void;
@@ -37,7 +36,6 @@ export const AnsweringScreen = ({
 	coverage,
 	storage,
 	configs,
-	slots,
 	checks,
 	gateReward,
 	category,
@@ -47,13 +45,14 @@ export const AnsweringScreen = ({
 	selectedOptionIds,
 	disabledOptionIds,
 	canLint,
+	lintReady,
+	linter,
 	lintCost,
 	onSelect,
 	onSubmit,
 	onLint,
 }: AnsweringScreenProps) => (
 	<div className="flex flex-col gap-6">
-		<GateTracker total={victoryGate} cleared={gatesCleared} />
 		<div className="flex flex-wrap gap-6">
 			<StatBadge
 				label="Gate"
@@ -68,13 +67,6 @@ export const AnsweringScreen = ({
 			<StatBadge label="Coverage" value={`${coverage}%`} category={category} />
 			<StatBadge label="Storage" value={`${storage}KB`} category={category} />
 		</div>
-		<Pipeline configs={configs} slots={slots} />
-		<GateRequirementList
-			checks={checks}
-			gateNumber={gatesCleared + 1}
-			pollsToGate={pollsToGate}
-			gateReward={gateReward}
-		/>
 		<PollCard
 			category={category}
 			question={question}
@@ -83,10 +75,20 @@ export const AnsweringScreen = ({
 			selectedOptionIds={selectedOptionIds}
 			disabledOptionIds={disabledOptionIds}
 			canLint={canLint}
+			lintReady={lintReady}
+			linter={linter}
 			lintCost={lintCost}
 			onSelect={onSelect}
 			onSubmit={onSubmit}
 			onLint={onLint}
+		/>
+		<GateRequirementList
+			checks={checks}
+			configs={configs}
+			gateNumber={gatesCleared + 1}
+			pollsToGate={pollsToGate}
+			gateReward={gateReward}
+			compact
 		/>
 	</div>
 );

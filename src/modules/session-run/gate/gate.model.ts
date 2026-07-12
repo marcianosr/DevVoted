@@ -11,6 +11,9 @@ import { CLIMB_BASE_REQUIREMENT, escalation } from "../rules.model";
 const passes = (state: CheckStatus["state"]): boolean =>
 	state === "success" || state === "skipped";
 
+const correctDemand = (required: number): string =>
+	`${required} correct answer${required === 1 ? "" : "s"}`;
+
 export const currentRequirement = (
 	pipeline: Pipeline,
 	gatesCleared: number
@@ -28,8 +31,16 @@ export const checkStatuses = (
 	const baseline = currentRequirement(pipeline, gatesCleared);
 	const context: EffectContext = { window, gatesCleared };
 	const contributed = pipeline.configs.flatMap((config) => {
-		const gateCheck = effectOf(config).gateCheck;
-		return gateCheck ? [gateCheck(context)] : [];
+		const effect = effectOf(config);
+		return effect.gateCheck
+			? [
+					{
+						...effect.gateCheck(context),
+						sourceConfigId: config.id,
+						description: effect.demand?.(gatesCleared),
+					},
+				]
+			: [];
 	});
 	return [
 		{
@@ -38,6 +49,7 @@ export const checkStatuses = (
 			current: window.correct,
 			target: baseline,
 			state: checkState(window.correct >= baseline, window),
+			description: correctDemand(baseline),
 		},
 		...contributed,
 	];
@@ -61,8 +73,5 @@ export const gateDemands = (
 		const demand = effectOf(config).demand;
 		return demand ? [demand(gatesCleared)] : [];
 	});
-	return [
-		`${correct} correct answer${correct === 1 ? "" : "s"}`,
-		...contributed,
-	];
+	return [correctDemand(correct), ...contributed];
 };

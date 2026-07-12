@@ -47,9 +47,8 @@ describe("ConfigChip", () => {
 		expect(screen.getByText("L2")).toBeInTheDocument();
 	});
 
-	it("exposes its family and description in a tooltip", () => {
+	it("exposes its description in a tooltip", () => {
 		render(<ConfigChip config={CONFIGS.coverageGain} />);
-		expect(screen.getByText("check")).toBeInTheDocument();
 		expect(
 			screen.getByText(CONFIGS.coverageGain.description)
 		).toBeInTheDocument();

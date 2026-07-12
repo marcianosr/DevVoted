@@ -6,11 +6,21 @@ import { RewardScreen } from "./RewardScreen.ui";
 
 const base = {
 	storage: 440,
-	demands: ["1 correct answer"],
-	rewardMultiplier: 1,
+	gateNumber: 1,
+	pollsToGate: 5,
+	gateReward: 120,
+	checks: [
+		{
+			label: "Correct",
+			progress: "0/1",
+			current: 0,
+			target: 1,
+			state: "running" as const,
+		},
+	],
 	configs: [],
 	newConfigIds: [],
-	draftOptions: [CONFIGS.eslint, CONFIGS.speed],
+	draftOptions: [CONFIGS.eslint, CONFIGS.copilot],
 	onDraft: vi.fn(),
 	rebuildCost: 1,
 	canRebuild: true,

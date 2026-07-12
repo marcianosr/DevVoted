@@ -4,7 +4,7 @@ import { getCategoryMetadata } from "~/domains/shared/categories";
 export type ConfigFamily =
 	"focus" | "defense" | "risk" | "amplify" | "economy" | "check";
 
-export type CheckKind = "coverage-gain" | "cold-start" | "speed";
+export type CheckKind = "coverage-gain" | "cold-start";
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";
 
@@ -17,7 +17,6 @@ export type Config = {
 	readonly requirementDelta: number;
 	readonly rewardMultiplier: number;
 	readonly focusCategory?: CategoryCode;
-	readonly immuneToRaise?: boolean;
 	readonly eliminatesWrongOptionsFor?: readonly CategoryCode[];
 	readonly coverageMultiplier?: number;
 	readonly coverageAdd?: number;
@@ -42,5 +41,5 @@ export const describeConfig = (config: Config): string => {
 	if (!config.focusCategory) return config.description;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	const level = config.level ?? 1;
-	return `${name} polls pay ${focusCoverageMultiplier(level)}× — but if ${name} shows, you must get ${level} right.`;
+	return `${name} polls earn ${focusCoverageMultiplier(level)}× coverage — but if ${name} shows, you must get ${level} right.`;
 };

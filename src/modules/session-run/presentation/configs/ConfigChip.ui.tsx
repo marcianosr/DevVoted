@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
 	Config,
 	describeConfig,
@@ -8,8 +9,8 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 type ConfigChipProps = {
 	config: Config;
-	/** Trailing label, e.g. "✕", "draft ＋", "→ L2 · 60KB". */
-	action?: string;
+	/** Trailing content, e.g. "✕", "draft ＋", or a value progression node. */
+	action?: ReactNode;
 	/** Interactive but currently unavailable (can't afford / no room). */
 	disabled?: boolean;
 	onClick?: () => void;
@@ -33,12 +34,7 @@ export const ConfigChip = ({
 		</>
 	);
 	const tip = (
-		<>
-			<span className="text-xs uppercase tracking-wide text-pewter">
-				{config.family}
-			</span>
-			<Paragraph className="mt-1 text-sm">{describeConfig(config)}</Paragraph>
-		</>
+		<Paragraph className="mt-1 text-sm">{describeConfig(config)}</Paragraph>
 	);
 	return (
 		<Tooltip content={tip}>

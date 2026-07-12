@@ -1,17 +1,22 @@
 import {
 	Config,
+	focusCoverageMultiplier,
 	upgradeCost,
 } from "~/modules/session-run/configs/config.model";
+import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { BuildSummary } from "../gate/BuildSummary.ui";
+import { GateRequirementList } from "../gate/GateRequirementList.ui";
 import { Pipeline } from "../pipeline/Pipeline.ui";
+import { Subtitle } from "~/ui/typography/Subtitle.component";
 
 type RewardScreenProps = {
 	storage: number;
-	demands: readonly string[];
-	rewardMultiplier: number;
+	checks: readonly CheckStatus[];
+	gateNumber: number;
+	pollsToGate: number;
+	gateReward: number;
 	configs: readonly Config[];
 	slots: number;
 	newConfigIds: readonly string[];
@@ -29,8 +34,10 @@ type RewardScreenProps = {
 
 export const RewardScreen = ({
 	storage,
-	demands,
-	rewardMultiplier,
+	checks,
+	gateNumber,
+	pollsToGate,
+	gateReward,
 	configs,
 	slots,
 	newConfigIds,
@@ -61,12 +68,22 @@ export const RewardScreen = ({
 
 			<Pipeline configs={configs} slots={slots} newConfigIds={newConfigIds} />
 
-			<BuildSummary demands={demands} rewardMultiplier={rewardMultiplier} />
+			<GateRequirementList
+				checks={checks}
+				configs={configs}
+				gateNumber={gateNumber}
+				pollsToGate={pollsToGate}
+				gateReward={gateReward}
+			/>
 
 			<section className="flex flex-col gap-4">
 				<Title as="h2" className="text-xl">
 					Draft configs
 				</Title>
+				<Subtitle>
+					Configs construct your pipeline — they provide perks but also
+					requirements for pipelines.
+				</Subtitle>
 				<div className="flex flex-wrap gap-3">
 					{draftOptions.map((config) => (
 						<ConfigChip
@@ -105,12 +122,25 @@ export const RewardScreen = ({
 					<Paragraph>Or upgrade a Focus config</Paragraph>
 					<div className="flex flex-wrap gap-3">
 						{upgradeable.map((config) => {
-							const cost = upgradeCost(config.level ?? 1);
+							const level = config.level ?? 1;
+							const cost = upgradeCost(level);
+							const action = (
+								<>
+									<span className="prismatic-text">
+										{focusCoverageMultiplier(level)}×
+									</span>
+									{" → "}
+									<span className="prismatic-text">
+										{focusCoverageMultiplier(level + 1)}×
+									</span>
+									{` · ${cost}KB`}
+								</>
+							);
 							return (
 								<ConfigChip
 									key={config.id}
 									config={config}
-									action={`→ L${(config.level ?? 1) + 1} · ${cost}KB`}
+									action={action}
 									disabled={storage < cost}
 									onClick={() => onUpgrade(config.id)}
 								/>

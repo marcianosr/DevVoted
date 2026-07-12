@@ -50,13 +50,13 @@ describe("effectOf — Check configs", () => {
 		expect(effect.demand?.(0)).toBe("+4% coverage this window");
 	});
 
-	it("Speed reads fast answers", () => {
-		expect(effectOf(CONFIGS.speed).gateCheck?.(ctx({ fast: 2 })).state).toBe(
-			"success"
-		);
-		expect(effectOf(CONFIGS.speed).gateCheck?.(ctx({ fast: 1 })).state).toBe(
-			"running"
-		);
+	it("Cold Start reads the leading correct streak", () => {
+		expect(
+			effectOf(CONFIGS.coldStart).gateCheck?.(ctx({ leadingCorrect: 2 })).state
+		).toBe("success");
+		expect(
+			effectOf(CONFIGS.coldStart).gateCheck?.(ctx({ leadingCorrect: 1 })).state
+		).toBe("running");
 	});
 
 	it("escalates the Coverage threshold deeper in the climb", () => {
@@ -74,8 +74,7 @@ describe("effectOf — passive effects", () => {
 		expect(mask?.("css")).toBe(false);
 	});
 
-	it("yarn.lock locks the bar; push --force raises it and pays", () => {
-		expect(effectOf(CONFIGS.yarnLock).locksBar).toBe(true);
+	it("push --force raises the bar and pays", () => {
 		expect(effectOf(CONFIGS.pushForce).requirementDelta).toBe(1);
 		expect(effectOf(CONFIGS.pushForce).rewardMultiplier).toBe(2);
 	});
@@ -86,6 +85,13 @@ describe("effectOf — passive effects", () => {
 			add: 0,
 		});
 		expect(effectOf(CONFIGS.indexedDb).faucetPerCorrect).toBe(8);
+	});
+
+	it("Intellisense multiplies storage rewards with no gate cost", () => {
+		const effect = effectOf(CONFIGS.intellisense);
+		expect(effect.rewardMultiplier).toBe(1.5);
+		expect(effect.gateCheck).toBeUndefined();
+		expect(effect.requirementDelta).toBeUndefined();
 	});
 
 	it("a plain Focus config contributes no requirement, faucet, or mask", () => {

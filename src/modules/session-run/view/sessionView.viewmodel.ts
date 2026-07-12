@@ -1,14 +1,16 @@
 import type { CategoryCode } from "~/domains/shared/categories";
-import type {
-	AnswerType,
-	SessionPoll,
-	SessionState,
-	SessionStatus,
+import {
+	type AnswerType,
+	canRunLinter,
+	lintApplies,
+	type SessionPoll,
+	type SessionState,
+	type SessionStatus,
 } from "../climb/sessionRun.model";
 import type { Config } from "../configs/config.model";
 import type { CheckStatus } from "../configs/effect.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
-import { rewardMultiplierFor } from "../pipeline/pipeline.model";
+import { linterFor, rewardMultiplierFor } from "../pipeline/pipeline.model";
 import { GATE_REWARD_KB, SLICE_WINDOW, VICTORY_GATE } from "../rules.model";
 
 /** A poll option as the client sees it — no `correct` flag. */
@@ -33,6 +35,12 @@ export type SessionView = {
 	readonly newConfigIds: readonly string[];
 	readonly stripsRemaining: number;
 	readonly poll: PollView | null;
+	/** The lint action is relevant to this poll (show the button). */
+	readonly canLint: boolean;
+	/** The lint action can be run now — applies and affordable (button enabled). */
+	readonly lintReady: boolean;
+	/** The linter config powering the lint on the current poll (for its chip). */
+	readonly linter: Config | null;
 	readonly checks: readonly CheckStatus[];
 	readonly demands: readonly string[];
 	readonly rewardMultiplier: number;
@@ -72,6 +80,12 @@ export const toSessionView = (state: SessionState): SessionView => {
 		newConfigIds: state.draftedThisGate,
 		stripsRemaining: state.stripsRemaining,
 		poll: state.status === "answering" && current ? redactPoll(current) : null,
+		canLint: lintApplies(state),
+		lintReady: canRunLinter(state),
+		linter:
+			current === undefined
+				? null
+				: (linterFor(state.pipeline.configs, current.category) ?? null),
 		checks: checkStatuses(state.pipeline, state.window, state.gatesCleared),
 		demands: gateDemands(state.pipeline, state.gatesCleared),
 		rewardMultiplier: rewardMultiplierFor(state.pipeline),

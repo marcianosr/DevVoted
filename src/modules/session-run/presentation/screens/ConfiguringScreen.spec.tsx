@@ -8,8 +8,18 @@ const base = {
 	configs: [CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.copilot],
-	demands: ["1 correct answer"],
-	rewardMultiplier: 1,
+	gateNumber: 1,
+	pollsToGate: 5,
+	gateReward: 120,
+	checks: [
+		{
+			label: "Correct",
+			progress: "0/1",
+			current: 0,
+			target: 1,
+			state: "running" as const,
+		},
+	],
 	onSlot: vi.fn(),
 	onUnslot: vi.fn(),
 	onStart: vi.fn(),
@@ -21,7 +31,7 @@ describe("ConfiguringScreen", () => {
 		expect(
 			screen.getByRole("heading", { name: /Configure your pipeline/ })
 		).toBeInTheDocument();
-		expect(screen.getByText("• 1 correct answer")).toBeInTheDocument();
+		expect(screen.getByText("Correct")).toBeInTheDocument();
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 

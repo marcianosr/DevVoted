@@ -19,7 +19,6 @@ export const Default: Story = {
 		coverage: 6,
 		storage: 440,
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
-		slots: 3,
 		checks: [
 			{
 				label: "Correct",

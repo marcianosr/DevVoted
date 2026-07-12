@@ -1,16 +1,19 @@
 import type { Config } from "~/modules/session-run/configs/config.model";
+import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RarityLegend } from "../configs/RarityLegend.ui";
-import { BuildSummary } from "../gate/BuildSummary.ui";
+import { GateRequirementList } from "../gate/GateRequirementList.ui";
 import { Pipeline } from "../pipeline/Pipeline.ui";
 
 type ConfiguringScreenProps = {
 	configs: readonly Config[];
 	slots: number;
 	bench: readonly Config[];
-	demands: readonly string[];
-	rewardMultiplier: number;
+	checks: readonly CheckStatus[];
+	gateNumber: number;
+	pollsToGate: number;
+	gateReward: number;
 	onSlot: (configId: string) => void;
 	onUnslot: (configId: string) => void;
 	onStart: () => void;
@@ -20,8 +23,10 @@ export const ConfiguringScreen = ({
 	configs,
 	slots,
 	bench,
-	demands,
-	rewardMultiplier,
+	checks,
+	gateNumber,
+	pollsToGate,
+	gateReward,
 	onSlot,
 	onUnslot,
 	onStart,
@@ -31,7 +36,13 @@ export const ConfiguringScreen = ({
 		<div className="flex flex-col gap-6">
 			<Title>Configure your pipeline</Title>
 			<Pipeline configs={configs} slots={slots} onRemove={onUnslot} />
-			<BuildSummary demands={demands} rewardMultiplier={rewardMultiplier} />
+			<GateRequirementList
+				checks={checks}
+				configs={configs}
+				gateNumber={gateNumber}
+				pollsToGate={pollsToGate}
+				gateReward={gateReward}
+			/>
 			<RarityLegend />
 			<div className="flex flex-wrap gap-2">
 				{bench.map((config) => (

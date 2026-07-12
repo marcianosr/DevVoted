@@ -11,7 +11,6 @@ const base = {
 	coverage: 6,
 	storage: 440,
 	configs: [CONFIGS.js],
-	slots: 3,
 	checks: [
 		{
 			label: "Correct",

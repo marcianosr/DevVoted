@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { PollCard } from "./PollCard.ui";
 
 const meta: Meta<typeof PollCard> = {
@@ -47,6 +48,7 @@ export const WithLinter: Story = {
 		disabledOptionIds: ["c"],
 		onSelect: () => {},
 		canLint: true,
+		linter: CONFIGS.eslint,
 		onLint: () => {},
 		lintCost: 40,
 	},

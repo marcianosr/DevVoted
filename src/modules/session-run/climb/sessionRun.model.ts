@@ -5,7 +5,6 @@ import {
 	BASE_SLOTS,
 	canLint,
 	coverageForAnswer,
-	disabledOptionIds,
 	isBare,
 	MAX_SLOTS,
 	rewardMultiplierFor,
@@ -19,7 +18,6 @@ import {
 	dropCount,
 	GATE_REWARD_KB,
 	SLICE_WINDOW,
-	SPEED_MS,
 	VICTORY_GATE,
 } from "../rules.model";
 
@@ -89,11 +87,7 @@ export type SessionAction =
 	| { readonly type: "slot"; readonly configId: string }
 	| { readonly type: "unslot"; readonly configId: string }
 	| { readonly type: "start" }
-	| {
-			readonly type: "answer";
-			readonly optionIds: readonly string[];
-			readonly elapsedMs?: number;
-	  }
+	| { readonly type: "answer"; readonly optionIds: readonly string[] }
 	| { readonly type: "lint-poll" }
 	| { readonly type: "strip"; readonly configId: string }
 	| { readonly type: "add-slot" }
@@ -124,8 +118,7 @@ export const createSession = (
 	log: [],
 });
 
-export { gateDemands, canLint, disabledOptionIds, rebuildCost };
-export { SPEED_MS } from "../rules.model";
+export { gateDemands, canLint, rebuildCost };
 
 const withLog = (
 	state: SessionState,
@@ -234,15 +227,13 @@ const closeWindow = (state: SessionState, nextIndex: number): SessionState => {
 
 const answer = (
 	state: SessionState,
-	optionIds: readonly string[],
-	elapsedMs?: number
+	optionIds: readonly string[]
 ): SessionState => {
 	if (optionIds.length === 0) return state;
 	const poll = state.polls[state.currentIndex];
 
 	const configs = state.pipeline.configs;
 	const correct = isCorrect(poll, optionIds);
-	const fast = elapsedMs !== undefined && elapsedMs <= SPEED_MS;
 	const openingClean = state.window.leadingCorrect === state.window.answered;
 	const earned = coverageForAnswer(configs, poll.category, correct);
 	const faucet = correct
@@ -257,7 +248,6 @@ const answer = (
 	const window: GateWindow = {
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
-		fast: state.window.fast + (fast ? 1 : 0),
 		coverageGained:
 			Math.round((state.window.coverageGained + earned) * 10) / 10,
 		leadingCorrect:
@@ -289,22 +279,34 @@ const answer = (
 	};
 };
 
-const spendLint = (state: SessionState): SessionState => {
-	if (!canLint(state.pipeline.configs) || state.storage < LINT_COST)
-		return state;
+const wrongStillOn = (state: SessionState) => {
 	const poll = state.polls[state.currentIndex];
-	const alreadyOff = new Set<string>([
-		...disabledOptionIds(state.pipeline.configs, poll.category, poll.options),
-		...state.manualDisabled,
-	]);
-	const remainingWrong = poll.options.filter(
+	const alreadyOff = new Set<string>(state.manualDisabled);
+	return poll.options.filter(
 		(option) => !option.correct && !alreadyOff.has(option.id)
 	);
-	if (remainingWrong.length <= 1) return state;
+};
+
+/**
+ * The lint action is relevant to this poll: a covering linter is equipped and ≥2 wrong
+ * options remain — so crossing one out still leaves a real choice. (Affordability aside.)
+ */
+export const lintApplies = (state: SessionState): boolean => {
+	const poll = state.polls[state.currentIndex];
+	if (!poll || !canLint(state.pipeline.configs, poll.category)) return false;
+	return wrongStillOn(state).length > 1;
+};
+
+/** The lint action can actually be run now — it applies and the player can afford it. */
+export const canRunLinter = (state: SessionState): boolean =>
+	lintApplies(state) && state.storage >= LINT_COST;
+
+const spendLint = (state: SessionState): SessionState => {
+	if (!canRunLinter(state)) return state;
 	return {
 		...state,
 		storage: state.storage - LINT_COST,
-		manualDisabled: [...state.manualDisabled, remainingWrong[0].id],
+		manualDisabled: [...state.manualDisabled, wrongStillOn(state)[0].id],
 		log: withLog(state, `Ran the linter (-${LINT_COST}KB).`),
 	};
 };
@@ -469,7 +471,7 @@ export const sessionReducer = (
 	if (action.type === "start" && state.status === "configuring")
 		return { ...state, status: "answering" };
 	if (action.type === "answer" && state.status === "answering")
-		return answer(state, action.optionIds, action.elapsedMs);
+		return answer(state, action.optionIds);
 	if (action.type === "lint-poll" && state.status === "answering")
 		return spendLint(state);
 	if (action.type === "strip" && state.status === "awaiting-strip")

@@ -8,7 +8,6 @@ export type CategoryTally = { readonly seen: number; readonly correct: number };
 export type GateWindow = {
 	readonly correct: number;
 	readonly answered: number;
-	readonly fast: number;
 	readonly coverageGained: number;
 	readonly leadingCorrect: number;
 	readonly byCategory: Readonly<Record<string, CategoryTally>>;
@@ -17,7 +16,6 @@ export type GateWindow = {
 export const EMPTY_WINDOW: GateWindow = {
 	correct: 0,
 	answered: 0,
-	fast: 0,
 	coverageGained: 0,
 	leadingCorrect: 0,
 	byCategory: {},
@@ -33,6 +31,10 @@ export type CheckStatus = {
 	readonly current: number;
 	readonly target: number;
 	readonly state: CheckState;
+	/** The config that produced this check; undefined for the pipeline's baseline. */
+	readonly sourceConfigId?: string;
+	/** Plain-language demand, e.g. "get one right if js appears". */
+	readonly description?: string;
 };
 
 export const checkState = (
@@ -57,7 +59,6 @@ export type EffectContext = {
 
 export type Effect = {
 	requirementDelta?: number;
-	locksBar?: boolean;
 	rewardMultiplier?: number;
 	faucetPerCorrect?: number;
 	coverage?: (category: CategoryCode) => Coverage;
@@ -105,26 +106,15 @@ const checkEffect = (config: Config): Effect => {
 			demand: (gatesCleared) =>
 				`+${amount + escalation(gatesCleared)}% coverage this window`,
 		};
-	if (config.check === "cold-start")
-		return {
-			gateCheck: ({ window }) => ({
-				label: "Cold start",
-				progress: `${window.leadingCorrect}/${amount}`,
-				current: window.leadingCorrect,
-				target: amount,
-				state: checkState(window.leadingCorrect >= amount, window),
-			}),
-			demand: () => `your first ${amount} answers correct`,
-		};
 	return {
 		gateCheck: ({ window }) => ({
-			label: "Speed",
-			progress: `${window.fast}/${amount} fast`,
-			current: window.fast,
+			label: "Cold start",
+			progress: `${window.leadingCorrect}/${amount}`,
+			current: window.leadingCorrect,
 			target: amount,
-			state: checkState(window.fast >= amount, window),
+			state: checkState(window.leadingCorrect >= amount, window),
 		}),
-		demand: () => `${amount} fast answers`,
+		demand: () => `your first ${amount} answers correct`,
 	};
 };
 
@@ -139,7 +129,6 @@ export const effectOf = (config: Config): Effect => {
 		const categories = config.eliminatesWrongOptionsFor;
 		return { maskWrongOn: (category) => categories.includes(category) };
 	}
-	if (config.immuneToRaise) return { locksBar: true };
 	if (
 		config.coverageMultiplier !== undefined ||
 		config.coverageAdd !== undefined
@@ -157,5 +146,7 @@ export const effectOf = (config: Config): Effect => {
 			requirementDelta: config.requirementDelta,
 			rewardMultiplier: config.rewardMultiplier,
 		};
+	if (config.rewardMultiplier !== 1)
+		return { rewardMultiplier: config.rewardMultiplier };
 	return {};
 };

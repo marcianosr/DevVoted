@@ -68,14 +68,14 @@ describe("checkStatuses", () => {
 		expect(statuses[1].state).toBe("failed"); // 3% < 4%, window closed
 	});
 
-	it("counts fast answers for Speed", () => {
-		const [, speed] = checkStatuses(
-			pipelineWith([CONFIGS.speed]),
-			win({ correct: 5, answered: 5, fast: 1 }),
+	it("counts the leading streak for Cold Start", () => {
+		const [, coldStart] = checkStatuses(
+			pipelineWith([CONFIGS.coldStart]),
+			win({ correct: 5, answered: 5, leadingCorrect: 1 }),
 			0
 		);
-		expect(speed.label).toBe("Speed");
-		expect(speed.state).toBe("failed"); // 1 fast < 2, window closed
+		expect(coldStart.label).toBe("Cold start");
+		expect(coldStart.state).toBe("failed"); // 1 < 2, window closed
 	});
 
 	it("ignores a Focus mastery until its category appears", () => {
@@ -106,15 +106,15 @@ describe("gatePassed", () => {
 	it("passes only when every check is met", () => {
 		expect(
 			gatePassed(
-				pipelineWith([CONFIGS.speed]),
-				win({ correct: 5, answered: 5, fast: 2 }),
+				pipelineWith([CONFIGS.coverageGain]),
+				win({ correct: 5, answered: 5, coverageGained: 5 }),
 				0
 			)
 		).toBe(true);
 		expect(
 			gatePassed(
-				pipelineWith([CONFIGS.speed]),
-				win({ correct: 5, answered: 5, fast: 1 }),
+				pipelineWith([CONFIGS.coverageGain]),
+				win({ correct: 5, answered: 5, coverageGained: 3 }),
 				0
 			)
 		).toBe(false);
@@ -124,11 +124,11 @@ describe("gatePassed", () => {
 describe("gateDemands", () => {
 	it("summarises the stacked demands in plain language", () => {
 		const demands = gateDemands(
-			pipelineWith([CONFIGS.speed, CONFIGS.coverageGain]),
+			pipelineWith([CONFIGS.coldStart, CONFIGS.coverageGain]),
 			0
 		);
 		expect(demands[0]).toBe("1 correct answer");
-		expect(demands).toContain("2 fast answers");
+		expect(demands).toContain("your first 2 answers correct");
 		expect(demands).toContain("+4% coverage this window");
 	});
 });

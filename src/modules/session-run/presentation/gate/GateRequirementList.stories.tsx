@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { GateRequirementList } from "./GateRequirementList.ui";
 
 const meta: Meta<typeof GateRequirementList> = {
@@ -15,6 +16,7 @@ export const InProgress: Story = {
 		gateNumber: 1,
 		pollsToGate: 4,
 		gateReward: 180,
+		configs: [CONFIGS.coverageGain],
 		checks: [
 			{
 				label: "Correct",
@@ -29,6 +31,7 @@ export const InProgress: Story = {
 				current: 0.7,
 				target: 3,
 				state: "running",
+				sourceConfigId: "coverage-gain",
 			},
 		],
 	},
@@ -39,6 +42,7 @@ export const MixedStates: Story = {
 		gateNumber: 3,
 		pollsToGate: 0,
 		gateReward: 240,
+		configs: [CONFIGS.js, CONFIGS.coldStart],
 		checks: [
 			{
 				label: "Correct",
@@ -53,13 +57,15 @@ export const MixedStates: Story = {
 				current: 0,
 				target: 1,
 				state: "skipped",
+				sourceConfigId: "js",
 			},
 			{
-				label: "Speed",
-				progress: "0/2 fast",
+				label: "Cold start",
+				progress: "0/2",
 				current: 0,
 				target: 2,
 				state: "failed",
+				sourceConfigId: "cold-start",
 			},
 		],
 	},
