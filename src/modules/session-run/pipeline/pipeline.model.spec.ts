@@ -23,28 +23,18 @@ describe("effectiveRequirement", () => {
 		expect(effectiveRequirement(pipelineWith([]), 1)).toBe(1);
 	});
 
-	it("raises per Risk config and stacks them", () => {
-		expect(effectiveRequirement(pipelineWith([CONFIGS.pushForce]), 1)).toBe(2);
-		expect(
-			effectiveRequirement(
-				pipelineWith([CONFIGS.pushForce, CONFIGS.deployFriday]),
-				1
-			)
-		).toBe(4);
-	});
-
 	it("floors at 1", () => {
 		expect(effectiveRequirement(pipelineWith([]), 0)).toBe(1);
 	});
 });
 
 describe("rewardMultiplierFor", () => {
-	it("multiplies Risk and Check payouts across the pipeline", () => {
+	it("multiplies an upgraded Unit Tests and Check payouts across the pipeline", () => {
 		expect(
 			rewardMultiplierFor(
-				pipelineWith([CONFIGS.pushForce, CONFIGS.coverageGain])
+				pipelineWith([{ ...CONFIGS.unitTests, level: 2 }, CONFIGS.coverageGain])
 			)
-		).toBe(3); // 2 × 1.5
+		).toBe(3); // 2 (L2 Unit Tests) × 1.5 (Coverage)
 	});
 
 	it("is 1 for a bare pipeline", () => {

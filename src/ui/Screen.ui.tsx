@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import { PrimaryButton } from "./PrimaryButton.component";
+import { Button } from "./Button.component";
 import {
 	clearScreenNavDirection,
 	peekScreenNavDirection,
@@ -101,24 +101,24 @@ export const Screen = ({
 					className={`mt-8 flex items-center ${footerJustify(leftAction, rightAction)}`}
 				>
 					{leftAction && (
-						<PrimaryButton
+						<Button
 							onClick={() => runAction(leftAction, "back")}
 							disabled={leftAction.disabled}
 						>
 							{leftAction.label}
-						</PrimaryButton>
+						</Button>
 					)}
 					{rightAction && (
 						<div className="flex flex-col items-end gap-1">
 							{rightAction.hint && (
 								<small className="text-sm">{rightAction.hint}</small>
 							)}
-							<PrimaryButton
+							<Button
 								onClick={() => runAction(rightAction, "forward")}
 								disabled={rightAction.disabled}
 							>
 								{rightAction.label}
-							</PrimaryButton>
+							</Button>
 						</div>
 					)}
 				</div>

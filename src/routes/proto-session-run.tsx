@@ -12,17 +12,20 @@ import {
 	sessionReducer,
 	SessionPoll,
 } from "~/modules/session-run/climb/sessionRun.model";
+import { isUpgradable } from "~/modules/session-run/configs/config.model";
 import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/session-run/draft/draft.model";
 import { MAX_SLOTS } from "~/modules/session-run/pipeline/pipeline.model";
 import { AnsweringScreen } from "~/modules/session-run/presentation/screens/AnsweringScreen.ui";
 import { ConfiguringScreen } from "~/modules/session-run/presentation/screens/ConfiguringScreen.ui";
 import { RewardScreen } from "~/modules/session-run/presentation/screens/RewardScreen.ui";
+import { ShopScreen } from "~/modules/session-run/presentation/screens/ShopScreen.ui";
 import { StripScreen } from "~/modules/session-run/presentation/screens/StripScreen.ui";
 import { RunSummary } from "~/modules/session-run/presentation/run/RunSummary.ui";
 import { toSessionView } from "~/modules/session-run/view/sessionView.viewmodel";
 import { SLICE_WINDOW, VICTORY_GATE } from "~/modules/session-run/rules.model";
 import type { CategoryCode } from "~/domains/shared/categories";
+import { Screen } from "~/ui/Screen.ui";
 
 export const Route = createFileRoute("/proto-session-run")({
 	component: RouteComponent,
@@ -121,130 +124,202 @@ const HANDED = [
 	CONFIGS.indexedDb,
 	CONFIGS.coverageGain,
 	CONFIGS.coldStart,
-	CONFIGS.pushForce,
 ];
 
 const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 	const [state, dispatch] = useReducer(sessionReducer, 0, () =>
-		createSession(POOLS, HANDED)
+		createSession(POOLS, HANDED, [CONFIGS.unitTests])
 	);
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	useEffect(() => {
 		setSelected([]);
 	}, [state.currentIndex]);
+	// The reward flows over two pages: the rewards summary, then the shop. Reset to the
+	// summary each time a new gate clears.
+	const [rewardStep, setRewardStep] = useState<"summary" | "shop">("summary");
+	useEffect(() => {
+		setRewardStep("summary");
+	}, [state.gatesCleared]);
 
 	const view = toSessionView(state);
 	// Only options the player paid to lint off are crossed out — no automatic masking.
 	const disabled = state.manualDisabled;
 	const cost = rebuildCost(state.rebuildsUsed);
-	const upgradeable = state.pipeline.configs.filter(
-		(config) => config.focusCategory
-	);
+	const upgradeable = state.pipeline.configs.filter(isUpgradable);
 
 	const answer = (optionIds: readonly string[]) =>
 		dispatch({ type: "answer", optionIds });
+	// Selecting no longer auto-answers — the player commits deliberately via the
+	// Screen's "Submit answer" footer action.
 	const onSelect = (optionId: string) => {
-		if (view.poll?.answerType === "single") return answer([optionId]);
+		if (view.poll?.answerType === "single") return setSelected([optionId]);
 		setSelected((current) =>
 			current.includes(optionId)
 				? current.filter((id) => id !== optionId)
 				: [...current, optionId]
 		);
 	};
+	const canSubmit = selected.length > 0;
+	const canStart = view.configs.filter((config) => !config.fixed).length > 0;
+	const quotaMet = view.stripsRemaining === 0;
 
 	return (
-		<div className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
+		<>
 			{state.status === "configuring" && (
-				<ConfiguringScreen
-					configs={view.configs}
-					slots={view.slots}
-					bench={view.available}
-					checks={view.checks}
-					gateNumber={view.gatesCleared + 1}
-					pollsToGate={view.pollsToGate}
-					gateReward={view.gateReward}
-					onSlot={(id) => dispatch({ type: "slot", configId: id })}
-					onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
-					onStart={() => dispatch({ type: "start" })}
-				/>
+				<Screen
+					rightAction={{
+						label: "Start the climb →",
+						onClick: () => dispatch({ type: "start" }),
+						disabled: !canStart,
+						hint: canStart ? undefined : "Slot a config to start",
+					}}
+				>
+					<ConfiguringScreen
+						configs={view.configs}
+						slots={view.slots}
+						bench={view.available}
+						checks={view.checks}
+						gateNumber={view.gatesCleared + 1}
+						pollsToGate={view.pollsToGate}
+						gateReward={view.gateReward}
+						onSlot={(id) => dispatch({ type: "slot", configId: id })}
+						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
+					/>
+				</Screen>
 			)}
 
 			{state.status === "answering" && view.poll && (
-				<AnsweringScreen
-					gatesCleared={view.gatesCleared}
-					victoryGate={view.victoryGate}
-					pollsToGate={view.pollsToGate}
-					coverage={view.coverage}
-					storage={view.storage}
-					configs={view.configs}
-					checks={view.checks}
-					gateReward={view.gateReward}
-					category={view.poll.category}
-					question={view.poll.question}
-					options={view.poll.options}
-					answerType={view.poll.answerType}
-					selectedOptionIds={selected}
-					disabledOptionIds={disabled}
-					canLint={view.canLint}
-					lintReady={view.lintReady}
-					linter={view.linter ?? undefined}
-					lintCost={LINT_COST}
-					onSelect={onSelect}
-					onSubmit={() => answer(selected)}
-					onLint={() => dispatch({ type: "lint-poll" })}
-				/>
+				<Screen
+					categoryCode={view.poll.category}
+					rightAction={{
+						label: "Submit answer →",
+						onClick: () => answer(selected),
+						disabled: !canSubmit,
+						hint: canSubmit ? undefined : "Pick an answer to submit",
+					}}
+				>
+					<AnsweringScreen
+						gatesCleared={view.gatesCleared}
+						victoryGate={view.victoryGate}
+						pollsToGate={view.pollsToGate}
+						coverage={view.coverage}
+						storage={view.storage}
+						configs={view.configs}
+						checks={view.checks}
+						gateReward={view.gateReward}
+						category={view.poll.category}
+						question={view.poll.question}
+						options={view.poll.options}
+						selectedOptionIds={selected}
+						disabledOptionIds={disabled}
+						canLint={view.canLint}
+						lintReady={view.lintReady}
+						linter={view.linter ?? undefined}
+						lintCost={LINT_COST}
+						onSelect={onSelect}
+						onLint={() => dispatch({ type: "lint-poll" })}
+					/>
+				</Screen>
 			)}
 
-			{state.status === "rewarding" && (
-				<RewardScreen
-					storage={view.storage}
-					checks={view.checks}
-					gateNumber={view.gatesCleared + 1}
-					pollsToGate={view.pollsToGate}
-					gateReward={view.gateReward}
-					configs={view.configs}
-					newConfigIds={view.newConfigIds}
-					draftOptions={view.draftOptions}
-					onDraft={(id) => dispatch({ type: "draft", configId: id })}
-					rebuildCost={cost}
-					canRebuild={state.storage >= cost}
-					onRebuild={() => dispatch({ type: "rebuild-draft" })}
-					slots={view.slots}
-					canAddSlot={state.pipeline.slots < MAX_SLOTS}
-					onAddSlot={() => dispatch({ type: "add-slot" })}
-					upgradeable={upgradeable}
-					onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
-					onNext={() => dispatch({ type: "finish-reward" })}
-				/>
+			{state.status === "rewarding" && rewardStep === "summary" && (
+				<Screen
+					rightAction={{
+						label: "Continue →",
+						onClick: () => setRewardStep("shop"),
+					}}
+				>
+					<RewardScreen
+						gatesCleared={view.gatesCleared}
+						storage={view.storage}
+						answered={view.answeredThisGate}
+						coverageByCategory={view.coverageByCategory}
+						passedChecks={view.passedChecks}
+						configs={view.configs}
+					/>
+				</Screen>
+			)}
+
+			{state.status === "rewarding" && rewardStep === "shop" && (
+				<Screen
+					width="wide"
+					leftAction={{
+						label: "← Back",
+						onClick: () => setRewardStep("summary"),
+					}}
+					rightAction={{
+						label: "Climb on →",
+						onClick: () => dispatch({ type: "finish-reward" }),
+					}}
+				>
+					<ShopScreen
+						storage={view.storage}
+						gatesCleared={view.gatesCleared}
+						coverage={view.coverage}
+						coverageByCategory={view.coverageByCategory}
+						checks={view.checks}
+						gateNumber={view.gatesCleared + 1}
+						pollsToGate={view.pollsToGate}
+						gateReward={view.gateReward}
+						configs={view.configs}
+						newConfigIds={view.newConfigIds}
+						draftOptions={view.draftOptions}
+						onDraft={(id) => dispatch({ type: "draft", configId: id })}
+						rebuildCost={cost}
+						canRebuild={state.storage >= cost}
+						onRebuild={() => dispatch({ type: "rebuild-draft" })}
+						slots={view.slots}
+						canAddSlot={state.pipeline.slots < MAX_SLOTS}
+						onAddSlot={() => dispatch({ type: "add-slot" })}
+						upgradeable={upgradeable}
+						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
+					/>
+				</Screen>
 			)}
 
 			{state.status === "awaiting-strip" && (
-				<StripScreen
-					stripsRemaining={view.stripsRemaining}
-					configs={view.configs}
-					checks={view.checks}
-					onStrip={(id) => dispatch({ type: "strip", configId: id })}
-				/>
+				<Screen
+					rightAction={{
+						label: "Climb on →",
+						onClick: () => dispatch({ type: "resume-climb" }),
+						disabled: !quotaMet,
+						hint: quotaMet
+							? undefined
+							: `Peel ${view.stripsRemaining} more to continue`,
+					}}
+				>
+					<StripScreen
+						stripsRemaining={view.stripsRemaining}
+						configs={view.configs}
+						checks={view.checks}
+						answered={view.answeredThisGate}
+						onStrip={(id) => dispatch({ type: "strip", configId: id })}
+					/>
+				</Screen>
 			)}
 
 			{(state.status === "won" || state.status === "dead") && (
-				<RunSummary
-					won={state.status === "won"}
-					gatesCleared={view.gatesCleared}
-					coverage={view.coverage}
-					storage={view.storage}
-					onRestart={onRestart}
-				/>
+				<Screen
+					width="narrow"
+					rightAction={{ label: "Play again →", onClick: onRestart }}
+				>
+					<RunSummary
+						won={state.status === "won"}
+						gatesCleared={view.gatesCleared}
+						coverage={view.coverage}
+						storage={view.storage}
+					/>
+				</Screen>
 			)}
 
 			{state.log.length > 0 && (
-				<div className="mt-4 rounded-lg bg-zinc-900 p-4 text-xs text-pewter">
+				<div className="mx-auto mt-4 max-w-5xl rounded-lg bg-zinc-900 p-4 text-xs text-pewter">
 					{state.log.slice(-4).map((line, index) => (
 						<p key={index}>▸ {line}</p>
 					))}
 				</div>
 			)}
-		</div>
+		</>
 	);
 };
 

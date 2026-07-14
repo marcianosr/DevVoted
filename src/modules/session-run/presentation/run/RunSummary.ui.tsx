@@ -7,7 +7,6 @@ type RunSummaryProps = {
 	gatesCleared: number;
 	coverage: number;
 	storage: number;
-	onRestart: () => void;
 };
 
 /** End-of-run outcome: summit or death, with the run's final stats. */
@@ -16,7 +15,6 @@ export const RunSummary = ({
 	gatesCleared,
 	coverage,
 	storage,
-	onRestart,
 }: RunSummaryProps) => (
 	<div className="flex flex-col gap-6">
 		<div
@@ -34,12 +32,5 @@ export const RunSummary = ({
 			<StatBadge label="Coverage" value={`${coverage}%`} />
 			<StatBadge label="Storage" value={`${storage}KB`} />
 		</div>
-		<button
-			type="button"
-			onClick={onRestart}
-			className="self-start rounded-lg bg-cerulean px-6 py-3 font-bold text-black transition hover:brightness-110"
-		>
-			Play again →
-		</button>
 	</div>
 );

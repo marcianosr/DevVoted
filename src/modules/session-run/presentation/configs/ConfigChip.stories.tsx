@@ -16,7 +16,7 @@ export const FocusLeveled: Story = {
 	args: { config: { ...CONFIGS.js, level: 2 } },
 };
 export const RareAmplify: Story = { args: { config: CONFIGS.copilot } };
-export const LegendaryRisk: Story = { args: { config: CONFIGS.deployFriday } };
+export const LegendaryRisk: Story = { args: { config: CONFIGS.copilot } };
 export const WithAction: Story = {
 	args: { config: CONFIGS.eslint, action: "✕", onClick: () => {} },
 };

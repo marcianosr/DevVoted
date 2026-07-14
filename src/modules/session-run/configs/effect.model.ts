@@ -25,15 +25,11 @@ export type CheckState = "success" | "running" | "skipped" | "failed";
 
 export type CheckStatus = {
 	readonly label: string;
-	/** Human-readable progress, e.g. "8%/4%" or "not seen". */
 	readonly progress: string;
-	/** Numeric progress toward the requirement, for a progress bar. */
 	readonly current: number;
 	readonly target: number;
 	readonly state: CheckState;
-	/** The config that produced this check; undefined for the pipeline's baseline. */
 	readonly sourceConfigId?: string;
-	/** Plain-language demand, e.g. "get one right if js appears". */
 	readonly description?: string;
 };
 
@@ -120,6 +116,10 @@ const checkEffect = (config: Config): Effect => {
 
 export const effectOf = (config: Config): Effect => {
 	if (config.focusCategory) return focusEffect(config, config.focusCategory);
+	// The correct config's level is both the required count AND the reward multiplier —
+	// upgrading it is "harder = richer" (L2 = 2 correct / ×2, L3 = 3 / ×3).
+	if (config.check === "correct")
+		return { rewardMultiplier: config.level ?? 1 };
 	if (config.check)
 		return {
 			...checkEffect(config),

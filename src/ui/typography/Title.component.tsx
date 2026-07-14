@@ -20,8 +20,8 @@ export const Title = ({
 	const themed = category
 		? {
 				...categoryTheme(category),
-				className: `text-3xl font-bold text-theme ${className}`,
+				className: `text-3xl text-theme ${className}`,
 			}
-		: { className: `text-3xl font-bold text-white ${className}` };
+		: { className: `text-3xl text-white ${className}` };
 	return <Tag {...themed}>{children}</Tag>;
 };

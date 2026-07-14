@@ -22,7 +22,6 @@ const base = {
 	],
 	onSlot: vi.fn(),
 	onUnslot: vi.fn(),
-	onStart: vi.fn(),
 };
 
 describe("ConfiguringScreen", () => {
@@ -35,20 +34,10 @@ describe("ConfiguringScreen", () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	it("disables Start until at least one config is slotted", () => {
-		render(<ConfiguringScreen {...base} configs={[]} />);
-		expect(
-			screen.getByRole("button", { name: /Slot a config to start/ })
-		).toBeDisabled();
-	});
-
-	it("slots a bench config and starts the climb", () => {
+	it("slots a clicked bench config", () => {
 		const onSlot = vi.fn();
-		const onStart = vi.fn();
-		render(<ConfiguringScreen {...base} onSlot={onSlot} onStart={onStart} />);
+		render(<ConfiguringScreen {...base} onSlot={onSlot} />);
 		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
 		expect(onSlot).toHaveBeenCalledWith("eslint");
-		fireEvent.click(screen.getByRole("button", { name: /Start the climb/ }));
-		expect(onStart).toHaveBeenCalledTimes(1);
 	});
 });

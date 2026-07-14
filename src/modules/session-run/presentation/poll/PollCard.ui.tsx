@@ -1,11 +1,8 @@
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
-import type { AnswerType } from "~/modules/session-run/climb/sessionRun.model";
 import type { Config } from "~/modules/session-run/configs/config.model";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-
-export type { AnswerType };
 
 /** A poll option as the client sees it — no `correct` flag (the server judges). */
 export type PollOption = { readonly id: string; readonly label: string };
@@ -14,18 +11,15 @@ type PollCardProps = {
 	category: CategoryCode;
 	question: string;
 	options: readonly PollOption[];
-	answerType: AnswerType;
-	/** Controlled selection for multiple-choice (ignored for single). */
+	/** Controlled selection — single replaces, multiple accumulates (decided by the caller). */
 	selectedOptionIds?: readonly string[];
 	/** Option ids crossed out by linter configs or the paid lint action. */
 	disabledOptionIds?: readonly string[];
 	/** Server-revealed result (only after answering) — drives the green/red reveal. */
 	correctOptionIds?: readonly string[];
 	chosenOptionIds?: readonly string[];
-	/** Single: answers immediately. Multiple: toggles the option in the selection. */
+	/** Single: replaces the selection. Multiple: toggles the option in the selection. */
 	onSelect: (optionId: string) => void;
-	/** Multiple only: submit the current selection. */
-	onSubmit?: () => void;
 	canLint?: boolean;
 	/** Whether the lint action can be run now (false = shown but disabled, e.g. can't afford it). */
 	lintReady?: boolean;
@@ -39,13 +33,11 @@ export const PollCard = ({
 	category,
 	question,
 	options,
-	answerType,
 	selectedOptionIds = [],
 	disabledOptionIds = [],
 	correctOptionIds,
 	chosenOptionIds = [],
 	onSelect,
-	onSubmit,
 	canLint = false,
 	lintReady = true,
 	linter,
@@ -123,17 +115,6 @@ export const PollCard = ({
 					);
 				})}
 			</div>
-
-			{answerType === "multiple" && !revealed ? (
-				<button
-					type="button"
-					onClick={onSubmit}
-					disabled={selected.size === 0}
-					className="self-start rounded-lg bg-cerulean px-6 py-3 font-bold text-black transition enabled:hover:brightness-110 disabled:opacity-40"
-				>
-					Submit {selected.size} answer{selected.size === 1 ? "" : "s"}
-				</button>
-			) : null}
 		</div>
 	);
 };

@@ -13,14 +13,14 @@ export const RARITY_COLORS: Record<
 	{ border: string; text: string; bg: string }
 > = {
 	common: {
-		border: "border-pewter",
-		text: "text-pewter",
-		bg: "bg-pewter/15",
+		border: "border-cerulean",
+		text: "text-cerulean",
+		bg: "bg-cerulean/15",
 	},
 	uncommon: {
-		border: "border-celadon",
-		text: "text-celadon",
-		bg: "bg-celadon/15",
+		border: "border-viridian",
+		text: "text-viridian",
+		bg: "bg-viridian/15",
 	},
 	rare: {
 		border: "border-cinnabar",
@@ -28,8 +28,8 @@ export const RARITY_COLORS: Record<
 		bg: "bg-cinnabar/15",
 	},
 	legendary: {
-		border: "border-indigo",
-		text: "text-indigo",
-		bg: "bg-indigo/15",
+		border: "prismatic-chip",
+		text: "prismatic-chip",
+		bg: "bg-lavender/10",
 	},
 };

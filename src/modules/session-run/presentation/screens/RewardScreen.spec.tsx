@@ -1,58 +1,48 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
 
-import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { RewardScreen } from "./RewardScreen.ui";
 
 const base = {
-	storage: 440,
-	gateNumber: 1,
-	pollsToGate: 5,
-	gateReward: 120,
-	checks: [
+	gatesCleared: 1,
+	storage: 280,
+	coverageByCategory: { js: 8, css: 3.5 },
+	answered: [
+		{
+			id: "js1",
+			question: "typeof null?",
+			category: "js" as const,
+			correct: true,
+			picked: ['"object"'],
+		},
+		{
+			id: "js2",
+			question: "at(-1)?",
+			category: "js" as const,
+			correct: false,
+			picked: ["pop()"],
+		},
+	],
+	passedChecks: [
 		{
 			label: "Correct",
-			progress: "0/1",
-			current: 0,
-			target: 1,
-			state: "running" as const,
+			progress: "2/2",
+			current: 2,
+			target: 2,
+			state: "success" as const,
 		},
 	],
 	configs: [],
-	newConfigIds: [],
-	draftOptions: [CONFIGS.eslint, CONFIGS.copilot],
-	onDraft: vi.fn(),
-	rebuildCost: 1,
-	canRebuild: true,
-	onRebuild: vi.fn(),
-	slots: 3,
-	canAddSlot: true,
-	onAddSlot: vi.fn(),
-	upgradeable: [CONFIGS.js],
-	onUpgrade: vi.fn(),
-	onNext: vi.fn(),
 };
 
 describe("RewardScreen", () => {
-	it("renders the reward header and draft options", () => {
+	it("shows the cleared gate, storage, and the answer results", () => {
 		render(<RewardScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: /build your pipeline/ })
+			screen.getByRole("heading", { name: /Gate #1 cleared/ })
 		).toBeInTheDocument();
-		expect(screen.getByText("ESLint")).toBeInTheDocument();
-	});
-
-	it("drafts a config", () => {
-		const onDraft = vi.fn();
-		render(<RewardScreen {...base} onDraft={onDraft} />);
-		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
-		expect(onDraft).toHaveBeenCalledWith("eslint");
-	});
-
-	it("advances only on the explicit Next button", () => {
-		const onNext = vi.fn();
-		render(<RewardScreen {...base} onNext={onNext} />);
-		fireEvent.click(screen.getByRole("button", { name: /Next/ }));
-		expect(onNext).toHaveBeenCalledTimes(1);
+		expect(screen.getByText("280KB")).toBeInTheDocument();
+		expect(screen.getByText("typeof null?")).toBeInTheDocument();
+		expect(screen.getByText(/Correct/)).toBeInTheDocument();
 	});
 });

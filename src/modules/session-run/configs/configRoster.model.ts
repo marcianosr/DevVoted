@@ -79,7 +79,17 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		focusCategory: "java",
 	},
-	// Defense — linters disable a wrong option.
+	unitTests: {
+		id: "unit-tests",
+		label: "Unit Tests",
+		family: "check",
+		description: "Requires 1 correct answer to pass the gate.",
+		requirementDelta: 0,
+		rewardMultiplier: 1,
+		check: "correct",
+		checkAmount: 1,
+		fixed: true,
+	},
 	eslint: {
 		id: "eslint",
 		label: "ESLint",
@@ -161,24 +171,6 @@ export const CONFIGS = {
 		rewardMultiplier: 1.5,
 		check: "cold-start",
 		checkAmount: 2,
-	},
-	pushForce: {
-		id: "push-force",
-		label: "push --force",
-		family: "risk",
-		rarity: "uncommon",
-		description: "Gate needs 1 more correct — but pays 2× storage.",
-		requirementDelta: 1,
-		rewardMultiplier: 2,
-	},
-	deployFriday: {
-		id: "deploy-friday",
-		label: "Deploy on Friday",
-		family: "risk",
-		rarity: "legendary",
-		description: "Gate needs 2 more correct — but pays 3× storage.",
-		requirementDelta: 2,
-		rewardMultiplier: 3,
 	},
 } as const satisfies Record<string, Config>;
 

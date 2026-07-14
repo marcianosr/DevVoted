@@ -5,15 +5,27 @@ import {
 	BASE_SLOTS,
 	canLint,
 	coverageForAnswer,
+	freeConfigs,
 	isBare,
+	isFixed,
 	MAX_SLOTS,
 	rewardMultiplierFor,
 	stripConfig,
 } from "../pipeline/pipeline.model";
-import { Config, upgradeCost } from "../configs/config.model";
-import { EMPTY_WINDOW, GateWindow } from "../configs/effect.model";
+import {
+	Config,
+	draftCost,
+	isUpgradable,
+	upgradeCost,
+	upgradeCoverageRequired,
+} from "../configs/config.model";
+import {
+	type CheckStatus,
+	EMPTY_WINDOW,
+	GateWindow,
+} from "../configs/effect.model";
 import { DRAFT_SIZE, rebuildCost, rollDraft } from "../draft/draft.model";
-import { gateDemands, gatePassed } from "../gate/gate.model";
+import { checkStatuses, gateDemands, gatePassed } from "../gate/gate.model";
 import {
 	dropCount,
 	GATE_REWARD_KB,
@@ -62,23 +74,33 @@ const isCorrect = (
 export type SessionStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
 
+/** A poll answered in the current gate window, with the result — for the post-gate summary. */
+export type AnsweredPoll = {
+	readonly id: string;
+	readonly question: string;
+	readonly category: CategoryCode;
+	readonly correct: boolean;
+	readonly picked: readonly string[];
+};
+
 export type SessionState = {
 	readonly status: SessionStatus;
 	readonly pipeline: Pipeline;
 	readonly available: readonly Config[];
 	readonly draftOptions: readonly Config[];
 	readonly rebuildsUsed: number;
-	/** Ids drafted since this reward screen opened — surfaced as "new" pipeline rows. */
 	readonly draftedThisGate: readonly string[];
-	/** Configs still to peel on the current failure. */
+	readonly answeredThisGate: readonly AnsweredPoll[];
+	readonly clearedChecks: readonly CheckStatus[];
 	readonly stripsRemaining: number;
 	readonly polls: readonly SessionPoll[];
 	readonly currentIndex: number;
 	readonly window: GateWindow;
-	/** Option ids the player paid to lint off the current poll (resets each poll). */
 	readonly manualDisabled: readonly string[];
 	readonly gatesCleared: number;
 	readonly coverage: number;
+	/** Coverage earned per category — gates Focus-config upgrades. */
+	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly log: readonly string[];
 };
@@ -90,6 +112,7 @@ export type SessionAction =
 	| { readonly type: "answer"; readonly optionIds: readonly string[] }
 	| { readonly type: "lint-poll" }
 	| { readonly type: "strip"; readonly configId: string }
+	| { readonly type: "resume-climb" }
 	| { readonly type: "add-slot" }
 	| { readonly type: "draft"; readonly configId: string }
 	| { readonly type: "upgrade"; readonly configId: string }
@@ -99,14 +122,18 @@ export type SessionAction =
 
 export const createSession = (
 	polls: readonly SessionPoll[],
-	handed: readonly Config[]
+	handed: readonly Config[],
+	/** Configs pre-slotted into every run and never removable (e.g. Unit Tests). */
+	fixed: readonly Config[] = []
 ): SessionState => ({
 	status: "configuring",
-	pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [] },
+	pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: fixed },
 	available: handed,
 	draftOptions: [],
 	rebuildsUsed: 0,
 	draftedThisGate: [],
+	answeredThisGate: [],
+	clearedChecks: [],
 	stripsRemaining: 0,
 	polls,
 	currentIndex: 0,
@@ -114,6 +141,7 @@ export const createSession = (
 	manualDisabled: [],
 	gatesCleared: 0,
 	coverage: 0,
+	coverageByCategory: {},
 	storage: 0,
 	log: [],
 });
@@ -136,7 +164,7 @@ const withPipeline = (
 
 const slotConfig = (state: SessionState, configId: string): SessionState => {
 	const config = state.available.find((candidate) => candidate.id === configId);
-	if (!config || state.pipeline.configs.length >= state.pipeline.slots)
+	if (!config || freeConfigs(state.pipeline).length >= state.pipeline.slots)
 		return state;
 	return {
 		...state,
@@ -149,7 +177,7 @@ const unslotConfig = (state: SessionState, configId: string): SessionState => {
 	const config = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!config) return state;
+	if (!config || isFixed(config)) return state;
 	return {
 		...state,
 		available: [...state.available, config],
@@ -176,7 +204,7 @@ const closeWindow = (state: SessionState, nextIndex: number): SessionState => {
 			};
 		const toDrop = Math.min(
 			dropCount(state.gatesCleared),
-			state.pipeline.configs.length
+			freeConfigs(state.pipeline).length
 		);
 		return {
 			...state,
@@ -217,6 +245,11 @@ const closeWindow = (state: SessionState, nextIndex: number): SessionState => {
 		draftOptions: rollDraft(gateNumber, state.pipeline.configs),
 		rebuildsUsed: 0,
 		draftedThisGate: [],
+		clearedChecks: checkStatuses(
+			state.pipeline,
+			state.window,
+			state.gatesCleared
+		),
 		status: "rewarding",
 		log: withLog(
 			state,
@@ -269,6 +302,25 @@ const answer = (
 		manualDisabled: [],
 		storage: state.storage + faucet,
 		coverage: Math.round((state.coverage + earned) * 10) / 10,
+		coverageByCategory: {
+			...state.coverageByCategory,
+			[poll.category]:
+				Math.round(
+					((state.coverageByCategory[poll.category] ?? 0) + earned) * 10
+				) / 10,
+		},
+		answeredThisGate: [
+			...state.answeredThisGate,
+			{
+				id: poll.id,
+				question: poll.question,
+				category: poll.category,
+				correct,
+				picked: poll.options
+					.filter((option) => optionIds.includes(option.id))
+					.map((option) => option.label),
+			},
+		],
 	};
 
 	if (window.answered >= SLICE_WINDOW) return closeWindow(answered, nextIndex);
@@ -312,25 +364,38 @@ const spendLint = (state: SessionState): SessionState => {
 };
 
 const strip = (state: SessionState, configId: string): SessionState => {
-	if (!state.pipeline.configs.some((config) => config.id === configId))
-		return state;
+	const target = state.pipeline.configs.find(
+		(config) => config.id === configId
+	);
+	if (!target || isFixed(target) || state.stripsRemaining <= 0) return state;
 	const pipeline = stripConfig(state.pipeline, configId);
 	const remaining = state.stripsRemaining - 1;
-	if (remaining > 0 && pipeline.configs.length > 0)
-		return {
-			...state,
-			pipeline,
-			stripsRemaining: remaining,
-			log: withLog(state, `Peeled a config. ${remaining} more to drop.`),
-		};
 	return {
 		...state,
 		pipeline,
+		stripsRemaining: remaining,
+		log: withLog(
+			state,
+			remaining > 0
+				? `Peeled a config. ${remaining} more to drop.`
+				: `Build repaired — climb on when ready.`
+		),
+	};
+};
+
+/** Commit the repaired build and resume the climb. No-op until the peel quota is met. */
+const resumeClimb = (state: SessionState): SessionState => {
+	if (state.stripsRemaining > 0) return state;
+	return {
+		...state,
 		window: EMPTY_WINDOW,
 		manualDisabled: [],
-		stripsRemaining: 0,
+		answeredThisGate: [],
 		status: isLastPoll(state, state.currentIndex) ? "won" : "answering",
-		log: withLog(state, `Peeled a config. ${pipeline.configs.length} left.`),
+		log: withLog(
+			state,
+			`Climbing on with ${state.pipeline.configs.length} configs.`
+		),
 	};
 };
 
@@ -367,55 +432,66 @@ const draft = (state: SessionState, configId: string): SessionState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!chosen) return state;
-	const owned = state.pipeline.configs.find(
+	// Drafts only ever add NEW configs (owned ones are upgraded in the shop, not re-drafted).
+	const alreadyOwned = state.pipeline.configs.some(
 		(candidate) => candidate.id === configId
 	);
+	const cost = draftCost(chosen);
+	if (
+		alreadyOwned ||
+		freeConfigs(state.pipeline).length >= state.pipeline.slots ||
+		state.storage < cost
+	)
+		return state;
 	const remaining = state.draftOptions.filter(
 		(candidate) => candidate.id !== configId
 	);
-	if (owned?.focusCategory)
-		return stayReward(
+	return {
+		...stayReward(
 			state,
-			withPipeline(
-				state.pipeline,
-				state.pipeline.configs.map((config) =>
-					config.id === configId ? levelUp(config) : config
-				)
-			),
+			withPipeline(state.pipeline, [...state.pipeline.configs, chosen]),
 			remaining,
-			`Upgraded ${chosen.label} to L${(owned.level ?? 1) + 1}.`
-		);
-	if (!owned && state.pipeline.configs.length < state.pipeline.slots)
-		return {
-			...stayReward(
-				state,
-				withPipeline(state.pipeline, [...state.pipeline.configs, chosen]),
-				remaining,
-				`Drafted ${chosen.label}.`
-			),
-			draftedThisGate: [...state.draftedThisGate, chosen.id],
-		};
-	return state;
+			`Drafted ${chosen.label} (-${cost}KB).`
+		),
+		storage: state.storage - cost,
+		draftedThisGate: [...state.draftedThisGate, chosen.id],
+	};
 };
 
 const upgrade = (state: SessionState, configId: string): SessionState => {
 	const owned = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!owned || !owned.focusCategory) return state;
-	const cost = upgradeCost(owned.level ?? 1);
+	if (!owned || !isUpgradable(owned)) return state;
+	const level = owned.level ?? 1;
+	const levelled = withPipeline(
+		state.pipeline,
+		state.pipeline.configs.map((config) =>
+			config.id === configId ? levelUp(config) : config
+		)
+	);
+
+	// Focus configs are gated on reaching category coverage (not spent); no KB cost.
+	if (owned.focusCategory) {
+		const have = state.coverageByCategory[owned.focusCategory] ?? 0;
+		if (have < upgradeCoverageRequired(level)) return state;
+		return stayReward(
+			state,
+			levelled,
+			state.draftOptions,
+			`Upgraded ${owned.label} to L${level + 1}.`
+		);
+	}
+
+	// Everything else (Unit Tests) costs KB.
+	const cost = upgradeCost(level);
 	if (state.storage < cost) return state;
 	return {
 		...stayReward(
 			state,
-			withPipeline(
-				state.pipeline,
-				state.pipeline.configs.map((config) =>
-					config.id === configId ? levelUp(config) : config
-				)
-			),
+			levelled,
 			state.draftOptions,
-			`Upgraded ${owned.label} to L${(owned.level ?? 1) + 1} (-${cost}KB).`
+			`Upgraded ${owned.label} to L${level + 1} (-${cost}KB).`
 		),
 		storage: state.storage - cost,
 	};
@@ -427,6 +503,8 @@ const finishReward = (state: SessionState): SessionState => ({
 	draftOptions: [],
 	rebuildsUsed: 0,
 	draftedThisGate: [],
+	answeredThisGate: [],
+	clearedChecks: [],
 	status: "answering",
 	log: withLog(state, "Climbing on."),
 });
@@ -448,8 +526,10 @@ const rebuildDraft = (state: SessionState): SessionState => {
 };
 
 const drop = (state: SessionState, configId: string): SessionState => {
-	if (!state.pipeline.configs.some((candidate) => candidate.id === configId))
-		return state;
+	const target = state.pipeline.configs.find(
+		(candidate) => candidate.id === configId
+	);
+	if (!target || isFixed(target)) return state;
 	return {
 		...state,
 		pipeline: withPipeline(
@@ -476,6 +556,8 @@ export const sessionReducer = (
 		return spendLint(state);
 	if (action.type === "strip" && state.status === "awaiting-strip")
 		return strip(state, action.configId);
+	if (action.type === "resume-climb" && state.status === "awaiting-strip")
+		return resumeClimb(state);
 	if (action.type === "add-slot" && state.status === "rewarding")
 		return addSlot(state);
 	if (action.type === "draft" && state.status === "rewarding")

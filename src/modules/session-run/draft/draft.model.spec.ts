@@ -34,11 +34,12 @@ describe("rollDraft", () => {
 		expect(ids(rollDraft(0, []))).not.toEqual(ids(rollDraft(1, [])));
 	});
 
-	it("never re-offers an owned non-Focus config", () => {
+	it("never re-offers any owned config — drafts are new configs only", () => {
 		expect(seenAcrossSeeds([CONFIGS.eslint])).not.toContain("eslint");
+		expect(seenAcrossSeeds([CONFIGS.js])).not.toContain("js");
 	});
 
-	it("still offers an owned Focus config, so it can be drafted as an upgrade", () => {
-		expect(seenAcrossSeeds([CONFIGS.js])).toContain("js");
+	it("never offers a fixed config", () => {
+		expect(seenAcrossSeeds([])).not.toContain("unit-tests");
 	});
 });

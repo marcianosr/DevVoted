@@ -17,11 +17,14 @@ const correctDemand = (required: number): string =>
 export const currentRequirement = (
 	pipeline: Pipeline,
 	gatesCleared: number
-): number =>
-	effectiveRequirement(
-		pipeline,
-		CLIMB_BASE_REQUIREMENT + escalation(gatesCleared)
+): number => {
+	// The correct-requirement config sets the base (and can be upgraded to raise it).
+	const correctConfig = pipeline.configs.find(
+		(config) => config.check === "correct"
 	);
+	const base = correctConfig?.level ?? CLIMB_BASE_REQUIREMENT;
+	return effectiveRequirement(pipeline, base + escalation(gatesCleared));
+};
 
 export const checkStatuses = (
 	pipeline: Pipeline,
@@ -42,6 +45,9 @@ export const checkStatuses = (
 				]
 			: [];
 	});
+	const correctConfig = pipeline.configs.find(
+		(config) => config.check === "correct"
+	);
 	return [
 		{
 			label: "Correct",
@@ -50,6 +56,7 @@ export const checkStatuses = (
 			target: baseline,
 			state: checkState(window.correct >= baseline, window),
 			description: correctDemand(baseline),
+			sourceConfigId: correctConfig?.id,
 		},
 		...contributed,
 	];

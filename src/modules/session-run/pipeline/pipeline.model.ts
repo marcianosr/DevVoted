@@ -10,10 +10,15 @@ export type Pipeline = {
 };
 
 export const BASE_SLOTS = 3;
-export const MAX_SLOTS = 5;
+export const MAX_SLOTS = 8;
+
+export const isFixed = (config: Config): boolean => config.fixed === true;
+
+export const freeConfigs = (pipeline: Pipeline): readonly Config[] =>
+	pipeline.configs.filter((config) => !isFixed(config));
 
 export const isBare = (pipeline: Pipeline): boolean =>
-	pipeline.configs.length === 0;
+	freeConfigs(pipeline).length === 0;
 
 const effects = (pipeline: Pipeline) => pipeline.configs.map(effectOf);
 

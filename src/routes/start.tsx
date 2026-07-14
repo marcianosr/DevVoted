@@ -21,7 +21,7 @@ import {
 } from "~/domains/runs/utils/difficultyStyles";
 import { formatStorage } from "~/lib/storage";
 import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { Button } from "~/ui/Button.component";
 
 export const Route = createFileRoute("/start")({
 	component: RouteComponent,
@@ -101,14 +101,14 @@ function RouteComponent() {
 							onToggleSlot={toggleExtraSlot}
 						/>
 
-						<PrimaryButton
+						<Button
 							onClick={() => startRunMutation.mutate()}
 							disabled={startRunMutation.isPending}
 						>
 							{selectedTier > 0
 								? `Start with +${formatStorage(selectedTier)} injected`
 								: "Start New Run"}
-						</PrimaryButton>
+						</Button>
 
 						{startRunMutation.isError && (
 							<p className="text-red-400 mt-3 text-sm">

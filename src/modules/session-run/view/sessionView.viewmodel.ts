@@ -1,5 +1,6 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 import {
+	type AnsweredPoll,
 	type AnswerType,
 	canRunLinter,
 	lintApplies,
@@ -13,7 +14,6 @@ import { checkStatuses, gateDemands } from "../gate/gate.model";
 import { linterFor, rewardMultiplierFor } from "../pipeline/pipeline.model";
 import { GATE_REWARD_KB, SLICE_WINDOW, VICTORY_GATE } from "../rules.model";
 
-/** A poll option as the client sees it — no `correct` flag. */
 export type PollOptionView = { readonly id: string; readonly label: string };
 
 export type PollView = {
@@ -42,6 +42,10 @@ export type SessionView = {
 	/** The linter config powering the lint on the current poll (for its chip). */
 	readonly linter: Config | null;
 	readonly checks: readonly CheckStatus[];
+	/** Polls answered in the current gate window, with results — for the reward summary. */
+	readonly answeredThisGate: readonly AnsweredPoll[];
+	/** The checks that passed on the last gate clear — for the reward summary. */
+	readonly passedChecks: readonly CheckStatus[];
 	readonly demands: readonly string[];
 	readonly rewardMultiplier: number;
 	/** Storage this gate pays on a clear (base × reward multiplier). */
@@ -50,6 +54,8 @@ export type SessionView = {
 	readonly victoryGate: number;
 	readonly pollsToGate: number;
 	readonly coverage: number;
+	/** Coverage earned per category — gates Focus-config upgrades in the shop. */
+	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly log: readonly string[];
 };
@@ -87,6 +93,8 @@ export const toSessionView = (state: SessionState): SessionView => {
 				? null
 				: (linterFor(state.pipeline.configs, current.category) ?? null),
 		checks: checkStatuses(state.pipeline, state.window, state.gatesCleared),
+		answeredThisGate: state.answeredThisGate,
+		passedChecks: state.clearedChecks,
 		demands: gateDemands(state.pipeline, state.gatesCleared),
 		rewardMultiplier: rewardMultiplierFor(state.pipeline),
 		gateReward: Math.round(
@@ -96,6 +104,7 @@ export const toSessionView = (state: SessionState): SessionView => {
 		victoryGate: VICTORY_GATE,
 		pollsToGate: SLICE_WINDOW - state.window.answered,
 		coverage: state.coverage,
+		coverageByCategory: state.coverageByCategory,
 		storage: state.storage,
 		log: state.log,
 	};

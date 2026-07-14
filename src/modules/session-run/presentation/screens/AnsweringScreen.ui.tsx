@@ -2,7 +2,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import type { Config } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { GateRequirementList } from "../gate/GateRequirementList.ui";
-import { AnswerType, PollCard, PollOption } from "../poll/PollCard.ui";
+import { PollCard, PollOption } from "../poll/PollCard.ui";
 import { StatBadge } from "../run/StatBadge.ui";
 
 type AnsweringScreenProps = {
@@ -17,7 +17,6 @@ type AnsweringScreenProps = {
 	category: CategoryCode;
 	question: string;
 	options: readonly PollOption[];
-	answerType: AnswerType;
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
 	canLint?: boolean;
@@ -25,7 +24,6 @@ type AnsweringScreenProps = {
 	linter?: Config;
 	lintCost?: number;
 	onSelect: (optionId: string) => void;
-	onSubmit?: () => void;
 	onLint?: () => void;
 };
 
@@ -41,7 +39,6 @@ export const AnsweringScreen = ({
 	category,
 	question,
 	options,
-	answerType,
 	selectedOptionIds,
 	disabledOptionIds,
 	canLint,
@@ -49,7 +46,6 @@ export const AnsweringScreen = ({
 	linter,
 	lintCost,
 	onSelect,
-	onSubmit,
 	onLint,
 }: AnsweringScreenProps) => (
 	<div className="flex flex-col gap-6">
@@ -71,7 +67,6 @@ export const AnsweringScreen = ({
 			category={category}
 			question={question}
 			options={options}
-			answerType={answerType}
 			selectedOptionIds={selectedOptionIds}
 			disabledOptionIds={disabledOptionIds}
 			canLint={canLint}
@@ -79,7 +74,6 @@ export const AnsweringScreen = ({
 			linter={linter}
 			lintCost={lintCost}
 			onSelect={onSelect}
-			onSubmit={onSubmit}
 			onLint={onLint}
 		/>
 		<GateRequirementList

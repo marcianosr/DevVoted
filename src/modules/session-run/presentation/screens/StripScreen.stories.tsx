@@ -14,7 +14,7 @@ type Story = StoryObj<typeof StripScreen>;
 export const Default: Story = {
 	args: {
 		stripsRemaining: 2,
-		configs: [CONFIGS.js, CONFIGS.copilot, CONFIGS.deployFriday],
+		configs: [CONFIGS.js, CONFIGS.copilot, CONFIGS.coverageGain],
 		checks: [
 			{
 				label: "Correct",
@@ -30,6 +30,22 @@ export const Default: Story = {
 				target: 4,
 				state: "failed",
 				sourceConfigId: "coverage-gain",
+			},
+		],
+		answered: [
+			{
+				id: "css1",
+				question: "Which centers a flex item on both axes?",
+				category: "css",
+				correct: false,
+				picked: ["align: middle"],
+			},
+			{
+				id: "js1",
+				question: "typeof null?",
+				category: "js",
+				correct: true,
+				picked: ['"object"'],
 			},
 		],
 		onStrip: () => {},

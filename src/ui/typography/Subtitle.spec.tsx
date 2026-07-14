@@ -11,6 +11,6 @@ describe("Subtitle", () => {
 
 	it("uses the muted lead style", () => {
 		render(<Subtitle>Lead</Subtitle>);
-		expect(screen.getByText("Lead")).toHaveClass("text-lg", "text-zinc-300");
+		expect(screen.getByText("Lead")).toHaveClass("text-lg", "text-zinc-400");
 	});
 });

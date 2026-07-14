@@ -43,7 +43,6 @@ export const Default: Story = {
 			{ id: "b", label: "The array index, always" },
 			{ id: "c", label: "Math.random()" },
 		],
-		answerType: "single",
 		onSelect: () => {},
 	},
 };

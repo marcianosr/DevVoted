@@ -3,53 +3,116 @@ import {
 	Config,
 	describeConfig,
 } from "~/modules/session-run/configs/config.model";
+import { Badge } from "~/ui/Badge.component";
 import { RARITY_COLORS } from "~/ui/rarityColors";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 type ConfigChipProps = {
 	config: Config;
-	/** Trailing content, e.g. "✕", "draft ＋", or a value progression node. */
 	action?: ReactNode;
-	/** Interactive but currently unavailable (can't afford / no room). */
+	subline?: ReactNode;
+	price?: number;
+	/** A corner badge (e.g. "new"). Overrides `price`, which renders a price badge for you. */
+	badge?: ReactNode;
+	/** Suppress the hover tooltip — e.g. inside an `overflow-hidden` list that would clip it. */
+	noTooltip?: boolean;
 	disabled?: boolean;
 	onClick?: () => void;
 };
 
-/** The one config token everywhere: rarity-styled, with a hover tooltip of its family + description. */
-export const ConfigChip = ({
+/** The label line: config name, level marker, and an optional trailing action glyph. */
+const ChipLabel = ({
 	config,
 	action,
-	disabled,
-	onClick,
-}: ConfigChipProps) => {
-	const rarity = RARITY_COLORS[config.rarity ?? "common"];
+}: Pick<ConfigChipProps, "config" | "action">) => {
 	const level = config.level ?? 1;
-	const style = `rounded-lg border-2 px-3 py-2 text-sm font-semibold ${rarity.border} ${rarity.bg} ${rarity.text}`;
-	const body = (
+	return (
 		<>
 			{config.label}
 			{level > 1 ? <span className="ml-1 opacity-70">L{level}</span> : null}
 			{action ? <span className="ml-2 opacity-70">{action}</span> : null}
 		</>
 	);
-	const tip = (
-		<Paragraph className="mt-1 text-sm">{describeConfig(config)}</Paragraph>
+};
+
+/** The chip's inner content: the label, with an optional subline stacked beneath it. */
+const ChipBody = ({
+	config,
+	action,
+	subline,
+}: Pick<ConfigChipProps, "config" | "action" | "subline">) =>
+	subline ? (
+		<span className="flex flex-col items-start gap-0.5">
+			<span>
+				<ChipLabel config={config} action={action} />
+			</span>
+			<span className="text-xs opacity-80">{subline}</span>
+		</span>
+	) : (
+		<ChipLabel config={config} action={action} />
 	);
+
+/** The rarity-styled surface: a button when interactive, otherwise a static span. */
+const ChipSurface = ({
+	config,
+	disabled,
+	onClick,
+	children,
+}: Pick<ConfigChipProps, "config" | "disabled" | "onClick"> & {
+	children: ReactNode;
+}) => {
+	const rarity = RARITY_COLORS[config.rarity ?? "common"];
+	const style = `rounded-lg border-2 px-3 py-2 text-sm font-semibold ${rarity.border} ${rarity.bg} ${rarity.text}`;
+	return onClick ? (
+		<button
+			type="button"
+			onClick={onClick}
+			disabled={disabled}
+			className={`${style} cursor-pointer transition enabled:hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40`}
+		>
+			{children}
+		</button>
+	) : (
+		<span className={style}>{children}</span>
+	);
+};
+
+/** A config as a rarity-styled chip: hover for its effect, with an optional corner badge and action. */
+export const ConfigChip = ({
+	config,
+	action,
+	subline,
+	price,
+	badge,
+	noTooltip,
+	disabled,
+	onClick,
+}: ConfigChipProps) => {
+	const corner =
+		badge ??
+		(price !== undefined ? <Badge tone="price">{price}KB</Badge> : null);
+	const surface = (
+		<ChipSurface config={config} disabled={disabled} onClick={onClick}>
+			<ChipBody config={config} action={action} subline={subline} />
+		</ChipSurface>
+	);
+	const chip = corner ? (
+		<span className="relative inline-flex">
+			{corner}
+			{surface}
+		</span>
+	) : (
+		surface
+	);
+	if (noTooltip) return chip;
 	return (
-		<Tooltip content={tip}>
-			{onClick ? (
-				<button
-					type="button"
-					onClick={onClick}
-					disabled={disabled}
-					className={`${style} cursor-pointer transition enabled:hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40`}
-				>
-					{body}
-				</button>
-			) : (
-				<span className={style}>{body}</span>
-			)}
+		<Tooltip
+			content={
+				<Paragraph className="mt-1 text-sm">{describeConfig(config)}</Paragraph>
+			}
+		>
+			{chip}
 		</Tooltip>
 	);
 };

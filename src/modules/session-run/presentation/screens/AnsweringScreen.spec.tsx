@@ -27,7 +27,6 @@ const base = {
 		{ id: "a", label: "A stable unique id" },
 		{ id: "b", label: "The array index" },
 	],
-	answerType: "single" as const,
 	onSelect: vi.fn(),
 };
 

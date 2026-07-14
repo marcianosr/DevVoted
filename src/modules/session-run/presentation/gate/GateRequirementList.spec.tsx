@@ -43,7 +43,7 @@ const checks: CheckStatus[] = [
 ];
 
 describe("GateRequirementList", () => {
-	it("renders the CI Pipelines header with gate number, poll count, and reward", () => {
+	it("renders the checks and the total reward", () => {
 		render(
 			<GateRequirementList
 				checks={checks}
@@ -53,11 +53,7 @@ describe("GateRequirementList", () => {
 				gateReward={180}
 			/>
 		);
-		expect(
-			screen.getByRole("heading", { name: "Pipelines" })
-		).toBeInTheDocument();
-		expect(screen.getByText("Gate #2")).toBeInTheDocument();
-		expect(screen.getByText(/4 polls left/)).toBeInTheDocument();
+		expect(screen.getByText("Correct")).toBeInTheDocument();
 		expect(screen.getByText(/\+180 KB storage/)).toBeInTheDocument();
 	});
 
@@ -77,7 +73,7 @@ describe("GateRequirementList", () => {
 		expect(screen.getByText("0/2")).toHaveClass("text-cinnabar");
 	});
 
-	it("ties each check to its source config, and the baseline to a 'base' tag", () => {
+	it("ties each config-derived check to its source config chip", () => {
 		render(
 			<GateRequirementList
 				checks={checks}
@@ -87,11 +83,10 @@ describe("GateRequirementList", () => {
 				gateReward={120}
 			/>
 		);
-		expect(screen.getByText("base")).toBeInTheDocument(); // the baseline Correct row
 		expect(screen.getByText(".js")).toBeInTheDocument(); // the .js config chip
 	});
 
-	it("shows each check's plain-language description", () => {
+	it("shows each source config's full description inline (no tooltip needed)", () => {
 		render(
 			<GateRequirementList
 				checks={checks}
@@ -102,7 +97,7 @@ describe("GateRequirementList", () => {
 			/>
 		);
 		expect(
-			screen.getByText("• get one right if js appears")
+			screen.getByText(/JavaScript polls earn 1\.5× coverage/)
 		).toBeInTheDocument();
 	});
 });

@@ -22,7 +22,7 @@ export const Full: Story = {
 };
 export const Removable: Story = {
 	args: {
-		configs: [CONFIGS.js, CONFIGS.deployFriday],
+		configs: [CONFIGS.js, CONFIGS.copilot],
 		slots: 4,
 		onRemove: () => {},
 	},

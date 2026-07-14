@@ -12,12 +12,11 @@ export const rollDraft = (
 	seed: number,
 	equipped: readonly Config[]
 ): readonly Config[] => {
-	const ownedNonFocus = new Set(
-		equipped
-			.filter((config) => !config.focusCategory)
-			.map((config) => config.id)
+	// Drafts offer NEW configs only — owned configs are upgraded in the shop, not re-drafted.
+	const owned = new Set(equipped.map((config) => config.id));
+	const pool = CONFIG_LIST.filter(
+		(config) => !owned.has(config.id) && !config.fixed
 	);
-	const pool = CONFIG_LIST.filter((config) => !ownedNonFocus.has(config.id));
 	return Array.from(
 		{ length: Math.min(DRAFT_SIZE, pool.length) },
 		(_, offset) => pool[(seed + offset) % pool.length]

@@ -406,6 +406,17 @@ meter::-webkit-meter-optimum-value {
 	animation: prismatic-text 4s linear infinite;
 }
 
+/*
+ * Animates border-color AND text color together on one element. Needed because
+ * the `animation` shorthand can't be composed across two classes — a second
+ * `animation` declaration clobbers the first — so both runs live in one rule.
+ */
+.prismatic-chip {
+	animation:
+		prismatic-border 4s linear infinite,
+		prismatic-text 4s linear infinite;
+}
+
 /* ─── Screen mount-in transitions ──────────────────────────────────────────────
    Applied by the Screen primitive via data-screen-transition. @starting-style
    defines the pre-mount state; the browser animates to the settled state the

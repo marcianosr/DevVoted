@@ -14,8 +14,8 @@ describe("rarityOf", () => {
 	});
 
 	it("reads an explicit rarity", () => {
-		expect(rarityOf(CONFIGS.deployFriday)).toBe("legendary");
 		expect(rarityOf(CONFIGS.copilot)).toBe("legendary");
+		expect(rarityOf(CONFIGS.coverageGain)).toBe("uncommon");
 	});
 });
 

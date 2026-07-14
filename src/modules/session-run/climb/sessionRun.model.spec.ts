@@ -32,7 +32,6 @@ const pool = (size: number): SessionPoll[] =>
 const handed = [
 	CONFIGS.js,
 	CONFIGS.eslint,
-	CONFIGS.pushForce,
 	CONFIGS.coverageGain,
 	CONFIGS.coldStart,
 	CONFIGS.indexedDb,
@@ -63,7 +62,7 @@ const started = (slotIds: string[], size = 60): SessionState => {
 describe("configuring", () => {
 	it("refuses to slot beyond the pipeline's slots", () => {
 		let state = createSession(pool(60), handed);
-		for (const id of ["js", "eslint", "push-force", "cold-start"])
+		for (const id of ["js", "eslint", "coverage-gain", "cold-start"])
 			state = sessionReducer(state, { type: "slot", configId: id });
 		expect(state.pipeline.configs).toHaveLength(3);
 	});
@@ -89,6 +88,8 @@ describe("gates and rewards", () => {
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
 
+		// Fund the shop: JS coverage for the focus upgrade, storage for the draft.
+		state = { ...state, coverageByCategory: { js: 100 }, storage: 500 };
 		state = sessionReducer(state, { type: "upgrade", configId: "js" });
 		expect(state.pipeline.configs[0].level).toBe(2);
 		expect(state.status).toBe("rewarding");
@@ -108,23 +109,38 @@ describe("gates and rewards", () => {
 		expect(state.status).toBe("answering");
 	});
 
-	it("charges storage to upgrade and refuses when it can't be paid", () => {
+	it("gates a Focus upgrade on category coverage (not KB)", () => {
 		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true); // react polls → no JS coverage
+		expect(state.status).toBe("rewarding");
+
+		state = sessionReducer(state, { type: "upgrade", configId: "js" }); // needs 5% JS coverage
+		expect(state.pipeline.configs[0].level ?? 1).toBe(1); // blocked
+
+		state = { ...state, coverageByCategory: { js: 100 } };
+		state = sessionReducer(state, { type: "upgrade", configId: "js" });
+		expect(state.pipeline.configs[0].level).toBe(2); // now allowed, no KB spent
+		expect(state.storage).toBe(120);
+	});
+
+	it("charges KB to upgrade the correct config (Unit Tests)", () => {
+		let state = createSession(pool(60), handed, [CONFIGS.unitTests]);
+		state = sessionReducer(state, { type: "slot", configId: "js" });
+		state = sessionReducer(state, { type: "start" });
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("rewarding");
 		expect(state.storage).toBe(120);
 
-		state = sessionReducer(state, { type: "upgrade", configId: "js" }); // L1→L2 costs 60
-		expect(state.pipeline.configs[0].level).toBe(2);
-		expect(state.storage).toBe(60);
-
-		state = sessionReducer(state, { type: "upgrade", configId: "js" }); // L2→L3 costs 120, only 60 left
-		expect(state.pipeline.configs[0].level).toBe(2);
+		state = sessionReducer(state, { type: "upgrade", configId: "unit-tests" }); // L1→L2 costs 60
+		const unit = state.pipeline.configs.find((c) => c.id === "unit-tests")!;
+		expect(unit.level).toBe(2);
 		expect(state.storage).toBe(60);
 	});
 
 	it("flags newly drafted configs and clears the flag on finish", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		state = { ...state, storage: 500 }; // drafting costs KB
 
 		const pick = state.draftOptions.find((config) => config.id !== "js")!;
 		state = sessionReducer(state, { type: "draft", configId: pick.id });
@@ -152,18 +168,32 @@ describe("check-configs on one pipeline", () => {
 
 describe("failure model", () => {
 	it("demands a strip when a stocked pipeline misses", () => {
-		let state = started(["push-force"]); // bar rises to 2
+		let state = started(["js"]); // misses the Correct requirement
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		expect(state.status).toBe("awaiting-strip");
 		expect(state.stripsRemaining).toBe(1);
 	});
 
-	it("resumes answering after the drop quota is peeled", () => {
-		let state = started(["push-force", "js"]);
+	it("holds after the drop quota is peeled until the player climbs on", () => {
+		let state = started(["eslint", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		state = sessionReducer(state, { type: "strip", configId: "push-force" });
+		state = sessionReducer(state, { type: "strip", configId: "eslint" });
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.stripsRemaining).toBe(0);
+		state = sessionReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("answering");
 		expect(configIds(state)).toEqual(["js"]);
+	});
+
+	it("ignores a strip once the quota is met", () => {
+		let state = started(["eslint", "js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		state = sessionReducer(state, { type: "strip", configId: "eslint" });
+		const afterQuota = sessionReducer(state, {
+			type: "strip",
+			configId: "js",
+		});
+		expect(afterQuota).toBe(state);
 	});
 
 	it("ends the run when a bare pipeline misses", () => {
@@ -183,6 +213,34 @@ describe("the summit", () => {
 		}
 		expect(state.status).toBe("won");
 		expect(state.gatesCleared).toBe(VICTORY_GATE);
+	});
+});
+
+describe("fixed configs", () => {
+	it("pre-slots a fixed config that can't be unslotted", () => {
+		let state = createSession(pool(60), handed, [CONFIGS.unitTests]);
+		expect(configIds(state)).toEqual(["unit-tests"]);
+		state = sessionReducer(state, { type: "unslot", configId: "unit-tests" });
+		expect(configIds(state)).toEqual(["unit-tests"]);
+	});
+
+	it("counts only non-fixed configs against the slots", () => {
+		let state = createSession(pool(60), handed, [CONFIGS.unitTests]);
+		for (const id of ["js", "eslint", "coverage-gain", "cold-start"])
+			state = sessionReducer(state, { type: "slot", configId: id });
+		expect(state.pipeline.configs).toHaveLength(4); // 3 free + the fixed one
+	});
+
+	it("dies only once nothing but the fixed config remains", () => {
+		let state = createSession(pool(60), handed, [CONFIGS.unitTests]);
+		state = sessionReducer(state, { type: "slot", configId: "js" });
+		state = sessionReducer(state, { type: "start" });
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("awaiting-strip"); // js still peelable
+		state = sessionReducer(state, { type: "strip", configId: "js" });
+		state = sessionReducer(state, { type: "resume-climb" });
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("dead"); // only the fixed config left → bare
 	});
 });
 

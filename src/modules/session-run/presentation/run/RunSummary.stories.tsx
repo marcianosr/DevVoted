@@ -16,7 +16,6 @@ export const Summited: Story = {
 		gatesCleared: 5,
 		coverage: 24,
 		storage: 640,
-		onRestart: () => {},
 	},
 };
 export const RunOver: Story = {
@@ -25,6 +24,5 @@ export const RunOver: Story = {
 		gatesCleared: 2,
 		coverage: 9,
 		storage: 120,
-		onRestart: () => {},
 	},
 };

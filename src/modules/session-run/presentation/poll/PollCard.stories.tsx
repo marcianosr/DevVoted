@@ -22,7 +22,6 @@ export const SingleChoice: Story = {
 		category: "react",
 		question: "What is the correct key to give list items in React?",
 		options,
-		answerType: "single",
 		onSelect: () => {},
 	},
 };
@@ -32,10 +31,8 @@ export const MultipleChoice: Story = {
 		category: "ts",
 		question: "Which of these are TypeScript utility types?",
 		options,
-		answerType: "multiple",
 		selectedOptionIds: ["a"],
 		onSelect: () => {},
-		onSubmit: () => {},
 	},
 };
 
@@ -44,7 +41,6 @@ export const WithLinter: Story = {
 		category: "js",
 		question: "Which coerces to true?",
 		options,
-		answerType: "single",
 		disabledOptionIds: ["c"],
 		onSelect: () => {},
 		canLint: true,
@@ -59,7 +55,6 @@ export const Revealed: Story = {
 		category: "react",
 		question: "What is the correct key to give list items in React?",
 		options,
-		answerType: "single",
 		onSelect: () => {},
 		correctOptionIds: ["a"],
 		chosenOptionIds: ["b"],

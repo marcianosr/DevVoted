@@ -13,7 +13,7 @@ import {
 	formatRequirement,
 	getSlotLabel,
 } from "~/domains/runs/utils/formatPipelineRequirement";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { Button } from "~/ui/Button.component";
 import { PipelineUpgradeCard } from "~/ui/runs/PipelineUpgradeCard.ui";
 
 import { CurrentPipeline } from "./CurrentPipeline.component";
@@ -97,12 +97,12 @@ export const UpgradePipelineSection = ({
 					))}
 				</div>
 				<div className="flex justify-end">
-					<PrimaryButton
+					<Button
 						onClick={() => onConfirm(selectedCards)}
 						disabled={selectedCards.length === 0 || isPending}
 					>
 						{confirmLabel(selectedCards.length)}
-					</PrimaryButton>
+					</Button>
 				</div>
 			</section>
 		</div>

@@ -29,17 +29,14 @@ describe("ConfigChip", () => {
 		expect(onClick).not.toHaveBeenCalled();
 	});
 
-	it("colors the label in the rarity text color (common → pewter)", () => {
+	it("colors the label in the rarity text color (common → cerulean)", () => {
 		render(<ConfigChip config={CONFIGS.js} />);
-		expect(screen.getByText(".js")).toHaveClass("text-pewter");
+		expect(screen.getByText(".js")).toHaveClass("text-cerulean");
 	});
 
-	it("wears the rarity border + text (legendary → indigo)", () => {
-		render(<ConfigChip config={CONFIGS.deployFriday} />);
-		expect(screen.getByText("Deploy on Friday")).toHaveClass(
-			"border-indigo",
-			"text-indigo"
-		);
+	it("wears the prismatic rarity styling (legendary)", () => {
+		render(<ConfigChip config={CONFIGS.copilot} />);
+		expect(screen.getByText("Copilot")).toHaveClass("prismatic-chip");
 	});
 
 	it("shows the level once upgraded", () => {

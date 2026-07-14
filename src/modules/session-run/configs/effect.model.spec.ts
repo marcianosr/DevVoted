@@ -74,9 +74,11 @@ describe("effectOf — passive effects", () => {
 		expect(mask?.("css")).toBe(false);
 	});
 
-	it("push --force raises the bar and pays", () => {
-		expect(effectOf(CONFIGS.pushForce).requirementDelta).toBe(1);
-		expect(effectOf(CONFIGS.pushForce).rewardMultiplier).toBe(2);
+	it("Unit Tests pays a reward multiplier equal to its level (harder = richer)", () => {
+		expect(effectOf(CONFIGS.unitTests).rewardMultiplier).toBe(1);
+		expect(effectOf({ ...CONFIGS.unitTests, level: 3 }).rewardMultiplier).toBe(
+			3
+		);
 	});
 
 	it("Copilot multiplies coverage; IndexedDB faucets storage", () => {

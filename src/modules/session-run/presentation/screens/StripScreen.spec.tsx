@@ -30,6 +30,7 @@ describe("StripScreen", () => {
 				stripsRemaining={2}
 				configs={[CONFIGS.js, CONFIGS.copilot]}
 				checks={checks}
+				answered={[]}
 				onStrip={() => {}}
 			/>
 		);
@@ -45,10 +46,11 @@ describe("StripScreen", () => {
 				stripsRemaining={1}
 				configs={[CONFIGS.js]}
 				checks={checks}
+				answered={[]}
 				onStrip={() => {}}
 			/>
 		);
-		expect(screen.getByText("✕ Correct")).toBeInTheDocument();
+		expect(screen.getByText("Correct")).toBeInTheDocument();
 	});
 
 	it("peels the chosen config", () => {
@@ -58,10 +60,24 @@ describe("StripScreen", () => {
 				stripsRemaining={1}
 				configs={[CONFIGS.js, CONFIGS.copilot]}
 				checks={checks}
+				answered={[]}
 				onStrip={onStrip}
 			/>
 		);
 		fireEvent.click(screen.getByRole("button", { name: /Copilot/ }));
 		expect(onStrip).toHaveBeenCalledWith("copilot");
+	});
+
+	it("locks the peel chips once the quota is met", () => {
+		render(
+			<StripScreen
+				stripsRemaining={0}
+				configs={[CONFIGS.js]}
+				checks={checks}
+				answered={[]}
+				onStrip={() => {}}
+			/>
+		);
+		expect(screen.getByRole("button", { name: /Remove/ })).toBeDisabled();
 	});
 });
