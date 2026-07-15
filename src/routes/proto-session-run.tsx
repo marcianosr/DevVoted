@@ -194,8 +194,7 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						slots={view.slots}
 						bench={view.available}
 						checks={view.checks}
-						gateNumber={view.gatesCleared + 1}
-						pollsToGate={view.pollsToGate}
+						victoryGate={view.victoryGate}
 						gateReward={view.gateReward}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
 						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
@@ -206,11 +205,8 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 			{state.status === "answering" && view.poll && (
 				<Screen categoryCode={view.poll.category}>
 					<AnsweringScreen
-						gatesCleared={view.gatesCleared}
-						pollsToGate={view.pollsToGate}
 						configs={view.configs}
 						checks={view.checks}
-						gateReward={view.gateReward}
 						category={view.poll.category}
 						question={view.poll.question}
 						options={view.poll.options}
@@ -263,8 +259,6 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						coverageByCategory={view.coverageByCategory}
 						checks={view.checks}
 						gateNumber={view.gatesCleared + 1}
-						pollsToGate={view.pollsToGate}
-						gateReward={view.gateReward}
 						configs={view.configs}
 						newConfigIds={view.newConfigIds}
 						draftOptions={view.draftOptions}
@@ -330,7 +324,7 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 function RouteComponent() {
 	const [seed, setSeed] = useState(0);
 	return (
-		<div className="min-h-screen bg-[#141221] text-white">
+		<div className="min-h-screen text-white">
 			<SessionGame
 				key={seed}
 				onRestart={() => setSeed((current) => current + 1)}

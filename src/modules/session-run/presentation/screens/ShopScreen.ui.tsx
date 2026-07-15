@@ -11,8 +11,9 @@ import { Button } from "~/ui/Button.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
+import { roleRows } from "~/modules/session-run/gate/configRole.model";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { GateRequirementList } from "../gate/GateRequirementList.ui";
+import { RoleList } from "../gate/RoleList.ui";
 import { Loadout } from "../pipeline/Loadout.ui";
 
 type ShopScreenProps = {
@@ -20,8 +21,6 @@ type ShopScreenProps = {
 	coverageByCategory: Readonly<Record<string, number>>;
 	checks: readonly CheckStatus[];
 	gateNumber: number;
-	pollsToGate: number;
-	gateReward: number;
 	configs: readonly Config[];
 	slots: number;
 	newConfigIds: readonly string[];
@@ -41,8 +40,6 @@ export const ShopScreen = ({
 	coverageByCategory,
 	checks,
 	gateNumber,
-	pollsToGate,
-	gateReward,
 	configs,
 	slots,
 	newConfigIds,
@@ -168,13 +165,7 @@ export const ShopScreen = ({
 				newConfigIds={newConfigIds}
 			/>
 
-			<GateRequirementList
-				checks={checks}
-				configs={configs}
-				gateNumber={gateNumber}
-				pollsToGate={pollsToGate}
-				gateReward={gateReward}
-			/>
+			<RoleList rows={roleRows(configs, checks)} />
 		</div>
 	);
 };

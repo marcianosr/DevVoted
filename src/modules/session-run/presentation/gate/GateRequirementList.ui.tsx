@@ -2,6 +2,7 @@ import type { Config } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { CheckList, PerkList } from "./CheckList.ui";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 const perksOf = (
 	configs: readonly Config[],
@@ -71,12 +72,12 @@ export const GateRequirementList = ({
 				</>
 			) : null}
 
-			<Subtitle>
+			<Paragraph>
 				Total reward if all pass:{" "}
 				<span className="font-bold text-viridian">
 					+{gateReward} KB storage
 				</span>
-			</Subtitle>
+			</Paragraph>
 		</div>
 	);
 };

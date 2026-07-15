@@ -8,8 +8,6 @@ const base = {
 	storage: 440,
 	coverageByCategory: {},
 	gateNumber: 2,
-	pollsToGate: 5,
-	gateReward: 120,
 	checks: [
 		{
 			label: "Correct",

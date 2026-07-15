@@ -5,9 +5,7 @@ import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { AnsweringScreen } from "./AnsweringScreen.ui";
 
 const base = {
-	gatesCleared: 2,
-	pollsToGate: 3,
-	configs: [CONFIGS.js],
+	configs: [CONFIGS.unitTests, CONFIGS.js],
 	checks: [
 		{
 			label: "Correct",
@@ -15,9 +13,9 @@ const base = {
 			current: 1,
 			target: 2,
 			state: "running" as const,
+			sourceConfigId: "unit-tests",
 		},
 	],
-	gateReward: 120,
 	category: "react" as const,
 	question: "Which key?",
 	options: [
@@ -33,7 +31,7 @@ describe("AnsweringScreen", () => {
 	it("renders the poll question and the gate checklist", () => {
 		render(<AnsweringScreen {...base} />);
 		expect(screen.getByText("Which key?")).toBeInTheDocument();
-		expect(screen.getByText(/Correct/)).toBeInTheDocument();
+		expect(screen.getByText("Unit Tests")).toBeInTheDocument();
 	});
 
 	it("answers a poll option", () => {

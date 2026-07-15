@@ -21,7 +21,7 @@ export const Loadout = ({
 }: LoadoutProps) => (
 	<section className="flex flex-col gap-2">
 		<header>
-			<Title as="h2">
+			<Title as="h2" size="md">
 				Your load-out{gateNumber !== undefined ? ` for gate ${gateNumber}` : ""}
 			</Title>
 			<Subtitle>Your configured pipeline requirements and perks</Subtitle>

@@ -1,16 +1,14 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 import type { Config } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
+import { roleRows } from "~/modules/session-run/gate/configRole.model";
 import { Button } from "~/ui/Button.component";
-import { GateRequirementList } from "../gate/GateRequirementList.ui";
+import { RoleList } from "../gate/RoleList.ui";
 import { PollCard, PollOption } from "../poll/PollCard.ui";
 
 type AnsweringScreenProps = {
-	gatesCleared: number;
-	pollsToGate: number;
 	configs: readonly Config[];
 	checks: readonly CheckStatus[];
-	gateReward: number;
 	category: CategoryCode;
 	question: string;
 	options: readonly PollOption[];
@@ -27,11 +25,8 @@ type AnsweringScreenProps = {
 };
 
 export const AnsweringScreen = ({
-	gatesCleared,
-	pollsToGate,
 	configs,
 	checks,
-	gateReward,
 	category,
 	question,
 	options,
@@ -65,13 +60,6 @@ export const AnsweringScreen = ({
 				Submit answer →
 			</Button>
 		</div>
-		<GateRequirementList
-			checks={checks}
-			configs={configs}
-			gateNumber={gatesCleared + 1}
-			pollsToGate={pollsToGate}
-			gateReward={gateReward}
-			compact
-		/>
+		<RoleList rows={roleRows(configs, checks)} />
 	</div>
 );

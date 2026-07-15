@@ -16,8 +16,6 @@ export const Default: Story = {
 		storage: 440,
 		coverageByCategory: { css: 8 },
 		gateNumber: 3,
-		pollsToGate: 5,
-		gateReward: 180,
 		checks: [
 			{
 				label: "Correct",

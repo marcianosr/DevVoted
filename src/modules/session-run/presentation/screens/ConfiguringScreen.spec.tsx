@@ -5,11 +5,10 @@ import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { ConfiguringScreen } from "./ConfiguringScreen.ui";
 
 const base = {
-	configs: [CONFIGS.js],
+	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.copilot],
-	gateNumber: 1,
-	pollsToGate: 5,
+	victoryGate: 5,
 	gateReward: 120,
 	checks: [
 		{
@@ -18,6 +17,7 @@ const base = {
 			current: 0,
 			target: 1,
 			state: "running" as const,
+			sourceConfigId: "unit-tests",
 		},
 	],
 	onSlot: vi.fn(),
@@ -25,12 +25,19 @@ const base = {
 };
 
 describe("ConfiguringScreen", () => {
-	it("renders the heading, the build summary, and the bench", () => {
+	it("renders both numbered steps and the run stakes", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: /Configure your pipeline/ })
+			screen.getByRole("heading", { name: /Pick your stack/ })
 		).toBeInTheDocument();
-		expect(screen.getByText("Correct")).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: /Review your build/ })
+		).toBeInTheDocument();
+		expect(screen.getByText(/Run stakes/i)).toBeInTheDocument();
+	});
+
+	it("renders the bench offers", () => {
+		render(<ConfiguringScreen {...base} />);
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
@@ -39,5 +46,12 @@ describe("ConfiguringScreen", () => {
 		render(<ConfiguringScreen {...base} onSlot={onSlot} />);
 		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
 		expect(onSlot).toHaveBeenCalledWith("eslint");
+	});
+
+	it("removes a non-fixed slotted config", () => {
+		const onUnslot = vi.fn();
+		render(<ConfiguringScreen {...base} onUnslot={onUnslot} />);
+		fireEvent.click(screen.getByRole("button", { name: /Remove \.js/ }));
+		expect(onUnslot).toHaveBeenCalledWith("js");
 	});
 });

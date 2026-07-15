@@ -28,7 +28,7 @@ const CoverageSummary = ({
 		return (
 			<span className="flex items-baseline gap-1.5">
 				<span className="text-pewter">Coverage</span>
-				<span className="font-bold text-cerulean">{coverage}%</span>
+				<span className="font-bold text-white">{coverage}%</span>
 			</span>
 		);
 
@@ -40,7 +40,7 @@ const CoverageSummary = ({
 				className="flex cursor-pointer items-center gap-1.5"
 			>
 				<span className="text-pewter">Coverage</span>
-				<span className="font-bold text-cerulean">{coverage}%</span>
+				<span className="font-bold text-white">{coverage}%</span>
 				<span className="text-pewter">
 					across {covered.length} categor{covered.length === 1 ? "y" : "ies"}
 				</span>

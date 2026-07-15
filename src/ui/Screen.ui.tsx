@@ -90,7 +90,7 @@ export const Screen = ({
 			data-category-theme={categoryCode}
 			data-screen-transition={effectiveTransition}
 			className={clsx(
-				"w-full mx-auto px-4 py-8 md:py-16",
+				"w-full mx-auto px-4 py-8",
 				WIDTH_CLASSES[width],
 				center && "flex-1 flex flex-col justify-center"
 			)}

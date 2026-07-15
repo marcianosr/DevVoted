@@ -13,8 +13,6 @@ type Story = StoryObj<typeof AnsweringScreen>;
 
 export const Default: Story = {
 	args: {
-		gatesCleared: 2,
-		pollsToGate: 3,
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
 		checks: [
 			{
@@ -23,6 +21,7 @@ export const Default: Story = {
 				current: 1,
 				target: 2,
 				state: "running",
+				sourceConfigId: "unit-tests",
 			},
 			{
 				label: "Coverage",
@@ -30,9 +29,9 @@ export const Default: Story = {
 				current: 2,
 				target: 4,
 				state: "running",
+				sourceConfigId: "coverage-gain",
 			},
 		],
-		gateReward: 180,
 		category: "react",
 		question: "What is the correct key to give list items in React?",
 		options: [
