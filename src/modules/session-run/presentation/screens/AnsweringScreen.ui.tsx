@@ -1,16 +1,13 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 import type { Config } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
+import { Button } from "~/ui/Button.component";
 import { GateRequirementList } from "../gate/GateRequirementList.ui";
 import { PollCard, PollOption } from "../poll/PollCard.ui";
-import { StatBadge } from "../run/StatBadge.ui";
 
 type AnsweringScreenProps = {
 	gatesCleared: number;
-	victoryGate: number;
 	pollsToGate: number;
-	coverage: number;
-	storage: number;
 	configs: readonly Config[];
 	checks: readonly CheckStatus[];
 	gateReward: number;
@@ -23,16 +20,15 @@ type AnsweringScreenProps = {
 	lintReady?: boolean;
 	linter?: Config;
 	lintCost?: number;
+	canSubmit: boolean;
 	onSelect: (optionId: string) => void;
+	onSubmit: () => void;
 	onLint?: () => void;
 };
 
 export const AnsweringScreen = ({
 	gatesCleared,
-	victoryGate,
 	pollsToGate,
-	coverage,
-	storage,
 	configs,
 	checks,
 	gateReward,
@@ -45,24 +41,12 @@ export const AnsweringScreen = ({
 	lintReady,
 	linter,
 	lintCost,
+	canSubmit,
 	onSelect,
+	onSubmit,
 	onLint,
 }: AnsweringScreenProps) => (
 	<div className="flex flex-col gap-6">
-		<div className="flex flex-wrap gap-6">
-			<StatBadge
-				label="Gate"
-				value={`${gatesCleared + 1}/${victoryGate}`}
-				category={category}
-			/>
-			<StatBadge
-				label="Gate in"
-				value={`${pollsToGate} poll${pollsToGate === 1 ? "" : "s"}`}
-				category={category}
-			/>
-			<StatBadge label="Coverage" value={`${coverage}%`} category={category} />
-			<StatBadge label="Storage" value={`${storage}KB`} category={category} />
-		</div>
 		<PollCard
 			category={category}
 			question={question}
@@ -76,6 +60,11 @@ export const AnsweringScreen = ({
 			onSelect={onSelect}
 			onLint={onLint}
 		/>
+		<div className="flex justify-end">
+			<Button className="rounded-lg" disabled={!canSubmit} onClick={onSubmit}>
+				Submit answer →
+			</Button>
+		</div>
 		<GateRequirementList
 			checks={checks}
 			configs={configs}

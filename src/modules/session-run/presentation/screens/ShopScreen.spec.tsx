@@ -6,8 +6,6 @@ import { ShopScreen } from "./ShopScreen.ui";
 
 const base = {
 	storage: 440,
-	gatesCleared: 2,
-	coverage: 12,
 	coverageByCategory: {},
 	gateNumber: 2,
 	pollsToGate: 5,

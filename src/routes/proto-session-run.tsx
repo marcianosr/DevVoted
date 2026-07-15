@@ -21,6 +21,7 @@ import { ConfiguringScreen } from "~/modules/session-run/presentation/screens/Co
 import { RewardScreen } from "~/modules/session-run/presentation/screens/RewardScreen.ui";
 import { ShopScreen } from "~/modules/session-run/presentation/screens/ShopScreen.ui";
 import { StripScreen } from "~/modules/session-run/presentation/screens/StripScreen.ui";
+import { RunHud } from "~/modules/session-run/presentation/run/RunHud.ui";
 import { RunSummary } from "~/modules/session-run/presentation/run/RunSummary.ui";
 import { toSessionView } from "~/modules/session-run/view/sessionView.viewmodel";
 import { SLICE_WINDOW, VICTORY_GATE } from "~/modules/session-run/rules.model";
@@ -163,8 +164,22 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 	const canStart = view.configs.filter((config) => !config.fixed).length > 0;
 	const quotaMet = view.stripsRemaining === 0;
 
+	const runOver = state.status === "won" || state.status === "dead";
+
 	return (
 		<>
+			{runOver ? null : (
+				<div className="mx-auto w-full max-w-5xl px-4 pt-6">
+					<RunHud
+						storage={view.storage}
+						gateNumber={view.gatesCleared + 1}
+						victoryGate={view.victoryGate}
+						pollsToGate={view.pollsToGate}
+						coverage={view.coverage}
+						coverageByCategory={view.coverageByCategory}
+					/>
+				</div>
+			)}
 			{state.status === "configuring" && (
 				<Screen
 					rightAction={{
@@ -189,21 +204,10 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 			)}
 
 			{state.status === "answering" && view.poll && (
-				<Screen
-					categoryCode={view.poll.category}
-					rightAction={{
-						label: "Submit answer →",
-						onClick: () => answer(selected),
-						disabled: !canSubmit,
-						hint: canSubmit ? undefined : "Pick an answer to submit",
-					}}
-				>
+				<Screen categoryCode={view.poll.category}>
 					<AnsweringScreen
 						gatesCleared={view.gatesCleared}
-						victoryGate={view.victoryGate}
 						pollsToGate={view.pollsToGate}
-						coverage={view.coverage}
-						storage={view.storage}
 						configs={view.configs}
 						checks={view.checks}
 						gateReward={view.gateReward}
@@ -216,7 +220,9 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						lintReady={view.lintReady}
 						linter={view.linter ?? undefined}
 						lintCost={LINT_COST}
+						canSubmit={canSubmit}
 						onSelect={onSelect}
+						onSubmit={() => answer(selected)}
 						onLint={() => dispatch({ type: "lint-poll" })}
 					/>
 				</Screen>
@@ -254,8 +260,6 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					<ShopScreen
 						storage={view.storage}
-						gatesCleared={view.gatesCleared}
-						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
 						checks={view.checks}
 						gateNumber={view.gatesCleared + 1}

@@ -7,10 +7,10 @@ Questions:
 - Be able to switch your load-out on gate check
 - Max 8 configs for pipeline - show that in descriptive text
 - "Next climb" should become - Start next gate (with a timer, or maybe if possible paid)
+- Slots: You can now endlessly add slots untilk your max. - do we want that?
 
 
 Wrapped in stories now:
-
 - If my slots are full, I see configs to be selected but I cant actually select them. There should be a hint that this cannot be added unless there is more space
 - Config packs (polls packs - new polls to play today, mystery configs, or requirements)
 - After 1 gate players should come bck tomorrow, OR spend KB's to continue.

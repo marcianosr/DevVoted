@@ -15,6 +15,8 @@ type ConfigChipProps = {
 	price?: number;
 	/** A corner badge (e.g. "new"). Overrides `price`, which renders a price badge for you. */
 	badge?: ReactNode;
+	/** Overrides the default hover tooltip (the config's effect) with custom content. */
+	tooltip?: ReactNode;
 	/** Suppress the hover tooltip — e.g. inside an `overflow-hidden` list that would clip it. */
 	noTooltip?: boolean;
 	disabled?: boolean;
@@ -85,12 +87,14 @@ export const ConfigChip = ({
 	subline,
 	price,
 	badge,
+	tooltip,
 	noTooltip,
 	disabled,
 	onClick,
 }: ConfigChipProps) => {
 	const corner =
 		badge ??
+		(config.fixed ? <Badge>fixed</Badge> : null) ??
 		(price !== undefined ? <Badge tone="price">{price}KB</Badge> : null);
 	const surface = (
 		<ChipSurface config={config} disabled={disabled} onClick={onClick}>
@@ -109,7 +113,9 @@ export const ConfigChip = ({
 	return (
 		<Tooltip
 			content={
-				<Paragraph className="mt-1 text-sm">{describeConfig(config)}</Paragraph>
+				<Paragraph className="mt-1 text-sm">
+					{tooltip ?? describeConfig(config)}
+				</Paragraph>
 			}
 		>
 			{chip}

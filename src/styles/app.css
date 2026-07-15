@@ -111,9 +111,8 @@
 	--warning: oklch(75% 0.25 90);
 	--succes: oklch(55% 0.3 145);
 
-	--font-family-display: "Pixter Display", sans-serif;
-	--font-family-granular: "Pixter Granular", sans-serif;
-	--font: "Fira Code", monospace;
+	--font-display: "Pixter Display", sans-serif;
+	--font-granular: "Pixter Granular", sans-serif;
 }
 
 /* Specific color utilities - no longer needed with Tailwind 4's --color-* prefix */
@@ -297,8 +296,22 @@
 
 @font-face {
 	font-family: "Pixter Display";
+	src: url("/fonts/PixterDisplay.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: "Pixter Display";
 	src: url("/fonts/PixterDisplayBold.ttf") format("truetype");
 	font-weight: bold;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: "Pixter Granular";
+	src: url("/fonts/PixterGranular.ttf") format("truetype");
+	font-weight: normal;
 	font-style: normal;
 }
 
@@ -310,8 +323,10 @@
 }
 
 body {
-	font-family: var(--font);
 	font-family: "Pixter Display", sans-serif;
+	/* Pin bold to preserve the app's look now that a real 400 face is registered —
+	   without this the default weight would silently flip to regular everywhere. */
+	font-weight: bold;
 }
 
 meter {
@@ -333,7 +348,6 @@ meter::-webkit-meter-optimum-value {
 	border-radius: inherit;
 }
 
-/* Prismatic border for #1 leaderboard position */
 @keyframes prismatic-border {
 	0% {
 		border-color: var(--color-vermillion);
@@ -415,6 +429,14 @@ meter::-webkit-meter-optimum-value {
 	animation:
 		prismatic-border 4s linear infinite,
 		prismatic-text 4s linear infinite;
+}
+
+/* Scrollable without a visible scrollbar (keeps content reachable, fixed height). */
+.no-scrollbar {
+	scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
 }
 
 /* ─── Screen mount-in transitions ──────────────────────────────────────────────

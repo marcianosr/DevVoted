@@ -6,6 +6,8 @@ import { Pipeline } from "./Pipeline.ui";
 type LoadoutProps = {
 	configs: readonly Config[];
 	slots: number;
+	/** When set, the heading names the gate this load-out is heading into. */
+	gateNumber?: number;
 	newConfigIds?: readonly string[];
 	onRemove?: (configId: string) => void;
 };
@@ -13,12 +15,15 @@ type LoadoutProps = {
 export const Loadout = ({
 	configs,
 	slots,
+	gateNumber,
 	newConfigIds,
 	onRemove,
 }: LoadoutProps) => (
 	<section className="flex flex-col gap-2">
 		<header>
-			<Title as="h2">Your load-out</Title>
+			<Title as="h2">
+				Your load-out{gateNumber !== undefined ? ` for gate ${gateNumber}` : ""}
+			</Title>
 			<Subtitle>Your configured pipeline requirements and perks</Subtitle>
 		</header>
 		<Pipeline

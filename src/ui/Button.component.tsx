@@ -48,7 +48,6 @@ export const Button = ({
 	const variantClass =
 		variant === "primary"
 			? clsx(
-					"font-semibold",
 					SIZE[size],
 					isDisabled
 						? "bg-zinc-800 text-gray-500"

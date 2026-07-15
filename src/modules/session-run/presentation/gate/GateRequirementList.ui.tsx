@@ -23,21 +23,18 @@ type GateRequirementListProps = {
 const CompactGate = ({
 	checks,
 	configs,
-	gateNumber,
-	pollsToGate,
-	gateReward,
 }: Omit<GateRequirementListProps, "compact">) => {
 	const perks = perksOf(configs, checks);
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="flex items-baseline justify-between gap-2">
-				<Subtitle>Pipelines · Gate #{gateNumber}</Subtitle>
-				<span className="text-sm text-pewter">
-					{pollsToGate} left · +{gateReward}KB
-				</span>
-			</div>
-			{perks.length > 0 ? <PerkList perks={perks} /> : null}
+			<Subtitle>Pipeline requirements</Subtitle>
 			<CheckList checks={checks} configs={configs} />
+			{perks.length > 0 ? (
+				<>
+					<Subtitle>Pipeline perks</Subtitle>
+					<PerkList perks={perks} />
+				</>
+			) : null}
 		</div>
 	);
 };
@@ -64,6 +61,7 @@ export const GateRequirementList = ({
 	const perks = perksOf(configs, checks);
 	return (
 		<div className="flex flex-col gap-3">
+			<Subtitle>Pipeline requirements</Subtitle>
 			<CheckList checks={checks} configs={configs} />
 
 			{perks.length > 0 ? (

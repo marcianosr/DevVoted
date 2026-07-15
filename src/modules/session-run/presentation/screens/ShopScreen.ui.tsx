@@ -1,3 +1,4 @@
+import { getCategoryMetadata } from "~/domains/shared/categories";
 import {
 	Config,
 	draftCost,
@@ -13,12 +14,9 @@ import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { GateRequirementList } from "../gate/GateRequirementList.ui";
 import { Loadout } from "../pipeline/Loadout.ui";
-import { StatBadge } from "../run/StatBadge.ui";
 
 type ShopScreenProps = {
 	storage: number;
-	gatesCleared: number;
-	coverage: number;
 	coverageByCategory: Readonly<Record<string, number>>;
 	checks: readonly CheckStatus[];
 	gateNumber: number;
@@ -40,8 +38,6 @@ type ShopScreenProps = {
 
 export const ShopScreen = ({
 	storage,
-	gatesCleared,
-	coverage,
 	coverageByCategory,
 	checks,
 	gateNumber,
@@ -64,128 +60,113 @@ export const ShopScreen = ({
 	return (
 		<div className="flex flex-col gap-6">
 			<Title>Upgrade your pipeline</Title>
-			<div className="flex flex-wrap gap-6">
-				<StatBadge label="Gates cleared" value={gatesCleared} />
-				<StatBadge label="Coverage" value={`${coverage}%`} />
-				<StatBadge label="Storage" value={`${storage}KB`} />
-			</div>
 
-			<div className="flex flex-col gap-5 rounded-xl border-2 border-zinc-700 bg-zinc-900/40 p-5 md:flex-row">
-				<div className="flex flex-row gap-3 md:w-44 md:shrink-0 md:flex-col">
+			<div className="flex flex-wrap items-start gap-8 rounded-xl border-2 border-zinc-700 bg-zinc-900/40 p-5">
+				<section className="flex flex-col gap-3">
+					<Subtitle>Select new configs</Subtitle>
+					<div className="flex flex-wrap gap-3">
+						{draftOptions.map((config) => {
+							const cost = draftCost(config);
+							return (
+								<ConfigChip
+									key={config.id}
+									config={config}
+									action="draft ＋"
+									price={cost}
+									disabled={isFull || storage < cost}
+									onClick={() => onDraft(config.id)}
+								/>
+							);
+						})}
+					</div>
 					<Button
 						variant="theme"
-						className="grow rounded-lg text-sm"
+						className="self-start rounded-lg text-sm"
 						disabled={!canRebuild}
 						onClick={onRebuild}
 					>
 						Rebuild configs ({rebuildCost}KB)
 					</Button>
-				</div>
+				</section>
 
-				<div className="flex flex-1 flex-col gap-5">
-					<section className="flex flex-col gap-2">
-						<Subtitle>Select new configs</Subtitle>
+				{upgradeable.length > 0 ? (
+					<section className="flex flex-col gap-3">
+						<Subtitle>Upgrade a config</Subtitle>
 						<div className="flex flex-wrap gap-3">
-							{draftOptions.map((config) => {
-								const cost = draftCost(config);
+							{upgradeable.map((config) => {
+								const level = config.level ?? 1;
+								// Focus configs gate on reaching category coverage; Unit Tests costs KB.
+								if (config.focusCategory) {
+									const need = upgradeCoverageRequired(level);
+									const have = coverageByCategory[config.focusCategory] ?? 0;
+									const met = have >= need;
+									const name = getCategoryMetadata(config.focusCategory).name;
+									const subline = (
+										<>
+											<span className="prismatic-text">
+												{focusCoverageMultiplier(level)}×
+											</span>
+											{" → "}
+											<span className="prismatic-text">
+												{focusCoverageMultiplier(level + 1)}×
+											</span>
+										</>
+									);
+									return (
+										<ConfigChip
+											key={config.id}
+											config={config}
+											subline={subline}
+											tooltip={`Reach ${need}% ${name} coverage to upgrade — you have ${have}%.`}
+											disabled={!met}
+											onClick={() => onUpgrade(config.id)}
+										/>
+									);
+								}
+								const cost = upgradeCost(level);
+								const subline = (
+									<>
+										<span className="prismatic-text">{level} correct</span>
+										{" → "}
+										<span className="prismatic-text">{level + 1} correct</span>
+									</>
+								);
 								return (
 									<ConfigChip
 										key={config.id}
 										config={config}
-										action="draft ＋"
+										subline={subline}
 										price={cost}
-										disabled={isFull || storage < cost}
-										onClick={() => onDraft(config.id)}
+										disabled={storage < cost}
+										onClick={() => onUpgrade(config.id)}
 									/>
 								);
 							})}
 						</div>
 					</section>
+				) : null}
 
-					<div className="flex flex-wrap gap-8">
-						{upgradeable.length > 0 ? (
-							<section className="flex flex-col gap-2">
-								<Subtitle>Upgrade a config</Subtitle>
-								<div className="flex flex-wrap gap-3">
-									{upgradeable.map((config) => {
-										const level = config.level ?? 1;
-										// Focus configs gate on reaching category coverage; Unit Tests costs KB.
-										if (config.focusCategory) {
-											const need = upgradeCoverageRequired(level);
-											const have =
-												coverageByCategory[config.focusCategory] ?? 0;
-											const met = have >= need;
-											const subline = (
-												<span className="flex flex-col">
-													<span>
-														<span className="prismatic-text">
-															{focusCoverageMultiplier(level)}×
-														</span>
-														{" → "}
-														<span className="prismatic-text">
-															{focusCoverageMultiplier(level + 1)}×
-														</span>
-													</span>
-													<span
-														className={met ? "text-viridian" : "text-pewter"}
-													>
-														reach {need}% coverage ({have}%)
-													</span>
-												</span>
-											);
-											return (
-												<ConfigChip
-													key={config.id}
-													config={config}
-													subline={subline}
-													disabled={!met}
-													onClick={() => onUpgrade(config.id)}
-												/>
-											);
-										}
-										const cost = upgradeCost(level);
-										const subline = (
-											<>
-												<span className="prismatic-text">{level} correct</span>
-												{" → "}
-												<span className="prismatic-text">
-													{level + 1} correct
-												</span>
-											</>
-										);
-										return (
-											<ConfigChip
-												key={config.id}
-												config={config}
-												subline={subline}
-												price={cost}
-												disabled={storage < cost}
-												onClick={() => onUpgrade(config.id)}
-											/>
-										);
-									})}
-								</div>
-							</section>
-						) : null}
-
-						<section className="flex flex-col gap-2">
-							<Subtitle>Expand your pipeline</Subtitle>
-							<Paragraph>Add more slots to your pipeline.</Paragraph>
-							{canAddSlot ? (
-								<button
-									type="button"
-									onClick={onAddSlot}
-									className="cursor-pointer self-start rounded-lg border border-theme px-3 py-2 text-sm text-theme transition hover:bg-theme hover:text-black"
-								>
-									Add a slot: {slots} → {slots + 1}
-								</button>
-							) : null}
-						</section>
-					</div>
-				</div>
+				<section className="flex flex-col gap-2">
+					<Subtitle>Expand your pipeline</Subtitle>
+					<Paragraph>Add more slots to your pipeline.</Paragraph>
+					{canAddSlot ? (
+						<button
+							type="button"
+							onClick={onAddSlot}
+							className="cursor-pointer self-start rounded-lg border border-theme px-3 py-2 text-sm text-theme transition hover:bg-theme hover:text-black"
+						>
+							Add a slot: {slots} → {slots + 1}
+						</button>
+					) : null}
+				</section>
 			</div>
 
-			<Loadout configs={configs} slots={slots} newConfigIds={newConfigIds} />
+			<Loadout
+				configs={configs}
+				slots={slots}
+				gateNumber={gateNumber}
+				newConfigIds={newConfigIds}
+			/>
 
 			<GateRequirementList
 				checks={checks}

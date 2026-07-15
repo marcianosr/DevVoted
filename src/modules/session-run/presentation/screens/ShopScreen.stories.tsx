@@ -14,8 +14,6 @@ type Story = StoryObj<typeof ShopScreen>;
 export const Default: Story = {
 	args: {
 		storage: 440,
-		gatesCleared: 3,
-		coverage: 18,
 		coverageByCategory: { css: 8 },
 		gateNumber: 3,
 		pollsToGate: 5,

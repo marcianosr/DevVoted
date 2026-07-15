@@ -20,11 +20,7 @@ export const Pipeline = ({
 	return (
 		<div className="flex flex-wrap gap-3">
 			{fixed.map((config) => (
-				<ConfigChip
-					key={config.id}
-					config={config}
-					badge={<Badge>fixed</Badge>}
-				/>
+				<ConfigChip key={config.id} config={config} />
 			))}
 			{Array.from({ length: slots }, (_, index) => {
 				const config = free[index];

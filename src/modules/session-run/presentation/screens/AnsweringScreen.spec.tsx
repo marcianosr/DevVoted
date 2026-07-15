@@ -6,10 +6,7 @@ import { AnsweringScreen } from "./AnsweringScreen.ui";
 
 const base = {
 	gatesCleared: 2,
-	victoryGate: 5,
 	pollsToGate: 3,
-	coverage: 6,
-	storage: 440,
 	configs: [CONFIGS.js],
 	checks: [
 		{
@@ -27,7 +24,9 @@ const base = {
 		{ id: "a", label: "A stable unique id" },
 		{ id: "b", label: "The array index" },
 	],
+	canSubmit: true,
 	onSelect: vi.fn(),
+	onSubmit: vi.fn(),
 };
 
 describe("AnsweringScreen", () => {
@@ -42,5 +41,19 @@ describe("AnsweringScreen", () => {
 		render(<AnsweringScreen {...base} onSelect={onSelect} />);
 		fireEvent.click(screen.getByRole("button", { name: /A stable unique id/ }));
 		expect(onSelect).toHaveBeenCalledWith("a");
+	});
+
+	it("submits the selected answer", () => {
+		const onSubmit = vi.fn();
+		render(<AnsweringScreen {...base} onSubmit={onSubmit} />);
+		fireEvent.click(screen.getByRole("button", { name: /Submit answer/ }));
+		expect(onSubmit).toHaveBeenCalledOnce();
+	});
+
+	it("disables submit when nothing is selected", () => {
+		render(<AnsweringScreen {...base} canSubmit={false} />);
+		expect(
+			screen.getByRole("button", { name: /Submit answer/ })
+		).toBeDisabled();
 	});
 });

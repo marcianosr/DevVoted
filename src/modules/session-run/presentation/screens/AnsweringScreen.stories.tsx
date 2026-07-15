@@ -14,10 +14,7 @@ type Story = StoryObj<typeof AnsweringScreen>;
 export const Default: Story = {
 	args: {
 		gatesCleared: 2,
-		victoryGate: 5,
 		pollsToGate: 3,
-		coverage: 6,
-		storage: 440,
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
 		checks: [
 			{
@@ -43,6 +40,8 @@ export const Default: Story = {
 			{ id: "b", label: "The array index, always" },
 			{ id: "c", label: "Math.random()" },
 		],
+		canSubmit: true,
 		onSelect: () => {},
+		onSubmit: () => {},
 	},
 };
