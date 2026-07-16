@@ -158,6 +158,31 @@ describe("gates and rewards", () => {
 	});
 });
 
+describe("selling in the shop", () => {
+	const rewardingWith = (configId: string): SessionState => {
+		let state = started([configId]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		return state;
+	};
+
+	it("removes a sold config and refunds half its draft cost", () => {
+		let state = { ...rewardingWith("eslint"), storage: 0 };
+		state = sessionReducer(state, { type: "sell", configId: "eslint" });
+		expect(configIds(state)).not.toContain("eslint");
+		expect(state.storage).toBe(10); // common draft cost 20 → half
+	});
+
+	it("refuses to sell a fixed config", () => {
+		let state = createSession(pool(60), handed, [CONFIGS.unitTests]);
+		for (const id of ["eslint"])
+			state = sessionReducer(state, { type: "slot", configId: id });
+		state = sessionReducer(state, { type: "start" });
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		state = sessionReducer(state, { type: "sell", configId: "unit-tests" });
+		expect(configIds(state)).toContain("unit-tests");
+	});
+});
+
 describe("slot coverage gate", () => {
 	const rewarding = (): SessionState => {
 		let state = started(["js"]);

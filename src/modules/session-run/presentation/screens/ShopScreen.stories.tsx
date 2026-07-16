@@ -51,8 +51,8 @@ export const Default: Story = {
 		slotCoverageRequired: 20,
 		canAddSlot: true,
 		onAddSlot: () => {},
-		upgradeable: [CONFIGS.js],
 		onUpgrade: () => {},
+		onSell: () => {},
 	},
 };
 

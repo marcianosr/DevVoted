@@ -16,6 +16,7 @@ import {
 	Config,
 	draftCost,
 	isUpgradable,
+	sellRefund,
 	upgradeCost,
 	upgradeCoverageRequired,
 } from "../configs/config.model";
@@ -116,6 +117,7 @@ export type SessionAction =
 	| { readonly type: "upgrade"; readonly configId: string }
 	| { readonly type: "rebuild-draft" }
 	| { readonly type: "finish-reward" }
+	| { readonly type: "sell"; readonly configId: string }
 	| { readonly type: "drop"; readonly configId: string };
 
 export const createSession = (
@@ -515,6 +517,20 @@ const rebuildDraft = (state: SessionState): SessionState => {
 	};
 };
 
+const sell = (state: SessionState, configId: string): SessionState => {
+	const target = state.pipeline.configs.find(
+		(candidate) => candidate.id === configId
+	);
+	if (!target || isFixed(target)) return state;
+	const refund = sellRefund(target);
+	return {
+		...state,
+		pipeline: stripConfig(state.pipeline, configId),
+		storage: addStorage(state.storage, refund),
+		log: withLog(state, `Sold ${target.label} (+${refund}KB).`),
+	};
+};
+
 const drop = (state: SessionState, configId: string): SessionState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
@@ -558,6 +574,8 @@ export const sessionReducer = (
 		return rebuildDraft(state);
 	if (action.type === "finish-reward" && state.status === "rewarding")
 		return finishReward(state);
+	if (action.type === "sell" && state.status === "rewarding")
+		return sell(state, action.configId);
 	if (action.type === "drop" && state.status === "rewarding")
 		return drop(state, action.configId);
 	return state;

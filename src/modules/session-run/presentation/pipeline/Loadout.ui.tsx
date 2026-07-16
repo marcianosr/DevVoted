@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
 import type { Config } from "~/modules/session-run/configs/config.model";
 import { GradientText } from "~/ui/typography/GradientText.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
+import type { ChipAction } from "../configs/ConfigActions.ui";
 import { Pipeline } from "./Pipeline.ui";
 
 type LoadoutProps = {
@@ -12,6 +14,8 @@ type LoadoutProps = {
 	gateReward?: number;
 	newConfigIds?: readonly string[];
 	onRemove?: (configId: string) => void;
+	actionsFor?: (config: Config) => readonly ChipAction[];
+	trailing?: ReactNode;
 };
 
 export const Loadout = ({
@@ -21,6 +25,8 @@ export const Loadout = ({
 	gateReward,
 	newConfigIds,
 	onRemove,
+	actionsFor,
+	trailing,
 }: LoadoutProps) => (
 	<section className="flex flex-col gap-2">
 		<header>
@@ -35,12 +41,17 @@ export const Loadout = ({
 			) : (
 				<Subtitle>Your configured pipeline requirements and perks</Subtitle>
 			)}
+			{actionsFor ? (
+				<Subtitle>Click a config to sell or upgrade it.</Subtitle>
+			) : null}
 		</header>
 		<Pipeline
 			configs={configs}
 			slots={slots}
 			newConfigIds={newConfigIds}
 			onRemove={onRemove}
+			actionsFor={actionsFor}
+			trailing={trailing}
 		/>
 	</section>
 );

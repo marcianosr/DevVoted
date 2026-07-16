@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { RunHud } from "./RunHud.ui";
 
 const meta: Meta<typeof RunHud> = {
@@ -21,6 +22,8 @@ export const WithCoverage: Story = {
 		category: "js",
 		coverage: 18.5,
 		coverageByCategory: { css: 3, js: 8, ts: 5, react: 2.5 },
+		configs: [CONFIGS.unitTests, CONFIGS.js, CONFIGS.eslint],
+		slots: 3,
 	},
 };
 
@@ -35,6 +38,8 @@ export const EarlyRun: Story = {
 		category: "css",
 		coverage: 0,
 		coverageByCategory: {},
+		configs: [CONFIGS.unitTests],
+		slots: 3,
 	},
 };
 
@@ -49,5 +54,12 @@ export const StorageNearCap: Story = {
 		category: "ts",
 		coverage: 64,
 		coverageByCategory: { css: 12, js: 22, ts: 18, react: 12 },
+		configs: [
+			CONFIGS.unitTests,
+			CONFIGS.ts,
+			CONFIGS.copilot,
+			CONFIGS.coldStart,
+		],
+		slots: 5,
 	},
 };

@@ -33,8 +33,8 @@ const base = {
 	slotCoverageRequired: 20,
 	canAddSlot: true,
 	onAddSlot: vi.fn(),
-	upgradeable: [CONFIGS.js],
 	onUpgrade: vi.fn(),
+	onSell: vi.fn(),
 };
 
 describe("ShopScreen", () => {
@@ -53,15 +53,28 @@ describe("ShopScreen", () => {
 		expect(onDraft).toHaveBeenCalledWith("eslint");
 	});
 
-	it("shows the KB cost of a correct-requirement upgrade even when the config is fixed", () => {
-		render(<ShopScreen {...base} upgradeable={[CONFIGS.unitTests]} />);
-		expect(screen.getAllByText("60KB").length).toBeGreaterThan(0);
+	it("shows the upgrade cost in a fixed config's action popover", () => {
+		render(<ShopScreen {...base} configs={[CONFIGS.unitTests]} />);
+		fireEvent.click(screen.getByRole("button", { name: /Unit Tests/ }));
+		expect(
+			screen.getByRole("button", { name: /Upgrade \(60KB\)/ })
+		).toBeInTheDocument();
 	});
 
 	it("shows the projected gate reward for the current build", () => {
 		render(<ShopScreen {...base} gateReward={240} rewardMultiplier={2} />);
 		expect(screen.getByText(/Clears for/)).toBeInTheDocument();
 		expect(screen.getByText("240KB")).toBeInTheDocument();
+	});
+
+	it("sells a config from its loadout popover", () => {
+		const onSell = vi.fn();
+		render(
+			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} onSell={onSell} />
+		);
+		fireEvent.click(screen.getByRole("button", { name: /IndexedDB/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Sell/ }));
+		expect(onSell).toHaveBeenCalledWith("indexed-db");
 	});
 
 	it("shows the coverage requirement when a slot is locked", () => {
@@ -74,10 +87,10 @@ describe("ShopScreen", () => {
 			/>
 		);
 		expect(
-			screen.getByText(/Reach 20% total coverage to widen — you have 12%/)
+			screen.getByText(/at 20% coverage — you have 12%/)
 		).toBeInTheDocument();
 		expect(
-			screen.queryByRole("button", { name: /Add a slot/ })
+			screen.queryByRole("button", { name: /Add slot/ })
 		).not.toBeInTheDocument();
 	});
 });

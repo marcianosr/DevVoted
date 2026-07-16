@@ -14,7 +14,7 @@ export const Subtitle = ({
 	const Tag = as;
 	return (
 		<Tag
-			className={`text-sm font-bold tracking-tight text-zinc-300 ${className}`}
+			className={`text-sm font-bold tracking-tight text-zinc-300 leading-6 ${className}`}
 		>
 			{children}
 		</Tag>

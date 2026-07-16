@@ -7,7 +7,6 @@ import {
 	sessionReducer,
 	SessionPoll,
 } from "~/modules/session-run/climb/sessionRun.model";
-import { isUpgradable } from "~/modules/session-run/configs/config.model";
 import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/session-run/draft/draft.model";
 import {
@@ -144,7 +143,6 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 	// Only options the player paid to lint off are crossed out — no automatic masking.
 	const disabled = state.manualDisabled;
 	const cost = rebuildCost(state.rebuildsUsed);
-	const upgradeable = state.pipeline.configs.filter(isUpgradable);
 
 	const answer = (optionIds: readonly string[]) =>
 		dispatch({ type: "answer", optionIds });
@@ -178,6 +176,8 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						category={view.poll?.category}
 						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
+						configs={view.configs}
+						slots={view.slots}
 					/>
 				</div>
 			)}
@@ -254,7 +254,7 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("summary"),
 					}}
 					rightAction={{
-						label: "Climb on →",
+						label: "Continue →",
 						onClick: () => dispatch({ type: "finish-reward" }),
 					}}
 				>
@@ -279,8 +279,8 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
 						canAddSlot={canAddSlot(state.pipeline.slots, state.coverage)}
 						onAddSlot={() => dispatch({ type: "add-slot" })}
-						upgradeable={upgradeable}
 						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
+						onSell={(id) => dispatch({ type: "sell", configId: id })}
 					/>
 				</Screen>
 			)}

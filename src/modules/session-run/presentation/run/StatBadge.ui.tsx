@@ -14,7 +14,7 @@ export const StatBadge = ({ label, value, category }: StatBadgeProps) => {
 	return (
 		<div className="flex flex-col" {...themed}>
 			<Subtitle>{label}</Subtitle>
-			<span className="text-theme text-xl font-black">{value}</span>
+			<span className="text-theme text-xl font-extrabold">{value}</span>
 		</div>
 	);
 };

@@ -1,15 +1,15 @@
 import type { ReactNode } from "react";
-import { getCategoryMetadata } from "~/domains/shared/categories";
 import {
 	Config,
 	draftCost,
-	focusCoverageMultiplier,
+	isUpgradable,
+	sellRefund,
 	upgradeCost,
 	upgradeCoverageRequired,
 } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
-import { Badge } from "~/ui/Badge.component";
 import { Button } from "~/ui/Button.component";
+import { Tooltip } from "~/ui/Tooltip.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/session-run/gate/configRole.model";
@@ -39,8 +39,8 @@ type ShopScreenProps = {
 	slotCoverageRequired: number;
 	canAddSlot: boolean;
 	onAddSlot: () => void;
-	upgradeable: readonly Config[];
 	onUpgrade: (configId: string) => void;
+	onSell: (configId: string) => void;
 };
 
 /** One upgrade path, rendered as a card: a heading and description over its actions. */
@@ -85,11 +85,61 @@ export const ShopScreen = ({
 	slotCoverageRequired,
 	canAddSlot,
 	onAddSlot,
-	upgradeable,
 	onUpgrade,
+	onSell,
 }: ShopScreenProps) => {
 	const atSlotCap = !Number.isFinite(slotCoverageRequired);
 	const isFull = configs.filter((config) => !config.fixed).length >= slots;
+
+	const canUpgrade = (config: Config): boolean => {
+		const level = config.level ?? 1;
+		if (config.focusCategory)
+			return (
+				(coverageByCategory[config.focusCategory] ?? 0) >=
+				upgradeCoverageRequired(level)
+			);
+		return storage >= upgradeCost(level);
+	};
+	const upgradeLabel = (config: Config): string => {
+		const level = config.level ?? 1;
+		return config.focusCategory
+			? `Upgrade (${upgradeCoverageRequired(level)}% cov)`
+			: `Upgrade (${upgradeCost(level)}KB)`;
+	};
+	const actionsFor = (config: Config) =>
+		[
+			isUpgradable(config)
+				? {
+						label: upgradeLabel(config),
+						onClick: () => onUpgrade(config.id),
+						disabled: !canUpgrade(config),
+					}
+				: null,
+			config.fixed
+				? null
+				: {
+						label: `Sell +${sellRefund(config)}KB`,
+						onClick: () => onSell(config.id),
+					},
+		].filter((action): action is NonNullable<typeof action> => action !== null);
+
+	const expandTile = atSlotCap ? null : canAddSlot ? (
+		<button
+			type="button"
+			onClick={onAddSlot}
+			className="rounded-lg border-2 border-dashed border-cerulean px-4 py-2 text-sm font-semibold text-cerulean transition hover:bg-cerulean/10"
+		>
+			＋ Add slot: {slots} → {slots + 1}
+		</button>
+	) : (
+		<Tooltip
+			content={`at ${slotCoverageRequired}% coverage — you have ${coverage}%`}
+		>
+			<span className="rounded-lg border-2 border-dashed border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-400">
+				Expand to {slots + 1} slots
+			</span>
+		</Tooltip>
+	);
 	return (
 		<div className="flex flex-col gap-6">
 			<header className="flex flex-col gap-3">
@@ -106,7 +156,7 @@ export const ShopScreen = ({
 				/>
 			</header>
 
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+			<div className="grid grid-cols-1 gap-4">
 				<PathCard
 					title="Select new configs"
 					description="Adds categories → boosts coverage fastest"
@@ -135,87 +185,6 @@ export const ShopScreen = ({
 						Rebuild configs ({rebuildCost}KB)
 					</Button>
 				</PathCard>
-
-				{upgradeable.length > 0 ? (
-					<PathCard
-						title="Upgrade a config"
-						description="Raises requirement, raises reward"
-					>
-						<div className="flex flex-wrap gap-3">
-							{upgradeable.map((config) => {
-								const level = config.level ?? 1;
-								// Focus configs gate on reaching category coverage; Unit Tests costs KB.
-								if (config.focusCategory) {
-									const need = upgradeCoverageRequired(level);
-									const have = coverageByCategory[config.focusCategory] ?? 0;
-									const met = have >= need;
-									const name = getCategoryMetadata(config.focusCategory).name;
-									const subline = (
-										<>
-											<span className="prismatic-text">
-												{focusCoverageMultiplier(level)}×
-											</span>
-											{" → "}
-											<span className="prismatic-text">
-												{focusCoverageMultiplier(level + 1)}×
-											</span>
-										</>
-									);
-									return (
-										<ConfigChip
-											key={config.id}
-											config={config}
-											subline={subline}
-											badge={<Badge tone="price">{`${need}% cov`}</Badge>}
-											tooltip={`Reach ${need}% ${name} coverage to upgrade — you have ${have}%.`}
-											disabled={!met}
-											onClick={() => onUpgrade(config.id)}
-										/>
-									);
-								}
-								const cost = upgradeCost(level);
-								const subline = (
-									<>
-										<span className="prismatic-text">{level} correct</span>
-										{" → "}
-										<span className="prismatic-text">{level + 1} correct</span>
-									</>
-								);
-								return (
-									<ConfigChip
-										key={config.id}
-										config={config}
-										subline={subline}
-										price={cost}
-										disabled={storage < cost}
-										onClick={() => onUpgrade(config.id)}
-									/>
-								);
-							})}
-						</div>
-					</PathCard>
-				) : null}
-
-				<PathCard
-					title="Expand your pipeline"
-					description="More slots, more can fail — earned by coverage"
-				>
-					{canAddSlot ? (
-						<Button
-							variant="primary"
-							className="self-start rounded-lg text-sm"
-							onClick={onAddSlot}
-						>
-							Add a slot: {slots} → {slots + 1}
-						</Button>
-					) : (
-						<Subtitle>
-							{atSlotCap
-								? `Pipeline maxed at ${slots} slots.`
-								: `Reach ${slotCoverageRequired}% total coverage to widen — you have ${coverage}%.`}
-						</Subtitle>
-					)}
-				</PathCard>
 			</div>
 
 			<Loadout
@@ -224,6 +193,8 @@ export const ShopScreen = ({
 				gateNumber={gateNumber}
 				gateReward={gateReward}
 				newConfigIds={newConfigIds}
+				actionsFor={actionsFor}
+				trailing={expandTile}
 			/>
 
 			<RoleList rows={roleRows(configs, checks)} />

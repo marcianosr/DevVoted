@@ -32,7 +32,7 @@ export const Title = ({
 	return (
 		<Tag
 			{...themeProps}
-			className={`${SIZE_CLASS[size]} ${color} tracking-tight font-extrabold ${className}`}
+			className={`${SIZE_CLASS[size]} ${color} tracking-tight font-extrabold leading-8 ${className}`}
 		>
 			{children}
 		</Tag>

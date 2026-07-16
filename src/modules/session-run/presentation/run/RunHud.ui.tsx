@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { type CategoryCode, getCategories } from "~/domains/shared/categories";
+import type { Config } from "~/modules/session-run/configs/config.model";
 import { Popover } from "~/ui/Popover.component";
 import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { STORAGE_CAP_KB } from "../../rules.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { ConfigChip } from "../configs/ConfigChip.ui";
 
 const storagePercent = (storage: number) =>
 	Math.min(100, Math.max(0, (storage / STORAGE_CAP_KB) * 100));
@@ -21,6 +23,51 @@ type RunHudProps = {
 	category?: CategoryCode;
 	coverage: number;
 	coverageByCategory: Readonly<Record<string, number>>;
+	configs: readonly Config[];
+	slots: number;
+};
+
+const LoadoutSummary = ({
+	configs,
+	slots,
+}: Pick<RunHudProps, "configs" | "slots">) => {
+	const [open, setOpen] = useState(false);
+	const free = configs.filter((config) => !config.fixed).length;
+
+	return (
+		<div className="relative">
+			<button
+				type="button"
+				onClick={() => setOpen((isOpen) => !isOpen)}
+				className="flex cursor-pointer items-center gap-1.5"
+			>
+				<Paragraph as="span" size="sm" tone="pewter">
+					Loadout
+				</Paragraph>
+				<Paragraph as="span" size="sm" tone="theme">
+					{free} / {slots}
+				</Paragraph>
+				<span
+					className={`text-pewter transition-transform ${open ? "rotate-180" : ""}`}
+				>
+					▾
+				</span>
+			</button>
+			{open ? (
+				<div className="absolute right-0 top-full z-20 mt-2 flex min-w-max max-w-md flex-wrap gap-2 rounded-lg border border-zinc-700 bg-zinc-900 p-3">
+					{configs.length > 0 ? (
+						configs.map((config) => (
+							<ConfigChip key={config.id} config={config} />
+						))
+					) : (
+						<Paragraph as="span" size="sm" tone="pewter">
+							No configs equipped yet.
+						</Paragraph>
+					)}
+				</div>
+			) : null}
+		</div>
+	);
 };
 
 const CoverageSummary = ({
@@ -103,6 +150,8 @@ export const RunHud = ({
 	category,
 	coverage,
 	coverageByCategory,
+	configs,
+	slots,
 }: RunHudProps) => (
 	<div
 		className="flex items-center gap-6 border-b border-zinc-800 pb-3 text-sm font-black"
@@ -165,7 +214,8 @@ export const RunHud = ({
 				streak
 			</Paragraph>
 		</span>
-		<div className="ml-auto shrink-0">
+		<div className="ml-auto flex shrink-0 items-center gap-6">
+			<LoadoutSummary configs={configs} slots={slots} />
 			<CoverageSummary
 				coverage={coverage}
 				coverageByCategory={coverageByCategory}

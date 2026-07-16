@@ -52,6 +52,10 @@ const DRAFT_COST: Record<Rarity, number> = {
 export const draftCost = (config: Config): number =>
 	DRAFT_COST[rarityOf(config)];
 
+/** Storage returned on selling a config — half its draft cost (market value). */
+export const sellRefund = (config: Config): number =>
+	Math.floor(draftCost(config) / 2);
+
 export const isUpgradable = (config: Config): boolean =>
 	config.focusCategory !== undefined || config.check === "correct";
 

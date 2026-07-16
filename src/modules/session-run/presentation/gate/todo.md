@@ -5,7 +5,7 @@ Questions:
 - Juicing up: show a -X number or +X numvber when adding/using storage
 - Be able to switch your load-out on gate check
 - Max 8 configs for pipeline - show that in descriptive text
-- "Next climb" should become - Start next gate (with a timer, or maybe if possible paid)
+- "Next climb (continue)" should become - Start next gate (with a timer, or maybe if possible paid)
 - Slots: You can now endlessly add slots untilk your max. - do we want that?
 - Remove the "5" gates max -  GATE 1 / ?
 - Configs: Look at my config map
@@ -16,10 +16,16 @@ Questions:
   - Postgres: Extend your 1MB cap with a x2
   - Localhost: Extend your 1MB cap with 256KB
   - Docker: transfer your configs to a new run for free?
+  - add a config to be allowed to go under 0 storage
 - Only continune if you selected something fro mt
+- Pipelines
+  - 1 pipeline focusses on "speed" (faster = more points)
+  - 1 pipeline forces you to answer mirrored (wrong answers only)
 - Animate the tooltips
 - Background color: soft kanto theme colors, radial background based on Hertek?
 - Better icons?
+- when bought a config, you can't reroll anymore
+- Level X drops in shop from configs (like EsLint lv2 crossed 2 wrong answers) and costs more
 
 
 Wrapped in stories now:
@@ -48,8 +54,7 @@ DOne:
     - After every gate you should be able to add a pipeline
       - 1 pipeline focusses on "correct" answers
       - 1 pipeline focusses on "coverage" (more coverage = more points)
-      - 1 pipeline focusses on "speed" (faster = more points)
-      - 1 pipeline forces you to answer mirrored (wrong answers only)
+
       - etc more?
     - Slots can be added every gate pass
     - The higher the gate, the more configs tyou need to drop if you fail
