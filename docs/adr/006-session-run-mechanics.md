@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (design capture). Validated in the throwaway prototype at `src/domains/runs/prototype/` and `src/routes/proto-session-slice.tsx` across multiple playtests ("still fun"). This ADR records the *decisions* the prototype settled so the production port has a north star. Depends on ADR-005 (session-run container) for the run it lives inside.
+Accepted (design capture). **Partially superseded by [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md)**: Decision 7 ("pick exactly one" reward) is replaced by a multi-buy shop; Decision 1's slot cap is larger and live-tuned in `pipeline.model.ts` (not 5); Decision 10 gains the draft-config rarity cost as a documented sink. Validated in the throwaway prototype at `src/domains/runs/prototype/` and `src/routes/proto-session-slice.tsx` across multiple playtests ("still fun"). This ADR records the *decisions* the prototype settled so the production port has a north star. Depends on ADR-005 (session-run container) for the run it lives inside.
 
 ## Context
 

@@ -43,9 +43,20 @@ export const Default: Story = {
 		canRebuild: true,
 		onRebuild: () => {},
 		slots: 3,
+		coverage: 25,
+		slotCoverageRequired: 20,
 		canAddSlot: true,
 		onAddSlot: () => {},
 		upgradeable: [CONFIGS.js],
 		onUpgrade: () => {},
+	},
+};
+
+export const SlotLocked: Story = {
+	args: {
+		...Default.args,
+		coverage: 12,
+		slotCoverageRequired: 20,
+		canAddSlot: false,
 	},
 };

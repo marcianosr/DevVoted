@@ -3,12 +3,6 @@ import type { CheckState, CheckStatus } from "../configs/effect.model";
 
 export type ConfigRole = "requirement" | "conditional" | "perk";
 
-/**
- * A config's role in the build, driving the "Review your build" badges:
- * - conditional: a Focus config — its gate check only bites when its category shows.
- * - requirement: backs an always-on gate check (correct count, coverage, cold-start).
- * - perk: an always-on benefit that backs no gate check.
- */
 export const roleOf = (
 	config: Config,
 	checks: readonly CheckStatus[]
@@ -22,9 +16,7 @@ export type RoleRow = {
 	readonly config: Config;
 	readonly role: ConfigRole;
 	readonly description: string;
-	/** Progress ("0/1") or the muted "not triggered yet" for an unseen conditional. */
 	readonly status?: string;
-	/** The gate-check state that colors the status; undefined for perks (no check). */
 	readonly state?: CheckState;
 };
 
@@ -34,7 +26,6 @@ const ROLE_ORDER: Record<ConfigRole, number> = {
 	perk: 2,
 };
 
-/** One badge row per config, ordered requirement → conditional → perk. */
 export const roleRows = (
 	configs: readonly Config[],
 	checks: readonly CheckStatus[]
@@ -61,7 +52,6 @@ export type StakesRequirement = {
 	readonly label: string;
 };
 
-/** The fixed correct-answer requirement every gate imposes, for the run-stakes summary. */
 export const stakesRequirement = (
 	configs: readonly Config[],
 	checks: readonly CheckStatus[]
@@ -74,11 +64,6 @@ export const stakesRequirement = (
 	};
 };
 
-/**
- * Extra always-on gate requirements beyond the fixed correct-answer one, for the
- * run-stakes summary. Conditional (Focus) checks are excluded — they only bite when
- * their category shows, so they aren't things "every gate needs".
- */
 export const extraGateRequirements = (
 	configs: readonly Config[],
 	checks: readonly CheckStatus[]

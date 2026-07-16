@@ -10,7 +10,28 @@ export type Pipeline = {
 };
 
 export const BASE_SLOTS = 3;
-export const MAX_SLOTS = 8;
+export const MAX_SLOTS = 12;
+
+/** Total-coverage % required to unlock each slot (ADR-008), keyed by target slot count. */
+const SLOT_COVERAGE_GATE: Readonly<Record<number, number>> = {
+	4: 11,
+	5: 25,
+	6: 50,
+	7: 80,
+	8: 110,
+	9: 150,
+	10: 195,
+	11: 230,
+	12: 270,
+};
+
+/** Total coverage needed to add the next slot; Infinity once the cap is reached. */
+export const coverageToAddSlot = (currentSlots: number): number =>
+	SLOT_COVERAGE_GATE[currentSlots + 1] ?? Infinity;
+
+/** A slot can be added only below the cap and once its coverage gate is met. */
+export const canAddSlot = (currentSlots: number, coverage: number): boolean =>
+	currentSlots < MAX_SLOTS && coverage >= coverageToAddSlot(currentSlots);
 
 export const isFixed = (config: Config): boolean => config.fixed === true;
 

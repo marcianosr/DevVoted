@@ -1,4 +1,5 @@
 import type { Config } from "~/modules/session-run/configs/config.model";
+import { GradientText } from "~/ui/typography/GradientText.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { Pipeline } from "./Pipeline.ui";
@@ -8,6 +9,8 @@ type LoadoutProps = {
 	slots: number;
 	/** When set, the heading names the gate this load-out is heading into. */
 	gateNumber?: number;
+	gateReward?: number;
+	rewardMultiplier?: number;
 	newConfigIds?: readonly string[];
 	onRemove?: (configId: string) => void;
 };
@@ -16,6 +19,8 @@ export const Loadout = ({
 	configs,
 	slots,
 	gateNumber,
+	gateReward,
+	rewardMultiplier,
 	newConfigIds,
 	onRemove,
 }: LoadoutProps) => (
@@ -24,7 +29,17 @@ export const Loadout = ({
 			<Title as="h2" size="md">
 				Your load-out{gateNumber !== undefined ? ` for gate ${gateNumber}` : ""}
 			</Title>
-			<Subtitle>Your configured pipeline requirements and perks</Subtitle>
+			{gateReward !== undefined ? (
+				<Subtitle>
+					Clears for <GradientText>{gateReward}KB</GradientText>
+					{rewardMultiplier !== undefined && rewardMultiplier > 1
+						? ` at ${rewardMultiplier}×`
+						: ""}{" "}
+					— heavier requirements pay more, easier builds pay less
+				</Subtitle>
+			) : (
+				<Subtitle>Your configured pipeline requirements and perks</Subtitle>
+			)}
 		</header>
 		<Pipeline
 			configs={configs}

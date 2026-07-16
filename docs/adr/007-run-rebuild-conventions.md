@@ -14,24 +14,29 @@ The prototype proved the loop is fun (ADR-006). We now rebuild the **run fronten
 
 **app.css is the single source of truth.** It maps each category to a Kanto color via `[data-category-theme="<code>"] { --theme-color: var(--color-…) }`, and exposes `.text-theme` / `.bg-theme` / `.bg-theme-soft` / `.border-theme` / `.accent-theme` utilities that read `--theme-color`. The authoritative pairs:
 
-| Category | Kanto | | Category | Kanto |
-|---|---|---|---|---|
-| html | vermillion | | react | celadon |
-| css | cerulean | | git | pewter |
-| js | saffron | | java | indigo |
-| ts | lavender | | python | viridian |
-| general-frontend | fuchsia | | ruby | cinnabar |
-| | | | general-backend | seafoam |
+| Category | Kanto |
+|---|---|
+| html | vermillion |
+| css | cerulean |
+| js | saffron |
+| ts | lavender |
+| general-frontend | fuchsia |
+| react | celadon |
+| git | pewter |
+| java | indigo |
+| python | viridian |
+| ruby | cinnabar |
+| general-backend | seafoam |
 
 **Do not duplicate this mapping in TypeScript.** To theme a subtree, spread `categoryTheme(code)` (`src/ui/theme/categoryTheme.ts` → `{ "data-category-theme": code }`) onto a container and style descendants with the theme utilities. Category colors are for Title accents, buttons, borders, and small accents — never large fills.
 
 ### 2. Typography — pixel font everywhere, three primitives
 
-The pixel font (`Pixter Display`) is already the global `body` font; components inherit it. Three presentational primitives, in `src/ui/typography/`, each with a Storybook story under a **new container** titled `"Design System/…"`:
+`JetBrains Mono` is already the global `body` font; components inherit it. Three presentational primitives, in `src/ui/typography/`, each with a Storybook story under a **new container** titled `"Design System/…"`:
 
-- **`Title`** — `text-3xl`, bold. White by default; accepts an optional `category` prop that self-themes the heading in that category's Kanto color (via `data-category-theme` + `.text-theme`).
-- **`Subtitle`** — `text-lg`, `text-zinc-300` (lead text and section/eyebrow labels, e.g. "This gate needs", stat captions).
-- **`Paragraph`** — base size, white.
+- **`Title`** — `text-3xl` by default (`size="lg" | "md" | "sm"`), extrabold. White by default; accepts an optional `category` prop that self-themes the heading in that category's Kanto color (via `data-category-theme` + `.text-theme`).
+- **`Subtitle`** — `text-sm`, bold, `text-zinc-300` (lead text and section/eyebrow labels, e.g. "This gate needs", stat captions).
+- **`Paragraph`** — `xs` size by default (`size="xs" | "sm"`), white.
 
 Three primitives only — `Title`, `Subtitle`, `Paragraph`. All app-facing run text uses these — **no ad-hoc `<h1>`/`<p>`/`<span>` with inline sizes, and no extra label primitive.** Category-accented values (stats, titles) use `.text-theme` so they wear the active category's color.
 
@@ -46,7 +51,7 @@ Three primitives only — `Title`, `Subtitle`, `Paragraph`. All app-facing run t
 
 ### 4. Comments explain *why*, never *what*
 
-Code is self-documenting through naming. Add a comment **only** when it captures reasoning the code can't show — a non-obvious constraint, a domain rule, a deliberate trade-off. Never narrate behaviour (`// filter the configs`, "Every check the gate imposes…") or restate what a well-named function already says; delete those. A comment that would still be true after the code changed is usually a *what* comment and should go.
+Code is self-documenting through naming. Never auto-add a comment — add one **only** when it's really necessary and the code requires explanation: a non-obvious constraint, a domain rule, a deliberate trade-off. Never narrate behaviour (`// filter the configs`, "Every check the gate imposes…") or restate what a well-named function already says; delete those. A comment that would still be true after the code changed is usually a *what* comment and should go.
 
 ### 5. Scope boundaries
 

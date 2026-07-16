@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { ConfigChip } from "./ConfigChip.ui";
 
-describe("ConfigChip", () => {
+describe(ConfigChip, () => {
 	it("renders the config label", () => {
 		render(<ConfigChip config={CONFIGS.js} />);
 		expect(screen.getByText(".js")).toBeInTheDocument();

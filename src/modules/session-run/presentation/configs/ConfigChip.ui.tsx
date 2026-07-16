@@ -13,17 +13,13 @@ type ConfigChipProps = {
 	action?: ReactNode;
 	subline?: ReactNode;
 	price?: number;
-	/** A corner badge (e.g. "new"). Overrides `price`, which renders a price badge for you. */
 	badge?: ReactNode;
-	/** Overrides the default hover tooltip (the config's effect) with custom content. */
 	tooltip?: ReactNode;
-	/** Suppress the hover tooltip — e.g. inside an `overflow-hidden` list that would clip it. */
 	noTooltip?: boolean;
 	disabled?: boolean;
 	onClick?: () => void;
 };
 
-/** The label line: config name, level marker, and an optional trailing action glyph. */
 const ChipLabel = ({
 	config,
 	action,
@@ -38,7 +34,6 @@ const ChipLabel = ({
 	);
 };
 
-/** The chip's inner content: the label, with an optional subline stacked beneath it. */
 const ChipBody = ({
 	config,
 	action,
@@ -55,7 +50,6 @@ const ChipBody = ({
 		<ChipLabel config={config} action={action} />
 	);
 
-/** The rarity-styled surface: a button when interactive, otherwise a static span. */
 const ChipSurface = ({
 	config,
 	disabled,
@@ -80,7 +74,6 @@ const ChipSurface = ({
 	);
 };
 
-/** A config as a rarity-styled chip: hover for its effect, with an optional corner badge and action. */
 export const ConfigChip = ({
 	config,
 	action,
@@ -92,23 +85,29 @@ export const ConfigChip = ({
 	disabled,
 	onClick,
 }: ConfigChipProps) => {
-	const corner =
-		badge ??
-		(config.fixed ? <Badge>fixed</Badge> : null) ??
-		(price !== undefined ? <Badge tone="price">{price}KB</Badge> : null);
+	const corners = [
+		badge ? <span key="badge">{badge}</span> : null,
+		config.fixed ? <Badge key="fixed">fixed</Badge> : null,
+		price !== undefined ? (
+			<Badge key="price" tone="price">{`${price}KB`}</Badge>
+		) : null,
+	].filter(Boolean);
 	const surface = (
 		<ChipSurface config={config} disabled={disabled} onClick={onClick}>
 			<ChipBody config={config} action={action} subline={subline} />
 		</ChipSurface>
 	);
-	const chip = corner ? (
-		<span className="relative inline-flex">
-			{corner}
-			{surface}
-		</span>
-	) : (
-		surface
-	);
+	const chip =
+		corners.length > 0 ? (
+			<span className="relative inline-flex">
+				<span className="absolute -right-1 -top-2 z-10 flex gap-1">
+					{corners}
+				</span>
+				{surface}
+			</span>
+		) : (
+			surface
+		);
 	if (noTooltip) return chip;
 	const rarity = config.rarity ?? "common";
 	return (

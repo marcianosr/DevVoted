@@ -10,7 +10,10 @@ import {
 import { isUpgradable } from "~/modules/session-run/configs/config.model";
 import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/session-run/draft/draft.model";
-import { MAX_SLOTS } from "~/modules/session-run/pipeline/pipeline.model";
+import {
+	canAddSlot,
+	coverageToAddSlot,
+} from "~/modules/session-run/pipeline/pipeline.model";
 import { AnsweringScreen } from "~/modules/session-run/presentation/screens/AnsweringScreen.ui";
 import { ConfiguringScreen } from "~/modules/session-run/presentation/screens/ConfiguringScreen.ui";
 import { RewardScreen } from "~/modules/session-run/presentation/screens/RewardScreen.ui";
@@ -203,6 +206,7 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 				<Screen categoryCode={view.poll.category}>
 					<AnsweringScreen
 						configs={view.configs}
+						slots={view.slots}
 						checks={view.checks}
 						category={view.poll.category}
 						question={view.poll.question}
@@ -257,6 +261,8 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						checks={view.checks}
 						gateNumber={view.gatesCleared + 1}
 						configs={view.configs}
+						gateReward={view.gateReward}
+						rewardMultiplier={view.rewardMultiplier}
 						newConfigIds={view.newConfigIds}
 						draftOptions={view.draftOptions}
 						onDraft={(id) => dispatch({ type: "draft", configId: id })}
@@ -264,7 +270,9 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						canRebuild={state.storage >= cost}
 						onRebuild={() => dispatch({ type: "rebuild-draft" })}
 						slots={view.slots}
-						canAddSlot={state.pipeline.slots < MAX_SLOTS}
+						coverage={view.coverage}
+						slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
+						canAddSlot={canAddSlot(state.pipeline.slots, state.coverage)}
 						onAddSlot={() => dispatch({ type: "add-slot" })}
 						upgradeable={upgradeable}
 						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}

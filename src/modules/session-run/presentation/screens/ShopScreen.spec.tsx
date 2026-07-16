@@ -25,6 +25,10 @@ const base = {
 	canRebuild: true,
 	onRebuild: vi.fn(),
 	slots: 3,
+	gateReward: 180,
+	rewardMultiplier: 1.5,
+	coverage: 25,
+	slotCoverageRequired: 20,
 	canAddSlot: true,
 	onAddSlot: vi.fn(),
 	upgradeable: [CONFIGS.js],
@@ -45,5 +49,33 @@ describe("ShopScreen", () => {
 		render(<ShopScreen {...base} onDraft={onDraft} />);
 		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
 		expect(onDraft).toHaveBeenCalledWith("eslint");
+	});
+
+	it("shows the KB cost of a correct-requirement upgrade even when the config is fixed", () => {
+		render(<ShopScreen {...base} upgradeable={[CONFIGS.unitTests]} />);
+		expect(screen.getAllByText("60KB").length).toBeGreaterThan(0);
+	});
+
+	it("shows the projected gate reward for the current build", () => {
+		render(<ShopScreen {...base} gateReward={240} rewardMultiplier={2} />);
+		expect(screen.getByText(/Clears for/)).toBeInTheDocument();
+		expect(screen.getByText("240KB")).toBeInTheDocument();
+	});
+
+	it("shows the coverage requirement when a slot is locked", () => {
+		render(
+			<ShopScreen
+				{...base}
+				canAddSlot={false}
+				coverage={12}
+				slotCoverageRequired={20}
+			/>
+		);
+		expect(
+			screen.getByText(/Reach 20% total coverage to widen — you have 12%/)
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /Add a slot/ })
+		).not.toBeInTheDocument();
 	});
 });

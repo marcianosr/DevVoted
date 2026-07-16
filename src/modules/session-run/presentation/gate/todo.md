@@ -26,9 +26,9 @@ Wrapped in stories now:
   - change name of "correct"
   - add config that shows an answer someone else picked
   - add config thart make polls occur more often
+  - add config that increases your load-out worth (higher sell price)
 - Only continune if you selected something fro mthe shop upgrade
 - General Screen feel: How does it feel?
-- Juice
 
 
 

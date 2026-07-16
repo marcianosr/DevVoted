@@ -68,7 +68,7 @@ describe("GateRequirementList", () => {
 			/>
 		);
 		expect(screen.getByText("3/3")).toHaveClass("text-viridian");
-		expect(screen.getByText("2%/4%")).toHaveClass("text-vermillion");
+		expect(screen.getByText("2%/4%")).toHaveClass("text-saffron");
 		expect(screen.getByText("not seen")).toHaveClass("text-pewter");
 		expect(screen.getByText("0/2")).toHaveClass("text-cinnabar");
 	});

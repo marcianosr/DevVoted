@@ -10,7 +10,7 @@ import type {
 import { ConfigChip } from "../configs/ConfigChip.ui";
 
 const STATE_TEXT: Record<CheckState, string> = {
-	running: "text-vermillion",
+	running: "text-saffron",
 	skipped: "text-pewter",
 	success: "text-viridian",
 	failed: "text-cinnabar",
@@ -23,16 +23,15 @@ const STATE_ICON: Record<CheckState, string> = {
 	failed: "✕",
 };
 
-/** Row background tint per check state — green passed, red failed, grey skipped. */
 const STATE_ROW: Record<CheckState, string> = {
-	running: "bg-vermillion/10",
+	running: "bg-saffron/30",
 	skipped: "bg-pewter/5",
 	success: "bg-viridian/30",
 	failed: "bg-cinnabar/30",
 };
 
 const STATE_BOX: Record<CheckState, string> = {
-	running: "border-vermillion divide-vermillion/25",
+	running: "border-saffron divide-saffron/25",
 	skipped: "border-zinc-700 divide-zinc-800",
 	success: "border-viridian divide-viridian/25",
 	failed: "border-cinnabar divide-cinnabar/25",
@@ -91,7 +90,6 @@ type CheckListProps = {
 	configs: readonly Config[];
 };
 
-/** Gate requirements as pipeline rows — state icon, source chip, description, progress. */
 export const CheckList = ({ checks, configs }: CheckListProps) => {
 	const tone = uniformState(checks);
 	return (
@@ -124,7 +122,6 @@ export const CheckList = ({ checks, configs }: CheckListProps) => {
 	);
 };
 
-/** Always-on perks as pipeline rows — the same boxed style, marked with ＋. */
 export const PerkList = ({ perks }: { perks: readonly Config[] }) => (
 	<PipelineRowList
 		rows={perks.map((perk) => ({

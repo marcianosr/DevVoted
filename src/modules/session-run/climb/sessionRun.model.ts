@@ -3,12 +3,12 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import {
 	Pipeline,
 	BASE_SLOTS,
+	canAddSlot,
 	canLint,
 	coverageForAnswer,
 	freeConfigs,
 	isBare,
 	isFixed,
-	MAX_SLOTS,
 	rewardMultiplierFor,
 	stripConfig,
 } from "../pipeline/pipeline.model";
@@ -411,7 +411,7 @@ const levelUp = (config: Config): Config => ({
 });
 
 const addSlot = (state: SessionState): SessionState => {
-	if (state.pipeline.slots >= MAX_SLOTS) return state;
+	if (!canAddSlot(state.pipeline.slots, state.coverage)) return state;
 	return stayReward(
 		state,
 		{ ...state.pipeline, slots: state.pipeline.slots + 1 },

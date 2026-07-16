@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 import { CONFIGS } from "../configs/configRoster.model";
+import { MAX_SLOTS } from "../pipeline/pipeline.model";
 import { SLICE_WINDOW, STORAGE_CAP_KB, VICTORY_GATE } from "../rules.model";
 import {
 	createSession,
@@ -88,8 +89,14 @@ describe("gates and rewards", () => {
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
 
-		// Fund the shop: JS coverage for the focus upgrade, storage for the draft.
-		state = { ...state, coverageByCategory: { js: 100 }, storage: 500 };
+		// Fund the shop: JS coverage for the focus upgrade, storage for the draft,
+		// and total coverage past the 20% gate for the first extra slot.
+		state = {
+			...state,
+			coverageByCategory: { js: 100 },
+			coverage: 100,
+			storage: 500,
+		};
 		state = sessionReducer(state, { type: "upgrade", configId: "js" });
 		expect(state.pipeline.configs[0].level).toBe(2);
 		expect(state.status).toBe("rewarding");
@@ -148,6 +155,37 @@ describe("gates and rewards", () => {
 
 		state = sessionReducer(state, { type: "finish-reward" });
 		expect(state.draftedThisGate).toEqual([]);
+	});
+});
+
+describe("slot coverage gate", () => {
+	const rewarding = (): SessionState => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		return state;
+	};
+
+	it("refuses to add a slot below the coverage threshold", () => {
+		let state = { ...rewarding(), coverage: 10 }; // under the 20% gate for slot 4
+		state = sessionReducer(state, { type: "add-slot" });
+		expect(state.pipeline.slots).toBe(3);
+	});
+
+	it("adds a slot once total coverage meets the threshold", () => {
+		let state = { ...rewarding(), coverage: 20 };
+		state = sessionReducer(state, { type: "add-slot" });
+		expect(state.pipeline.slots).toBe(4);
+	});
+
+	it("holds the hard cap even with abundant coverage", () => {
+		let state = rewarding();
+		state = {
+			...state,
+			coverage: 1000,
+			pipeline: { ...state.pipeline, slots: MAX_SLOTS },
+		};
+		state = sessionReducer(state, { type: "add-slot" });
+		expect(state.pipeline.slots).toBe(MAX_SLOTS);
 	});
 });
 

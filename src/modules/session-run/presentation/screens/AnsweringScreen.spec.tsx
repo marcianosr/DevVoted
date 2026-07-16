@@ -6,6 +6,7 @@ import { AnsweringScreen } from "./AnsweringScreen.ui";
 
 const base = {
 	configs: [CONFIGS.unitTests, CONFIGS.js],
+	slots: 3,
 	checks: [
 		{
 			label: "Correct",
