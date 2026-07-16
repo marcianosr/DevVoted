@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { GateTracker } from "./GateTracker.ui";
 
-describe("GateTracker", () => {
+describe(GateTracker, () => {
 	it("marks cleared gates done, the next gate now, and the rest ahead", () => {
 		render(<GateTracker total={3} cleared={1} />);
 		expect(screen.getByText("✓ done")).toBeInTheDocument();

@@ -3,11 +3,8 @@ import { Subtitle } from "~/ui/typography/Subtitle.component";
 export type CommunityOption = {
 	id: string;
 	label: string;
-	/** Share of the community that picked this option, 0–100. */
 	percentage: number;
-	/** The server-judged correct option. */
 	correct?: boolean;
-	/** The option this player picked. */
 	chosen?: boolean;
 };
 
@@ -18,7 +15,6 @@ type CommunityAnswersProps = {
 
 const clampPercent = (value: number) => Math.max(0, Math.min(100, value));
 
-/** Post-answer reveal of what the community chose, one bar per option. */
 export const CommunityAnswers = ({
 	options,
 	totalVotes,

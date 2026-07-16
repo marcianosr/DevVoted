@@ -42,7 +42,7 @@ const checks: CheckStatus[] = [
 	},
 ];
 
-describe("GateRequirementList", () => {
+describe(GateRequirementList, () => {
 	it("renders the checks and the total reward", () => {
 		render(
 			<GateRequirementList

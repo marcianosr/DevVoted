@@ -2,24 +2,8 @@ import type {
 	ConfigRole,
 	RoleRow,
 } from "~/modules/session-run/gate/configRole.model";
-import type { CheckState } from "~/modules/session-run/configs/effect.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-
-/** Status color follows the gate-check state — passed green, failed red, running hot. */
-const STATE_TEXT: Record<CheckState, string> = {
-	running: "text-vermillion",
-	skipped: "text-pewter",
-	success: "text-viridian",
-	failed: "text-cinnabar",
-};
-
-/** Soft row tint once a check resolves — green passed, red failed, grey skipped. */
-const STATE_ROW: Record<CheckState, string> = {
-	running: "",
-	skipped: "bg-pewter/5",
-	success: "bg-viridian/30",
-	failed: "bg-cinnabar/30",
-};
+import { STATE_ROW, STATE_TEXT } from "./checkStateStyles";
 
 const ROLE_LABEL: Record<ConfigRole, string> = {
 	requirement: "Requirement",
@@ -43,11 +27,9 @@ const RoleBadge = ({ role }: { role: ConfigRole }) => (
 
 type RoleListProps = {
 	rows: readonly RoleRow[];
-	/** Removes a slotted config; omitted rows and fixed configs show no remove control. */
 	onRemove?: (configId: string) => void;
 };
 
-/** The "Review your build" rows: every config stacked in one box, each with its typed badge. */
 export const RoleList = ({ rows, onRemove }: RoleListProps) => (
 	<ul className="divide-y divide-zinc-800 overflow-hidden rounded-xl border border-zinc-700">
 		{rows.map((row) => (
@@ -71,7 +53,7 @@ export const RoleList = ({ rows, onRemove }: RoleListProps) => (
 						type="button"
 						onClick={() => onRemove(row.config.id)}
 						aria-label={`Remove ${row.config.label}`}
-						className={`shrink-0 cursor-pointer text-pewter transition-colors hover:text-cinnabar ${row.status ? "" : "ml-auto"}`}
+						className={`shrink-0 cursor-pointer text-lg text-pewter transition-colors hover:text-cinnabar ${row.status ? "" : "ml-auto"}`}
 					>
 						✕
 					</button>

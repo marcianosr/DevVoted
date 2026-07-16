@@ -26,7 +26,7 @@ const base = {
 	onUnslot: vi.fn(),
 };
 
-describe("ConfiguringScreen", () => {
+describe(ConfiguringScreen, () => {
 	it("renders both numbered steps and the run stakes", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(

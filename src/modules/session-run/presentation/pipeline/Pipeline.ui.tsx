@@ -16,6 +16,14 @@ type PipelineProps = {
 	trailing?: ReactNode;
 };
 
+const EmptySlot = () => (
+	<Tooltip content="You can add configs here from the shop!">
+		<span className="rounded-lg border-2 border-dashed border-zinc-600 px-6 py-2 text-sm text-zinc-500">
+			empty
+		</span>
+	</Tooltip>
+);
+
 export const Pipeline = ({
 	configs,
 	slots,
@@ -63,14 +71,7 @@ export const Pipeline = ({
 						onClick={onRemove ? () => onRemove(config.id) : undefined}
 					/>
 				) : (
-					<Tooltip
-						key={`empty-${index}`}
-						content="You can add configs here from the shop!"
-					>
-						<span className="rounded-lg border-2 border-dashed border-zinc-600 px-6 py-2 text-sm text-zinc-500">
-							empty
-						</span>
-					</Tooltip>
+					<EmptySlot key={`empty-${index}`} />
 				);
 			})}
 			{trailing}

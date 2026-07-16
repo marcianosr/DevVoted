@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { RunSummary } from "./RunSummary.ui";
 
-describe("RunSummary", () => {
+describe(RunSummary, () => {
 	it("celebrates a summit and shows the final stats", () => {
 		render(<RunSummary won gatesCleared={5} coverage={24} storage={640} />);
 		expect(

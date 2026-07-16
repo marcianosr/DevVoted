@@ -2,6 +2,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 
 import { Config } from "../configs/config.model";
 import { Coverage, effectOf } from "../configs/effect.model";
+import { roundToOneDecimal } from "../rules.model";
 
 export type Pipeline = {
 	readonly id: string;
@@ -83,7 +84,7 @@ export const coverageForAnswer = (
 		.filter((cover): cover is Coverage => cover !== undefined);
 	const mult = covers.reduce((product, cover) => product * cover.mult, 1);
 	const add = covers.reduce((sum, cover) => sum + cover.add, 0);
-	return Math.round((mult + add) * 10) / 10;
+	return roundToOneDecimal(mult + add);
 };
 
 /** Whether the manual lint action is available — any equipped config that masks wrong options. */

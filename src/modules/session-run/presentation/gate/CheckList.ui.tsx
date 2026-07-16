@@ -8,26 +8,13 @@ import type {
 	CheckStatus,
 } from "~/modules/session-run/configs/effect.model";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-
-const STATE_TEXT: Record<CheckState, string> = {
-	running: "text-saffron",
-	skipped: "text-pewter",
-	success: "text-viridian",
-	failed: "text-cinnabar",
-};
+import { STATE_ROW, STATE_TEXT } from "./checkStateStyles";
 
 const STATE_ICON: Record<CheckState, string> = {
 	running: "●",
 	skipped: "⊘",
 	success: "✓",
 	failed: "✕",
-};
-
-const STATE_ROW: Record<CheckState, string> = {
-	running: "bg-saffron/30",
-	skipped: "bg-pewter/5",
-	success: "bg-viridian/30",
-	failed: "bg-cinnabar/30",
 };
 
 const STATE_BOX: Record<CheckState, string> = {

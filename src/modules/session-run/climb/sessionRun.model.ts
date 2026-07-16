@@ -30,6 +30,7 @@ import { checkStatuses, gateDemands, gatePassed } from "../gate/gate.model";
 import {
 	dropCount,
 	GATE_REWARD_KB,
+	roundToOneDecimal,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
 	VICTORY_GATE,
@@ -281,8 +282,7 @@ const answer = (
 	const window: GateWindow = {
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
-		coverageGained:
-			Math.round((state.window.coverageGained + earned) * 10) / 10,
+		coverageGained: roundToOneDecimal(state.window.coverageGained + earned),
 		leadingCorrect:
 			openingClean && correct
 				? state.window.leadingCorrect + 1
@@ -302,13 +302,12 @@ const answer = (
 		manualDisabled: [],
 		streak: correct ? state.streak + 1 : 0,
 		storage: addStorage(state.storage, faucet),
-		coverage: Math.round((state.coverage + earned) * 10) / 10,
+		coverage: roundToOneDecimal(state.coverage + earned),
 		coverageByCategory: {
 			...state.coverageByCategory,
-			[poll.category]:
-				Math.round(
-					((state.coverageByCategory[poll.category] ?? 0) + earned) * 10
-				) / 10,
+			[poll.category]: roundToOneDecimal(
+				(state.coverageByCategory[poll.category] ?? 0) + earned
+			),
 		},
 		answeredThisGate: [
 			...state.answeredThisGate,

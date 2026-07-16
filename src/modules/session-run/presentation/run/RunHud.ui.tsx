@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { type CategoryCode, getCategories } from "~/domains/shared/categories";
 import type { Config } from "~/modules/session-run/configs/config.model";
 import { Popover } from "~/ui/Popover.component";
@@ -7,6 +6,7 @@ import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { STORAGE_CAP_KB } from "../../rules.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { SummaryDropdown } from "./SummaryDropdown.ui";
 
 const storagePercent = (storage: number) =>
 	Math.min(100, Math.max(0, (storage / STORAGE_CAP_KB) * 100));
@@ -17,9 +17,7 @@ type RunHudProps = {
 	victoryGate: number;
 	pollsAnswered: number;
 	pollsPerGate: number;
-	/** Consecutive correct answers across the run; resets only on a wrong answer. */
 	streak: number;
-	/** The category of the poll being answered; absent outside the answering screen. */
 	category?: CategoryCode;
 	coverage: number;
 	coverageByCategory: Readonly<Record<string, number>>;
@@ -31,42 +29,30 @@ const LoadoutSummary = ({
 	configs,
 	slots,
 }: Pick<RunHudProps, "configs" | "slots">) => {
-	const [open, setOpen] = useState(false);
 	const free = configs.filter((config) => !config.fixed).length;
 
 	return (
-		<div className="relative">
-			<button
-				type="button"
-				onClick={() => setOpen((isOpen) => !isOpen)}
-				className="flex cursor-pointer items-center gap-1.5"
-			>
+		<SummaryDropdown
+			trigger={
+				<>
+					<Paragraph as="span" size="sm" tone="pewter">
+						Loadout
+					</Paragraph>
+					<Paragraph as="span" size="sm" tone="theme">
+						{free} / {slots}
+					</Paragraph>
+				</>
+			}
+			panelClassName="flex min-w-max max-w-md flex-wrap gap-2"
+		>
+			{configs.length > 0 ? (
+				configs.map((config) => <ConfigChip key={config.id} config={config} />)
+			) : (
 				<Paragraph as="span" size="sm" tone="pewter">
-					Loadout
+					No configs equipped yet.
 				</Paragraph>
-				<Paragraph as="span" size="sm" tone="theme">
-					{free} / {slots}
-				</Paragraph>
-				<span
-					className={`text-pewter transition-transform ${open ? "rotate-180" : ""}`}
-				>
-					▾
-				</span>
-			</button>
-			{open ? (
-				<div className="absolute right-0 top-full z-20 mt-2 flex min-w-max max-w-md flex-wrap gap-2 rounded-lg border border-zinc-700 bg-zinc-900 p-3">
-					{configs.length > 0 ? (
-						configs.map((config) => (
-							<ConfigChip key={config.id} config={config} />
-						))
-					) : (
-						<Paragraph as="span" size="sm" tone="pewter">
-							No configs equipped yet.
-						</Paragraph>
-					)}
-				</div>
-			) : null}
-		</div>
+			)}
+		</SummaryDropdown>
 	);
 };
 
@@ -74,7 +60,6 @@ const CoverageSummary = ({
 	coverage,
 	coverageByCategory,
 }: Pick<RunHudProps, "coverage" | "coverageByCategory">) => {
-	const [open, setOpen] = useState(false);
 	const all = getCategories().map(({ code, name }) => ({
 		code,
 		name,
@@ -95,51 +80,41 @@ const CoverageSummary = ({
 		);
 
 	return (
-		<div className="relative">
-			<button
-				type="button"
-				onClick={() => setOpen((isOpen) => !isOpen)}
-				className="flex cursor-pointer items-center gap-1.5"
-			>
-				<Paragraph as="span" size="sm" tone="pewter">
-					Coverage
-				</Paragraph>
-				<Paragraph as="span" size="sm" tone="theme">
-					{coverage}%
-				</Paragraph>
-				<Paragraph as="span" size="sm" tone="pewter">
-					across {coveredCount} categor{coveredCount === 1 ? "y" : "ies"}
-				</Paragraph>
+		<SummaryDropdown
+			trigger={
+				<>
+					<Paragraph as="span" size="sm" tone="pewter">
+						Coverage
+					</Paragraph>
+					<Paragraph as="span" size="sm" tone="theme">
+						{coverage}%
+					</Paragraph>
+					<Paragraph as="span" size="sm" tone="pewter">
+						across {coveredCount} categor{coveredCount === 1 ? "y" : "ies"}
+					</Paragraph>
+				</>
+			}
+			panelClassName="flex min-w-max flex-col gap-1.5"
+		>
+			{all.map(({ code, name, pct }) => (
 				<span
-					className={`text-pewter transition-transform ${open ? "rotate-180" : ""}`}
+					key={code}
+					{...categoryTheme(code)}
+					className="flex items-center gap-3"
 				>
-					▾
+					<Swatch size="sm" />
+					<Paragraph as="span" size="sm" tone="theme">
+						{name}
+					</Paragraph>
+					<Paragraph as="span" size="sm" tone="muted" className="ml-auto">
+						{pct}%
+					</Paragraph>
 				</span>
-			</button>
-			{open ? (
-				<div className="absolute right-0 top-full z-20 mt-2 flex min-w-max flex-col gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 p-3">
-					{all.map(({ code, name, pct }) => (
-						<span
-							key={code}
-							{...categoryTheme(code)}
-							className="flex items-center gap-3"
-						>
-							<Swatch size="sm" />
-							<Paragraph as="span" size="sm" tone="theme">
-								{name}
-							</Paragraph>
-							<Paragraph as="span" size="sm" tone="muted" className="ml-auto">
-								{pct}%
-							</Paragraph>
-						</span>
-					))}
-				</div>
-			) : null}
-		</div>
+			))}
+		</SummaryDropdown>
 	);
 };
 
-/** The persistent run HUD: one fixed-height strip of run-global stats above every screen. */
 export const RunHud = ({
 	storage,
 	gateNumber,

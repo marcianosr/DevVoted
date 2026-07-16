@@ -37,7 +37,7 @@ const base = {
 	onSell: vi.fn(),
 };
 
-describe("ShopScreen", () => {
+describe(ShopScreen, () => {
 	it("renders the upgrade heading and draft options", () => {
 		render(<ShopScreen {...base} />);
 		expect(

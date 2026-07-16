@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { CoverageByCategory } from "./CoverageByCategory.ui";
 
-describe("CoverageByCategory", () => {
+describe(CoverageByCategory, () => {
 	it("lists each earned category with its percentage", () => {
 		render(<CoverageByCategory coverageByCategory={{ css: 5.5, js: 12 }} />);
 		expect(screen.getByText("CSS")).toBeInTheDocument();

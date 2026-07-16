@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { Loadout } from "./Loadout.ui";
 
-describe("Loadout", () => {
+describe(Loadout, () => {
 	it("renders the load-out heading and the equipped configs", () => {
 		render(<Loadout configs={[CONFIGS.unitTests, CONFIGS.css]} slots={3} />);
 		expect(

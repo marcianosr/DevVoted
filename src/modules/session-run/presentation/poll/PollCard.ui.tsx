@@ -5,29 +5,56 @@ import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 
-/** A poll option as the client sees it — no `correct` flag (the server judges). */
 export type PollOption = { readonly id: string; readonly label: string };
 
 type PollCardProps = {
 	category: CategoryCode;
 	question: string;
 	options: readonly PollOption[];
-	/** Controlled selection — single replaces, multiple accumulates (decided by the caller). */
 	selectedOptionIds?: readonly string[];
-	/** Option ids crossed out by linter configs or the paid lint action. */
 	disabledOptionIds?: readonly string[];
-	/** Server-revealed result (only after answering) — drives the green/red reveal. */
 	correctOptionIds?: readonly string[];
 	chosenOptionIds?: readonly string[];
-	/** Single: replaces the selection. Multiple: toggles the option in the selection. */
 	onSelect: (optionId: string) => void;
 	canLint?: boolean;
-	/** Whether the lint action can be run now (false = shown but disabled, e.g. can't afford it). */
 	lintReady?: boolean;
-	/** The linter config powering the lint action — shown as a chip on the button. */
 	linter?: Config;
 	onLint?: () => void;
 	lintCost?: number;
+};
+
+type OptionStatus = "correct" | "chosenWrong" | "selected" | "neutral";
+
+const optionStatusOf = (
+	isCorrect: boolean,
+	isChosenWrong: boolean,
+	isSelected: boolean
+): OptionStatus => {
+	if (isCorrect) return "correct";
+	if (isChosenWrong) return "chosenWrong";
+	if (isSelected) return "selected";
+	return "neutral";
+};
+
+const ROW_CLASS: Record<OptionStatus, string> = {
+	correct: "bg-viridian/15 text-viridian",
+	chosenWrong: "bg-cinnabar/15 text-cinnabar",
+	selected: "bg-theme-soft text-white",
+	neutral: "text-white",
+};
+
+const BOX_CLASS: Record<OptionStatus, string> = {
+	correct: "border-viridian bg-viridian text-black",
+	chosenWrong: "border-cinnabar text-cinnabar",
+	selected: "border-theme bg-theme text-black",
+	neutral: "border-pewter",
+};
+
+const MARK: Record<OptionStatus, string> = {
+	correct: "✓",
+	chosenWrong: "✕",
+	selected: "✓",
+	neutral: "",
 };
 
 export const PollCard = ({
@@ -86,33 +113,19 @@ export const PollCard = ({
 					const isChosenWrong =
 						revealed && chosen.has(option.id) && !correct.has(option.id);
 					const isSelected = !revealed && selected.has(option.id);
-					const row = isCorrect
-						? "bg-viridian/15 text-viridian"
-						: isChosenWrong
-							? "bg-cinnabar/15 text-cinnabar"
-							: isSelected
-								? "bg-theme-soft text-white"
-								: "text-white";
-					const box = isCorrect
-						? "border-viridian bg-viridian text-black"
-						: isChosenWrong
-							? "border-cinnabar text-cinnabar"
-							: isSelected
-								? "border-theme bg-theme text-black"
-								: "border-pewter";
-					const mark = isCorrect || isSelected ? "✓" : isChosenWrong ? "✕" : "";
+					const status = optionStatusOf(isCorrect, isChosenWrong, isSelected);
 					return (
 						<button
 							key={option.id}
 							type="button"
 							disabled={off || revealed}
 							onClick={() => onSelect(option.id)}
-							className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left transition ${row} ${off ? "cursor-not-allowed opacity-40 line-through" : revealed ? "" : "cursor-pointer hover:bg-white/5"}`}
+							className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left transition ${ROW_CLASS[status]} ${off ? "cursor-not-allowed opacity-40 line-through" : revealed ? "" : "cursor-pointer hover:bg-white/5"}`}
 						>
 							<span
-								className={`flex h-5 w-5 items-center justify-center rounded border-2 text-xs ${box}`}
+								className={`flex h-5 w-5 items-center justify-center rounded border-2 text-xs ${BOX_CLASS[status]}`}
 							>
-								{mark}
+								{MARK[status]}
 							</span>
 							<span>{option.label}</span>
 						</button>

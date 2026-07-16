@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { RunHud } from "./RunHud.ui";
 
-describe("RunHud", () => {
+describe(RunHud, () => {
 	it("shows storage, gate progress, polls answered, and the streak", () => {
 		render(
 			<RunHud

@@ -43,7 +43,6 @@ type ShopScreenProps = {
 	onSell: (configId: string) => void;
 };
 
-/** One upgrade path, rendered as a card: a heading and description over its actions. */
 const PathCard = ({
 	title,
 	description,

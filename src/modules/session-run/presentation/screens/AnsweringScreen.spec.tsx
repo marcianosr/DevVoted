@@ -28,7 +28,7 @@ const base = {
 	onSubmit: vi.fn(),
 };
 
-describe("AnsweringScreen", () => {
+describe(AnsweringScreen, () => {
 	it("renders the poll question and the gate checklist", () => {
 		render(<AnsweringScreen {...base} />);
 		expect(screen.getByText("Which key?")).toBeInTheDocument();

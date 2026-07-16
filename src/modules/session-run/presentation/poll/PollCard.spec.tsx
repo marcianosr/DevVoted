@@ -9,7 +9,7 @@ const options = [
 	{ id: "c", label: "Gamma" },
 ];
 
-describe("PollCard", () => {
+describe(PollCard, () => {
 	it("renders the category name, question, and options", () => {
 		render(
 			<PollCard

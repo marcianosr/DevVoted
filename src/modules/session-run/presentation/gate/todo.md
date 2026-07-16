@@ -3,10 +3,7 @@ Questions:
 - Should I allow players to answer more polls after a gate? How am I handling that against the social layer? And how does that work if someone wants to review their answer(s)?
 - Showing the answers after the gate is nice, but some have omre detailed explanations. Currently it's just a list. What do we do here?
 - Juicing up: show a -X number or +X numvber when adding/using storage
-- Be able to switch your load-out on gate check
-- Max 8 configs for pipeline - show that in descriptive text
 - "Next climb (continue)" should become - Start next gate (with a timer, or maybe if possible paid)
-- Slots: You can now endlessly add slots untilk your max. - do we want that?
 - Remove the "5" gates max -  GATE 1 / ?
 - Configs: Look at my config map
   - change name of "correct"
@@ -26,7 +23,7 @@ Questions:
 - Better icons?
 - when bought a config, you can't reroll anymore
 - Level X drops in shop from configs (like EsLint lv2 crossed 2 wrong answers) and costs more
-
+- Good mobile views
 
 Wrapped in stories now:
 - If my slots are full, I see configs to be selected but I cant actually select them. There should be a hint that this cannot be added unless there is more space
@@ -45,6 +42,10 @@ Really build it
 - Real polls
 
 DOne:
+- Slots: You can now endlessly add slots untilk your max. - do we want that?
+
+- Be able to switch your load-out on gate check
+- Max 8 configs for pipeline - show that in descriptive text
 - see chosen answers after each gate
 - I can't choose to add another slot to the pipeline at the end of the gate
 - I can add .css muktiple times: either on coverage pipeline or on correct answers pipeline. Does that make sense?

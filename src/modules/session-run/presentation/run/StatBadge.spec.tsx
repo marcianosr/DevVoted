@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { StatBadge } from "./StatBadge.ui";
 
-describe("StatBadge", () => {
+describe(StatBadge, () => {
 	it("renders the label and value", () => {
 		render(<StatBadge label="Storage" value="440KB" />);
 		expect(screen.getByText("Storage")).toBeInTheDocument();

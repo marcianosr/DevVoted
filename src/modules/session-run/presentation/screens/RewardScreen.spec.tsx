@@ -37,7 +37,7 @@ const base = {
 	configs: [CONFIGS.unitTests],
 };
 
-describe("RewardScreen", () => {
+describe(RewardScreen, () => {
 	it("shows the cleared gate, the pipelines breakdown, and the answer results", () => {
 		render(<RewardScreen {...base} />);
 		expect(

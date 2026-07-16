@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { CONFIGS } from "~/modules/session-run/configs/configRoster.model";
 import { Pipeline } from "./Pipeline.ui";
 
-describe("Pipeline", () => {
+describe(Pipeline, () => {
 	it("renders equipped configs and empty slots up to capacity", () => {
 		render(<Pipeline configs={[CONFIGS.js]} slots={3} />);
 		expect(screen.getByText(".js")).toBeInTheDocument();

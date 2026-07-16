@@ -11,3 +11,6 @@ export const escalation = (gatesCleared: number): number =>
 
 export const dropCount = (gatesCleared: number): number =>
 	1 + Math.floor(gatesCleared / 2);
+
+export const roundToOneDecimal = (value: number): number =>
+	Math.round(value * 10) / 10;

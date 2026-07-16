@@ -2,6 +2,7 @@ import type { AnsweredPoll } from "~/modules/session-run/climb/sessionRun.model"
 import type { Config } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { roleRows } from "~/modules/session-run/gate/configRole.model";
+import { roundToOneDecimal } from "~/modules/session-run/rules.model";
 import { GradientText } from "~/ui/typography/GradientText.component";
 import { Title } from "~/ui/typography/Title.component";
 import { RoleList } from "../gate/RoleList.ui";
@@ -11,10 +12,8 @@ import { StatBadge } from "../run/StatBadge.ui";
 
 type RewardScreenProps = {
 	gatesCleared: number;
-	/** Storage (KB) this clear paid out. */
 	gateReward: number;
 	answered: readonly AnsweredPoll[];
-	/** Coverage earned per category in this gate. */
 	coverageGainedByCategory: Readonly<Record<string, number>>;
 	passedChecks: readonly CheckStatus[];
 	configs: readonly Config[];
@@ -28,13 +27,9 @@ export const RewardScreen = ({
 	passedChecks,
 	configs,
 }: RewardScreenProps) => {
-	const totalCoverageGained =
-		Math.round(
-			Object.values(coverageGainedByCategory).reduce(
-				(sum, pct) => sum + pct,
-				0
-			) * 10
-		) / 10;
+	const totalCoverageGained = roundToOneDecimal(
+		Object.values(coverageGainedByCategory).reduce((sum, pct) => sum + pct, 0)
+	);
 
 	return (
 		<div className="flex flex-col gap-6">

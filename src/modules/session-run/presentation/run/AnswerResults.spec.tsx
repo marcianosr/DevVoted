@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { AnswerResults } from "./AnswerResults.ui";
 
-describe("AnswerResults", () => {
+describe(AnswerResults, () => {
 	it("lists each answered poll with its category, question, and pick", () => {
 		render(
 			<AnswerResults

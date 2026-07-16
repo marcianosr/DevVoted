@@ -23,7 +23,7 @@ const checks: CheckStatus[] = [
 	},
 ];
 
-describe("StripScreen", () => {
+describe(StripScreen, () => {
 	it("tells the player how many configs to peel", () => {
 		render(
 			<StripScreen
