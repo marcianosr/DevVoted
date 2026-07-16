@@ -24,6 +24,9 @@ Questions:
 - when bought a config, you can't reroll anymore
 - Level X drops in shop from configs (like EsLint lv2 crossed 2 wrong answers) and costs more
 - Good mobile views
+- Randomly drawn configs at the start: RNG
+- A way to unlock configs? Reaching gates? Having coverage?
+- A page to show what configs you have unlocked, how many polls you answered in with category (poll dex) and which (only questions visible)
 
 Wrapped in stories now:
 - If my slots are full, I see configs to be selected but I cant actually select them. There should be a hint that this cannot be added unless there is more space

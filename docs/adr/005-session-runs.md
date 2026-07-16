@@ -45,4 +45,5 @@ Existing runs default to `"calendar"`, preserving current behavior with no backf
 
 ## Still open (deferred to their phases)
 
-- **Fuel currency shape** (leaning: it *is* storage, the run currency from ADR-006), **leaderboard entry volume**, **session window size** (prototype default: 5 polls/gate × 5 gates), and **practice-bank poll supply/ordering**.
+- **Cadence, seed model, and session-window size**: **Resolved by [ADR-009](009-session-run-cadence-daily-seeded-shared-run.md)** — a run is a daily-seeded, *shared*, self-contained climb (same polls for everyone that day), self-paced, gate = 5 polls, up to ~10 gates, death waits for the next day's seed.
+- **Fuel currency shape** (leaning: it *is* storage, the run currency from ADR-006) and **leaderboard shape/volume**: still open (see ADR-009's open list).
