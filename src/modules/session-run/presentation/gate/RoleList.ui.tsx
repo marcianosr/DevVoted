@@ -3,7 +3,7 @@ import type {
 	RoleRow,
 } from "~/modules/session-run/gate/configRole.model";
 import type { CheckState } from "~/modules/session-run/configs/effect.model";
-import { ConfigChip } from "../configs/ConfigChip.ui";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 /** Status color follows the gate-check state — passed green, failed red, running hot. */
 const STATE_TEXT: Record<CheckState, string> = {
@@ -17,8 +17,8 @@ const STATE_TEXT: Record<CheckState, string> = {
 const STATE_ROW: Record<CheckState, string> = {
 	running: "",
 	skipped: "bg-pewter/5",
-	success: "bg-viridian/10",
-	failed: "bg-cinnabar/10",
+	success: "bg-viridian/30",
+	failed: "bg-cinnabar/30",
 };
 
 const ROLE_LABEL: Record<ConfigRole, string> = {
@@ -56,8 +56,9 @@ export const RoleList = ({ rows, onRemove }: RoleListProps) => (
 				className={`flex items-center gap-3 px-4 py-3 ${row.state ? STATE_ROW[row.state] : ""}`}
 			>
 				<RoleBadge role={row.role} />
-				<ConfigChip config={row.config} noTooltip />
-				<span className="min-w-0 text-sm text-white">— {row.description}</span>
+				<Paragraph className="min-w-0 text-sm text-white">
+					· {row.description}
+				</Paragraph>
 				{row.status ? (
 					<span
 						className={`ml-auto shrink-0 text-sm font-bold ${row.state ? STATE_TEXT[row.state] : "text-pewter"}`}
@@ -70,7 +71,7 @@ export const RoleList = ({ rows, onRemove }: RoleListProps) => (
 						type="button"
 						onClick={() => onRemove(row.config.id)}
 						aria-label={`Remove ${row.config.label}`}
-						className={`shrink-0 text-pewter transition-colors hover:text-cinnabar ${row.status ? "" : "ml-auto"}`}
+						className={`shrink-0 cursor-pointer text-pewter transition-colors hover:text-cinnabar ${row.status ? "" : "ml-auto"}`}
 					>
 						✕
 					</button>

@@ -12,5 +12,11 @@ export const Subtitle = ({
 	className = "",
 }: SubtitleProps) => {
 	const Tag = as;
-	return <Tag className={`text-lg text-zinc-400 ${className}`}>{children}</Tag>;
+	return (
+		<Tag
+			className={`text-sm font-bold tracking-tight text-zinc-300 ${className}`}
+		>
+			{children}
+		</Tag>
+	);
 };

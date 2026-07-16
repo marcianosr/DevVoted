@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "highlight.js/styles/github-dark.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+@import "@fontsource/jetbrains-mono/800.css";
 
 @layer base {
 	html {
@@ -323,7 +327,7 @@
 }
 
 body {
-	font-family: "Pixter Display", sans-serif;
+	font-family: "JetBrains Mono", ui-monospace, monospace;
 	/* Pin bold to preserve the app's look now that a real 400 face is registered —
 	   without this the default weight would silently flip to regular everywhere. */
 	font-weight: bold;
@@ -429,6 +433,30 @@ meter::-webkit-meter-optimum-value {
 	animation:
 		prismatic-border 4s linear infinite,
 		prismatic-text 4s linear infinite;
+}
+
+/* Flowing celadon→viridian gradient clipped to the text glyphs. */
+@keyframes gradient-flow {
+	0% {
+		background-position: 0% 50%;
+	}
+	100% {
+		background-position: 200% 50%;
+	}
+}
+
+.text-gradient-green {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-celadon),
+		var(--color-viridian),
+		var(--color-celadon)
+	);
+	background-size: 200% auto;
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+	animation: gradient-flow 3s linear infinite;
 }
 
 /* Scrollable without a visible scrollbar (keeps content reachable, fixed height). */

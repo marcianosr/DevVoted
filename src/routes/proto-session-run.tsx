@@ -1,8 +1,3 @@
-/**
- * Client-side playtest harness for the REBUILT session-run (src/modules/session-run).
- * Open at /proto-session-run. Client-authoritative (holds full state incl. answer key) —
- * fine for local feel-testing; the server-authoritative version (DVTD-ay5e) comes later.
- */
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useReducer, useState } from "react";
 
@@ -174,7 +169,10 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						storage={view.storage}
 						gateNumber={view.gatesCleared + 1}
 						victoryGate={view.victoryGate}
-						pollsToGate={view.pollsToGate}
+						pollsAnswered={view.pollsAnswered}
+						pollsPerGate={view.pollsPerGate}
+						streak={view.streak}
+						category={view.poll?.category}
 						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
 					/>
@@ -183,7 +181,7 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 			{state.status === "configuring" && (
 				<Screen
 					rightAction={{
-						label: "Start the climb →",
+						label: "Start run →",
 						onClick: () => dispatch({ type: "start" }),
 						disabled: !canStart,
 						hint: canStart ? undefined : "Slot a config to start",
@@ -194,7 +192,6 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						slots={view.slots}
 						bench={view.available}
 						checks={view.checks}
-						victoryGate={view.victoryGate}
 						gateReward={view.gateReward}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
 						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
@@ -233,9 +230,9 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					<RewardScreen
 						gatesCleared={view.gatesCleared}
-						storage={view.storage}
+						gateReward={view.gateReward}
 						answered={view.answeredThisGate}
-						coverageByCategory={view.coverageByCategory}
+						coverageGainedByCategory={view.coverageGainedThisGate}
 						passedChecks={view.passedChecks}
 						configs={view.configs}
 					/>

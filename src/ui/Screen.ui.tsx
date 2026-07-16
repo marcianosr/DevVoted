@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { Button } from "./Button.component";
+import { Popover } from "./Popover.component";
 import {
 	clearScreenNavDirection,
 	peekScreenNavDirection,
@@ -23,10 +24,9 @@ export type ScreenAction = {
 const WIDTH_CLASSES: Record<ScreenWidth, string> = {
 	narrow: "sm:max-w-2xl",
 	default: "sm:max-w-5xl",
-	wide: "sm:max-w-7xl",
+	wide: "sm:max-w-5xl",
 };
 
-// Pin actions to their screen edge: both apart, or a lone action to its side.
 const footerJustify = (left?: ScreenAction, right?: ScreenAction) => {
 	if (left && right) return "justify-between";
 	return right ? "justify-end" : "justify-start";
@@ -39,19 +39,9 @@ type ScreenProps = {
 	categoryCode?: string;
 	leftAction?: ScreenAction;
 	rightAction?: ScreenAction;
-	/** Grow to fill the layout and vertically center the content (short pages). */
 	center?: boolean;
 };
 
-/**
- * The shared outer frame for every full-page screen: responsive centered width,
- * optional category theme, an optional CSS mount-in transition (driven by
- * @starting-style in app.css via the data-screen-transition attribute), and an
- * optional footer with actions pinned to each screen edge.
- *
- * All screen wrappers (Content, ContentSection) delegate here so screen sizing
- * and motion live in one place.
- */
 const DIRECTION_TRANSITION: Record<ScreenNavDirection, ScreenTransition> = {
 	forward: "slide-right",
 	back: "slide-left",
@@ -66,11 +56,6 @@ export const Screen = ({
 	rightAction,
 	center = false,
 }: ScreenProps) => {
-	// Animate in from the side of the action that led here: the previous Screen
-	// records a direction when its left/right action fires, this Screen consumes
-	// it on mount. Falls back to the explicit `transition` prop when arrived at
-	// without an action (initial load, direct URL). Captured once via the lazy
-	// initializer so it survives the clear below.
 	const [effectiveTransition] = useState<ScreenTransition>(() => {
 		const direction = peekScreenNavDirection();
 		return direction ? DIRECTION_TRANSITION[direction] : transition;
@@ -108,19 +93,28 @@ export const Screen = ({
 							{leftAction.label}
 						</Button>
 					)}
-					{rightAction && (
-						<div className="flex flex-col items-end gap-1">
-							{rightAction.hint && (
-								<small className="text-sm">{rightAction.hint}</small>
-							)}
+					{rightAction &&
+						(rightAction.hint ? (
+							<Popover
+								triggerAs="span"
+								ariaLabel={`Why "${rightAction.label}" is unavailable`}
+								content={<p className="max-w-xs text-sm">{rightAction.hint}</p>}
+							>
+								<Button
+									onClick={() => runAction(rightAction, "forward")}
+									disabled={rightAction.disabled}
+								>
+									{rightAction.label}
+								</Button>
+							</Popover>
+						) : (
 							<Button
 								onClick={() => runAction(rightAction, "forward")}
 								disabled={rightAction.disabled}
 							>
 								{rightAction.label}
 							</Button>
-						</div>
-					)}
+						))}
 				</div>
 			)}
 		</section>

@@ -27,8 +27,8 @@ const STATE_ICON: Record<CheckState, string> = {
 const STATE_ROW: Record<CheckState, string> = {
 	running: "bg-vermillion/10",
 	skipped: "bg-pewter/5",
-	success: "bg-viridian/10",
-	failed: "bg-cinnabar/10",
+	success: "bg-viridian/30",
+	failed: "bg-cinnabar/30",
 };
 
 const STATE_BOX: Record<CheckState, string> = {

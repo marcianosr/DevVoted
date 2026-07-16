@@ -1,5 +1,6 @@
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 import type { Config } from "~/modules/session-run/configs/config.model";
+import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
@@ -52,11 +53,14 @@ export const PollCard = ({
 
 	return (
 		<div {...categoryTheme(category)} className="flex flex-col gap-5">
-			<Title category={category} as="h2" className="text-4xl leading-none">
-				{getCategoryMetadata(category).name}
-			</Title>
+			<div className="flex items-center gap-3">
+				<Swatch size="xl" />
+				<Title category={category} as="h1">
+					{getCategoryMetadata(category).name}
+				</Title>
+			</div>
 
-			<hr className="border-theme border-t-2" />
+			<hr className="border-theme border-t" />
 
 			<Title category={category}>{question}</Title>
 

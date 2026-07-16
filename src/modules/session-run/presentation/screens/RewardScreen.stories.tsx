@@ -14,8 +14,8 @@ type Story = StoryObj<typeof RewardScreen>;
 export const Default: Story = {
 	args: {
 		gatesCleared: 1,
-		storage: 280,
-		coverageByCategory: { js: 8, css: 3.5 },
+		gateReward: 120,
+		coverageGainedByCategory: { js: 8, css: 3.5 },
 		answered: [
 			{
 				id: "js1",

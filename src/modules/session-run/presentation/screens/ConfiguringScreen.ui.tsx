@@ -1,13 +1,8 @@
 import type { Config } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
-import {
-	extraGateRequirements,
-	roleRows,
-	stakesRequirement,
-} from "~/modules/session-run/gate/configRole.model";
+import { roleRows } from "~/modules/session-run/gate/configRole.model";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { RarityLegend } from "../configs/RarityLegend.ui";
 import { RoleList } from "../gate/RoleList.ui";
 import { RunStakes } from "../run/RunStakes.ui";
 import { StepHeading } from "./StepHeading.ui";
@@ -17,7 +12,6 @@ type ConfiguringScreenProps = {
 	slots: number;
 	bench: readonly Config[];
 	checks: readonly CheckStatus[];
-	victoryGate: number;
 	gateReward: number;
 	onSlot: (configId: string) => void;
 	onUnslot: (configId: string) => void;
@@ -28,15 +22,12 @@ export const ConfiguringScreen = ({
 	slots,
 	bench,
 	checks,
-	victoryGate,
 	gateReward,
 	onSlot,
 	onUnslot,
 }: ConfiguringScreenProps) => {
 	const freeConfigs = configs.filter((config) => !config.fixed);
 	const full = freeConfigs.length >= slots;
-	const requirement = stakesRequirement(configs, checks);
-	const extraRequirements = extraGateRequirements(configs, checks);
 	const rows = roleRows(configs, checks);
 
 	return (
@@ -58,7 +49,6 @@ export const ConfiguringScreen = ({
 						/>
 					))}
 				</div>
-				<RarityLegend />
 			</section>
 
 			<section className="space-y-4">
@@ -68,15 +58,9 @@ export const ConfiguringScreen = ({
 					subtitle="Your configured pipeline requirements and perks"
 					tone="viridian"
 				/>
-				<RunStakes
-					victoryGate={victoryGate}
-					requirement={requirement.count}
-					requirementLabel={requirement.label}
-					extraRequirements={extraRequirements}
-					gateReward={gateReward}
-				/>
+				<RunStakes gateReward={gateReward} />
 				<div className="space-y-2">
-					<Title as="h3" size="md">
+					<Title as="h3" size="sm">
 						Pipelines
 					</Title>
 					<RoleList rows={rows} onRemove={onUnslot} />

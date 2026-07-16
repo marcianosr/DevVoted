@@ -18,7 +18,7 @@ export const RunSummary = ({
 }: RunSummaryProps) => (
 	<div className="flex flex-col gap-6">
 		<div
-			className={`rounded-xl border p-6 ${won ? "border-viridian bg-viridian/10" : "border-cinnabar bg-cinnabar/10"}`}
+			className={`rounded-xl border p-6 ${won ? "border-viridian bg-viridian/30" : "border-cinnabar bg-cinnabar/30"}`}
 		>
 			<Title>{won ? "You summited! 🟢" : "Run over. 💥"}</Title>
 			<Paragraph>

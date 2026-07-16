@@ -27,7 +27,7 @@ export const StripScreen = ({
 	const quotaMet = stripsRemaining === 0;
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="rounded-xl border border-cinnabar bg-cinnabar/10 p-6">
+			<div className="rounded-xl border border-cinnabar bg-cinnabar/30 p-6">
 				<Title>Gate failed!</Title>
 				<Subtitle>This gate was too hard!</Subtitle>
 				<Paragraph>

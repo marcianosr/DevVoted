@@ -25,10 +25,10 @@ describe("Title", () => {
 		expect(heading).toHaveClass("text-theme");
 	});
 
-	it("is white when no category is given", () => {
+	it("is zinc-100 when no category is given", () => {
 		render(<Title>Plain</Title>);
 		expect(screen.getByRole("heading", { name: "Plain" })).toHaveClass(
-			"text-white"
+			"text-zinc-100"
 		);
 	});
 });

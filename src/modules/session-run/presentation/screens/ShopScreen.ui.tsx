@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import {
 	Config,
@@ -8,7 +9,6 @@ import {
 } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { Button } from "~/ui/Button.component";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/session-run/gate/configRole.model";
@@ -35,6 +35,27 @@ type ShopScreenProps = {
 	onUpgrade: (configId: string) => void;
 };
 
+/** One upgrade path, rendered as a card: a heading and description over its actions. */
+const PathCard = ({
+	title,
+	description,
+	children,
+}: {
+	title: string;
+	description: string;
+	children: ReactNode;
+}) => (
+	<section className="flex flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-900/40 p-5">
+		<header>
+			<Title as="h3" size="sm">
+				{title}
+			</Title>
+			<Subtitle>{description}</Subtitle>
+		</header>
+		{children}
+	</section>
+);
+
 export const ShopScreen = ({
 	storage,
 	coverageByCategory,
@@ -56,11 +77,18 @@ export const ShopScreen = ({
 	const isFull = configs.filter((config) => !config.fixed).length >= slots;
 	return (
 		<div className="flex flex-col gap-6">
-			<Title>Upgrade your pipeline</Title>
+			<header>
+				<Title>Upgrade your pipeline</Title>
+				<Subtitle>
+					Expand your load-out or make your pipeline stricter!
+				</Subtitle>
+			</header>
 
-			<div className="flex flex-wrap items-start gap-8 rounded-xl border-2 border-zinc-700 bg-zinc-900/40 p-5">
-				<section className="flex flex-col gap-3">
-					<Subtitle>Select new configs</Subtitle>
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<PathCard
+					title="Select new configs"
+					description="Adds categories → boosts coverage fastest"
+				>
 					<div className="flex flex-wrap gap-3">
 						{draftOptions.map((config) => {
 							const cost = draftCost(config);
@@ -77,18 +105,20 @@ export const ShopScreen = ({
 						})}
 					</div>
 					<Button
-						variant="theme"
+						variant="primary"
 						className="self-start rounded-lg text-sm"
 						disabled={!canRebuild}
 						onClick={onRebuild}
 					>
 						Rebuild configs ({rebuildCost}KB)
 					</Button>
-				</section>
+				</PathCard>
 
 				{upgradeable.length > 0 ? (
-					<section className="flex flex-col gap-3">
-						<Subtitle>Upgrade a config</Subtitle>
+					<PathCard
+						title="Upgrade a config"
+						description="Raises requirement, raises reward"
+					>
 						<div className="flex flex-wrap gap-3">
 							{upgradeable.map((config) => {
 								const level = config.level ?? 1;
@@ -140,22 +170,23 @@ export const ShopScreen = ({
 								);
 							})}
 						</div>
-					</section>
+					</PathCard>
 				) : null}
 
-				<section className="flex flex-col gap-2">
-					<Subtitle>Expand your pipeline</Subtitle>
-					<Paragraph>Add more slots to your pipeline.</Paragraph>
+				<PathCard
+					title="Expand your pipeline"
+					description="More slots, more can fail"
+				>
 					{canAddSlot ? (
-						<button
-							type="button"
+						<Button
+							variant="primary"
+							className="self-start rounded-lg text-sm"
 							onClick={onAddSlot}
-							className="cursor-pointer self-start rounded-lg border border-theme px-3 py-2 text-sm text-theme transition hover:bg-theme hover:text-black"
 						>
 							Add a slot: {slots} → {slots + 1}
-						</button>
+						</Button>
 					) : null}
-				</section>
+				</PathCard>
 			</div>
 
 			<Loadout

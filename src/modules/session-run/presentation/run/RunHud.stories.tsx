@@ -15,7 +15,10 @@ export const WithCoverage: Story = {
 		storage: 120,
 		gateNumber: 2,
 		victoryGate: 5,
-		pollsToGate: 5,
+		pollsAnswered: 2,
+		pollsPerGate: 5,
+		streak: 2,
+		category: "js",
 		coverage: 18.5,
 		coverageByCategory: { css: 3, js: 8, ts: 5, react: 2.5 },
 	},
@@ -26,8 +29,25 @@ export const EarlyRun: Story = {
 		storage: 80,
 		gateNumber: 1,
 		victoryGate: 5,
-		pollsToGate: 5,
+		pollsAnswered: 0,
+		pollsPerGate: 5,
+		streak: 0,
+		category: "css",
 		coverage: 0,
 		coverageByCategory: {},
+	},
+};
+
+export const StorageNearCap: Story = {
+	args: {
+		storage: 980,
+		gateNumber: 5,
+		victoryGate: 5,
+		pollsAnswered: 2,
+		pollsPerGate: 5,
+		streak: 1,
+		category: "ts",
+		coverage: 64,
+		coverageByCategory: { css: 12, js: 22, ts: 18, react: 12 },
 	},
 };

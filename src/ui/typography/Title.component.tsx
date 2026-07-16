@@ -3,11 +3,12 @@ import type { ReactNode } from "react";
 import type { CategoryCode } from "~/domains/shared/categories";
 import { categoryTheme } from "../theme/categoryTheme";
 
-type TitleSize = "lg" | "md";
+type TitleSize = "lg" | "md" | "sm";
 
 const SIZE_CLASS: Record<TitleSize, string> = {
 	lg: "text-3xl",
 	md: "text-2xl",
+	sm: "text-lg",
 };
 
 type TitleProps = {
@@ -26,12 +27,12 @@ export const Title = ({
 	className = "",
 }: TitleProps) => {
 	const Tag = as;
-	const color = category ? "text-theme" : "text-white";
+	const color = category ? "text-theme" : "text-zinc-100";
 	const themeProps = category ? categoryTheme(category) : {};
 	return (
 		<Tag
 			{...themeProps}
-			className={`${SIZE_CLASS[size]} ${color} ${className}`}
+			className={`${SIZE_CLASS[size]} ${color} tracking-tight font-extrabold ${className}`}
 		>
 			{children}
 		</Tag>

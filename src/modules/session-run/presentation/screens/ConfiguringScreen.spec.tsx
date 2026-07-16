@@ -8,7 +8,6 @@ const base = {
 	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.copilot],
-	victoryGate: 5,
 	gateReward: 120,
 	checks: [
 		{

@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Tri-state open model: hover/focus open auto-close on leave/blur; sticky open
-// (set by click/tap) survives until the user dismisses via outside-click or ESC.
-// Without this split, touch users would see the popover flash and vanish — a
-// tap fires synthetic mouseenter then mouseleave back-to-back.
 type OpenSource = "none" | "hover" | "sticky";
 
 type Position = { top: number; left: number };
@@ -12,22 +8,25 @@ type PopoverProps = {
 	content: React.ReactNode;
 	ariaLabel: string;
 	children: React.ReactNode;
+	triggerAs?: "button" | "span";
 };
 
 const VIEWPORT_MARGIN = 8;
 const TRIGGER_GAP = 8;
 
-export const Popover = ({ content, ariaLabel, children }: PopoverProps) => {
+export const Popover = ({
+	content,
+	ariaLabel,
+	children,
+	triggerAs = "button",
+}: PopoverProps) => {
 	const [openSource, setOpenSource] = useState<OpenSource>("none");
 	const [position, setPosition] = useState<Position | null>(null);
-	const triggerRef = useRef<HTMLButtonElement>(null);
+	const triggerRef = useRef<HTMLElement | null>(null);
 	const popoverRef = useRef<HTMLDivElement>(null);
 
 	const isOpen = openSource !== "none";
 
-	// Anchored above the trigger, horizontally centered, flipped below when no
-	// room above. Clamped within the viewport horizontally. Runs after the
-	// popover is in the top-layer so getBoundingClientRect reflects real size.
 	const computePosition = useCallback(() => {
 		const trigger = triggerRef.current;
 		const popover = popoverRef.current;
@@ -87,24 +86,53 @@ export const Popover = ({ content, ariaLabel, children }: PopoverProps) => {
 	const handleMouseLeave = () => {
 		setOpenSource((prev) => (prev === "hover" ? "none" : prev));
 	};
+	const handleKeyDown = (event: React.KeyboardEvent) => {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		handleClick();
+	};
+
+	const setTriggerRef = (element: HTMLElement | null) => {
+		triggerRef.current = element;
+	};
+
+	const triggerProps = {
+		onClick: handleClick,
+		onMouseEnter: handleMouseEnter,
+		onMouseLeave: handleMouseLeave,
+		onFocus: handleMouseEnter,
+		onBlur: handleMouseLeave,
+		"aria-haspopup": "dialog" as const,
+		"aria-expanded": isOpen,
+		"aria-label": ariaLabel,
+	};
+
+	const focusRing =
+		"cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400";
 
 	return (
 		<>
-			<button
-				ref={triggerRef}
-				type="button"
-				onClick={handleClick}
-				onMouseEnter={handleMouseEnter}
-				onMouseLeave={handleMouseLeave}
-				onFocus={handleMouseEnter}
-				onBlur={handleMouseLeave}
-				aria-haspopup="dialog"
-				aria-expanded={isOpen}
-				aria-label={ariaLabel}
-				className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-full"
-			>
-				{children}
-			</button>
+			{triggerAs === "span" ? (
+				<span
+					ref={setTriggerRef}
+					role="button"
+					tabIndex={0}
+					onKeyDown={handleKeyDown}
+					className={`inline-flex rounded-md ${focusRing}`}
+					{...triggerProps}
+				>
+					{children}
+				</span>
+			) : (
+				<button
+					ref={setTriggerRef}
+					type="button"
+					className={`rounded-full ${focusRing}`}
+					{...triggerProps}
+				>
+					{children}
+				</button>
+			)}
 			<div
 				ref={popoverRef}
 				popover="auto"

@@ -30,17 +30,20 @@ import {
 	dropCount,
 	GATE_REWARD_KB,
 	SLICE_WINDOW,
+	STORAGE_CAP_KB,
 	VICTORY_GATE,
 } from "../rules.model";
 
 export const LINT_COST = 40;
+
+const addStorage = (current: number, income: number): number =>
+	Math.min(current + income, STORAGE_CAP_KB);
 
 export type SessionOption = {
 	readonly id: string;
 	readonly label: string;
 	readonly correct: boolean;
 };
-/** Mirrors the schema's `answer_type`. */
 export type AnswerType = "single" | "multiple";
 
 export type SessionPoll = {
@@ -51,10 +54,6 @@ export type SessionPoll = {
 	readonly options: readonly SessionOption[];
 };
 
-/**
- * The server's verdict on an answer. Single: exactly the one correct option.
- * Multiple: the selected set must equal the correct set exactly (all correct, no extras).
- */
 const isCorrect = (
 	poll: SessionPoll,
 	optionIds: readonly string[]
@@ -74,7 +73,6 @@ const isCorrect = (
 export type SessionStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
 
-/** A poll answered in the current gate window, with the result — for the post-gate summary. */
 export type AnsweredPoll = {
 	readonly id: string;
 	readonly question: string;
@@ -98,8 +96,8 @@ export type SessionState = {
 	readonly window: GateWindow;
 	readonly manualDisabled: readonly string[];
 	readonly gatesCleared: number;
+	readonly streak: number;
 	readonly coverage: number;
-	/** Coverage earned per category — gates Focus-config upgrades. */
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly log: readonly string[];
@@ -123,7 +121,6 @@ export type SessionAction =
 export const createSession = (
 	polls: readonly SessionPoll[],
 	handed: readonly Config[],
-	/** Configs pre-slotted into every run and never removable (e.g. Unit Tests). */
 	fixed: readonly Config[] = []
 ): SessionState => ({
 	status: "configuring",
@@ -140,6 +137,7 @@ export const createSession = (
 	window: EMPTY_WINDOW,
 	manualDisabled: [],
 	gatesCleared: 0,
+	streak: 0,
 	coverage: 0,
 	coverageByCategory: {},
 	storage: 0,
@@ -226,7 +224,7 @@ const closeWindow = (state: SessionState, nextIndex: number): SessionState => {
 		window: EMPTY_WINDOW,
 		manualDisabled: [],
 		gatesCleared: gateNumber,
-		storage: state.storage + reward,
+		storage: addStorage(state.storage, reward),
 		currentIndex: nextIndex,
 	};
 
@@ -300,7 +298,8 @@ const answer = (
 		...state,
 		window,
 		manualDisabled: [],
-		storage: state.storage + faucet,
+		streak: correct ? state.streak + 1 : 0,
+		storage: addStorage(state.storage, faucet),
 		coverage: Math.round((state.coverage + earned) * 10) / 10,
 		coverageByCategory: {
 			...state.coverageByCategory,
@@ -339,17 +338,12 @@ const wrongStillOn = (state: SessionState) => {
 	);
 };
 
-/**
- * The lint action is relevant to this poll: a covering linter is equipped and ≥2 wrong
- * options remain — so crossing one out still leaves a real choice. (Affordability aside.)
- */
 export const lintApplies = (state: SessionState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !canLint(state.pipeline.configs, poll.category)) return false;
 	return wrongStillOn(state).length > 1;
 };
 
-/** The lint action can actually be run now — it applies and the player can afford it. */
 export const canRunLinter = (state: SessionState): boolean =>
 	lintApplies(state) && state.storage >= LINT_COST;
 
@@ -399,7 +393,6 @@ const resumeClimb = (state: SessionState): SessionState => {
 	};
 };
 
-/** A reward action that keeps the player on the reward screen so they can take several. */
 const stayReward = (
 	state: SessionState,
 	pipeline: Pipeline,
@@ -471,7 +464,6 @@ const upgrade = (state: SessionState, configId: string): SessionState => {
 		)
 	);
 
-	// Focus configs are gated on reaching category coverage (not spent); no KB cost.
 	if (owned.focusCategory) {
 		const have = state.coverageByCategory[owned.focusCategory] ?? 0;
 		if (have < upgradeCoverageRequired(level)) return state;
@@ -483,7 +475,6 @@ const upgrade = (state: SessionState, configId: string): SessionState => {
 		);
 	}
 
-	// Everything else (Unit Tests) costs KB.
 	const cost = upgradeCost(level);
 	if (state.storage < cost) return state;
 	return {
@@ -497,7 +488,6 @@ const upgrade = (state: SessionState, configId: string): SessionState => {
 	};
 };
 
-/** Leave the reward screen and climb on — the explicit "Next" step. */
 const finishReward = (state: SessionState): SessionState => ({
 	...state,
 	draftOptions: [],

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 import { CONFIGS } from "../configs/configRoster.model";
-import { SLICE_WINDOW, VICTORY_GATE } from "../rules.model";
+import { SLICE_WINDOW, STORAGE_CAP_KB, VICTORY_GATE } from "../rules.model";
 import {
 	createSession,
 	sessionReducer,
@@ -244,6 +244,25 @@ describe("fixed configs", () => {
 	});
 });
 
+describe("streak", () => {
+	it("counts consecutive correct answers and resets on a wrong one", () => {
+		let state = started(["js"]);
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+		expect(state.streak).toBe(2);
+		state = answerWith(state, false);
+		expect(state.streak).toBe(0);
+	});
+
+	it("survives a gate clear — it tracks the run, not the window", () => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.gatesCleared).toBe(1);
+		expect(state.window.answered).toBe(0); // window reset on clear
+		expect(state.streak).toBe(SLICE_WINDOW); // streak carried over
+	});
+});
+
 describe("economy", () => {
 	it("earns storage from the IndexedDB faucet on correct answers only", () => {
 		let state = started(["indexed-db"]);
@@ -251,6 +270,19 @@ describe("economy", () => {
 		expect(state.storage).toBe(8);
 		state = answerWith(state, false);
 		expect(state.storage).toBe(8);
+	});
+
+	it("caps storage at 1 MB, discarding gate reward beyond the limit", () => {
+		let state = { ...started(["js"]), storage: STORAGE_CAP_KB - 10 };
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.gatesCleared).toBe(1);
+		expect(state.storage).toBe(STORAGE_CAP_KB);
+	});
+
+	it("caps storage at 1 MB, discarding faucet income beyond the limit", () => {
+		let state = { ...started(["indexed-db"]), storage: STORAGE_CAP_KB - 3 };
+		state = answerWith(state, true); // faucet pays 8KB, only 3 fit
+		expect(state.storage).toBe(STORAGE_CAP_KB);
 	});
 
 	it("gates the lint action behind a linter config", () => {

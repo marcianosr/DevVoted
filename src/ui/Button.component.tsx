@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-type ButtonVariant = "primary" | "secondary" | "danger" | "theme";
+type ButtonVariant = "primary" | "secondary" | "theme" | "danger";
 type ButtonSize = "default" | "small";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -17,23 +17,15 @@ const SIZE: Record<ButtonSize, string> = {
 	small: "text-sm px-3 py-2",
 };
 
-/** Outlined variants share the same shape; only their border/hover/disabled colors differ. */
 const OUTLINE = "border-2 px-4 py-2 text-sm";
 const OUTLINE_VARIANT: Record<Exclude<ButtonVariant, "primary">, string> = {
 	secondary:
 		"border-blue-500 text-white hover:bg-blue-500/40 disabled:bg-blue-200",
-	danger: "border-red-500 text-white hover:bg-red-500/40 disabled:bg-red-200",
 	theme:
 		"border-theme text-theme hover:bg-theme hover:text-black disabled:opacity-40",
+	danger: "border-red-500 text-white hover:bg-red-500/40 disabled:bg-red-200",
 };
 
-/**
- * The app's button. `primary` is a solid, theme-colored fill sized via `size`
- * (bg-theme resolves to the surrounding category, or the default cyan on
- * un-themed screens). The outlined variants — `secondary`, `danger`, `theme` —
- * share an outline shape and differ only in color; `theme` follows the
- * surrounding category color.
- */
 export const Button = ({
 	children,
 	variant = "primary",
@@ -60,7 +52,7 @@ export const Button = ({
 			type={type}
 			disabled={isDisabled}
 			className={clsx(
-				"cursor-pointer transition-colors disabled:cursor-not-allowed",
+				"rounded cursor-pointer transition-colors disabled:cursor-not-allowed",
 				variantClass,
 				className
 			)}

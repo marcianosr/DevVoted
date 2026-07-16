@@ -1,14 +1,22 @@
 import { getCategories } from "~/domains/shared/categories";
+import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
+import { Title } from "~/ui/typography/Title.component";
 
 type CoverageByCategoryProps = {
 	coverageByCategory: Readonly<Record<string, number>>;
+	title?: string;
+	subtitle?: string;
+	/** Prefixes each value — e.g. "+" when the numbers are gains. */
+	prefix?: string;
 };
 
 export const CoverageByCategory = ({
 	coverageByCategory,
+	title = "Coverage by category",
+	subtitle = "Shows categories you participated in",
+	prefix = "",
 }: CoverageByCategoryProps) => {
 	const covered = getCategories()
 		.map(({ code, name }) => ({
@@ -23,8 +31,8 @@ export const CoverageByCategory = ({
 	return (
 		<section className="flex flex-col gap-2">
 			<header>
-				<Subtitle>Coverage by category</Subtitle>
-				<Paragraph>Shows categories you participated in</Paragraph>
+				<Title size="sm">{title}</Title>
+				<Subtitle>{subtitle}</Subtitle>
 			</header>
 			<div className="flex flex-wrap gap-3">
 				{covered.map(({ code, name, pct }) => (
@@ -33,9 +41,12 @@ export const CoverageByCategory = ({
 						{...categoryTheme(code)}
 						className="flex items-center gap-1.5 rounded-lg border border-theme px-3 py-1.5 text-sm"
 					>
-						<span className="inline-block h-3.5 w-3.5 rounded bg-theme" />
+						<Swatch />
 						<span className="font-bold text-theme">{name}</span>
-						<span className="text-zinc-300">{pct}%</span>
+						<span className="text-zinc-300">
+							{prefix}
+							{pct}%
+						</span>
 					</span>
 				))}
 			</div>

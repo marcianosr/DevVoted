@@ -11,7 +11,11 @@ import {
 import type { Config } from "../configs/config.model";
 import type { CheckStatus } from "../configs/effect.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
-import { linterFor, rewardMultiplierFor } from "../pipeline/pipeline.model";
+import {
+	coverageForAnswer,
+	linterFor,
+	rewardMultiplierFor,
+} from "../pipeline/pipeline.model";
 import { GATE_REWARD_KB, SLICE_WINDOW, VICTORY_GATE } from "../rules.model";
 
 export type PollOptionView = { readonly id: string; readonly label: string };
@@ -53,11 +57,34 @@ export type SessionView = {
 	readonly gatesCleared: number;
 	readonly victoryGate: number;
 	readonly pollsToGate: number;
+	/** Polls answered in the current gate window, and the window size — HUD shows "x/5". */
+	readonly pollsAnswered: number;
+	readonly pollsPerGate: number;
+	/** Consecutive correct answers across the run; resets only on a wrong answer. */
+	readonly streak: number;
 	readonly coverage: number;
 	/** Coverage earned per category — gates Focus-config upgrades in the shop. */
 	readonly coverageByCategory: Readonly<Record<string, number>>;
+	/** Coverage earned per category in the gate just cleared — for the reward summary. */
+	readonly coverageGainedThisGate: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly log: readonly string[];
+};
+
+/** Coverage earned per category across the gate just cleared, from its answers. */
+const gainedThisGate = (state: SessionState): Record<string, number> => {
+	const gained: Record<string, number> = {};
+	for (const poll of state.answeredThisGate) {
+		const earned = coverageForAnswer(
+			state.pipeline.configs,
+			poll.category,
+			poll.correct
+		);
+		if (earned > 0)
+			gained[poll.category] =
+				Math.round(((gained[poll.category] ?? 0) + earned) * 10) / 10;
+	}
+	return gained;
 };
 
 const redactPoll = (poll: SessionPoll): PollView => ({
@@ -103,8 +130,12 @@ export const toSessionView = (state: SessionState): SessionView => {
 		gatesCleared: state.gatesCleared,
 		victoryGate: VICTORY_GATE,
 		pollsToGate: SLICE_WINDOW - state.window.answered,
+		pollsAnswered: state.window.answered,
+		pollsPerGate: SLICE_WINDOW,
+		streak: state.streak,
 		coverage: state.coverage,
 		coverageByCategory: state.coverageByCategory,
+		coverageGainedThisGate: gainedThisGate(state),
 		storage: state.storage,
 		log: state.log,
 	};

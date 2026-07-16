@@ -2,13 +2,16 @@ Questions:
 - How will it go for players answering 1 or 2 polls per day versus players aonswering a full gate (5 polls)
 - Should I allow players to answer more polls after a gate? How am I handling that against the social layer? And how does that work if someone wants to review their answer(s)?
 - Showing the answers after the gate is nice, but some have omre detailed explanations. Currently it's just a list. What do we do here?
-- Create Screen component for navigation
 - Juicing up: show a -X number or +X numvber when adding/using storage
 - Be able to switch your load-out on gate check
 - Max 8 configs for pipeline - show that in descriptive text
 - "Next climb" should become - Start next gate (with a timer, or maybe if possible paid)
 - Slots: You can now endlessly add slots untilk your max. - do we want that?
-
+- More hwelp for new players
+- Remove the "5" gates max -  GATE 1 / ?
+- Config:
+  - Postgres: Extend your 1MB cap with a x2
+  - Localhost: Extend your 1MB cap with 256KB
 
 Wrapped in stories now:
 - If my slots are full, I see configs to be selected but I cant actually select them. There should be a hint that this cannot be added unless there is more space

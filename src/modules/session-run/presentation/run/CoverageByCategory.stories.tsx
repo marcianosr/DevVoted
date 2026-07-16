@@ -4,7 +4,7 @@ import { CoverageByCategory } from "./CoverageByCategory.ui";
 
 const meta: Meta<typeof CoverageByCategory> = {
 	component: CoverageByCategory,
-	title: "SessionRun/CoverageByCategory",
+	title: "Session Run/CoverageByCategory",
 };
 export default meta;
 

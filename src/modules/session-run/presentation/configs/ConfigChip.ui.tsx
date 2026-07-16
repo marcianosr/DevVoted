@@ -110,12 +110,21 @@ export const ConfigChip = ({
 		surface
 	);
 	if (noTooltip) return chip;
+	const rarity = config.rarity ?? "common";
 	return (
 		<Tooltip
+			surfaceClassName={`${RARITY_COLORS[rarity].border} bg-zinc-900`}
 			content={
-				<Paragraph className="mt-1 text-sm">
-					{tooltip ?? describeConfig(config)}
-				</Paragraph>
+				<div className="flex flex-col gap-1">
+					<span
+						className={`text-xs font-bold uppercase tracking-wide ${RARITY_COLORS[rarity].text}`}
+					>
+						{rarity}
+					</span>
+					<Paragraph className="text-sm">
+						{tooltip ?? describeConfig(config)}
+					</Paragraph>
+				</div>
 			}
 		>
 			{chip}
