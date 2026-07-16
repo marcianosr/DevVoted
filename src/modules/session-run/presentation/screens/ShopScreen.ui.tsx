@@ -16,6 +16,7 @@ import { roleRows } from "~/modules/session-run/gate/configRole.model";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RoleList } from "../gate/RoleList.ui";
 import { Loadout } from "../pipeline/Loadout.ui";
+import { MultiplierSummary } from "../run/MultiplierSummary.ui";
 
 type ShopScreenProps = {
 	storage: number;
@@ -26,6 +27,8 @@ type ShopScreenProps = {
 	slots: number;
 	gateReward: number;
 	rewardMultiplier: number;
+	coverageMultiplier: number;
+	coverageAdd: number;
 	newConfigIds: readonly string[];
 	draftOptions: readonly Config[];
 	onDraft: (configId: string) => void;
@@ -70,6 +73,8 @@ export const ShopScreen = ({
 	slots,
 	gateReward,
 	rewardMultiplier,
+	coverageMultiplier,
+	coverageAdd,
 	newConfigIds,
 	draftOptions,
 	onDraft,
@@ -87,11 +92,18 @@ export const ShopScreen = ({
 	const isFull = configs.filter((config) => !config.fixed).length >= slots;
 	return (
 		<div className="flex flex-col gap-6">
-			<header>
-				<Title>Upgrade your pipeline</Title>
-				<Subtitle>
-					Expand your load-out or make your pipeline stricter!
-				</Subtitle>
+			<header className="flex flex-col gap-3">
+				<div>
+					<Title>Upgrade your pipeline</Title>
+					<Subtitle>
+						Expand your load-out or make your pipeline stricter!
+					</Subtitle>
+				</div>
+				<MultiplierSummary
+					rewardMultiplier={rewardMultiplier}
+					coverageMultiplier={coverageMultiplier}
+					coverageAdd={coverageAdd}
+				/>
 			</header>
 
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -211,7 +223,6 @@ export const ShopScreen = ({
 				slots={slots}
 				gateNumber={gateNumber}
 				gateReward={gateReward}
-				rewardMultiplier={rewardMultiplier}
 				newConfigIds={newConfigIds}
 			/>
 

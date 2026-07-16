@@ -196,6 +196,9 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						bench={view.available}
 						checks={view.checks}
 						gateReward={view.gateReward}
+						rewardMultiplier={view.rewardMultiplier}
+						coverageMultiplier={view.coverageMultiplier}
+						coverageAdd={view.coverageAdd}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
 						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
 					/>
@@ -263,6 +266,8 @@ const SessionGame = ({ onRestart }: { onRestart: () => void }) => {
 						configs={view.configs}
 						gateReward={view.gateReward}
 						rewardMultiplier={view.rewardMultiplier}
+						coverageMultiplier={view.coverageMultiplier}
+						coverageAdd={view.coverageAdd}
 						newConfigIds={view.newConfigIds}
 						draftOptions={view.draftOptions}
 						onDraft={(id) => dispatch({ type: "draft", configId: id })}

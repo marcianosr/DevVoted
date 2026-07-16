@@ -13,6 +13,7 @@ import type { CheckStatus } from "../configs/effect.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
 import {
 	coverageForAnswer,
+	coverageProfileFor,
 	linterFor,
 	rewardMultiplierFor,
 } from "../pipeline/pipeline.model";
@@ -52,6 +53,10 @@ export type SessionView = {
 	readonly passedChecks: readonly CheckStatus[];
 	readonly demands: readonly string[];
 	readonly rewardMultiplier: number;
+	/** Build-wide coverage multiplier applied to every correct answer. */
+	readonly coverageMultiplier: number;
+	/** Flat coverage % the build adds per correct answer. */
+	readonly coverageAdd: number;
 	/** Storage this gate pays on a clear (base × reward multiplier). */
 	readonly gateReward: number;
 	readonly gatesCleared: number;
@@ -124,6 +129,8 @@ export const toSessionView = (state: SessionState): SessionView => {
 		passedChecks: state.clearedChecks,
 		demands: gateDemands(state.pipeline, state.gatesCleared),
 		rewardMultiplier: rewardMultiplierFor(state.pipeline),
+		coverageMultiplier: coverageProfileFor(state.pipeline).mult,
+		coverageAdd: coverageProfileFor(state.pipeline).add,
 		gateReward: Math.round(
 			GATE_REWARD_KB * rewardMultiplierFor(state.pipeline)
 		),

@@ -27,6 +27,8 @@ const base = {
 	slots: 3,
 	gateReward: 180,
 	rewardMultiplier: 1.5,
+	coverageMultiplier: 2,
+	coverageAdd: 0.5,
 	coverage: 25,
 	slotCoverageRequired: 20,
 	canAddSlot: true,

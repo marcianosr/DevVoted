@@ -5,6 +5,7 @@ import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RoleList } from "../gate/RoleList.ui";
 import { Pipeline } from "../pipeline/Pipeline.ui";
+import { MultiplierSummary } from "../run/MultiplierSummary.ui";
 import { RunStakes } from "../run/RunStakes.ui";
 import { StepHeading } from "./StepHeading.ui";
 
@@ -14,6 +15,9 @@ type ConfiguringScreenProps = {
 	bench: readonly Config[];
 	checks: readonly CheckStatus[];
 	gateReward: number;
+	rewardMultiplier: number;
+	coverageMultiplier: number;
+	coverageAdd: number;
 	onSlot: (configId: string) => void;
 	onUnslot: (configId: string) => void;
 };
@@ -24,6 +28,9 @@ export const ConfiguringScreen = ({
 	bench,
 	checks,
 	gateReward,
+	rewardMultiplier,
+	coverageMultiplier,
+	coverageAdd,
 	onSlot,
 	onUnslot,
 }: ConfiguringScreenProps) => {
@@ -60,6 +67,11 @@ export const ConfiguringScreen = ({
 					tone="viridian"
 				/>
 				<RunStakes gateReward={gateReward} />
+				<MultiplierSummary
+					rewardMultiplier={rewardMultiplier}
+					coverageMultiplier={coverageMultiplier}
+					coverageAdd={coverageAdd}
+				/>
 				<div className="space-y-2">
 					<Title as="h3" size="sm">
 						Pipelines

@@ -10,7 +10,6 @@ type LoadoutProps = {
 	/** When set, the heading names the gate this load-out is heading into. */
 	gateNumber?: number;
 	gateReward?: number;
-	rewardMultiplier?: number;
 	newConfigIds?: readonly string[];
 	onRemove?: (configId: string) => void;
 };
@@ -20,7 +19,6 @@ export const Loadout = ({
 	slots,
 	gateNumber,
 	gateReward,
-	rewardMultiplier,
 	newConfigIds,
 	onRemove,
 }: LoadoutProps) => (
@@ -31,11 +29,8 @@ export const Loadout = ({
 			</Title>
 			{gateReward !== undefined ? (
 				<Subtitle>
-					Clears for <GradientText>{gateReward}KB</GradientText>
-					{rewardMultiplier !== undefined && rewardMultiplier > 1
-						? ` at ${rewardMultiplier}×`
-						: ""}{" "}
-					— heavier requirements pay more, easier builds pay less
+					Clears for <GradientText>{gateReward}KB</GradientText> — heavier
+					requirements pay more, easier builds pay less
 				</Subtitle>
 			) : (
 				<Subtitle>Your configured pipeline requirements and perks</Subtitle>

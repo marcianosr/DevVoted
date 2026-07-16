@@ -23,16 +23,12 @@ type ConfigChipProps = {
 const ChipLabel = ({
 	config,
 	action,
-}: Pick<ConfigChipProps, "config" | "action">) => {
-	const level = config.level ?? 1;
-	return (
-		<>
-			{config.label}
-			{level > 1 ? <span className="ml-1 opacity-70">L{level}</span> : null}
-			{action ? <span className="ml-2 opacity-70">{action}</span> : null}
-		</>
-	);
-};
+}: Pick<ConfigChipProps, "config" | "action">) => (
+	<>
+		{config.label}
+		{action ? <span className="ml-2 opacity-70">{action}</span> : null}
+	</>
+);
 
 const ChipBody = ({
 	config,
@@ -85,8 +81,10 @@ export const ConfigChip = ({
 	disabled,
 	onClick,
 }: ConfigChipProps) => {
+	const level = config.level ?? 1;
 	const corners = [
 		badge ? <span key="badge">{badge}</span> : null,
+		level > 1 ? <Badge key="level">L{level}</Badge> : null,
 		config.fixed ? <Badge key="fixed">fixed</Badge> : null,
 		price !== undefined ? (
 			<Badge key="price" tone="price">{`${price}KB`}</Badge>

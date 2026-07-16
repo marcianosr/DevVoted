@@ -5,6 +5,7 @@ import { CONFIGS } from "../configs/configRoster.model";
 import {
 	Pipeline,
 	coverageForAnswer,
+	coverageProfileFor,
 	effectiveRequirement,
 	canLint,
 	isBare,
@@ -16,6 +17,20 @@ const pipelineWith = (configs: Config[]): Pipeline => ({
 	id: "hyrule-ci",
 	slots: 3,
 	configs,
+});
+
+describe("coverageProfileFor", () => {
+	it("returns the identity profile for a bare pipeline", () => {
+		expect(coverageProfileFor(pipelineWith([]))).toEqual({ mult: 1, add: 0 });
+	});
+
+	it("multiplies Amplify coverage mults and sums flat adds across the build", () => {
+		const profile = coverageProfileFor(
+			pipelineWith([CONFIGS.copilot, CONFIGS.codeCoverage])
+		);
+		expect(profile.mult).toBe(2);
+		expect(profile.add).toBe(0.5);
+	});
 });
 
 describe("effectiveRequirement", () => {

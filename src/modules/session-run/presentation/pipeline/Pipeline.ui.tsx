@@ -1,5 +1,6 @@
 import type { Config } from "~/modules/session-run/configs/config.model";
 import { Badge } from "~/ui/Badge.component";
+import { Tooltip } from "~/ui/Tooltip.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 
 type PipelineProps = {
@@ -37,12 +38,14 @@ export const Pipeline = ({
 						onClick={onRemove ? () => onRemove(config.id) : undefined}
 					/>
 				) : (
-					<div
+					<Tooltip
 						key={`empty-${index}`}
-						className="rounded-lg border-2 border-dashed border-zinc-600 px-6 py-2 text-sm text-zinc-500"
+						content="You can add configs here from the shop!"
 					>
-						empty
-					</div>
+						<span className="rounded-lg border-2 border-dashed border-zinc-600 px-6 py-2 text-sm text-zinc-500">
+							empty
+						</span>
+					</Tooltip>
 				);
 			})}
 		</div>

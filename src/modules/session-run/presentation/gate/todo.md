@@ -7,11 +7,20 @@ Questions:
 - Max 8 configs for pipeline - show that in descriptive text
 - "Next climb" should become - Start next gate (with a timer, or maybe if possible paid)
 - Slots: You can now endlessly add slots untilk your max. - do we want that?
-- More hwelp for new players
 - Remove the "5" gates max -  GATE 1 / ?
-- Config:
+- Configs: Look at my config map
+  - change name of "correct"
+  - add config that shows an answer someone else picked
+  - add config that make polls occur more often
+  - add config that increases your load-out worth (higher sell price)
   - Postgres: Extend your 1MB cap with a x2
   - Localhost: Extend your 1MB cap with 256KB
+  - Docker: transfer your configs to a new run for free?
+- Only continune if you selected something fro mt
+- Animate the tooltips
+- Background color: soft kanto theme colors, radial background based on Hertek?
+- Better icons?
+
 
 Wrapped in stories now:
 - If my slots are full, I see configs to be selected but I cant actually select them. There should be a hint that this cannot be added unless there is more space
@@ -22,12 +31,6 @@ Wrapped in stories now:
 - Show what others chose on gate clear
 - Rarity drops
 - Coverage... what to do with it?
-- Configs: Look at my config map
-  - change name of "correct"
-  - add config that shows an answer someone else picked
-  - add config thart make polls occur more often
-  - add config that increases your load-out worth (higher sell price)
-- Only continune if you selected something fro mthe shop upgrade
 - General Screen feel: How does it feel?
 
 

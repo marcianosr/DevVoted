@@ -60,6 +60,18 @@ export const rewardMultiplierFor = (pipeline: Pipeline): number =>
 		1
 	);
 
+/** Build-wide coverage boost applied to every correct answer (Focus category bonuses excluded). */
+export const coverageProfileFor = (
+	pipeline: Pipeline
+): { readonly mult: number; readonly add: number } =>
+	pipeline.configs.reduce(
+		(profile, config) => ({
+			mult: profile.mult * (config.coverageMultiplier ?? 1),
+			add: profile.add + (config.coverageAdd ?? 0),
+		}),
+		{ mult: 1, add: 0 }
+	);
+
 export const coverageForAnswer = (
 	configs: readonly Config[],
 	category: CategoryCode,

@@ -9,6 +9,9 @@ const base = {
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.copilot],
 	gateReward: 120,
+	rewardMultiplier: 1,
+	coverageMultiplier: 1,
+	coverageAdd: 0,
 	checks: [
 		{
 			label: "Correct",

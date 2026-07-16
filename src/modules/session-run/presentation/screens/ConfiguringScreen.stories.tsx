@@ -19,6 +19,9 @@ export const Default: Story = {
 		gateNumber: 1,
 		pollsToGate: 5,
 		gateReward: 120,
+		rewardMultiplier: 1,
+		coverageMultiplier: 1,
+		coverageAdd: 0,
 		checks: [
 			{
 				label: "Correct",
