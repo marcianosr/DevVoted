@@ -1,15 +1,26 @@
 import type { ReactNode } from "react";
 
+import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
+
 import type { CategoryCode } from "~/domains/shared/categories";
 import { categoryTheme } from "../theme/categoryTheme";
 
 type TitleSize = "lg" | "md" | "sm";
 
-const SIZE_CLASS: Record<TitleSize, string> = {
-	lg: "text-3xl",
-	md: "text-2xl",
-	sm: "text-lg",
-};
+const title = cva("tracking-tight font-extrabold leading-8", {
+	variants: {
+		size: {
+			lg: "text-3xl",
+			md: "text-2xl",
+			sm: "text-lg",
+		} satisfies Record<TitleSize, string>,
+		themed: {
+			true: "text-theme",
+			false: "text-zinc-100",
+		},
+	},
+});
 
 type TitleProps = {
 	children: ReactNode;
@@ -27,12 +38,11 @@ export const Title = ({
 	className = "",
 }: TitleProps) => {
 	const Tag = as;
-	const color = category ? "text-theme" : "text-zinc-100";
 	const themeProps = category ? categoryTheme(category) : {};
 	return (
 		<Tag
 			{...themeProps}
-			className={`${SIZE_CLASS[size]} ${color} tracking-tight font-extrabold leading-8 ${className}`}
+			className={clsx(title({ size, themed: Boolean(category) }), className)}
 		>
 			{children}
 		</Tag>

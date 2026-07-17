@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { Button } from "~/ui/Button.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
@@ -14,6 +15,15 @@ type GameOverScreenProps = {
 	onClimbAgain: () => void;
 };
 
+const outcomeBanner = cva("rounded-xl border p-6", {
+	variants: {
+		won: {
+			true: "border-viridian bg-celadon/30",
+			false: "border-cinnabar bg-cinnabar/30",
+		},
+	},
+});
+
 export const GameOverScreen = ({
 	won,
 	gatesCleared,
@@ -24,9 +34,7 @@ export const GameOverScreen = ({
 	onClimbAgain,
 }: GameOverScreenProps) => (
 	<div className="flex flex-col gap-6">
-		<div
-			className={`rounded-xl border p-6 ${won ? "border-viridian bg-celadon/30" : "border-cinnabar bg-cinnabar/30"}`}
-		>
+		<div className={outcomeBanner({ won })}>
 			<Title>{won ? "You summited! 🟢" : "Run over. 💥"}</Title>
 			<Paragraph>
 				{won

@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 import type { Config } from "~/modules/session-run/configs/config.model";
 import { Swatch } from "~/ui/Swatch.component";
@@ -36,18 +37,12 @@ const optionStatusOf = (
 	return "neutral";
 };
 
-const ROW_CLASS: Record<OptionStatus, string> = {
-	correct: "bg-viridian/15 text-viridian",
-	chosenWrong: "bg-cinnabar/15 text-cinnabar",
-	selected: "bg-theme-soft text-white",
-	neutral: "text-white",
-};
+type InteractionState = "disabled" | "revealed" | "active";
 
-const BOX_CLASS: Record<OptionStatus, string> = {
-	correct: "border-viridian bg-viridian text-black",
-	chosenWrong: "border-cinnabar text-cinnabar",
-	selected: "border-theme bg-theme text-black",
-	neutral: "border-pewter",
+const interactionOf = (off: boolean, revealed: boolean): InteractionState => {
+	if (off) return "disabled";
+	if (revealed) return "revealed";
+	return "active";
 };
 
 const MARK: Record<OptionStatus, string> = {
@@ -56,6 +51,39 @@ const MARK: Record<OptionStatus, string> = {
 	selected: "✓",
 	neutral: "",
 };
+
+const optionRow = cva(
+	"flex items-center gap-3 rounded-lg px-4 py-3 text-left transition",
+	{
+		variants: {
+			status: {
+				correct: "bg-viridian/15 text-viridian",
+				chosenWrong: "bg-cinnabar/15 text-cinnabar",
+				selected: "bg-theme-soft text-white",
+				neutral: "text-white",
+			} satisfies Record<OptionStatus, string>,
+			interaction: {
+				disabled: "cursor-not-allowed opacity-40 line-through",
+				revealed: "",
+				active: "cursor-pointer hover:bg-white/5",
+			} satisfies Record<InteractionState, string>,
+		},
+	}
+);
+
+const optionBox = cva(
+	"flex h-5 w-5 items-center justify-center rounded border-2 text-xs",
+	{
+		variants: {
+			status: {
+				correct: "border-viridian bg-viridian text-black",
+				chosenWrong: "border-cinnabar text-cinnabar",
+				selected: "border-theme bg-theme text-black",
+				neutral: "border-pewter",
+			} satisfies Record<OptionStatus, string>,
+		},
+	}
+);
 
 export const PollCard = ({
 	category,
@@ -114,19 +142,16 @@ export const PollCard = ({
 						revealed && chosen.has(option.id) && !correct.has(option.id);
 					const isSelected = !revealed && selected.has(option.id);
 					const status = optionStatusOf(isCorrect, isChosenWrong, isSelected);
+					const interaction = interactionOf(off, revealed);
 					return (
 						<button
 							key={option.id}
 							type="button"
 							disabled={off || revealed}
 							onClick={() => onSelect(option.id)}
-							className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left transition ${ROW_CLASS[status]} ${off ? "cursor-not-allowed opacity-40 line-through" : revealed ? "" : "cursor-pointer hover:bg-white/5"}`}
+							className={optionRow({ status, interaction })}
 						>
-							<span
-								className={`flex h-5 w-5 items-center justify-center rounded border-2 text-xs ${BOX_CLASS[status]}`}
-							>
-								{MARK[status]}
-							</span>
+							<span className={optionBox({ status })}>{MARK[status]}</span>
 							<span>{option.label}</span>
 						</button>
 					);

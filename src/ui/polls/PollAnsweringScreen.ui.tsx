@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { cva } from "class-variance-authority";
+
 import type { AnswerType } from "~/domains/polls/models/poll.model";
 
 import { PollActiveConfigStrip } from "./PollActiveConfigStrip.ui";
@@ -35,6 +37,15 @@ type PollAnsweringScreenProps = {
 	codeSlot?: ReactNode;
 };
 
+const liveHintText = cva("text-xl mb-3", {
+	variants: {
+		tone: {
+			correct: "text-green-400",
+			incorrect: "text-red-400",
+		},
+	},
+});
+
 /**
  * The poll answering body: question, any code sample, the active-config strip,
  * the answer options, and the submit bar. Pure composition over plain data so
@@ -59,11 +70,7 @@ export const PollAnsweringScreen = ({
 			<PollActiveConfigStrip configs={activeConfigs} />
 		</div>
 		{liveHint && (
-			<p
-				className={`text-xl mb-3 ${liveHint.tone === "correct" ? "text-green-400" : "text-red-400"}`}
-			>
-				{liveHint.text}
-			</p>
+			<p className={liveHintText({ tone: liveHint.tone })}>{liveHint.text}</p>
 		)}
 		<PollOptionList
 			options={options}

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { cva } from "class-variance-authority";
+
 type OpenSource = "none" | "hover" | "sticky";
 
 type Position = { top: number; left: number };
@@ -13,6 +15,18 @@ type PopoverProps = {
 
 const VIEWPORT_MARGIN = 8;
 const TRIGGER_GAP = 8;
+
+const popoverTrigger = cva(
+	"cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400",
+	{
+		variants: {
+			as: {
+				span: "inline-flex rounded-md",
+				button: "rounded-full",
+			},
+		},
+	}
+);
 
 export const Popover = ({
 	content,
@@ -107,9 +121,6 @@ export const Popover = ({
 		"aria-label": ariaLabel,
 	};
 
-	const focusRing =
-		"cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400";
-
 	return (
 		<>
 			{triggerAs === "span" ? (
@@ -118,7 +129,7 @@ export const Popover = ({
 					role="button"
 					tabIndex={0}
 					onKeyDown={handleKeyDown}
-					className={`inline-flex rounded-md ${focusRing}`}
+					className={popoverTrigger({ as: "span" })}
 					{...triggerProps}
 				>
 					{children}
@@ -127,7 +138,7 @@ export const Popover = ({
 				<button
 					ref={setTriggerRef}
 					type="button"
-					className={`rounded-full ${focusRing}`}
+					className={popoverTrigger({ as: "button" })}
 					{...triggerProps}
 				>
 					{children}

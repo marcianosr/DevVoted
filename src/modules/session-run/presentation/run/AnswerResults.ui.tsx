@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import type { AnsweredPoll } from "~/modules/session-run/climb/sessionRun.model";
 import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
@@ -8,20 +9,38 @@ type AnswerResultsProps = {
 	answered: readonly AnsweredPoll[];
 };
 
+const resultMarker = cva("", {
+	variants: {
+		correct: {
+			true: "text-celadon",
+			false: "text-vermillion",
+		},
+	},
+});
+
+const resultRow = cva("flex items-start gap-2 rounded-lg p-3", {
+	variants: {
+		correct: {
+			true: "bg-celadon/10",
+			false: "bg-vermillion/10",
+		},
+	},
+});
+
 export const AnswerResults = ({ answered }: AnswerResultsProps) => (
 	<section className="flex flex-col gap-2">
 		<Title size="sm">Your answers</Title>
 		<ul className="flex flex-col gap-6">
 			{answered.map((poll, index) => {
 				const tone = poll.correct ? "celadon" : "vermillion";
-				const markerColor = poll.correct ? "text-celadon" : "text-vermillion";
-				const rowBg = poll.correct ? "bg-celadon/10" : "bg-vermillion/10";
 				return (
 					<li
 						key={`${poll.id}-${index}`}
-						className={`flex items-start gap-2 rounded-lg p-3 ${rowBg}`}
+						className={resultRow({ correct: poll.correct })}
 					>
-						<span className={markerColor}>{poll.correct ? "✓" : "✕"}</span>
+						<span className={resultMarker({ correct: poll.correct })}>
+							{poll.correct ? "✓" : "✕"}
+						</span>
 						{/* The category swatch stands in for its name, inline before the
 						    question; the coverage legend below decodes the colors. */}
 						<div className="flex min-w-0 flex-col gap-1">
@@ -33,7 +52,9 @@ export const AnswerResults = ({ answered }: AnswerResultsProps) => (
 									{poll.question}
 								</Paragraph>
 							</span>
-							<ul className={`list-disc pl-5 ${markerColor}`}>
+							<ul
+								className={`list-disc pl-5 ${resultMarker({ correct: poll.correct })}`}
+							>
 								{poll.picked.map((pick, pickIndex) => (
 									<li key={`${pick}-${pickIndex}`}>
 										<Paragraph tone={tone}>{pick}</Paragraph>

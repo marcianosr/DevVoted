@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import type { ReactNode } from "react";
 import {
 	type Config,
@@ -8,7 +9,7 @@ import type {
 	CheckStatus,
 } from "~/modules/session-run/configs/effect.model";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { STATE_ROW, STATE_TEXT } from "./checkStateStyles";
+import { stateRow, stateText } from "./checkStateStyles";
 
 const STATE_ICON: Record<CheckState, string> = {
 	running: "●",
@@ -17,14 +18,23 @@ const STATE_ICON: Record<CheckState, string> = {
 	failed: "✕",
 };
 
-const STATE_BOX: Record<CheckState, string> = {
-	running: "border-saffron divide-saffron/25",
-	skipped: "border-zinc-700 divide-zinc-800",
-	success: "border-viridian divide-viridian/25",
-	failed: "border-cinnabar divide-cinnabar/25",
-};
+const NEUTRAL_TONE = "neutral";
+type BoxTone = CheckState | typeof NEUTRAL_TONE;
 
-const NEUTRAL_BOX = "border-zinc-700 divide-zinc-800";
+const pipelineBox = cva("", {
+	variants: {
+		tone: {
+			running: "border-saffron divide-saffron/25",
+			skipped: "border-zinc-700 divide-zinc-800",
+			success: "border-viridian divide-viridian/25",
+			failed: "border-cinnabar divide-cinnabar/25",
+			neutral: "border-zinc-700 divide-zinc-800",
+		} satisfies Record<BoxTone, string>,
+	},
+	defaultVariants: {
+		tone: NEUTRAL_TONE,
+	},
+});
 
 const uniformState = (
 	checks: readonly CheckStatus[]
@@ -48,12 +58,14 @@ type PipelineRow = {
 
 const PipelineRowList = ({
 	rows,
-	boxClass = NEUTRAL_BOX,
+	boxClass,
 }: {
 	rows: readonly PipelineRow[];
 	boxClass?: string;
 }) => (
-	<ul className={`divide-y overflow-hidden rounded-xl border ${boxClass}`}>
+	<ul
+		className={`divide-y overflow-hidden rounded-xl border ${boxClass ?? pipelineBox({})}`}
+	>
 		{rows.map((row) => (
 			<li
 				key={row.key}
@@ -81,7 +93,7 @@ export const CheckList = ({ checks, configs }: CheckListProps) => {
 	const tone = uniformState(checks);
 	return (
 		<PipelineRowList
-			boxClass={tone ? STATE_BOX[tone] : NEUTRAL_BOX}
+			boxClass={pipelineBox({ tone })}
 			rows={checks.map((check) => {
 				const source = configs.find(
 					(config) => config.id === check.sourceConfigId
@@ -89,7 +101,7 @@ export const CheckList = ({ checks, configs }: CheckListProps) => {
 				return {
 					key: check.label,
 					icon: (
-						<span className={STATE_TEXT[check.state]}>
+						<span className={stateText({ state: check.state })}>
 							{STATE_ICON[check.state]}
 						</span>
 					),
@@ -99,9 +111,11 @@ export const CheckList = ({ checks, configs }: CheckListProps) => {
 					text: source
 						? describeConfig(source)
 						: (check.description ?? check.label),
-					rowClass: STATE_ROW[check.state],
+					rowClass: stateRow({ state: check.state }),
 					trailing: (
-						<span className={STATE_TEXT[check.state]}>{check.progress}</span>
+						<span className={stateText({ state: check.state })}>
+							{check.progress}
+						</span>
 					),
 				};
 			})}

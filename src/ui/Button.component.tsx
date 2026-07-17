@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
 type ButtonVariant = "primary" | "secondary" | "theme" | "danger";
@@ -12,19 +13,49 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	isLoading?: boolean;
 };
 
-const SIZE: Record<ButtonSize, string> = {
-	default: "text-base px-6 py-3.5",
-	small: "text-sm px-3 py-2",
-};
-
-const OUTLINE = "border-2 px-4 py-2 text-sm";
-const OUTLINE_VARIANT: Record<Exclude<ButtonVariant, "primary">, string> = {
-	secondary:
-		"border-blue-500 text-white hover:bg-blue-500/40 disabled:bg-blue-200",
-	theme:
-		"border-theme text-theme hover:bg-theme hover:text-black disabled:opacity-40",
-	danger: "border-red-500 text-white hover:bg-red-500/40 disabled:bg-red-200",
-};
+const button = cva(
+	"rounded cursor-pointer transition-colors disabled:cursor-not-allowed",
+	{
+		variants: {
+			variant: {
+				primary: "",
+				secondary:
+					"border-2 px-4 py-2 text-sm border-blue-500 text-white hover:bg-blue-500/40 disabled:bg-blue-200",
+				theme:
+					"border-2 px-4 py-2 text-sm border-theme text-theme hover:bg-theme hover:text-black disabled:opacity-40",
+				danger:
+					"border-2 px-4 py-2 text-sm border-red-500 text-white hover:bg-red-500/40 disabled:bg-red-200",
+			},
+			size: {
+				default: "",
+				small: "",
+			},
+			isDisabled: {
+				true: "",
+				false: "",
+			},
+		},
+		compoundVariants: [
+			{ variant: "primary", size: "default", class: "text-base px-6 py-3.5" },
+			{ variant: "primary", size: "small", class: "text-sm px-3 py-2" },
+			{
+				variant: "primary",
+				isDisabled: true,
+				class: "bg-zinc-800 text-gray-500",
+			},
+			{
+				variant: "primary",
+				isDisabled: false,
+				class: "bg-theme text-black hover:opacity-90",
+			},
+		],
+		defaultVariants: {
+			variant: "primary",
+			size: "default",
+			isDisabled: false,
+		},
+	}
+);
 
 export const Button = ({
 	children,
@@ -37,25 +68,12 @@ export const Button = ({
 	...props
 }: ButtonProps) => {
 	const isDisabled = disabled || isLoading;
-	const variantClass =
-		variant === "primary"
-			? clsx(
-					SIZE[size],
-					isDisabled
-						? "bg-zinc-800 text-gray-500"
-						: "bg-theme text-black hover:opacity-90"
-				)
-			: clsx(OUTLINE, OUTLINE_VARIANT[variant]);
 
 	return (
 		<button
 			type={type}
 			disabled={isDisabled}
-			className={clsx(
-				"rounded cursor-pointer transition-colors disabled:cursor-not-allowed",
-				variantClass,
-				className
-			)}
+			className={clsx(button({ variant, size, isDisabled }), className)}
 			{...props}
 		>
 			{children}

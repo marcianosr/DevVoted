@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { useState, type ReactNode } from "react";
 
 type SummaryDropdownProps = {
@@ -5,6 +6,15 @@ type SummaryDropdownProps = {
 	children: ReactNode;
 	panelClassName?: string;
 };
+
+const chevron = cva("text-pewter transition-transform", {
+	variants: {
+		open: {
+			true: "rotate-180",
+			false: "",
+		},
+	},
+});
 
 export const SummaryDropdown = ({
 	trigger,
@@ -20,11 +30,7 @@ export const SummaryDropdown = ({
 				className="flex cursor-pointer items-center gap-1.5"
 			>
 				{trigger}
-				<span
-					className={`text-pewter transition-transform ${open ? "rotate-180" : ""}`}
-				>
-					▾
-				</span>
+				<span className={chevron({ open })}>▾</span>
 			</button>
 			{open ? (
 				<div

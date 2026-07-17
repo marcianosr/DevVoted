@@ -1,9 +1,10 @@
+import { cva } from "class-variance-authority";
 import type {
 	ConfigRole,
 	RoleRow,
 } from "~/modules/session-run/gate/configRole.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { STATE_ROW, STATE_TEXT } from "./checkStateStyles";
+import { stateRow, stateText } from "./checkStateStyles";
 
 const ROLE_LABEL: Record<ConfigRole, string> = {
 	requirement: "Requirement",
@@ -11,18 +12,33 @@ const ROLE_LABEL: Record<ConfigRole, string> = {
 	perk: "Perk",
 };
 
-const ROLE_BADGE: Record<ConfigRole, string> = {
-	requirement: "bg-cinnabar text-white",
-	conditional: "bg-pewter text-black",
-	perk: "bg-viridian text-black",
-};
+const roleBadge = cva(
+	"shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+	{
+		variants: {
+			role: {
+				requirement: "bg-cinnabar text-white",
+				conditional: "bg-pewter text-black",
+				perk: "bg-viridian text-black",
+			} satisfies Record<ConfigRole, string>,
+		},
+	}
+);
 
 const RoleBadge = ({ role }: { role: ConfigRole }) => (
-	<span
-		className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${ROLE_BADGE[role]}`}
-	>
-		{ROLE_LABEL[role]}
-	</span>
+	<span className={roleBadge({ role })}>{ROLE_LABEL[role]}</span>
+);
+
+const removeButton = cva(
+	"shrink-0 cursor-pointer text-lg text-pewter transition-colors hover:text-cinnabar",
+	{
+		variants: {
+			hasStatus: {
+				true: "",
+				false: "ml-auto",
+			},
+		},
+	}
 );
 
 type RoleListProps = {
@@ -35,7 +51,7 @@ export const RoleList = ({ rows, onRemove }: RoleListProps) => (
 		{rows.map((row) => (
 			<li
 				key={row.config.id}
-				className={`flex items-center gap-3 px-4 py-3 ${row.state ? STATE_ROW[row.state] : ""}`}
+				className={`flex items-center gap-3 px-4 py-3 ${stateRow({ state: row.state })}`}
 			>
 				<RoleBadge role={row.role} />
 				<Paragraph className="min-w-0 text-sm text-white">
@@ -43,7 +59,7 @@ export const RoleList = ({ rows, onRemove }: RoleListProps) => (
 				</Paragraph>
 				{row.status ? (
 					<span
-						className={`ml-auto shrink-0 text-sm font-bold ${row.state ? STATE_TEXT[row.state] : "text-pewter"}`}
+						className={`ml-auto shrink-0 text-sm font-bold ${row.state ? stateText({ state: row.state }) : "text-pewter"}`}
 					>
 						{row.status}
 					</span>
@@ -53,7 +69,7 @@ export const RoleList = ({ rows, onRemove }: RoleListProps) => (
 						type="button"
 						onClick={() => onRemove(row.config.id)}
 						aria-label={`Remove ${row.config.label}`}
-						className={`shrink-0 cursor-pointer text-lg text-pewter transition-colors hover:text-cinnabar ${row.status ? "" : "ml-auto"}`}
+						className={removeButton({ hasStatus: Boolean(row.status) })}
 					>
 						✕
 					</button>

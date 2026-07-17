@@ -1,4 +1,23 @@
+import { cva } from "class-variance-authority";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
+
+const optionLabel = cva("", {
+	variants: {
+		correct: {
+			true: "font-bold text-viridian",
+			false: "text-white",
+		},
+	},
+});
+
+const barFill = cva("block h-full rounded-full", {
+	variants: {
+		correct: {
+			true: "bg-viridian",
+			false: "bg-zinc-600",
+		},
+	},
+});
 
 export type CommunityOption = {
 	id: string;
@@ -25,11 +44,7 @@ export const CommunityAnswers = ({
 			{options.map((option) => (
 				<li key={option.id} className="flex flex-col gap-1">
 					<span className="flex items-baseline justify-between gap-2 text-sm">
-						<span
-							className={
-								option.correct ? "font-bold text-viridian" : "text-white"
-							}
-						>
+						<span className={optionLabel({ correct: Boolean(option.correct) })}>
 							{option.label}
 							{option.chosen ? (
 								<span className="ml-2 text-xs text-zinc-400">you</span>
@@ -41,7 +56,7 @@ export const CommunityAnswers = ({
 					</span>
 					<span className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
 						<span
-							className={`block h-full rounded-full ${option.correct ? "bg-viridian" : "bg-zinc-600"}`}
+							className={barFill({ correct: Boolean(option.correct) })}
 							style={{ width: `${clampPercent(option.percentage)}%` }}
 						/>
 					</span>

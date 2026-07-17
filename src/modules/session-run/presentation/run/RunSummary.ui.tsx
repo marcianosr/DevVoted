@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { StatBadge } from "./StatBadge.ui";
@@ -9,6 +10,15 @@ type RunSummaryProps = {
 	storage: number;
 };
 
+const outcomeBanner = cva("rounded-xl border p-6", {
+	variants: {
+		won: {
+			true: "border-viridian bg-viridian/30",
+			false: "border-cinnabar bg-cinnabar/30",
+		},
+	},
+});
+
 /** End-of-run outcome: summit or death, with the run's final stats. */
 export const RunSummary = ({
 	won,
@@ -17,9 +27,7 @@ export const RunSummary = ({
 	storage,
 }: RunSummaryProps) => (
 	<div className="flex flex-col gap-6">
-		<div
-			className={`rounded-xl border p-6 ${won ? "border-viridian bg-viridian/30" : "border-cinnabar bg-cinnabar/30"}`}
-		>
+		<div className={outcomeBanner({ won })}>
 			<Title>{won ? "You summited! 🟢" : "Run over. 💥"}</Title>
 			<Paragraph>
 				{won

@@ -1,22 +1,28 @@
 import type { ElementType, ReactNode } from "react";
 
+import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
+
 type ParagraphSize = "xs" | "sm";
 type ParagraphTone =
 	"default" | "theme" | "pewter" | "muted" | "celadon" | "vermillion";
 
-const SIZE_CLASS: Record<ParagraphSize, string> = {
-	xs: "text-xs",
-	sm: "text-sm",
-};
-
-const TONE_CLASS: Record<ParagraphTone, string> = {
-	default: "text-zinc-100",
-	theme: "text-theme",
-	pewter: "text-pewter",
-	celadon: "text-celadon",
-	vermillion: "text-vermillion",
-	muted: "text-zinc-400",
-};
+const paragraph = cva("tracking-tight", {
+	variants: {
+		size: {
+			xs: "text-xs",
+			sm: "text-sm",
+		} satisfies Record<ParagraphSize, string>,
+		tone: {
+			default: "text-zinc-100",
+			theme: "text-theme",
+			pewter: "text-pewter",
+			celadon: "text-celadon",
+			vermillion: "text-vermillion",
+			muted: "text-zinc-400",
+		} satisfies Record<ParagraphTone, string>,
+	},
+});
 
 type ParagraphProps = {
 	children: ReactNode;
@@ -33,9 +39,5 @@ export const Paragraph = ({
 	tone = "default",
 	className = "",
 }: ParagraphProps) => (
-	<Tag
-		className={`${SIZE_CLASS[size]} ${TONE_CLASS[tone]} tracking-tight ${className}`}
-	>
-		{children}
-	</Tag>
+	<Tag className={clsx(paragraph({ size, tone }), className)}>{children}</Tag>
 );

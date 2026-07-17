@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 
-import { clsx } from "clsx";
+import { cva } from "class-variance-authority";
 
 import { Button } from "./Button.component";
 import { Popover } from "./Popover.component";
@@ -21,16 +21,39 @@ export type ScreenAction = {
 	hint?: ReactNode;
 };
 
-const WIDTH_CLASSES: Record<ScreenWidth, string> = {
-	narrow: "sm:max-w-2xl",
-	default: "sm:max-w-5xl",
-	wide: "sm:max-w-5xl",
+const screenSection = cva("w-full mx-auto px-4 py-8", {
+	variants: {
+		width: {
+			narrow: "sm:max-w-2xl",
+			default: "sm:max-w-5xl",
+			wide: "sm:max-w-5xl",
+		} satisfies Record<ScreenWidth, string>,
+		center: {
+			true: "flex-1 flex flex-col justify-center",
+			false: "",
+		},
+	},
+});
+
+type FooterLayout = "both" | "right" | "left-or-none";
+
+const footerLayoutOf = (
+	left?: ScreenAction,
+	right?: ScreenAction
+): FooterLayout => {
+	if (left && right) return "both";
+	return right ? "right" : "left-or-none";
 };
 
-const footerJustify = (left?: ScreenAction, right?: ScreenAction) => {
-	if (left && right) return "justify-between";
-	return right ? "justify-end" : "justify-start";
-};
+const screenFooter = cva("mt-8 flex items-center", {
+	variants: {
+		layout: {
+			both: "justify-between",
+			right: "justify-end",
+			"left-or-none": "justify-start",
+		} satisfies Record<FooterLayout, string>,
+	},
+});
 
 type ScreenProps = {
 	children: ReactNode;
@@ -74,16 +97,14 @@ export const Screen = ({
 		<section
 			data-category-theme={categoryCode}
 			data-screen-transition={effectiveTransition}
-			className={clsx(
-				"w-full mx-auto px-4 py-8",
-				WIDTH_CLASSES[width],
-				center && "flex-1 flex flex-col justify-center"
-			)}
+			className={screenSection({ width, center })}
 		>
 			{children}
 			{(leftAction || rightAction) && (
 				<div
-					className={`mt-8 flex items-center ${footerJustify(leftAction, rightAction)}`}
+					className={screenFooter({
+						layout: footerLayoutOf(leftAction, rightAction),
+					})}
 				>
 					{leftAction && (
 						<Button
