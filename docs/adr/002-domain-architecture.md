@@ -1,9 +1,9 @@
-# ADR 002: Domain Architecture
+# ADR-002: Domain architecture
 
-**Status:** Accepted
-**Deciders:** Marciano
-**Date:** 2025-02-14
-**Updated:** 2026-07-17
+## Status
+
+Accepted — 2025-02-14, last updated 2026-07-17. Living document: owns module
+structure and naming for the whole app (ADR-007 defers to it).
 
 ## Context
 
@@ -11,7 +11,18 @@ File structure needs to stay low-cognitive-load, layered, and support TanStack S
 
 ## Decision
 
-Domain-Driven Design + Screaming Architecture: features grouped by business domain, three-tier API layer per domain.
+Domain-oriented feature modules (screaming architecture): code grouped by business domain, layered **by convention** inside each module. This is deliberately *not* tactical DDD — no aggregates, repositories, or ports — but the layer responsibilities map cleanly:
+
+| Layer | Lives in | May import |
+|---|---|---|
+| Interface | `presentation/{concept}/`, `src/routes/`, `src/ui/` | application (server fns, hooks), models |
+| Application | `api/{domain}.ts`, `api/handlers.ts`, `services/`, `validation/` | domain, infrastructure |
+| Domain | `models/`, `utils/`, pure engines (reducers/functions) | other domain code only — never React, never Drizzle |
+| Infrastructure | `api/queries.ts`, `src/database/` | models (DTO conversion) |
+
+**The dependency rule**: imports point downward only (interface → application → domain), and infrastructure is reached only through the application layer. The domain layer stays framework-free so it is trivially unit-testable — ADR-007's "pure engine first" is this rule applied to session-run. Known concession vs. textbook DDD: handlers/services import concrete queries directly (no repository interfaces); acceptable until we ever need to swap infrastructure.
+
+**Enforcement**: `npm run lint:arch` (dependency-cruiser, config in `.dependency-cruiser.cjs`) fails on violations. Type-only imports across layers are allowed — types are contracts, not coupling; the rules bite on runtime imports.
 
 ### Top-level structure
 
@@ -44,10 +55,11 @@ src/modules/{domain}/
 │   ├── handlers.spec.ts
 │   ├── queries.ts        # Drizzle queries
 │   └── queries.spec.ts
-├── components/           # Domain components
+├── presentation/         # Smart components + hooks, colocated per concept
+│   └── {concept}/        #   e.g. gate/, shop/ — wiring only, zero HTML/CSS
 ├── data/                 # Static data, constants, fixtures
 ├── factories/            # Test/seed data factories
-├── hooks/                # Domain hooks
+├── hooks/                # Domain-wide hooks shared across concepts
 ├── models/               # Domain types + DTO conversions
 ├── view/                 # Viewmodels — UI-shaped projections built from one or more models for a specific screen/component
 ├── services/             # Business logic reused across handlers or domains
@@ -56,6 +68,8 @@ src/modules/{domain}/
 ```
 
 Create only the subfolders a domain actually needs — this is a menu, not a mandatory scaffold.
+
+> **Component placement (resolves ADR-007's open item, 2026-07-17):** smart components live in `presentation/{concept}/`, colocated with the hooks that only serve that concept. The older flat `components/` folder in legacy domains migrates opportunistically, same as `domains/` → `modules/`. Do not run both conventions inside one module.
 
 ## API layer flow
 
@@ -116,23 +130,25 @@ Why: server functions are hard to unit test (auth mocking); handlers are isolate
 
 | Type | Pattern | Folder |
 |---|---|---|
-| Component | `{Name}.ui.tsx` | `components/` |
-| Hook | `use{Name}.hook.ts` | `hooks/` |
+| UI component (HTML/CSS, plain props) | `{Name}.ui.tsx` | `src/ui/{domain}/` |
+| Smart component (wiring, no HTML/CSS) | `{Name}.component.tsx` | `presentation/{concept}/` |
+| Hook | `use{Name}.hook.ts` | `hooks/` or `presentation/{concept}/` |
 | Service | `{name}.service.ts` | `services/` |
 | Model / DTO | `{name}.model.ts` | `models/` |
 | Viewmodel | `{name}.viewmodel.ts` | `view/` |
 | Validation | `schemas.validation.ts` | `validation/` |
 | Factory | `{name}.factory.ts` | `factories/` |
 
-
+## Where code lives
 
 | Location | Use for |
 |---|---|
 | `src/services/` | Infrastructure (logging, caching), truly cross-cutting utilities |
 | `src/modules/*/services/` | Domain-specific business logic |
-| `src/ui/` | Pure presentational primitives, no business logic |
+| `src/ui/` | Global presentational primitives, no business logic |
+| `src/ui/{domain}/` | Domain-scoped presentational components, plain props only |
 | `src/components/` | Global components that may hold light logic (auth, navigation) |
-| `src/modules/*/components/` | Domain-specific components |
+| `src/modules/*/presentation/{concept}/` | Domain smart components — data wiring, zero HTML/CSS |
 
 ## Links
 

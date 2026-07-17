@@ -37,13 +37,16 @@ Existing runs default to `"calendar"`, preserving current behavior with no backf
 - **Positive**: the validated prototype logic ports into the `runs` domain largely intact; the daily poll path is untouched in Phase A; the change is a single additive, defaulted column (safe migration).
 - **Negative**: `mode` becomes an implicit filter contract — queries that must diverge by cadence have to remember to branch on it. Mitigated by keeping divergence confined to the poll-supply/answer-gating layer.
 
-## Resolved (2026-07-12) — Phase C unblocked
+## Resolved since acceptance
+
+**2026-07-12 — Phase C unblocked:**
 
 - **`polls_responses` uniqueness** `(poll_id, user_id, answer_date)`: **Resolved.** The one-answer-per-day rule applies to **daily/calendar responses only** (partial constraint `WHERE run_id IS NULL`). Session responses instead enforce **one answer per poll per run** (`(run_id, poll_id)`), so a run can freely replay past daily polls — including ones answered today — without tripping the daily guarantee. The practice bank is well-stocked for this (~475 real polls today vs. ~25 polls per run), so replay variety is ample.
 - **Daily poll ↔ runs coupling**: **Resolved — decouple.** The daily poll becomes "record answer + grant fuel + update leaderboard" and no longer touches `runsTable`. Runs are opt-in session things.
 - **In-flight run migration at cutover**: **Resolved.** Existing calendar runs are **let to finish** (read-only / no new gate mechanics changes); **no new calendar runs are created** after the switch. No wipe, no forced conversion.
 
+**Cadence, seed model, and session-window size** — resolved by [ADR-009](009-session-run-cadence-daily-seeded-shared-run.md): a run is a daily-seeded, *shared*, self-contained climb (same polls for everyone that day), self-paced, gate = 5 polls, up to ~10 gates, death waits for the next day's seed.
+
 ## Still open (deferred to their phases)
 
-- **Cadence, seed model, and session-window size**: **Resolved by [ADR-009](009-session-run-cadence-daily-seeded-shared-run.md)** — a run is a daily-seeded, *shared*, self-contained climb (same polls for everyone that day), self-paced, gate = 5 polls, up to ~10 gates, death waits for the next day's seed.
-- **Fuel currency shape** (leaning: it *is* storage, the run currency from ADR-006) and **leaderboard shape/volume**: still open (see ADR-009's open list).
+- **Fuel currency shape** (leaning: it *is* storage, the run currency from ADR-006) and **leaderboard shape/volume** — see ADR-009's open list.
