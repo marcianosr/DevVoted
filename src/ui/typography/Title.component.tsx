@@ -7,6 +7,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import { categoryTheme } from "../theme/categoryTheme";
 
 type TitleSize = "lg" | "md" | "sm";
+type TitleTone = "default" | "theme" | "gradient";
 
 const title = cva("tracking-tight font-extrabold leading-8", {
 	variants: {
@@ -15,10 +16,11 @@ const title = cva("tracking-tight font-extrabold leading-8", {
 			md: "text-2xl",
 			sm: "text-lg",
 		} satisfies Record<TitleSize, string>,
-		themed: {
-			true: "text-theme",
-			false: "text-zinc-100",
-		},
+		tone: {
+			default: "text-zinc-100",
+			theme: "text-theme",
+			gradient: "text-gradient-green",
+		} satisfies Record<TitleTone, string>,
 	},
 });
 
@@ -27,6 +29,8 @@ type TitleProps = {
 	category?: CategoryCode;
 	as?: "h1" | "h2" | "h3";
 	size?: TitleSize;
+	/** A category always themes the title; tone only applies without one. */
+	tone?: Exclude<TitleTone, "theme">;
 	className?: string;
 };
 
@@ -35,6 +39,7 @@ export const Title = ({
 	category,
 	as = "h1",
 	size = "lg",
+	tone = "default",
 	className = "",
 }: TitleProps) => {
 	const Tag = as;
@@ -42,7 +47,10 @@ export const Title = ({
 	return (
 		<Tag
 			{...themeProps}
-			className={clsx(title({ size, themed: Boolean(category) }), className)}
+			className={clsx(
+				title({ size, tone: category ? "theme" : tone }),
+				className
+			)}
 		>
 			{children}
 		</Tag>

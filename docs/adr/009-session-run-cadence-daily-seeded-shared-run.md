@@ -33,9 +33,9 @@ Each day a **single seed** produces one poll sequence, **identical for every pla
 
 The player advances the seed at their own pace — answer one poll and stop, or climb deep in one sitting — resuming the same seed any time that day. Each poll of the seed is **answered once** (no re-answering), keeping per-poll community splits honest. Stopping mid-gate is fine; the gate is only judged on a completed 5-poll window (ADR-006 Decision 2).
 
-### 3. Gate = 5 polls; climb up to ~10 gates; death waits for the next seed
+### 3. Gate = 5 polls; climb to the summit gate; death waits for the next seed
 
-The daily "bite" is **one gate = 5 polls** — finishable in ~2 minutes, the suggested casual dose. Keen players keep climbing: gates escalate up to a soft cap (**10 for now**, tunable), with the shop/escalation/strip-on-fail loop of ADR-006 between gates. Death ends today's climb; the answers already given remain recorded (content is never "burned" — a poll answered in a run is unique per `(run_id, poll_id)`, so future seeds may reuse it, per ADR-005).
+The daily "bite" is **one gate = 5 polls** — finishable in ~2 minutes, the suggested casual dose. Keen players keep climbing: gates escalate up to a soft cap (`VICTORY_GATE` in `src/modules/session-run/rules.model.ts`, currently 5 — live-tuned), with the shop/escalation/strip-on-fail loop of ADR-006 between gates. Death ends today's climb; the answers already given remain recorded (content is never "burned" — a poll answered in a run is unique per `(run_id, poll_id)`, so future seeds may reuse it, per ADR-005).
 
 ### 4. Category configs bias value, not frequency
 
@@ -47,7 +47,7 @@ Since everyone shares the seed, community data is rich and per-poll: for any pol
 
 ## Consequences
 
-- **Positive**: the social layer works as intended — same polls, same day, directly comparable answers. Death is never catastrophic. Balance is tractable (a bounded ~10-gate run). ADR-006's mechanics port in unchanged; ADR-005's two loops are preserved.
+- **Positive**: the social layer works as intended — same polls, same day, directly comparable answers. Death is never catastrophic. Balance is tractable (a bounded `VICTORY_GATE`-gate run). ADR-006's mechanics port in unchanged; ADR-005's two loops are preserved.
 - **Negative**: no "make my categories appear more often" config — a mechanic from the earlier calendar model is dropped. Mitigated by Decision 4 (value-based category identity). Also: the daily seed is a genuine **content dependency** — up to ~50 polls/day drawn from the pool; acceptable given ~475 pooled polls and cross-day reuse, but it sets a content-authoring floor.
 - The seed generator becomes authority: it must be deterministic per (date) and shared, and it defines the run's poll supply and ordering — a backend concern (see DVTD-ay5e).
 
@@ -55,4 +55,4 @@ Since everyone shares the seed, community data is rich and per-poll: for any pol
 
 - **Fuel**: whether starting a run costs fuel earned from the daily poll (ADR-005 leaned "fuel = storage"); not required for the cadence to work.
 - **Leaderboard shape** (deepest gate vs score) and **retry/monetization** (pay to revive past a death within today's seed — the reframed DVTD-uret lever).
-- **Exact seed length / gate cap** tuning (10 is a placeholder), and **seed ordering** (difficulty curve, category spread).
+- **Exact seed length / gate cap** tuning (`VICTORY_GATE` is a live-tuned placeholder), and **seed ordering** (difficulty curve, category spread).

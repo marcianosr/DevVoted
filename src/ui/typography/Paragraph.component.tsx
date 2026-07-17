@@ -5,7 +5,13 @@ import { clsx } from "clsx";
 
 type ParagraphSize = "xs" | "sm";
 type ParagraphTone =
-	"default" | "theme" | "pewter" | "muted" | "celadon" | "vermillion";
+	| "default"
+	| "theme"
+	| "pewter"
+	| "muted"
+	| "celadon"
+	| "vermillion"
+	| "gradient";
 
 const paragraph = cva("tracking-tight", {
 	variants: {
@@ -20,6 +26,7 @@ const paragraph = cva("tracking-tight", {
 			celadon: "text-celadon",
 			vermillion: "text-vermillion",
 			muted: "text-zinc-400",
+			gradient: "text-gradient-green",
 		} satisfies Record<ParagraphTone, string>,
 	},
 });

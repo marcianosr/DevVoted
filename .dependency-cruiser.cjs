@@ -33,10 +33,13 @@ module.exports = {
 		{
 			name: "interface-not-into-queries",
 			comment:
-				"Presentation and routes reach data through server functions/handlers, never queries directly — ADR-002 dependency rule",
+				"Presentation and routes reach data through server functions/handlers, never queries directly — ADR-002 dependency rule. Type-only imports are contracts and stay allowed.",
 			severity: "error",
 			from: { path: "/presentation/|^src/routes/" },
-			to: { path: "/api/queries" },
+			to: {
+				path: "/api/queries",
+				dependencyTypesNot: ["type-only"],
+			},
 		},
 		{
 			name: "ui-stays-presentational",

@@ -7,14 +7,22 @@ type StatBadgeProps = {
 	label: string;
 	value: ReactNode;
 	category?: CategoryCode;
+	valueTone?: "theme" | "gradient";
 };
 
-export const StatBadge = ({ label, value, category }: StatBadgeProps) => {
+export const StatBadge = ({
+	label,
+	value,
+	category,
+	valueTone = "theme",
+}: StatBadgeProps) => {
 	const themed = category ? categoryTheme(category) : {};
+	const valueColor =
+		valueTone === "gradient" ? "text-gradient-green" : "text-theme";
 	return (
 		<div className="flex flex-col" {...themed}>
 			<Subtitle>{label}</Subtitle>
-			<span className="text-theme text-xl font-extrabold">{value}</span>
+			<span className={`${valueColor} text-xl font-extrabold`}>{value}</span>
 		</div>
 	);
 };

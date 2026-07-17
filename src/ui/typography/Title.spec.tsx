@@ -31,4 +31,22 @@ describe("Title", () => {
 			"text-zinc-100"
 		);
 	});
+
+	it("renders the gradient tone", () => {
+		render(<Title tone="gradient">Gate #3 cleared!</Title>);
+		expect(
+			screen.getByRole("heading", { name: "Gate #3 cleared!" })
+		).toHaveClass("text-gradient-green");
+	});
+
+	it("lets a category win over the gradient tone", () => {
+		render(
+			<Title category="js" tone="gradient">
+				JavaScript
+			</Title>
+		);
+		const heading = screen.getByRole("heading", { name: "JavaScript" });
+		expect(heading).toHaveClass("text-theme");
+		expect(heading).not.toHaveClass("text-gradient-green");
+	});
 });

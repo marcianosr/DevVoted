@@ -21,3 +21,11 @@ export const CategoryAccent: Story = {
 		as: "h1",
 	},
 };
+
+export const Gradient: Story = {
+	args: {
+		children: "Gate #3 cleared!",
+		tone: "gradient",
+		as: "h2",
+	},
+};

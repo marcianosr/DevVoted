@@ -45,7 +45,7 @@ Existing runs default to `"calendar"`, preserving current behavior with no backf
 - **Daily poll ↔ runs coupling**: **Resolved — decouple.** The daily poll becomes "record answer + grant fuel + update leaderboard" and no longer touches `runsTable`. Runs are opt-in session things.
 - **In-flight run migration at cutover**: **Resolved.** Existing calendar runs are **let to finish** (read-only / no new gate mechanics changes); **no new calendar runs are created** after the switch. No wipe, no forced conversion.
 
-**Cadence, seed model, and session-window size** — resolved by [ADR-009](009-session-run-cadence-daily-seeded-shared-run.md): a run is a daily-seeded, *shared*, self-contained climb (same polls for everyone that day), self-paced, gate = 5 polls, up to ~10 gates, death waits for the next day's seed.
+**Cadence, seed model, and session-window size** — resolved by [ADR-009](009-session-run-cadence-daily-seeded-shared-run.md): a run is a daily-seeded, *shared*, self-contained climb (same polls for everyone that day), self-paced, gate = 5 polls, summit at `VICTORY_GATE` gates (live-tuned constant in `rules.model.ts`), death waits for the next day's seed.
 
 ## Still open (deferred to their phases)
 

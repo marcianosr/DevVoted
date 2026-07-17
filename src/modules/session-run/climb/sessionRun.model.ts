@@ -254,7 +254,7 @@ const closeWindow = (state: SessionState, nextIndex: number): SessionState => {
 		status: "rewarding",
 		log: withLog(
 			state,
-			`Gate ${gateNumber} cleared! +${reward}KB — take one reward.`
+			`Gate ${gateNumber} cleared! +${reward}KB — spend it in the shop.`
 		),
 	};
 };

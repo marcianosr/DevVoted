@@ -1,4 +1,3 @@
-import { GradientText } from "~/ui/typography/GradientText.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 
@@ -24,9 +23,9 @@ export const RunStakes = ({ gateReward }: RunStakesProps) => (
 			<li>
 				<Paragraph size="sm">
 					Clear the gate by letting your pipelines succeed and receive rewards{" "}
-					<GradientText className="font-black">
+					<Paragraph as="span" size="sm" tone="gradient" className="font-black">
 						+{gateReward}KB storage
-					</GradientText>
+					</Paragraph>
 				</Paragraph>
 			</li>
 		</ul>

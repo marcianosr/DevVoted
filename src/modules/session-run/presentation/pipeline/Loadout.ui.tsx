@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Config } from "~/modules/session-run/configs/config.model";
-import { GradientText } from "~/ui/typography/GradientText.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import type { ChipAction } from "../configs/ConfigActions.ui";
@@ -35,8 +35,11 @@ export const Loadout = ({
 			</Title>
 			{gateReward !== undefined ? (
 				<Subtitle>
-					Clears for <GradientText>{gateReward}KB</GradientText> — heavier
-					requirements pay more, easier builds pay less
+					Clears for{" "}
+					<Paragraph as="span" size="sm" tone="gradient">
+						{gateReward}KB
+					</Paragraph>{" "}
+					— heavier requirements pay more, easier builds pay less
 				</Subtitle>
 			) : (
 				<Subtitle>Your configured pipeline requirements and perks</Subtitle>

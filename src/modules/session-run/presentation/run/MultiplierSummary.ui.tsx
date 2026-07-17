@@ -1,4 +1,3 @@
-import { GradientText } from "~/ui/typography/GradientText.component";
 import { StatBadge } from "./StatBadge.ui";
 
 type MultiplierSummaryProps = {
@@ -15,7 +14,8 @@ export const MultiplierSummary = ({
 	<div className="flex flex-wrap gap-8">
 		<StatBadge
 			label="Reward multiplier"
-			value={<GradientText>×{rewardMultiplier}</GradientText>}
+			value={`×${rewardMultiplier}`}
+			valueTone="gradient"
 		/>
 		<StatBadge
 			label="Coverage multiplier"

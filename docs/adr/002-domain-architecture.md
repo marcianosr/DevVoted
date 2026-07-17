@@ -43,7 +43,7 @@ src/
 └── utils/        # Legacy
 ```
 
-> `domains/` → `modules/` is an in-progress rename. New domains go under `modules/`; existing ones under `domains/` migrate opportunistically, not as a big-bang rewrite.
+> `domains/` → `modules/` is an in-progress rename. New domains go under `modules/`; existing ones under `domains/` migrate opportunistically, not as a big-bang rewrite. Note the migration currently includes **sanctioned duplication**: `modules/session-run/` is a rebuild of `domains/runs/prototype/` and both live in the tree until the old run UI retires (ADR-007).
 
 ### Domain structure
 
@@ -55,8 +55,10 @@ src/modules/{domain}/
 │   ├── handlers.spec.ts
 │   ├── queries.ts        # Drizzle queries
 │   └── queries.spec.ts
-├── presentation/         # Smart components + hooks, colocated per concept
-│   └── {concept}/        #   e.g. gate/, shop/ — wiring only, zero HTML/CSS
+├── presentation/         # Per-concept UI — tier split is per FILE (ADR-010)
+│   └── {concept}/        #   e.g. gate/, shop/ — {Name}.ui.tsx visuals (plain
+│                         #   props, Story each) + {Name}.component.tsx wiring
+│                         #   and hooks (zero HTML/CSS)
 ├── data/                 # Static data, constants, fixtures
 ├── factories/            # Test/seed data factories
 ├── hooks/                # Domain-wide hooks shared across concepts
@@ -67,9 +69,9 @@ src/modules/{domain}/
 └── validation/           # Zod schemas
 ```
 
-Create only the subfolders a domain actually needs — this is a menu, not a mandatory scaffold.
+Create only the subfolders a domain actually needs — this is a menu, not a mandatory scaffold. A domain-logic-heavy module may also **colocate models per concept** instead of a flat `models/` folder — `session-run` does this (`gate/gate.model.ts`, `pipeline/pipeline.model.ts`, `configs/config.model.ts`, top-level `rules.model.ts`); the `.model.ts` suffix is the contract, the folder is layout.
 
-> **Component placement (resolves ADR-007's open item, 2026-07-17):** smart components live in `presentation/{concept}/`, colocated with the hooks that only serve that concept. The older flat `components/` folder in legacy domains migrates opportunistically, same as `domains/` → `modules/`. Do not run both conventions inside one module.
+> **Component placement (resolves ADR-007's open item, 2026-07-17):** a concept's UI lives in `presentation/{concept}/` — Tier 1 `{Name}.ui.tsx` visuals colocated with the Tier 2 `{Name}.component.tsx` wiring and hooks that serve only that concept. The two-tier split (ADR-010) is **per file, never per directory**. The older flat `components/` folder in legacy domains migrates opportunistically, same as `domains/` → `modules/`. Do not run both conventions inside one module.
 
 ## API layer flow
 
@@ -130,11 +132,12 @@ Why: server functions are hard to unit test (auth mocking); handlers are isolate
 
 | Type | Pattern | Folder |
 |---|---|---|
-| UI component (HTML/CSS, plain props) | `{Name}.ui.tsx` | `src/ui/{domain}/` |
+| UI component (HTML/CSS, plain props) | `{Name}.ui.tsx` | `presentation/{concept}/` (module visuals) or `src/ui/{domain}/` (legacy domain visuals) |
 | Smart component (wiring, no HTML/CSS) | `{Name}.component.tsx` | `presentation/{concept}/` |
+| Global primitive (legacy naming) | `{Name}.component.tsx` | `src/ui/` — presentational despite the suffix; rename to `.ui.tsx` opportunistically |
 | Hook | `use{Name}.hook.ts` | `hooks/` or `presentation/{concept}/` |
 | Service | `{name}.service.ts` | `services/` |
-| Model / DTO | `{name}.model.ts` | `models/` |
+| Model / DTO | `{name}.model.ts` | `models/` or colocated in `{concept}/` |
 | Viewmodel | `{name}.viewmodel.ts` | `view/` |
 | Validation | `schemas.validation.ts` | `validation/` |
 | Factory | `{name}.factory.ts` | `factories/` |
@@ -148,7 +151,7 @@ Why: server functions are hard to unit test (auth mocking); handlers are isolate
 | `src/ui/` | Global presentational primitives, no business logic |
 | `src/ui/{domain}/` | Domain-scoped presentational components, plain props only |
 | `src/components/` | Global components that may hold light logic (auth, navigation) |
-| `src/modules/*/presentation/{concept}/` | Domain smart components — data wiring, zero HTML/CSS |
+| `src/modules/*/presentation/{concept}/` | Concept UI: `.ui.tsx` visuals (plain props) + `.component.tsx` wiring (zero HTML/CSS) |
 
 ## Links
 

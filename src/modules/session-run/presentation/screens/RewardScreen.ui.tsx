@@ -3,7 +3,6 @@ import type { Config } from "~/modules/session-run/configs/config.model";
 import type { CheckStatus } from "~/modules/session-run/configs/effect.model";
 import { roleRows } from "~/modules/session-run/gate/configRole.model";
 import { roundToOneDecimal } from "~/modules/session-run/rules.model";
-import { GradientText } from "~/ui/typography/GradientText.component";
 import { Title } from "~/ui/typography/Title.component";
 import { RoleList } from "../gate/RoleList.ui";
 import { AnswerResults } from "../run/AnswerResults.ui";
@@ -33,9 +32,9 @@ export const RewardScreen = ({
 
 	return (
 		<div className="flex flex-col gap-6">
-			<GradientText as="h2" className="text-3xl font-extrabold tracking-tight">
+			<Title as="h2" tone="gradient">
 				Gate #{gatesCleared} cleared!
-			</GradientText>
+			</Title>
 
 			<section className="flex flex-col gap-3">
 				<Title as="h3" size="sm">
@@ -44,7 +43,8 @@ export const RewardScreen = ({
 				<div className="flex flex-wrap gap-8">
 					<StatBadge
 						label="Storage reward"
-						value={<GradientText>+{gateReward}KB</GradientText>}
+						value={`+${gateReward}KB`}
+						valueTone="gradient"
 					/>
 					<StatBadge
 						label="Coverage gained"
