@@ -3,7 +3,7 @@ import type {
 	GateTypeId,
 	PipelineSlot,
 } from "~/domains/runs/models/pipeline.model";
-import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
+import { DIFFICULTY_CLASSES } from "~/ui/runs/difficultyStyles";
 import { formatRequirement } from "~/domains/runs/utils/formatPipelineRequirement";
 import { CATEGORY_METADATA } from "~/domains/shared/categories";
 import {

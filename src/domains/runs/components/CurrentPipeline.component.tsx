@@ -4,7 +4,7 @@ import type {
 	PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { canCheckStillPass } from "~/domains/runs/utils/canCheckStillPass";
-import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
+import { DIFFICULTY_CLASSES } from "~/ui/runs/difficultyStyles";
 import {
 	formatRequirement,
 	getSlotLabel,

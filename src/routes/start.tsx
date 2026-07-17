@@ -18,7 +18,7 @@ import {
 import {
 	DIFFICULTY_CLASSES,
 	DIFFICULTY_LABEL,
-} from "~/domains/runs/utils/difficultyStyles";
+} from "~/ui/runs/difficultyStyles";
 import { formatStorage } from "~/lib/storage";
 import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
 import { Button } from "~/ui/Button.component";
