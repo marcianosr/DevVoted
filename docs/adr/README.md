@@ -1,0 +1,24 @@
+# Architecture Decision Records
+
+| # | Title | Status |
+|---|---|---|
+| [001](001-database-indexing-strategy.md) | Database indexing strategy | Accepted |
+| [002](002-domain-architecture.md) | Domain architecture | Accepted — living document, owns module structure/naming |
+| 003 | Domain restructure | Retired — removed during the run rebuild; ADR-002 owns structure now |
+| 004 | UI styling conventions | Retired — removed during the run rebuild; ADR-007 owns the design system now |
+| [005](005-session-runs.md) | Session runs and the two-loop model | Accepted — cadence questions resolved by 009 |
+| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — Decisions 1/7/10 amended or superseded by 008 |
+| [007](007-run-rebuild-conventions.md) | Run rebuild: design system and scope | Accepted |
+| [008](008-reward-shop-multibuy-coverage-gated-slots.md) | Reward shop: multi-buy, coverage-gated slots | Accepted — supersedes 006 Decision 7 |
+| [009](009-session-run-cadence-daily-seeded-shared-run.md) | Session-run cadence: daily-seeded shared run | Accepted — resolves 005's cadence questions |
+| [010](010-ui-layer-separation.md) | Two-tier UI separation (presentational vs composition) | Accepted — extracted from CLAUDE.md |
+
+## Conventions
+
+- Title: `# ADR-NNN: Title`, then a `## Status` section stating acceptance date
+  and any supersession, then `## Context` / `## Decision` / `## Consequences`.
+- Decisions are immutable history. A later ADR changes them **by reference**
+  (like ADR-008's Amendments section); the superseded spot gets an inline
+  `> ⚠ Amended/Superseded by ADR-NNN` marker so no reader acts on stale text.
+- Live-tuned numbers (thresholds, caps, costs) point to their source-of-truth
+  code file instead of being duplicated in the ADR.

@@ -1,6 +1,6 @@
-import { InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
-import { pollResponsesTable } from "@/src/database/schema";
+import type { pollResponsesTable } from "@/src/database/schema";
 
 export type PollResponseRecord = InferSelectModel<typeof pollResponsesTable>;
 

@@ -9,8 +9,12 @@ describe("Subtitle", () => {
 		expect(screen.getByText("Lead text")).toBeInTheDocument();
 	});
 
-	it("uses the muted lead style", () => {
+	it("uses the bold muted subtitle style", () => {
 		render(<Subtitle>Lead</Subtitle>);
-		expect(screen.getByText("Lead")).toHaveClass("text-lg", "text-zinc-400");
+		expect(screen.getByText("Lead")).toHaveClass(
+			"text-sm",
+			"font-bold",
+			"text-zinc-300"
+		);
 	});
 });

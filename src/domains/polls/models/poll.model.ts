@@ -1,6 +1,6 @@
-import { InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
-import { pollsTable } from "@/src/database/schema";
+import type { pollsTable } from "@/src/database/schema";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 import type { PollOption } from "./pollOption.model";

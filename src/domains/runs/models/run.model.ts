@@ -1,6 +1,6 @@
-import { InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
-import { runsTable } from "@/src/database/schema";
+import type { runsTable } from "@/src/database/schema";
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.model";
 import type {
 	PipelineSlot,

@@ -2,10 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 import { clsx } from "clsx";
 
-import {
-	DIFFICULTY_BG,
-	DIFFICULTY_LABEL,
-} from "~/domains/runs/utils/difficultyStyles";
+import { DIFFICULTY_BG, DIFFICULTY_LABEL } from "~/ui/runs/difficultyStyles";
 
 export type GatePathmapSlotDifficulty = "low" | "medium" | "high" | "critical";
 

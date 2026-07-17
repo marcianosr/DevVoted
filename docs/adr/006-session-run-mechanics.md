@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (design capture). **Partially superseded by [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md)**: Decision 7 ("pick exactly one" reward) is replaced by a multi-buy shop; Decision 1's slot cap is larger and live-tuned in `pipeline.model.ts` (not 5); Decision 10 gains the draft-config rarity cost as a documented sink. Validated in the throwaway prototype at `src/domains/runs/prototype/` and `src/routes/proto-session-slice.tsx` across multiple playtests ("still fun"). This ADR records the *decisions* the prototype settled so the production port has a north star. Depends on ADR-005 (session-run container) for the run it lives inside.
+Accepted (design capture). Decisions 1, 7, and 10 are amended or superseded by [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md) — see the ⚠ markers inline; ADR-008's Amendments section carries the details. Validated in the throwaway prototype (`src/domains/runs/prototype/`, multiple playtests: "still fun"); this ADR records the *decisions* the prototype settled so the production port has a north star. Depends on ADR-005 (session-run container).
 
 ## Context
 
@@ -15,6 +15,8 @@ A prior iteration tried **multiple pipelines** (each a different lens on the win
 ## Decision
 
 ### 1. One pipeline, not many
+
+> ⚠ **Amended by ADR-008**: the cap is `MAX_SLOTS` (live-tuned in `pipeline.model.ts`), not 5, and slots are earned by coverage.
 
 The player stacks **all** configs onto a single pipeline. It starts at **3 slots** and can grow to **5**. Slots are the scarcity that makes every config a real cut.
 
@@ -62,6 +64,8 @@ Miss a gate → the player **peels N configs of their choice** off the pipeline,
 
 ### 7. Rewards on a pass: pick exactly one
 
+> ⚠ **Superseded by ADR-008**: the reward screen is a multi-buy shop bounded by storage — there is no "pick exactly one".
+
 Clearing a non-final gate grants **one** reward:
 
 - **Draft a config** — 3 offered, slot one (a Focus dupe becomes an upgrade instead).
@@ -82,6 +86,8 @@ Configs carry a rarity — **common / uncommon / rare / legendary**. It rides th
 Rarity is **cosmetic only for now** — it does not yet affect draw odds or power.
 
 ### 10. Economy: storage as the run currency
+
+> ⚠ **Amended by ADR-008**: drafting a config costs storage on a rarity ramp (additional sink); slot width gates on coverage, not storage.
 
 - **Faucet**: gate-clear rewards (×multipliers) and IndexedDB (`+8KB`/correct).
 - **Sinks**: draft rebuild — cost is the literal **Fibonacci sequence in KB** (1, 2, 3, 5, 8, 13, 21, 34, …); on-demand lint (40KB).

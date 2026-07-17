@@ -8,7 +8,7 @@ import type {
 	PipelineEvaluation,
 	PipelineEvaluationContext,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import { DIFFICULTY_CLASSES } from "~/domains/runs/utils/difficultyStyles";
+import { DIFFICULTY_CLASSES } from "~/ui/runs/difficultyStyles";
 import {
 	formatRequirement,
 	getSlotLabel,
