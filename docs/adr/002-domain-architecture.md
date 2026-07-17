@@ -20,7 +20,7 @@ Domain-oriented feature modules (screaming architecture): code grouped by busine
 | Domain | `models/`, `utils/`, pure engines (reducers/functions) | other domain code only — never React, never Drizzle |
 | Infrastructure | `api/queries.ts`, `src/database/` | models (DTO conversion) |
 
-**The dependency rule**: imports point downward only (interface → application → domain), and infrastructure is reached only through the application layer. The domain layer stays framework-free so it is trivially unit-testable — ADR-007's "pure engine first" is this rule applied to session-run. Known concession vs. textbook DDD: handlers/services import concrete queries directly (no repository interfaces); acceptable until we ever need to swap infrastructure.
+**The dependency rule**: imports point downward only (interface → application → domain), and infrastructure is reached only through the application layer. The domain layer stays framework-free so it is trivially unit-testable — ADR-007's "pure engine first" is this rule applied to the `run` module. Known concession vs. textbook DDD: handlers/services import concrete queries directly (no repository interfaces); acceptable until we ever need to swap infrastructure.
 
 **Enforcement**: `npm run lint:arch` (dependency-cruiser, config in `.dependency-cruiser.cjs`) fails on violations. Type-only imports across layers are allowed — types are contracts, not coupling; the rules bite on runtime imports.
 
@@ -43,7 +43,7 @@ src/
 └── utils/        # Legacy
 ```
 
-> `domains/` → `modules/` is an in-progress rename. New domains go under `modules/`; existing ones under `domains/` migrate opportunistically, not as a big-bang rewrite. Note the migration currently includes **sanctioned duplication**: `modules/session-run/` is a rebuild of `domains/runs/prototype/` and both live in the tree until the old run UI retires (ADR-007).
+> `domains/` → `modules/` is an in-progress rename. New domains go under `modules/`; existing ones under `domains/` migrate opportunistically, not as a big-bang rewrite. Note the migration currently includes **sanctioned duplication**: `modules/run/` is a rebuild of `domains/runs/prototype/` and both live in the tree until the old run UI retires (ADR-007).
 
 ### Domain structure
 
@@ -69,7 +69,7 @@ src/modules/{domain}/
 └── validation/           # Zod schemas
 ```
 
-Create only the subfolders a domain actually needs — this is a menu, not a mandatory scaffold. A domain-logic-heavy module may also **colocate models per concept** instead of a flat `models/` folder — `session-run` does this (`gate/gate.model.ts`, `pipeline/pipeline.model.ts`, `configs/config.model.ts`, top-level `rules.model.ts`); the `.model.ts` suffix is the contract, the folder is layout.
+Create only the subfolders a domain actually needs — this is a menu, not a mandatory scaffold. A domain-logic-heavy module may also **colocate models per concept** instead of a flat `models/` folder — `run` does this (`gate/gate.model.ts`, `pipeline/pipeline.model.ts`, `configs/config.model.ts`, top-level `rules.model.ts`); the `.model.ts` suffix is the contract, the folder is layout.
 
 > **Component placement (resolves ADR-007's open item, 2026-07-17):** a concept's UI lives in `presentation/{concept}/` — Tier 1 `{Name}.ui.tsx` visuals colocated with the Tier 2 `{Name}.component.tsx` wiring and hooks that serve only that concept. The two-tier split (ADR-010) is **per file, never per directory**. The older flat `components/` folder in legacy domains migrates opportunistically, same as `domains/` → `modules/`. Do not run both conventions inside one module.
 

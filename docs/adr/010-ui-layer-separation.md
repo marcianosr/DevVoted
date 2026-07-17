@@ -37,7 +37,7 @@ tiers, but no file mixes them.
   query), call mutations, pass results as props to Tier 1.
 
 ```tsx
-// src/modules/session-run/presentation/poll/PollCard.ui.tsx — owns the HTML/CSS
+// src/modules/run/presentation/poll/PollCard.ui.tsx — owns the HTML/CSS
 export const PollCard = ({ question }: { question: string }) => (
   <div className="flex flex-col gap-4 p-6 rounded-xl bg-surface">
     <h2 className="text-lg font-bold">{question}</h2>

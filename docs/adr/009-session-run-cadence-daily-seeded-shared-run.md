@@ -35,7 +35,7 @@ The player advances the seed at their own pace — answer one poll and stop, or 
 
 ### 3. Gate = 5 polls; climb to the summit gate; death waits for the next seed
 
-The daily "bite" is **one gate = 5 polls** — finishable in ~2 minutes, the suggested casual dose. Keen players keep climbing: gates escalate up to a soft cap (`VICTORY_GATE` in `src/modules/session-run/rules.model.ts`, currently 5 — live-tuned), with the shop/escalation/strip-on-fail loop of ADR-006 between gates. Death ends today's climb; the answers already given remain recorded (content is never "burned" — a poll answered in a run is unique per `(run_id, poll_id)`, so future seeds may reuse it, per ADR-005).
+The daily "bite" is **one gate = 5 polls** — finishable in ~2 minutes, the suggested casual dose. Keen players keep climbing: gates escalate up to a soft cap (`VICTORY_GATE` in `src/modules/run/rules.model.ts`, currently 5 — live-tuned), with the shop/escalation/strip-on-fail loop of ADR-006 between gates. Death ends today's climb; the answers already given remain recorded (content is never "burned" — a poll answered in a run is unique per `(run_id, poll_id)`, so future seeds may reuse it, per ADR-005).
 
 ### 4. Category configs bias value, not frequency
 

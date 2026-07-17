@@ -4,6 +4,8 @@
 
 Accepted. Phase A (scaffolding) shipped; the three questions that blocked Phase C are now resolved (see below). Remaining open items are deferred to later phases, not blocking.
 
+> **Naming (2026-07-17):** the module and all UI are named plain **"run"** (`src/modules/run/`, `Run*` identifiers). "Session run" survives only as this ADR family's historical term for the concept — and as the `mode: "session"` column value, which is a schema discriminator, not product naming.
+
 ## Context
 
 DevVoted serves one daily poll per calendar day, and a "run" *is* that daily-poll stream: a run advances one poll per real day, gates evaluate every 5 polls, so a full run spans ~a month. This couples two experiences that want different rhythms:

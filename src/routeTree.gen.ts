@@ -13,7 +13,7 @@ import { Route as StatsRouteImport } from './routes/stats'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as ProtoSessionSliceRouteImport } from './routes/proto-session-slice'
-import { Route as ProtoSessionRunRouteImport } from './routes/proto-session-run'
+import { Route as ProtoRunRouteImport } from './routes/proto-run'
 import { Route as PresentationRouteImport } from './routes/presentation'
 import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
@@ -54,9 +54,9 @@ const ProtoSessionSliceRoute = ProtoSessionSliceRouteImport.update({
   path: '/proto-session-slice',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProtoSessionRunRoute = ProtoSessionRunRouteImport.update({
-  id: '/proto-session-run',
-  path: '/proto-session-run',
+const ProtoRunRoute = ProtoRunRouteImport.update({
+  id: '/proto-run',
+  path: '/proto-run',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PresentationRoute = PresentationRouteImport.update({
@@ -159,7 +159,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
-  '/proto-session-run': typeof ProtoSessionRunRoute
+  '/proto-run': typeof ProtoRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
@@ -184,7 +184,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
-  '/proto-session-run': typeof ProtoSessionRunRoute
+  '/proto-run': typeof ProtoRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
@@ -211,7 +211,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
-  '/proto-session-run': typeof ProtoSessionRunRoute
+  '/proto-run': typeof ProtoRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/start': typeof StartRoute
@@ -238,7 +238,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/presentation'
-    | '/proto-session-run'
+    | '/proto-run'
     | '/proto-session-slice'
     | '/sign-up'
     | '/start'
@@ -263,7 +263,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/presentation'
-    | '/proto-session-run'
+    | '/proto-run'
     | '/proto-session-slice'
     | '/sign-up'
     | '/start'
@@ -289,7 +289,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/presentation'
-    | '/proto-session-run'
+    | '/proto-run'
     | '/proto-session-slice'
     | '/sign-up'
     | '/start'
@@ -316,7 +316,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   LogoutRoute: typeof LogoutRoute
   PresentationRoute: typeof PresentationRoute
-  ProtoSessionRunRoute: typeof ProtoSessionRunRoute
+  ProtoRunRoute: typeof ProtoRunRoute
   ProtoSessionSliceRoute: typeof ProtoSessionSliceRoute
   SignUpRoute: typeof SignUpRoute
   StartRoute: typeof StartRoute
@@ -354,11 +354,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtoSessionSliceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/proto-session-run': {
-      id: '/proto-session-run'
-      path: '/proto-session-run'
-      fullPath: '/proto-session-run'
-      preLoaderRoute: typeof ProtoSessionRunRouteImport
+    '/proto-run': {
+      id: '/proto-run'
+      path: '/proto-run'
+      fullPath: '/proto-run'
+      preLoaderRoute: typeof ProtoRunRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/presentation': {
@@ -538,7 +538,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   LogoutRoute: LogoutRoute,
   PresentationRoute: PresentationRoute,
-  ProtoSessionRunRoute: ProtoSessionRunRoute,
+  ProtoRunRoute: ProtoRunRoute,
   ProtoSessionSliceRoute: ProtoSessionSliceRoute,
   SignUpRoute: SignUpRoute,
   StartRoute: StartRoute,
