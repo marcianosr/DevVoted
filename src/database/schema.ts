@@ -11,6 +11,7 @@ import {
 	text,
 	timestamp,
 	unique,
+	uniqueIndex,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
@@ -290,81 +291,167 @@ export const pollResponsesTable = pgTable(
  * - Players can have multiple runs over time
  * - Only one active run per user at a time
  */
-export const runsTable = pgTable("runs", {
-	id: serial("id").primaryKey(),
-	user_id: uuid("user_id")
-		.references(() => usersTable.id, { onDelete: "cascade" })
-		.notNull(),
-	season_id: integer("season_id").references(() => seasonsTable.id, {
-		onDelete: "set null",
-	}), // Nullable for backward compatibility with pre-season runs
-	status: runStatus("status").notNull().default("active"),
-	mode: varchar("mode", { length: 16 })
-		.notNull()
-		.default("calendar")
-		.$type<"calendar" | "session">(), // Run cadence (two-loop model, ADR-005): 'calendar' = legacy one-poll-per-day; 'session' = self-paced session run
-	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
-	injected_archive_bytes: integer("injected_archive_bytes")
-		.notNull()
-		.default(0), // Archive bytes spent at run-start to front-load storage_limit. Tracked separately so the breakdown UI can attribute it.
-	active_config_ids: json("active_config_ids")
-		.$type<string[]>()
-		.notNull()
-		.default([]), // Array of config IDs
-	rerolls: integer("rerolls").notNull().default(0), // Current poll session rerolls (resets each poll)
-	total_rerolls: integer("total_rerolls").notNull().default(0), // Total rerolls across entire run
-	reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
-	shop_skipped_date: varchar("shop_skipped_date", { length: 10 }), // Date when shop was skipped "YYYY-MM-DD"
-	shop_interacted_date: varchar("shop_interacted_date", { length: 10 }), // Date when user interacted with shop
-	deinstall_penalty: integer("deinstall_penalty").notNull().default(0), // Storage penalty from deinstalling configs
-	correct_polls_count: integer("correct_polls_count").notNull().default(0), // Number of correctly answered polls in this run
-	pipeline_slots: json("pipeline_slots")
-		.$type<
-			Array<{
-				gateTypeId: string;
-				difficulty: string;
-				requirement: object;
-				reward: number;
-			}>
-		>()
-		.notNull()
-		.default([]), // Active pipeline slots for the current run
-	pipeline_slot_snapshots: json("pipeline_slot_snapshots")
-		.$type<
-			Array<
+export const runsTable = pgTable(
+	"runs",
+	{
+		id: serial("id").primaryKey(),
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		season_id: integer("season_id").references(() => seasonsTable.id, {
+			onDelete: "set null",
+		}), // Nullable for backward compatibility with pre-season runs
+		status: runStatus("status").notNull().default("active"),
+		mode: varchar("mode", { length: 16 })
+			.notNull()
+			.default("calendar")
+			.$type<"calendar" | "session">(), // Run cadence (two-loop model, ADR-005): 'calendar' = legacy one-poll-per-day; 'session' = self-paced session run
+		storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
+		injected_archive_bytes: integer("injected_archive_bytes")
+			.notNull()
+			.default(0), // Archive bytes spent at run-start to front-load storage_limit. Tracked separately so the breakdown UI can attribute it.
+		active_config_ids: json("active_config_ids")
+			.$type<string[]>()
+			.notNull()
+			.default([]), // Array of config IDs
+		rerolls: integer("rerolls").notNull().default(0), // Current poll session rerolls (resets each poll)
+		total_rerolls: integer("total_rerolls").notNull().default(0), // Total rerolls across entire run
+		reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
+		shop_skipped_date: varchar("shop_skipped_date", { length: 10 }), // Date when shop was skipped "YYYY-MM-DD"
+		shop_interacted_date: varchar("shop_interacted_date", { length: 10 }), // Date when user interacted with shop
+		deinstall_penalty: integer("deinstall_penalty").notNull().default(0), // Storage penalty from deinstalling configs
+		correct_polls_count: integer("correct_polls_count").notNull().default(0), // Number of correctly answered polls in this run
+		pipeline_slots: json("pipeline_slots")
+			.$type<
 				Array<{
 					gateTypeId: string;
 					difficulty: string;
 					requirement: object;
 					reward: number;
 				}>
-			>
-		>()
+			>()
+			.notNull()
+			.default([]), // Active pipeline slots for the current run
+		pipeline_slot_snapshots: json("pipeline_slot_snapshots")
+			.$type<
+				Array<
+					Array<{
+						gateTypeId: string;
+						difficulty: string;
+						requirement: object;
+						reward: number;
+					}>
+				>
+			>()
+			.notNull()
+			.default([]), // Per-gate slot snapshots: index 0 = slots active during gate 1, index 1 = gate 2, etc.
+		pending_upgrade_cards: json("pending_upgrade_cards").$type<
+			Array<{
+				kind: string;
+				slot: object;
+				gateTypeId?: string;
+				from?: string;
+				to?: string;
+			}>
+		>(), // Upgrade cards pending player decision — null when no decision is pending
+		seed_date: varchar("seed_date", { length: 10 }), // "YYYY-MM-DD" of the daily shared seed (ADR-009). NULL for all calendar-mode runs.
+		completion_reason: text("completion_reason"), // Reason for run completion — stores JSON for pipeline failures, plain strings for others
+		victory_achieved_at: timestamp("victory_achieved_at", {
+			withTimezone: true,
+		}), // When player passed all gates (run continues in post-victory mode)
+		looted_by_user_id: uuid("looted_by_user_id").references(
+			() => usersTable.id,
+			{
+				onDelete: "set null",
+			}
+		),
+		looted_at: timestamp("looted_at", { withTimezone: true }),
+		loot_amount: integer("loot_amount"),
+		started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
+		finished_at: timestamp("finished_at", { withTimezone: true }),
+		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+		updated_at: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		// One session run per player per daily seed (ADR-009) — enforced at the DB
+		// so concurrent startRun calls cannot race their way into duplicates.
+		uniqueIndex("runs_user_seed_date_uniq")
+			.on(table.user_id, table.seed_date)
+			.where(sql`${table.mode} = 'session'`),
+	]
+);
+
+/**
+ * Run States Table (new game flow, ADR-005/009 — session runs only)
+ * 1:1 satellite of a `runs` row holding the engine state of the run rebuild
+ * (src/modules/run/). Kept out of `runs` so the crowded legacy columns stay
+ * untouched and every action dispatch updates a narrow row.
+ * - `state` is the persisted RunSnapshot (RunState minus `polls` — the day's
+ *   shared poll sequence is rehydrated from daily_run_polls on load).
+ *   Server-only: it contains correctness-adjacent data, never send to clients.
+ * - The scalar columns are denormalized from the blob on every persist so
+ *   leaderboards/"who's climbing" can be queried without opening JSON.
+ */
+export const runStatesTable = pgTable("run_states", {
+	id: serial("id").primaryKey(),
+	run_id: integer("run_id")
+		.references(() => runsTable.id, { onDelete: "cascade" })
 		.notNull()
-		.default([]), // Per-gate slot snapshots: index 0 = slots active during gate 1, index 1 = gate 2, etc.
-	pending_upgrade_cards: json("pending_upgrade_cards").$type<
-		Array<{
-			kind: string;
-			slot: object;
-			gateTypeId?: string;
-			from?: string;
-			to?: string;
-		}>
-	>(), // Upgrade cards pending player decision — null when no decision is pending
-	completion_reason: text("completion_reason"), // Reason for run completion — stores JSON for pipeline failures, plain strings for others
-	victory_achieved_at: timestamp("victory_achieved_at", { withTimezone: true }), // When player passed all gates (run continues in post-victory mode)
-	looted_by_user_id: uuid("looted_by_user_id").references(() => usersTable.id, {
-		onDelete: "set null",
-	}),
-	looted_at: timestamp("looted_at", { withTimezone: true }),
-	loot_amount: integer("loot_amount"),
-	started_at: timestamp("started_at", { withTimezone: true }).defaultNow(),
-	finished_at: timestamp("finished_at", { withTimezone: true }),
+		.unique(),
+	state: json("state")
+		.$type<import("~/modules/run/climb/runSnapshot.model").RunSnapshot>()
+		.notNull(),
+	engine_status: varchar("engine_status", { length: 16 })
+		.notNull()
+		.$type<import("~/modules/run/climb/run.model").RunStatus>(),
+	gates_cleared: integer("gates_cleared").notNull().default(0),
+	coverage: real("coverage").notNull().default(0),
+	polls_answered: integer("polls_answered").notNull().default(0), // = state.currentIndex
+	engine_version: integer("engine_version").notNull().default(1), // Reducer-shape version, for future blob migrations
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 });
+
+/**
+ * Daily Run Seeds Table (new game flow, ADR-009)
+ * One row per day: the seed string that produced that day's shared poll
+ * sequence. The resolved sequence itself lives in daily_run_polls — persisted
+ * (not recomputed) so mid-day poll-pool changes can never fork the shared climb.
+ */
+export const dailyRunSeedsTable = pgTable("daily_run_seeds", {
+	id: serial("id").primaryKey(),
+	date: varchar("date", { length: 10 }).notNull().unique(), // "YYYY-MM-DD"
+	seed: varchar("seed", { length: 64 }).notNull(), // PRNG seed used, kept for audit/regeneration
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
+ * Daily Run Polls Table (new game flow, ADR-009)
+ * The day's shared climb sequence, one row per position. Normalized rows (not
+ * a JSON array) so social/analytics queries can join per poll ("what did
+ * everyone pick at position 7 today").
+ * - onDelete restrict: deleting a poll that is part of a live shared seed must
+ *   fail loudly instead of silently shifting the sequence.
+ */
+export const dailyRunPollsTable = pgTable(
+	"daily_run_polls",
+	{
+		id: serial("id").primaryKey(),
+		date: varchar("date", { length: 10 }).notNull(), // "YYYY-MM-DD"
+		position: integer("position").notNull(), // 0-based order in the climb
+		poll_id: integer("poll_id")
+			.references(() => pollsTable.id, { onDelete: "restrict" })
+			.notNull(),
+	},
+	(table) => [
+		unique().on(table.date, table.position),
+		unique().on(table.date, table.poll_id),
+	]
+);
 
 /**
  * Run Category Coverage Table

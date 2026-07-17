@@ -93,6 +93,7 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		season_id: dto.seasonId,
 		status: dto.status,
 		mode: dto.mode,
+		seed_date: null, // Daily-seed key is a session-run concept (ADR-009); calendar runs never carry one
 		storage_limit: dto.storageLimit,
 		injected_archive_bytes: dto.injectedArchiveBytes,
 		active_config_ids: dto.activeConfigIds,

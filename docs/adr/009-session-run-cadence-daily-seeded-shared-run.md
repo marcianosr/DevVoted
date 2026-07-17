@@ -53,6 +53,6 @@ Since everyone shares the seed, community data is rich and per-poll: for any pol
 
 ## Open (deferred to their phases)
 
-- **Fuel**: whether starting a run costs fuel earned from the daily poll (ADR-005 leaned "fuel = storage"); not required for the cadence to work.
+- **Fuel**: whether starting a run costs fuel earned from the daily poll (ADR-005 leaned "fuel = storage"); not required for the cadence to work. The *reverse* direction is decided (2026-07-17, see ADR-005): leftover run storage credits `users.archived_storage` at run end.
 - **Leaderboard shape** (deepest gate vs score) and **retry/monetization** (pay to revive past a death within today's seed — the reframed DVTD-uret lever).
 - **Exact seed length / gate cap** tuning (`VICTORY_GATE` is a live-tuned placeholder), and **seed ordering** (difficulty curve, category spread).

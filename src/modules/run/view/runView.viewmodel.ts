@@ -4,6 +4,8 @@ import {
 	type AnswerType,
 	canRunLinter,
 	lintApplies,
+	LINT_COST,
+	rebuildCost,
 	type RunPoll,
 	type RunState,
 	type RunStatus,
@@ -12,8 +14,10 @@ import type { Config } from "../configs/config.model";
 import type { CheckStatus } from "../configs/effect.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
 import {
+	canAddSlot,
 	coverageForAnswer,
 	coverageProfileFor,
+	coverageToAddSlot,
 	linterFor,
 	rewardMultiplierFor,
 } from "../pipeline/pipeline.model";
@@ -43,9 +47,15 @@ export type RunView = {
 	readonly newConfigIds: readonly string[];
 	readonly stripsRemaining: number;
 	readonly poll: PollView | null;
+	readonly disabledOptionIds: readonly string[];
 	readonly canLint: boolean;
 	readonly lintReady: boolean;
+	readonly lintCost: number;
 	readonly linter: Config | null;
+	readonly rebuildCost: number;
+	readonly canRebuild: boolean;
+	readonly slotCoverageRequired: number;
+	readonly canAddSlot: boolean;
 	readonly checks: readonly CheckStatus[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly passedChecks: readonly CheckStatus[];
@@ -96,6 +106,7 @@ const redactPoll = (poll: RunPoll): PollView => ({
 
 export const toRunView = (state: RunState): RunView => {
 	const current = state.polls[state.currentIndex];
+	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
 	return {
 		status: state.status,
 		slots: state.pipeline.slots,
@@ -105,8 +116,15 @@ export const toRunView = (state: RunState): RunView => {
 		newConfigIds: state.draftedThisGate,
 		stripsRemaining: state.stripsRemaining,
 		poll: state.status === "answering" && current ? redactPoll(current) : null,
+		// Only options the player paid to lint off — no automatic masking.
+		disabledOptionIds: state.manualDisabled,
 		canLint: lintApplies(state),
 		lintReady: canRunLinter(state),
+		lintCost: LINT_COST,
+		rebuildCost: nextRebuildCost,
+		canRebuild: state.storage >= nextRebuildCost,
+		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
+		canAddSlot: canAddSlot(state.pipeline.slots, state.coverage),
 		linter:
 			current === undefined
 				? null

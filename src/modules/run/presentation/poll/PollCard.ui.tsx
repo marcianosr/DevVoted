@@ -53,7 +53,7 @@ const MARK: Record<OptionStatus, string> = {
 };
 
 const optionRow = cva(
-	"flex items-center gap-3 rounded-lg px-4 py-3 text-left transition",
+	"flex items-center gap-2 rounded-lg px-4 py-3 text-left transition font-extrabold",
 	{
 		variants: {
 			status: {
@@ -134,7 +134,7 @@ export const PollCard = ({
 				</button>
 			) : null}
 
-			<div className="flex flex-col gap-2">
+			<div className="flex flex-col gap-1">
 				{options.map((option) => {
 					const off = disabled.has(option.id);
 					const isCorrect = revealed && correct.has(option.id);
@@ -152,7 +152,9 @@ export const PollCard = ({
 							className={optionRow({ status, interaction })}
 						>
 							<span className={optionBox({ status })}>{MARK[status]}</span>
-							<span>{option.label}</span>
+							<span className="font-extrabold text-lg text-zinc-100">
+								{option.label}
+							</span>
 						</button>
 					);
 				})}

@@ -49,6 +49,13 @@ Existing runs default to `"calendar"`, preserving current behavior with no backf
 
 **Cadence, seed model, and session-window size** — resolved by [ADR-009](009-session-run-cadence-daily-seeded-shared-run.md): a run is a daily-seeded, *shared*, self-contained climb (same polls for everyone that day), self-paced, gate = 5 polls, summit at `VICTORY_GATE` gates (live-tuned constant in `rules.model.ts`), death waits for the next day's seed.
 
+**2026-07-17 — persistence shape (refines "persist to runsTable"):**
+
+- **Engine state lives in a 1:1 `run_states` satellite table**, not a JSON column on `runs`. This does not reopen this ADR's decision — `runs` stays the single identity table all FKs point at; `run_states` is an extension row (like `run_shop_offerings`). Chosen because `runs` already carries four legacy JSON columns (mode confusion), and every action dispatch rewrites state — a narrow row isolates the hot path and gives `SELECT … FOR UPDATE` a clean target. The blob is `RunSnapshot` = `RunState` minus `polls`; a few columns (`engine_status`, `gates_cleared`, `coverage`, `polls_answered`) are denormalized for queries.
+- **The daily shared seed is persisted** (`daily_run_seeds` + `daily_run_polls`, one row per position), not recomputed: mid-day poll-pool changes must never fork ADR-009's shared climb. `runs.seed_date` + partial unique `(user_id, seed_date) WHERE mode = 'session'` enforces one run per player per seed.
+- **Per-answer `polls_responses` rows are deferred** (slice 2). The partial-constraint plan above needs a local `mode` column on `polls_responses` — Postgres partial-index predicates cannot join to `runs.mode`.
+- **End-of-run economy bridge (decided):** leftover run storage (KB) credits `users.archived_storage` (bytes) when a run finishes, won or dead. Run-*start* fuel cost stays open (ADR-009).
+
 ## Still open (deferred to their phases)
 
 - **Fuel currency shape** (leaning: it *is* storage, the run currency from ADR-006) and **leaderboard shape/volume** — see ADR-009's open list.

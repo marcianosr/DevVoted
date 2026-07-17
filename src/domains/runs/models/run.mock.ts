@@ -55,6 +55,7 @@ export const createMockRunRecord = (
 	season_id: 1,
 	status: "active",
 	mode: "calendar",
+	seed_date: null,
 	storage_limit: STORAGE_UNITS.MB,
 	injected_archive_bytes: 0,
 	active_config_ids: [],

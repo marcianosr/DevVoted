@@ -21,6 +21,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthedShopRouteImport } from './routes/_authed/shop'
+import { Route as AuthedRunRouteImport } from './routes/_authed/run'
 import { Route as AuthedPipelinesRouteImport } from './routes/_authed/pipelines'
 import { Route as AuthedPipelineSuccessRouteImport } from './routes/_authed/pipeline-success'
 import { Route as AuthedPipelineFailureRouteImport } from './routes/_authed/pipeline-failure'
@@ -91,6 +92,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
 const AuthedShopRoute = AuthedShopRouteImport.update({
   id: '/shop',
   path: '/shop',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedRunRoute = AuthedRunRouteImport.update({
+  id: '/run',
+  path: '/run',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedPipelinesRoute = AuthedPipelinesRouteImport.update({
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/pipelines': typeof AuthedPipelinesRoute
+  '/run': typeof AuthedRunRoute
   '/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/pipelines': typeof AuthedPipelinesRoute
+  '/run': typeof AuthedRunRoute
   '/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
@@ -222,6 +230,7 @@ export interface FileRoutesById {
   '/_authed/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/_authed/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/_authed/pipelines': typeof AuthedPipelinesRoute
+  '/_authed/run': typeof AuthedRunRoute
   '/_authed/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/polls/new': typeof AuthedPollsNewRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/pipeline-failure'
     | '/pipeline-success'
     | '/pipelines'
+    | '/run'
     | '/shop'
     | '/auth/callback'
     | '/polls/new'
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/pipeline-failure'
     | '/pipeline-success'
     | '/pipelines'
+    | '/run'
     | '/shop'
     | '/auth/callback'
     | '/polls/new'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/_authed/pipeline-failure'
     | '/_authed/pipeline-success'
     | '/_authed/pipelines'
+    | '/_authed/run'
     | '/_authed/shop'
     | '/auth/callback'
     | '/_authed/polls/new'
@@ -410,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedShopRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/run': {
+      id: '/_authed/run'
+      path: '/run'
+      fullPath: '/run'
+      preLoaderRoute: typeof AuthedRunRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/pipelines': {
       id: '/_authed/pipelines'
       path: '/pipelines'
@@ -504,6 +523,7 @@ interface AuthedRouteChildren {
   AuthedPipelineFailureRoute: typeof AuthedPipelineFailureRoute
   AuthedPipelineSuccessRoute: typeof AuthedPipelineSuccessRoute
   AuthedPipelinesRoute: typeof AuthedPipelinesRoute
+  AuthedRunRoute: typeof AuthedRunRoute
   AuthedShopRoute: typeof AuthedShopRoute
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
@@ -520,6 +540,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPipelineFailureRoute: AuthedPipelineFailureRoute,
   AuthedPipelineSuccessRoute: AuthedPipelineSuccessRoute,
   AuthedPipelinesRoute: AuthedPipelinesRoute,
+  AuthedRunRoute: AuthedRunRoute,
   AuthedShopRoute: AuthedShopRoute,
   AuthedPollsNewRoute: AuthedPollsNewRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,

@@ -289,7 +289,7 @@
 }
 /* Translucent theme fill for selected/hover surfaces. */
 @utility bg-theme-soft {
-	background-color: oklch(from var(--theme-color) l c h / 0.1);
+	background-color: oklch(from var(--theme-color) l c h / 0.15);
 }
 @utility border-theme {
 	border-color: var(--theme-color);

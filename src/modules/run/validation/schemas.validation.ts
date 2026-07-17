@@ -1,0 +1,41 @@
+import { z } from "zod";
+
+/**
+ * Wire schema for RunAction (climb/run.model.ts). Strict on purpose: the
+ * client sends intent only — never state, storage, coverage, or gatesCleared
+ * (anti-cheat, DVTD-ay5e). Unknown action types and extra fields are rejected.
+ */
+const configActionSchema = <T extends string>(type: T) =>
+	z
+		.object({
+			type: z.literal(type),
+			configId: z.string().min(1),
+		})
+		.strict();
+
+const bareActionSchema = <T extends string>(type: T) =>
+	z.object({ type: z.literal(type) }).strict();
+
+export const runActionSchema = z.discriminatedUnion("type", [
+	configActionSchema("slot"),
+	configActionSchema("unslot"),
+	bareActionSchema("start"),
+	z
+		.object({
+			type: z.literal("answer"),
+			optionIds: z.array(z.string().min(1)).min(1),
+		})
+		.strict(),
+	bareActionSchema("lint-poll"),
+	configActionSchema("strip"),
+	bareActionSchema("resume-climb"),
+	bareActionSchema("add-slot"),
+	configActionSchema("draft"),
+	configActionSchema("upgrade"),
+	bareActionSchema("rebuild-draft"),
+	bareActionSchema("finish-reward"),
+	configActionSchema("sell"),
+	configActionSchema("drop"),
+]);
+
+export type RunActionInput = z.infer<typeof runActionSchema>;

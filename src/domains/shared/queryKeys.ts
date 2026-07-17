@@ -13,6 +13,11 @@ export const runQueryKeys = {
 		[...runQueryKeys.all, "last", userId] as const,
 };
 
+export const sessionRunQueryKeys = {
+	all: [...runQueryKeys.all, "session"] as const,
+	today: (date: string) => [...sessionRunQueryKeys.all, date] as const,
+};
+
 export const pollQueryKeys = {
 	all: ["polls"] as const,
 	detail: (pollId: number) => [...pollQueryKeys.all, pollId] as const,
