@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { SecondaryButton } from "~/ui/SecondaryButton.component";
+import { Button } from "~/ui/Button.component";
 
 export type ConfirmDialogProps = {
 	isOpen: boolean;
@@ -64,16 +64,20 @@ export const ConfirmDialog = ({
 					</p>
 				)}
 				<div className="flex gap-3 justify-end">
-					<SecondaryButton onClick={handleCancel} disabled={isConfirming}>
+					<Button
+						variant="secondary"
+						onClick={handleCancel}
+						disabled={isConfirming}
+					>
 						{cancelText}
-					</SecondaryButton>
-					<SecondaryButton
-						onClick={handleConfirm}
+					</Button>
+					<Button
 						variant="danger"
+						onClick={handleConfirm}
 						disabled={isConfirming}
 					>
 						{confirmText}
-					</SecondaryButton>
+					</Button>
 				</div>
 			</div>
 		</dialog>

@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
-import { SecondaryButton } from "~/ui/SecondaryButton.component";
+import { Button } from "~/ui/Button.component";
 import { getSupabaseBrowserClient } from "~/utils/supabaseBrowser";
 
 import { Auth } from "./Auth.component";
@@ -77,7 +77,8 @@ export function Login() {
 									{loginMutation.data.error &&
 									loginMutation.data.message === "Invalid login credentials" ? (
 										<div>
-											<SecondaryButton
+											<Button
+												variant="secondary"
 												className="text-blue-500"
 												onClick={(e) => {
 													const formData = new FormData(
@@ -94,7 +95,7 @@ export function Login() {
 												type="button"
 											>
 												Sign up instead?
-											</SecondaryButton>
+											</Button>
 										</div>
 									) : null}
 								</>
@@ -108,7 +109,8 @@ export function Login() {
 						</>
 					)}
 					<div className="mt-6 pt-6">
-						<SecondaryButton
+						<Button
+							variant="secondary"
 							onClick={handleGithubLogin}
 							disabled={githubLoading}
 							className="w-full bg-gray-800 dark:bg-gray-700 text-white flex items-center justify-center gap-2"
@@ -131,7 +133,7 @@ export function Login() {
 									Continue with GitHub
 								</>
 							)}
-						</SecondaryButton>
+						</Button>
 					</div>
 				</>
 			}

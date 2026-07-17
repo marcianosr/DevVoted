@@ -29,3 +29,18 @@ export const WithLongContent: Story = {
 		children: <span>💾</span>,
 	},
 };
+
+// Wraps a disabled button: the span trigger reveals why the action is unavailable
+// on hover (desktop) or tap (mobile), where the disabled button itself is inert.
+export const WrappingDisabledButton: Story = {
+	args: {
+		triggerAs: "span",
+		ariaLabel: 'Why "Start the climb" is unavailable',
+		content: <p className="max-w-xs text-sm">Slot a config to start</p>,
+		children: (
+			<button type="button" disabled className="px-4 py-2 opacity-40">
+				Start the climb →
+			</button>
+		),
+	},
+};

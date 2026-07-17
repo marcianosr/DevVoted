@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { formatStorage } from "~/lib/storage";
 import { PipelineProgressBar } from "~/ui/runs/PipelineProgressBar.ui";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 export type PipelineCheckStatus =
 	"in-progress" | "passed" | "failed" | "skipped";
@@ -165,9 +166,9 @@ export const CurrentPipeline = ({
 					<span className="text-yellow-400"> pending</span> checks must pass
 				</p>
 				{totalReward !== undefined && totalReward > 0 && (
-					<p className="text-sm mt-1">
+					<Paragraph>
 						Total reward if all pass: <RewardBadge reward={totalReward} />
-					</p>
+					</Paragraph>
 				)}
 			</div>
 

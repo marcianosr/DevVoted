@@ -21,7 +21,7 @@ import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { Run } from "~/domains/runs/models/run.model";
 import { formatStorage } from "~/lib/storage";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { Button } from "~/ui/Button.component";
 
 type ShopContainerProps = {
 	activeRun: Run;
@@ -131,7 +131,7 @@ const ShopContainer = ({
 				</ul>
 				<div className="flex gap-6 items-start bg-zinc-900 p-4">
 					<div className="flex flex-col">
-						<PrimaryButton
+						<Button
 							size="small"
 							onClick={onReroll}
 							disabled={!canReroll || !isOpen || onRerollMutation.isPending}
@@ -139,7 +139,7 @@ const ShopContainer = ({
 							{onRerollMutation.isPending
 								? "Rebuilding..."
 								: "Rebuild package offers"}
-						</PrimaryButton>
+						</Button>
 						<small className="text-sm mt-2">
 							Cost: {formatStorage(rerollCost)}
 						</small>

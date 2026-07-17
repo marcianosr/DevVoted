@@ -1,14 +1,18 @@
 import type { ReactNode } from "react";
 
-import { clsx } from "clsx";
+import { cva } from "class-variance-authority";
 
 type StackGap = "4" | "6" | "8";
 
-const GAP_CLASSES: Record<StackGap, string> = {
-	"4": "gap-4",
-	"6": "gap-6",
-	"8": "gap-8",
-};
+const stack = cva("flex flex-col", {
+	variants: {
+		gap: {
+			"4": "gap-4",
+			"6": "gap-6",
+			"8": "gap-8",
+		} satisfies Record<StackGap, string>,
+	},
+});
 
 export const Stack = ({
 	gap = "6",
@@ -16,4 +20,4 @@ export const Stack = ({
 }: {
 	gap?: StackGap;
 	children: ReactNode;
-}) => <div className={clsx("flex flex-col", GAP_CLASSES[gap])}>{children}</div>;
+}) => <div className={stack({ gap })}>{children}</div>;

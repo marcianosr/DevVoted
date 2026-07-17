@@ -1,4 +1,4 @@
-import { SecondaryButton } from "~/ui/SecondaryButton.component";
+import { Button } from "~/ui/Button.component";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -51,13 +51,14 @@ export function Auth({
 									className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
 								/>
 							</div>
-							<SecondaryButton
+							<Button
+								variant="secondary"
 								type="submit"
 								className="w-full bg-cyan-600 text-white font-black uppercase"
 								disabled={status === "pending"}
 							>
 								{status === "pending" ? "..." : actionText}
-							</SecondaryButton>
+							</Button>
 						</>
 					)}
 					{afterSubmit ? afterSubmit : null}

@@ -6,7 +6,7 @@ import {
 } from "~/domains/economy/hooks/useArchiveState";
 import type { Border } from "~/domains/economy/models/border.model";
 import { formatStorage } from "~/lib/storage";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { Button } from "~/ui/Button.component";
 
 type BorderShopProps = {
 	userId: string;
@@ -62,14 +62,14 @@ const BorderCard = ({
 				<img src={border.image} alt="" className="max-w-full max-h-full" />
 			</div>
 			<div className="mt-auto pt-2">
-				<PrimaryButton
+				<Button
 					size="small"
 					onClick={handleClick}
 					disabled={isMutating || (!owned && !canAfford)}
 					className="w-full"
 				>
 					{label}
-				</PrimaryButton>
+				</Button>
 			</div>
 		</div>
 	);

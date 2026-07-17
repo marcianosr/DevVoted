@@ -140,7 +140,7 @@ export const SLICE_TAGS = {
 		id: "eslint",
 		label: "ESLint",
 		family: "defense",
-		description: "Disables one wrong answer on JS/TS polls.",
+		description: "Disables one wrong answer on JS/TS polls",
 		requirementDelta: 0,
 		rewardMultiplier: 1,
 		eliminatesWrongOptionsFor: ["js", "ts"],

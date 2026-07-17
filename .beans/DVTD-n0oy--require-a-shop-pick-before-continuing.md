@@ -1,0 +1,11 @@
+---
+# DVTD-n0oy
+title: Require a shop pick before continuing
+status: todo
+type: feature
+created_at: 2026-07-13T08:24:10Z
+updated_at: 2026-07-13T08:24:10Z
+parent: DVTD-u35m
+---
+
+On the shop/upgrade page, the player can only 'Climb on' after they've actually taken something (drafted a config, upgraded, or added a slot). Prevents skipping the shop with no choice made.

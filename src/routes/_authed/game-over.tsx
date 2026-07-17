@@ -10,7 +10,7 @@ import {
 } from "~/domains/runs/utils/formatPipelineRequirement";
 import { parseCompletionReason } from "~/domains/runs/utils/parseCompletionReason";
 import { formatStorage } from "~/lib/storage";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { Button } from "~/ui/Button.component";
 
 export const Route = createFileRoute("/_authed/game-over")({
 	component: RouteComponent,
@@ -135,20 +135,20 @@ function RouteComponent() {
 								Congratulations on mastering all CI gates! You can continue your
 								run and try to reach the perfect 100% coverage!
 							</p>
-							<PrimaryButton className="px-3 py-1 mr-4">
+							<Button className="px-3 py-1 mr-4">
 								<Link to="/daily-poll">Continue Run</Link>
-							</PrimaryButton>
+							</Button>
 							<span className="text-gray-400">
 								Or start a new run below with a another set of CI gates!
 							</span>
 						</>
 					)}
-					<PrimaryButton
+					<Button
 						onClick={() => navigate({ to: "/start" })}
 						className="px-3 py-1"
 					>
 						Start New Run
-					</PrimaryButton>
+					</Button>
 				</section>
 			</div>
 		</Content>

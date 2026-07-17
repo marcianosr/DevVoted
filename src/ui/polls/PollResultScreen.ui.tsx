@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { MarkdownText } from "./PollMarkdown.ui";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { Button } from "~/ui/Button.component";
 import { PollAnswerReview } from "./PollAnswerReview.ui";
 import type { AnswerReviewOption } from "./PollAnswerReview.ui";
 import { PollQuestionHeading } from "./PollQuestionHeading.ui";
@@ -71,14 +71,14 @@ export const PollResultScreen = ({
 					</span>
 					<div className="flex gap-3">
 						{secondaryAction && (
-							<PrimaryButton onClick={secondaryAction.onClick}>
+							<Button onClick={secondaryAction.onClick}>
 								{secondaryAction.label}
-							</PrimaryButton>
+							</Button>
 						)}
 						{continueAction && (
-							<PrimaryButton onClick={continueAction.onClick}>
+							<Button onClick={continueAction.onClick}>
 								{continueAction.label}
-							</PrimaryButton>
+							</Button>
 						)}
 					</div>
 				</div>

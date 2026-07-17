@@ -8,7 +8,7 @@ import { useApplyPipelineUpgrade } from "~/domains/runs/hooks/useApplyPipelineUp
 import { getSlotLabel } from "~/domains/runs/utils/formatPipelineRequirement";
 import { PipelineSuccessScreen } from "~/ui/runs/PipelineSuccessScreen.ui";
 import type { PipelineReward } from "~/ui/runs/PipelineSuccessScreen.ui";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
+import { Button } from "~/ui/Button.component";
 
 export const Route = createFileRoute("/_authed/pipeline-success")({
 	component: PipelineSuccessRoute,
@@ -64,12 +64,12 @@ function PipelineSuccessRoute() {
 						showHeading={false}
 					/>
 				) : (
-					<PrimaryButton
+					<Button
 						onClick={() => navigate({ to: "/daily-poll" })}
 						className="self-start px-6 py-3"
 					>
 						Continue →
-					</PrimaryButton>
+					</Button>
 				)}
 			</PipelineSuccessScreen>
 		</Content>

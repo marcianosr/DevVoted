@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "highlight.js/styles/github-dark.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+@import "@fontsource/jetbrains-mono/800.css";
 
 @layer base {
 	html {
@@ -111,9 +115,8 @@
 	--warning: oklch(75% 0.25 90);
 	--succes: oklch(55% 0.3 145);
 
-	--font-family-display: "Pixter Display", sans-serif;
-	--font-family-granular: "Pixter Granular", sans-serif;
-	--font: "Fira Code", monospace;
+	--font-display: "Pixter Display", sans-serif;
+	--font-granular: "Pixter Granular", sans-serif;
 }
 
 /* Specific color utilities - no longer needed with Tailwind 4's --color-* prefix */
@@ -276,22 +279,30 @@
 	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
 }
 
-.text-theme {
+/* Registered as @utility (not plain classes) so Tailwind variants — hover:, focus:,
+   enabled:hover:, etc — attach to them the same as any built-in utility. */
+@utility text-theme {
 	color: var(--theme-color);
 }
-.bg-theme {
+@utility bg-theme {
 	background-color: var(--theme-color);
 }
-/* Translucent theme fill for selected/hover surfaces (opacity modifiers can't
-   apply to the custom .bg-theme class, so we derive the alpha here). */
-.bg-theme-soft {
+/* Translucent theme fill for selected/hover surfaces. */
+@utility bg-theme-soft {
 	background-color: oklch(from var(--theme-color) l c h / 0.1);
 }
-.border-theme {
+@utility border-theme {
 	border-color: var(--theme-color);
 }
-.accent-theme {
+@utility accent-theme {
 	accent-color: var(--theme-color);
+}
+
+@font-face {
+	font-family: "Pixter Display";
+	src: url("/fonts/PixterDisplay.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
 }
 
 @font-face {
@@ -303,14 +314,23 @@
 
 @font-face {
 	font-family: "Pixter Granular";
+	src: url("/fonts/PixterGranular.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: "Pixter Granular";
 	src: url("/fonts/PixterGranularBold.ttf") format("truetype");
 	font-weight: bold;
 	font-style: normal;
 }
 
 body {
-	font-family: var(--font);
-	font-family: "Pixter Display", sans-serif;
+	font-family: "JetBrains Mono", ui-monospace, monospace;
+	/* Pin bold to preserve the app's look now that a real 400 face is registered —
+	   without this the default weight would silently flip to regular everywhere. */
+	font-weight: bold;
 }
 
 meter {
@@ -332,7 +352,6 @@ meter::-webkit-meter-optimum-value {
 	border-radius: inherit;
 }
 
-/* Prismatic border for #1 leaderboard position */
 @keyframes prismatic-border {
 	0% {
 		border-color: var(--color-vermillion);
@@ -403,6 +422,49 @@ meter::-webkit-meter-optimum-value {
 
 .prismatic-text {
 	animation: prismatic-text 4s linear infinite;
+}
+
+/*
+ * Animates border-color AND text color together on one element. Needed because
+ * the `animation` shorthand can't be composed across two classes — a second
+ * `animation` declaration clobbers the first — so both runs live in one rule.
+ */
+.prismatic-chip {
+	animation:
+		prismatic-border 4s linear infinite,
+		prismatic-text 4s linear infinite;
+}
+
+/* Flowing celadon→viridian gradient clipped to the text glyphs. */
+@keyframes gradient-flow {
+	0% {
+		background-position: 0% 50%;
+	}
+	100% {
+		background-position: 200% 50%;
+	}
+}
+
+.text-gradient-green {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-celadon),
+		var(--color-viridian),
+		var(--color-celadon)
+	);
+	background-size: 200% auto;
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+	animation: gradient-flow 3s linear infinite;
+}
+
+/* Scrollable without a visible scrollbar (keeps content reachable, fixed height). */
+.no-scrollbar {
+	scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
 }
 
 /* ─── Screen mount-in transitions ──────────────────────────────────────────────

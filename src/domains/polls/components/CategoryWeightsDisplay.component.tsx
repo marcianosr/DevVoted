@@ -7,6 +7,7 @@ import {
 	CATEGORY_CODES,
 	getCategoryMetadata,
 } from "~/domains/shared/categories";
+import { Swatch } from "~/ui/Swatch.component";
 
 const getCategoryWeights = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -92,7 +93,7 @@ const CategoryWeightsDisplay = () => {
 						data-category-theme={item.code}
 						className="flex items-center gap-1.5 text-sm"
 					>
-						<span className="w-3 h-3 bg-theme inline-block" />
+						<Swatch size="sm" />
 						<span className="text-theme">{item.name}</span>
 						<span className="text-gray-400">{item.percentage.toFixed(1)}%</span>
 					</div>
