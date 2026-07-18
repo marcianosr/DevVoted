@@ -19,6 +19,7 @@ const base = {
 	],
 	category: "react" as const,
 	question: "Which key?",
+	answerType: "single" as const,
 	options: [
 		{ id: "a", label: "A stable unique id" },
 		{ id: "b", label: "The array index" },

@@ -1,4 +1,3 @@
-import { cva } from "class-variance-authority";
 import { useState } from "react";
 
 import type {
@@ -6,44 +5,7 @@ import type {
 	RunCommunityPoll,
 	RunCommunityPollDetail,
 } from "~/modules/run/api/community.handlers";
-
-type Outcome = RunCommunityPoll["outcome"];
-
-const OUTCOME_ICON: Record<Outcome, string> = {
-	correct: "✓",
-	partial: "◐",
-	wrong: "✕",
-	missed: "—",
-};
-
-const tile = cva(
-	"rounded-md border px-6 py-4 text-left font-mono transition-colors",
-	{
-		variants: {
-			outcome: {
-				correct: "border-viridian/60 bg-viridian/5 hover:bg-viridian/10",
-				partial: "border-saffron/60 bg-saffron/5 hover:bg-saffron/10",
-				wrong: "border-cinnabar/60 bg-cinnabar/5 hover:bg-cinnabar/10",
-				missed: "border-zinc-700 bg-zinc-900/40 cursor-not-allowed opacity-60",
-			} satisfies Record<Outcome, string>,
-			expanded: {
-				true: "ring-1",
-				false: "",
-			},
-		},
-	}
-);
-
-const outcomeText = cva("", {
-	variants: {
-		outcome: {
-			correct: "text-viridian",
-			partial: "text-saffron",
-			wrong: "text-cinnabar",
-			missed: "text-zinc-400",
-		} satisfies Record<Outcome, string>,
-	},
-});
+import { OutcomeTile, outcomeText } from "../poll/OutcomeTile.ui";
 
 const tileSubtitle = (poll: RunCommunityPoll): string => {
 	if (poll.outcome === "correct")
@@ -178,32 +140,19 @@ export const RunCommunityBoard = ({
 
 			<div className="flex flex-wrap gap-4">
 				{polls.map((poll) => (
-					<button
+					<OutcomeTile
 						key={poll.pollId}
-						type="button"
+						title={`Poll ${poll.index + 1}`}
+						subtitle={tileSubtitle(poll)}
+						outcome={poll.outcome}
+						expanded={expandedPollId === poll.pollId}
 						disabled={poll.outcome === "missed"}
 						onClick={() =>
 							setExpandedPollId(
 								expandedPollId === poll.pollId ? null : poll.pollId
 							)
 						}
-						className={tile({
-							outcome: poll.outcome,
-							expanded: expandedPollId === poll.pollId,
-						})}
-					>
-						<span className="block text-zinc-300">Poll {poll.index + 1}</span>
-						<span
-							className={`block text-xl ${outcomeText({ outcome: poll.outcome })}`}
-						>
-							{OUTCOME_ICON[poll.outcome]}
-						</span>
-						<span
-							className={`block text-sm ${outcomeText({ outcome: poll.outcome })}`}
-						>
-							{tileSubtitle(poll)}
-						</span>
-					</button>
+					/>
 				))}
 			</div>
 

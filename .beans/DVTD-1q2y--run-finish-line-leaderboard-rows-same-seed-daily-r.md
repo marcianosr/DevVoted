@@ -3,9 +3,9 @@
 title: 'run finish-line: leaderboard rows + same-seed daily ranking'
 status: todo
 type: feature
-priority: normal
+priority: deferred
 created_at: 2026-07-17T12:41:23Z
-updated_at: 2026-07-18T07:24:08Z
+updated_at: 2026-07-18T13:02:52Z
 blocked_by:
     - DVTD-fyxm
 ---

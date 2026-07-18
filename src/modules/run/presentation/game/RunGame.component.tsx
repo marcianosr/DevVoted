@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { sessionRunQueryKeys } from "~/domains/shared/queryKeys";
@@ -31,6 +32,7 @@ export const RunGame = () => {
 	const date = getTodayDateString();
 	const queryKey = sessionRunQueryKeys.today(date);
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 
 	const todaysRun = useQuery({
 		queryKey,
@@ -51,6 +53,15 @@ export const RunGame = () => {
 			if (result.success) queryClient.setQueryData(queryKey, result);
 		},
 	});
+
+	// Shop → "How you compared": commit the reward step, then detour to the
+	// community page. The climb itself resumes from there ("Climb on →").
+	const finishShopToCommunity = async () => {
+		const result = await dispatch.mutateAsync({ type: "finish-reward" });
+		if (result.success) {
+			await navigate({ to: "/run/community" });
+		}
+	};
 
 	const view: RunView | null =
 		todaysRun.data?.success === true ? todaysRun.data.data : null;
@@ -137,6 +148,7 @@ export const RunGame = () => {
 						coverageByCategory={view.coverageByCategory}
 						configs={view.configs}
 						slots={view.slots}
+						checks={view.checks}
 					/>
 				</HudBar>
 			)}
@@ -173,6 +185,7 @@ export const RunGame = () => {
 						checks={view.checks}
 						category={view.poll.category}
 						question={view.poll.question}
+						answerType={view.poll.answerType}
 						options={view.poll.options}
 						selectedOptionIds={selected}
 						disabledOptionIds={view.disabledOptionIds}
@@ -214,8 +227,8 @@ export const RunGame = () => {
 						onClick: () => setRewardStep("summary"),
 					}}
 					rightAction={{
-						label: "Continue →",
-						onClick: () => send({ type: "finish-reward" }),
+						label: "How you compared →",
+						onClick: () => finishShopToCommunity(),
 						disabled: busy,
 					}}
 				>

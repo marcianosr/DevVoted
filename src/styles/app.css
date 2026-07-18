@@ -279,6 +279,16 @@
 	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
 }
 
+/* Themed screens mirror their category onto <body> (Screen.ui) — the page then
+   trades pure black for a faint tint of the category color: theme hue, chroma
+   crushed to a quarter, lightness pinned near-black. */
+body {
+	transition: background-color 700ms ease;
+}
+body[data-category-theme] {
+	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
+}
+
 /* Registered as @utility (not plain classes) so Tailwind variants — hover:, focus:,
    enabled:hover:, etc — attach to them the same as any built-in utility. */
 @utility text-theme {

@@ -4,6 +4,15 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { RunHud } from "./RunHud.ui";
 
+const gateCheck = {
+	label: "Correct",
+	progress: "1/2",
+	current: 1,
+	target: 2,
+	state: "running" as const,
+	sourceConfigId: "unit-tests",
+};
+
 describe(RunHud, () => {
 	it("shows storage, gate progress, polls answered, and the streak", () => {
 		render(
@@ -19,14 +28,39 @@ describe(RunHud, () => {
 				coverageByCategory={{}}
 				configs={[]}
 				slots={3}
+				checks={[]}
 			/>
 		);
-		expect(screen.getByText("120KB")).toBeInTheDocument();
+		// The bar renders both the desktop and the compact mobile layout.
+		expect(screen.getAllByText("120KB")).not.toHaveLength(0);
 		expect(screen.getByText("2 / 5")).toBeInTheDocument();
 		expect(screen.getByText("3 / 5")).toBeInTheDocument();
-		expect(screen.getByText(/polls/)).toBeInTheDocument();
+		expect(screen.getAllByText(/polls/)).not.toHaveLength(0);
 		expect(screen.getByText("2")).toBeInTheDocument();
 		expect(screen.getByText("streak")).toBeInTheDocument();
+	});
+
+	it("reveals the gate stakes behind the mobile Stakes dropdown", () => {
+		render(
+			<RunHud
+				storage={76}
+				gateNumber={4}
+				victoryGate={5}
+				pollsAnswered={0}
+				pollsPerGate={5}
+				streak={3}
+				category="js"
+				coverage={12}
+				coverageByCategory={{}}
+				configs={[CONFIGS.unitTests]}
+				slots={3}
+				checks={[gateCheck]}
+			/>
+		);
+		expect(screen.queryByText("1/2")).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: /Stakes/ }));
+		expect(screen.getByText("1/2")).toBeInTheDocument();
+		expect(screen.getByText("Streak")).toBeInTheDocument();
 	});
 
 	it("summarizes covered categories, and reveals every category on expand", () => {
@@ -42,6 +76,7 @@ describe(RunHud, () => {
 				coverageByCategory={{ css: 3, js: 4.5, git: 0 }}
 				configs={[]}
 				slots={3}
+				checks={[]}
 			/>
 		);
 		// Collapsed: the summary counts only categories with coverage.
@@ -68,6 +103,7 @@ describe(RunHud, () => {
 				coverageByCategory={{}}
 				configs={[CONFIGS.eslint]}
 				slots={3}
+				checks={[]}
 			/>
 		);
 		expect(screen.queryByText("ESLint")).not.toBeInTheDocument();

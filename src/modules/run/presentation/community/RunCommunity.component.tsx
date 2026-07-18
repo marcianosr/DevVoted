@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
 import { sessionRunQueryKeys } from "~/domains/shared/queryKeys";
 import { getTodayDateString } from "~/lib/dateUtils";
@@ -12,15 +13,21 @@ import { RunCommunityBoard } from "./RunCommunity.ui";
 /** Tier 2 wiring for the run community page (DVTD-xrpx). */
 export const RunCommunity = () => {
 	const date = getTodayDateString();
+	const navigate = useNavigate();
 
 	const community = useQuery({
 		queryKey: sessionRunQueryKeys.community(date),
 		queryFn: () => getRunCommunity(),
 	});
 
+	const climbOn = {
+		label: "Climb on →",
+		onClick: () => navigate({ to: "/run" }),
+	};
+
 	if (community.isPending) {
 		return (
-			<Screen>
+			<Screen rightAction={climbOn}>
 				<Paragraph>Loading today’s comparison…</Paragraph>
 			</Screen>
 		);
@@ -30,7 +37,7 @@ export const RunCommunity = () => {
 
 	if (!view || view.polls.length === 0) {
 		return (
-			<Screen>
+			<Screen rightAction={climbOn}>
 				<Title>How you compared</Title>
 				<Paragraph>
 					Nothing to compare yet — answer some of today’s polls first.
@@ -40,7 +47,7 @@ export const RunCommunity = () => {
 	}
 
 	return (
-		<Screen>
+		<Screen rightAction={climbOn}>
 			<RunCommunityBoard
 				totalPlayers={view.totalPlayers}
 				topPercent={view.topPercent}

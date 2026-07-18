@@ -29,12 +29,12 @@ Older but still useful documentation can be found here:
 
 ### Database Operations
 
-- `npm run db:push` - Push schema changes to database
-- `npm run db:generate` - Generate migration files
-- `npm run db:migrate` - Run pending migrations
+- `npm run db:push` - Push schema changes to the local database (prototyping only — see ADR-012)
 - `npm run db:seed` - Seed database with initial data
 - `npm run db:reset` - Reset database (drops all data)
-- `npm run db:refresh` - Complete database refresh (reset + generate + push + seed)
+- `npm run db:refresh` - Complete database refresh (reset + push + seed)
+
+Schema changes ship as guarded SQL files in `supabase/migrations/` (ADR-012): applied to dev by hand, to production by CI on merge. `src/database/schema.ts` stays the source of truth for shape.
 
 ## Architecture Overview
 

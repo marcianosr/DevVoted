@@ -88,6 +88,14 @@ export const Screen = ({
 		clearScreenNavDirection();
 	}, []);
 
+	// Mirror the category onto <body> so the page background can take a faint
+	// theme tint (see `body[data-category-theme]` in app.css).
+	useEffect(() => {
+		if (!categoryCode) return;
+		document.body.setAttribute("data-category-theme", categoryCode);
+		return () => document.body.removeAttribute("data-category-theme");
+	}, [categoryCode]);
+
 	const runAction = (action: ScreenAction, direction: ScreenNavDirection) => {
 		setScreenNavDirection(direction);
 		action.onClick();

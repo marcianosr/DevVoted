@@ -1,1 +1,0 @@
-DROP TABLE "polls_user_performance" CASCADE;

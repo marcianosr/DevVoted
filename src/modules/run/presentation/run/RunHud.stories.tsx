@@ -24,6 +24,16 @@ export const WithCoverage: Story = {
 		coverageByCategory: { css: 3, js: 8, ts: 5, react: 2.5 },
 		configs: [CONFIGS.unitTests, CONFIGS.js, CONFIGS.eslint],
 		slots: 3,
+		checks: [
+			{
+				label: "Correct",
+				progress: "1/2",
+				current: 1,
+				target: 2,
+				state: "running",
+				sourceConfigId: "unit-tests",
+			},
+		],
 	},
 };
 
@@ -40,6 +50,16 @@ export const EarlyRun: Story = {
 		coverageByCategory: {},
 		configs: [CONFIGS.unitTests],
 		slots: 3,
+		checks: [
+			{
+				label: "Correct",
+				progress: "1/2",
+				current: 1,
+				target: 2,
+				state: "running",
+				sourceConfigId: "unit-tests",
+			},
+		],
 	},
 };
 
@@ -61,5 +81,6 @@ export const StorageNearCap: Story = {
 			CONFIGS.coldStart,
 		],
 		slots: 5,
+		checks: [],
 	},
 };

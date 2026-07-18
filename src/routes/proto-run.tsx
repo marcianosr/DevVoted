@@ -178,6 +178,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						coverageByCategory={view.coverageByCategory}
 						configs={view.configs}
 						slots={view.slots}
+						checks={view.checks}
 					/>
 				</div>
 			)}
@@ -213,6 +214,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						checks={view.checks}
 						category={view.poll.category}
 						question={view.poll.question}
+						answerType={view.poll.answerType}
 						options={view.poll.options}
 						selectedOptionIds={selected}
 						disabledOptionIds={disabled}

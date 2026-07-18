@@ -1,5 +1,6 @@
 import { cva } from "class-variance-authority";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
+import type { AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
@@ -11,6 +12,7 @@ export type PollOption = { readonly id: string; readonly label: string };
 type PollCardProps = {
 	category: CategoryCode;
 	question: string;
+	answerType: AnswerType;
 	options: readonly PollOption[];
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
@@ -48,46 +50,69 @@ const interactionOf = (off: boolean, revealed: boolean): InteractionState => {
 const MARK: Record<OptionStatus, string> = {
 	correct: "✓",
 	chosenWrong: "✕",
-	selected: "✓",
+	selected: "",
 	neutral: "",
 };
 
 const optionRow = cva(
-	"flex items-center gap-2 rounded-lg px-4 py-3 text-left transition font-extrabold",
+	"flex items-baseline gap-3 border-l-2 border-transparent px-4 py-3 text-left transition",
 	{
 		variants: {
 			status: {
-				correct: "bg-viridian/15 text-viridian",
-				chosenWrong: "bg-cinnabar/15 text-cinnabar",
-				selected: "bg-theme-soft text-white",
-				neutral: "text-white",
+				correct: "border-viridian bg-viridian/10",
+				chosenWrong: "border-cinnabar bg-cinnabar/10",
+				selected: "border-theme bg-theme-soft",
+				neutral: "",
 			} satisfies Record<OptionStatus, string>,
 			interaction: {
 				disabled: "cursor-not-allowed opacity-40 line-through",
 				revealed: "",
-				active: "cursor-pointer hover:bg-white/5",
+				active: "cursor-pointer hover:border-white/40 hover:bg-white/10",
 			} satisfies Record<InteractionState, string>,
 		},
+		compoundVariants: [
+			{
+				status: "selected",
+				interaction: "active",
+				className: "hover:border-theme",
+			},
+		],
 	}
 );
 
-const optionBox = cva(
-	"flex h-5 w-5 items-center justify-center rounded border-2 text-xs",
-	{
-		variants: {
-			status: {
-				correct: "border-viridian bg-viridian text-black",
-				chosenWrong: "border-cinnabar text-cinnabar",
-				selected: "border-theme bg-theme text-black",
-				neutral: "border-pewter",
-			} satisfies Record<OptionStatus, string>,
-		},
-	}
-);
+const ANSWER_TYPE_HINT: Record<AnswerType, string> = {
+	single: "Pick one answer",
+	multiple: "Multiple answers — select all that apply",
+};
+
+const optionIndex = cva("w-6 shrink-0 text-xs font-bold tabular-nums", {
+	variants: {
+		status: {
+			correct: "text-viridian",
+			chosenWrong: "text-cinnabar",
+			selected: "text-theme",
+			neutral: "text-pewter/70",
+		} satisfies Record<OptionStatus, string>,
+	},
+});
+
+const optionLabel = cva("font-medium text-base", {
+	variants: {
+		status: {
+			correct: "text-viridian",
+			chosenWrong: "text-cinnabar",
+			selected: "text-white",
+			neutral: "text-zinc-100",
+		} satisfies Record<OptionStatus, string>,
+	},
+});
+
+const optionNumber = (index: number) => String(index + 1).padStart(2, "0");
 
 export const PollCard = ({
 	category,
 	question,
+	answerType,
 	options,
 	selectedOptionIds = [],
 	disabledOptionIds = [],
@@ -119,6 +144,10 @@ export const PollCard = ({
 
 			<Title category={category}>{question}</Title>
 
+			<span className="text-pewter text-xs uppercase tracking-widest">
+				{ANSWER_TYPE_HINT[answerType]}
+			</span>
+
 			{canLint ? (
 				<button
 					type="button"
@@ -134,8 +163,8 @@ export const PollCard = ({
 				</button>
 			) : null}
 
-			<div className="flex flex-col gap-1">
-				{options.map((option) => {
+			<div className="flex flex-col divide-y divide-white/5">
+				{options.map((option, index) => {
 					const off = disabled.has(option.id);
 					const isCorrect = revealed && correct.has(option.id);
 					const isChosenWrong =
@@ -151,10 +180,10 @@ export const PollCard = ({
 							onClick={() => onSelect(option.id)}
 							className={optionRow({ status, interaction })}
 						>
-							<span className={optionBox({ status })}>{MARK[status]}</span>
-							<span className="font-extrabold text-lg text-zinc-100">
-								{option.label}
+							<span className={optionIndex({ status })}>
+								{MARK[status] || optionNumber(index)}
 							</span>
+							<span className={optionLabel({ status })}>{option.label}</span>
 						</button>
 					);
 				})}

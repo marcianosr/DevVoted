@@ -35,6 +35,7 @@ export const Default: Story = {
 		],
 		category: "react",
 		question: "What is the correct key to give list items in React?",
+		answerType: "single",
 		options: [
 			{ id: "a", label: "A stable unique id" },
 			{ id: "b", label: "The array index, always" },

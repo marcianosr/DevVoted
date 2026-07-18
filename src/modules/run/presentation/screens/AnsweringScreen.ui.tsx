@@ -1,4 +1,5 @@
 import type { CategoryCode } from "~/domains/shared/categories";
+import type { AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { roleRows } from "~/modules/run/gate/configRole.model";
@@ -13,6 +14,7 @@ type AnsweringScreenProps = {
 	checks: readonly CheckStatus[];
 	category: CategoryCode;
 	question: string;
+	answerType: AnswerType;
 	options: readonly PollOption[];
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
@@ -32,6 +34,7 @@ export const AnsweringScreen = ({
 	checks,
 	category,
 	question,
+	answerType,
 	options,
 	selectedOptionIds,
 	disabledOptionIds,
@@ -48,6 +51,7 @@ export const AnsweringScreen = ({
 		<PollCard
 			category={category}
 			question={question}
+			answerType={answerType}
 			options={options}
 			selectedOptionIds={selectedOptionIds}
 			disabledOptionIds={disabledOptionIds}
