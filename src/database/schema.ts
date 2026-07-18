@@ -262,7 +262,11 @@ export const pollResponsesTable = pgTable(
 		run_id: integer("run_id").references(() => runsTable.id, {
 			onDelete: "cascade",
 		}), // Nullable for legacy responses before this column existed
-		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows)
+		mode: varchar("mode", { length: 16 })
+			.notNull()
+			.default("calendar")
+			.$type<"calendar" | "session">(), // Which loop wrote this row (ADR-005): discriminates the two partial unique indexes below
+		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows, null for session rows — scoring lives in run_states)
 		score_breakdown:
 			json("score_breakdown").$type<
 				import("~/domains/runs/services/score.service").ScoreCalculation
@@ -276,11 +280,14 @@ export const pollResponsesTable = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => ({
-		uniquePollUserDaily: unique().on(
-			table.poll_id,
-			table.user_id,
-			table.answer_date
-		),
+		// Split invariant per mode (slice 2): calendar keeps one answer per
+		// poll/user/day; session runs answer each seed poll exactly once per run.
+		uniqueCalendarDaily: uniqueIndex("polls_responses_calendar_daily_uniq")
+			.on(table.poll_id, table.user_id, table.answer_date)
+			.where(sql`${table.mode} = 'calendar'`),
+		uniqueSessionRunPoll: uniqueIndex("polls_responses_session_run_poll_uniq")
+			.on(table.run_id, table.poll_id)
+			.where(sql`${table.mode} = 'session'`),
 	})
 );
 

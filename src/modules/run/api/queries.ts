@@ -5,6 +5,8 @@ import {
 	dailyRunPollsTable,
 	dailyRunSeedsTable,
 	pollOptionsTable,
+	pollResponseOptionsTable,
+	pollResponsesTable,
 	pollsTable,
 	runStatesTable,
 	runsTable,
@@ -205,8 +207,60 @@ export const createSessionRunWithState = async (
 		return { runId: run.id };
 	});
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Maps engine option ids (strings) back to DB option ids for the answered
+ * poll. The engine tolerates unknown ids (they count as a wrong pick), so the
+ * persistence layer must not be stricter than the game authority.
+ */
+const toSelectedOptionRecordIds = (
+	poll: RunPoll,
+	optionIds: readonly string[]
+): number[] =>
+	poll.options
+		.filter((option) => optionIds.includes(option.id))
+		.map((option) => Number(option.id));
+
+/**
+ * Session answers double as real polls_responses rows (slice 2, ADR-005) so
+ * answer data is queryable by the social layer — even for abandoned runs.
+ * Runs inside the dispatch transaction: the response row commits iff the
+ * state advance commits. score_breakdown/coverage_delta stay null; session
+ * scoring lives in run_states.
+ */
+const recordSessionAnswer = async (
+	tx: Tx,
+	args: { runId: number; userId: string; seedDate: string },
+	poll: RunPoll,
+	optionIds: readonly string[]
+): Promise<void> => {
+	const [response] = await tx
+		.insert(pollResponsesTable)
+		.values({
+			poll_id: Number(poll.id),
+			user_id: args.userId,
+			run_id: args.runId,
+			mode: "session",
+			answer_date: args.seedDate,
+		})
+		.returning({ response_id: pollResponsesTable.response_id });
+
+	if (!response) throw new Error("Failed to record session answer");
+
+	const selectedIds = toSelectedOptionRecordIds(poll, optionIds);
+	if (selectedIds.length === 0) return;
+
+	await tx.insert(pollResponseOptionsTable).values(
+		selectedIds.map((option_id) => ({
+			response_id: response.response_id,
+			option_id,
+		}))
+	);
+};
+
 const finishSessionRun = async (
-	tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+	tx: Tx,
 	runId: number,
 	userId: string,
 	state: RunState
@@ -264,6 +318,17 @@ export const applyActionToRun = async (args: {
 		const state = hydrateRunState(stateRow.state, polls);
 		const next = runReducer(state, args.action);
 		if (next === state) return state;
+
+		if (args.action.type === "answer") {
+			// The answered poll comes from the PRE-action state — the reducer
+			// has already advanced currentIndex past it in `next`.
+			await recordSessionAnswer(
+				tx,
+				args,
+				state.polls[state.currentIndex],
+				args.action.optionIds
+			);
+		}
 
 		await tx
 			.update(runStatesTable)

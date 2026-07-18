@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "~/database/db";
+import {
+	pollResponseOptionsTable,
+	pollResponsesTable,
+} from "~/database/schema";
 import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 
 import { createRun, type RunState } from "../climb/run.model";
@@ -208,6 +212,7 @@ describe("applyActionToRun", () => {
 		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ response_id: 900 }]);
 
 		const next = await dispatch({
 			type: "answer",
@@ -229,6 +234,7 @@ describe("applyActionToRun", () => {
 		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
+		mock.results.push([{ response_id: 900 }]);
 
 		const next = await dispatch({
 			type: "answer",
@@ -247,6 +253,62 @@ describe("applyActionToRun", () => {
 		expect(db.update).toHaveBeenCalledTimes(3);
 	});
 
+	it("writes the answer as a session polls_responses row with its picked options", async () => {
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.insertTables).toContain(pollResponsesTable);
+		expect(mock.valuesCalls[0]).toMatchObject({
+			poll_id: 1,
+			user_id: "red-from-pallet-town",
+			run_id: 64,
+			mode: "session",
+			answer_date: TEST_DATES.birthday,
+		});
+		expect(mock.insertTables).toContain(pollResponseOptionsTable);
+		expect(mock.valuesCalls[1]).toEqual([
+			{ response_id: 900, option_id: Number(correctOptionId(1)) },
+		]);
+	});
+
+	it("drops unknown option ids instead of failing the dispatch", async () => {
+		// The engine tolerates tampered ids (counts them as a wrong pick), so
+		// persistence must not veto an answer the engine already accepted.
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ response_id: 900 }]);
+
+		const next = await dispatch({
+			type: "answer",
+			optionIds: ["missingno"],
+		});
+
+		expect(next.currentIndex).toBe(1);
+		expect(mock.insertTables).toContain(pollResponsesTable);
+		expect(mock.insertTables).not.toContain(pollResponseOptionsTable);
+	});
+
+	it("writes no response row for advancing non-answer actions", async () => {
+		const configuring = {
+			...createRun([], [CONFIGS.js], [CONFIGS.unitTests]),
+			status: "configuring" as const,
+		};
+		mock.results.push([stateRow(configuring)]);
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		const next = await dispatch({ type: "start" });
+
+		expect(next.status).toBe("answering");
+		expect(mock.insertTables).not.toContain(pollResponsesTable);
+		expect(db.update).toHaveBeenCalled();
+	});
+
 	it("marks a bare-build gate failure as dead without crediting empty storage", async () => {
 		const bare = {
 			...createRun([], [], []),
@@ -263,6 +325,7 @@ describe("applyActionToRun", () => {
 		mock.results.push([stateRow(bare)]);
 		mock.results.push([1, 2, 3, 4, 5].map(dbPoll));
 		mock.results.push([1, 2, 3, 4, 5].flatMap(dbOptions));
+		mock.results.push([{ response_id: 900 }]);
 
 		const next = await dispatch({
 			type: "answer",
