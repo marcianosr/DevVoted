@@ -4,6 +4,7 @@ import { db } from "~/database/db";
 import {
 	pollResponseOptionsTable,
 	pollResponsesTable,
+	runPollsTable,
 } from "~/database/schema";
 import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 
@@ -24,6 +25,7 @@ const mock = vi.hoisted(() => ({
 	valuesCalls: [] as unknown[],
 	insertTables: [] as unknown[],
 	updateTables: [] as unknown[],
+	deleteTables: [] as unknown[],
 }));
 
 vi.mock("~/database/db", () => {
@@ -65,6 +67,10 @@ vi.mock("~/database/db", () => {
 			mock.updateTables.push(table);
 			return makeChain();
 		}),
+		delete: vi.fn((table: unknown) => {
+			mock.deleteTables.push(table);
+			return makeChain();
+		}),
 		transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
 			callback(mockDb)
 		),
@@ -104,7 +110,13 @@ const stateRow = (state: RunState) => ({
 	run_id: 64,
 	state: toRunSnapshot(state),
 	engine_status: state.status,
+	polls_answered: state.currentIndex,
 });
+
+/** Newest run_polls segment row: same-day by default, so no rollover runs. */
+const segmentRow = (segment_date: string = TEST_DATES.birthday) => [
+	{ segment_date },
+];
 
 describe("getOrCreateDailyRunSeed", () => {
 	beforeEach(() => {
@@ -170,13 +182,14 @@ describe("applyActionToRun", () => {
 		mock.valuesCalls.length = 0;
 		mock.insertTables.length = 0;
 		mock.updateTables.length = 0;
+		mock.deleteTables.length = 0;
 	});
 
 	const dispatch = (action: Parameters<typeof applyActionToRun>[0]["action"]) =>
 		applyActionToRun({
 			runId: 64,
 			userId: "red-from-pallet-town",
-			seedDate: TEST_DATES.birthday,
+			today: TEST_DATES.birthday,
 			action,
 		});
 
@@ -199,6 +212,7 @@ describe("applyActionToRun", () => {
 
 	it("skips persisting when the action is illegal for the current status", async () => {
 		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 
@@ -210,6 +224,7 @@ describe("applyActionToRun", () => {
 
 	it("persists the reducer output with denormalized columns", async () => {
 		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
 		mock.results.push([{ response_id: 900 }]);
@@ -232,6 +247,7 @@ describe("applyActionToRun", () => {
 	it("finishes the run and credits leftover storage on victory", async () => {
 		// Single-poll seed: a correct answer exhausts the polls, which the engine treats as won.
 		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 		mock.results.push([{ response_id: 900 }]);
@@ -255,6 +271,7 @@ describe("applyActionToRun", () => {
 
 	it("writes the answer as a session polls_responses row with its picked options", async () => {
 		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
 		mock.results.push([{ response_id: 900 }]);
@@ -279,6 +296,7 @@ describe("applyActionToRun", () => {
 		// The engine tolerates tampered ids (counts them as a wrong pick), so
 		// persistence must not veto an answer the engine already accepted.
 		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
 		mock.results.push([{ response_id: 900 }]);
@@ -293,12 +311,65 @@ describe("applyActionToRun", () => {
 		expect(mock.insertTables).not.toContain(pollResponseOptionsTable);
 	});
 
+	it("rolls the run over to today's segment when its newest segment is stale", async () => {
+		// One poll answered on Christmas Eve; the player returns on the birthday.
+		// Rollover drops the unplayed tail and appends today's sequence minus
+		// the already-answered poll 1, then the dispatch answers as normal.
+		const state = answeringState({
+			currentIndex: 1,
+			window: {
+				correct: 1,
+				answered: 1,
+				coverageGained: 0,
+				leadingCorrect: 1,
+				byCategory: { js: { seen: 1, correct: 1 } },
+			},
+		});
+		mock.results.push([stateRow(state)]);
+		mock.results.push(segmentRow(TEST_DATES.christmasEve));
+		mock.results.push([{ poll_id: 1 }]); // answered in this run
+		mock.results.push(undefined); // delete unplayed tail
+		mock.results.push([{ poll_id: 1 }, { poll_id: 2 }, { poll_id: 3 }]); // today's seed
+		mock.results.push(undefined); // insert appended segment
+		mock.results.push([dbPoll(1), dbPoll(2), dbPoll(3)]);
+		mock.results.push([1, 2, 3].flatMap(dbOptions));
+		mock.results.push([{ response_id: 900 }]);
+
+		const next = await dispatch({
+			type: "answer",
+			optionIds: [correctOptionId(2)],
+		});
+
+		expect(mock.deleteTables).toContain(runPollsTable);
+		expect(mock.valuesCalls[0]).toEqual([
+			{
+				run_id: 64,
+				position: 1,
+				poll_id: 2,
+				segment_date: TEST_DATES.birthday,
+			},
+			{
+				run_id: 64,
+				position: 2,
+				poll_id: 3,
+				segment_date: TEST_DATES.birthday,
+			},
+		]);
+		expect(mock.valuesCalls[1]).toMatchObject({
+			poll_id: 2,
+			answer_date: TEST_DATES.birthday,
+			mode: "session",
+		});
+		expect(next.currentIndex).toBe(2);
+	});
+
 	it("writes no response row for advancing non-answer actions", async () => {
 		const configuring = {
 			...createRun([], [CONFIGS.js], [CONFIGS.unitTests]),
 			status: "configuring" as const,
 		};
 		mock.results.push([stateRow(configuring)]);
+		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 
@@ -323,6 +394,7 @@ describe("applyActionToRun", () => {
 			},
 		};
 		mock.results.push([stateRow(bare)]);
+		mock.results.push(segmentRow());
 		mock.results.push([1, 2, 3, 4, 5].map(dbPoll));
 		mock.results.push([1, 2, 3, 4, 5].flatMap(dbOptions));
 		mock.results.push([{ response_id: 900 }]);

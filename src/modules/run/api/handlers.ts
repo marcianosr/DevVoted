@@ -7,8 +7,11 @@ import { type RunView, toRunView } from "../view/runView.viewmodel";
 import {
 	applyActionToRun,
 	createSessionRunWithState,
+	ensureTodaysSegment,
 	fetchRunPollsForDate,
+	fetchRunPollsForRun,
 	fetchRunSnapshot,
+	findActiveSessionRun,
 	findSessionRunByDate,
 	getOrCreateDailyRunSeed,
 	type SessionRunRecord,
@@ -31,18 +34,21 @@ const HANDED_CONFIGS = [
 ];
 const FIXED_CONFIGS = [CONFIGS.unitTests];
 
-const requireSeedDate = (run: SessionRunRecord): string => {
-	if (!run.seed_date) {
-		throw new Error("Session run is missing its seed date");
-	}
-	return run.seed_date;
-};
-
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
 	const snapshot = await fetchRunSnapshot(run.id);
 	if (!snapshot) throw new Error("Run state not found");
-	const polls = await fetchRunPollsForDate(requireSeedDate(run));
+	const polls = await fetchRunPollsForRun(run.id);
 	return toRunView(hydrateRunState(snapshot, polls));
+};
+
+/** The persistent run, rolled over to today's segment first (ADR-011). */
+const continueActiveRun = async (
+	run: SessionRunRecord,
+	date: string
+): Promise<RunView> => {
+	await getOrCreateDailyRunSeed(date);
+	await ensureTodaysSegment(run.id, date);
+	return viewOfRun(run);
 };
 
 export const getTodaysRunHandler = async ({
@@ -53,12 +59,16 @@ export const getTodaysRunHandler = async ({
 	date: string;
 }): Promise<ApiResponse<RunView | null>> =>
 	handleApiOperation(async () => {
-		const run = await findSessionRunByDate(userId, date);
-		if (!run) return null;
-		return viewOfRun(run);
+		const active = await findActiveSessionRun(userId);
+		if (active) return continueActiveRun(active, date);
+
+		// No run in progress — surface a run started today (its won/dead screen).
+		const startedToday = await findSessionRunByDate(userId, date);
+		if (!startedToday) return null;
+		return viewOfRun(startedToday);
 	});
 
-/** Idempotent: starting twice on the same day returns the existing climb. */
+/** Idempotent: with a run in progress (any day), starting resumes it. */
 export const startRunHandler = async ({
 	userId,
 	date,
@@ -67,8 +77,11 @@ export const startRunHandler = async ({
 	date: string;
 }): Promise<ApiResponse<RunView>> =>
 	handleApiOperation(async () => {
-		const existing = await findSessionRunByDate(userId, date);
-		if (existing) return viewOfRun(existing);
+		const active = await findActiveSessionRun(userId);
+		if (active) return continueActiveRun(active, date);
+
+		const startedToday = await findSessionRunByDate(userId, date);
+		if (startedToday) return viewOfRun(startedToday);
 
 		await getOrCreateDailyRunSeed(date);
 		const polls = await fetchRunPollsForDate(date);
@@ -91,13 +104,16 @@ export const dispatchRunActionHandler = async ({
 	action: RunAction;
 }): Promise<ApiResponse<RunView>> =>
 	handleApiOperation(async () => {
-		const run = await findSessionRunByDate(userId, date);
-		if (!run) throw new Error("No run started today");
+		const run = await findActiveSessionRun(userId);
+		if (!run) throw new Error("No active run");
 
+		// Materialize today's shared sequence before the dispatch transaction
+		// rolls the run over to it.
+		await getOrCreateDailyRunSeed(date);
 		const next = await applyActionToRun({
 			runId: run.id,
 			userId,
-			seedDate: requireSeedDate(run),
+			today: date,
 			action,
 		});
 		return toRunView(next);

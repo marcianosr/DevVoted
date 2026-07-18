@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -8,6 +8,7 @@ import {
 	pollResponseOptionsTable,
 	pollResponsesTable,
 	pollsTable,
+	runPollsTable,
 	runStatesTable,
 	runsTable,
 	usersTable,
@@ -95,26 +96,28 @@ export const getOrCreateDailyRunSeed = async (
 	});
 };
 
-/**
- * Hydrates the day's sequence into engine polls — WITH correctness. The result
- * must never leave the server; clients only ever see toRunView output.
- */
-const fetchRunPollsWith = async (
-	reader: DbReader,
-	date: string
-): Promise<RunPoll[]> => {
-	const pollRows = await reader
-		.select({
-			id: pollsTable.id,
-			question: pollsTable.question,
-			answerType: pollsTable.answer_type,
-			categoryCode: pollsTable.category_code,
-		})
-		.from(dailyRunPollsTable)
-		.innerJoin(pollsTable, eq(dailyRunPollsTable.poll_id, pollsTable.id))
-		.where(eq(dailyRunPollsTable.date, date))
-		.orderBy(asc(dailyRunPollsTable.position));
+const ENGINE_POLL_COLUMNS = {
+	id: pollsTable.id,
+	question: pollsTable.question,
+	answerType: pollsTable.answer_type,
+	categoryCode: pollsTable.category_code,
+};
 
+type EnginePollRow = {
+	id: number;
+	question: string;
+	answerType: RunPoll["answerType"];
+	categoryCode: string;
+};
+
+/**
+ * Hydrates poll rows into engine polls — WITH correctness. The result must
+ * never leave the server; clients only ever see toRunView output.
+ */
+const withOptions = async (
+	reader: DbReader,
+	pollRows: EnginePollRow[]
+): Promise<RunPoll[]> => {
 	if (pollRows.length === 0) return [];
 
 	const optionRows = await reader
@@ -147,8 +150,57 @@ const fetchRunPollsWith = async (
 	}));
 };
 
+const fetchRunPollsWith = async (
+	reader: DbReader,
+	date: string
+): Promise<RunPoll[]> => {
+	const pollRows = await reader
+		.select(ENGINE_POLL_COLUMNS)
+		.from(dailyRunPollsTable)
+		.innerJoin(pollsTable, eq(dailyRunPollsTable.poll_id, pollsTable.id))
+		.where(eq(dailyRunPollsTable.date, date))
+		.orderBy(asc(dailyRunPollsTable.position));
+	return withOptions(reader, pollRows);
+};
+
 export const fetchRunPollsForDate = async (date: string): Promise<RunPoll[]> =>
 	fetchRunPollsWith(db, date);
+
+/**
+ * The run's own materialized sequence (ADR-011) — the engine's poll list.
+ * Ordered by position; may span multiple daily segments.
+ */
+export const fetchRunPollsForRun = async (
+	runId: number,
+	reader: DbReader = db
+): Promise<RunPoll[]> => {
+	const pollRows = await reader
+		.select(ENGINE_POLL_COLUMNS)
+		.from(runPollsTable)
+		.innerJoin(pollsTable, eq(runPollsTable.poll_id, pollsTable.id))
+		.where(eq(runPollsTable.run_id, runId))
+		.orderBy(asc(runPollsTable.position));
+	return withOptions(reader, pollRows);
+};
+
+/** The user's persistent run-in-progress (ADR-011) — at most one exists. */
+export const findActiveSessionRun = async (
+	userId: string
+): Promise<SessionRunRecord | null> => {
+	const [run] = await db
+		.select()
+		.from(runsTable)
+		.where(
+			and(
+				eq(runsTable.user_id, userId),
+				eq(runsTable.mode, "session"),
+				eq(runsTable.status, "active")
+			)
+		)
+		.orderBy(desc(runsTable.id))
+		.limit(1);
+	return run ?? null;
+};
 
 export const findSessionRunByDate = async (
 	userId: string,
@@ -204,10 +256,89 @@ export const createSessionRunWithState = async (
 			polls_answered: initialState.currentIndex,
 		});
 
+		await tx.insert(runPollsTable).values(
+			initialState.polls.map((poll, position) => ({
+				run_id: run.id,
+				position,
+				poll_id: Number(poll.id),
+				segment_date: seedDate,
+			}))
+		);
+
 		return { runId: run.id };
 	});
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Day rollover (ADR-011 Decision 2). If the run's newest segment predates
+ * `today`: drop the unplayed tail (positions >= currentIndex), then append
+ * today's shared sequence minus polls already answered in this run. Same-day
+ * calls are no-ops, so this is safe on every read and dispatch. Callers must
+ * hold the run_states FOR UPDATE lock — it serializes concurrent rollovers.
+ */
+const ensureTodaysSegmentWith = async (
+	tx: Tx,
+	runId: number,
+	today: string,
+	currentIndex: number
+): Promise<void> => {
+	const [latest] = await tx
+		.select({ segment_date: runPollsTable.segment_date })
+		.from(runPollsTable)
+		.where(eq(runPollsTable.run_id, runId))
+		.orderBy(desc(runPollsTable.segment_date))
+		.limit(1);
+	if (!latest || latest.segment_date >= today) return;
+
+	const answeredRows = await tx
+		.select({ poll_id: pollResponsesTable.poll_id })
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.run_id, runId),
+				eq(pollResponsesTable.mode, "session")
+			)
+		);
+	const answered = new Set(answeredRows.map((row) => row.poll_id));
+
+	await tx
+		.delete(runPollsTable)
+		.where(
+			and(
+				eq(runPollsTable.run_id, runId),
+				gte(runPollsTable.position, currentIndex)
+			)
+		);
+
+	const todaysSequence = await fetchSeedPollIds(tx, today);
+	const fresh = todaysSequence.filter((pollId) => !answered.has(pollId));
+	if (fresh.length === 0) return;
+
+	await tx.insert(runPollsTable).values(
+		fresh.map((poll_id, offset) => ({
+			run_id: runId,
+			position: currentIndex + offset,
+			poll_id,
+			segment_date: today,
+		}))
+	);
+};
+
+/** Standalone rollover for read paths (getTodaysRun). Dispatch rolls over inside its own transaction. */
+export const ensureTodaysSegment = async (
+	runId: number,
+	today: string
+): Promise<void> =>
+	db.transaction(async (tx) => {
+		const [stateRow] = await tx
+			.select({ polls_answered: runStatesTable.polls_answered })
+			.from(runStatesTable)
+			.where(eq(runStatesTable.run_id, runId))
+			.for("update");
+		if (!stateRow) throw new Error("Run state not found");
+		await ensureTodaysSegmentWith(tx, runId, today, stateRow.polls_answered);
+	});
 
 /**
  * Maps engine option ids (strings) back to DB option ids for the answered
@@ -231,7 +362,7 @@ const toSelectedOptionRecordIds = (
  */
 const recordSessionAnswer = async (
 	tx: Tx,
-	args: { runId: number; userId: string; seedDate: string },
+	args: { runId: number; userId: string; today: string },
 	poll: RunPoll,
 	optionIds: readonly string[]
 ): Promise<void> => {
@@ -242,7 +373,7 @@ const recordSessionAnswer = async (
 			user_id: args.userId,
 			run_id: args.runId,
 			mode: "session",
-			answer_date: args.seedDate,
+			answer_date: args.today,
 		})
 		.returning({ response_id: pollResponsesTable.response_id });
 
@@ -299,7 +430,7 @@ const finishSessionRun = async (
 export const applyActionToRun = async (args: {
 	runId: number;
 	userId: string;
-	seedDate: string;
+	today: string;
 	action: RunAction;
 }): Promise<RunState> =>
 	db.transaction(async (tx) => {
@@ -314,7 +445,13 @@ export const applyActionToRun = async (args: {
 			throw new Error("Run is already over");
 		}
 
-		const polls = await fetchRunPollsWith(tx, args.seedDate);
+		await ensureTodaysSegmentWith(
+			tx,
+			args.runId,
+			args.today,
+			stateRow.polls_answered
+		);
+		const polls = await fetchRunPollsForRun(args.runId, tx);
 		const state = hydrateRunState(stateRow.state, polls);
 		const next = runReducer(state, args.action);
 		if (next === state) return state;

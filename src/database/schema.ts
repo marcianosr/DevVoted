@@ -361,7 +361,7 @@ export const runsTable = pgTable(
 				to?: string;
 			}>
 		>(), // Upgrade cards pending player decision — null when no decision is pending
-		seed_date: varchar("seed_date", { length: 10 }), // "YYYY-MM-DD" of the daily shared seed (ADR-009). NULL for all calendar-mode runs.
+		seed_date: varchar("seed_date", { length: 10 }), // "YYYY-MM-DD" the run STARTED (first segment's seed, ADR-011); with the unique below = one new run per day. NULL for all calendar-mode runs.
 		completion_reason: text("completion_reason"), // Reason for run completion — stores JSON for pipeline failures, plain strings for others
 		victory_achieved_at: timestamp("victory_achieved_at", {
 			withTimezone: true,
@@ -458,6 +458,33 @@ export const dailyRunPollsTable = pgTable(
 		unique().on(table.date, table.position),
 		unique().on(table.date, table.poll_id),
 	]
+);
+
+/**
+ * Run Polls Table (new game flow, ADR-011)
+ * The materialized poll sequence of one persistent session run, built from
+ * daily segments: day rollover drops the unplayed tail and appends that day's
+ * shared sequence (minus polls already answered in this run). This table — not
+ * daily_run_polls by seed_date — is the hydration source for the engine.
+ * - No (run_id, poll_id) unique: a poll missed or linted on an earlier day may
+ *   legitimately reappear via a later day's seed. Answered polls are excluded
+ *   at append time (backstopped by polls_responses_session_run_poll_uniq).
+ * - onDelete restrict on poll_id: same loud-failure rationale as daily_run_polls.
+ */
+export const runPollsTable = pgTable(
+	"run_polls",
+	{
+		id: serial("id").primaryKey(),
+		run_id: integer("run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		position: integer("position").notNull(), // 0-based; RunState.currentIndex indexes into this
+		poll_id: integer("poll_id")
+			.references(() => pollsTable.id, { onDelete: "restrict" })
+			.notNull(),
+		segment_date: varchar("segment_date", { length: 10 }).notNull(), // "YYYY-MM-DD" — the day this segment was appended
+	},
+	(table) => [unique().on(table.run_id, table.position)]
 );
 
 /**
