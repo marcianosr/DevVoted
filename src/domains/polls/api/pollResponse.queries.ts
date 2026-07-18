@@ -145,6 +145,9 @@ export const hasUserAnsweredPoll = async (
 			and(
 				eq(pollResponsesTable.poll_id, pollId),
 				eq(pollResponsesTable.user_id, userId),
+				// Answering a poll inside a session run must not count as
+				// having answered today's calendar poll.
+				eq(pollResponsesTable.mode, "calendar"),
 				gte(pollResponsesTable.created_at, today)
 			)
 		);
@@ -166,6 +169,7 @@ export const getUserSelectedOptions = async (
 			and(
 				eq(pollResponsesTable.poll_id, pollId),
 				eq(pollResponsesTable.user_id, userId),
+				eq(pollResponsesTable.mode, "calendar"),
 				gte(pollResponsesTable.created_at, today)
 			)
 		)
