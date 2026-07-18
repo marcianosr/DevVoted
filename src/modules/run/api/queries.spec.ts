@@ -452,6 +452,16 @@ describe("abandonSessionRun", () => {
 		);
 	});
 
+	it("abandons a corrupt run (no state row) with zero credit", async () => {
+		mock.results.push([]); // state row missing
+		mock.results.push([{ id: 64 }]);
+
+		await abandonSessionRun(64, "red-from-pallet-town");
+
+		expect(mock.setCalls[0]).toMatchObject({ completion_reason: "abandoned" });
+		expect(db.update).toHaveBeenCalledTimes(1); // no archived_storage credit
+	});
+
 	it("skips the credit entirely when nothing is left to bank", async () => {
 		mock.results.push([
 			{ state: toRunSnapshot(answeringState({ storage: 0 })) },

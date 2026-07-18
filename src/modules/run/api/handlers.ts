@@ -53,6 +53,27 @@ const continueActiveRun = async (
 	return viewOfRun(run);
 };
 
+/**
+ * The active run, if it is playable. An active run whose state row is missing
+ * (corrupt — seen once on dev) is unplayable and would brick every request;
+ * self-heal by abandoning it (credits nothing) and report "no active run".
+ */
+const findResumableRun = async (
+	userId: string
+): Promise<SessionRunRecord | null> => {
+	const active = await findActiveSessionRun(userId);
+	if (!active) return null;
+	const snapshot = await fetchRunSnapshot(active.id);
+	if (snapshot) return active;
+
+	await abandonSessionRun(active.id, userId);
+	return null;
+};
+
+/** Only a properly finished run has a summary screen worth surfacing. */
+const isFinishedRun = (run: SessionRunRecord): boolean =>
+	run.completion_reason === "victory" || run.completion_reason === "dead";
+
 export const getTodaysRunHandler = async ({
 	userId,
 	date,
@@ -61,15 +82,13 @@ export const getTodaysRunHandler = async ({
 	date: string;
 }): Promise<ApiResponse<RunView | null>> =>
 	handleApiOperation(async () => {
-		const active = await findActiveSessionRun(userId);
+		const active = await findResumableRun(userId);
 		if (active) return continueActiveRun(active, date);
 
 		// No run in progress — surface today's latest won/dead run (its summary
-		// screen). An abandoned run falls through to the start screen instead.
+		// screen). Abandoned or corrupt runs fall through to the start screen.
 		const startedToday = await findSessionRunByDate(userId, date);
-		if (!startedToday || startedToday.completion_reason === "abandoned") {
-			return null;
-		}
+		if (!startedToday || !isFinishedRun(startedToday)) return null;
 		return viewOfRun(startedToday);
 	});
 
@@ -82,7 +101,7 @@ export const startRunHandler = async ({
 	date: string;
 }): Promise<ApiResponse<RunView>> =>
 	handleApiOperation(async () => {
-		const active = await findActiveSessionRun(userId);
+		const active = await findResumableRun(userId);
 		if (active) return continueActiveRun(active, date);
 
 		await getOrCreateDailyRunSeed(date);

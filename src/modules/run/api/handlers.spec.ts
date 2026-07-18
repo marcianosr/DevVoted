@@ -96,7 +96,11 @@ describe("getTodaysRunHandler", () => {
 	it("surfaces a finished run started today without rolling it over", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
 		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(
-			sessionRunRecord({ seed_date: DATE, status: "finished" })
+			sessionRunRecord({
+				seed_date: DATE,
+				status: "finished",
+				completion_reason: "victory",
+			})
 		);
 		vi.mocked(queries.fetchRunSnapshot).mockResolvedValue(
 			toRunSnapshot({ ...configuringState(), status: "won" })
@@ -126,15 +130,20 @@ describe("getTodaysRunHandler", () => {
 		if (result.success) expect(result.data).toBeNull();
 	});
 
-	it("errors when the run exists but its state row is missing", async () => {
+	it("self-heals an active run whose state row is missing instead of bricking", async () => {
+		// Corrupt run (seen on dev): abandon it for nothing and show the start
+		// screen, rather than erroring on every request forever.
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
 			sessionRunRecord()
 		);
 		vi.mocked(queries.fetchRunSnapshot).mockResolvedValue(null);
+		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(null);
 
 		const result = await getTodaysRunHandler({ userId: USER, date: DATE });
 
-		expect(result.success).toBe(false);
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data).toBeNull();
+		expect(queries.abandonSessionRun).toHaveBeenCalledWith(64, USER);
 	});
 });
 

@@ -461,12 +461,13 @@ export const abandonSessionRun = async (
 	userId: string
 ): Promise<void> =>
 	db.transaction(async (tx) => {
+		// A missing state row means a corrupt, unplayable run (seen once on
+		// dev) — abandoning is exactly how it gets cleaned up, with 0 credit.
 		const [stateRow] = await tx
 			.select({ state: runStatesTable.state })
 			.from(runStatesTable)
 			.where(eq(runStatesTable.run_id, runId))
 			.for("update");
-		if (!stateRow) throw new Error("Run state not found");
 
 		const updated = await tx
 			.update(runsTable)
@@ -479,8 +480,9 @@ export const abandonSessionRun = async (
 			.returning({ id: runsTable.id });
 		if (updated.length === 0) throw new Error("Run is already over");
 
+		const leftoverKb = stateRow?.state.storage ?? 0;
 		const creditBytes = Math.round(
-			stateRow.state.storage * STORAGE_UNITS.KB * ABANDON_STORAGE_CREDIT_RATE
+			leftoverKb * STORAGE_UNITS.KB * ABANDON_STORAGE_CREDIT_RATE
 		);
 		if (creditBytes > 0) {
 			await tx
