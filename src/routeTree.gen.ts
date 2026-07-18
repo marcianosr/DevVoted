@@ -30,6 +30,7 @@ import { Route as AuthedCommunityRouteImport } from './routes/_authed/community'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
 import { Route as AuthedDailyPollIndexRouteImport } from './routes/_authed/daily-poll/index'
+import { Route as AuthedRunCommunityRouteImport } from './routes/_authed/run_.community'
 import { Route as AuthedProfileUserIdRouteImport } from './routes/_authed/profile.$userId'
 import { Route as AuthedPollsNewRouteImport } from './routes/_authed/polls/new'
 import { Route as AuthedPollsPollIdIndexRouteImport } from './routes/_authed/polls/$pollId/index'
@@ -139,6 +140,11 @@ const AuthedDailyPollIndexRoute = AuthedDailyPollIndexRouteImport.update({
   path: '/daily-poll/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedRunCommunityRoute = AuthedRunCommunityRouteImport.update({
+  id: '/run_/community',
+  path: '/run/community',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedProfileUserIdRoute = AuthedProfileUserIdRouteImport.update({
   id: '/profile/$userId',
   path: '/profile/$userId',
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
+  '/run/community': typeof AuthedRunCommunityRoute
   '/daily-poll/': typeof AuthedDailyPollIndexRoute
   '/polls/': typeof AuthedPollsIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
@@ -207,6 +214,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
+  '/run/community': typeof AuthedRunCommunityRoute
   '/daily-poll': typeof AuthedDailyPollIndexRoute
   '/polls': typeof AuthedPollsIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/polls/new': typeof AuthedPollsNewRoute
   '/_authed/profile/$userId': typeof AuthedProfileUserIdRoute
+  '/_authed/run_/community': typeof AuthedRunCommunityRoute
   '/_authed/daily-poll/': typeof AuthedDailyPollIndexRoute
   '/_authed/polls/': typeof AuthedPollsIndexRoute
   '/_authed/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/polls/new'
     | '/profile/$userId'
+    | '/run/community'
     | '/daily-poll/'
     | '/polls/'
     | '/polls/$pollId/edit'
@@ -289,6 +299,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/polls/new'
     | '/profile/$userId'
+    | '/run/community'
     | '/daily-poll'
     | '/polls'
     | '/polls/$pollId/edit'
@@ -316,6 +327,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_authed/polls/new'
     | '/_authed/profile/$userId'
+    | '/_authed/run_/community'
     | '/_authed/daily-poll/'
     | '/_authed/polls/'
     | '/_authed/polls/$pollId/edit'
@@ -485,6 +497,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDailyPollIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/run_/community': {
+      id: '/_authed/run_/community'
+      path: '/run/community'
+      fullPath: '/run/community'
+      preLoaderRoute: typeof AuthedRunCommunityRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/profile/$userId': {
       id: '/_authed/profile/$userId'
       path: '/profile/$userId'
@@ -527,6 +546,7 @@ interface AuthedRouteChildren {
   AuthedShopRoute: typeof AuthedShopRoute
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
+  AuthedRunCommunityRoute: typeof AuthedRunCommunityRoute
   AuthedDailyPollIndexRoute: typeof AuthedDailyPollIndexRoute
   AuthedPollsIndexRoute: typeof AuthedPollsIndexRoute
   AuthedPollsPollIdEditRoute: typeof AuthedPollsPollIdEditRoute
@@ -544,6 +564,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedShopRoute: AuthedShopRoute,
   AuthedPollsNewRoute: AuthedPollsNewRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,
+  AuthedRunCommunityRoute: AuthedRunCommunityRoute,
   AuthedDailyPollIndexRoute: AuthedDailyPollIndexRoute,
   AuthedPollsIndexRoute: AuthedPollsIndexRoute,
   AuthedPollsPollIdEditRoute: AuthedPollsPollIdEditRoute,

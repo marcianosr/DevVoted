@@ -5,6 +5,7 @@ import { getTodayDateString } from "~/lib/dateUtils";
 import { getAuthenticatedUserId } from "~/utils/authorization";
 
 import { runActionSchema } from "../validation/schemas.validation";
+import { getRunCommunityHandler } from "./community.handlers";
 import {
 	dispatchRunActionHandler,
 	getTodaysRunHandler,
@@ -28,6 +29,14 @@ export const startRun = createServerFn({ method: "POST" }).handler(async () => {
 	const userId = await getAuthenticatedUserId();
 	return startRunHandler({ userId, date: getTodayDateString() });
 });
+
+/** Community comparison for today's segment — only polls the viewer is past. */
+export const getRunCommunity = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const userId = await getAuthenticatedUserId();
+		return getRunCommunityHandler({ userId, date: getTodayDateString() });
+	}
+);
 
 export const dispatchRunAction = createServerFn({ method: "POST" })
 	.validator(z.object({ action: runActionSchema }).strict())

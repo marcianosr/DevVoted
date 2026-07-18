@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor shop design flow when skipping a shop
 - Added Ruby configs
 - Improve gate pathing visualizations
+- **Runs continue where you left off**: stopping mid-run no longer loses your climb — come back any day and pick up with that day's fresh polls. Polls you skip are missed, not failed.
+- **"How you compared" page** (`/run/community`): after answering, see per poll how the community voted — who agreed with you, who got it right, and where you rank today. Skipped polls stay sealed.
 
 ## 1.3.0 - 2026-07-06
 ### Added
