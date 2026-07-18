@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { sessionRunQueryKeys } from "~/domains/shared/queryKeys";
 import { getTodayDateString } from "~/lib/dateUtils";
 import {
+	abandonRun,
 	dispatchRunAction,
 	getTodaysRun,
 	startRun,
@@ -63,12 +64,30 @@ export const RunGame = () => {
 		}
 	};
 
+	// Abandoning is destructive (half the leftover storage forfeits), so the
+	// button arms on first click and only fires on the second.
+	const [abandonArmed, setAbandonArmed] = useState(false);
+	const abandon = useMutation({
+		mutationFn: () => abandonRun(),
+		onSuccess: (result) => {
+			setAbandonArmed(false);
+			if (result.success) {
+				queryClient.invalidateQueries({ queryKey });
+			}
+		},
+	});
+	const onAbandonClick = () => {
+		if (!abandonArmed) return setAbandonArmed(true);
+		abandon.mutate();
+	};
+
 	const view: RunView | null =
 		todaysRun.data?.success === true ? todaysRun.data.data : null;
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	useEffect(() => {
 		setSelected([]);
+		setAbandonArmed(false);
 	}, [view?.poll?.id]);
 	// The reward flows over two pages: the rewards summary, then the shop. Reset to the
 	// summary each time a new gate clears.
@@ -85,6 +104,7 @@ export const RunGame = () => {
 		);
 	}
 
+	console.log(todaysRun.data);
 	if (todaysRun.data?.success === false) {
 		return (
 			<Screen width="narrow">
@@ -178,10 +198,16 @@ export const RunGame = () => {
 			)}
 
 			{view.status === "answering" && view.poll && (
-				<Screen categoryCode={view.poll.category}>
+				<Screen
+					categoryCode={view.poll.category}
+					leftAction={{
+						label: abandonArmed ? "Really abandon? (½ storage)" : "Abandon run",
+						onClick: onAbandonClick,
+						disabled: abandon.isPending,
+					}}
+				>
 					<AnsweringScreen
 						configs={view.configs}
-						slots={view.slots}
 						checks={view.checks}
 						category={view.poll.category}
 						question={view.poll.question}
@@ -272,6 +298,7 @@ export const RunGame = () => {
 				>
 					<StripScreen
 						stripsRemaining={view.stripsRemaining}
+						gateNumber={view.gatesCleared + 1}
 						configs={view.configs}
 						checks={view.checks}
 						answered={view.answeredThisGate}
@@ -281,7 +308,14 @@ export const RunGame = () => {
 			)}
 
 			{runOver && (
-				<Screen width="narrow">
+				<Screen
+					width="narrow"
+					rightAction={{
+						label: "Start a new run →",
+						onClick: () => start.mutate(),
+						disabled: start.isPending,
+					}}
+				>
 					<RunSummary
 						won={view.status === "won"}
 						gatesCleared={view.gatesCleared}
@@ -291,6 +325,9 @@ export const RunGame = () => {
 					<Paragraph>
 						Leftover storage is archived. A fresh seed drops tomorrow.
 					</Paragraph>
+					{start.data?.success === false && (
+						<Paragraph>{start.data.error}</Paragraph>
+					)}
 				</Screen>
 			)}
 		</>

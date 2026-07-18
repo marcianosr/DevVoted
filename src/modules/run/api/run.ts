@@ -7,6 +7,7 @@ import { getAuthenticatedUserId } from "~/utils/authorization";
 import { runActionSchema } from "../validation/schemas.validation";
 import { getRunCommunityHandler } from "./community.handlers";
 import {
+	abandonRunHandler,
 	dispatchRunActionHandler,
 	getTodaysRunHandler,
 	startRunHandler,
@@ -29,6 +30,14 @@ export const startRun = createServerFn({ method: "POST" }).handler(async () => {
 	const userId = await getAuthenticatedUserId();
 	return startRunHandler({ userId, date: getTodayDateString() });
 });
+
+/** Give up the active run: 50% of leftover storage banks, a fresh start opens (DVTD-li9i). */
+export const abandonRun = createServerFn({ method: "POST" }).handler(
+	async () => {
+		const userId = await getAuthenticatedUserId();
+		return abandonRunHandler({ userId });
+	}
+);
 
 /** Community comparison for today's segment — only polls the viewer is past. */
 export const getRunCommunity = createServerFn({ method: "GET" }).handler(

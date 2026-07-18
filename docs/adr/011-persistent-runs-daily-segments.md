@@ -37,6 +37,8 @@ The 5-poll window (ADR-006) fills across segments. Answer 2 polls Monday and 3 T
 
 Hydration can no longer derive the poll list from `daily_run_polls` by the run's single `seed_date` — a run now owns an ordered list built from multiple days. The run's sequence is materialized per run (append + truncate at day rollover) and becomes the hydration source. `runs.seed_date` becomes the run's **start date** (kept for the one-new-run-per-day unique and cohort stats). Session `polls_responses.answer_date` records the day the answer was actually given, not the run's start date.
 
+> ⚠ **Amended (DVTD-li9i, 2026-07-18)**: the one-new-run-per-day unique is dropped — a player may **abandon** the active run (`completion_reason: "abandoned"`, only `ABANDON_STORAGE_CREDIT_RATE` of leftover storage banks — see `rules.model.ts`) and start fresh the same day. One-answer-per-poll-per-day survives differently: a new run's sequence is today's seed **minus polls the player already answered today in any run**, so community splits stay one vote per player.
+
 ## Consequences
 
 - **Positive**: roguelite identity restored; slow players keep their build; the shared daily conversation is untouched; no zombie-run cleanup machinery needed.

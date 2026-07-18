@@ -5,9 +5,11 @@ import { hydrateRunState } from "../climb/runSnapshot.model";
 import { CONFIGS } from "../configs/configRoster.model";
 import { type RunView, toRunView } from "../view/runView.viewmodel";
 import {
+	abandonSessionRun,
 	applyActionToRun,
 	createSessionRunWithState,
 	ensureTodaysSegment,
+	fetchAnsweredPollIdsForDay,
 	fetchRunPollsForDate,
 	fetchRunPollsForRun,
 	fetchRunSnapshot,
@@ -62,13 +64,16 @@ export const getTodaysRunHandler = async ({
 		const active = await findActiveSessionRun(userId);
 		if (active) return continueActiveRun(active, date);
 
-		// No run in progress — surface a run started today (its won/dead screen).
+		// No run in progress — surface today's latest won/dead run (its summary
+		// screen). An abandoned run falls through to the start screen instead.
 		const startedToday = await findSessionRunByDate(userId, date);
-		if (!startedToday) return null;
+		if (!startedToday || startedToday.completion_reason === "abandoned") {
+			return null;
+		}
 		return viewOfRun(startedToday);
 	});
 
-/** Idempotent: with a run in progress (any day), starting resumes it. */
+/** With a run in progress (any day), starting resumes it; otherwise a fresh run starts — same-day restarts included (DVTD-li9i). */
 export const startRunHandler = async ({
 	userId,
 	date,
@@ -80,18 +85,31 @@ export const startRunHandler = async ({
 		const active = await findActiveSessionRun(userId);
 		if (active) return continueActiveRun(active, date);
 
-		const startedToday = await findSessionRunByDate(userId, date);
-		if (startedToday) return viewOfRun(startedToday);
-
 		await getOrCreateDailyRunSeed(date);
-		const polls = await fetchRunPollsForDate(date);
+		const answeredToday = await fetchAnsweredPollIdsForDay(userId, date);
+		const polls = (await fetchRunPollsForDate(date)).filter(
+			(poll) => !answeredToday.has(Number(poll.id))
+		);
 		if (polls.length === 0) {
-			throw new Error("No polls seeded for today's run");
+			throw new Error("No polls left for a run today");
 		}
 
 		const state = createRun(polls, HANDED_CONFIGS, FIXED_CONFIGS);
 		await createSessionRunWithState(userId, date, state);
 		return toRunView(state);
+	});
+
+export const abandonRunHandler = async ({
+	userId,
+}: {
+	userId: string;
+}): Promise<ApiResponse<{ abandoned: true }>> =>
+	handleApiOperation(async () => {
+		const run = await findActiveSessionRun(userId);
+		if (!run) throw new Error("No active run");
+
+		await abandonSessionRun(run.id, userId);
+		return { abandoned: true as const };
 	});
 
 export const dispatchRunActionHandler = async ({

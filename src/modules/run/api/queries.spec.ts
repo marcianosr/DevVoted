@@ -11,7 +11,11 @@ import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 import { createRun, type RunState } from "../climb/run.model";
 import { toRunSnapshot } from "../climb/runSnapshot.model";
 import { CONFIGS } from "../configs/configRoster.model";
-import { applyActionToRun, getOrCreateDailyRunSeed } from "./queries";
+import {
+	abandonSessionRun,
+	applyActionToRun,
+	getOrCreateDailyRunSeed,
+} from "./queries";
 
 /**
  * Chainable thenable db mock: every query-builder method returns the chain,
@@ -411,5 +415,51 @@ describe("applyActionToRun", () => {
 		});
 		// storage is 0 — no archived_storage credit, so only run_states + runs updates
 		expect(db.update).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe("abandonSessionRun", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mock.results.length = 0;
+		mock.setCalls.length = 0;
+		mock.updateTables.length = 0;
+	});
+
+	it("finishes the run as abandoned and credits half the leftover storage", async () => {
+		mock.results.push([
+			{ state: toRunSnapshot(answeringState({ storage: 229 })) },
+		]);
+		mock.results.push([{ id: 64 }]); // runs update matched an active row
+
+		await abandonSessionRun(64, "red-from-pallet-town");
+
+		expect(mock.setCalls[0]).toMatchObject({
+			status: "finished",
+			completion_reason: "abandoned",
+		});
+		// 229 KB leftover → 50% credited, in bytes, on users.archived_storage
+		expect(mock.setCalls[1]).toHaveProperty("archived_storage");
+		expect(db.update).toHaveBeenCalledTimes(2);
+	});
+
+	it("throws when the run is already finished", async () => {
+		mock.results.push([{ state: toRunSnapshot(answeringState({})) }]);
+		mock.results.push([]); // no active row matched the guarded update
+
+		await expect(abandonSessionRun(64, "red-from-pallet-town")).rejects.toThrow(
+			"Run is already over"
+		);
+	});
+
+	it("skips the credit entirely when nothing is left to bank", async () => {
+		mock.results.push([
+			{ state: toRunSnapshot(answeringState({ storage: 0 })) },
+		]);
+		mock.results.push([{ id: 64 }]);
+
+		await abandonSessionRun(64, "red-from-pallet-town");
+
+		expect(db.update).toHaveBeenCalledTimes(1);
 	});
 });

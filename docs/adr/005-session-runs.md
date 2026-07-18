@@ -52,9 +52,9 @@ Existing runs default to `"calendar"`, preserving current behavior with no backf
 **2026-07-17 — persistence shape (refines "persist to runsTable"):**
 
 - **Engine state lives in a 1:1 `run_states` satellite table**, not a JSON column on `runs`. This does not reopen this ADR's decision — `runs` stays the single identity table all FKs point at; `run_states` is an extension row (like `run_shop_offerings`). Chosen because `runs` already carries four legacy JSON columns (mode confusion), and every action dispatch rewrites state — a narrow row isolates the hot path and gives `SELECT … FOR UPDATE` a clean target. The blob is `RunSnapshot` = `RunState` minus `polls`; a few columns (`engine_status`, `gates_cleared`, `coverage`, `polls_answered`) are denormalized for queries.
-- **The daily shared seed is persisted** (`daily_run_seeds` + `daily_run_polls`, one row per position), not recomputed: mid-day poll-pool changes must never fork ADR-009's shared climb. `runs.seed_date` + partial unique `(user_id, seed_date) WHERE mode = 'session'` enforces one run per player per seed.
+- **The daily shared seed is persisted** (`daily_run_seeds` + `daily_run_polls`, one row per position), not recomputed: mid-day poll-pool changes must never fork ADR-009's shared climb. `runs.seed_date` records the start date. *(The one-run-per-player-per-seed unique was dropped 2026-07-18 — same-day restart, see ADR-011 amendment.)*
 - **Per-answer `polls_responses` rows are deferred** (slice 2). The partial-constraint plan above needs a local `mode` column on `polls_responses` — Postgres partial-index predicates cannot join to `runs.mode`.
-- **End-of-run economy bridge (decided):** leftover run storage (KB) credits `users.archived_storage` (bytes) when a run finishes, won or dead. Run-*start* fuel cost stays open (ADR-009).
+- **End-of-run economy bridge (decided):** leftover run storage (KB) credits `users.archived_storage` (bytes) when a run finishes, won or dead. *Amended 2026-07-18 (DVTD-li9i): an **abandoned** run credits only `ABANDON_STORAGE_CREDIT_RATE` (see `rules.model.ts`) of its leftovers.* Run-*start* fuel cost stays open (ADR-009).
 
 ## Still open (deferred to their phases)
 

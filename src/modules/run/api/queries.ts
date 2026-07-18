@@ -16,6 +16,8 @@ import {
 import { type CategoryCode, isCategoryCode } from "~/domains/shared/categories";
 import { STORAGE_UNITS } from "~/lib/storage";
 
+import { ABANDON_STORAGE_CREDIT_RATE } from "../rules.model";
+
 import {
 	type RunAction,
 	type RunPoll,
@@ -101,6 +103,7 @@ const ENGINE_POLL_COLUMNS = {
 	question: pollsTable.question,
 	answerType: pollsTable.answer_type,
 	categoryCode: pollsTable.category_code,
+	explanation: pollsTable.explanation,
 };
 
 type EnginePollRow = {
@@ -108,6 +111,7 @@ type EnginePollRow = {
 	question: string;
 	answerType: RunPoll["answerType"];
 	categoryCode: string;
+	explanation: string | null;
 };
 
 /**
@@ -140,6 +144,7 @@ const withOptions = async (
 		category: toCategory(poll.categoryCode),
 		question: poll.question,
 		answerType: poll.answerType,
+		explanation: poll.explanation ?? undefined,
 		options: optionRows
 			.filter((option) => option.poll_id === poll.id)
 			.map((option) => ({
@@ -202,6 +207,7 @@ export const findActiveSessionRun = async (
 	return run ?? null;
 };
 
+/** Latest run started on `seedDate` — several may exist since same-day restart (DVTD-li9i). */
 export const findSessionRunByDate = async (
 	userId: string,
 	seedDate: string
@@ -216,8 +222,31 @@ export const findSessionRunByDate = async (
 				eq(runsTable.seed_date, seedDate)
 			)
 		)
+		.orderBy(desc(runsTable.id))
 		.limit(1);
 	return run ?? null;
+};
+
+/**
+ * Every poll the user answered today across ALL their runs. New runs start
+ * from today's seed minus these, so a same-day restart can never re-answer a
+ * poll — one vote per player per poll per day stays true for the community.
+ */
+export const fetchAnsweredPollIdsForDay = async (
+	userId: string,
+	date: string
+): Promise<Set<number>> => {
+	const rows = await db
+		.select({ poll_id: pollResponsesTable.poll_id })
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.user_id, userId),
+				eq(pollResponsesTable.mode, "session"),
+				eq(pollResponsesTable.answer_date, date)
+			)
+		);
+	return new Set(rows.map((row) => row.poll_id));
 };
 
 export const fetchRunSnapshot = async (
@@ -420,6 +449,48 @@ const finishSessionRun = async (
 			.where(eq(usersTable.id, userId));
 	}
 };
+
+/**
+ * Walking away (DVTD-li9i): the run finishes as "abandoned" and only
+ * ABANDON_STORAGE_CREDIT_RATE of its leftover storage is banked — won/dead
+ * credit 100% via finishSessionRun. Locks the state row like dispatch does,
+ * so an in-flight answer and an abandon cannot interleave.
+ */
+export const abandonSessionRun = async (
+	runId: number,
+	userId: string
+): Promise<void> =>
+	db.transaction(async (tx) => {
+		const [stateRow] = await tx
+			.select({ state: runStatesTable.state })
+			.from(runStatesTable)
+			.where(eq(runStatesTable.run_id, runId))
+			.for("update");
+		if (!stateRow) throw new Error("Run state not found");
+
+		const updated = await tx
+			.update(runsTable)
+			.set({
+				status: "finished",
+				finished_at: new Date(),
+				completion_reason: "abandoned",
+			})
+			.where(and(eq(runsTable.id, runId), eq(runsTable.status, "active")))
+			.returning({ id: runsTable.id });
+		if (updated.length === 0) throw new Error("Run is already over");
+
+		const creditBytes = Math.round(
+			stateRow.state.storage * STORAGE_UNITS.KB * ABANDON_STORAGE_CREDIT_RATE
+		);
+		if (creditBytes > 0) {
+			await tx
+				.update(usersTable)
+				.set({
+					archived_storage: sql`${usersTable.archived_storage} + ${creditBytes}`,
+				})
+				.where(eq(usersTable.id, userId));
+		}
+	});
 
 /**
  * The dispatch hot path. One transaction: lock the state row (serializes
