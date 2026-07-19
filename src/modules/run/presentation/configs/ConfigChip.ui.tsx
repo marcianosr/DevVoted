@@ -17,21 +17,26 @@ const rarityVariant = (
 	) as Record<Rarity, string>;
 
 // Compact chips (pipeline rows) are ghost outlines: thin border, no fill.
-const chipSurface = cva("rounded-lg text-sm font-semibold", {
-	variants: {
-		rarity: rarityVariant((colors) => clsx(colors.border, colors.text)),
-		compact: {
-			true: "border px-2.5 py-1",
-			false: "border-2 px-3 py-2",
+// inline-flex + shrink-0: a squeezed row wraps its description text, never
+// the chip's own dot/label.
+const chipSurface = cva(
+	"inline-flex shrink-0 items-center rounded-lg align-middle text-sm font-semibold",
+	{
+		variants: {
+			rarity: rarityVariant((colors) => clsx(colors.border, colors.text)),
+			compact: {
+				true: "border px-2.5 py-1",
+				false: "border-2 px-3 py-2",
+			},
 		},
-	},
-	compoundVariants: RARITY_KEYS.map((rarity) => ({
-		rarity,
-		compact: false as const,
-		class: RARITY_COLORS[rarity].bg,
-	})),
-	defaultVariants: { compact: false },
-});
+		compoundVariants: RARITY_KEYS.map((rarity) => ({
+			rarity,
+			compact: false as const,
+			class: RARITY_COLORS[rarity].bg,
+		})),
+		defaultVariants: { compact: false },
+	}
+);
 
 const tooltipSurface = cva("bg-zinc-900", {
 	variants: {

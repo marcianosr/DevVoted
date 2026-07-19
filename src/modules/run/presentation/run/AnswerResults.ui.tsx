@@ -150,6 +150,8 @@ export const AnswerResults = ({ answered }: AnswerResultsProps) => {
 			{answered.length > 1 ? (
 				<div className="flex items-center justify-between">
 					<Button
+						variant="secondary"
+						size="small"
 						disabled={expandedIndex === 0}
 						onClick={() => setExpandedIndex(expandedIndex - 1)}
 					>
@@ -170,6 +172,8 @@ export const AnswerResults = ({ answered }: AnswerResultsProps) => {
 						))}
 					</div>
 					<Button
+						variant="secondary"
+						size="small"
 						disabled={onLastPoll}
 						onClick={() => setExpandedIndex(expandedIndex + 1)}
 					>

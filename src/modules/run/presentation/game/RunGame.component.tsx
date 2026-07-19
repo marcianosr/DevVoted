@@ -229,6 +229,7 @@ export const RunGame = () => {
 
 			{view.status === "rewarding" && rewardStep === "summary" && (
 				<Screen
+					theme="celadon"
 					rightAction={{
 						label: "Continue →",
 						onClick: () => setRewardStep("shop"),
@@ -287,6 +288,7 @@ export const RunGame = () => {
 
 			{view.status === "awaiting-strip" && (
 				<Screen
+					theme="cinnabar"
 					rightAction={{
 						label: "Climb on →",
 						onClick: () => send({ type: "resume-climb" }),

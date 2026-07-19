@@ -12,7 +12,6 @@ import {
 	gateRowDescription,
 	roleOf,
 } from "~/modules/run/gate/configRole.model";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { stateText } from "./checkStateStyles";
 
@@ -63,18 +62,13 @@ export const PipelineRowList = ({ rows }: { rows: readonly PipelineRow[] }) => (
 	<ul className="divide-y divide-white/5 overflow-hidden rounded-r-xl bg-zinc-900/30">
 		{rows.map((row) => (
 			<li key={row.key} className={rowTone({ tone: row.state })}>
-				<span className="flex min-w-0 items-center gap-2">
-					{row.config ? (
-						<ConfigChip config={row.config} noTooltip noFixedBadge compact />
-					) : (
-						row.icon
-					)}
-					{row.config?.fixed ? (
-						<Paragraph as="span" tone="pewter">
-							fixed
-						</Paragraph>
-					) : null}
-					<span className={`text-sm ${row.textClass ?? "text-white"}`}>
+				{/* Inline flow, not flex: long descriptions wrap under the chip
+				    instead of hanging in their own column beside it. */}
+				<span className="min-w-0 text-sm leading-7">
+					{row.config ? <ConfigChip config={row.config} noTooltip /> : row.icon}
+					<span
+						className={`ml-2 align-middle ${row.textClass ?? "text-white"}`}
+					>
 						{row.text}
 					</span>
 				</span>

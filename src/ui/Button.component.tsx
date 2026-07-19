@@ -21,7 +21,7 @@ const button = cva(
 			variant: {
 				primary: "",
 				secondary:
-					"border border-cerulean text-cerulean hover:bg-cerulean/15 disabled:opacity-40",
+					"border border-theme text-theme hover:bg-theme-soft disabled:opacity-40",
 				theme:
 					"border-2 border-theme text-theme hover:bg-theme hover:text-black disabled:opacity-40",
 				danger:

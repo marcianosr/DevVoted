@@ -237,6 +237,15 @@
 	--theme-color: var(--color-cerulean);
 }
 
+/* Semantic screen mood — not a content category. Lets a whole screen re-point
+   the theme utilities: gate failed goes cinnabar, gate cleared goes celadon. */
+[data-screen-theme="cinnabar"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-screen-theme="celadon"] {
+	--theme-color: var(--color-celadon);
+}
+
 /* Set --theme-color on each category, then use it in theme utilities */
 [data-category-theme="html"] {
 	--theme-color: var(--color-vermillion);
@@ -287,6 +296,11 @@ body {
 }
 body[data-category-theme] {
 	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
+}
+/* Mood screens glow softer than category screens: chroma crushed further and
+   lightness pulled closer to black. */
+body[data-screen-theme] {
+	background-color: oklch(from var(--theme-color) 0.14 calc(c * 0.15) h);
 }
 
 /* Registered as @utility (not plain classes) so Tailwind variants — hover:, focus:,

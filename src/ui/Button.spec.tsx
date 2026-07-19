@@ -33,14 +33,14 @@ describe("Button", () => {
 		expect(screen.getByRole("button")).toHaveClass("border-cinnabar");
 	});
 
-	it("outlines the secondary variant in cerulean and shrinks with size", () => {
+	it("outlines the secondary variant in the theme color and shrinks with size", () => {
 		render(
 			<Button variant="secondary" size="small">
 				Review answers →
 			</Button>
 		);
 		const button = screen.getByRole("button");
-		expect(button).toHaveClass("border-cerulean", "text-cerulean");
+		expect(button).toHaveClass("border-theme", "text-theme");
 		expect(button).toHaveClass("px-3", "py-1.5");
 	});
 

@@ -12,6 +12,8 @@ import {
 } from "./screenNavDirection";
 
 export type ScreenWidth = "narrow" | "default" | "wide";
+/** Mood, not content category — re-points --theme-color for the whole page. */
+export type ScreenTheme = "cinnabar" | "celadon";
 export type ScreenTransition =
 	"none" | "fade" | "slide-up" | "slide-right" | "slide-left";
 export type ScreenAction = {
@@ -60,6 +62,7 @@ type ScreenProps = {
 	width?: ScreenWidth;
 	transition?: ScreenTransition;
 	categoryCode?: string;
+	theme?: ScreenTheme;
 	leftAction?: ScreenAction;
 	rightAction?: ScreenAction;
 	center?: boolean;
@@ -75,6 +78,7 @@ export const Screen = ({
 	width = "default",
 	transition = "none",
 	categoryCode,
+	theme,
 	leftAction,
 	rightAction,
 	center = false,
@@ -96,6 +100,14 @@ export const Screen = ({
 		return () => document.body.removeAttribute("data-category-theme");
 	}, [categoryCode]);
 
+	// Same trick for the mood theme: the body attribute cascades --theme-color
+	// to everything on the page, HUD included.
+	useEffect(() => {
+		if (!theme) return;
+		document.body.setAttribute("data-screen-theme", theme);
+		return () => document.body.removeAttribute("data-screen-theme");
+	}, [theme]);
+
 	const runAction = (action: ScreenAction, direction: ScreenNavDirection) => {
 		setScreenNavDirection(direction);
 		action.onClick();
@@ -104,6 +116,7 @@ export const Screen = ({
 	return (
 		<section
 			data-category-theme={categoryCode}
+			data-screen-theme={theme}
 			data-screen-transition={effectiveTransition}
 			className={screenSection({ width, center })}
 		>
