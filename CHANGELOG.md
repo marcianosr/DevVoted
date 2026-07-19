@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve gate pathing visualizations
 - **Runs continue where you left off**: stopping mid-run no longer loses your climb — come back any day and pick up with that day's fresh polls. Polls you skip are missed, not failed.
 - **"How you compared" page** (`/run/community`): after answering, see per poll how the community voted — who agreed with you, who got it right, and where you rank today. Skipped polls stay sealed.
-- **Abandon a run**: give up mid-climb, bank half its leftover storage, and start a fresh run the same day — the new run only serves polls you haven't answered today.
+- **Abandon a run**: give up mid-climb and start a fresh run the same day — the new run only serves polls you haven't answered today. Abandoned storage is forfeited.
+- **Storage pays out by progress**: when a run ends, leftover storage is archived proportionally to how far you climbed — win the final gate for all of it, die halfway for half. Abandoning banks nothing.
+- **Instant answer verdicts**: submitting an answer paints your picks green or red for a beat — with the right answer revealed when you missed — before the run moves on.
+- **Screens with a mood**: the gate-failed screen is bathed in red (buttons, HUD, backdrop included) and the gate-cleared summary in soft green, instead of everything staying default blue.
 
 ## 1.3.0 - 2026-07-06
 ### Added

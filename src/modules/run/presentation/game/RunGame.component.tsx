@@ -11,7 +11,11 @@ import {
 	startRun,
 } from "~/modules/run/api/run";
 import type { RunActionInput } from "~/modules/run/validation/schemas.validation";
-import type { RunView } from "~/modules/run/view/runView.viewmodel";
+import {
+	correctOptionIdsFor,
+	type RunView,
+} from "~/modules/run/view/runView.viewmodel";
+import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
 import { Screen } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
@@ -24,6 +28,9 @@ import { StripScreen } from "../screens/StripScreen.ui";
 import { HudBar } from "../run/HudBar.ui";
 import { RunHud } from "../run/RunHud.ui";
 import { RunSummary } from "../run/RunSummary.ui";
+
+/** How long the answered poll shows its ✓/✕ reveal before the run moves on. */
+const ANSWER_REVEAL_MS = 2000;
 
 /**
  * Tier 2 wiring for the daily run (DVTD-czuc): the server owns the state,
@@ -47,11 +54,35 @@ export const RunGame = () => {
 		},
 	});
 
+	// Post-submit reveal beat: the answered poll stays on screen with its
+	// options painted ✓/✕ while the server result waits here; only after the
+	// beat does the result land in the cache and the run move on.
+	const [reveal, setReveal] = useState<{
+		result: { success: true; data: RunView };
+		correctOptionIds: readonly string[];
+	} | null>(null);
+	useEffect(() => {
+		if (!reveal) return;
+		const timer = setTimeout(() => {
+			queryClient.setQueryData(queryKey, reveal.result);
+			setReveal(null);
+		}, ANSWER_REVEAL_MS);
+		return () => clearTimeout(timer);
+	}, [reveal, queryClient, queryKey]);
+
 	const dispatch = useMutation({
 		mutationFn: (action: RunActionInput) =>
 			dispatchRunAction({ data: { action } }),
-		onSuccess: (result) => {
-			if (result.success) queryClient.setQueryData(queryKey, result);
+		onSuccess: (result, action) => {
+			if (!result.success) return;
+			if (action.type === "answer" && view?.poll) {
+				setReveal({
+					result,
+					correctOptionIds: correctOptionIdsFor(view.poll, result.data),
+				});
+				return;
+			}
+			queryClient.setQueryData(queryKey, result);
 		},
 	});
 
@@ -64,22 +95,18 @@ export const RunGame = () => {
 		}
 	};
 
-	// Abandoning is destructive (half the leftover storage forfeits), so the
-	// button arms on first click and only fires on the second.
-	const [abandonArmed, setAbandonArmed] = useState(false);
+	// Abandoning is destructive (all leftover storage forfeits), so the button
+	// opens a confirm dialog instead of firing directly.
+	const [confirmingAbandon, setConfirmingAbandon] = useState(false);
 	const abandon = useMutation({
 		mutationFn: () => abandonRun(),
 		onSuccess: (result) => {
-			setAbandonArmed(false);
 			if (result.success) {
+				setConfirmingAbandon(false);
 				queryClient.invalidateQueries({ queryKey });
 			}
 		},
 	});
-	const onAbandonClick = () => {
-		if (!abandonArmed) return setAbandonArmed(true);
-		abandon.mutate();
-	};
 
 	const view: RunView | null =
 		todaysRun.data?.success === true ? todaysRun.data.data : null;
@@ -87,7 +114,6 @@ export const RunGame = () => {
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	useEffect(() => {
 		setSelected([]);
-		setAbandonArmed(false);
 	}, [view?.poll?.id]);
 	// The reward flows over two pages: the rewards summary, then the shop. Reset to the
 	// summary each time a new gate clears.
@@ -104,7 +130,6 @@ export const RunGame = () => {
 		);
 	}
 
-	console.log(todaysRun.data);
 	if (todaysRun.data?.success === false) {
 		return (
 			<Screen width="narrow">
@@ -138,7 +163,7 @@ export const RunGame = () => {
 
 	const send = (action: RunActionInput) => dispatch.mutate(action);
 	const busy = dispatch.isPending;
-	const canSubmit = selected.length > 0 && !busy;
+	const canSubmit = selected.length > 0 && !busy && reveal === null;
 	const canStart = view.configs.filter((config) => !config.fixed).length > 0;
 	const quotaMet = view.stripsRemaining === 0;
 	const runOver = view.status === "won" || view.status === "dead";
@@ -201,8 +226,8 @@ export const RunGame = () => {
 				<Screen
 					categoryCode={view.poll.category}
 					leftAction={{
-						label: abandonArmed ? "Really abandon? (½ storage)" : "Abandon run",
-						onClick: onAbandonClick,
+						label: "Abandon run",
+						onClick: () => setConfirmingAbandon(true),
 						disabled: abandon.isPending,
 					}}
 				>
@@ -215,14 +240,30 @@ export const RunGame = () => {
 						options={view.poll.options}
 						selectedOptionIds={selected}
 						disabledOptionIds={view.disabledOptionIds}
+						correctOptionIds={reveal?.correctOptionIds}
+						chosenOptionIds={reveal ? selected : undefined}
 						canLint={view.canLint}
-						lintReady={view.lintReady && !busy}
+						lintReady={view.lintReady && !busy && !reveal}
 						linter={view.linter ?? undefined}
 						lintCost={view.lintCost}
 						canSubmit={canSubmit}
 						onSelect={onSelect}
 						onSubmit={() => send({ type: "answer", optionIds: [...selected] })}
 						onLint={() => send({ type: "lint-poll" })}
+					/>
+					<ConfirmDialog
+						isOpen={confirmingAbandon}
+						theme="cinnabar"
+						title="Abandon this run?"
+						message="The climb ends here and every KB of leftover storage is forfeited. You can start a fresh run today — it skips the polls you already answered."
+						confirmText="Abandon run"
+						cancelText="Keep climbing"
+						isConfirming={abandon.isPending}
+						errorMessage={
+							abandon.data?.success === false ? abandon.data.error : null
+						}
+						onConfirm={() => abandon.mutate()}
+						onCancel={() => setConfirmingAbandon(false)}
 					/>
 				</Screen>
 			)}
@@ -325,7 +366,10 @@ export const RunGame = () => {
 						storage={view.storage}
 					/>
 					<Paragraph>
-						Leftover storage is archived. A fresh seed drops tomorrow.
+						{view.status === "won"
+							? "Leftover storage is archived in full."
+							: "A share of your leftover storage is archived — the further you climbed, the more."}{" "}
+						A fresh seed drops tomorrow.
 					</Paragraph>
 					{start.data?.success === false && (
 						<Paragraph>{start.data.error}</Paragraph>

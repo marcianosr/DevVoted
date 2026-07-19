@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
-type ButtonVariant = "primary" | "secondary" | "theme" | "danger";
+type ButtonVariant = "primary" | "secondary" | "theme" | "danger" | "neutral";
 type ButtonSize = "default" | "small";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -26,6 +26,9 @@ const button = cva(
 					"border-2 border-theme text-theme hover:bg-theme hover:text-black disabled:opacity-40",
 				danger:
 					"border-2 border-cinnabar text-white hover:bg-cinnabar/40 disabled:opacity-40",
+				// The no-drama option next to a loud one (e.g. a dialog's cancel).
+				neutral:
+					"border border-zinc-600 text-zinc-300 hover:border-zinc-400 hover:bg-white/5 disabled:opacity-40",
 			},
 			size: {
 				default: "px-4 py-2 text-sm",

@@ -85,17 +85,19 @@ const CoverageSummary = ({
 	return (
 		<SummaryDropdown
 			trigger={
-				<>
-					<Paragraph as="span" size="sm" tone="pewter">
-						Coverage
-					</Paragraph>
-					<Paragraph as="span" size="sm" tone="theme">
-						{coverage}%
-					</Paragraph>
-					<Paragraph as="span" size="sm" tone="pewter">
+				<span className="flex flex-col items-start">
+					<span className="flex items-baseline gap-1.5">
+						<Paragraph as="span" size="sm" tone="pewter">
+							Coverage
+						</Paragraph>
+						<Paragraph as="span" size="sm" tone="theme">
+							{coverage}%
+						</Paragraph>
+					</span>
+					<Paragraph as="span" size="xs" tone="pewter">
 						across {coveredCount} categor{coveredCount === 1 ? "y" : "ies"}
 					</Paragraph>
-				</>
+				</span>
 			}
 			panelClassName="flex min-w-max flex-col gap-1.5"
 		>

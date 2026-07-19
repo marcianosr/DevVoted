@@ -16,7 +16,7 @@ import {
 import { type CategoryCode, isCategoryCode } from "~/domains/shared/categories";
 import { STORAGE_UNITS } from "~/lib/storage";
 
-import { ABANDON_STORAGE_CREDIT_RATE } from "../rules.model";
+import { storageCreditRate } from "../rules.model";
 
 import {
 	type RunAction,
@@ -425,6 +425,7 @@ const finishSessionRun = async (
 	userId: string,
 	state: RunState
 ): Promise<void> => {
+	const reason = state.status === "won" ? "victory" : "dead";
 	const wonAt =
 		state.status === "won" ? { victory_achieved_at: new Date() } : {};
 	await tx
@@ -432,29 +433,34 @@ const finishSessionRun = async (
 		.set({
 			status: "finished",
 			finished_at: new Date(),
-			completion_reason: state.status === "won" ? "victory" : "dead",
+			completion_reason: reason,
 			...wonAt,
 		})
 		.where(eq(runsTable.id, runId));
 
-	// Economy bridge (decided 2026-07-17): leftover run storage becomes
-	// persistent meta-currency. Engine storage is KB; archived_storage is bytes.
-	const leftoverBytes = Math.round(state.storage * STORAGE_UNITS.KB);
-	if (leftoverBytes > 0) {
+	// Economy bridge: leftover run storage becomes persistent meta-currency,
+	// at a rate proportional to how far the climb got (storageCreditRate).
+	// Engine storage is KB; archived_storage is bytes.
+	const creditBytes = Math.round(
+		state.storage *
+			STORAGE_UNITS.KB *
+			storageCreditRate(reason, state.gatesCleared)
+	);
+	if (creditBytes > 0) {
 		await tx
 			.update(usersTable)
 			.set({
-				archived_storage: sql`${usersTable.archived_storage} + ${leftoverBytes}`,
+				archived_storage: sql`${usersTable.archived_storage} + ${creditBytes}`,
 			})
 			.where(eq(usersTable.id, userId));
 	}
 };
 
 /**
- * Walking away (DVTD-li9i): the run finishes as "abandoned" and only
- * ABANDON_STORAGE_CREDIT_RATE of its leftover storage is banked — won/dead
- * credit 100% via finishSessionRun. Locks the state row like dispatch does,
- * so an in-flight answer and an abandon cannot interleave.
+ * Walking away: the run finishes as "abandoned" and its leftover storage is
+ * banked at STORAGE_CREDIT_RATE.abandoned (currently nothing — abandoning is
+ * not a cash-out). Locks the state row like dispatch does, so an in-flight
+ * answer and an abandon cannot interleave.
  */
 export const abandonSessionRun = async (
 	runId: number,
@@ -480,9 +486,10 @@ export const abandonSessionRun = async (
 			.returning({ id: runsTable.id });
 		if (updated.length === 0) throw new Error("Run is already over");
 
-		const leftoverKb = stateRow?.state.storage ?? 0;
 		const creditBytes = Math.round(
-			leftoverKb * STORAGE_UNITS.KB * ABANDON_STORAGE_CREDIT_RATE
+			(stateRow?.state.storage ?? 0) *
+				STORAGE_UNITS.KB *
+				storageCreditRate("abandoned", stateRow?.state.gatesCleared ?? 0)
 		);
 		if (creditBytes > 0) {
 			await tx

@@ -54,15 +54,15 @@ Existing runs default to `"calendar"`, preserving current behavior with no backf
 - **Engine state lives in a 1:1 `run_states` satellite table**, not a JSON column on `runs`. This does not reopen this ADR's decision — `runs` stays the single identity table all FKs point at; `run_states` is an extension row (like `run_shop_offerings`). Chosen because `runs` already carries four legacy JSON columns (mode confusion), and every action dispatch rewrites state — a narrow row isolates the hot path and gives `SELECT … FOR UPDATE` a clean target. The blob is `RunSnapshot` = `RunState` minus `polls`; a few columns (`engine_status`, `gates_cleared`, `coverage`, `polls_answered`) are denormalized for queries.
 - **The daily shared seed is persisted** (`daily_run_seeds` + `daily_run_polls`, one row per position), not recomputed: mid-day poll-pool changes must never fork ADR-009's shared climb. `runs.seed_date` records the start date. *(The one-run-per-player-per-seed unique was dropped 2026-07-18 — same-day restart, see ADR-011 amendment.)*
 - **Per-answer `polls_responses` rows are deferred** (slice 2). The partial-constraint plan above needs a local `mode` column on `polls_responses` — Postgres partial-index predicates cannot join to `runs.mode`.
-- **End-of-run economy bridge (decided; abandon rate amended 2026-07-18, DVTD-li9i):** leftover run storage (KB) credits `users.archived_storage` (bytes) the moment the run ends, atomically in the ending transaction:
+- **End-of-run economy bridge (decided; rates re-cut 2026-07-19, superseding the DVTD-li9i flat rates):** leftover run storage (KB) credits `users.archived_storage` (bytes) the moment the run ends, atomically in the ending transaction, at `storageCreditRate(reason, gatesCleared)` (see `rules.model.ts`):
 
   | Run ends by | Credit to meta storage |
   |---|---|
   | Victory | 100% of leftovers |
-  | Death | 100% of leftovers |
-  | Abandon | `ABANDON_STORAGE_CREDIT_RATE` (see `rules.model.ts`) of leftovers |
+  | Death | `gatesCleared / VICTORY_GATE` of leftovers — die halfway, keep half |
+  | Abandon | Nothing |
 
-  Death pays full rate on purpose — losing the build is the punishment; every run feeds meta-progression. Abandoning takes the haircut so it can't be a free cash-out. Run-*start* fuel cost stays open (ADR-009).
+  Progress is what pays: the credit is proportional to how far the climb got, so a deep death still feeds meta-progression while an early one doesn't. Abandoning banks nothing so it can never be a cash-out. Run-*start* fuel cost stays open (ADR-009).
 
 ## Still open (deferred to their phases)
 

@@ -1,6 +1,17 @@
-Questions:
-- JSON in state? Dangerous?
+Your 10 items → beans
+- DVTD-b9gj — Run start screen design. (new)
+- DVTD-6l80 — Community page: more info on what other players did. (new)
+- DVTD-smye — Awards on run community page (top-committers style). (new)
+- DVTD-fdo4 — Linter button styling. (new)
+- DVTD-g1p0 — Victory at gate 12 + reward. (new, draft — reward undecided)
+- DVTD-acwh — "Add more configs" already covered by Config roster: renames + new configs.
+- DVTD-5ljh — "Rarity drops" already covered by Rarity drop rates.
+- DVTD-2try — "Unlockables" already covered by Config unlock system (draft).
+- DVTD-30k6 — "Randomize starter configs" already covered by Randomly drawn configs at run start (draft).
+- DVTD-uret — "Lock daily gates on 5 polls" folded into the existing Daily gate bean as a refinement note.
 
+
+Questions:
 - How will it go for players answering 1 or 2 polls per day versus players aonswering a full gate (5 polls)
 - Should I allow players to answer more polls after a gate? How am I handling that against the social layer? And how does that work if someone wants to review their answer(s)?
 - Showing the answers after the gate is nice, but some have omre detailed explanations. Currently it's just a list. What do we do here?

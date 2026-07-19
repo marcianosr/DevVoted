@@ -426,7 +426,7 @@ describe("abandonSessionRun", () => {
 		mock.updateTables.length = 0;
 	});
 
-	it("finishes the run as abandoned and credits half the leftover storage", async () => {
+	it("finishes the run as abandoned without banking any storage", async () => {
 		mock.results.push([
 			{ state: toRunSnapshot(answeringState({ storage: 229 })) },
 		]);
@@ -438,9 +438,8 @@ describe("abandonSessionRun", () => {
 			status: "finished",
 			completion_reason: "abandoned",
 		});
-		// 229 KB leftover → 50% credited, in bytes, on users.archived_storage
-		expect(mock.setCalls[1]).toHaveProperty("archived_storage");
-		expect(db.update).toHaveBeenCalledTimes(2);
+		// 229 KB leftover, all forfeited — abandoning is never a cash-out
+		expect(db.update).toHaveBeenCalledTimes(1);
 	});
 
 	it("throws when the run is already finished", async () => {
@@ -460,16 +459,5 @@ describe("abandonSessionRun", () => {
 
 		expect(mock.setCalls[0]).toMatchObject({ completion_reason: "abandoned" });
 		expect(db.update).toHaveBeenCalledTimes(1); // no archived_storage credit
-	});
-
-	it("skips the credit entirely when nothing is left to bank", async () => {
-		mock.results.push([
-			{ state: toRunSnapshot(answeringState({ storage: 0 })) },
-		]);
-		mock.results.push([{ id: 64 }]);
-
-		await abandonSessionRun(64, "red-from-pallet-town");
-
-		expect(db.update).toHaveBeenCalledTimes(1);
 	});
 });

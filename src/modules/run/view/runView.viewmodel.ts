@@ -1,6 +1,7 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 import {
 	type AnsweredPoll,
+	type AnswerOutcome,
 	type AnswerType,
 	canRunLinter,
 	lintApplies,
@@ -75,6 +76,40 @@ export type RunView = {
 	readonly coverageGainedThisGate: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly log: readonly string[];
+};
+
+export type AnswerVerdict = {
+	readonly outcome: AnswerOutcome;
+	readonly correctAnswers: readonly string[];
+};
+
+/**
+ * The verdict of the answer just submitted — the freshest entry in the gate's
+ * answer log. Older snapshots may lack `correct`; the verdict then only
+ * carries the outcome.
+ */
+export const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
+	const last = view.answeredThisGate.at(-1);
+	if (!last) return null;
+	return { outcome: last.outcome, correctAnswers: last.correct ?? [] };
+};
+
+/**
+ * Ids of the answered poll's correct options, for the post-submit reveal.
+ * `poll` is the poll as it was on screen (pre-advance view); `answered` is the
+ * server response that recorded the answer. Labels bridge the two — the
+ * redacted view strips per-option correctness, and the answer log only keeps
+ * labels.
+ */
+export const correctOptionIdsFor = (
+	poll: PollView,
+	answered: RunView
+): readonly string[] => {
+	const verdict = latestAnswerVerdict(answered);
+	if (!verdict) return [];
+	return poll.options
+		.filter((option) => verdict.correctAnswers.includes(option.label))
+		.map((option) => option.id);
 };
 
 const gainedThisGate = (state: RunState): Record<string, number> => {

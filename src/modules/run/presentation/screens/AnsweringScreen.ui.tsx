@@ -17,6 +17,9 @@ type AnsweringScreenProps = {
 	options: readonly PollOption[];
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
+	/** When set, the poll is in its post-submit reveal: options go inert and show ✓/✕. */
+	correctOptionIds?: readonly string[];
+	chosenOptionIds?: readonly string[];
 	canLint?: boolean;
 	lintReady?: boolean;
 	linter?: Config;
@@ -36,6 +39,8 @@ export const AnsweringScreen = ({
 	options,
 	selectedOptionIds,
 	disabledOptionIds,
+	correctOptionIds,
+	chosenOptionIds,
 	canLint,
 	lintReady,
 	linter,
@@ -53,6 +58,8 @@ export const AnsweringScreen = ({
 			options={options}
 			selectedOptionIds={selectedOptionIds}
 			disabledOptionIds={disabledOptionIds}
+			correctOptionIds={correctOptionIds}
+			chosenOptionIds={chosenOptionIds}
 			canLint={canLint}
 			lintReady={lintReady}
 			linter={linter}

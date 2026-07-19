@@ -294,6 +294,11 @@
 body {
 	transition: background-color 700ms ease;
 }
+
+/* A modal dialog (showModal) locks the page scroll behind it. */
+body:has(dialog:modal) {
+	overflow: hidden;
+}
 body[data-category-theme] {
 	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
 }

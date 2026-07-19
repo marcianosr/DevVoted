@@ -44,6 +44,13 @@ describe("Button", () => {
 		expect(button).toHaveClass("px-3", "py-1.5");
 	});
 
+	it("keeps the neutral variant colorless so it never competes with a loud sibling", () => {
+		render(<Button variant="neutral">Keep climbing</Button>);
+		const button = screen.getByRole("button");
+		expect(button).toHaveClass("border-zinc-600");
+		expect(button).not.toHaveClass("border-theme");
+	});
+
 	it("follows the category theme in the theme variant", () => {
 		render(<Button variant="theme">Rebuild</Button>);
 		const button = screen.getByRole("button");

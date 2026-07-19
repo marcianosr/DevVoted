@@ -6,10 +6,20 @@ export const GATE_REWARD_KB = 120;
 /** Hard cap (KB) on the storage currency. 1 MB — income beyond this is discarded. */
 export const STORAGE_CAP_KB = 1024;
 /**
- * Share of leftover storage credited to archived_storage when a run is
- * abandoned (won/dead credit 100%) — walking away costs half (DVTD-li9i).
+ * Share of leftover storage credited to archived_storage when a run ends —
+ * proportional to how far the climb got (Marciano, 2026-07-19; supersedes
+ * the flat rates of DVTD-li9i): winning the final gate banks everything,
+ * dying at the halfway gate banks half, walking away banks nothing so
+ * abandoning can never be a cash-out.
  */
-export const ABANDON_STORAGE_CREDIT_RATE = 0.5;
+export const storageCreditRate = (
+	reason: "victory" | "dead" | "abandoned",
+	gatesCleared: number
+): number => {
+	if (reason === "abandoned") return 0;
+	if (reason === "victory") return 1;
+	return Math.min(1, gatesCleared / VICTORY_GATE);
+};
 
 export const escalation = (gatesCleared: number): number =>
 	Math.floor(gatesCleared / 2);

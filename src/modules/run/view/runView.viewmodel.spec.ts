@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { createRun, runReducer, RunPoll } from "../climb/run.model";
 import { CONFIGS } from "../configs/configRoster.model";
-import { toRunView } from "./runView.viewmodel";
+import {
+	correctOptionIdsFor,
+	latestAnswerVerdict,
+	toRunView,
+} from "./runView.viewmodel";
 
 const poll = (id: string): RunPoll => ({
 	id,
@@ -55,5 +59,48 @@ describe("toRunView", () => {
 		expect(view.demands[0]).toContain("correct answer");
 		expect(view.pollsToGate).toBe(5);
 		expect(view.victoryGate).toBeGreaterThan(0);
+	});
+});
+
+describe("latestAnswerVerdict", () => {
+	it("is null before any answer this gate", () => {
+		expect(latestAnswerVerdict(toRunView(answering()))).toBeNull();
+	});
+
+	it("reports a correct pick", () => {
+		const state = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["q0-a"],
+		});
+		expect(latestAnswerVerdict(toRunView(state))).toEqual({
+			outcome: "correct",
+			correctAnswers: ["Yes"],
+		});
+	});
+
+	it("reports a wrong pick with the answer that was right", () => {
+		const state = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["q0-b"],
+		});
+		expect(latestAnswerVerdict(toRunView(state))).toEqual({
+			outcome: "wrong",
+			correctAnswers: ["Yes"],
+		});
+	});
+});
+
+describe("correctOptionIdsFor", () => {
+	it("maps the verdict back to option ids on the poll that was on screen", () => {
+		const onScreen = toRunView(answering());
+		const answered = toRunView(
+			runReducer(answering(), { type: "answer", optionIds: ["q0-b"] })
+		);
+		expect(correctOptionIdsFor(onScreen.poll!, answered)).toEqual(["q0-a"]);
+	});
+
+	it("is empty when nothing has been answered", () => {
+		const onScreen = toRunView(answering());
+		expect(correctOptionIdsFor(onScreen.poll!, onScreen)).toEqual([]);
 	});
 });

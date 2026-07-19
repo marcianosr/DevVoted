@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 
 import { Button } from "~/ui/Button.component";
+import type { ScreenTheme } from "~/ui/Screen.ui";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Title } from "~/ui/typography/Title.component";
 
 export type ConfirmDialogProps = {
 	isOpen: boolean;
@@ -12,6 +15,8 @@ export type ConfirmDialogProps = {
 	cancelText?: string;
 	errorMessage?: string | null;
 	isConfirming?: boolean;
+	/** Mood for the dialog: "cinnabar" turns border + buttons warning-red. */
+	theme?: ScreenTheme;
 };
 
 export const ConfirmDialog = ({
@@ -24,6 +29,7 @@ export const ConfirmDialog = ({
 	cancelText = "No",
 	errorMessage,
 	isConfirming = false,
+	theme,
 }: ConfirmDialogProps) => {
 	const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -49,23 +55,30 @@ export const ConfirmDialog = ({
 	return (
 		<dialog
 			ref={dialogRef}
+			data-screen-theme={theme}
 			onClose={handleCancel}
-			className="backdrop:bg-black backdrop:opacity-50 p-0 w-[min(28rem,calc(100vw-2rem))] m-auto border border-theme bg-gray-900 text-gray-200 whitespace-normal"
+			className="backdrop:bg-black backdrop:opacity-50 p-0 w-[min(28rem,calc(100vw-2rem))] m-auto rounded-xl border border-theme bg-zinc-900 whitespace-normal"
 		>
-			<div className="p-6">
-				<h2 className="text-xl mb-4 text-white">{title}</h2>
-				<p className="text-gray-400 mb-6 text-pretty break-words">{message}</p>
+			<div className="flex flex-col gap-4 p-6">
+				<Title as="h2" size="sm">
+					{title}
+				</Title>
+				<Paragraph tone="muted" size="sm" className="text-pretty break-words">
+					{message}
+				</Paragraph>
 				{errorMessage && (
-					<p
+					<div
 						role="alert"
-						className="mb-4 border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+						className="rounded border border-cinnabar/40 bg-cinnabar/10 px-3 py-2"
 					>
-						{errorMessage}
-					</p>
+						<Paragraph tone="cinnabar" size="sm">
+							{errorMessage}
+						</Paragraph>
+					</div>
 				)}
 				<div className="flex gap-3 justify-end">
 					<Button
-						variant="secondary"
+						variant="neutral"
 						onClick={handleCancel}
 						disabled={isConfirming}
 					>
