@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **"How you compared" page** (`/run/community`): after answering, see per poll how the community voted — who agreed with you, who got it right, and where you rank today. Skipped polls stay sealed.
 - **Abandon a run**: give up mid-climb and start a fresh run the same day — the new run only serves polls you haven't answered today. Abandoned storage is forfeited.
 - **Storage pays out by progress**: when a run ends, leftover storage is archived proportionally to how far you climbed — win the final gate for all of it, die halfway for half. Abandoning banks nothing.
+- **No unwinnable polls**: a poll without a correct answer can no longer sneak into a run's daily sequence.
+- **Coverage has stakes now**: a wrong answer costs coverage (more for high-multiplier builds), never below zero. Multi-answer polls pay coverage for the share you got right — but every wrong pick cancels a right one, so shotgunning pays nothing.
 - **Instant answer verdicts**: submitting an answer paints your picks green or red for a beat — with the right answer revealed when you missed — before the run moves on.
 - **Screens with a mood**: the gate-failed screen is bathed in red (buttons, HUD, backdrop included) and the gate-cleared summary in soft green, instead of everything staying default blue.
 

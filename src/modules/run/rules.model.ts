@@ -21,6 +21,8 @@ export const storageCreditRate = (
 	return Math.min(1, gatesCleared / VICTORY_GATE);
 };
 
+export const WRONG_COVERAGE_LOSS = 0.5;
+
 export const escalation = (gatesCleared: number): number =>
 	Math.floor(gatesCleared / 2);
 

@@ -34,6 +34,7 @@ import {
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
 	VICTORY_GATE,
+	WRONG_COVERAGE_LOSS,
 } from "../rules.model";
 
 export const LINT_COST = 40;
@@ -73,6 +74,29 @@ const isCorrect = (poll: RunPoll, optionIds: readonly string[]): boolean => {
 export type AnswerOutcome = "correct" | "partial" | "wrong";
 
 /**
+ * The answer's correctness share for coverage: 1 when fully correct, 0 on a
+ * miss, and on multi-answer polls the fraction of the correct set actually
+ * demonstrated — every wrong pick cancels a right one, so shotgunning every
+ * option earns nothing (Marciano, 2026-07-19). Gate math, streak, and storage
+ * stay binary; only coverage reads this.
+ */
+const coverageShare = (poll: RunPoll, optionIds: readonly string[]): number => {
+	if (isCorrect(poll, optionIds)) return 1;
+	if (poll.answerType === "single") return 0;
+	const picked = new Set(optionIds);
+	const correctIds = poll.options
+		.filter((option) => option.correct)
+		.map((option) => option.id);
+	if (correctIds.length === 0) return 0;
+	const correctPicked = correctIds.filter((id) => picked.has(id)).length;
+	const wrongPicked = optionIds.length - correctPicked;
+	return Math.max(
+		0,
+		Math.min(1, (correctPicked - wrongPicked) / correctIds.length)
+	);
+};
+
+/**
  * Partial exists only on multiple-answer polls: at least one correct option
  * picked without matching the exact correct set. Gate math stays binary
  * (isCorrect) — outcome is for the answer review, not for judging.
@@ -103,6 +127,8 @@ export type AnsweredPoll = {
 	readonly explanation?: string;
 	readonly options?: readonly string[];
 	readonly answerType?: AnswerType;
+	/** Coverage this answer earned (share-scaled for partial multi picks). */
+	readonly coverageEarned?: number;
 };
 
 export type RunState = {
@@ -288,7 +314,21 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 	const configs = state.pipeline.configs;
 	const correct = isCorrect(poll, optionIds);
 	const openingClean = state.window.leadingCorrect === state.window.answered;
-	const earned = coverageForAnswer(configs, poll.category, correct);
+	const share = coverageShare(poll, optionIds);
+	const earned = coverageForAnswer(configs, poll.category, share);
+	// A miss (share 0) bleeds coverage: base loss scaled by the build's reward
+	// multiplier — risk cuts both ways. Raw rules only: coverage configs never
+	// amplify a loss, and the gate never scales it.
+	const coverageLoss =
+		share > 0
+			? 0
+			: roundToOneDecimal(
+					WRONG_COVERAGE_LOSS * rewardMultiplierFor(state.pipeline)
+				);
+	const categoryBefore = state.coverageByCategory[poll.category] ?? 0;
+	const categoryAfter = roundToOneDecimal(
+		Math.max(0, categoryBefore + earned - coverageLoss)
+	);
 	const faucet = correct
 		? configs.reduce((sum, config) => sum + (config.storagePerCorrect ?? 0), 0)
 		: 0;
@@ -321,12 +361,17 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 		manualDisabled: [],
 		streak: correct ? state.streak + 1 : 0,
 		storage: addStorage(state.storage, faucet),
-		coverage: roundToOneDecimal(state.coverage + earned),
+		// The loss drains the poll's category (floored at 0) and the total
+		// moves by what the category actually lost — total stays the sum of
+		// the categories, and you can't lose coverage you don't have.
+		// window.coverageGained stays a gains-only tally, so coverage-gain
+		// checks aren't double-punished.
+		coverage: roundToOneDecimal(
+			Math.max(0, state.coverage + categoryAfter - categoryBefore)
+		),
 		coverageByCategory: {
 			...state.coverageByCategory,
-			[poll.category]: roundToOneDecimal(
-				(state.coverageByCategory[poll.category] ?? 0) + earned
-			),
+			[poll.category]: categoryAfter,
 		},
 		answeredThisGate: [
 			...state.answeredThisGate,
@@ -344,6 +389,7 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 				explanation: poll.explanation,
 				options: poll.options.map((option) => option.label),
 				answerType: poll.answerType,
+				coverageEarned: earned,
 			},
 		],
 	};

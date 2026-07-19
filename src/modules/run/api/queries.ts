@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, gte, inArray, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -75,10 +75,28 @@ export const getOrCreateDailyRunSeed = async (
 
 		if (!claimed) return fetchSeedPollIds(tx, date);
 
+		// Answerable published polls only: a poll without a single correct
+		// option can never be answered right (engine stays strict — see
+		// "answer judging" in run.model.spec), so it must not enter a climb.
 		const published = await tx
 			.select({ id: pollsTable.id })
 			.from(pollsTable)
-			.where(eq(pollsTable.status, "published"))
+			.where(
+				and(
+					eq(pollsTable.status, "published"),
+					exists(
+						tx
+							.select({ one: sql`1` })
+							.from(pollOptionsTable)
+							.where(
+								and(
+									eq(pollOptionsTable.poll_id, pollsTable.id),
+									eq(pollOptionsTable.correct, true)
+								)
+							)
+					)
+				)
+			)
 			.orderBy(asc(pollsTable.id));
 
 		const sequence = rollDailySeedSequence(

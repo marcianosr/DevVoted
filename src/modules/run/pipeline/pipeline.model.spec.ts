@@ -59,21 +59,22 @@ describe("rewardMultiplierFor", () => {
 
 describe("coverageForAnswer", () => {
 	it("pays 1.5x in a Focus category, 1x outside it", () => {
-		expect(coverageForAnswer([CONFIGS.js], "js", true)).toBe(1.5);
-		expect(coverageForAnswer([CONFIGS.js], "css", true)).toBe(1);
+		expect(coverageForAnswer([CONFIGS.js], "js", 1)).toBe(1.5);
+		expect(coverageForAnswer([CONFIGS.js], "css", 1)).toBe(1);
 	});
 
 	it("stacks Focus and Amplify across the whole pipeline", () => {
-		expect(coverageForAnswer([CONFIGS.js, CONFIGS.copilot], "js", true)).toBe(
-			3
-		); // 1.5 × 2
+		expect(coverageForAnswer([CONFIGS.js, CONFIGS.copilot], "js", 1)).toBe(3); // 1.5 × 2
 	});
 
 	it("scales Focus with level and pays nothing for a wrong answer", () => {
-		expect(coverageForAnswer([{ ...CONFIGS.js, level: 2 }], "js", true)).toBe(
-			2
-		);
-		expect(coverageForAnswer([CONFIGS.js], "js", false)).toBe(0);
+		expect(coverageForAnswer([{ ...CONFIGS.js, level: 2 }], "js", 1)).toBe(2);
+		expect(coverageForAnswer([CONFIGS.js], "js", 0)).toBe(0);
+	});
+
+	it("pays a partial share proportionally, configs included", () => {
+		// Half a multi-answer set demonstrated → half the Focus-boosted earn.
+		expect(coverageForAnswer([CONFIGS.js], "js", 0.5)).toBe(0.8); // 1.5 / 2, rounded
 	});
 });
 

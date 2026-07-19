@@ -115,11 +115,16 @@ export const correctOptionIdsFor = (
 const gainedThisGate = (state: RunState): Record<string, number> => {
 	const gained: Record<string, number> = {};
 	for (const poll of state.answeredThisGate) {
-		const earned = coverageForAnswer(
-			state.pipeline.configs,
-			poll.category,
-			poll.outcome === "correct"
-		);
+		// The engine records the actual earn per answer; recomputing (for
+		// pre-coverageEarned snapshots) can't know partial shares, so it
+		// falls back to full-or-nothing.
+		const earned =
+			poll.coverageEarned ??
+			coverageForAnswer(
+				state.pipeline.configs,
+				poll.category,
+				poll.outcome === "correct" ? 1 : 0
+			);
 		if (earned > 0)
 			gained[poll.category] = roundToOneDecimal(
 				(gained[poll.category] ?? 0) + earned

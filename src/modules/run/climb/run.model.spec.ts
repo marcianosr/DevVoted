@@ -438,6 +438,73 @@ describe("answer judging", () => {
 		expect(outcomeOf(["c"])).toBe("wrong");
 	});
 
+	it("earns half the coverage for demonstrating half the correct set", () => {
+		const partial = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["a"],
+		});
+		expect(partial.coverage).toBe(0.5);
+		expect(partial.answeredThisGate[0].coverageEarned).toBe(0.5);
+	});
+
+	it("cancels a correct pick with a wrong one — nothing earned, loss applied", () => {
+		// 1 right + 1 wrong of a 2-correct set → share 0 → the miss penalty bites.
+		const cancelled = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["a", "c"],
+		});
+		expect(cancelled.coverage).toBe(0);
+		expect(cancelled.answeredThisGate[0].coverageEarned).toBe(0);
+	});
+
+	// Real pool data holds mismatched polls (DVTD-wrem audit, 2026-07-19):
+	// the engine's contract for those shapes is pinned here.
+	const shapedPoll = (
+		answerType: RunPoll["answerType"],
+		correctIds: readonly string[]
+	): RunPoll => ({
+		id: "shaped",
+		category: "ts",
+		question: "Which Kanto badge does Blaine hand out?",
+		answerType,
+		options: ["a", "b", "c"].map((id) => ({
+			id,
+			label: id,
+			correct: correctIds.includes(id),
+		})),
+	});
+	const answerShaped = (
+		answerType: RunPoll["answerType"],
+		correctIds: readonly string[],
+		optionIds: string[]
+	) =>
+		runReducer(
+			{
+				...createRun([shapedPoll(answerType, correctIds), ...pool(5)], handed),
+				status: "answering",
+			},
+			{ type: "answer", optionIds }
+		);
+
+	it("accepts any one of several correct options on a single-answer poll", () => {
+		expect(answerShaped("single", ["a", "b"], ["b"]).window.correct).toBe(1);
+	});
+
+	it("demands the exact single option on a one-correct multiple poll — over-picking is partial", () => {
+		expect(answerShaped("multiple", ["a"], ["a"]).window.correct).toBe(1);
+		const overPicked = answerShaped("multiple", ["a"], ["a", "b"]);
+		expect(overPicked.window.correct).toBe(0);
+		expect(overPicked.answeredThisGate[0].outcome).toBe("partial");
+	});
+
+	it("can never be answered correctly when a poll has zero correct options", () => {
+		// Unanswerable data must be filtered at supply — the engine stays strict.
+		expect(answerShaped("single", [], ["a"]).window.correct).toBe(0);
+		expect(answerShaped("single", [], ["a"]).answeredThisGate[0].outcome).toBe(
+			"wrong"
+		);
+	});
+
 	it("records a missed single-answer poll as wrong, never partial", () => {
 		const singleMiss = runReducer(started(["js"]), {
 			type: "answer",
@@ -449,5 +516,54 @@ describe("answer judging", () => {
 	it("ignores an empty answer", () => {
 		const before = answering();
 		expect(runReducer(before, { type: "answer", optionIds: [] })).toBe(before);
+	});
+});
+
+describe("coverage scoring", () => {
+	it("bleeds coverage on a wrong answer, scaled by the reward multiplier", () => {
+		const afterOneCorrect = answerWith(started(["js"]), true);
+		expect(afterOneCorrect.coverage).toBe(1);
+		// Base pipeline multiplier is 1 → loss is the raw WRONG_COVERAGE_LOSS.
+		expect(answerWith(afterOneCorrect, false).coverage).toBe(0.5);
+	});
+
+	it("never drags coverage below zero", () => {
+		const wrongOnEmpty = answerWith(started(["js"]), false);
+		expect(wrongOnEmpty.coverage).toBe(0);
+		expect(wrongOnEmpty.coverageByCategory.react ?? 0).toBe(0);
+	});
+
+	it("costs nothing to be wrong in a category with no coverage yet", () => {
+		// Marciano's bug report (2026-07-19): wrong CSS answer at CSS 0% must
+		// not drain the total earned elsewhere — total stays Σ(categories).
+		const jsRich: RunState = {
+			...started(["js"]),
+			coverage: 1,
+			coverageByCategory: { js: 1 },
+		};
+		const wrongInUntouched = answerWith(jsRich, false); // current poll is react, at 0%
+		expect(wrongInUntouched.coverage).toBe(1);
+		expect(wrongInUntouched.coverageByCategory.js).toBe(1);
+		expect(wrongInUntouched.coverageByCategory.react ?? 0).toBe(0);
+	});
+
+	it("keeps the total equal to the sum of the categories after a loss", () => {
+		const afterOneCorrect = answerWith(started(["js"]), true); // react 1
+		const thenWrong = answerWith(afterOneCorrect, false); // react 1 → 0.5
+		expect(thenWrong.coverage).toBe(
+			Object.values(thenWrong.coverageByCategory).reduce(
+				(sum, pct) => sum + pct,
+				0
+			)
+		);
+	});
+
+	it("keeps the gate's coverage-gained tally gains-only", () => {
+		// The coverage-gain check judges what you earned; the loss hits the
+		// run's totals, not the gate window — no double punishment.
+		const afterOneCorrect = answerWith(started(["js"]), true);
+		const thenWrong = answerWith(afterOneCorrect, false);
+		expect(thenWrong.window.coverageGained).toBe(1);
+		expect(thenWrong.coverage).toBe(0.5);
 	});
 });
