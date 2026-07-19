@@ -5,6 +5,7 @@ type SummaryDropdownProps = {
 	trigger: ReactNode;
 	children: ReactNode;
 	panelClassName?: string;
+	triggerClassName?: string;
 };
 
 const chevron = cva("text-pewter transition-transform", {
@@ -20,6 +21,7 @@ export const SummaryDropdown = ({
 	trigger,
 	children,
 	panelClassName = "",
+	triggerClassName = "",
 }: SummaryDropdownProps) => {
 	const [open, setOpen] = useState(false);
 	return (
@@ -27,7 +29,7 @@ export const SummaryDropdown = ({
 			<button
 				type="button"
 				onClick={() => setOpen((isOpen) => !isOpen)}
-				className="flex cursor-pointer items-center gap-1.5"
+				className={`flex cursor-pointer items-center gap-1.5 ${triggerClassName}`}
 			>
 				{trigger}
 				<span className={chevron({ open })}>▾</span>

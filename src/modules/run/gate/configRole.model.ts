@@ -26,6 +26,21 @@ const ROLE_ORDER: Record<ConfigRole, number> = {
 	perk: 2,
 };
 
+/**
+ * Requirement rows must state the *escalated* demand the gate actually judges
+ * (the check's dynamic description), not the config's static base text —
+ * gate 5 requires 3 correct, not the roster's "1 correct answer" (DVTD-7wy6).
+ * Shared by every pipeline row surface (RoleList, CheckList).
+ */
+export const gateRowDescription = (
+	config: Config,
+	role: ConfigRole,
+	check: CheckStatus | undefined
+): string =>
+	role === "requirement" && check?.description
+		? `Requires ${check.description} to pass the gate.`
+		: describeConfig(config);
+
 export const roleRows = (
 	configs: readonly Config[],
 	checks: readonly CheckStatus[]
@@ -40,7 +55,7 @@ export const roleRows = (
 			return {
 				config,
 				role,
-				description: describeConfig(config),
+				description: gateRowDescription(config, role, check),
 				status: dormant ? "not triggered yet" : check?.progress,
 				state: check?.state,
 			};

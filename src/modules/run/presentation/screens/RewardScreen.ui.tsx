@@ -5,7 +5,7 @@ import { roleRows } from "~/modules/run/gate/configRole.model";
 import { roundToOneDecimal } from "~/modules/run/rules.model";
 import { Title } from "~/ui/typography/Title.component";
 import { RoleList } from "../gate/RoleList.ui";
-import { AnswerResults } from "../run/AnswerResults.ui";
+import { ReviewAnswers } from "../run/ReviewAnswers.ui";
 import { CoverageByCategory } from "../run/CoverageByCategory.ui";
 import { StatBadge } from "../run/StatBadge.ui";
 
@@ -31,16 +31,16 @@ export const RewardScreen = ({
 	);
 
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-4">
 			<Title as="h2" tone="gradient">
 				Gate #{gatesCleared} cleared!
 			</Title>
 
-			<section className="flex flex-col gap-3">
-				<Title as="h3" size="sm">
+			<section className="flex flex-col gap-2 rounded-r-xl border-l-4 border-viridian bg-linear-to-r from-viridian/10 to-transparent p-4">
+				<Title as="h3" size="md">
 					Rewards
 				</Title>
-				<div className="flex flex-wrap gap-8">
+				<div className="flex flex-wrap gap-2">
 					<StatBadge
 						label="Storage reward"
 						value={`+${gateReward}KB`}
@@ -53,8 +53,6 @@ export const RewardScreen = ({
 				</div>
 				<CoverageByCategory
 					coverageByCategory={coverageGainedByCategory}
-					title="Coverage per category"
-					subtitle="What you earned clearing this gate"
 					prefix="+"
 				/>
 			</section>
@@ -66,7 +64,7 @@ export const RewardScreen = ({
 				<RoleList rows={roleRows(configs, passedChecks)} />
 			</div>
 
-			<AnswerResults answered={answered} />
+			<ReviewAnswers answered={answered} />
 		</div>
 	);
 };

@@ -1,1 +1,0 @@
-ALTER TYPE "public"."status" ADD VALUE 'needs-revision';

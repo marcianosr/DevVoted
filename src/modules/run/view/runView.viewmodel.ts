@@ -1,9 +1,12 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 import {
 	type AnsweredPoll,
+	type AnswerOutcome,
 	type AnswerType,
 	canRunLinter,
 	lintApplies,
+	LINT_COST,
+	rebuildCost,
 	type RunPoll,
 	type RunState,
 	type RunStatus,
@@ -12,8 +15,10 @@ import type { Config } from "../configs/config.model";
 import type { CheckStatus } from "../configs/effect.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
 import {
+	canAddSlot,
 	coverageForAnswer,
 	coverageProfileFor,
+	coverageToAddSlot,
 	linterFor,
 	rewardMultiplierFor,
 } from "../pipeline/pipeline.model";
@@ -43,9 +48,15 @@ export type RunView = {
 	readonly newConfigIds: readonly string[];
 	readonly stripsRemaining: number;
 	readonly poll: PollView | null;
+	readonly disabledOptionIds: readonly string[];
 	readonly canLint: boolean;
 	readonly lintReady: boolean;
+	readonly lintCost: number;
 	readonly linter: Config | null;
+	readonly rebuildCost: number;
+	readonly canRebuild: boolean;
+	readonly slotCoverageRequired: number;
+	readonly canAddSlot: boolean;
 	readonly checks: readonly CheckStatus[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly passedChecks: readonly CheckStatus[];
@@ -65,6 +76,40 @@ export type RunView = {
 	readonly coverageGainedThisGate: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly log: readonly string[];
+};
+
+export type AnswerVerdict = {
+	readonly outcome: AnswerOutcome;
+	readonly correctAnswers: readonly string[];
+};
+
+/**
+ * The verdict of the answer just submitted — the freshest entry in the gate's
+ * answer log. Older snapshots may lack `correct`; the verdict then only
+ * carries the outcome.
+ */
+export const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
+	const last = view.answeredThisGate.at(-1);
+	if (!last) return null;
+	return { outcome: last.outcome, correctAnswers: last.correct ?? [] };
+};
+
+/**
+ * Ids of the answered poll's correct options, for the post-submit reveal.
+ * `poll` is the poll as it was on screen (pre-advance view); `answered` is the
+ * server response that recorded the answer. Labels bridge the two — the
+ * redacted view strips per-option correctness, and the answer log only keeps
+ * labels.
+ */
+export const correctOptionIdsFor = (
+	poll: PollView,
+	answered: RunView
+): readonly string[] => {
+	const verdict = latestAnswerVerdict(answered);
+	if (!verdict) return [];
+	return poll.options
+		.filter((option) => verdict.correctAnswers.includes(option.label))
+		.map((option) => option.id);
 };
 
 const gainedThisGate = (state: RunState): Record<string, number> => {
@@ -96,6 +141,7 @@ const redactPoll = (poll: RunPoll): PollView => ({
 
 export const toRunView = (state: RunState): RunView => {
 	const current = state.polls[state.currentIndex];
+	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
 	return {
 		status: state.status,
 		slots: state.pipeline.slots,
@@ -105,8 +151,15 @@ export const toRunView = (state: RunState): RunView => {
 		newConfigIds: state.draftedThisGate,
 		stripsRemaining: state.stripsRemaining,
 		poll: state.status === "answering" && current ? redactPoll(current) : null,
+		// Only options the player paid to lint off — no automatic masking.
+		disabledOptionIds: state.manualDisabled,
 		canLint: lintApplies(state),
 		lintReady: canRunLinter(state),
+		lintCost: LINT_COST,
+		rebuildCost: nextRebuildCost,
+		canRebuild: state.storage >= nextRebuildCost,
+		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
+		canAddSlot: canAddSlot(state.pipeline.slots, state.coverage),
 		linter:
 			current === undefined
 				? null

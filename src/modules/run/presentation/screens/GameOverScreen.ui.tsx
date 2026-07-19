@@ -18,8 +18,8 @@ type GameOverScreenProps = {
 const outcomeBanner = cva("rounded-xl border p-6", {
 	variants: {
 		won: {
-			true: "border-viridian bg-celadon/30",
-			false: "border-cinnabar bg-cinnabar/30",
+			true: "border-viridian bg-celadon/20",
+			false: "border-cinnabar bg-cinnabar/20",
 		},
 	},
 });

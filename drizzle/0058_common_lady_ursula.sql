@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "mode" varchar(16) DEFAULT 'calendar' NOT NULL;

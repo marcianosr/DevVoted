@@ -237,6 +237,15 @@
 	--theme-color: var(--color-cerulean);
 }
 
+/* Semantic screen mood — not a content category. Lets a whole screen re-point
+   the theme utilities: gate failed goes cinnabar, gate cleared goes celadon. */
+[data-screen-theme="cinnabar"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-screen-theme="celadon"] {
+	--theme-color: var(--color-celadon);
+}
+
 /* Set --theme-color on each category, then use it in theme utilities */
 [data-category-theme="html"] {
 	--theme-color: var(--color-vermillion);
@@ -279,6 +288,26 @@
 	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
 }
 
+/* Themed screens mirror their category onto <body> (Screen.ui) — the page then
+   trades pure black for a faint tint of the category color: theme hue, chroma
+   crushed to a quarter, lightness pinned near-black. */
+body {
+	transition: background-color 700ms ease;
+}
+
+/* A modal dialog (showModal) locks the page scroll behind it. */
+body:has(dialog:modal) {
+	overflow: hidden;
+}
+body[data-category-theme] {
+	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
+}
+/* Mood screens glow softer than category screens: chroma crushed further and
+   lightness pulled closer to black. */
+body[data-screen-theme] {
+	background-color: oklch(from var(--theme-color) 0.14 calc(c * 0.15) h);
+}
+
 /* Registered as @utility (not plain classes) so Tailwind variants — hover:, focus:,
    enabled:hover:, etc — attach to them the same as any built-in utility. */
 @utility text-theme {
@@ -289,7 +318,7 @@
 }
 /* Translucent theme fill for selected/hover surfaces. */
 @utility bg-theme-soft {
-	background-color: oklch(from var(--theme-color) l c h / 0.1);
+	background-color: oklch(from var(--theme-color) l c h / 0.15);
 }
 @utility border-theme {
 	border-color: var(--theme-color);

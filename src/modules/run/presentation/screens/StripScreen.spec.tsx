@@ -28,6 +28,7 @@ describe(StripScreen, () => {
 		render(
 			<StripScreen
 				stripsRemaining={2}
+				gateNumber={2}
 				configs={[CONFIGS.js, CONFIGS.copilot]}
 				checks={checks}
 				answered={[]}
@@ -37,13 +38,66 @@ describe(StripScreen, () => {
 		expect(
 			screen.getByRole("heading", { name: /Gate failed/ })
 		).toBeInTheDocument();
-		expect(screen.getByText("2")).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: /Remove 2 configs to continue/ })
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				"This is the only thing standing between you and gate 2."
+			)
+		).toBeInTheDocument();
+	});
+
+	it("collapses the answers behind a review bar", () => {
+		render(
+			<StripScreen
+				stripsRemaining={1}
+				gateNumber={2}
+				configs={[CONFIGS.js]}
+				checks={checks}
+				answered={[
+					{
+						id: "js1",
+						question: "typeof null?",
+						category: "js",
+						outcome: "wrong",
+						picked: ['"null"'],
+						correct: ['"object"'],
+						options: ['"object"', '"null"'],
+						answerType: "single",
+					},
+				]}
+				onStrip={() => {}}
+			/>
+		);
+		expect(screen.queryByText("typeof null?")).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: /Review answers/ }));
+		expect(screen.getByText("typeof null?")).toBeInTheDocument();
+	});
+
+	it("names the fixed config that can't be removed", () => {
+		render(
+			<StripScreen
+				stripsRemaining={1}
+				gateNumber={2}
+				configs={[CONFIGS.unitTests, CONFIGS.js]}
+				checks={checks}
+				answered={[]}
+				onStrip={() => {}}
+			/>
+		);
+		expect(screen.getByText(/Unit Tests can't be removed/)).toBeInTheDocument();
+		// The fixed config never gets a Remove chip.
+		expect(
+			screen.queryByRole("button", { name: /Unit Tests/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("shows which check broke the gate", () => {
 		render(
 			<StripScreen
 				stripsRemaining={1}
+				gateNumber={2}
 				configs={[CONFIGS.js]}
 				checks={checks}
 				answered={[]}
@@ -58,6 +112,7 @@ describe(StripScreen, () => {
 		render(
 			<StripScreen
 				stripsRemaining={1}
+				gateNumber={2}
 				configs={[CONFIGS.js, CONFIGS.copilot]}
 				checks={checks}
 				answered={[]}
@@ -72,6 +127,7 @@ describe(StripScreen, () => {
 		render(
 			<StripScreen
 				stripsRemaining={0}
+				gateNumber={2}
 				configs={[CONFIGS.js]}
 				checks={checks}
 				answered={[]}

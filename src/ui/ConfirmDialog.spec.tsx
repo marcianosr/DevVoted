@@ -39,6 +39,16 @@ describe("ConfirmDialog", () => {
 		expect(screen.getByRole("button", { name: "No" })).toBeInTheDocument();
 	});
 
+	it("carries the warning theme on the dialog so theme utilities go cinnabar", () => {
+		const { container } = render(
+			<ConfirmDialog {...defaultProps} theme="cinnabar" />
+		);
+		expect(container.querySelector("dialog")).toHaveAttribute(
+			"data-screen-theme",
+			"cinnabar"
+		);
+	});
+
 	it("uses custom button labels", () => {
 		render(
 			<ConfirmDialog

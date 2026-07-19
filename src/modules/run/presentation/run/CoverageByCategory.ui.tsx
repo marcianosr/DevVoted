@@ -14,8 +14,8 @@ type CoverageByCategoryProps = {
 
 export const CoverageByCategory = ({
 	coverageByCategory,
-	title = "Coverage by category",
-	subtitle = "Shows categories you participated in",
+	title,
+	subtitle,
 	prefix = "",
 }: CoverageByCategoryProps) => {
 	const covered = getCategories()
@@ -32,9 +32,9 @@ export const CoverageByCategory = ({
 		<section className="flex flex-col gap-2">
 			<header>
 				<Title size="sm">{title}</Title>
-				<Subtitle>{subtitle}</Subtitle>
+				{subtitle ? <Subtitle>{subtitle}</Subtitle> : null}
 			</header>
-			<div className="flex flex-wrap gap-3">
+			<div className="flex flex-wrap gap-2">
 				{covered.map(({ code, name, pct }) => (
 					<span
 						key={code}

@@ -84,6 +84,25 @@ describe("roleRows", () => {
 		expect(row.status).toBe("0/1");
 		expect(row.state).toBe("running");
 	});
+
+	it("states the escalated demand on a requirement row, not the base config text", () => {
+		const escalated = check({
+			label: "Correct",
+			sourceConfigId: "unit-tests",
+			target: 3,
+			progress: "2/3",
+			description: "3 correct answers",
+		});
+		const [row] = roleRows([unitTests], [escalated]);
+		expect(row.description).toBe(
+			"Requires 3 correct answers to pass the gate."
+		);
+	});
+
+	it("keeps the config's own description when the check carries no demand", () => {
+		const [row] = roleRows([unitTests], [correctCheck]);
+		expect(row.description).toBe("Requires 1 correct answer to pass the gate.");
+	});
 });
 
 describe("stakesRequirement", () => {

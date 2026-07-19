@@ -178,6 +178,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						coverageByCategory={view.coverageByCategory}
 						configs={view.configs}
 						slots={view.slots}
+						checks={view.checks}
 					/>
 				</div>
 			)}
@@ -209,10 +210,10 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				<Screen categoryCode={view.poll.category}>
 					<AnsweringScreen
 						configs={view.configs}
-						slots={view.slots}
 						checks={view.checks}
 						category={view.poll.category}
 						question={view.poll.question}
+						answerType={view.poll.answerType}
 						options={view.poll.options}
 						selectedOptionIds={selected}
 						disabledOptionIds={disabled}
@@ -298,6 +299,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					<StripScreen
 						stripsRemaining={view.stripsRemaining}
+						gateNumber={view.gatesCleared + 1}
 						configs={view.configs}
 						checks={view.checks}
 						answered={view.answeredThisGate}

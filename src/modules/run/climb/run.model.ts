@@ -54,6 +54,7 @@ export type RunPoll = {
 	readonly question: string;
 	readonly answerType: AnswerType;
 	readonly options: readonly RunOption[];
+	readonly explanation?: string;
 };
 
 const isCorrect = (poll: RunPoll, optionIds: readonly string[]): boolean => {
@@ -97,6 +98,11 @@ export type AnsweredPoll = {
 	readonly category: CategoryCode;
 	readonly outcome: AnswerOutcome;
 	readonly picked: readonly string[];
+	// Optional: runs snapshotted before these fields existed won't carry them.
+	readonly correct?: readonly string[];
+	readonly explanation?: string;
+	readonly options?: readonly string[];
+	readonly answerType?: AnswerType;
 };
 
 export type RunState = {
@@ -332,6 +338,12 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 				picked: poll.options
 					.filter((option) => optionIds.includes(option.id))
 					.map((option) => option.label),
+				correct: poll.options
+					.filter((option) => option.correct)
+					.map((option) => option.label),
+				explanation: poll.explanation,
+				options: poll.options.map((option) => option.label),
+				answerType: poll.answerType,
 			},
 		],
 	};

@@ -7,7 +7,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import { categoryTheme } from "../theme/categoryTheme";
 
 type TitleSize = "lg" | "md" | "sm";
-type TitleTone = "default" | "theme" | "gradient";
+type TitleTone = "default" | "theme" | "gradient" | "cinnabar";
 
 const title = cva("tracking-tight font-extrabold leading-8", {
 	variants: {
@@ -20,6 +20,7 @@ const title = cva("tracking-tight font-extrabold leading-8", {
 			default: "text-zinc-100",
 			theme: "text-theme",
 			gradient: "text-gradient-green",
+			cinnabar: "text-cinnabar",
 		} satisfies Record<TitleTone, string>,
 	},
 });

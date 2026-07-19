@@ -13,8 +13,8 @@ type RunSummaryProps = {
 const outcomeBanner = cva("rounded-xl border p-6", {
 	variants: {
 		won: {
-			true: "border-viridian bg-viridian/30",
-			false: "border-cinnabar bg-cinnabar/30",
+			true: "border-viridian bg-viridian/20",
+			false: "border-cinnabar bg-cinnabar/20",
 		},
 	},
 });

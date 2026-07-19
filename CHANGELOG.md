@@ -5,9 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- **Readable poll options**: answers are now a clean numbered list; picking one marks it with a colored accent bar, and every poll says up front whether it wants one answer or several.
+- **Poll results, poll by poll**: after a gate, your answers show as clickable outcome cards — open one to replay the full option list with your picks and the correct answers revealed, plus an explanation box when the poll has one. Step through polls with previous/next.
+- **The game tells the truth about gate demands**: requirement text now shows the escalated target for deeper gates (e.g. "Requires 3 correct answers"), matching the progress counter.
+- **Mobile HUD**: on small screens the run bar collapses to the essentials, with a "Stakes" button revealing what the gate demands plus your streak, coverage, and loadout.
+- **Themed backdrop**: the page behind a poll takes a faint tint of the category color instead of pure black.
+- **Start a new run from the summit**: the end-of-run screen has a button to begin a fresh climb once the next day's polls have dropped.
+- **Clearer gate-failed screen**: what broke sits right under the headline, the fix is a highlighted card with a single instruction ("Remove 2 configs to continue →"), and the screen explains why fixed configs can't be removed.
+- **Focused gate screens**: after a gate clears or fails, your answers tuck behind a one-line summary bar ("Review your 5 answers · 2 partial · 3 incorrect") — one click opens the full poll-by-poll review.
 - Refactor shop design flow when skipping a shop
 - Added Ruby configs
 - Improve gate pathing visualizations
+- **Runs continue where you left off**: stopping mid-run no longer loses your climb — come back any day and pick up with that day's fresh polls. Polls you skip are missed, not failed.
+- **"How you compared" page** (`/run/community`): after answering, see per poll how the community voted — who agreed with you, who got it right, and where you rank today. Skipped polls stay sealed.
+- **Abandon a run**: give up mid-climb and start a fresh run the same day — the new run only serves polls you haven't answered today. Abandoned storage is forfeited.
+- **Storage pays out by progress**: when a run ends, leftover storage is archived proportionally to how far you climbed — win the final gate for all of it, die halfway for half. Abandoning banks nothing.
+- **Instant answer verdicts**: submitting an answer paints your picks green or red for a beat — with the right answer revealed when you missed — before the run moves on.
+- **Screens with a mood**: the gate-failed screen is bathed in red (buttons, HUD, backdrop included) and the gate-cleared summary in soft green, instead of everything staying default blue.
 
 ## 1.3.0 - 2026-07-06
 ### Added

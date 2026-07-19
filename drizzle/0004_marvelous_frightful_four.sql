@@ -1,1 +1,0 @@
-ALTER TABLE "polls_responses" DROP COLUMN "id";

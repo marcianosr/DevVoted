@@ -32,6 +32,20 @@ export const WithError: Story = {
 	},
 };
 
+export const CinnabarWarning: Story = {
+	args: {
+		isOpen: true,
+		theme: "cinnabar",
+		title: "Abandon this run?",
+		message:
+			"The climb ends here and every KB of leftover storage is forfeited.",
+		confirmText: "Abandon run",
+		cancelText: "Keep climbing",
+		onConfirm: () => {},
+		onCancel: () => {},
+	},
+};
+
 export const Confirming: Story = {
 	args: {
 		isOpen: true,

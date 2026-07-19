@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
@@ -46,6 +46,8 @@ describe(RewardScreen, () => {
 		expect(
 			screen.getByRole("heading", { name: /Gate #1 cleared/ })
 		).toBeInTheDocument();
+		// Answers sit behind the review bar — expand it to reach the poll review.
+		fireEvent.click(screen.getByRole("button", { name: /Review answers/ }));
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();
 		// The pipelines row reuses RoleList — its cleared progress is shown.
 		expect(screen.getByText("2/2")).toBeInTheDocument();

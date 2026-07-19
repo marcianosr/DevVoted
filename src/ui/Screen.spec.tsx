@@ -32,6 +32,18 @@ describe(Screen.name, () => {
 		expect(section?.className).toContain("sm:max-w-2xl");
 	});
 
+	it("mirrors the category onto <body> for the page tint, and cleans it up", () => {
+		const { unmount } = render(<Screen categoryCode="css">content</Screen>);
+		expect(document.body).toHaveAttribute("data-category-theme", "css");
+		unmount();
+		expect(document.body).not.toHaveAttribute("data-category-theme");
+	});
+
+	it("leaves <body> untinted on screens without a category", () => {
+		render(<Screen>content</Screen>);
+		expect(document.body).not.toHaveAttribute("data-category-theme");
+	});
+
 	it("defaults to no transition", () => {
 		const { container } = render(<Screen>content</Screen>);
 		expect(container.querySelector("section")).toHaveAttribute(

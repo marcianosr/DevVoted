@@ -32,6 +32,9 @@ export const pollResponseFromDTO = (dto: PollResponse): PollResponseRecord => {
 		poll_id: dto.pollId,
 		user_id: dto.userId ?? null,
 		run_id: dto.runId ?? null,
+		// This legacy domain only handles the daily loop; session rows are
+		// written by src/modules/run and never round-trip through this DTO.
+		mode: "calendar",
 		answer_date: dto.answerDate,
 		coverage_delta: null,
 		score_breakdown: null,

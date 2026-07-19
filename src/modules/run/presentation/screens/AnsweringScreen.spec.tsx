@@ -6,7 +6,6 @@ import { AnsweringScreen } from "./AnsweringScreen.ui";
 
 const base = {
 	configs: [CONFIGS.unitTests, CONFIGS.js],
-	slots: 3,
 	checks: [
 		{
 			label: "Correct",
@@ -19,6 +18,7 @@ const base = {
 	],
 	category: "react" as const,
 	question: "Which key?",
+	answerType: "single" as const,
 	options: [
 		{ id: "a", label: "A stable unique id" },
 		{ id: "b", label: "The array index" },
@@ -32,7 +32,8 @@ describe(AnsweringScreen, () => {
 	it("renders the poll question and the gate checklist", () => {
 		render(<AnsweringScreen {...base} />);
 		expect(screen.getByText("Which key?")).toBeInTheDocument();
-		expect(screen.getByText("Unit Tests")).toBeInTheDocument();
+		// The pipeline strip and its role row both name the config now.
+		expect(screen.getAllByText("Unit Tests")).not.toHaveLength(0);
 	});
 
 	it("answers a poll option", () => {

@@ -1,21 +1,25 @@
 import type { CategoryCode } from "~/domains/shared/categories";
+import type { AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { roleRows } from "~/modules/run/gate/configRole.model";
 import { Button } from "~/ui/Button.component";
+import { Title } from "~/ui/typography/Title.component";
 import { RoleList } from "../gate/RoleList.ui";
-import { Pipeline } from "../pipeline/Pipeline.ui";
 import { PollCard, PollOption } from "../poll/PollCard.ui";
 
 type AnsweringScreenProps = {
 	configs: readonly Config[];
-	slots: number;
 	checks: readonly CheckStatus[];
 	category: CategoryCode;
 	question: string;
+	answerType: AnswerType;
 	options: readonly PollOption[];
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
+	/** When set, the poll is in its post-submit reveal: options go inert and show ✓/✕. */
+	correctOptionIds?: readonly string[];
+	chosenOptionIds?: readonly string[];
 	canLint?: boolean;
 	lintReady?: boolean;
 	linter?: Config;
@@ -28,13 +32,15 @@ type AnsweringScreenProps = {
 
 export const AnsweringScreen = ({
 	configs,
-	slots,
 	checks,
 	category,
 	question,
+	answerType,
 	options,
 	selectedOptionIds,
 	disabledOptionIds,
+	correctOptionIds,
+	chosenOptionIds,
 	canLint,
 	lintReady,
 	linter,
@@ -48,9 +54,12 @@ export const AnsweringScreen = ({
 		<PollCard
 			category={category}
 			question={question}
+			answerType={answerType}
 			options={options}
 			selectedOptionIds={selectedOptionIds}
 			disabledOptionIds={disabledOptionIds}
+			correctOptionIds={correctOptionIds}
+			chosenOptionIds={chosenOptionIds}
 			canLint={canLint}
 			lintReady={lintReady}
 			linter={linter}
@@ -63,7 +72,11 @@ export const AnsweringScreen = ({
 				Submit answer →
 			</Button>
 		</div>
-		<Pipeline configs={configs} slots={slots} />
-		<RoleList rows={roleRows(configs, checks)} />
+		<div className="space-y-2">
+			<Title as="h3" size="sm">
+				Pipelines status
+			</Title>
+			<RoleList rows={roleRows(configs, checks)} />
+		</div>
 	</div>
 );

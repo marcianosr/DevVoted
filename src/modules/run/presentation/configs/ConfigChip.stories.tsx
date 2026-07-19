@@ -15,6 +15,9 @@ export const Focus: Story = { args: { config: CONFIGS.js } };
 export const FocusLeveled: Story = {
 	args: { config: { ...CONFIGS.js, level: 2 } },
 };
+export const Compact: Story = {
+	args: { config: CONFIGS.unitTests, compact: true, noFixedBadge: true },
+};
 export const RareAmplify: Story = { args: { config: CONFIGS.copilot } };
 export const LegendaryRisk: Story = { args: { config: CONFIGS.copilot } };
 export const WithAction: Story = {

@@ -14,7 +14,6 @@ type Story = StoryObj<typeof AnsweringScreen>;
 export const Default: Story = {
 	args: {
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
-		slots: 3,
 		checks: [
 			{
 				label: "Correct",
@@ -35,6 +34,7 @@ export const Default: Story = {
 		],
 		category: "react",
 		question: "What is the correct key to give list items in React?",
+		answerType: "single",
 		options: [
 			{ id: "a", label: "A stable unique id" },
 			{ id: "b", label: "The array index, always" },
