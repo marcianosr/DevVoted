@@ -1,4 +1,5 @@
 import { cva } from "class-variance-authority";
+import { Subtitle } from "~/ui/typography/Subtitle.component";
 
 export type PollOutcome = "correct" | "partial" | "wrong" | "missed";
 
@@ -20,20 +21,23 @@ export const outcomeText = cva("", {
 	},
 });
 
-const tile = cva("rounded-md border p-2 text-left transition-colors", {
-	variants: {
-		outcome: {
-			correct: "border-viridian/60 bg-viridian/5 hover:bg-viridian/10",
-			partial: "border-saffron/60 bg-saffron/5 hover:bg-saffron/10",
-			wrong: "border-cinnabar/60 bg-cinnabar/5 hover:bg-cinnabar/10",
-			missed: "border-zinc-700 bg-zinc-900/40 cursor-not-allowed opacity-60",
-		} satisfies Record<PollOutcome, string>,
-		expanded: {
-			true: "ring-1",
-			false: "",
+const tile = cva(
+	"cursor-pointer rounded-md border p-2 text-left transition-colors",
+	{
+		variants: {
+			outcome: {
+				correct: "border-viridian/60 bg-viridian/5 hover:bg-viridian/10",
+				partial: "border-saffron/60 bg-saffron/5 hover:bg-saffron/10",
+				wrong: "border-cinnabar/60 bg-cinnabar/5 hover:bg-cinnabar/10",
+				missed: "border-zinc-700 bg-zinc-900/40 cursor-not-allowed opacity-60",
+			} satisfies Record<PollOutcome, string>,
+			expanded: {
+				true: "ring-1",
+				false: "",
+			},
 		},
-	},
-});
+	}
+);
 
 type OutcomeTileProps = {
 	title: string;
@@ -58,7 +62,7 @@ export const OutcomeTile = ({
 		onClick={onClick}
 		className={tile({ outcome, expanded })}
 	>
-		<span className="block text-zinc-300">{title}</span>
+		<Subtitle>{title}</Subtitle>
 		<div className="flex items-center gap-2">
 			<span className={outcomeText({ outcome })}>{OUTCOME_ICON[outcome]}</span>
 			<span className={`block text-sm ${outcomeText({ outcome })}`}>

@@ -83,7 +83,7 @@ describe(PollCard, () => {
 		).toBeInTheDocument();
 	});
 
-	it("numbers each option with a zero-padded index", () => {
+	it("labels each option with a letter badge", () => {
 		render(
 			<PollCard
 				category="css"
@@ -94,14 +94,14 @@ describe(PollCard, () => {
 			/>
 		);
 		expect(
-			screen.getByRole("button", { name: /01\s*Alpha/ })
+			screen.getByRole("button", { name: /A\s*Alpha/ })
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /03\s*Gamma/ })
+			screen.getByRole("button", { name: /C\s*Gamma/ })
 		).toBeInTheDocument();
 	});
 
-	it("swaps the index for a ✓/✕ mark on revealed correct and chosen-wrong options", () => {
+	it("swaps the letter for a ✓/✕ mark on revealed correct and chosen-wrong options", () => {
 		render(
 			<PollCard
 				category="css"
@@ -120,7 +120,7 @@ describe(PollCard, () => {
 			screen.getByRole("button", { name: /✕\s*Beta/ })
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /03\s*Gamma/ })
+			screen.getByRole("button", { name: /C\s*Gamma/ })
 		).toBeInTheDocument();
 	});
 

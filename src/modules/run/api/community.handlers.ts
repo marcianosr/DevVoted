@@ -1,6 +1,6 @@
 import { type ApiResponse, handleApiOperation } from "~/utils/errorHandling";
 
-import type { AnswerOutcome } from "../climb/run.model";
+import type { AnswerOutcome, AnswerType } from "../climb/run.model";
 import {
 	type CommunityPollRecord,
 	fetchConsumedPollsForDay,
@@ -19,6 +19,8 @@ export type CommunityVoter = {
 export type RunCommunityPollDetail = {
 	yourPickLabels: string[];
 	correctLabels: string[];
+	optionLabels: string[];
+	answerType: AnswerType;
 	agreedPercent: number;
 	gotItRightPercent: number;
 	answeredCount: number;
@@ -108,6 +110,8 @@ const buildPollDetail = (
 		correctLabels: poll.options
 			.filter((option) => option.correct)
 			.map((option) => option.label),
+		optionLabels: poll.options.map((option) => option.label),
+		answerType: poll.answerType,
 		agreedPercent: toPercent(agreeing.length, pollAnswers.length),
 		gotItRightPercent: toPercent(gotItRight.length, pollAnswers.length),
 		answeredCount: pollAnswers.length,

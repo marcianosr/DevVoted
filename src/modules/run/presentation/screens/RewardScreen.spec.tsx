@@ -46,9 +46,8 @@ describe(RewardScreen, () => {
 		expect(
 			screen.getByRole("heading", { name: /Gate #1 cleared/ })
 		).toBeInTheDocument();
-		// Answers now render as outcome tiles — the question shows after expanding.
-		expect(screen.getByRole("button", { name: /Poll 1/ })).toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: /Poll 1/ }));
+		// Answers sit behind the review bar — expand it to reach the poll review.
+		fireEvent.click(screen.getByRole("button", { name: /Review answers/ }));
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();
 		// The pipelines row reuses RoleList — its cleared progress is shown.
 		expect(screen.getByText("2/2")).toBeInTheDocument();

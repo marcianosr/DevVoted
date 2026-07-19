@@ -176,8 +176,9 @@ export const ShopScreen = ({
 						})}
 					</div>
 					<Button
-						variant="primary"
-						className="self-start rounded-lg text-sm"
+						variant="secondary"
+						size="small"
+						className="self-start"
 						disabled={!canRebuild}
 						onClick={onRebuild}
 					>

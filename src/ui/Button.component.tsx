@@ -13,6 +13,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	isLoading?: boolean;
 };
 
+// Variants carry color only; spacing lives in `size` so every variant shrinks.
 const button = cva(
 	"rounded cursor-pointer transition-colors disabled:cursor-not-allowed",
 	{
@@ -20,15 +21,15 @@ const button = cva(
 			variant: {
 				primary: "",
 				secondary:
-					"border-2 px-4 py-2 text-sm border-blue-500 text-white hover:bg-blue-500/40 disabled:bg-blue-200",
+					"border border-cerulean text-cerulean hover:bg-cerulean/15 disabled:opacity-40",
 				theme:
-					"border-2 px-4 py-2 text-sm border-theme text-theme hover:bg-theme hover:text-black disabled:opacity-40",
+					"border-2 border-theme text-theme hover:bg-theme hover:text-black disabled:opacity-40",
 				danger:
-					"border-2 px-4 py-2 text-sm border-red-500 text-white hover:bg-red-500/40 disabled:bg-red-200",
+					"border-2 border-cinnabar text-white hover:bg-cinnabar/40 disabled:opacity-40",
 			},
 			size: {
-				default: "",
-				small: "",
+				default: "px-4 py-2 text-sm",
+				small: "px-3 py-1.5 text-sm",
 			},
 			isDisabled: {
 				true: "",

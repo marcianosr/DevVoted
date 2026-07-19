@@ -28,15 +28,26 @@ describe("Button", () => {
 		expect(screen.getByRole("button")).toHaveClass("px-3", "py-2");
 	});
 
-	it("outlines the danger variant in red", () => {
+	it("outlines the danger variant in cinnabar", () => {
 		render(<Button variant="danger">Delete</Button>);
-		expect(screen.getByRole("button")).toHaveClass("border-red-500");
+		expect(screen.getByRole("button")).toHaveClass("border-cinnabar");
+	});
+
+	it("outlines the secondary variant in cerulean and shrinks with size", () => {
+		render(
+			<Button variant="secondary" size="small">
+				Review answers →
+			</Button>
+		);
+		const button = screen.getByRole("button");
+		expect(button).toHaveClass("border-cerulean", "text-cerulean");
+		expect(button).toHaveClass("px-3", "py-1.5");
 	});
 
 	it("follows the category theme in the theme variant", () => {
 		render(<Button variant="theme">Rebuild</Button>);
 		const button = screen.getByRole("button");
 		expect(button).toHaveClass("border-theme", "text-theme");
-		expect(button).not.toHaveClass("border-blue-500");
+		expect(button).not.toHaveClass("border-cerulean");
 	});
 });

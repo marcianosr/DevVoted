@@ -1,23 +1,51 @@
+import { cva } from "class-variance-authority";
+
 import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { CheckList } from "../gate/CheckList.ui";
-import { AnswerResults } from "../run/AnswerResults.ui";
+import { ReviewAnswers } from "../run/ReviewAnswers.ui";
 
 type StripScreenProps = {
 	stripsRemaining: number;
+	gateNumber: number;
 	configs: readonly Config[];
 	checks: readonly CheckStatus[];
 	answered: readonly AnsweredPoll[];
 	onStrip: (configId: string) => void;
 };
 
+const repairCard = cva("flex flex-col rounded-xl border p-5", {
+	variants: {
+		repaired: {
+			true: "border-viridian",
+			false: "border-cerulean bg-cerulean/10",
+		},
+	},
+});
+
+const removeHeading = (stripsRemaining: number): string =>
+	stripsRemaining === 0
+		? "Build repaired — climb on when you're ready"
+		: `Remove ${stripsRemaining} config${stripsRemaining === 1 ? "" : "s"} to continue`;
+
+const FixedConfigNote = ({ configs }: { configs: readonly Config[] }) => {
+	const fixed = configs.filter((config) => config.fixed);
+	if (fixed.length === 0) return null;
+	return (
+		<Paragraph tone="pewter">
+			{fixed.map((config) => config.label).join(", ")} can&apos;t be removed —
+			fixed for every run.
+		</Paragraph>
+	);
+};
+
 export const StripScreen = ({
 	stripsRemaining,
+	gateNumber,
 	configs,
 	checks,
 	answered,
@@ -27,46 +55,44 @@ export const StripScreen = ({
 	const quotaMet = stripsRemaining === 0;
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="rounded-xl border border-cinnabar bg-cinnabar/30 p-6">
-				<Title>Gate failed!</Title>
-				<Subtitle>This gate was too hard!</Subtitle>
-				<Paragraph>
-					Remove{" "}
-					<span className="font-bold text-cinnabar">{stripsRemaining}</span>{" "}
-					config{stripsRemaining === 1 ? "" : "s"} off your pipeline — your
-					choice which. Deeper gates cost more.
+			<header className="flex flex-col gap-2">
+				<Title category="ruby">Gate failed!</Title>
+				<Paragraph size="sm" tone="muted">
+					Your build broke because:
 				</Paragraph>
-			</div>
+			</header>
 			{failed.length > 0 ? (
-				<div className="flex flex-col gap-2">
-					<Subtitle>Your build broke because</Subtitle>
-					<CheckList checks={failed} configs={configs} />
-				</div>
+				<CheckList checks={failed} configs={configs} />
 			) : null}
 
-			<AnswerResults answered={answered} />
-
-			<div className="flex flex-col gap-3">
-				<Subtitle>Remove a config to continue</Subtitle>
-				<Paragraph>
-					{quotaMet
-						? "Build repaired. Climb on when you're ready."
-						: `Peel ${stripsRemaining} config${stripsRemaining === 1 ? "" : "s"} off your pipeline to repair your build.`}
-				</Paragraph>
-				<div className="flex flex-wrap gap-2">
-					{configs
-						.filter((config) => !config.fixed)
-						.map((config) => (
-							<ConfigChip
-								key={config.id}
-								config={config}
-								action="Remove ✕"
-								disabled={quotaMet}
-								onClick={() => onStrip(config.id)}
-							/>
-						))}
-				</div>
+			<div className={repairCard({ repaired: quotaMet })}>
+				<Title as="h2" size="sm">
+					{removeHeading(stripsRemaining)}
+				</Title>
+				<section className="space-y-2">
+					{quotaMet ? null : (
+						<Paragraph size="sm" tone="muted">
+							This is the only thing standing between you and gate {gateNumber}.
+						</Paragraph>
+					)}
+					<div className="flex flex-wrap gap-2">
+						{configs
+							.filter((config) => !config.fixed)
+							.map((config) => (
+								<ConfigChip
+									key={config.id}
+									config={config}
+									action="Remove ✕"
+									disabled={quotaMet}
+									onClick={() => onStrip(config.id)}
+								/>
+							))}
+					</div>
+					<FixedConfigNote configs={configs} />
+				</section>
 			</div>
+
+			<ReviewAnswers answered={answered} />
 		</div>
 	);
 };

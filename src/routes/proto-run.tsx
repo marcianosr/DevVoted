@@ -210,7 +210,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				<Screen categoryCode={view.poll.category}>
 					<AnsweringScreen
 						configs={view.configs}
-						slots={view.slots}
 						checks={view.checks}
 						category={view.poll.category}
 						question={view.poll.question}
@@ -300,6 +299,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					<StripScreen
 						stripsRemaining={view.stripsRemaining}
+						gateNumber={view.gatesCleared + 1}
 						configs={view.configs}
 						checks={view.checks}
 						answered={view.answeredThisGate}

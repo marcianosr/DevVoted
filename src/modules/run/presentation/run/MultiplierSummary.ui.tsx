@@ -11,7 +11,7 @@ export const MultiplierSummary = ({
 	coverageMultiplier,
 	coverageAdd,
 }: MultiplierSummaryProps) => (
-	<div className="flex flex-wrap gap-8">
+	<div className="flex flex-wrap gap-8 rounded-r-xl border-l-4 border-viridian bg-linear-to-r from-viridian/10 to-transparent p-4">
 		<StatBadge
 			label="Reward multiplier"
 			value={`×${rewardMultiplier}`}
@@ -20,6 +20,7 @@ export const MultiplierSummary = ({
 		<StatBadge
 			label="Coverage multiplier"
 			value={`×${coverageMultiplier}${coverageAdd > 0 ? ` +${coverageAdd}%` : ""}`}
+			valueTone="gradient"
 		/>
 	</div>
 );

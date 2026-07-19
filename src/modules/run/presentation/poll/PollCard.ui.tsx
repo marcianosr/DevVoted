@@ -55,48 +55,51 @@ const MARK: Record<OptionStatus, string> = {
 };
 
 const optionRow = cva(
-	"flex items-baseline gap-3 border-l-2 border-transparent px-4 py-3 text-left transition",
+	"flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition",
 	{
 		variants: {
 			status: {
 				correct: "border-viridian bg-viridian/10",
 				chosenWrong: "border-cinnabar bg-cinnabar/10",
 				selected: "border-theme bg-theme-soft",
-				neutral: "",
+				neutral: "border-zinc-700",
 			} satisfies Record<OptionStatus, string>,
 			interaction: {
 				disabled: "cursor-not-allowed opacity-40 line-through",
 				revealed: "",
-				active: "cursor-pointer hover:border-white/40 hover:bg-white/10",
+				active: "cursor-pointer",
 			} satisfies Record<InteractionState, string>,
 		},
 		compoundVariants: [
 			{
-				status: "selected",
+				status: "neutral",
 				interaction: "active",
-				className: "hover:border-theme",
+				className: "hover:border-zinc-500 hover:bg-white/5",
 			},
 		],
 	}
 );
 
-const ANSWER_TYPE_HINT: Record<AnswerType, string> = {
+export const ANSWER_TYPE_HINT: Record<AnswerType, string> = {
 	single: "Pick one answer",
 	multiple: "Multiple answers — select all that apply",
 };
 
-const optionIndex = cva("w-6 shrink-0 text-xs font-bold tabular-nums", {
-	variants: {
-		status: {
-			correct: "text-viridian",
-			chosenWrong: "text-cinnabar",
-			selected: "text-theme",
-			neutral: "text-pewter/70",
-		} satisfies Record<OptionStatus, string>,
-	},
-});
+const optionBadge = cva(
+	"flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-bold",
+	{
+		variants: {
+			status: {
+				correct: "bg-viridian text-black",
+				chosenWrong: "bg-cinnabar text-black",
+				selected: "bg-theme text-black",
+				neutral: "bg-zinc-800 text-zinc-400",
+			} satisfies Record<OptionStatus, string>,
+		},
+	}
+);
 
-const optionLabel = cva("font-medium text-base", {
+const optionLabel = cva("font-extrabold text-base", {
 	variants: {
 		status: {
 			correct: "text-viridian",
@@ -107,7 +110,7 @@ const optionLabel = cva("font-medium text-base", {
 	},
 });
 
-const optionNumber = (index: number) => String(index + 1).padStart(2, "0");
+const optionLetter = (index: number) => String.fromCharCode(65 + index);
 
 export const PollCard = ({
 	category,
@@ -132,10 +135,10 @@ export const PollCard = ({
 	const revealed = correctOptionIds !== undefined;
 
 	return (
-		<div {...categoryTheme(category)} className="flex flex-col gap-5">
+		<div {...categoryTheme(category)} className="flex flex-col gap-4">
 			<div className="flex items-center gap-3">
-				<Swatch size="xl" />
-				<Title category={category} as="h1">
+				<Swatch size="lg" />
+				<Title category={category} as="h1" size="md">
 					{getCategoryMetadata(category).name}
 				</Title>
 			</div>
@@ -163,7 +166,7 @@ export const PollCard = ({
 				</button>
 			) : null}
 
-			<div className="flex flex-col divide-y divide-white/5">
+			<div className="flex flex-col gap-3">
 				{options.map((option, index) => {
 					const off = disabled.has(option.id);
 					const isCorrect = revealed && correct.has(option.id);
@@ -180,8 +183,8 @@ export const PollCard = ({
 							onClick={() => onSelect(option.id)}
 							className={optionRow({ status, interaction })}
 						>
-							<span className={optionIndex({ status })}>
-								{MARK[status] || optionNumber(index)}
+							<span className={optionBadge({ status })}>
+								{MARK[status] || optionLetter(index)}
 							</span>
 							<span className={optionLabel({ status })}>{option.label}</span>
 						</button>

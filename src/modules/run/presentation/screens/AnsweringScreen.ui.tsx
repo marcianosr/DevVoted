@@ -4,13 +4,12 @@ import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { roleRows } from "~/modules/run/gate/configRole.model";
 import { Button } from "~/ui/Button.component";
+import { Title } from "~/ui/typography/Title.component";
 import { RoleList } from "../gate/RoleList.ui";
-import { Pipeline } from "../pipeline/Pipeline.ui";
 import { PollCard, PollOption } from "../poll/PollCard.ui";
 
 type AnsweringScreenProps = {
 	configs: readonly Config[];
-	slots: number;
 	checks: readonly CheckStatus[];
 	category: CategoryCode;
 	question: string;
@@ -30,7 +29,6 @@ type AnsweringScreenProps = {
 
 export const AnsweringScreen = ({
 	configs,
-	slots,
 	checks,
 	category,
 	question,
@@ -67,7 +65,11 @@ export const AnsweringScreen = ({
 				Submit answer →
 			</Button>
 		</div>
-		<Pipeline configs={configs} slots={slots} />
-		<RoleList rows={roleRows(configs, checks)} />
+		<div className="space-y-2">
+			<Title as="h3" size="sm">
+				Pipelines status
+			</Title>
+			<RoleList rows={roleRows(configs, checks)} />
+		</div>
 	</div>
 );

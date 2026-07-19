@@ -20,6 +20,10 @@ export const Secondary: Story = {
 	args: { children: "Cancel", variant: "secondary" },
 };
 
+export const SecondarySmall: Story = {
+	args: { children: "Review answers →", variant: "secondary", size: "small" },
+};
+
 export const Danger: Story = {
 	args: { children: "Delete", variant: "danger" },
 };

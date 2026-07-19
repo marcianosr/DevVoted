@@ -19,6 +19,9 @@ export const Default: Story = {
 				category: "js",
 				outcome: "correct",
 				picked: ["at(-1)"],
+				correct: ["at(-1)"],
+				options: ["at(-1)", "last()", "pop()"],
+				answerType: "single",
 			},
 			{
 				id: "css1",
@@ -26,6 +29,11 @@ export const Default: Story = {
 				category: "css",
 				outcome: "wrong",
 				picked: ["align: middle"],
+				correct: ["place-items: center"],
+				options: ["align: middle", "place-items: center", "float: center"],
+				answerType: "single",
+				explanation:
+					"place-items sets align-items and justify-items in one go, centering on both axes.",
 			},
 			{
 				id: "react1",
@@ -33,6 +41,9 @@ export const Default: Story = {
 				category: "react",
 				outcome: "correct",
 				picked: ["A stable unique id"],
+				correct: ["A stable unique id"],
+				options: ["A stable unique id", "The array index", "Math.random()"],
+				answerType: "single",
 			},
 			{
 				id: "ts1",
@@ -40,6 +51,9 @@ export const Default: Story = {
 				category: "ts",
 				outcome: "partial",
 				picked: ["Partial", "Banjo"],
+				correct: ["Partial", "Pick"],
+				options: ["Partial", "Banjo", "Pick", "Kazooie"],
+				answerType: "multiple",
 			},
 		],
 	},

@@ -11,14 +11,3 @@ export const stateText = cva("", {
 		} satisfies Record<CheckState, string>,
 	},
 });
-
-export const stateRow = cva("", {
-	variants: {
-		state: {
-			running: "bg-saffron/30",
-			skipped: "bg-pewter/5",
-			success: "bg-viridian/30",
-			failed: "bg-cinnabar/30",
-		} satisfies Record<CheckState, string>,
-	},
-});

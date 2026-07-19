@@ -8,10 +8,15 @@ import type {
 	CheckState,
 	CheckStatus,
 } from "~/modules/run/configs/effect.model";
+import {
+	gateRowDescription,
+	roleOf,
+} from "~/modules/run/gate/configRole.model";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { stateRow, stateText } from "./checkStateStyles";
+import { stateText } from "./checkStateStyles";
 
-const STATE_ICON: Record<CheckState, string> = {
+export const STATE_ICON: Record<CheckState, string> = {
 	running: "●",
 	skipped: "⊘",
 	success: "✓",
@@ -19,32 +24,30 @@ const STATE_ICON: Record<CheckState, string> = {
 };
 
 const NEUTRAL_TONE = "neutral";
-type BoxTone = CheckState | typeof NEUTRAL_TONE;
+type RowTone = CheckState | typeof NEUTRAL_TONE;
 
-const pipelineBox = cva("", {
-	variants: {
-		tone: {
-			running: "border-saffron divide-saffron/25",
-			skipped: "border-zinc-700 divide-zinc-800",
-			success: "border-viridian divide-viridian/25",
-			failed: "border-cinnabar divide-cinnabar/25",
-			neutral: "border-zinc-700 divide-zinc-800",
-		} satisfies Record<BoxTone, string>,
-	},
-	defaultVariants: {
-		tone: NEUTRAL_TONE,
-	},
-});
-
-const uniformState = (
-	checks: readonly CheckStatus[]
-): CheckState | undefined => {
-	const [first] = checks;
-	if (!first) return undefined;
-	return checks.every((check) => check.state === first.state)
-		? first.state
-		: undefined;
-};
+// No outline — every row carries its own state-colored accent bar on the left
+// with a soft gradient fading out of it (Marciano's pipeline-row design).
+// Success stays green, running saffron, skipped/stateless gray.
+const rowTone = cva(
+	"flex items-center justify-between gap-3 border-l-4 px-4 py-3",
+	{
+		variants: {
+			tone: {
+				running: "border-saffron bg-linear-to-r from-saffron/10 to-transparent",
+				skipped: "border-zinc-700",
+				success:
+					"border-viridian bg-linear-to-r from-viridian/10 to-transparent",
+				failed:
+					"border-cinnabar bg-linear-to-r from-cinnabar/10 to-transparent",
+				neutral: "border-zinc-700",
+			} satisfies Record<RowTone, string>,
+		},
+		defaultVariants: {
+			tone: NEUTRAL_TONE,
+		},
+	}
+);
 
 type PipelineRow = {
 	key: string;
@@ -52,28 +55,25 @@ type PipelineRow = {
 	config?: Config;
 	text: ReactNode;
 	textClass?: string;
-	rowClass?: string;
 	trailing?: ReactNode;
+	state?: CheckState;
 };
 
-const PipelineRowList = ({
-	rows,
-	boxClass,
-}: {
-	rows: readonly PipelineRow[];
-	boxClass?: string;
-}) => (
-	<ul
-		className={`divide-y overflow-hidden rounded-xl border ${boxClass ?? pipelineBox({})}`}
-	>
+export const PipelineRowList = ({ rows }: { rows: readonly PipelineRow[] }) => (
+	<ul className="divide-y divide-white/5 overflow-hidden rounded-r-xl bg-zinc-900/30">
 		{rows.map((row) => (
-			<li
-				key={row.key}
-				className={`flex items-center justify-between gap-3 px-4 py-2 ${row.rowClass ?? ""}`}
-			>
+			<li key={row.key} className={rowTone({ tone: row.state })}>
 				<span className="flex min-w-0 items-center gap-2">
-					{row.icon}
-					{row.config ? <ConfigChip config={row.config} noTooltip /> : null}
+					{row.config ? (
+						<ConfigChip config={row.config} noTooltip noFixedBadge compact />
+					) : (
+						row.icon
+					)}
+					{row.config?.fixed ? (
+						<Paragraph as="span" tone="pewter">
+							fixed
+						</Paragraph>
+					) : null}
 					<span className={`text-sm ${row.textClass ?? "text-white"}`}>
 						{row.text}
 					</span>
@@ -90,28 +90,26 @@ type CheckListProps = {
 };
 
 export const CheckList = ({ checks, configs }: CheckListProps) => {
-	const tone = uniformState(checks);
 	return (
 		<PipelineRowList
-			boxClass={pipelineBox({ tone })}
 			rows={checks.map((check) => {
 				const source = configs.find(
 					(config) => config.id === check.sourceConfigId
 				);
 				return {
 					key: check.label,
+					state: check.state,
 					icon: (
 						<span className={stateText({ state: check.state })}>
 							{STATE_ICON[check.state]}
 						</span>
 					),
 					config: source,
-					// Show the full description inline — the source chip's hover tooltip is
-					// clipped by the box's overflow, so the row itself carries it.
+					// The row states the demand the gate actually judges (escalated),
+					// inline — the source chip's hover tooltip is clipped by the box.
 					text: source
-						? describeConfig(source)
+						? gateRowDescription(source, roleOf(source, checks), check)
 						: (check.description ?? check.label),
-					rowClass: stateRow({ state: check.state }),
 					trailing: (
 						<span className={stateText({ state: check.state })}>
 							{check.progress}

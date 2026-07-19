@@ -14,7 +14,6 @@ type Story = StoryObj<typeof AnsweringScreen>;
 export const Default: Story = {
 	args: {
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
-		slots: 3,
 		checks: [
 			{
 				label: "Correct",

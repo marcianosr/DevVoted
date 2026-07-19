@@ -5,7 +5,10 @@ import type {
 	RunCommunityPoll,
 	RunCommunityPollDetail,
 } from "~/modules/run/api/community.handlers";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Title } from "~/ui/typography/Title.component";
 import { OutcomeTile, outcomeText } from "../poll/OutcomeTile.ui";
+import { PollOptionReview } from "../poll/PollOptionReview.ui";
 
 const tileSubtitle = (poll: RunCommunityPoll): string => {
 	if (poll.outcome === "correct")
@@ -54,9 +57,9 @@ const VoterRow = ({
 				</span>
 			))}
 		</div>
-		<span className={tone === "viridian" ? "text-viridian" : "text-cinnabar"}>
+		<Paragraph as="span" size="sm" tone={tone}>
 			{label}
-		</span>
+		</Paragraph>
 	</div>
 );
 
@@ -72,34 +75,43 @@ const AgreementBar = ({ detail }: { detail: RunCommunityPollDetail }) => (
 				style={{ width: `${detail.gotItRightPercent}%` }}
 			/>
 		</div>
-		<div className="flex justify-between text-sm text-zinc-400">
-			<span>{detail.agreedPercent}% picked what you picked</span>
-			<span>{detail.gotItRightPercent}% got it right</span>
+		<div className="flex justify-between">
+			<Paragraph as="span" size="sm" tone="muted">
+				{detail.agreedPercent}% picked what you picked
+			</Paragraph>
+			<Paragraph as="span" size="sm" tone="muted">
+				{detail.gotItRightPercent}% got it right
+			</Paragraph>
 		</div>
 	</div>
 );
 
 const ExpandedPoll = ({ poll }: { poll: RunCommunityPoll }) => {
-	if (!poll.detail) return null;
+	if (!poll.detail || poll.outcome === "missed") return null;
 	return (
-		<div className="space-y-5 rounded-md border border-zinc-700 bg-zinc-900/60 p-6 font-mono">
+		<div className="space-y-5 rounded-md border border-zinc-700 bg-zinc-900/60 p-6">
 			<div className="flex items-baseline justify-between gap-4">
-				<h3 className={`text-lg ${outcomeText({ outcome: poll.outcome })}`}>
-					Poll {poll.index + 1} — expanded
-				</h3>
-				<span className="text-sm text-zinc-500">{poll.question}</span>
+				<Title as="h3" size="sm">
+					<span className={outcomeText({ outcome: poll.outcome })}>
+						Poll {poll.index + 1}
+					</span>
+				</Title>
+				<Paragraph as="span" size="sm" tone="muted">
+					{poll.question}
+				</Paragraph>
 			</div>
-			<div className="space-y-1">
-				<p className="text-zinc-100">
-					You picked: “{poll.detail.yourPickLabels.join("”, “")}”
-				</p>
-				<p className="text-viridian">
-					Correct: “{poll.detail.correctLabels.join("”, “")}”
-				</p>
-			</div>
+			<PollOptionReview
+				options={poll.detail.optionLabels}
+				picked={poll.detail.yourPickLabels}
+				correct={poll.detail.correctLabels}
+				answerType={poll.detail.answerType}
+				outcome={poll.outcome}
+			/>
 			<AgreementBar detail={poll.detail} />
 			<div className="space-y-3">
-				<p className="text-sm text-zinc-500">Who picked what</p>
+				<Paragraph size="sm" tone="muted">
+					Who picked what
+				</Paragraph>
 				<VoterRow
 					voters={poll.detail.gotItRightVoters}
 					label="got it right"
@@ -131,14 +143,14 @@ export const RunCommunityBoard = ({
 
 	return (
 		<section className="space-y-8">
-			<header className="space-y-1 font-mono">
-				<h2 className="text-3xl text-zinc-50">How you compared</h2>
-				<p className="text-zinc-400">
+			<header className="space-y-1">
+				<Title as="h2">How you compared</Title>
+				<Paragraph size="sm" tone="muted">
 					{totalPlayers} player{totalPlayers === 1 ? "" : "s"} climbed today
-				</p>
+				</Paragraph>
 			</header>
 
-			<div className="flex flex-wrap gap-4">
+			<div className="grid grid-cols-5 gap-2">
 				{polls.map((poll) => (
 					<OutcomeTile
 						key={poll.pollId}
@@ -159,10 +171,10 @@ export const RunCommunityBoard = ({
 			{expanded && <ExpandedPoll poll={expanded} />}
 
 			{topPercent !== null && (
-				<footer className="font-mono text-zinc-400">
+				<Paragraph as="footer" size="sm" tone="muted">
 					top <span className="text-cerulean">{topPercent}%</span> of players
 					today
-				</footer>
+				</Paragraph>
 			)}
 		</section>
 	);

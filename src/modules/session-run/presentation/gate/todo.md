@@ -1,4 +1,6 @@
 Questions:
+- JSON in state? Dangerous?
+
 - How will it go for players answering 1 or 2 polls per day versus players aonswering a full gate (5 polls)
 - Should I allow players to answer more polls after a gate? How am I handling that against the social layer? And how does that work if someone wants to review their answer(s)?
 - Showing the answers after the gate is nice, but some have omre detailed explanations. Currently it's just a list. What do we do here?

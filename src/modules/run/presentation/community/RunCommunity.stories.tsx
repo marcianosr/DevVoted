@@ -23,6 +23,8 @@ const GYM_LEADERS: CommunityVoter[] = [
 const detail = (agreed: number, right: number) => ({
 	yourPickLabels: ["Guild[”members”]"],
 	correctLabels: ["Guild.members"],
+	optionLabels: ["Guild.members", "Guild[”members”]", "Pluck.members"],
+	answerType: "single" as const,
 	agreedPercent: agreed,
 	gotItRightPercent: right,
 	answeredCount: GYM_LEADERS.length,
