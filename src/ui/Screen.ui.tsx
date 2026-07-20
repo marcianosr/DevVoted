@@ -23,7 +23,7 @@ export type ScreenAction = {
 	hint?: ReactNode;
 };
 
-const screenSection = cva("w-full mx-auto px-4 py-8", {
+const screenSection = cva("w-full mx-auto px-4 py-4 sm:py-8", {
 	variants: {
 		width: {
 			narrow: "sm:max-w-2xl",
