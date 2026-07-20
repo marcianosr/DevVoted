@@ -9,12 +9,12 @@ import { categoryTheme } from "../theme/categoryTheme";
 type TitleSize = "lg" | "md" | "sm";
 type TitleTone = "default" | "theme" | "gradient" | "cinnabar";
 
-const title = cva("tracking-tight font-extrabold leading-8", {
+const title = cva("tracking-tight font-extrabold leading-6 sm:leading-8", {
 	variants: {
 		size: {
-			lg: "text-3xl",
-			md: "text-2xl",
-			sm: "text-lg",
+			lg: "text-xl sm:text-3xl",
+			md: "text lg sm:text-2xl",
+			sm: "text-md text-lg",
 		} satisfies Record<TitleSize, string>,
 		tone: {
 			default: "text-zinc-100",

@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 DevVoted is a developer quiz game built with TanStack Start, combining trivia with roguelike mechanics.
-For a thorough understanding of the game's vision, mechanics, and design decisions, please refer to our [stories][.beans]
+For a thorough understanding of the game's vision, mechanics, and design decisions, please refer to our [stories](.beans/)
 
 Older but still useful documentation can be found here:
 [Concept](https://www.notion.so/Concept-26407387629780e3b753e50c417a7901?source=copy_link) and [Brainstorming](docs/brainstorm)
@@ -34,7 +34,7 @@ Older but still useful documentation can be found here:
 - `npm run db:reset` - Reset database (drops all data)
 - `npm run db:refresh` - Complete database refresh (reset + push + seed)
 
-Schema changes ship as guarded SQL files in `supabase/migrations/` (ADR-012): applied to dev by hand, to production by CI on merge. `src/database/schema.ts` stays the source of truth for shape.
+
 
 ## Architecture Overview
 
@@ -53,7 +53,15 @@ Schema changes ship as guarded SQL files in `supabase/migrations/` (ADR-012): ap
 
 ### Module Architecture
 
-Feature modules under `src/modules/` (legacy `src/domains/` migrates opportunistically), each layered as server function → handler → query, with models/services/validation alongside. [ADR-002](docs/adr/002-domain-architecture.md) owns the structure, naming conventions, layer table, and the dependency rule — read it before adding files to a module. The rule is machine-enforced: `npm run lint` includes the architecture check (`lint:arch`, dependency-cruiser).
+New features live under `src/modules/`, layered server function → handler → query,
+with models/services/validation alongside. `src/domains/` is legacy-but-live:
+cross-cutting code (`shared/queryKeys.ts`, some models) still sits there and migrates
+to `src/modules/` opportunistically — migrate a slice when you touch it, not wholesale.
+So examples below that reference `@/src/domains/...` are correct today; that code just
+hasn't moved yet.
+
+[ADR-002](docs/adr/002-domain-architecture.md) owns structure, naming, the layer table,
+and the dependency rule (machine-enforced via `npm run lint` → `lint:arch`).
 
 ### UI Layer Architecture (CRITICAL)
 
@@ -72,29 +80,47 @@ Strict two-tier separation — see [ADR-010](docs/adr/010-ui-layer-separation.md
 `src/database/schema.ts` is the single source of truth — every table is documented inline there. Do not maintain a table list in this file.
 
 ### Path Aliases
+Standardize on `@/src`. Every import starts from it: `@/src/utils/errorHandling`, `@/src/test/kanto`. No bare `~/`, no deep relative imports.
 
-- `~` maps to `./src`
-- `@/src` maps to `./src`
+### Testing
 
-### Testing Philosophy
+- Co-located `.spec.ts(x)`; Vitest + Testing Library; jsdom
+- Mock at the boundary only: DB ops are mocked (chain `.values()`/`.returning()` on
+  Drizzle builders). Don't mock your own component functions — use the factory pattern
+  (`@/src/test/createMockDataFactory.ts`) for component data
+- `vi.clearAllMocks()` over `vi.resetAllMocks()` (preserves implementations)
+- Test names describe scenario + outcome; no "should"
+- Canonical data from `@/src/test/kanto.ts`; prefer birthday/Christmas dates via `TEST_DATES`. Source: [https://bulbapedia.bulbagarden.net/wiki/Kanto]
 
-- Tests are co-located with source files using `.spec.ts` or `.spec.tsx`
-- Database operations are mocked with Vitest for unit tests
-- Use `vi.clearAllMocks()` instead of `vi.resetAllMocks()` to preserve mock implementations
-- Mock Drizzle query builders by chaining `.values()` and `.returning()` methods
-- Clear test descriptions that doesn't use verbs like "should"
-- Never use function mocks, but use factory pattern for component data testing
-- For testing data, please always use stuff from RareWare, Pokemon, Banjo-Kazooie. Also, for instance when testing dates, prefer my birth day (13-05) or Christmas related dates. Just for fun. Canonical pool: `src/test/kanto.ts`.
 
 ### Common Patterns
 
 - Function composition pattern. Immutability is important.
-- Prevent usage of "else" if needed in if conditions
+- Prevent usage of "else" if needed in if conditions:
+
+```
+// ❌ Uses else
+if (user.isAdmin) {
+  return grantAccess();
+} else {
+  return denyAccess();
+}
+
+// ✅ No else — return early
+if (!user.isAdmin) {
+  return denyAccess();
+}
+return grantAccess();
+
+// ✅ Also fine — ternary when simple
+return user.isAdmin ? grantAccess() : denyAccess();
+```
+
 - Use arrow functions over regular functions
 
 #### Query Keys Pattern
 
-Centralized query keys in `src/domains/shared/queryKeys.ts` for consistent TanStack Query cache management:
+Centralized query keys in `@/src/domains/shared/queryKeys.ts` for consistent TanStack Query cache management:
 
 ```typescript
 export const pollQueryKeys = {
@@ -104,25 +130,6 @@ export const pollQueryKeys = {
     [...pollQueryKeys.all, "daily", userId] as const,
 };
 ```
-
-#### Mock Data Factory Pattern
-
-Use `src/test/createMockDataFactory.ts` for test data with sensible defaults, and pull values from the Kanto pool in `src/test/kanto.ts` (towns + mottos, gym leaders + badges, landmarks, poll-shaped `KANTO_QUIZ` questions, canonical `TEST_DATES`) instead of inventing ad-hoc strings:
-
-```typescript
-import { createMockDataFactory } from "~/test/createMockDataFactory";
-import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
-
-export const createMockPoll = createMockDataFactory<Poll>(defaultPoll);
-
-// Usage in tests:
-const poll = createMockPoll({
-  id: 64,
-  question: KANTO_QUIZ[0].question, // "What is the tallest building in Saffron City?"
-  createdAt: new Date(TEST_DATES.birthday),
-});
-```
-
 
 #### Database Transactions
 
@@ -135,24 +142,14 @@ await db.transaction(async (tx) => {
 
 #### DTO Conversion in Models
 
-Models contain TypeScript types and conversion functions (not in factories/):
-
-```typescript
-// src/domains/polls/models/poll.ts
-export const pollFactory = {
-  toDTO: (record: PollRecord): Poll => ({...}),
-  fromDTO: (dto: Poll): PollRecord => ({...}),
-  toDTOs: (records: PollRecord[]): Poll[] => records.map(pollFactory.toDTO),
-  fromDTOs: (dtos: Poll[]): PollRecord[] => dtos.map(pollFactory.fromDTO),
-};
-```
+`toDTO`/`fromDTO`/`toDTOs`/`fromDTOs` live in model files, never in `factories/`. Shape and naming: [ADR-002](docs/adr/002-domain-architecture.md).
 
 #### Error Handling in Handlers
 
 Use `handleApiOperation` wrapper from `src/utils/errorHandling.ts`:
 
 ```typescript
-import { handleApiOperation } from "~/utils/errorHandling";
+import { handleApiOperation } from "@/src/utils/errorHandling";
 
 export const getPollByIdHandler = async ({ data }: { data: { id: number } }) => {
   return handleApiOperation(async () => {
@@ -171,44 +168,35 @@ type ApiResponse<T> =
   | { success: false; error: string };
 ```
 
-#### Authorization Pattern (CRITICAL)
 
-**Never trust client-provided userId parameters** in server functions. Always extract userId from authenticated session.
+### Authorization (server functions) — security-critical
 
-```typescript
-// ❌ WRONG: Accepts userId from client (security vulnerability)
-export const getUserData = createServerFn()
-	.validator(z.object({ userId: z.string() }))
-	.handler(async ({ data }) => {
-		return await fetchUserData(data.userId);
-	});
+Never trust a client-provided `userId`. Extract it from the authenticated session.
+(WRONG: `.validator(z.object({ userId }))` then `fetchUserData(data.userId)` — auth bypass.
+RIGHT: `const userId = await getAuthenticatedUserId()`.)
 
-// ✅ CORRECT: Gets userId from authenticated session
-export const getUserData = createServerFn({ method: "GET" }).handler(
-	async () => {
-		const userId = await getAuthenticatedUserId();
-		return await fetchUserData(userId);
-	}
-);
-```
+Utilities — `@/src/utils/authorization.ts`:
+- `getAuthenticatedUserId()` — userId from the Supabase session
+- `ensureAuthorizedUser(authenticatedUserId, requestedUserId)` — validates access
 
-**Authorization utilities** (`src/utils/authorization.ts`):
+Accept `userId` as a parameter ONLY for public read-only data (profiles, leaderboards),
+and always validate it exists. Never for writes.
 
-- `getAuthenticatedUserId()` - Extracts userId from Supabase auth session
-- `ensureAuthorizedUser(authenticatedUserId, requestedUserId)` - Validates user access
+Checklist for a new server function:
+- [ ] Modifies user data? → `getAuthenticatedUserId()`
+- [ ] Reads sensitive user data? → `getAuthenticatedUserId()`
+- [ ] Public read-only? → `userId` param allowed, with validation
+- [ ] Test that unauthorized access fails
 
-**When to accept userId as parameter:**
 
-- Read-only public data (profiles, leaderboards) where viewing others' data is intentional
-- Always validate the userId exists in the database
-- Never for write operations (creating, updating, deleting user data)
 
-**Development checklist for new server functions:**
+### Database Migrations (ADR-012)
 
-- [ ] Does this function modify user data? → Use `getAuthenticatedUserId()`
-- [ ] Does this function access sensitive user data? → Use `getAuthenticatedUserId()`
-- [ ] Is this public read-only data? → Can accept userId parameter with validation
-- [ ] Test unauthorized access attempts fail properly
+`src/database/schema.ts` is the source of truth for shape. Changes are guarded:
+1. Edit `schema.ts`, `npm run db:push` (dev/prototyping only)
+2. Add a guarded SQL file: `supabase/migrations/YYYYMMDDHHMMSS_description.sql`
+3. CI applies migrations to production on merge
+
 
 ## Development Notes
 
@@ -221,4 +209,8 @@ export const getUserData = createServerFn({ method: "GET" }).handler(
 - If I disagree with something, please write this down in an ADR file
 - Docs boyscout rule: when this file or an ADR contradicts the code, fix the doc in the same session (or flag it explicitly). Never silently work around a stale doc. Prefer deleting doc content in favor of a pointer when the code already documents it.
 - When making player-visible changes, follow `docs/changelog-maintenance.md` to update `CHANGELOG.md`
-- Don't make stories for every action, only when I tell you. You are allowed to ask though.
+- Only create a Story when the component affects player-visible game behavior
+  or feel (not layout/admin/internal tooling). Before creating one, state the
+  one-sentence game-design reason in the PR/commit message. If you're not sure
+  it qualifies, ask rather than creating it.
+- If you're about to add new code to a domain that has legacy code sitting in src/domains/, ask whether to migrate that slice now or leave it.

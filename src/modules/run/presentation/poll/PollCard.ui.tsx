@@ -55,14 +55,14 @@ const MARK: Record<OptionStatus, string> = {
 };
 
 const optionRow = cva(
-	"flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition",
+	"flex items-start gap-3 px-2 py-3 text-left transition last:border-b-0",
 	{
 		variants: {
 			status: {
-				correct: "border-viridian bg-viridian/10",
-				chosenWrong: "border-cinnabar bg-cinnabar/10",
-				selected: "border-theme bg-theme-soft",
-				neutral: "border-zinc-700",
+				correct: "rounded-lg bg-viridian/10",
+				chosenWrong: "rounded-lg bg-cinnabar/10",
+				selected: "rounded-lg bg-theme-soft",
+				neutral: "border-b border-zinc-800",
 			} satisfies Record<OptionStatus, string>,
 			interaction: {
 				disabled: "cursor-not-allowed opacity-40 line-through",
@@ -74,19 +74,30 @@ const optionRow = cva(
 			{
 				status: "neutral",
 				interaction: "active",
-				className: "hover:border-zinc-500 hover:bg-white/5",
+				className: "hover:bg-white/5",
 			},
 		],
 	}
 );
 
+/** Recap copy for screens that show the answer type as text (e.g. AnswerResults). */
 export const ANSWER_TYPE_HINT: Record<AnswerType, string> = {
-	single: "Pick one answer",
-	multiple: "Multiple answers — select all that apply",
+	single: "Select exactly one answer",
+	multiple: "Select all that apply",
 };
 
+/**
+ * Single-answer polls badge each option as a radio (circle); multiple-answer polls
+ * as a checkbox (rounded square). The shape is the whole poll-type cue — no extra
+ * element, no vertical space — so single vs multiple reads before the first pick.
+ */
+type ControlShape = "radio" | "checkbox";
+
+const controlShapeOf = (answerType: AnswerType): ControlShape =>
+	answerType === "single" ? "radio" : "checkbox";
+
 const optionBadge = cva(
-	"flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-bold",
+	"flex h-6 w-6 shrink-0 items-center justify-center text-xs font-bold",
 	{
 		variants: {
 			status: {
@@ -95,11 +106,15 @@ const optionBadge = cva(
 				selected: "bg-theme text-black",
 				neutral: "bg-zinc-800 text-zinc-400",
 			} satisfies Record<OptionStatus, string>,
+			shape: {
+				radio: "rounded-full",
+				checkbox: "rounded-md",
+			} satisfies Record<ControlShape, string>,
 		},
 	}
 );
 
-const optionLabel = cva("font-extrabold text-base", {
+const optionLabel = cva("font-extrabold text-xs sm:text-base", {
 	variants: {
 		status: {
 			correct: "text-viridian",
@@ -133,6 +148,7 @@ export const PollCard = ({
 	const correct = new Set(correctOptionIds ?? []);
 	const chosen = new Set(chosenOptionIds);
 	const revealed = correctOptionIds !== undefined;
+	const shape = controlShapeOf(answerType);
 
 	return (
 		<div {...categoryTheme(category)} className="flex flex-col gap-4">
@@ -146,10 +162,6 @@ export const PollCard = ({
 			<hr className="border-theme border-t" />
 
 			<Title category={category}>{question}</Title>
-
-			<span className="text-pewter text-xs uppercase tracking-widest">
-				{ANSWER_TYPE_HINT[answerType]}
-			</span>
 
 			{canLint ? (
 				<button
@@ -166,7 +178,7 @@ export const PollCard = ({
 				</button>
 			) : null}
 
-			<div className="flex flex-col gap-3">
+			<div className="flex flex-col">
 				{options.map((option, index) => {
 					const off = disabled.has(option.id);
 					const isCorrect = revealed && correct.has(option.id);
@@ -183,7 +195,10 @@ export const PollCard = ({
 							onClick={() => onSelect(option.id)}
 							className={optionRow({ status, interaction })}
 						>
-							<span className={optionBadge({ status })}>
+							<span
+								data-shape={shape}
+								className={optionBadge({ status, shape })}
+							>
 								{MARK[status] || optionLetter(index)}
 							</span>
 							<span className={optionLabel({ status })}>{option.label}</span>

@@ -16,25 +16,16 @@ const rarityVariant = (
 		RARITY_KEYS.map((rarity) => [rarity, pick(RARITY_COLORS[rarity])])
 	) as Record<Rarity, string>;
 
-// Compact chips (pipeline rows) are ghost outlines: thin border, no fill.
-// inline-flex + shrink-0: a squeezed row wraps its description text, never
-// the chip's own dot/label.
 const chipSurface = cva(
-	"inline-flex shrink-0 items-center rounded-lg align-middle text-sm font-semibold",
+	"inline-flex shrink-0 items-center rounded-lg align-middle border-2 p-2 text-xs",
 	{
 		variants: {
 			rarity: rarityVariant((colors) => clsx(colors.border, colors.text)),
-			compact: {
-				true: "border px-2.5 py-1",
-				false: "border-2 px-3 py-2",
-			},
 		},
 		compoundVariants: RARITY_KEYS.map((rarity) => ({
 			rarity,
-			compact: false as const,
 			class: RARITY_COLORS[rarity].bg,
 		})),
-		defaultVariants: { compact: false },
 	}
 );
 
@@ -58,9 +49,7 @@ type ConfigChipProps = {
 	badge?: ReactNode;
 	tooltip?: ReactNode;
 	noTooltip?: boolean;
-	/** Pipeline rows show "fixed" inline next to the chip instead. */
 	noFixedBadge?: boolean;
-	/** Ghost outline for inline row contexts: thin border, no fill, tight padding. */
 	compact?: boolean;
 	disabled?: boolean;
 	onClick?: () => void;
@@ -96,21 +85,14 @@ const ChipSurface = ({
 	config,
 	disabled,
 	onClick,
-	compact,
 	children,
-}: Pick<ConfigChipProps, "config" | "disabled" | "onClick" | "compact"> & {
+}: Pick<ConfigChipProps, "config" | "disabled" | "onClick"> & {
 	children: ReactNode;
 }) => {
 	const style = chipSurface({
 		rarity: config.rarity ?? "common",
-		compact: compact ?? false,
 	});
-	const dot = compact ? (
-		<span
-			className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-current"
-			aria-hidden
-		/>
-	) : null;
+
 	return onClick ? (
 		<button
 			type="button"
@@ -118,14 +100,10 @@ const ChipSurface = ({
 			disabled={disabled}
 			className={`${style} cursor-pointer transition enabled:hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40`}
 		>
-			{dot}
 			{children}
 		</button>
 	) : (
-		<span className={style}>
-			{dot}
-			{children}
-		</span>
+		<span className={style}>{children}</span>
 	);
 };
 
@@ -138,7 +116,6 @@ export const ConfigChip = ({
 	tooltip,
 	noTooltip,
 	noFixedBadge,
-	compact,
 	disabled,
 	onClick,
 }: ConfigChipProps) => {
@@ -152,12 +129,7 @@ export const ConfigChip = ({
 		) : null,
 	].filter(Boolean);
 	const surface = (
-		<ChipSurface
-			config={config}
-			disabled={disabled}
-			onClick={onClick}
-			compact={compact}
-		>
+		<ChipSurface config={config} disabled={disabled} onClick={onClick}>
 			<ChipBody config={config} action={action} subline={subline} />
 		</ChipSurface>
 	);

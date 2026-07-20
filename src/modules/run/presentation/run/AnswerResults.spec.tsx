@@ -50,7 +50,7 @@ describe(AnswerResults, () => {
 	it("opens on the first poll with its question, hint, and full option list", () => {
 		render(<AnswerResults answered={answered} />);
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();
-		expect(screen.getByText("Pick one answer")).toBeInTheDocument();
+		expect(screen.getByText("Select exactly one answer")).toBeInTheDocument();
 		// Every option shows in review — including the ones you didn't pick.
 		expect(screen.getByText('"null"')).toBeInTheDocument();
 		expect(screen.getByText('"undefined"')).toBeInTheDocument();

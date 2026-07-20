@@ -58,8 +58,8 @@ describe(PollCard, () => {
 		expect(screen.getByRole("button", { name: /Gamma/ })).toBeDisabled();
 	});
 
-	it("tells the player how many answers a poll expects", () => {
-		const { rerender } = render(
+	it("badges options as radios for single-answer polls and checkboxes for multiple", () => {
+		const { container, rerender } = render(
 			<PollCard
 				category="js"
 				question="Q"
@@ -68,7 +68,9 @@ describe(PollCard, () => {
 				onSelect={() => {}}
 			/>
 		);
-		expect(screen.getByText("Pick one answer")).toBeInTheDocument();
+		expect(container.querySelectorAll('[data-shape="radio"]')).toHaveLength(
+			options.length
+		);
 		rerender(
 			<PollCard
 				category="js"
@@ -78,9 +80,9 @@ describe(PollCard, () => {
 				onSelect={() => {}}
 			/>
 		);
-		expect(
-			screen.getByText("Multiple answers — select all that apply")
-		).toBeInTheDocument();
+		expect(container.querySelectorAll('[data-shape="checkbox"]')).toHaveLength(
+			options.length
+		);
 	});
 
 	it("labels each option with a letter badge", () => {
