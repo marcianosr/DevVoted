@@ -319,6 +319,45 @@ describe("streak", () => {
 		expect(state.window.answered).toBe(0); // window reset on clear
 		expect(state.streak).toBe(SLICE_WINDOW); // streak carried over
 	});
+
+	it("scales each correct answer's coverage by the streak, applied last", () => {
+		let state = started([]); // bare pipeline → base earn of 1 per correct
+		state = answerWith(state, true);
+		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(1.1); // streak 1
+		state = answerWith(state, true);
+		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(1.2); // streak 2
+		expect(state.coverage).toBe(2.3); // 1.1 + 1.2
+	});
+
+	it("holds the streak (and its bonus) on a partial multi-answer pick", () => {
+		const multi: RunPoll = {
+			id: "multi",
+			category: "react",
+			question: "Pick the correct ones",
+			answerType: "multiple",
+			options: [
+				{ id: "m-a", label: "A", correct: true },
+				{ id: "m-b", label: "B", correct: true },
+				{ id: "m-c", label: "C", correct: false },
+			],
+		};
+		let state = createRun([poll("a", true), poll("b", true), multi], handed);
+		state = runReducer(state, { type: "start" });
+		state = answerWith(state, true); // streak 1
+		state = answerWith(state, true); // streak 2
+		state = runReducer(state, { type: "answer", optionIds: ["m-a"] }); // partial
+		expect(state.answeredThisGate.at(-1)?.outcome).toBe("partial");
+		expect(state.streak).toBe(2); // held: not reset, not incremented
+		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(0.6); // 0.5 × 1.2
+	});
+
+	it("earns no coverage and zeroes the streak on a wrong answer", () => {
+		let state = started([]);
+		state = answerWith(state, true); // streak 1
+		state = answerWith(state, false);
+		expect(state.streak).toBe(0);
+		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(0);
+	});
 });
 
 describe("economy", () => {
@@ -522,9 +561,9 @@ describe("answer judging", () => {
 describe("coverage scoring", () => {
 	it("bleeds coverage on a wrong answer, scaled by the reward multiplier", () => {
 		const afterOneCorrect = answerWith(started(["js"]), true);
-		expect(afterOneCorrect.coverage).toBe(1);
+		expect(afterOneCorrect.coverage).toBe(1.1); // base 1 × streak-1 factor 1.1
 		// Base pipeline multiplier is 1 → loss is the raw WRONG_COVERAGE_LOSS.
-		expect(answerWith(afterOneCorrect, false).coverage).toBe(0.5);
+		expect(answerWith(afterOneCorrect, false).coverage).toBe(0.6); // 1.1 − 0.5
 	});
 
 	it("never drags coverage below zero", () => {
@@ -563,7 +602,7 @@ describe("coverage scoring", () => {
 		// run's totals, not the gate window — no double punishment.
 		const afterOneCorrect = answerWith(started(["js"]), true);
 		const thenWrong = answerWith(afterOneCorrect, false);
-		expect(thenWrong.window.coverageGained).toBe(1);
-		expect(thenWrong.coverage).toBe(0.5);
+		expect(thenWrong.window.coverageGained).toBe(1.1); // streak-1 earn, gains only
+		expect(thenWrong.coverage).toBe(0.6); // 1.1 − 0.5 loss
 	});
 });

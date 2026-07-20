@@ -33,6 +33,7 @@ import {
 	roundToOneDecimal,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
+	streakMultiplier,
 	VICTORY_GATE,
 	WRONG_COVERAGE_LOSS,
 } from "../rules.model";
@@ -111,6 +112,12 @@ const answerOutcome = (
 		(option) => option.correct && optionIds.includes(option.id)
 	);
 	return pickedACorrectOption ? "partial" : "wrong";
+};
+
+const nextStreak = (current: number, outcome: AnswerOutcome): number => {
+	if (outcome === "correct") return current + 1;
+	if (outcome === "wrong") return 0;
+	return current;
 };
 
 export type RunStatus =
@@ -313,9 +320,18 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 
 	const configs = state.pipeline.configs;
 	const correct = isCorrect(poll, optionIds);
+	const outcome = answerOutcome(poll, optionIds);
 	const openingClean = state.window.leadingCorrect === state.window.answered;
 	const share = coverageShare(poll, optionIds);
-	const earned = coverageForAnswer(configs, poll.category, share);
+	// Streak updates first so this answer scores at its new level (a correct
+	// reaching streak 3 earns at 1.3×). Then it multiplies the earn last.
+	const streak = nextStreak(state.streak, outcome);
+	const earned = coverageForAnswer(
+		configs,
+		poll.category,
+		share,
+		streakMultiplier(streak)
+	);
 	// A miss (share 0) bleeds coverage: base loss scaled by the build's reward
 	// multiplier — risk cuts both ways. Raw rules only: coverage configs never
 	// amplify a loss, and the gate never scales it.
@@ -359,7 +375,7 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 		...state,
 		window,
 		manualDisabled: [],
-		streak: correct ? state.streak + 1 : 0,
+		streak,
 		storage: addStorage(state.storage, faucet),
 		// The loss drains the poll's category (floored at 0) and the total
 		// moves by what the category actually lost — total stays the sum of
@@ -379,7 +395,7 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 				id: poll.id,
 				question: poll.question,
 				category: poll.category,
-				outcome: answerOutcome(poll, optionIds),
+				outcome,
 				picked: poll.options
 					.filter((option) => optionIds.includes(option.id))
 					.map((option) => option.label),

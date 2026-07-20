@@ -76,6 +76,13 @@ describe("coverageForAnswer", () => {
 		// Half a multi-answer set demonstrated → half the Focus-boosted earn.
 		expect(coverageForAnswer([CONFIGS.js], "js", 0.5)).toBe(0.8); // 1.5 / 2, rounded
 	});
+
+	it("applies the streak factor last, over base × configs", () => {
+		// 1.5 (Focus) × 1.3 (streak 3) = 1.95, rounded to one decimal.
+		expect(coverageForAnswer([CONFIGS.js], "js", 1, 1.3)).toBe(2);
+		// A factor of 1 (no streak) leaves the earn unchanged.
+		expect(coverageForAnswer([CONFIGS.js], "js", 1, 1)).toBe(1.5);
+	});
 });
 
 describe("canLint", () => {

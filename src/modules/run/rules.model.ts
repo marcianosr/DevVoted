@@ -23,6 +23,11 @@ export const storageCreditRate = (
 
 export const WRONG_COVERAGE_LOSS = 0.5;
 
+export const STREAK_COVERAGE_BONUS = 0.1;
+
+export const streakMultiplier = (streak: number): number =>
+	1 + STREAK_COVERAGE_BONUS * streak;
+
 export const escalation = (gatesCleared: number): number =>
 	Math.floor(gatesCleared / 2);
 

@@ -74,15 +74,17 @@ export const coverageProfileFor = (
 	);
 
 /**
- * Coverage a single answer earns. `share` is the answer's correctness share
- * in [0, 1]: 1 for a fully correct answer, fractional for a partial
- * multi-answer pick, 0 for a miss. Config effects scale the earn — they
- * never touch losses (configs amplify gains only).
+ * Coverage a single answer earns, as base × configs × streak. `share` is the
+ * answer's correctness share in [0, 1]: 1 for a fully correct answer,
+ * fractional for a partial multi-answer pick, 0 for a miss. Config effects
+ * scale the earn — they never touch losses (configs amplify gains only).
+ * `streakFactor` is the run-wide streak multiplier applied last (1 = no streak).
  */
 export const coverageForAnswer = (
 	configs: readonly Config[],
 	category: CategoryCode,
-	share: number
+	share: number,
+	streakFactor = 1
 ): number => {
 	if (share <= 0) return 0;
 	const covers = configs
@@ -90,7 +92,7 @@ export const coverageForAnswer = (
 		.filter((cover): cover is Coverage => cover !== undefined);
 	const mult = covers.reduce((product, cover) => product * cover.mult, 1);
 	const add = covers.reduce((sum, cover) => sum + cover.add, 0);
-	return roundToOneDecimal(share * (mult + add));
+	return roundToOneDecimal(share * (mult + add) * streakFactor);
 };
 
 /** Whether the manual lint action is available — any equipped config that masks wrong options. */

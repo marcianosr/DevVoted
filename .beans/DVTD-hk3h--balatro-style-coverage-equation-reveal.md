@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-07-20T09:09:43Z
-updated_at: 2026-07-20T10:07:51Z
+updated_at: 2026-07-20T13:07:28Z
 ---
 
 Animate CoverageEquation.ui.tsx so the last answer's coverage resolves Balatro-style: chips fire one-at-a-time (base first, then each bonus), each pops with a floating delta, the '= earned' total counts up as a running subtotal per chip, then the category coverage bar fills previous->new and the streak line fades in. Pure Tier 1 (src/ui/runs/), plain props unchanged. Respect prefers-reduced-motion (snap to final).
@@ -44,3 +44,12 @@ Chose the per-config chip option. Added src/modules/run/presentation/run/coverag
 Files: coverageEquation.ts + coverageEquation.spec.ts (3 tests, real CONFIGS fixture); RunGame.component.tsx renders <CoverageEquation> from buildCoverageEquation. Verified: tsc clean, oxlint clean, depcruise 505 modules no violations, 25 specs pass (incl. RunGame).
 
 Known limit: reveal beat is ANSWER_REVEAL_MS=2000ms; at stepMs=450 the sequence fits ~1-2 config chips comfortably but 3+ could be cut. Follow-up if needed: sync reveal duration to chip count or speed up stepMs. Live end-to-end (full run in browser) not driven — Chrome extension unresponsive this session; validated via unit tests + user-confirmed visual (image #4).
+
+## Parked (2026-07-20)
+
+Per user: park in a story for now. Removed the live wiring from RunGame.component.tsx (imports + reveal-time render). Kept as story-only:
+- src/modules/run/presentation/run/CoverageEquation.ui.tsx (+ stories, + spec) — config bonuses render as full ConfigChip pills (user dropped compact).
+- src/modules/run/presentation/run/coverageEquation.ts (buildCoverageEquation) + spec — retained but currently unused; it's the derivation to reconnect when unparked.
+- Shared hook src/ui/hooks/useCoverageReveal.ts (+ spec).
+
+To unpark: re-add the import + render block in RunGame's answering Screen (gated on reveal), fed by buildCoverageEquation. tsc/oxlint/depcruise clean, 25 specs pass.
