@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-21T07:41:43Z
-updated_at: 2026-07-21T18:35:37Z
+updated_at: 2026-07-21T19:33:35Z
 ---
 
 Chosen from feel-test (DVTD-n4h8 thread): after answering, show the coverage earned as an animated chip equation (base + bonuses = earned), chips popping in after the option badges. No coverage bar, no streak line.
@@ -45,3 +45,11 @@ Scoring reveal is live in the real RunGame flow: answer -> options pop ✓/✕ -
 ### Follow-ups (deferred)
 - Prototype stories in ScoringReveal.stories.tsx (PerPopTally, CountUpTotal, ChipEquation) + RevealScore.ui.tsx are now superseded by the wired AnsweringScreen Revealed story — candidates for deletion.
 - Reveal pacing: was 2000ms auto; now manual. Old DVTD-whl4 note (2s ANSWER_REVEAL_MS) is stale.
+
+## Scoring change: multipliers-last (2026-07-21)
+coverageForAnswer now share × (1 + Σadd) × ∏mult × streak (was (∏mult+Σadd)×streak). Multipliers amplify adds. Breakdown: adds face value, mult chips absorb amplification, base=remainder. +2 tests. 839 tests pass.
+
+## Still open
+- Streak threshold: should a lone correct (streak 1) earn a bonus, or start at streak 2? (Marciano to decide — asked, pivoted)
+- Config chip order: loadout order (current) vs sorted by value/rarity? (asked, pivoted)
+- Code examples in poll question: rendered via QuestionMarkdown (done, needs visual check in real app)

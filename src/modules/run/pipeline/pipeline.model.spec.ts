@@ -84,6 +84,13 @@ describe("coverageForAnswer", () => {
 		// A factor of 1 (no streak) leaves the earn unchanged.
 		expect(coverageForAnswer([CONFIGS.js], "js", 1, 1)).toBe(1.5);
 	});
+
+	it("applies multipliers last, so a ×mult amplifies flat adds too", () => {
+		// (1 base + 0.5 Code Coverage) × 2 Copilot = 3 — the +0.5 gets doubled.
+		expect(
+			coverageForAnswer([CONFIGS.copilot, CONFIGS.codeCoverage], "js", 1)
+		).toBe(3);
+	});
 });
 
 describe("coverageBreakdownForAnswer", () => {
@@ -136,6 +143,27 @@ describe("coverageBreakdownForAnswer", () => {
 		expect(
 			coverageBreakdownForAnswer([CONFIGS.copilot], "js", 0, 1, 0.5)
 		).toEqual({ base: -0.5, streakBonus: 0, configBonuses: [] });
+	});
+
+	it("credits the multiplier chip when a ×mult amplifies a flat add", () => {
+		// (1 + 0.5) × 2 = 3: Code Coverage keeps its face +0.5, Copilot absorbs
+		// the amplification (+1.5 = doubling base + add), base stays 1.
+		expect(
+			coverageBreakdownForAnswer(
+				[CONFIGS.copilot, CONFIGS.codeCoverage],
+				"js",
+				1,
+				1,
+				0
+			)
+		).toEqual({
+			base: 1,
+			streakBonus: 0,
+			configBonuses: [
+				{ configId: "copilot", value: 1.5 },
+				{ configId: "code-coverage", value: 0.5 },
+			],
+		});
 	});
 
 	it("keeps base + streak + configs summing to the engine's earned coverage", () => {

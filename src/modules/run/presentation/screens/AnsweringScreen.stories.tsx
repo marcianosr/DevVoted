@@ -64,15 +64,17 @@ export const Revealed: Story = {
 		correctOptionIds: ["a", "b"],
 		chosenOptionIds: ["a", "c"],
 		canSubmit: false,
+		// Multipliers-last: Copilot ×2 amplifies base + the .js boost, so its chip
+		// is +1.5 (not +1.0). (1 + 0.5 .js) × 2 × 1.2 streak = 3.6.
 		revealScore: {
 			isCorrect: true,
 			baseCoverage: 1,
-			streakBonus: 0.2,
+			streakBonus: 0.6,
 			configBonuses: [
 				{ configId: "js", value: 0.5 },
-				{ configId: "copilot", value: 1 },
+				{ configId: "copilot", value: 1.5 },
 			],
-			earnedCoverage: 2.7,
+			earnedCoverage: 3.6,
 		},
 	},
 };
