@@ -15,11 +15,20 @@ type GameOverScreenProps = {
 	onClimbAgain: () => void;
 };
 
-const outcomeBanner = cva("rounded-xl border p-6", {
+const titleWithAccent = cva("border-l-4 pl-4 flex flex-col gap-2", {
 	variants: {
 		won: {
-			true: "border-viridian bg-celadon/20",
-			false: "border-cinnabar bg-cinnabar/20",
+			true: "border-l-viridian text-viridian",
+			false: "border-l-cinnabar text-cinnabar",
+		},
+	},
+});
+
+const sectionWithAccent = cva("border-l-4 pl-4 flex flex-col gap-2", {
+	variants: {
+		variant: {
+			success: "border-l-viridian",
+			warning: "border-l-saffron",
 		},
 	},
 });
@@ -33,8 +42,8 @@ export const GameOverScreen = ({
 	lootCollected,
 	onClimbAgain,
 }: GameOverScreenProps) => (
-	<div className="flex flex-col gap-6">
-		<div className={outcomeBanner({ won })}>
+	<div className="flex flex-col gap-8">
+		<div className={titleWithAccent({ won })}>
 			<Title>{won ? "You summited! 🟢" : "Run over. 💥"}</Title>
 			<Paragraph>
 				{won
@@ -52,7 +61,7 @@ export const GameOverScreen = ({
 			<StatBadge label="Storage" value={`${storage}KB`} />
 		</div>
 
-		<div className="flex flex-col gap-1 rounded-xl border border-saffron bg-saffron/10 p-5">
+		<div className={sectionWithAccent({ variant: "warning" })}>
 			<Subtitle>Loot collected</Subtitle>
 			<Paragraph>
 				<span className="text-xl font-bold text-saffron">

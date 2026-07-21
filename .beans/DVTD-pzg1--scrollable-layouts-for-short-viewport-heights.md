@@ -5,7 +5,8 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-07-20T15:16:25Z
-updated_at: 2026-07-20T15:16:29Z
+updated_at: 2026-07-21T19:42:54Z
+parent: DVTD-u35m
 ---
 
 Players on shorter screens (mobile portrait, small desktop windows) can't see all content: pipelines cut off in run hub, questions cut off in quiz flow. Need scrollable container strategy.

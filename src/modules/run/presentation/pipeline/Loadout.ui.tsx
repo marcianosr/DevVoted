@@ -42,7 +42,9 @@ export const Loadout = ({
 					— heavier requirements pay more, easier builds pay less
 				</Subtitle>
 			) : (
-				<Subtitle>Your configured pipeline requirements and perks</Subtitle>
+				<Subtitle>
+					Your configured pipeline requirements, perks and rewards
+				</Subtitle>
 			)}
 			{actionsFor ? (
 				<Subtitle>Click a config to sell or upgrade it.</Subtitle>

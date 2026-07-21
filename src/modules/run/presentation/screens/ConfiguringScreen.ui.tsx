@@ -43,8 +43,8 @@ export const ConfiguringScreen = ({
 			<section className="space-y-4">
 				<StepHeading
 					step={1}
-					title="Pick your stack"
-					subtitle="Select your loadout from the starter config offers"
+					title="Pick your config stack"
+					subtitle="Enrich your pipeline with these offered starter configs"
 					tone="cerulean"
 				/>
 				<div className="flex flex-wrap gap-2">
