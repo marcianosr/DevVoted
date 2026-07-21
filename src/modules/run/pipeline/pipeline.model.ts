@@ -95,6 +95,64 @@ export const coverageForAnswer = (
 	return roundToOneDecimal(share * (mult + add) * streakFactor);
 };
 
+export type CoverageConfigBonus = {
+	readonly configId: string;
+	readonly value: number;
+};
+
+export type CoverageBreakdown = {
+	readonly base: number;
+	readonly streakBonus: number;
+	readonly configBonuses: readonly CoverageConfigBonus[];
+};
+
+/**
+ * Splits a single answer's coverage into the chips the reveal shows: the
+ * correctness base, the streak bonus, and each coverage-affecting config's
+ * contribution. `base` is computed as the remainder so the parts always sum to
+ * the engine's `coverageForAnswer` total. A miss carries the loss as a negative
+ * base with no bonuses — configs never amplify losses.
+ */
+export const coverageBreakdownForAnswer = (
+	configs: readonly Config[],
+	category: CategoryCode,
+	share: number,
+	streakFactor: number,
+	coverageLoss: number
+): CoverageBreakdown => {
+	if (share <= 0) {
+		return {
+			base: roundToOneDecimal(-coverageLoss),
+			streakBonus: 0,
+			configBonuses: [],
+		};
+	}
+
+	const earned = coverageForAnswer(configs, category, share, streakFactor);
+	const earnedBeforeStreak = coverageForAnswer(configs, category, share, 1);
+	const streakBonus = roundToOneDecimal(earned - earnedBeforeStreak);
+
+	const configBonuses = configs
+		.map((config) => ({
+			config,
+			cover: effectOf(config).coverage?.(category),
+		}))
+		.filter(
+			(entry): entry is { config: Config; cover: Coverage } =>
+				entry.cover !== undefined
+		)
+		.map(({ config, cover }) => ({
+			configId: config.id,
+			value: roundToOneDecimal(share * (cover.mult - 1 + cover.add)),
+		}))
+		.filter((bonus) => bonus.value !== 0);
+
+	const bonusTotal = configBonuses.reduce((sum, bonus) => sum + bonus.value, 0);
+	const base = roundToOneDecimal(earned - streakBonus - bonusTotal);
+
+	return { base, streakBonus, configBonuses };
+};
+
 /** Whether the manual lint action is available — any equipped config that masks wrong options. */
 /** The equipped linter that covers this poll's category, if any (ESLint → JS/TS, Stylelint → CSS). */
 export const linterFor = (

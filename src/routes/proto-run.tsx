@@ -224,6 +224,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						canSubmit={canSubmit}
 						onSelect={onSelect}
 						onSubmit={() => answer(selected)}
+						onNext={() => {}}
 						onLint={() => dispatch({ type: "lint-poll" })}
 					/>
 				</Screen>

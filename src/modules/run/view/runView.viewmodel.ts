@@ -16,6 +16,7 @@ import type { CheckStatus } from "../configs/effect.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
 import {
 	canAddSlot,
+	type CoverageConfigBonus,
 	coverageForAnswer,
 	coverageProfileFor,
 	coverageToAddSlot,
@@ -101,6 +102,37 @@ export const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
  * redacted view strips per-option correctness, and the answer log only keeps
  * labels.
  */
+export type AnswerScore = {
+	readonly isCorrect: boolean;
+	readonly baseCoverage: number;
+	readonly streakBonus: number;
+	readonly configBonuses: readonly CoverageConfigBonus[];
+	readonly earnedCoverage: number;
+};
+
+/**
+ * The just-answered poll's coverage as the reveal's chip equation needs it:
+ * base + streak + per-config, plus the summed total. Null for snapshots taken
+ * before breakdowns existed. A miss reads as a negative base (the penalty).
+ */
+export const latestAnswerScore = (view: RunView): AnswerScore | null => {
+	const breakdown = view.answeredThisGate.at(-1)?.coverageBreakdown;
+	if (!breakdown) return null;
+	const { base, streakBonus, configBonuses } = breakdown;
+	const earnedCoverage = roundToOneDecimal(
+		base +
+			streakBonus +
+			configBonuses.reduce((sum, bonus) => sum + bonus.value, 0)
+	);
+	return {
+		isCorrect: base >= 0,
+		baseCoverage: base,
+		streakBonus,
+		configBonuses,
+		earnedCoverage,
+	};
+};
+
 export const correctOptionIdsFor = (
 	poll: PollView,
 	answered: RunView

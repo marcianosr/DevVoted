@@ -2,10 +2,12 @@ import { cva } from "class-variance-authority";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 import type { AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
+import { QuestionMarkdown } from "~/ui/polls/PollMarkdown.ui";
 import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { revealDelayMs } from "./revealTiming";
 
 export type PollOption = { readonly id: string; readonly label: string };
 
@@ -114,16 +116,19 @@ const optionBadge = cva(
 	}
 );
 
-const optionLabel = cva("font-extrabold text-xs sm:text-base", {
-	variants: {
-		status: {
-			correct: "text-viridian",
-			chosenWrong: "text-cinnabar",
-			selected: "text-white",
-			neutral: "text-zinc-100",
-		} satisfies Record<OptionStatus, string>,
-	},
-});
+const optionLabel = cva(
+	"font-extrabold text-xs sm:text-base transition-colors",
+	{
+		variants: {
+			status: {
+				correct: "text-viridian",
+				chosenWrong: "text-cinnabar",
+				selected: "text-white",
+				neutral: "text-zinc-100",
+			} satisfies Record<OptionStatus, string>,
+		},
+	}
+);
 
 const optionLetter = (index: number) => String.fromCharCode(65 + index);
 
@@ -161,7 +166,12 @@ export const PollCard = ({
 
 			<hr className="border-theme border-t" />
 
-			<Title category={category}>{question}</Title>
+			{/* The question is authored markdown, so code examples render highlighted
+			    (react-markdown + rehype-highlight) while inheriting the themed
+			    heading look from the wrapper. */}
+			<div className="markdown text-theme text-xl font-extrabold leading-6 tracking-tight sm:text-3xl sm:leading-8">
+				<QuestionMarkdown>{question}</QuestionMarkdown>
+			</div>
 
 			{canLint ? (
 				<button
@@ -187,6 +197,13 @@ export const PollCard = ({
 					const isSelected = !revealed && selected.has(option.id);
 					const status = optionStatusOf(isCorrect, isChosenWrong, isSelected);
 					const interaction = interactionOf(off, revealed);
+
+					const revealDelay = revealed
+						? revealDelayMs(index, options.length)
+						: 0;
+					const revealDelayStyle = revealed
+						? { transitionDelay: `${revealDelay}ms` }
+						: undefined;
 					return (
 						<button
 							key={option.id}
@@ -194,14 +211,27 @@ export const PollCard = ({
 							disabled={off || revealed}
 							onClick={() => onSelect(option.id)}
 							className={optionRow({ status, interaction })}
+							style={revealDelayStyle}
 						>
 							<span
 								data-shape={shape}
-								className={optionBadge({ status, shape })}
+								className={optionBadge({
+									status,
+									shape,
+									className: revealed ? "reveal-pop" : undefined,
+								})}
+								style={
+									revealed ? { animationDelay: `${revealDelay}ms` } : undefined
+								}
 							>
 								{MARK[status] || optionLetter(index)}
 							</span>
-							<span className={optionLabel({ status })}>{option.label}</span>
+							<span
+								className={optionLabel({ status })}
+								style={revealDelayStyle}
+							>
+								{option.label}
+							</span>
 						</button>
 					);
 				})}

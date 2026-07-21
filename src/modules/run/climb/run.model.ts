@@ -5,6 +5,8 @@ import {
 	BASE_SLOTS,
 	canAddSlot,
 	canLint,
+	type CoverageBreakdown,
+	coverageBreakdownForAnswer,
 	coverageForAnswer,
 	freeConfigs,
 	isBare,
@@ -136,6 +138,8 @@ export type AnsweredPoll = {
 	readonly answerType?: AnswerType;
 	/** Coverage this answer earned (share-scaled for partial multi picks). */
 	readonly coverageEarned?: number;
+	/** How that coverage broke down (base + streak + per-config) for the reveal. */
+	readonly coverageBreakdown?: CoverageBreakdown;
 };
 
 export type RunState = {
@@ -341,6 +345,13 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 			: roundToOneDecimal(
 					WRONG_COVERAGE_LOSS * rewardMultiplierFor(state.pipeline)
 				);
+	const coverageBreakdown = coverageBreakdownForAnswer(
+		configs,
+		poll.category,
+		share,
+		streakMultiplier(streak),
+		coverageLoss
+	);
 	const categoryBefore = state.coverageByCategory[poll.category] ?? 0;
 	const categoryAfter = roundToOneDecimal(
 		Math.max(0, categoryBefore + earned - coverageLoss)
@@ -406,6 +417,7 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 				options: poll.options.map((option) => option.label),
 				answerType: poll.answerType,
 				coverageEarned: earned,
+				coverageBreakdown,
 			},
 		],
 	};

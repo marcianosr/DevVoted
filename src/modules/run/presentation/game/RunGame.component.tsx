@@ -12,7 +12,9 @@ import {
 } from "~/modules/run/api/run";
 import type { RunActionInput } from "~/modules/run/validation/schemas.validation";
 import {
+	type AnswerScore,
 	correctOptionIdsFor,
+	latestAnswerScore,
 	type RunView,
 } from "~/modules/run/view/runView.viewmodel";
 import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
@@ -28,9 +30,6 @@ import { StripScreen } from "../screens/StripScreen.ui";
 import { HudBar } from "../run/HudBar.ui";
 import { RunHud } from "../run/RunHud.ui";
 import { RunSummary } from "../run/RunSummary.ui";
-
-/** How long the answered poll shows its ✓/✕ reveal before the run moves on. */
-const ANSWER_REVEAL_MS = 2000;
 
 /**
  * Tier 2 wiring for the daily run (DVTD-czuc): the server owns the state,
@@ -55,20 +54,19 @@ export const RunGame = () => {
 	});
 
 	// Post-submit reveal beat: the answered poll stays on screen with its
-	// options painted ✓/✕ while the server result waits here; only after the
-	// beat does the result land in the cache and the run move on.
+	// options painted ✓/✕ and the coverage score, while the server result waits
+	// here. The player advances it themselves (the "Next →" action) so they can
+	// read their answer and score — nothing auto-commits.
 	const [reveal, setReveal] = useState<{
 		result: { success: true; data: RunView };
 		correctOptionIds: readonly string[];
+		score: AnswerScore | null;
 	} | null>(null);
-	useEffect(() => {
+	const advanceFromReveal = () => {
 		if (!reveal) return;
-		const timer = setTimeout(() => {
-			queryClient.setQueryData(queryKey, reveal.result);
-			setReveal(null);
-		}, ANSWER_REVEAL_MS);
-		return () => clearTimeout(timer);
-	}, [reveal, queryClient, queryKey]);
+		queryClient.setQueryData(queryKey, reveal.result);
+		setReveal(null);
+	};
 
 	const dispatch = useMutation({
 		mutationFn: (action: RunActionInput) =>
@@ -79,6 +77,7 @@ export const RunGame = () => {
 				setReveal({
 					result,
 					correctOptionIds: correctOptionIdsFor(view.poll, result.data),
+					score: latestAnswerScore(result.data),
 				});
 				return;
 			}
@@ -242,6 +241,7 @@ export const RunGame = () => {
 						disabledOptionIds={view.disabledOptionIds}
 						correctOptionIds={reveal?.correctOptionIds}
 						chosenOptionIds={reveal ? selected : undefined}
+						revealScore={reveal?.score ?? undefined}
 						canLint={view.canLint}
 						lintReady={view.lintReady && !busy && !reveal}
 						linter={view.linter ?? undefined}
@@ -249,6 +249,7 @@ export const RunGame = () => {
 						canSubmit={canSubmit}
 						onSelect={onSelect}
 						onSubmit={() => send({ type: "answer", optionIds: [...selected] })}
+						onNext={advanceFromReveal}
 						onLint={() => send({ type: "lint-poll" })}
 					/>
 					<ConfirmDialog
