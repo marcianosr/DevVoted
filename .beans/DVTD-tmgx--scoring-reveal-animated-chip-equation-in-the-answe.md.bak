@@ -5,13 +5,8 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-21T07:41:43Z
-<<<<<<< Updated upstream
-updated_at: 2026-07-21T19:33:35Z
-||||||| Stash base
-=======
 updated_at: 2026-07-21T19:42:50Z
 parent: DVTD-u35m
->>>>>>> Stashed changes
 ---
 
 Chosen from feel-test (DVTD-n4h8 thread): after answering, show the coverage earned as an animated chip equation (base + bonuses = earned), chips popping in after the option badges. No coverage bar, no streak line.

@@ -2,7 +2,11 @@ import { cva } from "class-variance-authority";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 import type { AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
-import { QuestionMarkdown } from "~/ui/polls/PollMarkdown.ui";
+import { PollCodeSandbox } from "~/ui/polls/PollCodeSandbox.ui";
+import {
+	CodeBlockMarkdown,
+	QuestionMarkdown,
+} from "~/ui/polls/PollMarkdown.ui";
 import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
@@ -14,6 +18,8 @@ export type PollOption = { readonly id: string; readonly label: string };
 type PollCardProps = {
 	category: CategoryCode;
 	question: string;
+	codeBlock?: string;
+	codeSandboxUrl?: string;
 	answerType: AnswerType;
 	options: readonly PollOption[];
 	selectedOptionIds?: readonly string[];
@@ -76,7 +82,7 @@ const optionRow = cva(
 			{
 				status: "neutral",
 				interaction: "active",
-				className: "hover:bg-white/5",
+				className: "hover:bg-theme/10",
 			},
 		],
 	}
@@ -135,6 +141,8 @@ const optionLetter = (index: number) => String.fromCharCode(65 + index);
 export const PollCard = ({
 	category,
 	question,
+	codeBlock,
+	codeSandboxUrl,
 	answerType,
 	options,
 	selectedOptionIds = [],
@@ -173,10 +181,22 @@ export const PollCard = ({
 				<QuestionMarkdown>{question}</QuestionMarkdown>
 			</div>
 
+			{/* Some questions ship a separate code_block column; render it as a
+			    highlighted fenced block at body size, not the heading style above. */}
+			{codeBlock ? (
+				<div className="markdown">
+					<CodeBlockMarkdown>{codeBlock}</CodeBlockMarkdown>
+				</div>
+			) : null}
+
+			{/* Others reference a live CodeSandbox instead of a static snippet. */}
+			{codeSandboxUrl ? <PollCodeSandbox url={codeSandboxUrl} /> : null}
+
 			{canLint ? (
 				<button
 					type="button"
 					onClick={onLint}
+
 					disabled={!lintReady}
 					className="flex items-center gap-2 self-start rounded border border-viridian px-3 py-1 text-xs text-viridian transition enabled:cursor-pointer enabled:hover:bg-viridian enabled:hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
 				>

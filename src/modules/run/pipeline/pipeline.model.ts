@@ -146,11 +146,19 @@ export const coverageBreakdownForAnswer = (
 		);
 
 	const totalAdd = covered.reduce((sum, entry) => sum + entry.cover.add, 0);
+	// Render flat-add chips first, then multiplier chips, so the equation reads
+	// left-to-right the way the math composes: adds, then multipliers last. Adds
+	// are already folded into the subtotal below, so this reorder changes only
+	// display order — every chip value and the total stay identical.
+	const orderedCovered = [
+		...covered.filter((entry) => entry.cover.mult === 1),
+		...covered.filter((entry) => entry.cover.mult !== 1),
+	];
 	// Subtotal the multipliers amplify: the base plus every flat add. Each
 	// multiplier grows it in turn (mults compose last), so its chip reflects the
 	// gain it produced over everything earned so far.
 	let subtotal = share * (1 + totalAdd);
-	const configBonuses = covered
+	const configBonuses = orderedCovered
 		.map(({ config, cover }) => {
 			if (cover.mult !== 1) {
 				const value = roundToOneDecimal(subtotal * (cover.mult - 1));

@@ -36,6 +36,8 @@ export type PollView = {
 	readonly id: string;
 	readonly category: CategoryCode;
 	readonly question: string;
+	readonly codeBlock?: string;
+	readonly codeSandboxUrl?: string;
 	readonly answerType: AnswerType;
 	readonly options: readonly PollOptionView[];
 };
@@ -169,6 +171,8 @@ const redactPoll = (poll: RunPoll): PollView => ({
 	id: poll.id,
 	category: poll.category,
 	question: poll.question,
+	codeBlock: poll.codeBlock,
+	codeSandboxUrl: poll.codeSandboxUrl,
 	answerType: poll.answerType,
 	options: poll.options.map((option) => ({
 		id: option.id,

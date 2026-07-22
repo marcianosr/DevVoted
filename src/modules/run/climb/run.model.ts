@@ -32,6 +32,7 @@ import { checkStatuses, gateDemands, gatePassed } from "../gate/gate.model";
 import {
 	dropCount,
 	GATE_REWARD_KB,
+	gateBaseMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
@@ -56,6 +57,8 @@ export type RunPoll = {
 	readonly id: string;
 	readonly category: CategoryCode;
 	readonly question: string;
+	readonly codeBlock?: string;
+	readonly codeSandboxUrl?: string;
 	readonly answerType: AnswerType;
 	readonly options: readonly RunOption[];
 	readonly explanation?: string;
@@ -327,28 +330,36 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 	const outcome = answerOutcome(poll, optionIds);
 	const openingClean = state.window.leadingCorrect === state.window.answered;
 	const share = coverageShare(poll, optionIds);
+	// Deeper gates raise the stakes both ways: the gate number scales the
+	// correctness share before configs/streak amplify it, so gate 2 earns off a
+	// base of 2, not 1 — and the loss below scales by the same factor, so a miss
+	// at gate 5 hurts as much as a hit there helps. Coverage stays floored at 0.
+	const gateMultiplier = gateBaseMultiplier(state.gatesCleared);
+	const scoredShare = share * gateMultiplier;
 	// Streak updates first so this answer scores at its new level (a correct
 	// reaching streak 3 earns at 1.3×). Then it multiplies the earn last.
 	const streak = nextStreak(state.streak, outcome);
 	const earned = coverageForAnswer(
 		configs,
 		poll.category,
-		share,
+		scoredShare,
 		streakMultiplier(streak)
 	);
 	// A miss (share 0) bleeds coverage: base loss scaled by the build's reward
-	// multiplier — risk cuts both ways. Raw rules only: coverage configs never
-	// amplify a loss, and the gate never scales it.
+	// multiplier AND the gate — risk cuts both ways, and it cuts deeper the higher
+	// you climb. Raw rules only: coverage configs never amplify a loss.
 	const coverageLoss =
 		share > 0
 			? 0
 			: roundToOneDecimal(
-					WRONG_COVERAGE_LOSS * rewardMultiplierFor(state.pipeline)
+					WRONG_COVERAGE_LOSS *
+						rewardMultiplierFor(state.pipeline) *
+						gateMultiplier
 				);
 	const coverageBreakdown = coverageBreakdownForAnswer(
 		configs,
 		poll.category,
-		share,
+		scoredShare,
 		streakMultiplier(streak),
 		coverageLoss
 	);

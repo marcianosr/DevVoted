@@ -25,6 +25,55 @@ describe(PollCard, () => {
 		expect(screen.getByText("Alpha")).toBeInTheDocument();
 	});
 
+	it("renders the poll's code_block as a highlighted code block", () => {
+		const { container } = render(
+			<PollCard
+				category="react"
+				question="Why won't this render?"
+				codeBlock={"const App = () => {\n  <div>Hi</div>;\n};"}
+				answerType="single"
+				options={options}
+				onSelect={() => {}}
+			/>
+		);
+		const pre = container.querySelector("pre");
+		expect(pre).not.toBeNull();
+		// highlight.js fragments the source into token spans, so assert on the
+		// reassembled textContent rather than a single text node.
+		expect(pre?.textContent).toContain("const App = () =>");
+	});
+
+	it("embeds a CodeSandbox frame when the poll carries a sandbox url", () => {
+		render(
+			<PollCard
+				category="html"
+				question="See the sandbox below — which tags fit?"
+				codeSandboxUrl="https://codesandbox.io/embed/example"
+				answerType="single"
+				options={options}
+				onSelect={() => {}}
+			/>
+		);
+		const frame = screen.getByTitle("CodeSandbox example");
+		expect(frame).toHaveAttribute(
+			"src",
+			"https://codesandbox.io/embed/example"
+		);
+	});
+
+	it("omits the code block when the poll has no code_block", () => {
+		const { container } = render(
+			<PollCard
+				category="react"
+				question="Which key?"
+				answerType="single"
+				options={options}
+				onSelect={() => {}}
+			/>
+		);
+		expect(container.querySelector("pre")).toBeNull();
+	});
+
 	it("reports a clicked option through onSelect without any submit button", () => {
 		const onSelect = vi.fn();
 		render(

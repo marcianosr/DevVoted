@@ -97,6 +97,8 @@ Cheap to nudge, brutal to abuse.
 
 ### 11. Coverage scoring: losses, config positivity, and partial multi-answer credit (amended 2026-07-19)
 
+> ⚠ **Amended by [ADR-013](013-gate-scaled-coverage.md)**: coverage now gate-scales on **both** sides — the base gain is `× gate` and the loss is too. The "deliberately not gate-scaled" clause below is superseded; the death-spiral concern is resolved by the 0-floor. See ADR-013 for the reasoning.
+
 - **A miss bleeds coverage**: `WRONG_COVERAGE_LOSS` (see `rules.model.ts`) × the pipeline's reward multiplier. The loss drains the **poll's category**, floored at 0; the total moves by what the category actually lost, so the total always equals the sum of the categories and you can't lose coverage you don't have (wrong in an untouched category costs nothing). Risk cuts both ways — greedy builds lose more per mistake. The loss is deliberately **not** gate-scaled: escalating requirements already punish late mistakes, and stacking a second growing penalty on the same event is a death spiral.
 - **Config effects amplify gains, never losses.** Coverage multipliers/adds and storage faucets (IndexedDB) apply only to earnings; a wrong answer means *no payout*, never a config-driven penalty. A config may only be negative if its own definition says so explicitly.
 - **Multi-answer polls earn proportional coverage**: share = `(correct picks − wrong picks) / total correct`, clamped to [0, 1] — every wrong pick cancels a right one, so shotgunning earns nothing and trips the miss penalty. **Only coverage reads the share**; gate math, streak, and storage stay binary on the exact-set rule (see `coverageShare` in `run.model.ts`).

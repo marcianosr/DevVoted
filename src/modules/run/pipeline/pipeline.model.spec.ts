@@ -145,9 +145,10 @@ describe("coverageBreakdownForAnswer", () => {
 		).toEqual({ base: -0.5, streakBonus: 0, configBonuses: [] });
 	});
 
-	it("credits the multiplier chip when a ×mult amplifies a flat add", () => {
+	it("credits the multiplier chip when a ×mult amplifies a flat add, listing the mult last", () => {
 		// (1 + 0.5) × 2 = 3: Code Coverage keeps its face +0.5, Copilot absorbs
-		// the amplification (+1.5 = doubling base + add), base stays 1.
+		// the amplification (+1.5 = doubling base + add), base stays 1. Copilot is
+		// the ×mult, so it lists after the flat add even though it's slotted first.
 		expect(
 			coverageBreakdownForAnswer(
 				[CONFIGS.copilot, CONFIGS.codeCoverage],
@@ -160,10 +161,22 @@ describe("coverageBreakdownForAnswer", () => {
 			base: 1,
 			streakBonus: 0,
 			configBonuses: [
-				{ configId: "copilot", value: 1.5 },
 				{ configId: "code-coverage", value: 0.5 },
+				{ configId: "copilot", value: 1.5 },
 			],
 		});
+	});
+
+	it("lists every flat-add config before every ×mult config, whatever the slot order", () => {
+		const order = coverageBreakdownForAnswer(
+			[CONFIGS.copilot, CONFIGS.codeCoverage],
+			"js",
+			1,
+			1,
+			0
+		).configBonuses.map((bonus) => bonus.configId);
+		// copilot is the ×mult, code-coverage the flat add → add first, mult last.
+		expect(order).toEqual(["code-coverage", "copilot"]);
 	});
 
 	it("keeps base + streak + configs summing to the engine's earned coverage", () => {

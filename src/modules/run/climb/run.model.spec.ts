@@ -360,6 +360,28 @@ describe("streak", () => {
 	});
 });
 
+describe("gate base multiplier", () => {
+	// base is the correctness score before streak/config amplify it — it isolates
+	// the gate factor from the streak bonus every correct answer also carries.
+	const baseAt = (gatesCleared: number, correct: boolean): number | undefined =>
+		answerWith(
+			{ ...started([]), gatesCleared, streak: 0 },
+			correct
+		).answeredThisGate.at(-1)?.coverageBreakdown?.base;
+
+	it("scales the correctness base by the gate number (gate 1 ×1, gate 2 ×2, …)", () => {
+		expect(baseAt(0, true)).toBe(1); // gate 1
+		expect(baseAt(1, true)).toBe(2); // gate 2
+		expect(baseAt(2, true)).toBe(3); // gate 3
+	});
+
+	it("scales a wrong answer's loss by the gate too — risk cuts deeper as you climb", () => {
+		expect(baseAt(0, false)).toBe(-0.5); // gate 1: -0.5 × 1
+		expect(baseAt(1, false)).toBe(-1); // gate 2: -0.5 × 2
+		expect(baseAt(4, false)).toBe(-2.5); // gate 5: -0.5 × 5
+	});
+});
+
 describe("economy", () => {
 	it("earns storage from the IndexedDB faucet on correct answers only", () => {
 		let state = started(["indexed-db"]);

@@ -235,6 +235,8 @@ export const RunGame = () => {
 						checks={view.checks}
 						category={view.poll.category}
 						question={view.poll.question}
+						codeBlock={view.poll.codeBlock}
+						codeSandboxUrl={view.poll.codeSandboxUrl}
 						answerType={view.poll.answerType}
 						options={view.poll.options}
 						selectedOptionIds={selected}

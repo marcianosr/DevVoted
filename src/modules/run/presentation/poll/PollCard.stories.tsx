@@ -68,6 +68,30 @@ export const WithCodeExample: Story = {
 	},
 };
 
+/**
+ * A poll whose code lives in the `code_block` column (raw source, no fences) rather
+ * than inline in the question. The card wraps and highlights it so the player can
+ * actually read the code the question refers to.
+ */
+export const WithCodeBlock: Story = {
+	args: {
+		category: "react",
+		question:
+			"In React, the following code can be seen, why will it not render anything on the screen?",
+		codeBlock: "const App = () => {\n  <div>Hello world</div>;\n};",
+		answerType: "single",
+		options: [
+			{ id: "a", label: "It doesn't render, you need the `return` statement" },
+			{ id: "b", label: "It does render, this is implicit return" },
+			{
+				id: "c",
+				label: "It doesn't render because a render function is required",
+			},
+		],
+		onSelect: () => {},
+	},
+};
+
 export const Revealed: Story = {
 	args: {
 		category: "react",

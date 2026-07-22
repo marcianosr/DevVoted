@@ -47,6 +47,8 @@ type AnsweringScreenProps = {
 	checks: readonly CheckStatus[];
 	category: CategoryCode;
 	question: string;
+	codeBlock?: string;
+	codeSandboxUrl?: string;
 	answerType: AnswerType;
 	options: readonly PollOption[];
 	selectedOptionIds?: readonly string[];
@@ -73,6 +75,8 @@ export const AnsweringScreen = ({
 	checks,
 	category,
 	question,
+	codeBlock,
+	codeSandboxUrl,
 	answerType,
 	options,
 	selectedOptionIds,
@@ -94,6 +98,8 @@ export const AnsweringScreen = ({
 		<PollCard
 			category={category}
 			question={question}
+			codeBlock={codeBlock}
+			codeSandboxUrl={codeSandboxUrl}
 			answerType={answerType}
 			options={options}
 			selectedOptionIds={selectedOptionIds}
