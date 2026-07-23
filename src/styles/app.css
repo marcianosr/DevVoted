@@ -555,3 +555,35 @@ meter::-webkit-meter-optimum-value {
 		transition: none;
 	}
 }
+
+@keyframes reveal-pop {
+	0% {
+		opacity: 0;
+		transform: scale(0.6);
+	}
+	60% {
+		opacity: 1;
+		transform: scale(1.08);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.reveal-pop {
+	animation: reveal-pop 260ms ease-out both;
+}
+
+@keyframes score-bump {
+	0% {
+		transform: scale(1.35);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.score-bump {
+	animation: score-bump 200ms ease-out;
+}

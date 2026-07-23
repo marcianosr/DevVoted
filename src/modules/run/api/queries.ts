@@ -119,6 +119,8 @@ export const getOrCreateDailyRunSeed = async (
 const ENGINE_POLL_COLUMNS = {
 	id: pollsTable.id,
 	question: pollsTable.question,
+	codeBlock: pollsTable.code_block,
+	codeSandboxUrl: pollsTable.code_sandbox_example,
 	answerType: pollsTable.answer_type,
 	categoryCode: pollsTable.category_code,
 	explanation: pollsTable.explanation,
@@ -127,6 +129,8 @@ const ENGINE_POLL_COLUMNS = {
 type EnginePollRow = {
 	id: number;
 	question: string;
+	codeBlock: string | null;
+	codeSandboxUrl: string | null;
 	answerType: RunPoll["answerType"];
 	categoryCode: string;
 	explanation: string | null;
@@ -161,6 +165,8 @@ const withOptions = async (
 		id: String(poll.id),
 		category: toCategory(poll.categoryCode),
 		question: poll.question,
+		codeBlock: poll.codeBlock ?? undefined,
+		codeSandboxUrl: poll.codeSandboxUrl ?? undefined,
 		answerType: poll.answerType,
 		explanation: poll.explanation ?? undefined,
 		options: optionRows

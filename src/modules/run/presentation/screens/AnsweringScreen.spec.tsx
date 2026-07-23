@@ -26,6 +26,7 @@ const base = {
 	canSubmit: true,
 	onSelect: vi.fn(),
 	onSubmit: vi.fn(),
+	onNext: vi.fn(),
 };
 
 describe(AnsweringScreen, () => {
@@ -55,5 +56,49 @@ describe(AnsweringScreen, () => {
 		expect(
 			screen.getByRole("button", { name: /Submit answer/ })
 		).toBeDisabled();
+	});
+
+	it("swaps Submit for a Next button once the answer is revealed", () => {
+		const onNext = vi.fn();
+		render(
+			<AnsweringScreen
+				{...base}
+				correctOptionIds={["a"]}
+				chosenOptionIds={["b"]}
+				revealScore={{
+					isCorrect: true,
+					baseCoverage: 1,
+					streakBonus: 0.1,
+					configBonuses: [{ configId: "js", value: 0.5 }],
+					earnedCoverage: 1.6,
+				}}
+				onNext={onNext}
+			/>
+		);
+		expect(
+			screen.queryByRole("button", { name: /Submit answer/ })
+		).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: /Next/ }));
+		expect(onNext).toHaveBeenCalledOnce();
+	});
+
+	it("shows the coverage equation with a config chip on reveal", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				correctOptionIds={["a"]}
+				chosenOptionIds={["a"]}
+				revealScore={{
+					isCorrect: true,
+					baseCoverage: 1,
+					streakBonus: 0.1,
+					configBonuses: [{ configId: "js", value: 0.5 }],
+					earnedCoverage: 1.6,
+				}}
+			/>
+		);
+		// The equipped .js config is resolved to its chip inside the equation.
+		expect(screen.getAllByText(".js")).not.toHaveLength(0);
+		expect(screen.getByText("+1.6%")).toBeInTheDocument();
 	});
 });

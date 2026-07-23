@@ -43,5 +43,38 @@ export const Default: Story = {
 		canSubmit: true,
 		onSelect: () => {},
 		onSubmit: () => {},
+		onNext: () => {},
+	},
+};
+
+/** The post-submit reveal: options show ✓/✕, the coverage equation pops in with
+ *  real ConfigChips, and the CTA becomes "Next →" (the player advances). */
+export const Revealed: Story = {
+	args: {
+		...Default.args,
+		configs: [CONFIGS.js, CONFIGS.copilot],
+		category: "js",
+		question: "Which of these are valid ways to make a fetch cancellable?",
+		answerType: "multiple",
+		options: [
+			{ id: "a", label: "AbortController + signal" },
+			{ id: "b", label: "Ignoring the response if a newer request started" },
+			{ id: "c", label: "Setting fetch's timeout: property" },
+		],
+		correctOptionIds: ["a", "b"],
+		chosenOptionIds: ["a", "c"],
+		canSubmit: false,
+		// Multipliers-last: Copilot ×2 amplifies base + the .js boost, so its chip
+		// is +1.5 (not +1.0). (1 + 0.5 .js) × 2 × 1.2 streak = 3.6.
+		revealScore: {
+			isCorrect: true,
+			baseCoverage: 1,
+			streakBonus: 0.6,
+			configBonuses: [
+				{ configId: "js", value: 0.5 },
+				{ configId: "copilot", value: 1.5 },
+			],
+			earnedCoverage: 3.6,
+		},
 	},
 };

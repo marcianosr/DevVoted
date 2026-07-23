@@ -2,16 +2,24 @@ import { cva } from "class-variance-authority";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 import type { AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
+import { PollCodeSandbox } from "~/ui/polls/PollCodeSandbox.ui";
+import {
+	CodeBlockMarkdown,
+	QuestionMarkdown,
+} from "~/ui/polls/PollMarkdown.ui";
 import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { revealDelayMs } from "./revealTiming";
 
 export type PollOption = { readonly id: string; readonly label: string };
 
 type PollCardProps = {
 	category: CategoryCode;
 	question: string;
+	codeBlock?: string;
+	codeSandboxUrl?: string;
 	answerType: AnswerType;
 	options: readonly PollOption[];
 	selectedOptionIds?: readonly string[];
@@ -26,15 +34,21 @@ type PollCardProps = {
 	lintCost?: number;
 };
 
-type OptionStatus = "correct" | "chosenWrong" | "selected" | "neutral";
+type OptionStatus =
+	"correctChosen" | "correctMissed" | "chosenWrong" | "selected" | "neutral";
 
+/**
+ * On reveal the badge fill says "you picked this" and the color says right/wrong:
+ * a filled green ✓ is a correct pick, a filled red ✕ a wrong pick, and a hollow
+ * green ✓ a correct answer you *missed*. Pre-reveal only the live pick highlights.
+ */
 const optionStatusOf = (
-	isCorrect: boolean,
-	isChosenWrong: boolean,
+	isCorrectOption: boolean,
+	wasChosen: boolean,
 	isSelected: boolean
 ): OptionStatus => {
-	if (isCorrect) return "correct";
-	if (isChosenWrong) return "chosenWrong";
+	if (isCorrectOption) return wasChosen ? "correctChosen" : "correctMissed";
+	if (wasChosen) return "chosenWrong";
 	if (isSelected) return "selected";
 	return "neutral";
 };
@@ -48,7 +62,8 @@ const interactionOf = (off: boolean, revealed: boolean): InteractionState => {
 };
 
 const MARK: Record<OptionStatus, string> = {
-	correct: "✓",
+	correctChosen: "✓",
+	correctMissed: "✓",
 	chosenWrong: "✕",
 	selected: "",
 	neutral: "",
@@ -59,7 +74,8 @@ const optionRow = cva(
 	{
 		variants: {
 			status: {
-				correct: "rounded-lg bg-viridian/10",
+				correctChosen: "rounded-lg bg-viridian/10",
+				correctMissed: "rounded-lg bg-viridian/5",
 				chosenWrong: "rounded-lg bg-cinnabar/10",
 				selected: "rounded-lg bg-theme-soft",
 				neutral: "border-b border-zinc-800",
@@ -74,7 +90,7 @@ const optionRow = cva(
 			{
 				status: "neutral",
 				interaction: "active",
-				className: "hover:bg-white/5",
+				className: "hover:bg-theme/10",
 			},
 		],
 	}
@@ -101,7 +117,8 @@ const optionBadge = cva(
 	{
 		variants: {
 			status: {
-				correct: "bg-viridian text-black",
+				correctChosen: "bg-viridian text-black",
+				correctMissed: "border border-viridian bg-transparent text-viridian",
 				chosenWrong: "bg-cinnabar text-black",
 				selected: "bg-theme text-black",
 				neutral: "bg-zinc-800 text-zinc-400",
@@ -114,22 +131,28 @@ const optionBadge = cva(
 	}
 );
 
-const optionLabel = cva("font-extrabold text-xs sm:text-base", {
-	variants: {
-		status: {
-			correct: "text-viridian",
-			chosenWrong: "text-cinnabar",
-			selected: "text-white",
-			neutral: "text-zinc-100",
-		} satisfies Record<OptionStatus, string>,
-	},
-});
+const optionLabel = cva(
+	"font-extrabold text-xs sm:text-base transition-colors",
+	{
+		variants: {
+			status: {
+				correctChosen: "text-viridian",
+				correctMissed: "text-viridian/70",
+				chosenWrong: "text-cinnabar",
+				selected: "text-white",
+				neutral: "text-zinc-100",
+			} satisfies Record<OptionStatus, string>,
+		},
+	}
+);
 
 const optionLetter = (index: number) => String.fromCharCode(65 + index);
 
 export const PollCard = ({
 	category,
 	question,
+	codeBlock,
+	codeSandboxUrl,
 	answerType,
 	options,
 	selectedOptionIds = [],
@@ -161,12 +184,29 @@ export const PollCard = ({
 
 			<hr className="border-theme border-t" />
 
-			<Title category={category}>{question}</Title>
+			{/* The question is authored markdown, so code examples render highlighted
+			    (react-markdown + rehype-highlight) while inheriting the themed
+			    heading look from the wrapper. */}
+			<div className="markdown text-theme text-xl font-extrabold leading-6 tracking-tight sm:text-3xl sm:leading-8">
+				<QuestionMarkdown>{question}</QuestionMarkdown>
+			</div>
+
+			{/* Some questions ship a separate code_block column; render it as a
+			    highlighted fenced block at body size, not the heading style above. */}
+			{codeBlock ? (
+				<div className="markdown">
+					<CodeBlockMarkdown>{codeBlock}</CodeBlockMarkdown>
+				</div>
+			) : null}
+
+			{/* Others reference a live CodeSandbox instead of a static snippet. */}
+			{codeSandboxUrl ? <PollCodeSandbox url={codeSandboxUrl} /> : null}
 
 			{canLint ? (
 				<button
 					type="button"
 					onClick={onLint}
+
 					disabled={!lintReady}
 					className="flex items-center gap-2 self-start rounded border border-viridian px-3 py-1 text-xs text-viridian transition enabled:cursor-pointer enabled:hover:bg-viridian enabled:hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
 				>
@@ -181,12 +221,18 @@ export const PollCard = ({
 			<div className="flex flex-col">
 				{options.map((option, index) => {
 					const off = disabled.has(option.id);
-					const isCorrect = revealed && correct.has(option.id);
-					const isChosenWrong =
-						revealed && chosen.has(option.id) && !correct.has(option.id);
+					const isCorrectOption = revealed && correct.has(option.id);
+					const wasChosen = revealed && chosen.has(option.id);
 					const isSelected = !revealed && selected.has(option.id);
-					const status = optionStatusOf(isCorrect, isChosenWrong, isSelected);
+					const status = optionStatusOf(isCorrectOption, wasChosen, isSelected);
 					const interaction = interactionOf(off, revealed);
+
+					const revealDelay = revealed
+						? revealDelayMs(index, options.length)
+						: 0;
+					const revealDelayStyle = revealed
+						? { transitionDelay: `${revealDelay}ms` }
+						: undefined;
 					return (
 						<button
 							key={option.id}
@@ -194,14 +240,28 @@ export const PollCard = ({
 							disabled={off || revealed}
 							onClick={() => onSelect(option.id)}
 							className={optionRow({ status, interaction })}
+							style={revealDelayStyle}
 						>
 							<span
 								data-shape={shape}
-								className={optionBadge({ status, shape })}
+								data-status={status}
+								className={optionBadge({
+									status,
+									shape,
+									className: revealed ? "reveal-pop" : undefined,
+								})}
+								style={
+									revealed ? { animationDelay: `${revealDelay}ms` } : undefined
+								}
 							>
 								{MARK[status] || optionLetter(index)}
 							</span>
-							<span className={optionLabel({ status })}>{option.label}</span>
+							<span
+								className={optionLabel({ status })}
+								style={revealDelayStyle}
+							>
+								{option.label}
+							</span>
 						</button>
 					);
 				})}

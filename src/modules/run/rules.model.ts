@@ -28,6 +28,15 @@ export const STREAK_COVERAGE_BONUS = 0.1;
 export const streakMultiplier = (streak: number): number =>
 	1 + STREAK_COVERAGE_BONUS * streak;
 
+/**
+ * Deeper gates are worth more: the base coverage a correct answer earns scales
+ * with the gate number, so gate 1 pays ×1, gate 2 ×2, and so on. `gatesCleared`
+ * counts gates already beaten, so the gate being answered is `gatesCleared + 1`.
+ * Only gains scale — losses stay flat.
+ */
+export const gateBaseMultiplier = (gatesCleared: number): number =>
+	gatesCleared + 1;
+
 export const escalation = (gatesCleared: number): number =>
 	Math.floor(gatesCleared / 2);
 

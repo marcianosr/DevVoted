@@ -4,6 +4,7 @@ import { Config } from "../configs/config.model";
 import { CONFIGS } from "../configs/configRoster.model";
 import {
 	Pipeline,
+	coverageBreakdownForAnswer,
 	coverageForAnswer,
 	coverageProfileFor,
 	effectiveRequirement,
@@ -82,6 +83,112 @@ describe("coverageForAnswer", () => {
 		expect(coverageForAnswer([CONFIGS.js], "js", 1, 1.3)).toBe(2);
 		// A factor of 1 (no streak) leaves the earn unchanged.
 		expect(coverageForAnswer([CONFIGS.js], "js", 1, 1)).toBe(1.5);
+	});
+
+	it("applies multipliers last, so a ×mult amplifies flat adds too", () => {
+		// (1 base + 0.5 Code Coverage) × 2 Copilot = 3 — the +0.5 gets doubled.
+		expect(
+			coverageForAnswer([CONFIGS.copilot, CONFIGS.codeCoverage], "js", 1)
+		).toBe(3);
+	});
+});
+
+describe("coverageBreakdownForAnswer", () => {
+	it("gives a bare correct answer a base of 1 with no bonuses", () => {
+		expect(coverageBreakdownForAnswer([], "js", 1, 1, 0)).toEqual({
+			base: 1,
+			streakBonus: 0,
+			configBonuses: [],
+		});
+	});
+
+	it("splits an Amplify multiplier into its own config chip", () => {
+		// Copilot ×2 on a base of 1 → +1 config chip, base stays 1.
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.copilot], "js", 1, 1, 0)
+		).toEqual({
+			base: 1,
+			streakBonus: 0,
+			configBonuses: [{ configId: "copilot", value: 1 }],
+		});
+	});
+
+	it("splits a flat coverage add into its own config chip", () => {
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.codeCoverage], "js", 1, 1, 0)
+		).toEqual({
+			base: 1,
+			streakBonus: 0,
+			configBonuses: [{ configId: "code-coverage", value: 0.5 }],
+		});
+	});
+
+	it("pulls the streak factor into its own bonus over base + configs", () => {
+		// Focus .js (1.5×) at streak 1.3: base 1, .js +0.5, streak +0.5 = 2.
+		expect(coverageBreakdownForAnswer([CONFIGS.js], "js", 1, 1.3, 0)).toEqual({
+			base: 1,
+			streakBonus: 0.5,
+			configBonuses: [{ configId: "js", value: 0.5 }],
+		});
+	});
+
+	it("excludes configs with no coverage effect on the category", () => {
+		// ESLint is defense, .js Focus is a no-op on a CSS poll — neither chips.
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.eslint, CONFIGS.js], "css", 1, 1, 0)
+		).toEqual({ base: 1, streakBonus: 0, configBonuses: [] });
+	});
+
+	it("carries a miss as a negative base with no bonuses", () => {
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.copilot], "js", 0, 1, 0.5)
+		).toEqual({ base: -0.5, streakBonus: 0, configBonuses: [] });
+	});
+
+	it("credits the multiplier chip when a ×mult amplifies a flat add, listing the mult last", () => {
+		// (1 + 0.5) × 2 = 3: Code Coverage keeps its face +0.5, Copilot absorbs
+		// the amplification (+1.5 = doubling base + add), base stays 1. Copilot is
+		// the ×mult, so it lists after the flat add even though it's slotted first.
+		expect(
+			coverageBreakdownForAnswer(
+				[CONFIGS.copilot, CONFIGS.codeCoverage],
+				"js",
+				1,
+				1,
+				0
+			)
+		).toEqual({
+			base: 1,
+			streakBonus: 0,
+			configBonuses: [
+				{ configId: "code-coverage", value: 0.5 },
+				{ configId: "copilot", value: 1.5 },
+			],
+		});
+	});
+
+	it("lists every flat-add config before every ×mult config, whatever the slot order", () => {
+		const order = coverageBreakdownForAnswer(
+			[CONFIGS.copilot, CONFIGS.codeCoverage],
+			"js",
+			1,
+			1,
+			0
+		).configBonuses.map((bonus) => bonus.configId);
+		// copilot is the ×mult, code-coverage the flat add → add first, mult last.
+		expect(order).toEqual(["code-coverage", "copilot"]);
+	});
+
+	it("keeps base + streak + configs summing to the engine's earned coverage", () => {
+		const configs = [CONFIGS.copilot, CONFIGS.codeCoverage];
+		const breakdown = coverageBreakdownForAnswer(configs, "js", 1, 1.3, 0);
+		const sum =
+			breakdown.base +
+			breakdown.streakBonus +
+			breakdown.configBonuses.reduce((total, bonus) => total + bonus.value, 0);
+		expect(Math.round(sum * 10) / 10).toBe(
+			coverageForAnswer(configs, "js", 1, 1.3)
+		);
 	});
 });
 

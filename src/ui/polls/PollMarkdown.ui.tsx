@@ -61,3 +61,15 @@ export const MarkdownText = ({ children }: { children: string }) => (
 		{escapeMarkdownSyntax(children)}
 	</ReactMarkdown>
 );
+
+/**
+ * Renders a poll's `code_block` — a raw source string with no fences or language
+ * tag. Wrapping it in a bare fenced block lets it flow through the same
+ * language-detecting highlighter as inline question code, so a code example gets
+ * the same treatment whether authored inline or stored in its own column.
+ */
+export const CodeBlockMarkdown = ({ children }: { children: string }) => (
+	<ReactMarkdown rehypePlugins={[[rehypeHighlight, highlightOptions]]}>
+		{`\`\`\`\n${children}\n\`\`\``}
+	</ReactMarkdown>
+);

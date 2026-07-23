@@ -1,10 +1,11 @@
 ---
 # DVTD-sd0y
 title: 'Coverage: decide its purpose'
-status: draft
+status: completed
 type: task
+priority: normal
 created_at: 2026-07-13T08:24:10Z
-updated_at: 2026-07-13T08:24:10Z
+updated_at: 2026-07-22T12:50:10Z
 parent: DVTD-u35m
 ---
 

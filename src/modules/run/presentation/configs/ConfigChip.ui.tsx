@@ -123,7 +123,7 @@ export const ConfigChip = ({
 	const corners = [
 		badge ? <span key="badge">{badge}</span> : null,
 		level > 1 ? <Badge key="level">L{level}</Badge> : null,
-		config.fixed && !noFixedBadge ? <Badge key="fixed">fixed</Badge> : null,
+		config.fixed && !noFixedBadge ? <Badge key="fixed">🔒</Badge> : null,
 		price !== undefined ? (
 			<Badge key="price" tone="price">{`${price}KB`}</Badge>
 		) : null,
@@ -136,7 +136,7 @@ export const ConfigChip = ({
 	const chip =
 		corners.length > 0 ? (
 			<span className="relative inline-flex">
-				<span className="absolute -right-1 -top-2 z-10 flex gap-1">
+				<span className="absolute -right-2 -top-3 z-10 flex gap-1">
 					{corners}
 				</span>
 				{surface}
@@ -155,6 +155,11 @@ export const ConfigChip = ({
 					<Paragraph className="text-sm">
 						{tooltip ?? describeConfig(config)}
 					</Paragraph>
+					{config.fixed ? (
+						<Paragraph className="text-sm text-pewter">
+							🔒 Required — fixed for every run, so it can&apos;t be removed.
+						</Paragraph>
+					) : null}
 				</div>
 			}
 		>

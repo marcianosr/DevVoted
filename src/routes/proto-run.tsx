@@ -188,7 +188,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						label: "Start run →",
 						onClick: () => dispatch({ type: "start" }),
 						disabled: !canStart,
-						hint: canStart ? undefined : "Slot a config to start",
+						hint: canStart ? undefined : "Choose a config to start",
 					}}
 				>
 					<ConfiguringScreen
@@ -224,6 +224,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						canSubmit={canSubmit}
 						onSelect={onSelect}
 						onSubmit={() => answer(selected)}
+						onNext={() => {}}
 						onLint={() => dispatch({ type: "lint-poll" })}
 					/>
 				</Screen>

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { createRun, runReducer, RunPoll } from "../climb/run.model";
 import { CONFIGS } from "../configs/configRoster.model";
+import type { Config } from "../configs/config.model";
 import {
 	correctOptionIdsFor,
+	latestAnswerScore,
 	latestAnswerVerdict,
 	toRunView,
 } from "./runView.viewmodel";
@@ -23,6 +25,13 @@ const answering = () =>
 	runReducer(createRun([poll("q0"), poll("q1")], [CONFIGS.js]), {
 		type: "start",
 	});
+
+const answeringWith = (configs: Config[]) => {
+	let state = createRun([poll("q0"), poll("q1")], configs);
+	for (const config of configs)
+		state = runReducer(state, { type: "slot", configId: config.id });
+	return runReducer(state, { type: "start" });
+};
 
 describe("toRunView", () => {
 	it("redacts option correctness from the current poll", () => {
@@ -86,6 +95,55 @@ describe("latestAnswerVerdict", () => {
 		expect(latestAnswerVerdict(toRunView(state))).toEqual({
 			outcome: "wrong",
 			correctAnswers: ["Yes"],
+		});
+	});
+});
+
+describe("latestAnswerScore", () => {
+	it("is null before any answer this gate", () => {
+		expect(latestAnswerScore(toRunView(answering()))).toBeNull();
+	});
+
+	it("breaks a correct answer into base, streak, and total", () => {
+		const state = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["q0-a"],
+		});
+		// .js Focus is a no-op on a react poll, so no config chip; streak 1 → +0.1.
+		expect(latestAnswerScore(toRunView(state))).toEqual({
+			isCorrect: true,
+			baseCoverage: 1,
+			streakBonus: 0.1,
+			configBonuses: [],
+			earnedCoverage: 1.1,
+		});
+	});
+
+	it("adds a chip for a coverage-affecting config and sums the total", () => {
+		const state = runReducer(answeringWith([CONFIGS.copilot]), {
+			type: "answer",
+			optionIds: ["q0-a"],
+		});
+		expect(latestAnswerScore(toRunView(state))).toEqual({
+			isCorrect: true,
+			baseCoverage: 1,
+			streakBonus: 0.2,
+			configBonuses: [{ configId: "copilot", value: 1 }],
+			earnedCoverage: 2.2,
+		});
+	});
+
+	it("reads a miss as a negative base and no bonuses", () => {
+		const state = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["q0-b"],
+		});
+		expect(latestAnswerScore(toRunView(state))).toEqual({
+			isCorrect: false,
+			baseCoverage: -0.5,
+			streakBonus: 0,
+			configBonuses: [],
+			earnedCoverage: -0.5,
 		});
 	});
 });

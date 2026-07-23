@@ -7,13 +7,14 @@
 | 003 | Domain restructure | Retired — removed during the run rebuild; ADR-002 owns structure now |
 | 004 | UI styling conventions | Retired — removed during the run rebuild; ADR-007 owns the design system now |
 | [005](005-session-runs.md) | Session runs and the two-loop model | Accepted — cadence questions resolved by 009 |
-| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — Decisions 1/7/10 amended or superseded by 008 |
+| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — Decisions 1/7/10 amended by 008; Decision 11 amended by 013 |
 | [007](007-run-rebuild-conventions.md) | Run rebuild: design system and scope | Accepted |
 | [008](008-reward-shop-multibuy-coverage-gated-slots.md) | Reward shop: multi-buy, coverage-gated slots | Accepted — supersedes 006 Decision 7 |
 | [009](009-session-run-cadence-daily-seeded-shared-run.md) | Session-run cadence: daily-seeded shared run | Accepted — Decision 1 superseded by 011 |
 | [010](010-ui-layer-separation.md) | Two-tier UI separation (presentational vs composition) | Accepted — extracted from CLAUDE.md |
 | [011](011-persistent-runs-daily-segments.md) | Persistent runs with daily shared segments | Accepted — supersedes 009 Decision 1 |
 | [012](012-migration-strategy.md) | One migration pipeline: guarded SQL in supabase/migrations | Accepted — retires drizzle generate/migrate |
+| [013](013-gate-scaled-coverage.md) | Gate-scaled coverage (gain and loss) | Accepted — amends 006 Decision 11 |
 
 ## Conventions
 
