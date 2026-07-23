@@ -4,19 +4,18 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
 	filterPolldexEntries,
-	polldexCoverage,
 	presentCategories,
 	type PolldexCategoryFilter,
 } from "../../polldex/polldex.model";
+import { PolldexPanel } from "./PolldexPanel.ui";
 import { SAMPLE_POLLDEX_ENTRIES } from "./polldex.fixtures";
-import { PolldexScreen } from "./PolldexScreen.ui";
 
-const meta: Meta<typeof PolldexScreen> = {
-	component: PolldexScreen,
-	title: "Polldex/PolldexScreen",
+const meta: Meta<typeof PolldexPanel> = {
+	component: PolldexPanel,
+	title: "Dex/PolldexPanel",
 	decorators: [
 		(Story) => (
-			<div className="min-h-screen bg-gray-950">
+			<div className="min-h-screen bg-gray-950 p-6">
 				<Story />
 			</div>
 		),
@@ -24,15 +23,13 @@ const meta: Meta<typeof PolldexScreen> = {
 };
 export default meta;
 
-type Story = StoryObj<typeof PolldexScreen>;
+type Story = StoryObj<typeof PolldexPanel>;
 
 const Interactive = () => {
 	const [category, setCategory] = useState<PolldexCategoryFilter>("all");
-
 	return (
-		<PolldexScreen
+		<PolldexPanel
 			entries={filterPolldexEntries(SAMPLE_POLLDEX_ENTRIES, category)}
-			coverage={polldexCoverage(SAMPLE_POLLDEX_ENTRIES)}
 			categories={presentCategories(SAMPLE_POLLDEX_ENTRIES)}
 			selectedCategory={category}
 			onSelectCategory={setCategory}

@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-- **Polldex** (`/polldex`): a Pokédex-style catalogue of every poll. A coverage line shows how many you've discovered, and each poll you've met lists how many times you've seen it and your accuracy (green when you nail it, red when you don't). Polls you haven't met yet stay listed by their number but hide behind "???" so nothing's spoiled. Filter by category, and tap any column heading (ID, category, seen, accuracy) to sort.
+- **The Dex** (`/dex`): a Pokédex-style collection screen with two tabs. **Polls** catalogues every poll — a coverage count, plus how many times you've seen each one you've met and your accuracy (green when you nail it, red when you don't); polls you haven't met stay listed by number but hide behind "???" so nothing's spoiled. Filter by category and tap any column heading (ID, category, seen, accuracy) to sort. **Configs** shows the config collection grouped by rarity, using the same chips you drop into a loadout.
 - **Readable poll options**: answers are now a clean numbered list; picking one marks it with a colored accent bar, and every poll says up front whether it wants one answer or several.
 - **Poll results, poll by poll**: after a gate, your answers show as clickable outcome cards — open one to replay the full option list with your picks and the correct answers revealed, plus an explanation box when the poll has one. Step through polls with previous/next.
 - **The game tells the truth about gate demands**: requirement text now shows the escalated target for deeper gates (e.g. "Requires 3 correct answers"), matching the progress counter.

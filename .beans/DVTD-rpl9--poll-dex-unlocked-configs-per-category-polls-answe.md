@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-16T20:30:19Z
-updated_at: 2026-07-23T13:28:45Z
+updated_at: 2026-07-23T14:48:29Z
 parent: DVTD-u35m
 ---
 
@@ -67,3 +67,27 @@ Per follow-up feedback, dropped the search input — Polldex filters by category
 
 ## Refactor summary (TanStack Table)
 Replaced the hand-rolled grid with a reusable, headless `DataTable.ui` (sortable headers, aria-sort, meta.align/grow, rowClassName, emptyMessage; ascending-first via sortDescFirst:false). Polldex supplies `polldexColumns.ui` (ID default asc; Question unsortable; accuracy uses accessor `?? undefined` + sortUndefined:last so unanswered polls stay last both directions). Deleted PolldexTable/Row + their story/spec. Verified live in Storybook (clicking Accuracy reorders, unseen rows stay last) + 873 tests / tsc / lint / build green. Designed generic for the future /polls migration (out of scope here).
+
+## Update: renamed to Dex + Polls/Configs tabs
+- Page renamed **Polldex → Dex**; route `/polldex` → **`/dex`**; nav label "Dex".
+- New generic **`src/ui/Tabs.ui`** (role=tablist, aria-selected, active underline in theme color) + spec/story.
+- New `presentation/dex/`: `DexScreen.ui` (Title + Tabs + content slot), `Dex.component` (Tier-2: tab + query + filter state), `ConfigdexPanel.ui`. Repurposed `PolldexScreen.ui` → `PolldexPanel.ui` (filter+table+footer; coverage moved into the Polls tab count `seen/total`).
+- **Configdex** built as a catalogue of all `CONFIGS` grouped by rarity (legendary/rare/uncommon/common), reusing the run module's `ConfigChip` with the effect as a subline (`noTooltip` — also dodges a pre-existing `Tooltip` `<p>`-nesting bug). Configs tab count = total config count. **No unlock system yet**, so no owned/locked split or `???` redaction — added when unlocking lands.
+- Verified in Storybook (Dex shell, Configdex catalogue, tab switching); 876 tests / tsc / lint / build green.
+
+## Follow-up noted
+Pre-existing bug: `src/ui/Tooltip.component.tsx` wraps trigger+content in a `<Paragraph>` (`<p>`), causing invalid `<div>/<p>`-in-`<p>` nesting + hydration warnings wherever Tooltip is used (loadout etc.). Not fixed here (shared component, out of scope) — candidate for its own bean.
+
+## Update: Configdex chip width + totals
+- Config chips were full-width/ugly (used verbose describeConfig as a single-line subline). Fixed by wrapping the effect in a fixed-width block (`w-52`) so it wraps into compact uniform cards — no change to the shared ConfigChip.
+- Added a grand total (`{n} configs total`) at the top of the ConfigdexPanel; per-rarity totals already shown in group headers (`RARITY · N`). + ConfigdexPanel.spec.
+
+## Update: Configdex chip polish
+- Terse effect text via new `configEffectSummary(config)` (derived from config fields: focus → `1.5× {cat}`, storagePerCorrect → `+NKB / correct`, coverageAdd → `+N% flat / correct`, check → `requires/first N ...`, eliminates → `disables 1 wrong on {cats}, small price`, etc.) — replaces the full describeConfig that overflowed chips.
+- Capped effect width (fixed-width subline) → compact uniform cards.
+- Totals as fractions (no unlock system → owned==total): grand `17/17 collected`, per-rarity `RARITY · N/N`, Configs tab `17/17`.
+- Bold config titles in the Dex via opt-in `boldLabel` prop on ConfigChip (loadout unchanged).
+
+## Update: tab cursor + full config descriptions
+- Tabs now use `cursor-pointer`.
+- Reverted config chip effect text from the terse summary back to the full `describeConfig` (kept the fixed-width cap so it wraps — tall but not wide). Deleted the now-unused `configEffectSummary` helper.

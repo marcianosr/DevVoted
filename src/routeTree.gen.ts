@@ -22,11 +22,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthedShopRouteImport } from './routes/_authed/shop'
 import { Route as AuthedRunRouteImport } from './routes/_authed/run'
-import { Route as AuthedPolldexRouteImport } from './routes/_authed/polldex'
 import { Route as AuthedPipelinesRouteImport } from './routes/_authed/pipelines'
 import { Route as AuthedPipelineSuccessRouteImport } from './routes/_authed/pipeline-success'
 import { Route as AuthedPipelineFailureRouteImport } from './routes/_authed/pipeline-failure'
 import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
+import { Route as AuthedDexRouteImport } from './routes/_authed/dex'
 import { Route as AuthedCommunityRouteImport } from './routes/_authed/community'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
@@ -101,11 +101,6 @@ const AuthedRunRoute = AuthedRunRouteImport.update({
   path: '/run',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedPolldexRoute = AuthedPolldexRouteImport.update({
-  id: '/polldex',
-  path: '/polldex',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedPipelinesRoute = AuthedPipelinesRouteImport.update({
   id: '/pipelines',
   path: '/pipelines',
@@ -124,6 +119,11 @@ const AuthedPipelineFailureRoute = AuthedPipelineFailureRouteImport.update({
 const AuthedGameOverRoute = AuthedGameOverRouteImport.update({
   id: '/game-over',
   path: '/game-over',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedDexRoute = AuthedDexRouteImport.update({
+  id: '/dex',
+  path: '/dex',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedCommunityRoute = AuthedCommunityRouteImport.update({
@@ -184,11 +184,11 @@ export interface FileRoutesByFullPath {
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/community': typeof AuthedCommunityRoute
+  '/dex': typeof AuthedDexRoute
   '/game-over': typeof AuthedGameOverRoute
   '/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/pipelines': typeof AuthedPipelinesRoute
-  '/polldex': typeof AuthedPolldexRoute
   '/run': typeof AuthedRunRoute
   '/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -212,11 +212,11 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/community': typeof AuthedCommunityRoute
+  '/dex': typeof AuthedDexRoute
   '/game-over': typeof AuthedGameOverRoute
   '/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/pipelines': typeof AuthedPipelinesRoute
-  '/polldex': typeof AuthedPolldexRoute
   '/run': typeof AuthedRunRoute
   '/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -242,11 +242,11 @@ export interface FileRoutesById {
   '/stats': typeof StatsRoute
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/community': typeof AuthedCommunityRoute
+  '/_authed/dex': typeof AuthedDexRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
   '/_authed/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/_authed/pipeline-success': typeof AuthedPipelineSuccessRoute
   '/_authed/pipelines': typeof AuthedPipelinesRoute
-  '/_authed/polldex': typeof AuthedPolldexRoute
   '/_authed/run': typeof AuthedRunRoute
   '/_authed/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -272,11 +272,11 @@ export interface FileRouteTypes {
     | '/stats'
     | '/admin'
     | '/community'
+    | '/dex'
     | '/game-over'
     | '/pipeline-failure'
     | '/pipeline-success'
     | '/pipelines'
-    | '/polldex'
     | '/run'
     | '/shop'
     | '/auth/callback'
@@ -300,11 +300,11 @@ export interface FileRouteTypes {
     | '/stats'
     | '/admin'
     | '/community'
+    | '/dex'
     | '/game-over'
     | '/pipeline-failure'
     | '/pipeline-success'
     | '/pipelines'
-    | '/polldex'
     | '/run'
     | '/shop'
     | '/auth/callback'
@@ -329,11 +329,11 @@ export interface FileRouteTypes {
     | '/stats'
     | '/_authed/admin'
     | '/_authed/community'
+    | '/_authed/dex'
     | '/_authed/game-over'
     | '/_authed/pipeline-failure'
     | '/_authed/pipeline-success'
     | '/_authed/pipelines'
-    | '/_authed/polldex'
     | '/_authed/run'
     | '/_authed/shop'
     | '/auth/callback'
@@ -453,13 +453,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRunRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/polldex': {
-      id: '/_authed/polldex'
-      path: '/polldex'
-      fullPath: '/polldex'
-      preLoaderRoute: typeof AuthedPolldexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/pipelines': {
       id: '/_authed/pipelines'
       path: '/pipelines'
@@ -486,6 +479,13 @@ declare module '@tanstack/react-router' {
       path: '/game-over'
       fullPath: '/game-over'
       preLoaderRoute: typeof AuthedGameOverRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/dex': {
+      id: '/_authed/dex'
+      path: '/dex'
+      fullPath: '/dex'
+      preLoaderRoute: typeof AuthedDexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/community': {
@@ -557,11 +557,11 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRoute
   AuthedCommunityRoute: typeof AuthedCommunityRoute
+  AuthedDexRoute: typeof AuthedDexRoute
   AuthedGameOverRoute: typeof AuthedGameOverRoute
   AuthedPipelineFailureRoute: typeof AuthedPipelineFailureRoute
   AuthedPipelineSuccessRoute: typeof AuthedPipelineSuccessRoute
   AuthedPipelinesRoute: typeof AuthedPipelinesRoute
-  AuthedPolldexRoute: typeof AuthedPolldexRoute
   AuthedRunRoute: typeof AuthedRunRoute
   AuthedShopRoute: typeof AuthedShopRoute
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
@@ -576,11 +576,11 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRoute,
   AuthedCommunityRoute: AuthedCommunityRoute,
+  AuthedDexRoute: AuthedDexRoute,
   AuthedGameOverRoute: AuthedGameOverRoute,
   AuthedPipelineFailureRoute: AuthedPipelineFailureRoute,
   AuthedPipelineSuccessRoute: AuthedPipelineSuccessRoute,
   AuthedPipelinesRoute: AuthedPipelinesRoute,
-  AuthedPolldexRoute: AuthedPolldexRoute,
   AuthedRunRoute: AuthedRunRoute,
   AuthedShopRoute: AuthedShopRoute,
   AuthedPollsNewRoute: AuthedPollsNewRoute,

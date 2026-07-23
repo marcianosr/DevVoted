@@ -52,15 +52,22 @@ type ConfigChipProps = {
 	noFixedBadge?: boolean;
 	compact?: boolean;
 	disabled?: boolean;
+	// Render the label bold (Configdex uses this; loadout leaves it normal).
+	boldLabel?: boolean;
 	onClick?: () => void;
 };
 
 const ChipLabel = ({
 	config,
 	action,
-}: Pick<ConfigChipProps, "config" | "action">) => (
+	boldLabel,
+}: Pick<ConfigChipProps, "config" | "action" | "boldLabel">) => (
 	<>
-		{config.label}
+		{boldLabel ? (
+			<span className="font-bold">{config.label}</span>
+		) : (
+			config.label
+		)}
 		{action ? <span className="ml-2 opacity-70">{action}</span> : null}
 	</>
 );
@@ -69,16 +76,17 @@ const ChipBody = ({
 	config,
 	action,
 	subline,
-}: Pick<ConfigChipProps, "config" | "action" | "subline">) =>
+	boldLabel,
+}: Pick<ConfigChipProps, "config" | "action" | "subline" | "boldLabel">) =>
 	subline ? (
 		<span className="flex flex-col items-start gap-0.5">
 			<span>
-				<ChipLabel config={config} action={action} />
+				<ChipLabel config={config} action={action} boldLabel={boldLabel} />
 			</span>
 			<span className="text-xs opacity-80">{subline}</span>
 		</span>
 	) : (
-		<ChipLabel config={config} action={action} />
+		<ChipLabel config={config} action={action} boldLabel={boldLabel} />
 	);
 
 const ChipSurface = ({
@@ -116,6 +124,7 @@ export const ConfigChip = ({
 	tooltip,
 	noTooltip,
 	noFixedBadge,
+	boldLabel,
 	disabled,
 	onClick,
 }: ConfigChipProps) => {
@@ -130,7 +139,12 @@ export const ConfigChip = ({
 	].filter(Boolean);
 	const surface = (
 		<ChipSurface config={config} disabled={disabled} onClick={onClick}>
-			<ChipBody config={config} action={action} subline={subline} />
+			<ChipBody
+				config={config}
+				action={action}
+				subline={subline}
+				boldLabel={boldLabel}
+			/>
 		</ChipSurface>
 	);
 	const chip =

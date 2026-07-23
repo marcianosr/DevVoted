@@ -201,11 +201,11 @@ function Navigation() {
 									</Link>
 
 									<Link
-										to="/polldex"
+										to="/dex"
 										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
 										onClick={close}
 									>
-										Polldex
+										Dex
 									</Link>
 
 									<Link
@@ -244,11 +244,11 @@ function Navigation() {
 						<>
 							<span className="text-white">·</span>
 							<Link
-								to="/polldex"
+								to="/dex"
 								activeProps={{ className: "underline" }}
 								activeOptions={{ exact: true }}
 							>
-								Polldex
+								Dex
 							</Link>
 							<span className="text-white">·</span>
 							<Link
