@@ -175,6 +175,29 @@ describe(PollCard, () => {
 		).toBeInTheDocument();
 	});
 
+	it("distinguishes a correct answer you chose from one you missed", () => {
+		render(
+			<PollCard
+				category="css"
+				question="Q"
+				answerType="multiple"
+				options={options}
+				onSelect={() => {}}
+				correctOptionIds={["a", "c"]}
+				chosenOptionIds={["a", "b"]}
+			/>
+		);
+		const statusOf = (label: RegExp) =>
+			screen
+				.getByRole("button", { name: label })
+				.querySelector("[data-status]")
+				?.getAttribute("data-status");
+		// Alpha: correct and picked; Gamma: correct but missed — same ✓, different status.
+		expect(statusOf(/Alpha/)).toBe("correctChosen");
+		expect(statusOf(/Gamma/)).toBe("correctMissed");
+		expect(statusOf(/Beta/)).toBe("chosenWrong");
+	});
+
 	it("locks the options once the result is revealed", () => {
 		render(
 			<PollCard

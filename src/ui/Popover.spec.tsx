@@ -46,7 +46,7 @@ describe("Popover", () => {
 			<Popover
 				triggerAs="span"
 				ariaLabel="Why disabled"
-				content={<p>Slot a config to start</p>}
+				content={<p>Choose a config to start</p>}
 			>
 				<button type="button" disabled>
 					Start the climb

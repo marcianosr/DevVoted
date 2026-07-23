@@ -23,7 +23,6 @@ const stepBadge = cva(
 	}
 );
 
-/** A numbered step header — a tinted circle beside a Title, for the two build stages. */
 export const StepHeading = ({
 	step,
 	title,
@@ -32,11 +31,11 @@ export const StepHeading = ({
 }: StepHeadingProps) => (
 	<header className="flex items-start gap-3">
 		<span className={stepBadge({ tone })}>{step}</span>
-		<div>
+		<header>
 			<Title as="h2" size="md">
 				{title}
 			</Title>
 			{subtitle ? <Subtitle>{subtitle}</Subtitle> : null}
-		</div>
+		</header>
 	</header>
 );

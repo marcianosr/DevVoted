@@ -203,7 +203,7 @@ export const RunGame = () => {
 						label: "Start run →",
 						onClick: () => send({ type: "start" }),
 						disabled: !canStart || busy,
-						hint: canStart ? undefined : "Slot a config to start",
+						hint: canStart ? undefined : "Choose a config to start",
 					}}
 				>
 					<ConfiguringScreen

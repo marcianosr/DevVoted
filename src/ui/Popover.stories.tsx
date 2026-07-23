@@ -36,7 +36,7 @@ export const WrappingDisabledButton: Story = {
 	args: {
 		triggerAs: "span",
 		ariaLabel: 'Why "Start the climb" is unavailable',
-		content: <p className="max-w-xs text-sm">Slot a config to start</p>,
+		content: <p className="max-w-xs text-sm">Choose a config to start</p>,
 		children: (
 			<button type="button" disabled className="px-4 py-2 opacity-40">
 				Start the climb →

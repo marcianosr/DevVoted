@@ -5,7 +5,8 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-07-18T20:15:07Z
-updated_at: 2026-07-18T20:22:15Z
+updated_at: 2026-07-22T12:52:28Z
+parent: DVTD-u35m
 ---
 
 Abandon an active run (completion_reason=abandoned, credit 50% of leftover storage to archived_storage), drop the one-run-per-day unique so a fresh run can start the same day. Anti-exploit: new runs start from today's seed minus polls the user already answered today (any run), keeping one-answer-per-poll-per-day true for community stats. Decisions: Marciano 2026-07-18 (50% credit, same-day restart yes). Plan: ~/.claude-work/plans/have-a-look-in-calm-dove.md
