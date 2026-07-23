@@ -11,6 +11,8 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	variant?: ButtonVariant;
 	size?: ButtonSize;
 	isLoading?: boolean;
+	// Persistent "on" state for toggle/filter buttons; also sets aria-pressed.
+	isSelected?: boolean;
 };
 
 // Variants carry color only; spacing lives in `size` so every variant shrinks.
@@ -22,8 +24,9 @@ const button = cva(
 				primary: "",
 				secondary:
 					"border border-theme text-theme hover:bg-theme-soft disabled:opacity-40",
+				// text color is set per isSelected below so the selected fill wins.
 				theme:
-					"border-2 border-theme text-theme hover:bg-theme hover:text-black disabled:opacity-40",
+					"border-2 border-theme hover:bg-theme hover:text-black disabled:opacity-40",
 				danger:
 					"border-2 border-cinnabar text-white hover:bg-cinnabar/40 disabled:opacity-40",
 				// The no-drama option next to a loud one (e.g. a dialog's cancel).
@@ -38,8 +41,16 @@ const button = cva(
 				true: "",
 				false: "",
 			},
+			isSelected: {
+				true: "",
+				false: "",
+			},
 		},
 		compoundVariants: [
+			// Theme toggle: outline (colored text) when off, filled (black text) when on.
+			{ variant: "theme", isSelected: false, class: "text-theme" },
+			{ variant: "theme", isSelected: true, class: "bg-theme text-black" },
+			{ variant: "secondary", isSelected: true, class: "bg-theme-soft" },
 			{ variant: "primary", size: "default", class: "text-base px-6 py-3.5" },
 			{ variant: "primary", size: "small", class: "text-sm px-3 py-2" },
 			{
@@ -57,6 +68,7 @@ const button = cva(
 			variant: "primary",
 			size: "default",
 			isDisabled: false,
+			isSelected: false,
 		},
 	}
 );
@@ -67,6 +79,7 @@ export const Button = ({
 	size = "default",
 	disabled,
 	isLoading,
+	isSelected,
 	className,
 	type = "button",
 	...props
@@ -77,7 +90,11 @@ export const Button = ({
 		<button
 			type={type}
 			disabled={isDisabled}
-			className={clsx(button({ variant, size, isDisabled }), className)}
+			aria-pressed={isSelected}
+			className={clsx(
+				button({ variant, size, isDisabled, isSelected }),
+				className
+			)}
 			{...props}
 		>
 			{children}

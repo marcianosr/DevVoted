@@ -57,4 +57,31 @@ describe("Button", () => {
 		expect(button).toHaveClass("border-theme", "text-theme");
 		expect(button).not.toHaveClass("border-cerulean");
 	});
+
+	it("omits aria-pressed unless it is a toggle button", () => {
+		render(<Button>Go</Button>);
+		expect(screen.getByRole("button")).not.toHaveAttribute("aria-pressed");
+	});
+
+	it("fills the theme variant and sets aria-pressed when selected", () => {
+		render(
+			<Button variant="theme" isSelected>
+				CSS
+			</Button>
+		);
+		const button = screen.getByRole("button");
+		expect(button).toHaveAttribute("aria-pressed", "true");
+		expect(button).toHaveClass("bg-theme", "text-black");
+	});
+
+	it("stays an outline and reports aria-pressed=false when not selected", () => {
+		render(
+			<Button variant="theme" isSelected={false}>
+				CSS
+			</Button>
+		);
+		const button = screen.getByRole("button");
+		expect(button).toHaveAttribute("aria-pressed", "false");
+		expect(button).not.toHaveClass("bg-theme");
+	});
 });

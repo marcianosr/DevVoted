@@ -29,6 +29,8 @@ export const pollQueryKeys = {
 		[...pollQueryKeys.all, "daily", userId] as const,
 	seenInRun: (runId: number | undefined) =>
 		[...pollQueryKeys.all, "seenInRun", runId] as const,
+	polldex: (userId: string | undefined) =>
+		[...pollQueryKeys.all, "polldex", userId] as const,
 };
 
 export const userQueryKeys = {

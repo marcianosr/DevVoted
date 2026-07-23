@@ -32,6 +32,10 @@ export const Theme: Story = {
 	args: { children: "Rebuild configs (1KB)", variant: "theme" },
 };
 
+export const Selected: Story = {
+	args: { children: "CSS", variant: "theme", isSelected: true },
+};
+
 export const Loading: Story = {
 	args: { children: "Saving…", isLoading: true },
 };

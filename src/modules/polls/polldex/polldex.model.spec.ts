@@ -1,0 +1,118 @@
+import { describe, expect, it } from "vitest";
+
+import type { CategoryCode } from "~/domains/shared/categories";
+
+import {
+	filterPolldexEntries,
+	formatDexNumber,
+	polldexCoverage,
+	presentCategories,
+	sortByDexNumber,
+	type PolldexEntry,
+} from "./polldex.model";
+
+const entry = (overrides: Partial<PolldexEntry> = {}): PolldexEntry => ({
+	id: 1,
+	pollNumber: null,
+	categoryCode: "css",
+	seen: true,
+	question: "What does the box model describe?",
+	timesSeen: 3,
+	answeredCount: 2,
+	accuracy: 100,
+	...overrides,
+});
+
+const unseen = (overrides: Partial<PolldexEntry> = {}): PolldexEntry =>
+	entry({
+		seen: false,
+		question: null,
+		timesSeen: 0,
+		answeredCount: 0,
+		accuracy: null,
+		...overrides,
+	});
+
+describe("filterPolldexEntries", () => {
+	it("returns every entry when the filter is 'all'", () => {
+		const entries = [entry({ id: 1 }), unseen({ id: 2, categoryCode: "js" })];
+
+		expect(filterPolldexEntries(entries, "all")).toHaveLength(2);
+	});
+
+	it("keeps only entries whose category matches the selected category", () => {
+		const cssEntry = entry({ id: 1, categoryCode: "css" });
+		const jsEntry = entry({ id: 2, categoryCode: "js" });
+
+		expect(filterPolldexEntries([cssEntry, jsEntry], "js")).toEqual([jsEntry]);
+	});
+
+	it("keeps unseen entries under their category (redacted rows still filter)", () => {
+		const cssSeen = entry({ id: 1, categoryCode: "css" });
+		const cssUnseen = unseen({ id: 2, categoryCode: "css" });
+		const jsSeen = entry({ id: 3, categoryCode: "js" });
+
+		expect(filterPolldexEntries([cssSeen, cssUnseen, jsSeen], "css")).toEqual([
+			cssSeen,
+			cssUnseen,
+		]);
+	});
+});
+
+describe("polldexCoverage", () => {
+	it("counts seen entries and rounds the coverage percentage", () => {
+		const entries = [
+			entry({ id: 1, seen: true }),
+			entry({ id: 2, seen: true }),
+			unseen({ id: 3 }),
+		];
+
+		expect(polldexCoverage(entries)).toEqual({
+			seen: 2,
+			total: 3,
+			percent: 67,
+		});
+	});
+
+	it("reports zero coverage for an empty set without dividing by zero", () => {
+		expect(polldexCoverage([])).toEqual({ seen: 0, total: 0, percent: 0 });
+	});
+});
+
+describe("formatDexNumber", () => {
+	it("uses poll_number when present, padded to three digits", () => {
+		expect(formatDexNumber(entry({ id: 512, pollNumber: 7 }))).toBe("#007");
+	});
+
+	it("falls back to the id when poll_number is null", () => {
+		expect(formatDexNumber(entry({ id: 42, pollNumber: null }))).toBe("#042");
+	});
+});
+
+describe("sortByDexNumber", () => {
+	it("orders ascending by poll_number, falling back to id, without mutating input", () => {
+		const input = [
+			entry({ id: 1, pollNumber: 322 }),
+			entry({ id: 2, pollNumber: 31 }),
+			entry({ id: 3, pollNumber: null }),
+		];
+
+		const sorted = sortByDexNumber(input);
+
+		expect(sorted.map((e) => e.pollNumber ?? e.id)).toEqual([3, 31, 322]);
+		expect(input[0].pollNumber).toBe(322); // original array untouched
+	});
+});
+
+describe("presentCategories", () => {
+	it("returns distinct categories in canonical CATEGORY_CODES order", () => {
+		const entries = [
+			entry({ id: 1, categoryCode: "js" }),
+			entry({ id: 2, categoryCode: "css" }),
+			entry({ id: 3, categoryCode: "js" }),
+		];
+
+		const expected: CategoryCode[] = ["css", "js"];
+		expect(presentCategories(entries)).toEqual(expected);
+	});
+});
