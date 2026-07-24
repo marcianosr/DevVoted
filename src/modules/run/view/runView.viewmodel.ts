@@ -63,6 +63,8 @@ export type RunView = {
 	readonly canAddSlot: boolean;
 	readonly checks: readonly CheckStatus[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
+	/** Every poll answered across the whole run — the end-of-run review source. */
+	readonly allAnswered: readonly AnsweredPoll[];
 	readonly passedChecks: readonly CheckStatus[];
 	readonly demands: readonly string[];
 	readonly rewardMultiplier: number;
@@ -241,6 +243,7 @@ export const toRunView = (state: RunState): RunView => {
 				: (linterFor(state.pipeline.configs, current.category) ?? null),
 		checks: checkStatuses(state.pipeline, state.window, state.gatesCleared),
 		answeredThisGate: state.answeredThisGate,
+		allAnswered: state.allAnswered ?? [],
 		passedChecks: state.clearedChecks,
 		demands: gateDemands(state.pipeline, state.gatesCleared),
 		rewardMultiplier: rewardMultiplierFor(state.pipeline),

@@ -51,7 +51,7 @@ const VARIANTS: readonly VariantExample[] = [
 		valueClass: "text-zinc-400",
 	},
 	{
-		badge: "run",
+		badge: "running",
 		line: "requirement in flight",
 		value: "running",
 		valueClass: "text-saffron",
@@ -71,8 +71,6 @@ const value = (children: string, tone: string) => (
 	</span>
 );
 
-// Every badge state stacked, so the shared min-width badge column stays aligned and
-// each variant reads identically against the others.
 export const AllVariants: Story = {
 	render: () => (
 		<div className="flex flex-col font-mono">

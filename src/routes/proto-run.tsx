@@ -317,8 +317,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					<RunSummary
 						won={state.status === "won"}
 						gatesCleared={view.gatesCleared}
+						victoryGate={view.victoryGate}
 						coverage={view.coverage}
 						storage={view.storage}
+						configs={view.configs}
+						answered={view.allAnswered}
 					/>
 				</Screen>
 			)}

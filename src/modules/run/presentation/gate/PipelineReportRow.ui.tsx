@@ -46,15 +46,32 @@ export const PipelineReportRow = ({
 		lineTone={descriptionTone}
 		lineSize="sm"
 		leading={
-			chipActions ? (
-				<ConfigActions
-					config={config}
-					actions={chipActions}
-					badge={chipBadge}
-				/>
-			) : (
-				<ConfigChip config={config} badge={chipBadge} noTooltip />
-			)
+			<span className="flex items-center gap-1.5">
+				{chipActions ? (
+					<ConfigActions
+						config={config}
+						actions={chipActions}
+						badge={chipBadge}
+						noFixedBadge
+					/>
+				) : (
+					<ConfigChip
+						config={config}
+						badge={chipBadge}
+						noTooltip
+						noFixedBadge
+					/>
+				)}
+				{config.fixed ? (
+					<span
+						className="shrink-0 text-pewter"
+						aria-label="Fixed config"
+						title="Fixed — can't be removed"
+					>
+						🔒
+					</span>
+				) : null}
+			</span>
 		}
 		trailing={
 			<>

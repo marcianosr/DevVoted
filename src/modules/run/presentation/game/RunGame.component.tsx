@@ -365,15 +365,12 @@ export const RunGame = () => {
 					<RunSummary
 						won={view.status === "won"}
 						gatesCleared={view.gatesCleared}
+						victoryGate={view.victoryGate}
 						coverage={view.coverage}
 						storage={view.storage}
+						configs={view.configs}
+						answered={view.allAnswered}
 					/>
-					<Paragraph>
-						{view.status === "won"
-							? "Leftover storage is archived in full."
-							: "A share of your leftover storage is archived — the further you climbed, the more."}{" "}
-						A fresh seed drops tomorrow.
-					</Paragraph>
 					{start.data?.success === false && (
 						<Paragraph>{start.data.error}</Paragraph>
 					)}

@@ -154,6 +154,10 @@ export type RunState = {
 	readonly rebuildsUsed: number;
 	readonly draftedThisGate: readonly string[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
+	// Every poll answered across the whole run, never reset per gate — feeds the
+	// end-of-run review. Optional: runs snapshotted before it existed won't carry
+	// it, so read sites fall back to `answeredThisGate`/`[]`.
+	readonly allAnswered?: readonly AnsweredPoll[];
 	readonly clearedChecks: readonly CheckStatus[];
 	readonly stripsRemaining: number;
 	readonly polls: readonly RunPoll[];
@@ -196,6 +200,7 @@ export const createRun = (
 	rebuildsUsed: 0,
 	draftedThisGate: [],
 	answeredThisGate: [],
+	allAnswered: [],
 	clearedChecks: [],
 	stripsRemaining: 0,
 	polls,
@@ -401,6 +406,24 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 		},
 	};
 
+	const answeredPoll: AnsweredPoll = {
+		id: poll.id,
+		question: poll.question,
+		category: poll.category,
+		outcome,
+		picked: poll.options
+			.filter((option) => optionIds.includes(option.id))
+			.map((option) => option.label),
+		correct: poll.options
+			.filter((option) => option.correct)
+			.map((option) => option.label),
+		explanation: poll.explanation,
+		options: poll.options.map((option) => option.label),
+		answerType: poll.answerType,
+		coverageEarned: earned,
+		coverageBreakdown,
+	};
+
 	const answered: RunState = {
 		...state,
 		window,
@@ -419,26 +442,8 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 			...state.coverageByCategory,
 			[poll.category]: categoryAfter,
 		},
-		answeredThisGate: [
-			...state.answeredThisGate,
-			{
-				id: poll.id,
-				question: poll.question,
-				category: poll.category,
-				outcome,
-				picked: poll.options
-					.filter((option) => optionIds.includes(option.id))
-					.map((option) => option.label),
-				correct: poll.options
-					.filter((option) => option.correct)
-					.map((option) => option.label),
-				explanation: poll.explanation,
-				options: poll.options.map((option) => option.label),
-				answerType: poll.answerType,
-				coverageEarned: earned,
-				coverageBreakdown,
-			},
-		],
+		answeredThisGate: [...state.answeredThisGate, answeredPoll],
+		allAnswered: [...(state.allAnswered ?? []), answeredPoll],
 	};
 
 	if (window.answered >= SLICE_WINDOW) return closeWindow(answered, nextIndex);
