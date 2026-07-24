@@ -10,7 +10,8 @@ import {
 	type ParagraphTone,
 } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
-import { ConfigChip } from "../configs/ConfigChip.ui";
+import { Subtitle } from "~/ui/typography/Subtitle.component";
+import { PipelineReportRow } from "./PipelineReportRow.ui";
 
 const STATUS_VARIANT: Record<GateRewardStatus, StatusBadgeVariant> = {
 	passed: "pass",
@@ -33,30 +34,14 @@ const valueTone = (row: GateRewardRow): ParagraphTone => {
 };
 
 const ReportRow = ({ row }: { row: GateRewardRow }) => (
-	<div className="flex items-start gap-3 py-1">
-		<span className="shrink-0">
-			<StatusBadge variant={STATUS_VARIANT[row.status]} />
-		</span>
-		<span className="shrink-0">
-			<ConfigChip config={row.config} noTooltip />
-		</span>
-		<Paragraph
-			as="span"
-			size="sm"
-			tone={row.status === "failed" ? "cinnabar" : "muted"}
-			className="min-w-0 flex-1"
-		>
-			{row.description}
-		</Paragraph>
-		<Paragraph
-			as="span"
-			size="sm"
-			tone={valueTone(row)}
-			className="shrink-0 text-right font-bold tabular-nums"
-		>
-			{row.value}
-		</Paragraph>
-	</div>
+	<PipelineReportRow
+		badge={STATUS_VARIANT[row.status]}
+		config={row.config}
+		description={row.description}
+		descriptionTone={row.status === "failed" ? "cinnabar" : "muted"}
+		value={row.value}
+		valueTone={valueTone(row)}
+	/>
 );
 
 const STEP_PARTS = [
@@ -70,12 +55,9 @@ const StepsSummary = ({ rows }: { rows: readonly GateRewardRow[] }) => {
 	const parts = STEP_PARTS.filter((part) => summary[part.key] > 0);
 	return (
 		<Paragraph as="div" size="sm" className="flex gap-2 ">
-			<Paragraph as="span" size="sm" tone="pewter">
-				Steps
-			</Paragraph>
 			{parts.map((part, index) => (
 				<span key={part.key} className="flex gap-2">
-					{index > 0 ? <span className="text-pewter">,</span> : null}
+					{index > 0 ? <span className="text-zinc-300">·</span> : null}
 					<Paragraph as="span" size="sm" tone={part.tone}>
 						{summary[part.key]} {part.key}
 					</Paragraph>
@@ -104,13 +86,14 @@ export const GateRewardReport = ({
 		</Title>
 
 		<div className="flex items-center gap-3 ">
-			<Paragraph as="span" className="font-bold">
-				gate-{gateNumber}
-			</Paragraph>
 			<StatusBadge variant={cleared ? "pass" : "fail"} />
+			<Title size="sm">Gate {gateNumber} cleared!</Title>
 		</div>
 
-		<StepsSummary rows={rows} />
+		<section>
+			<Subtitle>Pipeline summary</Subtitle>
+			<StepsSummary rows={rows} />
+		</section>
 
 		<div>
 			{rows.map((row) => (

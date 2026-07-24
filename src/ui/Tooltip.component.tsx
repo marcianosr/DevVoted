@@ -5,14 +5,17 @@ type TooltipProps = {
 	content: ReactNode;
 	children: ReactNode;
 	surfaceClassName?: string;
+	/** Extra classes for the wrapper — e.g. `w-full` to let the trigger stretch. */
+	className?: string;
 };
 
 export const Tooltip = ({
 	content,
 	children,
 	surfaceClassName = "border-zinc-700 bg-zinc-900",
+	className = "",
 }: TooltipProps) => (
-	<Paragraph className="group relative inline-flex">
+	<Paragraph className={`group relative inline-flex ${className}`}>
 		{children}
 		<span
 			role="tooltip"

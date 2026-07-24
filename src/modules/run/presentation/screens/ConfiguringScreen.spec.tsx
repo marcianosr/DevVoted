@@ -30,12 +30,12 @@ describe(ConfiguringScreen, () => {
 	it("renders both numbered steps and the run stakes", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: /Pick your stack/ })
+			screen.getByRole("heading", { name: /Pick your config stack/ })
 		).toBeInTheDocument();
 		expect(
 			screen.getByRole("heading", { name: /Review your build/ })
 		).toBeInTheDocument();
-		expect(screen.getByText(/Run stakes/i)).toBeInTheDocument();
+		expect(screen.getByText(/Run rules/i)).toBeInTheDocument();
 	});
 
 	it("renders the bench offers", () => {

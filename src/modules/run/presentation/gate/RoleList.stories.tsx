@@ -57,3 +57,30 @@ export const FailedRequirement: Story = {
 		],
 	},
 };
+
+// The pipeline's open slots surface as empty rows once `slots` exceeds the filled ones.
+export const WithEmptySlots: Story = {
+	args: { rows, slots: 5 },
+};
+
+// The shop load-out: chips open a sell/upgrade popover, fresh drafts carry a "new"
+// badge, and the expand control rides along as the final row.
+export const ShopLoadout: Story = {
+	args: {
+		rows,
+		slots: 4,
+		newConfigIds: [CONFIGS.js.id],
+		actionsFor: (config) => [
+			{ label: "Upgrade (60KB)", onClick: () => {} },
+			...(config.fixed ? [] : [{ label: "Sell +20KB", onClick: () => {} }]),
+		],
+		trailing: (
+			<button
+				type="button"
+				className="rounded-lg border-2 border-dashed border-cerulean px-4 py-2 text-sm font-semibold text-cerulean"
+			>
+				＋ Add slot: 4 → 5
+			</button>
+		),
+	},
+};
