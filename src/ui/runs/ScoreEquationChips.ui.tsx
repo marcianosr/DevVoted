@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from "react";
+import { type CSSProperties, Fragment, type ReactNode } from "react";
 
 import { clsx } from "clsx";
 
@@ -6,6 +6,7 @@ import { ConfigCard } from "~/ui/economy/ConfigCard.ui";
 import { Popover } from "~/ui/Popover.component";
 import { RARITY_COLORS } from "~/ui/rarityColors";
 import type { Rarity } from "~/ui/rarityColors";
+import { Tooltip } from "~/ui/Tooltip.component";
 
 export type ScoreBonusRow = {
 	label: string;
@@ -15,11 +16,20 @@ export type ScoreBonusRow = {
 	chip?: ReactNode;
 };
 
+/** Why the base ("correct") chip was boosted — surfaced as its hover tooltip. */
+export type DifficultyBonus = {
+	multiplier: number;
+	optionCount: number;
+	isMultiple: boolean;
+};
+
 type ScoreEquationChipsProps = {
 	isCorrect: boolean;
 	baseCoverage: number;
 	bonuses: ScoreBonusRow[];
 	earnedCoverage: number;
+	/** When set, the "correct" chip explains its difficulty boost on hover. */
+	difficulty?: DifficultyBonus;
 	animated?: boolean;
 	startDelayMs?: number;
 };
@@ -44,11 +54,65 @@ const valueTone = (value: number): string => {
 	return "text-zinc-400";
 };
 
+const difficultyReason = ({
+	optionCount,
+	isMultiple,
+	multiplier,
+}: DifficultyBonus): string =>
+	`Harder polls pay more coverage — ${optionCount} options${
+		isMultiple ? ", multiple-choice" : ""
+	} (×${multiplier}).`;
+
+type ChipPop = { className: string; style: CSSProperties | undefined };
+
+/**
+ * A bordered "value + label" chip (the base "correct"/"wrong" chip, the streak
+ * chip, and any plain config bonus). When a difficulty boost is passed it wraps
+ * in a hover tooltip and marks the label with a dotted underline + help cursor,
+ * so players can learn why a harder poll paid more without adding a chip.
+ */
+const PlainScoreChip = ({
+	modifier,
+	pop,
+	difficulty,
+}: {
+	modifier: ScoreBonusRow;
+	pop: ChipPop;
+	difficulty?: DifficultyBonus;
+}) => {
+	const chip = (
+		<span
+			className={clsx(
+				"inline-flex items-baseline gap-1.5 border px-2 py-1",
+				chipTone(modifier.value),
+				difficulty && "cursor-help",
+				pop.className
+			)}
+			style={pop.style}
+		>
+			<span className="font-bold tabular-nums">
+				{formatDelta(modifier.value)}
+			</span>
+			<span
+				className={clsx(
+					"text-xs opacity-70",
+					difficulty && "underline decoration-dotted underline-offset-2"
+				)}
+			>
+				{modifier.label}
+			</span>
+		</span>
+	);
+	if (!difficulty) return chip;
+	return <Tooltip content={difficultyReason(difficulty)}>{chip}</Tooltip>;
+};
+
 export const ScoreEquationChips = ({
 	isCorrect,
 	baseCoverage,
 	bonuses,
 	earnedCoverage,
+	difficulty,
 	animated = false,
 	startDelayMs = 0,
 }: ScoreEquationChipsProps) => {
@@ -154,19 +218,13 @@ export const ScoreEquationChips = ({
 									</span>
 								</Popover>
 							) : (
-								<span
-									className={clsx(
-										"inline-flex items-baseline gap-1.5 border px-2 py-1",
-										chipTone(modifier.value),
-										pop.className
-									)}
-									style={pop.style}
-								>
-									<span className="font-bold tabular-nums">
-										{formatDelta(modifier.value)}
-									</span>
-									<span className="text-xs opacity-70">{modifier.label}</span>
-								</span>
+								<PlainScoreChip
+									modifier={modifier}
+									pop={pop}
+									difficulty={
+										index === 0 && modifier.value >= 0 ? difficulty : undefined
+									}
+								/>
 							)}
 						</Fragment>
 					);

@@ -25,6 +25,7 @@ import {
 } from "../pipeline/pipeline.model";
 import {
 	GATE_REWARD_KB,
+	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
 	VICTORY_GATE,
@@ -104,12 +105,43 @@ export const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
  * redacted view strips per-option correctness, and the answer log only keeps
  * labels.
  */
+/**
+ * Why a hard poll's base was boosted, for the reveal's "correct" chip tooltip.
+ * Present only when the poll earned more than the baseline (multiplier > 1) —
+ * baseline polls have nothing to explain.
+ */
+export type AnswerDifficulty = {
+	readonly multiplier: number;
+	readonly optionCount: number;
+	readonly isMultiple: boolean;
+};
+
 export type AnswerScore = {
 	readonly isCorrect: boolean;
 	readonly baseCoverage: number;
 	readonly streakBonus: number;
 	readonly configBonuses: readonly CoverageConfigBonus[];
 	readonly earnedCoverage: number;
+	readonly difficulty?: AnswerDifficulty;
+};
+
+/**
+ * The difficulty bonus folded into the answered poll's base coverage, or
+ * undefined for a baseline poll (3-option single-choice → ×1.0) or a snapshot
+ * taken before option/type were recorded. Sourced from the answered poll, not
+ * the live `poll`, which has already advanced to the next question at reveal.
+ */
+const answerDifficulty = (
+	answered: AnsweredPoll
+): AnswerDifficulty | undefined => {
+	const optionCount = answered.options?.length;
+	if (optionCount === undefined) return undefined;
+	const isMultiple = answered.answerType === "multiple";
+	const multiplier = roundToOneDecimal(
+		pollDifficultyMultiplier(optionCount, isMultiple)
+	);
+	if (multiplier <= 1) return undefined;
+	return { multiplier, optionCount, isMultiple };
 };
 
 /**
@@ -118,8 +150,9 @@ export type AnswerScore = {
  * before breakdowns existed. A miss reads as a negative base (the penalty).
  */
 export const latestAnswerScore = (view: RunView): AnswerScore | null => {
-	const breakdown = view.answeredThisGate.at(-1)?.coverageBreakdown;
-	if (!breakdown) return null;
+	const answered = view.answeredThisGate.at(-1);
+	const breakdown = answered?.coverageBreakdown;
+	if (!answered || !breakdown) return null;
 	const { base, streakBonus, configBonuses } = breakdown;
 	const earnedCoverage = roundToOneDecimal(
 		base +
@@ -132,6 +165,7 @@ export const latestAnswerScore = (view: RunView): AnswerScore | null => {
 		streakBonus,
 		configBonuses,
 		earnedCoverage,
+		difficulty: answerDifficulty(answered),
 	};
 };
 

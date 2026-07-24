@@ -33,6 +33,7 @@ import {
 	dropCount,
 	GATE_REWARD_KB,
 	gateBaseMultiplier,
+	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
@@ -335,7 +336,14 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 	// base of 2, not 1 — and the loss below scales by the same factor, so a miss
 	// at gate 5 hurts as much as a hit there helps. Coverage stays floored at 0.
 	const gateMultiplier = gateBaseMultiplier(state.gatesCleared);
-	const scoredShare = share * gateMultiplier;
+	// Harder polls pay more: more options and multiple-choice ("select all")
+	// scale the earned share. Gains-only — the loss below ignores it — so
+	// tackling a hard poll is never punished harder for missing.
+	const difficultyMultiplier = pollDifficultyMultiplier(
+		poll.options.length,
+		poll.answerType === "multiple"
+	);
+	const scoredShare = share * gateMultiplier * difficultyMultiplier;
 	// Streak updates first so this answer scores at its new level (a correct
 	// reaching streak 3 earns at 1.3×). Then it multiplies the earn last.
 	const streak = nextStreak(state.streak, outcome);

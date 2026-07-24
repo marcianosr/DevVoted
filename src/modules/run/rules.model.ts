@@ -37,6 +37,28 @@ export const streakMultiplier = (streak: number): number =>
 export const gateBaseMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;
 
+export const OPTION_COVERAGE_STEP = 0.1;
+export const MULTIPLE_CHOICE_COVERAGE_BONUS = 0.5;
+/** Fewest options a poll can carry before extra options start adding difficulty. */
+export const DIFFICULTY_BASELINE_OPTIONS = 3;
+
+/**
+ * Coverage bonus for a poll's intrinsic difficulty: each option beyond the
+ * baseline adds a step, and multiple-choice ("select all that apply") adds a
+ * flat bonus. Always >= 1 — difficulty is a reward, never a penalty, so polls
+ * with fewer than the baseline options (the engine permits 2-option polls even
+ * though authored content is 3-20) simply get ×1.0. Only gains scale — losses
+ * stay flat.
+ */
+export const pollDifficultyMultiplier = (
+	optionCount: number,
+	isMultiple: boolean
+): number =>
+	1 +
+	OPTION_COVERAGE_STEP *
+		Math.max(0, optionCount - DIFFICULTY_BASELINE_OPTIONS) +
+	(isMultiple ? MULTIPLE_CHOICE_COVERAGE_BONUS : 0);
+
 export const escalation = (gatesCleared: number): number =>
 	Math.floor(gatesCleared / 2);
 

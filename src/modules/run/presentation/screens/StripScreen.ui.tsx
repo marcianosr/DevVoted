@@ -1,12 +1,7 @@
-import { cva } from "class-variance-authority";
-
 import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { gateRewardRows } from "~/modules/run/gate/gateReward.model";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Title } from "~/ui/typography/Title.component";
-import { ConfigChip } from "../configs/ConfigChip.ui";
 import { GateRewardReport } from "../gate/GateRewardReport.ui";
 import { ReviewAnswers } from "../run/ReviewAnswers.ui";
 
@@ -19,31 +14,6 @@ type StripScreenProps = {
 	onStrip: (configId: string) => void;
 };
 
-const repairCard = cva("flex flex-col rounded-xl border p-5", {
-	variants: {
-		repaired: {
-			true: "border-viridian",
-			false: "border-cinnabar bg-cinnabar/10",
-		},
-	},
-});
-
-const removeHeading = (stripsRemaining: number): string =>
-	stripsRemaining === 0
-		? "Build repaired — climb on when you're ready"
-		: `Remove ${stripsRemaining} config${stripsRemaining === 1 ? "" : "s"} to continue`;
-
-const FixedConfigNote = ({ configs }: { configs: readonly Config[] }) => {
-	const fixed = configs.filter((config) => config.fixed);
-	if (fixed.length === 0) return null;
-	return (
-		<Paragraph tone="pewter">
-			{fixed.map((config) => config.label).join(", ")} can&apos;t be removed —
-			fixed for every run.
-		</Paragraph>
-	);
-};
-
 export const StripScreen = ({
 	stripsRemaining,
 	gateNumber,
@@ -53,37 +23,21 @@ export const StripScreen = ({
 	onStrip,
 }: StripScreenProps) => {
 	const quotaMet = stripsRemaining === 0;
-	const rows = gateRewardRows({ answered, configs, checks });
+	const removableConfigIds = quotaMet
+		? []
+		: configs.filter((config) => !config.fixed).map((config) => config.id);
+
 	return (
 		<div className="flex flex-col gap-6">
-			<GateRewardReport gateNumber={gateNumber} cleared={false} rows={rows} />
-
-			<div className={repairCard({ repaired: quotaMet })}>
-				<Title as="h2" size="sm">
-					{removeHeading(stripsRemaining)}
-				</Title>
-				<section className="space-y-2">
-					{quotaMet ? null : (
-						<Paragraph size="sm" tone="muted">
-							This is the only thing standing between you and gate {gateNumber}.
-						</Paragraph>
-					)}
-					<div className="flex flex-wrap gap-2">
-						{configs
-							.filter((config) => !config.fixed)
-							.map((config) => (
-								<ConfigChip
-									key={config.id}
-									config={config}
-									action="Remove ✕"
-									disabled={quotaMet}
-									onClick={() => onStrip(config.id)}
-								/>
-							))}
-					</div>
-					<FixedConfigNote configs={configs} />
-				</section>
-			</div>
+			<GateRewardReport
+				gateNumber={gateNumber}
+				cleared={false}
+				rows={gateRewardRows({ answered, configs, checks })}
+				removableConfigIds={removableConfigIds}
+				onRemoveConfig={onStrip}
+				stripsRemaining={stripsRemaining}
+				configs={configs}
+			/>
 
 			<ReviewAnswers answered={answered} />
 		</div>

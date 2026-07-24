@@ -65,6 +65,9 @@ const CHIP_DATA = {
 		},
 	],
 	earnedCoverage: 2.2,
+	// 5-option multiple-choice → the base "correct" chip carries a difficulty
+	// tooltip (hover it) explaining why a harder poll paid more.
+	difficulty: { multiplier: 1.7, optionCount: 5, isMultiple: true },
 };
 
 // The option pops run ~620ms (window + pop duration); chips start as the last

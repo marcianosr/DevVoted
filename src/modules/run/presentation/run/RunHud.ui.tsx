@@ -7,7 +7,6 @@ import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { STORAGE_CAP_KB } from "../../rules.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { CheckList } from "../gate/CheckList.ui";
 import { SummaryDropdown } from "./SummaryDropdown.ui";
 
 const storagePercent = (storage: number) =>
@@ -26,37 +25,6 @@ type RunHudProps = {
 	configs: readonly Config[];
 	slots: number;
 	checks: readonly CheckStatus[];
-};
-
-const LoadoutSummary = ({
-	configs,
-	slots,
-}: Pick<RunHudProps, "configs" | "slots">) => {
-	const free = configs.filter((config) => !config.fixed).length;
-
-	return (
-		<SummaryDropdown
-			trigger={
-				<>
-					<Paragraph as="span" size="sm" tone="pewter">
-						Loadout
-					</Paragraph>
-					<Paragraph as="span" size="sm" tone="theme">
-						{free} / {slots}
-					</Paragraph>
-				</>
-			}
-			panelClassName="flex min-w-max max-w-md flex-wrap gap-2"
-		>
-			{configs.length > 0 ? (
-				configs.map((config) => <ConfigChip key={config.id} config={config} />)
-			) : (
-				<Paragraph as="span" size="sm" tone="pewter">
-					No configs equipped yet.
-				</Paragraph>
-			)}
-		</SummaryDropdown>
-	);
 };
 
 const CoverageSummary = ({
@@ -124,10 +92,8 @@ const MobileStakesPanel = ({
 	streak,
 	coverage,
 	configs,
-	checks,
 }: Pick<RunHudProps, "streak" | "coverage" | "configs" | "checks">) => (
 	<>
-		<CheckList checks={checks} configs={configs} />
 		<hr className="border-zinc-800" />
 		<span className="flex items-baseline justify-between gap-4">
 			<Paragraph as="span" size="sm" tone="pewter">
@@ -166,7 +132,6 @@ export const RunHud = ({
 	coverage,
 	coverageByCategory,
 	configs,
-	slots,
 	checks,
 }: RunHudProps) => (
 	<div
@@ -263,7 +228,6 @@ export const RunHud = ({
 				</Paragraph>
 			</span>
 			<div className="ml-auto flex shrink-0 items-center gap-6">
-				<LoadoutSummary configs={configs} slots={slots} />
 				<CoverageSummary
 					coverage={coverage}
 					coverageByCategory={coverageByCategory}

@@ -36,15 +36,9 @@ describe(StripScreen, () => {
 				onStrip={() => {}}
 			/>
 		);
-		// The report header names the failed gate.
-		expect(screen.getByText("gate-2")).toBeInTheDocument();
+		expect(screen.getByText("Gate 2 failed!")).toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: /Remove 2 configs to continue/ })
-		).toBeInTheDocument();
-		expect(
-			screen.getByText(
-				"This is the only thing standing between you and gate 2."
-			)
+			screen.getByText("Remove 2 configs to continue")
 		).toBeInTheDocument();
 	});
 
@@ -120,11 +114,17 @@ describe(StripScreen, () => {
 				onStrip={onStrip}
 			/>
 		);
-		fireEvent.click(screen.getByRole("button", { name: /Copilot/ }));
+		// Click on the copilot row to remove it
+		const copilotRows = screen.getAllByRole("button");
+		const copilotRow = copilotRows.find((button) =>
+			button.textContent?.includes("Copilot")
+		);
+		fireEvent.click(copilotRow!);
 		expect(onStrip).toHaveBeenCalledWith("copilot");
 	});
 
 	it("locks the peel chips once the quota is met", () => {
+		const onStrip = vi.fn();
 		render(
 			<StripScreen
 				stripsRemaining={0}
@@ -132,9 +132,11 @@ describe(StripScreen, () => {
 				configs={[CONFIGS.js]}
 				checks={checks}
 				answered={[]}
-				onStrip={() => {}}
+				onStrip={onStrip}
 			/>
 		);
-		expect(screen.getByRole("button", { name: /Remove/ })).toBeDisabled();
+		// When stripsRemaining is 0, rows are not clickable (no role="button")
+		const pipelineRows = screen.queryAllByRole("button");
+		expect(pipelineRows).toHaveLength(0);
 	});
 });

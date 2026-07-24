@@ -146,6 +146,39 @@ describe("latestAnswerScore", () => {
 			earnedCoverage: -0.5,
 		});
 	});
+
+	it("omits the difficulty boost for a baseline single-choice poll", () => {
+		const state = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["q0-a"],
+		});
+		expect(latestAnswerScore(toRunView(state))?.difficulty).toBeUndefined();
+	});
+
+	it("surfaces the difficulty boost for a multiple-choice poll", () => {
+		const multiPoll: RunPoll = {
+			id: "q0",
+			category: "react",
+			question: "Pick both?",
+			answerType: "multiple",
+			options: [
+				{ id: "q0-a", label: "A", correct: true },
+				{ id: "q0-b", label: "B", correct: true },
+				{ id: "q0-c", label: "C", correct: false },
+			],
+		};
+		const state = runReducer(
+			runReducer(createRun([multiPoll, poll("q1")], [CONFIGS.js]), {
+				type: "start",
+			}),
+			{ type: "answer", optionIds: ["q0-a", "q0-b"] }
+		);
+		expect(latestAnswerScore(toRunView(state))?.difficulty).toEqual({
+			multiplier: 1.5,
+			optionCount: 3,
+			isMultiple: true,
+		});
+	});
 });
 
 describe("correctOptionIdsFor", () => {

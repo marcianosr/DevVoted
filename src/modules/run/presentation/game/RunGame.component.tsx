@@ -339,7 +339,7 @@ export const RunGame = () => {
 						disabled: !quotaMet || busy,
 						hint: quotaMet
 							? undefined
-							: `Peel ${view.stripsRemaining} more to continue`,
+							: `Remove ${view.stripsRemaining} pipeline(s) to continue`,
 					}}
 				>
 					<StripScreen

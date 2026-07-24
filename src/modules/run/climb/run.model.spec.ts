@@ -348,7 +348,7 @@ describe("streak", () => {
 		state = runReducer(state, { type: "answer", optionIds: ["m-a"] }); // partial
 		expect(state.answeredThisGate.at(-1)?.outcome).toBe("partial");
 		expect(state.streak).toBe(2); // held: not reset, not incremented
-		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(0.6); // 0.5 × 1.2
+		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(0.9); // 0.5 share × 1.5 difficulty (3-opt multiple) × 1.2 streak
 	});
 
 	it("earns no coverage and zeroes the streak on a wrong answer", () => {
@@ -504,8 +504,34 @@ describe("answer judging", () => {
 			type: "answer",
 			optionIds: ["a"],
 		});
-		expect(partial.coverage).toBe(0.5);
-		expect(partial.answeredThisGate[0].coverageEarned).toBe(0.5);
+		// 0.5 share × 1.5 difficulty (3-opt multiple) × 1.0 streak = 0.75, rounded to 0.8.
+		expect(partial.coverage).toBe(0.8);
+		expect(partial.answeredThisGate[0].coverageEarned).toBe(0.8);
+	});
+
+	it("pays more coverage for a multiple-choice poll than a single answered fully correct", () => {
+		const singlePoll: RunPoll = {
+			id: "s",
+			category: "ts",
+			question: "Which is a TS utility type?",
+			answerType: "single",
+			options: [
+				{ id: "s-a", label: "Partial", correct: true },
+				{ id: "s-b", label: "Banjo", correct: false },
+				{ id: "s-c", label: "Kazooie", correct: false },
+			],
+		};
+		const single = runReducer(
+			{ ...createRun([singlePoll, ...pool(5)], handed), status: "answering" },
+			{ type: "answer", optionIds: ["s-a"] }
+		);
+		const multiple = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["a", "b"],
+		});
+		expect(multiple.answeredThisGate[0].coverageEarned ?? 0).toBeGreaterThan(
+			single.answeredThisGate[0].coverageEarned ?? 0
+		);
 	});
 
 	it("cancels a correct pick with a wrong one — nothing earned, loss applied", () => {

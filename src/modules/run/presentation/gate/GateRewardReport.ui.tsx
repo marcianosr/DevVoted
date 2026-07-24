@@ -33,7 +33,15 @@ const valueTone = (row: GateRewardRow): ParagraphTone => {
 	return KIND_TONE[row.kind];
 };
 
-const ReportRow = ({ row }: { row: GateRewardRow }) => (
+const ReportRow = ({
+	row,
+	removable,
+	onRemove,
+}: {
+	row: GateRewardRow;
+	removable?: boolean;
+	onRemove?: (configId: string) => void;
+}) => (
 	<PipelineReportRow
 		badge={STATUS_VARIANT[row.status]}
 		config={row.config}
@@ -41,6 +49,8 @@ const ReportRow = ({ row }: { row: GateRewardRow }) => (
 		descriptionTone={row.status === "failed" ? "cinnabar" : "muted"}
 		value={row.value}
 		valueTone={valueTone(row)}
+		removable={removable}
+		onRemove={onRemove}
 	/>
 );
 
@@ -72,6 +82,21 @@ type GateRewardReportProps = {
 	cleared: boolean;
 	rows: readonly GateRewardRow[];
 	totals?: { storageKb: number; coveragePct: number };
+	removableConfigIds?: readonly string[];
+	onRemoveConfig?: (configId: string) => void;
+	stripsRemaining?: number;
+	configs?: readonly any[];
+};
+
+const FixedConfigNoteCompact = ({ configs }: { configs: readonly any[] }) => {
+	const fixed = configs?.filter((config) => config.fixed) ?? [];
+	if (fixed.length === 0) return null;
+	return (
+		<Paragraph tone="pewter" size="sm">
+			{fixed.map((config) => config.label).join(", ")} can&apos;t be removed —
+			fixed for every run.
+		</Paragraph>
+	);
 };
 
 export const GateRewardReport = ({
@@ -79,16 +104,32 @@ export const GateRewardReport = ({
 	cleared,
 	rows,
 	totals,
+	removableConfigIds = [],
+	onRemoveConfig,
+	stripsRemaining,
+	configs,
 }: GateRewardReportProps) => (
 	<div className="flex flex-col gap-3">
 		<Title as="h2" tone={cleared ? "gradient" : "cinnabar"}>
-			{cleared ? "Build pass!" : "Build fail!"}
+			{cleared ? "Build pass!" : "Build Failed!"}
 		</Title>
 
 		<div className="flex items-center gap-3 ">
 			<StatusBadge variant={cleared ? "pass" : "fail"} />
-			<Title size="sm">Gate {gateNumber} cleared!</Title>
+			<Title size="sm">
+				Gate {gateNumber} {cleared ? "cleared!" : "failed!"}
+			</Title>
 		</div>
+
+		{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
+			<div className="flex flex-col gap-2">
+				<Paragraph size="sm" tone="pewter">
+					Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
+					continue
+				</Paragraph>
+				{configs && <FixedConfigNoteCompact configs={configs} />}
+			</div>
+		)}
 
 		<section>
 			<Subtitle>Pipeline summary</Subtitle>
@@ -96,9 +137,21 @@ export const GateRewardReport = ({
 		</section>
 
 		<div>
-			{rows.map((row) => (
-				<ReportRow key={row.key} row={row} />
-			))}
+			{[...rows]
+				.sort((a: GateRewardRow, b: GateRewardRow) => {
+					const aRemovable = removableConfigIds.includes(a.config.id);
+					const bRemovable = removableConfigIds.includes(b.config.id);
+					// Fixed (non-removable) configs first, then removable ones
+					return aRemovable === bRemovable ? 0 : aRemovable ? 1 : -1;
+				})
+				.map((row) => (
+					<ReportRow
+						key={row.key}
+						row={row}
+						removable={removableConfigIds.includes(row.config.id)}
+						onRemove={onRemoveConfig}
+					/>
+				))}
 		</div>
 
 		{totals ? (
