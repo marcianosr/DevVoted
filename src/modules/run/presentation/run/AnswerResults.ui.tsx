@@ -2,7 +2,8 @@ import type {
 	AnswerOutcome,
 	AnsweredPoll,
 } from "~/modules/run/climb/run.model";
-import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
+import { StatusLine } from "~/ui/runs/StatusLine.ui";
+import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import {
 	Paragraph,
 	type ParagraphTone,
@@ -21,12 +22,6 @@ const OUTCOME_VARIANT: Record<AnswerOutcome, StatusBadgeVariant> = {
 	partial: "part",
 	wrong: "fail",
 };
-
-const Badge = ({ outcome }: { outcome: AnswerOutcome }) => (
-	<span className="shrink-0">
-		<StatusBadge variant={OUTCOME_VARIANT[outcome]} />
-	</span>
-);
 
 const formatScore = (coverageEarned: number): string =>
 	coverageEarned > 0 ? `+${coverageEarned}%` : `${coverageEarned}%`;
@@ -121,34 +116,38 @@ const ReporterRow = ({
 	const hasScore = poll.coverageEarned !== undefined;
 	return (
 		<details open={defaultOpen} className="group">
-			<summary className="flex cursor-pointer list-none items-start gap-3 rounded py-1 hover:bg-zinc-800/40 [&::-webkit-details-marker]:hidden">
-				<Badge outcome={poll.outcome} />
-				<Paragraph as="span" className="min-w-0 flex-1">
-					{poll.question}
-				</Paragraph>
-				<Paragraph
-					as="span"
-					size="sm"
-					tone="muted"
-					className="shrink-0 tabular-nums"
-				>
-					({count})
-				</Paragraph>
-				<Paragraph
-					as="span"
-					size="sm"
-					tone={hasScore ? OUTCOME_TONE[poll.outcome] : "muted"}
-					className="w-14 shrink-0 text-right font-bold tabular-nums"
-				>
-					{hasScore ? formatScore(poll.coverageEarned) : "—"}
-				</Paragraph>
-				<span
-					aria-hidden
-					className="shrink-0 text-zinc-500 transition-transform group-open:rotate-90"
-				>
-					▸
-				</span>
-			</summary>
+			<StatusLine
+				as="summary"
+				badge={OUTCOME_VARIANT[poll.outcome]}
+				line={poll.question}
+				className="cursor-pointer list-none rounded hover:bg-zinc-800/40 [&::-webkit-details-marker]:hidden"
+				trailing={
+					<>
+						<Paragraph
+							as="span"
+							size="sm"
+							tone="muted"
+							className="shrink-0 tabular-nums"
+						>
+							({count})
+						</Paragraph>
+						<Paragraph
+							as="span"
+							size="sm"
+							tone={hasScore ? OUTCOME_TONE[poll.outcome] : "muted"}
+							className="w-14 shrink-0 text-right font-bold tabular-nums"
+						>
+							{hasScore ? formatScore(poll.coverageEarned) : "—"}
+						</Paragraph>
+						<span
+							aria-hidden
+							className="shrink-0 text-zinc-500 transition-transform group-open:rotate-90"
+						>
+							▸
+						</span>
+					</>
+				}
+			/>
 
 			<AnswerTree poll={poll} />
 		</details>

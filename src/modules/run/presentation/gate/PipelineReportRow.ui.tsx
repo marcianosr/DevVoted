@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Config } from "~/modules/run/configs/config.model";
-import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
+import { StatusLine } from "~/ui/runs/StatusLine.ui";
+import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import {
 	Paragraph,
 	type ParagraphTone,
@@ -26,9 +27,6 @@ type PipelineReportRowProps = {
 	removable?: boolean;
 };
 
-// The one row shape shared by every pipeline reporter: a solid status badge, the
-// source config's chip, the demand it makes, and the right-aligned value it moves.
-// Callers own the semantics (which badge, which tones); the layout lives here once.
 export const PipelineReportRow = ({
 	badge,
 	config,
@@ -41,65 +39,42 @@ export const PipelineReportRow = ({
 	trailing,
 	onRemove,
 	removable = false,
-}: PipelineReportRowProps) => {
-	const handleClick =
-		removable && onRemove ? () => onRemove(config.id) : undefined;
-	const isClickable = !!handleClick;
-
-	return (
-		<div
-			className={`flex items-start gap-3 py-1 ${isClickable ? "cursor-pointer hover:opacity-70 transition-opacity" : ""}`}
-			onClick={handleClick}
-			role={isClickable ? "button" : undefined}
-			tabIndex={isClickable ? 0 : undefined}
-			onKeyDown={
-				isClickable
-					? (e) => {
-							if (e.key === "Enter" || e.key === " ") {
-								e.preventDefault();
-								handleClick?.();
-							}
-						}
-					: undefined
-			}
-		>
-			<span className="shrink-0">
-				<StatusBadge variant={badge} />
-			</span>
-			<span className="shrink-0">
-				{chipActions ? (
-					<ConfigActions
-						config={config}
-						actions={chipActions}
-						badge={chipBadge}
-					/>
-				) : (
-					<ConfigChip config={config} badge={chipBadge} noTooltip />
-				)}
-			</span>
-			<Paragraph
-				as="span"
-				size="sm"
-				tone={descriptionTone}
-				className="min-w-0 flex-1"
-			>
-				{description}
-			</Paragraph>
-			{value != null ? (
-				<Paragraph
-					as="span"
-					size="sm"
-					tone={valueTone}
-					className="shrink-0 text-right font-bold tabular-nums"
-				>
-					{value}
-				</Paragraph>
-			) : null}
-			{removable && onRemove ? (
-				<span className="shrink-0 text-cinnabar font-bold">✕</span>
-			) : trailing ? (
-				<span className="shrink-0">{trailing}</span>
-			) : null}
-		</div>
-	);
-};
+}: PipelineReportRowProps) => (
+	<StatusLine
+		badge={badge}
+		line={description}
+		lineTone={descriptionTone}
+		lineSize="sm"
+		leading={
+			chipActions ? (
+				<ConfigActions
+					config={config}
+					actions={chipActions}
+					badge={chipBadge}
+				/>
+			) : (
+				<ConfigChip config={config} badge={chipBadge} noTooltip />
+			)
+		}
+		trailing={
+			<>
+				{value != null ? (
+					<Paragraph
+						as="span"
+						size="sm"
+						tone={valueTone}
+						className="shrink-0 text-right font-bold tabular-nums"
+					>
+						{value}
+					</Paragraph>
+				) : null}
+				{removable && onRemove ? (
+					<span className="shrink-0 text-cinnabar font-bold">✕</span>
+				) : trailing ? (
+					<span className="shrink-0">{trailing}</span>
+				) : null}
+			</>
+		}
+		onActivate={removable && onRemove ? () => onRemove(config.id) : undefined}
+	/>
+);
