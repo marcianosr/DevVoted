@@ -17,7 +17,7 @@ const rarityVariant = (
 	) as Record<Rarity, string>;
 
 const chipSurface = cva(
-	"inline-flex shrink-0 items-center rounded-lg align-middle border-2 p-2 text-xs",
+	"inline-flex shrink-0 items-center rounded-sm align-middle border-1 p-1 text-xs",
 	{
 		variants: {
 			rarity: rarityVariant((colors) => clsx(colors.border, colors.text)),

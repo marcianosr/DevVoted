@@ -14,42 +14,61 @@ type Story = StoryObj<typeof RewardScreen>;
 export const Default: Story = {
 	args: {
 		gatesCleared: 1,
-		gateReward: 120,
-		coverageGainedByCategory: { js: 8, css: 3.5 },
+		gateReward: 88,
+		coverageGainedByCategory: { js: 3.1, css: 0.5, react: 2.2 },
 		answered: [
 			{
-				id: "js1",
-				question: "typeof null?",
-				category: "js",
-				outcome: "correct",
-				picked: ['"object"'],
+				id: "css1",
+				question:
+					"Before CSS existed we used inline styles — advantages and limitations?",
+				category: "css",
+				outcome: "partial",
+				picked: ["separates content from presentation"],
+				coverageBreakdown: {
+					base: 0.4,
+					streakBonus: 0,
+					configBonuses: [
+						{ configId: "css", value: 0.3 },
+						{ configId: "copilot", value: 0.4 },
+					],
+				},
 			},
 			{
-				id: "css1",
-				question: "Centers a flex item?",
-				category: "css",
+				id: "js1",
+				question: "In JS, which statements evaluate to true?",
+				category: "js",
 				outcome: "correct",
-				picked: ["place-items: center"],
+				picked: ['"0"'],
+				coverageBreakdown: {
+					base: 1.8,
+					streakBonus: 0.3,
+					configBonuses: [{ configId: "copilot", value: 3.5 }],
+				},
 			},
 			{
 				id: "js2",
-				question: "pop() returns?",
+				question: "A random output will print 1, 2 or 3 — which?",
 				category: "js",
 				outcome: "wrong",
-				picked: ["the first element"],
+				picked: ["always 1"],
 			},
 		],
 		passedChecks: [
 			{
 				label: "Correct",
-				progress: "2/2",
+				progress: "2/1",
 				current: 2,
-				target: 2,
+				target: 1,
 				state: "success",
 				sourceConfigId: "unit-tests",
-				description: "2 correct answers",
+				description: "1 correct answer",
 			},
 		],
-		configs: [CONFIGS.unitTests],
+		configs: [
+			CONFIGS.css,
+			CONFIGS.copilot,
+			CONFIGS.indexedDb,
+			CONFIGS.unitTests,
+		],
 	},
 };

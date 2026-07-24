@@ -41,15 +41,15 @@ const base = {
 };
 
 describe(RewardScreen, () => {
-	it("shows the cleared gate, the pipelines breakdown, and the answer results", () => {
+	it("shows the cleared gate, the reward report, and the answer results", () => {
 		render(<RewardScreen {...base} />);
-		expect(
-			screen.getByRole("heading", { name: /Gate #1 cleared/ })
-		).toBeInTheDocument();
+		// The report headlines success and names the gate.
+		expect(screen.getByText("Gate success!")).toBeInTheDocument();
+		expect(screen.getByText("gate-1")).toBeInTheDocument();
+		// The check config's progress shows in its row.
+		expect(screen.getByText("2/2")).toBeInTheDocument();
 		// Answers sit behind the review bar — expand it to reach the poll review.
 		fireEvent.click(screen.getByRole("button", { name: /Review answers/ }));
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();
-		// The pipelines row reuses RoleList — its cleared progress is shown.
-		expect(screen.getByText("2/2")).toBeInTheDocument();
 	});
 });

@@ -3,10 +3,11 @@ import { cva } from "class-variance-authority";
 import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
+import { gateRewardRows } from "~/modules/run/gate/gateReward.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { CheckList } from "../gate/CheckList.ui";
+import { GateRewardReport } from "../gate/GateRewardReport.ui";
 import { ReviewAnswers } from "../run/ReviewAnswers.ui";
 
 type StripScreenProps = {
@@ -51,19 +52,11 @@ export const StripScreen = ({
 	answered,
 	onStrip,
 }: StripScreenProps) => {
-	const failed = checks.filter((check) => check.state === "failed");
 	const quotaMet = stripsRemaining === 0;
+	const rows = gateRewardRows({ answered, configs, checks });
 	return (
 		<div className="flex flex-col gap-6">
-			<header className="flex flex-col gap-2">
-				<Title tone="cinnabar">Gate failed!</Title>
-				<Paragraph size="sm" tone="muted">
-					Your build broke because:
-				</Paragraph>
-			</header>
-			{failed.length > 0 ? (
-				<CheckList checks={failed} configs={configs} />
-			) : null}
+			<GateRewardReport gateNumber={gateNumber} cleared={false} rows={rows} />
 
 			<div className={repairCard({ repaired: quotaMet })}>
 				<Title as="h2" size="sm">
