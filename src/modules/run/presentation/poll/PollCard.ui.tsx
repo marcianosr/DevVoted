@@ -1,4 +1,3 @@
-import { cva } from "class-variance-authority";
 import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
 import type { AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
@@ -11,9 +10,9 @@ import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { revealDelayMs } from "./revealTiming";
+import { PollOption, PollOptionList } from "./PollOptionList.ui";
 
-export type PollOption = { readonly id: string; readonly label: string };
+export type { PollOption };
 
 type PollCardProps = {
 	category: CategoryCode;
@@ -34,119 +33,11 @@ type PollCardProps = {
 	lintCost?: number;
 };
 
-type OptionStatus =
-	"correctChosen" | "correctMissed" | "chosenWrong" | "selected" | "neutral";
-
-/**
- * On reveal the badge fill says "you picked this" and the color says right/wrong:
- * a filled green ✓ is a correct pick, a filled red ✕ a wrong pick, and a hollow
- * green ✓ a correct answer you *missed*. Pre-reveal only the live pick highlights.
- */
-const optionStatusOf = (
-	isCorrectOption: boolean,
-	wasChosen: boolean,
-	isSelected: boolean
-): OptionStatus => {
-	if (isCorrectOption) return wasChosen ? "correctChosen" : "correctMissed";
-	if (wasChosen) return "chosenWrong";
-	if (isSelected) return "selected";
-	return "neutral";
-};
-
-type InteractionState = "disabled" | "revealed" | "active";
-
-const interactionOf = (off: boolean, revealed: boolean): InteractionState => {
-	if (off) return "disabled";
-	if (revealed) return "revealed";
-	return "active";
-};
-
-const MARK: Record<OptionStatus, string> = {
-	correctChosen: "✓",
-	correctMissed: "✓",
-	chosenWrong: "✕",
-	selected: "",
-	neutral: "",
-};
-
-const optionRow = cva(
-	"flex items-start gap-3 px-2 py-3 text-left transition last:border-b-0",
-	{
-		variants: {
-			status: {
-				correctChosen: "rounded-lg bg-viridian/10",
-				correctMissed: "rounded-lg bg-viridian/5",
-				chosenWrong: "rounded-lg bg-cinnabar/10",
-				selected: "rounded-lg bg-theme-soft",
-				neutral: "border-b border-zinc-800",
-			} satisfies Record<OptionStatus, string>,
-			interaction: {
-				disabled: "cursor-not-allowed opacity-40 line-through",
-				revealed: "",
-				active: "cursor-pointer",
-			} satisfies Record<InteractionState, string>,
-		},
-		compoundVariants: [
-			{
-				status: "neutral",
-				interaction: "active",
-				className: "hover:bg-theme/10",
-			},
-		],
-	}
-);
-
 /** Recap copy for screens that show the answer type as text (e.g. AnswerResults). */
 export const ANSWER_TYPE_HINT: Record<AnswerType, string> = {
 	single: "Select exactly one answer",
 	multiple: "Select all that apply",
 };
-
-/**
- * Single-answer polls badge each option as a radio (circle); multiple-answer polls
- * as a checkbox (rounded square). The shape is the whole poll-type cue — no extra
- * element, no vertical space — so single vs multiple reads before the first pick.
- */
-type ControlShape = "radio" | "checkbox";
-
-const controlShapeOf = (answerType: AnswerType): ControlShape =>
-	answerType === "single" ? "radio" : "checkbox";
-
-const optionBadge = cva(
-	"flex h-6 w-6 shrink-0 items-center justify-center text-xs font-bold",
-	{
-		variants: {
-			status: {
-				correctChosen: "bg-viridian text-black",
-				correctMissed: "border border-viridian bg-transparent text-viridian",
-				chosenWrong: "bg-cinnabar text-black",
-				selected: "bg-theme text-black",
-				neutral: "bg-zinc-800 text-zinc-400",
-			} satisfies Record<OptionStatus, string>,
-			shape: {
-				radio: "rounded-full",
-				checkbox: "rounded-md",
-			} satisfies Record<ControlShape, string>,
-		},
-	}
-);
-
-const optionLabel = cva(
-	"font-extrabold text-xs sm:text-base transition-colors",
-	{
-		variants: {
-			status: {
-				correctChosen: "text-viridian",
-				correctMissed: "text-viridian/70",
-				chosenWrong: "text-cinnabar",
-				selected: "text-white",
-				neutral: "text-zinc-100",
-			} satisfies Record<OptionStatus, string>,
-		},
-	}
-);
-
-const optionLetter = (index: number) => String.fromCharCode(65 + index);
 
 export const PollCard = ({
 	category,
@@ -166,13 +57,6 @@ export const PollCard = ({
 	onLint,
 	lintCost,
 }: PollCardProps) => {
-	const selected = new Set(selectedOptionIds);
-	const disabled = new Set(disabledOptionIds);
-	const correct = new Set(correctOptionIds ?? []);
-	const chosen = new Set(chosenOptionIds);
-	const revealed = correctOptionIds !== undefined;
-	const shape = controlShapeOf(answerType);
-
 	return (
 		<div {...categoryTheme(category)} className="flex flex-col gap-4">
 			<div className="flex items-center gap-3">
@@ -218,54 +102,15 @@ export const PollCard = ({
 				</button>
 			) : null}
 
-			<div className="flex flex-col">
-				{options.map((option, index) => {
-					const off = disabled.has(option.id);
-					const isCorrectOption = revealed && correct.has(option.id);
-					const wasChosen = revealed && chosen.has(option.id);
-					const isSelected = !revealed && selected.has(option.id);
-					const status = optionStatusOf(isCorrectOption, wasChosen, isSelected);
-					const interaction = interactionOf(off, revealed);
-
-					const revealDelay = revealed
-						? revealDelayMs(index, options.length)
-						: 0;
-					const revealDelayStyle = revealed
-						? { transitionDelay: `${revealDelay}ms` }
-						: undefined;
-					return (
-						<button
-							key={option.id}
-							type="button"
-							disabled={off || revealed}
-							onClick={() => onSelect(option.id)}
-							className={optionRow({ status, interaction })}
-							style={revealDelayStyle}
-						>
-							<span
-								data-shape={shape}
-								data-status={status}
-								className={optionBadge({
-									status,
-									shape,
-									className: revealed ? "reveal-pop" : undefined,
-								})}
-								style={
-									revealed ? { animationDelay: `${revealDelay}ms` } : undefined
-								}
-							>
-								{MARK[status] || optionLetter(index)}
-							</span>
-							<span
-								className={optionLabel({ status })}
-								style={revealDelayStyle}
-							>
-								{option.label}
-							</span>
-						</button>
-					);
-				})}
-			</div>
+			<PollOptionList
+				answerType={answerType}
+				options={options}
+				selectedOptionIds={selectedOptionIds}
+				disabledOptionIds={disabledOptionIds}
+				correctOptionIds={correctOptionIds}
+				chosenOptionIds={chosenOptionIds}
+				onSelect={onSelect}
+			/>
 		</div>
 	);
 };

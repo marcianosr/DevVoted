@@ -5,7 +5,6 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RoleList } from "../gate/RoleList.ui";
-import { Pipeline } from "../pipeline/Pipeline.ui";
 import { RunModifiers } from "../run/RunModifiers.ui";
 import { RunStakes } from "../run/RunStakes.ui";
 import { StepHeading } from "./StepHeading.ui";
@@ -82,8 +81,7 @@ export const ConfiguringScreen = ({
 					<Title as="h3" size="sm">
 						Pipelines
 					</Title>
-					<Pipeline configs={configs} slots={slots} onRemove={onUnslot} />
-					<RoleList rows={rows} onRemove={onUnslot} />
+					<RoleList rows={rows} onRemove={onUnslot} slots={slots} />
 				</div>
 			</section>
 		</div>

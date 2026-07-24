@@ -26,6 +26,7 @@ import { Route as AuthedPipelinesRouteImport } from './routes/_authed/pipelines'
 import { Route as AuthedPipelineSuccessRouteImport } from './routes/_authed/pipeline-success'
 import { Route as AuthedPipelineFailureRouteImport } from './routes/_authed/pipeline-failure'
 import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
+import { Route as AuthedDexRouteImport } from './routes/_authed/dex'
 import { Route as AuthedCommunityRouteImport } from './routes/_authed/community'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
@@ -120,6 +121,11 @@ const AuthedGameOverRoute = AuthedGameOverRouteImport.update({
   path: '/game-over',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedDexRoute = AuthedDexRouteImport.update({
+  id: '/dex',
+  path: '/dex',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedCommunityRoute = AuthedCommunityRouteImport.update({
   id: '/community',
   path: '/community',
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/community': typeof AuthedCommunityRoute
+  '/dex': typeof AuthedDexRoute
   '/game-over': typeof AuthedGameOverRoute
   '/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/pipeline-success': typeof AuthedPipelineSuccessRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/community': typeof AuthedCommunityRoute
+  '/dex': typeof AuthedDexRoute
   '/game-over': typeof AuthedGameOverRoute
   '/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/pipeline-success': typeof AuthedPipelineSuccessRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/stats': typeof StatsRoute
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/community': typeof AuthedCommunityRoute
+  '/_authed/dex': typeof AuthedDexRoute
   '/_authed/game-over': typeof AuthedGameOverRoute
   '/_authed/pipeline-failure': typeof AuthedPipelineFailureRoute
   '/_authed/pipeline-success': typeof AuthedPipelineSuccessRoute
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/admin'
     | '/community'
+    | '/dex'
     | '/game-over'
     | '/pipeline-failure'
     | '/pipeline-success'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/admin'
     | '/community'
+    | '/dex'
     | '/game-over'
     | '/pipeline-failure'
     | '/pipeline-success'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/_authed/admin'
     | '/_authed/community'
+    | '/_authed/dex'
     | '/_authed/game-over'
     | '/_authed/pipeline-failure'
     | '/_authed/pipeline-success'
@@ -469,6 +481,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGameOverRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/dex': {
+      id: '/_authed/dex'
+      path: '/dex'
+      fullPath: '/dex'
+      preLoaderRoute: typeof AuthedDexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/community': {
       id: '/_authed/community'
       path: '/community'
@@ -538,6 +557,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRoute
   AuthedCommunityRoute: typeof AuthedCommunityRoute
+  AuthedDexRoute: typeof AuthedDexRoute
   AuthedGameOverRoute: typeof AuthedGameOverRoute
   AuthedPipelineFailureRoute: typeof AuthedPipelineFailureRoute
   AuthedPipelineSuccessRoute: typeof AuthedPipelineSuccessRoute
@@ -556,6 +576,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRoute,
   AuthedCommunityRoute: AuthedCommunityRoute,
+  AuthedDexRoute: AuthedDexRoute,
   AuthedGameOverRoute: AuthedGameOverRoute,
   AuthedPipelineFailureRoute: AuthedPipelineFailureRoute,
   AuthedPipelineSuccessRoute: AuthedPipelineSuccessRoute,

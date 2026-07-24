@@ -12,6 +12,7 @@ const checks: CheckStatus[] = [
 		current: 1,
 		target: 2,
 		state: "failed",
+		sourceConfigId: "unit-tests",
 	},
 	{
 		label: "Coverage",
@@ -35,9 +36,8 @@ describe(StripScreen, () => {
 				onStrip={() => {}}
 			/>
 		);
-		expect(
-			screen.getByRole("heading", { name: /Gate failed/ })
-		).toBeInTheDocument();
+		// The report header names the failed gate.
+		expect(screen.getByText("gate-2")).toBeInTheDocument();
 		expect(
 			screen.getByRole("heading", { name: /Remove 2 configs to continue/ })
 		).toBeInTheDocument();
@@ -93,18 +93,19 @@ describe(StripScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("shows which check broke the gate", () => {
+	it("shows which check broke the gate as a failed row", () => {
 		render(
 			<StripScreen
 				stripsRemaining={1}
 				gateNumber={2}
-				configs={[CONFIGS.js]}
+				configs={[CONFIGS.unitTests, CONFIGS.js]}
 				checks={checks}
 				answered={[]}
 				onStrip={() => {}}
 			/>
 		);
-		expect(screen.getByText("Correct")).toBeInTheDocument();
+		// The failed Unit Tests check surfaces its unmet progress in the report.
+		expect(screen.getByText("1/2")).toBeInTheDocument();
 	});
 
 	it("peels the chosen config", () => {

@@ -201,6 +201,14 @@ function Navigation() {
 									</Link>
 
 									<Link
+										to="/dex"
+										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										onClick={close}
+									>
+										Dex
+									</Link>
+
+									<Link
 										to="/polls/new"
 										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
 										onClick={close}
@@ -234,6 +242,14 @@ function Navigation() {
 
 					{user && (
 						<>
+							<span className="text-white">·</span>
+							<Link
+								to="/dex"
+								activeProps={{ className: "underline" }}
+								activeOptions={{ exact: true }}
+							>
+								Dex
+							</Link>
 							<span className="text-white">·</span>
 							<Link
 								to="/polls/new"

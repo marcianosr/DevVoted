@@ -10,13 +10,12 @@ import {
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { Button } from "~/ui/Button.component";
 import { Tooltip } from "~/ui/Tooltip.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/run/gate/configRole.model";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RoleList } from "../gate/RoleList.ui";
-import { Loadout } from "../pipeline/Loadout.ui";
-import { MultiplierSummary } from "../run/MultiplierSummary.ui";
 
 type ShopScreenProps = {
 	storage: number;
@@ -122,37 +121,36 @@ export const ShopScreen = ({
 					},
 		].filter((action): action is NonNullable<typeof action> => action !== null);
 
+	// Fixed configs sit in the same pipeline list, so the expand control counts the
+	// whole pipeline (fixed + free) — the player counts rows, not free slots alone.
+	const pipelineSlots = slots + configs.filter((config) => config.fixed).length;
+	const expandBar =
+		"block w-full rounded-lg border-2 border-dashed px-4 py-2 text-center text-sm font-semibold";
 	const expandTile = atSlotCap ? null : canAddSlot ? (
 		<button
 			type="button"
 			onClick={onAddSlot}
-			className="rounded-lg border-2 border-dashed border-cerulean px-4 py-2 text-sm font-semibold text-cerulean transition hover:bg-cerulean/10"
+			className={`${expandBar} border-cerulean text-cerulean transition hover:bg-cerulean/10`}
 		>
-			＋ Add slot: {slots} → {slots + 1}
+			＋ Add slot: {pipelineSlots} → {pipelineSlots + 1}
 		</button>
 	) : (
 		<Tooltip
+			className="w-full"
 			content={`at ${slotCoverageRequired}% coverage — you have ${coverage}%`}
 		>
-			<span className="rounded-lg border-2 border-dashed border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-400">
-				Expand to {slots + 1} slots
+			<span className={`${expandBar} border-zinc-700 text-zinc-400`}>
+				Expand to {pipelineSlots + 1} slots
 			</span>
 		</Tooltip>
 	);
 	return (
 		<div className="flex flex-col gap-6">
-			<header className="flex flex-col gap-3">
-				<div>
-					<Title>Upgrade your pipeline</Title>
-					<Subtitle>
-						Expand your load-out or make your pipeline stricter!
-					</Subtitle>
-				</div>
-				<MultiplierSummary
-					rewardMultiplier={rewardMultiplier}
-					coverageMultiplier={coverageMultiplier}
-					coverageAdd={coverageAdd}
-				/>
+			<header>
+				<Title>Upgrade your pipeline</Title>
+				<Subtitle>
+					Expand your load-out or make your pipeline stricter!
+				</Subtitle>
 			</header>
 
 			<div className="grid grid-cols-1 gap-4">
@@ -187,17 +185,36 @@ export const ShopScreen = ({
 				</PathCard>
 			</div>
 
-			<Loadout
-				configs={configs}
-				slots={slots}
-				gateNumber={gateNumber}
-				gateReward={gateReward}
-				newConfigIds={newConfigIds}
-				actionsFor={actionsFor}
-				trailing={expandTile}
-			/>
-
-			<RoleList rows={roleRows(configs, checks)} />
+			<section className="flex flex-col gap-2">
+				<header>
+					<Title as="h2" size="md">
+						Your load-out for gate {gateNumber}
+					</Title>
+					<Subtitle>Click a config to sell or upgrade it.</Subtitle>
+				</header>
+				<RoleList
+					rows={roleRows(configs, checks)}
+					slots={slots}
+					actionsFor={actionsFor}
+					newConfigIds={newConfigIds}
+					trailing={expandTile}
+				/>
+				<Paragraph size="sm" className="self-center">
+					<span className="font-extrabold text-gradient-green">
+						+{gateReward}KB
+					</span>{" "}
+					storage this gate ·{" "}
+					<span className="font-extrabold text-gradient-green">
+						×{rewardMultiplier}
+					</span>{" "}
+					reward ·{" "}
+					<span className="font-extrabold text-gradient-green">
+						×{coverageMultiplier}
+						{coverageAdd > 0 ? ` +${coverageAdd}%` : ""}
+					</span>{" "}
+					coverage
+				</Paragraph>
+			</section>
 		</div>
 	);
 };

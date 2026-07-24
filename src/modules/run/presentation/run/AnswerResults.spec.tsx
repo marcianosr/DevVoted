@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import { AnswerResults } from "./AnswerResults.ui";
 
@@ -13,6 +13,7 @@ const answered = [
 		correct: ['"object"'],
 		options: ['"object"', '"null"', '"undefined"'],
 		answerType: "single" as const,
+		coverageEarned: 12,
 	},
 	{
 		id: "css1",
@@ -25,6 +26,7 @@ const answered = [
 		answerType: "single" as const,
 		explanation:
 			"place-items centers on both axes in a grid or flex container.",
+		coverageEarned: 0,
 	},
 	{
 		id: "ts1",
@@ -35,76 +37,81 @@ const answered = [
 		correct: ["Partial", "Pick"],
 		options: ["Partial", "Banjo", "Pick", "Kazooie"],
 		answerType: "multiple" as const,
+		coverageEarned: 5,
 	},
 ];
 
+// Locate the describe/it line for a given option label.
+const lineOf = (label: string) => {
+	const node = screen.getByText(label).closest("div");
+	if (!node) throw new Error(`no row for ${label}`);
+	return node;
+};
+
 describe(AnswerResults, () => {
-	it("summarizes outcomes and renders a tile per answered poll", () => {
+	it("renders one reporter row per poll with a PASS/FAIL/PART badge and the question", () => {
 		render(<AnswerResults answered={answered} />);
 		expect(screen.getByText("1 correct")).toBeInTheDocument();
-		expect(screen.getByText("1 partial")).toBeInTheDocument();
-		expect(screen.getByText("1 incorrect")).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /Poll 3/ })).toBeInTheDocument();
-	});
-
-	it("opens on the first poll with its question, hint, and full option list", () => {
-		render(<AnswerResults answered={answered} />);
+		expect(screen.getByText("PASS")).toBeInTheDocument();
+		expect(screen.getByText("FAIL")).toBeInTheDocument();
+		expect(screen.getByText("PART")).toBeInTheDocument();
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();
-		expect(screen.getByText("Select exactly one answer")).toBeInTheDocument();
-		// Every option shows in review — including the ones you didn't pick.
-		expect(screen.getByText('"null"')).toBeInTheDocument();
-		expect(screen.getByText('"undefined"')).toBeInTheDocument();
+		expect(screen.getByText("Which are TS utility types?")).toBeInTheDocument();
 	});
 
-	it("reveals the correct option in green and the wrong pick in red", () => {
+	it("shows each poll's option count", () => {
 		render(<AnswerResults answered={answered} />);
-		fireEvent.click(screen.getByRole("button", { name: /Poll 2/ }));
-		expect(screen.getByText("place-items: center").closest("div")).toHaveClass(
-			"border-viridian/60"
-		);
-		expect(screen.getByText("align: middle").closest("div")).toHaveClass(
-			"border-cinnabar/60"
-		);
-		expect(screen.getByText("float: center").closest("div")).toHaveClass(
-			"border-zinc-700"
-		);
+		expect(screen.getAllByText("(3)")).toHaveLength(2); // js + css
+		expect(screen.getByText("(4)")).toBeInTheDocument(); // ts
 	});
 
-	it("shows the explanation box only when the poll carries one", () => {
+	it("shows earned coverage in the result slot, tinted by outcome", () => {
 		render(<AnswerResults answered={answered} />);
-		expect(screen.queryByText(/Explanation/)).not.toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: /Poll 2/ }));
-		expect(screen.getByText(/Explanation/)).toBeInTheDocument();
+		expect(screen.getByText("+12%")).toHaveClass("text-viridian");
+		expect(screen.getByText("0%")).toHaveClass("text-cinnabar");
+		expect(screen.getByText("+5%")).toHaveClass("text-saffron");
+	});
+
+	it("shows a dash instead of a score when coverage was never recorded", () => {
+		const withoutCoverage = answered.map(
+			({ coverageEarned: _drop, ...poll }) => poll
+		);
+		render(<AnswerResults answered={withoutCoverage} />);
+		expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+		expect(screen.getAllByText("—")).toHaveLength(3);
+	});
+
+	it("marks a picked-correct option as a passing assertion", () => {
+		render(<AnswerResults answered={answered} />);
+		expect(screen.getByText('"object"')).toHaveClass("text-zinc-100");
+		expect(screen.getByText("Partial")).toHaveClass("text-zinc-100");
+	});
+
+	it("marks a wrong pick as a failing assertion, tagged 'picked, wrong'", () => {
+		render(<AnswerResults answered={answered} />);
+		expect(screen.getByText("Banjo")).toHaveClass("text-cinnabar");
 		expect(
-			screen.getByText(/place-items centers on both axes/)
+			within(lineOf("Banjo")).getByText("picked, wrong")
 		).toBeInTheDocument();
 	});
 
-	it("judges each pick of a partial answer on its own", () => {
+	it("marks a correct option you didn't pick as a failing assertion, tagged 'missed'", () => {
 		render(<AnswerResults answered={answered} />);
-		fireEvent.click(screen.getByRole("button", { name: /Poll 3/ }));
-		expect(screen.getByText("Banjo").closest("div")).toHaveClass(
-			"border-cinnabar/60"
-		);
-		expect(screen.getByText("Partial").closest("div")).toHaveClass(
-			"border-viridian/60"
-		);
-		// The correct option you missed is revealed too.
-		expect(screen.getByText("Pick").closest("div")).toHaveClass(
-			"border-viridian/60"
-		);
+		expect(screen.getByText("Pick")).toHaveClass("text-cinnabar");
+		expect(within(lineOf("Pick")).getByText("missed")).toBeInTheDocument();
 	});
 
-	it("walks the polls with previous/next", () => {
+	it("marks an untouched wrong option as skipped", () => {
 		render(<AnswerResults answered={answered} />);
-		const next = screen.getByRole("button", { name: /Next poll/ });
+		expect(screen.getByText("Kazooie")).toHaveClass("text-zinc-400");
+		expect(screen.getByText("float: center")).toHaveClass("text-zinc-400");
+	});
+
+	it("shows the explanation, prefixed, only when the poll carries one", () => {
+		render(<AnswerResults answered={answered} />);
 		expect(
-			screen.getByRole("button", { name: /Previous poll/ })
-		).toBeDisabled();
-		fireEvent.click(next);
-		expect(screen.getByText("Center a flex item?")).toBeInTheDocument();
-		fireEvent.click(next);
-		expect(screen.getByText("Which are TS utility types?")).toBeInTheDocument();
-		expect(next).toBeDisabled();
+			screen.getByText(/place-items centers on both axes/)
+		).toBeInTheDocument();
+		expect(screen.getAllByText(/›/)).toHaveLength(1);
 	});
 });

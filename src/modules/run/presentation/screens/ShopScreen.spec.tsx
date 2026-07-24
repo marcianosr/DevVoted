@@ -61,10 +61,10 @@ describe(ShopScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("shows the projected gate reward for the current build", () => {
+	it("shows the storage reward earnable this gate below the pipeline", () => {
 		render(<ShopScreen {...base} gateReward={240} rewardMultiplier={2} />);
-		expect(screen.getByText(/Clears for/)).toBeInTheDocument();
-		expect(screen.getByText("240KB")).toBeInTheDocument();
+		expect(screen.getByText("+240KB")).toBeInTheDocument();
+		expect(screen.getByText(/storage this gate/)).toBeInTheDocument();
 	});
 
 	it("sells a config from its loadout popover", () => {
