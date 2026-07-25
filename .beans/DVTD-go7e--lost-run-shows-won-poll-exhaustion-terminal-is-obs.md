@@ -1,11 +1,11 @@
 ---
 # DVTD-go7e
 title: Lost run shows "won" — poll-exhaustion terminal is obsolete
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-07-24T15:03:09Z
-updated_at: 2026-07-24T15:03:19Z
+updated_at: 2026-07-25T15:48:53Z
 parent: DVTD-u35m
 ---
 
@@ -29,6 +29,22 @@ In the daily-gate model, what does **losing a gate** do?
 Whether "dead" exists, the summary copy, and storage-banking-on-loss all fall out of this.
 
 ## Todo
-- [ ] Decide loss semantics (a/b/c)
-- [ ] Update ADR (supersede ADR-009/011 daily-gate framing)
-- [ ] Remove "exhaustion = win"; implement the daily gate lock
+- [x] Decide loss semantics (a/b/c) — **(b) strip-on-fail** (2026-07-25): fail → peel N, locked till tomorrow; death only when a bare build fails. Window carries across days (ADR-011 D3 survives). Lock is derived state (no new RunStatus) — reducer stays day-unaware.
+- [x] Update ADR (supersede ADR-009/011 daily-gate framing) — ADR-014, + ⚠ markers in ADR-009/011
+- [x] Remove "exhaustion = win"; implement the daily gate lock
+
+## Summary of Changes
+
+**Decisions (Marciano, 2026-07-25)**: loss = (b) strip-on-fail (death only for a bare build); partial gate windows carry across days (ADR-011 D3 survives); the lock is derived state, not a new RunStatus.
+
+- **ADR-014** (`docs/adr/014-daily-gate-lock.md`): daily segment = SLICE_WINDOW (5) polls, exhaustion is not a terminal; amends ADR-011 D2, marks ADR-009 seed-length stale; ADR README indexed.
+- **Engine** (`run.model.ts`): removed `isLastPoll` → "won" mapping in `answer`/`resumeClimb`; `answer` no-ops when no poll is on deck; new derived `isAwaitingTomorrow(state)` selector.
+- **Seed** (`seed.service.ts`): `SEED_LENGTH = SLICE_WINDOW` (was 50), comment rewritten.
+- **View/routes**: `RunView.isAwaitingTomorrow`; `/run/locked` route; `routesForStatus`/`syncTarget` split "answering" on the lock.
+- **UI**: `LockedScreen.ui.tsx` (+ Story — the screen is the daily retention beat that ends every play day) wired via `RunLocked.component.tsx`. Content block left marked for Marciano to shape.
+- **Tests**: 5 new engine lock tests, dispatch regression test (mid-window exhaustion stays active, no payout), victory test rewritten as a real summit, locked-route sync tests.
+- **CHANGELOG**: "One gate a day" entry.
+
+Verified: vitest (934 passed; 3 failures pre-exist on HEAD in RunHud/RewardScreen specs), oxlint + depcruise, tsc, production build.
+
+**Update 2026-07-25 (DVTD-053t):** the locked screen surface (LockedScreen.ui, RunLocked, /run/locked, routing split) was removed the same day — Marciano: the lock is only meant to stop progression, not to be a destination. The engine mechanic from this bean (no exhaustion-win, answer no-op, isAwaitingTomorrow, SEED_LENGTH = SLICE_WINDOW) stands. Surface design continues in DVTD-uret.

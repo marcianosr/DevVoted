@@ -1,3 +1,5 @@
+import { useNavigate } from "@tanstack/react-router";
+
 import { Screen } from "~/ui/Screen.ui";
 
 import { StripScreen } from "../screens/StripScreen.ui";
@@ -7,18 +9,29 @@ import { useTodaysRun } from "./useTodaysRun.hook";
 /** Tier 2: the gate-failed repair step — remove pipelines to climb on. */
 export const RunStrip = () => {
 	const { view } = useTodaysRun();
-	const { send, busy } = useRunActions();
+	const { send, sendWith, commit, busy } = useRunActions();
+	const navigate = useNavigate();
 
 	if (!view) return null;
 
 	const quotaMet = view.stripsRemaining === 0;
 
+	// Strip → "How you compared": the failure path takes the same community
+	// detour as the shop — commit the repair, then step outside the layout.
+	// The climb resumes from the community page ("Climb on →").
+	const resumeToCommunity = () =>
+		sendWith({ type: "resume-climb" }, (result) => {
+			if (!result.success) return;
+			commit(result);
+			navigate({ to: "/run/community" });
+		});
+
 	return (
 		<Screen
 			theme="cinnabar"
 			rightAction={{
-				label: "Climb on →",
-				onClick: () => send({ type: "resume-climb" }),
+				label: "How you compared →",
+				onClick: resumeToCommunity,
 				disabled: !quotaMet || busy,
 				hint: quotaMet
 					? undefined

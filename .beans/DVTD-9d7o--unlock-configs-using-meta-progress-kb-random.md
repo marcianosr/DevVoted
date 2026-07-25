@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-23T13:37:05Z
-updated_at: 2026-07-23T13:37:18Z
+updated_at: 2026-07-25T14:59:50Z
 parent: DVTD-u35m
 ---
 
@@ -53,3 +53,7 @@ Allow players to spend accumulated vault KB to unlock random configs between run
 - Seasonal config unlock events
 - Weekly free unlock token
 - Trade/merge duplicate configs (post-launch)
+
+## Mechanics decisions (2026-07-25)
+
+Cap/grant edge cases resolved in [ADR-015](../docs/adr/015-storage-cap-policy-grant-and-cap-extender-configs.md): one-shot grant configs are strip fodder (no item class), grants clip at cap with the clip shown in the shop, cap-extenders use a soft over-cap on removal (excess persists, gains freeze), and no-selling is recorded as deliberate.

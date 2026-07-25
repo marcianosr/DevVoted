@@ -249,8 +249,20 @@ describe("applyActionToRun", () => {
 	});
 
 	it("finishes the run and credits leftover storage on victory", async () => {
-		// Single-poll seed: a correct answer exhausts the polls, which the engine treats as won.
-		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		// One answer from the summit: the final gate's window is 4/5 with every
+		// answer correct, so this correct answer closes it and clears gate 5.
+		const summitReady = answeringState({
+			storage: 100,
+			gatesCleared: 4,
+			window: {
+				correct: 4,
+				answered: 4,
+				coverageGained: 4,
+				leadingCorrect: 4,
+				byCategory: { js: { seen: 4, correct: 4 } },
+			},
+		});
+		mock.results.push([stateRow(summitReady)]);
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
@@ -271,6 +283,26 @@ describe("applyActionToRun", () => {
 		// 100 KB leftover → bytes credit on users.archived_storage
 		expect(mock.setCalls[2]).toHaveProperty("archived_storage");
 		expect(db.update).toHaveBeenCalledTimes(3);
+	});
+
+	it("keeps the run active when the day's polls run out mid-window (ADR-014)", async () => {
+		// Single-poll segment answered mid-window: the old engine called this a
+		// win (and cashed out); now the run just waits for tomorrow's polls.
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ response_id: 900 }]);
+
+		const next = await dispatch({
+			type: "answer",
+			optionIds: [correctOptionId(1)],
+		});
+
+		expect(next.status).toBe("answering");
+		expect(mock.setCalls[0]).toMatchObject({ engine_status: "answering" });
+		// One update only (the state row): no run finish, no storage credit.
+		expect(db.update).toHaveBeenCalledTimes(1);
 	});
 
 	it("writes the answer as a session polls_responses row with its picked options", async () => {

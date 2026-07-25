@@ -93,6 +93,8 @@ Rarity is **cosmetic only for now** — it does not yet affect draw odds or powe
 - **Sinks**: draft rebuild — cost is the literal **Fibonacci sequence in KB** (1, 2, 3, 5, 8, 13, 21, 34, …); on-demand lint (40KB).
 - **Cap**: storage is hard-capped at `STORAGE_CAP_KB` (1024KB, `rules.model.ts`) — faucets never push past it, so hoarding has a ceiling.
 
+  > ⚠ **Amended by [ADR-015](015-storage-cap-policy-grant-and-cap-extender-configs.md)**: 1024KB is the *base* — cap-extender configs raise an effective cap, and removing one leaves storage soft-over-cap (excess persists, gains freeze). The faucet invariant itself stands.
+
 Cheap to nudge, brutal to abuse.
 
 ### 11. Coverage scoring: losses, config positivity, and partial multi-answer credit (amended 2026-07-19)

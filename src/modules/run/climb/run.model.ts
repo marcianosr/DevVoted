@@ -221,8 +221,14 @@ const withLog = (state: RunState, ...lines: string[]): readonly string[] => [
 	...state.log,
 	...lines,
 ];
-const isLastPoll = (state: RunState, nextIndex: number): boolean =>
-	nextIndex >= state.polls.length;
+
+/**
+ * Out of polls while answering — the day's segment is exhausted and the run
+ * waits for tomorrow's polls (ADR-014). Derived on purpose: the reducer is
+ * day-unaware, so the rollover appending tomorrow's segment is the unlock.
+ */
+export const isAwaitingTomorrow = (state: RunState): boolean =>
+	state.status === "answering" && state.currentIndex >= state.polls.length;
 const withPipeline = (
 	pipeline: Pipeline,
 	configs: readonly Config[]
@@ -330,6 +336,9 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 	if (optionIds.length === 0) return state;
 	const poll = state.polls[state.currentIndex];
+	// Awaiting tomorrow's segment (ADR-014): no poll to answer is a no-op,
+	// not a crash — the status stays "answering" until rollover appends polls.
+	if (!poll) return state;
 
 	const configs = state.pipeline.configs;
 	const correct = isCorrect(poll, optionIds);
@@ -450,7 +459,7 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 	return {
 		...answered,
 		currentIndex: nextIndex,
-		status: isLastPoll(state, nextIndex) ? "won" : "answering",
+		status: "answering",
 	};
 };
 
@@ -509,7 +518,7 @@ const resumeClimb = (state: RunState): RunState => {
 		window: EMPTY_WINDOW,
 		manualDisabled: [],
 		answeredThisGate: [],
-		status: isLastPoll(state, state.currentIndex) ? "won" : "answering",
+		status: "answering",
 		log: withLog(
 			state,
 			`Climbing on with ${state.pipeline.configs.length} configs.`

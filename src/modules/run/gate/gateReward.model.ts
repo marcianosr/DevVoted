@@ -3,6 +3,7 @@ import type { AnsweredPoll } from "../climb/run.model";
 import { Config } from "../configs/config.model";
 import type { CheckStatus } from "../configs/effect.model";
 import { roundToOneDecimal } from "../rules.model";
+import { gateRowDescription, roleOf } from "./configRole.model";
 
 /**
  * The gate screen reads like a CI run: one row per pipeline config, each with a
@@ -126,20 +127,23 @@ const storageRow = (
 
 const checkRow = (
 	config: Config,
-	check: CheckStatus | undefined
-): GateRewardRow => ({
-	key: config.id,
-	config,
-	kind: "check",
-	status:
-		check?.state === "failed"
-			? "failed"
-			: check?.state === "skipped"
-				? "skipped"
-				: "passed",
-	description: config.description,
-	value: check?.progress ?? "—",
-});
+	checks: readonly CheckStatus[]
+): GateRewardRow => {
+	const check = checks.find((entry) => entry.sourceConfigId === config.id);
+	return {
+		key: config.id,
+		config,
+		kind: "check",
+		status:
+			check?.state === "failed"
+				? "failed"
+				: check?.state === "skipped"
+					? "skipped"
+					: "passed",
+		description: gateRowDescription(config, roleOf(config, checks), check),
+		value: check?.progress ?? "—",
+	};
+};
 
 const rowFor = (
 	config: Config,
@@ -151,11 +155,7 @@ const rowFor = (
 	if (isCoverageConfig(config)) return coverageRow(config, answered);
 	if (config.storagePerCorrect !== undefined)
 		return storageRow(config, answered);
-	if (config.check !== undefined)
-		return checkRow(
-			config,
-			checks.find((entry) => entry.sourceConfigId === config.id)
-		);
+	if (config.check !== undefined) return checkRow(config, checks);
 	return {
 		key: config.id,
 		config,

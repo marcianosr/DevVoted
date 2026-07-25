@@ -1,14 +1,16 @@
+import { SLICE_WINDOW } from "../rules.model";
+
 /**
  * Daily seed selection (ADR-009): one seed per day produces one poll sequence,
  * identical for every player. Pure — callers persist the result to
  * daily_run_polls exactly once, so mid-day poll-pool changes can never fork
  * the shared climb.
  *
- * Minimum win path is VICTORY_GATE * SLICE_WINDOW = 25 polls; gate failures
- * consume polls without clearing gates, and the engine treats poll exhaustion
- * as a win — 50 gives comfortable headroom.
+ * One gate per day (ADR-014): the day hands exactly one gate window's worth
+ * of polls. Running out is the normal end of every day — the run locks and
+ * tomorrow's segment unlocks it — never a terminal.
  */
-export const SEED_LENGTH = 50;
+export const SEED_LENGTH = SLICE_WINDOW;
 
 /** MurmurHash3-derived string hash: seeds the PRNG from an arbitrary string. */
 const xmur3 = (input: string): number => {

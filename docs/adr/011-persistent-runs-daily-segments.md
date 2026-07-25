@@ -19,6 +19,10 @@ There are no stale-run finalizers and no `completion_reason: "expired"`. An `act
 
 ### 2. Each calendar day appends today's shared sequence as a segment
 
+> ⚠ **Amended by [ADR-014](014-daily-gate-lock.md)** (2026-07-25): the daily
+> sequence is one gate's worth — `SLICE_WINDOW` (5) polls, not ~50. The
+> mechanics below are unchanged; only the segment length shrank.
+
 On the first interaction of a new calendar day (relative to the run's last-played segment):
 
 - the run's **unplayed tail is dropped** — polls you didn't reach yesterday are missed, permanently;

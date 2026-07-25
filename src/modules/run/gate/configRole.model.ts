@@ -30,7 +30,7 @@ const ROLE_ORDER: Record<ConfigRole, number> = {
  * Requirement rows must state the *escalated* demand the gate actually judges
  * (the check's dynamic description), not the config's static base text —
  * gate 5 requires 3 correct, not the roster's "1 correct answer" (DVTD-7wy6).
- * Shared by every pipeline row surface (RoleList, CheckList).
+ * Shared by every pipeline row surface (RoleList, CheckList, gate report).
  */
 export const gateRowDescription = (
 	config: Config,

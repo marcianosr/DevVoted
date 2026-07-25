@@ -6,6 +6,8 @@ Accepted. **Resolves** the cadence questions ADR-005 left open (session-window s
 
 > ⚠ **Decision 1 superseded by [ADR-011](011-persistent-runs-daily-segments.md)** (2026-07-18): runs persist across days via daily shared segments. The seed model, social rationale, and Decisions 2/4/5 stand.
 
+> ⚠ **Seed length re-decided by [ADR-014](014-daily-gate-lock.md)** (2026-07-25): the daily sequence is `SLICE_WINDOW` (5) polls — one gate per day — and poll exhaustion is no longer a terminal. The "~50 polls/day" content-dependency figure below is stale.
+
 ## Context
 
 ADR-005 decoupled the daily poll from runs and established two loops (daily poll = shared ritual + fuel + leaderboard; run = opt-in, self-paced, poll-count-based, drawing from a pool of past dailies). It deliberately left *how a run relates to daily play* open. A design spike worked through it.

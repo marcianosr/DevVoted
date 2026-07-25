@@ -85,6 +85,46 @@ describe(gateRewardRows, () => {
 		expect(rows.find((row) => row.key === "unit-tests")?.value).toBe("2/1");
 	});
 
+	it("states the escalated demand on the check row, not the roster text", () => {
+		const escalated: CheckStatus[] = [
+			{
+				label: "Correct",
+				progress: "2/3",
+				current: 2,
+				target: 3,
+				state: "failed",
+				sourceConfigId: "unit-tests",
+				description: "3 correct answers",
+			},
+		];
+		const row = gateRewardRows({ ...input, checks: escalated }).find(
+			(candidate) => candidate.key === "unit-tests"
+		);
+		expect(row?.status).toBe("failed");
+		expect(row?.description).toBe(
+			"Requires 3 correct answers to pass the gate."
+		);
+	});
+
+	it("keeps the roster text when the check carries no demand", () => {
+		const bare: CheckStatus[] = [
+			{
+				label: "Correct",
+				progress: "2/1",
+				current: 2,
+				target: 1,
+				state: "success",
+				sourceConfigId: "unit-tests",
+			},
+		];
+		const row = gateRewardRows({ ...input, checks: bare }).find(
+			(candidate) => candidate.key === "unit-tests"
+		);
+		expect(row?.description).toBe(
+			"Requires 1 correct answer to pass the gate."
+		);
+	});
+
 	it("passes a focus config whose category showed and was answered right", () => {
 		expect(gateRewardRows(input).find((row) => row.key === "css")?.status).toBe(
 			"passed"

@@ -5,7 +5,13 @@ import type { CategoryCode } from "~/domains/shared/categories";
 import { CONFIGS } from "../configs/configRoster.model";
 import { MAX_SLOTS } from "../pipeline/pipeline.model";
 import { SLICE_WINDOW, STORAGE_CAP_KB, VICTORY_GATE } from "../rules.model";
-import { createRun, runReducer, RunPoll, RunState } from "./run.model";
+import {
+	createRun,
+	isAwaitingTomorrow,
+	runReducer,
+	RunPoll,
+	RunState,
+} from "./run.model";
 
 const poll = (
 	id: string,
@@ -258,6 +264,97 @@ describe("failure model", () => {
 		let state = started([]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		expect(state.status).toBe("dead");
+	});
+});
+
+describe("the daily gate lock (ADR-014)", () => {
+	it("stays answering when the day's polls run out mid-window", () => {
+		let state = started(["js"], 3); // stub segment: the window never fills
+		for (let i = 0; i < 3; i++) state = answerWith(state, true);
+		expect(state.status).toBe("answering");
+		expect(isAwaitingTomorrow(state)).toBe(true);
+	});
+
+	it("ignores an answer while awaiting tomorrow's polls", () => {
+		let state = started(["js"], 1);
+		state = answerWith(state, true);
+		const locked = runReducer(state, {
+			type: "answer",
+			optionIds: ["ghost"],
+		});
+		expect(locked).toBe(state);
+	});
+
+	it("unlocks once the next day's segment appends polls", () => {
+		let state = started(["js"], 2);
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+		expect(isAwaitingTomorrow(state)).toBe(true);
+		// The rollover appends outside the reducer (ADR-011); the lock is derived.
+		const rolled = {
+			...state,
+			polls: [...state.polls, poll("tomorrow-0", true)],
+		};
+		expect(isAwaitingTomorrow(rolled)).toBe(false);
+	});
+
+	it("opens the shop, not the lock, when the gate clears on the day's last poll", () => {
+		let state = started(["js"], SLICE_WINDOW);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("rewarding");
+		expect(isAwaitingTomorrow(state)).toBe(false);
+		state = runReducer(state, { type: "finish-reward" });
+		expect(isAwaitingTomorrow(state)).toBe(true);
+	});
+
+	it("locks after the strip repair when the day ends on a failed gate", () => {
+		let state = started(["js"], SLICE_WINDOW);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("awaiting-strip");
+		state = runReducer(state, { type: "strip", configId: "js" });
+		state = runReducer(state, { type: "resume-climb" });
+		expect(state.status).toBe("answering");
+		expect(isAwaitingTomorrow(state)).toBe(true);
+	});
+});
+
+describe("a two-polls-a-day player (ADR-014)", () => {
+	const dayPolls = (day: number, count = SLICE_WINDOW): RunPoll[] =>
+		Array.from({ length: count }, (_, index) =>
+			poll(`day${day}-${index}`, true)
+		);
+
+	/**
+	 * What a day boundary means to the engine: the rollover (which lives
+	 * outside the reducer — ensureTodaysSegmentWith) drops the unplayed tail
+	 * and appends tomorrow's segment. In a pure test that is one array
+	 * operation; the reducer itself never learns the date changed.
+	 */
+	const nextDay = (
+		state: RunState,
+		tomorrow: readonly RunPoll[]
+	): RunState => ({
+		...state,
+		polls: [...state.polls.slice(0, state.currentIndex), ...tomorrow],
+	});
+
+	it("carries a half-filled gate across the day boundary", () => {
+		// Day 1: answer 2 of the day's 5 correctly, then stop for the day.
+		let state = started(["js"], SLICE_WINDOW);
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+
+		state = nextDay(state, dayPolls(2));
+
+		// The boundary changed the polls, not the climb: gate progress survives.
+		expect(state.window.answered).toBe(2);
+		expect(isAwaitingTomorrow(state)).toBe(false);
+
+		// TODO(marciano): finish the scenario — you decide which invariants
+		// matter. Candidates: the gate closes on day 2's third answer
+		// (status / gatesCleared / a fresh window), streak and coverage
+		// survive the boundary, and after day 2's remaining two polls the
+		// lock engages with the next window already 2/5 in (the drift).
 	});
 });
 
