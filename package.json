@@ -111,6 +111,7 @@
 	},
 	"lint-staged": {
 		"src/**/*.{ts,tsx}": [
+			"oxlint src/",
 			"prettier --write"
 		],
 		"*.{json,md}": [
