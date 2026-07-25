@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
-import { Route as StartRouteImport } from './routes/start'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as ProtoSessionSliceRouteImport } from './routes/proto-session-slice'
 import { Route as ProtoRunRouteImport } from './routes/proto-run'
@@ -19,19 +18,28 @@ import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OldStartRouteImport } from './routes/old/start'
+import { Route as OldShopRouteImport } from './routes/old/shop'
+import { Route as OldPipelinesRouteImport } from './routes/old/pipelines'
+import { Route as OldPipelineSuccessRouteImport } from './routes/old/pipeline-success'
+import { Route as OldPipelineFailureRouteImport } from './routes/old/pipeline-failure'
+import { Route as OldGameOverRouteImport } from './routes/old/game-over'
+import { Route as OldCommunityRouteImport } from './routes/old/community'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
-import { Route as AuthedShopRouteImport } from './routes/_authed/shop'
-import { Route as AuthedRunRouteImport } from './routes/_authed/run'
-import { Route as AuthedPipelinesRouteImport } from './routes/_authed/pipelines'
-import { Route as AuthedPipelineSuccessRouteImport } from './routes/_authed/pipeline-success'
-import { Route as AuthedPipelineFailureRouteImport } from './routes/_authed/pipeline-failure'
-import { Route as AuthedGameOverRouteImport } from './routes/_authed/game-over'
 import { Route as AuthedDexRouteImport } from './routes/_authed/dex'
-import { Route as AuthedCommunityRouteImport } from './routes/_authed/community'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
+import { Route as AuthedRunRouteRouteImport } from './routes/_authed/run/route'
+import { Route as OldDailyPollIndexRouteImport } from './routes/old/daily-poll/index'
+import { Route as AuthedRunIndexRouteImport } from './routes/_authed/run/index'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
-import { Route as AuthedDailyPollIndexRouteImport } from './routes/_authed/daily-poll/index'
+import { Route as OldRunCommunityRouteImport } from './routes/old/run_.community'
 import { Route as AuthedRunCommunityRouteImport } from './routes/_authed/run_.community'
+import { Route as AuthedRunStripRouteImport } from './routes/_authed/run/strip'
+import { Route as AuthedRunShopRouteImport } from './routes/_authed/run/shop'
+import { Route as AuthedRunRewardRouteImport } from './routes/_authed/run/reward'
+import { Route as AuthedRunOverRouteImport } from './routes/_authed/run/over'
+import { Route as AuthedRunConfigureRouteImport } from './routes/_authed/run/configure'
+import { Route as AuthedRunAnswerRouteImport } from './routes/_authed/run/answer'
 import { Route as AuthedProfileUserIdRouteImport } from './routes/_authed/profile.$userId'
 import { Route as AuthedPollsNewRouteImport } from './routes/_authed/polls/new'
 import { Route as AuthedPollsPollIdIndexRouteImport } from './routes/_authed/polls/$pollId/index'
@@ -40,11 +48,6 @@ import { Route as AuthedPollsPollIdEditRouteImport } from './routes/_authed/poll
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StartRoute = StartRouteImport.update({
-  id: '/start',
-  path: '/start',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignUpRoute = SignUpRouteImport.update({
@@ -86,49 +89,49 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OldStartRoute = OldStartRouteImport.update({
+  id: '/old/start',
+  path: '/old/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OldShopRoute = OldShopRouteImport.update({
+  id: '/old/shop',
+  path: '/old/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OldPipelinesRoute = OldPipelinesRouteImport.update({
+  id: '/old/pipelines',
+  path: '/old/pipelines',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OldPipelineSuccessRoute = OldPipelineSuccessRouteImport.update({
+  id: '/old/pipeline-success',
+  path: '/old/pipeline-success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OldPipelineFailureRoute = OldPipelineFailureRouteImport.update({
+  id: '/old/pipeline-failure',
+  path: '/old/pipeline-failure',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OldGameOverRoute = OldGameOverRouteImport.update({
+  id: '/old/game-over',
+  path: '/old/game-over',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OldCommunityRoute = OldCommunityRouteImport.update({
+  id: '/old/community',
+  path: '/old/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedShopRoute = AuthedShopRouteImport.update({
-  id: '/shop',
-  path: '/shop',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedRunRoute = AuthedRunRouteImport.update({
-  id: '/run',
-  path: '/run',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedPipelinesRoute = AuthedPipelinesRouteImport.update({
-  id: '/pipelines',
-  path: '/pipelines',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedPipelineSuccessRoute = AuthedPipelineSuccessRouteImport.update({
-  id: '/pipeline-success',
-  path: '/pipeline-success',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedPipelineFailureRoute = AuthedPipelineFailureRouteImport.update({
-  id: '/pipeline-failure',
-  path: '/pipeline-failure',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedGameOverRoute = AuthedGameOverRouteImport.update({
-  id: '/game-over',
-  path: '/game-over',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedDexRoute = AuthedDexRouteImport.update({
   id: '/dex',
   path: '/dex',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedCommunityRoute = AuthedCommunityRouteImport.update({
-  id: '/community',
-  path: '/community',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminRoute = AuthedAdminRouteImport.update({
@@ -136,20 +139,65 @@ const AuthedAdminRoute = AuthedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedRunRouteRoute = AuthedRunRouteRouteImport.update({
+  id: '/run',
+  path: '/run',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const OldDailyPollIndexRoute = OldDailyPollIndexRouteImport.update({
+  id: '/old/daily-poll/',
+  path: '/old/daily-poll/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedRunIndexRoute = AuthedRunIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
 const AuthedPollsIndexRoute = AuthedPollsIndexRouteImport.update({
   id: '/polls/',
   path: '/polls/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedDailyPollIndexRoute = AuthedDailyPollIndexRouteImport.update({
-  id: '/daily-poll/',
-  path: '/daily-poll/',
-  getParentRoute: () => AuthedRoute,
+const OldRunCommunityRoute = OldRunCommunityRouteImport.update({
+  id: '/old/run_/community',
+  path: '/old/run/community',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRunCommunityRoute = AuthedRunCommunityRouteImport.update({
   id: '/run_/community',
   path: '/run/community',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedRunStripRoute = AuthedRunStripRouteImport.update({
+  id: '/strip',
+  path: '/strip',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedRunShopRoute = AuthedRunShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedRunRewardRoute = AuthedRunRewardRouteImport.update({
+  id: '/reward',
+  path: '/reward',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedRunOverRoute = AuthedRunOverRouteImport.update({
+  id: '/over',
+  path: '/over',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedRunConfigureRoute = AuthedRunConfigureRouteImport.update({
+  id: '/configure',
+  path: '/configure',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedRunAnswerRoute = AuthedRunAnswerRouteImport.update({
+  id: '/answer',
+  path: '/answer',
+  getParentRoute: () => AuthedRunRouteRoute,
 } as any)
 const AuthedProfileUserIdRoute = AuthedProfileUserIdRouteImport.update({
   id: '/profile/$userId',
@@ -180,23 +228,31 @@ export interface FileRoutesByFullPath {
   '/proto-run': typeof ProtoRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
-  '/start': typeof StartRoute
   '/stats': typeof StatsRoute
+  '/run': typeof AuthedRunRouteRouteWithChildren
   '/admin': typeof AuthedAdminRoute
-  '/community': typeof AuthedCommunityRoute
   '/dex': typeof AuthedDexRoute
-  '/game-over': typeof AuthedGameOverRoute
-  '/pipeline-failure': typeof AuthedPipelineFailureRoute
-  '/pipeline-success': typeof AuthedPipelineSuccessRoute
-  '/pipelines': typeof AuthedPipelinesRoute
-  '/run': typeof AuthedRunRoute
-  '/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/old/community': typeof OldCommunityRoute
+  '/old/game-over': typeof OldGameOverRoute
+  '/old/pipeline-failure': typeof OldPipelineFailureRoute
+  '/old/pipeline-success': typeof OldPipelineSuccessRoute
+  '/old/pipelines': typeof OldPipelinesRoute
+  '/old/shop': typeof OldShopRoute
+  '/old/start': typeof OldStartRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
+  '/run/answer': typeof AuthedRunAnswerRoute
+  '/run/configure': typeof AuthedRunConfigureRoute
+  '/run/over': typeof AuthedRunOverRoute
+  '/run/reward': typeof AuthedRunRewardRoute
+  '/run/shop': typeof AuthedRunShopRoute
+  '/run/strip': typeof AuthedRunStripRoute
   '/run/community': typeof AuthedRunCommunityRoute
-  '/daily-poll/': typeof AuthedDailyPollIndexRoute
+  '/old/run/community': typeof OldRunCommunityRoute
   '/polls/': typeof AuthedPollsIndexRoute
+  '/run/': typeof AuthedRunIndexRoute
+  '/old/daily-poll/': typeof OldDailyPollIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
   '/polls/$pollId/': typeof AuthedPollsPollIdIndexRoute
 }
@@ -208,23 +264,30 @@ export interface FileRoutesByTo {
   '/proto-run': typeof ProtoRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
-  '/start': typeof StartRoute
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
-  '/community': typeof AuthedCommunityRoute
   '/dex': typeof AuthedDexRoute
-  '/game-over': typeof AuthedGameOverRoute
-  '/pipeline-failure': typeof AuthedPipelineFailureRoute
-  '/pipeline-success': typeof AuthedPipelineSuccessRoute
-  '/pipelines': typeof AuthedPipelinesRoute
-  '/run': typeof AuthedRunRoute
-  '/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/old/community': typeof OldCommunityRoute
+  '/old/game-over': typeof OldGameOverRoute
+  '/old/pipeline-failure': typeof OldPipelineFailureRoute
+  '/old/pipeline-success': typeof OldPipelineSuccessRoute
+  '/old/pipelines': typeof OldPipelinesRoute
+  '/old/shop': typeof OldShopRoute
+  '/old/start': typeof OldStartRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
+  '/run/answer': typeof AuthedRunAnswerRoute
+  '/run/configure': typeof AuthedRunConfigureRoute
+  '/run/over': typeof AuthedRunOverRoute
+  '/run/reward': typeof AuthedRunRewardRoute
+  '/run/shop': typeof AuthedRunShopRoute
+  '/run/strip': typeof AuthedRunStripRoute
   '/run/community': typeof AuthedRunCommunityRoute
-  '/daily-poll': typeof AuthedDailyPollIndexRoute
+  '/old/run/community': typeof OldRunCommunityRoute
   '/polls': typeof AuthedPollsIndexRoute
+  '/run': typeof AuthedRunIndexRoute
+  '/old/daily-poll': typeof OldDailyPollIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
   '/polls/$pollId': typeof AuthedPollsPollIdIndexRoute
 }
@@ -238,23 +301,31 @@ export interface FileRoutesById {
   '/proto-run': typeof ProtoRunRoute
   '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
-  '/start': typeof StartRoute
   '/stats': typeof StatsRoute
+  '/_authed/run': typeof AuthedRunRouteRouteWithChildren
   '/_authed/admin': typeof AuthedAdminRoute
-  '/_authed/community': typeof AuthedCommunityRoute
   '/_authed/dex': typeof AuthedDexRoute
-  '/_authed/game-over': typeof AuthedGameOverRoute
-  '/_authed/pipeline-failure': typeof AuthedPipelineFailureRoute
-  '/_authed/pipeline-success': typeof AuthedPipelineSuccessRoute
-  '/_authed/pipelines': typeof AuthedPipelinesRoute
-  '/_authed/run': typeof AuthedRunRoute
-  '/_authed/shop': typeof AuthedShopRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/old/community': typeof OldCommunityRoute
+  '/old/game-over': typeof OldGameOverRoute
+  '/old/pipeline-failure': typeof OldPipelineFailureRoute
+  '/old/pipeline-success': typeof OldPipelineSuccessRoute
+  '/old/pipelines': typeof OldPipelinesRoute
+  '/old/shop': typeof OldShopRoute
+  '/old/start': typeof OldStartRoute
   '/_authed/polls/new': typeof AuthedPollsNewRoute
   '/_authed/profile/$userId': typeof AuthedProfileUserIdRoute
+  '/_authed/run/answer': typeof AuthedRunAnswerRoute
+  '/_authed/run/configure': typeof AuthedRunConfigureRoute
+  '/_authed/run/over': typeof AuthedRunOverRoute
+  '/_authed/run/reward': typeof AuthedRunRewardRoute
+  '/_authed/run/shop': typeof AuthedRunShopRoute
+  '/_authed/run/strip': typeof AuthedRunStripRoute
   '/_authed/run_/community': typeof AuthedRunCommunityRoute
-  '/_authed/daily-poll/': typeof AuthedDailyPollIndexRoute
+  '/old/run_/community': typeof OldRunCommunityRoute
   '/_authed/polls/': typeof AuthedPollsIndexRoute
+  '/_authed/run/': typeof AuthedRunIndexRoute
+  '/old/daily-poll/': typeof OldDailyPollIndexRoute
   '/_authed/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
   '/_authed/polls/$pollId/': typeof AuthedPollsPollIdIndexRoute
 }
@@ -268,23 +339,31 @@ export interface FileRouteTypes {
     | '/proto-run'
     | '/proto-session-slice'
     | '/sign-up'
-    | '/start'
     | '/stats'
-    | '/admin'
-    | '/community'
-    | '/dex'
-    | '/game-over'
-    | '/pipeline-failure'
-    | '/pipeline-success'
-    | '/pipelines'
     | '/run'
-    | '/shop'
+    | '/admin'
+    | '/dex'
     | '/auth/callback'
+    | '/old/community'
+    | '/old/game-over'
+    | '/old/pipeline-failure'
+    | '/old/pipeline-success'
+    | '/old/pipelines'
+    | '/old/shop'
+    | '/old/start'
     | '/polls/new'
     | '/profile/$userId'
+    | '/run/answer'
+    | '/run/configure'
+    | '/run/over'
+    | '/run/reward'
+    | '/run/shop'
+    | '/run/strip'
     | '/run/community'
-    | '/daily-poll/'
+    | '/old/run/community'
     | '/polls/'
+    | '/run/'
+    | '/old/daily-poll/'
     | '/polls/$pollId/edit'
     | '/polls/$pollId/'
   fileRoutesByTo: FileRoutesByTo
@@ -296,23 +375,30 @@ export interface FileRouteTypes {
     | '/proto-run'
     | '/proto-session-slice'
     | '/sign-up'
-    | '/start'
     | '/stats'
     | '/admin'
-    | '/community'
     | '/dex'
-    | '/game-over'
-    | '/pipeline-failure'
-    | '/pipeline-success'
-    | '/pipelines'
-    | '/run'
-    | '/shop'
     | '/auth/callback'
+    | '/old/community'
+    | '/old/game-over'
+    | '/old/pipeline-failure'
+    | '/old/pipeline-success'
+    | '/old/pipelines'
+    | '/old/shop'
+    | '/old/start'
     | '/polls/new'
     | '/profile/$userId'
+    | '/run/answer'
+    | '/run/configure'
+    | '/run/over'
+    | '/run/reward'
+    | '/run/shop'
+    | '/run/strip'
     | '/run/community'
-    | '/daily-poll'
+    | '/old/run/community'
     | '/polls'
+    | '/run'
+    | '/old/daily-poll'
     | '/polls/$pollId/edit'
     | '/polls/$pollId'
   id:
@@ -325,23 +411,31 @@ export interface FileRouteTypes {
     | '/proto-run'
     | '/proto-session-slice'
     | '/sign-up'
-    | '/start'
     | '/stats'
-    | '/_authed/admin'
-    | '/_authed/community'
-    | '/_authed/dex'
-    | '/_authed/game-over'
-    | '/_authed/pipeline-failure'
-    | '/_authed/pipeline-success'
-    | '/_authed/pipelines'
     | '/_authed/run'
-    | '/_authed/shop'
+    | '/_authed/admin'
+    | '/_authed/dex'
     | '/auth/callback'
+    | '/old/community'
+    | '/old/game-over'
+    | '/old/pipeline-failure'
+    | '/old/pipeline-success'
+    | '/old/pipelines'
+    | '/old/shop'
+    | '/old/start'
     | '/_authed/polls/new'
     | '/_authed/profile/$userId'
+    | '/_authed/run/answer'
+    | '/_authed/run/configure'
+    | '/_authed/run/over'
+    | '/_authed/run/reward'
+    | '/_authed/run/shop'
+    | '/_authed/run/strip'
     | '/_authed/run_/community'
-    | '/_authed/daily-poll/'
+    | '/old/run_/community'
     | '/_authed/polls/'
+    | '/_authed/run/'
+    | '/old/daily-poll/'
     | '/_authed/polls/$pollId/edit'
     | '/_authed/polls/$pollId/'
   fileRoutesById: FileRoutesById
@@ -355,9 +449,17 @@ export interface RootRouteChildren {
   ProtoRunRoute: typeof ProtoRunRoute
   ProtoSessionSliceRoute: typeof ProtoSessionSliceRoute
   SignUpRoute: typeof SignUpRoute
-  StartRoute: typeof StartRoute
   StatsRoute: typeof StatsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  OldCommunityRoute: typeof OldCommunityRoute
+  OldGameOverRoute: typeof OldGameOverRoute
+  OldPipelineFailureRoute: typeof OldPipelineFailureRoute
+  OldPipelineSuccessRoute: typeof OldPipelineSuccessRoute
+  OldPipelinesRoute: typeof OldPipelinesRoute
+  OldShopRoute: typeof OldShopRoute
+  OldStartRoute: typeof OldStartRoute
+  OldRunCommunityRoute: typeof OldRunCommunityRoute
+  OldDailyPollIndexRoute: typeof OldDailyPollIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -367,13 +469,6 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof StatsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/start': {
-      id: '/start'
-      path: '/start'
-      fullPath: '/start'
-      preLoaderRoute: typeof StartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-up': {
@@ -432,6 +527,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/old/start': {
+      id: '/old/start'
+      path: '/old/start'
+      fullPath: '/old/start'
+      preLoaderRoute: typeof OldStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/old/shop': {
+      id: '/old/shop'
+      path: '/old/shop'
+      fullPath: '/old/shop'
+      preLoaderRoute: typeof OldShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/old/pipelines': {
+      id: '/old/pipelines'
+      path: '/old/pipelines'
+      fullPath: '/old/pipelines'
+      preLoaderRoute: typeof OldPipelinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/old/pipeline-success': {
+      id: '/old/pipeline-success'
+      path: '/old/pipeline-success'
+      fullPath: '/old/pipeline-success'
+      preLoaderRoute: typeof OldPipelineSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/old/pipeline-failure': {
+      id: '/old/pipeline-failure'
+      path: '/old/pipeline-failure'
+      fullPath: '/old/pipeline-failure'
+      preLoaderRoute: typeof OldPipelineFailureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/old/game-over': {
+      id: '/old/game-over'
+      path: '/old/game-over'
+      fullPath: '/old/game-over'
+      preLoaderRoute: typeof OldGameOverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/old/community': {
+      id: '/old/community'
+      path: '/old/community'
+      fullPath: '/old/community'
+      preLoaderRoute: typeof OldCommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -439,60 +583,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/shop': {
-      id: '/_authed/shop'
-      path: '/shop'
-      fullPath: '/shop'
-      preLoaderRoute: typeof AuthedShopRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/run': {
-      id: '/_authed/run'
-      path: '/run'
-      fullPath: '/run'
-      preLoaderRoute: typeof AuthedRunRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/pipelines': {
-      id: '/_authed/pipelines'
-      path: '/pipelines'
-      fullPath: '/pipelines'
-      preLoaderRoute: typeof AuthedPipelinesRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/pipeline-success': {
-      id: '/_authed/pipeline-success'
-      path: '/pipeline-success'
-      fullPath: '/pipeline-success'
-      preLoaderRoute: typeof AuthedPipelineSuccessRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/pipeline-failure': {
-      id: '/_authed/pipeline-failure'
-      path: '/pipeline-failure'
-      fullPath: '/pipeline-failure'
-      preLoaderRoute: typeof AuthedPipelineFailureRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/game-over': {
-      id: '/_authed/game-over'
-      path: '/game-over'
-      fullPath: '/game-over'
-      preLoaderRoute: typeof AuthedGameOverRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/dex': {
       id: '/_authed/dex'
       path: '/dex'
       fullPath: '/dex'
       preLoaderRoute: typeof AuthedDexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/community': {
-      id: '/_authed/community'
-      path: '/community'
-      fullPath: '/community'
-      preLoaderRoute: typeof AuthedCommunityRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin': {
@@ -502,6 +597,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/run': {
+      id: '/_authed/run'
+      path: '/run'
+      fullPath: '/run'
+      preLoaderRoute: typeof AuthedRunRouteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/old/daily-poll/': {
+      id: '/old/daily-poll/'
+      path: '/old/daily-poll'
+      fullPath: '/old/daily-poll/'
+      preLoaderRoute: typeof OldDailyPollIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed/run/': {
+      id: '/_authed/run/'
+      path: '/'
+      fullPath: '/run/'
+      preLoaderRoute: typeof AuthedRunIndexRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
     '/_authed/polls/': {
       id: '/_authed/polls/'
       path: '/polls'
@@ -509,12 +625,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPollsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/daily-poll/': {
-      id: '/_authed/daily-poll/'
-      path: '/daily-poll'
-      fullPath: '/daily-poll/'
-      preLoaderRoute: typeof AuthedDailyPollIndexRouteImport
-      parentRoute: typeof AuthedRoute
+    '/old/run_/community': {
+      id: '/old/run_/community'
+      path: '/old/run/community'
+      fullPath: '/old/run/community'
+      preLoaderRoute: typeof OldRunCommunityRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authed/run_/community': {
       id: '/_authed/run_/community'
@@ -522,6 +638,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/run/community'
       preLoaderRoute: typeof AuthedRunCommunityRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_authed/run/strip': {
+      id: '/_authed/run/strip'
+      path: '/strip'
+      fullPath: '/run/strip'
+      preLoaderRoute: typeof AuthedRunStripRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/run/shop': {
+      id: '/_authed/run/shop'
+      path: '/shop'
+      fullPath: '/run/shop'
+      preLoaderRoute: typeof AuthedRunShopRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/run/reward': {
+      id: '/_authed/run/reward'
+      path: '/reward'
+      fullPath: '/run/reward'
+      preLoaderRoute: typeof AuthedRunRewardRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/run/over': {
+      id: '/_authed/run/over'
+      path: '/over'
+      fullPath: '/run/over'
+      preLoaderRoute: typeof AuthedRunOverRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/run/configure': {
+      id: '/_authed/run/configure'
+      path: '/configure'
+      fullPath: '/run/configure'
+      preLoaderRoute: typeof AuthedRunConfigureRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/run/answer': {
+      id: '/_authed/run/answer'
+      path: '/answer'
+      fullPath: '/run/answer'
+      preLoaderRoute: typeof AuthedRunAnswerRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
     }
     '/_authed/profile/$userId': {
       id: '/_authed/profile/$userId'
@@ -554,39 +712,49 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthedRunRouteRouteChildren {
+  AuthedRunAnswerRoute: typeof AuthedRunAnswerRoute
+  AuthedRunConfigureRoute: typeof AuthedRunConfigureRoute
+  AuthedRunOverRoute: typeof AuthedRunOverRoute
+  AuthedRunRewardRoute: typeof AuthedRunRewardRoute
+  AuthedRunShopRoute: typeof AuthedRunShopRoute
+  AuthedRunStripRoute: typeof AuthedRunStripRoute
+  AuthedRunIndexRoute: typeof AuthedRunIndexRoute
+}
+
+const AuthedRunRouteRouteChildren: AuthedRunRouteRouteChildren = {
+  AuthedRunAnswerRoute: AuthedRunAnswerRoute,
+  AuthedRunConfigureRoute: AuthedRunConfigureRoute,
+  AuthedRunOverRoute: AuthedRunOverRoute,
+  AuthedRunRewardRoute: AuthedRunRewardRoute,
+  AuthedRunShopRoute: AuthedRunShopRoute,
+  AuthedRunStripRoute: AuthedRunStripRoute,
+  AuthedRunIndexRoute: AuthedRunIndexRoute,
+}
+
+const AuthedRunRouteRouteWithChildren = AuthedRunRouteRoute._addFileChildren(
+  AuthedRunRouteRouteChildren,
+)
+
 interface AuthedRouteChildren {
+  AuthedRunRouteRoute: typeof AuthedRunRouteRouteWithChildren
   AuthedAdminRoute: typeof AuthedAdminRoute
-  AuthedCommunityRoute: typeof AuthedCommunityRoute
   AuthedDexRoute: typeof AuthedDexRoute
-  AuthedGameOverRoute: typeof AuthedGameOverRoute
-  AuthedPipelineFailureRoute: typeof AuthedPipelineFailureRoute
-  AuthedPipelineSuccessRoute: typeof AuthedPipelineSuccessRoute
-  AuthedPipelinesRoute: typeof AuthedPipelinesRoute
-  AuthedRunRoute: typeof AuthedRunRoute
-  AuthedShopRoute: typeof AuthedShopRoute
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
   AuthedRunCommunityRoute: typeof AuthedRunCommunityRoute
-  AuthedDailyPollIndexRoute: typeof AuthedDailyPollIndexRoute
   AuthedPollsIndexRoute: typeof AuthedPollsIndexRoute
   AuthedPollsPollIdEditRoute: typeof AuthedPollsPollIdEditRoute
   AuthedPollsPollIdIndexRoute: typeof AuthedPollsPollIdIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedRunRouteRoute: AuthedRunRouteRouteWithChildren,
   AuthedAdminRoute: AuthedAdminRoute,
-  AuthedCommunityRoute: AuthedCommunityRoute,
   AuthedDexRoute: AuthedDexRoute,
-  AuthedGameOverRoute: AuthedGameOverRoute,
-  AuthedPipelineFailureRoute: AuthedPipelineFailureRoute,
-  AuthedPipelineSuccessRoute: AuthedPipelineSuccessRoute,
-  AuthedPipelinesRoute: AuthedPipelinesRoute,
-  AuthedRunRoute: AuthedRunRoute,
-  AuthedShopRoute: AuthedShopRoute,
   AuthedPollsNewRoute: AuthedPollsNewRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,
   AuthedRunCommunityRoute: AuthedRunCommunityRoute,
-  AuthedDailyPollIndexRoute: AuthedDailyPollIndexRoute,
   AuthedPollsIndexRoute: AuthedPollsIndexRoute,
   AuthedPollsPollIdEditRoute: AuthedPollsPollIdEditRoute,
   AuthedPollsPollIdIndexRoute: AuthedPollsPollIdIndexRoute,
@@ -604,9 +772,17 @@ const rootRouteChildren: RootRouteChildren = {
   ProtoRunRoute: ProtoRunRoute,
   ProtoSessionSliceRoute: ProtoSessionSliceRoute,
   SignUpRoute: SignUpRoute,
-  StartRoute: StartRoute,
   StatsRoute: StatsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  OldCommunityRoute: OldCommunityRoute,
+  OldGameOverRoute: OldGameOverRoute,
+  OldPipelineFailureRoute: OldPipelineFailureRoute,
+  OldPipelineSuccessRoute: OldPipelineSuccessRoute,
+  OldPipelinesRoute: OldPipelinesRoute,
+  OldShopRoute: OldShopRoute,
+  OldStartRoute: OldStartRoute,
+  OldRunCommunityRoute: OldRunCommunityRoute,
+  OldDailyPollIndexRoute: OldDailyPollIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

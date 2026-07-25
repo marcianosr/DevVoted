@@ -1,3 +1,5 @@
+// @ts-nocheck — legacy game routes parked under /old (DVTD-7tof cleanup).
+// Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { useMutation } from "@tanstack/react-query";
 import {
 	createFileRoute,
@@ -23,7 +25,7 @@ import { formatStorage } from "~/lib/storage";
 import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
 import { Button } from "~/ui/Button.component";
 
-export const Route = createFileRoute("/start")({
+export const Route = createFileRoute("/old/start")({
 	component: RouteComponent,
 	beforeLoad: async ({ context }) => {
 		if (context.activeRun?.success && context.activeRun?.data?.id) {

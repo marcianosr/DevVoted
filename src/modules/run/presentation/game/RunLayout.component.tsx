@@ -1,0 +1,63 @@
+import { Outlet } from "@tanstack/react-router";
+
+import { Screen } from "~/ui/Screen.ui";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Title } from "~/ui/typography/Title.component";
+
+import { HudBar } from "../run/HudBar.ui";
+import { RunHud } from "../run/RunHud.ui";
+import { useRunRouteSync } from "./useRunRouteSync.hook";
+import { useTodaysRun } from "./useTodaysRun.hook";
+
+/**
+ * Tier 2 layout for the /run flow (DVTD-td0v): loads today's run, shows the
+ * HUD while a climb is live, and keeps the URL synced to the server status.
+ * Which screen renders inside the outlet is decided by the route.
+ */
+export const RunLayout = () => {
+	useRunRouteSync();
+	const { view, isPending, errorMessage } = useTodaysRun();
+
+	if (isPending) {
+		return (
+			<Screen width="narrow">
+				<Paragraph>Loading today’s climb…</Paragraph>
+			</Screen>
+		);
+	}
+
+	if (errorMessage) {
+		return (
+			<Screen width="narrow">
+				<Title>Something broke</Title>
+				<Paragraph>{errorMessage}</Paragraph>
+			</Screen>
+		);
+	}
+
+	const runOver = view?.status === "won" || view?.status === "dead";
+
+	return (
+		<>
+			{view && !runOver && (
+				<HudBar>
+					<RunHud
+						storage={view.storage}
+						gateNumber={view.gatesCleared + 1}
+						victoryGate={view.victoryGate}
+						pollsAnswered={view.pollsAnswered}
+						pollsPerGate={view.pollsPerGate}
+						streak={view.streak}
+						category={view.poll?.category}
+						coverage={view.coverage}
+						coverageByCategory={view.coverageByCategory}
+						configs={view.configs}
+						slots={view.slots}
+						checks={view.checks}
+					/>
+				</HudBar>
+			)}
+			<Outlet />
+		</>
+	);
+};

@@ -140,7 +140,7 @@ export const AnsweringScreen = ({
 		</div>
 		<div className="space-y-2">
 			<Title as="h3" size="sm">
-				Pipelines status
+				Build status
 			</Title>
 			<RoleList rows={roleRows(configs, checks)} />
 		</div>

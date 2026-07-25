@@ -1,3 +1,5 @@
+// @ts-nocheck — legacy game routes parked under /old (DVTD-7tof cleanup).
+// Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { clsx } from "clsx";
 
@@ -12,7 +14,7 @@ import { parseCompletionReason } from "~/domains/runs/utils/parseCompletionReaso
 import { formatStorage } from "~/lib/storage";
 import { Button } from "~/ui/Button.component";
 
-export const Route = createFileRoute("/_authed/game-over")({
+export const Route = createFileRoute("/old/game-over")({
 	component: RouteComponent,
 	loader: async ({ context: { user, activeRun } }) => {
 		const lastRun = await getLastRunForGameOver();

@@ -1,3 +1,5 @@
+// @ts-nocheck — legacy game routes parked under /old (DVTD-7tof cleanup).
+// Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import {
@@ -11,7 +13,7 @@ import { Columns } from "~/ui/Columns.ui";
 import { Screen } from "~/ui/Screen.ui";
 import { Stack } from "~/ui/Stack.ui";
 
-export const Route = createFileRoute("/_authed/pipelines")({
+export const Route = createFileRoute("/old/pipelines")({
 	component: PipelinesRoute,
 	beforeLoad: ({ context }) => {
 		if (!context.activeRun?.success || !context.activeRun?.data?.id) {

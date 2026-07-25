@@ -79,6 +79,27 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		focusCategory: "java",
 	},
+	py: {
+		id: "py",
+		label: ".py",
+		family: "focus",
+		description:
+			"Python polls pay 1.5× — but if Python shows, you must get one right.",
+		requirementDelta: 0,
+		rewardMultiplier: 1,
+		focusCategory: "python",
+	},
+	frontend: {
+		id: "package.json-config",
+		label: "package.json",
+		family: "focus",
+		description:
+			"Frontend polls pay 1.5× — but if Frontend shows, you must get one right.",
+		requirementDelta: 0,
+		rewardMultiplier: 1,
+		focusCategory: "general-frontend",
+	},
+
 	unitTests: {
 		id: "unit-tests",
 		label: "Unit Tests",

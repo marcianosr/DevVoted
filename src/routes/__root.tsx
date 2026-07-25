@@ -159,7 +159,7 @@ function Navigation() {
 	const [isEndRunDialogOpen, setIsEndRunDialogOpen] = useState(false);
 	const finishRun = useFinishRun({
 		userId: user?.id,
-		redirectTo: "/game-over",
+		redirectTo: "/old/game-over",
 	});
 
 	const handleEndRunConfirm = () => {
@@ -193,11 +193,11 @@ function Navigation() {
 							{({ close }) => (
 								<>
 									<Link
-										to="/daily-poll"
+										to="/run"
 										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
 										onClick={close}
 									>
-										Daily Poll
+										Daily Run
 									</Link>
 
 									<Link
@@ -233,11 +233,11 @@ function Navigation() {
 
 				<div className="hidden md:flex gap-2 items-center min-w-0">
 					<Link
-						to="/daily-poll"
+						to="/run"
 						activeProps={{ className: "underline" }}
 						activeOptions={{ exact: true }}
 					>
-						Daily Poll
+						Daily Run
 					</Link>
 
 					{user && (

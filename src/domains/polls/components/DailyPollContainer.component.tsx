@@ -148,7 +148,7 @@ const DailyPollContainer = ({
 
 				if (response.data.runEnded) {
 					await router.invalidate();
-					navigate({ to: "/pipeline-failure" });
+					navigate({ to: "/old/pipeline-failure" });
 					return;
 				}
 			}
@@ -171,11 +171,11 @@ const DailyPollContainer = ({
 	const reviewContinueAction = lastPipelineEvaluation?.passed
 		? {
 				label: "Go to pipeline check →",
-				onClick: () => navigate({ to: "/pipeline-success" }),
+				onClick: () => navigate({ to: "/old/pipeline-success" }),
 			}
 		: {
 				label: "See pipelines →",
-				onClick: () => navigate({ to: "/pipelines" }),
+				onClick: () => navigate({ to: "/old/pipelines" }),
 			};
 	// Polls remaining in the current window before the next gate is evaluated.
 	const pollsUntilGate = lastEvaluationContext

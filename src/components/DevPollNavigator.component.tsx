@@ -25,14 +25,14 @@ export const DevPollNavigator = ({
 
 	const handleRandomPoll = () => {
 		navigate({
-			to: "/daily-poll",
+			to: "/old/daily-poll",
 			search: { date: getRandomDate() },
 		});
 	};
 
 	const handleResetToToday = () => {
 		navigate({
-			to: "/daily-poll",
+			to: "/old/daily-poll",
 			search: {},
 		});
 	};

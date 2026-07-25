@@ -6,7 +6,7 @@ import { runQueryKeys } from "~/domains/shared/queryKeys";
 
 type UseFinishRunOptions = {
 	userId: string | undefined;
-	redirectTo: "/start" | "/game-over";
+	redirectTo: "/old/start" | "/old/game-over";
 };
 
 // Shared mutation for ending the active run. Used by both the /game-over

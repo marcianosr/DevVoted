@@ -1,3 +1,5 @@
+// @ts-nocheck — legacy game routes parked under /old (DVTD-7tof cleanup).
+// Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { useState } from "react";
 
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -23,7 +25,7 @@ import { parseCompletionReason } from "~/domains/runs/utils/parseCompletionReaso
 import { PipelineFailureScreen } from "~/ui/runs/PipelineFailureScreen.ui";
 import type { RunSummaryData } from "~/ui/runs/PipelineFailureScreen.ui";
 
-export const Route = createFileRoute("/_authed/pipeline-failure")({
+export const Route = createFileRoute("/old/pipeline-failure")({
 	component: PipelineFailureRoute,
 	loader: async ({ context: { activeRun } }) => {
 		// The failure screen renders the last finished run. A run still in

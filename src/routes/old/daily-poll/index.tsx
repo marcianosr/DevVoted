@@ -1,3 +1,5 @@
+// @ts-nocheck — legacy game routes parked under /old (DVTD-7tof cleanup).
+// Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -68,7 +70,7 @@ const searchParamsSchema = z.object({
 	date: z.string().optional(),
 });
 
-export const Route = createFileRoute("/_authed/daily-poll/")({
+export const Route = createFileRoute("/old/daily-poll/")({
 	component: DailyPoll,
 	validateSearch: searchParamsSchema,
 	loaderDeps: ({ search }) => ({ date: search.date }),

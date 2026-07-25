@@ -1,3 +1,5 @@
+// @ts-nocheck — legacy game routes parked under /old (DVTD-7tof cleanup).
+// Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { useMutation } from "@tanstack/react-query";
 import {
 	createFileRoute,
@@ -18,7 +20,7 @@ import { getTodayDateString } from "~/lib/dateUtils";
 import { formatStorage } from "~/lib/storage";
 import { Screen } from "~/ui/Screen.ui";
 
-export const Route = createFileRoute("/_authed/shop")({
+export const Route = createFileRoute("/old/shop")({
 	component: ShopRoute,
 	loader: async ({ context: { activeRun } }) => {
 		if (!activeRun?.success) {

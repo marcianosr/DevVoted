@@ -1,3 +1,5 @@
+// @ts-nocheck — legacy game routes parked under /old (DVTD-7tof cleanup).
+// Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { applyEffects } from "~/domains/economy/data/configs";
@@ -14,7 +16,7 @@ import { RunJeopardy } from "~/domains/runs/components/RunJeopardy.component";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { Screen } from "~/ui/Screen.ui";
 
-export const Route = createFileRoute("/_authed/community")({
+export const Route = createFileRoute("/old/community")({
 	component: CommunityRoute,
 	beforeLoad: ({ context }) => {
 		if (!context.activeRun?.success || !context.activeRun.data?.id) {

@@ -71,7 +71,7 @@ export const Route = createFileRoute("/auth/callback")({
 		}
 
 		throw redirect({
-			to: "/daily-poll",
+			to: "/run",
 		});
 	},
 });

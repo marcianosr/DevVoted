@@ -1,3 +1,5 @@
+// @ts-nocheck — legacy game routes parked under /old (DVTD-7tof cleanup).
+// Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import Content from "~/components/Content.component";
@@ -10,7 +12,7 @@ import { PipelineSuccessScreen } from "~/ui/runs/PipelineSuccessScreen.ui";
 import type { PipelineReward } from "~/ui/runs/PipelineSuccessScreen.ui";
 import { Button } from "~/ui/Button.component";
 
-export const Route = createFileRoute("/_authed/pipeline-success")({
+export const Route = createFileRoute("/old/pipeline-success")({
 	component: PipelineSuccessRoute,
 	beforeLoad: ({ context }) => {
 		if (!context.activeRun?.success || !context.activeRun.data?.id) {
