@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-24T12:45:58Z
-updated_at: 2026-07-24T12:46:10Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-z2r2
 ---
 
 Display config upgrade levels and progression in the config dex/encyclopedia so players can track which configs they've upgraded

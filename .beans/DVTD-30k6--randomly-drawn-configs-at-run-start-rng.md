@@ -5,8 +5,8 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-07-16T20:30:06Z
-updated_at: 2026-07-16T20:30:19Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-d0fw
 blocked_by:
     - DVTD-2try
 ---

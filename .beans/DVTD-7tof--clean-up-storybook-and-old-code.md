@@ -5,8 +5,8 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-07-21T19:56:09Z
-updated_at: 2026-07-25T14:14:50Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:17:00Z
+parent: DVTD-82c4
 ---
 
 Remove unused stories, deprecated components, and dead code from the codebase

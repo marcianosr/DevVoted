@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-24T12:18:12Z
-updated_at: 2026-07-24T12:18:20Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-z2r2
 ---
 
 Allow players to spend vault KB during a run to gain bonuses like coverage boost, config unlock, or other run enhancements

@@ -34,6 +34,8 @@ Never confiscate, never gain while over cap. The invariant is preserved literall
 
 ### 4. Non-decision: there is no selling
 
+> **Superseded (2026-07):** selling landed with the config action popover (DVTD-86nr) — `sell()` in `run.model.ts` refunds half the draft cost (`sellRefund`), fixed configs excluded. As anticipated below, Decision 3's over-cap rule covers the refund path (`addStorage`). The original rationale is kept for the record.
+
 Configs enter via the shop draft (ADR-008) and leave **only** via strip (ADR-006 Decision 6). The economy stays one-directional: storage → configs, never back. Strip already forces build pivots, which is the job selling does in Balatro. Recorded so a future "add selling" idea starts from a deliberate absence, not an oversight — and if it ever lands, Decision 3's over-cap rule already covers it.
 
 ## Consequences

@@ -5,8 +5,8 @@ status: todo
 type: task
 priority: high
 created_at: 2026-07-13T08:23:52Z
-updated_at: 2026-07-13T08:23:52Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:17:00Z
+parent: DVTD-cb52
 ---
 
 When the pipeline's slots are full, bench/draft configs still look selectable but clicking does nothing. Add a clear hint/disabled state ('No free slots — remove one or add a slot') so it's obvious the config can't be added until there's space.

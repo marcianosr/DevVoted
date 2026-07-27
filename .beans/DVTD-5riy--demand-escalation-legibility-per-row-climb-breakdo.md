@@ -3,8 +3,10 @@
 title: 'Demand escalation legibility: per-row climb breakdown + SonarQube rename'
 status: in-progress
 type: feature
+priority: normal
 created_at: 2026-07-25T16:06:39Z
-updated_at: 2026-07-25T16:06:39Z
+updated_at: 2026-07-27T14:17:00Z
+parent: DVTD-cb52
 ---
 
 Escalating demands (Unit Tests correct-count, coverage-gain threshold) silently fold climb escalation into config rows, and the coverage-gain config is named "Coverage" — colliding with coverage-the-score.

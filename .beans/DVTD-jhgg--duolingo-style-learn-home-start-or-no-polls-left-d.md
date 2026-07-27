@@ -5,8 +5,8 @@ status: todo
 type: story
 priority: normal
 created_at: 2026-07-27T11:22:44Z
-updated_at: 2026-07-27T11:22:44Z
-parent: DVTD-nooj
+updated_at: 2026-07-27T14:06:44Z
+parent: DVTD-u35m
 ---
 
 Introduce a `/learn` screen modeled on Duolingo's home path — a visual, always-there hub. Two ways it could land in the flow:

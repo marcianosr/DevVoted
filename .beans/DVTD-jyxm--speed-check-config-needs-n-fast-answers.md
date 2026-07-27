@@ -5,8 +5,8 @@ status: draft
 type: feature
 priority: deferred
 created_at: 2026-07-12T16:57:32Z
-updated_at: 2026-07-12T16:57:32Z
-parent: DVTD-5jpw
+updated_at: 2026-07-27T14:17:00Z
+parent: DVTD-615s
 ---
 
 Parked: the Speed check-config and its 'fast answer' mechanism, removed from the session-run module for now.

@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-22T12:38:06Z
-updated_at: 2026-07-22T12:38:11Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-z2r2
 ---
 
 Allow players to unlock new configurations, additional starter configs, and custom borders through meta-progression between runs

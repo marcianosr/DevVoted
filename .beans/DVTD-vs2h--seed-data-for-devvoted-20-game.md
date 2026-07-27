@@ -5,8 +5,8 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-07-24T15:27:12Z
-updated_at: 2026-07-24T15:27:25Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:17:00Z
+parent: DVTD-82c4
 ---
 
 Create comprehensive seed data including polls, configs, categories, and test user accounts for the new 2.0 game

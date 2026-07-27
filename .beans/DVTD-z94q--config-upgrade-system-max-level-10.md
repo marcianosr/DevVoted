@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-24T12:46:02Z
-updated_at: 2026-07-24T12:46:21Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-d0fw
 ---
 
 Implement a config upgrade system where players can upgrade configs from level 1-10, with clear progression and upgrade paths

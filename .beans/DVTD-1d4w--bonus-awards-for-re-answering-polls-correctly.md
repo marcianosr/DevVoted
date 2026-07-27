@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-22T12:39:04Z
-updated_at: 2026-07-22T12:39:10Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-z2r2
 ---
 
 Award bonuses when players correctly answer polls they've previously answered, encouraging repeated engagement and memory building

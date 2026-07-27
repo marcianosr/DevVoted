@@ -1,12 +1,12 @@
 ---
 # DVTD-rpl9
 title: 'Poll Dex: unlocked configs + per-category polls-answered stats'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-16T20:30:19Z
-updated_at: 2026-07-23T14:48:29Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-z2r2
 ---
 
 Idea captured, mechanics still TBD.

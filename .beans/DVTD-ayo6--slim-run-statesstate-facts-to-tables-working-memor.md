@@ -5,7 +5,8 @@ status: todo
 type: task
 priority: deferred
 created_at: 2026-07-25T14:14:50Z
-updated_at: 2026-07-25T14:14:50Z
+updated_at: 2026-07-27T14:17:00Z
+parent: DVTD-615s
 ---
 
 The snapshot blob (>10KB at gate 3) persists three kinds of data; only one belongs there. Split decided 2026-07-25 (session w/ Claude), parked as deliberate debt — piggyback on the next engine_version bump, not a standalone project.

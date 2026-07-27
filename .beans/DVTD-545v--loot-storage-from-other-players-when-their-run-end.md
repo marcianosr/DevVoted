@@ -8,8 +8,8 @@ tags:
     - gameplay
     - juice
 created_at: 2026-07-19T09:09:13Z
-updated_at: 2026-07-20T14:56:42Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-z2r2
 ---
 
 When another player's run ends, their abandoned items/loot should be storable by other players who encounter them. This creates emergent gameplay where players can benefit from others' progress and failures.

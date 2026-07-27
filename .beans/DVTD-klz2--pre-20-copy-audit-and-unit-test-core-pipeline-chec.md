@@ -5,8 +5,8 @@ status: todo
 type: story
 priority: normal
 created_at: 2026-07-25T07:29:53Z
-updated_at: 2026-07-25T07:29:53Z
-parent: DVTD-nooj
+updated_at: 2026-07-27T14:06:47Z
+parent: DVTD-u35m
 ---
 
 QA pass for the 2.0 milestone.

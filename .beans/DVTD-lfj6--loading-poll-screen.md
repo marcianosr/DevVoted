@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-21T20:18:54Z
-updated_at: 2026-07-25T08:16:40Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:17:00Z
+parent: DVTD-cb52
 ---
 
 Create a loading state UI for when a poll is being fetched or prepared for display

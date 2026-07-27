@@ -5,8 +5,8 @@ status: todo
 type: story
 priority: normal
 created_at: 2026-07-27T10:42:56Z
-updated_at: 2026-07-27T10:47:17Z
-parent: DVTD-nooj
+updated_at: 2026-07-27T14:06:49Z
+parent: DVTD-u35m
 ---
 
 Configs that go up for different reasons (difficulty ramp vs. player investment) currently look identical on screen. Reframe the taxonomy as two species instead of three: **gates** (things that judge you — Unit Tests, Coverage) and **perks** (things that help you — ESLint, Copilot). Reward KB is just what a gate pays out when cleared, not a separate config kind.

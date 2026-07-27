@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-23T13:37:05Z
-updated_at: 2026-07-25T14:59:50Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-z2r2
 ---
 
 Allow players to spend accumulated vault KB to unlock random configs between runs, creating a progression loop

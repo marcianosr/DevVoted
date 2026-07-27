@@ -3,9 +3,10 @@
 title: Config unlock system (gates reached / coverage thresholds)
 status: draft
 type: feature
+priority: normal
 created_at: 2026-07-16T20:29:52Z
-updated_at: 2026-07-16T20:29:52Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-z2r2
 ---
 
 Idea captured, mechanics still TBD.

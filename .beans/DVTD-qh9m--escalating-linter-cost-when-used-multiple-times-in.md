@@ -3,9 +3,10 @@
 title: Escalating linter cost when used multiple times in a single poll
 status: todo
 type: feature
+priority: normal
 created_at: 2026-07-18T08:21:18Z
-updated_at: 2026-07-18T08:21:18Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-kulw
 ---
 
 ## Problem

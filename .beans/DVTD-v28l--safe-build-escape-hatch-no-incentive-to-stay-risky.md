@@ -5,8 +5,8 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-07-16T13:18:05Z
-updated_at: 2026-07-16T13:18:27Z
-parent: DVTD-5jpw
+updated_at: 2026-07-27T14:16:47Z
+parent: DVTD-kulw
 ---
 
 Found during playtest (DVTD-8eij): once a build gets stripped down to a bare Defense+Economy config set (no Focus/Check/Risk), it becomes strictly dominant for the rest of the run -- gates 4-5 had zero conditions beyond the plain baseline number, no tension, coasted to summit.

@@ -5,8 +5,8 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-07-24T15:06:29Z
-updated_at: 2026-07-25T12:43:39Z
-parent: DVTD-u35m
+updated_at: 2026-07-27T14:17:00Z
+parent: DVTD-82c4
 ---
 
 Refactor proto-run into modular components and establish proper routing structure for the game flow
