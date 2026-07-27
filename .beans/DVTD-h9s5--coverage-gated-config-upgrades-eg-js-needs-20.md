@@ -5,7 +5,8 @@ status: todo
 type: story
 priority: normal
 created_at: 2026-07-25T20:56:36Z
-updated_at: 2026-07-25T20:56:36Z
+updated_at: 2026-07-27T10:47:17Z
+parent: DVTD-nooj
 ---
 
 Require category coverage before a specific config can be upgraded. E.g. the `.js` config's upgrade is locked until the player has 20% coverage in JavaScript; each upgradeable config would define its own category + threshold pair. Ties config power directly to demonstrated category mastery instead of storage/currency alone.
