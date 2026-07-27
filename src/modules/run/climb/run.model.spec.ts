@@ -267,7 +267,7 @@ describe("failure model", () => {
 	});
 });
 
-describe("the daily gate lock (ADR-014)", () => {
+describe("the daily gate lock", () => {
 	it("stays answering when the day's polls run out mid-window", () => {
 		let state = started(["js"], 3); // stub segment: the window never fills
 		for (let i = 0; i < 3; i++) state = answerWith(state, true);
