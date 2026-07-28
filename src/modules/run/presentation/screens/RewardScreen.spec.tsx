@@ -24,7 +24,7 @@ const answered: AnsweredPoll[] = [
 
 const base = {
 	gatesCleared: 1,
-	gateReward: 120,
+	gateReward: 80,
 	coverageGainedByCategory: { js: 8, css: 3.5 },
 	answered,
 	passedChecks: [

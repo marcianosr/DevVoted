@@ -1,12 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useReducer, useState } from "react";
 
-import {
-	createRun,
-	LINT_COST,
-	runReducer,
-	RunPoll,
-} from "~/modules/run/climb/run.model";
+import { createRun, runReducer, RunPoll } from "~/modules/run/climb/run.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/run/draft/draft.model";
 import {
@@ -220,7 +215,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						canLint={view.canLint}
 						lintReady={view.lintReady}
 						linter={view.linter ?? undefined}
-						lintCost={LINT_COST}
+						lintCost={view.lintCost}
 						canSubmit={canSubmit}
 						onSelect={onSelect}
 						onSubmit={() => answer(selected)}

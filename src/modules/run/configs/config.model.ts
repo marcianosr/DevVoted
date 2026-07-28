@@ -43,10 +43,10 @@ export const upgradeCoverageRequired = (currentLevel: number): number =>
 	currentLevel * 5;
 
 const DRAFT_COST: Record<Rarity, number> = {
-	common: 20,
-	uncommon: 40,
-	rare: 80,
-	legendary: 160,
+	common: 32,
+	uncommon: 64,
+	rare: 128,
+	legendary: 256,
 };
 
 export const draftCost = (config: Config): number =>

@@ -3,10 +3,10 @@ import { CONFIG_LIST } from "../configs/configRoster.model";
 
 export const DRAFT_SIZE = 3;
 
-const REBUILD_FIB_KB = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+const REBUILD_COST_KB = [4, 8, 16, 32, 64, 128, 256, 512];
 
 export const rebuildCost = (rebuildsUsed: number): number =>
-	REBUILD_FIB_KB[rebuildsUsed] ?? REBUILD_FIB_KB[REBUILD_FIB_KB.length - 1];
+	REBUILD_COST_KB[rebuildsUsed] ?? REBUILD_COST_KB[REBUILD_COST_KB.length - 1];
 
 export const rollDraft = (
 	seed: number,

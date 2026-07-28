@@ -42,7 +42,11 @@ import {
 	WRONG_COVERAGE_LOSS,
 } from "../rules.model";
 
-export const LINT_COST = 40;
+const LINT_COSTS = [8, 16, 32, 64, 128, 256];
+
+/** Cost (KB) of the next linter run this poll — doubles each use, capped at 256. */
+export const lintCost = (usesThisPoll: number): number =>
+	LINT_COSTS[usesThisPoll] ?? LINT_COSTS[LINT_COSTS.length - 1];
 
 const addStorage = (current: number, income: number): number =>
 	Math.min(current + income, STORAGE_CAP_KB);
@@ -478,15 +482,16 @@ export const lintApplies = (state: RunState): boolean => {
 };
 
 export const canRunLinter = (state: RunState): boolean =>
-	lintApplies(state) && state.storage >= LINT_COST;
+	lintApplies(state) && state.storage >= lintCost(state.manualDisabled.length);
 
 const spendLint = (state: RunState): RunState => {
 	if (!canRunLinter(state)) return state;
+	const cost = lintCost(state.manualDisabled.length);
 	return {
 		...state,
-		storage: state.storage - LINT_COST,
+		storage: state.storage - cost,
 		manualDisabled: [...state.manualDisabled, wrongStillOn(state)[0].id],
-		log: withLog(state, `Ran the linter (-${LINT_COST}KB).`),
+		log: withLog(state, `Ran the linter (-${cost}KB).`),
 	};
 };
 

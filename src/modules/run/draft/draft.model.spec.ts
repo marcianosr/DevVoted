@@ -12,12 +12,14 @@ const seenAcrossSeeds = (equipped: readonly Config[]): string[] =>
 	);
 
 describe("rebuildCost", () => {
-	it("follows the Fibonacci sequence in KB", () => {
-		expect([0, 1, 2, 3, 4, 5].map(rebuildCost)).toEqual([1, 2, 3, 5, 8, 13]);
+	it("doubles each rebuild in KB (powers of 2)", () => {
+		expect([0, 1, 2, 3, 4, 5].map(rebuildCost)).toEqual([
+			4, 8, 16, 32, 64, 128,
+		]);
 	});
 
 	it("caps at the last defined step", () => {
-		expect(rebuildCost(50)).toBe(89);
+		expect(rebuildCost(50)).toBe(512);
 	});
 });
 

@@ -29,7 +29,7 @@ export const Danger: Story = {
 };
 
 export const Theme: Story = {
-	args: { children: "Rebuild configs (1KB)", variant: "theme" },
+	args: { children: "Rebuild configs (4KB)", variant: "theme" },
 };
 
 export const Selected: Story = {

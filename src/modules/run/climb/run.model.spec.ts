@@ -76,13 +76,13 @@ describe("gates and rewards", () => {
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.gatesCleared).toBe(1);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(120);
+		expect(state.storage).toBe(80); // GATE_REWARD_KB × 1
 	});
 
 	it("pays a check-config's stacked multiplier on a pass", () => {
 		let state = started(["coverage-gain"]); // 1.5× reward, needs +4% coverage
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true); // 5 correct → +5% coverage
-		expect(state.storage).toBe(180);
+		expect(state.storage).toBe(120); // 80 × 1.5
 	});
 
 	it("takes several rewards (upgrade + slot + draft) and stays until finish", () => {
@@ -128,7 +128,7 @@ describe("gates and rewards", () => {
 		state = { ...state, coverageByCategory: { js: 100 } };
 		state = runReducer(state, { type: "upgrade", configId: "js" });
 		expect(state.pipeline.configs[0].level).toBe(2); // now allowed, no KB spent
-		expect(state.storage).toBe(120);
+		expect(state.storage).toBe(80); // gate reward untouched by a free upgrade
 	});
 
 	it("charges KB to upgrade the correct config (Unit Tests)", () => {
@@ -137,12 +137,12 @@ describe("gates and rewards", () => {
 		state = runReducer(state, { type: "start" });
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(120);
+		expect(state.storage).toBe(80); // GATE_REWARD_KB × 1
 
 		state = runReducer(state, { type: "upgrade", configId: "unit-tests" }); // L1→L2 costs 60
 		const unit = state.pipeline.configs.find((c) => c.id === "unit-tests")!;
 		expect(unit.level).toBe(2);
-		expect(state.storage).toBe(60);
+		expect(state.storage).toBe(20); // 80 − 60
 	});
 
 	it("flags newly drafted configs and clears the flag on finish", () => {
@@ -170,7 +170,7 @@ describe("selling in the shop", () => {
 		let state = { ...rewardingWith("eslint"), storage: 0 };
 		state = runReducer(state, { type: "sell", configId: "eslint" });
 		expect(configIds(state)).not.toContain("eslint");
-		expect(state.storage).toBe(10); // common draft cost 20 → half
+		expect(state.storage).toBe(16); // common draft cost 32 → half
 	});
 
 	it("refuses to sell a fixed config", () => {
@@ -495,7 +495,7 @@ describe("economy", () => {
 		expect(state.storage).toBe(STORAGE_CAP_KB);
 	});
 
-	it("caps storage at 1 MB, discarding faucet income beyond the limit", () => {
+	it("caps storage at the limit, discarding faucet income beyond it", () => {
 		let state = { ...started(["indexed-db"]), storage: STORAGE_CAP_KB - 3 };
 		state = answerWith(state, true); // faucet pays 8KB, only 3 fit
 		expect(state.storage).toBe(STORAGE_CAP_KB);
@@ -522,7 +522,7 @@ describe("economy", () => {
 			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.eslint] },
 		};
 		const linted = runReducer(withLinter, { type: "lint-poll" });
-		expect(linted.storage).toBe(60);
+		expect(linted.storage).toBe(92); // first lint this poll costs 8KB
 		expect(linted.manualDisabled).toHaveLength(1);
 
 		const noLinter: RunState = {
@@ -533,6 +533,37 @@ describe("economy", () => {
 		};
 		const unchanged = runReducer(noLinter, { type: "lint-poll" });
 		expect(unchanged.storage).toBe(100);
+	});
+
+	it("doubles the lint cost with each use in the same poll", () => {
+		// Four options (one correct) leave three wrong, so two lints apply in a row.
+		const quadPoll: RunPoll = {
+			id: "quad",
+			category: "js",
+			question: "Pick",
+			answerType: "single",
+			options: [
+				{ id: "a", label: "A", correct: true },
+				{ id: "b", label: "B", correct: false },
+				{ id: "c", label: "C", correct: false },
+				{ id: "d", label: "D", correct: false },
+			],
+		};
+		const state: RunState = {
+			...createRun([quadPoll], handed),
+			status: "answering",
+			storage: 100,
+			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.eslint] },
+		};
+
+		const once = runReducer(state, { type: "lint-poll" });
+		expect(once.storage).toBe(92); // -8KB
+		expect(once.log.at(-1)).toContain("-8KB");
+
+		const twice = runReducer(once, { type: "lint-poll" });
+		expect(twice.storage).toBe(76); // -16KB, the escalated price
+		expect(twice.log.at(-1)).toContain("-16KB");
+		expect(twice.manualDisabled).toHaveLength(2);
 	});
 });
 

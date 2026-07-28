@@ -44,7 +44,7 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	rewardMultiplier: 1,
 	coverageMultiplier: 1,
 	coverageAdd: 0,
-	gateReward: 120,
+	gateReward: 80,
 	gatesCleared: 0,
 	victoryGate: 5,
 	pollsToGate: 5,

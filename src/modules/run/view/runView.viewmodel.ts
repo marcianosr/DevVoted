@@ -5,7 +5,7 @@ import {
 	type AnswerType,
 	canRunLinter,
 	lintApplies,
-	LINT_COST,
+	lintCost,
 	rebuildCost,
 	type RunPoll,
 	type RunState,
@@ -219,6 +219,7 @@ const redactPoll = (poll: RunPoll): PollView => ({
 export const toRunView = (state: RunState): RunView => {
 	const current = state.polls[state.currentIndex];
 	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
+	const nextLintCost = lintCost(state.manualDisabled.length);
 	return {
 		status: state.status,
 		slots: state.pipeline.slots,
@@ -232,7 +233,7 @@ export const toRunView = (state: RunState): RunView => {
 		disabledOptionIds: state.manualDisabled,
 		canLint: lintApplies(state),
 		lintReady: canRunLinter(state),
-		lintCost: LINT_COST,
+		lintCost: nextLintCost,
 		rebuildCost: nextRebuildCost,
 		canRebuild: state.storage >= nextRebuildCost,
 		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),

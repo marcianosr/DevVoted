@@ -8,7 +8,7 @@ const base = {
 	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.copilot],
-	gateReward: 120,
+	gateReward: 80,
 	rewardMultiplier: 1,
 	coverageMultiplier: 1,
 	coverageAdd: 0,

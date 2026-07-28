@@ -1,11 +1,11 @@
 ---
 # DVTD-qh9m
 title: Escalating linter cost when used multiple times in a single poll
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-18T08:21:18Z
-updated_at: 2026-07-27T14:16:47Z
+updated_at: 2026-07-27T16:56:43Z
 parent: DVTD-kulw
 ---
 
@@ -33,8 +33,16 @@ Pick an escalation curve — needs a game-design pass:
 
 ## Todo
 
-- [ ] Decide escalation curve (game design)
-- [ ] Derive lint cost from uses-this-poll in run.model.ts
-- [ ] Show next cost in PollCard button label
-- [ ] Log actual spent amount
-- [ ] Tests for escalation, reset, and storage gating
+- [x] Decide escalation curve (game design)
+- [x] Derive lint cost from uses-this-poll in run.model.ts
+- [x] Show next cost in PollCard button label
+- [x] Log actual spent amount
+- [x] Tests for escalation, reset, and storage gating
+
+## Design decision (resolved 2026-07-27)
+
+Doubling curve, re-based from 40 to a cheaper start: LINT_COSTS = [8, 16, 32, 64, 128, 256], indexed by manualDisabled.length (uses-this-poll), capped at 256. First use drops 40 -> 8; cheaper than the old flat 40 for the first ~4 cumulative uses, then steeper. Part of a wider KB-economy balance pass (see sibling balance bean).
+
+## Summary of Changes
+
+LINT_COST scalar (40) replaced by LINT_COSTS = [8,16,32,64,128,256] with lintCost(usesThisPoll) accessor in run.model.ts (mirrors rebuildCost). Cost indexes state.manualDisabled.length (linter runs this poll, resets per poll) — no new state. canRunLinter and spendLint compute the current cost; the run log records the actual amount spent. Viewmodel exposes view.lintCost = next price; PollCard button already renders it, so it now steps 8 -> 16 -> 32... live. Tests: escalation (8 then 16), gating, and reset covered in run.model.spec. Part of the wider KB-economy pass (DVTD-ggxi). Verified: tsc 0 errors, tests green.

@@ -18,7 +18,7 @@ export const Default: Story = {
 		bench: [CONFIGS.eslint, CONFIGS.copilot, CONFIGS.coverageGain],
 		gateNumber: 1,
 		pollsToGate: 5,
-		gateReward: 120,
+		gateReward: 80,
 		rewardMultiplier: 1,
 		coverageMultiplier: 1,
 		coverageAdd: 0,
