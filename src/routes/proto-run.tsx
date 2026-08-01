@@ -191,6 +191,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	};
 	const canSubmit = selected.length > 0;
 	const canStart = view.configs.length >= view.slots;
+
 	const quotaMet = view.stripsRemaining === 0;
 
 	const runOver = state.status === "won" || state.status === "dead";
@@ -221,7 +222,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						label: "Start run →",
 						onClick: () => dispatch({ type: "start" }),
 						disabled: !canStart,
-						hint: canStart ? undefined : "Choose a config to start",
+						hint: canStart
+							? undefined
+							: "Select a config for every pipeline slot",
 					}}
 				>
 					<ConfiguringScreen
@@ -250,6 +253,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						options={view.poll.options}
 						selectedOptionIds={selected}
 						disabledOptionIds={disabled}
+						slots={view.slots}
 						canLint={view.canLint}
 						lintReady={view.lintReady}
 						linter={view.linter ?? undefined}

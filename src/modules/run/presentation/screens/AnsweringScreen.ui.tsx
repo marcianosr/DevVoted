@@ -9,9 +9,9 @@ import {
 	ScoreEquationChips,
 	type ScoreBonusRow,
 } from "~/ui/runs/ScoreEquationChips.ui";
-import { Title } from "~/ui/typography/Title.component";
+import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
-import { RoleList } from "../gate/RoleList.ui";
+import { RoleList, type RowUseAction } from "../gate/RoleList.ui";
 import { PollCard, PollOption } from "../poll/PollCard.ui";
 
 /** Chips begin after the option badges have popped in (~620ms of pops). */
@@ -45,6 +45,8 @@ const scoreBonusRows = (
 type AnsweringScreenProps = {
 	configs: readonly Config[];
 	checks: readonly CheckStatus[];
+	/** Total pipeline slots — shown in the pipeline header when provided. */
+	slots?: number;
 	category: CategoryCode;
 	question: string;
 	codeBlock?: string;
@@ -73,6 +75,7 @@ type AnsweringScreenProps = {
 export const AnsweringScreen = ({
 	configs,
 	checks,
+	slots,
 	category,
 	question,
 	codeBlock,
@@ -93,56 +96,69 @@ export const AnsweringScreen = ({
 	onSubmit,
 	onNext,
 	onLint,
-}: AnsweringScreenProps) => (
-	<div className="flex flex-col gap-6">
-		<PollCard
-			category={category}
-			question={question}
-			codeBlock={codeBlock}
-			codeSandboxUrl={codeSandboxUrl}
-			answerType={answerType}
-			options={options}
-			selectedOptionIds={selectedOptionIds}
-			disabledOptionIds={disabledOptionIds}
-			correctOptionIds={correctOptionIds}
-			chosenOptionIds={chosenOptionIds}
-			canLint={canLint}
-			lintReady={lintReady}
-			linter={linter}
-			lintCost={lintCost}
-			onSelect={onSelect}
-			onLint={onLint}
-		/>
-		{revealScore ? (
-			<div className="flex flex-col gap-4">
-				<hr className="border-theme border-t" />
-				<ScoreEquationChips
-					isCorrect={revealScore.isCorrect}
-					baseCoverage={revealScore.baseCoverage}
-					bonuses={scoreBonusRows(revealScore, configs)}
-					earnedCoverage={revealScore.earnedCoverage}
-					difficulty={revealScore.difficulty}
-					animated
-					startDelayMs={REVEAL_SCORE_START_MS}
+}: AnsweringScreenProps) => {
+	// The linter acts from its own pipeline row: its row points (▸) and offers
+	// the "use" button, instead of a separate button on the poll card.
+	const lintActionFor = (config: Config): RowUseAction | undefined => {
+		if (!canLint || !linter || !onLint || config.id !== linter.id)
+			return undefined;
+		return { cost: lintCost, ready: lintReady ?? true, onUse: onLint };
+	};
+
+	return (
+		<div className="flex flex-col gap-6">
+			<PollCard
+				category={category}
+				question={question}
+				codeBlock={codeBlock}
+				codeSandboxUrl={codeSandboxUrl}
+				answerType={answerType}
+				options={options}
+				selectedOptionIds={selectedOptionIds}
+				disabledOptionIds={disabledOptionIds}
+				correctOptionIds={correctOptionIds}
+				chosenOptionIds={chosenOptionIds}
+				onSelect={onSelect}
+			/>
+			{revealScore ? (
+				<div className="flex flex-col gap-4">
+					<hr className="border-theme border-t" />
+					<ScoreEquationChips
+						isCorrect={revealScore.isCorrect}
+						baseCoverage={revealScore.baseCoverage}
+						bonuses={scoreBonusRows(revealScore, configs)}
+						earnedCoverage={revealScore.earnedCoverage}
+						difficulty={revealScore.difficulty}
+						animated
+						startDelayMs={REVEAL_SCORE_START_MS}
+					/>
+				</div>
+			) : null}
+			<div className="flex justify-end">
+				{correctOptionIds !== undefined ? (
+					<Button className="rounded-lg" onClick={onNext}>
+						Next →
+					</Button>
+				) : (
+					<Button
+						className="rounded-lg"
+						disabled={!canSubmit}
+						onClick={onSubmit}
+					>
+						Submit answer →
+					</Button>
+				)}
+			</div>
+			<div className="space-y-2 border-t border-zinc-700 pt-4">
+				<Subtitle as="h3">
+					pipeline{slots ? ` · ${configs.length} of ${slots} slots` : ""}
+				</Subtitle>
+				<RoleList
+					rows={roleRows(configs, checks)}
+					layout="stacked"
+					getUseAction={lintActionFor}
 				/>
 			</div>
-		) : null}
-		<div className="flex justify-end">
-			{correctOptionIds !== undefined ? (
-				<Button className="rounded-lg" onClick={onNext}>
-					Next →
-				</Button>
-			) : (
-				<Button className="rounded-lg" disabled={!canSubmit} onClick={onSubmit}>
-					Submit answer →
-				</Button>
-			)}
 		</div>
-		<div className="space-y-2">
-			<Title as="h3" size="sm">
-				Build status
-			</Title>
-			<RoleList rows={roleRows(configs, checks)} />
-		</div>
-	</div>
-);
+	);
+};

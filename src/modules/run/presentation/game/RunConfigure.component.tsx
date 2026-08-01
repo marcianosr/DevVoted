@@ -21,9 +21,7 @@ export const RunConfigure = () => {
 				label: "Start run →",
 				onClick: () => send({ type: "start" }),
 				disabled: !canStart || busy,
-				hint: canStart
-					? undefined
-					: `Fill ${slotsLeft} more slot${slotsLeft === 1 ? "" : "s"} to start`,
+				hint: canStart ? undefined : "Select a config for every pipeline slot",
 			}}
 		>
 			<ConfiguringScreen

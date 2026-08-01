@@ -87,7 +87,8 @@ describe("roleRows", () => {
 			progress: "not seen",
 		});
 		const [row] = roleRows([focusTs], [dormantMastery]);
-		expect(row.status).toBe("not triggered yet");
+		expect(row.status).toBeUndefined();
+		expect(row.note).toBe("skipped");
 		expect(row.state).toBe("skipped");
 	});
 
@@ -95,6 +96,62 @@ describe("roleRows", () => {
 		const [row] = roleRows([unitTests], [correctCheck]);
 		expect(row.status).toBe("0/1");
 		expect(row.state).toBe("running");
+	});
+
+	it("carries the authored gives and needs onto the row", () => {
+		const indexed = config({
+			id: "indexed-db",
+			label: "IndexedDB",
+			check: "min-correct",
+			gives: "+8KB per correct answer",
+			needs: "3 correct answers this window",
+		});
+		const [row] = roleRows(
+			[indexed],
+			[check({ label: "IndexedDB", sourceConfigId: "indexed-db" })]
+		);
+		expect(row.gives).toBe("+8KB per correct answer");
+		expect(row.needs).toBe("3 correct answers this window");
+	});
+
+	it("falls back to the live check demand when needs is not authored, so escalation stays visible", () => {
+		const escalated = check({
+			label: "Correct",
+			sourceConfigId: "unit-tests",
+			description: "3 correct answers",
+		});
+		const [row] = roleRows([unitTests], [escalated]);
+		expect(row.needs).toBe("3 correct answers");
+	});
+
+	it("prefers the roster's authored needs over the live check demand", () => {
+		const authored = config({
+			id: "ts",
+			label: ".ts",
+			focusCategory: "ts",
+			gives: "TypeScript polls earn 1.5× coverage",
+			needs: "1 correct TypeScript poll",
+		});
+		const mastery = check({
+			label: ".ts mastery",
+			sourceConfigId: "ts",
+			state: "skipped",
+			description: ".ts: get one right if ts appears",
+		});
+		const [row] = roleRows([authored], [mastery]);
+		expect(row.gives).toBe("TypeScript polls earn 1.5× coverage");
+		expect(row.needs).toBe("1 correct TypeScript poll");
+	});
+
+	it("drops wordy progress under the description instead of the value slot", () => {
+		const breadth = check({
+			label: "Breadth",
+			sourceConfigId: "unit-tests",
+			progress: "0/2 categories",
+		});
+		const [row] = roleRows([unitTests], [breadth]);
+		expect(row.status).toBeUndefined();
+		expect(row.note).toBe("0/2 categories");
 	});
 
 	it("states the escalated demand on a requirement row, not the base config text", () => {

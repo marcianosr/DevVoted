@@ -20,6 +20,7 @@ const base = {
 			target: 1,
 			state: "running" as const,
 			sourceConfigId: "unit-tests",
+			description: "1 correct answer",
 		},
 	],
 	onSlot: vi.fn(),
@@ -27,15 +28,37 @@ const base = {
 };
 
 describe(ConfiguringScreen, () => {
-	it("renders both numbered steps and the run stakes", () => {
+	it("renders the bench and pipeline columns side by side", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: /Pick your config stack/ })
+			screen.getByRole("heading", { name: "Available configs" })
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: /Review your build/ })
+			screen.getByRole("heading", { name: "Your pipeline" })
 		).toBeInTheDocument();
-		expect(screen.getByText(/Run rules/i)).toBeInTheDocument();
+	});
+
+	it("shows what a pipeline config gives and needs", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(screen.getByText("+32KB on clear")).toBeInTheDocument();
+		expect(screen.getByText("1 correct answer")).toBeInTheDocument();
+	});
+
+	it("marks pipeline rows with a state dot instead of a status badge", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(screen.getByRole("img", { name: "running" })).toBeInTheDocument();
+		expect(screen.queryByText("RUN")).not.toBeInTheDocument();
+	});
+
+	it("counts the used slots in the pipeline subtitle", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(screen.getByText("2 of 3 slots used")).toBeInTheDocument();
+	});
+
+	it("shows the gate reward and multipliers", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(screen.getByText("+80KB")).toBeInTheDocument();
+		expect(screen.getAllByText("×1")).toHaveLength(2);
 	});
 
 	it("renders the bench offers", () => {

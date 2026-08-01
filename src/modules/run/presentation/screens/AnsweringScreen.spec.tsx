@@ -58,6 +58,28 @@ describe(AnsweringScreen, () => {
 		).toBeDisabled();
 	});
 
+	it("runs the linter from its pipeline row", () => {
+		const onLint = vi.fn();
+		render(
+			<AnsweringScreen
+				{...base}
+				configs={[CONFIGS.unitTests, CONFIGS.eslint]}
+				canLint
+				lintReady
+				linter={CONFIGS.eslint}
+				lintCost={8}
+				onLint={onLint}
+			/>
+		);
+		fireEvent.click(screen.getByRole("button", { name: "use 8KB" }));
+		expect(onLint).toHaveBeenCalledOnce();
+	});
+
+	it("counts the pipeline slots in the section header", () => {
+		render(<AnsweringScreen {...base} slots={4} />);
+		expect(screen.getByText("pipeline · 2 of 4 slots")).toBeInTheDocument();
+	});
+
 	it("swaps Submit for a Next button once the answer is revealed", () => {
 		const onNext = vi.fn();
 		render(

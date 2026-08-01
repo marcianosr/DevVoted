@@ -91,7 +91,7 @@ const ExpandedPoll = ({ poll }: { poll: RunCommunityPoll }) => {
 	return (
 		<div className="space-y-5 rounded-md border border-zinc-700 bg-zinc-900/60 p-6">
 			<div className="flex items-baseline justify-between gap-4">
-				<Title as="h3" size="sm">
+				<Title as="h3">
 					<span className={outcomeText({ outcome: poll.outcome })}>
 						Poll {poll.index + 1}
 					</span>

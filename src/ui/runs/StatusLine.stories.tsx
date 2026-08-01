@@ -51,7 +51,7 @@ const VARIANTS: readonly VariantExample[] = [
 		valueClass: "text-zinc-400",
 	},
 	{
-		badge: "running",
+		badge: "run",
 		line: "requirement in flight",
 		value: "running",
 		valueClass: "text-saffron",

@@ -14,18 +14,16 @@ export const Default: Story = {
 	args: { children: "Gate 3 — the climb steepens" },
 };
 
+export const AsSectionHeading: Story = {
+	args: {
+		children: "Your pipeline",
+		as: "h2",
+	},
+};
+
 export const CategoryAccent: Story = {
 	args: {
 		children: "JavaScript",
 		category: "js",
-		as: "h1",
-	},
-};
-
-export const Gradient: Story = {
-	args: {
-		children: "Gate #3 cleared!",
-		tone: "gradient",
-		as: "h2",
 	},
 };

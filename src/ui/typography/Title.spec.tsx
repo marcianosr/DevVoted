@@ -18,35 +18,27 @@ describe("Title", () => {
 		).toBeInTheDocument();
 	});
 
+	it("uses the single flat title style", () => {
+		render(<Title>Plain</Title>);
+		expect(screen.getByRole("heading", { name: "Plain" })).toHaveClass(
+			"text-md",
+			"text-zinc-200",
+			"tracking-tight"
+		);
+	});
+
 	it("themes the heading in a category's color", () => {
 		render(<Title category="js">JavaScript</Title>);
 		const heading = screen.getByRole("heading", { name: "JavaScript" });
 		expect(heading).toHaveAttribute("data-category-theme", "js");
 		expect(heading).toHaveClass("text-theme");
+		expect(heading).not.toHaveClass("text-zinc-200");
 	});
 
-	it("is zinc-100 when no category is given", () => {
-		render(<Title>Plain</Title>);
-		expect(screen.getByRole("heading", { name: "Plain" })).toHaveClass(
-			"text-zinc-100"
-		);
-	});
-
-	it("renders the gradient tone", () => {
-		render(<Title tone="gradient">Gate #3 cleared!</Title>);
-		expect(
-			screen.getByRole("heading", { name: "Gate #3 cleared!" })
-		).toHaveClass("text-gradient-green");
-	});
-
-	it("lets a category win over the gradient tone", () => {
-		render(
-			<Title category="js" tone="gradient">
-				JavaScript
-			</Title>
-		);
-		const heading = screen.getByRole("heading", { name: "JavaScript" });
-		expect(heading).toHaveClass("text-theme");
-		expect(heading).not.toHaveClass("text-gradient-green");
+	it("appends caller classes to the base style", () => {
+		render(<Title className="text-cinnabar">Build broke!</Title>);
+		const heading = screen.getByRole("heading", { name: "Build broke!" });
+		expect(heading).toHaveClass("text-cinnabar");
+		expect(heading).toHaveClass("tracking-tight");
 	});
 });

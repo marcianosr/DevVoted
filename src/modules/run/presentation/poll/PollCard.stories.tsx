@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { PollCard } from "./PollCard.ui";
 
 const meta: Meta<typeof PollCard> = {
@@ -38,7 +37,9 @@ export const MultipleChoice: Story = {
 	},
 };
 
-export const WithLinter: Story = {
+// The lint action itself lives on the linter's pipeline row (RoleList) — the
+// card only shows its outcome: the crossed-out option.
+export const WithLintedOption: Story = {
 	args: {
 		category: "js",
 		question: "Which coerces to true?",
@@ -46,10 +47,6 @@ export const WithLinter: Story = {
 		options,
 		disabledOptionIds: ["c"],
 		onSelect: () => {},
-		canLint: true,
-		linter: CONFIGS.eslint,
-		onLint: () => {},
-		lintCost: 40,
 	},
 };
 

@@ -29,9 +29,7 @@ const seenLabel = ({ timesSeen, lastSeen }: PracticeBankEntry) =>
 export const PracticeBank = ({ entries, totalCount }: PracticeBankProps) => (
 	<section className="flex flex-col gap-4">
 		<header>
-			<Title as="h2" size="sm">
-				Practice bank
-			</Title>
+			<Title as="h2">Practice bank</Title>
 			<Subtitle>{totalCount ?? entries.length} polls to draw from</Subtitle>
 		</header>
 		<ul className="divide-y divide-zinc-800 overflow-hidden rounded-xl border border-zinc-700">

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { clsx } from "clsx";
+
 type SubtitleProps = {
 	children: ReactNode;
 	as?: "h2" | "h3" | "p";
@@ -8,15 +10,15 @@ type SubtitleProps = {
 
 export const Subtitle = ({
 	children,
-	as = "p",
+	as: Tag = "h2",
 	className = "",
-}: SubtitleProps) => {
-	const Tag = as;
-	return (
-		<Tag
-			className={`text-sm font-bold tracking-tight text-zinc-300 leading-6 ${className}`}
-		>
-			{children}
-		</Tag>
-	);
-};
+}: SubtitleProps) => (
+	<Tag
+		className={clsx(
+			"text-xs text-zinc-400 font-medium tracking-tight",
+			className
+		)}
+	>
+		{children}
+	</Tag>
+);

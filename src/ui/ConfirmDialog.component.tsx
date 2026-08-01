@@ -60,9 +60,7 @@ export const ConfirmDialog = ({
 			className="backdrop:bg-black backdrop:opacity-50 p-0 w-[min(28rem,calc(100vw-2rem))] m-auto rounded-xl border border-theme bg-zinc-900 whitespace-normal"
 		>
 			<div className="flex flex-col gap-4 p-6">
-				<Title as="h2" size="sm">
-					{title}
-				</Title>
+				<Title as="h2">{title}</Title>
 				<Paragraph tone="muted" size="sm" className="text-pretty break-words">
 					{message}
 				</Paragraph>

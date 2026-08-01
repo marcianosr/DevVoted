@@ -52,9 +52,7 @@ const PathCard = ({
 }) => (
 	<section className="flex flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-900/40 p-5">
 		<header>
-			<Title as="h3" size="sm">
-				{title}
-			</Title>
+			<Title as="h3">{title}</Title>
 			<Subtitle>{description}</Subtitle>
 		</header>
 		{children}
@@ -177,13 +175,12 @@ export const ShopScreen = ({
 
 			<section className="flex flex-col gap-2">
 				<header>
-					<Title as="h2" size="md">
-						Your load-out for gate {gateNumber}
-					</Title>
+					<Title as="h2">Your load-out for gate {gateNumber}</Title>
 					<Subtitle>Click a config to sell or upgrade it.</Subtitle>
 				</header>
 				<RoleList
 					rows={roleRows(configs, checks)}
+					layout="stacked"
 					slots={slots}
 					actionsFor={actionsFor}
 					newConfigIds={newConfigIds}

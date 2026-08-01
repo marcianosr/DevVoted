@@ -9,6 +9,7 @@ export type ParagraphTone =
 	| "theme"
 	| "pewter"
 	| "muted"
+	| "faint"
 	| "celadon"
 	| "vermillion"
 	| "viridian"
@@ -34,6 +35,7 @@ const paragraph = cva("tracking-tight", {
 			saffron: "text-saffron",
 			lavender: "text-lavender",
 			muted: "text-zinc-400",
+			faint: "text-zinc-500",
 			gradient: "text-gradient-green",
 		} satisfies Record<ParagraphTone, string>,
 	},

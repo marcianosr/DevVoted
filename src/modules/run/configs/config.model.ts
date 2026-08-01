@@ -21,6 +21,13 @@ export type Config = {
 	readonly family: ConfigFamily;
 	readonly rarity?: Rarity;
 	readonly description: string;
+	/** Benefit phrase — the pipeline row's "gives" line. */
+	readonly gives?: string;
+	/** Demand phrase — the "needs" line. Omit when the demand escalates (the
+	 * correct check): the live check text shows instead. */
+	readonly needs?: string;
+	/** Price phrase — the "costs" line (a linter's escalating fee and pledge). */
+	readonly costs?: string;
 	readonly requirementDelta: number;
 	readonly rewardMultiplier: number;
 	readonly focusCategory?: CategoryCode;

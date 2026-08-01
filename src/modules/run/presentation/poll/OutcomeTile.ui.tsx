@@ -62,7 +62,7 @@ export const OutcomeTile = ({
 		onClick={onClick}
 		className={tile({ outcome, expanded })}
 	>
-		<Subtitle>{title}</Subtitle>
+		<Subtitle as="p">{title}</Subtitle>
 		<div className="flex items-center gap-2">
 			<span className={outcomeText({ outcome })}>{OUTCOME_ICON[outcome]}</span>
 			<span className={`block text-sm ${outcomeText({ outcome })}`}>

@@ -25,7 +25,7 @@ const rows: readonly RoleRow[] = [
 		config: CONFIGS.js,
 		role: "conditional",
 		description: describeConfig(CONFIGS.js),
-		status: "not triggered yet",
+		note: "skipped",
 		state: "skipped",
 	},
 	{

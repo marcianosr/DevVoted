@@ -44,6 +44,8 @@ const ReportRow = ({
 }) => (
 	<PipelineReportRow
 		badge={STATUS_VARIANT[row.status]}
+		layout="stacked"
+		spacing="spacious"
 		config={row.config}
 		description={row.description}
 		descriptionTone={row.status === "failed" ? "cinnabar" : "muted"}
@@ -97,13 +99,16 @@ export const GateRewardReport = ({
 	stripsRemaining,
 }: GateRewardReportProps) => (
 	<div className="flex flex-col gap-3">
-		<Title as="h2" tone={cleared ? "gradient" : "cinnabar"}>
+		<Title
+			as="h2"
+			className={cleared ? "text-gradient-green" : "text-cinnabar"}
+		>
 			{cleared ? "Build pass!" : "Build Failed!"}
 		</Title>
 
 		<div className="flex items-center gap-3 ">
 			<StatusBadge variant={cleared ? "pass" : "fail"} />
-			<Title size="sm">
+			<Title>
 				Gate {gateNumber} {cleared ? "cleared!" : "failed!"}
 			</Title>
 		</div>
@@ -120,7 +125,7 @@ export const GateRewardReport = ({
 			<StepsSummary rows={rows} />
 		</section>
 
-		<div>
+		<div className="divide-y divide-zinc-700">
 			{[...rows]
 				.sort((a: GateRewardRow, b: GateRewardRow) => {
 					const aRemovable = removableConfigIds.includes(a.config.id);

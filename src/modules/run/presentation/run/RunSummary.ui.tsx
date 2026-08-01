@@ -67,9 +67,11 @@ export const RunSummary = ({
 		<div className="flex flex-col gap-6">
 			<header>
 				{won ? (
-					<Title tone="gradient">And now it&apos;s green!</Title>
+					<Title className="text-gradient-green">
+						And now it&apos;s green!
+					</Title>
 				) : (
-					<Title tone="cinnabar">Build broke!</Title>
+					<Title className="text-cinnabar">Build broke!</Title>
 				)}
 				<Subtitle>
 					{won
@@ -79,7 +81,7 @@ export const RunSummary = ({
 			</header>
 
 			<section className="flex flex-col">
-				<Title size="md">Results</Title>
+				<Title>Results</Title>
 				<Subtitle>Pipeline run</Subtitle>
 				<Paragraph as="div" size="sm" className="flex gap-2">
 					<Paragraph as="span" size="sm" tone="viridian">
@@ -123,7 +125,7 @@ export const RunSummary = ({
 			)}
 
 			<section className="flex flex-col gap-2">
-				<Title size="md">Rewards</Title>
+				<Title>Rewards</Title>
 				<Paragraph size="sm" tone="muted">
 					{won
 						? `You summited — all ${storage}KB of your run storage banks into meta.`

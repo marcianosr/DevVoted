@@ -188,7 +188,7 @@ export const OutcomeCounts = ({ answered }: AnswerResultsProps) => {
 export const AnswerResults = ({ answered }: AnswerResultsProps) => (
 	<section className="space-y-4">
 		<div className="space-y-1">
-			<Title size="sm">Your answers</Title>
+			<Title>Your answers</Title>
 			<OutcomeCounts answered={answered} />
 		</div>
 

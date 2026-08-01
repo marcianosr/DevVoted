@@ -20,7 +20,16 @@ export type RoleRow = {
 	readonly config: Config;
 	readonly role: ConfigRole;
 	readonly description: string;
+	/** The benefit phrase — the row's "gives" line. */
+	readonly gives?: string;
+	/** The check's demand — the row's "needs" line (escalated where applicable). */
+	readonly needs?: string;
+	/** The price phrase — the row's "costs" line. */
+	readonly costs?: string;
+	/** Compact counter shown as the row's value ("0/1", "5%/1%"). */
 	readonly status?: string;
+	/** Prose footnote under the description ("skipped", "0/2 categories"). */
+	readonly note?: string;
 	readonly state?: CheckState;
 };
 
@@ -45,6 +54,20 @@ export const gateRowDescription = (
 		? `Requires ${check.description} to pass the gate.`
 		: describeConfig(config);
 
+// A counter ("0/2", "5%/1%") reads at a glance and sits right as the value;
+// prose ("0/2 categories", "steady") is a remark and drops under the description.
+const isCounter = (progress: string): boolean => /^[\d/%.]+$/.test(progress);
+
+const progressPlacement = (
+	check: CheckStatus | undefined,
+	dormant: boolean
+): Pick<RoleRow, "status" | "note"> => {
+	if (dormant) return { note: "skipped" };
+	if (!check?.progress) return {};
+	if (isCounter(check.progress)) return { status: check.progress };
+	return { note: check.progress };
+};
+
 export const roleRows = (
 	configs: readonly Config[],
 	checks: readonly CheckStatus[]
@@ -60,7 +83,14 @@ export const roleRows = (
 				config,
 				role,
 				description: gateRowDescription(config, role, check),
-				status: dormant ? "not triggered yet" : check?.progress,
+				gives: config.gives,
+				// Only the correct check escalates with depth, so only it shows its
+				// live demand text; every other config authors needs on the roster.
+				needs:
+					config.needs ??
+					(config.check === "correct" ? check?.description : undefined),
+				costs: config.costs,
+				...progressPlacement(check, dormant),
 				state: check?.state,
 			};
 		})

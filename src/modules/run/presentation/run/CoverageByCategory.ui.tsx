@@ -31,7 +31,7 @@ export const CoverageByCategory = ({
 	return (
 		<section className="flex flex-col gap-2">
 			<header>
-				<Title size="sm">{title}</Title>
+				<Title>{title}</Title>
 				{subtitle ? <Subtitle>{subtitle}</Subtitle> : null}
 			</header>
 			<div className="flex flex-wrap gap-2">

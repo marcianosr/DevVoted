@@ -21,7 +21,7 @@ export const StatBadge = ({
 		valueTone === "gradient" ? "text-gradient-green" : "text-theme";
 	return (
 		<div className="flex flex-col" {...themed}>
-			<Subtitle>{label}</Subtitle>
+			<Subtitle as="p">{label}</Subtitle>
 			<span className={`${valueColor} text-xl font-extrabold`}>{value}</span>
 		</div>
 	);

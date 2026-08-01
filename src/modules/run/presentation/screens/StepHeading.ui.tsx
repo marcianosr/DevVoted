@@ -32,9 +32,7 @@ export const StepHeading = ({
 	<header className="flex items-start gap-3">
 		<span className={stepBadge({ tone })}>{step}</span>
 		<header>
-			<Title as="h2" size="md">
-				{title}
-			</Title>
+			<Title as="h2">{title}</Title>
 			{subtitle ? <Subtitle>{subtitle}</Subtitle> : null}
 		</header>
 	</header>
