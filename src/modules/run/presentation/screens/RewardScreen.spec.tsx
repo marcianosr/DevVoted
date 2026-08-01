@@ -44,10 +44,10 @@ describe(RewardScreen, () => {
 	it("shows the cleared gate, the reward report, and the answer results", () => {
 		render(<RewardScreen {...base} />);
 		// The report headlines success and names the gate.
-		expect(screen.getByText("Gate success!")).toBeInTheDocument();
-		expect(screen.getByText("gate-1")).toBeInTheDocument();
-		// The check config's progress shows in its row.
-		expect(screen.getByText("2/2")).toBeInTheDocument();
+		expect(screen.getByText("Build pass!")).toBeInTheDocument();
+		expect(screen.getByText(/Gate 1 cleared!/)).toBeInTheDocument();
+		// Unit Tests pays its flat clear payout in its row.
+		expect(screen.getByText("+32KB")).toBeInTheDocument();
 		// Answers sit behind the review bar — expand it to reach the poll review.
 		fireEvent.click(screen.getByRole("button", { name: /Review answers/ }));
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();

@@ -41,6 +41,13 @@ describe("currentRequirement", () => {
 		expect(currentRequirement(pipelineWith([]), 0)).toBe(1);
 		expect(currentRequirement(pipelineWith([]), 2)).toBe(2);
 	});
+
+	it("reads Unit Tests' checkAmount — its level never raises the demand", () => {
+		expect(currentRequirement(pipelineWith([CONFIGS.unitTests]), 0)).toBe(1);
+		expect(
+			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 3 }]), 0)
+		).toBe(1);
+	});
 });
 
 describe("checkStatuses", () => {
@@ -57,7 +64,7 @@ describe("checkStatuses", () => {
 	it("adds a Coverage check that can fail while Correct passes", () => {
 		const statuses = checkStatuses(
 			pipelineWith([CONFIGS.coverageGain]),
-			win({ correct: 3, answered: 5, coverageGained: 3 }),
+			win({ correct: 3, answered: 5, coverageGained: 0.5 }),
 			0
 		);
 		expect(statuses.map((check) => check.label)).toEqual([
@@ -65,17 +72,32 @@ describe("checkStatuses", () => {
 			"Coverage",
 		]);
 		expect(statuses[0].state).toBe("success");
-		expect(statuses[1].state).toBe("failed"); // 3% < 4%, window closed
+		expect(statuses[1].state).toBe("failed"); // 0.5% < 1%, window closed
 	});
 
-	it("counts the leading streak for Cold Start", () => {
+	it("fails Cold Start when the opening answer missed", () => {
 		const [, coldStart] = checkStatuses(
 			pipelineWith([CONFIGS.coldStart]),
-			win({ correct: 5, answered: 5, leadingCorrect: 1 }),
+			win({ correct: 4, answered: 5, leadingCorrect: 0 }),
 			0
 		);
 		expect(coldStart.label).toBe("Cold start");
-		expect(coldStart.state).toBe("failed"); // 1 < 2, window closed
+		expect(coldStart.state).toBe("failed");
+	});
+
+	it("composes every installed config's check into the window's checklist", () => {
+		const statuses = checkStatuses(
+			pipelineWith([CONFIGS.unitTests, CONFIGS.indexedDb, CONFIGS.eslint]),
+			win({ correct: 3, answered: 5 }),
+			0
+		);
+		expect(statuses.map((check) => check.label)).toEqual([
+			"Correct",
+			"IndexedDB",
+			"ESLint linted",
+		]);
+		expect(statuses[1].state).toBe("success"); // 3 correct ≥ 3
+		expect(statuses[2].state).toBe("skipped"); // never linted
 	});
 
 	it("ignores a Focus mastery until its category appears", () => {
@@ -114,7 +136,21 @@ describe("gatePassed", () => {
 		expect(
 			gatePassed(
 				pipelineWith([CONFIGS.coverageGain]),
-				win({ correct: 5, answered: 5, coverageGained: 3 }),
+				win({ correct: 5, answered: 5, coverageGained: 0.5 }),
+				0
+			)
+		).toBe(false);
+	});
+
+	it("fails the gate when a linted poll was missed, even with every answer demand met", () => {
+		expect(
+			gatePassed(
+				pipelineWith([CONFIGS.eslint]),
+				win({
+					correct: 4,
+					answered: 5,
+					lintedByConfig: { eslint: { polls: 1, correct: 0 } },
+				}),
 				0
 			)
 		).toBe(false);
@@ -128,7 +164,7 @@ describe("gateDemands", () => {
 			0
 		);
 		expect(demands[0]).toBe("1 correct answer");
-		expect(demands).toContain("your first 2 answers correct");
-		expect(demands).toContain("+4% coverage this window");
+		expect(demands).toContain("your first answer correct");
+		expect(demands).toContain("+1% coverage this window");
 	});
 });

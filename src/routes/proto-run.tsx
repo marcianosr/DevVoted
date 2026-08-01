@@ -1,7 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useReducer, useState } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
-import { createRun, runReducer, RunPoll } from "~/modules/run/climb/run.model";
+import {
+	createRun,
+	runReducer,
+	RunAction,
+	RunPoll,
+} from "~/modules/run/climb/run.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/run/draft/draft.model";
 import {
@@ -22,6 +27,10 @@ import { Screen } from "~/ui/Screen.ui";
 
 export const Route = createFileRoute("/proto-run")({
 	component: RouteComponent,
+	beforeLoad: () => {
+		// Test harness with cheat controls — never reachable on a deployed build.
+		if (import.meta.env.PROD) throw redirect({ to: "/" });
+	},
 });
 
 const single = (
@@ -101,28 +110,38 @@ const BASE_POLLS: RunPoll[] = [
 	]),
 ];
 
+type RigOutcome = "right" | "wrong";
+
+// The rig reads answers from the unredacted poll. Only possible here: the proto
+// route holds the full RunState client-side, while the real game strips
+// `correct` flags via toRunView before anything reaches the browser.
+const rigOptionIds = (
+	poll: RunPoll,
+	outcome: RigOutcome
+): readonly string[] => {
+	if (outcome === "right") {
+		return poll.options
+			.filter((option) => option.correct)
+			.map((option) => option.id);
+	}
+	const wrong = poll.options.find((option) => !option.correct);
+	return wrong ? [wrong.id] : [];
+};
+
 const POOL_SIZE = VICTORY_GATE * SLICE_WINDOW + SLICE_WINDOW;
 const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 	const base = BASE_POLLS[i % BASE_POLLS.length];
 	return { ...base, id: `${base.id}-${i}` };
 });
 
-const HANDED = [
-	CONFIGS.js,
-	CONFIGS.ts,
-	CONFIGS.css,
-	CONFIGS.eslint,
-	CONFIGS.copilot,
-	CONFIGS.codeCoverage,
-	CONFIGS.indexedDb,
-	CONFIGS.coverageGain,
-	CONFIGS.coldStart,
-];
+const HANDED = [...Object.values(CONFIGS)];
 
 const RunGame = ({ onRestart }: { onRestart: () => void }) => {
-	const [state, dispatch] = useReducer(runReducer, 0, () =>
-		createRun(POOLS, HANDED, [CONFIGS.unitTests])
-	);
+	// useState instead of useReducer so the rig can step the pure reducer in a
+	// loop (fast-forward needs each intermediate state to pick the next answer).
+	const [state, setState] = useState(() => createRun(POOLS, HANDED));
+	const dispatch = (action: RunAction) =>
+		setState((current) => runReducer(current, action));
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	useEffect(() => {
 		setSelected([]);
@@ -141,6 +160,25 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 	const answer = (optionIds: readonly string[]) =>
 		dispatch({ type: "answer", optionIds });
+	const answerCurrent = (outcome: RigOutcome) => {
+		const poll = state.polls[state.currentIndex];
+		if (poll) answer(rigOptionIds(poll, outcome));
+	};
+	// Auto-answer until the reducer closes the window (rewarding, strip, won or
+	// dead all exit the loop), so any gate — and game over — is a few clicks away.
+	const answerRestOfWindow = (outcome: RigOutcome) =>
+		setState((current) => {
+			let next = current;
+			while (next.status === "answering") {
+				const poll = next.polls[next.currentIndex];
+				if (!poll) return next;
+				next = runReducer(next, {
+					type: "answer",
+					optionIds: rigOptionIds(poll, outcome),
+				});
+			}
+			return next;
+		});
 	// Selecting no longer auto-answers — the player commits deliberately via the
 	// Screen's "Submit answer" footer action.
 	const onSelect = (optionId: string) => {
@@ -152,7 +190,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		);
 	};
 	const canSubmit = selected.length > 0;
-	const canStart = view.configs.filter((config) => !config.fixed).length > 0;
+	const canStart = view.configs.length >= view.slots;
 	const quotaMet = view.stripsRemaining === 0;
 
 	const runOver = state.status === "won" || state.status === "dead";
@@ -319,6 +357,40 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						answered={view.allAnswered}
 					/>
 				</Screen>
+			)}
+
+			{state.status === "answering" && (
+				<div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
+					<span className="font-semibold uppercase tracking-wide">Dev rig</span>
+					<button
+						type="button"
+						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+						onClick={() => answerCurrent("right")}
+					>
+						✓ Answer right
+					</button>
+					<button
+						type="button"
+						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+						onClick={() => answerCurrent("wrong")}
+					>
+						✕ Answer wrong
+					</button>
+					<button
+						type="button"
+						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+						onClick={() => answerRestOfWindow("right")}
+					>
+						⏩ All right → gate
+					</button>
+					<button
+						type="button"
+						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+						onClick={() => answerRestOfWindow("wrong")}
+					>
+						⏩ All wrong → gate
+					</button>
+				</div>
 			)}
 
 			{state.log.length > 0 && (

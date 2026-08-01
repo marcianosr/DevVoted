@@ -21,16 +21,18 @@ const poll = (id: string): RunPoll => ({
 	],
 });
 
-const answering = () =>
-	runReducer(createRun([poll("q0"), poll("q1")], [CONFIGS.js]), {
-		type: "start",
-	});
+// View specs bypass the full-pipeline start rule: the status is forced so the
+// pipeline holds exactly the configs under test, nothing more.
+const answering = () => ({
+	...createRun([poll("q0"), poll("q1")], [CONFIGS.js]),
+	status: "answering" as const,
+});
 
 const answeringWith = (configs: Config[]) => {
 	let state = createRun([poll("q0"), poll("q1")], configs);
 	for (const config of configs)
 		state = runReducer(state, { type: "slot", configId: config.id });
-	return runReducer(state, { type: "start" });
+	return { ...state, status: "answering" as const };
 };
 
 describe("toRunView", () => {
@@ -168,9 +170,10 @@ describe("latestAnswerScore", () => {
 			],
 		};
 		const state = runReducer(
-			runReducer(createRun([multiPoll, poll("q1")], [CONFIGS.js]), {
-				type: "start",
-			}),
+			{
+				...createRun([multiPoll, poll("q1")], [CONFIGS.js]),
+				status: "answering" as const,
+			},
 			{ type: "answer", optionIds: ["q0-a", "q0-b"] }
 		);
 		expect(latestAnswerScore(toRunView(state))?.difficulty).toEqual({

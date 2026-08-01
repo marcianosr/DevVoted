@@ -27,6 +27,7 @@ export const RunReward = () => {
 				coverageGainedByCategory={view.coverageGainedThisGate}
 				passedChecks={view.passedChecks}
 				configs={view.configs}
+				faucetThisGateKb={view.faucetThisGateKb}
 			/>
 		</Screen>
 	);

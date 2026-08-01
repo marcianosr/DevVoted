@@ -3,8 +3,13 @@ import { describe, expect, it } from "vitest";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 import { CONFIGS } from "../configs/configRoster.model";
-import { MAX_SLOTS } from "../pipeline/pipeline.model";
-import { SLICE_WINDOW, STORAGE_CAP_KB, VICTORY_GATE } from "../rules.model";
+import { BASE_SLOTS, MAX_SLOTS } from "../pipeline/pipeline.model";
+import {
+	FAUCET_CAP_KB,
+	SLICE_WINDOW,
+	STORAGE_CAP_KB,
+	VICTORY_GATE,
+} from "../rules.model";
 import {
 	createRun,
 	isAwaitingTomorrow,
@@ -32,11 +37,15 @@ const pool = (size: number): RunPoll[] =>
 	Array.from({ length: size }, (_, index) => poll(`kazooie-${index}`, true));
 
 const handed = [
+	CONFIGS.unitTests,
 	CONFIGS.js,
+	CONFIGS.ts,
+	CONFIGS.css,
 	CONFIGS.eslint,
 	CONFIGS.coverageGain,
 	CONFIGS.coldStart,
 	CONFIGS.indexedDb,
+	CONFIGS.codeCoverage,
 ];
 
 const configIds = (state: RunState): string[] =>
@@ -54,9 +63,15 @@ const answerWith = (state: RunState, correct: boolean): RunState => {
 	});
 };
 
+// The climb only starts on a full pipeline, so the helper pads the requested
+// configs with inert fillers: focus categories the react-only pool never
+// serves and a linter that is never used — their checks skip, never judge.
+const FILLER_IDS = ["ts", "css", "js", "eslint"];
+
 const started = (slotIds: string[], size = 60): RunState => {
 	let state = createRun(pool(size), handed);
-	for (const configId of slotIds)
+	const fillers = FILLER_IDS.filter((id) => !slotIds.includes(id));
+	for (const configId of [...slotIds, ...fillers].slice(0, BASE_SLOTS))
 		state = runReducer(state, { type: "slot", configId });
 	return runReducer(state, { type: "start" });
 };
@@ -79,10 +94,10 @@ describe("gates and rewards", () => {
 		expect(state.storage).toBe(80); // GATE_REWARD_KB × 1
 	});
 
-	it("pays a check-config's stacked multiplier on a pass", () => {
-		let state = started(["coverage-gain"]); // 1.5× reward, needs +4% coverage
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true); // 5 correct → +5% coverage
-		expect(state.storage).toBe(120); // 80 × 1.5
+	it("pays the flat Unit Tests payout on top of the gate reward", () => {
+		let state = started(["unit-tests", "js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.storage).toBe(112); // 80 gate + 32 Unit Tests flat
 	});
 
 	it("takes several rewards (upgrade + slot + draft) and stays until finish", () => {
@@ -131,26 +146,25 @@ describe("gates and rewards", () => {
 		expect(state.storage).toBe(80); // gate reward untouched by a free upgrade
 	});
 
-	it("charges KB to upgrade the correct config (Unit Tests)", () => {
-		let state = createRun(pool(60), handed, [CONFIGS.unitTests]);
-		state = runReducer(state, { type: "slot", configId: "js" });
-		state = runReducer(state, { type: "start" });
+	it("refuses to upgrade Unit Tests — escalation is its only ramp", () => {
+		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(80); // GATE_REWARD_KB × 1
 
-		state = runReducer(state, { type: "upgrade", configId: "unit-tests" }); // L1→L2 costs 60
+		state = runReducer(state, { type: "upgrade", configId: "unit-tests" });
 		const unit = state.pipeline.configs.find((c) => c.id === "unit-tests")!;
-		expect(unit.level).toBe(2);
-		expect(state.storage).toBe(20); // 80 − 60
+		expect(unit.level).toBeUndefined();
+		expect(state.storage).toBe(112); // nothing charged, nothing gained
 	});
 
 	it("flags newly drafted configs and clears the flag on finish", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		state = { ...state, storage: 500 }; // drafting costs KB
+		// The pipeline starts full, so drafting needs a widened build first.
+		state = { ...state, storage: 500, coverage: 100 };
+		state = runReducer(state, { type: "add-slot" });
 
-		const pick = state.draftOptions.find((config) => config.id !== "js")!;
+		const pick = state.draftOptions[0];
 		state = runReducer(state, { type: "draft", configId: pick.id });
 		expect(state.draftedThisGate).toEqual([pick.id]);
 
@@ -173,14 +187,13 @@ describe("selling in the shop", () => {
 		expect(state.storage).toBe(16); // common draft cost 32 → half
 	});
 
-	it("refuses to sell a fixed config", () => {
-		let state = createRun(pool(60), handed, [CONFIGS.unitTests]);
-		for (const id of ["eslint"])
-			state = runReducer(state, { type: "slot", configId: id });
-		state = runReducer(state, { type: "start" });
+	it("sells Unit Tests like any other config — nothing is locked anymore", () => {
+		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		state = { ...state, storage: 0 };
 		state = runReducer(state, { type: "sell", configId: "unit-tests" });
-		expect(configIds(state)).toContain("unit-tests");
+		expect(configIds(state)).not.toContain("unit-tests");
+		expect(state.storage).toBe(16); // common draft cost 32 → half
 	});
 });
 
@@ -216,15 +229,88 @@ describe("slot coverage gate", () => {
 });
 
 describe("check-configs on one pipeline", () => {
-	it("fails when Coverage is unmet even though Correct passes", () => {
-		let state = started(["coverage-gain"]);
-		for (let i = 0; i < 3; i++) state = answerWith(state, true); // +3% < 4%
-		for (let i = 0; i < 2; i++) state = answerWith(state, false);
+	it("fails when IndexedDB's 3-correct demand is unmet even though Correct passes", () => {
+		let state = started(["indexed-db"]);
+		for (let i = 0; i < 2; i++) state = answerWith(state, true); // Correct met (2 ≥ 1)
+		for (let i = 0; i < 3; i++) state = answerWith(state, false); // 2 < 3 for IndexedDB
 		expect(state.status).toBe("awaiting-strip");
 	});
 
-	it("passes a Cold Start check when the first answers are correct", () => {
-		let state = started(["cold-start"]); // needs first 2 correct
+	it("passes a Cold Start check when the first answer is correct", () => {
+		let state = started(["cold-start"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.gatesCleared).toBe(1);
+	});
+
+	it("doubles the opening answer's coverage with Cold Start", () => {
+		let state = started(["cold-start"]);
+		state = answerWith(state, true);
+		expect(state.coverage).toBe(2.2); // 1 × opener ×2 × streak 1.1
+		state = answerWith(state, true);
+		expect(state.coverage).toBe(3.4); // +1.2 — the doubling was opener-only
+	});
+
+	it("fails the gate on two consecutive misses with Code Coverage installed", () => {
+		let state = started(["code-coverage"]);
+		state = answerWith(state, true);
+		state = answerWith(state, false);
+		state = answerWith(state, false); // the double miss — unrecoverable
+		state = answerWith(state, true);
+		state = answerWith(state, true); // Correct met (3 ≥ 1), check still failed
+		expect(state.status).toBe("awaiting-strip");
+	});
+
+	it("stops the IndexedDB faucet at the per-run cap", () => {
+		let state = started(["indexed-db"]);
+		state = { ...state, faucetEarnedKb: FAUCET_CAP_KB - 4 };
+		state = answerWith(state, true); // only 4KB of headroom left
+		expect(state.storage).toBe(4);
+		expect(state.faucetEarnedKb).toBe(FAUCET_CAP_KB);
+		state = answerWith(state, true); // the faucet has run dry
+		expect(state.storage).toBe(4);
+	});
+});
+
+describe("lint-correct checks", () => {
+	// Three options so the lint action applies (it needs >1 wrong option left).
+	const lintablePoll = (id: string, correct: boolean): RunPoll => ({
+		id,
+		category: "js",
+		question: `Does ${id} lint?`,
+		answerType: "single",
+		options: [
+			{ id: `${id}-a`, label: "A", correct },
+			{ id: `${id}-b`, label: "B", correct: false },
+			{ id: `${id}-c`, label: "C", correct: !correct },
+		],
+	});
+
+	const lintableRun = (): RunState => {
+		let state = createRun(
+			Array.from({ length: 10 }, (_, index) =>
+				lintablePoll(`lintable-${index}`, true)
+			),
+			handed
+		);
+		// ts/css masteries skip on the js-only pool — only ESLint's check judges.
+		for (const configId of ["eslint", "ts", "css"])
+			state = runReducer(state, { type: "slot", configId });
+		state = runReducer(state, { type: "start" });
+		return { ...state, storage: 100 };
+	};
+
+	it("fails the gate when a linted poll is answered wrong", () => {
+		let state = lintableRun();
+		state = runReducer(state, { type: "lint-poll" });
+		expect(state.storage).toBe(92); // -8KB lint fee
+		state = answerWith(state, false); // the linted poll missed — unrecoverable
+		for (let i = 0; i < 4; i++) state = answerWith(state, true);
+		expect(state.status).toBe("awaiting-strip"); // Correct passed (4 ≥ 1), ESLint's check did not
+	});
+
+	it("passes when every linted poll is answered correctly", () => {
+		let state = lintableRun();
+		state = runReducer(state, { type: "lint-poll" });
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.gatesCleared).toBe(1);
 	});
@@ -246,7 +332,8 @@ describe("failure model", () => {
 		expect(state.stripsRemaining).toBe(0);
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("answering");
-		expect(configIds(state)).toEqual(["js"]);
+		expect(configIds(state)).not.toContain("eslint");
+		expect(state.pipeline.configs).toHaveLength(2);
 	});
 
 	it("ignores a strip once the quota is met", () => {
@@ -261,7 +348,9 @@ describe("failure model", () => {
 	});
 
 	it("ends the run when a bare pipeline misses", () => {
-		let state = started([]);
+		// Starting bare is impossible now — bareness is reached by stripping.
+		let state = started(["js"]);
+		state = { ...state, pipeline: { ...state.pipeline, configs: [] } };
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		expect(state.status).toBe("dead");
 	});
@@ -371,31 +460,27 @@ describe("the summit", () => {
 	});
 });
 
-describe("fixed configs", () => {
-	it("pre-slots a fixed config that can't be unslotted", () => {
-		let state = createRun(pool(60), handed, [CONFIGS.unitTests]);
-		expect(configIds(state)).toEqual(["unit-tests"]);
-		state = runReducer(state, { type: "unslot", configId: "unit-tests" });
-		expect(configIds(state)).toEqual(["unit-tests"]);
+describe("the starting pipeline", () => {
+	it("starts with empty slots — nothing is pre-installed", () => {
+		expect(configIds(createRun(pool(60), handed))).toEqual([]);
 	});
 
-	it("counts only non-fixed configs against the slots", () => {
-		let state = createRun(pool(60), handed, [CONFIGS.unitTests]);
-		for (const id of ["js", "eslint", "coverage-gain", "cold-start"])
-			state = runReducer(state, { type: "slot", configId: id });
-		expect(state.pipeline.configs).toHaveLength(4); // 3 free + the fixed one
-	});
-
-	it("dies only once nothing but the fixed config remains", () => {
-		let state = createRun(pool(60), handed, [CONFIGS.unitTests]);
+	it("refuses to start until every slot is filled", () => {
+		let state = createRun(pool(60), handed);
 		state = runReducer(state, { type: "slot", configId: "js" });
+		state = runReducer(state, { type: "slot", configId: "eslint" });
+		const early = runReducer(state, { type: "start" });
+		expect(early.status).toBe("configuring"); // 2 of 3 slots filled
+		state = runReducer(state, { type: "slot", configId: "cold-start" });
 		state = runReducer(state, { type: "start" });
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("awaiting-strip"); // js still peelable
-		state = runReducer(state, { type: "strip", configId: "js" });
-		state = runReducer(state, { type: "resume-climb" });
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("dead"); // only the fixed config left → bare
+		expect(state.status).toBe("answering");
+	});
+
+	it("unslots any config while configuring — Unit Tests included", () => {
+		let state = createRun(pool(60), handed);
+		state = runReducer(state, { type: "slot", configId: "unit-tests" });
+		state = runReducer(state, { type: "unslot", configId: "unit-tests" });
+		expect(configIds(state)).toEqual([]);
 	});
 });
 
@@ -438,8 +523,10 @@ describe("streak", () => {
 				{ id: "m-c", label: "C", correct: false },
 			],
 		};
-		let state = createRun([poll("a", true), poll("b", true), multi], handed);
-		state = runReducer(state, { type: "start" });
+		let state: RunState = {
+			...createRun([poll("a", true), poll("b", true), multi], handed),
+			status: "answering", // bare pipeline on purpose: base earn only
+		};
 		state = answerWith(state, true); // streak 1
 		state = answerWith(state, true); // streak 2
 		state = runReducer(state, { type: "answer", optionIds: ["m-a"] }); // partial

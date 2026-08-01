@@ -70,9 +70,9 @@ export const ShopLoadout: Story = {
 		rows,
 		slots: 4,
 		newConfigIds: [CONFIGS.js.id],
-		actionsFor: (config) => [
-			{ label: "Upgrade (60KB)", onClick: () => {} },
-			...(config.fixed ? [] : [{ label: "Sell +20KB", onClick: () => {} }]),
+		actionsFor: () => [
+			{ label: "Upgrade (5% cov)", onClick: () => {} },
+			{ label: "Sell +20KB", onClick: () => {} },
 		],
 		trailing: (
 			<button

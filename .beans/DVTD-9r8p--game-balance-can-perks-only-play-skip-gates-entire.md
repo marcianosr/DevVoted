@@ -1,11 +1,11 @@
 ---
 # DVTD-9r8p
 title: 'Game balance: can perks-only play skip gates entirely?'
-status: todo
+status: scrapped
 type: story
 priority: normal
 created_at: 2026-07-27T10:44:49Z
-updated_at: 2026-07-27T10:44:49Z
+updated_at: 2026-07-31T11:03:37Z
 parent: DVTD-bojz
 ---
 
@@ -26,3 +26,7 @@ Now that configs split into gates (judge you) and perks (help you), a balance qu
 - [ ] Playtest/simulate a perks-only run to see how far it gets
 - [ ] Decide whether gates need a non-reward incentive (or restriction) to stay meaningful
 - [ ] Write up the decision as a follow-up to DVTD-bojz once resolved
+
+## Reasons for Scrapping
+
+Closed by the Config Rule (wiki §4.1, DVTD-bojz resolution): every config carries a check, so a perks-only build that skips gates cannot exist — a build carrying few checks simply took little risk and earns least. Implemented 2026-07-31 (ADR-016).

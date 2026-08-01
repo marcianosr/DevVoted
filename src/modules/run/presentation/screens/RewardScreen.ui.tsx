@@ -16,6 +16,7 @@ type RewardScreenProps = {
 	coverageGainedByCategory: Readonly<Record<string, number>>;
 	passedChecks: readonly CheckStatus[];
 	configs: readonly Config[];
+	faucetThisGateKb?: number;
 };
 
 export const RewardScreen = ({
@@ -25,11 +26,17 @@ export const RewardScreen = ({
 	coverageGainedByCategory,
 	passedChecks,
 	configs,
+	faucetThisGateKb,
 }: RewardScreenProps) => {
 	const coveragePct = roundToOneDecimal(
 		Object.values(coverageGainedByCategory).reduce((sum, pct) => sum + pct, 0)
 	);
-	const rows = gateRewardRows({ answered, configs, checks: passedChecks });
+	const rows = gateRewardRows({
+		answered,
+		configs,
+		checks: passedChecks,
+		faucetThisGateKb,
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -38,7 +45,12 @@ export const RewardScreen = ({
 				cleared
 				rows={rows}
 				totals={{
-					storageKb: gateStorageGained(configs, answered, gateReward),
+					storageKb: gateStorageGained(
+						configs,
+						answered,
+						gateReward,
+						faucetThisGateKb
+					),
 					coveragePct,
 				}}
 			/>

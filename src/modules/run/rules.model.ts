@@ -6,6 +6,12 @@ export const GATE_REWARD_KB = 80;
 /** Hard cap (KB) on the storage currency — income beyond this is discarded. */
 export const STORAGE_CAP_KB = 512;
 /**
+ * Per-run ceiling (KB) on per-correct faucet income (IndexedDB). A single
+ * run-wide counter, deliberately: the shipped roster carries exactly one faucet
+ * config. If a second faucet ever ships, split the counter per config id.
+ */
+export const FAUCET_CAP_KB = 320;
+/**
  * Share of leftover storage credited to archived_storage when a run ends —
  * proportional to how far the climb got (Marciano, 2026-07-19; supersedes
  * the flat rates of DVTD-li9i): winning the final gate banks everything,

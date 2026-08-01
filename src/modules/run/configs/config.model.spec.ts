@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	describeConfig,
 	focusCoverageMultiplier,
 	focusDemand,
+	isUpgradable,
 	rarityOf,
-	upgradeCost,
 } from "./config.model";
 import { CONFIGS } from "./configRoster.model";
 
@@ -34,10 +35,36 @@ describe("focusDemand", () => {
 	});
 });
 
-describe("upgradeCost", () => {
-	it("climbs with the current level: 60 at L1, 120 at L2, 180 at L3", () => {
-		expect(upgradeCost(1)).toBe(60);
-		expect(upgradeCost(2)).toBe(120);
-		expect(upgradeCost(3)).toBe(180);
+describe("isUpgradable", () => {
+	it("allows focus configs", () => {
+		expect(isUpgradable(CONFIGS.js)).toBe(true);
+		expect(isUpgradable(CONFIGS.css)).toBe(true);
+	});
+
+	it("refuses Unit Tests — escalation is the only thing raising its check", () => {
+		expect(isUpgradable(CONFIGS.unitTests)).toBe(false);
+	});
+
+	it("refuses non-focus configs", () => {
+		expect(isUpgradable(CONFIGS.copilot)).toBe(false);
+		expect(isUpgradable(CONFIGS.coverageGain)).toBe(false);
+		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
+	});
+});
+
+describe("describeConfig", () => {
+	it("uses the roster description for Unit Tests — no level-based reward copy", () => {
+		expect(describeConfig(CONFIGS.unitTests)).toBe(
+			CONFIGS.unitTests.description
+		);
+		expect(describeConfig({ ...CONFIGS.unitTests, level: 2 })).toBe(
+			CONFIGS.unitTests.description
+		);
+	});
+
+	it("describes a focus config with its level-scaled payout and demand", () => {
+		expect(describeConfig({ ...CONFIGS.js, level: 2 })).toBe(
+			"JavaScript polls earn 2× coverage — but if JavaScript shows, you must get 2 right."
+		);
 	});
 });

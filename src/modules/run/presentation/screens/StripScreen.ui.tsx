@@ -23,9 +23,7 @@ export const StripScreen = ({
 	onStrip,
 }: StripScreenProps) => {
 	const quotaMet = stripsRemaining === 0;
-	const removableConfigIds = quotaMet
-		? []
-		: configs.filter((config) => !config.fixed).map((config) => config.id);
+	const removableConfigIds = quotaMet ? [] : configs.map((config) => config.id);
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -36,7 +34,6 @@ export const StripScreen = ({
 				removableConfigIds={removableConfigIds}
 				onRemoveConfig={onStrip}
 				stripsRemaining={stripsRemaining}
-				configs={configs}
 			/>
 
 			<ReviewAnswers answered={answered} />

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { Config } from "../configs/config.model";
 import { CONFIGS } from "../configs/configRoster.model";
+import { AnswerContext } from "../configs/effect.model";
 import {
 	Pipeline,
 	coverageBreakdownForAnswer,
@@ -11,6 +12,7 @@ import {
 	canLint,
 	isBare,
 	rewardMultiplierFor,
+	storageOnClearFor,
 	stripConfig,
 } from "./pipeline.model";
 
@@ -20,17 +22,29 @@ const pipelineWith = (configs: Config[]): Pipeline => ({
 	configs,
 });
 
+const at = (
+	category: AnswerContext["category"],
+	answeredBefore = 1
+): AnswerContext => ({ category, answeredBefore });
+
 describe("coverageProfileFor", () => {
 	it("returns the identity profile for a bare pipeline", () => {
 		expect(coverageProfileFor(pipelineWith([]))).toEqual({ mult: 1, add: 0 });
 	});
 
-	it("multiplies Amplify coverage mults and sums flat adds across the build", () => {
+	it("multiplies coverage mults and sums flat adds across the build", () => {
 		const profile = coverageProfileFor(
 			pipelineWith([CONFIGS.copilot, CONFIGS.codeCoverage])
 		);
 		expect(profile.mult).toBe(2);
 		expect(profile.add).toBe(0.5);
+	});
+
+	it("counts Intellisense and Coverage as coverage configs now, not storage ones", () => {
+		const profile = coverageProfileFor(
+			pipelineWith([CONFIGS.intellisense, CONFIGS.coverageGain])
+		);
+		expect(profile.mult).toBe(3); // 1.5 × 2
 	});
 });
 
@@ -45,12 +59,17 @@ describe("effectiveRequirement", () => {
 });
 
 describe("rewardMultiplierFor", () => {
-	it("multiplies an upgraded Unit Tests and Check payouts across the pipeline", () => {
+	it("is 1 across the whole shipped roster — the check is the price of the effect, not a storage payout", () => {
 		expect(
 			rewardMultiplierFor(
-				pipelineWith([{ ...CONFIGS.unitTests, level: 2 }, CONFIGS.coverageGain])
+				pipelineWith([
+					{ ...CONFIGS.unitTests, level: 2 },
+					CONFIGS.coverageGain,
+					CONFIGS.coldStart,
+					CONFIGS.intellisense,
+				])
 			)
-		).toBe(3); // 2 (L2 Unit Tests) × 1.5 (Coverage)
+		).toBe(1);
 	});
 
 	it("is 1 for a bare pipeline", () => {
@@ -58,44 +77,63 @@ describe("rewardMultiplierFor", () => {
 	});
 });
 
+describe("storageOnClearFor", () => {
+	it("is 0 for a bare pipeline and sums flat clear payouts", () => {
+		expect(storageOnClearFor(pipelineWith([]))).toBe(0);
+		expect(storageOnClearFor(pipelineWith([CONFIGS.unitTests]))).toBe(32);
+		expect(
+			storageOnClearFor(pipelineWith([CONFIGS.unitTests, CONFIGS.copilot]))
+		).toBe(32);
+	});
+});
+
 describe("coverageForAnswer", () => {
 	it("pays 1.5x in a Focus category, 1x outside it", () => {
-		expect(coverageForAnswer([CONFIGS.js], "js", 1)).toBe(1.5);
-		expect(coverageForAnswer([CONFIGS.js], "css", 1)).toBe(1);
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 1)).toBe(1.5);
+		expect(coverageForAnswer([CONFIGS.js], at("css"), 1)).toBe(1);
 	});
 
 	it("stacks Focus and Amplify across the whole pipeline", () => {
-		expect(coverageForAnswer([CONFIGS.js, CONFIGS.copilot], "js", 1)).toBe(3); // 1.5 × 2
+		expect(coverageForAnswer([CONFIGS.js, CONFIGS.copilot], at("js"), 1)).toBe(
+			3
+		); // 1.5 × 2
 	});
 
 	it("scales Focus with level and pays nothing for a wrong answer", () => {
-		expect(coverageForAnswer([{ ...CONFIGS.js, level: 2 }], "js", 1)).toBe(2);
-		expect(coverageForAnswer([CONFIGS.js], "js", 0)).toBe(0);
+		expect(coverageForAnswer([{ ...CONFIGS.js, level: 2 }], at("js"), 1)).toBe(
+			2
+		);
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 0)).toBe(0);
 	});
 
 	it("pays a partial share proportionally, configs included", () => {
 		// Half a multi-answer set demonstrated → half the Focus-boosted earn.
-		expect(coverageForAnswer([CONFIGS.js], "js", 0.5)).toBe(0.8); // 1.5 / 2, rounded
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 0.5)).toBe(0.8); // 1.5 / 2, rounded
 	});
 
 	it("applies the streak factor last, over base × configs", () => {
 		// 1.5 (Focus) × 1.3 (streak 3) = 1.95, rounded to one decimal.
-		expect(coverageForAnswer([CONFIGS.js], "js", 1, 1.3)).toBe(2);
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 1, 1.3)).toBe(2);
 		// A factor of 1 (no streak) leaves the earn unchanged.
-		expect(coverageForAnswer([CONFIGS.js], "js", 1, 1)).toBe(1.5);
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 1, 1)).toBe(1.5);
 	});
 
 	it("applies multipliers last, so a ×mult amplifies flat adds too", () => {
 		// (1 base + 0.5 Code Coverage) × 2 Copilot = 3 — the +0.5 gets doubled.
 		expect(
-			coverageForAnswer([CONFIGS.copilot, CONFIGS.codeCoverage], "js", 1)
+			coverageForAnswer([CONFIGS.copilot, CONFIGS.codeCoverage], at("js"), 1)
 		).toBe(3);
+	});
+
+	it("doubles the window's opening answer with Cold Start, and only that one", () => {
+		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 0), 1)).toBe(2);
+		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 1), 1)).toBe(1);
 	});
 });
 
 describe("coverageBreakdownForAnswer", () => {
 	it("gives a bare correct answer a base of 1 with no bonuses", () => {
-		expect(coverageBreakdownForAnswer([], "js", 1, 1, 0)).toEqual({
+		expect(coverageBreakdownForAnswer([], at("js"), 1, 1, 0)).toEqual({
 			base: 1,
 			streakBonus: 0,
 			configBonuses: [],
@@ -105,7 +143,7 @@ describe("coverageBreakdownForAnswer", () => {
 	it("splits an Amplify multiplier into its own config chip", () => {
 		// Copilot ×2 on a base of 1 → +1 config chip, base stays 1.
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.copilot], "js", 1, 1, 0)
+			coverageBreakdownForAnswer([CONFIGS.copilot], at("js"), 1, 1, 0)
 		).toEqual({
 			base: 1,
 			streakBonus: 0,
@@ -115,7 +153,7 @@ describe("coverageBreakdownForAnswer", () => {
 
 	it("splits a flat coverage add into its own config chip", () => {
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.codeCoverage], "js", 1, 1, 0)
+			coverageBreakdownForAnswer([CONFIGS.codeCoverage], at("js"), 1, 1, 0)
 		).toEqual({
 			base: 1,
 			streakBonus: 0,
@@ -123,9 +161,25 @@ describe("coverageBreakdownForAnswer", () => {
 		});
 	});
 
+	it("chips Cold Start on the opener and hides it afterwards", () => {
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 0), 1, 1, 0)
+		).toEqual({
+			base: 1,
+			streakBonus: 0,
+			configBonuses: [{ configId: "cold-start", value: 1 }],
+		});
+		// Off the opener Cold Start covers at ×1 → zero-value chip → filtered out.
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 1), 1, 1, 0)
+		).toEqual({ base: 1, streakBonus: 0, configBonuses: [] });
+	});
+
 	it("pulls the streak factor into its own bonus over base + configs", () => {
 		// Focus .js (1.5×) at streak 1.3: base 1, .js +0.5, streak +0.5 = 2.
-		expect(coverageBreakdownForAnswer([CONFIGS.js], "js", 1, 1.3, 0)).toEqual({
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.js], at("js"), 1, 1.3, 0)
+		).toEqual({
 			base: 1,
 			streakBonus: 0.5,
 			configBonuses: [{ configId: "js", value: 0.5 }],
@@ -135,13 +189,19 @@ describe("coverageBreakdownForAnswer", () => {
 	it("excludes configs with no coverage effect on the category", () => {
 		// ESLint is defense, .js Focus is a no-op on a CSS poll — neither chips.
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.eslint, CONFIGS.js], "css", 1, 1, 0)
+			coverageBreakdownForAnswer(
+				[CONFIGS.eslint, CONFIGS.js],
+				at("css"),
+				1,
+				1,
+				0
+			)
 		).toEqual({ base: 1, streakBonus: 0, configBonuses: [] });
 	});
 
 	it("carries a miss as a negative base with no bonuses", () => {
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.copilot], "js", 0, 1, 0.5)
+			coverageBreakdownForAnswer([CONFIGS.copilot], at("js"), 0, 1, 0.5)
 		).toEqual({ base: -0.5, streakBonus: 0, configBonuses: [] });
 	});
 
@@ -152,7 +212,7 @@ describe("coverageBreakdownForAnswer", () => {
 		expect(
 			coverageBreakdownForAnswer(
 				[CONFIGS.copilot, CONFIGS.codeCoverage],
-				"js",
+				at("js"),
 				1,
 				1,
 				0
@@ -170,7 +230,7 @@ describe("coverageBreakdownForAnswer", () => {
 	it("lists every flat-add config before every ×mult config, whatever the slot order", () => {
 		const order = coverageBreakdownForAnswer(
 			[CONFIGS.copilot, CONFIGS.codeCoverage],
-			"js",
+			at("js"),
 			1,
 			1,
 			0
@@ -181,13 +241,13 @@ describe("coverageBreakdownForAnswer", () => {
 
 	it("keeps base + streak + configs summing to the engine's earned coverage", () => {
 		const configs = [CONFIGS.copilot, CONFIGS.codeCoverage];
-		const breakdown = coverageBreakdownForAnswer(configs, "js", 1, 1.3, 0);
+		const breakdown = coverageBreakdownForAnswer(configs, at("js"), 1, 1.3, 0);
 		const sum =
 			breakdown.base +
 			breakdown.streakBonus +
 			breakdown.configBonuses.reduce((total, bonus) => total + bonus.value, 0);
 		expect(Math.round(sum * 10) / 10).toBe(
-			coverageForAnswer(configs, "js", 1, 1.3)
+			coverageForAnswer(configs, at("js"), 1, 1.3)
 		);
 	});
 });

@@ -49,7 +49,6 @@ type ConfigChipProps = {
 	badge?: ReactNode;
 	tooltip?: ReactNode;
 	noTooltip?: boolean;
-	noFixedBadge?: boolean;
 	compact?: boolean;
 	disabled?: boolean;
 	// Render the label bold (Configdex uses this; loadout leaves it normal).
@@ -123,7 +122,6 @@ export const ConfigChip = ({
 	badge,
 	tooltip,
 	noTooltip,
-	noFixedBadge,
 	boldLabel,
 	disabled,
 	onClick,
@@ -132,7 +130,6 @@ export const ConfigChip = ({
 	const corners = [
 		badge ? <span key="badge">{badge}</span> : null,
 		level > 1 ? <Badge key="level">L{level}</Badge> : null,
-		config.fixed && !noFixedBadge ? <Badge key="fixed">🔒</Badge> : null,
 		price !== undefined ? (
 			<Badge key="price" tone="price">{`${price}KB`}</Badge>
 		) : null,
@@ -169,11 +166,6 @@ export const ConfigChip = ({
 					<Paragraph className="text-sm">
 						{tooltip ?? describeConfig(config)}
 					</Paragraph>
-					{config.fixed ? (
-						<Paragraph className="text-sm text-pewter">
-							🔒 Required — fixed for every run, so it can&apos;t be removed.
-						</Paragraph>
-					) : null}
 				</div>
 			}
 		>

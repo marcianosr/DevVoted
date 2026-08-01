@@ -24,6 +24,7 @@ import {
  * unlocks land (DVTD-2try) — then this becomes a per-user query.
  */
 const HANDED_CONFIGS = [
+	CONFIGS.unitTests,
 	CONFIGS.js,
 	CONFIGS.ts,
 	CONFIGS.css,
@@ -34,7 +35,6 @@ const HANDED_CONFIGS = [
 	CONFIGS.coverageGain,
 	CONFIGS.coldStart,
 ];
-const FIXED_CONFIGS = [CONFIGS.unitTests];
 
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
 	const snapshot = await fetchRunSnapshot(run.id);
@@ -43,7 +43,6 @@ const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
 	return toRunView(hydrateRunState(snapshot, polls));
 };
 
-/** The persistent run, rolled over to today's segment first (ADR-011). */
 const continueActiveRun = async (
 	run: SessionRunRecord,
 	date: string
@@ -92,7 +91,6 @@ export const getTodaysRunHandler = async ({
 		return viewOfRun(startedToday);
 	});
 
-/** With a run in progress (any day), starting resumes it; otherwise a fresh run starts — same-day restarts included (DVTD-li9i). */
 export const startRunHandler = async ({
 	userId,
 	date,
@@ -113,7 +111,7 @@ export const startRunHandler = async ({
 			throw new Error("No polls left for a run today");
 		}
 
-		const state = createRun(polls, HANDED_CONFIGS, FIXED_CONFIGS);
+		const state = createRun(polls, HANDED_CONFIGS);
 		await createSessionRunWithState(userId, date, state);
 		return toRunView(state);
 	});

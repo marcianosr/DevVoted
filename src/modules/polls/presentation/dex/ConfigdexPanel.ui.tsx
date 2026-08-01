@@ -45,7 +45,6 @@ export const ConfigdexPanel = () => {
 										</span>
 									}
 									noTooltip
-									noFixedBadge
 									boldLabel
 								/>
 							))}

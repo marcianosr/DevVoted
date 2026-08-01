@@ -41,7 +41,7 @@ describe("rollDraft", () => {
 		expect(seenAcrossSeeds([CONFIGS.js])).not.toContain("js");
 	});
 
-	it("never offers a fixed config", () => {
-		expect(seenAcrossSeeds([])).not.toContain("unit-tests");
+	it("offers Unit Tests like any other unowned config", () => {
+		expect(seenAcrossSeeds([])).toContain("unit-tests");
 	});
 });

@@ -11,7 +11,9 @@ export const RunConfigure = () => {
 
 	if (!view) return null;
 
-	const canStart = view.configs.some((config) => !config.fixed);
+	// Mirrors the engine's start guard: the climb only begins on a full pipeline.
+	const slotsLeft = view.slots - view.configs.length;
+	const canStart = slotsLeft <= 0;
 
 	return (
 		<Screen
@@ -19,7 +21,9 @@ export const RunConfigure = () => {
 				label: "Start run →",
 				onClick: () => send({ type: "start" }),
 				disabled: !canStart || busy,
-				hint: canStart ? undefined : "Choose a config to start",
+				hint: canStart
+					? undefined
+					: `Fill ${slotsLeft} more slot${slotsLeft === 1 ? "" : "s"} to start`,
 			}}
 		>
 			<ConfiguringScreen

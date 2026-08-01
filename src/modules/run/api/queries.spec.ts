@@ -105,7 +105,7 @@ const wrongOptionId = (pollId: number) =>
 	);
 
 const answeringState = (overrides: Partial<RunState>): RunState => ({
-	...createRun([], [CONFIGS.js], [CONFIGS.unitTests]),
+	...createRun([], [CONFIGS.js]),
 	status: "answering",
 	...overrides,
 });
@@ -400,8 +400,14 @@ describe("applyActionToRun", () => {
 	});
 
 	it("writes no response row for advancing non-answer actions", async () => {
+		const base = createRun([], [CONFIGS.js]);
+		// Start only fires on a full pipeline, so the fixture fills every slot.
 		const configuring = {
-			...createRun([], [CONFIGS.js], [CONFIGS.unitTests]),
+			...base,
+			pipeline: {
+				...base.pipeline,
+				configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.css],
+			},
 			status: "configuring" as const,
 		};
 		mock.results.push([stateRow(configuring)]);
@@ -418,7 +424,7 @@ describe("applyActionToRun", () => {
 
 	it("marks a bare-build gate failure as dead without crediting empty storage", async () => {
 		const bare = {
-			...createRun([], [], []),
+			...createRun([], []),
 			status: "answering" as const,
 			currentIndex: 4,
 			window: {

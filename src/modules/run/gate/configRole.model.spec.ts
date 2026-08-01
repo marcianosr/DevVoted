@@ -33,6 +33,7 @@ const unitTests = config({
 	id: "unit-tests",
 	label: "Unit Tests",
 	check: "correct",
+	description: "+32KB storage on gate clear.",
 });
 const focusTs = config({ id: "ts", label: ".ts", focusCategory: "ts" });
 const coverageGain = config({
@@ -54,6 +55,17 @@ describe("roleOf", () => {
 
 	it("labels a config that backs no check a perk", () => {
 		expect(roleOf(coverageGain, [correctCheck])).toBe("perk");
+	});
+
+	it("labels a linter conditional — its check only bites when the lint is used", () => {
+		const eslint = config({
+			id: "eslint",
+			label: "ESLint",
+			check: "lint-correct",
+		});
+		expect(roleOf(eslint, [check({ label: "ESLint linted" })])).toBe(
+			"conditional"
+		);
 	});
 });
 
@@ -101,7 +113,7 @@ describe("roleRows", () => {
 
 	it("keeps the config's own description when the check carries no demand", () => {
 		const [row] = roleRows([unitTests], [correctCheck]);
-		expect(row.description).toBe("Requires 1 correct answer to pass the gate.");
+		expect(row.description).toBe("+32KB storage on gate clear.");
 	});
 });
 

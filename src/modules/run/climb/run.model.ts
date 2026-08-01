@@ -8,10 +8,10 @@ import {
 	type CoverageBreakdown,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
-	freeConfigs,
 	isBare,
-	isFixed,
+	linterFor,
 	rewardMultiplierFor,
+	storageOnClearFor,
 	stripConfig,
 } from "../pipeline/pipeline.model";
 import {
@@ -19,10 +19,10 @@ import {
 	draftCost,
 	isUpgradable,
 	sellRefund,
-	upgradeCost,
 	upgradeCoverageRequired,
 } from "../configs/config.model";
 import {
+	type AnswerContext,
 	type CheckStatus,
 	EMPTY_WINDOW,
 	GateWindow,
@@ -31,6 +31,7 @@ import { DRAFT_SIZE, rebuildCost, rollDraft } from "../draft/draft.model";
 import { checkStatuses, gateDemands, gatePassed } from "../gate/gate.model";
 import {
 	dropCount,
+	FAUCET_CAP_KB,
 	GATE_REWARD_KB,
 	gateBaseMultiplier,
 	pollDifficultyMultiplier,
@@ -130,6 +131,14 @@ const nextStreak = (current: number, outcome: AnswerOutcome): number => {
 	return current;
 };
 
+// Mirrors nextStreak from the other side: a partial neither cleans nor dirties
+// the miss record, so Code Coverage's no-double-miss check judges full misses only.
+const nextMissStreak = (current: number, outcome: AnswerOutcome): number => {
+	if (outcome === "wrong") return current + 1;
+	if (outcome === "correct") return 0;
+	return current;
+};
+
 export type RunStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
 
@@ -173,6 +182,11 @@ export type RunState = {
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
+	// Cumulative per-correct faucet income this run, capped at FAUCET_CAP_KB.
+	// Optional: runs snapshotted before it existed won't carry it.
+	readonly faucetEarnedKb?: number;
+	/** Faucet income inside the current window — feeds the gate report's exact row. */
+	readonly faucetThisGateKb?: number;
 	readonly log: readonly string[];
 };
 
@@ -194,11 +208,10 @@ export type RunAction =
 
 export const createRun = (
 	polls: readonly RunPoll[],
-	handed: readonly Config[],
-	fixed: readonly Config[] = []
+	handed: readonly Config[]
 ): RunState => ({
 	status: "configuring",
-	pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: fixed },
+	pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [] },
 	available: handed,
 	draftOptions: [],
 	rebuildsUsed: 0,
@@ -216,6 +229,8 @@ export const createRun = (
 	coverage: 0,
 	coverageByCategory: {},
 	storage: 0,
+	faucetEarnedKb: 0,
+	faucetThisGateKb: 0,
 	log: [],
 });
 
@@ -243,7 +258,7 @@ const withPipeline = (
 
 const slotConfig = (state: RunState, configId: string): RunState => {
 	const config = state.available.find((candidate) => candidate.id === configId);
-	if (!config || freeConfigs(state.pipeline).length >= state.pipeline.slots)
+	if (!config || state.pipeline.configs.length >= state.pipeline.slots)
 		return state;
 	return {
 		...state,
@@ -256,7 +271,7 @@ const unslotConfig = (state: RunState, configId: string): RunState => {
 	const config = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!config || isFixed(config)) return state;
+	if (!config) return state;
 	return {
 		...state,
 		available: [...state.available, config],
@@ -283,7 +298,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			};
 		const toDrop = Math.min(
 			dropCount(state.gatesCleared),
-			freeConfigs(state.pipeline).length
+			state.pipeline.configs.length
 		);
 		return {
 			...state,
@@ -297,9 +312,12 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		};
 	}
 
-	const reward = Math.round(
-		GATE_REWARD_KB * rewardMultiplierFor(state.pipeline)
-	);
+	// 80KB base × build multipliers, plus every flat clear payout (Unit Tests' +32).
+	const reward =
+		Math.round(GATE_REWARD_KB * rewardMultiplierFor(state.pipeline)) +
+		storageOnClearFor(state.pipeline);
+	// faucetThisGateKb is NOT reset here: the reward report still reads it while
+	// the shop is open. finishReward clears it, like answeredThisGate.
 	const cleared: RunState = {
 		...state,
 		window: EMPTY_WINDOW,
@@ -365,9 +383,15 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 	// Streak updates first so this answer scores at its new level (a correct
 	// reaching streak 3 earns at 1.3×). Then it multiplies the earn last.
 	const streak = nextStreak(state.streak, outcome);
+	// answeredBefore reads the pre-update window: 0 marks the window's opener,
+	// which is what Cold Start's opener multiplier keys off.
+	const answerContext: AnswerContext = {
+		category: poll.category,
+		answeredBefore: state.window.answered,
+	};
 	const earned = coverageForAnswer(
 		configs,
-		poll.category,
+		answerContext,
 		scoredShare,
 		streakMultiplier(streak)
 	);
@@ -384,7 +408,7 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 				);
 	const coverageBreakdown = coverageBreakdownForAnswer(
 		configs,
-		poll.category,
+		answerContext,
 		scoredShare,
 		streakMultiplier(streak),
 		coverageLoss
@@ -393,9 +417,33 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 	const categoryAfter = roundToOneDecimal(
 		Math.max(0, categoryBefore + earned - coverageLoss)
 	);
-	const faucet = correct
+	const rawFaucet = correct
 		? configs.reduce((sum, config) => sum + (config.storagePerCorrect ?? 0), 0)
 		: 0;
+	// Faucet income dries up at the per-run cap — partial payouts included, so
+	// a run at 316/320 still collects the last 4KB.
+	const faucetEarnedBefore = state.faucetEarnedKb ?? 0;
+	const faucet = Math.min(
+		rawFaucet,
+		Math.max(0, FAUCET_CAP_KB - faucetEarnedBefore)
+	);
+	// The lint spend is recorded per linter BEFORE manualDisabled resets below —
+	// this answer settles whether the linted poll was answered correctly.
+	const linter =
+		state.manualDisabled.length > 0
+			? linterFor(configs, poll.category)
+			: undefined;
+	const lintedBefore = state.window.lintedByConfig ?? {};
+	const lintedByConfig = linter
+		? {
+				...lintedBefore,
+				[linter.id]: {
+					polls: (lintedBefore[linter.id]?.polls ?? 0) + 1,
+					correct: (lintedBefore[linter.id]?.correct ?? 0) + (correct ? 1 : 0),
+				},
+			}
+		: lintedBefore;
+	const missStreak = nextMissStreak(state.window.missStreak ?? 0, outcome);
 	const tally = state.window.byCategory[poll.category] ?? {
 		seen: 0,
 		correct: 0,
@@ -415,8 +463,12 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 			[poll.category]: {
 				seen: tally.seen + 1,
 				correct: tally.correct + (correct ? 1 : 0),
+				gained: roundToOneDecimal((tally.gained ?? 0) + earned),
 			},
 		},
+		missStreak,
+		maxMissStreak: Math.max(state.window.maxMissStreak ?? 0, missStreak),
+		lintedByConfig,
 	};
 
 	const answeredPoll: AnsweredPoll = {
@@ -443,6 +495,8 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 		manualDisabled: [],
 		streak,
 		storage: addStorage(state.storage, faucet),
+		faucetEarnedKb: faucetEarnedBefore + faucet,
+		faucetThisGateKb: (state.faucetThisGateKb ?? 0) + faucet,
 		// The loss drains the poll's category (floored at 0) and the total
 		// moves by what the category actually lost — total stays the sum of
 		// the categories, and you can't lose coverage you don't have.
@@ -499,7 +553,7 @@ const strip = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(config) => config.id === configId
 	);
-	if (!target || isFixed(target) || state.stripsRemaining <= 0) return state;
+	if (!target || state.stripsRemaining <= 0) return state;
 	const pipeline = stripConfig(state.pipeline, configId);
 	const remaining = state.stripsRemaining - 1;
 	return {
@@ -522,6 +576,7 @@ const resumeClimb = (state: RunState): RunState => {
 		...state,
 		window: EMPTY_WINDOW,
 		manualDisabled: [],
+		faucetThisGateKb: 0,
 		answeredThisGate: [],
 		status: "answering",
 		log: withLog(
@@ -570,7 +625,7 @@ const draft = (state: RunState, configId: string): RunState => {
 	const cost = draftCost(chosen);
 	if (
 		alreadyOwned ||
-		freeConfigs(state.pipeline).length >= state.pipeline.slots ||
+		state.pipeline.configs.length >= state.pipeline.slots ||
 		state.storage < cost
 	)
 		return state;
@@ -594,36 +649,23 @@ const upgrade = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!owned || !isUpgradable(owned)) return state;
+	const focusCategory = owned.focusCategory;
+	if (!focusCategory) return state;
 	const level = owned.level ?? 1;
+	const have = state.coverageByCategory[focusCategory] ?? 0;
+	if (have < upgradeCoverageRequired(level)) return state;
 	const levelled = withPipeline(
 		state.pipeline,
 		state.pipeline.configs.map((config) =>
 			config.id === configId ? levelUp(config) : config
 		)
 	);
-
-	if (owned.focusCategory) {
-		const have = state.coverageByCategory[owned.focusCategory] ?? 0;
-		if (have < upgradeCoverageRequired(level)) return state;
-		return stayReward(
-			state,
-			levelled,
-			state.draftOptions,
-			`Upgraded ${owned.label} to L${level + 1}.`
-		);
-	}
-
-	const cost = upgradeCost(level);
-	if (state.storage < cost) return state;
-	return {
-		...stayReward(
-			state,
-			levelled,
-			state.draftOptions,
-			`Upgraded ${owned.label} to L${level + 1} (-${cost}KB).`
-		),
-		storage: state.storage - cost,
-	};
+	return stayReward(
+		state,
+		levelled,
+		state.draftOptions,
+		`Upgraded ${owned.label} to L${level + 1}.`
+	);
 };
 
 const finishReward = (state: RunState): RunState => ({
@@ -633,6 +675,7 @@ const finishReward = (state: RunState): RunState => ({
 	draftedThisGate: [],
 	answeredThisGate: [],
 	clearedChecks: [],
+	faucetThisGateKb: 0,
 	status: "answering",
 	log: withLog(state, "Climbing on."),
 });
@@ -657,7 +700,7 @@ const sell = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target || isFixed(target)) return state;
+	if (!target) return state;
 	const refund = sellRefund(target);
 	return {
 		...state,
@@ -671,7 +714,7 @@ const drop = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target || isFixed(target)) return state;
+	if (!target) return state;
 	return {
 		...state,
 		pipeline: withPipeline(
@@ -682,13 +725,20 @@ const drop = (state: RunState, configId: string): RunState => {
 	};
 };
 
+// Committing to the climb requires a full pipeline: every starting slot holds
+// a config, so the gate's opening demands are entirely the player's own picks.
+const start = (state: RunState): RunState => {
+	if (state.pipeline.configs.length < state.pipeline.slots) return state;
+	return { ...state, status: "answering" };
+};
+
 export const runReducer = (state: RunState, action: RunAction): RunState => {
 	if (action.type === "slot" && state.status === "configuring")
 		return slotConfig(state, action.configId);
 	if (action.type === "unslot" && state.status === "configuring")
 		return unslotConfig(state, action.configId);
 	if (action.type === "start" && state.status === "configuring")
-		return { ...state, status: "answering" };
+		return start(state);
 	if (action.type === "answer" && state.status === "answering")
 		return answer(state, action.optionIds);
 	if (action.type === "lint-poll" && state.status === "answering")

@@ -7,8 +7,12 @@ export const roleOf = (
 	config: Config,
 	checks: readonly CheckStatus[]
 ): ConfigRole => {
-	if (config.focusCategory) return "conditional";
+	// Skippable checks are conditional: judged only when triggered (the focus
+	// category showed up / the linter was actually used).
+	if (config.focusCategory || config.check === "lint-correct")
+		return "conditional";
 	const backsCheck = checks.some((check) => check.sourceConfigId === config.id);
+	// Under the Config Rule a checkless config is the exception (Copilot).
 	return backsCheck ? "requirement" : "perk";
 };
 
@@ -89,6 +93,9 @@ export const extraGateRequirements = (
 			const source = configs.find(
 				(config) => config.id === check.sourceConfigId
 			);
-			return !source?.focusCategory;
+			if (!source) return true;
+			// Conditionals (focus mastery, lint pledges) list with their config,
+			// not as standing gate demands.
+			return roleOf(source, checks) === "requirement";
 		})
 		.map((check) => check.description ?? check.label);

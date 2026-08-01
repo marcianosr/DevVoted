@@ -26,7 +26,11 @@
 			"mcp__playwright__browser_wait_for",
 			"mcp__playwright__browser_take_screenshot",
 			"mcp__playwright__browser_console_messages",
-			"Bash(beans show *)"
+			"Bash(beans show *)",
+			"Bash(beans list *)",
+			"Bash(grep -nE \"^#{1,4} \" docs/wiki.md)",
+			"Bash(python3 -c \"import sys,json; [print\\(d['id'],'|',d['status'],'|',d['title']\\) for d in json.load\\(sys.stdin\\)]\")",
+			"Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('STATUS:',d['status']\\); print\\(d['body']\\)\")"
 		],
 		"deny": []
 	}

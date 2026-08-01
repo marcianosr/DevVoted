@@ -14,9 +14,7 @@ export const rollDraft = (
 ): readonly Config[] => {
 	// Drafts offer NEW configs only — owned configs are upgraded in the shop, not re-drafted.
 	const owned = new Set(equipped.map((config) => config.id));
-	const pool = CONFIG_LIST.filter(
-		(config) => !owned.has(config.id) && !config.fixed
-	);
+	const pool = CONFIG_LIST.filter((config) => !owned.has(config.id));
 	return Array.from(
 		{ length: Math.min(DRAFT_SIZE, pool.length) },
 		(_, offset) => pool[(seed + offset) % pool.length]

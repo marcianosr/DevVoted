@@ -58,7 +58,7 @@ const sessionRunRecord = (
 	});
 
 const configuringState = (): RunState =>
-	createRun(POLLS, [CONFIGS.js, CONFIGS.eslint], [CONFIGS.unitTests]);
+	createRun(POLLS, [CONFIGS.js, CONFIGS.eslint]);
 
 describe("getTodaysRunHandler", () => {
 	beforeEach(() => {

@@ -22,6 +22,7 @@ import {
 	coverageToAddSlot,
 	linterFor,
 	rewardMultiplierFor,
+	storageOnClearFor,
 } from "../pipeline/pipeline.model";
 import {
 	GATE_REWARD_KB,
@@ -71,6 +72,8 @@ export type RunView = {
 	readonly coverageMultiplier: number;
 	readonly coverageAdd: number;
 	readonly gateReward: number;
+	/** Exact (capped) faucet income collected this gate — feeds the reward report. */
+	readonly faucetThisGateKb: number;
 	readonly gatesCleared: number;
 	readonly victoryGate: number;
 	readonly pollsToGate: number;
@@ -184,22 +187,23 @@ export const correctOptionIdsFor = (
 
 const gainedThisGate = (state: RunState): Record<string, number> => {
 	const gained: Record<string, number> = {};
-	for (const poll of state.answeredThisGate) {
+	state.answeredThisGate.forEach((poll, index) => {
 		// The engine records the actual earn per answer; recomputing (for
 		// pre-coverageEarned snapshots) can't know partial shares, so it
-		// falls back to full-or-nothing.
+		// falls back to full-or-nothing. The array index IS the window position,
+		// so index 0 marks the opener for Cold Start's multiplier.
 		const earned =
 			poll.coverageEarned ??
 			coverageForAnswer(
 				state.pipeline.configs,
-				poll.category,
+				{ category: poll.category, answeredBefore: index },
 				poll.outcome === "correct" ? 1 : 0
 			);
 		if (earned > 0)
 			gained[poll.category] = roundToOneDecimal(
 				(gained[poll.category] ?? 0) + earned
 			);
-	}
+	});
 	return gained;
 };
 
@@ -250,9 +254,10 @@ export const toRunView = (state: RunState): RunView => {
 		rewardMultiplier: rewardMultiplierFor(state.pipeline),
 		coverageMultiplier: coverageProfileFor(state.pipeline).mult,
 		coverageAdd: coverageProfileFor(state.pipeline).add,
-		gateReward: Math.round(
-			GATE_REWARD_KB * rewardMultiplierFor(state.pipeline)
-		),
+		gateReward:
+			Math.round(GATE_REWARD_KB * rewardMultiplierFor(state.pipeline)) +
+			storageOnClearFor(state.pipeline),
+		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
 		victoryGate: VICTORY_GATE,
 		pollsToGate: SLICE_WINDOW - state.window.answered,

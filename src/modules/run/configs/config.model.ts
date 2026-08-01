@@ -4,7 +4,14 @@ import { getCategoryMetadata } from "~/domains/shared/categories";
 export type ConfigFamily =
 	"focus" | "defense" | "risk" | "amplify" | "economy" | "check";
 
-export type CheckKind = "coverage-gain" | "cold-start" | "correct";
+export type CheckKind =
+	| "correct"
+	| "coverage-gain"
+	| "cold-start"
+	| "min-correct"
+	| "no-double-miss"
+	| "breadth"
+	| "lint-correct";
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";
 
@@ -22,9 +29,10 @@ export type Config = {
 	readonly coverageAdd?: number;
 	readonly level?: number;
 	readonly storagePerCorrect?: number;
+	readonly storageOnClear?: number;
+	readonly openerCoverageMultiplier?: number;
 	readonly check?: CheckKind;
 	readonly checkAmount?: number;
-	readonly fixed?: boolean;
 };
 
 export const rarityOf = (config: Config): Rarity => config.rarity ?? "common";
@@ -33,11 +41,6 @@ export const focusCoverageMultiplier = (level: number): number =>
 	1 + 0.5 * level;
 
 export const focusDemand = (config: Config): number => config.level ?? 1;
-
-const UPGRADE_COST_PER_LEVEL = 60;
-
-export const upgradeCost = (currentLevel: number): number =>
-	UPGRADE_COST_PER_LEVEL * currentLevel;
 
 export const upgradeCoverageRequired = (currentLevel: number): number =>
 	currentLevel * 5;
@@ -56,17 +59,13 @@ export const draftCost = (config: Config): number =>
 export const sellRefund = (config: Config): number =>
 	Math.floor(draftCost(config) / 2);
 
+// Unit Tests is deliberately absent: its check escalates on its own with gate
+// depth, and escalation + a paid upgrade would be two mechanisms raising the
+// same number (wiki §4.4).
 export const isUpgradable = (config: Config): boolean =>
-	config.focusCategory !== undefined || config.check === "correct";
+	config.focusCategory !== undefined;
 
 export const describeConfig = (config: Config): string => {
-	if (config.check === "correct") {
-		const level = config.level ?? 1;
-		const answers = `${level} correct answer${level === 1 ? "" : "s"}`;
-		return level > 1
-			? `Requires ${answers} to pass the gate — pays ${level}× storage.`
-			: `Requires ${answers} to pass the gate.`;
-	}
 	if (!config.focusCategory) return config.description;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	const level = config.level ?? 1;

@@ -26,7 +26,8 @@ export type GateRewardRow = {
 const isCoverageConfig = (config: Config): boolean =>
 	config.focusCategory !== undefined ||
 	config.coverageMultiplier !== undefined ||
-	config.coverageAdd !== undefined;
+	config.coverageAdd !== undefined ||
+	config.openerCoverageMultiplier !== undefined;
 
 const signedPercent = (value: number): string =>
 	`${value < 0 ? "" : "+"}${value}%`;
@@ -101,69 +102,63 @@ const focusRow = (
 	};
 };
 
-const coverageRow = (
-	config: Config,
-	answered: readonly AnsweredPoll[]
-): GateRewardRow => ({
-	key: config.id,
-	config,
-	kind: "coverage",
-	status: "passed",
-	description: config.description,
-	value: signedPercent(coverageContribution(config, answered)),
-});
-
-const storageRow = (
-	config: Config,
-	answered: readonly AnsweredPoll[]
-): GateRewardRow => ({
-	key: config.id,
-	config,
-	kind: "storage",
-	status: "passed",
-	description: config.description,
-	value: `+${(config.storagePerCorrect ?? 0) * correctCount(answered)}KB`,
-});
-
-const checkRow = (
-	config: Config,
-	checks: readonly CheckStatus[]
-): GateRewardRow => {
-	const check = checks.find((entry) => entry.sourceConfigId === config.id);
-	return {
-		key: config.id,
-		config,
-		kind: "check",
-		status:
-			check?.state === "failed"
-				? "failed"
-				: check?.state === "skipped"
-					? "skipped"
-					: "passed",
-		description: gateRowDescription(config, roleOf(config, checks), check),
-		value: check?.progress ?? "—",
-	};
+const statusFrom = (check: CheckStatus | undefined): GateRewardStatus => {
+	if (check?.state === "failed") return "failed";
+	if (check?.state === "skipped") return "skipped";
+	// No check at all (Copilot) counts as passed — nothing was demanded.
+	return "passed";
 };
 
+/**
+ * The Config Rule splits every row the same way the engine splits a config:
+ * the STATUS comes from its check (found via sourceConfigId), the VALUE and
+ * kind come from its benefit. Focus rows keep their richer per-category copy.
+ */
 const rowFor = (
 	config: Config,
 	answered: readonly AnsweredPoll[],
-	checks: readonly CheckStatus[]
+	checks: readonly CheckStatus[],
+	faucetThisGateKb?: number
 ): GateRewardRow => {
 	if (config.focusCategory !== undefined)
 		return focusRow(config, config.focusCategory, answered);
-	if (isCoverageConfig(config)) return coverageRow(config, answered);
-	if (config.storagePerCorrect !== undefined)
-		return storageRow(config, answered);
-	if (config.check !== undefined) return checkRow(config, checks);
-	return {
+
+	const check = checks.find((entry) => entry.sourceConfigId === config.id);
+	const base = {
 		key: config.id,
 		config,
-		kind: "coverage",
-		status: "passed",
-		description: config.description,
-		value: "",
+		status: statusFrom(check),
+		description: gateRowDescription(config, roleOf(config, checks), check),
 	};
+
+	if (isCoverageConfig(config))
+		return {
+			...base,
+			kind: "coverage",
+			value: signedPercent(coverageContribution(config, answered)),
+		};
+	if (config.storagePerCorrect !== undefined)
+		return {
+			...base,
+			kind: "storage",
+			// The exact capped faucet income when the engine provides it; the
+			// uncapped estimate otherwise (pre-cap snapshots). Attributing the
+			// whole gate faucet to this row is safe while one faucet config ships.
+			value: `+${faucetThisGateKb ?? (config.storagePerCorrect ?? 0) * correctCount(answered)}KB`,
+		};
+	// The clear payout only lands on a pass; a failed row shows the unmet
+	// progress instead, so the report says what fell short.
+	if (config.storageOnClear !== undefined)
+		return {
+			...base,
+			kind: "storage",
+			value:
+				base.status === "passed"
+					? `+${config.storageOnClear}KB`
+					: (check?.progress ?? "—"),
+		};
+	if (check) return { ...base, kind: "check", value: check.progress };
+	return { ...base, kind: "coverage", value: "" };
 };
 
 const KIND_ORDER: Record<GateRewardKind, number> = {
@@ -176,15 +171,18 @@ type GateRewardInput = {
 	readonly answered: readonly AnsweredPoll[];
 	readonly configs: readonly Config[];
 	readonly checks: readonly CheckStatus[];
+	/** Exact faucet income this gate (capped) — omitted by pre-cap callers. */
+	readonly faucetThisGateKb?: number;
 };
 
 export const gateRewardRows = ({
 	answered,
 	configs,
 	checks,
+	faucetThisGateKb,
 }: GateRewardInput): readonly GateRewardRow[] =>
 	configs
-		.map((config) => rowFor(config, answered, checks))
+		.map((config) => rowFor(config, answered, checks, faucetThisGateKb))
 		.sort((left, right) => KIND_ORDER[left.kind] - KIND_ORDER[right.kind]);
 
 export type GateStepsSummary = {
@@ -201,15 +199,17 @@ export const gateStepsSummary = (
 	skipped: rows.filter((row) => row.status === "skipped").length,
 });
 
-/** Total storage this gate added: the clear bonus plus every per-correct payout. */
+/** Total storage this gate added: the clear payout plus every per-correct payout. */
 export const gateStorageGained = (
 	configs: readonly Config[],
 	answered: readonly AnsweredPoll[],
-	gateReward: number
+	gateReward: number,
+	faucetThisGateKb?: number
 ): number =>
 	gateReward +
-	configs.reduce(
-		(sum, config) =>
-			sum + (config.storagePerCorrect ?? 0) * correctCount(answered),
-		0
-	);
+	(faucetThisGateKb ??
+		configs.reduce(
+			(sum, config) =>
+				sum + (config.storagePerCorrect ?? 0) * correctCount(answered),
+			0
+		));

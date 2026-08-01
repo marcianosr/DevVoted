@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (design capture). Decisions 1, 7, and 10 are amended or superseded by [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md) — see the ⚠ markers inline; ADR-008's Amendments section carries the details. Validated in the throwaway prototype (`src/domains/runs/prototype/`, multiple playtests: "still fun"); this ADR records the *decisions* the prototype settled so the production port has a north star. Depends on ADR-005 (session-run container).
+Accepted (design capture). Decisions 1, 7, and 10 are amended or superseded by [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md); Decisions 3, 4, and 5 are amended or superseded by [ADR-016](016-the-config-rule.md) (the Config Rule) — see the ⚠ markers inline. Validated in the throwaway prototype (`src/domains/runs/prototype/`, multiple playtests: "still fun"); this ADR records the *decisions* the prototype settled so the production port has a north star. Depends on ADR-005 (session-run container).
 
 ## Context
 
@@ -30,11 +30,15 @@ The player's build literally *composes* the gate. The UI shows this as a live ch
 
 ### 3. Baseline starts at 1 and self-imposed difficulty is the point
 
+> ⚠ **Amended by ADR-016**: escalation raises the baseline Correct check ONLY. Config check thresholds no longer escalate — Unit Tests is the only config whose check escalates (wiki §4.1).
+
 `CLIMB_BASE_REQUIREMENT = 1`. Escalation adds `+1` to the baseline every 2 gates cleared (`floor(gatesCleared / 2)`), also applied to check-config thresholds. So gate 1 is trivially easy (one correct answer) and the baseline reaches ~3 by the summit.
 
 *Philosophy:* the game is not hard by default — **your build is as hard as you make it.** All difficulty above the floor is either escalation or player-chosen via configs.
 
 ### 4. Harder conditions pay more (Check + Risk unify)
+
+> ⚠ **Superseded by ADR-016**: under the Config Rule the check IS the price of the effect — check-configs no longer pay a storage reward multiplier (Coverage's effect is coverage ×2, Cold Start's is an opener ×2, etc.). `rewardMultiplier` stays in the engine for future Risk-configs. `GATE_REWARD_KB` is 80 (ADR-008 retune), and Unit Tests adds a flat +32KB on clear.
 
 Two config families are "voluntary difficulty for a bigger payout," and they are the *same concept*:
 
@@ -44,6 +48,8 @@ Two config families are "voluntary difficulty for a bigger payout," and they are
 On a pass, storage reward = `GATE_REWARD_KB (120) × product(reward multipliers)`. This fixes the earlier "why would anyone take a harder condition?" hole: harder = richer, always.
 
 ### 5. Config families and effects
+
+> ⚠ **Amended by ADR-016**: the family taxonomy below is presentation-era grouping only. Mechanically every config is now Effect + Check (Copilot excepted); e.g. "Defense" linters carry a lint-correct check and "Economy" IndexedDB carries a 3-correct check. See the wiki roster (§4.3) for the authoritative Effect/Check per config.
 
 | Family | Effect | Notes |
 |---|---|---|

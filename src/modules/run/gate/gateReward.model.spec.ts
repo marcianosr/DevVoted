@@ -80,9 +80,57 @@ describe(gateRewardRows, () => {
 		expect(rows.find((row) => row.key === "indexed-db")?.value).toBe("+16KB");
 	});
 
-	it("reads check progress straight from the passed check", () => {
+	it("shows Unit Tests' flat payout as its value, judged by the Correct check", () => {
 		const rows = gateRewardRows(input);
-		expect(rows.find((row) => row.key === "unit-tests")?.value).toBe("2/1");
+		const unitTests = rows.find((row) => row.key === "unit-tests");
+		expect(unitTests?.value).toBe("+32KB");
+		expect(unitTests?.kind).toBe("storage");
+		expect(unitTests?.status).toBe("passed");
+	});
+
+	it("swaps the flat payout for the unmet progress when the Correct check failed", () => {
+		const failed: CheckStatus[] = [
+			{
+				label: "Correct",
+				progress: "0/1",
+				current: 0,
+				target: 1,
+				state: "failed",
+				sourceConfigId: "unit-tests",
+				description: "1 correct answer",
+			},
+		];
+		const row = gateRewardRows({ ...input, checks: failed }).find(
+			(candidate) => candidate.key === "unit-tests"
+		);
+		expect(row?.status).toBe("failed");
+		expect(row?.value).toBe("0/1");
+	});
+
+	it("reads check progress as the value for a pure-check row (linter)", () => {
+		const lintCheck: CheckStatus[] = [
+			{
+				label: "ESLint linted",
+				progress: "1/2",
+				current: 1,
+				target: 2,
+				state: "failed",
+				sourceConfigId: "eslint",
+			},
+		];
+		const row = gateRewardRows({
+			...input,
+			configs: [CONFIGS.eslint],
+			checks: lintCheck,
+		}).find((candidate) => candidate.key === "eslint");
+		expect(row?.kind).toBe("check");
+		expect(row?.value).toBe("1/2");
+		expect(row?.status).toBe("failed");
+	});
+
+	it("prefers the exact capped faucet income when the engine provides it", () => {
+		const rows = gateRewardRows({ ...input, faucetThisGateKb: 12 });
+		expect(rows.find((row) => row.key === "indexed-db")?.value).toBe("+12KB");
 	});
 
 	it("states the escalated demand on the check row, not the roster text", () => {
@@ -120,9 +168,7 @@ describe(gateRewardRows, () => {
 		const row = gateRewardRows({ ...input, checks: bare }).find(
 			(candidate) => candidate.key === "unit-tests"
 		);
-		expect(row?.description).toBe(
-			"Requires 1 correct answer to pass the gate."
-		);
+		expect(row?.description).toBe(CONFIGS.unitTests.description);
 	});
 
 	it("passes a focus config whose category showed and was answered right", () => {
@@ -161,19 +207,24 @@ describe(gateRewardRows, () => {
 	});
 
 	it("orders rows coverage → storage → check with no synthetic bonus row", () => {
+		// Unit Tests now rows as storage (+32KB on clear), not as a bare check.
 		const rows = gateRewardRows(input);
 		expect(rows.map((row) => row.kind)).toEqual([
 			"coverage",
 			"coverage",
 			"storage",
-			"check",
+			"storage",
 		]);
 	});
 });
 
 describe(gateStorageGained, () => {
-	it("adds the clear bonus to every per-correct payout", () => {
-		// 120 bonus + (2 correct × 8KB).
+	it("adds the clear payout to every per-correct payout", () => {
+		// 120 clear payout + (2 correct × 8KB).
 		expect(gateStorageGained(input.configs, answered, 120)).toBe(136);
+	});
+
+	it("uses the exact capped faucet income when provided", () => {
+		expect(gateStorageGained(input.configs, answered, 120, 12)).toBe(132);
 	});
 });

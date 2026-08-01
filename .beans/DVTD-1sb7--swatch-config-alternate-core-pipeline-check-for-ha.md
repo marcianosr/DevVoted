@@ -1,11 +1,11 @@
 ---
 # DVTD-1sb7
 title: 'Swatch config: alternate core pipeline check for harder runs'
-status: todo
+status: scrapped
 type: story
 priority: normal
 created_at: 2026-07-25T07:29:53Z
-updated_at: 2026-07-27T14:17:01Z
+updated_at: 2026-07-31T11:03:37Z
 parent: DVTD-u35m
 ---
 
@@ -26,3 +26,7 @@ Sister bean: DVTD-klz2 (renames the unit-test core check terminology this idea b
 - [ ] Brainstorm session to nail down swatch mechanics
 - [ ] Decide reward structure vs. unit-test-only runs
 - [ ] Spec out swatch as a new core pipeline check type alongside unit-test
+
+## Reasons for Scrapping
+
+Retired per wiki §6.4: under the Config Rule every config already adds a check, so a dedicated 'extra core check' config is redundant. 'Swatch' now names the cosmetic collectible only (DVTD-g8ty).

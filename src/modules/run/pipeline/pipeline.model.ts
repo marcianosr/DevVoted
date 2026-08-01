@@ -1,7 +1,7 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 
 import { Config } from "../configs/config.model";
-import { Coverage, effectOf } from "../configs/effect.model";
+import { AnswerContext, Coverage, effectOf } from "../configs/effect.model";
 import { roundToOneDecimal } from "../rules.model";
 
 export type Pipeline = {
@@ -34,13 +34,8 @@ export const coverageToAddSlot = (currentSlots: number): number =>
 export const canAddSlot = (currentSlots: number, coverage: number): boolean =>
 	currentSlots < MAX_SLOTS && coverage >= coverageToAddSlot(currentSlots);
 
-export const isFixed = (config: Config): boolean => config.fixed === true;
-
-export const freeConfigs = (pipeline: Pipeline): readonly Config[] =>
-	pipeline.configs.filter((config) => !isFixed(config));
-
 export const isBare = (pipeline: Pipeline): boolean =>
-	freeConfigs(pipeline).length === 0;
+	pipeline.configs.length === 0;
 
 const effects = (pipeline: Pipeline) => pipeline.configs.map(effectOf);
 
@@ -59,6 +54,13 @@ export const rewardMultiplierFor = (pipeline: Pipeline): number =>
 	effects(pipeline).reduce(
 		(product, effect) => product * (effect.rewardMultiplier ?? 1),
 		1
+	);
+
+/** Flat KB paid on top of the gate reward when the gate clears (Unit Tests' +32). */
+export const storageOnClearFor = (pipeline: Pipeline): number =>
+	effects(pipeline).reduce(
+		(total, effect) => total + (effect.storageOnClear ?? 0),
+		0
 	);
 
 /** Build-wide coverage boost applied to every correct answer (Focus category bonuses excluded). */
@@ -83,13 +85,13 @@ export const coverageProfileFor = (
  */
 export const coverageForAnswer = (
 	configs: readonly Config[],
-	category: CategoryCode,
+	context: AnswerContext,
 	share: number,
 	streakFactor = 1
 ): number => {
 	if (share <= 0) return 0;
 	const covers = configs
-		.map((config) => effectOf(config).coverage?.(category))
+		.map((config) => effectOf(config).coverage?.(context))
 		.filter((cover): cover is Coverage => cover !== undefined);
 	const mult = covers.reduce((product, cover) => product * cover.mult, 1);
 	const add = covers.reduce((sum, cover) => sum + cover.add, 0);
@@ -118,7 +120,7 @@ export type CoverageBreakdown = {
  */
 export const coverageBreakdownForAnswer = (
 	configs: readonly Config[],
-	category: CategoryCode,
+	context: AnswerContext,
 	share: number,
 	streakFactor: number,
 	coverageLoss: number
@@ -131,14 +133,14 @@ export const coverageBreakdownForAnswer = (
 		};
 	}
 
-	const earned = coverageForAnswer(configs, category, share, streakFactor);
-	const earnedBeforeStreak = coverageForAnswer(configs, category, share, 1);
+	const earned = coverageForAnswer(configs, context, share, streakFactor);
+	const earnedBeforeStreak = coverageForAnswer(configs, context, share, 1);
 	const streakBonus = roundToOneDecimal(earned - earnedBeforeStreak);
 
 	const covered = configs
 		.map((config) => ({
 			config,
-			cover: effectOf(config).coverage?.(category),
+			cover: effectOf(config).coverage?.(context),
 		}))
 		.filter(
 			(entry): entry is { config: Config; cover: Coverage } =>

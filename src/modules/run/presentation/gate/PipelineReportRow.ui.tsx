@@ -52,25 +52,10 @@ export const PipelineReportRow = ({
 						config={config}
 						actions={chipActions}
 						badge={chipBadge}
-						noFixedBadge
 					/>
 				) : (
-					<ConfigChip
-						config={config}
-						badge={chipBadge}
-						noTooltip
-						noFixedBadge
-					/>
+					<ConfigChip config={config} badge={chipBadge} noTooltip />
 				)}
-				{config.fixed ? (
-					<span
-						className="shrink-0 text-pewter"
-						aria-label="Fixed config"
-						title="Fixed — can't be removed"
-					>
-						🔒
-					</span>
-				) : null}
 			</span>
 		}
 		trailing={

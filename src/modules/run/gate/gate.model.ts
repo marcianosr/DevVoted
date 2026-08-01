@@ -18,11 +18,12 @@ export const currentRequirement = (
 	pipeline: Pipeline,
 	gatesCleared: number
 ): number => {
-	// The correct-requirement config sets the base (and can be upgraded to raise it).
+	// The correct-requirement config carries the base; only escalation raises it
+	// (wiki §4.1: Unit Tests is the only config whose check escalates).
 	const correctConfig = pipeline.configs.find(
 		(config) => config.check === "correct"
 	);
-	const base = correctConfig?.level ?? CLIMB_BASE_REQUIREMENT;
+	const base = correctConfig?.checkAmount ?? CLIMB_BASE_REQUIREMENT;
 	return effectiveRequirement(pipeline, base + escalation(gatesCleared));
 };
 

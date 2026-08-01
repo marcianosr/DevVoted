@@ -4,7 +4,6 @@ import {
 	draftCost,
 	isUpgradable,
 	sellRefund,
-	upgradeCost,
 	upgradeCoverageRequired,
 } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
@@ -87,23 +86,19 @@ export const ShopScreen = ({
 	onSell,
 }: ShopScreenProps) => {
 	const atSlotCap = !Number.isFinite(slotCoverageRequired);
-	const isFull = configs.filter((config) => !config.fixed).length >= slots;
+	const isFull = configs.length >= slots;
 
+	// Only focus configs are upgradable (isUpgradable), and their upgrades are
+	// coverage-gated, never paid in KB (wiki §4.4).
 	const canUpgrade = (config: Config): boolean => {
-		const level = config.level ?? 1;
-		if (config.focusCategory)
-			return (
-				(coverageByCategory[config.focusCategory] ?? 0) >=
-				upgradeCoverageRequired(level)
-			);
-		return storage >= upgradeCost(level);
+		if (!config.focusCategory) return false;
+		return (
+			(coverageByCategory[config.focusCategory] ?? 0) >=
+			upgradeCoverageRequired(config.level ?? 1)
+		);
 	};
-	const upgradeLabel = (config: Config): string => {
-		const level = config.level ?? 1;
-		return config.focusCategory
-			? `Upgrade (${upgradeCoverageRequired(level)}% cov)`
-			: `Upgrade (${upgradeCost(level)}KB)`;
-	};
+	const upgradeLabel = (config: Config): string =>
+		`Upgrade (${upgradeCoverageRequired(config.level ?? 1)}% cov)`;
 	const actionsFor = (config: Config) =>
 		[
 			isUpgradable(config)
@@ -113,17 +108,12 @@ export const ShopScreen = ({
 						disabled: !canUpgrade(config),
 					}
 				: null,
-			config.fixed
-				? null
-				: {
-						label: `Sell +${sellRefund(config)}KB`,
-						onClick: () => onSell(config.id),
-					},
+			{
+				label: `Sell +${sellRefund(config)}KB`,
+				onClick: () => onSell(config.id),
+			},
 		].filter((action): action is NonNullable<typeof action> => action !== null);
 
-	// Fixed configs sit in the same pipeline list, so the expand control counts the
-	// whole pipeline (fixed + free) — the player counts rows, not free slots alone.
-	const pipelineSlots = slots + configs.filter((config) => config.fixed).length;
 	const expandBar =
 		"block w-full rounded-lg border-2 border-dashed px-4 py-2 text-center text-sm font-semibold";
 	const expandTile = atSlotCap ? null : canAddSlot ? (
@@ -132,7 +122,7 @@ export const ShopScreen = ({
 			onClick={onAddSlot}
 			className={`${expandBar} border-cerulean text-cerulean transition hover:bg-cerulean/10`}
 		>
-			＋ Add slot: {pipelineSlots} → {pipelineSlots + 1}
+			＋ Add slot: {slots} → {slots + 1}
 		</button>
 	) : (
 		<Tooltip
@@ -140,7 +130,7 @@ export const ShopScreen = ({
 			content={`at ${slotCoverageRequired}% coverage — you have ${coverage}%`}
 		>
 			<span className={`${expandBar} border-zinc-700 text-zinc-400`}>
-				Expand to {pipelineSlots + 1} slots
+				Expand to {slots + 1} slots
 			</span>
 		</Tooltip>
 	);

@@ -23,9 +23,8 @@ const kantoPoll = (index: number): RunPoll => {
 
 const POLLS = [kantoPoll(0), kantoPoll(1), kantoPoll(2)];
 const HANDED = [CONFIGS.js, CONFIGS.eslint];
-const FIXED = [CONFIGS.unitTests];
 
-const baseState = createRun(POLLS, HANDED, FIXED);
+const baseState = createRun(POLLS, HANDED);
 
 const stateVariants: Record<string, RunState> = {
 	configuring: baseState,
@@ -79,5 +78,45 @@ describe("runSnapshot codec", () => {
 		const state = stateVariants["rewarding with draft options"];
 		const stored = JSON.parse(JSON.stringify(toRunSnapshot(state)));
 		expect(hydrateRunState(stored, state.polls)).toEqual(state);
+	});
+});
+
+describe("hydrateRunState — the roster is authoritative", () => {
+	it("swaps a stale embedded config for its current roster version", () => {
+		const staleEslint = {
+			...CONFIGS.eslint,
+			description: "Disables one wrong answer on JS/TS polls.",
+			check: undefined,
+		};
+		const state: RunState = {
+			...baseState,
+			pipeline: { ...baseState.pipeline, configs: [staleEslint] },
+		};
+		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
+		expect(rehydrated.pipeline.configs[0]).toEqual(CONFIGS.eslint);
+	});
+
+	it("keeps the player's earned level while refreshing everything else", () => {
+		const staleLevelled = { ...CONFIGS.js, level: 3, description: "stale" };
+		const state: RunState = {
+			...baseState,
+			available: [staleLevelled],
+		};
+		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
+		expect(rehydrated.available[0]).toEqual({ ...CONFIGS.js, level: 3 });
+	});
+
+	it("passes an unknown config id through untouched instead of crashing the run", () => {
+		const retired = {
+			...CONFIGS.copilot,
+			id: "yarn-lock",
+			label: "yarn.lock",
+		};
+		const state: RunState = {
+			...baseState,
+			draftOptions: [retired],
+		};
+		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
+		expect(rehydrated.draftOptions[0]).toEqual(retired);
 	});
 });

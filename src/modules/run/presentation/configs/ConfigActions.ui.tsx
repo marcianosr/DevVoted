@@ -13,8 +13,6 @@ type ConfigActionsProps = {
 	config: Config;
 	actions: readonly ChipAction[];
 	badge?: ReactNode;
-	/** Suppress the floating 🔒 corner badge (callers that show it inline instead). */
-	noFixedBadge?: boolean;
 };
 
 /** A config chip that reveals its contextual actions (sell/upgrade) as a popover on click. */
@@ -22,7 +20,6 @@ export const ConfigActions = ({
 	config,
 	actions,
 	badge,
-	noFixedBadge,
 }: ConfigActionsProps) => {
 	const [open, setOpen] = useState(false);
 	return (
@@ -30,7 +27,6 @@ export const ConfigActions = ({
 			<ConfigChip
 				config={config}
 				badge={badge}
-				noFixedBadge={noFixedBadge}
 				noTooltip={open}
 				onClick={() => setOpen((wasOpen) => !wasOpen)}
 			/>

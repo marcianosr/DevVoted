@@ -29,6 +29,22 @@ const clearedRows: GateRewardRow[] = [
 		kind: "storage",
 		status: "passed",
 	},
+	{
+		key: "unit-tests",
+		config: CONFIGS.unitTests,
+		description: CONFIGS.unitTests.description,
+		value: "+32KB",
+		kind: "storage",
+		status: "passed",
+	},
+	{
+		key: "eslint",
+		config: CONFIGS.eslint,
+		description: CONFIGS.eslint.description,
+		value: "not linted",
+		kind: "check",
+		status: "skipped",
+	},
 ];
 
 const failedRows: GateRewardRow[] = [
@@ -69,6 +85,14 @@ const failedRows: GateRewardRow[] = [
 		config: CONFIGS.unitTests,
 		description: CONFIGS.unitTests.description,
 		value: "1/2",
+		kind: "storage",
+		status: "failed",
+	},
+	{
+		key: "eslint",
+		config: CONFIGS.eslint,
+		description: CONFIGS.eslint.description,
+		value: "0/1",
 		kind: "check",
 		status: "failed",
 	},

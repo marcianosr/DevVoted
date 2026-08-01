@@ -1,11 +1,11 @@
 ---
 # DVTD-bojz
 title: Split config taxonomy into gates vs. perks
-status: todo
+status: completed
 type: story
 priority: normal
 created_at: 2026-07-27T10:42:56Z
-updated_at: 2026-07-27T14:06:49Z
+updated_at: 2026-07-31T11:03:37Z
 parent: DVTD-u35m
 ---
 
@@ -31,3 +31,7 @@ Configs that go up for different reasons (difficulty ramp vs. player investment)
 - [ ] Reclassify existing configs (Unit Tests, Coverage, ESLint, Copilot, etc.) into gate vs. perk
 - [ ] Decide how reward KB payout is surfaced now that it's tied to gate-clear rather than being its own config
 - [ ] Reconcile with DVTD-h9s5 on whether coverage ever gates an upgrade, given upgrades should cost storage
+
+## Resolution (2026-07-31)
+
+Resolved the OPPOSITE way from this body's proposal: configs are NOT split into gates vs perks. Every config is Effect + Check (the Config Rule, wiki §4.1); a perks-only build cannot exist. The two-zone shop / reclassification todos above are dead. Implemented in DVTD-77ke, recorded in ADR-016. This bean's body is kept as history of the rejected direction.

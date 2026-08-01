@@ -69,7 +69,7 @@ describe(StripScreen, () => {
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();
 	});
 
-	it("names the fixed config that can't be removed", () => {
+	it("offers every config for removal — Unit Tests included", () => {
 		render(
 			<StripScreen
 				stripsRemaining={1}
@@ -80,11 +80,10 @@ describe(StripScreen, () => {
 				onStrip={() => {}}
 			/>
 		);
-		expect(screen.getByText(/Unit Tests can't be removed/)).toBeInTheDocument();
-		// The fixed config never gets a Remove chip.
 		expect(
-			screen.queryByRole("button", { name: /Unit Tests/ })
-		).not.toBeInTheDocument();
+			screen.getByRole("button", { name: /Unit Tests/ })
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /.js/ })).toBeInTheDocument();
 	});
 
 	it("shows which check broke the gate as a failed row", () => {

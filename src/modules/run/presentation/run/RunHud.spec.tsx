@@ -40,6 +40,8 @@ describe(RunHud, () => {
 		expect(screen.getByText("streak")).toBeInTheDocument();
 	});
 
+	// Realigned after bf64bab: the mobile Stakes panel shows streak, coverage,
+	// and the equipped config chips — per-check progress moved off the HUD.
 	it("reveals the gate stakes behind the mobile Stakes dropdown", () => {
 		render(
 			<RunHud
@@ -57,10 +59,12 @@ describe(RunHud, () => {
 				checks={[gateCheck]}
 			/>
 		);
-		expect(screen.queryByText("1/2")).not.toBeInTheDocument();
+		expect(screen.queryByText("Unit Tests")).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: /Stakes/ }));
-		expect(screen.getByText("1/2")).toBeInTheDocument();
 		expect(screen.getByText("Streak")).toBeInTheDocument();
+		// Both the desktop summary and the opened panel state the coverage.
+		expect(screen.getAllByText("12%").length).toBeGreaterThan(0);
+		expect(screen.getByText("Unit Tests")).toBeInTheDocument();
 	});
 
 	it("summarizes covered categories, and reveals every category on expand", () => {
@@ -90,7 +94,9 @@ describe(RunHud, () => {
 		expect(screen.getByText("Git")).toBeInTheDocument();
 	});
 
-	it("reveals the equipped configs on expanding the loadout", () => {
+	// Realigned after bf64bab: the standalone Loadout expander is gone; equipped
+	// configs reveal behind the Stakes dropdown instead.
+	it("reveals the equipped configs behind the Stakes dropdown", () => {
 		render(
 			<RunHud
 				storage={120}
@@ -107,7 +113,7 @@ describe(RunHud, () => {
 			/>
 		);
 		expect(screen.queryByText("ESLint")).not.toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: /Loadout/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Stakes/ }));
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 });

@@ -53,11 +53,25 @@ describe(ShopScreen, () => {
 		expect(onDraft).toHaveBeenCalledWith("eslint");
 	});
 
-	it("shows the upgrade cost in a fixed config's action popover", () => {
+	it("offers no upgrade on Unit Tests — only focus configs upgrade", () => {
 		render(<ShopScreen {...base} configs={[CONFIGS.unitTests]} />);
 		fireEvent.click(screen.getByRole("button", { name: /Unit Tests/ }));
 		expect(
-			screen.getByRole("button", { name: /Upgrade \(60KB\)/ })
+			screen.queryByRole("button", { name: /Upgrade/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("shows the coverage-gated upgrade in a focus config's action popover", () => {
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.js]}
+				coverageByCategory={{ js: 10 }}
+			/>
+		);
+		fireEvent.click(screen.getByRole("button", { name: /.js/ }));
+		expect(
+			screen.getByRole("button", { name: /Upgrade \(5% cov\)/ })
 		).toBeInTheDocument();
 	});
 

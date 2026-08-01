@@ -34,8 +34,7 @@ export const ConfiguringScreen = ({
 	onSlot,
 	onUnslot,
 }: ConfiguringScreenProps) => {
-	const freeConfigs = configs.filter((config) => !config.fixed);
-	const full = freeConfigs.length >= slots;
+	const full = configs.length >= slots;
 	const rows = roleRows(configs, checks);
 
 	return (

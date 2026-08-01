@@ -85,18 +85,6 @@ type GateRewardReportProps = {
 	removableConfigIds?: readonly string[];
 	onRemoveConfig?: (configId: string) => void;
 	stripsRemaining?: number;
-	configs?: readonly any[];
-};
-
-const FixedConfigNoteCompact = ({ configs }: { configs: readonly any[] }) => {
-	const fixed = configs?.filter((config) => config.fixed) ?? [];
-	if (fixed.length === 0) return null;
-	return (
-		<Paragraph tone="pewter" size="sm">
-			{fixed.map((config) => config.label).join(", ")} can&apos;t be removed —
-			fixed for every run.
-		</Paragraph>
-	);
 };
 
 export const GateRewardReport = ({
@@ -107,7 +95,6 @@ export const GateRewardReport = ({
 	removableConfigIds = [],
 	onRemoveConfig,
 	stripsRemaining,
-	configs,
 }: GateRewardReportProps) => (
 	<div className="flex flex-col gap-3">
 		<Title as="h2" tone={cleared ? "gradient" : "cinnabar"}>
@@ -122,13 +109,10 @@ export const GateRewardReport = ({
 		</div>
 
 		{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
-			<div className="flex flex-col gap-2">
-				<Paragraph size="sm" tone="pewter">
-					Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
-					continue
-				</Paragraph>
-				{configs && <FixedConfigNoteCompact configs={configs} />}
-			</div>
+			<Paragraph size="sm" tone="pewter">
+				Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
+				continue
+			</Paragraph>
 		)}
 
 		<section>

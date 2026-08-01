@@ -52,7 +52,7 @@ const EmptySlotRow = () => (
 type RoleListProps = {
 	rows: readonly RoleRow[];
 	onRemove?: (configId: string) => void;
-	/** Total free (non-fixed) slots — unfilled ones render as empty rows. */
+	/** Total pipeline slots — unfilled ones render as empty rows. */
 	slots?: number;
 	/** When set, each config chip becomes a sell/upgrade popover (shop). */
 	actionsFor?: (config: Config) => readonly ChipAction[];
@@ -62,17 +62,16 @@ type RoleListProps = {
 	trailing?: ReactNode;
 };
 
-const removeButton = (row: RoleRow, onRemove: (configId: string) => void) =>
-	row.config.fixed ? undefined : (
-		<button
-			type="button"
-			onClick={() => onRemove(row.config.id)}
-			aria-label={`Remove ${row.config.label}`}
-			className="shrink-0 cursor-pointer text-lg text-pewter transition-colors hover:text-cinnabar"
-		>
-			✕
-		</button>
-	);
+const removeButton = (row: RoleRow, onRemove: (configId: string) => void) => (
+	<button
+		type="button"
+		onClick={() => onRemove(row.config.id)}
+		aria-label={`Remove ${row.config.label}`}
+		className="shrink-0 cursor-pointer text-lg text-pewter transition-colors hover:text-cinnabar"
+	>
+		✕
+	</button>
+);
 
 export const RoleList = ({
 	rows,
@@ -82,8 +81,7 @@ export const RoleList = ({
 	newConfigIds,
 	trailing,
 }: RoleListProps) => {
-	const filledFreeSlots = rows.filter((row) => !row.config.fixed).length;
-	const emptySlots = slots ? Math.max(0, slots - filledFreeSlots) : 0;
+	const emptySlots = slots ? Math.max(0, slots - rows.length) : 0;
 	const newBadge = (config: Config): ReactNode =>
 		newConfigIds?.includes(config.id) ? (
 			<Badge tone="positive">new</Badge>
