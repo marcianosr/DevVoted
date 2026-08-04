@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-08-01T07:11:39Z
-updated_at: 2026-08-03T16:32:39Z
+updated_at: 2026-08-04T08:47:01Z
 ---
 
 Redesign /run/configure per mockup: left column lists ALL available configs flat (no languages/tooling/perks grouping), right column shows the pipeline (N of M slots used, RoleList rows + empty slots), a compact stat strip (reward +KB, reward x, coverage x) and an inline 'on failure' line replacing the boxed RunStakes/RunModifiers.
@@ -116,3 +116,61 @@ Labeled gives/needs lines became an aligned table: config · effect · condition
 - [x] Changelog entry rewritten to the table; wiki §8 updated
 
 - [x] Responsive table (mock #24): under sm (640px) the header row hides and each row folds to two aligned lines — mark · config+rarity · state on line 1, effect · condition indented under the name on line 2. Narrow container drops to 4 columns (sm keeps 5); cells place via responsive col/row-start on the subgrid; empty slots/trailing span col-span-4 sm:col-span-5. Verified at 480px and 1280px on /proto-run; 996 tests, lint+depcruise, tsc green
+
+## Disclosure rows round (mock #25 + #26, 2026-08-04)
+
+The column table became collapsible disclosure rows — one view for desktop and mobile:
+
+- [x] PipelineReportRow: one line (mark · name underlined in rarity color · counter) + detail block (left border, indented): needs sentence, gives sentence with number tokens emphasized (emphasizeNumbers), costs in vermillion, description fallback, rarity word. Expanded BY DEFAULT (Marciano mid-round); name is a real <button aria-expanded> so inner controls never nest in a button role; whole row is a guarded convenience tap target; ghost = whole-row button (click to add), detail pinned open; shop chip rows keep the popover chip, detail pinned open; ✕ removal is an explicit button now (row click never strips)
+- [x] PipelineTable: 3-col grid (mark · config · counter), headers deleted
+- [x] RARITY_COLORS gains decoration tokens (underline colors; legendary static fuchsia — text-decoration-color cannot ride the prismatic animation)
+- [x] Roster copy → sentence style ("Gain coverage in 2 categories" / "Then all coverage earns ×1.5", "Get 1 Ruby poll right" / "Then Ruby polls earn ×1.5", eslint costs "The fee doubles each use")
+- [x] Button primary theme-based (mock #26): border/text/tint from --theme-color (saffron on JS polls); un-themed screens fall back to root default celadon; hover flips solid like the theme variant
+- [x] StripScreen specs rewired to explicit Remove buttons; ConfiguringScreen specs to default-open + name-tap fold; 998 tests, lint+depcruise, tsc green; verified on /proto-run (expanded rows, fold toggle, saffron submit)
+- [x] Changelog + wiki §8 updated
+
+## Reward screen round (mocks #27-#32, 2026-08-04)
+
+- [x] Totals framed as winnings: muted "you won" lead-in before +KB/+% (only the cleared path passes totals)
+- [x] StorageGainBar.ui (+ Story): HUD-style slim track split into pre-gate storage (zinc-500) and the won segment (viridian) toward STORAGE_CAP_KB; GateRewardReport takes storageBar prop; RewardScreen computes fromKb = storage − gained; storage threaded via RunReward + proto-run (view.storage)
+- [x] Coverage badges on the reward screen: existing CoverageByCategory reused with prefix="+" (boy scout: header now conditional so it renders headerless); centered under the winnings
+- [x] Answers list per mock #30: ReviewAnswers gate ("Review answers →" bar) deleted — AnswerResults always lists one tight row per poll (PASS/PART/FAIL badge, question in zinc-100, +% by outcome, ▸), choices fold open per row (details, closed by default); header "your answers" + "N of M correct" in viridian; (count) column and OutcomeCounts removed
+- [x] Specs: RewardScreen/StripScreen/RunSummary/AnswerResults realigned (toBeVisible for details folds); 998 tests, lint+depcruise, tsc green; verified end-to-end on /proto-run
+- [x] Changelog entry + wiki §8 Reward Report updated
+
+- [x] Chips head the pipeline rows everywhere (mock #34 applied to all surfaces): the underlined-name button replaced by ConfigChip (noTooltip; onClick = fold toggle, new ariaExpanded pass-through on ConfigChip; ghost preview chip stays inert — whole row commits). chipBadge rides as the chip corner badge again; mark/✕ cells self-stretch to center on the chip line. RARITY_COLORS decoration tokens removed (lived one round). 998 tests, lint+depcruise, tsc green; verified on /proto-run (legendary ring on Copilot chip in-row)
+
+## Locked slot row (mock #35, 2026-08-04)
+
+- [x] StorageGainBar generalized → ui/runs/GainBar.ui ({from,to,cap,label} unit-agnostic; gate report passes label="storage"; stories updated)
+- [x] RoleList.nextSlot (NextSlotUnlock) → LockedSlotRow after the empty slots: dashed box with "Slot N", "unlocks at X% coverage · you have Y%" (X white bold, Y viridian), GainBar progress (from 0), pill locked (faint) / unlocked (celadon) once met
+- [x] ConfiguringScreen: optional coverage + slotCoverageRequired props; nextSlot hidden at the cap (Infinity guard); local coverage StatPair renamed coverageTimes (prop collision); wired via RunConfigure + proto-run (view.coverage / view.slotCoverageRequired — mechanic was already in pipeline.model per ADR-008, only the surfacing is new)
+- [x] 3 new ConfiguringScreen specs (locked, unlocked, hidden-at-cap); 1001 tests, lint+depcruise, tsc green; verified on /proto-run
+- [x] Changelog + wiki §8 updated
+
+## Shop rows + static legendary ring (mocks #36/#37, 2026-08-04)
+
+- [x] .legendary-ring in app.css: the masked static Kanto-gradient ring (saffron→fuchsia→lavender→cerulean→celadon), replacing the prismatic animation on rarity surfaces; RARITY_COLORS.legendary = border-transparent legendary-ring / text-fuchsia; ghost dashes fall back to border-fuchsia. prismatic-* classes remain for the legacy slides/old pages only
+- [x] StatusDot "add" variant (＋ pewter); PipelineReportRow gains mark override + dimmed props; detail states "No condition" for checkless configs (mock copy)
+- [x] Shop offers = PipelineTable rows (mark="add", chip, sentence detail, buy button viridian border + saffron price; unaffordable → dimmed row + "need NKB"; full pipeline → disabled buy). "Rebuild configs" → "Reroll offers" action button
+- [x] Load-out rows: RoleList.trailingFor prop; ShopScreen renders upgrade (coverage-priced per current mechanic — mock showed KB, deliberately NOT adopted to avoid a balance change) / maxed / sell buttons; subtitle now "N of M slots used". ConfigActions popover has zero consumers again (delete or keep = Marciano, same as chip layout)
+- [x] ShopScreen + ConfigChip specs realigned; accessible-name fix (text space before price span); 1003 tests, lint+depcruise, tsc green; verified on /proto-run
+
+## Follow-up candidates (3)
+- Mock #36 prices upgrades in KB ("upgrade 48KB") — current mechanic is coverage-gated (wiki §4.4). If the KB economy is wanted, that is a model change: decide + ADR
+- Mock #36 Stylelint costs line reads live "Next use costs 16KB" — costs copy is static roster text today; needs live fee threading to the shop
+- ConfigActions.ui + PipelineReportRow chipActions path + layout="chip" all have zero consumers
+
+### Shop polish (same day)
+- [x] Full-pipeline buy buttons wrapped in Tooltip: "Add a new slot to upgrade or sell an existing config" (CSS-hover wrapper works around disabled buttons); spec added
+- [x] "maxed" placeholder dropped — upgrade button renders only when isUpgradable (Marciano correction to mock #36); spec realigned
+- [x] Proto shop continue → "Continue to gate N →"; boy scout: RunReward broken label "Continue to ${gatesCleared}" (rendered "Continue to 1") → "Continue to shop →"
+- [x] 1004 tests, lint+depcruise, tsc green; verified on /proto-run
+
+### Fix: linter rows claimed "No condition" (Marciano, 2026-08-04)
+- Divergence traced: mock #13 round moved the lint pledge out of needs into costs ("fee doubles each use · linted polls must be correct"); the mock #23 compaction trimmed the pledge half out of costs; mock #37 added the "No condition" placeholder for missing needs — turning the missing copy into a false claim. The lint-correct check never left the model.
+- [x] Authored needs on the linters: eslint "Linted JS/TS polls must be correct", stylelint "Linted CSS polls must be correct"
+- [x] Guard spec in config.model.spec: every config backing a check (except the live-text "correct" check) must author needs — a future copy trim now fails the suite instead of printing "No condition"
+- [x] 1005 tests, lint+depcruise, tsc green; verified on /proto-run
+
+- [x] Gated upgrade explains itself (Marciano): disabled upgrade buttons get a Tooltip — "Upgrade this to L{next} for a stronger effect. You need {n}% coverage in {Category} for this — you have {m}%." (category display name via getCategoryMetadata; live have-value appended in the expand-tile tooltip voice). Enabled buttons stay bare. Confirmed: upgrade gating was ALREADY category-tied (canUpgrade reads coverageByCategory[focusCategory] ≥ level×5, wiki §4.4) — the tooltip just surfaces it. Spec added; 1006 tests, lint+depcruise, tsc green

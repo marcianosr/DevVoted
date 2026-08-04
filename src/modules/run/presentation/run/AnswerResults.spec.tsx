@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import { AnswerResults } from "./AnswerResults.ui";
 
@@ -51,7 +51,7 @@ const lineOf = (label: string) => {
 describe(AnswerResults, () => {
 	it("renders one reporter row per poll with a PASS/FAIL/PART badge and the question", () => {
 		render(<AnswerResults answered={answered} />);
-		expect(screen.getByText("1 correct")).toBeInTheDocument();
+		expect(screen.getByText("1 of 3 correct")).toBeInTheDocument();
 		expect(screen.getByText("PASS")).toBeInTheDocument();
 		expect(screen.getByText("FAIL")).toBeInTheDocument();
 		expect(screen.getByText("PART")).toBeInTheDocument();
@@ -59,10 +59,20 @@ describe(AnswerResults, () => {
 		expect(screen.getByText("Which are TS utility types?")).toBeInTheDocument();
 	});
 
-	it("shows each poll's option count", () => {
+	it("themes each row in its poll's category, with a swatch beside the question", () => {
+		const { container } = render(<AnswerResults answered={answered} />);
+		const themed = container.querySelectorAll("[data-category-theme]");
+		expect(
+			Array.from(themed, (row) => row.getAttribute("data-category-theme"))
+		).toEqual(["js", "css", "ts"]);
+		expect(container.querySelectorAll(".bg-theme")).toHaveLength(3);
+	});
+
+	it("keeps each poll's choices folded until its row is tapped", () => {
 		render(<AnswerResults answered={answered} />);
-		expect(screen.getAllByText("(3)")).toHaveLength(2); // js + css
-		expect(screen.getByText("(4)")).toBeInTheDocument(); // ts
+		expect(screen.getByText('"object"')).not.toBeVisible();
+		fireEvent.click(screen.getByText("typeof null?"));
+		expect(screen.getByText('"object"')).toBeVisible();
 	});
 
 	it("shows earned coverage in the result slot, tinted by outcome", () => {

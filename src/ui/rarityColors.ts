@@ -10,34 +10,29 @@ export type Rarity = Config["rarity"];
  */
 export const RARITY_COLORS: Record<
 	Rarity,
-	{ border: string; text: string; bg: string; decoration: string }
+	{ border: string; text: string; bg: string }
 > = {
 	common: {
 		border: "border-cerulean",
 		text: "text-cerulean",
 		bg: "bg-cerulean/15",
-		decoration: "decoration-cerulean",
 	},
 	uncommon: {
 		border: "border-viridian",
 		text: "text-viridian",
 		bg: "bg-viridian/15",
-		decoration: "decoration-viridian",
 	},
 	rare: {
 		border: "border-cinnabar",
 		text: "text-cinnabar",
 		bg: "bg-cinnabar/15",
-		decoration: "decoration-cinnabar",
 	},
 	legendary: {
-		// Border is animation-only: chip labels are white, so the border token
-		// must not drag the text color along (.prismatic-chip animates both).
-		// Decoration stays static — text-decoration-color can't ride the
-		// prismatic animation.
-		border: "prismatic-border",
-		text: "prismatic-chip",
+		// The static Kanto-gradient ring (no animation — Marciano, 2026-08-04):
+		// the element's own border goes transparent so the masked ring overlays
+		// exactly where it would sit.
+		border: "border-transparent legendary-ring",
+		text: "text-fuchsia",
 		bg: "bg-lavender/10",
-		decoration: "decoration-fuchsia",
 	},
 };

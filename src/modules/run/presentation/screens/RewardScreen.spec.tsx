@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
@@ -47,8 +47,14 @@ describe(RewardScreen, () => {
 		expect(screen.getByText(/Gate 1 cleared!/)).toBeInTheDocument();
 		// Unit Tests pays its flat clear payout in its row.
 		expect(screen.getByText("+32KB")).toBeInTheDocument();
-		// Answers sit behind the review bar — expand it to reach the poll review.
-		fireEvent.click(screen.getByRole("button", { name: /Review answers/ }));
+		// The totals footer frames the sums as the gate's winnings.
+		expect(screen.getByText(/you won/)).toBeInTheDocument();
+		// Every answered question lists as a row right away.
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();
+		expect(screen.getByText("1 of 2 correct")).toBeInTheDocument();
+		// Coverage badges name each category the gate's polls came from.
+		expect(screen.getByText("JavaScript")).toBeInTheDocument();
+		expect(screen.getByText("+8%")).toBeInTheDocument();
+		expect(screen.getByText("+3.5%")).toBeInTheDocument();
 	});
 });

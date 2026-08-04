@@ -141,6 +141,7 @@ export const CONFIGS = {
 		description:
 			"Cross out a wrong answer on JS/TS polls for an escalating fee — linted polls must be answered correctly.",
 		gives: "Cross out a wrong answer on JS/TS polls",
+		needs: "Linted JS/TS polls must be correct",
 		costs: "The fee doubles each use",
 		requirementDelta: 0,
 		rewardMultiplier: 1,
@@ -154,6 +155,7 @@ export const CONFIGS = {
 		description:
 			"Cross out a wrong answer on CSS polls for an escalating fee — linted polls must be answered correctly.",
 		gives: "Cross out a wrong answer on CSS polls",
+		needs: "Linted CSS polls must be correct",
 		costs: "The fee doubles each use",
 		requirementDelta: 0,
 		rewardMultiplier: 1,

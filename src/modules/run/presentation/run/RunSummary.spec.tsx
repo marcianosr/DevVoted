@@ -78,6 +78,8 @@ describe(RunSummary, () => {
 		);
 		expect(screen.getByText("Configs installed")).toBeInTheDocument();
 		expect(screen.getAllByText(CONFIGS.css.label).length).toBeGreaterThan(0);
-		expect(screen.getByText(/Review your 2 answers/)).toBeInTheDocument();
+		// The review lists every question as a row, correct count up top.
+		expect(screen.getByText("1 of 2 correct")).toBeInTheDocument();
+		expect(screen.getByText("Q1?")).toBeInTheDocument();
 	});
 });

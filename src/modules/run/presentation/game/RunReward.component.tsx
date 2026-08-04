@@ -15,7 +15,7 @@ export const RunReward = () => {
 		<Screen
 			theme="celadon"
 			rightAction={{
-				label: `Continue to ${view.gatesCleared}`,
+				label: "Continue to shop →",
 				onClick: () => navigate({ to: "/run/shop" }),
 			}}
 		>
@@ -27,6 +27,7 @@ export const RunReward = () => {
 				passedChecks={view.passedChecks}
 				configs={view.configs}
 				faucetThisGateKb={view.faucetThisGateKb}
+				storage={view.storage}
 			/>
 		</Screen>
 	);

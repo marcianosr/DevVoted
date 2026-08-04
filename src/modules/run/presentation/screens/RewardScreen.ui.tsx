@@ -5,8 +5,9 @@ import {
 	gateRewardRows,
 	gateStorageGained,
 } from "~/modules/run/gate/gateReward.model";
-import { roundToOneDecimal } from "~/modules/run/rules.model";
+import { roundToOneDecimal, STORAGE_CAP_KB } from "~/modules/run/rules.model";
 import { GateRewardReport } from "../gate/GateRewardReport.ui";
+import { CoverageByCategory } from "../run/CoverageByCategory.ui";
 import { ReviewAnswers } from "../run/ReviewAnswers.ui";
 
 type RewardScreenProps = {
@@ -17,6 +18,8 @@ type RewardScreenProps = {
 	passedChecks: readonly CheckStatus[];
 	configs: readonly Config[];
 	faucetThisGateKb?: number;
+	/** The run's storage after the payout — drawn as the winnings bar. */
+	storage?: number;
 };
 
 export const RewardScreen = ({
@@ -27,6 +30,7 @@ export const RewardScreen = ({
 	passedChecks,
 	configs,
 	faucetThisGateKb,
+	storage,
 }: RewardScreenProps) => {
 	const coveragePct = roundToOneDecimal(
 		Object.values(coverageGainedByCategory).reduce((sum, pct) => sum + pct, 0)
@@ -37,6 +41,12 @@ export const RewardScreen = ({
 		checks: passedChecks,
 		faucetThisGateKb,
 	});
+	const storageKb = gateStorageGained(
+		configs,
+		answered,
+		gateReward,
+		faucetThisGateKb
+	);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -44,16 +54,25 @@ export const RewardScreen = ({
 				gateNumber={gatesCleared}
 				cleared
 				rows={rows}
-				totals={{
-					storageKb: gateStorageGained(
-						configs,
-						answered,
-						gateReward,
-						faucetThisGateKb
-					),
-					coveragePct,
-				}}
+				totals={{ storageKb, coveragePct }}
+				storageBar={
+					storage === undefined
+						? undefined
+						: {
+								fromKb: Math.max(0, storage - storageKb),
+								toKb: storage,
+								capKb: STORAGE_CAP_KB,
+							}
+				}
 			/>
+
+			{/* The winnings line's breakdown: one badge per category answered. */}
+			<div className="flex justify-center">
+				<CoverageByCategory
+					coverageByCategory={coverageGainedByCategory}
+					prefix="+"
+				/>
+			</div>
 
 			<ReviewAnswers answered={answered} />
 		</div>

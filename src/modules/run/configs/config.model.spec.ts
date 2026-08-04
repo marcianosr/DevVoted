@@ -7,7 +7,7 @@ import {
 	isUpgradable,
 	rarityOf,
 } from "./config.model";
-import { CONFIGS } from "./configRoster.model";
+import { CONFIG_LIST, CONFIGS } from "./configRoster.model";
 
 describe("rarityOf", () => {
 	it("defaults an unset rarity to common", () => {
@@ -66,5 +66,22 @@ describe("describeConfig", () => {
 		expect(describeConfig({ ...CONFIGS.js, level: 2 })).toBe(
 			"JavaScript polls earn 2× coverage — but if JavaScript shows, you must get 2 right."
 		);
+	});
+});
+
+describe("roster copy", () => {
+	// The pipeline detail prints "No condition" when `needs` is missing — a
+	// false claim for any config that actually backs a check. Every check
+	// authors its demand on the roster, except the escalating "correct" check,
+	// which reads its live text from the gate (DVTD-7wy6).
+	it("authors a needs sentence on every config whose check demands one", () => {
+		for (const config of CONFIG_LIST) {
+			if (!config.check && !config.focusCategory) continue;
+			if (config.check === "correct") continue;
+			expect(
+				config.needs,
+				`${config.id} backs a check but has no needs copy`
+			).toBeDefined();
+		}
 	});
 });

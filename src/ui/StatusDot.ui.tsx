@@ -2,10 +2,10 @@ import { clsx } from "clsx";
 
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 
-/** The dot speaks check states — plus "use", the mark of a usable-but-idle
- * config (an affordance, not a state; it yields to the honest dot once the
- * check arms or settles). */
-export type StatusDotVariant = StatusBadgeVariant | "use";
+/** The dot speaks check states — plus two affordance marks that carry no
+ * state: "use" (a usable-but-idle config; yields to the honest dot once the
+ * check arms) and "add" (a shop offer waiting to be bought). */
+export type StatusDotVariant = StatusBadgeVariant | "use" | "add";
 
 // The indicator is compact, so every variant carries a spoken state name for
 // screen readers — the text label the badge had is otherwise lost.
@@ -17,6 +17,7 @@ const LABEL: Record<StatusDotVariant, string> = {
 	run: "running",
 	perk: "perk",
 	use: "usable",
+	add: "buyable",
 };
 
 // Settled verdicts read as glyphs — a ✓/✗ scans faster than two more colored
@@ -25,6 +26,7 @@ const GLYPH: Partial<Record<StatusDotVariant, string>> = {
 	pass: "✓",
 	fail: "✗",
 	use: "▸",
+	add: "＋",
 };
 
 const DOT = "h-2.5 w-2.5 rounded-full";
@@ -39,6 +41,7 @@ const STYLE: Record<StatusDotVariant, string> = {
 	// distinct from skip's gray fill by shape, not only by color.
 	perk: clsx(DOT, "border-2 border-pewter"),
 	use: "text-xs leading-none text-pewter",
+	add: "text-xs leading-none text-pewter",
 };
 
 export const StatusDot = ({ variant }: { variant: StatusDotVariant }) => (

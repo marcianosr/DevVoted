@@ -38,21 +38,55 @@ describe(ConfiguringScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("folds a row open on tap to show what it gives and needs", () => {
+	it("shows the next coverage-gated slot locked, with live unlock progress", () => {
+		render(
+			<ConfiguringScreen {...base} coverage={6.5} slotCoverageRequired={11} />
+		);
+		expect(screen.getByText("Slot 4")).toBeInTheDocument();
+		expect(screen.getByText("11%")).toBeInTheDocument();
+		expect(screen.getByText("6.5%")).toBeInTheDocument();
+		expect(screen.getByText("locked")).toBeInTheDocument();
+		expect(
+			screen.getByRole("progressbar", { name: "coverage toward slot 4" })
+		).toBeInTheDocument();
+	});
+
+	it("marks the next slot unlocked once coverage meets its gate", () => {
+		render(
+			<ConfiguringScreen {...base} coverage={12} slotCoverageRequired={11} />
+		);
+		expect(screen.getByText("unlocked")).toBeInTheDocument();
+	});
+
+	it("hides the locked slot at the slot cap", () => {
+		render(
+			<ConfiguringScreen
+				{...base}
+				coverage={12}
+				slotCoverageRequired={Infinity}
+			/>
+		);
+		expect(screen.queryByText(/^Slot \d/)).not.toBeInTheDocument();
+	});
+
+	it("opens each row's demand and effect by default", () => {
 		render(<ConfiguringScreen {...base} />);
-		// Collapsed rows carry only the name and counter.
-		expect(screen.queryByText("1 correct answer")).not.toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: /^Unit Tests/ }));
 		expect(screen.getByText("1 correct answer")).toBeInTheDocument();
 		expect(screen.getByText("+32KB")).toBeInTheDocument();
 	});
 
-	it("folds an expanded row back shut on a second tap", () => {
+	it("folds a row to one line when its name is tapped", () => {
 		render(<ConfiguringScreen {...base} />);
-		const row = screen.getByRole("button", { name: /^Unit Tests/ });
-		fireEvent.click(row);
-		fireEvent.click(row);
+		fireEvent.click(screen.getByRole("button", { name: "Unit Tests" }));
 		expect(screen.queryByText("1 correct answer")).not.toBeInTheDocument();
+	});
+
+	it("folds a tapped-shut row back open on the next tap", () => {
+		render(<ConfiguringScreen {...base} />);
+		const name = screen.getByRole("button", { name: "Unit Tests" });
+		fireEvent.click(name);
+		fireEvent.click(name);
+		expect(screen.getByText("1 correct answer")).toBeInTheDocument();
 	});
 
 	it("marks pipeline rows with a state dot instead of a status badge", () => {

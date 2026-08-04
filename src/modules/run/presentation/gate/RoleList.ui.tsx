@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
+import { clsx } from "clsx";
 import type { Config } from "~/modules/run/configs/config.model";
 import { describeConfig } from "~/modules/run/configs/config.model";
 import type { CheckState } from "~/modules/run/configs/effect.model";
 import type { RoleRow } from "~/modules/run/gate/configRole.model";
 import { Badge } from "~/ui/Badge.component";
+import { GainBar } from "~/ui/runs/GainBar.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import {
 	Paragraph,
@@ -54,6 +56,14 @@ export type SlotPreview = {
 	readonly onAdd: () => void;
 };
 
+/** The next coverage-gated slot (ADR-008) — rendered as a locked slot with
+ * live unlock progress after the open ones. */
+export type NextSlotUnlock = {
+	readonly number: number;
+	readonly unlockAtPct: number;
+	readonly coveragePct: number;
+};
+
 const rowUseButton = (action: RowUseAction) => (
 	<button
 		type="button"
@@ -80,6 +90,48 @@ const EmptySlotRow = () => (
 	</div>
 );
 
+// The next coverage-gated slot: the same dashed pipe segment, carrying its
+// unlock demand, your live coverage, and a bar of the progress between them.
+const LockedSlotRow = ({ slot }: { slot: NextSlotUnlock }) => {
+	const unlocked = slot.coveragePct >= slot.unlockAtPct;
+	return (
+		<div className="col-span-3 py-2">
+			<div className="flex items-center gap-4 rounded-lg border-2 border-dashed border-zinc-700 px-4 py-3">
+				<div className="flex min-w-0 flex-1 flex-col gap-1.5">
+					<Paragraph as="span" size="sm" className="font-bold">
+						Slot {slot.number}
+					</Paragraph>
+					<Paragraph as="span" size="sm" tone="muted">
+						unlocks at{" "}
+						<span className="font-bold text-zinc-100">{slot.unlockAtPct}%</span>{" "}
+						coverage · you have{" "}
+						<span className="font-bold text-viridian">{slot.coveragePct}%</span>
+					</Paragraph>
+					<span className="max-w-56">
+						<GainBar
+							from={0}
+							to={slot.coveragePct}
+							cap={slot.unlockAtPct}
+							label={`coverage toward slot ${slot.number}`}
+						/>
+					</span>
+				</div>
+				<Paragraph
+					as="span"
+					size="xs"
+					tone={unlocked ? "celadon" : "faint"}
+					className={clsx(
+						"shrink-0 rounded border px-2 py-0.5",
+						unlocked ? "border-celadon" : "border-zinc-700"
+					)}
+				>
+					{unlocked ? "unlocked" : "locked"}
+				</Paragraph>
+			</div>
+		</div>
+	);
+};
+
 type RoleListProps = {
 	rows: readonly RoleRow[];
 	onRemove?: (configId: string) => void;
@@ -91,10 +143,15 @@ type RoleListProps = {
 	 * carries a "use" button and the ▸ usable mark while its check is dormant —
 	 * the dot turns honest (live orange) once the pledge is armed. */
 	getUseAction?: (config: Config) => RowUseAction | undefined;
+	/** Per-row trailing controls — the shop's upgrade/sell buttons. Wins over
+	 * the use/remove defaults when it returns something. */
+	trailingFor?: (config: Config) => ReactNode;
 	/** Configs to mark with a "new" chip badge (freshly drafted). */
 	newConfigIds?: readonly string[];
 	/** The configure screen's hovered bench config, occupying one would-be slot. */
 	preview?: SlotPreview;
+	/** The next coverage-gated slot, shown locked after the open ones. */
+	nextSlot?: NextSlotUnlock;
 	/** A control rendered as the final row — the shop's "expand pipeline". */
 	trailing?: ReactNode;
 };
@@ -116,8 +173,10 @@ export const RoleList = ({
 	slots,
 	actionsFor,
 	getUseAction,
+	trailingFor,
 	newConfigIds,
 	preview,
+	nextSlot,
 	trailing,
 }: RoleListProps) => {
 	// The preview occupies one would-be slot, so the open count shrinks with it.
@@ -151,11 +210,12 @@ export const RoleList = ({
 						chipActions={actionsFor?.(row.config)}
 						chipBadge={newBadge(row.config)}
 						trailing={
-							action
+							trailingFor?.(row.config) ??
+							(action
 								? rowUseButton(action)
 								: onRemove
 									? removeButton(row, onRemove)
-									: undefined
+									: undefined)
 						}
 					/>
 				);
@@ -181,6 +241,7 @@ export const RoleList = ({
 			{Array.from({ length: emptySlots }, (_, index) => (
 				<EmptySlotRow key={`empty-${index}`} />
 			))}
+			{nextSlot ? <LockedSlotRow slot={nextSlot} /> : null}
 			{trailing ? <div className="col-span-3 py-2">{trailing}</div> : null}
 		</PipelineTable>
 	);

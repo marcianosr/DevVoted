@@ -5,6 +5,7 @@ import {
 	type GateRewardStatus,
 } from "~/modules/run/gate/gateReward.model";
 import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
+import { GainBar } from "~/ui/runs/GainBar.ui";
 import {
 	Paragraph,
 	type ParagraphTone,
@@ -83,6 +84,9 @@ type GateRewardReportProps = {
 	cleared: boolean;
 	rows: readonly GateRewardRow[];
 	totals?: { storageKb: number; coveragePct: number };
+	/** Run storage before → after the payout — drawn as the HUD bar's sibling
+	 * under the winnings line. */
+	storageBar?: { fromKb: number; toKb: number; capKb: number };
 	removableConfigIds?: readonly string[];
 	onRemoveConfig?: (configId: string) => void;
 	stripsRemaining?: number;
@@ -93,6 +97,7 @@ export const GateRewardReport = ({
 	cleared,
 	rows,
 	totals,
+	storageBar,
 	removableConfigIds = [],
 	onRemoveConfig,
 	stripsRemaining,
@@ -133,16 +138,33 @@ export const GateRewardReport = ({
 		</PipelineTable>
 
 		{totals ? (
-			<Paragraph size="sm" className="self-center">
-				<span className="font-extrabold text-gradient-green">
-					+{totals.storageKb}KB
-				</span>{" "}
-				storage ·{" "}
-				<span className="font-extrabold text-gradient-green">
-					+{totals.coveragePct}%
-				</span>{" "}
-				coverage
-			</Paragraph>
+			// Only the cleared path passes totals, so the line reads as the
+			// gate's winnings rather than a bare sum.
+			<div className="flex flex-col items-center gap-2 self-center">
+				<Paragraph size="sm">
+					<Paragraph as="span" size="sm" tone="muted">
+						you won{" "}
+					</Paragraph>
+					<span className="font-extrabold text-gradient-green">
+						+{totals.storageKb}KB
+					</span>{" "}
+					storage ·{" "}
+					<span className="font-extrabold text-gradient-green">
+						+{totals.coveragePct}%
+					</span>{" "}
+					coverage
+				</Paragraph>
+				{storageBar ? (
+					<span className="w-56">
+						<GainBar
+							from={storageBar.fromKb}
+							to={storageBar.toKb}
+							cap={storageBar.capKb}
+							label="storage"
+						/>
+					</span>
+				) : null}
+			</div>
 		) : null}
 	</div>
 );

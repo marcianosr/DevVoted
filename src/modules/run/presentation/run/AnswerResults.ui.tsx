@@ -4,6 +4,8 @@ import type {
 } from "~/modules/run/climb/run.model";
 import { StatusLine } from "~/ui/runs/StatusLine.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
+import { Swatch } from "~/ui/Swatch.component";
+import { categoryTheme } from "~/ui/theme/categoryTheme";
 import {
 	Paragraph,
 	type ParagraphTone,
@@ -70,7 +72,7 @@ const ItLine = ({ label, status, note }: ItRow) => (
 	<div className="flex items-start gap-2">
 		<Paragraph
 			as="span"
-			size="sm"
+			size="xs"
 			tone={GLYPH_TONE[status]}
 			className="w-4 shrink-0 text-center"
 		>
@@ -78,14 +80,14 @@ const ItLine = ({ label, status, note }: ItRow) => (
 		</Paragraph>
 		<Paragraph
 			as="span"
-			size="sm"
+			size="xs"
 			tone={LABEL_TONE[status]}
 			className="min-w-0 flex-1"
 		>
 			{label}
 		</Paragraph>
 		{note ? (
-			<Paragraph as="span" size="sm" tone="muted" className="shrink-0 pl-2">
+			<Paragraph as="span" size="xs" tone="muted" className="shrink-0 pl-2">
 				{note}
 			</Paragraph>
 		) : null}
@@ -93,44 +95,30 @@ const ItLine = ({ label, status, note }: ItRow) => (
 );
 
 const AnswerTree = ({ poll }: { poll: AnsweredPoll }) => (
-	<div className="space-y-0.5 pb-3 pl-7">
+	<div className="space-y-0.5 pb-3 pl-23">
 		{itRowsFor(poll).map((row) => (
 			<ItLine key={row.label} {...row} />
 		))}
 		{poll.explanation ? (
-			<Paragraph size="sm" tone="muted" className="pt-1">
+			<Paragraph size="xs" tone="muted" className="pt-1">
 				› {poll.explanation}
 			</Paragraph>
 		) : null}
 	</div>
 );
 
-const ReporterRow = ({
-	poll,
-	defaultOpen,
-}: {
-	poll: AnsweredPoll;
-	defaultOpen: boolean;
-}) => {
-	const count = (poll.options ?? poll.picked).length;
+const ReporterRow = ({ poll }: { poll: AnsweredPoll }) => {
 	const hasScore = poll.coverageEarned !== undefined;
 	return (
-		<details open={defaultOpen} className="group">
+		<details {...categoryTheme(poll.category)} className="group">
 			<StatusLine
 				as="summary"
 				badge={OUTCOME_VARIANT[poll.outcome]}
+				leading={<Swatch size="sm" />}
 				line={poll.question}
 				className="cursor-pointer list-none rounded hover:bg-zinc-800/40 [&::-webkit-details-marker]:hidden"
 				trailing={
 					<>
-						<Paragraph
-							as="span"
-							size="sm"
-							tone="muted"
-							className="shrink-0 tabular-nums"
-						>
-							({count})
-						</Paragraph>
 						<Paragraph
 							as="span"
 							size="sm"
@@ -141,7 +129,7 @@ const ReporterRow = ({
 						</Paragraph>
 						<span
 							aria-hidden
-							className="shrink-0 text-zinc-500 transition-transform group-open:rotate-90"
+							className="shrink-0 text-zinc-300 transition-transform group-open:rotate-90"
 						>
 							▸
 						</span>
@@ -154,52 +142,31 @@ const ReporterRow = ({
 	);
 };
 
-const OUTCOME_SUMMARY = [
-	{ outcome: "correct", label: "correct" },
-	{ outcome: "partial", label: "partial" },
-	{ outcome: "wrong", label: "incorrect" },
-] as const;
-
 type AnswerResultsProps = {
 	answered: readonly AnsweredPoll[];
 };
 
-export const OutcomeCounts = ({ answered }: AnswerResultsProps) => {
-	const parts = OUTCOME_SUMMARY.map(({ outcome, label }) => ({
-		outcome,
-		label,
-		count: answered.filter((poll) => poll.outcome === outcome).length,
-	})).filter((part) => part.count > 0);
-
+export const AnswerResults = ({ answered }: AnswerResultsProps) => {
+	const correct = answered.filter((poll) => poll.outcome === "correct").length;
 	return (
-		<Paragraph size="sm" className="flex gap-2">
-			{parts.map((part, index) => (
-				<span key={part.outcome} className="flex gap-2">
-					{index > 0 ? <span className="text-pewter">·</span> : null}
-					<Paragraph as="span" size="sm" tone={OUTCOME_TONE[part.outcome]}>
-						{part.count} {part.label}
-					</Paragraph>
-				</span>
-			))}
-		</Paragraph>
+		<section className="space-y-2">
+			<div className="flex items-baseline justify-between">
+				<Title>Review your answers</Title>
+				<Paragraph
+					as="span"
+					size="sm"
+					tone="viridian"
+					className="font-bold tabular-nums"
+				>
+					{correct} of {answered.length} correct
+				</Paragraph>
+			</div>
+
+			<div className="font-mono">
+				{answered.map((poll, index) => (
+					<ReporterRow key={`${poll.id}-${index}`} poll={poll} />
+				))}
+			</div>
+		</section>
 	);
 };
-
-export const AnswerResults = ({ answered }: AnswerResultsProps) => (
-	<section className="space-y-4">
-		<div className="space-y-1">
-			<Title>Your answers</Title>
-			<OutcomeCounts answered={answered} />
-		</div>
-
-		<div className="font-mono">
-			{answered.map((poll, index) => (
-				<ReporterRow
-					key={`${poll.id}-${index}`}
-					poll={poll}
-					defaultOpen={index === 0}
-				/>
-			))}
-		</div>
-	</section>
-);

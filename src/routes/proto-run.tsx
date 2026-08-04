@@ -236,6 +236,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						rewardMultiplier={view.rewardMultiplier}
 						coverageMultiplier={view.coverageMultiplier}
 						coverageAdd={view.coverageAdd}
+						coverage={view.coverage}
+						slotCoverageRequired={view.slotCoverageRequired}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
 						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
 					/>
@@ -281,6 +283,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						coverageGainedByCategory={view.coverageGainedThisGate}
 						passedChecks={view.passedChecks}
 						configs={view.configs}
+						storage={view.storage}
 					/>
 				</Screen>
 			)}
@@ -293,7 +296,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("summary"),
 					}}
 					rightAction={{
-						label: "Continue →",
+						label: `Continue to gate ${view.gatesCleared + 1} →`,
 						onClick: () => dispatch({ type: "finish-reward" }),
 					}}
 				>

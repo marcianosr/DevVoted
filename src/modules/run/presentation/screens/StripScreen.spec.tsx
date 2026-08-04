@@ -42,7 +42,7 @@ describe(StripScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("collapses the answers behind a review bar", () => {
+	it("lists the questions and keeps each poll's choices behind a tap", () => {
 		render(
 			<StripScreen
 				stripsRemaining={1}
@@ -64,9 +64,11 @@ describe(StripScreen, () => {
 				onStrip={() => {}}
 			/>
 		);
-		expect(screen.queryByText("typeof null?")).not.toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: /Review answers/ }));
+		// The question is a visible row; its options wait behind the fold.
 		expect(screen.getByText("typeof null?")).toBeInTheDocument();
+		expect(screen.getByText('"object"')).not.toBeVisible();
+		fireEvent.click(screen.getByText("typeof null?"));
+		expect(screen.getByText('"object"')).toBeVisible();
 	});
 
 	it("offers every config for removal — Unit Tests included", () => {
@@ -81,9 +83,11 @@ describe(StripScreen, () => {
 			/>
 		);
 		expect(
-			screen.getByRole("button", { name: /Unit Tests/ })
+			screen.getByRole("button", { name: "Remove Unit Tests" })
 		).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /.js/ })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Remove .js" })
+		).toBeInTheDocument();
 	});
 
 	it("shows which check broke the gate as a failed row", () => {

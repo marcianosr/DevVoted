@@ -54,6 +54,8 @@ type ConfigChipProps = {
 	// Render the label bold (Configdex uses this; loadout leaves it normal).
 	boldLabel?: boolean;
 	onClick?: () => void;
+	/** Disclosure state when the chip toggles a fold (the pipeline rows). */
+	ariaExpanded?: boolean;
 };
 
 const ChipLabel = ({
@@ -92,8 +94,9 @@ const ChipSurface = ({
 	config,
 	disabled,
 	onClick,
+	ariaExpanded,
 	children,
-}: Pick<ConfigChipProps, "config" | "disabled" | "onClick"> & {
+}: Pick<ConfigChipProps, "config" | "disabled" | "onClick" | "ariaExpanded"> & {
 	children: ReactNode;
 }) => {
 	const style = chipSurface({
@@ -105,6 +108,7 @@ const ChipSurface = ({
 			type="button"
 			onClick={onClick}
 			disabled={disabled}
+			aria-expanded={ariaExpanded}
 			className={`${style} cursor-pointer transition enabled:hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40`}
 		>
 			{children}
@@ -125,6 +129,7 @@ export const ConfigChip = ({
 	boldLabel,
 	disabled,
 	onClick,
+	ariaExpanded,
 }: ConfigChipProps) => {
 	const level = config.level ?? 1;
 	const corners = [
@@ -135,7 +140,12 @@ export const ConfigChip = ({
 		) : null,
 	].filter(Boolean);
 	const surface = (
-		<ChipSurface config={config} disabled={disabled} onClick={onClick}>
+		<ChipSurface
+			config={config}
+			disabled={disabled}
+			onClick={onClick}
+			ariaExpanded={ariaExpanded}
+		>
 			<ChipBody
 				config={config}
 				action={action}

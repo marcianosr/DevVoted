@@ -37,13 +37,13 @@ describe(ConfigChip, () => {
 		);
 	});
 
-	it("wears the border-only prismatic styling (legendary), label stays white", () => {
+	it("wears the static Kanto gradient ring (legendary), label stays white", () => {
 		render(<ConfigChip config={CONFIGS.copilot} />);
 		expect(screen.getByText("Copilot")).toHaveClass(
-			"prismatic-border",
+			"legendary-ring",
+			"border-transparent",
 			"text-zinc-100"
 		);
-		expect(screen.getByText("Copilot")).not.toHaveClass("prismatic-chip");
 	});
 
 	it("shows the level once upgraded", () => {

@@ -33,6 +33,8 @@ export const RunConfigure = () => {
 				rewardMultiplier={view.rewardMultiplier}
 				coverageMultiplier={view.coverageMultiplier}
 				coverageAdd={view.coverageAdd}
+				coverage={view.coverage}
+				slotCoverageRequired={view.slotCoverageRequired}
 				onSlot={(id) => send({ type: "slot", configId: id })}
 				onUnslot={(id) => send({ type: "unslot", configId: id })}
 			/>

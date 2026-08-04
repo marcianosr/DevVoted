@@ -7,13 +7,14 @@ import {
 	upgradeCoverageRequired,
 } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
-import { Button } from "~/ui/Button.component";
+import { getCategoryMetadata } from "~/domains/shared/categories";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/run/gate/configRole.model";
-import { ConfigChip } from "../configs/ConfigChip.ui";
+import { PipelineReportRow } from "../gate/PipelineReportRow.ui";
+import { PipelineTable } from "../gate/PipelineTable.ui";
 import { RoleList } from "../gate/RoleList.ui";
 
 type ShopScreenProps = {
@@ -41,22 +42,39 @@ type ShopScreenProps = {
 	onSell: (configId: string) => void;
 };
 
-const PathCard = ({
-	title,
-	description,
-	children,
+// The shop's row controls share one shape: a bordered pill whose label reads
+// plain and whose price glows saffron. Buying is the loud one (viridian).
+const actionButton = ({
+	label,
+	price,
+	onClick,
+	disabled = false,
+	loud = false,
 }: {
-	title: string;
-	description: string;
-	children: ReactNode;
+	label: string;
+	price?: string;
+	onClick?: () => void;
+	disabled?: boolean;
+	loud?: boolean;
 }) => (
-	<section className="flex flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-900/40 p-5">
-		<header>
-			<Title as="h3">{title}</Title>
-			<Subtitle>{description}</Subtitle>
-		</header>
-		{children}
-	</section>
+	<button
+		type="button"
+		onClick={onClick}
+		disabled={disabled}
+		className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+			loud
+				? "border-viridian bg-viridian/10 text-zinc-100 enabled:hover:bg-viridian/20"
+				: "border-zinc-600 text-zinc-300 enabled:hover:border-zinc-400"
+		} enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600`}
+	>
+		{label}
+		{price ? (
+			<>
+				{" "}
+				<span className="ml-1 font-bold text-saffron">{price}</span>
+			</>
+		) : null}
+	</button>
 );
 
 export const ShopScreen = ({
@@ -95,22 +113,72 @@ export const ShopScreen = ({
 			upgradeCoverageRequired(config.level ?? 1)
 		);
 	};
-	const upgradeLabel = (config: Config): string =>
-		`Upgrade (${upgradeCoverageRequired(config.level ?? 1)}% cov)`;
-	const actionsFor = (config: Config) =>
-		[
-			isUpgradable(config)
-				? {
-						label: upgradeLabel(config),
-						onClick: () => onUpgrade(config.id),
-						disabled: !canUpgrade(config),
-					}
-				: null,
-			{
-				label: `Sell +${sellRefund(config)}KB`,
-				onClick: () => onSell(config.id),
-			},
-		].filter((action): action is NonNullable<typeof action> => action !== null);
+
+	// A gated upgrade explains itself on hover: the next level, and the
+	// category-tied coverage it wants (upgrades are per-category, wiki §4.4).
+	const upgradeTooltip = (config: Config): string => {
+		const nextLevel = (config.level ?? 1) + 1;
+		const required = upgradeCoverageRequired(config.level ?? 1);
+		if (!config.focusCategory)
+			return `Upgrade this to L${nextLevel} for a stronger effect.`;
+		const category = getCategoryMetadata(config.focusCategory).name;
+		const have = coverageByCategory[config.focusCategory] ?? 0;
+		return `Upgrade this to L${nextLevel} for a stronger effect. You need ${required}% coverage in ${category} for this — you have ${have}%.`;
+	};
+
+	// Every load-out row carries its verbs: sell always, upgrade only when the
+	// config can actually level (focus configs below the cap — no "maxed"
+	// placeholder for the rest).
+	const loadoutActions = (config: Config): ReactNode => {
+		const upgradeButton = isUpgradable(config)
+			? actionButton({
+					label: "upgrade",
+					price: `${upgradeCoverageRequired(config.level ?? 1)}% cov`,
+					onClick: () => onUpgrade(config.id),
+					disabled: !canUpgrade(config),
+				})
+			: null;
+		return (
+			<span className="flex items-center gap-2">
+				{upgradeButton && !canUpgrade(config) ? (
+					<Tooltip content={upgradeTooltip(config)}>{upgradeButton}</Tooltip>
+				) : (
+					upgradeButton
+				)}
+				{actionButton({
+					label: "sell",
+					price: `${sellRefund(config)}KB`,
+					onClick: () => onSell(config.id),
+				})}
+			</span>
+		);
+	};
+
+	// An affordable offer carries a buy button; one out of reach reads its
+	// missing price and dims. A full pipeline parks the button and tells the
+	// would-be buyer how to make room.
+	const offerAction = (config: Config): ReactNode => {
+		const cost = draftCost(config);
+		if (storage < cost)
+			return (
+				<Paragraph as="span" size="sm" tone="muted">
+					need <span className="font-bold text-saffron/70">{cost}KB</span>
+				</Paragraph>
+			);
+		const buy = actionButton({
+			label: "buy",
+			price: `${cost}KB`,
+			onClick: () => onDraft(config.id),
+			disabled: isFull,
+			loud: true,
+		});
+		if (!isFull) return buy;
+		return (
+			<Tooltip content="Add a new slot to upgrade or sell an existing config">
+				{buy}
+			</Tooltip>
+		);
+	};
 
 	const expandBar =
 		"block w-full rounded-lg border-2 border-dashed px-4 py-2 text-center text-sm font-semibold";
@@ -132,6 +200,7 @@ export const ShopScreen = ({
 			</span>
 		</Tooltip>
 	);
+
 	return (
 		<div className="flex flex-col gap-6">
 			<header>
@@ -141,47 +210,49 @@ export const ShopScreen = ({
 				</Subtitle>
 			</header>
 
-			<div className="grid grid-cols-1 gap-4">
-				<PathCard
-					title="Select new configs"
-					description="Adds categories → boosts coverage fastest"
-				>
-					<div className="flex flex-wrap gap-3">
-						{draftOptions.map((config) => {
-							const cost = draftCost(config);
-							return (
-								<ConfigChip
-									key={config.id}
-									config={config}
-									action="draft ＋"
-									price={cost}
-									disabled={isFull || storage < cost}
-									onClick={() => onDraft(config.id)}
-								/>
-							);
-						})}
-					</div>
-					<Button
-						variant="secondary"
-						size="small"
-						className="self-start"
-						disabled={!canRebuild}
-						onClick={onRebuild}
-					>
-						Rebuild configs ({rebuildCost}KB)
-					</Button>
-				</PathCard>
-			</div>
+			<section className="flex flex-col gap-2">
+				<header>
+					<Title as="h3">Select new configs</Title>
+					<Subtitle>New categories raise coverage fastest</Subtitle>
+				</header>
+				<PipelineTable>
+					{draftOptions.map((config) => (
+						<PipelineReportRow
+							key={config.id}
+							badge="perk"
+							mark="add"
+							layout="table"
+							config={config}
+							description={config.description}
+							gives={config.gives}
+							needs={config.needs}
+							costs={config.costs}
+							dimmed={storage < draftCost(config)}
+							trailing={offerAction(config)}
+						/>
+					))}
+				</PipelineTable>
+				<span className="self-start">
+					{actionButton({
+						label: "Reroll offers",
+						price: `${rebuildCost}KB`,
+						onClick: onRebuild,
+						disabled: !canRebuild,
+					})}
+				</span>
+			</section>
 
 			<section className="flex flex-col gap-2">
 				<header>
 					<Title as="h2">Your load-out for gate {gateNumber}</Title>
-					<Subtitle>Click a config to sell or upgrade it.</Subtitle>
+					<Subtitle>
+						{configs.length} of {slots} slots used
+					</Subtitle>
 				</header>
 				<RoleList
 					rows={roleRows(configs, checks)}
 					slots={slots}
-					actionsFor={actionsFor}
+					trailingFor={loadoutActions}
 					newConfigIds={newConfigIds}
 					trailing={expandTile}
 				/>

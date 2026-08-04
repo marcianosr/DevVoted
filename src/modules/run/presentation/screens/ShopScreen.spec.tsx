@@ -46,33 +46,85 @@ describe(ShopScreen, () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	it("drafts a config", () => {
+	it("buys an offer from its row's buy button", () => {
 		const onDraft = vi.fn();
 		render(<ShopScreen {...base} onDraft={onDraft} />);
-		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
+		fireEvent.click(screen.getAllByRole("button", { name: /buy/ })[0]);
 		expect(onDraft).toHaveBeenCalledWith("eslint");
 	});
 
-	it("offers no upgrade on Unit Tests — only focus configs upgrade", () => {
-		render(<ShopScreen {...base} configs={[CONFIGS.unitTests]} />);
-		fireEvent.click(screen.getByRole("button", { name: /Unit Tests/ }));
+	it("parks the buy button behind a make-room tooltip when the pipeline is full", () => {
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
+				slots={3}
+			/>
+		);
+		for (const buy of screen.getAllByRole("button", { name: /buy/ })) {
+			expect(buy).toBeDisabled();
+		}
 		expect(
-			screen.queryByRole("button", { name: /Upgrade/ })
-		).not.toBeInTheDocument();
+			screen.getAllByText(
+				"Add a new slot to upgrade or sell an existing config"
+			).length
+		).toBeGreaterThan(0);
 	});
 
-	it("shows the coverage-gated upgrade in a focus config's action popover", () => {
+	it("dims an offer the run can't afford and prices the gap instead", () => {
+		render(<ShopScreen {...base} storage={8} />);
+		expect(
+			screen.queryByRole("button", { name: /buy/ })
+		).not.toBeInTheDocument();
+		expect(screen.getAllByText(/need/).length).toBeGreaterThan(0);
+	});
+
+	it("rerolls the offers for a fee", () => {
+		const onRebuild = vi.fn();
+		render(<ShopScreen {...base} onRebuild={onRebuild} />);
+		fireEvent.click(screen.getByRole("button", { name: /Reroll offers/ }));
+		expect(onRebuild).toHaveBeenCalled();
+	});
+
+	it("offers no upgrade control on Unit Tests — only focus configs level", () => {
+		render(<ShopScreen {...base} configs={[CONFIGS.unitTests]} />);
+		expect(
+			screen.queryByRole("button", { name: /upgrade/ })
+		).not.toBeInTheDocument();
+		expect(screen.queryByText("maxed")).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /sell/ })).toBeInTheDocument();
+	});
+
+	it("explains a gated upgrade on hover — next level and the category-tied coverage", () => {
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.jsx]}
+				coverageByCategory={{ react: 2 }}
+			/>
+		);
+		expect(screen.getByRole("button", { name: /upgrade/ })).toBeDisabled();
+		expect(
+			screen.getByText(
+				"Upgrade this to L2 for a stronger effect. You need 5% coverage in React for this — you have 2%."
+			)
+		).toBeInTheDocument();
+	});
+
+	it("prices a focus config's upgrade in coverage on its row button", () => {
+		const onUpgrade = vi.fn();
 		render(
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.js]}
 				coverageByCategory={{ js: 10 }}
+				onUpgrade={onUpgrade}
 			/>
 		);
-		fireEvent.click(screen.getByRole("button", { name: /.js/ }));
-		expect(
-			screen.getByRole("button", { name: /Upgrade \(5% cov\)/ })
-		).toBeInTheDocument();
+		const upgrade = screen.getByRole("button", { name: /upgrade 5% cov/ });
+		expect(upgrade).toBeEnabled();
+		fireEvent.click(upgrade);
+		expect(onUpgrade).toHaveBeenCalledWith("js");
 	});
 
 	it("shows the storage reward earnable this gate below the pipeline", () => {
@@ -81,13 +133,12 @@ describe(ShopScreen, () => {
 		expect(screen.getByText(/storage this gate/)).toBeInTheDocument();
 	});
 
-	it("sells a config from its loadout popover", () => {
+	it("sells a config from its row's sell button", () => {
 		const onSell = vi.fn();
 		render(
 			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} onSell={onSell} />
 		);
-		fireEvent.click(screen.getByRole("button", { name: /IndexedDB/ }));
-		fireEvent.click(screen.getByRole("button", { name: /Sell/ }));
+		fireEvent.click(screen.getByRole("button", { name: /sell/ }));
 		expect(onSell).toHaveBeenCalledWith("indexed-db");
 	});
 

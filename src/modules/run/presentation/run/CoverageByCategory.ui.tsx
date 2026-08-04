@@ -30,10 +30,12 @@ export const CoverageByCategory = ({
 
 	return (
 		<section className="flex flex-col gap-2">
-			<header>
-				<Title>{title}</Title>
-				{subtitle ? <Subtitle>{subtitle}</Subtitle> : null}
-			</header>
+			{title ? (
+				<header>
+					<Title>{title}</Title>
+					{subtitle ? <Subtitle>{subtitle}</Subtitle> : null}
+				</header>
+			) : null}
 			<div className="flex flex-wrap gap-2">
 				{covered.map(({ code, name, pct }) => (
 					<span

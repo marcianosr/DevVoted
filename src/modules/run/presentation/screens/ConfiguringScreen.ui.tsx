@@ -21,6 +21,10 @@ type ConfiguringScreenProps = {
 	rewardMultiplier: number;
 	coverageMultiplier: number;
 	coverageAdd: number;
+	/** The run's total coverage — the locked slot's live unlock progress. */
+	coverage?: number;
+	/** Coverage the next slot demands (Infinity at the cap hides the row). */
+	slotCoverageRequired?: number;
 	onSlot: (configId: string) => void;
 	onUnslot: (configId: string) => void;
 };
@@ -76,6 +80,8 @@ export const ConfiguringScreen = ({
 	rewardMultiplier,
 	coverageMultiplier,
 	coverageAdd,
+	coverage,
+	slotCoverageRequired,
 	onSlot,
 	onUnslot,
 }: ConfiguringScreenProps) => {
@@ -103,7 +109,7 @@ export const ConfiguringScreen = ({
 		`×${rewardMultiplier}`,
 		next ? `×${next.rewardMultiplier}` : undefined
 	);
-	const coverage = statPair(
+	const coverageTimes = statPair(
 		coverageValue(coverageMultiplier, coverageAdd),
 		next ? coverageValue(next.coverageMultiplier, next.coverageAdd) : undefined
 	);
@@ -163,6 +169,17 @@ export const ConfiguringScreen = ({
 									}
 								: undefined
 						}
+						nextSlot={
+							coverage !== undefined &&
+							slotCoverageRequired !== undefined &&
+							Number.isFinite(slotCoverageRequired)
+								? {
+										number: slots + 1,
+										unlockAtPct: slotCoverageRequired,
+										coveragePct: coverage,
+									}
+								: undefined
+						}
 					/>
 					<div className="flex flex-wrap gap-8 border-t border-zinc-700 pt-4">
 						<StatBadge
@@ -179,9 +196,9 @@ export const ConfiguringScreen = ({
 						/>
 						<StatBadge
 							label="coverage ×"
-							value={coverage.value}
-							from={coverage.from}
-							valueTone={multiplierTone(coverage)}
+							value={coverageTimes.value}
+							from={coverageTimes.from}
+							valueTone={multiplierTone(coverageTimes)}
 						/>
 					</div>
 				</section>
