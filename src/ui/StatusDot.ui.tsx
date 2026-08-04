@@ -1,33 +1,52 @@
-import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
 
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 
-// The dot is a color-only signal, so every variant carries a spoken state name
-// for screen readers — the text label the badge had is otherwise lost.
-const LABEL: Record<StatusBadgeVariant, string> = {
+/** The dot speaks check states — plus "use", the mark of a usable-but-idle
+ * config (an affordance, not a state; it yields to the honest dot once the
+ * check arms or settles). */
+export type StatusDotVariant = StatusBadgeVariant | "use";
+
+// The indicator is compact, so every variant carries a spoken state name for
+// screen readers — the text label the badge had is otherwise lost.
+const LABEL: Record<StatusDotVariant, string> = {
 	pass: "passed",
 	part: "partial",
 	fail: "failed",
 	skip: "skipped",
 	run: "running",
 	perk: "perk",
+	use: "usable",
 };
 
-const dot = cva("inline-block h-2.5 w-2.5 rounded-full", {
-	variants: {
-		variant: {
-			pass: "bg-viridian",
-			part: "bg-white",
-			fail: "bg-cinnabar",
-			skip: "bg-zinc-600",
-			run: "bg-saffron",
-			// Perks back no check — a hollow ring reads "nothing to report",
-			// distinct from skip's gray fill by shape, not only by color.
-			perk: "border-2 border-pewter",
-		} satisfies Record<StatusBadgeVariant, string>,
-	},
-});
+// Settled verdicts read as glyphs — a ✓/✗ scans faster than two more colored
+// dots and survives color-blindness by shape.
+const GLYPH: Partial<Record<StatusDotVariant, string>> = {
+	pass: "✓",
+	fail: "✗",
+	use: "▸",
+};
 
-export const StatusDot = ({ variant }: { variant: StatusBadgeVariant }) => (
-	<span role="img" aria-label={LABEL[variant]} className={dot({ variant })} />
+const DOT = "h-2.5 w-2.5 rounded-full";
+
+const STYLE: Record<StatusDotVariant, string> = {
+	pass: "text-sm font-bold leading-none text-viridian",
+	fail: "text-sm font-bold leading-none text-cinnabar",
+	part: clsx(DOT, "bg-white"),
+	skip: clsx(DOT, "bg-zinc-600"),
+	run: clsx(DOT, "bg-saffron"),
+	// Perks back no check — a hollow ring reads "nothing to report",
+	// distinct from skip's gray fill by shape, not only by color.
+	perk: clsx(DOT, "border-2 border-pewter"),
+	use: "text-xs leading-none text-pewter",
+};
+
+export const StatusDot = ({ variant }: { variant: StatusDotVariant }) => (
+	<span
+		role="img"
+		aria-label={LABEL[variant]}
+		className={clsx("inline-block", STYLE[variant])}
+	>
+		{GLYPH[variant]}
+	</span>
 );

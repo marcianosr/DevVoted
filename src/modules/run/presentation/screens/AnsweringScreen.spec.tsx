@@ -75,9 +75,12 @@ describe(AnsweringScreen, () => {
 		expect(onLint).toHaveBeenCalledOnce();
 	});
 
-	it("counts the pipeline slots in the section header", () => {
+	it("heads the pipeline section like the configure screen, slots counted", () => {
 		render(<AnsweringScreen {...base} slots={4} />);
-		expect(screen.getByText("pipeline · 2 of 4 slots")).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Your pipeline" })
+		).toBeInTheDocument();
+		expect(screen.getByText("2 of 4 slots used")).toBeInTheDocument();
 	});
 
 	it("swaps Submit for a Next button once the answer is revealed", () => {

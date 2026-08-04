@@ -25,7 +25,6 @@ const rows: readonly RoleRow[] = [
 		config: CONFIGS.js,
 		role: "conditional",
 		description: describeConfig(CONFIGS.js),
-		note: "skipped",
 		state: "skipped",
 	},
 	{
@@ -61,6 +60,17 @@ export const FailedRequirement: Story = {
 // The pipeline's open slots surface as empty rows once `slots` exceeds the filled ones.
 export const WithEmptySlots: Story = {
 	args: { rows, slots: 5 },
+};
+
+// The configure screen's hover preview: the eyed bench config renders as a
+// would-be row in the next open slot (hollow dot, celadon "click to add"),
+// and the open-slot count shrinks by the one it would take.
+export const WithSlotPreview: Story = {
+	args: {
+		rows,
+		slots: 5,
+		preview: { config: CONFIGS.eslint, onAdd: () => {} },
+	},
 };
 
 // The shop load-out: chips open a sell/upgrade popover, fresh drafts carry a "new"

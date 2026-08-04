@@ -18,14 +18,11 @@ import {
 	canAddSlot,
 	type CoverageConfigBonus,
 	coverageForAnswer,
-	coverageProfileFor,
 	coverageToAddSlot,
 	linterFor,
-	rewardMultiplierFor,
-	storageOnClearFor,
+	pipelineModifiersFor,
 } from "../pipeline/pipeline.model";
 import {
-	GATE_REWARD_KB,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -251,12 +248,7 @@ export const toRunView = (state: RunState): RunView => {
 		allAnswered: state.allAnswered ?? [],
 		passedChecks: state.clearedChecks,
 		demands: gateDemands(state.pipeline, state.gatesCleared),
-		rewardMultiplier: rewardMultiplierFor(state.pipeline),
-		coverageMultiplier: coverageProfileFor(state.pipeline).mult,
-		coverageAdd: coverageProfileFor(state.pipeline).add,
-		gateReward:
-			Math.round(GATE_REWARD_KB * rewardMultiplierFor(state.pipeline)) +
-			storageOnClearFor(state.pipeline),
+		...pipelineModifiersFor(state.pipeline.configs),
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
 		victoryGate: VICTORY_GATE,

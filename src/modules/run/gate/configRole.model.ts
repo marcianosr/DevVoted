@@ -62,7 +62,9 @@ const progressPlacement = (
 	check: CheckStatus | undefined,
 	dormant: boolean
 ): Pick<RoleRow, "status" | "note"> => {
-	if (dormant) return { note: "skipped" };
+	// The gray dot already says a dormant conditional is skipped — no note,
+	// and its "not seen" progress text stays hidden too.
+	if (dormant) return {};
 	if (!check?.progress) return {};
 	if (isCounter(check.progress)) return { status: check.progress };
 	return { note: check.progress };

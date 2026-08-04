@@ -41,7 +41,9 @@ export type CheckState = "success" | "running" | "skipped" | "failed";
 
 export type CheckStatus = {
 	readonly label: string;
-	readonly progress: string;
+	/** Live tally or remark; absent when there is nothing to report — a clean
+	 * streak's dot already says all is well. */
+	readonly progress?: string;
 	readonly current: number;
 	readonly target: number;
 	readonly state: CheckState;
@@ -214,12 +216,14 @@ const noDoubleMissCheck = (config: Config): GateCheckPart => ({
 		const worst = window.maxMissStreak ?? 0;
 		return {
 			label: config.label,
+			// A clean streak reports nothing — "steady" said what the running dot
+			// already says. Only the warning and the verdict are worth a line.
 			progress:
 				worst >= 2
 					? "missed 2 in a row"
 					: (window.missStreak ?? 0) === 1
 						? "1 miss — the next one fails"
-						: "steady",
+						: undefined,
 			current: worst,
 			target: 1,
 			state: noDoubleMissState(window),

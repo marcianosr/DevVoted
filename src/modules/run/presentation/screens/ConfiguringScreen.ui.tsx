@@ -1,7 +1,11 @@
+import { useState } from "react";
+import { clsx } from "clsx";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { roleRows } from "~/modules/run/gate/configRole.model";
+import { pipelineModifiersFor } from "~/modules/run/pipeline/pipeline.model";
 import { Columns } from "~/ui/Columns.ui";
+import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
@@ -27,6 +31,13 @@ type ConfiguringScreenProps = {
 // (old grouping, minus headers). Implement your pick here.
 const benchOrder = (bench: readonly Config[]): readonly Config[] => bench;
 
+const RARITY_LEGEND: readonly Rarity[] = [
+	"common",
+	"uncommon",
+	"rare",
+	"legendary",
+];
+
 type PanelHeadingProps = {
 	title: string;
 	subtitle: string;
@@ -42,6 +53,20 @@ const PanelHeading = ({ title, subtitle }: PanelHeadingProps) => (
 const coverageValue = (coverageMultiplier: number, coverageAdd: number) =>
 	`×${coverageMultiplier}${coverageAdd > 0 ? ` +${coverageAdd}%` : ""}`;
 
+type StatPair = { readonly value: string; readonly from?: string };
+
+// While a bench config is previewed the strip reads old → new; an unchanged
+// stat keeps its plain value (no arrow).
+const statPair = (current: string, next: string | undefined): StatPair =>
+	next === undefined || next === current
+		? { value: current }
+		: { value: next, from: current };
+
+// An identity multiplier means "no modifier equipped yet" — it reads muted so
+// the stats that actually move are the ones that glow.
+const multiplierTone = (pair: StatPair): "muted" | "gradient" =>
+	pair.from === undefined && pair.value === "×1" ? "muted" : "gradient";
+
 export const ConfiguringScreen = ({
 	configs,
 	slots,
@@ -54,56 +79,109 @@ export const ConfiguringScreen = ({
 	onSlot,
 	onUnslot,
 }: ConfiguringScreenProps) => {
+	const [previewId, setPreviewId] = useState<string | null>(null);
 	const full = configs.length >= slots;
 	const rows = roleRows(configs, checks);
+
+	const previewConfig = full
+		? undefined
+		: bench.find((config) => config.id === previewId);
+	const next = previewConfig
+		? pipelineModifiersFor([...configs, previewConfig])
+		: undefined;
+
+	const commit = (configId: string) => {
+		onSlot(configId);
+		setPreviewId(null);
+	};
+
+	const reward = statPair(
+		`+${gateReward}KB`,
+		next ? `+${next.gateReward}KB` : undefined
+	);
+	const rewardTimes = statPair(
+		`×${rewardMultiplier}`,
+		next ? `×${next.rewardMultiplier}` : undefined
+	);
+	const coverage = statPair(
+		coverageValue(coverageMultiplier, coverageAdd),
+		next ? coverageValue(next.coverageMultiplier, next.coverageAdd) : undefined
+	);
 
 	return (
 		<Columns
 			aside={
 				<section className="space-y-2">
-					<PanelHeading
-						title="Available configs"
-						subtitle="Click to add to your pipeline"
-					/>
+					<PanelHeading title="Available configs" subtitle="Click to add" />
 					<div className="flex flex-wrap gap-2">
+						{/* The preview is sticky on purpose: it must survive the pointer's
+							trip from the bench to the pipeline row, so only hovering another
+							chip or committing replaces it — never leaving the chip. */}
 						{benchOrder(bench).map((config) => (
-							<ConfigChip
+							<span
 								key={config.id}
-								config={config}
-								action={full ? undefined : "＋"}
-								onClick={full ? undefined : () => onSlot(config.id)}
-							/>
+								onMouseEnter={full ? undefined : () => setPreviewId(config.id)}
+								onFocus={full ? undefined : () => setPreviewId(config.id)}
+							>
+								{/* The hover preview row already shows rarity + gives/needs,
+									so the chip tooltip would say the same thing twice. */}
+								<ConfigChip
+									config={config}
+									noTooltip
+									onClick={full ? undefined : () => commit(config.id)}
+								/>
+							</span>
+						))}
+					</div>
+					<div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
+						{RARITY_LEGEND.map((rarity) => (
+							<span
+								key={rarity}
+								className={clsx("text-xs", RARITY_COLORS[rarity].text)}
+							>
+								{rarity}
+							</span>
 						))}
 					</div>
 				</section>
 			}
 			main={
-				<section>
+				<section className="flex flex-col gap-4">
 					<PanelHeading
 						title="Your pipeline"
 						subtitle={`${configs.length} of ${slots} slots used`}
 					/>
 					<RoleList
 						rows={rows}
-						layout="stacked"
 						onRemove={onUnslot}
 						slots={slots}
+						preview={
+							previewConfig
+								? {
+										config: previewConfig,
+										onAdd: () => commit(previewConfig.id),
+									}
+								: undefined
+						}
 					/>
 					<div className="flex flex-wrap gap-8 border-t border-zinc-700 pt-4">
 						<StatBadge
-							label="Reward on gate clear"
-							value={`+${gateReward}KB`}
+							label="reward on clear"
+							value={reward.value}
+							from={reward.from}
 							valueTone="gradient"
 						/>
 						<StatBadge
-							label="Reward multiplier"
-							value={`×${rewardMultiplier}`}
-							valueTone="gradient"
+							label="reward ×"
+							value={rewardTimes.value}
+							from={rewardTimes.from}
+							valueTone={multiplierTone(rewardTimes)}
 						/>
 						<StatBadge
-							label="Coverage multiplier"
-							value={coverageValue(coverageMultiplier, coverageAdd)}
-							valueTone="gradient"
+							label="coverage ×"
+							value={coverage.value}
+							from={coverage.from}
+							valueTone={multiplierTone(coverage)}
 						/>
 					</div>
 				</section>

@@ -58,10 +58,14 @@ const button = cva(
 				isDisabled: true,
 				class: "bg-zinc-800 text-gray-500",
 			},
+			// Celadon is the CTA color (start run, submit, the linter's "use") —
+			// primary stopped following the category theme so the main action
+			// reads the same on every screen.
 			{
 				variant: "primary",
 				isDisabled: false,
-				class: "bg-theme text-black hover:opacity-90",
+				class:
+					"border border-celadon bg-celadon/15 text-celadon hover:bg-celadon/25",
 			},
 		],
 		defaultVariants: {

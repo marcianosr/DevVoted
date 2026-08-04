@@ -180,7 +180,6 @@ export const ShopScreen = ({
 				</header>
 				<RoleList
 					rows={roleRows(configs, checks)}
-					layout="stacked"
 					slots={slots}
 					actionsFor={actionsFor}
 					newConfigIds={newConfigIds}

@@ -9,10 +9,8 @@ import {
 	type ParagraphTone,
 } from "~/ui/typography/Paragraph.component";
 
-/** How a row announces its state: the boxed text badge or a compact dot. */
 export type StatusIndicator = "badge" | "dot";
 
-/** Vertical rhythm: dense reporter rows, or divided pipeline rows with air. */
 export type StatusLineSpacing = "compact" | "spacious";
 
 type StatusLineProps = {
@@ -54,7 +52,7 @@ export const StatusLine = ({
 	return (
 		<Tag
 			className={clsx(
-				"flex items-start gap-3",
+				"flex gap-3 items-center",
 				spacing === "spacious" ? "py-3" : "py-1",
 				interactive && "cursor-pointer transition-opacity hover:opacity-70",
 				className

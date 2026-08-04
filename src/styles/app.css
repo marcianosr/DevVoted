@@ -464,6 +464,12 @@ meter::-webkit-meter-optimum-value {
 		prismatic-text 4s linear infinite;
 }
 
+/* Border-only prismatic run — for surfaces whose text must stay its own color
+ * (white chip labels); .prismatic-chip would animate the text along. */
+.prismatic-border {
+	animation: prismatic-border 4s linear infinite;
+}
+
 /* Flowing celadon→viridian gradient clipped to the text glyphs. */
 @keyframes gradient-flow {
 	0% {

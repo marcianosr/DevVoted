@@ -14,4 +14,10 @@ describe(StatBadge, () => {
 		render(<StatBadge label="Coverage" value="6%" category="css" />);
 		expect(screen.getByText("6%")).toHaveClass("text-theme");
 	});
+
+	it("shows a pending change as muted old value with the new value in celadon", () => {
+		render(<StatBadge label="coverage ×" value="×2" from="×1" />);
+		expect(screen.getByText("×1")).toHaveClass("text-zinc-500");
+		expect(screen.getByText("→ ×2")).toHaveClass("text-celadon");
+	});
 });

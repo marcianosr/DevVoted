@@ -87,8 +87,9 @@ describe("roleRows", () => {
 			progress: "not seen",
 		});
 		const [row] = roleRows([focusTs], [dormantMastery]);
+		// The gray dot carries the skipped state alone — no counter, no note.
 		expect(row.status).toBeUndefined();
-		expect(row.note).toBe("skipped");
+		expect(row.note).toBeUndefined();
 		expect(row.state).toBe("skipped");
 	});
 

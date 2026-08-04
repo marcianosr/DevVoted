@@ -139,6 +139,17 @@ describe("effectOf — Code Coverage", () => {
 			).state
 		).toBe("success");
 	});
+
+	it("reports no progress on a clean streak, a warning after one miss", () => {
+		const check = effectOf(CONFIGS.codeCoverage).gateCheck;
+		// The running dot already says all is well — no "steady" remark.
+		expect(check?.(ctx({ answered: 2, missStreak: 0 })).progress).toBe(
+			undefined
+		);
+		expect(
+			check?.(ctx({ answered: 2, missStreak: 1, maxMissStreak: 1 })).progress
+		).toBe("1 miss — the next one fails");
+	});
 });
 
 describe("effectOf — Intellisense", () => {

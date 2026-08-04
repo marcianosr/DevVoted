@@ -10,8 +10,8 @@ import {
 	coverageForAnswer,
 	isBare,
 	linterFor,
+	pipelineModifiersFor,
 	rewardMultiplierFor,
-	storageOnClearFor,
 	stripConfig,
 } from "../pipeline/pipeline.model";
 import {
@@ -32,7 +32,6 @@ import { checkStatuses, gateDemands, gatePassed } from "../gate/gate.model";
 import {
 	dropCount,
 	FAUCET_CAP_KB,
-	GATE_REWARD_KB,
 	gateBaseMultiplier,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
@@ -313,9 +312,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	}
 
 	// 80KB base × build multipliers, plus every flat clear payout (Unit Tests' +32).
-	const reward =
-		Math.round(GATE_REWARD_KB * rewardMultiplierFor(state.pipeline)) +
-		storageOnClearFor(state.pipeline);
+	const reward = pipelineModifiersFor(state.pipeline.configs).gateReward;
 	// faucetThisGateKb is NOT reset here: the reward report still reads it while
 	// the shop is open. finishReward clears it, like answeredThisGate.
 	const cleared: RunState = {
@@ -403,7 +400,7 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 			? 0
 			: roundToOneDecimal(
 					WRONG_COVERAGE_LOSS *
-						rewardMultiplierFor(state.pipeline) *
+						rewardMultiplierFor(state.pipeline.configs) *
 						gateMultiplier
 				);
 	const coverageBreakdown = coverageBreakdownForAnswer(

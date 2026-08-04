@@ -11,6 +11,7 @@ import {
 	effectiveRequirement,
 	canLint,
 	isBare,
+	pipelineModifiersFor,
 	rewardMultiplierFor,
 	storageOnClearFor,
 	stripConfig,
@@ -29,21 +30,20 @@ const at = (
 
 describe("coverageProfileFor", () => {
 	it("returns the identity profile for a bare pipeline", () => {
-		expect(coverageProfileFor(pipelineWith([]))).toEqual({ mult: 1, add: 0 });
+		expect(coverageProfileFor([])).toEqual({ mult: 1, add: 0 });
 	});
 
 	it("multiplies coverage mults and sums flat adds across the build", () => {
-		const profile = coverageProfileFor(
-			pipelineWith([CONFIGS.copilot, CONFIGS.codeCoverage])
-		);
+		const profile = coverageProfileFor([CONFIGS.copilot, CONFIGS.codeCoverage]);
 		expect(profile.mult).toBe(2);
 		expect(profile.add).toBe(0.5);
 	});
 
 	it("counts Intellisense and Coverage as coverage configs now, not storage ones", () => {
-		const profile = coverageProfileFor(
-			pipelineWith([CONFIGS.intellisense, CONFIGS.coverageGain])
-		);
+		const profile = coverageProfileFor([
+			CONFIGS.intellisense,
+			CONFIGS.coverageGain,
+		]);
 		expect(profile.mult).toBe(3); // 1.5 × 2
 	});
 });
@@ -61,29 +61,47 @@ describe("effectiveRequirement", () => {
 describe("rewardMultiplierFor", () => {
 	it("is 1 across the whole shipped roster — the check is the price of the effect, not a storage payout", () => {
 		expect(
-			rewardMultiplierFor(
-				pipelineWith([
-					{ ...CONFIGS.unitTests, level: 2 },
-					CONFIGS.coverageGain,
-					CONFIGS.coldStart,
-					CONFIGS.intellisense,
-				])
-			)
+			rewardMultiplierFor([
+				{ ...CONFIGS.unitTests, level: 2 },
+				CONFIGS.coverageGain,
+				CONFIGS.coldStart,
+				CONFIGS.intellisense,
+			])
 		).toBe(1);
 	});
 
 	it("is 1 for a bare pipeline", () => {
-		expect(rewardMultiplierFor(pipelineWith([]))).toBe(1);
+		expect(rewardMultiplierFor([])).toBe(1);
 	});
 });
 
 describe("storageOnClearFor", () => {
 	it("is 0 for a bare pipeline and sums flat clear payouts", () => {
-		expect(storageOnClearFor(pipelineWith([]))).toBe(0);
-		expect(storageOnClearFor(pipelineWith([CONFIGS.unitTests]))).toBe(32);
-		expect(
-			storageOnClearFor(pipelineWith([CONFIGS.unitTests, CONFIGS.copilot]))
-		).toBe(32);
+		expect(storageOnClearFor([])).toBe(0);
+		expect(storageOnClearFor([CONFIGS.unitTests])).toBe(32);
+		expect(storageOnClearFor([CONFIGS.unitTests, CONFIGS.copilot])).toBe(32);
+	});
+});
+
+describe("pipelineModifiersFor", () => {
+	it("prices a bare pipeline at the base gate reward with identity multipliers", () => {
+		expect(pipelineModifiersFor([])).toEqual({
+			gateReward: 80,
+			rewardMultiplier: 1,
+			coverageMultiplier: 1,
+			coverageAdd: 0,
+		});
+	});
+
+	it("folds flat clear payouts and coverage boosts into one modifier set", () => {
+		// Unit Tests pays +32 on clear, Copilot doubles coverage — the same
+		// numbers the configure preview shows before the config is slotted.
+		expect(pipelineModifiersFor([CONFIGS.unitTests, CONFIGS.copilot])).toEqual({
+			gateReward: 112,
+			rewardMultiplier: 1,
+			coverageMultiplier: 2,
+			coverageAdd: 0,
+		});
 	});
 });
 
@@ -255,7 +273,8 @@ describe("coverageBreakdownForAnswer", () => {
 describe("canLint", () => {
 	it("is true only for a linter that covers the poll's category", () => {
 		expect(canLint([CONFIGS.eslint], "js")).toBe(true);
-		expect(canLint([CONFIGS.eslint], "css")).toBe(false); // ESLint is JS/TS only
+		expect(canLint([CONFIGS.eslint], "ts")).toBe(true); // ESLint covers both JS and TS
+		expect(canLint([CONFIGS.eslint], "css")).toBe(false);
 		expect(canLint([CONFIGS.stylelint], "css")).toBe(true);
 		expect(canLint([CONFIGS.js, CONFIGS.copilot], "js")).toBe(false); // no linter
 	});

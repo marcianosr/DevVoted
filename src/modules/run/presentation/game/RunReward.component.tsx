@@ -5,7 +5,6 @@ import { Screen } from "~/ui/Screen.ui";
 import { RewardScreen } from "../screens/RewardScreen.ui";
 import { useTodaysRun } from "./useTodaysRun.hook";
 
-/** Tier 2: the gate-cleared summary — first page of the reward flow. */
 export const RunReward = () => {
 	const { view } = useTodaysRun();
 	const navigate = useNavigate();
@@ -16,7 +15,7 @@ export const RunReward = () => {
 		<Screen
 			theme="celadon"
 			rightAction={{
-				label: "Continue →",
+				label: `Continue to ${view.gatesCleared}`,
 				onClick: () => navigate({ to: "/run/shop" }),
 			}}
 		>

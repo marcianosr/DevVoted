@@ -1,5 +1,4 @@
 import { cva } from "class-variance-authority";
-import { clsx } from "clsx";
 import type { ReactNode } from "react";
 import { Config, describeConfig } from "~/modules/run/configs/config.model";
 import { Badge } from "~/ui/Badge.component";
@@ -16,11 +15,12 @@ const rarityVariant = (
 		RARITY_KEYS.map((rarity) => [rarity, pick(RARITY_COLORS[rarity])])
 	) as Record<Rarity, string>;
 
+// Labels read white on every chip — rarity speaks through the border + tint.
 const chipSurface = cva(
-	"inline-flex shrink-0 items-center rounded-sm align-middle border-1 p-1 text-xs",
+	"inline-flex shrink-0 items-center rounded-sm align-middle border-1 p-1 text-xs text-zinc-100",
 	{
 		variants: {
-			rarity: rarityVariant((colors) => clsx(colors.border, colors.text)),
+			rarity: rarityVariant((colors) => colors.border),
 		},
 		compoundVariants: RARITY_KEYS.map((rarity) => ({
 			rarity,

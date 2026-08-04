@@ -44,7 +44,6 @@ describe(RewardScreen, () => {
 	it("shows the cleared gate, the reward report, and the answer results", () => {
 		render(<RewardScreen {...base} />);
 		// The report headlines success and names the gate.
-		expect(screen.getByText("Build pass!")).toBeInTheDocument();
 		expect(screen.getByText(/Gate 1 cleared!/)).toBeInTheDocument();
 		// Unit Tests pays its flat clear payout in its row.
 		expect(screen.getByText("+32KB")).toBeInTheDocument();

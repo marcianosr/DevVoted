@@ -2,7 +2,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 
 import { Config } from "../configs/config.model";
 import { AnswerContext, Coverage, effectOf } from "../configs/effect.model";
-import { roundToOneDecimal } from "../rules.model";
+import { GATE_REWARD_KB, roundToOneDecimal } from "../rules.model";
 
 export type Pipeline = {
 	readonly id: string;
@@ -37,43 +37,73 @@ export const canAddSlot = (currentSlots: number, coverage: number): boolean =>
 export const isBare = (pipeline: Pipeline): boolean =>
 	pipeline.configs.length === 0;
 
-const effects = (pipeline: Pipeline) => pipeline.configs.map(effectOf);
+const effects = (configs: readonly Config[]) => configs.map(effectOf);
 
 export const effectiveRequirement = (
 	pipeline: Pipeline,
 	base: number
 ): number => {
-	const raised = effects(pipeline).reduce(
+	const raised = effects(pipeline.configs).reduce(
 		(total, effect) => total + (effect.requirementDelta ?? 0),
 		0
 	);
 	return Math.max(1, base + raised);
 };
 
-export const rewardMultiplierFor = (pipeline: Pipeline): number =>
-	effects(pipeline).reduce(
+// The modifier fns take bare configs, not a Pipeline: the configure screen
+// prices a *previewed* loadout (equipped configs + hovered candidate) that has
+// no Pipeline identity yet, and none of them ever read slots or id.
+export const rewardMultiplierFor = (configs: readonly Config[]): number =>
+	effects(configs).reduce(
 		(product, effect) => product * (effect.rewardMultiplier ?? 1),
 		1
 	);
 
 /** Flat KB paid on top of the gate reward when the gate clears (Unit Tests' +32). */
-export const storageOnClearFor = (pipeline: Pipeline): number =>
-	effects(pipeline).reduce(
+export const storageOnClearFor = (configs: readonly Config[]): number =>
+	effects(configs).reduce(
 		(total, effect) => total + (effect.storageOnClear ?? 0),
 		0
 	);
 
 /** Build-wide coverage boost applied to every correct answer (Focus category bonuses excluded). */
 export const coverageProfileFor = (
-	pipeline: Pipeline
+	configs: readonly Config[]
 ): { readonly mult: number; readonly add: number } =>
-	pipeline.configs.reduce(
+	configs.reduce(
 		(profile, config) => ({
 			mult: profile.mult * (config.coverageMultiplier ?? 1),
 			add: profile.add + (config.coverageAdd ?? 0),
 		}),
 		{ mult: 1, add: 0 }
 	);
+
+export type PipelineModifiers = {
+	readonly gateReward: number;
+	readonly rewardMultiplier: number;
+	readonly coverageMultiplier: number;
+	readonly coverageAdd: number;
+};
+
+/**
+ * Every surface that prices a loadout — the run viewmodel, the gate-clear
+ * payout, and the configure screen's preview strip — derives from this one fn,
+ * so a previewed pipeline is guaranteed to price exactly like an equipped one.
+ */
+export const pipelineModifiersFor = (
+	configs: readonly Config[]
+): PipelineModifiers => {
+	const rewardMultiplier = rewardMultiplierFor(configs);
+	const coverage = coverageProfileFor(configs);
+	return {
+		rewardMultiplier,
+		coverageMultiplier: coverage.mult,
+		coverageAdd: coverage.add,
+		gateReward:
+			Math.round(GATE_REWARD_KB * rewardMultiplier) +
+			storageOnClearFor(configs),
+	};
+};
 
 /**
  * Coverage a single answer earns: `share × (1 + adds) × mults × streak`. The

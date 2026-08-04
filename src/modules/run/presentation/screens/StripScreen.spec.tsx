@@ -101,7 +101,7 @@ describe(StripScreen, () => {
 		expect(screen.getByText("1/2")).toBeInTheDocument();
 	});
 
-	it("peels the chosen config", () => {
+	it("peels the chosen config via its remove button", () => {
 		const onStrip = vi.fn();
 		render(
 			<StripScreen
@@ -113,16 +113,11 @@ describe(StripScreen, () => {
 				onStrip={onStrip}
 			/>
 		);
-		// Click on the copilot row to remove it
-		const copilotRows = screen.getAllByRole("button");
-		const copilotRow = copilotRows.find((button) =>
-			button.textContent?.includes("Copilot")
-		);
-		fireEvent.click(copilotRow!);
+		fireEvent.click(screen.getByRole("button", { name: "Remove Copilot" }));
 		expect(onStrip).toHaveBeenCalledWith("copilot");
 	});
 
-	it("locks the peel chips once the quota is met", () => {
+	it("offers no removal once the quota is met — rows only expand", () => {
 		const onStrip = vi.fn();
 		render(
 			<StripScreen
@@ -134,8 +129,11 @@ describe(StripScreen, () => {
 				onStrip={onStrip}
 			/>
 		);
-		// When stripsRemaining is 0, rows are not clickable (no role="button")
-		const pipelineRows = screen.queryAllByRole("button");
-		expect(pipelineRows).toHaveLength(0);
+		expect(
+			screen.queryByRole("button", { name: /Remove/ })
+		).not.toBeInTheDocument();
+		// A row tap folds detail open, never strips.
+		fireEvent.click(screen.getByRole("button", { name: /^\.js/ }));
+		expect(onStrip).not.toHaveBeenCalled();
 	});
 });

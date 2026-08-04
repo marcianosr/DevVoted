@@ -29,14 +29,21 @@ describe(ConfigChip, () => {
 		expect(onClick).not.toHaveBeenCalled();
 	});
 
-	it("colors the label in the rarity text color (common → cerulean)", () => {
+	it("keeps the label white and carries rarity on the border (common → cerulean)", () => {
 		render(<ConfigChip config={CONFIGS.js} />);
-		expect(screen.getByText(".js")).toHaveClass("text-cerulean");
+		expect(screen.getByText(".js")).toHaveClass(
+			"text-zinc-100",
+			"border-cerulean"
+		);
 	});
 
-	it("wears the prismatic rarity styling (legendary)", () => {
+	it("wears the border-only prismatic styling (legendary), label stays white", () => {
 		render(<ConfigChip config={CONFIGS.copilot} />);
-		expect(screen.getByText("Copilot")).toHaveClass("prismatic-chip");
+		expect(screen.getByText("Copilot")).toHaveClass(
+			"prismatic-border",
+			"text-zinc-100"
+		);
+		expect(screen.getByText("Copilot")).not.toHaveClass("prismatic-chip");
 	});
 
 	it("shows the level once upgraded", () => {

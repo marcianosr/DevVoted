@@ -157,7 +157,7 @@ const rowFor = (
 					? `+${config.storageOnClear}KB`
 					: (check?.progress ?? "—"),
 		};
-	if (check) return { ...base, kind: "check", value: check.progress };
+	if (check) return { ...base, kind: "check", value: check.progress ?? "" };
 	return { ...base, kind: "coverage", value: "" };
 };
 

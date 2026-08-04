@@ -10,6 +10,7 @@ import {
 	type ScoreBonusRow,
 } from "~/ui/runs/ScoreEquationChips.ui";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
+import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RoleList, type RowUseAction } from "../gate/RoleList.ui";
 import { PollCard, PollOption } from "../poll/PollCard.ui";
@@ -150,12 +151,17 @@ export const AnsweringScreen = ({
 				)}
 			</div>
 			<div className="space-y-2 border-t border-zinc-700 pt-4">
-				<Subtitle as="h3">
-					pipeline{slots ? ` · ${configs.length} of ${slots} slots` : ""}
-				</Subtitle>
+				{/* Same heading as the configure screen — one pipeline, one name. */}
+				<header>
+					<Title as="h3">Your pipeline</Title>
+					{slots ? (
+						<Subtitle>
+							{configs.length} of {slots} slots used
+						</Subtitle>
+					) : null}
+				</header>
 				<RoleList
 					rows={roleRows(configs, checks)}
-					layout="stacked"
 					getUseAction={lintActionFor}
 				/>
 			</div>

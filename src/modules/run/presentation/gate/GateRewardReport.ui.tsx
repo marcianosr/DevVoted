@@ -10,8 +10,8 @@ import {
 	type ParagraphTone,
 } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { PipelineReportRow } from "./PipelineReportRow.ui";
+import { PipelineTable } from "./PipelineTable.ui";
 
 const STATUS_VARIANT: Record<GateRewardStatus, StatusBadgeVariant> = {
 	passed: "pass",
@@ -44,8 +44,7 @@ const ReportRow = ({
 }) => (
 	<PipelineReportRow
 		badge={STATUS_VARIANT[row.status]}
-		layout="stacked"
-		spacing="spacious"
+		layout="table"
 		config={row.config}
 		description={row.description}
 		descriptionTone={row.status === "failed" ? "cinnabar" : "muted"}
@@ -99,13 +98,6 @@ export const GateRewardReport = ({
 	stripsRemaining,
 }: GateRewardReportProps) => (
 	<div className="flex flex-col gap-3">
-		<Title
-			as="h2"
-			className={cleared ? "text-gradient-green" : "text-cinnabar"}
-		>
-			{cleared ? "Build pass!" : "Build Failed!"}
-		</Title>
-
 		<div className="flex items-center gap-3 ">
 			<StatusBadge variant={cleared ? "pass" : "fail"} />
 			<Title>
@@ -120,12 +112,9 @@ export const GateRewardReport = ({
 			</Paragraph>
 		)}
 
-		<section>
-			<Subtitle>Pipeline summary</Subtitle>
-			<StepsSummary rows={rows} />
-		</section>
+		<StepsSummary rows={rows} />
 
-		<div className="divide-y divide-zinc-700">
+		<PipelineTable>
 			{[...rows]
 				.sort((a: GateRewardRow, b: GateRewardRow) => {
 					const aRemovable = removableConfigIds.includes(a.config.id);
@@ -141,7 +130,7 @@ export const GateRewardReport = ({
 						onRemove={onRemoveConfig}
 					/>
 				))}
-		</div>
+		</PipelineTable>
 
 		{totals ? (
 			<Paragraph size="sm" className="self-center">
