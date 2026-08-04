@@ -1,11 +1,11 @@
 ---
 # DVTD-oed6
 title: 'Redesign run configure screen: two-column bench + pipeline layout'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-08-01T07:11:39Z
-updated_at: 2026-08-04T08:47:01Z
+updated_at: 2026-08-04T16:16:53Z
 ---
 
 Redesign /run/configure per mockup: left column lists ALL available configs flat (no languages/tooling/perks grouping), right column shows the pipeline (N of M slots used, RoleList rows + empty slots), a compact stat strip (reward +KB, reward x, coverage x) and an inline 'on failure' line replacing the boxed RunStakes/RunModifiers.

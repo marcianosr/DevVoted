@@ -1,10 +1,11 @@
 ---
 # DVTD-ns48
 title: Show tomorrow's category mix in shop to inform focus purchases
-status: todo
+status: scrapped
 type: feature
+priority: normal
 created_at: 2026-07-27T15:23:52Z
-updated_at: 2026-07-27T15:23:52Z
+updated_at: 2026-08-04T16:12:16Z
 parent: DVTD-kulw
 ---
 

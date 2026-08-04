@@ -5,8 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-07-13T15:36:26Z
-updated_at: 2026-07-27T14:16:47Z
-parent: DVTD-d0fw
+updated_at: 2026-08-04T16:13:05Z
 ---
 
 Idea captured, mechanics still TBD, but ties into an existing system: each quiz category already has a fixed Kanto color (`src/ui/theme/categoryTheme.ts`, `app.css` — JS=saffron, CSS=cerulean, etc.).

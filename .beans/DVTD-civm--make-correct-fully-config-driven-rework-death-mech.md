@@ -1,11 +1,11 @@
 ---
 # DVTD-civm
 title: Make Correct fully config-driven (rework death mechanic)
-status: draft
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-07-12T19:54:36Z
-updated_at: 2026-07-27T14:16:47Z
+updated_at: 2026-08-04T16:12:34Z
 parent: DVTD-kulw
 ---
 

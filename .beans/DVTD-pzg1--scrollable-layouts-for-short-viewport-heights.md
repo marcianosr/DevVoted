@@ -1,11 +1,11 @@
 ---
 # DVTD-pzg1
 title: Scrollable layouts for short viewport heights
-status: todo
+status: completed
 type: feature
 priority: high
 created_at: 2026-07-20T15:16:25Z
-updated_at: 2026-07-27T14:17:00Z
+updated_at: 2026-08-04T16:14:13Z
 parent: DVTD-cb52
 ---
 

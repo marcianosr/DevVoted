@@ -1,11 +1,11 @@
 ---
 # DVTD-fdo4
 title: Linter button styling
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-07-19T07:44:48Z
-updated_at: 2026-07-27T14:17:00Z
+updated_at: 2026-08-04T16:14:45Z
 parent: DVTD-cb52
 ---
 

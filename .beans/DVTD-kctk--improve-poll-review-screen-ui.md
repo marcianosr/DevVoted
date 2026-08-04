@@ -1,11 +1,11 @@
 ---
 # DVTD-kctk
 title: Improve poll review screen UI
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-23T12:00:15Z
-updated_at: 2026-07-27T14:17:00Z
+updated_at: 2026-08-04T16:14:09Z
 parent: DVTD-cb52
 ---
 

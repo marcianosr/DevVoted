@@ -1,10 +1,11 @@
 ---
 # DVTD-dxqy
 title: Add defensive and interesting config families
-status: todo
+status: scrapped
 type: feature
+priority: normal
 created_at: 2026-07-31T14:02:57Z
-updated_at: 2026-07-31T14:02:57Z
+updated_at: 2026-08-04T16:13:18Z
 parent: DVTD-z2r2
 ---
 
