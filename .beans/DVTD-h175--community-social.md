@@ -3,9 +3,9 @@
 title: Community & social
 status: todo
 type: epic
-priority: low
+priority: normal
 created_at: 2026-07-27T14:16:27Z
-updated_at: 2026-07-27T14:16:27Z
+updated_at: 2026-08-04T16:30:29Z
 parent: DVTD-u35m
 ---
 

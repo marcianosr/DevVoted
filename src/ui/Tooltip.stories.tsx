@@ -23,3 +23,19 @@ export const Default: Story = {
 		),
 	},
 };
+
+/** Fit-content one-liner — used for voter-name chips on the community board. */
+export const Compact: Story = {
+	args: {
+		compact: true,
+		content: "Gary Oak",
+		children: (
+			<span
+				tabIndex={0}
+				className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-viridian text-xs text-white"
+			>
+				go
+			</span>
+		),
+	},
+};

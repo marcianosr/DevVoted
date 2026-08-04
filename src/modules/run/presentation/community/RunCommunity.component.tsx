@@ -38,9 +38,9 @@ export const RunCommunity = () => {
 	if (!view || view.polls.length === 0) {
 		return (
 			<Screen rightAction={climbOn}>
-				<Title>How you compared</Title>
+				<Title>Community</Title>
 				<Paragraph>
-					Nothing to compare yet — answer some of today’s polls first.
+					Nothing to see yet — answer some of today’s polls first.
 				</Paragraph>
 			</Screen>
 		);
@@ -51,6 +51,7 @@ export const RunCommunity = () => {
 			<RunCommunityBoard
 				totalPlayers={view.totalPlayers}
 				topPercent={view.topPercent}
+				standouts={view.standouts}
 				polls={view.polls}
 			/>
 		</Screen>

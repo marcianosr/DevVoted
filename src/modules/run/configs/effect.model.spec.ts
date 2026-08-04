@@ -24,14 +24,14 @@ const answering = (
 describe("effectOf — Focus", () => {
 	it("pays its multiplier in-category and 1× outside it", () => {
 		const effect = effectOf(CONFIGS.js);
-		expect(effect.coverage?.(answering("js"))).toEqual({ mult: 1.5, add: 0 });
+		expect(effect.coverage?.(answering("js"))).toEqual({ mult: 1.25, add: 0 });
 		expect(effect.coverage?.(answering("css"))).toEqual({ mult: 1, add: 0 });
 	});
 
 	it("scales with level", () => {
 		expect(
 			effectOf({ ...CONFIGS.js, level: 2 }).coverage?.(answering("js"))
-		).toEqual({ mult: 2, add: 0 });
+		).toEqual({ mult: 1.5, add: 0 });
 	});
 
 	it("adds a mastery gate-check: skipped until the category appears, then running/success", () => {

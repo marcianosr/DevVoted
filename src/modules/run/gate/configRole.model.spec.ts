@@ -125,13 +125,12 @@ describe("roleRows", () => {
 		expect(row.needs).toBe("3 correct answers");
 	});
 
-	it("prefers the roster's authored needs over the live check demand", () => {
-		const authored = config({
+	it("derives a focus config's gives and needs from its level, so an upgrade reads on the row", () => {
+		const levelled = config({
 			id: "ts",
 			label: ".ts",
 			focusCategory: "ts",
-			gives: "TypeScript polls earn 1.5× coverage",
-			needs: "1 correct TypeScript poll",
+			level: 2,
 		});
 		const mastery = check({
 			label: ".ts mastery",
@@ -139,9 +138,9 @@ describe("roleRows", () => {
 			state: "skipped",
 			description: ".ts: get one right if ts appears",
 		});
-		const [row] = roleRows([authored], [mastery]);
-		expect(row.gives).toBe("TypeScript polls earn 1.5× coverage");
-		expect(row.needs).toBe("1 correct TypeScript poll");
+		const [row] = roleRows([levelled], [mastery]);
+		expect(row.gives).toBe("Then TypeScript polls earn ×1.5 coverage");
+		expect(row.needs).toBe("Get 2 TypeScript polls right");
 	});
 
 	it("drops wordy progress under the description instead of the value slot", () => {

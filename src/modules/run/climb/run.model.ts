@@ -156,6 +156,8 @@ export type AnsweredPoll = {
 	readonly coverageEarned?: number;
 	/** How that coverage broke down (base + streak + per-config) for the reveal. */
 	readonly coverageBreakdown?: CoverageBreakdown;
+	/** Client-measured reveal→submit ms (absent on old snapshots/clients). */
+	readonly elapsedMs?: number;
 };
 
 export type RunState = {
@@ -193,7 +195,12 @@ export type RunAction =
 	| { readonly type: "slot"; readonly configId: string }
 	| { readonly type: "unslot"; readonly configId: string }
 	| { readonly type: "start" }
-	| { readonly type: "answer"; readonly optionIds: readonly string[] }
+	| {
+			readonly type: "answer";
+			readonly optionIds: readonly string[];
+			/** Client-measured reveal→submit ms — award data, absent on old clients. */
+			readonly elapsedMs?: number;
+	  }
 	| { readonly type: "lint-poll" }
 	| { readonly type: "strip"; readonly configId: string }
 	| { readonly type: "resume-climb" }
@@ -352,7 +359,11 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	};
 };
 
-const answer = (state: RunState, optionIds: readonly string[]): RunState => {
+const answer = (
+	state: RunState,
+	optionIds: readonly string[],
+	elapsedMs?: number
+): RunState => {
 	if (optionIds.length === 0) return state;
 	const poll = state.polls[state.currentIndex];
 	// Awaiting tomorrow's segment (ADR-014): no poll to answer is a no-op,
@@ -484,6 +495,7 @@ const answer = (state: RunState, optionIds: readonly string[]): RunState => {
 		answerType: poll.answerType,
 		coverageEarned: earned,
 		coverageBreakdown,
+		elapsedMs,
 	};
 
 	const answered: RunState = {
@@ -737,7 +749,7 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 	if (action.type === "start" && state.status === "configuring")
 		return start(state);
 	if (action.type === "answer" && state.status === "answering")
-		return answer(state, action.optionIds);
+		return answer(state, action.optionIds, action.elapsedMs);
 	if (action.type === "lint-poll" && state.status === "answering")
 		return spendLint(state);
 	if (action.type === "strip" && state.status === "awaiting-strip")

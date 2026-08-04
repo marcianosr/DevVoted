@@ -97,7 +97,7 @@ describe(ShopScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("explains a gated upgrade on hover — next level and the category-tied coverage in its own color", () => {
+	it("explains a gated upgrade on hover — next level's effect and the category-tied coverage in its own color", () => {
 		render(
 			<ShopScreen
 				{...base}
@@ -106,11 +106,31 @@ describe(ShopScreen, () => {
 			/>
 		);
 		expect(screen.getByRole("button", { name: /Upgrade/ })).toBeDisabled();
-		expect(screen.getByText(/You need 5% coverage in/)).toBeInTheDocument();
-		expect(screen.getByText(/for this — you have 2%/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/L2: React polls earn 1\.5× coverage/)
+		).toBeInTheDocument();
+		expect(screen.getByText(/Unlocks at 5%/)).toBeInTheDocument();
+		expect(screen.getByText(/you have 2%/)).toBeInTheDocument();
 		const category = screen.getByText("React");
 		expect(category).toHaveClass("text-theme");
 		expect(category).toHaveAttribute("data-category-theme", "react");
+	});
+
+	it("previews the next level's effect on hover once the upgrade is unlocked", () => {
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.js]}
+				coverageByCategory={{ js: 10 }}
+			/>
+		);
+		expect(screen.getByRole("button", { name: "Upgrade" })).toBeEnabled();
+		expect(
+			screen.getByText(
+				"L2: JavaScript polls earn 1.5× coverage — but if JavaScript shows, you must get 2 right."
+			)
+		).toBeInTheDocument();
+		expect(screen.queryByText(/Unlocks at/)).not.toBeInTheDocument();
 	});
 
 	it("unlocks a met upgrade — prismatic ring, no coverage price on the button", () => {

@@ -45,7 +45,7 @@ export type Config = {
 export const rarityOf = (config: Config): Rarity => config.rarity ?? "common";
 
 export const focusCoverageMultiplier = (level: number): number =>
-	1 + 0.5 * level;
+	1 + 0.25 * level;
 
 export const focusDemand = (config: Config): number => config.level ?? 1;
 
@@ -77,4 +77,21 @@ export const describeConfig = (config: Config): string => {
 	const name = getCategoryMetadata(config.focusCategory).name;
 	const level = config.level ?? 1;
 	return `${name} polls earn ${focusCoverageMultiplier(level)}× coverage — but if ${name} shows, you must get ${level} right.`;
+};
+
+// A focus config's gives/needs derive from its level, like describeConfig —
+// the roster only knows L1, so authored copy goes stale after an upgrade
+// (DVTD-a6yf). Non-focus copy stays authored on the roster.
+export const givesOf = (config: Config): string | undefined => {
+	if (!config.focusCategory) return config.gives;
+	const name = getCategoryMetadata(config.focusCategory).name;
+	const multiplier = focusCoverageMultiplier(config.level ?? 1);
+	return `Then ${name} polls earn ×${multiplier} coverage`;
+};
+
+export const needsOf = (config: Config): string | undefined => {
+	if (!config.focusCategory) return config.needs;
+	const name = getCategoryMetadata(config.focusCategory).name;
+	const demand = focusDemand(config);
+	return `Get ${demand} ${name} poll${demand === 1 ? "" : "s"} right`;
 };

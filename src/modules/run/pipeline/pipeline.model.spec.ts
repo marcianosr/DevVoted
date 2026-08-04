@@ -106,34 +106,34 @@ describe("pipelineModifiersFor", () => {
 });
 
 describe("coverageForAnswer", () => {
-	it("pays 1.5x in a Focus category, 1x outside it", () => {
-		expect(coverageForAnswer([CONFIGS.js], at("js"), 1)).toBe(1.5);
+	it("pays 1.25x in a Focus category (1.3 rounded), 1x outside it", () => {
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 1)).toBe(1.3);
 		expect(coverageForAnswer([CONFIGS.js], at("css"), 1)).toBe(1);
 	});
 
 	it("stacks Focus and Amplify across the whole pipeline", () => {
 		expect(coverageForAnswer([CONFIGS.js, CONFIGS.copilot], at("js"), 1)).toBe(
-			3
-		); // 1.5 × 2
+			2.5
+		); // 1.25 × 2
 	});
 
 	it("scales Focus with level and pays nothing for a wrong answer", () => {
 		expect(coverageForAnswer([{ ...CONFIGS.js, level: 2 }], at("js"), 1)).toBe(
-			2
+			1.5
 		);
 		expect(coverageForAnswer([CONFIGS.js], at("js"), 0)).toBe(0);
 	});
 
 	it("pays a partial share proportionally, configs included", () => {
 		// Half a multi-answer set demonstrated → half the Focus-boosted earn.
-		expect(coverageForAnswer([CONFIGS.js], at("js"), 0.5)).toBe(0.8); // 1.5 / 2, rounded
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 0.5)).toBe(0.6); // 1.25 / 2, rounded
 	});
 
 	it("applies the streak factor last, over base × configs", () => {
-		// 1.5 (Focus) × 1.3 (streak 3) = 1.95, rounded to one decimal.
-		expect(coverageForAnswer([CONFIGS.js], at("js"), 1, 1.3)).toBe(2);
-		// A factor of 1 (no streak) leaves the earn unchanged.
-		expect(coverageForAnswer([CONFIGS.js], at("js"), 1, 1)).toBe(1.5);
+		// 1.25 (Focus) × 1.3 (streak 3) = 1.625, rounded to one decimal.
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 1, 1.3)).toBe(1.6);
+		// A factor of 1 (no streak) leaves the earn unchanged (1.25 rounds to 1.3).
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 1, 1)).toBe(1.3);
 	});
 
 	it("applies multipliers last, so a ×mult amplifies flat adds too", () => {
@@ -194,13 +194,13 @@ describe("coverageBreakdownForAnswer", () => {
 	});
 
 	it("pulls the streak factor into its own bonus over base + configs", () => {
-		// Focus .js (1.5×) at streak 1.3: base 1, .js +0.5, streak +0.5 = 2.
+		// Focus .js (1.25×) at streak 1.3: total 1.6 → base 1, .js +0.3, streak +0.3.
 		expect(
 			coverageBreakdownForAnswer([CONFIGS.js], at("js"), 1, 1.3, 0)
 		).toEqual({
 			base: 1,
-			streakBonus: 0.5,
-			configBonuses: [{ configId: "js", value: 0.5 }],
+			streakBonus: 0.3,
+			configBonuses: [{ configId: "js", value: 0.3 }],
 		});
 	});
 

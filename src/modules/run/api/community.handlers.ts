@@ -1,9 +1,17 @@
+import {
+	getCategoryMetadata,
+	isCategoryCode,
+} from "~/domains/shared/categories";
+import { formatDurationMs } from "~/lib/dateUtils";
 import { type ApiResponse, handleApiOperation } from "~/utils/errorHandling";
+
+import type { CategoryCode } from "~/domains/shared/categories";
 
 import type { AnswerOutcome, AnswerType } from "../climb/run.model";
 import {
 	type CommunityPollRecord,
 	fetchConsumedPollsForDay,
+	fetchDailySeedCreatedAt,
 	fetchPollsWithOptions,
 	fetchRunProgress,
 	fetchSessionAnswersForDay,
@@ -14,27 +22,52 @@ import { findActiveSessionRun, findSessionRunByDate } from "./queries";
 export type CommunityVoter = {
 	id: string;
 	displayName: string;
+	/** Optional so fixtures stay lean — the handler always sets it. */
+	photoUrl?: string | null;
+	/** The viewer's own chip — rendered as "you". */
+	you: boolean;
+};
+
+/**
+ * One answer option with its community result. Named `isRight` (not `correct`)
+ * on purpose: the payload tripwire spec rejects any `"correct":` key, guarding
+ * against a raw DB option record leaking into the response.
+ */
+export type CommunityOptionResult = {
+	label: string;
+	isRight: boolean;
+	count: number;
+	/** Share of this poll's answerers, 0–100. Multi-answer polls may sum past 100. */
+	percent: number;
+	yours: boolean;
+	/** Everyone who picked this option, viewer first. */
+	voters: CommunityVoter[];
 };
 
 export type RunCommunityPollDetail = {
-	yourPickLabels: string[];
-	correctLabels: string[];
-	optionLabels: string[];
 	answerType: AnswerType;
-	agreedPercent: number;
-	gotItRightPercent: number;
 	answeredCount: number;
-	gotItRightVoters: CommunityVoter[];
-	pickedYoursVoters: CommunityVoter[];
+	gotItRightCount: number;
+	youGotItRight: boolean;
+	options: CommunityOptionResult[];
 };
 
 export type RunCommunityPoll = {
 	pollId: number;
 	index: number;
 	question: string;
+	/** The category swatch next to the question — null for missed polls (sealed). */
+	category: CategoryCode | null;
 	outcome: AnswerOutcome | "missed";
 	/** Absent for missed polls: they may reappear in a later seed, so nothing may be revealed. */
 	detail: RunCommunityPollDetail | null;
+};
+
+/** A "standouts today" row: who, what for, and the pre-formatted value. */
+export type CommunityStandout = {
+	voter: CommunityVoter;
+	title: string;
+	value: string;
 };
 
 export type RunCommunityView = {
@@ -42,13 +75,17 @@ export type RunCommunityView = {
 	totalPlayers: number;
 	/** "top X% of players today" — null until the viewer answered something today. */
 	topPercent: number | null;
+	standouts: CommunityStandout[];
 	polls: RunCommunityPoll[];
 };
 
 type SessionAnswer = {
 	pollId: number;
-	user: CommunityVoter;
+	user: { id: string; displayName: string; photoUrl: string | null };
 	optionIds: Set<number>;
+	categoryCode: string | null;
+	answeredAt: Date | null;
+	elapsedMs: number | null;
 };
 
 const groupAnswers = (rows: SessionAnswerRow[]): SessionAnswer[] => {
@@ -57,8 +94,15 @@ const groupAnswers = (rows: SessionAnswerRow[]): SessionAnswer[] => {
 		if (!row.userId) continue;
 		const answer = byResponse.get(row.responseId) ?? {
 			pollId: row.pollId,
-			user: { id: row.userId, displayName: row.displayName ?? row.userId },
+			user: {
+				id: row.userId,
+				displayName: row.displayName ?? row.userId,
+				photoUrl: row.photoUrl,
+			},
 			optionIds: new Set<number>(),
+			categoryCode: row.categoryCode,
+			answeredAt: row.answeredAt,
+			elapsedMs: row.answerTimeMs,
 		};
 		if (row.optionId !== null) answer.optionIds.add(row.optionId);
 		byResponse.set(row.responseId, answer);
@@ -88,37 +132,141 @@ const outcomeOf = (
 const toPercent = (part: number, total: number): number =>
 	total === 0 ? 0 : Math.round((part / total) * 100);
 
-const labelsOf = (poll: CommunityPollRecord, ids: Set<number>): string[] =>
-	poll.options
-		.filter((option) => ids.has(option.id))
-		.map((option) => option.label);
+const viewerFirst = (voters: CommunityVoter[]): CommunityVoter[] =>
+	[...voters].sort((a, b) => Number(b.you) - Number(a.you));
 
 const buildPollDetail = (
 	poll: CommunityPollRecord,
 	viewerAnswer: SessionAnswer,
 	pollAnswers: SessionAnswer[]
 ): RunCommunityPollDetail => {
-	const agreeing = pollAnswers.filter((answer) =>
-		sameSet(answer.optionIds, viewerAnswer.optionIds)
-	);
 	const gotItRight = pollAnswers.filter(
 		(answer) => outcomeOf(poll, answer.optionIds) === "correct"
 	);
 
 	return {
-		yourPickLabels: labelsOf(poll, viewerAnswer.optionIds),
-		correctLabels: poll.options
-			.filter((option) => option.correct)
-			.map((option) => option.label),
-		optionLabels: poll.options.map((option) => option.label),
 		answerType: poll.answerType,
-		agreedPercent: toPercent(agreeing.length, pollAnswers.length),
-		gotItRightPercent: toPercent(gotItRight.length, pollAnswers.length),
 		answeredCount: pollAnswers.length,
-		gotItRightVoters: gotItRight.map((answer) => answer.user),
-		pickedYoursVoters: agreeing.map((answer) => answer.user),
+		gotItRightCount: gotItRight.length,
+		youGotItRight: gotItRight.some(
+			(answer) => answer.user.id === viewerAnswer.user.id
+		),
+		options: poll.options.map((option): CommunityOptionResult => {
+			const pickers = pollAnswers.filter((answer) =>
+				answer.optionIds.has(option.id)
+			);
+			return {
+				label: option.label,
+				isRight: option.correct,
+				count: pickers.length,
+				percent: toPercent(pickers.length, pollAnswers.length),
+				yours: viewerAnswer.optionIds.has(option.id),
+				voters: viewerFirst(
+					pickers.map((answer) => ({
+						...answer.user,
+						you: answer.user.id === viewerAnswer.user.id,
+					}))
+				),
+			};
+		}),
 	};
 };
+
+// ─── Standouts ────────────────────────────────────────────────────────────────
+
+const toVoter = (
+	user: SessionAnswer["user"],
+	viewerId: string
+): CommunityVoter => ({ ...user, you: user.id === viewerId });
+
+type TimedAnswer = SessionAnswer & { elapsedMs: number };
+const isTimed = (answer: SessionAnswer): answer is TimedAnswer =>
+	answer.elapsedMs !== null;
+
+const fastestAnswerStandout = (
+	answers: SessionAnswer[],
+	viewerId: string
+): CommunityStandout | null => {
+	const timed = answers.filter(isTimed);
+	if (timed.length === 0) return null;
+	const fastest = timed.reduce((best, answer) =>
+		answer.elapsedMs < best.elapsedMs ? answer : best
+	);
+	return {
+		voter: toVoter(fastest.user, viewerId),
+		title: "fastest answer",
+		value: formatDurationMs(fastest.elapsedMs),
+	};
+};
+
+type DatedAnswer = SessionAnswer & { answeredAt: Date };
+const isDated = (answer: SessionAnswer): answer is DatedAnswer =>
+	answer.answeredAt !== null;
+
+const firstToAnswerStandout = (
+	answers: SessionAnswer[],
+	seedCreatedAt: Date | null,
+	viewerId: string
+): CommunityStandout | null => {
+	if (!seedCreatedAt) return null;
+	const dated = answers.filter(isDated);
+	if (dated.length === 0) return null;
+	const first = dated.reduce((best, answer) =>
+		answer.answeredAt < best.answeredAt ? answer : best
+	);
+	const sinceDrop = first.answeredAt.getTime() - seedCreatedAt.getTime();
+	return {
+		voter: toVoter(first.user, viewerId),
+		title: "first to answer",
+		value: formatDurationMs(Math.max(0, sinceDrop)),
+	};
+};
+
+const categoryNameOf = (code: string): string =>
+	isCategoryCode(code) ? getCategoryMetadata(code).name : code;
+
+const mostCategoryStandout = (
+	answers: SessionAnswer[],
+	viewerId: string
+): CommunityStandout | null => {
+	const tallies = new Map<
+		string,
+		{ user: SessionAnswer["user"]; category: string; count: number }
+	>();
+	for (const answer of answers) {
+		if (!answer.categoryCode) continue;
+		const key = `${answer.user.id}:${answer.categoryCode}`;
+		const tally = tallies.get(key) ?? {
+			user: answer.user,
+			category: answer.categoryCode,
+			count: 0,
+		};
+		tally.count += 1;
+		tallies.set(key, tally);
+	}
+	// Deterministic winner: highest count, ties broken by user id.
+	const top = [...tallies.values()].sort(
+		(a, b) => b.count - a.count || a.user.id.localeCompare(b.user.id)
+	)[0];
+	// A "most" of one is no distinction — the award waits for a real lead.
+	if (!top || top.count < 2) return null;
+	return {
+		voter: toVoter(top.user, viewerId),
+		title: `most ${categoryNameOf(top.category)} polls`,
+		value: String(top.count),
+	};
+};
+
+const standoutsFor = (
+	answers: SessionAnswer[],
+	seedCreatedAt: Date | null,
+	viewerId: string
+): CommunityStandout[] =>
+	[
+		fastestAnswerStandout(answers, viewerId),
+		firstToAnswerStandout(answers, seedCreatedAt, viewerId),
+		mostCategoryStandout(answers, viewerId),
+	].filter((standout): standout is CommunityStandout => standout !== null);
 
 /** "top 18%": players with a better correct-count today push you down. */
 const topPercentFor = (
@@ -149,6 +297,7 @@ const EMPTY_VIEW = (date: string): RunCommunityView => ({
 	date,
 	totalPlayers: 0,
 	topPercent: null,
+	standouts: [],
 	polls: [],
 });
 
@@ -171,6 +320,7 @@ export const getRunCommunityHandler = async ({
 
 		const answerRows = await fetchSessionAnswersForDay(date);
 		const answers = groupAnswers(answerRows);
+		const seedCreatedAt = await fetchDailySeedCreatedAt(date);
 		const dayPollIds = [...new Set(answers.map((answer) => answer.pollId))];
 		const polls = await fetchPollsWithOptions([
 			...new Set([...consumed.map((entry) => entry.poll_id), ...dayPollIds]),
@@ -196,6 +346,7 @@ export const getRunCommunityHandler = async ({
 					pollId: poll.id,
 					index,
 					question: poll.question,
+					category: null,
 					outcome: "missed",
 					detail: null,
 				};
@@ -205,6 +356,7 @@ export const getRunCommunityHandler = async ({
 				pollId: poll.id,
 				index,
 				question: poll.question,
+				category: isCategoryCode(poll.categoryCode) ? poll.categoryCode : null,
 				outcome: outcomeOf(poll, viewerAnswer.optionIds),
 				detail: buildPollDetail(poll, viewerAnswer, pollAnswers),
 			};
@@ -214,6 +366,7 @@ export const getRunCommunityHandler = async ({
 			date,
 			totalPlayers: new Set(answers.map((answer) => answer.user.id)).size,
 			topPercent: topPercentFor(userId, polls, answers),
+			standouts: standoutsFor(answers, seedCreatedAt, userId),
 			polls: views,
 		};
 	});

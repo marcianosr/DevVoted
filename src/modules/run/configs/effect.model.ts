@@ -130,7 +130,6 @@ const focusCheck = (
 	focusCategory: CategoryCode
 ): GateCheckPart => {
 	const level = config.level ?? 1;
-	console.log(config);
 	return {
 		gateCheck: ({ window }) => {
 			const tally = window.byCategory[focusCategory] ?? {

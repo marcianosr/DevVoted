@@ -3,6 +3,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import { AnswerResults } from "./AnswerResults.ui";
 
+// The ts1 fixture below is the only multiple-answer poll — its row carries
+// the quiet "multi" marker, the single-answer rows stay bare.
+
 const answered = [
 	{
 		id: "js1",
@@ -68,6 +71,16 @@ describe(AnswerResults, () => {
 			"ts",
 		]);
 		expect(screen.getAllByTestId("swatch")).toHaveLength(3);
+	});
+
+	it("tags only the multiple-answer poll with the multi marker", () => {
+		render(<AnswerResults answered={answered} />);
+		const markers = screen.getAllByText("multi");
+		expect(markers).toHaveLength(1);
+		expect(markers[0].closest("[data-category-theme]")).toHaveAttribute(
+			"data-category-theme",
+			"ts"
+		);
 	});
 
 	it("keeps each poll's choices folded until its row is tapped", () => {

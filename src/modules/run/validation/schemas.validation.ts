@@ -24,6 +24,9 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.object({
 			type: z.literal("answer"),
 			optionIds: z.array(z.string().min(1)).min(1),
+			// Reveal→submit ms, client-measured. Capped at 10 minutes: award
+			// data, not gameplay-relevant — a spoofed low value is accepted risk.
+			elapsedMs: z.number().int().min(0).max(600_000).optional(),
 		})
 		.strict(),
 	bareActionSchema("lint-poll"),

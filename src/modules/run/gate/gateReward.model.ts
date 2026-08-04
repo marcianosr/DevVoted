@@ -1,6 +1,6 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 import type { AnsweredPoll } from "../climb/run.model";
-import { Config } from "../configs/config.model";
+import { Config, describeConfig } from "../configs/config.model";
 import type { CheckStatus } from "../configs/effect.model";
 import { roundToOneDecimal } from "../rules.model";
 import { gateRowDescription, roleOf } from "./configRole.model";
@@ -90,7 +90,7 @@ const focusRow = (
 		return {
 			...base,
 			status: "passed",
-			description: config.description,
+			description: describeConfig(config),
 			value: signedPercent(coverageContribution(config, answered)),
 		};
 

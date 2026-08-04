@@ -14,7 +14,7 @@ export const RunShop = () => {
 
 	if (!view) return null;
 
-	// Shop → "How you compared": commit the reward step, then detour to the
+	// Shop → Community: commit the reward step, then detour to the
 	// community page. The climb itself resumes from there ("Climb on →") — the
 	// community route sits outside this layout, so the status sync won't fight
 	// the detour.
@@ -33,7 +33,7 @@ export const RunShop = () => {
 				onClick: () => navigate({ to: "/run/reward" }),
 			}}
 			rightAction={{
-				label: "How you compared →",
+				label: "Community →",
 				onClick: finishToCommunity,
 				disabled: busy,
 			}}

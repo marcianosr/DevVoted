@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, lt } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
+	dailyRunSeedsTable,
 	pollOptionsTable,
 	pollResponseOptionsTable,
 	pollResponsesTable,
@@ -54,6 +55,7 @@ export const fetchConsumedPollsForDay = async (
 export type CommunityPollRecord = {
 	id: number;
 	question: string;
+	categoryCode: string;
 	answerType: "single" | "multiple";
 	options: { id: number; label: string; correct: boolean }[];
 };
@@ -67,6 +69,7 @@ export const fetchPollsWithOptions = async (
 		.select({
 			id: pollsTable.id,
 			question: pollsTable.question,
+			categoryCode: pollsTable.category_code,
 			answerType: pollsTable.answer_type,
 		})
 		.from(pollsTable)
@@ -85,6 +88,7 @@ export const fetchPollsWithOptions = async (
 	return pollRows.map((poll) => ({
 		id: poll.id,
 		question: poll.question,
+		categoryCode: poll.categoryCode,
 		answerType: poll.answerType,
 		options: optionRows
 			.filter((option) => option.poll_id === poll.id)
@@ -101,7 +105,11 @@ export type SessionAnswerRow = {
 	pollId: number;
 	userId: string | null;
 	displayName: string | null;
+	photoUrl: string | null;
 	optionId: number | null;
+	categoryCode: string | null;
+	answeredAt: Date | null;
+	answerTimeMs: number | null;
 };
 
 /**
@@ -119,10 +127,15 @@ export const fetchSessionAnswersForDay = async (
 			pollId: pollResponsesTable.poll_id,
 			userId: pollResponsesTable.user_id,
 			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
 			optionId: pollResponseOptionsTable.option_id,
+			categoryCode: pollsTable.category_code,
+			answeredAt: pollResponsesTable.created_at,
+			answerTimeMs: pollResponsesTable.answer_time_ms,
 		})
 		.from(pollResponsesTable)
 		.leftJoin(usersTable, eq(pollResponsesTable.user_id, usersTable.id))
+		.leftJoin(pollsTable, eq(pollResponsesTable.poll_id, pollsTable.id))
 		.leftJoin(
 			pollResponseOptionsTable,
 			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
@@ -133,3 +146,15 @@ export const fetchSessionAnswersForDay = async (
 				eq(pollResponsesTable.answer_date, date)
 			)
 		);
+
+/** When today's seed dropped — the zero point for "first to answer". */
+export const fetchDailySeedCreatedAt = async (
+	date: string
+): Promise<Date | null> => {
+	const [row] = await db
+		.select({ created_at: dailyRunSeedsTable.created_at })
+		.from(dailyRunSeedsTable)
+		.where(eq(dailyRunSeedsTable.date, date))
+		.limit(1);
+	return row?.created_at ?? null;
+};

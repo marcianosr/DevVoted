@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import { clsx } from "clsx";
 import type { Config } from "~/modules/run/configs/config.model";
-import { describeConfig } from "~/modules/run/configs/config.model";
+import {
+	describeConfig,
+	givesOf,
+	needsOf,
+} from "~/modules/run/configs/config.model";
 import type { CheckState } from "~/modules/run/configs/effect.model";
 import type { RoleRow } from "~/modules/run/gate/configRole.model";
 import { Badge } from "~/ui/Badge.component";
@@ -202,8 +206,8 @@ export const RoleList = ({
 					ghost
 					config={preview.config}
 					description={describeConfig(preview.config)}
-					gives={preview.config.gives}
-					needs={preview.config.needs}
+					gives={givesOf(preview.config)}
+					needs={needsOf(preview.config)}
 					costs={preview.config.costs}
 					trailing={
 						<Paragraph as="span" size="sm" tone="celadon">

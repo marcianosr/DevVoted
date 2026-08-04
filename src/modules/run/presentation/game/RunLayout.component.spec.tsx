@@ -137,14 +137,13 @@ describe("run route sync", () => {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
 				topPercent: null,
+				standouts: [],
 				polls: [],
 			},
 		});
 
 		const router = renderRunRoutes("/run/shop");
-		await user.click(
-			await screen.findByRole("button", { name: /How you compared/ })
-		);
+		await user.click(await screen.findByRole("button", { name: /Community/ }));
 
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/community")

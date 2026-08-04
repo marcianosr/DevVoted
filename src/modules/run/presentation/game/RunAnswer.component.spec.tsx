@@ -69,7 +69,13 @@ describe("RunAnswer", () => {
 
 		await waitFor(() =>
 			expect(vi.mocked(dispatchRunAction)).toHaveBeenCalledWith({
-				data: { action: { type: "answer", optionIds: ["option-2"] } },
+				data: {
+					action: {
+						type: "answer",
+						optionIds: ["option-2"],
+						elapsedMs: expect.any(Number),
+					},
+				},
 			})
 		);
 	});
@@ -93,7 +99,13 @@ describe("RunAnswer", () => {
 
 		await waitFor(() =>
 			expect(vi.mocked(dispatchRunAction)).toHaveBeenCalledWith({
-				data: { action: { type: "answer", optionIds: ["option-2"] } },
+				data: {
+					action: {
+						type: "answer",
+						optionIds: ["option-2"],
+						elapsedMs: expect.any(Number),
+					},
+				},
 			})
 		);
 	});

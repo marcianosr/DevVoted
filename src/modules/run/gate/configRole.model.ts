@@ -1,4 +1,9 @@
-import { Config, describeConfig } from "../configs/config.model";
+import {
+	Config,
+	describeConfig,
+	givesOf,
+	needsOf,
+} from "../configs/config.model";
 import type { CheckState, CheckStatus } from "../configs/effect.model";
 
 export type ConfigRole = "requirement" | "conditional" | "perk";
@@ -85,9 +90,9 @@ export const roleRows = (
 				config,
 				role,
 				description: gateRowDescription(config, role, check),
-				gives: config.gives,
+				gives: givesOf(config),
 				needs:
-					config.needs ??
+					needsOf(config) ??
 					(config.check === "correct" ? check?.description : undefined),
 				costs: config.costs,
 				...progressPlacement(check, dormant),

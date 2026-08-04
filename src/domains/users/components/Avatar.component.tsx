@@ -16,6 +16,8 @@ type AvatarProps = {
 	size?: AvatarSize;
 	/** 'square' enables the equipped-border overlay (border art is square). */
 	shape?: "square" | "circle";
+	/** Drop the native title — for callers wrapping the avatar in a Tooltip. */
+	noTitle?: boolean;
 };
 
 const KANTO_COLORS = [
@@ -54,6 +56,7 @@ export const Avatar = ({
 	user,
 	size = "sm",
 	shape = "circle",
+	noTitle = false,
 }: AvatarProps) => {
 	const name = user.displayName ?? user.id;
 	const initial = name.charAt(0).toUpperCase();
@@ -68,7 +71,7 @@ export const Avatar = ({
 	const wrapper = clsx("relative inline-block shrink-0", SIZE_CLASSES[size]);
 
 	return (
-		<div className={wrapper} title={name}>
+		<div className={wrapper} title={noTitle ? undefined : name}>
 			<div className={clsx("absolute inset-0 overflow-hidden", rounding)}>
 				{user.photoUrl ? (
 					<img

@@ -119,7 +119,18 @@ const ReporterRow = ({ poll }: { poll: AnsweredPoll }) => {
 				as="summary"
 				badge={OUTCOME_VARIANT[poll.outcome]}
 				leading={<Swatch size="sm" />}
-				line={poll.question}
+				line={
+					poll.answerType === "multiple" ? (
+						<>
+							{poll.question}{" "}
+							<Paragraph as="p" tone="faint" size="xs">
+								multiple choice
+							</Paragraph>
+						</>
+					) : (
+						poll.question
+					)
+				}
 				className="cursor-pointer list-none rounded hover:bg-zinc-800/40 [&::-webkit-details-marker]:hidden"
 				trailing={
 					<>

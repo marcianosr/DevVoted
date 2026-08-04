@@ -267,6 +267,7 @@ export const pollResponsesTable = pgTable(
 			.default("calendar")
 			.$type<"calendar" | "session">(), // Which loop wrote this row (ADR-005): discriminates the two partial unique indexes below
 		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows, null for session rows — scoring lives in run_states)
+		answer_time_ms: integer("answer_time_ms"), // Client-measured reveal→submit ms (null: legacy rows, untimed clients). Award-grade data only — spoofable, never gameplay-relevant.
 		score_breakdown:
 			json("score_breakdown").$type<
 				import("~/domains/runs/services/score.service").ScoreCalculation

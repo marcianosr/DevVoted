@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 import {
 	Config,
+	describeConfig,
 	draftCost,
+	givesOf,
 	isUpgradable,
+	needsOf,
 	sellRefund,
 	upgradeCoverageRequired,
 } from "~/modules/run/configs/config.model";
@@ -128,26 +131,25 @@ export const ShopScreen = ({
 		);
 	};
 
-	// A gated upgrade explains itself on hover: the next level, and the
-	// category-tied coverage it wants (upgrades are per-category, wiki §4.4).
-	// The category name reads in its own Kanto color.
+	// Hovering Upgrade always previews the next level's concrete effect; while
+	// gated it adds the category-tied coverage it wants (upgrades are
+	// per-category, wiki §4.4). The category name reads in its own Kanto color.
 	const upgradeTooltip = (config: Config): ReactNode => {
 		const nextLevel = (config.level ?? 1) + 1;
+		const preview = `L${nextLevel}: ${describeConfig({ ...config, level: nextLevel })}`;
+		if (!config.focusCategory || canUpgrade(config)) return preview;
 		const required = upgradeCoverageRequired(config.level ?? 1);
-		if (!config.focusCategory)
-			return `Upgrade this to L${nextLevel} for a stronger effect.`;
 		const have = coverageByCategory[config.focusCategory] ?? 0;
 		return (
 			<>
-				Upgrade this to L{nextLevel} for a stronger effect. You need {required}%
-				coverage in{" "}
+				{preview} Unlocks at {required}%{" "}
 				<span
 					{...categoryTheme(config.focusCategory)}
 					className="font-bold text-theme"
 				>
 					{getCategoryMetadata(config.focusCategory).name}
 				</span>{" "}
-				for this — you have {have}%.
+				coverage — you have {have}%.
 			</>
 		);
 	};
@@ -163,11 +165,9 @@ export const ShopScreen = ({
 			: null;
 		return (
 			<span className="flex items-center gap-2">
-				{upgradeButton && !canUpgrade(config) ? (
+				{upgradeButton ? (
 					<Tooltip content={upgradeTooltip(config)}>{upgradeButton}</Tooltip>
-				) : (
-					upgradeButton
-				)}
+				) : null}
 				{actionButton({
 					label: "Deinstall",
 					price: `${sellRefund(config)}KB`,
@@ -243,9 +243,9 @@ export const ShopScreen = ({
 							mark="add"
 							layout="table"
 							config={config}
-							description={config.description}
-							gives={config.gives}
-							needs={config.needs}
+							description={describeConfig(config)}
+							gives={givesOf(config)}
+							needs={needsOf(config)}
 							costs={config.costs}
 							dimmed={storage < draftCost(config)}
 							trailing={offerAction(config)}

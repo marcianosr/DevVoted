@@ -16,7 +16,7 @@ export const RunStrip = () => {
 
 	const quotaMet = view.stripsRemaining === 0;
 
-	// Strip → "How you compared": the failure path takes the same community
+	// Strip → Community: the failure path takes the same community
 	// detour as the shop — commit the repair, then step outside the layout.
 	// The climb resumes from the community page ("Climb on →").
 	const resumeToCommunity = () =>
@@ -30,7 +30,7 @@ export const RunStrip = () => {
 		<Screen
 			theme="cinnabar"
 			rightAction={{
-				label: "How you compared →",
+				label: "Community →",
 				onClick: resumeToCommunity,
 				disabled: !quotaMet || busy,
 				hint: quotaMet

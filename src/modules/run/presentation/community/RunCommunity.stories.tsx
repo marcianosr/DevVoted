@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import type { CommunityVoter } from "~/modules/run/api/community.handlers";
+import type {
+	CommunityOptionResult,
+	CommunityVoter,
+} from "~/modules/run/api/community.handlers";
 
 import { RunCommunityBoard } from "./RunCommunity.ui";
 
@@ -12,65 +15,129 @@ export default meta;
 
 type Story = StoryObj<typeof RunCommunityBoard>;
 
-const GYM_LEADERS: CommunityVoter[] = [
-	{ id: "brock", displayName: "Brock Boulder" },
-	{ id: "misty", displayName: "Misty Cascade" },
-	{ id: "lt-surge", displayName: "Lt Surge" },
-	{ id: "erika", displayName: "Erika Rainbow" },
-	{ id: "sabrina", displayName: "Sabrina Marsh" },
-];
+const you: CommunityVoter = { id: "red", displayName: "Red", you: true };
+const brock: CommunityVoter = {
+	id: "brock",
+	displayName: "Brock Boulder",
+	you: false,
+};
+const misty: CommunityVoter = {
+	id: "misty",
+	displayName: "Misty Cascade",
+	you: false,
+};
+const surge: CommunityVoter = {
+	id: "lt-surge",
+	displayName: "Lt Surge",
+	you: false,
+};
+const erika: CommunityVoter = {
+	id: "erika",
+	displayName: "Erika Rainbow",
+	you: false,
+};
 
-const detail = (agreed: number, right: number) => ({
-	yourPickLabels: ["Guild[”members”]"],
-	correctLabels: ["Guild.members"],
-	optionLabels: ["Guild.members", "Guild[”members”]", "Pluck.members"],
-	answerType: "single" as const,
-	agreedPercent: agreed,
-	gotItRightPercent: right,
-	answeredCount: GYM_LEADERS.length,
-	gotItRightVoters: GYM_LEADERS.slice(0, 3),
-	pickedYoursVoters: GYM_LEADERS.slice(3),
+const option = (
+	over: Partial<CommunityOptionResult> & Pick<CommunityOptionResult, "label">
+): CommunityOptionResult => ({
+	isRight: false,
+	count: 0,
+	percent: 0,
+	yours: false,
+	voters: [],
+	...over,
 });
 
 export const FullGate: Story = {
 	args: {
-		totalPlayers: 8,
+		totalPlayers: 5,
 		topPercent: 18,
+		standouts: [
+			{ voter: you, title: "fastest answer", value: "9s" },
+			{ voter: misty, title: "first to answer", value: "1m45" },
+			{ voter: brock, title: "most CSS polls", value: "3" },
+		],
 		polls: [
 			{
 				pollId: 1,
 				index: 0,
-				question: "What does Pluck<Guild> return?",
+				question: "What happens when the stylesheet 404s?",
+				category: "css",
 				outcome: "correct",
-				detail: { ...detail(64, 64), yourPickLabels: ["Guild.members"] },
+				detail: {
+					answerType: "single",
+					answeredCount: 5,
+					gotItRightCount: 2,
+					youGotItRight: true,
+					options: [
+						option({
+							label: "Nothing happens and none of the CSS is applied",
+							isRight: true,
+							count: 2,
+							percent: 40,
+							yours: true,
+							voters: [you, brock],
+						}),
+						option({
+							label: "All three tags and the class turn red",
+							count: 2,
+							percent: 40,
+							voters: [misty, surge],
+						}),
+						option({
+							label: "Only the <h3>, <h4> and <a> tags turn red",
+							count: 1,
+							percent: 20,
+							voters: [erika],
+						}),
+						option({ label: "Only the .1a class gets color:red" }),
+						option({ label: "The CSS breaks entirely" }),
+					],
+				},
 			},
 			{
 				pollId: 2,
 				index: 1,
-				question: "Which selector is fastest?",
-				outcome: "correct",
-				detail: { ...detail(41, 41), yourPickLabels: ["Guild.members"] },
+				question: "Which are valid Banjo-Kazooie moves?",
+				category: "ts",
+				outcome: "partial",
+				detail: {
+					answerType: "multiple",
+					answeredCount: 4,
+					gotItRightCount: 1,
+					youGotItRight: false,
+					options: [
+						option({
+							label: "Talon Trot",
+							isRight: true,
+							count: 3,
+							percent: 75,
+							yours: true,
+							voters: [you, brock, misty],
+						}),
+						option({
+							label: "Beak Barge",
+							isRight: true,
+							count: 1,
+							percent: 25,
+							voters: [brock],
+						}),
+						option({
+							label: "Falcon Punch",
+							count: 2,
+							percent: 50,
+							voters: [surge, erika],
+						}),
+					],
+				},
 			},
 			{
 				pollId: 3,
 				index: 2,
-				question: "What does Copilot guarantee?",
-				outcome: "wrong",
-				detail: detail(23, 77),
-			},
-			{
-				pollId: 4,
-				index: 3,
-				question: "Skipped by lint",
+				question: "",
+				category: null,
 				outcome: "missed",
 				detail: null,
-			},
-			{
-				pollId: 5,
-				index: 4,
-				question: "Multi-select CSS quirks",
-				outcome: "partial",
-				detail: detail(35, 52),
 			},
 		],
 	},
@@ -80,17 +147,31 @@ export const FirstPlayerOfTheDay: Story = {
 	args: {
 		totalPlayers: 1,
 		topPercent: 100,
+		standouts: [{ voter: you, title: "first to answer", value: "12s" }],
 		polls: [
 			{
 				pollId: 1,
 				index: 0,
 				question: "What does Pluck<Guild> return?",
+				category: "ts",
 				outcome: "correct",
 				detail: {
-					...detail(100, 100),
-					gotItRightVoters: GYM_LEADERS.slice(0, 1),
-					pickedYoursVoters: GYM_LEADERS.slice(0, 1),
+					answerType: "single",
 					answeredCount: 1,
+					gotItRightCount: 1,
+					youGotItRight: true,
+					options: [
+						option({
+							label: "Guild.members",
+							isRight: true,
+							count: 1,
+							percent: 100,
+							yours: true,
+							voters: [you],
+						}),
+						option({ label: "Guild[0]" }),
+						option({ label: "Guild.at(0)" }),
+					],
 				},
 			},
 		],
@@ -101,6 +182,7 @@ export const NothingPlayedYet: Story = {
 	args: {
 		totalPlayers: 0,
 		topPercent: null,
+		standouts: [],
 		polls: [],
 	},
 };

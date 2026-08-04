@@ -11,6 +11,7 @@ export type ParagraphTone =
 	| "muted"
 	| "faint"
 	| "celadon"
+	| "cerulean"
 	| "vermillion"
 	| "viridian"
 	| "cinnabar"
@@ -29,6 +30,7 @@ const paragraph = cva("tracking-tight", {
 			theme: "text-theme",
 			pewter: "text-pewter",
 			celadon: "text-celadon",
+			cerulean: "text-cerulean",
 			vermillion: "text-vermillion",
 			viridian: "text-viridian",
 			cinnabar: "text-cinnabar",

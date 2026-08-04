@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
 	type AnswerScore,
@@ -28,8 +28,14 @@ export const RunAnswer = () => {
 	const { send, sendWith, commit, busy, abandon } = useRunActions();
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
+	// The answer clock starts when the poll reaches the screen and stops at
+	// submit — the "fastest answer" standout reads this (DVTD-smye).
+	// performance.now() over Date.now(): monotonic, so an NTP sync or manual
+	// clock change mid-poll can't produce a negative or absurd duration.
+	const pollShownAt = useRef(performance.now());
 	useEffect(() => {
 		setSelected([]);
+		pollShownAt.current = performance.now();
 	}, [view?.poll?.id]);
 
 	const [reveal, setReveal] = useState<RevealState | null>(null);
@@ -42,14 +48,24 @@ export const RunAnswer = () => {
 	const poll = view.poll;
 
 	const submitAnswer = () =>
-		sendWith({ type: "answer", optionIds: [...selected] }, (result) => {
-			if (!result.success) return;
-			setReveal({
-				result,
-				correctOptionIds: correctOptionIdsFor(poll, result.data),
-				score: latestAnswerScore(result.data),
-			});
-		});
+		sendWith(
+			{
+				type: "answer",
+				optionIds: [...selected],
+				elapsedMs: Math.min(
+					Math.round(performance.now() - pollShownAt.current),
+					600_000
+				),
+			},
+			(result) => {
+				if (!result.success) return;
+				setReveal({
+					result,
+					correctOptionIds: correctOptionIdsFor(poll, result.data),
+					score: latestAnswerScore(result.data),
+				});
+			}
+		);
 
 	const advanceFromReveal = () => {
 		if (!reveal) return;

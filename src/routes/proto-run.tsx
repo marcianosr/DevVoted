@@ -2,11 +2,22 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import {
+	type AnsweredPoll,
 	createRun,
 	runReducer,
 	RunAction,
 	RunPoll,
 } from "~/modules/run/climb/run.model";
+import type {
+	CommunityOptionResult,
+	CommunityStandout,
+	CommunityVoter,
+	RunCommunityPoll,
+} from "~/modules/run/api/community.handlers";
+import {
+	RunCommunityBoard,
+	type RunCommunityBoardProps,
+} from "~/modules/run/presentation/community/RunCommunity.ui";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/run/draft/draft.model";
 import {
@@ -22,7 +33,11 @@ import { RunHud } from "~/modules/run/presentation/run/RunHud.ui";
 import { RunSummary } from "~/modules/run/presentation/run/RunSummary.ui";
 import { toRunView } from "~/modules/run/view/runView.viewmodel";
 import { SLICE_WINDOW, VICTORY_GATE } from "~/modules/run/rules.model";
-import type { CategoryCode } from "~/domains/shared/categories";
+import {
+	type CategoryCode,
+	getCategoryMetadata,
+} from "~/domains/shared/categories";
+import { formatDurationMs } from "~/lib/dateUtils";
 import { Screen } from "~/ui/Screen.ui";
 
 export const Route = createFileRoute("/proto-run")({
@@ -128,6 +143,174 @@ const rigOptionIds = (
 	return wrong ? [wrong.id] : [];
 };
 
+// ─── Simulated community ─────────────────────────────────────────────────────
+// The rig has no server, so the community step fakes the town: Kanto trainers
+// whose picks derive from a (trainer, poll) hash — stable across re-renders,
+// varied across polls. Roster mirrors src/database/seedCommunity.ts.
+type SimTrainer = { id: string; displayName: string; accuracy: number };
+
+const TRAINERS: readonly SimTrainer[] = [
+	{ id: "gary", displayName: "Gary Oak", accuracy: 0.9 },
+	{ id: "lance", displayName: "Lance", accuracy: 0.8 },
+	{ id: "sabrina", displayName: "Sabrina", accuracy: 0.7 },
+	{ id: "erika", displayName: "Erika", accuracy: 0.6 },
+	{ id: "misty", displayName: "Misty", accuracy: 0.5 },
+	{ id: "brock", displayName: "Brock", accuracy: 0.45 },
+	{ id: "ash", displayName: "Ash Ketchum", accuracy: 0.35 },
+];
+
+const hashOf = (text: string): number =>
+	[...text].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 9973, 7);
+
+const simulatedPickLabels = (poll: RunPoll, trainer: SimTrainer): string[] => {
+	const roll = hashOf(trainer.id + poll.id) % 100;
+	const right = poll.options.filter((option) => option.correct);
+	const wrong = poll.options.filter((option) => !option.correct);
+	if (roll < trainer.accuracy * 100) return right.map((option) => option.label);
+	if (poll.answerType === "multiple" && roll % 2 === 0 && right[0] && wrong[0])
+		return [right[0].label, wrong[0].label];
+	if (wrong.length === 0) return right.map((option) => option.label);
+	return [wrong[roll % wrong.length].label];
+};
+
+const sameLabelSet = (a: readonly string[], b: readonly string[]): boolean =>
+	a.length === b.length && a.every((label) => b.includes(label));
+
+const YOU: CommunityVoter = { id: "you", displayName: "You", you: true };
+
+const simulateCommunityBoard = (
+	answered: readonly AnsweredPoll[],
+	polls: readonly RunPoll[]
+): RunCommunityBoardProps => {
+	const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
+	const answeredCount = TRAINERS.length + 1;
+
+	const trainerRightsOn = (poll: RunPoll): SimTrainer[] => {
+		const rightLabels = poll.options
+			.filter((option) => option.correct)
+			.map((option) => option.label);
+		return TRAINERS.filter((trainer) =>
+			sameLabelSet(simulatedPickLabels(poll, trainer), rightLabels)
+		);
+	};
+
+	const boardPolls = answered.flatMap((entry, index): RunCommunityPoll[] => {
+		const poll = pollsById.get(entry.id);
+		if (!poll) return [];
+		const gotItRightCount =
+			trainerRightsOn(poll).length + (entry.outcome === "correct" ? 1 : 0);
+
+		const options = poll.options.map((option): CommunityOptionResult => {
+			const yours = entry.picked.includes(option.label);
+			const pickers = TRAINERS.filter((trainer) =>
+				simulatedPickLabels(poll, trainer).includes(option.label)
+			);
+			const count = pickers.length + (yours ? 1 : 0);
+			return {
+				label: option.label,
+				isRight: option.correct,
+				count,
+				percent: Math.round((count / answeredCount) * 100),
+				yours,
+				voters: [
+					...(yours ? [YOU] : []),
+					...pickers.map((trainer) => ({
+						id: trainer.id,
+						displayName: trainer.displayName,
+						you: false,
+					})),
+				],
+			};
+		});
+
+		return [
+			{
+				pollId: index,
+				index,
+				question: poll.question,
+				category: poll.category,
+				outcome: entry.outcome,
+				detail: {
+					answerType: poll.answerType,
+					answeredCount,
+					gotItRightCount,
+					youGotItRight: entry.outcome === "correct",
+					options,
+				},
+			},
+		];
+	});
+
+	// Percentile mirrors the real page: trainers with more correct answers
+	// this gate push "you" down.
+	const yourRights = answered.filter(
+		(entry) => entry.outcome === "correct"
+	).length;
+	const rightsPerTrainer = TRAINERS.map(
+		(trainer) =>
+			answered.filter((entry) => {
+				const poll = pollsById.get(entry.id);
+				return poll && trainerRightsOn(poll).includes(trainer);
+			}).length
+	);
+	const better = rightsPerTrainer.filter((count) => count > yourRights).length;
+	const topPercent = Math.max(
+		1,
+		Math.ceil(((better + 1) / answeredCount) * 100)
+	);
+
+	// Standouts, hash-faked like the votes; "most X polls" counts the gate's
+	// real category mix so the award tracks what was actually played.
+	const trainerVoter = (trainer: SimTrainer): CommunityVoter => ({
+		id: trainer.id,
+		displayName: trainer.displayName,
+		you: false,
+	});
+	const trainerBy = (seedText: string): SimTrainer =>
+		TRAINERS[hashOf(seedText) % TRAINERS.length];
+	const categoryCounts = new Map<CategoryCode, number>();
+	for (const entry of answered)
+		categoryCounts.set(
+			entry.category,
+			(categoryCounts.get(entry.category) ?? 0) + 1
+		);
+	const topCategory = [...categoryCounts.entries()].sort(
+		(a, b) => b[1] - a[1]
+	)[0];
+	const gateKey = answered[0]?.id ?? "";
+	const standouts: CommunityStandout[] =
+		answered.length === 0 || !topCategory
+			? []
+			: [
+					{
+						voter: trainerVoter(trainerBy(`fastest:${gateKey}`)),
+						title: "fastest answer",
+						value: formatDurationMs(
+							(4 + (hashOf(`fastms:${gateKey}`) % 51)) * 1_000
+						),
+					},
+					{
+						voter: trainerVoter(trainerBy(`first:${gateKey}`)),
+						title: "first to answer",
+						value: formatDurationMs(
+							(60 + (hashOf(`firsts:${gateKey}`) % 60)) * 1_000
+						),
+					},
+					{
+						voter: trainerVoter(trainerBy(`most:${topCategory[0]}`)),
+						title: `most ${getCategoryMetadata(topCategory[0]).name} polls`,
+						value: String(topCategory[1]),
+					},
+				];
+
+	return {
+		totalPlayers: answeredCount,
+		topPercent,
+		standouts,
+		polls: boardPolls,
+	};
+};
+
 const POOL_SIZE = VICTORY_GATE * SLICE_WINDOW + SLICE_WINDOW;
 const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 	const base = BASE_POLLS[i % BASE_POLLS.length];
@@ -146,9 +329,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setSelected([]);
 	}, [state.currentIndex]);
-	// The reward flows over two pages: the rewards summary, then the shop. Reset to the
-	// summary each time a new gate clears.
-	const [rewardStep, setRewardStep] = useState<"summary" | "shop">("summary");
+	// The reward flows over three pages: the rewards summary, the shop, then the
+	// (simulated) community. Reset to the summary each time a new gate clears.
+	const [rewardStep, setRewardStep] = useState<
+		"summary" | "shop" | "community"
+	>("summary");
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
@@ -296,8 +481,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("summary"),
 					}}
 					rightAction={{
-						label: `Continue to gate ${view.gatesCleared + 1} →`,
-						onClick: () => dispatch({ type: "finish-reward" }),
+						label: "Community →",
+						onClick: () => setRewardStep("community"),
 					}}
 				>
 					<ShopScreen
@@ -323,6 +508,23 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onAddSlot={() => dispatch({ type: "add-slot" })}
 						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
 						onSell={(id) => dispatch({ type: "sell", configId: id })}
+					/>
+				</Screen>
+			)}
+
+			{state.status === "rewarding" && rewardStep === "community" && (
+				<Screen
+					leftAction={{
+						label: "← Back",
+						onClick: () => setRewardStep("shop"),
+					}}
+					rightAction={{
+						label: `Continue to gate ${view.gatesCleared + 1} →`,
+						onClick: () => dispatch({ type: "finish-reward" }),
+					}}
+				>
+					<RunCommunityBoard
+						{...simulateCommunityBoard(view.answeredThisGate, state.polls)}
 					/>
 				</Screen>
 			)}

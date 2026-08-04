@@ -417,7 +417,8 @@ const recordSessionAnswer = async (
 	tx: Tx,
 	args: { runId: number; userId: string; today: string },
 	poll: RunPoll,
-	optionIds: readonly string[]
+	optionIds: readonly string[],
+	elapsedMs?: number
 ): Promise<void> => {
 	const [response] = await tx
 		.insert(pollResponsesTable)
@@ -427,6 +428,7 @@ const recordSessionAnswer = async (
 			run_id: args.runId,
 			mode: "session",
 			answer_date: args.today,
+			answer_time_ms: elapsedMs ?? null,
 		})
 		.returning({ response_id: pollResponsesTable.response_id });
 
@@ -567,7 +569,8 @@ export const applyActionToRun = async (args: {
 				tx,
 				args,
 				state.polls[state.currentIndex],
-				args.action.optionIds
+				args.action.optionIds,
+				args.action.elapsedMs
 			);
 		}
 

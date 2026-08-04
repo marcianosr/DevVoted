@@ -19,3 +19,16 @@ export const getMsUntilNextPoll = (now: Date): number => {
 	nextMidnight.setHours(24, 0, 0, 0);
 	return nextMidnight.getTime() - now.getTime();
 };
+
+/**
+ * Game-copy duration: "9s" under a minute, "1m45" past it. Hand-rolled on
+ * purpose: Intl.DurationFormat's closest style is "1m 45s" and Temporal is
+ * still Stage 3 (Firefox-only without a polyfill) — the exact compact copy is
+ * a design choice, not a formatting gap. Floors at "1s": a standout can never
+ * read "0s".
+ */
+export const formatDurationMs = (ms: number): string => {
+	const seconds = Math.max(1, Math.round(ms / 1000));
+	if (seconds < 60) return `${seconds}s`;
+	return `${Math.floor(seconds / 60)}m${String(seconds % 60).padStart(2, "0")}`;
+};
