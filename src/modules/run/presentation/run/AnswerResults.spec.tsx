@@ -60,12 +60,14 @@ describe(AnswerResults, () => {
 	});
 
 	it("themes each row in its poll's category, with a swatch beside the question", () => {
-		const { container } = render(<AnswerResults answered={answered} />);
-		const themed = container.querySelectorAll("[data-category-theme]");
-		expect(
-			Array.from(themed, (row) => row.getAttribute("data-category-theme"))
-		).toEqual(["js", "css", "ts"]);
-		expect(container.querySelectorAll(".bg-theme")).toHaveLength(3);
+		render(<AnswerResults answered={answered} />);
+		const rows = screen.getAllByTestId("answer-row");
+		expect(rows.map((row) => row.getAttribute("data-category-theme"))).toEqual([
+			"js",
+			"css",
+			"ts",
+		]);
+		expect(screen.getAllByTestId("swatch")).toHaveLength(3);
 	});
 
 	it("keeps each poll's choices folded until its row is tapped", () => {

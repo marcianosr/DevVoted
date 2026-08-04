@@ -110,7 +110,11 @@ const AnswerTree = ({ poll }: { poll: AnsweredPoll }) => (
 const ReporterRow = ({ poll }: { poll: AnsweredPoll }) => {
 	const hasScore = poll.coverageEarned !== undefined;
 	return (
-		<details {...categoryTheme(poll.category)} className="group">
+		<details
+			data-testid="answer-row"
+			{...categoryTheme(poll.category)}
+			className="group"
+		>
 			<StatusLine
 				as="summary"
 				badge={OUTCOME_VARIANT[poll.outcome]}

@@ -46,10 +46,10 @@ describe(ShopScreen, () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	it("buys an offer from its row's buy button", () => {
+	it("buys an offer from its row's install button", () => {
 		const onDraft = vi.fn();
 		render(<ShopScreen {...base} onDraft={onDraft} />);
-		fireEvent.click(screen.getAllByRole("button", { name: /buy/ })[0]);
+		fireEvent.click(screen.getAllByRole("button", { name: /Install/ })[0]);
 		expect(onDraft).toHaveBeenCalledWith("eslint");
 	});
 
@@ -61,7 +61,7 @@ describe(ShopScreen, () => {
 				slots={3}
 			/>
 		);
-		for (const buy of screen.getAllByRole("button", { name: /buy/ })) {
+		for (const buy of screen.getAllByRole("button", { name: /Install/ })) {
 			expect(buy).toBeDisabled();
 		}
 		expect(
@@ -74,7 +74,7 @@ describe(ShopScreen, () => {
 	it("dims an offer the run can't afford and prices the gap instead", () => {
 		render(<ShopScreen {...base} storage={8} />);
 		expect(
-			screen.queryByRole("button", { name: /buy/ })
+			screen.queryByRole("button", { name: /Install/ })
 		).not.toBeInTheDocument();
 		expect(screen.getAllByText(/need/).length).toBeGreaterThan(0);
 	});
@@ -89,13 +89,15 @@ describe(ShopScreen, () => {
 	it("offers no upgrade control on Unit Tests — only focus configs level", () => {
 		render(<ShopScreen {...base} configs={[CONFIGS.unitTests]} />);
 		expect(
-			screen.queryByRole("button", { name: /upgrade/ })
+			screen.queryByRole("button", { name: /Upgrade/ })
 		).not.toBeInTheDocument();
 		expect(screen.queryByText("maxed")).not.toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /sell/ })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Deinstall/ })
+		).toBeInTheDocument();
 	});
 
-	it("explains a gated upgrade on hover — next level and the category-tied coverage", () => {
+	it("explains a gated upgrade on hover — next level and the category-tied coverage in its own color", () => {
 		render(
 			<ShopScreen
 				{...base}
@@ -103,15 +105,15 @@ describe(ShopScreen, () => {
 				coverageByCategory={{ react: 2 }}
 			/>
 		);
-		expect(screen.getByRole("button", { name: /upgrade/ })).toBeDisabled();
-		expect(
-			screen.getByText(
-				"Upgrade this to L2 for a stronger effect. You need 5% coverage in React for this — you have 2%."
-			)
-		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Upgrade/ })).toBeDisabled();
+		expect(screen.getByText(/You need 5% coverage in/)).toBeInTheDocument();
+		expect(screen.getByText(/for this — you have 2%/)).toBeInTheDocument();
+		const category = screen.getByText("React");
+		expect(category).toHaveClass("text-theme");
+		expect(category).toHaveAttribute("data-category-theme", "react");
 	});
 
-	it("prices a focus config's upgrade in coverage on its row button", () => {
+	it("unlocks a met upgrade — prismatic ring, no coverage price on the button", () => {
 		const onUpgrade = vi.fn();
 		render(
 			<ShopScreen
@@ -121,10 +123,24 @@ describe(ShopScreen, () => {
 				onUpgrade={onUpgrade}
 			/>
 		);
-		const upgrade = screen.getByRole("button", { name: /upgrade 5% cov/ });
+		const upgrade = screen.getByRole("button", { name: "Upgrade" });
 		expect(upgrade).toBeEnabled();
+		expect(upgrade).toHaveClass("legendary-ring");
 		fireEvent.click(upgrade);
 		expect(onUpgrade).toHaveBeenCalledWith("js");
+	});
+
+	it("keeps the ring off a gated upgrade button", () => {
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.jsx]}
+				coverageByCategory={{ react: 2 }}
+			/>
+		);
+		expect(screen.getByRole("button", { name: /Upgrade/ })).not.toHaveClass(
+			"legendary-ring"
+		);
 	});
 
 	it("shows the storage reward earnable this gate below the pipeline", () => {
@@ -133,12 +149,12 @@ describe(ShopScreen, () => {
 		expect(screen.getByText(/storage this gate/)).toBeInTheDocument();
 	});
 
-	it("sells a config from its row's sell button", () => {
+	it("sells a config from its row's deinstall button", () => {
 		const onSell = vi.fn();
 		render(
 			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} onSell={onSell} />
 		);
-		fireEvent.click(screen.getByRole("button", { name: /sell/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Deinstall/ }));
 		expect(onSell).toHaveBeenCalledWith("indexed-db");
 	});
 

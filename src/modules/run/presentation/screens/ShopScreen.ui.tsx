@@ -8,6 +8,7 @@ import {
 } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { getCategoryMetadata } from "~/domains/shared/categories";
+import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
@@ -43,29 +44,42 @@ type ShopScreenProps = {
 };
 
 // The shop's row controls share one shape: a bordered pill whose label reads
-// plain and whose price glows saffron. Buying is the loud one (viridian).
+// plain and whose price glows saffron. Buying is the loud one (viridian);
+// an unlocked upgrade wears the legendary Kanto ring (prismatic).
+const actionTone = ({
+	loud,
+	prismatic,
+}: {
+	loud: boolean;
+	prismatic: boolean;
+}): string => {
+	if (prismatic)
+		return "border-transparent legendary-ring text-zinc-100 enabled:hover:brightness-125";
+	if (loud)
+		return "border-viridian bg-viridian/10 text-zinc-100 enabled:hover:bg-viridian/20";
+	return "border-zinc-600 text-zinc-300 enabled:hover:border-zinc-400";
+};
+
 const actionButton = ({
 	label,
 	price,
 	onClick,
 	disabled = false,
 	loud = false,
+	prismatic = false,
 }: {
 	label: string;
 	price?: string;
 	onClick?: () => void;
 	disabled?: boolean;
 	loud?: boolean;
+	prismatic?: boolean;
 }) => (
 	<button
 		type="button"
 		onClick={onClick}
 		disabled={disabled}
-		className={`rounded-lg border px-3 py-1.5 text-sm transition ${
-			loud
-				? "border-viridian bg-viridian/10 text-zinc-100 enabled:hover:bg-viridian/20"
-				: "border-zinc-600 text-zinc-300 enabled:hover:border-zinc-400"
-		} enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600`}
+		className={`rounded-lg border px-3 py-1.5 text-sm transition ${actionTone({ loud, prismatic })} enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600`}
 	>
 		{label}
 		{price ? (
@@ -116,26 +130,35 @@ export const ShopScreen = ({
 
 	// A gated upgrade explains itself on hover: the next level, and the
 	// category-tied coverage it wants (upgrades are per-category, wiki §4.4).
-	const upgradeTooltip = (config: Config): string => {
+	// The category name reads in its own Kanto color.
+	const upgradeTooltip = (config: Config): ReactNode => {
 		const nextLevel = (config.level ?? 1) + 1;
 		const required = upgradeCoverageRequired(config.level ?? 1);
 		if (!config.focusCategory)
 			return `Upgrade this to L${nextLevel} for a stronger effect.`;
-		const category = getCategoryMetadata(config.focusCategory).name;
 		const have = coverageByCategory[config.focusCategory] ?? 0;
-		return `Upgrade this to L${nextLevel} for a stronger effect. You need ${required}% coverage in ${category} for this — you have ${have}%.`;
+		return (
+			<>
+				Upgrade this to L{nextLevel} for a stronger effect. You need {required}%
+				coverage in{" "}
+				<span
+					{...categoryTheme(config.focusCategory)}
+					className="font-bold text-theme"
+				>
+					{getCategoryMetadata(config.focusCategory).name}
+				</span>{" "}
+				for this — you have {have}%.
+			</>
+		);
 	};
 
-	// Every load-out row carries its verbs: sell always, upgrade only when the
-	// config can actually level (focus configs below the cap — no "maxed"
-	// placeholder for the rest).
 	const loadoutActions = (config: Config): ReactNode => {
 		const upgradeButton = isUpgradable(config)
 			? actionButton({
-					label: "upgrade",
-					price: `${upgradeCoverageRequired(config.level ?? 1)}% cov`,
+					label: "Upgrade",
 					onClick: () => onUpgrade(config.id),
 					disabled: !canUpgrade(config),
+					prismatic: canUpgrade(config),
 				})
 			: null;
 		return (
@@ -146,7 +169,7 @@ export const ShopScreen = ({
 					upgradeButton
 				)}
 				{actionButton({
-					label: "sell",
+					label: "Deinstall",
 					price: `${sellRefund(config)}KB`,
 					onClick: () => onSell(config.id),
 				})}
@@ -154,9 +177,6 @@ export const ShopScreen = ({
 		);
 	};
 
-	// An affordable offer carries a buy button; one out of reach reads its
-	// missing price and dims. A full pipeline parks the button and tells the
-	// would-be buyer how to make room.
 	const offerAction = (config: Config): ReactNode => {
 		const cost = draftCost(config);
 		if (storage < cost)
@@ -166,7 +186,7 @@ export const ShopScreen = ({
 				</Paragraph>
 			);
 		const buy = actionButton({
-			label: "buy",
+			label: "Install",
 			price: `${cost}KB`,
 			onClick: () => onDraft(config.id),
 			disabled: isFull,
@@ -212,7 +232,7 @@ export const ShopScreen = ({
 
 			<section className="flex flex-col gap-2">
 				<header>
-					<Title as="h3">Select new configs</Title>
+					<Title as="h3">Install new configs</Title>
 					<Subtitle>New categories raise coverage fastest</Subtitle>
 				</header>
 				<PipelineTable>

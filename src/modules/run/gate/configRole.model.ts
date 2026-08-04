@@ -86,8 +86,6 @@ export const roleRows = (
 				role,
 				description: gateRowDescription(config, role, check),
 				gives: config.gives,
-				// Only the correct check escalates with depth, so only it shows its
-				// live demand text; every other config authors needs on the roster.
 				needs:
 					config.needs ??
 					(config.check === "correct" ? check?.description : undefined),

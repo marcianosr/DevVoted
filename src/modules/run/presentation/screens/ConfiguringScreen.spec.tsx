@@ -31,11 +31,26 @@ describe(ConfiguringScreen, () => {
 	it("renders the bench and pipeline columns side by side", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: "Available configs" })
+			screen.getByRole("heading", { name: "Starter configs" })
 		).toBeInTheDocument();
 		expect(
 			screen.getByRole("heading", { name: "Your pipeline" })
 		).toBeInTheDocument();
+	});
+
+	it("disables the bench chips once the pipeline is full", () => {
+		const onSlot = vi.fn();
+		render(
+			<ConfiguringScreen
+				{...base}
+				configs={[CONFIGS.unitTests, CONFIGS.js, CONFIGS.css]}
+				onSlot={onSlot}
+			/>
+		);
+		const chip = screen.getByRole("button", { name: /ESLint/ });
+		expect(chip).toBeDisabled();
+		fireEvent.click(chip);
+		expect(onSlot).not.toHaveBeenCalled();
 	});
 
 	it("shows the next coverage-gated slot locked, with live unlock progress", () => {

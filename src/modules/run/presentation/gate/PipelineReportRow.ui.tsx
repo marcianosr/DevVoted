@@ -181,8 +181,6 @@ export const PipelineReportRow = ({
 		</>
 	);
 
-	// The folded-open detail: demand first, then the effect it unlocks, then
-	// price, footnote, and rarity — a sentence-per-line story of the config.
 	const detail = (
 		<span className="col-span-2 col-start-2 row-start-2 mt-1.5 flex flex-col gap-1 border-l border-zinc-700 pl-3">
 			{needs ? (
@@ -190,19 +188,17 @@ export const PipelineReportRow = ({
 					{needs}
 				</Paragraph>
 			) : gives || costs ? (
-				// A checkless config states the absence — "No condition" reads as
-				// the perk it is, not a missing line.
-				<Paragraph as="span" size="sm" tone="muted">
+				<Paragraph as="span" size="xs" tone="muted">
 					No condition
 				</Paragraph>
 			) : null}
 			{gives ? (
-				<Paragraph as="span" size="sm" tone="muted">
+				<Paragraph as="span" size="xs" tone="muted">
 					{emphasizeNumbers(gives)}
 				</Paragraph>
 			) : null}
 			{costs ? (
-				<Paragraph as="span" size="sm" tone="vermillion">
+				<Paragraph as="span" size="xs" tone="vermillion">
 					{costs}
 				</Paragraph>
 			) : null}
@@ -226,8 +222,6 @@ export const PipelineReportRow = ({
 		rarity === "legendary" ? "border-fuchsia" : RARITY_COLORS[rarity].border
 	);
 
-	// Rows with their own chip actions (the shop) never fold on a row tap —
-	// their detail stays open and their controls do the work.
 	return (
 		<FoldableRow
 			summary={summaryCells}

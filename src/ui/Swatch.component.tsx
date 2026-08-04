@@ -18,5 +18,5 @@ type SwatchProps = {
 };
 
 export const Swatch = ({ size = "md" }: SwatchProps) => (
-	<span className={swatch({ size })} />
+	<span data-testid="swatch" className={swatch({ size })} />
 );

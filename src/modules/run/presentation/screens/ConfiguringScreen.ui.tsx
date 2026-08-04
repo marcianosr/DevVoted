@@ -118,23 +118,22 @@ export const ConfiguringScreen = ({
 		<Columns
 			aside={
 				<section className="space-y-2">
-					<PanelHeading title="Available configs" subtitle="Click to add" />
+					<PanelHeading
+						title="Starter configs"
+						subtitle="Click a config to add it to your pipeline"
+					/>
 					<div className="flex flex-wrap gap-2">
-						{/* The preview is sticky on purpose: it must survive the pointer's
-							trip from the bench to the pipeline row, so only hovering another
-							chip or committing replaces it — never leaving the chip. */}
 						{benchOrder(bench).map((config) => (
 							<span
 								key={config.id}
 								onMouseEnter={full ? undefined : () => setPreviewId(config.id)}
 								onFocus={full ? undefined : () => setPreviewId(config.id)}
 							>
-								{/* The hover preview row already shows rarity + gives/needs,
-									so the chip tooltip would say the same thing twice. */}
 								<ConfigChip
 									config={config}
 									noTooltip
-									onClick={full ? undefined : () => commit(config.id)}
+									disabled={full}
+									onClick={() => commit(config.id)}
 								/>
 							</span>
 						))}
