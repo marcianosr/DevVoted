@@ -37,7 +37,7 @@ describe("escalation and dropCount", () => {
 });
 
 describe("currentRequirement", () => {
-	it("owes nothing without a correct-check config (ADR-017)", () => {
+	it("owes nothing without a correct-check config", () => {
 		expect(currentRequirement(pipelineWith([]), 0)).toBeNull();
 		expect(currentRequirement(pipelineWith([CONFIGS.coldStart]), 2)).toBeNull();
 	});

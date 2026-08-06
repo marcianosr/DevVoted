@@ -19,17 +19,16 @@ export type Pipeline = {
 export const BASE_SLOTS = 3;
 export const MAX_SLOTS = 12;
 
-/** Total-coverage % required to unlock each slot (ADR-008), keyed by target slot count. */
 const SLOT_COVERAGE_GATE: Readonly<Record<number, number>> = {
-	4: 11,
-	5: 25,
-	6: 50,
-	7: 80,
-	8: 110,
-	9: 150,
-	10: 195,
-	11: 230,
-	12: 270,
+	4: 8,
+	5: 16,
+	6: 28,
+	7: 45,
+	8: 70,
+	9: 100,
+	10: 140,
+	11: 190,
+	12: 250,
 };
 
 /** Total coverage needed to add the next slot; Infinity once the cap is reached. */
