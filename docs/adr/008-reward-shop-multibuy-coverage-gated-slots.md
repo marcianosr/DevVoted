@@ -29,7 +29,7 @@ Coverage is a **gate, not a currency** — it is *not* consumed on purchase, mir
 
 The threshold ladder and cap are **live-tuned in `pipeline.model.ts`** (`SLOT_COVERAGE_GATE` / `coverageToAddSlot` / `canAddSlot`) — that file is the source of truth, not this ADR, since the numbers change with playtesting. The shop surfaces the requirement inline when a slot is locked ("Reach 45% total coverage to widen — you have 32%").
 
-> ⚠ Extended by [ADR-018](018-gate-slot-coupling-and-slot-swatches.md): width now also gates *depth* — gate N requires slot N, so the ladder is mandatory rather than optional. Each unlock is also a permanent, account-wide **swatch**. Nothing here is reversed: slots stay free, coverage stays a gate and not a currency.
+> ⚠ ADR-018 briefly made width gate *depth* too; [ADR-019](019-depth-and-width-are-independent.md) reversed that the next day. This decision stands exactly as written: slots are free, coverage-gated, and optional — they buy room for configs and nothing else. Badges are earned by clearing gates, not by unlocking slots.
 
 ### 3. Drafting a config costs storage by rarity (documented sink)
 

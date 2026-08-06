@@ -62,10 +62,10 @@ describe(RunSummary, () => {
 		expect(screen.getByText("Gate 3 — not reached")).toBeInTheDocument();
 		// Coverage is the run score, shown separately from the storage reward.
 		expect(screen.getByText("9%")).toBeInTheDocument();
-		// 2 of 12 gates cleared → 17% of the 120KB built up banks, the rest is lost.
-		expect(screen.getByText(/banks only 17%/)).toBeInTheDocument();
-		expect(screen.getByText(/20KB carried/)).toBeInTheDocument();
-		expect(screen.getByText("100KB lost")).toBeInTheDocument();
+		// 2 of 13 gates cleared → 15% of the 120KB built up banks, the rest is lost.
+		expect(screen.getByText(/banks only 15%/)).toBeInTheDocument();
+		expect(screen.getByText(/18KB carried/)).toBeInTheDocument();
+		expect(screen.getByText("102KB lost")).toBeInTheDocument();
 	});
 
 	it("lists installed configs and offers a review of answered polls", () => {

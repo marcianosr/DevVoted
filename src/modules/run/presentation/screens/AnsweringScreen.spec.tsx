@@ -157,4 +157,23 @@ describe(AnsweringScreen, () => {
 		expect(screen.getAllByText(".js")).not.toHaveLength(0);
 		expect(screen.getByText("+1.6%")).toBeInTheDocument();
 	});
+	it("warns what a failed gate would peel at this depth", () => {
+		// base holds 2 configs; a shallow gate peels 1, so there is margin.
+		render(<AnsweringScreen {...base} slots={4} stripsOnFailure={1} />);
+		expect(screen.getByText("a fail peels 1")).toBeInTheDocument();
+	});
+
+	it("reads the warning as fatal once the quota meets the build's size", () => {
+		// From around gate 4 the quota outgrows a narrow pipeline: one bad window
+		// strips it bare, and a bare build cannot clear (ADR-017) — that is death.
+		render(<AnsweringScreen {...base} slots={4} stripsOnFailure={2} />);
+		const warning = screen.getByText("a fail peels all 2 — run over");
+		expect(warning).toBeInTheDocument();
+		expect(warning).toHaveClass("text-cinnabar");
+	});
+
+	it("shows no stake warning when the depth is not supplied", () => {
+		render(<AnsweringScreen {...base} slots={4} />);
+		expect(screen.queryByText(/a fail peels/)).not.toBeInTheDocument();
+	});
 });

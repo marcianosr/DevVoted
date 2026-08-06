@@ -23,8 +23,8 @@ import {
 	linterFor,
 	pipelineModifiersFor,
 } from "../pipeline/pipeline.model";
-import { gateOpenedBySlot } from "../pipeline/swatch.model";
 import {
+	dropCount,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -63,12 +63,10 @@ export type RunView = {
 	readonly canRebuild: boolean;
 	readonly slotCoverageRequired: number;
 	/**
-	 * The unlock the run is currently paying for: which gate the next slot opens
-	 * and how far coverage has come toward it (0–1). Names the gate rather than
-	 * assuming it follows the current one, since width can be bought ahead.
-	 * Undefined once the ladder is exhausted.
+	 * The unlock the run is currently paying for: the slot coverage is buying and
+	 * how far it has come toward it (0–1). Undefined once the ladder is exhausted.
 	 */
-	readonly unlock?: { readonly gate: number; readonly progress: number };
+	readonly unlock?: { readonly slot: number; readonly progress: number };
 	readonly canAddSlot: boolean;
 	readonly checks: readonly CheckStatus[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
@@ -86,19 +84,18 @@ export type RunView = {
 	readonly faucetThisGateKb: number;
 	readonly gatesCleared: number;
 	/**
-	 * The gate the last clear actually beat — differs from `gatesCleared` when
-	 * the gate–slot cap froze the climb (replaying your widest gate). Old
-	 * snapshots lack the source field; the fallback keeps their old behavior.
+	 * The gate the last clear beat — one behind `gatesCleared`, which that clear
+	 * advanced. Old snapshots lack the source field; the fallback keeps their
+	 * old behavior.
 	 */
 	readonly clearedGateNumber: number;
-	/**
-	 * The last clear passed its gate but the climb held there: the pipeline is
-	 * too narrow for the next gate (ADR-018). Read straight from the engine —
-	 * with gates numbered from 0 it cannot be inferred from the gate numbers,
-	 * which are equal while held. Old snapshots lack the flag and read false.
-	 */
-	readonly heldAtGate: boolean;
 	readonly victoryGate: number;
+	/**
+	 * Configs a failed gate would peel at this depth. Surfaced because the quota
+	 * outgrows a narrow pipeline (`dropCount`), so a window can be sudden death
+	 * without the player being told.
+	 */
+	readonly stripsOnFailure: number;
 	readonly pollsToGate: number;
 	readonly pollsAnswered: number;
 	readonly pollsPerGate: number;
@@ -231,17 +228,16 @@ const gainedThisGate = (state: RunState): Record<string, number> => {
 };
 
 /**
- * The rung the run is paying for: the next slot's gate and how far coverage has
- * come toward it. Undefined at the slot cap, where no rung is left to buy.
+ * The rung the run is paying for: the next slot and how far coverage has come
+ * toward it. Undefined at the slot cap, where no rung is left to buy.
  */
 const unlockOf = (
 	state: RunState
-): { gate: number; progress: number } | undefined => {
-	const nextSlot = state.pipeline.slots + 1;
+): { slot: number; progress: number } | undefined => {
 	const required = coverageToAddSlot(state.pipeline.slots);
 	if (!Number.isFinite(required) || required <= 0) return undefined;
 	return {
-		gate: gateOpenedBySlot(nextSlot),
+		slot: state.pipeline.slots + 1,
 		progress: Math.min(1, state.coverage / required),
 	};
 };
@@ -297,8 +293,8 @@ export const toRunView = (state: RunState): RunView => {
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
 		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
-		heldAtGate: state.heldAtGate === true,
 		victoryGate: VICTORY_GATE,
+		stripsOnFailure: dropCount(state.gatesCleared),
 		pollsToGate: SLICE_WINDOW - state.window.answered,
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,

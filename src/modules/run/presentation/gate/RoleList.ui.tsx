@@ -15,7 +15,7 @@ import {
 } from "~/ui/typography/Paragraph.component";
 import type { ChipAction } from "../configs/ConfigActions.ui";
 import { PipelineReportRow } from "./PipelineReportRow.ui";
-import { PipelineTable } from "./PipelineTable.ui";
+import { PipelineTable, SlotNumberCell } from "./PipelineTable.ui";
 
 const STATE_BADGE: Record<CheckState, StatusBadgeVariant> = {
 	running: "run",
@@ -49,6 +49,13 @@ export type RowUseAction = {
 export type SlotPreview = {
 	readonly config: Config;
 	readonly onAdd: () => void;
+	/**
+	 * Trailing content for the preview row — the shop's price. The configure bench
+	 * is free and shows nothing: naming the action *inside* the pipeline read as if
+	 * the row were already installed (Marciano, 2026-08-06). The bench heading
+	 * already says "Click a config to add it to your pipeline".
+	 */
+	readonly hint?: ReactNode;
 };
 
 const rowUseButton = (action: RowUseAction) => (
@@ -62,17 +69,20 @@ const rowUseButton = (action: RowUseAction) => (
 	</button>
 );
 
-const EmptySlotRow = () => (
-	<div className="col-span-3 py-2">
-		<Paragraph
-			as="span"
-			size="xs"
-			tone="muted"
-			className="block w-full rounded-lg border-2 border-dashed border-zinc-700 px-4 py-2 text-center"
-		>
-			empty slot
-		</Paragraph>
-	</div>
+const EmptySlotRow = ({ slot }: { slot: number }) => (
+	<>
+		<SlotNumberCell slot={slot} />
+		<div className="col-start-2 col-span-3 py-2">
+			<Paragraph
+				as="span"
+				size="xs"
+				tone="muted"
+				className="block w-full rounded-lg border-2 border-dashed border-zinc-700 px-4 py-2 text-center"
+			>
+				empty slot
+			</Paragraph>
+		</div>
+	</>
 );
 
 type RoleListProps = {
@@ -117,13 +127,21 @@ export const RoleList = ({
 			<Badge tone="positive">new</Badge>
 		) : undefined;
 
+	// Slots number straight down the list: filled rows, then the hovered ghost,
+	// then the empties, then the rung you have not bought — so the number beside
+	// the unlock row is literally the slot it opens.
+	const previewSlot = rows.length + 1;
+	const firstEmptySlot = previewSlot + (preview ? 1 : 0);
+	const trailingSlot = firstEmptySlot + emptySlots;
+
 	return (
-		<PipelineTable>
-			{rows.map((row) => {
+		<PipelineTable numbered>
+			{rows.map((row, index) => {
 				const action = getUseAction?.(row.config);
 				return (
 					<PipelineReportRow
 						key={row.config.id}
+						slotNumber={index + 1}
 						badge={roleBadge(row)}
 						layout="table"
 						config={row.config}
@@ -150,6 +168,7 @@ export const RoleList = ({
 			})}
 			{preview ? (
 				<PipelineReportRow
+					slotNumber={previewSlot}
 					badge="skip"
 					layout="table"
 					ghost
@@ -158,18 +177,20 @@ export const RoleList = ({
 					gives={givesOf(preview.config)}
 					needs={needsOf(preview.config)}
 					costs={preview.config.costs}
-					trailing={
-						<Paragraph as="span" size="sm" tone="celadon">
-							click to add
-						</Paragraph>
-					}
+					trailing={preview.hint}
+					activateLabel={`Add ${preview.config.label} to your pipeline`}
 					onActivate={preview.onAdd}
 				/>
 			) : null}
 			{Array.from({ length: emptySlots }, (_, index) => (
-				<EmptySlotRow key={`empty-${index}`} />
+				<EmptySlotRow key={`empty-${index}`} slot={firstEmptySlot + index} />
 			))}
-			{trailing ? <div className="col-span-3 py-2">{trailing}</div> : null}
+			{trailing ? (
+				<>
+					<SlotNumberCell slot={trailingSlot} />
+					<div className="col-start-2 col-span-3 py-2">{trailing}</div>
+				</>
+			) : null}
 		</PipelineTable>
 	);
 };

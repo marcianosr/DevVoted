@@ -281,10 +281,11 @@
 	--theme-color: var(--color-seafoam);
 }
 
-/* Slot-unlock swatches, colored by their home Kanto location (swatch.model.ts):
-   eight gym badges, then the two gym-less landmarks that stretch the ladder
-   across all 12 gates. elite-four sets no --theme-color — its chip and unlock
-   pill wear .legendary-ring instead (indigo is the app background). */
+/* Gate swatches, colored by their home Kanto location (gate/swatch.model.ts):
+   Pallet, the eight gym badges, then the two gym-less landmarks, and the summit
+   pair. elite keeps indigo for Indigo Plateau even though indigo is the app
+   background — its "plate" finish adds a rim so it reads, and its name falls back
+   to zinc. champion sets no --theme-color at all: it wears the Kanto gradient. */
 [data-swatch-theme="pallet"] {
 	--theme-color: var(--color-pallet);
 }
@@ -317,6 +318,9 @@
 }
 [data-swatch-theme="seafoam"] {
 	--theme-color: var(--color-seafoam);
+}
+[data-swatch-theme="elite"] {
+	--theme-color: var(--color-indigo);
 }
 
 /* Theme utilities - use inherited --theme-color (category color, or the root

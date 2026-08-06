@@ -108,6 +108,7 @@ export const RunAnswer = () => {
 				chosenOptionIds={reveal ? selected : undefined}
 				revealScore={reveal?.score ?? undefined}
 				slots={view.slots}
+				stripsOnFailure={view.stripsOnFailure}
 				canLint={view.canLint}
 				lintReady={view.lintReady && !busy && !reveal}
 				linter={view.linter ?? undefined}

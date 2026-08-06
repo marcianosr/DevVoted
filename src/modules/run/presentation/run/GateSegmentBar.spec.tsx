@@ -1,13 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { gateLadderRungs } from "~/modules/run/pipeline/swatch.model";
+import { ALL_SWATCHES } from "~/modules/run/gate/swatch.model";
 import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/rules.model";
 import { GateSegmentBar } from "./GateSegmentBar.ui";
-
-// Gates count from 0, so the ladder runs gate 0 (Pallet, free) through the
-// summit, and a pip's index is its gate number.
-const rungs = gateLadderRungs(VICTORY_GATE);
 
 const pips = (): HTMLElement[] => screen.getAllByRole("button");
 
@@ -18,180 +14,121 @@ const fillOf = (gate: number): HTMLElement => {
 	return fill;
 };
 
+// Two gates banked (0 and 1), so gate 2 is the one underway, 3 of its 5 polls in.
+const midClimb = (
+	<GateSegmentBar
+		swatches={ALL_SWATCHES}
+		gatesCleared={2}
+		pollsAnswered={3}
+		pollsPerGate={5}
+		label="climb"
+	/>
+);
+
 describe(GateSegmentBar, () => {
-	it("draws one pip per gate on the ladder", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={2}
-				coverage={20}
-				label="climb"
-			/>
-		);
+	it("draws one pip per gate of the climb", () => {
+		render(midClimb);
 		expect(pips()).toHaveLength(GATE_COUNT);
 	});
 
-	it("wears each gate's swatch colour, so the bar is the ladder", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={2}
-				coverage={20}
-				label="climb"
-			/>
-		);
-		// Boulder opens gate 1, Cascade gate 2.
+	it("wears each gate's swatch colour, so the bar is the badge collection", () => {
+		render(midClimb);
+		expect(pips()[0]).toHaveAttribute("data-swatch-theme", "pallet");
 		expect(pips()[1]).toHaveAttribute("data-swatch-theme", "boulder");
 		expect(pips()[2]).toHaveAttribute("data-swatch-theme", "cascade");
 		expect(fillOf(1)).toHaveClass("bg-theme");
 	});
 
-	it("opens the bar in Pallet — the free swatch you start holding", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={0}
-				coverage={0}
-				label="climb"
-			/>
-		);
-		expect(pips()[0]).toHaveAttribute("data-swatch-theme", "pallet");
-		expect(fillOf(0)).not.toHaveClass("opacity-25");
-	});
-
-	it("fills the gates you hold, including the one you're standing on", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={2}
-				coverage={20}
-				label="climb"
-			/>
-		);
-		for (const gate of [0, 1, 2]) {
+	it("fills the gates already beaten", () => {
+		render(midClimb);
+		for (const gate of [0, 1]) {
 			expect(fillOf(gate)).toHaveStyle({ width: "100%" });
-			expect(fillOf(gate)).not.toHaveClass("opacity-25");
+			expect(fillOf(gate)).not.toHaveClass("opacity-40");
 		}
 	});
 
-	it("dims a rung still to collect and fills it by coverage earned", () => {
-		// Gate 3 (Thunder) costs 28%; 14% is exactly half way there.
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={2}
-				coverage={14}
-				label="climb"
-			/>
-		);
-		expect(fillOf(3)).toHaveClass("opacity-25");
-		expect(fillOf(3)).toHaveStyle({ width: "50%" });
+	it("fills the gate underway by the polls answered into its window", () => {
+		render(midClimb);
+		expect(fillOf(2)).toHaveStyle({ width: "60%" }); // 3 of 5
 	});
 
-	it("clamps a rung already afforded instead of overflowing its pip", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={0}
-				coverage={999}
-				label="climb"
-			/>
-		);
-		expect(fillOf(4)).toHaveStyle({ width: "100%" });
+	it("leaves gates not yet reached empty", () => {
+		render(midClimb);
+		expect(fillOf(3)).toHaveStyle({ width: "0%" });
+		expect(fillOf(3)).toHaveClass("opacity-40");
 	});
 
-	it("gives the legendary rung a gradient fill, having no flat colour", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={0}
-				coverage={0}
-				label="climb"
-			/>
-		);
+	it("carries no coverage — width's progress lives in the shop", () => {
+		render(midClimb);
+		for (const detail of screen.getAllByRole("tooltip")) {
+			expect(detail).not.toHaveTextContent("coverage");
+		}
+	});
+
+	it("rims the Elite pip, whose indigo is darker than the empty track", () => {
+		render(midClimb);
+		const elite = pips()[VICTORY_GATE - 1];
+		expect(elite).toHaveAttribute("data-swatch-theme", "elite");
+		expect(elite).toHaveClass("ring-pewter");
+	});
+
+	it("gives the Champion a gradient fill, having no flat colour", () => {
+		render(midClimb);
 		expect(pips().at(-1)).not.toHaveAttribute("data-swatch-theme");
 		expect(fillOf(VICTORY_GATE)).toHaveClass("bg-legendary");
 	});
 
-	it("names each pip for assistive tech, gap included", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={2}
-				coverage={19}
-				label="climb"
-			/>
-		);
+	it("names each pip's standing for assistive tech", () => {
+		render(midClimb);
 		expect(
-			screen.getByRole("button", { name: /gate 0, Pallet Swatch, collected/ })
+			screen.getByRole("button", { name: "gate 0, Pallet Swatch, earned" })
 		).toBeInTheDocument();
-		// Gate 3 costs 28%, so 19% leaves 9 points to earn.
 		expect(
 			screen.getByRole("button", {
-				name: /gate 3, Thunder Swatch, opens at 28% coverage, 9% to go/,
+				name: "gate 2, Cascade Swatch, current gate",
+			})
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", {
+				name: "gate 3, Thunder Swatch, not reached",
 			})
 		).toBeInTheDocument();
 	});
 
-	it("reports a rung as ready once its coverage is in hand", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={2}
-				coverage={30}
-				label="climb"
-			/>
-		);
-		expect(
-			screen.getByRole("button", {
-				name: /gate 3, Thunder Swatch, ready to unlock/,
-			})
-		).toBeInTheDocument();
+	it("details the gate underway with its window progress", () => {
+		render(midClimb);
+		const detail = screen.getAllByRole("tooltip")[2];
+		expect(detail).toHaveTextContent("gate 2");
+		expect(detail).toHaveTextContent("Cascade Swatch");
+		expect(detail).toHaveTextContent("Running now · 3 of 5 answered");
 	});
 
-	it("details a single gate on its pip — swatch, price, and the gap left", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={2}
-				coverage={19}
-				label="climb"
-			/>
-		);
-		const detail = screen.getAllByRole("tooltip")[3]; // gate 3
-		expect(detail).toHaveTextContent("gate 3");
-		expect(detail).toHaveTextContent("Thunder Swatch");
-		expect(detail).toHaveTextContent("Opens at 28% coverage");
-		expect(detail).toHaveTextContent("you have 19%");
-		expect(detail).toHaveTextContent("9% to go");
-	});
-
-	it("says a held gate is collected instead of pricing it again", () => {
-		render(
-			<GateSegmentBar
-				rungs={rungs}
-				gatesCleared={2}
-				coverage={19}
-				label="climb"
-			/>
-		);
-		const detail = screen.getAllByRole("tooltip")[1]; // gate 1, held
+	it("says a beaten gate's badge is earned", () => {
+		render(midClimb);
+		const detail = screen.getAllByRole("tooltip")[1];
 		expect(detail).toHaveTextContent("Boulder Swatch");
-		expect(detail).toHaveTextContent("Collected");
-		expect(detail).not.toHaveTextContent("to go");
+		expect(detail).toHaveTextContent("Earned");
+	});
+
+	it("tells an unreached gate what would earn its badge", () => {
+		render(midClimb);
+		expect(screen.getAllByRole("tooltip")[4]).toHaveTextContent(
+			"Clear gate 4 to earn it"
+		);
 	});
 
 	it("groups the pips under the climb's own label", () => {
 		render(
 			<GateSegmentBar
-				rungs={rungs}
+				swatches={ALL_SWATCHES}
 				gatesCleared={3}
-				coverage={40}
-				label="gate 3 of 11"
+				pollsAnswered={0}
+				pollsPerGate={5}
+				label="gate 3 of 12"
 			/>
 		);
 		expect(
-			screen.getByRole("group", { name: "gate 3 of 11" })
+			screen.getByRole("group", { name: "gate 3 of 12" })
 		).toBeInTheDocument();
 	});
 });

@@ -1,27 +1,27 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
 	Config,
 	describeConfig,
 	draftCost,
-	givesOf,
 	isUpgradable,
-	needsOf,
 	sellRefund,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { getCategoryMetadata } from "~/domains/shared/categories";
+import { pipelineModifiersFor } from "~/modules/run/pipeline/pipeline.model";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
+import { Columns } from "~/ui/Columns.ui";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/run/gate/configRole.model";
-import { PipelineReportRow } from "../gate/PipelineReportRow.ui";
-import { PipelineTable } from "../gate/PipelineTable.ui";
+import { ConfigChip } from "../configs/ConfigChip.ui";
+import { GateModifierStrip } from "../gate/GateModifierStrip.ui";
 import { RoleList } from "../gate/RoleList.ui";
-import { nextSwatchRow } from "../gate/SlotSwatchRow.ui";
+import { nextSlotRow } from "../gate/SlotUnlockRow.ui";
 
 type ShopScreenProps = {
 	storage: number;
@@ -96,6 +96,18 @@ const actionButton = ({
 	</button>
 );
 
+type PanelHeadingProps = {
+	title: string;
+	subtitle: string;
+};
+
+const PanelHeading = ({ title, subtitle }: PanelHeadingProps) => (
+	<header>
+		<Title>{title}</Title>
+		<Subtitle>{subtitle}</Subtitle>
+	</header>
+);
+
 export const ShopScreen = ({
 	storage,
 	coverageByCategory,
@@ -120,7 +132,11 @@ export const ShopScreen = ({
 	onUpgrade,
 	onSell,
 }: ShopScreenProps) => {
+	const [previewId, setPreviewId] = useState<string | null>(null);
 	const isFull = configs.length >= slots;
+
+	const canAfford = (config: Config): boolean => storage >= draftCost(config);
+	const canInstall = (config: Config): boolean => !isFull && canAfford(config);
 
 	// Focus upgrades are coverage-gated and free; Unit Tests' upgrade is
 	// storage-priced (32KB × the level bought) with no coverage requirement.
@@ -186,25 +202,44 @@ export const ShopScreen = ({
 		);
 	};
 
-	const offerAction = (config: Config): ReactNode => {
-		const cost = draftCost(config);
-		if (storage < cost)
-			return (
-				<Paragraph as="span" size="sm" tone="muted">
-					need <span className="font-bold text-saffron/70">{cost}KB</span>
-				</Paragraph>
-			);
-		const buy = actionButton({
-			label: "Install",
-			price: `${cost}KB`,
-			onClick: () => onDraft(config.id),
-			disabled: isFull,
-			loud: true,
-		});
-		if (!isFull) return buy;
+	// Only an installable offer previews. Hovering one you cannot afford (or with
+	// no free slot) used to draw a ghost row in a slot that does not exist, which
+	// read as if the config had been added. The chip's own price tag and tooltip
+	// carry the refusal instead.
+	const previewConfig = draftOptions.find(
+		(config) => config.id === previewId && canInstall(config)
+	);
+	const next = previewConfig
+		? pipelineModifiersFor([...configs, previewConfig])
+		: undefined;
+
+	const install = (configId: string) => {
+		onDraft(configId);
+		setPreviewId(null);
+	};
+
+	// Only reached for an installable offer, so this is purely the price — the row
+	// itself is the button (its aria-label names the action).
+	const previewHint = (config: Config): ReactNode => (
+		<Paragraph as="span" size="sm" tone="muted">
+			<span className="font-bold text-saffron">{draftCost(config)}KB</span>
+		</Paragraph>
+	);
+
+	const offerChip = (config: Config): ReactNode => {
+		const chip = (
+			<ConfigChip
+				config={config}
+				noTooltip
+				price={draftCost(config)}
+				disabled={!canInstall(config)}
+				onClick={() => install(config.id)}
+			/>
+		);
+		if (!isFull) return chip;
 		return (
 			<Tooltip content="Add a new slot to upgrade or sell an existing config">
-				{buy}
+				{chip}
 			</Tooltip>
 		);
 	};
@@ -218,73 +253,76 @@ export const ShopScreen = ({
 				</Subtitle>
 			</header>
 
-			<section className="flex flex-col gap-2">
-				<header>
-					<Title as="h3">Install new configs</Title>
-					<Subtitle>New categories raise coverage fastest</Subtitle>
-				</header>
-				<PipelineTable>
-					{draftOptions.map((config) => (
-						<PipelineReportRow
-							key={config.id}
-							badge="skip"
-							mark="add"
-							layout="table"
-							config={config}
-							description={describeConfig(config)}
-							gives={givesOf(config)}
-							needs={needsOf(config)}
-							costs={config.costs}
-							dimmed={storage < draftCost(config)}
-							trailing={offerAction(config)}
+			<Columns
+				aside={
+					<section className="space-y-2">
+						<PanelHeading
+							title="Install new configs"
+							subtitle="New categories raise coverage fastest"
 						/>
-					))}
-				</PipelineTable>
-				<span className="self-start">
-					{actionButton({
-						label: "Reroll offers",
-						price: `${rebuildCost}KB`,
-						onClick: onRebuild,
-						disabled: !canRebuild,
-					})}
-				</span>
-			</section>
-
-			<section className="flex flex-col gap-2">
-				<header>
-					<Title as="h2">Your load-out for gate {gateNumber}</Title>
-					<Subtitle>
-						{configs.length} of {slots} slots used
-					</Subtitle>
-				</header>
-				<RoleList
-					rows={roleRows(configs, checks)}
-					slots={slots}
-					trailingFor={loadoutActions}
-					newConfigIds={newConfigIds}
-					trailing={nextSwatchRow({
-						slots,
-						coverage,
-						slotCoverageRequired,
-						claim: { ready: canAddSlot, onClaim: onAddSlot },
-					})}
-				/>
-				<Paragraph size="sm" className="self-center">
-					<span className="font-extrabold text-gradient-green">
-						+{gateReward}KB
-					</span>{" "}
-					storage this gate ·{" "}
-					<span className="font-extrabold text-gradient-green">
-						×{rewardMultiplier}
-					</span>{" "}
-					reward ·{" "}
-					<span className="font-extrabold text-gradient-green">
-						×{coverageMultiplier}
-						{coverageAdd > 0 ? ` +${coverageAdd}%` : ""}
-					</span>{" "}
-					coverage
-				</Paragraph>
-			</section>
+						{/* The price tags overhang their chips, so the bench needs more room
+						    between offers than a plain chip row would — otherwise one
+						    offer's tag lands on the next one's label. */}
+						<div className="flex flex-wrap gap-x-4 gap-y-4 pt-2">
+							{draftOptions.map((config) => (
+								<span
+									key={config.id}
+									onMouseEnter={() => setPreviewId(config.id)}
+									onFocus={() => setPreviewId(config.id)}
+								>
+									{offerChip(config)}
+								</span>
+							))}
+						</div>
+						<div className="pt-1">
+							{actionButton({
+								label: "Rebuild offers",
+								price: `${rebuildCost}KB`,
+								onClick: onRebuild,
+								disabled: !canRebuild,
+							})}
+						</div>
+					</section>
+				}
+				main={
+					<section className="flex flex-col gap-4">
+						<PanelHeading
+							title={`Your load-out for gate ${gateNumber}`}
+							subtitle={`${configs.length} of ${slots} slots used`}
+						/>
+						<RoleList
+							rows={roleRows(configs, checks)}
+							slots={slots}
+							trailingFor={loadoutActions}
+							newConfigIds={newConfigIds}
+							preview={
+								previewConfig
+									? {
+											config: previewConfig,
+											onAdd: () => install(previewConfig.id),
+											hint: previewHint(previewConfig),
+										}
+									: undefined
+							}
+							trailing={nextSlotRow({
+								slots,
+								coverage,
+								slotCoverageRequired,
+								claim: { ready: canAddSlot, onClaim: onAddSlot },
+							})}
+						/>
+						<GateModifierStrip
+							current={{
+								gateReward,
+								rewardMultiplier,
+								coverageMultiplier,
+								coverageAdd,
+							}}
+							next={next}
+						/>
+					</section>
+				}
+			/>
 		</div>
 	);
 };

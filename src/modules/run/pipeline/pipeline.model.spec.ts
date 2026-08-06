@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { VICTORY_GATE } from "../rules.model";
 import { Config } from "../configs/config.model";
 import { CONFIGS } from "../configs/configRoster.model";
 import { AnswerContext } from "../configs/effect.model";
@@ -113,12 +114,14 @@ describe("gateClearPayout", () => {
 	});
 
 	it("rides the same gate-depth curve as coverage", () => {
-		expect(gateClearPayout([], 5, 4)).toBe(160); // gate 5: 32 × 5
-		expect(gateClearPayout([], 5, 11)).toBe(384); // gate 12: 32 × 12
+		expect(gateClearPayout([], 5, 4)).toBe(160); // gate 4: 32 × 5
+		expect(gateClearPayout([], 5, 11)).toBe(384); // gate 11: 32 × 12
 	});
 
-	it("caps the depth multiplier at gate 12 for endless runs", () => {
-		expect(gateClearPayout([], 5, 30)).toBe(384); // gate 31 still pays like gate 12
+	it("caps the depth multiplier at the summit for endless runs", () => {
+		// The summit pays in full (×13); past it the multiplier stops climbing.
+		expect(gateClearPayout([], 5, VICTORY_GATE)).toBe(416);
+		expect(gateClearPayout([], 5, 30)).toBe(416);
 	});
 
 	it("pays a 0/5 clear nothing — a farm build banks no storage (ADR-017)", () => {

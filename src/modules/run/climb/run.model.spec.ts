@@ -471,10 +471,9 @@ describe("a two-polls-a-day player (ADR-014)", () => {
 });
 
 describe("the summit", () => {
-	it("wins by clearing every gate on a full-width pipeline", () => {
+	it("wins by clearing every gate, on the starting width if the checks allow", () => {
+		// Depth is paid for in checks, not slots (ADR-019), so no widening here.
 		let state = started(["js"], GATE_COUNT * SLICE_WINDOW);
-		// Every advance is bought with a slot, so the summit needs the full width.
-		state = { ...state, pipeline: { ...state.pipeline, slots: MAX_SLOTS } };
 		for (let gate = 0; gate < GATE_COUNT; gate++) {
 			for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 			if (state.status === "rewarding")
@@ -486,16 +485,12 @@ describe("the summit", () => {
 	});
 });
 
-describe("gate–slot coupling", () => {
+describe("depth and width are independent (ADR-019)", () => {
 	const clearGate = (state: RunState): RunState => {
 		let next = state;
 		for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, true);
 		return next;
 	};
-
-	// The base three slots carry gate 0 only, so the very first clear already
-	// hits the width wall. Ends in "rewarding" — the held gate's shop is open.
-	const heldAtGateZero = (): RunState => clearGate(started(["js"]));
 
 	// Coverage far past every rung, so add-slot is never the blocker.
 	const funded = (state: RunState): RunState => ({
@@ -503,66 +498,55 @@ describe("gate–slot coupling", () => {
 		coverage: 10_000,
 	});
 
-	it("holds the climb on gate 0 — three slots only ever run one gate", () => {
-		const state = heldAtGateZero();
+	it("advances the gate on a clear the starting three slots paid for", () => {
+		const state = clearGate(started(["js"]));
 
-		expect(state.status).toBe("rewarding"); // the clear still pays out
-		expect(state.gatesCleared).toBe(0); // but the climb has not advanced
-		expect(state.clearedGate).toBe(0); // the gate it beat, named from 0
-		expect(state.heldAtGate).toBe(true); // and it says so explicitly
-		expect(state.storage).toBe(32); // paid in full
-		expect(state.log.at(-1)).toContain("widen the pipeline");
+		expect(state.status).toBe("rewarding");
+		expect(state.gatesCleared).toBe(1); // the clear advanced it, nothing else
+		expect(state.clearedGate).toBe(0); // and names the gate it beat
+		expect(state.storage).toBe(32);
 	});
 
-	it("advances the gate the moment a slot is claimed", () => {
-		let state = funded(heldAtGateZero());
-		state = runReducer(state, { type: "add-slot" });
-
-		expect(state.pipeline.slots).toBe(BASE_SLOTS + 1);
-		expect(state.gatesCleared).toBe(1); // the claim is what advanced it
-		expect(state.heldAtGate).toBe(false);
-		expect(state.log.at(-1)).toContain("gate 1 is next");
+	it("names the badge the clear earned in the log", () => {
+		expect(clearGate(started(["js"])).log.at(-1)).toContain(
+			"Pallet Swatch earned"
+		);
 	});
 
-	it("replays the held gate at flat payout when no slot is claimed", () => {
-		const firstClear = heldAtGateZero();
-		let replay = runReducer(firstClear, { type: "finish-reward" });
-		replay = clearGate(replay);
+	it("keeps climbing on three slots — width is never a toll gate", () => {
+		let state = started(["js"], 3 * SLICE_WINDOW);
+		for (let gate = 0; gate < 3; gate++) {
+			state = clearGate(state);
+			if (state.status === "rewarding")
+				state = runReducer(state, { type: "finish-reward" });
+		}
 
-		expect(replay.gatesCleared).toBe(0); // still held
-		expect(replay.clearedGate).toBe(0);
-		expect(replay.gateRewardKb).toBe(firstClear.gateRewardKb); // no farming ramp
+		expect(state.pipeline.slots).toBe(BASE_SLOTS); // never widened
+		expect(state.gatesCleared).toBe(3); // and still three gates deep
 	});
 
-	it("banks extra width for later gates instead of skipping ahead", () => {
-		let state = funded(heldAtGateZero());
-		state = runReducer(state, { type: "add-slot" }); // releases gate 1
-		state = runReducer(state, { type: "add-slot" }); // pre-buys gate 2's width
-
-		expect(state.pipeline.slots).toBe(BASE_SLOTS + 2);
-		expect(state.gatesCleared).toBe(1); // one clear, one advance
-
-		// Gate 1's clear rides the pre-bought width, so it advances on its own.
+	it("pays a deeper gate more, so replaying shallow ones is never the ramp", () => {
+		let state = clearGate(started(["js"], 2 * SLICE_WINDOW));
+		const firstGate = state.gateRewardKb;
 		state = runReducer(state, { type: "finish-reward" });
 		state = clearGate(state);
-		expect(state.clearedGate).toBe(1);
-		expect(state.gatesCleared).toBe(2);
+
+		expect(state.gateRewardKb).toBeGreaterThan(firstGate ?? 0);
 	});
 
-	it("keeps the hold when the claim is short of the next gate's width", () => {
-		// A slot claimed while nothing is pending cannot conjure an advance.
-		let state = funded(started(["js"]));
-		state = { ...state, status: "rewarding" };
+	it("claims a slot as width only, leaving the gate where it was", () => {
+		let state = funded(clearGate(started(["js"])));
+		const before = state.gatesCleared;
 		state = runReducer(state, { type: "add-slot" });
 
 		expect(state.pipeline.slots).toBe(BASE_SLOTS + 1);
-		expect(state.gatesCleared).toBe(0); // no clear to release
+		expect(state.gatesCleared).toBe(before); // buying width buys no depth
+		expect(state.log.at(-1)).toContain("Widened the pipeline");
 		expect(state.log.at(-1)).not.toContain("is next");
 	});
 
-	it("prices the whole ladder into the summit", () => {
-		// The summit is the far end of the slot ladder, not an independent number.
-		expect(VICTORY_GATE).toBe(MAX_SLOTS - BASE_SLOTS);
+	it("leaves the slot ladder free to outlast the gate ladder", () => {
+		// Nothing ties the two any more, so the ladder ends where tuning says.
 		expect(coverageToAddSlot(MAX_SLOTS - 1)).toBeLessThan(Infinity);
 		expect(coverageToAddSlot(MAX_SLOTS)).toBe(Infinity);
 	});

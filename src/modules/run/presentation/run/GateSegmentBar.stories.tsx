@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { gateLadderRungs } from "~/modules/run/pipeline/swatch.model";
-import { VICTORY_GATE } from "~/modules/run/rules.model";
+import { ALL_SWATCHES } from "~/modules/run/gate/swatch.model";
+import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/rules.model";
 import { GateSegmentBar } from "./GateSegmentBar.ui";
 
 const meta: Meta<typeof GateSegmentBar> = {
 	component: GateSegmentBar,
 	title: "Run/GateSegmentBar",
-	args: { rungs: gateLadderRungs(VICTORY_GATE) },
+	args: { swatches: ALL_SWATCHES, pollsPerGate: 5 },
 	decorators: [
 		(Story) => (
 			<div className="flex w-72">
@@ -20,22 +20,26 @@ export default meta;
 
 type Story = StoryObj<typeof GateSegmentBar>;
 
-// A fresh run: Pallet held, Boulder already part-paid. Hover a pip for its swatch.
+// A fresh run: nothing earned yet, gate 0 two polls in. Hover a pip for its badge.
 export const FreshRun: Story = {
-	args: { gatesCleared: 0, coverage: 1.5, label: "gate 1 of 12" },
+	args: { gatesCleared: 0, pollsAnswered: 2, label: "gate 0 of 12" },
 };
 
-// Mid-climb: the gym badges you hold read solid, the rest wait dimmed.
+// Mid-climb: the badges you hold read solid, the rest wait dimmed.
 export const MidClimb: Story = {
-	args: { gatesCleared: 4, coverage: 60, label: "gate 5 of 12" },
+	args: { gatesCleared: 4, pollsAnswered: 3, label: "gate 4 of 12" },
 };
 
-// Coverage has run ahead of the ladder — several rungs are ready to unlock.
-export const UnlockReady: Story = {
-	args: { gatesCleared: 5, coverage: 150, label: "gate 6 of 12" },
+// The last two gates: the Elite plate's rim, then the Champion's gradient.
+export const AtTheSummitPair: Story = {
+	args: {
+		gatesCleared: VICTORY_GATE - 1,
+		pollsAnswered: 4,
+		label: "gate 11 of 12",
+	},
 };
 
-// The summit: every swatch collected, the Elite Four's gradient included.
+// Summited: all thirteen badges collected.
 export const Summited: Story = {
-	args: { gatesCleared: VICTORY_GATE, coverage: 420, label: "gate 12 of 12" },
+	args: { gatesCleared: GATE_COUNT, pollsAnswered: 0, label: "gate 12 of 12" },
 };

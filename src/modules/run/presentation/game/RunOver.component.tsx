@@ -27,7 +27,6 @@ export const RunOver = () => {
 				victoryGate={view.victoryGate}
 				coverage={view.coverage}
 				storage={view.storage}
-				slots={view.slots}
 				configs={view.configs}
 				answered={view.allAnswered}
 			/>

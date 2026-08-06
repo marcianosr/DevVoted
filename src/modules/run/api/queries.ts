@@ -29,7 +29,7 @@ import {
 	type RunSnapshot,
 	toRunSnapshot,
 } from "../climb/runSnapshot.model";
-import { swatchForSlot } from "../pipeline/swatch.model";
+import { swatchForGate } from "../gate/swatch.model";
 import { rollDailySeedSequence } from "../services/seed.service";
 
 export type SessionRunRecord = typeof runsTable.$inferSelect;
@@ -286,16 +286,16 @@ export const fetchRunSnapshot = async (
 };
 
 /**
- * Widening the pipeline earns the slot's swatch permanently, account-wide. The
- * guard makes it idempotent: unlocking slot 4 on a later run matches no row, so
- * the array never collects duplicates.
+ * Clearing a gate earns that gate's swatch permanently, account-wide (ADR-019).
+ * The guard makes it idempotent: re-clearing gate 1 on a later run matches no
+ * row, so the array never collects duplicates.
  */
-const awardSlotSwatch = async (
+const awardGateSwatch = async (
 	tx: Pick<typeof db, "update">,
 	userId: string,
-	slots: number
+	clearedGate: number
 ): Promise<void> => {
-	const swatch = swatchForSlot(slots);
+	const swatch = swatchForGate(clearedGate);
 	if (!swatch) return;
 	await tx
 		.update(usersTable)
@@ -343,10 +343,6 @@ export const createSessionRunWithState = async (
 				segment_date: seedDate,
 			}))
 		);
-
-		// Starting the climb earns Pallet: the base slots' swatch is free, and
-		// every run begins there (ADR-018).
-		await awardSlotSwatch(tx, userId, initialState.pipeline.slots);
 
 		return { runId: run.id };
 	});
@@ -616,8 +612,13 @@ export const applyActionToRun = async (args: {
 			);
 		}
 
-		if (next.pipeline.slots > state.pipeline.slots)
-			await awardSlotSwatch(tx, args.userId, next.pipeline.slots);
+		// A clear advances gatesCleared by one, and `clearedGate` names the gate it
+		// beat — the badge that clear awarded (ADR-019).
+		if (
+			next.gatesCleared > state.gatesCleared &&
+			next.clearedGate !== undefined
+		)
+			await awardGateSwatch(tx, args.userId, next.clearedGate);
 
 		await tx
 			.update(runStatesTable)

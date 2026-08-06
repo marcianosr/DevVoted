@@ -4,7 +4,7 @@ import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { STORAGE_CAP_KB } from "../../rules.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { gateLadderRungs } from "~/modules/run/pipeline/swatch.model";
+import { ALL_SWATCHES } from "~/modules/run/gate/swatch.model";
 import { GateSegmentBar } from "./GateSegmentBar.ui";
 import { StorageGauge } from "./StorageGauge.ui";
 import { SummaryDropdown } from "./SummaryDropdown.ui";
@@ -106,9 +106,10 @@ export const RunHud = ({
 			</div>
 			<span className="flex flex-col gap-1">
 				<GateSegmentBar
-					rungs={gateLadderRungs(victoryGate)}
+					swatches={ALL_SWATCHES}
 					gatesCleared={gatesCleared}
-					coverage={coverage}
+					pollsAnswered={pollsAnswered}
+					pollsPerGate={pollsPerGate}
 					label={`gate ladder: gate ${gatesCleared} of ${victoryGate}`}
 				/>
 			</span>
@@ -137,9 +138,10 @@ export const RunHud = ({
 					{victoryGate}
 				</Paragraph>
 				<GateSegmentBar
-					rungs={gateLadderRungs(victoryGate)}
+					swatches={ALL_SWATCHES}
 					gatesCleared={gatesCleared}
-					coverage={coverage}
+					pollsAnswered={pollsAnswered}
+					pollsPerGate={pollsPerGate}
 					label={`gate ${gatesCleared} of ${victoryGate}`}
 				/>
 			</span>

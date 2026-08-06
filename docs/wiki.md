@@ -152,15 +152,48 @@ and rises by +1 for every 2 gates cleared, capped at +3 (`ESCALATION_CAP`) — a
 L1 Unit Tests never demands more than 4 of 5, and the total clamps to the window
 (see [4.4 Upgrades](#44-upgrades)).
 
-**Gates count from 0**, and **every gate past the first is bought with a slot**
-(ADR-018). Gate 0 runs on your three starting slots; gate 1 needs slot 4, and the
-summit, gate 11, needs all 14. Clear the
-deepest gate your pipeline can hold and you *replay* it — the clear still pays, but
-demands, payout, coverage multiplier, and strip count all stay frozen until you
-widen. **Unlocking the slot is what advances the gate**, so the shop's unlock button
-is the moment the climb moves. Depth is bought with breadth, which is why nobody
-farms their way to gate 12 on a starter pipeline
-([3.1 Slots & Expansion](#31-slots--expansion)).
+**Gates count from 0**, and **passing the checks is the whole price of depth**
+(ADR-019). A run opens on gate 0 and every clear advances one gate, up to the summit
+at gate 12. Width is bought separately with coverage and gates nothing, so a run can
+sit at gate 5 on its starting three slots. What makes depth expensive is *risk*: the
+demands escalate as you climb, so a pipeline too narrow to meet them fails and
+strips rather than stalling. Clearing a gate also awards that gate's **swatch**
+([6.4 Swatches](#64-swatches)).
+
+> ⚠ ADR-018 briefly made gate N require slot N, with a "cleared, still gate 3"
+> replay when coverage lagged. ADR-019 reversed it the next day: the gate number was
+> redundant with the slot count, and the enforced replay *was* the farming ADR-017
+> already prices out. **Open risk:** with `ESCALATION_CAP` at +3, a narrow build owes
+> fewer checks than a wide one and can currently coast deep (DVTD-ziss).
+
+**Exactly one of three things happens when the window's 5th poll is answered** —
+nothing is decided before that:
+
+| | condition | outcome |
+| --- | --- | --- |
+| **Advance** | every check passed *or* skipped | paid, gate's swatch earned, `gatesCleared + 1`, shop opens |
+| **Don't advance** | any one check failed | peel `dropCount` configs, then replay the **same** gate on a fresh 5 polls |
+| **Run over** | a check failed *and* the pipeline is bare | dead |
+
+There is no other way to not advance. Since ADR-019 removed the width freeze, the
+failure path is the only one, and it always costs configs.
+
+**Failure trades difficulty for fragility.** The quota grows with depth
+(`dropCount = 1 + floor(gate / 2)`), and **stripping takes configs, never slots**,
+so a deep failure leaves a wide, half-empty pipeline. Measured at gate 10 with ten
+configs: the quota is 6, the player chooses which 6 to peel, and the gate's demands
+fall from **10 to 4** — the retried gate is genuinely easier. What it costs is the
+gate's payout, six configs' worth of storage, every multiplier they carried, and a
+day. Clearing the retry pays and opens the shop, and the empty slots refill from
+drafts over the next two or three gates (three offers per gate), so recovery is a
+slow rebuild out of storage rather than a reset.
+
+While thin, the next failure is fatal: from **gate 4** a three-config build owes at
+least as many strips as it holds, so one bad window strips it bare — and a bare
+build cannot clear (ADR-017). Width is therefore the run's hit-point pool, and the
+tradeoff that makes the independent axes work: a narrow build owes fewer checks but
+has no margin, a wide one owes more and survives mistakes. The answering screen
+names the stake inline ("a fail peels 3", red once it would take everything).
 
 **Boss gates** (every 5th gate, two requirements AND-ed, no reroll) are parked, along
 with ~14 extra gate types (streak gates, economy gates, double-window gates).
@@ -326,19 +359,18 @@ worked off rather than compounding.
 
 ### 2.8 Victory & Run End
 
-Clear all **12** gates — numbered **0 through 11** — to win; `VICTORY_GATE` is the
-summit's number (11) and `GATE_COUNT` is how many there are (12). Because every
-gate past the first is bought with a slot ([2.2](#22-gates)), the summit demands a
-fully widened 14-slot pipeline: every swatch, and therefore the top of the coverage
-ladder. A continue-past-victory option is
+Clear all **13** gates — numbered **0 through 12** — to win; `VICTORY_GATE` is the
+summit's number (12) and `GATE_COUNT` is how many there are (13). How long the climb
+runs is a content decision, one gate per badge in the roster, and no longer derived
+from the slot ladder (ADR-019) — a narrow pipeline that keeps passing its checks can
+summit. A continue-past-victory option is
 confirmed but unbuilt (DVTD-g1p0); the victory *reward* is still undecided, with
 one constraint set by ADR-017: it must not be claimable by a zero-coverage farm run.
 
 When a run ends, leftover storage is credited to your persistent archived storage
 proportionally to how far you climbed: **victory banks 100%**, **death banks
-gatesCleared ÷ VICTORY_GATE** (die at gate 6 of 12, keep half), **abandoning banks
-nothing**; walking away can never be a cash-out. Note the summit move to 12 made
-this divisor steeper: dying at gate 5 now banks 42%, not everything.
+gatesCleared ÷ GATE_COUNT** (die having cleared 6 of 13, keep 46%), **abandoning
+banks nothing**; walking away can never be a cash-out.
 
 ### 2.9 A Typical Run
 
@@ -355,22 +387,20 @@ coverage configs, one draft per shop. Per-gate coverage is then roughly
 
 | After gate | Coverage gained | Total coverage | Storage (after shopping) | Milestone |
 | --- | --- | --- | --- | --- |
-| 1 | ~3.7% | ~4% | +26 | Boulder Swatch / slot 4 (8%) — needed to reach gate 2 |
-| 2 | ~7.9% | ~12% | +51, drafted a common | Cascade Swatch / slot 5 (16%) |
-| 3 | ~12.1% | ~24% | +77, drafted an uncommon | Thunder Swatch / slot 6 (28%) |
-| 4 | ~16.3% | ~40% | +102 | Rainbow Swatch / slot 7 (45%) |
-| 5 | ~20.5% | ~61% | +128 | Soul Swatch / slot 8 (70%) |
+| 1 | ~3.7% | ~4% | +26 | Boulder Swatch earned; slot 4 in reach (8%) |
+| 2 | ~7.9% | ~12% | +51, drafted a common | Cascade Swatch; slot 5 (16%) |
+| 3 | ~12.1% | ~24% | +77, drafted an uncommon | Thunder Swatch; slot 6 (28%) |
+| 4 | ~16.3% | ~40% | +102 | Rainbow Swatch; slot 7 (45%) |
+| 5 | ~20.5% | ~61% | +128 | Soul Swatch; slot 8 (70%) |
 
 Rule of thumb: **by gate 3 a solid player sits around 20–25% total coverage and
 ~150 KB earned gross**. Coverage configs like Copilot roughly double the coverage
 column, and a miss-heavy run falls behind the ladder instead.
 
-The run no longer ends at gate 5 — the summit is gate 12, and because **every
-advance is bought with a slot** each row's swatch is mandatory, not optional: fall
-behind the ladder and the climb parks on a replayed gate until coverage catches up.
-Note the first rung already bites after gate 1 (8% against the ~4% a solid player
-holds), so an early replay day is the expected shape, not a failure. The full ladder
-is in [3.1](#31-slots--expansion); its numbers are live-tuned in
+The run no longer ends at gate 5 — the summit is gate 12. The swatch column is the
+badge each clear awards; the slot column is a *separate* track the same coverage
+pays for, so falling behind the ladder costs you width and power, never depth. The
+full ladder is in [3.1](#31-slots--expansion); its numbers are live-tuned in
 `pipeline.model.ts`, so treat this table's thresholds as illustrative and the code as
 authoritative.
 
@@ -382,29 +412,22 @@ authoritative.
 
 Your pipeline holds every installed config, one per **slot**. You start with **3
 slots** and can grow to **14**. Adding a slot costs no storage; it is gated by total
-coverage instead (*breadth earns width* — and, since every gate advance is bought
-with a slot, *width earns depth*). Each rung is one swatch and one gate:
+coverage instead (*breadth earns width*). Width buys room for another config and
+nothing else — it opens no gates (ADR-019), so the ladder's length is free to differ
+from the gate count:
 
-| Target slot | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Total coverage required | free | 8% | 16% | 28% | 45% | 70% | 100% | 140% | 190% | 250% | 325% | 415% |
-| Swatch earned | Pallet | Boulder | Cascade | Thunder | Rainbow | Soul | Marsh | Volcano | Earth | Lavender | Seafoam | Elite Four |
-| Opens gate | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
+| Target slot | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Total coverage required | 8% | 16% | 28% | 45% | 70% | 100% | 140% | 190% | 250% | 325% | 415% |
 
-Slot 3 is the last of the three you start with, so **Pallet** costs nothing and is
-held from the run's first moment — every journey starts in Pallet Town. The eleven
-rungs above it are the ones you buy.
+The first three slots come with the run. Slots 13–14 (325%/415%) are extrapolated
+rather than playtested. These thresholds are live-tuned in `pipeline.model.ts`
+(ADR-008); that file is the source of truth if this table drifts.
 
-These thresholds are live-tuned in `pipeline.model.ts` (ADR-008); that file is the
-source of truth if this table drifts.
-
-Each unlock is a **swatch**, named after a gen-1 gym badge and colored from that
-badge's home city in the Kanto palette (Boulder → pewter, Cascade → cerulean, and so
-on; the Elite Four wears the legendary gradient). The shop shows the next one as a
-full-width row — swatch chip, the coverage it wants against what you have, a live
-progress bar, and an **Unlock slot** button once the gate is met. Swatches are
-permanent and account-wide: earning Boulder in any run keeps it forever
-([6.4 Swatches](#64-swatches)).
+The shop shows the next rung as a full-width row in the pipeline list, numbered like
+every other slot — the coverage it wants against what you have, a live progress bar,
+and an **Unlock slot** button once the rung is met. It carries no swatch: badges come
+from clearing gates ([6.4 Swatches](#64-swatches)).
 
 ### 3.2 Managing Configs
 
@@ -650,7 +673,7 @@ re-answering previously-mastered polls correctly.
 
 The Pokédex of DevVoted, at `/dex`. The **Polls** tab tracks every poll you've
 seen with lifetime accuracy (unseen polls redact to `???`); the **Configs** tab
-catalogs the full roster grouped by rarity; the **Swatches** tab shows the nine slot
+catalogs the full roster grouped by rarity; the **Swatches** tab shows the gate
 swatches you've collected across every run ([6.4](#64-swatches)), unearned ones
 redacted. Planned additions: upgrade levels
 ("Lvl 5/10"), collection stats, per-poll community success rates, and named
@@ -658,24 +681,29 @@ collection states: **???** → **Encountered** → **Mastered**.
 
 ### 6.4 Swatches
 
-**Shipped: slot swatches.** Twelve swatches, one per gate: **Pallet** (slot 3, free
-— it comes with your starting pipeline and opens gate 0), then the eight gen-1 gym
+**Shipped: gate swatches.** Thirteen swatches, one per gate, earned by **clearing**
+that gate (ADR-019) — you beat the leader, you get the badge; buying width earns
+nothing. Gate 0 is **Pallet**, where every journey starts, then the eight gen-1 gym
 badges (Boulder, Cascade, Thunder, Rainbow, Soul, Marsh, Volcano, Earth), the two
-Kanto landmarks that never had a gym — **Lavender** and **Seafoam** — and the
-**Elite Four** finale at slot 14. Unlocking a slot in any run earns its
-swatch **permanently and account-wide** (`users.owned_swatch_ids`); re-unlocking the
-same slot on a later run is a no-op, so the collection only grows. Colors come from
-each badge's home city in the Kanto palette and live in `app.css` under
-`[data-swatch-theme]`, never duplicated in TypeScript. The Elite Four has no flat
-color (indigo is the app background) and wears the legendary gradient ring instead.
+Kanto landmarks that never had a gym — **Lavender** and **Seafoam** — and the summit
+pair: the **Elite** gate at Indigo Plateau, then the **Champion** above it.
 
-They surface in four places: the shop's unlock row (the next one to earn), the
-gate-cleared reward screen and the Configuring stat row (what you hold this run),
-the end-of-run summary, and the **Swatches** tab of [the Dex](#63-the-dex), where
+Clearing a gate in any run earns its swatch **permanently and account-wide**
+(`users.owned_swatch_ids`); re-clearing it on a later run is a no-op, so the
+collection only grows. Colors come from each name's home location in the Kanto
+palette and live in `app.css` under `[data-swatch-theme]`, never duplicated in
+TypeScript. The summit pair are drawn apart because the palette runs out — 13 gates
+against 12 colours, one of them the app background: **Elite** keeps indigo (it *is*
+Indigo Plateau) with a rim so it reads, and only its name falls back to plain zinc;
+the **Champion** alone wears the Kanto gradient.
+
+They surface in four places: the gate-cleared reward screen, which names the badge
+that clear just earned; the Configuring stat row (what you hold this run); the
+end-of-run summary; and the **Swatches** tab of [the Dex](#63-the-dex), where
 unearned entries redact to `???`.
 
 **Still planned** — **Collect Swatches** (DVTD-g8ty): a *per-category* cosmetic chip
-earned through mastery. That is a separate collection from the slot swatches above
+earned through mastery. That is a separate collection from the gate swatches above
 and reuses the name deliberately.
 
 Resolved: the old third meaning of "Swatch" (DVTD-1sb7, a config installing an
@@ -764,32 +792,30 @@ The game leans hard into its CI metaphor:
 - **Run HUD**: storage as **headroom** — a big "328 KB free" over a bar of what is
   committed and a "184 of 512 used" caption, because free space is the number you
   actually spend against (income past the 512KB cap is discarded). Then the gate,
-  polls answered, streak, and total coverage. The gate reads **"gate 0 / 11"** —
+  polls answered, streak, and total coverage. The gate reads **"gate 0 / 12"** —
   one number, since gates count from 0 and the gates you have banked *are* the gate
-  you are on — over a **pip bar** that is the swatch ladder: one pip per gate, each
-  wearing the colour of the swatch that opens it. Pips you hold read solid, the
-  rest sit dimmed in their own colours as a preview of the collection ahead, each
-  filling as its coverage accrues (gate 0 wears Pallet, the free swatch you start
-  with; the Elite Four's pip wears the legendary gradient). **Every pip is its own
-  control**: hover or tap one and it names that gate's swatch, what it costs, what
-  you hold, and the gap left ("Opens at 28% coverage · you have 19% · 9% to go").
-- **Slot swatch row**: the next coverage-gated slot closes both the configure and
-  shop pipelines as a dashed full-width row — its swatch chip in its Kanto color,
-  "Boulder Swatch · slot 4 · opens gate 2", "Unlocks at 8% total coverage · you
-  have 9.9%", and a live progress bar. On the shop it carries the **Unlock slot**
-  button once the gate is met (nothing to press before then); on configure it
-  reads locked/unlocked instead, since widening happens in the shop. The row
-  advances to the next swatch as you widen and retires at the slot cap.
+  you are on — over a **pip bar** that is the badge collection: one pip per gate,
+  each wearing the colour of the swatch that gate awards. Gates behind you read
+  solid, the gate underway fills with the polls answered into its window, and the
+  rest sit dimmed as a preview of what is left (the Elite pip carries a rim, since
+  its indigo is darker than the empty track; the Champion's shimmers). **Every pip
+  is its own control**: hover or tap one and it names that gate's badge and its
+  standing — earned, running now with the window count, or "clear gate 7 to earn
+  it". It deliberately carries no coverage: coverage buys width, not depth.
+- **Slot unlock row**: the next coverage-gated slot closes both the configure and
+  shop pipelines as a dashed row, numbered in the list's gutter like every other
+  slot — "Opens at 8% coverage", "9.9% reached", and a live progress bar. On the
+  shop it carries the **Unlock slot** button once the rung is met (nothing to press
+  before then); on configure it reads locked/unlocked instead, since widening
+  happens in the shop. It carries no swatch, and retires at the slot cap.
 - **Reward Report**: gate results styled as a CI build log: one passed/failed/skipped
   row per config, a steps summary, and a winnings footer — "you won +KB · +%"
   over a storage bar drawn from pre-gate storage to the new total (toward the
   512KB cap), plus coverage badges per answered category and the gate's
-  questions as foldable PASS/FAIL rows (choices behind a tap). It has a **third
-  headline state** for a clear the gate–slot cap held ([2.2](#22-gates)): the
-  PASS badge stays (the gate did pass, and paid), but the title reads "Gate 3
-  cleared — still gate 3" over an amber line naming the cause and the fix
-  ("Unlock slot 6 in the shop — the Thunder Swatch — to climb on"), so a frozen
-  climb never reads as a bug. It also lists the swatches collected so far.
+  questions as foldable PASS/FAIL rows (choices behind a tap). Directly under the
+  headline it names the badge the clear awarded, in that swatch's own colour
+  ("Thunder Swatch earned") — the clear's own receipt. It also lists the swatches
+  collected so far.
 - **Poll Review**: a test-runner reporter where each poll folds open into a
   describe/it tree and every option is an assertion (✓ / ✕ / ○).
 - **Game Over**: a gate ladder (one row per gate: pass/fail/skip), your final build,
@@ -806,8 +832,8 @@ The game leans hard into its CI metaphor:
 | **Run / Climb** | One playthrough, spanning multiple real days. |
 | **Gate** | A checkpoint judging a 5-poll window as a composed checklist. |
 | **Pipeline** | Your build: the stack of config slots. |
-| **Slot** | One pipeline position (3 → 14, coverage-gated). Each slot past the base buys one gate advance. |
-| **Gate number** | Counts from 0: a run opens on gate 0 and summits on gate 11. |
+| **Slot** | One pipeline position (3 → 14, coverage-gated). Buys room for a config; opens no gates. |
+| **Gate number** | Counts from 0: a run opens on gate 0 and summits on gate 12. |
 | **Config** | An installable dev-tool item. Every config has an **Effect** and a **Check**. |
 | **Effect** | The benefit a config provides. |
 | **Check** | The requirement a config adds to the gate window. The gate fails if any active check fails. |
@@ -828,7 +854,7 @@ The game leans hard into its CI metaphor:
 | **Escalation** | Unit Tests' rising demand: +1 correct answer per 2 gates cleared, capped at +3. |
 | **The Dex** | The collection screen (Polls + Configs + Swatches tabs). |
 | **Kanto colors** | The fixed per-category palette (saffron, cerulean, viridian, …). |
-| **Swatch** | A slot's collectible chip (Pallet … Elite Four), kept across runs. One per gate; Pallet is free. |
+| **Swatch** | A gate's collectible badge (Pallet … Champion), earned by clearing it and kept across runs. |
 | **Water-cooler moment** | The design north star: same polls, same day, compare answers. |
 
 ---
@@ -841,8 +867,8 @@ code, and this table follows it.
 | Constant | Value | Meaning |
 | --- | --- | --- |
 | `SLICE_WINDOW` | 5 | Polls per gate window (= per day). |
-| `VICTORY_GATE` | 11 | The summit's gate *number* — gates count from 0. Derived: `MAX_SLOTS - BASE_SLOTS` (ADR-018). |
-| `GATE_COUNT` | 12 | How many gates a run holds (gates 0…11). The divisor for archived-storage credit. |
+| `VICTORY_GATE` | 12 | The summit's gate *number* — gates count from 0. A content decision, one gate per badge; no longer derived from the slot ladder (ADR-019). |
+| `GATE_COUNT` | 13 | How many gates a run holds (gates 0…12). The divisor for archived-storage credit and the reward multiplier cap. |
 | Escalation | `min(floor(gatesCleared ÷ 2), 3)` | Added to Unit Tests' correct demand; `ESCALATION_CAP` = 3. |
 | Max config level | 5 | `maxLevel`, default for every upgradable config (window ceiling). |
 | Unit Tests upgrade cost | 32 KB × level bought | Storage-priced, no coverage gate (focus upgrades stay free + coverage-gated). |
@@ -856,10 +882,10 @@ code, and this table follows it.
 | `GATE_REWARD_MULTIPLIER_CAP` | 12 | Reward depth multiplier stops growing past gate 12 (endless runs). |
 | `STORAGE_CAP_KB` | 512 | Storage cap (512 KB); clamp timing moving to *Climb on* (DVTD-0h4n). |
 | Cap extension | Undecided | 🟡 Planned voucher, raises `STORAGE_CAP_KB` for the run; slot-free, not a config. |
-| Archived-storage credit rate | 1 / `gates ÷ GATE_COUNT` / 0 | Victory / death / abandon share of leftovers. Divisor is 12, so death banks less than it used to. |
-| `BASE_SLOTS` → `MAX_SLOTS` | 3 → 14 | Pipeline width. Gate 1 runs on 3; each further gate needs one more slot. |
+| Archived-storage credit rate | 1 / `gates ÷ GATE_COUNT` / 0 | Victory / death / abandon share of leftovers. Divisor is 13. |
+| `BASE_SLOTS` → `MAX_SLOTS` | 3 → 14 | Pipeline width, bought with coverage. Independent of the gate count (ADR-019). |
 | Slot coverage ladder | 8 / 16 / 28 / 45 / 70 / 100 / 140 / 190 / 250 / 325 / 415 | Total-coverage % to reach slots 4–14. Live-tuned in `pipeline.model.ts` (ADR-008); the last two rungs are untuned. |
-| Slot swatches | Pallet … Elite Four | Twelve — one per gate. Pallet (slot 3) is free; slots 4–14 are bought. Permanent and account-wide (`users.owned_swatch_ids`). |
+| Gate swatches | Pallet … Champion | Thirteen — one per gate, earned by clearing it. Permanent and account-wide (`users.owned_swatch_ids`). |
 | `DRAFT_SIZE` | 3 | Configs offered per shop draft. |
 | Draft cost | 32 / 64 / 128 / 256 KB | By rarity: common → legendary. |
 | Sell refund | `floor(draftCost ÷ 2)` | Storage back on sell. |

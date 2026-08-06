@@ -1,11 +1,19 @@
+import { clsx } from "clsx";
+
 import {
 	gateStepsSummary,
 	type GateRewardKind,
 	type GateRewardRow,
 	type GateRewardStatus,
 } from "~/modules/run/gate/gateReward.model";
+import {
+	type GateSwatch,
+	hasThemeColor,
+} from "~/modules/run/gate/swatch.model";
 import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { GainBar } from "~/ui/runs/GainBar.ui";
+import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
+import { swatchTheme } from "~/ui/theme/swatchTheme";
 import {
 	Paragraph,
 	type ParagraphTone,
@@ -82,13 +90,8 @@ const StepsSummary = ({ rows }: { rows: readonly GateRewardRow[] }) => {
 type GateRewardReportProps = {
 	gateNumber: number;
 	cleared: boolean;
-	/**
-	 * Present when the clear passed but the climb stays on this gate: the
-	 * pipeline is too narrow for the next one (ADR-018). A third headline state —
-	 * the clear was real and paid, so "failed" would lie, but so would implying
-	 * the next gate is next. Carries the one claim that releases it.
-	 */
-	held?: { nextGate: number; unlockSlot: number; swatchName: string };
+	/** The badge this gate's clear awarded (ADR-019) — absent on a failed gate. */
+	earnedSwatch?: GateSwatch;
 	rows: readonly GateRewardRow[];
 	totals?: { storageKb: number; coveragePct: number };
 	/** Run storage before → after the payout — drawn as the HUD bar's sibling
@@ -99,26 +102,41 @@ type GateRewardReportProps = {
 	stripsRemaining?: number;
 };
 
-// A held clear keeps the PASS badge — the gate genuinely passed and paid; it is
-// the *climb* that stopped, which the title and the saffron line below carry.
 const headline = (
 	gateNumber: number,
-	cleared: boolean,
-	held: boolean
-): { variant: StatusBadgeVariant; title: string } => {
-	if (!cleared) return { variant: "fail", title: `Gate ${gateNumber} failed!` };
-	if (held)
-		return {
-			variant: "pass",
-			title: `Gate ${gateNumber} cleared — still gate ${gateNumber}`,
-		};
-	return { variant: "pass", title: `Gate ${gateNumber} cleared!` };
-};
+	cleared: boolean
+): { variant: StatusBadgeVariant; title: string } =>
+	cleared
+		? { variant: "pass", title: `Gate ${gateNumber} cleared!` }
+		: { variant: "fail", title: `Gate ${gateNumber} failed!` };
+
+/**
+ * The badge line: the clear's own receipt, so it sits directly under the
+ * headline rather than with the collection tally further down. Wears the
+ * swatch's colour, which is the whole point of earning it.
+ */
+const EarnedSwatch = ({ swatch }: { swatch: GateSwatch }) => (
+	<span
+		data-testid="earned-swatch"
+		{...(hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
+		className="flex items-center gap-2"
+	>
+		<SwatchMark finish={swatch.finish} />
+		{/* One Paragraph, not two: a flex gap is not whitespace, so split spans
+		    would be read out as "Boulder Swatchearned". */}
+		<Paragraph as="span" size="sm" tone="muted">
+			<span className={clsx("font-bold", swatchNameClass(swatch.finish))}>
+				{swatch.name}
+			</span>{" "}
+			earned
+		</Paragraph>
+	</span>
+);
 
 export const GateRewardReport = ({
 	gateNumber,
 	cleared,
-	held,
+	earnedSwatch,
 	rows,
 	totals,
 	storageBar,
@@ -126,7 +144,7 @@ export const GateRewardReport = ({
 	onRemoveConfig,
 	stripsRemaining,
 }: GateRewardReportProps) => {
-	const { variant, title } = headline(gateNumber, cleared, held !== undefined);
+	const { variant, title } = headline(gateNumber, cleared);
 	return (
 		<div className="flex flex-col gap-3">
 			<div className="flex items-center gap-3 ">
@@ -134,13 +152,7 @@ export const GateRewardReport = ({
 				<Title>{title}</Title>
 			</div>
 
-			{cleared && held && (
-				<Paragraph size="sm" tone="saffron">
-					Gate {held.nextGate} needs a wider pipeline, so you&apos;ll run gate{" "}
-					{gateNumber} again. Unlock slot {held.unlockSlot} in the shop — the{" "}
-					{held.swatchName} — to climb on.
-				</Paragraph>
-			)}
+			{cleared && earnedSwatch && <EarnedSwatch swatch={earnedSwatch} />}
 
 			{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
 				<Paragraph size="sm" tone="pewter">

@@ -89,35 +89,21 @@ describe("toRunView", () => {
 		expect(toRunView(configuring).awaitingTomorrow).toBe(false);
 	});
 
-	it("reports a held climb from the engine's own flag", () => {
-		// Gates count from 0, so a held clear leaves the two numbers equal — only
-		// the flag can tell the states apart.
-		const frozen = {
-			...answering(),
-			gatesCleared: 2,
-			clearedGate: 2,
-			heldAtGate: true,
-		};
-		const view = toRunView(frozen);
-		expect(view.clearedGateNumber).toBe(2);
-		expect(view.heldAtGate).toBe(true);
+	it("names the gate a clear beat, one behind the count it advanced", () => {
+		const cleared = { ...answering(), gatesCleared: 3, clearedGate: 2 };
+		expect(toRunView(cleared).clearedGateNumber).toBe(2);
 	});
 
 	it("falls back to gatesCleared for snapshots without clearedGate", () => {
-		const legacy = { ...answering(), gatesCleared: 2 };
-		const view = toRunView(legacy);
-		expect(view.clearedGateNumber).toBe(2);
-		expect(view.heldAtGate).toBe(false);
+		expect(
+			toRunView({ ...answering(), gatesCleared: 2 }).clearedGateNumber
+		).toBe(2);
 	});
 
-	it("reads a clear that advanced the climb as not held", () => {
-		const advanced = {
-			...answering(),
-			gatesCleared: 3,
-			clearedGate: 2,
-			heldAtGate: false,
-		};
-		expect(toRunView(advanced).heldAtGate).toBe(false);
+	it("names the slot coverage is buying, not a gate — width opens no gates", () => {
+		const view = toRunView(answering());
+		expect(view.unlock?.slot).toBe(4); // the next one up from the base three
+		expect(view.unlock?.progress).toBe(0);
 	});
 });
 

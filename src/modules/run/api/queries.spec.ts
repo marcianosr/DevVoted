@@ -12,7 +12,7 @@ import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 import { createRun, type RunState } from "../climb/run.model";
 import { toRunSnapshot } from "../climb/runSnapshot.model";
 import { CONFIGS } from "../configs/configRoster.model";
-import { MAX_SLOTS } from "../pipeline/pipeline.model";
+import { BASE_SLOTS } from "../pipeline/pipeline.model";
 import { VICTORY_GATE } from "../rules.model";
 import {
 	abandonSessionRun,
@@ -257,10 +257,10 @@ describe("applyActionToRun", () => {
 		// answer correct, so this correct answer closes it and clears the summit.
 		// A bare pipeline can never clear (ADR-017), so the summit build carries
 		// its .js config — the window's 4/4 JS record passes its mastery check.
-		// Slots are maxed because every advance is bought with a slot (ADR-018).
+		// Width is irrelevant to depth (ADR-019), so the starting slots suffice.
 		const summitReady = answeringState({
 			storage: 100,
-			pipeline: { id: "pipeline", slots: MAX_SLOTS, configs: [CONFIGS.js] },
+			pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
 			window: {
 				correct: 4,
@@ -282,22 +282,23 @@ describe("applyActionToRun", () => {
 		});
 
 		expect(next.status).toBe("won");
-		expect(mock.setCalls[0]).toMatchObject({ engine_status: "won" });
-		expect(mock.setCalls[1]).toMatchObject({
+		// The summit's own clear awards the Champion first, then the state row.
+		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
+		expect(mock.setCalls[1]).toMatchObject({ engine_status: "won" });
+		expect(mock.setCalls[2]).toMatchObject({
 			status: "finished",
 			completion_reason: "victory",
 		});
-		expect(mock.setCalls[1].victory_achieved_at).toBeInstanceOf(Date);
+		expect(mock.setCalls[2].victory_achieved_at).toBeInstanceOf(Date);
 		// 100 KB leftover → bytes credit on users.archived_storage
-		expect(mock.setCalls[2]).toHaveProperty("archived_storage");
-		expect(db.update).toHaveBeenCalledTimes(3);
+		expect(mock.setCalls[3]).toHaveProperty("archived_storage");
+		expect(db.update).toHaveBeenCalledTimes(4);
 	});
 
-	it("earns Pallet the moment a run starts — the base slots' free swatch", async () => {
+	it("hands out no swatch at run start — Pallet is gate 0's reward", async () => {
 		mock.results.push([{ id: 64 }]); // runs insert
 		mock.results.push(undefined); // run_states insert
 		mock.results.push(undefined); // run_polls insert
-		mock.results.push(undefined); // users update
 
 		await createSessionRunWithState(
 			"red-from-pallet-town",
@@ -305,31 +306,39 @@ describe("applyActionToRun", () => {
 			answeringState({ polls: [] })
 		);
 
-		expect(mock.updateTables).toContain(usersTable);
-		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
+		expect(mock.updateTables).not.toContain(usersTable);
 	});
 
-	it("earns the slot's swatch when the pipeline widens", async () => {
-		// Slot 4's coverage gate is met, so the reward-screen claim goes through
-		// and the Boulder Swatch is written to the account before the state row.
-		const rewarding = answeringState({
-			status: "rewarding",
-			coverage: 1000,
-			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.js] },
+	it("earns the cleared gate's swatch, written before the state row", async () => {
+		// One correct answer from closing gate 0's window, so this dispatch clears
+		// it and the Pallet Swatch lands on the account.
+		const closing = answeringState({
+			pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [CONFIGS.js] },
+			window: {
+				correct: 4,
+				answered: 4,
+				coverageGained: 4,
+				leadingCorrect: 4,
+				byCategory: { js: { seen: 4, correct: 4 } },
+			},
 		});
-		mock.results.push([stateRow(rewarding)]);
+		mock.results.push([stateRow(closing)]);
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
+		mock.results.push([{ response_id: 900 }]);
 
-		const next = await dispatch({ type: "add-slot" });
+		const next = await dispatch({
+			type: "answer",
+			optionIds: [correctOptionId(1)],
+		});
 
-		expect(next.pipeline.slots).toBe(4);
+		expect(next.gatesCleared).toBe(1);
 		expect(mock.updateTables[0]).toBe(usersTable);
 		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
 	});
 
-	it("earns no swatch when the action leaves the pipeline's width alone", async () => {
+	it("earns no swatch when the action clears no gate", async () => {
 		mock.results.push([stateRow(answeringState({}))]);
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);

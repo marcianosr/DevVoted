@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { pollQueryKeys, userQueryKeys } from "~/domains/shared/queryKeys";
 import { getOwnedSwatches } from "~/modules/run/api/run";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
-import { ALL_SWATCHES } from "~/modules/run/pipeline/swatch.model";
+import { ALL_SWATCHES } from "~/modules/run/gate/swatch.model";
 import { Screen } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";

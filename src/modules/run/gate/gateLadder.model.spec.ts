@@ -42,9 +42,8 @@ describe(deriveGateLadder, () => {
 		expect(ladder.at(-1)?.gate).toBe(VICTORY_GATE);
 	});
 
-	it("marks a death during a frozen replay on the held gate, not beyond it", () => {
-		// gatesCleared froze at 2 while the player replayed gate 2 (gate–slot cap):
-		// the ladder blames gate 2 and skips the unreached rest.
+	it("blames the gate the run died on and skips the rest", () => {
+		// Two gates banked, so gate 2 is the one underway when the build broke.
 		const ladder = deriveGateLadder(2, false, VICTORY_GATE);
 		expect(ladder[2]).toEqual({ gate: 2, status: "fail" });
 		expect(ladder.slice(3).every(({ status }) => status === "skip")).toBe(true);

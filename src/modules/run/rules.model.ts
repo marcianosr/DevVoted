@@ -1,18 +1,23 @@
 export const SLICE_WINDOW = 5;
 /**
  * The summit's gate number. Gates count from **0**: gate 0 runs on the starting
- * pipeline, and every gate after it is bought with a slot (ADR-018), so this is
- * the far end of the slot ladder: `MAX_SLOTS - BASE_SLOTS`. Gate 11 needs all 14
- * slots, which means every swatch.
+ * pipeline and every clear advances one gate (ADR-019). This is a content
+ * decision — how long a climb is, one gate per swatch in the roster — and no
+ * longer derived from the slot ladder: depth and width are independent axes.
  */
-export const VICTORY_GATE = 11;
+export const VICTORY_GATE = 12;
 
 /** How many gates a run holds — gates 0 through `VICTORY_GATE`. */
 export const GATE_COUNT = VICTORY_GATE + 1;
 /** Gate-1 base storage (KB) a clear pays — scaled by gate depth, reward multipliers, and window correctness. */
 export const GATE_REWARD_KB = 32;
-/** Depth cap on the reward's gate multiplier: endless (continue-past-victory) runs stop scaling payout past gate 12, the intended summit. */
-export const GATE_REWARD_MULTIPLIER_CAP = 12;
+/**
+ * Depth cap on the reward's gate multiplier: endless (continue-past-victory)
+ * runs stop scaling payout past the intended summit. The summit itself still
+ * pays in full, so the cap is the multiplier *at* `VICTORY_GATE`, which
+ * `gateBaseMultiplier` makes `GATE_COUNT`.
+ */
+export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 /** Hard cap (KB) on the storage currency — income beyond this is discarded. */
 export const STORAGE_CAP_KB = 512;
 /**

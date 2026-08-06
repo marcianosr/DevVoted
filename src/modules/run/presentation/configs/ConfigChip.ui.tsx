@@ -134,9 +134,13 @@ export const ConfigChip = ({
 	const level = config.level ?? 1;
 	const corners = [
 		badge ? <span key="badge">{badge}</span> : null,
-		level > 1 ? <Badge key="level">L{level}</Badge> : null,
+		level > 1 ? (
+			<Badge key="level" size="corner">
+				L{level}
+			</Badge>
+		) : null,
 		price !== undefined ? (
-			<Badge key="price" tone="price">{`${price}KB`}</Badge>
+			<Badge key="price" tone="price" size="corner">{`${price}KB`}</Badge>
 		) : null,
 	].filter(Boolean);
 	const surface = (
@@ -157,7 +161,7 @@ export const ConfigChip = ({
 	const chip =
 		corners.length > 0 ? (
 			<span className="relative inline-flex">
-				<span className="absolute -right-2 -top-3 z-10 flex gap-1">
+				<span className="absolute -right-1.5 -top-2 z-10 flex gap-1">
 					{corners}
 				</span>
 				{surface}

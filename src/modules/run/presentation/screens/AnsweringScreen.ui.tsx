@@ -9,6 +9,7 @@ import {
 	ScoreEquationChips,
 	type ScoreBonusRow,
 } from "~/ui/runs/ScoreEquationChips.ui";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
@@ -43,11 +44,37 @@ const scoreBonusRows = (
 	return rows;
 };
 
+/**
+ * What a failed gate would cost, inline in the pipeline subtitle rather than as a
+ * callout: the strip quota grows with depth (`dropCount`), so from around gate 4 a
+ * three-config build owes more than it holds and one bad window strips it bare —
+ * which is death (ADR-017). Reading red is the only warning a player gets that
+ * today's window is sudden death, so it has to sit where the stakes are read.
+ */
+const StakeOnFailure = ({
+	strips,
+	configs,
+}: {
+	strips: number;
+	configs: number;
+}) => {
+	const fatal = strips >= configs;
+	return (
+		<Paragraph as="span" size="sm" tone={fatal ? "cinnabar" : "saffron"}>
+			{fatal
+				? `a fail peels all ${configs} — run over`
+				: `a fail peels ${strips}`}
+		</Paragraph>
+	);
+};
+
 type AnsweringScreenProps = {
 	configs: readonly Config[];
 	checks: readonly CheckStatus[];
 	/** Total pipeline slots — shown in the pipeline header when provided. */
 	slots?: number;
+	/** Configs a failed gate would peel at this depth — omitted, no warning shown. */
+	stripsOnFailure?: number;
 	category: CategoryCode;
 	question: string;
 	codeBlock?: string;
@@ -77,6 +104,7 @@ export const AnsweringScreen = ({
 	configs,
 	checks,
 	slots,
+	stripsOnFailure,
 	category,
 	question,
 	codeBlock,
@@ -159,6 +187,15 @@ export const AnsweringScreen = ({
 					{slots ? (
 						<Subtitle>
 							{configs.length} of {slots} slots used
+							{stripsOnFailure === undefined ? null : (
+								<>
+									{" · "}
+									<StakeOnFailure
+										strips={stripsOnFailure}
+										configs={configs.length}
+									/>
+								</>
+							)}
 						</Subtitle>
 					) : null}
 				</header>

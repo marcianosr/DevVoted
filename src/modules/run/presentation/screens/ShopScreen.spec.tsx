@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
+import { draftCost } from "~/modules/run/configs/config.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
+import { MAX_SLOTS } from "~/modules/run/pipeline/pipeline.model";
 import { ShopScreen } from "./ShopScreen.ui";
 
 const base = {
@@ -46,14 +48,21 @@ describe(ShopScreen, () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	it("buys an offer from its row's install button", () => {
+	it("installs an offer when its chip is clicked", () => {
 		const onDraft = vi.fn();
 		render(<ShopScreen {...base} onDraft={onDraft} />);
-		fireEvent.click(screen.getAllByRole("button", { name: /Install/ })[0]);
+		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
 		expect(onDraft).toHaveBeenCalledWith("eslint");
 	});
 
-	it("parks the buy button behind a make-room tooltip when the pipeline is full", () => {
+	it("prices each offer chip in storage", () => {
+		render(<ShopScreen {...base} />);
+		expect(screen.getAllByText(`${draftCost(CONFIGS.eslint)}KB`).length).toBe(
+			1
+		);
+	});
+
+	it("parks the offer chips behind a make-room tooltip when the pipeline is full", () => {
 		render(
 			<ShopScreen
 				{...base}
@@ -61,9 +70,7 @@ describe(ShopScreen, () => {
 				slots={3}
 			/>
 		);
-		for (const buy of screen.getAllByRole("button", { name: /Install/ })) {
-			expect(buy).toBeDisabled();
-		}
+		expect(screen.getByRole("button", { name: /ESLint/ })).toBeDisabled();
 		expect(
 			screen.getAllByText(
 				"Add a new slot to upgrade or sell an existing config"
@@ -71,19 +78,57 @@ describe(ShopScreen, () => {
 		).toBeGreaterThan(0);
 	});
 
-	it("dims an offer the run can't afford and prices the gap instead", () => {
+	it("disables an offer the run can't afford and previews nothing on hover", () => {
 		render(<ShopScreen {...base} storage={8} />);
+		const chip = screen.getByRole("button", { name: /ESLint/ });
+		expect(chip).toBeDisabled();
+		fireEvent.mouseEnter(chip.parentElement as HTMLElement);
+		// No ghost row: previewing an offer you cannot buy read as if it had been
+		// installed. The chip's own price tag carries the refusal.
 		expect(
-			screen.queryByRole("button", { name: /Install/ })
+			screen.queryByText(/Cross out a wrong answer/)
 		).not.toBeInTheDocument();
-		expect(screen.getAllByText(/need/).length).toBeGreaterThan(0);
+		expect(
+			screen.queryByRole("button", { name: /^Add .+ to your pipeline$/ })
+		).not.toBeInTheDocument();
 	});
 
-	it("rerolls the offers for a fee", () => {
+	it("rebuilds the offers for a fee", () => {
 		const onRebuild = vi.fn();
 		render(<ShopScreen {...base} onRebuild={onRebuild} />);
-		fireEvent.click(screen.getByRole("button", { name: /Reroll offers/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Rebuild offers/ }));
 		expect(onRebuild).toHaveBeenCalled();
+	});
+
+	it("previews an installable offer inside the pipeline, with its effect and price", () => {
+		render(<ShopScreen {...base} />);
+		const chip = screen.getByRole("button", { name: /ESLint/ });
+		fireEvent.mouseEnter(chip.parentElement as HTMLElement);
+
+		expect(screen.getByText(/Cross out a wrong answer/)).toBeInTheDocument();
+		// The row is the button; the trailing text is purely the price.
+		expect(
+			screen.getByRole("button", { name: "Add ESLint to your pipeline" })
+		).toBeInTheDocument();
+		expect(
+			screen.getAllByText(`${draftCost(CONFIGS.eslint)}KB`).length
+		).toBeGreaterThan(0);
+	});
+
+	it("previews nothing when the pipeline has no room for the offer", () => {
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
+				slots={3}
+			/>
+		);
+		const chip = screen.getByRole("button", { name: /ESLint/ });
+		fireEvent.mouseEnter(chip.parentElement as HTMLElement);
+		// A full pipeline has no slot to draw the ghost into, so none is drawn.
+		expect(
+			screen.queryByText(/Cross out a wrong answer/)
+		).not.toBeInTheDocument();
 	});
 
 	it("prices Unit Tests' upgrade in storage, unlike free focus upgrades", () => {
@@ -135,8 +180,8 @@ describe(ShopScreen, () => {
 				"L2: JavaScript polls earn 1.5× coverage — but if JavaScript shows, you must get 2 right."
 			)
 		).toBeInTheDocument();
-		// The upgrade's own gate line is gone; "Unlocks at" may still appear in
-		// the slot-swatch row, so the check pins the upgrade's 5% threshold.
+		// The upgrade's own gate line is gone; "Opens at" may still appear in the
+		// slot unlock row, so the check pins the upgrade's 5% threshold.
 		expect(screen.queryByText(/Unlocks at 5%/)).not.toBeInTheDocument();
 	});
 
@@ -170,10 +215,11 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	it("shows the storage reward earnable this gate below the pipeline", () => {
+	it("shows the storage reward earnable this gate in the gate modifier strip", () => {
 		render(<ShopScreen {...base} gateReward={240} rewardMultiplier={2} />);
 		expect(screen.getByText("+240KB")).toBeInTheDocument();
-		expect(screen.getByText(/storage this gate/)).toBeInTheDocument();
+		expect(screen.getByText("reward on clear")).toBeInTheDocument();
+		expect(screen.getByText("coverage ×")).toBeInTheDocument();
 	});
 
 	it("sells a config from its row's deinstall button", () => {
@@ -185,7 +231,7 @@ describe(ShopScreen, () => {
 		expect(onSell).toHaveBeenCalledWith("indexed-db");
 	});
 
-	it("shows the next swatch locked with live progress — no unlock button below the gate", () => {
+	it("shows the next slot locked with live progress — no unlock button below the rung", () => {
 		render(
 			<ShopScreen
 				{...base}
@@ -194,14 +240,12 @@ describe(ShopScreen, () => {
 				slotCoverageRequired={20}
 			/>
 		);
-		expect(screen.getByText("Boulder Swatch")).toBeInTheDocument();
-		expect(screen.getByText(/· slot 4 · opens gate 1/)).toBeInTheDocument();
-		expect(screen.getByText("12%")).toBeInTheDocument();
+		// Badges belong to gates now, so this row prices width and nothing else.
+		expect(screen.queryByText(/Swatch/)).not.toBeInTheDocument();
+		expect(screen.getByText("12% reached")).toBeInTheDocument();
 		expect(
-			screen.getByRole("progressbar", {
-				name: "coverage toward Boulder Swatch",
-			})
-		).toBeInTheDocument();
+			screen.getByRole("progressbar", { name: "coverage toward slot 4" })
+		).toHaveAttribute("aria-valuenow", "12");
 		expect(
 			screen.queryByRole("button", { name: "Unlock slot" })
 		).not.toBeInTheDocument();
@@ -214,14 +258,17 @@ describe(ShopScreen, () => {
 		expect(onAddSlot).toHaveBeenCalled();
 	});
 
-	it("advances the row to the next swatch as the pipeline widens", () => {
+	it("advances the row to the next slot as the pipeline widens", () => {
 		render(<ShopScreen {...base} slots={4} />);
-		expect(screen.getByText("Cascade Swatch")).toBeInTheDocument();
-		expect(screen.queryByText("Boulder Swatch")).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("progressbar", { name: "coverage toward slot 5" })
+		).toBeInTheDocument();
 	});
 
-	it("retires the swatch row at the slot cap", () => {
-		render(<ShopScreen {...base} slots={12} slotCoverageRequired={Infinity} />);
-		expect(screen.queryByText(/Swatch$/)).not.toBeInTheDocument();
+	it("retires the unlock row at the slot cap", () => {
+		render(
+			<ShopScreen {...base} slots={MAX_SLOTS} slotCoverageRequired={Infinity} />
+		);
+		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
 	});
 });

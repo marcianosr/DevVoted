@@ -4,7 +4,7 @@ import { describeConfig } from "~/modules/run/configs/config.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import type { RoleRow } from "~/modules/run/gate/configRole.model";
 import { RoleList } from "./RoleList.ui";
-import { nextSwatchRow } from "./SlotSwatchRow.ui";
+import { nextSlotRow } from "./SlotUnlockRow.ui";
 
 const meta: Meta<typeof RoleList> = {
 	component: RoleList,
@@ -64,7 +64,7 @@ export const WithEmptySlots: Story = {
 };
 
 // The configure screen's hover preview: the eyed bench config renders as a
-// would-be row in the next open slot (hollow dot, celadon "click to add"),
+// would-be row in the next open slot (hollow dot, dashed rarity border),
 // and the open-slot count shrinks by the one it would take.
 export const WithSlotPreview: Story = {
 	args: {
@@ -85,7 +85,7 @@ export const ShopLoadout: Story = {
 			{ label: "Upgrade (5% cov)", onClick: () => {} },
 			{ label: "Sell +20KB", onClick: () => {} },
 		],
-		trailing: nextSwatchRow({
+		trailing: nextSlotRow({
 			slots: 4,
 			coverage: 18.2,
 			slotCoverageRequired: 16,

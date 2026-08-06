@@ -411,6 +411,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					<ConfiguringScreen
 						configs={view.configs}
 						slots={view.slots}
+						gatesCleared={view.gatesCleared}
 						bench={view.available}
 						checks={view.checks}
 						gateReward={view.gateReward}
@@ -437,6 +438,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						selectedOptionIds={selected}
 						disabledOptionIds={disabled}
 						slots={view.slots}
+						stripsOnFailure={view.stripsOnFailure}
 						canLint={view.canLint}
 						lintReady={view.lintReady}
 						linter={view.linter ?? undefined}
@@ -459,9 +461,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					<RewardScreen
 						clearedGate={view.clearedGateNumber}
-						slots={view.slots}
-						heldAtGate={view.heldAtGate}
-						gateReward={view.gateReward}
+						// The PAID amount, not the full-correctness ceiling (ADR-017):
+						// a 2/5 clear banks 13KB, and the report must say 13.
+						gateReward={view.gateRewardPaidKb}
 						answered={view.answeredThisGate}
 						coverageGainedByCategory={view.coverageGainedThisGate}
 						passedChecks={view.passedChecks}
@@ -560,7 +562,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						victoryGate={view.victoryGate}
 						coverage={view.coverage}
 						storage={view.storage}
-						slots={view.slots}
 						configs={view.configs}
 						answered={view.allAnswered}
 					/>

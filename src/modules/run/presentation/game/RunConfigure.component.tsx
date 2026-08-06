@@ -27,6 +27,7 @@ export const RunConfigure = () => {
 			<ConfiguringScreen
 				configs={view.configs}
 				slots={view.slots}
+				gatesCleared={view.gatesCleared}
 				bench={view.available}
 				checks={view.checks}
 				gateReward={view.gateReward}

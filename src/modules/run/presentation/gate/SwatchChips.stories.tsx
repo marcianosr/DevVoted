@@ -1,8 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-	ALL_SWATCHES,
-	SLOT_SWATCHES,
-} from "~/modules/run/pipeline/swatch.model";
+import { ALL_SWATCHES, GATE_SWATCHES } from "~/modules/run/gate/swatch.model";
 import { SwatchChips } from "./SwatchChips.ui";
 
 // The collection payoff: swatches are kept forever, so seeing the earned ones
@@ -18,7 +15,7 @@ type Story = StoryObj<typeof SwatchChips>;
 // What a run shows: only the swatches it has actually earned.
 export const EarnedThisRun: Story = {
 	args: {
-		swatches: [SLOT_SWATCHES[4], SLOT_SWATCHES[5], SLOT_SWATCHES[6]],
+		swatches: [GATE_SWATCHES[1], GATE_SWATCHES[2], GATE_SWATCHES[3]],
 	},
 };
 
@@ -26,12 +23,12 @@ export const EarnedThisRun: Story = {
 export const CollectionInProgress: Story = {
 	args: {
 		swatches: ALL_SWATCHES,
-		ownedIds: [SLOT_SWATCHES[4].id, SLOT_SWATCHES[5].id],
+		ownedIds: [GATE_SWATCHES[1].id, GATE_SWATCHES[2].id],
 		redactLocked: true,
 	},
 };
 
-// Every swatch collected, Elite Four included.
+// Every swatch collected, the Champion included.
 export const Complete: Story = {
 	args: {
 		swatches: ALL_SWATCHES,

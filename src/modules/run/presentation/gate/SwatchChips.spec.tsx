@@ -1,26 +1,27 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { MAX_SLOTS } from "~/modules/run/pipeline/pipeline.model";
 import {
 	ALL_SWATCHES,
-	SLOT_SWATCHES,
-} from "~/modules/run/pipeline/swatch.model";
+	GATE_SWATCHES,
+	swatchForGate,
+} from "~/modules/run/gate/swatch.model";
+import { VICTORY_GATE } from "~/modules/run/rules.model";
 import { SwatchChips } from "./SwatchChips.ui";
+
+const boulder = GATE_SWATCHES[1];
+const cascade = GATE_SWATCHES[2];
 
 describe(SwatchChips, () => {
 	it("treats every chip as earned when no ownership is given", () => {
-		render(<SwatchChips swatches={[SLOT_SWATCHES[4], SLOT_SWATCHES[5]]} />);
+		render(<SwatchChips swatches={[boulder, cascade]} />);
 		expect(screen.getByText("Boulder Swatch")).toBeInTheDocument();
 		expect(screen.getByText("Cascade Swatch")).toBeInTheDocument();
 	});
 
 	it("colors earned chips and leaves unearned ones unthemed", () => {
 		const { container } = render(
-			<SwatchChips
-				swatches={[SLOT_SWATCHES[4], SLOT_SWATCHES[5]]}
-				ownedIds={[SLOT_SWATCHES[4].id]}
-			/>
+			<SwatchChips swatches={[boulder, cascade]} ownedIds={[boulder.id]} />
 		);
 		expect(container.querySelectorAll("[data-swatch-theme]")).toHaveLength(1);
 		expect(
@@ -32,7 +33,7 @@ describe(SwatchChips, () => {
 		render(
 			<SwatchChips
 				swatches={ALL_SWATCHES}
-				ownedIds={[SLOT_SWATCHES[4].id]}
+				ownedIds={[boulder.id]}
 				redactLocked
 			/>
 		);
@@ -41,12 +42,29 @@ describe(SwatchChips, () => {
 		expect(screen.getAllByText("???")).toHaveLength(ALL_SWATCHES.length - 1);
 	});
 
-	it("rings the earned Elite Four chip instead of coloring it", () => {
-		const eliteFour = SLOT_SWATCHES[MAX_SLOTS];
+	it("keeps the Elite chip's indigo but rims it, so it does not vanish", () => {
+		const elite = swatchForGate(VICTORY_GATE - 1)!;
 		const { container } = render(
-			<SwatchChips swatches={[eliteFour]} ownedIds={[eliteFour.id]} />
+			<SwatchChips swatches={[elite]} ownedIds={[elite.id]} />
+		);
+		// Still themed — indigo is a real colour, just an unreadable text colour.
+		expect(
+			container.querySelector('[data-swatch-theme="elite"]')
+		).toBeInTheDocument();
+		expect(container.querySelector('[data-testid="swatch-mark"]')).toHaveClass(
+			"ring-pewter"
+		);
+	});
+
+	it("gives the earned Champion chip the gradient and no theme colour", () => {
+		const champion = swatchForGate(VICTORY_GATE)!;
+		const { container } = render(
+			<SwatchChips swatches={[champion]} ownedIds={[champion.id]} />
 		);
 		expect(container.querySelector("[data-swatch-theme]")).toBeNull();
-		expect(container.querySelectorAll(".legendary-ring").length).toBe(2); // chip border + dot
+		expect(container.querySelectorAll(".legendary-ring")).toHaveLength(1); // the chip border
+		expect(container.querySelector('[data-testid="swatch-mark"]')).toHaveClass(
+			"bg-legendary"
+		);
 	});
 });

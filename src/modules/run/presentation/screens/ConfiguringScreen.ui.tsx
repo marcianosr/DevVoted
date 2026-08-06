@@ -7,21 +7,23 @@ import { pipelineModifiersFor } from "~/modules/run/pipeline/pipeline.model";
 import {
 	ALL_SWATCHES,
 	swatchesEarnedAt,
-} from "~/modules/run/pipeline/swatch.model";
+} from "~/modules/run/gate/swatch.model";
 import { Columns } from "~/ui/Columns.ui";
 import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { GateModifierStrip } from "../gate/GateModifierStrip.ui";
 import { RoleList } from "../gate/RoleList.ui";
-import { nextSwatchRow } from "../gate/SlotSwatchRow.ui";
+import { nextSlotRow } from "../gate/SlotUnlockRow.ui";
 import { SwatchChips } from "../gate/SwatchChips.ui";
-import { StatBadge } from "../run/StatBadge.ui";
 
 type ConfiguringScreenProps = {
 	configs: readonly Config[];
 	slots: number;
+	/** Gates banked, which names the swatches collected so far. */
+	gatesCleared: number;
 	bench: readonly Config[];
 	checks: readonly CheckStatus[];
 	gateReward: number;
@@ -61,26 +63,10 @@ const PanelHeading = ({ title, subtitle }: PanelHeadingProps) => (
 	</header>
 );
 
-const coverageValue = (coverageMultiplier: number, coverageAdd: number) =>
-	`×${coverageMultiplier}${coverageAdd > 0 ? ` +${coverageAdd}%` : ""}`;
-
-type StatPair = { readonly value: string; readonly from?: string };
-
-// While a bench config is previewed the strip reads old → new; an unchanged
-// stat keeps its plain value (no arrow).
-const statPair = (current: string, next: string | undefined): StatPair =>
-	next === undefined || next === current
-		? { value: current }
-		: { value: next, from: current };
-
-// An identity multiplier means "no modifier equipped yet" — it reads muted so
-// the stats that actually move are the ones that glow.
-const multiplierTone = (pair: StatPair): "muted" | "gradient" =>
-	pair.from === undefined && pair.value === "×1" ? "muted" : "gradient";
-
 export const ConfiguringScreen = ({
 	configs,
 	slots,
+	gatesCleared,
 	bench,
 	checks,
 	gateReward,
@@ -95,7 +81,7 @@ export const ConfiguringScreen = ({
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const full = configs.length >= slots;
 	const rows = roleRows(configs, checks);
-	const earnedSwatches = swatchesEarnedAt(slots);
+	const earnedSwatches = swatchesEarnedAt(gatesCleared);
 
 	const previewConfig = full
 		? undefined
@@ -108,19 +94,6 @@ export const ConfiguringScreen = ({
 		onSlot(configId);
 		setPreviewId(null);
 	};
-
-	const reward = statPair(
-		`+${gateReward}KB`,
-		next ? `+${next.gateReward}KB` : undefined
-	);
-	const rewardTimes = statPair(
-		`×${rewardMultiplier}`,
-		next ? `×${next.rewardMultiplier}` : undefined
-	);
-	const coverageTimes = statPair(
-		coverageValue(coverageMultiplier, coverageAdd),
-		next ? coverageValue(next.coverageMultiplier, next.coverageAdd) : undefined
-	);
 
 	return (
 		<Columns
@@ -176,31 +149,17 @@ export const ConfiguringScreen = ({
 									}
 								: undefined
 						}
-						trailing={nextSwatchRow({ slots, coverage, slotCoverageRequired })}
+						trailing={nextSlotRow({ slots, coverage, slotCoverageRequired })}
 					/>
-					<div className="flex flex-col gap-2 border-t border-zinc-700 pt-4">
-						<Subtitle as="p">Gate modifiers</Subtitle>
-						<div className="flex flex-wrap gap-8">
-							<StatBadge
-								label="reward on clear"
-								value={reward.value}
-								from={reward.from}
-								valueTone="gradient"
-							/>
-							<StatBadge
-								label="reward ×"
-								value={rewardTimes.value}
-								from={rewardTimes.from}
-								valueTone={multiplierTone(rewardTimes)}
-							/>
-							<StatBadge
-								label="coverage ×"
-								value={coverageTimes.value}
-								from={coverageTimes.from}
-								valueTone={multiplierTone(coverageTimes)}
-							/>
-						</div>
-					</div>
+					<GateModifierStrip
+						current={{
+							gateReward,
+							rewardMultiplier,
+							coverageMultiplier,
+							coverageAdd,
+						}}
+						next={next}
+					/>
 					{/* A collection tally, not a gate modifier — so it stands apart. */}
 					<div className="flex flex-col gap-2">
 						<Subtitle as="p">
@@ -210,7 +169,7 @@ export const ConfiguringScreen = ({
 							<SwatchChips swatches={earnedSwatches} />
 						) : (
 							<Paragraph size="xs" tone="faint">
-								Unlock a slot to earn your first — each one opens the next gate.
+								Clear gates to earn your swatches: every gate carries one.
 							</Paragraph>
 						)}
 					</div>

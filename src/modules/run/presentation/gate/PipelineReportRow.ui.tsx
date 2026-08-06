@@ -13,6 +13,7 @@ import {
 } from "~/ui/typography/Paragraph.component";
 import { type ChipAction, ConfigActions } from "../configs/ConfigActions.ui";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { SlotNumberCell } from "./PipelineTable.ui";
 
 export type PipelineRowLayout = "chip" | "table";
 
@@ -53,7 +54,11 @@ type PipelineReportRowProps = {
 	mark?: StatusDotVariant;
 	dimmed?: boolean;
 	onActivate?: () => void;
+	/** Spoken name for an activatable (preview) row. */
+	activateLabel?: string;
 	ghost?: boolean;
+	/** Slot this row occupies, shown in the table's leading gutter. */
+	slotNumber?: number;
 };
 
 export const PipelineReportRow = ({
@@ -77,7 +82,9 @@ export const PipelineReportRow = ({
 	mark,
 	dimmed = false,
 	onActivate,
+	activateLabel,
 	ghost = false,
+	slotNumber,
 }: PipelineReportRowProps) => {
 	const noteBlock = note ? (
 		<Paragraph as="span" size="xs" tone="faint" className="block">
@@ -177,8 +184,11 @@ export const PipelineReportRow = ({
 		</>
 	);
 
+	// The rule runs under the status mark, not under the config chip: the eye
+	// follows the mark's column down the list, so hanging the detail off it reads
+	// as one thread per row instead of two staggered starts.
 	const detail = (
-		<span className="col-span-2 col-start-2 row-start-2 mt-1.5 flex flex-col gap-1 border-l border-zinc-700 pl-3">
+		<span className="col-span-3 col-start-1 row-start-2 mt-1.5 flex flex-col gap-1 border-l border-zinc-700 pl-3">
 			{needs ? (
 				<Paragraph as="span" size="sm" tone={failed ? "cinnabar" : "default"}>
 					{needs}
@@ -204,9 +214,6 @@ export const PipelineReportRow = ({
 				</Paragraph>
 			) : null}
 			{noteBlock}
-			<span className={clsx("text-xs", RARITY_COLORS[rarity].text)}>
-				{rarity}
-			</span>
 		</span>
 	);
 
@@ -219,12 +226,19 @@ export const PipelineReportRow = ({
 	);
 
 	return (
-		<FoldableRow
-			summary={summaryCells}
-			detail={detail}
-			onActivate={onActivate}
-			foldable={!chipActions}
-			className={clsx(ghost && ghostBox, dimmed && "opacity-50")}
-		/>
+		<>
+			{slotNumber === undefined ? null : <SlotNumberCell slot={slotNumber} />}
+			<FoldableRow
+				summary={summaryCells}
+				detail={detail}
+				onActivate={onActivate}
+				activateLabel={activateLabel}
+				foldable={!chipActions}
+				className={clsx(ghost && ghostBox, dimmed && "opacity-50")}
+				placement={
+					slotNumber === undefined ? undefined : "col-start-2 col-span-3"
+				}
+			/>
+		</>
 	);
 };

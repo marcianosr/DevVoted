@@ -2,9 +2,14 @@
 
 ## Status
 
-Accepted (2026-08-06, Marciano). Adds a second consequence to pipeline width
-(ADR-008 Decision 2 — inline pointer there), flips `VICTORY_GATE` per DVTD-g1p0,
-and constrains the frozen-gate case in ADR-013 and ADR-014.
+⚠ **Superseded by [ADR-019](019-depth-and-width-are-independent.md)** (2026-08-06,
+one day after acceptance). The coupling below, the `heldAtGate` state, and
+slot-keyed swatches are all gone; read 019 for what shipped. Kept for the
+reasoning, since 019 is a direct answer to it.
+
+Was: accepted (2026-08-06, Marciano). Added a second consequence to pipeline width
+(ADR-008 Decision 2 — inline pointer there), flipped `VICTORY_GATE` per DVTD-g1p0,
+and constrained the frozen-gate case in ADR-013 and ADR-014.
 
 ## Context
 

@@ -5,6 +5,7 @@ import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { ConfiguringScreen } from "./ConfiguringScreen.ui";
 
 const base = {
+	gatesCleared: 0,
 	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.copilot],
@@ -53,20 +54,27 @@ describe(ConfiguringScreen, () => {
 		expect(onSlot).not.toHaveBeenCalled();
 	});
 
-	it("shows the next swatch locked, with live unlock progress", () => {
+	it("shows the next slot locked, with live unlock progress", () => {
 		render(
 			<ConfiguringScreen {...base} coverage={6.5} slotCoverageRequired={11} />
 		);
-		expect(screen.getByText("Boulder Swatch")).toBeInTheDocument();
-		expect(screen.getByText(/· slot 4 · opens gate 1/)).toBeInTheDocument();
+		// No badge on this row: swatches are earned by clearing gates (ADR-019).
+		expect(screen.queryByText("Boulder Swatch")).not.toBeInTheDocument();
 		expect(screen.getByText("11%")).toBeInTheDocument();
-		expect(screen.getByText("6.5%")).toBeInTheDocument();
+		expect(screen.getByText("6.5% reached")).toBeInTheDocument();
 		expect(screen.getByText("locked")).toBeInTheDocument();
 		expect(
-			screen.getByRole("progressbar", {
-				name: "coverage toward Boulder Swatch",
-			})
-		).toBeInTheDocument();
+			screen.getByRole("progressbar", { name: "coverage toward slot 4" })
+		).toHaveAttribute("aria-valuenow", "6.5");
+	});
+
+	it("numbers every slot down the list, the locked rung included", () => {
+		render(
+			<ConfiguringScreen {...base} coverage={6.5} slotCoverageRequired={11} />
+		);
+		// base fills two of three slots, so: 1-2 filled, 3 empty, 4 the locked rung.
+		for (const slot of ["1", "2", "3", "4"])
+			expect(screen.getByText(slot)).toBeInTheDocument();
 	});
 
 	it("marks the next swatch unlocked once coverage meets its gate", () => {
@@ -84,8 +92,7 @@ describe(ConfiguringScreen, () => {
 				slotCoverageRequired={Infinity}
 			/>
 		);
-		// The collected chips still list Pallet; it is the unlock row that goes.
-		expect(screen.queryByText(/opens gate/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
 		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 	});
 
@@ -149,7 +156,12 @@ describe(ConfiguringScreen, () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(screen.getByText("empty slot")).toBeInTheDocument();
 		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
-		expect(screen.getByText("click to add")).toBeInTheDocument();
+		// The row itself is the affordance — no "click to add" text inside the
+		// pipeline, which read as if the config were already installed.
+		expect(
+			screen.getByRole("button", { name: "Add Copilot to your pipeline" })
+		).toBeInTheDocument();
+		expect(screen.queryByText("click to add")).not.toBeInTheDocument();
 		// The preview occupies the would-be slot, so no open slot remains.
 		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
 	});
@@ -162,7 +174,9 @@ describe(ConfiguringScreen, () => {
 		const chip = screen.getByRole("button", { name: /Copilot/ });
 		fireEvent.mouseOver(chip);
 		fireEvent.mouseLeave(chip);
-		fireEvent.click(screen.getByRole("button", { name: /click to add/ }));
+		fireEvent.click(
+			screen.getByRole("button", { name: /^Add .+ to your pipeline$/ })
+		);
 		expect(onSlot).toHaveBeenCalledWith("copilot");
 	});
 
@@ -170,8 +184,9 @@ describe(ConfiguringScreen, () => {
 		render(<ConfiguringScreen {...base} />);
 		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
 		fireEvent.mouseOver(screen.getByRole("button", { name: /ESLint/ }));
-		const previews = screen.getAllByText("click to add");
-		expect(previews).toHaveLength(1);
+		expect(
+			screen.getAllByRole("button", { name: /^Add .+ to your pipeline$/ })
+		).toHaveLength(1);
 		expect(screen.queryByText(/All coverage earns/)).not.toBeInTheDocument();
 	});
 
@@ -181,7 +196,9 @@ describe(ConfiguringScreen, () => {
 		const chip = screen.getByRole("button", { name: /Copilot/ });
 		fireEvent.mouseOver(chip);
 		fireEvent.click(chip);
-		expect(screen.queryByText("click to add")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /^Add .+ to your pipeline$/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("shows the modifier change the previewed config would make, old to new", () => {
@@ -207,14 +224,16 @@ describe(ConfiguringScreen, () => {
 		const onSlot = vi.fn();
 		render(<ConfiguringScreen {...base} onSlot={onSlot} />);
 		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
-		fireEvent.click(screen.getByRole("button", { name: /click to add/ }));
+		fireEvent.click(
+			screen.getByRole("button", { name: /^Add .+ to your pipeline$/ })
+		);
 		expect(onSlot).toHaveBeenCalledWith("copilot");
 	});
 
-	it("names each pipeline row's rarity", () => {
+	it("keeps rarity to the bench legend — the rows carry it in their border", () => {
 		render(<ConfiguringScreen {...base} />);
 		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
-		// Once for the legend entry, once for the preview row's heading.
-		expect(screen.getAllByText("legendary")).toHaveLength(2);
+		// The word appears once, in the legend: naming it per row added nothing.
+		expect(screen.getAllByText("legendary")).toHaveLength(1);
 	});
 });
