@@ -86,15 +86,20 @@ describe(ShopScreen, () => {
 		expect(onRebuild).toHaveBeenCalled();
 	});
 
-	it("offers no upgrade control on Unit Tests — only focus configs level", () => {
+	it("prices Unit Tests' upgrade in storage, unlike free focus upgrades", () => {
 		render(<ShopScreen {...base} configs={[CONFIGS.unitTests]} />);
-		expect(
-			screen.queryByRole("button", { name: /Upgrade/ })
-		).not.toBeInTheDocument();
-		expect(screen.queryByText("maxed")).not.toBeInTheDocument();
+		const upgrade = screen.getByRole("button", { name: /Upgrade/ });
+		expect(upgrade).toBeEnabled(); // base storage 440 covers the 64KB
+		expect(upgrade).toHaveTextContent("64KB");
 		expect(
 			screen.getByRole("button", { name: /Deinstall/ })
 		).toBeInTheDocument();
+	});
+
+	it("parks Unit Tests' upgrade when storage can't cover it", () => {
+		render(<ShopScreen {...base} configs={[CONFIGS.unitTests]} storage={40} />);
+		expect(screen.getByRole("button", { name: /Upgrade/ })).toBeDisabled();
+		expect(screen.getByText(/Costs 64KB — you have 40KB/)).toBeInTheDocument();
 	});
 
 	it("explains a gated upgrade on hover — next level's effect and the category-tied coverage in its own color", () => {

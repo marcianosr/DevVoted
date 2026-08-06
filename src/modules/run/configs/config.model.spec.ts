@@ -43,11 +43,16 @@ describe("isUpgradable", () => {
 		expect(isUpgradable(CONFIGS.css)).toBe(true);
 	});
 
-	it("refuses Unit Tests — escalation is the only thing raising its check", () => {
-		expect(isUpgradable(CONFIGS.unitTests)).toBe(false);
+	it("allows Unit Tests until its level cap", () => {
+		expect(isUpgradable(CONFIGS.unitTests)).toBe(true);
+		expect(isUpgradable({ ...CONFIGS.unitTests, level: 5 })).toBe(false);
 	});
 
-	it("refuses non-focus configs", () => {
+	it("caps focus configs at level 5 too", () => {
+		expect(isUpgradable({ ...CONFIGS.js, level: 5 })).toBe(false);
+	});
+
+	it("refuses non-focus configs without a correct check", () => {
 		expect(isUpgradable(CONFIGS.copilot)).toBe(false);
 		expect(isUpgradable(CONFIGS.coverageGain)).toBe(false);
 		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
@@ -55,12 +60,12 @@ describe("isUpgradable", () => {
 });
 
 describe("describeConfig", () => {
-	it("uses the roster description for Unit Tests — no level-based reward copy", () => {
+	it("derives Unit Tests' copy from its level — payout and demand together", () => {
 		expect(describeConfig(CONFIGS.unitTests)).toBe(
-			CONFIGS.unitTests.description
+			"+32KB storage on gate clear — demands 1 correct answer, rising as you climb."
 		);
 		expect(describeConfig({ ...CONFIGS.unitTests, level: 2 })).toBe(
-			CONFIGS.unitTests.description
+			"+64KB storage on gate clear — demands 2 correct answers, rising as you climb."
 		);
 	});
 
@@ -89,8 +94,15 @@ describe("givesOf / needsOf", () => {
 	});
 
 	it("passes a non-focus config's authored copy through untouched", () => {
-		expect(givesOf(CONFIGS.unitTests)).toBe(CONFIGS.unitTests.gives);
+		expect(givesOf(CONFIGS.eslint)).toBe(CONFIGS.eslint.gives);
 		expect(needsOf(CONFIGS.eslint)).toBe(CONFIGS.eslint.needs);
+	});
+
+	it("derives Unit Tests' gives from its level", () => {
+		expect(givesOf(CONFIGS.unitTests)).toBe("Then +32KB on clear");
+		expect(givesOf({ ...CONFIGS.unitTests, level: 3 })).toBe(
+			"Then +96KB on clear"
+		);
 	});
 });
 

@@ -13,6 +13,14 @@ export const RUN_ROUTES = {
 export type RunRoutePath = (typeof RUN_ROUTES)[keyof typeof RUN_ROUTES];
 
 /**
+ * Deliberately NOT in RUN_ROUTES: the community board is a breather outside
+ * the climb, so the sync must never police it — it is only ever a target.
+ */
+export const COMMUNITY_ROUTE = "/run/community";
+
+export type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
+
+/**
  * The server owns the run's state machine; the URL only projects it. This maps
  * each status to the route(s) allowed to show it — first entry is canonical.
  * "rewarding" spans two routes because the reward → shop hop is a user-driven
@@ -46,14 +54,19 @@ const RUN_SCREEN_PATHS: readonly string[] = Object.values(RUN_ROUTES);
  * transition to elsewhere (the community detour, /dex, …) the layout is
  * still briefly mounted with the new pathname, and policing it would drag
  * the player back into the run.
+ *
+ * The daily lock overrides the status map: awaiting tomorrow's polls there
+ * is nothing to show on any run screen, so the player lands on the
+ * community board — the day's closing beat (ADR-014, DVTD-zfuv).
  */
 export const syncTarget = (
 	pathname: string,
-	view: Pick<RunView, "status"> | null,
+	view: Pick<RunView, "status" | "awaitingTomorrow"> | null,
 	isPending: boolean
-): RunRoutePath | null => {
+): SyncTargetPath | null => {
 	if (isPending) return null;
 	if (!RUN_SCREEN_PATHS.includes(pathname)) return null;
+	if (view?.awaitingTomorrow) return COMMUNITY_ROUTE;
 	const allowed = routesForStatus(view);
 	const isOnAllowedScreen = allowed.some((path) => path === pathname);
 	return isOnAllowedScreen ? null : allowed[0];

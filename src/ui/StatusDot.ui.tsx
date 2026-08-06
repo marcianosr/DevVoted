@@ -2,10 +2,10 @@ import { clsx } from "clsx";
 
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 
-/** The dot speaks check states — plus two affordance marks that carry no
- * state: "use" (a usable-but-idle config; yields to the honest dot once the
- * check arms) and "add" (a shop offer waiting to be bought). */
-export type StatusDotVariant = StatusBadgeVariant | "use" | "add";
+/** The dot speaks check states — plus one affordance mark that carries no
+ * state: "add" (a shop offer waiting to be bought). An idle linter reads
+ * plain "skip": its use-button is the affordance, the dot stays honest. */
+export type StatusDotVariant = StatusBadgeVariant | "add";
 
 // The indicator is compact, so every variant carries a spoken state name for
 // screen readers — the text label the badge had is otherwise lost.
@@ -15,8 +15,6 @@ const LABEL: Record<StatusDotVariant, string> = {
 	fail: "failed",
 	skip: "skipped",
 	run: "running",
-	perk: "perk",
-	use: "usable",
 	add: "buyable",
 };
 
@@ -25,7 +23,6 @@ const LABEL: Record<StatusDotVariant, string> = {
 const GLYPH: Partial<Record<StatusDotVariant, string>> = {
 	pass: "✓",
 	fail: "✗",
-	use: "▸",
 	add: "＋",
 };
 
@@ -37,10 +34,6 @@ const STYLE: Record<StatusDotVariant, string> = {
 	part: clsx(DOT, "bg-white"),
 	skip: clsx(DOT, "bg-zinc-600"),
 	run: clsx(DOT, "bg-saffron"),
-	// Perks back no check — a hollow ring reads "nothing to report",
-	// distinct from skip's gray fill by shape, not only by color.
-	perk: clsx(DOT, "border-2 border-pewter"),
-	use: "text-xs leading-none text-pewter",
 	add: "text-xs leading-none text-pewter",
 };
 

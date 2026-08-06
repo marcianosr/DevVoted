@@ -9,6 +9,7 @@ import {
 	coverageForAnswer,
 	coverageProfileFor,
 	effectiveRequirement,
+	gateClearPayout,
 	canLint,
 	isBare,
 	pipelineModifiersFor,
@@ -86,7 +87,7 @@ describe("storageOnClearFor", () => {
 describe("pipelineModifiersFor", () => {
 	it("prices a bare pipeline at the base gate reward with identity multipliers", () => {
 		expect(pipelineModifiersFor([])).toEqual({
-			gateReward: 80,
+			gateReward: 32,
 			rewardMultiplier: 1,
 			coverageMultiplier: 1,
 			coverageAdd: 0,
@@ -97,11 +98,36 @@ describe("pipelineModifiersFor", () => {
 		// Unit Tests pays +32 on clear, Copilot doubles coverage — the same
 		// numbers the configure preview shows before the config is slotted.
 		expect(pipelineModifiersFor([CONFIGS.unitTests, CONFIGS.copilot])).toEqual({
-			gateReward: 112,
+			gateReward: 64,
 			rewardMultiplier: 1,
 			coverageMultiplier: 2,
 			coverageAdd: 0,
 		});
+	});
+});
+
+describe("gateClearPayout", () => {
+	it("scales the base reward with window correctness", () => {
+		expect(gateClearPayout([], 5, 0)).toBe(32);
+		expect(gateClearPayout([], 3, 0)).toBe(19); // 32 × 3/5, rounded
+	});
+
+	it("rides the same gate-depth curve as coverage", () => {
+		expect(gateClearPayout([], 5, 4)).toBe(160); // gate 5: 32 × 5
+		expect(gateClearPayout([], 5, 11)).toBe(384); // gate 12: 32 × 12
+	});
+
+	it("caps the depth multiplier at gate 12 for endless runs", () => {
+		expect(gateClearPayout([], 5, 30)).toBe(384); // gate 31 still pays like gate 12
+	});
+
+	it("pays a 0/5 clear nothing — a farm build banks no storage (ADR-017)", () => {
+		expect(gateClearPayout([], 0, 11)).toBe(0);
+	});
+
+	it("keeps flat clear payouts whole — they ride their own passed check", () => {
+		// Unit Tests' +32 is not scaled: its check demanded the correct answers.
+		expect(gateClearPayout([CONFIGS.unitTests], 3, 0)).toBe(19 + 32);
 	});
 });
 

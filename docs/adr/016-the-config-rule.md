@@ -21,11 +21,11 @@ export const effectOf = (config: Config): Effect => ({
 });
 ```
 
-`benefitOf` branches only on which benefit fields are set, never on "what kind of config is this". `checkOf` resolves a builder from the `CheckKind` union (`coverage-gain`, `cold-start`, `min-correct`, `no-double-miss`, `breadth`, `lint-correct`); focus configs derive their mastery check from `focusCategory`; `"correct"` contributes nothing because the baseline Correct check stays synthesized in `gate.model.ts` (a bare pipeline must still demand answers — see DVTD-civm for the open death-model question).
+`benefitOf` branches only on which benefit fields are set, never on "what kind of config is this". `checkOf` resolves a builder from the `CheckKind` union (`coverage-gain`, `cold-start`, `min-correct`, `no-double-miss`, `breadth`, `lint-correct`); focus configs derive their mastery check from `focusCategory`; `"correct"` contributes nothing because the Correct check stays synthesized in `gate.model.ts`. ⚠ Amended by [ADR-017](017-no-baseline-check.md): the synthesized row now exists only while a `check: "correct"` config is installed — there is no always-on baseline, and a bare pipeline never clears.
 
 ### 2. Only the baseline escalates
 
-`escalation(gatesCleared)` raises the Correct check only. Config check thresholds are flat (Coverage demands +1% at gate 1 and at gate 5). Supersedes ADR-006 §3's "also applied to check-config thresholds".
+⚠ Re-read under [ADR-017](017-no-baseline-check.md): "the baseline" is now Unit Tests' Correct check — still the only check that escalates. `escalation(gatesCleared)` raises the Correct check only. Config check thresholds are flat (Coverage demands +1% at gate 1 and at gate 5). Supersedes ADR-006 §3's "also applied to check-config thresholds".
 
 ### 3. The check is the price of the effect — no storage multipliers
 

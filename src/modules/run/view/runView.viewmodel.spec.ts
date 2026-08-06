@@ -65,11 +65,28 @@ describe("toRunView", () => {
 	});
 
 	it("surfaces the gate checks, demands, and stats a screen needs", () => {
-		const view = toRunView(answering());
-		expect(view.checks[0].label).toBe("Correct");
-		expect(view.demands[0]).toContain("correct answer");
+		const view = toRunView(answeringWith([CONFIGS.js]));
+		// The .js build owes only its own check — no baseline row (ADR-017).
+		expect(view.checks.map((check) => check.label)).toEqual([".js mastery"]);
+		expect(view.demands[0]).toBe(".js: get one right if js appears");
 		expect(view.pollsToGate).toBe(5);
 		expect(view.victoryGate).toBeGreaterThan(0);
+	});
+
+	it("keeps awaitingTomorrow off while a poll is on deck", () => {
+		expect(toRunView(answering()).awaitingTomorrow).toBe(false);
+	});
+
+	it("raises awaitingTomorrow when answering with the day's polls exhausted", () => {
+		const exhausted = { ...answering(), currentIndex: 2 };
+		const view = toRunView(exhausted);
+		expect(view.awaitingTomorrow).toBe(true);
+		expect(view.poll).toBeNull();
+	});
+
+	it("keeps awaitingTomorrow off outside the answering status", () => {
+		const configuring = createRun([], [CONFIGS.js]);
+		expect(toRunView(configuring).awaitingTomorrow).toBe(false);
 	});
 });
 

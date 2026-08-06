@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { RUN_ROUTES, routesForStatus, syncTarget } from "./runRoutes.viewmodel";
+import {
+	COMMUNITY_ROUTE,
+	RUN_ROUTES,
+	routesForStatus,
+	syncTarget,
+} from "./runRoutes.viewmodel";
+
+const climbing = (status: Parameters<typeof routesForStatus>[0] & object) => ({
+	...status,
+	awaitingTomorrow: false,
+});
 
 describe("routesForStatus", () => {
 	it("sends a day without a run to the start screen", () => {
@@ -34,32 +44,38 @@ describe("routesForStatus", () => {
 
 describe("syncTarget", () => {
 	it("holds position while the run is still loading, even off-route", () => {
-		expect(syncTarget("/run/shop", { status: "answering" }, true)).toBeNull();
+		expect(
+			syncTarget("/run/shop", climbing({ status: "answering" }), true)
+		).toBeNull();
 		expect(syncTarget("/run/shop", null, true)).toBeNull();
 	});
 
 	it("stays put on the allowed screen for the current status", () => {
 		expect(
-			syncTarget("/run/answer", { status: "answering" }, false)
+			syncTarget("/run/answer", climbing({ status: "answering" }), false)
 		).toBeNull();
 		expect(syncTarget("/run", null, false)).toBeNull();
-		expect(syncTarget("/run/over", { status: "dead" }, false)).toBeNull();
+		expect(
+			syncTarget("/run/over", climbing({ status: "dead" }), false)
+		).toBeNull();
 	});
 
 	it("stays put on either reward page while rewarding", () => {
 		expect(
-			syncTarget("/run/reward", { status: "rewarding" }, false)
+			syncTarget("/run/reward", climbing({ status: "rewarding" }), false)
 		).toBeNull();
-		expect(syncTarget("/run/shop", { status: "rewarding" }, false)).toBeNull();
+		expect(
+			syncTarget("/run/shop", climbing({ status: "rewarding" }), false)
+		).toBeNull();
 	});
 
 	it("redirects a stale screen to the canonical route for the status", () => {
-		expect(syncTarget("/run/answer", { status: "rewarding" }, false)).toBe(
-			RUN_ROUTES.reward
-		);
-		expect(syncTarget("/run/shop", { status: "answering" }, false)).toBe(
-			RUN_ROUTES.answer
-		);
+		expect(
+			syncTarget("/run/answer", climbing({ status: "rewarding" }), false)
+		).toBe(RUN_ROUTES.reward);
+		expect(
+			syncTarget("/run/shop", climbing({ status: "answering" }), false)
+		).toBe(RUN_ROUTES.answer);
 	});
 
 	it("sends a day without a run back to the start screen", () => {
@@ -67,15 +83,41 @@ describe("syncTarget", () => {
 	});
 
 	it("pulls the start screen forward into a live run", () => {
-		expect(syncTarget("/run", { status: "configuring" }, false)).toBe(
+		expect(syncTarget("/run", climbing({ status: "configuring" }), false)).toBe(
 			RUN_ROUTES.configure
 		);
 	});
 
 	it("stands down on paths that are not run screens", () => {
 		expect(
-			syncTarget("/run/community", { status: "rewarding" }, false)
+			syncTarget("/run/community", climbing({ status: "rewarding" }), false)
 		).toBeNull();
-		expect(syncTarget("/dex", { status: "answering" }, false)).toBeNull();
+		expect(
+			syncTarget("/dex", climbing({ status: "answering" }), false)
+		).toBeNull();
+	});
+
+	// The daily lock (ADR-014): today's polls are spent, the run waits for
+	// tomorrow's segment. There is nothing to show on any run screen, so the
+	// player lands on the community board instead of a blank answer page.
+	describe("while the run awaits tomorrow's polls", () => {
+		const locked = { status: "answering", awaitingTomorrow: true } as const;
+
+		it("sends the answer screen to the community board", () => {
+			expect(syncTarget("/run/answer", locked, false)).toBe(COMMUNITY_ROUTE);
+		});
+
+		it("sends every other run screen to the community board too", () => {
+			expect(syncTarget("/run", locked, false)).toBe(COMMUNITY_ROUTE);
+			expect(syncTarget("/run/shop", locked, false)).toBe(COMMUNITY_ROUTE);
+		});
+
+		it("stays put once on the community board", () => {
+			expect(syncTarget("/run/community", locked, false)).toBeNull();
+		});
+
+		it("holds position while the run is still loading", () => {
+			expect(syncTarget("/run/answer", locked, true)).toBeNull();
+		});
 	});
 });

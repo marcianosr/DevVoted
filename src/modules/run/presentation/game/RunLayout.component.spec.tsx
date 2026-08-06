@@ -150,6 +150,36 @@ describe("run route sync", () => {
 		);
 	});
 
+	it("lands a run awaiting tomorrow's polls on the community board", async () => {
+		vi.mocked(getTodaysRun).mockResolvedValue({
+			success: true,
+			data: createMockRunView({
+				status: "answering",
+				poll: null,
+				awaitingTomorrow: true,
+			}),
+		});
+		vi.mocked(getRunCommunity).mockResolvedValue({
+			success: true,
+			data: {
+				date: TEST_DATES.birthday,
+				totalPlayers: 3,
+				topPercent: null,
+				standouts: [],
+				polls: [],
+			},
+		});
+
+		const router = renderRunRoutes("/run/answer");
+
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/run/community")
+		);
+		// The continue button waits with the run: a countdown, not a dead link.
+		const wait = await screen.findByRole("button", { name: /New polls in/ });
+		expect(wait).toBeDisabled();
+	});
+
 	it("keeps a finished run on the summary and hides the HUD", async () => {
 		vi.mocked(getTodaysRun).mockResolvedValue({
 			success: true,

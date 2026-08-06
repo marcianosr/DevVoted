@@ -14,11 +14,15 @@ export const getTodayDateString = () => {
  * setHours(24, 0, 0, 0) rolls cleanly into tomorrow (JS normalises hour 24 to
  * 00:00 of the next day), so the diff is the time left in the local day.
  */
-export const getMsUntilNextPoll = (now: Date): number => {
-	const nextMidnight = new Date(now);
-	nextMidnight.setHours(24, 0, 0, 0);
-	return nextMidnight.getTime() - now.getTime();
+export const nextLocalMidnight = (now: Date): Date => {
+	const next = new Date(now);
+	// setHours(24, …) normalises hour 24 to 00:00 of the next day.
+	next.setHours(24, 0, 0, 0);
+	return next;
 };
+
+export const getMsUntilNextPoll = (now: Date): number =>
+	nextLocalMidnight(now).getTime() - now.getTime();
 
 /**
  * Game-copy duration: "9s" under a minute, "1m45" past it. Hand-rolled on
@@ -27,6 +31,20 @@ export const getMsUntilNextPoll = (now: Date): number => {
  * a design choice, not a formatting gap. Floors at "1s": a standout can never
  * read "0s".
  */
+/**
+ * Wait-copy duration: "7h 23m" / "2h" / "45m" / "<1m". Minute resolution on
+ * purpose — it labels a button counting down to the next day, and a seconds
+ * tick there reads as jitter, not information.
+ */
+export const formatCompactDuration = (ms: number): string => {
+	const totalMinutes = Math.floor(Math.max(0, ms) / 60_000);
+	if (totalMinutes < 1) return "<1m";
+	const hours = Math.floor(totalMinutes / 60);
+	const minutes = totalMinutes % 60;
+	if (hours < 1) return `${minutes}m`;
+	return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
+};
+
 export const formatDurationMs = (ms: number): string => {
 	const seconds = Math.max(1, Math.round(ms / 1000));
 	if (seconds < 60) return `${seconds}s`;

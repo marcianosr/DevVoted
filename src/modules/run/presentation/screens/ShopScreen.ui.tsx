@@ -8,6 +8,7 @@ import {
 	needsOf,
 	sellRefund,
 	upgradeCoverageRequired,
+	upgradeStorageCost,
 } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { getCategoryMetadata } from "~/domains/shared/categories";
@@ -121,10 +122,11 @@ export const ShopScreen = ({
 	const atSlotCap = !Number.isFinite(slotCoverageRequired);
 	const isFull = configs.length >= slots;
 
-	// Only focus configs are upgradable (isUpgradable), and their upgrades are
-	// coverage-gated, never paid in KB (wiki §4.4).
+	// Focus upgrades are coverage-gated and free; Unit Tests' upgrade is
+	// storage-priced (32KB × the level bought) with no coverage requirement.
 	const canUpgrade = (config: Config): boolean => {
-		if (!config.focusCategory) return false;
+		if (!config.focusCategory)
+			return storage >= upgradeStorageCost(config.level ?? 1);
 		return (
 			(coverageByCategory[config.focusCategory] ?? 0) >=
 			upgradeCoverageRequired(config.level ?? 1)
@@ -132,12 +134,16 @@ export const ShopScreen = ({
 	};
 
 	// Hovering Upgrade always previews the next level's concrete effect; while
-	// gated it adds the category-tied coverage it wants (upgrades are
-	// per-category, wiki §4.4). The category name reads in its own Kanto color.
+	// gated it adds what the upgrade wants — the category-tied coverage for a
+	// focus config (its name in its own Kanto color), the KB price otherwise.
 	const upgradeTooltip = (config: Config): ReactNode => {
 		const nextLevel = (config.level ?? 1) + 1;
 		const preview = `L${nextLevel}: ${describeConfig({ ...config, level: nextLevel })}`;
-		if (!config.focusCategory || canUpgrade(config)) return preview;
+		if (canUpgrade(config)) return preview;
+		if (!config.focusCategory) {
+			const cost = upgradeStorageCost(config.level ?? 1);
+			return `${preview} Costs ${cost}KB — you have ${storage}KB.`;
+		}
 		const required = upgradeCoverageRequired(config.level ?? 1);
 		const have = coverageByCategory[config.focusCategory] ?? 0;
 		return (
@@ -158,6 +164,9 @@ export const ShopScreen = ({
 		const upgradeButton = isUpgradable(config)
 			? actionButton({
 					label: "Upgrade",
+					price: config.focusCategory
+						? undefined
+						: `${upgradeStorageCost(config.level ?? 1)}KB`,
 					onClick: () => onUpgrade(config.id),
 					disabled: !canUpgrade(config),
 					prismatic: canUpgrade(config),
@@ -239,7 +248,7 @@ export const ShopScreen = ({
 					{draftOptions.map((config) => (
 						<PipelineReportRow
 							key={config.id}
-							badge="perk"
+							badge="skip"
 							mark="add"
 							layout="table"
 							config={config}

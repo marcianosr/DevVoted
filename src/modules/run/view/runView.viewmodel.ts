@@ -4,6 +4,7 @@ import {
 	type AnswerOutcome,
 	type AnswerType,
 	canRunLinter,
+	isAwaitingTomorrow,
 	lintApplies,
 	lintCost,
 	rebuildCost,
@@ -50,6 +51,8 @@ export type RunView = {
 	readonly newConfigIds: readonly string[];
 	readonly stripsRemaining: number;
 	readonly poll: PollView | null;
+	/** Daily lock (ADR-014): answering, but today's segment is spent. */
+	readonly awaitingTomorrow: boolean;
 	readonly disabledOptionIds: readonly string[];
 	readonly canLint: boolean;
 	readonly lintReady: boolean;
@@ -69,6 +72,8 @@ export type RunView = {
 	readonly coverageMultiplier: number;
 	readonly coverageAdd: number;
 	readonly gateReward: number;
+	/** What the just-cleared gate actually paid — the reward/shop screens' number. */
+	readonly gateRewardPaidKb: number;
 	/** Exact (capped) faucet income collected this gate — feeds the reward report. */
 	readonly faucetThisGateKb: number;
 	readonly gatesCleared: number;
@@ -230,6 +235,7 @@ export const toRunView = (state: RunState): RunView => {
 		newConfigIds: state.draftedThisGate,
 		stripsRemaining: state.stripsRemaining,
 		poll: state.status === "answering" && current ? redactPoll(current) : null,
+		awaitingTomorrow: isAwaitingTomorrow(state),
 		// Only options the player paid to lint off — no automatic masking.
 		disabledOptionIds: state.manualDisabled,
 		canLint: lintApplies(state),
@@ -249,6 +255,7 @@ export const toRunView = (state: RunState): RunView => {
 		passedChecks: state.clearedChecks,
 		demands: gateDemands(state.pipeline, state.gatesCleared),
 		...pipelineModifiersFor(state.pipeline.configs),
+		gateRewardPaidKb: state.gateRewardKb ?? 0,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
 		victoryGate: VICTORY_GATE,

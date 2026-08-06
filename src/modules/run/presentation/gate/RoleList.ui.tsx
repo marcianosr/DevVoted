@@ -34,7 +34,7 @@ const STATE_VALUE_TONE: Record<CheckState, ParagraphTone> = {
 };
 
 const roleBadge = (row: RoleRow): StatusBadgeVariant =>
-	row.state ? STATE_BADGE[row.state] : "perk";
+	row.state ? STATE_BADGE[row.state] : "skip";
 
 const roleValueTone = (row: RoleRow): ParagraphTone =>
 	row.state ? STATE_VALUE_TONE[row.state] : "muted";
@@ -176,7 +176,6 @@ export const RoleList = ({
 						key={row.config.id}
 						badge={roleBadge(row)}
 						layout="table"
-						usable={Boolean(action)}
 						config={row.config}
 						description={row.description}
 						descriptionTone={row.state === "failed" ? "cinnabar" : "muted"}
@@ -201,7 +200,7 @@ export const RoleList = ({
 			})}
 			{preview ? (
 				<PipelineReportRow
-					badge="perk"
+					badge="skip"
 					layout="table"
 					ghost
 					config={preview.config}

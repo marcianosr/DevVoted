@@ -1,7 +1,6 @@
 import { cva } from "class-variance-authority";
 
-export type StatusBadgeVariant =
-	"pass" | "part" | "fail" | "skip" | "run" | "perk";
+export type StatusBadgeVariant = "pass" | "part" | "fail" | "skip" | "run";
 
 const LABEL: Record<StatusBadgeVariant, string> = {
 	pass: "PASS",
@@ -9,7 +8,6 @@ const LABEL: Record<StatusBadgeVariant, string> = {
 	fail: "FAIL",
 	skip: "SKIP",
 	run: "RUN",
-	perk: "PERK",
 };
 
 const badge = cva(
@@ -22,7 +20,6 @@ const badge = cva(
 				fail: "bg-cinnabar text-black",
 				skip: "bg-zinc-600 text-zinc-100",
 				run: "bg-saffron text-black",
-				perk: "bg-lavender text-black",
 			} satisfies Record<StatusBadgeVariant, string>,
 		},
 	}

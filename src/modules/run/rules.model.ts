@@ -1,8 +1,9 @@
 export const SLICE_WINDOW = 5;
-export const CLIMB_BASE_REQUIREMENT = 1;
 export const VICTORY_GATE = 5;
-/** Base storage (KB) a cleared gate pays, before Risk/Check reward multipliers. */
-export const GATE_REWARD_KB = 80;
+/** Gate-1 base storage (KB) a clear pays — scaled by gate depth, reward multipliers, and window correctness. */
+export const GATE_REWARD_KB = 32;
+/** Depth cap on the reward's gate multiplier: endless (continue-past-victory) runs stop scaling payout past gate 12, the intended summit. */
+export const GATE_REWARD_MULTIPLIER_CAP = 12;
 /** Hard cap (KB) on the storage currency — income beyond this is discarded. */
 export const STORAGE_CAP_KB = 512;
 /**
@@ -67,6 +68,13 @@ export const pollDifficultyMultiplier = (
 
 export const escalation = (gatesCleared: number): number =>
 	Math.floor(gatesCleared / 2);
+
+/**
+ * Auto-escalation stops at +3: an un-upgraded Unit Tests never demands more
+ * than 4 of 5, so any depth stays survivable with one miss. Only bought
+ * levels can push the demand to the full window (gate.model clamps the total).
+ */
+export const ESCALATION_CAP = 3;
 
 export const dropCount = (gatesCleared: number): number =>
 	1 + Math.floor(gatesCleared / 2);

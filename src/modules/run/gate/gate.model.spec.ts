@@ -37,33 +37,61 @@ describe("escalation and dropCount", () => {
 });
 
 describe("currentRequirement", () => {
-	it("starts at 1 and escalates", () => {
-		expect(currentRequirement(pipelineWith([]), 0)).toBe(1);
-		expect(currentRequirement(pipelineWith([]), 2)).toBe(2);
+	it("owes nothing without a correct-check config (ADR-017)", () => {
+		expect(currentRequirement(pipelineWith([]), 0)).toBeNull();
+		expect(currentRequirement(pipelineWith([CONFIGS.coldStart]), 2)).toBeNull();
 	});
 
-	it("reads Unit Tests' checkAmount — its level never raises the demand", () => {
+	it("reads Unit Tests' checkAmount and escalates with gate depth", () => {
 		expect(currentRequirement(pipelineWith([CONFIGS.unitTests]), 0)).toBe(1);
+		expect(currentRequirement(pipelineWith([CONFIGS.unitTests]), 2)).toBe(2);
+	});
+
+	it("each Unit Tests level adds one demanded answer", () => {
 		expect(
 			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 3 }]), 0)
-		).toBe(1);
+		).toBe(3);
+	});
+
+	it("caps auto-escalation at 4 of 5 — an L1 build always survives one miss", () => {
+		expect(currentRequirement(pipelineWith([CONFIGS.unitTests]), 12)).toBe(4);
+	});
+
+	it("clamps the total to the window — only bought levels reach 5 of 5", () => {
+		expect(
+			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 3 }]), 12)
+		).toBe(5);
+		expect(
+			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 5 }]), 0)
+		).toBe(5);
 	});
 });
 
 describe("checkStatuses", () => {
-	it("always leads with the Correct baseline", () => {
+	it("contributes no Correct check without a correct-check config", () => {
+		expect(checkStatuses(pipelineWith([]), EMPTY_WINDOW, 0)).toEqual([]);
+		const labels = checkStatuses(
+			pipelineWith([CONFIGS.coldStart]),
+			win({ correct: 1, answered: 5, leadingCorrect: 1 }),
+			0
+		).map((check) => check.label);
+		expect(labels).not.toContain("Correct");
+	});
+
+	it("leads with Unit Tests' Correct check when it is installed", () => {
 		const [first] = checkStatuses(
-			pipelineWith([]),
+			pipelineWith([CONFIGS.unitTests]),
 			win({ correct: 1, answered: 5 }),
 			0
 		);
 		expect(first.label).toBe("Correct");
 		expect(first.state).toBe("success");
+		expect(first.sourceConfigId).toBe(CONFIGS.unitTests.id);
 	});
 
 	it("adds a Coverage check that can fail while Correct passes", () => {
 		const statuses = checkStatuses(
-			pipelineWith([CONFIGS.coverageGain]),
+			pipelineWith([CONFIGS.unitTests, CONFIGS.coverageGain]),
 			win({ correct: 3, answered: 5, coverageGained: 0.5 }),
 			0
 		);
@@ -76,7 +104,7 @@ describe("checkStatuses", () => {
 	});
 
 	it("fails Cold Start when the opening answer missed", () => {
-		const [, coldStart] = checkStatuses(
+		const [coldStart] = checkStatuses(
 			pipelineWith([CONFIGS.coldStart]),
 			win({ correct: 4, answered: 5, leadingCorrect: 0 }),
 			0
@@ -155,6 +183,14 @@ describe("gatePassed", () => {
 			)
 		).toBe(false);
 	});
+
+	// ADR-017: with checks coming only from configs, an empty checklist would
+	// pass vacuously and a stripped-bare run could never die.
+	it("never passes a bare pipeline — nothing installed, nothing ships", () => {
+		expect(
+			gatePassed(pipelineWith([]), win({ correct: 5, answered: 5 }), 0)
+		).toBe(false);
+	});
 });
 
 describe("gateDemands", () => {
@@ -163,8 +199,16 @@ describe("gateDemands", () => {
 			pipelineWith([CONFIGS.coldStart, CONFIGS.coverageGain]),
 			0
 		);
-		expect(demands[0]).toBe("1 correct answer");
 		expect(demands).toContain("your first answer correct");
 		expect(demands).toContain("+1% coverage this window");
+	});
+
+	it("only demands correct answers when a correct-check config asks", () => {
+		expect(gateDemands(pipelineWith([CONFIGS.coldStart]), 0)).not.toContain(
+			"1 correct answer"
+		);
+		expect(gateDemands(pipelineWith([CONFIGS.unitTests]), 0)[0]).toBe(
+			"1 correct answer"
+		);
 	});
 });

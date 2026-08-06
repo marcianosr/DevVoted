@@ -8,9 +8,9 @@ import {
 	type CoverageBreakdown,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
+	gateClearPayout,
 	isBare,
 	linterFor,
-	pipelineModifiersFor,
 	rewardMultiplierFor,
 	stripConfig,
 } from "../pipeline/pipeline.model";
@@ -20,6 +20,7 @@ import {
 	isUpgradable,
 	sellRefund,
 	upgradeCoverageRequired,
+	upgradeStorageCost,
 } from "../configs/config.model";
 import {
 	type AnswerContext,
@@ -188,6 +189,8 @@ export type RunState = {
 	readonly faucetEarnedKb?: number;
 	/** Faucet income inside the current window — feeds the gate report's exact row. */
 	readonly faucetThisGateKb?: number;
+	/** What the just-cleared gate actually paid (correctness- and depth-scaled) — feeds the reward report. */
+	readonly gateRewardKb?: number;
 	readonly log: readonly string[];
 };
 
@@ -237,6 +240,7 @@ export const createRun = (
 	storage: 0,
 	faucetEarnedKb: 0,
 	faucetThisGateKb: 0,
+	gateRewardKb: 0,
 	log: [],
 });
 
@@ -318,16 +322,22 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		};
 	}
 
-	// 80KB base × build multipliers, plus every flat clear payout (Unit Tests' +32).
-	const reward = pipelineModifiersFor(state.pipeline.configs).gateReward;
-	// faucetThisGateKb is NOT reset here: the reward report still reads it while
-	// the shop is open. finishReward clears it, like answeredThisGate.
+	// 32KB base × gate number × build multipliers, scaled by window correctness
+	// (0/5 pays 0), plus every flat clear payout (Unit Tests' +32) whole.
+	const reward = gateClearPayout(
+		state.pipeline.configs,
+		state.window.correct,
+		state.gatesCleared
+	);
+	// faucetThisGateKb/gateRewardKb are NOT reset here: the reward report still
+	// reads them while the shop is open. finishReward clears them.
 	const cleared: RunState = {
 		...state,
 		window: EMPTY_WINDOW,
 		manualDisabled: [],
 		gatesCleared: gateNumber,
 		storage: addStorage(state.storage, reward),
+		gateRewardKb: reward,
 		currentIndex: nextIndex,
 	};
 
@@ -586,6 +596,7 @@ const resumeClimb = (state: RunState): RunState => {
 		window: EMPTY_WINDOW,
 		manualDisabled: [],
 		faucetThisGateKb: 0,
+		gateRewardKb: 0,
 		answeredThisGate: [],
 		status: "answering",
 		log: withLog(
@@ -653,27 +664,37 @@ const draft = (state: RunState, configId: string): RunState => {
 	};
 };
 
+// Focus upgrades are free but coverage-gated; Unit Tests' upgrade is
+// storage-priced (32KB × the level bought) with no coverage requirement.
 const upgrade = (state: RunState, configId: string): RunState => {
 	const owned = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
 	if (!owned || !isUpgradable(owned)) return state;
-	const focusCategory = owned.focusCategory;
-	if (!focusCategory) return state;
 	const level = owned.level ?? 1;
-	const have = state.coverageByCategory[focusCategory] ?? 0;
-	if (have < upgradeCoverageRequired(level)) return state;
 	const levelled = withPipeline(
 		state.pipeline,
 		state.pipeline.configs.map((config) =>
 			config.id === configId ? levelUp(config) : config
 		)
 	);
+	if (owned.focusCategory) {
+		const have = state.coverageByCategory[owned.focusCategory] ?? 0;
+		if (have < upgradeCoverageRequired(level)) return state;
+		return stayReward(
+			state,
+			levelled,
+			state.draftOptions,
+			`Upgraded ${owned.label} to L${level + 1}.`
+		);
+	}
+	const cost = upgradeStorageCost(level);
+	if (state.storage < cost) return state;
 	return stayReward(
-		state,
+		{ ...state, storage: state.storage - cost },
 		levelled,
 		state.draftOptions,
-		`Upgraded ${owned.label} to L${level + 1}.`
+		`Upgraded ${owned.label} to L${level + 1} for ${cost}KB.`
 	);
 };
 
@@ -685,6 +706,7 @@ const finishReward = (state: RunState): RunState => ({
 	answeredThisGate: [],
 	clearedChecks: [],
 	faucetThisGateKb: 0,
+	gateRewardKb: 0,
 	status: "answering",
 	log: withLog(state, "Climbing on."),
 });

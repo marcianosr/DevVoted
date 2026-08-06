@@ -98,8 +98,9 @@ export const AnsweringScreen = ({
 	onNext,
 	onLint,
 }: AnsweringScreenProps) => {
-	// The linter acts from its own pipeline row: its row points (▸) and offers
-	// the "use" button, instead of a separate button on the poll card.
+	// The linter acts from its own pipeline row: it offers the "use" button
+	// instead of a separate button on the poll card. The row's dot stays an
+	// honest "skipped" until the linter is used — the button is the affordance.
 	const lintActionFor = (config: Config): RowUseAction | undefined => {
 		if (!canLint || !linter || !onLint || config.id !== linter.id)
 			return undefined;
@@ -107,51 +108,52 @@ export const AnsweringScreen = ({
 	};
 
 	return (
-		<div className="flex flex-col gap-6">
-			<PollCard
-				category={category}
-				question={question}
-				codeBlock={codeBlock}
-				codeSandboxUrl={codeSandboxUrl}
-				answerType={answerType}
-				options={options}
-				selectedOptionIds={selectedOptionIds}
-				disabledOptionIds={disabledOptionIds}
-				correctOptionIds={correctOptionIds}
-				chosenOptionIds={chosenOptionIds}
-				onSelect={onSelect}
-			/>
-			{revealScore ? (
-				<div className="flex flex-col gap-4">
-					<hr className="border-theme border-t" />
-					<ScoreEquationChips
-						isCorrect={revealScore.isCorrect}
-						baseCoverage={revealScore.baseCoverage}
-						bonuses={scoreBonusRows(revealScore, configs)}
-						earnedCoverage={revealScore.earnedCoverage}
-						difficulty={revealScore.difficulty}
-						animated
-						startDelayMs={REVEAL_SCORE_START_MS}
-					/>
+		<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
+			<div className="flex flex-1 flex-col gap-6">
+				<PollCard
+					category={category}
+					question={question}
+					codeBlock={codeBlock}
+					codeSandboxUrl={codeSandboxUrl}
+					answerType={answerType}
+					options={options}
+					selectedOptionIds={selectedOptionIds}
+					disabledOptionIds={disabledOptionIds}
+					correctOptionIds={correctOptionIds}
+					chosenOptionIds={chosenOptionIds}
+					onSelect={onSelect}
+				/>
+				{revealScore ? (
+					<div className="flex flex-col gap-4">
+						<hr className="border-theme border-t" />
+						<ScoreEquationChips
+							isCorrect={revealScore.isCorrect}
+							baseCoverage={revealScore.baseCoverage}
+							bonuses={scoreBonusRows(revealScore, configs)}
+							earnedCoverage={revealScore.earnedCoverage}
+							difficulty={revealScore.difficulty}
+							animated
+							startDelayMs={REVEAL_SCORE_START_MS}
+						/>
+					</div>
+				) : null}
+				<div className="flex justify-end">
+					{correctOptionIds !== undefined ? (
+						<Button className="rounded-lg" onClick={onNext}>
+							Next →
+						</Button>
+					) : (
+						<Button
+							className="rounded-lg"
+							disabled={!canSubmit}
+							onClick={onSubmit}
+						>
+							Submit answer →
+						</Button>
+					)}
 				</div>
-			) : null}
-			<div className="flex justify-end">
-				{correctOptionIds !== undefined ? (
-					<Button className="rounded-lg" onClick={onNext}>
-						Next →
-					</Button>
-				) : (
-					<Button
-						className="rounded-lg"
-						disabled={!canSubmit}
-						onClick={onSubmit}
-					>
-						Submit answer →
-					</Button>
-				)}
 			</div>
-			<div className="space-y-2 border-t border-zinc-700 pt-4">
-				{/* Same heading as the configure screen — one pipeline, one name. */}
+			<div className="space-y-2 border-t border-zinc-800 pt-4 lg:pt-0 lg:shrink-0 lg:border-t-0 lg:pl-8 lg:border-l">
 				<header>
 					<Title as="h3">Your pipeline</Title>
 					{slots ? (

@@ -2,7 +2,13 @@ import type { CategoryCode } from "~/domains/shared/categories";
 
 import { Config } from "../configs/config.model";
 import { AnswerContext, Coverage, effectOf } from "../configs/effect.model";
-import { GATE_REWARD_KB, roundToOneDecimal } from "../rules.model";
+import {
+	GATE_REWARD_KB,
+	GATE_REWARD_MULTIPLIER_CAP,
+	SLICE_WINDOW,
+	gateBaseMultiplier,
+	roundToOneDecimal,
+} from "../rules.model";
 
 export type Pipeline = {
 	readonly id: string;
@@ -104,6 +110,26 @@ export const pipelineModifiersFor = (
 			storageOnClearFor(configs),
 	};
 };
+
+/**
+ * Storage a cleared gate actually pays. The 32KB base rides the same
+ * `gatesCleared + 1` curve as coverage (gate 1 tops out at 32, gate 5 at
+ * 160) and scales with window correctness — a 0/5 clear pays nothing, so an
+ * all-skip build climbs without earning anything to bank (ADR-017). Flat
+ * clear payouts (Unit Tests' +32) stay whole: they ride on that config's
+ * own passed check.
+ */
+export const gateClearPayout = (
+	configs: readonly Config[],
+	correct: number,
+	gatesCleared: number
+): number =>
+	Math.round(
+		GATE_REWARD_KB *
+			Math.min(gateBaseMultiplier(gatesCleared), GATE_REWARD_MULTIPLIER_CAP) *
+			rewardMultiplierFor(configs) *
+			(correct / SLICE_WINDOW)
+	) + storageOnClearFor(configs);
 
 /**
  * Coverage a single answer earns: `share × (1 + adds) × mults × streak`. The

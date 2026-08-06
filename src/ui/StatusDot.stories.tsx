@@ -18,7 +18,6 @@ export const AllVariants: Story = {
 			<StatusDot variant="fail" />
 			<StatusDot variant="skip" />
 			<StatusDot variant="run" />
-			<StatusDot variant="perk" />
 		</div>
 	),
 };

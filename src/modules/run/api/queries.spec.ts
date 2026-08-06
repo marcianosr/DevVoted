@@ -251,8 +251,11 @@ describe("applyActionToRun", () => {
 	it("finishes the run and credits leftover storage on victory", async () => {
 		// One answer from the summit: the final gate's window is 4/5 with every
 		// answer correct, so this correct answer closes it and clears gate 5.
+		// A bare pipeline can never clear (ADR-017), so the summit build carries
+		// its .js config — the window's 4/4 JS record passes its mastery check.
 		const summitReady = answeringState({
 			storage: 100,
+			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.js] },
 			gatesCleared: 4,
 			window: {
 				correct: 4,

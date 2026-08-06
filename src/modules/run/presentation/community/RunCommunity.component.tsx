@@ -8,21 +8,31 @@ import { Screen } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 
+import { useTodaysRun } from "../game/useTodaysRun.hook";
 import { RunCommunityBoard } from "./RunCommunity.ui";
+import { useNextPollsCountdown } from "./useNextPollsCountdown.hook";
 
 /** Tier 2 wiring for the run community page (DVTD-xrpx). */
 export const RunCommunity = () => {
 	const date = getTodayDateString();
 	const navigate = useNavigate();
+	const { view: run } = useTodaysRun();
+	const countdown = useNextPollsCountdown();
 
 	const community = useQuery({
 		queryKey: sessionRunQueryKeys.community(date),
 		queryFn: () => getRunCommunity(),
 	});
 
+	// A locked run has nothing to climb to until tomorrow's segment drops, so
+	// the continue button becomes the countdown; at midnight it flips back to
+	// a working "Climb on →" (the day rollover happens on the next /run load).
+	const waitingForTomorrow =
+		run?.awaitingTomorrow === true && !countdown.isOpen;
 	const climbOn = {
-		label: "Climb on →",
+		label: waitingForTomorrow ? countdown.label : "Climb on →",
 		onClick: () => navigate({ to: "/run" }),
+		disabled: waitingForTomorrow,
 	};
 
 	if (community.isPending) {

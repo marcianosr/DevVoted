@@ -75,6 +75,37 @@ describe(AnsweringScreen, () => {
 		expect(onLint).toHaveBeenCalledOnce();
 	});
 
+	// The use-button is the affordance; the dot stays an honest check state
+	// (DVTD-0dkp — no more ▸ mark on a usable-but-idle linter).
+	it("keeps an idle linter's dot at skipped even while usable", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				configs={[CONFIGS.eslint]}
+				checks={[
+					{
+						label: "ESLint linted",
+						progress: "0/0",
+						current: 0,
+						target: 0,
+						state: "skipped",
+						sourceConfigId: "eslint",
+					},
+				]}
+				canLint
+				lintReady
+				linter={CONFIGS.eslint}
+				lintCost={8}
+				onLint={vi.fn()}
+			/>
+		);
+		expect(screen.getByRole("button", { name: "use 8KB" })).toBeEnabled();
+		expect(
+			screen.queryByRole("img", { name: "usable" })
+		).not.toBeInTheDocument();
+		expect(screen.getByRole("img", { name: "skipped" })).toBeInTheDocument();
+	});
+
 	it("heads the pipeline section like the configure screen, slots counted", () => {
 		render(<AnsweringScreen {...base} slots={4} />);
 		expect(

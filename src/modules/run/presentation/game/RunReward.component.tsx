@@ -21,7 +21,7 @@ export const RunReward = () => {
 		>
 			<RewardScreen
 				gatesCleared={view.gatesCleared}
-				gateReward={view.gateReward}
+				gateReward={view.gateRewardPaidKb}
 				answered={view.answeredThisGate}
 				coverageGainedByCategory={view.coverageGainedThisGate}
 				passedChecks={view.passedChecks}

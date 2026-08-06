@@ -57,7 +57,7 @@ const VARIANTS: readonly VariantExample[] = [
 		valueClass: "text-saffron",
 	},
 	{
-		badge: "perk",
+		badge: "skip",
 		line: "always-on bonus — no check to clear",
 		lineTone: "muted",
 		value: "+1",
@@ -138,7 +138,7 @@ export const Run: Story = {
 
 export const Perk: Story = {
 	args: {
-		badge: "perk",
+		badge: "skip",
 		line: "always-on bonus — no check to clear",
 		lineTone: "muted",
 		lineSize: "sm",

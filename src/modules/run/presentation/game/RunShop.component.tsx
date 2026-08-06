@@ -44,7 +44,7 @@ export const RunShop = () => {
 				checks={view.checks}
 				gateNumber={view.gatesCleared + 1}
 				configs={view.configs}
-				gateReward={view.gateReward}
+				gateReward={view.gateRewardPaidKb}
 				rewardMultiplier={view.rewardMultiplier}
 				coverageMultiplier={view.coverageMultiplier}
 				coverageAdd={view.coverageAdd}

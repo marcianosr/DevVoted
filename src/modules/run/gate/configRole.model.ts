@@ -6,7 +6,7 @@ import {
 } from "../configs/config.model";
 import type { CheckState, CheckStatus } from "../configs/effect.model";
 
-export type ConfigRole = "requirement" | "conditional" | "perk";
+export type ConfigRole = "requirement" | "conditional" | "passive";
 
 export const roleOf = (
 	config: Config,
@@ -18,7 +18,7 @@ export const roleOf = (
 		return "conditional";
 	const backsCheck = checks.some((check) => check.sourceConfigId === config.id);
 	// Under the Config Rule a checkless config is the exception (Copilot).
-	return backsCheck ? "requirement" : "perk";
+	return backsCheck ? "requirement" : "passive";
 };
 
 export type RoleRow = {
@@ -41,7 +41,7 @@ export type RoleRow = {
 const ROLE_ORDER: Record<ConfigRole, number> = {
 	requirement: 0,
 	conditional: 1,
-	perk: 2,
+	passive: 2,
 };
 
 /**

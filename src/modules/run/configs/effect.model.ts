@@ -116,7 +116,11 @@ const benefitOf = (config: Config): Effect => ({
 	coverage: coverageOf(config),
 	maskWrongOn: maskOf(config),
 	faucetPerCorrect: config.storagePerCorrect,
-	storageOnClear: config.storageOnClear,
+	// Flat clear payouts scale with level: Unit Tests pays +32KB × level.
+	storageOnClear:
+		config.storageOnClear === undefined
+			? undefined
+			: config.storageOnClear * (config.level ?? 1),
 	requirementDelta:
 		config.requirementDelta === 0 ? undefined : config.requirementDelta,
 	rewardMultiplier:
@@ -137,20 +141,26 @@ const focusCheck = (
 				correct: 0,
 			};
 			const seen = tally.seen > 0;
+			// The demand clamps to appearances — a level can never outnumber the
+			// window, so an L10 mastery reads "every poll of the category, always".
+			const target = seen ? Math.min(level, tally.seen) : level;
 			return {
 				label: `${config.label} mastery`,
-				progress: seen ? `${tally.correct}/${level}` : "not seen",
+				progress: seen ? `${tally.correct}/${target}` : "not seen",
 				current: tally.correct,
-				target: level,
-				state: checkState(tally.correct >= level, window, !seen),
+				target,
+				state: checkState(tally.correct >= target, window, !seen),
 			};
 		},
-		demand: () => `${config.label}: get one right if ${focusCategory} appears`,
+		demand: () =>
+			level === 1
+				? `${config.label}: get one right if ${focusCategory} appears`
+				: `${config.label}: get ${level} right if ${focusCategory} appears`,
 	};
 };
 
-// Checks do not escalate with gate depth — only the baseline Correct check
-// does (wiki §4.1: Unit Tests is the only config whose check escalates).
+// Checks do not escalate with gate depth — only Unit Tests' Correct check
+// does (wiki §4.1: the only config whose check escalates).
 const coverageGainCheck = (config: Config): GateCheckPart => {
 	const target = config.checkAmount ?? 1;
 	return {
@@ -294,8 +304,8 @@ const CHECK_BUILDERS: Record<
 /** The check half: the requirement the config adds to the gate window. */
 const checkOf = (config: Config): GateCheckPart => {
 	if (config.focusCategory) return focusCheck(config, config.focusCategory);
-	// "correct" is the baseline check — gate.model synthesizes it so a bare
-	// pipeline still demands answers; the config only carries its amount.
+	// "correct" is synthesized by gate.model — present only while a config
+	// carrying it (Unit Tests) is installed; the config only holds its amount.
 	if (config.check === undefined || config.check === "correct") return {};
 	return CHECK_BUILDERS[config.check](config);
 };

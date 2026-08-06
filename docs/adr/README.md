@@ -17,7 +17,8 @@
 | [013](013-gate-scaled-coverage.md) | Gate-scaled coverage (gain and loss) | Accepted — amends 006 Decision 11 |
 | [014](014-daily-gate-lock.md) | Daily gate lock: 5 polls/day, exhaustion is not a terminal | Accepted — amends 011 Decision 2, removes the exhaustion-win |
 | [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: one-shot grants and a soft over-cap | Accepted — amends 006 Decision 10 cap; records no-selling |
-| [016](016-the-config-rule.md) | The Config Rule: every config is Effect + Check | Accepted — amends 006 Decisions 3/4/5 |
+| [016](016-the-config-rule.md) | The Config Rule: every config is Effect + Check | Accepted — amends 006 Decisions 3/4/5; §1–2 amended by 017 |
+| [017](017-no-baseline-check.md) | No baseline check: checks come only from configs; payout scales with correctness | Accepted — amends 016 §1–2 |
 
 ## Conventions
 

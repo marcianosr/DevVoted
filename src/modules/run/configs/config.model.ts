@@ -35,6 +35,8 @@ export type Config = {
 	readonly coverageMultiplier?: number;
 	readonly coverageAdd?: number;
 	readonly level?: number;
+	/** Upgrade ceiling. Omitted = the default (5, the 5-poll window's natural demand ceiling). */
+	readonly maxLevel?: number;
 	readonly storagePerCorrect?: number;
 	readonly storageOnClear?: number;
 	readonly openerCoverageMultiplier?: number;
@@ -52,6 +54,12 @@ export const focusDemand = (config: Config): number => config.level ?? 1;
 export const upgradeCoverageRequired = (currentLevel: number): number =>
 	currentLevel * 5;
 
+const UPGRADE_STORAGE_STEP_KB = 32;
+
+/** KB price of a storage-priced upgrade (Unit Tests): 32 × the level being bought. */
+export const upgradeStorageCost = (currentLevel: number): number =>
+	UPGRADE_STORAGE_STEP_KB * (currentLevel + 1);
+
 const DRAFT_COST: Record<Rarity, number> = {
 	common: 32,
 	uncommon: 64,
@@ -66,13 +74,26 @@ export const draftCost = (config: Config): number =>
 export const sellRefund = (config: Config): number =>
 	Math.floor(draftCost(config) / 2);
 
-// Unit Tests is deliberately absent: its check escalates on its own with gate
-// depth, and escalation + a paid upgrade would be two mechanisms raising the
-// same number (wiki §4.4).
-export const isUpgradable = (config: Config): boolean =>
-	config.focusCategory !== undefined;
+const DEFAULT_MAX_LEVEL = 5;
+
+export const maxLevelOf = (config: Config): number =>
+	config.maxLevel ?? DEFAULT_MAX_LEVEL;
+
+// Focus configs upgrade freely behind a coverage gate. Unit Tests upgrades
+// for storage, buying payout AND demand together; each config's ceiling
+// lives on the config itself (maxLevel, default 10).
+export const isUpgradable = (config: Config): boolean => {
+	const upgradable =
+		config.focusCategory !== undefined || config.check === "correct";
+	return upgradable && (config.level ?? 1) < maxLevelOf(config);
+};
 
 export const describeConfig = (config: Config): string => {
+	if (config.check === "correct") {
+		const level = config.level ?? 1;
+		const payout = (config.storageOnClear ?? 0) * level;
+		return `+${payout}KB storage on gate clear — demands ${level} correct answer${level === 1 ? "" : "s"}, rising as you climb.`;
+	}
 	if (!config.focusCategory) return config.description;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	const level = config.level ?? 1;
@@ -83,6 +104,10 @@ export const describeConfig = (config: Config): string => {
 // the roster only knows L1, so authored copy goes stale after an upgrade
 // (DVTD-a6yf). Non-focus copy stays authored on the roster.
 export const givesOf = (config: Config): string | undefined => {
+	if (config.check === "correct") {
+		const payout = (config.storageOnClear ?? 0) * (config.level ?? 1);
+		return `Then +${payout}KB on clear`;
+	}
 	if (!config.focusCategory) return config.gives;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	const multiplier = focusCoverageMultiplier(config.level ?? 1);

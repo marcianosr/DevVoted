@@ -29,7 +29,7 @@ const rows: readonly RoleRow[] = [
 	},
 	{
 		config: CONFIGS.copilot,
-		role: "perk",
+		role: "passive",
 		description: describeConfig(CONFIGS.copilot),
 	},
 ];

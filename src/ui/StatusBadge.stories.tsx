@@ -18,7 +18,6 @@ export const AllVariants: Story = {
 			<StatusBadge variant="fail" />
 			<StatusBadge variant="skip" />
 			<StatusBadge variant="run" />
-			<StatusBadge variant="perk" />
 		</div>
 	),
 };

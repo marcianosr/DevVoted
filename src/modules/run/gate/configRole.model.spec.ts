@@ -34,6 +34,7 @@ const unitTests = config({
 	label: "Unit Tests",
 	check: "correct",
 	description: "+32KB storage on gate clear.",
+	storageOnClear: 32,
 });
 const focusTs = config({ id: "ts", label: ".ts", focusCategory: "ts" });
 const coverageGain = config({
@@ -53,8 +54,8 @@ describe("roleOf", () => {
 		expect(roleOf(unitTests, [correctCheck])).toBe("requirement");
 	});
 
-	it("labels a config that backs no check a perk", () => {
-		expect(roleOf(coverageGain, [correctCheck])).toBe("perk");
+	it("labels a config that backs no check passive", () => {
+		expect(roleOf(coverageGain, [correctCheck])).toBe("passive");
 	});
 
 	it("labels a linter conditional — its check only bites when the lint is used", () => {
@@ -70,12 +71,12 @@ describe("roleOf", () => {
 });
 
 describe("roleRows", () => {
-	it("orders rows requirement, then conditional, then perk", () => {
+	it("orders rows requirement, then conditional, then passive", () => {
 		const rows = roleRows([coverageGain, focusTs, unitTests], [correctCheck]);
 		expect(rows.map((row) => row.role)).toEqual([
 			"requirement",
 			"conditional",
-			"perk",
+			"passive",
 		]);
 	});
 
@@ -168,9 +169,11 @@ describe("roleRows", () => {
 		);
 	});
 
-	it("keeps the config's own description when the check carries no demand", () => {
+	it("derives the correct-check copy when the check carries no demand", () => {
 		const [row] = roleRows([unitTests], [correctCheck]);
-		expect(row.description).toBe("+32KB storage on gate clear.");
+		expect(row.description).toBe(
+			"+32KB storage on gate clear — demands 1 correct answer, rising as you climb."
+		);
 	});
 });
 

@@ -50,7 +50,6 @@ type PipelineReportRowProps = {
 	trailing?: ReactNode;
 	onRemove?: (configId: string) => void;
 	removable?: boolean;
-	usable?: boolean;
 	mark?: StatusDotVariant;
 	dimmed?: boolean;
 	onActivate?: () => void;
@@ -75,7 +74,6 @@ export const PipelineReportRow = ({
 	trailing,
 	onRemove,
 	removable = false,
-	usable = false,
 	mark,
 	dimmed = false,
 	onActivate,
@@ -152,9 +150,7 @@ export const PipelineReportRow = ({
 	const summaryCells = ({ expanded, toggle }: Fold) => (
 		<>
 			<span className="col-start-1 row-start-1 flex items-center self-stretch">
-				<StatusDot
-					variant={mark ?? (usable && badge === "skip" ? "use" : badge)}
-				/>
+				<StatusDot variant={mark ?? badge} />
 			</span>
 			<span className="col-start-2 row-start-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
 				{chipActions ? (

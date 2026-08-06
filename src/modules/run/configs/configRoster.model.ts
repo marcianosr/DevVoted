@@ -107,8 +107,7 @@ export const CONFIGS = {
 		label: "Unit Tests",
 		family: "check",
 		description:
-			"+32KB storage on gate clear — the correct-answer demand escalates as you climb.",
-		gives: "Then +32KB on clear",
+			"+32KB storage on gate clear — demands 1 correct answer, rising as you climb.",
 		requirementDelta: 0,
 		rewardMultiplier: 1,
 		storageOnClear: 32,

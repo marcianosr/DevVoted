@@ -91,13 +91,22 @@ describe("gates and rewards", () => {
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.gatesCleared).toBe(1);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(80); // GATE_REWARD_KB × 1
+		expect(state.storage).toBe(32); // GATE_REWARD_KB × gate 1 × 5/5
 	});
 
 	it("pays the flat Unit Tests payout on top of the gate reward", () => {
 		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.storage).toBe(112); // 80 gate + 32 Unit Tests flat
+		expect(state.storage).toBe(64); // 32 gate + 32 Unit Tests flat
+	});
+
+	it("pays the cleared gate by its window, not the ceiling", () => {
+		let state = started(["js"]); // every check skips — a 4/5 window still clears
+		state = answerWith(state, false);
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
+		expect(state.status).toBe("rewarding");
+		expect(state.gateRewardKb).toBe(26); // 32 × 4/5, rounded
+		expect(state.storage).toBe(26);
 	});
 
 	it("takes several rewards (upgrade + slot + draft) and stays until finish", () => {
@@ -143,18 +152,25 @@ describe("gates and rewards", () => {
 		state = { ...state, coverageByCategory: { js: 100 } };
 		state = runReducer(state, { type: "upgrade", configId: "js" });
 		expect(state.pipeline.configs[0].level).toBe(2); // now allowed, no KB spent
-		expect(state.storage).toBe(80); // gate reward untouched by a free upgrade
+		expect(state.storage).toBe(32); // gate reward untouched by a free upgrade
 	});
 
-	it("refuses to upgrade Unit Tests — escalation is its only ramp", () => {
+	it("upgrades Unit Tests for storage — the next level costs 32KB × level", () => {
 		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
+		expect(state.storage).toBe(64); // 32 gate + 32 Unit Tests flat
 
 		state = runReducer(state, { type: "upgrade", configId: "unit-tests" });
 		const unit = state.pipeline.configs.find((c) => c.id === "unit-tests")!;
-		expect(unit.level).toBeUndefined();
-		expect(state.storage).toBe(112); // nothing charged, nothing gained
+		expect(unit.level).toBe(2);
+		expect(state.storage).toBe(0); // L2 cost the full 64KB
+
+		const broke = runReducer(state, {
+			type: "upgrade",
+			configId: "unit-tests",
+		});
+		expect(broke).toBe(state); // L3 costs 96KB — unaffordable, no-op
 	});
 
 	it("flags newly drafted configs and clears the flag on finish", () => {
@@ -318,14 +334,14 @@ describe("lint-correct checks", () => {
 
 describe("failure model", () => {
 	it("demands a strip when a stocked pipeline misses", () => {
-		let state = started(["js"]); // misses the Correct requirement
+		let state = started(["unit-tests"]); // misses Unit Tests' correct demand
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		expect(state.status).toBe("awaiting-strip");
 		expect(state.stripsRemaining).toBe(1);
 	});
 
 	it("holds after the drop quota is peeled until the player climbs on", () => {
-		let state = started(["eslint", "js"]);
+		let state = started(["unit-tests", "eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		state = runReducer(state, { type: "strip", configId: "eslint" });
 		expect(state.status).toBe("awaiting-strip");
@@ -337,12 +353,13 @@ describe("failure model", () => {
 	});
 
 	it("ignores a strip once the quota is met", () => {
-		let state = started(["eslint", "js"]);
+		let state = started(["unit-tests", "eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("awaiting-strip");
 		state = runReducer(state, { type: "strip", configId: "eslint" });
 		const afterQuota = runReducer(state, {
 			type: "strip",
-			configId: "js",
+			configId: "ts",
 		});
 		expect(afterQuota).toBe(state);
 	});
@@ -397,10 +414,10 @@ describe("the daily gate lock", () => {
 	});
 
 	it("locks after the strip repair when the day ends on a failed gate", () => {
-		let state = started(["js"], SLICE_WINDOW);
+		let state = started(["unit-tests"], SLICE_WINDOW);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		expect(state.status).toBe("awaiting-strip");
-		state = runReducer(state, { type: "strip", configId: "js" });
+		state = runReducer(state, { type: "strip", configId: "unit-tests" });
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("answering");
 		expect(isAwaitingTomorrow(state)).toBe(true);

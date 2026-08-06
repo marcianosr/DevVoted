@@ -50,7 +50,7 @@ export const Composition: Story = {
 		<div className="flex flex-col gap-3">
 			<header>
 				<Title>Your load-out</Title>
-				<Subtitle>Your configured pipeline requirements and perks</Subtitle>
+				<Subtitle>Your configured pipeline checks and effects</Subtitle>
 			</header>
 			<Paragraph>
 				Requires 1 correct answer to pass the gate. Deeper gates cost more.
