@@ -29,6 +29,8 @@ Coverage is a **gate, not a currency** — it is *not* consumed on purchase, mir
 
 The threshold ladder and cap are **live-tuned in `pipeline.model.ts`** (`SLOT_COVERAGE_GATE` / `coverageToAddSlot` / `canAddSlot`) — that file is the source of truth, not this ADR, since the numbers change with playtesting. The shop surfaces the requirement inline when a slot is locked ("Reach 45% total coverage to widen — you have 32%").
 
+> ⚠ Extended by [ADR-018](018-gate-slot-coupling-and-slot-swatches.md): width now also gates *depth* — gate N requires slot N, so the ladder is mandatory rather than optional. Each unlock is also a permanent, account-wide **swatch**. Nothing here is reversed: slots stay free, coverage stays a gate and not a currency.
+
 ### 3. Drafting a config costs storage by rarity (documented sink)
 
 Drafting spends storage on a **rarity ramp** (`DRAFT_COST` in `config.model.ts`). This was already in the prototype but undocumented in ADR-006's economy section. With multi-buy it is clearly motivated: it is the shop's primary storage sink and gives rarity an economic weight (ADR-006 Decision 9 left rarity cosmetic-only; this is the first place it bites).

@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-07-19T07:44:48Z
-updated_at: 2026-08-04T16:35:05Z
+updated_at: 2026-08-06T11:08:16Z
 parent: DVTD-kulw
 ---
 
@@ -24,3 +24,22 @@ What does the player actually win? Currently only storage: storageCreditRate("vi
 - **VICTORY_GATE = 12 confirmed** — expand from the current 5.
 - **Add a way to continue past victory** (keep climbing after gate 12, endless-style). Same design conversation as the escalation cap: whatever fixes gates 11-12 must also hold for gates 13+.
 - Still open: the victory reward (currently storage-only, see note above).
+
+## VICTORY_GATE = 12 shipped (2026-08-06)
+
+The constant flip landed with the gate–slot coupling work (DVTD-ein1, ADR-018):
+`VICTORY_GATE = 12` in rules.model.ts. The escalation constraint above is
+resolved — `ESCALATION_CAP = 3` plus the window clamp keep gates 11–12
+survivable (DVTD-hbz5), so the note about 6/5 demands is stale.
+
+Also note the earlier claim "slots are irrelevant to this — slot count never
+enters the gate check" no longer holds: ADR-018 makes gate N require slot N, so
+reaching gate 12 now requires all 12 slots.
+
+Still open, and why this bean stays alive:
+- The victory **reward** (storage-only today; ADR-017 requires it not be
+  claimable by a zero-coverage farm run).
+- **Continue past victory** (endless mode) — unbuilt. `GATE_REWARD_MULTIPLIER_CAP`
+  = 12 already exists for it, deliberately kept separate from VICTORY_GATE.
+
+Correction (same day): the summit needs all **14** slots, not 12 — MAX_SLOTS grew to 14 so that eleven swatch rungs could cover the eleven gate advances from gate 1 to gate 12. VICTORY_GATE is now derived as `MAX_SLOTS - BASE_SLOTS + 1`.

@@ -37,6 +37,8 @@ export const userQueryKeys = {
 	all: ["users"] as const,
 	profile: (userId: string) =>
 		[...userQueryKeys.all, userId, "profile"] as const,
+	swatches: (userId: string) =>
+		[...userQueryKeys.all, userId, "swatches"] as const,
 };
 
 export const archiveQueryKeys = {

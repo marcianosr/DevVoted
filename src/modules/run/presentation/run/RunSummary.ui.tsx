@@ -5,6 +5,7 @@ import {
 	type GateOutcome,
 	type GateOutcomeStatus,
 } from "~/modules/run/gate/gateLadder.model";
+import { swatchesEarnedAt } from "~/modules/run/pipeline/swatch.model";
 import { storageCreditRate } from "~/modules/run/rules.model";
 import { MetaStorageBar } from "~/ui/runs/MetaStorageBar.ui";
 import { StatusLine } from "~/ui/runs/StatusLine.ui";
@@ -16,6 +17,7 @@ import {
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { SwatchChips } from "../gate/SwatchChips.ui";
 import { ReviewAnswers } from "./ReviewAnswers.ui";
 
 type RunSummaryProps = {
@@ -24,6 +26,8 @@ type RunSummaryProps = {
 	victoryGate: number;
 	coverage: number;
 	storage: number;
+	/** Pipeline width the run ended with — names the swatches it earned. */
+	slots?: number;
 	/** Configs the run ended with, shown beside the pipeline ladder. */
 	configs?: readonly Config[];
 	/** Every poll answered across the run, for the fold-out review. */
@@ -55,10 +59,12 @@ export const RunSummary = ({
 	victoryGate,
 	coverage,
 	storage,
+	slots,
 	configs,
 	answered,
 }: RunSummaryProps) => {
 	const ladder = deriveGateLadder(gatesCleared, won, victoryGate);
+	const earnedSwatches = slots === undefined ? [] : swatchesEarnedAt(slots);
 	const creditRate = storageCreditRate(won ? "victory" : "dead", gatesCleared);
 	const carriedKb = storage * creditRate;
 	const bankedPct = Math.round(creditRate * 100);
@@ -89,7 +95,7 @@ export const RunSummary = ({
 					</Paragraph>
 					<span className="text-zinc-300">·</span>
 					<Paragraph as="span" size="sm" tone={won ? "viridian" : "cinnabar"}>
-						{won ? "summit reached" : `stalled at gate ${gatesCleared + 1}`}
+						{won ? "summit reached" : `stalled at gate ${gatesCleared}`}
 					</Paragraph>
 				</Paragraph>
 				<div>
@@ -111,6 +117,16 @@ export const RunSummary = ({
 				</Paragraph>
 			</section>
 
+			{earnedSwatches.length > 0 && (
+				<section className="flex flex-col gap-2">
+					<Subtitle>Swatches earned</Subtitle>
+					<Paragraph as="span" size="xs" tone="muted">
+						kept forever — every run adds to the collection
+					</Paragraph>
+					<SwatchChips swatches={earnedSwatches} />
+				</section>
+			)}
+
 			{configs && configs.length > 0 && (
 				<section className="flex flex-col gap-2">
 					<Subtitle>Configs installed</Subtitle>
@@ -129,9 +145,7 @@ export const RunSummary = ({
 				<Paragraph size="sm" tone="muted">
 					{won
 						? `You summited — all ${storage}KB of your run storage banks into meta.`
-						: `You built up ${storage}KB this run, but breaking at gate ${
-								gatesCleared + 1
-							} banks only ${bankedPct}% into meta — the rest is lost.`}
+						: `You built up ${storage}KB this run, but breaking at gate ${gatesCleared} banks only ${bankedPct}% into meta — the rest is lost.`}
 				</Paragraph>
 
 				<MetaStorageBar carriedKb={carriedKb} totalKb={storage} />

@@ -104,6 +104,13 @@ export const usersTable = pgTable("users", {
 		.notNull()
 		.default(sql`'{}'::text[]`),
 	equipped_border_id: text("equipped_border_id"),
+	// Slot-unlock swatches earned across every run (gym-badge ids from
+	// modules/run/pipeline/swatch.model). Permanent: unlocking slot 4 in any run
+	// earns the Boulder Swatch forever, and re-unlocking it later is a no-op.
+	owned_swatch_ids: text("owned_swatch_ids")
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
 });
 
 /**

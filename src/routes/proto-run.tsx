@@ -384,20 +384,16 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	return (
 		<>
 			{runOver ? null : (
-				<div className="mx-auto w-full max-w-5xl px-4 pt-6">
+				<div className="mx-auto w-full max-w-5xl p-2">
 					<RunHud
 						storage={view.storage}
-						gateNumber={view.gatesCleared + 1}
+						gatesCleared={view.gatesCleared}
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
 						pollsPerGate={view.pollsPerGate}
-						streak={view.streak}
 						category={view.poll?.category}
 						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
-						configs={view.configs}
-						slots={view.slots}
-						checks={view.checks}
 					/>
 				</div>
 			)}
@@ -462,7 +458,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					}}
 				>
 					<RewardScreen
-						gatesCleared={view.gatesCleared}
+						clearedGate={view.clearedGateNumber}
+						slots={view.slots}
+						heldAtGate={view.heldAtGate}
 						gateReward={view.gateReward}
 						answered={view.answeredThisGate}
 						coverageGainedByCategory={view.coverageGainedThisGate}
@@ -487,9 +485,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					<ShopScreen
 						storage={view.storage}
+						gateNumber={view.gatesCleared}
 						coverageByCategory={view.coverageByCategory}
 						checks={view.checks}
-						gateNumber={view.gatesCleared + 1}
 						configs={view.configs}
 						gateReward={view.gateReward}
 						rewardMultiplier={view.rewardMultiplier}
@@ -541,8 +539,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					}}
 				>
 					<StripScreen
+						gateNumber={view.gatesCleared}
 						stripsRemaining={view.stripsRemaining}
-						gateNumber={view.gatesCleared + 1}
 						configs={view.configs}
 						checks={view.checks}
 						answered={view.answeredThisGate}
@@ -562,6 +560,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						victoryGate={view.victoryGate}
 						coverage={view.coverage}
 						storage={view.storage}
+						slots={view.slots}
 						configs={view.configs}
 						answered={view.allAnswered}
 					/>

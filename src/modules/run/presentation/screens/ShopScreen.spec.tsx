@@ -135,7 +135,9 @@ describe(ShopScreen, () => {
 				"L2: JavaScript polls earn 1.5× coverage — but if JavaScript shows, you must get 2 right."
 			)
 		).toBeInTheDocument();
-		expect(screen.queryByText(/Unlocks at/)).not.toBeInTheDocument();
+		// The upgrade's own gate line is gone; "Unlocks at" may still appear in
+		// the slot-swatch row, so the check pins the upgrade's 5% threshold.
+		expect(screen.queryByText(/Unlocks at 5%/)).not.toBeInTheDocument();
 	});
 
 	it("unlocks a met upgrade — prismatic ring, no coverage price on the button", () => {
@@ -183,7 +185,7 @@ describe(ShopScreen, () => {
 		expect(onSell).toHaveBeenCalledWith("indexed-db");
 	});
 
-	it("shows the coverage requirement when a slot is locked", () => {
+	it("shows the next swatch locked with live progress — no unlock button below the gate", () => {
 		render(
 			<ShopScreen
 				{...base}
@@ -192,11 +194,34 @@ describe(ShopScreen, () => {
 				slotCoverageRequired={20}
 			/>
 		);
+		expect(screen.getByText("Boulder Swatch")).toBeInTheDocument();
+		expect(screen.getByText(/· slot 4 · opens gate 1/)).toBeInTheDocument();
+		expect(screen.getByText("12%")).toBeInTheDocument();
 		expect(
-			screen.getByText(/at 20% coverage — you have 12%/)
+			screen.getByRole("progressbar", {
+				name: "coverage toward Boulder Swatch",
+			})
 		).toBeInTheDocument();
 		expect(
-			screen.queryByRole("button", { name: /Add slot/ })
+			screen.queryByRole("button", { name: "Unlock slot" })
 		).not.toBeInTheDocument();
+	});
+
+	it("unlocks the next slot once its coverage gate is met", () => {
+		const onAddSlot = vi.fn();
+		render(<ShopScreen {...base} onAddSlot={onAddSlot} />);
+		fireEvent.click(screen.getByRole("button", { name: "Unlock slot" }));
+		expect(onAddSlot).toHaveBeenCalled();
+	});
+
+	it("advances the row to the next swatch as the pipeline widens", () => {
+		render(<ShopScreen {...base} slots={4} />);
+		expect(screen.getByText("Cascade Swatch")).toBeInTheDocument();
+		expect(screen.queryByText("Boulder Swatch")).not.toBeInTheDocument();
+	});
+
+	it("retires the swatch row at the slot cap", () => {
+		render(<ShopScreen {...base} slots={12} slotCoverageRequired={Infinity} />);
+		expect(screen.queryByText(/Swatch$/)).not.toBeInTheDocument();
 	});
 });

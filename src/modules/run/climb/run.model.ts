@@ -9,6 +9,7 @@ import {
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
 	gateClearPayout,
+	gateFitsPipeline,
 	isBare,
 	linterFor,
 	rewardMultiplierFor,
@@ -191,6 +192,20 @@ export type RunState = {
 	readonly faucetThisGateKb?: number;
 	/** What the just-cleared gate actually paid (correctness- and depth-scaled) — feeds the reward report. */
 	readonly gateRewardKb?: number;
+	/**
+	 * The gate number the last clear actually beat. Not derivable from
+	 * `gatesCleared` once the gate–slot cap freezes the climb (a frozen replay
+	 * leaves `gatesCleared` behind the gate it just cleared). Optional: old
+	 * snapshots won't carry it — readers fall back to `gatesCleared`.
+	 */
+	readonly clearedGate?: number;
+	/**
+	 * The last clear passed its gate but could not advance the climb: the pipeline
+	 * is too narrow for the next gate (ADR-018). `addSlot` reads this to know an
+	 * advance is pending. It cannot be inferred from `clearedGate` vs
+	 * `gatesCleared` now that gates count from 0 — while held, the two are equal.
+	 */
+	readonly heldAtGate?: boolean;
 	readonly log: readonly string[];
 };
 
@@ -293,7 +308,7 @@ const unslotConfig = (state: RunState, configId: string): RunState => {
 };
 
 const closeWindow = (state: RunState, nextIndex: number): RunState => {
-	const gateNumber = state.gatesCleared + 1;
+	const gateNumber = state.gatesCleared;
 
 	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
 		if (isBare(state.pipeline))
@@ -331,19 +346,34 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	);
 	// faucetThisGateKb/gateRewardKb are NOT reset here: the reward report still
 	// reads them while the shop is open. finishReward clears them.
+	//
+	// Every gate past the first is bought with a slot (ADR-018): the climb only
+	// advances when the next gate already fits the pipeline. Otherwise the clear
+	// still pays but `gatesCleared` freezes, so demands, payout, and strips stay
+	// flat across the replay and farming stays priced out by the
+	// correctness-scaled payout. `addSlot` is what releases the hold — the claim
+	// is the moment the gate advances.
+	const heldAtGate = !gateFitsPipeline(gateNumber + 1, state.pipeline.slots);
 	const cleared: RunState = {
 		...state,
 		window: EMPTY_WINDOW,
 		manualDisabled: [],
-		gatesCleared: gateNumber,
+		gatesCleared: heldAtGate ? state.gatesCleared : state.gatesCleared + 1,
+		clearedGate: gateNumber,
+		heldAtGate,
 		storage: addStorage(state.storage, reward),
 		gateRewardKb: reward,
 		currentIndex: nextIndex,
 	};
 
+	// Victory outranks the freeze: it checks the uncapped gate number and
+	// records the summit uncapped, so clearing gate 12 with 12 slots still wins.
 	if (gateNumber >= VICTORY_GATE)
 		return {
 			...cleared,
+			// The summit is recorded as a full count, uncapped by the freeze.
+			gatesCleared: gateNumber + 1,
+			heldAtGate: false,
 			status: "won",
 			log: withLog(
 				state,
@@ -364,7 +394,9 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		status: "rewarding",
 		log: withLog(
 			state,
-			`Gate ${gateNumber} cleared! +${reward}KB — spend it in the shop.`
+			heldAtGate
+				? `Gate ${gateNumber} cleared! +${reward}KB — widen the pipeline to climb past it.`
+				: `Gate ${gateNumber} cleared! +${reward}KB — spend it in the shop.`
 		),
 	};
 };
@@ -623,14 +655,29 @@ const levelUp = (config: Config): Config => ({
 	level: (config.level ?? 1) + 1,
 });
 
+/**
+ * Claiming a slot is what advances the climb (ADR-018). A clear that could not
+ * fit the next gate left `clearedGate` ahead of `gatesCleared`; once the new
+ * width fits that next gate, the pending advance lands here. Widening beyond
+ * what the next gate needs simply banks width for later gates.
+ */
 const addSlot = (state: RunState): RunState => {
 	if (!canAddSlot(state.pipeline.slots, state.coverage)) return state;
-	return stayReward(
+	const slots = state.pipeline.slots + 1;
+	const nextGate = state.gatesCleared + 1;
+	const releases =
+		state.heldAtGate === true && gateFitsPipeline(nextGate, slots);
+	const widened = stayReward(
 		state,
-		{ ...state.pipeline, slots: state.pipeline.slots + 1 },
+		{ ...state.pipeline, slots },
 		state.draftOptions,
-		`Widened the pipeline to ${state.pipeline.slots + 1} slots.`
+		releases
+			? `Widened the pipeline to ${slots} slots — gate ${nextGate} is next.`
+			: `Widened the pipeline to ${slots} slots.`
 	);
+	return releases
+		? { ...widened, gatesCleared: nextGate, heldAtGate: false }
+		: widened;
 };
 
 const draft = (state: RunState, configId: string): RunState => {

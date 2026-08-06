@@ -17,7 +17,7 @@ export type Pipeline = {
 };
 
 export const BASE_SLOTS = 3;
-export const MAX_SLOTS = 12;
+export const MAX_SLOTS = 14;
 
 const SLOT_COVERAGE_GATE: Readonly<Record<number, number>> = {
 	4: 8,
@@ -29,6 +29,10 @@ const SLOT_COVERAGE_GATE: Readonly<Record<number, number>> = {
 	10: 140,
 	11: 190,
 	12: 250,
+	// Slots 13–14 continue the curve's own growth (deltas ~60 → ~75 → ~90).
+	// Untuned by playtesting, unlike the rungs above them.
+	13: 325,
+	14: 415,
 };
 
 /** Total coverage needed to add the next slot; Infinity once the cap is reached. */
@@ -38,6 +42,18 @@ export const coverageToAddSlot = (currentSlots: number): number =>
 /** A slot can be added only below the cap and once its coverage gate is met. */
 export const canAddSlot = (currentSlots: number, coverage: number): boolean =>
 	currentSlots < MAX_SLOTS && coverage >= coverageToAddSlot(currentSlots);
+
+/**
+ * Every gate past the first is bought with a slot (ADR-018). Gates count from 0:
+ * gate 0 runs on the starting width, and each later gate demands one more slot
+ * than the one before, so gate 11 needs all 14. `VICTORY_GATE` is the far end of
+ * this same relation (`MAX_SLOTS - BASE_SLOTS`).
+ */
+export const slotsRequiredForGate = (gate: number): number => gate + BASE_SLOTS;
+
+/** Whether a pipeline of this width is wide enough to run the given gate. */
+export const gateFitsPipeline = (gate: number, slots: number): boolean =>
+	slots >= slotsRequiredForGate(gate);
 
 export const isBare = (pipeline: Pipeline): boolean =>
 	pipeline.configs.length === 0;

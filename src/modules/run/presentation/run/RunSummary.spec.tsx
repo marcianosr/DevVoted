@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
+import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/rules.model";
 import { RunSummary } from "./RunSummary.ui";
 
 const answered: AnsweredPoll[] = [
@@ -21,15 +22,18 @@ describe(RunSummary, () => {
 		render(
 			<RunSummary
 				won
-				gatesCleared={5}
-				victoryGate={5}
+				gatesCleared={GATE_COUNT}
+				victoryGate={VICTORY_GATE}
 				coverage={24}
 				storage={640}
 			/>
 		);
 		expect(screen.getByRole("heading", { name: /green/ })).toBeInTheDocument();
-		expect(screen.getByText("Gate 1 cleared")).toBeInTheDocument();
-		expect(screen.getByText("Gate 5 cleared")).toBeInTheDocument();
+		// Gates count from 0, so the ladder runs gate 0 through the summit.
+		expect(screen.getByText("Gate 0 cleared")).toBeInTheDocument();
+		expect(
+			screen.getByText(`Gate ${VICTORY_GATE} cleared`)
+		).toBeInTheDocument();
 		// Coverage reads as a score, not a reward.
 		expect(screen.getByText("24%")).toBeInTheDocument();
 		expect(screen.getByText(/all 640KB/)).toBeInTheDocument();
@@ -43,7 +47,7 @@ describe(RunSummary, () => {
 			<RunSummary
 				won={false}
 				gatesCleared={2}
-				victoryGate={5}
+				victoryGate={VICTORY_GATE}
 				coverage={9}
 				storage={120}
 			/>
@@ -51,17 +55,17 @@ describe(RunSummary, () => {
 		expect(
 			screen.getByRole("heading", { name: /Build broke/ })
 		).toBeInTheDocument();
-		expect(screen.getByText(/stalled at gate 3/)).toBeInTheDocument();
+		expect(screen.getByText(/stalled at gate 2/)).toBeInTheDocument();
 		expect(
-			screen.getByText("Gate 3 — pipeline broke here")
+			screen.getByText("Gate 2 — pipeline broke here")
 		).toBeInTheDocument();
-		expect(screen.getByText("Gate 4 — not reached")).toBeInTheDocument();
+		expect(screen.getByText("Gate 3 — not reached")).toBeInTheDocument();
 		// Coverage is the run score, shown separately from the storage reward.
 		expect(screen.getByText("9%")).toBeInTheDocument();
-		// 2 of 5 gates cleared → 40% of the 120KB built up banks, the rest is lost.
-		expect(screen.getByText(/banks only 40%/)).toBeInTheDocument();
-		expect(screen.getByText(/48KB carried/)).toBeInTheDocument();
-		expect(screen.getByText("72KB lost")).toBeInTheDocument();
+		// 2 of 12 gates cleared → 17% of the 120KB built up banks, the rest is lost.
+		expect(screen.getByText(/banks only 17%/)).toBeInTheDocument();
+		expect(screen.getByText(/20KB carried/)).toBeInTheDocument();
+		expect(screen.getByText("100KB lost")).toBeInTheDocument();
 	});
 
 	it("lists installed configs and offers a review of answered polls", () => {
@@ -69,7 +73,7 @@ describe(RunSummary, () => {
 			<RunSummary
 				won={false}
 				gatesCleared={1}
-				victoryGate={5}
+				victoryGate={VICTORY_GATE}
 				coverage={4}
 				storage={40}
 				configs={[CONFIGS.css]}

@@ -40,7 +40,7 @@ export const RunStrip = () => {
 		>
 			<StripScreen
 				stripsRemaining={view.stripsRemaining}
-				gateNumber={view.gatesCleared + 1}
+				gateNumber={view.gatesCleared}
 				configs={view.configs}
 				checks={view.checks}
 				answered={view.answeredThisGate}

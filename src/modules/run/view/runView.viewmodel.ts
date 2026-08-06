@@ -23,6 +23,7 @@ import {
 	linterFor,
 	pipelineModifiersFor,
 } from "../pipeline/pipeline.model";
+import { gateOpenedBySlot } from "../pipeline/swatch.model";
 import {
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
@@ -61,6 +62,13 @@ export type RunView = {
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;
 	readonly slotCoverageRequired: number;
+	/**
+	 * The unlock the run is currently paying for: which gate the next slot opens
+	 * and how far coverage has come toward it (0–1). Names the gate rather than
+	 * assuming it follows the current one, since width can be bought ahead.
+	 * Undefined once the ladder is exhausted.
+	 */
+	readonly unlock?: { readonly gate: number; readonly progress: number };
 	readonly canAddSlot: boolean;
 	readonly checks: readonly CheckStatus[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
@@ -77,6 +85,19 @@ export type RunView = {
 	/** Exact (capped) faucet income collected this gate — feeds the reward report. */
 	readonly faucetThisGateKb: number;
 	readonly gatesCleared: number;
+	/**
+	 * The gate the last clear actually beat — differs from `gatesCleared` when
+	 * the gate–slot cap froze the climb (replaying your widest gate). Old
+	 * snapshots lack the source field; the fallback keeps their old behavior.
+	 */
+	readonly clearedGateNumber: number;
+	/**
+	 * The last clear passed its gate but the climb held there: the pipeline is
+	 * too narrow for the next gate (ADR-018). Read straight from the engine —
+	 * with gates numbered from 0 it cannot be inferred from the gate numbers,
+	 * which are equal while held. Old snapshots lack the flag and read false.
+	 */
+	readonly heldAtGate: boolean;
 	readonly victoryGate: number;
 	readonly pollsToGate: number;
 	readonly pollsAnswered: number;
@@ -209,6 +230,22 @@ const gainedThisGate = (state: RunState): Record<string, number> => {
 	return gained;
 };
 
+/**
+ * The rung the run is paying for: the next slot's gate and how far coverage has
+ * come toward it. Undefined at the slot cap, where no rung is left to buy.
+ */
+const unlockOf = (
+	state: RunState
+): { gate: number; progress: number } | undefined => {
+	const nextSlot = state.pipeline.slots + 1;
+	const required = coverageToAddSlot(state.pipeline.slots);
+	if (!Number.isFinite(required) || required <= 0) return undefined;
+	return {
+		gate: gateOpenedBySlot(nextSlot),
+		progress: Math.min(1, state.coverage / required),
+	};
+};
+
 const redactPoll = (poll: RunPoll): PollView => ({
 	id: poll.id,
 	category: poll.category,
@@ -244,6 +281,7 @@ export const toRunView = (state: RunState): RunView => {
 		rebuildCost: nextRebuildCost,
 		canRebuild: state.storage >= nextRebuildCost,
 		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
+		unlock: unlockOf(state),
 		canAddSlot: canAddSlot(state.pipeline.slots, state.coverage),
 		linter:
 			current === undefined
@@ -258,6 +296,8 @@ export const toRunView = (state: RunState): RunView => {
 		gateRewardPaidKb: state.gateRewardKb ?? 0,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
+		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
+		heldAtGate: state.heldAtGate === true,
 		victoryGate: VICTORY_GATE,
 		pollsToGate: SLICE_WINDOW - state.window.answered,
 		pollsAnswered: state.window.answered,

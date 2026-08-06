@@ -53,27 +53,30 @@ describe(ConfiguringScreen, () => {
 		expect(onSlot).not.toHaveBeenCalled();
 	});
 
-	it("shows the next coverage-gated slot locked, with live unlock progress", () => {
+	it("shows the next swatch locked, with live unlock progress", () => {
 		render(
 			<ConfiguringScreen {...base} coverage={6.5} slotCoverageRequired={11} />
 		);
-		expect(screen.getByText("Slot 4")).toBeInTheDocument();
+		expect(screen.getByText("Boulder Swatch")).toBeInTheDocument();
+		expect(screen.getByText(/· slot 4 · opens gate 1/)).toBeInTheDocument();
 		expect(screen.getByText("11%")).toBeInTheDocument();
 		expect(screen.getByText("6.5%")).toBeInTheDocument();
 		expect(screen.getByText("locked")).toBeInTheDocument();
 		expect(
-			screen.getByRole("progressbar", { name: "coverage toward slot 4" })
+			screen.getByRole("progressbar", {
+				name: "coverage toward Boulder Swatch",
+			})
 		).toBeInTheDocument();
 	});
 
-	it("marks the next slot unlocked once coverage meets its gate", () => {
+	it("marks the next swatch unlocked once coverage meets its gate", () => {
 		render(
 			<ConfiguringScreen {...base} coverage={12} slotCoverageRequired={11} />
 		);
 		expect(screen.getByText("unlocked")).toBeInTheDocument();
 	});
 
-	it("hides the locked slot at the slot cap", () => {
+	it("hides the swatch row at the slot cap", () => {
 		render(
 			<ConfiguringScreen
 				{...base}
@@ -81,7 +84,9 @@ describe(ConfiguringScreen, () => {
 				slotCoverageRequired={Infinity}
 			/>
 		);
-		expect(screen.queryByText(/^Slot \d/)).not.toBeInTheDocument();
+		// The collected chips still list Pallet; it is the unlock row that goes.
+		expect(screen.queryByText(/opens gate/)).not.toBeInTheDocument();
+		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 	});
 
 	it("opens each row's demand and effect by default", () => {

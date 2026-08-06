@@ -4,6 +4,8 @@
 
 Accepted 2026-07-25. **Amends [ADR-006](006-session-run-mechanics.md) Decision 10**: the 1024KB cap becomes a *base* — cap-extender configs raise an effective cap per run, and removing an extender leaves storage soft-over-cap instead of clamping (⚠ marker inline there). Depends on ADR-005/006/008. Live-tuned numbers stay in `src/modules/run/rules.model.ts`; the clamp site is `addStorage` in `run.model.ts`.
 
+**Decision 3 superseded 2026-08-06** (DVTD-0h4n): the cap-extender is not a config. If raising the cap took a pipeline slot, every build would run it and the config roster's diversity would collapse into "extender + N free slots." It's a slot-free, sticky shop voucher instead — bought once, applies run-wide, never occupies a slot and so is never strippable. Decision 3's soft-over-cap-on-removal mechanic doesn't apply: there's no removal path for a purchase that was never installed. Overflow above the cap is now handled at the *Climb on* boundary instead (see [wiki §5.1](../wiki.md#51-storage-kb)), not via a per-config effective-cap calculation. Decisions 1, 2, and 4 (one-shot grant configs, their clip-at-cap behavior, and the no-selling non-decision) are unaffected.
+
 ## Context
 
 Config unlocking (DVTD-9d7o) introduces config candidates whose effects touch the storage economy directly, and three mechanic holes surfaced before implementation:

@@ -82,6 +82,13 @@ const StepsSummary = ({ rows }: { rows: readonly GateRewardRow[] }) => {
 type GateRewardReportProps = {
 	gateNumber: number;
 	cleared: boolean;
+	/**
+	 * Present when the clear passed but the climb stays on this gate: the
+	 * pipeline is too narrow for the next one (ADR-018). A third headline state —
+	 * the clear was real and paid, so "failed" would lie, but so would implying
+	 * the next gate is next. Carries the one claim that releases it.
+	 */
+	held?: { nextGate: number; unlockSlot: number; swatchName: string };
 	rows: readonly GateRewardRow[];
 	totals?: { storageKb: number; coveragePct: number };
 	/** Run storage before → after the payout — drawn as the HUD bar's sibling
@@ -92,79 +99,105 @@ type GateRewardReportProps = {
 	stripsRemaining?: number;
 };
 
+// A held clear keeps the PASS badge — the gate genuinely passed and paid; it is
+// the *climb* that stopped, which the title and the saffron line below carry.
+const headline = (
+	gateNumber: number,
+	cleared: boolean,
+	held: boolean
+): { variant: StatusBadgeVariant; title: string } => {
+	if (!cleared) return { variant: "fail", title: `Gate ${gateNumber} failed!` };
+	if (held)
+		return {
+			variant: "pass",
+			title: `Gate ${gateNumber} cleared — still gate ${gateNumber}`,
+		};
+	return { variant: "pass", title: `Gate ${gateNumber} cleared!` };
+};
+
 export const GateRewardReport = ({
 	gateNumber,
 	cleared,
+	held,
 	rows,
 	totals,
 	storageBar,
 	removableConfigIds = [],
 	onRemoveConfig,
 	stripsRemaining,
-}: GateRewardReportProps) => (
-	<div className="flex flex-col gap-3">
-		<div className="flex items-center gap-3 ">
-			<StatusBadge variant={cleared ? "pass" : "fail"} />
-			<Title>
-				Gate {gateNumber} {cleared ? "cleared!" : "failed!"}
-			</Title>
-		</div>
-
-		{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
-			<Paragraph size="sm" tone="pewter">
-				Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
-				continue
-			</Paragraph>
-		)}
-
-		<StepsSummary rows={rows} />
-
-		<PipelineTable>
-			{[...rows]
-				.sort((a: GateRewardRow, b: GateRewardRow) => {
-					const aRemovable = removableConfigIds.includes(a.config.id);
-					const bRemovable = removableConfigIds.includes(b.config.id);
-					// Fixed (non-removable) configs first, then removable ones
-					return aRemovable === bRemovable ? 0 : aRemovable ? 1 : -1;
-				})
-				.map((row) => (
-					<ReportRow
-						key={row.key}
-						row={row}
-						removable={removableConfigIds.includes(row.config.id)}
-						onRemove={onRemoveConfig}
-					/>
-				))}
-		</PipelineTable>
-
-		{totals ? (
-			// Only the cleared path passes totals, so the line reads as the
-			// gate's winnings rather than a bare sum.
-			<div className="flex flex-col items-center gap-2 self-center">
-				<Paragraph size="sm">
-					<Paragraph as="span" size="sm" tone="muted">
-						you won{" "}
-					</Paragraph>
-					<span className="font-extrabold text-gradient-green">
-						+{totals.storageKb}KB
-					</span>{" "}
-					storage ·{" "}
-					<span className="font-extrabold text-gradient-green">
-						+{totals.coveragePct}%
-					</span>{" "}
-					coverage
-				</Paragraph>
-				{storageBar ? (
-					<span className="w-56">
-						<GainBar
-							from={storageBar.fromKb}
-							to={storageBar.toKb}
-							cap={storageBar.capKb}
-							label="storage"
-						/>
-					</span>
-				) : null}
+}: GateRewardReportProps) => {
+	const { variant, title } = headline(gateNumber, cleared, held !== undefined);
+	return (
+		<div className="flex flex-col gap-3">
+			<div className="flex items-center gap-3 ">
+				<StatusBadge variant={variant} />
+				<Title>{title}</Title>
 			</div>
-		) : null}
-	</div>
-);
+
+			{cleared && held && (
+				<Paragraph size="sm" tone="saffron">
+					Gate {held.nextGate} needs a wider pipeline, so you&apos;ll run gate{" "}
+					{gateNumber} again. Unlock slot {held.unlockSlot} in the shop — the{" "}
+					{held.swatchName} — to climb on.
+				</Paragraph>
+			)}
+
+			{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
+				<Paragraph size="sm" tone="pewter">
+					Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
+					continue
+				</Paragraph>
+			)}
+
+			<StepsSummary rows={rows} />
+
+			<PipelineTable>
+				{[...rows]
+					.sort((a: GateRewardRow, b: GateRewardRow) => {
+						const aRemovable = removableConfigIds.includes(a.config.id);
+						const bRemovable = removableConfigIds.includes(b.config.id);
+						// Fixed (non-removable) configs first, then removable ones
+						return aRemovable === bRemovable ? 0 : aRemovable ? 1 : -1;
+					})
+					.map((row) => (
+						<ReportRow
+							key={row.key}
+							row={row}
+							removable={removableConfigIds.includes(row.config.id)}
+							onRemove={onRemoveConfig}
+						/>
+					))}
+			</PipelineTable>
+
+			{totals ? (
+				// Only the cleared path passes totals, so the line reads as the
+				// gate's winnings rather than a bare sum.
+				<div className="flex flex-col items-center gap-2 self-center">
+					<Paragraph size="sm">
+						<Paragraph as="span" size="sm" tone="muted">
+							you won{" "}
+						</Paragraph>
+						<span className="font-extrabold text-gradient-green">
+							+{totals.storageKb}KB
+						</span>{" "}
+						storage ·{" "}
+						<span className="font-extrabold text-gradient-green">
+							+{totals.coveragePct}%
+						</span>{" "}
+						coverage
+					</Paragraph>
+					{storageBar ? (
+						<span className="w-56">
+							<GainBar
+								from={storageBar.fromKb}
+								to={storageBar.toKb}
+								cap={storageBar.capKb}
+								label="storage"
+							/>
+						</span>
+					) : null}
+				</div>
+			) : null}
+		</div>
+	);
+};

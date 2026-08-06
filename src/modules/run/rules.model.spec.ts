@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	pollDifficultyMultiplier,
 	storageCreditRate,
+	GATE_COUNT,
 	VICTORY_GATE,
 } from "./rules.model";
 
@@ -17,10 +18,11 @@ describe("storageCreditRate", () => {
 	});
 
 	it("scales a death linearly with gates cleared", () => {
+		// gatesCleared is a count, so the share divides by how many gates a run has.
 		expect(storageCreditRate("dead", 0)).toBe(0);
-		expect(storageCreditRate("dead", VICTORY_GATE / 2)).toBeCloseTo(0.5);
-		expect(storageCreditRate("dead", VICTORY_GATE - 1)).toBeCloseTo(
-			(VICTORY_GATE - 1) / VICTORY_GATE
+		expect(storageCreditRate("dead", GATE_COUNT / 2)).toBeCloseTo(0.5);
+		expect(storageCreditRate("dead", GATE_COUNT - 1)).toBeCloseTo(
+			(GATE_COUNT - 1) / GATE_COUNT
 		);
 	});
 

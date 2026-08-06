@@ -13,7 +13,7 @@ type Story = StoryObj<typeof RewardScreen>;
 
 export const Default: Story = {
 	args: {
-		gatesCleared: 1,
+		clearedGate: 1,
 		gateReward: 88,
 		coverageGainedByCategory: { js: 3.1, css: 0.5, react: 2.2 },
 		answered: [

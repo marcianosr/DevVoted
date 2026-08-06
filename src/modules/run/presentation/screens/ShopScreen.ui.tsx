@@ -21,6 +21,7 @@ import { roleRows } from "~/modules/run/gate/configRole.model";
 import { PipelineReportRow } from "../gate/PipelineReportRow.ui";
 import { PipelineTable } from "../gate/PipelineTable.ui";
 import { RoleList } from "../gate/RoleList.ui";
+import { nextSwatchRow } from "../gate/SlotSwatchRow.ui";
 
 type ShopScreenProps = {
 	storage: number;
@@ -119,7 +120,6 @@ export const ShopScreen = ({
 	onUpgrade,
 	onSell,
 }: ShopScreenProps) => {
-	const atSlotCap = !Number.isFinite(slotCoverageRequired);
 	const isFull = configs.length >= slots;
 
 	// Focus upgrades are coverage-gated and free; Unit Tests' upgrade is
@@ -209,27 +209,6 @@ export const ShopScreen = ({
 		);
 	};
 
-	const expandBar =
-		"block w-full rounded-lg border-2 border-dashed px-4 py-2 text-center text-sm font-semibold";
-	const expandTile = atSlotCap ? null : canAddSlot ? (
-		<button
-			type="button"
-			onClick={onAddSlot}
-			className={`${expandBar} border-cerulean text-cerulean transition hover:bg-cerulean/10`}
-		>
-			＋ Add slot: {slots} → {slots + 1}
-		</button>
-	) : (
-		<Tooltip
-			className="w-full"
-			content={`at ${slotCoverageRequired}% coverage — you have ${coverage}%`}
-		>
-			<span className={`${expandBar} border-zinc-700 text-zinc-400`}>
-				Expand to {slots + 1} slots
-			</span>
-		</Tooltip>
-	);
-
 	return (
 		<div className="flex flex-col gap-6">
 			<header>
@@ -283,7 +262,12 @@ export const ShopScreen = ({
 					slots={slots}
 					trailingFor={loadoutActions}
 					newConfigIds={newConfigIds}
-					trailing={expandTile}
+					trailing={nextSwatchRow({
+						slots,
+						coverage,
+						slotCoverageRequired,
+						claim: { ready: canAddSlot, onClaim: onAddSlot },
+					})}
 				/>
 				<Paragraph size="sm" className="self-center">
 					<span className="font-extrabold text-gradient-green">

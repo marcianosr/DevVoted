@@ -281,6 +281,44 @@
 	--theme-color: var(--color-seafoam);
 }
 
+/* Slot-unlock swatches, colored by their home Kanto location (swatch.model.ts):
+   eight gym badges, then the two gym-less landmarks that stretch the ladder
+   across all 12 gates. elite-four sets no --theme-color — its chip and unlock
+   pill wear .legendary-ring instead (indigo is the app background). */
+[data-swatch-theme="pallet"] {
+	--theme-color: var(--color-pallet);
+}
+[data-swatch-theme="boulder"] {
+	--theme-color: var(--color-pewter);
+}
+[data-swatch-theme="cascade"] {
+	--theme-color: var(--color-cerulean);
+}
+[data-swatch-theme="thunder"] {
+	--theme-color: var(--color-vermillion);
+}
+[data-swatch-theme="rainbow"] {
+	--theme-color: var(--color-celadon);
+}
+[data-swatch-theme="soul"] {
+	--theme-color: var(--color-fuchsia);
+}
+[data-swatch-theme="marsh"] {
+	--theme-color: var(--color-saffron);
+}
+[data-swatch-theme="volcano"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-swatch-theme="earth"] {
+	--theme-color: var(--color-viridian);
+}
+[data-swatch-theme="lavender"] {
+	--theme-color: var(--color-lavender);
+}
+[data-swatch-theme="seafoam"] {
+	--theme-color: var(--color-seafoam);
+}
+
 /* Theme utilities - use inherited --theme-color (category color, or the root
    default on un-themed screens) */
 [data-category-theme] {
@@ -501,6 +539,22 @@ meter::-webkit-meter-optimum-value {
 	pointer-events: none;
 }
 
+/*
+ * The legendary Kanto gradient as a flat fill — .legendary-ring's sibling, for
+ * places where a 1px ring would be invisible (the HUD's 1.5px gate segments).
+ * Same stops, same source vars.
+ */
+@utility bg-legendary {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-saffron),
+		var(--color-fuchsia),
+		var(--color-lavender),
+		var(--color-cerulean),
+		var(--color-celadon)
+	);
+}
+
 /* Flowing celadon→viridian gradient clipped to the text glyphs. */
 @keyframes gradient-flow {
 	0% {
@@ -531,6 +585,35 @@ meter::-webkit-meter-optimum-value {
 }
 .no-scrollbar::-webkit-scrollbar {
 	display: none;
+}
+
+/* ─── Anchored popover ─────────────────────────────────────────────────────────
+   src/ui/Popover places itself entirely in CSS; the component only supplies the
+   per-instance `anchor-name`. This replaced ~40 lines of getBoundingClientRect
+   measurement, which had two defects the platform doesn't: a pinned popover kept
+   stale coordinates when the page scrolled, and it could paint one frame at the
+   UA's centred position before the measured values landed.
+
+   The UA sheet gives [popover] `inset: 0; margin: auto` to centre it in the
+   viewport — both have to go, or the box stretches to fill the position-area
+   region instead of shrink-wrapping its content. The block margin that replaces
+   `margin: auto` is the old TRIGGER_GAP; max-inline-size is the old
+   VIEWPORT_MARGIN clamp. */
+[popover].popover-anchored {
+	inset: auto;
+	margin: 0.5rem 0;
+	/* Above the trigger, flipping below when there's no room — the same preference
+	   order the JS used. */
+	position-area: block-start span-all;
+	position-try-fallbacks: flip-block;
+	/* span-all makes the position-area region the full inline axis, and the box
+	   stretches to fill it rather than hugging its content, so both of these are
+	   load-bearing: fit-content shrink-wraps (what `position: fixed` with no width
+	   gave us before) and anchor-center re-centres the shrunk box on the trigger,
+	   replacing the JS's centering math. */
+	inline-size: fit-content;
+	justify-self: anchor-center;
+	max-inline-size: calc(100dvw - 1rem);
 }
 
 /* ─── Screen mount-in transitions ──────────────────────────────────────────────

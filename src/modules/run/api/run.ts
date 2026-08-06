@@ -9,6 +9,7 @@ import { getRunCommunityHandler } from "./community.handlers";
 import {
 	abandonRunHandler,
 	dispatchRunActionHandler,
+	getOwnedSwatchesHandler,
 	getTodaysRunHandler,
 	startRunHandler,
 } from "./handlers";
@@ -57,3 +58,14 @@ export const dispatchRunAction = createServerFn({ method: "POST" })
 			action: data.action,
 		});
 	});
+
+/**
+ * The viewer's swatch collection. userId comes from the session, never the
+ * client — the collection is per-user.
+ */
+export const getOwnedSwatches = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const userId = await getAuthenticatedUserId();
+		return getOwnedSwatchesHandler({ userId });
+	}
+);

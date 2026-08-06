@@ -5,15 +5,19 @@ import {
 	pollResponseOptionsTable,
 	pollResponsesTable,
 	runPollsTable,
+	usersTable,
 } from "~/database/schema";
 import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 
 import { createRun, type RunState } from "../climb/run.model";
 import { toRunSnapshot } from "../climb/runSnapshot.model";
 import { CONFIGS } from "../configs/configRoster.model";
+import { MAX_SLOTS } from "../pipeline/pipeline.model";
+import { VICTORY_GATE } from "../rules.model";
 import {
 	abandonSessionRun,
 	applyActionToRun,
+	createSessionRunWithState,
 	getOrCreateDailyRunSeed,
 } from "./queries";
 
@@ -250,13 +254,14 @@ describe("applyActionToRun", () => {
 
 	it("finishes the run and credits leftover storage on victory", async () => {
 		// One answer from the summit: the final gate's window is 4/5 with every
-		// answer correct, so this correct answer closes it and clears gate 5.
+		// answer correct, so this correct answer closes it and clears the summit.
 		// A bare pipeline can never clear (ADR-017), so the summit build carries
 		// its .js config — the window's 4/4 JS record passes its mastery check.
+		// Slots are maxed because every advance is bought with a slot (ADR-018).
 		const summitReady = answeringState({
 			storage: 100,
-			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.js] },
-			gatesCleared: 4,
+			pipeline: { id: "pipeline", slots: MAX_SLOTS, configs: [CONFIGS.js] },
+			gatesCleared: VICTORY_GATE,
 			window: {
 				correct: 4,
 				answered: 4,
@@ -286,6 +291,54 @@ describe("applyActionToRun", () => {
 		// 100 KB leftover → bytes credit on users.archived_storage
 		expect(mock.setCalls[2]).toHaveProperty("archived_storage");
 		expect(db.update).toHaveBeenCalledTimes(3);
+	});
+
+	it("earns Pallet the moment a run starts — the base slots' free swatch", async () => {
+		mock.results.push([{ id: 64 }]); // runs insert
+		mock.results.push(undefined); // run_states insert
+		mock.results.push(undefined); // run_polls insert
+		mock.results.push(undefined); // users update
+
+		await createSessionRunWithState(
+			"red-from-pallet-town",
+			TEST_DATES.birthday,
+			answeringState({ polls: [] })
+		);
+
+		expect(mock.updateTables).toContain(usersTable);
+		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
+	});
+
+	it("earns the slot's swatch when the pipeline widens", async () => {
+		// Slot 4's coverage gate is met, so the reward-screen claim goes through
+		// and the Boulder Swatch is written to the account before the state row.
+		const rewarding = answeringState({
+			status: "rewarding",
+			coverage: 1000,
+			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.js] },
+		});
+		mock.results.push([stateRow(rewarding)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		const next = await dispatch({ type: "add-slot" });
+
+		expect(next.pipeline.slots).toBe(4);
+		expect(mock.updateTables[0]).toBe(usersTable);
+		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
+	});
+
+	it("earns no swatch when the action leaves the pipeline's width alone", async () => {
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.updateTables).not.toContain(usersTable);
 	});
 
 	it("keeps the run active when the day's polls run out mid-window (ADR-014)", async () => {

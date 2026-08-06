@@ -64,3 +64,25 @@ export const SlotLocked: Story = {
 		canAddSlot: false,
 	},
 };
+
+// The last slot on the ladder — it opens the summit and wears the legendary ring.
+export const EliteFourNext: Story = {
+	args: {
+		...Default.args,
+		slots: 13,
+		coverage: 400,
+		slotCoverageRequired: 415,
+		canAddSlot: false,
+	},
+};
+
+// Every slot unlocked — the swatch row retires.
+export const AtSlotCap: Story = {
+	args: {
+		...Default.args,
+		slots: 14,
+		coverage: 430,
+		slotCoverageRequired: Infinity,
+		canAddSlot: false,
+	},
+};

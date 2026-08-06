@@ -8,24 +8,24 @@ export type GateOutcome = {
 };
 
 /**
- * The full gate ladder for the end-of-run screen: one entry per gate from 1 to
- * `victoryGate`. Gates up to `gatesCleared` passed; on a lost run the very next
- * gate is where the pipeline broke (fail); everything beyond was never reached
- * (skip). A won run clears the whole ladder, so no fail/skip rows appear.
+ * The full gate ladder for the end-of-run screen: one entry per gate, gate 0
+ * through `finalGate`. `gatesCleared` gates passed; on a lost run the gate the player was
+ * standing on is where the pipeline broke (fail); everything beyond was never
+ * reached (skip). A won run clears the whole ladder, so no fail/skip rows appear.
  */
 export const deriveGateLadder = (
 	gatesCleared: number,
 	won: boolean,
-	victoryGate: number = VICTORY_GATE
+	finalGate: number = VICTORY_GATE
 ): readonly GateOutcome[] => {
 	const statusFor = (gate: number): GateOutcomeStatus => {
-		if (gate <= gatesCleared) return "pass";
-		if (!won && gate === gatesCleared + 1) return "fail";
+		if (gate < gatesCleared) return "pass";
+		if (!won && gate === gatesCleared) return "fail";
 		return "skip";
 	};
 
-	return Array.from({ length: victoryGate }, (_, index) => {
-		const gate = index + 1;
-		return { gate, status: statusFor(gate) };
-	});
+	return Array.from({ length: Math.max(0, finalGate + 1) }, (_, gate) => ({
+		gate,
+		status: statusFor(gate),
+	}));
 };

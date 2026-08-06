@@ -125,3 +125,15 @@ export const Cleared: Story = {
 export const Failed: Story = {
 	args: { gateNumber: 2, cleared: false, rows: failedRows },
 };
+
+// Cleared, but the pipeline is only 3 slots wide, so gate 3 is as deep as it
+// reaches — the climb replays it until a slot is unlocked (ADR-018).
+export const ClearedButHeld: Story = {
+	args: {
+		gateNumber: 3,
+		cleared: true,
+		held: true,
+		rows: clearedRows,
+		totals: { storageKb: 136, coveragePct: 5.8 },
+	},
+};

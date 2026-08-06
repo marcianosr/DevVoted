@@ -48,7 +48,7 @@ export const GameOverScreen = ({
 			<Paragraph>
 				{won
 					? "You cleared every gate with your build intact."
-					: `Your build broke at gate ${gatesCleared + 1}. The climb is over.`}
+					: `Your build broke at gate ${gatesCleared}. The climb is over.`}
 			</Paragraph>
 		</div>
 

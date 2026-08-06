@@ -5,13 +5,24 @@ import {
 	gateRewardRows,
 	gateStorageGained,
 } from "~/modules/run/gate/gateReward.model";
+import {
+	swatchesEarnedAt,
+	swatchForSlot,
+} from "~/modules/run/pipeline/swatch.model";
 import { roundToOneDecimal, STORAGE_CAP_KB } from "~/modules/run/rules.model";
+import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { GateRewardReport } from "../gate/GateRewardReport.ui";
+import { SwatchChips } from "../gate/SwatchChips.ui";
 import { CoverageByCategory } from "../run/CoverageByCategory.ui";
 import { ReviewAnswers } from "../run/ReviewAnswers.ui";
 
 type RewardScreenProps = {
-	gatesCleared: number;
+	/** The gate the clear actually beat — not `gatesCleared`, which the gate–slot cap can freeze behind it. */
+	clearedGate: number;
+	/** Pipeline width, which names the swatches collected so far. */
+	slots?: number;
+	/** The clear passed but the climb stays on this gate — the pipeline is too narrow. */
+	heldAtGate?: boolean;
 	gateReward: number;
 	answered: readonly AnsweredPoll[];
 	coverageGainedByCategory: Readonly<Record<string, number>>;
@@ -23,7 +34,9 @@ type RewardScreenProps = {
 };
 
 export const RewardScreen = ({
-	gatesCleared,
+	clearedGate,
+	slots,
+	heldAtGate = false,
 	gateReward,
 	answered,
 	coverageGainedByCategory,
@@ -47,12 +60,26 @@ export const RewardScreen = ({
 		gateReward,
 		faucetThisGateKb
 	);
+	const earnedSwatches = slots === undefined ? [] : swatchesEarnedAt(slots);
+	// A held clear is always exactly one slot short: running this gate already
+	// required every slot below it (ADR-018).
+	const unlockSwatch =
+		slots === undefined ? undefined : swatchForSlot(slots + 1);
+	const held =
+		heldAtGate && slots !== undefined && unlockSwatch
+			? {
+					nextGate: clearedGate + 1,
+					unlockSlot: unlockSwatch.slot,
+					swatchName: unlockSwatch.name,
+				}
+			: undefined;
 
 	return (
 		<div className="flex flex-col gap-4">
 			<GateRewardReport
-				gateNumber={gatesCleared}
+				gateNumber={clearedGate}
 				cleared
+				held={held}
 				rows={rows}
 				totals={{ storageKb, coveragePct }}
 				storageBar={
@@ -73,6 +100,13 @@ export const RewardScreen = ({
 					prefix="+"
 				/>
 			</div>
+
+			{earnedSwatches.length > 0 && (
+				<section className="flex flex-col items-center gap-2">
+					<Subtitle>Swatches collected</Subtitle>
+					<SwatchChips swatches={earnedSwatches} />
+				</section>
+			)}
 
 			<ReviewAnswers answered={answered} />
 		</div>

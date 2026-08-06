@@ -43,17 +43,13 @@ export const RunLayout = () => {
 				<HudBar>
 					<RunHud
 						storage={view.storage}
-						gateNumber={view.gatesCleared + 1}
+						gatesCleared={view.gatesCleared}
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
 						pollsPerGate={view.pollsPerGate}
-						streak={view.streak}
 						category={view.poll?.category}
 						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
-						configs={view.configs}
-						slots={view.slots}
-						checks={view.checks}
 					/>
 				</HudBar>
 			)}

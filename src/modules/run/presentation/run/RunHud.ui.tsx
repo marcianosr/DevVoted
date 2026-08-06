@@ -1,30 +1,23 @@
 import { type CategoryCode, getCategories } from "~/domains/shared/categories";
-import type { Config } from "~/modules/run/configs/config.model";
-import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { Popover } from "~/ui/Popover.component";
 import { Swatch } from "~/ui/Swatch.component";
 import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { STORAGE_CAP_KB } from "../../rules.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { ConfigChip } from "../configs/ConfigChip.ui";
+import { gateLadderRungs } from "~/modules/run/pipeline/swatch.model";
+import { GateSegmentBar } from "./GateSegmentBar.ui";
+import { StorageGauge } from "./StorageGauge.ui";
 import { SummaryDropdown } from "./SummaryDropdown.ui";
-
-const storagePercent = (storage: number) =>
-	Math.min(100, Math.max(0, (storage / STORAGE_CAP_KB) * 100));
 
 type RunHudProps = {
 	storage: number;
-	gateNumber: number;
+	gatesCleared: number;
 	victoryGate: number;
 	pollsAnswered: number;
 	pollsPerGate: number;
-	streak: number;
 	category?: CategoryCode;
 	coverage: number;
 	coverageByCategory: Readonly<Record<string, number>>;
-	configs: readonly Config[];
-	slots: number;
-	checks: readonly CheckStatus[];
 };
 
 const CoverageSummary = ({
@@ -88,113 +81,48 @@ const CoverageSummary = ({
 	);
 };
 
-const MobileStakesPanel = ({
-	streak,
-	coverage,
-	configs,
-}: Pick<RunHudProps, "streak" | "coverage" | "configs" | "checks">) => (
-	<>
-		<hr className="border-zinc-800" />
-		<span className="flex items-baseline justify-between gap-4">
-			<Paragraph as="span" size="sm" tone="pewter">
-				Streak
-			</Paragraph>
-			<Paragraph as="span" size="sm" tone="theme">
-				{streak}
-			</Paragraph>
-		</span>
-		<span className="flex items-baseline justify-between gap-4">
-			<Paragraph as="span" size="sm" tone="pewter">
-				Coverage
-			</Paragraph>
-			<Paragraph as="span" size="sm" tone="theme">
-				{coverage}%
-			</Paragraph>
-		</span>
-		{configs.length > 0 ? (
-			<span className="flex flex-wrap gap-2">
-				{configs.map((config) => (
-					<ConfigChip key={config.id} config={config} />
-				))}
-			</span>
-		) : null}
-	</>
-);
-
 export const RunHud = ({
 	storage,
-	gateNumber,
+	gatesCleared,
 	victoryGate,
 	pollsAnswered,
 	pollsPerGate,
-	streak,
 	category,
 	coverage,
 	coverageByCategory,
-	configs,
-	checks,
 }: RunHudProps) => (
 	<div
-		className="border-b border-zinc-800 pb-3 text-sm font-black"
+		className="border-b border-zinc-800 pb-3 text-sm "
 		{...(category ? categoryTheme(category) : {})}
 	>
-		<div className="flex items-center justify-between gap-3 sm:hidden">
-			<span className="flex items-baseline gap-2">
-				<Paragraph as="span" size="sm" tone="theme">
-					{storage}KB
-				</Paragraph>
-				<span className="text-pewter">·</span>
-				<Paragraph as="span" size="sm" tone="pewter">
-					Gate
-				</Paragraph>
-				<Paragraph as="span" size="sm" tone="theme">
-					{gateNumber}/{victoryGate}
-				</Paragraph>
-				<span className="text-pewter">·</span>
-				<Paragraph as="span" size="sm" tone="pewter">
-					{pollsAnswered}/{pollsPerGate} polls
-				</Paragraph>
-			</span>
-			<SummaryDropdown
-				trigger={<span className="text-cinnabar">Stakes</span>}
-				triggerClassName="rounded-lg border border-cinnabar/60 px-3 py-1"
-				panelClassName="flex w-72 flex-col gap-3"
-			>
-				<MobileStakesPanel
-					streak={streak}
+		<div className="flex flex-col gap-2 sm:hidden">
+			<div className="flex items-center justify-between gap-3">
+				<StorageGauge usedKb={storage} capKb={STORAGE_CAP_KB} />
+				<span className="flex items-baseline gap-2">
+					<Paragraph as="span" size="sm" tone="pewter">
+						{pollsAnswered}/{pollsPerGate} polls
+					</Paragraph>
+				</span>
+			</div>
+			<span className="flex flex-col gap-1">
+				<GateSegmentBar
+					rungs={gateLadderRungs(victoryGate)}
+					gatesCleared={gatesCleared}
 					coverage={coverage}
-					configs={configs}
-					checks={checks}
+					label={`gate ladder: gate ${gatesCleared} of ${victoryGate}`}
 				/>
-			</SummaryDropdown>
+			</span>
 		</div>
 
 		<div className="hidden items-center gap-6 sm:flex">
-			<span className="flex shrink-0 items-center gap-1.5">
-				<Paragraph as="span" size="sm" tone="pewter">
-					Storage
-				</Paragraph>
-				<Paragraph as="span" size="sm" tone="theme">
-					{storage}KB
-				</Paragraph>
-				<span
-					className="ml-1 h-1.5 w-16 overflow-hidden rounded-full bg-zinc-800"
-					role="progressbar"
-					aria-valuenow={storage}
-					aria-valuemin={0}
-					aria-valuemax={STORAGE_CAP_KB}
-				>
-					<span
-						className="block h-full rounded-full bg-theme transition-all"
-						style={{ width: `${storagePercent(storage)}%` }}
-					/>
-				</span>
+			<span className="flex shrink-0 items-start gap-1.5">
+				<StorageGauge usedKb={storage} capKb={STORAGE_CAP_KB} />
 				<Popover
 					ariaLabel="How storage works"
 					content={
 						<p className="max-w-xs text-sm">
-							Storage caps at 1 MB. Clear gates and answer correctly to earn KB
-							— income beyond the cap is discarded.
+							Storage caps at {STORAGE_CAP_KB}KB. Clear gates and answer
+							correctly to earn KB — income beyond the cap is discarded.
 						</p>
 					}
 				>
@@ -203,13 +131,17 @@ export const RunHud = ({
 					</span>
 				</Popover>
 			</span>
-			<span className="flex shrink-0 items-baseline gap-1.5">
+			<span className="flex w-56 shrink-0 flex-col gap-1">
 				<Paragraph as="span" size="sm" tone="pewter">
-					Gate
+					gate <span className="text-theme">{gatesCleared}</span> /{" "}
+					{victoryGate}
 				</Paragraph>
-				<Paragraph as="span" size="sm" tone="theme">
-					{gateNumber} / {victoryGate}
-				</Paragraph>
+				<GateSegmentBar
+					rungs={gateLadderRungs(victoryGate)}
+					gatesCleared={gatesCleared}
+					coverage={coverage}
+					label={`gate ${gatesCleared} of ${victoryGate}`}
+				/>
 			</span>
 			<span className="flex shrink-0 items-baseline gap-1.5">
 				<Paragraph as="span" size="sm" tone="theme">
@@ -217,14 +149,6 @@ export const RunHud = ({
 				</Paragraph>
 				<Paragraph as="span" size="sm" tone="pewter">
 					polls
-				</Paragraph>
-			</span>
-			<span className="flex shrink-0 items-baseline gap-1.5">
-				<Paragraph as="span" size="sm" tone="theme">
-					{streak}
-				</Paragraph>
-				<Paragraph as="span" size="sm" tone="pewter">
-					streak
 				</Paragraph>
 			</span>
 			<div className="ml-auto flex shrink-0 items-center gap-6">

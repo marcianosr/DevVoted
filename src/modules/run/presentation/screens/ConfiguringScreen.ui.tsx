@@ -4,12 +4,19 @@ import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { roleRows } from "~/modules/run/gate/configRole.model";
 import { pipelineModifiersFor } from "~/modules/run/pipeline/pipeline.model";
+import {
+	ALL_SWATCHES,
+	swatchesEarnedAt,
+} from "~/modules/run/pipeline/swatch.model";
 import { Columns } from "~/ui/Columns.ui";
 import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RoleList } from "../gate/RoleList.ui";
+import { nextSwatchRow } from "../gate/SlotSwatchRow.ui";
+import { SwatchChips } from "../gate/SwatchChips.ui";
 import { StatBadge } from "../run/StatBadge.ui";
 
 type ConfiguringScreenProps = {
@@ -88,6 +95,7 @@ export const ConfiguringScreen = ({
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const full = configs.length >= slots;
 	const rows = roleRows(configs, checks);
+	const earnedSwatches = swatchesEarnedAt(slots);
 
 	const previewConfig = full
 		? undefined
@@ -168,37 +176,43 @@ export const ConfiguringScreen = ({
 									}
 								: undefined
 						}
-						nextSlot={
-							coverage !== undefined &&
-							slotCoverageRequired !== undefined &&
-							Number.isFinite(slotCoverageRequired)
-								? {
-										number: slots + 1,
-										unlockAtPct: slotCoverageRequired,
-										coveragePct: coverage,
-									}
-								: undefined
-						}
+						trailing={nextSwatchRow({ slots, coverage, slotCoverageRequired })}
 					/>
-					<div className="flex flex-wrap gap-8 border-t border-zinc-700 pt-4">
-						<StatBadge
-							label="reward on clear"
-							value={reward.value}
-							from={reward.from}
-							valueTone="gradient"
-						/>
-						<StatBadge
-							label="reward ×"
-							value={rewardTimes.value}
-							from={rewardTimes.from}
-							valueTone={multiplierTone(rewardTimes)}
-						/>
-						<StatBadge
-							label="coverage ×"
-							value={coverageTimes.value}
-							from={coverageTimes.from}
-							valueTone={multiplierTone(coverageTimes)}
-						/>
+					<div className="flex flex-col gap-2 border-t border-zinc-700 pt-4">
+						<Subtitle as="p">Gate modifiers</Subtitle>
+						<div className="flex flex-wrap gap-8">
+							<StatBadge
+								label="reward on clear"
+								value={reward.value}
+								from={reward.from}
+								valueTone="gradient"
+							/>
+							<StatBadge
+								label="reward ×"
+								value={rewardTimes.value}
+								from={rewardTimes.from}
+								valueTone={multiplierTone(rewardTimes)}
+							/>
+							<StatBadge
+								label="coverage ×"
+								value={coverageTimes.value}
+								from={coverageTimes.from}
+								valueTone={multiplierTone(coverageTimes)}
+							/>
+						</div>
+					</div>
+					{/* A collection tally, not a gate modifier — so it stands apart. */}
+					<div className="flex flex-col gap-2">
+						<Subtitle as="p">
+							Swatches {earnedSwatches.length} / {ALL_SWATCHES.length}
+						</Subtitle>
+						{earnedSwatches.length > 0 ? (
+							<SwatchChips swatches={earnedSwatches} />
+						) : (
+							<Paragraph size="xs" tone="faint">
+								Unlock a slot to earn your first — each one opens the next gate.
+							</Paragraph>
+						)}
 					</div>
 				</section>
 			}

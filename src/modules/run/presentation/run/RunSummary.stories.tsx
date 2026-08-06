@@ -52,7 +52,7 @@ export const Summited: Story = {
 	args: {
 		won: true,
 		gatesCleared: 5,
-		victoryGate: 5,
+		victoryGate: 12,
 		coverage: 24,
 		storage: 640,
 		configs,
@@ -64,7 +64,7 @@ export const RunOver: Story = {
 	args: {
 		won: false,
 		gatesCleared: 2,
-		victoryGate: 5,
+		victoryGate: 12,
 		coverage: 9,
 		storage: 137,
 		configs,
@@ -76,7 +76,7 @@ export const StalledAtFirstGate: Story = {
 	args: {
 		won: false,
 		gatesCleared: 0,
-		victoryGate: 5,
+		victoryGate: 12,
 		coverage: 2,
 		storage: 24,
 		configs: [CONFIGS.css],

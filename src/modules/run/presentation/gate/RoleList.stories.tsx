@@ -4,6 +4,7 @@ import { describeConfig } from "~/modules/run/configs/config.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import type { RoleRow } from "~/modules/run/gate/configRole.model";
 import { RoleList } from "./RoleList.ui";
+import { nextSwatchRow } from "./SlotSwatchRow.ui";
 
 const meta: Meta<typeof RoleList> = {
 	component: RoleList,
@@ -74,7 +75,7 @@ export const WithSlotPreview: Story = {
 };
 
 // The shop load-out: chips open a sell/upgrade popover, fresh drafts carry a "new"
-// badge, and the expand control rides along as the final row.
+// badge, and the next slot's swatch rides along as the final row.
 export const ShopLoadout: Story = {
 	args: {
 		rows,
@@ -84,13 +85,11 @@ export const ShopLoadout: Story = {
 			{ label: "Upgrade (5% cov)", onClick: () => {} },
 			{ label: "Sell +20KB", onClick: () => {} },
 		],
-		trailing: (
-			<button
-				type="button"
-				className="rounded-lg border-2 border-dashed border-cerulean px-4 py-2 text-sm font-semibold text-cerulean"
-			>
-				＋ Add slot: 4 → 5
-			</button>
-		),
+		trailing: nextSwatchRow({
+			slots: 4,
+			coverage: 18.2,
+			slotCoverageRequired: 16,
+			claim: { ready: true, onClaim: () => {} },
+		}),
 	},
 };

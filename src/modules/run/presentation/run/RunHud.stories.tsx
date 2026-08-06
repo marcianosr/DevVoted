@@ -14,8 +14,8 @@ type Story = StoryObj<typeof RunHud>;
 export const WithCoverage: Story = {
 	args: {
 		storage: 120,
-		gateNumber: 2,
-		victoryGate: 5,
+		gatesCleared: 1,
+		victoryGate: 12,
 		pollsAnswered: 2,
 		pollsPerGate: 5,
 		streak: 2,
@@ -23,7 +23,6 @@ export const WithCoverage: Story = {
 		coverage: 18.5,
 		coverageByCategory: { css: 3, js: 8, ts: 5, react: 2.5 },
 		configs: [CONFIGS.unitTests, CONFIGS.js, CONFIGS.eslint],
-		slots: 3,
 		checks: [
 			{
 				label: "Correct",
@@ -40,16 +39,14 @@ export const WithCoverage: Story = {
 export const EarlyRun: Story = {
 	args: {
 		storage: 80,
-		gateNumber: 1,
-		victoryGate: 5,
+		gatesCleared: 1,
+		victoryGate: 12,
 		pollsAnswered: 0,
 		pollsPerGate: 5,
 		streak: 0,
 		category: "css",
 		coverage: 0,
 		coverageByCategory: {},
-		configs: [CONFIGS.unitTests],
-		slots: 3,
 		checks: [
 			{
 				label: "Correct",
@@ -66,8 +63,8 @@ export const EarlyRun: Story = {
 export const StorageNearCap: Story = {
 	args: {
 		storage: 980,
-		gateNumber: 5,
-		victoryGate: 5,
+		gatesCleared: 1,
+		victoryGate: 12,
 		pollsAnswered: 2,
 		pollsPerGate: 5,
 		streak: 1,
@@ -80,7 +77,5 @@ export const StorageNearCap: Story = {
 			CONFIGS.copilot,
 			CONFIGS.coldStart,
 		],
-		slots: 5,
-		checks: [],
 	},
 };

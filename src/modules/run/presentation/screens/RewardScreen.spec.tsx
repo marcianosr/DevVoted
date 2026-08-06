@@ -23,7 +23,7 @@ const answered: AnsweredPoll[] = [
 ];
 
 const base = {
-	gatesCleared: 1,
+	clearedGate: 1,
 	gateReward: 80,
 	coverageGainedByCategory: { js: 8, css: 3.5 },
 	answered,
@@ -56,5 +56,39 @@ describe(RewardScreen, () => {
 		expect(screen.getByText("JavaScript")).toBeInTheDocument();
 		expect(screen.getByText("+8%")).toBeInTheDocument();
 		expect(screen.getByText("+3.5%")).toBeInTheDocument();
+	});
+
+	it("names the swatches the run has collected", () => {
+		render(<RewardScreen {...base} slots={5} />);
+		expect(screen.getByText("Swatches collected")).toBeInTheDocument();
+		expect(screen.getByText("Boulder Swatch")).toBeInTheDocument();
+		expect(screen.getByText("Cascade Swatch")).toBeInTheDocument();
+	});
+
+	it("holds Pallet from the starting width — every run begins there", () => {
+		render(<RewardScreen {...base} slots={3} />);
+		expect(screen.getByText("Swatches collected")).toBeInTheDocument();
+		expect(screen.getByText("Pallet Swatch")).toBeInTheDocument();
+		expect(screen.queryByText("Boulder Swatch")).not.toBeInTheDocument();
+	});
+
+	it("says the climb held when the pipeline is too narrow for the next gate", () => {
+		// Running gate 3 already took 5 slots, so the hold is always one claim
+		// away — here slot 6, the Thunder Swatch, which opens gate 4.
+		render(<RewardScreen {...base} clearedGate={3} slots={5} heldAtGate />);
+		expect(
+			screen.getByText("Gate 3 cleared — still gate 3")
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/Unlock slot 6 in the shop — the Thunder Swatch/)
+		).toBeInTheDocument();
+		// The clear was real, so the payout still reads as winnings.
+		expect(screen.getByText(/you won/)).toBeInTheDocument();
+	});
+
+	it("headlines a plain clear without the held warning", () => {
+		render(<RewardScreen {...base} clearedGate={3} slots={5} />);
+		expect(screen.getByText("Gate 3 cleared!")).toBeInTheDocument();
+		expect(screen.queryByText(/still gate 3/)).not.toBeInTheDocument();
 	});
 });

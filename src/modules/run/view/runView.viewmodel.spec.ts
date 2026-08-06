@@ -88,6 +88,37 @@ describe("toRunView", () => {
 		const configuring = createRun([], [CONFIGS.js]);
 		expect(toRunView(configuring).awaitingTomorrow).toBe(false);
 	});
+
+	it("reports a held climb from the engine's own flag", () => {
+		// Gates count from 0, so a held clear leaves the two numbers equal — only
+		// the flag can tell the states apart.
+		const frozen = {
+			...answering(),
+			gatesCleared: 2,
+			clearedGate: 2,
+			heldAtGate: true,
+		};
+		const view = toRunView(frozen);
+		expect(view.clearedGateNumber).toBe(2);
+		expect(view.heldAtGate).toBe(true);
+	});
+
+	it("falls back to gatesCleared for snapshots without clearedGate", () => {
+		const legacy = { ...answering(), gatesCleared: 2 };
+		const view = toRunView(legacy);
+		expect(view.clearedGateNumber).toBe(2);
+		expect(view.heldAtGate).toBe(false);
+	});
+
+	it("reads a clear that advanced the climb as not held", () => {
+		const advanced = {
+			...answering(),
+			gatesCleared: 3,
+			clearedGate: 2,
+			heldAtGate: false,
+		};
+		expect(toRunView(advanced).heldAtGate).toBe(false);
+	});
 });
 
 describe("latestAnswerVerdict", () => {

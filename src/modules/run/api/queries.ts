@@ -29,6 +29,7 @@ import {
 	type RunSnapshot,
 	toRunSnapshot,
 } from "../climb/runSnapshot.model";
+import { swatchForSlot } from "../pipeline/swatch.model";
 import { rollDailySeedSequence } from "../services/seed.service";
 
 export type SessionRunRecord = typeof runsTable.$inferSelect;
@@ -284,6 +285,31 @@ export const fetchRunSnapshot = async (
 	return row?.state ?? null;
 };
 
+/**
+ * Widening the pipeline earns the slot's swatch permanently, account-wide. The
+ * guard makes it idempotent: unlocking slot 4 on a later run matches no row, so
+ * the array never collects duplicates.
+ */
+const awardSlotSwatch = async (
+	tx: Pick<typeof db, "update">,
+	userId: string,
+	slots: number
+): Promise<void> => {
+	const swatch = swatchForSlot(slots);
+	if (!swatch) return;
+	await tx
+		.update(usersTable)
+		.set({
+			owned_swatch_ids: sql`array_append(${usersTable.owned_swatch_ids}, ${swatch.id})`,
+		})
+		.where(
+			and(
+				eq(usersTable.id, userId),
+				sql`NOT (${usersTable.owned_swatch_ids} @> ARRAY[${swatch.id}]::text[])`
+			)
+		);
+};
+
 export const createSessionRunWithState = async (
 	userId: string,
 	seedDate: string,
@@ -317,6 +343,10 @@ export const createSessionRunWithState = async (
 				segment_date: seedDate,
 			}))
 		);
+
+		// Starting the climb earns Pallet: the base slots' swatch is free, and
+		// every run begins there (ADR-018).
+		await awardSlotSwatch(tx, userId, initialState.pipeline.slots);
 
 		return { runId: run.id };
 	});
@@ -527,6 +557,18 @@ export const abandonSessionRun = async (
 		}
 	});
 
+/** Swatch ids the player has earned across every run — the collection surface. */
+export const fetchOwnedSwatchIds = async (
+	userId: string
+): Promise<readonly string[]> => {
+	const [row] = await db
+		.select({ ownedSwatchIds: usersTable.owned_swatch_ids })
+		.from(usersTable)
+		.where(eq(usersTable.id, userId))
+		.limit(1);
+	return row?.ownedSwatchIds ?? [];
+};
+
 /**
  * The dispatch hot path. One transaction: lock the state row (serializes
  * double-submits), rehydrate, run the engine as authority, persist. Returns
@@ -573,6 +615,9 @@ export const applyActionToRun = async (args: {
 				args.action.elapsedMs
 			);
 		}
+
+		if (next.pipeline.slots > state.pipeline.slots)
+			await awardSlotSwatch(tx, args.userId, next.pipeline.slots);
 
 		await tx
 			.update(runStatesTable)

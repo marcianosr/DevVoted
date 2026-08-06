@@ -14,6 +14,7 @@ import {
 	fetchRunPollsForRun,
 	fetchRunSnapshot,
 	findActiveSessionRun,
+	fetchOwnedSwatchIds,
 	findSessionRunByDate,
 	getOrCreateDailyRunSeed,
 	type SessionRunRecord,
@@ -153,3 +154,13 @@ export const dispatchRunActionHandler = async ({
 		});
 		return toRunView(next);
 	});
+
+/** The viewer's permanent swatch collection, earned by widening pipelines. */
+export const getOwnedSwatchesHandler = async ({
+	userId,
+}: {
+	userId: string;
+}): Promise<ApiResponse<{ ownedSwatchIds: readonly string[] }>> =>
+	handleApiOperation(async () => ({
+		ownedSwatchIds: await fetchOwnedSwatchIds(userId),
+	}));

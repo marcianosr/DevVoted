@@ -2,8 +2,10 @@ import { useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
-import { pollQueryKeys } from "~/domains/shared/queryKeys";
+import { pollQueryKeys, userQueryKeys } from "~/domains/shared/queryKeys";
+import { getOwnedSwatches } from "~/modules/run/api/run";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
+import { ALL_SWATCHES } from "~/modules/run/pipeline/swatch.model";
 import { Screen } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
@@ -18,6 +20,7 @@ import {
 import { PolldexPanel } from "../polldex/PolldexPanel.ui";
 import { ConfigdexPanel } from "./ConfigdexPanel.ui";
 import { DexScreen } from "./DexScreen.ui";
+import { SwatchdexPanel } from "./SwatchdexPanel.ui";
 
 type DexProps = {
 	// Only the query-cache discriminator; the server derives auth server-side.
@@ -34,6 +37,14 @@ export const Dex = ({ userId }: DexProps) => {
 		queryKey: pollQueryKeys.polldex(userId),
 		queryFn: () => getPolldex(),
 	});
+
+	const swatches = useQuery({
+		queryKey: userQueryKeys.swatches(userId),
+		queryFn: () => getOwnedSwatches(),
+	});
+	const ownedSwatchIds = swatches.data?.success
+		? swatches.data.data.ownedSwatchIds
+		: [];
 
 	if (polldex.isPending) {
 		return (
@@ -73,19 +84,26 @@ export const Dex = ({ userId }: DexProps) => {
 					// No unlock system yet — owned == total.
 					count: `${configCount}/${configCount}`,
 				},
+				{
+					id: "swatches",
+					label: "Swatches",
+					count: `${ownedSwatchIds.length}/${ALL_SWATCHES.length}`,
+				},
 			]}
 			activeTab={activeTab}
 			onSelectTab={setActiveTab}
 		>
-			{activeTab === "polls" ? (
+			{activeTab === "polls" && (
 				<PolldexPanel
 					entries={filterPolldexEntries(entries, selectedCategory)}
 					categories={presentCategories(entries)}
 					selectedCategory={selectedCategory}
 					onSelectCategory={setSelectedCategory}
 				/>
-			) : (
-				<ConfigdexPanel />
+			)}
+			{activeTab === "configs" && <ConfigdexPanel />}
+			{activeTab === "swatches" && (
+				<SwatchdexPanel ownedSwatchIds={ownedSwatchIds} />
 			)}
 		</DexScreen>
 	);

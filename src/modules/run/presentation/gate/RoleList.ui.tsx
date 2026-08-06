@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { clsx } from "clsx";
 import type { Config } from "~/modules/run/configs/config.model";
 import {
 	describeConfig,
@@ -9,7 +8,6 @@ import {
 import type { CheckState } from "~/modules/run/configs/effect.model";
 import type { RoleRow } from "~/modules/run/gate/configRole.model";
 import { Badge } from "~/ui/Badge.component";
-import { GainBar } from "~/ui/runs/GainBar.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import {
 	Paragraph,
@@ -53,12 +51,6 @@ export type SlotPreview = {
 	readonly onAdd: () => void;
 };
 
-export type NextSlotUnlock = {
-	readonly number: number;
-	readonly unlockAtPct: number;
-	readonly coveragePct: number;
-};
-
 const rowUseButton = (action: RowUseAction) => (
 	<button
 		type="button"
@@ -83,46 +75,6 @@ const EmptySlotRow = () => (
 	</div>
 );
 
-const LockedSlotRow = ({ slot }: { slot: NextSlotUnlock }) => {
-	const unlocked = slot.coveragePct >= slot.unlockAtPct;
-	return (
-		<div className="col-span-3 py-2">
-			<div className="flex items-center gap-4 rounded-lg border-2 border-dashed border-zinc-700 px-4 py-3">
-				<div className="flex min-w-0 flex-1 flex-col gap-1.5">
-					<Paragraph as="span" size="sm" className="font-bold">
-						Slot {slot.number}
-					</Paragraph>
-					<Paragraph as="span" size="sm" tone="muted">
-						unlocks at{" "}
-						<span className="font-bold text-zinc-100">{slot.unlockAtPct}%</span>{" "}
-						coverage · you have{" "}
-						<span className="font-bold text-viridian">{slot.coveragePct}%</span>
-					</Paragraph>
-					<span className="max-w-56">
-						<GainBar
-							from={0}
-							to={slot.coveragePct}
-							cap={slot.unlockAtPct}
-							label={`coverage toward slot ${slot.number}`}
-						/>
-					</span>
-				</div>
-				<Paragraph
-					as="span"
-					size="xs"
-					tone={unlocked ? "celadon" : "faint"}
-					className={clsx(
-						"shrink-0 rounded border px-2 py-0.5",
-						unlocked ? "border-celadon" : "border-zinc-700"
-					)}
-				>
-					{unlocked ? "unlocked" : "locked"}
-				</Paragraph>
-			</div>
-		</div>
-	);
-};
-
 type RoleListProps = {
 	rows: readonly RoleRow[];
 	onRemove?: (configId: string) => void;
@@ -132,7 +84,6 @@ type RoleListProps = {
 	trailingFor?: (config: Config) => ReactNode;
 	newConfigIds?: readonly string[];
 	preview?: SlotPreview;
-	nextSlot?: NextSlotUnlock;
 	trailing?: ReactNode;
 };
 
@@ -156,7 +107,6 @@ export const RoleList = ({
 	trailingFor,
 	newConfigIds,
 	preview,
-	nextSlot,
 	trailing,
 }: RoleListProps) => {
 	const emptySlots = slots
@@ -219,7 +169,6 @@ export const RoleList = ({
 			{Array.from({ length: emptySlots }, (_, index) => (
 				<EmptySlotRow key={`empty-${index}`} />
 			))}
-			{nextSlot ? <LockedSlotRow slot={nextSlot} /> : null}
 			{trailing ? <div className="col-span-3 py-2">{trailing}</div> : null}
 		</PipelineTable>
 	);

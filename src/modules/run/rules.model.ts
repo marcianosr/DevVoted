@@ -1,5 +1,14 @@
 export const SLICE_WINDOW = 5;
-export const VICTORY_GATE = 5;
+/**
+ * The summit's gate number. Gates count from **0**: gate 0 runs on the starting
+ * pipeline, and every gate after it is bought with a slot (ADR-018), so this is
+ * the far end of the slot ladder: `MAX_SLOTS - BASE_SLOTS`. Gate 11 needs all 14
+ * slots, which means every swatch.
+ */
+export const VICTORY_GATE = 11;
+
+/** How many gates a run holds — gates 0 through `VICTORY_GATE`. */
+export const GATE_COUNT = VICTORY_GATE + 1;
 /** Gate-1 base storage (KB) a clear pays — scaled by gate depth, reward multipliers, and window correctness. */
 export const GATE_REWARD_KB = 32;
 /** Depth cap on the reward's gate multiplier: endless (continue-past-victory) runs stop scaling payout past gate 12, the intended summit. */
@@ -25,7 +34,8 @@ export const storageCreditRate = (
 ): number => {
 	if (reason === "abandoned") return 0;
 	if (reason === "victory") return 1;
-	return Math.min(1, gatesCleared / VICTORY_GATE);
+	// gatesCleared is a count, so it divides by the count, not the last number.
+	return Math.min(1, gatesCleared / GATE_COUNT);
 };
 
 export const WRONG_COVERAGE_LOSS = 0.5;
@@ -37,8 +47,9 @@ export const streakMultiplier = (streak: number): number =>
 
 /**
  * Deeper gates are worth more: the base coverage a correct answer earns scales
- * with the gate number, so gate 1 pays ×1, gate 2 ×2, and so on. `gatesCleared`
- * counts gates already beaten, so the gate being answered is `gatesCleared + 1`.
+ * with depth, so the first gate pays ×1, the next ×2, and so on. `gatesCleared`
+ * counts gates already beaten; since gates count from 0 it is also the number of
+ * the gate being answered.
  * Only gains scale — losses stay flat.
  */
 export const gateBaseMultiplier = (gatesCleared: number): number =>
