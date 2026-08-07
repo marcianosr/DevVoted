@@ -41,7 +41,7 @@ export const RunShop = () => {
 			}}
 		>
 			<div className="space-y-8">
-				{/* Pipeline Shop Section */}
+				{/* Pipeline Shop - two-column with current build */}
 				<ShopScreen
 					storage={view.storage}
 					storageCap={view.storageCap}
