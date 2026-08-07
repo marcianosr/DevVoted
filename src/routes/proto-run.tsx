@@ -595,7 +595,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("community"),
 					}}
 				>
-					<div className="space-y-8">
+					<div className="grid grid-cols-2 gap-12">
 						{/* Pipeline Shop Section */}
 						<ShopScreen
 							storage={view.storage}
@@ -630,30 +630,21 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						/>
 
 						{/* Storage Shop Section */}
-						{view.slots < 3 ? (
-							<div className="rounded-lg border border-zinc-700 bg-zinc-900/30 px-6 py-8 text-center">
-								<p className="text-sm text-zinc-400">
-									Unlock storage upgrades by reaching 3 total slots (2 new
-									slots)
-								</p>
-							</div>
-						) : (
-							<StorageShop
-								storage={view.storage}
-								storageCap={view.storageCap}
-								availableStorageConfigs={view.availableStorageConfigs}
-								draftCostReduction={view.draftCostReduction}
-								refundBoost={view.refundBoost}
-								payoutBoost={view.payoutBoost}
-								freeRebuild={view.freeRebuild}
-								onUpgradeStorage={(configId) =>
-									dispatch({ type: "upgrade-storage", configId })
-								}
-								onDeinstallStorage={(configId) =>
-									dispatch({ type: "deinstall-storage", configId })
-								}
-							/>
-						)}
+						<StorageShop
+							storage={view.storage}
+							storageCap={view.storageCap}
+							availableStorageConfigs={view.availableStorageConfigs}
+							draftCostReduction={view.draftCostReduction}
+							refundBoost={view.refundBoost}
+							payoutBoost={view.payoutBoost}
+							freeRebuild={view.freeRebuild}
+							onUpgradeStorage={(configId) =>
+								dispatch({ type: "upgrade-storage", configId })
+							}
+							onDeinstallStorage={(configId) =>
+								dispatch({ type: "deinstall-storage", configId })
+							}
+						/>
 					</div>
 				</Screen>
 			)}
