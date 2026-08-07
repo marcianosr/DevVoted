@@ -4,12 +4,12 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { PollAnsweringScreen } from "./PollAnsweringScreen.ui";
 import type { PollAnsweringOption } from "./PollOptionList.ui";
-import { withCategoryTheme } from "./story-utils";
+import { withGateTheme } from "./story-utils";
 
 const meta: Meta<typeof PollAnsweringScreen> = {
 	component: PollAnsweringScreen,
 	title: "Polls/PollAnsweringScreen",
-	decorators: [withCategoryTheme("js")],
+	decorators: [withGateTheme("marsh")],
 };
 export default meta;
 

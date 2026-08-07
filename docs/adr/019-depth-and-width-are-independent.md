@@ -39,3 +39,22 @@ charge for, and its stall state ("cleared, still gate 3") reads as a bug.
 - 13 gates against 12 Kanto colours (indigo being the app background) is why the
   summit pair are drawn apart: Elite keeps indigo with a rim, the Champion alone
   wears the gradient.
+- **The roster's spine is the palette, not the map** (2026-08-07). Every gate
+  spends one Kanto colour exactly once, so the count is "12 colours plus the
+  gradient" and the two non-gym landmarks (Lavender, Seafoam) exist because
+  their colours did, not because Kanto owed them a stop. A fourteenth gate would
+  therefore mean inventing a thirteenth colour, off-palette from the Warp theme
+  the set is drawn from; and once a location can justify a colour rather than
+  the reverse, Mt. Moon, Victory Road, the Safari Zone and Silph Co. all have an
+  equal claim and there is no principled place to stop. Victory Road is the one
+  with a real narrative gap to fill (the 8th badge currently hands straight to
+  the Elite Four); it is name-checked in flavour rather than given a swatch.
+- **Landmarks sit where Kanto walks them** (2026-08-07). Lavender and Seafoam
+  moved from gates 9–10 to 4 and 8, leaving the eight badges in strict
+  trainer-card order. Two reasons: mid-game stops were sitting one gate from the
+  Elite Four, and the palette's two palest colours were on the deepest gates, so
+  the run visibly cooled off where it should have been closing in. The summit
+  approach now reads cinnabar → viridian → indigo. Safe to reorder because
+  `users.owned_swatch_ids` persists `swatch-${theme}` ids, never gate numbers;
+  only a run's in-flight "earned so far" set, derived from `gatesCleared`,
+  reshuffles.

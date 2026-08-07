@@ -20,28 +20,28 @@ describe(Screen.name, () => {
 		expect(screen.getByText("Gruntilda's Lair")).toBeInTheDocument();
 	});
 
-	it("applies the requested width, transition and theme", () => {
+	it("applies the requested width, transition and gate theme", () => {
 		const { container } = render(
-			<Screen width="narrow" transition="fade" categoryCode="js">
+			<Screen width="narrow" transition="fade" gateTheme="marsh">
 				content
 			</Screen>
 		);
 		const section = container.querySelector("section");
 		expect(section).toHaveAttribute("data-screen-transition", "fade");
-		expect(section).toHaveAttribute("data-category-theme", "js");
+		expect(section).toHaveAttribute("data-gate-theme", "marsh");
 		expect(section?.className).toContain("sm:max-w-2xl");
 	});
 
-	it("mirrors the category onto <body> for the page tint, and cleans it up", () => {
-		const { unmount } = render(<Screen categoryCode="css">content</Screen>);
-		expect(document.body).toHaveAttribute("data-category-theme", "css");
+	it("mirrors the gate theme onto <body> for the page tint, and cleans it up", () => {
+		const { unmount } = render(<Screen gateTheme="cascade">content</Screen>);
+		expect(document.body).toHaveAttribute("data-gate-theme", "cascade");
 		unmount();
-		expect(document.body).not.toHaveAttribute("data-category-theme");
+		expect(document.body).not.toHaveAttribute("data-gate-theme");
 	});
 
-	it("leaves <body> untinted on screens without a category", () => {
+	it("leaves <body> untinted on screens without a gate theme", () => {
 		render(<Screen>content</Screen>);
-		expect(document.body).not.toHaveAttribute("data-category-theme");
+		expect(document.body).not.toHaveAttribute("data-gate-theme");
 	});
 
 	it("defaults to no transition", () => {

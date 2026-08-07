@@ -49,6 +49,7 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	gateRewardPaidKb: 0,
 	faucetThisGateKb: 0,
 	gatesCleared: 0,
+	gateTheme: "pallet",
 	clearedGateNumber: 0,
 	victoryGate: 12,
 	stripsOnFailure: 1,

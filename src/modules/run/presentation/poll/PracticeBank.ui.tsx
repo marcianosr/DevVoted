@@ -2,7 +2,6 @@ import {
 	type CategoryCode,
 	getCategoryMetadata,
 } from "~/domains/shared/categories";
-import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
@@ -35,11 +34,7 @@ export const PracticeBank = ({ entries, totalCount }: PracticeBankProps) => (
 		<ul className="divide-y divide-zinc-800 overflow-hidden rounded-xl border border-zinc-700">
 			{entries.map((entry) => (
 				<li key={entry.id} className="flex items-center gap-3 px-4 py-3">
-					<span
-						{...categoryTheme(entry.category)}
-						className="flex shrink-0 items-center gap-1.5 font-bold text-theme"
-					>
-						<span className="inline-block h-3.5 w-3.5 rounded bg-theme" />
+					<span className="shrink-0 font-bold">
 						{getCategoryMetadata(entry.category).name}
 					</span>
 					<Paragraph className="min-w-0 truncate">{entry.question}</Paragraph>

@@ -2,8 +2,11 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { cva } from "class-variance-authority";
 
+import type { SwatchTheme } from "~/modules/run/gate/swatch.model";
+
 import { Button } from "./Button.component";
 import { Popover } from "./Popover.component";
+import { Paragraph } from "./typography/Paragraph.component";
 import {
 	clearScreenNavDirection,
 	peekScreenNavDirection,
@@ -12,7 +15,6 @@ import {
 } from "./screenNavDirection";
 
 export type ScreenWidth = "narrow" | "default" | "wide";
-/** Mood, not content category — re-points --theme-color for the whole page. */
 export type ScreenTheme = "cinnabar" | "celadon";
 export type ScreenTransition =
 	"none" | "fade" | "slide-up" | "slide-right" | "slide-left";
@@ -27,8 +29,8 @@ const screenSection = cva("w-full mx-auto px-4 py-4 sm:py-8", {
 	variants: {
 		width: {
 			narrow: "sm:max-w-2xl",
-			default: "sm:max-w-5xl",
-			wide: "sm:max-w-5xl",
+			default: "sm:max-w-6xl",
+			wide: "sm:max-w-6xl",
 		} satisfies Record<ScreenWidth, string>,
 		center: {
 			true: "flex-1 flex flex-col justify-center",
@@ -40,10 +42,10 @@ const screenSection = cva("w-full mx-auto px-4 py-4 sm:py-8", {
 type FooterLayout = "both" | "right" | "left-or-none";
 
 const footerLayoutOf = (
-	left?: ScreenAction,
+	hasLeft: boolean,
 	right?: ScreenAction
 ): FooterLayout => {
-	if (left && right) return "both";
+	if (hasLeft && right) return "both";
 	return right ? "right" : "left-or-none";
 };
 
@@ -61,10 +63,16 @@ type ScreenProps = {
 	children: ReactNode;
 	width?: ScreenWidth;
 	transition?: ScreenTransition;
-	categoryCode?: string;
+	gateTheme?: SwatchTheme;
 	theme?: ScreenTheme;
 	leftAction?: ScreenAction;
 	rightAction?: ScreenAction;
+	/**
+	 * A line of standing context beside the actions — a countdown, a cost, a
+	 * warning. Not an action: it takes the footer's left seat because it is what
+	 * the button on the right is answering to, and it is never clickable.
+	 */
+	footerNote?: ReactNode;
 	center?: boolean;
 };
 
@@ -77,10 +85,11 @@ export const Screen = ({
 	children,
 	width = "default",
 	transition = "none",
-	categoryCode,
+	gateTheme,
 	theme,
 	leftAction,
 	rightAction,
+	footerNote,
 	center = false,
 }: ScreenProps) => {
 	const [effectiveTransition] = useState<ScreenTransition>(() => {
@@ -92,13 +101,14 @@ export const Screen = ({
 		clearScreenNavDirection();
 	}, []);
 
-	// Mirror the category onto <body> so the page background can take a faint
-	// theme tint (see `body[data-category-theme]` in app.css).
+	// Mirror the gate theme onto <body> so the page background takes a faint
+	// tint of the gate being played, and the HUD (outside this section)
+	// inherits --theme-color (see `body[data-gate-theme]` in app.css).
 	useEffect(() => {
-		if (!categoryCode) return;
-		document.body.setAttribute("data-category-theme", categoryCode);
-		return () => document.body.removeAttribute("data-category-theme");
-	}, [categoryCode]);
+		if (!gateTheme) return;
+		document.body.setAttribute("data-gate-theme", gateTheme);
+		return () => document.body.removeAttribute("data-gate-theme");
+	}, [gateTheme]);
 
 	// Same trick for the mood theme: the body attribute cascades --theme-color
 	// to everything on the page, HUD included.
@@ -113,28 +123,42 @@ export const Screen = ({
 		action.onClick();
 	};
 
+	// The note and the back button share the left seat, so a screen carrying both
+	// still lays out as two sides rather than three.
+	const leftSide =
+		footerNote || leftAction ? (
+			<span className="flex items-center gap-4">
+				{footerNote && (
+					<Paragraph as="span" tone="muted">
+						{footerNote}
+					</Paragraph>
+				)}
+				{leftAction && (
+					<Button
+						onClick={() => runAction(leftAction, "back")}
+						disabled={leftAction.disabled}
+					>
+						{leftAction.label}
+					</Button>
+				)}
+			</span>
+		) : null;
+
 	return (
 		<section
-			data-category-theme={categoryCode}
+			data-gate-theme={gateTheme}
 			data-screen-theme={theme}
 			data-screen-transition={effectiveTransition}
 			className={screenSection({ width, center })}
 		>
 			{children}
-			{(leftAction || rightAction) && (
+			{(leftSide || rightAction) && (
 				<div
 					className={screenFooter({
-						layout: footerLayoutOf(leftAction, rightAction),
+						layout: footerLayoutOf(leftSide !== null, rightAction),
 					})}
 				>
-					{leftAction && (
-						<Button
-							onClick={() => runAction(leftAction, "back")}
-							disabled={leftAction.disabled}
-						>
-							{leftAction.label}
-						</Button>
-					)}
+					{leftSide}
 					{rightAction &&
 						(rightAction.hint ? (
 							<Popover

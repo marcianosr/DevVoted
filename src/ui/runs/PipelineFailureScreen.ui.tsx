@@ -76,7 +76,6 @@ export const PipelineFailureScreen = ({
 					{categoryCoverage.map((category) => (
 						<div
 							key={category.categoryCode}
-							data-category-theme={category.categoryCode}
 							className="flex flex-col gap-0.5 border border-theme px-3 py-2"
 						>
 							<div className="flex items-baseline justify-between">

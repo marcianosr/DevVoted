@@ -4,12 +4,12 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { PollOptionList } from "./PollOptionList.ui";
 import type { PollAnsweringOption } from "./PollOptionList.ui";
-import { withCategoryTheme } from "./story-utils";
+import { withGateTheme } from "./story-utils";
 
 const meta: Meta<typeof PollOptionList> = {
 	component: PollOptionList,
 	title: "Polls/PollOptionList",
-	decorators: [withCategoryTheme("js")],
+	decorators: [withGateTheme("marsh")],
 };
 export default meta;
 

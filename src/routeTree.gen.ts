@@ -37,6 +37,7 @@ import { Route as AuthedRunCommunityRouteImport } from './routes/_authed/run_.co
 import { Route as AuthedRunStripRouteImport } from './routes/_authed/run/strip'
 import { Route as AuthedRunShopRouteImport } from './routes/_authed/run/shop'
 import { Route as AuthedRunRewardRouteImport } from './routes/_authed/run/reward'
+import { Route as AuthedRunReviewRouteImport } from './routes/_authed/run/review'
 import { Route as AuthedRunOverRouteImport } from './routes/_authed/run/over'
 import { Route as AuthedRunConfigureRouteImport } from './routes/_authed/run/configure'
 import { Route as AuthedRunAnswerRouteImport } from './routes/_authed/run/answer'
@@ -184,6 +185,11 @@ const AuthedRunRewardRoute = AuthedRunRewardRouteImport.update({
   path: '/reward',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
+const AuthedRunReviewRoute = AuthedRunReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
 const AuthedRunOverRoute = AuthedRunOverRouteImport.update({
   id: '/over',
   path: '/over',
@@ -245,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/run/answer': typeof AuthedRunAnswerRoute
   '/run/configure': typeof AuthedRunConfigureRoute
   '/run/over': typeof AuthedRunOverRoute
+  '/run/review': typeof AuthedRunReviewRoute
   '/run/reward': typeof AuthedRunRewardRoute
   '/run/shop': typeof AuthedRunShopRoute
   '/run/strip': typeof AuthedRunStripRoute
@@ -280,6 +287,7 @@ export interface FileRoutesByTo {
   '/run/answer': typeof AuthedRunAnswerRoute
   '/run/configure': typeof AuthedRunConfigureRoute
   '/run/over': typeof AuthedRunOverRoute
+  '/run/review': typeof AuthedRunReviewRoute
   '/run/reward': typeof AuthedRunRewardRoute
   '/run/shop': typeof AuthedRunShopRoute
   '/run/strip': typeof AuthedRunStripRoute
@@ -318,6 +326,7 @@ export interface FileRoutesById {
   '/_authed/run/answer': typeof AuthedRunAnswerRoute
   '/_authed/run/configure': typeof AuthedRunConfigureRoute
   '/_authed/run/over': typeof AuthedRunOverRoute
+  '/_authed/run/review': typeof AuthedRunReviewRoute
   '/_authed/run/reward': typeof AuthedRunRewardRoute
   '/_authed/run/shop': typeof AuthedRunShopRoute
   '/_authed/run/strip': typeof AuthedRunStripRoute
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/run/answer'
     | '/run/configure'
     | '/run/over'
+    | '/run/review'
     | '/run/reward'
     | '/run/shop'
     | '/run/strip'
@@ -391,6 +401,7 @@ export interface FileRouteTypes {
     | '/run/answer'
     | '/run/configure'
     | '/run/over'
+    | '/run/review'
     | '/run/reward'
     | '/run/shop'
     | '/run/strip'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/_authed/run/answer'
     | '/_authed/run/configure'
     | '/_authed/run/over'
+    | '/_authed/run/review'
     | '/_authed/run/reward'
     | '/_authed/run/shop'
     | '/_authed/run/strip'
@@ -660,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRunRewardRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
+    '/_authed/run/review': {
+      id: '/_authed/run/review'
+      path: '/review'
+      fullPath: '/run/review'
+      preLoaderRoute: typeof AuthedRunReviewRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
     '/_authed/run/over': {
       id: '/_authed/run/over'
       path: '/over'
@@ -716,6 +735,7 @@ interface AuthedRunRouteRouteChildren {
   AuthedRunAnswerRoute: typeof AuthedRunAnswerRoute
   AuthedRunConfigureRoute: typeof AuthedRunConfigureRoute
   AuthedRunOverRoute: typeof AuthedRunOverRoute
+  AuthedRunReviewRoute: typeof AuthedRunReviewRoute
   AuthedRunRewardRoute: typeof AuthedRunRewardRoute
   AuthedRunShopRoute: typeof AuthedRunShopRoute
   AuthedRunStripRoute: typeof AuthedRunStripRoute
@@ -726,6 +746,7 @@ const AuthedRunRouteRouteChildren: AuthedRunRouteRouteChildren = {
   AuthedRunAnswerRoute: AuthedRunAnswerRoute,
   AuthedRunConfigureRoute: AuthedRunConfigureRoute,
   AuthedRunOverRoute: AuthedRunOverRoute,
+  AuthedRunReviewRoute: AuthedRunReviewRoute,
   AuthedRunRewardRoute: AuthedRunRewardRoute,
   AuthedRunShopRoute: AuthedRunShopRoute,
   AuthedRunStripRoute: AuthedRunStripRoute,

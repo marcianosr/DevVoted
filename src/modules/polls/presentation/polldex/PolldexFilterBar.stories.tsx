@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
 	presentCategories,
 	type PolldexCategoryFilter,
+	type PolldexSeenFilter,
 } from "../../polldex/polldex.model";
 import { SAMPLE_POLLDEX_ENTRIES } from "./polldex.fixtures";
 import { PolldexFilterBar } from "./PolldexFilterBar.ui";
@@ -26,11 +27,14 @@ type Story = StoryObj<typeof PolldexFilterBar>;
 
 const Interactive = () => {
 	const [selected, setSelected] = useState<PolldexCategoryFilter>("all");
+	const [seen, setSeen] = useState<PolldexSeenFilter>("all");
 	return (
 		<PolldexFilterBar
 			categories={presentCategories(SAMPLE_POLLDEX_ENTRIES)}
 			selected={selected}
 			onSelect={setSelected}
+			selectedSeen={seen}
+			onSelectSeen={setSeen}
 		/>
 	);
 };

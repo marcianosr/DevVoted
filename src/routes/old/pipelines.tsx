@@ -51,7 +51,6 @@ function PipelinesRoute() {
 		<Screen
 			transition="fade"
 			center
-			categoryCode={scoreHeader?.categoryCode}
 			leftAction={{
 				label: "← Review answer",
 				onClick: () => navigate({ to: "/daily-poll" }),

@@ -30,7 +30,8 @@ export const MidClimb: Story = {
 	args: { gatesCleared: 4, pollsAnswered: 3, label: "gate 4 of 12" },
 };
 
-// The last two gates: the Elite plate's rim, then the Champion's gradient.
+// The last two gates: the Elite plate underway (so it carries the rim), then the
+// Champion's gradient waiting above it.
 export const AtTheSummitPair: Story = {
 	args: {
 		gatesCleared: VICTORY_GATE - 1,

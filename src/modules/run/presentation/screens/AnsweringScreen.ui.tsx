@@ -60,7 +60,7 @@ const StakeOnFailure = ({
 }) => {
 	const fatal = strips >= configs;
 	return (
-		<Paragraph as="span" size="sm" tone={fatal ? "cinnabar" : "saffron"}>
+		<Paragraph as="span" size="xs" tone={fatal ? "cinnabar" : "saffron"}>
 			{fatal
 				? `a fail peels all ${configs} — run over`
 				: `a fail peels ${strips}`}
@@ -126,9 +126,6 @@ export const AnsweringScreen = ({
 	onNext,
 	onLint,
 }: AnsweringScreenProps) => {
-	// The linter acts from its own pipeline row: it offers the "use" button
-	// instead of a separate button on the poll card. The row's dot stays an
-	// honest "skipped" until the linter is used — the button is the affordance.
 	const lintActionFor = (config: Config): RowUseAction | undefined => {
 		if (!canLint || !linter || !onLint || config.id !== linter.id)
 			return undefined;
@@ -136,8 +133,8 @@ export const AnsweringScreen = ({
 	};
 
 	return (
-		<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
-			<div className="flex flex-1 flex-col gap-6">
+		<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10">
+			<div className="flex min-w-0 flex-col gap-6">
 				<PollCard
 					category={category}
 					question={question}
@@ -181,7 +178,7 @@ export const AnsweringScreen = ({
 					)}
 				</div>
 			</div>
-			<div className="space-y-2 border-t border-zinc-800 pt-4 lg:pt-0 lg:shrink-0 lg:border-t-0 lg:pl-8 lg:border-l">
+			<div className="space-y-2 border-t border-zinc-800 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
 				<header>
 					<Title as="h3">Your pipeline</Title>
 					{slots ? (
@@ -202,6 +199,7 @@ export const AnsweringScreen = ({
 				<RoleList
 					rows={roleRows(configs, checks)}
 					getUseAction={lintActionFor}
+					foldIdleRows
 				/>
 			</div>
 		</div>

@@ -4,11 +4,19 @@
  * separately with coverage and never grants one, the same way a gym badge comes
  * from the leader and not from a bigger bag.
  *
- * Gate 0 is **Pallet**, where every journey starts. Gates 1–8 are the eight
- * gen-1 gym badges in canonical order. Gates 9–10 are the two Kanto landmarks
- * that never had a gym (Lavender Town, the Seafoam Islands), and the climb ends
- * the way the games do: the **Elite** gate at Indigo Plateau, then the
- * **Champion** above it.
+ * Gate 0 is **Pallet**, where every journey starts, and the climb ends the way
+ * the games do: the **Elite** gate at Indigo Plateau, then the **Champion**
+ * above it. Between them the eight gen-1 gym badges run in strict trainer-card
+ * order, and the two Kanto landmarks that never had a gym sit where the games
+ * actually walk you through them: **Lavender** at gate 4 (out of Rock Tunnel
+ * after Vermilion, before Celadon) and **Seafoam** at gate 8 (Route 20, between
+ * Fuchsia/Saffron and Cinnabar).
+ *
+ * They used to be appended after all eight badges, at gates 9–10, which put two
+ * mid-game landmarks one step from the Elite Four and spent the palette's two
+ * palest colours on the deepest gates — the run visibly cooled off exactly where
+ * it should have been closing in. Interleaved, the summit approach reads
+ * cinnabar → viridian → indigo instead.
  *
  * Colours follow each name's home location in the Kanto palette (Boulder/Pewter
  * City → pewter) and live in app.css under [data-swatch-theme] — never in TS.
@@ -48,6 +56,11 @@ export type GateSwatch = {
 	readonly id: string;
 	/** The gate whose clear awards it. */
 	readonly gate: number;
+	/**
+	 * The name the gate and its badge share: "Pallet" is both the Pallet gate and
+	 * the Pallet Swatch. One source, so the two can never drift apart.
+	 */
+	readonly gateName: string;
 	readonly name: string;
 	readonly theme: SwatchTheme;
 	readonly finish: SwatchFinish;
@@ -62,25 +75,32 @@ export const hasThemeColor = (swatch: GateSwatch): boolean =>
 
 const swatch = (
 	gate: number,
-	name: string,
+	gateName: string,
 	theme: SwatchTheme,
 	finish: SwatchFinish = "flat"
-): GateSwatch => ({ id: `swatch-${theme}`, gate, name, theme, finish });
+): GateSwatch => ({
+	id: `swatch-${theme}`,
+	gate,
+	gateName,
+	name: `${gateName} Swatch`,
+	theme,
+	finish,
+});
 
 export const GATE_SWATCHES: Readonly<Record<number, GateSwatch>> = {
-	0: swatch(0, "Pallet Swatch", "pallet"),
-	1: swatch(1, "Boulder Swatch", "boulder"),
-	2: swatch(2, "Cascade Swatch", "cascade"),
-	3: swatch(3, "Thunder Swatch", "thunder"),
-	4: swatch(4, "Rainbow Swatch", "rainbow"),
-	5: swatch(5, "Soul Swatch", "soul"),
-	6: swatch(6, "Marsh Swatch", "marsh"),
-	7: swatch(7, "Volcano Swatch", "volcano"),
-	8: swatch(8, "Earth Swatch", "earth"),
-	9: swatch(9, "Lavender Swatch", "lavender"),
-	10: swatch(10, "Seafoam Swatch", "seafoam"),
-	11: swatch(11, "Elite Swatch", "elite", "plate"),
-	12: swatch(12, "Champion Swatch", "champion", "fill"),
+	0: swatch(0, "Pallet", "pallet"),
+	1: swatch(1, "Boulder", "boulder"),
+	2: swatch(2, "Cascade", "cascade"),
+	3: swatch(3, "Thunder", "thunder"),
+	4: swatch(4, "Lavender", "lavender"),
+	5: swatch(5, "Rainbow", "rainbow"),
+	6: swatch(6, "Soul", "soul"),
+	7: swatch(7, "Marsh", "marsh"),
+	8: swatch(8, "Seafoam", "seafoam"),
+	9: swatch(9, "Volcano", "volcano"),
+	10: swatch(10, "Earth", "earth"),
+	11: swatch(11, "Elite", "elite", "plate"),
+	12: swatch(12, "Champion", "champion", "fill"),
 };
 
 export const swatchForGate = (gate: number): GateSwatch | undefined =>

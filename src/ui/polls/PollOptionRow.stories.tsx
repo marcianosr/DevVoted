@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { PollOptionRow } from "./PollOptionRow.ui";
-import { withCategoryTheme } from "./story-utils";
+import { withGateTheme } from "./story-utils";
 
 const meta: Meta<typeof PollOptionRow> = {
 	component: PollOptionRow,
 	title: "Polls/PollOptionRow",
 	decorators: [
-		withCategoryTheme("js"),
+		withGateTheme("marsh"),
 		(Story) => (
 			<ul className="space-y-2">
 				<Story />

@@ -9,30 +9,23 @@ import { useTodaysRun } from "./useTodaysRun.hook";
 /** Tier 2: the gate-failed repair step — remove pipelines to climb on. */
 export const RunStrip = () => {
 	const { view } = useTodaysRun();
-	const { send, sendWith, commit, busy } = useRunActions();
+	const { send } = useRunActions();
 	const navigate = useNavigate();
 
 	if (!view) return null;
 
 	const quotaMet = view.stripsRemaining === 0;
 
-	// Strip → Community: the failure path takes the same community
-	// detour as the shop — commit the repair, then step outside the layout.
-	// The climb resumes from the community page ("Climb on →").
-	const resumeToCommunity = () =>
-		sendWith({ type: "resume-climb" }, (result) => {
-			if (!result.success) return;
-			commit(result);
-			navigate({ to: "/run/community" });
-		});
-
+	// Strip → Review: peeling the pipeline is the whole job of this screen, so it
+	// hands off rather than resuming. The action that actually restarts the climb
+	// waits on the review page, the last beat of the failed gate.
 	return (
 		<Screen
 			theme="cinnabar"
 			rightAction={{
-				label: "Community →",
-				onClick: resumeToCommunity,
-				disabled: !quotaMet || busy,
+				label: "Review answers →",
+				onClick: () => navigate({ to: "/run/review" }),
+				disabled: !quotaMet,
 				hint: quotaMet
 					? undefined
 					: `Remove ${view.stripsRemaining} pipeline(s) to continue`,

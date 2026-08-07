@@ -8,18 +8,12 @@ describe("ContentSection", () => {
 		expect(screen.getByText("Banjo-Kazooie quiz")).toBeInTheDocument();
 	});
 
-	it("sets data-category-theme when categoryCode is provided", () => {
+	it("forwards the width to the underlying Screen", () => {
 		const { container } = render(
-			<ContentSection categoryCode="react">Content</ContentSection>
+			<ContentSection width="narrow">Content</ContentSection>
 		);
-		expect(
-			container.querySelector("[data-category-theme='react']")
-		).toBeInTheDocument();
-	});
-
-	it("omits data-category-theme when categoryCode is undefined", () => {
-		const { container } = render(<ContentSection>Content</ContentSection>);
-		const section = container.querySelector("section");
-		expect(section?.getAttribute("data-category-theme")).toBeNull();
+		expect(container.querySelector("section")?.className).toContain(
+			"sm:max-w-2xl"
+		);
 	});
 });

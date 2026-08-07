@@ -169,6 +169,13 @@ describe("RunAnswer", () => {
 		);
 	});
 
+	it("wears the current gate's theme, not the poll's category", async () => {
+		await renderAnswerScreen(createMockRunView({ gateTheme: "cascade" }));
+		const section = document.querySelector("section[data-gate-theme]");
+		expect(section).toHaveAttribute("data-gate-theme", "cascade");
+		expect(document.body).toHaveAttribute("data-gate-theme", "cascade");
+	});
+
 	it("abandoning asks for confirmation and surfaces the server error", async () => {
 		const user = userEvent.setup();
 		await renderAnswerScreen();

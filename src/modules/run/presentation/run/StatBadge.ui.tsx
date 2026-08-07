@@ -1,12 +1,9 @@
 import type { ReactNode } from "react";
-import type { CategoryCode } from "~/domains/shared/categories";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
-import { categoryTheme } from "~/ui/theme/categoryTheme";
 
 type StatBadgeProps = {
 	label: string;
 	value: ReactNode;
-	category?: CategoryCode;
 	valueTone?: "theme" | "gradient" | "muted";
 	/** The value before a pending change — renders muted, with an arrow to the
 	 * new value in celadon (the configure preview's old → new strip). */
@@ -22,13 +19,11 @@ const VALUE_COLOR: Record<NonNullable<StatBadgeProps["valueTone"]>, string> = {
 export const StatBadge = ({
 	label,
 	value,
-	category,
 	valueTone = "theme",
 	from,
 }: StatBadgeProps) => {
-	const themed = category ? categoryTheme(category) : {};
 	return (
-		<div className="flex flex-col" {...themed}>
+		<div className="flex flex-col">
 			<Subtitle as="p">{label}</Subtitle>
 			<span className="text-xl font-extrabold">
 				{from != null ? (

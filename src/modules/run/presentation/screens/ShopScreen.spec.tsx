@@ -48,6 +48,17 @@ describe(ShopScreen, () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
+	// The shop sits between gates: what you are building for is the gate ahead,
+	// named after the badge clearing it awards.
+	it("names the gate ahead by its badge, not by its number alone", () => {
+		render(<ShopScreen {...base} />);
+		expect(
+			screen.getByRole("heading", {
+				name: "Your load-out for Cascade gate 2",
+			})
+		).toBeInTheDocument();
+	});
+
 	it("installs an offer when its chip is clicked", () => {
 		const onDraft = vi.fn();
 		render(<ShopScreen {...base} onDraft={onDraft} />);
@@ -147,7 +158,7 @@ describe(ShopScreen, () => {
 		expect(screen.getByText(/Costs 64KB — you have 40KB/)).toBeInTheDocument();
 	});
 
-	it("explains a gated upgrade on hover — next level's effect and the category-tied coverage in its own color", () => {
+	it("explains a gated upgrade on hover — next level's effect and the category-tied coverage in bold", () => {
 		render(
 			<ShopScreen
 				{...base}
@@ -161,9 +172,7 @@ describe(ShopScreen, () => {
 		).toBeInTheDocument();
 		expect(screen.getByText(/Unlocks at 5%/)).toBeInTheDocument();
 		expect(screen.getByText(/you have 2%/)).toBeInTheDocument();
-		const category = screen.getByText("React");
-		expect(category).toHaveClass("text-theme");
-		expect(category).toHaveAttribute("data-category-theme", "react");
+		expect(screen.getByText("React")).toHaveClass("font-bold");
 	});
 
 	it("previews the next level's effect on hover once the upgrade is unlocked", () => {

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockRunRecord } from "~/domains/runs/models/run.mock";
 import { TEST_DATES } from "~/test/kanto";
 
+import * as climbQueries from "./climb.queries";
 import { getRunCommunityHandler } from "./community.handlers";
 import * as communityQueries from "./community.queries";
 import type { SessionAnswerRow } from "./community.queries";
@@ -19,6 +20,13 @@ vi.mock("./community.queries", () => ({
 vi.mock("./queries", () => ({
 	findActiveSessionRun: vi.fn(),
 	findSessionRunByDate: vi.fn(),
+}));
+
+vi.mock("./climb.queries", () => ({
+	fetchActiveClimbers: vi.fn(),
+	fetchClimbMarker: vi.fn(),
+	fetchFallenToday: vi.fn(),
+	fetchPersonalBestPosition: vi.fn(),
 }));
 
 const DATE = TEST_DATES.birthday;
@@ -155,7 +163,53 @@ const consumedForViewer = [
 	{ position: 2, poll_id: 12 },
 ];
 
+/** Climb map fixture: Red (the usual viewer) mid-Soul, Blue ahead, Green well back. */
+const RED_AT = { gate: 6, pollsIntoGate: 3 };
+const CLIMBERS = [
+	{ userId: RED, displayName: "Red", photoUrl: null, ...RED_AT },
+	{
+		userId: BLUE,
+		displayName: "Blue",
+		photoUrl: null,
+		gate: 7,
+		pollsIntoGate: 1,
+	},
+	{
+		userId: GREEN,
+		displayName: "Green",
+		photoUrl: null,
+		gate: 2,
+		pollsIntoGate: 4,
+	},
+];
+const FALLEN = [
+	{
+		runId: 11,
+		userId: "koga",
+		displayName: "Koga",
+		photoUrl: null,
+		gate: 3,
+		pollsIntoGate: 2,
+	},
+	{
+		runId: 12,
+		userId: "janine",
+		displayName: null,
+		photoUrl: null,
+		gate: 5,
+		pollsIntoGate: 0,
+	},
+];
+
+const arrangeClimb = () => {
+	vi.mocked(climbQueries.fetchClimbMarker).mockResolvedValue(RED_AT);
+	vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue(CLIMBERS);
+	vi.mocked(climbQueries.fetchFallenToday).mockResolvedValue(FALLEN);
+	vi.mocked(climbQueries.fetchPersonalBestPosition).mockResolvedValue(31);
+};
+
 const arrange = () => {
+	arrangeClimb();
 	vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
 		createMockRunRecord({ id: 64, mode: "session", seed_date: DATE })
 	);
@@ -350,5 +404,154 @@ describe("getRunCommunityHandler", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		expect(JSON.stringify(result.data)).not.toContain('"correct":');
+	});
+});
+
+describe("getRunCommunityHandler climb map", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("places every live run on the map, ordered from the back of the field", async () => {
+		arrange();
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.climb?.climbers).toEqual([
+			{
+				id: GREEN,
+				displayName: "Green",
+				photoUrl: null,
+				gate: 2,
+				pollsIntoGate: 4,
+				you: false,
+			},
+			{
+				id: RED,
+				displayName: "Red",
+				photoUrl: null,
+				gate: 6,
+				pollsIntoGate: 3,
+				you: true,
+			},
+			{
+				id: BLUE,
+				displayName: "Blue",
+				photoUrl: null,
+				gate: 7,
+				pollsIntoGate: 1,
+				you: false,
+			},
+		]);
+	});
+
+	it("keeps the viewer on the map after their own run has died", async () => {
+		arrange();
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue(
+			CLIMBERS.filter((climber) => climber.userId !== RED)
+		);
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const you = result.data.climb?.climbers.filter((climber) => climber.you);
+		expect(you).toEqual([
+			{
+				id: RED,
+				displayName: "you",
+				photoUrl: undefined,
+				gate: 6,
+				pollsIntoGate: 3,
+				you: true,
+			},
+		]);
+	});
+
+	it("draws one marker per player when a user holds two live runs", async () => {
+		arrange();
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue([
+			...CLIMBERS,
+			{
+				userId: BLUE,
+				displayName: "Blue",
+				photoUrl: null,
+				gate: 1,
+				pollsIntoGate: 0,
+			},
+		]);
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const blues = result.data.climb?.climbers.filter(
+			(climber) => climber.id === BLUE
+		);
+		expect(blues).toHaveLength(1);
+		expect(blues?.[0].gate).toBe(7); // the deeper of the two
+	});
+
+	it("marks where runs the gate killed today came to a stop, with who fell", async () => {
+		arrange();
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.climb?.fallen).toEqual([
+			{
+				runId: 11,
+				id: "koga",
+				displayName: "Koga",
+				photoUrl: null,
+				gate: 3,
+				pollsIntoGate: 2,
+			},
+			// A nameless account falls back to its id, so the avatar still draws.
+			{
+				runId: 12,
+				id: "janine",
+				displayName: "janine",
+				photoUrl: null,
+				gate: 5,
+				pollsIntoGate: 0,
+			},
+		]);
+	});
+
+	it("carries the viewer's deepest finished run as their best", async () => {
+		arrange();
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.climb?.bestPosition).toBe(31);
+	});
+
+	it("builds the map on a day with nothing answered yet", async () => {
+		arrange();
+		vi.mocked(communityQueries.fetchConsumedPollsForDay).mockResolvedValue([]);
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.polls).toEqual([]);
+		expect(result.data.climb?.climbers).toHaveLength(3);
+	});
+
+	it("leaves the map off when the viewer has no run to stand on", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(null);
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.climb).toBeNull();
 	});
 });

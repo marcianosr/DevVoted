@@ -1,22 +1,13 @@
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 type StorageGaugeProps = {
-	/** KB the run currently holds. */
 	usedKb: number;
-	/** The storage ceiling (`STORAGE_CAP_KB`). */
 	capKb: number;
 };
 
 const percentOf = (part: number, whole: number): number =>
 	whole <= 0 ? 0 : Math.max(0, Math.min(100, (part / whole) * 100));
 
-/**
- * Storage read as headroom rather than hoard: the big number is what you have
- * left to spend, with the filled bar and caption carrying what is already
- * committed. Framing it as "free" matches the disk metaphor the currency is
- * built on, and it keeps the number that matters at shop time in the largest
- * type — income past the cap is discarded, so free space is the real budget.
- */
 export const StorageGauge = ({ usedKb, capKb }: StorageGaugeProps) => {
 	const used = Math.max(0, Math.min(usedKb, capKb));
 	const free = Math.max(0, capKb - used);
@@ -27,10 +18,10 @@ export const StorageGauge = ({ usedKb, capKb }: StorageGaugeProps) => {
 				<Paragraph as="span" className="text-2xl font-extrabold text-celadon">
 					{free}
 				</Paragraph>
-				<Paragraph as="span" size="sm" tone="pewter">
+				<Paragraph as="span" size="xs" tone="pewter">
 					KB
 				</Paragraph>
-				<Paragraph as="span" size="sm" tone="faint">
+				<Paragraph as="span" size="xs" tone="faint">
 					free
 				</Paragraph>
 			</span>
@@ -47,8 +38,10 @@ export const StorageGauge = ({ usedKb, capKb }: StorageGaugeProps) => {
 					style={{ width: `${percentOf(used, capKb)}%` }}
 				/>
 			</span>
+			{/* Both numbers carry the unit: "72 of 512 used" reads as a count of
+			    something unnamed once the headline's KB has scrolled out of the eye. */}
 			<Paragraph as="span" size="xs" tone="faint">
-				{used} of {capKb} used
+				{used}KB of {capKb}KB used
 			</Paragraph>
 		</span>
 	);

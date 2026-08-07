@@ -151,6 +151,13 @@ export type AnsweredPoll = {
 	readonly picked: readonly string[];
 	// Optional: runs snapshotted before these fields existed won't carry them.
 	readonly correct?: readonly string[];
+	/**
+	 * The snippet the question was asked against. Copied onto the answer rather
+	 * than looked up later, because the review outlives the gate's poll list —
+	 * without it a snippet question reads as "which of these is not valid?" with
+	 * nothing to judge against.
+	 */
+	readonly codeBlock?: string;
 	readonly explanation?: string;
 	readonly options?: readonly string[];
 	readonly answerType?: AnswerType;
@@ -524,6 +531,7 @@ const answer = (
 		correct: poll.options
 			.filter((option) => option.correct)
 			.map((option) => option.label),
+		codeBlock: poll.codeBlock,
 		explanation: poll.explanation,
 		options: poll.options.map((option) => option.label),
 		answerType: poll.answerType,

@@ -57,7 +57,6 @@ export const Route = createFileRoute("/old/shop")({
 			: [];
 
 		return {
-			poll,
 			activeRun: run,
 			offeredConfigs,
 			nextOfferedConfigs,
@@ -71,7 +70,6 @@ export const Route = createFileRoute("/old/shop")({
 
 function ShopRoute() {
 	const {
-		poll,
 		activeRun,
 		offeredConfigs,
 		nextOfferedConfigs,
@@ -130,7 +128,6 @@ function ShopRoute() {
 
 	return (
 		<Screen
-			categoryCode={poll.categoryCode}
 			transition="fade"
 			center
 			leftAction={{

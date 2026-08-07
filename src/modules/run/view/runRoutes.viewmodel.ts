@@ -5,6 +5,7 @@ export const RUN_ROUTES = {
 	configure: "/run/configure",
 	answer: "/run/answer",
 	reward: "/run/reward",
+	review: "/run/review",
 	shop: "/run/shop",
 	strip: "/run/strip",
 	over: "/run/over",
@@ -23,8 +24,11 @@ export type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
 /**
  * The server owns the run's state machine; the URL only projects it. This maps
  * each status to the route(s) allowed to show it — first entry is canonical.
- * "rewarding" spans two routes because the reward → shop hop is a user-driven
- * page turn within one server status.
+ * "rewarding" spans three routes because reward → review → shop are user-driven
+ * page turns within one server status, and "awaiting-strip" spans two for the
+ * same reason: strip → review. Both ends of a gate close on the answers, and on
+ * neither path does reading them advance the run — the action that does sits on
+ * the last page of the sequence.
  */
 export const routesForStatus = (
 	view: Pick<RunView, "status"> | null
@@ -36,9 +40,9 @@ export const routesForStatus = (
 		case "answering":
 			return [RUN_ROUTES.answer];
 		case "rewarding":
-			return [RUN_ROUTES.reward, RUN_ROUTES.shop];
+			return [RUN_ROUTES.reward, RUN_ROUTES.review, RUN_ROUTES.shop];
 		case "awaiting-strip":
-			return [RUN_ROUTES.strip];
+			return [RUN_ROUTES.strip, RUN_ROUTES.review];
 		case "won":
 		case "dead":
 			return [RUN_ROUTES.over];

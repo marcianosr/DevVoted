@@ -6,6 +6,7 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import type {
 	PolldexCategoryFilter,
 	PolldexEntry,
+	PolldexSeenFilter,
 } from "../../polldex/polldex.model";
 import { PolldexFilterBar } from "./PolldexFilterBar.ui";
 import { polldexColumns } from "./polldexColumns.ui";
@@ -15,20 +16,26 @@ type PolldexPanelProps = {
 	categories: CategoryCode[];
 	selectedCategory: PolldexCategoryFilter;
 	onSelectCategory: (category: PolldexCategoryFilter) => void;
+	selectedSeen: PolldexSeenFilter;
+	onSelectSeen: (seen: PolldexSeenFilter) => void;
 };
 
-/** The Polls tab body: category filter + the sortable poll table. */
+/** The Polls tab body: the two filters + the sortable poll table. */
 export const PolldexPanel = ({
 	entries,
 	categories,
 	selectedCategory,
 	onSelectCategory,
+	selectedSeen,
+	onSelectSeen,
 }: PolldexPanelProps) => (
 	<Stack gap="6">
 		<PolldexFilterBar
 			categories={categories}
 			selected={selectedCategory}
 			onSelect={onSelectCategory}
+			selectedSeen={selectedSeen}
+			onSelectSeen={onSelectSeen}
 		/>
 
 		<DataTable

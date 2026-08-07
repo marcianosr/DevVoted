@@ -229,56 +229,12 @@
 	animation: color-cycle-hover 60s linear infinite;
 }
 
-/* Category-based theme utilities */
+/* Theme color plumbing */
 /* Default theme color for un-themed screens (pipelines, shop, run screens).
-   Category ancestors below override it; the theme utilities inherit whichever
+   Gate/mood ancestors below override it; the theme utilities inherit whichever
    value is nearest, so bg-theme/text-theme render everywhere. */
 :root {
 	--theme-color: var(--color-cerulean);
-}
-
-/* Semantic screen mood — not a content category. Lets a whole screen re-point
-   the theme utilities: gate failed goes cinnabar, gate cleared goes celadon. */
-[data-screen-theme="cinnabar"] {
-	--theme-color: var(--color-cinnabar);
-}
-[data-screen-theme="celadon"] {
-	--theme-color: var(--color-celadon);
-}
-
-/* Set --theme-color on each category, then use it in theme utilities */
-[data-category-theme="html"] {
-	--theme-color: var(--color-vermillion);
-}
-[data-category-theme="css"] {
-	--theme-color: var(--color-cerulean);
-}
-[data-category-theme="js"] {
-	--theme-color: var(--color-saffron);
-}
-[data-category-theme="ts"] {
-	--theme-color: var(--color-lavender);
-}
-[data-category-theme="general-frontend"] {
-	--theme-color: var(--color-fuchsia);
-}
-[data-category-theme="react"] {
-	--theme-color: var(--color-celadon);
-}
-[data-category-theme="git"] {
-	--theme-color: var(--color-pewter);
-}
-[data-category-theme="java"] {
-	--theme-color: var(--color-indigo);
-}
-[data-category-theme="python"] {
-	--theme-color: var(--color-viridian);
-}
-[data-category-theme="ruby"] {
-	--theme-color: var(--color-cinnabar);
-}
-[data-category-theme="general-backend"] {
-	--theme-color: var(--color-seafoam);
 }
 
 /* Gate swatches, colored by their home Kanto location (gate/swatch.model.ts):
@@ -323,15 +279,63 @@
 	--theme-color: var(--color-indigo);
 }
 
-/* Theme utilities - use inherited --theme-color (category color, or the root
-   default on un-themed screens) */
-[data-category-theme] {
-	--meter-fill: var(--theme-color);
-	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
+/* Ambient run theme (ADR-020) — what the whole page wears while a gate is being
+   played (Screen.ui mirrors it onto <body>). Chip colors live under
+   [data-swatch-theme] above; this table deviates only at the summit: elite
+   lightens indigo so text/accents read on the near-black page (the chip itself
+   stays true indigo), and champion — gradient-only as a chip — gets fuchsia as
+   its one designated solid. */
+[data-gate-theme="pallet"] {
+	--theme-color: var(--color-pallet);
+}
+[data-gate-theme="boulder"] {
+	--theme-color: var(--color-pewter);
+}
+[data-gate-theme="cascade"] {
+	--theme-color: var(--color-cerulean);
+}
+[data-gate-theme="thunder"] {
+	--theme-color: var(--color-vermillion);
+}
+[data-gate-theme="rainbow"] {
+	--theme-color: var(--color-celadon);
+}
+[data-gate-theme="soul"] {
+	--theme-color: var(--color-fuchsia);
+}
+[data-gate-theme="marsh"] {
+	--theme-color: var(--color-saffron);
+}
+[data-gate-theme="volcano"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-gate-theme="earth"] {
+	--theme-color: var(--color-viridian);
+}
+[data-gate-theme="lavender"] {
+	--theme-color: var(--color-lavender);
+}
+[data-gate-theme="seafoam"] {
+	--theme-color: var(--color-seafoam);
+}
+[data-gate-theme="elite"] {
+	--theme-color: oklch(from var(--color-indigo) 0.7 c h);
+}
+[data-gate-theme="champion"] {
+	--theme-color: var(--color-fuchsia);
 }
 
-/* Themed screens mirror their category onto <body> (Screen.ui) — the page then
-   trades pure black for a faint tint of the category color: theme hue, chroma
+/* Semantic screen mood — pass/fail feedback, not gate identity. Declared after
+   the gate blocks so mood wins if both attributes ever land on one element. */
+[data-screen-theme="cinnabar"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-screen-theme="celadon"] {
+	--theme-color: var(--color-celadon);
+}
+
+/* Themed screens mirror their gate onto <body> (Screen.ui) — the page then
+   trades pure black for a faint tint of the gate color: theme hue, chroma
    crushed to a quarter, lightness pinned near-black. */
 body {
 	transition: background-color 700ms ease;
@@ -341,11 +345,11 @@ body {
 body:has(dialog:modal) {
 	overflow: hidden;
 }
-body[data-category-theme] {
+body[data-gate-theme] {
 	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
 }
-/* Mood screens glow softer than category screens: chroma crushed further and
-   lightness pulled closer to black. */
+/* Mood screens glow softer than gate screens: chroma crushed further and
+   lightness pulled closer to black. Stays after the gate rule so mood wins. */
 body[data-screen-theme] {
 	background-color: oklch(from var(--theme-color) 0.14 calc(c * 0.15) h);
 }
@@ -408,18 +412,21 @@ meter {
 	width: 100%;
 }
 
+/* --theme-color is used directly (not via an intermediary var) so it resolves
+   against the meter's inherited theme, not against wherever a var alias was
+   declared. */
 meter::-moz-meter-bar {
-	background: var(--meter-fill);
+	background: var(--theme-color);
 	border-radius: inherit;
 }
 
 meter::-webkit-meter-bar {
-	background: var(--meter-bg);
+	background: oklch(from var(--theme-color) calc(l - 0.25) c h);
 	border-radius: inherit;
 }
 
 meter::-webkit-meter-optimum-value {
-	background: var(--meter-fill);
+	background: var(--theme-color);
 	border-radius: inherit;
 }
 

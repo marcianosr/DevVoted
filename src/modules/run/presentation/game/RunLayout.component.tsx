@@ -47,7 +47,7 @@ export const RunLayout = () => {
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
 						pollsPerGate={view.pollsPerGate}
-						category={view.poll?.category}
+						pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
 					/>

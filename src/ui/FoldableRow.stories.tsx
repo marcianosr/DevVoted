@@ -21,7 +21,7 @@ export default meta;
 
 type Story = StoryObj<typeof FoldableRow>;
 
-const summaryCells = ({ expanded, toggle }: Fold) => (
+const summaryCells = ({ expanded, toggle, marker }: Fold) => (
 	<>
 		<span className="col-start-1 row-start-1">●</span>
 		<span className="col-start-2 row-start-1">
@@ -29,12 +29,19 @@ const summaryCells = ({ expanded, toggle }: Fold) => (
 				.js
 			</button>
 		</span>
-		<span className="col-start-3 row-start-1">+0.5%</span>
+		<span className="col-start-3 row-start-1 flex items-center gap-3">
+			+0.5%
+			{marker}
+		</span>
 	</>
 );
 
-const detailBlock = (
-	<span className="col-span-2 col-start-2 row-start-2 mt-1.5 flex flex-col gap-1 border-l border-zinc-700 pl-3">
+// Narrow the preview under 640px to see the default fold flip: the detail shuts
+// itself on a phone and the caret turns to point at what is left to open.
+const detailBlock = ({ detailClass }: Fold) => (
+	<span
+		className={`col-span-2 col-start-2 row-start-2 mt-1.5 flex-col gap-1 border-l border-zinc-700 pl-3 ${detailClass}`}
+	>
 		<span>Answer a JavaScript poll correctly.</span>
 		<span>Then all coverage earns ×1.5.</span>
 	</span>
@@ -49,7 +56,7 @@ export const WholeRowActivates: Story = {
 		summary: summaryCells,
 		detail: detailBlock,
 		onActivate: () => {},
-		className: "-mx-3 rounded-lg border-2 border-dashed border-celadon px-3",
+		className: "rounded-lg border-1 border-dashed border-celadon px-3",
 	},
 };
 

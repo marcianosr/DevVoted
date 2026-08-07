@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { categoryTheme } from "~/ui/theme/categoryTheme";
+import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Swatch } from "./Swatch.component";
 
 const meta: Meta<typeof Swatch> = {
@@ -8,7 +8,7 @@ const meta: Meta<typeof Swatch> = {
 	title: "UI/Swatch",
 	decorators: [
 		(Story) => (
-			<div {...categoryTheme("js")}>
+			<div {...swatchTheme("cascade")}>
 				<Story />
 			</div>
 		),

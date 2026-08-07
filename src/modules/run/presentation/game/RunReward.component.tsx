@@ -28,6 +28,10 @@ export const RunReward = () => {
 				configs={view.configs}
 				faucetThisGateKb={view.faucetThisGateKb}
 				storage={view.storage}
+				coverage={view.coverage}
+				slotCoverageRequired={view.slotCoverageRequired}
+				slots={view.slots}
+				onReviewAnswers={() => navigate({ to: "/run/review" })}
 			/>
 		</Screen>
 	);

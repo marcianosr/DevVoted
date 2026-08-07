@@ -32,7 +32,8 @@ const isCoverageConfig = (config: Config): boolean =>
 const signedPercent = (value: number): string =>
 	`${value < 0 ? "" : "+"}${value}%`;
 
-const correctCount = (answered: readonly AnsweredPoll[]): number =>
+/** How many of a window's answers were fully right — the gate's score line. */
+export const correctCount = (answered: readonly AnsweredPoll[]): number =>
 	answered.filter((poll) => poll.outcome === "correct").length;
 
 const inCategory = (

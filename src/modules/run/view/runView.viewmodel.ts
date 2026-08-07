@@ -15,6 +15,7 @@ import {
 import type { Config } from "../configs/config.model";
 import type { CheckStatus } from "../configs/effect.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
+import { swatchForGate, type SwatchTheme } from "../gate/swatch.model";
 import {
 	canAddSlot,
 	type CoverageConfigBonus,
@@ -83,6 +84,12 @@ export type RunView = {
 	/** Exact (capped) faucet income collected this gate — feeds the reward report. */
 	readonly faucetThisGateKb: number;
 	readonly gatesCleared: number;
+	/**
+	 * The ambient theme of the gate being played (ADR-020): the whole app wears
+	 * the swatch of the gate you're fighting for. Undefined past the last gate,
+	 * falling back to the :root default.
+	 */
+	readonly gateTheme?: SwatchTheme;
 	/**
 	 * The gate the last clear beat — one behind `gatesCleared`, which that clear
 	 * advanced. Old snapshots lack the source field; the fallback keeps their
@@ -292,6 +299,7 @@ export const toRunView = (state: RunState): RunView => {
 		gateRewardPaidKb: state.gateRewardKb ?? 0,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
+		gateTheme: swatchForGate(state.gatesCleared)?.theme,
 		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
 		victoryGate: VICTORY_GATE,
 		stripsOnFailure: dropCount(state.gatesCleared),

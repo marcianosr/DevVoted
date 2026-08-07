@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { PollActiveConfigStrip } from "./PollActiveConfigStrip.ui";
-import { withCategoryTheme } from "./story-utils";
+import { withGateTheme } from "./story-utils";
 
 const meta: Meta<typeof PollActiveConfigStrip> = {
 	component: PollActiveConfigStrip,
 	title: "Polls/PollActiveConfigStrip",
-	decorators: [withCategoryTheme("js")],
+	decorators: [withGateTheme("marsh")],
 };
 export default meta;
 

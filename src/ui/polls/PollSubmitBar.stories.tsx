@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { PollSubmitBar } from "./PollSubmitBar.ui";
-import { withCategoryTheme } from "./story-utils";
+import { withGateTheme } from "./story-utils";
 
 const meta: Meta<typeof PollSubmitBar> = {
 	component: PollSubmitBar,
 	title: "Polls/PollSubmitBar",
-	decorators: [withCategoryTheme("js")],
+	decorators: [withGateTheme("marsh")],
 	args: {
 		canSubmit: false,
 		isSubmitting: false,

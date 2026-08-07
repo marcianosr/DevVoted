@@ -20,6 +20,14 @@ export type PolldexEntry = {
 
 export type PolldexCategoryFilter = CategoryCode | "all";
 
+/**
+ * The second filter axis. Category asks "what is this poll about"; this one asks
+ * "have I met it" — the question a collection screen is actually opened with,
+ * whether that is "show me what I still have to find" or "let me re-read the
+ * ones I know".
+ */
+export type PolldexSeenFilter = "all" | "seen" | "unseen";
+
 export type PolldexCoverage = {
 	seen: number;
 	total: number;
@@ -31,11 +39,24 @@ const matchesCategory = (
 	category: PolldexCategoryFilter
 ): boolean => category === "all" || entry.categoryCode === category;
 
+const matchesSeen = (entry: PolldexEntry, seen: PolldexSeenFilter): boolean => {
+	if (seen === "all") return true;
+	return seen === "seen" ? entry.seen : !entry.seen;
+};
+
+/**
+ * The two axes are independent and both narrow, so they are applied together
+ * rather than as separate passes — "CSS polls I haven't met" is the query the
+ * screen exists to answer.
+ */
 export const filterPolldexEntries = (
 	entries: PolldexEntry[],
-	category: PolldexCategoryFilter
+	category: PolldexCategoryFilter,
+	seen: PolldexSeenFilter = "all"
 ): PolldexEntry[] =>
-	entries.filter((entry) => matchesCategory(entry, category));
+	entries.filter(
+		(entry) => matchesCategory(entry, category) && matchesSeen(entry, seen)
+	);
 
 export const polldexCoverage = (entries: PolldexEntry[]): PolldexCoverage => {
 	const total = entries.length;

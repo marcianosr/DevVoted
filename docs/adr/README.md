@@ -21,6 +21,7 @@
 | [017](017-no-baseline-check.md) | No baseline check: checks come only from configs; payout scales with correctness | Accepted — amends 016 §1–2 |
 | [018](018-gate-slot-coupling-and-slot-swatches.md) | Gate–slot coupling: gate N requires slot N; summit at gate 12; slot swatches | **Superseded by 019** (2026-08-06, one day later) |
 | [019](019-depth-and-width-are-independent.md) | Depth and width are independent; swatches are gate badges; summit at gate 12 of 13 | Accepted — supersedes 018; open risk in DVTD-ziss |
+| [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no color | Accepted — retires the per-category palette (wiki §2.4, DVTD-sthm) |
 
 ## Conventions
 

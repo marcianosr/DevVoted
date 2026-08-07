@@ -28,6 +28,7 @@ export const RunShop = () => {
 	return (
 		<Screen
 			width="wide"
+			gateTheme={view.gateTheme}
 			leftAction={{
 				label: "← Back",
 				onClick: () => navigate({ to: "/run/reward" }),

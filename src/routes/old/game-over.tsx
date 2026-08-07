@@ -97,10 +97,7 @@ function RouteComponent() {
 						})}
 					>
 						{(lastRun?.categoryCoverage ?? []).map((category) => (
-							<li
-								key={category.categoryCode}
-								data-category-theme={category.categoryCode}
-							>
+							<li key={category.categoryCode}>
 								<span className="text-theme">{category.categoryCode}</span> -
 								Coverage: {category.currentCoverage}%, Best Streak:{" "}
 								{category.bestStreak}

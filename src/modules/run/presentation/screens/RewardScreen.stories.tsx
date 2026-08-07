@@ -15,6 +15,12 @@ export const Default: Story = {
 	args: {
 		clearedGate: 1,
 		gateReward: 88,
+		// The run's standing after the payout — without these the meters have
+		// nothing to fill toward and both rewards read as bare numbers.
+		storage: 168,
+		coverage: 6.5,
+		slots: 3,
+		slotCoverageRequired: 8,
 		coverageGainedByCategory: { js: 3.1, css: 0.5, react: 2.2 },
 		answered: [
 			{

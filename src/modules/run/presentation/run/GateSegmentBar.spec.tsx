@@ -65,11 +65,21 @@ describe(GateSegmentBar, () => {
 		}
 	});
 
-	it("rims the Elite pip, whose indigo is darker than the empty track", () => {
+	it("rims the gate underway, and only that one", () => {
+		render(midClimb);
+		expect(pips()[2]).toHaveClass("ring-pewter");
+		for (const gate of [0, 1, 3]) {
+			expect(pips()[gate]).not.toHaveClass("ring-pewter");
+		}
+	});
+
+	// The rim used to mark the Elite plate's finish, which read as an active gate
+	// eleven gates before the player could stand on it.
+	it("leaves the Elite pip unrimmed until the climb reaches it", () => {
 		render(midClimb);
 		const elite = pips()[VICTORY_GATE - 1];
 		expect(elite).toHaveAttribute("data-swatch-theme", "elite");
-		expect(elite).toHaveClass("ring-pewter");
+		expect(elite).not.toHaveClass("ring-pewter");
 	});
 
 	it("gives the Champion a gradient fill, having no flat colour", () => {
@@ -130,5 +140,12 @@ describe(GateSegmentBar, () => {
 		expect(
 			screen.getByRole("group", { name: "gate 3 of 12" })
 		).toBeInTheDocument();
+	});
+
+	// The tap-to-pin behaviour itself lives in Tooltip (and is specced there);
+	// what matters here is that each pip carries its own panel to pin.
+	it("gives every pip its own tappable detail panel", () => {
+		render(midClimb);
+		expect(screen.getAllByRole("tooltip")).toHaveLength(GATE_COUNT);
 	});
 });

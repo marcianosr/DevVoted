@@ -57,6 +57,39 @@ describe("filterPolldexEntries", () => {
 			cssUnseen,
 		]);
 	});
+
+	it("keeps only met polls under the 'seen' filter", () => {
+		const met = entry({ id: 1 });
+		const unmet = unseen({ id: 2 });
+
+		expect(filterPolldexEntries([met, unmet], "all", "seen")).toEqual([met]);
+	});
+
+	it("keeps only the polls still to find under 'unseen'", () => {
+		const met = entry({ id: 1 });
+		const unmet = unseen({ id: 2 });
+
+		expect(filterPolldexEntries([met, unmet], "all", "unseen")).toEqual([
+			unmet,
+		]);
+	});
+
+	it("narrows on both axes at once — 'the CSS polls I haven't met'", () => {
+		const cssSeen = entry({ id: 1, categoryCode: "css" });
+		const cssUnseen = unseen({ id: 2, categoryCode: "css" });
+		const jsUnseen = unseen({ id: 3, categoryCode: "js" });
+
+		expect(
+			filterPolldexEntries([cssSeen, cssUnseen, jsUnseen], "css", "unseen")
+		).toEqual([cssUnseen]);
+	});
+
+	it("defaults to every poll when no seen filter is given", () => {
+		const met = entry({ id: 1 });
+		const unmet = unseen({ id: 2 });
+
+		expect(filterPolldexEntries([met, unmet], "all")).toHaveLength(2);
+	});
 });
 
 describe("polldexCoverage", () => {

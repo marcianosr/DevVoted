@@ -77,7 +77,7 @@ const EmptySlotRow = ({ slot }: { slot: number }) => (
 				as="span"
 				size="xs"
 				tone="muted"
-				className="block w-full rounded-lg border-2 border-dashed border-zinc-700 px-4 py-2 text-center"
+				className="block w-full rounded-lg border-1 border-dashed border-zinc-700 px-4 py-2 text-center"
 			>
 				empty slot
 			</Paragraph>
@@ -95,6 +95,15 @@ type RoleListProps = {
 	newConfigIds?: readonly string[];
 	preview?: SlotPreview;
 	trailing?: ReactNode;
+	/**
+	 * Shuts every row whose check isn't currently running. For the answering
+	 * screen, where the pipeline sits beside the question: only the check the
+	 * gate is judging right now is worth reading mid-poll, and three open rows
+	 * push the question off a laptop screen. Everywhere the list *is* the screen
+	 * (gate report, shop, configure) it stays off — there, why a row passed or
+	 * failed is the thing the player came to read.
+	 */
+	foldIdleRows?: boolean;
 };
 
 const removeButton = (row: RoleRow, onRemove: (configId: string) => void) => (
@@ -118,6 +127,7 @@ export const RoleList = ({
 	newConfigIds,
 	preview,
 	trailing,
+	foldIdleRows = false,
 }: RoleListProps) => {
 	const emptySlots = slots
 		? Math.max(0, slots - rows.length - (preview ? 1 : 0))
@@ -155,6 +165,7 @@ export const RoleList = ({
 						valueTone={roleValueTone(row)}
 						chipActions={actionsFor?.(row.config)}
 						chipBadge={newBadge(row.config)}
+						defaultOpen={foldIdleRows ? row.state === "running" : undefined}
 						trailing={
 							trailingFor?.(row.config) ??
 							(action

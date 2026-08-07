@@ -59,6 +59,8 @@ type PipelineReportRowProps = {
 	ghost?: boolean;
 	/** Slot this row occupies, shown in the table's leading gutter. */
 	slotNumber?: number;
+	/** Starts the row open or shut instead of letting the breakpoint decide. */
+	defaultOpen?: boolean;
 };
 
 export const PipelineReportRow = ({
@@ -85,6 +87,7 @@ export const PipelineReportRow = ({
 	activateLabel,
 	ghost = false,
 	slotNumber,
+	defaultOpen,
 }: PipelineReportRowProps) => {
 	const noteBlock = note ? (
 		<Paragraph as="span" size="xs" tone="faint" className="block">
@@ -154,7 +157,7 @@ export const PipelineReportRow = ({
 	const rarity = rarityOf(config);
 	const failed = badge === "fail";
 
-	const summaryCells = ({ expanded, toggle }: Fold) => (
+	const summaryCells = ({ expanded, toggle, marker }: Fold) => (
 		<>
 			<span className="col-start-1 row-start-1 flex items-center self-stretch">
 				<StatusDot variant={mark ?? badge} />
@@ -180,15 +183,22 @@ export const PipelineReportRow = ({
 			</span>
 			<span className="col-start-3 row-start-1 flex items-center justify-end gap-3 self-stretch">
 				{trailingBlock}
+				{marker}
 			</span>
 		</>
 	);
 
 	// The rule runs under the status mark, not under the config chip: the eye
 	// follows the mark's column down the list, so hanging the detail off it reads
-	// as one thread per row instead of two staggered starts.
-	const detail = (
-		<span className="col-span-3 col-start-1 row-start-2 mt-1.5 flex flex-col gap-1 border-l border-zinc-700 pl-3">
+	// as one thread per row instead of two staggered starts. Its display class
+	// comes from the fold, which shuts the row by default on a narrow screen.
+	const detail = ({ detailClass }: Fold) => (
+		<span
+			className={clsx(
+				"col-span-3 col-start-1 row-start-2 mt-1.5 flex-col gap-1 border-l border-zinc-700 pl-3",
+				detailClass
+			)}
+		>
 			{needs ? (
 				<Paragraph as="span" size="sm" tone={failed ? "cinnabar" : "default"}>
 					{needs}
@@ -217,12 +227,19 @@ export const PipelineReportRow = ({
 		</span>
 	);
 
-	// A ghost boxes the row in a dashed rarity border; the negative margin
-	// gives the border room without knocking its cells out of column. Legendary
-	// dashes go static fuchsia (the gradient ring can't dash).
+	// A ghost boxes the row in a dashed rarity border, and that box has to be the
+	// same width as the empty slots above and below it — it stands in for one.
+	// (It used to bleed 12px past them with a negative margin, to keep its cells
+	// in column with the unboxed rows; a preview slot wider than the slot it
+	// previews is the worse of the two misalignments.) A legendary wears the same
+	// gradient ring as its chip instead: the masked gradient cannot dash, and the
+	// flat-fuchsia stand-in read as a rarity of its own next to the gradient chip
+	// sitting inside it.
 	const ghostBox = clsx(
-		"-mx-3 rounded-lg border-2 border-dashed px-3",
-		rarity === "legendary" ? "border-fuchsia" : RARITY_COLORS[rarity].border
+		"rounded-lg px-3",
+		rarity === "legendary"
+			? `border-1 ${RARITY_COLORS.legendary.border}`
+			: `border-1 border-dashed ${RARITY_COLORS[rarity].border}`
 	);
 
 	return (
@@ -234,6 +251,7 @@ export const PipelineReportRow = ({
 				onActivate={onActivate}
 				activateLabel={activateLabel}
 				foldable={!chipActions}
+				defaultOpen={defaultOpen}
 				className={clsx(ghost && ghostBox, dimmed && "opacity-50")}
 				placement={
 					slotNumber === undefined ? undefined : "col-start-2 col-span-3"

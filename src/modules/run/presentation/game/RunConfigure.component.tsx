@@ -17,6 +17,7 @@ export const RunConfigure = () => {
 
 	return (
 		<Screen
+			gateTheme={view.gateTheme}
 			rightAction={{
 				label: "Start run →",
 				onClick: () => send({ type: "start" }),

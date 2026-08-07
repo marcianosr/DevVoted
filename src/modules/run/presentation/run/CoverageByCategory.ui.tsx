@@ -1,6 +1,5 @@
 import { getCategories } from "~/domains/shared/categories";
-import { Swatch } from "~/ui/Swatch.component";
-import { categoryTheme } from "~/ui/theme/categoryTheme";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 
@@ -12,6 +11,13 @@ type CoverageByCategoryProps = {
 	prefix?: string;
 };
 
+/**
+ * The coverage split, biggest earner first, as a two-column list of ruled rows.
+ * Ranked rather than kept in category order: the question the split answers is
+ * "where did this come from", and a row of equal-looking chips made you read all
+ * of them to find that out. The rule under each row is what lets a name on the
+ * left and a number on the right read as one line across the gap.
+ */
 export const CoverageByCategory = ({
 	coverageByCategory,
 	title,
@@ -24,7 +30,8 @@ export const CoverageByCategory = ({
 			name,
 			pct: coverageByCategory[code] ?? 0,
 		}))
-		.filter(({ pct }) => pct > 0);
+		.filter(({ pct }) => pct > 0)
+		.sort((left, right) => right.pct - left.pct);
 
 	if (covered.length === 0) return null;
 
@@ -36,20 +43,25 @@ export const CoverageByCategory = ({
 					{subtitle ? <Subtitle>{subtitle}</Subtitle> : null}
 				</header>
 			) : null}
-			<div className="flex flex-wrap gap-2">
+			<div className="grid gap-x-12 sm:grid-cols-2">
 				{covered.map(({ code, name, pct }) => (
-					<span
+					<div
 						key={code}
-						{...categoryTheme(code)}
-						className="flex items-center gap-1.5 rounded-lg border border-theme px-3 py-1.5 text-sm"
+						className="flex items-baseline justify-between gap-6 border-b border-zinc-800 py-2"
 					>
-						<Swatch />
-						<span className="font-bold text-theme">{name}</span>
-						<span className="text-zinc-300">
+						<Paragraph as="span" size="sm">
+							{name}
+						</Paragraph>
+						<Paragraph
+							as="span"
+							size="sm"
+							tone="viridian"
+							className="font-bold tabular-nums"
+						>
 							{prefix}
 							{pct}%
-						</span>
-					</span>
+						</Paragraph>
+					</div>
 				))}
 			</div>
 		</section>

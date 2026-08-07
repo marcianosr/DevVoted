@@ -33,6 +33,44 @@ describe("GATE_SWATCHES", () => {
 		expect(swatchForGate(VICTORY_GATE - 1)?.name).toBe("Elite Swatch");
 	});
 
+	it("keeps the eight gym badges in trainer-card order", () => {
+		const badges = ALL_SWATCHES.filter(({ gateName }) =>
+			[
+				"Boulder",
+				"Cascade",
+				"Thunder",
+				"Rainbow",
+				"Soul",
+				"Marsh",
+				"Volcano",
+				"Earth",
+			].includes(gateName)
+		);
+		expect(badges.map(({ gateName }) => gateName)).toEqual([
+			"Boulder",
+			"Cascade",
+			"Thunder",
+			"Rainbow",
+			"Soul",
+			"Marsh",
+			"Volcano",
+			"Earth",
+		]);
+	});
+
+	it("walks the two non-gym landmarks where Kanto actually walks them", () => {
+		// Lavender Town comes out of Rock Tunnel after Vermilion and before
+		// Celadon; the Seafoam Islands sit on Route 20 on the way to Cinnabar.
+		// Appending them after all eight badges put mid-game stops next to the
+		// Elite Four, and left the deepest gates wearing the palest colours.
+		expect(swatchForGate(4)?.gateName).toBe("Lavender");
+		expect(swatchForGate(8)?.gateName).toBe("Seafoam");
+		expect(swatchForGate(3)?.gateName).toBe("Thunder");
+		expect(swatchForGate(5)?.gateName).toBe("Rainbow");
+		expect(swatchForGate(9)?.gateName).toBe("Volcano");
+		expect(swatchForGate(10)?.gateName).toBe("Earth");
+	});
+
 	it("draws only the summit pair off the flat palette", () => {
 		// 13 gates against a 12-colour palette: the two specials are what keeps
 		// every badge's colour its own.

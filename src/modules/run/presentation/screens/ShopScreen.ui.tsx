@@ -11,14 +11,15 @@ import {
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { pipelineModifiersFor } from "~/modules/run/pipeline/pipeline.model";
-import { categoryTheme } from "~/ui/theme/categoryTheme";
 import { Columns } from "~/ui/Columns.ui";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/run/gate/configRole.model";
+import { swatchForGate } from "~/modules/run/gate/swatch.model";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { SwatchLabel } from "../gate/SwatchLabel.ui";
 import { GateModifierStrip } from "../gate/GateModifierStrip.ui";
 import { RoleList } from "../gate/RoleList.ui";
 import { nextSlotRow } from "../gate/SlotUnlockRow.ui";
@@ -97,7 +98,8 @@ const actionButton = ({
 );
 
 type PanelHeadingProps = {
-	title: string;
+	/** A node, not a string: the load-out panel names its gate in badge colour. */
+	title: ReactNode;
 	subtitle: string;
 };
 
@@ -134,6 +136,7 @@ export const ShopScreen = ({
 }: ShopScreenProps) => {
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const isFull = configs.length >= slots;
+	const nextGate = swatchForGate(gateNumber);
 
 	const canAfford = (config: Config): boolean => storage >= draftCost(config);
 	const canInstall = (config: Config): boolean => !isFull && canAfford(config);
@@ -151,7 +154,7 @@ export const ShopScreen = ({
 
 	// Hovering Upgrade always previews the next level's concrete effect; while
 	// gated it adds what the upgrade wants — the category-tied coverage for a
-	// focus config (its name in its own Kanto color), the KB price otherwise.
+	// focus config (its name in bold), the KB price otherwise.
 	const upgradeTooltip = (config: Config): ReactNode => {
 		const nextLevel = (config.level ?? 1) + 1;
 		const preview = `L${nextLevel}: ${describeConfig({ ...config, level: nextLevel })}`;
@@ -165,10 +168,7 @@ export const ShopScreen = ({
 		return (
 			<>
 				{preview} Unlocks at {required}%{" "}
-				<span
-					{...categoryTheme(config.focusCategory)}
-					className="font-bold text-theme"
-				>
+				<span className="font-bold">
 					{getCategoryMetadata(config.focusCategory).name}
 				</span>{" "}
 				coverage — you have {have}%.
@@ -287,7 +287,23 @@ export const ShopScreen = ({
 				main={
 					<section className="flex flex-col gap-4">
 						<PanelHeading
-							title={`Your load-out for gate ${gateNumber}`}
+							// The shop sits between gates, so its heading names the one you
+							// are building for — by badge, since that is what the gate is
+							// called and what clearing it will award.
+							title={
+								nextGate ? (
+									<>
+										Your load-out for{" "}
+										<SwatchLabel
+											swatch={nextGate}
+											label={`${nextGate.gateName} gate ${gateNumber}`}
+											size="md"
+										/>
+									</>
+								) : (
+									`Your load-out for gate ${gateNumber}`
+								)
+							}
 							subtitle={`${configs.length} of ${slots} slots used`}
 						/>
 						<RoleList

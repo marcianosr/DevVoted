@@ -86,7 +86,7 @@ export const RunAnswer = () => {
 
 	return (
 		<Screen
-			categoryCode={poll.category}
+			gateTheme={view.gateTheme}
 			leftAction={{
 				label: "Abandon run",
 				onClick: () => setConfirmingAbandon(true),

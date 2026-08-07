@@ -2,7 +2,11 @@ import type { ElementType, KeyboardEvent, ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
+import {
+	StatusBadge,
+	type StatusBadgeEmphasis,
+	type StatusBadgeVariant,
+} from "~/ui/StatusBadge.ui";
 import { StatusDot } from "~/ui/StatusDot.ui";
 import {
 	Paragraph,
@@ -15,6 +19,7 @@ export type StatusLineSpacing = "compact" | "spacious";
 
 type StatusLineProps = {
 	badge: StatusBadgeVariant;
+	badgeEmphasis?: StatusBadgeEmphasis;
 	indicator?: StatusIndicator;
 	spacing?: StatusLineSpacing;
 	line: ReactNode;
@@ -29,6 +34,7 @@ type StatusLineProps = {
 
 export const StatusLine = ({
 	badge,
+	badgeEmphasis = "solid",
 	indicator = "badge",
 	spacing = "compact",
 	line,
@@ -71,7 +77,7 @@ export const StatusLine = ({
 				{indicator === "dot" ? (
 					<StatusDot variant={badge} />
 				) : (
-					<StatusBadge variant={badge} />
+					<StatusBadge variant={badge} emphasis={badgeEmphasis} />
 				)}
 			</span>
 			{leading ? <span className="shrink-0">{leading}</span> : null}

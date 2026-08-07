@@ -96,16 +96,23 @@ describe(ConfiguringScreen, () => {
 		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 	});
 
-	it("opens each row's demand and effect by default", () => {
+	// Wide screens open every row; a phone shuts them all and shows the caret.
+	// The detail stays mounted either way, so the fold is a class, not a mount.
+	it("opens each row's demand and effect by default, above the fold breakpoint", () => {
 		render(<ConfiguringScreen {...base} />);
-		expect(screen.getByText("1 correct answer")).toBeInTheDocument();
+		expect(screen.getByText("1 correct answer").parentElement).toHaveClass(
+			"hidden",
+			"sm:flex"
+		);
 		expect(screen.getByText("+32KB")).toBeInTheDocument();
 	});
 
 	it("folds a row to one line when its name is tapped", () => {
 		render(<ConfiguringScreen {...base} />);
 		fireEvent.click(screen.getByRole("button", { name: "Unit Tests" }));
-		expect(screen.queryByText("1 correct answer")).not.toBeInTheDocument();
+		const detail = screen.getByText("1 correct answer").parentElement;
+		expect(detail).toHaveClass("hidden");
+		expect(detail).not.toHaveClass("sm:flex");
 	});
 
 	it("folds a tapped-shut row back open on the next tap", () => {
@@ -113,7 +120,9 @@ describe(ConfiguringScreen, () => {
 		const name = screen.getByRole("button", { name: "Unit Tests" });
 		fireEvent.click(name);
 		fireEvent.click(name);
-		expect(screen.getByText("1 correct answer")).toBeInTheDocument();
+		expect(screen.getByText("1 correct answer").parentElement).toHaveClass(
+			"flex"
+		);
 	});
 
 	it("marks pipeline rows with a state dot instead of a status badge", () => {

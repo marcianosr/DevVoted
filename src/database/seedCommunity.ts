@@ -5,9 +5,13 @@ import {
 	pollOptionsTable,
 	pollResponseOptionsTable,
 	pollResponsesTable,
+	runStatesTable,
+	runsTable,
 	usersTable,
 } from "@/src/database/schema";
 import { getOrCreateDailyRunSeed } from "~/modules/run/api/queries";
+import { createRun } from "~/modules/run/climb/run.model";
+import { toRunSnapshot } from "~/modules/run/climb/runSnapshot.model";
 import { SLICE_WINDOW } from "~/modules/run/rules.model";
 
 // ─── Kanto trainer roster ─────────────────────────────────────────────────────
@@ -15,20 +19,69 @@ import { SLICE_WINDOW } from "~/modules/run/rules.model";
 // local dev. Session responses only (mode: "session", run_id null) — exactly
 // the rows the community aggregation reads. Roster mirrors the proto-run rig's
 // simulated community. Rerunnable daily: it no-ops if today is already seeded.
+//
+// They also each get a session run parked at a fixed depth, which is what the
+// climb map draws — without those the map shows one lonely avatar.
 
-type Trainer = { id: string; displayName: string; accuracy: number };
+/**
+ * `climb` places the trainer on the community page's climb map. `fell` finishes
+ * their run as a death so the map has gravestones to draw; the rest stay live.
+ * Spread across the ladder on purpose — clustered, ahead of, and behind a
+ * typical viewer — so paging and the uncharted zone both have something to show.
+ */
+type Trainer = {
+	id: string;
+	displayName: string;
+	accuracy: number;
+	climb: { gatesCleared: number; pollsIntoGate: number; fell?: boolean };
+};
 
 const trainerUUID = (index: number): string =>
 	`ca7050ca-ca70-4ca7-8ca7-${index.toString(16).padStart(12, "0")}`;
 
 const TRAINERS: readonly Trainer[] = [
-	{ id: trainerUUID(1), displayName: "Gary Oak", accuracy: 0.9 },
-	{ id: trainerUUID(2), displayName: "Lance", accuracy: 0.8 },
-	{ id: trainerUUID(3), displayName: "Sabrina", accuracy: 0.7 },
-	{ id: trainerUUID(4), displayName: "Erika", accuracy: 0.6 },
-	{ id: trainerUUID(5), displayName: "Misty", accuracy: 0.5 },
-	{ id: trainerUUID(6), displayName: "Brock", accuracy: 0.45 },
-	{ id: trainerUUID(7), displayName: "Ash Ketchum", accuracy: 0.35 },
+	{
+		id: trainerUUID(1),
+		displayName: "Gary Oak",
+		accuracy: 0.9,
+		climb: { gatesCleared: 8, pollsIntoGate: 2 },
+	},
+	{
+		id: trainerUUID(2),
+		displayName: "Lance",
+		accuracy: 0.8,
+		climb: { gatesCleared: 6, pollsIntoGate: 4 },
+	},
+	{
+		id: trainerUUID(3),
+		displayName: "Sabrina",
+		accuracy: 0.7,
+		climb: { gatesCleared: 6, pollsIntoGate: 1 },
+	},
+	{
+		id: trainerUUID(4),
+		displayName: "Erika",
+		accuracy: 0.6,
+		climb: { gatesCleared: 5, pollsIntoGate: 3 },
+	},
+	{
+		id: trainerUUID(5),
+		displayName: "Misty",
+		accuracy: 0.5,
+		climb: { gatesCleared: 4, pollsIntoGate: 0 },
+	},
+	{
+		id: trainerUUID(6),
+		displayName: "Brock",
+		accuracy: 0.45,
+		climb: { gatesCleared: 3, pollsIntoGate: 2, fell: true },
+	},
+	{
+		id: trainerUUID(7),
+		displayName: "Ash Ketchum",
+		accuracy: 0.35,
+		climb: { gatesCleared: 5, pollsIntoGate: 1, fell: true },
+	},
 ];
 
 const slugifyEmail = (name: string): string =>
@@ -75,16 +128,63 @@ const ensureTrainerUsers = async (): Promise<void> => {
 	}
 };
 
+const TRAINER_IDS = TRAINERS.map((trainer) => trainer.id);
+
+/**
+ * A run per trainer, so the climb map has a field. The engine state is a fresh
+ * run with the position dialled in — nothing here has to be a *plausible* game
+ * history, only a valid snapshot at a known depth.
+ */
+const seedTrainerRuns = async (today: string): Promise<void> => {
+	await db.delete(runsTable).where(inArray(runsTable.user_id, TRAINER_IDS));
+
+	const blank = toRunSnapshot(createRun([], []));
+
+	for (const trainer of TRAINERS) {
+		const { gatesCleared, pollsIntoGate, fell = false } = trainer.climb;
+		const [run] = await db
+			.insert(runsTable)
+			.values({
+				user_id: trainer.id,
+				mode: "session",
+				status: fell ? "finished" : "active",
+				seed_date: today,
+				completion_reason: fell ? "dead" : null,
+				finished_at: fell ? new Date() : null,
+			})
+			.returning({ id: runsTable.id });
+
+		await db.insert(runStatesTable).values({
+			run_id: run.id,
+			state: {
+				...blank,
+				status: fell ? "dead" : "answering",
+				gatesCleared,
+				currentIndex: gatesCleared * SLICE_WINDOW + pollsIntoGate,
+				window: {
+					...blank.window,
+					answered: pollsIntoGate,
+					correct: pollsIntoGate,
+				},
+			},
+			engine_status: fell ? "dead" : "answering",
+			gates_cleared: gatesCleared,
+			polls_answered: gatesCleared * SLICE_WINDOW + pollsIntoGate,
+		});
+
+		console.log(
+			`🧗 ${trainer.displayName} — gate ${gatesCleared}, ${pollsIntoGate} in${fell ? " (fell)" : ""}`
+		);
+	}
+};
+
 const alreadySeededToday = async (today: string): Promise<boolean> => {
 	const existing = await db
 		.select({ id: pollResponsesTable.response_id })
 		.from(pollResponsesTable)
 		.where(
 			and(
-				inArray(
-					pollResponsesTable.user_id,
-					TRAINERS.map((trainer) => trainer.id)
-				),
+				inArray(pollResponsesTable.user_id, TRAINER_IDS),
 				eq(pollResponsesTable.answer_date, today),
 				eq(pollResponsesTable.mode, "session")
 			)
@@ -99,6 +199,9 @@ async function seedCommunityDay() {
 	console.log(`🏘️  Seeding community answers for ${today}...\n`);
 
 	await ensureTrainerUsers();
+	// Idempotent on its own (delete + reinsert), so it runs before the answer
+	// seeding's skip check — the map should be populated either way.
+	await seedTrainerRuns(today);
 
 	if (await alreadySeededToday(today)) {
 		if (!refresh) {
@@ -108,16 +211,15 @@ async function seedCommunityDay() {
 			return;
 		}
 		// Response options cascade with their responses.
-		await db.delete(pollResponsesTable).where(
-			and(
-				inArray(
-					pollResponsesTable.user_id,
-					TRAINERS.map((trainer) => trainer.id)
-				),
-				eq(pollResponsesTable.answer_date, today),
-				eq(pollResponsesTable.mode, "session")
-			)
-		);
+		await db
+			.delete(pollResponsesTable)
+			.where(
+				and(
+					inArray(pollResponsesTable.user_id, TRAINER_IDS),
+					eq(pollResponsesTable.answer_date, today),
+					eq(pollResponsesTable.mode, "session")
+				)
+			);
 		console.log("♻️  Cleared today's trainer answers for a refresh.");
 	}
 

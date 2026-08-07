@@ -74,6 +74,16 @@ export const WithSlotPreview: Story = {
 	},
 };
 
+// Copilot is the roster's only legendary, and a masked gradient has no dashed
+// form — so its preview box wears the same gradient ring its chip wears.
+export const WithLegendarySlotPreview: Story = {
+	args: {
+		rows: rows.slice(0, 2),
+		slots: 5,
+		preview: { config: CONFIGS.copilot, onAdd: () => {} },
+	},
+};
+
 // The shop load-out: chips open a sell/upgrade popover, fresh drafts carry a "new"
 // badge, and the next slot's swatch rides along as the final row.
 export const ShopLoadout: Story = {

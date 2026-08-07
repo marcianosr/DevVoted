@@ -91,8 +91,9 @@ const PipDetail = ({
  * The climb as one pip per gate, each wearing the colour of the swatch that gate
  * awards — so the bar is the badge collection and the depth meter at once. Gates
  * behind you read solid, the gate underway fills with the window's answers, and
- * the rest sit dimmed as a preview of what is left. Every pip is its own button,
- * so hover (or tap) names that gate's badge.
+ * the rest sit dimmed as a preview of what is left. Every pip is its own button:
+ * hover names that gate's badge, and a tap holds the name open, since a 12px dot
+ * is unreadable without it and a touch screen has no hover to offer.
  *
  * Deliberately carries no coverage: since ADR-019 coverage buys width, not depth,
  * and the shop's unlock row is where that progress belongs.
@@ -107,8 +108,8 @@ export const GateSegmentBar = ({
 	<span role="group" aria-label={label} className="flex shrink-0 gap-1">
 		{swatches.map((swatch) => {
 			const standing = standingOf(swatch.gate, gatesCleared);
-			// A 12px pip is too small for a rim to read, so the Elite plate fills
-			// with its indigo like any other themed pip; its popover carries the rim.
+			// The Elite plate fills with its indigo like any other themed pip; the
+			// rim that used to mark its finish now belongs to the current gate.
 			const fill = hasThemeColor(swatch) ? "bg-theme" : "bg-legendary";
 			const width =
 				standing === "earned"
@@ -135,9 +136,11 @@ export const GateSegmentBar = ({
 						{...(hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
 						className={clsx(
 							"h-3 w-3 cursor-pointer overflow-hidden rounded-sm bg-zinc-800 transition hover:brightness-125",
-							// Indigo is darker than the empty track, so the Elite pip would
-							// read as a hole. Its rim is what marks it present at all.
-							swatch.finish === "plate" && "ring-1 ring-pewter"
+							// The rim means "you are here", and only that. It used to mark the
+							// Elite plate instead, which read as an active gate eleven gates
+							// before you could reach it — the one thing a bar of pips has to
+							// get right is where the player is standing.
+							standing === "current" && "ring-1 ring-pewter"
 						)}
 					>
 						<span

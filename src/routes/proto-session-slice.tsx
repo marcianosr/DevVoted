@@ -306,7 +306,7 @@ const Board = ({
 			) : (
 				<div
 					key={`empty-${index}`}
-					className="rounded-lg border-2 border-dashed border-[#8B8D98] px-6 py-2 text-sm text-[#8B8D98]"
+					className="rounded-lg border-1 border-dashed border-[#8B8D98] px-6 py-2 text-sm text-[#8B8D98]"
 				>
 					empty
 				</div>

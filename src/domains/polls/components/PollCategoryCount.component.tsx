@@ -28,7 +28,7 @@ const PollCategoryCount = ({ polls }: PollCategoryCountProps) => {
 	return (
 		<ul className="list-disc px-4 text-2xl mt-4">
 			{categoryCounts.map((cat) => (
-				<li key={cat.code} data-category-theme={cat.code}>
+				<li key={cat.code}>
 					<span className="text-theme">{cat.name}</span>: {cat.count}
 				</li>
 			))}

@@ -59,7 +59,7 @@ export const SlotUnlockRow = ({
 }: SlotUnlockRowProps) => {
 	const unlocked = coveragePct >= unlockAtPct;
 	return (
-		<div className="flex items-center gap-4 rounded-lg border-2 border-dashed border-zinc-700 px-4 py-3">
+		<div className="flex items-center gap-4 rounded-lg border border-dashed border-zinc-700 px-4 py-3">
 			<div className="flex min-w-0 flex-1 flex-col gap-1">
 				{/* The table's gutter already numbers this slot, so the row leads with
 				    what it costs rather than repeating "Slot 4". */}

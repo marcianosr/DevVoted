@@ -10,11 +10,11 @@ export default meta;
 
 type Story = StoryObj<typeof StatBadge>;
 
-export const CssActive: Story = {
-	args: { label: "Coverage", value: "6%", category: "css" },
+export const Coverage: Story = {
+	args: { label: "Coverage", value: "6%" },
 };
-export const JsActive: Story = {
-	args: { label: "Storage", value: "440KB", category: "js" },
+export const Storage: Story = {
+	args: { label: "Storage", value: "440KB" },
 };
 export const AmbientTheme: Story = { args: { label: "Gate", value: "3/5" } };
 

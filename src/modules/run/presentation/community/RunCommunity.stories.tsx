@@ -178,6 +178,72 @@ export const FirstPlayerOfTheDay: Story = {
 	},
 };
 
+/**
+ * The row the split was built for: the right answer over the one you handed in,
+ * with the seven you never considered folded away — and a clean sweep of the
+ * day's standouts.
+ */
+export const MissedIt: Story = {
+	args: {
+		totalPlayers: 8,
+		topPercent: 12,
+		standouts: [
+			{ voter: you, title: "fastest answer", value: "4s" },
+			{ voter: you, title: "first to answer", value: "1m21" },
+			{ voter: you, title: "most CSS polls", value: "3" },
+		],
+		polls: [
+			{
+				pollId: 1,
+				index: 0,
+				question:
+					"A selector to match elements without children — which is correct?",
+				category: "css",
+				outcome: "wrong",
+				detail: {
+					answerType: "single",
+					answeredCount: 8,
+					gotItRightCount: 4,
+					youGotItRight: false,
+					options: [
+						option({
+							label: ":empty()",
+							isRight: true,
+							count: 4,
+							percent: 50,
+							voters: [brock, misty, surge, erika],
+						}),
+						option({
+							label: ":clearfix()",
+							count: 1,
+							percent: 13,
+							yours: true,
+							voters: [you],
+						}),
+						option({
+							label: ":blank()",
+							count: 1,
+							percent: 13,
+							voters: [misty],
+						}),
+						option({
+							label: ":has()",
+							count: 2,
+							percent: 25,
+							voters: [brock, erika],
+						}),
+						option({ label: ":root()" }),
+						option({ label: ":scope()" }),
+						option({ label: ":is()" }),
+						option({ label: ":where()" }),
+						option({ label: ":not()" }),
+					],
+				},
+			},
+		],
+	},
+};
+
 export const NothingPlayedYet: Story = {
 	args: {
 		totalPlayers: 0,

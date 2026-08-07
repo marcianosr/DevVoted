@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-08-06T09:48:43Z
-updated_at: 2026-08-06T13:50:52Z
+updated_at: 2026-08-06T20:51:46Z
 ---
 
 Slot unlocks 4-12 get gym-badge Swatch theming (Boulder..Elite Four) in Kanto colors, shown as a full-width claim row on the shop (replaces the dashed Add slot tile). Mechanic: gate number may never exceed slot count (gate N requires slot N); VICTORY_GATE 5 -> 12 (picks up DVTD-g1p0). Coverage ladder numbers in pipeline.model.ts are live-tuned and untouched.
@@ -198,3 +198,102 @@ Caution for next time: I damaged RunHud.ui.tsx twice with bulk python str.replac
 (lost MobileStakesPanel, the desktop streak readout, and the GateLadderPanel
 import). On files being edited concurrently, use Edit with exact context or
 rewrite whole - not multi-line pattern surgery.
+
+## Legendary preview box wears the chip ring (2026-08-06)
+
+Marciano: "Can you make this the same as the legendary chip?" The ghost (hover)
+pipeline row boxed itself in a dashed rarity border, and legendary fell back to a
+flat `border-fuchsia` because a mask-composite gradient ring has no dashed form.
+Next to the gradient-ringed Copilot chip inside it, the flat fuchsia read as a
+different rarity.
+
+- [x] `PipelineReportRow` ghostBox: legendary -> `border-1 border-transparent
+  legendary-ring` (the chip's own geometry); every other rarity keeps the 2px
+  dashed border. The legendary preview trades the dash for the ring.
+- [x] `RoleList.stories`: new `WithLegendarySlotPreview` (Copilot previewed into
+  an open slot) so the ring is reviewable in Storybook.
+
+Still flat fuchsia: the rarity WORD in the chip tooltip (`RARITY_COLORS.legendary
+.text` = `text-fuchsia`). Gradient text is possible (`bg-legendary bg-clip-text
+text-transparent`, same trick as `.text-gradient-green`) but that token is read by
+5 other surfaces incl. legacy cards - not changed unilaterally.
+
+## Touch + reward-screen pass (2026-08-06)
+
+Four asks in one go, all Tier-1:
+
+- [x] **Tooltip pins on tap** (`Tooltip.component`). Hover and focus never fire on
+  a touch screen (iOS does not focus a button on tap), so a 12px gate pip was
+  unreadable on a phone. Tap now pins the panel; it clears on a second tap, a tap
+  anywhere else (document `pointerdown`, ignoring the trigger so it cannot race
+  its own toggle), or Escape. A **mouse** pointerup deliberately does not pin —
+  hover already covers it, and pinning would leave a panel hanging after every
+  click on a tooltipped button. Lives in the primitive, not in GateSegmentBar:
+  every tooltip on the page needed it (Marciano). The trigger is wrapped in a
+  `display:contents` span so the ref/handler cost no layout.
+- [x] **Fold is a breakpoint, not state** (`FoldableRow`). Rows shut themselves
+  below `sm` and open above via `hidden sm:flex`, so there is no media query to
+  read and no hydration flash; a tap then pins either way. `Fold` grew
+  `detailClass` + a `marker` caret (▸, rotates on open) the caller places — the
+  detail stays mounted and hides by class, so specs assert classes now.
+  `foldable: false` (the shop rows) still never hides its detail.
+- [x] **Gate rewards section** (`GateRewardReport`). The earned swatch moved out
+  from under the headline into the "you won" line as a third inline reward (no
+  "earned" — the line says it), the block gained a heading and the coverage
+  chips via a new `breakdown` slot, and it is left-aligned.
+- [x] **Named gates in the headline.** The green PASS pill is replaced by the
+  gate swatch at `size="lg"`, the title reads "Boulder gate cleared!" with the
+  name in the swatch colour, and the number drops to a muted `gate 1` caption.
+  `earnedSwatch` -> `swatch` (the gate identity; on a clear it is also the
+  award), and StripScreen passes it so a failure reads "Cascade gate failed!" —
+  keeping the red FAIL badge, since a failure needs no colour of its own.
+- [x] `GateSwatch.gateName` added: `swatch(1, "Boulder", ...)` derives
+  `name: "Boulder Swatch"`, so the gate name and the badge name cannot drift.
+
+Verified: 114 files / 1144 tests green, tsc clean, `npm run lint` (incl. arch)
+clean. Not yet eyeballed on a real phone.
+
+## Rewards as a list + named gates in the shop (2026-08-06)
+
+- [x] **Gate rewards is a list**, one reward per line: storage (its GainBar
+  inline beside it), coverage (its category chips on the same line), then the
+  badge. Three rewards chained on one line read as a sentence, not as winnings.
+  "you won" dropped — the heading already says these are rewards.
+- [x] Category chips keep their zinc borders (no per-category colour, per
+  DVTD-gjub). I first tried them as dotted plain text; Marciano wanted the
+  borders back, so `CoverageByCategory` stayed exactly as it was and the chips
+  simply ride on the coverage line.
+- [x] **New `SwatchLabel.ui`** — mark + name in the swatch colour, inline. One
+  home for an idiom that had grown to three copies (reward payout line, shop
+  heading, and the pattern inside SwatchChips).
+- [x] **Shop heading names the gate ahead**: "Your load-out for [chip] Cascade
+  gate 2". `PanelHeading.title` widened to ReactNode for it.
+
+## Answer review gets its own route (2026-08-06)
+
+Marciano: "I feel the review answers should be a separate page (route)." The
+reward screen was the payout plus five expandable questions on one scroll; the
+reward is a beat you just earned, the review is study material.
+
+- [x] `/run/review` (`review.tsx` -> new `RunReview.component`), inside the
+  **rewarding** status: `routesForStatus("rewarding")` is now
+  `[reward, review, shop]` — three user-driven page turns, one server status,
+  extending the pattern reward -> shop already set. The sync still evicts the
+  page once the status moves on (specced).
+- [x] Reward screen keeps the score, not the answers: a bordered row reading
+  "Review your answers · 1 of 2 correct →" wired through a new
+  `onReviewAnswers` callback. Without the callback (stories) the row is absent.
+- [x] Review page carries both ways out: "← Back to rewards" (left, back
+  transition) and "Continue to shop →" (right), so it is a stop rather than a
+  dead end.
+- [x] `correctCount` exported from `gateReward.model` — it was private there and
+  duplicated in `AnswerResults`; the new score row would have been a third copy.
+
+NOT changed: StripScreen still lists the answers inline. On a failure the review
+is the evidence for *which* configs to strip, so moving it a page away is a real
+UX call — flagged for Marciano rather than assumed. RunSummary keeps its inline
+review too (the run is over; there is no flow to interrupt).
+
+Verified: 114 files / 1149 tests green, tsc clean, lint + arch clean.
+routeTree.gen.ts regenerated by the running dev server. Not clicked through in
+the browser.

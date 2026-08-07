@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import { AnswerResults } from "./AnswerResults.ui";
 
-// The ts1 fixture below is the only multiple-answer poll — its row carries
-// the quiet "multiple choice" marker, the single-answer rows stay bare.
+// Letters come from each option's seat in its own poll's option list, so the
+// fixtures below are read as: js1 A/B/C, css1 A/B/C, ts1 A/B/C/D.
 
 const answered = [
 	{
@@ -44,11 +44,18 @@ const answered = [
 	},
 ];
 
-// Locate the describe/it line for a given option label.
-const lineOf = (label: string) => {
-	const node = screen.getByText(label).closest("div");
-	if (!node) throw new Error(`no row for ${label}`);
-	return node;
+const rowOf = (question: string): HTMLElement => {
+	const row = screen.getByText(question).closest("details");
+	if (!row) throw new Error(`no row for ${question}`);
+	return row;
+};
+
+/** The option lines under a row's Expected or Received label. */
+const sideOf = (question: string, side: "Expected" | "Received") => {
+	const label = within(rowOf(question)).getByText(side);
+	const lines = label.parentElement?.lastElementChild;
+	if (!(lines instanceof HTMLElement)) throw new Error(`no ${side} lines`);
+	return within(lines);
 };
 
 describe(AnswerResults, () => {
@@ -62,39 +69,79 @@ describe(AnswerResults, () => {
 		expect(screen.getByText("Which are TS utility types?")).toBeInTheDocument();
 	});
 
-	it("themes each row in its poll's category, with a swatch beside the question", () => {
+	it("opens the polls you fumbled and leaves the one you passed folded", () => {
 		render(<AnswerResults answered={answered} />);
-		const rows = screen.getAllByTestId("answer-row");
-		expect(rows.map((row) => row.getAttribute("data-category-theme"))).toEqual([
-			"js",
-			"css",
-			"ts",
-		]);
-		expect(screen.getAllByTestId("swatch")).toHaveLength(3);
+		expect(rowOf("typeof null?")).not.toHaveAttribute("open");
+		expect(rowOf("Center a flex item?")).toHaveAttribute("open");
+		expect(rowOf("Which are TS utility types?")).toHaveAttribute("open");
 	});
 
-	it("tags only the multiple-answer poll with the multi marker", () => {
+	it("dims a passed poll's question and keeps the fumbled ones at full contrast", () => {
 		render(<AnswerResults answered={answered} />);
-		const markers = screen.getAllByText("multiple choice");
-		expect(markers).toHaveLength(1);
-		expect(markers[0].closest("[data-category-theme]")).toHaveAttribute(
-			"data-category-theme",
-			"ts"
+		expect(screen.getByText("typeof null?")).toHaveClass("text-pewter");
+		expect(screen.getByText("Center a flex item?")).toHaveClass(
+			"text-zinc-100"
 		);
 	});
 
-	it("keeps each poll's choices folded until its row is tapped", () => {
+	it("pairs each expected option with its letter, in celadon", () => {
 		render(<AnswerResults answered={answered} />);
-		expect(screen.getByText('"object"')).not.toBeVisible();
-		fireEvent.click(screen.getByText("typeof null?"));
-		expect(screen.getByText('"object"')).toBeVisible();
+		const expected = sideOf("Center a flex item?", "Expected");
+		expect(expected.getByText("B")).toBeInTheDocument();
+		expect(expected.getByText("place-items: center")).toHaveClass(
+			"text-celadon"
+		);
+	});
+
+	it("colours a wrong pick vermillion and a partial one saffron", () => {
+		render(<AnswerResults answered={answered} />);
+		const wrong = sideOf("Center a flex item?", "Received");
+		expect(wrong.getByText("A")).toBeInTheDocument();
+		expect(wrong.getByText("align: middle")).toHaveClass("text-vermillion");
+
+		const partial = sideOf("Which are TS utility types?", "Received");
+		expect(partial.getByText("Partial")).toHaveClass("text-saffron");
+		expect(partial.getByText("Banjo")).toHaveClass("text-saffron");
+	});
+
+	it("tallies a multiple-answer poll and names the letters you missed", () => {
+		render(<AnswerResults answered={answered} />);
+		const tally = within(rowOf("Which are TS utility types?")).getByText(
+			/1 of 2/
+		);
+		expect(tally).toHaveTextContent("1 of 2 — you missed C");
+	});
+
+	it("leaves single-answer polls untallied — expected over received says it all", () => {
+		render(<AnswerResults answered={answered} />);
+		expect(
+			within(rowOf("Center a flex item?")).queryByText(/of 1/)
+		).not.toBeInTheDocument();
+	});
+
+	it("folds away the options neither side of the diff touched", () => {
+		render(<AnswerResults answered={answered} />);
+		const row = within(rowOf("Center a flex item?"));
+		expect(row.getByText(/1 other option/)).toBeInTheDocument();
+		expect(row.getByText("float: center")).not.toBeVisible();
+	});
+
+	it("counts the untouched options in plural when there is more than one", () => {
+		render(<AnswerResults answered={answered} />);
+		expect(
+			within(rowOf("typeof null?")).getByText(/2 other options/)
+		).toBeInTheDocument();
 	});
 
 	it("shows earned coverage in the result slot, tinted by outcome", () => {
 		render(<AnswerResults answered={answered} />);
-		expect(screen.getByText("+12%")).toHaveClass("text-viridian");
-		expect(screen.getByText("0%")).toHaveClass("text-cinnabar");
+		expect(screen.getByText("+12%")).toHaveClass("text-celadon");
 		expect(screen.getByText("+5%")).toHaveClass("text-saffron");
+	});
+
+	it("leaves a zero score grey — the FAIL badge already carries that news", () => {
+		render(<AnswerResults answered={answered} />);
+		expect(screen.getByText("0%")).toHaveClass("text-zinc-500");
 	});
 
 	it("shows a dash instead of a score when coverage was never recorded", () => {
@@ -106,30 +153,42 @@ describe(AnswerResults, () => {
 		expect(screen.getAllByText("—")).toHaveLength(3);
 	});
 
-	it("marks a picked-correct option as a passing assertion", () => {
+	it("tags only the multiple-answer poll as multiple choice", () => {
 		render(<AnswerResults answered={answered} />);
-		expect(screen.getByText('"object"')).toHaveClass("text-zinc-100");
-		expect(screen.getByText("Partial")).toHaveClass("text-zinc-100");
-	});
-
-	it("marks a wrong pick as a failing assertion, tagged 'picked, wrong'", () => {
-		render(<AnswerResults answered={answered} />);
-		expect(screen.getByText("Banjo")).toHaveClass("text-cinnabar");
+		const markers = screen.getAllByText("multiple choice");
+		expect(markers).toHaveLength(1);
 		expect(
-			within(lineOf("Banjo")).getByText("picked, wrong")
+			within(rowOf("Which are TS utility types?")).getByText("multiple choice")
 		).toBeInTheDocument();
 	});
 
-	it("marks a correct option you didn't pick as a failing assertion, tagged 'missed'", () => {
+	it("names no category on the row — the gate owns the run's colour and label", () => {
 		render(<AnswerResults answered={answered} />);
-		expect(screen.getByText("Pick")).toHaveClass("text-cinnabar");
-		expect(within(lineOf("Pick")).getByText("missed")).toBeInTheDocument();
+		expect(screen.queryByText("TypeScript")).not.toBeInTheDocument();
+		expect(screen.queryByText("JavaScript")).not.toBeInTheDocument();
 	});
 
-	it("marks an untouched wrong option as skipped", () => {
-		render(<AnswerResults answered={answered} />);
-		expect(screen.getByText("Kazooie")).toHaveClass("text-zinc-400");
-		expect(screen.getByText("float: center")).toHaveClass("text-zinc-400");
+	it("drops the Expected side for snapshots taken before answers were keyed", () => {
+		const legacy = answered.map(({ correct: _drop, ...poll }) => poll);
+		render(<AnswerResults answered={legacy} />);
+		expect(screen.queryByText("Expected")).not.toBeInTheDocument();
+		expect(screen.getAllByText("Received")).toHaveLength(3);
+	});
+
+	it("shows the poll's snippet inside the row, only when it had one", () => {
+		const withCode = [
+			{ ...answered[0], codeBlock: "let parsed = pollPoints.map(parseInt);" },
+			answered[1],
+		];
+		const { container } = render(<AnswerResults answered={withCode} />);
+		// Queried as an element, not by text: the highlighter splits the snippet
+		// across a span per token, so no single node holds the whole line.
+		const blocks = container.querySelectorAll("pre");
+		// One block, for the one poll that had code — no empty block on the other.
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toHaveTextContent(
+			"let parsed = pollPoints.map(parseInt);"
+		);
 	});
 
 	it("shows the explanation, prefixed, only when the poll carries one", () => {

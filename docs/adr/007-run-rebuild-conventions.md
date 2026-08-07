@@ -13,15 +13,17 @@ the existing app keeps running alongside it.
 ## Decision
 
 ### Design system
-- Categories are themed via Kanto colors, applied through `[data-category-theme]` +
-  `--theme-color` in `app.css` — the single source of truth for the mapping, not
-  duplicated in TypeScript. Spread `categoryTheme(code)` onto a container; style
-  descendants with the `.text-theme` / `.bg-theme` / `.bg-theme-soft` / `.border-theme`
-  / `.accent-theme` utilities. Category color is for accents only — never large fills.
-- All run text goes through three primitives in `src/ui/typography/` — `Title`
-  (optional `category` prop for self-theming), `Subtitle`, `Paragraph` — each with a
-  Storybook story under "Design System/…". No ad-hoc `<h1>`/`<p>`/`<span>` with inline
-  sizes, no additional label primitive.
+- ~~Categories are themed via Kanto colors~~ **Superseded by
+  [ADR-020](020-gate-theme-replaces-category-colors.md)**: categories carry no
+  color; the current gate's swatch drives `--theme-color` via `[data-gate-theme]`
+  in `app.css` — still the single source of truth for the mapping, never
+  duplicated in TypeScript. Style descendants with the `.text-theme` /
+  `.bg-theme` / `.bg-theme-soft` / `.border-theme` / `.accent-theme` utilities.
+  Theme color is for accents only — never large fills.
+- All run text goes through three primitives in `src/ui/typography/` — `Title`,
+  `Subtitle`, `Paragraph` — each with a Storybook story under "Design System/…".
+  No ad-hoc `<h1>`/`<p>`/`<span>` with inline sizes, no additional label
+  primitive.
 - Pure engine first: ADR-006 mechanics port as tested reducers/functions before any
   presentation wires to them.
 

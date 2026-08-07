@@ -129,18 +129,14 @@ function PollsList() {
 							? polls.length
 							: (categoryCounts[option.value] ?? 0);
 					const isSelected = categoryFilter === option.value;
-					const isCategory = option.value !== "all";
 
 					return (
 						<button
 							key={option.value}
 							onClick={() => setCategoryFilter(option.value)}
-							data-category-theme={isCategory ? option.value : undefined}
 							className={`px-3 py-1 rounded-full text-sm transition-colors ${
 								isSelected
-									? isCategory
-										? "bg-theme text-white"
-										: "bg-primary text-white"
+									? "bg-theme text-white"
 									: "bg-gray-700 text-gray-300 hover:bg-gray-600"
 							}`}
 						>

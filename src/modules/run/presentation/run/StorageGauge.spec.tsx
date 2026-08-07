@@ -9,7 +9,7 @@ describe(StorageGauge, () => {
 		render(<StorageGauge usedKb={184} capKb={512} />);
 		expect(screen.getByText("328")).toBeInTheDocument();
 		expect(screen.getByText("free")).toBeInTheDocument();
-		expect(screen.getByText("184 of 512 used")).toBeInTheDocument();
+		expect(screen.getByText("184KB of 512KB used")).toBeInTheDocument();
 	});
 
 	it("fills the bar by what is committed, against the cap", () => {
@@ -23,13 +23,15 @@ describe(StorageGauge, () => {
 	it("reads all free on an empty run", () => {
 		render(<StorageGauge usedKb={0} capKb={STORAGE_CAP_KB} />);
 		expect(screen.getByText(String(STORAGE_CAP_KB))).toBeInTheDocument();
-		expect(screen.getByText(`0 of ${STORAGE_CAP_KB} used`)).toBeInTheDocument();
+		expect(
+			screen.getByText(`0KB of ${STORAGE_CAP_KB}KB used`)
+		).toBeInTheDocument();
 	});
 
 	it("reads nothing free at the cap", () => {
 		render(<StorageGauge usedKb={512} capKb={512} />);
 		expect(screen.getByText("0")).toBeInTheDocument();
-		expect(screen.getByText("512 of 512 used")).toBeInTheDocument();
+		expect(screen.getByText("512KB of 512KB used")).toBeInTheDocument();
 	});
 
 	it("clamps a run that somehow overshot the cap", () => {

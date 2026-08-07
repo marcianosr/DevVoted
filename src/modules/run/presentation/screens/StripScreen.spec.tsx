@@ -36,13 +36,17 @@ describe(StripScreen, () => {
 				onStrip={() => {}}
 			/>
 		);
-		expect(screen.getByText("Gate 2 failed!")).toBeInTheDocument();
+		// Named after its gate, like a clear — but the FAIL badge keeps the red.
+		expect(screen.getByRole("heading")).toHaveTextContent(
+			"Cascade gate failed!"
+		);
+		expect(screen.getByText("FAIL")).toBeInTheDocument();
 		expect(
 			screen.getByText("Remove 2 configs to continue")
 		).toBeInTheDocument();
 	});
 
-	it("lists the questions and keeps each poll's choices behind a tap", () => {
+	it("keeps the gate's questions off the repair screen", () => {
 		render(
 			<StripScreen
 				stripsRemaining={1}
@@ -64,11 +68,10 @@ describe(StripScreen, () => {
 				onStrip={() => {}}
 			/>
 		);
-		// The question is a visible row; its options wait behind the fold.
-		expect(screen.getByText("typeof null?")).toBeInTheDocument();
-		expect(screen.getByText('"object"')).not.toBeVisible();
-		fireEvent.click(screen.getByText("typeof null?"));
-		expect(screen.getByText('"object"')).toBeVisible();
+		// The answers belong to /run/review now — this screen asks for one decision
+		// and shows only what that decision needs.
+		expect(screen.queryByText("typeof null?")).not.toBeInTheDocument();
+		expect(screen.queryByText("Review your answers")).not.toBeInTheDocument();
 	});
 
 	it("offers every config for removal — Unit Tests included", () => {

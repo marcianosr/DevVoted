@@ -1,7 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { getCategoryMetadata } from "~/domains/shared/categories";
-import { CategoryTag } from "~/ui/polls/CategoryTag.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 import {
@@ -39,17 +38,13 @@ export const polldexColumns: ColumnDef<PolldexEntry>[] = [
 		id: "category",
 		header: "Category",
 		accessorFn: (entry) => getCategoryMetadata(entry.categoryCode).name,
-		cell: ({ row }) =>
-			row.original.seen ? (
-				<CategoryTag
-					category={row.original.categoryCode}
-					name={getCategoryMetadata(row.original.categoryCode).name}
-				/>
-			) : (
-				<Paragraph as="span" tone="muted">
-					{REDACTED}
-				</Paragraph>
-			),
+		cell: ({ row }) => (
+			<Paragraph as="span" tone={row.original.seen ? "default" : "muted"}>
+				{row.original.seen
+					? getCategoryMetadata(row.original.categoryCode).name
+					: REDACTED}
+			</Paragraph>
+		),
 	},
 	{
 		id: "seen",

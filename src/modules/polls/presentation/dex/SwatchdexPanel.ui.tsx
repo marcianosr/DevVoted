@@ -8,9 +8,9 @@ type SwatchdexPanelProps = {
 };
 
 /**
- * The swatch collection: one chip per unlockable slot, earned by widening a
- * pipeline that far in any run. Unearned entries stay dashed and redacted, the
- * Polldex convention — the ladder's shape is a spoiler-free goal.
+ * The swatch collection: one chip per gate, earned by clearing that gate in any
+ * run (ADR-019). Unearned entries stay dashed and redacted, the Polldex
+ * convention — the ladder's shape is a spoiler-free goal.
  */
 export const SwatchdexPanel = ({ ownedSwatchIds }: SwatchdexPanelProps) => (
 	<Stack gap="6">
@@ -18,8 +18,8 @@ export const SwatchdexPanel = ({ ownedSwatchIds }: SwatchdexPanelProps) => (
 			{ownedSwatchIds.length}/{ALL_SWATCHES.length} collected
 		</Paragraph>
 		<Paragraph size="sm" tone="muted">
-			Each slot you unlock earns its gym-badge swatch — kept forever, across
-			every run.
+			Swatches can be obtained in runs when defeating gates. They prove you
+			mastered gates!
 		</Paragraph>
 		<SwatchChips
 			swatches={ALL_SWATCHES}

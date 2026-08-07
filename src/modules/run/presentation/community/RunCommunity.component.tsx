@@ -5,10 +5,12 @@ import { sessionRunQueryKeys } from "~/domains/shared/queryKeys";
 import { getTodayDateString } from "~/lib/dateUtils";
 import { getRunCommunity } from "~/modules/run/api/run";
 import { Screen } from "~/ui/Screen.ui";
+import { Stack } from "~/ui/Stack.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 
 import { useTodaysRun } from "../game/useTodaysRun.hook";
+import { ClimbToday } from "./ClimbToday.ui";
 import { RunCommunityBoard } from "./RunCommunity.ui";
 import { useNextPollsCountdown } from "./useNextPollsCountdown.hook";
 
@@ -24,20 +26,29 @@ export const RunCommunity = () => {
 		queryFn: () => getRunCommunity(),
 	});
 
-	// A locked run has nothing to climb to until tomorrow's segment drops, so
-	// the continue button becomes the countdown; at midnight it flips back to
-	// a working "Climb on →" (the day rollover happens on the next /run load).
+	// A locked run has nothing to climb to until tomorrow's segment drops, so the
+	// way out is disabled until then — /run would bounce straight back here. The
+	// countdown stands beside it rather than inside it: "when do new polls land"
+	// is worth knowing on any visit, not only the one that finds you stuck.
 	const waitingForTomorrow =
 		run?.awaitingTomorrow === true && !countdown.isOpen;
 	const climbOn = {
-		label: waitingForTomorrow ? countdown.label : "Climb on →",
+		label: "Back to your run →",
 		onClick: () => navigate({ to: "/run" }),
 		disabled: waitingForTomorrow,
+		hint: waitingForTomorrow
+			? "Today’s polls are spent. Your run picks up when the next segment drops at midnight."
+			: undefined,
 	};
+	const footerNote = countdown.isOpen ? undefined : countdown.label;
 
 	if (community.isPending) {
 		return (
-			<Screen rightAction={climbOn}>
+			<Screen
+				gateTheme={run?.gateTheme}
+				rightAction={climbOn}
+				footerNote={footerNote}
+			>
 				<Paragraph>Loading today’s comparison…</Paragraph>
 			</Screen>
 		);
@@ -45,25 +56,45 @@ export const RunCommunity = () => {
 
 	const view = community.data?.success === true ? community.data.data : null;
 
+	// The map outlives the board: it has something to say from the moment a run
+	// exists, including before the day's first answer.
+	const climb = view?.climb ? <ClimbToday {...view.climb} /> : null;
+
 	if (!view || view.polls.length === 0) {
 		return (
-			<Screen rightAction={climbOn}>
-				<Title>Community</Title>
-				<Paragraph>
-					Nothing to see yet — answer some of today’s polls first.
-				</Paragraph>
+			<Screen
+				gateTheme={run?.gateTheme}
+				rightAction={climbOn}
+				footerNote={footerNote}
+			>
+				<Stack gap="6" divided>
+					{climb}
+					<Stack gap="4">
+						<Title>Today’s polls</Title>
+						<Paragraph>
+							Nothing to see yet — answer some of today’s polls first.
+						</Paragraph>
+					</Stack>
+				</Stack>
 			</Screen>
 		);
 	}
 
 	return (
-		<Screen rightAction={climbOn}>
-			<RunCommunityBoard
-				totalPlayers={view.totalPlayers}
-				topPercent={view.topPercent}
-				standouts={view.standouts}
-				polls={view.polls}
-			/>
+		<Screen
+			gateTheme={run?.gateTheme}
+			rightAction={climbOn}
+			footerNote={footerNote}
+		>
+			<Stack gap="6" divided>
+				{climb}
+				<RunCommunityBoard
+					totalPlayers={view.totalPlayers}
+					topPercent={view.topPercent}
+					standouts={view.standouts}
+					polls={view.polls}
+				/>
+			</Stack>
 		</Screen>
 	);
 };

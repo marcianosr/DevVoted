@@ -105,6 +105,25 @@ describe("toRunView", () => {
 		expect(view.unlock?.slot).toBe(4); // the next one up from the base three
 		expect(view.unlock?.progress).toBe(0);
 	});
+
+	// The ambient theme follows the gate being played (ADR-020): the fresh run
+	// wears Pallet, the summit pair keep their own themes, and past the last
+	// gate there is nothing left to wear — the :root default takes over.
+	it("themes the run after the gate being played", () => {
+		expect(toRunView(answering()).gateTheme).toBe("pallet");
+		expect(toRunView({ ...answering(), gatesCleared: 11 }).gateTheme).toBe(
+			"elite"
+		);
+		expect(toRunView({ ...answering(), gatesCleared: 12 }).gateTheme).toBe(
+			"champion"
+		);
+	});
+
+	it("drops the gate theme once the last gate is beaten", () => {
+		expect(
+			toRunView({ ...answering(), gatesCleared: 13 }).gateTheme
+		).toBeUndefined();
+	});
 });
 
 describe("latestAnswerVerdict", () => {

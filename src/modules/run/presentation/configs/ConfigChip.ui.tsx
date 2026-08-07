@@ -44,51 +44,32 @@ const rarityLabel = cva("text-xs font-bold uppercase tracking-wide", {
 type ConfigChipProps = {
 	config: Config;
 	action?: ReactNode;
-	subline?: ReactNode;
 	price?: number;
 	badge?: ReactNode;
 	tooltip?: ReactNode;
 	noTooltip?: boolean;
 	compact?: boolean;
 	disabled?: boolean;
-	// Render the label bold (Configdex uses this; loadout leaves it normal).
-	boldLabel?: boolean;
 	onClick?: () => void;
 	/** Disclosure state when the chip toggles a fold (the pipeline rows). */
 	ariaExpanded?: boolean;
 };
 
+/**
+ * One size only. The chip carried a `subline` for the Configdex's card layout
+ * until that became a plain chip grid too — a chip that can grow a paragraph is
+ * a card wearing a chip's border, and the tooltip already had somewhere to put
+ * the prose.
+ */
 const ChipLabel = ({
 	config,
 	action,
-	boldLabel,
-}: Pick<ConfigChipProps, "config" | "action" | "boldLabel">) => (
+}: Pick<ConfigChipProps, "config" | "action">) => (
 	<>
-		{boldLabel ? (
-			<span className="font-bold">{config.label}</span>
-		) : (
-			config.label
-		)}
+		{config.label}
 		{action ? <span className="ml-2 opacity-70">{action}</span> : null}
 	</>
 );
-
-const ChipBody = ({
-	config,
-	action,
-	subline,
-	boldLabel,
-}: Pick<ConfigChipProps, "config" | "action" | "subline" | "boldLabel">) =>
-	subline ? (
-		<span className="flex flex-col items-start gap-0.5">
-			<span>
-				<ChipLabel config={config} action={action} boldLabel={boldLabel} />
-			</span>
-			<span className="text-xs opacity-80">{subline}</span>
-		</span>
-	) : (
-		<ChipLabel config={config} action={action} boldLabel={boldLabel} />
-	);
 
 const ChipSurface = ({
 	config,
@@ -121,12 +102,10 @@ const ChipSurface = ({
 export const ConfigChip = ({
 	config,
 	action,
-	subline,
 	price,
 	badge,
 	tooltip,
 	noTooltip,
-	boldLabel,
 	disabled,
 	onClick,
 	ariaExpanded,
@@ -150,12 +129,7 @@ export const ConfigChip = ({
 			onClick={onClick}
 			ariaExpanded={ariaExpanded}
 		>
-			<ChipBody
-				config={config}
-				action={action}
-				subline={subline}
-				boldLabel={boldLabel}
-			/>
+			<ChipLabel config={config} action={action} />
 		</ChipSurface>
 	);
 	const chip =

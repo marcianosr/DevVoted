@@ -10,9 +10,14 @@ describe(ConfigdexPanel, () => {
 		expect(screen.getByText(/legendary · \d+\/\d+/i)).toBeInTheDocument();
 	});
 
-	it("renders a known config with its effect", () => {
+	it("lists a config as a bare chip, with its effect in the chip's tooltip", () => {
 		render(<ConfigdexPanel />);
 		expect(screen.getByText("Copilot")).toBeInTheDocument();
-		expect(screen.getByText("All coverage ×2.")).toBeInTheDocument();
+		// The effect is no longer printed under the label — the collection reads as
+		// a grid of chips, and the prose lives one hover away.
+		const tooltips = screen.getAllByRole("tooltip");
+		expect(
+			tooltips.some((node) => node.textContent?.includes("All coverage ×2."))
+		).toBe(true);
 	});
 });

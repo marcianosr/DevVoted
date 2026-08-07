@@ -80,7 +80,6 @@ function PipelineFailureRoute() {
 		return (
 			<Screen
 				key="review"
-				categoryCode={review.poll.categoryCode}
 				transition="fade"
 				rightAction={{
 					label: "Back to summary →",

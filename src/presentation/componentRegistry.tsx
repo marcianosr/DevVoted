@@ -149,10 +149,7 @@ const ConfigCardsDemo = () => (
 
 // Demo component: Category Coverage Grid
 const CoverageDemo = () => (
-	<div
-		className="flex items-center justify-center h-full"
-		data-category-theme="react"
-	>
+	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-2xl border border-gray-700 p-6">
 			<CategoryCoverageGrid
 				categoryCoverage={DEMO_COVERAGE}
@@ -180,7 +177,7 @@ const StorageDemo = () => (
 
 // Combined demo showing multiple elements
 const FullDemo = () => (
-	<div className="grid grid-cols-2 gap-8 h-full p-4" data-category-theme="js">
+	<div className="grid grid-cols-2 gap-8 h-full p-4">
 		<div className="flex flex-col gap-4">
 			<div className="border border-gray-700 p-4">
 				<CategoryCoverageGrid

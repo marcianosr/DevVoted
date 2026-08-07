@@ -11,22 +11,37 @@ import {
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
-type SwatchChipsProps = {
-	swatches: readonly GateSwatch[];
-	/** Swatch ids the player owns; omit to show every chip as earned. */
-	ownedIds?: readonly string[];
-	/** Redact unearned names to `???`, the Polldex convention. */
-	redactLocked?: boolean;
+type SwatchChipProps = {
+	swatch: GateSwatch;
+	/** Unowned chips go dashed and grey — the collection surface's locked state. */
+	owned?: boolean;
+	/** Redact an unearned name to `???`, the Polldex convention. */
+	redact?: boolean;
+	testId?: string;
 };
 
-const chip = (swatch: GateSwatch, owned: boolean, redact: boolean) => {
+/**
+ * One swatch as a bordered chip: its mark, its name, and a border in its own
+ * badge colour. The single shape a swatch wears wherever it is *named* — the
+ * collection strips and the gate's payout line alike — so the badge you just
+ * won and the same badge in your collection are visibly one thing.
+ *
+ * A `span`, not an `li`: it sits inside the rewards list on one screen and owns
+ * its own list item on another, and only the caller knows which.
+ */
+export const SwatchChip = ({
+	swatch,
+	owned = true,
+	redact = false,
+	testId,
+}: SwatchChipProps) => {
 	const themed = owned && hasThemeColor(swatch);
 	return (
-		<li
-			key={swatch.id}
+		<span
+			data-testid={testId}
 			{...(themed ? swatchTheme(swatch.theme) : {})}
 			className={clsx(
-				"flex items-center gap-2 rounded-lg border px-2 py-1",
+				"inline-flex items-center gap-2 rounded-lg border px-2 py-1 align-middle",
 				owned
 					? swatchBorderClass(swatch.finish)
 					: "border-dashed border-zinc-700"
@@ -45,8 +60,16 @@ const chip = (swatch: GateSwatch, owned: boolean, redact: boolean) => {
 			>
 				{owned || !redact ? swatch.name : "???"}
 			</Paragraph>
-		</li>
+		</span>
 	);
+};
+
+type SwatchChipsProps = {
+	swatches: readonly GateSwatch[];
+	/** Swatch ids the player owns; omit to show every chip as earned. */
+	ownedIds?: readonly string[];
+	/** Redact unearned names to `???`, the Polldex convention. */
+	redactLocked?: boolean;
 };
 
 /**
@@ -60,8 +83,14 @@ export const SwatchChips = ({
 	redactLocked = false,
 }: SwatchChipsProps) => (
 	<ul className="flex flex-wrap gap-2">
-		{swatches.map((swatch) =>
-			chip(swatch, ownedIds ? ownedIds.includes(swatch.id) : true, redactLocked)
-		)}
+		{swatches.map((swatch) => (
+			<li key={swatch.id}>
+				<SwatchChip
+					swatch={swatch}
+					owned={ownedIds ? ownedIds.includes(swatch.id) : true}
+					redact={redactLocked}
+				/>
+			</li>
+		))}
 	</ul>
 );

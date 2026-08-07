@@ -6,6 +6,7 @@ import {
 	filterPolldexEntries,
 	presentCategories,
 	type PolldexCategoryFilter,
+	type PolldexSeenFilter,
 } from "../../polldex/polldex.model";
 import { PolldexPanel } from "./PolldexPanel.ui";
 import { SAMPLE_POLLDEX_ENTRIES } from "./polldex.fixtures";
@@ -27,12 +28,15 @@ type Story = StoryObj<typeof PolldexPanel>;
 
 const Interactive = () => {
 	const [category, setCategory] = useState<PolldexCategoryFilter>("all");
+	const [seen, setSeen] = useState<PolldexSeenFilter>("all");
 	return (
 		<PolldexPanel
-			entries={filterPolldexEntries(SAMPLE_POLLDEX_ENTRIES, category)}
+			entries={filterPolldexEntries(SAMPLE_POLLDEX_ENTRIES, category, seen)}
 			categories={presentCategories(SAMPLE_POLLDEX_ENTRIES)}
 			selectedCategory={category}
 			onSelectCategory={setCategory}
+			selectedSeen={seen}
+			onSelectSeen={setSeen}
 		/>
 	);
 };

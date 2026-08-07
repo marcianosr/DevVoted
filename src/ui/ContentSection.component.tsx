@@ -4,7 +4,6 @@ import { Screen } from "~/ui/Screen.ui";
 import type { ScreenTransition, ScreenWidth } from "~/ui/Screen.ui";
 
 type ContentSectionProps = {
-	categoryCode?: string;
 	width?: ScreenWidth;
 	transition?: ScreenTransition;
 	center?: boolean;
@@ -12,18 +11,12 @@ type ContentSectionProps = {
 };
 
 export const ContentSection = ({
-	categoryCode,
 	width,
 	transition,
 	center,
 	children,
 }: ContentSectionProps) => (
-	<Screen
-		categoryCode={categoryCode}
-		width={width}
-		transition={transition}
-		center={center}
-	>
+	<Screen width={width} transition={transition} center={center}>
 		{children}
 	</Screen>
 );

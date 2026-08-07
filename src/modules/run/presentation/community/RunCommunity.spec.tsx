@@ -68,25 +68,24 @@ const base = {
 	polls: [answeredPoll, missedPoll],
 };
 
+const summaryAround = (text: RegExp): Element => {
+	const summary = screen.getByText(text).closest("summary");
+	if (!summary) throw new Error(`No <summary> wraps ${text}`);
+	return summary;
+};
+
 describe(RunCommunityBoard, () => {
-	it("heads the board with the player count for today", () => {
+	it("heads the board with today's polls and the player count", () => {
 		render(<RunCommunityBoard {...base} />);
 		expect(
-			screen.getByRole("heading", { name: "Community" })
+			screen.getByRole("heading", { name: "Today’s polls" })
 		).toBeInTheDocument();
-		expect(screen.getByText("5 players answered today")).toBeInTheDocument();
+		expect(screen.getByText("5 players answered")).toBeInTheDocument();
 	});
 
-	it("wears the poll's category as a swatch next to the question — sealed polls stay bare", () => {
+	it("leaves the poll's category unnamed — the gate owns the run's colour", () => {
 		render(<RunCommunityBoard {...base} />);
-		const [swatch] = screen.getAllByTestId("swatch");
-		// The swatch inherits its color from the section's category theme.
-		expect(swatch.closest("[data-category-theme]")).toHaveAttribute(
-			"data-category-theme",
-			"css"
-		);
-		// One answered poll → exactly one swatch; the missed poll shows none.
-		expect(screen.getAllByTestId("swatch")).toHaveLength(1);
+		expect(screen.queryByText("CSS")).not.toBeInTheDocument();
 	});
 
 	it("tags a multiple-answer poll with a quiet multi marker", () => {
@@ -101,14 +100,53 @@ describe(RunCommunityBoard, () => {
 		expect(screen.getByText("multi")).toBeInTheDocument();
 	});
 
-	it("lists every option with its pick count — no percentages, no summary line", () => {
+	it("opens on the right answer and your pick, folding the rest away", () => {
 		render(<RunCommunityBoard {...base} />);
 		expect(
 			screen.getByText("Nothing happens and none of the CSS is applied")
-		).toBeInTheDocument();
-		expect(screen.getByText("3")).toBeInTheDocument();
+		).toBeVisible();
+		expect(screen.getByText("All three tags turn red")).not.toBeVisible();
+		expect(screen.getByText("The CSS breaks entirely")).not.toBeVisible();
+	});
+
+	it("counts the folded options and the votes they still hold", () => {
+		render(<RunCommunityBoard {...base} />);
+		expect(screen.getByText(/2 other options, 3 votes/)).toBeInTheDocument();
+	});
+
+	it("drops the vote count from a tail nobody touched", () => {
+		const untouchedTail: RunCommunityPoll = {
+			...answeredPoll,
+			detail: answeredPoll.detail && {
+				...answeredPoll.detail,
+				options: answeredPoll.detail.options.map((option) =>
+					option.isRight ? option : { ...option, count: 0, voters: [] }
+				),
+			},
+		};
+		render(<RunCommunityBoard {...base} polls={[untouchedTail]} />);
+		expect(screen.getByText(/2 other options/)).not.toHaveTextContent("vote");
+	});
+
+	it("shows one row when the answer you picked was the right one", () => {
+		render(<RunCommunityBoard {...base} />);
+		// isRight and yours are the same option here, so it is listed once.
+		expect(
+			screen.getAllByText("Nothing happens and none of the CSS is applied")
+		).toHaveLength(1);
+	});
+
+	it("unfolds the tail with its voter chips and counts intact", () => {
+		render(<RunCommunityBoard {...base} />);
+		fireEvent.click(summaryAround(/2 other options, 3 votes/));
+		expect(screen.getByText("All three tags turn red")).toBeVisible();
+		expect(screen.getByText("3")).toBeVisible();
+	});
+
+	it("lists an option's pick count without a percentage", () => {
+		render(<RunCommunityBoard {...base} />);
+		expect(screen.getByText("2")).toBeInTheDocument();
 		expect(screen.queryByText("40%")).not.toBeInTheDocument();
-		expect(screen.queryByText(/got it right/)).not.toBeInTheDocument();
 	});
 
 	it("tucks voter names into chip tooltips, with the viewer's 'you' chip first", () => {
@@ -125,27 +163,37 @@ describe(RunCommunityBoard, () => {
 		);
 	});
 
-	it("folds a poll's options behind its question and reopens on a second tap", () => {
+	it("keeps the share who got it right in view whether the poll is open or shut", () => {
 		render(<RunCommunityBoard {...base} />);
-		const question = screen.getByRole("button", {
-			name: /What happens when the stylesheet 404s\?/,
-		});
-		// jsdom has no matchMedia, so the section starts open (the desktop default).
-		expect(screen.getByText("All three tags turn red")).toBeInTheDocument();
-		expect(screen.queryByText(/had it correct/)).not.toBeInTheDocument();
-		fireEvent.click(question);
+		const percent = screen.getByText("40% correct");
+		expect(percent).toBeInTheDocument();
+
+		fireEvent.click(summaryAround(/What happens when the stylesheet 404s\?/));
 		expect(
-			screen.queryByText("All three tags turn red")
-		).not.toBeInTheDocument();
-		// Folded, the row still tells the story: the share who got it right.
-		expect(screen.getByText(/had it correct/)).toHaveTextContent(
-			"40% had it correct"
-		);
-		fireEvent.click(question);
-		expect(screen.getByText("All three tags turn red")).toBeInTheDocument();
+			screen.getByText("Nothing happens and none of the CSS is applied")
+		).not.toBeVisible();
+		expect(screen.getByText("40% correct")).toBeInTheDocument();
 	});
 
-	it("lists the day's standouts with the winner named and the value in view", () => {
+	it("colours the share by how the crowd found the poll", () => {
+		render(<RunCommunityBoard {...base} />);
+		// 40% split the room.
+		expect(screen.getByText("40% correct")).toHaveClass("text-saffron");
+
+		const brutal: RunCommunityPoll = {
+			...answeredPoll,
+			pollId: 3,
+			detail: answeredPoll.detail && {
+				...answeredPoll.detail,
+				gotItRightCount: 1,
+				answeredCount: 5,
+			},
+		};
+		render(<RunCommunityBoard {...base} polls={[brutal]} />);
+		expect(screen.getByText("20% correct")).toHaveClass("text-vermillion");
+	});
+
+	it("lists the day's standouts by avatar and value, summarising your haul", () => {
 		render(
 			<RunCommunityBoard
 				{...base}
@@ -164,14 +212,32 @@ describe(RunCommunityBoard, () => {
 			/>
 		);
 		expect(screen.getByText("standouts today")).toBeInTheDocument();
-		// The viewer's own standout reads "you"; others carry their name visibly.
+		expect(screen.getByText("you took one of two")).toBeInTheDocument();
 		expect(screen.getByText("fastest answer")).toBeInTheDocument();
 		expect(screen.getByText("9s")).toBeInTheDocument();
+		// The winner is the avatar; their name lives in its tooltip, as on an
+		// option row.
 		expect(
 			screen
 				.getAllByText("Brock Boulder")
-				.some((node) => node.getAttribute("role") !== "tooltip")
+				.every((node) => node.getAttribute("role") === "tooltip")
 		).toBe(true);
+	});
+
+	it("says nothing about your haul when you took no standouts", () => {
+		render(
+			<RunCommunityBoard
+				{...base}
+				standouts={[
+					{
+						voter: { id: "brock", displayName: "Brock Boulder", you: false },
+						title: "most CSS polls",
+						value: "3",
+					},
+				]}
+			/>
+		);
+		expect(screen.queryByText(/you took/)).not.toBeInTheDocument();
 	});
 
 	it("keeps a skipped poll sealed — no question, no results", () => {

@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { describeConfig, rarityOf } from "~/modules/run/configs/config.model";
+import { rarityOf } from "~/modules/run/configs/config.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { ConfigChip } from "~/modules/run/presentation/configs/ConfigChip.ui";
 import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
@@ -34,19 +34,13 @@ export const ConfigdexPanel = () => {
 						>
 							{rarity} · {group.length}/{group.length}
 						</p>
-						<div className="flex flex-wrap gap-3">
+						{/* Chips only, no card: a collection is read as a grid of things
+						    you have, and printing every effect made four rows of prose
+						    you have to scan past to see the shape of the set. The chip's
+						    own tooltip still names the rarity and what it does. */}
+						<div className="flex flex-wrap gap-2">
 							{group.map((config) => (
-								<ConfigChip
-									key={config.id}
-									config={config}
-									subline={
-										<span className="block w-52 whitespace-normal">
-											{describeConfig(config)}
-										</span>
-									}
-									noTooltip
-									boldLabel
-								/>
+								<ConfigChip key={config.id} config={config} />
 							))}
 						</div>
 					</div>

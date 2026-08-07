@@ -7,7 +7,14 @@ import { type ApiResponse, handleApiOperation } from "~/utils/errorHandling";
 
 import type { CategoryCode } from "~/domains/shared/categories";
 
+import { type ClimbMarker, trackPosition } from "../climb/climbMap.model";
 import type { AnswerOutcome, AnswerType } from "../climb/run.model";
+import {
+	fetchActiveClimbers,
+	fetchClimbMarker,
+	fetchFallenToday,
+	fetchPersonalBestPosition,
+} from "./climb.queries";
 import {
 	type CommunityPollRecord,
 	fetchConsumedPollsForDay,
@@ -70,6 +77,34 @@ export type CommunityStandout = {
 	value: string;
 };
 
+/** One player's live position on the climb map. */
+export type ClimbClimber = ClimbMarker & {
+	id: string;
+	displayName: string;
+	photoUrl?: string | null;
+	/** The viewer's own marker — drawn exactly once, however their run ended. */
+	you: boolean;
+};
+
+/**
+ * A run the gate killed today, drawn as its player greyed out where they fell.
+ * Keyed by run rather than by player: one player can lose more than one run in
+ * a day, and each loss happened somewhere different.
+ */
+export type ClimbFallen = ClimbMarker & {
+	runId: number;
+	id: string;
+	displayName: string;
+	photoUrl?: string | null;
+};
+
+export type ClimbTodayView = {
+	climbers: ClimbClimber[];
+	fallen: ClimbFallen[];
+	/** Deepest position any finished run of the viewer's reached — null on a first climb. */
+	bestPosition: number | null;
+};
+
 export type RunCommunityView = {
 	date: string;
 	totalPlayers: number;
@@ -77,6 +112,8 @@ export type RunCommunityView = {
 	topPercent: number | null;
 	standouts: CommunityStandout[];
 	polls: RunCommunityPoll[];
+	/** The climb map — null when the viewer has no run to place themselves on. */
+	climb: ClimbTodayView | null;
 };
 
 type SessionAnswer = {
@@ -293,13 +330,86 @@ const topPercentFor = (
 	return Math.max(1, Math.ceil(((better + 1) / scores.length) * 100));
 };
 
-const EMPTY_VIEW = (date: string): RunCommunityView => ({
+const EMPTY_VIEW = (
+	date: string,
+	climb: ClimbTodayView | null
+): RunCommunityView => ({
 	date,
 	totalPlayers: 0,
 	topPercent: null,
 	standouts: [],
 	polls: [],
+	climb,
 });
+
+/**
+ * One marker per player. A user with more than one live run (the schema allows
+ * it even though the loop does not) keeps their deepest, so the map never draws
+ * the same person twice.
+ */
+const deepestPerUser = (climbers: ClimbClimber[]): ClimbClimber[] => {
+	const byUser = new Map<string, ClimbClimber>();
+	for (const climber of climbers) {
+		const held = byUser.get(climber.id);
+		if (!held || trackPosition(climber) > trackPosition(held))
+			byUser.set(climber.id, climber);
+	}
+	return [...byUser.values()].sort(
+		(a, b) => trackPosition(a) - trackPosition(b)
+	);
+};
+
+const buildClimbToday = async ({
+	userId,
+	date,
+	viewerAt,
+}: {
+	userId: string;
+	date: string;
+	/** The viewer's own position, so they appear even once their run is over. */
+	viewerAt: ClimbMarker;
+}): Promise<ClimbTodayView> => {
+	const [active, fallen, bestPosition] = await Promise.all([
+		fetchActiveClimbers(),
+		fetchFallenToday(date),
+		fetchPersonalBestPosition(userId),
+	]);
+
+	const others = active
+		.filter((row) => row.userId !== userId)
+		.map((row): ClimbClimber => ({
+			id: row.userId,
+			displayName: row.displayName ?? row.userId,
+			photoUrl: row.photoUrl,
+			gate: row.gate,
+			pollsIntoGate: row.pollsIntoGate,
+			you: false,
+		}));
+
+	// The viewer's marker comes from their own run, not the active-climber list:
+	// a run that died today has left that list but still belongs on the map.
+	const viewerRow = active.find((row) => row.userId === userId);
+	const viewer: ClimbClimber = {
+		id: userId,
+		displayName: viewerRow?.displayName ?? "you",
+		photoUrl: viewerRow?.photoUrl,
+		...viewerAt,
+		you: true,
+	};
+
+	return {
+		climbers: deepestPerUser([...others, viewer]),
+		fallen: fallen.map((row) => ({
+			runId: row.runId,
+			id: row.userId,
+			displayName: row.displayName ?? row.userId,
+			photoUrl: row.photoUrl,
+			gate: row.gate,
+			pollsIntoGate: row.pollsIntoGate,
+		})),
+		bestPosition,
+	};
+};
 
 export const getRunCommunityHandler = async ({
 	userId,
@@ -312,11 +422,18 @@ export const getRunCommunityHandler = async ({
 		const run =
 			(await findActiveSessionRun(userId)) ??
 			(await findSessionRunByDate(userId, date));
-		if (!run) return EMPTY_VIEW(date);
+		if (!run) return EMPTY_VIEW(date, null);
+
+		// Built before the poll board's early returns: the map has something to say
+		// from the moment a run exists, including on a day with nothing answered yet.
+		const viewerAt = await fetchClimbMarker(run.id);
+		const climb = viewerAt
+			? await buildClimbToday({ userId, date, viewerAt })
+			: null;
 
 		const currentIndex = await fetchRunProgress(run.id);
 		const consumed = await fetchConsumedPollsForDay(run.id, date, currentIndex);
-		if (consumed.length === 0) return EMPTY_VIEW(date);
+		if (consumed.length === 0) return EMPTY_VIEW(date, climb);
 
 		const answerRows = await fetchSessionAnswersForDay(date);
 		const answers = groupAnswers(answerRows);
@@ -368,5 +485,6 @@ export const getRunCommunityHandler = async ({
 			topPercent: topPercentFor(userId, polls, answers),
 			standouts: standoutsFor(answers, seedCreatedAt, userId),
 			polls: views,
+			climb,
 		};
 	});

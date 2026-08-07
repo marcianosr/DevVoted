@@ -218,36 +218,14 @@ useState → *Hooks*: +2% per solved set, −1% per wrong guess).
 
 ### 2.4 Categories
 
-Every poll belongs to one of **11 categories**. Each owns a fixed **Kanto color**,
-used as an accent throughout the game; category color says *what*, never *how rare*.
+Every poll belongs to one of **11 categories**: JavaScript, TypeScript, CSS, HTML,
+React, Git, Java, Python, Ruby, General Frontend, and General Backend. Categories
+carry **no color of their own** (ADR-020) — they appear as plain text labels
+wherever a poll's subject matters. The Kanto palette belongs to the gates: the
+gate being played themes the whole app ([6.4 Swatches](#64-swatches)).
 
-| Category | Kanto color |
-| --- | --- |
-| JavaScript | Saffron |
-| TypeScript | Lavender |
-| CSS | Cerulean |
-| HTML | Vermilion |
-| React | Celadon |
-| Git | Pewter |
-| Java | Indigo |
-| Python | Viridian |
-| Ruby | Cinnabar |
-| General Frontend | Fuchsia |
-| General Backend | Seafoam |
-
-Pallet is held in reserve. Kanto has no room left for the scheduled additions, so
-those continue into **Johto**.
-
-| Category | Johto color |
-| --- | --- |
-| SQL | Goldenrod |
-| AI | Violet |
-| UI/UX | Cherrygrove |
-| Architecture | Blackthorn |
-| Frontend frameworks | Olivine |
-| Backend frameworks | Mahogany |
-
-Frontend frameworks would absorb React alongside Angular, Vue, and Next.js. Category
+Planned additions: SQL, AI, UI/UX, Architecture, Frontend frameworks (absorbing
+React alongside Angular, Vue, and Next.js), and Backend frameworks. Category
 draw weights that configs can skew are also planned.
 
 ### 2.5 Coverage (Scoring)
@@ -683,10 +661,15 @@ collection states: **???** → **Encountered** → **Mastered**.
 
 **Shipped: gate swatches.** Thirteen swatches, one per gate, earned by **clearing**
 that gate (ADR-019) — you beat the leader, you get the badge; buying width earns
-nothing. Gate 0 is **Pallet**, where every journey starts, then the eight gen-1 gym
-badges (Boulder, Cascade, Thunder, Rainbow, Soul, Marsh, Volcano, Earth), the two
-Kanto landmarks that never had a gym — **Lavender** and **Seafoam** — and the summit
-pair: the **Elite** gate at Indigo Plateau, then the **Champion** above it.
+nothing. Gate 0 is **Pallet**, where every journey starts, and the summit pair close
+it: the **Elite** gate at Indigo Plateau, then the **Champion** above it. In between,
+the eight gen-1 gym badges run in strict trainer-card order (Boulder, Cascade,
+Thunder, Rainbow, Soul, Marsh, Volcano, Earth) with the two Kanto landmarks that
+never had a gym dropped into the gaps where the games actually walk you through
+them: **Lavender** at gate 4, out of Rock Tunnel after Vermilion and before Celadon,
+and **Seafoam** at gate 8, on Route 20 heading for Cinnabar. So the full ladder reads
+Pallet, Boulder, Cascade, Thunder, Lavender, Rainbow, Soul, Marsh, Seafoam, Volcano,
+Earth, Elite, Champion.
 
 Clearing a gate in any run earns its swatch **permanently and account-wide**
 (`users.owned_swatch_ids`); re-clearing it on a later run is a no-op, so the
@@ -701,6 +684,16 @@ They surface in four places: the gate-cleared reward screen, which names the bad
 that clear just earned; the Configuring stat row (what you hold this run); the
 end-of-run summary; and the **Swatches** tab of [the Dex](#63-the-dex), where
 unearned entries redact to `???`.
+
+**The gate themes the run** (ADR-020). The swatch of the gate being played sets
+the whole app's accent color during a run — background tint, HUD, question card,
+buttons — so climbing *feels* like travelling Kanto: pale Pallet at the start,
+Boulder's pewter on gate 1, and so on up. Two summit exceptions keep text
+readable: **Elite**'s ambient theme is a lightened indigo (its chip stays true
+indigo), and the **Champion** — gradient-only as a chip — wears fuchsia as its
+one ambient solid. The celadon/cinnabar pass-fail moods still override the gate
+theme on the reward and strip screens. Categories carry no color at all anymore;
+they appear as plain text ([2.4 Categories](#24-categories)).
 
 **Still planned** — **Collect Swatches** (DVTD-g8ty): a *per-category* cosmetic chip
 earned through mastery. That is a separate collection from the gate swatches above
@@ -734,24 +727,68 @@ ritual DevVoted grew from.
 
 ### 7.2 The Community Board
 
-After every shop visit *and* every failed-gate strip, the climb detours through
-`/run/community` ("Community →"); a run locked for the day also lands here (the
-lock stops progression, and the board is its waiting room — the continue button
-counts down to tomorrow's polls and reactivates at local midnight). Each of today's polls opens with its category
-swatch (same as the answer review) and a faint "multi" marker on multiple-answer
-polls, then lists every answer option as a single line: the option (the right
-answer reads green, zero-pick options dim), then the avatar chips of exactly who
-picked it — the viewer first, as "you" — and the pick count on the right. Names live in the chip tooltips
+After every shop visit *and* every failed-gate strip (whose "Community →" sits on
+the answer review that follows it, `/run/strip` → `/run/review`), the climb detours
+through `/run/community`; a run locked for the day also lands here (the
+lock stops progression, and the board is its waiting room — "Back to your run →"
+is disabled until local midnight, with the countdown standing beside it in the
+footer as a permanent `Screen` note, since "when do new polls land" is worth
+knowing on any visit).
+
+The page is one screen rather than two cards: the climb map sits at the top with
+no chrome of its own, a hairline rule separates it from the polls, and both
+borrow the gate review's vocabulary (§8, DVTD-dqbc).
+
+**The climb today** heads the page: a horizontal gate track carrying every live
+session run as an avatar, positioned by gate and by how deep into that gate's
+five polls it stands. The viewer's marker is ringed and labelled "you"; players
+sharing a position stack behind a `+N` badge. A dashed, faded avatar marks the
+deepest point any of the viewer's *finished* runs reached. Everything ahead of
+that furthest-ever point sits behind a dashed edge labelled **uncharted**, so
+another player standing beyond it is visibly ahead of anywhere you have been. The
+zone takes a diagonal hatch only while it is narrow (≤35% of the window) — on a
+first climb it is nearly the whole track, and a texture that large reads as the
+page's background rather than a marker.
+
+Each gate's **swatch sits on the track itself**, at the point that gate begins,
+with its number and name beneath (`6 Soul`) — the ladder and the route are one
+thing, not a track with a key under it. Below the line, each run a gate killed
+today is that player's avatar, dimmed and desaturated where it fell
+(`completion_reason = 'dead'`; abandoning is not falling, so it draws nothing),
+naming them on hover. Fallen markers are keyed by run, not player, so two losses
+in one day both show. Above the line you are climbing, below it you are out.
+
+**A desktop shows all 13 gates** — no paging, and the summit visible from gate 0.
+A phone splits 13 ways at roughly 28px a gate, which a swatch survives and a gate
+name does not, so below `sm` it narrows to a 3-gate window centred on the viewer
+with bare `←` / `→` arrows. There is no progress copy and no legend: the map is
+the whole card. Geometry lives in
+`src/modules/run/climb/climbMap.model.ts`, which reduces every marker to one
+unit: polls, counted `gate * 5 + pollsIntoGate`. Builds, configs and storage are
+still not shown (the rest of DVTD-6l80).
+
+Below it, **today's polls**. Each row is a native `<details>` whose summary is the
+question, a faint "multi" sub-line on multiple-answer polls, and the share of
+players who got it right — always in view, open or shut, and coloured in the same
+three tones as the test-runner badge (celadon ≥60%, saffron ≥40%, vermillion
+below). Categories are not named (ADR-020: the gate owns the run's colour).
+Opening a row draws the same split the gate review draws as Expected over
+Received: **the right answer and whatever you picked**, each as one line — mark,
+option, the avatar chips of exactly who picked it (the viewer first, as "you"),
+and the pick count. Everything else folds behind `N other options, M votes` (the
+shared `Disclosure`), because on a nine-option poll the pair you came to compare
+is two lines, not nine; unfolded, those rows keep their chips and counts, since
+unlike the review's tail they did draw a crowd. Names live in the chip tooltips
 (hover, or tap on mobile). Under the polls, **standouts today** crowns the day:
 fastest answer (answers are timed client-side from poll reveal to submit,
 stored as `polls_responses.answer_time_ms`), first to answer after the seed
-dropped, and most polls of one category (needs a lead of ≥2 to show). The
-header counts the day's players and the footer keeps the "top X% today"
-percentile. **Redaction rules** keep it fair: polls you haven't
-reached never appear, and linted or missed polls stay sealed (no question, no
-results). Multi-answer polls note "multiple answers" since option shares can sum
-past 100%. Showing other players' builds, storage, and climb depth is planned
-(DVTD-6l80); profile borders and awards come with DVTD-wii3 / DVTD-smye.
+dropped, and most polls of one category (needs a lead of ≥2 to show). A standout
+row is avatar · title · value — the winner is the chip, named on hover — and your
+haul is summarised beside the heading ("you took all three"). The header counts
+the day's players and the footer keeps the "top X% today" percentile.
+**Redaction rules** keep it fair: polls you haven't reached never appear, and
+linted or missed polls stay sealed (no question, no results). Profile borders and
+awards come with DVTD-wii3 / DVTD-smye.
 
 ### 7.3 Leaderboards
 
@@ -797,8 +834,9 @@ The game leans hard into its CI metaphor:
   you are on — over a **pip bar** that is the badge collection: one pip per gate,
   each wearing the colour of the swatch that gate awards. Gates behind you read
   solid, the gate underway fills with the polls answered into its window, and the
-  rest sit dimmed as a preview of what is left (the Elite pip carries a rim, since
-  its indigo is darker than the empty track; the Champion's shimmers). **Every pip
+  rest sit dimmed as a preview of what is left (the Champion's shimmers). A pewter
+  rim marks the gate you are standing on, and nothing else: it used to mark the
+  Elite plate's finish, which read as an active gate eleven gates early. **Every pip
   is its own control**: hover or tap one and it names that gate's badge and its
   standing — earned, running now with the window count, or "clear gate 7 to earn
   it". It deliberately carries no coverage: coverage buys width, not depth.
@@ -816,8 +854,17 @@ The game leans hard into its CI metaphor:
   headline it names the badge the clear awarded, in that swatch's own colour
   ("Thunder Swatch earned") — the clear's own receipt. It also lists the swatches
   collected so far.
-- **Poll Review**: a test-runner reporter where each poll folds open into a
-  describe/it tree and every option is an assertion (✓ / ✕ / ○).
+- **Poll Review**: a test-runner reporter. Each poll is one row (PASS / PART / FAIL
+  badge, the question, the coverage it earned); the rows you fumbled are open on
+  arrival, the ones you passed stay folded and dimmed. An open row is an assertion
+  diff: **Expected** over **Received**, every option carrying its letter from that
+  question's own option list, on round chips for single-answer polls and square ones
+  for multi-answer polls (the same shapes as the radio and checkbox you answered
+  with). Expected always reads celadon and Received wears the outcome, so the two
+  sides share a colour only when you were right. Multi-answer polls close with a
+  tally of what you caught and the letters you missed. Options that neither side
+  touched fold away behind "7 other options", and the poll's snippet and explanation
+  sit with the diff.
 - **Game Over**: a gate ladder (one row per gate: pass/fail/skip), your final build,
   whole-run poll review, and the archived-storage credit bar.
 - **Learn Home**: a Duolingo-style path/hub planned as both the start point and
@@ -853,8 +900,8 @@ The game leans hard into its CI metaphor:
 | **Lint** | Paying an escalating fee (from 8 KB) to disable one wrong option (needs a linter config). |
 | **Escalation** | Unit Tests' rising demand: +1 correct answer per 2 gates cleared, capped at +3. |
 | **The Dex** | The collection screen (Polls + Configs + Swatches tabs). |
-| **Kanto colors** | The fixed per-category palette (saffron, cerulean, viridian, …). |
-| **Swatch** | A gate's collectible badge (Pallet … Champion), earned by clearing it and kept across runs. |
+| **Kanto colors** | The game's palette (saffron, cerulean, viridian, …), keyed to gates via their swatches — not to categories (ADR-020). |
+| **Swatch** | A gate's collectible badge (Pallet … Champion), earned by clearing it and kept across runs. Its color also themes the whole app while that gate is played. |
 | **Water-cooler moment** | The design north star: same polls, same day, compare answers. |
 
 ---

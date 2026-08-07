@@ -81,7 +81,7 @@ export const maxLevelOf = (config: Config): number =>
 
 // Focus configs upgrade freely behind a coverage gate. Unit Tests upgrades
 // for storage, buying payout AND demand together; each config's ceiling
-// lives on the config itself (maxLevel, default 10).
+// lives on the config itself (maxLevel, default DEFAULT_MAX_LEVEL).
 export const isUpgradable = (config: Config): boolean => {
 	const upgradable =
 		config.focusCategory !== undefined || config.check === "correct";

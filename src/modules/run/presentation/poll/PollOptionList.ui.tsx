@@ -96,20 +96,17 @@ const optionBadge = cva(
 	}
 );
 
-const optionLabel = cva(
-	"font-extrabold text-xs sm:text-base transition-colors",
-	{
-		variants: {
-			status: {
-				correctChosen: "text-viridian",
-				correctMissed: "text-viridian/70",
-				chosenWrong: "text-cinnabar",
-				selected: "text-white",
-				neutral: "text-zinc-100",
-			} satisfies Record<OptionStatus, string>,
-		},
-	}
-);
+const optionLabel = cva("font-extrabold text-xs sm:text-sm transition-colors", {
+	variants: {
+		status: {
+			correctChosen: "text-viridian",
+			correctMissed: "text-viridian/70",
+			chosenWrong: "text-cinnabar",
+			selected: "text-white",
+			neutral: "text-zinc-100",
+		} satisfies Record<OptionStatus, string>,
+	},
+});
 
 const optionLetter = (index: number) => String.fromCharCode(65 + index);
 

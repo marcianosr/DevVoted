@@ -10,8 +10,8 @@ describe(StatBadge, () => {
 		expect(screen.getByText("440KB")).toBeInTheDocument();
 	});
 
-	it("colors the value in the active category theme", () => {
-		render(<StatBadge label="Coverage" value="6%" category="css" />);
+	it("colors the value in the inherited theme by default", () => {
+		render(<StatBadge label="Coverage" value="6%" />);
 		expect(screen.getByText("6%")).toHaveClass("text-theme");
 	});
 

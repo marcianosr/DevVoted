@@ -29,6 +29,7 @@ import { ConfiguringScreen } from "~/modules/run/presentation/screens/Configurin
 import { RewardScreen } from "~/modules/run/presentation/screens/RewardScreen.ui";
 import { ShopScreen } from "~/modules/run/presentation/screens/ShopScreen.ui";
 import { StripScreen } from "~/modules/run/presentation/screens/StripScreen.ui";
+import { ReviewAnswers } from "~/modules/run/presentation/run/ReviewAnswers.ui";
 import { RunHud } from "~/modules/run/presentation/run/RunHud.ui";
 import { RunSummary } from "~/modules/run/presentation/run/RunSummary.ui";
 import { toRunView } from "~/modules/run/view/runView.viewmodel";
@@ -329,14 +330,20 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setSelected([]);
 	}, [state.currentIndex]);
-	// The reward flows over three pages: the rewards summary, the shop, then the
-	// (simulated) community. Reset to the summary each time a new gate clears.
+	// The reward flows over four pages, the same sequence the routed app walks
+	// (reward → review → shop → community). Reset to the summary each new gate.
 	const [rewardStep, setRewardStep] = useState<
-		"summary" | "shop" | "community"
+		"summary" | "review" | "shop" | "community"
 	>("summary");
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
+	// The failed gate's own two pages: peel the build, then read the answers —
+	// mirroring RunStrip → RunReview.
+	const [stripStep, setStripStep] = useState<"strip" | "review">("strip");
+	useEffect(() => {
+		setStripStep("strip");
+	}, [state.status]);
 
 	const view = toRunView(state);
 	// Only options the player paid to lint off are crossed out — no automatic masking.
@@ -384,14 +391,14 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	return (
 		<>
 			{runOver ? null : (
-				<div className="mx-auto w-full max-w-5xl p-2">
+				<div className="mx-auto w-full max-w-6xl p-2">
 					<RunHud
 						storage={view.storage}
 						gatesCleared={view.gatesCleared}
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
 						pollsPerGate={view.pollsPerGate}
-						category={view.poll?.category}
+						pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
 					/>
@@ -399,6 +406,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			)}
 			{state.status === "configuring" && (
 				<Screen
+					gateTheme={view.gateTheme}
 					rightAction={{
 						label: "Start run →",
 						onClick: () => dispatch({ type: "start" }),
@@ -427,7 +435,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			)}
 
 			{state.status === "answering" && view.poll && (
-				<Screen categoryCode={view.poll.category}>
+				<Screen gateTheme={view.gateTheme}>
 					<AnsweringScreen
 						configs={view.configs}
 						checks={view.checks}
@@ -454,8 +462,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 			{state.status === "rewarding" && rewardStep === "summary" && (
 				<Screen
+					theme="celadon"
 					rightAction={{
-						label: "Continue →",
+						label: "Continue to shop →",
 						onClick: () => setRewardStep("shop"),
 					}}
 				>
@@ -468,14 +477,36 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						coverageGainedByCategory={view.coverageGainedThisGate}
 						passedChecks={view.passedChecks}
 						configs={view.configs}
+						faucetThisGateKb={view.faucetThisGateKb}
 						storage={view.storage}
+						coverage={view.coverage}
+						slotCoverageRequired={view.slotCoverageRequired}
+						slots={view.slots}
+						onReviewAnswers={() => setRewardStep("review")}
 					/>
+				</Screen>
+			)}
+
+			{state.status === "rewarding" && rewardStep === "review" && (
+				<Screen
+					theme="celadon"
+					leftAction={{
+						label: "← Back to rewards",
+						onClick: () => setRewardStep("summary"),
+					}}
+					rightAction={{
+						label: "Continue to shop →",
+						onClick: () => setRewardStep("shop"),
+					}}
+				>
+					<ReviewAnswers answered={view.answeredThisGate} />
 				</Screen>
 			)}
 
 			{state.status === "rewarding" && rewardStep === "shop" && (
 				<Screen
 					width="wide"
+					gateTheme={view.gateTheme}
 					leftAction={{
 						label: "← Back",
 						onClick: () => setRewardStep("summary"),
@@ -514,6 +545,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 			{state.status === "rewarding" && rewardStep === "community" && (
 				<Screen
+					gateTheme={view.gateTheme}
 					leftAction={{
 						label: "← Back",
 						onClick: () => setRewardStep("shop"),
@@ -529,11 +561,12 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</Screen>
 			)}
 
-			{state.status === "awaiting-strip" && (
+			{state.status === "awaiting-strip" && stripStep === "strip" && (
 				<Screen
+					theme="cinnabar"
 					rightAction={{
-						label: "Climb on →",
-						onClick: () => dispatch({ type: "resume-climb" }),
+						label: "Review answers →",
+						onClick: () => setStripStep("review"),
 						disabled: !quotaMet,
 						hint: quotaMet
 							? undefined
@@ -548,6 +581,22 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						answered={view.answeredThisGate}
 						onStrip={(id) => dispatch({ type: "strip", configId: id })}
 					/>
+				</Screen>
+			)}
+
+			{state.status === "awaiting-strip" && stripStep === "review" && (
+				<Screen
+					theme="cinnabar"
+					leftAction={{
+						label: "← Back to the gate",
+						onClick: () => setStripStep("strip"),
+					}}
+					rightAction={{
+						label: "Climb on →",
+						onClick: () => dispatch({ type: "resume-climb" }),
+					}}
+				>
+					<ReviewAnswers answered={view.answeredThisGate} />
 				</Screen>
 			)}
 

@@ -40,6 +40,21 @@ const answered: AnsweredPoll[] = [
 		coverageEarned: 10,
 	},
 	{
+		id: "js2",
+		question: "What does this log?",
+		category: "js",
+		outcome: "wrong",
+		picked: ["[10, 10, 10]"],
+		correct: ["[10, NaN, 2]"],
+		options: ["[10, 10, 10]", "[10, NaN, 2]", "[NaN, NaN, NaN]"],
+		answerType: "single",
+		// A snippet poll: the question means nothing without the code, which is
+		// why the review carries it.
+		codeBlock:
+			"const parsed = ['10', '10', '10'].map(parseInt);\nconsole.log(parsed);",
+		coverageEarned: 0,
+	},
+	{
 		id: "ts1",
 		question: "Which are TS utility types?",
 		category: "ts",
@@ -49,6 +64,30 @@ const answered: AnsweredPoll[] = [
 		options: ["Partial", "Banjo", "Pick", "Kazooie"],
 		answerType: "multiple",
 		coverageEarned: 4,
+	},
+	// The case the folded list exists for: nine options, two of them involved.
+	// Without the fold this row alone is taller than the three above it.
+	{
+		id: "css2",
+		question:
+			"A selector to match elements without children — which is correct?",
+		category: "css",
+		outcome: "wrong",
+		picked: [":clearfix()"],
+		correct: [":empty()"],
+		options: [
+			":blank()",
+			":void()",
+			":childless()",
+			":none()",
+			":clearfix()",
+			":empty()",
+			":leaf()",
+			":bare()",
+			":hollow()",
+		],
+		answerType: "single",
+		coverageEarned: 0,
 	},
 ];
 

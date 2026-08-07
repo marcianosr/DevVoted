@@ -139,6 +139,7 @@ describe("run route sync", () => {
 				topPercent: null,
 				standouts: [],
 				polls: [],
+				climb: null,
 			},
 		});
 
@@ -167,6 +168,7 @@ describe("run route sync", () => {
 				topPercent: null,
 				standouts: [],
 				polls: [],
+				climb: null,
 			},
 		});
 
@@ -175,9 +177,15 @@ describe("run route sync", () => {
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/community")
 		);
-		// The continue button waits with the run: a countdown, not a dead link.
-		const wait = await screen.findByRole("button", { name: /New polls in/ });
-		expect(wait).toBeDisabled();
+		// The way back waits with the run — /run would only bounce here again —
+		// and the countdown stands beside it saying how long that will be.
+		// Exact: the disabled button is wrapped in a Popover whose own trigger
+		// quotes the label back ("Why … is unavailable").
+		const back = await screen.findByRole("button", {
+			name: "Back to your run →",
+		});
+		expect(back).toBeDisabled();
+		expect(screen.getByText(/New polls in/)).toBeInTheDocument();
 	});
 
 	it("keeps a finished run on the summary and hides the HUD", async () => {

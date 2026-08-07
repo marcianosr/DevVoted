@@ -53,7 +53,6 @@ export const Route = createFileRoute("/old/community")({
 			communityStats,
 			exposedConfigDeck,
 			viewerUserId: run.userId,
-			categoryCode: poll.categoryCode,
 			windowContext,
 			categoryCoverage: run.categoryCoverage,
 			pipelineSlots: run.pipelineSlots,
@@ -66,7 +65,6 @@ function CommunityRoute() {
 		communityStats,
 		exposedConfigDeck,
 		viewerUserId,
-		categoryCode,
 		windowContext,
 		categoryCoverage,
 		pipelineSlots,
@@ -76,7 +74,6 @@ function CommunityRoute() {
 
 	return (
 		<Screen
-			categoryCode={categoryCode}
 			transition="slide-up"
 			leftAction={{
 				label: "← Back to shop",

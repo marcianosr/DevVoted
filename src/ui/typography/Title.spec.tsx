@@ -27,14 +27,6 @@ describe("Title", () => {
 		);
 	});
 
-	it("themes the heading in a category's color", () => {
-		render(<Title category="js">JavaScript</Title>);
-		const heading = screen.getByRole("heading", { name: "JavaScript" });
-		expect(heading).toHaveAttribute("data-category-theme", "js");
-		expect(heading).toHaveClass("text-theme");
-		expect(heading).not.toHaveClass("text-zinc-200");
-	});
-
 	it("appends caller classes to the base style", () => {
 		render(<Title className="text-cinnabar">Build broke!</Title>);
 		const heading = screen.getByRole("heading", { name: "Build broke!" });

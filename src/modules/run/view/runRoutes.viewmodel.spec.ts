@@ -24,15 +24,24 @@ describe("routesForStatus", () => {
 		expect(routesForStatus({ status: "answering" })).toEqual([
 			RUN_ROUTES.answer,
 		]);
-		expect(routesForStatus({ status: "awaiting-strip" })).toEqual([
-			RUN_ROUTES.strip,
+	});
+
+	// One server status, three page turns: the payout, the answers, the shop.
+	it("allows reward, review and shop while rewarding, with reward canonical", () => {
+		expect(routesForStatus({ status: "rewarding" })).toEqual([
+			RUN_ROUTES.reward,
+			RUN_ROUTES.review,
+			RUN_ROUTES.shop,
 		]);
 	});
 
-	it("allows both reward and shop while rewarding, with reward canonical", () => {
-		expect(routesForStatus({ status: "rewarding" })).toEqual([
-			RUN_ROUTES.reward,
-			RUN_ROUTES.shop,
+	// The failed gate closes on its answers too: strip → review, with the resume
+	// waiting on the review page. Strip stays canonical — landing on the status
+	// must always put the repair first.
+	it("allows strip and review while awaiting a strip, with strip canonical", () => {
+		expect(routesForStatus({ status: "awaiting-strip" })).toEqual([
+			RUN_ROUTES.strip,
+			RUN_ROUTES.review,
 		]);
 	});
 
@@ -60,13 +69,24 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	it("stays put on either reward page while rewarding", () => {
+	it("stays put on any of the three reward pages while rewarding", () => {
 		expect(
 			syncTarget("/run/reward", climbing({ status: "rewarding" }), false)
 		).toBeNull();
 		expect(
+			syncTarget("/run/review", climbing({ status: "rewarding" }), false)
+		).toBeNull();
+		expect(
 			syncTarget("/run/shop", climbing({ status: "rewarding" }), false)
 		).toBeNull();
+	});
+
+	// The review is only ever this gate's answers, so it has no meaning once the
+	// status has moved on — the sync sends the player back to the live screen.
+	it("redirects the review page away once the gate is no longer being paid out", () => {
+		expect(
+			syncTarget("/run/review", climbing({ status: "answering" }), false)
+		).toBe(RUN_ROUTES.answer);
 	});
 
 	it("redirects a stale screen to the canonical route for the status", () => {

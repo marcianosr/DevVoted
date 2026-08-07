@@ -16,6 +16,7 @@ import {
 	polldexCoverage,
 	presentCategories,
 	type PolldexCategoryFilter,
+	type PolldexSeenFilter,
 } from "../../polldex/polldex.model";
 import { PolldexPanel } from "../polldex/PolldexPanel.ui";
 import { ConfigdexPanel } from "./ConfigdexPanel.ui";
@@ -32,6 +33,7 @@ export const Dex = ({ userId }: DexProps) => {
 	const [activeTab, setActiveTab] = useState("polls");
 	const [selectedCategory, setSelectedCategory] =
 		useState<PolldexCategoryFilter>("all");
+	const [selectedSeen, setSelectedSeen] = useState<PolldexSeenFilter>("all");
 
 	const polldex = useQuery({
 		queryKey: pollQueryKeys.polldex(userId),
@@ -95,10 +97,18 @@ export const Dex = ({ userId }: DexProps) => {
 		>
 			{activeTab === "polls" && (
 				<PolldexPanel
-					entries={filterPolldexEntries(entries, selectedCategory)}
+					entries={filterPolldexEntries(
+						entries,
+						selectedCategory,
+						selectedSeen
+					)}
+					// Categories come from the unfiltered set: a filter bar that drops
+					// options as you filter can strand you with no way back.
 					categories={presentCategories(entries)}
 					selectedCategory={selectedCategory}
 					onSelectCategory={setSelectedCategory}
+					selectedSeen={selectedSeen}
+					onSelectSeen={setSelectedSeen}
 				/>
 			)}
 			{activeTab === "configs" && <ConfigdexPanel />}
