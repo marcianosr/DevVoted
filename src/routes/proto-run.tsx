@@ -21,15 +21,10 @@ import {
 import { longestCorrectStreak } from "~/modules/run/community/standouts.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/run/draft/draft.model";
-import {
-	canAddSlot,
-	coverageToAddSlot,
-} from "~/modules/run/pipeline/pipeline.model";
 import { AnsweringScreen } from "~/modules/run/presentation/screens/AnsweringScreen.ui";
 import { ConfiguringScreen } from "~/modules/run/presentation/screens/ConfiguringScreen.ui";
 import { RewardScreen } from "~/modules/run/presentation/screens/RewardScreen.ui";
-import { ShopScreen } from "~/modules/run/presentation/screens/ShopScreen.ui";
-import { StorageShop } from "~/modules/run/presentation/screens/StorageShop.ui";
+import { DualShop } from "~/modules/run/presentation/screens/DualShop.ui";
 import { StripScreen } from "~/modules/run/presentation/screens/StripScreen.ui";
 import { ReviewAnswers } from "~/modules/run/presentation/run/ReviewAnswers.ui";
 import { RunHud } from "~/modules/run/presentation/run/RunHud.ui";
@@ -596,64 +591,31 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					}}
 				>
 					<div className="space-y-8">
-						{/* Pipeline Shop Section */}
-						<ShopScreen
+						<DualShop
+							pipelineDraftOptions={view.draftOptions}
+							pipelineConfigs={view.configs}
+							pipelineSlots={view.slots}
+							pipelineRebuildCost={cost}
+							onPipelineDraft={(id) =>
+								dispatch({ type: "draft", configId: id })
+							}
+							onPipelineRebuild={() => dispatch({ type: "rebuild-draft" })}
+							onPipelineUpgrade={(id) =>
+								dispatch({ type: "upgrade", configId: id })
+							}
+							onPipelineSell={(id) => dispatch({ type: "sell", configId: id })}
 							storage={view.storage}
 							storageCap={view.storageCap}
-							ownedStorageConfigs={view.ownedStorageConfigs}
-							availableStorageConfigs={view.availableStorageConfigs}
+							storageConfigs={view.availableStorageConfigs}
+							storageRebuildCost={cost}
 							draftCostReduction={view.draftCostReduction}
-							refundBoost={view.refundBoost}
-							payoutBoost={view.payoutBoost}
-							freeRebuild={view.freeRebuild}
-							gateNumber={view.gatesCleared}
-							coverageByCategory={view.coverageByCategory}
-							checks={view.checks}
-							configs={view.configs}
-							gateReward={view.gateReward}
-							rewardMultiplier={view.rewardMultiplier}
-							coverageMultiplier={view.coverageMultiplier}
-							coverageAdd={view.coverageAdd}
-							newConfigIds={view.newConfigIds}
-							draftOptions={view.draftOptions}
-							onDraft={(id) => dispatch({ type: "draft", configId: id })}
-							rebuildCost={cost}
-							canRebuild={state.storage >= cost}
-							onRebuild={() => dispatch({ type: "rebuild-draft" })}
-							slots={view.slots}
-							coverage={view.coverage}
-							slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
-							canAddSlot={canAddSlot(state.pipeline.slots, state.coverage)}
-							onAddSlot={() => dispatch({ type: "add-slot" })}
-							onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
-							onSell={(id) => dispatch({ type: "sell", configId: id })}
+							onStorageUpgrade={(id) =>
+								dispatch({ type: "upgrade-storage", configId: id })
+							}
+							onStorageDeinstall={(id) =>
+								dispatch({ type: "deinstall-storage", configId: id })
+							}
 						/>
-
-						{/* Storage Shop Section */}
-						{view.slots < 3 ? (
-							<div className="rounded-lg border border-zinc-700 bg-zinc-900/30 px-6 py-8 text-center">
-								<p className="text-sm text-zinc-400">
-									Unlock storage upgrades by reaching 3 total slots (2 new
-									slots)
-								</p>
-							</div>
-						) : (
-							<StorageShop
-								storage={view.storage}
-								storageCap={view.storageCap}
-								availableStorageConfigs={view.availableStorageConfigs}
-								draftCostReduction={view.draftCostReduction}
-								refundBoost={view.refundBoost}
-								payoutBoost={view.payoutBoost}
-								freeRebuild={view.freeRebuild}
-								onUpgradeStorage={(configId) =>
-									dispatch({ type: "upgrade-storage", configId })
-								}
-								onDeinstallStorage={(configId) =>
-									dispatch({ type: "deinstall-storage", configId })
-								}
-							/>
-						)}
 					</div>
 				</Screen>
 			)}
