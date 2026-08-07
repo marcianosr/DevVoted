@@ -29,6 +29,7 @@ import { AnsweringScreen } from "~/modules/run/presentation/screens/AnsweringScr
 import { ConfiguringScreen } from "~/modules/run/presentation/screens/ConfiguringScreen.ui";
 import { RewardScreen } from "~/modules/run/presentation/screens/RewardScreen.ui";
 import { ShopScreen } from "~/modules/run/presentation/screens/ShopScreen.ui";
+import { StorageShop } from "~/modules/run/presentation/screens/StorageShop.ui";
 import { StripScreen } from "~/modules/run/presentation/screens/StripScreen.ui";
 import { ReviewAnswers } from "~/modules/run/presentation/run/ReviewAnswers.ui";
 import { RunHud } from "~/modules/run/presentation/run/RunHud.ui";
@@ -407,6 +408,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const [rewardStep, setRewardStep] = useState<
 		"summary" | "review" | "shop" | "community"
 	>("summary");
+	const [activeShop, setActiveShop] = useState<"pipeline" | "storage">(
+		"pipeline"
+	);
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
@@ -594,37 +598,88 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("community"),
 					}}
 				>
-					<ShopScreen
-						storage={view.storage}
-						storageCap={view.storageCap}
-						ownedStorageConfigs={view.ownedStorageConfigs}
-						availableStorageConfigs={view.availableStorageConfigs}
-						draftCostReduction={view.draftCostReduction}
-						refundBoost={view.refundBoost}
-						payoutBoost={view.payoutBoost}
-						freeRebuild={view.freeRebuild}
-						gateNumber={view.gatesCleared}
-						coverageByCategory={view.coverageByCategory}
-						checks={view.checks}
-						configs={view.configs}
-						gateReward={view.gateReward}
-						rewardMultiplier={view.rewardMultiplier}
-						coverageMultiplier={view.coverageMultiplier}
-						coverageAdd={view.coverageAdd}
-						newConfigIds={view.newConfigIds}
-						draftOptions={view.draftOptions}
-						onDraft={(id) => dispatch({ type: "draft", configId: id })}
-						rebuildCost={cost}
-						canRebuild={state.storage >= cost}
-						onRebuild={() => dispatch({ type: "rebuild-draft" })}
-						slots={view.slots}
-						coverage={view.coverage}
-						slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
-						canAddSlot={canAddSlot(state.pipeline.slots, state.coverage)}
-						onAddSlot={() => dispatch({ type: "add-slot" })}
-						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
-						onSell={(id) => dispatch({ type: "sell", configId: id })}
-					/>
+					{/* Shop tabs */}
+					<div className="flex gap-2 border-b border-zinc-800 pb-4">
+						<button
+							type="button"
+							className={`px-4 py-2 text-sm font-semibold transition ${
+								activeShop === "pipeline"
+									? "text-zinc-100 border-b-2 border-zinc-100"
+									: "text-zinc-500 hover:text-zinc-400"
+							}`}
+							onClick={() => setActiveShop("pipeline")}
+						>
+							Pipeline
+						</button>
+						<button
+							type="button"
+							disabled={view.slots < 3}
+							className={`px-4 py-2 text-sm font-semibold transition ${
+								activeShop === "storage"
+									? "text-zinc-100 border-b-2 border-zinc-100"
+									: view.slots >= 3
+										? "text-zinc-500 hover:text-zinc-400 cursor-pointer"
+										: "text-zinc-700 cursor-not-allowed"
+							}`}
+							onClick={() => view.slots >= 3 && setActiveShop("storage")}
+						>
+							Storage{" "}
+							{view.slots < 3 && (
+								<span className="ml-2 text-xs text-zinc-600">(2 slots+)</span>
+							)}
+						</button>
+					</div>
+
+					{/* Shop content */}
+					{activeShop === "pipeline" ? (
+						<ShopScreen
+							storage={view.storage}
+							storageCap={view.storageCap}
+							ownedStorageConfigs={view.ownedStorageConfigs}
+							availableStorageConfigs={view.availableStorageConfigs}
+							draftCostReduction={view.draftCostReduction}
+							refundBoost={view.refundBoost}
+							payoutBoost={view.payoutBoost}
+							freeRebuild={view.freeRebuild}
+							gateNumber={view.gatesCleared}
+							coverageByCategory={view.coverageByCategory}
+							checks={view.checks}
+							configs={view.configs}
+							gateReward={view.gateReward}
+							rewardMultiplier={view.rewardMultiplier}
+							coverageMultiplier={view.coverageMultiplier}
+							coverageAdd={view.coverageAdd}
+							newConfigIds={view.newConfigIds}
+							draftOptions={view.draftOptions}
+							onDraft={(id) => dispatch({ type: "draft", configId: id })}
+							rebuildCost={cost}
+							canRebuild={state.storage >= cost}
+							onRebuild={() => dispatch({ type: "rebuild-draft" })}
+							slots={view.slots}
+							coverage={view.coverage}
+							slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
+							canAddSlot={canAddSlot(state.pipeline.slots, state.coverage)}
+							onAddSlot={() => dispatch({ type: "add-slot" })}
+							onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
+							onSell={(id) => dispatch({ type: "sell", configId: id })}
+						/>
+					) : (
+						<StorageShop
+							storage={view.storage}
+							storageCap={view.storageCap}
+							availableStorageConfigs={view.availableStorageConfigs}
+							draftCostReduction={view.draftCostReduction}
+							refundBoost={view.refundBoost}
+							payoutBoost={view.payoutBoost}
+							freeRebuild={view.freeRebuild}
+							onUpgradeStorage={(configId) =>
+								dispatch({ type: "upgrade-storage", configId })
+							}
+							onDeinstallStorage={(configId) =>
+								dispatch({ type: "deinstall-storage", configId })
+							}
+						/>
+					)}
 				</Screen>
 			)}
 
