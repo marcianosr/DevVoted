@@ -32,9 +32,11 @@ import { draftSeed, rebuildCost, rollDraft } from "../draft/draft.model";
 import { checkStatuses, gateDemands, gatePassed } from "../gate/gate.model";
 import { swatchForGate } from "../gate/swatch.model";
 import {
+	aggregateStorageEffects,
 	dropCount,
 	FAUCET_CAP_KB,
 	gateBaseMultiplier,
+	getStorageConfig,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -51,7 +53,7 @@ export const lintCost = (usesThisPoll: number): number =>
 	LINT_COSTS[usesThisPoll] ?? LINT_COSTS[LINT_COSTS.length - 1];
 
 const addStorage = (current: number, income: number): number =>
-	Math.min(current + income, STORAGE_CAP_KB);
+	current + income;
 
 export type RunOption = {
 	readonly id: string;
@@ -207,6 +209,7 @@ export type RunState = {
 	 * snapshots won't carry it — readers fall back to `gatesCleared`.
 	 */
 	readonly clearedGate?: number;
+	readonly ownedStorageConfigs: Readonly<Record<string, number>>;
 	readonly log: readonly string[];
 };
 
@@ -229,7 +232,9 @@ export type RunAction =
 	| { readonly type: "rebuild-draft" }
 	| { readonly type: "finish-reward" }
 	| { readonly type: "sell"; readonly configId: string }
-	| { readonly type: "drop"; readonly configId: string };
+	| { readonly type: "drop"; readonly configId: string }
+	| { readonly type: "upgrade-storage"; readonly configId: string }
+	| { readonly type: "deinstall-storage"; readonly configId: string };
 
 export const createRun = (
 	polls: readonly RunPoll[],
@@ -257,6 +262,7 @@ export const createRun = (
 	faucetEarnedKb: 0,
 	faucetThisGateKb: 0,
 	gateRewardKb: 0,
+	ownedStorageConfigs: {},
 	log: [],
 });
 
@@ -721,6 +727,60 @@ const addSlot = (state: RunState): RunState => {
 	);
 };
 
+const upgradeStorageConfig = (state: RunState, configId: string): RunState => {
+	const config = getStorageConfig(configId);
+	if (!config) return state;
+
+	const currentLevel = state.ownedStorageConfigs[configId] ?? 0;
+	if (currentLevel >= config.levelPrices.length) return state;
+
+	const cost = config.levelPrices[currentLevel];
+	if (state.storage < cost) return state;
+
+	const nextLevel = currentLevel + 1;
+	const nextEffects = aggregateStorageEffects({
+		...state.ownedStorageConfigs,
+		[configId]: nextLevel,
+	});
+	const nextCap = STORAGE_CAP_KB + (nextEffects.capAddKb ?? 0);
+
+	return stayReward(
+		{
+			...state,
+			storage: state.storage - cost,
+			ownedStorageConfigs: {
+				...state.ownedStorageConfigs,
+				[configId]: nextLevel,
+			},
+		},
+		state.pipeline,
+		state.draftOptions,
+		`Upgraded ${config.label} to L${nextLevel} (-${cost}KB). Cap now ${nextCap}KB.`
+	);
+};
+
+const deinstallStorageConfig = (
+	state: RunState,
+	configId: string
+): RunState => {
+	const config = getStorageConfig(configId);
+	if (!config) return state;
+
+	const level = state.ownedStorageConfigs[configId];
+	if (!level || level < 1) return state;
+
+	const refund = Math.floor(config.levelPrices[level - 1] * 0.5);
+
+	const { [configId]: _, ...remaining } = state.ownedStorageConfigs;
+
+	return {
+		...state,
+		storage: state.storage + refund,
+		ownedStorageConfigs: remaining,
+		log: withLog(state, `Removed ${config.label} (+${refund}KB refund).`),
+	};
+};
+
 const draft = (state: RunState, configId: string): RunState => {
 	const chosen = state.draftOptions.find(
 		(candidate) => candidate.id === configId
@@ -786,18 +846,23 @@ const upgrade = (state: RunState, configId: string): RunState => {
 	);
 };
 
-const finishReward = (state: RunState): RunState => ({
-	...state,
-	draftOptions: [],
-	rebuildsUsed: 0,
-	draftedThisGate: [],
-	answeredThisGate: [],
-	clearedChecks: [],
-	faucetThisGateKb: 0,
-	gateRewardKb: 0,
-	status: "answering",
-	log: withLog(state, "Climbing on."),
-});
+const finishReward = (state: RunState): RunState => {
+	const effects = aggregateStorageEffects(state.ownedStorageConfigs);
+	const cap = STORAGE_CAP_KB + (effects.capAddKb ?? 0);
+	return {
+		...state,
+		draftOptions: [],
+		rebuildsUsed: 0,
+		draftedThisGate: [],
+		answeredThisGate: [],
+		clearedChecks: [],
+		faucetThisGateKb: 0,
+		gateRewardKb: 0,
+		storage: Math.min(state.storage, cap),
+		status: "answering",
+		log: withLog(state, "Climbing on."),
+	};
+};
 
 const rebuildDraft = (state: RunState): RunState => {
 	const cost = rebuildCost(state.rebuildsUsed);
@@ -888,6 +953,10 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return sell(state, action.configId);
 	if (action.type === "drop" && state.status === "rewarding")
 		return drop(state, action.configId);
+	if (action.type === "upgrade-storage" && state.status === "rewarding")
+		return upgradeStorageConfig(state, action.configId);
+	if (action.type === "deinstall-storage" && state.status === "rewarding")
+		return deinstallStorageConfig(state, action.configId);
 	return state;
 };
 

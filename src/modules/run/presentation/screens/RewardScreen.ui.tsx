@@ -14,7 +14,6 @@ import {
 import {
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	STORAGE_CAP_KB,
 	VICTORY_GATE,
 } from "~/modules/run/rules.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
@@ -36,6 +35,8 @@ type RewardScreenProps = {
 	faucetThisGateKb?: number;
 	/** The run's storage after the payout — drawn as the winnings bar. */
 	storage?: number;
+	/** The cap in KB at the time this reward was received — the bar's upper limit. */
+	capKb?: number;
 	/** The run's coverage after the payout — drawn as the coverage bar. */
 	coverage?: number;
 	/**
@@ -58,6 +59,7 @@ export const RewardScreen = ({
 	configs,
 	faucetThisGateKb,
 	storage,
+	capKb,
 	coverage,
 	slotCoverageRequired,
 	slots,
@@ -115,12 +117,12 @@ export const RewardScreen = ({
 				rows={rows}
 				totals={{ storageKb, coveragePct }}
 				storageBar={
-					storage === undefined
+					storage === undefined || capKb === undefined
 						? undefined
 						: {
 								fromKb: Math.max(0, storage - storageKb),
 								toKb: storage,
-								capKb: STORAGE_CAP_KB,
+								capKb,
 							}
 				}
 				coverageBar={

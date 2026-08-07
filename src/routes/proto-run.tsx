@@ -471,6 +471,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				<div className="mx-auto w-full max-w-6xl p-2">
 					<RunHud
 						storage={view.storage}
+						capKb={view.storageCap}
 						gatesCleared={view.gatesCleared}
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
@@ -595,6 +596,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					<ShopScreen
 						storage={view.storage}
+						storageCap={view.storageCap}
+						ownedStorageConfigs={view.ownedStorageConfigs}
+						availableStorageConfigs={view.availableStorageConfigs}
+						draftCostReduction={view.draftCostReduction}
+						refundBoost={view.refundBoost}
+						payoutBoost={view.payoutBoost}
+						freeRebuild={view.freeRebuild}
 						gateNumber={view.gatesCleared}
 						coverageByCategory={view.coverageByCategory}
 						checks={view.checks}

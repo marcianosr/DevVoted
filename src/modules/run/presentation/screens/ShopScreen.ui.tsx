@@ -26,6 +26,20 @@ import { nextSlotRow } from "../gate/SlotUnlockRow.ui";
 
 type ShopScreenProps = {
 	storage: number;
+	storageCap: number;
+	ownedStorageConfigs: Readonly<Record<string, number>>;
+	availableStorageConfigs: ReadonlyArray<{
+		readonly id: string;
+		readonly label: string;
+		readonly description: string;
+		readonly currentLevel: number;
+		readonly nextLevelCost: number | null;
+		readonly maxLevel: boolean;
+	}>;
+	draftCostReduction: number;
+	refundBoost: number;
+	payoutBoost: number;
+	freeRebuild: boolean;
 	coverageByCategory: Readonly<Record<string, number>>;
 	checks: readonly CheckStatus[];
 	gateNumber: number;
@@ -112,6 +126,13 @@ const PanelHeading = ({ title, subtitle }: PanelHeadingProps) => (
 
 export const ShopScreen = ({
 	storage,
+	storageCap: _storageCap,
+	ownedStorageConfigs: _ownedStorageConfigs,
+	availableStorageConfigs: _availableStorageConfigs,
+	draftCostReduction: _draftCostReduction,
+	refundBoost: _refundBoost,
+	payoutBoost: _payoutBoost,
+	freeRebuild: _freeRebuild,
 	coverageByCategory,
 	checks,
 	gateNumber,
@@ -265,6 +286,8 @@ export const ShopScreen = ({
 					Expand your load-out or make your pipeline stricter!
 				</Subtitle>
 			</header>
+
+			{/* Storage configs moved to separate StorageShop component */}
 
 			<Columns
 				aside={

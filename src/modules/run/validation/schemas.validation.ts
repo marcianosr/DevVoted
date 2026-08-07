@@ -39,6 +39,8 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	bareActionSchema("finish-reward"),
 	configActionSchema("sell"),
 	configActionSchema("drop"),
+	configActionSchema("upgrade-storage"),
+	configActionSchema("deinstall-storage"),
 ]);
 
 export type RunActionInput = z.infer<typeof runActionSchema>;

@@ -2,7 +2,6 @@ import { clsx } from "clsx";
 
 import { getCategories } from "~/domains/shared/categories";
 import { Popover } from "~/ui/Popover.component";
-import { STORAGE_CAP_KB } from "../../rules.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import {
 	ALL_SWATCHES,
@@ -19,6 +18,7 @@ import { SummaryDropdown } from "./SummaryDropdown.ui";
 
 type RunHudProps = {
 	storage: number;
+	capKb: number;
 	gatesCleared: number;
 	victoryGate: number;
 	pollsAnswered: number;
@@ -130,6 +130,7 @@ const GateName = ({ gate }: { gate: number }) => {
 
 export const RunHud = ({
 	storage,
+	capKb,
 	gatesCleared,
 	victoryGate,
 	pollsAnswered,
@@ -141,7 +142,7 @@ export const RunHud = ({
 	<div className="border-b border-zinc-800 pb-3 text-sm">
 		<div className="flex flex-col gap-2 sm:hidden">
 			<div className="flex items-center justify-between gap-3">
-				<StorageGauge usedKb={storage} capKb={STORAGE_CAP_KB} />
+				<StorageGauge usedKb={storage} capKb={capKb} />
 				<span className="flex items-center gap-2">
 					<PollOutcomeBar outcomes={pollOutcomes} pollsPerGate={pollsPerGate} />
 					<Paragraph as="span" size="xs" tone="pewter">
@@ -162,10 +163,10 @@ export const RunHud = ({
 
 		<div className="hidden items-center gap-6 sm:flex">
 			<span className="flex shrink-0 items-start gap-1.5">
-				<StorageGauge usedKb={storage} capKb={STORAGE_CAP_KB} />
+				<StorageGauge usedKb={storage} capKb={capKb} />
 				<HudHint label="How storage works">
-					Storage caps at {STORAGE_CAP_KB}KB. Clear gates and answer correctly
-					to earn KB — income beyond the cap is discarded.
+					Storage caps at {capKb}KB. Clear gates and answer correctly to earn KB
+					— overflow carries into the shop.
 				</HudHint>
 			</span>
 			<span className="flex shrink-0 items-start gap-1.5">

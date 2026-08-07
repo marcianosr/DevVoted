@@ -28,6 +28,7 @@ export const RunReward = () => {
 				configs={view.configs}
 				faucetThisGateKb={view.faucetThisGateKb}
 				storage={view.storage}
+				capKb={view.storageCap}
 				coverage={view.coverage}
 				slotCoverageRequired={view.slotCoverageRequired}
 				slots={view.slots}

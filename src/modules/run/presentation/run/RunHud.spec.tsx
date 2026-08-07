@@ -8,6 +8,7 @@ describe(RunHud, () => {
 		render(
 			<RunHud
 				storage={120}
+				capKb={512}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -36,6 +37,7 @@ describe(RunHud, () => {
 		render(
 			<RunHud
 				storage={120}
+				capKb={512}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -63,6 +65,7 @@ describe(RunHud, () => {
 		render(
 			<RunHud
 				storage={120}
+				capKb={512}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -85,6 +88,7 @@ describe(RunHud, () => {
 		render(
 			<RunHud
 				storage={120}
+				capKb={512}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={1}
