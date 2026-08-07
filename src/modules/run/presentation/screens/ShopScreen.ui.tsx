@@ -176,7 +176,18 @@ export const ShopScreen = ({
 		);
 	};
 
+	// The last installed config stays: a bare pipeline can never clear a gate
+	// (ADR-017), so deinstalling it would hand the player an already-lost run —
+	// and since ADR-021 a build only dies at a gate it failed.
+	const holdsLastConfig = configs.length <= 1;
+
 	const loadoutActions = (config: Config): ReactNode => {
+		const deinstallButton = actionButton({
+			label: "Deinstall",
+			price: `${sellRefund(config)}KB`,
+			onClick: () => onSell(config.id),
+			disabled: holdsLastConfig,
+		});
 		const upgradeButton = isUpgradable(config)
 			? actionButton({
 					label: "Upgrade",
@@ -193,11 +204,13 @@ export const ShopScreen = ({
 				{upgradeButton ? (
 					<Tooltip content={upgradeTooltip(config)}>{upgradeButton}</Tooltip>
 				) : null}
-				{actionButton({
-					label: "Deinstall",
-					price: `${sellRefund(config)}KB`,
-					onClick: () => onSell(config.id),
-				})}
+				{holdsLastConfig ? (
+					<Tooltip content="Your only config — deinstalling it would leave nothing to clear a gate with.">
+						{deinstallButton}
+					</Tooltip>
+				) : (
+					deinstallButton
+				)}
 			</span>
 		);
 	};

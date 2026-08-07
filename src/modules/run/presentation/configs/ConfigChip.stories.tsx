@@ -18,8 +18,8 @@ export const FocusLeveled: Story = {
 export const Compact: Story = {
 	args: { config: CONFIGS.unitTests, compact: true },
 };
-export const RareAmplify: Story = { args: { config: CONFIGS.copilot } };
-export const LegendaryRisk: Story = { args: { config: CONFIGS.copilot } };
+export const RareAmplify: Story = { args: { config: CONFIGS.agentsMd } };
+export const LegendaryRisk: Story = { args: { config: CONFIGS.agentsMd } };
 export const WithAction: Story = {
 	args: { config: CONFIGS.eslint, action: "✕", onClick: () => {} },
 };

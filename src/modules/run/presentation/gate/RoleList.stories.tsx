@@ -29,9 +29,9 @@ const rows: readonly RoleRow[] = [
 		state: "skipped",
 	},
 	{
-		config: CONFIGS.copilot,
+		config: CONFIGS.agentsMd,
 		role: "passive",
-		description: describeConfig(CONFIGS.copilot),
+		description: describeConfig(CONFIGS.agentsMd),
 	},
 ];
 
@@ -74,13 +74,13 @@ export const WithSlotPreview: Story = {
 	},
 };
 
-// Copilot is the roster's only legendary, and a masked gradient has no dashed
+// AGENTS.md is the roster's only legendary, and a masked gradient has no dashed
 // form — so its preview box wears the same gradient ring its chip wears.
 export const WithLegendarySlotPreview: Story = {
 	args: {
 		rows: rows.slice(0, 2),
 		slots: 5,
-		preview: { config: CONFIGS.copilot, onAdd: () => {} },
+		preview: { config: CONFIGS.agentsMd, onAdd: () => {} },
 	},
 };
 

@@ -35,7 +35,7 @@ export const Default: Story = {
 					streakBonus: 0,
 					configBonuses: [
 						{ configId: "css", value: 0.3 },
-						{ configId: "copilot", value: 0.4 },
+						{ configId: "agents-md", value: 0.4 },
 					],
 				},
 			},
@@ -48,7 +48,7 @@ export const Default: Story = {
 				coverageBreakdown: {
 					base: 1.8,
 					streakBonus: 0.3,
-					configBonuses: [{ configId: "copilot", value: 3.5 }],
+					configBonuses: [{ configId: "agents-md", value: 3.5 }],
 				},
 			},
 			{
@@ -72,7 +72,7 @@ export const Default: Story = {
 		],
 		configs: [
 			CONFIGS.css,
-			CONFIGS.copilot,
+			CONFIGS.agentsMd,
 			CONFIGS.indexedDb,
 			CONFIGS.unitTests,
 		],

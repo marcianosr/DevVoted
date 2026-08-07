@@ -106,7 +106,7 @@ const focusRow = (
 const statusFrom = (check: CheckStatus | undefined): GateRewardStatus => {
 	if (check?.state === "failed") return "failed";
 	if (check?.state === "skipped") return "skipped";
-	// No check at all (Copilot) counts as passed — nothing was demanded.
+	// No check at all (AGENTS.md) counts as passed — nothing was demanded.
 	return "passed";
 };
 

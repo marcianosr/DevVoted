@@ -21,7 +21,7 @@ const base = {
 	],
 	configs: [],
 	newConfigIds: [],
-	draftOptions: [CONFIGS.eslint, CONFIGS.copilot],
+	draftOptions: [CONFIGS.eslint, CONFIGS.agentsMd],
 	onDraft: vi.fn(),
 	rebuildCost: 1,
 	canRebuild: true,
@@ -231,13 +231,38 @@ describe(ShopScreen, () => {
 		expect(screen.getByText("coverage ×")).toBeInTheDocument();
 	});
 
+	// Row order follows the config's gate role, not the prop order, so this asserts
+	// every row sells its own config rather than indexing into the rendered list.
 	it("sells a config from its row's deinstall button", () => {
+		const onSell = vi.fn();
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.indexedDb, CONFIGS.rb]}
+				onSell={onSell}
+			/>
+		);
+		for (const button of screen.getAllByRole("button", { name: /Deinstall/ }))
+			fireEvent.click(button);
+		expect(onSell.mock.calls.flat()).toEqual(
+			expect.arrayContaining(["indexed-db", "rb"])
+		);
+	});
+
+	// A bare pipeline can never clear a gate (ADR-017), so the shop refuses to
+	// empty the build — a run only dies at a gate it failed (ADR-021).
+	it("locks the deinstall button on the only installed config", () => {
 		const onSell = vi.fn();
 		render(
 			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} onSell={onSell} />
 		);
-		fireEvent.click(screen.getByRole("button", { name: /Deinstall/ }));
-		expect(onSell).toHaveBeenCalledWith("indexed-db");
+		const deinstall = screen.getByRole("button", { name: /Deinstall/ });
+		expect(deinstall).toBeDisabled();
+		expect(
+			screen.getByText(/deinstalling it would leave nothing to clear a gate/i)
+		).toBeInTheDocument();
+		fireEvent.click(deinstall);
+		expect(onSell).not.toHaveBeenCalled();
 	});
 
 	it("shows the next slot locked with live progress — no unlock button below the rung", () => {

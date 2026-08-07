@@ -37,7 +37,7 @@ export const Default: Story = {
 		],
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
 		newConfigIds: ["coverage-gain"],
-		draftOptions: [CONFIGS.eslint, CONFIGS.copilot, CONFIGS.coldStart],
+		draftOptions: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coldStart],
 		onDraft: () => {},
 		rebuildCost: 4,
 		canRebuild: true,

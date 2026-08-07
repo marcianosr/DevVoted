@@ -17,7 +17,7 @@ export const roleOf = (
 	if (config.focusCategory || config.check === "lint-correct")
 		return "conditional";
 	const backsCheck = checks.some((check) => check.sourceConfigId === config.id);
-	// Under the Config Rule a checkless config is the exception (Copilot).
+	// Under the Config Rule a checkless config is the exception (AGENTS.md).
 	return backsCheck ? "requirement" : "passive";
 };
 

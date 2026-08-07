@@ -10,7 +10,20 @@ export type CategoryTally = {
 	readonly gained?: number;
 };
 
-export type LintTally = { readonly polls: number; readonly correct: number };
+/**
+ * A linter's window record. `offered` counts the polls it *could* have run on
+ * (its category, with more than one wrong option to cross out); `polls` and
+ * `correct` count what it actually pledged. The gap between them is a declined
+ * pledge, which ADR-022 treats as a failure rather than a skip — otherwise a
+ * linter that is never run owes nothing and clears every gate for free.
+ * `offered` is optional: pre-ADR-022 snapshots hydrate without it and read as
+ * "never offered", so an in-flight run keeps the old excused-skip behaviour.
+ */
+export type LintTally = {
+	readonly offered?: number;
+	readonly polls: number;
+	readonly correct: number;
+};
 
 export type GateWindow = {
 	readonly correct: number;
@@ -207,7 +220,8 @@ const minCorrectCheck = (config: Config): GateCheckPart => {
 			target,
 			state: checkState(window.correct >= target, window),
 		}),
-		demand: () => `${target} correct answers this window`,
+		demand: () =>
+			`${target} correct answer${target === 1 ? "" : "s"} this window`,
 	};
 };
 
@@ -260,25 +274,57 @@ const breadthCheck = (config: Config): GateCheckPart => {
 	};
 };
 
+const windowClosed = (window: GateWindow): boolean =>
+	window.answered >= SLICE_WINDOW;
+
+/**
+ * The linter's verdict. Three cases the old rule collapsed into one "skipped":
+ *
+ * 1. **Never offered** (`offered === 0`) — no poll of its category turned up, or
+ *    none had two wrong options to cross out. Unavoidable, so still `skipped`:
+ *    an unlucky draw must never cost a gate.
+ * 2. **Offered and declined** (`offered > 0`, `polls === 0`) — the chance came
+ *    and the pledge was not taken. ADR-022 makes this a failure, since a linter
+ *    that is never run is a config that owes nothing.
+ * 3. **Pledged** (`polls > 0`) — every linted poll must be correct.
+ *
+ * TODO(marciano): implement. The rule choice is in case 2, and it decides when
+ * the verdict lands:
+ *
+ *   (a) *one offer redeems the window* — a later lintable poll can still take
+ *       the pledge, so a declined poll only fails once the window closes
+ *       (`windowClosed(window)`), and stays "running" until then. One fee per
+ *       window.
+ *   (b) *every offer must be taken* — the first declined poll fails on the
+ *       spot, like `coldStartCheck`'s broken opening streak. One fee per
+ *       lintable poll, so a JS-heavy window gets expensive fast.
+ *
+ * Keep case 3's existing shape: a fail is immediate (`correct < polls`), a
+ * success waits for the close, because a later lint could still break it.
+ */
 const lintState = (tally: LintTally, window: GateWindow): CheckState => {
 	if (tally.polls === 0) return "skipped";
 	if (tally.correct < tally.polls) return "failed";
-	// All linted polls correct so far — but a later lint could still fail this,
-	// so success only lands when the window closes.
-	if (window.answered >= SLICE_WINDOW) return "success";
-	return "running";
+	return windowClosed(window) ? "success" : "running";
+};
+
+const lintProgress = (tally: LintTally): string | undefined => {
+	if (tally.polls > 0) return `${tally.correct}/${tally.polls}`;
+	// "not linted" reads as an excuse; when the chance was there and passed up,
+	// the row has to say the pledge was owed.
+	return (tally.offered ?? 0) > 0 ? "declined the lint" : "not linted";
 };
 
 const lintCorrectCheck = (config: Config): GateCheckPart => ({
 	gateCheck: ({ window }) => {
 		const tally = window.lintedByConfig?.[config.id] ?? {
+			offered: 0,
 			polls: 0,
 			correct: 0,
 		};
 		return {
 			label: `${config.label} linted`,
-			progress:
-				tally.polls === 0 ? "not linted" : `${tally.correct}/${tally.polls}`,
+			progress: lintProgress(tally),
 			current: tally.correct,
 			target: tally.polls,
 			state: lintState(tally, window),

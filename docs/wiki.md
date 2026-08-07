@@ -82,8 +82,8 @@ escalating stakes, strip-on-fail, and meta-progression that outlives a single ru
 What it leaves behind: procedural generation (polls are hand-written and the daily
 seed is shared by every player, so no two runs differ by dice), session-length play
 (a run spans real calendar days, one gate per day, and can sit half-finished
-overnight), and permadeath as the default state — dying takes a bare build failing a
-gate, which is rare and slow. Think of the roguelite parts as the skeleton, not the
+overnight), and permadeath as the default state (dying takes a gate whose peel
+quota is bigger than your build, which is slow to arrive). Think of the roguelite parts as the skeleton, not the
 point: the point is a daily learning ritual that happens to keep score.
 
 Beneath the mechanics sits the creator's own philosophy, learned from experience
@@ -172,8 +172,8 @@ nothing is decided before that:
 | | condition | outcome |
 | --- | --- | --- |
 | **Advance** | every check passed *or* skipped | paid, gate's swatch earned, `gatesCleared + 1`, shop opens |
-| **Don't advance** | any one check failed | peel `dropCount` configs, then replay the **same** gate on a fresh 5 polls |
-| **Run over** | a check failed *and* the pipeline is bare | dead |
+| **Don't advance** | a check failed, and the build holds more configs than the peel quota | peel `dropCount` configs, then replay the **same** gate on a fresh 5 polls |
+| **Run over** | a check failed, and the peel quota takes every config the build holds | dead (ADR-021) |
 
 There is no other way to not advance. Since ADR-019 removed the width freeze, the
 failure path is the only one, and it always costs configs.
@@ -189,8 +189,10 @@ drafts over the next two or three gates (three offers per gate), so recovery is 
 slow rebuild out of storage rather than a reset.
 
 While thin, the next failure is fatal: from **gate 4** a three-config build owes at
-least as many strips as it holds, so one bad window strips it bare — and a bare
-build cannot clear (ADR-017). Width is therefore the run's hit-point pool, and the
+least as many strips as it holds, and a fail it cannot pay for ends the run on the
+spot (ADR-021). Nothing else empties a pipeline: the shop will not let you deinstall
+your last config, so the peel is always survivable and death always belongs to a
+gate you failed. Width is therefore the run's hit-point pool, and the
 tradeoff that makes the independent axes work: a narrow build owes fewer checks but
 has no margin, a wide one owes more and survives mistakes. The answering screen
 names the stake inline ("a fail peels 3", red once it would take everything).
@@ -410,9 +412,10 @@ from clearing gates ([6.4 Swatches](#64-swatches)).
 ### 3.2 Managing Configs
 
 Click any config chip for its action popover: **Install**, **Sell** (refunds half
-the draft cost), or **Upgrade**. Any config can be sold — selling your way out of
-every check just sells your income with it (payouts scale with correctness, and a
-bare pipeline never clears). At run start, the **Configuring** screen lets you build a starting pipeline
+the draft cost), or **Upgrade**. Any config can be sold except your last one:
+selling your way out of every check just sells your income with it (payouts scale
+with correctness), and a pipeline is never allowed to reach zero configs in the shop
+(ADR-021). At run start, the **Configuring** screen lets you build a starting pipeline
 from a handed set of configs, and **all 3 starting slots must be filled before the
 climb begins**. The starting hand is currently a curated set; a random
 rarity-weighted draw is planned (DVTD-30k6).

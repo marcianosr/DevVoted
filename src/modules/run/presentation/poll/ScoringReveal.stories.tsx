@@ -50,7 +50,7 @@ const CHIP_DATA = {
 	bonuses: [
 		{ label: "streak", value: 0.3 },
 		// Only coverage-affecting configs earn score chips — Code Coverage (flat
-		// +0.5%) and Copilot (×2). They render as the real ConfigChip, injected
+		// +0.5%) and AGENTS.md (×2). They render as the real ConfigChip, injected
 		// here (the ui tier can't import module components — see ScoreEquationChips).
 		// noTooltip avoids ConfigChip's tooltip nesting a <p> inside a <p>.
 		{
@@ -59,9 +59,9 @@ const CHIP_DATA = {
 			chip: <ConfigChip config={CONFIGS.codeCoverage} noTooltip />,
 		},
 		{
-			label: "copilot",
+			label: "agents-md",
 			value: 0.6,
-			chip: <ConfigChip config={CONFIGS.copilot} noTooltip />,
+			chip: <ConfigChip config={CONFIGS.agentsMd} noTooltip />,
 		},
 	],
 	earnedCoverage: 2.2,

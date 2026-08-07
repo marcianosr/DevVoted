@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CategoryCode } from "~/domains/shared/categories";
 
 import { CONFIGS } from "../configs/configRoster.model";
+import { checkStatuses } from "../gate/gate.model";
 import {
 	BASE_SLOTS,
 	coverageToAddSlot,
@@ -208,6 +209,19 @@ describe("selling in the shop", () => {
 		expect(state.storage).toBe(16); // common draft cost 32 → half
 	});
 
+	it("refuses to deinstall the only installed config", () => {
+		const state = {
+			...rewardingWith("eslint"),
+			storage: 0,
+		};
+		const oneConfig = {
+			...state,
+			pipeline: { ...state.pipeline, configs: [CONFIGS.eslint] },
+		};
+		const blocked = runReducer(oneConfig, { type: "sell", configId: "eslint" });
+		expect(blocked).toBe(oneConfig); // a bare build could never clear a gate
+	});
+
 	it("sells Unit Tests like any other config — nothing is locked anymore", () => {
 		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
@@ -336,6 +350,107 @@ describe("lint-correct checks", () => {
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
 	});
+
+	it("fails the gate when a lintable poll is answered without linting", () => {
+		// A perfect window still fails: the pledge was owed and declined (ADR-022).
+		let state = lintableRun();
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("awaiting-strip");
+	});
+
+	it("names the declined pledge on the checklist row", () => {
+		let state = lintableRun();
+		state = answerWith(state, true);
+		const row = checkStatuses(state.pipeline, state.window, 0).find(
+			(check) => check.sourceConfigId === "eslint"
+		);
+		expect(row?.progress).toBe("declined the lint");
+	});
+
+	it("excuses the linter when no poll of its category turns up", () => {
+		// The react-only pool never offers ESLint a JS/TS poll, so its check is
+		// dormant rather than dodged and a good window still clears.
+		let state = started(["eslint"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+	});
+});
+
+describe("no build owes the gate nothing (ADR-022)", () => {
+	// AGENTS.md used to carry no check at all, and on a react-only pool the two
+	// linters are never offered a poll of their category. That build's checklist
+	// was empty, so it passed vacuously and summited on 0/5 with every swatch.
+	const freeloader = (size = GATE_COUNT * SLICE_WINDOW): RunState => {
+		let state = createRun(pool(size), [
+			CONFIGS.agentsMd,
+			CONFIGS.eslint,
+			CONFIGS.stylelint,
+		]);
+		for (const configId of ["agents-md", "eslint", "stylelint"])
+			state = runReducer(state, { type: "slot", configId });
+		return runReducer(state, { type: "start" });
+	};
+
+	it("refuses the clear when the build's one unconditional check is unmet", () => {
+		let state = freeloader();
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		// The linters are excused by the draw; AGENTS.md is the row that judges.
+		expect(
+			checkStatuses(state.pipeline, state.window, 0).map((check) => [
+				check.label,
+				check.state,
+			])
+		).toEqual([
+			["AGENTS.md", "failed"],
+			["ESLint linted", "skipped"],
+			["Stylelint linted", "skipped"],
+		]);
+		expect(state.status).toBe("awaiting-strip");
+	});
+
+	it("names the failed check in the log rather than just the gate", () => {
+		let state = freeloader();
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.log.at(-1)).toContain("Gate 0 failed: AGENTS.md");
+	});
+
+	it("never summits a build that answers nothing", () => {
+		let state = freeloader();
+		for (let gate = 0; gate < GATE_COUNT; gate++) {
+			for (let i = 0; i < SLICE_WINDOW && state.status === "answering"; i++)
+				state = answerWith(state, false);
+			if (state.status === "rewarding")
+				state = runReducer(state, { type: "finish-reward" });
+		}
+		expect(state.status).not.toBe("won");
+		expect(state.gatesCleared).toBe(0);
+	});
+
+	it("clears on the single correct answer AGENTS.md asks for", () => {
+		// A legendary's 256KB draft price is most of what it costs, so its check
+		// is light. Light is not free: it is never excused by the draw.
+		let state = freeloader(SLICE_WINDOW);
+		state = answerWith(state, true);
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, false);
+		expect(state.clearedGate).toBe(0);
+	});
+
+	it("carries no gate-level correctness floor", () => {
+		// Rejected in ADR-022: "get one right" is a config's check, not the gate's
+		// rule. Three focus configs, none of their categories drawn, so every row
+		// is excused and the gate demands nothing — which is the honest reading of
+		// "the gate demands only what your build demands". Not exploitable: the
+		// draw cannot be chosen, so this cannot be chained into a climb.
+		let state = started(["ts", "css", "js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.clearedGate).toBe(0);
+	});
+
+	it("leaves an unlucky focus build alone when it answered well", () => {
+		let state = started(["ts", "css", "js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+	});
 });
 
 describe("failure model", () => {
@@ -370,8 +485,50 @@ describe("failure model", () => {
 		expect(afterQuota).toBe(state);
 	});
 
+	it("ends the run when the peel quota takes the whole build", () => {
+		// Gate 4 owes 3 peels (dropCount) and the starting build holds exactly 3.
+		let state = { ...started(["unit-tests"]), gatesCleared: 4 };
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("dead");
+		expect(state.pipeline.configs).toHaveLength(3); // the run ends instead of peeling
+	});
+
+	it("leaves a config standing whenever the build outholds the quota", () => {
+		let state = started(["unit-tests"]);
+		state = {
+			...state,
+			gatesCleared: 4, // owes 3 peels
+			pipeline: {
+				...state.pipeline,
+				slots: 4,
+				configs: [...state.pipeline.configs, CONFIGS.coverageGain],
+			},
+		};
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.stripsRemaining).toBe(3);
+		expect(state.stripsRemaining).toBeLessThan(state.pipeline.configs.length);
+	});
+
+	it("ends the run when a peel emptied the build instead of climbing on", () => {
+		// Reachable only from a pre-ADR-021 snapshot, whose quota was capped at
+		// what the build held; the guard keeps a bare build from ever climbing.
+		let state = started(["unit-tests", "eslint"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("awaiting-strip");
+		// The post-peel state a legacy quota left behind: nothing owed, nothing held.
+		state = {
+			...state,
+			stripsRemaining: 0,
+			pipeline: { ...state.pipeline, configs: [] },
+		};
+		state = runReducer(state, { type: "resume-climb" });
+		expect(state.status).toBe("dead");
+	});
+
 	it("ends the run when a bare pipeline misses", () => {
-		// Starting bare is impossible now — bareness is reached by stripping.
+		// Bareness is unreachable since ADR-021 — this guards runs snapshotted
+		// before it, which can still resume with an emptied pipeline.
 		let state = started(["js"]);
 		state = { ...state, pipeline: { ...state.pipeline, configs: [] } };
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);

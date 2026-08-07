@@ -46,6 +46,8 @@ two places and forcing a snapshot migration.
 
 ### 3. Loss semantics: strip-on-fail stands; death only for a bare build
 
+> ⚠ **Superseded by [ADR-021](021-death-at-the-gate-that-empties-the-build.md)**: strip-on-fail stands, but the run dies at the gate whose peel quota would empty the build, not one gate later. Choice (b) below is still the choice; only its death trigger moved.
+
 Considered: (a) no death at all — summit is the only ending; (b) keep
 ADR-006's strip-on-fail; (c) any gate loss kills the run.
 

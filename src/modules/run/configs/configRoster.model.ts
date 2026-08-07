@@ -1,4 +1,20 @@
-import type { Config } from "./config.model";
+import type { CategoryCode } from "~/domains/shared/categories";
+
+import type { CheckKind, Config } from "./config.model";
+
+/**
+ * Every config owes the gate something (ADR-022): either an authored `check` or
+ * a `focusCategory` the check derives from. Enforced here rather than on
+ * `Config` because the roster is the only place configs are authored, and
+ * because a partial `Config` is legitimate elsewhere (the configure screen
+ * prices previewed loadouts).
+ *
+ * A config with neither field contributes no checklist row at all, which made a
+ * build carrying it pass gates vacuously on 0/5. AGENTS.md was that config;
+ * the type is here so the next one cannot be.
+ */
+type RosterConfig = Config &
+	({ readonly check: CheckKind } | { readonly focusCategory: CategoryCode });
 
 export const CONFIGS = {
 	js: {
@@ -156,16 +172,25 @@ export const CONFIGS = {
 		check: "breadth",
 		checkAmount: 2,
 	},
-	copilot: {
-		id: "copilot",
-		label: "Copilot",
+	// Vendor-neutral on purpose: the roster names tools and files, and there is
+	// more than one AI assistant. AGENTS.md is the cross-vendor standard, so it
+	// names the help without naming a vendor.
+	agentsMd: {
+		id: "agents-md",
+		label: "AGENTS.md",
 		family: "amplify",
 		rarity: "legendary",
-		description: "All coverage ×2.",
+		description: "All coverage ×2 — get one answer right each gate.",
 		gives: "All coverage earns ×2",
+		needs: "Get 1 answer right this window",
 		requirementDelta: 0,
 		rewardMultiplier: 1,
 		coverageMultiplier: 2,
+		// The legendary's 256KB draft price is most of what it costs, so the check
+		// is deliberately light. It is unconditional, though: never excused by the
+		// draw, which is what makes a gate-level correctness floor unnecessary.
+		check: "min-correct",
+		checkAmount: 1,
 	},
 	codeCoverage: {
 		id: "code-coverage",
@@ -225,6 +250,6 @@ export const CONFIGS = {
 		check: "cold-start",
 		checkAmount: 1,
 	},
-} as const satisfies Record<string, Config>;
+} as const satisfies Record<string, RosterConfig>;
 
 export const CONFIG_LIST: readonly Config[] = Object.values(CONFIGS);

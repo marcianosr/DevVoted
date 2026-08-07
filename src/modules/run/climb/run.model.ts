@@ -279,6 +279,37 @@ const clearLine = (gateNumber: number, reward: number): string => {
 };
 
 /**
+ * Which checks actually failed. A gate fails on any one unmet check, so the log
+ * has to name them: the checklist is the whole rulebook (ADR-022), and a bare
+ * "gate failed" left the player to guess which row cost them the run. At window
+ * close every unmet check has resolved to "failed", so nothing reads as pending.
+ */
+const failedChecks = (state: RunState): readonly string[] =>
+	checkStatuses(state.pipeline, state.window, state.gatesCleared)
+		.filter((check) => check.state === "failed")
+		.map((check) => check.label);
+
+const failureCause = (state: RunState): string => {
+	const failed = failedChecks(state);
+	return failed.length > 0 ? `: ${failed.join(", ")}` : "";
+};
+
+/**
+ * The log line for a fatal fail. A bare build is unreachable since ADR-021, but
+ * runs snapshotted before it can resume bare, so both readings stay.
+ */
+const fatalPeelLine = (
+	state: RunState,
+	gateNumber: number,
+	installed: number
+): string => {
+	if (installed === 0)
+		return `Gate ${gateNumber} broke a bare build — run over.`;
+	const plural = installed > 1 ? "s" : "";
+	return `Gate ${gateNumber} failed${failureCause(state)}. The peel takes all ${installed} config${plural} — run over.`;
+};
+
+/**
  * Out of polls while answering — the day's segment is exhausted and the run
  * waits for tomorrow's polls (ADR-014). Derived on purpose: the reducer is
  * day-unaware, so the rollover appending tomorrow's segment is the unlock.
@@ -323,28 +354,28 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const gateNumber = state.gatesCleared;
 
 	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
-		if (isBare(state.pipeline))
+		const quota = dropCount(state.gatesCleared);
+		const installed = state.pipeline.configs.length;
+		// A fail the build cannot pay for ends the run (ADR-021). The quota grows
+		// with depth, so from gate 4 a three-config build owes everything it holds —
+		// and a build that pays that has nothing left to climb with. Peeling it bare
+		// and playing on was a zombie window: ADR-017 makes a bare pipeline unable
+		// to clear, so it could only ever end in this same death one gate later.
+		if (quota >= installed)
 			return {
 				...state,
 				currentIndex: nextIndex,
 				status: "dead",
-				log: withLog(
-					state,
-					`Gate ${gateNumber} broke a bare build — run over.`
-				),
+				log: withLog(state, fatalPeelLine(state, gateNumber, installed)),
 			};
-		const toDrop = Math.min(
-			dropCount(state.gatesCleared),
-			state.pipeline.configs.length
-		);
 		return {
 			...state,
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
-			stripsRemaining: toDrop,
+			stripsRemaining: quota,
 			log: withLog(
 				state,
-				`Gate ${gateNumber} failed. Peel ${toDrop} config${toDrop > 1 ? "s" : ""}.`
+				`Gate ${gateNumber} failed${failureCause(state)}. Peel ${quota} config${quota > 1 ? "s" : ""}.`
 			),
 		};
 	}
@@ -477,21 +508,31 @@ const answer = (
 		Math.max(0, FAUCET_CAP_KB - faucetEarnedBefore)
 	);
 	// The lint spend is recorded per linter BEFORE manualDisabled resets below —
-	// this answer settles whether the linted poll was answered correctly.
-	const linter =
-		state.manualDisabled.length > 0
-			? linterFor(configs, poll.category)
-			: undefined;
+	// this answer settles whether the linted poll was answered correctly. The
+	// *offer* is recorded alongside it: a poll this linter could have run on and
+	// did not is a declined pledge (ADR-022), so the check needs to know the
+	// chance existed. Read from the poll's own options rather than
+	// `wrongStillOn`, which shrinks with each lint already spent here.
+	const linter = linterFor(configs, poll.category);
+	const couldLint =
+		linter !== undefined &&
+		poll.options.filter((option) => !option.correct).length > 1;
+	const didLint = linter !== undefined && state.manualDisabled.length > 0;
 	const lintedBefore = state.window.lintedByConfig ?? {};
-	const lintedByConfig = linter
-		? {
-				...lintedBefore,
-				[linter.id]: {
-					polls: (lintedBefore[linter.id]?.polls ?? 0) + 1,
-					correct: (lintedBefore[linter.id]?.correct ?? 0) + (correct ? 1 : 0),
-				},
-			}
-		: lintedBefore;
+	const lintedByConfig =
+		linter && (couldLint || didLint)
+			? {
+					...lintedBefore,
+					[linter.id]: {
+						offered:
+							(lintedBefore[linter.id]?.offered ?? 0) + (couldLint ? 1 : 0),
+						polls: (lintedBefore[linter.id]?.polls ?? 0) + (didLint ? 1 : 0),
+						correct:
+							(lintedBefore[linter.id]?.correct ?? 0) +
+							(didLint && correct ? 1 : 0),
+					},
+				}
+			: lintedBefore;
 	const missStreak = nextMissStreak(state.window.missStreak ?? 0, outcome);
 	const tally = state.window.byCategory[poll.category] ?? {
 		seen: 0,
@@ -623,6 +664,15 @@ const strip = (state: RunState, configId: string): RunState => {
 /** Commit the repaired build and resume the climb. No-op until the peel quota is met. */
 const resumeClimb = (state: RunState): RunState => {
 	if (state.stripsRemaining > 0) return state;
+	// An emptied build never climbs on. Only runs snapshotted before ADR-021 reach
+	// this — their quota was capped at what the build held — and a bare pipeline
+	// cannot clear a check (ADR-017), so the climb is already decided.
+	if (isBare(state.pipeline))
+		return {
+			...state,
+			status: "dead",
+			log: withLog(state, "Nothing left in the pipeline — run over."),
+		};
 	return {
 		...state,
 		window: EMPTY_WINDOW,
@@ -765,11 +815,19 @@ const rebuildDraft = (state: RunState): RunState => {
 	};
 };
 
+/**
+ * The last installed config is not removable. A bare pipeline can never clear a
+ * gate (ADR-017), so emptying the build in the shop would be a delayed suicide
+ * with no failed gate to justify it — death belongs to the gate (ADR-021).
+ */
+const holdsLastConfig = (state: RunState): boolean =>
+	state.pipeline.configs.length <= 1;
+
 const sell = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target) return state;
+	if (!target || holdsLastConfig(state)) return state;
 	const refund = sellRefund(target);
 	return {
 		...state,
@@ -783,7 +841,7 @@ const drop = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target) return state;
+	if (!target || holdsLastConfig(state)) return state;
 	return {
 		...state,
 		pipeline: withPipeline(

@@ -36,7 +36,10 @@ describe("coverageProfileFor", () => {
 	});
 
 	it("multiplies coverage mults and sums flat adds across the build", () => {
-		const profile = coverageProfileFor([CONFIGS.copilot, CONFIGS.codeCoverage]);
+		const profile = coverageProfileFor([
+			CONFIGS.agentsMd,
+			CONFIGS.codeCoverage,
+		]);
 		expect(profile.mult).toBe(2);
 		expect(profile.add).toBe(0.5);
 	});
@@ -81,7 +84,7 @@ describe("storageOnClearFor", () => {
 	it("is 0 for a bare pipeline and sums flat clear payouts", () => {
 		expect(storageOnClearFor([])).toBe(0);
 		expect(storageOnClearFor([CONFIGS.unitTests])).toBe(32);
-		expect(storageOnClearFor([CONFIGS.unitTests, CONFIGS.copilot])).toBe(32);
+		expect(storageOnClearFor([CONFIGS.unitTests, CONFIGS.agentsMd])).toBe(32);
 	});
 });
 
@@ -96,14 +99,16 @@ describe("pipelineModifiersFor", () => {
 	});
 
 	it("folds flat clear payouts and coverage boosts into one modifier set", () => {
-		// Unit Tests pays +32 on clear, Copilot doubles coverage — the same
+		// Unit Tests pays +32 on clear, AGENTS.md doubles coverage — the same
 		// numbers the configure preview shows before the config is slotted.
-		expect(pipelineModifiersFor([CONFIGS.unitTests, CONFIGS.copilot])).toEqual({
-			gateReward: 64,
-			rewardMultiplier: 1,
-			coverageMultiplier: 2,
-			coverageAdd: 0,
-		});
+		expect(pipelineModifiersFor([CONFIGS.unitTests, CONFIGS.agentsMd])).toEqual(
+			{
+				gateReward: 64,
+				rewardMultiplier: 1,
+				coverageMultiplier: 2,
+				coverageAdd: 0,
+			}
+		);
 	});
 });
 
@@ -141,7 +146,7 @@ describe("coverageForAnswer", () => {
 	});
 
 	it("stacks Focus and Amplify across the whole pipeline", () => {
-		expect(coverageForAnswer([CONFIGS.js, CONFIGS.copilot], at("js"), 1)).toBe(
+		expect(coverageForAnswer([CONFIGS.js, CONFIGS.agentsMd], at("js"), 1)).toBe(
 			2.5
 		); // 1.25 × 2
 	});
@@ -166,9 +171,9 @@ describe("coverageForAnswer", () => {
 	});
 
 	it("applies multipliers last, so a ×mult amplifies flat adds too", () => {
-		// (1 base + 0.5 Code Coverage) × 2 Copilot = 3 — the +0.5 gets doubled.
+		// (1 base + 0.5 Code Coverage) × 2 AGENTS.md = 3 — the +0.5 gets doubled.
 		expect(
-			coverageForAnswer([CONFIGS.copilot, CONFIGS.codeCoverage], at("js"), 1)
+			coverageForAnswer([CONFIGS.agentsMd, CONFIGS.codeCoverage], at("js"), 1)
 		).toBe(3);
 	});
 
@@ -188,13 +193,13 @@ describe("coverageBreakdownForAnswer", () => {
 	});
 
 	it("splits an Amplify multiplier into its own config chip", () => {
-		// Copilot ×2 on a base of 1 → +1 config chip, base stays 1.
+		// AGENTS.md ×2 on a base of 1 → +1 config chip, base stays 1.
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.copilot], at("js"), 1, 1, 0)
+			coverageBreakdownForAnswer([CONFIGS.agentsMd], at("js"), 1, 1, 0)
 		).toEqual({
 			base: 1,
 			streakBonus: 0,
-			configBonuses: [{ configId: "copilot", value: 1 }],
+			configBonuses: [{ configId: "agents-md", value: 1 }],
 		});
 	});
 
@@ -248,17 +253,17 @@ describe("coverageBreakdownForAnswer", () => {
 
 	it("carries a miss as a negative base with no bonuses", () => {
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.copilot], at("js"), 0, 1, 0.5)
+			coverageBreakdownForAnswer([CONFIGS.agentsMd], at("js"), 0, 1, 0.5)
 		).toEqual({ base: -0.5, streakBonus: 0, configBonuses: [] });
 	});
 
 	it("credits the multiplier chip when a ×mult amplifies a flat add, listing the mult last", () => {
-		// (1 + 0.5) × 2 = 3: Code Coverage keeps its face +0.5, Copilot absorbs
-		// the amplification (+1.5 = doubling base + add), base stays 1. Copilot is
+		// (1 + 0.5) × 2 = 3: Code Coverage keeps its face +0.5, AGENTS.md absorbs
+		// the amplification (+1.5 = doubling base + add), base stays 1. AGENTS.md is
 		// the ×mult, so it lists after the flat add even though it's slotted first.
 		expect(
 			coverageBreakdownForAnswer(
-				[CONFIGS.copilot, CONFIGS.codeCoverage],
+				[CONFIGS.agentsMd, CONFIGS.codeCoverage],
 				at("js"),
 				1,
 				1,
@@ -269,25 +274,25 @@ describe("coverageBreakdownForAnswer", () => {
 			streakBonus: 0,
 			configBonuses: [
 				{ configId: "code-coverage", value: 0.5 },
-				{ configId: "copilot", value: 1.5 },
+				{ configId: "agents-md", value: 1.5 },
 			],
 		});
 	});
 
 	it("lists every flat-add config before every ×mult config, whatever the slot order", () => {
 		const order = coverageBreakdownForAnswer(
-			[CONFIGS.copilot, CONFIGS.codeCoverage],
+			[CONFIGS.agentsMd, CONFIGS.codeCoverage],
 			at("js"),
 			1,
 			1,
 			0
 		).configBonuses.map((bonus) => bonus.configId);
-		// copilot is the ×mult, code-coverage the flat add → add first, mult last.
-		expect(order).toEqual(["code-coverage", "copilot"]);
+		// agents-md is the ×mult, code-coverage the flat add → add first, mult last.
+		expect(order).toEqual(["code-coverage", "agents-md"]);
 	});
 
 	it("keeps base + streak + configs summing to the engine's earned coverage", () => {
-		const configs = [CONFIGS.copilot, CONFIGS.codeCoverage];
+		const configs = [CONFIGS.agentsMd, CONFIGS.codeCoverage];
 		const breakdown = coverageBreakdownForAnswer(configs, at("js"), 1, 1.3, 0);
 		const sum =
 			breakdown.base +
@@ -305,7 +310,7 @@ describe("canLint", () => {
 		expect(canLint([CONFIGS.eslint], "ts")).toBe(true); // ESLint covers both JS and TS
 		expect(canLint([CONFIGS.eslint], "css")).toBe(false);
 		expect(canLint([CONFIGS.stylelint], "css")).toBe(true);
-		expect(canLint([CONFIGS.js, CONFIGS.copilot], "js")).toBe(false); // no linter
+		expect(canLint([CONFIGS.js, CONFIGS.agentsMd], "js")).toBe(false); // no linter
 	});
 });
 

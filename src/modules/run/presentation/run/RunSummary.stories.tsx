@@ -38,7 +38,7 @@ const answered: AnsweredPoll[] = [
 	},
 ];
 
-const configs = [CONFIGS.css, CONFIGS.copilot, CONFIGS.indexedDb];
+const configs = [CONFIGS.css, CONFIGS.agentsMd, CONFIGS.indexedDb];
 
 const meta: Meta<typeof RunSummary> = {
 	component: RunSummary,

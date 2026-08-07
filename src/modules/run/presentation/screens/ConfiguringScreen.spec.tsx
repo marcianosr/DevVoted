@@ -8,7 +8,7 @@ const base = {
 	gatesCleared: 0,
 	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
-	bench: [CONFIGS.eslint, CONFIGS.copilot],
+	bench: [CONFIGS.eslint, CONFIGS.agentsMd],
 	gateReward: 80,
 	rewardMultiplier: 1,
 	coverageMultiplier: 1,
@@ -164,11 +164,11 @@ describe(ConfiguringScreen, () => {
 	it("previews a hovered bench config in the next open slot", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(screen.getByText("empty slot")).toBeInTheDocument();
-		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
+		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
 		// The row itself is the affordance — no "click to add" text inside the
 		// pipeline, which read as if the config were already installed.
 		expect(
-			screen.getByRole("button", { name: "Add Copilot to your pipeline" })
+			screen.getByRole("button", { name: "Add AGENTS.md to your pipeline" })
 		).toBeInTheDocument();
 		expect(screen.queryByText("click to add")).not.toBeInTheDocument();
 		// The preview occupies the would-be slot, so no open slot remains.
@@ -180,18 +180,18 @@ describe(ConfiguringScreen, () => {
 		// clicked — the preview only yields to another hover or a commit.
 		const onSlot = vi.fn();
 		render(<ConfiguringScreen {...base} onSlot={onSlot} />);
-		const chip = screen.getByRole("button", { name: /Copilot/ });
+		const chip = screen.getByRole("button", { name: /AGENTS.md/ });
 		fireEvent.mouseOver(chip);
 		fireEvent.mouseLeave(chip);
 		fireEvent.click(
 			screen.getByRole("button", { name: /^Add .+ to your pipeline$/ })
 		);
-		expect(onSlot).toHaveBeenCalledWith("copilot");
+		expect(onSlot).toHaveBeenCalledWith("agents-md");
 	});
 
 	it("switches the preview when another bench config is hovered", () => {
 		render(<ConfiguringScreen {...base} />);
-		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
+		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
 		fireEvent.mouseOver(screen.getByRole("button", { name: /ESLint/ }));
 		expect(
 			screen.getAllByRole("button", { name: /^Add .+ to your pipeline$/ })
@@ -201,8 +201,8 @@ describe(ConfiguringScreen, () => {
 
 	it("drops the preview once its config is committed", () => {
 		render(<ConfiguringScreen {...base} />);
-		// Grab the chip before hovering — the preview row also answers to /Copilot/.
-		const chip = screen.getByRole("button", { name: /Copilot/ });
+		// Grab the chip before hovering — the preview row also answers to /AGENTS.md/.
+		const chip = screen.getByRole("button", { name: /AGENTS.md/ });
 		fireEvent.mouseOver(chip);
 		fireEvent.click(chip);
 		expect(
@@ -212,9 +212,9 @@ describe(ConfiguringScreen, () => {
 
 	it("shows the modifier change the previewed config would make, old to new", () => {
 		render(<ConfiguringScreen {...base} />);
-		// Copilot doubles coverage: every ×1 on the strip reads muted (the old
+		// AGENTS.md doubles coverage: every ×1 on the strip reads muted (the old
 		// coverage value and the untouched reward ×), and → ×2 arrives in celadon.
-		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
+		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
 		for (const identity of screen.getAllByText("×1")) {
 			expect(identity).toHaveClass("text-zinc-500");
 		}
@@ -223,8 +223,8 @@ describe(ConfiguringScreen, () => {
 
 	it("keeps unchanged stats plain while previewing", () => {
 		render(<ConfiguringScreen {...base} />);
-		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
-		// Copilot touches neither the gate reward nor the reward multiplier.
+		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
+		// AGENTS.md touches neither the gate reward nor the reward multiplier.
 		expect(screen.getByText("+80KB")).toBeInTheDocument();
 		expect(screen.queryByText(/→ \+80KB/)).not.toBeInTheDocument();
 	});
@@ -232,16 +232,16 @@ describe(ConfiguringScreen, () => {
 	it("commits the previewed config when its row is clicked", () => {
 		const onSlot = vi.fn();
 		render(<ConfiguringScreen {...base} onSlot={onSlot} />);
-		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
+		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
 		fireEvent.click(
 			screen.getByRole("button", { name: /^Add .+ to your pipeline$/ })
 		);
-		expect(onSlot).toHaveBeenCalledWith("copilot");
+		expect(onSlot).toHaveBeenCalledWith("agents-md");
 	});
 
 	it("keeps rarity to the bench legend — the rows carry it in their border", () => {
 		render(<ConfiguringScreen {...base} />);
-		fireEvent.mouseOver(screen.getByRole("button", { name: /Copilot/ }));
+		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
 		// The word appears once, in the legend: naming it per row added nothing.
 		expect(screen.getAllByText("legendary")).toHaveLength(1);
 	});

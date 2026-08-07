@@ -55,7 +55,7 @@ describe(RoleList, () => {
 	});
 
 	it("shuts a config with no check at all, since nothing about it is live", () => {
-		render(<RoleList rows={roleRows([CONFIGS.copilot], [])} foldIdleRows />);
-		expect(detailFor("Copilot")).toHaveClass("hidden");
+		render(<RoleList rows={roleRows([CONFIGS.agentsMd], [])} foldIdleRows />);
+		expect(detailFor("AGENTS.md")).toHaveClass("hidden");
 	});
 });

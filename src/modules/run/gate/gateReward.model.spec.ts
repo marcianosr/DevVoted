@@ -27,7 +27,7 @@ const answered: AnsweredPoll[] = [
 		coverageBreakdown: {
 			base: 0.5,
 			streakBonus: 0,
-			configBonuses: [{ configId: "copilot", value: 0.5 }],
+			configBonuses: [{ configId: "agents-md", value: 0.5 }],
 		},
 	},
 	{
@@ -53,15 +53,20 @@ const checks: CheckStatus[] = [
 
 const input = {
 	answered,
-	configs: [CONFIGS.css, CONFIGS.copilot, CONFIGS.indexedDb, CONFIGS.unitTests],
+	configs: [
+		CONFIGS.css,
+		CONFIGS.agentsMd,
+		CONFIGS.indexedDb,
+		CONFIGS.unitTests,
+	],
 	checks,
 };
 
 describe(gateRewardRows, () => {
 	it("uses each config's roster description verbatim", () => {
 		const rows = gateRewardRows(input);
-		expect(rows.find((row) => row.key === "copilot")?.description).toBe(
-			CONFIGS.copilot.description
+		expect(rows.find((row) => row.key === "agents-md")?.description).toBe(
+			CONFIGS.agentsMd.description
 		);
 		expect(rows.find((row) => row.key === "indexed-db")?.description).toBe(
 			CONFIGS.indexedDb.description
@@ -71,7 +76,7 @@ describe(gateRewardRows, () => {
 	it("attributes coverage per config by summing per-answer breakdowns", () => {
 		const rows = gateRewardRows(input);
 		expect(rows.find((row) => row.key === "css")?.value).toBe("+0.2%");
-		expect(rows.find((row) => row.key === "copilot")?.value).toBe("+0.5%");
+		expect(rows.find((row) => row.key === "agents-md")?.value).toBe("+0.5%");
 	});
 
 	it("computes storage as per-correct × correct answers", () => {

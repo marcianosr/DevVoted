@@ -30,7 +30,7 @@ describe(StripScreen, () => {
 			<StripScreen
 				stripsRemaining={2}
 				gateNumber={2}
-				configs={[CONFIGS.js, CONFIGS.copilot]}
+				configs={[CONFIGS.js, CONFIGS.agentsMd]}
 				checks={checks}
 				answered={[]}
 				onStrip={() => {}}
@@ -114,14 +114,14 @@ describe(StripScreen, () => {
 			<StripScreen
 				stripsRemaining={1}
 				gateNumber={2}
-				configs={[CONFIGS.js, CONFIGS.copilot]}
+				configs={[CONFIGS.js, CONFIGS.agentsMd]}
 				checks={checks}
 				answered={[]}
 				onStrip={onStrip}
 			/>
 		);
-		fireEvent.click(screen.getByRole("button", { name: "Remove Copilot" }));
-		expect(onStrip).toHaveBeenCalledWith("copilot");
+		fireEvent.click(screen.getByRole("button", { name: "Remove AGENTS.md" }));
+		expect(onStrip).toHaveBeenCalledWith("agents-md");
 	});
 
 	it("offers no removal once the quota is met — rows only expand", () => {

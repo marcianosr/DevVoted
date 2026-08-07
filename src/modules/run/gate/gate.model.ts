@@ -84,6 +84,12 @@ export const checkStatuses = (
  * (ADR-017), an empty checklist would pass vacuously and make a stripped-
  * bare run immortal. Nothing installed means nothing ships — so bareness
  * itself is the failure, keeping "a bare build fails → dead" reachable.
+ *
+ * There is deliberately **no** correctness floor here (ADR-022, rejected).
+ * "Get one right" is a config's check, not the gate's rule: AGENTS.md carries
+ * it unconditionally, and duplicating it here would charge builds that never
+ * bought it and add a demand with no checklist row for the player to read.
+ * The checklist is the whole rulebook.
  */
 export const gatePassed = (
 	pipeline: Pipeline,

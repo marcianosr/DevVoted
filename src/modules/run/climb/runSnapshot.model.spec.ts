@@ -54,8 +54,8 @@ const stateVariants: Record<string, RunState> = {
 	"rewarding with draft options": {
 		...baseState,
 		status: "rewarding",
-		draftOptions: [CONFIGS.copilot, CONFIGS.indexedDb],
-		draftedThisGate: [CONFIGS.copilot.id],
+		draftOptions: [CONFIGS.agentsMd, CONFIGS.indexedDb],
+		draftedThisGate: [CONFIGS.agentsMd.id],
 		rebuildsUsed: 1,
 		gatesCleared: 1,
 	},
@@ -108,7 +108,7 @@ describe("hydrateRunState — the roster is authoritative", () => {
 
 	it("passes an unknown config id through untouched instead of crashing the run", () => {
 		const retired = {
-			...CONFIGS.copilot,
+			...CONFIGS.agentsMd,
 			id: "yarn-lock",
 			label: "yarn.lock",
 		};

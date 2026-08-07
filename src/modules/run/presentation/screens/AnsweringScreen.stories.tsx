@@ -52,7 +52,7 @@ export const Default: Story = {
 export const Revealed: Story = {
 	args: {
 		...Default.args,
-		configs: [CONFIGS.js, CONFIGS.copilot],
+		configs: [CONFIGS.js, CONFIGS.agentsMd],
 		category: "js",
 		question: "Which of these are valid ways to make a fetch cancellable?",
 		answerType: "multiple",
@@ -64,7 +64,7 @@ export const Revealed: Story = {
 		correctOptionIds: ["a", "b"],
 		chosenOptionIds: ["a", "c"],
 		canSubmit: false,
-		// Multipliers-last: Copilot ×2 amplifies base + the .js boost, so its chip
+		// Multipliers-last: AGENTS.md ×2 amplifies base + the .js boost, so its chip
 		// is +1.5 (not +1.0). (1 + 0.5 .js) × 2 × 1.2 streak = 3.6.
 		revealScore: {
 			isCorrect: true,
@@ -72,7 +72,7 @@ export const Revealed: Story = {
 			streakBonus: 0.6,
 			configBonuses: [
 				{ configId: "js", value: 0.5 },
-				{ configId: "copilot", value: 1.5 },
+				{ configId: "agents-md", value: 1.5 },
 			],
 			earnedCoverage: 3.6,
 		},

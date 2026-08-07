@@ -12,12 +12,14 @@ describe(ConfigdexPanel, () => {
 
 	it("lists a config as a bare chip, with its effect in the chip's tooltip", () => {
 		render(<ConfigdexPanel />);
-		expect(screen.getByText("Copilot")).toBeInTheDocument();
+		expect(screen.getByText("AGENTS.md")).toBeInTheDocument();
 		// The effect is no longer printed under the label — the collection reads as
 		// a grid of chips, and the prose lives one hover away.
 		const tooltips = screen.getAllByRole("tooltip");
 		expect(
-			tooltips.some((node) => node.textContent?.includes("All coverage ×2."))
+			tooltips.some((node) =>
+				node.textContent?.includes("All coverage ×2 — get one answer right")
+			)
 		).toBe(true);
 	});
 });

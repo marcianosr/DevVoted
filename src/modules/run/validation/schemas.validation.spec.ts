@@ -13,12 +13,12 @@ describe("runActionSchema", () => {
 			{ type: "strip", configId: "eslint" },
 			{ type: "resume-climb" },
 			{ type: "add-slot" },
-			{ type: "draft", configId: "copilot" },
+			{ type: "draft", configId: "agents-md" },
 			{ type: "upgrade", configId: "js" },
 			{ type: "rebuild-draft" },
 			{ type: "finish-reward" },
-			{ type: "sell", configId: "copilot" },
-			{ type: "drop", configId: "copilot" },
+			{ type: "sell", configId: "agents-md" },
+			{ type: "drop", configId: "agents-md" },
 		];
 		actions.forEach((action) => {
 			expect(runActionSchema.safeParse(action).success).toBe(true);

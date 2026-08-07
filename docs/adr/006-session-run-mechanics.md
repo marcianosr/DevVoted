@@ -64,6 +64,8 @@ Coverage on a correct answer is driven by the **whole build** (all equipped conf
 
 ### 6. Failure model: strip-on-fail, drop N (N climbs)
 
+> ⚠ **Death rule superseded by [ADR-021](021-death-at-the-gate-that-empties-the-build.md)**: a fail whose peel quota meets or exceeds the installed configs ends the run on the spot. The peel itself (N of the player's choice) is unchanged.
+
 Miss a gate → the player **peels N configs of their choice** off the pipeline, where `N = 1 + floor(gatesCleared / 2)`. Then the run resumes on a fresh window. **Death happens only when a bare build (0 configs) misses a gate.** A drop quota larger than the build strips it bare rather than instantly killing.
 
 *Rationale:* deeper gates bleed you faster (bigger drop), pushing you toward the bare-and-fragile state where death lives — without cheap one-shot deaths early.

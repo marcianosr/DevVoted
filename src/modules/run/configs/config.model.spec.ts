@@ -17,7 +17,7 @@ describe("rarityOf", () => {
 	});
 
 	it("reads an explicit rarity", () => {
-		expect(rarityOf(CONFIGS.copilot)).toBe("legendary");
+		expect(rarityOf(CONFIGS.agentsMd)).toBe("legendary");
 		expect(rarityOf(CONFIGS.coverageGain)).toBe("uncommon");
 	});
 });
@@ -53,7 +53,7 @@ describe("isUpgradable", () => {
 	});
 
 	it("refuses non-focus configs without a correct check", () => {
-		expect(isUpgradable(CONFIGS.copilot)).toBe(false);
+		expect(isUpgradable(CONFIGS.agentsMd)).toBe(false);
 		expect(isUpgradable(CONFIGS.coverageGain)).toBe(false);
 		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
 	});

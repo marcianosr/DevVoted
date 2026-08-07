@@ -15,7 +15,7 @@ export const Default: Story = {
 	args: {
 		configs: [CONFIGS.js],
 		slots: 3,
-		bench: [CONFIGS.eslint, CONFIGS.copilot, CONFIGS.coverageGain],
+		bench: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coverageGain],
 		gateReward: 80,
 		rewardMultiplier: 1,
 		coverageMultiplier: 1,

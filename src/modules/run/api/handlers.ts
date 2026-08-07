@@ -30,7 +30,7 @@ const HANDED_CONFIGS = [
 	CONFIGS.ts,
 	CONFIGS.css,
 	CONFIGS.eslint,
-	CONFIGS.copilot,
+	CONFIGS.agentsMd,
 	CONFIGS.codeCoverage,
 	CONFIGS.indexedDb,
 	CONFIGS.coverageGain,

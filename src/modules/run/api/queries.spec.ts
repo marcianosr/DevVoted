@@ -224,7 +224,7 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 
-		const next = await dispatch({ type: "draft", configId: "copilot" });
+		const next = await dispatch({ type: "draft", configId: "agents-md" });
 
 		expect(next.status).toBe("answering");
 		expect(db.update).not.toHaveBeenCalled();

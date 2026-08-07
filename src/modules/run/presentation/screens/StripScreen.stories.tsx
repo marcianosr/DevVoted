@@ -14,7 +14,7 @@ type Story = StoryObj<typeof StripScreen>;
 export const Default: Story = {
 	args: {
 		stripsRemaining: 2,
-		configs: [CONFIGS.js, CONFIGS.copilot, CONFIGS.coverageGain],
+		configs: [CONFIGS.js, CONFIGS.agentsMd, CONFIGS.coverageGain],
 		checks: [
 			{
 				label: "Correct",

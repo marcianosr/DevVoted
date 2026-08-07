@@ -175,7 +175,7 @@ describe("latestAnswerScore", () => {
 	});
 
 	it("adds a chip for a coverage-affecting config and sums the total", () => {
-		const state = runReducer(answeringWith([CONFIGS.copilot]), {
+		const state = runReducer(answeringWith([CONFIGS.agentsMd]), {
 			type: "answer",
 			optionIds: ["q0-a"],
 		});
@@ -183,7 +183,7 @@ describe("latestAnswerScore", () => {
 			isCorrect: true,
 			baseCoverage: 1,
 			streakBonus: 0.2,
-			configBonuses: [{ configId: "copilot", value: 1 }],
+			configBonuses: [{ configId: "agents-md", value: 1 }],
 			earnedCoverage: 2.2,
 		});
 	});

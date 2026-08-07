@@ -222,7 +222,7 @@ describe("effectOf — linters", () => {
 	});
 });
 
-describe("effectOf — Unit Tests & Copilot", () => {
+describe("effectOf — Unit Tests & AGENTS.md", () => {
 	it("Unit Tests pays flat storage on clear — level never touches the multiplier", () => {
 		const effect = effectOf(CONFIGS.unitTests);
 		expect(effect.storageOnClear).toBe(32);
@@ -234,9 +234,16 @@ describe("effectOf — Unit Tests & Copilot", () => {
 		expect(effect.gateCheck).toBeUndefined();
 	});
 
-	it("Copilot multiplies coverage with no check — the legendary exception", () => {
-		const effect = effectOf(CONFIGS.copilot);
+	it("AGENTS.md doubles coverage and owes one correct answer for it", () => {
+		// No longer the checkless exception (ADR-022): a config that owes nothing
+		// let a build clear gates on 0/5. Its check is light because the 256KB
+		// legendary draft price already is most of what it costs, but it is
+		// unconditional — the draw can never excuse it.
+		const effect = effectOf(CONFIGS.agentsMd);
 		expect(effect.coverage?.(answering("css"))).toEqual({ mult: 2, add: 0 });
-		expect(effect.gateCheck).toBeUndefined();
+		expect(effect.demand?.(0)).toBe("1 correct answer this window");
+		expect(
+			effect.gateCheck?.({ window: EMPTY_WINDOW, gatesCleared: 0 })
+		).toMatchObject({ label: "AGENTS.md", current: 0, target: 1 });
 	});
 });

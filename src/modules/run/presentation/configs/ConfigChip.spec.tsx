@@ -38,8 +38,8 @@ describe(ConfigChip, () => {
 	});
 
 	it("wears the static Kanto gradient ring (legendary), label stays white", () => {
-		render(<ConfigChip config={CONFIGS.copilot} />);
-		expect(screen.getByText("Copilot")).toHaveClass(
+		render(<ConfigChip config={CONFIGS.agentsMd} />);
+		expect(screen.getByText("AGENTS.md")).toHaveClass(
 			"legendary-ring",
 			"border-transparent",
 			"text-zinc-100"
