@@ -18,6 +18,7 @@ import {
 	RunCommunityBoard,
 	type RunCommunityBoardProps,
 } from "~/modules/run/presentation/community/RunCommunity.ui";
+import { longestCorrectStreak } from "~/modules/run/community/standouts.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/run/draft/draft.model";
 import {
@@ -32,14 +33,21 @@ import { StripScreen } from "~/modules/run/presentation/screens/StripScreen.ui";
 import { ReviewAnswers } from "~/modules/run/presentation/run/ReviewAnswers.ui";
 import { RunHud } from "~/modules/run/presentation/run/RunHud.ui";
 import { RunSummary } from "~/modules/run/presentation/run/RunSummary.ui";
+import { StandoutsPanel } from "~/modules/run/presentation/community/Standouts.ui";
+import { swatchForGate } from "~/modules/run/gate/swatch.model";
 import { toRunView } from "~/modules/run/view/runView.viewmodel";
-import { SLICE_WINDOW, VICTORY_GATE } from "~/modules/run/rules.model";
+import {
+	roundToOneDecimal,
+	SLICE_WINDOW,
+	VICTORY_GATE,
+} from "~/modules/run/rules.model";
 import {
 	type CategoryCode,
 	getCategoryMetadata,
 } from "~/domains/shared/categories";
 import { formatDurationMs } from "~/lib/dateUtils";
 import { Screen } from "~/ui/Screen.ui";
+import { Stack } from "~/ui/Stack.ui";
 
 export const Route = createFileRoute("/proto-run")({
 	component: RouteComponent,
@@ -179,10 +187,20 @@ const sameLabelSet = (a: readonly string[], b: readonly string[]): boolean =>
 
 const YOU: CommunityVoter = { id: "you", displayName: "You", you: true };
 
+type SimulatedCommunity = RunCommunityBoardProps & {
+	standouts: CommunityStandout[];
+};
+
+/**
+ * The rig has no other runs, so the run-scoped awards are faked from *your*
+ * standing and handed to random trainers. The point here is that the panel looks
+ * and reads like production, not that the numbers mean anything.
+ */
 const simulateCommunityBoard = (
 	answered: readonly AnsweredPoll[],
-	polls: readonly RunPoll[]
-): RunCommunityBoardProps => {
+	polls: readonly RunPoll[],
+	run: { gatesCleared: number; coverage: number; configCount: number }
+): SimulatedCommunity => {
 	const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
 	const answeredCount = TRAINERS.length + 1;
 
@@ -279,6 +297,9 @@ const simulateCommunityBoard = (
 		(a, b) => b[1] - a[1]
 	)[0];
 	const gateKey = answered[0]?.id ?? "";
+	const streak = longestCorrectStreak(answered.map((entry) => entry.outcome));
+	const deepest = swatchForGate(run.gatesCleared);
+	const hardest = answered.find((entry) => entry.outcome !== "correct");
 	const standouts: CommunityStandout[] =
 		answered.length === 0 || !topCategory
 			? []
@@ -298,9 +319,60 @@ const simulateCommunityBoard = (
 						),
 					},
 					{
-						voter: trainerVoter(trainerBy(`most:${topCategory[0]}`)),
-						title: `most ${getCategoryMetadata(topCategory[0]).name} polls`,
-						value: String(topCategory[1]),
+						voter: trainerVoter(trainerBy(`good:${gateKey}`)),
+						title: "first good",
+						value: formatDurationMs(
+							(90 + (hashOf(`goods:${gateKey}`) % 90)) * 1_000
+						),
+					},
+					// Same floor the model applies: a "most" of one is no distinction.
+					...(topCategory[1] >= 2
+						? [
+								{
+									voter: trainerVoter(trainerBy(`most:${topCategory[0]}`)),
+									title: `most ${getCategoryMetadata(topCategory[0]).name} polls`,
+									value: String(topCategory[1]),
+								},
+							]
+						: []),
+					...(hardest
+						? [
+								{
+									voter: trainerVoter(trainerBy(`lone:${hardest.id}`)),
+									title: "only one right",
+									value:
+										hardest.question.length > 32
+											? `${hardest.question.slice(0, 31).trimEnd()}…`
+											: hardest.question,
+								},
+							]
+						: []),
+					{
+						voter: trainerVoter(trainerBy(`gate:${gateKey}`)),
+						title: "deepest gate",
+						value: deepest?.gateName ?? "the climb",
+						...(deepest
+							? { swatch: { theme: deepest.theme, finish: deepest.finish } }
+							: {}),
+					},
+					...(streak >= 2
+						? [
+								{
+									voter: trainerVoter(trainerBy(`streak:${gateKey}`)),
+									title: "longest streak",
+									value: String(streak),
+								},
+							]
+						: []),
+					{
+						voter: trainerVoter(trainerBy(`cov:${gateKey}`)),
+						title: "most coverage",
+						value: `+${roundToOneDecimal(run.coverage)}%`,
+					},
+					{
+						voter: trainerVoter(trainerBy(`wide:${gateKey}`)),
+						title: "widest pipeline",
+						value: `${run.configCount} config${run.configCount === 1 ? "" : "s"}`,
 					},
 				];
 
@@ -346,6 +418,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	}, [state.status]);
 
 	const view = toRunView(state);
+	const community = simulateCommunityBoard(view.answeredThisGate, state.polls, {
+		gatesCleared: view.gatesCleared,
+		coverage: view.coverage,
+		configCount: view.configs.length,
+	});
 	// Only options the player paid to lint off are crossed out — no automatic masking.
 	const disabled = state.manualDisabled;
 	const cost = rebuildCost(state.rebuildsUsed);
@@ -555,9 +632,14 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => dispatch({ type: "finish-reward" }),
 					}}
 				>
-					<RunCommunityBoard
-						{...simulateCommunityBoard(view.answeredThisGate, state.polls)}
-					/>
+					<Stack gap="6" divided>
+						<StandoutsPanel standouts={community.standouts} />
+						<RunCommunityBoard
+							totalPlayers={community.totalPlayers}
+							topPercent={community.topPercent}
+							polls={community.polls}
+						/>
+					</Stack>
 				</Screen>
 			)}
 

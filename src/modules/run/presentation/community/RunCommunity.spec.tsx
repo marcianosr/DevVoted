@@ -64,7 +64,6 @@ const missedPoll: RunCommunityPoll = {
 const base = {
 	totalPlayers: 5,
 	topPercent: 18,
-	standouts: [],
 	polls: [answeredPoll, missedPoll],
 };
 
@@ -191,53 +190,6 @@ describe(RunCommunityBoard, () => {
 		};
 		render(<RunCommunityBoard {...base} polls={[brutal]} />);
 		expect(screen.getByText("20% correct")).toHaveClass("text-vermillion");
-	});
-
-	it("lists the day's standouts by avatar and value, summarising your haul", () => {
-		render(
-			<RunCommunityBoard
-				{...base}
-				standouts={[
-					{
-						voter: { id: "red", displayName: "Red", you: true },
-						title: "fastest answer",
-						value: "9s",
-					},
-					{
-						voter: { id: "brock", displayName: "Brock Boulder", you: false },
-						title: "most CSS polls",
-						value: "3",
-					},
-				]}
-			/>
-		);
-		expect(screen.getByText("standouts today")).toBeInTheDocument();
-		expect(screen.getByText("you took one of two")).toBeInTheDocument();
-		expect(screen.getByText("fastest answer")).toBeInTheDocument();
-		expect(screen.getByText("9s")).toBeInTheDocument();
-		// The winner is the avatar; their name lives in its tooltip, as on an
-		// option row.
-		expect(
-			screen
-				.getAllByText("Brock Boulder")
-				.every((node) => node.getAttribute("role") === "tooltip")
-		).toBe(true);
-	});
-
-	it("says nothing about your haul when you took no standouts", () => {
-		render(
-			<RunCommunityBoard
-				{...base}
-				standouts={[
-					{
-						voter: { id: "brock", displayName: "Brock Boulder", you: false },
-						title: "most CSS polls",
-						value: "3",
-					},
-				]}
-			/>
-		);
-		expect(screen.queryByText(/you took/)).not.toBeInTheDocument();
 	});
 
 	it("keeps a skipped poll sealed — no question, no results", () => {

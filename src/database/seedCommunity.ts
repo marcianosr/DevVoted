@@ -10,7 +10,9 @@ import {
 	usersTable,
 } from "@/src/database/schema";
 import { getOrCreateDailyRunSeed } from "~/modules/run/api/queries";
+import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import { createRun } from "~/modules/run/climb/run.model";
+import { CONFIG_LIST } from "~/modules/run/configs/configRoster.model";
 import { toRunSnapshot } from "~/modules/run/climb/runSnapshot.model";
 import { SLICE_WINDOW } from "~/modules/run/rules.model";
 
@@ -28,12 +30,22 @@ import { SLICE_WINDOW } from "~/modules/run/rules.model";
  * their run as a death so the map has gravestones to draw; the rest stay live.
  * Spread across the ladder on purpose — clustered, ahead of, and behind a
  * typical viewer — so paging and the uncharted zone both have something to show.
+ *
+ * `configs` and `coverage` feed the run-scoped standouts, which rank live runs
+ * rather than today's answers. Left at their defaults every trainer would tie at
+ * zero and the whole right-hand column of awards would vanish.
  */
 type Trainer = {
 	id: string;
 	displayName: string;
 	accuracy: number;
-	climb: { gatesCleared: number; pollsIntoGate: number; fell?: boolean };
+	climb: {
+		gatesCleared: number;
+		pollsIntoGate: number;
+		fell?: boolean;
+		configs: number;
+		coverage: number;
+	};
 };
 
 const trainerUUID = (index: number): string =>
@@ -44,43 +56,55 @@ const TRAINERS: readonly Trainer[] = [
 		id: trainerUUID(1),
 		displayName: "Gary Oak",
 		accuracy: 0.9,
-		climb: { gatesCleared: 8, pollsIntoGate: 2 },
+		climb: { gatesCleared: 8, pollsIntoGate: 2, configs: 7, coverage: 21.4 },
 	},
 	{
 		id: trainerUUID(2),
 		displayName: "Lance",
 		accuracy: 0.8,
-		climb: { gatesCleared: 6, pollsIntoGate: 4 },
+		climb: { gatesCleared: 6, pollsIntoGate: 4, configs: 5, coverage: 17.2 },
 	},
 	{
 		id: trainerUUID(3),
 		displayName: "Sabrina",
 		accuracy: 0.7,
-		climb: { gatesCleared: 6, pollsIntoGate: 1 },
+		climb: { gatesCleared: 6, pollsIntoGate: 1, configs: 6, coverage: 15.8 },
 	},
 	{
 		id: trainerUUID(4),
 		displayName: "Erika",
 		accuracy: 0.6,
-		climb: { gatesCleared: 5, pollsIntoGate: 3 },
+		climb: { gatesCleared: 5, pollsIntoGate: 3, configs: 4, coverage: 12.1 },
 	},
 	{
 		id: trainerUUID(5),
 		displayName: "Misty",
 		accuracy: 0.5,
-		climb: { gatesCleared: 4, pollsIntoGate: 0 },
+		climb: { gatesCleared: 4, pollsIntoGate: 0, configs: 3, coverage: 9.4 },
 	},
 	{
 		id: trainerUUID(6),
 		displayName: "Brock",
 		accuracy: 0.45,
-		climb: { gatesCleared: 3, pollsIntoGate: 2, fell: true },
+		climb: {
+			gatesCleared: 3,
+			pollsIntoGate: 2,
+			fell: true,
+			configs: 3,
+			coverage: 6.7,
+		},
 	},
 	{
 		id: trainerUUID(7),
 		displayName: "Ash Ketchum",
 		accuracy: 0.35,
-		climb: { gatesCleared: 5, pollsIntoGate: 1, fell: true },
+		climb: {
+			gatesCleared: 5,
+			pollsIntoGate: 1,
+			fell: true,
+			configs: 4,
+			coverage: 8.3,
+		},
 	},
 ];
 
@@ -141,7 +165,33 @@ const seedTrainerRuns = async (today: string): Promise<void> => {
 	const blank = toRunSnapshot(createRun([], []));
 
 	for (const trainer of TRAINERS) {
-		const { gatesCleared, pollsIntoGate, fell = false } = trainer.climb;
+		const {
+			gatesCleared,
+			pollsIntoGate,
+			fell = false,
+			configs,
+			coverage,
+		} = trainer.climb;
+		const answeredCount = gatesCleared * SLICE_WINDOW + pollsIntoGate;
+		// An answer history shaped by the trainer's accuracy, so "longest streak"
+		// has something to rank. Deterministic like every other seeded value.
+		const history: AnsweredPoll[] = Array.from(
+			{ length: answeredCount },
+			(_, index) => ({
+				id: `seed-${trainer.id}-${index}`,
+				question: "",
+				category: "js",
+				// index * a prime, because hashOf increments with its input: plain
+				// indices hand back consecutive values, which lands every correct
+				// answer in one block and invents a 25-long streak at 60% accuracy.
+				outcome:
+					hashOf(`${trainer.displayName}:outcome:${index * 37}`) % 100 <
+					trainer.accuracy * 100
+						? "correct"
+						: "wrong",
+				picked: [],
+			})
+		);
 		const [run] = await db
 			.insert(runsTable)
 			.values({
@@ -160,7 +210,13 @@ const seedTrainerRuns = async (today: string): Promise<void> => {
 				...blank,
 				status: fell ? "dead" : "answering",
 				gatesCleared,
-				currentIndex: gatesCleared * SLICE_WINDOW + pollsIntoGate,
+				coverage,
+				currentIndex: answeredCount,
+				allAnswered: history,
+				pipeline: {
+					...blank.pipeline,
+					configs: CONFIG_LIST.slice(0, configs),
+				},
 				window: {
 					...blank.window,
 					answered: pollsIntoGate,
@@ -169,11 +225,12 @@ const seedTrainerRuns = async (today: string): Promise<void> => {
 			},
 			engine_status: fell ? "dead" : "answering",
 			gates_cleared: gatesCleared,
-			polls_answered: gatesCleared * SLICE_WINDOW + pollsIntoGate,
+			coverage,
+			polls_answered: answeredCount,
 		});
 
 		console.log(
-			`🧗 ${trainer.displayName} — gate ${gatesCleared}, ${pollsIntoGate} in${fell ? " (fell)" : ""}`
+			`🧗 ${trainer.displayName} — gate ${gatesCleared}, ${pollsIntoGate} in · ${configs} configs · ${coverage}%${fell ? " (fell)" : ""}`
 		);
 	}
 };

@@ -1,8 +1,4 @@
-import {
-	getCategoryMetadata,
-	isCategoryCode,
-} from "~/domains/shared/categories";
-import { formatDurationMs } from "~/lib/dateUtils";
+import { isCategoryCode } from "~/domains/shared/categories";
 import { type ApiResponse, handleApiOperation } from "~/utils/errorHandling";
 
 import type { CategoryCode } from "~/domains/shared/categories";
@@ -11,12 +7,14 @@ import { type ClimbMarker, trackPosition } from "../climb/climbMap.model";
 import type { AnswerOutcome, AnswerType } from "../climb/run.model";
 import {
 	fetchActiveClimbers,
+	fetchActiveRunStats,
 	fetchClimbMarker,
 	fetchFallenToday,
 	fetchPersonalBestPosition,
 } from "./climb.queries";
 import {
 	type CommunityPollRecord,
+	type ConsumedRunPoll,
 	fetchConsumedPollsForDay,
 	fetchDailySeedCreatedAt,
 	fetchPollsWithOptions,
@@ -25,15 +23,17 @@ import {
 	type SessionAnswerRow,
 } from "./community.queries";
 import { findActiveSessionRun, findSessionRunByDate } from "./queries";
+import {
+	type CommunityAnswer,
+	type CommunityStandout,
+	type CommunityVoter,
+	standoutsFor,
+} from "../community/standouts.model";
 
-export type CommunityVoter = {
-	id: string;
-	displayName: string;
-	/** Optional so fixtures stay lean — the handler always sets it. */
-	photoUrl?: string | null;
-	/** The viewer's own chip — rendered as "you". */
-	you: boolean;
-};
+export type {
+	CommunityStandout,
+	CommunityVoter,
+} from "../community/standouts.model";
 
 /**
  * One answer option with its community result. Named `isRight` (not `correct`)
@@ -68,13 +68,6 @@ export type RunCommunityPoll = {
 	outcome: AnswerOutcome | "missed";
 	/** Absent for missed polls: they may reappear in a later seed, so nothing may be revealed. */
 	detail: RunCommunityPollDetail | null;
-};
-
-/** A "standouts today" row: who, what for, and the pre-formatted value. */
-export type CommunityStandout = {
-	voter: CommunityVoter;
-	title: string;
-	value: string;
 };
 
 /** One player's live position on the climb map. */
@@ -116,17 +109,8 @@ export type RunCommunityView = {
 	climb: ClimbTodayView | null;
 };
 
-type SessionAnswer = {
-	pollId: number;
-	user: { id: string; displayName: string; photoUrl: string | null };
-	optionIds: Set<number>;
-	categoryCode: string | null;
-	answeredAt: Date | null;
-	elapsedMs: number | null;
-};
-
-const groupAnswers = (rows: SessionAnswerRow[]): SessionAnswer[] => {
-	const byResponse = new Map<number, SessionAnswer>();
+const groupAnswers = (rows: SessionAnswerRow[]): CommunityAnswer[] => {
+	const byResponse = new Map<number, CommunityAnswer>();
 	for (const row of rows) {
 		if (!row.userId) continue;
 		const answer = byResponse.get(row.responseId) ?? {
@@ -174,8 +158,8 @@ const viewerFirst = (voters: CommunityVoter[]): CommunityVoter[] =>
 
 const buildPollDetail = (
 	poll: CommunityPollRecord,
-	viewerAnswer: SessionAnswer,
-	pollAnswers: SessionAnswer[]
+	viewerAnswer: CommunityAnswer,
+	pollAnswers: CommunityAnswer[]
 ): RunCommunityPollDetail => {
 	const gotItRight = pollAnswers.filter(
 		(answer) => outcomeOf(poll, answer.optionIds) === "correct"
@@ -209,107 +193,11 @@ const buildPollDetail = (
 	};
 };
 
-// ─── Standouts ────────────────────────────────────────────────────────────────
-
-const toVoter = (
-	user: SessionAnswer["user"],
-	viewerId: string
-): CommunityVoter => ({ ...user, you: user.id === viewerId });
-
-type TimedAnswer = SessionAnswer & { elapsedMs: number };
-const isTimed = (answer: SessionAnswer): answer is TimedAnswer =>
-	answer.elapsedMs !== null;
-
-const fastestAnswerStandout = (
-	answers: SessionAnswer[],
-	viewerId: string
-): CommunityStandout | null => {
-	const timed = answers.filter(isTimed);
-	if (timed.length === 0) return null;
-	const fastest = timed.reduce((best, answer) =>
-		answer.elapsedMs < best.elapsedMs ? answer : best
-	);
-	return {
-		voter: toVoter(fastest.user, viewerId),
-		title: "fastest answer",
-		value: formatDurationMs(fastest.elapsedMs),
-	};
-};
-
-type DatedAnswer = SessionAnswer & { answeredAt: Date };
-const isDated = (answer: SessionAnswer): answer is DatedAnswer =>
-	answer.answeredAt !== null;
-
-const firstToAnswerStandout = (
-	answers: SessionAnswer[],
-	seedCreatedAt: Date | null,
-	viewerId: string
-): CommunityStandout | null => {
-	if (!seedCreatedAt) return null;
-	const dated = answers.filter(isDated);
-	if (dated.length === 0) return null;
-	const first = dated.reduce((best, answer) =>
-		answer.answeredAt < best.answeredAt ? answer : best
-	);
-	const sinceDrop = first.answeredAt.getTime() - seedCreatedAt.getTime();
-	return {
-		voter: toVoter(first.user, viewerId),
-		title: "first to answer",
-		value: formatDurationMs(Math.max(0, sinceDrop)),
-	};
-};
-
-const categoryNameOf = (code: string): string =>
-	isCategoryCode(code) ? getCategoryMetadata(code).name : code;
-
-const mostCategoryStandout = (
-	answers: SessionAnswer[],
-	viewerId: string
-): CommunityStandout | null => {
-	const tallies = new Map<
-		string,
-		{ user: SessionAnswer["user"]; category: string; count: number }
-	>();
-	for (const answer of answers) {
-		if (!answer.categoryCode) continue;
-		const key = `${answer.user.id}:${answer.categoryCode}`;
-		const tally = tallies.get(key) ?? {
-			user: answer.user,
-			category: answer.categoryCode,
-			count: 0,
-		};
-		tally.count += 1;
-		tallies.set(key, tally);
-	}
-	// Deterministic winner: highest count, ties broken by user id.
-	const top = [...tallies.values()].sort(
-		(a, b) => b.count - a.count || a.user.id.localeCompare(b.user.id)
-	)[0];
-	// A "most" of one is no distinction — the award waits for a real lead.
-	if (!top || top.count < 2) return null;
-	return {
-		voter: toVoter(top.user, viewerId),
-		title: `most ${categoryNameOf(top.category)} polls`,
-		value: String(top.count),
-	};
-};
-
-const standoutsFor = (
-	answers: SessionAnswer[],
-	seedCreatedAt: Date | null,
-	viewerId: string
-): CommunityStandout[] =>
-	[
-		fastestAnswerStandout(answers, viewerId),
-		firstToAnswerStandout(answers, seedCreatedAt, viewerId),
-		mostCategoryStandout(answers, viewerId),
-	].filter((standout): standout is CommunityStandout => standout !== null);
-
 /** "top 18%": players with a better correct-count today push you down. */
 const topPercentFor = (
 	viewerId: string,
 	polls: CommunityPollRecord[],
-	answers: SessionAnswer[]
+	answers: CommunityAnswer[]
 ): number | null => {
 	const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
 	const correctByUser = new Map<string, number>();
@@ -332,15 +220,64 @@ const topPercentFor = (
 
 const EMPTY_VIEW = (
 	date: string,
-	climb: ClimbTodayView | null
+	climb: ClimbTodayView | null,
+	standouts: CommunityStandout[] = []
 ): RunCommunityView => ({
 	date,
 	totalPlayers: 0,
 	topPercent: null,
-	standouts: [],
+	standouts,
 	polls: [],
 	climb,
 });
+
+/**
+ * The day's awards, gathered for the model. Run-scoped awards read live runs
+ * rather than today's answers, so this is built before the poll board's early
+ * return — a player who has not answered yet still holds the deepest gate.
+ */
+const buildStandouts = async ({
+	answers,
+	consumed,
+	pollsById,
+	seedCreatedAt,
+	viewerId,
+}: {
+	answers: CommunityAnswer[];
+	consumed: ConsumedRunPoll[];
+	pollsById: Map<number, CommunityPollRecord>;
+	seedCreatedAt: Date | null;
+	viewerId: string;
+}): Promise<CommunityStandout[]> => {
+	const runStats = await fetchActiveRunStats();
+	return standoutsFor({
+		answers,
+		// Only what the viewer is past may be named — the same redaction the
+		// poll board applies.
+		eligiblePolls: consumed.flatMap((entry) => {
+			const poll = pollsById.get(entry.poll_id);
+			return poll ? [{ id: poll.id, question: poll.question }] : [];
+		}),
+		isCorrect: (pollId, optionIds) => {
+			const poll = pollsById.get(pollId);
+			return poll ? outcomeOf(poll, new Set(optionIds)) === "correct" : false;
+		},
+		seedCreatedAt,
+		runStats: runStats.map((row) => ({
+			user: {
+				id: row.userId,
+				displayName: row.displayName ?? row.userId,
+				photoUrl: row.photoUrl,
+			},
+			gatesCleared: row.gatesCleared,
+			coverage: row.coverage,
+			configCount: row.configCount,
+			outcomes: row.outcomes,
+			streak: row.streak,
+		})),
+		viewerId,
+	});
+};
 
 /**
  * One marker per player. A user with more than one live run (the schema allows
@@ -433,7 +370,6 @@ export const getRunCommunityHandler = async ({
 
 		const currentIndex = await fetchRunProgress(run.id);
 		const consumed = await fetchConsumedPollsForDay(run.id, date, currentIndex);
-		if (consumed.length === 0) return EMPTY_VIEW(date, climb);
 
 		const answerRows = await fetchSessionAnswersForDay(date);
 		const answers = groupAnswers(answerRows);
@@ -443,6 +379,17 @@ export const getRunCommunityHandler = async ({
 			...new Set([...consumed.map((entry) => entry.poll_id), ...dayPollIds]),
 		]);
 		const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
+
+		// Ahead of the board's early return: the run-scoped awards stand on live
+		// runs, not on whether the viewer has answered anything today.
+		const standouts = await buildStandouts({
+			answers,
+			consumed,
+			pollsById,
+			seedCreatedAt,
+			viewerId: userId,
+		});
+		if (consumed.length === 0) return EMPTY_VIEW(date, climb, standouts);
 
 		const views = consumed.map((entry, index): RunCommunityPoll => {
 			const poll = pollsById.get(entry.poll_id);
@@ -483,7 +430,7 @@ export const getRunCommunityHandler = async ({
 			date,
 			totalPlayers: new Set(answers.map((answer) => answer.user.id)).size,
 			topPercent: topPercentFor(userId, polls, answers),
-			standouts: standoutsFor(answers, seedCreatedAt, userId),
+			standouts,
 			polls: views,
 			climb,
 		};

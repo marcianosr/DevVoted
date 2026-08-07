@@ -1,52 +1,17 @@
 import { useState } from "react";
 
-import { Avatar } from "~/domains/users/components/Avatar.component";
 import type {
 	CommunityOptionResult,
-	CommunityStandout,
-	CommunityVoter,
 	RunCommunityPoll,
 } from "~/modules/run/api/community.handlers";
 import { Disclosure } from "~/ui/Disclosure.ui";
-import { Tooltip } from "~/ui/Tooltip.component";
 import {
 	Paragraph,
 	type ParagraphTone,
 } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 
-// The shared Avatar (photo or identity-colored initial) in a ring: cerulean
-// marks the viewer, zinc separates overlapping chips. tabIndex makes the chip
-// focusable so a mobile tap can reveal the tooltip.
-const VoterAvatar = ({
-	voter,
-	focusable = false,
-}: {
-	voter: CommunityVoter;
-	focusable?: boolean;
-}) => (
-	<span
-		tabIndex={focusable ? 0 : undefined}
-		className={`inline-flex cursor-default rounded-full ring-2 ${voter.you ? "ring-cerulean" : "ring-zinc-950"}`}
-	>
-		<Avatar
-			user={{
-				id: voter.id,
-				displayName: voter.displayName,
-				photoUrl: voter.photoUrl,
-			}}
-			size="sm"
-			noTitle
-		/>
-	</span>
-);
-
-// The name lives in the chip's tooltip: hover on desktop, tap on mobile.
-const VoterChip = ({ voter }: { voter: CommunityVoter }) => (
-	<Tooltip compact content={voter.you ? "you" : voter.displayName}>
-		<VoterAvatar voter={voter} focusable />
-	</Tooltip>
-);
+import { VoterChip } from "./Voter.ui";
 
 /**
  * How the crowd found this poll, in the three tones the test-runner badge
@@ -61,41 +26,6 @@ const crowdTone = (percent: number): ParagraphTone => {
 	if (percent >= CROWD_EASY_PERCENT) return "celadon";
 	return percent >= CROWD_MIXED_PERCENT ? "saffron" : "vermillion";
 };
-
-const NUMBER_WORDS = ["no", "one", "two", "three"] as const;
-
-const spell = (count: number): string => NUMBER_WORDS[count] ?? String(count);
-
-/**
- * Your haul, beside the heading rather than on a row of its own — three
- * standouts is already a short list, and a fourth line saying "you won two of
- * these" would be longer than the thing it summarises.
- */
-const standoutSummary = (standouts: CommunityStandout[]): string | null => {
-	const yours = standouts.filter((standout) => standout.voter.you).length;
-	if (yours === 0) return null;
-	if (yours < standouts.length)
-		return `you took ${spell(yours)} of ${spell(standouts.length)}`;
-	return standouts.length === 1
-		? "you took it"
-		: `you took all ${spell(yours)}`;
-};
-
-// The avatar carries the winner the same way it does on an option row: ringed
-// cerulean when it is you, named on hover otherwise. Spelling the name out here
-// too would make three rows of "Gary Oak fastest answer" out of three rows the
-// value is the point of.
-const StandoutRow = ({ standout }: { standout: CommunityStandout }) => (
-	<div className="flex items-center gap-3">
-		<VoterChip voter={standout.voter} />
-		<Paragraph as="span" className="min-w-0 flex-1">
-			{standout.title}
-		</Paragraph>
-		<Paragraph as="span" tone="saffron" className="font-bold tabular-nums">
-			{standout.value}
-		</Paragraph>
-	</div>
-);
 
 // One line per option, so a 10-answer poll stays scannable: mark, label,
 // then the voter chips and count on the right where a percentage would sit.
@@ -233,55 +163,34 @@ const PollSection = ({ poll }: { poll: RunCommunityPoll }) => {
 export type RunCommunityBoardProps = {
 	totalPlayers: number;
 	topPercent: number | null;
-	standouts: CommunityStandout[];
 	polls: RunCommunityPoll[];
 };
 
 export const RunCommunityBoard = ({
 	totalPlayers,
 	topPercent,
-	standouts,
 	polls,
-}: RunCommunityBoardProps) => {
-	const summary = standoutSummary(standouts);
-	return (
-		<section className="space-y-5">
-			<header className="flex flex-wrap items-baseline justify-between gap-2">
-				<Title as="h2">Today’s polls</Title>
-				<Paragraph as="span" tone="muted">
-					{totalPlayers} player{totalPlayers === 1 ? "" : "s"} answered
-				</Paragraph>
-			</header>
+}: RunCommunityBoardProps) => (
+	<section className="space-y-5">
+		<header className="flex flex-wrap items-baseline justify-between gap-2">
+			<Title as="h2">Today’s polls</Title>
+			<Paragraph as="span" tone="muted">
+				{totalPlayers} player{totalPlayers === 1 ? "" : "s"} answered
+			</Paragraph>
+		</header>
 
-			{polls.map((poll) => (
-				<PollSection key={poll.pollId} poll={poll} />
-			))}
+		{polls.map((poll) => (
+			<PollSection key={poll.pollId} poll={poll} />
+		))}
 
-			{standouts.length > 0 && (
-				<section className="space-y-2 border-t border-zinc-800 pt-5">
-					<div className="flex flex-wrap items-baseline justify-between gap-2">
-						<Paragraph tone="faint">standouts today</Paragraph>
-						{summary && (
-							<Paragraph as="span" tone="muted">
-								{summary}
-							</Paragraph>
-						)}
-					</div>
-					{standouts.map((standout) => (
-						<StandoutRow key={standout.title} standout={standout} />
-					))}
-				</section>
-			)}
-
-			{topPercent !== null && (
-				<Paragraph as="footer" tone="muted">
-					top{" "}
-					<Paragraph as="span" tone="cerulean">
-						{topPercent}%
-					</Paragraph>{" "}
-					of players today
-				</Paragraph>
-			)}
-		</section>
-	);
-};
+		{topPercent !== null && (
+			<Paragraph as="footer" tone="muted">
+				top{" "}
+				<Paragraph as="span" tone="cerulean">
+					{topPercent}%
+				</Paragraph>{" "}
+				of players today
+			</Paragraph>
+		)}
+	</section>
+);

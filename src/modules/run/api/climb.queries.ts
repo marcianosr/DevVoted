@@ -3,6 +3,7 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { db } from "~/database/db";
 import { runStatesTable, runsTable, usersTable } from "~/database/schema";
 
+import type { AnswerOutcome } from "../climb/run.model";
 import { SLICE_WINDOW } from "../rules.model";
 
 /**
@@ -62,6 +63,46 @@ export const fetchClimbMarker = async (
 		.limit(1);
 	return row ?? null;
 };
+
+export type ActiveRunStatsRow = {
+	userId: string;
+	displayName: string | null;
+	photoUrl: string | null;
+	gatesCleared: number;
+	coverage: number;
+	configCount: number;
+	outcomes: AnswerOutcome[];
+	streak: number;
+};
+
+/**
+ * Every live run's standing, for the run-scoped standouts (DVTD-wp69).
+ *
+ * `outcomes` is extracted rather than the whole answer history: an `AnsweredPoll`
+ * carries the poll's `correct` option ids, and there is no reason to lift
+ * correctness data into Node just to measure a streak. Postgres unnests the
+ * array and hands back the verdicts alone.
+ */
+export const fetchActiveRunStats = async (): Promise<ActiveRunStatsRow[]> =>
+	db
+		.select({
+			userId: runsTable.user_id,
+			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+			gatesCleared: runStatesTable.gates_cleared,
+			coverage: runStatesTable.coverage,
+			configCount: sql<number>`coalesce(json_array_length(${runStatesTable.state}->'pipeline'->'configs'), 0)`,
+			outcomes: sql<AnswerOutcome[]>`coalesce((
+				select json_agg(entry->>'outcome' order by ord)
+				from json_array_elements(${runStatesTable.state}->'allAnswered')
+					with ordinality as history(entry, ord)
+			), '[]'::json)`,
+			streak: sql<number>`coalesce((${runStatesTable.state}->>'streak')::int, 0)`,
+		})
+		.from(runsTable)
+		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
+		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
+		.where(and(eq(runsTable.mode, "session"), eq(runsTable.status, "active")));
 
 export type FallenRow = {
 	runId: number;

@@ -1,11 +1,11 @@
 ---
 # DVTD-n3mi
 title: Community page adopts the answer-review reporter style
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-08-07T11:16:11Z
-updated_at: 2026-08-07T11:34:10Z
+updated_at: 2026-08-07T12:36:27Z
 parent: DVTD-h175
 ---
 
@@ -91,3 +91,27 @@ Two things only an eyeball settles, both worth a look before this is called done
   bare) against `NearingTheSummit` (narrow, hatched);
 - the `Stack divided` rhythm and the poll rows' left gutter — see
   `Run/RunCommunityBoard` → `MissedIt`, which reproduces the mockup.
+
+## Shipped in a711c1d ("feat: alot of improvements")
+
+Marciano committed this alongside a further rework of the climb map, so parts of
+the ClimbToday half of this bean were superseded on the way in. What actually
+landed:
+
+**Survived as written** — the whole poll-board half (`Disclosure`, `crowdTone`,
+`tookPart`/`tailSummary`, `standoutSummary`, native `<details>` rows, the left
+gutter), `Stack`'s `divided`, `Screen`'s `footerNote`, and the conditional
+uncharted hatch (`UNCHARTED_HATCH_MAX_PERCENT = 35`).
+
+**Superseded** — the climb map went further than this bean planned: the gate
+ladder moved onto the track itself (each swatch sits where its gate starts,
+numbered and named), all 13 gates now fit on desktop, and the windowed/paged
+model was dropped, taking `gateWindowRange`/`shiftWindowStart`/`gateRangeLabel`/
+`progressLine`/`bestGapLine` out of `climbMap.model.ts` with it. Fallen runs went
+back to dimmed avatars rather than the `†` proposed here — though they kept the
+`Tooltip` this bean gave them in place of the native `title`.
+
+Post-commit state: `tsc --noEmit` clean, oxlint + dependency-cruiser clean
+(580 modules), 1214 tests / 117 files pass.
+
+The browser check noted above was never run and still hasn't been.

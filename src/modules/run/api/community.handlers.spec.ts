@@ -24,6 +24,7 @@ vi.mock("./queries", () => ({
 
 vi.mock("./climb.queries", () => ({
 	fetchActiveClimbers: vi.fn(),
+	fetchActiveRunStats: vi.fn(),
 	fetchClimbMarker: vi.fn(),
 	fetchFallenToday: vi.fn(),
 	fetchPersonalBestPosition: vi.fn(),
@@ -201,7 +202,34 @@ const FALLEN = [
 	},
 ];
 
+/** Live-run standings behind the run-scoped awards. Blue is the deepest and widest. */
+const RUN_STATS = [
+	{
+		userId: RED,
+		displayName: "Red",
+		photoUrl: null,
+		gatesCleared: 6,
+		coverage: 12.5,
+		configCount: 3,
+		outcomes: ["correct", "correct", "wrong"] as const,
+		streak: 0,
+	},
+	{
+		userId: BLUE,
+		displayName: "Blue",
+		photoUrl: null,
+		gatesCleared: 7,
+		coverage: 21.44,
+		configCount: 7,
+		outcomes: ["correct", "correct", "correct", "correct"] as const,
+		streak: 4,
+	},
+];
+
 const arrangeClimb = () => {
+	vi.mocked(climbQueries.fetchActiveRunStats).mockResolvedValue(
+		RUN_STATS.map((row) => ({ ...row, outcomes: [...row.outcomes] }))
+	);
 	vi.mocked(climbQueries.fetchClimbMarker).mockResolvedValue(RED_AT);
 	vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue(CLIMBERS);
 	vi.mocked(climbQueries.fetchFallenToday).mockResolvedValue(FALLEN);
@@ -353,34 +381,111 @@ describe("getRunCommunityHandler", () => {
 		expect(result.data.topPercent).toBe(67);
 	});
 
-	it("crowns the day's standouts: fastest answer, first to answer, most-category polls", async () => {
+	it("crowns the day's awards, today's before the climb's", async () => {
 		arrange();
 
 		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-
-		expect(result.data.standouts).toEqual([
-			{
-				voter: { id: RED, displayName: "Red", photoUrl: null, you: true },
-				title: "fastest answer",
-				value: "9s", // 9_000ms, the only sub-30s timing
-			},
-			{
-				voter: { id: RED, displayName: "Red", photoUrl: null, you: true },
-				title: "first to answer",
-				value: "1m45", // answered 1.75 minutes after the seed dropped
-			},
-			{
-				voter: { id: BLUE, displayName: "Blue", photoUrl: null, you: false },
-				title: "most TypeScript polls",
-				value: "3", // Blue answered all three ts-coded polls
-			},
+		expect(result.data.standouts.map((standout) => standout.title)).toEqual([
+			"fastest answer",
+			"first to answer",
+			"first good",
+			"most TypeScript polls",
+			"only one right",
+			"deepest gate",
+			"longest streak",
+			"most coverage",
+			"widest pipeline",
 		]);
 	});
 
-	it("skips the fastest-answer standout when no answer carries a timing", async () => {
+	it("reads the poll-scoped awards off today's answers", async () => {
+		arrange();
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const byTitle = new Map(
+			result.data.standouts.map((standout) => [standout.title, standout])
+		);
+
+		// 9_000ms, the only sub-30s timing.
+		expect(byTitle.get("fastest answer")).toMatchObject({
+			value: "9s",
+			voter: { id: RED, you: true },
+		});
+		// Red answered 1.75 minutes after the seed dropped, and got it right.
+		expect(byTitle.get("first to answer")?.value).toBe("1m45");
+		expect(byTitle.get("first good")).toMatchObject({
+			value: "1m45",
+			voter: { id: RED },
+		});
+		// Blue answered all three ts-coded polls.
+		expect(byTitle.get("most TypeScript polls")?.value).toBe("3");
+	});
+
+	it("names the poll only one player got right, from those the viewer has met", async () => {
+		arrange();
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const lone = result.data.standouts.find(
+			(standout) => standout.title === "only one right"
+		);
+
+		// Poll 12: Blue alone got it, and Red has consumed it.
+		expect(lone).toMatchObject({
+			value: "Which town has no gym?",
+			voter: { id: BLUE, you: false },
+		});
+	});
+
+	it("reads the run-scoped awards off live runs", async () => {
+		arrange();
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const byTitle = new Map(
+			result.data.standouts.map((standout) => [standout.title, standout])
+		);
+
+		expect(byTitle.get("deepest gate")).toMatchObject({
+			value: "Marsh", // gate 7
+			voter: { id: BLUE },
+		});
+		// Red's best was 2 before it broke; Blue ran four clean.
+		expect(byTitle.get("longest streak")?.value).toBe("4");
+		expect(byTitle.get("most coverage")?.value).toBe("+21.4%");
+		expect(byTitle.get("widest pipeline")?.value).toBe("7 configs");
+	});
+
+	it("keeps the awards on a day the viewer has not answered anything", async () => {
+		arrange();
+		vi.mocked(communityQueries.fetchConsumedPollsForDay).mockResolvedValue([]);
+
+		const result = await getRunCommunityHandler({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.polls).toEqual([]);
+		// Run-scoped awards stand on live runs, not on today's answers.
+		expect(result.data.standouts.map((standout) => standout.title)).toContain(
+			"deepest gate"
+		);
+		// But nothing may name a poll the viewer has not reached.
+		expect(
+			result.data.standouts.map((standout) => standout.title)
+		).not.toContain("only one right");
+	});
+
+	it("skips the fastest-answer award when no answer carries a timing", async () => {
 		arrange();
 		vi.mocked(communityQueries.fetchSessionAnswersForDay).mockResolvedValue(
 			answerRows.map((row) => ({ ...row, answerTimeMs: null }))
@@ -390,10 +495,9 @@ describe("getRunCommunityHandler", () => {
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		expect(result.data.standouts.map((standout) => standout.title)).toEqual([
-			"first to answer",
-			"most TypeScript polls",
-		]);
+		expect(
+			result.data.standouts.map((standout) => standout.title)
+		).not.toContain("fastest answer");
 	});
 
 	it("never exposes raw option correct flags in the payload", async () => {

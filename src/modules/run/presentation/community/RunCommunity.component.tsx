@@ -11,6 +11,7 @@ import { Title } from "~/ui/typography/Title.component";
 
 import { useTodaysRun } from "../game/useTodaysRun.hook";
 import { ClimbToday } from "./ClimbToday.ui";
+import { StandoutsPanel } from "./Standouts.ui";
 import { RunCommunityBoard } from "./RunCommunity.ui";
 import { useNextPollsCountdown } from "./useNextPollsCountdown.hook";
 
@@ -56,9 +57,10 @@ export const RunCommunity = () => {
 
 	const view = community.data?.success === true ? community.data.data : null;
 
-	// The map outlives the board: it has something to say from the moment a run
-	// exists, including before the day's first answer.
+	// Both outlive the board: the map and the run-scoped awards have something to
+	// say from the moment a run exists, including before the day's first answer.
 	const climb = view?.climb ? <ClimbToday {...view.climb} /> : null;
+	const standouts = view ? <StandoutsPanel standouts={view.standouts} /> : null;
 
 	if (!view || view.polls.length === 0) {
 		return (
@@ -68,6 +70,7 @@ export const RunCommunity = () => {
 				footerNote={footerNote}
 			>
 				<Stack gap="6" divided>
+					{standouts}
 					{climb}
 					<Stack gap="4">
 						<Title>Today’s polls</Title>
@@ -87,11 +90,11 @@ export const RunCommunity = () => {
 			footerNote={footerNote}
 		>
 			<Stack gap="6" divided>
+				{standouts}
 				{climb}
 				<RunCommunityBoard
 					totalPlayers={view.totalPlayers}
 					topPercent={view.topPercent}
-					standouts={view.standouts}
 					polls={view.polls}
 				/>
 			</Stack>

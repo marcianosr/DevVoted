@@ -739,7 +739,8 @@ The page is one screen rather than two cards: the climb map sits at the top with
 no chrome of its own, a hairline rule separates it from the polls, and both
 borrow the gate review's vocabulary (§8, DVTD-dqbc).
 
-**The climb today** heads the page: a horizontal gate track carrying every live
+**Standouts today** heads the page — see [7.5 Awards](#75-awards) for the nine.
+Below it, **the climb today**: a horizontal gate track carrying every live
 session run as an avatar, positioned by gate and by how deep into that gate's
 five polls it stands. The viewer's marker is ringed and labelled "you"; players
 sharing a position stack behind a `+N` badge. A dashed, faded avatar marks the
@@ -779,22 +780,17 @@ and the pick count. Everything else folds behind `N other options, M votes` (the
 shared `Disclosure`), because on a nine-option poll the pair you came to compare
 is two lines, not nine; unfolded, those rows keep their chips and counts, since
 unlike the review's tail they did draw a crowd. Names live in the chip tooltips
-(hover, or tap on mobile). Under the polls, **standouts today** crowns the day:
-fastest answer (answers are timed client-side from poll reveal to submit,
-stored as `polls_responses.answer_time_ms`), first to answer after the seed
-dropped, and most polls of one category (needs a lead of ≥2 to show). A standout
-row is avatar · title · value — the winner is the chip, named on hover — and your
-haul is summarised beside the heading ("you took all three"). The header counts
-the day's players and the footer keeps the "top X% today" percentile.
-**Redaction rules** keep it fair: polls you haven't reached never appear, and
-linted or missed polls stay sealed (no question, no results). Profile borders and
-awards come with DVTD-wii3 / DVTD-smye.
+(hover, or tap on mobile). The header counts the day's players and the footer
+keeps the "top X% today" percentile. **Redaction rules** keep it fair: polls you
+haven't reached never appear, and linted or missed polls stay sealed (no
+question, no results). Profile borders come with DVTD-wii3.
 
 ### 7.3 Leaderboards
 
 Two views: **progress today** (everyone on the same seed, comparable per-segment)
 and **run completion** (won/dead, gates cleared, duration in days). Rows carry
-per-category coverage, total coverage, and best streak.
+per-category coverage, total coverage, and best streak — the last of which
+`standouts.model.ts` already computes from a run's answer history.
 
 ### 7.4 Loot & Fallen Runs
 
@@ -803,10 +799,41 @@ who encounter it, profiting from others' failures. Mechanics undefined.
 
 ### 7.5 Awards
 
-Community-page awards in the vein of "top committers". Shipped as **standouts
-today** (§7.2): fastest answer, first to answer, most polls of one category.
-Still brainstormed: fastest climber, most storage banked, best streak of the
-day.
+Community-page awards in the vein of "top committers", shipped as **standouts
+today** — the first panel on `/run/community` (§7.2). Nine of them, in two kinds,
+and the difference is the point:
+
+**Poll-scoped**, read off today's answers:
+
+| Award | Won by |
+| --- | --- |
+| fastest answer | the quickest single answer (timed client-side from reveal to submit, stored as `polls_responses.answer_time_ms`) |
+| first to answer | the first answer after the seed dropped, right or wrong |
+| first good | the first answer that was actually *correct* |
+| most *{category}* polls | the biggest single-category haul (needs a lead of ≥2 to show) |
+| only one right | the poll exactly one player cracked, named by them |
+
+**Run-scoped**, read off live `run_states` across **active runs only** — so these
+rank a standing rather than an activity, and a player who has not answered today
+still holds the deepest gate:
+
+| Award | Won by |
+| --- | --- |
+| deepest gate | the highest `gates_cleared`, shown as that gate's badge and name |
+| longest streak | the longest consecutive-correct run *this run has managed*, recomputed from its answer history rather than the live streak, which a single wrong answer resets (needs ≥2) |
+| most coverage | the highest coverage |
+| widest pipeline | the most configs installed |
+
+A standout row is avatar · title · value — the winner is the chip, named on
+hover — and your haul is summarised beside the heading ("you took 3 of 9"). Two
+columns on `sm` and up, filled top-to-bottom, so today's awards sit left and the
+climb's sit right. Any award nobody has earned is dropped rather than shown
+empty; ties break on player id, so a redraw never reshuffles the winners.
+
+Logic lives in `src/modules/run/community/standouts.model.ts`, which is pure —
+correctness arrives as a callback and run state as plain numbers.
+
+Still brainstormed: perfect gate, no linter used, biggest bank, comeback clear.
 
 ### 7.6 Interference
 
