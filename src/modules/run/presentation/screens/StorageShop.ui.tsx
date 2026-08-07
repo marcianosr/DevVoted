@@ -56,10 +56,7 @@ export const StorageShop = ({
 
 		<div className="space-y-3">
 			{availableStorageConfigs.map((config) => (
-				<div
-					key={config.id}
-					className="rounded-lg border border-zinc-700 bg-zinc-900/50 px-4 py-3"
-				>
+				<div key={config.id} className="py-3">
 					<div className="flex items-center justify-between gap-4">
 						<div className="flex-1">
 							<div className="flex items-center gap-2">
