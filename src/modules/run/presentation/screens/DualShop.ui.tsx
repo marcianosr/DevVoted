@@ -2,12 +2,7 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import type { Config } from "~/modules/run/configs/config.model";
-import {
-	draftCost,
-	sellRefund,
-	describeConfig,
-} from "~/modules/run/configs/config.model";
-import { ConfigChip } from "../configs/ConfigChip.ui";
+import { draftCost, sellRefund } from "~/modules/run/configs/config.model";
 
 type StorageConfig = {
 	readonly id: string;
@@ -76,11 +71,18 @@ export const DualShop = ({
 							key={config.id}
 							type="button"
 							onClick={() => onPipelineDraft(config.id)}
-							className="rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 transition hover:border-zinc-500"
+							className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 transition hover:border-zinc-500"
 						>
-							<ConfigChip config={config} price={draftCost(config)} noTooltip />
-							<Paragraph size="xs" tone="muted" className="mt-1">
-								{describeConfig(config)}
+							<div className="flex-1 text-left">
+								<Paragraph size="sm" className="font-semibold">
+									{config.label}
+								</Paragraph>
+								<Paragraph size="xs" tone="muted">
+									Adds 1 check
+								</Paragraph>
+							</div>
+							<Paragraph size="sm" className="text-viridian">
+								{draftCost(config)}KB
 							</Paragraph>
 						</button>
 					))}
@@ -103,33 +105,36 @@ export const DualShop = ({
 					{pipelineConfigs.map((config, idx) => (
 						<div
 							key={config.id}
-							className="rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-3"
+							className="rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2"
 						>
 							<div className="flex items-start justify-between gap-2">
-								<div className="flex-1 space-y-2">
+								<div className="flex-1">
 									<div className="flex items-center gap-2">
-										<span className="text-sm">{idx + 1}</span>
-										<ConfigChip
-											config={config}
-											action={
-												<button
-													type="button"
-													onClick={() => onPipelineSell(config.id)}
-													className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-400 transition hover:border-zinc-400"
-												>
-													deinstall
-												</button>
-											}
-											noTooltip
-										/>
+										<span className="text-sm">
+											{idx + 1} <span className="text-yellow-400">●</span>
+										</span>
+										<Paragraph size="sm" className="font-semibold">
+											{config.label}
+										</Paragraph>
 									</div>
-									<Paragraph size="xs" tone="muted">
-										{describeConfig(config)}
+									<Paragraph size="xs" tone="muted" className="mt-1">
+										1 check
 									</Paragraph>
-									<Paragraph size="xs" tone="muted">
+									<Paragraph
+										size="xs"
+										tone="muted"
+										className="mt-0.5 text-zinc-500"
+									>
 										deinstall {sellRefund(config)}KB
 									</Paragraph>
 								</div>
+								<button
+									type="button"
+									onClick={() => onPipelineSell(config.id)}
+									className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-400 transition hover:border-zinc-400"
+								>
+									deinstall
+								</button>
 							</div>
 						</div>
 					))}
@@ -159,16 +164,18 @@ export const DualShop = ({
 							type="button"
 							onClick={() => onStorageUpgrade(config.id)}
 							disabled={storage < (config.nextLevelCost ?? 0)}
-							className="rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 text-left transition enabled:hover:border-zinc-500 disabled:opacity-50"
+							className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 transition enabled:hover:border-zinc-500 disabled:opacity-50"
 						>
-							<div className="font-mono text-sm font-semibold">
-								{config.label}
-								<span className="ml-2 text-viridian">
-									{config.nextLevelCost}KB
-								</span>
+							<div className="flex-1 text-left">
+								<Paragraph size="sm" className="font-semibold">
+									{config.label}
+								</Paragraph>
+								<Paragraph size="xs" tone="muted">
+									{config.description}
+								</Paragraph>
 							</div>
-							<Paragraph size="xs" tone="muted" className="mt-0.5">
-								{config.description}
+							<Paragraph size="sm" className="text-viridian">
+								{config.nextLevelCost}KB
 							</Paragraph>
 						</button>
 					))}
