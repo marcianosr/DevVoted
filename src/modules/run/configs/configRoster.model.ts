@@ -112,10 +112,20 @@ export const CONFIGS = {
 		label: "package.json",
 		family: "focus",
 		description:
-			"Frontend polls pay 1.25× — but if Frontend shows, you must get one right.",
+			"General Frontend polls pay 1.25× — but if General Frontend shows, you must get one right.",
 		requirementDelta: 0,
 		rewardMultiplier: 1,
 		focusCategory: "general-frontend",
+	},
+	vue: {
+		id: ".vue",
+		label: ".vue",
+		family: "focus",
+		description:
+			"Vue polls pay 1.25× — but if Vue shows, you must get one right.",
+		requirementDelta: 0,
+		rewardMultiplier: 1,
+		focusCategory: "vue",
 	},
 
 	unitTests: {

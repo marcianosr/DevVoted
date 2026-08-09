@@ -1,18 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
+import { MAX_SLOTS } from "~/modules/run/pipeline/pipeline.model";
 import { ConfiguringScreen } from "./ConfiguringScreen.ui";
 
 const base = {
 	gatesCleared: 0,
+	pollsPerGate: 5,
+	stripsOnFailure: 1,
+	modifiers: {
+		gateReward: 80,
+		rewardMultiplier: 1,
+		coverageMultiplier: 1,
+		coverageAdd: 0,
+	},
 	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.agentsMd],
-	gateReward: 80,
-	rewardMultiplier: 1,
-	coverageMultiplier: 1,
-	coverageAdd: 0,
 	checks: [
 		{
 			label: "Correct",
@@ -29,6 +34,58 @@ const base = {
 };
 
 describe(ConfiguringScreen, () => {
+	it("names the first gate — no separate prep screen for gate 0", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(screen.getByText("Pallet gate")).toBeInTheDocument();
+	});
+
+	it("captions the gate with its clear reward, base reward, coverage, and fail stake", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(
+			screen.getByText("polls this window", { exact: false })
+		).toBeInTheDocument();
+		expect(screen.getByText("+80KB")).toHaveClass("text-viridian");
+		// Base reward ×1 and coverage ×1 both read identically at identity —
+		// two matches confirms both segments render, not just one.
+		expect(screen.getAllByText("×1")).toHaveLength(2);
+		expect(screen.getByText("strip 1 config")).toHaveClass("text-cinnabar");
+	});
+
+	it("captions the gate with its coverage multiplier", () => {
+		render(
+			<ConfiguringScreen
+				{...base}
+				modifiers={{ ...base.modifiers, coverageMultiplier: 2, coverageAdd: 5 }}
+			/>
+		);
+		expect(screen.getByText("×2 +5%")).toHaveClass("text-viridian");
+	});
+
+	it("names the stake fatal once a fail would take the whole build", () => {
+		render(
+			<ConfiguringScreen {...base} stripsOnFailure={2} configs={base.configs} />
+		);
+		expect(screen.getByText("strip all — run over")).toBeInTheDocument();
+	});
+
+	it("previews the clear reward a hovered bench config would add, old to new", () => {
+		const { container } = render(
+			<ConfiguringScreen
+				{...base}
+				configs={[CONFIGS.js]}
+				modifiers={{ ...base.modifiers, gateReward: 32 }}
+				bench={[CONFIGS.unitTests]}
+			/>
+		);
+		fireEvent.mouseOver(screen.getByRole("button", { name: "Unit Tests" }));
+		// Scoped to the caption header — Unit Tests' own previewed pipeline row
+		// also prints "+32KB" (its gives text), which would otherwise collide.
+		const caption = within(container.querySelector("header")!);
+		// Unit Tests' +32KB storageOnClear stacks onto the base 32KB reward.
+		expect(caption.getByText("+32KB")).toHaveClass("text-zinc-400");
+		expect(caption.getByText("→ +64KB")).toHaveClass("text-celadon");
+	});
+
 	it("renders the bench and pipeline columns side by side", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
@@ -54,53 +111,47 @@ describe(ConfiguringScreen, () => {
 		expect(onSlot).not.toHaveBeenCalled();
 	});
 
-	it("shows the next slot locked, with live unlock progress", () => {
-		render(
-			<ConfiguringScreen {...base} coverage={6.5} slotCoverageRequired={11} />
-		);
-		// No badge on this row: swatches are earned by clearing gates (ADR-019).
-		expect(screen.queryByText("Boulder Swatch")).not.toBeInTheDocument();
-		expect(screen.getByText("11%")).toBeInTheDocument();
-		expect(screen.getByText("6.5% reached")).toBeInTheDocument();
-		expect(screen.getByText("locked")).toBeInTheDocument();
+	it("promises more slots instead of showing an unclaimable unlock rung", () => {
+		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByRole("progressbar", { name: "coverage toward slot 4" })
-		).toHaveAttribute("aria-valuenow", "6.5");
-	});
-
-	it("numbers every slot down the list, the locked rung included", () => {
-		render(
-			<ConfiguringScreen {...base} coverage={6.5} slotCoverageRequired={11} />
-		);
-		// base fills two of three slots, so: 1-2 filled, 3 empty, 4 the locked rung.
-		for (const slot of ["1", "2", "3", "4"])
-			expect(screen.getByText(slot)).toBeInTheDocument();
-	});
-
-	it("marks the next swatch unlocked once coverage meets its gate", () => {
-		render(
-			<ConfiguringScreen {...base} coverage={12} slotCoverageRequired={11} />
-		);
-		expect(screen.getByText("unlocked")).toBeInTheDocument();
-	});
-
-	it("hides the swatch row at the slot cap", () => {
-		render(
-			<ConfiguringScreen
-				{...base}
-				coverage={12}
-				slotCoverageRequired={Infinity}
-			/>
-		);
+			screen.getByText("More slots will unlock when you gain coverage!")
+		).toBeInTheDocument();
 		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
 		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 	});
 
+	it("numbers only the slots the pipeline actually has", () => {
+		render(<ConfiguringScreen {...base} />);
+		// base fills two of three slots, so: 1-2 filled, 3 empty, and no fourth row.
+		// Scoped to the row numbering itself — the stake block above also shows a
+		// bare number, and can collide with a slot digit.
+		for (const slot of ["1", "2", "3"])
+			expect(
+				screen.getByText(slot, { selector: ".tabular-nums" })
+			).toBeInTheDocument();
+		expect(
+			screen.queryByText("4", { selector: ".tabular-nums" })
+		).not.toBeInTheDocument();
+	});
+
+	it("drops the slot promise at the slot cap", () => {
+		render(<ConfiguringScreen {...base} slots={MAX_SLOTS} />);
+		expect(
+			screen.queryByText(/More slots will unlock/)
+		).not.toBeInTheDocument();
+	});
+
 	// Wide screens open every row; a phone shuts them all and shows the caret.
 	// The detail stays mounted either way, so the fold is a class, not a mount.
+	// The FactRow wraps each fact in its own label+value line, so the
+	// fold-controlled ancestor sits three levels up: value → FactRow → the
+	// requirement/effect/progress group → the detail span itself.
+	const foldedDetailFor = (text: string) =>
+		screen.getByText(text).parentElement?.parentElement?.parentElement;
+
 	it("opens each row's demand and effect by default, above the fold breakpoint", () => {
 		render(<ConfiguringScreen {...base} />);
-		expect(screen.getByText("1 correct answer").parentElement).toHaveClass(
+		expect(foldedDetailFor("1 correct answer")).toHaveClass(
 			"hidden",
 			"sm:flex"
 		);
@@ -110,7 +161,7 @@ describe(ConfiguringScreen, () => {
 	it("folds a row to one line when its name is tapped", () => {
 		render(<ConfiguringScreen {...base} />);
 		fireEvent.click(screen.getByRole("button", { name: "Unit Tests" }));
-		const detail = screen.getByText("1 correct answer").parentElement;
+		const detail = foldedDetailFor("1 correct answer");
 		expect(detail).toHaveClass("hidden");
 		expect(detail).not.toHaveClass("sm:flex");
 	});
@@ -120,9 +171,8 @@ describe(ConfiguringScreen, () => {
 		const name = screen.getByRole("button", { name: "Unit Tests" });
 		fireEvent.click(name);
 		fireEvent.click(name);
-		expect(screen.getByText("1 correct answer").parentElement).toHaveClass(
-			"flex"
-		);
+		expect(foldedDetailFor("1 correct answer")).toHaveClass("flex");
+		expect(foldedDetailFor("1 correct answer")).not.toHaveClass("hidden");
 	});
 
 	it("marks pipeline rows with a state dot instead of a status badge", () => {
@@ -136,10 +186,24 @@ describe(ConfiguringScreen, () => {
 		expect(screen.getByText("2 of 3 slots used")).toBeInTheDocument();
 	});
 
-	it("shows the gate reward and multipliers", () => {
+	it("leaves Gate modifiers out — the pipeline rows carry the rewards", () => {
 		render(<ConfiguringScreen {...base} />);
-		expect(screen.getByText("+80KB")).toBeInTheDocument();
-		expect(screen.getAllByText("×1")).toHaveLength(2);
+		expect(screen.queryByText("Gate modifiers")).not.toBeInTheDocument();
+	});
+
+	it("labels a pipeline row's check and reward, red and green", () => {
+		render(<ConfiguringScreen {...base} />);
+		// Both installed configs carry a check here (Unit Tests' check,
+		// .js's focus demand), so the label itself is not unique — the row's
+		// value is.
+		expect(screen.getAllByText("Check").length).toBeGreaterThan(0);
+		expect(screen.getByText("1 correct answer")).toHaveClass("text-cinnabar");
+		expect(screen.getAllByText("Reward").length).toBeGreaterThan(0);
+		// "+32KB" is itself wrapped in a bold highlight span (emphasizeNumbers) —
+		// the tone class lives on its enclosing paragraph.
+		expect(screen.getByText("+32KB").parentElement).toHaveClass(
+			"text-viridian"
+		);
 	});
 
 	it("renders the bench offers", () => {
@@ -208,25 +272,6 @@ describe(ConfiguringScreen, () => {
 		expect(
 			screen.queryByRole("button", { name: /^Add .+ to your pipeline$/ })
 		).not.toBeInTheDocument();
-	});
-
-	it("shows the modifier change the previewed config would make, old to new", () => {
-		render(<ConfiguringScreen {...base} />);
-		// AGENTS.md doubles coverage: every ×1 on the strip reads muted (the old
-		// coverage value and the untouched reward ×), and → ×2 arrives in celadon.
-		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
-		for (const identity of screen.getAllByText("×1")) {
-			expect(identity).toHaveClass("text-zinc-500");
-		}
-		expect(screen.getByText("→ ×2")).toHaveClass("text-celadon");
-	});
-
-	it("keeps unchanged stats plain while previewing", () => {
-		render(<ConfiguringScreen {...base} />);
-		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
-		// AGENTS.md touches neither the gate reward nor the reward multiplier.
-		expect(screen.getByText("+80KB")).toBeInTheDocument();
-		expect(screen.queryByText(/→ \+80KB/)).not.toBeInTheDocument();
 	});
 
 	it("commits the previewed config when its row is clicked", () => {

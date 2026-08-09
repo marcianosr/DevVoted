@@ -21,149 +21,6 @@ export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 /** Hard cap (KB) on the storage currency — income beyond this is discarded. */
 export const STORAGE_CAP_KB = 512;
 
-export type StorageConfigEffect = {
-	readonly capAddKb?: number;
-	readonly draftCostReduction?: number;
-	readonly refundBoost?: number;
-	readonly payoutBoost?: number;
-	readonly freeRebuild?: boolean;
-	readonly metaStorageBoost?: number;
-};
-
-export type StorageConfig = {
-	readonly id: string;
-	readonly label: string;
-	readonly description: string;
-	readonly basePrice: number;
-	readonly levelPrices: readonly number[];
-	readonly effects: readonly StorageConfigEffect[];
-};
-
-export const STORAGE_CONFIGS: readonly StorageConfig[] = [
-	{
-		id: "postgres",
-		label: "Postgres",
-		description: "Storage cap upgrade",
-		basePrice: 64,
-		levelPrices: [64, 96, 128, 160, 192],
-		effects: [
-			{ capAddKb: 256 },
-			{ capAddKb: 384 },
-			{ capAddKb: 512 },
-			{ capAddKb: 640 },
-			{ capAddKb: 768 },
-		],
-	},
-	{
-		id: "firebase",
-		label: "Firebase",
-		description: "Gate payout boost",
-		basePrice: 64,
-		levelPrices: [64, 96, 128, 160, 192],
-		effects: [
-			{ payoutBoost: 0.2 },
-			{ payoutBoost: 0.3 },
-			{ payoutBoost: 0.4 },
-			{ payoutBoost: 0.5 },
-			{ payoutBoost: 0.6 },
-		],
-	},
-	{
-		id: "localStorage",
-		label: "localStorage",
-		description: "Sell refund boost",
-		basePrice: 48,
-		levelPrices: [48, 64, 96, 128, 160],
-		effects: [
-			{ refundBoost: 0.15 },
-			{ refundBoost: 0.17 },
-			{ refundBoost: 0.2 },
-			{ refundBoost: 0.22 },
-			{ refundBoost: 0.25 },
-		],
-	},
-	{
-		id: "sessionStorage",
-		label: "sessionStorage",
-		description: "Draft cost reduction",
-		basePrice: 32,
-		levelPrices: [32, 48, 64, 96, 128],
-		effects: [
-			{ draftCostReduction: 0.05 },
-			{ draftCostReduction: 0.1 },
-			{ draftCostReduction: 0.15 },
-			{ draftCostReduction: 0.2 },
-			{ draftCostReduction: 0.25 },
-		],
-	},
-	{
-		id: "redis",
-		label: "Redis",
-		description: "Free rebuild per shop",
-		basePrice: 32,
-		levelPrices: [32, 48, 64, 96, 128],
-		effects: [
-			{ freeRebuild: true },
-			{ freeRebuild: true },
-			{ freeRebuild: true },
-			{ freeRebuild: true },
-			{ freeRebuild: true },
-		],
-	},
-	{
-		id: "s3",
-		label: "S3",
-		description: "Meta storage boost on run end",
-		basePrice: 32,
-		levelPrices: [32, 48, 64, 96, 128],
-		effects: [
-			{ metaStorageBoost: 0.1 },
-			{ metaStorageBoost: 0.15 },
-			{ metaStorageBoost: 0.2 },
-			{ metaStorageBoost: 0.25 },
-			{ metaStorageBoost: 0.3 },
-		],
-	},
-];
-
-export const getStorageConfig = (id: string): StorageConfig | undefined =>
-	STORAGE_CONFIGS.find((c) => c.id === id);
-
-export const aggregateStorageEffects = (
-	configs: Readonly<Record<string, number>>
-): StorageConfigEffect => {
-	let capAddKb = 0;
-	let draftCostReduction = 0;
-	let refundBoost = 0;
-	let payoutBoost = 0;
-	let freeRebuild = false;
-	let metaStorageBoost = 0;
-
-	for (const [configId, level] of Object.entries(configs)) {
-		const config = getStorageConfig(configId);
-		if (!config || level < 1 || level > config.effects.length) continue;
-
-		const effect = config.effects[level - 1];
-		if (effect.capAddKb !== undefined) capAddKb += effect.capAddKb;
-		if (effect.draftCostReduction !== undefined)
-			draftCostReduction += effect.draftCostReduction;
-		if (effect.refundBoost !== undefined) refundBoost += effect.refundBoost;
-		if (effect.payoutBoost !== undefined) payoutBoost += effect.payoutBoost;
-		if (effect.freeRebuild) freeRebuild = true;
-		if (effect.metaStorageBoost !== undefined)
-			metaStorageBoost += effect.metaStorageBoost;
-	}
-
-	return {
-		...(capAddKb > 0 && { capAddKb }),
-		...(draftCostReduction > 0 && { draftCostReduction }),
-		...(refundBoost > 0 && { refundBoost }),
-		...(payoutBoost > 0 && { payoutBoost }),
-		...(freeRebuild && { freeRebuild }),
-		...(metaStorageBoost > 0 && { metaStorageBoost }),
-	} as StorageConfigEffect;
-};
-
 /**
  * Per-run ceiling (KB) on per-correct faucet income (IndexedDB). A single
  * run-wide counter, deliberately: the shipped roster carries exactly one faucet
@@ -241,3 +98,16 @@ export const dropCount = (gatesCleared: number): number =>
 
 export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
+
+export type GateStake = {
+	readonly strips: number;
+	readonly configs: number;
+	/** True once a failed window's peel quota would take the whole build — the run ends there (ADR-021) rather than opening the strip screen. */
+	readonly fatal: boolean;
+};
+
+export const gateStake = (strips: number, configs: number): GateStake => ({
+	strips,
+	configs,
+	fatal: strips >= configs,
+});

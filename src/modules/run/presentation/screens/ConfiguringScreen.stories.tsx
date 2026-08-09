@@ -15,11 +15,16 @@ export const Default: Story = {
 	args: {
 		configs: [CONFIGS.js],
 		slots: 3,
+		gatesCleared: 0,
+		pollsPerGate: 5,
+		stripsOnFailure: 1,
+		modifiers: {
+			gateReward: 80,
+			rewardMultiplier: 1,
+			coverageMultiplier: 1,
+			coverageAdd: 0,
+		},
 		bench: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coverageGain],
-		gateReward: 80,
-		rewardMultiplier: 1,
-		coverageMultiplier: 1,
-		coverageAdd: 0,
 		checks: [
 			{
 				label: "Correct",

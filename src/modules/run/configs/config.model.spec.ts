@@ -77,19 +77,19 @@ describe("describeConfig", () => {
 });
 
 describe("givesOf / needsOf", () => {
-	it("derives a focus config's L1 copy — singular demand, base multiplier", () => {
-		expect(givesOf(CONFIGS.js)).toBe(
-			"Then JavaScript polls earn ×1.25 coverage"
+	it("derives a focus config's L1 copy — base multiplier", () => {
+		expect(givesOf(CONFIGS.js)).toBe("JavaScript polls reward ×1.25 coverage");
+		expect(needsOf(CONFIGS.js)).toBe(
+			"If JavaScript poll occurs you must answer correctly"
 		);
-		expect(needsOf(CONFIGS.js)).toBe("Get 1 JavaScript poll right");
 	});
 
-	it("scales the copy with the config's level after an upgrade", () => {
+	it("scales the reward with the config's level after an upgrade", () => {
 		expect(givesOf({ ...CONFIGS.js, level: 2 })).toBe(
-			"Then JavaScript polls earn ×1.5 coverage"
+			"JavaScript polls reward ×1.5 coverage"
 		);
 		expect(needsOf({ ...CONFIGS.js, level: 2 })).toBe(
-			"Get 2 JavaScript polls right"
+			"If JavaScript poll occurs you must answer correctly"
 		);
 	});
 

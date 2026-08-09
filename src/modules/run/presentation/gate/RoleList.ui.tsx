@@ -77,7 +77,7 @@ const EmptySlotRow = ({ slot }: { slot: number }) => (
 				as="span"
 				size="xs"
 				tone="muted"
-				className="block w-full rounded-lg border-1 border-dashed border-zinc-700 px-4 py-2 text-center"
+				className="block w-full rounded-lg border border-dashed border-zinc-700 px-4 py-2 text-center"
 			>
 				empty slot
 			</Paragraph>

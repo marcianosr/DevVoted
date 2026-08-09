@@ -33,6 +33,47 @@ const emphasizeNumbers = (text: string): ReactNode =>
 		)
 	);
 
+/**
+ * One labelled fact in a row's detail: an icon and an all-caps name carry no
+ * colour of their own (only the value does) — CHECK and REWARD read as
+ * the same kind of line, not a red one competing with a green one.
+ */
+const FactRow = ({
+	icon,
+	label,
+	tone,
+	value,
+}: {
+	icon: string;
+	label: string;
+	tone: ParagraphTone;
+	value: ReactNode;
+}) => (
+	<div className="flex items-center gap-3 py-1.5">
+		<Paragraph
+			as="span"
+			tone={tone}
+			className="w-4 shrink-0 text-center font-bold"
+		>
+			{icon}
+		</Paragraph>
+		<Paragraph
+			as="span"
+			size="xs"
+			tone="muted"
+			className="w-24 shrink-0 uppercase tracking-wide"
+		>
+			{label}
+		</Paragraph>
+		<span aria-hidden className="text-zinc-700">
+			|
+		</span>
+		<Paragraph as="span" tone={tone}>
+			{value}
+		</Paragraph>
+	</div>
+);
+
 type PipelineReportRowProps = {
 	badge: StatusBadgeVariant;
 	layout?: PipelineRowLayout;
@@ -95,14 +136,20 @@ export const PipelineReportRow = ({
 		</Paragraph>
 	) : null;
 
-	const trailingBlock = (
+	// The table layout's detail repeats `value` as its own Progress row once
+	// open, so the header copy passes `hideWhenOpenClass` to step aside there —
+	// the chip layout has no detail to repeat it, so it always shows its copy.
+	const renderTrailing = (hideWhenOpenClass?: string) => (
 		<>
 			{value != null ? (
 				<Paragraph
 					as="span"
 					size="sm"
 					tone={valueTone}
-					className="shrink-0 text-right font-bold tabular-nums"
+					className={clsx(
+						"shrink-0 text-right font-bold tabular-nums",
+						hideWhenOpenClass
+					)}
 				>
 					{value}
 				</Paragraph>
@@ -149,15 +196,19 @@ export const PipelineReportRow = ({
 						)}
 					</span>
 				}
-				trailing={trailingBlock}
+				trailing={renderTrailing()}
 			/>
 		);
 	}
 
 	const rarity = rarityOf(config);
-	const failed = badge === "fail";
 
-	const summaryCells = ({ expanded, toggle, marker }: Fold) => (
+	const summaryCells = ({
+		expanded,
+		toggle,
+		marker,
+		summaryOnlyClass,
+	}: Fold) => (
 		<>
 			<span className="col-start-1 row-start-1 flex items-center self-stretch">
 				<StatusDot variant={mark ?? badge} />
@@ -182,7 +233,7 @@ export const PipelineReportRow = ({
 				)}
 			</span>
 			<span className="col-start-3 row-start-1 flex items-center justify-end gap-3 self-stretch">
-				{trailingBlock}
+				{renderTrailing(summaryOnlyClass)}
 				{marker}
 			</span>
 		</>
@@ -199,20 +250,37 @@ export const PipelineReportRow = ({
 				detailClass
 			)}
 		>
-			{needs ? (
-				<Paragraph as="span" size="sm" tone={failed ? "cinnabar" : "default"}>
-					{needs}
-				</Paragraph>
-			) : gives || costs ? (
-				<Paragraph as="span" size="xs" tone="muted">
-					No condition
-				</Paragraph>
-			) : null}
-			{gives ? (
-				<Paragraph as="span" size="xs" tone="muted">
-					{emphasizeNumbers(gives)}
-				</Paragraph>
-			) : null}
+			<div className="flex flex-col divide-y divide-dashed divide-zinc-800">
+				{needs ? (
+					<FactRow icon="!" label="Check" tone="cinnabar" value={needs} />
+				) : gives || costs ? (
+					<Paragraph as="span" size="xs" tone="muted">
+						No condition
+					</Paragraph>
+				) : null}
+				{gives ? (
+					<FactRow
+						icon="v"
+						label="Reward"
+						tone="viridian"
+						value={emphasizeNumbers(gives)}
+					/>
+				) : null}
+				{/* Post-gate report rows (StripScreen, RewardScreen) also carry a
+				    `value` but never a requirement/effect — their corner badge is
+				    the only place that number belongs, so this stays pipeline-only.
+				    `note` fills in when the check's progress didn't fit the corner
+				    badge's bare-counter shape ("0/2 categories") — same fact, just
+				    prose instead of digits, so it earns the same row. */}
+				{(value != null || note) && (needs || gives) ? (
+					<FactRow
+						icon="○"
+						label="Progress"
+						tone={value != null ? valueTone : "muted"}
+						value={value ?? note}
+					/>
+				) : null}
+			</div>
 			{costs ? (
 				<Paragraph as="span" size="xs" tone="vermillion">
 					{costs}
@@ -223,7 +291,9 @@ export const PipelineReportRow = ({
 					{description}
 				</Paragraph>
 			) : null}
-			{noteBlock}
+			{/* Already folded into the Progress row above once there's a
+			    requirement or effect to attach it to. */}
+			{needs || gives ? null : noteBlock}
 		</span>
 	);
 

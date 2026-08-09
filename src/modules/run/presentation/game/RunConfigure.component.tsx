@@ -29,14 +29,16 @@ export const RunConfigure = () => {
 				configs={view.configs}
 				slots={view.slots}
 				gatesCleared={view.gatesCleared}
+				pollsPerGate={view.pollsPerGate}
+				stripsOnFailure={view.stripsOnFailure}
+				modifiers={{
+					gateReward: view.gateReward,
+					rewardMultiplier: view.rewardMultiplier,
+					coverageMultiplier: view.coverageMultiplier,
+					coverageAdd: view.coverageAdd,
+				}}
 				bench={view.available}
 				checks={view.checks}
-				gateReward={view.gateReward}
-				rewardMultiplier={view.rewardMultiplier}
-				coverageMultiplier={view.coverageMultiplier}
-				coverageAdd={view.coverageAdd}
-				coverage={view.coverage}
-				slotCoverageRequired={view.slotCoverageRequired}
 				onSlot={(id) => send({ type: "slot", configId: id })}
 				onUnslot={(id) => send({ type: "unslot", configId: id })}
 			/>

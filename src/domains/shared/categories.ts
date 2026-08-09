@@ -15,6 +15,7 @@ export const CATEGORY_CODES = [
 	"python",
 	"ruby",
 	"general-backend",
+	"vue",
 ] as const;
 export type CategoryCode = (typeof CATEGORY_CODES)[number];
 
@@ -32,6 +33,7 @@ export const CATEGORY_METADATA = {
 	"general-frontend": { name: "General Frontend" },
 	python: { name: "Python" },
 	ruby: { name: "Ruby" },
+	vue: { name: "Vue" },
 	"general-backend": { name: "General Backend" },
 } as const satisfies Record<CategoryCode, { name: string }>;
 

@@ -126,7 +126,7 @@ describe("roleRows", () => {
 		expect(row.needs).toBe("3 correct answers");
 	});
 
-	it("derives a focus config's gives and needs from its level, so an upgrade reads on the row", () => {
+	it("derives a focus config's gives from its level, so an upgrade reads on the row", () => {
 		const levelled = config({
 			id: "ts",
 			label: ".ts",
@@ -140,8 +140,10 @@ describe("roleRows", () => {
 			description: ".ts: get one right if ts appears",
 		});
 		const [row] = roleRows([levelled], [mastery]);
-		expect(row.gives).toBe("Then TypeScript polls earn ×1.5 coverage");
-		expect(row.needs).toBe("Get 2 TypeScript polls right");
+		expect(row.gives).toBe("TypeScript polls reward ×1.5 coverage");
+		expect(row.needs).toBe(
+			"If TypeScript poll occurs you must answer correctly"
+		);
 	});
 
 	it("drops wordy progress under the description instead of the value slot", () => {

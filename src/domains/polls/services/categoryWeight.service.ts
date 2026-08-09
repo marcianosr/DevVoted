@@ -16,6 +16,7 @@ export const DEFAULT_CATEGORY_WEIGHTS: CategoryWeights = {
 	python: 0,
 	ruby: 1,
 	"general-backend": 0,
+	vue: 1,
 };
 
 /**

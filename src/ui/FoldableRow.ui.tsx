@@ -15,6 +15,12 @@ export type Fold = {
 	toggle: () => void;
 	/** Visibility classes for the caller's own detail cell. */
 	detailClass: string;
+	/**
+	 * Visibility classes for summary content that repeats something the detail
+	 * already shows once open (a progress counter, say) — the exact inverse of
+	 * `detailClass` at every breakpoint, so the value shows in exactly one place.
+	 */
+	summaryOnlyClass: string;
 	/** The disclosure caret, placed by the caller inside its own layout. */
 	marker: ReactNode;
 };
@@ -43,6 +49,19 @@ const detailVisibility = (
 	if (pinned !== null) return pinned ? "flex" : "hidden";
 	if (defaultOpen === undefined) return "hidden sm:flex";
 	return defaultOpen ? "flex" : "hidden";
+};
+
+// The exact inverse of detailVisibility: visible wherever the detail is not,
+// so a value shown in the detail's own rows drops out of the summary there.
+const summaryOnlyVisibility = (
+	foldable: boolean,
+	pinned: boolean | null,
+	defaultOpen?: boolean
+): string => {
+	if (!foldable) return "hidden";
+	if (pinned !== null) return pinned ? "hidden" : "inline";
+	if (defaultOpen === undefined) return "inline sm:hidden";
+	return defaultOpen ? "hidden" : "inline";
 };
 
 /** The caret points right while shut, down while open — following the same rule. */
@@ -115,6 +134,7 @@ export const FoldableRow = ({
 		expanded: pinned ?? undefined,
 		toggle,
 		detailClass: detailVisibility(foldable, pinned, defaultOpen),
+		summaryOnlyClass: summaryOnlyVisibility(foldable, pinned, defaultOpen),
 		marker: foldable ? (
 			<FoldMarker rotation={markerRotation(foldable, pinned, defaultOpen)} />
 		) : null,

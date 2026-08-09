@@ -111,12 +111,11 @@ export const givesOf = (config: Config): string | undefined => {
 	if (!config.focusCategory) return config.gives;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	const multiplier = focusCoverageMultiplier(config.level ?? 1);
-	return `Then ${name} polls earn ×${multiplier} coverage`;
+	return `${name} polls reward ×${multiplier} coverage`;
 };
 
 export const needsOf = (config: Config): string | undefined => {
 	if (!config.focusCategory) return config.needs;
 	const name = getCategoryMetadata(config.focusCategory).name;
-	const demand = focusDemand(config);
-	return `Get ${demand} ${name} poll${demand === 1 ? "" : "s"} right`;
+	return `If ${name} poll occurs you must answer correctly`;
 };

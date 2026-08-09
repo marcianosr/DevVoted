@@ -8,22 +8,6 @@ import { ShopScreen } from "./ShopScreen.ui";
 
 const base = {
 	storage: 440,
-	storageCap: 512,
-	ownedStorageConfigs: {},
-	availableStorageConfigs: [
-		{
-			id: "postgres",
-			label: "Postgres",
-			description: "Cap +256KB",
-			currentLevel: 0,
-			nextLevelCost: 64,
-			maxLevel: false,
-		},
-	],
-	draftCostReduction: 0,
-	refundBoost: 0,
-	payoutBoost: 0,
-	freeRebuild: false,
 	coverageByCategory: {},
 	gateNumber: 2,
 	checks: [

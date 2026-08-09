@@ -15,6 +15,7 @@ import {
 	getRunCommunity,
 	getTodaysRun,
 } from "~/modules/run/api/run";
+import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { RunCommunity } from "~/modules/run/presentation/community/RunCommunity.component";
 import { TEST_DATES } from "~/test/kanto";
 import { createMockRunView } from "~/test/runView.factory";
@@ -23,6 +24,7 @@ import { RunAnswer } from "./RunAnswer.component";
 import { RunConfigure } from "./RunConfigure.component";
 import { RunLayout } from "./RunLayout.component";
 import { RunOver } from "./RunOver.component";
+import { RunPrep } from "./RunPrep.component";
 import { RunReward } from "./RunReward.component";
 import { RunShop } from "./RunShop.component";
 import { RunStart } from "./RunStart.component";
@@ -78,6 +80,7 @@ const renderRunRoutes = (initialPath: string) => {
 			runRoute.addChildren([
 				leaf("/", RunStart),
 				leaf("configure", RunConfigure),
+				leaf("prep", RunPrep),
 				leaf("answer", RunAnswer),
 				leaf("reward", RunReward),
 				leaf("shop", RunShop),
@@ -110,6 +113,18 @@ describe("run route sync", () => {
 			expect(router.state.location.pathname).toBe("/run/answer")
 		);
 		expect(await screen.findByText(view.poll?.question ?? "")).toBeVisible();
+	});
+
+	it("redirects a deep link past the first gate to prep, not the live poll", async () => {
+		const view = createMockRunView({ gatesCleared: 1 });
+		vi.mocked(getTodaysRun).mockResolvedValue({ success: true, data: view });
+
+		const router = renderRunRoutes("/run/shop");
+
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/run/prep")
+		);
+		expect(await screen.findByText("Boulder gate")).toBeVisible();
 	});
 
 	it("sends a day without a run to the start screen", async () => {
@@ -149,6 +164,115 @@ describe("run route sync", () => {
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/community")
 		);
+	});
+
+	it("the community board's back-to-run lands on gate prep, not the live poll", async () => {
+		const user = userEvent.setup();
+		vi.mocked(getTodaysRun).mockResolvedValue({
+			success: true,
+			data: createMockRunView({
+				status: "answering",
+				gatesCleared: 1,
+				poll: null,
+			}),
+		});
+		vi.mocked(getRunCommunity).mockResolvedValue({
+			success: true,
+			data: {
+				date: TEST_DATES.birthday,
+				totalPlayers: 3,
+				topPercent: null,
+				standouts: [],
+				polls: [],
+				climb: null,
+			},
+		});
+
+		const router = renderRunRoutes("/run/community");
+		await user.click(
+			await screen.findByRole("button", { name: "Back to your run →" })
+		);
+
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/run/prep")
+		);
+	});
+
+	it("the community board's back-to-run skips prep on the very first gate", async () => {
+		const user = userEvent.setup();
+		vi.mocked(getTodaysRun).mockResolvedValue({
+			success: true,
+			data: createMockRunView({
+				status: "answering",
+				gatesCleared: 0,
+				poll: null,
+			}),
+		});
+		vi.mocked(getRunCommunity).mockResolvedValue({
+			success: true,
+			data: {
+				date: TEST_DATES.birthday,
+				totalPlayers: 3,
+				topPercent: null,
+				standouts: [],
+				polls: [],
+				climb: null,
+			},
+		});
+
+		const router = renderRunRoutes("/run/community");
+		await user.click(
+			await screen.findByRole("button", { name: "Back to your run →" })
+		);
+
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/run/answer")
+		);
+	});
+
+	it("dropping a config from prep's edit mode dispatches the drop action", async () => {
+		const user = userEvent.setup();
+		vi.mocked(getTodaysRun).mockResolvedValue({
+			success: true,
+			data: createMockRunView({
+				status: "answering",
+				gatesCleared: 1,
+				configs: [CONFIGS.js, CONFIGS.eslint],
+			}),
+		});
+		vi.mocked(dispatchRunAction).mockResolvedValue({
+			success: true,
+			data: createMockRunView({
+				status: "answering",
+				gatesCleared: 1,
+				configs: [CONFIGS.js],
+			}),
+		});
+
+		renderRunRoutes("/run/prep");
+		await user.click(
+			await screen.findByRole("button", { name: "Edit pipeline" })
+		);
+		await user.click(screen.getByRole("button", { name: /ESLint/ }));
+
+		await waitFor(() =>
+			expect(vi.mocked(dispatchRunAction)).toHaveBeenCalledWith({
+				data: { action: { type: "drop", configId: "eslint" } },
+			})
+		);
+	});
+
+	it("starting the gate from prep reaches the first poll", async () => {
+		const user = userEvent.setup();
+		const view = createMockRunView({ status: "answering", gatesCleared: 1 });
+		vi.mocked(getTodaysRun).mockResolvedValue({ success: true, data: view });
+
+		renderRunRoutes("/run/prep");
+		await user.click(
+			await screen.findByRole("button", { name: /Start .* gate →/ })
+		);
+
+		expect(await screen.findByText(view.poll?.question ?? "")).toBeVisible();
 	});
 
 	it("lands a run awaiting tomorrow's polls on the community board", async () => {

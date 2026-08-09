@@ -25,13 +25,11 @@ import {
 	pipelineModifiersFor,
 } from "../pipeline/pipeline.model";
 import {
-	aggregateStorageEffects,
 	dropCount,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
-	STORAGE_CONFIGS,
 	VICTORY_GATE,
 } from "../rules.model";
 
@@ -115,19 +113,6 @@ export type RunView = {
 	readonly coverageGainedThisGate: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly storageCap: number;
-	readonly ownedStorageConfigs: Readonly<Record<string, number>>;
-	readonly availableStorageConfigs: ReadonlyArray<{
-		readonly id: string;
-		readonly label: string;
-		readonly description: string;
-		readonly currentLevel: number;
-		readonly nextLevelCost: number | null;
-		readonly maxLevel: boolean;
-	}>;
-	readonly draftCostReduction: number;
-	readonly refundBoost: number;
-	readonly payoutBoost: number;
-	readonly freeRebuild: boolean;
 	readonly log: readonly string[];
 };
 
@@ -284,22 +269,6 @@ export const toRunView = (state: RunState): RunView => {
 	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
 	const nextLintCost = lintCost(state.manualDisabled.length);
 
-	const effects = aggregateStorageEffects(state.ownedStorageConfigs);
-	const storageCap = STORAGE_CAP_KB + (effects.capAddKb ?? 0);
-
-	const availableStorageConfigs = STORAGE_CONFIGS.map((config) => {
-		const currentLevel = state.ownedStorageConfigs[config.id] ?? 0;
-		const isMaxed = currentLevel >= config.levelPrices.length;
-		return {
-			id: config.id,
-			label: config.label,
-			description: config.description,
-			currentLevel,
-			nextLevelCost: isMaxed ? null : config.levelPrices[currentLevel],
-			maxLevel: isMaxed,
-		};
-	});
-
 	return {
 		status: state.status,
 		slots: state.pipeline.slots,
@@ -345,13 +314,7 @@ export const toRunView = (state: RunState): RunView => {
 		coverageByCategory: state.coverageByCategory,
 		coverageGainedThisGate: gainedThisGate(state),
 		storage: state.storage,
-		storageCap,
-		ownedStorageConfigs: state.ownedStorageConfigs,
-		availableStorageConfigs,
-		draftCostReduction: effects.draftCostReduction ?? 0,
-		refundBoost: effects.refundBoost ?? 0,
-		payoutBoost: effects.payoutBoost ?? 0,
-		freeRebuild: effects.freeRebuild ?? false,
+		storageCap: STORAGE_CAP_KB,
 		log: state.log,
 	};
 };

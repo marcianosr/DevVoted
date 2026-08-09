@@ -232,6 +232,32 @@ describe("selling in the shop", () => {
 	});
 });
 
+describe("dropping from the gate-prep screen", () => {
+	it("drops an installed config while answering, no refund", () => {
+		let state = { ...started(["eslint", "js"]), storage: 0 };
+		state = runReducer(state, { type: "drop", configId: "eslint" });
+		expect(configIds(state)).not.toContain("eslint");
+		expect(state.storage).toBe(0); // drop() never refunds, unlike sell()
+	});
+
+	it("refuses to drop the only installed config while answering", () => {
+		const state = started(["eslint"]);
+		const oneConfig = {
+			...state,
+			pipeline: { ...state.pipeline, configs: [CONFIGS.eslint] },
+		};
+		const blocked = runReducer(oneConfig, { type: "drop", configId: "eslint" });
+		expect(blocked).toBe(oneConfig); // a bare build could never clear a gate
+	});
+
+	it("ignores drop before the climb starts", () => {
+		let state = createRun(pool(60), handed);
+		state = runReducer(state, { type: "slot", configId: "js" });
+		const blocked = runReducer(state, { type: "drop", configId: "js" });
+		expect(blocked).toBe(state);
+	});
+});
+
 describe("slot coverage gate", () => {
 	const rewarding = (): RunState => {
 		let state = started(["js"]);

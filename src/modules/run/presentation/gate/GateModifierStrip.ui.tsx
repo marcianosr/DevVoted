@@ -26,7 +26,7 @@ const statPair = (current: string, next: string | undefined): StatPair =>
 const multiplierTone = (pair: StatPair): "muted" | "gradient" =>
 	pair.from === undefined && pair.value === "×1" ? "muted" : "gradient";
 
-const coverageValue = ({
+export const coverageValue = ({
 	coverageMultiplier,
 	coverageAdd,
 }: PipelineModifiers) =>

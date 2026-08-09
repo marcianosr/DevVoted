@@ -3,6 +3,7 @@ import type { RunView } from "./runView.viewmodel";
 export const RUN_ROUTES = {
 	start: "/run",
 	configure: "/run/configure",
+	prep: "/run/prep",
 	answer: "/run/answer",
 	reward: "/run/reward",
 	review: "/run/review",
@@ -29,16 +30,26 @@ export type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
  * same reason: strip → review. Both ends of a gate close on the answers, and on
  * neither path does reading them advance the run — the action that does sits on
  * the last page of the sequence.
+ *
+ * "answering" spans two for a different reason: prep is the pre-gate beat —
+ * the stake and the pipeline, before the first poll — and canonical, so any
+ * stale or deep link into a gate already in progress (chiefly the community
+ * board's "back to your run") lands there rather than mid-poll. Gate 0 is the
+ * one exception: Configure already shows the same stake before the climb even
+ * starts, so a prep page right after it would repeat itself — "answering"
+ * collapses to just `answer` there.
  */
 export const routesForStatus = (
-	view: Pick<RunView, "status"> | null
+	view: Pick<RunView, "status" | "gatesCleared"> | null
 ): readonly [RunRoutePath, ...RunRoutePath[]] => {
 	if (!view) return [RUN_ROUTES.start];
 	switch (view.status) {
 		case "configuring":
 			return [RUN_ROUTES.configure];
 		case "answering":
-			return [RUN_ROUTES.answer];
+			return view.gatesCleared > 0
+				? [RUN_ROUTES.prep, RUN_ROUTES.answer]
+				: [RUN_ROUTES.answer];
 		case "rewarding":
 			return [RUN_ROUTES.reward, RUN_ROUTES.review, RUN_ROUTES.shop];
 		case "awaiting-strip":
@@ -65,7 +76,7 @@ const RUN_SCREEN_PATHS: readonly string[] = Object.values(RUN_ROUTES);
  */
 export const syncTarget = (
 	pathname: string,
-	view: Pick<RunView, "status" | "awaitingTomorrow"> | null,
+	view: Pick<RunView, "status" | "awaitingTomorrow" | "gatesCleared"> | null,
 	isPending: boolean
 ): SyncTargetPath | null => {
 	if (isPending) return null;

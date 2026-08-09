@@ -27,9 +27,9 @@ import {
 } from "~/modules/run/pipeline/pipeline.model";
 import { AnsweringScreen } from "~/modules/run/presentation/screens/AnsweringScreen.ui";
 import { ConfiguringScreen } from "~/modules/run/presentation/screens/ConfiguringScreen.ui";
+import { PrepScreen } from "~/modules/run/presentation/screens/PrepScreen.ui";
 import { RewardScreen } from "~/modules/run/presentation/screens/RewardScreen.ui";
 import { ShopScreen } from "~/modules/run/presentation/screens/ShopScreen.ui";
-import { StorageShop } from "~/modules/run/presentation/screens/StorageShop.ui";
 import { StripScreen } from "~/modules/run/presentation/screens/StripScreen.ui";
 import { ReviewAnswers } from "~/modules/run/presentation/run/ReviewAnswers.ui";
 import { RunHud } from "~/modules/run/presentation/run/RunHud.ui";
@@ -417,6 +417,16 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setStripStep("strip");
 	}, [state.status]);
+	// The gate-prep beat before the first poll of every gate — mirrors the
+	// routed app's community → prep → answer sequence (RunPrep.component.tsx).
+	const [answeringStep, setAnsweringStep] = useState<"prep" | "poll">("prep");
+	useEffect(() => {
+		setAnsweringStep("prep");
+	}, [state.status]);
+	const [editingPipeline, setEditingPipeline] = useState(false);
+	useEffect(() => {
+		setEditingPipeline(false);
+	}, [answeringStep]);
 
 	const view = toRunView(state);
 	const community = simulateCommunityBoard(view.answeredThisGate, state.polls, {
@@ -499,45 +509,70 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						configs={view.configs}
 						slots={view.slots}
 						gatesCleared={view.gatesCleared}
+						pollsPerGate={view.pollsPerGate}
+						stripsOnFailure={view.stripsOnFailure}
+						modifiers={{
+							gateReward: view.gateReward,
+							rewardMultiplier: view.rewardMultiplier,
+							coverageMultiplier: view.coverageMultiplier,
+							coverageAdd: view.coverageAdd,
+						}}
 						bench={view.available}
 						checks={view.checks}
-						gateReward={view.gateReward}
-						rewardMultiplier={view.rewardMultiplier}
-						coverageMultiplier={view.coverageMultiplier}
-						coverageAdd={view.coverageAdd}
-						coverage={view.coverage}
-						slotCoverageRequired={view.slotCoverageRequired}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
 						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
 					/>
 				</Screen>
 			)}
 
-			{state.status === "answering" && view.poll && (
+			{state.status === "answering" && answeringStep === "prep" && (
 				<Screen gateTheme={view.gateTheme}>
-					<AnsweringScreen
-						configs={view.configs}
-						checks={view.checks}
-						category={view.poll.category}
-						question={view.poll.question}
-						answerType={view.poll.answerType}
-						options={view.poll.options}
-						selectedOptionIds={selected}
-						disabledOptionIds={disabled}
-						slots={view.slots}
+					<PrepScreen
+						gateNumber={view.gatesCleared}
+						pollsPerGate={view.pollsPerGate}
 						stripsOnFailure={view.stripsOnFailure}
-						canLint={view.canLint}
-						lintReady={view.lintReady}
-						linter={view.linter ?? undefined}
-						lintCost={view.lintCost}
-						canSubmit={canSubmit}
-						onSelect={onSelect}
-						onSubmit={() => answer(selected)}
-						onNext={() => {}}
-						onLint={() => dispatch({ type: "lint-poll" })}
+						modifiers={{
+							gateReward: view.gateReward,
+							rewardMultiplier: view.rewardMultiplier,
+							coverageMultiplier: view.coverageMultiplier,
+							coverageAdd: view.coverageAdd,
+						}}
+						configs={view.configs}
+						editing={editingPipeline}
+						onDropConfig={(configId) => dispatch({ type: "drop", configId })}
+						onEditPipeline={() => setEditingPipeline((current) => !current)}
+						onStartGate={() => setAnsweringStep("poll")}
 					/>
 				</Screen>
 			)}
+
+			{state.status === "answering" &&
+				answeringStep === "poll" &&
+				view.poll && (
+					<Screen gateTheme={view.gateTheme}>
+						<AnsweringScreen
+							configs={view.configs}
+							checks={view.checks}
+							category={view.poll.category}
+							question={view.poll.question}
+							answerType={view.poll.answerType}
+							options={view.poll.options}
+							selectedOptionIds={selected}
+							disabledOptionIds={disabled}
+							slots={view.slots}
+							stripsOnFailure={view.stripsOnFailure}
+							canLint={view.canLint}
+							lintReady={view.lintReady}
+							linter={view.linter ?? undefined}
+							lintCost={view.lintCost}
+							canSubmit={canSubmit}
+							onSelect={onSelect}
+							onSubmit={() => answer(selected)}
+							onNext={() => {}}
+							onLint={() => dispatch({ type: "lint-poll" })}
+						/>
+					</Screen>
+				)}
 
 			{state.status === "rewarding" && rewardStep === "summary" && (
 				<Screen
@@ -595,57 +630,30 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("community"),
 					}}
 				>
-					<div className="grid grid-cols-2 gap-12">
-						{/* Pipeline Shop Section */}
-						<ShopScreen
-							storage={view.storage}
-							storageCap={view.storageCap}
-							ownedStorageConfigs={view.ownedStorageConfigs}
-							availableStorageConfigs={view.availableStorageConfigs}
-							draftCostReduction={view.draftCostReduction}
-							refundBoost={view.refundBoost}
-							payoutBoost={view.payoutBoost}
-							freeRebuild={view.freeRebuild}
-							gateNumber={view.gatesCleared}
-							coverageByCategory={view.coverageByCategory}
-							checks={view.checks}
-							configs={view.configs}
-							gateReward={view.gateReward}
-							rewardMultiplier={view.rewardMultiplier}
-							coverageMultiplier={view.coverageMultiplier}
-							coverageAdd={view.coverageAdd}
-							newConfigIds={view.newConfigIds}
-							draftOptions={view.draftOptions}
-							onDraft={(id) => dispatch({ type: "draft", configId: id })}
-							rebuildCost={cost}
-							canRebuild={state.storage >= cost}
-							onRebuild={() => dispatch({ type: "rebuild-draft" })}
-							slots={view.slots}
-							coverage={view.coverage}
-							slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
-							canAddSlot={canAddSlot(state.pipeline.slots, state.coverage)}
-							onAddSlot={() => dispatch({ type: "add-slot" })}
-							onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
-							onSell={(id) => dispatch({ type: "sell", configId: id })}
-						/>
-
-						{/* Storage Shop Section */}
-						<StorageShop
-							storage={view.storage}
-							storageCap={view.storageCap}
-							availableStorageConfigs={view.availableStorageConfigs}
-							draftCostReduction={view.draftCostReduction}
-							refundBoost={view.refundBoost}
-							payoutBoost={view.payoutBoost}
-							freeRebuild={view.freeRebuild}
-							onUpgradeStorage={(configId) =>
-								dispatch({ type: "upgrade-storage", configId })
-							}
-							onDeinstallStorage={(configId) =>
-								dispatch({ type: "deinstall-storage", configId })
-							}
-						/>
-					</div>
+					<ShopScreen
+						storage={view.storage}
+						gateNumber={view.gatesCleared}
+						coverageByCategory={view.coverageByCategory}
+						checks={view.checks}
+						configs={view.configs}
+						gateReward={view.gateReward}
+						rewardMultiplier={view.rewardMultiplier}
+						coverageMultiplier={view.coverageMultiplier}
+						coverageAdd={view.coverageAdd}
+						newConfigIds={view.newConfigIds}
+						draftOptions={view.draftOptions}
+						onDraft={(id) => dispatch({ type: "draft", configId: id })}
+						rebuildCost={cost}
+						canRebuild={state.storage >= cost}
+						onRebuild={() => dispatch({ type: "rebuild-draft" })}
+						slots={view.slots}
+						coverage={view.coverage}
+						slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
+						canAddSlot={canAddSlot(state.pipeline.slots, state.coverage)}
+						onAddSlot={() => dispatch({ type: "add-slot" })}
+						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
+						onSell={(id) => dispatch({ type: "sell", configId: id })}
+					/>
 				</Screen>
 			)}
 
@@ -728,7 +736,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</Screen>
 			)}
 
-			{state.status === "answering" && (
+			{state.status === "answering" && answeringStep === "poll" && (
 				<div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
 					<span className="font-semibold uppercase tracking-wide">Dev rig</span>
 					<button

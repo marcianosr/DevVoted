@@ -3,6 +3,7 @@ import type { AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { roleRows } from "~/modules/run/gate/configRole.model";
+import { gateStake } from "~/modules/run/rules.model";
 import type { AnswerScore } from "~/modules/run/view/runView.viewmodel";
 import { Button } from "~/ui/Button.component";
 import {
@@ -58,7 +59,7 @@ const StakeOnFailure = ({
 	strips: number;
 	configs: number;
 }) => {
-	const fatal = strips >= configs;
+	const { fatal } = gateStake(strips, configs);
 	return (
 		<Paragraph as="span" size="xs" tone={fatal ? "cinnabar" : "saffron"}>
 			{fatal

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	gateStake,
 	pollDifficultyMultiplier,
 	storageCreditRate,
 	GATE_COUNT,
@@ -49,5 +50,19 @@ describe("pollDifficultyMultiplier", () => {
 		expect(pollDifficultyMultiplier(3, true)).toBeCloseTo(1.5);
 		expect(pollDifficultyMultiplier(6, true)).toBeCloseTo(1.8);
 		expect(pollDifficultyMultiplier(8, true)).toBeCloseTo(2);
+	});
+});
+
+describe("gateStake", () => {
+	it("is not fatal when the peel quota is smaller than the build", () => {
+		expect(gateStake(1, 3)).toEqual({ strips: 1, configs: 3, fatal: false });
+	});
+
+	it("is fatal once the peel quota matches the whole build", () => {
+		expect(gateStake(3, 3).fatal).toBe(true);
+	});
+
+	it("is fatal when the peel quota exceeds the build", () => {
+		expect(gateStake(4, 3).fatal).toBe(true);
 	});
 });
