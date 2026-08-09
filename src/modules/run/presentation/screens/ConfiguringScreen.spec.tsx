@@ -42,13 +42,13 @@ describe(ConfiguringScreen, () => {
 	it("lists the gate's rewards and fail stake as their own rows", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByText("polls this window", { exact: false })
+			screen.getAllByText("polls this window", { exact: false }).length
+		).toBeGreaterThan(0);
+		expect(
+			screen.getByRole("heading", { name: "Rewards" })
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: "Gate rewards" })
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Gate penalty" })
+			screen.getByRole("heading", { name: "Penalty" })
 		).toBeInTheDocument();
 		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
 		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
@@ -63,6 +63,15 @@ describe(ConfiguringScreen, () => {
 			/>
 		);
 		expect(screen.getByText("×2 +5%")).toHaveClass("text-gradient-green");
+	});
+
+	it("states the window's objectives on the receipt", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(
+			screen.getByRole("heading", { name: "Objectives" })
+		).toBeInTheDocument();
+		expect(screen.getByText("Make your pipeline succeed")).toBeInTheDocument();
+		expect(screen.getByText("Answer 5 polls this window")).toBeInTheDocument();
 	});
 
 	it("names the stake fatal once a fail would take the whole build", () => {

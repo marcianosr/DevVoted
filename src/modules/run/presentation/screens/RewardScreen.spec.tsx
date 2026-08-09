@@ -40,15 +40,6 @@ const base = {
 	configs: [CONFIGS.unitTests],
 };
 
-// The climb ladder names every gate's badge in a pip tooltip, so a bare
-// document-wide query for a swatch name (or a gate number) now hits the ladder
-// too. Anything about what this clear *held* is scoped to its own section.
-const collectedSection = () => {
-	const section = screen.getByText("Swatches collected").parentElement;
-	if (!section) throw new Error("no collected section");
-	return section;
-};
-
 describe(RewardScreen, () => {
 	it("shows the cleared gate and the reward report", () => {
 		render(<RewardScreen {...base} />);
@@ -68,14 +59,13 @@ describe(RewardScreen, () => {
 		expect(screen.getByText("+3.5%")).toBeInTheDocument();
 	});
 
-	// The answers themselves moved to /run/review; the score stays here, since it
-	// is the gate's report card and the way through to them.
-	it("keeps the answers off the screen, offering the score as the way in", () => {
+	// The answers themselves moved to /run/review; this button is the way through
+	// to them, with the score left to the answers page itself.
+	it("keeps the answers off the screen, offering a way through to them", () => {
 		const onReviewAnswers = vi.fn();
 		render(<RewardScreen {...base} onReviewAnswers={onReviewAnswers} />);
 		expect(screen.queryByText("typeof null?")).not.toBeInTheDocument();
 		const link = screen.getByRole("button", { name: /Review your answers/ });
-		expect(link).toHaveTextContent("1 of 2 correct");
 		fireEvent.click(link);
 		expect(onReviewAnswers).toHaveBeenCalledTimes(1);
 	});
@@ -84,6 +74,28 @@ describe(RewardScreen, () => {
 		render(<RewardScreen {...base} />);
 		expect(
 			screen.queryByRole("button", { name: /Review your answers/ })
+		).not.toBeInTheDocument();
+	});
+
+	// The way forward sits beside the way through to the answers, not above it.
+	it("offers a way to the shop beside reviewing the answers", () => {
+		const onContinue = vi.fn();
+		render(
+			<RewardScreen
+				{...base}
+				onReviewAnswers={vi.fn()}
+				onContinue={onContinue}
+			/>
+		);
+		const shopButton = screen.getByRole("button", { name: /Continue to shop/ });
+		fireEvent.click(shopButton);
+		expect(onContinue).toHaveBeenCalledTimes(1);
+	});
+
+	it("drops the shop button when there is nowhere for the run to continue", () => {
+		render(<RewardScreen {...base} />);
+		expect(
+			screen.queryByRole("button", { name: /Continue to shop/ })
 		).not.toBeInTheDocument();
 	});
 
@@ -110,14 +122,16 @@ describe(RewardScreen, () => {
 		// first gate always looks like — the same number twice — so the pair merges.
 		render(<RewardScreen {...base} storage={80} />);
 		const storage = screen.getAllByRole("listitem")[0];
-		expect(storage).toHaveTextContent("+80KB storage this gate");
+		expect(storage).toHaveTextContent("storage this gate");
+		expect(within(storage).getByText("+80KB")).toBeInTheDocument();
 		expect(within(storage).queryByText("+80KB this gate")).toBeNull();
 	});
 
 	it("keeps the running total and the delta apart once they differ", () => {
-		render(<RewardScreen {...base} storage={200} />);
+		render(<RewardScreen {...base} storage={200} capKb={512} />);
 		const storage = screen.getAllByRole("listitem")[0];
-		expect(storage).toHaveTextContent("200KB storage");
+		expect(within(storage).getByText("storage")).toBeInTheDocument();
+		expect(within(storage).getByText("200KB")).toBeInTheDocument();
 		expect(within(storage).getByText("+80KB this gate")).toBeInTheDocument();
 	});
 
@@ -141,21 +155,20 @@ describe(RewardScreen, () => {
 			<RewardScreen
 				{...base}
 				storage={96}
+				capKb={512}
 				coverage={6.5}
 				slots={3}
 				slotCoverageRequired={8}
 			/>
 		);
-		// Each reward leads with where the run now stands, then this gate's delta.
-		const [storage, coverage] = screen.getAllByRole("listitem");
-		expect(storage).toHaveTextContent("96KB storage");
+
+		const [storage, coverage, slotProgress] = screen.getAllByRole("listitem");
+		expect(within(storage).getByText("96KB")).toBeInTheDocument();
 		expect(storage).toHaveTextContent("this gate");
 		expect(storage).toHaveTextContent("of 512KB cap");
-		expect(coverage).toHaveTextContent("6.5% coverage");
-		// Coverage buys width, so its meter is the slot's own line (ADR-019): a
-		// small bar toward the rung, plus how much of it is still needed.
-		expect(coverage).toHaveTextContent("6.5% of 8% for slot 4");
-		expect(screen.getByText("6.5% of 8% for slot 4")).toHaveClass(
+		expect(within(coverage).getByText("6.5%")).toBeInTheDocument();
+		expect(slotProgress).toHaveTextContent("slot 4 progress");
+		expect(within(slotProgress).getByText("6.5% of 8%")).toHaveClass(
 			"text-zinc-400"
 		);
 		expect(
@@ -174,46 +187,27 @@ describe(RewardScreen, () => {
 			/>
 		);
 		expect(screen.queryByText(/for slot/)).not.toBeInTheDocument();
-		// The total still reads — only the bar and its target go.
 		expect(screen.getAllByRole("listitem")[1]).toHaveTextContent("coverage");
 	});
 
 	it("counts the fresh badge against the whole collection", () => {
 		render(<RewardScreen {...base} />);
-		// Clearing gate 1 banks Pallet and Boulder: 2 of the 13 gates' swatches.
 		expect(screen.getAllByRole("listitem")[2]).toHaveTextContent(
 			"earned · 2 of 13"
 		);
 	});
 
-	it("names every swatch the run holds, the fresh one included", () => {
-		render(<RewardScreen {...base} clearedGate={2} />);
-		const collected = within(collectedSection());
-		// Clearing gate 2 banks gates 0 through 2 — Pallet, Boulder, Cascade.
-		for (const name of ["Pallet Swatch", "Boulder Swatch", "Cascade Swatch"])
-			expect(collected.getByText(name)).toBeInTheDocument();
-		expect(collected.queryByText("Thunder Swatch")).not.toBeInTheDocument();
-	});
-
-	it("gives gate 0's clear Pallet and nothing else", () => {
-		render(<RewardScreen {...base} clearedGate={0} />);
-		const collected = within(collectedSection());
-		expect(collected.getByText("Pallet Swatch")).toBeInTheDocument();
-		expect(collected.queryByText("Boulder Swatch")).not.toBeInTheDocument();
-	});
-
 	it("shows where the clear leaves the climb, and what is next", () => {
 		render(<RewardScreen {...base} />);
-		// Clearing gate 1 puts the run on gate 2 — the ladder and its caption agree.
 		expect(
 			screen.getByRole("group", { name: "gate 2 of 12" })
 		).toBeInTheDocument();
-		expect(screen.getAllByRole("listitem")[2]).toHaveTextContent(
-			"gate 2 of 12 · next up: Cascade gate"
-		);
+		expect(
+			screen.getByText("gate 2 of 12 · next up: Cascade gate")
+		).toBeInTheDocument();
 	});
 
-	it("calls out a slot this gate's coverage just opened", () => {
+	it("reads the slot progress as unlocked once its rung is met", () => {
 		render(
 			<RewardScreen
 				{...base}
@@ -222,31 +216,7 @@ describe(RewardScreen, () => {
 				slotCoverageRequired={8}
 			/>
 		);
-		// The fixture gains 11.5%, so the run crossed 8% inside this gate.
-		expect(
-			screen.getByText("slot 4 unlocked this gate — claim it in the shop")
-		).toBeInTheDocument();
-		// ...and the line it sits under agrees.
-		expect(screen.getByText("8.5% of 8% for slot 4")).toHaveClass(
-			"text-gradient-green"
-		);
-	});
-
-	it("keeps naming the target when the rung was already cleared earlier", () => {
-		render(
-			<RewardScreen
-				{...base}
-				// 20% now, 8.5% before this gate's 11.5% — the rung fell two gates ago.
-				coverage={20}
-				slots={3}
-				slotCoverageRequired={8}
-			/>
-		);
-		// The line still reads as unlocked — it is; only the "this gate" news is gone.
-		expect(screen.queryByText(/unlocked this gate/)).not.toBeInTheDocument();
-		expect(screen.getByText("20% of 8% for slot 4")).toHaveClass(
-			"text-gradient-green"
-		);
+		expect(screen.getByText("8.5% of 8%")).toHaveClass("text-gradient-green");
 	});
 
 	it("headlines every clear as a clear — the climb never holds", () => {

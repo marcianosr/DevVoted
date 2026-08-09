@@ -1,7 +1,6 @@
 import { getCategories } from "~/domains/shared/categories";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
-import { Title } from "~/ui/typography/Title.component";
 
 type CoverageByCategoryProps = {
 	coverageByCategory: Readonly<Record<string, number>>;
@@ -12,11 +11,12 @@ type CoverageByCategoryProps = {
 };
 
 /**
- * The coverage split, biggest earner first, as a two-column list of ruled rows.
- * Ranked rather than kept in category order: the question the split answers is
- * "where did this come from", and a row of equal-looking chips made you read all
- * of them to find that out. The rule under each row is what lets a name on the
- * left and a number on the right read as one line across the gap.
+ * The coverage split, biggest earner first, as one flowing line of
+ * name-and-percentage pairs. Ranked rather than kept in category order: the
+ * question the split answers is "where did this come from", and a row of
+ * equal-looking chips made you read all of them to find that out. A single
+ * dot-separated line reads as a footnote to the payout above it, rather than
+ * a second ledger competing for the same attention.
  */
 export const CoverageByCategory = ({
 	coverageByCategory,
@@ -39,17 +39,15 @@ export const CoverageByCategory = ({
 		<section className="flex flex-col gap-2">
 			{title ? (
 				<header>
-					<Title>{title}</Title>
-					{subtitle ? <Subtitle>{subtitle}</Subtitle> : null}
+					<Subtitle>{title}</Subtitle>
+					{subtitle ? <Paragraph tone="muted">{subtitle}</Paragraph> : null}
 				</header>
 			) : null}
-			<div className="grid gap-x-12 sm:grid-cols-2">
-				{covered.map(({ code, name, pct }) => (
-					<div
-						key={code}
-						className="flex items-baseline justify-between gap-6 border-b border-zinc-800 py-2"
-					>
-						<Paragraph as="span" size="sm">
+			<Paragraph as="div" size="sm" className="flex flex-wrap gap-2">
+				{covered.map(({ code, name, pct }, index) => (
+					<span key={code} className="flex items-baseline gap-2">
+						{index > 0 ? <span className="text-zinc-600">·</span> : null}
+						<Paragraph as="span" size="sm" className="font-bold">
 							{name}
 						</Paragraph>
 						<Paragraph
@@ -61,9 +59,9 @@ export const CoverageByCategory = ({
 							{prefix}
 							{pct}%
 						</Paragraph>
-					</div>
+					</span>
 				))}
-			</div>
+			</Paragraph>
 		</section>
 	);
 };

@@ -2,7 +2,6 @@ import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import {
-	correctCount,
 	gateRewardRows,
 	gateStorageGained,
 } from "~/modules/run/gate/gateReward.model";
@@ -16,16 +15,14 @@ import {
 	SLICE_WINDOW,
 	VICTORY_GATE,
 } from "~/modules/run/rules.model";
+import { Button } from "~/ui/Button.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { GateRewardReport } from "../gate/GateRewardReport.ui";
 import { nextSlotProgress } from "../gate/SlotUnlockRow.ui";
-import { SwatchChips } from "../gate/SwatchChips.ui";
 import { CoverageByCategory } from "../run/CoverageByCategory.ui";
 import { GateSegmentBar } from "../run/GateSegmentBar.ui";
 
 type RewardScreenProps = {
-	/** The gate the clear beat — one behind `gatesCleared`, which it advanced. */
 	clearedGate: number;
 	gateReward: number;
 	answered: readonly AnsweredPoll[];
@@ -33,25 +30,15 @@ type RewardScreenProps = {
 	passedChecks: readonly CheckStatus[];
 	configs: readonly Config[];
 	faucetThisGateKb?: number;
-	/** The run's storage after the payout — drawn as the winnings bar. */
 	storage?: number;
-	/** The cap in KB at the time this reward was received — the bar's upper limit. */
 	capKb?: number;
-	/** The run's coverage after the payout — drawn as the coverage bar. */
 	coverage?: number;
-	/**
-	 * Coverage the next slot costs, and which slot that is. Coverage buys width,
-	 * so this is what its bar fills toward (ADR-019). Infinite at the slot cap,
-	 * where the bar drops rather than filling toward nothing.
-	 */
 	slotCoverageRequired?: number;
 	slots?: number;
-	/** What the storage plan billed when this window closed — 0/omitted on the free tier. */
 	billKb?: number;
-	/** True when the bill went unpaid and the plan dropped to the free tier. */
 	planDowngraded?: boolean;
-	/** Opens the review page. Omit and the score line stays off the screen. */
 	onReviewAnswers?: () => void;
+	onContinue?: () => void;
 };
 
 export const RewardScreen = ({
@@ -70,6 +57,7 @@ export const RewardScreen = ({
 	billKb,
 	planDowngraded,
 	onReviewAnswers,
+	onContinue,
 }: RewardScreenProps) => {
 	const coveragePct = roundToOneDecimal(
 		Object.values(coverageGainedByCategory).reduce((sum, pct) => sum + pct, 0)
@@ -86,13 +74,8 @@ export const RewardScreen = ({
 		gateReward,
 		faucetThisGateKb
 	);
-	// This clear banked gate `clearedGate`, so every swatch up to and including
-	// it is now held — no separate width or count needs passing in.
 	const earnedSwatches = swatchesEarnedAt(clearedGate + 1);
 
-	// The rung coverage is paying for. A finite requirement is the only case with
-	// something to fill toward: at the slot cap `coverageToAddSlot` is Infinity,
-	// and a bar against infinity would read as "you have made no progress".
 	const buysNextSlot =
 		coverage !== undefined &&
 		slots !== undefined &&
@@ -100,17 +83,6 @@ export const RewardScreen = ({
 		Number.isFinite(slotCoverageRequired) &&
 		slotCoverageRequired > 0;
 
-	// A rung crossed *by this gate* is the news; a rung crossed two gates ago and
-	// left unspent is not, so the before-value is what decides. The slot itself is
-	// still claimed in the shop — the reward screen only reports that it opened.
-	const openedSlot =
-		buysNextSlot &&
-		coverage >= slotCoverageRequired &&
-		coverage - coveragePct < slotCoverageRequired;
-
-	// The climb after this clear: gates count from 0, so the gate just banked
-	// makes `clearedGate + 1` both the gates-cleared count and the gate now under
-	// way — the same number the HUD's ladder reads.
 	const gatesCleared = clearedGate + 1;
 	const nextGate = swatchForGate(gatesCleared);
 
@@ -131,23 +103,11 @@ export const RewardScreen = ({
 								capKb,
 							}
 				}
-				coverageBar={
-					buysNextSlot
-						? {
-								fromPct: roundToOneDecimal(coverage - coveragePct),
-								toPct: coverage,
-								targetPct: slotCoverageRequired,
-								targetLabel: `slot ${slots + 1}`,
-								reached: openedSlot,
-							}
-						: undefined
-				}
+				coverageBar={buysNextSlot ? { toPct: coverage } : undefined}
 				swatchProgress={{
 					earned: earnedSwatches.length,
 					total: ALL_SWATCHES.length,
 				}}
-				// Read-only: the reward screen reports that width opened, the shop is
-				// where it is claimed. `nextSlotProgress` returns nothing at the slot cap.
 				slotRow={
 					slots === undefined
 						? null
@@ -155,9 +115,6 @@ export const RewardScreen = ({
 				}
 				climb={{
 					ladder: (
-						// The same ladder the HUD carries, so the badge you just won is
-						// visibly the pip that filled. No polls answered yet in the new
-						// window — the next gate opens tomorrow.
 						<GateSegmentBar
 							swatches={ALL_SWATCHES}
 							gatesCleared={gatesCleared}
@@ -173,8 +130,6 @@ export const RewardScreen = ({
 									nextGate ? ` · next up: ${nextGate.gateName} gate` : ""
 								}`,
 				}}
-				// Where the coverage number came from — the section that closes the
-				// payout, under its own rule.
 				breakdown={
 					<CoverageByCategory
 						coverageByCategory={coverageGainedByCategory}
@@ -184,7 +139,6 @@ export const RewardScreen = ({
 				}
 			/>
 
-			{/* The plan's receipt: a bill is silent income shrinkage unless named. */}
 			{billKb !== undefined && billKb > 0 ? (
 				<Paragraph size="sm" tone="muted">
 					Storage plan billed −{billKb}KB this window.
@@ -196,36 +150,17 @@ export const RewardScreen = ({
 				</Paragraph>
 			) : null}
 
-			{earnedSwatches.length > 0 && (
-				<section className="flex flex-col items-start gap-2">
-					<Subtitle>Swatches collected</Subtitle>
-					<SwatchChips swatches={earnedSwatches} />
-				</section>
-			)}
-
-			{/* The answers themselves live on their own page; what belongs here is the
-			    score, which is the gate's report card — and the way through to them. */}
-			{answered.length > 0 && onReviewAnswers ? (
-				<button
-					type="button"
-					onClick={onReviewAnswers}
-					className="flex cursor-pointer items-center gap-3 self-start rounded-lg border border-zinc-700 px-3 py-2 text-left transition-colors hover:bg-zinc-900/60"
-				>
-					<Paragraph as="span" size="sm">
-						Review your answers
-					</Paragraph>
-					<Paragraph
-						as="span"
-						size="sm"
-						tone="viridian"
-						className="font-bold tabular-nums"
-					>
-						{correctCount(answered)} of {answered.length} correct
-					</Paragraph>
-					<Paragraph as="span" size="sm" tone="muted">
-						→
-					</Paragraph>
-				</button>
+			{(answered.length > 0 && onReviewAnswers) || onContinue ? (
+				<div className="flex items-center justify-end gap-3">
+					{answered.length > 0 && onReviewAnswers ? (
+						<Button variant="neutral" onClick={onReviewAnswers}>
+							Review your answers →
+						</Button>
+					) : null}
+					{onContinue ? (
+						<Button onClick={onContinue}>Continue to shop →</Button>
+					) : null}
+				</div>
 			) : null}
 		</div>
 	);

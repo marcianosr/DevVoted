@@ -102,18 +102,11 @@ type GateRewardReportProps = {
 	 * under the winnings line. */
 	storageBar?: { fromKb: number; toKb: number; capKb: number };
 	/**
-	 * Run coverage before → after, and the rung it is paying for. Coverage buys
-	 * width, so the target is the next slot (ADR-019) — never a swatch, which the
-	 * clear itself awards. Omitted at the slot cap, where nothing is left to buy.
+	 * Run coverage after the payout — the running total the coverage figure
+	 * reads against. Omitted at the slot cap, where there is no total left to
+	 * track. The rung's own progress is `slotRow`'s job, not this one's.
 	 */
-	coverageBar?: {
-		fromPct: number;
-		toPct: number;
-		targetPct: number;
-		targetLabel: string;
-		/** True when this gate's coverage is what carried it over the line. */
-		reached?: boolean;
-	};
+	coverageBar?: { toPct: number };
 	/** How much of the collection this clear's badge makes — "1 of 13". */
 	swatchProgress?: { earned: number; total: number };
 	/**
@@ -123,12 +116,10 @@ type GateRewardReportProps = {
 	 */
 	climb?: { ladder: ReactNode; caption: ReactNode };
 	/**
-	 * The width the run's coverage is paying for, as a compact single-line
-	 * preview — a small bar plus "X% of Y% for slot N", muted until met. It
-	 * *is* the coverage meter's bar when given, not a second one under it:
-	 * both draw the same rung, and two identical bars two lines apart read as
-	 * two different facts. The preview wins because it adds what the plain
-	 * bar cannot — whether the rung has actually bought a slot yet.
+	 * The width the run's coverage is paying for, as its own ledger row — a
+	 * small bar plus "X% of Y%", muted until met and gradient-green once it
+	 * is. Sits right under the coverage row rather than inside it: coverage
+	 * is a running total, the slot is a separate thing it is buying.
 	 */
 	slotRow?: ReactNode;
 	/** What the coverage number breaks down into — closes the rewards section. */
@@ -187,68 +178,69 @@ const GateHeadline = ({
 	</div>
 );
 
-/** Every reward's number reads in the same gradient green. */
-const RewardValue = ({ children }: { children: ReactNode }) => (
-	<span className="font-extrabold text-gradient-green">{children}</span>
-);
-
 /**
  * The two figures a reward carries — where the run stands, and what this gate
  * added. On the first gate they are the same number, because everything you hold
- * is what you just won, so they merge into one line instead of printing "72KB"
- * on the left and "+72KB" on the right. A run with history keeps them apart,
- * which is the only case where the pair says two things.
+ * is what you just won, so the label carries "this gate" and the value is the
+ * gain alone. A run with history keeps the running total as the value and moves
+ * "this gate" onto a second, smaller figure beneath it.
  */
 const meterFigures = (
 	total: number | undefined,
 	gain: number,
-	unit: string
-): { total: string; suffix: string; gain?: string } =>
+	unit: string,
+	name: string
+): { label: string; value: string; gain?: string } =>
 	total === undefined || total === gain
-		? { total: `+${gain}${unit}`, suffix: " this gate" }
+		? { label: `${name} this gate`, value: `+${gain}${unit}` }
 		: {
-				total: `${total}${unit}`,
-				suffix: "",
+				label: name,
+				value: `${total}${unit}`,
 				gain: `+${gain}${unit} this gate`,
 			};
 
 /**
- * One reward as a meter: where the run now stands, what this gate added, a bar,
- * and what the bar is filling toward. Storage and coverage are the same kind of
- * thing — a running total this gate moved — so they get the same three lines,
- * and the caption is what stops a bar from being decoration: "of 512KB cap" and
- * the slot's unlock row are the only reason the fill means anything.
+ * One reward as a bullet line — the same shape the gate's stake receipt lists
+ * its rewards in (`GateStakeReceipt`'s `GainRow`), so what a gate promises and
+ * what it paid read as the same list rather than two designs for the same
+ * fact. The value leads, gradient green and bold, since it is the number a
+ * player scans for; the label just names what it is. An optional detail (a
+ * bar, a caption) sits below the line, inside the bullet.
  */
-const RewardMeter = ({
-	total,
+const RewardLine = ({
 	label,
+	value,
 	gain,
-	bar,
-	caption,
+	detail,
 }: {
-	total: ReactNode;
-	label: string;
+	label: ReactNode;
+	value: ReactNode;
 	gain?: ReactNode;
-	bar?: ReactNode;
-	caption?: ReactNode;
+	detail?: ReactNode;
 }) => (
-	<li className="flex flex-col gap-1">
-		<div className="flex flex-wrap items-baseline justify-between gap-x-6">
-			<Paragraph as="span" size="sm">
-				<RewardValue>{total}</RewardValue> {label}
-			</Paragraph>
+	<li>
+		<Paragraph as="span" size="sm">
+			<Paragraph
+				as="span"
+				size="sm"
+				tone="gradient"
+				className="font-extrabold tabular-nums"
+			>
+				{value}
+			</Paragraph>{" "}
+			{label}
 			{gain ? (
-				<Paragraph as="span" size="sm" tone="saffron" className="tabular-nums">
+				<Paragraph
+					as="span"
+					size="xs"
+					tone="saffron"
+					className="ml-2 tabular-nums"
+				>
 					{gain}
 				</Paragraph>
 			) : null}
-		</div>
-		{bar}
-		{caption ? (
-			<Paragraph as="span" size="xs" tone="faint">
-				{caption}
-			</Paragraph>
-		) : null}
+		</Paragraph>
+		{detail}
 	</li>
 );
 
@@ -284,27 +276,20 @@ export const GateRewardReport = ({
 	const storageFigures = meterFigures(
 		storageBar?.toKb,
 		totals?.storageKb ?? 0,
-		"KB"
+		"KB",
+		"storage"
 	);
 	const coverageFigures = meterFigures(
 		coverageBar?.toPct,
 		totals?.coveragePct ?? 0,
-		"%"
+		"%",
+		"coverage"
 	);
 
-	return (
-		<div className="flex flex-col gap-3">
-			<GateHeadline gateNumber={gateNumber} cleared={cleared} swatch={swatch} />
-
-			{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
-				<Paragraph size="sm" tone="pewter">
-					Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
-					continue
-				</Paragraph>
-			)}
-
+	const pipelineSection = (
+		<section className="flex flex-col gap-2">
+			<Title>Your pipeline</Title>
 			<StepsSummary rows={rows} />
-
 			<PipelineTable>
 				{[...rows]
 					.sort((a: GateRewardRow, b: GateRewardRow) => {
@@ -322,92 +307,90 @@ export const GateRewardReport = ({
 						/>
 					))}
 			</PipelineTable>
+		</section>
+	);
+
+	return (
+		<div className="flex flex-col gap-3">
+			<GateHeadline gateNumber={gateNumber} cleared={cleared} swatch={swatch} />
+
+			{totals && climb ? (
+				<div className="flex flex-col gap-1.5">
+					{climb.ladder}
+					<Paragraph as="span" size="xs" tone="faint">
+						{climb.caption}
+					</Paragraph>
+				</div>
+			) : null}
+
+			{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
+				<Paragraph size="sm" tone="pewter">
+					Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
+					continue
+				</Paragraph>
+			)}
 
 			{totals ? (
-				// Only the cleared path passes totals, so this whole block is the gate's
-				// payout — one reward per line, since three of them chained on a single
-				// line read as a sentence rather than as a list of winnings. The heading
-				// says "rewards", so no line needs to repeat "you won".
-				<section className="flex flex-col gap-2 pt-8">
-					<Title>Gate rewards</Title>
-					<ul className="flex flex-col gap-4">
-						<RewardMeter
-							total={storageFigures.total}
-							label={`storage${storageFigures.suffix}`}
-							gain={storageFigures.gain}
-							bar={
-								storageBar ? (
-									<GainBar
-										from={storageBar.fromKb}
-										to={storageBar.toKb}
-										cap={storageBar.capKb}
-										label="storage"
-									/>
-								) : undefined
-							}
-							caption={storageBar ? `of ${storageBar.capKb}KB cap` : undefined}
-						/>
-						<RewardMeter
-							total={coverageFigures.total}
-							label={`coverage${coverageFigures.suffix}`}
-							gain={coverageFigures.gain}
-							bar={
-								slotRow ??
-								(coverageBar ? (
-									<GainBar
-										from={coverageBar.fromPct}
-										to={coverageBar.toPct}
-										cap={coverageBar.targetPct}
-										label={`coverage toward ${coverageBar.targetLabel}`}
-									/>
-								) : undefined)
-							}
-							caption={
-								// A rung crossed *this* gate is news the row's own "unlocked"
-								// pill cannot carry — the pill states a fact, this says it just
-								// happened, and points at where to spend it.
-								coverageBar?.reached ? (
-									<Paragraph as="span" size="xs" tone="viridian">
-										{coverageBar.targetLabel} unlocked this gate — claim it in
-										the shop
-									</Paragraph>
-								) : slotRow ? undefined : coverageBar ? (
-									`of ${coverageBar.targetPct}% for ${coverageBar.targetLabel}`
-								) : undefined
-							}
-						/>
-						{swatch ? (
-							// Badge beside ladder, not above it: they are one fact — the pip
-							// that just filled is the badge sitting next to it — and stacked
-							// they read as two separate rewards. Wraps to two rows only when
-							// the ladder can no longer sit alongside.
-							<li className="flex flex-wrap items-center gap-x-6 gap-y-3">
-								<div className="flex flex-wrap items-center gap-3">
-									<EarnedSwatch swatch={swatch} />
-									{swatchProgress ? (
-										<Paragraph as="span" size="xs" tone="faint">
-											earned · {swatchProgress.earned} of {swatchProgress.total}
-										</Paragraph>
-									) : null}
-								</div>
-								{climb ? (
-									<div className="flex flex-col gap-1.5">
-										{climb.ladder}
-										<Paragraph as="span" size="xs" tone="faint">
-											{climb.caption}
-										</Paragraph>
+				// Only the cleared path passes totals. The pipeline steps and the
+				// payout are two halves of the same report — what the run just did,
+				// and what it won for doing it — so they sit side by side rather than
+				// one after the other.
+				<div className="grid gap-x-12 gap-y-6 pt-6 sm:grid-cols-2">
+					{pipelineSection}
+					<section className="flex flex-col gap-2">
+						<Title>Gate rewards</Title>
+						<ul className="flex flex-col gap-1 list-disc pl-4 marker:text-zinc-500">
+							<RewardLine
+								label={storageFigures.label}
+								value={storageFigures.value}
+								gain={storageFigures.gain}
+								detail={
+									storageBar ? (
+										<>
+											<GainBar
+												from={storageBar.fromKb}
+												to={storageBar.toKb}
+												cap={storageBar.capKb}
+												label="storage"
+											/>
+											<Paragraph as="span" size="xs" tone="faint">
+												of {storageBar.capKb}KB cap
+											</Paragraph>
+										</>
+									) : undefined
+								}
+							/>
+							<RewardLine
+								label={coverageFigures.label}
+								value={coverageFigures.value}
+								gain={coverageFigures.gain}
+							/>
+							{slotRow}
+							{swatch ? (
+								<li>
+									<div className="flex flex-wrap items-center gap-3">
+										<EarnedSwatch swatch={swatch} />
+										{swatchProgress ? (
+											<Paragraph as="span" size="xs" tone="faint">
+												earned · {swatchProgress.earned} of{" "}
+												{swatchProgress.total}
+											</Paragraph>
+										) : null}
 									</div>
-								) : null}
-							</li>
-						) : null}
-					</ul>
-					{breakdown ? (
-						<>
-							<hr className="mt-4 border-t border-zinc-800" />
-							{breakdown}
-						</>
-					) : null}
-				</section>
+								</li>
+							) : null}
+						</ul>
+					</section>
+				</div>
+			) : (
+				pipelineSection
+			)}
+
+			{totals && breakdown ? (
+				<>
+					<hr className="border-t border-zinc-800" />
+					{breakdown}
+				</>
 			) : null}
 		</div>
 	);

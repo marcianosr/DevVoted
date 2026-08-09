@@ -211,7 +211,7 @@ export const PipelineReportRow = ({
 	const detail = ({ detailClass }: Fold) => (
 		<span
 			className={clsx(
-				"col-span-3 col-start-1 row-start-2 mt-1.5 flex-col gap-1 border-l border-zinc-700 pl-3",
+				"col-span-3 col-start-1 row-start-2 mt-1.5 flex-col gap-1",
 				detailClass
 			)}
 		>

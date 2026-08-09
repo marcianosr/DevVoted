@@ -9,7 +9,6 @@ describe(RunHud, () => {
 			<RunHud
 				storage={120}
 				capKb={512}
-				storageBillKb={0}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -35,7 +34,6 @@ describe(RunHud, () => {
 			<RunHud
 				storage={120}
 				capKb={512}
-				storageBillKb={0}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -58,7 +56,6 @@ describe(RunHud, () => {
 			<RunHud
 				storage={120}
 				capKb={512}
-				storageBillKb={0}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -75,7 +72,6 @@ describe(RunHud, () => {
 			<RunHud
 				storage={120}
 				capKb={640}
-				storageBillKb={8}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -96,7 +92,6 @@ describe(RunHud, () => {
 			<RunHud
 				storage={120}
 				capKb={512}
-				storageBillKb={0}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={1}

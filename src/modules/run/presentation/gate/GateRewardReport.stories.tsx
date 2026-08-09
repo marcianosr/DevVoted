@@ -105,7 +105,7 @@ const meta: Meta<typeof GateRewardReport> = {
 	title: "Run/GateRewardReport",
 	decorators: [
 		(Story) => (
-			<div className="max-w-2xl p-4">
+			<div className="max-w-6xl p-4">
 				<Story />
 			</div>
 		),
@@ -133,7 +133,7 @@ export const ClearedWithBadge: Story = {
 	args: {
 		gateNumber: 3,
 		cleared: true,
-		earnedSwatch: swatchForGate(3),
+		swatch: swatchForGate(3),
 		rows: clearedRows,
 		totals: { storageKb: 136, coveragePct: 5.8 },
 	},
@@ -144,7 +144,7 @@ export const ClearedTheSummit: Story = {
 	args: {
 		gateNumber: VICTORY_GATE,
 		cleared: true,
-		earnedSwatch: swatchForGate(VICTORY_GATE),
+		swatch: swatchForGate(VICTORY_GATE),
 		rows: clearedRows,
 		totals: { storageKb: 416, coveragePct: 22.4 },
 	},

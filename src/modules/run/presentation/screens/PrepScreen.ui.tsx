@@ -65,13 +65,15 @@ export const PrepScreen = ({
 	const gateName = swatchForGate(gateNumber)?.gateName ?? `Gate ${gateNumber}`;
 	return (
 		<div className="flex flex-col gap-6">
-			<GateStakeSummary gateNumber={gateNumber} pollsPerGate={pollsPerGate} />
+			<GateStakeSummary pollsPerGate={pollsPerGate} />
 			<PipelineChips
 				configs={configs}
 				editing={editing}
 				onDropConfig={onDropConfig}
 			/>
 			<GateStakeReceipt
+				gateNumber={gateNumber}
+				pollsPerGate={pollsPerGate}
 				stripsOnFailure={stripsOnFailure}
 				configCount={configs.length}
 				modifiers={modifiers}

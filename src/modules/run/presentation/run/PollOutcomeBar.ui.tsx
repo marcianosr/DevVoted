@@ -38,7 +38,7 @@ export const PollOutcomeBar = ({
 	<span
 		role="group"
 		aria-label={`${outcomes.length} of ${pollsPerGate} polls answered`}
-		className="flex shrink-0 items-center gap-1"
+		className="flex w-full items-center gap-1"
 	>
 		{Array.from({ length: pollsPerGate }, (_, index) => {
 			const outcome = outcomes[index];
@@ -51,7 +51,7 @@ export const PollOutcomeBar = ({
 							: `poll ${index + 1}, not answered`
 					}
 					className={clsx(
-						"block h-1 w-3.5 rounded-full transition-colors",
+						"block h-2 flex-1 rounded-sm transition-colors",
 						outcome ? OUTCOME_FILL[outcome] : "bg-zinc-700"
 					)}
 				/>

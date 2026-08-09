@@ -49,7 +49,7 @@ export const PollCard = ({
 				{getCategoryMetadata(category).name}
 			</Paragraph>
 
-			<div className="markdown text-theme text-xl font-extrabold leading-6 tracking-tight sm:text-3xl sm:leading-8">
+			<div className="markdown text-theme text-xl font-extrabold leading-6 tracking-tight sm:text-3xl sm:leading-10">
 				<QuestionMarkdown>{question}</QuestionMarkdown>
 			</div>
 

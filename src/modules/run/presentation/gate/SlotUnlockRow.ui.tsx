@@ -135,7 +135,7 @@ export const nextSlotRow = ({
 };
 
 /**
- * The next slot's progress as a single line — a small bar plus how much
+ * The next slot's progress as its own bullet — a small bar plus how much
  * coverage it still needs, muted until met and gradient-green once it is.
  * For contexts that only report the rung (the gate reward payout) rather
  * than sell it (the shop's `nextSlotRow`, with its button and lock pill).
@@ -143,24 +143,33 @@ export const nextSlotRow = ({
 const SlotProgressLine = ({ slot, unlockAtPct, coveragePct }: NextSlot) => {
 	const unlocked = coveragePct >= unlockAtPct;
 	return (
-		<div className="flex items-center gap-2">
-			<span className="w-12 shrink-0">
-				<GainBar
-					from={0}
-					to={coveragePct}
-					cap={unlockAtPct}
-					label={`coverage toward slot ${slot}`}
-				/>
-			</span>
-			<Paragraph
-				as="span"
-				size="xs"
-				tone={unlocked ? "gradient" : "muted"}
-				className={unlocked ? "font-bold" : undefined}
-			>
-				{coveragePct}% of {unlockAtPct}% for slot {slot}
-			</Paragraph>
-		</div>
+		// The marker needs a plain list-item box on the `<li>` itself — flex would
+		// suppress it — so the row's own layout lives on a nested div instead.
+		<li>
+			<div className="flex items-center justify-between gap-4">
+				<Paragraph as="span" size="sm">
+					slot {slot} progress
+				</Paragraph>
+				<div className="flex items-center gap-4">
+					<span className="w-24 shrink-0">
+						<GainBar
+							from={0}
+							to={coveragePct}
+							cap={unlockAtPct}
+							label={`coverage toward slot ${slot}`}
+						/>
+					</span>
+					<Paragraph
+						as="span"
+						size="sm"
+						tone={unlocked ? "gradient" : "muted"}
+						className={unlocked ? "font-bold" : undefined}
+					>
+						{coveragePct}% of {unlockAtPct}%
+					</Paragraph>
+				</div>
+			</div>
+		</li>
 	);
 };
 

@@ -37,9 +37,9 @@ describe(StripScreen, () => {
 			/>
 		);
 		// Named after its gate, like a clear — but the FAIL badge keeps the red.
-		expect(screen.getByRole("heading")).toHaveTextContent(
-			"Cascade gate failed!"
-		);
+		expect(
+			screen.getByRole("heading", { name: /Cascade gate failed!/ })
+		).toBeInTheDocument();
 		expect(screen.getByText("FAIL")).toBeInTheDocument();
 		expect(
 			screen.getByText("Remove 2 configs to continue")

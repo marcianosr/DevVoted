@@ -480,15 +480,18 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const quotaMet = view.stripsRemaining === 0;
 
 	const runOver = state.status === "won" || state.status === "dead";
+	// The gate report is its own celebration — the running HUD it would repeat
+	// (storage, coverage, gate ladder) is right there in the payout already.
+	const hidesHud =
+		runOver || (state.status === "rewarding" && rewardStep === "summary");
 
 	return (
 		<>
-			{runOver ? null : (
+			{hidesHud ? null : (
 				<div className="mx-auto w-full max-w-6xl p-2">
 					<RunHud
 						storage={view.storage}
 						capKb={view.storageCap}
-						storageBillKb={view.storageBillKb}
 						gatesCleared={view.gatesCleared}
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
@@ -583,13 +586,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				)}
 
 			{state.status === "rewarding" && rewardStep === "summary" && (
-				<Screen
-					theme="celadon"
-					rightAction={{
-						label: "Continue to shop →",
-						onClick: () => setRewardStep("shop"),
-					}}
-				>
+				<Screen theme="celadon">
 					<RewardScreen
 						clearedGate={view.clearedGateNumber}
 						// The PAID amount, not the full-correctness ceiling (ADR-017):
@@ -607,6 +604,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						billKb={view.gateBillPaidKb}
 						planDowngraded={view.planDowngraded}
 						onReviewAnswers={() => setRewardStep("review")}
+						onContinue={() => setRewardStep("shop")}
 					/>
 				</Screen>
 			)}

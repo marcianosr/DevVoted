@@ -144,9 +144,9 @@ export const AnsweringScreen = ({
 	};
 
 	return (
-		<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10">
-			<div className="flex min-w-0 flex-col gap-6">
-				<span className="flex shrink-0 items-center gap-2">
+		<div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start lg:gap-10">
+			<div className="flex min-w-0 flex-col gap-6 lg:order-2">
+				<span className="flex flex-col gap-2">
 					<PollOutcomeBar outcomes={pollOutcomes} pollsPerGate={pollsPerGate} />
 					<Paragraph as="span" size="xs" tone="pewter">
 						{pollOutcomes.length} of {pollsPerGate} polls
@@ -195,7 +195,7 @@ export const AnsweringScreen = ({
 					)}
 				</div>
 			</div>
-			<div className="space-y-2 border-t border-zinc-800 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+			<div className="space-y-2 border-t border-zinc-800 pt-4 lg:order-1 lg:border-t-0 lg:border-r lg:pt-0 lg:pr-8">
 				<header>
 					<Title as="h3">Your pipeline</Title>
 					{slots ? (

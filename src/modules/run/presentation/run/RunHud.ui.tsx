@@ -17,8 +17,6 @@ import { SummaryDropdown } from "./SummaryDropdown.ui";
 type RunHudProps = {
 	storage: number;
 	capKb: number;
-	/** The current storage plan's recurring bill — 0 on the free plan (DVTD-rf5c). */
-	storageBillKb: number;
 	gatesCleared: number;
 	victoryGate: number;
 	pollsAnswered: number;
@@ -124,7 +122,6 @@ const GateName = ({ gate }: { gate: number }) => {
 export const RunHud = ({
 	storage,
 	capKb,
-	storageBillKb,
 	gatesCleared,
 	victoryGate,
 	pollsAnswered,
@@ -133,7 +130,6 @@ export const RunHud = ({
 	coverageByCategory,
 }: RunHudProps) => (
 	<div className="border-b border-zinc-800 pb-3 text-sm">
-		storagebillKb{storageBillKb}
 		<div className="flex flex-col gap-2 sm:hidden">
 			<StorageGauge usedKb={storage} capKb={capKb} />
 			<span className="flex flex-col gap-1">
