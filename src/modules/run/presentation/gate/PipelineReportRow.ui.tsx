@@ -17,9 +17,6 @@ import { SlotNumberCell } from "./PipelineTable.ui";
 
 export type PipelineRowLayout = "chip" | "table";
 
-// Numbers carry the payload of a detail sentence ("Then all coverage earns
-// ×1.5") — they read bright while the prose around them stays muted. The
-// capture group makes every odd split part a number token.
 const NUMBER_TOKEN = /(×[\d.]+|[+−-][\d.]+(?:%|KB)?)/;
 
 const emphasizeNumbers = (text: string): ReactNode =>
@@ -33,41 +30,19 @@ const emphasizeNumbers = (text: string): ReactNode =>
 		)
 	);
 
-/**
- * One labelled fact in a row's detail: an icon and an all-caps name carry no
- * colour of their own (only the value does) — CHECK and REWARD read as
- * the same kind of line, not a red one competing with a green one.
- */
 const FactRow = ({
 	icon,
-	label,
 	tone,
 	value,
 }: {
 	icon: string;
-	label: string;
 	tone: ParagraphTone;
 	value: ReactNode;
 }) => (
-	<div className="flex items-center gap-3 py-1.5">
-		<Paragraph
-			as="span"
-			tone={tone}
-			className="w-4 shrink-0 text-center font-bold"
-		>
+	<div className="flex items-center gap-3 py-2">
+		<Paragraph as="span" tone={tone} className="w-1 shrink-0 font-bold">
 			{icon}
 		</Paragraph>
-		<Paragraph
-			as="span"
-			size="xs"
-			tone="muted"
-			className="w-24 shrink-0 uppercase tracking-wide"
-		>
-			{label}
-		</Paragraph>
-		<span aria-hidden className="text-zinc-700">
-			|
-		</span>
 		<Paragraph as="span" tone={tone}>
 			{value}
 		</Paragraph>
@@ -95,12 +70,9 @@ type PipelineReportRowProps = {
 	mark?: StatusDotVariant;
 	dimmed?: boolean;
 	onActivate?: () => void;
-	/** Spoken name for an activatable (preview) row. */
 	activateLabel?: string;
 	ghost?: boolean;
-	/** Slot this row occupies, shown in the table's leading gutter. */
 	slotNumber?: number;
-	/** Starts the row open or shut instead of letting the breakpoint decide. */
 	defaultOpen?: boolean;
 };
 
@@ -136,9 +108,6 @@ export const PipelineReportRow = ({
 		</Paragraph>
 	) : null;
 
-	// The table layout's detail repeats `value` as its own Progress row once
-	// open, so the header copy passes `hideWhenOpenClass` to step aside there —
-	// the chip layout has no detail to repeat it, so it always shows its copy.
 	const renderTrailing = (hideWhenOpenClass?: string) => (
 		<>
 			{value != null ? (
@@ -239,10 +208,6 @@ export const PipelineReportRow = ({
 		</>
 	);
 
-	// The rule runs under the status mark, not under the config chip: the eye
-	// follows the mark's column down the list, so hanging the detail off it reads
-	// as one thread per row instead of two staggered starts. Its display class
-	// comes from the fold, which shuts the row by default on a narrow screen.
 	const detail = ({ detailClass }: Fold) => (
 		<span
 			className={clsx(
@@ -252,30 +217,18 @@ export const PipelineReportRow = ({
 		>
 			<div className="flex flex-col divide-y divide-dashed divide-zinc-800">
 				{needs ? (
-					<FactRow icon="!" label="Check" tone="cinnabar" value={needs} />
+					<FactRow icon="!" tone="cinnabar" value={needs} />
 				) : gives || costs ? (
 					<Paragraph as="span" size="xs" tone="muted">
 						No condition
 					</Paragraph>
 				) : null}
 				{gives ? (
-					<FactRow
-						icon="v"
-						label="Reward"
-						tone="viridian"
-						value={emphasizeNumbers(gives)}
-					/>
+					<FactRow icon="v" tone="viridian" value={emphasizeNumbers(gives)} />
 				) : null}
-				{/* Post-gate report rows (StripScreen, RewardScreen) also carry a
-				    `value` but never a requirement/effect — their corner badge is
-				    the only place that number belongs, so this stays pipeline-only.
-				    `note` fills in when the check's progress didn't fit the corner
-				    badge's bare-counter shape ("0/2 categories") — same fact, just
-				    prose instead of digits, so it earns the same row. */}
 				{(value != null || note) && (needs || gives) ? (
 					<FactRow
 						icon="○"
-						label="Progress"
 						tone={value != null ? valueTone : "muted"}
 						value={value ?? note}
 					/>
@@ -291,20 +244,10 @@ export const PipelineReportRow = ({
 					{description}
 				</Paragraph>
 			) : null}
-			{/* Already folded into the Progress row above once there's a
-			    requirement or effect to attach it to. */}
 			{needs || gives ? null : noteBlock}
 		</span>
 	);
 
-	// A ghost boxes the row in a dashed rarity border, and that box has to be the
-	// same width as the empty slots above and below it — it stands in for one.
-	// (It used to bleed 12px past them with a negative margin, to keep its cells
-	// in column with the unboxed rows; a preview slot wider than the slot it
-	// previews is the worse of the two misalignments.) A legendary wears the same
-	// gradient ring as its chip instead: the masked gradient cannot dash, and the
-	// flat-fuchsia stand-in read as a rarity of its own next to the gradient chip
-	// sitting inside it.
 	const ghostBox = clsx(
 		"rounded-lg px-3",
 		rarity === "legendary"

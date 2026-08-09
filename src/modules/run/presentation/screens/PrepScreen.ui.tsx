@@ -4,6 +4,7 @@ import type { PipelineModifiers } from "~/modules/run/pipeline/pipeline.model";
 import { Button } from "~/ui/Button.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { GateStakeReceipt } from "../gate/GateStakeReceipt.ui";
 import { GateStakeSummary } from "../gate/GateStakeSummary.ui";
 
 type PrepScreenProps = {
@@ -61,17 +62,16 @@ export const PrepScreen = ({
 	const gateName = swatchForGate(gateNumber)?.gateName ?? `Gate ${gateNumber}`;
 	return (
 		<div className="flex flex-col gap-6">
-			<GateStakeSummary
-				gateNumber={gateNumber}
-				pollsPerGate={pollsPerGate}
-				stripsOnFailure={stripsOnFailure}
-				configCount={configs.length}
-				modifiers={modifiers}
-			/>
+			<GateStakeSummary gateNumber={gateNumber} pollsPerGate={pollsPerGate} />
 			<PipelineChips
 				configs={configs}
 				editing={editing}
 				onDropConfig={onDropConfig}
+			/>
+			<GateStakeReceipt
+				stripsOnFailure={stripsOnFailure}
+				configCount={configs.length}
+				modifiers={modifiers}
 			/>
 			<div className="flex flex-col gap-3 sm:flex-row">
 				<Button variant="neutral" className="flex-1" onClick={onEditPipeline}>

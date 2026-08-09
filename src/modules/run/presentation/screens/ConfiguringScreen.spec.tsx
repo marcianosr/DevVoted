@@ -39,14 +39,20 @@ describe(ConfiguringScreen, () => {
 		expect(screen.getByText("Pallet gate")).toBeInTheDocument();
 	});
 
-	it("captions the gate with its clear reward, base reward, coverage, and fail stake", () => {
+	it("lists the gate's rewards and fail stake as their own rows", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
 			screen.getByText("polls this window", { exact: false })
 		).toBeInTheDocument();
-		expect(screen.getByText("+80KB")).toHaveClass("text-viridian");
+		expect(
+			screen.getByRole("heading", { name: "Gate rewards" })
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Gate penalty" })
+		).toBeInTheDocument();
+		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
 		// Base reward ×1 and coverage ×1 both read identically at identity —
-		// two matches confirms both segments render, not just one.
+		// two matches confirms both rows render, not just one.
 		expect(screen.getAllByText("×1")).toHaveLength(2);
 		expect(screen.getByText("strip 1 config")).toHaveClass("text-cinnabar");
 	});
@@ -58,7 +64,7 @@ describe(ConfiguringScreen, () => {
 				modifiers={{ ...base.modifiers, coverageMultiplier: 2, coverageAdd: 5 }}
 			/>
 		);
-		expect(screen.getByText("×2 +5%")).toHaveClass("text-viridian");
+		expect(screen.getByText("×2 +5%")).toHaveClass("text-gradient-green");
 	});
 
 	it("names the stake fatal once a fail would take the whole build", () => {
@@ -69,7 +75,7 @@ describe(ConfiguringScreen, () => {
 	});
 
 	it("previews the clear reward a hovered bench config would add, old to new", () => {
-		const { container } = render(
+		render(
 			<ConfiguringScreen
 				{...base}
 				configs={[CONFIGS.js]}
@@ -78,12 +84,12 @@ describe(ConfiguringScreen, () => {
 			/>
 		);
 		fireEvent.mouseOver(screen.getByRole("button", { name: "Unit Tests" }));
-		// Scoped to the caption header — Unit Tests' own previewed pipeline row
-		// also prints "+32KB" (its gives text), which would otherwise collide.
-		const caption = within(container.querySelector("header")!);
+		// Scoped to the receipt — Unit Tests' own previewed pipeline row also
+		// prints "+32KB" (its gives text), which would otherwise collide.
+		const receipt = within(screen.getByTestId("gate-stake-receipt"));
 		// Unit Tests' +32KB storageOnClear stacks onto the base 32KB reward.
-		expect(caption.getByText("+32KB")).toHaveClass("text-zinc-400");
-		expect(caption.getByText("→ +64KB")).toHaveClass("text-celadon");
+		expect(receipt.getByText("+32KB")).toHaveClass("text-zinc-400");
+		expect(receipt.getByText("→ +64KB")).toHaveClass("text-celadon");
 	});
 
 	it("renders the bench and pipeline columns side by side", () => {

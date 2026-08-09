@@ -39,11 +39,14 @@ describe(PrepScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("captions the gate with its clear reward and base reward", () => {
+	it("lists the gate's clear reward and base reward as their own rows", () => {
 		render(<PrepScreen {...base} />);
-		expect(screen.getByText("+32KB")).toHaveClass("text-viridian");
+		expect(
+			screen.getByRole("heading", { name: "Gate rewards" })
+		).toBeInTheDocument();
+		expect(screen.getByText("+32KB")).toHaveClass("text-gradient-green");
 		// Base reward ×1 and coverage ×1 both read identically at identity —
-		// two matches confirms both segments render, not just one.
+		// two matches confirms both rows render, not just one.
 		expect(screen.getAllByText("×1")).toHaveLength(2);
 	});
 
@@ -54,7 +57,7 @@ describe(PrepScreen, () => {
 				modifiers={{ ...base.modifiers, coverageMultiplier: 2, coverageAdd: 5 }}
 			/>
 		);
-		expect(screen.getByText("×2 +5%")).toHaveClass("text-viridian");
+		expect(screen.getByText("×2 +5%")).toHaveClass("text-gradient-green");
 	});
 
 	it("states the stake as a plain count when it is not fatal", () => {

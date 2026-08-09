@@ -14,6 +14,7 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { GateStakeReceipt } from "../gate/GateStakeReceipt.ui";
 import { GateStakeSummary } from "../gate/GateStakeSummary.ui";
 import { RoleList } from "../gate/RoleList.ui";
 
@@ -86,14 +87,7 @@ export const ConfiguringScreen = ({
 
 	return (
 		<div className="flex flex-col gap-6">
-			<GateStakeSummary
-				gateNumber={gatesCleared}
-				pollsPerGate={pollsPerGate}
-				stripsOnFailure={stripsOnFailure}
-				configCount={configs.length}
-				modifiers={modifiers}
-				preview={next}
-			/>
+			<GateStakeSummary gateNumber={gatesCleared} pollsPerGate={pollsPerGate} />
 			<Columns
 				aside={
 					<section className="space-y-2">
@@ -155,6 +149,12 @@ export const ConfiguringScreen = ({
 								More slots will unlock when you gain coverage!
 							</Paragraph>
 						) : null}
+						<GateStakeReceipt
+							stripsOnFailure={stripsOnFailure}
+							configCount={configs.length}
+							modifiers={modifiers}
+							preview={next}
+						/>
 					</section>
 				}
 			/>
