@@ -104,6 +104,8 @@ export const RunAnswer = () => {
 				options={poll.options}
 				selectedOptionIds={selected}
 				disabledOptionIds={view.disabledOptionIds}
+				pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
+				pollsPerGate={view.pollsPerGate}
 				correctOptionIds={reveal?.correctOptionIds}
 				chosenOptionIds={reveal ? selected : undefined}
 				revealScore={reveal?.score ?? undefined}

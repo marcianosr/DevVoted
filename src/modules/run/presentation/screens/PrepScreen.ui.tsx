@@ -13,6 +13,8 @@ type PrepScreenProps = {
 	pollsPerGate: number;
 	/** Configs a failed window would peel at this depth (`dropCount`). */
 	stripsOnFailure: number;
+	/** The storage plan's recurring bill, owed when this window closes — 0 on the free tier. */
+	storageBillKb: number;
 	modifiers: PipelineModifiers;
 	configs: readonly Config[];
 	/** Reveals each chip's remove affordance. */
@@ -52,6 +54,7 @@ export const PrepScreen = ({
 	gateNumber,
 	pollsPerGate,
 	stripsOnFailure,
+	storageBillKb,
 	modifiers,
 	configs,
 	editing,
@@ -72,6 +75,7 @@ export const PrepScreen = ({
 				stripsOnFailure={stripsOnFailure}
 				configCount={configs.length}
 				modifiers={modifiers}
+				billKb={storageBillKb}
 			/>
 			<div className="flex flex-col gap-3 sm:flex-row">
 				<Button variant="neutral" className="flex-1" onClick={onEditPipeline}>

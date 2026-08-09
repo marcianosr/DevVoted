@@ -38,7 +38,8 @@ import {
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	STORAGE_CAP_KB,
+	STORAGE_PLANS,
+	storagePlanFor,
 	streakMultiplier,
 	VICTORY_GATE,
 	WRONG_COVERAGE_LOSS,
@@ -200,6 +201,15 @@ export type RunState = {
 	/** What the just-cleared gate actually paid (correctness- and depth-scaled) — feeds the reward report. */
 	readonly gateRewardKb?: number;
 	/**
+	 * Storage-plan tier (rules.model's STORAGE_PLANS). Optional: runs
+	 * snapshotted before plans existed carry none and read as the free tier.
+	 */
+	readonly storagePlan?: number;
+	/** What the just-closed window's plan bill collected — feeds the gate report. */
+	readonly gateBillKb?: number;
+	/** True while the report shows a window whose bill went unpaid, dropping the plan to free. */
+	readonly planDowngraded?: boolean;
+	/**
 	 * The gate number the last clear actually beat — one behind `gatesCleared`,
 	 * which the same clear incremented. Recorded rather than re-derived so the
 	 * reward screens never have to reason about the off-by-one, and so the
@@ -229,7 +239,8 @@ export type RunAction =
 	| { readonly type: "rebuild-draft" }
 	| { readonly type: "finish-reward" }
 	| { readonly type: "sell"; readonly configId: string }
-	| { readonly type: "drop"; readonly configId: string };
+	| { readonly type: "drop"; readonly configId: string }
+	| { readonly type: "change-plan"; readonly tier: number };
 
 export const createRun = (
 	polls: readonly RunPoll[],
@@ -257,6 +268,9 @@ export const createRun = (
 	faucetEarnedKb: 0,
 	faucetThisGateKb: 0,
 	gateRewardKb: 0,
+	storagePlan: STORAGE_PLANS[0].tier,
+	gateBillKb: 0,
+	planDowngraded: false,
 	log: [],
 });
 
@@ -350,7 +364,36 @@ const unslotConfig = (state: RunState, configId: string): RunState => {
 	};
 };
 
-const closeWindow = (state: RunState, nextIndex: number): RunState => {
+/**
+ * The plan's bill lands the moment a window closes — pass or fail, before the
+ * payout — so a subscription is a liability exactly when the run wobbles. An
+ * unpayable bill is never partially collected: the provider drops the run to
+ * the free tier instead. No overflow can burn there (storage sat below the
+ * bill), so the downgrade only costs future headroom.
+ */
+const chargeStorageBill = (state: RunState): RunState => {
+	const plan = storagePlanFor(state.storagePlan);
+	if (plan.billKb === 0)
+		return { ...state, gateBillKb: 0, planDowngraded: false };
+	if (state.storage < plan.billKb)
+		return {
+			...state,
+			storagePlan: STORAGE_PLANS[0].tier,
+			gateBillKb: 0,
+			planDowngraded: true,
+			log: withLog(state, "Storage bill unpaid — downgraded to the free tier."),
+		};
+	return {
+		...state,
+		storage: state.storage - plan.billKb,
+		gateBillKb: plan.billKb,
+		planDowngraded: false,
+		log: withLog(state, `Storage bill paid (-${plan.billKb}KB).`),
+	};
+};
+
+const closeWindow = (closing: RunState, nextIndex: number): RunState => {
+	const state = chargeStorageBill(closing);
 	const gateNumber = state.gatesCleared;
 
 	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
@@ -679,6 +722,8 @@ const resumeClimb = (state: RunState): RunState => {
 		manualDisabled: [],
 		faucetThisGateKb: 0,
 		gateRewardKb: 0,
+		gateBillKb: 0,
+		planDowngraded: false,
 		answeredThisGate: [],
 		status: "answering",
 		log: withLog(
@@ -786,6 +831,30 @@ const upgrade = (state: RunState, configId: string): RunState => {
 	);
 };
 
+/**
+ * Storage plans are a shop action like any other (DVTD-rf5c): switching is
+ * free both ways, but a voluntary downgrade clamps on the spot — headroom you
+ * stop paying for takes whatever sat in it. The shop names the burn before
+ * the click; the reducer just collects it.
+ */
+const changePlan = (state: RunState, tier: number): RunState => {
+	const current = storagePlanFor(state.storagePlan);
+	const next = STORAGE_PLANS.find((plan) => plan.tier === tier);
+	if (!next || next.tier === current.tier) return state;
+	const clamped = Math.min(state.storage, next.capKb);
+	const burned = state.storage - clamped;
+	const upgradeLine = `Storage plan upgraded: ${next.capKb}KB cap for ${next.billKb}KB per gate.`;
+	const downgradeLine = `Storage plan downgraded to a ${next.capKb}KB cap${
+		burned > 0 ? ` — ${burned}KB over it burned` : ""
+	}.`;
+	return {
+		...state,
+		storagePlan: next.tier,
+		storage: clamped,
+		log: withLog(state, next.tier > current.tier ? upgradeLine : downgradeLine),
+	};
+};
+
 const finishReward = (state: RunState): RunState => ({
 	...state,
 	draftOptions: [],
@@ -795,7 +864,9 @@ const finishReward = (state: RunState): RunState => ({
 	clearedChecks: [],
 	faucetThisGateKb: 0,
 	gateRewardKb: 0,
-	storage: Math.min(state.storage, STORAGE_CAP_KB),
+	gateBillKb: 0,
+	planDowngraded: false,
+	storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
 	status: "answering",
 	log: withLog(state, "Climbing on."),
 });
@@ -885,6 +956,8 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return rebuildDraft(state);
 	if (action.type === "finish-reward" && state.status === "rewarding")
 		return finishReward(state);
+	if (action.type === "change-plan" && state.status === "rewarding")
+		return changePlan(state, action.tier);
 	if (action.type === "sell" && state.status === "rewarding")
 		return sell(state, action.configId);
 	if (

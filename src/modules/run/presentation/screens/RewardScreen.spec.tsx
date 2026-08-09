@@ -152,11 +152,12 @@ describe(RewardScreen, () => {
 		expect(storage).toHaveTextContent("this gate");
 		expect(storage).toHaveTextContent("of 512KB cap");
 		expect(coverage).toHaveTextContent("6.5% coverage");
-		// Coverage buys width, so its meter is the slot's own row (ADR-019): one
-		// bar toward the rung, plus whether the rung has bought anything yet.
-		expect(coverage).toHaveTextContent("Opens at 8% coverage");
-		expect(coverage).toHaveTextContent("6.5% reached");
-		expect(coverage).toHaveTextContent("locked");
+		// Coverage buys width, so its meter is the slot's own line (ADR-019): a
+		// small bar toward the rung, plus how much of it is still needed.
+		expect(coverage).toHaveTextContent("6.5% of 8% for slot 4");
+		expect(screen.getByText("6.5% of 8% for slot 4")).toHaveClass(
+			"text-zinc-400"
+		);
 		expect(
 			screen.getAllByRole("progressbar", { name: "coverage toward slot 4" })
 		).toHaveLength(1);
@@ -225,8 +226,10 @@ describe(RewardScreen, () => {
 		expect(
 			screen.getByText("slot 4 unlocked this gate — claim it in the shop")
 		).toBeInTheDocument();
-		// ...and the row it sits under agrees.
-		expect(screen.getByText("unlocked")).toBeInTheDocument();
+		// ...and the line it sits under agrees.
+		expect(screen.getByText("8.5% of 8% for slot 4")).toHaveClass(
+			"text-gradient-green"
+		);
 	});
 
 	it("keeps naming the target when the rung was already cleared earlier", () => {
@@ -239,8 +242,11 @@ describe(RewardScreen, () => {
 				slotCoverageRequired={8}
 			/>
 		);
-		// The row still reads "unlocked" — it is; only the "this gate" news is gone.
+		// The line still reads as unlocked — it is; only the "this gate" news is gone.
 		expect(screen.queryByText(/unlocked this gate/)).not.toBeInTheDocument();
+		expect(screen.getByText("20% of 8% for slot 4")).toHaveClass(
+			"text-gradient-green"
+		);
 	});
 
 	it("headlines every clear as a clear — the climb never holds", () => {

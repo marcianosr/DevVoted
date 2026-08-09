@@ -9,6 +9,8 @@ type GateStakeReceiptProps = {
 	configCount: number;
 	modifiers: PipelineModifiers;
 	preview?: PipelineModifiers;
+	/** The storage plan's recurring bill — omitted (or 0) on the free tier. */
+	billKb?: number;
 };
 
 const stripLabel = (strips: number, configCount: number): string =>
@@ -16,26 +18,8 @@ const stripLabel = (strips: number, configCount: number): string =>
 		? "strip all — run over"
 		: `strip ${strips} config${strips === 1 ? "" : "s"}`;
 
-const FIGURE = "text-xl font-extrabold tabular-nums";
-
-const PreviewableStat = ({
-	current,
-	preview,
-}: {
-	current: string;
-	preview?: string;
-}) => {
-	if (preview !== undefined && preview !== current)
-		return (
-			<span className={FIGURE}>
-				<span className="text-zinc-400">{current}</span>
-				<span className="text-celadon"> → {preview}</span>
-			</span>
-		);
-	return <span className={`${FIGURE} text-gradient-green`}>{current}</span>;
-};
-
-const StakeRow = ({
+/** A gain the gate pays out, read inline with its label: "+32KB storage this gate". */
+const GainRow = ({
 	label,
 	current,
 	preview,
@@ -44,9 +28,18 @@ const StakeRow = ({
 	current: string;
 	preview?: string;
 }) => (
-	<li className="flex items-baseline justify-between gap-4">
-		<Paragraph tone="muted">{label}</Paragraph>
-		<PreviewableStat current={current} preview={preview} />
+	<li>
+		<Paragraph as="span" size="sm">
+			{preview !== undefined && preview !== current ? (
+				<>
+					<span className="font-extrabold text-zinc-400">{current}</span>
+					<span className="font-extrabold text-celadon"> → {preview}</span>
+				</>
+			) : (
+				<span className="font-extrabold text-gradient-green">{current}</span>
+			)}{" "}
+			{label}
+		</Paragraph>
 	</li>
 );
 
@@ -55,6 +48,7 @@ export const GateStakeReceipt = ({
 	configCount,
 	modifiers,
 	preview,
+	billKb,
 }: GateStakeReceiptProps) => (
 	<section
 		data-testid="gate-stake-receipt"
@@ -63,18 +57,13 @@ export const GateStakeReceipt = ({
 		<div className="flex flex-col gap-2">
 			<Title>Gate rewards</Title>
 			<ul className="flex flex-col">
-				<StakeRow
-					label="Clear reward"
+				<GainRow
+					label="storage this gate"
 					current={`+${modifiers.gateReward}KB`}
 					preview={preview && `+${preview.gateReward}KB`}
 				/>
-				<StakeRow
-					label="Base reward"
-					current={`×${modifiers.rewardMultiplier}`}
-					preview={preview && `×${preview.rewardMultiplier}`}
-				/>
-				<StakeRow
-					label="Coverage bonus"
+				<GainRow
+					label="coverage this gate"
 					current={coverageValue(modifiers)}
 					preview={preview && coverageValue(preview)}
 				/>
@@ -92,6 +81,17 @@ export const GateStakeReceipt = ({
 						</Paragraph>
 					</Paragraph>
 				</li>
+				{billKb !== undefined && billKb > 0 ? (
+					<li>
+						<Paragraph tone="muted">
+							Storage plan bills{" "}
+							<Paragraph as="span" tone="cinnabar" className="font-bold">
+								−{billKb}KB
+							</Paragraph>{" "}
+							when this window closes — pass or fail
+						</Paragraph>
+					</li>
+				) : null}
 			</ul>
 		</div>
 	</section>

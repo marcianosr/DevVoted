@@ -40,6 +40,8 @@ export const Default: Story = {
 			{ id: "b", label: "The array index, always" },
 			{ id: "c", label: "Math.random()" },
 		],
+		pollOutcomes: ["correct", "wrong"],
+		pollsPerGate: 5,
 		canSubmit: true,
 		onSelect: () => {},
 		onSubmit: () => {},

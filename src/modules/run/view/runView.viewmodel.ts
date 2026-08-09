@@ -29,11 +29,22 @@ import {
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	STORAGE_CAP_KB,
+	STORAGE_PLANS,
+	storagePlanFor,
 	VICTORY_GATE,
 } from "../rules.model";
 
 export type PollOptionView = { readonly id: string; readonly label: string };
+
+/** One rung of the storage-plan ladder, as the shop row renders it. */
+export type StoragePlanOption = {
+	readonly tier: number;
+	readonly capKb: number;
+	readonly billKb: number;
+	readonly current: boolean;
+	/** KB sitting above this plan's cap that switching to it would burn on the spot. */
+	readonly burnKb: number;
+};
 
 export type PollView = {
 	readonly id: string;
@@ -112,7 +123,16 @@ export type RunView = {
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly coverageGainedThisGate: Readonly<Record<string, number>>;
 	readonly storage: number;
+	/** The current plan's cap — the HUD gauge's ceiling (DVTD-rf5c). */
 	readonly storageCap: number;
+	/** The current plan's recurring bill, owed every closed window — pass or fail. */
+	readonly storageBillKb: number;
+	/** What the just-closed window's bill actually collected — the report's line. */
+	readonly gateBillPaidKb: number;
+	/** True while the report shows a window whose bill went unpaid, dropping the plan to free. */
+	readonly planDowngraded: boolean;
+	/** The full plan ladder with the current rung marked — the shop's plan section. */
+	readonly storagePlans: readonly StoragePlanOption[];
 	readonly log: readonly string[];
 };
 
@@ -268,6 +288,7 @@ export const toRunView = (state: RunState): RunView => {
 	const current = state.polls[state.currentIndex];
 	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
 	const nextLintCost = lintCost(state.manualDisabled.length);
+	const plan = storagePlanFor(state.storagePlan);
 
 	return {
 		status: state.status,
@@ -314,7 +335,17 @@ export const toRunView = (state: RunState): RunView => {
 		coverageByCategory: state.coverageByCategory,
 		coverageGainedThisGate: gainedThisGate(state),
 		storage: state.storage,
-		storageCap: STORAGE_CAP_KB,
+		storageCap: plan.capKb,
+		storageBillKb: plan.billKb,
+		gateBillPaidKb: state.gateBillKb ?? 0,
+		planDowngraded: state.planDowngraded ?? false,
+		storagePlans: STORAGE_PLANS.map((option) => ({
+			tier: option.tier,
+			capKb: option.capKb,
+			billKb: option.billKb,
+			current: option.tier === plan.tier,
+			burnKb: Math.max(0, state.storage - option.capKb),
+		})),
 		log: state.log,
 	};
 };

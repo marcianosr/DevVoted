@@ -10,19 +10,15 @@ const percentOf = (part: number, whole: number): number =>
 
 export const StorageGauge = ({ usedKb, capKb }: StorageGaugeProps) => {
 	const used = Math.max(0, Math.min(usedKb, capKb));
-	const free = Math.max(0, capKb - used);
 
 	return (
 		<span className="flex w-44 shrink-0 flex-col gap-1">
+			<Paragraph as="span" tone="muted" size="xs">
+				Free tier
+			</Paragraph>
 			<span className="flex items-baseline gap-1.5">
-				<Paragraph as="span" className="text-2xl font-extrabold text-celadon">
-					{free}
-				</Paragraph>
-				<Paragraph as="span" size="xs" tone="pewter">
-					KB
-				</Paragraph>
-				<Paragraph as="span" size="xs" tone="faint">
-					free
+				<Paragraph as="span">
+					{used} KB / {capKb} KB used
 				</Paragraph>
 			</span>
 			<span
@@ -38,11 +34,6 @@ export const StorageGauge = ({ usedKb, capKb }: StorageGaugeProps) => {
 					style={{ width: `${percentOf(used, capKb)}%` }}
 				/>
 			</span>
-			{/* Both numbers carry the unit: "72 of 512 used" reads as a count of
-			    something unnamed once the headline's KB has scrolled out of the eye. */}
-			<Paragraph as="span" size="xs" tone="faint">
-				{used}KB of {capKb}KB used
-			</Paragraph>
 		</span>
 	);
 };

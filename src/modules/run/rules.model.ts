@@ -21,6 +21,29 @@ export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 /** Hard cap (KB) on the storage currency — income beyond this is discarded. */
 export const STORAGE_CAP_KB = 512;
 
+export type StoragePlan = {
+	readonly tier: number;
+	readonly capKb: number;
+	readonly billKb: number;
+};
+
+/**
+ * Storage capacity is a subscription (DVTD-rf5c): every run opens on the free
+ * tier, and a bigger cap carries a bill collected on every closed window —
+ * pass or fail — so upgrading is never automatically correct. The ladder
+ * replaces the scrapped storage-config shop (DVTD-xmu7): one dial, no second
+ * shop, no slot. Tiers stay internally unflavored until the mechanic proves fun.
+ */
+export const STORAGE_PLANS: readonly StoragePlan[] = [
+	{ tier: 1, capKb: STORAGE_CAP_KB, billKb: 0 },
+	{ tier: 2, capKb: 640, billKb: 8 },
+	{ tier: 3, capKb: 768, billKb: 16 },
+];
+
+/** Runs snapshotted before plans existed carry no tier — they read as free. */
+export const storagePlanFor = (tier: number | undefined): StoragePlan =>
+	STORAGE_PLANS.find((plan) => plan.tier === tier) ?? STORAGE_PLANS[0];
+
 /**
  * Per-run ceiling (KB) on per-correct faucet income (IndexedDB). A single
  * run-wide counter, deliberately: the shipped roster carries exactly one faucet

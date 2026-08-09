@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { AnsweringScreen } from "./AnsweringScreen.ui";
@@ -23,6 +23,8 @@ const base = {
 		{ id: "a", label: "A stable unique id" },
 		{ id: "b", label: "The array index" },
 	],
+	pollOutcomes: [],
+	pollsPerGate: 5,
 	canSubmit: true,
 	onSelect: vi.fn(),
 	onSubmit: vi.fn(),
@@ -35,6 +37,34 @@ describe(AnsweringScreen, () => {
 		expect(screen.getByText("Which key?")).toBeInTheDocument();
 		// The pipeline strip and its role row both name the config now.
 		expect(screen.getAllByText("Unit Tests")).not.toHaveLength(0);
+	});
+
+	it("shows how many polls have been answered this window", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				pollOutcomes={["correct", "wrong", "partial"]}
+			/>
+		);
+		expect(screen.getByText("3 of 5 polls")).toBeInTheDocument();
+	});
+
+	it("colours the poll bar by how each answer went, dimming the ones to come", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				pollOutcomes={["correct", "wrong", "partial"]}
+			/>
+		);
+		const bar = screen.getByRole("group", { name: "3 of 5 polls answered" });
+		const dash = (name: string) =>
+			within(bar).getByLabelText(name, { selector: "span" });
+		expect(dash("poll 1, correct")).toHaveClass("bg-viridian");
+		expect(dash("poll 2, wrong")).toHaveClass("bg-cinnabar");
+		expect(dash("poll 3, partly correct")).toHaveClass("bg-saffron");
+		// The window's remaining polls stay grey until they are answered.
+		expect(dash("poll 4, not answered")).toHaveClass("bg-zinc-700");
+		expect(dash("poll 5, not answered")).toHaveClass("bg-zinc-700");
 	});
 
 	it("answers a poll option", () => {

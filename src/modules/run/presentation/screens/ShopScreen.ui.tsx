@@ -9,6 +9,7 @@ import {
 	upgradeStorageCost,
 } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
+import type { StoragePlanOption } from "~/modules/run/view/runView.viewmodel";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import { pipelineModifiersFor } from "~/modules/run/pipeline/pipeline.model";
 import { Columns } from "~/ui/Columns.ui";
@@ -47,6 +48,8 @@ type ShopScreenProps = {
 	onAddSlot: () => void;
 	onUpgrade: (configId: string) => void;
 	onSell: (configId: string) => void;
+	storagePlans: readonly StoragePlanOption[];
+	onChangePlan: (tier: number) => void;
 };
 
 // The shop's row controls share one shape: a bordered pill whose label reads
@@ -133,6 +136,8 @@ export const ShopScreen = ({
 	onAddSlot,
 	onUpgrade,
 	onSell,
+	storagePlans,
+	onChangePlan,
 }: ShopScreenProps) => {
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const isFull = configs.length >= slots;
@@ -295,6 +300,51 @@ export const ShopScreen = ({
 								disabled: !canRebuild,
 							})}
 						</div>
+
+						<div className="pt-4">
+							<PanelHeading
+								title="Storage plan"
+								subtitle="A bigger cap bills every gate — pass or fail"
+							/>
+						</div>
+						<ul className="flex flex-col gap-2">
+							{storagePlans.map((plan) => {
+								const switchButton = actionButton({
+									label: "Switch",
+									price:
+										plan.billKb > 0 ? `${plan.billKb}KB / gate` : undefined,
+									onClick: () => onChangePlan(plan.tier),
+								});
+								return (
+									<li
+										key={plan.tier}
+										className="flex items-center justify-between gap-3"
+									>
+										<Paragraph
+											as="span"
+											size="sm"
+											tone={plan.current ? undefined : "muted"}
+										>
+											{plan.capKb}KB cap
+											{plan.billKb === 0 ? " · free" : ""}
+										</Paragraph>
+										{plan.current ? (
+											<Paragraph as="span" size="sm" tone="muted">
+												current plan
+											</Paragraph>
+										) : plan.burnKb > 0 ? (
+											<Tooltip
+												content={`Switching burns the ${plan.burnKb}KB sitting above this cap.`}
+											>
+												{switchButton}
+											</Tooltip>
+										) : (
+											switchButton
+										)}
+									</li>
+								);
+							})}
+						</ul>
 					</section>
 				}
 				main={

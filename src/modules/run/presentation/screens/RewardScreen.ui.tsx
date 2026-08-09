@@ -19,7 +19,7 @@ import {
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { GateRewardReport } from "../gate/GateRewardReport.ui";
-import { nextSlotRow } from "../gate/SlotUnlockRow.ui";
+import { nextSlotProgress } from "../gate/SlotUnlockRow.ui";
 import { SwatchChips } from "../gate/SwatchChips.ui";
 import { CoverageByCategory } from "../run/CoverageByCategory.ui";
 import { GateSegmentBar } from "../run/GateSegmentBar.ui";
@@ -46,6 +46,10 @@ type RewardScreenProps = {
 	 */
 	slotCoverageRequired?: number;
 	slots?: number;
+	/** What the storage plan billed when this window closed — 0/omitted on the free tier. */
+	billKb?: number;
+	/** True when the bill went unpaid and the plan dropped to the free tier. */
+	planDowngraded?: boolean;
 	/** Opens the review page. Omit and the score line stays off the screen. */
 	onReviewAnswers?: () => void;
 };
@@ -63,6 +67,8 @@ export const RewardScreen = ({
 	coverage,
 	slotCoverageRequired,
 	slots,
+	billKb,
+	planDowngraded,
 	onReviewAnswers,
 }: RewardScreenProps) => {
 	const coveragePct = roundToOneDecimal(
@@ -141,11 +147,11 @@ export const RewardScreen = ({
 					total: ALL_SWATCHES.length,
 				}}
 				// Read-only: the reward screen reports that width opened, the shop is
-				// where it is claimed. `nextSlotRow` returns nothing at the slot cap.
+				// where it is claimed. `nextSlotProgress` returns nothing at the slot cap.
 				slotRow={
 					slots === undefined
 						? null
-						: nextSlotRow({ slots, coverage, slotCoverageRequired })
+						: nextSlotProgress({ slots, coverage, slotCoverageRequired })
 				}
 				climb={{
 					ladder: (
@@ -177,6 +183,18 @@ export const RewardScreen = ({
 					/>
 				}
 			/>
+
+			{/* The plan's receipt: a bill is silent income shrinkage unless named. */}
+			{billKb !== undefined && billKb > 0 ? (
+				<Paragraph size="sm" tone="muted">
+					Storage plan billed −{billKb}KB this window.
+				</Paragraph>
+			) : null}
+			{planDowngraded ? (
+				<Paragraph size="sm" tone="cinnabar">
+					Storage bill unpaid — downgraded to the free tier.
+				</Paragraph>
+			) : null}
 
 			{earnedSwatches.length > 0 && (
 				<section className="flex flex-col items-start gap-2">

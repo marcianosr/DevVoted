@@ -1,11 +1,23 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
+import { STORAGE_PLANS } from "~/modules/run/rules.model";
 import { ShopScreen } from "./ShopScreen.ui";
+
+const plansOn = (currentTier: number, storage = 0) =>
+	STORAGE_PLANS.map((plan) => ({
+		...plan,
+		current: plan.tier === currentTier,
+		burnKb: Math.max(0, storage - plan.capKb),
+	}));
 
 const meta: Meta<typeof ShopScreen> = {
 	component: ShopScreen,
 	title: "Run/Screens/Shop",
+	args: {
+		storagePlans: plansOn(1),
+		onChangePlan: () => {},
+	},
 };
 export default meta;
 
@@ -84,5 +96,15 @@ export const AtSlotCap: Story = {
 		coverage: 430,
 		slotCoverageRequired: Infinity,
 		canAddSlot: false,
+	},
+};
+
+// On tier 3 with overflow riding: the free-tier rung's Switch would burn the
+// 188KB sitting above its cap, and the tooltip names it before the click.
+export const PaidStoragePlan: Story = {
+	args: {
+		...Default.args,
+		storage: 700,
+		storagePlans: plansOn(3, 700),
 	},
 };

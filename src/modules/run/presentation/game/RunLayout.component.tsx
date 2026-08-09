@@ -44,11 +44,11 @@ export const RunLayout = () => {
 					<RunHud
 						storage={view.storage}
 						capKb={view.storageCap}
+						storageBillKb={view.storageBillKb}
 						gatesCleared={view.gatesCleared}
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
 						pollsPerGate={view.pollsPerGate}
-						pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
 					/>

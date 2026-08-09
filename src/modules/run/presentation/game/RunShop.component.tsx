@@ -62,6 +62,8 @@ export const RunShop = () => {
 				onAddSlot={() => send({ type: "add-slot" })}
 				onUpgrade={(id) => send({ type: "upgrade", configId: id })}
 				onSell={(id) => send({ type: "sell", configId: id })}
+				storagePlans={view.storagePlans}
+				onChangePlan={(tier) => send({ type: "change-plan", tier })}
 			/>
 		</Screen>
 	);

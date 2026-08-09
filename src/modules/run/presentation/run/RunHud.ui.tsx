@@ -10,26 +10,19 @@ import {
 } from "~/modules/run/gate/swatch.model";
 import { swatchNameClass } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
-import type { AnswerOutcome } from "~/modules/run/climb/run.model";
 import { GateSegmentBar } from "./GateSegmentBar.ui";
-import { PollOutcomeBar } from "./PollOutcomeBar.ui";
 import { StorageGauge } from "./StorageGauge.ui";
 import { SummaryDropdown } from "./SummaryDropdown.ui";
 
 type RunHudProps = {
 	storage: number;
 	capKb: number;
+	/** The current storage plan's recurring bill — 0 on the free plan (DVTD-rf5c). */
+	storageBillKb: number;
 	gatesCleared: number;
 	victoryGate: number;
 	pollsAnswered: number;
 	pollsPerGate: number;
-	/**
-	 * This gate's answers so far — the poll bar's colours. Required, not optional
-	 * with an empty default: a HUD missing them renders five grey dashes, which
-	 * looks like a fresh gate rather than like a bug, and that is exactly how the
-	 * prototype route shipped without them.
-	 */
-	pollOutcomes: readonly AnswerOutcome[];
 	coverage: number;
 	coverageByCategory: Readonly<Record<string, number>>;
 };
@@ -131,25 +124,18 @@ const GateName = ({ gate }: { gate: number }) => {
 export const RunHud = ({
 	storage,
 	capKb,
+	storageBillKb,
 	gatesCleared,
 	victoryGate,
 	pollsAnswered,
 	pollsPerGate,
-	pollOutcomes,
 	coverage,
 	coverageByCategory,
 }: RunHudProps) => (
 	<div className="border-b border-zinc-800 pb-3 text-sm">
+		storagebillKb{storageBillKb}
 		<div className="flex flex-col gap-2 sm:hidden">
-			<div className="flex items-center justify-between gap-3">
-				<StorageGauge usedKb={storage} capKb={capKb} />
-				<span className="flex items-center gap-2">
-					<PollOutcomeBar outcomes={pollOutcomes} pollsPerGate={pollsPerGate} />
-					<Paragraph as="span" size="xs" tone="pewter">
-						{pollsAnswered} of {pollsPerGate} polls
-					</Paragraph>
-				</span>
-			</div>
+			<StorageGauge usedKb={storage} capKb={capKb} />
 			<span className="flex flex-col gap-1">
 				<GateSegmentBar
 					swatches={ALL_SWATCHES}
@@ -160,13 +146,12 @@ export const RunHud = ({
 				/>
 			</span>
 		</div>
-
 		<div className="hidden items-center gap-6 sm:flex">
 			<span className="flex shrink-0 items-start gap-1.5">
 				<StorageGauge usedKb={storage} capKb={capKb} />
 				<HudHint label="How storage works">
-					Storage caps at {capKb}KB. Clear gates and answer correctly to earn KB
-					— overflow carries into the shop.
+					Current storage caps at {capKb}KB. You can upgrade storage tiers in
+					the shop to increase your cap and earn more KB per gate.
 				</HudHint>
 			</span>
 			<span className="flex shrink-0 items-start gap-1.5">
@@ -184,16 +169,10 @@ export const RunHud = ({
 					/>
 				</span>
 				<HudHint label="How gates work">
-					Each gate is {pollsPerGate} polls judged against the checks in your
-					pipeline. Clear one to earn its swatch and its payout; break one and
-					it peels configs off your build. Gate {victoryGate} ends the climb.
+					Each gate contains 5 polls and runs checks on the pipeline. Clearing
+					the gate earns you gate rewards and unlocks the next gate. Failing the
+					gate applies penalties to your pipeline.
 				</HudHint>
-			</span>
-			<span className="flex shrink-0 items-center gap-2">
-				<PollOutcomeBar outcomes={pollOutcomes} pollsPerGate={pollsPerGate} />
-				<Paragraph as="span" size="xs" tone="pewter">
-					{pollsAnswered} of {pollsPerGate} polls
-				</Paragraph>
 			</span>
 			<div className="ml-auto flex shrink-0 items-center gap-6">
 				<CoverageSummary

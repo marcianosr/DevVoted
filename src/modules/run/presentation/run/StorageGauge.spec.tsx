@@ -5,14 +5,12 @@ import { STORAGE_CAP_KB } from "~/modules/run/rules.model";
 import { StorageGauge } from "./StorageGauge.ui";
 
 describe(StorageGauge, () => {
-	it("leads with the headroom left, not the amount held", () => {
-		render(<StorageGauge usedKb={184} capKb={512} />);
-		expect(screen.getByText("328")).toBeInTheDocument();
-		expect(screen.getByText("free")).toBeInTheDocument();
-		expect(screen.getByText("184KB of 512KB used")).toBeInTheDocument();
+	it("reads the used amount against the cap", () => {
+		render(<StorageGauge usedKb={64} capKb={512} />);
+		expect(screen.getByText("64 KB / 512 KB used")).toBeInTheDocument();
 	});
 
-	it("fills the bar by what is committed, against the cap", () => {
+	it("fills the bar in proportion to what is committed", () => {
 		render(<StorageGauge usedKb={128} capKb={512} />);
 		const bar = screen.getByRole("progressbar", { name: "storage used" });
 		expect(bar).toHaveAttribute("aria-valuenow", "128");
@@ -22,21 +20,29 @@ describe(StorageGauge, () => {
 
 	it("reads all free on an empty run", () => {
 		render(<StorageGauge usedKb={0} capKb={STORAGE_CAP_KB} />);
-		expect(screen.getByText(String(STORAGE_CAP_KB))).toBeInTheDocument();
 		expect(
-			screen.getByText(`0KB of ${STORAGE_CAP_KB}KB used`)
+			screen.getByText(`0 KB / ${STORAGE_CAP_KB} KB used`)
 		).toBeInTheDocument();
+		expect(screen.getByRole("progressbar").firstElementChild).toHaveStyle({
+			width: "0%",
+		});
 	});
 
-	it("reads nothing free at the cap", () => {
+	it("reads full at the cap", () => {
 		render(<StorageGauge usedKb={512} capKb={512} />);
-		expect(screen.getByText("0")).toBeInTheDocument();
-		expect(screen.getByText("512KB of 512KB used")).toBeInTheDocument();
+		expect(screen.getByText("512 KB / 512 KB used")).toBeInTheDocument();
+		expect(screen.getByRole("progressbar").firstElementChild).toHaveStyle({
+			width: "100%",
+		});
 	});
 
 	it("clamps a run that somehow overshot the cap", () => {
 		render(<StorageGauge usedKb={600} capKb={512} />);
-		expect(screen.getByText("0")).toBeInTheDocument();
+		expect(screen.getByText("512 KB / 512 KB used")).toBeInTheDocument();
+		expect(screen.getByRole("progressbar")).toHaveAttribute(
+			"aria-valuenow",
+			"512"
+		);
 		expect(screen.getByRole("progressbar").firstElementChild).toHaveStyle({
 			width: "100%",
 		});

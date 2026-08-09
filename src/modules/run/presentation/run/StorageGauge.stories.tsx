@@ -3,8 +3,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { STORAGE_CAP_KB } from "~/modules/run/rules.model";
 import { StorageGauge } from "./StorageGauge.ui";
 
-// Storage is a budget, not a trophy: what you can still spend is the number a
-// player acts on in the shop, so it gets the largest type.
 const meta: Meta<typeof StorageGauge> = {
 	component: StorageGauge,
 	title: "Run/StorageGauge",

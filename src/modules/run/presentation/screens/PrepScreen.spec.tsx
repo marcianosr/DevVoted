@@ -8,6 +8,7 @@ const base = {
 	gateNumber: 1,
 	pollsPerGate: 5,
 	stripsOnFailure: 1,
+	storageBillKb: 0,
 	modifiers: {
 		gateReward: 32,
 		rewardMultiplier: 1,
@@ -39,15 +40,13 @@ describe(PrepScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("lists the gate's clear reward and base reward as their own rows", () => {
+	it("lists the gate's storage and coverage gain this gate", () => {
 		render(<PrepScreen {...base} />);
 		expect(
 			screen.getByRole("heading", { name: "Gate rewards" })
 		).toBeInTheDocument();
 		expect(screen.getByText("+32KB")).toHaveClass("text-gradient-green");
-		// Base reward ×1 and coverage ×1 both read identically at identity —
-		// two matches confirms both rows render, not just one.
-		expect(screen.getAllByText("×1")).toHaveLength(2);
+		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
 	});
 
 	it("captions the gate with its coverage multiplier", () => {
@@ -79,6 +78,19 @@ describe(PrepScreen, () => {
 	it("warns the run is over once the stake would take the whole build", () => {
 		render(<PrepScreen {...base} stripsOnFailure={2} configs={base.configs} />);
 		expect(screen.getByText("strip all — run over")).toBeInTheDocument();
+	});
+
+	it("names the storage plan's bill on a paid tier", () => {
+		render(<PrepScreen {...base} storageBillKb={8} />);
+		expect(screen.getByText("−8KB")).toHaveClass("text-cinnabar");
+		expect(
+			screen.getByText(/when this window closes — pass or fail/)
+		).toBeInTheDocument();
+	});
+
+	it("keeps the free tier's receipt bill-free", () => {
+		render(<PrepScreen {...base} />);
+		expect(screen.queryByText(/Storage plan bills/)).not.toBeInTheDocument();
 	});
 
 	it("marks the gate name with its swatch colour", () => {

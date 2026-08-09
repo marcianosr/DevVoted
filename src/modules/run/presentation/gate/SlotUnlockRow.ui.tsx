@@ -9,6 +9,35 @@ export type SlotUnlockClaim = {
 	readonly onClaim: () => void;
 };
 
+type NextSlotArgs = {
+	slots: number;
+	coverage?: number;
+	slotCoverageRequired?: number;
+};
+
+type NextSlot = { slot: number; unlockAtPct: number; coveragePct: number };
+
+/** The next slot's numbers, narrowed from optional run state — or nothing at
+ * the slot cap, the one guard every caller needs. */
+const nextSlot = ({
+	slots,
+	coverage,
+	slotCoverageRequired,
+}: NextSlotArgs): NextSlot | null => {
+	if (
+		slots >= MAX_SLOTS ||
+		coverage === undefined ||
+		slotCoverageRequired === undefined ||
+		!Number.isFinite(slotCoverageRequired)
+	)
+		return null;
+	return {
+		slot: slots + 1,
+		unlockAtPct: slotCoverageRequired,
+		coveragePct: coverage,
+	};
+};
+
 type SlotUnlockRowProps = {
 	/** The slot this row buys — the next one up from the current width. */
 	slot: number;
@@ -90,29 +119,53 @@ export const SlotUnlockRow = ({
  * cap — the one guard both the shop and the configuring screen need.
  */
 export const nextSlotRow = ({
-	slots,
-	coverage,
-	slotCoverageRequired,
 	claim,
-}: {
-	slots: number;
-	coverage?: number;
-	slotCoverageRequired?: number;
-	claim?: SlotUnlockClaim;
-}): ReactNode => {
-	if (
-		slots >= MAX_SLOTS ||
-		coverage === undefined ||
-		slotCoverageRequired === undefined ||
-		!Number.isFinite(slotCoverageRequired)
-	)
-		return null;
+	...args
+}: NextSlotArgs & { claim?: SlotUnlockClaim }): ReactNode => {
+	const next = nextSlot(args);
+	if (!next) return null;
 	return (
 		<SlotUnlockRow
-			slot={slots + 1}
-			unlockAtPct={slotCoverageRequired}
-			coveragePct={coverage}
+			slot={next.slot}
+			unlockAtPct={next.unlockAtPct}
+			coveragePct={next.coveragePct}
 			claim={claim}
 		/>
 	);
+};
+
+/**
+ * The next slot's progress as a single line — a small bar plus how much
+ * coverage it still needs, muted until met and gradient-green once it is.
+ * For contexts that only report the rung (the gate reward payout) rather
+ * than sell it (the shop's `nextSlotRow`, with its button and lock pill).
+ */
+const SlotProgressLine = ({ slot, unlockAtPct, coveragePct }: NextSlot) => {
+	const unlocked = coveragePct >= unlockAtPct;
+	return (
+		<div className="flex items-center gap-2">
+			<span className="w-12 shrink-0">
+				<GainBar
+					from={0}
+					to={coveragePct}
+					cap={unlockAtPct}
+					label={`coverage toward slot ${slot}`}
+				/>
+			</span>
+			<Paragraph
+				as="span"
+				size="xs"
+				tone={unlocked ? "gradient" : "muted"}
+				className={unlocked ? "font-bold" : undefined}
+			>
+				{coveragePct}% of {unlockAtPct}% for slot {slot}
+			</Paragraph>
+		</div>
+	);
+};
+
+export const nextSlotProgress = (args: NextSlotArgs): ReactNode => {
+	const next = nextSlot(args);
+	if (!next) return null;
+	return <SlotProgressLine {...next} />;
 };

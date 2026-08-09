@@ -32,6 +32,8 @@ export const RunReward = () => {
 				coverage={view.coverage}
 				slotCoverageRequired={view.slotCoverageRequired}
 				slots={view.slots}
+				billKb={view.gateBillPaidKb}
+				planDowngraded={view.planDowngraded}
 				onReviewAnswers={() => navigate({ to: "/run/review" })}
 			/>
 		</Screen>

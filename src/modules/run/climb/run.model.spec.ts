@@ -14,6 +14,8 @@ import {
 	GATE_COUNT,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
+	STORAGE_PLANS,
+	storagePlanFor,
 	VICTORY_GATE,
 } from "../rules.model";
 import {
@@ -850,17 +852,21 @@ describe("economy", () => {
 		expect(state.storage).toBe(8);
 	});
 
-	it("caps storage at 1 MB, discarding gate reward beyond the limit", () => {
+	it("lets a gate reward ride over the cap into the shop, forfeiting at climb-on", () => {
+		// Overflow is spend-it-or-lose-it (DVTD-0h4n): the clamp waits for
+		// "Climb on", so a rich gate buys a shopping spree above the ceiling.
 		let state = { ...started(["js"]), storage: STORAGE_CAP_KB - 10 };
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
+		expect(state.storage).toBe(STORAGE_CAP_KB + 22); // 502 + 32, uncapped
+		state = runReducer(state, { type: "finish-reward" });
 		expect(state.storage).toBe(STORAGE_CAP_KB);
 	});
 
-	it("caps storage at the limit, discarding faucet income beyond it", () => {
+	it("lets faucet income ride over the cap until climb-on", () => {
 		let state = { ...started(["indexed-db"]), storage: STORAGE_CAP_KB - 3 };
-		state = answerWith(state, true); // faucet pays 8KB, only 3 fit
-		expect(state.storage).toBe(STORAGE_CAP_KB);
+		state = answerWith(state, true); // faucet pays the full 8KB, uncapped
+		expect(state.storage).toBe(STORAGE_CAP_KB + 5);
 	});
 
 	it("gates the lint action behind a linter config", () => {
@@ -1142,5 +1148,95 @@ describe("coverage scoring", () => {
 		const thenWrong = answerWith(afterOneCorrect, false);
 		expect(thenWrong.window.coverageGained).toBe(1.1); // streak-1 earn, gains only
 		expect(thenWrong.coverage).toBe(0.6); // 1.1 − 0.5 loss
+	});
+});
+
+describe("storage plan", () => {
+	// Gate 0 cleared on the starting build: the shop is open, storage is 32.
+	const inShop = (): RunState => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		return state;
+	};
+
+	it("starts every run on the free tier", () => {
+		const state = createRun(pool(10), handed);
+		expect(storagePlanFor(state.storagePlan)).toEqual(STORAGE_PLANS[0]);
+	});
+
+	it("reads a pre-plan snapshot as the free tier", () => {
+		expect(storagePlanFor(undefined)).toEqual(STORAGE_PLANS[0]);
+	});
+
+	it("switches plans in the shop and clamps to the new cap at climb-on", () => {
+		let state = runReducer(inShop(), { type: "change-plan", tier: 2 });
+		state = { ...state, storage: 700 };
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.storage).toBe(640);
+	});
+
+	it("refuses a plan change outside the shop", () => {
+		const answering = started(["js"]);
+		expect(runReducer(answering, { type: "change-plan", tier: 3 })).toBe(
+			answering
+		);
+	});
+
+	it("refuses an unknown tier", () => {
+		const shopping = inShop();
+		expect(runReducer(shopping, { type: "change-plan", tier: 9 })).toBe(
+			shopping
+		);
+	});
+
+	it("bills a paid plan when a cleared window closes, before the payout lands", () => {
+		let state = runReducer(inShop(), { type: "change-plan", tier: 2 });
+		state = runReducer(state, { type: "finish-reward" });
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		// Gate 1 pays 32 × 2; the 8KB bill collects from the 32 carried in.
+		expect(state.storage).toBe(32 - 8 + 64);
+		expect(state.gateBillKb).toBe(8);
+	});
+
+	it("bills a failed window too — the subscription has teeth", () => {
+		let state = started(["unit-tests", "js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		state = runReducer(state, { type: "change-plan", tier: 2 });
+		state = runReducer(state, { type: "finish-reward" }); // storage 64
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.storage).toBe(64 - 8);
+		expect(state.gateBillKb).toBe(8);
+	});
+
+	it("auto-downgrades to the free tier when the bill can't be paid", () => {
+		let state = runReducer(inShop(), { type: "change-plan", tier: 3 });
+		state = runReducer(state, { type: "finish-reward" });
+		state = { ...state, storage: 5 };
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(storagePlanFor(state.storagePlan).tier).toBe(1);
+		expect(state.planDowngraded).toBe(true);
+		// An unpayable bill is never partially collected: 5 rides into the payout.
+		expect(state.storage).toBe(5 + 64);
+	});
+
+	it("burns storage above the new cap on a voluntary downgrade", () => {
+		let state = runReducer(inShop(), { type: "change-plan", tier: 3 });
+		state = { ...state, storage: 700 };
+		state = runReducer(state, { type: "change-plan", tier: 1 });
+		expect(state.storage).toBe(STORAGE_CAP_KB);
+		expect(storagePlanFor(state.storagePlan).tier).toBe(1);
+	});
+
+	it("clears the bill report fields when the climb resumes after a strip", () => {
+		let state = started(["unit-tests", "js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		state = runReducer(state, { type: "change-plan", tier: 2 });
+		state = runReducer(state, { type: "finish-reward" });
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		state = runReducer(state, { type: "strip", configId: "unit-tests" });
+		state = runReducer(state, { type: "resume-climb" });
+		expect(state.gateBillKb).toBe(0);
+		expect(state.planDowngraded).toBe(false);
 	});
 });

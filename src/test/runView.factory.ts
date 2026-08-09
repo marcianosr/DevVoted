@@ -1,4 +1,5 @@
 import { CATEGORY_CODES } from "~/domains/shared/categories";
+import { STORAGE_PLANS } from "~/modules/run/rules.model";
 import type { PollView, RunView } from "~/modules/run/view/runView.viewmodel";
 
 import { createMockDataFactory } from "./createMockDataFactory";
@@ -62,5 +63,13 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	coverageGainedThisGate: {},
 	storage: 64,
 	storageCap: 512,
+	storageBillKb: 0,
+	gateBillPaidKb: 0,
+	planDowngraded: false,
+	storagePlans: STORAGE_PLANS.map((plan, index) => ({
+		...plan,
+		current: index === 0,
+		burnKb: 0,
+	})),
 	log: [],
 });

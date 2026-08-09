@@ -123,11 +123,12 @@ type GateRewardReportProps = {
 	 */
 	climb?: { ladder: ReactNode; caption: ReactNode };
 	/**
-	 * The width the run's coverage is paying for, as the same dashed row the shop
-	 * and the configuring screen draw. It *is* the coverage meter's bar when given,
-	 * not a second one under it: both draw the same rung, and two identical bars
-	 * two lines apart read as two different facts. The row wins because it adds
-	 * what the plain bar cannot — whether the rung has actually bought a slot yet.
+	 * The width the run's coverage is paying for, as a compact single-line
+	 * preview — a small bar plus "X% of Y% for slot N", muted until met. It
+	 * *is* the coverage meter's bar when given, not a second one under it:
+	 * both draw the same rung, and two identical bars two lines apart read as
+	 * two different facts. The preview wins because it adds what the plain
+	 * bar cannot — whether the rung has actually bought a slot yet.
 	 */
 	slotRow?: ReactNode;
 	/** What the coverage number breaks down into — closes the rewards section. */

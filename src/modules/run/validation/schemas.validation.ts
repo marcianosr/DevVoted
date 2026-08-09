@@ -39,6 +39,11 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	bareActionSchema("finish-reward"),
 	configActionSchema("sell"),
 	configActionSchema("drop"),
+	// Tier is intent, not state: the reducer rejects unknown tiers and the
+	// change is shop-only, so the wire only vouches for the shape.
+	z
+		.object({ type: z.literal("change-plan"), tier: z.number().int().min(1) })
+		.strict(),
 ]);
 
 export type RunActionInput = z.infer<typeof runActionSchema>;

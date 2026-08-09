@@ -23,6 +23,7 @@ export const RunPrep = () => {
 				gateNumber={view.gatesCleared}
 				pollsPerGate={view.pollsPerGate}
 				stripsOnFailure={view.stripsOnFailure}
+				storageBillKb={view.storageBillKb}
 				modifiers={{
 					gateReward: view.gateReward,
 					rewardMultiplier: view.rewardMultiplier,

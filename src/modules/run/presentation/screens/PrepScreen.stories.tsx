@@ -16,6 +16,7 @@ export const Default: Story = {
 		gateNumber: 1,
 		pollsPerGate: 5,
 		stripsOnFailure: 1,
+		storageBillKb: 0,
 		modifiers: {
 			gateReward: 32,
 			rewardMultiplier: 1,
@@ -43,5 +44,13 @@ export const Editing: Story = {
 	args: {
 		...Default.args,
 		editing: true,
+	},
+};
+
+/** On a paid storage plan: the receipt names the bill the window will collect. */
+export const PaidStoragePlan: Story = {
+	args: {
+		...Default.args,
+		storageBillKb: 16,
 	},
 };

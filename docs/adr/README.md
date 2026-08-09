@@ -23,6 +23,8 @@
 | [019](019-depth-and-width-are-independent.md) | Depth and width are independent; swatches are gate badges; summit at gate 12 of 13 | Accepted — supersedes 018; open risk in DVTD-ziss |
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no color | Accepted — retires the per-category palette (wiki §2.4, DVTD-sthm) |
 | [021](021-death-at-the-gate-that-empties-the-build.md) | A run dies at the gate that empties its build | Accepted — supersedes the death rule of 006 Decision 6 and 014 §3 (DVTD-1ys6) |
+| 022 | *(reserved: the checklist-is-the-rulebook / declined-lint-pledge rule the code already cites)* | Unwritten — `run.model.ts`/`effect.model.ts` reference it |
+| [023](023-storage-capacity-is-a-subscription.md) | Storage capacity is a subscription — the plan ladder | Accepted — supersedes the cap-extension voucher (015 Decision 3 via DVTD-0h4n); DVTD-rf5c |
 
 ## Conventions
 

@@ -1,5 +1,5 @@
 import type { CategoryCode } from "~/domains/shared/categories";
-import type { AnswerType } from "~/modules/run/climb/run.model";
+import type { AnswerOutcome, AnswerType } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import { roleRows } from "~/modules/run/gate/configRole.model";
@@ -16,6 +16,7 @@ import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { RoleList, type RowUseAction } from "../gate/RoleList.ui";
 import { PollCard, PollOption } from "../poll/PollCard.ui";
+import { PollOutcomeBar } from "../run/PollOutcomeBar.ui";
 
 /** Chips begin after the option badges have popped in (~620ms of pops). */
 const REVEAL_SCORE_START_MS = 500;
@@ -82,6 +83,13 @@ type AnsweringScreenProps = {
 	codeSandboxUrl?: string;
 	answerType: AnswerType;
 	options: readonly PollOption[];
+	/**
+	 * This gate's answers so far — the poll bar's colours. Required, not optional
+	 * with an empty default: a screen missing them renders five grey dashes, which
+	 * looks like a fresh gate rather than like a bug.
+	 */
+	pollOutcomes: readonly AnswerOutcome[];
+	pollsPerGate: number;
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
 	/** When set, the poll is in its post-submit reveal: options go inert and show ✓/✕. */
@@ -112,6 +120,8 @@ export const AnsweringScreen = ({
 	codeSandboxUrl,
 	answerType,
 	options,
+	pollOutcomes,
+	pollsPerGate,
 	selectedOptionIds,
 	disabledOptionIds,
 	correctOptionIds,
@@ -136,6 +146,12 @@ export const AnsweringScreen = ({
 	return (
 		<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10">
 			<div className="flex min-w-0 flex-col gap-6">
+				<span className="flex shrink-0 items-center gap-2">
+					<PollOutcomeBar outcomes={pollOutcomes} pollsPerGate={pollsPerGate} />
+					<Paragraph as="span" size="xs" tone="pewter">
+						{pollOutcomes.length} of {pollsPerGate} polls
+					</Paragraph>
+				</span>
 				<PollCard
 					category={category}
 					question={question}

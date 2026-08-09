@@ -584,21 +584,38 @@ unrelated stat-sticks.
 
 ### 5.1 Storage (KB)
 
-**Storage** is the in-run currency, measured in kilobytes and capped at **512 KB**.
+**Storage** is the in-run currency, measured in kilobytes and capped by your
+**storage plan** — **512 KB** on the free tier every run starts on.
 Faucets: clearing a gate pays **32 KB × gate number × correct ÷ 5** (the same
 `gatesCleared + 1` curve coverage rides — gate 1 tops out at 32 KB, gate 5 at 160,
 capped at gate 12's ×12 so endless runs stop scaling); IndexedDB adds +8 KB per
 correct answer. Sinks: drafting configs (32–256 KB by rarity), linting (8–256 KB,
-escalating), and draft rebuilds.
+escalating), draft rebuilds, and the storage plan's bill.
 
-**Overflow is spend-it-or-lose-it, not discarded on arrival** 🟡. A gate reward can
-push storage past 512 KB; that overflow rides uncapped into the shop that follows,
+**Storage plans** 🟢 (ADR-023). Capacity is a subscription: a bigger cap carries
+a recurring bill, collected every time a window closes — **pass or fail**, before
+the payout. A failed gate pays nothing and still bills. An unpayable bill
+collects nothing and **auto-downgrades the run to the free tier**; a voluntary
+downgrade (shop only, like upgrading) clamps on the spot, burning anything above
+the new cap. Tiers are internally unflavored for now:
+
+| Tier | Cap | Bill / gate |
+| --- | --- | --- |
+| 1 (free, the start) | 512 KB | 0 |
+| 2 | 640 KB | 8 KB |
+| 3 | 768 KB | 16 KB |
+
+The split behind it: anything that *earns* storage is a pipeline config under
+the Config Rule (IndexedDB); a slot-free purchase may only change the
+container's rules — cap size today — never multiply power. Numbers live in
+`rules.model.ts` (`STORAGE_PLANS`).
+
+**Overflow is spend-it-or-lose-it, not discarded on arrival** 🟢. A gate reward can
+push storage past the cap; that overflow rides uncapped into the shop that follows,
 so a rich gate buys a genuine shopping spree above the usual ceiling. The cap only
-clamps when the player presses *Climb on* — whatever's still over 512 KB at that
-moment is forfeit. Waste becomes urgency instead of a silent tax on the reward you
-just earned. ⚠ Code still clamps at gate-clear time (`run.model.ts`'s
-`clampedStorage`, applied to the reward itself); moving the clamp to *Climb on* is
-tracked in DVTD-0h4n.
+clamps when the player presses *Climb on* (`finishReward`) — whatever's still over
+it at that moment is forfeit. Waste becomes urgency instead of a silent tax on the
+reward you just earned.
 
 ### 5.2 The Shop
 
@@ -613,10 +630,11 @@ something before you can climb on:
 - **Upgrade** a Focus config (free, coverage-gated) or Unit Tests (32 KB × the
   level bought).
 - **Add a slot**: free, coverage-gated (see [3.1 Slots & Expansion](#31-slots--expansion)).
-- **Extend cap** 🟡: a voucher-style purchase that raises the 512 KB storage cap
-  for the rest of the run. Slot-free and not a config — buy it once and it applies
-  run-wide, unlike every other action here, which spends storage into the build.
-  Cost and cap increase undecided (DVTD-0h4n).
+- **Change storage plan** 🟢: switch tiers on the plan ladder
+  ([5.1](#51-storage-kb)), both directions, switching itself free. The paid
+  rungs price their recurring bill on the button ("8 KB / gate"); a downgrade
+  names the burn it would cause before the click. Replaced the planned one-time
+  cap-extension voucher (ADR-023 supersedes DVTD-0h4n's shape).
 
 When a gate reward has carried storage over the cap, this is where that shows up:
 a warning that the overflow is forfeit at *Climb on*, sitting next to the actions
@@ -917,8 +935,8 @@ The game leans hard into its CI metaphor:
 | **Check dial** | What a check keys off: correctness, storage, speed, build composition, duration, streaks, breadth, or other players. |
 | **Demand** | A check's escalating requirement ("Requires 3 correct answers"). |
 | **Coverage** | The score: a percentage per category plus a run total. Full in-fiction name: **knowledge coverage**. |
-| **Storage** | The in-run currency, in KB, capped at 512 KB. Overflow above the cap forfeits only at *Climb on*, not when it's earned 🟡 (DVTD-0h4n). |
-| **Cap extension** 🟡 | Planned slot-free shop voucher that raises the 512 KB storage cap for the rest of the run — not a config. |
+| **Storage** | The in-run currency, in KB, capped by the storage plan (512 free / 640 / 768). Overflow above the cap forfeits only at *Climb on*, not when it's earned 🟡 (DVTD-0h4n). |
+| **Storage plan** | The subscription setting the storage cap (ADR-023): free 512 KB, or a bigger cap for a per-gate bill collected pass or fail. Unpaid bills auto-downgrade to free. |
 | **Archived storage** | Persistent cross-run storage (bytes): the meta-progression currency, spendable on cosmetics, run injections, and more. |
 | **Faucet** | Any per-correct-answer storage income (e.g. IndexedDB). |
 | **Draft / Rebuild** | Buying a shop config / re-rolling the offer (doubling cost). |
@@ -957,8 +975,8 @@ code, and this table follows it.
 | Difficulty bonus | +0.1 / option > 3, +0.5 multi | Gains-only multiplier, never below ×1. |
 | `GATE_REWARD_KB` | 32 | Gate-1 base storage per clear (× gate multiplier × reward multipliers × correct ÷ 5). |
 | `GATE_REWARD_MULTIPLIER_CAP` | 12 | Reward depth multiplier stops growing past gate 12 (endless runs). |
-| `STORAGE_CAP_KB` | 512 | Storage cap (512 KB); clamp timing moving to *Climb on* (DVTD-0h4n). |
-| Cap extension | Undecided | 🟡 Planned voucher, raises `STORAGE_CAP_KB` for the run; slot-free, not a config. |
+| `STORAGE_CAP_KB` | 512 | The free tier's storage cap; the clamp waits for *Climb on* (DVTD-0h4n). |
+| `STORAGE_PLANS` | 512/0 · 640/8 · 768/16 | Cap / bill-per-gate by tier (ADR-023). Billed on every closed window, pass or fail; unpaid → auto-downgrade to free. |
 | Archived-storage credit rate | 1 / `gates ÷ GATE_COUNT` / 0 | Victory / death / abandon share of leftovers. Divisor is 13. |
 | `BASE_SLOTS` → `MAX_SLOTS` | 3 → 14 | Pipeline width, bought with coverage. Independent of the gate count (ADR-019). |
 | Slot coverage ladder | 8 / 16 / 28 / 45 / 70 / 100 / 140 / 190 / 250 / 325 / 415 | Total-coverage % to reach slots 4–14. Live-tuned in `pipeline.model.ts` (ADR-008); the last two rungs are untuned. |

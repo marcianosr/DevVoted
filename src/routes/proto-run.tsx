@@ -417,12 +417,17 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setStripStep("strip");
 	}, [state.status]);
-	// The gate-prep beat before the first poll of every gate — mirrors the
-	// routed app's community → prep → answer sequence (RunPrep.component.tsx).
-	const [answeringStep, setAnsweringStep] = useState<"prep" | "poll">("prep");
+	// The gate-prep beat before the first poll of every gate but the first —
+	// mirrors the routed app's community → prep → answer sequence
+	// (RunPrep.component.tsx). Gate 0 skips it: Configure already shows the same
+	// stake right before the climb starts, so a prep page for Pallet would repeat
+	// it (see runRoutes.viewmodel.ts's gate-0 exception).
+	const [answeringStep, setAnsweringStep] = useState<"prep" | "poll">(
+		state.gatesCleared > 0 ? "prep" : "poll"
+	);
 	useEffect(() => {
-		setAnsweringStep("prep");
-	}, [state.status]);
+		setAnsweringStep(state.gatesCleared > 0 ? "prep" : "poll");
+	}, [state.status, state.gatesCleared]);
 	const [editingPipeline, setEditingPipeline] = useState(false);
 	useEffect(() => {
 		setEditingPipeline(false);
@@ -483,11 +488,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					<RunHud
 						storage={view.storage}
 						capKb={view.storageCap}
+						storageBillKb={view.storageBillKb}
 						gatesCleared={view.gatesCleared}
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
 						pollsPerGate={view.pollsPerGate}
-						pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 						coverage={view.coverage}
 						coverageByCategory={view.coverageByCategory}
 					/>
@@ -531,6 +536,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						gateNumber={view.gatesCleared}
 						pollsPerGate={view.pollsPerGate}
 						stripsOnFailure={view.stripsOnFailure}
+						storageBillKb={view.storageBillKb}
 						modifiers={{
 							gateReward: view.gateReward,
 							rewardMultiplier: view.rewardMultiplier,
@@ -559,6 +565,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							options={view.poll.options}
 							selectedOptionIds={selected}
 							disabledOptionIds={disabled}
+							pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
+							pollsPerGate={view.pollsPerGate}
 							slots={view.slots}
 							stripsOnFailure={view.stripsOnFailure}
 							canLint={view.canLint}
@@ -596,6 +604,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						coverage={view.coverage}
 						slotCoverageRequired={view.slotCoverageRequired}
 						slots={view.slots}
+						billKb={view.gateBillPaidKb}
+						planDowngraded={view.planDowngraded}
 						onReviewAnswers={() => setRewardStep("review")}
 					/>
 				</Screen>
@@ -653,6 +663,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onAddSlot={() => dispatch({ type: "add-slot" })}
 						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
 						onSell={(id) => dispatch({ type: "sell", configId: id })}
+						storagePlans={view.storagePlans}
+						onChangePlan={(tier) => dispatch({ type: "change-plan", tier })}
 					/>
 				</Screen>
 			)}
@@ -698,6 +710,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						configs={view.configs}
 						checks={view.checks}
 						answered={view.answeredThisGate}
+						billKb={view.gateBillPaidKb}
+						planDowngraded={view.planDowngraded}
 						onStrip={(id) => dispatch({ type: "strip", configId: id })}
 					/>
 				</Screen>

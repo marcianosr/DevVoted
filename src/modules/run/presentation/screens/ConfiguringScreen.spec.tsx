@@ -51,9 +51,7 @@ describe(ConfiguringScreen, () => {
 			screen.getByRole("heading", { name: "Gate penalty" })
 		).toBeInTheDocument();
 		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
-		// Base reward ×1 and coverage ×1 both read identically at identity —
-		// two matches confirms both rows render, not just one.
-		expect(screen.getAllByText("×1")).toHaveLength(2);
+		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
 		expect(screen.getByText("strip 1 config")).toHaveClass("text-cinnabar");
 	});
 

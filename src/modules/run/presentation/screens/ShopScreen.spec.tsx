@@ -4,7 +4,15 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { draftCost } from "~/modules/run/configs/config.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { MAX_SLOTS } from "~/modules/run/pipeline/pipeline.model";
+import { STORAGE_PLANS } from "~/modules/run/rules.model";
 import { ShopScreen } from "./ShopScreen.ui";
+
+const plansOn = (currentTier: number, storage = 0) =>
+	STORAGE_PLANS.map((plan) => ({
+		...plan,
+		current: plan.tier === currentTier,
+		burnKb: Math.max(0, storage - plan.capKb),
+	}));
 
 const base = {
 	storage: 440,
@@ -37,6 +45,8 @@ const base = {
 	onAddSlot: vi.fn(),
 	onUpgrade: vi.fn(),
 	onSell: vi.fn(),
+	storagePlans: plansOn(1),
+	onChangePlan: vi.fn(),
 };
 
 describe(ShopScreen, () => {
@@ -304,5 +314,37 @@ describe(ShopScreen, () => {
 			<ShopScreen {...base} slots={MAX_SLOTS} slotCoverageRequired={Infinity} />
 		);
 		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
+	});
+
+	it("lists the storage-plan ladder with the current rung marked", () => {
+		render(<ShopScreen {...base} />);
+		expect(screen.getByText("512KB cap · free")).toBeInTheDocument();
+		expect(screen.getByText("640KB cap")).toBeInTheDocument();
+		expect(screen.getByText("current plan")).toBeInTheDocument();
+	});
+
+	it("prices every paid rung per gate on its switch button", () => {
+		render(<ShopScreen {...base} />);
+		expect(screen.getByText("8KB / gate")).toBeInTheDocument();
+		expect(screen.getByText("16KB / gate")).toBeInTheDocument();
+	});
+
+	it("switches the storage plan when a rung's button is clicked", () => {
+		const onChangePlan = vi.fn();
+		render(<ShopScreen {...base} onChangePlan={onChangePlan} />);
+		const [toTierTwo] = screen.getAllByRole("button", { name: /Switch/ });
+		fireEvent.click(toTierTwo);
+		expect(onChangePlan).toHaveBeenCalledWith(2);
+	});
+
+	it("names the burn a downgrade would cost on hover", () => {
+		render(
+			<ShopScreen {...base} storage={700} storagePlans={plansOn(3, 700)} />
+		);
+		const [toFreeTier] = screen.getAllByRole("button", { name: /Switch/ });
+		fireEvent.mouseEnter(toFreeTier);
+		expect(
+			screen.getByText("Switching burns the 188KB sitting above this cap.")
+		).toBeInTheDocument();
 	});
 });
