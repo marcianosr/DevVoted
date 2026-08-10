@@ -20,6 +20,7 @@ import {
 } from "~/modules/run/presentation/community/RunCommunity.ui";
 import { longestCorrectStreak } from "~/modules/run/community/standouts.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
+import { STARTER_STACKS } from "~/modules/run/configs/stack.model";
 import { rebuildCost } from "~/modules/run/draft/draft.model";
 import { coverageToAddSlot } from "~/modules/run/pipeline/pipeline.model";
 import { AnsweringScreen } from "~/modules/run/presentation/screens/AnsweringScreen.ui";
@@ -505,9 +506,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						label: "Start run →",
 						onClick: () => dispatch({ type: "start" }),
 						disabled: !canStart,
-						hint: canStart
-							? undefined
-							: "Select a config for every pipeline slot",
+						hint: canStart ? undefined : "Pick a stack to start",
 					}}
 				>
 					<ConfiguringScreen
@@ -526,6 +525,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						checks={view.checks}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
 						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
+						stacks={STARTER_STACKS}
+						onPickStack={(stackId) => dispatch({ type: "pick-stack", stackId })}
 					/>
 				</Screen>
 			)}
@@ -587,17 +588,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					<RewardScreen
 						clearedGate={view.clearedGateNumber}
 						// The PAID amount, not the full-correctness ceiling (ADR-017):
-						// a 2/5 clear banks 13KB, and the report must say 13.
+						// a 2/5 clear banks 13KB, and the payoff must say 13.
 						gateReward={view.gateRewardPaidKb}
 						answered={view.answeredThisGate}
-						coverageGainedByCategory={view.coverageGainedThisGate}
-						passedChecks={view.passedChecks}
 						configs={view.configs}
-						faucetThisGateKb={view.faucetThisGateKb}
 						storage={view.storage}
-						coverage={view.coverage}
-						slotCoverageRequired={view.slotCoverageRequired}
-						slots={view.slots}
+						capKb={view.storageCap}
+						faucetThisGateKb={view.faucetThisGateKb}
 						billKb={view.gateBillPaidKb}
 						planDowngraded={view.planDowngraded}
 						onReviewAnswers={() => setRewardStep("review")}

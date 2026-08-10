@@ -28,6 +28,7 @@ import {
 	EMPTY_WINDOW,
 	GateWindow,
 } from "../configs/effect.model";
+import { starterStackFor } from "../configs/stack.model";
 import { draftSeed, rebuildCost, rollDraft } from "../draft/draft.model";
 import { checkStatuses, gateDemands, gatePassed } from "../gate/gate.model";
 import { swatchForGate } from "../gate/swatch.model";
@@ -230,6 +231,7 @@ export type RunState = {
 export type RunAction =
 	| { readonly type: "slot"; readonly configId: string }
 	| { readonly type: "unslot"; readonly configId: string }
+	| { readonly type: "pick-stack"; readonly stackId: string }
 	| { readonly type: "start" }
 	| {
 			readonly type: "answer";
@@ -353,6 +355,30 @@ const slotConfig = (state: RunState, configId: string): RunState => {
 		...state,
 		available: state.available.filter((candidate) => candidate.id !== configId),
 		pipeline: withPipeline(state.pipeline, [...state.pipeline.configs, config]),
+	};
+};
+
+/**
+ * Swap the whole pipeline for a starter stack in one move (ADR-026). Atomic on
+ * purpose: applying a stack as N slot actions could commit half a stack when a
+ * member is missing from the handed pool. Members resolve against the run's
+ * own instances (already-slotted ones included, so switching stacks works), and
+ * any member the run wasn't handed makes the whole pick a no-op.
+ */
+const pickStack = (state: RunState, stackId: string): RunState => {
+	const stack = starterStackFor(stackId);
+	if (!stack || stack.configs.length > state.pipeline.slots) return state;
+	const pool = [...state.pipeline.configs, ...state.available];
+	const members = stack.configs.flatMap((member) => {
+		const handed = pool.find((config) => config.id === member.id);
+		return handed ? [handed] : [];
+	});
+	if (members.length < stack.configs.length) return state;
+	const memberIds = new Set(members.map((config) => config.id));
+	return {
+		...state,
+		pipeline: withPipeline(state.pipeline, members),
+		available: pool.filter((config) => !memberIds.has(config.id)),
 	};
 };
 
@@ -959,6 +985,8 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return slotConfig(state, action.configId);
 	if (action.type === "unslot" && state.status === "configuring")
 		return unslotConfig(state, action.configId);
+	if (action.type === "pick-stack" && state.status === "configuring")
+		return pickStack(state, action.stackId);
 	if (action.type === "start" && state.status === "configuring")
 		return start(state);
 	if (action.type === "answer" && state.status === "answering")

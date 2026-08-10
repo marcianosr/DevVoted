@@ -200,12 +200,13 @@ const meterFigures = (
 			};
 
 /**
- * One reward as a bullet line — the same shape the gate's stake receipt lists
- * its rewards in (`GateStakeReceipt`'s `GainRow`), so what a gate promises and
- * what it paid read as the same list rather than two designs for the same
- * fact. The value leads, gradient green and bold, since it is the number a
- * player scans for; the label just names what it is. An optional detail (a
- * bar, a caption) sits below the line, inside the bullet.
+ * One reward as a bullet line. `GateStakeReceipt` (what a gate promises)
+ * moved to an inline flow (Marciano, 2026-08-10: "5 polls → reward → fail
+ * consequence") — this report (what it paid) stays a list, since it's read
+ * after the fact rather than scanned for a quick decision. The value leads,
+ * gradient green and bold, since it is the number a player scans for; the
+ * label just names what it is. An optional detail (a bar, a caption) sits
+ * below the line, inside the bullet.
  */
 const RewardLine = ({
 	label,

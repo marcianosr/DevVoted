@@ -27,6 +27,7 @@
 | [023](023-storage-capacity-is-a-subscription.md) | Storage capacity is a subscription — the plan ladder | Accepted — supersedes the cap-extension voucher (015 Decision 3 via DVTD-0h4n); DVTD-rf5c |
 | 024 | *(reserved: shop-router — one shop per gate, locks the other until the next rung)* | Unwritten — not implemented on the live route |
 | [025](025-automatic-width-claiming.md) | Width claims itself automatically — no more Unlock slot button | Accepted — amends 008 Decision 2 |
+| [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: starter stacks, plain-language receipt, payoff-first gate clear | Accepted — account-level unlock flags are follow-up work |
 
 ## Conventions
 

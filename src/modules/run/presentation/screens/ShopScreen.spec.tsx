@@ -241,13 +241,12 @@ describe(ShopScreen, () => {
 		render(
 			<ShopScreen
 				{...base}
-				modifiers={{ ...base.modifiers, gateReward: 240, rewardMultiplier: 2 }}
+				modifiers={{ ...base.modifiers, gateReward: 240 }}
 			/>
 		);
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
 		expect(receipt.getByText("+240KB")).toBeInTheDocument();
-		expect(receipt.getByText(/storage/)).toBeInTheDocument();
-		expect(receipt.getByText(/coverage/)).toBeInTheDocument();
+		expect(receipt.getByText("×2 +0.5%")).toBeInTheDocument();
 	});
 
 	// Row order follows the config's gate role, not the prop order, so this asserts

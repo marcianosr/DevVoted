@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
+import { STARTER_STACKS } from "~/modules/run/configs/stack.model";
 import { ConfiguringScreen } from "./ConfiguringScreen.ui";
 
 const meta: Meta<typeof ConfiguringScreen> = {
@@ -44,5 +45,21 @@ export const Default: Story = {
 		],
 		onSlot: () => {},
 		onUnslot: () => {},
+	},
+};
+
+export const StackMode: Story = {
+	args: {
+		...Default.args,
+		configs: [],
+		stacks: STARTER_STACKS,
+		onPickStack: () => {},
+	},
+};
+
+export const StackModePicked: Story = {
+	args: {
+		...StackMode.args,
+		configs: STARTER_STACKS[0].configs,
 	},
 };

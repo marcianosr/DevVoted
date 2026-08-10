@@ -1,143 +1,104 @@
 import type { AnsweredPoll } from "~/modules/run/climb/run.model";
 import type { Config } from "~/modules/run/configs/config.model";
-import type { CheckStatus } from "~/modules/run/configs/effect.model";
-import {
-	gateRewardRows,
-	gateStorageGained,
-} from "~/modules/run/gate/gateReward.model";
-import {
-	ALL_SWATCHES,
-	swatchesEarnedAt,
-	swatchForGate,
-} from "~/modules/run/gate/swatch.model";
-import {
-	roundToOneDecimal,
-	SLICE_WINDOW,
-	VICTORY_GATE,
-} from "~/modules/run/rules.model";
+import { gateStorageGained } from "~/modules/run/gate/gateReward.model";
+import { hasThemeColor, swatchForGate } from "~/modules/run/gate/swatch.model";
 import { Button } from "~/ui/Button.component";
+import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
+import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { GateRewardReport } from "../gate/GateRewardReport.ui";
-import { nextSlotProgress } from "../gate/SlotUnlockRow.ui";
-import { CoverageByCategory } from "../run/CoverageByCategory.ui";
-import { GateSegmentBar } from "../run/GateSegmentBar.ui";
+import { SwatchLabel } from "../gate/SwatchLabel.ui";
+import { StorageGauge } from "../run/StorageGauge.ui";
 
 type RewardScreenProps = {
 	clearedGate: number;
 	gateReward: number;
 	answered: readonly AnsweredPoll[];
-	coverageGainedByCategory: Readonly<Record<string, number>>;
-	passedChecks: readonly CheckStatus[];
 	configs: readonly Config[];
+	storage: number;
+	capKb: number;
 	faucetThisGateKb?: number;
-	storage?: number;
-	capKb?: number;
-	coverage?: number;
-	slotCoverageRequired?: number;
-	slots?: number;
 	billKb?: number;
 	planDowngraded?: boolean;
 	onReviewAnswers?: () => void;
 	onContinue?: () => void;
 };
 
+/**
+ * The clear is a payoff, not a report (ADR-026): one storage number, landed at
+ * the moment it can teach, routed straight into spending it. The per-config
+ * attribution this screen used to carry lives on in the failed gate's report
+ * (GateRewardReport), where the player needs to know what fell short.
+ */
 export const RewardScreen = ({
 	clearedGate,
 	gateReward,
 	answered,
-	coverageGainedByCategory,
-	passedChecks,
 	configs,
-	faucetThisGateKb,
 	storage,
 	capKb,
-	coverage,
-	slotCoverageRequired,
-	slots,
+	faucetThisGateKb,
 	billKb,
 	planDowngraded,
 	onReviewAnswers,
 	onContinue,
 }: RewardScreenProps) => {
-	const coveragePct = roundToOneDecimal(
-		Object.values(coverageGainedByCategory).reduce((sum, pct) => sum + pct, 0)
-	);
-	const rows = gateRewardRows({
-		answered,
-		configs,
-		checks: passedChecks,
-		faucetThisGateKb,
-	});
 	const storageKb = gateStorageGained(
 		configs,
 		answered,
 		gateReward,
 		faucetThisGateKb
 	);
-	const earnedSwatches = swatchesEarnedAt(clearedGate + 1);
-
-	const buysNextSlot =
-		coverage !== undefined &&
-		slots !== undefined &&
-		slotCoverageRequired !== undefined &&
-		Number.isFinite(slotCoverageRequired) &&
-		slotCoverageRequired > 0;
-
-	const gatesCleared = clearedGate + 1;
-	const nextGate = swatchForGate(gatesCleared);
+	const swatch = swatchForGate(clearedGate);
 
 	return (
-		<div className="flex flex-col gap-4">
-			<GateRewardReport
-				gateNumber={clearedGate}
-				cleared
-				swatch={swatchForGate(clearedGate)}
-				rows={rows}
-				totals={{ storageKb, coveragePct }}
-				storageBar={
-					storage === undefined || capKb === undefined
-						? undefined
-						: {
-								fromKb: Math.max(0, storage - storageKb),
-								toKb: storage,
-								capKb,
-							}
-				}
-				coverageBar={buysNextSlot ? { toPct: coverage } : undefined}
-				swatchProgress={{
-					earned: earnedSwatches.length,
-					total: ALL_SWATCHES.length,
-				}}
-				slotRow={
-					slots === undefined
-						? null
-						: nextSlotProgress({ slots, coverage, slotCoverageRequired })
-				}
-				climb={{
-					ladder: (
-						<GateSegmentBar
-							swatches={ALL_SWATCHES}
-							gatesCleared={gatesCleared}
-							pollsAnswered={0}
-							pollsPerGate={SLICE_WINDOW}
-							label={`gate ${gatesCleared} of ${VICTORY_GATE}`}
-						/>
-					),
-					caption:
-						gatesCleared > VICTORY_GATE
-							? `gate ${VICTORY_GATE} of ${VICTORY_GATE} — the summit`
-							: `gate ${gatesCleared} of ${VICTORY_GATE}${
-									nextGate ? ` · next up: ${nextGate.gateName} gate` : ""
-								}`,
-				}}
-				breakdown={
-					<CoverageByCategory
-						coverageByCategory={coverageGainedByCategory}
-						title="Coverage by category"
-						prefix="+"
-					/>
-				}
-			/>
+		<div className="flex flex-col items-center gap-4 py-12 text-center">
+			<div
+				{...(swatch && hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
+				className="flex items-center gap-1.5"
+			>
+				{swatch ? <SwatchMark finish={swatch.finish} size="sm" /> : null}
+				<Paragraph
+					size="sm"
+					tone="muted"
+					className="uppercase tracking-[0.3em]"
+				>
+					{swatch ? (
+						<span className={swatchNameClass(swatch.finish)}>
+							{swatch.gateName}
+						</span>
+					) : (
+						`Gate ${clearedGate}`
+					)}{" "}
+					gate · cleared
+				</Paragraph>
+			</div>
+
+			<div className="flex flex-col items-center gap-2">
+				<div className="flex flex-col items-center gap-1">
+					<p className="text-4xl font-extrabold tracking-tight text-gradient-green sm:text-5xl">
+						+{storageKb}KB
+					</p>
+					<Paragraph
+						size="sm"
+						tone="muted"
+						className="uppercase tracking-[0.3em]"
+					>
+						storage earned
+					</Paragraph>
+				</div>
+
+				<StorageGauge usedKb={storage} capKb={capKb} />
+
+				{swatch ? (
+					<Paragraph size="sm" tone="muted">
+						<SwatchLabel swatch={swatch} label={swatch.name} /> unlocked
+					</Paragraph>
+				) : null}
+			</div>
+
+			<Paragraph tone="muted">
+				Spend storage on configs, upgrades, and patches.
+			</Paragraph>
 
 			{billKb !== undefined && billKb > 0 ? (
 				<Paragraph size="sm" tone="muted">
@@ -151,14 +112,14 @@ export const RewardScreen = ({
 			) : null}
 
 			{(answered.length > 0 && onReviewAnswers) || onContinue ? (
-				<div className="flex items-center justify-end gap-3">
+				<div className="mt-4 flex items-center gap-3">
+					{onContinue ? (
+						<Button onClick={onContinue}>Enter shop →</Button>
+					) : null}
 					{answered.length > 0 && onReviewAnswers ? (
 						<Button variant="neutral" onClick={onReviewAnswers}>
-							Review your answers →
+							Review answers
 						</Button>
-					) : null}
-					{onContinue ? (
-						<Button onClick={onContinue}>Continue to shop →</Button>
 					) : null}
 				</div>
 			) : null}

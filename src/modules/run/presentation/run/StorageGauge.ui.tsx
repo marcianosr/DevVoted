@@ -16,11 +16,9 @@ export const StorageGauge = ({ usedKb, capKb }: StorageGaugeProps) => {
 			<Paragraph as="span" tone="muted" size="xs">
 				Free tier
 			</Paragraph>
-			<span className="flex items-baseline gap-1.5">
-				<Paragraph as="span">
-					{used} KB / {capKb} KB used
-				</Paragraph>
-			</span>
+			<Paragraph as="span" size="xs">
+				{used} / {capKb} KB stored
+			</Paragraph>
 			<span
 				role="progressbar"
 				aria-label="storage used"

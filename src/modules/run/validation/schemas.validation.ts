@@ -19,6 +19,11 @@ const bareActionSchema = <T extends string>(type: T) =>
 export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("slot"),
 	configActionSchema("unslot"),
+	// stackId is intent like configId: the reducer resolves it against the
+	// roster and rejects unknown stacks, so the wire only vouches for the shape.
+	z
+		.object({ type: z.literal("pick-stack"), stackId: z.string().min(1) })
+		.strict(),
 	bareActionSchema("start"),
 	z
 		.object({

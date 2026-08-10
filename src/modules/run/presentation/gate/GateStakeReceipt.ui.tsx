@@ -23,30 +23,53 @@ const stripLabel = (strips: number, configCount: number): string =>
 		? "Strip all — run over"
 		: `Strip ${strips} config${strips === 1 ? "" : "s"}`;
 
-const GainRow = ({
-	label,
+const Arrow = () => (
+	<span aria-hidden className="text-zinc-600">
+		→
+	</span>
+);
+
+const StageLabel = ({
+	tone,
+	children,
+}: {
+	tone: "viridian" | "cinnabar";
+	children: string;
+}) => (
+	<Paragraph
+		as="span"
+		size="xs"
+		tone={tone}
+		className="uppercase tracking-wide opacity-70"
+	>
+		{children}
+	</Paragraph>
+);
+
+/** One metric's value, diff-highlighted old→new when a hovered pick would change it. */
+const MetricValue = ({
 	current,
 	preview,
 }: {
-	label: string;
 	current: string;
 	preview?: string;
-}) => (
-	<li>
-		<Paragraph as="span" size="xs" tone="muted">
-			{preview !== undefined && preview !== current ? (
-				<>
-					<span className="font-extrabold text-zinc-400">{current}</span>
-					<span className="font-extrabold text-celadon"> → {preview}</span>
-				</>
-			) : (
-				<span className="font-extrabold text-gradient-green">{current}</span>
-			)}{" "}
-			{label}
-		</Paragraph>
-	</li>
-);
+}) => {
+	if (preview !== undefined && preview !== current)
+		return (
+			<>
+				<span className="text-zinc-400">{current}</span>
+				<span className="text-celadon"> → {preview}</span>
+			</>
+		);
+	return <span className="text-gradient-green">{current}</span>;
+};
 
+/**
+ * The stake as one flowing sequence — polls → reward → fail consequence —
+ * instead of separate headed sections (Marciano, 2026-08-10): the causal
+ * chain a player actually cares about ("what do I answer, what do I get,
+ * what do I lose") reads faster left-to-right than three stacked panels.
+ */
 export const GateStakeReceipt = ({
 	gateNumber,
 	pollsPerGate,
@@ -60,7 +83,7 @@ export const GateStakeReceipt = ({
 	const gateName = swatch?.gateName ?? `Gate ${gateNumber}`;
 	return (
 		<TerminalPanel title="Build Summary">
-			<div data-testid="gate-stake-receipt" className="flex flex-col gap-1.5">
+			<div data-testid="gate-stake-receipt" className="flex flex-col gap-3">
 				<div
 					{...(swatch && hasThemeColor(swatch)
 						? swatchTheme(swatch.theme)
@@ -74,55 +97,38 @@ export const GateStakeReceipt = ({
 						{gateName} gate
 					</Title>
 				</div>
-				<div className="flex flex-col gap-1">
-					<Title as="h3">Objective</Title>
-					<ul className="flex flex-col list-disc pl-4 marker:text-zinc-500">
-						<li>
-							<Paragraph tone="muted">Clear your pipeline</Paragraph>
-						</li>
-						<li>
-							<Paragraph tone="muted">
-								Answer {pollsPerGate} polls this window
-							</Paragraph>
-						</li>
-					</ul>
-				</div>
-				<hr className="border-t border-zinc-800" />
-				<div className="flex flex-col gap-1">
-					<Title as="h3">On clear</Title>
-					<ul className="flex flex-col list-disc pl-4 marker:text-zinc-500">
-						<GainRow
-							label="storage"
-							current={`+${modifiers.gateReward}KB`}
-							preview={preview && `+${preview.gateReward}KB`}
-						/>
-						<GainRow
-							label="coverage"
-							current={coverageValue(modifiers)}
-							preview={preview && coverageValue(preview)}
-						/>
-					</ul>
-				</div>
-				<hr className="border-t border-zinc-800" />
-				<div className="flex flex-col gap-1">
-					<Title as="h3">On fail</Title>
-					<ul className="flex flex-col list-disc pl-4 marker:text-zinc-500">
-						<li>
+				<div className="flex flex-col gap-1.5">
+					<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+						<Paragraph as="span" className="font-bold">
+							{pollsPerGate} polls
+						</Paragraph>
+						<Arrow />
+						<StageLabel tone="viridian">clear</StageLabel>
+						<Paragraph as="span" className="font-bold">
+							<MetricValue
+								current={`+${modifiers.gateReward}KB`}
+								preview={preview && `+${preview.gateReward}KB`}
+							/>
+							{" · "}
+							<MetricValue
+								current={coverageValue(modifiers)}
+								preview={preview && coverageValue(preview)}
+							/>
+						</Paragraph>
+						<Arrow />
+						<StageLabel tone="cinnabar">fail</StageLabel>
+						<Paragraph as="span" tone="cinnabar" className="font-bold">
+							{stripLabel(stripsOnFailure, configCount)}
+						</Paragraph>
+					</div>
+					{billKb !== undefined && billKb > 0 ? (
+						<Paragraph tone="muted">
 							<Paragraph as="span" tone="cinnabar" className="font-bold">
-								{stripLabel(stripsOnFailure, configCount)}
-							</Paragraph>
-						</li>
-						{billKb !== undefined && billKb > 0 ? (
-							<li>
-								<Paragraph tone="muted">
-									<Paragraph as="span" tone="cinnabar" className="font-bold">
-										−{billKb}KB
-									</Paragraph>{" "}
-									storage bill — pass or fail
-								</Paragraph>
-							</li>
-						) : null}
-					</ul>
+								−{billKb}KB
+							</Paragraph>{" "}
+							storage bill — pass or fail
+						</Paragraph>
+					) : null}
 				</div>
 			</div>
 		</TerminalPanel>

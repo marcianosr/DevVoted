@@ -417,10 +417,16 @@ Click any config chip for its action popover: **Install**, **Sell** (refunds hal
 the draft cost), or **Upgrade**. Any config can be sold except your last one:
 selling your way out of every check just sells your income with it (payouts scale
 with correctness), and a pipeline is never allowed to reach zero configs in the shop
-(ADR-021). At run start, the **Configuring** screen lets you build a starting pipeline
-from a handed set of configs, and **all 3 starting slots must be filled before the
-climb begins**. The starting hand is currently a curated set; a random
-rarity-weighted draw is planned (DVTD-30k6).
+(ADR-021). At run start, the **Configuring** screen offers **starter stacks**
+(ADR-026): curated three-config pipelines picked with one click — the stack's
+one-liner carries the choice, and the picked row expands into a trimmed
+preview (each config's demand and payoff, always visible; a linter's fee sits
+behind its own "more details" tap). Picking a stack is atomic (`pick-stack`);
+**all 3 starting slots must be filled before the climb begins**. A "Build your
+own" row opens the classic bench-drafting screen (no `stacks` prop) for
+self-assembly, which returns as the default once account-level intro flags
+land. The starting hand is currently a curated set; a random rarity-weighted
+draw is planned (DVTD-30k6).
 
 ---
 
@@ -703,10 +709,11 @@ against 12 colours, one of them the app background: **Elite** keeps indigo (it *
 Indigo Plateau) with a rim so it reads, and only its name falls back to plain zinc;
 the **Champion** alone wears the Kanto gradient.
 
-They surface in four places: the gate-cleared reward screen, which names the badge
-that clear just earned; the Configuring stat row (what you hold this run); the
-end-of-run summary; and the **Swatches** tab of [the Dex](#63-the-dex), where
-unearned entries redact to `???`.
+They surface in four places: the run log's clear line, which names the badge that
+clear just earned (the gate-clear screen itself is a bare payoff since ADR-026);
+the Configuring stat row (what you hold this run); the end-of-run summary; and
+the **Swatches** tab of [the Dex](#63-the-dex), where unearned entries redact
+to `???`.
 
 **The gate themes the run** (ADR-020). The swatch of the gate being played sets
 the whole app's accent color during a run — background tint, HUD, question card,

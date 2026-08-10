@@ -1,3 +1,4 @@
+import { STARTER_STACKS } from "~/modules/run/configs/stack.model";
 import { Screen } from "~/ui/Screen.ui";
 
 import { ConfiguringScreen } from "../screens/ConfiguringScreen.ui";
@@ -22,7 +23,7 @@ export const RunConfigure = () => {
 				label: "Start run →",
 				onClick: () => send({ type: "start" }),
 				disabled: !canStart || busy,
-				hint: canStart ? undefined : "Select a config for every pipeline slot",
+				hint: canStart ? undefined : "Pick a stack to start",
 			}}
 		>
 			<ConfiguringScreen
@@ -41,6 +42,8 @@ export const RunConfigure = () => {
 				checks={view.checks}
 				onSlot={(id) => send({ type: "slot", configId: id })}
 				onUnslot={(id) => send({ type: "unslot", configId: id })}
+				stacks={STARTER_STACKS}
+				onPickStack={(stackId) => send({ type: "pick-stack", stackId })}
 			/>
 		</Screen>
 	);

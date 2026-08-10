@@ -7,6 +7,7 @@ describe("runActionSchema", () => {
 		const actions = [
 			{ type: "slot", configId: "js" },
 			{ type: "unslot", configId: "js" },
+			{ type: "pick-stack", stackId: "ship-it" },
 			{ type: "start" },
 			{ type: "answer", optionIds: ["64"] },
 			{ type: "lint-poll" },
@@ -51,6 +52,11 @@ describe("runActionSchema", () => {
 
 	it("rejects config actions without a configId", () => {
 		const result = runActionSchema.safeParse({ type: "draft" });
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects a stack pick without a stackId", () => {
+		const result = runActionSchema.safeParse({ type: "pick-stack" });
 		expect(result.success).toBe(false);
 	});
 });

@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
+import {
+	STARTER_STACKS,
+	starterStackFor,
+} from "~/modules/run/configs/stack.model";
 import { MAX_SLOTS } from "~/modules/run/pipeline/pipeline.model";
 import { ConfiguringScreen } from "./ConfiguringScreen.ui";
 
@@ -39,17 +43,11 @@ describe(ConfiguringScreen, () => {
 		expect(screen.getByText("Pallet gate")).toBeInTheDocument();
 	});
 
-	it("lists the gate's rewards and fail stake as their own rows", () => {
+	it("flows the stake as polls → clear reward → fail consequence", () => {
 		render(<ConfiguringScreen {...base} />);
-		expect(
-			screen.getAllByText("polls this window", { exact: false }).length
-		).toBeGreaterThan(0);
-		expect(
-			screen.getByRole("heading", { name: "On clear" })
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "On fail" })
-		).toBeInTheDocument();
+		expect(screen.getByText("5 polls")).toBeInTheDocument();
+		expect(screen.getByText("clear")).toBeInTheDocument();
+		expect(screen.getByText("fail")).toBeInTheDocument();
 		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
 		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
 		expect(screen.getByText("Strip 1 config")).toHaveClass("text-cinnabar");
@@ -65,13 +63,12 @@ describe(ConfiguringScreen, () => {
 		expect(screen.getByText("×2 +5%")).toHaveClass("text-gradient-green");
 	});
 
-	it("states the window's objectives on the receipt", () => {
+	it("keeps the stake in plain language, no pipeline jargon", () => {
 		render(<ConfiguringScreen {...base} />);
+		expect(screen.queryByText(/Clear your pipeline/)).not.toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: "Objective" })
-		).toBeInTheDocument();
-		expect(screen.getByText("Clear your pipeline")).toBeInTheDocument();
-		expect(screen.getByText("Answer 5 polls this window")).toBeInTheDocument();
+			screen.queryByText(/satisfy your config checks/)
+		).not.toBeInTheDocument();
 	});
 
 	it("names the stake fatal once a fail would take the whole build", () => {
@@ -302,5 +299,134 @@ describe(ConfiguringScreen, () => {
 		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
 		// The word appears once, in the legend: naming it per row added nothing.
 		expect(screen.getAllByText("legendary")).toHaveLength(1);
+	});
+});
+
+describe("stack mode (ADR-026)", () => {
+	const stackBase = {
+		...base,
+		configs: [],
+		stacks: STARTER_STACKS,
+		onPickStack: vi.fn(),
+	};
+
+	it("offers one radio row per stack", () => {
+		render(<ConfiguringScreen {...stackBase} />);
+		expect(screen.getAllByRole("radio")).toHaveLength(STARTER_STACKS.length);
+	});
+
+	it("picks a stack when its row is clicked", () => {
+		const onPickStack = vi.fn();
+		render(<ConfiguringScreen {...stackBase} onPickStack={onPickStack} />);
+		fireEvent.click(screen.getByRole("radio", { name: /React/ }));
+		expect(onPickStack).toHaveBeenCalledWith("ship-it");
+	});
+
+	it("reads the stack the pipeline already holds as the checked one", () => {
+		const shipIt = starterStackFor("ship-it");
+		if (!shipIt) throw new Error("ship-it stack missing");
+		render(<ConfiguringScreen {...stackBase} configs={shipIt.configs} />);
+		expect(screen.getByRole("radio", { name: /React/ })).toBeChecked();
+		expect(screen.getByRole("radio", { name: /TypeScript/ })).not.toBeChecked();
+	});
+
+	it("replaces the bench and pipeline with the one stack decision", () => {
+		render(<ConfiguringScreen {...stackBase} />);
+		expect(screen.getByText("Pick your stack")).toBeInTheDocument();
+		expect(screen.queryByText("Starter configs")).not.toBeInTheDocument();
+		expect(screen.queryByText("Your pipeline")).not.toBeInTheDocument();
+	});
+
+	it("shows the same flowing receipt as the classic screen — no separate variant", () => {
+		render(<ConfiguringScreen {...stackBase} />);
+		expect(screen.getByText("5 polls")).toBeInTheDocument();
+		expect(screen.getByText("clear")).toBeInTheDocument();
+		expect(screen.getByText("fail")).toBeInTheDocument();
+	});
+
+	it("reads the stake against the build the stack will become, not an empty one", () => {
+		// An unpicked screen holds zero configs — the stake must not open on
+		// "Strip all — run over" before the player has done anything.
+		render(<ConfiguringScreen {...stackBase} />);
+		expect(screen.getByText("Strip 1 config")).toBeInTheDocument();
+		expect(screen.queryByText(/run over/)).not.toBeInTheDocument();
+	});
+
+	it("stays on the classic bench screen when no stacks are offered", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(screen.queryByText("Pick your stack")).not.toBeInTheDocument();
+		expect(screen.getByText("Starter configs")).toBeInTheDocument();
+	});
+
+	it("expands the picked stack into its trimmed preview — demand and payoff, no live progress", () => {
+		const testEverything = starterStackFor("test-everything");
+		if (!testEverything) throw new Error("test-everything stack missing");
+		render(
+			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
+		);
+		// Demand ("!") and payoff ("v") are always visible — the preset view.
+		expect(
+			screen.getByText("If JavaScript poll occurs you must answer correctly")
+		).toBeInTheDocument();
+		// The gives text bolds its number in a nested span (emphasizeNumbers), so
+		// a plain string match won't see across the element boundary — match on
+		// the full concatenated text instead.
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.textContent === "JavaScript polls reward ×1.25 coverage"
+			)
+		).toBeInTheDocument();
+		// No window has been played on this screen — the live counter is absent,
+		// not just hidden, and no status dot claims something is "running" yet.
+		expect(screen.queryByText("0/1")).not.toBeInTheDocument();
+		expect(screen.queryByRole("img")).not.toBeInTheDocument();
+	});
+
+	it("keeps a linter's fee behind its own details tap — the expanded config's mechanics", () => {
+		const testEverything = starterStackFor("test-everything");
+		if (!testEverything) throw new Error("test-everything stack missing");
+		render(
+			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
+		);
+		expect(
+			screen.getByText("Linted JS/TS polls must be correct")
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText("The fee doubles each use")
+		).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: /more details/ }));
+		expect(screen.getByText("The fee doubles each use")).toBeInTheDocument();
+	});
+
+	it("keeps unpicked stacks as plain chips — no pipeline to show yet", () => {
+		render(<ConfiguringScreen {...stackBase} />);
+		expect(screen.queryByText("1 correct answer")).not.toBeInTheDocument();
+	});
+
+	it("opens the full bench from the Customize row", () => {
+		render(<ConfiguringScreen {...stackBase} />);
+		fireEvent.click(
+			screen.getByRole("button", { name: /Customize all 3 slots/ })
+		);
+		expect(screen.getByText("Starter configs")).toBeInTheDocument();
+		expect(screen.queryByText("Pick your stack")).not.toBeInTheDocument();
+	});
+
+	it("walks back from the bench to the stacks", () => {
+		render(<ConfiguringScreen {...stackBase} />);
+		fireEvent.click(
+			screen.getByRole("button", { name: /Customize all 3 slots/ })
+		);
+		fireEvent.click(screen.getByRole("button", { name: /Back to stacks/ }));
+		expect(screen.getByText("Pick your stack")).toBeInTheDocument();
+		expect(screen.getAllByRole("radio")).toHaveLength(STARTER_STACKS.length);
+	});
+
+	it("keeps the bench free of the stacks detour when no stacks were offered", () => {
+		render(<ConfiguringScreen {...base} />);
+		expect(
+			screen.queryByRole("button", { name: /Back to stacks/ })
+		).not.toBeInTheDocument();
 	});
 });

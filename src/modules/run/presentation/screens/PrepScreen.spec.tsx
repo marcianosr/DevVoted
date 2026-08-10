@@ -35,16 +35,12 @@ describe(PrepScreen, () => {
 
 	it("shows the polls-per-window subcaption", () => {
 		render(<PrepScreen {...base} pollsPerGate={5} />);
-		expect(
-			screen.getAllByText("polls this window", { exact: false }).length
-		).toBeGreaterThan(0);
+		expect(screen.getByText("5 polls")).toBeInTheDocument();
 	});
 
-	it("lists the gate's storage and coverage gain this gate", () => {
+	it("flows the gate's storage and coverage gain from the poll count", () => {
 		render(<PrepScreen {...base} />);
-		expect(
-			screen.getByRole("heading", { name: "On clear" })
-		).toBeInTheDocument();
+		expect(screen.getByText("clear")).toBeInTheDocument();
 		expect(screen.getByText("+32KB")).toHaveClass("text-gradient-green");
 		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
 	});
@@ -59,13 +55,12 @@ describe(PrepScreen, () => {
 		expect(screen.getByText("×2 +5%")).toHaveClass("text-gradient-green");
 	});
 
-	it("states the window's objectives on the receipt", () => {
-		render(<PrepScreen {...base} pollsPerGate={5} />);
+	it("keeps the stake in plain language, no pipeline jargon", () => {
+		render(<PrepScreen {...base} />);
+		expect(screen.queryByText(/Clear your pipeline/)).not.toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: "Objective" })
-		).toBeInTheDocument();
-		expect(screen.getByText("Clear your pipeline")).toBeInTheDocument();
-		expect(screen.getByText("Answer 5 polls this window")).toBeInTheDocument();
+			screen.queryByText(/satisfy your config checks/)
+		).not.toBeInTheDocument();
 	});
 
 	it("states the stake as a plain count when it is not fatal", () => {

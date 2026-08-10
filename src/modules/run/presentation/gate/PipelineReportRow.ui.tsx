@@ -19,7 +19,7 @@ export type PipelineRowLayout = "chip" | "table";
 
 const NUMBER_TOKEN = /(×[\d.]+|[+−-][\d.]+(?:%|KB)?)/;
 
-const emphasizeNumbers = (text: string): ReactNode =>
+export const emphasizeNumbers = (text: string): ReactNode =>
 	text.split(NUMBER_TOKEN).map((part, index) =>
 		index % 2 === 1 ? (
 			<span key={`${part}-${index}`} className="font-bold text-zinc-100">
@@ -30,7 +30,7 @@ const emphasizeNumbers = (text: string): ReactNode =>
 		)
 	);
 
-const FactRow = ({
+export const FactRow = ({
 	icon,
 	tone,
 	value,

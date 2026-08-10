@@ -93,6 +93,52 @@ describe("configuring", () => {
 	});
 });
 
+describe("starter stacks (ADR-026)", () => {
+	// The spec's handed pool holds every "test-everything" member but lacks
+	// "ship-it"'s .jsx — one stack to apply, one to refuse.
+	const pickStack = (state: RunState, stackId: string): RunState =>
+		runReducer(state, { type: "pick-stack", stackId });
+
+	it("fills the whole pipeline with the stack and pulls its members from the pool", () => {
+		const state = pickStack(createRun(pool(60), handed), "test-everything");
+		expect(configIds(state)).toEqual(["js", "ts", "eslint"]);
+		const availableIds = state.available.map((config) => config.id);
+		expect(availableIds).not.toContain("js");
+		expect(availableIds).not.toContain("ts");
+		expect(availableIds).not.toContain("eslint");
+	});
+
+	it("replaces hand-slotted configs instead of stacking on top of them", () => {
+		let state = createRun(pool(60), handed);
+		state = runReducer(state, { type: "slot", configId: "css" });
+		state = pickStack(state, "test-everything");
+		expect(configIds(state)).toEqual(["js", "ts", "eslint"]);
+		expect(state.available.map((config) => config.id)).toContain("css");
+	});
+
+	it("refuses the whole stack when a member was never handed to the run", () => {
+		const before = createRun(pool(60), handed);
+		const after = pickStack(before, "ship-it");
+		expect(after).toBe(before);
+	});
+
+	it("ignores an unknown stack id", () => {
+		const before = createRun(pool(60), handed);
+		expect(pickStack(before, "team-rocket")).toBe(before);
+	});
+
+	it("only applies while configuring — a started run keeps its build", () => {
+		const before = started(["js"]);
+		expect(pickStack(before, "test-everything")).toBe(before);
+	});
+
+	it("makes the run startable in one pick", () => {
+		let state = pickStack(createRun(pool(60), handed), "test-everything");
+		state = runReducer(state, { type: "start" });
+		expect(state.status).toBe("answering");
+	});
+});
+
 describe("gates and rewards", () => {
 	it("clears a gate into the reward screen and grants storage", () => {
 		let state = started(["js"]);

@@ -12,29 +12,19 @@ export const RunReward = () => {
 	if (!view) return null;
 
 	return (
-		<Screen
-			theme="celadon"
-			rightAction={{
-				label: "Continue to shop →",
-				onClick: () => navigate({ to: "/run/shop" }),
-			}}
-		>
+		<Screen theme="celadon">
 			<RewardScreen
 				clearedGate={view.clearedGateNumber}
 				gateReward={view.gateRewardPaidKb}
 				answered={view.answeredThisGate}
-				coverageGainedByCategory={view.coverageGainedThisGate}
-				passedChecks={view.passedChecks}
 				configs={view.configs}
-				faucetThisGateKb={view.faucetThisGateKb}
 				storage={view.storage}
 				capKb={view.storageCap}
-				coverage={view.coverage}
-				slotCoverageRequired={view.slotCoverageRequired}
-				slots={view.slots}
+				faucetThisGateKb={view.faucetThisGateKb}
 				billKb={view.gateBillPaidKb}
 				planDowngraded={view.planDowngraded}
 				onReviewAnswers={() => navigate({ to: "/run/review" })}
+				onContinue={() => navigate({ to: "/run/shop" })}
 			/>
 		</Screen>
 	);

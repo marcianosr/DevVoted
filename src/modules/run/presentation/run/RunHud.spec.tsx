@@ -18,7 +18,7 @@ describe(RunHud, () => {
 			/>
 		);
 		// Both layouts render the gauge, so its text shows up twice.
-		expect(screen.getAllByText("120 KB / 512 KB used")).toHaveLength(2);
+		expect(screen.getAllByText("120 / 512 KB stored")).toHaveLength(2);
 		// Gates count from 0, so one banked means you are standing on gate 1. Both
 		// layouts render the bar, so both copies show up here.
 		expect(screen.getAllByRole("group", { name: /gate 1 of 11/ })).toHaveLength(

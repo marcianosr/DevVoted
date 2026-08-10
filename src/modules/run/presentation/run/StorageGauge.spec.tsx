@@ -7,7 +7,7 @@ import { StorageGauge } from "./StorageGauge.ui";
 describe(StorageGauge, () => {
 	it("reads the used amount against the cap", () => {
 		render(<StorageGauge usedKb={64} capKb={512} />);
-		expect(screen.getByText("64 KB / 512 KB used")).toBeInTheDocument();
+		expect(screen.getByText("64 / 512 KB stored")).toBeInTheDocument();
 	});
 
 	it("fills the bar in proportion to what is committed", () => {
@@ -21,7 +21,7 @@ describe(StorageGauge, () => {
 	it("reads all free on an empty run", () => {
 		render(<StorageGauge usedKb={0} capKb={STORAGE_CAP_KB} />);
 		expect(
-			screen.getByText(`0 KB / ${STORAGE_CAP_KB} KB used`)
+			screen.getByText(`0 / ${STORAGE_CAP_KB} KB stored`)
 		).toBeInTheDocument();
 		expect(screen.getByRole("progressbar").firstElementChild).toHaveStyle({
 			width: "0%",
@@ -30,7 +30,7 @@ describe(StorageGauge, () => {
 
 	it("reads full at the cap", () => {
 		render(<StorageGauge usedKb={512} capKb={512} />);
-		expect(screen.getByText("512 KB / 512 KB used")).toBeInTheDocument();
+		expect(screen.getByText("512 / 512 KB stored")).toBeInTheDocument();
 		expect(screen.getByRole("progressbar").firstElementChild).toHaveStyle({
 			width: "100%",
 		});
@@ -38,7 +38,7 @@ describe(StorageGauge, () => {
 
 	it("clamps a run that somehow overshot the cap", () => {
 		render(<StorageGauge usedKb={600} capKb={512} />);
-		expect(screen.getByText("512 KB / 512 KB used")).toBeInTheDocument();
+		expect(screen.getByText("512 / 512 KB stored")).toBeInTheDocument();
 		expect(screen.getByRole("progressbar")).toHaveAttribute(
 			"aria-valuenow",
 			"512"

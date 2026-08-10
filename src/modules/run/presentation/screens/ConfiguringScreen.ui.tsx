@@ -2,12 +2,17 @@ import { useState } from "react";
 import { clsx } from "clsx";
 import type { Config } from "~/modules/run/configs/config.model";
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
-import { roleRows } from "~/modules/run/gate/configRole.model";
+import {
+	stackMatching,
+	type StarterStack,
+} from "~/modules/run/configs/stack.model";
+import { preRunRoleRows } from "~/modules/run/gate/configRole.model";
 import {
 	MAX_SLOTS,
 	pipelineModifiersFor,
 	type PipelineModifiers,
 } from "~/modules/run/pipeline/pipeline.model";
+import { Button } from "~/ui/Button.component";
 import { Columns } from "~/ui/Columns.ui";
 import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
 import { TerminalPanel } from "~/ui/TerminalPanel.ui";
@@ -15,6 +20,8 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
+import { StackPicker } from "../configs/StackPicker.ui";
+import { StackPreviewList } from "../configs/StackPreviewList.ui";
 import { GateStakeReceipt } from "../gate/GateStakeReceipt.ui";
 import { RoleList } from "../gate/RoleList.ui";
 
@@ -30,6 +37,13 @@ type ConfiguringScreenProps = {
 	checks: readonly CheckStatus[];
 	onSlot: (configId: string) => void;
 	onUnslot: (configId: string) => void;
+	/**
+	 * Stack mode (ADR-026): when stacks are offered, the free bench is replaced by
+	 * one flavor decision and the receipt trims to its intro variant. Omit both
+	 * to get the classic bench-and-pipeline drafting screen.
+	 */
+	stacks?: readonly StarterStack[];
+	onPickStack?: (stackId: string) => void;
 };
 
 // TODO(marciano): with the family headers gone, the bench needs an order.
@@ -68,10 +82,52 @@ export const ConfiguringScreen = ({
 	checks,
 	onSlot,
 	onUnslot,
+	stacks,
+	onPickStack,
 }: ConfiguringScreenProps) => {
 	const [previewId, setPreviewId] = useState<string | null>(null);
+	const [customBuild, setCustomBuild] = useState(false);
 	const full = configs.length >= slots;
-	const rows = roleRows(configs, checks);
+	// No window has been played yet on this screen — the counter these rows would
+	// otherwise show ("0/1") is truthful but meaningless before there's a run to
+	// judge (Marciano, 2026-08-10). Only Answering/Shop/gate reports show it live.
+	const rows = preRunRoleRows(configs, checks);
+	const stackMode = stacks !== undefined && onPickStack !== undefined;
+
+	if (stackMode && !customBuild) {
+		return (
+			<div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
+				<div className="md:col-span-2">
+					<TerminalPanel title="Pick your stack">
+						<Paragraph tone="muted">
+							Choose a stack. You can rebuild it later.
+						</Paragraph>
+						<StackPicker
+							stacks={stacks}
+							selectedStackId={stackMatching(configs)?.id}
+							onPick={onPickStack}
+							onCustomBuild={() => setCustomBuild(true)}
+							// The picked stack IS the pipeline, so its row expands into a
+							// trimmed preview: demand + payoff, always visible; a linter's
+							// fee waits behind its own "more details" tap (Marciano,
+							// 2026-08-10 — "preset view = what matters for choosing").
+							selectedDetail={<StackPreviewList rows={rows} />}
+						/>
+					</TerminalPanel>
+				</div>
+				<GateStakeReceipt
+					gateNumber={gatesCleared}
+					pollsPerGate={pollsPerGate}
+					stripsOnFailure={stripsOnFailure}
+					// The committed build always fills every slot (the start guard), so
+					// the stake reads against the pipeline the stack is about to become —
+					// an unpicked screen must not open on "Strip all — run over".
+					configCount={slots}
+					modifiers={modifiers}
+				/>
+			</div>
+		);
+	}
 
 	const previewConfig = full
 		? undefined
@@ -121,6 +177,16 @@ export const ConfiguringScreen = ({
 								</span>
 							))}
 						</div>
+						{stackMode ? (
+							<Button
+								variant="neutral"
+								size="small"
+								className="self-start"
+								onClick={() => setCustomBuild(false)}
+							>
+								← Back to stacks
+							</Button>
+						) : null}
 					</TerminalPanel>
 				}
 				main={
