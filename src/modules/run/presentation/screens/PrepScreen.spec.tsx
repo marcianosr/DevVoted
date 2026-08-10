@@ -43,7 +43,7 @@ describe(PrepScreen, () => {
 	it("lists the gate's storage and coverage gain this gate", () => {
 		render(<PrepScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: "Rewards" })
+			screen.getByRole("heading", { name: "On clear" })
 		).toBeInTheDocument();
 		expect(screen.getByText("+32KB")).toHaveClass("text-gradient-green");
 		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
@@ -62,15 +62,15 @@ describe(PrepScreen, () => {
 	it("states the window's objectives on the receipt", () => {
 		render(<PrepScreen {...base} pollsPerGate={5} />);
 		expect(
-			screen.getByRole("heading", { name: "Objectives" })
+			screen.getByRole("heading", { name: "Objective" })
 		).toBeInTheDocument();
-		expect(screen.getByText("Make your pipeline succeed")).toBeInTheDocument();
+		expect(screen.getByText("Clear your pipeline")).toBeInTheDocument();
 		expect(screen.getByText("Answer 5 polls this window")).toBeInTheDocument();
 	});
 
 	it("states the stake as a plain count when it is not fatal", () => {
 		render(<PrepScreen {...base} stripsOnFailure={1} />);
-		expect(screen.getByText("strip 1 config")).toHaveClass("text-cinnabar");
+		expect(screen.getByText("Strip 1 config")).toHaveClass("text-cinnabar");
 	});
 
 	it("pluralizes the stake for more than one config", () => {
@@ -81,25 +81,25 @@ describe(PrepScreen, () => {
 				configs={[CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]}
 			/>
 		);
-		expect(screen.getByText("strip 2 configs")).toBeInTheDocument();
+		expect(screen.getByText("Strip 2 configs")).toBeInTheDocument();
 	});
 
 	it("warns the run is over once the stake would take the whole build", () => {
 		render(<PrepScreen {...base} stripsOnFailure={2} configs={base.configs} />);
-		expect(screen.getByText("strip all — run over")).toBeInTheDocument();
+		expect(screen.getByText("Strip all — run over")).toBeInTheDocument();
 	});
 
 	it("names the storage plan's bill on a paid tier", () => {
 		render(<PrepScreen {...base} storageBillKb={8} />);
 		expect(screen.getByText("−8KB")).toHaveClass("text-cinnabar");
-		expect(
-			screen.getByText(/when this window closes — pass or fail/)
-		).toBeInTheDocument();
+		expect(screen.getByText(/storage bill — pass or fail/)).toBeInTheDocument();
 	});
 
 	it("keeps the free tier's receipt bill-free", () => {
 		render(<PrepScreen {...base} />);
-		expect(screen.queryByText(/Storage plan bills/)).not.toBeInTheDocument();
+		expect(
+			screen.queryByText(/storage bill — pass or fail/)
+		).not.toBeInTheDocument();
 	});
 
 	it("marks the gate name with its swatch colour", () => {

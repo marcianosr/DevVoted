@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { draftCost } from "~/modules/run/configs/config.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
@@ -35,14 +35,17 @@ const base = {
 	canRebuild: true,
 	onRebuild: vi.fn(),
 	slots: 3,
-	gateReward: 180,
-	rewardMultiplier: 1.5,
-	coverageMultiplier: 2,
-	coverageAdd: 0.5,
+	pollsPerGate: 5,
+	stripsOnFailure: 1,
+	modifiers: {
+		gateReward: 180,
+		rewardMultiplier: 1.5,
+		coverageMultiplier: 2,
+		coverageAdd: 0.5,
+	},
 	coverage: 25,
 	slotCoverageRequired: 20,
-	canAddSlot: true,
-	onAddSlot: vi.fn(),
+	justUnlockedSlots: [],
 	onUpgrade: vi.fn(),
 	onSell: vi.fn(),
 	storagePlans: plansOn(1),
@@ -64,7 +67,7 @@ describe(ShopScreen, () => {
 		render(<ShopScreen {...base} />);
 		expect(
 			screen.getByRole("heading", {
-				name: "Your load-out for Cascade gate 2",
+				name: "Your pipeline for Cascade gate 2",
 			})
 		).toBeInTheDocument();
 	});
@@ -158,7 +161,7 @@ describe(ShopScreen, () => {
 		expect(upgrade).toBeEnabled(); // base storage 440 covers the 64KB
 		expect(upgrade).toHaveTextContent("64KB");
 		expect(
-			screen.getByRole("button", { name: /Deinstall/ })
+			screen.getByRole("button", { name: /Uninstall/ })
 		).toBeInTheDocument();
 	});
 
@@ -234,11 +237,17 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	it("shows the storage reward earnable this gate in the gate modifier strip", () => {
-		render(<ShopScreen {...base} gateReward={240} rewardMultiplier={2} />);
-		expect(screen.getByText("+240KB")).toBeInTheDocument();
-		expect(screen.getByText("reward on clear")).toBeInTheDocument();
-		expect(screen.getByText("coverage ×")).toBeInTheDocument();
+	it("shows the storage reward earnable this gate in the rewards receipt", () => {
+		render(
+			<ShopScreen
+				{...base}
+				modifiers={{ ...base.modifiers, gateReward: 240, rewardMultiplier: 2 }}
+			/>
+		);
+		const receipt = within(screen.getByTestId("gate-stake-receipt"));
+		expect(receipt.getByText("+240KB")).toBeInTheDocument();
+		expect(receipt.getByText(/storage/)).toBeInTheDocument();
+		expect(receipt.getByText(/coverage/)).toBeInTheDocument();
 	});
 
 	// Row order follows the config's gate role, not the prop order, so this asserts
@@ -252,7 +261,7 @@ describe(ShopScreen, () => {
 				onSell={onSell}
 			/>
 		);
-		for (const button of screen.getAllByRole("button", { name: /Deinstall/ }))
+		for (const button of screen.getAllByRole("button", { name: /Uninstall/ }))
 			fireEvent.click(button);
 		expect(onSell.mock.calls.flat()).toEqual(
 			expect.arrayContaining(["indexed-db", "rb"])
@@ -266,7 +275,7 @@ describe(ShopScreen, () => {
 		render(
 			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} onSell={onSell} />
 		);
-		const deinstall = screen.getByRole("button", { name: /Deinstall/ });
+		const deinstall = screen.getByRole("button", { name: /Uninstall/ });
 		expect(deinstall).toBeDisabled();
 		expect(
 			screen.getByText(/deinstalling it would leave nothing to clear a gate/i)
@@ -275,31 +284,24 @@ describe(ShopScreen, () => {
 		expect(onSell).not.toHaveBeenCalled();
 	});
 
-	it("shows the next slot locked with live progress — no unlock button below the rung", () => {
-		render(
-			<ShopScreen
-				{...base}
-				canAddSlot={false}
-				coverage={12}
-				slotCoverageRequired={20}
-			/>
-		);
+	it("shows the next slot locked with live progress — no unlock button anywhere", () => {
+		render(<ShopScreen {...base} coverage={12} slotCoverageRequired={20} />);
 		// Badges belong to gates now, so this row prices width and nothing else.
 		expect(screen.queryByText(/Swatch/)).not.toBeInTheDocument();
 		expect(screen.getByText("12% reached")).toBeInTheDocument();
 		expect(
 			screen.getByRole("progressbar", { name: "coverage toward slot 4" })
 		).toHaveAttribute("aria-valuenow", "12");
+		// Width claims itself automatically (ADR-025) — there is no purchase step.
 		expect(
 			screen.queryByRole("button", { name: "Unlock slot" })
 		).not.toBeInTheDocument();
 	});
 
-	it("unlocks the next slot once its coverage gate is met", () => {
-		const onAddSlot = vi.fn();
-		render(<ShopScreen {...base} onAddSlot={onAddSlot} />);
-		fireEvent.click(screen.getByRole("button", { name: "Unlock slot" }));
-		expect(onAddSlot).toHaveBeenCalled();
+	it("acknowledges a slot auto-widened since the last visit instead of the next lock row", () => {
+		render(<ShopScreen {...base} justUnlockedSlots={[4]} />);
+		expect(screen.getByText("Unlocked 4th slot")).toBeInTheDocument();
+		expect(screen.queryByText(/Opens at/)).not.toBeInTheDocument();
 	});
 
 	it("advances the row to the next slot as the pipeline widens", () => {
@@ -318,22 +320,28 @@ describe(ShopScreen, () => {
 
 	it("lists the storage-plan ladder with the current rung marked", () => {
 		render(<ShopScreen {...base} />);
-		expect(screen.getByText("512KB cap · free")).toBeInTheDocument();
-		expect(screen.getByText("640KB cap")).toBeInTheDocument();
-		expect(screen.getByText("current plan")).toBeInTheDocument();
+		expect(screen.getByText("free")).toBeInTheDocument();
+		expect(screen.getByText("512KB")).toBeInTheDocument();
+		expect(screen.getByText("640KB")).toBeInTheDocument();
+		// Only the current (512KB) rung is plain text — the others are switch buttons.
+		expect(
+			screen.queryByRole("button", { name: /512KB storage plan/ })
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /640KB storage plan/ })
+		).toBeInTheDocument();
 	});
 
-	it("prices every paid rung per gate on its switch button", () => {
+	it("prices every paid rung per gate", () => {
 		render(<ShopScreen {...base} />);
-		expect(screen.getByText("8KB / gate")).toBeInTheDocument();
-		expect(screen.getByText("16KB / gate")).toBeInTheDocument();
+		expect(screen.getByText("-8KB/gate")).toBeInTheDocument();
+		expect(screen.getByText("-16KB/gate")).toBeInTheDocument();
 	});
 
-	it("switches the storage plan when a rung's button is clicked", () => {
+	it("switches the storage plan when a rung's row is clicked", () => {
 		const onChangePlan = vi.fn();
 		render(<ShopScreen {...base} onChangePlan={onChangePlan} />);
-		const [toTierTwo] = screen.getAllByRole("button", { name: /Switch/ });
-		fireEvent.click(toTierTwo);
+		fireEvent.click(screen.getByRole("button", { name: /640KB storage plan/ }));
 		expect(onChangePlan).toHaveBeenCalledWith(2);
 	});
 
@@ -341,7 +349,9 @@ describe(ShopScreen, () => {
 		render(
 			<ShopScreen {...base} storage={700} storagePlans={plansOn(3, 700)} />
 		);
-		const [toFreeTier] = screen.getAllByRole("button", { name: /Switch/ });
+		const toFreeTier = screen.getByRole("button", {
+			name: /512KB storage plan/,
+		});
 		fireEvent.mouseEnter(toFreeTier);
 		expect(
 			screen.getByText("Switching burns the 188KB sitting above this cap.")

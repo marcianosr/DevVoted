@@ -61,7 +61,7 @@ describe("toRunView", () => {
 		expect(view.rebuildCost).toBeGreaterThan(0);
 		expect(view.canRebuild).toBe(false); // fresh run starts at 0 KB
 		expect(view.slotCoverageRequired).toBeGreaterThan(0);
-		expect(view.canAddSlot).toBe(false); // no coverage earned yet
+		expect(view.justUnlockedSlots).toEqual([]); // no coverage earned yet
 	});
 
 	it("surfaces the gate checks, demands, and stats a screen needs", () => {

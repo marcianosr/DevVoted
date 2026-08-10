@@ -45,14 +45,14 @@ describe(ConfiguringScreen, () => {
 			screen.getAllByText("polls this window", { exact: false }).length
 		).toBeGreaterThan(0);
 		expect(
-			screen.getByRole("heading", { name: "Rewards" })
+			screen.getByRole("heading", { name: "On clear" })
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: "Penalty" })
+			screen.getByRole("heading", { name: "On fail" })
 		).toBeInTheDocument();
 		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
 		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
-		expect(screen.getByText("strip 1 config")).toHaveClass("text-cinnabar");
+		expect(screen.getByText("Strip 1 config")).toHaveClass("text-cinnabar");
 	});
 
 	it("captions the gate with its coverage multiplier", () => {
@@ -68,9 +68,9 @@ describe(ConfiguringScreen, () => {
 	it("states the window's objectives on the receipt", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: "Objectives" })
+			screen.getByRole("heading", { name: "Objective" })
 		).toBeInTheDocument();
-		expect(screen.getByText("Make your pipeline succeed")).toBeInTheDocument();
+		expect(screen.getByText("Clear your pipeline")).toBeInTheDocument();
 		expect(screen.getByText("Answer 5 polls this window")).toBeInTheDocument();
 	});
 
@@ -78,7 +78,7 @@ describe(ConfiguringScreen, () => {
 		render(
 			<ConfiguringScreen {...base} stripsOnFailure={2} configs={base.configs} />
 		);
-		expect(screen.getByText("strip all — run over")).toBeInTheDocument();
+		expect(screen.getByText("Strip all — run over")).toBeInTheDocument();
 	});
 
 	it("previews the clear reward a hovered bench config would add, old to new", () => {

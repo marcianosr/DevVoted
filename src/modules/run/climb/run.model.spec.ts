@@ -134,7 +134,9 @@ describe("gates and rewards", () => {
 		expect(state.pipeline.configs[0].level).toBe(2);
 		expect(state.status).toBe("rewarding");
 
-		state = runReducer(state, { type: "add-slot" });
+		// Width now claims itself automatically (ADR-025) rather than through a
+		// shop action, so a widened pipeline is set up directly here.
+		state = { ...state, pipeline: { ...state.pipeline, slots: 4 } };
 		expect(state.pipeline.slots).toBe(4);
 		expect(state.status).toBe("rewarding");
 
@@ -185,8 +187,12 @@ describe("gates and rewards", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		// The pipeline starts full, so drafting needs a widened build first.
-		state = { ...state, storage: 500, coverage: 100 };
-		state = runReducer(state, { type: "add-slot" });
+		state = {
+			...state,
+			storage: 500,
+			coverage: 100,
+			pipeline: { ...state.pipeline, slots: state.pipeline.slots + 1 },
+		};
 
 		const pick = state.draftOptions[0];
 		state = runReducer(state, { type: "draft", configId: pick.id });
@@ -260,34 +266,29 @@ describe("dropping from the gate-prep screen", () => {
 	});
 });
 
-describe("slot coverage gate", () => {
-	const rewarding = (): RunState => {
-		let state = started(["js"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		return state;
-	};
-
-	it("refuses to add a slot below the coverage threshold", () => {
-		const justUnder = coverageToAddSlot(BASE_SLOTS) - 1;
-		let state = { ...rewarding(), coverage: justUnder };
-		state = runReducer(state, { type: "add-slot" });
-		expect(state.pipeline.slots).toBe(3);
+describe("automatic slot widening (ADR-025)", () => {
+	it("does not widen below the coverage threshold", () => {
+		let state = { ...started(["js"]), coverage: 2 };
+		state = answerWith(state, false); // a miss only ever loses coverage
+		expect(state.pipeline.slots).toBe(BASE_SLOTS);
+		expect(state.justUnlockedSlots).toEqual([]);
 	});
 
-	it("adds a slot once total coverage meets the threshold", () => {
-		let state = { ...rewarding(), coverage: coverageToAddSlot(BASE_SLOTS) };
-		state = runReducer(state, { type: "add-slot" });
-		expect(state.pipeline.slots).toBe(4);
+	it("widens automatically once total coverage meets the threshold", () => {
+		let state = { ...started(["js"]), coverage: coverageToAddSlot(BASE_SLOTS) };
+		state = answerWith(state, true); // a hit never loses coverage
+		expect(state.pipeline.slots).toBe(BASE_SLOTS + 1);
+		expect(state.justUnlockedSlots).toEqual([BASE_SLOTS + 1]);
 	});
 
 	it("holds the hard cap even with abundant coverage", () => {
-		let state = rewarding();
-		state = {
-			...state,
+		const base = started(["js"]);
+		let state = {
+			...base,
 			coverage: 1000,
-			pipeline: { ...state.pipeline, slots: MAX_SLOTS },
+			pipeline: { ...base.pipeline, slots: MAX_SLOTS },
 		};
-		state = runReducer(state, { type: "add-slot" });
+		state = answerWith(state, true);
 		expect(state.pipeline.slots).toBe(MAX_SLOTS);
 	});
 });
@@ -698,7 +699,7 @@ describe("depth and width are independent (ADR-019)", () => {
 		);
 	});
 
-	it("keeps climbing on three slots — width is never a toll gate", () => {
+	it("keeps climbing regardless of how much width has auto-widened", () => {
 		let state = started(["js"], 3 * SLICE_WINDOW);
 		for (let gate = 0; gate < 3; gate++) {
 			state = clearGate(state);
@@ -706,8 +707,10 @@ describe("depth and width are independent (ADR-019)", () => {
 				state = runReducer(state, { type: "finish-reward" });
 		}
 
-		expect(state.pipeline.slots).toBe(BASE_SLOTS); // never widened
-		expect(state.gatesCleared).toBe(3); // and still three gates deep
+		// Width auto-claims itself off coverage alone (ADR-025) and never blocks
+		// or requires a clear, so depth just keeps advancing regardless of it.
+		expect(state.gatesCleared).toBe(3);
+		expect(state.pipeline.slots).toBeGreaterThanOrEqual(BASE_SLOTS);
 	});
 
 	it("pays a deeper gate more, so replaying shallow ones is never the ramp", () => {
@@ -719,15 +722,14 @@ describe("depth and width are independent (ADR-019)", () => {
 		expect(state.gateRewardKb).toBeGreaterThan(firstGate ?? 0);
 	});
 
-	it("claims a slot as width only, leaving the gate where it was", () => {
-		let state = funded(clearGate(started(["js"])));
+	it("widens automatically as width only, leaving the gate where it was", () => {
+		let state = funded(started(["js"]));
 		const before = state.gatesCleared;
-		state = runReducer(state, { type: "add-slot" });
+		state = answerWith(state, true);
 
-		expect(state.pipeline.slots).toBe(BASE_SLOTS + 1);
+		// Coverage this abundant clears every rung on the ladder in one go.
+		expect(state.pipeline.slots).toBe(MAX_SLOTS);
 		expect(state.gatesCleared).toBe(before); // buying width buys no depth
-		expect(state.log.at(-1)).toContain("Widened the pipeline");
-		expect(state.log.at(-1)).not.toContain("is next");
 	});
 
 	it("leaves the slot ladder free to outlast the gate ladder", () => {

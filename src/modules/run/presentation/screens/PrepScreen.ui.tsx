@@ -5,7 +5,6 @@ import { Button } from "~/ui/Button.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { GateStakeReceipt } from "../gate/GateStakeReceipt.ui";
-import { GateStakeSummary } from "../gate/GateStakeSummary.ui";
 
 type PrepScreenProps = {
 	/** 0-indexed, same source as the HUD and `swatchForGate`. */
@@ -65,7 +64,6 @@ export const PrepScreen = ({
 	const gateName = swatchForGate(gateNumber)?.gateName ?? `Gate ${gateNumber}`;
 	return (
 		<div className="flex flex-col gap-6">
-			<GateStakeSummary pollsPerGate={pollsPerGate} />
 			<PipelineChips
 				configs={configs}
 				editing={editing}

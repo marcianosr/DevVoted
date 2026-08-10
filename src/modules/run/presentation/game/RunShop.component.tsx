@@ -45,10 +45,15 @@ export const RunShop = () => {
 				checks={view.checks}
 				gateNumber={view.gatesCleared}
 				configs={view.configs}
-				gateReward={view.gateRewardPaidKb}
-				rewardMultiplier={view.rewardMultiplier}
-				coverageMultiplier={view.coverageMultiplier}
-				coverageAdd={view.coverageAdd}
+				pollsPerGate={view.pollsPerGate}
+				stripsOnFailure={view.stripsOnFailure}
+				modifiers={{
+					gateReward: view.gateReward,
+					rewardMultiplier: view.rewardMultiplier,
+					coverageMultiplier: view.coverageMultiplier,
+					coverageAdd: view.coverageAdd,
+				}}
+				billKb={view.storageBillKb}
 				newConfigIds={view.newConfigIds}
 				draftOptions={view.draftOptions}
 				onDraft={(id) => send({ type: "draft", configId: id })}
@@ -58,8 +63,7 @@ export const RunShop = () => {
 				slots={view.slots}
 				coverage={view.coverage}
 				slotCoverageRequired={view.slotCoverageRequired}
-				canAddSlot={view.canAddSlot && !busy}
-				onAddSlot={() => send({ type: "add-slot" })}
+				justUnlockedSlots={view.justUnlockedSlots}
 				onUpgrade={(id) => send({ type: "upgrade", configId: id })}
 				onSell={(id) => send({ type: "sell", configId: id })}
 				storagePlans={view.storagePlans}

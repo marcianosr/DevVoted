@@ -17,7 +17,6 @@ import type { CheckStatus } from "../configs/effect.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
 import { swatchForGate, type SwatchTheme } from "../gate/swatch.model";
 import {
-	canAddSlot,
 	type CoverageConfigBonus,
 	coverageForAnswer,
 	coverageToAddSlot,
@@ -80,7 +79,8 @@ export type RunView = {
 	 * how far it has come toward it (0–1). Undefined once the ladder is exhausted.
 	 */
 	readonly unlock?: { readonly slot: number; readonly progress: number };
-	readonly canAddSlot: boolean;
+	/** Slots auto-widened since the last shop visit — the shop's one-time "Unlocked Nth slot" row. */
+	readonly justUnlockedSlots: readonly number[];
 	readonly checks: readonly CheckStatus[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	/** Every poll answered across the whole run — the end-of-run review source. */
@@ -309,7 +309,7 @@ export const toRunView = (state: RunState): RunView => {
 		canRebuild: state.storage >= nextRebuildCost,
 		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
 		unlock: unlockOf(state),
-		canAddSlot: canAddSlot(state.pipeline.slots, state.coverage),
+		justUnlockedSlots: state.justUnlockedSlots ?? [],
 		linter:
 			current === undefined
 				? null

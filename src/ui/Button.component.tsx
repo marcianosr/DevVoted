@@ -46,7 +46,7 @@ const button = cva(
 		},
 		compoundVariants: [
 			// Sizing — primary is the CTA, one step larger than the rest
-			{ variant: "primary", size: "default", class: "px-6 py-3.5 text-base" },
+			{ variant: "primary", size: "default", class: "px-6 py-3.5 text-xs" },
 			{ variant: "primary", size: "small", class: "px-3 py-2 text-sm" },
 			{
 				variant: ["secondary", "theme", "danger", "neutral"],

@@ -405,9 +405,11 @@ rather than playtested. These thresholds are live-tuned in `pipeline.model.ts`
 (ADR-008); that file is the source of truth if this table drifts.
 
 The shop shows the next rung as a full-width row in the pipeline list, numbered like
-every other slot — the coverage it wants against what you have, a live progress bar,
-and an **Unlock slot** button once the rung is met. It carries no swatch: badges come
-from clearing gates ([6.4 Swatches](#64-swatches)).
+every other slot — the coverage it wants against what you have and a live progress
+bar. Width claims itself automatically the instant coverage affords it (ADR-025) —
+there is no purchase step. The shop marks whichever slot(s) auto-widened since your
+last visit with a green "Unlocked Nth slot" row in the same spot instead. It carries
+no swatch: badges come from clearing gates ([6.4 Swatches](#64-swatches)).
 
 ### 3.2 Managing Configs
 
@@ -890,10 +892,11 @@ The game leans hard into its CI metaphor:
   it". It deliberately carries no coverage: coverage buys width, not depth.
 - **Slot unlock row**: the next coverage-gated slot closes both the configure and
   shop pipelines as a dashed row, numbered in the list's gutter like every other
-  slot — "Opens at 8% coverage", "9.9% reached", and a live progress bar. On the
-  shop it carries the **Unlock slot** button once the rung is met (nothing to press
-  before then); on configure it reads locked/unlocked instead, since widening
-  happens in the shop. It carries no swatch, and retires at the slot cap.
+  slot — "Opens at 8% coverage", "9.9% reached", a live progress bar, and a
+  locked/unlocked pill. Width claims itself automatically the instant coverage
+  affords it (ADR-025) — there is no unlock button anywhere. The shop replaces this
+  row with a green "Unlocked Nth slot" acknowledgment for whichever slot(s)
+  auto-widened since the last visit. It carries no swatch, and retires at the slot cap.
 - **Reward Report**: gate results styled as a CI build log: one passed/failed/skipped
   row per config, a steps summary, and a winnings footer — "you won +KB · +%"
   over a storage bar drawn from pre-gate storage to the new total (toward the

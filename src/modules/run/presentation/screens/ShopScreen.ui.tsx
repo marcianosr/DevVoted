@@ -11,8 +11,12 @@ import {
 import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import type { StoragePlanOption } from "~/modules/run/view/runView.viewmodel";
 import { getCategoryMetadata } from "~/domains/shared/categories";
-import { pipelineModifiersFor } from "~/modules/run/pipeline/pipeline.model";
+import {
+	pipelineModifiersFor,
+	type PipelineModifiers,
+} from "~/modules/run/pipeline/pipeline.model";
 import { Columns } from "~/ui/Columns.ui";
+import { TerminalPanel, TerminalSection } from "~/ui/TerminalPanel.ui";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
@@ -21,7 +25,7 @@ import { roleRows } from "~/modules/run/gate/configRole.model";
 import { swatchForGate } from "~/modules/run/gate/swatch.model";
 import { ConfigChip } from "../configs/ConfigChip.ui";
 import { SwatchLabel } from "../gate/SwatchLabel.ui";
-import { GateModifierStrip } from "../gate/GateModifierStrip.ui";
+import { GateStakeReceipt } from "../gate/GateStakeReceipt.ui";
 import { RoleList } from "../gate/RoleList.ui";
 import { nextSlotRow } from "../gate/SlotUnlockRow.ui";
 
@@ -32,10 +36,10 @@ type ShopScreenProps = {
 	gateNumber: number;
 	configs: readonly Config[];
 	slots: number;
-	gateReward: number;
-	rewardMultiplier: number;
-	coverageMultiplier: number;
-	coverageAdd: number;
+	pollsPerGate: number;
+	stripsOnFailure: number;
+	modifiers: PipelineModifiers;
+	billKb?: number;
 	newConfigIds: readonly string[];
 	draftOptions: readonly Config[];
 	onDraft: (configId: string) => void;
@@ -44,8 +48,7 @@ type ShopScreenProps = {
 	onRebuild: () => void;
 	coverage: number;
 	slotCoverageRequired: number;
-	canAddSlot: boolean;
-	onAddSlot: () => void;
+	justUnlockedSlots: readonly number[];
 	onUpgrade: (configId: string) => void;
 	onSell: (configId: string) => void;
 	storagePlans: readonly StoragePlanOption[];
@@ -76,6 +79,7 @@ const actionButton = ({
 	disabled = false,
 	loud = false,
 	prismatic = false,
+	pill = false,
 }: {
 	label: string;
 	price?: string;
@@ -83,12 +87,13 @@ const actionButton = ({
 	disabled?: boolean;
 	loud?: boolean;
 	prismatic?: boolean;
+	pill?: boolean;
 }) => (
 	<button
 		type="button"
 		onClick={onClick}
 		disabled={disabled}
-		className={`rounded-lg border px-3 py-1.5 text-sm transition ${actionTone({ loud, prismatic })} enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600`}
+		className={`${pill ? "rounded-full" : "rounded-lg"} border px-3 py-1.5 text-sm transition ${actionTone({ loud, prismatic })} enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600`}
 	>
 		{label}
 		{price ? (
@@ -120,10 +125,10 @@ export const ShopScreen = ({
 	gateNumber,
 	configs,
 	slots,
-	gateReward,
-	rewardMultiplier,
-	coverageMultiplier,
-	coverageAdd,
+	pollsPerGate,
+	stripsOnFailure,
+	modifiers,
+	billKb,
 	newConfigIds,
 	draftOptions,
 	onDraft,
@@ -132,8 +137,7 @@ export const ShopScreen = ({
 	onRebuild,
 	coverage,
 	slotCoverageRequired,
-	canAddSlot,
-	onAddSlot,
+	justUnlockedSlots,
 	onUpgrade,
 	onSell,
 	storagePlans,
@@ -188,10 +192,11 @@ export const ShopScreen = ({
 
 	const loadoutActions = (config: Config): ReactNode => {
 		const deinstallButton = actionButton({
-			label: "Deinstall",
-			price: `${sellRefund(config)}KB`,
+			label: "Uninstall",
+			price: `+${sellRefund(config)}KB`,
 			onClick: () => onSell(config.id),
 			disabled: holdsLastConfig,
+			pill: true,
 		});
 		const upgradeButton = isUpgradable(config)
 			? actionButton({
@@ -266,22 +271,13 @@ export const ShopScreen = ({
 		<div className="flex flex-col gap-6">
 			<header>
 				<Title>Upgrade your pipeline</Title>
-				<Subtitle>
-					Expand your load-out or make your pipeline stricter!
-				</Subtitle>
+				<Subtitle>Expand your pipeline or make it stricter!</Subtitle>
 			</header>
 
 			<Columns
 				aside={
-					<section className="space-y-2">
-						<PanelHeading
-							title="Install new configs"
-							subtitle="New categories raise coverage fastest"
-						/>
-						{/* The price tags overhang their chips, so the bench needs more room
-						    between offers than a plain chip row would — otherwise one
-						    offer's tag lands on the next one's label. */}
-						<div className="flex flex-wrap gap-x-4 gap-y-4 pt-2">
+					<TerminalPanel title="Shop · Install configs">
+						<div className="flex flex-wrap gap-x-4 gap-y-4">
 							{draftOptions.map((config) => (
 								<span
 									key={config.id}
@@ -293,59 +289,70 @@ export const ShopScreen = ({
 							))}
 						</div>
 						<div className="pt-1">
-							{actionButton({
-								label: "Rebuild offers",
-								price: `${rebuildCost}KB`,
-								onClick: onRebuild,
-								disabled: !canRebuild,
-							})}
+							<Tooltip content="Swap these offers for a new set — the price doubles each rebuild, resets next shop">
+								{actionButton({
+									label: "↻ Rebuild offers",
+									price: `${rebuildCost}KB`,
+									onClick: onRebuild,
+									disabled: !canRebuild,
+								})}
+							</Tooltip>
 						</div>
 
-						<div className="pt-4">
-							<PanelHeading
-								title="Storage plan"
-								subtitle="A bigger cap bills every gate — pass or fail"
-							/>
-						</div>
-						<ul className="flex flex-col gap-2">
-							{storagePlans.map((plan) => {
-								const switchButton = actionButton({
-									label: "Switch",
-									price:
-										plan.billKb > 0 ? `${plan.billKb}KB / gate` : undefined,
-									onClick: () => onChangePlan(plan.tier),
-								});
-								return (
-									<li
-										key={plan.tier}
-										className="flex items-center justify-between gap-3"
-									>
-										<Paragraph
-											as="span"
-											size="sm"
-											tone={plan.current ? undefined : "muted"}
-										>
-											{plan.capKb}KB cap
-											{plan.billKb === 0 ? " · free" : ""}
-										</Paragraph>
-										{plan.current ? (
+						<hr className="border-t border-zinc-700" />
+
+						<TerminalSection label="Storage">
+							<ul className="flex flex-col">
+								{storagePlans.map((plan) => {
+									const descriptor =
+										plan.billKb === 0 ? "free" : `-${plan.billKb}KB/gate`;
+									const row = (
+										<span className="flex items-center justify-between gap-3">
+											<span className="flex items-center gap-2">
+												<span aria-hidden>{plan.current ? "●" : "○"}</span>
+												<Paragraph
+													as="span"
+													size="sm"
+													tone={plan.current ? undefined : "muted"}
+												>
+													{plan.capKb}KB
+												</Paragraph>
+											</span>
 											<Paragraph as="span" size="sm" tone="muted">
-												current plan
+												{descriptor}
 											</Paragraph>
-										) : plan.burnKb > 0 ? (
-											<Tooltip
-												content={`Switching burns the ${plan.burnKb}KB sitting above this cap.`}
-											>
-												{switchButton}
-											</Tooltip>
-										) : (
-											switchButton
-										)}
-									</li>
-								);
-							})}
-						</ul>
-					</section>
+										</span>
+									);
+									if (plan.current) return <li key={plan.tier}>{row}</li>;
+									const switchButton = (
+										<button
+											type="button"
+											onClick={() => onChangePlan(plan.tier)}
+											aria-label={`Switch to ${plan.capKb}KB storage plan${
+												plan.billKb > 0 ? `, ${plan.billKb}KB per gate` : ""
+											}`}
+											className="w-full cursor-pointer rounded-lg px-1 py-1 text-left transition hover:bg-zinc-800/60"
+										>
+											{row}
+										</button>
+									);
+									return (
+										<li key={plan.tier}>
+											{plan.burnKb > 0 ? (
+												<Tooltip
+													content={`Switching burns the ${plan.burnKb}KB sitting above this cap.`}
+												>
+													{switchButton}
+												</Tooltip>
+											) : (
+												switchButton
+											)}
+										</li>
+									);
+								})}
+							</ul>
+						</TerminalSection>
+					</TerminalPanel>
 				}
 				main={
 					<section className="flex flex-col gap-4">
@@ -356,7 +363,7 @@ export const ShopScreen = ({
 							title={
 								nextGate ? (
 									<>
-										Your load-out for{" "}
+										Your pipeline for{" "}
 										<SwatchLabel
 											swatch={nextGate}
 											label={`${nextGate.gateName} gate ${gateNumber}`}
@@ -364,7 +371,7 @@ export const ShopScreen = ({
 										/>
 									</>
 								) : (
-									`Your load-out for gate ${gateNumber}`
+									`Your pipeline for gate ${gateNumber}`
 								)
 							}
 							subtitle={`${configs.length} of ${slots} slots used`}
@@ -387,17 +394,17 @@ export const ShopScreen = ({
 								slots,
 								coverage,
 								slotCoverageRequired,
-								claim: { ready: canAddSlot, onClaim: onAddSlot },
+								justUnlocked: justUnlockedSlots,
 							})}
 						/>
-						<GateModifierStrip
-							current={{
-								gateReward,
-								rewardMultiplier,
-								coverageMultiplier,
-								coverageAdd,
-							}}
-							next={next}
+						<GateStakeReceipt
+							gateNumber={gateNumber}
+							pollsPerGate={pollsPerGate}
+							stripsOnFailure={stripsOnFailure}
+							configCount={configs.length}
+							modifiers={modifiers}
+							preview={next}
+							billKb={billKb}
 						/>
 					</section>
 				}

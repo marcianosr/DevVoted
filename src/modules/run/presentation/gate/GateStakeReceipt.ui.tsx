@@ -2,6 +2,7 @@ import { hasThemeColor, swatchForGate } from "~/modules/run/gate/swatch.model";
 import type { PipelineModifiers } from "~/modules/run/pipeline/pipeline.model";
 import { gateStake } from "~/modules/run/rules.model";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
+import { TerminalPanel } from "~/ui/TerminalPanel.ui";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
@@ -19,8 +20,8 @@ type GateStakeReceiptProps = {
 
 const stripLabel = (strips: number, configCount: number): string =>
 	gateStake(strips, configCount).fatal
-		? "strip all — run over"
-		: `strip ${strips} config${strips === 1 ? "" : "s"}`;
+		? "Strip all — run over"
+		: `Strip ${strips} config${strips === 1 ? "" : "s"}`;
 
 const GainRow = ({
 	label,
@@ -58,73 +59,72 @@ export const GateStakeReceipt = ({
 	const swatch = swatchForGate(gateNumber);
 	const gateName = swatch?.gateName ?? `Gate ${gateNumber}`;
 	return (
-		<section
-			data-testid="gate-stake-receipt"
-			className="flex flex-col gap-3 rounded border border-zinc-800 px-4 py-3"
-		>
-			<div
-				{...(swatch && hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
-				className="flex items-center gap-2"
-			>
-				{swatch ? <SwatchMark finish={swatch.finish} size="sm" /> : null}
-				<Title className={swatch ? swatchNameClass(swatch.finish) : undefined}>
-					{gateName} gate
-				</Title>
-			</div>
-			<div className="flex flex-col gap-2">
-				<Title as="h2">Objectives</Title>
-				<ul className="flex flex-col gap-1 list-disc pl-4 marker:text-zinc-500">
-					<li>
-						<Paragraph tone="muted">Make your pipeline succeed</Paragraph>
-					</li>
-					<li>
-						<Paragraph tone="muted">
-							Answer {pollsPerGate} polls this window
-						</Paragraph>
-					</li>
-				</ul>
-			</div>
-			<hr className="border-t border-zinc-800" />
-			<div className="flex flex-col gap-2">
-				<Title as="h2">Rewards</Title>
-				<ul className="flex flex-col gap-1 list-disc pl-4 marker:text-zinc-500">
-					<GainRow
-						label="storage this gate"
-						current={`+${modifiers.gateReward}KB`}
-						preview={preview && `+${preview.gateReward}KB`}
-					/>
-					<GainRow
-						label="coverage this gate"
-						current={coverageValue(modifiers)}
-						preview={preview && coverageValue(preview)}
-					/>
-				</ul>
-			</div>
-			<hr className="border-t border-zinc-800" />
-			<div className="flex flex-col gap-2">
-				<Title as="h2">Penalty</Title>
-				<ul className="flex flex-col gap-1 list-disc pl-4 marker:text-zinc-500">
-					<li>
-						<Paragraph tone="muted">
-							When a pipeline fails,{" "}
+		<TerminalPanel title="Build Summary">
+			<div data-testid="gate-stake-receipt" className="flex flex-col gap-1.5">
+				<div
+					{...(swatch && hasThemeColor(swatch)
+						? swatchTheme(swatch.theme)
+						: {})}
+					className="flex items-center gap-2"
+				>
+					{swatch ? <SwatchMark finish={swatch.finish} size="sm" /> : null}
+					<Title
+						className={swatch ? swatchNameClass(swatch.finish) : undefined}
+					>
+						{gateName} gate
+					</Title>
+				</div>
+				<div className="flex flex-col gap-1">
+					<Title as="h3">Objective</Title>
+					<ul className="flex flex-col list-disc pl-4 marker:text-zinc-500">
+						<li>
+							<Paragraph tone="muted">Clear your pipeline</Paragraph>
+						</li>
+						<li>
+							<Paragraph tone="muted">
+								Answer {pollsPerGate} polls this window
+							</Paragraph>
+						</li>
+					</ul>
+				</div>
+				<hr className="border-t border-zinc-800" />
+				<div className="flex flex-col gap-1">
+					<Title as="h3">On clear</Title>
+					<ul className="flex flex-col list-disc pl-4 marker:text-zinc-500">
+						<GainRow
+							label="storage"
+							current={`+${modifiers.gateReward}KB`}
+							preview={preview && `+${preview.gateReward}KB`}
+						/>
+						<GainRow
+							label="coverage"
+							current={coverageValue(modifiers)}
+							preview={preview && coverageValue(preview)}
+						/>
+					</ul>
+				</div>
+				<hr className="border-t border-zinc-800" />
+				<div className="flex flex-col gap-1">
+					<Title as="h3">On fail</Title>
+					<ul className="flex flex-col list-disc pl-4 marker:text-zinc-500">
+						<li>
 							<Paragraph as="span" tone="cinnabar" className="font-bold">
 								{stripLabel(stripsOnFailure, configCount)}
 							</Paragraph>
-						</Paragraph>
-					</li>
-					{billKb !== undefined && billKb > 0 ? (
-						<li>
-							<Paragraph tone="muted">
-								Storage plan bills{" "}
-								<Paragraph as="span" tone="cinnabar" className="font-bold">
-									−{billKb}KB
-								</Paragraph>{" "}
-								when this window closes — pass or fail
-							</Paragraph>
 						</li>
-					) : null}
-				</ul>
+						{billKb !== undefined && billKb > 0 ? (
+							<li>
+								<Paragraph tone="muted">
+									<Paragraph as="span" tone="cinnabar" className="font-bold">
+										−{billKb}KB
+									</Paragraph>{" "}
+									storage bill — pass or fail
+								</Paragraph>
+							</li>
+						) : null}
+					</ul>
+				</div>
 			</div>
-		</section>
+		</TerminalPanel>
 	);
 };

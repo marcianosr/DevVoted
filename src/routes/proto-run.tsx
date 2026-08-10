@@ -21,10 +21,7 @@ import {
 import { longestCorrectStreak } from "~/modules/run/community/standouts.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { rebuildCost } from "~/modules/run/draft/draft.model";
-import {
-	canAddSlot,
-	coverageToAddSlot,
-} from "~/modules/run/pipeline/pipeline.model";
+import { coverageToAddSlot } from "~/modules/run/pipeline/pipeline.model";
 import { AnsweringScreen } from "~/modules/run/presentation/screens/AnsweringScreen.ui";
 import { ConfiguringScreen } from "~/modules/run/presentation/screens/ConfiguringScreen.ui";
 import { PrepScreen } from "~/modules/run/presentation/screens/PrepScreen.ui";
@@ -644,10 +641,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						coverageByCategory={view.coverageByCategory}
 						checks={view.checks}
 						configs={view.configs}
-						gateReward={view.gateReward}
-						rewardMultiplier={view.rewardMultiplier}
-						coverageMultiplier={view.coverageMultiplier}
-						coverageAdd={view.coverageAdd}
+						pollsPerGate={view.pollsPerGate}
+						stripsOnFailure={view.stripsOnFailure}
+						modifiers={{
+							gateReward: view.gateReward,
+							rewardMultiplier: view.rewardMultiplier,
+							coverageMultiplier: view.coverageMultiplier,
+							coverageAdd: view.coverageAdd,
+						}}
+						billKb={view.storageBillKb}
 						newConfigIds={view.newConfigIds}
 						draftOptions={view.draftOptions}
 						onDraft={(id) => dispatch({ type: "draft", configId: id })}
@@ -657,8 +659,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						slots={view.slots}
 						coverage={view.coverage}
 						slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
-						canAddSlot={canAddSlot(state.pipeline.slots, state.coverage)}
-						onAddSlot={() => dispatch({ type: "add-slot" })}
+						justUnlockedSlots={view.justUnlockedSlots}
 						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
 						onSell={(id) => dispatch({ type: "sell", configId: id })}
 						storagePlans={view.storagePlans}

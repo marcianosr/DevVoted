@@ -37,7 +37,7 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	rebuildCost: 0,
 	canRebuild: false,
 	slotCoverageRequired: 0,
-	canAddSlot: false,
+	justUnlockedSlots: [],
 	checks: [],
 	answeredThisGate: [],
 	allAnswered: [],

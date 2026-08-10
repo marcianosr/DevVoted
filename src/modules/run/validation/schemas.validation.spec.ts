@@ -12,7 +12,6 @@ describe("runActionSchema", () => {
 			{ type: "lint-poll" },
 			{ type: "strip", configId: "eslint" },
 			{ type: "resume-climb" },
-			{ type: "add-slot" },
 			{ type: "draft", configId: "agents-md" },
 			{ type: "upgrade", configId: "js" },
 			{ type: "rebuild-draft" },

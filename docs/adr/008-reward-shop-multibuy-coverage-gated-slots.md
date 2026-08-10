@@ -23,6 +23,10 @@ This is the existing reducer behaviour (multi-action `rewarding` phase), now the
 
 ### 2. Slots are gated by total coverage, not bought with storage
 
+> ⚠ **Superseded by [ADR-025](025-automatic-width-claiming.md)** (2026-08-09): `add-slot`
+> is no longer a player-taken action. Width still gates on total coverage exactly as
+> below, but now claims itself the instant a threshold is met, in or out of the shop.
+
 `add-slot` is free of storage but gated on **total run coverage**. Each successive slot requires a higher coverage threshold, so a widening cannot cascade within one round.
 
 Coverage is a **gate, not a currency** — it is *not* consumed on purchase, mirroring how Focus-config upgrades gate on category coverage (ADR-006 Decision 5). Breadth earns width. The hard cap is `MAX_SLOTS`.

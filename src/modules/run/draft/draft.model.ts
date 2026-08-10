@@ -1,7 +1,7 @@
 import { Config } from "../configs/config.model";
 import { CONFIG_LIST } from "../configs/configRoster.model";
 
-export const DRAFT_SIZE = 3;
+export const DRAFT_SIZE = 5;
 
 const REBUILD_COST_KB = [4, 8, 16, 32, 64, 128, 256, 512];
 

@@ -32,7 +32,6 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	bareActionSchema("lint-poll"),
 	configActionSchema("strip"),
 	bareActionSchema("resume-climb"),
-	bareActionSchema("add-slot"),
 	configActionSchema("draft"),
 	configActionSchema("upgrade"),
 	bareActionSchema("rebuild-draft"),

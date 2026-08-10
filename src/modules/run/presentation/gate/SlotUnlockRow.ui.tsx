@@ -4,11 +4,6 @@ import { MAX_SLOTS } from "~/modules/run/pipeline/pipeline.model";
 import { GainBar } from "~/ui/runs/GainBar.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
-export type SlotUnlockClaim = {
-	readonly ready: boolean;
-	readonly onClaim: () => void;
-};
-
 type NextSlotArgs = {
 	slots: number;
 	coverage?: number;
@@ -38,24 +33,30 @@ const nextSlot = ({
 	};
 };
 
+const ORDINAL_SUFFIX: Readonly<Record<Intl.LDMLPluralRule, string>> = {
+	one: "st",
+	two: "nd",
+	few: "rd",
+	other: "th",
+	zero: "th",
+	many: "th",
+};
+const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" });
+const ordinal = (n: number): string =>
+	`${n}${ORDINAL_SUFFIX[ordinalRules.select(n)]}`;
+
+const joinOrdinals = (slots: readonly number[]): string => {
+	const labels = slots.map(ordinal);
+	if (labels.length < 2) return labels.join("");
+	return `${labels.slice(0, -1).join(", ")} & ${labels.at(-1)}`;
+};
+
 type SlotUnlockRowProps = {
 	/** The slot this row buys — the next one up from the current width. */
 	slot: number;
 	unlockAtPct: number;
 	coveragePct: number;
-	/** The shop passes this to make the row claimable; the configuring screen omits it. */
-	claim?: SlotUnlockClaim;
 };
-
-const unlockButton = (claim: SlotUnlockClaim) => (
-	<button
-		type="button"
-		onClick={claim.onClaim}
-		className="shrink-0 cursor-pointer rounded-lg border border-viridian bg-viridian/10 px-3 py-1.5 text-sm text-zinc-100 transition hover:bg-viridian/20"
-	>
-		Unlock slot
-	</button>
-);
 
 const lockPill = (unlocked: boolean) => (
 	<Paragraph
@@ -72,10 +73,9 @@ const lockPill = (unlocked: boolean) => (
 );
 
 /**
- * The next slot coverage is paying for, with live progress toward its rung. With
- * `claim` it is the shop's unlock row — the button only appears once the rung is
- * met, since a locked row's bar and copy already explain why there is nothing to
- * press. Without `claim` it is a read-only preview.
+ * The next slot coverage is paying for, with live progress toward its rung —
+ * a read-only preview, since width claims itself automatically the instant
+ * coverage affords it (ADR-025) and needs no purchase step.
  *
  * Carries no swatch: badges are awarded by gates, not bought with coverage
  * (ADR-019), so width's reward is the width itself.
@@ -84,7 +84,6 @@ export const SlotUnlockRow = ({
 	slot,
 	unlockAtPct,
 	coveragePct,
-	claim,
 }: SlotUnlockRowProps) => {
 	const unlocked = coveragePct >= unlockAtPct;
 	return (
@@ -109,19 +108,36 @@ export const SlotUnlockRow = ({
 					label={`coverage toward slot ${slot}`}
 				/>
 			</div>
-			{claim ? (claim.ready ? unlockButton(claim) : null) : lockPill(unlocked)}
+			{lockPill(unlocked)}
 		</div>
 	);
 };
 
 /**
+ * The shop's one-time acknowledgment for a slot (or slots) auto-widened since
+ * the last visit — same dashed-box shape as `SlotUnlockRow`, but green and
+ * done rather than dashed grey and pending.
+ */
+const UnlockedSlotRow = ({ slots }: { slots: readonly number[] }) => (
+	<div className="flex items-center gap-4 rounded-lg border border-dashed border-viridian px-4 py-3">
+		<Paragraph as="span" size="sm" tone="viridian" className="font-bold">
+			Unlocked {joinOrdinals(slots)} slot{slots.length > 1 ? "s" : ""}
+		</Paragraph>
+	</div>
+);
+
+/**
  * The next slot row for a pipeline of the given width, or nothing at the slot
- * cap — the one guard both the shop and the configuring screen need.
+ * cap — the one guard both the shop and the configuring screen need. When
+ * slots widened automatically since the last shop visit, this shows that
+ * acknowledgment instead of the next (still-locked) slot's progress.
  */
 export const nextSlotRow = ({
-	claim,
+	justUnlocked,
 	...args
-}: NextSlotArgs & { claim?: SlotUnlockClaim }): ReactNode => {
+}: NextSlotArgs & { justUnlocked?: readonly number[] }): ReactNode => {
+	if (justUnlocked && justUnlocked.length > 0)
+		return <UnlockedSlotRow slots={justUnlocked} />;
 	const next = nextSlot(args);
 	if (!next) return null;
 	return (
@@ -129,7 +145,6 @@ export const nextSlotRow = ({
 			slot={next.slot}
 			unlockAtPct={next.unlockAtPct}
 			coveragePct={next.coveragePct}
-			claim={claim}
 		/>
 	);
 };
@@ -138,7 +153,7 @@ export const nextSlotRow = ({
  * The next slot's progress as its own bullet — a small bar plus how much
  * coverage it still needs, muted until met and gradient-green once it is.
  * For contexts that only report the rung (the gate reward payout) rather
- * than sell it (the shop's `nextSlotRow`, with its button and lock pill).
+ * than sell it (the shop's `nextSlotRow`, with its lock pill).
  */
 const SlotProgressLine = ({ slot, unlockAtPct, coveragePct }: NextSlot) => {
 	const unlocked = coveragePct >= unlockAtPct;

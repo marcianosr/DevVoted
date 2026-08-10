@@ -1,0 +1,23 @@
+{
+	"version": 1,
+	"skills": {
+		"teach": {
+			"source": "mattpocock/skills",
+			"sourceType": "github",
+			"skillPath": "skills/productivity/teach/SKILL.md",
+			"computedHash": "68999bb1a241384b2f921f3321d779b7d05eb6089077b70d88cee2aee3d75ccc"
+		},
+		"to-questionnaire": {
+			"source": "mattpocock/skills",
+			"sourceType": "github",
+			"skillPath": "skills/productivity/to-questionnaire/SKILL.md",
+			"computedHash": "d8938509f3400d9977343e11e876fc6e1982b0b9c133a2f2e9d3d730a67a103e"
+		},
+		"wait-what": {
+			"source": "mattpocock/skills",
+			"sourceType": "github",
+			"skillPath": "skills/productivity/wait-what/SKILL.md",
+			"computedHash": "9638acdcd76457ca70a007b5a02c4bf44893fb3064692a9158d907e82f200eec"
+		}
+	}
+}

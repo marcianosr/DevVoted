@@ -10,6 +10,7 @@ import {
 } from "~/modules/run/pipeline/pipeline.model";
 import { Columns } from "~/ui/Columns.ui";
 import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
+import { TerminalPanel } from "~/ui/TerminalPanel.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
@@ -88,11 +89,10 @@ export const ConfiguringScreen = ({
 		<div className="flex flex-col gap-6">
 			<Columns
 				aside={
-					<section className="space-y-2">
-						<PanelHeading
-							title="Starter configs"
-							subtitle="Click a config to add it to your pipeline"
-						/>
+					<TerminalPanel title="Starter configs">
+						<Paragraph tone="muted">
+							Click a config to add it to your pipeline
+						</Paragraph>
 						<div className="flex flex-wrap gap-2">
 							{benchOrder(bench).map((config) => (
 								<span
@@ -121,7 +121,7 @@ export const ConfiguringScreen = ({
 								</span>
 							))}
 						</div>
-					</section>
+					</TerminalPanel>
 				}
 				main={
 					<section className="flex flex-col gap-4">

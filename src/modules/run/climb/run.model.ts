@@ -217,6 +217,13 @@ export type RunState = {
 	 * snapshots won't carry it — readers fall back to `gatesCleared`.
 	 */
 	readonly clearedGate?: number;
+	/**
+	 * Slots auto-widened since the last shop visit (ADR-025) — the shop's
+	 * one-time "Unlocked Nth slot" acknowledgment. Reset when the shop is left
+	 * (`finishReward`), not when it opens, so it survives to be shown there.
+	 * Optional: runs snapshotted before it existed carry none.
+	 */
+	readonly justUnlockedSlots?: readonly number[];
 	readonly log: readonly string[];
 };
 
@@ -233,7 +240,6 @@ export type RunAction =
 	| { readonly type: "lint-poll" }
 	| { readonly type: "strip"; readonly configId: string }
 	| { readonly type: "resume-climb" }
-	| { readonly type: "add-slot" }
 	| { readonly type: "draft"; readonly configId: string }
 	| { readonly type: "upgrade"; readonly configId: string }
 	| { readonly type: "rebuild-draft" }
@@ -271,6 +277,7 @@ export const createRun = (
 	storagePlan: STORAGE_PLANS[0].tier,
 	gateBillKb: 0,
 	planDowngraded: false,
+	justUnlockedSlots: [],
 	log: [],
 });
 
@@ -624,6 +631,15 @@ const answer = (
 		elapsedMs,
 	};
 
+	// The loss drains the poll's category (floored at 0) and the total moves by
+	// what the category actually lost — total stays the sum of the categories,
+	// and you can't lose coverage you don't have. window.coverageGained stays a
+	// gains-only tally, so coverage-gain checks aren't double-punished.
+	const coverage = roundToOneDecimal(
+		Math.max(0, state.coverage + categoryAfter - categoryBefore)
+	);
+	const widened = autoWidenSlots(state.pipeline, coverage);
+
 	const answered: RunState = {
 		...state,
 		window,
@@ -632,18 +648,15 @@ const answer = (
 		storage: addStorage(state.storage, faucet),
 		faucetEarnedKb: faucetEarnedBefore + faucet,
 		faucetThisGateKb: (state.faucetThisGateKb ?? 0) + faucet,
-		// The loss drains the poll's category (floored at 0) and the total
-		// moves by what the category actually lost — total stays the sum of
-		// the categories, and you can't lose coverage you don't have.
-		// window.coverageGained stays a gains-only tally, so coverage-gain
-		// checks aren't double-punished.
-		coverage: roundToOneDecimal(
-			Math.max(0, state.coverage + categoryAfter - categoryBefore)
-		),
+		coverage,
 		coverageByCategory: {
 			...state.coverageByCategory,
 			[poll.category]: categoryAfter,
 		},
+		pipeline: widened.pipeline,
+		justUnlockedSlots: widened.justUnlocked.length
+			? [...(state.justUnlockedSlots ?? []), ...widened.justUnlocked]
+			: state.justUnlockedSlots,
 		answeredThisGate: [...state.answeredThisGate, answeredPoll],
 		allAnswered: [...(state.allAnswered ?? []), answeredPoll],
 	};
@@ -755,15 +768,24 @@ const levelUp = (config: Config): Config => ({
  * another config, never a gate. The climb's depth is settled by the checks, so
  * this stays a pure widening.
  */
-const addSlot = (state: RunState): RunState => {
-	if (!canAddSlot(state.pipeline.slots, state.coverage)) return state;
-	const slots = state.pipeline.slots + 1;
-	return stayReward(
-		state,
-		{ ...state.pipeline, slots },
-		state.draftOptions,
-		`Widened the pipeline to ${slots} slots.`
-	);
+/**
+ * Width is bought with coverage alone (ADR-019), and now claims itself the
+ * instant a threshold is met — no purchase step, so this just widens.
+ */
+const autoWidenSlots = (
+	pipeline: Pipeline,
+	coverage: number
+): { pipeline: Pipeline; justUnlocked: readonly number[] } => {
+	let slots = pipeline.slots;
+	const justUnlocked: number[] = [];
+	while (canAddSlot(slots, coverage)) {
+		slots += 1;
+		justUnlocked.push(slots);
+	}
+	return {
+		pipeline: justUnlocked.length ? { ...pipeline, slots } : pipeline,
+		justUnlocked,
+	};
 };
 
 const draft = (state: RunState, configId: string): RunState => {
@@ -866,6 +888,7 @@ const finishReward = (state: RunState): RunState => ({
 	gateRewardKb: 0,
 	gateBillKb: 0,
 	planDowngraded: false,
+	justUnlockedSlots: [],
 	storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
 	status: "answering",
 	log: withLog(state, "Climbing on."),
@@ -946,8 +969,6 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return strip(state, action.configId);
 	if (action.type === "resume-climb" && state.status === "awaiting-strip")
 		return resumeClimb(state);
-	if (action.type === "add-slot" && state.status === "rewarding")
-		return addSlot(state);
 	if (action.type === "draft" && state.status === "rewarding")
 		return draft(state, action.configId);
 	if (action.type === "upgrade" && state.status === "rewarding")

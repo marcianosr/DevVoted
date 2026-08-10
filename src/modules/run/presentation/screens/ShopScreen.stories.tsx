@@ -55,14 +55,17 @@ export const Default: Story = {
 		canRebuild: true,
 		onRebuild: () => {},
 		slots: 3,
-		gateReward: 240,
-		rewardMultiplier: 2,
-		coverageMultiplier: 2,
-		coverageAdd: 0.5,
+		pollsPerGate: 5,
+		stripsOnFailure: 1,
+		modifiers: {
+			gateReward: 240,
+			rewardMultiplier: 2,
+			coverageMultiplier: 2,
+			coverageAdd: 0.5,
+		},
 		coverage: 25,
 		slotCoverageRequired: 20,
-		canAddSlot: true,
-		onAddSlot: () => {},
+		justUnlockedSlots: [],
 		onUpgrade: () => {},
 		onSell: () => {},
 	},
@@ -73,7 +76,16 @@ export const SlotLocked: Story = {
 		...Default.args,
 		coverage: 12,
 		slotCoverageRequired: 20,
-		canAddSlot: false,
+	},
+};
+
+// Width claims itself automatically the instant coverage affords it (ADR-025) —
+// this is the shop's one-time acknowledgment for the gate that crossed the rung.
+export const SlotJustUnlocked: Story = {
+	args: {
+		...Default.args,
+		slots: 4,
+		justUnlockedSlots: [4],
 	},
 };
 
@@ -84,7 +96,6 @@ export const EliteFourNext: Story = {
 		slots: 13,
 		coverage: 400,
 		slotCoverageRequired: 415,
-		canAddSlot: false,
 	},
 };
 
@@ -95,12 +106,11 @@ export const AtSlotCap: Story = {
 		slots: 14,
 		coverage: 430,
 		slotCoverageRequired: Infinity,
-		canAddSlot: false,
 	},
 };
 
-// On tier 3 with overflow riding: the free-tier rung's Switch would burn the
-// 188KB sitting above its cap, and the tooltip names it before the click.
+// On tier 3 with overflow riding: switching to the free-tier rung would burn
+// the 188KB sitting above its cap, and the tooltip names it before the click.
 export const PaidStoragePlan: Story = {
 	args: {
 		...Default.args,
