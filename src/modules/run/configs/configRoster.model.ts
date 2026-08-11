@@ -245,6 +245,27 @@ export const CONFIGS = {
 		check: "coverage-gain",
 		checkAmount: 1,
 	},
+	// The one config named after a company, and on purpose: the emissions
+	// defeat device is what the mechanic *is*, and "Volkswagen CI" is already
+	// the name developers use for a pipeline that is green by fraud. The
+	// vendor-neutral rule above holds for tools the roster could have picked
+	// arbitrarily; there is no generic stand-in for this joke.
+	volkswagenCi: {
+		id: "volkswagen-ci",
+		label: "Volkswagen CI",
+		family: "risk",
+		rarity: "legendary",
+		// 256 (legendary) + 128: it never asks the player for anything, so the
+		// price and the slot are the whole cost (ADR-028).
+		draftCost: 384,
+		description:
+			"Reports one failing check as passing — needs 3 other checks to run and pass.",
+		gives: "One failing check reports success",
+		needs: "3 other checks must run and pass",
+		requirementDelta: 0,
+		rewardMultiplier: 1,
+		check: "defeat-device",
+	},
 	coldStart: {
 		id: "cold-start",
 		label: "Cold Start",

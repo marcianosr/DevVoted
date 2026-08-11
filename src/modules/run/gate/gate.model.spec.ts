@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Pipeline } from "../pipeline/pipeline.model";
 import { Config } from "../configs/config.model";
 import { CONFIGS } from "../configs/configRoster.model";
-import { EMPTY_WINDOW, GateWindow } from "../configs/effect.model";
+import { CheckStatus, EMPTY_WINDOW, GateWindow } from "../configs/effect.model";
 import { dropCount, escalation } from "../rules.model";
 import {
 	checkStatuses,
@@ -190,6 +190,107 @@ describe("gatePassed", () => {
 		expect(
 			gatePassed(pipelineWith([]), win({ correct: 5, answered: 5 }), 0)
 		).toBe(false);
+	});
+});
+
+// ADR-028. A closed window (answered: 5) so every check has resolved.
+describe("Volkswagen CI", () => {
+	const closed = { correct: 3, answered: 5 };
+	// Correct (1), IndexedDB (3 correct), AGENTS.md (1 correct) all pass on 3
+	// correct; Coverage fails on 0% gained. Exactly the one failure to hide.
+	const covered = [
+		CONFIGS.unitTests,
+		CONFIGS.indexedDb,
+		CONFIGS.agentsMd,
+		CONFIGS.coverageGain,
+		CONFIGS.volkswagenCi,
+	];
+	const rowFor = (
+		configs: Config[],
+		window: GateWindow,
+		label: string
+	): CheckStatus | undefined =>
+		checkStatuses(pipelineWith(configs), window, 0).find(
+			(check) => check.label === label
+		);
+
+	it("reports the single failing check as passing when 3 others passed", () => {
+		const window = win(closed);
+		expect(rowFor(covered, window, "Coverage")?.state).toBe("skipped");
+		expect(gatePassed(pipelineWith(covered), window, 0)).toBe(true);
+	});
+
+	it("names the check it hid, and leaves that check's real tally readable", () => {
+		const window = win(closed);
+		expect(rowFor(covered, window, "Volkswagen CI")).toMatchObject({
+			state: "success",
+			progress: "hid Coverage",
+		});
+		expect(rowFor(covered, window, "Coverage")?.progress).toBe(
+			"0%/1% (reported passing)"
+		);
+	});
+
+	it("hides nothing when only two other checks passed", () => {
+		const thin = [
+			CONFIGS.unitTests,
+			CONFIGS.indexedDb,
+			CONFIGS.coverageGain,
+			CONFIGS.volkswagenCi,
+		];
+		const window = win(closed);
+		expect(rowFor(thin, window, "Coverage")?.state).toBe("failed");
+		expect(rowFor(thin, window, "Volkswagen CI")?.progress).toBe("2/3 passed");
+		expect(gatePassed(pipelineWith(thin), window, 0)).toBe(false);
+	});
+
+	it("hides nothing when two checks failed at once", () => {
+		const configs = [...covered, CONFIGS.coldStart];
+		const window = win({ ...closed, leadingCorrect: 0 });
+		expect(rowFor(configs, window, "Volkswagen CI")).toMatchObject({
+			state: "failed",
+			progress: "2 checks failing",
+		});
+		expect(gatePassed(pipelineWith(configs), window, 0)).toBe(false);
+	});
+
+	it("stays dormant with nothing to hide", () => {
+		const clean = [
+			CONFIGS.unitTests,
+			CONFIGS.indexedDb,
+			CONFIGS.agentsMd,
+			CONFIGS.volkswagenCi,
+		];
+		const window = win(closed);
+		expect(rowFor(clean, window, "Volkswagen CI")).toMatchObject({
+			state: "skipped",
+			progress: undefined,
+		});
+		expect(gatePassed(pipelineWith(clean), window, 0)).toBe(true);
+	});
+
+	// Both regressions guard the same hole: a build that cannot fail.
+	it("leaves a narrow build mortal — no passing checks, no cover", () => {
+		const narrow = [CONFIGS.unitTests, CONFIGS.volkswagenCi];
+		const window = win({ correct: 0, answered: 5 });
+		expect(rowFor(narrow, window, "Correct")?.state).toBe("failed");
+		expect(gatePassed(pipelineWith(narrow), window, 0)).toBe(false);
+	});
+
+	it("counts only checks that ran — skipped Focus configs are not cover", () => {
+		const padded = [
+			CONFIGS.unitTests,
+			CONFIGS.js,
+			CONFIGS.ts,
+			CONFIGS.css,
+			CONFIGS.volkswagenCi,
+		];
+		const window = win({ correct: 0, answered: 5 });
+		expect(rowFor(padded, window, ".js mastery")?.state).toBe("skipped");
+		expect(rowFor(padded, window, "Volkswagen CI")?.progress).toBe(
+			"0/3 passed"
+		);
+		expect(gatePassed(pipelineWith(padded), window, 0)).toBe(false);
 	});
 });
 

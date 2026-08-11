@@ -2,14 +2,31 @@ import { describe, expect, it } from "vitest";
 
 import {
 	describeConfig,
+	draftCost,
 	focusCoverageMultiplier,
 	focusDemand,
 	givesOf,
 	isUpgradable,
 	needsOf,
 	rarityOf,
+	sellRefund,
 } from "./config.model";
 import { CONFIG_LIST, CONFIGS } from "./configRoster.model";
+
+describe("draftCost", () => {
+	it("prices a config from its rarity", () => {
+		expect(draftCost(CONFIGS.js)).toBe(32);
+		expect(draftCost(CONFIGS.agentsMd)).toBe(256);
+	});
+
+	it("prefers an authored price over the rarity's", () => {
+		expect(draftCost(CONFIGS.volkswagenCi)).toBe(384);
+	});
+
+	it("refunds half the authored price on a sell", () => {
+		expect(sellRefund(CONFIGS.volkswagenCi)).toBe(192);
+	});
+});
 
 describe("rarityOf", () => {
 	it("defaults an unset rarity to common", () => {

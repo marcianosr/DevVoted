@@ -333,7 +333,7 @@ const lintCorrectCheck = (config: Config): GateCheckPart => ({
 	demand: () => `answer every ${config.label}-linted poll correctly`,
 });
 
-type ContributedCheckKind = Exclude<CheckKind, "correct">;
+type ContributedCheckKind = Exclude<CheckKind, "correct" | "defeat-device">;
 
 const CHECK_BUILDERS: Record<
 	ContributedCheckKind,
@@ -350,9 +350,16 @@ const CHECK_BUILDERS: Record<
 /** The check half: the requirement the config adds to the gate window. */
 const checkOf = (config: Config): GateCheckPart => {
 	if (config.focusCategory) return focusCheck(config, config.focusCategory);
-	// "correct" is synthesized by gate.model — present only while a config
-	// carrying it (Unit Tests) is installed; the config only holds its amount.
-	if (config.check === undefined || config.check === "correct") return {};
+	// "correct" and "defeat-device" are synthesized by gate.model, which is the
+	// only place with the whole checklist in hand: "correct" is present only
+	// while a config carrying it (Unit Tests) is installed, and the defeat
+	// device reads the other rows rather than adding a demand of its own.
+	if (
+		config.check === undefined ||
+		config.check === "correct" ||
+		config.check === "defeat-device"
+	)
+		return {};
 	return CHECK_BUILDERS[config.check](config);
 };
 

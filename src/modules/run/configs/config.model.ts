@@ -11,7 +11,8 @@ export type CheckKind =
 	| "min-correct"
 	| "no-double-miss"
 	| "breadth"
-	| "lint-correct";
+	| "lint-correct"
+	| "defeat-device";
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";
 
@@ -42,6 +43,8 @@ export type Config = {
 	readonly openerCoverageMultiplier?: number;
 	readonly check?: CheckKind;
 	readonly checkAmount?: number;
+	/** Draft price override (KB). Omitted = the rarity's price. */
+	readonly draftCost?: number;
 };
 
 export const rarityOf = (config: Config): Rarity => config.rarity ?? "common";
@@ -68,7 +71,7 @@ const DRAFT_COST: Record<Rarity, number> = {
 };
 
 export const draftCost = (config: Config): number =>
-	DRAFT_COST[rarityOf(config)];
+	config.draftCost ?? DRAFT_COST[rarityOf(config)];
 
 /** Storage returned on selling a config — half its draft cost (market value). */
 export const sellRefund = (config: Config): number =>

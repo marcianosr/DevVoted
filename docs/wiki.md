@@ -478,9 +478,20 @@ doubles your gains and asks you to gain something; Cold Start doubles your opene
 and asks you to land it. Add a condition you trust yourself to hit, and get paid for
 the confidence. Your build is as hard as you make it, and exactly as rich.
 
-**The legendary exception.** Copilot carries no check. That is what legendary means
-in DevVoted: at the top of the rarity ladder, an effect can stand alone. It is the
-only config in the roster allowed to.
+**The legendary exception.** Legendaries no longer skip the check (ADR-022 closed
+that: a config with no check made a build pass gates vacuously). What legendary buys
+instead is a check that barely asks for anything, because the 256 KB draft price is
+most of what the config costs. AGENTS.md doubles all coverage and asks for one
+correct answer.
+
+**Volkswagen CI is the real exception** (ADR-028). It is the only config that reads
+the checklist rather than adding to it: when exactly one check has failed, and at
+least 3 others *ran and passed*, it reports the failing one as passing. It therefore
+never fails a gate on its own, which is the one place the Config Rule is genuinely
+waived. Its price is its 384 KB and the slot, plus a hidden width demand — covering
+takes 3 passing rows plus the row it hides, so the fraud does not work below slot 5.
+Checks that were skipped rather than passed count for nothing: a test that never ran
+proves nothing.
 
 Resolved (DVTD-bojz): configs are **not** split into two species. Every config is
 Effect + Check, so a "perks-only build" does not exist — a build carrying few checks
@@ -517,7 +528,8 @@ One table, every config. Each entry reads **Effect / Check**.
 | IndexedDB | uncommon | +8 KB storage per correct answer; caps at 320 KB | Answer at least 3 polls correctly | 🟢 |
 | Code Coverage | uncommon | +0.5% flat coverage per correct answer | Don't miss two polls in a row | 🟢 |
 | Intellisense | rare | All coverage ×1.5 | Gain coverage in at least 2 categories this gate | 🟢 |
-| Copilot | legendary | All coverage ×2 | — (see [4.1](#41-the-config-rule), the legendary exception) | 🟢 |
+| AGENTS.md | legendary | All coverage ×2 | Answer at least one poll correctly | 🟢 |
+| Volkswagen CI | legendary | Reports one failing check as passing; costs 384 KB to draft | 3 other checks must run and pass (see [4.1](#41-the-config-rule)) | 🟢 |
 | Vite config | common | +3% coverage on JS/TS polls answered under 35 s | At least one poll answered under 35 s | 🟡 |
 | `.every()` | common | +1% when a category you've 5-streaked appears | Don't break your streak this gate | 🟡 |
 | Semver | common | Coverage ×1.2 for each Focus config at L2 or higher | No Focus config may sit at L1 | 🟡 |

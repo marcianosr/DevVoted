@@ -29,6 +29,7 @@
 | [025](025-automatic-width-claiming.md) | Width claims itself automatically — no more Unlock slot button | Accepted — amends 008 Decision 2 |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: starter stacks, plain-language receipt, payoff-first gate clear | Accepted — account-level unlock flags are follow-up work |
 | [027](027-gate-width-demand.md) | A gate only admits a build that can survive its own stake (width demand) | Accepted — amends 017 §3 and 021 §3, qualifies 019 (DVTD-kokk) |
+| [028](028-the-defeat-device.md) | Volkswagen CI: a legendary that reports one failing check as passing | Accepted — the one waiver of the 022 rule the code cites; retires wiki §4.1's "legendary carries no check" (DVTD-dbuw) |
 
 ## Conventions
 

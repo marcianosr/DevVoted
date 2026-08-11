@@ -12,7 +12,13 @@ export const roleOf = (
 	config: Config,
 	checks: readonly CheckStatus[]
 ): ConfigRole => {
-	if (config.focusCategory || config.check === "lint-correct")
+	// Conditional, not a requirement: the defeat device demands nothing of the
+	// player, it only wakes up once another check has already failed.
+	if (
+		config.focusCategory ||
+		config.check === "lint-correct" ||
+		config.check === "defeat-device"
+	)
 		return "conditional";
 	const backsCheck = checks.some((check) => check.sourceConfigId === config.id);
 	return backsCheck ? "requirement" : "passive";
