@@ -16,12 +16,18 @@ export const Default: Story = {
 		gateNumber: 1,
 		pollsPerGate: 5,
 		stripsOnFailure: 1,
+		minConfigs: 1,
 		storageBillKb: 0,
 		modifiers: {
 			gateReward: 32,
 			rewardMultiplier: 1,
 			coverageMultiplier: 1,
 			coverageAdd: 0,
+		},
+		perAnswer: {
+			coveragePerCorrect: 8,
+			storageKbPerCorrect: 2,
+			matchingConfigMultiplier: 1.25,
 		},
 		configs: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
 		editing: false,
@@ -52,5 +58,20 @@ export const PaidStoragePlan: Story = {
 	args: {
 		...Default.args,
 		storageBillKb: 16,
+	},
+};
+
+/**
+ * A strip sank the build under the gate's width demand (ADR-027): the receipt
+ * warns in cinnabar that climbing on ends the run — the moment that decides
+ * whether death at the gate's door reads as fair.
+ */
+export const UnderWidthDemand: Story = {
+	args: {
+		...Default.args,
+		gateNumber: 4,
+		stripsOnFailure: 3,
+		minConfigs: 4,
+		configs: [CONFIGS.js, CONFIGS.eslint],
 	},
 };

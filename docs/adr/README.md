@@ -18,16 +18,17 @@
 | [014](014-daily-gate-lock.md) | Daily gate lock: 5 polls/day, exhaustion is not a terminal | Accepted — amends 011 Decision 2, removes the exhaustion-win; §3's death rule superseded by 021 |
 | [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: one-shot grants and a soft over-cap | Accepted — amends 006 Decision 10 cap; records no-selling; Decision 3 (cap-extender as config) superseded 2026-08-06, DVTD-0h4n |
 | [016](016-the-config-rule.md) | The Config Rule: every config is Effect + Check | Accepted — amends 006 Decisions 3/4/5; §1–2 amended by 017 |
-| [017](017-no-baseline-check.md) | No baseline check: checks come only from configs; payout scales with correctness | Accepted — amends 016 §1–2 |
+| [017](017-no-baseline-check.md) | No baseline check: checks come only from configs; payout scales with correctness | Accepted — amends 016 §1–2; §3 amended by 027 |
 | [018](018-gate-slot-coupling-and-slot-swatches.md) | Gate–slot coupling: gate N requires slot N; summit at gate 12; slot swatches | **Superseded by 019** (2026-08-06, one day later) |
-| [019](019-depth-and-width-are-independent.md) | Depth and width are independent; swatches are gate badges; summit at gate 12 of 13 | Accepted — supersedes 018; open risk in DVTD-ziss |
+| [019](019-depth-and-width-are-independent.md) | Depth and width are independent; swatches are gate badges; summit at gate 12 of 13 | Accepted — supersedes 018; "width never gates the climb" qualified by 027 |
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no color | Accepted — retires the per-category palette (wiki §2.4, DVTD-sthm) |
-| [021](021-death-at-the-gate-that-empties-the-build.md) | A run dies at the gate that empties its build | Accepted — supersedes the death rule of 006 Decision 6 and 014 §3 (DVTD-1ys6) |
+| [021](021-death-at-the-gate-that-empties-the-build.md) | A run dies at the gate that empties its build | Accepted — supersedes the death rule of 006 Decision 6 and 014 §3 (DVTD-1ys6); §3 generalized by 027 |
 | 022 | *(reserved: the checklist-is-the-rulebook / declined-lint-pledge rule the code already cites)* | Unwritten — `run.model.ts`/`effect.model.ts` reference it |
 | [023](023-storage-capacity-is-a-subscription.md) | Storage capacity is a subscription — the plan ladder | Accepted — supersedes the cap-extension voucher (015 Decision 3 via DVTD-0h4n); DVTD-rf5c |
 | 024 | *(reserved: shop-router — one shop per gate, locks the other until the next rung)* | Unwritten — not implemented on the live route |
 | [025](025-automatic-width-claiming.md) | Width claims itself automatically — no more Unlock slot button | Accepted — amends 008 Decision 2 |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: starter stacks, plain-language receipt, payoff-first gate clear | Accepted — account-level unlock flags are follow-up work |
+| [027](027-gate-width-demand.md) | A gate only admits a build that can survive its own stake (width demand) | Accepted — amends 017 §3 and 021 §3, qualifies 019 (DVTD-kokk) |
 
 ## Conventions
 

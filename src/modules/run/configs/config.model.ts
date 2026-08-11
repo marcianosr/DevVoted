@@ -106,7 +106,7 @@ export const describeConfig = (config: Config): string => {
 export const givesOf = (config: Config): string | undefined => {
 	if (config.check === "correct") {
 		const payout = (config.storageOnClear ?? 0) * (config.level ?? 1);
-		return `Then +${payout}KB on clear`;
+		return `+${payout}KB on clear`;
 	}
 	if (!config.focusCategory) return config.gives;
 	const name = getCategoryMetadata(config.focusCategory).name;
@@ -117,5 +117,5 @@ export const givesOf = (config: Config): string | undefined => {
 export const needsOf = (config: Config): string | undefined => {
 	if (!config.focusCategory) return config.needs;
 	const name = getCategoryMetadata(config.focusCategory).name;
-	return `If ${name} poll occurs you must answer correctly`;
+	return `Answer ${name} polls correct when they show`;
 };

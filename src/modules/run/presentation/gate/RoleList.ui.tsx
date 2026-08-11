@@ -31,7 +31,7 @@ const STATE_VALUE_TONE: Record<CheckState, ParagraphTone> = {
 	failed: "cinnabar",
 };
 
-const roleBadge = (row: RoleRow): StatusBadgeVariant =>
+export const roleBadge = (row: RoleRow): StatusBadgeVariant =>
 	row.state ? STATE_BADGE[row.state] : "skip";
 
 const roleValueTone = (row: RoleRow): ParagraphTone =>
@@ -49,12 +49,6 @@ export type RowUseAction = {
 export type SlotPreview = {
 	readonly config: Config;
 	readonly onAdd: () => void;
-	/**
-	 * Trailing content for the preview row — the shop's price. The configure bench
-	 * is free and shows nothing: naming the action *inside* the pipeline read as if
-	 * the row were already installed (Marciano, 2026-08-06). The bench heading
-	 * already says "Click a config to add it to your pipeline".
-	 */
 	readonly hint?: ReactNode;
 };
 
@@ -95,14 +89,6 @@ type RoleListProps = {
 	newConfigIds?: readonly string[];
 	preview?: SlotPreview;
 	trailing?: ReactNode;
-	/**
-	 * Shuts every row whose check isn't currently running. For the answering
-	 * screen, where the pipeline sits beside the question: only the check the
-	 * gate is judging right now is worth reading mid-poll, and three open rows
-	 * push the question off a laptop screen. Everywhere the list *is* the screen
-	 * (gate report, shop, configure) it stays off — there, why a row passed or
-	 * failed is the thing the player came to read.
-	 */
 	foldIdleRows?: boolean;
 };
 
@@ -111,7 +97,7 @@ const removeButton = (row: RoleRow, onRemove: (configId: string) => void) => (
 		type="button"
 		onClick={() => onRemove(row.config.id)}
 		aria-label={`Remove ${row.config.label}`}
-		className="shrink-0 cursor-pointer text-lg text-pewter transition-colors hover:text-cinnabar"
+		className="shrink-0 cursor-pointer text-xl text-pewter transition-colors hover:text-cinnabar"
 	>
 		✕
 	</button>
@@ -137,12 +123,8 @@ export const RoleList = ({
 			<Badge tone="positive">new</Badge>
 		) : undefined;
 
-	// Slots number straight down the list: filled rows, then the hovered ghost,
-	// then the empties, then the rung you have not bought — so the number beside
-	// the unlock row is literally the slot it opens.
 	const previewSlot = rows.length + 1;
 	const firstEmptySlot = previewSlot + (preview ? 1 : 0);
-	const trailingSlot = firstEmptySlot + emptySlots;
 
 	return (
 		<PipelineTable numbered>
@@ -196,12 +178,7 @@ export const RoleList = ({
 			{Array.from({ length: emptySlots }, (_, index) => (
 				<EmptySlotRow key={`empty-${index}`} slot={firstEmptySlot + index} />
 			))}
-			{trailing ? (
-				<>
-					<SlotNumberCell slot={trailingSlot} />
-					<div className="col-start-2 col-span-3 py-2">{trailing}</div>
-				</>
-			) : null}
+			{trailing}
 		</PipelineTable>
 	);
 };

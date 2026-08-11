@@ -19,6 +19,10 @@ const base = {
 		coverageMultiplier: 1,
 		coverageAdd: 0,
 	},
+	perAnswer: {
+		coveragePerCorrect: 1,
+		storageKbPerCorrect: 0,
+	},
 	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.agentsMd],
@@ -35,6 +39,7 @@ const base = {
 	],
 	onSlot: vi.fn(),
 	onUnslot: vi.fn(),
+	startAction: { label: "Start run →", onClick: vi.fn() },
 };
 
 describe(ConfiguringScreen, () => {
@@ -43,14 +48,16 @@ describe(ConfiguringScreen, () => {
 		expect(screen.getByText("Pallet gate")).toBeInTheDocument();
 	});
 
-	it("flows the stake as polls → clear reward → fail consequence", () => {
+	it("sections the stake as the gate, then its outcomes", () => {
 		render(<ConfiguringScreen {...base} />);
-		expect(screen.getByText("5 polls")).toBeInTheDocument();
-		expect(screen.getByText("clear")).toBeInTheDocument();
-		expect(screen.getByText("fail")).toBeInTheDocument();
+		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
+		expect(screen.getByText("Succeed your build:")).toBeInTheDocument();
 		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
-		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
-		expect(screen.getByText("Strip 1 config")).toHaveClass("text-cinnabar");
+		expect(screen.queryByText("×1")).not.toBeInTheDocument();
+		expect(screen.getByText("Fail your build:")).toBeInTheDocument();
+		expect(screen.getByText("1 config disabled for the run")).toHaveClass(
+			"text-cinnabar"
+		);
 	});
 
 	it("captions the gate with its coverage multiplier", () => {
@@ -60,7 +67,9 @@ describe(ConfiguringScreen, () => {
 				modifiers={{ ...base.modifiers, coverageMultiplier: 2, coverageAdd: 5 }}
 			/>
 		);
-		expect(screen.getByText("×2 +5%")).toHaveClass("text-gradient-green");
+		expect(screen.getByText("×2 +5% coverage this gate")).toHaveClass(
+			"text-gradient-green"
+		);
 	});
 
 	it("keeps the stake in plain language, no pipeline jargon", () => {
@@ -75,7 +84,9 @@ describe(ConfiguringScreen, () => {
 		render(
 			<ConfiguringScreen {...base} stripsOnFailure={2} configs={base.configs} />
 		);
-		expect(screen.getByText("Strip all — run over")).toBeInTheDocument();
+		expect(
+			screen.getByText("All configs disabled — run over")
+		).toBeInTheDocument();
 	});
 
 	it("previews the clear reward a hovered bench config would add, old to new", () => {
@@ -337,18 +348,35 @@ describe("stack mode (ADR-026)", () => {
 		expect(screen.queryByText("Your pipeline")).not.toBeInTheDocument();
 	});
 
-	it("shows the same flowing receipt as the classic screen — no separate variant", () => {
+	it("shows the same receipt as the classic screen — no separate variant", () => {
 		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.getByText("5 polls")).toBeInTheDocument();
-		expect(screen.getByText("clear")).toBeInTheDocument();
-		expect(screen.getByText("fail")).toBeInTheDocument();
+		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
+		expect(screen.getByText("Succeed your build:")).toBeInTheDocument();
+		expect(
+			screen.getByText("1 config disabled for the run")
+		).toBeInTheDocument();
+	});
+
+	it("carries the start action inside the build summary, not the screen footer", () => {
+		const onClick = vi.fn();
+		render(
+			<ConfiguringScreen
+				{...stackBase}
+				startAction={{ label: "Start run →", onClick }}
+			/>
+		);
+		const receipt = within(screen.getByTestId("gate-stake-receipt"));
+		fireEvent.click(receipt.getByRole("button", { name: "Start run →" }));
+		expect(onClick).toHaveBeenCalledTimes(1);
 	});
 
 	it("reads the stake against the build the stack will become, not an empty one", () => {
 		// An unpicked screen holds zero configs — the stake must not open on
-		// "Strip all — run over" before the player has done anything.
+		// "All configs disabled — run over" before the player has done anything.
 		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.getByText("Strip 1 config")).toBeInTheDocument();
+		expect(
+			screen.getByText("1 config disabled for the run")
+		).toBeInTheDocument();
 		expect(screen.queryByText(/run over/)).not.toBeInTheDocument();
 	});
 
@@ -358,7 +386,7 @@ describe("stack mode (ADR-026)", () => {
 		expect(screen.getByText("Starter configs")).toBeInTheDocument();
 	});
 
-	it("expands the picked stack into its trimmed preview — demand and payoff, no live progress", () => {
+	it("expands the picked stack into its trimmed preview — demand, payoff, and live state", () => {
 		const testEverything = starterStackFor("test-everything");
 		if (!testEverything) throw new Error("test-everything stack missing");
 		render(
@@ -378,9 +406,10 @@ describe("stack mode (ADR-026)", () => {
 			)
 		).toBeInTheDocument();
 		// No window has been played on this screen — the live counter is absent,
-		// not just hidden, and no status dot claims something is "running" yet.
+		// not just hidden (Marciano, 2026-08-10) — but each config's status dot
+		// is back, the same one RoleList shows (Marciano, 2026-08-11).
 		expect(screen.queryByText("0/1")).not.toBeInTheDocument();
-		expect(screen.queryByRole("img")).not.toBeInTheDocument();
+		expect(screen.getAllByRole("img").length).toBeGreaterThan(0);
 	});
 
 	it("keeps a linter's fee behind its own details tap — the expanded config's mechanics", () => {
@@ -428,5 +457,27 @@ describe("stack mode (ADR-026)", () => {
 		expect(
 			screen.queryByRole("button", { name: /Back to stacks/ })
 		).not.toBeInTheDocument();
+	});
+
+	it("shows how many configs the pipeline still needs before any stack is picked", () => {
+		render(<ConfiguringScreen {...stackBase} />);
+		expect(screen.getByText("To start")).toBeInTheDocument();
+		// The count sits in its own bold span, so match on the concatenated text —
+		// scoped to the span itself, since its parent section shares the same text.
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.tagName === "SPAN" &&
+					element.textContent === "Needs at least 3 configs in your pipeline"
+			)
+		).toBeInTheDocument();
+	});
+
+	it("drops the install count once a picked stack fills every slot", () => {
+		const shipIt = starterStackFor("ship-it");
+		if (!shipIt) throw new Error("ship-it stack missing");
+		render(<ConfiguringScreen {...stackBase} configs={shipIt.configs} />);
+		expect(screen.queryByText("To start")).not.toBeInTheDocument();
+		expect(screen.queryByText(/in your pipeline/)).not.toBeInTheDocument();
 	});
 });

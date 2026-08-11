@@ -37,11 +37,16 @@ const base = {
 	slots: 3,
 	pollsPerGate: 5,
 	stripsOnFailure: 1,
+	minConfigs: 1,
 	modifiers: {
 		gateReward: 180,
 		rewardMultiplier: 1.5,
 		coverageMultiplier: 2,
 		coverageAdd: 0.5,
+	},
+	perAnswer: {
+		coveragePerCorrect: 3,
+		storageKbPerCorrect: 0,
 	},
 	coverage: 25,
 	slotCoverageRequired: 20,
@@ -246,7 +251,9 @@ describe(ShopScreen, () => {
 		);
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
 		expect(receipt.getByText("+240KB")).toBeInTheDocument();
-		expect(receipt.getByText("×2 +0.5%")).toBeInTheDocument();
+		expect(
+			receipt.getByText("×2 +0.5% coverage this gate")
+		).toBeInTheDocument();
 	});
 
 	// Row order follows the config's gate role, not the prop order, so this asserts
@@ -267,8 +274,34 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	// A bare pipeline can never clear a gate (ADR-017), so the shop refuses to
-	// empty the build — a run only dies at a gate it failed (ADR-021).
+	// The gate ahead only admits a build over its width demand (ADR-027), so
+	// the shop refuses to sell below it — a run only dies at a gate it failed
+	// (ADR-021).
+	it("locks every deinstall once the build sits at the gate's width demand", () => {
+		const onSell = vi.fn();
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.indexedDb, CONFIGS.rb]}
+				minConfigs={2}
+				onSell={onSell}
+			/>
+		);
+		const deinstalls = screen.getAllByRole("button", { name: /Uninstall/ });
+		for (const button of deinstalls) {
+			expect(button).toBeDisabled();
+			fireEvent.click(button);
+		}
+		expect(onSell).not.toHaveBeenCalled();
+		expect(
+			screen.getAllByText(
+				/Gate 2 demands 2 configs — uninstalling would sink the build below it/i
+			)
+		).toHaveLength(deinstalls.length);
+	});
+
+	// The early gates demand less than one config, so ADR-021's last-config
+	// rule stays the hard bottom with its own plain wording.
 	it("locks the deinstall button on the only installed config", () => {
 		const onSell = vi.fn();
 		render(
@@ -281,6 +314,30 @@ describe(ShopScreen, () => {
 		).toBeInTheDocument();
 		fireEvent.click(deinstall);
 		expect(onSell).not.toHaveBeenCalled();
+	});
+
+	it("mentions the coming gate's width demand in the build summary", () => {
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.indexedDb, CONFIGS.rb]}
+				minConfigs={2}
+			/>
+		);
+		const receipt = within(screen.getByTestId("gate-stake-receipt"));
+		expect(receipt.getByText(/2\+ configs/)).toBeInTheDocument();
+	});
+
+	it("warns in the build summary when the build is under the gate's demand", () => {
+		render(
+			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} minConfigs={4} />
+		);
+		const receipt = within(screen.getByTestId("gate-stake-receipt"));
+		expect(
+			receipt.getByText(
+				"Demands 4 configs — the build holds 1. Climbing on ends the run."
+			)
+		).toHaveClass("text-cinnabar");
 	});
 
 	it("shows the next slot locked with live progress — no unlock button anywhere", () => {
@@ -297,10 +354,14 @@ describe(ShopScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("acknowledges a slot auto-widened since the last visit instead of the next lock row", () => {
+	it("acknowledges a slot auto-widened since the last visit, alongside progress toward the next one", () => {
 		render(<ShopScreen {...base} justUnlockedSlots={[4]} />);
 		expect(screen.getByText("Unlocked 4th slot")).toBeInTheDocument();
-		expect(screen.queryByText(/Opens at/)).not.toBeInTheDocument();
+		// The acknowledgment names slot 4 — it must not also relabel it as the
+		// still-locked next slot. Progress resumes one slot further on.
+		expect(
+			screen.getByRole("progressbar", { name: "coverage toward slot 5" })
+		).toBeInTheDocument();
 	});
 
 	it("advances the row to the next slot as the pipeline widens", () => {

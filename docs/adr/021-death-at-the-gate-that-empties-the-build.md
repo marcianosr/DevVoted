@@ -35,6 +35,10 @@ should be game over.
 3. **Nothing outside a failed gate can empty the pipeline.** The shop refuses to
    deinstall or drop the last installed config (`holdsLastConfig`), and the
    Deinstall button on a one-config load-out is disabled with the reason.
+
+   > ⚠ Generalized by ADR-027: `holdsLastConfig` became `atMinimumWidth` — the
+   > shop and prep doorstep refuse any removal at or under the coming gate's
+   > width demand (`minConfigsForGate`), not just the last config.
 4. **`isBare` stays** as gate.model's clear rule (ADR-017) and as the reducer's
    fallback for runs snapshotted before this ADR, which can still resume with an
    empty pipeline.

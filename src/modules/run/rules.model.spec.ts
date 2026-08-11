@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	dropCount,
 	gateStake,
+	minConfigsForGate,
 	pollDifficultyMultiplier,
 	storageCreditRate,
 	GATE_COUNT,
@@ -50,6 +52,31 @@ describe("pollDifficultyMultiplier", () => {
 		expect(pollDifficultyMultiplier(3, true)).toBeCloseTo(1.5);
 		expect(pollDifficultyMultiplier(6, true)).toBeCloseTo(1.8);
 		expect(pollDifficultyMultiplier(8, true)).toBeCloseTo(2);
+	});
+});
+
+describe("minConfigsForGate", () => {
+	it("ramps with the early gates so the opening climb farms freely", () => {
+		expect(minConfigsForGate(0)).toBe(0); // Pallet demands nothing
+		expect(minConfigsForGate(1)).toBe(1); // Boulder
+		expect(minConfigsForGate(2)).toBe(2); // Cascade
+		expect(minConfigsForGate(3)).toBe(3); // Thunder
+	});
+
+	it("follows one-over-the-strip-quota from gate 4 to the summit's 8", () => {
+		for (let gate = 4; gate < GATE_COUNT; gate++)
+			expect(minConfigsForGate(gate)).toBe(dropCount(gate) + 1);
+		expect(minConfigsForGate(4)).toBe(4);
+		expect(minConfigsForGate(VICTORY_GATE)).toBe(8);
+	});
+
+	it("admits only stake-survivable builds from Thunder on — meeting the demand is never fatal there", () => {
+		// Before gate 3 the demand sits under the quota on purpose: the early
+		// glass cannon is farmable, and ADR-021's fatal rule prices it honestly.
+		for (let gate = 3; gate < GATE_COUNT; gate++)
+			expect(gateStake(dropCount(gate), minConfigsForGate(gate)).fatal).toBe(
+				false
+			);
 	});
 });
 

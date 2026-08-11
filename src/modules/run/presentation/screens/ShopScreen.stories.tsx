@@ -57,11 +57,17 @@ export const Default: Story = {
 		slots: 3,
 		pollsPerGate: 5,
 		stripsOnFailure: 1,
+		minConfigs: 1,
 		modifiers: {
 			gateReward: 240,
 			rewardMultiplier: 2,
 			coverageMultiplier: 2,
 			coverageAdd: 0.5,
+		},
+		perAnswer: {
+			coveragePerCorrect: 8,
+			storageKbPerCorrect: 0,
+			matchingConfigMultiplier: 1.25,
 		},
 		coverage: 25,
 		slotCoverageRequired: 20,
@@ -116,5 +122,18 @@ export const PaidStoragePlan: Story = {
 		...Default.args,
 		storage: 700,
 		storagePlans: plansOn(3, 700),
+	},
+};
+
+// A strip sank the build under the coming gate's width demand (ADR-027): the
+// build summary warns that climbing on ends the run, and every uninstall locks —
+// the moment that decides whether death at the gate's door reads as fair.
+export const UnderWidthDemand: Story = {
+	args: {
+		...Default.args,
+		configs: [CONFIGS.js],
+		newConfigIds: [],
+		stripsOnFailure: 3,
+		minConfigs: 4,
 	},
 };

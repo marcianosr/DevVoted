@@ -25,6 +25,11 @@ export const Default: Story = {
 			coverageMultiplier: 1,
 			coverageAdd: 0,
 		},
+		perAnswer: {
+			coveragePerCorrect: 1,
+			storageKbPerCorrect: 0,
+			matchingConfigMultiplier: 1.25,
+		},
 		bench: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coverageGain],
 		checks: [
 			{
@@ -45,6 +50,7 @@ export const Default: Story = {
 		],
 		onSlot: () => {},
 		onUnslot: () => {},
+		startAction: { label: "Start run →", onClick: () => {} },
 	},
 };
 

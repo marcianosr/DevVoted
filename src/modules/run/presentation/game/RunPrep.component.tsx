@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
 
+import { perAnswerPreviewFor } from "~/modules/run/pipeline/pipeline.model";
 import { Screen } from "~/ui/Screen.ui";
 
 import { PrepScreen } from "../screens/PrepScreen.ui";
@@ -23,6 +24,7 @@ export const RunPrep = () => {
 				gateNumber={view.gatesCleared}
 				pollsPerGate={view.pollsPerGate}
 				stripsOnFailure={view.stripsOnFailure}
+				minConfigs={view.minConfigs}
 				storageBillKb={view.storageBillKb}
 				modifiers={{
 					gateReward: view.gateReward,
@@ -30,6 +32,7 @@ export const RunPrep = () => {
 					coverageMultiplier: view.coverageMultiplier,
 					coverageAdd: view.coverageAdd,
 				}}
+				perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
 				configs={view.configs}
 				editing={editing}
 				onDropConfig={(configId) => send({ type: "drop", configId })}

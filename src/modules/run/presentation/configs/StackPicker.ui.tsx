@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 
 import type { StarterStack } from "~/modules/run/configs/stack.model";
 import { Badge } from "~/ui/Badge.component";
+import { RadioDot } from "~/ui/RadioDot.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { ConfigChip } from "./ConfigChip.ui";
 
@@ -13,16 +14,6 @@ type StackPickerProps = {
 	onCustomBuild?: () => void;
 	selectedDetail?: ReactNode;
 };
-
-const RadioDot = ({ checked }: { checked: boolean }) => (
-	<span
-		aria-hidden
-		className={clsx(
-			"size-3 shrink-0 rounded-full border",
-			checked ? "border-celadon bg-celadon/70" : "border-zinc-600"
-		)}
-	/>
-);
 
 const StackHeader = ({
 	stack,
@@ -41,7 +32,11 @@ const StackHeader = ({
 		>
 			{stack.name}
 		</Paragraph>
-		{stack.recommended ? <Badge tone="positive">Recommended</Badge> : null}
+		{stack.recommended ? (
+			<Badge tone="positive" size="pill">
+				Recommended
+			</Badge>
+		) : null}
 		<Paragraph as="span" tone="muted">
 			{stack.blurb}
 		</Paragraph>

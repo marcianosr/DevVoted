@@ -12,6 +12,7 @@ import {
 import {
 	FAUCET_CAP_KB,
 	GATE_COUNT,
+	minConfigsForGate,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
 	STORAGE_PLANS,
@@ -82,6 +83,31 @@ const started = (slotIds: string[], size = 60): RunState => {
 	for (const configId of [...slotIds, ...fillers].slice(0, BASE_SLOTS))
 		state = runReducer(state, { type: "slot", configId });
 	return runReducer(state, { type: "start" });
+};
+
+// Meets a gate's width demand (ADR-027) by padding the build with reserves
+// whose checks all pass on an all-correct react-only pool.
+const RESERVES = [
+	CONFIGS.coverageGain,
+	CONFIGS.coldStart,
+	CONFIGS.indexedDb,
+	CONFIGS.codeCoverage,
+	CONFIGS.agentsMd,
+];
+
+const widenedTo = (state: RunState, width: number): RunState => {
+	const installedIds = new Set(configIds(state));
+	const extras = RESERVES.filter(
+		(config) => !installedIds.has(config.id)
+	).slice(0, width - state.pipeline.configs.length);
+	return {
+		...state,
+		pipeline: {
+			...state.pipeline,
+			slots: Math.max(state.pipeline.slots, width),
+			configs: [...state.pipeline.configs, ...extras],
+		},
+	};
 };
 
 describe("configuring", () => {
@@ -611,6 +637,79 @@ describe("failure model", () => {
 	});
 });
 
+describe("the gate's width demand (ADR-027)", () => {
+	// A shop standing before gate 4 (demand: 4 configs) on the starting three —
+	// one config short, the state only a strip can produce for real.
+	const shopBeforeGate4 = (): RunState => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		return { ...state, gatesCleared: 4 };
+	};
+
+	it("ends the run at the door of a gate the build is too thin for", () => {
+		const state = runReducer(shopBeforeGate4(), { type: "finish-reward" });
+		expect(state.status).toBe("dead");
+		expect(state.log.at(-1)).toBe(
+			"Gate 4 demands 4 configs — the build holds 3. Run over."
+		);
+	});
+
+	it("admits a build that meets the demand exactly", () => {
+		const state = runReducer(widenedTo(shopBeforeGate4(), 4), {
+			type: "finish-reward",
+		});
+		expect(state.status).toBe("answering");
+	});
+
+	it("refuses the sell that would sink the build under the coming gate's demand", () => {
+		const atDemand = widenedTo(shopBeforeGate4(), 4);
+		const blocked = runReducer(atDemand, { type: "sell", configId: "js" });
+		expect(blocked).toBe(atDemand);
+	});
+
+	it("still sells while the build is wider than the demand", () => {
+		const above = widenedTo(shopBeforeGate4(), 5);
+		const sold = runReducer(above, { type: "sell", configId: "js" });
+		expect(sold.pipeline.configs).toHaveLength(4);
+	});
+
+	it("refuses the doorstep drop that would sink the build under the gate's demand", () => {
+		let state = widenedTo(shopBeforeGate4(), 4);
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.status).toBe("answering");
+		const blocked = runReducer(state, { type: "drop", configId: "js" });
+		expect(blocked).toBe(state);
+	});
+
+	it("refuses any drop once the window has opened — a failing check cannot be shed mid-gate", () => {
+		let state = widenedTo(shopBeforeGate4(), 5);
+		state = runReducer(state, { type: "finish-reward" });
+		state = answerWith(state, true);
+		const blocked = runReducer(state, { type: "drop", configId: "js" });
+		expect(blocked).toBe(state);
+	});
+
+	it("exempts the replay: a strip may sink the build under the demand, the next gate refuses it", () => {
+		let state = widenedTo(shopBeforeGate4(), 4); // js, ts, css, coverage-gain
+		state = runReducer(state, { type: "finish-reward" });
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.status).toBe("awaiting-strip"); // quota 3 < 4 installed
+
+		for (const configId of ["js", "ts", "css"])
+			state = runReducer(state, { type: "strip", configId });
+		state = runReducer(state, { type: "resume-climb" });
+		expect(state.status).toBe("answering"); // 1 config replays gate 4 legally
+
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("rewarding"); // the replay cleared
+
+		// The cheese DVTD-kokk closes: the unrepaired 1-config build is turned
+		// away at gate 5's door instead of cruising on a one-line checklist.
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.status).toBe("dead");
+	});
+});
+
 describe("the daily gate lock", () => {
 	it("stays answering when the day's polls run out mid-window", () => {
 		let state = started(["js"], 3); // stub segment: the window never fills
@@ -703,13 +802,17 @@ describe("a two-polls-a-day player (ADR-014)", () => {
 });
 
 describe("the summit", () => {
-	it("wins by clearing every gate, on the starting width if the checks allow", () => {
-		// Depth is paid for in checks, not slots (ADR-019), so no widening here.
+	it("wins by clearing every gate, widening to meet each gate's demand", () => {
+		// Depth is still paid for in checks (ADR-019), but a gate only admits a
+		// build wide enough to survive its own stake (ADR-027) — the summit
+		// demands 8 configs, so the starting three cannot carry a whole climb.
 		let state = started(["js"], GATE_COUNT * SLICE_WINDOW);
 		for (let gate = 0; gate < GATE_COUNT; gate++) {
 			for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-			if (state.status === "rewarding")
+			if (state.status === "rewarding") {
+				state = widenedTo(state, minConfigsForGate(state.gatesCleared));
 				state = runReducer(state, { type: "finish-reward" });
+			}
 		}
 		expect(state.status).toBe("won");
 		expect(state.clearedGate).toBe(VICTORY_GATE); // the last gate's number

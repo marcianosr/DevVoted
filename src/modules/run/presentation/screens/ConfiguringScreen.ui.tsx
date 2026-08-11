@@ -9,13 +9,15 @@ import {
 import { preRunRoleRows } from "~/modules/run/gate/configRole.model";
 import {
 	MAX_SLOTS,
+	perAnswerPreviewFor,
 	pipelineModifiersFor,
+	type PerAnswerPreview,
 	type PipelineModifiers,
 } from "~/modules/run/pipeline/pipeline.model";
 import { Button } from "~/ui/Button.component";
 import { Columns } from "~/ui/Columns.ui";
 import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
-import { TerminalPanel } from "~/ui/TerminalPanel.ui";
+import type { ScreenAction } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
@@ -33,6 +35,7 @@ type ConfiguringScreenProps = {
 	/** Configs a failed window would peel at this depth (`dropCount`). */
 	stripsOnFailure: number;
 	modifiers: PipelineModifiers;
+	perAnswer: PerAnswerPreview;
 	bench: readonly Config[];
 	checks: readonly CheckStatus[];
 	onSlot: (configId: string) => void;
@@ -44,6 +47,8 @@ type ConfiguringScreenProps = {
 	 */
 	stacks?: readonly StarterStack[];
 	onPickStack?: (stackId: string) => void;
+	/** The receipt carries its own CTA now, rather than the screen footer. */
+	startAction: ScreenAction;
 };
 
 // TODO(marciano): with the family headers gone, the bench needs an order.
@@ -78,12 +83,14 @@ export const ConfiguringScreen = ({
 	pollsPerGate,
 	stripsOnFailure,
 	modifiers,
+	perAnswer,
 	bench,
 	checks,
 	onSlot,
 	onUnslot,
 	stacks,
 	onPickStack,
+	startAction,
 }: ConfiguringScreenProps) => {
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const [customBuild, setCustomBuild] = useState(false);
@@ -97,33 +104,28 @@ export const ConfiguringScreen = ({
 	if (stackMode && !customBuild) {
 		return (
 			<div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
-				<div className="md:col-span-2">
-					<TerminalPanel title="Pick your stack">
-						<Paragraph tone="muted">
-							Choose a stack. You can rebuild it later.
-						</Paragraph>
-						<StackPicker
-							stacks={stacks}
-							selectedStackId={stackMatching(configs)?.id}
-							onPick={onPickStack}
-							onCustomBuild={() => setCustomBuild(true)}
-							// The picked stack IS the pipeline, so its row expands into a
-							// trimmed preview: demand + payoff, always visible; a linter's
-							// fee waits behind its own "more details" tap (Marciano,
-							// 2026-08-10 — "preset view = what matters for choosing").
-							selectedDetail={<StackPreviewList rows={rows} />}
-						/>
-					</TerminalPanel>
-				</div>
+				<section className="flex flex-col gap-4 md:col-span-2">
+					<Title>Pick your build</Title>
+					<Paragraph tone="muted">
+						Choose a stack. You can rebuild it later.
+					</Paragraph>
+					<StackPicker
+						stacks={stacks}
+						selectedStackId={stackMatching(configs)?.id}
+						onPick={onPickStack}
+						onCustomBuild={() => setCustomBuild(true)}
+						selectedDetail={<StackPreviewList rows={rows} />}
+					/>
+				</section>
 				<GateStakeReceipt
 					gateNumber={gatesCleared}
 					pollsPerGate={pollsPerGate}
 					stripsOnFailure={stripsOnFailure}
-					// The committed build always fills every slot (the start guard), so
-					// the stake reads against the pipeline the stack is about to become —
-					// an unpicked screen must not open on "Strip all — run over".
 					configCount={slots}
 					modifiers={modifiers}
+					perAnswer={perAnswer}
+					configsToInstall={slots - configs.length}
+					action={startAction}
 				/>
 			</div>
 		);
@@ -135,6 +137,9 @@ export const ConfiguringScreen = ({
 	const next = previewConfig
 		? pipelineModifiersFor([...configs, previewConfig])
 		: undefined;
+	const nextPerAnswer = previewConfig
+		? perAnswerPreviewFor([...configs, previewConfig], gatesCleared)
+		: undefined;
 
 	const commit = (configId: string) => {
 		onSlot(configId);
@@ -145,7 +150,7 @@ export const ConfiguringScreen = ({
 		<div className="flex flex-col gap-6">
 			<Columns
 				aside={
-					<TerminalPanel title="Starter configs">
+					<>
 						<Paragraph tone="muted">
 							Click a config to add it to your pipeline
 						</Paragraph>
@@ -187,7 +192,7 @@ export const ConfiguringScreen = ({
 								← Back to stacks
 							</Button>
 						) : null}
-					</TerminalPanel>
+					</>
 				}
 				main={
 					<section className="flex flex-col gap-4">
@@ -220,6 +225,9 @@ export const ConfiguringScreen = ({
 							configCount={configs.length}
 							modifiers={modifiers}
 							preview={next}
+							perAnswer={perAnswer}
+							previewPerAnswer={nextPerAnswer}
+							action={startAction}
 						/>
 					</section>
 				}

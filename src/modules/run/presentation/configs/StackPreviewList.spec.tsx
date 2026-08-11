@@ -31,6 +31,18 @@ describe(StackPreviewList, () => {
 		expect(screen.queryByText("0/1")).not.toBeInTheDocument();
 	});
 
+	it("shows each config's live status dot — preRunRoleRows keeps state", () => {
+		const rows = preRunRoleRows([CONFIGS.unitTests], checks);
+		render(<StackPreviewList rows={rows} />);
+		expect(screen.getByRole("img", { name: "running" })).toBeInTheDocument();
+	});
+
+	it("defaults a config with no matching check to a skipped dot", () => {
+		const rows = preRunRoleRows([CONFIGS.eslint], []);
+		render(<StackPreviewList rows={rows} />);
+		expect(screen.getByRole("img", { name: "skipped" })).toBeInTheDocument();
+	});
+
 	it("hides a config's fee until its details are tapped open", () => {
 		const rows = preRunRoleRows([CONFIGS.eslint], []);
 		render(<StackPreviewList rows={rows} />);

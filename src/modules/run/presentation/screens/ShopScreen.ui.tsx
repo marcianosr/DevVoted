@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { clsx } from "clsx";
 import {
 	Config,
 	describeConfig,
@@ -12,10 +13,13 @@ import type { CheckStatus } from "~/modules/run/configs/effect.model";
 import type { StoragePlanOption } from "~/modules/run/view/runView.viewmodel";
 import { getCategoryMetadata } from "~/domains/shared/categories";
 import {
+	perAnswerPreviewFor,
 	pipelineModifiersFor,
+	type PerAnswerPreview,
 	type PipelineModifiers,
 } from "~/modules/run/pipeline/pipeline.model";
 import { Columns } from "~/ui/Columns.ui";
+import { RadioDot } from "~/ui/RadioDot.ui";
 import { TerminalPanel, TerminalSection } from "~/ui/TerminalPanel.ui";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
@@ -38,7 +42,10 @@ type ShopScreenProps = {
 	slots: number;
 	pollsPerGate: number;
 	stripsOnFailure: number;
+	/** The coming gate's width demand (ADR-027): selling below it is refused. */
+	minConfigs: number;
 	modifiers: PipelineModifiers;
+	perAnswer: PerAnswerPreview;
 	billKb?: number;
 	newConfigIds: readonly string[];
 	draftOptions: readonly Config[];
@@ -106,7 +113,6 @@ const actionButton = ({
 );
 
 type PanelHeadingProps = {
-	/** A node, not a string: the load-out panel names its gate in badge colour. */
 	title: ReactNode;
 	subtitle: string;
 };
@@ -127,7 +133,9 @@ export const ShopScreen = ({
 	slots,
 	pollsPerGate,
 	stripsOnFailure,
+	minConfigs,
 	modifiers,
+	perAnswer,
 	billKb,
 	newConfigIds,
 	draftOptions,
@@ -150,8 +158,6 @@ export const ShopScreen = ({
 	const canAfford = (config: Config): boolean => storage >= draftCost(config);
 	const canInstall = (config: Config): boolean => !isFull && canAfford(config);
 
-	// Focus upgrades are coverage-gated and free; Unit Tests' upgrade is
-	// storage-priced (32KB × the level bought) with no coverage requirement.
 	const canUpgrade = (config: Config): boolean => {
 		if (!config.focusCategory)
 			return storage >= upgradeStorageCost(config.level ?? 1);
@@ -161,9 +167,6 @@ export const ShopScreen = ({
 		);
 	};
 
-	// Hovering Upgrade always previews the next level's concrete effect; while
-	// gated it adds what the upgrade wants — the category-tied coverage for a
-	// focus config (its name in bold), the KB price otherwise.
 	const upgradeTooltip = (config: Config): ReactNode => {
 		const nextLevel = (config.level ?? 1) + 1;
 		const preview = `L${nextLevel}: ${describeConfig({ ...config, level: nextLevel })}`;
@@ -185,17 +188,14 @@ export const ShopScreen = ({
 		);
 	};
 
-	// The last installed config stays: a bare pipeline can never clear a gate
-	// (ADR-017), so deinstalling it would hand the player an already-lost run —
-	// and since ADR-021 a build only dies at a gate it failed.
-	const holdsLastConfig = configs.length <= 1;
+	const atMinimumWidth = configs.length <= Math.max(1, minConfigs);
 
 	const loadoutActions = (config: Config): ReactNode => {
 		const deinstallButton = actionButton({
 			label: "Uninstall",
 			price: `+${sellRefund(config)}KB`,
 			onClick: () => onSell(config.id),
-			disabled: holdsLastConfig,
+			disabled: atMinimumWidth,
 			pill: true,
 		});
 		const upgradeButton = isUpgradable(config)
@@ -214,8 +214,14 @@ export const ShopScreen = ({
 				{upgradeButton ? (
 					<Tooltip content={upgradeTooltip(config)}>{upgradeButton}</Tooltip>
 				) : null}
-				{holdsLastConfig ? (
-					<Tooltip content="Your only config — deinstalling it would leave nothing to clear a gate with.">
+				{atMinimumWidth ? (
+					<Tooltip
+						content={
+							minConfigs >= 2
+								? `Gate ${gateNumber} demands ${minConfigs} configs — uninstalling would sink the build below it.`
+								: "Your only config — deinstalling it would leave nothing to clear a gate with."
+						}
+					>
 						{deinstallButton}
 					</Tooltip>
 				) : (
@@ -225,15 +231,14 @@ export const ShopScreen = ({
 		);
 	};
 
-	// Only an installable offer previews. Hovering one you cannot afford (or with
-	// no free slot) used to draw a ghost row in a slot that does not exist, which
-	// read as if the config had been added. The chip's own price tag and tooltip
-	// carry the refusal instead.
 	const previewConfig = draftOptions.find(
 		(config) => config.id === previewId && canInstall(config)
 	);
 	const next = previewConfig
 		? pipelineModifiersFor([...configs, previewConfig])
+		: undefined;
+	const nextPerAnswer = previewConfig
+		? perAnswerPreviewFor([...configs, previewConfig], gateNumber)
 		: undefined;
 
 	const install = (configId: string) => {
@@ -241,8 +246,6 @@ export const ShopScreen = ({
 		setPreviewId(null);
 	};
 
-	// Only reached for an installable offer, so this is purely the price — the row
-	// itself is the button (its aria-label names the action).
 	const previewHint = (config: Config): ReactNode => (
 		<Paragraph as="span" size="sm" tone="muted">
 			<span className="font-bold text-saffron">{draftCost(config)}KB</span>
@@ -301,7 +304,7 @@ export const ShopScreen = ({
 
 						<hr className="border-t border-zinc-700" />
 
-						<TerminalSection label="Storage">
+						<TerminalSection label="Storage upgrades">
 							<ul className="flex flex-col">
 								{storagePlans.map((plan) => {
 									const descriptor =
@@ -309,7 +312,7 @@ export const ShopScreen = ({
 									const row = (
 										<span className="flex items-center justify-between gap-3">
 											<span className="flex items-center gap-2">
-												<span aria-hidden>{plan.current ? "●" : "○"}</span>
+												<RadioDot checked={plan.current} />
 												<Paragraph
 													as="span"
 													size="sm"
@@ -323,7 +326,17 @@ export const ShopScreen = ({
 											</Paragraph>
 										</span>
 									);
-									if (plan.current) return <li key={plan.tier}>{row}</li>;
+									// Every row shares one box (padding, rounding) whether it's the
+									// current plan or a switch target — otherwise the current row
+									// (plain span) sits a different size than the others (button),
+									// and the list visibly shifts as the selection changes.
+									const rowBox = "block w-full rounded-lg px-1 py-1 text-left";
+									if (plan.current)
+										return (
+											<li key={plan.tier}>
+												<span className={rowBox}>{row}</span>
+											</li>
+										);
 									const switchButton = (
 										<button
 											type="button"
@@ -331,7 +344,10 @@ export const ShopScreen = ({
 											aria-label={`Switch to ${plan.capKb}KB storage plan${
 												plan.billKb > 0 ? `, ${plan.billKb}KB per gate` : ""
 											}`}
-											className="w-full cursor-pointer rounded-lg px-1 py-1 text-left transition hover:bg-zinc-800/60"
+											className={clsx(
+												rowBox,
+												"cursor-pointer transition hover:bg-zinc-800/60"
+											)}
 										>
 											{row}
 										</button>
@@ -357,9 +373,6 @@ export const ShopScreen = ({
 				main={
 					<section className="flex flex-col gap-4">
 						<PanelHeading
-							// The shop sits between gates, so its heading names the one you
-							// are building for — by badge, since that is what the gate is
-							// called and what clearing it will award.
 							title={
 								nextGate ? (
 									<>
@@ -404,7 +417,10 @@ export const ShopScreen = ({
 							configCount={configs.length}
 							modifiers={modifiers}
 							preview={next}
+							perAnswer={perAnswer}
+							previewPerAnswer={nextPerAnswer}
 							billKb={billKb}
+							minConfigs={minConfigs}
 						/>
 					</section>
 				}

@@ -119,6 +119,20 @@ export const ESCALATION_CAP = 3;
 export const dropCount = (gatesCleared: number): number =>
 	1 + Math.floor(gatesCleared / 2);
 
+/**
+ * The smallest build a gate lets in (ADR-027). Checks come only from configs
+ * (ADR-017), so a thin build owes a short checklist — this demand keeps the
+ * stake real by refusing builds that dodge it through thinness. It ramps with
+ * the early gates (Pallet 0, Boulder 1, Cascade 2, Thunder 3) so the opening
+ * climb farms freely and a broke post-strip run can recover, then follows
+ * `dropCount + 1` — one over the strip quota, so from Thunder on every
+ * admitted build's peel is survivable (quota < configs, ADR-021). Graded at
+ * the gate's door only: a strip may sink a build below it for the replay,
+ * but the next gate turns an unrepaired build away for good.
+ */
+export const minConfigsForGate = (gatesCleared: number): number =>
+	Math.min(gatesCleared, dropCount(gatesCleared) + 1);
+
 export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
 

@@ -25,6 +25,7 @@ import {
 } from "../pipeline/pipeline.model";
 import {
 	dropCount,
+	minConfigsForGate,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -115,6 +116,13 @@ export type RunView = {
 	 * without the player being told.
 	 */
 	readonly stripsOnFailure: number;
+	/**
+	 * The coming gate's width demand (ADR-027): the smallest build it admits —
+	 * one config over its own strip quota (`minConfigsForGate`).
+	 */
+	readonly minConfigs: number;
+	/** True while the build is under that demand — entering the gate ends the run; the shop is where it's repaired. */
+	readonly underMinConfigs: boolean;
 	readonly pollsToGate: number;
 	readonly pollsAnswered: number;
 	readonly pollsPerGate: number;
@@ -327,6 +335,9 @@ export const toRunView = (state: RunState): RunView => {
 		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
 		victoryGate: VICTORY_GATE,
 		stripsOnFailure: dropCount(state.gatesCleared),
+		minConfigs: minConfigsForGate(state.gatesCleared),
+		underMinConfigs:
+			state.pipeline.configs.length < minConfigsForGate(state.gatesCleared),
 		pollsToGate: SLICE_WINDOW - state.window.answered,
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,

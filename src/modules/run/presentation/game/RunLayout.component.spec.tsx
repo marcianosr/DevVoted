@@ -232,12 +232,14 @@ describe("run route sync", () => {
 
 	it("dropping a config from prep's edit mode dispatches the drop action", async () => {
 		const user = userEvent.setup();
+		// Three configs against a demand of two (ADR-027): the build must sit
+		// above the gate's width demand for prep to offer a drop at all.
 		vi.mocked(getTodaysRun).mockResolvedValue({
 			success: true,
 			data: createMockRunView({
 				status: "answering",
 				gatesCleared: 1,
-				configs: [CONFIGS.js, CONFIGS.eslint],
+				configs: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
 			}),
 		});
 		vi.mocked(dispatchRunAction).mockResolvedValue({
@@ -245,7 +247,7 @@ describe("run route sync", () => {
 			data: createMockRunView({
 				status: "answering",
 				gatesCleared: 1,
-				configs: [CONFIGS.js],
+				configs: [CONFIGS.js, CONFIGS.agentsMd],
 			}),
 		});
 

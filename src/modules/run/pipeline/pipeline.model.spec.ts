@@ -13,6 +13,7 @@ import {
 	gateClearPayout,
 	canLint,
 	isBare,
+	perAnswerPreviewFor,
 	pipelineModifiersFor,
 	rewardMultiplierFor,
 	storageOnClearFor,
@@ -109,6 +110,51 @@ describe("pipelineModifiersFor", () => {
 				coverageAdd: 0,
 			}
 		);
+	});
+});
+
+describe("perAnswerPreviewFor", () => {
+	it("prices a bare pipeline at gate 0: 1 coverage, no storage, no matching-config bonus", () => {
+		expect(perAnswerPreviewFor([], 0)).toEqual({
+			coveragePerCorrect: 1,
+			storageKbPerCorrect: 0,
+			matchingConfigMultiplier: undefined,
+		});
+	});
+
+	it("scales coverage with gate depth, riding the same curve as gateClearPayout", () => {
+		expect(perAnswerPreviewFor([], 4).coveragePerCorrect).toBe(5); // gate 4: ×5
+	});
+
+	it("folds in build-wide coverage mults/adds, excluding Focus bonuses", () => {
+		// AGENTS.md doubles coverage, Code Coverage adds +0.5 flat: (1 + 0.5) × 2.
+		expect(
+			perAnswerPreviewFor([CONFIGS.agentsMd, CONFIGS.codeCoverage], 0)
+				.coveragePerCorrect
+		).toBe(3);
+	});
+
+	it("sums storagePerCorrect across the build", () => {
+		expect(
+			perAnswerPreviewFor([CONFIGS.indexedDb], 0).storageKbPerCorrect
+		).toBe(8);
+		expect(perAnswerPreviewFor([], 0).storageKbPerCorrect).toBe(0);
+	});
+
+	it("surfaces the highest Focus bonus as the matching-config multiplier", () => {
+		expect(perAnswerPreviewFor([CONFIGS.js], 0).matchingConfigMultiplier).toBe(
+			1.25
+		);
+		expect(
+			perAnswerPreviewFor([CONFIGS.js, { ...CONFIGS.ts, level: 3 }], 0)
+				.matchingConfigMultiplier
+		).toBe(1.75); // .ts at L3: 1 + 0.25 × 3
+	});
+
+	it("omits the matching-config multiplier with no Focus config equipped", () => {
+		expect(
+			perAnswerPreviewFor([CONFIGS.agentsMd], 0).matchingConfigMultiplier
+		).toBeUndefined();
 	});
 });
 

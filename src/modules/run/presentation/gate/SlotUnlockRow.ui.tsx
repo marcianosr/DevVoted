@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import { MAX_SLOTS } from "~/modules/run/pipeline/pipeline.model";
 import { GainBar } from "~/ui/runs/GainBar.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { SlotNumberCell } from "./PipelineTable.ui";
 
 type NextSlotArgs = {
 	slots: number;
@@ -87,65 +88,87 @@ export const SlotUnlockRow = ({
 }: SlotUnlockRowProps) => {
 	const unlocked = coveragePct >= unlockAtPct;
 	return (
-		<div className="flex items-center gap-4 rounded-lg border border-dashed border-zinc-700 px-4 py-3">
-			<div className="flex min-w-0 flex-1 flex-col gap-1">
-				{/* The table's gutter already numbers this slot, so the row leads with
-				    what it costs rather than repeating "Slot 4". */}
-				<Paragraph as="span" size="sm" tone="muted">
-					Opens at{" "}
-					<span className="font-bold text-zinc-100">{unlockAtPct}%</span>{" "}
-					coverage
-				</Paragraph>
-				<Paragraph as="span" size="xs" tone="muted">
-					<span className={clsx("font-bold", unlocked && "text-viridian")}>
-						{coveragePct}% reached
-					</span>
-				</Paragraph>
-				<GainBar
-					from={0}
-					to={coveragePct}
-					cap={unlockAtPct}
-					label={`coverage toward slot ${slot}`}
-				/>
+		<>
+			<SlotNumberCell slot={slot} />
+			<div className="col-start-2 col-span-3 flex items-center gap-4 rounded-lg border border-dashed border-zinc-700 px-4 py-3">
+				<div className="flex min-w-0 flex-1 flex-col gap-1">
+					{/* The table's gutter already numbers this slot, so the row leads with
+					    what it costs rather than repeating "Slot 4". */}
+					<Paragraph as="span" size="sm" tone="muted">
+						Opens at{" "}
+						<span className="font-bold text-zinc-100">{unlockAtPct}%</span>{" "}
+						coverage
+					</Paragraph>
+					<Paragraph as="span" size="xs" tone="muted">
+						<span className={clsx("font-bold", unlocked && "text-viridian")}>
+							{coveragePct}% reached
+						</span>
+					</Paragraph>
+					<GainBar
+						from={0}
+						to={coveragePct}
+						cap={unlockAtPct}
+						label={`coverage toward slot ${slot}`}
+					/>
+				</div>
+				{lockPill(unlocked)}
 			</div>
-			{lockPill(unlocked)}
-		</div>
+		</>
 	);
 };
 
 /**
  * The shop's one-time acknowledgment for a slot (or slots) auto-widened since
  * the last visit — same dashed-box shape as `SlotUnlockRow`, but green and
- * done rather than dashed grey and pending.
+ * done rather than dashed grey and pending. Carries no slot number of its
+ * own: the slots it names already have their own numbered rows above it in
+ * the pipeline list (as empty slots), so numbering this row too would invent
+ * a slot that doesn't exist — the bug that had slot 7 read as "unlocked" when
+ * only 4–6 had (Marciano, 2026-08-11).
  */
 const UnlockedSlotRow = ({ slots }: { slots: readonly number[] }) => (
-	<div className="flex items-center gap-4 rounded-lg border border-dashed border-viridian px-4 py-3">
-		<Paragraph as="span" size="sm" tone="viridian" className="font-bold">
-			Unlocked {joinOrdinals(slots)} slot{slots.length > 1 ? "s" : ""}
-		</Paragraph>
-	</div>
+	<>
+		<span aria-hidden className="col-start-1" />
+		<div className="col-start-2 col-span-3 flex items-center gap-4 rounded-lg border border-dashed border-viridian px-4 py-3">
+			<Paragraph as="span" size="sm" tone="viridian" className="font-bold">
+				Unlocked {joinOrdinals(slots)} slot{slots.length > 1 ? "s" : ""}
+			</Paragraph>
+		</div>
+	</>
 );
 
 /**
- * The next slot row for a pipeline of the given width, or nothing at the slot
- * cap — the one guard both the shop and the configuring screen need. When
- * slots widened automatically since the last shop visit, this shows that
- * acknowledgment instead of the next (still-locked) slot's progress.
+ * The pipeline list's trailing row(s): a one-time acknowledgment for any slot
+ * that auto-widened since the last shop visit (ADR-025), followed by live
+ * progress toward the actual next slot — the two are independent facts and
+ * both can be true at once, so neither hides the other. `effectiveSlots`
+ * folds `justUnlocked` into the width so the progress row always numbers the
+ * slot genuinely beyond every slot already shown, even if a caller's `slots`
+ * hasn't caught up yet. Nothing renders once every slot up to the cap has
+ * both widened and been acknowledged.
  */
 export const nextSlotRow = ({
 	justUnlocked,
 	...args
 }: NextSlotArgs & { justUnlocked?: readonly number[] }): ReactNode => {
-	if (justUnlocked && justUnlocked.length > 0)
-		return <UnlockedSlotRow slots={justUnlocked} />;
-	const next = nextSlot(args);
-	if (!next) return null;
+	const effectiveSlots = Math.max(args.slots, ...(justUnlocked ?? []));
+	const next = nextSlot({ ...args, slots: effectiveSlots });
+	const unlockedNotice =
+		justUnlocked && justUnlocked.length > 0 ? (
+			<UnlockedSlotRow slots={justUnlocked} />
+		) : null;
+	if (!unlockedNotice && !next) return null;
 	return (
-		<SlotUnlockRow
-			slot={next.slot}
-			unlockAtPct={next.unlockAtPct}
-			coveragePct={next.coveragePct}
-		/>
+		<>
+			{unlockedNotice}
+			{next ? (
+				<SlotUnlockRow
+					slot={next.slot}
+					unlockAtPct={next.unlockAtPct}
+					coveragePct={next.coveragePct}
+				/>
+			) : null}
+		</>
 	);
 };
 

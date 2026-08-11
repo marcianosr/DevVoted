@@ -8,12 +8,17 @@ const base = {
 	gateNumber: 1,
 	pollsPerGate: 5,
 	stripsOnFailure: 1,
+	minConfigs: 1,
 	storageBillKb: 0,
 	modifiers: {
 		gateReward: 32,
 		rewardMultiplier: 1,
 		coverageMultiplier: 1,
 		coverageAdd: 0,
+	},
+	perAnswer: {
+		coveragePerCorrect: 1,
+		storageKbPerCorrect: 0,
 	},
 	configs: [CONFIGS.js, CONFIGS.eslint],
 	editing: false,
@@ -35,14 +40,14 @@ describe(PrepScreen, () => {
 
 	it("shows the polls-per-window subcaption", () => {
 		render(<PrepScreen {...base} pollsPerGate={5} />);
-		expect(screen.getByText("5 polls")).toBeInTheDocument();
+		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
 	});
 
-	it("flows the gate's storage and coverage gain from the poll count", () => {
+	it("shows the gate's storage reward, not a trivial coverage multiplier", () => {
 		render(<PrepScreen {...base} />);
-		expect(screen.getByText("clear")).toBeInTheDocument();
+		expect(screen.getByText("Succeed your build:")).toBeInTheDocument();
 		expect(screen.getByText("+32KB")).toHaveClass("text-gradient-green");
-		expect(screen.getByText("×1")).toHaveClass("text-gradient-green");
+		expect(screen.queryByText("×1")).not.toBeInTheDocument();
 	});
 
 	it("captions the gate with its coverage multiplier", () => {
@@ -52,7 +57,9 @@ describe(PrepScreen, () => {
 				modifiers={{ ...base.modifiers, coverageMultiplier: 2, coverageAdd: 5 }}
 			/>
 		);
-		expect(screen.getByText("×2 +5%")).toHaveClass("text-gradient-green");
+		expect(screen.getByText("×2 +5% coverage this gate")).toHaveClass(
+			"text-gradient-green"
+		);
 	});
 
 	it("keeps the stake in plain language, no pipeline jargon", () => {
@@ -65,7 +72,9 @@ describe(PrepScreen, () => {
 
 	it("states the stake as a plain count when it is not fatal", () => {
 		render(<PrepScreen {...base} stripsOnFailure={1} />);
-		expect(screen.getByText("Strip 1 config")).toHaveClass("text-cinnabar");
+		expect(screen.getByText("1 config disabled for the run")).toHaveClass(
+			"text-cinnabar"
+		);
 	});
 
 	it("pluralizes the stake for more than one config", () => {
@@ -76,12 +85,16 @@ describe(PrepScreen, () => {
 				configs={[CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]}
 			/>
 		);
-		expect(screen.getByText("Strip 2 configs")).toBeInTheDocument();
+		expect(
+			screen.getByText("2 configs disabled for the run")
+		).toBeInTheDocument();
 	});
 
 	it("warns the run is over once the stake would take the whole build", () => {
 		render(<PrepScreen {...base} stripsOnFailure={2} configs={base.configs} />);
-		expect(screen.getByText("Strip all — run over")).toBeInTheDocument();
+		expect(
+			screen.getByText("All configs disabled — run over")
+		).toBeInTheDocument();
 	});
 
 	it("names the storage plan's bill on a paid tier", () => {
@@ -132,6 +145,30 @@ describe(PrepScreen, () => {
 		expect(
 			screen.queryByRole("button", { name: /^\.js/ })
 		).not.toBeInTheDocument();
+	});
+
+	it("locks every chip once the build sits at the gate's width demand", () => {
+		render(<PrepScreen {...base} editing minConfigs={2} />);
+		expect(
+			screen.queryByRole("button", { name: /^\.js/ })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /^ESLint/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("mentions the gate's width demand in the build summary", () => {
+		render(<PrepScreen {...base} minConfigs={2} />);
+		expect(screen.getByText(/2\+ configs/)).toBeInTheDocument();
+	});
+
+	it("warns in cinnabar that entering under the demand ends the run", () => {
+		render(<PrepScreen {...base} minConfigs={3} />);
+		expect(
+			screen.getByText(
+				"Demands 3 configs — the build holds 2. Climbing on ends the run."
+			)
+		).toHaveClass("text-cinnabar");
 	});
 
 	it("names the start action after the gate and fires onStartGate when clicked", () => {

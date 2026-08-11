@@ -73,6 +73,25 @@ describe("toRunView", () => {
 		expect(view.victoryGate).toBeGreaterThan(0);
 	});
 
+	it("surfaces the gate's width demand and flags a build under it (ADR-027)", () => {
+		// The demand ramps with the gate: Pallet asks nothing, so the early
+		// climb farms freely; deeper gates demand one config over their quota.
+		expect(toRunView(answeringWith([CONFIGS.js])).minConfigs).toBe(0);
+
+		const thin = toRunView({
+			...answeringWith([CONFIGS.js]),
+			gatesCleared: 4,
+		});
+		expect(thin.minConfigs).toBe(4);
+		expect(thin.underMinConfigs).toBe(true);
+
+		const met = toRunView({
+			...answeringWith([CONFIGS.js, CONFIGS.eslint]),
+			gatesCleared: 2,
+		});
+		expect(met.underMinConfigs).toBe(false);
+	});
+
 	it("keeps awaitingTomorrow off while a poll is on deck", () => {
 		expect(toRunView(answering()).awaitingTomorrow).toBe(false);
 	});

@@ -36,6 +36,7 @@ import {
 	dropCount,
 	FAUCET_CAP_KB,
 	gateBaseMultiplier,
+	minConfigsForGate,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -903,22 +904,43 @@ const changePlan = (state: RunState, tier: number): RunState => {
 	};
 };
 
-const finishReward = (state: RunState): RunState => ({
-	...state,
-	draftOptions: [],
-	rebuildsUsed: 0,
-	draftedThisGate: [],
-	answeredThisGate: [],
-	clearedChecks: [],
-	faucetThisGateKb: 0,
-	gateRewardKb: 0,
-	gateBillKb: 0,
-	planDowngraded: false,
-	justUnlockedSlots: [],
-	storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
-	status: "answering",
-	log: withLog(state, "Climbing on."),
-});
+/**
+ * Leaving the shop is entering the next gate, and the gate grades its width
+ * demand at the door (ADR-027): a build under `minConfigsForGate` could not
+ * even pay the gate's stake, so entry is refused for good — the death ADR-021
+ * says belongs to a gate. Only a strip can sink a build this low (the shop and
+ * doorstep refuse voluntary thinning), so the charge always traces back to a
+ * failed gate, and the shop names it in cinnabar before the click.
+ */
+const finishReward = (state: RunState): RunState => {
+	const demanded = minConfigsForGate(state.gatesCleared);
+	const installed = state.pipeline.configs.length;
+	if (installed < demanded)
+		return {
+			...state,
+			status: "dead",
+			log: withLog(
+				state,
+				`Gate ${state.gatesCleared} demands ${demanded} configs — the build holds ${installed}. Run over.`
+			),
+		};
+	return {
+		...state,
+		draftOptions: [],
+		rebuildsUsed: 0,
+		draftedThisGate: [],
+		answeredThisGate: [],
+		clearedChecks: [],
+		faucetThisGateKb: 0,
+		gateRewardKb: 0,
+		gateBillKb: 0,
+		planDowngraded: false,
+		justUnlockedSlots: [],
+		storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
+		status: "answering",
+		log: withLog(state, "Climbing on."),
+	};
+};
 
 const rebuildDraft = (state: RunState): RunState => {
 	const cost = rebuildCost(state.rebuildsUsed);
@@ -937,18 +959,23 @@ const rebuildDraft = (state: RunState): RunState => {
 };
 
 /**
- * The last installed config is not removable. A bare pipeline can never clear a
- * gate (ADR-017), so emptying the build in the shop would be a delayed suicide
- * with no failed gate to justify it — death belongs to the gate (ADR-021).
+ * The build sits at (or under) the coming gate's width demand
+ * (`minConfigsForGate`, ADR-027), so nothing may be voluntarily removed.
+ * Generalizes ADR-021's last-config rule: thinning below the demand in the
+ * shop or on the prep doorstep would hand the player an already-lost run
+ * with no failed gate to justify it — death belongs to the gate. The early
+ * gates demand less than one config, so the last-config rule stays the
+ * hard bottom there.
  */
-const holdsLastConfig = (state: RunState): boolean =>
-	state.pipeline.configs.length <= 1;
+const atMinimumWidth = (state: RunState): boolean =>
+	state.pipeline.configs.length <=
+	Math.max(1, minConfigsForGate(state.gatesCleared));
 
 const sell = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target || holdsLastConfig(state)) return state;
+	if (!target || atMinimumWidth(state)) return state;
 	const refund = sellRefund(target);
 	return {
 		...state,
@@ -962,7 +989,7 @@ const drop = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target || holdsLastConfig(state)) return state;
+	if (!target || atMinimumWidth(state)) return state;
 	return {
 		...state,
 		pipeline: withPipeline(
@@ -1009,9 +1036,13 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return changePlan(state, action.tier);
 	if (action.type === "sell" && state.status === "rewarding")
 		return sell(state, action.configId);
+	// While answering, drop is doorstep-only (window untouched): mid-window it
+	// would shed the very check about to fail and re-derive the checklist
+	// without it (ADR-027) — the gate grades the build it admitted.
 	if (
 		action.type === "drop" &&
-		(state.status === "rewarding" || state.status === "answering")
+		(state.status === "rewarding" ||
+			(state.status === "answering" && state.window.answered === 0))
 	)
 		return drop(state, action.configId);
 	return state;

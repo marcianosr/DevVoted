@@ -224,7 +224,7 @@ export const PipelineReportRow = ({
 					</Paragraph>
 				) : null}
 				{gives ? (
-					<FactRow icon="v" tone="viridian" value={emphasizeNumbers(gives)} />
+					<FactRow icon="v" tone="celadon" value={emphasizeNumbers(gives)} />
 				) : null}
 				{(value != null || note) && (needs || gives) ? (
 					<FactRow

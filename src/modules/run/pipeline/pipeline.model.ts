@@ -1,6 +1,6 @@
 import type { CategoryCode } from "~/domains/shared/categories";
 
-import { Config } from "../configs/config.model";
+import { Config, focusCoverageMultiplier } from "../configs/config.model";
 import { AnswerContext, Coverage, effectOf } from "../configs/effect.model";
 import {
 	GATE_REWARD_KB,
@@ -113,6 +113,44 @@ export const pipelineModifiersFor = (
 		gateReward:
 			Math.round(GATE_REWARD_KB * rewardMultiplier) +
 			storageOnClearFor(configs),
+	};
+};
+
+export type PerAnswerPreview = {
+	readonly coveragePerCorrect: number;
+	readonly storageKbPerCorrect: number;
+	/** The best Focus bonus in the build, called out separately since it only
+	 * lands when a poll's category matches — absent with no Focus config equipped. */
+	readonly matchingConfigMultiplier?: number;
+};
+
+/**
+ * What one correct, average-difficulty answer is worth right now — the stake
+ * receipt's "Per answer" line. `coverageProfileFor` deliberately excludes Focus
+ * bonuses (they're conditional on the poll's category), so `coveragePerCorrect`
+ * is the guaranteed floor; `matchingConfigMultiplier` is surfaced separately as
+ * the best-case bonus a Focus config in the build can add. Only one category
+ * can match a given poll, so the highest level stands in rather than summing
+ * every Focus config's multiplier.
+ */
+export const perAnswerPreviewFor = (
+	configs: readonly Config[],
+	gatesCleared: number
+): PerAnswerPreview => {
+	const { mult, add } = coverageProfileFor(configs);
+	const focusMultipliers = configs
+		.filter((config) => config.focusCategory !== undefined)
+		.map((config) => focusCoverageMultiplier(config.level ?? 1));
+	return {
+		coveragePerCorrect: roundToOneDecimal(
+			gateBaseMultiplier(gatesCleared) * (1 + add) * mult
+		),
+		storageKbPerCorrect: configs.reduce(
+			(sum, config) => sum + (config.storagePerCorrect ?? 0),
+			0
+		),
+		matchingConfigMultiplier:
+			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
 	};
 };
 

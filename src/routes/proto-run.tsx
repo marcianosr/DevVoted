@@ -22,7 +22,10 @@ import { longestCorrectStreak } from "~/modules/run/community/standouts.model";
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
 import { STARTER_STACKS } from "~/modules/run/configs/stack.model";
 import { rebuildCost } from "~/modules/run/draft/draft.model";
-import { coverageToAddSlot } from "~/modules/run/pipeline/pipeline.model";
+import {
+	coverageToAddSlot,
+	perAnswerPreviewFor,
+} from "~/modules/run/pipeline/pipeline.model";
 import { AnsweringScreen } from "~/modules/run/presentation/screens/AnsweringScreen.ui";
 import { ConfiguringScreen } from "~/modules/run/presentation/screens/ConfiguringScreen.ui";
 import { PrepScreen } from "~/modules/run/presentation/screens/PrepScreen.ui";
@@ -46,6 +49,7 @@ import {
 } from "~/domains/shared/categories";
 import { formatDurationMs } from "~/lib/dateUtils";
 import { Screen } from "~/ui/Screen.ui";
+import { setScreenNavDirection } from "~/ui/screenNavDirection";
 import { Stack } from "~/ui/Stack.ui";
 
 export const Route = createFileRoute("/proto-run")({
@@ -500,15 +504,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</div>
 			)}
 			{state.status === "configuring" && (
-				<Screen
-					gateTheme={view.gateTheme}
-					rightAction={{
-						label: "Start run →",
-						onClick: () => dispatch({ type: "start" }),
-						disabled: !canStart,
-						hint: canStart ? undefined : "Pick a stack to start",
-					}}
-				>
+				<Screen gateTheme={view.gateTheme}>
 					<ConfiguringScreen
 						configs={view.configs}
 						slots={view.slots}
@@ -521,12 +517,22 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							coverageMultiplier: view.coverageMultiplier,
 							coverageAdd: view.coverageAdd,
 						}}
+						perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
 						bench={view.available}
 						checks={view.checks}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
 						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
 						stacks={STARTER_STACKS}
 						onPickStack={(stackId) => dispatch({ type: "pick-stack", stackId })}
+						startAction={{
+							label: "Start run →",
+							onClick: () => {
+								setScreenNavDirection("forward");
+								dispatch({ type: "start" });
+							},
+							disabled: !canStart,
+							hint: canStart ? undefined : "Pick a stack to start",
+						}}
 					/>
 				</Screen>
 			)}
@@ -537,6 +543,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						gateNumber={view.gatesCleared}
 						pollsPerGate={view.pollsPerGate}
 						stripsOnFailure={view.stripsOnFailure}
+						minConfigs={view.minConfigs}
 						storageBillKb={view.storageBillKb}
 						modifiers={{
 							gateReward: view.gateReward,
@@ -544,6 +551,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							coverageMultiplier: view.coverageMultiplier,
 							coverageAdd: view.coverageAdd,
 						}}
+						perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
 						configs={view.configs}
 						editing={editingPipeline}
 						onDropConfig={(configId) => dispatch({ type: "drop", configId })}
@@ -640,12 +648,14 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						configs={view.configs}
 						pollsPerGate={view.pollsPerGate}
 						stripsOnFailure={view.stripsOnFailure}
+						minConfigs={view.minConfigs}
 						modifiers={{
 							gateReward: view.gateReward,
 							rewardMultiplier: view.rewardMultiplier,
 							coverageMultiplier: view.coverageMultiplier,
 							coverageAdd: view.coverageAdd,
 						}}
+						perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
 						billKb={view.storageBillKb}
 						newConfigIds={view.newConfigIds}
 						draftOptions={view.draftOptions}
@@ -673,7 +683,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("shop"),
 					}}
 					rightAction={{
-						label: `Continue to gate ${view.gatesCleared + 1} →`,
+						label: view.underMinConfigs
+							? `Enter gate ${view.gatesCleared + 1} — build too thin, run ends →`
+							: `Continue to gate ${view.gatesCleared + 1} →`,
 						onClick: () => dispatch({ type: "finish-reward" }),
 					}}
 				>

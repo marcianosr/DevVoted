@@ -1,5 +1,7 @@
 import { STARTER_STACKS } from "~/modules/run/configs/stack.model";
+import { perAnswerPreviewFor } from "~/modules/run/pipeline/pipeline.model";
 import { Screen } from "~/ui/Screen.ui";
+import { setScreenNavDirection } from "~/ui/screenNavDirection";
 
 import { ConfiguringScreen } from "../screens/ConfiguringScreen.ui";
 import { useRunActions } from "./useRunActions.hook";
@@ -17,15 +19,7 @@ export const RunConfigure = () => {
 	const canStart = slotsLeft <= 0;
 
 	return (
-		<Screen
-			gateTheme={view.gateTheme}
-			rightAction={{
-				label: "Start run →",
-				onClick: () => send({ type: "start" }),
-				disabled: !canStart || busy,
-				hint: canStart ? undefined : "Pick a stack to start",
-			}}
-		>
+		<Screen gateTheme={view.gateTheme}>
 			<ConfiguringScreen
 				configs={view.configs}
 				slots={view.slots}
@@ -38,12 +32,25 @@ export const RunConfigure = () => {
 					coverageMultiplier: view.coverageMultiplier,
 					coverageAdd: view.coverageAdd,
 				}}
+				perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
 				bench={view.available}
 				checks={view.checks}
 				onSlot={(id) => send({ type: "slot", configId: id })}
 				onUnslot={(id) => send({ type: "unslot", configId: id })}
 				stacks={STARTER_STACKS}
 				onPickStack={(stackId) => send({ type: "pick-stack", stackId })}
+				startAction={{
+					label: "Start run →",
+					onClick: () => {
+						// The receipt carries this CTA itself now (moved inside "Build
+						// Summary", Marciano 2026-08-11), so it — not Screen's own footer —
+						// is what fires the forward transition for the next screen.
+						setScreenNavDirection("forward");
+						send({ type: "start" });
+					},
+					disabled: !canStart || busy,
+					hint: canStart ? undefined : "Pick a stack to start",
+				}}
 			/>
 		</Screen>
 	);

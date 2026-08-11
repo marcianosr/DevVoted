@@ -192,10 +192,25 @@ While thin, the next failure is fatal: from **gate 4** a three-config build owes
 least as many strips as it holds, and a fail it cannot pay for ends the run on the
 spot (ADR-021). Nothing else empties a pipeline: the shop will not let you deinstall
 your last config, so the peel is always survivable and death always belongs to a
-gate you failed. Width is therefore the run's hit-point pool, and the
-tradeoff that makes the independent axes work: a narrow build owes fewer checks but
-has no margin, a wide one owes more and survives mistakes. The answering screen
-names the stake inline ("a fail peels 3", red once it would take everything).
+gate you failed. Width is therefore the run's hit-point pool: a narrow build owes
+fewer checks but has no margin, a wide one owes more and survives mistakes. The
+answering screen names the stake inline ("a fail peels 3", red once it would take
+everything).
+
+**A gate only admits a build that can survive its stake** (ADR-027). Because
+checks come only from configs, a stripped-thin build owed a one-line checklist —
+failure made the retry easier, and a one-config build could cruise to the summit.
+Each gate now carries a width demand, graded at its door:
+`minConfigs = min(gate, dropCount + 1)` — nothing at Pallet, 1 at Boulder, 2 at
+Cascade, 3 at Thunder, then one over the strip quota up to **8 at the summit**.
+The early ramp keeps the opening gates farmable and lets a broke post-strip run
+recover. The shop and prep screen refuse to sell or drop below the coming gate's
+demand (the last config never sells, whatever the demand), so only a strip can
+sink a build under it — the replay of the failed gate is exempt, but the *next*
+gate turns an unrepaired build away: entering under the demand ends the run.
+The Build Summary names the demand (muted while met, cinnabar once climbing on
+would end the run), and mid-window drops are gone — the gate grades the build
+it admitted.
 
 **Boss gates** (every 5th gate, two requirements AND-ed, no reroll) are parked, along
 with ~14 extra gate types (streak gates, economy gates, double-window gates).
@@ -446,11 +461,12 @@ Some configs don't touch polls at all — their effect is simply a flat payout o
 clear. Unit Tests is the clearest case: +32 KB for carrying the game's only
 correct-answer check.
 
-**No baseline** (ADR-017). The gate demands nothing of its own — install Unit Tests
-and you owe correct answers (the only demand that escalates); skip it and no check
-asks for them, but the correctness-scaled payout means wrong answers earn nothing.
-Nothing in the pipeline is locked: every config, Unit Tests included, can be sold or
-stripped.
+**No baseline** (ADR-017). The gate demands no *answers* of its own — install Unit
+Tests and you owe correct answers (the only demand that escalates); skip it and no
+check asks for them, but the correctness-scaled payout means wrong answers earn
+nothing. The gate's one structural demand is width (ADR-027, §2.2): it only admits
+a build wide enough to survive its strip quota. Nothing in the pipeline is locked:
+every config, Unit Tests included, can be sold or stripped — down to that demand.
 
 Checks are not only about answering correctly. A check can key off storage level,
 answer speed, build composition, duration, streaks, coverage breadth, or other

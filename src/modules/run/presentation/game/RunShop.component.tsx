@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
+import { perAnswerPreviewFor } from "~/modules/run/pipeline/pipeline.model";
 import { Screen } from "~/ui/Screen.ui";
 
 import { ShopScreen } from "../screens/ShopScreen.ui";
@@ -22,6 +23,9 @@ export const RunShop = () => {
 		sendWith({ type: "finish-reward" }, (result) => {
 			if (!result.success) return;
 			commit(result);
+			// A build under the gate's width demand died at its door (ADR-027) —
+			// the layout's status sync routes to the run-over screen, not community.
+			if (result.data.status === "dead") return;
 			navigate({ to: "/run/community" });
 		});
 
@@ -47,12 +51,14 @@ export const RunShop = () => {
 				configs={view.configs}
 				pollsPerGate={view.pollsPerGate}
 				stripsOnFailure={view.stripsOnFailure}
+				minConfigs={view.minConfigs}
 				modifiers={{
 					gateReward: view.gateReward,
 					rewardMultiplier: view.rewardMultiplier,
 					coverageMultiplier: view.coverageMultiplier,
 					coverageAdd: view.coverageAdd,
 				}}
+				perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
 				billKb={view.storageBillKb}
 				newConfigIds={view.newConfigIds}
 				draftOptions={view.draftOptions}

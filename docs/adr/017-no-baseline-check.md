@@ -43,6 +43,10 @@ removal anyway, with the explicit requirement that farming still be dealt with.
    → dead" reachable. Tightening accepted: a bare build that answered well
    could previously squeak past the baseline; now bareness itself is failure.
 
+   > ⚠ Amended by ADR-027: the gate's structural width demand scales from ≥1
+   > to `minConfigsForGate` (one over its strip quota), graded at the gate's
+   > door. `isBare` stays as the window-close rule.
+
 ## Consequences
 
 - An all-skip build can still climb and reach the summit, but banks (nearly)

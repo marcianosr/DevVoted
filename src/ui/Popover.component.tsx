@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
 
 type OpenSource = "none" | "hover" | "sticky";
 
@@ -9,6 +10,7 @@ type PopoverProps = {
 	ariaLabel: string;
 	children: React.ReactNode;
 	triggerAs?: "button" | "span";
+	className?: string;
 };
 
 const popoverTrigger = cva(
@@ -28,6 +30,7 @@ export const Popover = ({
 	ariaLabel,
 	children,
 	triggerAs = "button",
+	className,
 }: PopoverProps) => {
 	const [openSource, setOpenSource] = useState<OpenSource>("none");
 	const popoverRef = useRef<HTMLDivElement>(null);
@@ -103,7 +106,7 @@ export const Popover = ({
 					role="button"
 					tabIndex={0}
 					onKeyDown={handleKeyDown}
-					className={popoverTrigger({ as: "span" })}
+					className={clsx(popoverTrigger({ as: "span" }), className)}
 					{...triggerProps}
 				>
 					{children}
