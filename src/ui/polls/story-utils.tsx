@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { SwatchTheme } from "~/modules/run/gate/swatch.model";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 /**
  * Wraps a story in a gate-themed section so the `*-theme` utilities resolve,

@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { ALL_SWATCHES, type GateSwatch } from "~/modules/run/gate/swatch.model";
+import {
+	ALL_SWATCHES,
+	type GateSwatch,
+} from "~/modules/run/gate/domain/swatch.model";
 
 /**
  * The ambient run theme per gate (ADR-020): every `[data-gate-theme]` value

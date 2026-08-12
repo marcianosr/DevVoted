@@ -403,11 +403,11 @@ export const runStatesTable = pgTable("run_states", {
 		.notNull()
 		.unique(),
 	state: json("state")
-		.$type<import("~/modules/run/climb/runSnapshot.model").RunSnapshot>()
+		.$type<import("~/modules/run/run/domain/runSnapshot.model").RunSnapshot>()
 		.notNull(),
 	engine_status: varchar("engine_status", { length: 16 })
 		.notNull()
-		.$type<import("~/modules/run/climb/run.model").RunStatus>(),
+		.$type<import("~/modules/run/run/domain/run.model").RunStatus>(),
 	gates_cleared: integer("gates_cleared").notNull().default(0),
 	coverage: real("coverage").notNull().default(0),
 	polls_answered: integer("polls_answered").notNull().default(0), // = state.currentIndex

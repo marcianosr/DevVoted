@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { cva } from "class-variance-authority";
 
-import type { SwatchTheme } from "~/modules/run/gate/swatch.model";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Button, type ButtonVariant } from "./Button.component";
 import { Popover } from "./Popover.component";

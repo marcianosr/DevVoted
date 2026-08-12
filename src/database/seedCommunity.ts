@@ -9,12 +9,12 @@ import {
 	runsTable,
 	usersTable,
 } from "@/src/database/schema";
-import { getOrCreateDailyRunSeed } from "~/modules/run/api/queries";
-import type { AnsweredPoll } from "~/modules/run/climb/run.model";
-import { createRun } from "~/modules/run/climb/run.model";
-import { CONFIG_LIST } from "~/modules/run/configs/configRoster.model";
-import { toRunSnapshot } from "~/modules/run/climb/runSnapshot.model";
-import { SLICE_WINDOW } from "~/modules/run/rules.model";
+import { getOrCreateDailyRunSeed } from "~/modules/run/run/infrastructure/run.repository";
+import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import { createRun } from "~/modules/run/run/domain/run.model";
+import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 
 // ─── Kanto trainer roster ─────────────────────────────────────────────────────
 // Trainers "answer" today's seed polls so /run/community has a town to show in

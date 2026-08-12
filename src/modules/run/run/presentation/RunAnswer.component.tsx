@@ -1,0 +1,149 @@
+import { useEffect, useRef, useState } from "react";
+
+import {
+	type AnswerScore,
+	correctOptionIdsFor,
+	latestAnswerScore,
+} from "~/modules/run/run/application/runView.viewmodel";
+import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
+import { Screen } from "~/ui/Screen.ui";
+
+import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
+import {
+	type RunActionSuccess,
+	useRunActions,
+} from "~/modules/run/run/application/useRunActions.hook";
+import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
+
+// Post-submit reveal beat: the answered poll stays on screen with its options
+// painted ✓/✕ and the coverage score, while the server result waits here. The
+// player advances it themselves (the "Next →" action) so they can read their
+// answer and score — nothing auto-commits.
+type RevealState = {
+	readonly result: RunActionSuccess;
+	readonly correctOptionIds: readonly string[];
+	readonly score: AnswerScore | null;
+};
+
+/** Tier 2: the answering screen, including the reveal beat and abandoning. */
+export const RunAnswer = () => {
+	const { view } = useTodaysRun();
+	const { send, sendWith, commit, busy, abandon } = useRunActions();
+
+	const [selected, setSelected] = useState<readonly string[]>([]);
+	// The answer clock starts when the poll reaches the screen and stops at
+	// submit — the "fastest answer" standout reads this (DVTD-smye).
+	// performance.now() over Date.now(): monotonic, so an NTP sync or manual
+	// clock change mid-poll can't produce a negative or absurd duration.
+	const pollShownAt = useRef(performance.now());
+	useEffect(() => {
+		setSelected([]);
+		pollShownAt.current = performance.now();
+	}, [view?.poll?.id]);
+
+	const [reveal, setReveal] = useState<RevealState | null>(null);
+
+	// Abandoning is destructive (all leftover storage forfeits), so the button
+	// opens a confirm dialog instead of firing directly.
+	const [confirmingAbandon, setConfirmingAbandon] = useState(false);
+
+	if (!view?.poll) return null;
+	const poll = view.poll;
+
+	const submitAnswer = () =>
+		sendWith(
+			{
+				type: "answer",
+				optionIds: [...selected],
+				elapsedMs: Math.min(
+					Math.round(performance.now() - pollShownAt.current),
+					600_000
+				),
+			},
+			(result) => {
+				if (!result.success) return;
+				setReveal({
+					result,
+					correctOptionIds: correctOptionIdsFor(poll, result.data),
+					score: latestAnswerScore(result.data),
+				});
+			}
+		);
+
+	const advanceFromReveal = () => {
+		if (!reveal) return;
+		commit(reveal.result);
+		setReveal(null);
+	};
+
+	const canSubmit = selected.length > 0 && !busy && reveal === null;
+
+	const onSelect = (optionId: string) => {
+		if (poll.answerType === "single") return setSelected([optionId]);
+		setSelected((current) =>
+			current.includes(optionId)
+				? current.filter((id) => id !== optionId)
+				: [...current, optionId]
+		);
+	};
+
+	return (
+		<Screen
+			gateTheme={view.gateTheme}
+			leftAction={{
+				label: "Abandon run",
+				onClick: () => setConfirmingAbandon(true),
+				disabled: abandon.isPending,
+			}}
+		>
+			<AnsweringScreen
+				configs={view.configs}
+				checks={view.checks}
+				category={poll.category}
+				question={poll.question}
+				codeBlock={poll.codeBlock}
+				codeSandboxUrl={poll.codeSandboxUrl}
+				answerType={poll.answerType}
+				options={poll.options}
+				selectedOptionIds={selected}
+				disabledOptionIds={view.disabledOptionIds}
+				pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
+				pollsPerGate={view.pollsPerGate}
+				correctOptionIds={reveal?.correctOptionIds}
+				chosenOptionIds={reveal ? selected : undefined}
+				revealScore={reveal?.score ?? undefined}
+				slots={view.slots}
+				stripsOnFailure={view.stripsOnFailure}
+				canLint={view.canLint}
+				lintReady={view.lintReady && !busy && !reveal}
+				linter={view.linter ?? undefined}
+				lintCost={view.lintCost}
+				canSubmit={canSubmit}
+				onSelect={onSelect}
+				onSubmit={submitAnswer}
+				onNext={advanceFromReveal}
+				onLint={() => send({ type: "lint-poll" })}
+			/>
+			<ConfirmDialog
+				isOpen={confirmingAbandon}
+				theme="cinnabar"
+				title="Abandon this run?"
+				message="The climb ends here and every KB of leftover storage is forfeited. You can start a fresh run today — it skips the polls you already answered."
+				confirmText="Abandon run"
+				cancelText="Keep climbing"
+				isConfirming={abandon.isPending}
+				errorMessage={
+					abandon.data?.success === false ? abandon.data.error : null
+				}
+				onConfirm={() =>
+					abandon.mutate(undefined, {
+						onSuccess: (result) => {
+							if (result.success) setConfirmingAbandon(false);
+						},
+					})
+				}
+				onCancel={() => setConfirmingAbandon(false)}
+			/>
+		</Screen>
+	);
+};

@@ -7,42 +7,45 @@ import {
 	runReducer,
 	RunAction,
 	RunPoll,
-} from "~/modules/run/climb/run.model";
+} from "~/modules/run/run/domain/run.model";
 import type {
 	CommunityOptionResult,
 	CommunityStandout,
 	CommunityVoter,
 	RunCommunityPoll,
-} from "~/modules/run/api/community.handlers";
+} from "~/modules/run/community/application/community.service";
 import {
 	RunCommunityBoard,
 	type RunCommunityBoardProps,
-} from "~/modules/run/presentation/community/RunCommunity.ui";
-import { longestCorrectStreak } from "~/modules/run/community/standouts.model";
-import { CONFIGS } from "~/modules/run/configs/configRoster.model";
-import { STARTER_STACKS } from "~/modules/run/configs/stack.model";
-import { rebuildCost } from "~/modules/run/draft/draft.model";
+} from "~/modules/run/community/presentation/RunCommunity.ui";
+import { longestCorrectStreak } from "~/modules/run/community/domain/standouts.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
+import { rebuildCost } from "~/modules/run/shop/domain/draft.model";
 import {
 	coverageToAddSlot,
 	perAnswerPreviewFor,
-} from "~/modules/run/pipeline/pipeline.model";
-import { AnsweringScreen } from "~/modules/run/presentation/screens/AnsweringScreen.ui";
-import { ConfiguringScreen } from "~/modules/run/presentation/screens/ConfiguringScreen.ui";
-import { PrepScreen } from "~/modules/run/presentation/screens/PrepScreen.ui";
-import { RewardScreen } from "~/modules/run/presentation/screens/RewardScreen.ui";
-import { ShopScreen } from "~/modules/run/presentation/screens/ShopScreen.ui";
-import { StripScreen } from "~/modules/run/presentation/screens/StripScreen.ui";
-import { ReviewAnswers } from "~/modules/run/presentation/run/ReviewAnswers.ui";
-import { RunHud } from "~/modules/run/presentation/run/RunHud.ui";
-import { RunSummary } from "~/modules/run/presentation/run/RunSummary.ui";
-import { StandoutsPanel } from "~/modules/run/presentation/community/Standouts.ui";
-import { swatchForGate } from "~/modules/run/gate/swatch.model";
-import { shopExitFor, toRunView } from "~/modules/run/view/runView.viewmodel";
+} from "~/modules/run/pipeline/domain/pipeline.model";
+import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
+import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
+import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";
+import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
+import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
+import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
+import { ReviewAnswers } from "~/modules/run/run/presentation/ReviewAnswers.ui";
+import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";
+import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";
+import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.ui";
+import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
+import {
+	shopExitFor,
+	toRunView,
+} from "~/modules/run/run/application/runView.viewmodel";
 import {
 	roundToOneDecimal,
 	SLICE_WINDOW,
 	VICTORY_GATE,
-} from "~/modules/run/rules.model";
+} from "~/modules/run/run/domain/rules.model";
 import {
 	type CategoryCode,
 	getCategoryMetadata,

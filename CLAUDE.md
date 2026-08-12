@@ -53,27 +53,38 @@ Older but still useful documentation can be found here:
 
 ### Module Architecture
 
-New features live under `src/modules/`, layered server function → handler → query,
-with models/services/validation alongside. `src/domains/` is legacy-but-live:
-cross-cutting code (`shared/queryKeys.ts`, some models) still sits there and migrates
-to `src/modules/` opportunistically — migrate a slice when you touch it, not wholesale.
-So examples below that reference `@/src/domains/...` are correct today; that code just
-hasn't moved yet.
+New code lives under `src/modules/{context}/{aggregate}/{layer}`, where layer is one
+of `domain/`, `application/`, `infrastructure/`, `presentation/`. Contexts are `run`,
+`polls`, `collection`, `account`.
 
-[ADR-002](docs/adr/002-domain-architecture.md) owns structure, naming, the layer table,
-and the dependency rule (machine-enforced via `npm run lint` → `lint:arch`).
+**Before creating any file under `src/modules/`, walk the decision tree in
+[ADR-002 §5](docs/adr/002-domain-architecture.md#5-decision-tree-where-does-my-file-go).**
+It gives you `(folder, suffix)` and the suffix allowlist in §4.1 is closed: no bare
+filenames, no `.utils.ts`, no `.types.ts`, no `.queries.ts`, no `.handlers.ts`.
+
+ADR-002 owns structure, layering, naming, and the dependency rule (machine-enforced
+via `npm run lint` → `lint:arch`). [CONTEXT.md](CONTEXT.md) says which aggregate owns
+which domain term.
+
+The restructure is partly done (`DVTD-36ct`): **`src/modules/run/` has migrated**
+and is the reference for what the shape looks like. `src/modules/polls/` and
+`src/domains/` have not, and are legacy-but-live. Migrate a slice when you touch
+it, not wholesale. Examples below that reference `@/src/domains/...` are correct
+today; that code just hasn't moved yet.
 
 ### UI Layer Architecture (CRITICAL)
 
-Strict two-tier separation — see [ADR-010](docs/adr/010-ui-layer-separation.md) for the full decision:
+Strict two-tier separation, both tiers inside `presentation/`. See
+[ADR-010](docs/adr/010-ui-layer-separation.md) for the full decision:
 
-- **Tier 1** (`src/ui/`, `src/ui/{domain}/`) owns **all** HTML and Tailwind in the codebase, accepts plain data props only, every component has a Story.
-- **Tier 2** (`src/modules/*/presentation/{concept}/`, `src/routes/`; legacy flat `components/`) wires data and mutations to Tier 1 — zero HTML/CSS.
+- **Tier 1** `{Name}.ui.tsx` owns **all** HTML and Tailwind in the codebase, accepts plain data props only, every component has a Story. Lives in `{aggregate}/presentation/` or `src/ui/` (global primitives).
+- **Tier 2** `{Name}.component.tsx` and `src/routes/` wire data and mutations to Tier 1: zero HTML, zero CSS.
 
 **Rules enforced on every new file:**
-- [ ] Renders HTML or uses Tailwind classes? → `src/ui/` (or `src/ui/{domain}/`), plain props, has a Story.
-- [ ] Calls a hook, query, or server function? → `presentation/{concept}/` or `src/routes/`, zero HTML/CSS.
+- [ ] Renders HTML or uses Tailwind classes? → `{aggregate}/presentation/{Name}.ui.tsx`, plain props, has a Story.
+- [ ] Calls a hook or server function? → `{aggregate}/presentation/{Name}.component.tsx` or `src/routes/`, zero HTML/CSS.
 - [ ] Never mix both in the same file.
+- [ ] `presentation/` may not import `infrastructure/` at all: go via an application hook or server function.
 
 ### Database Tables
 

@@ -20,7 +20,7 @@
 		"**/*.config.ts",
 		"**/scripts/**",
 		"**/sonar-scanner.cjs",
-		"**/database/seed.ts",
+		"**/database/seed*.ts",
 		"**/database/reset.ts"
 	],
 	"rules": {

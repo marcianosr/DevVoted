@@ -2,8 +2,11 @@ import { CATEGORY_CODES } from "~/domains/shared/categories";
 import {
 	isStoragePlanUnlocked,
 	storagePlanLadder,
-} from "~/modules/run/rules.model";
-import type { PollView, RunView } from "~/modules/run/view/runView.viewmodel";
+} from "~/modules/run/run/domain/rules.model";
+import type {
+	PollView,
+	RunView,
+} from "~/modules/run/run/application/runView.viewmodel";
 
 import { createMockDataFactory } from "./createMockDataFactory";
 import { KANTO_QUIZ } from "./kanto";

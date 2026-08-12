@@ -37,10 +37,15 @@ the existing app keeps running alongside it.
 - Work against the new rebuild beans and ADRs 005–007; ignore old-concept/brainstorm
   beans unless a new bean explicitly revives one.
 
-## Resolved (2026-07-17)
-Component placement is settled in ADR-002: domain smart components colocate
-per-concept in `modules/{domain}/presentation/{concept}/`. The rebuild's layout is
-the convention; legacy flat `components/` folders migrate opportunistically.
+## Resolved (2026-07-17, restated 2026-08-12)
+Component placement is settled in ADR-002: an aggregate's visuals and wiring both
+live in `modules/{context}/{aggregate}/presentation/`, alongside that aggregate's
+`domain/`, `application/` and `infrastructure/` folders. Legacy flat
+`components/` folders migrate opportunistically.
+
+"Pure engine first" is now a structural rule rather than a habit: the engine is
+`{aggregate}/domain/`, and ADR-002 §3 forbids it from importing React, Drizzle or
+anything outside `domain/`.
 
 ## Consequences
 - Positive: one type system for color and text, Storybook-testable, old app keeps

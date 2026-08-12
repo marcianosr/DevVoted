@@ -1,8 +1,8 @@
 import { clsx } from "clsx";
 
-import { rarityOf } from "~/modules/run/configs/config.model";
-import { CONFIGS } from "~/modules/run/configs/configRoster.model";
-import { ConfigChip } from "~/modules/run/presentation/configs/ConfigChip.ui";
+import { rarityOf } from "~/modules/run/config/domain/config.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
 import { Stack } from "~/ui/Stack.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";

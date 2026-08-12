@@ -1,5 +1,5 @@
-import { ALL_SWATCHES } from "~/modules/run/gate/swatch.model";
-import { SwatchChips } from "~/modules/run/presentation/gate/SwatchChips.ui";
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+import { SwatchChips } from "~/modules/run/gate/presentation/SwatchChips.ui";
 import { Stack } from "~/ui/Stack.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 

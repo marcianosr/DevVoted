@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import type { SwatchFinish } from "~/modules/run/gate/swatch.model";
+import type { SwatchFinish } from "~/modules/run/gate/domain/swatch.model";
 import { Swatch } from "./Swatch.component";
 
 type SwatchMarkSize = "sm" | "md" | "lg";

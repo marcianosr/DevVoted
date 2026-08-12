@@ -116,7 +116,7 @@ Cheap to nudge, brutal to abuse.
 
 ## Consequences
 
-- **Positive**: a small, coherent rule set (one pipeline, one composed gate, one failure rule) that reuses ADR-005's poll-count-based engine. The proven logic ports into `src/modules/run` — pure engine in concept folders, visuals as `.ui.tsx` under `presentation/{concept}/` (ADR-002/ADR-010) — respecting the split the prototype broke.
+- **Positive**: a small, coherent rule set (one pipeline, one composed gate, one failure rule) that reuses ADR-005's poll-count-based engine. The proven logic ports into `src/modules/run`: pure engine in each aggregate's `domain/`, visuals as `.ui.tsx` in the same aggregate's `presentation/` (ADR-002/ADR-010), respecting the split the prototype broke.
 - **Negative**: "every check must pass" can feel swingy — one missed condition sinks a whole gate. The strip-N model is the pressure valve, but it needs live tuning.
 - The composed-gate model means the UI **must** always surface the full live checklist; a hidden condition reads as an unfair loss.
 

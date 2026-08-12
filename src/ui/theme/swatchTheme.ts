@@ -1,4 +1,4 @@
-import type { SwatchTheme } from "~/modules/run/gate/swatch.model";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 /**
  * Theme a subtree in a gate swatch's Kanto color, mirroring categoryTheme.

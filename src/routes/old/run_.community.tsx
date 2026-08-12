@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { RunCommunity } from "~/modules/run/presentation/community/RunCommunity.component";
+import { RunCommunity } from "~/modules/run/community/presentation/RunCommunity.component";
 
 export const Route = createFileRoute("/old/run_/community")({
 	component: RunCommunityRoute,

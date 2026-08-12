@@ -2,9 +2,10 @@
 
 ## Status
 
-Accepted — convention in force since the Storybook adoption; extracted from
-CLAUDE.md into an ADR 2026-07-17. Complements ADR-002 (module layers): this ADR
-is the interface layer's internal split.
+Accepted. Convention in force since the Storybook adoption; extracted from
+CLAUDE.md into an ADR 2026-07-17; paths updated 2026-08-12 for ADR-002's
+context/aggregate/layer restructure. Complements ADR-002 (module layers): this
+ADR is the internal split of the `presentation/` layer.
 
 ## Context
 
@@ -20,9 +21,10 @@ tiers, but no file mixes them.
 **Tier 1 — Presentational (design system): `{Name}.ui.tsx`**
 
 - `src/ui/` — global primitives (`Button`, typography; legacy files still use
-  the `.component.tsx` suffix — rename opportunistically).
-- `src/modules/{domain}/presentation/{concept}/` — module visuals, colocated
-  with their concept (e.g. `session-run/presentation/poll/PollCard.ui.tsx`).
+  the `.component.tsx` suffix, rename opportunistically).
+- `src/modules/{context}/{aggregate}/presentation/` — aggregate visuals,
+  colocated with the concept's own domain and application layers
+  (e.g. `run/gate/presentation/GateRewardReport.ui.tsx`).
 - `src/ui/{domain}/` — older domain visuals (`runs/`, `economy/`, `polls/`,
   `ranking/`); stays until each retires, no new files here.
 - These files own **all HTML tags and Tailwind classes in the codebase**.
@@ -31,13 +33,17 @@ tiers, but no file mixes them.
 
 **Tier 2 — Composition (app layer): `{Name}.component.tsx` and routes**
 
-- Sibling `{Name}.component.tsx` files in `presentation/{concept}/` (legacy:
-  flat `components/`) and `src/routes/`.
-- Zero HTML tags, zero CSS classes. Their only job: read data (loader, hook, or
-  query), call mutations, pass results as props to Tier 1.
+- Sibling `{Name}.component.tsx` files in the same
+  `{aggregate}/presentation/` folder (legacy: flat `components/`), and
+  `src/routes/`.
+- Zero HTML tags, zero CSS classes. Their only job: read data (loader or hook),
+  call mutations, pass results as props to Tier 1.
+- They reach data through an application hook or server function. ADR-002 §3
+  forbids `presentation/` importing `infrastructure/` at all, which is stricter
+  than the previous "no direct query imports" rule.
 
 ```tsx
-// src/modules/run/presentation/poll/PollCard.ui.tsx — owns the HTML/CSS
+// src/modules/run/poll/presentation/PollCard.ui.tsx — owns the HTML/CSS
 export const PollCard = ({ question }: { question: string }) => (
   <div className="flex flex-col gap-4 p-6 rounded-xl bg-surface">
     <h2 className="text-lg font-bold">{question}</h2>
@@ -58,9 +64,12 @@ wiring (full table in ADR-002).
 ## Enforcement
 
 - `npm run lint:arch` (dependency-cruiser): `src/ui` may take only **type**
-  imports from modules — any runtime import of hooks/queries/server functions
-  fails the build. Note this rule scopes `src/ui/` only; `.ui.tsx` purity
-  inside `modules/*/presentation/` is review-enforced.
+  imports from modules. Any runtime import of hooks, repositories or server
+  functions fails the build. This rule scopes `src/ui/` only; `.ui.tsx` purity
+  inside `{aggregate}/presentation/` is review-enforced.
+- ADR-002 §4.1 pins both suffixes to `presentation/`, so a `.ui.tsx` in
+  `domain/` or a `.model.ts` in `presentation/` is a placement violation
+  independent of what it imports.
 - "No HTML/CSS in Tier 2" is not machine-checkable; it is enforced by the
   new-file checklist in CLAUDE.md and review. Today `src/routes/` and the
   legacy `components/` folders still own HTML wholesale — sanctioned legacy

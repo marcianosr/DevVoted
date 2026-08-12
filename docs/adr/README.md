@@ -3,7 +3,7 @@
 | # | Title | Status |
 |---|---|---|
 | [001](001-database-indexing-strategy.md) | Database indexing strategy | Accepted |
-| [002](002-domain-architecture.md) | Domain architecture | Accepted — living document, owns module structure/naming |
+| [002](002-domain-architecture.md) | Domain architecture | Accepted — living document, owns module structure/naming. **Rewritten 2026-08-12** to context/aggregate/four-layer DDD; has the "where does my file go?" decision tree |
 | 003 | Domain restructure | Retired — removed during the run rebuild; ADR-002 owns structure now |
 | 004 | UI styling conventions | Retired — removed during the run rebuild; ADR-007 owns the design system now |
 | [005](005-session-runs.md) | Session runs and the two-loop model | Accepted — cadence questions resolved by 009 |
