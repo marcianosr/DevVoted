@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {

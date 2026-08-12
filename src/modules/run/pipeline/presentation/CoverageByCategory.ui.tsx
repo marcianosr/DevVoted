@@ -1,4 +1,4 @@
-import { getCategories } from "~/domains/shared/categories";
+import { getCategories } from "~/shared/lib/categories";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 

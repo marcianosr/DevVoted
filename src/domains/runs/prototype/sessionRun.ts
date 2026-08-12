@@ -10,7 +10,7 @@
  * Fail → drop N configs (N climbs with the gate). Fail while bare → the run ends.
  * Summit at VICTORY_GATE.
  */
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 import {
 	coverageForAnswer,

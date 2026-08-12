@@ -66,11 +66,10 @@ ADR-002 owns structure, layering, naming, and the dependency rule (machine-enfor
 via `npm run lint` → `lint:arch`). [CONTEXT.md](CONTEXT.md) says which aggregate owns
 which domain term.
 
-The restructure is partly done (`DVTD-36ct`): **`src/modules/run/` has migrated**
-and is the reference for what the shape looks like. `src/modules/polls/` and
-`src/domains/` have not, and are legacy-but-live. Migrate a slice when you touch
-it, not wholesale. Examples below that reference `@/src/domains/...` are correct
-today; that code just hasn't moved yet.
+The restructure is partly done (`DVTD-36ct`): **`src/modules/run/`,
+`src/modules/collection/` and `src/shared/` have migrated** and are the
+reference for what the shape looks like. `src/domains/` has not, and is
+legacy-but-live. Migrate a slice when you touch it, not wholesale.
 
 ### UI Layer Architecture (CRITICAL)
 
@@ -91,17 +90,17 @@ Strict two-tier separation, both tiers inside `presentation/`. See
 `src/database/schema.ts` is the single source of truth — every table is documented inline there. Do not maintain a table list in this file.
 
 ### Path Aliases
-Standardize on `@/src`. Every import starts from it: `@/src/utils/errorHandling`, `@/src/test/kanto`. No bare `~/`, no deep relative imports.
+Standardize on `~/` (the only configured alias, mapping to `src/`). Every import starts from it: `~/shared/utils/errorHandling`, `~/test/kanto`. No deep relative imports.
 
 ### Testing
 
 - Co-located `.spec.ts(x)`; Vitest + Testing Library; jsdom
 - Mock at the boundary only: DB ops are mocked (chain `.values()`/`.returning()` on
   Drizzle builders). Don't mock your own component functions — use the factory pattern
-  (`@/src/test/createMockDataFactory.ts`) for component data
+  (`~/test/createMockDataFactory.ts`) for component data
 - `vi.clearAllMocks()` over `vi.resetAllMocks()` (preserves implementations)
 - Test names describe scenario + outcome; no "should"
-- Canonical data from `@/src/test/kanto.ts`; prefer birthday/Christmas dates via `TEST_DATES`. Source: [https://bulbapedia.bulbagarden.net/wiki/Kanto]
+- Canonical data from `~/test/kanto.ts`; prefer birthday/Christmas dates via `TEST_DATES`. Source: [https://bulbapedia.bulbagarden.net/wiki/Kanto]
 
 
 ### Common Patterns
@@ -131,7 +130,7 @@ return user.isAdmin ? grantAccess() : denyAccess();
 
 #### Query Keys Pattern
 
-Centralized query keys in `@/src/domains/shared/queryKeys.ts` for consistent TanStack Query cache management:
+Centralized query keys in `~/shared/queryKeys.ts` for consistent TanStack Query cache management:
 
 ```typescript
 export const pollQueryKeys = {
@@ -157,10 +156,10 @@ await db.transaction(async (tx) => {
 
 #### Error Handling in Handlers
 
-Use `handleApiOperation` wrapper from `src/utils/errorHandling.ts`:
+Use `handleApiOperation` wrapper from `src/shared/utils/errorHandling.ts`:
 
 ```typescript
-import { handleApiOperation } from "@/src/utils/errorHandling";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 export const getPollByIdHandler = async ({ data }: { data: { id: number } }) => {
   return handleApiOperation(async () => {
@@ -186,7 +185,7 @@ Never trust a client-provided `userId`. Extract it from the authenticated sessio
 (WRONG: `.validator(z.object({ userId }))` then `fetchUserData(data.userId)` — auth bypass.
 RIGHT: `const userId = await getAuthenticatedUserId()`.)
 
-Utilities — `@/src/utils/authorization.ts`:
+Utilities — `~/shared/utils/authorization.ts`:
 - `getAuthenticatedUserId()` — userId from the Supabase session
 - `ensureAuthorizedUser(authenticatedUserId, requestedUserId)` — validates access
 

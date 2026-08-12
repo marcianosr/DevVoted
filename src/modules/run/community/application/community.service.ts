@@ -1,7 +1,10 @@
-import { isCategoryCode } from "~/domains/shared/categories";
-import { type ApiResponse, handleApiOperation } from "~/utils/errorHandling";
+import { isCategoryCode } from "~/shared/lib/categories";
+import {
+	type ApiResponse,
+	handleApiOperation,
+} from "~/shared/utils/errorHandling";
 
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 import {
 	type ClimbMarker,

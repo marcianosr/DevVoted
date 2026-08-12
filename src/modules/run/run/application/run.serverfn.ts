@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { getTodayDateString } from "~/lib/dateUtils";
-import { getAuthenticatedUserId } from "~/utils/authorization";
+import { getTodayDateString } from "~/shared/lib/dateUtils";
+import { getAuthenticatedUserId } from "~/shared/utils/authorization";
 
 import { runActionSchema } from "~/modules/run/run/application/run.validation";
 import {

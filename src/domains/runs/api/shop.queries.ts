@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 
 import { runsTable, runCategoryCoverageTable } from "@/src/database/schema";
-import { SKIP_SHOP_REWARD } from "~/config/economy";
+import { SKIP_SHOP_REWARD } from "~/shared/config/economy";
 import { db } from "~/database/db";
 
 import { runFactory } from "../models/run.model";

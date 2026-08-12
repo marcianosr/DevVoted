@@ -2,7 +2,7 @@ import type { Poll } from "~/domains/polls/models/poll.model";
 import {
 	getCategoryMetadata,
 	type CategoryCode,
-} from "~/domains/shared/categories";
+} from "~/shared/lib/categories";
 
 type PollCategoryCountProps = {
 	polls: Poll[];

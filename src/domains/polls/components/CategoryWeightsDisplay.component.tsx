@@ -6,7 +6,7 @@ import {
 	CategoryCode,
 	CATEGORY_CODES,
 	getCategoryMetadata,
-} from "~/domains/shared/categories";
+} from "~/shared/lib/categories";
 
 const getCategoryWeights = createServerFn({ method: "GET" }).handler(
 	async () => {

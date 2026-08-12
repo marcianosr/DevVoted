@@ -9,7 +9,7 @@ import {
 	removeConfigsFromRun,
 } from "~/domains/economy/services/configManager.service";
 import { createMockRun } from "~/domains/runs/models/run.mock";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 describe("configStorage", () => {
 	describe("canAddConfigToRun", () => {

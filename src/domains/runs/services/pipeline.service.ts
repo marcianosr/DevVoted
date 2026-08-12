@@ -12,7 +12,7 @@ import type {
 	UpgradeCard,
 	UpgradeCategoryMasterySlotCard,
 } from "~/domains/runs/models/pipeline.model";
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 const DIFFICULTY_ORDER: readonly GateDifficulty[] = [
 	"low",

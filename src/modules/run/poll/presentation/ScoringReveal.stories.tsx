@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { type ReactNode, useState } from "react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { ScoreEquationChips } from "~/ui/runs/ScoreEquationChips.ui";
+import { ScoreEquationChips } from "~/modules/run/run/presentation/ScoreEquationChips.ui";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { PollCard } from "~/modules/run/poll/presentation/PollCard.ui";
 import {

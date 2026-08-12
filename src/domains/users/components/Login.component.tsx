@@ -5,7 +5,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
 import { Button } from "~/ui/Button.component";
-import { getSupabaseBrowserClient } from "~/utils/supabaseBrowser";
+import { getSupabaseBrowserClient } from "~/shared/utils/supabaseBrowser";
 
 import { Auth } from "./Auth.component";
 import { loginFn } from "~/routes/_authed";

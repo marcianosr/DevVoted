@@ -5,7 +5,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { getUserPollsOrAll, getPollCreators } from "~/domains/polls/api/polls";
 import type { Poll } from "~/domains/polls/models/poll.model";
-import { getCategories, type CategoryCode } from "~/domains/shared/categories";
+import { getCategories, type CategoryCode } from "~/shared/lib/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent.component";
 
 export const Route = createFileRoute("/_authed/polls/")({

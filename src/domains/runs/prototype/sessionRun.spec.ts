@@ -15,7 +15,7 @@ import {
 	VICTORY_GATE,
 } from "./sessionRun";
 import { SLICE_TAGS } from "./sessionSlice";
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 const poll = (
 	id: string,

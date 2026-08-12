@@ -7,7 +7,7 @@ import {
 	pollResponsesTable,
 } from "@/src/database/schema";
 import { db } from "~/database/db";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { calculateLootAmount } from "~/domains/runs/services/lootCalculator.service";
 import { getInitialPipelineSlots } from "~/domains/runs/services/pipeline.service";
 import { getPreRunSlot } from "~/domains/runs/data/pipelineSlots";
@@ -20,7 +20,7 @@ import type {
 	PipelineSlot,
 	UpgradeCard,
 } from "~/domains/runs/models/pipeline.model";
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 import { debitArchivedStorageGuarded } from "~/domains/economy/api/archive.queries";
 import { calculateArchiveCredit } from "~/domains/economy/services/archive.service";

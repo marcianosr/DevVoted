@@ -3,7 +3,7 @@
  * Separated from handlers.ts to avoid DB code leaking to client bundles.
  */
 import { getOrCreateExposedDeck } from "~/domains/economy/services/shopOfferings.service";
-import { handleApiOperation } from "~/utils/errorHandling";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 /**
  * Gets a random exposed config deck from another player.

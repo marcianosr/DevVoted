@@ -22,9 +22,9 @@ term, and which words we no longer use.
 `src/modules/{context}/{aggregate}/{layer}`. The **aggregate** is the domain
 boundary, so this table is the map an architecture review reads first.
 
-> **`run` has migrated** (2026-08-12, `DVTD-36ct`); its paths below are real.
-> `polls`, `collection` and `account` have not: their Today column is where the
-> files actually sit. Drop the column per context as each one lands.
+> **`run` and `collection` have migrated** (2026-08-12, `DVTD-36ct`); their
+> paths below are real. `polls` and `account` have not: their Today column is
+> where the files actually sit. Drop the column per context as each one lands.
 
 ### Context `run`
 
@@ -75,16 +75,17 @@ run's way of drawing one.
 
 | Concept | Aggregate | Key symbols | Today |
 |---|---|---|---|
-| Poll | `poll` | Poll reads and answer evaluation | `polls/api/`, `domains/polls/` |
+| Poll | `poll` | Poll reads and answer evaluation | `domains/polls/` |
 | Poll authoring | `authoring` | Admin CRUD, `PollForm` | `domains/polls/components/`, `domains/polls/api/admin.handlers.ts` |
 
 ### Context `collection`
 
-| Concept | Aggregate | Key symbols | Today |
-|---|---|---|---|
-| Polldex | `dex` | `PolldexEntry`, `filterPolldexEntries`, `polldexCoverage` (`polldex.model.ts`) | `polls/polldex/` |
-| The Dex | `dex` | Tab shell plus the Configs, Swatches and Polls panels | `polls/presentation/dex/`, `polls/presentation/polldex/` |
-| Unlockables | `unlockables` | Planned (`DVTD-2try`, `DVTD-g8ty`). The reason `collection` is its own context | not built |
+| Concept | Lives in | Key symbols |
+|---|---|---|
+| Polldex | `dex/domain` | `PolldexEntry`, `filterPolldexEntries`, `polldexCoverage` (`polldex.model.ts`) |
+| Dex reads | `dex/application` + `dex/infrastructure` | `getPolldexService` (`polldex.service.ts`), `getPolldex` (`polldex.serverfn.ts`), `polldex.repository.ts` |
+| The Dex | `dex/presentation` | Tab shell plus the Configs, Swatches and Polls panels (`Dex.component`, `DexScreen`, `PolldexPanel`, `ConfigdexPanel`, `SwatchdexPanel`) |
+| Unlockables | `unlockables` | Planned (`DVTD-2try`, `DVTD-g8ty`). The reason `collection` is its own context — not built |
 
 ### Context `account`
 
@@ -132,7 +133,7 @@ meant two things at once.
 | Config Trigger | Never built as a distinct concept | **Check** and **Effect** |
 | Config Effects Engine | The engine is one function | `effectOf` in `config/domain/effect.model.ts` |
 | Config Discovery | Not built; tracked in DVTD-2try | Say "config unlocks" and link the bean |
-| `session-run` | Renamed to `run` in 2026-07; `src/modules/session-run/` holds one orphan file | `src/modules/run/`; the DB value `mode: "session"` keeps the old name |
+| `session-run` | Renamed to `run` in 2026-07; the orphan folder was deleted 2026-08-12 | `src/modules/run/`; the DB value `mode: "session"` keeps the old name |
 
 Retired **folder and file** names, per the ADR-002 rewrite of 2026-08-12:
 

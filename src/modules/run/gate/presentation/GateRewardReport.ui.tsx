@@ -11,7 +11,7 @@ import {
 	hasThemeColor,
 } from "~/modules/run/gate/domain/swatch.model";
 import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import { GainBar } from "~/ui/runs/GainBar.ui";
+import { GainBar } from "~/ui/GainBar.ui";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import {

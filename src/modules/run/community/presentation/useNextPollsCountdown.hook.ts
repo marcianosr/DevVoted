@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { formatCompactDuration, nextLocalMidnight } from "~/lib/dateUtils";
+import {
+	formatCompactDuration,
+	nextLocalMidnight,
+} from "~/shared/lib/dateUtils";
 
 type NextPollsCountdown = {
 	/** True once the local day rolled over — tomorrow's segment is live. */

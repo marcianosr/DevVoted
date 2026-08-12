@@ -136,9 +136,11 @@ is out of scope.
 ### Shared boundary
 
 `src/shared/` is cross-context code: `src/modules/` may import from it, and it
-may **never** import from `src/modules/`. It absorbs today's `src/lib/`,
-`src/utils/`, `src/domains/shared/` and `src/config/`, which already satisfy the
-rule (verified 2026-08-12: none of them import from `modules/` or `domains/`).
+may **never** import from `src/modules/`. It absorbed `src/lib/`, `src/utils/`,
+`src/domains/shared/` and `src/config/` (moved 2026-08-12; none of them imported
+from `modules/` or `domains/`, so the boundary held on day one). Layout:
+`src/shared/lib/` holds the pure helpers `domain/` may import (§3 table);
+everything else in shared is app-side and off-limits to `domain/`.
 
 `src/ui/` stays where it is as the design-system half of shared. Folding it into
 `src/shared/ui/` would rewrite a hundred imports for no boundary gain; the
@@ -345,8 +347,7 @@ src/
 ├── styles/       # Global Tailwind
 ├── test/         # Test setup, shared factories
 ├── presentation/ # Presentation-mode feature (slides). Unrelated to the layer name
-├── components/   # Legacy
-└── lib/, utils/, config/   # Legacy. Absorbed by shared/
+└── components/   # Legacy
 ```
 
 > `domains/` → `modules/` is in progress. New code goes under `modules/`;

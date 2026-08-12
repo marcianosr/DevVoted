@@ -13,8 +13,8 @@ import {
 	runsTable,
 	usersTable,
 } from "~/database/schema";
-import { type CategoryCode, isCategoryCode } from "~/domains/shared/categories";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 

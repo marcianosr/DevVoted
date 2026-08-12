@@ -18,21 +18,12 @@ import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as OldStartRouteImport } from './routes/old/start'
-import { Route as OldShopRouteImport } from './routes/old/shop'
-import { Route as OldPipelinesRouteImport } from './routes/old/pipelines'
-import { Route as OldPipelineSuccessRouteImport } from './routes/old/pipeline-success'
-import { Route as OldPipelineFailureRouteImport } from './routes/old/pipeline-failure'
-import { Route as OldGameOverRouteImport } from './routes/old/game-over'
-import { Route as OldCommunityRouteImport } from './routes/old/community'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthedDexRouteImport } from './routes/_authed/dex'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedRunRouteRouteImport } from './routes/_authed/run/route'
-import { Route as OldDailyPollIndexRouteImport } from './routes/old/daily-poll/index'
 import { Route as AuthedRunIndexRouteImport } from './routes/_authed/run/index'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
-import { Route as OldRunCommunityRouteImport } from './routes/old/run_.community'
 import { Route as AuthedRunCommunityRouteImport } from './routes/_authed/run_.community'
 import { Route as AuthedRunStripRouteImport } from './routes/_authed/run/strip'
 import { Route as AuthedRunShopRouteImport } from './routes/_authed/run/shop'
@@ -91,41 +82,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OldStartRoute = OldStartRouteImport.update({
-  id: '/old/start',
-  path: '/old/start',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OldShopRoute = OldShopRouteImport.update({
-  id: '/old/shop',
-  path: '/old/shop',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OldPipelinesRoute = OldPipelinesRouteImport.update({
-  id: '/old/pipelines',
-  path: '/old/pipelines',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OldPipelineSuccessRoute = OldPipelineSuccessRouteImport.update({
-  id: '/old/pipeline-success',
-  path: '/old/pipeline-success',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OldPipelineFailureRoute = OldPipelineFailureRouteImport.update({
-  id: '/old/pipeline-failure',
-  path: '/old/pipeline-failure',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OldGameOverRoute = OldGameOverRouteImport.update({
-  id: '/old/game-over',
-  path: '/old/game-over',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OldCommunityRoute = OldCommunityRouteImport.update({
-  id: '/old/community',
-  path: '/old/community',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -146,11 +102,6 @@ const AuthedRunRouteRoute = AuthedRunRouteRouteImport.update({
   path: '/run',
   getParentRoute: () => AuthedRoute,
 } as any)
-const OldDailyPollIndexRoute = OldDailyPollIndexRouteImport.update({
-  id: '/old/daily-poll/',
-  path: '/old/daily-poll/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthedRunIndexRoute = AuthedRunIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -160,11 +111,6 @@ const AuthedPollsIndexRoute = AuthedPollsIndexRouteImport.update({
   id: '/polls/',
   path: '/polls/',
   getParentRoute: () => AuthedRoute,
-} as any)
-const OldRunCommunityRoute = OldRunCommunityRouteImport.update({
-  id: '/old/run_/community',
-  path: '/old/run/community',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRunCommunityRoute = AuthedRunCommunityRouteImport.update({
   id: '/run_/community',
@@ -245,13 +191,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthedAdminRoute
   '/dex': typeof AuthedDexRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/old/community': typeof OldCommunityRoute
-  '/old/game-over': typeof OldGameOverRoute
-  '/old/pipeline-failure': typeof OldPipelineFailureRoute
-  '/old/pipeline-success': typeof OldPipelineSuccessRoute
-  '/old/pipelines': typeof OldPipelinesRoute
-  '/old/shop': typeof OldShopRoute
-  '/old/start': typeof OldStartRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
   '/run/answer': typeof AuthedRunAnswerRoute
@@ -263,10 +202,8 @@ export interface FileRoutesByFullPath {
   '/run/shop': typeof AuthedRunShopRoute
   '/run/strip': typeof AuthedRunStripRoute
   '/run/community': typeof AuthedRunCommunityRoute
-  '/old/run/community': typeof OldRunCommunityRoute
   '/polls/': typeof AuthedPollsIndexRoute
   '/run/': typeof AuthedRunIndexRoute
-  '/old/daily-poll/': typeof OldDailyPollIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
   '/polls/$pollId/': typeof AuthedPollsPollIdIndexRoute
 }
@@ -282,13 +219,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthedAdminRoute
   '/dex': typeof AuthedDexRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/old/community': typeof OldCommunityRoute
-  '/old/game-over': typeof OldGameOverRoute
-  '/old/pipeline-failure': typeof OldPipelineFailureRoute
-  '/old/pipeline-success': typeof OldPipelineSuccessRoute
-  '/old/pipelines': typeof OldPipelinesRoute
-  '/old/shop': typeof OldShopRoute
-  '/old/start': typeof OldStartRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
   '/run/answer': typeof AuthedRunAnswerRoute
@@ -300,10 +230,8 @@ export interface FileRoutesByTo {
   '/run/shop': typeof AuthedRunShopRoute
   '/run/strip': typeof AuthedRunStripRoute
   '/run/community': typeof AuthedRunCommunityRoute
-  '/old/run/community': typeof OldRunCommunityRoute
   '/polls': typeof AuthedPollsIndexRoute
   '/run': typeof AuthedRunIndexRoute
-  '/old/daily-poll': typeof OldDailyPollIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
   '/polls/$pollId': typeof AuthedPollsPollIdIndexRoute
 }
@@ -322,13 +250,6 @@ export interface FileRoutesById {
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/dex': typeof AuthedDexRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/old/community': typeof OldCommunityRoute
-  '/old/game-over': typeof OldGameOverRoute
-  '/old/pipeline-failure': typeof OldPipelineFailureRoute
-  '/old/pipeline-success': typeof OldPipelineSuccessRoute
-  '/old/pipelines': typeof OldPipelinesRoute
-  '/old/shop': typeof OldShopRoute
-  '/old/start': typeof OldStartRoute
   '/_authed/polls/new': typeof AuthedPollsNewRoute
   '/_authed/profile/$userId': typeof AuthedProfileUserIdRoute
   '/_authed/run/answer': typeof AuthedRunAnswerRoute
@@ -340,10 +261,8 @@ export interface FileRoutesById {
   '/_authed/run/shop': typeof AuthedRunShopRoute
   '/_authed/run/strip': typeof AuthedRunStripRoute
   '/_authed/run_/community': typeof AuthedRunCommunityRoute
-  '/old/run_/community': typeof OldRunCommunityRoute
   '/_authed/polls/': typeof AuthedPollsIndexRoute
   '/_authed/run/': typeof AuthedRunIndexRoute
-  '/old/daily-poll/': typeof OldDailyPollIndexRoute
   '/_authed/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
   '/_authed/polls/$pollId/': typeof AuthedPollsPollIdIndexRoute
 }
@@ -362,13 +281,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dex'
     | '/auth/callback'
-    | '/old/community'
-    | '/old/game-over'
-    | '/old/pipeline-failure'
-    | '/old/pipeline-success'
-    | '/old/pipelines'
-    | '/old/shop'
-    | '/old/start'
     | '/polls/new'
     | '/profile/$userId'
     | '/run/answer'
@@ -380,10 +292,8 @@ export interface FileRouteTypes {
     | '/run/shop'
     | '/run/strip'
     | '/run/community'
-    | '/old/run/community'
     | '/polls/'
     | '/run/'
-    | '/old/daily-poll/'
     | '/polls/$pollId/edit'
     | '/polls/$pollId/'
   fileRoutesByTo: FileRoutesByTo
@@ -399,13 +309,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dex'
     | '/auth/callback'
-    | '/old/community'
-    | '/old/game-over'
-    | '/old/pipeline-failure'
-    | '/old/pipeline-success'
-    | '/old/pipelines'
-    | '/old/shop'
-    | '/old/start'
     | '/polls/new'
     | '/profile/$userId'
     | '/run/answer'
@@ -417,10 +320,8 @@ export interface FileRouteTypes {
     | '/run/shop'
     | '/run/strip'
     | '/run/community'
-    | '/old/run/community'
     | '/polls'
     | '/run'
-    | '/old/daily-poll'
     | '/polls/$pollId/edit'
     | '/polls/$pollId'
   id:
@@ -438,13 +339,6 @@ export interface FileRouteTypes {
     | '/_authed/admin'
     | '/_authed/dex'
     | '/auth/callback'
-    | '/old/community'
-    | '/old/game-over'
-    | '/old/pipeline-failure'
-    | '/old/pipeline-success'
-    | '/old/pipelines'
-    | '/old/shop'
-    | '/old/start'
     | '/_authed/polls/new'
     | '/_authed/profile/$userId'
     | '/_authed/run/answer'
@@ -456,10 +350,8 @@ export interface FileRouteTypes {
     | '/_authed/run/shop'
     | '/_authed/run/strip'
     | '/_authed/run_/community'
-    | '/old/run_/community'
     | '/_authed/polls/'
     | '/_authed/run/'
-    | '/old/daily-poll/'
     | '/_authed/polls/$pollId/edit'
     | '/_authed/polls/$pollId/'
   fileRoutesById: FileRoutesById
@@ -475,15 +367,6 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   StatsRoute: typeof StatsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
-  OldCommunityRoute: typeof OldCommunityRoute
-  OldGameOverRoute: typeof OldGameOverRoute
-  OldPipelineFailureRoute: typeof OldPipelineFailureRoute
-  OldPipelineSuccessRoute: typeof OldPipelineSuccessRoute
-  OldPipelinesRoute: typeof OldPipelinesRoute
-  OldShopRoute: typeof OldShopRoute
-  OldStartRoute: typeof OldStartRoute
-  OldRunCommunityRoute: typeof OldRunCommunityRoute
-  OldDailyPollIndexRoute: typeof OldDailyPollIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -551,55 +434,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/old/start': {
-      id: '/old/start'
-      path: '/old/start'
-      fullPath: '/old/start'
-      preLoaderRoute: typeof OldStartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/old/shop': {
-      id: '/old/shop'
-      path: '/old/shop'
-      fullPath: '/old/shop'
-      preLoaderRoute: typeof OldShopRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/old/pipelines': {
-      id: '/old/pipelines'
-      path: '/old/pipelines'
-      fullPath: '/old/pipelines'
-      preLoaderRoute: typeof OldPipelinesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/old/pipeline-success': {
-      id: '/old/pipeline-success'
-      path: '/old/pipeline-success'
-      fullPath: '/old/pipeline-success'
-      preLoaderRoute: typeof OldPipelineSuccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/old/pipeline-failure': {
-      id: '/old/pipeline-failure'
-      path: '/old/pipeline-failure'
-      fullPath: '/old/pipeline-failure'
-      preLoaderRoute: typeof OldPipelineFailureRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/old/game-over': {
-      id: '/old/game-over'
-      path: '/old/game-over'
-      fullPath: '/old/game-over'
-      preLoaderRoute: typeof OldGameOverRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/old/community': {
-      id: '/old/community'
-      path: '/old/community'
-      fullPath: '/old/community'
-      preLoaderRoute: typeof OldCommunityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -628,13 +462,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRunRouteRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/old/daily-poll/': {
-      id: '/old/daily-poll/'
-      path: '/old/daily-poll'
-      fullPath: '/old/daily-poll/'
-      preLoaderRoute: typeof OldDailyPollIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authed/run/': {
       id: '/_authed/run/'
       path: '/'
@@ -648,13 +475,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/polls/'
       preLoaderRoute: typeof AuthedPollsIndexRouteImport
       parentRoute: typeof AuthedRoute
-    }
-    '/old/run_/community': {
-      id: '/old/run_/community'
-      path: '/old/run/community'
-      fullPath: '/old/run/community'
-      preLoaderRoute: typeof OldRunCommunityRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authed/run_/community': {
       id: '/_authed/run_/community'
@@ -816,15 +636,6 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   StatsRoute: StatsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
-  OldCommunityRoute: OldCommunityRoute,
-  OldGameOverRoute: OldGameOverRoute,
-  OldPipelineFailureRoute: OldPipelineFailureRoute,
-  OldPipelineSuccessRoute: OldPipelineSuccessRoute,
-  OldPipelinesRoute: OldPipelinesRoute,
-  OldShopRoute: OldShopRoute,
-  OldStartRoute: OldStartRoute,
-  OldRunCommunityRoute: OldRunCommunityRoute,
-  OldDailyPollIndexRoute: OldDailyPollIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

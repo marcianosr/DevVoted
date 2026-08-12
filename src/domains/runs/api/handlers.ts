@@ -1,6 +1,6 @@
 import { aggregateRunCategoryCoverage } from "~/domains/runs/utils/coverageCalculations";
-import type { CategoryCode } from "~/domains/shared/categories";
-import { handleApiOperation } from "~/utils/errorHandling";
+import type { CategoryCode } from "~/shared/lib/categories";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 import {
 	getActiveRunByUserId,

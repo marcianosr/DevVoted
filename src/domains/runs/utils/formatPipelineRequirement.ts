@@ -1,4 +1,4 @@
-import { CATEGORY_METADATA } from "~/domains/shared/categories";
+import { CATEGORY_METADATA } from "~/shared/lib/categories";
 import type {
 	GateTypeId,
 	PipelineSlotRequirement,

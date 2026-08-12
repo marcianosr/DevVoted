@@ -6,8 +6,8 @@ import type {
 } from "~/modules/run/run/domain/run.model";
 import { correctCount } from "~/modules/run/gate/domain/gateReward.model";
 import { Disclosure } from "~/ui/Disclosure.ui";
-import { CodeBlockMarkdown } from "~/ui/polls/PollMarkdown.ui";
-import { StatusLine } from "~/ui/runs/StatusLine.ui";
+import { CodeBlockMarkdown } from "~/modules/run/poll/presentation/PollMarkdown.ui";
+import { StatusLine } from "~/ui/StatusLine.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import {
 	Paragraph,

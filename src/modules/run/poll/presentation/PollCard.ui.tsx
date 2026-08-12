@@ -1,10 +1,10 @@
-import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
+import { CategoryCode, getCategoryMetadata } from "~/shared/lib/categories";
 import type { AnswerType } from "~/modules/run/run/domain/run.model";
-import { PollCodeSandbox } from "~/ui/polls/PollCodeSandbox.ui";
+import { PollCodeSandbox } from "~/modules/run/poll/presentation/PollCodeSandbox.ui";
 import {
 	CodeBlockMarkdown,
 	QuestionMarkdown,
-} from "~/ui/polls/PollMarkdown.ui";
+} from "~/modules/run/poll/presentation/PollMarkdown.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import {
 	PollOption,

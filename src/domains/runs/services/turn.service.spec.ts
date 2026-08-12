@@ -62,7 +62,7 @@ vi.mock("~/domains/economy/data/configs", () => ({
 	applyEffects: vi.fn(),
 }));
 
-vi.mock("~/lib/dateUtils", () => ({
+vi.mock("~/shared/lib/dateUtils", () => ({
 	getTodayDateString: vi.fn().mockReturnValue("2025-05-13"),
 }));
 

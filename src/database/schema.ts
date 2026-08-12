@@ -16,7 +16,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 /**
  * Database Schema for DevVoted Quiz Game

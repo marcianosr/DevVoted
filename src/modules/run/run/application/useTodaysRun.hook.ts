@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { sessionRunQueryKeys } from "~/domains/shared/queryKeys";
-import { getTodayDateString } from "~/lib/dateUtils";
+import { sessionRunQueryKeys } from "~/shared/queryKeys";
+import { getTodayDateString } from "~/shared/lib/dateUtils";
 import { getTodaysRun } from "~/modules/run/run/application/run.serverfn";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 

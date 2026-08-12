@@ -1,4 +1,4 @@
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {

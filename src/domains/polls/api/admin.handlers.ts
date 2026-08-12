@@ -10,7 +10,7 @@ import {
 	type CreatePollWithOptionsInput,
 	type UpdatePollInput,
 } from "~/domains/polls/validation/schemas";
-import { handleApiOperation } from "~/utils/errorHandling";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 export const createPollWithOptionsHandler = async ({
 	data,

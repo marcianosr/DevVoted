@@ -36,7 +36,7 @@ import {
 	Tag,
 } from "~/domains/runs/prototype/sessionSlice";
 import { buildSlicePool } from "~/domains/runs/prototype/slicePolls";
-import { CategoryCode, getCategoryMetadata } from "~/domains/shared/categories";
+import { CategoryCode, getCategoryMetadata } from "~/shared/lib/categories";
 
 export const Route = createFileRoute("/proto-session-slice")({
 	component: RouteComponent,

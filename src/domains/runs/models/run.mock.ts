@@ -1,4 +1,4 @@
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import type { Run, RunRecord } from "./run.model";
 

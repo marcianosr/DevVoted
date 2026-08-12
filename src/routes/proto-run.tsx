@@ -49,8 +49,8 @@ import {
 import {
 	type CategoryCode,
 	getCategoryMetadata,
-} from "~/domains/shared/categories";
-import { formatDurationMs } from "~/lib/dateUtils";
+} from "~/shared/lib/categories";
+import { formatDurationMs } from "~/shared/lib/dateUtils";
 import { Screen } from "~/ui/Screen.ui";
 import { setScreenNavDirection } from "~/ui/screenNavDirection";
 import { Stack } from "~/ui/Stack.ui";

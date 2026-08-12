@@ -20,7 +20,7 @@ import {
 import { calculateRerollCost } from "~/domains/economy/services/reroll.service";
 import { rerollShopServerFn } from "~/domains/runs/api/reroll";
 import { Run } from "~/domains/runs/models/run.model";
-import { formatStorage } from "~/lib/storage";
+import { formatStorage } from "~/shared/lib/storage";
 import { Button } from "~/ui/Button.component";
 
 type ShopContainerProps = {

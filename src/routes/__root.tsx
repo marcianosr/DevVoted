@@ -30,8 +30,8 @@ import {
 
 import { getActiveRun } from "../domains/runs/api/runs";
 import appCss from "../styles/app.css?url";
-import { seo } from "../utils/seo";
-import { getSupabaseServerClient } from "../utils/supabase";
+import { seo } from "~/shared/utils/seo";
+import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
 if (import.meta.env.PROD) {
 	Sentry.init({
@@ -157,10 +157,7 @@ function Navigation() {
 	const { hasActiveRun, canEndRun } = deriveNavRunState(activeRun);
 
 	const [isEndRunDialogOpen, setIsEndRunDialogOpen] = useState(false);
-	const finishRun = useFinishRun({
-		userId: user?.id,
-		redirectTo: "/old/game-over",
-	});
+	const finishRun = useFinishRun({ userId: user?.id });
 
 	const handleEndRunConfirm = () => {
 		finishRun.reset();

@@ -11,14 +11,14 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import type { StoragePlanOption } from "~/modules/run/run/application/runView.viewmodel";
-import { getCategoryMetadata } from "~/domains/shared/categories";
+import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 	type PerAnswerPreview,
 	type PipelineModifiers,
 } from "~/modules/run/pipeline/domain/pipeline.model";
-import { formatKb } from "~/lib/storage";
+import { formatKb } from "~/shared/lib/storage";
 import { Badge } from "~/ui/Badge.component";
 import { Columns } from "~/ui/Columns.ui";
 import { RadioDot } from "~/ui/RadioDot.ui";

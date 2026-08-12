@@ -1,11 +1,11 @@
 ---
 # DVTD-7q8l
 title: 'Group C: Retire the src/ui legacy island (6 load-bearing files)'
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-08-12T09:12:53Z
-updated_at: 2026-08-12T09:12:53Z
+updated_at: 2026-08-12T20:03:30Z
 parent: DVTD-82c4
 ---
 
@@ -37,7 +37,13 @@ Overlaps DVTD-7tof (clean up storybook and old code) and the scrapped
 DVTD-wz1b item "cut modules->domains legacy tendrils".
 
 ## Todo
-- [ ] Promote the six load-bearing files out of the frozen folders
-- [ ] Recolour `ScoreEquationChips` to Kanto on the way
-- [ ] Confirm nothing outside `/old` and `src/domains/` imports the remainder
-- [ ] Delete the remainder with the `/old` routes
+- [x] Promote the six load-bearing files out of the frozen folders (StatusLine + GainBar -> src/ui; MetaStorageBar + ScoreEquationChips -> run/run/presentation; PollMarkdown + PollCodeSandbox -> run/poll/presentation)
+- [x] Recolour `ScoreEquationChips` to Kanto (green-400/red-400 -> viridian/cinnabar); also deleted its dead rarity/ConfigCard branch — no live caller ever passed `rarity`, and cutting it severed the economy-island dependency
+- [x] Confirmed: after promotion, only src/domains components and the three /old routes imported the remainder
+- [x] Deleted: src/ui/{runs,polls,economy} (29 files), all 9 /old routes, 16 transitively-orphaned src/domains components, DevPollNavigator. routeTree regenerated. Two live tails fixed: polls/$pollId now uses PollQuestionHeading (resurrected into run/poll/presentation); ConfigCard.ui restored beside its legacy Cards consumers for the slides deck; nav End Run now lands home instead of /old/game-over
+
+## Summary of Changes
+
+The src/ui legacy island is gone. Six load-bearing files promoted to their consumers homes, ScoreEquationChips recoloured to Kanto with its dead rarity branch cut, then src/ui/{runs,polls,economy}, the 9 /old routes, 16 orphaned domains components and DevPollNavigator deleted as one unit. Two live surfaces repaired: the polls admin detail heading and the slides deck ConfigCard. CHANGELOG entry added (old game retired).
+
+Verified: tsc 0 errors, oxlint clean, lint:arch 0 violations — 524 modules cruised, down from 590. Vitest 113 files / 1425 passed / 0 failed (8 island spec files went with it).

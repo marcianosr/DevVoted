@@ -1,4 +1,7 @@
-import { type ApiResponse, handleApiOperation } from "~/utils/errorHandling";
+import {
+	type ApiResponse,
+	handleApiOperation,
+} from "~/shared/utils/errorHandling";
 
 import { createRun, type RunAction } from "~/modules/run/run/domain/run.model";
 import { hydrateRunState } from "~/modules/run/run/domain/runSnapshot.model";

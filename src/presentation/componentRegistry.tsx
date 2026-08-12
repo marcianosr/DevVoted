@@ -9,7 +9,7 @@ import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverage
 import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.mock";
 import { DEFAULT_WINDOW_SIZE } from "~/domains/runs/services/pipelineEvaluator.service";
 import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
 
 // Demo data for ConfigCards

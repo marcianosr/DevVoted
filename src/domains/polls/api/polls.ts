@@ -2,9 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { POLL_STATUSES } from "~/domains/polls/models/poll.model";
-import { ADMIN_EMAILS } from "~/utils/adminAuth";
-import { getAuthenticatedUserId } from "~/utils/authorization";
-import { getSupabaseServerClient } from "~/utils/supabase";
+import { ADMIN_EMAILS } from "~/shared/utils/adminAuth";
+import { getAuthenticatedUserId } from "~/shared/utils/authorization";
+import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
 import {
 	getAllPollsHandler,

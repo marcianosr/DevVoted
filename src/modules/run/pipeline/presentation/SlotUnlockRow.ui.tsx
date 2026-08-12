@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { clsx } from "clsx";
 import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
-import { GainBar } from "~/ui/runs/GainBar.ui";
+import { GainBar } from "~/ui/GainBar.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { SlotNumberCell } from "~/modules/run/pipeline/presentation/PipelineTable.ui";
 

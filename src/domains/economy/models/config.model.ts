@@ -1,6 +1,6 @@
 import { Run } from "~/domains/runs/models/run.model";
 import { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.model";
-import { CategoryCode } from "~/domains/shared/categories";
+import { CategoryCode } from "~/shared/lib/categories";
 
 export type ConfigEffectContext = {
 	run: Run;

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { db } from "~/database/db";
 
 import { debitArchivedStorageGuarded } from "~/domains/economy/api/archive.queries";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import {
 	getActiveRunByUserId,

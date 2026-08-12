@@ -1,4 +1,4 @@
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 import type {
 	AnswerOutcome,
 	AnswerType,
@@ -12,7 +12,7 @@ import { Button } from "~/ui/Button.component";
 import {
 	ScoreEquationChips,
 	type ScoreBonusRow,
-} from "~/ui/runs/ScoreEquationChips.ui";
+} from "~/modules/run/run/presentation/ScoreEquationChips.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";

@@ -1,7 +1,7 @@
 import {
 	type CategoryCode,
 	getCategoryMetadata,
-} from "~/domains/shared/categories";
+} from "~/shared/lib/categories";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";

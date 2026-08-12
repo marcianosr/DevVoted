@@ -6,7 +6,7 @@ import type {
 	PipelineSlot,
 	UpgradeCard,
 } from "~/domains/runs/models/pipeline.model";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 // TODO: Refactor this to ActiveRun?
 export type Run = {

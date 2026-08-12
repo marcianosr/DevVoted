@@ -1,8 +1,5 @@
-import {
-	getCategoryMetadata,
-	isCategoryCode,
-} from "~/domains/shared/categories";
-import { formatDurationMs } from "~/lib/dateUtils";
+import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
+import { formatDurationMs } from "~/shared/lib/dateUtils";
 
 import {
 	type AnswerOutcome,

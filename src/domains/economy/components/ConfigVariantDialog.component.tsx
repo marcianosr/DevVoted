@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { Config, ConfigVariant } from "~/domains/economy/models/config.model";
-import { formatStorage } from "~/lib/storage";
+import { formatStorage } from "~/shared/lib/storage";
 import { Button } from "~/ui/Button.component";
 
 export type ConfigVariantDialogProps = {

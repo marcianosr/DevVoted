@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { getTodayDateString } from "~/lib/dateUtils";
-import { getAuthenticatedUserId } from "~/utils/authorization";
+import { getTodayDateString } from "~/shared/lib/dateUtils";
+import { getAuthenticatedUserId } from "~/shared/utils/authorization";
 
 import { getRunCommunityService } from "~/modules/run/community/application/community.service";
 

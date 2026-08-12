@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { getCategories } from "~/domains/shared/categories";
+import { getCategories } from "~/shared/lib/categories";
 import { Popover } from "~/ui/Popover.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import {

@@ -1,7 +1,7 @@
 import { formatDuration, intervalToDuration } from "date-fns";
 import { useEffect, useState } from "react";
 
-import { getMsUntilNextPoll } from "~/lib/dateUtils";
+import { getMsUntilNextPoll } from "~/shared/lib/dateUtils";
 
 type CountdownToNextPoll = {
 	/** True once the local day has rolled over and the next poll is available. */

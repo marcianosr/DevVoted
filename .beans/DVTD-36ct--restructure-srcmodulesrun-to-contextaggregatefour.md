@@ -1,11 +1,11 @@
 ---
 # DVTD-36ct
 title: Restructure src/modules/run to context/aggregate/four-layer (ADR-002 rewrite)
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-08-12T09:40:17Z
-updated_at: 2026-08-12T10:25:05Z
+updated_at: 2026-08-12T19:52:58Z
 parent: DVTD-82c4
 ---
 
@@ -41,11 +41,11 @@ climb, pipeline, gate, config, shop, community.
 - [x] `community` — standouts.model → domain; community.handlers → application/community.service.ts; RunCommunity, Standouts, Voter, ClimbToday, useNextPollsCountdown → presentation
 - [x] `poll` visuals (PollCard, PollOptionList, RevealScore, revealTiming) — decide: climb's presentation, or a `poll` aggregate in the run context
 - [x] Rename `api/queries.ts` → `*.repository.ts`, `api/handlers.ts` → `*.service.ts`, `api/run.ts` → `*.serverfn.ts`
-- [ ] Delete `src/modules/session-run/` (orphan todo.md)
+- [x] Delete `src/modules/session-run/` (orphan todo.md) — done via DVTD-ylsm 2026-08-12
 
 ## Shared
 
-- [ ] Create `src/shared/`, absorbing `src/lib/`, `src/utils/`, `src/domains/shared/`, `src/config/`. Verified 2026-08-12: none of these import from `modules/` or `domains/`, so the boundary rule holds on day one.
+- [x] Create `src/shared/`, absorbing `src/lib/`, `src/utils/`, `src/domains/shared/`, `src/config/`. Done 2026-08-12: lib -> shared/lib (plus categories.ts, which domain imports at runtime), utils -> shared/utils, config -> shared/config, queryKeys -> shared root. ~145 files rewritten, 3 deep-relative route imports fixed. New cruiser rule domain-into-shared-lib-only (proved on a deliberate violation); shared-not-into-modules re-pointed at ^src/shared/. ADR-002 §3/§7 + CLAUDE.md paths updated.
 - [x] `src/ui/` stays put as the design-system half of shared (folding it in rewrites ~100 imports for no boundary gain)
 
 ## Enforcement
@@ -88,5 +88,19 @@ to baseline (22 failed / 1445 passed, same 7 files, all pre-existing).
 
 ## Still open
 
-- [ ] `polls` / `collection` / `account` contexts not migrated
-- [ ] Split `run/infrastructure/run.repository.ts` (639 lines) per read concern — deferred, the write path must stay one transaction
+- [x] `collection` migrated 2026-08-12: modules/polls WAS the Dex — moved to modules/collection/dex/{domain,application,infrastructure,presentation}, getPolldexHandler -> getPolldexService, accuracyTone folded into polldexColumns.ui, fixtures -> polldex.factory.ts, LEGACY_FROM narrowed to src/domains. `polls` + `account` live in src/domains legacy -> follow-up DVTD-wj1t (after 7q8l deletes the /old surface)
+- [x] Split `run/infrastructure/run.repository.ts` — deferred to its own bean DVTD-eyya; the write path stays one transaction
+
+## Summary of Changes
+
+The ADR-002 restructure is done for everything that lives under src/modules today:
+
+- run context: 163 files to context/aggregate/four-layer (2026-08-12, earlier session)
+- src/shared/ created: lib/utils/config/domains-shared absorbed (~145 imports rewritten); new cruiser rule domain-into-shared-lib-only, proved on a deliberate violation
+- collection context: modules/polls (the Dex) -> modules/collection/dex, suffixes normalized, bare files folded/renamed
+- Docs: ADR-002 shared-boundary section, CONTEXT.md tables (run + collection now real paths), CLAUDE.md paths
+- Enforcement: .dependency-cruiser.cjs per ADR-002 §3; legacy rules now scope to src/domains only
+
+Verified at completion: tsc 0 errors, oxlint clean, lint:arch 0 violations (590 modules), vitest 121 files / 1465 passed / 0 failed.
+
+Follow-ups: DVTD-wj1t (polls + account out of src/domains, after DVTD-7q8l), DVTD-eyya (repository read-split).

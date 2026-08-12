@@ -1,5 +1,5 @@
-import type { CategoryCode } from "~/domains/shared/categories";
-import { getCategoryMetadata } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
+import { getCategoryMetadata } from "~/shared/lib/categories";
 
 export type ConfigFamily =
 	"focus" | "defense" | "risk" | "amplify" | "economy" | "check";

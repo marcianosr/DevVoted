@@ -8,7 +8,7 @@
  */
 
 const AGG = "^src/modules/[^/]+/[^/]+";
-const LEGACY_FROM = "^src/(domains/[^/]+|modules/polls)/";
+const LEGACY_FROM = "^src/domains/[^/]+/";
 /** Dev rigs: they drive the engine directly, so runtime domain imports are expected. */
 const DEV_RIG_ROUTES = "^src/routes/proto-(run|session-slice)\\.tsx$";
 
@@ -102,9 +102,19 @@ module.exports = {
 			name: "shared-not-into-modules",
 			comment: "shared code is imported BY modules, never the reverse",
 			severity: "error",
-			from: { path: "^src/(lib|utils|config)/", pathNot: "\\.spec\\.tsx?$" },
+			from: { path: "^src/shared/", pathNot: "\\.spec\\.tsx?$" },
 			to: {
 				path: "^src/(modules|domains)/",
+				dependencyTypesNot: ["type-only"],
+			},
+		},
+		{
+			name: "domain-into-shared-lib-only",
+			comment: "of src/shared, domain/ may reach only the pure helpers in lib/",
+			severity: "error",
+			from: { path: `${AGG}/domain/`, pathNot: "\\.spec\\.tsx?$" },
+			to: {
+				path: "^src/shared/(?!lib/)",
 				dependencyTypesNot: ["type-only"],
 			},
 		},

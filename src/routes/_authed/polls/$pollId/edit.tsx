@@ -11,8 +11,8 @@ import {
 	updatePollServerFn,
 } from "~/domains/polls/api/polls";
 import { PollForm } from "~/domains/polls/components/PollForm.component";
-import { ADMIN_EMAILS } from "~/utils/adminAuth";
-import { getSupabaseServerClient } from "~/utils/supabase";
+import { ADMIN_EMAILS } from "~/shared/utils/adminAuth";
+import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
 const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();

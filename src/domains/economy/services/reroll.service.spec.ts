@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import { calculateRerollCost } from "./reroll.service";
 

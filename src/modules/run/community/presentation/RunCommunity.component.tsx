@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
-import { sessionRunQueryKeys } from "~/domains/shared/queryKeys";
-import { getTodayDateString } from "~/lib/dateUtils";
+import { sessionRunQueryKeys } from "~/shared/queryKeys";
+import { getTodayDateString } from "~/shared/lib/dateUtils";
 import { getRunCommunity } from "~/modules/run/community/application/community.serverfn";
 import { Screen } from "~/ui/Screen.ui";
 import { Stack } from "~/ui/Stack.ui";

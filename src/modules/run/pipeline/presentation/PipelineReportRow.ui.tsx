@@ -4,7 +4,7 @@ import type { Config } from "~/modules/run/config/domain/config.model";
 import { rarityOf } from "~/modules/run/config/domain/config.model";
 import { FoldableRow, type Fold } from "~/ui/FoldableRow.ui";
 import { RARITY_COLORS } from "~/ui/rarityColors";
-import { StatusLine, type StatusLineSpacing } from "~/ui/runs/StatusLine.ui";
+import { StatusLine, type StatusLineSpacing } from "~/ui/StatusLine.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { StatusDot, type StatusDotVariant } from "~/ui/StatusDot.ui";
 import {

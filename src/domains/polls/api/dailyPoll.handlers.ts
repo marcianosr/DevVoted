@@ -24,7 +24,7 @@ import {
 } from "~/domains/polls/validation/schemas";
 import { getUserActiveRun } from "~/domains/runs/api/handlers";
 import { fetchUserDisplayName } from "~/domains/users/api/queries";
-import { handleApiOperation } from "~/utils/errorHandling";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 export const getDailyPollHandler = async ({
 	data,

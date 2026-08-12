@@ -4,7 +4,7 @@
  * Pure mechanics only. Proves the tag tension and the strip-on-fail failure model
  * are fun BEFORE any production wiring. Tags are grounded in DevVoted's real configs.
  */
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 export type TagFamily =
 	"focus" | "defense" | "risk" | "amplify" | "economy" | "check";

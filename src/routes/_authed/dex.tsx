@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Dex } from "~/modules/polls/presentation/dex/Dex.component";
+import { Dex } from "~/modules/collection/dex/presentation/Dex.component";
 
 const DexPage = () => {
 	const { user } = Route.useRouteContext();

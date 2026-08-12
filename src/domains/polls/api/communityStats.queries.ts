@@ -18,7 +18,7 @@ import {
 	getCurrentGate,
 	getWindowSize,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import { isCategoryCode, type CategoryCode } from "~/domains/shared/categories";
+import { isCategoryCode, type CategoryCode } from "~/shared/lib/categories";
 import type { User } from "~/domains/users/services/userSync.service";
 
 export type UserRole = "user" | "poll-editor" | "admin";

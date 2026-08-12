@@ -3,7 +3,7 @@ import { redirect, createFileRoute } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 
 import { Auth } from "../domains/users/components/Auth.component";
-import { getSupabaseServerClient } from "../utils/supabase";
+import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
 export const signupFn = createServerFn({ method: "POST" })
 	.validator(

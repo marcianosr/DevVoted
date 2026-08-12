@@ -7,8 +7,8 @@ import {
 } from "~/modules/run/gate/domain/gateLadder.model";
 import { swatchesEarnedAt } from "~/modules/run/gate/domain/swatch.model";
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
-import { MetaStorageBar } from "~/ui/runs/MetaStorageBar.ui";
-import { StatusLine } from "~/ui/runs/StatusLine.ui";
+import { MetaStorageBar } from "~/modules/run/run/presentation/MetaStorageBar.ui";
+import { StatusLine } from "~/ui/StatusLine.ui";
 import { type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import {
 	Paragraph,

@@ -12,7 +12,7 @@ import {
 	type ParsedCompletion,
 } from "~/domains/runs/utils/parseCompletionReason";
 import { Avatar } from "~/domains/users/components/Avatar.component";
-import { formatStorage } from "~/lib/storage";
+import { formatStorage } from "~/shared/lib/storage";
 import { Button } from "~/ui/Button.component";
 
 export type FallenPlayerModalProps = {

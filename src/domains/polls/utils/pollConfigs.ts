@@ -1,5 +1,5 @@
 import type { Config } from "~/domains/economy/models/config.model";
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 /**
  * Whether an installed config can act on a poll of the given category. Configs

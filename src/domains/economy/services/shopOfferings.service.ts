@@ -3,7 +3,7 @@
  * This file contains functions that interact with the database.
  * For pure selection logic (no DB), see configSelection.ts
  */
-import { DEFAULT_OFFERED_CONFIGS_COUNT } from "~/config/economy";
+import { DEFAULT_OFFERED_CONFIGS_COUNT } from "~/shared/config/economy";
 import { configs } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
 
