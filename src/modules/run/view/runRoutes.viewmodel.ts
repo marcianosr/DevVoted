@@ -22,23 +22,6 @@ export const COMMUNITY_ROUTE = "/run/community";
 
 export type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
 
-/**
- * The server owns the run's state machine; the URL only projects it. This maps
- * each status to the route(s) allowed to show it — first entry is canonical.
- * "rewarding" spans three routes because reward → review → shop are user-driven
- * page turns within one server status, and "awaiting-strip" spans two for the
- * same reason: strip → review. Both ends of a gate close on the answers, and on
- * neither path does reading them advance the run — the action that does sits on
- * the last page of the sequence.
- *
- * "answering" spans two for a different reason: prep is the pre-gate beat —
- * the stake and the pipeline, before the first poll — and canonical, so any
- * stale or deep link into a gate already in progress (chiefly the community
- * board's "back to your run") lands there rather than mid-poll. Gate 0 is the
- * one exception: Configure already shows the same stake before the climb even
- * starts, so a prep page right after it would repeat itself — "answering"
- * collapses to just `answer` there.
- */
 export const routesForStatus = (
 	view: Pick<RunView, "status" | "gatesCleared"> | null
 ): readonly [RunRoutePath, ...RunRoutePath[]] => {
@@ -51,7 +34,12 @@ export const routesForStatus = (
 				? [RUN_ROUTES.prep, RUN_ROUTES.answer]
 				: [RUN_ROUTES.answer];
 		case "rewarding":
-			return [RUN_ROUTES.reward, RUN_ROUTES.review, RUN_ROUTES.shop];
+			return [
+				RUN_ROUTES.reward,
+				RUN_ROUTES.review,
+				RUN_ROUTES.shop,
+				RUN_ROUTES.prep,
+			];
 		case "awaiting-strip":
 			return [RUN_ROUTES.strip, RUN_ROUTES.review];
 		case "won":
@@ -62,18 +50,6 @@ export const routesForStatus = (
 
 const RUN_SCREEN_PATHS: readonly string[] = Object.values(RUN_ROUTES);
 
-/**
- * The redirect verdict for the route sync: where the player must be moved,
- * or null to stay put. Null while loading — a stale cached view must never
- * cause a redirect. Null for paths outside the run's own screens: mid-
- * transition to elsewhere (the community detour, /dex, …) the layout is
- * still briefly mounted with the new pathname, and policing it would drag
- * the player back into the run.
- *
- * The daily lock overrides the status map: awaiting tomorrow's polls there
- * is nothing to show on any run screen, so the player lands on the
- * community board — the day's closing beat (ADR-014, DVTD-zfuv).
- */
 export const syncTarget = (
 	pathname: string,
 	view: Pick<RunView, "status" | "awaitingTomorrow" | "gatesCleared"> | null,

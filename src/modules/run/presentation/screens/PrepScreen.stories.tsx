@@ -30,14 +30,11 @@ export const Default: Story = {
 			matchingConfigMultiplier: 1.25,
 		},
 		configs: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
-		editing: false,
-		onDropConfig: () => {},
-		onEditPipeline: () => {},
+		shopAction: { label: "← Back to shop", onClick: () => {} },
 		onStartGate: () => {},
 	},
 };
 
-/** The peel quota has caught up with the build: a fail here ends the run. */
 export const Fatal: Story = {
 	args: {
 		...Default.args,
@@ -45,15 +42,6 @@ export const Fatal: Story = {
 	},
 };
 
-/** "Edit pipeline" toggled: every chip but the last offers a remove action. */
-export const Editing: Story = {
-	args: {
-		...Default.args,
-		editing: true,
-	},
-};
-
-/** On a paid storage plan: the receipt names the bill the window will collect. */
 export const PaidStoragePlan: Story = {
 	args: {
 		...Default.args,
@@ -61,11 +49,6 @@ export const PaidStoragePlan: Story = {
 	},
 };
 
-/**
- * A strip sank the build under the gate's width demand (ADR-027): the receipt
- * warns in cinnabar that climbing on ends the run — the moment that decides
- * whether death at the gate's door reads as fair.
- */
 export const UnderWidthDemand: Story = {
 	args: {
 		...Default.args,
@@ -73,5 +56,12 @@ export const UnderWidthDemand: Story = {
 		stripsOnFailure: 3,
 		minConfigs: 4,
 		configs: [CONFIGS.js, CONFIGS.eslint],
+	},
+};
+
+export const AwaitingTomorrowsPolls: Story = {
+	args: {
+		...Default.args,
+		startLock: "New polls in 7h 23m",
 	},
 };

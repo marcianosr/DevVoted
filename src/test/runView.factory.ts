@@ -1,5 +1,8 @@
 import { CATEGORY_CODES } from "~/domains/shared/categories";
-import { STORAGE_PLANS } from "~/modules/run/rules.model";
+import {
+	isStoragePlanUnlocked,
+	storagePlanLadder,
+} from "~/modules/run/rules.model";
 import type { PollView, RunView } from "~/modules/run/view/runView.viewmodel";
 
 import { createMockDataFactory } from "./createMockDataFactory";
@@ -18,7 +21,6 @@ export const createMockPollView = createMockDataFactory<PollView>({
 	})),
 });
 
-/** A mid-climb answering view; override `status`/`poll` for other screens. */
 export const createMockRunView = createMockDataFactory<RunView>({
 	status: "answering",
 	slots: 3,
@@ -29,6 +31,7 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	stripsRemaining: 0,
 	poll: createMockPollView(),
 	awaitingTomorrow: false,
+	pollsExhausted: false,
 	disabledOptionIds: [],
 	canLint: false,
 	lintReady: false,
@@ -36,6 +39,14 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	linter: null,
 	rebuildCost: 0,
 	canRebuild: false,
+	lockAvailable: false,
+	lockCost: 16,
+	canLock: false,
+	lockedOfferIds: [],
+	extendAvailable: false,
+	extendCost: 48,
+	canExtend: false,
+	offerCount: 5,
 	slotCoverageRequired: 0,
 	justUnlockedSlots: [],
 	checks: [],
@@ -56,6 +67,7 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	stripsOnFailure: 1,
 	minConfigs: 2,
 	underMinConfigs: false,
+	widthRepairable: true,
 	pollsToGate: 5,
 	pollsAnswered: 0,
 	pollsPerGate: 5,
@@ -68,10 +80,11 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	storageBillKb: 0,
 	gateBillPaidKb: 0,
 	planDowngraded: false,
-	storagePlans: STORAGE_PLANS.map((plan, index) => ({
+	storagePlans: storagePlanLadder(0).map((plan, index) => ({
 		...plan,
 		current: index === 0,
 		burnKb: 0,
+		locked: !isStoragePlanUnlocked(plan, 0),
 	})),
 	log: [],
 });

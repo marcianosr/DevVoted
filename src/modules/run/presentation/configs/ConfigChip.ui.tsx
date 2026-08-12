@@ -1,4 +1,5 @@
 import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
 import type { ReactNode } from "react";
 import { Config, describeConfig } from "~/modules/run/configs/config.model";
 import { Badge } from "~/ui/Badge.component";
@@ -47,20 +48,24 @@ type ConfigChipProps = {
 	price?: number;
 	badge?: ReactNode;
 	tooltip?: ReactNode;
+	/** The tooltip panel carries its own buttons, so the pointer must reach it. */
+	interactiveTooltip?: boolean;
+	/**
+	 * Compact hover caption ("Click to install") shown INSTEAD of the panel until
+	 * the chip is clicked. Requires the parent to drive `tooltipPinned` from its
+	 * own click handler — the hint itself never opens the panel.
+	 */
+	tooltipHint?: ReactNode;
+	tooltipPinned?: boolean;
+	onTooltipDismiss?: () => void;
 	noTooltip?: boolean;
 	compact?: boolean;
 	disabled?: boolean;
+	dimmed?: boolean;
 	onClick?: () => void;
-	/** Disclosure state when the chip toggles a fold (the pipeline rows). */
 	ariaExpanded?: boolean;
 };
 
-/**
- * One size only. The chip carried a `subline` for the Configdex's card layout
- * until that became a plain chip grid too — a chip that can grow a paragraph is
- * a card wearing a chip's border, and the tooltip already had somewhere to put
- * the prose.
- */
 const ChipLabel = ({
 	config,
 	action,
@@ -74,15 +79,20 @@ const ChipLabel = ({
 const ChipSurface = ({
 	config,
 	disabled,
+	dimmed,
 	onClick,
 	ariaExpanded,
 	children,
-}: Pick<ConfigChipProps, "config" | "disabled" | "onClick" | "ariaExpanded"> & {
+}: Pick<
+	ConfigChipProps,
+	"config" | "disabled" | "dimmed" | "onClick" | "ariaExpanded"
+> & {
 	children: ReactNode;
 }) => {
-	const style = chipSurface({
-		rarity: config.rarity ?? "common",
-	});
+	const style = clsx(
+		chipSurface({ rarity: config.rarity ?? "common" }),
+		dimmed && "opacity-40"
+	);
 
 	return onClick ? (
 		<button
@@ -105,8 +115,13 @@ export const ConfigChip = ({
 	price,
 	badge,
 	tooltip,
+	interactiveTooltip,
+	tooltipHint,
+	tooltipPinned,
+	onTooltipDismiss,
 	noTooltip,
 	disabled,
+	dimmed,
 	onClick,
 	ariaExpanded,
 }: ConfigChipProps) => {
@@ -126,6 +141,7 @@ export const ConfigChip = ({
 		<ChipSurface
 			config={config}
 			disabled={disabled}
+			dimmed={dimmed}
 			onClick={onClick}
 			ariaExpanded={ariaExpanded}
 		>
@@ -135,7 +151,7 @@ export const ConfigChip = ({
 	const chip =
 		corners.length > 0 ? (
 			<span className="relative inline-flex">
-				<span className="absolute -right-1.5 -top-2 z-10 flex gap-1">
+				<span className="absolute -right-1 -top-2.5 z-10 flex gap-1">
 					{corners}
 				</span>
 				{surface}
@@ -145,16 +161,27 @@ export const ConfigChip = ({
 		);
 	if (noTooltip) return chip;
 	const rarity = config.rarity ?? "common";
+	// `pinned={false}` keeps the hint controlled-shut: a touch tap must not pin
+	// the caption itself, because the chip's click is what swaps in the panel.
+	if (tooltipHint !== undefined && !tooltipPinned)
+		return (
+			<Tooltip compact pinned={false} content={tooltipHint}>
+				{chip}
+			</Tooltip>
+		);
 	return (
 		<Tooltip
 			surfaceClassName={tooltipSurface({ rarity })}
+			interactive={interactiveTooltip}
+			pinned={tooltipHint !== undefined ? tooltipPinned : undefined}
+			onDismiss={onTooltipDismiss}
 			content={
-				<div className="flex flex-col gap-1">
+				<span className="flex flex-col gap-1">
 					<span className={rarityLabel({ rarity })}>{rarity}</span>
-					<Paragraph className="text-sm">
-						{tooltip ?? describeConfig(config)}
-					</Paragraph>
-				</div>
+					{tooltip ?? (
+						<Paragraph className="text-sm">{describeConfig(config)}</Paragraph>
+					)}
+				</span>
 			}
 		>
 			{chip}

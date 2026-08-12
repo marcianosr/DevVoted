@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 
 import type { SwatchTheme } from "~/modules/run/gate/swatch.model";
 
-import { Button } from "./Button.component";
+import { Button, type ButtonVariant } from "./Button.component";
 import { Popover } from "./Popover.component";
 import { Paragraph } from "./typography/Paragraph.component";
 import {
@@ -23,6 +23,8 @@ export type ScreenAction = {
 	onClick: () => void;
 	disabled?: boolean;
 	hint?: ReactNode;
+	/** The footer button's tone — "danger" marks a click that ends the run (ADR-031). */
+	variant?: ButtonVariant;
 };
 
 const screenSection = cva("w-full mx-auto px-4 py-4 sm:py-8", {
@@ -67,11 +69,6 @@ type ScreenProps = {
 	theme?: ScreenTheme;
 	leftAction?: ScreenAction;
 	rightAction?: ScreenAction;
-	/**
-	 * A line of standing context beside the actions — a countdown, a cost, a
-	 * warning. Not an action: it takes the footer's left seat because it is what
-	 * the button on the right is answering to, and it is never clickable.
-	 */
 	footerNote?: ReactNode;
 	center?: boolean;
 };
@@ -101,17 +98,12 @@ export const Screen = ({
 		clearScreenNavDirection();
 	}, []);
 
-	// Mirror the gate theme onto <body> so the page background takes a faint
-	// tint of the gate being played, and the HUD (outside this section)
-	// inherits --theme-color (see `body[data-gate-theme]` in app.css).
 	useEffect(() => {
 		if (!gateTheme) return;
 		document.body.setAttribute("data-gate-theme", gateTheme);
 		return () => document.body.removeAttribute("data-gate-theme");
 	}, [gateTheme]);
 
-	// Same trick for the mood theme: the body attribute cascades --theme-color
-	// to everything on the page, HUD included.
 	useEffect(() => {
 		if (!theme) return;
 		document.body.setAttribute("data-screen-theme", theme);
@@ -123,8 +115,6 @@ export const Screen = ({
 		action.onClick();
 	};
 
-	// The note and the back button share the left seat, so a screen carrying both
-	// still lays out as two sides rather than three.
 	const leftSide =
 		footerNote || leftAction ? (
 			<span className="flex items-center gap-4">
@@ -137,6 +127,7 @@ export const Screen = ({
 					<Button
 						onClick={() => runAction(leftAction, "back")}
 						disabled={leftAction.disabled}
+						variant={leftAction.variant}
 					>
 						{leftAction.label}
 					</Button>
@@ -169,6 +160,7 @@ export const Screen = ({
 								<Button
 									onClick={() => runAction(rightAction, "forward")}
 									disabled={rightAction.disabled}
+									variant={rightAction.variant}
 								>
 									{rightAction.label}
 								</Button>
@@ -177,6 +169,7 @@ export const Screen = ({
 							<Button
 								onClick={() => runAction(rightAction, "forward")}
 								disabled={rightAction.disabled}
+								variant={rightAction.variant}
 							>
 								{rightAction.label}
 							</Button>

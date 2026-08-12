@@ -32,6 +32,9 @@ converge instead of varying.
    512KB, free; tier 2 — 640KB at 8KB/gate; tier 3 — 768KB at 16KB/gate.
    Tiers stay internally unflavored (no Free/Pro/Enterprise skin) until the
    mechanic proves fun.
+   > ⚠ Amended by [ADR-030](030-gate-staged-storage-plans.md) (2026-08-11): the
+   > ladder now runs to seven rungs (3MB cap) and each rung is gate-staged. The
+   > subscription mechanic below is unchanged.
 2. **The bill collects on every closed window, pass or fail**
    (`chargeStorageBill`, first thing in `closeWindow`, before the clear
    payout). A failed gate pays nothing and still bills: the subscription is a

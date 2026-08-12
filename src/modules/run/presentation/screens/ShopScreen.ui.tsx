@@ -18,11 +18,16 @@ import {
 	type PerAnswerPreview,
 	type PipelineModifiers,
 } from "~/modules/run/pipeline/pipeline.model";
+import { formatKb } from "~/lib/storage";
+import { Badge } from "~/ui/Badge.component";
 import { Columns } from "~/ui/Columns.ui";
 import { RadioDot } from "~/ui/RadioDot.ui";
 import { TerminalPanel, TerminalSection } from "~/ui/TerminalPanel.ui";
 import { Tooltip } from "~/ui/Tooltip.component";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import {
+	Paragraph,
+	type ParagraphTone,
+} from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/run/gate/configRole.model";
@@ -42,7 +47,6 @@ type ShopScreenProps = {
 	slots: number;
 	pollsPerGate: number;
 	stripsOnFailure: number;
-	/** The coming gate's width demand (ADR-027): selling below it is refused. */
 	minConfigs: number;
 	modifiers: PipelineModifiers;
 	perAnswer: PerAnswerPreview;
@@ -53,6 +57,15 @@ type ShopScreenProps = {
 	rebuildCost: number;
 	canRebuild: boolean;
 	onRebuild: () => void;
+	lockAvailable: boolean;
+	lockCost: number;
+	canLock: boolean;
+	lockedOfferIds: readonly string[];
+	onLock: (configId: string) => void;
+	extendAvailable: boolean;
+	extendCost: number;
+	canExtend: boolean;
+	onExtend: () => void;
 	coverage: number;
 	slotCoverageRequired: number;
 	justUnlockedSlots: readonly number[];
@@ -62,9 +75,6 @@ type ShopScreenProps = {
 	onChangePlan: (tier: number) => void;
 };
 
-// The shop's row controls share one shape: a bordered pill whose label reads
-// plain and whose price glows saffron. Buying is the loud one (viridian);
-// an unlocked upgrade wears the legendary Kanto ring (prismatic).
 const actionTone = ({
 	loud,
 	prismatic,
@@ -87,6 +97,7 @@ const actionButton = ({
 	loud = false,
 	prismatic = false,
 	pill = false,
+	ariaLabel,
 }: {
 	label: string;
 	price?: string;
@@ -95,11 +106,13 @@ const actionButton = ({
 	loud?: boolean;
 	prismatic?: boolean;
 	pill?: boolean;
+	ariaLabel?: string;
 }) => (
 	<button
 		type="button"
 		onClick={onClick}
 		disabled={disabled}
+		aria-label={ariaLabel}
 		className={`${pill ? "rounded-full" : "rounded-lg"} border px-3 py-1.5 text-sm transition ${actionTone({ loud, prismatic })} enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600`}
 	>
 		{label}
@@ -111,6 +124,16 @@ const actionButton = ({
 		) : null}
 	</button>
 );
+
+const planBill = (plan: StoragePlanOption): string => {
+	if (plan.locked) return `Opens after gate ${plan.fromGate}`;
+	return plan.billKb === 0 ? "Free" : `${plan.billKb}KB / gate`;
+};
+
+const planLabelTone = (plan: StoragePlanOption): ParagraphTone | undefined => {
+	if (plan.locked) return "faint";
+	return plan.current ? undefined : "muted";
+};
 
 type PanelHeadingProps = {
 	title: ReactNode;
@@ -143,6 +166,15 @@ export const ShopScreen = ({
 	rebuildCost,
 	canRebuild,
 	onRebuild,
+	lockAvailable,
+	lockCost,
+	canLock,
+	lockedOfferIds,
+	onLock,
+	extendAvailable,
+	extendCost,
+	canExtend,
+	onExtend,
 	coverage,
 	slotCoverageRequired,
 	justUnlockedSlots,
@@ -151,12 +183,20 @@ export const ShopScreen = ({
 	storagePlans,
 	onChangePlan,
 }: ShopScreenProps) => {
-	const [previewId, setPreviewId] = useState<string | null>(null);
+	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const isFull = configs.length >= slots;
 	const nextGate = swatchForGate(gateNumber);
 
+	const isLocked = (config: Config): boolean =>
+		lockedOfferIds.includes(config.id);
+
+	const isOwned = (config: Config): boolean =>
+		configs.some((installed) => installed.id === config.id);
+
 	const canAfford = (config: Config): boolean => storage >= draftCost(config);
-	const canInstall = (config: Config): boolean => !isFull && canAfford(config);
+	const canInstall = (config: Config): boolean =>
+		!isFull && canAfford(config) && !isOwned(config);
 
 	const canUpgrade = (config: Config): boolean => {
 		if (!config.focusCategory)
@@ -232,7 +272,7 @@ export const ShopScreen = ({
 	};
 
 	const previewConfig = draftOptions.find(
-		(config) => config.id === previewId && canInstall(config)
+		(config) => config.id === (hoveredId ?? selectedId) && canInstall(config)
 	);
 	const next = previewConfig
 		? pipelineModifiersFor([...configs, previewConfig])
@@ -243,7 +283,8 @@ export const ShopScreen = ({
 
 	const install = (configId: string) => {
 		onDraft(configId);
-		setPreviewId(null);
+		setSelectedId(null);
+		setHoveredId(null);
 	};
 
 	const previewHint = (config: Config): ReactNode => (
@@ -252,21 +293,104 @@ export const ShopScreen = ({
 		</Paragraph>
 	);
 
+	const installRefusal = (config: Config): string | null => {
+		if (isFull) return "No free slot — uninstall a config first";
+		if (!canAfford(config))
+			return `Costs ${draftCost(config)}KB — you have ${storage}KB`;
+		return null;
+	};
+
+	const offerBadge = (config: Config): ReactNode => {
+		if (isOwned(config))
+			return (
+				<Badge size="corner">
+					<span aria-hidden="true">✓ </span>owned
+				</Badge>
+			);
+		return (
+			<Badge tone="price" size="corner">
+				{draftCost(config)}KB
+			</Badge>
+		);
+	};
+
+	const offerTooltip = (config: Config): ReactNode => {
+		const refusal = installRefusal(config);
+		const installTone: "neutral" | "positive" = refusal
+			? "neutral"
+			: "positive";
+		const installBtn = (
+			<Badge
+				tone={installTone}
+				size="corner"
+				onClick={() => install(config.id)}
+				disabled={refusal !== null}
+				ariaLabel={`Install ${config.label} for ${draftCost(config)}KB`}
+			>
+				install
+			</Badge>
+		);
+		const lockBtn =
+			lockAvailable && !isLocked(config) ? (
+				<Badge
+					tone="price"
+					size="corner"
+					onClick={() => onLock(config.id)}
+					disabled={!canLock}
+					ariaLabel={`Lock ${config.label} for ${lockCost}KB`}
+				>
+					Lock config
+				</Badge>
+			) : null;
+
+		return (
+			<>
+				<span className="text-sm">{describeConfig(config)}</span>
+				<span className="mt-2 flex gap-1">
+					{refusal ? (
+						<Tooltip content={refusal} compact nested>
+							{installBtn}
+						</Tooltip>
+					) : (
+						installBtn
+					)}
+					{lockBtn &&
+						(canLock ? (
+							lockBtn
+						) : (
+							<Tooltip
+								content={`Holding costs ${lockCost}KB — you have ${storage}KB.`}
+								compact
+								nested
+							>
+								{lockBtn}
+							</Tooltip>
+						))}
+				</span>
+			</>
+		);
+	};
+
 	const offerChip = (config: Config): ReactNode => {
-		const chip = (
+		const selected = config.id === selectedId;
+		return (
 			<ConfigChip
 				config={config}
-				noTooltip
-				price={draftCost(config)}
-				disabled={!canInstall(config)}
-				onClick={() => install(config.id)}
+				tooltip={!isOwned(config) ? offerTooltip(config) : undefined}
+				interactiveTooltip={!isOwned(config)}
+				tooltipHint={!isOwned(config) ? "Click to install" : undefined}
+				tooltipPinned={!isOwned(config) ? selected : undefined}
+				onTooltipDismiss={() => setSelectedId(null)}
+				badge={
+					<>
+						{isLocked(config) ? <Badge size="corner">Locked</Badge> : null}
+						{offerBadge(config)}
+					</>
+				}
+				disabled={isOwned(config)}
+				onClick={() => setSelectedId(selected ? null : config.id)}
+				ariaExpanded={selected}
 			/>
-		);
-		if (!isFull) return chip;
-		return (
-			<Tooltip content="Add a new slot to upgrade or sell an existing config">
-				{chip}
-			</Tooltip>
 		);
 	};
 
@@ -280,68 +404,91 @@ export const ShopScreen = ({
 			<Columns
 				aside={
 					<TerminalPanel title="Shop · Install configs">
-						<div className="flex flex-wrap gap-x-4 gap-y-4">
+						<div className="flex flex-wrap items-start gap-x-4 gap-y-5">
 							{draftOptions.map((config) => (
 								<span
 									key={config.id}
-									onMouseEnter={() => setPreviewId(config.id)}
-									onFocus={() => setPreviewId(config.id)}
+									className={clsx(
+										"inline-flex rounded-sm",
+										config.id === selectedId &&
+											"ring-2 ring-celadon ring-offset-2 ring-offset-zinc-950"
+									)}
+									onMouseEnter={() => setHoveredId(config.id)}
+									onFocus={() => setHoveredId(config.id)}
 								>
 									{offerChip(config)}
 								</span>
 							))}
 						</div>
-						<div className="pt-1">
-							<Tooltip content="Swap these offers for a new set — the price doubles each rebuild, resets next shop">
-								{actionButton({
-									label: "↻ Rebuild offers",
-									price: `${rebuildCost}KB`,
-									onClick: onRebuild,
-									disabled: !canRebuild,
-								})}
-							</Tooltip>
-						</div>
+						<TerminalSection label="Shop controls">
+							<div className="flex flex-wrap items-center gap-2">
+								<Tooltip content="Swap these offers for a new set — the price doubles each rebuild, resets next shop">
+									{actionButton({
+										label: "↻ Rebuild offers",
+										price: `${rebuildCost}KB`,
+										onClick: onRebuild,
+										disabled: !canRebuild,
+									})}
+								</Tooltip>
+								{extendAvailable ? (
+									<Tooltip content="One more offer, in this shop and every shop after it">
+										{actionButton({
+											label: "+ Extend offers",
+											price: `${extendCost}KB`,
+											onClick: onExtend,
+											disabled: !canExtend,
+										})}
+									</Tooltip>
+								) : null}
+							</div>
+						</TerminalSection>
 
 						<hr className="border-t border-zinc-700" />
 
 						<TerminalSection label="Storage upgrades">
 							<ul className="flex flex-col">
 								{storagePlans.map((plan) => {
-									const descriptor =
-										plan.billKb === 0 ? "free" : `-${plan.billKb}KB/gate`;
-									const row = (
+									const planRow = (
 										<span className="flex items-center justify-between gap-3">
 											<span className="flex items-center gap-2">
 												<RadioDot checked={plan.current} />
 												<Paragraph
 													as="span"
 													size="sm"
-													tone={plan.current ? undefined : "muted"}
+													tone={planLabelTone(plan)}
 												>
-													{plan.capKb}KB
+													{formatKb(plan.capKb)}
 												</Paragraph>
 											</span>
 											<Paragraph as="span" size="sm" tone="muted">
-												{descriptor}
+												{planBill(plan)}
 											</Paragraph>
 										</span>
 									);
-									// Every row shares one box (padding, rounding) whether it's the
-									// current plan or a switch target — otherwise the current row
-									// (plain span) sits a different size than the others (button),
-									// and the list visibly shifts as the selection changes.
 									const rowBox = "block w-full rounded-lg px-1 py-1 text-left";
+									if (plan.locked)
+										return (
+											<li key={plan.tier}>
+												<Tooltip
+													content={`A ${formatKb(plan.capKb)} cap is only worth its bill once a gate pays enough to fill it — this rung opens after gate ${plan.fromGate}.`}
+												>
+													<span className={clsx(rowBox, "opacity-60")}>
+														{planRow}
+													</span>
+												</Tooltip>
+											</li>
+										);
 									if (plan.current)
 										return (
 											<li key={plan.tier}>
-												<span className={rowBox}>{row}</span>
+												<span className={rowBox}>{planRow}</span>
 											</li>
 										);
 									const switchButton = (
 										<button
 											type="button"
 											onClick={() => onChangePlan(plan.tier)}
-											aria-label={`Switch to ${plan.capKb}KB storage plan${
+											aria-label={`Switch to ${formatKb(plan.capKb)} storage plan${
 												plan.billKb > 0 ? `, ${plan.billKb}KB per gate` : ""
 											}`}
 											className={clsx(
@@ -349,7 +496,7 @@ export const ShopScreen = ({
 												"cursor-pointer transition hover:bg-zinc-800/60"
 											)}
 										>
-											{row}
+											{planRow}
 										</button>
 									);
 									return (

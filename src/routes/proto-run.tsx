@@ -37,7 +37,7 @@ import { RunHud } from "~/modules/run/presentation/run/RunHud.ui";
 import { RunSummary } from "~/modules/run/presentation/run/RunSummary.ui";
 import { StandoutsPanel } from "~/modules/run/presentation/community/Standouts.ui";
 import { swatchForGate } from "~/modules/run/gate/swatch.model";
-import { toRunView } from "~/modules/run/view/runView.viewmodel";
+import { shopExitFor, toRunView } from "~/modules/run/view/runView.viewmodel";
 import {
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -55,7 +55,6 @@ import { Stack } from "~/ui/Stack.ui";
 export const Route = createFileRoute("/proto-run")({
 	component: RouteComponent,
 	beforeLoad: () => {
-		// Test harness with cheat controls — never reachable on a deployed build.
 		if (import.meta.env.PROD) throw redirect({ to: "/" });
 	},
 });
@@ -139,9 +138,6 @@ const BASE_POLLS: RunPoll[] = [
 
 type RigOutcome = "right" | "wrong";
 
-// The rig reads answers from the unredacted poll. Only possible here: the proto
-// route holds the full RunState client-side, while the real game strips
-// `correct` flags via toRunView before anything reaches the browser.
 const rigOptionIds = (
 	poll: RunPoll,
 	outcome: RigOutcome
@@ -155,10 +151,6 @@ const rigOptionIds = (
 	return wrong ? [wrong.id] : [];
 };
 
-// ─── Simulated community ─────────────────────────────────────────────────────
-// The rig has no server, so the community step fakes the town: Kanto trainers
-// whose picks derive from a (trainer, poll) hash — stable across re-renders,
-// varied across polls. Roster mirrors src/database/seedCommunity.ts.
 type SimTrainer = { id: string; displayName: string; accuracy: number };
 
 const TRAINERS: readonly SimTrainer[] = [
@@ -194,11 +186,6 @@ type SimulatedCommunity = RunCommunityBoardProps & {
 	standouts: CommunityStandout[];
 };
 
-/**
- * The rig has no other runs, so the run-scoped awards are faked from *your*
- * standing and handed to random trainers. The point here is that the panel looks
- * and reads like production, not that the numbers mean anything.
- */
 const simulateCommunityBoard = (
 	answered: readonly AnsweredPoll[],
 	polls: readonly RunPoll[],
@@ -263,8 +250,6 @@ const simulateCommunityBoard = (
 		];
 	});
 
-	// Percentile mirrors the real page: trainers with more correct answers
-	// this gate push "you" down.
 	const yourRights = answered.filter(
 		(entry) => entry.outcome === "correct"
 	).length;
@@ -281,8 +266,6 @@ const simulateCommunityBoard = (
 		Math.ceil(((better + 1) / answeredCount) * 100)
 	);
 
-	// Standouts, hash-faked like the votes; "most X polls" counts the gate's
-	// real category mix so the award tracks what was actually played.
 	const trainerVoter = (trainer: SimTrainer): CommunityVoter => ({
 		id: trainer.id,
 		displayName: trainer.displayName,
@@ -328,7 +311,6 @@ const simulateCommunityBoard = (
 							(90 + (hashOf(`goods:${gateKey}`) % 90)) * 1_000
 						),
 					},
-					// Same floor the model applies: a "most" of one is no distinction.
 					...(topCategory[1] >= 2
 						? [
 								{
@@ -396,8 +378,6 @@ const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 const HANDED = [...Object.values(CONFIGS)];
 
 const RunGame = ({ onRestart }: { onRestart: () => void }) => {
-	// useState instead of useReducer so the rig can step the pure reducer in a
-	// loop (fast-forward needs each intermediate state to pick the next answer).
 	const [state, setState] = useState(() => createRun(POOLS, HANDED));
 	const dispatch = (action: RunAction) =>
 		setState((current) => runReducer(current, action));
@@ -405,35 +385,16 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setSelected([]);
 	}, [state.currentIndex]);
-	// The reward flows over four pages, the same sequence the routed app walks
-	// (reward → review → shop → community). Reset to the summary each new gate.
 	const [rewardStep, setRewardStep] = useState<
-		"summary" | "review" | "shop" | "community"
+		"summary" | "review" | "shop" | "prep" | "community"
 	>("summary");
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
-	// The failed gate's own two pages: peel the build, then read the answers —
-	// mirroring RunStrip → RunReview.
 	const [stripStep, setStripStep] = useState<"strip" | "review">("strip");
 	useEffect(() => {
 		setStripStep("strip");
 	}, [state.status]);
-	// The gate-prep beat before the first poll of every gate but the first —
-	// mirrors the routed app's community → prep → answer sequence
-	// (RunPrep.component.tsx). Gate 0 skips it: Configure already shows the same
-	// stake right before the climb starts, so a prep page for Pallet would repeat
-	// it (see runRoutes.viewmodel.ts's gate-0 exception).
-	const [answeringStep, setAnsweringStep] = useState<"prep" | "poll">(
-		state.gatesCleared > 0 ? "prep" : "poll"
-	);
-	useEffect(() => {
-		setAnsweringStep(state.gatesCleared > 0 ? "prep" : "poll");
-	}, [state.status, state.gatesCleared]);
-	const [editingPipeline, setEditingPipeline] = useState(false);
-	useEffect(() => {
-		setEditingPipeline(false);
-	}, [answeringStep]);
 
 	const view = toRunView(state);
 	const community = simulateCommunityBoard(view.answeredThisGate, state.polls, {
@@ -441,9 +402,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		coverage: view.coverage,
 		configCount: view.configs.length,
 	});
-	// Only options the player paid to lint off are crossed out — no automatic masking.
 	const disabled = state.manualDisabled;
 	const cost = rebuildCost(state.rebuildsUsed);
+	const shopExit = shopExitFor(view);
 
 	const answer = (optionIds: readonly string[]) =>
 		dispatch({ type: "answer", optionIds });
@@ -451,8 +412,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		const poll = state.polls[state.currentIndex];
 		if (poll) answer(rigOptionIds(poll, outcome));
 	};
-	// Auto-answer until the reducer closes the window (rewarding, strip, won or
-	// dead all exit the loop), so any gate — and game over — is a few clicks away.
 	const answerRestOfWindow = (outcome: RigOutcome) =>
 		setState((current) => {
 			let next = current;
@@ -466,8 +425,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			}
 			return next;
 		});
-	// Selecting no longer auto-answers — the player commits deliberately via the
-	// Screen's "Submit answer" footer action.
 	const onSelect = (optionId: string) => {
 		if (view.poll?.answerType === "single") return setSelected([optionId]);
 		setSelected((current) =>
@@ -482,8 +439,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const quotaMet = view.stripsRemaining === 0;
 
 	const runOver = state.status === "won" || state.status === "dead";
-	// The gate report is its own celebration — the running HUD it would repeat
-	// (storage, coverage, gate ladder) is right there in the payout already.
 	const hidesHud =
 		runOver || (state.status === "rewarding" && rewardStep === "summary");
 
@@ -537,66 +492,38 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</Screen>
 			)}
 
-			{state.status === "answering" && answeringStep === "prep" && (
+			{state.status === "answering" && view.poll && (
 				<Screen gateTheme={view.gateTheme}>
-					<PrepScreen
-						gateNumber={view.gatesCleared}
-						pollsPerGate={view.pollsPerGate}
-						stripsOnFailure={view.stripsOnFailure}
-						minConfigs={view.minConfigs}
-						storageBillKb={view.storageBillKb}
-						modifiers={{
-							gateReward: view.gateReward,
-							rewardMultiplier: view.rewardMultiplier,
-							coverageMultiplier: view.coverageMultiplier,
-							coverageAdd: view.coverageAdd,
-						}}
-						perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
+					<AnsweringScreen
 						configs={view.configs}
-						editing={editingPipeline}
-						onDropConfig={(configId) => dispatch({ type: "drop", configId })}
-						onEditPipeline={() => setEditingPipeline((current) => !current)}
-						onStartGate={() => setAnsweringStep("poll")}
+						checks={view.checks}
+						category={view.poll.category}
+						question={view.poll.question}
+						answerType={view.poll.answerType}
+						options={view.poll.options}
+						selectedOptionIds={selected}
+						disabledOptionIds={disabled}
+						pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
+						pollsPerGate={view.pollsPerGate}
+						slots={view.slots}
+						stripsOnFailure={view.stripsOnFailure}
+						canLint={view.canLint}
+						lintReady={view.lintReady}
+						linter={view.linter ?? undefined}
+						lintCost={view.lintCost}
+						canSubmit={canSubmit}
+						onSelect={onSelect}
+						onSubmit={() => answer(selected)}
+						onNext={() => {}}
+						onLint={() => dispatch({ type: "lint-poll" })}
 					/>
 				</Screen>
 			)}
-
-			{state.status === "answering" &&
-				answeringStep === "poll" &&
-				view.poll && (
-					<Screen gateTheme={view.gateTheme}>
-						<AnsweringScreen
-							configs={view.configs}
-							checks={view.checks}
-							category={view.poll.category}
-							question={view.poll.question}
-							answerType={view.poll.answerType}
-							options={view.poll.options}
-							selectedOptionIds={selected}
-							disabledOptionIds={disabled}
-							pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
-							pollsPerGate={view.pollsPerGate}
-							slots={view.slots}
-							stripsOnFailure={view.stripsOnFailure}
-							canLint={view.canLint}
-							lintReady={view.lintReady}
-							linter={view.linter ?? undefined}
-							lintCost={view.lintCost}
-							canSubmit={canSubmit}
-							onSelect={onSelect}
-							onSubmit={() => answer(selected)}
-							onNext={() => {}}
-							onLint={() => dispatch({ type: "lint-poll" })}
-						/>
-					</Screen>
-				)}
 
 			{state.status === "rewarding" && rewardStep === "summary" && (
 				<Screen theme="celadon">
 					<RewardScreen
 						clearedGate={view.clearedGateNumber}
-						// The PAID amount, not the full-correctness ceiling (ADR-017):
-						// a 2/5 clear banks 13KB, and the payoff must say 13.
 						gateReward={view.gateRewardPaidKb}
 						answered={view.answeredThisGate}
 						configs={view.configs}
@@ -636,8 +563,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("summary"),
 					}}
 					rightAction={{
-						label: "Community →",
-						onClick: () => setRewardStep("community"),
+						label: shopExit.label,
+						hint: shopExit.hint,
+						variant: shopExit.variant,
+						disabled: shopExit.disabled,
+						onClick: shopExit.endsRun
+							? () => dispatch({ type: "finish-reward" })
+							: () => setRewardStep("prep"),
 					}}
 				>
 					<ShopScreen
@@ -663,6 +595,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						rebuildCost={cost}
 						canRebuild={state.storage >= cost}
 						onRebuild={() => dispatch({ type: "rebuild-draft" })}
+						lockAvailable={view.lockAvailable}
+						lockCost={view.lockCost}
+						canLock={view.canLock}
+						lockedOfferIds={view.lockedOfferIds}
+						onLock={(id) => dispatch({ type: "lock-offer", configId: id })}
+						extendAvailable={view.extendAvailable}
+						extendCost={view.extendCost}
+						canExtend={view.canExtend}
+						onExtend={() => dispatch({ type: "extend-offers" })}
 						slots={view.slots}
 						coverage={view.coverage}
 						slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
@@ -675,18 +616,47 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</Screen>
 			)}
 
+			{state.status === "rewarding" && rewardStep === "prep" && (
+				<Screen
+					gateTheme={view.gateTheme}
+					leftAction={{
+						label: "← Back to shop",
+						onClick: () => setRewardStep("shop"),
+					}}
+					rightAction={{
+						label: "Community →",
+						onClick: () => setRewardStep("community"),
+					}}
+				>
+					<PrepScreen
+						gateNumber={view.gatesCleared}
+						pollsPerGate={view.pollsPerGate}
+						stripsOnFailure={view.stripsOnFailure}
+						minConfigs={view.minConfigs}
+						storageBillKb={view.storageBillKb}
+						modifiers={{
+							gateReward: view.gateReward,
+							rewardMultiplier: view.rewardMultiplier,
+							coverageMultiplier: view.coverageMultiplier,
+							coverageAdd: view.coverageAdd,
+						}}
+						perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
+						configs={view.configs}
+						shopAction={{
+							label: "← Back to shop",
+							onClick: () => setRewardStep("shop"),
+						}}
+						onStartGate={() => dispatch({ type: "finish-reward" })}
+					/>
+				</Screen>
+			)}
+
 			{state.status === "rewarding" && rewardStep === "community" && (
 				<Screen
 					gateTheme={view.gateTheme}
 					leftAction={{
-						label: "← Back",
-						onClick: () => setRewardStep("shop"),
-					}}
-					rightAction={{
-						label: view.underMinConfigs
-							? `Enter gate ${view.gatesCleared + 1} — build too thin, run ends →`
-							: `Continue to gate ${view.gatesCleared + 1} →`,
-						onClick: () => dispatch({ type: "finish-reward" }),
+						label: "← Back to prep",
+						onClick: () => setRewardStep("prep"),
 					}}
 				>
 					<Stack gap="6" divided>
@@ -758,7 +728,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</Screen>
 			)}
 
-			{state.status === "answering" && answeringStep === "poll" && (
+			{state.status === "answering" && (
 				<div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
 					<span className="font-semibold uppercase tracking-wide">Dev rig</span>
 					<button

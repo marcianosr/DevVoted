@@ -12,45 +12,49 @@ type TooltipProps = {
 	content: ReactNode;
 	children: ReactNode;
 	surfaceClassName?: string;
-	/** Extra classes for the wrapper — e.g. `w-full` to let the trigger stretch. */
 	className?: string;
-	/** Fit-content one-liner surface (a voter's name) instead of the w-64 panel. */
 	compact?: boolean;
+	interactive?: boolean;
+	nested?: boolean;
+	pinned?: boolean;
+	onDismiss?: () => void;
 };
 
-/**
- * Hover and focus reveal the panel on a pointer device. A touch screen has
- * neither — iOS does not focus a button on tap and emulated hover is unreliable —
- * so a tap pins the panel open instead, and holds it until the next gesture:
- * another tap on the trigger, a tap anywhere else, or Escape.
- *
- * A mouse click deliberately does NOT pin: hover already covers the mouse, and
- * pinning would leave a panel hanging over the page after every click on a
- * tooltipped button.
- */
 export const Tooltip = ({
 	content,
 	children,
 	surfaceClassName = "border-zinc-700 bg-zinc-900",
 	className = "",
 	compact = false,
+	interactive = false,
+	nested = false,
+	pinned,
+	onDismiss,
 }: TooltipProps) => {
-	const [pinned, setPinned] = useState(false);
+	const [internalPinned, setInternalPinned] = useState(false);
+	const controlled = pinned !== undefined;
+	const isPinned = pinned ?? internalPinned;
 	const triggerRef = useRef<HTMLSpanElement>(null);
+	const panelRef = useRef<HTMLSpanElement>(null);
 
-	// The outside-tap listener ignores taps on the trigger, so it never races the
-	// toggle below: closing on pointerdown and reopening on pointerup would make
-	// a pinned panel impossible to dismiss by tapping its own trigger again.
 	useEffect(() => {
-		if (!pinned) return;
+		if (!isPinned) return;
+		const dismiss = () => {
+			if (controlled) {
+				onDismiss?.();
+				return;
+			}
+			setInternalPinned(false);
+		};
 		const closeOnOutsideTap = (event: globalThis.PointerEvent) => {
 			const target = event.target;
 			if (target instanceof Node && triggerRef.current?.contains(target))
 				return;
-			setPinned(false);
+			if (target instanceof Node && panelRef.current?.contains(target)) return;
+			dismiss();
 		};
 		const closeOnEscape = (event: KeyboardEvent) => {
-			if (event.key === "Escape") setPinned(false);
+			if (event.key === "Escape") dismiss();
 		};
 		document.addEventListener("pointerdown", closeOnOutsideTap);
 		document.addEventListener("keydown", closeOnEscape);
@@ -58,32 +62,39 @@ export const Tooltip = ({
 			document.removeEventListener("pointerdown", closeOnOutsideTap);
 			document.removeEventListener("keydown", closeOnEscape);
 		};
-	}, [pinned]);
+	}, [isPinned, controlled, onDismiss]);
 
 	const togglePin = (event: PointerEvent<HTMLSpanElement>) => {
+		if (controlled) return;
 		if (event.pointerType === "mouse") return;
-		setPinned((open) => !open);
+		setInternalPinned((open) => !open);
 	};
 
+	const reveal = nested
+		? "hidden group-hover/nested:block group-focus-within/nested:block"
+		: "hidden group-hover:block group-focus-within:block";
+
 	return (
-		// span, not the default <p>: block-level children (Avatar renders a div)
-		// inside a <p> get reparented by the HTML parser and break hydration.
 		<Paragraph
 			as="span"
-			className={clsx("group relative inline-flex", className)}
+			className={clsx(
+				nested ? "group/nested" : "group",
+				"relative inline-flex",
+				className
+			)}
 		>
-			{/* display:contents leaves the trigger's own layout untouched while
-			    giving the tap a node to hang on and to test containment against. */}
 			<span ref={triggerRef} className="contents" onPointerUp={togglePin}>
 				{children}
 			</span>
 			<span
+				ref={panelRef}
 				role="tooltip"
 				className={clsx(
-					"pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 rounded-lg border text-left shadow-lg",
-					pinned
-						? "block"
-						: "hidden group-hover:block group-focus-within:block",
+					"absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 rounded-lg border text-left shadow-lg",
+					interactive
+						? "pointer-events-auto before:absolute before:inset-x-0 before:-top-2 before:h-2 before:content-['']"
+						: "pointer-events-none",
+					isPinned ? "block" : reveal,
 					compact ? "w-max px-2 py-1" : "w-64 p-3",
 					surfaceClassName
 				)}

@@ -15,6 +15,7 @@ import {
 	stripConfig,
 } from "../pipeline/pipeline.model";
 import {
+	CHEAPEST_DRAFT_COST_KB,
 	Config,
 	draftCost,
 	isUpgradable,
@@ -29,13 +30,25 @@ import {
 	GateWindow,
 } from "../configs/effect.model";
 import { starterStackFor } from "../configs/stack.model";
-import { draftSeed, rebuildCost, rollDraft } from "../draft/draft.model";
+import {
+	draftSeed,
+	EXTEND_FROM_GATE,
+	extendCost,
+	LOCK_COST_KB,
+	LOCK_FROM_GATE,
+	MAX_EXTENSIONS,
+	MAX_LOCKED_OFFERS,
+	offerCount,
+	rebuildCost,
+	rollDraft,
+} from "../draft/draft.model";
 import { checkStatuses, gateDemands, gatePassed } from "../gate/gate.model";
 import { swatchForGate } from "../gate/swatch.model";
 import {
 	dropCount,
 	FAUCET_CAP_KB,
 	gateBaseMultiplier,
+	isStoragePlanUnlocked,
 	minConfigsForGate,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
@@ -49,7 +62,6 @@ import {
 
 const LINT_COSTS = [8, 16, 32, 64, 128, 256];
 
-/** Cost (KB) of the next linter run this poll — doubles each use, capped at 256. */
 export const lintCost = (usesThisPoll: number): number =>
 	LINT_COSTS[usesThisPoll] ?? LINT_COSTS[LINT_COSTS.length - 1];
 
@@ -89,13 +101,6 @@ const isCorrect = (poll: RunPoll, optionIds: readonly string[]): boolean => {
 
 export type AnswerOutcome = "correct" | "partial" | "wrong";
 
-/**
- * The answer's correctness share for coverage: 1 when fully correct, 0 on a
- * miss, and on multi-answer polls the fraction of the correct set actually
- * demonstrated — every wrong pick cancels a right one, so shotgunning every
- * option earns nothing (Marciano, 2026-07-19). Gate math, streak, and storage
- * stay binary; only coverage reads this.
- */
 const coverageShare = (poll: RunPoll, optionIds: readonly string[]): number => {
 	if (isCorrect(poll, optionIds)) return 1;
 	if (poll.answerType === "single") return 0;
@@ -112,11 +117,6 @@ const coverageShare = (poll: RunPoll, optionIds: readonly string[]): number => {
 	);
 };
 
-/**
- * Partial exists only on multiple-answer polls: at least one correct option
- * picked without matching the exact correct set. Gate math stays binary
- * (isCorrect) — outcome is for the answer review, not for judging.
- */
 const answerOutcome = (
 	poll: RunPoll,
 	optionIds: readonly string[]
@@ -135,8 +135,6 @@ const nextStreak = (current: number, outcome: AnswerOutcome): number => {
 	return current;
 };
 
-// Mirrors nextStreak from the other side: a partial neither cleans nor dirties
-// the miss record, so Code Coverage's no-double-miss check judges full misses only.
 const nextMissStreak = (current: number, outcome: AnswerOutcome): number => {
 	if (outcome === "wrong") return current + 1;
 	if (outcome === "correct") return 0;
@@ -152,23 +150,13 @@ export type AnsweredPoll = {
 	readonly category: CategoryCode;
 	readonly outcome: AnswerOutcome;
 	readonly picked: readonly string[];
-	// Optional: runs snapshotted before these fields existed won't carry them.
 	readonly correct?: readonly string[];
-	/**
-	 * The snippet the question was asked against. Copied onto the answer rather
-	 * than looked up later, because the review outlives the gate's poll list —
-	 * without it a snippet question reads as "which of these is not valid?" with
-	 * nothing to judge against.
-	 */
 	readonly codeBlock?: string;
 	readonly explanation?: string;
 	readonly options?: readonly string[];
 	readonly answerType?: AnswerType;
-	/** Coverage this answer earned (share-scaled for partial multi picks). */
 	readonly coverageEarned?: number;
-	/** How that coverage broke down (base + streak + per-config) for the reveal. */
 	readonly coverageBreakdown?: CoverageBreakdown;
-	/** Client-measured reveal→submit ms (absent on old snapshots/clients). */
 	readonly elapsedMs?: number;
 };
 
@@ -178,11 +166,10 @@ export type RunState = {
 	readonly available: readonly Config[];
 	readonly draftOptions: readonly Config[];
 	readonly rebuildsUsed: number;
+	readonly lockedOfferIds?: readonly string[];
+	readonly extensionsBought?: number;
 	readonly draftedThisGate: readonly string[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
-	// Every poll answered across the whole run, never reset per gate — feeds the
-	// end-of-run review. Optional: runs snapshotted before it existed won't carry
-	// it, so read sites fall back to `answeredThisGate`/`[]`.
 	readonly allAnswered?: readonly AnsweredPoll[];
 	readonly clearedChecks: readonly CheckStatus[];
 	readonly stripsRemaining: number;
@@ -195,36 +182,13 @@ export type RunState = {
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
-	// Cumulative per-correct faucet income this run, capped at FAUCET_CAP_KB.
-	// Optional: runs snapshotted before it existed won't carry it.
 	readonly faucetEarnedKb?: number;
-	/** Faucet income inside the current window — feeds the gate report's exact row. */
 	readonly faucetThisGateKb?: number;
-	/** What the just-cleared gate actually paid (correctness- and depth-scaled) — feeds the reward report. */
 	readonly gateRewardKb?: number;
-	/**
-	 * Storage-plan tier (rules.model's STORAGE_PLANS). Optional: runs
-	 * snapshotted before plans existed carry none and read as the free tier.
-	 */
 	readonly storagePlan?: number;
-	/** What the just-closed window's plan bill collected — feeds the gate report. */
 	readonly gateBillKb?: number;
-	/** True while the report shows a window whose bill went unpaid, dropping the plan to free. */
 	readonly planDowngraded?: boolean;
-	/**
-	 * The gate number the last clear actually beat — one behind `gatesCleared`,
-	 * which the same clear incremented. Recorded rather than re-derived so the
-	 * reward screens never have to reason about the off-by-one, and so the
-	 * swatch a clear earned stays readable after the fact. Optional: old
-	 * snapshots won't carry it — readers fall back to `gatesCleared`.
-	 */
 	readonly clearedGate?: number;
-	/**
-	 * Slots auto-widened since the last shop visit (ADR-025) — the shop's
-	 * one-time "Unlocked Nth slot" acknowledgment. Reset when the shop is left
-	 * (`finishReward`), not when it opens, so it survives to be shown there.
-	 * Optional: runs snapshotted before it existed carry none.
-	 */
 	readonly justUnlockedSlots?: readonly number[];
 	readonly log: readonly string[];
 };
@@ -237,7 +201,6 @@ export type RunAction =
 	| {
 			readonly type: "answer";
 			readonly optionIds: readonly string[];
-			/** Client-measured reveal→submit ms — award data, absent on old clients. */
 			readonly elapsedMs?: number;
 	  }
 	| { readonly type: "lint-poll" }
@@ -246,6 +209,8 @@ export type RunAction =
 	| { readonly type: "draft"; readonly configId: string }
 	| { readonly type: "upgrade"; readonly configId: string }
 	| { readonly type: "rebuild-draft" }
+	| { readonly type: "lock-offer"; readonly configId: string }
+	| { readonly type: "extend-offers" }
 	| { readonly type: "finish-reward" }
 	| { readonly type: "sell"; readonly configId: string }
 	| { readonly type: "drop"; readonly configId: string }
@@ -260,6 +225,8 @@ export const createRun = (
 	available: handed,
 	draftOptions: [],
 	rebuildsUsed: 0,
+	lockedOfferIds: [],
+	extensionsBought: 0,
 	draftedThisGate: [],
 	answeredThisGate: [],
 	allAnswered: [],
@@ -291,23 +258,12 @@ const withLog = (state: RunState, ...lines: string[]): readonly string[] => [
 	...lines,
 ];
 
-/**
- * The shared opening of every gate-clear log line. Names the swatch the clear
- * awarded (ADR-019) — the badge is the clear's own receipt, so it belongs on the
- * same line as the payout rather than only on the reward screen.
- */
 const clearLine = (gateNumber: number, reward: number): string => {
 	const swatch = swatchForGate(gateNumber);
 	const earned = swatch ? `, ${swatch.name} earned` : "";
 	return `Gate ${gateNumber} cleared! +${reward}KB${earned}.`;
 };
 
-/**
- * Which checks actually failed. A gate fails on any one unmet check, so the log
- * has to name them: the checklist is the whole rulebook (ADR-022), and a bare
- * "gate failed" left the player to guess which row cost them the run. At window
- * close every unmet check has resolved to "failed", so nothing reads as pending.
- */
 const failedChecks = (state: RunState): readonly string[] =>
 	checkStatuses(state.pipeline, state.window, state.gatesCleared)
 		.filter((check) => check.state === "failed")
@@ -318,10 +274,6 @@ const failureCause = (state: RunState): string => {
 	return failed.length > 0 ? `: ${failed.join(", ")}` : "";
 };
 
-/**
- * The log line for a fatal fail. A bare build is unreachable since ADR-021, but
- * runs snapshotted before it can resume bare, so both readings stay.
- */
 const fatalPeelLine = (
 	state: RunState,
 	gateNumber: number,
@@ -333,11 +285,6 @@ const fatalPeelLine = (
 	return `Gate ${gateNumber} failed${failureCause(state)}. The peel takes all ${installed} config${plural} — run over.`;
 };
 
-/**
- * Out of polls while answering — the day's segment is exhausted and the run
- * waits for tomorrow's polls (ADR-014). Derived on purpose: the reducer is
- * day-unaware, so the rollover appending tomorrow's segment is the unlock.
- */
 export const isAwaitingTomorrow = (state: RunState): boolean =>
 	state.status === "answering" && state.currentIndex >= state.polls.length;
 const withPipeline = (
@@ -359,13 +306,6 @@ const slotConfig = (state: RunState, configId: string): RunState => {
 	};
 };
 
-/**
- * Swap the whole pipeline for a starter stack in one move (ADR-026). Atomic on
- * purpose: applying a stack as N slot actions could commit half a stack when a
- * member is missing from the handed pool. Members resolve against the run's
- * own instances (already-slotted ones included, so switching stacks works), and
- * any member the run wasn't handed makes the whole pick a no-op.
- */
 const pickStack = (state: RunState, stackId: string): RunState => {
 	const stack = starterStackFor(stackId);
 	if (!stack || stack.configs.length > state.pipeline.slots) return state;
@@ -398,13 +338,6 @@ const unslotConfig = (state: RunState, configId: string): RunState => {
 	};
 };
 
-/**
- * The plan's bill lands the moment a window closes — pass or fail, before the
- * payout — so a subscription is a liability exactly when the run wobbles. An
- * unpayable bill is never partially collected: the provider drops the run to
- * the free tier instead. No overflow can burn there (storage sat below the
- * bill), so the downgrade only costs future headroom.
- */
 const chargeStorageBill = (state: RunState): RunState => {
 	const plan = storagePlanFor(state.storagePlan);
 	if (plan.billKb === 0)
@@ -426,6 +359,14 @@ const chargeStorageBill = (state: RunState): RunState => {
 	};
 };
 
+const shopDraft = (state: RunState, seed: number): readonly Config[] =>
+	rollDraft(
+		seed,
+		state.pipeline.configs,
+		state.lockedOfferIds ?? [],
+		offerCount(state.extensionsBought ?? 0)
+	);
+
 const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	const state = chargeStorageBill(closing);
 	const gateNumber = state.gatesCleared;
@@ -433,11 +374,6 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
 		const quota = dropCount(state.gatesCleared);
 		const installed = state.pipeline.configs.length;
-		// A fail the build cannot pay for ends the run (ADR-021). The quota grows
-		// with depth, so from gate 4 a three-config build owes everything it holds —
-		// and a build that pays that has nothing left to climb with. Peeling it bare
-		// and playing on was a zombie window: ADR-017 makes a bare pipeline unable
-		// to clear, so it could only ever end in this same death one gate later.
 		if (quota >= installed)
 			return {
 				...state,
@@ -457,21 +393,11 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		};
 	}
 
-	// 32KB base × gate number × build multipliers, scaled by window correctness
-	// (0/5 pays 0), plus every flat clear payout (Unit Tests' +32) whole.
 	const reward = gateClearPayout(
 		state.pipeline.configs,
 		state.window.correct,
 		state.gatesCleared
 	);
-	// faucetThisGateKb/gateRewardKb are NOT reset here: the reward report still
-	// reads them while the shop is open. finishReward clears them.
-	//
-	// Passing the checks is the whole price of depth (ADR-019): a clear always
-	// advances. Width is bought with coverage on its own ladder and never gates
-	// the climb, so a run can sit at gate 2 on its starting three slots. What
-	// makes depth expensive is risk — the demands escalate with it, and a build
-	// too narrow to meet them dies rather than stalling.
 	const cleared: RunState = {
 		...state,
 		window: EMPTY_WINDOW,
@@ -492,7 +418,7 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 
 	return {
 		...cleared,
-		draftOptions: rollDraft(draftSeed(gateNumber, 0), state.pipeline.configs),
+		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
 		rebuildsUsed: 0,
 		draftedThisGate: [],
 		clearedChecks: checkStatuses(
@@ -515,8 +441,6 @@ const answer = (
 ): RunState => {
 	if (optionIds.length === 0) return state;
 	const poll = state.polls[state.currentIndex];
-	// Awaiting tomorrow's segment (ADR-014): no poll to answer is a no-op,
-	// not a crash — the status stays "answering" until rollover appends polls.
 	if (!poll) return state;
 
 	const configs = state.pipeline.configs;
@@ -524,24 +448,13 @@ const answer = (
 	const outcome = answerOutcome(poll, optionIds);
 	const openingClean = state.window.leadingCorrect === state.window.answered;
 	const share = coverageShare(poll, optionIds);
-	// Deeper gates raise the stakes both ways: the gate number scales the
-	// correctness share before configs/streak amplify it, so gate 2 earns off a
-	// base of 2, not 1 — and the loss below scales by the same factor, so a miss
-	// at gate 5 hurts as much as a hit there helps. Coverage stays floored at 0.
 	const gateMultiplier = gateBaseMultiplier(state.gatesCleared);
-	// Harder polls pay more: more options and multiple-choice ("select all")
-	// scale the earned share. Gains-only — the loss below ignores it — so
-	// tackling a hard poll is never punished harder for missing.
 	const difficultyMultiplier = pollDifficultyMultiplier(
 		poll.options.length,
 		poll.answerType === "multiple"
 	);
 	const scoredShare = share * gateMultiplier * difficultyMultiplier;
-	// Streak updates first so this answer scores at its new level (a correct
-	// reaching streak 3 earns at 1.3×). Then it multiplies the earn last.
 	const streak = nextStreak(state.streak, outcome);
-	// answeredBefore reads the pre-update window: 0 marks the window's opener,
-	// which is what Cold Start's opener multiplier keys off.
 	const answerContext: AnswerContext = {
 		category: poll.category,
 		answeredBefore: state.window.answered,
@@ -552,9 +465,6 @@ const answer = (
 		scoredShare,
 		streakMultiplier(streak)
 	);
-	// A miss (share 0) bleeds coverage: base loss scaled by the build's reward
-	// multiplier AND the gate — risk cuts both ways, and it cuts deeper the higher
-	// you climb. Raw rules only: coverage configs never amplify a loss.
 	const coverageLoss =
 		share > 0
 			? 0
@@ -577,19 +487,11 @@ const answer = (
 	const rawFaucet = correct
 		? configs.reduce((sum, config) => sum + (config.storagePerCorrect ?? 0), 0)
 		: 0;
-	// Faucet income dries up at the per-run cap — partial payouts included, so
-	// a run at 316/320 still collects the last 4KB.
 	const faucetEarnedBefore = state.faucetEarnedKb ?? 0;
 	const faucet = Math.min(
 		rawFaucet,
 		Math.max(0, FAUCET_CAP_KB - faucetEarnedBefore)
 	);
-	// The lint spend is recorded per linter BEFORE manualDisabled resets below —
-	// this answer settles whether the linted poll was answered correctly. The
-	// *offer* is recorded alongside it: a poll this linter could have run on and
-	// did not is a declined pledge (ADR-022), so the check needs to know the
-	// chance existed. Read from the poll's own options rather than
-	// `wrongStillOn`, which shrinks with each lint already spent here.
 	const linter = linterFor(configs, poll.category);
 	const couldLint =
 		linter !== undefined &&
@@ -658,10 +560,6 @@ const answer = (
 		elapsedMs,
 	};
 
-	// The loss drains the poll's category (floored at 0) and the total moves by
-	// what the category actually lost — total stays the sum of the categories,
-	// and you can't lose coverage you don't have. window.coverageGained stays a
-	// gains-only tally, so coverage-gain checks aren't double-punished.
 	const coverage = roundToOneDecimal(
 		Math.max(0, state.coverage + categoryAfter - categoryBefore)
 	);
@@ -744,12 +642,8 @@ const strip = (state: RunState, configId: string): RunState => {
 	};
 };
 
-/** Commit the repaired build and resume the climb. No-op until the peel quota is met. */
 const resumeClimb = (state: RunState): RunState => {
 	if (state.stripsRemaining > 0) return state;
-	// An emptied build never climbs on. Only runs snapshotted before ADR-021 reach
-	// this — their quota was capped at what the build held — and a bare pipeline
-	// cannot clear a check (ADR-017), so the climb is already decided.
 	if (isBare(state.pipeline))
 		return {
 			...state,
@@ -790,15 +684,6 @@ const levelUp = (config: Config): Config => ({
 	level: (config.level ?? 1) + 1,
 });
 
-/**
- * Width is bought with coverage and nothing else (ADR-019): a slot buys room for
- * another config, never a gate. The climb's depth is settled by the checks, so
- * this stays a pure widening.
- */
-/**
- * Width is bought with coverage alone (ADR-019), and now claims itself the
- * instant a threshold is met — no purchase step, so this just widens.
- */
 const autoWidenSlots = (
 	pipeline: Pipeline,
 	coverage: number
@@ -820,7 +705,6 @@ const draft = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!chosen) return state;
-	// Drafts only ever add NEW configs (owned ones are upgraded in the shop, not re-drafted).
 	const alreadyOwned = state.pipeline.configs.some(
 		(candidate) => candidate.id === configId
 	);
@@ -831,23 +715,21 @@ const draft = (state: RunState, configId: string): RunState => {
 		state.storage < cost
 	)
 		return state;
-	const remaining = state.draftOptions.filter(
-		(candidate) => candidate.id !== configId
-	);
 	return {
 		...stayReward(
 			state,
 			withPipeline(state.pipeline, [...state.pipeline.configs, chosen]),
-			remaining,
+			state.draftOptions,
 			`Drafted ${chosen.label} (-${cost}KB).`
 		),
 		storage: state.storage - cost,
 		draftedThisGate: [...state.draftedThisGate, chosen.id],
+		lockedOfferIds: (state.lockedOfferIds ?? []).filter(
+			(id) => id !== chosen.id
+		),
 	};
 };
 
-// Focus upgrades are free but coverage-gated; Unit Tests' upgrade is
-// storage-priced (32KB × the level bought) with no coverage requirement.
 const upgrade = (state: RunState, configId: string): RunState => {
 	const owned = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
@@ -880,16 +762,11 @@ const upgrade = (state: RunState, configId: string): RunState => {
 	);
 };
 
-/**
- * Storage plans are a shop action like any other (DVTD-rf5c): switching is
- * free both ways, but a voluntary downgrade clamps on the spot — headroom you
- * stop paying for takes whatever sat in it. The shop names the burn before
- * the click; the reducer just collects it.
- */
 const changePlan = (state: RunState, tier: number): RunState => {
 	const current = storagePlanFor(state.storagePlan);
 	const next = STORAGE_PLANS.find((plan) => plan.tier === tier);
 	if (!next || next.tier === current.tier) return state;
+	if (!isStoragePlanUnlocked(next, state.gatesCleared)) return state;
 	const clamped = Math.min(state.storage, next.capKb);
 	const burned = state.storage - clamped;
 	const upgradeLine = `Storage plan upgraded: ${next.capKb}KB cap for ${next.billKb}KB per gate.`;
@@ -904,26 +781,32 @@ const changePlan = (state: RunState, tier: number): RunState => {
 	};
 };
 
-/**
- * Leaving the shop is entering the next gate, and the gate grades its width
- * demand at the door (ADR-027): a build under `minConfigsForGate` could not
- * even pay the gate's stake, so entry is refused for good — the death ADR-021
- * says belongs to a gate. Only a strip can sink a build this low (the shop and
- * doorstep refuse voluntary thinning), so the charge always traces back to a
- * failed gate, and the shop names it in cinnabar before the click.
- */
+export const canRepairWidthDemand = (state: RunState): boolean => {
+	if (state.pipeline.configs.length >= state.pipeline.slots) return false;
+	const ownedIds = new Set(state.pipeline.configs.map((config) => config.id));
+	const affordableOffer = state.draftOptions.some(
+		(offer) => !ownedIds.has(offer.id) && draftCost(offer) <= state.storage
+	);
+	return (
+		affordableOffer ||
+		state.storage >= rebuildCost(state.rebuildsUsed) + CHEAPEST_DRAFT_COST_KB
+	);
+};
+
 const finishReward = (state: RunState): RunState => {
 	const demanded = minConfigsForGate(state.gatesCleared);
 	const installed = state.pipeline.configs.length;
-	if (installed < demanded)
+	if (installed < demanded) {
+		if (canRepairWidthDemand(state)) return state;
 		return {
 			...state,
 			status: "dead",
 			log: withLog(
 				state,
-				`Gate ${state.gatesCleared} demands ${demanded} configs — the build holds ${installed}. Run over.`
+				`Gate ${state.gatesCleared} demands ${demanded} configs — the build holds ${installed} and the shop can't get it there. Run over.`
 			),
 		};
+	}
 	return {
 		...state,
 		draftOptions: [],
@@ -950,23 +833,56 @@ const rebuildDraft = (state: RunState): RunState => {
 		...state,
 		storage: state.storage - cost,
 		rebuildsUsed: nextRebuilds,
-		draftOptions: rollDraft(
-			draftSeed(state.gatesCleared, nextRebuilds),
-			state.pipeline.configs
-		),
+		draftOptions: shopDraft(state, draftSeed(state.gatesCleared, nextRebuilds)),
 		log: withLog(state, `Rebuilt the draft (-${cost}KB).`),
 	};
 };
 
-/**
- * The build sits at (or under) the coming gate's width demand
- * (`minConfigsForGate`, ADR-027), so nothing may be voluntarily removed.
- * Generalizes ADR-021's last-config rule: thinning below the demand in the
- * shop or on the prep doorstep would hand the player an already-lost run
- * with no failed gate to justify it — death belongs to the gate. The early
- * gates demand less than one config, so the last-config rule stays the
- * hard bottom there.
- */
+const lockOffer = (state: RunState, configId: string): RunState => {
+	if (state.gatesCleared < LOCK_FROM_GATE) return state;
+	const offer = state.draftOptions.find(
+		(candidate) => candidate.id === configId
+	);
+	const locked = state.lockedOfferIds ?? [];
+	if (!offer || locked.includes(configId)) return state;
+	if (locked.length >= MAX_LOCKED_OFFERS) return state;
+	if (state.storage < LOCK_COST_KB) return state;
+	return {
+		...state,
+		storage: state.storage - LOCK_COST_KB,
+		lockedOfferIds: [...locked, configId],
+		log: withLog(
+			state,
+			`Locked ${offer.label} (-${LOCK_COST_KB}KB) — it holds until you install it.`
+		),
+	};
+};
+
+const extendOffers = (state: RunState): RunState => {
+	if (state.gatesCleared < EXTEND_FROM_GATE) return state;
+	const bought = state.extensionsBought ?? 0;
+	if (bought >= MAX_EXTENSIONS) return state;
+	const cost = extendCost(bought);
+	if (state.storage < cost) return state;
+	const extensions = bought + 1;
+	const [drawn] = rollDraft(
+		draftSeed(state.gatesCleared, state.rebuildsUsed, extensions),
+		[...state.pipeline.configs, ...state.draftOptions],
+		[],
+		1
+	);
+	return {
+		...state,
+		storage: state.storage - cost,
+		extensionsBought: extensions,
+		draftOptions: drawn ? [...state.draftOptions, drawn] : state.draftOptions,
+		log: withLog(
+			state,
+			`Extended the shop to ${offerCount(extensions)} offers (-${cost}KB).`
+		),
+	};
+};
+
 const atMinimumWidth = (state: RunState): boolean =>
 	state.pipeline.configs.length <=
 	Math.max(1, minConfigsForGate(state.gatesCleared));
@@ -1000,8 +916,6 @@ const drop = (state: RunState, configId: string): RunState => {
 	};
 };
 
-// Committing to the climb requires a full pipeline: every starting slot holds
-// a config, so the gate's opening demands are entirely the player's own picks.
 const start = (state: RunState): RunState => {
 	if (state.pipeline.configs.length < state.pipeline.slots) return state;
 	return { ...state, status: "answering" };
@@ -1030,15 +944,16 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return upgrade(state, action.configId);
 	if (action.type === "rebuild-draft" && state.status === "rewarding")
 		return rebuildDraft(state);
+	if (action.type === "lock-offer" && state.status === "rewarding")
+		return lockOffer(state, action.configId);
+	if (action.type === "extend-offers" && state.status === "rewarding")
+		return extendOffers(state);
 	if (action.type === "finish-reward" && state.status === "rewarding")
 		return finishReward(state);
 	if (action.type === "change-plan" && state.status === "rewarding")
 		return changePlan(state, action.tier);
 	if (action.type === "sell" && state.status === "rewarding")
 		return sell(state, action.configId);
-	// While answering, drop is doorstep-only (window untouched): mid-window it
-	// would shed the very check about to fail and re-derive the checklist
-	// without it (ADR-027) — the gate grades the build it admitted.
 	if (
 		action.type === "drop" &&
 		(state.status === "rewarding" ||

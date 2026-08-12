@@ -3,6 +3,7 @@ import {
 	type AnsweredPoll,
 	type AnswerOutcome,
 	type AnswerType,
+	canRepairWidthDemand,
 	canRunLinter,
 	isAwaitingTomorrow,
 	lintApplies,
@@ -14,6 +15,15 @@ import {
 } from "../climb/run.model";
 import type { Config } from "../configs/config.model";
 import type { CheckStatus } from "../configs/effect.model";
+import {
+	EXTEND_FROM_GATE,
+	extendCost,
+	LOCK_COST_KB,
+	LOCK_FROM_GATE,
+	MAX_EXTENSIONS,
+	MAX_LOCKED_OFFERS,
+	offerCount,
+} from "../draft/draft.model";
 import { checkStatuses, gateDemands } from "../gate/gate.model";
 import { swatchForGate, type SwatchTheme } from "../gate/swatch.model";
 import {
@@ -25,12 +35,13 @@ import {
 } from "../pipeline/pipeline.model";
 import {
 	dropCount,
+	isStoragePlanUnlocked,
 	minConfigsForGate,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	STORAGE_PLANS,
 	storagePlanFor,
+	storagePlanLadder,
 	VICTORY_GATE,
 } from "../rules.model";
 
@@ -44,6 +55,10 @@ export type StoragePlanOption = {
 	readonly current: boolean;
 	/** KB sitting above this plan's cap that switching to it would burn on the spot. */
 	readonly burnKb: number;
+	/** Gates the run must clear before this rung is sold (ADR-030). */
+	readonly fromGate: number;
+	/** The one rung shown ahead of the run — visible, priced, not yet buyable. */
+	readonly locked: boolean;
 };
 
 export type PollView = {
@@ -65,8 +80,9 @@ export type RunView = {
 	readonly newConfigIds: readonly string[];
 	readonly stripsRemaining: number;
 	readonly poll: PollView | null;
-	/** Daily lock (ADR-014): answering, but today's segment is spent. */
 	readonly awaitingTomorrow: boolean;
+
+	readonly pollsExhausted: boolean;
 	readonly disabledOptionIds: readonly string[];
 	readonly canLint: boolean;
 	readonly lintReady: boolean;
@@ -74,17 +90,21 @@ export type RunView = {
 	readonly linter: Config | null;
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;
+
+	readonly lockAvailable: boolean;
+	readonly lockCost: number;
+	readonly canLock: boolean;
+	readonly lockedOfferIds: readonly string[];
+	readonly extendAvailable: boolean;
+	readonly extendCost: number;
+	readonly canExtend: boolean;
+	readonly offerCount: number;
 	readonly slotCoverageRequired: number;
-	/**
-	 * The unlock the run is currently paying for: the slot coverage is buying and
-	 * how far it has come toward it (0–1). Undefined once the ladder is exhausted.
-	 */
+
 	readonly unlock?: { readonly slot: number; readonly progress: number };
-	/** Slots auto-widened since the last shop visit — the shop's one-time "Unlocked Nth slot" row. */
 	readonly justUnlockedSlots: readonly number[];
 	readonly checks: readonly CheckStatus[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
-	/** Every poll answered across the whole run — the end-of-run review source. */
 	readonly allAnswered: readonly AnsweredPoll[];
 	readonly passedChecks: readonly CheckStatus[];
 	readonly demands: readonly string[];
@@ -92,37 +112,21 @@ export type RunView = {
 	readonly coverageMultiplier: number;
 	readonly coverageAdd: number;
 	readonly gateReward: number;
-	/** What the just-cleared gate actually paid — the reward/shop screens' number. */
 	readonly gateRewardPaidKb: number;
-	/** Exact (capped) faucet income collected this gate — feeds the reward report. */
 	readonly faucetThisGateKb: number;
 	readonly gatesCleared: number;
-	/**
-	 * The ambient theme of the gate being played (ADR-020): the whole app wears
-	 * the swatch of the gate you're fighting for. Undefined past the last gate,
-	 * falling back to the :root default.
-	 */
+
 	readonly gateTheme?: SwatchTheme;
-	/**
-	 * The gate the last clear beat — one behind `gatesCleared`, which that clear
-	 * advanced. Old snapshots lack the source field; the fallback keeps their
-	 * old behavior.
-	 */
+
 	readonly clearedGateNumber: number;
 	readonly victoryGate: number;
-	/**
-	 * Configs a failed gate would peel at this depth. Surfaced because the quota
-	 * outgrows a narrow pipeline (`dropCount`), so a window can be sudden death
-	 * without the player being told.
-	 */
+
 	readonly stripsOnFailure: number;
-	/**
-	 * The coming gate's width demand (ADR-027): the smallest build it admits —
-	 * one config over its own strip quota (`minConfigsForGate`).
-	 */
+
 	readonly minConfigs: number;
-	/** True while the build is under that demand — entering the gate ends the run; the shop is where it's repaired. */
 	readonly underMinConfigs: boolean;
+
+	readonly widthRepairable: boolean;
 	readonly pollsToGate: number;
 	readonly pollsAnswered: number;
 	readonly pollsPerGate: number;
@@ -131,15 +135,10 @@ export type RunView = {
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly coverageGainedThisGate: Readonly<Record<string, number>>;
 	readonly storage: number;
-	/** The current plan's cap — the HUD gauge's ceiling (DVTD-rf5c). */
 	readonly storageCap: number;
-	/** The current plan's recurring bill, owed every closed window — pass or fail. */
 	readonly storageBillKb: number;
-	/** What the just-closed window's bill actually collected — the report's line. */
 	readonly gateBillPaidKb: number;
-	/** True while the report shows a window whose bill went unpaid, dropping the plan to free. */
 	readonly planDowngraded: boolean;
-	/** The full plan ladder with the current rung marked — the shop's plan section. */
 	readonly storagePlans: readonly StoragePlanOption[];
 	readonly log: readonly string[];
 };
@@ -149,29 +148,12 @@ export type AnswerVerdict = {
 	readonly correctAnswers: readonly string[];
 };
 
-/**
- * The verdict of the answer just submitted — the freshest entry in the gate's
- * answer log. Older snapshots may lack `correct`; the verdict then only
- * carries the outcome.
- */
 export const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
 	const last = view.answeredThisGate.at(-1);
 	if (!last) return null;
 	return { outcome: last.outcome, correctAnswers: last.correct ?? [] };
 };
 
-/**
- * Ids of the answered poll's correct options, for the post-submit reveal.
- * `poll` is the poll as it was on screen (pre-advance view); `answered` is the
- * server response that recorded the answer. Labels bridge the two — the
- * redacted view strips per-option correctness, and the answer log only keeps
- * labels.
- */
-/**
- * Why a hard poll's base was boosted, for the reveal's "correct" chip tooltip.
- * Present only when the poll earned more than the baseline (multiplier > 1) —
- * baseline polls have nothing to explain.
- */
 export type AnswerDifficulty = {
 	readonly multiplier: number;
 	readonly optionCount: number;
@@ -187,12 +169,6 @@ export type AnswerScore = {
 	readonly difficulty?: AnswerDifficulty;
 };
 
-/**
- * The difficulty bonus folded into the answered poll's base coverage, or
- * undefined for a baseline poll (3-option single-choice → ×1.0) or a snapshot
- * taken before option/type were recorded. Sourced from the answered poll, not
- * the live `poll`, which has already advanced to the next question at reveal.
- */
 const answerDifficulty = (
 	answered: AnsweredPoll
 ): AnswerDifficulty | undefined => {
@@ -206,11 +182,6 @@ const answerDifficulty = (
 	return { multiplier, optionCount, isMultiple };
 };
 
-/**
- * The just-answered poll's coverage as the reveal's chip equation needs it:
- * base + streak + per-config, plus the summed total. Null for snapshots taken
- * before breakdowns existed. A miss reads as a negative base (the penalty).
- */
 export const latestAnswerScore = (view: RunView): AnswerScore | null => {
 	const answered = view.answeredThisGate.at(-1);
 	const breakdown = answered?.coverageBreakdown;
@@ -245,10 +216,6 @@ export const correctOptionIdsFor = (
 const gainedThisGate = (state: RunState): Record<string, number> => {
 	const gained: Record<string, number> = {};
 	state.answeredThisGate.forEach((poll, index) => {
-		// The engine records the actual earn per answer; recomputing (for
-		// pre-coverageEarned snapshots) can't know partial shares, so it
-		// falls back to full-or-nothing. The array index IS the window position,
-		// so index 0 marks the opener for Cold Start's multiplier.
 		const earned =
 			poll.coverageEarned ??
 			coverageForAnswer(
@@ -264,10 +231,6 @@ const gainedThisGate = (state: RunState): Record<string, number> => {
 	return gained;
 };
 
-/**
- * The rung the run is paying for: the next slot and how far coverage has come
- * toward it. Undefined at the slot cap, where no rung is left to buy.
- */
 const unlockOf = (
 	state: RunState
 ): { slot: number; progress: number } | undefined => {
@@ -297,6 +260,9 @@ export const toRunView = (state: RunState): RunView => {
 	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
 	const nextLintCost = lintCost(state.manualDisabled.length);
 	const plan = storagePlanFor(state.storagePlan);
+	const locked = state.lockedOfferIds ?? [];
+	const extensions = state.extensionsBought ?? 0;
+	const nextExtendCost = extendCost(extensions);
 
 	return {
 		status: state.status,
@@ -308,6 +274,7 @@ export const toRunView = (state: RunState): RunView => {
 		stripsRemaining: state.stripsRemaining,
 		poll: state.status === "answering" && current ? redactPoll(current) : null,
 		awaitingTomorrow: isAwaitingTomorrow(state),
+		pollsExhausted: state.currentIndex >= state.polls.length,
 		// Only options the player paid to lint off — no automatic masking.
 		disabledOptionIds: state.manualDisabled,
 		canLint: lintApplies(state),
@@ -315,6 +282,16 @@ export const toRunView = (state: RunState): RunView => {
 		lintCost: nextLintCost,
 		rebuildCost: nextRebuildCost,
 		canRebuild: state.storage >= nextRebuildCost,
+		lockAvailable:
+			state.gatesCleared >= LOCK_FROM_GATE && locked.length < MAX_LOCKED_OFFERS,
+		lockCost: LOCK_COST_KB,
+		canLock: state.storage >= LOCK_COST_KB,
+		lockedOfferIds: locked,
+		extendAvailable:
+			state.gatesCleared >= EXTEND_FROM_GATE && extensions < MAX_EXTENSIONS,
+		extendCost: nextExtendCost,
+		canExtend: state.storage >= nextExtendCost,
+		offerCount: offerCount(extensions),
 		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
 		unlock: unlockOf(state),
 		justUnlockedSlots: state.justUnlockedSlots ?? [],
@@ -338,6 +315,7 @@ export const toRunView = (state: RunState): RunView => {
 		minConfigs: minConfigsForGate(state.gatesCleared),
 		underMinConfigs:
 			state.pipeline.configs.length < minConfigsForGate(state.gatesCleared),
+		widthRepairable: canRepairWidthDemand(state),
 		pollsToGate: SLICE_WINDOW - state.window.answered,
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,
@@ -350,13 +328,63 @@ export const toRunView = (state: RunState): RunView => {
 		storageBillKb: plan.billKb,
 		gateBillPaidKb: state.gateBillKb ?? 0,
 		planDowngraded: state.planDowngraded ?? false,
-		storagePlans: STORAGE_PLANS.map((option) => ({
+		storagePlans: storagePlanLadder(state.gatesCleared).map((option) => ({
 			tier: option.tier,
 			capKb: option.capKb,
 			billKb: option.billKb,
 			current: option.tier === plan.tier,
 			burnKb: Math.max(0, state.storage - option.capKb),
+			fromGate: option.fromGate,
+			locked: !isStoragePlanUnlocked(option, state.gatesCleared),
 		})),
 		log: state.log,
+	};
+};
+
+export type ShopExit = {
+	readonly label: string;
+	readonly disabled: boolean;
+	readonly hint?: string;
+	readonly variant?: "danger";
+	/** True when the click is the explicit dead-end: leaving ends the run (ADR-031). */
+	readonly endsRun: boolean;
+};
+
+/**
+ * The shop's one exit, graded against the coming gate's width demand
+ * (ADR-031). Open while the build meets it; blocked — with the shortfall
+ * named — while the shop can still repair it; and once the run is provably
+ * stuck (no affordable offer, no rebuild worth hoping for, or no free slot),
+ * an explicit cinnabar end-run click. Shared by every surface that draws the
+ * shop, so the door reads the same everywhere.
+ */
+export const shopExitFor = (
+	view: Pick<
+		RunView,
+		| "gatesCleared"
+		| "minConfigs"
+		| "underMinConfigs"
+		| "widthRepairable"
+		| "configs"
+	>
+): ShopExit => {
+	const continueLabel = `Continue to gate ${view.gatesCleared} →`;
+	if (!view.underMinConfigs)
+		return { label: continueLabel, disabled: false, endsRun: false };
+	if (view.widthRepairable) {
+		const shortfall = view.minConfigs - view.configs.length;
+		return {
+			label: continueLabel,
+			disabled: true,
+			hint: `Gate ${view.gatesCleared} demands ${view.minConfigs} configs — install ${shortfall} more before you can climb on.`,
+			endsRun: false,
+		};
+	}
+	return {
+		label: `End run — gate ${view.gatesCleared} demands ${view.minConfigs} configs →`,
+		disabled: false,
+		variant: "danger",
+		hint: "The shop can no longer get the build to the demand. Leaving walks into the gate and ends the run.",
+		endsRun: true,
 	};
 };

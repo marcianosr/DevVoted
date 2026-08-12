@@ -21,9 +21,6 @@ const base = {
 		storageKbPerCorrect: 0,
 	},
 	configs: [CONFIGS.js, CONFIGS.eslint],
-	editing: false,
-	onDropConfig: vi.fn(),
-	onEditPipeline: vi.fn(),
 	onStartGate: vi.fn(),
 };
 
@@ -72,9 +69,7 @@ describe(PrepScreen, () => {
 
 	it("states the stake as a plain count when it is not fatal", () => {
 		render(<PrepScreen {...base} stripsOnFailure={1} />);
-		expect(screen.getByText("1 config disabled for the run")).toHaveClass(
-			"text-cinnabar"
-		);
+		expect(screen.getByText("Remove 1 config")).toHaveClass("text-cinnabar");
 	});
 
 	it("pluralizes the stake for more than one config", () => {
@@ -85,9 +80,7 @@ describe(PrepScreen, () => {
 				configs={[CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]}
 			/>
 		);
-		expect(
-			screen.getByText("2 configs disabled for the run")
-		).toBeInTheDocument();
+		expect(screen.getByText("Remove 2 configs")).toBeInTheDocument();
 	});
 
 	it("warns the run is over once the stake would take the whole build", () => {
@@ -127,46 +120,16 @@ describe(PrepScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("reveals a remove action on every chip once editing", () => {
-		render(<PrepScreen {...base} editing />);
-		expect(screen.getByRole("button", { name: /^\.js/ })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /^ESLint/ })).toBeInTheDocument();
-	});
-
-	it("drops a config when its remove action is clicked while editing", () => {
-		const onDropConfig = vi.fn();
-		render(<PrepScreen {...base} editing onDropConfig={onDropConfig} />);
-		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
-		expect(onDropConfig).toHaveBeenCalledWith("eslint");
-	});
-
-	it("keeps the last config non-interactive even while editing", () => {
-		render(<PrepScreen {...base} editing configs={[CONFIGS.js]} />);
-		expect(
-			screen.queryByRole("button", { name: /^\.js/ })
-		).not.toBeInTheDocument();
-	});
-
-	it("locks every chip once the build sits at the gate's width demand", () => {
-		render(<PrepScreen {...base} editing minConfigs={2} />);
-		expect(
-			screen.queryByRole("button", { name: /^\.js/ })
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /^ESLint/ })
-		).not.toBeInTheDocument();
-	});
-
 	it("mentions the gate's width demand in the build summary", () => {
 		render(<PrepScreen {...base} minConfigs={2} />);
 		expect(screen.getByText(/2\+ configs/)).toBeInTheDocument();
 	});
 
-	it("warns in cinnabar that entering under the demand ends the run", () => {
+	it("names the shortfall in cinnabar while the build sits under the demand", () => {
 		render(<PrepScreen {...base} minConfigs={3} />);
 		expect(
 			screen.getByText(
-				"Demands 3 configs — the build holds 2. Climbing on ends the run."
+				"Demands 3 configs — the build holds 2. Install 1 more to climb on."
 			)
 		).toHaveClass("text-cinnabar");
 	});
@@ -180,17 +143,39 @@ describe(PrepScreen, () => {
 		expect(onStartGate).toHaveBeenCalledTimes(1);
 	});
 
-	it("fires onEditPipeline and flips its own label once editing", () => {
-		const onEditPipeline = vi.fn();
-		const { rerender } = render(
-			<PrepScreen {...base} onEditPipeline={onEditPipeline} />
+	it("offers the back-to-shop shortcut beside the stake while the shop is open", () => {
+		const onClick = vi.fn();
+		render(
+			<PrepScreen
+				{...base}
+				minConfigs={2}
+				shopAction={{ label: "← Back to shop", onClick }}
+			/>
 		);
-		fireEvent.click(screen.getByRole("button", { name: "Edit pipeline" }));
-		expect(onEditPipeline).toHaveBeenCalledTimes(1);
+		fireEvent.click(screen.getByRole("button", { name: "← Back to shop" }));
+		expect(onClick).toHaveBeenCalledTimes(1);
+	});
 
-		rerender(<PrepScreen {...base} editing onEditPipeline={onEditPipeline} />);
+	it("leaves the shortcut out when no shop sits behind prep", () => {
+		render(<PrepScreen {...base} minConfigs={2} />);
 		expect(
-			screen.getByRole("button", { name: "Done editing" })
-		).toBeInTheDocument();
+			screen.queryByRole("button", { name: "← Back to shop" })
+		).not.toBeInTheDocument();
+	});
+
+	it("locks the start button behind the wait copy until the next polls open", () => {
+		const onStartGate = vi.fn();
+		render(
+			<PrepScreen
+				{...base}
+				startLock="New polls in 7h 23m"
+				onStartGate={onStartGate}
+			/>
+		);
+		const locked = screen.getByRole("button", { name: "New polls in 7h 23m" });
+		expect(locked).toBeDisabled();
+		expect(
+			screen.queryByRole("button", { name: /Start .* gate/ })
+		).not.toBeInTheDocument();
 	});
 });

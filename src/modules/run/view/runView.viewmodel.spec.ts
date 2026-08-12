@@ -4,9 +4,20 @@ import { createRun, runReducer, RunPoll } from "../climb/run.model";
 import { CONFIGS } from "../configs/configRoster.model";
 import type { Config } from "../configs/config.model";
 import {
+	EXTEND_FROM_GATE,
+	extendCost,
+	LOCK_FROM_GATE,
+	MAX_EXTENSIONS,
+	offerCount,
+} from "../draft/draft.model";
+import { STORAGE_PLANS, VICTORY_GATE } from "../rules.model";
+import { createMockRunView } from "~/test/runView.factory";
+import {
 	correctOptionIdsFor,
 	latestAnswerScore,
 	latestAnswerVerdict,
+	type RunView,
+	shopExitFor,
 	toRunView,
 } from "./runView.viewmodel";
 
@@ -92,6 +103,66 @@ describe("toRunView", () => {
 		expect(met.underMinConfigs).toBe(false);
 	});
 
+	describe("the shop exit (ADR-031)", () => {
+		const shopView = (overrides: Partial<RunView>): RunView =>
+			createMockRunView({ gatesCleared: 4, minConfigs: 4, ...overrides });
+
+		it("opens toward the gate while the build meets the demand", () => {
+			const exit = shopExitFor(shopView({ underMinConfigs: false }));
+			expect(exit).toEqual({
+				label: "Continue to gate 4 →",
+				disabled: false,
+				endsRun: false,
+			});
+		});
+
+		it("blocks and names the shortfall while the shop can repair it", () => {
+			const exit = shopExitFor(
+				shopView({
+					underMinConfigs: true,
+					widthRepairable: true,
+					configs: [CONFIGS.js],
+				})
+			);
+			expect(exit.disabled).toBe(true);
+			expect(exit.endsRun).toBe(false);
+			expect(exit.hint).toBe(
+				"Gate 4 demands 4 configs — install 3 more before you can climb on."
+			);
+		});
+
+		it("turns into the explicit end-run click once the build is stuck", () => {
+			const exit = shopExitFor(
+				shopView({ underMinConfigs: true, widthRepairable: false })
+			);
+			expect(exit.disabled).toBe(false);
+			expect(exit.endsRun).toBe(true);
+			expect(exit.variant).toBe("danger");
+			expect(exit.label).toBe("End run — gate 4 demands 4 configs →");
+		});
+	});
+
+	it("tells a repairable width shortfall from a provably stuck one (ADR-031)", () => {
+		const thin = {
+			...answeringWith([CONFIGS.js]),
+			gatesCleared: 4,
+			draftOptions: [CONFIGS.eslint],
+		};
+
+		const funded = toRunView({ ...thin, storage: 1000 });
+		expect(funded.widthRepairable).toBe(true);
+
+		const broke = toRunView({ ...thin, storage: 0 });
+		expect(broke.widthRepairable).toBe(false);
+
+		const slotCapped = toRunView({
+			...thin,
+			storage: 1000,
+			pipeline: { ...thin.pipeline, slots: thin.pipeline.configs.length },
+		});
+		expect(slotCapped.widthRepairable).toBe(false);
+	});
+
 	it("keeps awaitingTomorrow off while a poll is on deck", () => {
 		expect(toRunView(answering()).awaitingTomorrow).toBe(false);
 	});
@@ -142,6 +213,95 @@ describe("toRunView", () => {
 		expect(
 			toRunView({ ...answering(), gatesCleared: 13 }).gateTheme
 		).toBeUndefined();
+	});
+});
+
+// Staged exposure is the viewmodel's call: the reducer refuses an early control
+// anyway, but only this decides whether the shop draws it at all.
+describe("shop controls (DVTD-5lt6)", () => {
+	const shopping = (gatesCleared: number, storage: number) => ({
+		...answering(),
+		gatesCleared,
+		storage,
+	});
+
+	it("hides both new controls in the opening shop", () => {
+		const view = toRunView(shopping(1, 512));
+		expect(view.lockAvailable).toBe(false);
+		expect(view.extendAvailable).toBe(false);
+	});
+
+	it("stages the lock in a gate before the extension", () => {
+		expect(toRunView(shopping(LOCK_FROM_GATE, 512)).lockAvailable).toBe(true);
+		expect(toRunView(shopping(LOCK_FROM_GATE, 512)).extendAvailable).toBe(
+			false
+		);
+		expect(toRunView(shopping(EXTEND_FROM_GATE, 512)).extendAvailable).toBe(
+			true
+		);
+	});
+
+	it("keeps showing a control the run cannot afford, unpressable", () => {
+		const view = toRunView(shopping(EXTEND_FROM_GATE, 0));
+		expect(view.lockAvailable).toBe(true);
+		expect(view.canLock).toBe(false);
+		expect(view.extendAvailable).toBe(true);
+		expect(view.canExtend).toBe(false);
+	});
+
+	it("takes the lock off the table while one is held", () => {
+		const view = toRunView({
+			...shopping(EXTEND_FROM_GATE, 512),
+			lockedOfferIds: ["eslint"],
+		});
+		expect(view.lockAvailable).toBe(false);
+		expect(view.lockedOfferIds).toEqual(["eslint"]);
+	});
+
+	it("counts bought extensions into the offers the shop shows", () => {
+		const view = toRunView({
+			...shopping(EXTEND_FROM_GATE, 512),
+			extensionsBought: 1,
+		});
+		expect(view.offerCount).toBe(offerCount(1));
+		expect(view.extendCost).toBe(extendCost(1));
+	});
+
+	it("stops offering extensions once the run holds them all", () => {
+		const view = toRunView({
+			...shopping(EXTEND_FROM_GATE, 512),
+			extensionsBought: MAX_EXTENSIONS,
+		});
+		expect(view.extendAvailable).toBe(false);
+	});
+});
+
+describe("the storage-plan ladder in the shop (ADR-030)", () => {
+	const atGate = (gatesCleared: number) =>
+		toRunView({ ...answering(), gatesCleared, storage: 0 }).storagePlans;
+
+	it("draws only the rungs a shallow run has reached, plus the next one", () => {
+		const rungs = atGate(0);
+		expect(rungs.filter((rung) => !rung.locked)).toHaveLength(2);
+		expect(rungs.filter((rung) => rung.locked)).toHaveLength(1);
+	});
+
+	it("unlocks the drawn rung once the run clears its gate", () => {
+		const locked = atGate(0).find((rung) => rung.locked);
+		const later = atGate(locked?.fromGate ?? 0).find(
+			(rung) => rung.tier === locked?.tier
+		);
+		expect(later?.locked).toBe(false);
+	});
+
+	it("offers the whole ladder to a run at the summit", () => {
+		expect(atGate(VICTORY_GATE)).toHaveLength(STORAGE_PLANS.length);
+		expect(atGate(VICTORY_GATE).every((rung) => !rung.locked)).toBe(true);
+	});
+
+	it("marks the plan the run is actually on", () => {
+		const view = toRunView({ ...answering(), gatesCleared: 4, storagePlan: 3 });
+		expect(view.storagePlans.find((rung) => rung.current)?.tier).toBe(3);
 	});
 });
 

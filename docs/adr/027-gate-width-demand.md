@@ -45,7 +45,13 @@ failing check could be shed mid-window before the gate closed.
    the demand. The first gates stay easy and farmable instead; the price is
    that an at-demand build *can* be fatally stripped before Thunder, which
    ADR-021's fatal rule already prices honestly.
-2. **Graded at the door, not the window.** `finishReward` ends the run
+2. **Graded at the door, not the window.**
+   > ⚠ Amended by [ADR-031](031-shop-exit-blocks-under-width-builds.md):
+   > the door no longer kills — it refuses (blocked exit) while the shop can
+   > repair the width, and ends the run only via an explicit cinnabar click
+   > once the build is provably stuck.
+
+   `finishReward` ends the run
    (`dead`) when the build is under the coming gate's demand, with the gate
    named in the log. `gatePassed` and `checkStatuses` are untouched: a strip
    may legally sink a build below the demand and the **replay is exempt** —
@@ -75,7 +81,12 @@ crawl; past gate 4 the quota outgrows it and thin-at-demand stays a
 low-demand cruise. The ramped quota-following curve was chosen knowing what
 it re-couples (below).
 
-**Rejected: blocking the shop exit while the repair is affordable.** It needs
+**Rejected: blocking the shop exit while the repair is affordable.**
+> ⚠ Reversed by [ADR-031](031-shop-exit-blocks-under-width-builds.md)
+> (2026-08-11): the playtest showed the door-death is the worse deal — the
+> exit now blocks, and the stuck case gets an explicit end-run click.
+
+It needs
 solvency math (draft prices, offer counts, rebuild costs) to decide when the
 player is stuck, and an insolvent player would be soft-locked with abandon
 (banks nothing) as the only exit — a worse deal than the death the door gives

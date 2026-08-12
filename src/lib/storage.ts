@@ -5,6 +5,14 @@ export const STORAGE_UNITS = {
 	GB: 1024 * 1024 * 1024,
 } as const;
 
+const KB_PER_MB = 1024;
+
+export function formatKb(kb: number): string {
+	if (kb < KB_PER_MB) return `${kb}KB`;
+	const mb = kb / KB_PER_MB;
+	return `${mb % 1 === 0 ? mb : mb.toFixed(1)}MB`;
+}
+
 export function formatStorage(bytes: number): string {
 	if (bytes === 0) return "0 B";
 
@@ -26,12 +34,6 @@ export function formatStorage(bytes: number): string {
 	return `${bytes} B`;
 }
 
-/**
- * Like formatStorage, but appends the next-smaller unit when rounding to the
- * primary unit hides meaningful precision — e.g. 1153024 B → "1.1 MB · 1,126 KB".
- * For values below 1 MB the KB display is already precise enough; for round
- * values like exactly 1 MB or 2 GB the secondary is omitted.
- */
 export function formatStorageDetailed(bytes: number): string {
 	const primary = formatStorage(bytes);
 

@@ -3,7 +3,8 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
-type ButtonVariant = "primary" | "secondary" | "theme" | "danger" | "neutral";
+export type ButtonVariant =
+	"primary" | "secondary" | "theme" | "danger" | "neutral";
 type ButtonSize = "default" | "small";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -14,8 +15,6 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	isSelected?: boolean;
 };
 
-// Empty variant values only register the key so compoundVariants can match on
-// it — the classes for those combinations live in compoundVariants, exactly once.
 const button = cva(
 	"rounded cursor-pointer transition-colors disabled:cursor-not-allowed",
 	{

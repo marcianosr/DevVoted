@@ -1,10 +1,5 @@
 import { z } from "zod";
 
-/**
- * Wire schema for RunAction (climb/run.model.ts). Strict on purpose: the
- * client sends intent only — never state, storage, coverage, or gatesCleared
- * (anti-cheat, DVTD-ay5e). Unknown action types and extra fields are rejected.
- */
 const configActionSchema = <T extends string>(type: T) =>
 	z
 		.object({
@@ -19,8 +14,6 @@ const bareActionSchema = <T extends string>(type: T) =>
 export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("slot"),
 	configActionSchema("unslot"),
-	// stackId is intent like configId: the reducer resolves it against the
-	// roster and rejects unknown stacks, so the wire only vouches for the shape.
 	z
 		.object({ type: z.literal("pick-stack"), stackId: z.string().min(1) })
 		.strict(),
@@ -29,8 +22,6 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.object({
 			type: z.literal("answer"),
 			optionIds: z.array(z.string().min(1)).min(1),
-			// Reveal→submit ms, client-measured. Capped at 10 minutes: award
-			// data, not gameplay-relevant — a spoofed low value is accepted risk.
 			elapsedMs: z.number().int().min(0).max(600_000).optional(),
 		})
 		.strict(),
@@ -40,11 +31,11 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("draft"),
 	configActionSchema("upgrade"),
 	bareActionSchema("rebuild-draft"),
+	configActionSchema("lock-offer"),
+	bareActionSchema("extend-offers"),
 	bareActionSchema("finish-reward"),
 	configActionSchema("sell"),
 	configActionSchema("drop"),
-	// Tier is intent, not state: the reducer rejects unknown tiers and the
-	// change is shop-only, so the wire only vouches for the shape.
 	z
 		.object({ type: z.literal("change-plan"), tier: z.number().int().min(1) })
 		.strict(),

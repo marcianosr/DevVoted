@@ -1,33 +1,21 @@
 import { useNavigate } from "@tanstack/react-router";
 
 import { perAnswerPreviewFor } from "~/modules/run/pipeline/pipeline.model";
+import { shopExitFor } from "~/modules/run/view/runView.viewmodel";
 import { Screen } from "~/ui/Screen.ui";
 
 import { ShopScreen } from "../screens/ShopScreen.ui";
 import { useRunActions } from "./useRunActions.hook";
 import { useTodaysRun } from "./useTodaysRun.hook";
 
-/** Tier 2: the post-gate shop — second page of the reward flow. */
 export const RunShop = () => {
 	const { view } = useTodaysRun();
-	const { send, sendWith, commit, busy } = useRunActions();
+	const { send, busy } = useRunActions();
 	const navigate = useNavigate();
 
 	if (!view) return null;
 
-	// Shop → Community: commit the reward step, then detour to the
-	// community page. The climb itself resumes from there ("Climb on →") — the
-	// community route sits outside this layout, so the status sync won't fight
-	// the detour.
-	const finishToCommunity = () =>
-		sendWith({ type: "finish-reward" }, (result) => {
-			if (!result.success) return;
-			commit(result);
-			// A build under the gate's width demand died at its door (ADR-027) —
-			// the layout's status sync routes to the run-over screen, not community.
-			if (result.data.status === "dead") return;
-			navigate({ to: "/run/community" });
-		});
+	const exit = shopExitFor(view);
 
 	return (
 		<Screen
@@ -38,9 +26,13 @@ export const RunShop = () => {
 				onClick: () => navigate({ to: "/run/reward" }),
 			}}
 			rightAction={{
-				label: "Community →",
-				onClick: finishToCommunity,
-				disabled: busy,
+				label: exit.label,
+				hint: exit.hint,
+				variant: exit.variant,
+				disabled: exit.disabled || busy,
+				onClick: exit.endsRun
+					? () => send({ type: "finish-reward" })
+					: () => navigate({ to: "/run/prep" }),
 			}}
 		>
 			<ShopScreen
@@ -66,6 +58,15 @@ export const RunShop = () => {
 				rebuildCost={view.rebuildCost}
 				canRebuild={view.canRebuild && !busy}
 				onRebuild={() => send({ type: "rebuild-draft" })}
+				lockAvailable={view.lockAvailable}
+				lockCost={view.lockCost}
+				canLock={view.canLock && !busy}
+				lockedOfferIds={view.lockedOfferIds}
+				onLock={(id) => send({ type: "lock-offer", configId: id })}
+				extendAvailable={view.extendAvailable}
+				extendCost={view.extendCost}
+				canExtend={view.canExtend && !busy}
+				onExtend={() => send({ type: "extend-offers" })}
 				slots={view.slots}
 				coverage={view.coverage}
 				slotCoverageRequired={view.slotCoverageRequired}

@@ -2,13 +2,69 @@ import { describe, expect, it } from "vitest";
 
 import {
 	dropCount,
+	gateBaseMultiplier,
 	gateStake,
+	isStoragePlanUnlocked,
 	minConfigsForGate,
 	pollDifficultyMultiplier,
 	storageCreditRate,
+	storagePlanLadder,
 	GATE_COUNT,
+	GATE_REWARD_KB,
+	STORAGE_PLANS,
 	VICTORY_GATE,
 } from "./rules.model";
+
+describe("the storage-plan ladder (ADR-030)", () => {
+	it("climbs to a 3MB cap", () => {
+		expect(STORAGE_PLANS.at(-1)?.capKb).toBe(3072);
+	});
+
+	it("never sells a bigger cap for a smaller bill", () => {
+		const rungs = [...STORAGE_PLANS];
+		rungs.forEach((rung, index) => {
+			const previous = rungs[index - 1];
+			if (!previous) return;
+			expect(rung.capKb).toBeGreaterThan(previous.capKb);
+			expect(rung.billKb).toBeGreaterThan(previous.billKb);
+			expect(rung.fromGate).toBeGreaterThanOrEqual(previous.fromGate);
+		});
+	});
+
+	// A cap is only worth its bill once a clear can fill it, and the bill lands
+	// pass or fail — so no rung may cost more than the gate that unlocks it pays.
+	it("prices every rung under a perfect clear at the gate that opens it", () => {
+		STORAGE_PLANS.filter((plan) => plan.billKb > 0).forEach((plan) => {
+			const clearAtUnlock =
+				GATE_REWARD_KB * gateBaseMultiplier(Math.max(1, plan.fromGate));
+			expect(plan.billKb).toBeLessThan(clearAtUnlock / 2);
+		});
+	});
+
+	it("opens the free tier and one paid rung from the very first shop", () => {
+		expect(
+			storagePlanLadder(0).filter((plan) => isStoragePlanUnlocked(plan, 0))
+		).toEqual([STORAGE_PLANS[0], STORAGE_PLANS[1]]);
+	});
+
+	// Showing the whole tail would turn a three-row section into seven rows of
+	// things the run cannot buy.
+	it("draws the unlocked rungs plus exactly one still out of reach", () => {
+		const ladder = storagePlanLadder(0);
+		expect(
+			ladder.filter((plan) => !isStoragePlanUnlocked(plan, 0))
+		).toHaveLength(1);
+		expect(ladder).toHaveLength(3);
+	});
+
+	it("widens as the run climbs, and stops adding a locked rung at the top", () => {
+		expect(storagePlanLadder(4).length).toBeGreaterThan(
+			storagePlanLadder(0).length
+		);
+		const summit = storagePlanLadder(STORAGE_PLANS.at(-1)?.fromGate ?? 0);
+		expect(summit).toHaveLength(STORAGE_PLANS.length);
+	});
+});
 
 describe("storageCreditRate", () => {
 	it("banks everything on a victory", () => {

@@ -28,8 +28,12 @@
 | 024 | *(reserved: shop-router — one shop per gate, locks the other until the next rung)* | Unwritten — not implemented on the live route |
 | [025](025-automatic-width-claiming.md) | Width claims itself automatically — no more Unlock slot button | Accepted — amends 008 Decision 2 |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: starter stacks, plain-language receipt, payoff-first gate clear | Accepted — account-level unlock flags are follow-up work |
-| [027](027-gate-width-demand.md) | A gate only admits a build that can survive its own stake (width demand) | Accepted — amends 017 §3 and 021 §3, qualifies 019 (DVTD-kokk) |
+| [027](027-gate-width-demand.md) | A gate only admits a build that can survive its own stake (width demand) | Accepted — amends 017 §3 and 021 §3, qualifies 019 (DVTD-kokk); Decision 2's kill-at-door amended by 031 |
 | [028](028-the-defeat-device.md) | Volkswagen CI: a legendary that reports one failing check as passing | Accepted — the one waiver of the 022 rule the code cites; retires wiki §4.1's "legendary carries no check" (DVTD-dbuw) |
+| [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons: Rebuild (visit), Lock (next shop), Extend (run) | Accepted — extends 008's shop; rejects account-level rerolls (DVTD-5lt6) |
+| [030](030-gate-staged-storage-plans.md) | The storage-plan ladder is gate-staged, and climbs to 3MB | Accepted — amends 023 Decision 1 (ladder shape only); wiki §2.10 collects every gate-staged unlock |
+| [031](031-shop-exit-blocks-under-width-builds.md) | The shop exit blocks an under-width build; death is an explicit dead-end click | Accepted — amends 027 Decision 2, reverses its rejected exit-blocking option (DVTD-jnlj) |
+| [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub — the gate starts from prep, the shop stays open until it does | Accepted — moves finish-reward to prep's start button; community stays the mid-gate wait (DVTD-f7hs) |
 
 ## Conventions
 

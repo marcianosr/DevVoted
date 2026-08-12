@@ -1,14 +1,22 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/configs/configRoster.model";
-import { STORAGE_PLANS } from "~/modules/run/rules.model";
+import {
+	isStoragePlanUnlocked,
+	storagePlanLadder,
+} from "~/modules/run/rules.model";
 import { ShopScreen } from "./ShopScreen.ui";
 
+/** Gate 3, the depth every story below sits at — so tier 3 is already on offer. */
+const GATES_CLEARED = 2;
+
+/** The ladder as a run at this depth sees it: unlocked rungs plus the next, locked. */
 const plansOn = (currentTier: number, storage = 0) =>
-	STORAGE_PLANS.map((plan) => ({
+	storagePlanLadder(GATES_CLEARED).map((plan) => ({
 		...plan,
 		current: plan.tier === currentTier,
 		burnKb: Math.max(0, storage - plan.capKb),
+		locked: !isStoragePlanUnlocked(plan, GATES_CLEARED),
 	}));
 
 const meta: Meta<typeof ShopScreen> = {
@@ -17,6 +25,15 @@ const meta: Meta<typeof ShopScreen> = {
 	args: {
 		storagePlans: plansOn(1),
 		onChangePlan: () => {},
+		lockAvailable: true,
+		lockCost: 16,
+		canLock: true,
+		lockedOfferIds: [],
+		onLock: () => {},
+		extendAvailable: true,
+		extendCost: 48,
+		canExtend: true,
+		onExtend: () => {},
 	},
 };
 export default meta;
@@ -74,6 +91,29 @@ export const Default: Story = {
 		justUnlockedSlots: [],
 		onUpgrade: () => {},
 		onSell: () => {},
+	},
+};
+
+/**
+ * A held offer (DVTD-5lt6): the padlock corner marks what 16KB is reserving, and
+ * the run's one lock being spent takes the padlock off the other offers.
+ */
+export const OfferLocked: Story = {
+	args: {
+		...Default.args,
+		lockedOfferIds: ["cold-start"],
+		lockAvailable: false,
+	},
+};
+
+/**
+ * The badge's third state (ADR-029): a bought offer stays on the table reading
+ * "owned" rather than vanishing from under the finger that tapped it.
+ */
+export const OfferOwned: Story = {
+	args: {
+		...Default.args,
+		draftOptions: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
 	},
 };
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+	formatKb,
 	formatStorage,
 	parseStorage,
 	getStorageUsagePercentage,
@@ -9,6 +10,25 @@ import {
 } from "./storage";
 
 describe("Storage utilities", () => {
+	// The run economy's own unit: whole KB in, tight label out.
+	describe("formatKb", () => {
+		it("writes sub-megabyte caps in KB", () => {
+			expect(formatKb(512)).toBe("512KB");
+			expect(formatKb(768)).toBe("768KB");
+			expect(formatKb(1023)).toBe("1023KB");
+		});
+
+		it("switches to MB at 1024KB", () => {
+			expect(formatKb(1024)).toBe("1MB");
+			expect(formatKb(2048)).toBe("2MB");
+			expect(formatKb(3072)).toBe("3MB");
+		});
+
+		it("keeps one decimal for a half rung", () => {
+			expect(formatKb(1536)).toBe("1.5MB");
+		});
+	});
+
 	describe("formatStorage", () => {
 		it("formats bytes correctly", () => {
 			expect(formatStorage(0)).toBe("0 B");

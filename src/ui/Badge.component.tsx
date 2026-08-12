@@ -15,8 +15,8 @@ const badge = cva("font-bold", {
 		} satisfies Record<BadgeTone, string>,
 		size: {
 			default: "rounded px-1.5 py-0.5 text-sm",
-			corner: "rounded px-1 py-0 text-[0.625rem] leading-4",
-			pill: "rounded-full px-2.5 py-1 text-[10px]",
+			corner: "rounded px-1 py-1 text-[0.625rem] leading-4",
+			pill: "rounded-full px-2.5 py-1 text-[0.625rem]",
 		} satisfies Record<BadgeSize, string>,
 	},
 });
@@ -25,10 +25,30 @@ type BadgeProps = {
 	children: ReactNode;
 	tone?: BadgeTone;
 	size?: BadgeSize;
+	onClick?: () => void;
+	disabled?: boolean;
+	ariaLabel?: string;
 };
 
 export const Badge = ({
 	children,
 	tone = "neutral",
 	size = "default",
-}: BadgeProps) => <span className={badge({ tone, size })}>{children}</span>;
+	onClick,
+	disabled = false,
+	ariaLabel,
+}: BadgeProps) => {
+	const style = badge({ tone, size });
+	if (!onClick) return <span className={style}>{children}</span>;
+	return (
+		<button
+			type="button"
+			onClick={disabled ? undefined : onClick}
+			aria-disabled={disabled || undefined}
+			aria-label={ariaLabel}
+			className={`${style} cursor-pointer transition hover:brightness-110 aria-disabled:cursor-not-allowed aria-disabled:border-zinc-600 aria-disabled:bg-zinc-700 aria-disabled:text-zinc-300`}
+		>
+			{children}
+		</button>
+	);
+};

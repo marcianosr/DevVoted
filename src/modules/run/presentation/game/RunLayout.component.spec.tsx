@@ -136,15 +136,39 @@ describe("run route sync", () => {
 		expect(await screen.findByText("Today’s climb")).toBeVisible();
 	});
 
-	it("the shop detour reaches the community page", async () => {
+	it("the shop exit continues to the prep hub without closing the shop", async () => {
 		const user = userEvent.setup();
 		vi.mocked(getTodaysRun).mockResolvedValue({
 			success: true,
-			data: createMockRunView({ status: "rewarding", poll: null }),
+			data: createMockRunView({
+				status: "rewarding",
+				gatesCleared: 1,
+				poll: null,
+			}),
 		});
-		vi.mocked(dispatchRunAction).mockResolvedValue({
+
+		const router = renderRunRoutes("/run/shop");
+		await user.click(
+			await screen.findByRole("button", { name: "Continue to gate 1 →" })
+		);
+
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/run/prep")
+		);
+		// finish-reward waits for prep's start button (ADR-032) — the shop must
+		// stay open behind the back button.
+		expect(vi.mocked(dispatchRunAction)).not.toHaveBeenCalled();
+	});
+
+	it("prep's community nudge reaches the community board", async () => {
+		const user = userEvent.setup();
+		vi.mocked(getTodaysRun).mockResolvedValue({
 			success: true,
-			data: createMockRunView({ status: "answering" }),
+			data: createMockRunView({
+				status: "rewarding",
+				gatesCleared: 1,
+				poll: null,
+			}),
 		});
 		vi.mocked(getRunCommunity).mockResolvedValue({
 			success: true,
@@ -158,7 +182,7 @@ describe("run route sync", () => {
 			},
 		});
 
-		const router = renderRunRoutes("/run/shop");
+		const router = renderRunRoutes("/run/prep");
 		await user.click(await screen.findByRole("button", { name: /Community/ }));
 
 		await waitFor(() =>
@@ -230,37 +254,76 @@ describe("run route sync", () => {
 		);
 	});
 
-	it("dropping a config from prep's edit mode dispatches the drop action", async () => {
+	it("starting the gate from the prep hub commits finish-reward and reaches the poll", async () => {
 		const user = userEvent.setup();
-		// Three configs against a demand of two (ADR-027): the build must sit
-		// above the gate's width demand for prep to offer a drop at all.
-		vi.mocked(getTodaysRun).mockResolvedValue({
-			success: true,
-			data: createMockRunView({
-				status: "answering",
-				gatesCleared: 1,
-				configs: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
-			}),
+		// A stateful server stub: every fetch reports the run parked in the shop
+		// phase until finish-reward lands, then reports the climb resumed —
+		// otherwise a background refetch would revert the committed status.
+		let serverView = createMockRunView({
+			status: "rewarding",
+			gatesCleared: 1,
+			poll: null,
 		});
-		vi.mocked(dispatchRunAction).mockResolvedValue({
+		vi.mocked(getTodaysRun).mockImplementation(async () => ({
 			success: true,
-			data: createMockRunView({
-				status: "answering",
-				gatesCleared: 1,
-				configs: [CONFIGS.js, CONFIGS.agentsMd],
-			}),
+			data: serverView,
+		}));
+		vi.mocked(dispatchRunAction).mockImplementation(async () => {
+			serverView = createMockRunView({ status: "answering", gatesCleared: 1 });
+			return { success: true, data: serverView };
 		});
 
-		renderRunRoutes("/run/prep");
+		const router = renderRunRoutes("/run/prep");
 		await user.click(
-			await screen.findByRole("button", { name: "Edit pipeline" })
+			await screen.findByRole("button", { name: "Start Boulder gate →" })
 		);
-		await user.click(screen.getByRole("button", { name: /ESLint/ }));
 
 		await waitFor(() =>
 			expect(vi.mocked(dispatchRunAction)).toHaveBeenCalledWith({
-				data: { action: { type: "drop", configId: "eslint" } },
+				data: { action: { type: "finish-reward" } },
 			})
+		);
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/run/answer")
+		);
+	});
+
+	it("a dead-end shop exit ends the run and lands on the run-over screen", async () => {
+		const user = userEvent.setup();
+		// Under the demand with no repair left (ADR-031): the exit is the
+		// explicit end-run click, and the reducer's verdict routes to /run/over.
+		let serverView = createMockRunView({
+			status: "rewarding",
+			gatesCleared: 4,
+			minConfigs: 4,
+			underMinConfigs: true,
+			widthRepairable: false,
+			configs: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
+			poll: null,
+		});
+		vi.mocked(getTodaysRun).mockImplementation(async () => ({
+			success: true,
+			data: serverView,
+		}));
+		vi.mocked(dispatchRunAction).mockImplementation(async () => {
+			serverView = createMockRunView({ status: "dead", poll: null });
+			return { success: true, data: serverView };
+		});
+
+		const router = renderRunRoutes("/run/shop");
+		await user.click(
+			await screen.findByRole("button", {
+				name: "End run — gate 4 demands 4 configs →",
+			})
+		);
+
+		await waitFor(() =>
+			expect(vi.mocked(dispatchRunAction)).toHaveBeenCalledWith({
+				data: { action: { type: "finish-reward" } },
+			})
+		);
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/run/over")
 		);
 	});
 

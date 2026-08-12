@@ -1,25 +1,49 @@
-import { useState } from "react";
-
 import { useNavigate } from "@tanstack/react-router";
 
 import { perAnswerPreviewFor } from "~/modules/run/pipeline/pipeline.model";
 import { Screen } from "~/ui/Screen.ui";
 
+import { useNextPollsCountdown } from "../community/useNextPollsCountdown.hook";
 import { PrepScreen } from "../screens/PrepScreen.ui";
 import { useRunActions } from "./useRunActions.hook";
 import { useTodaysRun } from "./useTodaysRun.hook";
 
-/** Tier 2: the gate-prep beat between the community board and the first poll. */
 export const RunPrep = () => {
 	const { view } = useTodaysRun();
-	const { send } = useRunActions();
+	const { sendWith, commit, busy } = useRunActions();
 	const navigate = useNavigate();
-	const [editing, setEditing] = useState(false);
+	const countdown = useNextPollsCountdown();
 
 	if (!view) return null;
 
+	const parkedInShopPhase = view.status === "rewarding";
+	const backToShop = parkedInShopPhase
+		? {
+				label: "← Back to shop",
+				onClick: () => navigate({ to: "/run/shop" }),
+			}
+		: undefined;
+	const gateLocked = view.pollsExhausted && !countdown.isOpen;
+
+	const startGate = () => {
+		if (busy) return;
+		if (!parkedInShopPhase) return navigate({ to: "/run/answer" });
+		sendWith({ type: "finish-reward" }, (result) => {
+			if (!result.success) return;
+			commit(result);
+			if (result.data.status === "answering") navigate({ to: "/run/answer" });
+		});
+	};
+
 	return (
-		<Screen gateTheme={view.gateTheme}>
+		<Screen
+			gateTheme={view.gateTheme}
+			leftAction={backToShop}
+			rightAction={{
+				label: "Community →",
+				onClick: () => navigate({ to: "/run/community" }),
+			}}
+		>
 			<PrepScreen
 				gateNumber={view.gatesCleared}
 				pollsPerGate={view.pollsPerGate}
@@ -34,10 +58,9 @@ export const RunPrep = () => {
 				}}
 				perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
 				configs={view.configs}
-				editing={editing}
-				onDropConfig={(configId) => send({ type: "drop", configId })}
-				onEditPipeline={() => setEditing((current) => !current)}
-				onStartGate={() => navigate({ to: "/run/answer" })}
+				startLock={gateLocked ? countdown.label : undefined}
+				shopAction={backToShop}
+				onStartGate={startGate}
 			/>
 		</Screen>
 	);

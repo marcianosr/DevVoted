@@ -27,15 +27,12 @@ export const RunCommunity = () => {
 		queryFn: () => getRunCommunity(),
 	});
 
-	// A locked run has nothing to climb to until tomorrow's segment drops, so the
-	// way out is disabled until then — /run would bounce straight back here. The
-	// countdown stands beside it rather than inside it: "when do new polls land"
-	// is worth knowing on any visit, not only the one that finds you stuck.
 	const waitingForTomorrow =
 		run?.awaitingTomorrow === true && !countdown.isOpen;
+	const backTarget = run?.status === "rewarding" ? "/run/prep" : "/run";
 	const climbOn = {
 		label: "Back to your run →",
-		onClick: () => navigate({ to: "/run" }),
+		onClick: () => navigate({ to: backTarget }),
 		disabled: waitingForTomorrow,
 		hint: waitingForTomorrow
 			? "Today’s polls are spent. Your run picks up when the next segment drops at midnight."
@@ -57,8 +54,6 @@ export const RunCommunity = () => {
 
 	const view = community.data?.success === true ? community.data.data : null;
 
-	// Both outlive the board: the map and the run-scoped awards have something to
-	// say from the moment a run exists, including before the day's first answer.
 	const climb = view?.climb ? <ClimbToday {...view.climb} /> : null;
 	const standouts = view ? <StandoutsPanel standouts={view.standouts} /> : null;
 

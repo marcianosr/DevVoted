@@ -7,12 +7,26 @@ import { MAX_SLOTS } from "~/modules/run/pipeline/pipeline.model";
 import { STORAGE_PLANS } from "~/modules/run/rules.model";
 import { ShopScreen } from "./ShopScreen.ui";
 
+/** Every rung unlocked, as a deep run sees the ladder. */
 const plansOn = (currentTier: number, storage = 0) =>
 	STORAGE_PLANS.map((plan) => ({
 		...plan,
 		current: plan.tier === currentTier,
 		burnKb: Math.max(0, storage - plan.capKb),
+		locked: false,
 	}));
+
+/**
+ * The refusal panel belonging to one badge, not the offer panel it sits inside.
+ * Keyed on the nested tooltip's own named group — the scoping that stops it
+ * opening whenever the chip is hovered.
+ */
+const refusalOn = (badge: HTMLElement): HTMLElement => {
+	const scope = badge.closest('[class~="group/nested"]');
+	if (!(scope instanceof HTMLElement))
+		throw new Error(`${badge.textContent} is not inside a nested tooltip`);
+	return within(scope).getByRole("tooltip");
+};
 
 const base = {
 	storage: 440,
@@ -34,6 +48,15 @@ const base = {
 	rebuildCost: 1,
 	canRebuild: true,
 	onRebuild: vi.fn(),
+	lockAvailable: true,
+	lockCost: 16,
+	canLock: true,
+	lockedOfferIds: [],
+	onLock: vi.fn(),
+	extendAvailable: true,
+	extendCost: 48,
+	canExtend: true,
+	onExtend: vi.fn(),
 	slots: 3,
 	pollsPerGate: 5,
 	stripsOnFailure: 1,
@@ -77,11 +100,89 @@ describe(ShopScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("installs an offer when its chip is clicked", () => {
+	// Two taps, not one: a chip is a big target next to other big targets, and on
+	// a phone brushing one used to spend up to 384KB with no way back.
+	it("spends nothing when an offer chip is tapped", () => {
+		const onDraft = vi.fn();
+		const onLock = vi.fn();
+		render(<ShopScreen {...base} onDraft={onDraft} onLock={onLock} />);
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		expect(onDraft).not.toHaveBeenCalled();
+		expect(onLock).not.toHaveBeenCalled();
+	});
+
+	it("installs the selected offer when its own Install button is pressed", () => {
 		const onDraft = vi.fn();
 		render(<ShopScreen {...base} onDraft={onDraft} />);
-		fireEvent.click(screen.getByRole("button", { name: /ESLint/ }));
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		fireEvent.click(
+			screen.getByRole("button", {
+				name: `Install ESLint for ${draftCost(CONFIGS.eslint)}KB`,
+			})
+		);
 		expect(onDraft).toHaveBeenCalledWith("eslint");
+	});
+
+	// The badge carries all three states in one spot: price → install → owned.
+	// Scoped to the offers panel, since the pipeline beside it draws its own chips
+	// (and the ghost row repeats the price the offer stopped showing).
+	it("shows install button in tooltip when config is selected", () => {
+		render(<ShopScreen {...base} />);
+		const offers = () =>
+			within(screen.getByRole("group", { name: /Install configs/ }));
+		// Price badge visible by default
+		expect(
+			offers().getByText(`${draftCost(CONFIGS.eslint)}KB`)
+		).toBeInTheDocument();
+		// Clicking the chip makes the tooltip appear
+		fireEvent.click(offers().getByRole("button", { name: "ESLint" }));
+		// Tooltip contains the install button
+		expect(
+			screen.getByRole("button", { name: /Install ESLint/ })
+		).toBeInTheDocument();
+		// Price badge stays visible (not replaced)
+		expect(
+			offers().getByText(`${draftCost(CONFIGS.eslint)}KB`)
+		).toBeInTheDocument();
+	});
+
+	it("marks an offer already installed as owned and stops selling it", () => {
+		render(<ShopScreen {...base} configs={[CONFIGS.eslint]} />);
+		const offers = within(
+			screen.getByRole("group", { name: /Install configs/ })
+		);
+		expect(offers.getByText("owned")).toBeInTheDocument();
+		expect(offers.getByRole("button", { name: "ESLint" })).toBeDisabled();
+		expect(
+			screen.queryByRole("button", { name: /^Install ESLint/ })
+		).not.toBeInTheDocument();
+	});
+
+	// Hover only hints — the buttons stay behind the click that selects the chip,
+	// so a pointer sweeping the shelf never crosses live spend controls.
+	it("hints on hover and keeps the install button behind the click", () => {
+		render(<ShopScreen {...base} />);
+		expect(screen.getAllByText("Click to install").length).toBeGreaterThan(0);
+		expect(
+			screen.queryByRole("button", { name: /^Install ESLint/ })
+		).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		expect(
+			screen.getByRole("button", { name: /^Install ESLint/ })
+		).toBeInTheDocument();
+	});
+
+	it("closes the action tooltip when the selected chip is clicked again", () => {
+		render(<ShopScreen {...base} />);
+		const chip = screen.getByRole("button", { name: "ESLint" });
+		fireEvent.click(chip);
+		expect(
+			screen.getByRole("button", { name: /^Install ESLint/ })
+		).toBeInTheDocument();
+		fireEvent.click(chip);
+		expect(
+			screen.queryByRole("button", { name: /^Install ESLint/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("prices each offer chip in storage", () => {
@@ -91,7 +192,10 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	it("parks the offer chips behind a make-room tooltip when the pipeline is full", () => {
+	// The badge refuses via aria-disabled, not the disabled attribute: a disabled
+	// button fires no pointer events, so it could neither be tapped for its own
+	// explanation nor hovered for one.
+	it("refuses to install into a full pipeline and explains on the badge", () => {
 		render(
 			<ShopScreen
 				{...base}
@@ -99,27 +203,67 @@ describe(ShopScreen, () => {
 				slots={3}
 			/>
 		);
-		expect(screen.getByRole("button", { name: /ESLint/ })).toBeDisabled();
-		expect(
-			screen.getAllByText(
-				"Add a new slot to upgrade or sell an existing config"
-			).length
-		).toBeGreaterThan(0);
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		const install = screen.getByRole("button", { name: /^Install ESLint/ });
+		expect(install).toHaveAttribute("aria-disabled", "true");
+		expect(refusalOn(install)).toHaveTextContent(
+			"No free slot — uninstall a config first"
+		);
 	});
 
-	it("disables an offer the run can't afford and previews nothing on hover", () => {
+	// The refusal used to share the chip's unnamed hover group, so it opened over
+	// the shop the instant the chip was hovered, next to an offer it had not
+	// refused. It reveals on its own badge or not at all.
+	it("reveals the refusal on its own badge, not with the chip's tooltip", () => {
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
+				slots={3}
+			/>
+		);
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		const install = screen.getByRole("button", { name: /^Install ESLint/ });
+		expect(refusalOn(install)).toHaveClass("group-hover/nested:block");
+		expect(refusalOn(install)).not.toHaveClass("group-hover:block");
+	});
+
+	it("does not install when the refusing badge is pressed", () => {
+		const onDraft = vi.fn();
+		render(<ShopScreen {...base} storage={8} onDraft={onDraft} />);
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		fireEvent.click(screen.getByRole("button", { name: /^Install ESLint/ }));
+		expect(onDraft).not.toHaveBeenCalled();
+	});
+
+	// An offer you cannot afford stays readable — a chip that refuses the tap can't
+	// be inspected either.
+	it("keeps an unaffordable offer selectable and prices the refusal", () => {
 		render(<ShopScreen {...base} storage={8} />);
-		const chip = screen.getByRole("button", { name: /ESLint/ });
-		expect(chip).toBeDisabled();
-		fireEvent.mouseEnter(chip.parentElement as HTMLElement);
-		// No ghost row: previewing an offer you cannot buy read as if it had been
-		// installed. The chip's own price tag carries the refusal.
-		expect(
-			screen.queryByText(/Cross out a wrong answer/)
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /^Add .+ to your pipeline$/ })
-		).not.toBeInTheDocument();
+		const chip = screen.getByRole("button", { name: "ESLint" });
+		expect(chip).toBeEnabled();
+		fireEvent.click(chip);
+		const install = screen.getByRole("button", { name: /^Install ESLint/ });
+		expect(install).toHaveAttribute("aria-disabled", "true");
+		expect(refusalOn(install)).toHaveTextContent(
+			`Costs ${draftCost(CONFIGS.eslint)}KB — you have 8KB`
+		);
+	});
+
+	it("shows description and install button on click, with refusal on disabled click", () => {
+		render(<ShopScreen {...base} storage={8} />);
+		const chip = screen.getByRole("button", { name: "ESLint" });
+		fireEvent.click(chip);
+		// Selecting shows description and install button in tooltip
+		expect(screen.queryAllByText(/Cross out a wrong answer/)).not.toHaveLength(
+			0
+		);
+		// Install button appears (disabled due to storage)
+		const installBtn = screen.getByRole("button", { name: /Install ESLint/ });
+		expect(installBtn).toHaveAttribute("aria-disabled", "true");
+		// Clicking the disabled button reveals the refusal message
+		fireEvent.click(installBtn);
+		expect(screen.getByText(/Costs 32KB/)).toBeInTheDocument();
 	});
 
 	it("rebuilds the offers for a fee", () => {
@@ -129,13 +273,80 @@ describe(ShopScreen, () => {
 		expect(onRebuild).toHaveBeenCalled();
 	});
 
+	it("locks the selected offer when its Lock config button is pressed", () => {
+		const onLock = vi.fn();
+		render(<ShopScreen {...base} onLock={onLock} />);
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		fireEvent.click(
+			screen.getByRole("button", { name: `Lock ESLint for ${base.lockCost}KB` })
+		);
+		expect(onLock).toHaveBeenCalledWith("eslint");
+	});
+
+	// The price still shows on a lock the run cannot afford — a control the player
+	// never sees is a control they never learn.
+	it("prices the lock's refusal when the lock is unaffordable", () => {
+		render(<ShopScreen {...base} canLock={false} />);
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		const lock = screen.getByRole("button", {
+			name: `Lock ESLint for ${base.lockCost}KB`,
+		});
+		expect(lock).toHaveAttribute("aria-disabled", "true");
+		expect(refusalOn(lock)).toHaveTextContent(
+			`Holding costs ${base.lockCost}KB`
+		);
+	});
+
+	it("marks the held offer and stops offering more locks once one is spent", () => {
+		render(
+			<ShopScreen {...base} lockedOfferIds={["eslint"]} lockAvailable={false} />
+		);
+		expect(screen.getByText("Locked")).toBeInTheDocument();
+		// Selecting the other offer must not turn up a second lock to buy.
+		fireEvent.click(screen.getByRole("button", { name: "AGENTS.md" }));
+		expect(
+			screen.getByRole("button", { name: /^Install AGENTS/ })
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /^Lock / })
+		).not.toBeInTheDocument();
+	});
+
+	it("offers no lock at all before the lock's gate", () => {
+		render(<ShopScreen {...base} lockAvailable={false} />);
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		expect(
+			screen.getByRole("button", { name: /^Install ESLint/ })
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /^Lock / })
+		).not.toBeInTheDocument();
+	});
+
+	it("extends the offers for a fee", () => {
+		const onExtend = vi.fn();
+		render(<ShopScreen {...base} onExtend={onExtend} />);
+		fireEvent.click(screen.getByRole("button", { name: /Extend offers/ }));
+		expect(onExtend).toHaveBeenCalled();
+	});
+
+	it("hides the extend control before its gate", () => {
+		render(<ShopScreen {...base} extendAvailable={false} />);
+		expect(
+			screen.queryByRole("button", { name: /Extend offers/ })
+		).not.toBeInTheDocument();
+	});
+
 	it("previews an installable offer inside the pipeline, with its effect and price", () => {
 		render(<ShopScreen {...base} />);
-		const chip = screen.getByRole("button", { name: /ESLint/ });
+		const chip = screen.getByRole("button", { name: "ESLint" });
 		fireEvent.mouseEnter(chip.parentElement as HTMLElement);
 
-		expect(screen.getByText(/Cross out a wrong answer/)).toBeInTheDocument();
-		// The row is the button; the trailing text is purely the price.
+		// Description appears on hover, carried by the pipeline's ghost row
+		expect(screen.queryAllByText(/Cross out a wrong answer/)).not.toHaveLength(
+			0
+		);
+		// Preview row appears in the pipeline
 		expect(
 			screen.getByRole("button", { name: "Add ESLint to your pipeline" })
 		).toBeInTheDocument();
@@ -144,7 +355,7 @@ describe(ShopScreen, () => {
 		).toBeGreaterThan(0);
 	});
 
-	it("previews nothing when the pipeline has no room for the offer", () => {
+	it("shows description on click but no preview when pipeline is full", () => {
 		render(
 			<ShopScreen
 				{...base}
@@ -152,11 +363,13 @@ describe(ShopScreen, () => {
 				slots={3}
 			/>
 		);
-		const chip = screen.getByRole("button", { name: /ESLint/ });
-		fireEvent.mouseEnter(chip.parentElement as HTMLElement);
-		// A full pipeline has no slot to draw the ghost into, so none is drawn.
+		const chip = screen.getByRole("button", { name: "ESLint" });
+		fireEvent.click(chip);
+		// Description appears in the pinned tooltip; a full pipeline draws no ghost row
+		expect(screen.queryByText(/Cross out a wrong answer/)).toBeInTheDocument();
+		// But preview row doesn't appear when pipeline is full
 		expect(
-			screen.queryByText(/Cross out a wrong answer/)
+			screen.queryByRole("button", { name: /^Add .+ to your pipeline$/ })
 		).not.toBeInTheDocument();
 	});
 
@@ -328,14 +541,14 @@ describe(ShopScreen, () => {
 		expect(receipt.getByText(/2\+ configs/)).toBeInTheDocument();
 	});
 
-	it("warns in the build summary when the build is under the gate's demand", () => {
+	it("names the shortfall in the build summary when the build is under the gate's demand", () => {
 		render(
 			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} minConfigs={4} />
 		);
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
 		expect(
 			receipt.getByText(
-				"Demands 4 configs — the build holds 1. Climbing on ends the run."
+				"Demands 4 configs — the build holds 1. Install 3 more to climb on."
 			)
 		).toHaveClass("text-cinnabar");
 	});
@@ -380,7 +593,7 @@ describe(ShopScreen, () => {
 
 	it("lists the storage-plan ladder with the current rung marked", () => {
 		render(<ShopScreen {...base} />);
-		expect(screen.getByText("free")).toBeInTheDocument();
+		expect(screen.getByText("Free")).toBeInTheDocument();
 		expect(screen.getByText("512KB")).toBeInTheDocument();
 		expect(screen.getByText("640KB")).toBeInTheDocument();
 		// Only the current (512KB) rung is plain text — the others are switch buttons.
@@ -394,8 +607,29 @@ describe(ShopScreen, () => {
 
 	it("prices every paid rung per gate", () => {
 		render(<ShopScreen {...base} />);
-		expect(screen.getByText("-8KB/gate")).toBeInTheDocument();
-		expect(screen.getByText("-16KB/gate")).toBeInTheDocument();
+		expect(screen.getByText("8KB / gate")).toBeInTheDocument();
+		expect(screen.getByText("16KB / gate")).toBeInTheDocument();
+	});
+
+	it("writes the deep rungs in MB", () => {
+		render(<ShopScreen {...base} />);
+		expect(screen.getByText("1MB")).toBeInTheDocument();
+		expect(screen.getByText("1.5MB")).toBeInTheDocument();
+		expect(screen.getByText("3MB")).toBeInTheDocument();
+	});
+
+	// The rung ahead is shown so the ladder reads as going somewhere, but it is a
+	// row, not a button — and it says what opens it.
+	it("shows the next rung as unbuyable, naming the gate that opens it", () => {
+		const staged = plansOn(1).map((plan) => ({
+			...plan,
+			locked: plan.tier === 3,
+		}));
+		render(<ShopScreen {...base} storagePlans={staged} />);
+		expect(screen.getByText("Opens after gate 2")).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /768KB storage plan/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("switches the storage plan when a rung's row is clicked", () => {

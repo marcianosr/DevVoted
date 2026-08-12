@@ -40,12 +40,14 @@ describe("routesForStatus", () => {
 		]);
 	});
 
-	// One server status, three page turns: the payout, the answers, the shop.
-	it("allows reward, review and shop while rewarding, with reward canonical", () => {
+	// One server status, four page turns: the payout, the answers, the shop,
+	// and the prep hub the shop feeds into (ADR-032) — the gate starts there.
+	it("allows reward, review, shop and prep while rewarding, with reward canonical", () => {
 		expect(routesForStatus({ status: "rewarding", gatesCleared: 1 })).toEqual([
 			RUN_ROUTES.reward,
 			RUN_ROUTES.review,
 			RUN_ROUTES.shop,
+			RUN_ROUTES.prep,
 		]);
 	});
 
@@ -105,7 +107,14 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	it("stays put on any of the three reward pages while rewarding", () => {
+	it("stays put on any of the reward pages while rewarding", () => {
+		expect(
+			syncTarget(
+				"/run/prep",
+				climbing({ status: "rewarding", gatesCleared: 1 }),
+				false
+			)
+		).toBeNull();
 		expect(
 			syncTarget(
 				"/run/reward",

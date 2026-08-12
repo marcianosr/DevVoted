@@ -26,6 +26,7 @@ type GateStakeReceiptProps = {
 	minConfigs?: number;
 	configsToInstall?: number;
 	action?: ScreenAction;
+	shopAction?: ScreenAction;
 };
 
 const stripLabel = (strips: number, configCount: number): string =>
@@ -44,8 +45,8 @@ const WidthDemand = ({
 	if (configCount < minConfigs)
 		return (
 			<Paragraph as="span" tone="cinnabar" className="font-bold">
-				Demands {minConfigs} configs — the build holds {configCount}. Climbing
-				on ends the run.
+				Demands {minConfigs} configs — the build holds {configCount}. Install{" "}
+				{minConfigs - configCount} more to climb on.
 			</Paragraph>
 		);
 	return (
@@ -85,28 +86,22 @@ export const GateStakeReceipt = ({
 	minConfigs,
 	configsToInstall,
 	action,
+	shopAction,
 }: GateStakeReceiptProps) => {
 	const swatch = swatchForGate(gateNumber);
 	const gateName = swatch?.gateName ?? `Gate ${gateNumber}`;
 	const hasStartRequirement =
 		(configsToInstall !== undefined && configsToInstall > 0) ||
 		(minConfigs !== undefined && minConfigs >= 2);
-	// An identity multiplier ("no bonus yet") is noise once the reward line reads
-	// as prose rather than a stat row — shown only once it (or a hovered preview)
-	// actually carries a bonus.
 	const showsCoverage =
 		modifiers.coverageMultiplier !== 1 ||
 		modifiers.coverageAdd > 0 ||
 		(preview !== undefined &&
 			coverageValue(preview) !== coverageValue(modifiers));
-	// Same "only show what's non-trivial" rule as showsCoverage above: no faucet
-	// config equipped means nothing to report, unless a hovered candidate would add one.
 	const showsStorageKbPerAnswer =
 		perAnswer.storageKbPerCorrect > 0 ||
 		(previewPerAnswer !== undefined &&
 			previewPerAnswer.storageKbPerCorrect !== perAnswer.storageKbPerCorrect);
-	// A hovered Focus candidate's bonus takes priority over the equipped build's,
-	// since that's the number the player is deciding whether to chase.
 	const matchingConfigMultiplier =
 		previewPerAnswer?.matchingConfigMultiplier ??
 		perAnswer.matchingConfigMultiplier;
@@ -133,7 +128,19 @@ export const GateStakeReceipt = ({
 					<>
 						<hr className="border-t border-zinc-800" />
 						<div className="flex flex-col gap-1">
-							<Paragraph size="xs">To start</Paragraph>
+							<div className="flex items-center justify-between">
+								<Paragraph size="xs">To start</Paragraph>
+								{shopAction ? (
+									<Button
+										variant="neutral"
+										size="small"
+										onClick={shopAction.onClick}
+										disabled={shopAction.disabled}
+									>
+										{shopAction.label}
+									</Button>
+								) : null}
+							</div>
 							{configsToInstall !== undefined && configsToInstall > 0 ? (
 								<Paragraph as="span" tone="muted">
 									Needs at least{" "}

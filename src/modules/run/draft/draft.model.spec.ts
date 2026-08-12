@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { Config } from "../configs/config.model";
 import { CONFIGS, CONFIG_LIST } from "../configs/configRoster.model";
-import { DRAFT_SIZE, draftSeed, rebuildCost, rollDraft } from "./draft.model";
+import {
+	DRAFT_SIZE,
+	draftSeed,
+	extendCost,
+	MAX_EXTENSIONS,
+	offerCount,
+	rebuildCost,
+	rollDraft,
+} from "./draft.model";
 
 const ids = (configs: readonly Config[]): string[] =>
 	configs.map((config) => config.id);
@@ -64,6 +72,69 @@ describe("rollDraft", () => {
 	it("spreads offers across the whole pool given enough seeds", () => {
 		const seen = new Set(seenAcrossSeeds([]));
 		expect(seen.size).toBe(CONFIG_LIST.length);
+	});
+});
+
+describe("extendCost", () => {
+	it("prices the run's extensions 48KB then 96KB", () => {
+		expect([0, 1].map(extendCost)).toEqual([48, 96]);
+	});
+
+	it("caps at the last step once every extension is bought", () => {
+		expect(extendCost(MAX_EXTENSIONS)).toBe(96);
+	});
+});
+
+describe("offerCount", () => {
+	it("shows five offers before any extension", () => {
+		expect(offerCount(0)).toBe(DRAFT_SIZE);
+	});
+
+	it("adds one offer per extension bought", () => {
+		expect(offerCount(1)).toBe(DRAFT_SIZE + 1);
+		expect(offerCount(2)).toBe(DRAFT_SIZE + 2);
+	});
+
+	it("never grows past the extensions a run can buy", () => {
+		expect(offerCount(99)).toBe(DRAFT_SIZE + MAX_EXTENSIONS);
+	});
+});
+
+describe("rollDraft with shop controls", () => {
+	it("keeps a locked offer in the draft and leads with it", () => {
+		const offered = ids(rollDraft(7, [], ["eslint"]));
+		expect(offered[0]).toBe("eslint");
+		expect(offered).toHaveLength(DRAFT_SIZE);
+	});
+
+	// The whole point of paying to lock: rerolling is supposed to lose offers.
+	it("holds the locked offer across every reroll", () => {
+		const held = Array.from({ length: 20 }, (_, seed) =>
+			ids(rollDraft(seed, [], ["cold-start"]))
+		);
+		expect(held.every((offers) => offers.includes("cold-start"))).toBe(true);
+	});
+
+	it("still rerolls everything the lock does not hold", () => {
+		const first = ids(rollDraft(0, [], ["eslint"]));
+		const second = ids(rollDraft(1, [], ["eslint"]));
+		expect(second.slice(1)).not.toEqual(first.slice(1));
+	});
+
+	it("offers no duplicate of the locked config", () => {
+		const offered = ids(rollDraft(3, [], ["eslint"]));
+		expect(offered.filter((id) => id === "eslint")).toHaveLength(1);
+	});
+
+	// A lock is spent by installing the config; a stale id must not eat a slot.
+	it("drops a locked id the player has since installed", () => {
+		const offered = ids(rollDraft(3, [CONFIGS.eslint], ["eslint"]));
+		expect(offered).not.toContain("eslint");
+		expect(offered).toHaveLength(DRAFT_SIZE);
+	});
+
+	it("offers as many configs as the extensions bought allow", () => {
+		expect(rollDraft(0, [], [], offerCount(2))).toHaveLength(DRAFT_SIZE + 2);
 	});
 });
 

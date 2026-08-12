@@ -32,6 +32,7 @@ Because DevVoted is in active development, every article carries a status tag:
   - [2.7 Pipeline Build Failure](#27-pipeline-build-failure)
   - [2.8 Victory & Run End](#28-victory--run-end)
   - [2.9 A Typical Run](#29-a-typical-run)
+  - [2.10 What Unlocks When](#210-what-unlocks-when)
 - [3. The Pipeline](#3-the-pipeline)
   - [3.1 Slots & Expansion](#31-slots--expansion)
   - [3.2 Managing Configs](#32-managing-configs)
@@ -118,9 +119,12 @@ festive coding challenges.
 A run is a multi-day climb through numbered gates. Each calendar day, one shared
 **daily seed** hands every player the same 5 polls, one gate's worth
 (**1 gate = 1 day = 5 polls**). Answer them and the run locks until tomorrow, when a
-fresh 5-poll **segment** is appended. A locked run parks on the
-[community board](#72-the-community-board) — any run screen redirects there until
-tomorrow's segment drops. Runs persist across days and never expire;
+fresh 5-poll **segment** is appended. Where a locked run parks depends on the
+phase (ADR-032): mid-gate, any run screen redirects to the
+[community board](#72-the-community-board) until tomorrow's segment drops;
+after a cleared gate the run parks on the **prep page** instead — the shop a
+click away for more customizing, the community board a nudge, and the
+start-gate button wearing the countdown until midnight. Runs persist across days and never expire;
 partially answered gates simply fill up across day boundaries. Unplayed polls from
 yesterday are dropped, not failed. A flawless summit takes 12 calendar days; every
 failed gate adds a day, and so does every gate replayed while waiting on the
@@ -207,10 +211,14 @@ The early ramp keeps the opening gates farmable and lets a broke post-strip run
 recover. The shop and prep screen refuse to sell or drop below the coming gate's
 demand (the last config never sells, whatever the demand), so only a strip can
 sink a build under it — the replay of the failed gate is exempt, but the *next*
-gate turns an unrepaired build away: entering under the demand ends the run.
-The Build Summary names the demand (muted while met, cinnabar once climbing on
-would end the run), and mid-window drops are gone — the gate grades the build
-it admitted.
+gate turns an unrepaired build away. Turning away is a **blocked shop exit**,
+not a death (ADR-031): while the shop can still repair the width (a free slot
+plus an affordable offer, or a rebuild worth hoping for) the exit stays
+disabled with the shortfall named. Only a provably stuck build — broke or
+slot-capped — gets a door: an explicit cinnabar **End run** click. The Build
+Summary names the demand (muted while met, cinnabar with the install count
+once under it), and mid-window drops are gone — the gate grades the build it
+admitted.
 
 **Boss gates** (every 5th gate, two requirements AND-ed, no reroll) are parked, along
 with ~14 extra gate types (streak gates, economy gates, double-window gates).
@@ -398,6 +406,49 @@ pays for, so falling behind the ladder costs you width and power, never depth. T
 full ladder is in [3.1](#31-slots--expansion); its numbers are live-tuned in
 `pipeline.model.ts`, so treat this table's thresholds as illustrative and the code as
 authoritative.
+
+### 2.10 What Unlocks When
+
+One sheet for everything the climb stages in, because the rules arrive on three
+different axes and it is easy to lose track of which is which:
+
+- **Gate number** stages the *stakes* and the *shop's controls*. Gate depth is
+  bought with clears alone (ADR-019).
+- **Total coverage** stages *width* — the slot ladder, and nothing else
+  ([3.1](#31-slots--expansion)). It never gates depth.
+- **Category coverage** stages *Focus upgrades* ([4.4](#44-upgrades)).
+
+| Gate | Swatch | Configs demanded | Strips on fail | Unit Tests escalation | Unlocks at this gate |
+| --- | --- | --- | --- | --- | --- |
+| 0 | Pallet | 0 | 1 | +0 | Shop, **Rebuild offers**, the 512KB free plan and the 640KB rung |
+| 1 | Boulder | 1 | 1 | +0 | — |
+| 2 | Cascade | 2 | 2 | +1 | **Lock an offer**, 768KB rung |
+| 3 | Thunder | 3 | 2 | +1 | **Extend offers** |
+| 4 | Lavender | 4 | 3 | +2 | 1MB rung |
+| 5 | Rainbow | 4 | 3 | +2 | — |
+| 6 | Soul | 5 | 4 | +3 (cap) | 1.5MB rung |
+| 7 | Marsh | 5 | 4 | +3 | — |
+| 8 | Seafoam | 6 | 5 | +3 | 2MB rung |
+| 9 | Volcano | 6 | 5 | +3 | — |
+| 10 | Earth | 7 | 6 | +3 | 3MB rung (top of the ladder) |
+| 11 | Elite | 7 | 6 | +3 | — |
+| 12 | Champion | 8 | 7 | +3 | Summit — clearing it wins the run |
+
+Sources, all authoritative over this table: `minConfigsForGate`, `dropCount`,
+`escalation`/`ESCALATION_CAP`, `STORAGE_PLANS` (`rules.model.ts`),
+`LOCK_FROM_GATE`/`EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
+(`swatch.model.ts`).
+
+**Not on this axis** (so they are deliberately absent above):
+
+| Track | Staged by | Where |
+| --- | --- | --- |
+| Pipeline slots 4–14 | total coverage % | [3.1](#31-slots--expansion) |
+| Focus config levels | that category's coverage % | [4.4](#44-upgrades) |
+| Unit Tests levels | storage (32KB × level bought) | [4.4](#44-upgrades) |
+| Lint fee | uses within the current poll | [4.5](#45-the-lint-action) |
+| Rebuild price | rebuilds within the current shop | [5.2](#52-the-shop) |
+| Swatches, Dex, borders | account-level, across runs | [6. Meta-progression](#6-meta-progression) |
 
 ---
 
@@ -635,11 +686,25 @@ collects nothing and **auto-downgrades the run to the free tier**; a voluntary
 downgrade (shop only, like upgrading) clamps on the spot, burning anything above
 the new cap. Tiers are internally unflavored for now:
 
-| Tier | Cap | Bill / gate |
-| --- | --- | --- |
-| 1 (free, the start) | 512 KB | 0 |
-| 2 | 640 KB | 8 KB |
-| 3 | 768 KB | 16 KB |
+| Tier | Cap | Bill / gate | Opens after |
+| --- | --- | --- | --- |
+| 1 (free, the start) | 512KB | Free | — |
+| 2 | 640KB | 8KB / gate | — |
+| 3 | 768KB | 16KB / gate | gate 2 |
+| 4 | 1MB | 32KB / gate | gate 4 |
+| 5 | 1.5MB | 48KB / gate | gate 6 |
+| 6 | 2MB | 72KB / gate | gate 8 |
+| 7 | 3MB | 112KB / gate | gate 10 |
+
+**The ladder is gate-staged** 🟢 (ADR-030). A clear pays roughly `32KB × gate`, so a
+cap is only worth its bill once income can fill it — sold at gate 0, a 3MB cap is a
+bill against storage the run cannot yet earn. Each rung's bill runs about a fifth to
+a third of a perfect clear at the gate that opens it, which keeps the top of the
+ladder a late-run flex rather than an opening trap. The shop draws the rungs you have
+plus the next one, greyed, so the ladder reads as going somewhere; the reducer refuses
+a rung the run has not reached, because the wire only carries a tier number. Note the
+cliff scales with the rung: an unpayable bill at 3MB drops you to the free tier, and
+everything above 512KB burns at *Climb on*.
 
 The split behind it: anything that *earns* storage is a pipeline config under
 the Config Rule (IndexedDB); a slot-free purchase may only change the
@@ -649,19 +714,37 @@ container's rules — cap size today — never multiply power. Numbers live in
 **Overflow is spend-it-or-lose-it, not discarded on arrival** 🟢. A gate reward can
 push storage past the cap; that overflow rides uncapped into the shop that follows,
 so a rich gate buys a genuine shopping spree above the usual ceiling. The cap only
-clamps when the player presses *Climb on* (`finishReward`) — whatever's still over
-it at that moment is forfeit. Waste becomes urgency instead of a silent tax on the
-reward you just earned.
+clamps at *Climb on* (`finishReward`) — since ADR-032 that click is prep's
+**Start gate** button, so the overflow survives shop ↔ prep ↔ community detours
+and is forfeit only when the climb actually resumes. Waste becomes urgency
+instead of a silent tax on the reward you just earned.
 
 ### 5.2 The Shop
 
 Clearing a non-final gate opens a Balatro-style **multi-buy shop** bounded only by
-storage. Take as many actions as you can afford, in any order, but you must take
-something before you can climb on:
+storage. Take as many actions as you can afford, in any order. The exit leads to
+the **prep page** (ADR-032), and the shop stays open behind it until the next
+gate actually starts — so shop → prep → community → back to the shop is a legal
+loop while waiting on tomorrow's polls. The exit is graded against the coming
+gate's width demand (ADR-031): blocked, with the shortfall named, while the
+build is under it and repairable; an explicit cinnabar **End run** click once
+no repair exists.
 
-- **Draft** one of 3 offered configs (new configs only; owned ones upgrade instead).
+- **Draft** one of 5 offered configs (new configs only; owned ones upgrade instead).
+  Buying is two taps 🟢 (ADR-029), and the offer's corner badge is the second one:
+  it reads the price, turns green and reads **install** once the card is tapped,
+  then settles into **owned** — the bought offer stays on the table until the next
+  roll. The padlock joins the selected offer's corner the same way. An offer you
+  cannot afford stays selectable; pressing its greyed-out **install** explains what
+  is in the way.
 - **Rebuild** the offer for a cost that doubles each time: 4, 8, 16, 32, 64, 128,
   256, 512 KB per rebuild within the same shop (capped at 512).
+- **Lock** one offer 🟢 (ADR-029): a flat fee pins it, so rebuilds skip it and it is
+  still offered at the next gate's shop. One at a time, spent by installing the
+  config. Staged in from gate 2.
+- **Extend** the offer 🟢 (ADR-029): one more config on the table, in this shop and
+  every shop after it. A small fixed supply per run, escalating price. Staged in
+  from gate 3.
 - **Sell** a config for half its draft cost.
 - **Upgrade** a Focus config (free, coverage-gated) or Unit Tests (32 KB × the
   level bought).
@@ -1014,15 +1097,18 @@ code, and this table follows it.
 | `GATE_REWARD_KB` | 32 | Gate-1 base storage per clear (× gate multiplier × reward multipliers × correct ÷ 5). |
 | `GATE_REWARD_MULTIPLIER_CAP` | 12 | Reward depth multiplier stops growing past gate 12 (endless runs). |
 | `STORAGE_CAP_KB` | 512 | The free tier's storage cap; the clamp waits for *Climb on* (DVTD-0h4n). |
-| `STORAGE_PLANS` | 512/0 · 640/8 · 768/16 | Cap / bill-per-gate by tier (ADR-023). Billed on every closed window, pass or fail; unpaid → auto-downgrade to free. |
+| `STORAGE_PLANS` | 512/0 · 640/8 · 768/16 · 1MB/32 · 1.5MB/48 · 2MB/72 · 3MB/112 | Cap / bill-per-gate by tier (ADR-023). Billed on every closed window, pass or fail; unpaid → auto-downgrade to free. Gate-staged from 0/0/2/4/6/8/10 (ADR-030) — see [2.10](#210-what-unlocks-when). |
 | Archived-storage credit rate | 1 / `gates ÷ GATE_COUNT` / 0 | Victory / death / abandon share of leftovers. Divisor is 13. |
 | `BASE_SLOTS` → `MAX_SLOTS` | 3 → 14 | Pipeline width, bought with coverage. Independent of the gate count (ADR-019). |
 | Slot coverage ladder | 8 / 16 / 28 / 45 / 70 / 100 / 140 / 190 / 250 / 325 / 415 | Total-coverage % to reach slots 4–14. Live-tuned in `pipeline.model.ts` (ADR-008); the last two rungs are untuned. |
 | Gate swatches | Pallet … Champion | Thirteen — one per gate, earned by clearing it. Permanent and account-wide (`users.owned_swatch_ids`). |
-| `DRAFT_SIZE` | 3 | Configs offered per shop draft. |
+| `DRAFT_SIZE` | 5 | Configs offered per shop draft, before any Extend. |
 | Draft cost | 32 / 64 / 128 / 256 KB | By rarity: common → legendary. |
 | Sell refund | `floor(draftCost ÷ 2)` | Storage back on sell. |
 | Rebuild cost | 4, 8, 16, 32, 64, 128, 256, 512 KB | Powers of 2, per rebuild in the same shop (capped at 512). |
+| `LOCK_COST_KB` | 16 | Flat, one lock at a time, survives into the next shop (ADR-029). |
+| Extend cost | 48, 96 KB | Two per run, each adds one offer for the rest of the run (ADR-029). |
+| Control staging | gate 2 / gate 3 | Gates that stage Lock and Extend into the shop (`draft.model.ts`). |
 | Lint cost | 8 / 16 / 32 / 64 / 128 / 256 KB | Doubles per use within a poll (capped at 256); resets each poll. |
 | Focus payout | `1 + 0.25 × level` | Category coverage multiplier (L1 = 1.25×). |
 | Focus upgrade gate | `5% × level` | Category coverage needed to level up. |
