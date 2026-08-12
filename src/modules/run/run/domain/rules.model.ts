@@ -77,11 +77,6 @@ export const pollDifficultyMultiplier = (
 		Math.max(0, optionCount - DIFFICULTY_BASELINE_OPTIONS) +
 	(isMultiple ? MULTIPLE_CHOICE_COVERAGE_BONUS : 0);
 
-export const escalation = (gatesCleared: number): number =>
-	Math.floor(gatesCleared / 2);
-
-export const ESCALATION_CAP = 3;
-
 export const dropCount = (gatesCleared: number): number =>
 	1 + Math.floor(gatesCleared / 2);
 
@@ -91,14 +86,6 @@ export const minConfigsForGate = (gatesCleared: number): number =>
 export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
 
-export type GateStake = {
-	readonly strips: number;
-	readonly configs: number;
-	readonly fatal: boolean;
-};
-
-export const gateStake = (strips: number, configs: number): GateStake => ({
-	strips,
-	configs,
-	fatal: strips >= configs,
-});
+/** A failed gate is fatal when its strip quota takes the whole build. */
+export const isStakeFatal = (strips: number, configs: number): boolean =>
+	strips >= configs;

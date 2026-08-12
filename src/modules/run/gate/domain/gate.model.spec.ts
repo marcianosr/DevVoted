@@ -8,7 +8,7 @@ import {
 	EMPTY_WINDOW,
 	GateWindow,
 } from "~/modules/run/config/domain/effect.model";
-import { dropCount, escalation } from "~/modules/run/run/domain/rules.model";
+import { dropCount } from "~/modules/run/run/domain/rules.model";
 import {
 	checkStatuses,
 	currentRequirement,
@@ -26,13 +26,7 @@ const win = (partial: Partial<GateWindow>): GateWindow => ({
 	...partial,
 });
 
-describe("escalation and dropCount", () => {
-	it("adds +1 every two gates cleared", () => {
-		expect(escalation(0)).toBe(0);
-		expect(escalation(2)).toBe(1);
-		expect(escalation(4)).toBe(2);
-	});
-
+describe("dropCount", () => {
 	it("drops more configs deeper in the climb", () => {
 		expect(dropCount(0)).toBe(1);
 		expect(dropCount(2)).toBe(2);
@@ -42,31 +36,26 @@ describe("escalation and dropCount", () => {
 
 describe("currentRequirement", () => {
 	it("owes nothing without a correct-check config", () => {
-		expect(currentRequirement(pipelineWith([]), 0)).toBeNull();
-		expect(currentRequirement(pipelineWith([CONFIGS.coldStart]), 2)).toBeNull();
+		expect(currentRequirement(pipelineWith([]))).toBeNull();
+		expect(currentRequirement(pipelineWith([CONFIGS.coldStart]))).toBeNull();
 	});
 
-	it("reads Unit Tests' checkAmount and escalates with gate depth", () => {
-		expect(currentRequirement(pipelineWith([CONFIGS.unitTests]), 0)).toBe(1);
-		expect(currentRequirement(pipelineWith([CONFIGS.unitTests]), 2)).toBe(2);
+	it("reads Unit Tests' checkAmount and nothing else (ADR-033)", () => {
+		expect(currentRequirement(pipelineWith([CONFIGS.unitTests]))).toBe(1);
 	});
 
 	it("each Unit Tests level adds one demanded answer", () => {
 		expect(
-			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 3 }]), 0)
+			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 3 }]))
 		).toBe(3);
 	});
 
-	it("caps auto-escalation at 4 of 5 — an L1 build always survives one miss", () => {
-		expect(currentRequirement(pipelineWith([CONFIGS.unitTests]), 12)).toBe(4);
-	});
-
-	it("clamps the total to the window — only bought levels reach 5 of 5", () => {
+	it("clamps the total to the window", () => {
 		expect(
-			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 3 }]), 12)
+			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 5 }]))
 		).toBe(5);
 		expect(
-			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 5 }]), 0)
+			currentRequirement(pipelineWith([{ ...CONFIGS.unitTests, level: 9 }]))
 		).toBe(5);
 	});
 });

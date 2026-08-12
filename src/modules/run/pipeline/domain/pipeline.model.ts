@@ -2,6 +2,7 @@ import type { CategoryCode } from "~/domains/shared/categories";
 
 import {
 	Config,
+	faucetKbPerCorrect,
 	focusCoverageMultiplier,
 } from "~/modules/run/config/domain/config.model";
 import {
@@ -152,10 +153,7 @@ export const perAnswerPreviewFor = (
 		coveragePerCorrect: roundToOneDecimal(
 			gateBaseMultiplier(gatesCleared) * (1 + add) * mult
 		),
-		storageKbPerCorrect: configs.reduce(
-			(sum, config) => sum + (config.storagePerCorrect ?? 0),
-			0
-		),
+		storageKbPerCorrect: faucetKbPerCorrect(configs),
 		matchingConfigMultiplier:
 			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
 	};

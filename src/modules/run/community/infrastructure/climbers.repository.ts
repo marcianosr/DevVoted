@@ -18,7 +18,8 @@ import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
  */
 const pollsIntoGate = sql<number>`coalesce((${runStatesTable.state}->'window'->>'answered')::int, 0)`;
 
-/** The whole ladder position in one expression, for aggregates. */
+/** The whole ladder position in one expression, for aggregates.
+ *  Mirrors trackPosition; climbMap.model.spec pins the formula. */
 const position = sql<number>`${runStatesTable.gates_cleared} * ${SLICE_WINDOW} + coalesce((${runStatesTable.state}->'window'->>'answered')::int, 0)`;
 
 export type ClimberRow = {

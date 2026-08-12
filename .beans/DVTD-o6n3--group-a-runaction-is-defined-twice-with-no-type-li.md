@@ -31,6 +31,6 @@ Previously surfaced in the scrapped DVTD-wz1b ("single source for RunAction
 contract (zod/TS twins)") and never fixed.
 
 ## Todo
-- [ ] Bind the schema to the union so drift is a compile error
-- [ ] Re-point `RunActionInput` at the engine type
+- [x] Bind the schema to the union so drift is a compile error
+- [x] Re-point `RunActionInput` at the engine type
 - [ ] Delete `drop`, or wire it up and give it a caller

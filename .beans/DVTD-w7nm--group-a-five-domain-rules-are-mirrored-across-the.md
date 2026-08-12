@@ -35,8 +35,8 @@ Previously surfaced in the scrapped DVTD-wz1b ("unify answer-outcome rule
 
 ## Todo
 - [ ] Unify `answerOutcome` / `outcomeOf`
-- [ ] Make `Effect.faucetPerCorrect` the only faucet sum, or delete the field
-- [ ] Share the coverage-config predicate
-- [ ] Share `nextStreak` with `longestCorrectStreak`
-- [ ] Keep the SQL position, but add a test asserting it agrees with `trackPosition`
+- [x] Make `Effect.faucetPerCorrect` the only faucet sum, or delete the field
+- [x] Share the coverage-config predicate
+- [x] Share `nextStreak` with `longestCorrectStreak`
+- [x] Keep the SQL position, but add a test asserting it agrees with `trackPosition`
 

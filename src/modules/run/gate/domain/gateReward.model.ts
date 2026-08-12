@@ -3,8 +3,12 @@ import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
 import {
 	Config,
 	describeConfig,
+	faucetKbPerCorrect,
 } from "~/modules/run/config/domain/config.model";
-import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
+import {
+	type CheckStatus,
+	touchesCoverage,
+} from "~/modules/run/config/domain/effect.model";
 import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
 import {
 	gateRowDescription,
@@ -28,12 +32,6 @@ export type GateRewardRow = {
 	readonly kind: GateRewardKind;
 	readonly status: GateRewardStatus;
 };
-
-const isCoverageConfig = (config: Config): boolean =>
-	config.focusCategory !== undefined ||
-	config.coverageMultiplier !== undefined ||
-	config.coverageAdd !== undefined ||
-	config.openerCoverageMultiplier !== undefined;
 
 const signedPercent = (value: number): string =>
 	`${value < 0 ? "" : "+"}${value}%`;
@@ -138,7 +136,7 @@ const rowFor = (
 		description: gateRowDescription(config, roleOf(config, checks), check),
 	};
 
-	if (isCoverageConfig(config))
+	if (touchesCoverage(config))
 		return {
 			...base,
 			kind: "coverage",
@@ -214,9 +212,4 @@ export const gateStorageGained = (
 	faucetThisGateKb?: number
 ): number =>
 	gateReward +
-	(faucetThisGateKb ??
-		configs.reduce(
-			(sum, config) =>
-				sum + (config.storagePerCorrect ?? 0) * correctCount(answered),
-			0
-		));
+	(faucetThisGateKb ?? faucetKbPerCorrect(configs) * correctCount(answered));

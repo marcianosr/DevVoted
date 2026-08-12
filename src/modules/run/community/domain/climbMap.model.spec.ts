@@ -51,3 +51,19 @@ describe("gateStartPercent", () => {
 		expect(gateStartPercent(GATE_COUNT - 1)).toBeLessThan(100);
 	});
 });
+
+describe("trackPosition vs the SQL that mirrors it", () => {
+	// climbers.repository computes the same position in SQL, for aggregates it
+	// cannot do in TS. This cannot execute that SQL; it pins the formula so a
+	// change here fails loudly next to the comment naming its copy.
+	it.each([
+		[0, 0],
+		[1, 3],
+		[4, 5],
+		[GATE_COUNT - 1, 2],
+	])("places gate %i, %i polls in, where the query would", (gate, polls) => {
+		expect(trackPosition({ gate, pollsIntoGate: polls })).toBe(
+			gate * SLICE_WINDOW + polls
+		);
+	});
+});

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { faucetKbPerCorrect } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	AnswerContext,
@@ -48,7 +49,7 @@ describe("effectOf — Focus", () => {
 	it("contributes no requirement, faucet, or mask", () => {
 		const effect = effectOf(CONFIGS.js);
 		expect(effect.requirementDelta).toBeUndefined();
-		expect(effect.faucetPerCorrect).toBeUndefined();
+		expect(faucetKbPerCorrect([CONFIGS.js])).toBe(0);
 		expect(effect.maskWrongOn).toBeUndefined();
 	});
 });
@@ -98,7 +99,7 @@ describe("effectOf — Cold Start", () => {
 describe("effectOf — IndexedDB", () => {
 	it("faucets storage AND demands 3 correct this window", () => {
 		const effect = effectOf(CONFIGS.indexedDb);
-		expect(effect.faucetPerCorrect).toBe(8);
+		expect(faucetKbPerCorrect([CONFIGS.indexedDb])).toBe(8);
 		expect(effect.gateCheck?.(ctx({ correct: 2, answered: 4 })).state).toBe(
 			"running"
 		);

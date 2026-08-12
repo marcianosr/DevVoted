@@ -6,7 +6,7 @@ import type {
 	PerAnswerPreview,
 	PipelineModifiers,
 } from "~/modules/run/pipeline/domain/pipeline.model";
-import { gateStake } from "~/modules/run/run/domain/rules.model";
+import { isStakeFatal } from "~/modules/run/run/domain/rules.model";
 import { Button } from "~/ui/Button.component";
 import { Popover } from "~/ui/Popover.component";
 import type { ScreenAction } from "~/ui/Screen.ui";
@@ -33,7 +33,7 @@ type GateStakeReceiptProps = {
 };
 
 const stripLabel = (strips: number, configCount: number): string =>
-	gateStake(strips, configCount).fatal
+	isStakeFatal(strips, configCount)
 		? "All configs disabled — run over"
 		: `Remove ${strips} config${strips === 1 ? "" : "s"}`;
 

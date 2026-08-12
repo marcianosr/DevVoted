@@ -26,6 +26,11 @@ removal anyway, with the explicit requirement that farming still be dealt with.
    `checkAmount + escalation(gatesCleared)`. `CLIMB_BASE_REQUIREMENT` is deleted.
    Unit Tests keeps sole ownership of escalation (ADR-016 §2 survives with
    "baseline" re-read as "Unit Tests' check").
+
+   > ⚠ The escalation term is **superseded by
+   > [ADR-033](033-demand-is-what-you-bought.md)**: the target is now
+   > `checkAmount + level - 1`, and gate depth no longer raises it. The rest of
+   > this decision (no synthesized baseline) stands.
 2. **Farming is priced out, not forbidden** (chosen over a frozen floor-of-1,
    all-skip-fails, and prize-gating via AskUserQuestion): the gate payout scales
    with window correctness — `gateClearPayout = round(GATE_REWARD_KB ×
@@ -57,7 +62,9 @@ removal anyway, with the explicit requirement that farming still be dealt with.
   the reducer pays `gateClearPayout` on the actual window.
 - The escalation-cap problem for `VICTORY_GATE = 12` (demand exceeding the
   5-poll window around gate 8) became a **Unit Tests tuning** question and was
-  resolved same-day (DVTD-hbz5): auto-escalation caps at +3 (`ESCALATION_CAP`),
+  resolved same-day (DVTD-hbz5) — then made moot by
+  [ADR-033](033-demand-is-what-you-bought.md), which removed depth escalation
+  entirely: auto-escalation caps at +3 (`ESCALATION_CAP`),
   the total demand clamps to the window, and Unit Tests levels (storage-priced,
   max 5) buy payout + demand together. `dropCount`'s identical growth curve
   still needs the same look — open.

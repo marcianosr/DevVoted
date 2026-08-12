@@ -110,3 +110,7 @@ export const needsOf = (config: Config): string | undefined => {
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `Answer ${name} polls correct when they show`;
 };
+
+/** The faucet: KB a build pays out per correct answer. */
+export const faucetKbPerCorrect = (configs: readonly Config[]): number =>
+	configs.reduce((sum, config) => sum + (config.storagePerCorrect ?? 0), 0);

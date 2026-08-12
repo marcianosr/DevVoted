@@ -1,10 +1,11 @@
 ---
 # DVTD-7pwh
 title: 'Group B: The run write surface hides in a file named queries.ts'
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-08-12T09:11:57Z
-updated_at: 2026-08-12T09:11:57Z
+updated_at: 2026-08-12T11:06:38Z
 parent: DVTD-82c4
 ---
 
@@ -31,3 +32,7 @@ pass-through across three files with zero logic.
 - [ ] Split the write/transaction surface out of `queries.ts`
 - [ ] Collapse the duplicated storage credit into one call
 - [ ] Make the seed-before-transaction ordering structural, not a comment
+
+## Summary of Changes
+
+Resolved by DVTD-36ct (2026-08-12). `api/queries.ts` is now `run/infrastructure/run.repository.ts`, and `applyActionToRun` sits in a file named for what it is. The read/write split within that file is still open and tracked on DVTD-36ct's last todo.

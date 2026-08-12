@@ -20,6 +20,7 @@ import {
 import {
 	FAUCET_CAP_KB,
 	GATE_COUNT,
+	isStakeFatal,
 	minConfigsForGate,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
@@ -27,6 +28,7 @@ import {
 	storagePlanFor,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
+import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	createRun,
 	isAwaitingTomorrow,
@@ -788,6 +790,25 @@ describe("failure model", () => {
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("dead");
 	});
+
+	// The receipt is the only warning a player gets before sudden death
+	// (ADR-017), so what it predicts and what closeWindow does must not drift.
+	it.each([0, 2, 4, 6, 8])(
+		"kills the run at gate %i exactly when the receipt predicted it",
+		(gate) => {
+			const before = { ...started(["unit-tests"]), gatesCleared: gate };
+			const view = toRunView(before);
+			const receiptSaysFatal = isStakeFatal(
+				view.stripsOnFailure,
+				view.configs.length
+			);
+
+			let after = before;
+			for (let i = 0; i < SLICE_WINDOW; i++) after = answerWith(after, false);
+
+			expect(after.status === "dead").toBe(receiptSaysFatal);
+		}
+	);
 
 	it("ends the run when a bare pipeline misses", () => {
 		// Bareness is unreachable since ADR-021 — this guards runs snapshotted

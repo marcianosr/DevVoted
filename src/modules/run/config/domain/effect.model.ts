@@ -97,7 +97,6 @@ export type EffectContext = {
 export type Effect = {
 	requirementDelta?: number;
 	rewardMultiplier?: number;
-	faucetPerCorrect?: number;
 	storageOnClear?: number;
 	coverage?: (context: AnswerContext) => Coverage;
 	maskWrongOn?: (category: CategoryCode) => boolean;
@@ -105,13 +104,14 @@ export type Effect = {
 	demand?: (gatesCleared: number) => string;
 };
 
+export const touchesCoverage = (config: Config): boolean =>
+	config.focusCategory !== undefined ||
+	config.coverageMultiplier !== undefined ||
+	config.coverageAdd !== undefined ||
+	config.openerCoverageMultiplier !== undefined;
+
 const coverageOf = (config: Config): Effect["coverage"] => {
-	const touchesCoverage =
-		config.focusCategory !== undefined ||
-		config.coverageMultiplier !== undefined ||
-		config.coverageAdd !== undefined ||
-		config.openerCoverageMultiplier !== undefined;
-	if (!touchesCoverage) return undefined;
+	if (!touchesCoverage(config)) return undefined;
 	const level = config.level ?? 1;
 	return ({ category, answeredBefore }) => ({
 		mult:
@@ -132,7 +132,6 @@ const maskOf = (config: Config): Effect["maskWrongOn"] => {
 const benefitOf = (config: Config): Effect => ({
 	coverage: coverageOf(config),
 	maskWrongOn: maskOf(config),
-	faucetPerCorrect: config.storagePerCorrect,
 	// Flat clear payouts scale with level: Unit Tests pays +32KB × level.
 	storageOnClear:
 		config.storageOnClear === undefined

@@ -33,26 +33,25 @@ Modelled on connect-portal ADR-083. Confirmed by Marciano:
 Six aggregates, each getting domain/application/infrastructure/presentation:
 climb, pipeline, gate, config, shop, community.
 
-- [ ] `climb` — run.model, runSnapshot.model, climbMap.model, rules.model → domain; runView.viewmodel, runRoutes.viewmodel, seed.service, run.validation, useRunActions/useTodaysRun/useRunRouteSync → application; applyActionToRun → infrastructure/run.repository.ts; Prep/Answering/GameOver screens + RunHud + StorageGauge → presentation
-- [ ] `pipeline` — pipeline.model → domain; ConfiguringScreen, PipelineTable, PipelineReportRow → presentation
-- [ ] `gate` — gate/swatch/gateReward/gateLadder/configRole models → domain; RewardScreen, StripScreen, GateRewardReport, GateStakeReceipt, SwatchChips, RoleList → presentation
-- [ ] `config` — config/configRoster/effect/stack models → domain; ConfigChip, ConfigActions, StackPicker, StackPreviewList → presentation
-- [ ] `shop` (was `draft/`) — draft.model → domain; ShopScreen → presentation
-- [ ] `community` — standouts.model → domain; community.handlers → application/community.service.ts; RunCommunity, Standouts, Voter, ClimbToday, useNextPollsCountdown → presentation
-- [ ] `poll` visuals (PollCard, PollOptionList, RevealScore, revealTiming) — decide: climb's presentation, or a `poll` aggregate in the run context
-- [ ] Rename `api/queries.ts` → `*.repository.ts`, `api/handlers.ts` → `*.service.ts`, `api/run.ts` → `*.serverfn.ts`
+- [x] `climb` — run.model, runSnapshot.model, climbMap.model, rules.model → domain; runView.viewmodel, runRoutes.viewmodel, seed.service, run.validation, useRunActions/useTodaysRun/useRunRouteSync → application; applyActionToRun → infrastructure/run.repository.ts; Prep/Answering/GameOver screens + RunHud + StorageGauge → presentation
+- [x] `pipeline` — pipeline.model → domain; ConfiguringScreen, PipelineTable, PipelineReportRow → presentation
+- [x] `gate` — gate/swatch/gateReward/gateLadder/configRole models → domain; RewardScreen, StripScreen, GateRewardReport, GateStakeReceipt, SwatchChips, RoleList → presentation
+- [x] `config` — config/configRoster/effect/stack models → domain; ConfigChip, ConfigActions, StackPicker, StackPreviewList → presentation
+- [x] `shop` (was `draft/`) — draft.model → domain; ShopScreen → presentation
+- [x] `community` — standouts.model → domain; community.handlers → application/community.service.ts; RunCommunity, Standouts, Voter, ClimbToday, useNextPollsCountdown → presentation
+- [x] `poll` visuals (PollCard, PollOptionList, RevealScore, revealTiming) — decide: climb's presentation, or a `poll` aggregate in the run context
+- [x] Rename `api/queries.ts` → `*.repository.ts`, `api/handlers.ts` → `*.service.ts`, `api/run.ts` → `*.serverfn.ts`
 - [ ] Delete `src/modules/session-run/` (orphan todo.md)
 
 ## Shared
 
 - [ ] Create `src/shared/`, absorbing `src/lib/`, `src/utils/`, `src/domains/shared/`, `src/config/`. Verified 2026-08-12: none of these import from `modules/` or `domains/`, so the boundary rule holds on day one.
-- [ ] `src/ui/` stays put as the design-system half of shared (folding it in rewrites ~100 imports for no boundary gain)
-- [ ] Note: there is no `src/shared/` today. Marciano referred to it; the shared-ish code is spread across lib/utils/domains-shared/config.
+- [x] `src/ui/` stays put as the design-system half of shared (folding it in rewrites ~100 imports for no boundary gain)
 
 ## Enforcement
 
-- [ ] Rewrite `.dependency-cruiser.cjs` to ADR-002 §9, in the SAME commit as the moves. Today's rules key off directory names (`/presentation/`, `/api/`) and will break. This is a shared-config change and must be flagged in the commit message.
-- [ ] Confirm `lint:arch` fails on a deliberately-wrong file before trusting it
+- [x] Rewrite `.dependency-cruiser.cjs` to ADR-002 §9, in the SAME commit as the moves. Today's rules key off directory names (`/presentation/`, `/api/`) and will break. This is a shared-config change and must be flagged in the commit message.
+- [x] Confirm `lint:arch` fails on a deliberately-wrong file before trusting it
 
 ## Blocked on / conflicts
 
@@ -89,7 +88,5 @@ to baseline (22 failed / 1445 passed, same 7 files, all pre-existing).
 
 ## Still open
 
-- [ ] `src/shared/` does not exist yet: `src/lib/`, `src/utils/`, `src/config/`, `src/domains/shared/` not yet collapsed. `shared-not-into-modules` rule is in place and passing already.
 - [ ] `polls` / `collection` / `account` contexts not migrated
-- [ ] `src/modules/session-run/` orphan (one todo.md) still present — left alone deliberately, it is unrelated to the proto-* routes Marciano wants kept
 - [ ] Split `run/infrastructure/run.repository.ts` (639 lines) per read concern — deferred, the write path must stay one transaction

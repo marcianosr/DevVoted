@@ -151,24 +151,26 @@ but the gate payout scales with window correctness (`32 KB × gate number ×
 correct ÷ 5`), so a 0/5 clear banks nothing. The design motto: *your build is as hard as you make it*.
 Every extra config is opt-in risk for opt-in reward.
 
-**Only Unit Tests escalates**: its "N correct answers" check starts at its level
-and rises by +1 for every 2 gates cleared, capped at +3 (`ESCALATION_CAP`) — an
-L1 Unit Tests never demands more than 4 of 5, and the total clamps to the window
-(see [4.4 Upgrades](#44-upgrades)).
+**The demand is what you bought** (ADR-033): Unit Tests' "N correct answers"
+check is `checkAmount + level - 1`, clamped to the window. Gate depth does not
+raise it, so an L1 Unit Tests demands 1 correct answer at gate 0 and at gate 12
+alike; only bought levels move it (see [4.4 Upgrades](#44-upgrades)).
 
 **Gates count from 0**, and **passing the checks is the whole price of depth**
 (ADR-019). A run opens on gate 0 and every clear advances one gate, up to the summit
 at gate 12. Width is bought separately with coverage and gates nothing, so a run can
 sit at gate 5 on its starting three slots. What makes depth expensive is *risk*: the
-demands escalate as you climb, so a pipeline too narrow to meet them fails and
-strips rather than stalling. Clearing a gate also awards that gate's **swatch**
+strip quota grows as you climb, so a pipeline too narrow to absorb it fails and
+dies rather than stalling. Clearing a gate also awards that gate's **swatch**
 ([6.4 Swatches](#64-swatches)).
 
 > ⚠ ADR-018 briefly made gate N require slot N, with a "cleared, still gate 3"
 > replay when coverage lagged. ADR-019 reversed it the next day: the gate number was
 > redundant with the slot count, and the enforced replay *was* the farming ADR-017
-> already prices out. **Open risk:** with `ESCALATION_CAP` at +3, a narrow build owes
-> fewer checks than a wide one and can currently coast deep (DVTD-ziss).
+> already prices out. The "a narrow build coasts deep" risk it opened (DVTD-ziss)
+> was closed by ADR-027's width demand, which stops a build staying narrow at all.
+> ADR-033 later removed depth escalation from the correct-answer check; the width
+> demand is what prices depth now.
 
 **Exactly one of three things happens when the window's 5th poll is answered** —
 nothing is decided before that:
@@ -351,7 +353,7 @@ A failed gate costs you three ways at once.
 | **No shop** | The shop only opens on a cleared gate. A failed gate pays no reward and offers no draft, so storage sits idle while the pipeline sits disabled. |
 | **A real day** | One gate per calendar day, so every retry costs 24 hours. A flawless summit takes 5 days; two failures at gate 4 turn the run into a week. |
 
-Tomorrow you face the same gate at the same demand — escalation is set by gates
+Tomorrow you face the same gate at the same demand — the demand is set by your build
 cleared, so it never rewinds — but with fewer live effects.
 
 **What survives keeps recovery possible.** Coverage is untouched, storage is
@@ -418,24 +420,24 @@ different axes and it is easy to lose track of which is which:
   ([3.1](#31-slots--expansion)). It never gates depth.
 - **Category coverage** stages *Focus upgrades* ([4.4](#44-upgrades)).
 
-| Gate | Swatch | Configs demanded | Strips on fail | Unit Tests escalation | Unlocks at this gate |
-| --- | --- | --- | --- | --- | --- |
-| 0 | Pallet | 0 | 1 | +0 | Shop, **Rebuild offers**, the 512KB free plan and the 640KB rung |
-| 1 | Boulder | 1 | 1 | +0 | — |
-| 2 | Cascade | 2 | 2 | +1 | **Lock an offer**, 768KB rung |
-| 3 | Thunder | 3 | 2 | +1 | **Extend offers** |
-| 4 | Lavender | 4 | 3 | +2 | 1MB rung |
-| 5 | Rainbow | 4 | 3 | +2 | — |
-| 6 | Soul | 5 | 4 | +3 (cap) | 1.5MB rung |
-| 7 | Marsh | 5 | 4 | +3 | — |
-| 8 | Seafoam | 6 | 5 | +3 | 2MB rung |
-| 9 | Volcano | 6 | 5 | +3 | — |
-| 10 | Earth | 7 | 6 | +3 | 3MB rung (top of the ladder) |
-| 11 | Elite | 7 | 6 | +3 | — |
-| 12 | Champion | 8 | 7 | +3 | Summit — clearing it wins the run |
+| Gate | Swatch | Configs demanded | Strips on fail | Unlocks at this gate |
+| --- | --- | --- | --- | --- |
+| 0 | Pallet | 0 | 1 | Shop, **Rebuild offers**, the 512KB free plan and the 640KB rung |
+| 1 | Boulder | 1 | 1 | — |
+| 2 | Cascade | 2 | 2 | **Lock an offer**, 768KB rung |
+| 3 | Thunder | 3 | 2 | **Extend offers** |
+| 4 | Lavender | 4 | 3 | 1MB rung |
+| 5 | Rainbow | 4 | 3 | — |
+| 6 | Soul | 5 | 4 | 1.5MB rung |
+| 7 | Marsh | 5 | 4 | — |
+| 8 | Seafoam | 6 | 5 | 2MB rung |
+| 9 | Volcano | 6 | 5 | — |
+| 10 | Earth | 7 | 6 | 3MB rung (top of the ladder) |
+| 11 | Elite | 7 | 6 | — |
+| 12 | Champion | 8 | 7 | Summit — clearing it wins the run |
 
 Sources, all authoritative over this table: `minConfigsForGate`, `dropCount`,
-`escalation`/`ESCALATION_CAP`, `STORAGE_PLANS` (`rules.model.ts`),
+`STORAGE_PLANS` (`rules.model.ts`),
 `LOCK_FROM_GATE`/`EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
 (`swatch.model.ts`).
 
@@ -513,7 +515,7 @@ clear. Unit Tests is the clearest case: +32 KB for carrying the game's only
 correct-answer check.
 
 **No baseline** (ADR-017). The gate demands no *answers* of its own — install Unit
-Tests and you owe correct answers (the only demand that escalates); skip it and no
+Tests and you owe correct answers; skip it and no
 check asks for them, but the correctness-scaled payout means wrong answers earn
 nothing. The gate's one structural demand is width (ADR-027, §2.2): it only admits
 a build wide enough to survive its strip quota. Nothing in the pipeline is locked:
@@ -561,7 +563,7 @@ One table, every config. Each entry reads **Effect / Check**.
 
 | Config | Rarity | Effect | Check | Status |
 | --- | --- | --- | --- | --- |
-| Unit Tests | common | +32 KB × level storage on gate clear | `level` correct answers + escalation (capped — see §4.4) | 🟢 |
+| Unit Tests | common | +32 KB × level storage on gate clear | `level` correct answers (see §4.4) | 🟢 |
 | `.js` | common | JavaScript polls reward ×1.25 | If a JavaScript poll appears, answer at least one correctly | 🟢 |
 | `.ts` | common | TypeScript polls reward ×1.25 | If a TypeScript poll appears, answer at least one correctly | 🟢 |
 | `.css` | common | CSS polls reward ×1.25 | If a CSS poll appears, answer at least one correctly | 🟢 |
@@ -628,10 +630,10 @@ config's current level, so an upgraded config reads its real numbers everywhere.
 
 **Unit Tests upgrades for storage** (32 KB × the level bought: L2 costs 64,
 L5 costs 160 — no coverage gate). Each level buys both halves: +32 KB payout per
-level on clear, and +1 to the correct-answer demand. On top sits the automatic
-escalation (+1 per 2 gates cleared, **capped at +3** — `ESCALATION_CAP`), and the
-total demand clamps to the window: an un-upgraded Unit Tests never owes more than
-4 of 5 at any depth; only bought levels can demand a perfect 5/5 window.
+level on clear, and +1 to the correct-answer demand. Nothing else moves it
+(ADR-033): gate depth does not raise the demand, so an un-upgraded Unit Tests
+owes 1 correct answer at every gate. The total clamps to the window, so only
+bought levels can demand a perfect 5/5.
 
 In flux: the stories also propose archived-storage-funded, 10-level cross-run
 upgrades (DVTD-z94q); the upgrade currency question (run storage vs archived
@@ -1054,7 +1056,7 @@ The game leans hard into its CI metaphor:
 | **Effect** | The benefit a config provides. |
 | **Check** | The requirement a config adds to the gate window. The gate fails if any active check fails. |
 | **Check dial** | What a check keys off: correctness, storage, speed, build composition, duration, streaks, breadth, or other players. |
-| **Demand** | A check's escalating requirement ("Requires 3 correct answers"). |
+| **Demand** | What a check requires ("Requires 3 correct answers"). Set by the build, not by gate depth. |
 | **Coverage** | The score: a percentage per category plus a run total. Full in-fiction name: **knowledge coverage**. |
 | **Storage** | The in-run currency, in KB, capped by the storage plan (512 free / 640 / 768). Overflow above the cap forfeits only at *Climb on*, not when it's earned 🟡 (DVTD-0h4n). |
 | **Storage plan** | The subscription setting the storage cap (ADR-023): free 512 KB, or a bigger cap for a per-gate bill collected pass or fail. Unpaid bills auto-downgrade to free. |
@@ -1085,7 +1087,6 @@ code, and this table follows it.
 | `SLICE_WINDOW` | 5 | Polls per gate window (= per day). |
 | `VICTORY_GATE` | 12 | The summit's gate *number* — gates count from 0. A content decision, one gate per badge; no longer derived from the slot ladder (ADR-019). |
 | `GATE_COUNT` | 13 | How many gates a run holds (gates 0…12). The divisor for archived-storage credit and the reward multiplier cap. |
-| Escalation | `min(floor(gatesCleared ÷ 2), 3)` | Added to Unit Tests' correct demand; `ESCALATION_CAP` = 3. |
 | Max config level | 5 | `maxLevel`, default for every upgradable config (window ceiling). |
 | Unit Tests upgrade cost | 32 KB × level bought | Storage-priced, no coverage gate (focus upgrades stay free + coverage-gated). |
 | Debt cards per failed gate | 1 per failed check | Planted on the failing config; does not stack. |

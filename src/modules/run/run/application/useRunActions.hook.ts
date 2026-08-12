@@ -5,7 +5,7 @@ import {
 	dispatchRunAction,
 	startRun,
 } from "~/modules/run/run/application/run.serverfn";
-import type { RunActionInput } from "~/modules/run/run/application/run.validation";
+import type { RunAction } from "~/modules/run/run/domain/run.model";
 
 import { todaysRunQueryKey } from "~/modules/run/run/application/useTodaysRun.hook";
 
@@ -25,12 +25,11 @@ export const useRunActions = () => {
 		queryClient.setQueryData(queryKey, result);
 
 	const dispatch = useMutation({
-		mutationFn: (action: RunActionInput) =>
-			dispatchRunAction({ data: { action } }),
+		mutationFn: (action: RunAction) => dispatchRunAction({ data: { action } }),
 	});
 
 	/** Dispatch an action and commit the resulting view — the default. */
-	const send = (action: RunActionInput) =>
+	const send = (action: RunAction) =>
 		dispatch.mutate(action, {
 			onSuccess: (result) => {
 				if (result.success) commit(result);
@@ -43,7 +42,7 @@ export const useRunActions = () => {
 	 * act right after committing (shop → community detour).
 	 */
 	const sendWith = (
-		action: RunActionInput,
+		action: RunAction,
 		onResult: (result: RunActionResult) => void
 	) => dispatch.mutate(action, { onSuccess: (result) => onResult(result) });
 

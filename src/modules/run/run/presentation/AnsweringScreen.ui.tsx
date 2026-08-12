@@ -6,7 +6,7 @@ import type {
 import type { Config } from "~/modules/run/config/domain/config.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
-import { gateStake } from "~/modules/run/run/domain/rules.model";
+import { isStakeFatal } from "~/modules/run/run/domain/rules.model";
 import type { AnswerScore } from "~/modules/run/run/application/runView.viewmodel";
 import { Button } from "~/ui/Button.component";
 import {
@@ -69,7 +69,7 @@ const StakeOnFailure = ({
 	strips: number;
 	configs: number;
 }) => {
-	const { fatal } = gateStake(strips, configs);
+	const fatal = isStakeFatal(strips, configs);
 	return (
 		<Paragraph as="span" size="xs" tone={fatal ? "cinnabar" : "saffron"}>
 			{fatal

@@ -4,7 +4,10 @@ import {
 } from "~/domains/shared/categories";
 import { formatDurationMs } from "~/lib/dateUtils";
 
-import type { AnswerOutcome } from "~/modules/run/run/domain/run.model";
+import {
+	type AnswerOutcome,
+	nextStreak,
+} from "~/modules/run/run/domain/run.model";
 import {
 	type SwatchFinish,
 	swatchForGate,
@@ -281,19 +284,14 @@ const onlyOneRight = ({
 
 // ─── Run-scoped awards (active runs only) ─────────────────────────────────────
 
-/**
- * The longest run of correct answers this run has managed, not the streak it is
- * riding now. Mirrors the engine's `nextStreak`: a correct extends, a wrong
- * breaks, a partial holds — so a half-right answer never costs you the award.
- */
+/** The longest run of correct answers, not the streak being ridden now. */
 export const longestCorrectStreak = (
 	outcomes: readonly AnswerOutcome[]
 ): number => {
 	let best = 0;
 	let current = 0;
 	for (const outcome of outcomes) {
-		if (outcome === "correct") current += 1;
-		if (outcome === "wrong") current = 0;
+		current = nextStreak(current, outcome);
 		best = Math.max(best, current);
 	}
 	return best;

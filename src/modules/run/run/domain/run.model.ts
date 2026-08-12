@@ -18,6 +18,7 @@ import {
 	CHEAPEST_DRAFT_COST_KB,
 	Config,
 	draftCost,
+	faucetKbPerCorrect,
 	isUpgradable,
 	sellRefund,
 	upgradeCoverageRequired,
@@ -52,6 +53,7 @@ import {
 	dropCount,
 	FAUCET_CAP_KB,
 	gateBaseMultiplier,
+	isStakeFatal,
 	isStoragePlanUnlocked,
 	minConfigsForGate,
 	pollDifficultyMultiplier,
@@ -133,7 +135,8 @@ const answerOutcome = (
 	return pickedACorrectOption ? "partial" : "wrong";
 };
 
-const nextStreak = (current: number, outcome: AnswerOutcome): number => {
+/** A correct extends the streak, a wrong breaks it, a partial holds it. */
+export const nextStreak = (current: number, outcome: AnswerOutcome): number => {
 	if (outcome === "correct") return current + 1;
 	if (outcome === "wrong") return 0;
 	return current;
@@ -378,7 +381,7 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
 		const quota = dropCount(state.gatesCleared);
 		const installed = state.pipeline.configs.length;
-		if (quota >= installed)
+		if (isStakeFatal(quota, installed))
 			return {
 				...state,
 				currentIndex: nextIndex,
@@ -488,9 +491,7 @@ const answer = (
 	const categoryAfter = roundToOneDecimal(
 		Math.max(0, categoryBefore + earned - coverageLoss)
 	);
-	const rawFaucet = correct
-		? configs.reduce((sum, config) => sum + (config.storagePerCorrect ?? 0), 0)
-		: 0;
+	const rawFaucet = correct ? faucetKbPerCorrect(configs) : 0;
 	const faucetEarnedBefore = state.faucetEarnedKb ?? 0;
 	const faucet = Math.min(
 		rawFaucet,

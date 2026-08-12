@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	dropCount,
 	gateBaseMultiplier,
-	gateStake,
+	isStakeFatal,
 	isStoragePlanUnlocked,
 	minConfigsForGate,
 	pollDifficultyMultiplier,
@@ -130,22 +130,22 @@ describe("minConfigsForGate", () => {
 		// Before gate 3 the demand sits under the quota on purpose: the early
 		// glass cannon is farmable, and ADR-021's fatal rule prices it honestly.
 		for (let gate = 3; gate < GATE_COUNT; gate++)
-			expect(gateStake(dropCount(gate), minConfigsForGate(gate)).fatal).toBe(
+			expect(isStakeFatal(dropCount(gate), minConfigsForGate(gate))).toBe(
 				false
 			);
 	});
 });
 
-describe("gateStake", () => {
+describe("isStakeFatal", () => {
 	it("is not fatal when the peel quota is smaller than the build", () => {
-		expect(gateStake(1, 3)).toEqual({ strips: 1, configs: 3, fatal: false });
+		expect(isStakeFatal(1, 3)).toBe(false);
 	});
 
 	it("is fatal once the peel quota matches the whole build", () => {
-		expect(gateStake(3, 3).fatal).toBe(true);
+		expect(isStakeFatal(3, 3)).toBe(true);
 	});
 
 	it("is fatal when the peel quota exceeds the build", () => {
-		expect(gateStake(4, 3).fatal).toBe(true);
+		expect(isStakeFatal(4, 3)).toBe(true);
 	});
 });

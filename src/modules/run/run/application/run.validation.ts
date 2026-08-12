@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { RunAction } from "~/modules/run/run/domain/run.model";
+
 const configActionSchema = <T extends string>(type: T) =>
 	z
 		.object({
@@ -21,7 +23,7 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	z
 		.object({
 			type: z.literal("answer"),
-			optionIds: z.array(z.string().min(1)).min(1),
+			optionIds: z.array(z.string().min(1)).min(1).readonly(),
 			elapsedMs: z.number().int().min(0).max(600_000).optional(),
 		})
 		.strict(),
@@ -41,4 +43,16 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.strict(),
 ]);
 
-export type RunActionInput = z.infer<typeof runActionSchema>;
+type SchemaAction = z.infer<typeof runActionSchema>;
+type Assert<T extends true> = T;
+
+/** The engine owns the action contract. These stop compiling if the schema drifts from it. */
+export type SchemaCoversEveryAction = Assert<
+	[RunAction["type"]] extends [SchemaAction["type"]] ? true : false
+>;
+export type SchemaAddsNoAction = Assert<
+	[SchemaAction["type"]] extends [RunAction["type"]] ? true : false
+>;
+export type SchemaPayloadsMatchEngine = Assert<
+	SchemaAction extends RunAction ? true : false
+>;

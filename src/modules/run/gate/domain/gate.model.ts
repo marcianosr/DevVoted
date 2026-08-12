@@ -11,11 +11,7 @@ import {
 	effectiveRequirement,
 	isBare,
 } from "~/modules/run/pipeline/domain/pipeline.model";
-import {
-	ESCALATION_CAP,
-	SLICE_WINDOW,
-	escalation,
-} from "~/modules/run/run/domain/rules.model";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 
 const passes = (state: CheckStatus["state"]): boolean =>
 	state === "success" || state === "skipped";
@@ -28,26 +24,20 @@ const correctConfigOf = (pipeline: Pipeline) =>
 
 /**
  * The correct-answer demand, or null when no installed config carries one.
- * Checks come only from configs (ADR-017): a build without Unit Tests owes
- * no correct count — farming is priced out by the correctness-scaled gate
- * payout instead. Each Unit Tests level adds +1; auto-escalation adds up to
- * +ESCALATION_CAP (an L1 build never owes more than 4 of 5, whatever the
- * depth); the total clamps to the window, so only bought levels can demand
- * a perfect 5/5.
+ * Checks come only from configs (ADR-017): a build without Unit Tests owes no
+ * correct count. The demand is what you bought and nothing else (ADR-033) —
+ * gate depth does not raise it. It clamps to the window, so only levels can
+ * demand a perfect 5/5.
  */
-export const currentRequirement = (
-	pipeline: Pipeline,
-	gatesCleared: number
-): number | null => {
+export const currentRequirement = (pipeline: Pipeline): number | null => {
 	const correctConfig = correctConfigOf(pipeline);
 	if (!correctConfig) return null;
 	const base = correctConfig.checkAmount ?? 1;
 	const level = correctConfig.level ?? 1;
-	const demanded = Math.min(
-		SLICE_WINDOW,
-		base + (level - 1) + Math.min(escalation(gatesCleared), ESCALATION_CAP)
+	return effectiveRequirement(
+		pipeline,
+		Math.min(SLICE_WINDOW, base + level - 1)
 	);
-	return effectiveRequirement(pipeline, demanded);
 };
 
 /**
@@ -141,7 +131,7 @@ export const checkStatuses = (
 	window: GateWindow,
 	gatesCleared: number
 ): readonly CheckStatus[] => {
-	const requirement = currentRequirement(pipeline, gatesCleared);
+	const requirement = currentRequirement(pipeline);
 	const context: EffectContext = { window, gatesCleared };
 	const contributed = pipeline.configs.flatMap((config) => {
 		const effect = effectOf(config);
@@ -202,7 +192,7 @@ export const gateDemands = (
 	pipeline: Pipeline,
 	gatesCleared: number
 ): readonly string[] => {
-	const correct = currentRequirement(pipeline, gatesCleared);
+	const correct = currentRequirement(pipeline);
 	const contributed = pipeline.configs.flatMap((config) => {
 		const demand = effectOf(config).demand;
 		return demand ? [demand(gatesCleared)] : [];

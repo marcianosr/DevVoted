@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-08-06T15:30:17Z
-updated_at: 2026-08-06T15:47:20Z
+updated_at: 2026-08-12T11:42:32Z
 blocked_by:
     - DVTD-iq13
 ---
@@ -44,3 +44,41 @@ A flawless 3-slot run does summit: 13 days, 65 polls, coverage 2412%, storage ca
 - [x] Surfaced the strip quota inline in the answering pipeline header ("a fail peels 3", cinnabar when it would take everything) — shipped 2026-08-06
 
 Downgraded from high; the ADR-019 open risk is closed.
+
+## Correction — 2026-08-12: the conclusion stands, ADR-033 does not void it
+
+An earlier note today claimed this bean's premise was void because ADR-033
+removed depth escalation. That was wrong, and Marciano caught it.
+
+Depth is still priced, in two places, neither of which was escalation:
+
+- `dropCount(g) = 1 + floor(g/2)` — the strip quota this bean measured on
+  2026-08-06. Unchanged.
+- `minConfigsForGate(g) = min(g, dropCount(g) + 1)` — the width demand from
+  ADR-027 (2026-08-10) and ADR-031 (2026-08-11), enforced at `run.model.ts:804`
+  (shop exit kills an under-width build) and `:899` (sell refuses to go below).
+  It runs 0 configs at gate 0 to 8 at gate 12.
+
+Both ADRs postdate the 2026-08-06 measurement, so the wall is now *higher* than
+when this bean measured it, not lower. Escalation added at most +3 to one
+check's target; the width demand adds eight checks. Removing the smaller term
+does not reopen the coasting risk.
+
+The "narrow build coasts deep" framing in the description above is itself
+obsolete: a build cannot stay narrow past gate 3, because the shop will not let
+it leave.
+
+- [x] ~~Raise or remove ESCALATION_CAP~~ — the symbol is gone (ADR-033); it was
+  never the wall anyway
+- [x] ~~Consider a depth demand that does not come from a config~~ — ADR-027's
+  width demand did this, without reopening ADR-017 Decision 1
+- [ ] Playtest whether the gate-4 cliff reads as fair or as a gotcha (the one
+  open question, unchanged since 2026-08-06)
+
+## What is actually unpriced: excusal
+
+The width demand only bites if the checks it forces can fail. A check whose
+category never appears in the window skips, and a skip passes. So a build can
+hold eight configs at gate 12 and owe almost nothing on an unlucky draw.
+
+That is `DVTD-ezij`'s subject, not this bean's. Track it there.

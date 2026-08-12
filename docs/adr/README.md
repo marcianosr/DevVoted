@@ -33,6 +33,7 @@
 | [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons: Rebuild (visit), Lock (next shop), Extend (run) | Accepted — extends 008's shop; rejects account-level rerolls (DVTD-5lt6) |
 | [030](030-gate-staged-storage-plans.md) | The storage-plan ladder is gate-staged, and climbs to 3MB | Accepted — amends 023 Decision 1 (ladder shape only); wiki §2.10 collects every gate-staged unlock |
 | [031](031-shop-exit-blocks-under-width-builds.md) | The shop exit blocks an under-width build; death is an explicit dead-end click | Accepted — amends 027 Decision 2, reverses its rejected exit-blocking option (DVTD-jnlj) |
+| [033](033-demand-is-what-you-bought.md) | The correct-answer demand is what you bought | Accepted — reverses ADR-017's escalation term; depth no longer raises the Unit Tests check |
 | [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub — the gate starts from prep, the shop stays open until it does | Accepted — moves finish-reward to prep's start button; community stays the mid-gate wait (DVTD-f7hs) |
 
 ## Conventions
