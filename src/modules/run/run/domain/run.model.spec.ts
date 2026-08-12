@@ -572,7 +572,7 @@ describe("check-configs on one pipeline", () => {
 	});
 });
 
-describe("lint-correct checks", () => {
+describe("linter mastery checks", () => {
 	// Three options so the lint action applies (it needs >1 wrong option left).
 	const lintablePoll = (id: string, correct: boolean): RunPoll => ({
 		id,
@@ -600,44 +600,46 @@ describe("lint-correct checks", () => {
 		return { ...state, storage: 100 };
 	};
 
-	it("fails the gate when a linted poll is answered wrong", () => {
+	it("clears a window that never linted, so the fee is never forced", () => {
+		// ADR-022: forcing the lint makes an unaffordable window fatal, which is
+		// the trap ADR-031 reversed. Competence is owed; spending is not.
 		let state = lintableRun();
-		state = runReducer(state, { type: "lint-poll" });
-		expect(state.storage).toBe(92); // -8KB lint fee
-		state = answerWith(state, false); // the linted poll missed — unrecoverable
-		for (let i = 0; i < 4; i++) state = answerWith(state, true);
-		expect(state.status).toBe("awaiting-strip"); // Correct passed (4 ≥ 1), ESLint's check did not
-	});
-
-	it("passes when every linted poll is answered correctly", () => {
-		let state = lintableRun();
-		state = runReducer(state, { type: "lint-poll" });
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
 	});
 
-	it("fails the gate when a lintable poll is answered without linting", () => {
-		// A perfect window still fails: the pledge was owed and declined (ADR-022).
+	it("charges the fee for a lint but demands nothing back for it", () => {
 		let state = lintableRun();
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		state = runReducer(state, { type: "lint-poll" });
+		expect(state.storage).toBe(92); // -8KB lint fee
+		state = answerWith(state, false); // the linted poll still missed
+		for (let i = 0; i < 4; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0); // 4 correct js answers satisfy mastery
+	});
+
+	it("fails the gate when its category was drawn and nothing was answered right", () => {
+		let state = lintableRun();
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		expect(state.status).toBe("awaiting-strip");
 	});
 
-	it("names the declined pledge on the checklist row", () => {
+	it("excuses the linter when no poll of its category turns up", () => {
+		// The react-only pool never draws JS/TS, so ESLint's check is dormant
+		// rather than dodged and a good window still clears. An unlucky draw must
+		// never cost a gate; a decision must.
+		let state = started(["eslint"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+	});
+
+	it("reads mastery, not lint usage, on the checklist row", () => {
 		let state = lintableRun();
 		state = answerWith(state, true);
 		const row = checkStatuses(state.pipeline, state.window, 0).find(
 			(check) => check.sourceConfigId === "eslint"
 		);
-		expect(row?.progress).toBe("declined the lint");
-	});
-
-	it("excuses the linter when no poll of its category turns up", () => {
-		// The react-only pool never offers ESLint a JS/TS poll, so its check is
-		// dormant rather than dodged and a good window still clears.
-		let state = started(["eslint"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.clearedGate).toBe(0);
+		expect(row?.label).toBe("ESLint mastery");
+		expect(row?.progress).toBe("1/1");
 	});
 });
 
@@ -667,8 +669,8 @@ describe("no build owes the gate nothing (ADR-022)", () => {
 			])
 		).toEqual([
 			["AGENTS.md", "failed"],
-			["ESLint linted", "skipped"],
-			["Stylelint linted", "skipped"],
+			["ESLint mastery", "skipped"],
+			["Stylelint mastery", "skipped"],
 		]);
 		expect(state.status).toBe("awaiting-strip");
 	});

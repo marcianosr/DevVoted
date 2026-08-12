@@ -114,7 +114,7 @@ describe(AnsweringScreen, () => {
 				configs={[CONFIGS.eslint]}
 				checks={[
 					{
-						label: "ESLint linted",
+						label: "ESLint mastery",
 						progress: "0/0",
 						current: 0,
 						target: 0,

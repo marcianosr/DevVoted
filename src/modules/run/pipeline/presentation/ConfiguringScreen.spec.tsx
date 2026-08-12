@@ -419,7 +419,7 @@ describe("stack mode (ADR-026)", () => {
 			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
 		);
 		expect(
-			screen.getByText("Linted JS/TS polls must be correct")
+			screen.getByText("Get one JS/TS poll right if either appears")
 		).toBeInTheDocument();
 		expect(
 			screen.queryByText("The fee doubles each use")

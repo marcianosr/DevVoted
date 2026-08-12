@@ -118,7 +118,7 @@ describe(gateRewardRows, () => {
 	it("reads check progress as the value for a pure-check row (linter)", () => {
 		const lintCheck: CheckStatus[] = [
 			{
-				label: "ESLint linted",
+				label: "ESLint mastery",
 				progress: "1/2",
 				current: 1,
 				target: 2,

@@ -58,13 +58,13 @@ describe("roleOf", () => {
 		expect(roleOf(coverageGain, [correctCheck])).toBe("passive");
 	});
 
-	it("labels a linter conditional — its check only bites when the lint is used", () => {
+	it("labels a linter conditional — its check bites only when its category is drawn", () => {
 		const eslint = config({
 			id: "eslint",
 			label: "ESLint",
-			check: "lint-correct",
+			eliminatesWrongOptionsFor: ["js", "ts"],
 		});
-		expect(roleOf(eslint, [check({ label: "ESLint linted" })])).toBe(
+		expect(roleOf(eslint, [check({ label: "ESLint mastery" })])).toBe(
 			"conditional"
 		);
 	});

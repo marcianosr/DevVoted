@@ -189,37 +189,49 @@ describe("effectOf — linters", () => {
 		expect(mask?.("css")).toBe(false);
 	});
 
-	it("skips the check when never linted", () => {
-		expect(effectOf(CONFIGS.eslint).gateCheck?.(ctx()).state).toBe("skipped");
+	it("skips only when none of its categories appeared, never because linting was declined", () => {
+		const check = effectOf(CONFIGS.eslint).gateCheck;
+		expect(check?.(ctx()).state).toBe("skipped");
+		// The player answered a JS poll and chose not to lint it. Pre-ADR-022 this
+		// also read "skipped", which is the freeloader hole: never spend, never owe.
+		expect(
+			check?.(ctx({ byCategory: { js: { seen: 1, correct: 0 } }, answered: 1 }))
+				.state
+		).not.toBe("skipped");
 	});
 
-	it("fails the moment a linted poll is missed", () => {
+	it("counts either of its categories toward one demand", () => {
+		const check = effectOf(CONFIGS.eslint).gateCheck;
+		expect(
+			check?.(ctx({ byCategory: { ts: { seen: 1, correct: 1 } }, answered: 5 }))
+				.state
+		).toBe("success");
+		expect(
+			check?.(ctx({ byCategory: { js: { seen: 1, correct: 1 } }, answered: 5 }))
+				.state
+		).toBe("success");
+	});
+
+	it("fails a window that saw its category and got none right", () => {
 		expect(
 			effectOf(CONFIGS.eslint).gateCheck?.(
-				ctx({
-					lintedByConfig: { eslint: { polls: 1, correct: 0 } },
-					answered: 1,
-				})
+				ctx({ byCategory: { js: { seen: 2, correct: 0 } }, answered: 5 })
 			).state
 		).toBe("failed");
 	});
 
-	it("stays running until close, then succeeds when every linted poll was correct", () => {
-		const check = effectOf(CONFIGS.eslint).gateCheck;
-		const linted = { lintedByConfig: { eslint: { polls: 2, correct: 2 } } };
-		expect(check?.(ctx({ ...linted, answered: 4 })).state).toBe("running");
-		expect(check?.(ctx({ ...linted, answered: 5 })).state).toBe("success");
-	});
-
-	it("reads only its own lint tally", () => {
+	it("reads only its own categories", () => {
 		expect(
 			effectOf(CONFIGS.stylelint).gateCheck?.(
-				ctx({
-					lintedByConfig: { eslint: { polls: 1, correct: 0 } },
-					answered: 1,
-				})
+				ctx({ byCategory: { js: { seen: 1, correct: 0 } }, answered: 5 })
 			).state
 		).toBe("skipped");
+	});
+
+	it("demands nothing extra for linting, so an unaffordable window is never fatal", () => {
+		expect(effectOf(CONFIGS.eslint).demand?.(0)).toBe(
+			"ESLint: get one right if js or ts appears"
+		);
 	});
 });
 

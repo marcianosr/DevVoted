@@ -10,7 +10,6 @@ import {
 	coverageForAnswer,
 	gateClearPayout,
 	isBare,
-	linterFor,
 	rewardMultiplierFor,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
@@ -497,26 +496,6 @@ const answer = (
 		rawFaucet,
 		Math.max(0, FAUCET_CAP_KB - faucetEarnedBefore)
 	);
-	const linter = linterFor(configs, poll.category);
-	const couldLint =
-		linter !== undefined &&
-		poll.options.filter((option) => !option.correct).length > 1;
-	const didLint = linter !== undefined && state.manualDisabled.length > 0;
-	const lintedBefore = state.window.lintedByConfig ?? {};
-	const lintedByConfig =
-		linter && (couldLint || didLint)
-			? {
-					...lintedBefore,
-					[linter.id]: {
-						offered:
-							(lintedBefore[linter.id]?.offered ?? 0) + (couldLint ? 1 : 0),
-						polls: (lintedBefore[linter.id]?.polls ?? 0) + (didLint ? 1 : 0),
-						correct:
-							(lintedBefore[linter.id]?.correct ?? 0) +
-							(didLint && correct ? 1 : 0),
-					},
-				}
-			: lintedBefore;
 	const missStreak = nextMissStreak(state.window.missStreak ?? 0, outcome);
 	const tally = state.window.byCategory[poll.category] ?? {
 		seen: 0,
@@ -542,7 +521,6 @@ const answer = (
 		},
 		missStreak,
 		maxMissStreak: Math.max(state.window.maxMissStreak ?? 0, missStreak),
-		lintedByConfig,
 	};
 
 	const answeredPoll: AnsweredPoll = {

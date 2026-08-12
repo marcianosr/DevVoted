@@ -11,7 +11,6 @@ export type CheckKind =
 	| "min-correct"
 	| "no-double-miss"
 	| "breadth"
-	| "lint-correct"
 	| "defeat-device";
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";

@@ -115,10 +115,10 @@ describe("checkStatuses", () => {
 		expect(statuses.map((check) => check.label)).toEqual([
 			"Correct",
 			"IndexedDB",
-			"ESLint linted",
+			"ESLint mastery",
 		]);
 		expect(statuses[1].state).toBe("success"); // 3 correct ≥ 3
-		expect(statuses[2].state).toBe("skipped"); // never linted
+		expect(statuses[2].state).toBe("skipped"); // no JS/TS poll drawn
 	});
 
 	it("ignores a Focus mastery until its category appears", () => {
@@ -163,14 +163,14 @@ describe("gatePassed", () => {
 		).toBe(false);
 	});
 
-	it("fails the gate when a linted poll was missed, even with every answer demand met", () => {
+	it("fails the gate when the linter's categories were drawn and none was answered right", () => {
 		expect(
 			gatePassed(
 				pipelineWith([CONFIGS.eslint]),
 				win({
 					correct: 4,
 					answered: 5,
-					lintedByConfig: { eslint: { polls: 1, correct: 0 } },
+					byCategory: { js: { seen: 1, correct: 0 } },
 				}),
 				0
 			)

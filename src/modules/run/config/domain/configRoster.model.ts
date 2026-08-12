@@ -6,18 +6,29 @@ import type {
 } from "~/modules/run/config/domain/config.model";
 
 /**
- * Every config owes the gate something (ADR-022): either an authored `check` or
- * a `focusCategory` the check derives from. Enforced here rather than on
- * `Config` because the roster is the only place configs are authored, and
- * because a partial `Config` is legitimate elsewhere (the configure screen
- * prices previewed loadouts).
+ * Every config owes the gate something (ADR-022), by one of three routes: an
+ * authored `check`, a `focusCategory`, or the categories it lints. Enforced
+ * here rather than on `Config` because the roster is the only place configs are
+ * authored, and because a partial `Config` is legitimate elsewhere (the
+ * configure screen prices previewed loadouts).
  *
- * A config with neither field contributes no checklist row at all, which made a
+ * A config with none of them contributes no checklist row at all, which made a
  * build carrying it pass gates vacuously on 0/5. AGENTS.md was that config;
- * the type is here so the next one cannot be.
+ * the type is here so the next one cannot be. The linter route is a non-empty
+ * tuple on purpose: an empty category list would satisfy the type and still owe
+ * nothing, which is the exact hole this guards.
  */
 type RosterConfig = Config &
-	({ readonly check: CheckKind } | { readonly focusCategory: CategoryCode });
+	(
+		| { readonly check: CheckKind }
+		| { readonly focusCategory: CategoryCode }
+		| {
+				readonly eliminatesWrongOptionsFor: readonly [
+					CategoryCode,
+					...CategoryCode[],
+				];
+		  }
+	);
 
 export const CONFIGS = {
 	js: {
@@ -148,28 +159,26 @@ export const CONFIGS = {
 		label: "ESLint",
 		family: "defense",
 		description:
-			"Cross out a wrong answer on JS/TS polls for an escalating fee — linted polls must be answered correctly.",
+			"Cross out a wrong answer on JS/TS polls for an escalating fee — but if JS/TS shows, you must get one right.",
 		gives: "Cross out a wrong answer on JS/TS polls",
-		needs: "Linted JS/TS polls must be correct",
+		needs: "Get one JS/TS poll right if either appears",
 		costs: "The fee doubles each use",
 		requirementDelta: 0,
 		rewardMultiplier: 1,
 		eliminatesWrongOptionsFor: ["js", "ts"],
-		check: "lint-correct",
 	},
 	stylelint: {
 		id: "stylelint",
 		label: "Stylelint",
 		family: "defense",
 		description:
-			"Cross out a wrong answer on CSS polls for an escalating fee — linted polls must be answered correctly.",
+			"Cross out a wrong answer on CSS polls for an escalating fee — but if CSS shows, you must get one right.",
 		gives: "Cross out a wrong answer on CSS polls",
-		needs: "Linted CSS polls must be correct",
+		needs: "Get one CSS poll right if CSS appears",
 		costs: "The fee doubles each use",
 		requirementDelta: 0,
 		rewardMultiplier: 1,
 		eliminatesWrongOptionsFor: ["css"],
-		check: "lint-correct",
 	},
 	intellisense: {
 		id: "intellisense",

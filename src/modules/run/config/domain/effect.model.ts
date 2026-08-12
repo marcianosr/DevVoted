@@ -14,21 +14,6 @@ export type CategoryTally = {
 	readonly gained?: number;
 };
 
-/**
- * A linter's window record. `offered` counts the polls it *could* have run on
- * (its category, with more than one wrong option to cross out); `polls` and
- * `correct` count what it actually pledged. The gap between them is a declined
- * pledge, which ADR-022 treats as a failure rather than a skip — otherwise a
- * linter that is never run owes nothing and clears every gate for free.
- * `offered` is optional: pre-ADR-022 snapshots hydrate without it and read as
- * "never offered", so an in-flight run keeps the old excused-skip behaviour.
- */
-export type LintTally = {
-	readonly offered?: number;
-	readonly polls: number;
-	readonly correct: number;
-};
-
 export type GateWindow = {
 	readonly correct: number;
 	readonly answered: number;
@@ -39,8 +24,6 @@ export type GateWindow = {
 	readonly missStreak?: number;
 	/** Worst miss run this window — reaching 2 permanently fails no-double-miss. Optional: legacy snapshots. */
 	readonly maxMissStreak?: number;
-	/** Lint usage per linter config id: polls linted, and how many of those were answered correctly. */
-	readonly lintedByConfig?: Readonly<Record<string, LintTally>>;
 };
 
 export const EMPTY_WINDOW: GateWindow = {
@@ -51,7 +34,6 @@ export const EMPTY_WINDOW: GateWindow = {
 	byCategory: {},
 	missStreak: 0,
 	maxMissStreak: 0,
-	lintedByConfig: {},
 };
 
 export type CheckState = "success" | "running" | "skipped" | "failed";
@@ -145,33 +127,46 @@ const benefitOf = (config: Config): Effect => ({
 
 type GateCheckPart = Pick<Effect, "gateCheck" | "demand">;
 
-const focusCheck = (
+const categoryList = (categories: readonly CategoryCode[]): string =>
+	categories.length < 2
+		? (categories[0] ?? "")
+		: `${categories.slice(0, -1).join(", ")} or ${categories[categories.length - 1]}`;
+
+/**
+ * Competence in the categories a config claims. A Focus config claims one; a
+ * linter claims the categories it can lint (ADR-022). Excused only by the draw:
+ * if none of the categories appeared there is nothing to prove, so an unlucky
+ * window never costs a gate. Nothing the player *chooses* can excuse it, which
+ * is what stops a config owing the gate nothing.
+ */
+const masteryCheck = (
 	config: Config,
-	focusCategory: CategoryCode
+	categories: readonly CategoryCode[]
 ): GateCheckPart => {
 	const level = config.level ?? 1;
 	return {
 		gateCheck: ({ window }) => {
-			const tally = window.byCategory[focusCategory] ?? {
-				seen: 0,
-				correct: 0,
-			};
-			const seen = tally.seen > 0;
+			const tallies = categories.map(
+				(category) => window.byCategory[category] ?? { seen: 0, correct: 0 }
+			);
+			const seenCount = tallies.reduce((sum, tally) => sum + tally.seen, 0);
+			const correct = tallies.reduce((sum, tally) => sum + tally.correct, 0);
+			const seen = seenCount > 0;
 			// The demand clamps to appearances — a level can never outnumber the
 			// window, so an L10 mastery reads "every poll of the category, always".
-			const target = seen ? Math.min(level, tally.seen) : level;
+			const target = seen ? Math.min(level, seenCount) : level;
 			return {
 				label: `${config.label} mastery`,
-				progress: seen ? `${tally.correct}/${target}` : "not seen",
-				current: tally.correct,
+				progress: seen ? `${correct}/${target}` : "not seen",
+				current: correct,
 				target,
-				state: checkState(tally.correct >= target, window, !seen),
+				state: checkState(correct >= target, window, !seen),
 			};
 		},
 		demand: () =>
 			level === 1
-				? `${config.label}: get one right if ${focusCategory} appears`
-				: `${config.label}: get ${level} right if ${focusCategory} appears`,
+				? `${config.label}: get one right if ${categoryList(categories)} appears`
+				: `${config.label}: get ${level} right if ${categoryList(categories)} appears`,
 	};
 };
 
@@ -277,65 +272,6 @@ const breadthCheck = (config: Config): GateCheckPart => {
 	};
 };
 
-const windowClosed = (window: GateWindow): boolean =>
-	window.answered >= SLICE_WINDOW;
-
-/**
- * The linter's verdict. Three cases the old rule collapsed into one "skipped":
- *
- * 1. **Never offered** (`offered === 0`) — no poll of its category turned up, or
- *    none had two wrong options to cross out. Unavoidable, so still `skipped`:
- *    an unlucky draw must never cost a gate.
- * 2. **Offered and declined** (`offered > 0`, `polls === 0`) — the chance came
- *    and the pledge was not taken. ADR-022 makes this a failure, since a linter
- *    that is never run is a config that owes nothing.
- * 3. **Pledged** (`polls > 0`) — every linted poll must be correct.
- *
- * TODO(marciano): implement. The rule choice is in case 2, and it decides when
- * the verdict lands:
- *
- *   (a) *one offer redeems the window* — a later lintable poll can still take
- *       the pledge, so a declined poll only fails once the window closes
- *       (`windowClosed(window)`), and stays "running" until then. One fee per
- *       window.
- *   (b) *every offer must be taken* — the first declined poll fails on the
- *       spot, like `coldStartCheck`'s broken opening streak. One fee per
- *       lintable poll, so a JS-heavy window gets expensive fast.
- *
- * Keep case 3's existing shape: a fail is immediate (`correct < polls`), a
- * success waits for the close, because a later lint could still break it.
- */
-const lintState = (tally: LintTally, window: GateWindow): CheckState => {
-	if (tally.polls === 0) return "skipped";
-	if (tally.correct < tally.polls) return "failed";
-	return windowClosed(window) ? "success" : "running";
-};
-
-const lintProgress = (tally: LintTally): string | undefined => {
-	if (tally.polls > 0) return `${tally.correct}/${tally.polls}`;
-	// "not linted" reads as an excuse; when the chance was there and passed up,
-	// the row has to say the pledge was owed.
-	return (tally.offered ?? 0) > 0 ? "declined the lint" : "not linted";
-};
-
-const lintCorrectCheck = (config: Config): GateCheckPart => ({
-	gateCheck: ({ window }) => {
-		const tally = window.lintedByConfig?.[config.id] ?? {
-			offered: 0,
-			polls: 0,
-			correct: 0,
-		};
-		return {
-			label: `${config.label} linted`,
-			progress: lintProgress(tally),
-			current: tally.correct,
-			target: tally.polls,
-			state: lintState(tally, window),
-		};
-	},
-	demand: () => `answer every ${config.label}-linted poll correctly`,
-});
-
 type ContributedCheckKind = Exclude<CheckKind, "correct" | "defeat-device">;
 
 const CHECK_BUILDERS: Record<
@@ -347,12 +283,15 @@ const CHECK_BUILDERS: Record<
 	"min-correct": minCorrectCheck,
 	"no-double-miss": noDoubleMissCheck,
 	breadth: breadthCheck,
-	"lint-correct": lintCorrectCheck,
 };
 
 /** The check half: the requirement the config adds to the gate window. */
 const checkOf = (config: Config): GateCheckPart => {
-	if (config.focusCategory) return focusCheck(config, config.focusCategory);
+	if (config.focusCategory) return masteryCheck(config, [config.focusCategory]);
+	// A linter owes competence in what it lints, never proof that it was used:
+	// forcing the fee makes an unaffordable window fatal (ADR-031's trap rule).
+	if (config.eliminatesWrongOptionsFor?.length)
+		return masteryCheck(config, config.eliminatesWrongOptionsFor);
 	// "correct" and "defeat-device" are synthesized by gate.model, which is the
 	// only place with the whole checklist in hand: "correct" is present only
 	// while a config carrying it (Unit Tests) is installed, and the defeat

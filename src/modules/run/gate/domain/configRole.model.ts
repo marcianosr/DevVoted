@@ -19,7 +19,7 @@ export const roleOf = (
 	// player, it only wakes up once another check has already failed.
 	if (
 		config.focusCategory ||
-		config.check === "lint-correct" ||
+		config.eliminatesWrongOptionsFor?.length ||
 		config.check === "defeat-device"
 	)
 		return "conditional";
