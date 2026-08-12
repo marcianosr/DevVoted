@@ -10,7 +10,7 @@ import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
 export const RunPrep = () => {
 	const { view } = useTodaysRun();
-	const { sendWith, commit, busy } = useRunActions();
+	const { send, sendWith, commit, busy } = useRunActions();
 	const navigate = useNavigate();
 	const countdown = useNextPollsCountdown();
 
@@ -24,6 +24,11 @@ export const RunPrep = () => {
 			}
 		: undefined;
 	const gateLocked = view.pollsExhausted && !countdown.isOpen;
+
+	const dropConfig = (configId: string) => {
+		if (busy) return;
+		send({ type: "drop", configId });
+	};
 
 	const startGate = () => {
 		if (busy) return;
@@ -61,6 +66,7 @@ export const RunPrep = () => {
 				startLock={gateLocked ? countdown.label : undefined}
 				shopAction={backToShop}
 				onStartGate={startGate}
+				onDropConfig={dropConfig}
 			/>
 		</Screen>
 	);

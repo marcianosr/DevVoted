@@ -32,6 +32,15 @@ export const Default: Story = {
 		configs: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
 		shopAction: { label: "← Back to shop", onClick: () => {} },
 		onStartGate: () => {},
+		onDropConfig: () => {},
+	},
+};
+
+/** Past the shop door: the drop panel loses its "sell it instead" way out. */
+export const ShopClosed: Story = {
+	args: {
+		...Default.args,
+		shopAction: undefined,
 	},
 };
 

@@ -22,6 +22,7 @@ const base = {
 	},
 	configs: [CONFIGS.js, CONFIGS.eslint],
 	onStartGate: vi.fn(),
+	onDropConfig: vi.fn(),
 };
 
 describe(PrepScreen, () => {
@@ -108,16 +109,74 @@ describe(PrepScreen, () => {
 		expect(screen.getByTestId("swatch")).toBeInTheDocument();
 	});
 
-	it("lists the installed configs as plain chips", () => {
+	it("lists the installed configs", () => {
 		render(<PrepScreen {...base} />);
 		expect(screen.getByText(".js")).toBeInTheDocument();
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /^\.js/ })
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /^ESLint/ })
-		).not.toBeInTheDocument();
+	});
+
+	describe("the doorstep drop (ADR-027)", () => {
+		const droppable = { ...base, configs: [CONFIGS.js, CONFIGS.eslint] };
+
+		it("drops the config the player confirms, naming it on the button", () => {
+			const onDropConfig = vi.fn();
+			render(<PrepScreen {...droppable} onDropConfig={onDropConfig} />);
+			fireEvent.click(screen.getByRole("button", { name: /^\.js/ }));
+			fireEvent.click(screen.getByRole("button", { name: "Drop .js" }));
+			expect(onDropConfig).toHaveBeenCalledWith("js");
+		});
+
+		it("asks for a second click, so one stray click never sheds a config", () => {
+			const onDropConfig = vi.fn();
+			render(<PrepScreen {...droppable} onDropConfig={onDropConfig} />);
+			fireEvent.click(screen.getByRole("button", { name: /^\.js/ }));
+			expect(onDropConfig).not.toHaveBeenCalled();
+		});
+
+		it("warns that dropping refunds nothing while the shop is still open", () => {
+			render(
+				<PrepScreen
+					{...droppable}
+					shopAction={{ label: "← Back to shop", onClick: vi.fn() }}
+				/>
+			);
+			fireEvent.click(screen.getByRole("button", { name: /^\.js/ }));
+			expect(
+				screen.getByText(/Uninstall it in the shop to bank the refund/)
+			).toBeInTheDocument();
+		});
+
+		it("says the shop is closed once prep sits behind the gate door", () => {
+			render(<PrepScreen {...droppable} />);
+			fireEvent.click(screen.getByRole("button", { name: /^\.js/ }));
+			expect(
+				screen.getByText(/the shop is closed until the next gate/)
+			).toBeInTheDocument();
+		});
+
+		it("refuses every drop at the gate's width demand, naming the demand", () => {
+			render(<PrepScreen {...droppable} minConfigs={2} gateNumber={4} />);
+			expect(
+				screen.queryByRole("button", { name: /^\.js/ })
+			).not.toBeInTheDocument();
+			expect(
+				screen.getAllByText(
+					"Gate 4 demands 2 configs — dropping would sink the build below it."
+				)
+			).toHaveLength(droppable.configs.length);
+		});
+
+		it("refuses the drop of a last config even where the gate demands none", () => {
+			render(<PrepScreen {...base} minConfigs={0} configs={[CONFIGS.js]} />);
+			expect(
+				screen.queryByRole("button", { name: /^\.js/ })
+			).not.toBeInTheDocument();
+			expect(
+				screen.getByText(
+					"Your only config — dropping it would leave nothing to clear a gate with."
+				)
+			).toBeInTheDocument();
+		});
 	});
 
 	it("mentions the gate's width demand in the build summary", () => {

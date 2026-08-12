@@ -650,6 +650,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							onClick: () => setRewardStep("shop"),
 						}}
 						onStartGate={() => dispatch({ type: "finish-reward" })}
+						onDropConfig={(id) => dispatch({ type: "drop", configId: id })}
 					/>
 				</Screen>
 			)}

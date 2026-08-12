@@ -1,3 +1,5 @@
+import { useState, type ReactNode } from "react";
+
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import type {
@@ -6,6 +8,7 @@ import type {
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import { Button } from "~/ui/Button.component";
 import type { ScreenAction } from "~/ui/Screen.ui";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
@@ -22,18 +25,80 @@ type PrepScreenProps = {
 	startLock?: string;
 	shopAction?: ScreenAction;
 	onStartGate: () => void;
+	onDropConfig: (configId: string) => void;
 };
 
-const PipelineChips = ({ configs }: Pick<PrepScreenProps, "configs">) => (
-	<section className="flex flex-col gap-3 rounded border border-zinc-800 px-4 py-3">
-		<Title as="h3">Your pipeline</Title>
-		<div className="flex flex-wrap gap-2">
-			{configs.map((config) => (
-				<ConfigChip key={config.id} config={config} noTooltip />
-			))}
-		</div>
-	</section>
-);
+type PipelineChipsProps = Pick<
+	PrepScreenProps,
+	"configs" | "gateNumber" | "minConfigs" | "onDropConfig"
+> & { shopIsOpen: boolean };
+
+const PipelineChips = ({
+	configs,
+	gateNumber,
+	minConfigs,
+	shopIsOpen,
+	onDropConfig,
+}: PipelineChipsProps) => {
+	const [pinnedId, setPinnedId] = useState<string | null>(null);
+	const atMinimumWidth = configs.length <= Math.max(1, minConfigs);
+
+	const blockedReason = (
+		<Paragraph as="span" size="sm">
+			{minConfigs >= 2
+				? `Gate ${gateNumber} demands ${minConfigs} configs — dropping would sink the build below it.`
+				: "Your only config — dropping it would leave nothing to clear a gate with."}
+		</Paragraph>
+	);
+
+	const dropPanel = (config: Config): ReactNode => (
+		<span className="flex flex-col items-start gap-2">
+			<Paragraph as="span" size="sm">
+				{shopIsOpen
+					? "Drops for nothing back. Uninstall it in the shop to bank the refund."
+					: "Drops for nothing back — the shop is closed until the next gate."}
+			</Paragraph>
+			<Button
+				variant="danger"
+				size="small"
+				onClick={() => {
+					setPinnedId(null);
+					onDropConfig(config.id);
+				}}
+			>
+				Drop {config.label}
+			</Button>
+		</span>
+	);
+
+	const chipFor = (config: Config): ReactNode => {
+		if (atMinimumWidth)
+			return (
+				<ConfigChip key={config.id} config={config} tooltip={blockedReason} />
+			);
+		const pinned = config.id === pinnedId;
+		return (
+			<ConfigChip
+				key={config.id}
+				config={config}
+				tooltip={dropPanel(config)}
+				interactiveTooltip
+				tooltipHint="Click to drop"
+				tooltipPinned={pinned}
+				onTooltipDismiss={() => setPinnedId(null)}
+				onClick={() => setPinnedId(pinned ? null : config.id)}
+				ariaExpanded={pinned}
+			/>
+		);
+	};
+
+	return (
+		<section className="flex flex-col gap-3 rounded border border-zinc-800 px-4 py-3">
+			<Title as="h3">Your pipeline</Title>
+			<div className="flex flex-wrap gap-2">{configs.map(chipFor)}</div>
+		</section>
+	);
+};
 
 export const PrepScreen = ({
 	gateNumber,
@@ -47,11 +112,18 @@ export const PrepScreen = ({
 	startLock,
 	shopAction,
 	onStartGate,
+	onDropConfig,
 }: PrepScreenProps) => {
 	const gateName = swatchForGate(gateNumber)?.gateName ?? `Gate ${gateNumber}`;
 	return (
 		<div className="flex flex-col gap-6">
-			<PipelineChips configs={configs} />
+			<PipelineChips
+				configs={configs}
+				gateNumber={gateNumber}
+				minConfigs={minConfigs}
+				shopIsOpen={shopAction !== undefined}
+				onDropConfig={onDropConfig}
+			/>
 			<GateStakeReceipt
 				gateNumber={gateNumber}
 				pollsPerGate={pollsPerGate}
