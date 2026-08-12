@@ -8,7 +8,6 @@ import {
 	isAwaitingTomorrow,
 	lintApplies,
 	lintCost,
-	rebuildCost,
 	type RunPoll,
 	type RunState,
 	type RunStatus,
@@ -23,6 +22,7 @@ import {
 	MAX_EXTENSIONS,
 	MAX_LOCKED_OFFERS,
 	offerCount,
+	rebuildCost,
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	checkStatuses,
@@ -51,7 +51,7 @@ import {
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 
-export type PollOptionView = { readonly id: string; readonly label: string };
+type PollOptionView = { readonly id: string; readonly label: string };
 
 /** One rung of the storage-plan ladder, as the shop row renders it. */
 export type StoragePlanOption = {
@@ -149,18 +149,18 @@ export type RunView = {
 	readonly log: readonly string[];
 };
 
-export type AnswerVerdict = {
+type AnswerVerdict = {
 	readonly outcome: AnswerOutcome;
 	readonly correctAnswers: readonly string[];
 };
 
-export const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
+const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
 	const last = view.answeredThisGate.at(-1);
 	if (!last) return null;
 	return { outcome: last.outcome, correctAnswers: last.correct ?? [] };
 };
 
-export type AnswerDifficulty = {
+type AnswerDifficulty = {
 	readonly multiplier: number;
 	readonly optionCount: number;
 	readonly isMultiple: boolean;
@@ -347,7 +347,7 @@ export const toRunView = (state: RunState): RunView => {
 	};
 };
 
-export type ShopExit = {
+type ShopExit = {
 	readonly label: string;
 	readonly disabled: boolean;
 	readonly hint?: string;

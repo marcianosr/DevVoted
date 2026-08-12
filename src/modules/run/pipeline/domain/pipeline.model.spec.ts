@@ -8,7 +8,6 @@ import {
 	Pipeline,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
-	coverageProfileFor,
 	effectiveRequirement,
 	gateClearPayout,
 	canLint,
@@ -16,7 +15,6 @@ import {
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 	rewardMultiplierFor,
-	storageOnClearFor,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 
@@ -30,29 +28,6 @@ const at = (
 	category: AnswerContext["category"],
 	answeredBefore = 1
 ): AnswerContext => ({ category, answeredBefore });
-
-describe("coverageProfileFor", () => {
-	it("returns the identity profile for a bare pipeline", () => {
-		expect(coverageProfileFor([])).toEqual({ mult: 1, add: 0 });
-	});
-
-	it("multiplies coverage mults and sums flat adds across the build", () => {
-		const profile = coverageProfileFor([
-			CONFIGS.agentsMd,
-			CONFIGS.codeCoverage,
-		]);
-		expect(profile.mult).toBe(2);
-		expect(profile.add).toBe(0.5);
-	});
-
-	it("counts Intellisense and Coverage as coverage configs now, not storage ones", () => {
-		const profile = coverageProfileFor([
-			CONFIGS.intellisense,
-			CONFIGS.coverageGain,
-		]);
-		expect(profile.mult).toBe(3); // 1.5 × 2
-	});
-});
 
 describe("effectiveRequirement", () => {
 	it("returns the base for a bare pipeline", () => {
@@ -81,14 +56,6 @@ describe("rewardMultiplierFor", () => {
 	});
 });
 
-describe("storageOnClearFor", () => {
-	it("is 0 for a bare pipeline and sums flat clear payouts", () => {
-		expect(storageOnClearFor([])).toBe(0);
-		expect(storageOnClearFor([CONFIGS.unitTests])).toBe(32);
-		expect(storageOnClearFor([CONFIGS.unitTests, CONFIGS.agentsMd])).toBe(32);
-	});
-});
-
 describe("pipelineModifiersFor", () => {
 	it("prices a bare pipeline at the base gate reward with identity multipliers", () => {
 		expect(pipelineModifiersFor([])).toEqual({
@@ -110,6 +77,13 @@ describe("pipelineModifiersFor", () => {
 				coverageAdd: 0,
 			}
 		);
+	});
+
+	it("multiplies coverage mults across the build instead of summing them", () => {
+		expect(
+			pipelineModifiersFor([CONFIGS.intellisense, CONFIGS.coverageGain])
+				.coverageMultiplier
+		).toBe(3); // 1.5 × 2
 	});
 });
 

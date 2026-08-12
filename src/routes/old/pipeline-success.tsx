@@ -2,7 +2,7 @@
 // Internal links still use pre-move paths; unmaintained, delete-on-cleanup.
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
-import Content from "~/components/Content.component";
+import { Screen } from "~/ui/Screen.ui";
 import { getStorageInfo } from "~/domains/economy/services/configManager.service";
 import { getWindowContextFn } from "~/domains/runs/api/runs";
 import { PipelineUpgradeContainer } from "~/domains/runs/components/PipelineUpgradeContainer.component";
@@ -48,7 +48,7 @@ function PipelineSuccessRoute() {
 	const pendingCards = run.pendingUpgradeCards;
 
 	return (
-		<Content transition="fade">
+		<Screen transition="fade">
 			<PipelineSuccessScreen
 				gateNumber={gateNumber}
 				rewards={rewards}
@@ -74,6 +74,6 @@ function PipelineSuccessRoute() {
 					</Button>
 				)}
 			</PipelineSuccessScreen>
-		</Content>
+		</Screen>
 	);
 }

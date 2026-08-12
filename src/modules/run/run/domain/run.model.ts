@@ -44,7 +44,6 @@ import {
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	checkStatuses,
-	gateDemands,
 	gatePassed,
 } from "~/modules/run/gate/domain/gate.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
@@ -256,8 +255,6 @@ export const createRun = (
 	justUnlockedSlots: [],
 	log: [],
 });
-
-export { gateDemands, canLint, rebuildCost };
 
 const withLog = (state: RunState, ...lines: string[]): readonly string[] => [
 	...state.log,
@@ -945,8 +942,3 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return drop(state, action.configId);
 	return state;
 };
-
-export {
-	checkStatuses,
-	currentRequirement,
-} from "~/modules/run/gate/domain/gate.model";

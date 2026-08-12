@@ -9,7 +9,7 @@ import type {
 	CheckStatus,
 } from "~/modules/run/config/domain/effect.model";
 
-export type ConfigRole = "requirement" | "conditional" | "passive";
+type ConfigRole = "requirement" | "conditional" | "passive";
 
 export const roleOf = (
 	config: Config,
@@ -105,37 +105,3 @@ export const preRunRoleRows = (
 		status: undefined,
 		note: undefined,
 	}));
-
-export type StakesRequirement = {
-	readonly count: number;
-	readonly label: string;
-};
-
-export const stakesRequirement = (
-	configs: readonly Config[],
-	checks: readonly CheckStatus[]
-): StakesRequirement => {
-	const correctConfig = configs.find((config) => config.check === "correct");
-	const correctCheck = checks.find((check) => check.label === "Correct");
-	return {
-		count: correctCheck?.target ?? 1,
-		label: correctConfig?.label ?? "correct",
-	};
-};
-
-export const extraGateRequirements = (
-	configs: readonly Config[],
-	checks: readonly CheckStatus[]
-): readonly string[] =>
-	checks
-		.filter((check) => {
-			if (check.label === "Correct") return false;
-			const source = configs.find(
-				(config) => config.id === check.sourceConfigId
-			);
-			if (!source) return true;
-			// Conditionals (focus mastery, lint pledges) list with their config,
-			// not as standing gate demands.
-			return roleOf(source, checks) === "requirement";
-		})
-		.map((check) => check.description ?? check.label);

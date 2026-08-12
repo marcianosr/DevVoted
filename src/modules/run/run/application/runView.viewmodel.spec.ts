@@ -22,7 +22,6 @@ import { createMockRunView } from "~/test/runView.factory";
 import {
 	correctOptionIdsFor,
 	latestAnswerScore,
-	latestAnswerVerdict,
 	type RunView,
 	shopExitFor,
 	toRunView,
@@ -309,34 +308,6 @@ describe("the storage-plan ladder in the shop (ADR-030)", () => {
 	it("marks the plan the run is actually on", () => {
 		const view = toRunView({ ...answering(), gatesCleared: 4, storagePlan: 3 });
 		expect(view.storagePlans.find((rung) => rung.current)?.tier).toBe(3);
-	});
-});
-
-describe("latestAnswerVerdict", () => {
-	it("is null before any answer this gate", () => {
-		expect(latestAnswerVerdict(toRunView(answering()))).toBeNull();
-	});
-
-	it("reports a correct pick", () => {
-		const state = runReducer(answering(), {
-			type: "answer",
-			optionIds: ["q0-a"],
-		});
-		expect(latestAnswerVerdict(toRunView(state))).toEqual({
-			outcome: "correct",
-			correctAnswers: ["Yes"],
-		});
-	});
-
-	it("reports a wrong pick with the answer that was right", () => {
-		const state = runReducer(answering(), {
-			type: "answer",
-			optionIds: ["q0-b"],
-		});
-		expect(latestAnswerVerdict(toRunView(state))).toEqual({
-			outcome: "wrong",
-			correctAnswers: ["Yes"],
-		});
 	});
 });
 

@@ -1,6 +1,6 @@
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 
-export const RUN_ROUTES = {
+const RUN_ROUTES = {
 	start: "/run",
 	configure: "/run/configure",
 	prep: "/run/prep",
@@ -12,17 +12,17 @@ export const RUN_ROUTES = {
 	over: "/run/over",
 } as const;
 
-export type RunRoutePath = (typeof RUN_ROUTES)[keyof typeof RUN_ROUTES];
+type RunRoutePath = (typeof RUN_ROUTES)[keyof typeof RUN_ROUTES];
 
 /**
  * Deliberately NOT in RUN_ROUTES: the community board is a breather outside
  * the climb, so the sync must never police it — it is only ever a target.
  */
-export const COMMUNITY_ROUTE = "/run/community";
+const COMMUNITY_ROUTE = "/run/community";
 
-export type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
+type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
 
-export const routesForStatus = (
+const routesForStatus = (
 	view: Pick<RunView, "status" | "gatesCleared"> | null
 ): readonly [RunRoutePath, ...RunRoutePath[]] => {
 	if (!view) return [RUN_ROUTES.start];

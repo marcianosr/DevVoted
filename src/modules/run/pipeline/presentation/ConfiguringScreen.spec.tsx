@@ -55,9 +55,7 @@ describe(ConfiguringScreen, () => {
 		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
 		expect(screen.queryByText("×1")).not.toBeInTheDocument();
 		expect(screen.getByText("Fail your build:")).toBeInTheDocument();
-		expect(screen.getByText("1 config disabled for the run")).toHaveClass(
-			"text-cinnabar"
-		);
+		expect(screen.getByText("Remove 1 config")).toHaveClass("text-cinnabar");
 	});
 
 	it("captions the gate with its coverage multiplier", () => {
@@ -109,8 +107,10 @@ describe(ConfiguringScreen, () => {
 
 	it("renders the bench and pipeline columns side by side", () => {
 		render(<ConfiguringScreen {...base} />);
+		// The bench aside carries no heading anymore — its instruction line is
+		// what identifies it.
 		expect(
-			screen.getByRole("heading", { name: "Starter configs" })
+			screen.getByText("Click a config to add it to your pipeline")
 		).toBeInTheDocument();
 		expect(
 			screen.getByRole("heading", { name: "Your pipeline" })
@@ -214,17 +214,14 @@ describe(ConfiguringScreen, () => {
 
 	it("labels a pipeline row's check and reward, red and green", () => {
 		render(<ConfiguringScreen {...base} />);
-		// Both installed configs carry a check here (Unit Tests' check,
-		// .js's focus demand), so the label itself is not unique — the row's
-		// value is.
-		expect(screen.getAllByText("Check").length).toBeGreaterThan(0);
+		// The fact rows mark a demand with "!" and a payoff with "v" — both
+		// installed configs carry a demand, so the mark itself is not unique.
+		expect(screen.getAllByText("!").length).toBeGreaterThan(0);
 		expect(screen.getByText("1 correct answer")).toHaveClass("text-cinnabar");
-		expect(screen.getAllByText("Reward").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("v").length).toBeGreaterThan(0);
 		// "+32KB" is itself wrapped in a bold highlight span (emphasizeNumbers) —
 		// the tone class lives on its enclosing paragraph.
-		expect(screen.getByText("+32KB").parentElement).toHaveClass(
-			"text-viridian"
-		);
+		expect(screen.getByText("+32KB").parentElement).toHaveClass("text-celadon");
 	});
 
 	it("renders the bench offers", () => {
@@ -343,8 +340,10 @@ describe("stack mode (ADR-026)", () => {
 
 	it("replaces the bench and pipeline with the one stack decision", () => {
 		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.getByText("Pick your stack")).toBeInTheDocument();
-		expect(screen.queryByText("Starter configs")).not.toBeInTheDocument();
+		expect(screen.getByText("Pick your build")).toBeInTheDocument();
+		expect(
+			screen.queryByText("Click a config to add it to your pipeline")
+		).not.toBeInTheDocument();
 		expect(screen.queryByText("Your pipeline")).not.toBeInTheDocument();
 	});
 
@@ -352,9 +351,7 @@ describe("stack mode (ADR-026)", () => {
 		render(<ConfiguringScreen {...stackBase} />);
 		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
 		expect(screen.getByText("Succeed your build:")).toBeInTheDocument();
-		expect(
-			screen.getByText("1 config disabled for the run")
-		).toBeInTheDocument();
+		expect(screen.getByText("Remove 1 config")).toBeInTheDocument();
 	});
 
 	it("carries the start action inside the build summary, not the screen footer", () => {
@@ -374,16 +371,16 @@ describe("stack mode (ADR-026)", () => {
 		// An unpicked screen holds zero configs — the stake must not open on
 		// "All configs disabled — run over" before the player has done anything.
 		render(<ConfiguringScreen {...stackBase} />);
-		expect(
-			screen.getByText("1 config disabled for the run")
-		).toBeInTheDocument();
+		expect(screen.getByText("Remove 1 config")).toBeInTheDocument();
 		expect(screen.queryByText(/run over/)).not.toBeInTheDocument();
 	});
 
 	it("stays on the classic bench screen when no stacks are offered", () => {
 		render(<ConfiguringScreen {...base} />);
-		expect(screen.queryByText("Pick your stack")).not.toBeInTheDocument();
-		expect(screen.getByText("Starter configs")).toBeInTheDocument();
+		expect(screen.queryByText("Pick your build")).not.toBeInTheDocument();
+		expect(
+			screen.getByText("Click a config to add it to your pipeline")
+		).toBeInTheDocument();
 	});
 
 	it("expands the picked stack into its trimmed preview — demand, payoff, and live state", () => {
@@ -394,7 +391,7 @@ describe("stack mode (ADR-026)", () => {
 		);
 		// Demand ("!") and payoff ("v") are always visible — the preset view.
 		expect(
-			screen.getByText("If JavaScript poll occurs you must answer correctly")
+			screen.getByText("Answer JavaScript polls correct when they show")
 		).toBeInTheDocument();
 		// The gives text bolds its number in a nested span (emphasizeNumbers), so
 		// a plain string match won't see across the element boundary — match on
@@ -438,8 +435,10 @@ describe("stack mode (ADR-026)", () => {
 		fireEvent.click(
 			screen.getByRole("button", { name: /Customize all 3 slots/ })
 		);
-		expect(screen.getByText("Starter configs")).toBeInTheDocument();
-		expect(screen.queryByText("Pick your stack")).not.toBeInTheDocument();
+		expect(
+			screen.getByText("Click a config to add it to your pipeline")
+		).toBeInTheDocument();
+		expect(screen.queryByText("Pick your build")).not.toBeInTheDocument();
 	});
 
 	it("walks back from the bench to the stacks", () => {
@@ -448,7 +447,7 @@ describe("stack mode (ADR-026)", () => {
 			screen.getByRole("button", { name: /Customize all 3 slots/ })
 		);
 		fireEvent.click(screen.getByRole("button", { name: /Back to stacks/ }));
-		expect(screen.getByText("Pick your stack")).toBeInTheDocument();
+		expect(screen.getByText("Pick your build")).toBeInTheDocument();
 		expect(screen.getAllByRole("radio")).toHaveLength(STARTER_STACKS.length);
 	});
 

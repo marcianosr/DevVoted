@@ -32,7 +32,7 @@ const configs = [CONFIGS.unitTests, CONFIGS.coverageGain];
 // own chip so the assertions don't ride on the list's sort order.
 const detailFor = (label: string) => {
 	const row = screen.getByText(label).closest("div.grid");
-	const detail = row?.querySelector(".border-l");
+	const detail = row?.querySelector(".row-start-2");
 	if (!detail) throw new Error(`no detail cell for ${label}`);
 	return detail;
 };

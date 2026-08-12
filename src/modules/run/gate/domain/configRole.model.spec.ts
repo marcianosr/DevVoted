@@ -2,12 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
-import {
-	extraGateRequirements,
-	roleOf,
-	roleRows,
-	stakesRequirement,
-} from "~/modules/run/gate/domain/configRole.model";
+import { roleOf, roleRows } from "~/modules/run/gate/domain/configRole.model";
 
 const config = (
 	over: Partial<Config> & Pick<Config, "id" | "label">
@@ -141,9 +136,7 @@ describe("roleRows", () => {
 		});
 		const [row] = roleRows([levelled], [mastery]);
 		expect(row.gives).toBe("TypeScript polls reward ×1.5 coverage");
-		expect(row.needs).toBe(
-			"If TypeScript poll occurs you must answer correctly"
-		);
+		expect(row.needs).toBe("Answer TypeScript polls correct when they show");
 	});
 
 	it("drops wordy progress under the description instead of the value slot", () => {
@@ -176,55 +169,5 @@ describe("roleRows", () => {
 		expect(row.description).toBe(
 			"+32KB storage on gate clear — demands 1 correct answer, rising as you climb."
 		);
-	});
-});
-
-describe("stakesRequirement", () => {
-	it("reads the count from the Correct check and the label from its config", () => {
-		const raised = check({
-			label: "Correct",
-			sourceConfigId: "unit-tests",
-			target: 2,
-		});
-		expect(stakesRequirement([unitTests], [raised])).toEqual({
-			count: 2,
-			label: "Unit Tests",
-		});
-	});
-
-	it("falls back to a single correct answer when no check exists yet", () => {
-		expect(stakesRequirement([unitTests], [])).toEqual({
-			count: 1,
-			label: "Unit Tests",
-		});
-	});
-});
-
-describe("extraGateRequirements", () => {
-	const coverageCheck = check({
-		label: "Coverage",
-		sourceConfigId: "coverage-gain",
-		description: "+4% coverage this window",
-	});
-	const masteryCheck = check({
-		label: ".ts mastery",
-		sourceConfigId: "ts",
-		state: "skipped",
-	});
-
-	it("lists always-on requirements beyond the fixed correct one", () => {
-		const demands = extraGateRequirements(
-			[unitTests, coverageGain],
-			[correctCheck, coverageCheck]
-		);
-		expect(demands).toEqual(["+4% coverage this window"]);
-	});
-
-	it("excludes conditional Focus checks — they only bite when the category shows", () => {
-		const demands = extraGateRequirements(
-			[unitTests, focusTs],
-			[correctCheck, masteryCheck]
-		);
-		expect(demands).toEqual([]);
 	});
 });

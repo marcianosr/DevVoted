@@ -79,14 +79,14 @@ export const rewardMultiplierFor = (configs: readonly Config[]): number =>
 	);
 
 /** Flat KB paid on top of the gate reward when the gate clears (Unit Tests' +32). */
-export const storageOnClearFor = (configs: readonly Config[]): number =>
+const storageOnClearFor = (configs: readonly Config[]): number =>
 	effects(configs).reduce(
 		(total, effect) => total + (effect.storageOnClear ?? 0),
 		0
 	);
 
 /** Build-wide coverage boost applied to every correct answer (Focus category bonuses excluded). */
-export const coverageProfileFor = (
+const coverageProfileFor = (
 	configs: readonly Config[]
 ): { readonly mult: number; readonly add: number } =>
 	configs.reduce(

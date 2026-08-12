@@ -6,7 +6,7 @@ export const GATE_REWARD_KB = 32;
 export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 export const STORAGE_CAP_KB = 512;
 
-export type StoragePlan = {
+type StoragePlan = {
 	readonly tier: number;
 	readonly capKb: number;
 	readonly billKb: number;
@@ -56,7 +56,7 @@ export const storageCreditRate = (
 
 export const WRONG_COVERAGE_LOSS = 0.5;
 
-export const STREAK_COVERAGE_BONUS = 0.1;
+const STREAK_COVERAGE_BONUS = 0.1;
 
 export const streakMultiplier = (streak: number): number =>
 	1 + STREAK_COVERAGE_BONUS * streak;
@@ -64,9 +64,9 @@ export const streakMultiplier = (streak: number): number =>
 export const gateBaseMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;
 
-export const OPTION_COVERAGE_STEP = 0.1;
-export const MULTIPLE_CHOICE_COVERAGE_BONUS = 0.5;
-export const DIFFICULTY_BASELINE_OPTIONS = 3;
+const OPTION_COVERAGE_STEP = 0.1;
+const MULTIPLE_CHOICE_COVERAGE_BONUS = 0.5;
+const DIFFICULTY_BASELINE_OPTIONS = 3;
 
 export const pollDifficultyMultiplier = (
 	optionCount: number,

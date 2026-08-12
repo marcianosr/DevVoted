@@ -3,7 +3,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { clsx } from "clsx";
 
-import Content from "~/components/Content.component";
+import { Screen } from "~/ui/Screen.ui";
 import { useArchiveState } from "~/domains/economy/hooks/useArchiveState";
 import { getLastRunForGameOver } from "~/domains/runs/api/runs";
 import {
@@ -63,7 +63,7 @@ function RouteComponent() {
 	);
 
 	return (
-		<Content>
+		<Screen>
 			<div className="py-8 space-y-8">
 				<header>
 					<h1 className="text-4xl">
@@ -150,6 +150,6 @@ function RouteComponent() {
 					</Button>
 				</section>
 			</div>
-		</Content>
+		</Screen>
 	);
 }

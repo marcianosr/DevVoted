@@ -1,73 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import {
-	COMMUNITY_ROUTE,
-	RUN_ROUTES,
-	routesForStatus,
-	syncTarget,
-} from "~/modules/run/run/application/runRoutes.viewmodel";
+import { syncTarget } from "~/modules/run/run/application/runRoutes.viewmodel";
+import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 
-const climbing = (status: Parameters<typeof routesForStatus>[0] & object) => ({
+const climbing = (status: Pick<RunView, "status" | "gatesCleared">) => ({
 	...status,
 	awaitingTomorrow: false,
-});
-
-describe("routesForStatus", () => {
-	it("sends a day without a run to the start screen", () => {
-		expect(routesForStatus(null)).toEqual([RUN_ROUTES.start]);
-	});
-
-	it("maps the single-screen status to exactly its route", () => {
-		expect(routesForStatus({ status: "configuring", gatesCleared: 0 })).toEqual(
-			[RUN_ROUTES.configure]
-		);
-	});
-
-	// Configure already shows the gate name and its stake before the climb
-	// even starts, so gate 0 skips straight to the poll — no repeat page.
-	it("answers gate 0 straight from configure, skipping prep", () => {
-		expect(routesForStatus({ status: "answering", gatesCleared: 0 })).toEqual([
-			RUN_ROUTES.answer,
-		]);
-	});
-
-	// One server status, two page turns from gate 1 onward: the pre-gate
-	// stake, then the poll.
-	it("allows prep and answer past the first gate, with prep canonical", () => {
-		expect(routesForStatus({ status: "answering", gatesCleared: 1 })).toEqual([
-			RUN_ROUTES.prep,
-			RUN_ROUTES.answer,
-		]);
-	});
-
-	// One server status, four page turns: the payout, the answers, the shop,
-	// and the prep hub the shop feeds into (ADR-032) — the gate starts there.
-	it("allows reward, review, shop and prep while rewarding, with reward canonical", () => {
-		expect(routesForStatus({ status: "rewarding", gatesCleared: 1 })).toEqual([
-			RUN_ROUTES.reward,
-			RUN_ROUTES.review,
-			RUN_ROUTES.shop,
-			RUN_ROUTES.prep,
-		]);
-	});
-
-	// The failed gate closes on its answers too: strip → review, with the resume
-	// waiting on the review page. Strip stays canonical — landing on the status
-	// must always put the repair first.
-	it("allows strip and review while awaiting a strip, with strip canonical", () => {
-		expect(
-			routesForStatus({ status: "awaiting-strip", gatesCleared: 1 })
-		).toEqual([RUN_ROUTES.strip, RUN_ROUTES.review]);
-	});
-
-	it("routes both won and dead runs to the run-over screen", () => {
-		expect(routesForStatus({ status: "won", gatesCleared: 12 })).toEqual([
-			RUN_ROUTES.over,
-		]);
-		expect(routesForStatus({ status: "dead", gatesCleared: 3 })).toEqual([
-			RUN_ROUTES.over,
-		]);
-	});
 });
 
 describe("syncTarget", () => {
@@ -107,6 +45,8 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
+	// One server status, four page turns: the payout, the answers, the shop,
+	// and the prep hub the shop feeds into (ADR-032).
 	it("stays put on any of the reward pages while rewarding", () => {
 		expect(
 			syncTarget(
@@ -138,6 +78,36 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
+	// The failed gate closes on its answers too: strip → review, with the
+	// resume waiting on the review page.
+	it("stays put on the strip and review pages while a strip is owed", () => {
+		expect(
+			syncTarget(
+				"/run/strip",
+				climbing({ status: "awaiting-strip", gatesCleared: 1 }),
+				false
+			)
+		).toBeNull();
+		expect(
+			syncTarget(
+				"/run/review",
+				climbing({ status: "awaiting-strip", gatesCleared: 1 }),
+				false
+			)
+		).toBeNull();
+	});
+
+	// Landing on the status must always put the repair first.
+	it("redirects a stale screen to the strip page while a strip is owed", () => {
+		expect(
+			syncTarget(
+				"/run/answer",
+				climbing({ status: "awaiting-strip", gatesCleared: 1 }),
+				false
+			)
+		).toBe("/run/strip");
+	});
+
 	// The review is only ever this gate's answers, so it has no meaning once the
 	// status has moved on — the sync sends the player back to the live screen.
 	it("redirects the review page away once the gate is no longer being paid out", () => {
@@ -147,7 +117,7 @@ describe("syncTarget", () => {
 				climbing({ status: "answering", gatesCleared: 1 }),
 				false
 			)
-		).toBe(RUN_ROUTES.prep);
+		).toBe("/run/prep");
 	});
 
 	it("redirects a stale screen to the canonical route for the status", () => {
@@ -157,14 +127,14 @@ describe("syncTarget", () => {
 				climbing({ status: "rewarding", gatesCleared: 0 }),
 				false
 			)
-		).toBe(RUN_ROUTES.reward);
+		).toBe("/run/reward");
 		expect(
 			syncTarget(
 				"/run/shop",
 				climbing({ status: "answering", gatesCleared: 1 }),
 				false
 			)
-		).toBe(RUN_ROUTES.prep);
+		).toBe("/run/prep");
 	});
 
 	// The community board's "back to your run" always lands on plain `/run`,
@@ -177,7 +147,7 @@ describe("syncTarget", () => {
 				climbing({ status: "answering", gatesCleared: 1 }),
 				false
 			)
-		).toBe(RUN_ROUTES.prep);
+		).toBe("/run/prep");
 	});
 
 	// Gate 0 has no prep route at all (Configure already covers it), so a deep
@@ -189,18 +159,35 @@ describe("syncTarget", () => {
 				climbing({ status: "answering", gatesCleared: 0 }),
 				false
 			)
-		).toBe(RUN_ROUTES.answer);
+		).toBe("/run/answer");
 		expect(
 			syncTarget(
 				"/run/prep",
 				climbing({ status: "answering", gatesCleared: 0 }),
 				false
 			)
-		).toBe(RUN_ROUTES.answer);
+		).toBe("/run/answer");
+	});
+
+	it("routes a finished run to the run-over screen, won or dead", () => {
+		expect(
+			syncTarget(
+				"/run/answer",
+				climbing({ status: "won", gatesCleared: 12 }),
+				false
+			)
+		).toBe("/run/over");
+		expect(
+			syncTarget(
+				"/run/shop",
+				climbing({ status: "dead", gatesCleared: 3 }),
+				false
+			)
+		).toBe("/run/over");
 	});
 
 	it("sends a day without a run back to the start screen", () => {
-		expect(syncTarget("/run/configure", null, false)).toBe(RUN_ROUTES.start);
+		expect(syncTarget("/run/configure", null, false)).toBe("/run");
 	});
 
 	it("pulls the start screen forward into a live run", () => {
@@ -210,7 +197,7 @@ describe("syncTarget", () => {
 				climbing({ status: "configuring", gatesCleared: 0 }),
 				false
 			)
-		).toBe(RUN_ROUTES.configure);
+		).toBe("/run/configure");
 	});
 
 	it("stands down on paths that are not run screens", () => {
@@ -241,12 +228,12 @@ describe("syncTarget", () => {
 		} as const;
 
 		it("sends the answer screen to the community board", () => {
-			expect(syncTarget("/run/answer", locked, false)).toBe(COMMUNITY_ROUTE);
+			expect(syncTarget("/run/answer", locked, false)).toBe("/run/community");
 		});
 
 		it("sends every other run screen to the community board too", () => {
-			expect(syncTarget("/run", locked, false)).toBe(COMMUNITY_ROUTE);
-			expect(syncTarget("/run/shop", locked, false)).toBe(COMMUNITY_ROUTE);
+			expect(syncTarget("/run", locked, false)).toBe("/run/community");
+			expect(syncTarget("/run/shop", locked, false)).toBe("/run/community");
 		});
 
 		it("stays put once on the community board", () => {

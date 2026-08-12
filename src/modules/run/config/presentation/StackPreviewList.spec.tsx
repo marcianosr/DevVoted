@@ -22,7 +22,9 @@ describe(StackPreviewList, () => {
 		const rows = preRunRoleRows([CONFIGS.unitTests], checks);
 		render(<StackPreviewList rows={rows} />);
 		expect(screen.getByText("1 correct answer")).toBeInTheDocument();
-		expect(screen.getByText(/Then/)).toHaveTextContent("Then +32KB on clear");
+		expect(
+			screen.getByText((_, el) => el?.textContent === "+32KB on clear")
+		).toBeInTheDocument();
 	});
 
 	it("carries no live progress — preRunRoleRows already stripped it", () => {

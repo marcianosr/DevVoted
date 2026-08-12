@@ -100,7 +100,7 @@ describe("givesOf / needsOf", () => {
 	it("derives a focus config's L1 copy — base multiplier", () => {
 		expect(givesOf(CONFIGS.js)).toBe("JavaScript polls reward ×1.25 coverage");
 		expect(needsOf(CONFIGS.js)).toBe(
-			"If JavaScript poll occurs you must answer correctly"
+			"Answer JavaScript polls correct when they show"
 		);
 	});
 
@@ -109,7 +109,7 @@ describe("givesOf / needsOf", () => {
 			"JavaScript polls reward ×1.5 coverage"
 		);
 		expect(needsOf({ ...CONFIGS.js, level: 2 })).toBe(
-			"If JavaScript poll occurs you must answer correctly"
+			"Answer JavaScript polls correct when they show"
 		);
 	});
 
@@ -119,10 +119,8 @@ describe("givesOf / needsOf", () => {
 	});
 
 	it("derives Unit Tests' gives from its level", () => {
-		expect(givesOf(CONFIGS.unitTests)).toBe("Then +32KB on clear");
-		expect(givesOf({ ...CONFIGS.unitTests, level: 3 })).toBe(
-			"Then +96KB on clear"
-		);
+		expect(givesOf(CONFIGS.unitTests)).toBe("+32KB on clear");
+		expect(givesOf({ ...CONFIGS.unitTests, level: 3 })).toBe("+96KB on clear");
 	});
 });
 

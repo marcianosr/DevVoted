@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import Content from "~/components/Content.component";
+import { Screen } from "~/ui/Screen.ui";
 import { getAllPolls, getPollCreators } from "~/domains/polls/api/polls";
 import PollCategoryCount from "~/domains/polls/components/PollCategoryCount.component";
 import { getAllRunsServerFn } from "~/domains/runs/api/runs";
@@ -38,7 +38,7 @@ function RouteComponent() {
 	const runStats = runs.success ? computeRunStats(runs.data) : null;
 
 	return (
-		<Content>
+		<Screen>
 			<section className="space-y-12">
 				<div>
 					<h1 className="text-3xl underline">Polls & categories</h1>
@@ -80,7 +80,7 @@ function RouteComponent() {
 					</ul>
 				</div>
 			</section>
-		</Content>
+		</Screen>
 	);
 }
 

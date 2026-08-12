@@ -44,14 +44,12 @@ describe(RunHud, () => {
 		);
 		const hint = screen.getByRole("button", { name: "How gates work" });
 		expect(hint).toHaveTextContent("ⓘ");
-		// The numbers come from the run's own rules, not a hardcoded blurb: a 5-poll
-		// window and a gate 11 summit have to read back out of the explanation.
-		expect(screen.getByText(/Each gate is 5 polls/)).toHaveTextContent(
-			"Gate 11 ends the climb."
+		expect(screen.getByText(/Each gate contains 5 polls/)).toHaveTextContent(
+			"Clearing the gate earns you gate rewards"
 		);
 	});
 
-	it("names the free plan behind the storage info icon", () => {
+	it("explains the storage cap behind the storage info icon", () => {
 		render(
 			<RunHud
 				storage={120}
@@ -64,10 +62,14 @@ describe(RunHud, () => {
 				coverageByCategory={{}}
 			/>
 		);
-		expect(screen.getByText(/the free plan — no bill\./)).toBeInTheDocument();
+		const hint = screen.getByRole("button", { name: "How storage works" });
+		expect(hint).toHaveTextContent("ⓘ");
+		expect(
+			screen.getByText(/Current storage caps at 512KB/)
+		).toBeInTheDocument();
 	});
 
-	it("names the current plan's bill behind the storage info icon", () => {
+	it("reads the cap in the storage explanation from the run, not a hardcoded blurb", () => {
 		render(
 			<RunHud
 				storage={120}
@@ -81,9 +83,7 @@ describe(RunHud, () => {
 			/>
 		);
 		expect(
-			screen.getByText(
-				/this plan bills 8KB every closed window, pass or fail\./
-			)
+			screen.getByText(/Current storage caps at 640KB/)
 		).toBeInTheDocument();
 	});
 

@@ -1,11 +1,11 @@
 ---
 # DVTD-ylsm
 title: 'Group C: Delete dead surface (31 exports, 4 dead .ui.tsx, session-run orphan)'
-status: todo
+status: in-progress
 type: task
 priority: low
 created_at: 2026-08-12T09:12:53Z
-updated_at: 2026-08-12T09:12:53Z
+updated_at: 2026-08-12T14:48:12Z
 parent: DVTD-82c4
 ---
 
@@ -46,8 +46,12 @@ story, while `src/ui/ContentSection.component.tsx` (a pure pass-through to
 Overlaps DVTD-7tof.
 
 ## Todo
-- [ ] Delete the four dead components and the `session-run` orphan folder
-- [ ] Make spec-only exports private, test them through their real caller
-- [ ] Drop the `run.model.ts` re-export laundering
+- [x] Delete the four dead components and the `session-run` orphan folder (also collapsed the Content -> ContentSection -> Screen pass-through chain: 4 routes now use Screen directly)
+- [x] Make spec-only exports private, test them through their real caller (rules.model x5, runRoutes x4, runView x5, pipeline.model x2, configRole x3 deleted outright; STORAGE_CAP_KB kept — 3 live consumer files, the finding was stale)
+- [x] Drop the `run.model.ts` re-export laundering (runView now imports rebuildCost from draft.model)
 - [ ] Check intent on the five story-only files before deleting
-- [ ] Add a spec for `SwatchMark`; delete `ContentSection`
+- [x] Add a spec for `SwatchMark`; delete `ContentSection`
+
+## Progress note 2026-08-12
+
+All code work done and verified (121 files / 1465 tests green, tsc clean, lint:arch 0 violations, 591 modules — down from 600). Only open item: Marciano has not yet ruled which of the five story-only .ui.tsx files (PracticeBank, RevealScore, GameOverScreen, StepHeading, CoverageByCategory) are staged for unbuilt features.

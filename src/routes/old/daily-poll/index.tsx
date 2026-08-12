@@ -3,7 +3,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
-import Content from "~/components/Content.component";
+import { Screen } from "~/ui/Screen.ui";
 import { DevPollNavigator } from "~/components/DevPollNavigator.component";
 import { applyEffects } from "~/domains/economy/data/configs";
 import {
@@ -42,7 +42,7 @@ const DailyPoll: React.FC = () => {
 	}
 
 	return (
-		<Content transition="fade">
+		<Screen transition="fade">
 			<DevPollNavigator currentDate={currentDate} hasCustomDate={!!date} />
 			<DailyPollContainer
 				key={poll.id}
@@ -62,7 +62,7 @@ const DailyPoll: React.FC = () => {
 				lastEncounteredAt={lastEncounteredAt}
 				timesEncountered={timesEncountered}
 			/>
-		</Content>
+		</Screen>
 	);
 };
 
