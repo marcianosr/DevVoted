@@ -578,6 +578,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					<ShopScreen
 						storage={view.storage}
 						stake={view.gateStake}
+						atMinimumWidth={view.atMinimumWidth}
 						coverageByCategory={view.coverageByCategory}
 						checks={view.checks}
 						configs={view.configs}
@@ -623,6 +624,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					<PrepScreen
 						stake={view.gateStake}
 						configs={view.configs}
+						atMinimumWidth={view.atMinimumWidth}
 						shopAction={{
 							label: "← Back to shop",
 							onClick: () => setRewardStep("shop"),

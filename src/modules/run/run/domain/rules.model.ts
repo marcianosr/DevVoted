@@ -83,6 +83,20 @@ export const dropCount = (gatesCleared: number): number =>
 export const minConfigsForGate = (gatesCleared: number): number =>
 	Math.min(gatesCleared, dropCount(gatesCleared) + 1);
 
+/**
+ * A build sitting on its width floor cannot give up another config: the next
+ * removal would sink it under the coming gate's demand (ADR-027). The floor of
+ * 1 holds even where the gate demands none, so no route empties a pipeline —
+ * a run dies at a gate it failed, never at a shop counter (ADR-021).
+ *
+ * Exported so the sell and drop buttons ask the rule rather than restating it;
+ * the reducer refuses either way.
+ */
+export const atMinimumWidth = (
+	configCount: number,
+	minConfigs: number
+): boolean => configCount <= Math.max(1, minConfigs);
+
 export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
 

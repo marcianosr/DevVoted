@@ -67,6 +67,7 @@ const base = {
 		},
 	],
 	configs: [],
+	atMinimumWidth: false,
 	newConfigIds: [],
 	draftOptions: [CONFIGS.eslint, CONFIGS.agentsMd],
 	onDraft: vi.fn(),
@@ -511,6 +512,7 @@ describe(ShopScreen, () => {
 				{...base}
 				configs={[CONFIGS.indexedDb, CONFIGS.rb]}
 				stake={stakeWith({ minConfigs: 2 })}
+				atMinimumWidth
 				onSell={onSell}
 			/>
 		);
@@ -532,12 +534,17 @@ describe(ShopScreen, () => {
 	it("locks the deinstall button on the only installed config", () => {
 		const onSell = vi.fn();
 		render(
-			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} onSell={onSell} />
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.indexedDb]}
+				atMinimumWidth
+				onSell={onSell}
+			/>
 		);
 		const deinstall = screen.getByRole("button", { name: /Uninstall/ });
 		expect(deinstall).toBeDisabled();
 		expect(
-			screen.getByText(/deinstalling it would leave nothing to clear a gate/i)
+			screen.getByText(/uninstalling it would leave nothing to clear a gate/i)
 		).toBeInTheDocument();
 		fireEvent.click(deinstall);
 		expect(onSell).not.toHaveBeenCalled();

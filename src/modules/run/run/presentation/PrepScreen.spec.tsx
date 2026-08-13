@@ -29,6 +29,7 @@ const stakeWith = (overrides: Partial<GateStake>): GateStake => ({
 const base = {
 	stake,
 	configs: [CONFIGS.js, CONFIGS.eslint],
+	atMinimumWidth: false,
 	onStartGate: vi.fn(),
 	onDropConfig: vi.fn(),
 };
@@ -179,6 +180,7 @@ describe(PrepScreen, () => {
 				<PrepScreen
 					{...droppable}
 					stake={stakeWith({ minConfigs: 2, gateNumber: 4 })}
+					atMinimumWidth
 				/>
 			);
 			expect(
@@ -197,6 +199,7 @@ describe(PrepScreen, () => {
 					{...base}
 					stake={stakeWith({ minConfigs: 0 })}
 					configs={[CONFIGS.js]}
+					atMinimumWidth
 				/>
 			);
 			expect(

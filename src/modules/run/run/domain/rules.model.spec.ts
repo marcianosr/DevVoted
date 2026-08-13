@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	atMinimumWidth,
 	dropCount,
 	gateBaseMultiplier,
 	isStakeFatal,
@@ -133,6 +134,22 @@ describe("minConfigsForGate", () => {
 			expect(isStakeFatal(dropCount(gate), minConfigsForGate(gate))).toBe(
 				false
 			);
+	});
+});
+
+describe("atMinimumWidth", () => {
+	it("refuses the removal that would sink the build under the demand", () => {
+		expect(atMinimumWidth(3, 2)).toBe(false); // one to spare
+		expect(atMinimumWidth(2, 2)).toBe(true); // removing one breaches it
+		expect(atMinimumWidth(1, 2)).toBe(true); // already under
+	});
+
+	it("keeps a floor of one even where the gate demands none", () => {
+		// Pallet asks for nothing, but emptying the pipeline would make a
+		// stripped-bare run unkillable (ADR-021), so the last config never goes.
+		expect(minConfigsForGate(0)).toBe(0);
+		expect(atMinimumWidth(1, 0)).toBe(true);
+		expect(atMinimumWidth(2, 0)).toBe(false);
 	});
 });
 

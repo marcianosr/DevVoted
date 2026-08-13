@@ -36,7 +36,10 @@ import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { SwatchLabel } from "~/modules/run/gate/presentation/SwatchLabel.ui";
-import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
+import {
+	GateStakeReceipt,
+	widthRefusal,
+} from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
 import { nextSlotRow } from "~/modules/run/pipeline/presentation/SlotUnlockRow.ui";
 
@@ -46,6 +49,8 @@ type ShopScreenProps = {
 	checks: readonly CheckStatus[];
 	stake: GateStake;
 	configs: readonly Config[];
+	/** The build is on its width floor, so every uninstall is refused. */
+	atMinimumWidth: boolean;
 	slots: number;
 	newConfigIds: readonly string[];
 	draftOptions: readonly Config[];
@@ -178,6 +183,7 @@ export const ShopScreen = ({
 	checks,
 	stake,
 	configs,
+	atMinimumWidth,
 	slots,
 	newConfigIds,
 	draftOptions,
@@ -248,8 +254,6 @@ export const ShopScreen = ({
 		);
 	};
 
-	const atMinimumWidth = configs.length <= Math.max(1, minConfigs);
-
 	const loadoutActions = (config: Config): ReactNode => {
 		const deinstallButton = actionButton({
 			label: "Uninstall",
@@ -276,11 +280,7 @@ export const ShopScreen = ({
 				) : null}
 				{atMinimumWidth ? (
 					<Tooltip
-						content={
-							minConfigs >= 2
-								? `Gate ${gateNumber} demands ${minConfigs} configs — uninstalling would sink the build below it.`
-								: "Your only config — deinstalling it would leave nothing to clear a gate with."
-						}
+						content={widthRefusal(gateNumber, minConfigs, "uninstalling")}
 					>
 						{deinstallButton}
 					</Tooltip>

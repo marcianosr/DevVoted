@@ -8,18 +8,26 @@ import type { ScreenAction } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
-import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
+import {
+	GateStakeReceipt,
+	widthRefusal,
+} from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 
 type PrepScreenProps = {
 	stake: GateStake;
 	configs: readonly Config[];
+	/** The build is on its width floor, so every drop is refused. */
+	atMinimumWidth: boolean;
 	startLock?: string;
 	shopAction?: ScreenAction;
 	onStartGate: () => void;
 	onDropConfig: (configId: string) => void;
 };
 
-type PipelineChipsProps = Pick<PrepScreenProps, "configs" | "onDropConfig"> & {
+type PipelineChipsProps = Pick<
+	PrepScreenProps,
+	"configs" | "atMinimumWidth" | "onDropConfig"
+> & {
 	gateNumber: number;
 	minConfigs: number;
 	shopIsOpen: boolean;
@@ -29,17 +37,15 @@ const PipelineChips = ({
 	configs,
 	gateNumber,
 	minConfigs,
+	atMinimumWidth,
 	shopIsOpen,
 	onDropConfig,
 }: PipelineChipsProps) => {
 	const [pinnedId, setPinnedId] = useState<string | null>(null);
-	const atMinimumWidth = configs.length <= Math.max(1, minConfigs);
 
 	const blockedReason = (
 		<Paragraph as="span" size="sm">
-			{minConfigs >= 2
-				? `Gate ${gateNumber} demands ${minConfigs} configs — dropping would sink the build below it.`
-				: "Your only config — dropping it would leave nothing to clear a gate with."}
+			{widthRefusal(gateNumber, minConfigs, "dropping")}
 		</Paragraph>
 	);
 
@@ -95,6 +101,7 @@ const PipelineChips = ({
 export const PrepScreen = ({
 	stake,
 	configs,
+	atMinimumWidth,
 	startLock,
 	shopAction,
 	onStartGate,
@@ -108,6 +115,7 @@ export const PrepScreen = ({
 				configs={configs}
 				gateNumber={gateNumber}
 				minConfigs={minConfigs}
+				atMinimumWidth={atMinimumWidth}
 				shopIsOpen={shopAction !== undefined}
 				onDropConfig={onDropConfig}
 			/>

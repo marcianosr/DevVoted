@@ -89,6 +89,7 @@ const createRunView = createMockDataFactory<RunView>({
 	stripsOnFailure: 1,
 	minConfigs: 2,
 	underMinConfigs: false,
+	atMinimumWidth: false,
 	widthRepairable: true,
 	pollsAnswered: 0,
 	pollsPerGate: 5,

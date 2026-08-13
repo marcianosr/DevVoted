@@ -47,6 +47,7 @@ import {
 } from "~/modules/run/gate/domain/gate.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
+	atMinimumWidth,
 	dropCount,
 	FAUCET_CAP_KB,
 	gateBaseMultiplier,
@@ -812,9 +813,34 @@ const finishReward = (state: RunState): RunState => {
 	};
 };
 
+/**
+ * The shop's three controls (ADR-029), each asked once. Every one splits the
+ * same way: `{name}Available` is whether this depth of climb sells it at all,
+ * `can{Name}` whether the run can pay for it right now — the shop hides an
+ * unavailable control and disables an unaffordable one, so the two cannot be
+ * one flag. Exported so the buttons ask the rule; the reducer refuses either
+ * way.
+ */
+export const canRebuild = (state: RunState): boolean =>
+	state.storage >= rebuildCost(state.rebuildsUsed);
+
+export const lockAvailable = (state: RunState): boolean =>
+	state.gatesCleared >= LOCK_FROM_GATE &&
+	(state.lockedOfferIds ?? []).length < MAX_LOCKED_OFFERS;
+
+export const canLock = (state: RunState): boolean =>
+	state.storage >= LOCK_COST_KB;
+
+export const extendAvailable = (state: RunState): boolean =>
+	state.gatesCleared >= EXTEND_FROM_GATE &&
+	(state.extensionsBought ?? 0) < MAX_EXTENSIONS;
+
+export const canExtend = (state: RunState): boolean =>
+	state.storage >= extendCost(state.extensionsBought ?? 0);
+
 const rebuildDraft = (state: RunState): RunState => {
+	if (!canRebuild(state)) return state;
 	const cost = rebuildCost(state.rebuildsUsed);
-	if (state.storage < cost) return state;
 	const nextRebuilds = state.rebuildsUsed + 1;
 	return {
 		...state,
@@ -826,14 +852,13 @@ const rebuildDraft = (state: RunState): RunState => {
 };
 
 const lockOffer = (state: RunState, configId: string): RunState => {
-	if (state.gatesCleared < LOCK_FROM_GATE) return state;
+	if (!lockAvailable(state) || !canLock(state)) return state;
 	const offer = state.draftOptions.find(
 		(candidate) => candidate.id === configId
 	);
 	const locked = state.lockedOfferIds ?? [];
+	// Per-offer, so it stays here: the view answers it from lockedOfferIds.
 	if (!offer || locked.includes(configId)) return state;
-	if (locked.length >= MAX_LOCKED_OFFERS) return state;
-	if (state.storage < LOCK_COST_KB) return state;
 	return {
 		...state,
 		storage: state.storage - LOCK_COST_KB,
@@ -846,11 +871,9 @@ const lockOffer = (state: RunState, configId: string): RunState => {
 };
 
 const extendOffers = (state: RunState): RunState => {
-	if (state.gatesCleared < EXTEND_FROM_GATE) return state;
+	if (!extendAvailable(state) || !canExtend(state)) return state;
 	const bought = state.extensionsBought ?? 0;
-	if (bought >= MAX_EXTENSIONS) return state;
 	const cost = extendCost(bought);
-	if (state.storage < cost) return state;
 	const extensions = bought + 1;
 	const [drawn] = rollDraft(
 		draftSeed(state.gatesCleared, state.rebuildsUsed, extensions),
@@ -870,15 +893,17 @@ const extendOffers = (state: RunState): RunState => {
 	};
 };
 
-const atMinimumWidth = (state: RunState): boolean =>
-	state.pipeline.configs.length <=
-	Math.max(1, minConfigsForGate(state.gatesCleared));
+const pipelineAtMinimumWidth = (state: RunState): boolean =>
+	atMinimumWidth(
+		state.pipeline.configs.length,
+		minConfigsForGate(state.gatesCleared)
+	);
 
 const sell = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target || atMinimumWidth(state)) return state;
+	if (!target || pipelineAtMinimumWidth(state)) return state;
 	const refund = sellRefund(target);
 	return {
 		...state,
@@ -892,7 +917,7 @@ const drop = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target || atMinimumWidth(state)) return state;
+	if (!target || pipelineAtMinimumWidth(state)) return state;
 	return {
 		...state,
 		pipeline: withPipeline(

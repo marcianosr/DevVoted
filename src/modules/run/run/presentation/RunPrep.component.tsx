@@ -51,6 +51,7 @@ export const RunPrep = () => {
 			<PrepScreen
 				stake={view.gateStake}
 				configs={view.configs}
+				atMinimumWidth={view.atMinimumWidth}
 				startLock={gateLocked ? countdown.label : undefined}
 				shopAction={backToShop}
 				onStartGate={startGate}

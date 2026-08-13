@@ -476,3 +476,86 @@ describe("the gate stake travels as one object", () => {
 		expect(view.gateStake.billKb).toBe(view.storageBillKb);
 	});
 });
+
+// Each shop control used to be graded twice — once as a reducer guard, once as
+// a view flag built from the same constants (DVTD-xg62). These drive both off
+// the one predicate, so a button can never offer what the reducer refuses.
+describe("the shop's controls answer to the reducer", () => {
+	// The shop's controls only answer in `rewarding` — that status gate is the
+	// reducer's, and these tests are about the predicates behind it.
+	const shopWith = (state: RunState, storage: number): RunState => ({
+		...state,
+		status: "rewarding",
+		storage,
+	});
+
+	it("offers a rebuild exactly when the reducer performs one", () => {
+		const rich = shopWith(answering(), 512);
+		const broke = shopWith(answering(), 0);
+
+		expect(toRunView(rich).canRebuild).toBe(true);
+		expect(runReducer(rich, { type: "rebuild-draft" }).rebuildsUsed).toBe(1);
+
+		expect(toRunView(broke).canRebuild).toBe(false);
+		expect(runReducer(broke, { type: "rebuild-draft" }).rebuildsUsed).toBe(0);
+	});
+
+	it("offers the lock exactly when the reducer takes one", () => {
+		const onOffer = { ...answering(), draftOptions: [CONFIGS.eslint] };
+		const deep = shopWith({ ...onOffer, gatesCleared: LOCK_FROM_GATE }, 512);
+		const shallow = shopWith({ ...onOffer, gatesCleared: 0 }, 512);
+		const broke = shopWith({ ...onOffer, gatesCleared: LOCK_FROM_GATE }, 0);
+		const lock = { type: "lock-offer", configId: CONFIGS.eslint.id } as const;
+
+		expect(toRunView(deep).lockAvailable && toRunView(deep).canLock).toBe(true);
+		expect(runReducer(deep, lock).lockedOfferIds).toEqual([CONFIGS.eslint.id]);
+
+		expect(toRunView(shallow).lockAvailable).toBe(false);
+		expect(runReducer(shallow, lock).lockedOfferIds).toEqual([]);
+
+		expect(toRunView(broke).canLock).toBe(false);
+		expect(runReducer(broke, lock).lockedOfferIds).toEqual([]);
+	});
+
+	it("offers the extension exactly when the reducer buys one", () => {
+		const deep = shopWith(
+			{ ...answering(), gatesCleared: EXTEND_FROM_GATE },
+			512
+		);
+		const maxed = { ...deep, extensionsBought: MAX_EXTENSIONS };
+		const broke = shopWith(
+			{ ...answering(), gatesCleared: EXTEND_FROM_GATE },
+			0
+		);
+		const extend = { type: "extend-offers" } as const;
+
+		expect(toRunView(deep).extendAvailable && toRunView(deep).canExtend).toBe(
+			true
+		);
+		expect(runReducer(deep, extend).extensionsBought).toBe(1);
+
+		expect(toRunView(maxed).extendAvailable).toBe(false);
+		expect(runReducer(maxed, extend).extensionsBought).toBe(MAX_EXTENSIONS);
+
+		expect(toRunView(broke).canExtend).toBe(false);
+		expect(runReducer(broke, extend).extensionsBought).toBe(0);
+	});
+
+	it("flags the width floor exactly where the reducer refuses to shrink", () => {
+		// Gate 2 demands 2, so a two-config build is on its floor.
+		const onFloor: RunState = {
+			...answeringWith([CONFIGS.js, CONFIGS.ts]),
+			status: "rewarding",
+			gatesCleared: 2,
+		};
+		const target = onFloor.pipeline.configs[0].id;
+
+		expect(toRunView(onFloor).atMinimumWidth).toBe(true);
+		expect(
+			runReducer(onFloor, { type: "sell", configId: target }).pipeline.configs
+		).toHaveLength(2);
+		expect(
+			runReducer(onFloor, { type: "drop", configId: target }).pipeline.configs
+		).toHaveLength(2);
+	});
+});

@@ -32,6 +32,20 @@ const stripLabel = (strips: number, configCount: number): string =>
 		? "All configs disabled — run over"
 		: `Remove ${strips} config${strips === 1 ? "" : "s"}`;
 
+/**
+ * Why a removal is refused, for the two surfaces that offer one. The verb is
+ * theirs — you uninstall in the shop and drop at the gate door — but the rule
+ * behind it is `atMinimumWidth`, so the sentence is written once.
+ */
+export const widthRefusal = (
+	gateNumber: number,
+	minConfigs: number,
+	verb: "uninstalling" | "dropping"
+): string =>
+	minConfigs >= 2
+		? `Gate ${gateNumber} demands ${minConfigs} configs — ${verb} would sink the build below it.`
+		: `Your only config — ${verb} it would leave nothing to clear a gate with.`;
+
 const WidthDemand = ({
 	minConfigs,
 	configCount,

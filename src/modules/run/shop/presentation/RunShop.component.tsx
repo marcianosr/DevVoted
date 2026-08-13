@@ -43,6 +43,7 @@ export const RunShop = () => {
 				checks={view.checks}
 				stake={view.gateStake}
 				configs={view.configs}
+				atMinimumWidth={view.atMinimumWidth}
 				newConfigIds={view.newConfigIds}
 				draftOptions={view.draftOptions}
 				onDraft={(id) => send({ type: "draft", configId: id })}

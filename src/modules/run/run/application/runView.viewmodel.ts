@@ -3,9 +3,14 @@ import {
 	type AnsweredPoll,
 	type AnswerOutcome,
 	type AnswerType,
+	canExtend,
+	canLock,
+	canRebuild,
 	canRepairWidthDemand,
 	canRunLinter,
 	canStart,
+	extendAvailable,
+	lockAvailable,
 	isAwaitingTomorrow,
 	isRunOver,
 	lintApplies,
@@ -17,12 +22,8 @@ import {
 import type { Config } from "~/modules/run/config/domain/config.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import {
-	EXTEND_FROM_GATE,
 	extendCost,
 	LOCK_COST_KB,
-	LOCK_FROM_GATE,
-	MAX_EXTENSIONS,
-	MAX_LOCKED_OFFERS,
 	rebuildCost,
 } from "~/modules/run/shop/domain/draft.model";
 import { checkStatuses } from "~/modules/run/gate/domain/gate.model";
@@ -40,6 +41,7 @@ import {
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
+	atMinimumWidth,
 	dropCount,
 	isStoragePlanUnlocked,
 	minConfigsForGate,
@@ -148,6 +150,9 @@ export type RunView = {
 
 	readonly minConfigs: number;
 	readonly underMinConfigs: boolean;
+	/** Distinct from `underMinConfigs`: this build still meets the demand, but
+	 * only just, so sell and drop are refused. */
+	readonly atMinimumWidth: boolean;
 
 	readonly widthRepairable: boolean;
 	readonly pollsAnswered: number;
@@ -279,16 +284,14 @@ export const toRunView = (state: RunState): RunView => {
 		lintReady: canRunLinter(state),
 		lintCost: nextLintCost,
 		rebuildCost: nextRebuildCost,
-		canRebuild: state.storage >= nextRebuildCost,
-		lockAvailable:
-			state.gatesCleared >= LOCK_FROM_GATE && locked.length < MAX_LOCKED_OFFERS,
+		canRebuild: canRebuild(state),
+		lockAvailable: lockAvailable(state),
 		lockCost: LOCK_COST_KB,
-		canLock: state.storage >= LOCK_COST_KB,
+		canLock: canLock(state),
 		lockedOfferIds: locked,
-		extendAvailable:
-			state.gatesCleared >= EXTEND_FROM_GATE && extensions < MAX_EXTENSIONS,
+		extendAvailable: extendAvailable(state),
 		extendCost: nextExtendCost,
-		canExtend: state.storage >= nextExtendCost,
+		canExtend: canExtend(state),
 		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
 		justUnlockedSlots: state.justUnlockedSlots ?? [],
 		linter:
@@ -320,6 +323,7 @@ export const toRunView = (state: RunState): RunView => {
 		stripsOnFailure: dropCount(state.gatesCleared),
 		minConfigs,
 		underMinConfigs: state.pipeline.configs.length < minConfigs,
+		atMinimumWidth: atMinimumWidth(state.pipeline.configs.length, minConfigs),
 		widthRepairable: canRepairWidthDemand(state),
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,
