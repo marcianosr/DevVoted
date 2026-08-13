@@ -20,6 +20,13 @@ describe("syncTarget", () => {
 		expect(syncTarget("/run/shop", null, true)).toBeNull();
 	});
 
+	// A null view means "no run today, go start one" — but only once the read
+	// resolved. While it is unknown the same null must move nobody (DVTD-cmqj).
+	it("holds position when the run could not be read, though null alone sends home", () => {
+		expect(syncTarget("/run/configure", null, true)).toBeNull();
+		expect(syncTarget("/run/configure", null, false)).toBe("/run");
+	});
+
 	it("stays put on the allowed screen for the current status", () => {
 		expect(
 			syncTarget(

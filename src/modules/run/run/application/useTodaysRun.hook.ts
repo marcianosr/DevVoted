@@ -19,9 +19,23 @@ export const useTodaysRun = () => {
 		queryFn: () => getTodaysRun(),
 	});
 
+	const response = query.data;
 	const view: RunView | null =
-		query.data?.success === true ? query.data.data : null;
-	const errorMessage = query.data?.success === false ? query.data.error : null;
+		response?.success === true ? response.data : null;
 
-	return { view, isPending: query.isPending, errorMessage };
+	// A rejected query counts too. `view === null` is a real answer — "no run
+	// today, start one" — so a failure that also produced null would otherwise
+	// be indistinguishable from it, and the route sync would act on a guess.
+	const errorMessage =
+		response?.success === false
+			? response.error
+			: (query.error?.message ?? null);
+
+	return {
+		view,
+		isPending: query.isPending,
+		errorMessage,
+		/** `view` is only trustworthy — including when it is null — once this is false. */
+		statusUnknown: query.isPending || errorMessage !== null,
+	};
 };

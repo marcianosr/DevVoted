@@ -13,7 +13,7 @@ import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
  */
 export const useRunRouteSync = () => {
 	const navigate = useNavigate();
-	const { view, isPending } = useTodaysRun();
+	const { view, statusUnknown } = useTodaysRun();
 	// The index route can report a trailing slash ("/run/"); normalize it so
 	// path comparisons don't false-negative.
 	const pathname = useRouterState({
@@ -21,11 +21,11 @@ export const useRunRouteSync = () => {
 	});
 
 	useEffect(() => {
-		const target = syncTarget(pathname, view, isPending);
+		const target = syncTarget(pathname, view, statusUnknown);
 		if (!target) return;
 
 		// `replace`: status hops are server-driven, so the back button should
 		// step out of the run — not through stale screens that re-redirect.
 		navigate({ to: target, replace: true });
-	}, [navigate, pathname, view, isPending]);
+	}, [navigate, pathname, view, statusUnknown]);
 };

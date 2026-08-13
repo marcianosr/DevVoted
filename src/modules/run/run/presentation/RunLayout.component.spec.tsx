@@ -139,6 +139,31 @@ describe("run route sync", () => {
 		expect(await screen.findByText("Today’s climb")).toBeVisible();
 	});
 
+	// The counterpart to the test above, and the reason the two must not share a
+	// code path: "no run today" is an answer that moves the player, while a read
+	// that failed is not an answer at all (DVTD-cmqj).
+	it("keeps a player whose run could not be read where they are, and says why", async () => {
+		vi.mocked(getTodaysRun).mockRejectedValue(new Error("Not authenticated"));
+
+		const router = renderRunRoutes("/run/configure");
+
+		expect(await screen.findByText("Not authenticated")).toBeVisible();
+		expect(router.state.location.pathname).toBe("/run/configure");
+		expect(screen.queryByText("Today’s climb")).not.toBeInTheDocument();
+	});
+
+	it("surfaces a failed read the server reported as a failure, not a rejection", async () => {
+		vi.mocked(getTodaysRun).mockResolvedValue({
+			success: false,
+			error: "Run state not found",
+		});
+
+		const router = renderRunRoutes("/run/configure");
+
+		expect(await screen.findByText("Run state not found")).toBeVisible();
+		expect(router.state.location.pathname).toBe("/run/configure");
+	});
+
 	it("the shop exit continues to the prep hub without closing the shop", async () => {
 		const user = userEvent.setup();
 		vi.mocked(getTodaysRun).mockResolvedValue({

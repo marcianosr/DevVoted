@@ -50,12 +50,18 @@ const routesForStatus = (
 
 const RUN_SCREEN_PATHS: readonly string[] = Object.values(RUN_ROUTES);
 
+/**
+ * `statusUnknown` covers both ways the run status can be un-askable: still
+ * loading, or failed to load. A null `view` is otherwise a real answer ("no run
+ * today"), so acting on it while the read is unresolved would move the player
+ * off their screen on the strength of data that never arrived (DVTD-cmqj).
+ */
 export const syncTarget = (
 	pathname: string,
 	view: Pick<RunView, "status" | "awaitingTomorrow" | "gatesCleared"> | null,
-	isPending: boolean
+	statusUnknown: boolean
 ): SyncTargetPath | null => {
-	if (isPending) return null;
+	if (statusUnknown) return null;
 	if (!RUN_SCREEN_PATHS.includes(pathname)) return null;
 	if (view?.awaitingTomorrow) return COMMUNITY_ROUTE;
 	const allowed = routesForStatus(view);
