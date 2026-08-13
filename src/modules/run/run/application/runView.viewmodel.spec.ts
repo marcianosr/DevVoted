@@ -11,7 +11,10 @@ import {
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import type { Config } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	draftCost,
+} from "~/modules/run/config/domain/config.model";
 import {
 	EXTEND_FROM_GATE,
 	extendCost,
@@ -557,5 +560,72 @@ describe("the shop's controls answer to the reducer", () => {
 		expect(
 			runReducer(onFloor, { type: "drop", configId: target }).pipeline.configs
 		).toHaveLength(2);
+	});
+});
+
+// The shop used to answer all of this itself from raw roster configs, which put
+// offer pricing behind render() and out of reach of this spec (DVTD-od1l).
+describe("the view prices the shop's offers", () => {
+	const shopping = (overrides: Partial<RunState> = {}): RunState => ({
+		...answeringWith([CONFIGS.js]),
+		status: "rewarding",
+		storage: 512,
+		draftOptions: [CONFIGS.eslint],
+		...overrides,
+	});
+
+	const only = (state: RunState) => toRunView(state).offers[0];
+
+	it("prices each offer and clears it for install when the run can pay", () => {
+		const offer = only(shopping());
+		expect(offer.config.id).toBe("eslint");
+		expect(offer.priceKb).toBe(draftCost(CONFIGS.eslint));
+		expect(offer.installable).toBe(true);
+		expect(offer.refusal).toBeNull();
+	});
+
+	it("refuses an offer the run cannot afford, naming both numbers", () => {
+		const offer = only(shopping({ storage: 8 }));
+		expect(offer.installable).toBe(false);
+		expect(offer.refusal).toEqual({
+			reason: "too-expensive",
+			priceKb: draftCost(CONFIGS.eslint),
+			storageKb: 8,
+		});
+	});
+
+	it("refuses every offer once the pipeline has no free slot", () => {
+		const full = answeringWith([CONFIGS.js]);
+		const offer = only(
+			shopping({
+				...full,
+				status: "rewarding",
+				pipeline: { ...full.pipeline, slots: full.pipeline.configs.length },
+				draftOptions: [CONFIGS.eslint],
+			})
+		);
+		expect(offer.refusal).toEqual({ reason: "no-slot" });
+	});
+
+	it("marks an offer already installed as owned and unbuyable", () => {
+		const owned = only(shopping({ draftOptions: [CONFIGS.js] }));
+		expect(owned.owned).toBe(true);
+		expect(owned.installable).toBe(false);
+	});
+
+	it("marks a held offer without changing what it costs", () => {
+		const offer = only(shopping({ lockedOfferIds: ["eslint"] }));
+		expect(offer.locked).toBe(true);
+		expect(offer.priceKb).toBe(draftCost(CONFIGS.eslint));
+	});
+
+	it("previews what installing the offer would do to the build's payouts", () => {
+		const state = shopping();
+		const offer = only(state);
+		const withIt = [...state.pipeline.configs, CONFIGS.eslint];
+		expect(offer.preview).toEqual(pipelineModifiersFor(withIt));
+		expect(offer.previewPerAnswer).toEqual(
+			perAnswerPreviewFor(withIt, state.gatesCleared)
+		);
 	});
 });

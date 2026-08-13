@@ -45,7 +45,7 @@ export const RunShop = () => {
 				configs={view.configs}
 				atMinimumWidth={view.atMinimumWidth}
 				newConfigIds={view.newConfigIds}
-				draftOptions={view.draftOptions}
+				offers={view.offers}
 				onDraft={(id) => send({ type: "draft", configId: id })}
 				rebuildCost={view.rebuildCost}
 				canRebuild={view.canRebuild && !busy}
@@ -53,7 +53,6 @@ export const RunShop = () => {
 				lockAvailable={view.lockAvailable}
 				lockCost={view.lockCost}
 				canLock={view.canLock && !busy}
-				lockedOfferIds={view.lockedOfferIds}
 				onLock={(id) => send({ type: "lock-offer", configId: id })}
 				extendAvailable={view.extendAvailable}
 				extendCost={view.extendCost}

@@ -3,10 +3,15 @@ import {
 	isStoragePlanUnlocked,
 	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
+import {
+	type Config,
+	draftCost,
+} from "~/modules/run/config/domain/config.model";
 import type {
 	GateStake,
 	PollView,
 	RunView,
+	ShopOffer,
 } from "~/modules/run/run/application/runView.viewmodel";
 
 import { createMockDataFactory } from "./createMockDataFactory";
@@ -23,6 +28,31 @@ export const createMockPollView = createMockDataFactory<PollView>({
 		id: `option-${index + 1}`,
 		label,
 	})),
+});
+
+/**
+ * A priced draft offer. Pass `config` for the one under test; the verdicts
+ * default to "installable, affordable, not owned" so a spec only states the
+ * one it is about.
+ */
+export const createMockShopOffer = (
+	config: Config,
+	overrides: Partial<Omit<ShopOffer, "config">> = {}
+): ShopOffer => ({
+	config,
+	priceKb: draftCost(config),
+	owned: false,
+	locked: false,
+	installable: true,
+	refusal: null,
+	preview: {
+		rewardMultiplier: 1,
+		coverageMultiplier: 1,
+		coverageAdd: 0,
+		gateReward: 32,
+	},
+	previewPerAnswer: { coveragePerCorrect: 2, storageKbPerCorrect: 0 },
+	...overrides,
 });
 
 export const createMockGateStake = createMockDataFactory<GateStake>({
@@ -46,6 +76,7 @@ const createRunView = createMockDataFactory<RunView>({
 	configs: [],
 	available: [],
 	draftOptions: [],
+	offers: [],
 	newConfigIds: [],
 	stripsRemaining: 0,
 	poll: createMockPollView(),

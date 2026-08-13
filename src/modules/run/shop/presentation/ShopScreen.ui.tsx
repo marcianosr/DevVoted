@@ -3,7 +3,6 @@ import { clsx } from "clsx";
 import {
 	Config,
 	describeConfig,
-	draftCost,
 	isUpgradable,
 	sellRefund,
 	upgradeCoverageRequired,
@@ -12,14 +11,12 @@ import {
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import type {
 	GateStake,
+	OfferRefusal,
 	ShopExit,
+	ShopOffer,
 	StoragePlanOption,
 } from "~/modules/run/run/application/runView.viewmodel";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import {
-	perAnswerPreviewFor,
-	pipelineModifiersFor,
-} from "~/modules/run/pipeline/domain/pipeline.model";
 import { formatKb } from "~/shared/lib/storage";
 import { Badge } from "~/ui/Badge.component";
 import { Columns } from "~/ui/Columns.ui";
@@ -53,7 +50,7 @@ type ShopScreenProps = {
 	atMinimumWidth: boolean;
 	slots: number;
 	newConfigIds: readonly string[];
-	draftOptions: readonly Config[];
+	offers: readonly ShopOffer[];
 	onDraft: (configId: string) => void;
 	rebuildCost: number;
 	canRebuild: boolean;
@@ -61,7 +58,6 @@ type ShopScreenProps = {
 	lockAvailable: boolean;
 	lockCost: number;
 	canLock: boolean;
-	lockedOfferIds: readonly string[];
 	onLock: (configId: string) => void;
 	extendAvailable: boolean;
 	extendCost: number;
@@ -104,6 +100,16 @@ export const shopExitAction = (exit: ShopExit): ShopExitAction => {
 		hint: "The shop can no longer get the build to the demand. Leaving walks into the gate and ends the run.",
 	};
 };
+
+/**
+ * An offer's install refusal, in the shop's own words. Same split as
+ * `shopExitAction` above: the viewmodel grades, this formats — so both
+ * phrasings are reachable from a story.
+ */
+export const offerRefusalText = (refusal: OfferRefusal): string =>
+	refusal.reason === "no-slot"
+		? "No free slot — uninstall a config first"
+		: `Costs ${refusal.priceKb}KB — you have ${refusal.storageKb}KB`;
 
 const actionTone = ({
 	loud,
@@ -186,7 +192,7 @@ export const ShopScreen = ({
 	atMinimumWidth,
 	slots,
 	newConfigIds,
-	draftOptions,
+	offers,
 	onDraft,
 	rebuildCost,
 	canRebuild,
@@ -194,7 +200,6 @@ export const ShopScreen = ({
 	lockAvailable,
 	lockCost,
 	canLock,
-	lockedOfferIds,
 	onLock,
 	extendAvailable,
 	extendCost,
@@ -211,18 +216,7 @@ export const ShopScreen = ({
 	const { gateNumber, minConfigs } = stake;
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
-	const isFull = configs.length >= slots;
 	const nextGate = swatchForGate(gateNumber);
-
-	const isLocked = (config: Config): boolean =>
-		lockedOfferIds.includes(config.id);
-
-	const isOwned = (config: Config): boolean =>
-		configs.some((installed) => installed.id === config.id);
-
-	const canAfford = (config: Config): boolean => storage >= draftCost(config);
-	const canInstall = (config: Config): boolean =>
-		!isFull && canAfford(config) && !isOwned(config);
 
 	const canUpgrade = (config: Config): boolean => {
 		if (!config.focusCategory)
@@ -291,15 +285,12 @@ export const ShopScreen = ({
 		);
 	};
 
-	const previewConfig = draftOptions.find(
-		(config) => config.id === (hoveredId ?? selectedId) && canInstall(config)
+	const previewOffer = offers.find(
+		(offer) =>
+			offer.config.id === (hoveredId ?? selectedId) && offer.installable
 	);
-	const next = previewConfig
-		? pipelineModifiersFor([...configs, previewConfig])
-		: undefined;
-	const nextPerAnswer = previewConfig
-		? perAnswerPreviewFor([...configs, previewConfig], gateNumber)
-		: undefined;
+	const next = previewOffer?.preview;
+	const nextPerAnswer = previewOffer?.previewPerAnswer;
 
 	const install = (configId: string) => {
 		onDraft(configId);
@@ -307,21 +298,14 @@ export const ShopScreen = ({
 		setHoveredId(null);
 	};
 
-	const previewHint = (config: Config): ReactNode => (
+	const previewHint = (offer: ShopOffer): ReactNode => (
 		<Paragraph as="span" size="sm" tone="muted">
-			<span className="font-bold text-saffron">{draftCost(config)}KB</span>
+			<span className="font-bold text-saffron">{offer.priceKb}KB</span>
 		</Paragraph>
 	);
 
-	const installRefusal = (config: Config): string | null => {
-		if (isFull) return "No free slot — uninstall a config first";
-		if (!canAfford(config))
-			return `Costs ${draftCost(config)}KB — you have ${storage}KB`;
-		return null;
-	};
-
-	const offerBadge = (config: Config): ReactNode => {
-		if (isOwned(config))
+	const offerBadge = ({ owned, priceKb }: ShopOffer): ReactNode => {
+		if (owned)
 			return (
 				<Badge size="corner">
 					<span aria-hidden="true">✓ </span>owned
@@ -329,13 +313,13 @@ export const ShopScreen = ({
 			);
 		return (
 			<Badge tone="price" size="corner">
-				{draftCost(config)}KB
+				{priceKb}KB
 			</Badge>
 		);
 	};
 
-	const offerTooltip = (config: Config): ReactNode => {
-		const refusal = installRefusal(config);
+	const offerTooltip = (offer: ShopOffer): ReactNode => {
+		const { config, priceKb, refusal } = offer;
 		const installTone: "neutral" | "positive" = refusal
 			? "neutral"
 			: "positive";
@@ -345,13 +329,13 @@ export const ShopScreen = ({
 				size="corner"
 				onClick={() => install(config.id)}
 				disabled={refusal !== null}
-				ariaLabel={`Install ${config.label} for ${draftCost(config)}KB`}
+				ariaLabel={`Install ${config.label} for ${priceKb}KB`}
 			>
 				install
 			</Badge>
 		);
 		const lockBtn =
-			lockAvailable && !isLocked(config) ? (
+			lockAvailable && !offer.locked ? (
 				<Badge
 					tone="price"
 					size="corner"
@@ -368,7 +352,7 @@ export const ShopScreen = ({
 				<span className="text-sm">{describeConfig(config)}</span>
 				<span className="mt-2 flex gap-1">
 					{refusal ? (
-						<Tooltip content={refusal} compact nested>
+						<Tooltip content={offerRefusalText(refusal)} compact nested>
 							{installBtn}
 						</Tooltip>
 					) : (
@@ -391,23 +375,24 @@ export const ShopScreen = ({
 		);
 	};
 
-	const offerChip = (config: Config): ReactNode => {
+	const offerChip = (offer: ShopOffer): ReactNode => {
+		const { config, owned } = offer;
 		const selected = config.id === selectedId;
 		return (
 			<ConfigChip
 				config={config}
-				tooltip={!isOwned(config) ? offerTooltip(config) : undefined}
-				interactiveTooltip={!isOwned(config)}
-				tooltipHint={!isOwned(config) ? "Click to install" : undefined}
-				tooltipPinned={!isOwned(config) ? selected : undefined}
+				tooltip={!owned ? offerTooltip(offer) : undefined}
+				interactiveTooltip={!owned}
+				tooltipHint={!owned ? "Click to install" : undefined}
+				tooltipPinned={!owned ? selected : undefined}
 				onTooltipDismiss={() => setSelectedId(null)}
 				badge={
 					<>
-						{isLocked(config) ? <Badge size="corner">Locked</Badge> : null}
-						{offerBadge(config)}
+						{offer.locked ? <Badge size="corner">Locked</Badge> : null}
+						{offerBadge(offer)}
 					</>
 				}
-				disabled={isOwned(config)}
+				disabled={owned}
 				onClick={() => setSelectedId(selected ? null : config.id)}
 				ariaExpanded={selected}
 			/>
@@ -425,18 +410,18 @@ export const ShopScreen = ({
 				aside={
 					<TerminalPanel title="Shop · Install configs">
 						<div className="flex flex-wrap items-start gap-x-4 gap-y-5">
-							{draftOptions.map((config) => (
+							{offers.map((offer) => (
 								<span
-									key={config.id}
+									key={offer.config.id}
 									className={clsx(
 										"inline-flex rounded-sm",
-										config.id === selectedId &&
+										offer.config.id === selectedId &&
 											"ring-2 ring-celadon ring-offset-2 ring-offset-zinc-950"
 									)}
-									onMouseEnter={() => setHoveredId(config.id)}
-									onFocus={() => setHoveredId(config.id)}
+									onMouseEnter={() => setHoveredId(offer.config.id)}
+									onFocus={() => setHoveredId(offer.config.id)}
 								>
-									{offerChip(config)}
+									{offerChip(offer)}
 								</span>
 							))}
 						</div>
@@ -562,11 +547,11 @@ export const ShopScreen = ({
 							trailingFor={loadoutActions}
 							newConfigIds={newConfigIds}
 							preview={
-								previewConfig
+								previewOffer
 									? {
-											config: previewConfig,
-											onAdd: () => install(previewConfig.id),
-											hint: previewHint(previewConfig),
+											config: previewOffer.config,
+											onAdd: () => install(previewOffer.config.id),
+											hint: previewHint(previewOffer),
 										}
 									: undefined
 							}

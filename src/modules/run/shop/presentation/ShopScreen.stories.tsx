@@ -6,7 +6,10 @@ import {
 	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
 import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
-import { createMockGateStake } from "~/test/runView.factory";
+import {
+	createMockGateStake,
+	createMockShopOffer,
+} from "~/test/runView.factory";
 
 /** Gate 3, the depth every story below sits at — so tier 3 is already on offer. */
 const GATES_CLEARED = 2;
@@ -45,7 +48,6 @@ const meta: Meta<typeof ShopScreen> = {
 		lockAvailable: true,
 		lockCost: 16,
 		canLock: true,
-		lockedOfferIds: [],
 		onLock: () => {},
 		extendAvailable: true,
 		extendCost: 48,
@@ -83,7 +85,9 @@ export const Default: Story = {
 		],
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
 		newConfigIds: ["coverage-gain"],
-		draftOptions: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coldStart],
+		offers: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coldStart].map(
+			(config) => createMockShopOffer(config)
+		),
 		onDraft: () => {},
 		rebuildCost: 4,
 		canRebuild: true,
@@ -104,7 +108,10 @@ export const Default: Story = {
 export const OfferLocked: Story = {
 	args: {
 		...Default.args,
-		lockedOfferIds: ["cold-start"],
+		offers: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coldStart].map(
+			(config) =>
+				createMockShopOffer(config, { locked: config.id === "cold-start" })
+		),
 		lockAvailable: false,
 	},
 };
@@ -116,7 +123,11 @@ export const OfferLocked: Story = {
 export const OfferOwned: Story = {
 	args: {
 		...Default.args,
-		draftOptions: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
+		offers: [
+			createMockShopOffer(CONFIGS.js, { owned: true, installable: false }),
+			createMockShopOffer(CONFIGS.eslint),
+			createMockShopOffer(CONFIGS.agentsMd),
+		],
 	},
 };
 

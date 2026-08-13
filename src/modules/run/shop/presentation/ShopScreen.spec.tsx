@@ -10,7 +10,10 @@ import {
 	ShopScreen,
 	shopExitAction,
 } from "~/modules/run/shop/presentation/ShopScreen.ui";
-import { createMockGateStake } from "~/test/runView.factory";
+import {
+	createMockGateStake,
+	createMockShopOffer,
+} from "~/test/runView.factory";
 
 /** Every rung unlocked, as a deep run sees the ladder. */
 const plansOn = (currentTier: number, storage = 0) =>
@@ -69,7 +72,7 @@ const base = {
 	configs: [],
 	atMinimumWidth: false,
 	newConfigIds: [],
-	draftOptions: [CONFIGS.eslint, CONFIGS.agentsMd],
+	offers: [CONFIGS.eslint, CONFIGS.agentsMd].map((c) => createMockShopOffer(c)),
 	onDraft: vi.fn(),
 	rebuildCost: 1,
 	canRebuild: true,
@@ -77,7 +80,6 @@ const base = {
 	lockAvailable: true,
 	lockCost: 16,
 	canLock: true,
-	lockedOfferIds: [],
 	onLock: vi.fn(),
 	extendAvailable: true,
 	extendCost: 48,
@@ -160,7 +162,19 @@ describe(ShopScreen, () => {
 	});
 
 	it("marks an offer already installed as owned and stops selling it", () => {
-		render(<ShopScreen {...base} configs={[CONFIGS.eslint]} />);
+		render(
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.eslint]}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, {
+						owned: true,
+						installable: false,
+					}),
+					createMockShopOffer(CONFIGS.agentsMd),
+				]}
+			/>
+		);
 		const offers = within(
 			screen.getByRole("group", { name: /Install configs/ })
 		);
@@ -214,6 +228,16 @@ describe(ShopScreen, () => {
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
 				slots={3}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, {
+						installable: false,
+						refusal: { reason: "no-slot" },
+					}),
+					createMockShopOffer(CONFIGS.agentsMd, {
+						installable: false,
+						refusal: { reason: "no-slot" },
+					}),
+				]}
 			/>
 		);
 		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
@@ -233,6 +257,16 @@ describe(ShopScreen, () => {
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
 				slots={3}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, {
+						installable: false,
+						refusal: { reason: "no-slot" },
+					}),
+					createMockShopOffer(CONFIGS.agentsMd, {
+						installable: false,
+						refusal: { reason: "no-slot" },
+					}),
+				]}
 			/>
 		);
 		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
@@ -243,7 +277,24 @@ describe(ShopScreen, () => {
 
 	it("does not install when the refusing badge is pressed", () => {
 		const onDraft = vi.fn();
-		render(<ShopScreen {...base} storage={8} onDraft={onDraft} />);
+		render(
+			<ShopScreen
+				{...base}
+				storage={8}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, {
+						installable: false,
+						refusal: {
+							reason: "too-expensive",
+							priceKb: draftCost(CONFIGS.eslint),
+							storageKb: 8,
+						},
+					}),
+					createMockShopOffer(CONFIGS.agentsMd),
+				]}
+				onDraft={onDraft}
+			/>
+		);
 		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
 		fireEvent.click(screen.getByRole("button", { name: /^Install ESLint/ }));
 		expect(onDraft).not.toHaveBeenCalled();
@@ -252,7 +303,23 @@ describe(ShopScreen, () => {
 	// An offer you cannot afford stays readable — a chip that refuses the tap can't
 	// be inspected either.
 	it("keeps an unaffordable offer selectable and prices the refusal", () => {
-		render(<ShopScreen {...base} storage={8} />);
+		render(
+			<ShopScreen
+				{...base}
+				storage={8}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, {
+						installable: false,
+						refusal: {
+							reason: "too-expensive",
+							priceKb: draftCost(CONFIGS.eslint),
+							storageKb: 8,
+						},
+					}),
+					createMockShopOffer(CONFIGS.agentsMd),
+				]}
+			/>
+		);
 		const chip = screen.getByRole("button", { name: "ESLint" });
 		expect(chip).toBeEnabled();
 		fireEvent.click(chip);
@@ -264,7 +331,23 @@ describe(ShopScreen, () => {
 	});
 
 	it("shows description and install button on click, with refusal on disabled click", () => {
-		render(<ShopScreen {...base} storage={8} />);
+		render(
+			<ShopScreen
+				{...base}
+				storage={8}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, {
+						installable: false,
+						refusal: {
+							reason: "too-expensive",
+							priceKb: draftCost(CONFIGS.eslint),
+							storageKb: 8,
+						},
+					}),
+					createMockShopOffer(CONFIGS.agentsMd),
+				]}
+			/>
+		);
 		const chip = screen.getByRole("button", { name: "ESLint" });
 		fireEvent.click(chip);
 		// Selecting shows description and install button in tooltip
@@ -312,7 +395,14 @@ describe(ShopScreen, () => {
 
 	it("marks the held offer and stops offering more locks once one is spent", () => {
 		render(
-			<ShopScreen {...base} lockedOfferIds={["eslint"]} lockAvailable={false} />
+			<ShopScreen
+				{...base}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, { locked: true }),
+					createMockShopOffer(CONFIGS.agentsMd),
+				]}
+				lockAvailable={false}
+			/>
 		);
 		expect(screen.getByText("Locked")).toBeInTheDocument();
 		// Selecting the other offer must not turn up a second lock to buy.
@@ -374,6 +464,16 @@ describe(ShopScreen, () => {
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
 				slots={3}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, {
+						installable: false,
+						refusal: { reason: "no-slot" },
+					}),
+					createMockShopOffer(CONFIGS.agentsMd, {
+						installable: false,
+						refusal: { reason: "no-slot" },
+					}),
+				]}
 			/>
 		);
 		const chip = screen.getByRole("button", { name: "ESLint" });

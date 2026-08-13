@@ -19,7 +19,10 @@ import {
 	type RunState,
 	type RunStatus,
 } from "~/modules/run/run/domain/run.model";
-import type { Config } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	draftCost,
+} from "~/modules/run/config/domain/config.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import {
 	extendCost,
@@ -87,6 +90,37 @@ export type GateStake = {
 	readonly perAnswer: PerAnswerPreview;
 };
 
+/**
+ * Why the shop will not install an offer. Carries the numbers, not the
+ * sentence: the wording lives beside `shopExitAction` in the shop screen, so
+ * every phrasing stays reachable from a story rather than only from the engine
+ * state that produces it.
+ */
+export type OfferRefusal =
+	| { readonly reason: "no-slot" }
+	| {
+			readonly reason: "too-expensive";
+			readonly priceKb: number;
+			readonly storageKb: number;
+	  };
+
+/**
+ * One draft option, priced against the run looking at it. The shop used to
+ * answer all of this itself from raw roster configs, which put the offer
+ * economics behind `render()` and out of reach of the viewmodel's own spec.
+ */
+export type ShopOffer = {
+	readonly config: Config;
+	readonly priceKb: number;
+	readonly owned: boolean;
+	readonly locked: boolean;
+	readonly installable: boolean;
+	readonly refusal: OfferRefusal | null;
+	/** What the build's payouts become with this installed — the hover preview. */
+	readonly preview: PipelineModifiers;
+	readonly previewPerAnswer: PerAnswerPreview;
+};
+
 export type PollView = {
 	readonly id: string;
 	readonly category: CategoryCode;
@@ -103,6 +137,8 @@ export type RunView = {
 	readonly configs: readonly Config[];
 	readonly available: readonly Config[];
 	readonly draftOptions: readonly Config[];
+	/** `draftOptions` with the run's own answer attached to each. */
+	readonly offers: readonly ShopOffer[];
 	readonly newConfigIds: readonly string[];
 	readonly stripsRemaining: number;
 	readonly poll: PollView | null;
@@ -239,6 +275,40 @@ export const correctOptionIdsFor = (
 		.map((option) => option.id);
 };
 
+const offerRefusal = (
+	state: RunState,
+	config: Config,
+	isFull: boolean
+): OfferRefusal | null => {
+	if (isFull) return { reason: "no-slot" };
+	const priceKb = draftCost(config);
+	if (state.storage < priceKb)
+		return { reason: "too-expensive", priceKb, storageKb: state.storage };
+	return null;
+};
+
+const offersFor = (state: RunState): readonly ShopOffer[] => {
+	const installed = state.pipeline.configs;
+	const isFull = installed.length >= state.pipeline.slots;
+	const locked = state.lockedOfferIds ?? [];
+
+	return state.draftOptions.map((config) => {
+		const owned = installed.some((slotted) => slotted.id === config.id);
+		const refusal = offerRefusal(state, config, isFull);
+		const withIt = [...installed, config];
+		return {
+			config,
+			priceKb: draftCost(config),
+			owned,
+			locked: locked.includes(config.id),
+			installable: !owned && refusal === null,
+			refusal,
+			preview: pipelineModifiersFor(withIt),
+			previewPerAnswer: perAnswerPreviewFor(withIt, state.gatesCleared),
+		};
+	});
+};
+
 const redactPoll = (poll: RunPoll): PollView => ({
 	id: poll.id,
 	category: poll.category,
@@ -273,6 +343,7 @@ export const toRunView = (state: RunState): RunView => {
 		configs: state.pipeline.configs,
 		available: state.available,
 		draftOptions: state.draftOptions,
+		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
 		stripsRemaining: state.stripsRemaining,
 		poll: state.status === "answering" && current ? redactPoll(current) : null,

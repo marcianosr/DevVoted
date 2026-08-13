@@ -583,7 +583,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						checks={view.checks}
 						configs={view.configs}
 						newConfigIds={view.newConfigIds}
-						draftOptions={view.draftOptions}
+						offers={view.offers}
 						onDraft={(id) => dispatch({ type: "draft", configId: id })}
 						rebuildCost={cost}
 						canRebuild={state.storage >= cost}
@@ -591,7 +591,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						lockAvailable={view.lockAvailable}
 						lockCost={view.lockCost}
 						canLock={view.canLock}
-						lockedOfferIds={view.lockedOfferIds}
 						onLock={(id) => dispatch({ type: "lock-offer", configId: id })}
 						extendAvailable={view.extendAvailable}
 						extendCost={view.extendCost}
