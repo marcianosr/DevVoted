@@ -17,6 +17,7 @@ import {
 	type GateSwatch,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
+import { AvatarRing } from "~/modules/run/community/presentation/Voter.ui";
 import { GATE_COUNT, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import { SwatchMark } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
@@ -94,22 +95,10 @@ const Ticks = () => (
 	</>
 );
 
+// Titled, unlike the poll rows': a climber pin carries no Tooltip, so the
+// browser's own hover name is the only place the name appears.
 const ClimberAvatar = ({ climber }: { climber: ClimbClimber }) => (
-	<span
-		className={clsx(
-			"inline-flex rounded-full ring-2",
-			climber.you ? "ring-cerulean" : "ring-zinc-950"
-		)}
-	>
-		<Avatar
-			user={{
-				id: climber.id,
-				displayName: climber.displayName,
-				photoUrl: climber.photoUrl,
-			}}
-			size="sm"
-		/>
-	</span>
+	<AvatarRing player={climber} titled />
 );
 
 type ClimberPinProps = {

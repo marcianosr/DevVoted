@@ -6,6 +6,7 @@ import type {
 } from "~/modules/run/run/domain/run.model";
 import { correctCount } from "~/modules/run/gate/domain/gateReward.model";
 import { Disclosure } from "~/ui/Disclosure.ui";
+import { FoldCaret } from "~/ui/FoldCaret.ui";
 import { CodeBlockMarkdown } from "~/modules/run/poll/presentation/PollMarkdown.ui";
 import { StatusLine } from "~/ui/StatusLine.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
@@ -374,12 +375,7 @@ const ReporterRow = ({ poll }: { poll: AnsweredPoll }) => {
 						>
 							{hasScore ? formatScore(poll.coverageEarned) : "—"}
 						</Paragraph>
-						<span
-							aria-hidden
-							className="shrink-0 text-zinc-600 transition-transform group-open:rotate-90"
-						>
-							▸
-						</span>
+						<FoldCaret />
 					</>
 				}
 			/>

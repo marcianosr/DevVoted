@@ -5,6 +5,7 @@ import type {
 	RunCommunityPoll,
 } from "~/modules/run/community/application/community.service";
 import { Disclosure } from "~/ui/Disclosure.ui";
+import { FoldCaret } from "~/ui/FoldCaret.ui";
 import {
 	Paragraph,
 	type ParagraphTone,
@@ -130,12 +131,7 @@ const PollSection = ({ poll }: { poll: RunCommunityPoll }) => {
 				>
 					{rightPercent}% correct
 				</Paragraph>
-				<span
-					aria-hidden
-					className="shrink-0 text-zinc-600 transition-transform group-open:rotate-90"
-				>
-					▸
-				</span>
+				<FoldCaret />
 			</summary>
 
 			{/* The rule is the gutter: it ties every option line to the question it

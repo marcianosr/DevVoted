@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import type { ParagraphTone } from "~/ui/typography/Paragraph.component";
+import { FoldCaret } from "./FoldCaret.ui";
 import { StatusLine } from "./StatusLine.ui";
 
 const meta: Meta<typeof StatusLine> = {
@@ -170,14 +171,7 @@ export const CollapsibleSummary: Story = {
 				badge="pass"
 				line="typeof null? — click to collapse"
 				className="cursor-pointer list-none rounded hover:bg-zinc-800/40 [&::-webkit-details-marker]:hidden"
-				trailing={
-					<span
-						aria-hidden
-						className="shrink-0 text-zinc-500 transition-transform group-open:rotate-90"
-					>
-						▸
-					</span>
-				}
+				trailing={<FoldCaret />}
 			/>
 			<p className="pl-7 pt-1 text-sm text-zinc-400">
 				the expanded body lives here
