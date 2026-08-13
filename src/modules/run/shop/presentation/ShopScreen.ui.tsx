@@ -11,6 +11,7 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import type {
+	GateStake,
 	ShopExit,
 	StoragePlanOption,
 } from "~/modules/run/run/application/runView.viewmodel";
@@ -18,8 +19,6 @@ import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
-	type PerAnswerPreview,
-	type PipelineModifiers,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import { formatKb } from "~/shared/lib/storage";
 import { Badge } from "~/ui/Badge.component";
@@ -45,15 +44,9 @@ type ShopScreenProps = {
 	storage: number;
 	coverageByCategory: Readonly<Record<string, number>>;
 	checks: readonly CheckStatus[];
-	gateNumber: number;
+	stake: GateStake;
 	configs: readonly Config[];
 	slots: number;
-	pollsPerGate: number;
-	stripsOnFailure: number;
-	minConfigs: number;
-	modifiers: PipelineModifiers;
-	perAnswer: PerAnswerPreview;
-	billKb?: number;
 	newConfigIds: readonly string[];
 	draftOptions: readonly Config[];
 	onDraft: (configId: string) => void;
@@ -183,15 +176,9 @@ export const ShopScreen = ({
 	storage,
 	coverageByCategory,
 	checks,
-	gateNumber,
+	stake,
 	configs,
 	slots,
-	pollsPerGate,
-	stripsOnFailure,
-	minConfigs,
-	modifiers,
-	perAnswer,
-	billKb,
 	newConfigIds,
 	draftOptions,
 	onDraft,
@@ -215,6 +202,7 @@ export const ShopScreen = ({
 	storagePlans,
 	onChangePlan,
 }: ShopScreenProps) => {
+	const { gateNumber, minConfigs } = stake;
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const isFull = configs.length >= slots;
@@ -590,16 +578,10 @@ export const ShopScreen = ({
 							})}
 						/>
 						<GateStakeReceipt
-							gateNumber={gateNumber}
-							pollsPerGate={pollsPerGate}
-							stripsOnFailure={stripsOnFailure}
+							stake={stake}
 							configCount={configs.length}
-							modifiers={modifiers}
 							preview={next}
-							perAnswer={perAnswer}
 							previewPerAnswer={nextPerAnswer}
-							billKb={billKb}
-							minConfigs={minConfigs}
 						/>
 					</section>
 				}

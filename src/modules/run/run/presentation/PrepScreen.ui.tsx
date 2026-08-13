@@ -2,10 +2,7 @@ import { useState, type ReactNode } from "react";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import type {
-	PerAnswerPreview,
-	PipelineModifiers,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
 import { Button } from "~/ui/Button.component";
 import type { ScreenAction } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
@@ -14,13 +11,7 @@ import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 
 type PrepScreenProps = {
-	gateNumber: number;
-	pollsPerGate: number;
-	stripsOnFailure: number;
-	minConfigs: number;
-	storageBillKb: number;
-	modifiers: PipelineModifiers;
-	perAnswer: PerAnswerPreview;
+	stake: GateStake;
 	configs: readonly Config[];
 	startLock?: string;
 	shopAction?: ScreenAction;
@@ -28,10 +19,11 @@ type PrepScreenProps = {
 	onDropConfig: (configId: string) => void;
 };
 
-type PipelineChipsProps = Pick<
-	PrepScreenProps,
-	"configs" | "gateNumber" | "minConfigs" | "onDropConfig"
-> & { shopIsOpen: boolean };
+type PipelineChipsProps = Pick<PrepScreenProps, "configs" | "onDropConfig"> & {
+	gateNumber: number;
+	minConfigs: number;
+	shopIsOpen: boolean;
+};
 
 const PipelineChips = ({
 	configs,
@@ -101,19 +93,14 @@ const PipelineChips = ({
 };
 
 export const PrepScreen = ({
-	gateNumber,
-	pollsPerGate,
-	stripsOnFailure,
-	minConfigs,
-	storageBillKb,
-	modifiers,
-	perAnswer,
+	stake,
 	configs,
 	startLock,
 	shopAction,
 	onStartGate,
 	onDropConfig,
 }: PrepScreenProps) => {
+	const { gateNumber, minConfigs } = stake;
 	const gateName = swatchForGate(gateNumber)?.gateName ?? `Gate ${gateNumber}`;
 	return (
 		<div className="flex flex-col gap-6">
@@ -125,14 +112,8 @@ export const PrepScreen = ({
 				onDropConfig={onDropConfig}
 			/>
 			<GateStakeReceipt
-				gateNumber={gateNumber}
-				pollsPerGate={pollsPerGate}
-				stripsOnFailure={stripsOnFailure}
+				stake={stake}
 				configCount={configs.length}
-				modifiers={modifiers}
-				perAnswer={perAnswer}
-				billKb={storageBillKb}
-				minConfigs={minConfigs}
 				shopAction={shopAction}
 			/>
 			<div className="flex flex-col gap-3 sm:flex-row">

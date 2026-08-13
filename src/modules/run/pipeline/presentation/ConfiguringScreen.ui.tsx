@@ -7,12 +7,11 @@ import {
 	type StarterStack,
 } from "~/modules/run/config/domain/stack.model";
 import { preRunRoleRows } from "~/modules/run/gate/domain/configRole.model";
+import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	MAX_SLOTS,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
-	type PerAnswerPreview,
-	type PipelineModifiers,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import { Button } from "~/ui/Button.component";
 import { Columns } from "~/ui/Columns.ui";
@@ -30,12 +29,7 @@ import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
 type ConfiguringScreenProps = {
 	configs: readonly Config[];
 	slots: number;
-	gatesCleared: number;
-	pollsPerGate: number;
-	/** Configs a failed window would peel at this depth (`dropCount`). */
-	stripsOnFailure: number;
-	modifiers: PipelineModifiers;
-	perAnswer: PerAnswerPreview;
+	stake: GateStake;
 	bench: readonly Config[];
 	checks: readonly CheckStatus[];
 	onSlot: (configId: string) => void;
@@ -79,11 +73,7 @@ const PanelHeading = ({ title, subtitle }: PanelHeadingProps) => (
 export const ConfiguringScreen = ({
 	configs,
 	slots,
-	gatesCleared,
-	pollsPerGate,
-	stripsOnFailure,
-	modifiers,
-	perAnswer,
+	stake,
 	bench,
 	checks,
 	onSlot,
@@ -92,6 +82,7 @@ export const ConfiguringScreen = ({
 	onPickStack,
 	startAction,
 }: ConfiguringScreenProps) => {
+	const { gateNumber } = stake;
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const [customBuild, setCustomBuild] = useState(false);
 	const full = configs.length >= slots;
@@ -118,12 +109,8 @@ export const ConfiguringScreen = ({
 					/>
 				</section>
 				<GateStakeReceipt
-					gateNumber={gatesCleared}
-					pollsPerGate={pollsPerGate}
-					stripsOnFailure={stripsOnFailure}
+					stake={stake}
 					configCount={slots}
-					modifiers={modifiers}
-					perAnswer={perAnswer}
 					configsToInstall={slots - configs.length}
 					action={startAction}
 				/>
@@ -138,7 +125,7 @@ export const ConfiguringScreen = ({
 		? pipelineModifiersFor([...configs, previewConfig])
 		: undefined;
 	const nextPerAnswer = previewConfig
-		? perAnswerPreviewFor([...configs, previewConfig], gatesCleared)
+		? perAnswerPreviewFor([...configs, previewConfig], gateNumber)
 		: undefined;
 
 	const commit = (configId: string) => {
@@ -219,13 +206,9 @@ export const ConfiguringScreen = ({
 							</Paragraph>
 						) : null}
 						<GateStakeReceipt
-							gateNumber={gatesCleared}
-							pollsPerGate={pollsPerGate}
-							stripsOnFailure={stripsOnFailure}
+							stake={stake}
 							configCount={configs.length}
-							modifiers={modifiers}
 							preview={next}
-							perAnswer={perAnswer}
 							previewPerAnswer={nextPerAnswer}
 							action={startAction}
 						/>

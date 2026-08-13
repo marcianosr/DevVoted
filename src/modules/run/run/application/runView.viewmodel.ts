@@ -23,13 +23,9 @@ import {
 	LOCK_FROM_GATE,
 	MAX_EXTENSIONS,
 	MAX_LOCKED_OFFERS,
-	offerCount,
 	rebuildCost,
 } from "~/modules/run/shop/domain/draft.model";
-import {
-	checkStatuses,
-	gateDemands,
-} from "~/modules/run/gate/domain/gate.model";
+import { checkStatuses } from "~/modules/run/gate/domain/gate.model";
 import {
 	swatchForGate,
 	type SwatchTheme,
@@ -38,7 +34,6 @@ import {
 	type CoverageConfigBonus,
 	type PerAnswerPreview,
 	type PipelineModifiers,
-	coverageForAnswer,
 	coverageToAddSlot,
 	linterFor,
 	perAnswerPreviewFor,
@@ -70,6 +65,24 @@ export type StoragePlanOption = {
 	readonly fromGate: number;
 	/** The one rung shown ahead of the run — visible, priced, not yet buyable. */
 	readonly locked: boolean;
+};
+
+/**
+ * What the coming gate demands and what it pays — the subject of
+ * `GateStakeReceipt`, which Prep, Configuring and Shop all render.
+ *
+ * Clustered rather than flattened for the same reason as `modifiers`: the three
+ * screens were each carrying the seven fields as props only to hand them on, so
+ * every added field cost four edits and none of them a decision.
+ */
+export type GateStake = {
+	readonly gateNumber: number;
+	readonly pollsPerGate: number;
+	readonly stripsOnFailure: number;
+	readonly minConfigs: number;
+	readonly billKb: number;
+	readonly modifiers: PipelineModifiers;
+	readonly perAnswer: PerAnswerPreview;
 };
 
 export type PollView = {
@@ -109,20 +122,17 @@ export type RunView = {
 	readonly extendAvailable: boolean;
 	readonly extendCost: number;
 	readonly canExtend: boolean;
-	readonly offerCount: number;
 	readonly slotCoverageRequired: number;
 
-	readonly unlock?: { readonly slot: number; readonly progress: number };
 	readonly justUnlockedSlots: readonly number[];
 	readonly checks: readonly CheckStatus[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered: readonly AnsweredPoll[];
-	readonly passedChecks: readonly CheckStatus[];
-	readonly demands: readonly string[];
 	/** Kept whole rather than flattened: every screen that shows pricing wants all
 	 * four at once, and a spread here means each one reassembles them by hand. */
 	readonly modifiers: PipelineModifiers;
 	readonly perAnswer: PerAnswerPreview;
+	readonly gateStake: GateStake;
 	readonly canStart: boolean;
 	readonly isOver: boolean;
 	readonly gateRewardPaidKb: number;
@@ -140,13 +150,11 @@ export type RunView = {
 	readonly underMinConfigs: boolean;
 
 	readonly widthRepairable: boolean;
-	readonly pollsToGate: number;
 	readonly pollsAnswered: number;
 	readonly pollsPerGate: number;
 	readonly streak: number;
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
-	readonly coverageGainedThisGate: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly storageCap: number;
 	readonly storageBillKb: number;
@@ -226,35 +234,6 @@ export const correctOptionIdsFor = (
 		.map((option) => option.id);
 };
 
-const gainedThisGate = (state: RunState): Record<string, number> => {
-	const gained: Record<string, number> = {};
-	state.answeredThisGate.forEach((poll, index) => {
-		const earned =
-			poll.coverageEarned ??
-			coverageForAnswer(
-				state.pipeline.configs,
-				{ category: poll.category, answeredBefore: index },
-				poll.outcome === "correct" ? 1 : 0
-			);
-		if (earned > 0)
-			gained[poll.category] = roundToOneDecimal(
-				(gained[poll.category] ?? 0) + earned
-			);
-	});
-	return gained;
-};
-
-const unlockOf = (
-	state: RunState
-): { slot: number; progress: number } | undefined => {
-	const required = coverageToAddSlot(state.pipeline.slots);
-	if (!Number.isFinite(required) || required <= 0) return undefined;
-	return {
-		slot: state.pipeline.slots + 1,
-		progress: Math.min(1, state.coverage / required),
-	};
-};
-
 const redactPoll = (poll: RunPoll): PollView => ({
 	id: poll.id,
 	category: poll.category,
@@ -276,6 +255,12 @@ export const toRunView = (state: RunState): RunView => {
 	const locked = state.lockedOfferIds ?? [];
 	const extensions = state.extensionsBought ?? 0;
 	const nextExtendCost = extendCost(extensions);
+	const modifiers = pipelineModifiersFor(state.pipeline.configs);
+	const perAnswer = perAnswerPreviewFor(
+		state.pipeline.configs,
+		state.gatesCleared
+	);
+	const minConfigs = minConfigsForGate(state.gatesCleared);
 
 	return {
 		status: state.status,
@@ -304,9 +289,7 @@ export const toRunView = (state: RunState): RunView => {
 			state.gatesCleared >= EXTEND_FROM_GATE && extensions < MAX_EXTENSIONS,
 		extendCost: nextExtendCost,
 		canExtend: state.storage >= nextExtendCost,
-		offerCount: offerCount(extensions),
 		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
-		unlock: unlockOf(state),
 		justUnlockedSlots: state.justUnlockedSlots ?? [],
 		linter:
 			current === undefined
@@ -315,10 +298,17 @@ export const toRunView = (state: RunState): RunView => {
 		checks: checkStatuses(state.pipeline, state.window, state.gatesCleared),
 		answeredThisGate: state.answeredThisGate,
 		allAnswered: state.allAnswered ?? [],
-		passedChecks: state.clearedChecks,
-		demands: gateDemands(state.pipeline, state.gatesCleared),
-		modifiers: pipelineModifiersFor(state.pipeline.configs),
-		perAnswer: perAnswerPreviewFor(state.pipeline.configs, state.gatesCleared),
+		modifiers,
+		perAnswer,
+		gateStake: {
+			gateNumber: state.gatesCleared,
+			pollsPerGate: SLICE_WINDOW,
+			stripsOnFailure: dropCount(state.gatesCleared),
+			minConfigs,
+			billKb: plan.billKb,
+			modifiers,
+			perAnswer,
+		},
 		canStart: canStart(state.pipeline),
 		isOver: isRunOver(state.status),
 		gateRewardPaidKb: state.gateRewardKb ?? 0,
@@ -328,17 +318,14 @@ export const toRunView = (state: RunState): RunView => {
 		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
 		victoryGate: VICTORY_GATE,
 		stripsOnFailure: dropCount(state.gatesCleared),
-		minConfigs: minConfigsForGate(state.gatesCleared),
-		underMinConfigs:
-			state.pipeline.configs.length < minConfigsForGate(state.gatesCleared),
+		minConfigs,
+		underMinConfigs: state.pipeline.configs.length < minConfigs,
 		widthRepairable: canRepairWidthDemand(state),
-		pollsToGate: SLICE_WINDOW - state.window.answered,
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,
 		streak: state.streak,
 		coverage: state.coverage,
 		coverageByCategory: state.coverageByCategory,
-		coverageGainedThisGate: gainedThisGate(state),
 		storage: state.storage,
 		storageCap: plan.capKb,
 		storageBillKb: plan.billKb,

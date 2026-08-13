@@ -6,9 +6,26 @@ import {
 	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
 import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
 /** Gate 3, the depth every story below sits at — so tier 3 is already on offer. */
 const GATES_CLEARED = 2;
+
+const stake = createMockGateStake({
+	gateNumber: 3,
+	minConfigs: 1,
+	modifiers: {
+		gateReward: 240,
+		rewardMultiplier: 2,
+		coverageMultiplier: 2,
+		coverageAdd: 0.5,
+	},
+	perAnswer: {
+		coveragePerCorrect: 8,
+		storageKbPerCorrect: 0,
+		matchingConfigMultiplier: 1.25,
+	},
+});
 
 /** The ladder as a run at this depth sees it: unlocked rungs plus the next, locked. */
 const plansOn = (currentTier: number, storage = 0) =>
@@ -44,7 +61,7 @@ export const Default: Story = {
 	args: {
 		storage: 440,
 		coverageByCategory: { css: 8 },
-		gateNumber: 3,
+		stake,
 		checks: [
 			{
 				label: "Correct",
@@ -72,20 +89,6 @@ export const Default: Story = {
 		canRebuild: true,
 		onRebuild: () => {},
 		slots: 3,
-		pollsPerGate: 5,
-		stripsOnFailure: 1,
-		minConfigs: 1,
-		modifiers: {
-			gateReward: 240,
-			rewardMultiplier: 2,
-			coverageMultiplier: 2,
-			coverageAdd: 0.5,
-		},
-		perAnswer: {
-			coveragePerCorrect: 8,
-			storageKbPerCorrect: 0,
-			matchingConfigMultiplier: 1.25,
-		},
 		coverage: 25,
 		slotCoverageRequired: 20,
 		justUnlockedSlots: [],
@@ -173,7 +176,6 @@ export const UnderWidthDemand: Story = {
 		...Default.args,
 		configs: [CONFIGS.js],
 		newConfigIds: [],
-		stripsOnFailure: 3,
-		minConfigs: 4,
+		stake: { ...stake, stripsOnFailure: 3, minConfigs: 4 },
 	},
 };

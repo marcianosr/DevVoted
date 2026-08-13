@@ -49,13 +49,7 @@ export const RunPrep = () => {
 			}}
 		>
 			<PrepScreen
-				gateNumber={view.gatesCleared}
-				pollsPerGate={view.pollsPerGate}
-				stripsOnFailure={view.stripsOnFailure}
-				minConfigs={view.minConfigs}
-				storageBillKb={view.storageBillKb}
-				modifiers={view.modifiers}
-				perAnswer={view.perAnswer}
+				stake={view.gateStake}
 				configs={view.configs}
 				startLock={gateLocked ? countdown.label : undefined}
 				shopAction={backToShop}

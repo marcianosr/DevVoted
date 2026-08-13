@@ -187,16 +187,3 @@ export const gatePassed = (
 	checkStatuses(pipeline, window, gatesCleared).every((check) =>
 		passes(check.state)
 	);
-
-export const gateDemands = (
-	pipeline: Pipeline,
-	gatesCleared: number
-): readonly string[] => {
-	const correct = currentRequirement(pipeline);
-	const contributed = pipeline.configs.flatMap((config) => {
-		const demand = effectOf(config).demand;
-		return demand ? [demand(gatesCleared)] : [];
-	});
-	if (correct === null) return contributed;
-	return [correctDemand(correct), ...contributed];
-};

@@ -2,14 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
 import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
-const base = {
+const stake = createMockGateStake({
 	gateNumber: 1,
-	pollsPerGate: 5,
-	stripsOnFailure: 1,
 	minConfigs: 1,
-	storageBillKb: 0,
 	modifiers: {
 		gateReward: 32,
 		rewardMultiplier: 1,
@@ -20,6 +19,15 @@ const base = {
 		coveragePerCorrect: 1,
 		storageKbPerCorrect: 0,
 	},
+});
+
+const stakeWith = (overrides: Partial<GateStake>): GateStake => ({
+	...stake,
+	...overrides,
+});
+
+const base = {
+	stake,
 	configs: [CONFIGS.js, CONFIGS.eslint],
 	onStartGate: vi.fn(),
 	onDropConfig: vi.fn(),
@@ -32,12 +40,12 @@ describe(PrepScreen, () => {
 	});
 
 	it("falls back to a plain number past the swatch roster", () => {
-		render(<PrepScreen {...base} gateNumber={99} />);
+		render(<PrepScreen {...base} stake={stakeWith({ gateNumber: 99 })} />);
 		expect(screen.getByText("Gate 99 gate")).toBeInTheDocument();
 	});
 
 	it("shows the polls-per-window subcaption", () => {
-		render(<PrepScreen {...base} pollsPerGate={5} />);
+		render(<PrepScreen {...base} stake={stakeWith({ pollsPerGate: 5 })} />);
 		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
 	});
 
@@ -52,7 +60,13 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				modifiers={{ ...base.modifiers, coverageMultiplier: 2, coverageAdd: 5 }}
+				stake={stakeWith({
+					modifiers: {
+						...stake.modifiers,
+						coverageMultiplier: 2,
+						coverageAdd: 5,
+					},
+				})}
 			/>
 		);
 		expect(screen.getByText("×2 +5% coverage this gate")).toHaveClass(
@@ -69,7 +83,7 @@ describe(PrepScreen, () => {
 	});
 
 	it("states the stake as a plain count when it is not fatal", () => {
-		render(<PrepScreen {...base} stripsOnFailure={1} />);
+		render(<PrepScreen {...base} stake={stakeWith({ stripsOnFailure: 1 })} />);
 		expect(screen.getByText("Remove 1 config")).toHaveClass("text-cinnabar");
 	});
 
@@ -77,7 +91,7 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				stripsOnFailure={2}
+				stake={stakeWith({ stripsOnFailure: 2 })}
 				configs={[CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]}
 			/>
 		);
@@ -85,14 +99,20 @@ describe(PrepScreen, () => {
 	});
 
 	it("warns the run is over once the stake would take the whole build", () => {
-		render(<PrepScreen {...base} stripsOnFailure={2} configs={base.configs} />);
+		render(
+			<PrepScreen
+				{...base}
+				stake={stakeWith({ stripsOnFailure: 2 })}
+				configs={base.configs}
+			/>
+		);
 		expect(
 			screen.getByText("All configs disabled — run over")
 		).toBeInTheDocument();
 	});
 
 	it("names the storage plan's bill on a paid tier", () => {
-		render(<PrepScreen {...base} storageBillKb={8} />);
+		render(<PrepScreen {...base} stake={stakeWith({ billKb: 8 })} />);
 		expect(screen.getByText("−8KB")).toHaveClass("text-cinnabar");
 		expect(screen.getByText(/storage bill — pass or fail/)).toBeInTheDocument();
 	});
@@ -155,7 +175,12 @@ describe(PrepScreen, () => {
 		});
 
 		it("refuses every drop at the gate's width demand, naming the demand", () => {
-			render(<PrepScreen {...droppable} minConfigs={2} gateNumber={4} />);
+			render(
+				<PrepScreen
+					{...droppable}
+					stake={stakeWith({ minConfigs: 2, gateNumber: 4 })}
+				/>
+			);
 			expect(
 				screen.queryByRole("button", { name: /^\.js/ })
 			).not.toBeInTheDocument();
@@ -167,7 +192,13 @@ describe(PrepScreen, () => {
 		});
 
 		it("refuses the drop of a last config even where the gate demands none", () => {
-			render(<PrepScreen {...base} minConfigs={0} configs={[CONFIGS.js]} />);
+			render(
+				<PrepScreen
+					{...base}
+					stake={stakeWith({ minConfigs: 0 })}
+					configs={[CONFIGS.js]}
+				/>
+			);
 			expect(
 				screen.queryByRole("button", { name: /^\.js/ })
 			).not.toBeInTheDocument();
@@ -180,12 +211,12 @@ describe(PrepScreen, () => {
 	});
 
 	it("mentions the gate's width demand in the build summary", () => {
-		render(<PrepScreen {...base} minConfigs={2} />);
+		render(<PrepScreen {...base} stake={stakeWith({ minConfigs: 2 })} />);
 		expect(screen.getByText(/2\+ configs/)).toBeInTheDocument();
 	});
 
 	it("names the shortfall in cinnabar while the build sits under the demand", () => {
-		render(<PrepScreen {...base} minConfigs={3} />);
+		render(<PrepScreen {...base} stake={stakeWith({ minConfigs: 3 })} />);
 		expect(
 			screen.getByText(
 				"Demands 3 configs — the build holds 2. Install 1 more to climb on."
@@ -207,7 +238,7 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				minConfigs={2}
+				stake={stakeWith({ minConfigs: 2 })}
 				shopAction={{ label: "← Back to shop", onClick }}
 			/>
 		);
@@ -216,7 +247,7 @@ describe(PrepScreen, () => {
 	});
 
 	it("leaves the shortcut out when no shop sits behind prep", () => {
-		render(<PrepScreen {...base} minConfigs={2} />);
+		render(<PrepScreen {...base} stake={stakeWith({ minConfigs: 2 })} />);
 		expect(
 			screen.queryByRole("button", { name: "← Back to shop" })
 		).not.toBeInTheDocument();

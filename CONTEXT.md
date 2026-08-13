@@ -36,6 +36,7 @@ boundary, so this table is the map an architecture review reads first.
 | Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `STORAGE_PLANS`, `dropCount`, `isStakeFatal` (`rules.model.ts`) |
 | Seed / Segment | `run/domain` | `rollDailySeedSequence` (`seed.model.ts`); pure, so it is a model not a service |
 | Run view | `run/application` | `RunView`, `toRunView` (`runView.viewmodel.ts`); the single projection every screen reads |
+| Gate stake | `run/application` | `GateStake` (`runView.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
 | Run orchestration | `run/application` | `run.service.ts` (was `handlers.ts`), `run.serverfn.ts` (was `api/run.ts`), `run.validation.ts` |
 | Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, one write. Never split across aggregates |
 | Run screens and HUD | `run/presentation` | Prep / Answering / GameOver screens, `RunLayout`, `RunHud`, `StorageGauge`, `RunSummary` |
@@ -44,7 +45,7 @@ boundary, so this table is the map an architecture review reads first.
 | Coverage | `pipeline/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
 | Lint | `pipeline/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/run.model.ts` |
 | Build screen | `pipeline/presentation` | `ConfiguringScreen`, `PipelineTable`, `PipelineReportRow`, `SlotUnlockRow`, `CoverageByCategory` |
-| Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed`, `gateDemands` (`gate.model.ts`) |
+| Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed` (`gate.model.ts`) |
 | Gate reward | `gate/domain` | `gateRewardRows`, `gateStorageGained` (`gateReward.model.ts`) |
 | Gate ladder | `gate/domain` | `gateLadder.model.ts`; what unlocks at which gate |
 | Swatch | `gate/domain` | `GateSwatch`, `SwatchTheme`, `swatchForGate` (`swatch.model.ts`); app theming via `src/ui/theme/swatchTheme.ts` |
@@ -111,7 +112,7 @@ Where the two differ, use the code name in code and the player name in copy.
 |---|---|
 | Climb | `Run` / `RunState`; the aggregate folder is `run/`. "Climb" survives in `climbMap`, `ClimbToday`, `climbers.repository`, and the `resume-climb` action |
 | Window | `GateWindow`, sized by `SLICE_WINDOW` |
-| Demand | `gateDemands`, `minConfigsForGate`, `focusDemand` |
+| Demand | `minConfigsForGate`, `focusDemand`, `Effect.demand` |
 | Strip | `RunAction` `strip`, `RunState.stripsRemaining` |
 | Faucet | `Config.storagePerCorrect`, `RunState.faucetEarnedKb`, `FAUCET_CAP_KB` |
 | Storage plan | `StoragePlan`, `STORAGE_PLANS`, `storagePlanFor` |

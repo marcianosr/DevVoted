@@ -25,7 +25,6 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import {
 	type AnswerContext,
-	type CheckStatus,
 	EMPTY_WINDOW,
 	GateWindow,
 } from "~/modules/run/config/domain/effect.model";
@@ -192,7 +191,6 @@ export type RunState = {
 	readonly draftedThisGate: readonly string[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered?: readonly AnsweredPoll[];
-	readonly clearedChecks: readonly CheckStatus[];
 	readonly stripsRemaining: number;
 	readonly polls: readonly RunPoll[];
 	readonly currentIndex: number;
@@ -251,7 +249,6 @@ export const createRun = (
 	draftedThisGate: [],
 	answeredThisGate: [],
 	allAnswered: [],
-	clearedChecks: [],
 	stripsRemaining: 0,
 	polls,
 	currentIndex: 0,
@@ -440,11 +437,6 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
 		rebuildsUsed: 0,
 		draftedThisGate: [],
-		clearedChecks: checkStatuses(
-			state.pipeline,
-			state.window,
-			state.gatesCleared
-		),
 		status: "rewarding",
 		log: withLog(
 			state,
@@ -809,7 +801,6 @@ const finishReward = (state: RunState): RunState => {
 		rebuildsUsed: 0,
 		draftedThisGate: [],
 		answeredThisGate: [],
-		clearedChecks: [],
 		faucetThisGateKb: 0,
 		gateRewardKb: 0,
 		gateBillKb: 0,

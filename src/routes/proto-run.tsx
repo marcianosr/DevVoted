@@ -477,11 +477,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					<ConfiguringScreen
 						configs={view.configs}
 						slots={view.slots}
-						gatesCleared={view.gatesCleared}
-						pollsPerGate={view.pollsPerGate}
-						stripsOnFailure={view.stripsOnFailure}
-						modifiers={view.modifiers}
-						perAnswer={view.perAnswer}
+						stake={view.gateStake}
 						bench={view.available}
 						checks={view.checks}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
@@ -581,16 +577,10 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					<ShopScreen
 						storage={view.storage}
-						gateNumber={view.gatesCleared}
+						stake={view.gateStake}
 						coverageByCategory={view.coverageByCategory}
 						checks={view.checks}
 						configs={view.configs}
-						pollsPerGate={view.pollsPerGate}
-						stripsOnFailure={view.stripsOnFailure}
-						minConfigs={view.minConfigs}
-						modifiers={view.modifiers}
-						perAnswer={view.perAnswer}
-						billKb={view.storageBillKb}
 						newConfigIds={view.newConfigIds}
 						draftOptions={view.draftOptions}
 						onDraft={(id) => dispatch({ type: "draft", configId: id })}
@@ -631,13 +621,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					}}
 				>
 					<PrepScreen
-						gateNumber={view.gatesCleared}
-						pollsPerGate={view.pollsPerGate}
-						stripsOnFailure={view.stripsOnFailure}
-						minConfigs={view.minConfigs}
-						storageBillKb={view.storageBillKb}
-						modifiers={view.modifiers}
-						perAnswer={view.perAnswer}
+						stake={view.gateStake}
 						configs={view.configs}
 						shopAction={{
 							label: "← Back to shop",

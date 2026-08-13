@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-12T19:52:09Z
-updated_at: 2026-08-13T11:13:47Z
+updated_at: 2026-08-13T11:18:33Z
 ---
 
 Follow-up to DVTD-36ct, which migrated run, collection and shared. What remains is src/domains legacy: polls context (poll reads, answer evaluation, authoring — domains/polls) and account context (auth, profile — domains/users), plus domains/economy and domains/runs which are mostly reachable only via the /old routes that DVTD-7q8l deletes.
@@ -15,7 +15,7 @@ Order matters: let 7q8l delete the /old surface first, then migrate what is stil
 ## Todo
 - [x] After 7q8l: inventory what in src/domains is still imported by live routes
 - [x] account: domains/users -> modules/account/{auth,profile}
-- [ ] polls: domains/polls -> modules/polls/{poll,authoring}
+- [ ] ~~polls: domains/polls -> modules/polls/{poll,authoring}~~ — parked pending DVTD-17b3 audit
 - [ ] Retire the legacy-* dependency-cruiser rules as each slice lands
 
 ## Account slice landed (2026-08-13)
@@ -98,3 +98,13 @@ tsc clean · lint clean, 0 violations across 536 modules · 1475 tests passing.
 `polls` (40 files), `runs` (52) and `economy` (37) remain. `runs` and `economy`
 are the larger pair and are still reached from `__root.tsx`, `stats.tsx`,
 `seed.ts` and the componentRegistry.
+
+## Direction changed 2026-08-13 (Marciano)
+
+Challenged the premise: *"it's the legacy app, why do you want to migrate that?"* Correct — the remaining todos assume migration is the right verb, and for the old game engine it is not.
+
+Evidence gathered on the spot: `runs/prototype/` is reachable only from a dev rig, and `economy/data/configs.ts` (1134 lines) is superseded by `configRoster.model.ts` (298). Migrating either would move code toward deletion.
+
+The account slice above stands — auth is the app's front door, nothing in `modules/` was replacing it, and it retired a cycle plus DVTD-iide. But it was picked by working down the board rather than by asking what the code is *for*.
+
+**The remaining todos (`polls`, and the legacy-rule retirement) are parked** pending DVTD-17b3 (audit) and DVTD-9qyd (delete). Re-scope this bean to whatever genuinely survives.

@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
 const meta: Meta<typeof ConfiguringScreen> = {
 	component: ConfiguringScreen,
@@ -12,24 +13,25 @@ export default meta;
 
 type Story = StoryObj<typeof ConfiguringScreen>;
 
+const stake = createMockGateStake({
+	modifiers: {
+		gateReward: 80,
+		rewardMultiplier: 1,
+		coverageMultiplier: 1,
+		coverageAdd: 0,
+	},
+	perAnswer: {
+		coveragePerCorrect: 1,
+		storageKbPerCorrect: 0,
+		matchingConfigMultiplier: 1.25,
+	},
+});
+
 export const Default: Story = {
 	args: {
 		configs: [CONFIGS.js],
 		slots: 3,
-		gatesCleared: 0,
-		pollsPerGate: 5,
-		stripsOnFailure: 1,
-		modifiers: {
-			gateReward: 80,
-			rewardMultiplier: 1,
-			coverageMultiplier: 1,
-			coverageAdd: 0,
-		},
-		perAnswer: {
-			coveragePerCorrect: 1,
-			storageKbPerCorrect: 0,
-			matchingConfigMultiplier: 1.25,
-		},
+		stake,
 		bench: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coverageGain],
 		checks: [
 			{

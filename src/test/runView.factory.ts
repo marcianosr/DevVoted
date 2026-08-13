@@ -4,6 +4,7 @@ import {
 	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
 import type {
+	GateStake,
 	PollView,
 	RunView,
 } from "~/modules/run/run/application/runView.viewmodel";
@@ -24,7 +25,22 @@ export const createMockPollView = createMockDataFactory<PollView>({
 	})),
 });
 
-export const createMockRunView = createMockDataFactory<RunView>({
+export const createMockGateStake = createMockDataFactory<GateStake>({
+	gateNumber: 0,
+	pollsPerGate: 5,
+	stripsOnFailure: 1,
+	minConfigs: 2,
+	billKb: 0,
+	modifiers: {
+		rewardMultiplier: 1,
+		coverageMultiplier: 1,
+		coverageAdd: 0,
+		gateReward: 32,
+	},
+	perAnswer: { coveragePerCorrect: 2, storageKbPerCorrect: 0 },
+});
+
+const createRunView = createMockDataFactory<RunView>({
 	status: "answering",
 	slots: 3,
 	configs: [],
@@ -49,14 +65,11 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	extendAvailable: false,
 	extendCost: 48,
 	canExtend: false,
-	offerCount: 5,
 	slotCoverageRequired: 0,
 	justUnlockedSlots: [],
 	checks: [],
 	answeredThisGate: [],
 	allAnswered: [],
-	passedChecks: [],
-	demands: [],
 	modifiers: {
 		rewardMultiplier: 1,
 		coverageMultiplier: 1,
@@ -64,6 +77,7 @@ export const createMockRunView = createMockDataFactory<RunView>({
 		gateReward: 32,
 	},
 	perAnswer: { coveragePerCorrect: 2, storageKbPerCorrect: 0 },
+	gateStake: createMockGateStake(),
 	canStart: false,
 	isOver: false,
 	gateRewardPaidKb: 0,
@@ -76,13 +90,11 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	minConfigs: 2,
 	underMinConfigs: false,
 	widthRepairable: true,
-	pollsToGate: 5,
 	pollsAnswered: 0,
 	pollsPerGate: 5,
 	streak: 0,
 	coverage: 0,
 	coverageByCategory: {},
-	coverageGainedThisGate: {},
 	storage: 64,
 	storageCap: 512,
 	storageBillKb: 0,
@@ -96,3 +108,20 @@ export const createMockRunView = createMockDataFactory<RunView>({
 	})),
 	log: [],
 });
+
+/**
+ * `gatesCleared` and `gateStake.gateNumber` are the same fact, so a test that
+ * moves the run to a deeper gate gets a stake that agrees with it — otherwise
+ * the screens read gate 0 while the view claims gate 4. A test that passes its
+ * own `gateStake` keeps it verbatim.
+ */
+export const createMockRunView = (
+	overrides: Partial<RunView> = {}
+): RunView => {
+	const view = createRunView(overrides);
+	if (overrides.gateStake) return view;
+	return {
+		...view,
+		gateStake: { ...view.gateStake, gateNumber: view.gatesCleared },
+	};
+};

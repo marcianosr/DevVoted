@@ -18,11 +18,7 @@ export const RunConfigure = () => {
 			<ConfiguringScreen
 				configs={view.configs}
 				slots={view.slots}
-				gatesCleared={view.gatesCleared}
-				pollsPerGate={view.pollsPerGate}
-				stripsOnFailure={view.stripsOnFailure}
-				modifiers={view.modifiers}
-				perAnswer={view.perAnswer}
+				stake={view.gateStake}
 				bench={view.available}
 				checks={view.checks}
 				onSlot={(id) => send({ type: "slot", configId: id })}

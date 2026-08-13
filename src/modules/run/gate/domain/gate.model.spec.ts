@@ -12,7 +12,6 @@ import { dropCount } from "~/modules/run/run/domain/rules.model";
 import {
 	checkStatuses,
 	currentRequirement,
-	gateDemands,
 	gatePassed,
 } from "~/modules/run/gate/domain/gate.model";
 
@@ -284,26 +283,6 @@ describe("Volkswagen CI", () => {
 			"0/3 passed"
 		);
 		expect(gatePassed(pipelineWith(padded), window, 0)).toBe(false);
-	});
-});
-
-describe("gateDemands", () => {
-	it("summarises the stacked demands in plain language", () => {
-		const demands = gateDemands(
-			pipelineWith([CONFIGS.coldStart, CONFIGS.coverageGain]),
-			0
-		);
-		expect(demands).toContain("your first answer correct");
-		expect(demands).toContain("+1% coverage this window");
-	});
-
-	it("only demands correct answers when a correct-check config asks", () => {
-		expect(gateDemands(pipelineWith([CONFIGS.coldStart]), 0)).not.toContain(
-			"1 correct answer"
-		);
-		expect(gateDemands(pipelineWith([CONFIGS.unitTests]), 0)[0]).toBe(
-			"1 correct answer"
-		);
 	});
 });
 

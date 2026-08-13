@@ -17,9 +17,12 @@ import {
 	extendCost,
 	LOCK_FROM_GATE,
 	MAX_EXTENSIONS,
-	offerCount,
 } from "~/modules/run/shop/domain/draft.model";
 import {
+	dropCount,
+	minConfigsForGate,
+	SLICE_WINDOW,
+	storagePlanFor,
 	STORAGE_PLANS,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
@@ -86,12 +89,11 @@ describe("toRunView", () => {
 		expect(view.justUnlockedSlots).toEqual([]); // no coverage earned yet
 	});
 
-	it("surfaces the gate checks, demands, and stats a screen needs", () => {
+	it("surfaces the gate checks and stats a screen needs", () => {
 		const view = toRunView(answeringWith([CONFIGS.js]));
 		// The .js build owes only its own check — no baseline row (ADR-017).
 		expect(view.checks.map((check) => check.label)).toEqual([".js mastery"]);
-		expect(view.demands[0]).toBe(".js: get one right if js appears");
-		expect(view.pollsToGate).toBe(5);
+		expect(view.pollsPerGate).toBe(5);
 		expect(view.victoryGate).toBeGreaterThan(0);
 	});
 
@@ -195,12 +197,6 @@ describe("toRunView", () => {
 		).toBe(2);
 	});
 
-	it("names the slot coverage is buying, not a gate — width opens no gates", () => {
-		const view = toRunView(answering());
-		expect(view.unlock?.slot).toBe(4); // the next one up from the base three
-		expect(view.unlock?.progress).toBe(0);
-	});
-
 	// The ambient theme follows the gate being played (ADR-020): the fresh run
 	// wears Pallet, the summit pair keep their own themes, and past the last
 	// gate there is nothing left to wear — the :root default takes over.
@@ -263,12 +259,11 @@ describe("shop controls (DVTD-5lt6)", () => {
 		expect(view.lockedOfferIds).toEqual(["eslint"]);
 	});
 
-	it("counts bought extensions into the offers the shop shows", () => {
+	it("prices the next extension against the ones already bought", () => {
 		const view = toRunView({
 			...shopping(EXTEND_FROM_GATE, 512),
 			extensionsBought: 1,
 		});
-		expect(view.offerCount).toBe(offerCount(1));
 		expect(view.extendCost).toBe(extendCost(1));
 	});
 
@@ -452,5 +447,32 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 		expect(toRunView(state).perAnswer).toEqual(
 			perAnswerPreviewFor(state.pipeline.configs, state.gatesCleared)
 		);
+	});
+});
+
+// Prep, Configuring and Shop all render GateStakeReceipt, and each used to carry
+// the seven fields as props purely to hand them on (DVTD-gf7h).
+describe("the gate stake travels as one object", () => {
+	it("collects what the coming gate demands and pays", () => {
+		const state = { ...answeringWith([CONFIGS.js]), gatesCleared: 4 };
+		const view = toRunView(state);
+
+		expect(view.gateStake).toEqual({
+			gateNumber: 4,
+			pollsPerGate: SLICE_WINDOW,
+			stripsOnFailure: dropCount(4),
+			minConfigs: minConfigsForGate(4),
+			billKb: storagePlanFor(state.storagePlan).billKb,
+			modifiers: view.modifiers,
+			perAnswer: view.perAnswer,
+		});
+	});
+
+	it("agrees with the flat fields the other screens still read", () => {
+		const view = toRunView({ ...answeringWith([CONFIGS.js]), gatesCleared: 4 });
+		expect(view.gateStake.gateNumber).toBe(view.gatesCleared);
+		expect(view.gateStake.minConfigs).toBe(view.minConfigs);
+		expect(view.gateStake.stripsOnFailure).toBe(view.stripsOnFailure);
+		expect(view.gateStake.billKb).toBe(view.storageBillKb);
 	});
 });

@@ -41,14 +41,8 @@ export const RunShop = () => {
 				storage={view.storage}
 				coverageByCategory={view.coverageByCategory}
 				checks={view.checks}
-				gateNumber={view.gatesCleared}
+				stake={view.gateStake}
 				configs={view.configs}
-				pollsPerGate={view.pollsPerGate}
-				stripsOnFailure={view.stripsOnFailure}
-				minConfigs={view.minConfigs}
-				modifiers={view.modifiers}
-				perAnswer={view.perAnswer}
-				billKb={view.storageBillKb}
 				newConfigIds={view.newConfigIds}
 				draftOptions={view.draftOptions}
 				onDraft={(id) => send({ type: "draft", configId: id })}

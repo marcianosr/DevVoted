@@ -8,21 +8,24 @@ import {
 } from "~/modules/run/config/domain/stack.model";
 import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
 const base = {
-	gatesCleared: 0,
-	pollsPerGate: 5,
-	stripsOnFailure: 1,
-	modifiers: {
-		gateReward: 80,
-		rewardMultiplier: 1,
-		coverageMultiplier: 1,
-		coverageAdd: 0,
-	},
-	perAnswer: {
-		coveragePerCorrect: 1,
-		storageKbPerCorrect: 0,
-	},
+	// This screen only renders on a fresh run (`configuring` is set in createRun
+	// alone), so the gate is always 0 — which demands no width.
+	stake: createMockGateStake({
+		minConfigs: 0,
+		modifiers: {
+			gateReward: 80,
+			rewardMultiplier: 1,
+			coverageMultiplier: 1,
+			coverageAdd: 0,
+		},
+		perAnswer: {
+			coveragePerCorrect: 1,
+			storageKbPerCorrect: 0,
+		},
+	}),
 	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.agentsMd],
@@ -62,7 +65,13 @@ describe(ConfiguringScreen, () => {
 		render(
 			<ConfiguringScreen
 				{...base}
-				modifiers={{ ...base.modifiers, coverageMultiplier: 2, coverageAdd: 5 }}
+				stake={createMockGateStake({
+					modifiers: {
+						...base.stake.modifiers,
+						coverageMultiplier: 2,
+						coverageAdd: 5,
+					},
+				})}
 			/>
 		);
 		expect(screen.getByText("×2 +5% coverage this gate")).toHaveClass(
@@ -80,7 +89,11 @@ describe(ConfiguringScreen, () => {
 
 	it("names the stake fatal once a fail would take the whole build", () => {
 		render(
-			<ConfiguringScreen {...base} stripsOnFailure={2} configs={base.configs} />
+			<ConfiguringScreen
+				{...base}
+				stake={createMockGateStake({ stripsOnFailure: 2 })}
+				configs={base.configs}
+			/>
 		);
 		expect(
 			screen.getByText("All configs disabled — run over")
@@ -92,7 +105,9 @@ describe(ConfiguringScreen, () => {
 			<ConfiguringScreen
 				{...base}
 				configs={[CONFIGS.js]}
-				modifiers={{ ...base.modifiers, gateReward: 32 }}
+				stake={createMockGateStake({
+					modifiers: { ...base.stake.modifiers, gateReward: 32 },
+				})}
 				bench={[CONFIGS.unitTests]}
 			/>
 		);

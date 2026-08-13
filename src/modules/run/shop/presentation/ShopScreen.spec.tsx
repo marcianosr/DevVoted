@@ -4,11 +4,13 @@ import { render, screen, fireEvent, within } from "@testing-library/react";
 import { draftCost } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
+import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
 import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
 import {
 	ShopScreen,
 	shopExitAction,
 } from "~/modules/run/shop/presentation/ShopScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
 /** Every rung unlocked, as a deep run sees the ladder. */
 const plansOn = (currentTier: number, storage = 0) =>
@@ -31,10 +33,30 @@ const refusalOn = (badge: HTMLElement): HTMLElement => {
 	return within(scope).getByRole("tooltip");
 };
 
+const stake = createMockGateStake({
+	gateNumber: 2,
+	minConfigs: 1,
+	modifiers: {
+		gateReward: 180,
+		rewardMultiplier: 1.5,
+		coverageMultiplier: 2,
+		coverageAdd: 0.5,
+	},
+	perAnswer: {
+		coveragePerCorrect: 3,
+		storageKbPerCorrect: 0,
+	},
+});
+
+const stakeWith = (overrides: Partial<GateStake>): GateStake => ({
+	...stake,
+	...overrides,
+});
+
 const base = {
 	storage: 440,
 	coverageByCategory: {},
-	gateNumber: 2,
+	stake,
 	checks: [
 		{
 			label: "Correct",
@@ -61,19 +83,6 @@ const base = {
 	canExtend: true,
 	onExtend: vi.fn(),
 	slots: 3,
-	pollsPerGate: 5,
-	stripsOnFailure: 1,
-	minConfigs: 1,
-	modifiers: {
-		gateReward: 180,
-		rewardMultiplier: 1.5,
-		coverageMultiplier: 2,
-		coverageAdd: 0.5,
-	},
-	perAnswer: {
-		coveragePerCorrect: 3,
-		storageKbPerCorrect: 0,
-	},
 	coverage: 25,
 	slotCoverageRequired: 20,
 	justUnlockedSlots: [],
@@ -462,7 +471,9 @@ describe(ShopScreen, () => {
 		render(
 			<ShopScreen
 				{...base}
-				modifiers={{ ...base.modifiers, gateReward: 240 }}
+				stake={stakeWith({
+					modifiers: { ...stake.modifiers, gateReward: 240 },
+				})}
 			/>
 		);
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
@@ -499,7 +510,7 @@ describe(ShopScreen, () => {
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.indexedDb, CONFIGS.rb]}
-				minConfigs={2}
+				stake={stakeWith({ minConfigs: 2 })}
 				onSell={onSell}
 			/>
 		);
@@ -537,7 +548,7 @@ describe(ShopScreen, () => {
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.indexedDb, CONFIGS.rb]}
-				minConfigs={2}
+				stake={stakeWith({ minConfigs: 2 })}
 			/>
 		);
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
@@ -546,7 +557,11 @@ describe(ShopScreen, () => {
 
 	it("names the shortfall in the build summary when the build is under the gate's demand", () => {
 		render(
-			<ShopScreen {...base} configs={[CONFIGS.indexedDb]} minConfigs={4} />
+			<ShopScreen
+				{...base}
+				configs={[CONFIGS.indexedDb]}
+				stake={stakeWith({ minConfigs: 4 })}
+			/>
 		);
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
 		expect(

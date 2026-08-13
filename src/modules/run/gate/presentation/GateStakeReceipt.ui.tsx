@@ -6,6 +6,7 @@ import type {
 	PerAnswerPreview,
 	PipelineModifiers,
 } from "~/modules/run/pipeline/domain/pipeline.model";
+import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
 import { isStakeFatal } from "~/modules/run/run/domain/rules.model";
 import { Button } from "~/ui/Button.component";
 import { Popover } from "~/ui/Popover.component";
@@ -17,16 +18,10 @@ import { Title } from "~/ui/typography/Title.component";
 import { coverageValue } from "~/modules/run/gate/presentation/GateModifierStrip.ui";
 
 type GateStakeReceiptProps = {
-	gateNumber: number;
-	pollsPerGate: number;
-	stripsOnFailure: number;
+	stake: GateStake;
 	configCount: number;
-	modifiers: PipelineModifiers;
 	preview?: PipelineModifiers;
-	perAnswer: PerAnswerPreview;
 	previewPerAnswer?: PerAnswerPreview;
-	billKb?: number;
-	minConfigs?: number;
 	configsToInstall?: number;
 	action?: ScreenAction;
 	shopAction?: ScreenAction;
@@ -77,25 +72,27 @@ const MetricValue = ({
 };
 
 export const GateStakeReceipt = ({
-	gateNumber,
-	pollsPerGate,
-	stripsOnFailure,
+	stake,
 	configCount,
-	modifiers,
 	preview,
-	perAnswer,
 	previewPerAnswer,
-	billKb,
-	minConfigs,
 	configsToInstall,
 	action,
 	shopAction,
 }: GateStakeReceiptProps) => {
+	const {
+		gateNumber,
+		pollsPerGate,
+		stripsOnFailure,
+		minConfigs,
+		billKb,
+		modifiers,
+		perAnswer,
+	} = stake;
 	const swatch = swatchForGate(gateNumber);
 	const gateName = swatch?.gateName ?? `Gate ${gateNumber}`;
 	const hasStartRequirement =
-		(configsToInstall !== undefined && configsToInstall > 0) ||
-		(minConfigs !== undefined && minConfigs >= 2);
+		(configsToInstall !== undefined && configsToInstall > 0) || minConfigs >= 2;
 	const showsCoverage =
 		modifiers.coverageMultiplier !== 1 ||
 		modifiers.coverageAdd > 0 ||
@@ -154,7 +151,7 @@ export const GateStakeReceipt = ({
 									in your pipeline
 								</Paragraph>
 							) : null}
-							{minConfigs !== undefined && minConfigs >= 2 ? (
+							{minConfigs >= 2 ? (
 								<WidthDemand
 									minConfigs={minConfigs}
 									configCount={configCount}
@@ -228,7 +225,7 @@ export const GateStakeReceipt = ({
 							{stripLabel(stripsOnFailure, configCount)}
 						</Paragraph>
 					</Paragraph>
-					{billKb !== undefined && billKb > 0 ? (
+					{billKb > 0 ? (
 						<Paragraph as="span" tone="muted">
 							<Paragraph as="span" tone="cinnabar" className="font-bold">
 								−{billKb}KB
