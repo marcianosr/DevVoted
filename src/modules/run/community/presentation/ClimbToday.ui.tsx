@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { clsx } from "clsx";
 
-import { Avatar } from "~/domains/users/components/Avatar.component";
+import { Avatar } from "~/modules/account/profile/presentation/Avatar.ui";
 import type {
 	ClimbClimber,
 	ClimbFallen,

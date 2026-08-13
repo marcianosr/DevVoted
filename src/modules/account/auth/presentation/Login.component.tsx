@@ -7,9 +7,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { Button } from "~/ui/Button.component";
 import { getSupabaseBrowserClient } from "~/shared/utils/supabaseBrowser";
 
-import { Auth } from "./Auth.component";
-import { loginFn } from "~/routes/_authed";
-import { signupFn } from "~/routes/sign-up";
+import {
+	loginFn,
+	signupFn,
+} from "~/modules/account/auth/application/auth.serverfn";
+import { Auth } from "~/modules/account/auth/presentation/Auth.ui";
 
 export function Login() {
 	const router = useRouter();

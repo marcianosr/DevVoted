@@ -11,7 +11,7 @@ import {
 	parseCompletionReason,
 	type ParsedCompletion,
 } from "~/domains/runs/utils/parseCompletionReason";
-import { Avatar } from "~/domains/users/components/Avatar.component";
+import { Avatar } from "~/modules/account/profile/presentation/Avatar.ui";
 import { formatStorage } from "~/shared/lib/storage";
 import { Button } from "~/ui/Button.component";
 

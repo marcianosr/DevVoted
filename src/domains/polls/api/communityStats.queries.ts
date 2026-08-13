@@ -19,7 +19,7 @@ import {
 	getWindowSize,
 } from "~/domains/runs/services/pipelineEvaluator.service";
 import { isCategoryCode, type CategoryCode } from "~/shared/lib/categories";
-import type { User } from "~/domains/users/services/userSync.service";
+import type { User } from "~/modules/account/auth/application/userSync.service";
 
 export type UserRole = "user" | "poll-editor" | "admin";
 

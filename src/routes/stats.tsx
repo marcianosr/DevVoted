@@ -4,9 +4,8 @@ import { Screen } from "~/ui/Screen.ui";
 import { getAllPolls, getPollCreators } from "~/domains/polls/api/polls";
 import PollCategoryCount from "~/domains/polls/components/PollCategoryCount.component";
 import { getAllRunsServerFn } from "~/domains/runs/api/runs";
-import { getUsersByDisplayNames } from "~/domains/users/api/users";
-
-const SPECIAL_THANKS = ["Matthijs Groen", "Piet de Vries", "Sander van Maurik"];
+import { CreditList } from "~/modules/account/profile/presentation/CreditList.ui";
+import { SpecialThanksPanel } from "~/modules/account/profile/presentation/SpecialThanksPanel.component";
 
 export const Route = createFileRoute("/stats")({
 	component: RouteComponent,
@@ -15,9 +14,6 @@ export const Route = createFileRoute("/stats")({
 			polls: await getAllPolls(),
 			creators: await getPollCreators(),
 			runs: await getAllRunsServerFn(),
-			specialThanks: await getUsersByDisplayNames({
-				data: { displayNames: SPECIAL_THANKS },
-			}),
 		};
 	},
 });
@@ -33,7 +29,7 @@ const computeRunStats = (
 };
 
 function RouteComponent() {
-	const { polls, creators, runs, specialThanks } = Route.useLoaderData();
+	const { polls, creators, runs } = Route.useLoaderData();
 
 	const runStats = runs.success ? computeRunStats(runs.data) : null;
 
@@ -45,18 +41,9 @@ function RouteComponent() {
 
 					{polls.success && <PollCategoryCount polls={polls.data} />}
 				</div>
-				<div>
-					<h1 className="text-3xl underline">Poll Editors</h1>
-					{creators.success && (
-						<ul className="flex flex-wrap gap-6 mt-4">
-							{creators.data.map((creator) => (
-								<li key={creator.id} className="flex items-center gap-3">
-									<ProfileAvatar user={creator} />
-								</li>
-							))}
-						</ul>
-					)}
-				</div>
+				{creators.success && (
+					<CreditList title="Poll Editors" people={creators.data} />
+				)}
 
 				<div>
 					<h1 className="text-3xl underline">Run Stats</h1>
@@ -69,50 +56,8 @@ function RouteComponent() {
 					)}
 				</div>
 
-				<div>
-					<h1 className="text-3xl underline">Special thanks to</h1>
-					<ul className="flex flex-wrap gap-6 mt-4">
-						{specialThanks.map((user) => (
-							<li key={user.id} className="flex items-center gap-3">
-								<ProfileAvatar user={user} />
-							</li>
-						))}
-					</ul>
-				</div>
+				<SpecialThanksPanel />
 			</section>
 		</Screen>
 	);
 }
-
-type ProfileAvatarProps = {
-	user: {
-		displayName: string;
-		photoUrl: string | null;
-		githubUsername: string | null;
-	};
-};
-
-const ProfileAvatar = ({ user }: ProfileAvatarProps) => (
-	<>
-		{user.photoUrl && (
-			<img
-				src={user.photoUrl}
-				alt={user.displayName}
-				className="w-12 h-12 rounded-full"
-			/>
-		)}
-		<div>
-			<p className="text-xl">{user.displayName}</p>
-			{user.githubUsername && (
-				<a
-					href={`https://github.com/${user.githubUsername}`}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="text-sm text-blue-400 hover:underline"
-				>
-					@{user.githubUsername}
-				</a>
-			)}
-		</div>
-	</>
-);

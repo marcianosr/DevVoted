@@ -11,6 +11,9 @@ const AGG = "^src/modules/[^/]+/[^/]+";
 const LEGACY_FROM = "^src/domains/[^/]+/";
 /** Dev rigs: they drive the engine directly, so runtime domain imports are expected. */
 const DEV_RIG_ROUTES = "^src/routes/proto-(run|session-slice)\\.tsx$";
+/** The root route builds the router context in `beforeLoad`, which runs before
+ * any component exists — so it cannot reach its data by mounting one. */
+const ROOT_ROUTE = "^src/routes/__root\\.tsx$";
 /** TanStack generates routeTree and pairs it with router.tsx; the cycle is theirs. */
 const GENERATED_ROUTER = "^src/(router\\.tsx|routeTree\\.gen\\.ts)$";
 const LEGACY_TREE = "^src/domains/";
@@ -92,9 +95,14 @@ module.exports = {
 		},
 		{
 			name: "routes-only-into-presentation",
-			comment: "a route mounts a presentation component and stops there",
+			comment:
+				"a route mounts a presentation component and stops there; __root is " +
+				"exempt because beforeLoad has no component to mount",
 			severity: "error",
-			from: { path: "^src/routes/", pathNot: DEV_RIG_ROUTES },
+			from: {
+				path: "^src/routes/",
+				pathNot: `${DEV_RIG_ROUTES}|${ROOT_ROUTE}`,
+			},
 			to: {
 				path: `${AGG}/(domain|application|infrastructure)/`,
 				dependencyTypesNot: ["type-only"],
@@ -149,12 +157,11 @@ module.exports = {
 		},
 		{
 			name: "legacy-engine-stays-pure-no-db",
-			// userSync.service is a known exception, tracked in DVTD-iide
 			comment: "pre-ADR-002 layout: engine code never touches Drizzle",
 			severity: "error",
 			from: {
 				path: LEGACY_FROM,
-				pathNot: "/(api|factories)/|userSync\\.service\\.ts$",
+				pathNot: "/(api|factories)/",
 			},
 			to: {
 				path: "drizzle-orm|^src/database/",

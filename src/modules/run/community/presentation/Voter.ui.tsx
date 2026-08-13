@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { Avatar } from "~/domains/users/components/Avatar.component";
+import { Avatar } from "~/modules/account/profile/presentation/Avatar.ui";
 import type { CommunityVoter } from "~/modules/run/community/application/community.service";
 import { Tooltip } from "~/ui/Tooltip.component";
 

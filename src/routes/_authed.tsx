@@ -1,25 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 
-import { Login } from "../domains/users/components/Login.component";
-import { getSupabaseServerClient } from "~/shared/utils/supabase";
-
-export const loginFn = createServerFn({ method: "POST" })
-	.validator((d: { email: string; password: string }) => d)
-	.handler(async ({ data }) => {
-		const supabase = await getSupabaseServerClient();
-		const { error } = await supabase.auth.signInWithPassword({
-			email: data.email,
-			password: data.password,
-		});
-
-		if (error) {
-			return {
-				error: true,
-				message: error.message,
-			};
-		}
-	});
+import { Login } from "~/modules/account/auth/presentation/Login.component";
 
 export const Route = createFileRoute("/_authed")({
 	beforeLoad: ({ context }) => {
