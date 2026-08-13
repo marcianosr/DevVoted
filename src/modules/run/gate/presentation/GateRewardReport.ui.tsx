@@ -78,7 +78,7 @@ const StepsSummary = ({ rows }: { rows: readonly GateRewardRow[] }) => {
 		<Paragraph as="div" size="sm" className="flex gap-2 ">
 			{parts.map((part, index) => (
 				<span key={part.key} className="flex gap-2">
-					{index > 0 ? <span className="text-zinc-300">·</span> : null}
+					{index > 0 ? <span className="text-pewter">·</span> : null}
 					<Paragraph as="span" size="sm" tone={part.tone}>
 						{summary[part.key]} {part.key}
 					</Paragraph>
@@ -172,7 +172,7 @@ const GateHeadline = ({
 			{swatch ? "gate " : ""}
 			{cleared ? "cleared!" : "failed!"}
 		</Title>
-		<Paragraph as="span" size="sm" tone="faint">
+		<Paragraph as="span" size="sm" tone="muted">
 			gate {gateNumber}
 		</Paragraph>
 	</div>
@@ -318,14 +318,14 @@ export const GateRewardReport = ({
 			{totals && climb ? (
 				<div className="flex flex-col gap-1.5">
 					{climb.ladder}
-					<Paragraph as="span" size="xs" tone="faint">
+					<Paragraph as="span" size="xs" tone="muted">
 						{climb.caption}
 					</Paragraph>
 				</div>
 			) : null}
 
 			{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
-				<Paragraph size="sm" tone="pewter">
+				<Paragraph size="sm" tone="muted">
 					Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
 					continue
 				</Paragraph>
@@ -354,7 +354,7 @@ export const GateRewardReport = ({
 												cap={storageBar.capKb}
 												label="storage"
 											/>
-											<Paragraph as="span" size="xs" tone="faint">
+											<Paragraph as="span" size="xs" tone="muted">
 												of {storageBar.capKb}KB cap
 											</Paragraph>
 										</>
@@ -372,7 +372,7 @@ export const GateRewardReport = ({
 									<div className="flex flex-wrap items-center gap-3">
 										<EarnedSwatch swatch={swatch} />
 										{swatchProgress ? (
-											<Paragraph as="span" size="xs" tone="faint">
+											<Paragraph as="span" size="xs" tone="muted">
 												earned · {swatchProgress.earned} of{" "}
 												{swatchProgress.total}
 											</Paragraph>

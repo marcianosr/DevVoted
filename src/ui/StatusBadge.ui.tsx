@@ -36,7 +36,7 @@ const OUTLINE: Record<StatusBadgeVariant, string> = {
 	pass: "border border-celadon text-celadon",
 	part: "border border-saffron text-saffron",
 	fail: "border border-vermillion text-vermillion",
-	skip: "border border-zinc-700 text-zinc-500",
+	skip: "border border-zinc-700 text-pewter",
 	run: "border border-saffron text-saffron",
 };
 

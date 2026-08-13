@@ -46,7 +46,10 @@ export const Badge = ({
 			onClick={disabled ? undefined : onClick}
 			aria-disabled={disabled || undefined}
 			aria-label={ariaLabel}
-			className={`${style} cursor-pointer transition hover:brightness-110 aria-disabled:cursor-not-allowed aria-disabled:border-zinc-600 aria-disabled:bg-zinc-700 aria-disabled:text-zinc-300`}
+			// Disabled dims the whole badge rather than recolouring its text: the
+			// old aria-disabled text was a lighter gray than the enabled tone, so a
+			// dead badge read brighter than a live one.
+			className={`${style} cursor-pointer transition hover:brightness-110 aria-disabled:cursor-not-allowed aria-disabled:opacity-50`}
 		>
 			{children}
 		</button>

@@ -243,12 +243,12 @@ const GateName = ({
 		{...swatchTheme(swatch.theme)}
 		className="flex min-w-0 items-baseline gap-1"
 	>
-		<Paragraph as="span" tone="faint" className="tabular-nums">
+		<Paragraph as="span" tone="muted" className="tabular-nums">
 			{swatch.gate}
 		</Paragraph>
 		<Paragraph
 			as="span"
-			tone={state === "current" ? "default" : "faint"}
+			tone={state === "current" ? "default" : "muted"}
 			className={clsx("truncate", state === "current" && "font-extrabold")}
 		>
 			{swatch.gateName}

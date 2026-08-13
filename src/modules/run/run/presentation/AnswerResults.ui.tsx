@@ -31,7 +31,7 @@ const OUTCOME_VARIANT: Record<AnswerOutcome, StatusBadgeVariant> = {
 const SCORE_TONE: Record<AnswerOutcome, ParagraphTone> = {
 	correct: "celadon",
 	partial: "saffron",
-	wrong: "faint",
+	wrong: "muted",
 };
 
 /**
@@ -39,12 +39,12 @@ const SCORE_TONE: Record<AnswerOutcome, ParagraphTone> = {
  * the eye slides past it to the rows that still owe you something.
  */
 const QUESTION_TONE: Record<AnswerOutcome, ParagraphTone> = {
-	correct: "pewter",
+	correct: "muted",
 	partial: "default",
 	wrong: "default",
 };
 
-type ChipTone = "celadon" | "vermillion" | "saffron" | "faint";
+type ChipTone = "celadon" | "vermillion" | "saffron" | "muted";
 
 // Expected is always celadon — it is what was true, regardless of how you did.
 // Received wears the outcome, so the two rows are the same colour only when you
@@ -59,21 +59,21 @@ const CHIP_OUTLINE: Record<ChipTone, string> = {
 	celadon: "border-celadon text-celadon",
 	vermillion: "border-vermillion text-vermillion",
 	saffron: "border-saffron text-saffron",
-	faint: "border-zinc-700 text-zinc-500",
+	muted: "border-zinc-700 text-pewter",
 };
 
 const CHIP_FILLED: Record<ChipTone, string> = {
 	celadon: "border-celadon bg-celadon text-zinc-950",
 	vermillion: "border-vermillion bg-vermillion text-zinc-950",
 	saffron: "border-saffron bg-saffron text-zinc-950",
-	faint: "border-zinc-700 bg-zinc-700 text-zinc-950",
+	muted: "border-zinc-700 bg-zinc-700 text-zinc-950",
 };
 
 const TEXT_TONE: Record<ChipTone, ParagraphTone> = {
 	celadon: "celadon",
 	vermillion: "vermillion",
 	saffron: "saffron",
-	faint: "faint",
+	muted: "muted",
 };
 
 const OPTION_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -226,7 +226,7 @@ const MultiTally = ({
 	missed: readonly ReviewOption[];
 }) => (
 	<div className="border-t border-zinc-900 pt-3">
-		<Paragraph tone="faint">
+		<Paragraph tone="muted">
 			{hits} of {expected}
 			{missed.length > 0 ? (
 				<>
@@ -301,7 +301,7 @@ const OtherOptions = ({
 				<OptionLine
 					key={option.letter}
 					option={option}
-					tone="faint"
+					tone="muted"
 					filled={false}
 					multi={multi}
 				/>
@@ -336,7 +336,7 @@ const QuestionLine = ({ poll }: { poll: AnsweredPoll }) => (
 	<>
 		{poll.question}
 		{poll.answerType === "multiple" ? (
-			<Paragraph as="span" tone="faint" className="block">
+			<Paragraph as="span" tone="muted" className="block">
 				multiple choice
 			</Paragraph>
 		) : null}
@@ -370,7 +370,7 @@ const ReporterRow = ({ poll }: { poll: AnsweredPoll }) => {
 						<Paragraph
 							as="span"
 							size="sm"
-							tone={hasScore ? SCORE_TONE[poll.outcome] : "faint"}
+							tone={hasScore ? SCORE_TONE[poll.outcome] : "muted"}
 							className="w-14 shrink-0 text-right tabular-nums"
 						>
 							{hasScore ? formatScore(poll.coverageEarned) : "—"}
@@ -410,7 +410,7 @@ export const AnswerResults = ({ answered }: AnswerResultsProps) => {
 		<section className="space-y-2">
 			<div className="flex items-baseline justify-between border-b border-zinc-900 pb-2">
 				<Title>Review your answers</Title>
-				<Paragraph as="span" size="sm" tone="pewter" className="tabular-nums">
+				<Paragraph as="span" size="sm" tone="muted" className="tabular-nums">
 					{correct} of {answered.length} correct
 				</Paragraph>
 			</div>

@@ -141,7 +141,7 @@ describe(AnswerResults, () => {
 
 	it("leaves a zero score grey — the FAIL badge already carries that news", () => {
 		render(<AnswerResults answered={answered} />);
-		expect(screen.getByText("0%")).toHaveClass("text-zinc-500");
+		expect(screen.getByText("0%")).toHaveClass("text-pewter");
 	});
 
 	it("shows a dash instead of a score when coverage was never recorded", () => {

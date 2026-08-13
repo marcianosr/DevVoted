@@ -86,7 +86,7 @@ export const DataTable = <TData,>({
 									key={header.id}
 									aria-sort={ariaSortOf(sorted)}
 									className={clsx(
-										"pb-2 text-xs font-normal uppercase text-zinc-400",
+										"pb-2 text-xs font-normal uppercase text-pewter",
 										align === "right" ? "text-right" : "text-left",
 										grow ? "w-full" : "whitespace-nowrap"
 									)}
@@ -95,7 +95,7 @@ export const DataTable = <TData,>({
 										<button
 											type="button"
 											onClick={header.column.getToggleSortingHandler()}
-											className="inline-flex items-center gap-1 uppercase hover:text-zinc-200"
+											className="inline-flex items-center gap-1 uppercase hover:text-zinc-100"
 										>
 											{label}
 											<SortIndicator sorted={sorted} />
@@ -113,7 +113,7 @@ export const DataTable = <TData,>({
 						<tr>
 							<td
 								colSpan={columns.length}
-								className="py-6 text-center text-sm text-zinc-400"
+								className="py-6 text-center text-sm text-pewter"
 							>
 								{emptyMessage}
 							</td>

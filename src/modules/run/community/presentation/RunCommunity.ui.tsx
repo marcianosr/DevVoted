@@ -42,7 +42,7 @@ const OptionRow = ({ option }: { option: CommunityOptionResult }) => {
 			</span>
 			<Paragraph
 				as="span"
-				tone={option.isRight ? "celadon" : empty ? "faint" : "default"}
+				tone={option.isRight ? "celadon" : empty ? "muted" : "default"}
 				className="min-w-0 flex-1 font-semibold"
 			>
 				{option.label}
@@ -96,7 +96,7 @@ const PollSection = ({ poll }: { poll: RunCommunityPoll }) => {
 	// not even the question (mirrors the handler's sealed detail).
 	if (!poll.detail)
 		return (
-			<Paragraph tone="faint">
+			<Paragraph tone="muted">
 				Poll {poll.index + 1} · skipped — results stay sealed until you meet it
 				again
 			</Paragraph>
@@ -117,8 +117,8 @@ const PollSection = ({ poll }: { poll: RunCommunityPoll }) => {
 				<Paragraph as="span" className="min-w-0 flex-1 font-extrabold">
 					{poll.question}
 					{poll.detail.answerType === "multiple" && (
-						<Paragraph as="span" tone="faint" className="block font-normal">
-							multi
+						<Paragraph as="span" tone="muted" className="block font-normal">
+							Multiple choice
 						</Paragraph>
 					)}
 				</Paragraph>

@@ -86,7 +86,7 @@ const actionTone = ({
 		return "border-transparent legendary-ring text-zinc-100 enabled:hover:brightness-125";
 	if (loud)
 		return "border-viridian bg-viridian/10 text-zinc-100 enabled:hover:bg-viridian/20";
-	return "border-zinc-600 text-zinc-300 enabled:hover:border-zinc-400";
+	return "border-zinc-600 text-pewter enabled:hover:border-zinc-400";
 };
 
 const actionButton = ({
@@ -130,10 +130,10 @@ const planBill = (plan: StoragePlanOption): string => {
 	return plan.billKb === 0 ? "Free" : `${plan.billKb}KB / gate`;
 };
 
-const planLabelTone = (plan: StoragePlanOption): ParagraphTone | undefined => {
-	if (plan.locked) return "faint";
-	return plan.current ? undefined : "muted";
-};
+// A locked rung reads dim through its row's own opacity, so it needs no third
+// tone of its own — only the plan you are on is at full strength.
+const planLabelTone = (plan: StoragePlanOption): ParagraphTone | undefined =>
+	plan.current ? undefined : "muted";
 
 type PanelHeadingProps = {
 	title: ReactNode;

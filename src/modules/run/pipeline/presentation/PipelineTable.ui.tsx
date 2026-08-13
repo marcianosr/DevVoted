@@ -32,7 +32,7 @@ export const SlotNumberCell = ({ slot }: { slot: number }) => (
 	<Paragraph
 		as="span"
 		size="xs"
-		tone="faint"
+		tone="muted"
 		className="col-start-1 self-start py-2 leading-6 tabular-nums"
 	>
 		{slot}

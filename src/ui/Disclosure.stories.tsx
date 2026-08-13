@@ -26,7 +26,7 @@ const distractors = [":root()", ":scope()", ":is()", ":where()"];
 const Options = () => (
 	<div className="space-y-1.5">
 		{distractors.map((option) => (
-			<Paragraph key={option} tone="faint">
+			<Paragraph key={option} tone="muted">
 				{option}
 			</Paragraph>
 		))}

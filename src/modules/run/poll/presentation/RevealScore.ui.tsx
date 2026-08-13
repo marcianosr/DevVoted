@@ -30,10 +30,12 @@ const roundTenth = (value: number): number => Math.round(value * 10) / 10;
 const formatDelta = (value: number): string =>
 	`${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 
+// Matches ScoreEquationChips' valueTone: the reveal and the answer screen grade
+// the same number, so they cannot disagree about what a gain looks like.
 const toneOf = (value: number): string => {
-	if (value > 0) return "text-green-400";
-	if (value < 0) return "text-red-400";
-	return "text-zinc-400";
+	if (value > 0) return "text-viridian";
+	if (value < 0) return "text-cinnabar";
+	return "text-pewter";
 };
 
 const totalOf = (steps: readonly RevealStep[]): number =>

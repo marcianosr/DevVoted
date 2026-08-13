@@ -28,7 +28,7 @@ const button = cva(
 				danger:
 					"border-2 border-cinnabar text-white hover:bg-cinnabar/40 disabled:opacity-40",
 				neutral:
-					"border border-zinc-600 text-zinc-300 hover:border-zinc-400 hover:bg-white/5 disabled:opacity-40",
+					"border border-zinc-600 text-zinc-100 hover:border-zinc-400 hover:bg-white/5 disabled:opacity-40",
 			},
 			size: {
 				default: "",
@@ -61,7 +61,7 @@ const button = cva(
 			{
 				variant: "primary",
 				isDisabled: true,
-				class: "bg-zinc-800 text-gray-500",
+				class: "bg-zinc-800 text-pewter",
 			},
 			{
 				variant: "primary",

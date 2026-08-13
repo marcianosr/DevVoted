@@ -106,7 +106,7 @@ export const PipelineReportRow = ({
 	defaultOpen,
 }: PipelineReportRowProps) => {
 	const noteBlock = note ? (
-		<Paragraph as="span" size="xs" tone="faint" className="block">
+		<Paragraph as="span" size="xs" tone="muted" className="block">
 			{note}
 		</Paragraph>
 	) : null;

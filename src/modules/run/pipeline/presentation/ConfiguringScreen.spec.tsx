@@ -101,7 +101,7 @@ describe(ConfiguringScreen, () => {
 		// prints "+32KB" (its gives text), which would otherwise collide.
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
 		// Unit Tests' +32KB storageOnClear stacks onto the base 32KB reward.
-		expect(receipt.getByText("+32KB")).toHaveClass("text-zinc-400");
+		expect(receipt.getByText("+32KB")).toHaveClass("text-pewter");
 		expect(receipt.getByText("→ +64KB")).toHaveClass("text-celadon");
 	});
 

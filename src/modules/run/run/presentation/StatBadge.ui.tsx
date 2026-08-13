@@ -10,10 +10,13 @@ type StatBadgeProps = {
 	from?: ReactNode;
 };
 
+// A stat's value outranks its own label, so the quiet tone here is the body
+// colour rather than the gray the label wears — it used to be dimmer than the
+// Subtitle above it, which read as though the number were the caption.
 const VALUE_COLOR: Record<NonNullable<StatBadgeProps["valueTone"]>, string> = {
 	theme: "text-theme",
 	gradient: "text-gradient-green",
-	muted: "text-zinc-500",
+	muted: "text-zinc-100",
 };
 
 export const StatBadge = ({
@@ -28,7 +31,7 @@ export const StatBadge = ({
 			<span className="text-xl font-extrabold">
 				{from != null ? (
 					<>
-						<span className="text-zinc-500">{from}</span>
+						<span className="text-pewter">{from}</span>
 						<span className="text-celadon"> → {value}</span>
 					</>
 				) : (

@@ -15,7 +15,7 @@ export const Subtitle = ({
 }: SubtitleProps) => (
 	<Tag
 		className={clsx(
-			"text-xs text-zinc-400 font-medium tracking-tight",
+			"text-xs text-pewter font-medium tracking-tight",
 			className
 		)}
 	>

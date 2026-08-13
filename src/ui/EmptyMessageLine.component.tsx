@@ -5,5 +5,5 @@ type EmptyMessageLineProps = {
 };
 
 export const EmptyMessageLine = ({ children }: EmptyMessageLineProps) => (
-	<p className="text-zinc-300">{children}</p>
+	<p className="text-pewter">{children}</p>
 );

@@ -96,7 +96,7 @@ describe(RunCommunityBoard, () => {
 			},
 		};
 		render(<RunCommunityBoard {...base} polls={[multi]} />);
-		expect(screen.getByText("multi")).toBeInTheDocument();
+		expect(screen.getByText("Multiple choice")).toBeInTheDocument();
 	});
 
 	it("opens on the right answer and your pick, folding the rest away", () => {

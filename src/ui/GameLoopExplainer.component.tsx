@@ -2,6 +2,8 @@ import { useState } from "react";
 
 import { clsx } from "clsx";
 
+import { Subtitle } from "~/ui/typography/Subtitle.component";
+
 type Step = {
 	icon: string;
 	title: string;
@@ -58,13 +60,13 @@ export const GameLoopExplainer = () => {
 
 	return (
 		<div className="mb-8 border border-gray-700 p-6">
-			<p className="text-gray-400 text-sm mb-4 uppercase tracking-wider">
+			<Subtitle as="p" className="mb-4 uppercase tracking-wider">
 				How the game works
-			</p>
+			</Subtitle>
 
 			<div className="min-h-[30]">
 				<div className="flex items-start gap-4">
-					<span className="text-3xl text-yellow-500 font-bold">
+					<span className="text-3xl text-saffron font-bold">
 						{currentStepData.icon}
 					</span>
 					<div>

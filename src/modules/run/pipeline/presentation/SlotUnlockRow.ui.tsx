@@ -63,7 +63,7 @@ const lockPill = (unlocked: boolean) => (
 	<Paragraph
 		as="span"
 		size="xs"
-		tone={unlocked ? "celadon" : "faint"}
+		tone={unlocked ? "celadon" : "muted"}
 		className={clsx(
 			"shrink-0 rounded border px-2 py-0.5",
 			unlocked ? "border-celadon" : "border-zinc-700"

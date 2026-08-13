@@ -70,7 +70,7 @@ const StackPreviewRow = ({ index, row }: { index: number; row: RoleRow }) => {
 				<Paragraph
 					as="span"
 					size="xs"
-					tone="faint"
+					tone="muted"
 					className="w-4 shrink-0 text-right tabular-nums"
 				>
 					{index}
@@ -102,7 +102,7 @@ const StackPreviewRow = ({ index, row }: { index: number; row: RoleRow }) => {
 					<button
 						type="button"
 						onClick={() => setDetailsOpen((current) => !current)}
-						className="cursor-pointer self-start text-xs text-pewter underline decoration-dotted underline-offset-2 hover:text-zinc-300"
+						className="cursor-pointer self-start text-xs text-pewter underline decoration-dotted underline-offset-2 hover:text-zinc-100"
 					>
 						{detailsOpen ? "▾ hide the fine print" : "▸ more details"}
 					</button>

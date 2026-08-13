@@ -55,7 +55,7 @@ export const SwatchChip = ({
 			<Paragraph
 				as="span"
 				size="xs"
-				tone={owned ? "default" : "faint"}
+				tone={owned ? "default" : "muted"}
 				className={clsx(owned && swatchNameClass(swatch.finish))}
 			>
 				{owned || !redact ? swatch.name : "???"}

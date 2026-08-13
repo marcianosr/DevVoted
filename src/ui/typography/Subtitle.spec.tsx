@@ -21,7 +21,7 @@ describe("Subtitle", () => {
 		render(<Subtitle>Lead</Subtitle>);
 		expect(screen.getByText("Lead")).toHaveClass(
 			"text-xs",
-			"text-zinc-400",
+			"text-pewter",
 			"font-medium",
 			"tracking-tight"
 		);

@@ -214,7 +214,7 @@ export const ConfiguringScreen = ({
 							}
 						/>
 						{slots < MAX_SLOTS ? (
-							<Paragraph size="xs" tone="faint">
+							<Paragraph size="xs" tone="muted">
 								More slots will unlock when you gain coverage!
 							</Paragraph>
 						) : null}

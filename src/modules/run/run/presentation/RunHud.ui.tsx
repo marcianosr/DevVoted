@@ -39,7 +39,7 @@ const CoverageSummary = ({
 	if (coveredCount === 0)
 		return (
 			<span className="flex items-baseline gap-2">
-				<Paragraph as="span" size="xs" tone="pewter">
+				<Paragraph as="span" size="xs" tone="muted">
 					Coverage
 				</Paragraph>
 				<Paragraph as="span" size="xs" tone="theme">
@@ -53,14 +53,14 @@ const CoverageSummary = ({
 			trigger={
 				<span className="flex flex-col items-start">
 					<span className="flex items-baseline gap-1.5">
-						<Paragraph as="span" size="xs" tone="pewter">
+						<Paragraph as="span" size="xs" tone="muted">
 							Coverage
 						</Paragraph>
 						<Paragraph as="span" size="xs" tone="theme">
 							{coverage}%
 						</Paragraph>
 					</span>
-					<Paragraph as="span" size="xs" tone="pewter">
+					<Paragraph as="span" size="xs" tone="muted">
 						across {coveredCount} categor{coveredCount === 1 ? "y" : "ies"}
 					</Paragraph>
 				</span>
@@ -152,7 +152,7 @@ export const RunHud = ({
 			</span>
 			<span className="flex shrink-0 items-start gap-1.5">
 				<span className="flex w-56 flex-col gap-1">
-					<Paragraph as="span" size="xs" tone="pewter">
+					<Paragraph as="span" size="xs" tone="muted">
 						<GateName gate={gatesCleared} /> gate · {gatesCleared} /{" "}
 						{victoryGate}
 					</Paragraph>

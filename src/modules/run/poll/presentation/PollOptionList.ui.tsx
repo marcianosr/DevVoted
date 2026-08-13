@@ -86,7 +86,7 @@ const optionBadge = cva(
 				correctMissed: "border border-viridian bg-transparent text-viridian",
 				chosenWrong: "bg-cinnabar text-black",
 				selected: "bg-theme text-black",
-				neutral: "bg-zinc-800 text-zinc-400",
+				neutral: "bg-zinc-800 text-pewter",
 			} satisfies Record<OptionStatus, string>,
 			shape: {
 				radio: "rounded-full",

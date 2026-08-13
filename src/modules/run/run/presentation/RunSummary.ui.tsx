@@ -90,7 +90,7 @@ export const RunSummary = ({
 					<Paragraph as="span" size="sm" tone="viridian">
 						{gatesCleared} cleared
 					</Paragraph>
-					<span className="text-zinc-300">·</span>
+					<span className="text-pewter">·</span>
 					<Paragraph as="span" size="sm" tone={won ? "viridian" : "cinnabar"}>
 						{won ? "summit reached" : `stalled at gate ${gatesCleared}`}
 					</Paragraph>
@@ -107,7 +107,9 @@ export const RunSummary = ({
 					))}
 				</div>
 				<Paragraph size="sm" className="mt-1">
-					<span className="text-zinc-400">Coverage score</span>{" "}
+					<Paragraph as="span" size="sm" tone="muted">
+						Coverage score
+					</Paragraph>{" "}
 					<span className="font-extrabold text-gradient-green">
 						{coverage}%
 					</span>

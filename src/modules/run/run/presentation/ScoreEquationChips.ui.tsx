@@ -3,6 +3,7 @@ import { type CSSProperties, Fragment, type ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { Tooltip } from "~/ui/Tooltip.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 export type ScoreBonusRow = {
 	label: string;
@@ -39,14 +40,18 @@ export const totalTone = (isCorrect: boolean): string =>
 const chipTone = (value: number): string => {
 	if (value > 0) return "border-viridian/50 text-viridian";
 	if (value < 0) return "border-cinnabar/50 text-cinnabar";
-	return "border-zinc-700 text-zinc-400";
+	return "border-zinc-700 text-pewter";
 };
 
 const valueTone = (value: number): string => {
 	if (value > 0) return "text-viridian";
 	if (value < 0) return "text-cinnabar";
-	return "text-zinc-400";
+	return "text-pewter";
 };
+
+// The operators are the equation's scaffolding, so they sit back and let the
+// numbers carry the colour. Previously "+" was white and "=" gray, in one line.
+const OPERATOR_TONE = "text-pewter";
 
 const difficultyReason = ({
 	optionCount,
@@ -132,9 +137,9 @@ export const ScoreEquationChips = ({
 		return (
 			<div className="pb-2">
 				<div className="flex items-baseline justify-between">
-					<span className="text-zinc-400">
+					<Paragraph as="span" tone="muted">
 						{isCorrect ? "Correct answer" : "Wrong answer"}
-					</span>
+					</Paragraph>
 					<span
 						className={clsx(
 							"inline-block text-xl font-bold tabular-nums",
@@ -159,7 +164,7 @@ export const ScoreEquationChips = ({
 						<Fragment key={`${modifier.label}-${index}`}>
 							{index > 0 && (
 								<span
-									className={clsx("inline-block text-white", pop.className)}
+									className={clsx("inline-block", OPERATOR_TONE, pop.className)}
 									style={pop.style}
 								>
 									+
@@ -196,7 +201,7 @@ export const ScoreEquationChips = ({
 					);
 				})}
 				<span
-					className={clsx("text-zinc-500", popAt(totalStep).className)}
+					className={clsx(OPERATOR_TONE, popAt(totalStep).className)}
 					style={popAt(totalStep).style}
 				>
 					=

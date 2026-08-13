@@ -38,7 +38,7 @@ export const PracticeBank = ({ entries, totalCount }: PracticeBankProps) => (
 						{getCategoryMetadata(entry.category).name}
 					</span>
 					<Paragraph className="min-w-0 truncate">{entry.question}</Paragraph>
-					<span className="ml-auto shrink-0 text-xs text-zinc-500">
+					<span className="ml-auto shrink-0 text-xs text-pewter">
 						{seenLabel(entry)}
 					</span>
 				</li>

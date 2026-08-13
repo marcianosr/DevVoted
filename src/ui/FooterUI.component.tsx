@@ -35,13 +35,13 @@ export const FooterUI = ({
 				Tanstack Start by Marciano Schildmeijer | EST may 2022 | Last updated:{" "}
 				{lastCommitDate}
 			</p>
-			<p className="mt-2 text-zinc-400">
+			<p className="mt-2 text-pewter">
 				Found a bug?{" "}
 				<a
 					href="https://github.com/marcianosr/DevVoted/issues"
 					target="_blank"
 					rel="noopener noreferrer"
-					className="text-blue-400 hover:text-blue-300 underline"
+					className="text-cerulean hover:brightness-125 underline"
 				>
 					Report it on GitHub
 				</a>

@@ -157,7 +157,7 @@ export const AnsweringScreen = ({
 			<div className="flex min-w-0 flex-col gap-6 lg:order-2">
 				<span className="flex flex-col gap-2">
 					<PollOutcomeBar outcomes={pollOutcomes} pollsPerGate={pollsPerGate} />
-					<Paragraph as="span" size="xs" tone="pewter">
+					<Paragraph as="span" size="xs" tone="muted">
 						{pollOutcomes.length} of {pollsPerGate} polls
 					</Paragraph>
 				</span>

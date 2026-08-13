@@ -41,7 +41,7 @@ export const MetaStorageBar = ({ carriedKb, totalKb }: MetaStorageBarProps) => {
 			<div className="flex items-baseline justify-between gap-3">
 				<Paragraph as="span" size="sm" tone="saffron" className="font-bold">
 					{carried}KB carried{" "}
-					<span className="font-normal text-zinc-400">
+					<span className="font-normal text-pewter">
 						· {percent}% of {total}KB
 					</span>
 				</Paragraph>

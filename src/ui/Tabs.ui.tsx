@@ -28,7 +28,7 @@ export const Tabs = ({ tabs, activeId, onSelect }: TabsProps) => (
 						"-mb-px cursor-pointer border-b-2 pb-2 text-sm font-bold transition-colors",
 						isActive
 							? "border-theme text-theme"
-							: "border-transparent text-zinc-400 hover:text-zinc-200"
+							: "border-transparent text-pewter hover:text-zinc-100"
 					)}
 				>
 					{tab.label}

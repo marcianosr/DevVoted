@@ -69,7 +69,7 @@ const MetricValue = ({
 	if (preview !== undefined && preview !== current)
 		return (
 			<>
-				<span className="text-zinc-400">{current}</span>
+				<span className="text-pewter">{current}</span>
 				<span className="text-celadon"> → {preview}</span>
 			</>
 		);
@@ -167,7 +167,7 @@ export const GateStakeReceipt = ({
 				<div className="flex flex-col gap-1">
 					<Paragraph size="xs">Per answer</Paragraph>
 					<Paragraph as="span">
-						<Paragraph as="span" className="font-bold" tone="pewter">
+						<Paragraph as="span" className="font-bold" tone="muted">
 							Correct:
 						</Paragraph>{" "}
 						<MetricValue
@@ -201,7 +201,7 @@ export const GateStakeReceipt = ({
 				<div className="flex flex-col gap-1">
 					<Paragraph size="xs">Outcomes</Paragraph>
 					<Paragraph as="span">
-						<Paragraph as="span" className="font-bold" tone="pewter">
+						<Paragraph as="span" className="font-bold" tone="muted">
 							Succeed your build:
 						</Paragraph>{" "}
 						<MetricValue
@@ -221,7 +221,7 @@ export const GateStakeReceipt = ({
 						) : null}
 					</Paragraph>
 					<Paragraph as="span">
-						<Paragraph as="span" className="font-bold" tone="pewter">
+						<Paragraph as="span" className="font-bold" tone="muted">
 							Fail your build:
 						</Paragraph>{" "}
 						<Paragraph as="span" tone="cinnabar" className="font-bold">

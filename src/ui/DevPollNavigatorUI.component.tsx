@@ -28,6 +28,6 @@ export const DevPollNavigatorUI = ({
 				Today
 			</button>
 		)}
-		<span className="text-xs text-gray-500">Viewing: {currentDate}</span>
+		<span className="text-xs text-pewter">Viewing: {currentDate}</span>
 	</div>
 );

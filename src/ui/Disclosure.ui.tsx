@@ -31,7 +31,7 @@ export const Disclosure = ({
 }: DisclosureProps) => (
 	<details className={clsx("group/disclosure", className)} open={defaultOpen}>
 		<summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-			<Paragraph as="span" tone="faint">
+			<Paragraph as="span" tone="muted">
 				{summary}{" "}
 				<span
 					aria-hidden
