@@ -1,11 +1,11 @@
 ---
 # DVTD-ezij
 title: A dodged check fails; a gate never clears on zero correct
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-08-07T13:46:32Z
-updated_at: 2026-08-12T13:17:04Z
+updated_at: 2026-08-13T06:47:31Z
 ---
 
 A build of Copilot + ESLint + Stylelint summits on 0 correct answers. Driven through the real reducer: 13 gates cleared, storage 0, coverage 0, status "won", and all 13 swatches written to users.owned_swatch_ids.
@@ -22,13 +22,13 @@ Affordability does not excuse the pledge: a build that cannot fund what it promi
 
 ## Todo
 - [x] `LintTally` gains `offered`; the reducer records lintable polls per linter
-- [ ] `lintState`: dodge fails at window close, excused skip stays a skip
+- [x] ~~`lintState`: dodge fails at window close~~ — superseded 2026-08-12: the pledge is dropped, linters carry a mastery check instead
 - [x] ~~`MIN_CORRECT_TO_CLEAR`~~ rejected: the floor is a config's check, not the gate's rule
 - [x] The failure log names which checks failed
-- [ ] Tests: freeloader dies, unlucky focus build survives, dodge vs excused, floor
+- [x] Tests: freeloader dies, unlucky focus build survives, floor rejected (dodge-vs-excused dropped with the pledge)
 - [x] Copilot renamed AGENTS.md, gains `min-correct: 1`; roster invariant makes a checkless config a compile error
-- [ ] ADR-022 + amendment markers on ADR-017 and ADR-019's open risk
-- [ ] wiki.md + CHANGELOG
+- [x] ADR-022 + amendment markers on ADR-017 and ADR-019's open risk
+- [x] wiki.md + CHANGELOG
 
 ## Notes
 
@@ -79,6 +79,32 @@ some linter's category, so a full-linter build fires a mastery check on nearly
 every poll and becomes one of the hardest builds to clear rather than the
 easiest. "Accept it and pin a test" would have aged badly.
 
-- [ ] masteryCheck generalises focusCheck; linters use eliminatesWrongOptionsFor
-- [ ] Delete lint-correct, LintTally, lintedByConfig, offered
-- [ ] RosterConfig accepts a non-empty eliminatesWrongOptionsFor as owing a check
+- [x] masteryCheck generalises focusCheck; linters use eliminatesWrongOptionsFor
+- [x] Delete lint-correct, LintTally, lintedByConfig, offered
+- [x] RosterConfig accepts a non-empty eliminatesWrongOptionsFor as owing a check
+
+## Summary of Changes
+
+Closed 2026-08-13. The engine work had landed across earlier sessions; this session found it complete and finished the writing, then closed the open UI gap by proving it no longer exists.
+
+**Already in place, verified rather than built:** `masteryCheck` generalises the Focus check and both linters route through it via `eliminatesWrongOptionsFor`; `RosterConfig` enforces the invariant (removing a check makes tsc fail); `lint-correct`, `LintTally`, `lintedByConfig` and `offered` are gone from `src/modules` (only the parked prototype in `src/domains/runs/prototype/` still carries them, knowingly); the freeloader/unlucky-focus/no-floor tests all exist and pass.
+
+**ADR-022 written** (`docs/adr/022-every-config-owes-the-gate-a-check.md`). The code had cited "ADR-022" in nine places for a week while the file did not exist, and the ADR index openly reserved the number as "Unwritten". It records the decision plus both rejected designs, since each looks obviously correct on a second pass:
+- the gate-level correctness floor (charges every build for what one build bought; adds a demand with no checklist row)
+- the declined-lint pledge (forces the fee, so an unaffordable window becomes a death the player never chose, the same trap ADR-031 had just reversed at the shop door)
+- the sizing correction: the hole grows with the roster (12 categories vs an 8-config width cap), so the mastery check is load-bearing rather than cosmetic
+
+**Amendment markers:** ADR-017's "an all-skip build banks nearly nothing" consequence now carries a ⚠ marker saying that was the bug, not an acceptable cost, closed by 022. ADR-019's DVTD-ziss open risk now names the three ADRs that address it (022, 027, 033). ADR-028's "reserved and unwritten" preamble now links the real file. ADR index rows updated for 017, 022, 028.
+
+**Wiki §4.1** rewrote the legendary-exception paragraph into the roster invariant plus a linters-owe-competence paragraph, and the roster table's two linter rows still described the dropped pledge ("If you use it on a poll, you must answer that poll correctly") -> now the mastery demand the code actually implements.
+
+**CHANGELOG** entry for the player-visible half: both linters and AGENTS.md changed what they demand, and the all-excused residual is stated honestly.
+
+**The open UI gap turned out to be closed by the floor's rejection**, not by new code. The gap was "a gate fails with an all-skipped checklist and no stated reason" — reachable only through a rule with no checklist row, which is exactly what the floor was and exactly why it was rejected. Pinned mechanically in `gate.model.spec.ts`: no roster config can fail a stocked gate without a failed row on the checklist, and every roster config contributes at least one row. Probed for vacuity before trusting it (7 of 21 configs fail the test window, so the loop body really runs).
+
+Verified: tsc clean, oxlint clean, 0 arch violations (524 modules), 1439 tests passing (+8).
+
+## Follow-ups
+
+- The parked prototype (`src/domains/runs/prototype/sessionSlice.ts`, `sessionRun.ts`) still carries `lintState`/`LintTally`. It diverges knowingly, the same way it does on ADR-017. It dies with DVTD-wj1t or its own cleanup, not here.
+- The accepted residual (an all-excused window clears on 0/5) is pinned by test, not fixed. If the roster grows such that it becomes reachable by choice rather than by draw, revisit.

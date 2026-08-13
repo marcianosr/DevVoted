@@ -10,9 +10,10 @@ import {
 	type ClimbMarker,
 	trackPosition,
 } from "~/modules/run/community/domain/climbMap.model";
-import type {
-	AnswerOutcome,
-	AnswerType,
+import {
+	answerOutcome,
+	type AnswerOutcome,
+	type AnswerType,
 } from "~/modules/run/run/domain/run.model";
 import {
 	fetchActiveClimbers,
@@ -143,25 +144,6 @@ const groupAnswers = (rows: SessionAnswerRow[]): CommunityAnswer[] => {
 	return [...byResponse.values()];
 };
 
-const sameSet = (a: Set<number>, b: Set<number>): boolean =>
-	a.size === b.size && [...a].every((value) => b.has(value));
-
-/** Mirrors the engine's answerOutcome: partial exists only on multi-answer polls. */
-const outcomeOf = (
-	poll: CommunityPollRecord,
-	picked: Set<number>
-): AnswerOutcome => {
-	const correctIds = new Set(
-		poll.options.filter((option) => option.correct).map((option) => option.id)
-	);
-	if (sameSet(picked, correctIds)) return "correct";
-	if (poll.answerType === "single") return "wrong";
-	const anyCorrectPicked = poll.options.some(
-		(option) => option.correct && picked.has(option.id)
-	);
-	return anyCorrectPicked ? "partial" : "wrong";
-};
-
 const toPercent = (part: number, total: number): number =>
 	total === 0 ? 0 : Math.round((part / total) * 100);
 
@@ -174,7 +156,7 @@ const buildPollDetail = (
 	pollAnswers: CommunityAnswer[]
 ): RunCommunityPollDetail => {
 	const gotItRight = pollAnswers.filter(
-		(answer) => outcomeOf(poll, answer.optionIds) === "correct"
+		(answer) => answerOutcome(poll, answer.optionIds) === "correct"
 	);
 
 	return {
@@ -216,7 +198,7 @@ const topPercentFor = (
 	for (const answer of answers) {
 		const poll = pollsById.get(answer.pollId);
 		if (!poll) continue;
-		const isCorrect = outcomeOf(poll, answer.optionIds) === "correct";
+		const isCorrect = answerOutcome(poll, answer.optionIds) === "correct";
 		correctByUser.set(
 			answer.user.id,
 			(correctByUser.get(answer.user.id) ?? 0) + (isCorrect ? 1 : 0)
@@ -272,7 +254,7 @@ const buildStandouts = async ({
 		}),
 		isCorrect: (pollId, optionIds) => {
 			const poll = pollsById.get(pollId);
-			return poll ? outcomeOf(poll, new Set(optionIds)) === "correct" : false;
+			return poll ? answerOutcome(poll, optionIds) === "correct" : false;
 		},
 		seedCreatedAt,
 		runStats: runStats.map((row) => ({
@@ -433,7 +415,7 @@ export const getRunCommunityService = async ({
 				index,
 				question: poll.question,
 				category: isCategoryCode(poll.categoryCode) ? poll.categoryCode : null,
-				outcome: outcomeOf(poll, viewerAnswer.optionIds),
+				outcome: answerOutcome(poll, viewerAnswer.optionIds),
 				detail: buildPollDetail(poll, viewerAnswer, pollAnswers),
 			};
 		});

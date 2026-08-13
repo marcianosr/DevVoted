@@ -2,10 +2,9 @@
 
 **Status:** Accepted
 **Date:** 2026-08-11
-**Supersedes:** nothing. Carves one narrow exception out of the ADR-022 rule
-(reserved and unwritten, but cited throughout `effect.model.ts` and
-`run.model.ts`: the checklist is the whole rulebook, and every config owes the
-gate something).
+**Supersedes:** nothing. Carves one narrow exception out of the
+[ADR-022](022-every-config-owes-the-gate-a-check.md) rule: the checklist is the
+whole rulebook, and every config owes the gate something.
 
 ## Context
 

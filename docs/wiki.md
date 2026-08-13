@@ -531,11 +531,24 @@ doubles your gains and asks you to gain something; Cold Start doubles your opene
 and asks you to land it. Add a condition you trust yourself to hit, and get paid for
 the confidence. Your build is as hard as you make it, and exactly as rich.
 
-**The legendary exception.** Legendaries no longer skip the check (ADR-022 closed
-that: a config with no check made a build pass gates vacuously). What legendary buys
-instead is a check that barely asks for anything, because the 256 KB draft price is
-most of what the config costs. AGENTS.md doubles all coverage and asks for one
-correct answer.
+**Every config owes the gate something** (ADR-022), by one of three routes: an
+authored check, a Focus category, or the categories it lints. The roster type
+refuses anything else, so a config that owes nothing is a compile error rather than
+a bug to find later. It was a bug once: a build of AGENTS.md (then Copilot) plus two
+linters carried an entirely skippable checklist, so it summited on zero correct
+answers and collected all 13 swatches.
+
+**A linter owes competence, never proof it was used.** ESLint asks you to get one
+JS/TS poll right if either appears; Stylelint asks the same of CSS. It is the same
+mechanic as a Focus config, excused by an unlucky draw and by nothing you choose.
+Using the effect is always optional: an earlier design failed the gate when you
+declined to lint, which turned a window you could not afford into a death you never
+chose. A lint you get wrong now costs the fee and nothing more.
+
+**The legendary exception.** Legendaries no longer skip the check. What legendary
+buys instead is a check that barely asks for anything, because the 256 KB draft price
+is most of what the config costs. AGENTS.md doubles all coverage and asks for one
+correct answer, unconditionally: light is not free.
 
 **Volkswagen CI is the real exception** (ADR-028). It is the only config that reads
 the checklist rather than adding to it: when exactly one check has failed, and at
@@ -574,8 +587,8 @@ One table, every config. Each entry reads **Effect / Check**.
 | `.py` | common | Python polls reward ×1.25 | If a Python poll appears, answer at least one correctly | 🟢 |
 | `.rb` | common | Ruby polls reward ×1.25 | If a Ruby poll appears, answer at least one correctly | 🟢 |
 | `package.json` | common | General Frontend polls reward ×1.25 | If a General Frontend poll appears, answer at least one correctly | 🟢 |
-| ESLint | common | Cross out one wrong answer on JS/TS polls, for an escalating price (from 8 KB) | If you use it on a poll, you must answer that poll correctly | 🟢 |
-| Stylelint | common | Cross out one wrong answer on CSS polls, for an escalating price (from 8 KB) | If you use it on a poll, you must answer that poll correctly | 🟢 |
+| ESLint | common | Cross out one wrong answer on JS/TS polls, for an escalating price (from 8 KB) | If a JS or TS poll appears, answer at least one correctly | 🟢 |
+| Stylelint | common | Cross out one wrong answer on CSS polls, for an escalating price (from 8 KB) | If a CSS poll appears, answer at least one correctly | 🟢 |
 | Cold Start | uncommon | First answer rewards ×2 | First answer must be correct | 🟢 |
 | Coverage | uncommon | Coverage gains ×2 | Gain at least 1% coverage this gate | 🟢 |
 | IndexedDB | uncommon | +8 KB storage per correct answer; caps at 320 KB | Answer at least 3 polls correctly | 🟢 |

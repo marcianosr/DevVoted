@@ -36,6 +36,15 @@ charge for, and its stall state ("cleared, still gate 3") reads as a bug.
   demands more than 4 of 5 at any depth, so a *narrow* build owes fewer checks
   and can coast to the summit. Deliberately shipped as-is so the wall can be
   felt before it is tuned — tracked in DVTD-ziss.
+
+  > ⚠ The risk was real and arrived by a worse route than tuning could reach.
+  > It is addressed from three directions since:
+  > [ADR-022](022-every-config-owes-the-gate-a-check.md) stops a build owing
+  > *no* checks (the coast was free, not merely cheap),
+  > [ADR-027](027-gate-width-demand.md) makes width itself a gate demand, and
+  > [ADR-033](033-demand-is-what-you-bought.md) removes depth escalation
+  > entirely, retiring `ESCALATION_CAP`'s role in the coast. DVTD-ziss survives
+  > as the playtest of what is left.
 - 13 gates against 12 Kanto colours (indigo being the app background) is why the
   summit pair are drawn apart: Elite keeps indigo with a rim, the Champion alone
   wears the gradient.

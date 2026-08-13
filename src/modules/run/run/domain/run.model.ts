@@ -90,45 +90,61 @@ export type RunPoll = {
 	readonly explanation?: string;
 };
 
-const isCorrect = (poll: RunPoll, optionIds: readonly string[]): boolean => {
-	const selected = new Set(optionIds);
+/**
+ * The grading rule reads ids only for equality, so it is generic over their
+ * type: the engine grades string ids, the community board numeric DB ids.
+ */
+type GradedPoll<Id> = {
+	readonly answerType: AnswerType;
+	readonly options: readonly { readonly id: Id; readonly correct: boolean }[];
+};
+
+const isCorrect = <Id>(
+	poll: GradedPoll<Id>,
+	picked: ReadonlySet<Id>
+): boolean => {
 	const correctIds = poll.options
 		.filter((option) => option.correct)
 		.map((option) => option.id);
 	if (poll.answerType === "single")
-		return optionIds.length === 1 && correctIds.includes(optionIds[0]);
+		return picked.size === 1 && correctIds.some((id) => picked.has(id));
 	return (
-		correctIds.length === selected.size &&
-		correctIds.every((id) => selected.has(id))
+		correctIds.length === picked.size &&
+		correctIds.every((id) => picked.has(id))
 	);
 };
 
 export type AnswerOutcome = "correct" | "partial" | "wrong";
 
 const coverageShare = (poll: RunPoll, optionIds: readonly string[]): number => {
-	if (isCorrect(poll, optionIds)) return 1;
-	if (poll.answerType === "single") return 0;
 	const picked = new Set(optionIds);
+	if (isCorrect(poll, picked)) return 1;
+	if (poll.answerType === "single") return 0;
 	const correctIds = poll.options
 		.filter((option) => option.correct)
 		.map((option) => option.id);
 	if (correctIds.length === 0) return 0;
 	const correctPicked = correctIds.filter((id) => picked.has(id)).length;
-	const wrongPicked = optionIds.length - correctPicked;
+	const wrongPicked = picked.size - correctPicked;
 	return Math.max(
 		0,
 		Math.min(1, (correctPicked - wrongPicked) / correctIds.length)
 	);
 };
 
-const answerOutcome = (
-	poll: RunPoll,
-	optionIds: readonly string[]
+/**
+ * The one grading rule. A partial exists only on multi-answer polls, where the
+ * player caught at least one correct option but not the whole set.
+ */
+export const answerOutcome = <Id>(
+	poll: GradedPoll<Id>,
+	optionIds: Iterable<Id>
 ): AnswerOutcome => {
-	if (isCorrect(poll, optionIds)) return "correct";
+	const picked = new Set(optionIds);
+	if (isCorrect(poll, picked)) return "correct";
 	if (poll.answerType === "single") return "wrong";
 	const pickedACorrectOption = poll.options.some(
-		(option) => option.correct && optionIds.includes(option.id)
+		(option) => option.correct && picked.has(option.id)
 	);
 	return pickedACorrectOption ? "partial" : "wrong";
 };
@@ -447,8 +463,8 @@ const answer = (
 	if (!poll) return state;
 
 	const configs = state.pipeline.configs;
-	const correct = isCorrect(poll, optionIds);
 	const outcome = answerOutcome(poll, optionIds);
+	const correct = outcome === "correct";
 	const openingClean = state.window.leadingCorrect === state.window.answered;
 	const share = coverageShare(poll, optionIds);
 	const gateMultiplier = gateBaseMultiplier(state.gatesCleared);

@@ -58,6 +58,13 @@ removal anyway, with the explicit requirement that farming still be dealt with.
   nothing: no scaled payout on 0/5, no coverage, and flat payouts require
   passing the very checks a farmer avoids. The victory *prize* (DVTD-g1p0,
   open) must not be claimable by zero-coverage runs — noted there.
+
+  > ⚠ This consequence was the bug, not an acceptable cost. **Closed by
+  > [ADR-022](022-every-config-owes-the-gate-a-check.md)** (DVTD-ezij): pricing
+  > farming out failed because the climb is itself the reward. The freeloader
+  > build summited on **zero** correct answers, banking nearly nothing and
+  > collecting all 13 swatches, gate depth and the victory, all of which were
+  > free. ADR-022 makes a config that owes the gate nothing a compile error.
 - The view's `gateReward` stays the full-correctness ceiling (a preview);
   the reducer pays `gateClearPayout` on the actual window.
 - The escalation-cap problem for `VICTORY_GATE = 12` (demand exceeding the

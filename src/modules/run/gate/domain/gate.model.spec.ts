@@ -306,3 +306,34 @@ describe("gateDemands", () => {
 		);
 	});
 });
+
+describe("the checklist is the whole rulebook (ADR-022)", () => {
+	// Why this matters beyond tidiness: a rejected design added a correctness
+	// floor to gatePassed directly. It worked, but it could fail a gate while
+	// every visible row read "skipped", leaving the player no way to see why.
+	// Keeping every reason on the checklist is what makes the report readable.
+	const everyRoster = Object.values(CONFIGS);
+
+	it("never fails a stocked gate without a failed row to point at", () => {
+		const closed = win({ correct: 0, answered: 5, maxMissStreak: 2 });
+		for (const config of everyRoster) {
+			const pipeline = pipelineWith([config]);
+			if (gatePassed(pipeline, closed, 0)) continue;
+			const rows = checkStatuses(pipeline, closed, 0);
+			expect(
+				rows.some((row) => row.state === "failed"),
+				`${config.label} fails the gate with no failed row on the checklist`
+			).toBe(true);
+		}
+	});
+
+	it("gives every roster config a row of its own to answer for", () => {
+		for (const config of everyRoster) {
+			const rows = checkStatuses(pipelineWith([config]), EMPTY_WINDOW, 0);
+			expect(
+				rows.length,
+				`${config.label} contributes no checklist row`
+			).toBeGreaterThan(0);
+		}
+	});
+});

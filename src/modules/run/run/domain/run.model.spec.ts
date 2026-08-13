@@ -30,6 +30,7 @@ import {
 } from "~/modules/run/run/domain/rules.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
+	answerOutcome,
 	createRun,
 	isAwaitingTomorrow,
 	runReducer,
@@ -1632,5 +1633,71 @@ describe("storage plan", () => {
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.gateBillKb).toBe(0);
 		expect(state.planDowngraded).toBe(false);
+	});
+});
+
+describe("answerOutcome grades the community board and the engine alike", () => {
+	const enginePoll = {
+		answerType: "multiple",
+		options: [
+			{ id: "a", correct: true },
+			{ id: "b", correct: true },
+			{ id: "c", correct: false },
+		],
+	} as const;
+
+	// The board reads numeric DB ids out of a Set; the engine reads string ids
+	// out of an array. Same poll, same picks, expressed in each side's shape.
+	const boardPoll = {
+		answerType: "multiple",
+		options: [
+			{ id: 1, correct: true },
+			{ id: 2, correct: true },
+			{ id: 3, correct: false },
+		],
+	} as const;
+
+	const cases = [
+		{ name: "the exact correct set", engine: ["a", "b"], board: [1, 2] },
+		{ name: "half the correct set", engine: ["a"], board: [1] },
+		{
+			name: "the correct set plus a wrong pick",
+			engine: ["a", "b", "c"],
+			board: [1, 2, 3],
+		},
+		{ name: "only wrong picks", engine: ["c"], board: [3] },
+	];
+
+	cases.forEach(({ name, engine, board }) => {
+		it(`agrees on ${name}`, () => {
+			expect(answerOutcome(boardPoll, new Set(board))).toBe(
+				answerOutcome(enginePoll, engine)
+			);
+		});
+	});
+
+	it("grades a single-answer poll on the correct pick, not on set equality", () => {
+		// Malformed data (two correct options on a single-answer poll) is where the
+		// board's old set-equality copy disagreed with the engine and called this wrong.
+		const single = {
+			answerType: "single",
+			options: [
+				{ id: 1, correct: true },
+				{ id: 2, correct: true },
+				{ id: 3, correct: false },
+			],
+		} as const;
+		expect(answerOutcome(single, new Set([1]))).toBe("correct");
+	});
+
+	it("never calls a single-answer poll partial", () => {
+		const single = {
+			answerType: "single",
+			options: [
+				{ id: "a", correct: true },
+				{ id: "b", correct: false },
+			],
+		} as const;
+		expect(answerOutcome(single, ["b"])).toBe("wrong");
 	});
 });
