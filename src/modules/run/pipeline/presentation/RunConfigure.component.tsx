@@ -1,5 +1,4 @@
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
-import { perAnswerPreviewFor } from "~/modules/run/pipeline/domain/pipeline.model";
 import { Screen } from "~/ui/Screen.ui";
 import { setScreenNavDirection } from "~/ui/screenNavDirection";
 
@@ -14,10 +13,6 @@ export const RunConfigure = () => {
 
 	if (!view) return null;
 
-	// Mirrors the engine's start guard: the climb only begins on a full pipeline.
-	const slotsLeft = view.slots - view.configs.length;
-	const canStart = slotsLeft <= 0;
-
 	return (
 		<Screen gateTheme={view.gateTheme}>
 			<ConfiguringScreen
@@ -26,13 +21,8 @@ export const RunConfigure = () => {
 				gatesCleared={view.gatesCleared}
 				pollsPerGate={view.pollsPerGate}
 				stripsOnFailure={view.stripsOnFailure}
-				modifiers={{
-					gateReward: view.gateReward,
-					rewardMultiplier: view.rewardMultiplier,
-					coverageMultiplier: view.coverageMultiplier,
-					coverageAdd: view.coverageAdd,
-				}}
-				perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
+				modifiers={view.modifiers}
+				perAnswer={view.perAnswer}
 				bench={view.available}
 				checks={view.checks}
 				onSlot={(id) => send({ type: "slot", configId: id })}
@@ -48,8 +38,8 @@ export const RunConfigure = () => {
 						setScreenNavDirection("forward");
 						send({ type: "start" });
 					},
-					disabled: !canStart || busy,
-					hint: canStart ? undefined : "Pick a stack to start",
+					disabled: !view.canStart || busy,
+					hint: view.canStart ? undefined : "Pick a stack to start",
 				}}
 			/>
 		</Screen>

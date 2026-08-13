@@ -19,6 +19,7 @@ import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 
 import {
+	isRunOver,
 	type RunAction,
 	type RunPoll,
 	type RunState,
@@ -585,7 +586,7 @@ export const applyActionToRun = async (args: {
 			.for("update");
 
 		if (!stateRow) throw new Error("Run state not found");
-		if (stateRow.engine_status === "won" || stateRow.engine_status === "dead") {
+		if (isRunOver(stateRow.engine_status)) {
 			throw new Error("Run is already over");
 		}
 
@@ -631,7 +632,7 @@ export const applyActionToRun = async (args: {
 			})
 			.where(eq(runStatesTable.run_id, args.runId));
 
-		if (next.status === "won" || next.status === "dead") {
+		if (isRunOver(next.status)) {
 			await finishSessionRun(tx, args.runId, args.userId, next);
 		}
 

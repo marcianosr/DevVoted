@@ -4,7 +4,12 @@ import {
 	createRun,
 	runReducer,
 	RunPoll,
+	type RunState,
 } from "~/modules/run/run/domain/run.model";
+import {
+	perAnswerPreviewFor,
+	pipelineModifiersFor,
+} from "~/modules/run/pipeline/domain/pipeline.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
@@ -115,14 +120,10 @@ describe("toRunView", () => {
 
 		it("opens toward the gate while the build meets the demand", () => {
 			const exit = shopExitFor(shopView({ underMinConfigs: false }));
-			expect(exit).toEqual({
-				label: "Continue to gate 4 →",
-				disabled: false,
-				endsRun: false,
-			});
+			expect(exit).toEqual({ state: "open", gate: 4 });
 		});
 
-		it("blocks and names the shortfall while the shop can repair it", () => {
+		it("blocks and measures the shortfall while the shop can repair it", () => {
 			const exit = shopExitFor(
 				shopView({
 					underMinConfigs: true,
@@ -130,21 +131,19 @@ describe("toRunView", () => {
 					configs: [CONFIGS.js],
 				})
 			);
-			expect(exit.disabled).toBe(true);
-			expect(exit.endsRun).toBe(false);
-			expect(exit.hint).toBe(
-				"Gate 4 demands 4 configs — install 3 more before you can climb on."
-			);
+			expect(exit).toEqual({
+				state: "blocked",
+				gate: 4,
+				demand: 4,
+				shortfall: 3,
+			});
 		});
 
-		it("turns into the explicit end-run click once the build is stuck", () => {
+		it("turns into the explicit end-run verdict once the build is stuck", () => {
 			const exit = shopExitFor(
 				shopView({ underMinConfigs: true, widthRepairable: false })
 			);
-			expect(exit.disabled).toBe(false);
-			expect(exit.endsRun).toBe(true);
-			expect(exit.variant).toBe("danger");
-			expect(exit.label).toBe("End run — gate 4 demands 4 configs →");
+			expect(exit).toEqual({ state: "stuck", gate: 4, demand: 4 });
 		});
 	});
 
@@ -406,5 +405,52 @@ describe("correctOptionIdsFor", () => {
 	it("is empty when nothing has been answered", () => {
 		const onScreen = toRunView(answering());
 		expect(correctOptionIdsFor(onScreen.poll!, onScreen)).toEqual([]);
+	});
+});
+
+describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
+	const configuringWith = (configs: Config[]) => {
+		let state = createRun([poll("q0"), poll("q1")], configs);
+		for (const config of configs)
+			state = runReducer(state, { type: "slot", configId: config.id });
+		return state;
+	};
+
+	// These pin canStart to the reducer rather than to a hard-coded slot count:
+	// if the engine's start rule moves, a view that disagrees fails here.
+	it("offers canStart only when the reducer would actually start the run", () => {
+		const partial = configuringWith([CONFIGS.js, CONFIGS.ts]);
+		expect(toRunView(partial).canStart).toBe(false);
+		expect(runReducer(partial, { type: "start" }).status).toBe("configuring");
+	});
+
+	it("offers canStart once the pipeline is full, and the reducer agrees", () => {
+		const full = configuringWith([CONFIGS.js, CONFIGS.ts, CONFIGS.css]);
+		expect(toRunView(full).canStart).toBe(true);
+		expect(runReducer(full, { type: "start" }).status).toBe("answering");
+	});
+
+	it("reports isOver for both terminal statuses and no others", () => {
+		const base = answering();
+		expect(toRunView({ ...base, status: "won" }).isOver).toBe(true);
+		expect(toRunView({ ...base, status: "dead" }).isOver).toBe(true);
+
+		const live = ["configuring", "answering", "awaiting-strip", "rewarding"];
+		for (const status of live)
+			expect(toRunView({ ...base, status } as RunState).isOver).toBe(false);
+	});
+
+	it("hands modifiers over as one object rather than four loose fields", () => {
+		const view = toRunView(answeringWith([CONFIGS.js]));
+		expect(view.modifiers).toEqual(
+			pipelineModifiersFor(answeringWith([CONFIGS.js]).pipeline.configs)
+		);
+	});
+
+	it("prices one answer so screens do not call the domain themselves", () => {
+		const state = answeringWith([CONFIGS.js]);
+		expect(toRunView(state).perAnswer).toEqual(
+			perAnswerPreviewFor(state.pipeline.configs, state.gatesCleared)
+		);
 	});
 });

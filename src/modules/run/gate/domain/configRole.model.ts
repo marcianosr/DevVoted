@@ -1,6 +1,6 @@
+import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	Config,
-	describeConfig,
 	givesOf,
 	needsOf,
 } from "~/modules/run/config/domain/config.model";
@@ -10,6 +10,22 @@ import type {
 } from "~/modules/run/config/domain/effect.model";
 
 type ConfigRole = "requirement" | "conditional" | "passive";
+
+/**
+ * Why a config row reads the way it does. `config` means "show the config's own
+ * roster text" and carries no copy of its own; the rest are the screens'
+ * sentences, reduced to the facts they are built from.
+ */
+export type GateRowReason =
+	| { readonly kind: "config" }
+	| { readonly kind: "gateRequirement"; readonly requirement: string }
+	| { readonly kind: "noPollInCategory"; readonly category: CategoryCode }
+	| {
+			readonly kind: "focusMissed";
+			readonly category: CategoryCode;
+			readonly needed: number;
+			readonly got: number;
+	  };
 
 export const roleOf = (
 	config: Config,
@@ -30,7 +46,7 @@ export const roleOf = (
 export type RoleRow = {
 	readonly config: Config;
 	readonly role: ConfigRole;
-	readonly description: string;
+	readonly reason: GateRowReason;
 	readonly gives?: string;
 	readonly needs?: string;
 	readonly costs?: string;
@@ -45,14 +61,18 @@ const ROLE_ORDER: Record<ConfigRole, number> = {
 	passive: 2,
 };
 
-export const gateRowDescription = (
-	config: Config,
+/**
+ * A requirement row leads with the check it owes the gate; everything else
+ * leads with the config's own roster text. Returns which of the two, not the
+ * sentence — the screens write that.
+ */
+export const gateRowReason = (
 	role: ConfigRole,
 	check: CheckStatus | undefined
-): string =>
+): GateRowReason =>
 	role === "requirement" && check?.description
-		? `Requires ${check.description} to pass the gate.`
-		: describeConfig(config);
+		? { kind: "gateRequirement", requirement: check.description }
+		: { kind: "config" };
 
 // A counter ("0/2", "5%/1%") reads at a glance and sits right as the value;
 // prose ("0/2 categories", "steady") is a remark and drops under the description.
@@ -84,7 +104,7 @@ export const roleRows = (
 			return {
 				config,
 				role,
-				description: gateRowDescription(config, role, check),
+				reason: gateRowReason(role, check),
 				gives: givesOf(config),
 				needs:
 					needsOf(config) ??

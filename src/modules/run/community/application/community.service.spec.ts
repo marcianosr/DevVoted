@@ -414,17 +414,23 @@ describe("getRunCommunityService", () => {
 
 		// 9_000ms, the only sub-30s timing.
 		expect(byTitle.get("fastest answer")).toMatchObject({
-			value: "9s",
+			value: { unit: "duration", ms: 9_000 },
 			voter: { id: RED, you: true },
 		});
 		// Red answered 1.75 minutes after the seed dropped, and got it right.
-		expect(byTitle.get("first to answer")?.value).toBe("1m45");
+		expect(byTitle.get("first to answer")?.value).toEqual({
+			unit: "duration",
+			ms: 105_000,
+		});
 		expect(byTitle.get("first good")).toMatchObject({
-			value: "1m45",
+			value: { unit: "duration", ms: 105_000 },
 			voter: { id: RED },
 		});
 		// Blue answered all three ts-coded polls.
-		expect(byTitle.get("most TypeScript polls")?.value).toBe("3");
+		expect(byTitle.get("most TypeScript polls")?.value).toEqual({
+			unit: "count",
+			amount: 3,
+		});
 	});
 
 	it("names the poll only one player got right, from those the viewer has met", async () => {
@@ -440,7 +446,7 @@ describe("getRunCommunityService", () => {
 
 		// Poll 12: Blue alone got it, and Red has consumed it.
 		expect(lone).toMatchObject({
-			value: "Which town has no gym?",
+			value: { unit: "text", text: "Which town has no gym?" },
 			voter: { id: BLUE, you: false },
 		});
 	});
@@ -457,13 +463,22 @@ describe("getRunCommunityService", () => {
 		);
 
 		expect(byTitle.get("deepest gate")).toMatchObject({
-			value: "Marsh", // gate 7
+			value: { unit: "text", text: "Marsh" }, // gate 7
 			voter: { id: BLUE },
 		});
 		// Red's best was 2 before it broke; Blue ran four clean.
-		expect(byTitle.get("longest streak")?.value).toBe("4");
-		expect(byTitle.get("most coverage")?.value).toBe("+21.4%");
-		expect(byTitle.get("widest pipeline")?.value).toBe("7 configs");
+		expect(byTitle.get("longest streak")?.value).toEqual({
+			unit: "count",
+			amount: 4,
+		});
+		expect(byTitle.get("most coverage")?.value).toEqual({
+			unit: "percent",
+			amount: 21.4,
+		});
+		expect(byTitle.get("widest pipeline")?.value).toEqual({
+			unit: "configs",
+			amount: 7,
+		});
 	});
 
 	it("keeps the awards on a day the viewer has not answered anything", async () => {

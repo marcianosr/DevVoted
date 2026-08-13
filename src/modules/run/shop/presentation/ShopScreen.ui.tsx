@@ -10,7 +10,10 @@ import {
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
-import type { StoragePlanOption } from "~/modules/run/run/application/runView.viewmodel";
+import type {
+	ShopExit,
+	StoragePlanOption,
+} from "~/modules/run/run/application/runView.viewmodel";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
 	perAnswerPreviewFor,
@@ -73,6 +76,35 @@ type ShopScreenProps = {
 	onSell: (configId: string) => void;
 	storagePlans: readonly StoragePlanOption[];
 	onChangePlan: (tier: number) => void;
+};
+
+type ShopExitAction = {
+	readonly label: string;
+	readonly disabled: boolean;
+	readonly hint?: string;
+	readonly variant?: "danger";
+};
+
+/**
+ * The shop door's wording, for the three verdicts `shopExitFor` grades. Lives
+ * here rather than in the viewmodel so every phrasing is reachable from a story
+ * instead of only from an engine state that produces it.
+ */
+export const shopExitAction = (exit: ShopExit): ShopExitAction => {
+	if (exit.state === "open")
+		return { label: `Continue to gate ${exit.gate} →`, disabled: false };
+	if (exit.state === "blocked")
+		return {
+			label: `Continue to gate ${exit.gate} →`,
+			disabled: true,
+			hint: `Gate ${exit.gate} demands ${exit.demand} configs — install ${exit.shortfall} more before you can climb on.`,
+		};
+	return {
+		label: `End run — gate ${exit.gate} demands ${exit.demand} configs →`,
+		disabled: false,
+		variant: "danger",
+		hint: "The shop can no longer get the build to the demand. Leaving walks into the gate and ends the run.",
+	};
 };
 
 const actionTone = ({

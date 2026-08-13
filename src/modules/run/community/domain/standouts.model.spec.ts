@@ -162,7 +162,7 @@ describe("standoutsFor — poll-scoped awards", () => {
 		);
 
 		expect(find(result, "fastest answer")).toMatchObject({
-			value: "9s",
+			value: { unit: "duration", ms: 9_000 },
 			voter: { id: BLUE, you: false },
 		});
 	});
@@ -182,7 +182,7 @@ describe("standoutsFor — poll-scoped awards", () => {
 		);
 
 		expect(find(result, "first to answer")).toMatchObject({
-			value: "1m45",
+			value: { unit: "duration", ms: 105_000 },
 			voter: { id: RED, you: true },
 		});
 	});
@@ -201,7 +201,7 @@ describe("standoutsFor — poll-scoped awards", () => {
 
 		expect(find(result, "first to answer")?.voter.id).toBe(RED);
 		expect(find(result, "first good")).toMatchObject({
-			value: "4m00",
+			value: { unit: "duration", ms: 240_000 },
 			voter: { id: BLUE },
 		});
 	});
@@ -234,7 +234,7 @@ describe("standoutsFor — poll-scoped awards", () => {
 		);
 
 		expect(find(result, "only one right")).toMatchObject({
-			value: "Why do margins collide?",
+			value: { unit: "text", text: "Why do margins collide?" },
 			voter: { id: BLUE },
 		});
 	});
@@ -267,9 +267,11 @@ describe("standoutsFor — poll-scoped awards", () => {
 			})
 		);
 
-		const value = find(result, "only one right")?.value ?? "";
-		expect(value.length).toBeLessThanOrEqual(32);
-		expect(value.endsWith("…")).toBe(true);
+		const value = find(result, "only one right")?.value;
+		expect(value?.unit).toBe("text");
+		const question = value?.unit === "text" ? value.text : "";
+		expect(question.length).toBeLessThanOrEqual(32);
+		expect(question.endsWith("…")).toBe(true);
 	});
 });
 
@@ -285,7 +287,7 @@ describe("standoutsFor — run-scoped awards", () => {
 		);
 
 		expect(find(result, "deepest gate")).toMatchObject({
-			value: "Soul",
+			value: { unit: "text", text: "Soul" },
 			voter: { id: BLUE },
 		});
 	});
@@ -304,7 +306,7 @@ describe("standoutsFor — run-scoped awards", () => {
 
 		// Red's live streak is 0, but its best was 3.
 		expect(find(result, "longest streak")).toMatchObject({
-			value: "3",
+			value: { unit: "count", amount: 3 },
 			voter: { id: RED },
 		});
 	});
@@ -314,7 +316,10 @@ describe("standoutsFor — run-scoped awards", () => {
 			input({ runStats: [runStats(RED, { outcomes: [], streak: 4 })] })
 		);
 
-		expect(find(result, "longest streak")?.value).toBe("4");
+		expect(find(result, "longest streak")?.value).toEqual({
+			unit: "count",
+			amount: 4,
+		});
 	});
 
 	it("reports coverage as a gain, rounded to one decimal", () => {
@@ -322,7 +327,10 @@ describe("standoutsFor — run-scoped awards", () => {
 			input({ runStats: [runStats(RED, { coverage: 21.44 })] })
 		);
 
-		expect(find(result, "most coverage")?.value).toBe("+21.4%");
+		expect(find(result, "most coverage")?.value).toEqual({
+			unit: "percent",
+			amount: 21.4,
+		});
 	});
 
 	it("counts the widest pipeline in configs", () => {
@@ -336,7 +344,7 @@ describe("standoutsFor — run-scoped awards", () => {
 		);
 
 		expect(find(result, "widest pipeline")).toMatchObject({
-			value: "7 configs",
+			value: { unit: "configs", amount: 7 },
 			voter: { id: BLUE },
 		});
 	});
@@ -346,7 +354,10 @@ describe("standoutsFor — run-scoped awards", () => {
 			input({ runStats: [runStats(RED, { configCount: 1 })] })
 		);
 
-		expect(find(result, "widest pipeline")?.value).toBe("1 config");
+		expect(find(result, "widest pipeline")?.value).toEqual({
+			unit: "configs",
+			amount: 1,
+		});
 	});
 });
 

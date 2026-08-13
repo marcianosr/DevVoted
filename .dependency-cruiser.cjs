@@ -11,9 +11,28 @@ const AGG = "^src/modules/[^/]+/[^/]+";
 const LEGACY_FROM = "^src/domains/[^/]+/";
 /** Dev rigs: they drive the engine directly, so runtime domain imports are expected. */
 const DEV_RIG_ROUTES = "^src/routes/proto-(run|session-slice)\\.tsx$";
+/** TanStack generates routeTree and pairs it with router.tsx; the cycle is theirs. */
+const GENERATED_ROUTER = "^src/(router\\.tsx|routeTree\\.gen\\.ts)$";
+const LEGACY_TREE = "^src/domains/";
 
 module.exports = {
 	forbidden: [
+		{
+			name: "no-circular-runtime",
+			comment:
+				"Aggregates may depend on each other's types freely (CONTEXT.md assigns " +
+				"each term one owner), but a runtime cycle means neither module can be " +
+				"loaded, read or tested without the other. Exempt: the generated route " +
+				"tree, which TanStack Router pairs with router.tsx by design, and " +
+				"src/domains/, which holds two known cycles awaiting DVTD-wj1t.",
+			severity: "error",
+			from: { pathNot: `${GENERATED_ROUTER}|${LEGACY_TREE}` },
+			to: {
+				circular: true,
+				dependencyTypesNot: ["type-only"],
+				pathNot: `${GENERATED_ROUTER}|${LEGACY_TREE}`,
+			},
+		},
 		{
 			name: "domain-stays-pure-no-react",
 			comment: "domain/ is the game engine: no framework imports",

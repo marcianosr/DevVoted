@@ -66,32 +66,41 @@ const input = {
 };
 
 describe(gateRewardRows, () => {
-	it("uses each config's roster description verbatim", () => {
+	it("defers to each config's own roster text when it owes nothing extra", () => {
 		const rows = gateRewardRows(input);
-		expect(rows.find((row) => row.key === "agents-md")?.description).toBe(
-			CONFIGS.agentsMd.description
-		);
-		expect(rows.find((row) => row.key === "indexed-db")?.description).toBe(
-			CONFIGS.indexedDb.description
-		);
+		expect(rows.find((row) => row.key === "agents-md")?.reason).toEqual({
+			kind: "config",
+		});
+		expect(rows.find((row) => row.key === "indexed-db")?.reason).toEqual({
+			kind: "config",
+		});
 	});
 
 	it("attributes coverage per config by summing per-answer breakdowns", () => {
 		const rows = gateRewardRows(input);
-		expect(rows.find((row) => row.key === "css")?.value).toBe("+0.2%");
-		expect(rows.find((row) => row.key === "agents-md")?.value).toBe("+0.5%");
+		expect(rows.find((row) => row.key === "css")?.value).toEqual({
+			unit: "percent",
+			amount: 0.2,
+		});
+		expect(rows.find((row) => row.key === "agents-md")?.value).toEqual({
+			unit: "percent",
+			amount: 0.5,
+		});
 	});
 
 	it("computes storage as per-correct × correct answers", () => {
 		const rows = gateRewardRows(input);
 		// 2 correct answers × 8KB.
-		expect(rows.find((row) => row.key === "indexed-db")?.value).toBe("+16KB");
+		expect(rows.find((row) => row.key === "indexed-db")?.value).toEqual({
+			unit: "kb",
+			amount: 16,
+		});
 	});
 
 	it("shows Unit Tests' flat payout as its value, judged by the Correct check", () => {
 		const rows = gateRewardRows(input);
 		const unitTests = rows.find((row) => row.key === "unit-tests");
-		expect(unitTests?.value).toBe("+32KB");
+		expect(unitTests?.value).toEqual({ unit: "kb", amount: 32 });
 		expect(unitTests?.kind).toBe("storage");
 		expect(unitTests?.status).toBe("passed");
 	});
@@ -112,7 +121,7 @@ describe(gateRewardRows, () => {
 			(candidate) => candidate.key === "unit-tests"
 		);
 		expect(row?.status).toBe("failed");
-		expect(row?.value).toBe("0/1");
+		expect(row?.value).toEqual({ unit: "checkProgress", text: "0/1" });
 	});
 
 	it("reads check progress as the value for a pure-check row (linter)", () => {
@@ -132,13 +141,16 @@ describe(gateRewardRows, () => {
 			checks: lintCheck,
 		}).find((candidate) => candidate.key === "eslint");
 		expect(row?.kind).toBe("check");
-		expect(row?.value).toBe("1/2");
+		expect(row?.value).toEqual({ unit: "checkProgress", text: "1/2" });
 		expect(row?.status).toBe("failed");
 	});
 
 	it("prefers the exact capped faucet income when the engine provides it", () => {
 		const rows = gateRewardRows({ ...input, faucetThisGateKb: 12 });
-		expect(rows.find((row) => row.key === "indexed-db")?.value).toBe("+12KB");
+		expect(rows.find((row) => row.key === "indexed-db")?.value).toEqual({
+			unit: "kb",
+			amount: 12,
+		});
 	});
 
 	it("states the escalated demand on the check row, not the roster text", () => {
@@ -157,9 +169,10 @@ describe(gateRewardRows, () => {
 			(candidate) => candidate.key === "unit-tests"
 		);
 		expect(row?.status).toBe("failed");
-		expect(row?.description).toBe(
-			"Requires 3 correct answers to pass the gate."
-		);
+		expect(row?.reason).toEqual({
+			kind: "gateRequirement",
+			requirement: "3 correct answers",
+		});
 	});
 
 	it("keeps the roster text when the check carries no demand", () => {
@@ -176,7 +189,7 @@ describe(gateRewardRows, () => {
 		const row = gateRewardRows({ ...input, checks: bare }).find(
 			(candidate) => candidate.key === "unit-tests"
 		);
-		expect(row?.description).toBe(CONFIGS.unitTests.description);
+		expect(row?.reason).toEqual({ kind: "config" });
 	});
 
 	it("passes a focus config whose category showed and was answered right", () => {
@@ -189,8 +202,8 @@ describe(gateRewardRows, () => {
 		const rows = gateRewardRows({ ...input, configs: [CONFIGS.ts] });
 		const ts = rows.find((row) => row.key === "ts");
 		expect(ts?.status).toBe("skipped");
-		expect(ts?.description).toBe("no ts poll in this gate");
-		expect(ts?.value).toBe("—");
+		expect(ts?.reason).toEqual({ kind: "noPollInCategory", category: "ts" });
+		expect(ts?.value).toEqual({ unit: "none" });
 	});
 
 	it("fails a focus config whose category showed but wasn't answered right", () => {
@@ -210,8 +223,13 @@ describe(gateRewardRows, () => {
 			configs: [CONFIGS.css],
 		}).find((row) => row.key === "css");
 		expect(css?.status).toBe("failed");
-		expect(css?.description).toBe("needs 1 correct css, got 0");
-		expect(css?.value).toBe("-1.2%");
+		expect(css?.reason).toEqual({
+			kind: "focusMissed",
+			category: "css",
+			needed: 1,
+			got: 0,
+		});
+		expect(css?.value).toEqual({ unit: "percent", amount: -1.2 });
 	});
 
 	it("orders rows coverage → storage → check with no synthetic bonus row", () => {

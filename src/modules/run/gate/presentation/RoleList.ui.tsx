@@ -14,7 +14,10 @@ import {
 	type ParagraphTone,
 } from "~/ui/typography/Paragraph.component";
 import type { ChipAction } from "~/modules/run/config/presentation/ConfigActions.ui";
-import { PipelineReportRow } from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
+import {
+	describeRow,
+	PipelineReportRow,
+} from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
 import {
 	PipelineTable,
 	SlotNumberCell,
@@ -140,7 +143,7 @@ export const RoleList = ({
 						badge={roleBadge(row)}
 						layout="table"
 						config={row.config}
-						description={row.description}
+						description={describeRow(row.config, row.reason)}
 						descriptionTone={row.state === "failed" ? "cinnabar" : "muted"}
 						gives={row.gives}
 						needs={row.needs}

@@ -1,4 +1,10 @@
 import type { CommunityStandout } from "~/modules/run/community/application/community.service";
+import type { StandoutValue } from "~/modules/run/community/domain/standouts.model";
+import {
+	formatCount,
+	formatDuration,
+	formatPercent,
+} from "~/shared/lib/displayValue";
 import { SwatchMark } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
@@ -21,6 +27,15 @@ const standoutSummary = (standouts: CommunityStandout[]): string | null => {
 	return standouts.length === 1 ? "you took it" : `you took all ${yours}`;
 };
 
+const formatStandoutValue = (value: StandoutValue): string => {
+	if (value.unit === "duration") return formatDuration(value);
+	if (value.unit === "percent") return formatPercent(value);
+	if (value.unit === "count") return formatCount(value);
+	if (value.unit === "configs")
+		return `${value.amount} config${value.amount === 1 ? "" : "s"}`;
+	return value.text;
+};
+
 /**
  * The avatar carries the winner the same way it does on an option row: ringed
  * cerulean when it is you, named on hover otherwise. Spelling the name out here
@@ -39,7 +54,7 @@ const StandoutRow = ({ standout }: { standout: CommunityStandout }) => (
 				</span>
 			)}
 			<Paragraph as="span" tone="saffron" className="font-bold tabular-nums">
-				{standout.value}
+				{formatStandoutValue(standout.value)}
 			</Paragraph>
 		</span>
 	</div>

@@ -1,0 +1,12 @@
+---
+# DVTD-m9kk
+title: 'ESLint research: investigate TS poll linting issue'
+status: todo
+type: task
+priority: high
+created_at: 2026-08-13T10:52:54Z
+updated_at: 2026-08-13T10:52:54Z
+parent: DVTD-u35m
+---
+
+Research: Why can't oxlint lint on TypeScript polls? Investigate configuration, rule scope, and potential workarounds.

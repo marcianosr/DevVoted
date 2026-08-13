@@ -35,7 +35,7 @@ export const RunLayout = () => {
 		);
 	}
 
-	const runOver = view?.status === "won" || view?.status === "dead";
+	const runOver = view?.isOver ?? false;
 
 	return (
 		<>

@@ -912,8 +912,18 @@ const drop = (state: RunState, configId: string): RunState => {
 	};
 };
 
+/** The climb only begins on a full pipeline. Exported so the Start button asks
+ * the rule rather than restating it; the reducer refuses either way. */
+export const canStart = (pipeline: Pipeline): boolean =>
+	pipeline.configs.length >= pipeline.slots;
+
+/** Won and dead are both terminal; nearly every caller wants "is it finished"
+ * rather than which of the two, and spelling out the pair invites missing one. */
+export const isRunOver = (status: RunStatus): boolean =>
+	status === "won" || status === "dead";
+
 const start = (state: RunState): RunState => {
-	if (state.pipeline.configs.length < state.pipeline.slots) return state;
+	if (!canStart(state.pipeline)) return state;
 	return { ...state, status: "answering" };
 };
 

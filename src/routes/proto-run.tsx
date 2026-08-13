@@ -22,15 +22,15 @@ import { longestCorrectStreak } from "~/modules/run/community/domain/standouts.m
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import { rebuildCost } from "~/modules/run/shop/domain/draft.model";
-import {
-	coverageToAddSlot,
-	perAnswerPreviewFor,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+import { coverageToAddSlot } from "~/modules/run/pipeline/domain/pipeline.model";
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
 import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
 import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";
 import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
-import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
+import {
+	ShopScreen,
+	shopExitAction,
+} from "~/modules/run/shop/presentation/ShopScreen.ui";
 import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
 import { ReviewAnswers } from "~/modules/run/run/presentation/ReviewAnswers.ui";
 import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";
@@ -50,7 +50,6 @@ import {
 	type CategoryCode,
 	getCategoryMetadata,
 } from "~/shared/lib/categories";
-import { formatDurationMs } from "~/shared/lib/dateUtils";
 import { Screen } from "~/ui/Screen.ui";
 import { setScreenNavDirection } from "~/ui/screenNavDirection";
 import { Stack } from "~/ui/Stack.ui";
@@ -296,30 +295,33 @@ const simulateCommunityBoard = (
 					{
 						voter: trainerVoter(trainerBy(`fastest:${gateKey}`)),
 						title: "fastest answer",
-						value: formatDurationMs(
-							(4 + (hashOf(`fastms:${gateKey}`) % 51)) * 1_000
-						),
+						value: {
+							unit: "duration",
+							ms: (4 + (hashOf(`fastms:${gateKey}`) % 51)) * 1_000,
+						},
 					},
 					{
 						voter: trainerVoter(trainerBy(`first:${gateKey}`)),
 						title: "first to answer",
-						value: formatDurationMs(
-							(60 + (hashOf(`firsts:${gateKey}`) % 60)) * 1_000
-						),
+						value: {
+							unit: "duration",
+							ms: (60 + (hashOf(`firsts:${gateKey}`) % 60)) * 1_000,
+						},
 					},
 					{
 						voter: trainerVoter(trainerBy(`good:${gateKey}`)),
 						title: "first good",
-						value: formatDurationMs(
-							(90 + (hashOf(`goods:${gateKey}`) % 90)) * 1_000
-						),
+						value: {
+							unit: "duration",
+							ms: (90 + (hashOf(`goods:${gateKey}`) % 90)) * 1_000,
+						},
 					},
 					...(topCategory[1] >= 2
 						? [
 								{
 									voter: trainerVoter(trainerBy(`most:${topCategory[0]}`)),
 									title: `most ${getCategoryMetadata(topCategory[0]).name} polls`,
-									value: String(topCategory[1]),
+									value: { unit: "count" as const, amount: topCategory[1] },
 								},
 							]
 						: []),
@@ -328,17 +330,23 @@ const simulateCommunityBoard = (
 								{
 									voter: trainerVoter(trainerBy(`lone:${hardest.id}`)),
 									title: "only one right",
-									value:
-										hardest.question.length > 32
-											? `${hardest.question.slice(0, 31).trimEnd()}…`
-											: hardest.question,
+									value: {
+										unit: "text" as const,
+										text:
+											hardest.question.length > 32
+												? `${hardest.question.slice(0, 31).trimEnd()}…`
+												: hardest.question,
+									},
 								},
 							]
 						: []),
 					{
 						voter: trainerVoter(trainerBy(`gate:${gateKey}`)),
 						title: "deepest gate",
-						value: deepest?.gateName ?? "the climb",
+						value: {
+							unit: "text" as const,
+							text: deepest?.gateName ?? "the climb",
+						},
 						...(deepest
 							? { swatch: { theme: deepest.theme, finish: deepest.finish } }
 							: {}),
@@ -348,19 +356,22 @@ const simulateCommunityBoard = (
 								{
 									voter: trainerVoter(trainerBy(`streak:${gateKey}`)),
 									title: "longest streak",
-									value: String(streak),
+									value: { unit: "count" as const, amount: streak },
 								},
 							]
 						: []),
 					{
 						voter: trainerVoter(trainerBy(`cov:${gateKey}`)),
 						title: "most coverage",
-						value: `+${roundToOneDecimal(run.coverage)}%`,
+						value: {
+							unit: "percent" as const,
+							amount: roundToOneDecimal(run.coverage),
+						},
 					},
 					{
 						voter: trainerVoter(trainerBy(`wide:${gateKey}`)),
 						title: "widest pipeline",
-						value: `${run.configCount} config${run.configCount === 1 ? "" : "s"}`,
+						value: { unit: "configs" as const, amount: run.configCount },
 					},
 				];
 
@@ -469,13 +480,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						gatesCleared={view.gatesCleared}
 						pollsPerGate={view.pollsPerGate}
 						stripsOnFailure={view.stripsOnFailure}
-						modifiers={{
-							gateReward: view.gateReward,
-							rewardMultiplier: view.rewardMultiplier,
-							coverageMultiplier: view.coverageMultiplier,
-							coverageAdd: view.coverageAdd,
-						}}
-						perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
+						modifiers={view.modifiers}
+						perAnswer={view.perAnswer}
 						bench={view.available}
 						checks={view.checks}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
@@ -566,13 +572,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setRewardStep("summary"),
 					}}
 					rightAction={{
-						label: shopExit.label,
-						hint: shopExit.hint,
-						variant: shopExit.variant,
-						disabled: shopExit.disabled,
-						onClick: shopExit.endsRun
-							? () => dispatch({ type: "finish-reward" })
-							: () => setRewardStep("prep"),
+						...shopExitAction(shopExit),
+						onClick:
+							shopExit.state === "stuck"
+								? () => dispatch({ type: "finish-reward" })
+								: () => setRewardStep("prep"),
 					}}
 				>
 					<ShopScreen
@@ -584,13 +588,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						pollsPerGate={view.pollsPerGate}
 						stripsOnFailure={view.stripsOnFailure}
 						minConfigs={view.minConfigs}
-						modifiers={{
-							gateReward: view.gateReward,
-							rewardMultiplier: view.rewardMultiplier,
-							coverageMultiplier: view.coverageMultiplier,
-							coverageAdd: view.coverageAdd,
-						}}
-						perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
+						modifiers={view.modifiers}
+						perAnswer={view.perAnswer}
 						billKb={view.storageBillKb}
 						newConfigIds={view.newConfigIds}
 						draftOptions={view.draftOptions}
@@ -637,13 +636,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						stripsOnFailure={view.stripsOnFailure}
 						minConfigs={view.minConfigs}
 						storageBillKb={view.storageBillKb}
-						modifiers={{
-							gateReward: view.gateReward,
-							rewardMultiplier: view.rewardMultiplier,
-							coverageMultiplier: view.coverageMultiplier,
-							coverageAdd: view.coverageAdd,
-						}}
-						perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
+						modifiers={view.modifiers}
+						perAnswer={view.perAnswer}
 						configs={view.configs}
 						shopAction={{
 							label: "← Back to shop",

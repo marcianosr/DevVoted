@@ -2,12 +2,13 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { CommunityStandout } from "~/modules/run/community/application/community.service";
+import type { StandoutValue } from "~/modules/run/community/domain/standouts.model";
 
 import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.ui";
 
 const standout = (
 	title: string,
-	value: string,
+	value: StandoutValue,
 	winner: { id: string; displayName: string; you?: boolean }
 ): CommunityStandout => ({
 	voter: { ...winner, you: winner.you ?? false },
@@ -15,17 +16,22 @@ const standout = (
 	value,
 });
 
-const YOURS = standout("fastest answer", "9s", {
-	id: "red",
-	displayName: "Red",
-	you: true,
-});
-const THEIRS = standout("most CSS polls", "3", {
-	id: "brock",
-	displayName: "Brock Boulder",
-});
+const YOURS = standout(
+	"fastest answer",
+	{ unit: "duration", ms: 9000 },
+	{ id: "red", displayName: "Red", you: true }
+);
+const THEIRS = standout(
+	"most CSS polls",
+	{ unit: "count", amount: 3 },
+	{ id: "brock", displayName: "Brock Boulder" }
+);
 const DEEPEST: CommunityStandout = {
-	...standout("deepest gate", "Soul", { id: "misty", displayName: "Misty" }),
+	...standout(
+		"deepest gate",
+		{ unit: "text", text: "Soul" },
+		{ id: "misty", displayName: "Misty" }
+	),
 	swatch: { theme: "soul", finish: "flat" },
 };
 

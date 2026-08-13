@@ -1,5 +1,12 @@
 import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
-import { formatDurationMs } from "~/shared/lib/dateUtils";
+import {
+	count,
+	type Count,
+	duration,
+	type Duration,
+	percent,
+	type Percent,
+} from "~/shared/lib/displayValue";
 
 import {
 	type AnswerOutcome,
@@ -34,11 +41,24 @@ export type CommunityVoter = {
 	you: boolean;
 };
 
-/** A "standouts today" row: who, what for, and the pre-formatted value. */
+/**
+ * What an award is worth. `configs` is this context's own — it carries a plural
+ * the shared units have no reason to know about. `text` is for the two awards
+ * whose value genuinely is prose (a gate's name, a question snippet), not an
+ * escape hatch for numbers that were easier to format here.
+ */
+export type StandoutValue =
+	| Duration
+	| Count
+	| Percent
+	| { readonly unit: "configs"; readonly amount: number }
+	| { readonly unit: "text"; readonly text: string };
+
+/** A "standouts today" row: who, what for, and what it was worth. */
 export type CommunityStandout = {
 	voter: CommunityVoter;
 	title: string;
-	value: string;
+	value: StandoutValue;
 	/**
 	 * A gate's badge to sit beside the value, when the value *is* a gate. Carried
 	 * as theme and finish rather than a colour, because the palette lives in
@@ -116,8 +136,10 @@ const award = (
 	user: Player,
 	viewerId: string,
 	title: string,
-	value: string
+	value: StandoutValue
 ): CommunityStandout => ({ voter: toVoter(user, viewerId), title, value });
+
+const text = (value: string): StandoutValue => ({ unit: "text", text: value });
 
 // ─── Poll-scoped awards ───────────────────────────────────────────────────────
 
@@ -140,12 +162,12 @@ const fastestAnswer = ({
 		fastest.user,
 		viewerId,
 		"fastest answer",
-		formatDurationMs(fastest.elapsedMs)
+		duration(fastest.elapsedMs)
 	);
 };
 
-const sinceDrop = (answeredAt: Date, seedCreatedAt: Date): string =>
-	formatDurationMs(Math.max(0, answeredAt.getTime() - seedCreatedAt.getTime()));
+const sinceDrop = (answeredAt: Date, seedCreatedAt: Date): StandoutValue =>
+	duration(Math.max(0, answeredAt.getTime() - seedCreatedAt.getTime()));
 
 type DatedAnswer = CommunityAnswer & { answeredAt: Date };
 const isDated = (answer: CommunityAnswer): answer is DatedAnswer =>
@@ -232,7 +254,7 @@ const mostInCategory = ({
 		top.user,
 		viewerId,
 		`most ${categoryNameOf(top.category)} polls`,
-		String(top.count)
+		count(top.count)
 	);
 };
 
@@ -275,7 +297,7 @@ const onlyOneRight = ({
 		latest.winner.user,
 		viewerId,
 		"only one right",
-		shorten(latest.poll.question)
+		text(shorten(latest.poll.question))
 	);
 };
 
@@ -304,7 +326,7 @@ const runAward = (
 	{ runStats, viewerId }: StandoutInput,
 	title: string,
 	score: (stats: ActiveRunStats) => number,
-	format: (stats: ActiveRunStats) => string,
+	format: (stats: ActiveRunStats) => StandoutValue,
 	floor = 1
 ): { standout: CommunityStandout; top: ActiveRunStats } | null => {
 	const top = topBy(runStats, score, (stats) => stats.user);
@@ -322,7 +344,7 @@ const deepestGate = (input: StandoutInput): CommunityStandout | null => {
 		input,
 		"deepest gate",
 		(stats) => stats.gatesCleared,
-		(stats) => swatchForGate(stats.gatesCleared)?.gateName ?? "the climb"
+		(stats) => text(swatchForGate(stats.gatesCleared)?.gateName ?? "the climb")
 	);
 	if (!result) return null;
 	// The badge, not just its name: the gate you are chasing is a colour before
@@ -342,7 +364,7 @@ const longestStreak = (input: StandoutInput): CommunityStandout | null =>
 			input,
 			"longest streak",
 			streakOf,
-			(stats) => String(streakOf(stats)),
+			(stats) => count(streakOf(stats)),
 			// One correct answer in a row is just an answer.
 			2
 		)
@@ -354,7 +376,7 @@ const mostCoverage = (input: StandoutInput): CommunityStandout | null =>
 			input,
 			"most coverage",
 			(stats) => stats.coverage,
-			(stats) => `+${roundToOneDecimal(stats.coverage)}%`
+			(stats) => percent(roundToOneDecimal(stats.coverage))
 		)
 	);
 
@@ -364,8 +386,7 @@ const widestPipeline = (input: StandoutInput): CommunityStandout | null =>
 			input,
 			"widest pipeline",
 			(stats) => stats.configCount,
-			(stats) =>
-				`${stats.configCount} config${stats.configCount === 1 ? "" : "s"}`
+			(stats) => ({ unit: "configs", amount: stats.configCount })
 		)
 	);
 

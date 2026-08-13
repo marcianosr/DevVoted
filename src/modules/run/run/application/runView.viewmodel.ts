@@ -5,7 +5,9 @@ import {
 	type AnswerType,
 	canRepairWidthDemand,
 	canRunLinter,
+	canStart,
 	isAwaitingTomorrow,
+	isRunOver,
 	lintApplies,
 	lintCost,
 	type RunPoll,
@@ -34,9 +36,12 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 import {
 	type CoverageConfigBonus,
+	type PerAnswerPreview,
+	type PipelineModifiers,
 	coverageForAnswer,
 	coverageToAddSlot,
 	linterFor,
+	perAnswerPreviewFor,
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
@@ -114,10 +119,12 @@ export type RunView = {
 	readonly allAnswered: readonly AnsweredPoll[];
 	readonly passedChecks: readonly CheckStatus[];
 	readonly demands: readonly string[];
-	readonly rewardMultiplier: number;
-	readonly coverageMultiplier: number;
-	readonly coverageAdd: number;
-	readonly gateReward: number;
+	/** Kept whole rather than flattened: every screen that shows pricing wants all
+	 * four at once, and a spread here means each one reassembles them by hand. */
+	readonly modifiers: PipelineModifiers;
+	readonly perAnswer: PerAnswerPreview;
+	readonly canStart: boolean;
+	readonly isOver: boolean;
 	readonly gateRewardPaidKb: number;
 	readonly faucetThisGateKb: number;
 	readonly gatesCleared: number;
@@ -310,7 +317,10 @@ export const toRunView = (state: RunState): RunView => {
 		allAnswered: state.allAnswered ?? [],
 		passedChecks: state.clearedChecks,
 		demands: gateDemands(state.pipeline, state.gatesCleared),
-		...pipelineModifiersFor(state.pipeline.configs),
+		modifiers: pipelineModifiersFor(state.pipeline.configs),
+		perAnswer: perAnswerPreviewFor(state.pipeline.configs, state.gatesCleared),
+		canStart: canStart(state.pipeline),
+		isOver: isRunOver(state.status),
 		gateRewardPaidKb: state.gateRewardKb ?? 0,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
@@ -347,22 +357,28 @@ export const toRunView = (state: RunState): RunView => {
 	};
 };
 
-type ShopExit = {
-	readonly label: string;
-	readonly disabled: boolean;
-	readonly hint?: string;
-	readonly variant?: "danger";
-	/** True when the click is the explicit dead-end: leaving ends the run (ADR-031). */
-	readonly endsRun: boolean;
-};
+/** `stuck` is the explicit dead-end: leaving walks into the gate and ends the
+ * run (ADR-031). */
+export type ShopExit =
+	| { readonly state: "open"; readonly gate: number }
+	| {
+			readonly state: "blocked";
+			readonly gate: number;
+			readonly demand: number;
+			readonly shortfall: number;
+	  }
+	| { readonly state: "stuck"; readonly gate: number; readonly demand: number };
 
 /**
  * The shop's one exit, graded against the coming gate's width demand
  * (ADR-031). Open while the build meets it; blocked — with the shortfall
- * named — while the shop can still repair it; and once the run is provably
+ * measured — while the shop can still repair it; and once the run is provably
  * stuck (no affordable offer, no rebuild worth hoping for, or no free slot),
- * an explicit cinnabar end-run click. Shared by every surface that draws the
- * shop, so the door reads the same everywhere.
+ * an explicit end-run click.
+ *
+ * The verdict carries numbers, not a label: the door reads the same everywhere
+ * because every surface formats this one shape, and the wording is reachable
+ * from a story rather than only from an engine state that produces it.
  */
 export const shopExitFor = (
 	view: Pick<
@@ -374,23 +390,17 @@ export const shopExitFor = (
 		| "configs"
 	>
 ): ShopExit => {
-	const continueLabel = `Continue to gate ${view.gatesCleared} →`;
-	if (!view.underMinConfigs)
-		return { label: continueLabel, disabled: false, endsRun: false };
-	if (view.widthRepairable) {
-		const shortfall = view.minConfigs - view.configs.length;
+	if (!view.underMinConfigs) return { state: "open", gate: view.gatesCleared };
+	if (view.widthRepairable)
 		return {
-			label: continueLabel,
-			disabled: true,
-			hint: `Gate ${view.gatesCleared} demands ${view.minConfigs} configs — install ${shortfall} more before you can climb on.`,
-			endsRun: false,
+			state: "blocked",
+			gate: view.gatesCleared,
+			demand: view.minConfigs,
+			shortfall: view.minConfigs - view.configs.length,
 		};
-	}
 	return {
-		label: `End run — gate ${view.gatesCleared} demands ${view.minConfigs} configs →`,
-		disabled: false,
-		variant: "danger",
-		hint: "The shop can no longer get the build to the demand. Leaving walks into the gate and ends the run.",
-		endsRun: true,
+		state: "stuck",
+		gate: view.gatesCleared,
+		demand: view.minConfigs,
 	};
 };

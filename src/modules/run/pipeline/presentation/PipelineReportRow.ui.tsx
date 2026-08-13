@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import { clsx } from "clsx";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { rarityOf } from "~/modules/run/config/domain/config.model";
+import {
+	describeConfig,
+	rarityOf,
+} from "~/modules/run/config/domain/config.model";
+import type { GateRowReason } from "~/modules/run/gate/domain/configRole.model";
 import { FoldableRow, type Fold } from "~/ui/FoldableRow.ui";
 import { RARITY_COLORS } from "~/ui/rarityColors";
 import { StatusLine, type StatusLineSpacing } from "~/ui/StatusLine.ui";
@@ -19,6 +23,21 @@ import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { SlotNumberCell } from "~/modules/run/pipeline/presentation/PipelineTable.ui";
 
 export type PipelineRowLayout = "chip" | "table";
+
+/**
+ * The one place a config row's line is written. Both the gate report and the
+ * role list feed it the same `GateRowReason`, so a passed row and a failed one
+ * cannot drift into different phrasings of the same fact.
+ */
+export const describeRow = (config: Config, reason: GateRowReason): string => {
+	if (reason.kind === "gateRequirement")
+		return `Requires ${reason.requirement} to pass the gate.`;
+	if (reason.kind === "noPollInCategory")
+		return `no ${reason.category} poll in this gate`;
+	if (reason.kind === "focusMissed")
+		return `needs ${reason.needed} correct ${reason.category}, got ${reason.got}`;
+	return describeConfig(config);
+};
 
 const NUMBER_TOKEN = /(×[\d.]+|[+−-][\d.]+(?:%|KB)?)/;
 

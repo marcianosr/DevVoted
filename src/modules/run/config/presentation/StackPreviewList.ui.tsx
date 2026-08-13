@@ -2,7 +2,10 @@ import { useState, type ReactNode } from "react";
 import { clsx } from "clsx";
 
 import type { RoleRow } from "~/modules/run/gate/domain/configRole.model";
-import { emphasizeNumbers } from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
+import {
+	describeRow,
+	emphasizeNumbers,
+} from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
 import { roleBadge } from "~/modules/run/gate/presentation/RoleList.ui";
 import { StatusDot } from "~/ui/StatusDot.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
@@ -95,7 +98,7 @@ const StackPreviewRow = ({ index, row }: { index: number; row: RoleRow }) => {
 					</>
 				) : (
 					<Paragraph size="xs" tone="muted">
-						{row.description}
+						{describeRow(row.config, row.reason)}
 					</Paragraph>
 				)}
 				{row.costs ? (

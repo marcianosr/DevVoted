@@ -5,7 +5,10 @@ import { draftCost } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
-import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
+import {
+	ShopScreen,
+	shopExitAction,
+} from "~/modules/run/shop/presentation/ShopScreen.ui";
 
 /** Every rung unlocked, as a deep run sees the ladder. */
 const plansOn = (currentTier: number, storage = 0) =>
@@ -650,5 +653,35 @@ describe(ShopScreen, () => {
 		expect(
 			screen.getByText("Switching burns the 188KB sitting above this cap.")
 		).toBeInTheDocument();
+	});
+});
+
+describe("the shop door's wording (DVTD-52f2)", () => {
+	it("points at the coming gate while the build meets the demand", () => {
+		const action = shopExitAction({ state: "open", gate: 4 });
+		expect(action.label).toBe("Continue to gate 4 →");
+		expect(action.disabled).toBe(false);
+		expect(action.hint).toBeUndefined();
+	});
+
+	it("keeps the same label but disables it and says what is missing", () => {
+		const action = shopExitAction({
+			state: "blocked",
+			gate: 4,
+			demand: 4,
+			shortfall: 3,
+		});
+		expect(action.label).toBe("Continue to gate 4 →");
+		expect(action.disabled).toBe(true);
+		expect(action.hint).toBe(
+			"Gate 4 demands 4 configs — install 3 more before you can climb on."
+		);
+	});
+
+	it("renames the door and turns it dangerous once the build is stuck", () => {
+		const action = shopExitAction({ state: "stuck", gate: 4, demand: 4 });
+		expect(action.label).toBe("End run — gate 4 demands 4 configs →");
+		expect(action.variant).toBe("danger");
+		expect(action.disabled).toBe(false);
 	});
 });

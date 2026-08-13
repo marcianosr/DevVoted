@@ -1,8 +1,15 @@
 import type { CategoryCode } from "~/shared/lib/categories";
+import {
+	kb,
+	type Kb,
+	nothing,
+	type Nothing,
+	percent,
+	type Percent,
+} from "~/shared/lib/displayValue";
 import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
 import {
 	Config,
-	describeConfig,
 	faucetKbPerCorrect,
 } from "~/modules/run/config/domain/config.model";
 import {
@@ -11,7 +18,8 @@ import {
 } from "~/modules/run/config/domain/effect.model";
 import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
 import {
-	gateRowDescription,
+	type GateRowReason,
+	gateRowReason,
 	roleOf,
 } from "~/modules/run/gate/domain/configRole.model";
 
@@ -24,17 +32,31 @@ import {
 export type GateRewardKind = "coverage" | "storage" | "check";
 export type GateRewardStatus = "passed" | "skipped" | "failed";
 
+/**
+ * What a row earned. `checkProgress` is the one variant this context adds and
+ * the one still carrying a string: it passes through `CheckStatus.progress`,
+ * whose shapes vary per check ("2/3", "not seen", "3/5 categories") and which
+ * effect.model still owns (DVTD-c0d0).
+ */
+export type GateRewardValue =
+	| Percent
+	| Kb
+	| { readonly unit: "checkProgress"; readonly text: string }
+	| Nothing;
+
 export type GateRewardRow = {
 	readonly key: string;
 	readonly config: Config;
-	readonly description: string;
-	readonly value: string;
+	readonly reason: GateRowReason;
+	readonly value: GateRewardValue;
 	readonly kind: GateRewardKind;
 	readonly status: GateRewardStatus;
 };
 
-const signedPercent = (value: number): string =>
-	`${value < 0 ? "" : "+"}${value}%`;
+const checkProgress = (check: CheckStatus | undefined): GateRewardValue =>
+	check?.progress === undefined
+		? nothing
+		: { unit: "checkProgress", text: check.progress };
 
 /** How many of a window's answers were fully right — the gate's score line. */
 export const correctCount = (answered: readonly AnsweredPoll[]): number =>
@@ -87,23 +109,23 @@ const focusRow = (
 		return {
 			...base,
 			status: "skipped",
-			description: `no ${category} poll in this gate`,
-			value: "—",
+			reason: { kind: "noPollInCategory", category },
+			value: nothing,
 		};
 
 	if (correct >= level)
 		return {
 			...base,
 			status: "passed",
-			description: describeConfig(config),
-			value: signedPercent(coverageContribution(config, answered)),
+			reason: { kind: "config" },
+			value: percent(coverageContribution(config, answered)),
 		};
 
 	return {
 		...base,
 		status: "failed",
-		description: `needs ${level} correct ${category}, got ${correct}`,
-		value: signedPercent(netCategoryCoverage(category, answered)),
+		reason: { kind: "focusMissed", category, needed: level, got: correct },
+		value: percent(netCategoryCoverage(category, answered)),
 	};
 };
 
@@ -133,14 +155,14 @@ const rowFor = (
 		key: config.id,
 		config,
 		status: statusFrom(check),
-		description: gateRowDescription(config, roleOf(config, checks), check),
+		reason: gateRowReason(roleOf(config, checks), check),
 	};
 
 	if (touchesCoverage(config))
 		return {
 			...base,
 			kind: "coverage",
-			value: signedPercent(coverageContribution(config, answered)),
+			value: percent(coverageContribution(config, answered)),
 		};
 	if (config.storagePerCorrect !== undefined)
 		return {
@@ -149,7 +171,10 @@ const rowFor = (
 			// The exact capped faucet income when the engine provides it; the
 			// uncapped estimate otherwise (pre-cap snapshots). Attributing the
 			// whole gate faucet to this row is safe while one faucet config ships.
-			value: `+${faucetThisGateKb ?? (config.storagePerCorrect ?? 0) * correctCount(answered)}KB`,
+			value: kb(
+				faucetThisGateKb ??
+					(config.storagePerCorrect ?? 0) * correctCount(answered)
+			),
 		};
 	// The clear payout only lands on a pass; a failed row shows the unmet
 	// progress instead, so the report says what fell short.
@@ -159,11 +184,11 @@ const rowFor = (
 			kind: "storage",
 			value:
 				base.status === "passed"
-					? `+${config.storageOnClear}KB`
-					: (check?.progress ?? "—"),
+					? kb(config.storageOnClear)
+					: checkProgress(check),
 		};
-	if (check) return { ...base, kind: "check", value: check.progress ?? "" };
-	return { ...base, kind: "coverage", value: "" };
+	if (check) return { ...base, kind: "check", value: checkProgress(check) };
+	return { ...base, kind: "coverage", value: nothing };
 };
 
 const KIND_ORDER: Record<GateRewardKind, number> = {

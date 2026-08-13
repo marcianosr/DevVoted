@@ -159,15 +159,14 @@ describe("roleRows", () => {
 			description: "3 correct answers",
 		});
 		const [row] = roleRows([unitTests], [escalated]);
-		expect(row.description).toBe(
-			"Requires 3 correct answers to pass the gate."
-		);
+		expect(row.reason).toEqual({
+			kind: "gateRequirement",
+			requirement: "3 correct answers",
+		});
 	});
 
-	it("derives the correct-check copy when the check carries no demand", () => {
+	it("falls back to the config's own text when the check carries no demand", () => {
 		const [row] = roleRows([unitTests], [correctCheck]);
-		expect(row.description).toBe(
-			"+32KB storage on gate clear — demands 1 correct answer, rising as you climb."
-		);
+		expect(row.reason).toEqual({ kind: "config" });
 	});
 });

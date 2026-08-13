@@ -1,6 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { perAnswerPreviewFor } from "~/modules/run/pipeline/domain/pipeline.model";
 import { Screen } from "~/ui/Screen.ui";
 
 import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
@@ -55,13 +54,8 @@ export const RunPrep = () => {
 				stripsOnFailure={view.stripsOnFailure}
 				minConfigs={view.minConfigs}
 				storageBillKb={view.storageBillKb}
-				modifiers={{
-					gateReward: view.gateReward,
-					rewardMultiplier: view.rewardMultiplier,
-					coverageMultiplier: view.coverageMultiplier,
-					coverageAdd: view.coverageAdd,
-				}}
-				perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
+				modifiers={view.modifiers}
+				perAnswer={view.perAnswer}
 				configs={view.configs}
 				startLock={gateLocked ? countdown.label : undefined}
 				shopAction={backToShop}

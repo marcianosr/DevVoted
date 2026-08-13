@@ -1,10 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { perAnswerPreviewFor } from "~/modules/run/pipeline/domain/pipeline.model";
 import { shopExitFor } from "~/modules/run/run/application/runView.viewmodel";
 import { Screen } from "~/ui/Screen.ui";
 
-import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
+import {
+	ShopScreen,
+	shopExitAction,
+} from "~/modules/run/shop/presentation/ShopScreen.ui";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
@@ -16,6 +18,7 @@ export const RunShop = () => {
 	if (!view) return null;
 
 	const exit = shopExitFor(view);
+	const action = shopExitAction(exit);
 
 	return (
 		<Screen
@@ -26,13 +29,12 @@ export const RunShop = () => {
 				onClick: () => navigate({ to: "/run/reward" }),
 			}}
 			rightAction={{
-				label: exit.label,
-				hint: exit.hint,
-				variant: exit.variant,
-				disabled: exit.disabled || busy,
-				onClick: exit.endsRun
-					? () => send({ type: "finish-reward" })
-					: () => navigate({ to: "/run/prep" }),
+				...action,
+				disabled: action.disabled || busy,
+				onClick:
+					exit.state === "stuck"
+						? () => send({ type: "finish-reward" })
+						: () => navigate({ to: "/run/prep" }),
 			}}
 		>
 			<ShopScreen
@@ -44,13 +46,8 @@ export const RunShop = () => {
 				pollsPerGate={view.pollsPerGate}
 				stripsOnFailure={view.stripsOnFailure}
 				minConfigs={view.minConfigs}
-				modifiers={{
-					gateReward: view.gateReward,
-					rewardMultiplier: view.rewardMultiplier,
-					coverageMultiplier: view.coverageMultiplier,
-					coverageAdd: view.coverageAdd,
-				}}
-				perAnswer={perAnswerPreviewFor(view.configs, view.gatesCleared)}
+				modifiers={view.modifiers}
+				perAnswer={view.perAnswer}
 				billKb={view.storageBillKb}
 				newConfigIds={view.newConfigIds}
 				draftOptions={view.draftOptions}

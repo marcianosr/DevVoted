@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { describeConfig } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { RoleRow } from "~/modules/run/gate/domain/configRole.model";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
@@ -18,20 +17,20 @@ const rows: readonly RoleRow[] = [
 	{
 		config: CONFIGS.unitTests,
 		role: "requirement",
-		description: describeConfig(CONFIGS.unitTests),
+		reason: { kind: "config" as const },
 		status: "2/3",
 		state: "running",
 	},
 	{
 		config: CONFIGS.js,
 		role: "conditional",
-		description: describeConfig(CONFIGS.js),
+		reason: { kind: "config" as const },
 		state: "skipped",
 	},
 	{
 		config: CONFIGS.agentsMd,
 		role: "passive",
-		description: describeConfig(CONFIGS.agentsMd),
+		reason: { kind: "config" as const },
 	},
 ];
 
@@ -50,7 +49,7 @@ export const FailedRequirement: Story = {
 			{
 				config: CONFIGS.coldStart,
 				role: "requirement",
-				description: describeConfig(CONFIGS.coldStart),
+				reason: { kind: "config" as const },
 				status: "0/2",
 				state: "failed",
 			},

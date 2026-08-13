@@ -5,11 +5,17 @@ import {
 	type GateRewardKind,
 	type GateRewardRow,
 	type GateRewardStatus,
+	type GateRewardValue,
 } from "~/modules/run/gate/domain/gateReward.model";
 import {
 	type GateSwatch,
 	hasThemeColor,
 } from "~/modules/run/gate/domain/swatch.model";
+import {
+	formatKbGain,
+	formatPercent,
+	NOTHING_SHOWN,
+} from "~/shared/lib/displayValue";
 import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { GainBar } from "~/ui/GainBar.ui";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
@@ -19,7 +25,10 @@ import {
 	type ParagraphTone,
 } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
-import { PipelineReportRow } from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
+import {
+	describeRow,
+	PipelineReportRow,
+} from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
 import { PipelineTable } from "~/modules/run/pipeline/presentation/PipelineTable.ui";
 import { SwatchChip } from "~/modules/run/gate/presentation/SwatchChips.ui";
 
@@ -43,6 +52,13 @@ const valueTone = (row: GateRewardRow): ParagraphTone => {
 	return KIND_TONE[row.kind];
 };
 
+const formatValue = (value: GateRewardValue): string => {
+	if (value.unit === "percent") return formatPercent(value);
+	if (value.unit === "kb") return formatKbGain(value);
+	if (value.unit === "checkProgress") return value.text;
+	return NOTHING_SHOWN;
+};
+
 const ReportRow = ({
 	row,
 	removable,
@@ -56,9 +72,9 @@ const ReportRow = ({
 		badge={STATUS_VARIANT[row.status]}
 		layout="table"
 		config={row.config}
-		description={row.description}
+		description={describeRow(row.config, row.reason)}
 		descriptionTone={row.status === "failed" ? "cinnabar" : "muted"}
-		value={row.value}
+		value={formatValue(row.value)}
 		valueTone={valueTone(row)}
 		removable={removable}
 		onRemove={onRemove}
