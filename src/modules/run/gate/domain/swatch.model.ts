@@ -73,6 +73,16 @@ export type GateSwatch = {
 export const hasThemeColor = (swatch: GateSwatch): boolean =>
 	swatch.finish !== "fill";
 
+/**
+ * The swatch's flat theme colour, or undefined where it has none — a legendary
+ * wears `.legendary-ring` instead. Exported so a caller asks once rather than
+ * pairing `hasThemeColor` with `.theme` at every themed element.
+ */
+export const themeColorOf = (
+	swatch: Pick<GateSwatch, "theme" | "finish">
+): SwatchTheme | undefined =>
+	swatch.finish === "fill" ? undefined : swatch.theme;
+
 const swatch = (
 	gate: number,
 	gateName: string,

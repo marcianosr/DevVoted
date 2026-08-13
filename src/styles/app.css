@@ -5,18 +5,24 @@
 @import "@fontsource/jetbrains-mono/700.css";
 @import "@fontsource/jetbrains-mono/800.css";
 
+/* Dark-only (Marciano, 2026-08-13). The light halves that used to sit in here
+   were unreachable — `__root.tsx`'s `<body class="bg-black text-white">` is a
+   utility, so it beat this layer on every render — while the `dark:` variant
+   they were paired with keys off the OS setting, not off `color-scheme`. A
+   light-OS visitor therefore got the light default border on any element that
+   did not name its own. One ramp now, and it is the one components use. */
 @layer base {
 	html {
-		color-scheme: light dark;
+		color-scheme: dark;
 	}
 
 	* {
-		@apply border-gray-200 dark:border-gray-800;
+		@apply border-edge;
 	}
 
 	html,
 	body {
-		@apply text-gray-900 bg-gray-50 dark:bg-gray-950 dark:text-gray-200;
+		@apply bg-zinc-950 text-zinc-200;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
 		text-rendering: optimizeLegibility;
@@ -32,7 +38,7 @@
 
 @layer components {
 	.markdown {
-		@apply text-gray-900 dark:text-gray-200;
+		@apply text-zinc-200;
 	}
 
 	.markdown p {
@@ -64,11 +70,11 @@
 	}
 
 	.markdown code {
-		@apply bg-gray-900 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
+		@apply bg-surface-raised px-1.5 py-0.5 rounded text-sm font-mono;
 	}
 
 	.markdown pre {
-		@apply bg-gray-900 dark:bg-gray-950 rounded-lg p-4 mb-4 overflow-x-auto;
+		@apply bg-zinc-950 rounded-lg p-4 mb-4 overflow-x-auto;
 	}
 
 	.markdown pre code {
@@ -84,11 +90,11 @@
 	}
 
 	.markdown blockquote {
-		@apply border-l-4 border-gray-300 dark:border-gray-700 pl-4 italic my-4;
+		@apply border-l-4 border-edge-strong pl-4 italic my-4;
 	}
 
 	.markdown a {
-		@apply text-blue-600 dark:text-blue-400 hover:underline;
+		@apply text-cerulean hover:underline;
 	}
 }
 
@@ -111,9 +117,24 @@
 	--color-indigo: oklch(45% 0.18 265); /* Deep indigo - Elite Four */
 	--color-seafoam: oklch(75% 0.15 185); /* Seafoam cyan - ice caves */
 
-	--error: oklch(55% 0.3 25);
-	--warning: oklch(75% 0.25 90);
-	--succes: oklch(55% 0.3 145);
+	/* Neutral surfaces (DVTD-8ksp). Kanto names the accents; surfaces are not
+	   part of the identity, so they stay zinc — but behind four named roles
+	   rather than the eleven shades call sites used to pick from. A component
+	   asks for the role it means, which is why re-tinting the whole app later
+	   is an edit to these four lines and nothing else.
+
+	   Semantic colours are NOT here: an error border is `border-cinnabar`, the
+	   same token the text tone uses. Three unprefixed aliases (--error,
+	   --warning, --succes, sic) used to sit at this spot generating no
+	   utilities at all, and no consumers ever appeared. */
+	--color-surface: var(--color-zinc-900);
+	--color-surface-raised: var(--color-zinc-800);
+	--color-edge: var(--color-zinc-800);
+	--color-edge-strong: var(--color-zinc-700);
+	/* The outline of something you can click, which sits a step brighter than a
+	   panel edge so a control reads as reachable. Its hover state stays a raw
+	   shade at the call site: brightening on hover is a behaviour, not a role. */
+	--color-control-edge: var(--color-zinc-600);
 
 	--font-display: "Pixter Display", sans-serif;
 	--font-granular: "Pixter Granular", sans-serif;
@@ -368,6 +389,11 @@ body[data-screen-theme] {
 }
 @utility border-theme {
 	border-color: var(--theme-color);
+}
+/* Focus rings follow the gate the screen is themed for, so a ring never has to
+   fall back to a hardcoded zinc. */
+@utility ring-theme {
+	--tw-ring-color: var(--theme-color);
 }
 @utility accent-theme {
 	accent-color: var(--theme-color);

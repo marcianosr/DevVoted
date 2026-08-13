@@ -2,7 +2,7 @@ import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { gateStorageGained } from "~/modules/run/gate/domain/gateReward.model";
 import {
-	hasThemeColor,
+	themeColorOf,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
 import { Button } from "~/ui/Button.component";
@@ -56,7 +56,7 @@ export const RewardScreen = ({
 	return (
 		<div className="flex flex-col items-center gap-4 py-12 text-center">
 			<div
-				{...(swatch && hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
+				{...swatchTheme(swatch && themeColorOf(swatch))}
 				className="flex items-center gap-1.5"
 			>
 				{swatch ? <SwatchMark finish={swatch.finish} size="sm" /> : null}

@@ -14,7 +14,7 @@ import {
 const GateThemeRow = ({ swatch }: { swatch: GateSwatch }) => (
 	<div
 		data-gate-theme={swatch.theme}
-		className="flex items-center gap-4 border-b border-zinc-800 px-4 py-3"
+		className="flex items-center gap-4 border-b border-edge px-4 py-3"
 	>
 		<span className="w-16 text-sm text-zinc-500">gate {swatch.gate}</span>
 		<span className="h-4 w-4 rounded bg-theme" />

@@ -162,7 +162,7 @@ export const FoldableRow = ({
 			className={clsx(
 				placement,
 				"grid grid-cols-subgrid items-start gap-x-4 py-2",
-				"cursor-pointer transition-colors hover:bg-zinc-900/60",
+				"cursor-pointer transition-colors hover:bg-surface/60",
 				className
 			)}
 			onClick={handleClick}

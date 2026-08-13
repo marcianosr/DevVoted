@@ -23,7 +23,7 @@ type TooltipProps = {
 export const Tooltip = ({
 	content,
 	children,
-	surfaceClassName = "border-zinc-700 bg-zinc-900",
+	surfaceClassName = "border-edge-strong bg-surface",
 	className = "",
 	compact = false,
 	interactive = false,

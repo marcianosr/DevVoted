@@ -17,7 +17,7 @@ const config = (
 const check = (
 	over: Partial<CheckStatus> & Pick<CheckStatus, "label">
 ): CheckStatus => ({
-	progress: "0/1",
+	progress: { kind: "answers", current: 0, target: 1 },
 	current: 0,
 	target: 1,
 	state: "running",
@@ -80,18 +80,17 @@ describe("roleRows", () => {
 			label: ".ts mastery",
 			sourceConfigId: "ts",
 			state: "skipped",
-			progress: "not seen",
+			progress: { kind: "notSeen" },
 		});
 		const [row] = roleRows([focusTs], [dormantMastery]);
-		// The gray dot carries the skipped state alone — no counter, no note.
-		expect(row.status).toBeUndefined();
-		expect(row.note).toBeUndefined();
+		// The gray dot carries the skipped state alone — nothing to report.
+		expect(row.progress).toBeUndefined();
 		expect(row.state).toBe("skipped");
 	});
 
 	it("shows live progress for an active requirement", () => {
 		const [row] = roleRows([unitTests], [correctCheck]);
-		expect(row.status).toBe("0/1");
+		expect(row.progress).toEqual({ kind: "answers", current: 0, target: 1 });
 		expect(row.state).toBe("running");
 	});
 
@@ -139,23 +138,12 @@ describe("roleRows", () => {
 		expect(row.needs).toBe("Answer TypeScript polls correct when they show");
 	});
 
-	it("drops wordy progress under the description instead of the value slot", () => {
-		const breadth = check({
-			label: "Breadth",
-			sourceConfigId: "unit-tests",
-			progress: "0/2 categories",
-		});
-		const [row] = roleRows([unitTests], [breadth]);
-		expect(row.status).toBeUndefined();
-		expect(row.note).toBe("0/2 categories");
-	});
-
 	it("states the escalated demand on a requirement row, not the base config text", () => {
 		const escalated = check({
 			label: "Correct",
 			sourceConfigId: "unit-tests",
 			target: 3,
-			progress: "2/3",
+			progress: { kind: "answers", current: 2, target: 3 },
 			description: "3 correct answers",
 		});
 		const [row] = roleRows([unitTests], [escalated]);

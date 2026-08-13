@@ -2,6 +2,7 @@ import { type ReactNode, useState } from "react";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { Button } from "~/ui/Button.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
+import { FLOATING_SURFACE } from "~/ui/surfaces";
 
 export type ChipAction = {
 	label: string;
@@ -31,7 +32,9 @@ export const ConfigActions = ({
 				onClick={() => setOpen((wasOpen) => !wasOpen)}
 			/>
 			{open && actions.length > 0 ? (
-				<span className="absolute left-0 top-full z-20 mt-1 flex min-w-max flex-col gap-1 rounded-lg border border-zinc-700 bg-zinc-900 p-1">
+				<span
+					className={`absolute left-0 top-full z-20 mt-1 flex min-w-max flex-col gap-1 p-1 ${FLOATING_SURFACE}`}
+				>
 					{actions.map((action) => (
 						<Button
 							key={action.label}

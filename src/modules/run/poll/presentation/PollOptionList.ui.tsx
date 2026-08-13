@@ -49,7 +49,7 @@ const optionRow = cva(
 				correctMissed: "rounded-lg bg-viridian/5",
 				chosenWrong: "rounded-lg bg-cinnabar/10",
 				selected: "rounded-lg bg-theme-soft",
-				neutral: "border-b border-zinc-800",
+				neutral: "border-b border-edge",
 			} satisfies Record<OptionStatus, string>,
 			interaction: {
 				disabled: "cursor-not-allowed opacity-40 line-through",
@@ -86,7 +86,7 @@ const optionBadge = cva(
 				correctMissed: "border border-viridian bg-transparent text-viridian",
 				chosenWrong: "bg-cinnabar text-black",
 				selected: "bg-theme text-black",
-				neutral: "bg-zinc-800 text-pewter",
+				neutral: "bg-surface-raised text-pewter",
 			} satisfies Record<OptionStatus, string>,
 			shape: {
 				radio: "rounded-full",

@@ -14,7 +14,7 @@ type TabsProps = {
 
 /** Underlined tab bar; the active tab glows in the theme color. Generic + reusable. */
 export const Tabs = ({ tabs, activeId, onSelect }: TabsProps) => (
-	<div role="tablist" className="flex gap-6 border-b border-zinc-800">
+	<div role="tablist" className="flex gap-6 border-b border-edge">
 		{tabs.map((tab) => {
 			const isActive = tab.id === activeId;
 			return (

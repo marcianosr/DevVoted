@@ -15,75 +15,27 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { BASE_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import {
+	type DrizzleMockState,
+	resetDrizzleMock,
+} from "~/test/drizzleMock.factory";
+import {
 	abandonSessionRun,
 	applyActionToRun,
 	createSessionRunWithState,
-	getOrCreateDailyRunSeed,
 } from "~/modules/run/run/infrastructure/run.repository";
 
-/**
- * Chainable thenable db mock: every query-builder method returns the chain,
- * awaiting the chain consumes the next queued result. Writes (values/set)
- * record their payloads for assertions. Queue results in the exact order the
- * code under test awaits its queries.
- */
-const mock = vi.hoisted(() => ({
-	results: [] as unknown[],
-	setCalls: [] as Record<string, unknown>[],
-	valuesCalls: [] as unknown[],
-	insertTables: [] as unknown[],
-	updateTables: [] as unknown[],
-	deleteTables: [] as unknown[],
+const mock = vi.hoisted((): DrizzleMockState => ({
+	results: [],
+	setCalls: [],
+	valuesCalls: [],
+	insertTables: [],
+	updateTables: [],
+	deleteTables: [],
 }));
 
-vi.mock("~/database/db", () => {
-	const makeChain = () => {
-		const chain: Record<string, unknown> = {};
-		const chainMethods = [
-			"from",
-			"where",
-			"orderBy",
-			"limit",
-			"innerJoin",
-			"returning",
-			"onConflictDoNothing",
-			"for",
-		];
-		chainMethods.forEach((method) => {
-			chain[method] = vi.fn(() => chain);
-		});
-		chain.values = vi.fn((payload: unknown) => {
-			mock.valuesCalls.push(payload);
-			return chain;
-		});
-		chain.set = vi.fn((payload: Record<string, unknown>) => {
-			mock.setCalls.push(payload);
-			return chain;
-		});
-		chain.then = (resolve: (value: unknown) => void) =>
-			resolve(mock.results.shift());
-		return chain;
-	};
-
-	const mockDb = {
-		select: vi.fn(() => makeChain()),
-		insert: vi.fn((table: unknown) => {
-			mock.insertTables.push(table);
-			return makeChain();
-		}),
-		update: vi.fn((table: unknown) => {
-			mock.updateTables.push(table);
-			return makeChain();
-		}),
-		delete: vi.fn((table: unknown) => {
-			mock.deleteTables.push(table);
-			return makeChain();
-		}),
-		transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-			callback(mockDb)
-		),
-	};
-	return { db: mockDb };
+vi.mock("~/database/db", async () => {
+	const { createMockDb } = await import("~/test/drizzleMock.factory");
+	return { db: createMockDb(mock) };
 });
 
 const quiz = KANTO_QUIZ[0];
@@ -126,80 +78,26 @@ const segmentRow = (segment_date: string = TEST_DATES.birthday) => [
 	{ segment_date },
 ];
 
-describe("getOrCreateDailyRunSeed", () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-		mock.results.length = 0;
-		mock.setCalls.length = 0;
-		mock.valuesCalls.length = 0;
-		mock.insertTables.length = 0;
-		mock.updateTables.length = 0;
-	});
-
-	it("returns the existing sequence without creating anything", async () => {
-		mock.results.push([{ poll_id: 7 }, { poll_id: 3 }]);
-
-		const sequence = await getOrCreateDailyRunSeed(TEST_DATES.birthday);
-
-		expect(sequence).toEqual([7, 3]);
-		expect(db.insert).not.toHaveBeenCalled();
-	});
-
-	it("rolls and persists the sequence when the day has none", async () => {
-		const published = [1, 2, 3, 4].map((id) => ({ id }));
-		mock.results.push([]); // no existing sequence
-		mock.results.push([{ id: 1 }]); // seed row claimed
-		mock.results.push(published);
-		mock.results.push(undefined); // daily_run_polls insert
-
-		const sequence = await getOrCreateDailyRunSeed(TEST_DATES.birthday);
-
-		expect([...sequence].sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
-		expect(db.insert).toHaveBeenCalledTimes(2);
-		const insertedRows = mock.valuesCalls[1] as { position: number }[];
-		expect(insertedRows.map((row) => row.position)).toEqual([0, 1, 2, 3]);
-	});
-
-	it("reads the winner's sequence when losing the creation race", async () => {
-		mock.results.push([]); // no existing sequence yet
-		mock.results.push([]); // claim conflicts — another request won
-		mock.results.push([{ poll_id: 9 }, { poll_id: 5 }]);
-
-		const sequence = await getOrCreateDailyRunSeed(TEST_DATES.christmas);
-
-		expect(sequence).toEqual([9, 5]);
-		expect(db.insert).toHaveBeenCalledTimes(1);
-	});
-
-	it("throws when there are no published polls to seed from", async () => {
-		mock.results.push([]);
-		mock.results.push([{ id: 1 }]);
-		mock.results.push([]);
-
-		await expect(getOrCreateDailyRunSeed(TEST_DATES.christmas)).rejects.toThrow(
-			"No published polls"
-		);
-	});
-});
-
 describe("applyActionToRun", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mock.results.length = 0;
-		mock.setCalls.length = 0;
-		mock.valuesCalls.length = 0;
-		mock.insertTables.length = 0;
-		mock.updateTables.length = 0;
-		mock.deleteTables.length = 0;
+		resetDrizzleMock(mock);
 	});
 
-	const dispatch = (action: Parameters<typeof applyActionToRun>[0]["action"]) =>
-		applyActionToRun({
+	// applyActionToRun materializes today's shared sequence before it takes the
+	// run lock, so every dispatch answers that lookup first: a non-empty result
+	// short-circuits the seed and leaves the queue aligned with the transaction.
+	const dispatch = (
+		action: Parameters<typeof applyActionToRun>[0]["action"]
+	) => {
+		mock.results.unshift([{ poll_id: 1 }]);
+		return applyActionToRun({
 			runId: 64,
 			userId: "red-from-pallet-town",
 			today: TEST_DATES.birthday,
 			action,
 		});
+	};
 
 	it("throws when the run state row is missing", async () => {
 		mock.results.push([]);
@@ -524,9 +422,7 @@ describe("applyActionToRun", () => {
 describe("abandonSessionRun", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mock.results.length = 0;
-		mock.setCalls.length = 0;
-		mock.updateTables.length = 0;
+		resetDrizzleMock(mock);
 	});
 
 	it("finishes the run as abandoned without banking any storage", async () => {

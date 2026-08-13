@@ -58,18 +58,10 @@ export const selectSeededRandom = <T>(array: T[], seed: string): T | null => {
 };
 
 /**
- * Create a seeded random number generator instance
- * Useful when you need multiple random values with the same seed
- */
-export const createSeededRandom = (seed: string): SeededRandom => {
-	return new SeededRandom(seed);
-};
-
-/**
  * Represents an item with an associated weight for weighted random selection
  * Higher weight = higher probability of being selected
  */
-export type WeightedItem<T> = {
+type WeightedItem<T> = {
 	item: T;
 	weight: number;
 };
@@ -103,40 +95,4 @@ export const selectWeightedSeededRandom = <T>(
 
 	// Fallback for floating-point edge cases
 	return selected?.item ?? items[0].item;
-};
-
-/**
- * Select multiple unique items using weighted probability (without replacement)
- * Each picked item is removed from the pool before the next selection,
- * ensuring no duplicates are returned.
- */
-export const selectMultipleWeightedSeededRandom = <T>(
-	items: WeightedItem<T>[],
-	count: number,
-	seed: string
-): T[] => {
-	if (items.length === 0) return [];
-
-	const rng = new SeededRandom(seed);
-	const selected: T[] = [];
-	let remaining = [...items];
-
-	for (let i = 0; i < count && remaining.length > 0; i++) {
-		// Recalculate cumulative weights for remaining items
-		let cumulativeWeight = 0;
-		const weighted = remaining.map(({ item, weight }) => {
-			cumulativeWeight += weight;
-			return { item, weight, cumulativeWeight };
-		});
-
-		const randomValue = rng.next() * cumulativeWeight;
-		const choice = weighted.find((w) => randomValue <= w.cumulativeWeight);
-
-		if (choice) {
-			selected.push(choice.item);
-			remaining = remaining.filter((r) => r.item !== choice.item);
-		}
-	}
-
-	return selected;
 };

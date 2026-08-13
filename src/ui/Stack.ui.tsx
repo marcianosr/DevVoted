@@ -14,7 +14,7 @@ const stack = cva("flex flex-col", {
 		// A rule between children, not around them — divide-y skips the first, so a
 		// one-child stack stays a plain stack.
 		divided: {
-			true: "divide-y divide-zinc-800",
+			true: "divide-y divide-edge",
 			false: "",
 		},
 	},

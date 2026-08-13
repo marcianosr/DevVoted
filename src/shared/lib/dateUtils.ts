@@ -1,9 +1,6 @@
 import { format } from "date-fns";
 
-export const getTodayDateString = () => {
-	// return "2025-11-02";
-	return format(new Date(), "yyyy-MM-dd");
-};
+export const getTodayDateString = () => format(new Date(), "yyyy-MM-dd");
 
 /**
  * Milliseconds from `now` until the next daily poll opens.
@@ -25,13 +22,6 @@ export const getMsUntilNextPoll = (now: Date): number =>
 	nextLocalMidnight(now).getTime() - now.getTime();
 
 /**
- * Game-copy duration: "9s" under a minute, "1m45" past it. Hand-rolled on
- * purpose: Intl.DurationFormat's closest style is "1m 45s" and Temporal is
- * still Stage 3 (Firefox-only without a polyfill) — the exact compact copy is
- * a design choice, not a formatting gap. Floors at "1s": a standout can never
- * read "0s".
- */
-/**
  * Wait-copy duration: "7h 23m" / "2h" / "45m" / "<1m". Minute resolution on
  * purpose — it labels a button counting down to the next day, and a seconds
  * tick there reads as jitter, not information.
@@ -45,6 +35,13 @@ export const formatCompactDuration = (ms: number): string => {
 	return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 };
 
+/**
+ * Game-copy duration: "9s" under a minute, "1m45" past it. Hand-rolled on
+ * purpose: Intl.DurationFormat's closest style is "1m 45s" and Temporal is
+ * still Stage 3 (Firefox-only without a polyfill) — the exact compact copy is
+ * a design choice, not a formatting gap. Floors at "1s": a standout can never
+ * read "0s".
+ */
 export const formatDurationMs = (ms: number): string => {
 	const seconds = Math.max(1, Math.round(ms / 1000));
 	if (seconds < 60) return `${seconds}s`;

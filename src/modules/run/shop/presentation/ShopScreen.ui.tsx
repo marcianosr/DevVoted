@@ -122,7 +122,7 @@ const actionTone = ({
 		return "border-transparent legendary-ring text-zinc-100 enabled:hover:brightness-125";
 	if (loud)
 		return "border-viridian bg-viridian/10 text-zinc-100 enabled:hover:bg-viridian/20";
-	return "border-zinc-600 text-pewter enabled:hover:border-zinc-400";
+	return "border-control-edge text-pewter enabled:hover:border-zinc-400";
 };
 
 const actionButton = ({
@@ -149,7 +149,7 @@ const actionButton = ({
 		onClick={onClick}
 		disabled={disabled}
 		aria-label={ariaLabel}
-		className={`${pill ? "rounded-full" : "rounded-lg"} border px-3 py-1.5 text-sm transition ${actionTone({ loud, prismatic })} enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600`}
+		className={`${pill ? "rounded-full" : "rounded-lg"} border px-3 py-1.5 text-sm transition ${actionTone({ loud, prismatic })} enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-edge disabled:text-zinc-600`}
 	>
 		{label}
 		{price ? (
@@ -448,7 +448,7 @@ export const ShopScreen = ({
 							</div>
 						</TerminalSection>
 
-						<hr className="border-t border-zinc-700" />
+						<hr className="border-t border-edge" />
 
 						<TerminalSection label="Storage upgrades">
 							<ul className="flex flex-col">
@@ -498,7 +498,7 @@ export const ShopScreen = ({
 											}`}
 											className={clsx(
 												rowBox,
-												"cursor-pointer transition hover:bg-zinc-800/60"
+												"cursor-pointer transition hover:bg-surface-raised/60"
 											)}
 										>
 											{planRow}

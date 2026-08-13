@@ -9,7 +9,7 @@ import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
 const checks: CheckStatus[] = [
 	{
 		label: "Correct",
-		progress: "0/1",
+		progress: { kind: "answers", current: 0, target: 1 },
 		current: 0,
 		target: 1,
 		state: "running",
@@ -17,7 +17,7 @@ const checks: CheckStatus[] = [
 	},
 	{
 		label: "Coverage",
-		progress: "2%/1%",
+		progress: { kind: "coverage", current: 2, target: 1 },
 		current: 2,
 		target: 1,
 		state: "success",
@@ -57,5 +57,42 @@ describe(RoleList, () => {
 	it("shuts a config with no check at all, since nothing about it is live", () => {
 		render(<RoleList rows={roleRows([CONFIGS.agentsMd], [])} foldIdleRows />);
 		expect(detailFor("AGENTS.md")).toHaveClass("hidden");
+	});
+
+	// Which column a tally reads in, per DVTD-c0d0. A counter is short enough to
+	// scan in the value column; prose needs the width of the note under it.
+	const valueOf = (label: string) =>
+		screen.getByText(label).closest("div.grid")?.querySelector(".tabular-nums")
+			?.textContent;
+
+	it("puts a bare counter in the value column", () => {
+		const counting: CheckStatus[] = [
+			{
+				label: "Correct",
+				progress: { kind: "answers", current: 1, target: 2 },
+				current: 1,
+				target: 2,
+				state: "running",
+				sourceConfigId: "unit-tests",
+			},
+		];
+		render(<RoleList rows={roleRows([CONFIGS.unitTests], counting)} />);
+		expect(valueOf("Unit Tests")).toBe("1/2");
+	});
+
+	it("drops a wordy tally under the description instead of the value column", () => {
+		const breadth: CheckStatus[] = [
+			{
+				label: "Breadth",
+				progress: { kind: "categories", current: 0, target: 2 },
+				current: 0,
+				target: 2,
+				state: "running",
+				sourceConfigId: "unit-tests",
+			},
+		];
+		render(<RoleList rows={roleRows([CONFIGS.unitTests], breadth)} />);
+		expect(screen.getByText("0/2 categories")).toBeInTheDocument();
+		expect(valueOf("Unit Tests")).toBeUndefined();
 	});
 });

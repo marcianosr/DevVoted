@@ -14,7 +14,7 @@ import {
 	type ScreenNavDirection,
 } from "./screenNavDirection";
 
-export type ScreenWidth = "narrow" | "default" | "wide";
+export type ScreenWidth = "narrow" | "default";
 export type ScreenTheme = "cinnabar" | "celadon";
 export type ScreenTransition =
 	"none" | "fade" | "slide-up" | "slide-right" | "slide-left";
@@ -32,12 +32,7 @@ const screenSection = cva("w-full mx-auto px-4 py-4 sm:py-8", {
 		width: {
 			narrow: "sm:max-w-2xl",
 			default: "sm:max-w-6xl",
-			wide: "sm:max-w-6xl",
 		} satisfies Record<ScreenWidth, string>,
-		center: {
-			true: "flex-1 flex flex-col justify-center",
-			false: "",
-		},
 	},
 });
 
@@ -64,13 +59,11 @@ const screenFooter = cva("mt-8 flex items-center", {
 type ScreenProps = {
 	children: ReactNode;
 	width?: ScreenWidth;
-	transition?: ScreenTransition;
 	gateTheme?: SwatchTheme;
 	theme?: ScreenTheme;
 	leftAction?: ScreenAction;
 	rightAction?: ScreenAction;
 	footerNote?: ReactNode;
-	center?: boolean;
 };
 
 const DIRECTION_TRANSITION: Record<ScreenNavDirection, ScreenTransition> = {
@@ -81,17 +74,15 @@ const DIRECTION_TRANSITION: Record<ScreenNavDirection, ScreenTransition> = {
 export const Screen = ({
 	children,
 	width = "default",
-	transition = "none",
 	gateTheme,
 	theme,
 	leftAction,
 	rightAction,
 	footerNote,
-	center = false,
 }: ScreenProps) => {
 	const [effectiveTransition] = useState<ScreenTransition>(() => {
 		const direction = peekScreenNavDirection();
-		return direction ? DIRECTION_TRANSITION[direction] : transition;
+		return direction ? DIRECTION_TRANSITION[direction] : "none";
 	});
 
 	useEffect(() => {
@@ -113,6 +104,28 @@ export const Screen = ({
 	const runAction = (action: ScreenAction, direction: ScreenNavDirection) => {
 		setScreenNavDirection(direction);
 		action.onClick();
+	};
+
+	const rightActionButton = (action: ScreenAction) => {
+		const button = (
+			<Button
+				onClick={() => runAction(action, "forward")}
+				disabled={action.disabled}
+				variant={action.variant}
+			>
+				{action.label}
+			</Button>
+		);
+		if (!action.hint) return button;
+		return (
+			<Popover
+				triggerAs="span"
+				ariaLabel={`Why "${action.label}" is unavailable`}
+				content={<p className="max-w-xs text-sm">{action.hint}</p>}
+			>
+				{button}
+			</Popover>
+		);
 	};
 
 	const leftSide =
@@ -140,7 +153,7 @@ export const Screen = ({
 			data-gate-theme={gateTheme}
 			data-screen-theme={theme}
 			data-screen-transition={effectiveTransition}
-			className={screenSection({ width, center })}
+			className={screenSection({ width })}
 		>
 			{children}
 			{(leftSide || rightAction) && (
@@ -150,30 +163,7 @@ export const Screen = ({
 					})}
 				>
 					{leftSide}
-					{rightAction &&
-						(rightAction.hint ? (
-							<Popover
-								triggerAs="span"
-								ariaLabel={`Why "${rightAction.label}" is unavailable`}
-								content={<p className="max-w-xs text-sm">{rightAction.hint}</p>}
-							>
-								<Button
-									onClick={() => runAction(rightAction, "forward")}
-									disabled={rightAction.disabled}
-									variant={rightAction.variant}
-								>
-									{rightAction.label}
-								</Button>
-							</Popover>
-						) : (
-							<Button
-								onClick={() => runAction(rightAction, "forward")}
-								disabled={rightAction.disabled}
-								variant={rightAction.variant}
-							>
-								{rightAction.label}
-							</Button>
-						))}
+					{rightAction && rightActionButton(rightAction)}
 				</div>
 			)}
 		</section>

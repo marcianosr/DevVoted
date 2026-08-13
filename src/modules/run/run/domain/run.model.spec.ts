@@ -640,7 +640,7 @@ describe("linter mastery checks", () => {
 			(check) => check.sourceConfigId === "eslint"
 		);
 		expect(row?.label).toBe("ESLint mastery");
-		expect(row?.progress).toBe("1/1");
+		expect(row?.progress).toEqual({ kind: "answers", current: 1, target: 1 });
 	});
 });
 

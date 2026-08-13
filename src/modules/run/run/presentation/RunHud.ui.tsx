@@ -5,7 +5,7 @@ import { Popover } from "~/ui/Popover.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import {
 	ALL_SWATCHES,
-	hasThemeColor,
+	themeColorOf,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
 import { swatchNameClass } from "~/ui/SwatchMark.component";
@@ -107,7 +107,7 @@ const GateName = ({ gate }: { gate: number }) => {
 	const swatch = swatchForGate(gate);
 	if (!swatch) return null;
 	return (
-		<span {...(hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}>
+		<span {...swatchTheme(themeColorOf(swatch))}>
 			<Paragraph
 				as="span"
 				size="xs"
@@ -129,7 +129,7 @@ export const RunHud = ({
 	coverage,
 	coverageByCategory,
 }: RunHudProps) => (
-	<div className="border-b border-zinc-800 pb-3 text-sm">
+	<div className="border-b border-edge pb-3 text-sm">
 		<div className="flex flex-col gap-2 sm:hidden">
 			<StorageGauge usedKb={storage} capKb={capKb} />
 			<span className="flex flex-col gap-1">

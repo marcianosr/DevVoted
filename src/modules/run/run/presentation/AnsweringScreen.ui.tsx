@@ -204,7 +204,7 @@ export const AnsweringScreen = ({
 					)}
 				</div>
 			</div>
-			<div className="space-y-2 border-t border-zinc-800 pt-4 lg:order-1 lg:border-t-0 lg:border-r lg:pt-0 lg:pr-8">
+			<div className="space-y-2 border-t border-edge pt-4 lg:order-1 lg:border-t-0 lg:border-r lg:pt-0 lg:pr-8">
 				<header>
 					<Title as="h3">Your pipeline</Title>
 					{slots ? (

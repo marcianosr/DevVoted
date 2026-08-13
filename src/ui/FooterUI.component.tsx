@@ -17,7 +17,7 @@ export const FooterUI = ({
 	lastCommitDate,
 	statsLink,
 }: FooterUIProps) => (
-	<footer className="p-4 mt-auto bg-zinc-900 text-white flex flex-col items-center">
+	<footer className="p-4 mt-auto bg-surface text-white flex flex-col items-center">
 		<section className="flex gap-2 items-center">
 			{!isLoading && pollCount !== null && <div>{pollCount} polls</div>}
 			<span>·</span>

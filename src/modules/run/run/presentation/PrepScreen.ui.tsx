@@ -91,7 +91,7 @@ const PipelineChips = ({
 	};
 
 	return (
-		<section className="flex flex-col gap-3 rounded border border-zinc-800 px-4 py-3">
+		<section className="flex flex-col gap-3 rounded border border-edge px-4 py-3">
 			<Title as="h3">Your pipeline</Title>
 			<div className="flex flex-wrap gap-2">{configs.map(chipFor)}</div>
 		</section>

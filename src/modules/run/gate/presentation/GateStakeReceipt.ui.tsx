@@ -1,5 +1,5 @@
 import {
-	hasThemeColor,
+	themeColorOf,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
 import type {
@@ -120,12 +120,10 @@ export const GateStakeReceipt = ({
 		previewPerAnswer?.matchingConfigMultiplier ??
 		perAnswer.matchingConfigMultiplier;
 	return (
-		<section className="rounded-lg border border-zinc-600 p-4">
+		<section className="rounded-lg border border-edge-strong p-4">
 			<div data-testid="gate-stake-receipt" className="flex flex-col gap-3">
 				<div
-					{...(swatch && hasThemeColor(swatch)
-						? swatchTheme(swatch.theme)
-						: {})}
+					{...swatchTheme(swatch && themeColorOf(swatch))}
 					className="flex items-center gap-2"
 				>
 					{swatch ? <SwatchMark finish={swatch.finish} size="sm" /> : null}
@@ -140,7 +138,7 @@ export const GateStakeReceipt = ({
 				</div>
 				{hasStartRequirement ? (
 					<>
-						<hr className="border-t border-zinc-800" />
+						<hr className="border-t border-edge" />
 						<div className="flex flex-col gap-1">
 							<div className="flex items-center justify-between">
 								<Paragraph size="xs">To start</Paragraph>
@@ -174,7 +172,7 @@ export const GateStakeReceipt = ({
 						</div>
 					</>
 				) : null}
-				<hr className="border-t border-zinc-800" />
+				<hr className="border-t border-edge" />
 				<div className="flex flex-col gap-1">
 					<Paragraph size="xs">Per answer</Paragraph>
 					<Paragraph as="span">
@@ -208,7 +206,7 @@ export const GateStakeReceipt = ({
 						) : null}
 					</Paragraph>
 				</div>
-				<hr className="border-t border-zinc-800" />
+				<hr className="border-t border-edge" />
 				<div className="flex flex-col gap-1">
 					<Paragraph size="xs">Outcomes</Paragraph>
 					<Paragraph as="span">

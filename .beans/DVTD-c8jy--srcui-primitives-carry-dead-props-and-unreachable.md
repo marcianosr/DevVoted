@@ -1,10 +1,11 @@
 ---
 # DVTD-c8jy
 title: src/ui primitives carry dead props and unreachable variants
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-08-13T13:46:18Z
-updated_at: 2026-08-13T13:46:18Z
+updated_at: 2026-08-13T16:03:30Z
 parent: DVTD-82c4
 ---
 
@@ -71,9 +72,45 @@ Identical body at `ScoreEquationChips.ui.tsx:46-50`, plus `StackPreviewList.ui.t
 
 ## Todo
 
-- [ ] Collapse `Screen.width` to `narrow | default`; delete `transition`, `center`, the duplicated Button block
-- [ ] Confirm intent, then delete `StatusLine.indicator` and its dead branch
-- [ ] Delete `Button.isLoading`, `Stack` `gap="8"`
-- [ ] `swatchTheme(swatch)`; delete the seven guards
-- [ ] Add `signTone` to the theme; delete the three copies
-- [ ] Delete admin.tsx's shadow `RARITY_COLORS`; dedupe the legendary-ring string
+- [x] Collapse `Screen.width` to `narrow | default`; delete `transition`, `center`, the duplicated Button block
+- [x] Deleted `StatusLine.indicator` and its dead branch
+- [~] Kept both, deliberately — see "What I did not delete"
+- [x] `swatchTheme(themeColorOf(swatch))`; all eleven call sites now ask once
+- [~] Skipped — the duplicate is a live function and a dead one; see below
+- [~] Ring string deduped; the admin map is not a shadow — see below
+
+## Summary of Changes
+
+### Screen
+
+`width` had three values and two behaviours — `wide` and `default` were the same string, so five call sites believed they were choosing something. Collapsed to `narrow | default`; the five sites (`Dex` ×2, `DexScreen`, `RunShop`, `proto-run`) just drop the prop, so **nothing renders differently**.
+
+`transition` had zero callers and was overwritten on every mount by `peekScreenNavDirection()`; `center` had zero callers. Both gone, along with the `center` cva variant. The nav direction is now the only source of a transition, and a screen mounted without one does not animate.
+
+The `rightAction` Button was written twice — once inside the `Popover` branch, once outside. Now one `rightActionButton` helper that wraps in its explanation only when there is a hint.
+
+### StatusLine
+
+`indicator` was passed exactly once, as `indicator="badge"` — the default. The `"dot"` branch had no caller: the two surfaces that want dots import `StatusDot` directly. Prop, union type, branch and the now-unused `StatusDot` import all deleted, and `PipelineReportRow` stopped passing the default explicitly.
+
+### swatchTheme
+
+The guard `hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {}` was repeated at **eight** sites, each importing `hasThemeColor` for it alone — and **three more sites skipped the guard entirely** (`Standouts`, `ClimbToday` ×2), so those set `data-swatch-theme` on legendary swatches that have no CSS block.
+
+The fix could not go where the bean said: `.dependency-cruiser.cjs`'s `ui-stays-presentational` rule allows `src/ui` to take **types** from modules but never runtime values, so `swatchTheme` cannot call `hasThemeColor`. Instead the domain answers it — new `themeColorOf(swatch)` returns the theme or `undefined` — and `swatchTheme` absorbs `undefined` by rendering no attribute. Every call site is now `{...swatchTheme(themeColorOf(swatch))}`, including the three that used to be inconsistent.
+
+`themeColorOf` takes `Pick<GateSwatch, "theme" | "finish">` because `Standouts` carries a partial swatch, and those two fields are all it reads.
+
+**One bug I introduced and caught mid-change**: `SwatchChips` gated theming on `owned && hasThemeColor(swatch)`, and the mechanical rewrite dropped the `owned` half — an unowned chip is drawn dashed and grey and must not wear its colour. Restored explicitly, with a comment.
+
+### What I did not delete, and why
+
+- **`Button.isLoading`** — no production caller, but it has a Story and a loading state is ordinary primitive capability. Deleting it removes something a caller would reasonably reach for, which is not the same as removing dead weight.
+- **`Stack` `gap="8"`** — same reasoning. A spacing scale with a hole in it is worse than an unused rung.
+- **`signTone`** — the two copies are `ScoreEquationChips.valueTone` (live) and `RevealScore.toneOf` (**story-only**, on the `DVTD-ylsm` ruling list). Extracting a shared theme helper to unify a live function with a dead one is not worth the module. Revisit after the ruling: if `RevealScore` goes, so does the duplication.
+- **`admin.tsx`'s `RARITY_COLORS`** — not a shadow. It is a different palette (`bg-blue-100` / `text-blue-800` etc. for a light admin table) against `src/ui/rarityColors.ts`'s Kanto colours for game chips. Importing the game palette would change how the admin screen looks, for no functional gain, on a legacy route.
+- **`DataTable`'s module augmentation** — structural, one caller, harmless.
+
+The one real duplicate was `"border-transparent legendary-ring"` in both `rarityColors.ts` and `SwatchMark.component.tsx`; it is now `LEGENDARY_BORDER`, exported with the explanation that used to sit inside the rarity map.
+
+Verified: tsc 0 errors, oxlint clean, depcruise 0 violations (531 modules), 1473 tests passing.

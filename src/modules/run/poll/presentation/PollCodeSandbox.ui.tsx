@@ -12,7 +12,7 @@ export const PollCodeSandbox = ({ url }: PollCodeSandboxProps) => (
 	<iframe
 		src={url}
 		title="CodeSandbox example"
-		className="my-2 h-96 w-full rounded-lg border border-zinc-700"
+		className="my-2 h-96 w-full rounded-lg border border-edge-strong"
 		allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
 		sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
 	/>

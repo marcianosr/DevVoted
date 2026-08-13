@@ -115,7 +115,7 @@ export function Login() {
 							variant="secondary"
 							onClick={handleGithubLogin}
 							disabled={githubLoading}
-							className="w-full bg-gray-800 dark:bg-gray-700 text-white flex items-center justify-center gap-2"
+							className="w-full bg-surface-raised text-white flex items-center justify-center gap-2"
 						>
 							{githubLoading ? (
 								"Redirecting..."

@@ -17,7 +17,7 @@ export const Default: Story = {
 		checks: [
 			{
 				label: "Correct",
-				progress: "1/2",
+				progress: { kind: "answers", current: 1, target: 2 },
 				current: 1,
 				target: 2,
 				state: "running",
@@ -25,7 +25,7 @@ export const Default: Story = {
 			},
 			{
 				label: "Coverage",
-				progress: "2%/4%",
+				progress: { kind: "coverage", current: 2, target: 4 },
 				current: 2,
 				target: 4,
 				state: "running",

@@ -136,7 +136,7 @@ const PollSection = ({ poll }: { poll: RunCommunityPoll }) => {
 
 			{/* The rule is the gutter: it ties every option line to the question it
 			    belongs to, which is the only structure a page of stacked polls has. */}
-			<div className="mt-2 space-y-2 border-l border-zinc-800 pl-4">
+			<div className="mt-2 space-y-2 border-l border-edge pl-4">
 				<ul className="space-y-1">
 					{involved.map((option) => (
 						<OptionRow key={option.label} option={option} />

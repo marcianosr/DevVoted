@@ -2,7 +2,7 @@ import { clsx } from "clsx";
 
 import {
 	type GateSwatch,
-	hasThemeColor,
+	themeColorOf,
 } from "~/modules/run/gate/domain/swatch.model";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
@@ -32,7 +32,7 @@ export const SwatchLabel = ({
 }: SwatchLabelProps) => (
 	<span
 		data-testid={testId}
-		{...(hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
+		{...swatchTheme(themeColorOf(swatch))}
 		className="inline-flex items-center gap-1.5 align-middle"
 	>
 		<SwatchMark finish={swatch.finish} size={size} />

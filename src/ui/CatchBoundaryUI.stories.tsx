@@ -18,7 +18,7 @@ export const Default: Story = {
 		navigationLink: (
 			<a
 				href="/"
-				className="px-2 py-1 bg-gray-700 rounded text-white uppercase font-extrabold text-sm"
+				className="px-2 py-1 bg-surface-raised rounded text-white uppercase font-extrabold text-sm"
 			>
 				Go Back
 			</a>

@@ -6,7 +6,9 @@ import {
 	startRun,
 } from "~/modules/run/run/application/run.serverfn";
 import type { RunAction } from "~/modules/run/run/domain/run.model";
+import { userQueryKeys } from "~/shared/queryKeys";
 
+import { runCommunityQueryKey } from "~/modules/run/community/application/useRunCommunity.hook";
 import { todaysRunQueryKey } from "~/modules/run/run/application/useTodaysRun.hook";
 
 export type RunActionResult = Awaited<ReturnType<typeof dispatchRunAction>>;
@@ -21,8 +23,23 @@ export const useRunActions = () => {
 	const queryClient = useQueryClient();
 	const queryKey = todaysRunQueryKey();
 
-	const commit = (result: RunActionSuccess) =>
+	/**
+	 * The two caches a run action moves without returning them. Both are marked
+	 * stale rather than refetched — neither is mounted while the run is being
+	 * played, so they reload when the player next opens them. Every action
+	 * invalidates both rather than only the ones that qualify: an answer moves
+	 * the board, a gate clear awards a swatch, and a stale mark is cheaper than
+	 * a rule about which action did what.
+	 */
+	const invalidateSideViews = () => {
+		queryClient.invalidateQueries({ queryKey: runCommunityQueryKey() });
+		queryClient.invalidateQueries({ queryKey: userQueryKeys.swatchesAll });
+	};
+
+	const commit = (result: RunActionSuccess) => {
 		queryClient.setQueryData(queryKey, result);
+		invalidateSideViews();
+	};
 
 	const dispatch = useMutation({
 		mutationFn: (action: RunAction) => dispatchRunAction({ data: { action } }),
@@ -56,7 +73,10 @@ export const useRunActions = () => {
 	const abandon = useMutation({
 		mutationFn: () => abandonRun(),
 		onSuccess: (result) => {
-			if (result.success) queryClient.invalidateQueries({ queryKey });
+			if (!result.success) return;
+			queryClient.invalidateQueries({ queryKey });
+			// A quit takes you off the climb map too.
+			invalidateSideViews();
 		},
 	});
 

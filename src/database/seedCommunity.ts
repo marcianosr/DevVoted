@@ -9,7 +9,7 @@ import {
 	runsTable,
 	usersTable,
 } from "@/src/database/schema";
-import { getOrCreateDailyRunSeed } from "~/modules/run/run/infrastructure/run.repository";
+import { getOrCreateDailyRunSeed } from "~/modules/run/run/infrastructure/runPolls.repository";
 import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
 import { createRun } from "~/modules/run/run/domain/run.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";

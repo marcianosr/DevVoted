@@ -52,30 +52,6 @@ export function formatStorageDetailed(bytes: number): string {
 	return primary;
 }
 
-export function parseStorage(storageString: string): number {
-	const normalized = storageString.toUpperCase().trim();
-	const match = normalized.match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)?$/);
-
-	if (!match) {
-		throw new Error(`Invalid storage format: ${storageString}`);
-	}
-
-	const [, value, unit = "B"] = match;
-	const numValue = parseFloat(value);
-
-	switch (unit) {
-		case "GB":
-			return Math.round(numValue * STORAGE_UNITS.GB);
-		case "MB":
-			return Math.round(numValue * STORAGE_UNITS.MB);
-		case "KB":
-			return Math.round(numValue * STORAGE_UNITS.KB);
-		case "B":
-		default:
-			return Math.round(numValue);
-	}
-}
-
 export const getStorageUsagePercentage = (
 	used: number,
 	total: number

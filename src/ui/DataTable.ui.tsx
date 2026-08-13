@@ -72,7 +72,7 @@ export const DataTable = <TData,>({
 		<div className="overflow-x-auto">
 			<table className="w-full min-w-[36rem] border-collapse text-left">
 				<thead>
-					<tr className="border-b border-zinc-700">
+					<tr className="border-b border-edge-strong">
 						{table.getFlatHeaders().map((header) => {
 							const { align = "left", grow } =
 								header.column.columnDef.meta ?? {};
@@ -123,7 +123,7 @@ export const DataTable = <TData,>({
 							<tr
 								key={row.id}
 								className={clsx(
-									"border-b border-zinc-800",
+									"border-b border-edge",
 									rowClassName?.(row.original)
 								)}
 							>

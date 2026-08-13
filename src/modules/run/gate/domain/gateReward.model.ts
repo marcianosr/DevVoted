@@ -13,6 +13,7 @@ import {
 	faucetKbPerCorrect,
 } from "~/modules/run/config/domain/config.model";
 import {
+	type CheckProgress,
 	type CheckStatus,
 	touchesCoverage,
 } from "~/modules/run/config/domain/effect.model";
@@ -33,15 +34,15 @@ export type GateRewardKind = "coverage" | "storage" | "check";
 export type GateRewardStatus = "passed" | "skipped" | "failed";
 
 /**
- * What a row earned. `checkProgress` is the one variant this context adds and
- * the one still carrying a string: it passes through `CheckStatus.progress`,
- * whose shapes vary per check ("2/3", "not seen", "3/5 categories") and which
- * effect.model still owns (DVTD-c0d0).
+ * What a row earned. `checkProgress` is the one variant this context adds: a row
+ * that owed the gate a check and nothing else reports the tally where the others
+ * report a quantity. It stays a variant rather than folding into the shared
+ * quantities because "not seen" and "hid Coverage" are not amounts of anything.
  */
 export type GateRewardValue =
 	| Percent
 	| Kb
-	| { readonly unit: "checkProgress"; readonly text: string }
+	| { readonly unit: "checkProgress"; readonly progress: CheckProgress }
 	| Nothing;
 
 export type GateRewardRow = {
@@ -56,7 +57,7 @@ export type GateRewardRow = {
 const checkProgress = (check: CheckStatus | undefined): GateRewardValue =>
 	check?.progress === undefined
 		? nothing
-		: { unit: "checkProgress", text: check.progress };
+		: { unit: "checkProgress", progress: check.progress };
 
 /** How many of a window's answers were fully right — the gate's score line. */
 export const correctCount = (answered: readonly AnsweredPoll[]): number =>

@@ -1,5 +1,7 @@
 import { clsx } from "clsx";
 
+import { LEGENDARY_BORDER } from "~/ui/rarityColors";
+
 import type { SwatchFinish } from "~/modules/run/gate/domain/swatch.model";
 import { Swatch } from "./Swatch.component";
 
@@ -48,7 +50,5 @@ export const swatchNameClass = (finish: SwatchFinish): string =>
 /** The border a chip wrapping this swatch should wear, by the same logic. */
 export const swatchBorderClass = (finish: SwatchFinish): string => {
 	if (finish === "flat") return "border-theme";
-	return finish === "plate"
-		? "border-pewter"
-		: "border-transparent legendary-ring";
+	return finish === "plate" ? "border-pewter" : LEGENDARY_BORDER;
 };

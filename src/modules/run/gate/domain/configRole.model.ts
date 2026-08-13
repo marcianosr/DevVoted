@@ -5,6 +5,7 @@ import {
 	needsOf,
 } from "~/modules/run/config/domain/config.model";
 import type {
+	CheckProgress,
 	CheckState,
 	CheckStatus,
 } from "~/modules/run/config/domain/effect.model";
@@ -50,8 +51,8 @@ export type RoleRow = {
 	readonly gives?: string;
 	readonly needs?: string;
 	readonly costs?: string;
-	readonly status?: string;
-	readonly note?: string;
+	/** Absent when there is nothing to report, or when the row is dormant. */
+	readonly progress?: CheckProgress;
 	readonly state?: CheckState;
 };
 
@@ -74,21 +75,13 @@ export const gateRowReason = (
 		? { kind: "gateRequirement", requirement: check.description }
 		: { kind: "config" };
 
-// A counter ("0/2", "5%/1%") reads at a glance and sits right as the value;
-// prose ("0/2 categories", "steady") is a remark and drops under the description.
-const isCounter = (progress: string): boolean => /^[\d/%.]+$/.test(progress);
-
-const progressPlacement = (
+// The gray dot already says a dormant conditional is skipped — no note, and its
+// "not seen" progress stays hidden too. Which column the rest reads in is the
+// screen's call (`isCounterProgress`), not this model's.
+const liveProgress = (
 	check: CheckStatus | undefined,
 	dormant: boolean
-): Pick<RoleRow, "status" | "note"> => {
-	// The gray dot already says a dormant conditional is skipped — no note,
-	// and its "not seen" progress text stays hidden too.
-	if (dormant) return {};
-	if (!check?.progress) return {};
-	if (isCounter(check.progress)) return { status: check.progress };
-	return { note: check.progress };
-};
+): CheckProgress | undefined => (dormant ? undefined : check?.progress);
 
 export const roleRows = (
 	configs: readonly Config[],
@@ -110,7 +103,7 @@ export const roleRows = (
 					needsOf(config) ??
 					(config.check === "correct" ? check?.description : undefined),
 				costs: config.costs,
-				...progressPlacement(check, dormant),
+				progress: liveProgress(check, dormant),
 				state: check?.state,
 			};
 		})
@@ -120,8 +113,4 @@ export const preRunRoleRows = (
 	configs: readonly Config[],
 	checks: readonly CheckStatus[]
 ): readonly RoleRow[] =>
-	roleRows(configs, checks).map((row) => ({
-		...row,
-		status: undefined,
-		note: undefined,
-	}));
+	roleRows(configs, checks).map((row) => ({ ...row, progress: undefined }));

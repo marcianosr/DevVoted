@@ -10,7 +10,7 @@ const meta: Meta<typeof Stack> = {
 		children: KANTO_TOWNS.slice(0, 3).map((town) => (
 			<div
 				key={town.name}
-				className="rounded-lg border border-zinc-700 p-4 text-white"
+				className="rounded-lg border border-edge-strong p-4 text-white"
 			>
 				{town.name}
 			</div>

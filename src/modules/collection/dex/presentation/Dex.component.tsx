@@ -50,7 +50,7 @@ export const Dex = ({ userId }: DexProps) => {
 
 	if (polldex.isPending) {
 		return (
-			<Screen width="wide">
+			<Screen>
 				<Title>Dex</Title>
 				<Paragraph tone="muted">Loading your collection…</Paragraph>
 			</Screen>
@@ -59,7 +59,7 @@ export const Dex = ({ userId }: DexProps) => {
 
 	if (!polldex.data?.success) {
 		return (
-			<Screen width="wide">
+			<Screen>
 				<Title>Dex</Title>
 				<Paragraph tone="cinnabar">
 					Couldn’t load your collection. Try again shortly.

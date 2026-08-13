@@ -15,7 +15,9 @@ import {
 } from "~/ui/typography/Paragraph.component";
 import type { ChipAction } from "~/modules/run/config/presentation/ConfigActions.ui";
 import {
+	describeCheckProgress,
 	describeRow,
+	isCounterProgress,
 	PipelineReportRow,
 } from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
 import {
@@ -43,8 +45,17 @@ export const roleBadge = (row: RoleRow): StatusBadgeVariant =>
 const roleValueTone = (row: RoleRow): ParagraphTone =>
 	row.state ? STATE_VALUE_TONE[row.state] : "muted";
 
-const rowValue = (row: RoleRow): string | undefined =>
-	row.status ?? (row.state ? undefined : "passive");
+const rowValue = (row: RoleRow): string | undefined => {
+	if (row.progress && isCounterProgress(row.progress))
+		return describeCheckProgress(row.progress);
+	return row.state ? undefined : "passive";
+};
+
+/** Prose progress drops under the description; a counter has the value column. */
+const rowNote = (row: RoleRow): string | undefined =>
+	row.progress && !isCounterProgress(row.progress)
+		? describeCheckProgress(row.progress)
+		: undefined;
 
 export type RowUseAction = {
 	readonly cost?: number;
@@ -77,7 +88,7 @@ const EmptySlotRow = ({ slot }: { slot: number }) => (
 				as="span"
 				size="xs"
 				tone="muted"
-				className="block w-full rounded-lg border border-dashed border-zinc-700 px-4 py-2 text-center"
+				className="block w-full rounded-lg border border-dashed border-edge-strong px-4 py-2 text-center"
 			>
 				empty slot
 			</Paragraph>
@@ -148,7 +159,7 @@ export const RoleList = ({
 						gives={row.gives}
 						needs={row.needs}
 						costs={row.costs}
-						note={row.note}
+						note={rowNote(row)}
 						value={action ? undefined : rowValue(row)}
 						valueTone={roleValueTone(row)}
 						chipActions={actionsFor?.(row.config)}

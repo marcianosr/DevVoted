@@ -66,7 +66,7 @@ const lockPill = (unlocked: boolean) => (
 		tone={unlocked ? "celadon" : "muted"}
 		className={clsx(
 			"shrink-0 rounded border px-2 py-0.5",
-			unlocked ? "border-celadon" : "border-zinc-700"
+			unlocked ? "border-celadon" : "border-edge-strong"
 		)}
 	>
 		{unlocked ? "unlocked" : "locked"}
@@ -90,7 +90,7 @@ export const SlotUnlockRow = ({
 	return (
 		<>
 			<SlotNumberCell slot={slot} />
-			<div className="col-start-2 col-span-3 flex items-center gap-4 rounded-lg border border-dashed border-zinc-700 px-4 py-3">
+			<div className="col-start-2 col-span-3 flex items-center gap-4 rounded-lg border border-dashed border-edge-strong px-4 py-3">
 				<div className="flex min-w-0 flex-1 flex-col gap-1">
 					{/* The table's gutter already numbers this slot, so the row leads with
 					    what it costs rather than repeating "Slot 4". */}

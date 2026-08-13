@@ -16,6 +16,7 @@ import {
 import {
 	type GateSwatch,
 	swatchForGate,
+	themeColorOf,
 } from "~/modules/run/gate/domain/swatch.model";
 import { AvatarRing } from "~/modules/run/community/presentation/Voter.ui";
 import { GATE_COUNT, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
@@ -216,7 +217,7 @@ const GateMark = ({
 	percent: number;
 }) => (
 	<span
-		{...swatchTheme(swatch.theme)}
+		{...swatchTheme(themeColorOf(swatch))}
 		className={clsx(
 			"absolute top-px -translate-y-1/2",
 			state === "ahead" && "opacity-75"
@@ -240,7 +241,7 @@ const GateName = ({
 	state: GateState;
 }) => (
 	<li
-		{...swatchTheme(swatch.theme)}
+		{...swatchTheme(themeColorOf(swatch))}
 		className="flex min-w-0 items-baseline gap-1"
 	>
 		<Paragraph as="span" tone="muted" className="tabular-nums">

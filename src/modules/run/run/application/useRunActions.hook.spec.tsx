@@ -9,7 +9,9 @@ import {
 	startRun,
 } from "~/modules/run/run/application/run.serverfn";
 import { createMockRunView } from "~/test/runView.factory";
+import { userQueryKeys } from "~/shared/queryKeys";
 
+import { runCommunityQueryKey } from "~/modules/run/community/application/useRunCommunity.hook";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { todaysRunQueryKey } from "~/modules/run/run/application/useTodaysRun.hook";
 
@@ -103,6 +105,31 @@ describe("useRunActions", () => {
 		await waitFor(() =>
 			expect(queryClient.getQueryData(todaysRunQueryKey())).toEqual(fresh)
 		);
+	});
+
+	// DVTD-63ur: both caches used to sit unwritten and unread until their screen
+	// happened to remount, which only worked because the root client leaves
+	// staleTime at 0. A global staleTime would have frozen them silently.
+	it("commit stales the community board and the swatch collection", async () => {
+		const { queryClient, result } = setup();
+		queryClient.setQueryData(runCommunityQueryKey(), { success: true });
+		queryClient.setQueryData(userQueryKeys.swatches("red"), { success: true });
+
+		act(() =>
+			result.current.commit({
+				success: true,
+				data: createMockRunView({ status: "rewarding" }),
+			})
+		);
+
+		await waitFor(() => {
+			expect(
+				queryClient.getQueryState(runCommunityQueryKey())?.isInvalidated
+			).toBe(true);
+			expect(
+				queryClient.getQueryState(userQueryKeys.swatches("red"))?.isInvalidated
+			).toBe(true);
+		});
 	});
 
 	it("abandon invalidates today's run so it refetches", async () => {

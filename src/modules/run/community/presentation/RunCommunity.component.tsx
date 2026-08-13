@@ -1,9 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
-import { sessionRunQueryKeys } from "~/shared/queryKeys";
-import { getTodayDateString } from "~/shared/lib/dateUtils";
-import { getRunCommunity } from "~/modules/run/community/application/community.serverfn";
+import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import { Screen } from "~/ui/Screen.ui";
 import { Stack } from "~/ui/Stack.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
@@ -17,15 +14,10 @@ import { useNextPollsCountdown } from "~/modules/run/community/presentation/useN
 
 /** Tier 2 wiring for the run community page (DVTD-xrpx). */
 export const RunCommunity = () => {
-	const date = getTodayDateString();
 	const navigate = useNavigate();
 	const { view: run } = useTodaysRun();
 	const countdown = useNextPollsCountdown();
-
-	const community = useQuery({
-		queryKey: sessionRunQueryKeys.community(date),
-		queryFn: () => getRunCommunity(),
-	});
+	const community = useRunCommunity();
 
 	const waitingForTomorrow =
 		run?.awaitingTomorrow === true && !countdown.isOpen;
@@ -52,7 +44,22 @@ export const RunCommunity = () => {
 		);
 	}
 
-	const view = community.data?.success === true ? community.data.data : null;
+	if (community.errorMessage) {
+		return (
+			<Screen
+				gateTheme={run?.gateTheme}
+				rightAction={climbOn}
+				footerNote={footerNote}
+			>
+				<Paragraph tone="cinnabar">
+					Couldn’t load today’s comparison. Your run is unaffected — try again
+					shortly.
+				</Paragraph>
+			</Screen>
+		);
+	}
+
+	const { view } = community;
 
 	const climb = view?.climb ? <ClimbToday {...view.climb} /> : null;
 	const standouts = view ? <StandoutsPanel standouts={view.standouts} /> : null;

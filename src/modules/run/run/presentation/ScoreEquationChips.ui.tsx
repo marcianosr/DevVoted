@@ -40,7 +40,7 @@ export const totalTone = (isCorrect: boolean): string =>
 const chipTone = (value: number): string => {
 	if (value > 0) return "border-viridian/50 text-viridian";
 	if (value < 0) return "border-cinnabar/50 text-cinnabar";
-	return "border-zinc-700 text-pewter";
+	return "border-edge-strong text-pewter";
 };
 
 const valueTone = (value: number): string => {

@@ -16,7 +16,7 @@ export const CatchBoundaryUI = ({
 		<div className="flex gap-2 items-center flex-wrap">
 			<button
 				onClick={onRetry}
-				className="px-2 py-1 bg-gray-600 dark:bg-gray-700 rounded text-white uppercase font-extrabold"
+				className="px-2 py-1 bg-surface-raised rounded text-white uppercase font-extrabold"
 			>
 				Try Again
 			</button>

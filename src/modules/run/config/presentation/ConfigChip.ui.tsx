@@ -33,7 +33,7 @@ const chipSurface = cva(
 	}
 );
 
-const tooltipSurface = cva("bg-zinc-900", {
+const tooltipSurface = cva("bg-surface", {
 	variants: {
 		rarity: rarityVariant((colors) => colors.border),
 	},

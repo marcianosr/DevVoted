@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import {
 	type GateSwatch,
 	hasThemeColor,
+	themeColorOf,
 } from "~/modules/run/gate/domain/swatch.model";
 import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
@@ -52,7 +53,7 @@ const PipDetail = ({
 	pollsPerGate: number;
 }) => (
 	<span
-		{...(hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
+		{...swatchTheme(themeColorOf(swatch))}
 		className="flex flex-col gap-1 p-1"
 	>
 		<Paragraph as="span" size="xs" tone="muted">
@@ -133,9 +134,9 @@ export const GateSegmentBar = ({
 					<button
 						type="button"
 						aria-label={spokenName(swatch, standing)}
-						{...(hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
+						{...swatchTheme(themeColorOf(swatch))}
 						className={clsx(
-							"h-3 w-3 cursor-pointer overflow-hidden rounded-sm bg-zinc-800 transition hover:brightness-125",
+							"h-3 w-3 cursor-pointer overflow-hidden rounded-sm bg-surface-raised transition hover:brightness-125",
 							// The rim means "you are here", and only that. It used to mark the
 							// Elite plate instead, which read as an active gate eleven gates
 							// before you could reach it — the one thing a bar of pips has to

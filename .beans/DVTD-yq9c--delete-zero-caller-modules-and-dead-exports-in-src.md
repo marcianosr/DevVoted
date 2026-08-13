@@ -1,10 +1,11 @@
 ---
 # DVTD-yq9c
 title: Delete zero-caller modules and dead exports in src/ui and shared/lib
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-08-13T13:46:46Z
-updated_at: 2026-08-13T13:46:46Z
+updated_at: 2026-08-13T15:56:00Z
 parent: DVTD-82c4
 ---
 
@@ -44,7 +45,19 @@ Two notes for that ruling: `GameOverScreen.ui.tsx` (82 lines) duplicates ground 
 
 ## Todo
 
-- [ ] Delete `EmptyMessageLine` and `DevPollNavigatorUI` with their spec and story siblings
-- [ ] Collapse `PageLayout.component.tsx` into `__root.tsx`
-- [ ] Delete the four dead `shared/lib` exports and the ~150 spec lines that cover them
-- [ ] Fix the two `dateUtils.ts` comments
+- [x] Delete `EmptyMessageLine` and `DevPollNavigatorUI` with their spec and story siblings
+- [x] Collapse `PageLayout.component.tsx` into `__root.tsx`
+- [x] Deleted three; `WeightedItem` un-exported instead — see below
+- [x] Fix the two `dateUtils.ts` comments
+
+## Summary of Changes
+
+**Six files deleted**: `EmptyMessageLine.component` + story, `DevPollNavigatorUI.component` + spec + story, and `PageLayout.component.tsx`. `__root.tsx` now calls `PageLayoutUI` with `footer={<Footer />}` directly — the Tier-2 file had no wiring to justify the hop.
+
+**One correction to this bean.** `WeightedItem` was listed as a dead export, but it is not dead: it is the parameter type of the live `selectWeightedSeededRandom`. It is un-exported rather than deleted, since nothing outside the file names it. `createSeededRandom` and `selectMultipleWeightedSeededRandom` were genuinely unreachable and are gone with their describe blocks — `seededRandom.spec.ts` drops from 300 lines to 158.
+
+`parseStorage` deleted with its describe block.
+
+**dateUtils**: the stacked doc comment now sits on `formatDurationMs`, the function it actually describes, instead of on `formatCompactDuration` above it. `getTodayDateString` lost its commented-out date override and became a one-line arrow.
+
+Test count drops 1493 → 1473 because the deleted specs covered deleted code. tsc 0 errors, oxlint clean, depcruise 0 violations.

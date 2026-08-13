@@ -7,20 +7,16 @@ import {
 	type StatusBadgeEmphasis,
 	type StatusBadgeVariant,
 } from "~/ui/StatusBadge.ui";
-import { StatusDot } from "~/ui/StatusDot.ui";
 import {
 	Paragraph,
 	type ParagraphTone,
 } from "~/ui/typography/Paragraph.component";
-
-export type StatusIndicator = "badge" | "dot";
 
 export type StatusLineSpacing = "compact" | "spacious";
 
 type StatusLineProps = {
 	badge: StatusBadgeVariant;
 	badgeEmphasis?: StatusBadgeEmphasis;
-	indicator?: StatusIndicator;
 	spacing?: StatusLineSpacing;
 	line: ReactNode;
 	lineTone?: ParagraphTone;
@@ -35,7 +31,6 @@ type StatusLineProps = {
 export const StatusLine = ({
 	badge,
 	badgeEmphasis = "solid",
-	indicator = "badge",
 	spacing = "compact",
 	line,
 	lineTone = "default",
@@ -68,17 +63,8 @@ export const StatusLine = ({
 			tabIndex={interactive ? 0 : undefined}
 			onKeyDown={interactive ? handleKeyDown : undefined}
 		>
-			<span
-				className={clsx(
-					"shrink-0",
-					indicator === "dot" && "flex h-5 items-center"
-				)}
-			>
-				{indicator === "dot" ? (
-					<StatusDot variant={badge} />
-				) : (
-					<StatusBadge variant={badge} emphasis={badgeEmphasis} />
-				)}
+			<span className="shrink-0">
+				<StatusBadge variant={badge} emphasis={badgeEmphasis} />
 			</span>
 			{leading ? <span className="shrink-0">{leading}</span> : null}
 			<Paragraph

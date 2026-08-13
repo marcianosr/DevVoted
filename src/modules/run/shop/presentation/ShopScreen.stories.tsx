@@ -67,7 +67,7 @@ export const Default: Story = {
 		checks: [
 			{
 				label: "Correct",
-				progress: "0/2",
+				progress: { kind: "answers", current: 0, target: 2 },
 				current: 0,
 				target: 2,
 				state: "running",
@@ -75,7 +75,7 @@ export const Default: Story = {
 			},
 			{
 				label: ".js mastery",
-				progress: "not seen",
+				progress: { kind: "notSeen" },
 				current: 0,
 				target: 1,
 				state: "skipped",

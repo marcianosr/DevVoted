@@ -147,6 +147,14 @@ everything else in shared is app-side and off-limits to `domain/`.
 constraint that matters (`src/ui/` may take only type imports from modules) is
 already enforced and already passing.
 
+That constraint also settles where a visual goes when two modules want it. A
+Tier 1 component that **draws a game concept** — `ConfigChip` draws a `Config`,
+`SwatchChips` draws a `GateSwatch` — cannot move to `src/ui/`, because rendering
+it needs the concept's runtime values, not just its type. It stays in the
+aggregate that owns the concept, and other aggregates import it directly
+(cross-aggregate `presentation → presentation`, allowed above). `src/ui/` is for
+primitives that know nothing about the game: `Badge`, `Meter`, `Screen`.
+
 ## 4. File suffixes
 
 One role per suffix. If a file does not match a suffix, it does not get one.

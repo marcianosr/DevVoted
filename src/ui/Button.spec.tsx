@@ -15,7 +15,7 @@ describe("Button", () => {
 		render(<Button disabled>Start</Button>);
 		const button = screen.getByRole("button");
 		expect(button).toBeDisabled();
-		expect(button).toHaveClass("bg-zinc-800");
+		expect(button).toHaveClass("bg-surface-raised");
 	});
 
 	it("is disabled while loading", () => {
@@ -47,7 +47,7 @@ describe("Button", () => {
 	it("keeps the neutral variant colorless so it never competes with a loud sibling", () => {
 		render(<Button variant="neutral">Keep climbing</Button>);
 		const button = screen.getByRole("button");
-		expect(button).toHaveClass("border-zinc-600");
+		expect(button).toHaveClass("border-control-edge");
 		expect(button).not.toHaveClass("border-theme");
 	});
 

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Columns } from "./Columns.ui";
 
 const Panel = ({ label }: { label: string }) => (
-	<div className="rounded-lg border border-zinc-700 p-6 text-white">
+	<div className="rounded-lg border border-edge-strong p-6 text-white">
 		{label}
 	</div>
 );

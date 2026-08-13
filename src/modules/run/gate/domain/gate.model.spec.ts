@@ -216,11 +216,12 @@ describe("Volkswagen CI", () => {
 		const window = win(closed);
 		expect(rowFor(covered, window, "Volkswagen CI")).toMatchObject({
 			state: "success",
-			progress: "hid Coverage",
+			progress: { kind: "hidCheck", label: "Coverage" },
 		});
-		expect(rowFor(covered, window, "Coverage")?.progress).toBe(
-			"0%/1% (reported passing)"
-		);
+		expect(rowFor(covered, window, "Coverage")?.progress).toEqual({
+			kind: "reportedPassing",
+			actual: { kind: "coverage", current: 0, target: 1 },
+		});
 	});
 
 	it("hides nothing when only two other checks passed", () => {
@@ -232,7 +233,11 @@ describe("Volkswagen CI", () => {
 		];
 		const window = win(closed);
 		expect(rowFor(thin, window, "Coverage")?.state).toBe("failed");
-		expect(rowFor(thin, window, "Volkswagen CI")?.progress).toBe("2/3 passed");
+		expect(rowFor(thin, window, "Volkswagen CI")?.progress).toEqual({
+			kind: "cover",
+			current: 2,
+			target: 3,
+		});
 		expect(gatePassed(pipelineWith(thin), window, 0)).toBe(false);
 	});
 
@@ -241,7 +246,7 @@ describe("Volkswagen CI", () => {
 		const window = win({ ...closed, leadingCorrect: 0 });
 		expect(rowFor(configs, window, "Volkswagen CI")).toMatchObject({
 			state: "failed",
-			progress: "2 checks failing",
+			progress: { kind: "checksFailing", count: 2 },
 		});
 		expect(gatePassed(pipelineWith(configs), window, 0)).toBe(false);
 	});
@@ -279,9 +284,11 @@ describe("Volkswagen CI", () => {
 		];
 		const window = win({ correct: 0, answered: 5 });
 		expect(rowFor(padded, window, ".js mastery")?.state).toBe("skipped");
-		expect(rowFor(padded, window, "Volkswagen CI")?.progress).toBe(
-			"0/3 passed"
-		);
+		expect(rowFor(padded, window, "Volkswagen CI")?.progress).toEqual({
+			kind: "cover",
+			current: 0,
+			target: 3,
+		});
 		expect(gatePassed(pipelineWith(padded), window, 0)).toBe(false);
 	});
 });

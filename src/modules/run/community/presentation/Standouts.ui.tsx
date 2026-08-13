@@ -6,6 +6,7 @@ import {
 	formatPercent,
 } from "~/shared/lib/displayValue";
 import { SwatchMark } from "~/ui/SwatchMark.component";
+import { themeColorOf } from "~/modules/run/gate/domain/swatch.model";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
@@ -49,7 +50,7 @@ const StandoutRow = ({ standout }: { standout: CommunityStandout }) => (
 		</Paragraph>
 		<span className="flex shrink-0 items-center gap-1.5">
 			{standout.swatch && (
-				<span {...swatchTheme(standout.swatch.theme)}>
+				<span {...swatchTheme(themeColorOf(standout.swatch))}>
 					<SwatchMark finish={standout.swatch.finish} size="sm" />
 				</span>
 			)}

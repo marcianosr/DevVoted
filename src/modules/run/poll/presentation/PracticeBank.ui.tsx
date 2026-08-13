@@ -31,7 +31,7 @@ export const PracticeBank = ({ entries, totalCount }: PracticeBankProps) => (
 			<Title as="h2">Practice bank</Title>
 			<Subtitle>{totalCount ?? entries.length} polls to draw from</Subtitle>
 		</header>
-		<ul className="divide-y divide-zinc-800 overflow-hidden rounded-xl border border-zinc-700">
+		<ul className="divide-y divide-edge overflow-hidden rounded-xl border border-edge-strong">
 			{entries.map((entry) => (
 				<li key={entry.id} className="flex items-center gap-3 px-4 py-3">
 					<span className="shrink-0 font-bold">

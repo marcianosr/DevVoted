@@ -1,11 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import {
-	selectSeededRandom,
-	createSeededRandom,
-	selectWeightedSeededRandom,
-	selectMultipleWeightedSeededRandom,
-} from "./seededRandom";
+import { selectSeededRandom, selectWeightedSeededRandom } from "./seededRandom";
 
 describe("seededRandom", () => {
 	describe("selectSeededRandom", () => {
@@ -57,52 +52,6 @@ describe("seededRandom", () => {
 
 			const result = selectSeededRandom(items, seed);
 			expect(items).toContain(result);
-		});
-	});
-
-	describe("createSeededRandom", () => {
-		it("generates consistent sequence with same seed", () => {
-			const rng1 = createSeededRandom("test-seed");
-			const rng2 = createSeededRandom("test-seed");
-
-			// Generate multiple values to test sequence consistency
-			const sequence1 = [rng1.next(), rng1.next(), rng1.next()];
-
-			const sequence2 = [rng2.next(), rng2.next(), rng2.next()];
-
-			expect(sequence1).toEqual(sequence2);
-		});
-
-		it("generates different sequences with different seeds", () => {
-			const rng1 = createSeededRandom("seed1");
-			const rng2 = createSeededRandom("seed2");
-
-			const sequence1 = [rng1.next(), rng1.next(), rng1.next()];
-
-			const sequence2 = [rng2.next(), rng2.next(), rng2.next()];
-
-			expect(sequence1).not.toEqual(sequence2);
-		});
-
-		it("generates numbers between 0 and 1", () => {
-			const rng = createSeededRandom("test");
-
-			for (let i = 0; i < 100; i++) {
-				const value = rng.next();
-				expect(value).toBeGreaterThanOrEqual(0);
-				expect(value).toBeLessThan(1);
-			}
-		});
-
-		it("nextInt generates numbers in correct range", () => {
-			const rng = createSeededRandom("test");
-
-			for (let i = 0; i < 100; i++) {
-				const value = rng.nextInt(5, 10);
-				expect(value).toBeGreaterThanOrEqual(5);
-				expect(value).toBeLessThan(10);
-				expect(Number.isInteger(value)).toBe(true);
-			}
 		});
 	});
 
@@ -207,94 +156,6 @@ describe("seededRandom", () => {
 			expect(counts.kazooie).toBeLessThan(expectedCount + variance);
 			expect(counts.banjo).toBeGreaterThan(expectedCount - variance);
 			expect(counts.banjo).toBeLessThan(expectedCount + variance);
-		});
-	});
-
-	describe("selectMultipleWeightedSeededRandom", () => {
-		it("returns correct count of items", () => {
-			const items = [
-				{ item: "goldeneye", weight: 1 },
-				{ item: "perfect-dark", weight: 1 },
-				{ item: "jet-force-gemini", weight: 1 },
-			];
-
-			const result = selectMultipleWeightedSeededRandom(items, 2, "rareware");
-			expect(result).toHaveLength(2);
-		});
-
-		it("does not return duplicates", () => {
-			const items = [
-				{ item: "donkey-kong", weight: 100 },
-				{ item: "diddy-kong", weight: 1 },
-				{ item: "dixie-kong", weight: 1 },
-			];
-
-			const result = selectMultipleWeightedSeededRandom(items, 3, "dk-country");
-			const unique = new Set(result);
-
-			expect(unique.size).toBe(result.length);
-		});
-
-		it("returns all items if count exceeds array length", () => {
-			const items = [
-				{ item: "gruntilda", weight: 1 },
-				{ item: "klungo", weight: 1 },
-			];
-
-			const result = selectMultipleWeightedSeededRandom(
-				items,
-				5,
-				"witches-lair"
-			);
-			expect(result).toHaveLength(2);
-		});
-
-		it("returns same results for same seed", () => {
-			const items = [
-				{ item: "jinjo", weight: 10 },
-				{ item: "jiggy", weight: 20 },
-				{ item: "honeycomb", weight: 30 },
-				{ item: "music-note", weight: 40 },
-			];
-
-			const result1 = selectMultipleWeightedSeededRandom(
-				items,
-				3,
-				"spiral-mountain"
-			);
-			const result2 = selectMultipleWeightedSeededRandom(
-				items,
-				3,
-				"spiral-mountain"
-			);
-
-			expect(result1).toEqual(result2);
-		});
-
-		it("returns empty array for empty input", () => {
-			const result = selectMultipleWeightedSeededRandom([], 3, "empty-seed");
-			expect(result).toEqual([]);
-		});
-
-		it("respects weights when selecting multiple items", () => {
-			// High weight item should almost always be picked first
-			const items = [
-				{ item: "legendary-copilot", weight: 1000 },
-				{ item: "common-config", weight: 1 },
-				{ item: "rare-config", weight: 1 },
-			];
-
-			// Run many times and check legendary is always first
-			let legendaryFirstCount = 0;
-			for (let i = 0; i < 100; i++) {
-				const result = selectMultipleWeightedSeededRandom(items, 2, `run-${i}`);
-				if (result[0] === "legendary-copilot") {
-					legendaryFirstCount++;
-				}
-			}
-
-			// Legendary should be first in almost all cases
-			expect(legendaryFirstCount).toBeGreaterThan(95);
 		});
 	});
 });

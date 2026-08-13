@@ -4,7 +4,6 @@ import {
 } from "~/shared/utils/errorHandling";
 
 import { createRun, type RunAction } from "~/modules/run/run/domain/run.model";
-import { hydrateRunState } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	type RunView,
@@ -16,15 +15,14 @@ import {
 	createSessionRunWithState,
 	ensureTodaysSegment,
 	fetchAnsweredPollIdsForDay,
-	fetchRunPollsForDate,
-	fetchRunPollsForRun,
 	fetchRunSnapshot,
+	loadRunState,
 	findActiveSessionRun,
 	fetchOwnedSwatchIds,
 	findSessionRunByDate,
-	getOrCreateDailyRunSeed,
 	type SessionRunRecord,
 } from "~/modules/run/run/infrastructure/run.repository";
+import { fetchRunPollsForDate } from "~/modules/run/run/infrastructure/runPolls.repository";
 
 /**
  * The starting loadout, mirroring proto-run.tsx. Interim until config
@@ -43,18 +41,13 @@ const HANDED_CONFIGS = [
 	CONFIGS.coldStart,
 ];
 
-const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
-	const snapshot = await fetchRunSnapshot(run.id);
-	if (!snapshot) throw new Error("Run state not found");
-	const polls = await fetchRunPollsForRun(run.id);
-	return toRunView(hydrateRunState(snapshot, polls));
-};
+const viewOfRun = async (run: SessionRunRecord): Promise<RunView> =>
+	toRunView(await loadRunState(run.id));
 
 const continueActiveRun = async (
 	run: SessionRunRecord,
 	date: string
 ): Promise<RunView> => {
-	await getOrCreateDailyRunSeed(date);
 	await ensureTodaysSegment(run.id, date);
 	return viewOfRun(run);
 };
@@ -109,7 +102,6 @@ export const startRunService = async ({
 		const active = await findResumableRun(userId);
 		if (active) return continueActiveRun(active, date);
 
-		await getOrCreateDailyRunSeed(date);
 		const answeredToday = await fetchAnsweredPollIdsForDay(userId, date);
 		const polls = (await fetchRunPollsForDate(date)).filter(
 			(poll) => !answeredToday.has(Number(poll.id))
@@ -149,9 +141,6 @@ export const dispatchRunActionService = async ({
 		const run = await findActiveSessionRun(userId);
 		if (!run) throw new Error("No active run");
 
-		// Materialize today's shared sequence before the dispatch transaction
-		// rolls the run over to it.
-		await getOrCreateDailyRunSeed(date);
 		const next = await applyActionToRun({
 			runId: run.id,
 			userId,

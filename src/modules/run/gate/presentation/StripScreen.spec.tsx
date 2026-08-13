@@ -8,7 +8,7 @@ import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
 const checks: CheckStatus[] = [
 	{
 		label: "Correct",
-		progress: "1/2",
+		progress: { kind: "answers", current: 1, target: 2 },
 		current: 1,
 		target: 2,
 		state: "failed",
@@ -16,7 +16,7 @@ const checks: CheckStatus[] = [
 	},
 	{
 		label: "Coverage",
-		progress: "2%/4%",
+		progress: { kind: "coverage", current: 2, target: 4 },
 		current: 2,
 		target: 4,
 		state: "success",

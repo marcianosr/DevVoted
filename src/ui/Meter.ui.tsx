@@ -51,7 +51,7 @@ export const Meter = ({
 			aria-valuemin={label ? 0 : undefined}
 			aria-valuemax={label ? cap : undefined}
 			className={clsx(
-				"flex w-full overflow-hidden bg-zinc-800",
+				"flex w-full overflow-hidden bg-surface-raised",
 				trackClassName
 			)}
 		>

@@ -149,7 +149,7 @@ describe("effectOf — Code Coverage", () => {
 		);
 		expect(
 			check?.(ctx({ answered: 2, missStreak: 1, maxMissStreak: 1 })).progress
-		).toBe("1 miss — the next one fails");
+		).toEqual({ kind: "missStreak", missed: 1 });
 	});
 });
 

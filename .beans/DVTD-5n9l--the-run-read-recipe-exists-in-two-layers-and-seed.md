@@ -1,10 +1,11 @@
 ---
 # DVTD-5n9l
 title: The run read recipe exists in two layers, and seed ordering is convention
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-08-13T13:45:36Z
-updated_at: 2026-08-13T13:45:36Z
+updated_at: 2026-08-13T16:10:29Z
 parent: DVTD-82c4
 ---
 
@@ -43,7 +44,38 @@ await applyActionToRun({ ... });
 
 ## Todo
 
-- [ ] Add `loadRunState(runId)`; the service stops assembling snapshot + polls + hydrate
-- [ ] Move `getOrCreateDailyRunSeed` inside the dispatch path so the ordering cannot be skipped
-- [ ] Delete the three ordering comments once the interface enforces them
-- [ ] Narrow the repository's export surface; then revisit DVTD-eyya
+- [x] Add `loadRunState(runId)`; the service stops assembling snapshot + polls + hydrate
+- [x] Moved into all three readers of the day sequence, not just dispatch
+- [x] Delete the three ordering comments once the interface enforces them
+- [~] Net-neutral: `fetchRunPollsForRun` left the service's imports, `loadRunState` joined. DVTD-eyya still worth doing
+
+## Summary of Changes
+
+### One call to load a run
+
+`loadRunState(runId)` in the repository does snapshot → polls → hydrate. `viewOfRun` collapses from six lines to one, and the application layer no longer needs to know that a snapshot is not a `RunState`, that polls live in a separate table (ADR-009), or which order to join them in. `run.service.ts` dropped its `hydrateRunState` and `fetchRunPollsForRun` imports entirely.
+
+### The seed rule moved to the readers
+
+It was enforced by comment at three service call sites, and forgetting it failed **silently** — `ensureTodaysSegmentWith` reads `fetchSeedPollIds` and returns early on an empty result, so a missing seed reads as "nothing to roll over" rather than an error.
+
+Now every reader of today's shared sequence materializes it first:
+
+- `ensureTodaysSegment`
+- `applyActionToRun`
+- `fetchRunPollsForDate` (the start-a-run path, which reads the sequence directly)
+
+**Placement mattered.** The seed opens its own transaction, so calling it *inside* the `run_states FOR UPDATE` block would invert the lock order — seed-then-run everywhere becomes run-then-seed there. Both calls sit immediately before `db.transaction`, preserving the ordering the service used to achieve by convention. That is written down at both sites, because it is the kind of thing a later reader would "tidy" into the transaction.
+
+`run.service.ts` no longer imports `getOrCreateDailyRunSeed` at all, and the three explanatory comments went with it.
+
+### Tests
+
+The spec changes are the clearest evidence the seam moved:
+
+- `run.service.spec.ts` stopped mocking `fetchRunPollsForRun` and stopped asserting `getOrCreateDailyRunSeed` was called — neither is the service's business now. It mocks `loadRunState` instead, which is a single stub where there were two.
+- `run.repository.spec.ts`'s `dispatch` helper primes one extra query result, since `applyActionToRun` now answers the seed lookup before taking the lock. A non-empty result short-circuits `getOrCreateDailyRunSeed` and leaves the queue aligned.
+
+`fetchRunSnapshot` stays in the service for `findResumableRun`, which asks whether a state row *exists* (the corrupt-run self-heal) rather than hydrating it — a different question, correctly still its own call.
+
+Verified: tsc 0 errors, oxlint clean, depcruise 0 violations (531 modules), 1473 tests passing.

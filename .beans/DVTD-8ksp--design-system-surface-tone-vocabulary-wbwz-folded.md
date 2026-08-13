@@ -1,11 +1,11 @@
 ---
 # DVTD-8ksp
 title: 'Design system: surface tone vocabulary (wbwz folded in)'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-08-13T08:24:01Z
-updated_at: 2026-08-13T09:08:02Z
+updated_at: 2026-08-13T19:37:48Z
 parent: DVTD-82c4
 ---
 
@@ -27,13 +27,13 @@ Also unresolved:
 `src/ui/rarityColors.ts` already has the `{ border, text, bg }` shape a surface token needs and is built on Kanto tokens. `Badge`'s `neutral` tone (`border-2 border-pewter bg-black text-pewter`) is the one place a surface is already expressed in a token.
 
 ## Todo
-- [ ] Design the neutral token set (resolve pewter-vs-Boulder, reconcile gray vs zinc)
-- [ ] Add the surface tone vocabulary
-- [ ] Extract the divider/rule primitive: `border-t border-zinc-{700,800,900}` at 8 sites, 3 shades for one visual role
-- [ ] Extract the panel border: 9 sites, radius varies rounded/md/lg/xl, border varies 600/700/800
-- [ ] The popover surface, duplicated exactly twice (ConfigActions.ui.tsx:34, SummaryDropdown.ui.tsx:39)
+- [x] Design the neutral token set (resolve pewter-vs-Boulder, reconcile gray vs zinc)
+- [x] Add the surface tone vocabulary
+- [x] Collapse the divider to one role — retokened rather than extracted, see below
+- [x] Collapse the panel border to one role — retokened rather than extracted, see below
+- [x] The popover surface, duplicated exactly twice — now `FLOATING_SURFACE`
 - [x] wbwz's text grays — done 2026-08-13, see below
-- [ ] Add `ring-theme`; fix the `--succes` typo or delete the three dead aliases
+- [x] Add `ring-theme`; deleted the three dead aliases
 
 ## Noted, not scheduled
 - The `▾ rotate-180` chevron pair (SummaryDropdown.ui.tsx:35, `__root.tsx`:286). One site is a legacy nav route full of raw HTML.
@@ -71,3 +71,90 @@ Now: `default` (zinc-100) for anything meant to be read, `muted` (pewter) for ev
 **Still true after this pass:** `grep text-zinc` returns ~158 hits in `src/domains/`, `src/routes/` and `src/presentation/`. That is legacy Tier-2 awaiting DVTD-wj1t, not drift this pass introduced.
 
 Verified: tsc clean, oxlint clean, 0 arch violations (529 modules), 1457 tests passing.
+
+## Surface half done (2026-08-13)
+
+Marciano's two calls, which is what the bean was blocked on:
+
+1. **Name zinc's roles.** Surfaces are not part of the Kanto identity, so they
+   stay zinc behind named tokens. Pewter keeps its two jobs (a text tone, and
+   Boulder's gate accent) and never becomes a body colour.
+2. **Dark-only.** Drop the light ramp rather than give every token two values.
+
+### The tokens
+
+```css
+--color-surface:        var(--color-zinc-900);  /* panel fill        */
+--color-surface-raised: var(--color-zinc-800);  /* popover, chip     */
+--color-edge:           var(--color-zinc-800);  /* divider, rule     */
+--color-edge-strong:    var(--color-zinc-700);  /* panel border      */
+--color-control-edge:   var(--color-zinc-600);  /* clickable outline */
+```
+
+`control-edge` was not in the plan; it earned itself once the surfaces were
+named, because `border-zinc-600` turned out to be one role at every site
+(Button's neutral variant, RadioDot, ShopScreen's action pills, and the two
+`border-gray-600` buttons). Hover brightening stays a raw shade at the call
+site: it is a behaviour, not a role.
+
+Semantic colours deliberately did NOT go here. An error border is
+`border-cinnabar` — the same token the text tone already uses. The three
+unprefixed aliases that squatted on that idea (`--error`, `--warning`,
+`--succes`, sic) generated no utilities, had no consumers, and are deleted.
+`ring-theme` added, so a focus ring can follow the gate instead of a fallback.
+
+### 91 sites → 25, and the 25 are not surfaces
+
+55 sites were exact-value matches, so they are provably zero visual change —
+verified in the built CSS, where `--color-surface` resolves to
+`oklch(21% .006 285.885)`, the same value `bg-zinc-900` emitted.
+
+What remains raw is not drift: bar fills (`GainBar`, `StorageGauge`,
+`PollOutcomeBar`, ClimbToday's track), status dots, hover brightening, and
+`Voter`'s `ring-zinc-950`, which deliberately matches the page so avatars read
+as cut out of it. Those are content and state, not surfaces, and giving them
+surface tokens would have been the same mistake in a new coat.
+
+### Pixels that did move, and why
+
+Each is one visual role that had drifted to different shades:
+
+- The `<hr>` divider was zinc-700 in ShopScreen and zinc-900 in AnswerResults
+  while everything else used zinc-800. All at `--color-edge` now: ShopScreen's
+  dims a step, AnswerResults' two brighten a step.
+- `GateStakeReceipt`'s panel was the only one at zinc-600 → `edge-strong`.
+- `TerminalPanel`'s `border-zinc-300` — the bean's own "3-5 stops lighter than
+  every other panel, one consumer" — → `edge-strong`.
+
+### The bug the dark-only call surfaced
+
+`dark:` keys off `prefers-color-scheme`, **not** off `color-scheme`. So the
+seven `X dark:Y` pairs (CatchBoundary ×3, Login, Auth ×2, plus the base layer)
+served their *light* value to a visitor whose OS is set to light — on a page
+that `__root.tsx` paints black regardless. `* { border-gray-200 }` was the worst
+of them: any element with `border` and no colour got a near-white edge. All
+seven collapsed to their dark value; no `dark:` variant remains in the app.
+
+### Deviations
+
+The bean asked for a divider primitive and a panel primitive. Neither was
+built. `Stack divided` already covers the between-children rule, and the rest
+are inline `<hr>`s and one-off boxes whose radius and padding genuinely differ;
+a component would have had to take both as props and would have saved nothing.
+Naming the colour was the whole of the actual problem — the shades were the
+drift, not the markup. The one duplicate that *was* byte-identical (two
+popovers) became `FLOATING_SURFACE` in the new `src/ui/surfaces.ts`.
+
+### Verification
+
+1480 passing across 118 files, tsc clean, oxlint clean, dependency-cruiser 0
+violations (537 modules), production build green with every new utility present
+in the output CSS.
+
+### Left for later
+
+- `GameLoopExplainer.component.tsx` renders raw HTML in a `.component.tsx`, an
+  ADR-010 violation predating this pass. Retokened, not restructured.
+- `Title` renders `text-zinc-200` while `ParagraphTone.default` is `text-zinc-100`
+  — still disagreeing about "default foreground" (also DVTD-39k8's territory).
+- `StorageGauge`'s hardcoded "Free tier", stale against ADR-030.

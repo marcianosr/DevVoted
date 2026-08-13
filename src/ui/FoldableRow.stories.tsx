@@ -40,7 +40,7 @@ const summaryCells = ({ expanded, toggle, marker }: Fold) => (
 // itself on a phone and the caret turns to point at what is left to open.
 const detailBlock = ({ detailClass }: Fold) => (
 	<span
-		className={`col-span-2 col-start-2 row-start-2 mt-1.5 flex-col gap-1 border-l border-zinc-700 pl-3 ${detailClass}`}
+		className={`col-span-2 col-start-2 row-start-2 mt-1.5 flex-col gap-1 border-l border-edge-strong pl-3 ${detailClass}`}
 	>
 		<span>Answer a JavaScript poll correctly.</span>
 		<span>Then all coverage earns ×1.5.</span>

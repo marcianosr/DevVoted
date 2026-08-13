@@ -20,14 +20,13 @@ describe(Screen.name, () => {
 		expect(screen.getByText("Gruntilda's Lair")).toBeInTheDocument();
 	});
 
-	it("applies the requested width, transition and gate theme", () => {
+	it("applies the requested width and gate theme", () => {
 		const { container } = render(
-			<Screen width="narrow" transition="fade" gateTheme="marsh">
+			<Screen width="narrow" gateTheme="marsh">
 				content
 			</Screen>
 		);
 		const section = container.querySelector("section");
-		expect(section).toHaveAttribute("data-screen-transition", "fade");
 		expect(section).toHaveAttribute("data-gate-theme", "marsh");
 		expect(section?.className).toContain("sm:max-w-2xl");
 	});
@@ -104,8 +103,10 @@ describe(Screen.name, () => {
 		expect(transitionOf(container)).toBe("slide-left");
 	});
 
-	it("falls back to the transition prop when no action preceded the mount", () => {
-		const { container } = render(<Screen transition="fade">content</Screen>);
-		expect(transitionOf(container)).toBe("fade");
+	// The nav direction is the only source now: a screen mounted without one
+	// simply does not animate.
+	it("does not animate when no action preceded the mount", () => {
+		const { container } = render(<Screen>content</Screen>);
+		expect(transitionOf(container)).toBe("none");
 	});
 });

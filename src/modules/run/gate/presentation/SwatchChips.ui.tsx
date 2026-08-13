@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 import {
 	type GateSwatch,
-	hasThemeColor,
+	themeColorOf,
 } from "~/modules/run/gate/domain/swatch.model";
 import {
 	SwatchMark,
@@ -35,22 +35,22 @@ export const SwatchChip = ({
 	redact = false,
 	testId,
 }: SwatchChipProps) => {
-	const themed = owned && hasThemeColor(swatch);
+	// An unowned chip is drawn dashed and grey: it must not wear its colour yet.
 	return (
 		<span
 			data-testid={testId}
-			{...(themed ? swatchTheme(swatch.theme) : {})}
+			{...swatchTheme(owned ? themeColorOf(swatch) : undefined)}
 			className={clsx(
 				"inline-flex items-center gap-2 rounded-lg border px-2 py-1 align-middle",
 				owned
 					? swatchBorderClass(swatch.finish)
-					: "border-dashed border-zinc-700"
+					: "border-dashed border-edge-strong"
 			)}
 		>
 			{owned ? (
 				<SwatchMark finish={swatch.finish} />
 			) : (
-				<span className="inline-block h-3.5 w-3.5 rounded bg-zinc-800" />
+				<span className="inline-block h-3.5 w-3.5 rounded bg-surface-raised" />
 			)}
 			<Paragraph
 				as="span"

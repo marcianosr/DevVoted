@@ -39,6 +39,7 @@ boundary, so this table is the map an architecture review reads first.
 | Gate stake | `run/application` | `GateStake` (`runView.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
 | Run orchestration | `run/application` | `run.service.ts` (was `handlers.ts`), `run.serverfn.ts` (was `api/run.ts`), `run.validation.ts` |
 | Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, one write. Never split across aggregates |
+| Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |
 | Run screens and HUD | `run/presentation` | Prep / Answering / GameOver screens, `RunLayout`, `RunHud`, `StorageGauge`, `RunSummary` |
 | Pipeline | `pipeline/domain` | `Pipeline` = `{ id, slots, configs }` (`pipeline.model.ts`) |
 | Slot | `pipeline/domain` | `BASE_SLOTS` (3), `MAX_SLOTS` (14), `coverageToAddSlot`, `canAddSlot` |

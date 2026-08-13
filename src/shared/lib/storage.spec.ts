@@ -3,7 +3,6 @@ import { describe, it, expect } from "vitest";
 import {
 	formatKb,
 	formatStorage,
-	parseStorage,
 	getStorageUsagePercentage,
 	canAddToStorage,
 	STORAGE_UNITS,
@@ -51,30 +50,6 @@ describe("Storage utilities", () => {
 		it("formats GB correctly", () => {
 			expect(formatStorage(STORAGE_UNITS.GB)).toBe("1 GB");
 			expect(formatStorage(1.5 * STORAGE_UNITS.GB)).toBe("1.5 GB");
-		});
-	});
-
-	describe("parseStorage", () => {
-		it("parses bytes correctly", () => {
-			expect(parseStorage("512")).toBe(512);
-			expect(parseStorage("512B")).toBe(512);
-			expect(parseStorage("512 B")).toBe(512);
-		});
-
-		it("parses KB correctly", () => {
-			expect(parseStorage("1KB")).toBe(1024);
-			expect(parseStorage("1.5KB")).toBe(1536);
-			expect(parseStorage("2 KB")).toBe(2048);
-		});
-
-		it("parses MB correctly", () => {
-			expect(parseStorage("1MB")).toBe(STORAGE_UNITS.MB);
-			expect(parseStorage("1.5 MB")).toBe(1.5 * STORAGE_UNITS.MB);
-		});
-
-		it("throws error for invalid format", () => {
-			expect(() => parseStorage("invalid")).toThrow("Invalid storage format");
-			expect(() => parseStorage("1.5.5MB")).toThrow("Invalid storage format");
 		});
 	});
 

@@ -170,7 +170,7 @@ export const CollapsibleSummary: Story = {
 				as="summary"
 				badge="pass"
 				line="typeof null? — click to collapse"
-				className="cursor-pointer list-none rounded hover:bg-zinc-800/40 [&::-webkit-details-marker]:hidden"
+				className="cursor-pointer list-none rounded hover:bg-surface-raised/40 [&::-webkit-details-marker]:hidden"
 				trailing={<FoldCaret />}
 			/>
 			<p className="pl-7 pt-1 text-sm text-zinc-400">

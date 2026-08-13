@@ -16,7 +16,8 @@ import { useState } from "react";
 
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
-import PageLayout from "~/components/PageLayout.component";
+import Footer from "~/components/Footer.component";
+import { PageLayoutUI } from "~/ui/PageLayoutUI.component";
 import { useFinishRun } from "~/domains/runs/hooks/useFinishRun";
 import { deriveNavRunState } from "~/domains/runs/utils/deriveNavRunState";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
@@ -102,9 +103,9 @@ function RootComponent() {
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
 				<Navigation />
-				<PageLayout>
+				<PageLayoutUI footer={<Footer />}>
 					<Outlet />
-				</PageLayout>
+				</PageLayoutUI>
 			</QueryClientProvider>
 		</RootDocument>
 	);

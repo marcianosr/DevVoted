@@ -33,12 +33,18 @@ export const pollQueryKeys = {
 		[...pollQueryKeys.all, "polldex", userId] as const,
 };
 
+const USERS = ["users"] as const;
+
 export const userQueryKeys = {
-	all: ["users"] as const,
-	profile: (userId: string) =>
-		[...userQueryKeys.all, userId, "profile"] as const,
-	swatches: (userId: string) =>
-		[...userQueryKeys.all, userId, "swatches"] as const,
+	all: USERS,
+	profile: (userId: string) => [...USERS, userId, "profile"] as const,
+	/**
+	 * Grouped by concern *before* the user, unlike `profile`: a gate clear awards
+	 * a swatch and has to invalidate this, but the run flow never holds a userId
+	 * (the server derives it from the session), so it needs a prefix it can name.
+	 */
+	swatchesAll: [...USERS, "swatches"] as const,
+	swatches: (userId: string) => [...userQueryKeys.swatchesAll, userId] as const,
 };
 
 export const archiveQueryKeys = {

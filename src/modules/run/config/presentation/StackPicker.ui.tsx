@@ -63,7 +63,7 @@ export const StackPicker = ({
 							"rounded-md border p-4 transition",
 							selected
 								? "border-celadon bg-celadon/5"
-								: "border-zinc-700 hover:border-zinc-500 hover:bg-white/5"
+								: "border-edge-strong hover:border-zinc-500 hover:bg-white/5"
 						)}
 					>
 						<button
@@ -93,7 +93,7 @@ export const StackPicker = ({
 			<button
 				type="button"
 				onClick={onCustomBuild}
-				className="cursor-pointer rounded-md border border-dashed border-zinc-700 p-4 text-left transition hover:border-zinc-500 hover:bg-white/5"
+				className="cursor-pointer rounded-md border border-dashed border-edge-strong p-4 text-left transition hover:border-zinc-500 hover:bg-white/5"
 			>
 				<Paragraph
 					as="span"

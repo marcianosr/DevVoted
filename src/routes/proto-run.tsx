@@ -561,7 +561,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 			{state.status === "rewarding" && rewardStep === "shop" && (
 				<Screen
-					width="wide"
 					gateTheme={view.gateTheme}
 					leftAction={{
 						label: "← Back",

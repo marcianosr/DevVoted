@@ -45,7 +45,7 @@ const answered: AnsweredPoll[] = [
 const checks: CheckStatus[] = [
 	{
 		label: "Correct",
-		progress: "2/1",
+		progress: { kind: "answers", current: 2, target: 1 },
 		current: 2,
 		target: 1,
 		state: "success",
@@ -109,7 +109,7 @@ describe(gateRewardRows, () => {
 		const failed: CheckStatus[] = [
 			{
 				label: "Correct",
-				progress: "0/1",
+				progress: { kind: "answers", current: 0, target: 1 },
 				current: 0,
 				target: 1,
 				state: "failed",
@@ -121,14 +121,17 @@ describe(gateRewardRows, () => {
 			(candidate) => candidate.key === "unit-tests"
 		);
 		expect(row?.status).toBe("failed");
-		expect(row?.value).toEqual({ unit: "checkProgress", text: "0/1" });
+		expect(row?.value).toEqual({
+			unit: "checkProgress",
+			progress: { kind: "answers", current: 0, target: 1 },
+		});
 	});
 
 	it("reads check progress as the value for a pure-check row (linter)", () => {
 		const lintCheck: CheckStatus[] = [
 			{
 				label: "ESLint mastery",
-				progress: "1/2",
+				progress: { kind: "answers", current: 1, target: 2 },
 				current: 1,
 				target: 2,
 				state: "failed",
@@ -141,7 +144,10 @@ describe(gateRewardRows, () => {
 			checks: lintCheck,
 		}).find((candidate) => candidate.key === "eslint");
 		expect(row?.kind).toBe("check");
-		expect(row?.value).toEqual({ unit: "checkProgress", text: "1/2" });
+		expect(row?.value).toEqual({
+			unit: "checkProgress",
+			progress: { kind: "answers", current: 1, target: 2 },
+		});
 		expect(row?.status).toBe("failed");
 	});
 
@@ -157,7 +163,7 @@ describe(gateRewardRows, () => {
 		const escalated: CheckStatus[] = [
 			{
 				label: "Correct",
-				progress: "2/3",
+				progress: { kind: "answers", current: 2, target: 3 },
 				current: 2,
 				target: 3,
 				state: "failed",
@@ -179,7 +185,7 @@ describe(gateRewardRows, () => {
 		const bare: CheckStatus[] = [
 			{
 				label: "Correct",
-				progress: "2/1",
+				progress: { kind: "answers", current: 2, target: 1 },
 				current: 2,
 				target: 1,
 				state: "success",

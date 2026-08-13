@@ -3,7 +3,13 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { db } from "~/database/db";
 import { runStatesTable, runsTable, usersTable } from "~/database/schema";
 
-import type { AnswerOutcome } from "~/modules/run/run/domain/run.model";
+import type {
+	AnsweredPoll,
+	AnswerOutcome,
+} from "~/modules/run/run/domain/run.model";
+import type { GateWindow } from "~/modules/run/config/domain/effect.model";
+import type { Pipeline } from "~/modules/run/pipeline/domain/pipeline.model";
+import type { RunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 
 /**
@@ -16,11 +22,26 @@ import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
  * out with a JSON path *inside* the query: the blob stays in Postgres and only
  * an integer crosses the wire.
  */
-const pollsIntoGate = sql<number>`coalesce((${runStatesTable.state}->'window'->>'answered')::int, 0)`;
+/**
+ * Field names inside the `run_states.state` blob, each bound to the type that
+ * owns it. The queries below read the blob by hand, and a JSON path that misses
+ * yields null — every one of them is `coalesce`d, so a renamed field would show
+ * up as a zero rather than an error (DVTD-rn26). Naming the keys through these
+ * makes the rename a compile failure instead.
+ *
+ * `sql.raw` is safe here precisely because the argument cannot be anything but
+ * a key of the type: there is no runtime input to inject.
+ */
+const stateKey = <K extends keyof RunSnapshot>(key: K) => sql.raw(`'${key}'`);
+const windowKey = <K extends keyof GateWindow>(key: K) => sql.raw(`'${key}'`);
+const pipelineKey = <K extends keyof Pipeline>(key: K) => sql.raw(`'${key}'`);
+const answeredKey = <K extends keyof AnsweredPoll>(key: K) => sql.raw(`${key}`);
+
+const pollsIntoGate = sql<number>`coalesce((${runStatesTable.state}->${stateKey("window")}->>${windowKey("answered")})::int, 0)`;
 
 /** The whole ladder position in one expression, for aggregates.
  *  Mirrors trackPosition; climbMap.model.spec pins the formula. */
-const position = sql<number>`${runStatesTable.gates_cleared} * ${SLICE_WINDOW} + coalesce((${runStatesTable.state}->'window'->>'answered')::int, 0)`;
+const position = sql<number>`${runStatesTable.gates_cleared} * ${SLICE_WINDOW} + coalesce((${runStatesTable.state}->${stateKey("window")}->>${windowKey("answered")})::int, 0)`;
 
 export type ClimberRow = {
 	userId: string;
@@ -92,13 +113,13 @@ export const fetchActiveRunStats = async (): Promise<ActiveRunStatsRow[]> =>
 			photoUrl: usersTable.photo_url,
 			gatesCleared: runStatesTable.gates_cleared,
 			coverage: runStatesTable.coverage,
-			configCount: sql<number>`coalesce(json_array_length(${runStatesTable.state}->'pipeline'->'configs'), 0)`,
+			configCount: sql<number>`coalesce(json_array_length(${runStatesTable.state}->${stateKey("pipeline")}->${pipelineKey("configs")}), 0)`,
 			outcomes: sql<AnswerOutcome[]>`coalesce((
-				select json_agg(entry->>'outcome' order by ord)
-				from json_array_elements(${runStatesTable.state}->'allAnswered')
+				select json_agg(entry->>'${answeredKey("outcome")}' order by ord)
+				from json_array_elements(${runStatesTable.state}->${stateKey("allAnswered")})
 					with ordinality as history(entry, ord)
 			), '[]'::json)`,
-			streak: sql<number>`coalesce((${runStatesTable.state}->>'streak')::int, 0)`,
+			streak: sql<number>`coalesce((${runStatesTable.state}->>${stateKey("streak")})::int, 0)`,
 		})
 		.from(runsTable)
 		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
@@ -121,10 +142,26 @@ export type FallenRow = {
  * `finished_at` is a timestamp, so the day is bounded in local time to match
  * `getTodayDateString()` — the same calendar day the rest of the run loop uses.
  */
+/**
+ * The half-open local-day window `[start, end)` for a `yyyy-MM-dd` date.
+ *
+ * Local, not UTC: the seed date is the player's calendar day (`getTodayDateString`),
+ * so a run that ended at 23:30 belongs to the day the player was living in.
+ * Omitting the time would parse as UTC midnight and shift the boundary by the
+ * offset — which in practice moves late-evening deaths onto the wrong day.
+ *
+ * Exported for its spec: the arithmetic is the part worth pinning, and the
+ * query around it needs a database to say anything.
+ */
+export const localDayRange = (date: string): { start: Date; end: Date } => {
+	const start = new Date(`${date}T00:00:00`);
+	const end = new Date(start);
+	end.setDate(end.getDate() + 1);
+	return { start, end };
+};
+
 export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
-	const dayStart = new Date(`${date}T00:00:00`);
-	const dayEnd = new Date(dayStart);
-	dayEnd.setDate(dayEnd.getDate() + 1);
+	const { start: dayStart, end: dayEnd } = localDayRange(date);
 
 	return db
 		.select({

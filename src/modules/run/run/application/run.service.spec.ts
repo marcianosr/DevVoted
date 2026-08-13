@@ -17,6 +17,7 @@ import {
 	startRunService,
 } from "~/modules/run/run/application/run.service";
 import * as queries from "~/modules/run/run/infrastructure/run.repository";
+import * as pollQueries from "~/modules/run/run/infrastructure/runPolls.repository";
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	abandonSessionRun: vi.fn(),
@@ -24,12 +25,14 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	createSessionRunWithState: vi.fn(),
 	ensureTodaysSegment: vi.fn(),
 	fetchAnsweredPollIdsForDay: vi.fn(),
-	fetchRunPollsForDate: vi.fn(),
-	fetchRunPollsForRun: vi.fn(),
+	loadRunState: vi.fn(),
 	fetchRunSnapshot: vi.fn(),
 	findActiveSessionRun: vi.fn(),
 	findSessionRunByDate: vi.fn(),
-	getOrCreateDailyRunSeed: vi.fn(),
+}));
+
+vi.mock("~/modules/run/run/infrastructure/runPolls.repository", () => ({
+	fetchRunPollsForDate: vi.fn(),
 }));
 
 const kantoPoll = (index: number): RunPoll => {
@@ -86,15 +89,16 @@ describe("getTodaysRunService", () => {
 		vi.mocked(queries.fetchRunSnapshot).mockResolvedValue(
 			toRunSnapshot(configuringState())
 		);
-		vi.mocked(queries.fetchRunPollsForRun).mockResolvedValue(POLLS);
+		vi.mocked(queries.loadRunState).mockResolvedValue(configuringState());
 
 		const result = await getTodaysRunService({ userId: USER, date: DATE });
 
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data?.status).toBe("configuring");
-		expect(queries.getOrCreateDailyRunSeed).toHaveBeenCalledWith(DATE);
+		// Seeding today's sequence is the rollover's own business now, so the
+		// service only has to ask for it once (DVTD-5n9l).
 		expect(queries.ensureTodaysSegment).toHaveBeenCalledWith(64, DATE);
-		expect(queries.fetchRunPollsForRun).toHaveBeenCalledWith(64);
+		expect(queries.loadRunState).toHaveBeenCalledWith(64);
 	});
 
 	it("surfaces a finished run started today without rolling it over", async () => {
@@ -109,7 +113,10 @@ describe("getTodaysRunService", () => {
 		vi.mocked(queries.fetchRunSnapshot).mockResolvedValue(
 			toRunSnapshot({ ...configuringState(), status: "won" })
 		);
-		vi.mocked(queries.fetchRunPollsForRun).mockResolvedValue(POLLS);
+		vi.mocked(queries.loadRunState).mockResolvedValue({
+			...configuringState(),
+			status: "won",
+		});
 
 		const result = await getTodaysRunService({ userId: USER, date: DATE });
 
@@ -163,7 +170,7 @@ describe("startRunService", () => {
 		vi.mocked(queries.fetchRunSnapshot).mockResolvedValue(
 			toRunSnapshot(configuringState())
 		);
-		vi.mocked(queries.fetchRunPollsForRun).mockResolvedValue(POLLS);
+		vi.mocked(queries.loadRunState).mockResolvedValue(configuringState());
 
 		const result = await startRunService({ userId: USER, date: DATE });
 
@@ -174,9 +181,8 @@ describe("startRunService", () => {
 
 	it("seeds the day and creates a run in configuring status", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.getOrCreateDailyRunSeed).mockResolvedValue([1, 2]);
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
-		vi.mocked(queries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
 		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
 			runId: 64,
 		});
@@ -194,12 +200,11 @@ describe("startRunService", () => {
 
 	it("starts a same-day rerun from today's seed minus already-answered polls", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.getOrCreateDailyRunSeed).mockResolvedValue([0, 1]);
 		// POLLS[0] has engine id "0" — answered in the abandoned run this morning.
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
 			new Set([0])
 		);
-		vi.mocked(queries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
 		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
 			runId: 65,
 		});
@@ -216,11 +221,10 @@ describe("startRunService", () => {
 
 	it("errors when every poll of the day is already answered", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.getOrCreateDailyRunSeed).mockResolvedValue([0, 1]);
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
 			new Set([0, 1])
 		);
-		vi.mocked(queries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
 
 		const result = await startRunService({ userId: USER, date: DATE });
 
@@ -290,7 +294,6 @@ describe("dispatchRunActionService", () => {
 
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data.status).toBe("answering");
-		expect(queries.getOrCreateDailyRunSeed).toHaveBeenCalledWith(DATE);
 		expect(queries.applyActionToRun).toHaveBeenCalledWith({
 			runId: 64,
 			userId: USER,

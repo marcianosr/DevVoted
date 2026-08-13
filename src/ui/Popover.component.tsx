@@ -124,7 +124,7 @@ export const Popover = ({
 				ref={popoverRef}
 				popover="auto"
 				style={{ positionAnchor: anchorName }}
-				className="popover-anchored border border-theme bg-gray-900 p-3"
+				className="popover-anchored border border-theme bg-surface p-3"
 			>
 				{content}
 			</div>

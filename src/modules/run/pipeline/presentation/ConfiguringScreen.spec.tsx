@@ -32,7 +32,7 @@ const base = {
 	checks: [
 		{
 			label: "Correct",
-			progress: "0/1",
+			progress: { kind: "answers" as const, current: 0, target: 1 },
 			current: 0,
 			target: 1,
 			state: "running" as const,

@@ -7,7 +7,7 @@ const meta: Meta<typeof ConfigdexPanel> = {
 	title: "Dex/ConfigdexPanel",
 	decorators: [
 		(Story) => (
-			<div className="min-h-screen bg-gray-950 p-6">
+			<div className="min-h-screen bg-zinc-950 p-6">
 				<Story />
 			</div>
 		),

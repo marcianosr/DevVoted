@@ -11,7 +11,7 @@ const meta: Meta<typeof DexScreen> = {
 	title: "Dex/DexScreen",
 	decorators: [
 		(Story) => (
-			<div className="min-h-screen bg-gray-950">
+			<div className="min-h-screen bg-zinc-950">
 				<Story />
 			</div>
 		),

@@ -9,7 +9,7 @@ import {
 } from "~/modules/run/gate/domain/gateReward.model";
 import {
 	type GateSwatch,
-	hasThemeColor,
+	themeColorOf,
 } from "~/modules/run/gate/domain/swatch.model";
 import {
 	formatKbGain,
@@ -26,6 +26,7 @@ import {
 } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 import {
+	describeCheckProgress,
 	describeRow,
 	PipelineReportRow,
 } from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
@@ -55,7 +56,8 @@ const valueTone = (row: GateRewardRow): ParagraphTone => {
 const formatValue = (value: GateRewardValue): string => {
 	if (value.unit === "percent") return formatPercent(value);
 	if (value.unit === "kb") return formatKbGain(value);
-	if (value.unit === "checkProgress") return value.text;
+	if (value.unit === "checkProgress")
+		return describeCheckProgress(value.progress);
 	return NOTHING_SHOWN;
 };
 
@@ -168,7 +170,7 @@ const GateHeadline = ({
 	swatch?: GateSwatch;
 }) => (
 	<div
-		{...(swatch && hasThemeColor(swatch) ? swatchTheme(swatch.theme) : {})}
+		{...swatchTheme(swatch && themeColorOf(swatch))}
 		className="flex items-center gap-3"
 	>
 		{cleared ? null : <StatusBadge variant="fail" />}
@@ -405,7 +407,7 @@ export const GateRewardReport = ({
 
 			{totals && breakdown ? (
 				<>
-					<hr className="border-t border-zinc-800" />
+					<hr className="border-t border-edge" />
 					{breakdown}
 				</>
 			) : null}

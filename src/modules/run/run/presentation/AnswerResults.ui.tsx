@@ -59,14 +59,14 @@ const CHIP_OUTLINE: Record<ChipTone, string> = {
 	celadon: "border-celadon text-celadon",
 	vermillion: "border-vermillion text-vermillion",
 	saffron: "border-saffron text-saffron",
-	muted: "border-zinc-700 text-pewter",
+	muted: "border-edge-strong text-pewter",
 };
 
 const CHIP_FILLED: Record<ChipTone, string> = {
 	celadon: "border-celadon bg-celadon text-zinc-950",
 	vermillion: "border-vermillion bg-vermillion text-zinc-950",
 	saffron: "border-saffron bg-saffron text-zinc-950",
-	muted: "border-zinc-700 bg-zinc-700 text-zinc-950",
+	muted: "border-edge-strong bg-zinc-700 text-zinc-950",
 };
 
 const TEXT_TONE: Record<ChipTone, ParagraphTone> = {
@@ -225,7 +225,7 @@ const MultiTally = ({
 	expected: number;
 	missed: readonly ReviewOption[];
 }) => (
-	<div className="border-t border-zinc-900 pt-3">
+	<div className="border-t border-edge pt-3">
 		<Paragraph tone="muted">
 			{hits} of {expected}
 			{missed.length > 0 ? (
@@ -250,7 +250,7 @@ const AnswerDiffPanel = ({
 	const multi = poll.answerType === "multiple";
 	const receivedTone = RECEIVED_TONE[poll.outcome];
 	return (
-		<div className="space-y-3 rounded-lg bg-zinc-950 p-4 ring-1 ring-zinc-900">
+		<div className="space-y-3 rounded-lg bg-zinc-950 p-4 ring-1 ring-edge">
 			{diff.expected.length > 0 ? (
 				<DiffSide
 					label="Expected"
@@ -364,7 +364,7 @@ const ReporterRow = ({ poll }: { poll: AnsweredPoll }) => {
 				lineSize="sm"
 				lineTone={QUESTION_TONE[poll.outcome]}
 				line={<QuestionLine poll={poll} />}
-				className="cursor-pointer list-none rounded hover:bg-zinc-800/40 [&::-webkit-details-marker]:hidden"
+				className="cursor-pointer list-none rounded hover:bg-surface-raised/40 [&::-webkit-details-marker]:hidden"
 				trailing={
 					<>
 						<Paragraph
@@ -408,7 +408,7 @@ export const AnswerResults = ({ answered }: AnswerResultsProps) => {
 	const correct = correctCount(answered);
 	return (
 		<section className="space-y-2">
-			<div className="flex items-baseline justify-between border-b border-zinc-900 pb-2">
+			<div className="flex items-baseline justify-between border-b border-edge pb-2">
 				<Title>Review your answers</Title>
 				<Paragraph as="span" size="sm" tone="muted" className="tabular-nums">
 					{correct} of {answered.length} correct

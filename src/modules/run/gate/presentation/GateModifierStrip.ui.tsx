@@ -50,7 +50,7 @@ export const GateModifierStrip = ({
 	);
 
 	return (
-		<div className="flex flex-col gap-2 border-t border-zinc-700 pt-4">
+		<div className="flex flex-col gap-2 border-t border-edge pt-4">
 			<Title as="h3">Gate modifiers</Title>
 			<div className="flex flex-wrap gap-8">
 				<StatBadge

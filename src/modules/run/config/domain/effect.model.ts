@@ -38,11 +38,50 @@ export const EMPTY_WINDOW: GateWindow = {
 
 export type CheckState = "success" | "running" | "skipped" | "failed";
 
+/**
+ * What a check has to report right now, as the facts behind the sentence rather
+ * than the sentence. Every variant names what it counts, because that is what
+ * decides how it reads: a bare tally sits in the row's value column, prose drops
+ * under the description. The screens own both the words and that placement
+ * (`describeCheckProgress`) — the domain used to write the string and then sniff
+ * its shape with a regex to guess the column back (DVTD-c0d0).
+ */
+export type CheckProgress =
+	| {
+			readonly kind: "answers";
+			readonly current: number;
+			readonly target: number;
+	  }
+	| {
+			readonly kind: "coverage";
+			readonly current: number;
+			readonly target: number;
+	  }
+	| {
+			readonly kind: "categories";
+			readonly current: number;
+			readonly target: number;
+	  }
+	| {
+			readonly kind: "cover";
+			readonly current: number;
+			readonly target: number;
+	  }
+	| { readonly kind: "notSeen" }
+	| { readonly kind: "missStreak"; readonly missed: number }
+	| { readonly kind: "hidCheck"; readonly label: string }
+	| { readonly kind: "checksFailing"; readonly count: number }
+	/** The defeat device's lie, wrapping the tally it is lying about. */
+	| {
+			readonly kind: "reportedPassing";
+			readonly actual?: Exclude<CheckProgress, { kind: "reportedPassing" }>;
+	  };
+
 export type CheckStatus = {
 	readonly label: string;
 	/** Live tally or remark; absent when there is nothing to report — a clean
 	 * streak's dot already says all is well. */
-	readonly progress?: string;
+	readonly progress?: CheckProgress;
 	readonly current: number;
 	readonly target: number;
 	readonly state: CheckState;
@@ -157,7 +196,9 @@ const masteryCheck = (
 			const target = seen ? Math.min(level, seenCount) : level;
 			return {
 				label: `${config.label} mastery`,
-				progress: seen ? `${correct}/${target}` : "not seen",
+				progress: seen
+					? { kind: "answers", current: correct, target }
+					: { kind: "notSeen" },
 				current: correct,
 				target,
 				state: checkState(correct >= target, window, !seen),
@@ -177,7 +218,11 @@ const coverageGainCheck = (config: Config): GateCheckPart => {
 	return {
 		gateCheck: ({ window }) => ({
 			label: "Coverage",
-			progress: `${window.coverageGained}%/${target}%`,
+			progress: {
+				kind: "coverage",
+				current: window.coverageGained,
+				target,
+			},
 			current: window.coverageGained,
 			target,
 			state: checkState(window.coverageGained >= target, window),
@@ -195,7 +240,11 @@ const coldStartCheck = (config: Config): GateCheckPart => {
 			const broken = !met && window.answered > window.leadingCorrect;
 			return {
 				label: "Cold start",
-				progress: `${Math.min(window.leadingCorrect, target)}/${target}`,
+				progress: {
+					kind: "answers",
+					current: Math.min(window.leadingCorrect, target),
+					target,
+				},
 				current: window.leadingCorrect,
 				target,
 				state: broken ? "failed" : checkState(met, window),
@@ -213,7 +262,7 @@ const minCorrectCheck = (config: Config): GateCheckPart => {
 	return {
 		gateCheck: ({ window }) => ({
 			label: config.label,
-			progress: `${window.correct}/${target}`,
+			progress: { kind: "answers", current: window.correct, target },
 			current: window.correct,
 			target,
 			state: checkState(window.correct >= target, window),
@@ -240,11 +289,9 @@ const noDoubleMissCheck = (config: Config): GateCheckPart => ({
 			// A clean streak reports nothing — "steady" said what the running dot
 			// already says. Only the warning and the verdict are worth a line.
 			progress:
-				worst >= 2
-					? "missed 2 in a row"
-					: (window.missStreak ?? 0) === 1
-						? "1 miss — the next one fails"
-						: undefined,
+				worst >= 2 || (window.missStreak ?? 0) === 1
+					? { kind: "missStreak", missed: Math.max(worst, 1) }
+					: undefined,
 			current: worst,
 			target: 1,
 			state: noDoubleMissState(window),
@@ -262,7 +309,7 @@ const breadthCheck = (config: Config): GateCheckPart => {
 			).length;
 			return {
 				label: config.label,
-				progress: `${categoriesGained}/${target} categories`,
+				progress: { kind: "categories", current: categoriesGained, target },
 				current: categoriesGained,
 				target,
 				state: checkState(categoriesGained >= target, window),

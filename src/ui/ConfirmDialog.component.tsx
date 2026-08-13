@@ -57,7 +57,7 @@ export const ConfirmDialog = ({
 			ref={dialogRef}
 			data-screen-theme={theme}
 			onClose={handleCancel}
-			className="backdrop:bg-black backdrop:opacity-50 p-0 w-[min(28rem,calc(100vw-2rem))] m-auto rounded-xl border border-theme bg-zinc-900 whitespace-normal"
+			className="backdrop:bg-black backdrop:opacity-50 p-0 w-[min(28rem,calc(100vw-2rem))] m-auto rounded-xl border border-theme bg-surface whitespace-normal"
 		>
 			<div className="flex flex-col gap-4 p-6">
 				<Title as="h2">{title}</Title>

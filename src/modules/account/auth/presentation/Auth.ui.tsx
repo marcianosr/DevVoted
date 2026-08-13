@@ -19,7 +19,7 @@ export function Auth({
 		<div className="text-white inset-0 flex items-start justify-center p-8 ">
 			<div className="p-8 rounded-lg shadow-lg">
 				<h1 className="text-2xl">{actionText}</h1>
-				<h2 className="text-gray-400 mb-4">{subTitle}</h2>
+				<h2 className="text-pewter mb-4">{subTitle}</h2>
 				<form
 					onSubmit={(e) => {
 						e.preventDefault();
@@ -37,7 +37,7 @@ export function Auth({
 									type="email"
 									name="email"
 									id="email"
-									className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
+									className="px-2 py-1 w-full rounded border border-edge bg-surface-raised"
 								/>
 							</div>
 							<div>
@@ -48,7 +48,7 @@ export function Auth({
 									type="password"
 									name="password"
 									id="password"
-									className="px-2 py-1 w-full rounded border border-gray-500/20 dark:bg-gray-800"
+									className="px-2 py-1 w-full rounded border border-edge bg-surface-raised"
 								/>
 							</div>
 							<Button

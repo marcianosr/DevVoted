@@ -9,7 +9,7 @@ const base = {
 	checks: [
 		{
 			label: "Correct",
-			progress: "1/2",
+			progress: { kind: "answers" as const, current: 1, target: 2 },
 			current: 1,
 			target: 2,
 			state: "running" as const,
@@ -115,7 +115,7 @@ describe(AnsweringScreen, () => {
 				checks={[
 					{
 						label: "ESLint mastery",
-						progress: "0/0",
+						progress: { kind: "answers", current: 0, target: 0 },
 						current: 0,
 						target: 0,
 						state: "skipped",

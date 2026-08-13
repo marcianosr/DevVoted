@@ -1,5 +1,6 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
+	CheckProgress,
 	checkState,
 	CheckStatus,
 	EffectContext,
@@ -68,21 +69,23 @@ const defeatDeviceOf = (pipeline: Pipeline): Config | undefined =>
 const reportPassing = (check: CheckStatus): CheckStatus => ({
 	...check,
 	state: "skipped",
-	progress: check.progress
-		? `${check.progress} (reported passing)`
-		: "reported passing",
+	progress: {
+		kind: "reportedPassing",
+		actual:
+			check.progress?.kind === "reportedPassing" ? undefined : check.progress,
+	},
 });
 
 const defeatDeviceProgress = (
 	hiddenLabel: string | undefined,
 	failing: number,
 	covered: number
-): string | undefined => {
-	if (hiddenLabel) return `hid ${hiddenLabel}`;
+): CheckProgress | undefined => {
+	if (hiddenLabel) return { kind: "hidCheck", label: hiddenLabel };
 	// Nothing failing is the dormant case — the gray dot says it already.
 	if (failing === 0) return undefined;
-	if (failing > 1) return `${failing} checks failing`;
-	return `${covered}/${DEFEAT_DEVICE_COVER} passed`;
+	if (failing > 1) return { kind: "checksFailing", count: failing };
+	return { kind: "cover", current: covered, target: DEFEAT_DEVICE_COVER };
 };
 
 /**
@@ -145,13 +148,17 @@ export const checkStatuses = (
 				]
 			: [];
 	});
-	const listed =
+	const listed: readonly CheckStatus[] =
 		requirement === null
 			? contributed
 			: [
 					{
 						label: "Correct",
-						progress: `${window.correct}/${requirement}`,
+						progress: {
+							kind: "answers",
+							current: window.correct,
+							target: requirement,
+						},
 						current: window.correct,
 						target: requirement,
 						state: checkState(window.correct >= requirement, window),

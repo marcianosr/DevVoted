@@ -52,18 +52,39 @@ describe("gateStartPercent", () => {
 	});
 });
 
-describe("trackPosition vs the SQL that mirrors it", () => {
-	// climbers.repository computes the same position in SQL, for aggregates it
-	// cannot do in TS. This cannot execute that SQL; it pins the formula so a
-	// change here fails loudly next to the comment naming its copy.
-	it.each([
-		[0, 0],
-		[1, 3],
-		[4, 5],
-		[GATE_COUNT - 1, 2],
-	])("places gate %i, %i polls in, where the query would", (gate, polls) => {
-		expect(trackPosition({ gate, pollsIntoGate: polls })).toBe(
-			gate * SLICE_WINDOW + polls
-		);
+// These state the answer outright rather than recomputing it: the block they
+// replace asserted `gate * SLICE_WINDOW + polls`, which is the implementation
+// retyped, so it could never fail for the reason it existed (DVTD-rn26).
+// climbers.repository builds the same position in SQL for aggregates it cannot
+// do in TS, and interpolates the same SLICE_WINDOW — so the tunable is shared
+// and only the arithmetic shape is written twice.
+describe("trackPosition", () => {
+	it("starts the track at zero", () => {
+		expect(trackPosition({ gate: 0, pollsIntoGate: 0 })).toBe(0);
+	});
+
+	it("counts polls within the opening gate one for one", () => {
+		expect(trackPosition({ gate: 0, pollsIntoGate: 3 })).toBe(3);
+	});
+
+	it("puts a fresh gate a whole window past the one before it", () => {
+		expect(trackPosition({ gate: 1, pollsIntoGate: 0 })).toBe(5);
+		expect(trackPosition({ gate: 4, pollsIntoGate: 0 })).toBe(20);
+	});
+
+	it("lands the last gate inside the track it ends", () => {
+		expect(
+			trackPosition({ gate: GATE_COUNT - 1, pollsIntoGate: 0 })
+		).toBeLessThan(TRACK_LENGTH);
+	});
+
+	it("never moves backwards as a climb progresses", () => {
+		const climb = [
+			trackPosition({ gate: 0, pollsIntoGate: 4 }),
+			trackPosition({ gate: 1, pollsIntoGate: 0 }),
+			trackPosition({ gate: 1, pollsIntoGate: 1 }),
+			trackPosition({ gate: 2, pollsIntoGate: 0 }),
+		];
+		expect(climb).toEqual([...climb].sort((a, b) => a - b));
 	});
 });

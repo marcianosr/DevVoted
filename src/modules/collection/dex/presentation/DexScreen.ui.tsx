@@ -19,7 +19,7 @@ export const DexScreen = ({
 	onSelectTab,
 	children,
 }: DexScreenProps) => (
-	<Screen width="wide">
+	<Screen>
 		<Stack gap="6">
 			<Title>Dex</Title>
 			<Tabs tabs={tabs} activeId={activeTab} onSelect={onSelectTab} />

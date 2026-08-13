@@ -5,6 +5,7 @@ import {
 	describeConfig,
 	rarityOf,
 } from "~/modules/run/config/domain/config.model";
+import type { CheckProgress } from "~/modules/run/config/domain/effect.model";
 import type { GateRowReason } from "~/modules/run/gate/domain/configRole.model";
 import { FoldableRow, type Fold } from "~/ui/FoldableRow.ui";
 import { RARITY_COLORS } from "~/ui/rarityColors";
@@ -38,6 +39,48 @@ export const describeRow = (config: Config, reason: GateRowReason): string => {
 		return `needs ${reason.needed} correct ${reason.category}, got ${reason.got}`;
 	return describeConfig(config);
 };
+
+/**
+ * The words for a check's live tally, written once for the same reason
+ * `describeRow` is: the role list and the gate report show the same check and
+ * must not phrase it two ways.
+ */
+export const describeCheckProgress = (progress: CheckProgress): string => {
+	switch (progress.kind) {
+		case "answers":
+			return `${progress.current}/${progress.target}`;
+		case "coverage":
+			return `${progress.current}%/${progress.target}%`;
+		case "categories":
+			return `${progress.current}/${progress.target} categories`;
+		case "cover":
+			return `${progress.current}/${progress.target} passed`;
+		case "notSeen":
+			return "not seen";
+		// A worse streak than two still reads "2 in a row": two is the number that
+		// fails the check, and the run ended there.
+		case "missStreak":
+			return progress.missed >= 2
+				? "missed 2 in a row"
+				: "1 miss — the next one fails";
+		case "hidCheck":
+			return `hid ${progress.label}`;
+		case "checksFailing":
+			return `${progress.count} checks failing`;
+		case "reportedPassing":
+			return progress.actual
+				? `${describeCheckProgress(progress.actual)} (reported passing)`
+				: "reported passing";
+	}
+};
+
+/**
+ * Whether the tally reads at a glance, and so belongs in the row's value column
+ * rather than as a note under the description. "2/3" does; "3/5 categories" and
+ * "not seen" are prose and need the room.
+ */
+export const isCounterProgress = (progress: CheckProgress): boolean =>
+	progress.kind === "answers" || progress.kind === "coverage";
 
 const NUMBER_TOKEN = /(×[\d.]+|[+−-][\d.]+(?:%|KB)?)/;
 
@@ -164,7 +207,6 @@ export const PipelineReportRow = ({
 		return (
 			<StatusLine
 				badge={badge}
-				indicator="badge"
 				spacing={spacing}
 				line={
 					<>
@@ -237,7 +279,7 @@ export const PipelineReportRow = ({
 				detailClass
 			)}
 		>
-			<div className="flex flex-col divide-y divide-dashed divide-zinc-800">
+			<div className="flex flex-col divide-y divide-dashed divide-edge">
 				{needs ? (
 					<FactRow icon="!" tone="cinnabar" value={needs} />
 				) : gives || costs ? (

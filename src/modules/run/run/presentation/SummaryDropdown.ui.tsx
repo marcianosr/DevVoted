@@ -1,5 +1,6 @@
 import { cva } from "class-variance-authority";
 import { useState, type ReactNode } from "react";
+import { FLOATING_SURFACE } from "~/ui/surfaces";
 
 type SummaryDropdownProps = {
 	trigger: ReactNode;
@@ -36,7 +37,7 @@ export const SummaryDropdown = ({
 			</button>
 			{open ? (
 				<div
-					className={`absolute right-0 top-full z-20 mt-2 rounded-lg border border-zinc-700 bg-zinc-900 p-3 ${panelClassName}`}
+					className={`absolute right-0 top-full z-20 mt-2 p-3 ${FLOATING_SURFACE} ${panelClassName}`}
 				>
 					{children}
 				</div>
