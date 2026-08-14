@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "deinstall_penalty" integer DEFAULT 0 NOT NULL;

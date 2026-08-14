@@ -11,11 +11,12 @@ import {
 	text,
 	timestamp,
 	unique,
+	uniqueIndex,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
 
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 /**
  * Database Schema for DevVoted Quiz Game
@@ -103,6 +104,13 @@ export const usersTable = pgTable("users", {
 		.notNull()
 		.default(sql`'{}'::text[]`),
 	equipped_border_id: text("equipped_border_id"),
+	// Gate swatches earned across every run (badge ids from
+	// modules/run/gate/swatch.model). Permanent: clearing gate 1 in any run earns
+	// the Boulder Swatch forever, and re-clearing it later is a no-op.
+	owned_swatch_ids: text("owned_swatch_ids")
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
 });
 
 /**
@@ -261,7 +269,12 @@ export const pollResponsesTable = pgTable(
 		run_id: integer("run_id").references(() => runsTable.id, {
 			onDelete: "cascade",
 		}), // Nullable for legacy responses before this column existed
-		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows)
+		mode: varchar("mode", { length: 16 })
+			.notNull()
+			.default("calendar")
+			.$type<"calendar" | "session">(), // Which loop wrote this row (ADR-005): discriminates the two partial unique indexes below
+		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows, null for session rows — scoring lives in run_states)
+		answer_time_ms: integer("answer_time_ms"), // Client-measured reveal→submit ms (null: legacy rows, untimed clients). Award-grade data only — spoofable, never gameplay-relevant.
 		score_breakdown:
 			json("score_breakdown").$type<
 				import("~/domains/runs/services/score.service").ScoreCalculation
@@ -275,11 +288,14 @@ export const pollResponsesTable = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => ({
-		uniquePollUserDaily: unique().on(
-			table.poll_id,
-			table.user_id,
-			table.answer_date
-		),
+		// Split invariant per mode (slice 2): calendar keeps one answer per
+		// poll/user/day; session runs answer each seed poll exactly once per run.
+		uniqueCalendarDaily: uniqueIndex("polls_responses_calendar_daily_uniq")
+			.on(table.poll_id, table.user_id, table.answer_date)
+			.where(sql`${table.mode} = 'calendar'`),
+		uniqueSessionRunPoll: uniqueIndex("polls_responses_session_run_poll_uniq")
+			.on(table.run_id, table.poll_id)
+			.where(sql`${table.mode} = 'session'`),
 	})
 );
 
@@ -299,6 +315,10 @@ export const runsTable = pgTable("runs", {
 		onDelete: "set null",
 	}), // Nullable for backward compatibility with pre-season runs
 	status: runStatus("status").notNull().default("active"),
+	mode: varchar("mode", { length: 16 })
+		.notNull()
+		.default("calendar")
+		.$type<"calendar" | "session">(), // Run cadence (two-loop model, ADR-005): 'calendar' = legacy one-poll-per-day; 'session' = self-paced session run
 	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
 	injected_archive_bytes: integer("injected_archive_bytes")
 		.notNull()
@@ -347,8 +367,11 @@ export const runsTable = pgTable("runs", {
 			to?: string;
 		}>
 	>(), // Upgrade cards pending player decision — null when no decision is pending
+	seed_date: varchar("seed_date", { length: 10 }), // "YYYY-MM-DD" the run STARTED (first segment's seed, ADR-011). Several runs per day are allowed (same-day restart, DVTD-li9i). NULL for all calendar-mode runs.
 	completion_reason: text("completion_reason"), // Reason for run completion — stores JSON for pipeline failures, plain strings for others
-	victory_achieved_at: timestamp("victory_achieved_at", { withTimezone: true }), // When player passed all gates (run continues in post-victory mode)
+	victory_achieved_at: timestamp("victory_achieved_at", {
+		withTimezone: true,
+	}), // When player passed all gates (run continues in post-victory mode)
 	looted_by_user_id: uuid("looted_by_user_id").references(() => usersTable.id, {
 		onDelete: "set null",
 	}),
@@ -361,6 +384,103 @@ export const runsTable = pgTable("runs", {
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 });
+
+/**
+ * Run States Table (new game flow, ADR-005/009 — session runs only)
+ * 1:1 satellite of a `runs` row holding the engine state of the run rebuild
+ * (src/modules/run/). Kept out of `runs` so the crowded legacy columns stay
+ * untouched and every action dispatch updates a narrow row.
+ * - `state` is the persisted RunSnapshot (RunState minus `polls` — the day's
+ *   shared poll sequence is rehydrated from daily_run_polls on load).
+ *   Server-only: it contains correctness-adjacent data, never send to clients.
+ * - The scalar columns are denormalized from the blob on every persist so
+ *   leaderboards/"who's climbing" can be queried without opening JSON.
+ */
+export const runStatesTable = pgTable("run_states", {
+	id: serial("id").primaryKey(),
+	run_id: integer("run_id")
+		.references(() => runsTable.id, { onDelete: "cascade" })
+		.notNull()
+		.unique(),
+	state: json("state")
+		.$type<import("~/modules/run/run/domain/runSnapshot.model").RunSnapshot>()
+		.notNull(),
+	engine_status: varchar("engine_status", { length: 16 })
+		.notNull()
+		.$type<import("~/modules/run/run/domain/run.model").RunStatus>(),
+	gates_cleared: integer("gates_cleared").notNull().default(0),
+	coverage: real("coverage").notNull().default(0),
+	polls_answered: integer("polls_answered").notNull().default(0), // = state.currentIndex
+	engine_version: integer("engine_version").notNull().default(1), // Reducer-shape version, for future blob migrations
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true })
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+});
+
+/**
+ * Daily Run Seeds Table (new game flow, ADR-009)
+ * One row per day: the seed string that produced that day's shared poll
+ * sequence. The resolved sequence itself lives in daily_run_polls — persisted
+ * (not recomputed) so mid-day poll-pool changes can never fork the shared climb.
+ */
+export const dailyRunSeedsTable = pgTable("daily_run_seeds", {
+	id: serial("id").primaryKey(),
+	date: varchar("date", { length: 10 }).notNull().unique(), // "YYYY-MM-DD"
+	seed: varchar("seed", { length: 64 }).notNull(), // PRNG seed used, kept for audit/regeneration
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
+ * Daily Run Polls Table (new game flow, ADR-009)
+ * The day's shared climb sequence, one row per position. Normalized rows (not
+ * a JSON array) so social/analytics queries can join per poll ("what did
+ * everyone pick at position 7 today").
+ * - onDelete restrict: deleting a poll that is part of a live shared seed must
+ *   fail loudly instead of silently shifting the sequence.
+ */
+export const dailyRunPollsTable = pgTable(
+	"daily_run_polls",
+	{
+		id: serial("id").primaryKey(),
+		date: varchar("date", { length: 10 }).notNull(), // "YYYY-MM-DD"
+		position: integer("position").notNull(), // 0-based order in the climb
+		poll_id: integer("poll_id")
+			.references(() => pollsTable.id, { onDelete: "restrict" })
+			.notNull(),
+	},
+	(table) => [
+		unique().on(table.date, table.position),
+		unique().on(table.date, table.poll_id),
+	]
+);
+
+/**
+ * Run Polls Table (new game flow, ADR-011)
+ * The materialized poll sequence of one persistent session run, built from
+ * daily segments: day rollover drops the unplayed tail and appends that day's
+ * shared sequence (minus polls already answered in this run). This table — not
+ * daily_run_polls by seed_date — is the hydration source for the engine.
+ * - No (run_id, poll_id) unique: a poll missed or linted on an earlier day may
+ *   legitimately reappear via a later day's seed. Answered polls are excluded
+ *   at append time (backstopped by polls_responses_session_run_poll_uniq).
+ * - onDelete restrict on poll_id: same loud-failure rationale as daily_run_polls.
+ */
+export const runPollsTable = pgTable(
+	"run_polls",
+	{
+		id: serial("id").primaryKey(),
+		run_id: integer("run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		position: integer("position").notNull(), // 0-based; RunState.currentIndex indexes into this
+		poll_id: integer("poll_id")
+			.references(() => pollsTable.id, { onDelete: "restrict" })
+			.notNull(),
+		segment_date: varchar("segment_date", { length: 10 }).notNull(), // "YYYY-MM-DD" — the day this segment was appended
+	},
+	(table) => [unique().on(table.run_id, table.position)]
+);
 
 /**
  * Run Category Coverage Table

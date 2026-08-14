@@ -1,5 +1,5 @@
-import { STORAGE_UNITS } from "~/lib/storage";
-import type { CategoryCode } from "~/domains/shared/categories";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
+import type { CategoryCode } from "~/shared/lib/categories";
 import type {
 	GateDifficulty,
 	GateTypeId,

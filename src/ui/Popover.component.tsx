@@ -1,65 +1,59 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
-// Tri-state open model: hover/focus open auto-close on leave/blur; sticky open
-// (set by click/tap) survives until the user dismisses via outside-click or ESC.
-// Without this split, touch users would see the popover flash and vanish — a
-// tap fires synthetic mouseenter then mouseleave back-to-back.
+import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
+
 type OpenSource = "none" | "hover" | "sticky";
-
-type Position = { top: number; left: number };
 
 type PopoverProps = {
 	content: React.ReactNode;
 	ariaLabel: string;
 	children: React.ReactNode;
+	triggerAs?: "button" | "span";
+	className?: string;
 };
 
-const VIEWPORT_MARGIN = 8;
-const TRIGGER_GAP = 8;
+const popoverTrigger = cva(
+	"cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400",
+	{
+		variants: {
+			as: {
+				span: "inline-flex rounded-md",
+				button: "rounded-full",
+			},
+		},
+	}
+);
 
-export const Popover = ({ content, ariaLabel, children }: PopoverProps) => {
+export const Popover = ({
+	content,
+	ariaLabel,
+	children,
+	triggerAs = "button",
+	className,
+}: PopoverProps) => {
 	const [openSource, setOpenSource] = useState<OpenSource>("none");
-	const [position, setPosition] = useState<Position | null>(null);
-	const triggerRef = useRef<HTMLButtonElement>(null);
 	const popoverRef = useRef<HTMLDivElement>(null);
 
+	// Placement is entirely CSS (`.popover-anchored` in app.css). The only thing
+	// React contributes is this name, because `anchor-name` idents are
+	// document-scoped: two Popovers sharing one static name would both resolve to
+	// whichever trigger came last in the DOM. useId gives one per instance;
+	// non-word characters are stripped so it's a valid dashed-ident.
+	const anchorName = `--popover-${useId().replace(/\W/g, "")}`;
+
 	const isOpen = openSource !== "none";
-
-	// Anchored above the trigger, horizontally centered, flipped below when no
-	// room above. Clamped within the viewport horizontally. Runs after the
-	// popover is in the top-layer so getBoundingClientRect reflects real size.
-	const computePosition = useCallback(() => {
-		const trigger = triggerRef.current;
-		const popover = popoverRef.current;
-		if (!trigger || !popover) return;
-
-		const t = trigger.getBoundingClientRect();
-		const p = popover.getBoundingClientRect();
-
-		const preferredTop = t.top - p.height - TRIGGER_GAP;
-		const top =
-			preferredTop < VIEWPORT_MARGIN ? t.bottom + TRIGGER_GAP : preferredTop;
-
-		const centered = t.left + t.width / 2 - p.width / 2;
-		const left = Math.max(
-			VIEWPORT_MARGIN,
-			Math.min(centered, window.innerWidth - p.width - VIEWPORT_MARGIN)
-		);
-
-		setPosition({ top, left });
-	}, []);
 
 	useEffect(() => {
 		const popover = popoverRef.current;
 		if (!popover) return;
 
-		if (isOpen) {
-			popover.showPopover();
-			computePosition();
-		} else {
+		if (!isOpen) {
 			popover.hidePopover();
+			return;
 		}
-	}, [isOpen, computePosition]);
+		popover.showPopover();
+	}, [isOpen]);
 
 	// Browser-initiated close (ESC, light-dismiss) — sync state so React knows
 	// the popover is no longer open. Otherwise the next hover wouldn't reopen.
@@ -87,38 +81,50 @@ export const Popover = ({ content, ariaLabel, children }: PopoverProps) => {
 	const handleMouseLeave = () => {
 		setOpenSource((prev) => (prev === "hover" ? "none" : prev));
 	};
+	const handleKeyDown = (event: React.KeyboardEvent) => {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		handleClick();
+	};
+
+	const triggerProps = {
+		onClick: handleClick,
+		onMouseEnter: handleMouseEnter,
+		onMouseLeave: handleMouseLeave,
+		onFocus: handleMouseEnter,
+		onBlur: handleMouseLeave,
+		style: { anchorName },
+		"aria-haspopup": "dialog" as const,
+		"aria-expanded": isOpen,
+		"aria-label": ariaLabel,
+	};
 
 	return (
 		<>
-			<button
-				ref={triggerRef}
-				type="button"
-				onClick={handleClick}
-				onMouseEnter={handleMouseEnter}
-				onMouseLeave={handleMouseLeave}
-				onFocus={handleMouseEnter}
-				onBlur={handleMouseLeave}
-				aria-haspopup="dialog"
-				aria-expanded={isOpen}
-				aria-label={ariaLabel}
-				className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-full"
-			>
-				{children}
-			</button>
+			{triggerAs === "span" ? (
+				<span
+					role="button"
+					tabIndex={0}
+					onKeyDown={handleKeyDown}
+					className={clsx(popoverTrigger({ as: "span" }), className)}
+					{...triggerProps}
+				>
+					{children}
+				</span>
+			) : (
+				<button
+					type="button"
+					className={popoverTrigger({ as: "button" })}
+					{...triggerProps}
+				>
+					{children}
+				</button>
+			)}
 			<div
 				ref={popoverRef}
 				popover="auto"
-				style={
-					position
-						? {
-								position: "fixed",
-								top: position.top,
-								left: position.left,
-								margin: 0,
-							}
-						: undefined
-				}
-				className="border border-theme bg-gray-900 p-3"
+				style={{ positionAnchor: anchorName }}
+				className="popover-anchored border border-theme bg-surface p-3"
 			>
 				{content}
 			</div>

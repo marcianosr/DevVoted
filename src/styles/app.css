@@ -1,18 +1,28 @@
 @import "tailwindcss";
 @import "highlight.js/styles/github-dark.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+@import "@fontsource/jetbrains-mono/800.css";
 
+/* Dark-only (Marciano, 2026-08-13). The light halves that used to sit in here
+   were unreachable — `__root.tsx`'s `<body class="bg-black text-white">` is a
+   utility, so it beat this layer on every render — while the `dark:` variant
+   they were paired with keys off the OS setting, not off `color-scheme`. A
+   light-OS visitor therefore got the light default border on any element that
+   did not name its own. One ramp now, and it is the one components use. */
 @layer base {
 	html {
-		color-scheme: light dark;
+		color-scheme: dark;
 	}
 
 	* {
-		@apply border-gray-200 dark:border-gray-800;
+		@apply border-edge;
 	}
 
 	html,
 	body {
-		@apply text-gray-900 bg-gray-50 dark:bg-gray-950 dark:text-gray-200;
+		@apply bg-zinc-950 text-zinc-200;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
 		text-rendering: optimizeLegibility;
@@ -28,7 +38,7 @@
 
 @layer components {
 	.markdown {
-		@apply text-gray-900 dark:text-gray-200;
+		@apply text-zinc-200;
 	}
 
 	.markdown p {
@@ -60,11 +70,11 @@
 	}
 
 	.markdown code {
-		@apply bg-gray-900 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
+		@apply bg-surface-raised px-1.5 py-0.5 rounded text-sm font-mono;
 	}
 
 	.markdown pre {
-		@apply bg-gray-900 dark:bg-gray-950 rounded-lg p-4 mb-4 overflow-x-auto;
+		@apply bg-zinc-950 rounded-lg p-4 mb-4 overflow-x-auto;
 	}
 
 	.markdown pre code {
@@ -80,11 +90,11 @@
 	}
 
 	.markdown blockquote {
-		@apply border-l-4 border-gray-300 dark:border-gray-700 pl-4 italic my-4;
+		@apply border-l-4 border-edge-strong pl-4 italic my-4;
 	}
 
 	.markdown a {
-		@apply text-blue-600 dark:text-blue-400 hover:underline;
+		@apply text-cerulean hover:underline;
 	}
 }
 
@@ -107,13 +117,27 @@
 	--color-indigo: oklch(45% 0.18 265); /* Deep indigo - Elite Four */
 	--color-seafoam: oklch(75% 0.15 185); /* Seafoam cyan - ice caves */
 
-	--error: oklch(55% 0.3 25);
-	--warning: oklch(75% 0.25 90);
-	--succes: oklch(55% 0.3 145);
+	/* Neutral surfaces (DVTD-8ksp). Kanto names the accents; surfaces are not
+	   part of the identity, so they stay zinc — but behind four named roles
+	   rather than the eleven shades call sites used to pick from. A component
+	   asks for the role it means, which is why re-tinting the whole app later
+	   is an edit to these four lines and nothing else.
 
-	--font-family-display: "Pixter Display", sans-serif;
-	--font-family-granular: "Pixter Granular", sans-serif;
-	--font: "Fira Code", monospace;
+	   Semantic colours are NOT here: an error border is `border-cinnabar`, the
+	   same token the text tone uses. Three unprefixed aliases (--error,
+	   --warning, --succes, sic) used to sit at this spot generating no
+	   utilities at all, and no consumers ever appeared. */
+	--color-surface: var(--color-zinc-900);
+	--color-surface-raised: var(--color-zinc-800);
+	--color-edge: var(--color-zinc-800);
+	--color-edge-strong: var(--color-zinc-700);
+	/* The outline of something you can click, which sits a step brighter than a
+	   panel edge so a control reads as reachable. Its hover state stays a raw
+	   shade at the call site: brightening on hover is a behaviour, not a role. */
+	--color-control-edge: var(--color-zinc-600);
+
+	--font-display: "Pixter Display", sans-serif;
+	--font-granular: "Pixter Granular", sans-serif;
 }
 
 /* Specific color utilities - no longer needed with Tailwind 4's --color-* prefix */
@@ -226,72 +250,160 @@
 	animation: color-cycle-hover 60s linear infinite;
 }
 
-/* Category-based theme utilities */
+/* Theme color plumbing */
 /* Default theme color for un-themed screens (pipelines, shop, run screens).
-   Category ancestors below override it; the theme utilities inherit whichever
+   Gate/mood ancestors below override it; the theme utilities inherit whichever
    value is nearest, so bg-theme/text-theme render everywhere. */
 :root {
 	--theme-color: var(--color-cerulean);
 }
 
-/* Set --theme-color on each category, then use it in theme utilities */
-[data-category-theme="html"] {
-	--theme-color: var(--color-vermillion);
+/* Gate swatches, colored by their home Kanto location (gate/swatch.model.ts):
+   Pallet, the eight gym badges, then the two gym-less landmarks, and the summit
+   pair. elite keeps indigo for Indigo Plateau even though indigo is the app
+   background — its "plate" finish adds a rim so it reads, and its name falls back
+   to zinc. champion sets no --theme-color at all: it wears the Kanto gradient. */
+[data-swatch-theme="pallet"] {
+	--theme-color: var(--color-pallet);
 }
-[data-category-theme="css"] {
-	--theme-color: var(--color-cerulean);
-}
-[data-category-theme="js"] {
-	--theme-color: var(--color-saffron);
-}
-[data-category-theme="ts"] {
-	--theme-color: var(--color-lavender);
-}
-[data-category-theme="general-frontend"] {
-	--theme-color: var(--color-fuchsia);
-}
-[data-category-theme="react"] {
-	--theme-color: var(--color-celadon);
-}
-[data-category-theme="git"] {
+[data-swatch-theme="boulder"] {
 	--theme-color: var(--color-pewter);
 }
-[data-category-theme="java"] {
-	--theme-color: var(--color-indigo);
+[data-swatch-theme="cascade"] {
+	--theme-color: var(--color-cerulean);
 }
-[data-category-theme="python"] {
-	--theme-color: var(--color-viridian);
+[data-swatch-theme="thunder"] {
+	--theme-color: var(--color-vermillion);
 }
-[data-category-theme="ruby"] {
+[data-swatch-theme="rainbow"] {
+	--theme-color: var(--color-celadon);
+}
+[data-swatch-theme="soul"] {
+	--theme-color: var(--color-fuchsia);
+}
+[data-swatch-theme="marsh"] {
+	--theme-color: var(--color-saffron);
+}
+[data-swatch-theme="volcano"] {
 	--theme-color: var(--color-cinnabar);
 }
-[data-category-theme="general-backend"] {
+[data-swatch-theme="earth"] {
+	--theme-color: var(--color-viridian);
+}
+[data-swatch-theme="lavender"] {
+	--theme-color: var(--color-lavender);
+}
+[data-swatch-theme="seafoam"] {
 	--theme-color: var(--color-seafoam);
 }
-
-/* Theme utilities - use inherited --theme-color (category color, or the root
-   default on un-themed screens) */
-[data-category-theme] {
-	--meter-fill: var(--theme-color);
-	--meter-bg: oklch(from var(--theme-color) calc(l - 0.25) c h);
+[data-swatch-theme="elite"] {
+	--theme-color: var(--color-indigo);
 }
 
-.text-theme {
+/* Ambient run theme (ADR-020) — what the whole page wears while a gate is being
+   played (Screen.ui mirrors it onto <body>). Chip colors live under
+   [data-swatch-theme] above; this table deviates only at the summit: elite
+   lightens indigo so text/accents read on the near-black page (the chip itself
+   stays true indigo), and champion — gradient-only as a chip — gets fuchsia as
+   its one designated solid. */
+[data-gate-theme="pallet"] {
+	--theme-color: var(--color-pallet);
+}
+[data-gate-theme="boulder"] {
+	--theme-color: var(--color-pewter);
+}
+[data-gate-theme="cascade"] {
+	--theme-color: var(--color-cerulean);
+}
+[data-gate-theme="thunder"] {
+	--theme-color: var(--color-vermillion);
+}
+[data-gate-theme="rainbow"] {
+	--theme-color: var(--color-celadon);
+}
+[data-gate-theme="soul"] {
+	--theme-color: var(--color-fuchsia);
+}
+[data-gate-theme="marsh"] {
+	--theme-color: var(--color-saffron);
+}
+[data-gate-theme="volcano"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-gate-theme="earth"] {
+	--theme-color: var(--color-viridian);
+}
+[data-gate-theme="lavender"] {
+	--theme-color: var(--color-lavender);
+}
+[data-gate-theme="seafoam"] {
+	--theme-color: var(--color-seafoam);
+}
+[data-gate-theme="elite"] {
+	--theme-color: oklch(from var(--color-indigo) 0.7 c h);
+}
+[data-gate-theme="champion"] {
+	--theme-color: var(--color-fuchsia);
+}
+
+/* Semantic screen mood — pass/fail feedback, not gate identity. Declared after
+   the gate blocks so mood wins if both attributes ever land on one element. */
+[data-screen-theme="cinnabar"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-screen-theme="celadon"] {
+	--theme-color: var(--color-celadon);
+}
+
+/* Themed screens mirror their gate onto <body> (Screen.ui) — the page then
+   trades pure black for a faint tint of the gate color: theme hue, chroma
+   crushed to a quarter, lightness pinned near-black. */
+body {
+	transition: background-color 700ms ease;
+}
+
+/* A modal dialog (showModal) locks the page scroll behind it. */
+body:has(dialog:modal) {
+	overflow: hidden;
+}
+body[data-gate-theme] {
+	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
+}
+/* Mood screens glow softer than gate screens: chroma crushed further and
+   lightness pulled closer to black. Stays after the gate rule so mood wins. */
+body[data-screen-theme] {
+	background-color: oklch(from var(--theme-color) 0.14 calc(c * 0.15) h);
+}
+
+/* Registered as @utility (not plain classes) so Tailwind variants — hover:, focus:,
+   enabled:hover:, etc — attach to them the same as any built-in utility. */
+@utility text-theme {
 	color: var(--theme-color);
 }
-.bg-theme {
+@utility bg-theme {
 	background-color: var(--theme-color);
 }
-/* Translucent theme fill for selected/hover surfaces (opacity modifiers can't
-   apply to the custom .bg-theme class, so we derive the alpha here). */
-.bg-theme-soft {
-	background-color: oklch(from var(--theme-color) l c h / 0.1);
+/* Translucent theme fill for selected/hover surfaces. */
+@utility bg-theme-soft {
+	background-color: oklch(from var(--theme-color) l c h / 0.15);
 }
-.border-theme {
+@utility border-theme {
 	border-color: var(--theme-color);
 }
-.accent-theme {
+/* Focus rings follow the gate the screen is themed for, so a ring never has to
+   fall back to a hardcoded zinc. */
+@utility ring-theme {
+	--tw-ring-color: var(--theme-color);
+}
+@utility accent-theme {
 	accent-color: var(--theme-color);
+}
+
+@font-face {
+	font-family: "Pixter Display";
+	src: url("/fonts/PixterDisplay.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
 }
 
 @font-face {
@@ -303,36 +415,47 @@
 
 @font-face {
 	font-family: "Pixter Granular";
+	src: url("/fonts/PixterGranular.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: "Pixter Granular";
 	src: url("/fonts/PixterGranularBold.ttf") format("truetype");
 	font-weight: bold;
 	font-style: normal;
 }
 
 body {
-	font-family: var(--font);
-	font-family: "Pixter Display", sans-serif;
+	font-family: "JetBrains Mono", ui-monospace, monospace;
+	/* Pin bold to preserve the app's look now that a real 400 face is registered —
+	   without this the default weight would silently flip to regular everywhere. */
+	font-weight: bold;
 }
 
 meter {
 	width: 100%;
 }
 
+/* --theme-color is used directly (not via an intermediary var) so it resolves
+   against the meter's inherited theme, not against wherever a var alias was
+   declared. */
 meter::-moz-meter-bar {
-	background: var(--meter-fill);
+	background: var(--theme-color);
 	border-radius: inherit;
 }
 
 meter::-webkit-meter-bar {
-	background: var(--meter-bg);
+	background: oklch(from var(--theme-color) calc(l - 0.25) c h);
 	border-radius: inherit;
 }
 
 meter::-webkit-meter-optimum-value {
-	background: var(--meter-fill);
+	background: var(--theme-color);
 	border-radius: inherit;
 }
 
-/* Prismatic border for #1 leaderboard position */
 @keyframes prismatic-border {
 	0% {
 		border-color: var(--color-vermillion);
@@ -405,6 +528,131 @@ meter::-webkit-meter-optimum-value {
 	animation: prismatic-text 4s linear infinite;
 }
 
+/*
+ * Animates border-color AND text color together on one element. Needed because
+ * the `animation` shorthand can't be composed across two classes — a second
+ * `animation` declaration clobbers the first — so both runs live in one rule.
+ */
+.prismatic-chip {
+	animation:
+		prismatic-border 4s linear infinite,
+		prismatic-text 4s linear infinite;
+}
+
+/* Border-only prismatic run — for surfaces whose text must stay its own color
+ * (white chip labels); .prismatic-chip would animate the text along. */
+.prismatic-border {
+	animation: prismatic-border 4s linear infinite;
+}
+
+/*
+ * A legendary's static Kanto-gradient border ring (no animation — Marciano,
+ * 2026-08-04). Painted on a masked ::before instead of border-image (which
+ * drops border-radius) or a wrapper div (which needs an opaque fill the
+ * theme-tinted page background can't match). The mask cuts the padding-box
+ * out of the gradient, leaving a 1px ring and a transparent interior.
+ */
+.legendary-ring {
+	position: relative;
+}
+.legendary-ring::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1px;
+	background: linear-gradient(
+		90deg,
+		var(--color-saffron),
+		var(--color-fuchsia),
+		var(--color-lavender),
+		var(--color-cerulean),
+		var(--color-celadon)
+	);
+	mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	mask-composite: exclude;
+	pointer-events: none;
+}
+
+/*
+ * The legendary Kanto gradient as a flat fill — .legendary-ring's sibling, for
+ * places where a 1px ring would be invisible (the HUD's 1.5px gate segments).
+ * Same stops, same source vars.
+ */
+@utility bg-legendary {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-saffron),
+		var(--color-fuchsia),
+		var(--color-lavender),
+		var(--color-cerulean),
+		var(--color-celadon)
+	);
+}
+
+/* Flowing celadon→viridian gradient clipped to the text glyphs. */
+@keyframes gradient-flow {
+	0% {
+		background-position: 0% 50%;
+	}
+	100% {
+		background-position: 200% 50%;
+	}
+}
+
+.text-gradient-green {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-celadon),
+		var(--color-viridian),
+		var(--color-celadon)
+	);
+	background-size: 200% auto;
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+	animation: gradient-flow 3s linear infinite;
+}
+
+/* Scrollable without a visible scrollbar (keeps content reachable, fixed height). */
+.no-scrollbar {
+	scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+
+/* ─── Anchored popover ─────────────────────────────────────────────────────────
+   src/ui/Popover places itself entirely in CSS; the component only supplies the
+   per-instance `anchor-name`. This replaced ~40 lines of getBoundingClientRect
+   measurement, which had two defects the platform doesn't: a pinned popover kept
+   stale coordinates when the page scrolled, and it could paint one frame at the
+   UA's centred position before the measured values landed.
+
+   The UA sheet gives [popover] `inset: 0; margin: auto` to centre it in the
+   viewport — both have to go, or the box stretches to fill the position-area
+   region instead of shrink-wrapping its content. The block margin that replaces
+   `margin: auto` is the old TRIGGER_GAP; max-inline-size is the old
+   VIEWPORT_MARGIN clamp. */
+[popover].popover-anchored {
+	inset: auto;
+	margin: 0.5rem 0;
+	/* Above the trigger, flipping below when there's no room — the same preference
+	   order the JS used. */
+	position-area: block-start span-all;
+	position-try-fallbacks: flip-block;
+	/* span-all makes the position-area region the full inline axis, and the box
+	   stretches to fill it rather than hugging its content, so both of these are
+	   load-bearing: fit-content shrink-wraps (what `position: fixed` with no width
+	   gave us before) and anchor-center re-centres the shrunk box on the trigger,
+	   replacing the JS's centering math. */
+	inline-size: fit-content;
+	justify-self: anchor-center;
+	max-inline-size: calc(100dvw - 1rem);
+}
+
 /* ─── Screen mount-in transitions ──────────────────────────────────────────────
    Applied by the Screen primitive via data-screen-transition. @starting-style
    defines the pre-mount state; the browser animates to the settled state the
@@ -463,4 +711,36 @@ meter::-webkit-meter-optimum-value {
 	[data-screen-transition="slide-left"] {
 		transition: none;
 	}
+}
+
+@keyframes reveal-pop {
+	0% {
+		opacity: 0;
+		transform: scale(0.6);
+	}
+	60% {
+		opacity: 1;
+		transform: scale(1.08);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.reveal-pop {
+	animation: reveal-pop 260ms ease-out both;
+}
+
+@keyframes score-bump {
+	0% {
+		transform: scale(1.35);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.score-bump {
+	animation: score-bump 200ms ease-out;
 }

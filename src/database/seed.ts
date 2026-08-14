@@ -20,7 +20,7 @@ import {
 	seasonsTable,
 	leaderboardTable,
 } from "@/src/database/schema";
-import { getCategories, CATEGORY_CODES } from "~/domains/shared/categories";
+import { getCategories, CATEGORY_CODES } from "~/shared/lib/categories";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 const ADMIN_UID = "65ad226e-e3c1-4e7f-a96d-a84156589733";

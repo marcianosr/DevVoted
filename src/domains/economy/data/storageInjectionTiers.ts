@@ -1,4 +1,4 @@
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 // Fixed tiers a player can spend from their archive to front-load a new run.
 // 1:1 conversion — bytes spent equal bytes added to the run's storage_limit.

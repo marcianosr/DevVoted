@@ -1,4 +1,4 @@
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 export type GateDifficulty = "low" | "medium" | "high" | "critical";
 export type GateTypeId =

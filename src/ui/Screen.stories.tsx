@@ -7,9 +7,9 @@ const meta: Meta<typeof Screen> = {
 	title: "Layout/Screen",
 	args: {
 		children: (
-			<div className="border border-zinc-700 p-6">
+			<div className="border border-edge-strong p-6">
 				<h1 className="text-2xl">Screen content</h1>
-				<p className="text-gray-400">
+				<p className="text-pewter">
 					Centered, responsive width. Resize the viewport to see the frame.
 				</p>
 			</div>

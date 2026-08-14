@@ -1,6 +1,6 @@
 import { findBorderById } from "~/domains/economy/data/borders";
-import { getAuthenticatedUserId } from "~/utils/authorization";
-import { handleApiOperation } from "~/utils/errorHandling";
+import { getAuthenticatedUserId } from "~/shared/utils/authorization";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 import {
 	fetchUserArchiveState,

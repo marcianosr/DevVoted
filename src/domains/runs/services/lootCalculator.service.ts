@@ -1,5 +1,5 @@
-import { LOOT_CAP_KB, LOOT_PER_GATE_KB } from "~/config/economy";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { LOOT_CAP_KB, LOOT_PER_GATE_KB } from "~/shared/config/economy";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 /**
  * Award scales with the gate the deceased reached:

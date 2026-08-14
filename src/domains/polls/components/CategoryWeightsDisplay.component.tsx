@@ -6,7 +6,7 @@ import {
 	CategoryCode,
 	CATEGORY_CODES,
 	getCategoryMetadata,
-} from "~/domains/shared/categories";
+} from "~/shared/lib/categories";
 
 const getCategoryWeights = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -76,8 +76,7 @@ const CategoryWeightsDisplay = () => {
 				{categoryItems.map((item) => (
 					<div
 						key={item.code}
-						data-category-theme={item.code}
-						className="h-full bg-theme"
+						className="h-full bg-theme odd:opacity-60"
 						style={{ width: `${item.percentage}%` }}
 						title={`${item.name}: ${item.percentage.toFixed(1)}%`}
 					/>
@@ -87,12 +86,7 @@ const CategoryWeightsDisplay = () => {
 			{/* Legend */}
 			<div className="flex flex-wrap gap-x-4 gap-y-2 mt-4">
 				{categoryItems.map((item) => (
-					<div
-						key={item.code}
-						data-category-theme={item.code}
-						className="flex items-center gap-1.5 text-sm"
-					>
-						<span className="w-3 h-3 bg-theme inline-block" />
+					<div key={item.code} className="flex items-center gap-1.5 text-sm">
 						<span className="text-theme">{item.name}</span>
 						<span className="text-gray-400">{item.percentage.toFixed(1)}%</span>
 					</div>

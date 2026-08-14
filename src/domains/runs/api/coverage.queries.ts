@@ -2,7 +2,7 @@ import { eq, and, sql } from "drizzle-orm";
 
 import { runCategoryCoverageTable, runsTable } from "@/src/database/schema";
 import { db } from "~/database/db";
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 import { runCategoryCoverageFactory } from "../models/runCategoryCoverage.model";
 

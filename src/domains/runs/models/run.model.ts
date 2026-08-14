@@ -1,12 +1,12 @@
-import { InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
-import { runsTable } from "@/src/database/schema";
+import type { runsTable } from "@/src/database/schema";
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.model";
 import type {
 	PipelineSlot,
 	UpgradeCard,
 } from "~/domains/runs/models/pipeline.model";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 // TODO: Refactor this to ActiveRun?
 export type Run = {
@@ -14,6 +14,8 @@ export type Run = {
 	userId: string;
 	seasonId: number | null;
 	status: "active" | "finished";
+	/** Run cadence: "calendar" (one poll/day) or "session" (opt-in climb). Inert until session runs ship. */
+	mode: "calendar" | "session";
 	storageLimit: number;
 	injectedArchiveBytes: number;
 	activeConfigIds: string[];
@@ -50,6 +52,7 @@ export const runToDTO = (
 		userId: record.user_id,
 		seasonId: record.season_id,
 		status: record.status,
+		mode: record.mode,
 		storageLimit: record.storage_limit,
 		injectedArchiveBytes: record.injected_archive_bytes,
 		activeConfigIds: record.active_config_ids || [],
@@ -89,6 +92,8 @@ export const runFromDTO = (dto: Run): RunRecord => {
 		user_id: dto.userId,
 		season_id: dto.seasonId,
 		status: dto.status,
+		mode: dto.mode,
+		seed_date: null, // Daily-seed key is a session-run concept (ADR-009); calendar runs never carry one
 		storage_limit: dto.storageLimit,
 		injected_archive_bytes: dto.injectedArchiveBytes,
 		active_config_ids: dto.activeConfigIds,
@@ -135,6 +140,7 @@ export const createRun = (partial: Partial<Run> = {}): Run => {
 		userId: "",
 		seasonId: null,
 		status: "active",
+		mode: "calendar",
 
 		storageLimit: STORAGE_UNITS.MB, // 1MB default
 		injectedArchiveBytes: 0,

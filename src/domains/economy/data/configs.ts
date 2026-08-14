@@ -1,8 +1,8 @@
 import { Config } from "~/domains/economy/models/config.model";
 import { PollWithOptionsResponse } from "~/domains/polls/models/poll.model";
 import { Run } from "~/domains/runs/models/run.model";
-import { selectSeededRandom } from "~/lib/seededRandom";
-import { STORAGE_UNITS, formatStorage } from "~/lib/storage";
+import { selectSeededRandom } from "~/shared/lib/seededRandom";
+import { STORAGE_UNITS, formatStorage } from "~/shared/lib/storage";
 
 export const configs: Config[] = [
 	{

@@ -6,13 +6,10 @@ import {
 	getCategoryMasterySlot,
 	getSlotDefinition,
 } from "~/domains/runs/data/pipelineSlots";
-import {
-	CATEGORY_CODES,
-	getCategoryMetadata,
-} from "~/domains/shared/categories";
+import { CATEGORY_CODES, getCategoryMetadata } from "~/shared/lib/categories";
 import type { UpgradeCard } from "~/domains/runs/models/pipeline.model";
 import { applyUpgradeCard } from "~/domains/runs/services/pipeline.service";
-import { getAuthenticatedUserId } from "~/utils/authorization";
+import { getAuthenticatedUserId } from "~/shared/utils/authorization";
 
 import { getRandomExposedConfigDeckHandler } from "./exposedDeck.handler";
 import {
@@ -41,7 +38,7 @@ import {
 	getActiveRunByUserId,
 	lootRun,
 } from "./run.queries";
-import { handleApiOperation } from "~/utils/errorHandling";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 import { getAllTimeHighestGate } from "~/domains/runs/api/ranking.queries";
 
 const staticGateTypeIdSchema = z.enum([

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 import {
 	getCategoryMasterySlot,
 	getSlotDefinition,

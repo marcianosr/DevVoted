@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ArchiveSummary } from "~/domains/economy/components/ArchiveSummary.component";
-import { Avatar } from "~/domains/users/components/Avatar.component";
+import { Avatar } from "~/modules/account/profile/presentation/Avatar.ui";
 import { BorderShop } from "~/domains/economy/components/BorderShop.component";
 import { useArchiveState } from "~/domains/economy/hooks/useArchiveState";
-import { Polldex } from "~/domains/polls/components/Polldex.component";
 
 const ProfilePage: React.FC = () => {
 	const { userId } = Route.useParams();
@@ -40,8 +39,6 @@ const ProfilePage: React.FC = () => {
 						<BorderShop userId={userId} />
 					</>
 				)}
-
-				<Polldex pollsWithStats={[]} />
 			</div>
 		</section>
 	);

@@ -7,7 +7,7 @@ import {
 	orchestrateScoreCalculation,
 	ScoreCalculation,
 } from "~/domains/runs/services/score.service";
-import { CategoryCode } from "~/domains/shared/categories";
+import { CategoryCode } from "~/shared/lib/categories";
 
 import { awardCoverageToRun } from "../api/coverage.queries";
 import { Run } from "../models/run.model";

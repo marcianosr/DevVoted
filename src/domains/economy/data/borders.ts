@@ -1,5 +1,5 @@
 import type { Border } from "~/domains/economy/models/border.model";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 // Border catalog wired to assets in public/borders/. Filenames are kept as-is
 // so they match what's on disk; readable names live in `name`.

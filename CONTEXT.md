@@ -1,91 +1,164 @@
 # DevVoted Domain Context
 
-Ubiquitous language for DevVoted. Use these terms in code, ADRs, and conversations.
-When a concept doesn't appear here, add it before naming the module.
+Ubiquitous language for DevVoted, written for one purpose: naming modules,
+folders, and files. When a concept is missing here, add it before you name the
+module.
+
+Two pointers, so nothing is stated twice:
+
+- **What a term means in the game** lives in the [wiki glossary](docs/wiki.md#9-glossary).
+  That is the source of truth for meaning. Do not restate it here.
+- **How code is structured and layered** lives in [ADR-002](docs/adr/002-domain-architecture.md).
+  That is the source of truth for the layer table and the dependency rule.
+
+This file owns the join between them: which module and concept folder owns each
+term, and which words we no longer use.
 
 ---
 
-## Core Concepts
+## Where each concept lives
 
-**Poll**
-A quiz question with one or more answer options and a category. The atomic unit of gameplay content. Admins create polls; players answer them.
+[ADR-002](docs/adr/002-domain-architecture.md) organises code as
+`src/modules/{context}/{aggregate}/{layer}`. The **aggregate** is the domain
+boundary, so this table is the map an architecture review reads first.
 
-**Daily Poll**
-The single poll selected for all players on a given date. Chosen via a weighted category selection at midnight. The weights are snapshotted in advance based on active configs.
+> **`run` and `collection` have migrated** (2026-08-12, `DVTD-36ct`); their
+> paths below are real. `polls` and `account` have not: their Today column is
+> where the files actually sit. Drop the column per context as each one lands.
 
-**Run**
-A game session. A player starts a run, answers polls sequentially, and either completes or fails it. Runs have configuration, coverage state, pipeline state, and a status (active / finished / failed).
+### Context `run`
 
-**Turn**
-A single poll answer within a run. Each turn awards coverage, may trigger pipeline evaluation, and may end the run. The core game loop unit.
-_(Code: `runs/services/turn.service.ts`)_
-
-**CI Pipeline**
-The evaluation structure inside a run. Divided into windows. At each window boundary, the CI pipeline checks whether the player's knowledge coverage meets the requirement. Failing ends the run. Players choose their own CI pipeline difficulty after each clear.
-
-**Window**
-A fixed-size group of consecutive turns evaluated together by the CI pipeline. When a window closes, the pipeline determines whether the player advances or fails.
-
-**Gate**
-The pass/fail requirement at the end of a pipeline window. Defined by the run's CI pipeline configuration.
-
-**Knowledge Coverage** _(Coverage)_
-A player's accumulated performance score per category within a run. Awarded each turn. Drives CI gate evaluation and determines run outcome. Informally called "coverage" in code.
-
-**Config**
-A game modifier — DevC-themed name for a modifier that alters run mechanics (coverage multipliers, category weights, storage capacity, etc.). Configs are the purchasable and (future) unlockable power-ups of the game. A config has an effect definition that the config effects engine applies. Configs have a rarity (Common, Uncommon, Rare, Legendary) that determines how often they appear in the shop.
-
-**Config Trigger**
-The event that activates a config's effect — e.g. answering a poll, opening the shop, clearing a CI pipeline window. Each config declares its trigger; the effects engine fires it at the right moment.
-
-**Config Discovery**
-How configs are unlocked for a player. Some configs are available from the start; others are discovered by meeting in-run criteria (e.g. "beat 8 CI pipeline windows"). Undiscovered configs appear as "???" in the shop.
-
-**Config Effects Engine**
-The module that applies a set of active configs to produce modified game parameters. Called during turn processing and daily poll selection.
-_(Code: currently embedded in `configs/data/configs.ts`)_
-
-**Package Manager** _(Shop)_
-The in-run acquisition channel for configs, presented between turns. DevC-themed name for the shop. Players install and deinstall configs using their available storage.
-
-**Rebuild** _(Reroll)_
-The shop action that refreshes the current shop offerings at a storage cost. Cost increases on each rebuild (Fibonacci scale), resets after each CI pipeline window.
-
-**Storage**
-The KB/MB/GB capacity a run has for holding configs. Configs consume storage when installed; deinstalling frees it (minus junk). Can be expanded via configs or by skipping the shop.
-
-**Score**
-The points awarded for a correct turn. Computed from correctness, coverage delta, streak, and config bonuses. Has its own display component (ScoreBlock).
-
-**Community Stats**
-Social data about the daily poll: who answered first, who was fastest, who was first to answer correctly. Scoped to a single daily poll. Part of the post-turn daily poll experience.
-
-**Leaderboard**
-Season-scoped rankings of players by score or coverage. Distinct from community stats — leaderboards are persistent and competitive; community stats are ephemeral and social.
-
-**Season**
-A time-bounded competition period. Leaderboard rankings reset between seasons.
-
-**Player**
-A registered user participating in runs. Has a profile, run history, and season stats.
-
----
-
-## Ownership Rules
-
-| Concept | Domain | Notes |
+| Concept | Lives in | Key symbols |
 |---|---|---|
-| Poll questions + options | `polls/` | Admin CRUD + fetch |
-| Daily poll selection | `polls/daily/` | Weights snapshot, O(1) lookup |
-| Community stats | `polls/daily/` | Scoped to a daily poll |
-| Run lifecycle | `runs/` | Start, finish, fail |
-| Turn processing | `runs/` | Was `processPollAnswer.service.ts` |
-| Answer recording | `runs/` | `createPollResponse` and tracking |
-| CI pipeline + window evaluation | `runs/` | `getWindowResults`, CI pipeline services |
-| Coverage calculation | `runs/` | Consolidated here, not split across polls |
-| Config definitions + effects engine | `configs/` | Not an economy concern — game mechanic |
-| Shop offerings + purchases | `economy/shop/` | Acquisition channel for configs |
-| Storage management | `economy/storage/` | Capacity rules |
-| Scoring rules + ScoreBlock | `score/` | Pure domain with logic + UI |
-| Season lifecycle | `seasons/` | |
-| Rankings | `leaderboards/` | Season-scoped |
+| Run / Climb | `run/domain` | `RunState`, `RunAction`, `runReducer`, `createRun` (`run.model.ts`) |
+| Run status | `run/domain` | `RunStatus` = `configuring \| answering \| awaiting-strip \| rewarding \| won \| dead` |
+| Run snapshot | `run/domain` | `RunSnapshot`, `toRunSnapshot`, `hydrateRunState` (`runSnapshot.model.ts`); what persists to `run_states.state` |
+| Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `STORAGE_PLANS`, `dropCount`, `isStakeFatal`, `atMinimumWidth` (`rules.model.ts`) |
+| Seed / Segment | `run/domain` | `rollDailySeedSequence` (`seed.model.ts`); pure, so it is a model not a service |
+| Run view | `run/application` | `RunView`, `toRunView` (`runView.viewmodel.ts`); the single projection every screen reads |
+| Gate stake | `run/application` | `GateStake` (`runView.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
+| Run orchestration | `run/application` | `run.service.ts` (was `handlers.ts`), `run.serverfn.ts` (was `api/run.ts`), `run.validation.ts` |
+| Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, one write. Never split across aggregates |
+| Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |
+| Run screens and HUD | `run/presentation` | Prep / Answering / GameOver screens, `RunLayout`, `RunHud`, `StorageGauge`, `RunSummary` |
+| Pipeline | `pipeline/domain` | `Pipeline` = `{ id, slots, configs }` (`pipeline.model.ts`) |
+| Slot | `pipeline/domain` | `BASE_SLOTS` (3), `MAX_SLOTS` (14), `coverageToAddSlot`, `canAddSlot` |
+| Coverage | `pipeline/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
+| Lint | `pipeline/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/run.model.ts` |
+| Build screen | `pipeline/presentation` | `ConfiguringScreen`, `PipelineTable`, `PipelineReportRow`, `SlotUnlockRow`, `CoverageByCategory` |
+| Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed` (`gate.model.ts`) |
+| Gate reward | `gate/domain` | `gateRewardRows`, `gateStorageGained` (`gateReward.model.ts`) |
+| Gate ladder | `gate/domain` | `gateLadder.model.ts`; what unlocks at which gate |
+| Swatch | `gate/domain` | `GateSwatch`, `SwatchTheme`, `swatchForGate` (`swatch.model.ts`); app theming via `src/ui/theme/swatchTheme.ts` |
+| Config role | `gate/domain` | `roleOf`, `roleRows` (`configRole.model.ts`); how a config reads on a gate report |
+| Gate screens | `gate/presentation` | `RewardScreen`, `StripScreen`, `GateRewardReport`, `GateStakeReceipt`, `RoleList`, `SwatchChips`, `GateSegmentBar` |
+| Config | `config/domain` | `Config`, `ConfigFamily`, `CheckKind`, `Rarity` (`config.model.ts`) |
+| Config roster | `config/domain` | `CONFIG_ROSTER` (`configRoster.model.ts`); the content catalogue |
+| Effect | `config/domain` | `Effect`, `effectOf` (`effect.model.ts`); the benefit half of a config |
+| Check | `config/domain` | `CheckKind` (`config.model.ts`), `CheckStatus` / `checkState` (`effect.model.ts`); the requirement half |
+| Gate window | `config/domain` | `GateWindow`, `EMPTY_WINDOW` (`effect.model.ts`); the 5-answer tally a gate judges |
+| Stack | `config/domain` | `STARTER_STACKS`, `starterStackFor` (`stack.model.ts`); the staged opening loadouts |
+| Config visuals | `config/presentation` | `ConfigChip`, `ConfigActions`, `StackPicker`, `StackPreviewList` |
+| Draft / Rebuild / Lock / Extend | `shop/domain` | `rollDraft`, `rebuildCost`, `extendCost`, `offerCount` (`draft.model.ts`) |
+| Shop screen | `shop/presentation` | `ShopScreen`, `RunShop` |
+| Standouts / Awards | `community/domain` | `standoutsFor` (`standouts.model.ts`) |
+| Climb map | `community/domain` | `ClimbMarker`, `trackPosition` (`climbMap.model.ts`); the shared per-day position track, read only by the community board |
+| Community board | `community/application` | `getRunCommunityService` and its view types (`community.service.ts`), `community.serverfn.ts` |
+| Community reads | `community/infrastructure` | `community.repository.ts`, `climbers.repository.ts` |
+| Community screen | `community/presentation` | `RunCommunity`, `Standouts`, `Voter`, `ClimbToday`, `useNextPollsCountdown` |
+| Poll answering visuals | `poll/presentation` | `PollCard`, `PollOptionList`, `PollOptionReview`, `OutcomeTile`, `RevealScore`, `PracticeBank` |
+
+A screen belongs to the aggregate whose concept it is about, which is why
+`ShopScreen` is shop's and `RewardScreen` is gate's. `poll` has presentation only:
+the Poll concept itself belongs to the `polls` context, and these files are the
+run's way of drawing one.
+
+### Context `polls`
+
+| Concept | Aggregate | Key symbols | Today |
+|---|---|---|---|
+| Poll | `poll` | Poll reads and answer evaluation | `domains/polls/` |
+| Poll authoring | `authoring` | Admin CRUD, `PollForm` | `domains/polls/components/`, `domains/polls/api/admin.handlers.ts` |
+
+### Context `collection`
+
+| Concept | Lives in | Key symbols |
+|---|---|---|
+| Polldex | `dex/domain` | `PolldexEntry`, `filterPolldexEntries`, `polldexCoverage` (`polldex.model.ts`) |
+| Dex reads | `dex/application` + `dex/infrastructure` | `getPolldexService` (`polldex.service.ts`), `getPolldex` (`polldex.serverfn.ts`), `polldex.repository.ts` |
+| The Dex | `dex/presentation` | Tab shell plus the Configs, Swatches and Polls panels (`Dex.component`, `DexScreen`, `PolldexPanel`, `ConfigdexPanel`, `SwatchdexPanel`) |
+| Unlockables | `unlockables` | Planned (`DVTD-2try`, `DVTD-g8ty`). The reason `collection` is its own context — not built |
+
+### Context `account`
+
+| Concept | Aggregate | Today |
+|---|---|---|
+| Login, signup, session | `auth` | `domains/users/` |
+| User, dev card, awards | `profile` | `domains/users/`, `routes/_authed/profile.$userId.tsx` |
+
+### Legacy: `src/domains/`
+
+`economy/`, `polls/`, `runs/`, `shared/`, `users/`. Live but being migrated per
+ADR-002. `shared/queryKeys.ts` and `shared/categories` are still cross-cutting
+and used by `src/modules/`; they belong in `src/shared/`. Do not add new
+concepts here.
+
+---
+
+## Code name vs player-facing name
+
+Where the two differ, use the code name in code and the player name in copy.
+
+| Player-facing (wiki) | Code |
+|---|---|
+| Climb | `Run` / `RunState`; the aggregate folder is `run/`. "Climb" survives in `climbMap`, `ClimbToday`, `climbers.repository`, and the `resume-climb` action |
+| Window | `GateWindow`, sized by `SLICE_WINDOW` |
+| Demand | `minConfigsForGate`, `focusDemand`, `Effect.demand` |
+| Strip | `RunAction` `strip`, `RunState.stripsRemaining` |
+| Faucet | `Config.storagePerCorrect`, `RunState.faucetEarnedKb`, `FAUCET_CAP_KB` |
+| Storage plan | `StoragePlan`, `STORAGE_PLANS`, `storagePlanFor` |
+
+---
+
+## Retired terms
+
+Do not reintroduce these. Each was replaced because the code moved or the word
+meant two things at once.
+
+| Retired | Why | Use instead |
+|---|---|---|
+| CI Pipeline (as "the evaluator") | `Pipeline` means the player's build of config slots, not the thing that judges it | **Pipeline** for the build; **Gate** for the judgement |
+| Board | Never the container word | **Pipeline** |
+| Package Manager | Legacy in-fiction name for the shop; survives only in one `GameLoopExplainer` string | **Shop** |
+| Turn | No such symbol in `src/modules/`; `turn.service.ts` is legacy `src/domains/runs/` | **Answer** (`RunAction` `answer`, `AnsweredPoll`) |
+| Score / ScoreBlock | No score system and no such component; scoring *is* coverage | **Coverage** |
+| Config Trigger | Never built as a distinct concept | **Check** and **Effect** |
+| Config Effects Engine | The engine is one function | `effectOf` in `config/domain/effect.model.ts` |
+| Config Discovery | Not built; tracked in DVTD-2try | Say "config unlocks" and link the bean |
+| `session-run` | Renamed to `run` in 2026-07; the orphan folder was deleted 2026-08-12 | `src/modules/run/`; the DB value `mode: "session"` keeps the old name |
+
+Retired **folder and file** names, per the ADR-002 rewrite of 2026-08-12:
+
+| Retired | Why | Use instead |
+|---|---|---|
+| `presentation/{concept}/` beside concept folders | Split the same concept across two folders | `{aggregate}/presentation/` |
+| `queries.ts` | Names the SQL verb, not the role; reads and writes share table knowledge | `{name}.repository.ts` in `infrastructure/` |
+| `handlers.ts` | Orchestration is a service. (`.handlers.ts` means MSW in the ADR-083 lineage; DevVoted has no MSW) | `{name}.service.ts` in `application/` |
+| `view/`, `services/`, `validation/` as module-level folders | Layer folders holding one or two files that belonged to a concept | `{aggregate}/application/` |
+| `models/` as a flat folder | Same | `{aggregate}/domain/` |
+| `{name}.mock.ts` | One suffix per role | `{name}.factory.ts` |
+
+---
+
+## Naming rules
+
+- Name an aggregate after the concept, never after its layer or its shape.
+  `gate/`, not `gateUtils/`; `standouts.model.ts`, not `awardsHelper.ts`.
+- Reuse a term from this file or the wiki glossary before coining a new one. A
+  new word needs an entry here in the same commit.
+- Where a file goes is not a judgement call: walk the decision tree in
+  [ADR-002 §5](docs/adr/002-domain-architecture.md#5-decision-tree-where-does-my-file-go).
+  Suffixes come from the closed allowlist in §4.1, and each one is pinned to a
+  single layer.
+- Content and identity labels name the real thing (React, TypeScript), not an
+  invented punchy phrase.

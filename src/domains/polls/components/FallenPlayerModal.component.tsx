@@ -11,10 +11,9 @@ import {
 	parseCompletionReason,
 	type ParsedCompletion,
 } from "~/domains/runs/utils/parseCompletionReason";
-import { Avatar } from "~/domains/users/components/Avatar.component";
-import { formatStorage } from "~/lib/storage";
-import { PrimaryButton } from "~/ui/PrimaryButton.component";
-import { SecondaryButton } from "~/ui/SecondaryButton.component";
+import { Avatar } from "~/modules/account/profile/presentation/Avatar.ui";
+import { formatStorage } from "~/shared/lib/storage";
+import { Button } from "~/ui/Button.component";
 
 export type FallenPlayerModalProps = {
 	player: FallenRunPlayer | null;
@@ -126,16 +125,18 @@ export const FallenPlayerModal = ({
 
 				<div className="flex justify-end gap-2">
 					{canLoot && (
-						<PrimaryButton
+						<Button
 							onClick={() => lootMutation.mutate(player.runId)}
 							disabled={lootMutation.isPending}
 						>
 							{lootMutation.isPending
 								? "Looting…"
 								: `Loot +${formatStorage(previewLootAmount)}`}
-						</PrimaryButton>
+						</Button>
 					)}
-					<SecondaryButton onClick={onClose}>Close</SecondaryButton>
+					<Button variant="secondary" onClick={onClose}>
+						Close
+					</Button>
 				</div>
 			</div>
 		</dialog>

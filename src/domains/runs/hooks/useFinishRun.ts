@@ -2,19 +2,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import { finishRunFn } from "~/domains/runs/api/runs";
-import { runQueryKeys } from "~/domains/shared/queryKeys";
+import { runQueryKeys } from "~/shared/queryKeys";
 
 type UseFinishRunOptions = {
 	userId: string | undefined;
-	redirectTo: "/start" | "/game-over";
 };
 
-// Shared mutation for ending the active run. Used by both the /game-over
-// "Start New Run" button and the profile dropdown "End Run" item. The redirect
-// target differs by call site — game-over sends the player back to /start
-// (they were already on the wrap-up screen), while dropdown End Run sends them
-// to /game-over so they can see the wrap-up they just earned.
-export const useFinishRun = ({ userId, redirectTo }: UseFinishRunOptions) => {
+// Ends the active legacy run from the nav's "End Run" item. Its old wrap-up
+// screen retired with the /old routes (DVTD-7q8l), so the player lands home.
+export const useFinishRun = ({ userId }: UseFinishRunOptions) => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
@@ -26,7 +22,7 @@ export const useFinishRun = ({ userId, redirectTo }: UseFinishRunOptions) => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: runQueryKeys.active(userId) });
-			navigate({ to: redirectTo });
+			navigate({ to: "/" });
 		},
 	});
 };

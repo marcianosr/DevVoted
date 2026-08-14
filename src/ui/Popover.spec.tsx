@@ -40,4 +40,23 @@ describe("Popover", () => {
 		await userEvent.click(btn);
 		expect(btn).toHaveAttribute("aria-expanded", "false");
 	});
+
+	it("wraps a disabled control in a span trigger that still opens on tap", async () => {
+		render(
+			<Popover
+				triggerAs="span"
+				ariaLabel="Why disabled"
+				content={<p>Choose a config to start</p>}
+			>
+				<button type="button" disabled>
+					Start the climb
+				</button>
+			</Popover>
+		);
+		// The span is the interactive trigger; the disabled inner button is not.
+		const trigger = screen.getByRole("button", { name: "Why disabled" });
+		expect(trigger.tagName).toBe("SPAN");
+		await userEvent.click(trigger);
+		expect(trigger).toHaveAttribute("aria-expanded", "true");
+	});
 });

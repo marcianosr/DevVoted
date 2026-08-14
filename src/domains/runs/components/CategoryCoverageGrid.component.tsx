@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 
 import type { RunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.model";
-import { CATEGORY_METADATA } from "~/domains/shared/categories";
+import { CATEGORY_METADATA } from "~/shared/lib/categories";
 
 type CategoryCoverageGridProps = {
 	categoryCoverage: RunCategoryCoverage[];

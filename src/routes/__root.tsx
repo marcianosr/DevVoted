@@ -11,16 +11,16 @@ import {
 	createRootRoute,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { createServerFn } from "@tanstack/react-start";
 
 import { useState } from "react";
 
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
-import PageLayout from "~/components/PageLayout.component";
+import Footer from "~/components/Footer.component";
+import { PageLayoutUI } from "~/ui/PageLayoutUI.component";
 import { useFinishRun } from "~/domains/runs/hooks/useFinishRun";
 import { deriveNavRunState } from "~/domains/runs/utils/deriveNavRunState";
-import { ensureUserExists } from "~/domains/users/services/userSync.service";
+import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
 import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
 import {
 	Dropdown,
@@ -30,8 +30,7 @@ import {
 
 import { getActiveRun } from "../domains/runs/api/runs";
 import appCss from "../styles/app.css?url";
-import { seo } from "../utils/seo";
-import { getSupabaseServerClient } from "../utils/supabase";
+import { seo } from "~/shared/utils/seo";
 
 if (import.meta.env.PROD) {
 	Sentry.init({
@@ -39,46 +38,6 @@ if (import.meta.env.PROD) {
 		sendDefaultPii: true,
 	});
 }
-
-const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
-	try {
-		const supabase = getSupabaseServerClient();
-		const { data, error } = await supabase.auth.getUser();
-
-		if (error) {
-			Sentry.captureException(error, {
-				level: "warning",
-				extra: {
-					operation: "fetchUser.getUser",
-				},
-			});
-			return null;
-		}
-
-		if (!data.user?.email) {
-			return null;
-		}
-
-		const user = await ensureUserExists({
-			id: data.user.id,
-			email: data.user.email,
-			displayName:
-				data.user.user_metadata?.display_name ||
-				data.user.user_metadata?.full_name,
-			photoUrl: data.user.user_metadata?.avatar_url,
-		});
-
-		return user;
-	} catch (error) {
-		Sentry.captureException(error, {
-			level: "warning",
-			extra: {
-				operation: "fetchUser.ensureUserExists",
-			},
-		});
-		return null;
-	}
-});
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -144,9 +103,9 @@ function RootComponent() {
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
 				<Navigation />
-				<PageLayout>
+				<PageLayoutUI footer={<Footer />}>
 					<Outlet />
-				</PageLayout>
+				</PageLayoutUI>
 			</QueryClientProvider>
 		</RootDocument>
 	);
@@ -157,10 +116,7 @@ function Navigation() {
 	const { hasActiveRun, canEndRun } = deriveNavRunState(activeRun);
 
 	const [isEndRunDialogOpen, setIsEndRunDialogOpen] = useState(false);
-	const finishRun = useFinishRun({
-		userId: user?.id,
-		redirectTo: "/game-over",
-	});
+	const finishRun = useFinishRun({ userId: user?.id });
 
 	const handleEndRunConfirm = () => {
 		finishRun.reset();
@@ -193,16 +149,24 @@ function Navigation() {
 							{({ close }) => (
 								<>
 									<Link
-										to="/daily-poll"
-										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										to="/run"
+										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 										onClick={close}
 									>
-										Daily Poll
+										Daily Run
+									</Link>
+
+									<Link
+										to="/dex"
+										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
+										onClick={close}
+									>
+										Dex
 									</Link>
 
 									<Link
 										to="/polls/new"
-										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 										onClick={close}
 									>
 										Suggest your own poll
@@ -211,7 +175,7 @@ function Navigation() {
 										to="/profile/$userId"
 										params={{ userId: user.id }}
 										hash="border-shop"
-										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 										onClick={close}
 									>
 										Border Shop
@@ -225,15 +189,23 @@ function Navigation() {
 
 				<div className="hidden md:flex gap-2 items-center min-w-0">
 					<Link
-						to="/daily-poll"
+						to="/run"
 						activeProps={{ className: "underline" }}
 						activeOptions={{ exact: true }}
 					>
-						Daily Poll
+						Daily Run
 					</Link>
 
 					{user && (
 						<>
+							<span className="text-white">·</span>
+							<Link
+								to="/dex"
+								activeProps={{ className: "underline" }}
+								activeOptions={{ exact: true }}
+							>
+								Dex
+							</Link>
 							<span className="text-white">·</span>
 							<Link
 								to="/polls/new"
@@ -287,14 +259,14 @@ function Navigation() {
 										<Link
 											to="/profile/$userId"
 											params={{ userId: user.id }}
-											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 											onClick={close}
 										>
 											Profile
 										</Link>
 										<Link
 											to="/polls"
-											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 											onClick={close}
 										>
 											My Polls
@@ -319,7 +291,7 @@ function Navigation() {
 										<DropdownDivider />
 										<Link
 											to="/logout"
-											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 											onClick={close}
 										>
 											Logout

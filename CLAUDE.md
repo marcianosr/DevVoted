@@ -5,10 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 DevVoted is a developer quiz game built with TanStack Start, combining trivia with roguelike mechanics.
-For a thorough understanding of the game's vision, mechanics, and design decisions, please refer to [Concept](https://www.notion.so/Concept-26407387629780e3b753e50c417a7901?source=copy_link) and [Brainstorming](docs/brainstorm)
+For a thorough understanding of the game's vision, mechanics, and design decisions, please refer to our [stories](.beans/) and to the [wiki](./docs/wiki.md) for full documentation about the game. For each story we complete, check and update the wiki if somehting changed.
 
+Older but still useful documentation can be found here:
+[Concept](https://www.notion.so/Concept-26407387629780e3b753e50c417a7901?source=copy_link) and [Brainstorming](docs/brainstorm)
 
-Refer to `roadmap.md` for the current roadmap and MVP. Currently we are past MVP stage.
 
 ## Common Commands
 
@@ -17,6 +18,7 @@ Refer to `roadmap.md` for the current roadmap and MVP. Currently we are past MVP
 - `npm run dev` - Start development server on port 3005
 - `npm run build` - Build for production and run TypeScript checks
 - `npm run start` - Start production server
+- `npm run lint` - oxlint + architecture boundaries (dependency-cruiser)
 
 ### Testing
 
@@ -27,12 +29,12 @@ Refer to `roadmap.md` for the current roadmap and MVP. Currently we are past MVP
 
 ### Database Operations
 
-- `npm run db:push` - Push schema changes to database
-- `npm run db:generate` - Generate migration files
-- `npm run db:migrate` - Run pending migrations
+- `npm run db:push` - Push schema changes to the local database (prototyping only — see ADR-012)
 - `npm run db:seed` - Seed database with initial data
 - `npm run db:reset` - Reset database (drops all data)
-- `npm run db:refresh` - Complete database refresh (reset + generate + push + seed)
+- `npm run db:refresh` - Complete database refresh (reset + push + seed)
+
+
 
 ## Architecture Overview
 
@@ -49,153 +51,86 @@ Refer to `roadmap.md` for the current roadmap and MVP. Currently we are past MVP
 - **Error Monitoring**: Sentry
 - **Utilities**: date-fns, clsx, deepmerge
 
-### Directory Structure
+### Module Architecture
 
-```
-src/
-├── components/     # Global shared React components (layouts, navigation, auth)
-├── config/         # Application configuration constants
-├── database/       # Drizzle ORM setup, schema, migrations, seeds
-├── domains/        # Feature-oriented domain modules (DDD approach)
-├── hooks/          # Global custom React hooks
-├── lib/            # Pure utility functions (date utils, storage helpers)
-├── presentation/   # Presentation mode feature (slides)
-├── routes/         # TanStack Router file-based routes
-├── styles/         # Global CSS (Tailwind)
-├── test/           # Test setup and utilities (mock factories)
-├── ui/             # Reusable UI primitives (buttons, skeletons)
-└── utils/          # Application utilities (auth, error handling, SEO)
-```
+New code lives under `src/modules/{context}/{aggregate}/{layer}`, where layer is one
+of `domain/`, `application/`, `infrastructure/`, `presentation/`. Contexts are `run`,
+`polls`, `collection`, `account`.
 
-### Domain-Driven Architecture
+**Before creating any file under `src/modules/`, walk the decision tree in
+[ADR-002 §5](docs/adr/002-domain-architecture.md#5-decision-tree-where-does-my-file-go).**
+It gives you `(folder, suffix)` and the suffix allowlist in §4.1 is closed: no bare
+filenames, no `.utils.ts`, no `.types.ts`, no `.queries.ts`, no `.handlers.ts`.
 
-The codebase follows a domain-driven structure under `src/domains/`. For the complete architecture documentation including the server function flow, see [ADR-002: Domain Architecture](docs/adr/002-domain-architecture.md).
+ADR-002 owns structure, layering, naming, and the dependency rule (machine-enforced
+via `npm run lint` → `lint:arch`). [CONTEXT.md](CONTEXT.md) says which aggregate owns
+which domain term.
 
-```
-src/domains/{domain}/
-├── api/
-│   ├── {domain}.ts     # Server functions (createServerFn) - entry point
-│   ├── handlers.ts     # Business logic handlers (pure functions)
-│   └── queries.ts      # Database operations (Drizzle ORM)
-├── components/         # Domain-specific React components
-├── factories/          # Test data factories + seed data factories
-├── hooks/              # Domain-specific custom hooks
-├── models/             # TypeScript types + DTO conversion functions (toDTO/fromDTO)
-├── services/           # Complex business logic, orchestration
-├── utils/              # Domain-specific utility functions
-└── validation/         # Zod schemas for input validation
-```
-
-### UI vs Components
-
-| Location | Purpose |
-|----------|---------|
-| `src/ui/` | Pure presentational primitives (buttons, skeletons) - no business logic, no data fetching |
-| `src/ui/{domain}/` | Domain-specific presentational components - compose `src/ui/` primitives, no data fetching or state |
-| `src/components/` | Global shared components with logic (layouts, auth, navigation) |
-| `src/domains/*/components/` | Domain composition layer - wires data and logic to UI components, no HTML/CSS |
-| `src/routes/` | Route composition layer - wires loader data and mutations to components, no HTML/CSS |
+The restructure is partly done (`DVTD-36ct`): **`src/modules/run/`,
+`src/modules/collection/` and `src/shared/` have migrated** and are the
+reference for what the shape looks like. `src/domains/` has not, and is
+legacy-but-live. Migrate a slice when you touch it, not wholesale.
 
 ### UI Layer Architecture (CRITICAL)
 
-The app enforces a strict two-tier UI separation to keep all visual code independently testable in Storybook:
+Strict two-tier separation, both tiers inside `presentation/`. See
+[ADR-010](docs/adr/010-ui-layer-separation.md) for the full decision:
 
-**Tier 1 — Presentational (design system)**
-- `src/ui/` — global primitives: `Button`, `Card`, `Badge`, `Skeleton`, etc.
-- `src/ui/{domain}/` — domain-specific visuals: `src/ui/polls/PollCard.ui.tsx`, `src/ui/runs/RunHeader.ui.tsx`, etc.
-- These files contain **all HTML tags and Tailwind CSS classes** in the codebase.
-- They accept only plain data props (no hooks, no server functions, no TanStack Query).
-- They are fully renderable from mock factory data in Storybook without a running server.
-
-`src/domains/` is the application and business logic layer. It must not contain any UI (React components, HTML, CSS). Domain-specific UI belongs in `src/ui/{domain}/` so the domain stays portable across interfaces (CLI, API, web).
-
-**Tier 2 — Composition (app layer)**
-- `src/domains/*/components/` — domain smart components
-- `src/routes/` — route files
-- These files contain **zero HTML tags and zero CSS classes**.
-- Their only job is: read data (from loader, hook, or query), call mutations, and pass results as props to Tier 1 components.
-
-```tsx
-// ❌ WRONG: HTML/CSS in a domain component
-export const PollSection = ({ poll }: { poll: Poll }) => (
-  <div className="flex flex-col gap-4 p-6 rounded-xl bg-surface">
-    <h2 className="text-lg font-bold">{poll.question}</h2>
-  </div>
-);
-
-// ✅ CORRECT: domain component is pure composition
-// src/ui/polls/PollSection.ui.tsx  ← owns the HTML/CSS
-export const PollSection = ({ question }: { question: string }) => (
-  <div className="flex flex-col gap-4 p-6 rounded-xl bg-surface">
-    <h2 className="text-lg font-bold">{question}</h2>
-  </div>
-);
-
-// src/domains/polls/components/PollSection.component.tsx  ← owns the wiring
-export const PollSection = () => {
-  const { poll } = Route.useLoaderData();
-  const submit = useSubmitPoll();
-  return <PollSectionUI question={poll.question} onSubmit={submit} />;
-};
-```
-
-**File naming conventions:**
-- `src/ui/Button.component.tsx` — global primitive
-- `src/ui/{domain}/PollCard.ui.tsx` — domain-scoped UI component
-- `src/domains/{domain}/components/PollSection.component.tsx` — domain composition component
+- **Tier 1** `{Name}.ui.tsx` owns **all** HTML and Tailwind in the codebase, accepts plain data props only, every component has a Story. Lives in `{aggregate}/presentation/` or `src/ui/` (global primitives).
+- **Tier 2** `{Name}.component.tsx` and `src/routes/` wire data and mutations to Tier 1: zero HTML, zero CSS.
 
 **Rules enforced on every new file:**
-- [ ] Does this file render HTML or use Tailwind classes? → It belongs in `src/ui/` (or `src/ui/{domain}/`), receives only plain props, has a Story.
-- [ ] Does this file call a hook, query, or server function? → It belongs in `src/domains/*/components/` or `src/routes/`, contains zero HTML/CSS.
+- [ ] Renders HTML or uses Tailwind classes? → `{aggregate}/presentation/{Name}.ui.tsx`, plain props, has a Story.
+- [ ] Calls a hook or server function? → `{aggregate}/presentation/{Name}.component.tsx` or `src/routes/`, zero HTML/CSS.
 - [ ] Never mix both in the same file.
+- [ ] `presentation/` may not import `infrastructure/` at all: go via an application hook or server function.
 
-### Key Database Tables
+### Database Tables
 
-- `polls` - Quiz questions with metadata (status, answer type, category)
-- `polls_options` - Answer choices for each poll
-- `polls_responses` - User submissions
-- `polls_response_options` - Links responses to selected options
-- `polls_categories` - Quiz categories for organization and filtering
-- `daily_polls` - Pre-computed daily poll selection (O(1) lookup by date)
-- `users` - Player profiles and stats
-- `runs` - Individual game sessions with config storage and run status
-- `run_category_coverage` - Coverage tracking per category within each run
-- `polls_user_performance` - User's best performance across all runs per category
-
-### Data Flow Pattern
-
-The API layer follows a three-tier pattern. See [ADR-002](docs/adr/002-domain-architecture.md) for detailed examples.
-
-1. **Server Functions** (`api/{domain}.ts`) - Authentication, authorization, input validation
-2. **Handlers** (`api/handlers.ts`) - Business logic orchestration, error handling
-3. **Queries** (`api/queries.ts`) - Database operations with Drizzle
-4. **Models** (`models/`) - TypeScript types + DTO conversion functions
-5. **Services** (`services/`) - Complex business logic spanning multiple queries
+`src/database/schema.ts` is the single source of truth — every table is documented inline there. Do not maintain a table list in this file.
 
 ### Path Aliases
+Standardize on `~/` (the only configured alias, mapping to `src/`). Every import starts from it: `~/shared/utils/errorHandling`, `~/test/kanto`. No deep relative imports.
 
-- `~` maps to `./src`
-- `@/src` maps to `./src`
+### Testing
 
-### Testing Philosophy
+- Co-located `.spec.ts(x)`; Vitest + Testing Library; jsdom
+- Mock at the boundary only: DB ops are mocked (chain `.values()`/`.returning()` on
+  Drizzle builders). Don't mock your own component functions — use the factory pattern
+  (`~/test/createMockDataFactory.ts`) for component data
+- `vi.clearAllMocks()` over `vi.resetAllMocks()` (preserves implementations)
+- Test names describe scenario + outcome; no "should"
+- Canonical data from `~/test/kanto.ts`; prefer birthday/Christmas dates via `TEST_DATES`. Source: [https://bulbapedia.bulbagarden.net/wiki/Kanto]
 
-- Tests are co-located with source files using `.spec.ts` or `.spec.tsx`
-- Database operations are mocked with Vitest for unit tests
-- Use `vi.clearAllMocks()` instead of `vi.resetAllMocks()` to preserve mock implementations
-- Mock Drizzle query builders by chaining `.values()` and `.returning()` methods
-- Clear test descriptions that doesn't use verbs like "should"
-- Never use function mocks, but use factory pattern for component data testing
-- For testing data, please always use stuff from RareWare, Pokemon, Banjo-Kazooie. Also, for instance when testing dates, prefer my birth day (13-05) or Christmas related dates. Just for fun.
 
 ### Common Patterns
 
 - Function composition pattern. Immutability is important.
-- Prevent usage of "else" if needed in if conditions
+- Prevent usage of "else" if needed in if conditions:
+
+```
+// ❌ Uses else
+if (user.isAdmin) {
+  return grantAccess();
+} else {
+  return denyAccess();
+}
+
+// ✅ No else — return early
+if (!user.isAdmin) {
+  return denyAccess();
+}
+return grantAccess();
+
+// ✅ Also fine — ternary when simple
+return user.isAdmin ? grantAccess() : denyAccess();
+```
+
 - Use arrow functions over regular functions
 
 #### Query Keys Pattern
 
-Centralized query keys in `src/domains/shared/queryKeys.ts` for consistent TanStack Query cache management:
+Centralized query keys in `~/shared/queryKeys.ts` for consistent TanStack Query cache management:
 
 ```typescript
 export const pollQueryKeys = {
@@ -205,49 +140,6 @@ export const pollQueryKeys = {
     [...pollQueryKeys.all, "daily", userId] as const,
 };
 ```
-
-#### Mock Data Factory Pattern
-
-Use `src/test/createMockDataFactory.ts` for creating test data with sensible defaults:
-
-```typescript
-import { createMockDataFactory } from "~/test/createMockDataFactory";
-
-const defaultPoll: Poll = {
-  id: 1,
-  question: "What method returns the last element of an array?",
-  // ... other defaults
-};
-
-export const createMockPoll = createMockDataFactory<Poll>(defaultPoll);
-
-// Usage in tests:
-const poll = createMockPoll({ id: 64, question: "Banjo's sister name?" });
-```
-
-#### Service Layer Organization
-
-Services should be **feature-scoped** within their domain rather than global:
-
-```typescript
-// ✅ Good: Feature-scoped service
-src/domains/polls/services/processPollAnswer.service.ts
-
-// ❌ Avoid: Global service for domain-specific logic
-src/services/pollAnswerService.ts
-```
-
-**Use global services** (`src/services/`) only for:
-
-- Infrastructure concerns (logging, caching, notifications)
-- Truly shared utilities (date formatting, validation helpers)
-- Cross-cutting concerns (authentication, authorization)
-
-**Use feature-scoped services** (`src/domains/*/services/`) for:
-
-- Domain-specific workflows and orchestration
-- Business logic that coordinates multiple subdomains
-- Complex operations that span multiple layers within a domain
 
 #### Database Transactions
 
@@ -260,24 +152,14 @@ await db.transaction(async (tx) => {
 
 #### DTO Conversion in Models
 
-Models contain TypeScript types and conversion functions (not in factories/):
-
-```typescript
-// src/domains/polls/models/poll.ts
-export const pollFactory = {
-  toDTO: (record: PollRecord): Poll => ({...}),
-  fromDTO: (dto: Poll): PollRecord => ({...}),
-  toDTOs: (records: PollRecord[]): Poll[] => records.map(pollFactory.toDTO),
-  fromDTOs: (dtos: Poll[]): PollRecord[] => dtos.map(pollFactory.fromDTO),
-};
-```
+`toDTO`/`fromDTO`/`toDTOs`/`fromDTOs` live in model files, never in `factories/`. Shape and naming: [ADR-002](docs/adr/002-domain-architecture.md).
 
 #### Error Handling in Handlers
 
-Use `handleApiOperation` wrapper from `src/utils/errorHandling.ts`:
+Use `handleApiOperation` wrapper from `src/shared/utils/errorHandling.ts`:
 
 ```typescript
-import { handleApiOperation } from "~/utils/errorHandling";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 export const getPollByIdHandler = async ({ data }: { data: { id: number } }) => {
   return handleApiOperation(async () => {
@@ -296,44 +178,35 @@ type ApiResponse<T> =
   | { success: false; error: string };
 ```
 
-#### Authorization Pattern (CRITICAL)
 
-**Never trust client-provided userId parameters** in server functions. Always extract userId from authenticated session.
+### Authorization (server functions) — security-critical
 
-```typescript
-// ❌ WRONG: Accepts userId from client (security vulnerability)
-export const getUserData = createServerFn()
-	.validator(z.object({ userId: z.string() }))
-	.handler(async ({ data }) => {
-		return await fetchUserData(data.userId);
-	});
+Never trust a client-provided `userId`. Extract it from the authenticated session.
+(WRONG: `.validator(z.object({ userId }))` then `fetchUserData(data.userId)` — auth bypass.
+RIGHT: `const userId = await getAuthenticatedUserId()`.)
 
-// ✅ CORRECT: Gets userId from authenticated session
-export const getUserData = createServerFn({ method: "GET" }).handler(
-	async () => {
-		const userId = await getAuthenticatedUserId();
-		return await fetchUserData(userId);
-	}
-);
-```
+Utilities — `~/shared/utils/authorization.ts`:
+- `getAuthenticatedUserId()` — userId from the Supabase session
+- `ensureAuthorizedUser(authenticatedUserId, requestedUserId)` — validates access
 
-**Authorization utilities** (`src/utils/authorization.ts`):
+Accept `userId` as a parameter ONLY for public read-only data (profiles, leaderboards),
+and always validate it exists. Never for writes.
 
-- `getAuthenticatedUserId()` - Extracts userId from Supabase auth session
-- `ensureAuthorizedUser(authenticatedUserId, requestedUserId)` - Validates user access
+Checklist for a new server function:
+- [ ] Modifies user data? → `getAuthenticatedUserId()`
+- [ ] Reads sensitive user data? → `getAuthenticatedUserId()`
+- [ ] Public read-only? → `userId` param allowed, with validation
+- [ ] Test that unauthorized access fails
 
-**When to accept userId as parameter:**
 
-- Read-only public data (profiles, leaderboards) where viewing others' data is intentional
-- Always validate the userId exists in the database
-- Never for write operations (creating, updating, deleting user data)
 
-**Development checklist for new server functions:**
+### Database Migrations (ADR-012)
 
-- [ ] Does this function modify user data? → Use `getAuthenticatedUserId()`
-- [ ] Does this function access sensitive user data? → Use `getAuthenticatedUserId()`
-- [ ] Is this public read-only data? → Can accept userId parameter with validation
-- [ ] Test unauthorized access attempts fail properly
+`src/database/schema.ts` is the source of truth for shape. Changes are guarded:
+1. Edit `schema.ts`, `npm run db:push` (dev/prototyping only)
+2. Add a guarded SQL file: `supabase/migrations/YYYYMMDDHHMMSS_description.sql`
+3. CI applies migrations to production on merge
+
 
 ## Development Notes
 
@@ -342,6 +215,12 @@ export const getUserData = createServerFn({ method: "GET" }).handler(
 - Database schema is defined in `src/database/schema.ts` with comprehensive documentation
 - Test setup includes jsdom environment and jest-dom matchers
 - Development server runs on port 3005 (configured in vite.config.ts)
-- Architecture Decision Records are stored in `docs/adr/`
+- Architecture Decision Records are stored in `docs/adr/` (index + conventions: `docs/adr/README.md`)
 - If I disagree with something, please write this down in an ADR file
+- Docs boyscout rule: when this file or an ADR contradicts the code, fix the doc in the same session (or flag it explicitly). Never silently work around a stale doc. Prefer deleting doc content in favor of a pointer when the code already documents it.
 - When making player-visible changes, follow `docs/changelog-maintenance.md` to update `CHANGELOG.md`
+- Only create a Story when the component affects player-visible game behavior
+  or feel (not layout/admin/internal tooling). Before creating one, state the
+  one-sentence game-design reason in the PR/commit message. If you're not sure
+  it qualifies, ask rather than creating it.
+- If you're about to add new code to a domain that has legacy code sitting in src/domains/, ask whether to migrate that slice now or leave it.

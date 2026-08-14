@@ -8,7 +8,7 @@ import {
 } from "@/src/database/schema";
 import { db } from "~/database/db";
 import { evaluatePollAnswer } from "~/domains/polls/services/pollAnswerEvaluation.service";
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 export type WindowResult = {
 	isCorrect: boolean;

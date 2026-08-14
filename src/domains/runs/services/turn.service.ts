@@ -38,7 +38,7 @@ import {
 	multiCorrectnessFactor,
 	PollScoreBreakdown,
 } from "~/domains/runs/services/score.service";
-import { getTodayDateString } from "~/lib/dateUtils";
+import { getTodayDateString } from "~/shared/lib/dateUtils";
 
 export type PollAnswerResult = {
 	runId: number | null;

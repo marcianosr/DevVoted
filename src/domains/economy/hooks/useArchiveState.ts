@@ -5,7 +5,7 @@ import {
 	getArchiveStateServerFn,
 	purchaseBorderServerFn,
 } from "~/domains/economy/api/archive";
-import { archiveQueryKeys } from "~/domains/shared/queryKeys";
+import { archiveQueryKeys } from "~/shared/queryKeys";
 
 export const useArchiveState = (userId: string | undefined) =>
 	useQuery({

@@ -9,7 +9,7 @@ import {
 	CATEGORY_CODES,
 	getCategoryMetadata,
 	type CategoryCode,
-} from "~/domains/shared/categories";
+} from "~/shared/lib/categories";
 
 type PollFormOption = {
 	id?: number; // Existing options have ID, new ones don't

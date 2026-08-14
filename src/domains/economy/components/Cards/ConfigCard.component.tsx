@@ -1,7 +1,7 @@
 import { Config } from "~/domains/economy/models/config.model";
 import { calculateRefund } from "~/domains/economy/services/configManager.service";
-import { formatStorage } from "~/lib/storage";
-import { ConfigCard as ConfigCardUI } from "~/ui/economy/ConfigCard.ui";
+import { formatStorage } from "~/shared/lib/storage";
+import { ConfigCard as ConfigCardUI } from "~/domains/economy/components/Cards/ConfigCard.ui";
 
 type ConfigProps = {
 	config: Config;

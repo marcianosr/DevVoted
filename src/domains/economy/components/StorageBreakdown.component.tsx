@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { formatStorage, formatStorageDetailed } from "~/lib/storage";
+import { formatStorage, formatStorageDetailed } from "~/shared/lib/storage";
 
 type StorageBreakdownProps = {
 	storageUsed: number;

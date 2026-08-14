@@ -20,7 +20,7 @@
 		"**/*.config.ts",
 		"**/scripts/**",
 		"**/sonar-scanner.cjs",
-		"**/database/seed.ts",
+		"**/database/seed*.ts",
 		"**/database/reset.ts"
 	],
 	"rules": {
@@ -139,6 +139,12 @@
 		}
 	},
 	"overrides": [
+		{
+			"files": ["src/routes/old/**"],
+			"rules": {
+				"@typescript-eslint/ban-ts-comment": "off"
+			}
+		},
 		{
 			"files": ["**/*.ts", "**/*.tsx"],
 			"rules": {

@@ -1,4 +1,4 @@
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import type { Run, RunRecord } from "./run.model";
 
@@ -14,6 +14,7 @@ export const createMockRun = (overrides: Partial<Run> = {}): Run => {
 		userId: "test-user-id",
 		seasonId: 1,
 		status: "active",
+		mode: "calendar",
 		storageLimit: STORAGE_UNITS.MB,
 		injectedArchiveBytes: 0,
 		activeConfigIds: [],
@@ -53,6 +54,8 @@ export const createMockRunRecord = (
 	user_id: "test-user-id",
 	season_id: 1,
 	status: "active",
+	mode: "calendar",
+	seed_date: null,
 	storage_limit: STORAGE_UNITS.MB,
 	injected_archive_bytes: 0,
 	active_config_ids: [],

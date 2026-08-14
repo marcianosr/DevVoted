@@ -1,0 +1,498 @@
+import type { CategoryCode } from "~/shared/lib/categories";
+import {
+	type AnsweredPoll,
+	type AnswerOutcome,
+	type AnswerType,
+	canBuyPeek,
+	canExtend,
+	canLock,
+	canRebuild,
+	canRepairWidthDemand,
+	canRunLinter,
+	canStart,
+	extendAvailable,
+	lockAvailable,
+	isAwaitingTomorrow,
+	isRunOver,
+	lintApplies,
+	lintCost,
+	peekApplies,
+	peekCost,
+	type RunPoll,
+	type RunState,
+	type RunStatus,
+} from "~/modules/run/run/domain/run.model";
+import {
+	type Config,
+	draftCost,
+} from "~/modules/run/config/domain/config.model";
+import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
+import {
+	extendCost,
+	LOCK_COST_KB,
+	rebuildCost,
+} from "~/modules/run/shop/domain/draft.model";
+import { checkStatuses } from "~/modules/run/gate/domain/gate.model";
+import {
+	swatchForGate,
+	type SwatchTheme,
+} from "~/modules/run/gate/domain/swatch.model";
+import {
+	type CoverageConfigBonus,
+	type PerAnswerPreview,
+	type PipelineModifiers,
+	budgeterFor,
+	coverageToAddSlot,
+	linterFor,
+	peekerFor,
+	perAnswerPreviewFor,
+	pipelineModifiersFor,
+} from "~/modules/run/pipeline/domain/pipeline.model";
+import {
+	atMinimumWidth,
+	dropCount,
+	isStoragePlanUnlocked,
+	minConfigsForGate,
+	pollDifficultyMultiplier,
+	roundToOneDecimal,
+	SLICE_WINDOW,
+	storagePlanFor,
+	storagePlanLadder,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
+
+type PollOptionView = { readonly id: string; readonly label: string };
+
+/** One rung of the storage-plan ladder, as the shop row renders it. */
+export type StoragePlanOption = {
+	readonly tier: number;
+	readonly capKb: number;
+	readonly billKb: number;
+	readonly current: boolean;
+	/** KB sitting above this plan's cap that switching to it would burn on the spot. */
+	readonly burnKb: number;
+	/** Gates the run must clear before this rung is sold (ADR-030). */
+	readonly fromGate: number;
+	/** The one rung shown ahead of the run — visible, priced, not yet buyable. */
+	readonly locked: boolean;
+};
+
+/**
+ * What the coming gate demands and what it pays — the subject of
+ * `GateStakeReceipt`, which Prep, Configuring and Shop all render.
+ *
+ * Clustered rather than flattened for the same reason as `modifiers`: the three
+ * screens were each carrying the seven fields as props only to hand them on, so
+ * every added field cost four edits and none of them a decision.
+ */
+export type GateStake = {
+	readonly gateNumber: number;
+	readonly pollsPerGate: number;
+	readonly stripsOnFailure: number;
+	readonly minConfigs: number;
+	readonly billKb: number;
+	readonly modifiers: PipelineModifiers;
+	readonly perAnswer: PerAnswerPreview;
+};
+
+/**
+ * Why the shop will not install an offer. Carries the numbers, not the
+ * sentence: the wording lives beside `shopExitAction` in the shop screen, so
+ * every phrasing stays reachable from a story rather than only from the engine
+ * state that produces it.
+ */
+export type OfferRefusal =
+	| { readonly reason: "no-slot" }
+	| {
+			readonly reason: "too-expensive";
+			readonly priceKb: number;
+			readonly storageKb: number;
+	  };
+
+/**
+ * One draft option, priced against the run looking at it. The shop used to
+ * answer all of this itself from raw roster configs, which put the offer
+ * economics behind `render()` and out of reach of the viewmodel's own spec.
+ */
+export type ShopOffer = {
+	readonly config: Config;
+	readonly priceKb: number;
+	readonly owned: boolean;
+	readonly locked: boolean;
+	readonly installable: boolean;
+	readonly refusal: OfferRefusal | null;
+	/** What the build's payouts become with this installed — the hover preview. */
+	readonly preview: PipelineModifiers;
+	readonly previewPerAnswer: PerAnswerPreview;
+};
+
+export type PollView = {
+	readonly id: string;
+	readonly category: CategoryCode;
+	readonly question: string;
+	readonly codeBlock?: string;
+	readonly codeSandboxUrl?: string;
+	readonly answerType: AnswerType;
+	readonly options: readonly PollOptionView[];
+};
+
+export type RunView = {
+	readonly status: RunStatus;
+	readonly slots: number;
+	readonly configs: readonly Config[];
+	readonly available: readonly Config[];
+	readonly draftOptions: readonly Config[];
+	/** `draftOptions` with the run's own answer attached to each. */
+	readonly offers: readonly ShopOffer[];
+	readonly newConfigIds: readonly string[];
+	readonly stripsRemaining: number;
+	readonly poll: PollView | null;
+	readonly awaitingTomorrow: boolean;
+
+	readonly pollsExhausted: boolean;
+	readonly disabledOptionIds: readonly string[];
+	readonly canLint: boolean;
+	readonly lintReady: boolean;
+	readonly lintCost: number;
+	readonly linter: Config | null;
+	readonly canPeek: boolean;
+	readonly peekReady: boolean;
+	readonly peekCost: number;
+	readonly peeker: Config | null;
+	/** Whether this poll's split is already paid for — the screen shows the bars
+	 * off this, and the split query refuses to answer until it is true. */
+	readonly currentPollPeeked: boolean;
+	/** Picks the gate's budget still has, before the current poll's selection.
+	 * Null when no config is counting, which is what hides the line. */
+	readonly pickBudgetLeft: number | null;
+	readonly rebuildCost: number;
+	readonly canRebuild: boolean;
+
+	readonly lockAvailable: boolean;
+	readonly lockCost: number;
+	readonly canLock: boolean;
+	readonly lockedOfferIds: readonly string[];
+	readonly extendAvailable: boolean;
+	readonly extendCost: number;
+	readonly canExtend: boolean;
+	readonly slotCoverageRequired: number;
+
+	readonly justUnlockedSlots: readonly number[];
+	readonly checks: readonly CheckStatus[];
+	readonly answeredThisGate: readonly AnsweredPoll[];
+	readonly allAnswered: readonly AnsweredPoll[];
+	/** Kept whole rather than flattened: every screen that shows pricing wants all
+	 * four at once, and a spread here means each one reassembles them by hand. */
+	readonly modifiers: PipelineModifiers;
+	readonly perAnswer: PerAnswerPreview;
+	readonly gateStake: GateStake;
+	readonly canStart: boolean;
+	readonly isOver: boolean;
+	readonly gateRewardPaidKb: number;
+	readonly faucetThisGateKb: number;
+	readonly gatesCleared: number;
+
+	readonly gateTheme?: SwatchTheme;
+
+	readonly clearedGateNumber: number;
+	readonly victoryGate: number;
+
+	readonly stripsOnFailure: number;
+
+	readonly minConfigs: number;
+	readonly underMinConfigs: boolean;
+	/** Distinct from `underMinConfigs`: this build still meets the demand, but
+	 * only just, so sell and drop are refused. */
+	readonly atMinimumWidth: boolean;
+
+	readonly widthRepairable: boolean;
+	readonly pollsAnswered: number;
+	readonly pollsPerGate: number;
+	readonly streak: number;
+	readonly coverage: number;
+	readonly coverageByCategory: Readonly<Record<string, number>>;
+	readonly storage: number;
+	readonly storageCap: number;
+	readonly storageBillKb: number;
+	readonly gateBillPaidKb: number;
+	readonly planDowngraded: boolean;
+	readonly storagePlans: readonly StoragePlanOption[];
+	readonly log: readonly string[];
+};
+
+type AnswerVerdict = {
+	readonly outcome: AnswerOutcome;
+	readonly correctAnswers: readonly string[];
+};
+
+const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
+	const last = view.answeredThisGate.at(-1);
+	if (!last) return null;
+	return { outcome: last.outcome, correctAnswers: last.correct ?? [] };
+};
+
+type AnswerDifficulty = {
+	readonly multiplier: number;
+	readonly optionCount: number;
+	readonly isMultiple: boolean;
+};
+
+export type AnswerScore = {
+	readonly isCorrect: boolean;
+	readonly baseCoverage: number;
+	readonly streakBonus: number;
+	readonly configBonuses: readonly CoverageConfigBonus[];
+	readonly earnedCoverage: number;
+	readonly difficulty?: AnswerDifficulty;
+};
+
+const answerDifficulty = (
+	answered: AnsweredPoll
+): AnswerDifficulty | undefined => {
+	const optionCount = answered.options?.length;
+	if (optionCount === undefined) return undefined;
+	const isMultiple = answered.answerType === "multiple";
+	const multiplier = roundToOneDecimal(
+		pollDifficultyMultiplier(optionCount, isMultiple)
+	);
+	if (multiplier <= 1) return undefined;
+	return { multiplier, optionCount, isMultiple };
+};
+
+export const latestAnswerScore = (view: RunView): AnswerScore | null => {
+	const answered = view.answeredThisGate.at(-1);
+	const breakdown = answered?.coverageBreakdown;
+	if (!answered || !breakdown) return null;
+	const { base, streakBonus, configBonuses } = breakdown;
+	const earnedCoverage = roundToOneDecimal(
+		base +
+			streakBonus +
+			configBonuses.reduce((sum, bonus) => sum + bonus.value, 0)
+	);
+	return {
+		isCorrect: base >= 0,
+		baseCoverage: base,
+		streakBonus,
+		configBonuses,
+		earnedCoverage,
+		difficulty: answerDifficulty(answered),
+	};
+};
+
+export const correctOptionIdsFor = (
+	poll: PollView,
+	answered: RunView
+): readonly string[] => {
+	const verdict = latestAnswerVerdict(answered);
+	if (!verdict) return [];
+	return poll.options
+		.filter((option) => verdict.correctAnswers.includes(option.label))
+		.map((option) => option.id);
+};
+
+const offerRefusal = (
+	state: RunState,
+	config: Config,
+	isFull: boolean
+): OfferRefusal | null => {
+	if (isFull) return { reason: "no-slot" };
+	const priceKb = draftCost(config);
+	if (state.storage < priceKb)
+		return { reason: "too-expensive", priceKb, storageKb: state.storage };
+	return null;
+};
+
+const offersFor = (state: RunState): readonly ShopOffer[] => {
+	const installed = state.pipeline.configs;
+	const isFull = installed.length >= state.pipeline.slots;
+	const locked = state.lockedOfferIds ?? [];
+
+	return state.draftOptions.map((config) => {
+		const owned = installed.some((slotted) => slotted.id === config.id);
+		const refusal = offerRefusal(state, config, isFull);
+		const withIt = [...installed, config];
+		return {
+			config,
+			priceKb: draftCost(config),
+			owned,
+			locked: locked.includes(config.id),
+			installable: !owned && refusal === null,
+			refusal,
+			preview: pipelineModifiersFor(withIt),
+			previewPerAnswer: perAnswerPreviewFor(withIt, state.gatesCleared),
+		};
+	});
+};
+
+const redactPoll = (poll: RunPoll): PollView => ({
+	id: poll.id,
+	category: poll.category,
+	question: poll.question,
+	codeBlock: poll.codeBlock,
+	codeSandboxUrl: poll.codeSandboxUrl,
+	answerType: poll.answerType,
+	options: poll.options.map((option) => ({
+		id: option.id,
+		label: option.label,
+	})),
+});
+
+export const toRunView = (state: RunState): RunView => {
+	const current = state.polls[state.currentIndex];
+	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
+	const nextLintCost = lintCost(state.manualDisabled.length);
+	const plan = storagePlanFor(state.storagePlan);
+	const locked = state.lockedOfferIds ?? [];
+	const extensions = state.extensionsBought ?? 0;
+	const nextExtendCost = extendCost(extensions);
+	const modifiers = pipelineModifiersFor(state.pipeline.configs);
+	const perAnswer = perAnswerPreviewFor(
+		state.pipeline.configs,
+		state.gatesCleared
+	);
+	const minConfigs = minConfigsForGate(state.gatesCleared);
+
+	return {
+		status: state.status,
+		slots: state.pipeline.slots,
+		configs: state.pipeline.configs,
+		available: state.available,
+		draftOptions: state.draftOptions,
+		offers: offersFor(state),
+		newConfigIds: state.draftedThisGate,
+		stripsRemaining: state.stripsRemaining,
+		poll: state.status === "answering" && current ? redactPoll(current) : null,
+		awaitingTomorrow: isAwaitingTomorrow(state),
+		pollsExhausted: state.currentIndex >= state.polls.length,
+		// Only options the player paid to lint off — no automatic masking.
+		disabledOptionIds: state.manualDisabled,
+		canLint: lintApplies(state),
+		lintReady: canRunLinter(state),
+		lintCost: nextLintCost,
+		canPeek: peekApplies(state),
+		peekReady: canBuyPeek(state),
+		peekCost: peekCost(state.window.peeked ?? 0),
+		peeker: peekerFor(state.pipeline.configs) ?? null,
+		currentPollPeeked:
+			current !== undefined && (state.peekedPollIds ?? []).includes(current.id),
+		pickBudgetLeft:
+			budgeterFor(state.pipeline.configs) === undefined
+				? null
+				: (state.window.budget ?? 0) - (state.window.picks ?? 0),
+		rebuildCost: nextRebuildCost,
+		canRebuild: canRebuild(state),
+		lockAvailable: lockAvailable(state),
+		lockCost: LOCK_COST_KB,
+		canLock: canLock(state),
+		lockedOfferIds: locked,
+		extendAvailable: extendAvailable(state),
+		extendCost: nextExtendCost,
+		canExtend: canExtend(state),
+		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
+		justUnlockedSlots: state.justUnlockedSlots ?? [],
+		linter:
+			current === undefined
+				? null
+				: (linterFor(state.pipeline.configs, current.category) ?? null),
+		checks: checkStatuses(
+			state.pipeline,
+			state.window,
+			state.gatesCleared,
+			state.storage
+		),
+		answeredThisGate: state.answeredThisGate,
+		allAnswered: state.allAnswered ?? [],
+		modifiers,
+		perAnswer,
+		gateStake: {
+			gateNumber: state.gatesCleared,
+			pollsPerGate: SLICE_WINDOW,
+			stripsOnFailure: dropCount(state.gatesCleared),
+			minConfigs,
+			billKb: plan.billKb,
+			modifiers,
+			perAnswer,
+		},
+		canStart: canStart(state.pipeline),
+		isOver: isRunOver(state.status),
+		gateRewardPaidKb: state.gateRewardKb ?? 0,
+		faucetThisGateKb: state.faucetThisGateKb ?? 0,
+		gatesCleared: state.gatesCleared,
+		gateTheme: swatchForGate(state.gatesCleared)?.theme,
+		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
+		victoryGate: VICTORY_GATE,
+		stripsOnFailure: dropCount(state.gatesCleared),
+		minConfigs,
+		underMinConfigs: state.pipeline.configs.length < minConfigs,
+		atMinimumWidth: atMinimumWidth(state.pipeline.configs.length, minConfigs),
+		widthRepairable: canRepairWidthDemand(state),
+		pollsAnswered: state.window.answered,
+		pollsPerGate: SLICE_WINDOW,
+		streak: state.streak,
+		coverage: state.coverage,
+		coverageByCategory: state.coverageByCategory,
+		storage: state.storage,
+		storageCap: plan.capKb,
+		storageBillKb: plan.billKb,
+		gateBillPaidKb: state.gateBillKb ?? 0,
+		planDowngraded: state.planDowngraded ?? false,
+		storagePlans: storagePlanLadder(state.gatesCleared).map((option) => ({
+			tier: option.tier,
+			capKb: option.capKb,
+			billKb: option.billKb,
+			current: option.tier === plan.tier,
+			burnKb: Math.max(0, state.storage - option.capKb),
+			fromGate: option.fromGate,
+			locked: !isStoragePlanUnlocked(option, state.gatesCleared),
+		})),
+		log: state.log,
+	};
+};
+
+/** `stuck` is the explicit dead-end: leaving walks into the gate and ends the
+ * run (ADR-031). */
+export type ShopExit =
+	| { readonly state: "open"; readonly gate: number }
+	| {
+			readonly state: "blocked";
+			readonly gate: number;
+			readonly demand: number;
+			readonly shortfall: number;
+	  }
+	| { readonly state: "stuck"; readonly gate: number; readonly demand: number };
+
+/**
+ * The shop's one exit, graded against the coming gate's width demand
+ * (ADR-031). Open while the build meets it; blocked — with the shortfall
+ * measured — while the shop can still repair it; and once the run is provably
+ * stuck (no affordable offer, no rebuild worth hoping for, or no free slot),
+ * an explicit end-run click.
+ *
+ * The verdict carries numbers, not a label: the door reads the same everywhere
+ * because every surface formats this one shape, and the wording is reachable
+ * from a story rather than only from an engine state that produces it.
+ */
+export const shopExitFor = (
+	view: Pick<
+		RunView,
+		| "gatesCleared"
+		| "minConfigs"
+		| "underMinConfigs"
+		| "widthRepairable"
+		| "configs"
+	>
+): ShopExit => {
+	if (!view.underMinConfigs) return { state: "open", gate: view.gatesCleared };
+	if (view.widthRepairable)
+		return {
+			state: "blocked",
+			gate: view.gatesCleared,
+			demand: view.minConfigs,
+			shortfall: view.minConfigs - view.configs.length,
+		};
+	return {
+		state: "stuck",
+		gate: view.gatesCleared,
+		demand: view.minConfigs,
+	};
+};

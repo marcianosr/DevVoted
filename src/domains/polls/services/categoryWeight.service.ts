@@ -1,5 +1,5 @@
 import { configs } from "~/domains/economy/data/configs";
-import { CATEGORY_CODES, CategoryCode } from "~/domains/shared/categories";
+import { CATEGORY_CODES, CategoryCode } from "~/shared/lib/categories";
 
 export type CategoryWeights = Record<CategoryCode, number>;
 
@@ -16,6 +16,7 @@ export const DEFAULT_CATEGORY_WEIGHTS: CategoryWeights = {
 	python: 0,
 	ruby: 1,
 	"general-backend": 0,
+	vue: 1,
 };
 
 /**

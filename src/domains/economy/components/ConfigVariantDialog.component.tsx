@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import { Config, ConfigVariant } from "~/domains/economy/models/config.model";
-import { formatStorage } from "~/lib/storage";
-import { SecondaryButton } from "~/ui/SecondaryButton.component";
+import { formatStorage } from "~/shared/lib/storage";
+import { Button } from "~/ui/Button.component";
 
 export type ConfigVariantDialogProps = {
 	isOpen: boolean;
@@ -69,7 +69,9 @@ export const ConfigVariantDialog = ({
 				</ul>
 
 				<div className="flex justify-end">
-					<SecondaryButton onClick={onCancel}>Cancel</SecondaryButton>
+					<Button variant="secondary" onClick={onCancel}>
+						Cancel
+					</Button>
 				</div>
 			</div>
 		</dialog>

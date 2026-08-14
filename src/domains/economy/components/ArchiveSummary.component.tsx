@@ -1,5 +1,5 @@
 import { useArchiveState } from "~/domains/economy/hooks/useArchiveState";
-import { formatStorageDetailed } from "~/lib/storage";
+import { formatStorageDetailed } from "~/shared/lib/storage";
 
 type ArchiveSummaryProps = {
 	userId: string;

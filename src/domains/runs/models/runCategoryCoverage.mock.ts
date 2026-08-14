@@ -1,4 +1,4 @@
-import { CATEGORY_CODES } from "~/domains/shared/categories";
+import { CATEGORY_CODES } from "~/shared/lib/categories";
 
 import type {
 	RunCategoryCoverage,

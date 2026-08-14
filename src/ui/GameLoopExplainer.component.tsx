@@ -2,6 +2,8 @@ import { useState } from "react";
 
 import { clsx } from "clsx";
 
+import { Subtitle } from "~/ui/typography/Subtitle.component";
+
 type Step = {
 	icon: string;
 	title: string;
@@ -57,19 +59,19 @@ export const GameLoopExplainer = () => {
 	const isLastStep = currentStep === GAME_LOOP_STEPS.length - 1;
 
 	return (
-		<div className="mb-8 border border-gray-700 p-6">
-			<p className="text-gray-400 text-sm mb-4 uppercase tracking-wider">
+		<div className="mb-8 border border-edge-strong p-6">
+			<Subtitle as="p" className="mb-4 uppercase tracking-wider">
 				How the game works
-			</p>
+			</Subtitle>
 
 			<div className="min-h-[30]">
 				<div className="flex items-start gap-4">
-					<span className="text-3xl text-yellow-500 font-bold">
+					<span className="text-3xl text-saffron font-bold">
 						{currentStepData.icon}
 					</span>
 					<div>
 						<h4 className="text-xl text-white mb-2">{currentStepData.title}</h4>
-						<p className="text-gray-300">{currentStepData.description}</p>
+						<p className="text-zinc-200">{currentStepData.description}</p>
 					</div>
 				</div>
 			</div>
@@ -79,9 +81,9 @@ export const GameLoopExplainer = () => {
 					onClick={goToPrev}
 					disabled={isFirstStep}
 					className={clsx(
-						"px-4 py-2 text-sm border border-gray-600",
+						"px-4 py-2 text-sm border border-control-edge",
 						isFirstStep
-							? "text-gray-600 cursor-not-allowed"
+							? "text-pewter cursor-not-allowed"
 							: "text-white hover:border-white cursor-pointer"
 					)}
 				>
@@ -96,8 +98,8 @@ export const GameLoopExplainer = () => {
 							className={clsx(
 								"w-3 h-3 rounded-full transition-colors cursor-pointer",
 								index === currentStep
-									? "bg-yellow-500"
-									: "bg-gray-600 hover:bg-gray-500"
+									? "bg-saffron"
+									: "bg-zinc-600 hover:bg-zinc-500"
 							)}
 							aria-label={`Go to step ${index + 1}`}
 						/>
@@ -108,9 +110,9 @@ export const GameLoopExplainer = () => {
 					onClick={goToNext}
 					disabled={isLastStep}
 					className={clsx(
-						"px-4 py-2 text-sm border border-gray-600",
+						"px-4 py-2 text-sm border border-control-edge",
 						isLastStep
-							? "text-gray-600 cursor-not-allowed"
+							? "text-pewter cursor-not-allowed"
 							: "text-white hover:border-white cursor-pointer"
 					)}
 				>

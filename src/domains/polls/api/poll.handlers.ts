@@ -6,7 +6,7 @@ import {
 	fetchPollCreators,
 } from "~/domains/polls/api/poll.queries";
 import { hasUserAnsweredPoll } from "~/domains/polls/api/pollResponse.queries";
-import { handleApiOperation } from "~/utils/errorHandling";
+import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 export const getPollByIdWithOptionsHandler = async ({
 	data,

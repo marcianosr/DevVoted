@@ -1,0 +1,87 @@
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+
+import { Button } from "./Button.component";
+
+describe("Button", () => {
+	it("renders its children and fires onClick", () => {
+		const onClick = vi.fn();
+		render(<Button onClick={onClick}>Start</Button>);
+		fireEvent.click(screen.getByRole("button", { name: "Start" }));
+		expect(onClick).toHaveBeenCalledOnce();
+	});
+
+	it("greys out the primary fill when disabled", () => {
+		render(<Button disabled>Start</Button>);
+		const button = screen.getByRole("button");
+		expect(button).toBeDisabled();
+		expect(button).toHaveClass("bg-surface-raised");
+	});
+
+	it("is disabled while loading", () => {
+		render(<Button isLoading>Saving…</Button>);
+		expect(screen.getByRole("button")).toBeDisabled();
+	});
+
+	it("shrinks the primary padding at the small size", () => {
+		render(<Button size="small">Click</Button>);
+		expect(screen.getByRole("button")).toHaveClass("px-3", "py-2");
+	});
+
+	it("outlines the danger variant in cinnabar", () => {
+		render(<Button variant="danger">Delete</Button>);
+		expect(screen.getByRole("button")).toHaveClass("border-cinnabar");
+	});
+
+	it("outlines the secondary variant in the theme color and shrinks with size", () => {
+		render(
+			<Button variant="secondary" size="small">
+				Review answers →
+			</Button>
+		);
+		const button = screen.getByRole("button");
+		expect(button).toHaveClass("border-theme", "text-theme");
+		expect(button).toHaveClass("px-3", "py-1.5");
+	});
+
+	it("keeps the neutral variant colorless so it never competes with a loud sibling", () => {
+		render(<Button variant="neutral">Keep climbing</Button>);
+		const button = screen.getByRole("button");
+		expect(button).toHaveClass("border-control-edge");
+		expect(button).not.toHaveClass("border-theme");
+	});
+
+	it("follows the category theme in the theme variant", () => {
+		render(<Button variant="theme">Rebuild</Button>);
+		const button = screen.getByRole("button");
+		expect(button).toHaveClass("border-theme", "text-theme");
+		expect(button).not.toHaveClass("border-cerulean");
+	});
+
+	it("omits aria-pressed unless it is a toggle button", () => {
+		render(<Button>Go</Button>);
+		expect(screen.getByRole("button")).not.toHaveAttribute("aria-pressed");
+	});
+
+	it("fills the theme variant and sets aria-pressed when selected", () => {
+		render(
+			<Button variant="theme" isSelected>
+				CSS
+			</Button>
+		);
+		const button = screen.getByRole("button");
+		expect(button).toHaveAttribute("aria-pressed", "true");
+		expect(button).toHaveClass("bg-theme", "text-black");
+	});
+
+	it("stays an outline and reports aria-pressed=false when not selected", () => {
+		render(
+			<Button variant="theme" isSelected={false}>
+				CSS
+			</Button>
+		);
+		const button = screen.getByRole("button");
+		expect(button).toHaveAttribute("aria-pressed", "false");
+		expect(button).not.toHaveClass("bg-theme");
+	});
+});

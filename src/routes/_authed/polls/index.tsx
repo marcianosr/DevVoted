@@ -5,7 +5,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { getUserPollsOrAll, getPollCreators } from "~/domains/polls/api/polls";
 import type { Poll } from "~/domains/polls/models/poll.model";
-import { getCategories, type CategoryCode } from "~/domains/shared/categories";
+import { getCategories, type CategoryCode } from "~/shared/lib/categories";
 import { ErrorComponent } from "~/ui/ErrorComponent.component";
 
 export const Route = createFileRoute("/_authed/polls/")({
@@ -129,18 +129,14 @@ function PollsList() {
 							? polls.length
 							: (categoryCounts[option.value] ?? 0);
 					const isSelected = categoryFilter === option.value;
-					const isCategory = option.value !== "all";
 
 					return (
 						<button
 							key={option.value}
 							onClick={() => setCategoryFilter(option.value)}
-							data-category-theme={isCategory ? option.value : undefined}
 							className={`px-3 py-1 rounded-full text-sm transition-colors ${
 								isSelected
-									? isCategory
-										? "bg-theme text-white"
-										: "bg-primary text-white"
+									? "bg-theme text-white"
 									: "bg-gray-700 text-gray-300 hover:bg-gray-600"
 							}`}
 						>

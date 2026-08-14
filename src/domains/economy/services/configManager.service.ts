@@ -1,7 +1,10 @@
 import { configs, applyEffects } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
 import { Run } from "~/domains/runs/models/run.model";
-import { getStorageUsagePercentage, canAddToStorage } from "~/lib/storage";
+import {
+	getStorageUsagePercentage,
+	canAddToStorage,
+} from "~/shared/lib/storage";
 
 // Player gets back REFUND_RATE * cost on deinstall; the rest becomes a penalty.
 export const REFUND_RATE = 0.5;

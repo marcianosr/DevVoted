@@ -1,7 +1,7 @@
-import { InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
-import { runCategoryCoverageTable } from "@/src/database/schema";
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { runCategoryCoverageTable } from "@/src/database/schema";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 // TODO: Refactor to "RunMetric"
 export type RunCategoryCoverage = {

@@ -2,9 +2,9 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
 	beforeLoad: ({ context }) => {
-		// Redirect authenticated users to daily poll
+		// Redirect authenticated users to today's run
 		if (context.user) {
-			throw redirect({ to: "/daily-poll" });
+			throw redirect({ to: "/run" });
 		}
 
 		// Redirect unauthenticated users to login

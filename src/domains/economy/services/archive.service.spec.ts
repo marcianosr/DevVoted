@@ -6,7 +6,7 @@ import {
 	getConversionRateForGate,
 } from "~/domains/economy/services/archive.service";
 import { createMockRun } from "~/domains/runs/models/run.mock";
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 vi.mock("~/domains/economy/api/archive.queries", () => ({
 	creditArchivedStorage: vi.fn(),

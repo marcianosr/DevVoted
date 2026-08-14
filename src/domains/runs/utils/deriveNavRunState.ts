@@ -3,7 +3,7 @@ import {
 	MIN_GATE_FOR_MANUAL_END,
 	getActiveGate,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import type { ApiResponse } from "~/utils/errorHandling";
+import type { ApiResponse } from "~/shared/utils/errorHandling";
 
 export type NavRunState = {
 	hasActiveRun: boolean;

@@ -1,1 +1,0 @@
-ALTER TABLE "polls_responses" ADD COLUMN "coverage_delta" real;

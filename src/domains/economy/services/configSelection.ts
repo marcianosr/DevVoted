@@ -2,7 +2,7 @@
  * Pure config selection logic - no database dependencies.
  * Safe to import from routes and components.
  */
-import { DEFAULT_OFFERED_CONFIGS_COUNT } from "~/config/economy";
+import { DEFAULT_OFFERED_CONFIGS_COUNT } from "~/shared/config/economy";
 import { configs } from "~/domains/economy/data/configs";
 import { Config } from "~/domains/economy/models/config.model";
 import { withDiscount } from "~/domains/economy/services/discount.service";

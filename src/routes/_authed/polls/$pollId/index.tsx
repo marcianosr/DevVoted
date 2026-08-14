@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { getPollByIdWithOptions } from "~/domains/polls/api/polls";
 import { PollCodeBlock } from "~/domains/polls/components/PollCodeBlock.component";
 import { PollCodeSandboxEmbed } from "~/domains/polls/components/PollCodeSandboxEmbed.component";
-import { PollQuestionDisplay } from "~/domains/polls/components/PollQuestionDisplay.component";
+import { PollQuestionHeading } from "~/modules/run/poll/presentation/PollQuestionHeading.ui";
 
 const PollDetail: React.FC = () => {
 	const { poll, options, isAdmin } = Route.useLoaderData();
@@ -45,7 +45,7 @@ const PollDetail: React.FC = () => {
 					<p className="text-theme">Category: {poll.categoryCode}</p>
 				</aside>
 			</div>
-			<PollQuestionDisplay poll={poll} />
+			<PollQuestionHeading question={poll.question} />
 			{poll.codeSandboxExample && (
 				<PollCodeSandboxEmbed url={poll.codeSandboxExample} />
 			)}

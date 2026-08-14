@@ -18,8 +18,8 @@ import {
 	getCurrentGate,
 	getWindowSize,
 } from "~/domains/runs/services/pipelineEvaluator.service";
-import { isCategoryCode, type CategoryCode } from "~/domains/shared/categories";
-import type { User } from "~/domains/users/services/userSync.service";
+import { isCategoryCode, type CategoryCode } from "~/shared/lib/categories";
+import type { User } from "~/modules/account/auth/application/userSync.service";
 
 export type UserRole = "user" | "poll-editor" | "admin";
 
@@ -114,6 +114,8 @@ export const getCommunityStatsForDailyPoll = async (
 		.where(
 			and(
 				eq(pollResponsesTable.poll_id, pollId),
+				// Session runs write into the same table; this page is calendar-only.
+				eq(pollResponsesTable.mode, "calendar"),
 				gte(pollResponsesTable.created_at, startOfDay),
 				lt(pollResponsesTable.created_at, startOfNextDay)
 			)
@@ -570,6 +572,7 @@ export const getRandomAnswerForDailyPoll = async (
 		.where(
 			and(
 				eq(pollResponsesTable.poll_id, pollId),
+				eq(pollResponsesTable.mode, "calendar"),
 				gte(pollResponsesTable.created_at, startOfDay),
 				lt(pollResponsesTable.created_at, startOfNextDay)
 			)

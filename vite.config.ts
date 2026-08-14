@@ -18,6 +18,10 @@ const getLastCommitDate = () => {
 export default defineConfig(({ mode }) => ({
 	server: {
 		port: 3005,
+		// Vite blocks requests whose Host isn't localhost (CVE-2025-24010 fix).
+		// Allow Cloudflare quick tunnels so the dev app is reachable remotely
+		// (`cloudflared tunnel --url http://localhost:3005`).
+		allowedHosts: [".trycloudflare.com"],
 	},
 	define: {
 		__LAST_COMMIT_DATE__: JSON.stringify(getLastCommitDate()),

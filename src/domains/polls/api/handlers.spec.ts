@@ -56,7 +56,7 @@ vi.mock("~/domains/runs/api/handlers", () => ({
 	getUserActiveRun: vi.fn(),
 }));
 
-vi.mock("~/domains/users/api/queries", () => ({
+vi.mock("~/modules/account/profile/infrastructure/profile.repository", () => ({
 	fetchUserDisplayName: vi.fn(),
 }));
 

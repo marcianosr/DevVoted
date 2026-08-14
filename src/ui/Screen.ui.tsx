@@ -1,8 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 
-import { clsx } from "clsx";
+import { cva } from "class-variance-authority";
 
-import { PrimaryButton } from "./PrimaryButton.component";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+import { Button, type ButtonVariant } from "./Button.component";
+import { Popover } from "./Popover.component";
+import { Paragraph } from "./typography/Paragraph.component";
 import {
 	clearScreenNavDirection,
 	peekScreenNavDirection,
@@ -10,7 +14,8 @@ import {
 	type ScreenNavDirection,
 } from "./screenNavDirection";
 
-export type ScreenWidth = "narrow" | "default" | "wide";
+export type ScreenWidth = "narrow" | "default";
+export type ScreenTheme = "cinnabar" | "celadon";
 export type ScreenTransition =
 	"none" | "fade" | "slide-up" | "slide-right" | "slide-left";
 export type ScreenAction = {
@@ -18,40 +23,49 @@ export type ScreenAction = {
 	onClick: () => void;
 	disabled?: boolean;
 	hint?: ReactNode;
+	/** The footer button's tone — "danger" marks a click that ends the run (ADR-031). */
+	variant?: ButtonVariant;
 };
 
-const WIDTH_CLASSES: Record<ScreenWidth, string> = {
-	narrow: "sm:max-w-2xl",
-	default: "sm:max-w-5xl",
-	wide: "sm:max-w-7xl",
+const screenSection = cva("w-full mx-auto px-4 py-4 sm:py-8", {
+	variants: {
+		width: {
+			narrow: "sm:max-w-2xl",
+			default: "sm:max-w-6xl",
+		} satisfies Record<ScreenWidth, string>,
+	},
+});
+
+type FooterLayout = "both" | "right" | "left-or-none";
+
+const footerLayoutOf = (
+	hasLeft: boolean,
+	right?: ScreenAction
+): FooterLayout => {
+	if (hasLeft && right) return "both";
+	return right ? "right" : "left-or-none";
 };
 
-// Pin actions to their screen edge: both apart, or a lone action to its side.
-const footerJustify = (left?: ScreenAction, right?: ScreenAction) => {
-	if (left && right) return "justify-between";
-	return right ? "justify-end" : "justify-start";
-};
+const screenFooter = cva("mt-8 flex items-center", {
+	variants: {
+		layout: {
+			both: "justify-between",
+			right: "justify-end",
+			"left-or-none": "justify-start",
+		} satisfies Record<FooterLayout, string>,
+	},
+});
 
 type ScreenProps = {
 	children: ReactNode;
 	width?: ScreenWidth;
-	transition?: ScreenTransition;
-	categoryCode?: string;
+	gateTheme?: SwatchTheme;
+	theme?: ScreenTheme;
 	leftAction?: ScreenAction;
 	rightAction?: ScreenAction;
-	/** Grow to fill the layout and vertically center the content (short pages). */
-	center?: boolean;
+	footerNote?: ReactNode;
 };
 
-/**
- * The shared outer frame for every full-page screen: responsive centered width,
- * optional category theme, an optional CSS mount-in transition (driven by
- * @starting-style in app.css via the data-screen-transition attribute), and an
- * optional footer with actions pinned to each screen edge.
- *
- * All screen wrappers (Content, ContentSection) delegate here so screen sizing
- * and motion live in one place.
- */
 const DIRECTION_TRANSITION: Record<ScreenNavDirection, ScreenTransition> = {
 	forward: "slide-right",
 	back: "slide-left",
@@ -60,67 +74,96 @@ const DIRECTION_TRANSITION: Record<ScreenNavDirection, ScreenTransition> = {
 export const Screen = ({
 	children,
 	width = "default",
-	transition = "none",
-	categoryCode,
+	gateTheme,
+	theme,
 	leftAction,
 	rightAction,
-	center = false,
+	footerNote,
 }: ScreenProps) => {
-	// Animate in from the side of the action that led here: the previous Screen
-	// records a direction when its left/right action fires, this Screen consumes
-	// it on mount. Falls back to the explicit `transition` prop when arrived at
-	// without an action (initial load, direct URL). Captured once via the lazy
-	// initializer so it survives the clear below.
 	const [effectiveTransition] = useState<ScreenTransition>(() => {
 		const direction = peekScreenNavDirection();
-		return direction ? DIRECTION_TRANSITION[direction] : transition;
+		return direction ? DIRECTION_TRANSITION[direction] : "none";
 	});
 
 	useEffect(() => {
 		clearScreenNavDirection();
 	}, []);
 
+	useEffect(() => {
+		if (!gateTheme) return;
+		document.body.setAttribute("data-gate-theme", gateTheme);
+		return () => document.body.removeAttribute("data-gate-theme");
+	}, [gateTheme]);
+
+	useEffect(() => {
+		if (!theme) return;
+		document.body.setAttribute("data-screen-theme", theme);
+		return () => document.body.removeAttribute("data-screen-theme");
+	}, [theme]);
+
 	const runAction = (action: ScreenAction, direction: ScreenNavDirection) => {
 		setScreenNavDirection(direction);
 		action.onClick();
 	};
 
+	const rightActionButton = (action: ScreenAction) => {
+		const button = (
+			<Button
+				onClick={() => runAction(action, "forward")}
+				disabled={action.disabled}
+				variant={action.variant}
+			>
+				{action.label}
+			</Button>
+		);
+		if (!action.hint) return button;
+		return (
+			<Popover
+				triggerAs="span"
+				ariaLabel={`Why "${action.label}" is unavailable`}
+				content={<p className="max-w-xs text-sm">{action.hint}</p>}
+			>
+				{button}
+			</Popover>
+		);
+	};
+
+	const leftSide =
+		footerNote || leftAction ? (
+			<span className="flex items-center gap-4">
+				{footerNote && (
+					<Paragraph as="span" tone="muted">
+						{footerNote}
+					</Paragraph>
+				)}
+				{leftAction && (
+					<Button
+						onClick={() => runAction(leftAction, "back")}
+						disabled={leftAction.disabled}
+						variant={leftAction.variant}
+					>
+						{leftAction.label}
+					</Button>
+				)}
+			</span>
+		) : null;
+
 	return (
 		<section
-			data-category-theme={categoryCode}
+			data-gate-theme={gateTheme}
+			data-screen-theme={theme}
 			data-screen-transition={effectiveTransition}
-			className={clsx(
-				"w-full mx-auto px-4 py-8 md:py-16",
-				WIDTH_CLASSES[width],
-				center && "flex-1 flex flex-col justify-center"
-			)}
+			className={screenSection({ width })}
 		>
 			{children}
-			{(leftAction || rightAction) && (
+			{(leftSide || rightAction) && (
 				<div
-					className={`mt-8 flex items-center ${footerJustify(leftAction, rightAction)}`}
+					className={screenFooter({
+						layout: footerLayoutOf(leftSide !== null, rightAction),
+					})}
 				>
-					{leftAction && (
-						<PrimaryButton
-							onClick={() => runAction(leftAction, "back")}
-							disabled={leftAction.disabled}
-						>
-							{leftAction.label}
-						</PrimaryButton>
-					)}
-					{rightAction && (
-						<div className="flex flex-col items-end gap-1">
-							{rightAction.hint && (
-								<small className="text-sm">{rightAction.hint}</small>
-							)}
-							<PrimaryButton
-								onClick={() => runAction(rightAction, "forward")}
-								disabled={rightAction.disabled}
-							>
-								{rightAction.label}
-							</PrimaryButton>
-						</div>
-					)}
+					{leftSide}
+					{rightAction && rightActionButton(rightAction)}
 				</div>
 			)}
 		</section>

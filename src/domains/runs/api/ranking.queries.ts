@@ -8,7 +8,7 @@ import {
 	usersTable,
 } from "@/src/database/schema";
 import { db } from "~/database/db";
-import type { CategoryCode } from "~/domains/shared/categories";
+import type { CategoryCode } from "~/shared/lib/categories";
 
 export const getLiveRunRankings = async (categoryCode?: CategoryCode) => {
 	if (categoryCode) {
