@@ -21,9 +21,23 @@ export const AsSectionHeading: Story = {
 	},
 };
 
-export const CategoryAccent: Story = {
-	args: {
-		children: "JavaScript",
-		category: "js",
-	},
+/** The three levels together — the step a screen reader announces is the step you see. */
+export const Levels: Story = {
+	render: () => (
+		<div className="flex flex-col gap-2">
+			<Title as="h1">Upgrade your pipeline</Title>
+			<Title as="h2">Your pipeline</Title>
+			<Title as="h3">Gate modifiers</Title>
+		</div>
+	),
+};
+
+/** A heading carrying the news, in the same tones Paragraph uses for it. */
+export const Toned: Story = {
+	render: () => (
+		<div className="flex flex-col gap-2">
+			<Title tone="gradient">And now it&apos;s green!</Title>
+			<Title tone="cinnabar">Build broke!</Title>
+		</div>
+	),
 };

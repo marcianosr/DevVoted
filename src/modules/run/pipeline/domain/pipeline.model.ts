@@ -85,6 +85,27 @@ const storageOnClearFor = (configs: readonly Config[]): number =>
 		0
 	);
 
+/**
+ * Interest a cleared gate pays on the balance you are already holding — the one
+ * payout that is not a function of the loadout alone, which is why it stays out
+ * of `pipelineModifiersFor` (a previewed loadout has no balance) and is applied
+ * beside `gateClearPayout` by the reducer, the only place that knows the
+ * post-bill balance. Rounded down: KB are whole, and the player should never
+ * see interest they cannot spend.
+ */
+export const storageInterestFor = (
+	configs: readonly Config[],
+	heldKb: number
+): number =>
+	Math.floor(
+		(heldKb *
+			effects(configs).reduce(
+				(pct, effect) => pct + (effect.storageInterestPct ?? 0),
+				0
+			)) /
+			100
+	);
+
 /** Build-wide coverage boost applied to every correct answer (Focus category bonuses excluded). */
 const coverageProfileFor = (
 	configs: readonly Config[]

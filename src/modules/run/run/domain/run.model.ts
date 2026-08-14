@@ -9,6 +9,7 @@ import {
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
 	gateClearPayout,
+	storageInterestFor,
 	isBare,
 	rewardMultiplierFor,
 	stripConfig,
@@ -205,6 +206,9 @@ export type RunState = {
 	readonly faucetEarnedKb?: number;
 	readonly faucetThisGateKb?: number;
 	readonly gateRewardKb?: number;
+	/** The interest slice of `gateRewardKb`, kept so the gate report can attribute
+	 * it to the config that earned it (as `faucetThisGateKb` does). */
+	readonly interestThisGateKb?: number;
 	readonly storagePlan?: number;
 	readonly gateBillKb?: number;
 	readonly planDowngraded?: boolean;
@@ -282,7 +286,7 @@ const clearLine = (gateNumber: number, reward: number): string => {
 };
 
 const failedChecks = (state: RunState): readonly string[] =>
-	checkStatuses(state.pipeline, state.window, state.gatesCleared)
+	checkStatuses(state.pipeline, state.window, state.gatesCleared, state.storage)
 		.filter((check) => check.state === "failed")
 		.map((check) => check.label);
 
@@ -388,7 +392,11 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	const state = chargeStorageBill(closing);
 	const gateNumber = state.gatesCleared;
 
-	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
+	// Post-bill on purpose: the plan is charged first (`chargeStorageBill`), so a
+	// subscription that eats into the balance can drop a storage floor below it.
+	if (
+		!gatePassed(state.pipeline, state.window, state.gatesCleared, state.storage)
+	) {
 		const quota = dropCount(state.gatesCleared);
 		const installed = state.pipeline.configs.length;
 		if (isStakeFatal(quota, installed))
@@ -410,11 +418,13 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		};
 	}
 
-	const reward = gateClearPayout(
-		state.pipeline.configs,
-		state.window.correct,
-		state.gatesCleared
-	);
+	const interest = storageInterestFor(state.pipeline.configs, state.storage);
+	const reward =
+		gateClearPayout(
+			state.pipeline.configs,
+			state.window.correct,
+			state.gatesCleared
+		) + interest;
 	const cleared: RunState = {
 		...state,
 		window: EMPTY_WINDOW,
@@ -423,6 +433,7 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		clearedGate: gateNumber,
 		storage: addStorage(state.storage, reward),
 		gateRewardKb: reward,
+		interestThisGateKb: interest,
 		currentIndex: nextIndex,
 	};
 

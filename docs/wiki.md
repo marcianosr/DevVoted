@@ -338,6 +338,10 @@ differ only in what it takes to resolve them.
 | Legacy module | Written by someone who left. | Clearing a gate without a miss |
 | Memory leak | Slower every day, nobody profiles it. | 8 correct answers |
 
+Two card names are also config names in the agreed roster (DVTD-72d9): **Memory
+Leak** and **Race Condition**. One of each pair has to be renamed before either
+ships, or the gate report will show the same words meaning two different things.
+
 Resolve conditions span four shapes: **correctness** (answer N polls correctly, or N
 in a row), **coverage thresholds** (reach a total or category level), **breadth**
 (gain coverage across N categories), and **build actions** (sell N configs, clear N
@@ -531,6 +535,13 @@ doubles your gains and asks you to gain something; Cold Start doubles your opene
 and asks you to land it. Add a condition you trust yourself to hit, and get paid for
 the confidence. Your build is as hard as you make it, and exactly as rich.
 
+**Fees price actions, checks price passives** (2026-08-13). A passive effect
+(a multiplier, a payout) is priced only by its check — never a fee. An on-demand
+*action* (the lint cross-out, Telemetry's peek) may meter each use with an
+escalating fee, because the player chooses every activation. This is the line
+that makes the lint ladder and a fee-charging Telemetry consistent with the
+no-separate-fee rule above.
+
 **Every config owes the gate something** (ADR-022), by one of three routes: an
 authored check, a Focus category, or the categories it lints. The roster type
 refuses anything else, so a config that owes nothing is a compile error rather than
@@ -600,13 +611,25 @@ One table, every config. Each entry reads **Effect / Check**.
 | `.every()` | common | +1% when a category you've 5-streaked appears | Don't break your streak this gate | 🟡 |
 | Semver | common | Coverage ×1.2 for each Focus config at L2 or higher | No Focus config may sit at L1 | 🟡 |
 | Rate limiter | common | Wrong answers don't bleed coverage | No single poll may earn more than 3% coverage | 🟡 |
-| Telemetry | uncommon | See one other player's answer before you commit | Your gate coverage must beat that player's | 🟡 |
+| Telemetry | uncommon | Pay per use (32 → 64 → 128 KB, doubling, resets each gate) to see the community split on the current poll; quorum-gated | Each peeked poll must be answered correctly | 🟡 |
+| Benchmark | uncommon | See your paired ghost's answer before you commit (formerly named Telemetry) | Your gate coverage must beat that ghost's | 🟡 |
 | Cold cache | uncommon | The gate's first poll pays nothing; every poll after pays ×1.5 | You must answer all 5 polls — skipping breaks the warm-up | 🟡 |
 | Dependabot | uncommon | Each gate, one random config of yours upgrades a level for free | You may not sell configs | 🟡 |
 | Overclock | rare | 4× coverage on one poll, then −128 KB across the next two | Storage must not hit 0 before the gate closes | 🟡 |
 | Snapshot Testing | rare | Polls you've already seen reward ×2 | If a seen poll appears, you must answer it correctly | 🟡 |
 | Bundle Analyzer | rare | In the shop, see the category mix of the next gate's 5 polls before you draft | You must answer correctly in the most-represented category | 🟡 |
 | Rebase | rare | See the gate's remaining polls and reorder them however you like | Your last poll must be correct — and you chose what it was | 🟡 |
+| `.tsx` | uncommon | TypeScript and React polls reward ×1.25 | If TS shows, answer one right; if React shows, answer one right — both live | 🟡 |
+| git stash | uncommon | Once per window, stash the current poll; it returns as the window's last, after you've seen the rest | The stashed poll must be answered correctly | 🟡 |
+| Hotfix | rare | A failed gate still opens the shop — failure becomes a playable turn | The gate after an emergency shop must clear | 🟡 |
+| Garbage Collection | uncommon | A peeled config pays you its sell value | Check undecided | 🟡 |
+| Watch | uncommon | Pick a category at draft: its polls get double draw weight in your windows | Every poll of that category in your window must be answered correctly | 🟡 |
+| Replication | rare | All storage gains ×2 (payouts, faucets, everything) | Locked to the free 512 KB plan while installed | 🟡 |
+| Continuous Deployment | rare | +64 KB every gate clear | You never enter the shop again — self-locking, since selling happens in the shop | 🟡 |
+| `--save-exact` | uncommon | Every future draft costs 20% less | Configs can never be sold; peel on failure still works | 🟡 |
+| WTFPL | legendary | The shop offers the entire roster: draft whatever you want | No warranty: sell refund is 0 on everything you own (authored check still open) | 🟡 |
+| Weekend Project | common | Saturday and Sunday gates pay +50% storage | Those gates demand +1 correct answer | 🟡 |
+| Moore's Law | common | On each gate clear, +2% × level of held storage | Hold 32 KB × level when the gate resolves (see [4.4](#44-upgrades)) | 🟢 |
 
 **Bundle Analyzer and Rebase are a deliberate pair.** Analyzer reveals categories in
 the *shop*, so it informs what you draft; Rebase reveals and reorders inside the
@@ -615,6 +638,60 @@ is the full-information build. Rebase is local to your own run: reordering a sha
 seed would silently break other players' position-based configs (Cold Start, Cold
 cache), so the social version belongs in
 [7.6 Interference](#76-interference) instead.
+
+**Dual focus** (2026-08-13): one slot focusing two categories, both appearance
+checks live — slot economy paid for with double risk. Chosen **over** a hidden
+synergy table (§4.7): a dual is the synergy turned into a visible, draftable item.
+Only recognizably real intersections qualify. The pool: `.tsx` (TS+React), `.jsx`
+reworked (JS+React — solo React would relabel, `useState` is the leading
+candidate), `styled-components` (CSS+React), `JSDoc` (JS+TS), `<script>` (HTML+JS),
+`<style>` (HTML+CSS), `Tailwind` (CSS+HTML), `.erb` (Ruby+HTML), `.jsp`
+(Java+HTML), `Jinja` (Python+HTML), and the runtime family — `Node.js` (JS),
+`Deno` (TS), `Rails` (Ruby), `Django` (Python), `Spring` (Java), `Next.js`
+(React), `Nuxt` (Vue) — each pairing a language with General Backend, which
+finally gives that category coverage. Git has no natural intersection and stays
+solo; `.vue` is secretly the quad (SFC = template + script + style) and an
+upgrade candidate. Ship `.tsx` and `Node.js` first, pool the rest: nine configs
+for one mechanic is waste.
+
+**Moore's Law and the cap** (built 2026-08-13). Interest is the only benefit that reads
+your balance instead of the window, which gives it three properties nothing else
+on the roster has.
+
+It **ramps instead of gating**: a 32 KB common paying 2% against a 32 KB floor is
+nearly free at L1 and deliberately near-worthless (2% of 128 KB is 2 KB), because
+interest is only worth anything once the balance is large, and the balance is only
+large late. Both halves rise per level, reaching 10% against 160 KB at L5, so the
+config grows with the economy rather than waiting on it. It upgrades for **storage**
+like Unit Tests, which is its own tension: the upgrade spends the principal the
+next gate demands.
+
+The floor is read **after** the gate's storage bill, so a subscription you can
+barely cover can be the thing that drops you under it. And because the plan cap
+burns the surplus when the shop closes ([5.2](#52-the-shop)), interest at the free
+512 KB tier is *shop budget*, not principal: compounding requires buying cap room,
+which bills you every gate, which pressures the floor again.
+
+**Balance checks and failure.** A balance check is the only kind whose difficulty
+does not reset each window: every other check gets a fresh 5 polls, while this one
+carries your economic position forward, and the only way to improve it is to
+succeed. Today that is survivable, because the free tier bills 0 (a failed gate
+costs no storage and there is no shop to drain it, so a met floor stays met), a
+paid plan's bleed auto-downgrades and stops itself, and the peel is always an
+escape: shed the config and its check leaves with it. It stops being survivable
+the moment [debt cards](#debt-cards) ship, since a card disables the effect and
+keeps the check live, leaving a floor you can never earn toward. Rule to write
+before then: **a balance check is skipped on any gate you could not shop for.**
+Precedented (the draw excuses focus and lint checks) and it covers every future
+balance check, not just this one. Hotfix, if it ships, dissolves the problem
+instead.
+
+Known dial collisions among the 🟡 rows: Hotfix and Try/Catch share
+"next gate must clear" (Hotfix preferred — Try/Catch cancels a loss, Hotfix makes
+a loss playable); `--save-exact` and Dependabot share "you may not sell" (only one
+ships as-is). Garbage Collector (+32 KB per peeled config, check: leave one poll
+unanswered) died for lack of a skip mechanic; its payout lives on inside Hotfix.
+Cold cache's check is vacuous for the same reason until a skip mechanic exists.
 
 Each Focus level raises both halves: the payout (`1 + 0.25 × level`) and the check
 (`level` correct answers owed in that category, **clamped to how many actually
@@ -640,6 +717,11 @@ polls of that category right when it shows, clamped to appearances). The shop's
 Upgrade button previews the next level's effect on hover; while gated, the tooltip
 also names the coverage requirement. Row copy (demand/payoff) derives from the
 config's current level, so an upgraded config reads its real numbers everywhere.
+
+**Moore's Law upgrades for storage** on the same curve as Unit Tests, and each level
+buys both halves: +2% interest and +32 KB of floor. Buying a level therefore
+spends the very principal the next gate's floor demands, which is the decision the
+config is built around.
 
 **Unit Tests upgrades for storage** (32 KB × the level bought: L2 costs 64,
 L5 costs 160 — no coverage gate). Each level buys both halves: +32 KB payout per
@@ -671,14 +753,19 @@ brain-bender, pays 2×), **yarn.lock** (immunity to requirement raises), **rm -r
 isn't a config: see [5.2 The Shop](#52-the-shop) for its resolved shape as a
 slot-free shop purchase (DVTD-0h4n).
 
-Planned: a **social-hint config** (reveals what another player picked) and a
-**poll-bias config** (skews which polls appear).
+The planned **social-hint config** and **poll-bias config** are now designed:
+see Telemetry, Benchmark, and Watch in the roster table ([4.3](#43-config-roster)).
 
 ### 4.7 Synergies
 
 Brainstormed: configs held together could combo. Stacking HTML + CSS (or TS + JS)
 pays double coverage on both categories, rewarding themed builds over a pile of
 unrelated stat-sticks.
+
+Superseded by **dual-focus configs** (2026-08-13, see [4.3](#43-config-roster)):
+a hidden pair-bonus table is invisible to new players and scales combinatorially,
+while a dual puts the themed-build bonus on a visible, draftable item priced by
+its own double check.
 
 ---
 

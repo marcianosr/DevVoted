@@ -80,6 +80,21 @@ describe(RoleList, () => {
 		expect(valueOf("Unit Tests")).toBe("1/2");
 	});
 
+	it("reads a storage floor as KB in the value column", () => {
+		const floor: CheckStatus[] = [
+			{
+				label: "Moore's Law",
+				progress: { kind: "storage", current: 96, target: 128 },
+				current: 96,
+				target: 128,
+				state: "running",
+				sourceConfigId: "moores-law",
+			},
+		];
+		render(<RoleList rows={roleRows([CONFIGS.mooresLaw], floor)} />);
+		expect(valueOf("Moore's Law")).toBe("96KB/128KB");
+	});
+
 	it("drops a wordy tally under the description instead of the value column", () => {
 		const breadth: CheckStatus[] = [
 			{

@@ -7,10 +7,8 @@ import {
 	type StatusBadgeEmphasis,
 	type StatusBadgeVariant,
 } from "~/ui/StatusBadge.ui";
-import {
-	Paragraph,
-	type ParagraphTone,
-} from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 
 export type StatusLineSpacing = "compact" | "spacious";
 
@@ -19,7 +17,7 @@ type StatusLineProps = {
 	badgeEmphasis?: StatusBadgeEmphasis;
 	spacing?: StatusLineSpacing;
 	line: ReactNode;
-	lineTone?: ParagraphTone;
+	lineTone?: TextTone;
 	lineSize?: "xs" | "sm";
 	leading?: ReactNode;
 	trailing?: ReactNode;

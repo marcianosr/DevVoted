@@ -150,7 +150,7 @@ function Navigation() {
 								<>
 									<Link
 										to="/run"
-										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 										onClick={close}
 									>
 										Daily Run
@@ -158,7 +158,7 @@ function Navigation() {
 
 									<Link
 										to="/dex"
-										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 										onClick={close}
 									>
 										Dex
@@ -166,7 +166,7 @@ function Navigation() {
 
 									<Link
 										to="/polls/new"
-										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 										onClick={close}
 									>
 										Suggest your own poll
@@ -175,7 +175,7 @@ function Navigation() {
 										to="/profile/$userId"
 										params={{ userId: user.id }}
 										hash="border-shop"
-										className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 										onClick={close}
 									>
 										Border Shop
@@ -259,14 +259,14 @@ function Navigation() {
 										<Link
 											to="/profile/$userId"
 											params={{ userId: user.id }}
-											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 											onClick={close}
 										>
 											Profile
 										</Link>
 										<Link
 											to="/polls"
-											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 											onClick={close}
 										>
 											My Polls
@@ -291,7 +291,7 @@ function Navigation() {
 										<DropdownDivider />
 										<Link
 											to="/logout"
-											className="block w-full text-left px-4 py-2 text-md hover:bg-gray-800"
+											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 											onClick={close}
 										>
 											Logout

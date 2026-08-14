@@ -146,7 +146,8 @@ const rowFor = (
 	config: Config,
 	answered: readonly AnsweredPoll[],
 	checks: readonly CheckStatus[],
-	faucetThisGateKb?: number
+	faucetThisGateKb?: number,
+	interestThisGateKb?: number
 ): GateRewardRow => {
 	if (config.focusCategory !== undefined)
 		return focusRow(config, config.focusCategory, answered);
@@ -177,6 +178,18 @@ const rowFor = (
 					(config.storagePerCorrect ?? 0) * correctCount(answered)
 			),
 		};
+	// Interest is earned by holding, not answering, so the row shows the KB it
+	// paid — and the balance behind the floor whenever no interest was paid,
+	// which covers both a failed floor and a failed gate (no clear, no interest).
+	if (config.storageInterestPct !== undefined)
+		return {
+			...base,
+			kind: "storage",
+			value:
+				base.status === "passed" && interestThisGateKb !== undefined
+					? kb(interestThisGateKb)
+					: checkProgress(check),
+		};
 	// The clear payout only lands on a pass; a failed row shows the unmet
 	// progress instead, so the report says what fell short.
 	if (config.storageOnClear !== undefined)
@@ -204,6 +217,8 @@ type GateRewardInput = {
 	readonly checks: readonly CheckStatus[];
 	/** Exact faucet income this gate (capped) — omitted by pre-cap callers. */
 	readonly faucetThisGateKb?: number;
+	/** Interest paid this gate — omitted by callers with no balance in hand. */
+	readonly interestThisGateKb?: number;
 };
 
 export const gateRewardRows = ({
@@ -211,9 +226,12 @@ export const gateRewardRows = ({
 	configs,
 	checks,
 	faucetThisGateKb,
+	interestThisGateKb,
 }: GateRewardInput): readonly GateRewardRow[] =>
 	configs
-		.map((config) => rowFor(config, answered, checks, faucetThisGateKb))
+		.map((config) =>
+			rowFor(config, answered, checks, faucetThisGateKb, interestThisGateKb)
+		)
 		.sort((left, right) => KIND_ORDER[left.kind] - KIND_ORDER[right.kind]);
 
 export type GateStepsSummary = {

@@ -10,7 +10,7 @@ type TerminalPanelProps = {
 export const TerminalPanel = ({ title, children }: TerminalPanelProps) => (
 	<fieldset className="flex flex-col gap-4 border border-edge-strong px-5 py-4">
 		<legend className="px-2">
-			<Title as="h2" className="tracking-[0.3em] text-zinc-100">
+			<Title as="h2" className="tracking-[0.3em]">
 				{title}
 			</Title>
 		</legend>

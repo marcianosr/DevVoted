@@ -41,7 +41,7 @@ export const Paragraph_: Story = {
 
 /** Title tinted to the surrounding category theme (here: CSS → cerulean). */
 export const ThemedTitle: Story = {
-	render: () => <Title>Configure your pipeline</Title>,
+	render: () => <Title tone="cerulean">Configure your pipeline</Title>,
 };
 
 /** The three roles together, as they stack on a real screen header. */

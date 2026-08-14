@@ -129,13 +129,19 @@ const applyDefeatDevice = (
 	];
 };
 
+/**
+ * `storageKb` defaults to 0 so the many callers that hold no balance-reading
+ * config stay unchanged. A caller that forgets it starves a storage floor
+ * instead of passing it vacuously — the direction ADR-022 cares about.
+ */
 export const checkStatuses = (
 	pipeline: Pipeline,
 	window: GateWindow,
-	gatesCleared: number
+	gatesCleared: number,
+	storageKb = 0
 ): readonly CheckStatus[] => {
 	const requirement = currentRequirement(pipeline);
-	const context: EffectContext = { window, gatesCleared };
+	const context: EffectContext = { window, gatesCleared, storageKb };
 	const contributed = pipeline.configs.flatMap((config) => {
 		const effect = effectOf(config);
 		return effect.gateCheck
@@ -188,9 +194,10 @@ export const checkStatuses = (
 export const gatePassed = (
 	pipeline: Pipeline,
 	window: GateWindow,
-	gatesCleared: number
+	gatesCleared: number,
+	storageKb = 0
 ): boolean =>
 	!isBare(pipeline) &&
-	checkStatuses(pipeline, window, gatesCleared).every((check) =>
+	checkStatuses(pipeline, window, gatesCleared, storageKb).every((check) =>
 		passes(check.state)
 	);

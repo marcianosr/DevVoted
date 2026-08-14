@@ -7,15 +7,14 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import type { CheckProgress } from "~/modules/run/config/domain/effect.model";
 import type { GateRowReason } from "~/modules/run/gate/domain/configRole.model";
+import { formatKb } from "~/shared/lib/storage";
 import { FoldableRow, type Fold } from "~/ui/FoldableRow.ui";
 import { RARITY_COLORS } from "~/ui/rarityColors";
 import { StatusLine, type StatusLineSpacing } from "~/ui/StatusLine.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { StatusDot, type StatusDotVariant } from "~/ui/StatusDot.ui";
-import {
-	Paragraph,
-	type ParagraphTone,
-} from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import {
 	type ChipAction,
 	ConfigActions,
@@ -53,6 +52,8 @@ export const describeCheckProgress = (progress: CheckProgress): string => {
 			return `${progress.current}%/${progress.target}%`;
 		case "categories":
 			return `${progress.current}/${progress.target} categories`;
+		case "storage":
+			return `${formatKb(progress.current)}/${formatKb(progress.target)}`;
 		case "cover":
 			return `${progress.current}/${progress.target} passed`;
 		case "notSeen":
@@ -80,7 +81,9 @@ export const describeCheckProgress = (progress: CheckProgress): string => {
  * "not seen" are prose and need the room.
  */
 export const isCounterProgress = (progress: CheckProgress): boolean =>
-	progress.kind === "answers" || progress.kind === "coverage";
+	progress.kind === "answers" ||
+	progress.kind === "coverage" ||
+	progress.kind === "storage";
 
 const NUMBER_TOKEN = /(×[\d.]+|[+−-][\d.]+(?:%|KB)?)/;
 
@@ -101,7 +104,7 @@ export const FactRow = ({
 	value,
 }: {
 	icon: string;
-	tone: ParagraphTone;
+	tone: TextTone;
 	value: ReactNode;
 }) => (
 	<div className="flex items-center gap-3 py-2">
@@ -120,13 +123,13 @@ type PipelineReportRowProps = {
 	spacing?: StatusLineSpacing;
 	config: Config;
 	description: ReactNode;
-	descriptionTone?: ParagraphTone;
+	descriptionTone?: TextTone;
 	gives?: string;
 	needs?: string;
 	costs?: string;
 	note?: ReactNode;
 	value?: ReactNode;
-	valueTone?: ParagraphTone;
+	valueTone?: TextTone;
 	chipActions?: readonly ChipAction[];
 	chipBadge?: ReactNode;
 	trailing?: ReactNode;

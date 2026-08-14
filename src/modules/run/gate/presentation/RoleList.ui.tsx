@@ -9,10 +9,8 @@ import type { CheckState } from "~/modules/run/config/domain/effect.model";
 import type { RoleRow } from "~/modules/run/gate/domain/configRole.model";
 import { Badge } from "~/ui/Badge.component";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import {
-	Paragraph,
-	type ParagraphTone,
-} from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import type { ChipAction } from "~/modules/run/config/presentation/ConfigActions.ui";
 import {
 	describeCheckProgress,
@@ -32,7 +30,7 @@ const STATE_BADGE: Record<CheckState, StatusBadgeVariant> = {
 	failed: "fail",
 };
 
-const STATE_VALUE_TONE: Record<CheckState, ParagraphTone> = {
+const STATE_VALUE_TONE: Record<CheckState, TextTone> = {
 	running: "saffron",
 	skipped: "muted",
 	success: "viridian",
@@ -42,7 +40,7 @@ const STATE_VALUE_TONE: Record<CheckState, ParagraphTone> = {
 export const roleBadge = (row: RoleRow): StatusBadgeVariant =>
 	row.state ? STATE_BADGE[row.state] : "skip";
 
-const roleValueTone = (row: RoleRow): ParagraphTone =>
+const roleValueTone = (row: RoleRow): TextTone =>
 	row.state ? STATE_VALUE_TONE[row.state] : "muted";
 
 const rowValue = (row: RoleRow): string | undefined => {

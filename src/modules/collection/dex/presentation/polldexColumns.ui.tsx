@@ -1,8 +1,8 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import type { ParagraphTone } from "~/ui/typography/Paragraph.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 
 import {
 	dexNumber,
@@ -15,7 +15,7 @@ const REDACTED = "???";
 const ACCURACY_HIGH = 70;
 const ACCURACY_MID = 40;
 
-const accuracyTone = (accuracy: number): ParagraphTone => {
+const accuracyTone = (accuracy: number): TextTone => {
 	if (accuracy >= ACCURACY_HIGH) return "viridian";
 	if (accuracy >= ACCURACY_MID) return "saffron";
 	return "cinnabar";

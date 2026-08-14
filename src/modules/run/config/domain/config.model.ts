@@ -1,5 +1,6 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
+import { formatKb } from "~/shared/lib/storage";
 
 export type ConfigFamily =
 	"focus" | "defense" | "risk" | "amplify" | "economy" | "check";
@@ -11,6 +12,7 @@ export type CheckKind =
 	| "min-correct"
 	| "no-double-miss"
 	| "breadth"
+	| "storage-floor"
 	| "defeat-device";
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";
@@ -34,6 +36,9 @@ export type Config = {
 	readonly maxLevel?: number;
 	readonly storagePerCorrect?: number;
 	readonly storageOnClear?: number;
+	/** Percent of held storage paid on gate clear — the only benefit that reads
+	 * the balance rather than the window, so it compounds. */
+	readonly storageInterestPct?: number;
 	readonly openerCoverageMultiplier?: number;
 	readonly check?: CheckKind;
 	readonly checkAmount?: number;
@@ -77,11 +82,21 @@ export const maxLevelOf = (config: Config): number =>
 
 export const isUpgradable = (config: Config): boolean => {
 	const upgradable =
-		config.focusCategory !== undefined || config.check === "correct";
+		config.focusCategory !== undefined ||
+		config.check === "correct" ||
+		config.storageInterestPct !== undefined;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
 };
 
+export const interestPctOf = (config: Config): number =>
+	(config.storageInterestPct ?? 0) * (config.level ?? 1);
+
+export const interestFloorKbOf = (config: Config): number =>
+	(config.checkAmount ?? 0) * (config.level ?? 1);
+
 export const describeConfig = (config: Config): string => {
+	if (config.storageInterestPct !== undefined)
+		return `+${interestPctOf(config)}% of held storage on gate clear — hold ${formatKb(interestFloorKbOf(config))} when the gate resolves.`;
 	if (config.check === "correct") {
 		const level = config.level ?? 1;
 		const payout = (config.storageOnClear ?? 0) * level;
@@ -94,6 +109,8 @@ export const describeConfig = (config: Config): string => {
 };
 
 export const givesOf = (config: Config): string | undefined => {
+	if (config.storageInterestPct !== undefined)
+		return `+${interestPctOf(config)}% of held storage on clear`;
 	if (config.check === "correct") {
 		const payout = (config.storageOnClear ?? 0) * (config.level ?? 1);
 		return `+${payout}KB on clear`;
@@ -105,6 +122,8 @@ export const givesOf = (config: Config): string | undefined => {
 };
 
 export const needsOf = (config: Config): string | undefined => {
+	if (config.storageInterestPct !== undefined)
+		return `Hold ${formatKb(interestFloorKbOf(config))} when the gate resolves`;
 	if (!config.focusCategory) return config.needs;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `Answer ${name} polls correct when they show`;

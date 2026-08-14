@@ -15,6 +15,7 @@ import {
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 	rewardMultiplierFor,
+	storageInterestFor,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 
@@ -156,6 +157,38 @@ describe("gateClearPayout", () => {
 	it("keeps flat clear payouts whole — they ride their own passed check", () => {
 		// Unit Tests' +32 is not scaled: its check demanded the correct answers.
 		expect(gateClearPayout([CONFIGS.unitTests], 3, 0)).toBe(19 + 32);
+	});
+});
+
+describe("storageInterestFor", () => {
+	it("pays nothing without an interest config", () => {
+		expect(storageInterestFor([], 512)).toBe(0);
+		expect(storageInterestFor([CONFIGS.unitTests], 512)).toBe(0);
+	});
+
+	it("pays 2% of held storage at L1, rounded down to whole KB", () => {
+		expect(storageInterestFor([CONFIGS.mooresLaw], 512)).toBe(10);
+		expect(storageInterestFor([CONFIGS.mooresLaw], 99)).toBe(1);
+	});
+
+	it("pays 2% more per level, reaching a tenth at L5", () => {
+		expect(storageInterestFor([{ ...CONFIGS.mooresLaw, level: 3 }], 512)).toBe(
+			30
+		);
+		expect(storageInterestFor([{ ...CONFIGS.mooresLaw, level: 5 }], 512)).toBe(
+			51
+		);
+	});
+
+	it("pays nothing on a balance too small to earn a whole KB", () => {
+		expect(storageInterestFor([CONFIGS.mooresLaw], 0)).toBe(0);
+		expect(storageInterestFor([CONFIGS.mooresLaw], 32)).toBe(0); // 2% of 32 is 0.64
+	});
+
+	it("compounds across gates by reading the grown balance each time", () => {
+		const maxed = [{ ...CONFIGS.mooresLaw, level: 5 }];
+		const first = storageInterestFor(maxed, 512);
+		expect(storageInterestFor(maxed, 512 + first)).toBe(56);
 	});
 });
 

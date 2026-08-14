@@ -1,4 +1,5 @@
 import type { CategoryCode } from "~/shared/lib/categories";
+import { formatKb } from "~/shared/lib/storage";
 
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
@@ -67,6 +68,11 @@ export type CheckProgress =
 			readonly current: number;
 			readonly target: number;
 	  }
+	| {
+			readonly kind: "storage";
+			readonly current: number;
+			readonly target: number;
+	  }
 	| { readonly kind: "notSeen" }
 	| { readonly kind: "missStreak"; readonly missed: number }
 	| { readonly kind: "hidCheck"; readonly label: string }
@@ -113,12 +119,16 @@ export type AnswerContext = {
 export type EffectContext = {
 	readonly window: GateWindow;
 	readonly gatesCleared: number;
+	/** Storage held right now. A check may key off the balance (wiki §4.1), and
+	 * one does: Moore's Law's floor. */
+	readonly storageKb: number;
 };
 
 export type Effect = {
 	requirementDelta?: number;
 	rewardMultiplier?: number;
 	storageOnClear?: number;
+	storageInterestPct?: number;
 	coverage?: (context: AnswerContext) => Coverage;
 	maskWrongOn?: (category: CategoryCode) => boolean;
 	gateCheck?: (context: EffectContext) => CheckStatus;
@@ -158,6 +168,10 @@ const benefitOf = (config: Config): Effect => ({
 		config.storageOnClear === undefined
 			? undefined
 			: config.storageOnClear * (config.level ?? 1),
+	storageInterestPct:
+		config.storageInterestPct === undefined
+			? undefined
+			: config.storageInterestPct * (config.level ?? 1),
 	requirementDelta:
 		config.requirementDelta === 0 ? undefined : config.requirementDelta,
 	rewardMultiplier:
@@ -319,6 +333,32 @@ const breadthCheck = (config: Config): GateCheckPart => {
 	};
 };
 
+/**
+ * Sticky in neither direction, unlike every other check here: the balance moves
+ * while the window is open (a lint fee drains it, the faucet feeds it) and the
+ * gate reads it once, after the storage bill. So a rich mid-window build is
+ * unproven rather than passing, and a broke one is behind rather than dead.
+ */
+const storageFloorState = (window: GateWindow, met: boolean): CheckState => {
+	if (window.answered < SLICE_WINDOW) return "running";
+	return met ? "success" : "failed";
+};
+
+const storageFloorCheck = (config: Config): GateCheckPart => {
+	// Both halves rise together, the same bargain every upgrade in the game makes.
+	const target = (config.checkAmount ?? 0) * (config.level ?? 1);
+	return {
+		gateCheck: ({ window, storageKb }) => ({
+			label: config.label,
+			progress: { kind: "storage", current: storageKb, target },
+			current: storageKb,
+			target,
+			state: storageFloorState(window, storageKb >= target),
+		}),
+		demand: () => `${formatKb(target)} held when the gate resolves`,
+	};
+};
+
 type ContributedCheckKind = Exclude<CheckKind, "correct" | "defeat-device">;
 
 const CHECK_BUILDERS: Record<
@@ -330,6 +370,7 @@ const CHECK_BUILDERS: Record<
 	"min-correct": minCorrectCheck,
 	"no-double-miss": noDoubleMissCheck,
 	breadth: breadthCheck,
+	"storage-floor": storageFloorCheck,
 };
 
 /** The check half: the requirement the config adds to the gate window. */

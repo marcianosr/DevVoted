@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 
 import { LEGENDARY_BORDER } from "~/ui/rarityColors";
+import { TEXT_TONE, type TextTone } from "~/ui/typography/textTone";
 
 import type { SwatchFinish } from "~/modules/run/gate/domain/swatch.model";
 import { Swatch } from "./Swatch.component";
@@ -44,8 +45,12 @@ export const SwatchMark = ({ finish, size = "md" }: SwatchMarkProps) => {
  * How a swatch's *name* must be coloured. A plate's colour is too dark to read
  * as text and the gradient has no colour at all, so both fall back to zinc.
  */
+export const swatchNameTone = (finish: SwatchFinish): TextTone =>
+	finish === "flat" ? "theme" : "default";
+
+/** The same decision as a class, for the labels that are raw spans. */
 export const swatchNameClass = (finish: SwatchFinish): string =>
-	finish === "flat" ? "text-theme" : "text-zinc-100";
+	TEXT_TONE[swatchNameTone(finish)];
 
 /** The border a chip wrapping this swatch should wear, by the same logic. */
 export const swatchBorderClass = (finish: SwatchFinish): string => {

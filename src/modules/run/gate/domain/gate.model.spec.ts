@@ -185,6 +185,68 @@ describe("gatePassed", () => {
 	});
 });
 
+describe("Moore's Law's storage floor", () => {
+	const closed = win({ correct: 5, answered: 5 });
+	const floorCheck = (window: GateWindow, storageKb: number) =>
+		checkStatuses(pipelineWith([CONFIGS.mooresLaw]), window, 0, storageKb)[0];
+
+	it("passes a window that closes on the floor", () => {
+		expect(floorCheck(closed, 32).state).toBe("success");
+	});
+
+	it("fails a window that closes a single KB short", () => {
+		expect(floorCheck(closed, 31).state).toBe("failed");
+	});
+
+	it("demands 32KB more per level, so an upgrade raises both halves", () => {
+		const atLevel = (level: number) =>
+			checkStatuses(
+				pipelineWith([{ ...CONFIGS.mooresLaw, level }]),
+				closed,
+				0,
+				96
+			)[0];
+
+		expect(atLevel(3).target).toBe(96);
+		expect(atLevel(3).state).toBe("success");
+		expect(atLevel(4).target).toBe(128);
+		expect(atLevel(4).state).toBe("failed"); // the same 96KB now falls short
+	});
+
+	it("stays running while the window is open, however much is held", () => {
+		// Not sticky either way: a lint fee can still drain the balance below the
+		// floor before the gate resolves, so a rich mid-window build is unproven.
+		expect(floorCheck(win({ correct: 2, answered: 2 }), 512).state).toBe(
+			"running"
+		);
+	});
+
+	it("reports the balance against the floor in KB", () => {
+		expect(floorCheck(closed, 200).progress).toEqual({
+			kind: "storage",
+			current: 200,
+			target: 32,
+		});
+	});
+
+	it("fails the gate when the balance falls short", () => {
+		expect(gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0, 31)).toBe(
+			false
+		);
+		expect(gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0, 32)).toBe(
+			true
+		);
+	});
+
+	it("fails closed when no balance is supplied", () => {
+		// A caller that forgets the balance starves the check rather than passing
+		// it vacuously — the hole ADR-022's roster type exists to prevent.
+		expect(gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0)).toBe(
+			false
+		);
+	});
+});
+
 // ADR-028. A closed window (answered: 5) so every check has resolved.
 describe("Volkswagen CI", () => {
 	const closed = { correct: 3, answered: 5 };

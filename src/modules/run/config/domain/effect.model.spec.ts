@@ -11,10 +11,12 @@ import {
 
 const ctx = (
 	overrides: Partial<EffectContext["window"]> = {},
-	gatesCleared = 0
+	gatesCleared = 0,
+	storageKb = 0
 ): EffectContext => ({
 	window: { ...EMPTY_WINDOW, ...overrides },
 	gatesCleared,
+	storageKb,
 });
 
 const answering = (
@@ -256,7 +258,11 @@ describe("effectOf — Unit Tests & AGENTS.md", () => {
 		expect(effect.coverage?.(answering("css"))).toEqual({ mult: 2, add: 0 });
 		expect(effect.demand?.(0)).toBe("1 correct answer this window");
 		expect(
-			effect.gateCheck?.({ window: EMPTY_WINDOW, gatesCleared: 0 })
+			effect.gateCheck?.({
+				window: EMPTY_WINDOW,
+				gatesCleared: 0,
+				storageKb: 0,
+			})
 		).toMatchObject({ label: "AGENTS.md", current: 0, target: 1 });
 	});
 });

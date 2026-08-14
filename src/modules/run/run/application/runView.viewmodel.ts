@@ -369,7 +369,12 @@ export const toRunView = (state: RunState): RunView => {
 			current === undefined
 				? null
 				: (linterFor(state.pipeline.configs, current.category) ?? null),
-		checks: checkStatuses(state.pipeline, state.window, state.gatesCleared),
+		checks: checkStatuses(
+			state.pipeline,
+			state.window,
+			state.gatesCleared,
+			state.storage
+		),
 		answeredThisGate: state.answeredThisGate,
 		allAnswered: state.allAnswered ?? [],
 		modifiers,

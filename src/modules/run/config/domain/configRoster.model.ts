@@ -278,6 +278,25 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		check: "defeat-device",
 	},
+	// Cheap and nearly free at L1 on purpose: interest is only worth anything
+	// once the balance is large, and the balance is large only late, so the
+	// config ramps with the economy instead of gating on it. Both halves scale
+	// per level (2% per level of interest, 32KB per level of floor), so L5 is
+	// 10% against 160KB — a late-game engine you paid for in instalments.
+	mooresLaw: {
+		id: "moores-law",
+		label: "Moore's Law",
+		family: "economy",
+		description:
+			"+2% of held storage on gate clear — hold 32KB when the gate resolves.",
+		gives: "Then every gate clear pays +2% of held storage",
+		needs: "Hold 32KB when the gate resolves",
+		requirementDelta: 0,
+		rewardMultiplier: 1,
+		storageInterestPct: 2,
+		check: "storage-floor",
+		checkAmount: 32,
+	},
 	coldStart: {
 		id: "cold-start",
 		label: "Cold Start",

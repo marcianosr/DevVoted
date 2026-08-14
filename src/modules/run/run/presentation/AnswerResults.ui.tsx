@@ -10,10 +10,8 @@ import { FoldCaret } from "~/ui/FoldCaret.ui";
 import { CodeBlockMarkdown } from "~/modules/run/poll/presentation/PollMarkdown.ui";
 import { StatusLine } from "~/ui/StatusLine.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import {
-	Paragraph,
-	type ParagraphTone,
-} from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import { Title } from "~/ui/typography/Title.component";
 
 // The poll outcome maps onto the shared test-runner badge.
@@ -28,7 +26,7 @@ const OUTCOME_VARIANT: Record<AnswerOutcome, StatusBadgeVariant> = {
  * FAIL badge has already delivered that news, and a red number beside a red
  * badge just doubles the volume on the row you are least likely to re-read.
  */
-const SCORE_TONE: Record<AnswerOutcome, ParagraphTone> = {
+const SCORE_TONE: Record<AnswerOutcome, TextTone> = {
 	correct: "celadon",
 	partial: "saffron",
 	wrong: "muted",
@@ -38,7 +36,7 @@ const SCORE_TONE: Record<AnswerOutcome, ParagraphTone> = {
  * A poll you got right is not study material. Its question drops to pewter so
  * the eye slides past it to the rows that still owe you something.
  */
-const QUESTION_TONE: Record<AnswerOutcome, ParagraphTone> = {
+const QUESTION_TONE: Record<AnswerOutcome, TextTone> = {
 	correct: "muted",
 	partial: "default",
 	wrong: "default",
@@ -69,7 +67,7 @@ const CHIP_FILLED: Record<ChipTone, string> = {
 	muted: "border-edge-strong bg-zinc-700 text-zinc-950",
 };
 
-const TEXT_TONE: Record<ChipTone, ParagraphTone> = {
+const CHIP_TEXT_TONE: Record<ChipTone, TextTone> = {
 	celadon: "celadon",
 	vermillion: "vermillion",
 	saffron: "saffron",
@@ -174,7 +172,7 @@ const OptionLine = ({
 			filled={filled}
 			multi={multi}
 		/>
-		<Paragraph as="span" tone={TEXT_TONE[tone]} className="min-w-0 flex-1">
+		<Paragraph as="span" tone={CHIP_TEXT_TONE[tone]} className="min-w-0 flex-1">
 			{option.label}
 		</Paragraph>
 	</div>
@@ -194,7 +192,7 @@ const DiffSide = ({
 	multi: boolean;
 }) => (
 	<div className="flex gap-4">
-		<Paragraph as="span" tone={TEXT_TONE[tone]} className="w-20 shrink-0">
+		<Paragraph as="span" tone={CHIP_TEXT_TONE[tone]} className="w-20 shrink-0">
 			{label}
 		</Paragraph>
 		<div className="min-w-0 flex-1 space-y-1.5">

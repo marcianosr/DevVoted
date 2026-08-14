@@ -26,4 +26,9 @@ describe("Subtitle", () => {
 			"tracking-tight"
 		);
 	});
+
+	it("takes a tone from the shared vocabulary when the caption carries meaning", () => {
+		render(<Subtitle tone="cinnabar">Pipeline broke</Subtitle>);
+		expect(screen.getByText("Pipeline broke")).toHaveClass("text-cinnabar");
+	});
 });

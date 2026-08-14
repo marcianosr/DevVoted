@@ -57,6 +57,7 @@ const pool = (size: number): RunPoll[] =>
 	Array.from({ length: size }, (_, index) => poll(`kazooie-${index}`, true));
 
 const handed = [
+	CONFIGS.mooresLaw,
 	CONFIGS.unitTests,
 	CONFIGS.js,
 	CONFIGS.ts,
@@ -1699,5 +1700,93 @@ describe("answerOutcome grades the community board and the engine alike", () => 
 			],
 		} as const;
 		expect(answerOutcome(single, ["b"])).toBe("wrong");
+	});
+});
+
+describe("Moore's Law", () => {
+	const held = (state: RunState, storage: number): RunState => ({
+		...state,
+		storage,
+	});
+	const maxed = (state: RunState): RunState => ({
+		...state,
+		pipeline: {
+			...state.pipeline,
+			configs: state.pipeline.configs.map((config) =>
+				config.id === "moores-law" ? { ...config, level: 5 } : config
+			),
+		},
+	});
+	const answerWholeWindow = (state: RunState): RunState => {
+		let next = state;
+		for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, true);
+		return next;
+	};
+
+	it("pays 2% of the balance on top of the gate reward at L1", () => {
+		const state = answerWholeWindow(held(started(["moores-law"]), 128));
+
+		expect(state.status).toBe("rewarding");
+		expect(state.interestThisGateKb).toBe(2); // 2% of 128, rounded down
+		expect(state.gateRewardKb).toBe(32 + 2);
+		expect(state.storage).toBe(128 + 34);
+	});
+
+	it("pays five times as much once maxed, on the same balance", () => {
+		const state = answerWholeWindow(maxed(held(started(["moores-law"]), 512)));
+
+		expect(state.interestThisGateKb).toBe(51); // 10% at L5
+	});
+
+	it("fails the gate one KB under the floor, however clean the window", () => {
+		const state = answerWholeWindow(held(started(["moores-law"]), 31));
+
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.log.at(-1)).toContain("Moore's Law");
+	});
+
+	it("upgrades for storage, spending the principal it then demands", () => {
+		const shopping: RunState = {
+			...held(started(["moores-law"]), 200),
+			status: "rewarding",
+		};
+		const state = runReducer(shopping, {
+			type: "upgrade",
+			configId: "moores-law",
+		});
+
+		expect(state.storage).toBe(200 - 64); // 32KB × the level bought
+		expect(
+			state.pipeline.configs.find((config) => config.id === "moores-law")?.level
+		).toBe(2);
+	});
+
+	// The free plan's 512KB cap burns everything above it when the shop closes
+	// (ADR-023), so interest on a full balance is shop budget, not principal.
+	it("cannot compound on a capped plan — the burn takes the interest back", () => {
+		let state = answerWholeWindow(
+			maxed(held(started(["moores-law"], 4 * SLICE_WINDOW), 512))
+		);
+		expect(state.storage).toBe(512 + 51 + 32);
+
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.storage).toBe(512);
+
+		state = answerWholeWindow(state);
+		expect(state.interestThisGateKb).toBe(51); // the same tenth, again
+	});
+
+	it("compounds once a bigger plan leaves the balance room to grow", () => {
+		const onTier2: RunState = {
+			...maxed(held(started(["moores-law"], 4 * SLICE_WINDOW), 512)),
+			storagePlan: 2, // 640KB cap, billed 8KB a gate
+		};
+		let state = answerWholeWindow(onTier2);
+		const first = state.interestThisGateKb ?? 0;
+		state = runReducer(state, { type: "finish-reward" });
+		state = answerWholeWindow(state);
+
+		expect(first).toBe(50); // 10% of 504, the balance after the 8KB bill
+		expect(state.interestThisGateKb).toBeGreaterThan(first);
 	});
 });

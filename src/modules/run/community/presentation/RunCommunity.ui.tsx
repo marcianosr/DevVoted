@@ -6,10 +6,8 @@ import type {
 } from "~/modules/run/community/application/community.service";
 import { Disclosure } from "~/ui/Disclosure.ui";
 import { FoldCaret } from "~/ui/FoldCaret.ui";
-import {
-	Paragraph,
-	type ParagraphTone,
-} from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import { Title } from "~/ui/typography/Title.component";
 
 import { VoterChip } from "~/modules/run/community/presentation/Voter.ui";
@@ -23,7 +21,7 @@ import { VoterChip } from "~/modules/run/community/presentation/Voter.ui";
 const CROWD_EASY_PERCENT = 60;
 const CROWD_MIXED_PERCENT = 40;
 
-const crowdTone = (percent: number): ParagraphTone => {
+const crowdTone = (percent: number): TextTone => {
 	if (percent >= CROWD_EASY_PERCENT) return "celadon";
 	return percent >= CROWD_MIXED_PERCENT ? "saffron" : "vermillion";
 };

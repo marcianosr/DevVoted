@@ -20,10 +20,8 @@ import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { GainBar } from "~/ui/GainBar.ui";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
-import {
-	Paragraph,
-	type ParagraphTone,
-} from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import { Title } from "~/ui/typography/Title.component";
 import {
 	describeCheckProgress,
@@ -41,13 +39,13 @@ const STATUS_VARIANT: Record<GateRewardStatus, StatusBadgeVariant> = {
 
 // Coverage reads green, storage amber, checks green — overridden to red when the
 // step failed, muted when skipped.
-const KIND_TONE: Record<GateRewardKind, ParagraphTone> = {
+const KIND_TONE: Record<GateRewardKind, TextTone> = {
 	coverage: "viridian",
 	storage: "saffron",
 	check: "viridian",
 };
 
-const valueTone = (row: GateRewardRow): ParagraphTone => {
+const valueTone = (row: GateRewardRow): TextTone => {
 	if (row.status === "failed") return "cinnabar";
 	if (row.status === "skipped") return "muted";
 	return KIND_TONE[row.kind];

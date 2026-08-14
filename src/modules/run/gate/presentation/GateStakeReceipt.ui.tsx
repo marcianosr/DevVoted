@@ -11,7 +11,7 @@ import { isStakeFatal } from "~/modules/run/run/domain/rules.model";
 import { Button } from "~/ui/Button.component";
 import { Popover } from "~/ui/Popover.component";
 import type { ScreenAction } from "~/ui/Screen.ui";
-import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
+import { SwatchMark, swatchNameTone } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
@@ -127,9 +127,7 @@ export const GateStakeReceipt = ({
 					className="flex items-center gap-2"
 				>
 					{swatch ? <SwatchMark finish={swatch.finish} size="sm" /> : null}
-					<Title
-						className={swatch ? swatchNameClass(swatch.finish) : undefined}
-					>
+					<Title tone={swatch ? swatchNameTone(swatch.finish) : "default"}>
 						{gateName} gate
 					</Title>
 					<Paragraph as="span" tone="muted">

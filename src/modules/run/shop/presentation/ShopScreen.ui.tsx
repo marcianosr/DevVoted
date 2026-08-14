@@ -23,10 +23,8 @@ import { Columns } from "~/ui/Columns.ui";
 import { RadioDot } from "~/ui/RadioDot.ui";
 import { TerminalPanel, TerminalSection } from "~/ui/TerminalPanel.ui";
 import { Tooltip } from "~/ui/Tooltip.component";
-import {
-	Paragraph,
-	type ParagraphTone,
-} from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
@@ -168,7 +166,7 @@ const planBill = (plan: StoragePlanOption): string => {
 
 // A locked rung reads dim through its row's own opacity, so it needs no third
 // tone of its own — only the plan you are on is at full strength.
-const planLabelTone = (plan: StoragePlanOption): ParagraphTone | undefined =>
+const planLabelTone = (plan: StoragePlanOption): TextTone | undefined =>
 	plan.current ? undefined : "muted";
 
 type PanelHeadingProps = {

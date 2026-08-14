@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import type { ParagraphTone } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import { FoldCaret } from "./FoldCaret.ui";
 import { StatusLine } from "./StatusLine.ui";
 
@@ -16,7 +16,7 @@ type Story = StoryObj<typeof StatusLine>;
 type VariantExample = {
 	badge: StatusBadgeVariant;
 	line: string;
-	lineTone?: ParagraphTone;
+	lineTone?: TextTone;
 	value: string;
 	valueClass: string;
 };

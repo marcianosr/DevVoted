@@ -10,10 +10,8 @@ import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 import { MetaStorageBar } from "~/modules/run/run/presentation/MetaStorageBar.ui";
 import { StatusLine } from "~/ui/StatusLine.ui";
 import { type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import {
-	Paragraph,
-	type ParagraphTone,
-} from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
@@ -39,7 +37,7 @@ const STATUS_BADGE: Record<GateOutcomeStatus, StatusBadgeVariant> = {
 };
 
 // The stall gate reads red, cleared gates default, unreached ones muted.
-const STATUS_TONE: Record<GateOutcomeStatus, ParagraphTone> = {
+const STATUS_TONE: Record<GateOutcomeStatus, TextTone> = {
 	pass: "default",
 	fail: "cinnabar",
 	skip: "muted",
@@ -70,11 +68,9 @@ export const RunSummary = ({
 		<div className="flex flex-col gap-6">
 			<header>
 				{won ? (
-					<Title className="text-gradient-green">
-						And now it&apos;s green!
-					</Title>
+					<Title tone="gradient">And now it&apos;s green!</Title>
 				) : (
-					<Title className="text-cinnabar">Build broke!</Title>
+					<Title tone="cinnabar">Build broke!</Title>
 				)}
 				<Subtitle>
 					{won
