@@ -14,6 +14,7 @@ export type CheckKind =
 	| "breadth"
 	| "storage-floor"
 	| "peek-count"
+	| "pick-budget"
 	| "defeat-device";
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";
@@ -46,6 +47,10 @@ export type Config = {
 	 * coverage or KB, so it is a flag: what it hands over is a whole screen, not a
 	 * number the pipeline can multiply. */
 	readonly peeksCommunitySplit?: boolean;
+	/** KB paid on clear per correct answer the window held beyond one per poll, so
+	 * the payout is a function of the window's shape rather than the loadout — it
+	 * pays most in exactly the windows whose pick budget was hardest to hit. */
+	readonly storagePerExtraPick?: number;
 	readonly check?: CheckKind;
 	readonly checkAmount?: number;
 	readonly draftCost?: number;

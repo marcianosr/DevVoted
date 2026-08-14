@@ -34,6 +34,7 @@ import {
 	canBuyPeek,
 	createRun,
 	isAwaitingTomorrow,
+	pickBudgetFor,
 	runReducer,
 	RunPoll,
 	RunState,
@@ -644,6 +645,126 @@ describe("linter mastery checks", () => {
 		);
 		expect(row?.label).toBe("ESLint mastery");
 		expect(row?.progress).toEqual({ kind: "answers", current: 1, target: 1 });
+	});
+});
+
+describe(".length's pick budget", () => {
+	// Two correct options out of three, so this poll alone costs 2 of the budget.
+	const multiPoll = (id: string): RunPoll => ({
+		id,
+		category: "react",
+		question: `Which of ${id} are Kanto towns?`,
+		answerType: "multiple",
+		options: [
+			{ id: `${id}-a`, label: "Pewter", correct: true },
+			{ id: `${id}-b`, label: "Viridian", correct: true },
+			{ id: `${id}-c`, label: "Hyrule", correct: false },
+		],
+	});
+
+	// One multi-answer poll in the first window: budget 6 across 5 polls, so the
+	// window holds exactly one correct answer beyond one per poll.
+	const mixedPool = (size = 60): RunPoll[] => [
+		multiPoll("celadon"),
+		...Array.from({ length: size - 1 }, (_, index) =>
+			poll(`kazooie-${index}`, true)
+		),
+	];
+
+	const counting = (polls: RunPoll[] = mixedPool()): RunState => {
+		let state = createRun(polls, [...handed, CONFIGS.length]);
+		for (const configId of ["length", "ts", "css"])
+			state = runReducer(state, { type: "slot", configId });
+		return runReducer(state, { type: "start" });
+	};
+
+	const answerIds = (state: RunState, ids: string[]): RunState =>
+		runReducer(state, { type: "answer", optionIds: ids });
+
+	const spendAll = (state: RunState): RunState =>
+		answerIds(state, ["celadon-a", "celadon-b"]);
+
+	it("fixes the budget from the window's polls when the run starts", () => {
+		expect(counting().window.budget).toBe(6);
+		expect(pickBudgetFor(mixedPool(), 0)).toBe(6);
+	});
+
+	it("tallies every option submitted, not every poll answered", () => {
+		const state = spendAll(counting());
+		expect(state.window.picks).toBe(2);
+		expect(state.window.answered).toBe(1);
+	});
+
+	// The same build with .length swapped for a linter the react-only pool never
+	// serves: its check skips and it pays nothing, so any difference in the clear
+	// payout is .length's alone.
+	const uncounted = (polls: RunPoll[] = mixedPool()): RunState => {
+		let state = createRun(polls, handed);
+		for (const configId of ["eslint", "ts", "css"])
+			state = runReducer(state, { type: "slot", configId });
+		return runReducer(state, { type: "start" });
+	};
+
+	it("clears the gate on the exact spend and pays 16KB for the extra pick", () => {
+		let state = spendAll(counting());
+		for (let i = 0; i < SLICE_WINDOW - 2; i++) state = answerWith(state, true);
+		expect(state.window.picks).toBe(5); // one poll left, one pick still owed
+		state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+
+		let bare = spendAll(uncounted());
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) bare = answerWith(bare, true);
+		expect(bare.clearedGate).toBe(0);
+		expect(state.gateRewardKb).toBe((bare.gateRewardKb ?? 0) + 16);
+	});
+
+	it("fails the gate when the window closes a pick short", () => {
+		// Hedging the multi-answer poll banks partial coverage and loses the gate:
+		// the pick you saved is one the budget still expects.
+		let state = answerIds(counting(), ["celadon-a"]);
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
+		expect(state.window.picks).toBe(5);
+		expect(state.status).toBe("awaiting-strip");
+	});
+
+	it("fails while the window is still open once the spend goes over", () => {
+		// Both options on three single-answer polls is 6 picks against a budget of
+		// 5, and there is no way back down.
+		let state = counting(pool(60));
+		expect(state.window.budget).toBe(5);
+		for (let i = 0; i < 3; i++) {
+			const current = state.polls[state.currentIndex];
+			state = answerIds(
+				state,
+				current.options.map((option) => option.id)
+			);
+		}
+		expect(state.status).toBe("answering");
+		const check = checkStatuses(state.pipeline, state.window, 0).find(
+			(entry) => entry.label === ".length"
+		);
+		expect(check?.state).toBe("failed");
+		expect(check?.progress).toEqual({ kind: "answers", current: 6, target: 5 });
+	});
+
+	it("pays nothing on a window of single-answer polls, the config's dead spot", () => {
+		let withConfig = counting(pool(60));
+		let bare = uncounted(pool(60));
+		for (let i = 0; i < SLICE_WINDOW; i++) {
+			withConfig = answerWith(withConfig, true);
+			bare = answerWith(bare, true);
+		}
+		expect(withConfig.clearedGate).toBe(0);
+		expect(withConfig.gateRewardKb).toBe(bare.gateRewardKb);
+	});
+
+	it("refreshes the budget for the next gate off the polls it will serve", () => {
+		let state = spendAll(counting());
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+		// The second window is all single-answer, so its budget is one per poll.
+		expect(state.window.budget).toBe(5);
+		expect(state.window.picks).toBe(0);
 	});
 });
 

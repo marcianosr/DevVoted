@@ -11,6 +11,7 @@ import {
 	effectiveRequirement,
 	gateClearPayout,
 	canLint,
+	extraPickPayoutFor,
 	isBare,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
@@ -189,6 +190,26 @@ describe("storageInterestFor", () => {
 		const maxed = [{ ...CONFIGS.mooresLaw, level: 5 }];
 		const first = storageInterestFor(maxed, 512);
 		expect(storageInterestFor(maxed, 512 + first)).toBe(56);
+	});
+});
+
+describe("extraPickPayoutFor", () => {
+	it("pays nothing without .length, however many extra picks the window held", () => {
+		expect(extraPickPayoutFor([], 3)).toBe(0);
+		expect(extraPickPayoutFor([CONFIGS.unitTests], 3)).toBe(0);
+	});
+
+	it("pays 16KB per correct answer beyond one per poll", () => {
+		expect(extraPickPayoutFor([CONFIGS.length], 3)).toBe(48);
+		expect(extraPickPayoutFor([CONFIGS.length], 1)).toBe(16);
+	});
+
+	it("pays nothing on a window of single-answer polls, the config's dead spot", () => {
+		expect(extraPickPayoutFor([CONFIGS.length], 0)).toBe(0);
+	});
+
+	it("never pays negative on a short final window", () => {
+		expect(extraPickPayoutFor([CONFIGS.length], -2)).toBe(0);
 	});
 });
 

@@ -323,6 +323,26 @@ export const CONFIGS = {
 		check: "peek-count",
 		checkAmount: 1,
 	},
+	// The reward axis here is deliberately not a coverage multiplier: four configs
+	// already sell coverage magnitude, and a fifth would be a reskin. This one pays
+	// in KB, scaled by how many extra picks the window demanded — most in exactly
+	// the windows whose budget was hardest to hit, nothing in a window of five
+	// single-answer polls. That dead spot is the honest version of an activation
+	// threshold: visible on the row, not an invisible condition.
+	length: {
+		id: "length",
+		label: ".length",
+		family: "check",
+		rarity: "uncommon",
+		description:
+			"Shows how many correct answers this gate holds, and pays +16KB per answer beyond one per poll — but you must spend exactly that many picks.",
+		gives: "+16KB per correct answer beyond one per poll",
+		needs: "Spend the gate's pick budget exactly",
+		requirementDelta: 0,
+		rewardMultiplier: 1,
+		storagePerExtraPick: 16,
+		check: "pick-budget",
+	},
 	coldStart: {
 		id: "cold-start",
 		label: "Cold Start",

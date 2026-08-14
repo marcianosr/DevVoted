@@ -559,6 +559,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 									)
 								: undefined
 						}
+						pickBudgetLeft={view.pickBudgetLeft ?? undefined}
 						canSubmit={canSubmit}
 						onSelect={onSelect}
 						onSubmit={() => answer(selected)}

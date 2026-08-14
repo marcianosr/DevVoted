@@ -247,6 +247,72 @@ describe("Moore's Law's storage floor", () => {
 	});
 });
 
+describe(".length's pick budget", () => {
+	const budgetCheck = (window: GateWindow) =>
+		checkStatuses(pipelineWith([CONFIGS.length]), window, 0)[0];
+
+	it("stands down on a window with no budget, which is a legacy snapshot", () => {
+		// 0 is impossible for a real window: every poll has a correct option.
+		const check = budgetCheck(win({ answered: 5, picks: 5 }));
+		expect(check.state).toBe("skipped");
+		expect(check.progress).toBeUndefined();
+	});
+
+	it("counts picks spent against the budget", () => {
+		expect(
+			budgetCheck(win({ answered: 2, picks: 3, budget: 7 })).progress
+		).toEqual({ kind: "answers", current: 3, target: 7 });
+	});
+
+	it("stays running while the window is open and under budget", () => {
+		expect(budgetCheck(win({ answered: 3, picks: 4, budget: 7 })).state).toBe(
+			"running"
+		);
+	});
+
+	it("passes on the exact spend", () => {
+		expect(budgetCheck(win({ answered: 5, picks: 7, budget: 7 })).state).toBe(
+			"success"
+		);
+	});
+
+	it("fails the moment the spend goes over, with the window still open", () => {
+		// Picks only grow, so over budget is unrecoverable: reporting anything but
+		// failed would be a lie the player then acts on.
+		expect(budgetCheck(win({ answered: 2, picks: 8, budget: 7 })).state).toBe(
+			"failed"
+		);
+	});
+
+	it("fails a window that closes under budget", () => {
+		expect(budgetCheck(win({ answered: 5, picks: 6, budget: 7 })).state).toBe(
+			"failed"
+		);
+	});
+
+	it("judges the spend and never the answers", () => {
+		const perfectButShort = win({
+			answered: 5,
+			correct: 5,
+			picks: 6,
+			budget: 7,
+		});
+		const wrongButExact = win({ answered: 5, correct: 0, picks: 7, budget: 7 });
+		expect(budgetCheck(perfectButShort).state).toBe("failed");
+		expect(budgetCheck(wrongButExact).state).toBe("success");
+	});
+
+	it("fails the gate on a misspend and clears it on the exact number", () => {
+		const pipeline = pipelineWith([CONFIGS.length]);
+		expect(
+			gatePassed(pipeline, win({ answered: 5, picks: 6, budget: 7 }), 0)
+		).toBe(false);
+		expect(
+			gatePassed(pipeline, win({ answered: 5, picks: 7, budget: 7 }), 0)
+		).toBe(true);
+	});
+});
+
 describe("Telemetry's peek demand", () => {
 	const peekCheck = (window: GateWindow) =>
 		checkStatuses(pipelineWith([CONFIGS.telemetry]), window, 0)[0];

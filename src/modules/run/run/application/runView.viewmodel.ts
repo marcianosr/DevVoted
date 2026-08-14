@@ -41,6 +41,7 @@ import {
 	type CoverageConfigBonus,
 	type PerAnswerPreview,
 	type PipelineModifiers,
+	budgeterFor,
 	coverageToAddSlot,
 	linterFor,
 	peekerFor,
@@ -161,6 +162,9 @@ export type RunView = {
 	/** Whether this poll's split is already paid for — the screen shows the bars
 	 * off this, and the split query refuses to answer until it is true. */
 	readonly currentPollPeeked: boolean;
+	/** Picks the gate's budget still has, before the current poll's selection.
+	 * Null when no config is counting, which is what hides the line. */
+	readonly pickBudgetLeft: number | null;
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;
 
@@ -371,6 +375,10 @@ export const toRunView = (state: RunState): RunView => {
 		peeker: peekerFor(state.pipeline.configs) ?? null,
 		currentPollPeeked:
 			current !== undefined && (state.peekedPollIds ?? []).includes(current.id),
+		pickBudgetLeft:
+			budgeterFor(state.pipeline.configs) === undefined
+				? null
+				: (state.window.budget ?? 0) - (state.window.picks ?? 0),
 		rebuildCost: nextRebuildCost,
 		canRebuild: canRebuild(state),
 		lockAvailable: lockAvailable(state),

@@ -613,6 +613,7 @@ One table, every config. Each entry reads **Effect / Check**.
 | Semver | common | Coverage ×1.2 for each Focus config at L2 or higher | No Focus config may sit at L1 | 🟡 |
 | Rate limiter | common | Wrong answers don't bleed coverage | No single poll may earn more than 3% coverage | 🟡 |
 | Telemetry | uncommon | Pay per use (32 → 64 → 128 KB, doubling, resets each gate) to see how everyone who ever answered this poll voted. L1 shows percentages only; L2 adds the sample size (see [4.4](#44-upgrades)) | Peek at least once each gate | 🟢 |
+| `.length` | uncommon | Shows how many correct answers the gate's 5 polls hold between them, and pays +16 KB per answer beyond one per poll | Spend exactly that many picks | 🟢 |
 | Benchmark | uncommon | See your paired ghost's answer before you commit (formerly named Telemetry) | Your gate coverage must beat that ghost's | 🟡 |
 | Cold cache | uncommon | The gate's first poll pays nothing; every poll after pays ×1.5 | You must answer all 5 polls — skipping breaks the warm-up | 🟡 |
 | Dependabot | uncommon | Each gate, one random config of yours upgrades a level for free | You may not sell configs | 🟡 |
@@ -705,6 +706,38 @@ Coverage is still slated for a rename (collides with coverage-the-score);
 
 Diagnostic: if two configs share a check dial, one of them probably has a boring
 effect.
+
+**`.length` is the roster's one non-outcome check** (DVTD-cz6c). Every other check
+grades what happened: answers, coverage, streaks, the balance. This one grades a
+*decision* — the gate names how many correct answers its five polls hold between
+them, and you must submit exactly that many picks. It never asks whether any of
+them was right, so a 0/5 window with the exact spend passes it and a 5/5 window a
+pick short does not.
+
+The mechanic it exists to bite is hedging. A partial answer on a multi-answer poll
+pays proportional coverage, dodges the wrong-answer penalty entirely (`share > 0`
+skips it) and holds the streak, so under-picking was a free lunch with no config
+pricing it. `.length` prices it: save a pick early and you must overspend later,
+and overspending fails immediately and permanently because picks only accumulate.
+Underspending stays live until the window closes, since a later poll can always
+take more.
+
+The payout is deliberately **not** a coverage multiplier — four configs already
+sell coverage magnitude. It pays 16 KB per correct answer the window held beyond
+one per poll, so it pays most in exactly the windows whose budget was hardest to
+hit, and nothing at all in a window of five single-answer polls. That dead spot is
+the honest version of an activation threshold: it is on the row, not hidden in the
+rules. The budget line on the poll card counts the *tentative* selection, which is
+the only way the number can inform the decision being made; the pipeline row can
+only report picks already spent.
+
+A window that spans a day boundary re-reads its budget (DVTD-6nkn). Gates ignore
+day boundaries (ADR-011 §3), but the rollover drops the unplayed tail and appends
+today's segment, so the polls the window will serve change while it is open. The
+budget is therefore recomputed on every load rather than stored when the window
+opened — picks already spent still count, and the number the player sees always
+describes the polls actually in front of them. A slow player's budget can move
+overnight; a stale one would have priced deleted polls.
 
 ### 4.4 Upgrades
 

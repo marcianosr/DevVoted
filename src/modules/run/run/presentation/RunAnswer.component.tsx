@@ -131,6 +131,7 @@ export const RunAnswer = () => {
 				peeker={view.peeker ?? undefined}
 				peekCost={view.peekCost}
 				split={split ?? undefined}
+				pickBudgetLeft={view.pickBudgetLeft ?? undefined}
 				canSubmit={canSubmit}
 				onSelect={onSelect}
 				onSubmit={submitAnswer}

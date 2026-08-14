@@ -117,6 +117,8 @@ type AnsweringScreenProps = {
 	peekCost?: number;
 	/** The bought split for this poll — absent until the peek is paid for. */
 	split?: PollSplitView;
+	/** Picks the gate's budget still has (.length) — absent when nothing counts. */
+	pickBudgetLeft?: number;
 	canSubmit: boolean;
 	onSelect: (optionId: string) => void;
 	onSubmit: () => void;
@@ -153,6 +155,7 @@ export const AnsweringScreen = ({
 	peeker,
 	peekCost,
 	split,
+	pickBudgetLeft,
 	canSubmit,
 	onSelect,
 	onSubmit,
@@ -191,6 +194,7 @@ export const AnsweringScreen = ({
 					correctOptionIds={correctOptionIds}
 					chosenOptionIds={chosenOptionIds}
 					split={split}
+					pickBudgetLeft={pickBudgetLeft}
 					onSelect={onSelect}
 				/>
 				{revealScore ? (

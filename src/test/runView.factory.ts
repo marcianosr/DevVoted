@@ -92,6 +92,7 @@ const createRunView = createMockDataFactory<RunView>({
 	peekCost: 32,
 	peeker: null,
 	currentPollPeeked: false,
+	pickBudgetLeft: null,
 	rebuildCost: 0,
 	canRebuild: false,
 	lockAvailable: false,

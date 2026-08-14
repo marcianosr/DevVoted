@@ -6,6 +6,7 @@ import {
 	QuestionMarkdown,
 } from "~/modules/run/poll/presentation/PollMarkdown.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { TextTone } from "~/ui/typography/textTone";
 import {
 	PollOption,
 	PollOptionList,
@@ -35,7 +36,32 @@ type PollCardProps = {
 	correctOptionIds?: readonly string[];
 	chosenOptionIds?: readonly string[];
 	split?: PollSplitView;
+	/** Picks the gate's budget still has before this poll's selection (.length).
+	 * Absent when no config is counting. */
+	pickBudgetLeft?: number;
 	onSelect: (optionId: string) => void;
+};
+
+/**
+ * The live budget line for `.length`. It has to count the *tentative* selection,
+ * not the submitted one, because the decision it exists to inform is being made
+ * right now: the pipeline row can only report picks already spent.
+ */
+const pickBudgetNote = (
+	left: number,
+	selectedCount: number
+): { readonly text: string; readonly tone: TextTone } => {
+	const remaining = left - selectedCount;
+	if (remaining < 0)
+		return {
+			text: `${-remaining} pick${remaining === -1 ? "" : "s"} over budget`,
+			tone: "cinnabar",
+		};
+	if (remaining === 0) return { text: "budget spent", tone: "saffron" };
+	return {
+		text: `${remaining} pick${remaining === 1 ? "" : "s"} left this gate`,
+		tone: "muted",
+	};
 };
 
 /** Recap copy for screens that show the answer type as text (e.g. AnswerResults). */
@@ -56,8 +82,14 @@ export const PollCard = ({
 	correctOptionIds,
 	chosenOptionIds = [],
 	split,
+	pickBudgetLeft,
 	onSelect,
 }: PollCardProps) => {
+	const budgetNote =
+		pickBudgetLeft === undefined
+			? undefined
+			: pickBudgetNote(pickBudgetLeft, selectedOptionIds.length);
+
 	return (
 		<div className="flex flex-col gap-2">
 			<Paragraph as="h1" size="sm" tone="theme" className="font-bold">
@@ -93,6 +125,12 @@ export const PollCard = ({
 					{split.answeredCount === 1 ? "" : "s"}
 				</Paragraph>
 			)}
+
+			{budgetNote ? (
+				<Paragraph as="span" size="xs" tone={budgetNote.tone}>
+					{budgetNote.text}
+				</Paragraph>
+			) : null}
 		</div>
 	);
 };

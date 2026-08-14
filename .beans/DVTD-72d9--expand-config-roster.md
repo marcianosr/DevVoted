@@ -5,7 +5,7 @@ status: in-progress
 type: milestone
 priority: normal
 created_at: 2026-07-24T15:25:42Z
-updated_at: 2026-08-14T11:22:35Z
+updated_at: 2026-08-14T13:44:29Z
 parent: DVTD-d0fw
 ---
 
@@ -343,3 +343,7 @@ Impact: Victim has to spend storage to reveal answers.
 ### Hidden question as a thwart
 Effect: Hide the question.
 Impact: Victim pays storage if they want to reveal it.
+
+### See next gate category mix
+Benefit: See upcoming gate category distribution (next gate poll mix revealed).
+Check: Correct in biggest category AND draft at least one config targeting a revealed category.

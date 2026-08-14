@@ -28,6 +28,17 @@ export type GateWindow = {
 	/** Peeks bought this window. Doubles as the fee ladder's position, which is why
 	 * the ladder and the peek demand reset together. Optional: legacy snapshots. */
 	readonly peeked?: number;
+	/** Options submitted this window, across every poll. Only ever grows, which is
+	 * what makes overspending the pick budget unrecoverable. Optional: legacy snapshots. */
+	readonly picks?: number;
+	/** Correct options across this window's polls, recomputed on load because a day
+	 * rollover (ADR-011) swaps the window's unplayed polls for tomorrow's. Lives on
+	 * the window rather than in `EffectContext` because it is a fact about the
+	 * window, and because the split screen and the row both read it. Absent on
+	 * legacy snapshots, and 0 is impossible for a real window (every poll has at
+	 * least one correct option), so a falsy budget means "unknown" and the check
+	 * stands down. */
+	readonly budget?: number;
 };
 
 export const EMPTY_WINDOW: GateWindow = {
@@ -39,6 +50,7 @@ export const EMPTY_WINDOW: GateWindow = {
 	missStreak: 0,
 	maxMissStreak: 0,
 	peeked: 0,
+	picks: 0,
 };
 
 export type CheckState = "success" | "running" | "skipped" | "failed";
@@ -391,6 +403,38 @@ const peekCountCheck = (config: Config): GateCheckPart => {
 	};
 };
 
+/**
+ * `.length`'s demand: spend exactly as many picks as the window holds correct
+ * answers. The first check that judges a *decision* rather than an outcome — it
+ * never asks whether an answer was right, only whether you committed the number
+ * you were told to.
+ *
+ * Overspending fails immediately and permanently, because `window.picks` only
+ * grows: once past the budget there is no way back to it, so reporting anything
+ * but `failed` would be a lie the player acts on. Underspending stays `running`
+ * until the window closes, since a later poll can always take more picks. That
+ * asymmetry is the whole game: hedge early and you must overspend later.
+ *
+ * A falsy budget means a legacy snapshot rather than a real window, so the check
+ * stands down instead of demanding zero picks.
+ */
+const pickBudgetCheck = (config: Config): GateCheckPart => ({
+	gateCheck: ({ window }) => {
+		const target = window.budget ?? 0;
+		const picks = window.picks ?? 0;
+		const base = {
+			label: config.label,
+			progress: { kind: "answers", current: picks, target } as const,
+			current: picks,
+			target,
+		};
+		if (target === 0) return { ...base, progress: undefined, state: "skipped" };
+		if (picks > target) return { ...base, state: "failed" };
+		return { ...base, state: checkState(picks === target, window) };
+	},
+	demand: () => "every pick the window's answers add up to",
+});
+
 type ContributedCheckKind = Exclude<CheckKind, "correct" | "defeat-device">;
 
 const CHECK_BUILDERS: Record<
@@ -404,6 +448,7 @@ const CHECK_BUILDERS: Record<
 	breadth: breadthCheck,
 	"storage-floor": storageFloorCheck,
 	"peek-count": peekCountCheck,
+	"pick-budget": pickBudgetCheck,
 };
 
 /** The check half: the requirement the config adds to the gate window. */

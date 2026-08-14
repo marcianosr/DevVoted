@@ -198,6 +198,62 @@ describe(PollCard, () => {
 		expect(statusOf(/Beta/)).toBe("chosenWrong");
 	});
 
+	describe(".length's pick budget line", () => {
+		const withBudget = (
+			pickBudgetLeft: number,
+			selectedOptionIds: string[] = []
+		) =>
+			render(
+				<PollCard
+					category="react"
+					question="Which are Kanto towns?"
+					answerType="multiple"
+					options={options}
+					selectedOptionIds={selectedOptionIds}
+					pickBudgetLeft={pickBudgetLeft}
+					onSelect={() => {}}
+				/>
+			);
+
+		it("stays hidden when no config is counting picks", () => {
+			render(
+				<PollCard
+					category="react"
+					question="Q"
+					answerType="multiple"
+					options={options}
+					onSelect={() => {}}
+				/>
+			);
+			expect(screen.queryByText(/picks? left/)).not.toBeInTheDocument();
+		});
+
+		it("counts the tentative selection, not just the submitted picks", () => {
+			withBudget(3, ["a"]);
+			expect(screen.getByText("2 picks left this gate")).toBeInTheDocument();
+		});
+
+		it("says budget spent on the pick that lands exactly on it", () => {
+			withBudget(2, ["a", "b"]);
+			expect(screen.getByText("budget spent")).toBeInTheDocument();
+		});
+
+		it("warns the moment the selection goes over, before it is submitted", () => {
+			withBudget(1, ["a", "b", "c"]);
+			expect(screen.getByText("2 picks over budget")).toBeInTheDocument();
+		});
+
+		it("keeps the singular on the last pick the budget has", () => {
+			withBudget(1);
+			expect(screen.getByText("1 pick left this gate")).toBeInTheDocument();
+		});
+
+		it("keeps the singular one pick over the budget", () => {
+			withBudget(0, ["a"]);
+			expect(screen.getByText("1 pick over budget")).toBeInTheDocument();
+		});
+	});
+
 	it("locks the options once the result is revealed", () => {
 		render(
 			<PollCard

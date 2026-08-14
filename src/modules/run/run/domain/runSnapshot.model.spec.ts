@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { KANTO_QUIZ } from "~/test/kanto";
+import { KANTO_QUIZ, KANTO_TOWNS } from "~/test/kanto";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
@@ -48,6 +48,8 @@ const stateVariants: Record<string, RunState> = {
 			coverageGained: 2.4,
 			leadingCorrect: 2,
 			byCategory: { js: { seen: 2, correct: 2 } },
+			// Three single-answer polls from index 0: what hydration will recompute.
+			budget: 3,
 		},
 		storage: 120,
 		log: ["Gate 1 progress"],
@@ -125,5 +127,88 @@ describe("hydrateRunState — the roster is authoritative", () => {
 		};
 		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
 		expect(rehydrated.draftOptions[0]).toEqual(retired);
+	});
+});
+
+describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
+	const multiPoll = (id: string, correctCount: number): RunPoll => ({
+		id,
+		category: "js",
+		question: "Which of these are Kanto towns?",
+		answerType: "multiple",
+		options: KANTO_TOWNS.slice(0, 4).map((town, index) => ({
+			id: `${id}-${index}`,
+			label: town.name,
+			correct: index < correctCount,
+		})),
+	});
+
+	const midGate = stateVariants["mid-gate answering"];
+
+	it("recomputes the pick budget from the polls the window holds now", () => {
+		// The rollover dropped the unplayed tail and appended multi-answer polls, so
+		// the budget the window opened with describes polls that no longer exist.
+		const afterRollover = [POLLS[0], POLLS[1], multiPoll("day2-0", 3)];
+		const rehydrated = hydrateRunState(toRunSnapshot(midGate), afterRollover);
+		expect(midGate.window.budget).toBe(3);
+		expect(rehydrated.window.budget).toBe(5);
+	});
+
+	it("counts the polls already answered this window, not just the ones ahead", () => {
+		// Two answered polls with three correct options each, one single-answer poll
+		// left: a budget of only the remaining poll would let a spent pick vanish.
+		const answeredWereMulti = [
+			multiPoll("day1-0", 3),
+			multiPoll("day1-1", 3),
+			POLLS[2],
+		];
+		const rehydrated = hydrateRunState(
+			toRunSnapshot(midGate),
+			answeredWereMulti
+		);
+		expect(rehydrated.window.budget).toBe(7);
+	});
+
+	it("measures the window from its own first poll, not from the run's", () => {
+		// Second window, one poll in: the budget must skip the cleared gate's polls.
+		const secondWindow: RunState = {
+			...midGate,
+			currentIndex: 6,
+			gatesCleared: 1,
+			window: { ...midGate.window, answered: 1 },
+		};
+		const polls = [
+			...Array.from({ length: 5 }, (_, index) =>
+				multiPoll(`gate1-${index}`, 4)
+			),
+			multiPoll("gate2-0", 2),
+			POLLS[0],
+			POLLS[1],
+		];
+		// From index 5: gate2-0 (2) + two single-answer polls (1 each).
+		expect(
+			hydrateRunState(toRunSnapshot(secondWindow), polls).window.budget
+		).toBe(4);
+	});
+
+	it("gives a legacy snapshot with no budget a real one", () => {
+		const legacy = toRunSnapshot({
+			...midGate,
+			window: { ...midGate.window, budget: undefined },
+		});
+		expect(hydrateRunState(legacy, POLLS).window.budget).toBe(3);
+	});
+
+	it("reads a budget of zero on a fresh window with the day's polls used up", () => {
+		// Awaiting tomorrow: the window opened on nothing, so the check stands down
+		// instead of demanding picks the day cannot supply.
+		const awaitingTomorrow: RunState = {
+			...midGate,
+			currentIndex: POLLS.length,
+			window: { ...midGate.window, answered: 0 },
+		};
+		expect(
+			hydrateRunState(toRunSnapshot(awaitingTomorrow), POLLS).window.budget
+		).toBe(0);
 	});
 });

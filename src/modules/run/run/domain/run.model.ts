@@ -9,6 +9,7 @@ import {
 	type CoverageBreakdown,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
+	extraPickPayoutFor,
 	gateClearPayout,
 	storageInterestFor,
 	isBare,
@@ -254,6 +255,37 @@ export type RunAction =
 	| { readonly type: "drop"; readonly configId: string }
 	| { readonly type: "change-plan"; readonly tier: number };
 
+const correctOptionCount = (poll: RunPoll): number =>
+	poll.options.filter((option) => option.correct).length;
+
+/**
+ * The window's pick budget: every correct option across the polls it serves,
+ * the already-answered ones included. Recomputed at each hydration rather than
+ * stored at open, because a day rollover (ADR-011) swaps the window's unplayed
+ * polls for tomorrow's.
+ */
+export const pickBudgetFor = (
+	polls: readonly RunPoll[],
+	fromIndex: number
+): number =>
+	polls
+		.slice(fromIndex, fromIndex + SLICE_WINDOW)
+		.reduce((total, poll) => total + correctOptionCount(poll), 0);
+
+/** Where the open window began: `answered` and `currentIndex` advance one per
+ * answer and reset together, so their difference is the window's first poll. */
+export const windowStartIndex = (
+	state: Pick<RunState, "currentIndex" | "window">
+): number => state.currentIndex - state.window.answered;
+
+const freshWindow = (
+	polls: readonly RunPoll[],
+	fromIndex: number
+): GateWindow => ({
+	...EMPTY_WINDOW,
+	budget: pickBudgetFor(polls, fromIndex),
+});
+
 export const createRun = (
 	polls: readonly RunPoll[],
 	handed: readonly Config[]
@@ -271,7 +303,7 @@ export const createRun = (
 	stripsRemaining: 0,
 	polls,
 	currentIndex: 0,
-	window: EMPTY_WINDOW,
+	window: freshWindow(polls, 0),
 	manualDisabled: [],
 	peekedPollIds: [],
 	gatesCleared: 0,
@@ -434,15 +466,21 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	}
 
 	const interest = storageInterestFor(state.pipeline.configs, state.storage);
+	// Picks the window demanded beyond one per poll: what `.length` counted, and
+	// the only part of the clear payout the loadout alone cannot price.
+	const extraPicks = (state.window.budget ?? 0) - state.window.answered;
+	const extraPickKb = extraPickPayoutFor(state.pipeline.configs, extraPicks);
 	const reward =
 		gateClearPayout(
 			state.pipeline.configs,
 			state.window.correct,
 			state.gatesCleared
-		) + interest;
+		) +
+		interest +
+		extraPickKb;
 	const cleared: RunState = {
 		...state,
-		window: EMPTY_WINDOW,
+		window: freshWindow(state.polls, nextIndex),
 		manualDisabled: [],
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
@@ -551,6 +589,8 @@ const answer = (
 				gained: roundToOneDecimal((tally.gained ?? 0) + earned),
 			},
 		},
+		picks: (state.window.picks ?? 0) + optionIds.length,
+		budget: state.window.budget,
 		missStreak,
 		maxMissStreak: Math.max(state.window.maxMissStreak ?? 0, missStreak),
 		peeked: state.window.peeked ?? 0,
@@ -695,7 +735,7 @@ const resumeClimb = (state: RunState): RunState => {
 		};
 	return {
 		...state,
-		window: EMPTY_WINDOW,
+		window: freshWindow(state.polls, state.currentIndex),
 		manualDisabled: [],
 		faucetThisGateKb: 0,
 		gateRewardKb: 0,

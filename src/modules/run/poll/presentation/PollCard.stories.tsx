@@ -83,6 +83,40 @@ export const WithCommunitySplitAndSampleSize: Story = {
 	},
 };
 
+/**
+ * `.length`'s budget line (DVTD-cz6c). It counts the *tentative* selection, so it
+ * moves as the player toggles options: this is the number the commit decision is
+ * made against, and the pipeline row can only report picks already spent.
+ */
+export const WithPickBudgetLeft: Story = {
+	args: {
+		category: "js",
+		question: "Which of these are falsy?",
+		answerType: "multiple",
+		options,
+		selectedOptionIds: ["a"],
+		pickBudgetLeft: 3,
+		onSelect: () => {},
+	},
+};
+
+/**
+ * One pick past the budget, before submitting. The warning is deliberately loud
+ * and deliberately not a block: overspending is unrecoverable, so the player has
+ * to be able to see it coming, but stopping them would make the check unfailable.
+ */
+export const WithPickBudgetOverspent: Story = {
+	args: {
+		category: "js",
+		question: "Which of these are falsy?",
+		answerType: "multiple",
+		options,
+		selectedOptionIds: ["a", "b", "c"],
+		pickBudgetLeft: 2,
+		onSelect: () => {},
+	},
+};
+
 export const WithCodeExample: Story = {
 	args: {
 		category: "js",

@@ -106,6 +106,27 @@ export const storageInterestFor = (
 			100
 	);
 
+/**
+ * `.length`'s clear payout: KB per correct answer the window held beyond one per
+ * poll. Out of `pipelineModifiersFor` for the same reason interest is — the
+ * loadout alone cannot price it, since the amount is a fact about the window
+ * that was drawn. A window of five single-answer polls has no extra picks and
+ * pays nothing, which is the config's honest dead spot; a multi-heavy window
+ * pays well and was the hard one to count.
+ *
+ * No pass check needed: the reducer only calls this on a clear, and a clear
+ * means every check passed, including `.length`'s own budget.
+ */
+export const extraPickPayoutFor = (
+	configs: readonly Config[],
+	extraPicks: number
+): number =>
+	configs.reduce(
+		(total, config) =>
+			total + (config.storagePerExtraPick ?? 0) * Math.max(0, extraPicks),
+		0
+	);
+
 /** Build-wide coverage boost applied to every correct answer (Focus category bonuses excluded). */
 const coverageProfileFor = (
 	configs: readonly Config[]
@@ -325,6 +346,10 @@ export const canLint = (
  */
 export const peekerFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.peeksCommunitySplit === true);
+
+/** The equipped config counting the window's picks, if any (`.length`). */
+export const budgeterFor = (configs: readonly Config[]): Config | undefined =>
+	configs.find((config) => config.check === "pick-budget");
 
 export const stripConfig = (
 	pipeline: Pipeline,

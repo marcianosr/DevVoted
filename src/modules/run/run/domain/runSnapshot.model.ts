@@ -1,6 +1,10 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import type { RunPoll, RunState } from "~/modules/run/run/domain/run.model";
+import {
+	pickBudgetFor,
+	windowStartIndex,
+} from "~/modules/run/run/domain/run.model";
 
 /**
  * The persisted shape of a run (run_states.state): everything the engine
@@ -33,6 +37,14 @@ const refreshConfig = (config: Config): Config => {
 const refreshConfigs = (configs: readonly Config[]): readonly Config[] =>
 	configs.map(refreshConfig);
 
+/**
+ * The polls are authoritative on load in the same way the roster is: a day
+ * rollover (ADR-011) drops the window's unplayed tail and appends today's
+ * segment, so a pick budget stored when the window opened would describe polls
+ * that no longer exist. Recomputing it here covers every load path, and the
+ * reducer keeps setting it at open so a window that fills inside one session
+ * never needs a round trip to learn its own budget.
+ */
 export const hydrateRunState = (
 	snapshot: RunSnapshot,
 	polls: readonly RunPoll[]
@@ -44,5 +56,9 @@ export const hydrateRunState = (
 	},
 	available: refreshConfigs(snapshot.available),
 	draftOptions: refreshConfigs(snapshot.draftOptions),
+	window: {
+		...snapshot.window,
+		budget: pickBudgetFor(polls, windowStartIndex(snapshot)),
+	},
 	polls,
 });
