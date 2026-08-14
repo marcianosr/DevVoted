@@ -13,6 +13,7 @@ export type CheckKind =
 	| "no-double-miss"
 	| "breadth"
 	| "storage-floor"
+	| "peek-count"
 	| "defeat-device";
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";
@@ -40,6 +41,11 @@ export type Config = {
 	 * the balance rather than the window, so it compounds. */
 	readonly storageInterestPct?: number;
 	readonly openerCoverageMultiplier?: number;
+	/** Sells a look at how everyone else answered the current poll, for a fee that
+	 * doubles per use. The only benefit that pays in information rather than in
+	 * coverage or KB, so it is a flag: what it hands over is a whole screen, not a
+	 * number the pipeline can multiply. */
+	readonly peeksCommunitySplit?: boolean;
 	readonly check?: CheckKind;
 	readonly checkAmount?: number;
 	readonly draftCost?: number;
@@ -84,8 +90,27 @@ export const isUpgradable = (config: Config): boolean => {
 	const upgradable =
 		config.focusCategory !== undefined ||
 		config.check === "correct" ||
-		config.storageInterestPct !== undefined;
+		config.storageInterestPct !== undefined ||
+		config.peeksCommunitySplit === true;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
+};
+
+const SAMPLE_SIZE_LEVEL = 2;
+
+/**
+ * Whether a peek comes with the number of answers behind it. L1 sells the
+ * percentages alone, so 100% of two players and 100% of a hundred read
+ * identically — the upgrade buys the one line that tells them apart, which is
+ * the whole product of level 2 (see the roster entry).
+ */
+export const showsSampleSize = (config: Config): boolean =>
+	(config.level ?? 1) >= SAMPLE_SIZE_LEVEL;
+
+const DEFAULT_PEEK_DEMAND = 1;
+
+const peekDemandPhrase = (config: Config): string => {
+	const target = config.checkAmount ?? DEFAULT_PEEK_DEMAND;
+	return target === 1 ? "once each gate" : `${target}× each gate`;
 };
 
 export const interestPctOf = (config: Config): number =>
@@ -95,6 +120,10 @@ export const interestFloorKbOf = (config: Config): number =>
 	(config.checkAmount ?? 0) * (config.level ?? 1);
 
 export const describeConfig = (config: Config): string => {
+	if (config.peeksCommunitySplit)
+		return showsSampleSize(config)
+			? `Pay a doubling fee to see how the community answered this poll, and how many answered — but you must peek at least ${peekDemandPhrase(config)}.`
+			: `Pay a doubling fee to see how the community answered this poll — but you must peek at least ${peekDemandPhrase(config)}.`;
 	if (config.storageInterestPct !== undefined)
 		return `+${interestPctOf(config)}% of held storage on gate clear — hold ${formatKb(interestFloorKbOf(config))} when the gate resolves.`;
 	if (config.check === "correct") {
@@ -109,6 +138,10 @@ export const describeConfig = (config: Config): string => {
 };
 
 export const givesOf = (config: Config): string | undefined => {
+	if (config.peeksCommunitySplit)
+		return showsSampleSize(config)
+			? "See how the community answered, and how many answered"
+			: "See how the community answered this poll";
 	if (config.storageInterestPct !== undefined)
 		return `+${interestPctOf(config)}% of held storage on clear`;
 	if (config.check === "correct") {
@@ -122,6 +155,8 @@ export const givesOf = (config: Config): string | undefined => {
 };
 
 export const needsOf = (config: Config): string | undefined => {
+	if (config.peeksCommunitySplit)
+		return `Peek at least ${peekDemandPhrase(config)}`;
 	if (config.storageInterestPct !== undefined)
 		return `Hold ${formatKb(interestFloorKbOf(config))} when the gate resolves`;
 	if (!config.focusCategory) return config.needs;

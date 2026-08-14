@@ -247,6 +247,55 @@ describe("Moore's Law's storage floor", () => {
 	});
 });
 
+describe("Telemetry's peek demand", () => {
+	const peekCheck = (window: GateWindow) =>
+		checkStatuses(pipelineWith([CONFIGS.telemetry]), window, 0)[0];
+
+	it("fails a closed window that bought no peeks — the demand is never excused", () => {
+		// The one check on the roster that cannot be dodged by declining to use the
+		// config: carrying Telemetry owes the gate a fee, full stop.
+		const check = peekCheck(win({ correct: 5, answered: 5 }));
+		expect(check.state).toBe("failed");
+		expect(check.progress).toEqual({ kind: "answers", current: 0, target: 1 });
+	});
+
+	it("passes the moment the peek is bought, however the polls go", () => {
+		// Sticky success: a bought peek cannot be unbought, and correctness is no
+		// longer any of this check's business.
+		expect(peekCheck(win({ answered: 2, peeked: 1, correct: 0 })).state).toBe(
+			"success"
+		);
+	});
+
+	it("stays running while the window is open and short of the demand", () => {
+		expect(peekCheck(win({ answered: 3 })).state).toBe("running");
+	});
+
+	it("counts peeks bought against peeks owed", () => {
+		expect(peekCheck(win({ answered: 2 })).progress).toEqual({
+			kind: "answers",
+			current: 0,
+			target: 1,
+		});
+	});
+
+	it("reads its demand off checkAmount, so the count is a roster dial", () => {
+		const atThree = checkStatuses(
+			pipelineWith([{ ...CONFIGS.telemetry, checkAmount: 3 }]),
+			win({ answered: 5, peeked: 2 }),
+			0
+		)[0];
+		expect(atThree.target).toBe(3);
+		expect(atThree.state).toBe("failed");
+	});
+
+	it("fails the gate on an unpeeked window and clears it on the first peek", () => {
+		const pipeline = pipelineWith([CONFIGS.telemetry]);
+		expect(gatePassed(pipeline, win({ answered: 5 }), 0)).toBe(false);
+		expect(gatePassed(pipeline, win({ answered: 5, peeked: 1 }), 0)).toBe(true);
+	});
+});
+
 // ADR-028. A closed window (answered: 5) so every check has resolved.
 describe("Volkswagen CI", () => {
 	const closed = { correct: 3, answered: 5 };

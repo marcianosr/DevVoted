@@ -297,6 +297,32 @@ export const CONFIGS = {
 		check: "storage-floor",
 		checkAmount: 32,
 	},
+	// Two levels, and the second one sells honesty rather than power. L1 hands
+	// over the percentages with nothing attached, so 100% of two players and 100%
+	// of a hundred are the same picture — the config can talk you into a wrong
+	// answer, and that risk is what the 64KB buys. L2 adds the sample size, which
+	// is the only thing that tells those two apart. Hence `maxLevel: 2`: there is
+	// no third thing to reveal that is not just the answer.
+	telemetry: {
+		id: "telemetry",
+		label: "Telemetry",
+		family: "defense",
+		rarity: "uncommon",
+		maxLevel: 2,
+		description:
+			"Pay a doubling fee to see how the community answered this poll — but you must peek at least once each gate.",
+		gives: "See how the community answered this poll",
+		needs: "Peek at least once each gate",
+		costs: "The fee doubles each use, and resets each gate",
+		requirementDelta: 0,
+		rewardMultiplier: 1,
+		peeksCommunitySplit: true,
+		// One peek, not two: the demand is the ladder's first rung (32KB), which a
+		// cleared gate pays back, so carrying Telemetry cannot price a window out
+		// of reach the way two rungs (96KB) could.
+		check: "peek-count",
+		checkAmount: 1,
+	},
 	coldStart: {
 		id: "cold-start",
 		label: "Cold Start",

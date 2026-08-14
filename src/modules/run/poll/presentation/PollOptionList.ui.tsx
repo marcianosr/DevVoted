@@ -110,6 +110,20 @@ const optionLabel = cva("font-extrabold text-xs sm:text-sm transition-colors", {
 
 const optionLetter = (index: number) => String.fromCharCode(65 + index);
 
+/**
+ * The community's share of this option, drawn in pewter rather than in any
+ * meaningful colour: a crowd favourite is not a correct answer, and painting it
+ * green or red would hand over the one thing the peek is not allowed to say.
+ */
+const SplitBar = ({ percent }: { percent: number }) => (
+	<span className="block h-1 w-full overflow-hidden rounded-full bg-surface-raised">
+		<span
+			className="block h-full rounded-full bg-pewter"
+			style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+		/>
+	</span>
+);
+
 type PollOptionListProps = {
 	answerType: AnswerType;
 	options: readonly PollOption[];
@@ -117,6 +131,9 @@ type PollOptionListProps = {
 	disabledOptionIds?: readonly string[];
 	correctOptionIds?: readonly string[];
 	chosenOptionIds?: readonly string[];
+	/** Community share per option id, 0–100 (Telemetry). Options missing from it
+	 * were picked by nobody, so they draw an empty bar rather than no bar. */
+	splitPercentByOptionId?: Readonly<Record<string, number>>;
 	onSelect: (optionId: string) => void;
 };
 
@@ -132,6 +149,7 @@ export const PollOptionList = ({
 	disabledOptionIds = [],
 	correctOptionIds,
 	chosenOptionIds = [],
+	splitPercentByOptionId,
 	onSelect,
 }: PollOptionListProps) => {
 	const selected = new Set(selectedOptionIds);
@@ -178,9 +196,22 @@ export const PollOptionList = ({
 						>
 							{MARK[status] || optionLetter(index)}
 						</span>
-						<span className={optionLabel({ status })} style={revealDelayStyle}>
-							{option.label}
+						<span className="flex min-w-0 flex-1 flex-col gap-1.5">
+							<span
+								className={optionLabel({ status })}
+								style={revealDelayStyle}
+							>
+								{option.label}
+							</span>
+							{splitPercentByOptionId ? (
+								<SplitBar percent={splitPercentByOptionId[option.id] ?? 0} />
+							) : null}
 						</span>
+						{splitPercentByOptionId ? (
+							<span className="shrink-0 text-xs font-bold tabular-nums text-pewter">
+								{splitPercentByOptionId[option.id] ?? 0}%
+							</span>
+						) : null}
 					</button>
 				);
 			})}

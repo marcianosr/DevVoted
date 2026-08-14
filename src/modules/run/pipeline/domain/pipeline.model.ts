@@ -305,7 +305,6 @@ export const coverageBreakdownForAnswer = (
 	return { base, streakBonus, configBonuses };
 };
 
-/** Whether the manual lint action is available — any equipped config that masks wrong options. */
 /** The equipped linter that covers this poll's category, if any (ESLint → JS/TS, Stylelint → CSS). */
 export const linterFor = (
 	configs: readonly Config[],
@@ -318,6 +317,14 @@ export const canLint = (
 	configs: readonly Config[],
 	category: CategoryCode
 ): boolean => linterFor(configs, category) !== undefined;
+
+/**
+ * The equipped config that sells community splits, if any. Category-blind, which
+ * is what separates it from `linterFor`: the split exists for every poll, so the
+ * draw can never excuse the check it comes with.
+ */
+export const peekerFor = (configs: readonly Config[]): Config | undefined =>
+	configs.find((config) => config.peeksCommunitySplit === true);
 
 export const stripConfig = (
 	pipeline: Pipeline,

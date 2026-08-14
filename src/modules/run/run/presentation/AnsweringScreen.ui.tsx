@@ -24,6 +24,7 @@ import {
 import {
 	PollCard,
 	PollOption,
+	type PollSplitView,
 } from "~/modules/run/poll/presentation/PollCard.ui";
 import { PollOutcomeBar } from "~/modules/run/run/presentation/PollOutcomeBar.ui";
 
@@ -110,12 +111,19 @@ type AnsweringScreenProps = {
 	lintReady?: boolean;
 	linter?: Config;
 	lintCost?: number;
+	canPeek?: boolean;
+	peekReady?: boolean;
+	peeker?: Config;
+	peekCost?: number;
+	/** The bought split for this poll — absent until the peek is paid for. */
+	split?: PollSplitView;
 	canSubmit: boolean;
 	onSelect: (optionId: string) => void;
 	onSubmit: () => void;
 	/** Advances past the reveal to the next poll — the player triggers it, not a timer. */
 	onNext: () => void;
 	onLint?: () => void;
+	onPeek?: () => void;
 };
 
 export const AnsweringScreen = ({
@@ -140,16 +148,26 @@ export const AnsweringScreen = ({
 	lintReady,
 	linter,
 	lintCost,
+	canPeek,
+	peekReady,
+	peeker,
+	peekCost,
+	split,
 	canSubmit,
 	onSelect,
 	onSubmit,
 	onNext,
 	onLint,
+	onPeek,
 }: AnsweringScreenProps) => {
-	const lintActionFor = (config: Config): RowUseAction | undefined => {
-		if (!canLint || !linter || !onLint || config.id !== linter.id)
-			return undefined;
-		return { cost: lintCost, ready: lintReady ?? true, onUse: onLint };
+	// Both paid actions hang off the row of the config that sells them, so the
+	// pipeline stays the one place a build's powers are read from.
+	const useActionFor = (config: Config): RowUseAction | undefined => {
+		if (canLint && linter && onLint && config.id === linter.id)
+			return { cost: lintCost, ready: lintReady ?? true, onUse: onLint };
+		if (canPeek && peeker && onPeek && config.id === peeker.id)
+			return { cost: peekCost, ready: peekReady ?? true, onUse: onPeek };
+		return undefined;
 	};
 
 	return (
@@ -172,6 +190,7 @@ export const AnsweringScreen = ({
 					disabledOptionIds={disabledOptionIds}
 					correctOptionIds={correctOptionIds}
 					chosenOptionIds={chosenOptionIds}
+					split={split}
 					onSelect={onSelect}
 				/>
 				{revealScore ? (
@@ -224,7 +243,7 @@ export const AnsweringScreen = ({
 				</header>
 				<RoleList
 					rows={roleRows(configs, checks)}
-					getUseAction={lintActionFor}
+					getUseAction={useActionFor}
 					foldIdleRows
 				/>
 			</div>

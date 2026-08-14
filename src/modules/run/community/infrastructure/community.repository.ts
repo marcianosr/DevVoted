@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -146,6 +146,51 @@ export const fetchSessionAnswersForDay = async (
 				eq(pollResponsesTable.answer_date, date)
 			)
 		);
+
+export type PollSplitRecord = {
+	/** Everyone who has ever answered the poll, both loops. */
+	answeredCount: number;
+	picksByOptionId: Readonly<Record<number, number>>;
+};
+
+/**
+ * How the whole community has answered one poll, over the poll's entire life and
+ * across both loops (ADR-005) — deliberately not scoped to today's date or to
+ * `mode = 'session'` the way the community board is. Telemetry sells this while
+ * the poll is still open, so a day-scoped pool would leave the config dead for
+ * every early climber and thin for everyone else.
+ *
+ * Returns pick counts only. Correctness never joins this query: the caller hands
+ * the numbers to a player who has not answered yet.
+ */
+export const fetchPollSplit = async (
+	pollId: number
+): Promise<PollSplitRecord> => {
+	const [totals] = await db
+		.select({ answeredCount: sql<number>`count(*)::int` })
+		.from(pollResponsesTable)
+		.where(eq(pollResponsesTable.poll_id, pollId));
+
+	const picks = await db
+		.select({
+			optionId: pollResponseOptionsTable.option_id,
+			picks: sql<number>`count(*)::int`,
+		})
+		.from(pollResponseOptionsTable)
+		.innerJoin(
+			pollResponsesTable,
+			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
+		)
+		.where(eq(pollResponsesTable.poll_id, pollId))
+		.groupBy(pollResponseOptionsTable.option_id);
+
+	return {
+		answeredCount: totals?.answeredCount ?? 0,
+		picksByOptionId: Object.fromEntries(
+			picks.map((row) => [row.optionId, row.picks])
+		),
+	};
+};
 
 /** When today's seed dropped — the zero point for "first to answer". */
 export const fetchDailySeedCreatedAt = async (

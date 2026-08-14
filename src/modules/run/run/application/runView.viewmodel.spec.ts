@@ -92,6 +92,36 @@ describe("toRunView", () => {
 		expect(view.justUnlockedSlots).toEqual([]); // no coverage earned yet
 	});
 
+	it("prices the peek and marks the poll once it is bought", () => {
+		const installed = {
+			...answeringWith([CONFIGS.telemetry]),
+			storage: 200,
+		};
+		const offered = toRunView(installed);
+		expect(offered.canPeek).toBe(true);
+		expect(offered.peekReady).toBe(true);
+		expect(offered.peekCost).toBe(32);
+		expect(offered.peeker?.id).toBe("telemetry");
+		expect(offered.currentPollPeeked).toBe(false);
+
+		const bought = toRunView(runReducer(installed, { type: "peek-poll" }));
+		expect(bought.currentPollPeeked).toBe(true);
+		expect(bought.canPeek).toBe(false); // one look per poll
+		expect(bought.peekCost).toBe(64); // the ladder has moved
+	});
+
+	it("offers no peek to a build without the config, and none it cannot afford", () => {
+		const without = toRunView(answeringWith([CONFIGS.js]));
+		expect(without.canPeek).toBe(false);
+		expect(without.peeker).toBeNull();
+
+		// canPeek says the action exists, peekReady says it is affordable — the
+		// row shows a greyed-out price rather than vanishing.
+		const broke = toRunView(answeringWith([CONFIGS.telemetry]));
+		expect(broke.canPeek).toBe(true);
+		expect(broke.peekReady).toBe(false);
+	});
+
 	it("surfaces the gate checks and stats a screen needs", () => {
 		const view = toRunView(answeringWith([CONFIGS.js]));
 		// The .js build owes only its own check — no baseline row (ADR-017).

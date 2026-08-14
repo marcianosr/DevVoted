@@ -25,6 +25,9 @@ export type GateWindow = {
 	readonly missStreak?: number;
 	/** Worst miss run this window — reaching 2 permanently fails no-double-miss. Optional: legacy snapshots. */
 	readonly maxMissStreak?: number;
+	/** Peeks bought this window. Doubles as the fee ladder's position, which is why
+	 * the ladder and the peek demand reset together. Optional: legacy snapshots. */
+	readonly peeked?: number;
 };
 
 export const EMPTY_WINDOW: GateWindow = {
@@ -35,6 +38,7 @@ export const EMPTY_WINDOW: GateWindow = {
 	byCategory: {},
 	missStreak: 0,
 	maxMissStreak: 0,
+	peeked: 0,
 };
 
 export type CheckState = "success" | "running" | "skipped" | "failed";
@@ -359,6 +363,34 @@ const storageFloorCheck = (config: Config): GateCheckPart => {
 	};
 };
 
+/**
+ * Telemetry's demand: buy the split at least `checkAmount` times a window. The
+ * only check on the roster that asks the player to *spend* rather than to play
+ * well, so it is priced in KB rather than in correctness — at one peek a window
+ * that is the ladder's opening 32KB, which a cleared gate pays back.
+ *
+ * Standard `checkState`, unlike the correctness demand it replaced: success is
+ * sticky (a bought peek cannot be unbought) and failure only lands when the
+ * window closes short. Never skipped — carrying the config always owes the gate
+ * the fee, which is exactly what makes it a demand rather than an option.
+ */
+const peekCountCheck = (config: Config): GateCheckPart => {
+	const target = config.checkAmount ?? 1;
+	return {
+		gateCheck: ({ window }) => {
+			const peeked = window.peeked ?? 0;
+			return {
+				label: config.label,
+				progress: { kind: "answers", current: peeked, target },
+				current: peeked,
+				target,
+				state: checkState(peeked >= target, window),
+			};
+		},
+		demand: () => `${target} peek${target === 1 ? "" : "s"} this window`,
+	};
+};
+
 type ContributedCheckKind = Exclude<CheckKind, "correct" | "defeat-device">;
 
 const CHECK_BUILDERS: Record<
@@ -371,6 +403,7 @@ const CHECK_BUILDERS: Record<
 	"no-double-miss": noDoubleMissCheck,
 	breadth: breadthCheck,
 	"storage-floor": storageFloorCheck,
+	"peek-count": peekCountCheck,
 };
 
 /** The check half: the requirement the config adds to the gate window. */

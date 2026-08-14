@@ -28,6 +28,7 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		})
 		.strict(),
 	bareActionSchema("lint-poll"),
+	bareActionSchema("peek-poll"),
 	configActionSchema("strip"),
 	bareActionSchema("resume-climb"),
 	configActionSchema("draft"),

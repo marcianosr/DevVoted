@@ -10,6 +10,7 @@ import {
 	needsOf,
 	rarityOf,
 	sellRefund,
+	showsSampleSize,
 } from "~/modules/run/config/domain/config.model";
 import {
 	CONFIG_LIST,
@@ -77,6 +78,18 @@ describe("isUpgradable", () => {
 		expect(isUpgradable(CONFIGS.coverageGain)).toBe(false);
 		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
 	});
+
+	it("allows Telemetry exactly one upgrade — its own cap, not the shared 5", () => {
+		expect(isUpgradable(CONFIGS.telemetry)).toBe(true);
+		expect(isUpgradable({ ...CONFIGS.telemetry, level: 2 })).toBe(false);
+	});
+});
+
+describe("showsSampleSize", () => {
+	it("withholds the number of answers at L1 and hands it over at L2", () => {
+		expect(showsSampleSize(CONFIGS.telemetry)).toBe(false);
+		expect(showsSampleSize({ ...CONFIGS.telemetry, level: 2 })).toBe(true);
+	});
 });
 
 describe("describeConfig", () => {
@@ -121,6 +134,28 @@ describe("givesOf / needsOf", () => {
 	it("derives Unit Tests' gives from its level", () => {
 		expect(givesOf(CONFIGS.unitTests)).toBe("+32KB on clear");
 		expect(givesOf({ ...CONFIGS.unitTests, level: 3 })).toBe("+96KB on clear");
+	});
+
+	it("adds the sample size to Telemetry's gives once it is upgraded", () => {
+		expect(givesOf(CONFIGS.telemetry)).toBe(
+			"See how the community answered this poll"
+		);
+		expect(givesOf({ ...CONFIGS.telemetry, level: 2 })).toBe(
+			"See how the community answered, and how many answered"
+		);
+	});
+
+	it("keeps Telemetry's demand level-independent — the upgrade buys the reading, not the price", () => {
+		expect(needsOf(CONFIGS.telemetry)).toBe("Peek at least once each gate");
+		expect(needsOf({ ...CONFIGS.telemetry, level: 2 })).toBe(
+			"Peek at least once each gate"
+		);
+	});
+
+	it("reads Telemetry's demand off checkAmount rather than hardcoding one", () => {
+		expect(needsOf({ ...CONFIGS.telemetry, checkAmount: 3 })).toBe(
+			"Peek at least 3× each gate"
+		);
 	});
 });
 

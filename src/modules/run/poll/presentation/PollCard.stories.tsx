@@ -50,6 +50,39 @@ export const WithLintedOption: Story = {
 	},
 };
 
+/**
+ * A bought peek at Telemetry level 1 (DVTD-fpf9). The bars are pewter on purpose:
+ * a crowd favourite is not a right answer, and the player is reading a hint, not
+ * a verdict. What they cannot see is how many people those percentages stand on —
+ * this could be 42 developers or three.
+ */
+export const WithCommunitySplit: Story = {
+	args: {
+		category: "js",
+		question: "Which coerces to true?",
+		answerType: "single",
+		options,
+		split: { percentByOptionId: { a: 71, b: 22, c: 7 } },
+		onSelect: () => {},
+	},
+};
+
+/**
+ * The same peek at level 2, where the sample size arrives. It is the whole
+ * upgrade: 71% of 127 answers is worth following, 71% of 7 is a coin toss with
+ * extra steps.
+ */
+export const WithCommunitySplitAndSampleSize: Story = {
+	args: {
+		category: "js",
+		question: "Which coerces to true?",
+		answerType: "single",
+		options,
+		split: { percentByOptionId: { a: 71, b: 22, c: 7 }, answeredCount: 127 },
+		onSelect: () => {},
+	},
+};
+
 export const WithCodeExample: Story = {
 	args: {
 		category: "js",

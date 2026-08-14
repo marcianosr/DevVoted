@@ -3,6 +3,7 @@ import {
 	type AnsweredPoll,
 	type AnswerOutcome,
 	type AnswerType,
+	canBuyPeek,
 	canExtend,
 	canLock,
 	canRebuild,
@@ -15,6 +16,8 @@ import {
 	isRunOver,
 	lintApplies,
 	lintCost,
+	peekApplies,
+	peekCost,
 	type RunPoll,
 	type RunState,
 	type RunStatus,
@@ -40,6 +43,7 @@ import {
 	type PipelineModifiers,
 	coverageToAddSlot,
 	linterFor,
+	peekerFor,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
@@ -150,6 +154,13 @@ export type RunView = {
 	readonly lintReady: boolean;
 	readonly lintCost: number;
 	readonly linter: Config | null;
+	readonly canPeek: boolean;
+	readonly peekReady: boolean;
+	readonly peekCost: number;
+	readonly peeker: Config | null;
+	/** Whether this poll's split is already paid for — the screen shows the bars
+	 * off this, and the split query refuses to answer until it is true. */
+	readonly currentPollPeeked: boolean;
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;
 
@@ -354,6 +365,12 @@ export const toRunView = (state: RunState): RunView => {
 		canLint: lintApplies(state),
 		lintReady: canRunLinter(state),
 		lintCost: nextLintCost,
+		canPeek: peekApplies(state),
+		peekReady: canBuyPeek(state),
+		peekCost: peekCost(state.window.peeked ?? 0),
+		peeker: peekerFor(state.pipeline.configs) ?? null,
+		currentPollPeeked:
+			current !== undefined && (state.peekedPollIds ?? []).includes(current.id),
 		rebuildCost: nextRebuildCost,
 		canRebuild: canRebuild(state),
 		lockAvailable: lockAvailable(state),

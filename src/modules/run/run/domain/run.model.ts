@@ -5,6 +5,7 @@ import {
 	BASE_SLOTS,
 	canAddSlot,
 	canLint,
+	peekerFor,
 	type CoverageBreakdown,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
@@ -69,6 +70,14 @@ const LINT_COSTS = [8, 16, 32, 64, 128, 256];
 
 export const lintCost = (usesThisPoll: number): number =>
 	LINT_COSTS[usesThisPoll] ?? LINT_COSTS[LINT_COSTS.length - 1];
+
+// One rung above the lint ladder, and it resets per GATE rather than per poll:
+// a peek buys information about the whole poll where a lint buys one crossed-out
+// option, so the second peek of a window has to hurt.
+const PEEK_COSTS = [32, 64, 128, 256, 512];
+
+export const peekCost = (usesThisGate: number): number =>
+	PEEK_COSTS[usesThisGate] ?? PEEK_COSTS[PEEK_COSTS.length - 1];
 
 const addStorage = (current: number, income: number): number =>
 	current + income;
@@ -198,6 +207,10 @@ export type RunState = {
 	readonly currentIndex: number;
 	readonly window: GateWindow;
 	readonly manualDisabled: readonly string[];
+	/** Polls whose community split has been bought, for the whole run rather than
+	 * the window: the split screen has to survive a reload, and the server reads
+	 * this list to decide whether it may hand the numbers over at all. */
+	readonly peekedPollIds?: readonly string[];
 	readonly gatesCleared: number;
 	readonly streak: number;
 	readonly coverage: number;
@@ -228,6 +241,7 @@ export type RunAction =
 			readonly elapsedMs?: number;
 	  }
 	| { readonly type: "lint-poll" }
+	| { readonly type: "peek-poll" }
 	| { readonly type: "strip"; readonly configId: string }
 	| { readonly type: "resume-climb" }
 	| { readonly type: "draft"; readonly configId: string }
@@ -259,6 +273,7 @@ export const createRun = (
 	currentIndex: 0,
 	window: EMPTY_WINDOW,
 	manualDisabled: [],
+	peekedPollIds: [],
 	gatesCleared: 0,
 	streak: 0,
 	coverage: 0,
@@ -538,6 +553,7 @@ const answer = (
 		},
 		missStreak,
 		maxMissStreak: Math.max(state.window.maxMissStreak ?? 0, missStreak),
+		peeked: state.window.peeked ?? 0,
 	};
 
 	const answeredPoll: AnsweredPoll = {
@@ -619,6 +635,33 @@ const spendLint = (state: RunState): RunState => {
 		storage: state.storage - cost,
 		manualDisabled: [...state.manualDisabled, wrongStillOn(state)[0].id],
 		log: withLog(state, `Ran the linter (-${cost}KB).`),
+	};
+};
+
+/**
+ * A peek is available on any poll, in any category — the split exists for all of
+ * them. Once per poll: the whole split comes over at once, so a second look on
+ * the same poll would be a charge for nothing.
+ */
+export const peekApplies = (state: RunState): boolean => {
+	const poll = state.polls[state.currentIndex];
+	if (!poll || !peekerFor(state.pipeline.configs)) return false;
+	return !(state.peekedPollIds ?? []).includes(poll.id);
+};
+
+export const canBuyPeek = (state: RunState): boolean =>
+	peekApplies(state) && state.storage >= peekCost(state.window.peeked ?? 0);
+
+const spendPeek = (state: RunState): RunState => {
+	if (!canBuyPeek(state)) return state;
+	const poll = state.polls[state.currentIndex];
+	const cost = peekCost(state.window.peeked ?? 0);
+	return {
+		...state,
+		storage: state.storage - cost,
+		peekedPollIds: [...(state.peekedPollIds ?? []), poll.id],
+		window: { ...state.window, peeked: (state.window.peeked ?? 0) + 1 },
+		log: withLog(state, `Peeked at the community split (-${cost}KB).`),
 	};
 };
 
@@ -967,6 +1010,8 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return answer(state, action.optionIds, action.elapsedMs);
 	if (action.type === "lint-poll" && state.status === "answering")
 		return spendLint(state);
+	if (action.type === "peek-poll" && state.status === "answering")
+		return spendPeek(state);
 	if (action.type === "strip" && state.status === "awaiting-strip")
 		return strip(state, action.configId);
 	if (action.type === "resume-climb" && state.status === "awaiting-strip")

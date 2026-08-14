@@ -13,6 +13,16 @@ import {
 
 export type { PollOption };
 
+/**
+ * A bought community split (Telemetry). `answeredCount` arrives only at level 2,
+ * and its absence is load-bearing: without it the bars have no denominator, which
+ * is exactly what level 1 sells.
+ */
+export type PollSplitView = {
+	readonly percentByOptionId: Readonly<Record<string, number>>;
+	readonly answeredCount?: number;
+};
+
 type PollCardProps = {
 	category: CategoryCode;
 	question: string;
@@ -24,6 +34,7 @@ type PollCardProps = {
 	disabledOptionIds?: readonly string[];
 	correctOptionIds?: readonly string[];
 	chosenOptionIds?: readonly string[];
+	split?: PollSplitView;
 	onSelect: (optionId: string) => void;
 };
 
@@ -44,6 +55,7 @@ export const PollCard = ({
 	disabledOptionIds = [],
 	correctOptionIds,
 	chosenOptionIds = [],
+	split,
 	onSelect,
 }: PollCardProps) => {
 	return (
@@ -71,8 +83,16 @@ export const PollCard = ({
 				disabledOptionIds={disabledOptionIds}
 				correctOptionIds={correctOptionIds}
 				chosenOptionIds={chosenOptionIds}
+				splitPercentByOptionId={split?.percentByOptionId}
 				onSelect={onSelect}
 			/>
+
+			{split?.answeredCount === undefined ? null : (
+				<Paragraph as="span" size="xs" tone="muted">
+					based on {split.answeredCount} answer
+					{split.answeredCount === 1 ? "" : "s"}
+				</Paragraph>
+			)}
 		</div>
 	);
 };

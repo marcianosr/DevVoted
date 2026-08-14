@@ -18,6 +18,10 @@ export const sessionRunQueryKeys = {
 	today: (date: string) => [...sessionRunQueryKeys.all, date] as const,
 	community: (date: string) =>
 		[...sessionRunQueryKeys.all, "community", date] as const,
+	/** Keyed by poll rather than by date: a peek is bought once and stays bought
+	 * for as long as that poll is on screen. */
+	pollSplit: (pollId: number) =>
+		[...sessionRunQueryKeys.all, "split", pollId] as const,
 };
 
 export const pollQueryKeys = {

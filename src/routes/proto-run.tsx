@@ -19,11 +19,14 @@ import {
 	type RunCommunityBoardProps,
 } from "~/modules/run/community/presentation/RunCommunity.ui";
 import { longestCorrectStreak } from "~/modules/run/community/domain/standouts.model";
+import type { Config } from "~/modules/run/config/domain/config.model";
+import { showsSampleSize } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import { rebuildCost } from "~/modules/run/shop/domain/draft.model";
 import { coverageToAddSlot } from "~/modules/run/pipeline/domain/pipeline.model";
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
+import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui";
 import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
 import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";
 import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
@@ -181,6 +184,34 @@ const simulatedPickLabels = (poll: RunPoll, trainer: SimTrainer): string[] => {
 
 const sameLabelSet = (a: readonly string[], b: readonly string[]): boolean =>
 	a.length === b.length && a.every((label) => b.includes(label));
+
+/**
+ * Telemetry's peek, off the same seven simulated trainers the community board
+ * uses — so the split you pay for mid-poll and the board you read afterwards
+ * agree. The real screen buys this from the server; the prototype has no run to
+ * authorize against, so it fakes the data and keeps the mechanic honest instead.
+ *
+ * Keyed by option id (the answering screen's shape), not by label like the board.
+ * The denominator is the trainers alone: you have not answered yet.
+ */
+const simulatePollSplit = (poll: RunPoll, peeker: Config): PollSplitView => {
+	const percentByOptionId = Object.fromEntries(
+		poll.options.map((option) => [
+			option.id,
+			Math.round(
+				(TRAINERS.filter((trainer) =>
+					simulatedPickLabels(poll, trainer).includes(option.label)
+				).length /
+					TRAINERS.length) *
+					100
+			),
+		])
+	);
+	return {
+		percentByOptionId,
+		...(showsSampleSize(peeker) ? { answeredCount: TRAINERS.length } : {}),
+	};
+};
 
 const YOU: CommunityVoter = { id: "you", displayName: "You", you: true };
 
@@ -516,11 +547,24 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						lintReady={view.lintReady}
 						linter={view.linter ?? undefined}
 						lintCost={view.lintCost}
+						canPeek={view.canPeek}
+						peekReady={view.peekReady}
+						peeker={view.peeker ?? undefined}
+						peekCost={view.peekCost}
+						split={
+							view.currentPollPeeked && view.peeker
+								? simulatePollSplit(
+										state.polls[state.currentIndex],
+										view.peeker
+									)
+								: undefined
+						}
 						canSubmit={canSubmit}
 						onSelect={onSelect}
 						onSubmit={() => answer(selected)}
 						onNext={() => {}}
 						onLint={() => dispatch({ type: "lint-poll" })}
+						onPeek={() => dispatch({ type: "peek-poll" })}
 					/>
 				</Screen>
 			)}

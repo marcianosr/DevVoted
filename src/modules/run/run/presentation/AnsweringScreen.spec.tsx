@@ -136,6 +136,86 @@ describe(AnsweringScreen, () => {
 		expect(screen.getByRole("img", { name: "skipped" })).toBeInTheDocument();
 	});
 
+	it("buys a peek from Telemetry's pipeline row", () => {
+		const onPeek = vi.fn();
+		render(
+			<AnsweringScreen
+				{...base}
+				configs={[CONFIGS.unitTests, CONFIGS.telemetry]}
+				canPeek
+				peekReady
+				peeker={CONFIGS.telemetry}
+				peekCost={32}
+				onPeek={onPeek}
+			/>
+		);
+		fireEvent.click(screen.getByRole("button", { name: "use 32KB" }));
+		expect(onPeek).toHaveBeenCalledOnce();
+	});
+
+	it("disables the peek the balance cannot cover", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				configs={[CONFIGS.telemetry]}
+				canPeek
+				peekReady={false}
+				peeker={CONFIGS.telemetry}
+				peekCost={64}
+				onPeek={vi.fn()}
+			/>
+		);
+		expect(screen.getByRole("button", { name: "use 64KB" })).toBeDisabled();
+	});
+
+	it("shows the community share on each option once the peek is bought", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				configs={[CONFIGS.telemetry]}
+				split={{ percentByOptionId: { a: 71, b: 29 } }}
+			/>
+		);
+		expect(screen.getByText("71%")).toBeInTheDocument();
+		expect(screen.getByText("29%")).toBeInTheDocument();
+	});
+
+	it("reads an unpicked option as 0% rather than leaving it blank", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				configs={[CONFIGS.telemetry]}
+				split={{ percentByOptionId: { a: 100 } }}
+			/>
+		);
+		expect(screen.getByText("0%")).toBeInTheDocument();
+	});
+
+	it("names the sample size only when the split carries one (Telemetry L2)", () => {
+		const { rerender } = render(
+			<AnsweringScreen
+				{...base}
+				configs={[CONFIGS.telemetry]}
+				split={{ percentByOptionId: { a: 71, b: 29 } }}
+			/>
+		);
+		expect(screen.queryByText(/based on/)).not.toBeInTheDocument();
+
+		rerender(
+			<AnsweringScreen
+				{...base}
+				configs={[{ ...CONFIGS.telemetry, level: 2 }]}
+				split={{ percentByOptionId: { a: 71, b: 29 }, answeredCount: 127 }}
+			/>
+		);
+		expect(screen.getByText("based on 127 answers")).toBeInTheDocument();
+	});
+
+	it("shows no percentages at all before a peek is paid for", () => {
+		render(<AnsweringScreen {...base} configs={[CONFIGS.telemetry]} />);
+		expect(screen.queryByText(/%$/)).not.toBeInTheDocument();
+	});
+
 	it("heads the pipeline section like the configure screen, slots counted", () => {
 		render(<AnsweringScreen {...base} slots={4} />);
 		expect(

@@ -31,6 +31,7 @@ import {
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	answerOutcome,
+	canBuyPeek,
 	createRun,
 	isAwaitingTomorrow,
 	runReducer,
@@ -57,6 +58,7 @@ const pool = (size: number): RunPoll[] =>
 	Array.from({ length: size }, (_, index) => poll(`kazooie-${index}`, true));
 
 const handed = [
+	CONFIGS.telemetry,
 	CONFIGS.mooresLaw,
 	CONFIGS.unitTests,
 	CONFIGS.js,
@@ -642,6 +644,97 @@ describe("linter mastery checks", () => {
 		);
 		expect(row?.label).toBe("ESLint mastery");
 		expect(row?.progress).toEqual({ kind: "answers", current: 1, target: 1 });
+	});
+});
+
+describe("Telemetry peeks", () => {
+	// ts/css masteries skip on the react-only pool, so Telemetry's is the only
+	// check that judges this window.
+	const peekingRun = (): RunState => ({
+		...started(["telemetry"]),
+		storage: 200,
+	});
+
+	const peek = (state: RunState): RunState =>
+		runReducer(state, { type: "peek-poll" });
+
+	it("charges 32KB and records the poll it bought", () => {
+		const state = peek(peekingRun());
+		expect(state.storage).toBe(168);
+		expect(state.peekedPollIds).toEqual([state.polls[0].id]);
+		expect(state.window.peeked).toBe(1);
+	});
+
+	it("doubles the fee for a second peek in the same gate", () => {
+		let state = peek(peekingRun());
+		state = answerWith(state, true);
+		state = peek(state);
+		expect(state.storage).toBe(104); // 200 - 32 - 64
+	});
+
+	it("refuses a second peek on the same poll — the split comes over once", () => {
+		const bought = peek(peekingRun());
+		expect(peek(bought)).toBe(bought);
+	});
+
+	it("refuses a peek no installed config sells", () => {
+		const state = { ...started(["js"]), storage: 200 };
+		expect(peek(state)).toBe(state);
+	});
+
+	it("refuses a peek the balance cannot cover", () => {
+		const broke = { ...peekingRun(), storage: 31 };
+		expect(peek(broke)).toBe(broke);
+	});
+
+	it("clears the gate once the window has bought its peek", () => {
+		let state = peek(peekingRun());
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+		expect(state.status).toBe("rewarding");
+	});
+
+	it("fails a perfect window that never peeked at all", () => {
+		// The demand is the fee, not the answers: 5/5 does not pay it.
+		let state = peekingRun();
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("awaiting-strip");
+	});
+
+	it("does not care how a peeked poll was answered", () => {
+		let state = peek(peekingRun());
+		state = answerWith(state, false);
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+	});
+
+	it("resets the ladder at the next gate, so a peek never gets permanently expensive", () => {
+		let state = peek(peekingRun());
+		state = answerWith(state, true);
+		state = peek(state);
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+		expect(state.window.peeked).toBe(0);
+	});
+
+	it("cannot pay the demand on a balance under 32KB, which is a lost gate", () => {
+		// The trap this check accepts by design (ADR-031's rule points the other
+		// way): one rung is all it asks, and a balance under it loses the window
+		// before it starts.
+		let state = { ...peekingRun(), storage: 31 };
+		expect(canBuyPeek(state)).toBe(false);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("awaiting-strip");
+	});
+
+	it("keeps peeked polls for the whole run, so the split survives a later gate", () => {
+		let state = peek(peekingRun());
+		const peekedId = state.polls[0].id;
+		state = answerWith(state, true);
+		state = peek(state);
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
+		expect(state.peekedPollIds).toContain(peekedId);
+		expect(state.peekedPollIds).toHaveLength(2);
 	});
 });
 

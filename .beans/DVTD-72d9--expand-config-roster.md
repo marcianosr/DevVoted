@@ -5,7 +5,7 @@ status: in-progress
 type: milestone
 priority: normal
 created_at: 2026-07-24T15:25:42Z
-updated_at: 2026-08-14T10:02:10Z
+updated_at: 2026-08-14T11:22:35Z
 parent: DVTD-d0fw
 ---
 
@@ -99,7 +99,7 @@ Keepers, roughly by ship order:
 
 - [ ] Hotfix (rare): failed gate still opens the shop. Check: gate after an emergency shop must clear. **Corrected 2026-08-14**: the peel refund does NOT belong here — the agreed roster below gives it to **Garbage Collection** (a peeled config pays its sell value), which is strictly better since it scales with what you lost. My skip-based "Garbage Collector" died (no skip mechanic exists, which also makes Cold cache's check vacuous today); the name survives on Marciano's version.
 - [ ] git stash (uncommon): stash the current poll to the window's end. Check: stashed poll must be correct. Converges on Rebase (stash makes a poll last and binds it) — likely ships as the affordable version, Rebase becomes its upgrade or dies.
-- [ ] Telemetry (uncommon, name taken from the Phase 2 ghost design): pay 32/64/128… doubling per use, resets per gate, to see the community split on the current poll; quorum-gated. Check: each peeked poll must be correct. Phase 2's ghost-duel version renamed **Benchmark**.
+- [x] **Telemetry** — BUILT 2026-08-14 (DVTD-fpf9). Fee ladder 32/64/128, resets per gate. Check: each peeked poll must be correct. Two changes from this line: the pool is **all-time, both loops** (not today's session answers, which leave early climbers with nothing), and there is **no quorum gate** — L1 sells percentages with no sample size, so a 2-answer 100% and a 127-answer 100% draw the same bar. That blindness is the L1 product; L2 (64KB, maxLevel 2) adds the sample size. Phase 2's ghost-duel version renamed **Benchmark**.
 - Dual-focus family: split out to its own bean, **DVTD-9hm8** (it needs a plural `focusCategory`, so it does not belong in this one).
 - [ ] Watch (uncommon): pick a category at draft, double draw weight from the daily pool. Check: every appearance must be correct. Sim first — this is the aim lever measured at 5×.
 - [ ] `--save-exact` (uncommon): drafts 20% cheaper, configs can never be sold (peel unaffected). Dial collision: Dependabot's "may not sell" — only one ships as-is.

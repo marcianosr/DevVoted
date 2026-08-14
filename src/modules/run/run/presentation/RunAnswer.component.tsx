@@ -9,6 +9,7 @@ import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
 import { Screen } from "~/ui/Screen.ui";
 
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
+import { usePollSplit } from "~/modules/run/community/application/usePollSplit.hook";
 import {
 	type RunActionSuccess,
 	useRunActions,
@@ -42,6 +43,13 @@ export const RunAnswer = () => {
 	}, [view?.poll?.id]);
 
 	const [reveal, setReveal] = useState<RevealState | null>(null);
+
+	// Above the early return, so the hook count never moves. The engine decides
+	// whether this poll is paid for; the query only asks once it says so.
+	const { split } = usePollSplit({
+		pollId: view?.poll?.id ?? null,
+		paid: view?.currentPollPeeked ?? false,
+	});
 
 	// Abandoning is destructive (all leftover storage forfeits), so the button
 	// opens a confirm dialog instead of firing directly.
@@ -118,11 +126,17 @@ export const RunAnswer = () => {
 				lintReady={view.lintReady && !busy && !reveal}
 				linter={view.linter ?? undefined}
 				lintCost={view.lintCost}
+				canPeek={view.canPeek}
+				peekReady={view.peekReady && !busy && !reveal}
+				peeker={view.peeker ?? undefined}
+				peekCost={view.peekCost}
+				split={split ?? undefined}
 				canSubmit={canSubmit}
 				onSelect={onSelect}
 				onSubmit={submitAnswer}
 				onNext={advanceFromReveal}
 				onLint={() => send({ type: "lint-poll" })}
+				onPeek={() => send({ type: "peek-poll" })}
 			/>
 			<ConfirmDialog
 				isOpen={confirmingAbandon}

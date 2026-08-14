@@ -41,7 +41,7 @@ Because DevVoted is in active development, every article carries a status tag:
   - [4.2 Rarity](#42-rarity)
   - [4.3 Config Roster](#43-config-roster)
   - [4.4 Upgrades](#44-upgrades)
-  - [4.5 The Lint Action](#45-the-lint-action)
+  - [4.5 Paid Actions: Lint and Peek](#45-paid-actions-lint-and-peek)
   - [4.6 Parked & Planned Configs](#46-parked--planned-configs)
   - [4.7 Synergies](#47-synergies)
 - [5. Economy](#5-economy)
@@ -452,7 +452,8 @@ Sources, all authoritative over this table: `minConfigsForGate`, `dropCount`,
 | Pipeline slots 4–14 | total coverage % | [3.1](#31-slots--expansion) |
 | Focus config levels | that category's coverage % | [4.4](#44-upgrades) |
 | Unit Tests levels | storage (32KB × level bought) | [4.4](#44-upgrades) |
-| Lint fee | uses within the current poll | [4.5](#45-the-lint-action) |
+| Lint fee | uses within the current poll | [4.5](#45-paid-actions-lint-and-peek) |
+| Peek fee | peeks within the current gate | [4.5](#45-paid-actions-lint-and-peek) |
 | Rebuild price | rebuilds within the current shop | [5.2](#52-the-shop) |
 | Swatches, Dex, borders | account-level, across runs | [6. Meta-progression](#6-meta-progression) |
 
@@ -611,7 +612,7 @@ One table, every config. Each entry reads **Effect / Check**.
 | `.every()` | common | +1% when a category you've 5-streaked appears | Don't break your streak this gate | 🟡 |
 | Semver | common | Coverage ×1.2 for each Focus config at L2 or higher | No Focus config may sit at L1 | 🟡 |
 | Rate limiter | common | Wrong answers don't bleed coverage | No single poll may earn more than 3% coverage | 🟡 |
-| Telemetry | uncommon | Pay per use (32 → 64 → 128 KB, doubling, resets each gate) to see the community split on the current poll; quorum-gated | Each peeked poll must be answered correctly | 🟡 |
+| Telemetry | uncommon | Pay per use (32 → 64 → 128 KB, doubling, resets each gate) to see how everyone who ever answered this poll voted. L1 shows percentages only; L2 adds the sample size (see [4.4](#44-upgrades)) | Peek at least once each gate | 🟢 |
 | Benchmark | uncommon | See your paired ghost's answer before you commit (formerly named Telemetry) | Your gate coverage must beat that ghost's | 🟡 |
 | Cold cache | uncommon | The gate's first poll pays nothing; every poll after pays ×1.5 | You must answer all 5 polls — skipping breaks the warm-up | 🟡 |
 | Dependabot | uncommon | Each gate, one random config of yours upgrades a level for free | You may not sell configs | 🟡 |
@@ -708,7 +709,8 @@ effect.
 ### 4.4 Upgrades
 
 Every upgrade caps at **level 5** (`maxLevel` on the config, default 5 — the
-5-poll window is the natural demand ceiling).
+5-poll window is the natural demand ceiling). Telemetry is the exception at
+`maxLevel: 2`, below.
 
 **Focus configs** upgrade free of storage but are **coverage-gated**: level
 N → N+1 requires 5% × N coverage in that category. Each level raises the payout
@@ -730,17 +732,66 @@ level on clear, and +1 to the correct-answer demand. Nothing else moves it
 owes 1 correct answer at every gate. The total clamps to the window, so only
 bought levels can demand a perfect 5/5.
 
+**Telemetry upgrades once, and buys honesty rather than power** (64 KB, storage,
+`maxLevel: 2`). L1 hands over the percentages with no denominator attached, so
+100% of two players and 100% of a hundred are the same picture: the config can
+talk you into a wrong answer, and that risk is what its draft price buys. L2 adds
+one line — "based on 127 answers" — which is the only thing that separates those
+two readings. The number is withheld server-side, never merely hidden in the UI,
+so the L1 blindness survives a devtools tab. There is no L3 because there is no
+third thing left to reveal that is not just the answer.
+
 In flux: the stories also propose archived-storage-funded, 10-level cross-run
 upgrades (DVTD-z94q); the upgrade currency question (run storage vs archived
 storage vs coverage) is explicitly unreconciled.
 
-### 4.5 The Lint Action
+### 4.5 Paid Actions: Lint and Peek
 
-If a linter covering the poll's category is equipped, a lint button appears: pay
-to gray out one wrong option. Linted polls never reveal their correct answer in
-community views; they may reappear in a later seed. The cost doubles with each use
-within a poll (8 → 16 → 32 → 64 → 128 → 256 KB, capped) and resets each poll, to stop
-lint-spam.
+Two configs sell an action rather than a passive, and both meter it with a
+doubling fee (§4.1: fees price actions). Both actions hang off the selling
+config's own pipeline row, so a build's powers are all read in one place.
+
+**Lint.** If a linter covering the poll's category is equipped, a lint button
+appears: pay to gray out one wrong option. Linted polls never reveal their correct
+answer in community views; they may reappear in a later seed. The cost doubles with
+each use within a poll (8 → 16 → 32 → 64 → 128 → 256 KB, capped) and resets each
+poll, to stop lint-spam. The linter's check asks for competence in its categories,
+never proof that the fee was paid — forcing an action makes an unaffordable window
+fatal (ADR-031).
+
+**Peek** (Telemetry, DVTD-fpf9). Pay to see how the community voted on the poll in
+front of you, drawn as a gray bar per option. The pool is every answer that poll
+has ever taken, both loops — not today's climbers, who on a quiet morning are
+nobody. The fee doubles per use and resets **each gate** rather than each poll
+(32 → 64 → 128 → 256 → 512 KB, capped): a peek buys the whole poll where a lint
+buys one option, so the second peek of a window has to hurt. One peek per poll —
+the split arrives complete.
+
+Unlike the lint, the peek's check *is* the action: **you must peek at least once
+each gate** (`checkAmount`, so the count is a dial). Carrying Telemetry therefore
+owes the gate the ladder's first rung, **32 KB a window, every window**, and an
+unpeeked window fails. It is the only check on the roster priced in KB rather than
+in play, and the only one that cannot be dodged by declining to use the config.
+
+**This deliberately breaks the lint rule directly above it** (Marciano's call,
+2026-08-14). The linter refuses to demand proof of purchase because an
+unaffordable window then becomes a death the player never chose — ADR-031's trap
+rule. Telemetry accepts a narrow version of that trap: enter a window under 32 KB
+and the gate is lost before the first poll. Four things make it survivable rather
+than punishing: one rung is the cheapest the ladder gets and a cleared gate pays it
+straight back (32 KB × gate number), it is never handed at run start (so gate 0 can
+never be lost to it), the loss is one gate rather than a spiral, and the peel is
+the escape — shedding it takes the demand with it. What it buys in exchange is a
+config that forces you to *hear the room* once a window whether you want to or not,
+which at L1 is an opinion you cannot calibrate.
+
+The count was two peeks (96 KB a window) for a day, and was cut to one on
+2026-08-14: two rungs outran the gate payout until gate 2, which made an early
+draft a bill the run could not pay rather than a tension.
+
+Correctness never travels with a peek. The server hands over option ids and
+percentages for polls the run has already paid on, and nothing else — a peek is a
+hint, not an answer.
 
 ### 4.6 Parked & Planned Configs
 
