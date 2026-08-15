@@ -18,7 +18,9 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import type { TextTone } from "~/ui/typography/textTone";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { SwatchLabel } from "~/modules/run/gate/presentation/SwatchLabel.ui";
+import { GateStakeRewards } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { StorageGauge } from "~/modules/run/run/presentation/StorageGauge.ui";
+import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
 
 type RewardScreenProps = {
 	clearedGate: number;
@@ -32,6 +34,8 @@ type RewardScreenProps = {
 	extraPickThisGateKb?: number;
 	billKb?: number;
 	planDowngraded?: boolean;
+	/** The gate this clear opens onto, so the shop that follows has a target. */
+	nextStake?: GateStake;
 	onReviewAnswers?: () => void;
 	onContinue?: () => void;
 };
@@ -130,6 +134,7 @@ export const RewardScreen = ({
 	extraPickThisGateKb,
 	billKb,
 	planDowngraded,
+	nextStake,
 	onReviewAnswers,
 	onContinue,
 }: RewardScreenProps) => {
@@ -204,6 +209,15 @@ export const RewardScreen = ({
 				<Paragraph size="sm" tone="cinnabar">
 					Storage bill unpaid — downgraded to the free tier.
 				</Paragraph>
+			) : null}
+
+			{/* Left-aligned inside a centred screen: the ledger reads the same here
+			    as it will in the shop this button opens. Only the payout shows — the
+			    demand and game-over rules belong to the gate ahead, not this clear. */}
+			{nextStake ? (
+				<div className="w-full text-left">
+					<GateStakeRewards stake={nextStake} lead="Next up" />
+				</div>
 			) : null}
 
 			{(answered.length > 0 && onReviewAnswers) || onContinue ? (

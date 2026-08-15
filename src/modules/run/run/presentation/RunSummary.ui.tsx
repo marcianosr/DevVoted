@@ -6,7 +6,10 @@ import {
 	type GateOutcomeStatus,
 } from "~/modules/run/gate/domain/gateLadder.model";
 import { swatchesEarnedAt } from "~/modules/run/gate/domain/swatch.model";
-import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
+import {
+	configFloorForGate,
+	storageCreditRate,
+} from "~/modules/run/run/domain/rules.model";
 import { MetaStorageBar } from "~/modules/run/run/presentation/MetaStorageBar.ui";
 import { StatusLine } from "~/ui/StatusLine.ui";
 import { type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
@@ -43,6 +46,14 @@ const STATUS_TONE: Record<GateOutcomeStatus, TextTone> = {
 	skip: "muted",
 };
 
+/**
+ * The rule that ended the run, in the words the stake receipt used before the
+ * gate. Every death route lands under the same floor (ADR-021), so the summary
+ * names the floor rather than guessing which route got there.
+ */
+const breakLine = (gatesCleared: number, configsHeld: number): string =>
+	`Your pipeline held ${configsHeld} config${configsHeld === 1 ? "" : "s"} — gate ${gatesCleared} ends a run below ${configFloorForGate(gatesCleared)}.`;
+
 const gateLabel = ({ gate, status }: GateOutcome): string => {
 	if (status === "pass") return `Gate ${gate} cleared`;
 	if (status === "fail") return `Gate ${gate} — pipeline broke here`;
@@ -75,7 +86,7 @@ export const RunSummary = ({
 				<Subtitle>
 					{won
 						? "You cleared every gate with your build intact."
-						: "Your pipeline was stripped bare and broke."}
+						: breakLine(gatesCleared, configs?.length ?? 0)}
 				</Subtitle>
 			</header>
 

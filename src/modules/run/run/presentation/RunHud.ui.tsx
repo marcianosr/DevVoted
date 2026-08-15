@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 
 import { getCategories } from "~/shared/lib/categories";
+import { coverageLapFor } from "~/modules/run/pipeline/domain/pipeline.model";
 import { Popover } from "~/ui/Popover.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import {
@@ -25,6 +26,12 @@ type RunHudProps = {
 	coverageByCategory: Readonly<Record<string, number>>;
 };
 
+/** Plain % on the first lap; the rigor name carries the wrap after that. */
+const lapLabel = (coverage: number): string => {
+	const { lap, name, remainder } = coverageLapFor(coverage);
+	return lap === 1 ? `${remainder}%` : `${name} ${remainder}%`;
+};
+
 const CoverageSummary = ({
 	coverage,
 	coverageByCategory,
@@ -43,7 +50,7 @@ const CoverageSummary = ({
 					Coverage
 				</Paragraph>
 				<Paragraph as="span" size="xs" tone="theme">
-					{coverage}%
+					{lapLabel(coverage)}
 				</Paragraph>
 			</span>
 		);
@@ -57,7 +64,7 @@ const CoverageSummary = ({
 							Coverage
 						</Paragraph>
 						<Paragraph as="span" size="xs" tone="theme">
-							{coverage}%
+							{lapLabel(coverage)}
 						</Paragraph>
 					</span>
 					<Paragraph as="span" size="xs" tone="muted">

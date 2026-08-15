@@ -2,10 +2,10 @@
 # DVTD-72d9
 title: Expand config roster
 status: in-progress
-type: milestone
+type: epic
 priority: normal
 created_at: 2026-07-24T15:25:42Z
-updated_at: 2026-08-14T13:44:29Z
+updated_at: 2026-08-15T13:53:34Z
 parent: DVTD-d0fw
 ---
 
@@ -347,3 +347,8 @@ Impact: Victim pays storage if they want to reveal it.
 ### See next gate category mix
 Benefit: See upcoming gate category distribution (next gate poll mix revealed).
 Check: Correct in biggest category AND draft at least one config targeting a revealed category.
+
+### Deprecated (Ice Cream/Popcorn)
+Benefit: Starts at ×2 coverage multiplier, loses ×0.25 per gate, deletes itself at ×1.
+Check: (Undecided).
+Rationale: Cheap for its power; the visible countdown is the honest version of a decay mechanic (withhold nothing, falsify nothing).

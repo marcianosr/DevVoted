@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. **Supersedes ADR-006 Decision 7** ("pick exactly one" reward) and **amends ADR-006 Decisions 1 and 10**. Found and decided during playtest DVTD-8eij / bug DVTD-k13o.
+Accepted. **Supersedes ADR-006 Decision 7** ("pick exactly one" reward) and **amends ADR-006 Decisions 1 and 10**. Found and decided during playtest DVTD-8eij / bug DVTD-k13o. **Decision 2's coverage ladder superseded by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): slots are granted by gate clears; Decisions 1 and 3 stand.
 
 ## Context
 
@@ -33,7 +33,7 @@ Coverage is a **gate, not a currency** — it is *not* consumed on purchase, mir
 
 The threshold ladder and cap are **live-tuned in `pipeline.model.ts`** (`SLOT_COVERAGE_GATE` / `coverageToAddSlot` / `canAddSlot`) — that file is the source of truth, not this ADR, since the numbers change with playtesting. The shop surfaces the requirement inline when a slot is locked ("Reach 45% total coverage to widen — you have 32%").
 
-> ⚠ ADR-018 briefly made width gate *depth* too; [ADR-019](019-depth-and-width-are-independent.md) reversed that the next day. This decision stands exactly as written: slots are free, coverage-gated, and optional — they buy room for configs and nothing else. Badges are earned by clearing gates, not by unlocking slots.
+> ⚠ ADR-018 briefly made width gate *depth* too; [ADR-019](019-depth-and-width-are-independent.md) reversed that the next day. This decision stands exactly as written: slots are free, coverage-gated, and optional — they buy room for configs and nothing else. Badges are earned by clearing gates, not by unlocking slots. Reversed in turn by [ADR-034](034-the-gate-is-a-ci-run.md) (2026-08-15): the coverage gate on slots is deleted; clears grant them.
 
 ### 3. Drafting a config costs storage by rarity (documented sink)
 

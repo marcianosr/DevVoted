@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
 const meta: Meta<typeof RewardScreen> = {
 	component: RewardScreen,
@@ -36,6 +37,19 @@ export const Default: Story = {
 		configs: [CONFIGS.css, CONFIGS.unitTests],
 		storage: 168,
 		capKb: 512,
+		nextStake: createMockGateStake({
+			gateNumber: 2,
+			coverageDemand: 24,
+			coverageHeld: 14,
+			stripsOnFailure: 2,
+			minConfigs: 2,
+			modifiers: {
+				rewardMultiplier: 1,
+				coverageMultiplier: 1,
+				coverageAdd: 0,
+				gateReward: 48,
+			},
+		}),
 		onReviewAnswers: () => {},
 		onContinue: () => {},
 	},

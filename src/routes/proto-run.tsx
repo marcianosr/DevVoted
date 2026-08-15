@@ -24,7 +24,6 @@ import { showsSampleSize } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import { rebuildCost } from "~/modules/run/shop/domain/draft.model";
-import { coverageToAddSlot } from "~/modules/run/pipeline/domain/pipeline.model";
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
 import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui";
 import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
@@ -582,6 +581,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						faucetThisGateKb={view.faucetThisGateKb}
 						billKb={view.gateBillPaidKb}
 						planDowngraded={view.planDowngraded}
+						nextStake={view.gateStake}
 						onReviewAnswers={() => setRewardStep("review")}
 						onContinue={() => setRewardStep("shop")}
 					/>
@@ -607,10 +607,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			{state.status === "rewarding" && rewardStep === "shop" && (
 				<Screen
 					gateTheme={view.gateTheme}
-					leftAction={{
-						label: "← Back",
-						onClick: () => setRewardStep("summary"),
-					}}
+					leftAction={
+						// A redo has no clear behind it, so there is no summary to back into.
+						view.redoingGate === null
+							? {
+									label: "← Back",
+									onClick: () => setRewardStep("summary"),
+								}
+							: undefined
+					}
 					rightAction={{
 						...shopExitAction(shopExit),
 						onClick:
@@ -641,8 +646,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						canExtend={view.canExtend}
 						onExtend={() => dispatch({ type: "extend-offers" })}
 						slots={view.slots}
-						coverage={view.coverage}
-						slotCoverageRequired={coverageToAddSlot(state.pipeline.slots)}
+						nextSlotGate={view.nextSlotGate}
 						justUnlockedSlots={view.justUnlockedSlots}
 						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
 						onSell={(id) => dispatch({ type: "sell", configId: id })}
@@ -717,6 +721,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						answered={view.answeredThisGate}
 						billKb={view.gateBillPaidKb}
 						planDowngraded={view.planDowngraded}
+						retryStake={view.gateStake}
 						onStrip={(id) => dispatch({ type: "strip", configId: id })}
 					/>
 				</Screen>
@@ -730,8 +735,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onClick: () => setStripStep("strip"),
 					}}
 					rightAction={{
-						label: "Climb on →",
-						onClick: () => dispatch({ type: "resume-climb" }),
+						label: "To the shop →",
+						onClick: () => {
+							setRewardStep("shop");
+							dispatch({ type: "resume-climb" });
+						},
 					}}
 				>
 					<ReviewAnswers answered={view.answeredThisGate} />

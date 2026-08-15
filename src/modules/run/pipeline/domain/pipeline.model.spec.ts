@@ -6,19 +6,64 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { AnswerContext } from "~/modules/run/config/domain/effect.model";
 import {
 	Pipeline,
+	BASE_SLOTS,
+	MAX_SLOTS,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
+	coverageLapFor,
 	effectiveRequirement,
 	gateClearPayout,
 	canLint,
 	extraPickPayoutFor,
 	isBare,
+	nextSlotGateFor,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 	rewardMultiplierFor,
+	slotsForGatesCleared,
 	storageInterestFor,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
+
+describe("gates grant slots (ADR-034)", () => {
+	it("opens slots 4–14 on clears 1–11, holding the cap past them", () => {
+		expect(slotsForGatesCleared(0)).toBe(BASE_SLOTS);
+		expect(slotsForGatesCleared(1)).toBe(BASE_SLOTS); // gate 0 teaches
+		expect(slotsForGatesCleared(2)).toBe(4); // gate 1 grants slot 4
+		expect(slotsForGatesCleared(12)).toBe(MAX_SLOTS); // gate 11 tops it out
+		expect(slotsForGatesCleared(13)).toBe(MAX_SLOTS);
+	});
+
+	it("names the gate holding the next slot, and none at the cap", () => {
+		expect(nextSlotGateFor(BASE_SLOTS)).toBe(1);
+		expect(nextSlotGateFor(13)).toBe(11);
+		expect(nextSlotGateFor(MAX_SLOTS)).toBeNull();
+	});
+});
+
+describe("coverage laps (ADR-034)", () => {
+	it("reads lap 1 plainly and later laps by their rigor name", () => {
+		expect(coverageLapFor(45)).toEqual({ lap: 1, name: "Line", remainder: 45 });
+		expect(coverageLapFor(170)).toEqual({
+			lap: 2,
+			name: "Branch",
+			remainder: 70,
+		});
+		expect(coverageLapFor(365)).toEqual({
+			lap: 4,
+			name: "Fuzz",
+			remainder: 65,
+		});
+	});
+
+	it("holds the last name past 400%, where no threshold reaches", () => {
+		expect(coverageLapFor(450)).toEqual({
+			lap: 4,
+			name: "Fuzz",
+			remainder: 150,
+		});
+	});
+});
 
 const pipelineWith = (configs: Config[]): Pipeline => ({
 	id: "hyrule-ci",

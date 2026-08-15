@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-08-09, Marciano). **Amends [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md) Decision 2** (the coverage-gated ladder itself is unchanged — only how a slot is claimed).
+Accepted (2026-08-09, Marciano). **Amends [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md) Decision 2** (the coverage-gated ladder itself is unchanged — only how a slot is claimed). **The ladder is replaced by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): slots are granted by gate clears; the no-button auto-claim survives, keyed to the clear.
 
 ## Context
 

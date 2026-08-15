@@ -58,10 +58,13 @@ describe(GateSegmentBar, () => {
 		expect(fillOf(3)).toHaveClass("opacity-40");
 	});
 
-	it("carries no coverage — width's progress lives in the shop", () => {
+	it("names the demand but never the run's own coverage — the pip is a ladder, not a meter", () => {
+		// Coverage appears here only as what a gate asks for (ADR-034). How much
+		// the run holds against it is the stake receipt's job, and the bar has no
+		// room to grade thirteen gates at once.
 		render(midClimb);
 		for (const detail of screen.getAllByRole("tooltip")) {
-			expect(detail).not.toHaveTextContent("coverage");
+			expect(detail).not.toHaveTextContent(/Current|you hold/);
 		}
 	});
 
@@ -125,6 +128,36 @@ describe(GateSegmentBar, () => {
 		expect(screen.getAllByRole("tooltip")[4]).toHaveTextContent(
 			"Clear gate 4 to earn it"
 		);
+	});
+
+	it("names what each gate ahead demands, so the ladder is readable from gate 0", () => {
+		render(midClimb);
+		expect(screen.getAllByRole("tooltip")[4]).toHaveTextContent(
+			"Needs 60% total coverage · 4 configs"
+		);
+		expect(screen.getAllByRole("tooltip")[2]).toHaveTextContent(
+			"Needs 24% total coverage · 2 configs"
+		);
+	});
+
+	it("keeps the demand off a gate already cleared — the badge is the news there", () => {
+		render(midClimb);
+		expect(screen.getAllByRole("tooltip")[1]).not.toHaveTextContent(/Needs/);
+	});
+
+	it("drops the config half where the teaching gate demands none", () => {
+		render(
+			<GateSegmentBar
+				swatches={ALL_SWATCHES}
+				gatesCleared={0}
+				pollsAnswered={0}
+				pollsPerGate={5}
+				label="gate 0 of 12"
+			/>
+		);
+		const detail = screen.getAllByRole("tooltip")[0];
+		expect(detail).toHaveTextContent("Needs 3% total coverage");
+		expect(detail).not.toHaveTextContent(/config/);
 	});
 
 	it("groups the pips under the climb's own label", () => {

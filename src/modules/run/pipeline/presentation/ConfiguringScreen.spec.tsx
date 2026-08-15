@@ -54,11 +54,16 @@ describe(ConfiguringScreen, () => {
 	it("sections the stake as the gate, then its outcomes", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
-		expect(screen.getByText("Succeed your build:")).toBeInTheDocument();
+		expect(screen.getByText("Gate cleared")).toBeInTheDocument();
 		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
 		expect(screen.queryByText("×1")).not.toBeInTheDocument();
-		expect(screen.getByText("Fail your build:")).toBeInTheDocument();
-		expect(screen.getByText("Remove 1 config")).toHaveClass("text-cinnabar");
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.textContent ===
+					"Miss the target: remove 1 config, then retry this gate"
+			)
+		).toBeInTheDocument();
 	});
 
 	it("captions the gate with its coverage multiplier", () => {
@@ -96,7 +101,9 @@ describe(ConfiguringScreen, () => {
 			/>
 		);
 		expect(
-			screen.getByText("All configs disabled — run over")
+			screen.getByText(
+				"Your pipeline holds 2 configs — missing this gate removes 2 and ends the run."
+			)
 		).toBeInTheDocument();
 	});
 
@@ -153,7 +160,10 @@ describe(ConfiguringScreen, () => {
 			screen.getByText("More slots will unlock when you gain coverage!")
 		).toBeInTheDocument();
 		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
-		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+		// The one rail on screen is the gate's coverage demand, not a slot rung.
+		expect(screen.getByRole("progressbar")).toHaveAccessibleName(
+			"coverage toward gate 0"
+		);
 	});
 
 	it("numbers only the slots the pipeline actually has", () => {
@@ -365,8 +375,14 @@ describe("stack mode (ADR-026)", () => {
 	it("shows the same receipt as the classic screen — no separate variant", () => {
 		render(<ConfiguringScreen {...stackBase} />);
 		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
-		expect(screen.getByText("Succeed your build:")).toBeInTheDocument();
-		expect(screen.getByText("Remove 1 config")).toBeInTheDocument();
+		expect(screen.getByText("Gate cleared")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.textContent ===
+					"Miss the target: remove 1 config, then retry this gate"
+			)
+		).toBeInTheDocument();
 	});
 
 	it("carries the start action inside the build summary, not the screen footer", () => {
@@ -383,11 +399,17 @@ describe("stack mode (ADR-026)", () => {
 	});
 
 	it("reads the stake against the build the stack will become, not an empty one", () => {
-		// An unpicked screen holds zero configs — the stake must not open on
-		// "All configs disabled — run over" before the player has done anything.
+		// An unpicked screen holds zero configs — the stake must not open on the
+		// fatal wording before the player has done anything.
 		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.getByText("Remove 1 config")).toBeInTheDocument();
-		expect(screen.queryByText(/run over/)).not.toBeInTheDocument();
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.textContent ===
+					"Miss the target: remove 1 config, then retry this gate"
+			)
+		).toBeInTheDocument();
+		expect(screen.queryByText(/ends the run/)).not.toBeInTheDocument();
 	});
 
 	it("stays on the classic bench screen when no stacks are offered", () => {

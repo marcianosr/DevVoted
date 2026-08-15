@@ -3,7 +3,6 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	Pipeline,
 	BASE_SLOTS,
-	canAddSlot,
 	canLint,
 	peekerFor,
 	type CoverageBreakdown,
@@ -14,6 +13,7 @@ import {
 	storageInterestFor,
 	isBare,
 	rewardMultiplierFor,
+	slotsForGatesCleared,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
@@ -51,6 +51,7 @@ import {
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	atMinimumWidth,
+	coverageDemandFor,
 	dropCount,
 	FAUCET_CAP_KB,
 	gateBaseMultiplier,
@@ -230,6 +231,10 @@ export type RunState = {
 	readonly gateBillKb?: number;
 	readonly planDowngraded?: boolean;
 	readonly clearedGate?: number;
+	/** Set while the shop/prep visit is a redo of this failed gate (ADR-034),
+	 * so the screens can tell it from a post-clear visit — `clearedGate` still
+	 * holds the previous clear and cannot. */
+	readonly redoGate?: number;
 	readonly justUnlockedSlots?: readonly number[];
 	readonly log: readonly string[];
 };
@@ -340,8 +345,15 @@ const failedChecks = (state: RunState): readonly string[] =>
 		.filter((check) => check.state === "failed")
 		.map((check) => check.label);
 
+const coverageShortfall = (state: RunState): readonly string[] => {
+	const demanded = coverageDemandFor(state.gatesCleared);
+	return state.coverage < demanded
+		? [`coverage ${state.coverage}% of ${demanded}%`]
+		: [];
+};
+
 const failureCause = (state: RunState): string => {
-	const failed = failedChecks(state);
+	const failed = [...failedChecks(state), ...coverageShortfall(state)];
 	return failed.length > 0 ? `: ${failed.join(", ")}` : "";
 };
 
@@ -445,7 +457,13 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	// Post-bill on purpose: the plan is charged first (`chargeStorageBill`), so a
 	// subscription that eats into the balance can drop a storage floor below it.
 	if (
-		!gatePassed(state.pipeline, state.window, state.gatesCleared, state.storage)
+		!gatePassed(
+			state.pipeline,
+			state.window,
+			state.gatesCleared,
+			state.storage,
+			state.coverage
+		)
 	) {
 		const quota = dropCount(state.gatesCleared);
 		const installed = state.pipeline.configs.length;
@@ -481,12 +499,24 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		) +
 		interest +
 		extraPickKb;
+	// Max with the live width, so a run hydrated from the retired coverage
+	// ladder (pre-ADR-034) never shrinks below what it already earned.
+	const slots = Math.max(
+		state.pipeline.slots,
+		slotsForGatesCleared(state.gatesCleared + 1)
+	);
+	const grantedSlot = slots > state.pipeline.slots;
 	const cleared: RunState = {
 		...state,
 		window: freshWindow(state.polls, nextIndex),
 		manualDisabled: [],
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
+		redoGate: undefined,
+		pipeline: grantedSlot ? { ...state.pipeline, slots } : state.pipeline,
+		justUnlockedSlots: grantedSlot
+			? [...(state.justUnlockedSlots ?? []), slots]
+			: state.justUnlockedSlots,
 		storage: addStorage(state.storage, reward),
 		gateRewardKb: reward,
 		interestThisGateKb: interest,
@@ -623,7 +653,6 @@ const answer = (
 	const coverage = roundToOneDecimal(
 		Math.max(0, state.coverage + categoryAfter - categoryBefore)
 	);
-	const widened = autoWidenSlots(state.pipeline, coverage);
 
 	const answered: RunState = {
 		...state,
@@ -638,10 +667,6 @@ const answer = (
 			...state.coverageByCategory,
 			[poll.category]: categoryAfter,
 		},
-		pipeline: widened.pipeline,
-		justUnlockedSlots: widened.justUnlocked.length
-			? [...(state.justUnlockedSlots ?? []), ...widened.justUnlocked]
-			: state.justUnlockedSlots,
 		answeredThisGate: [...state.answeredThisGate, answeredPoll],
 		allAnswered: [...(state.allAnswered ?? []), answeredPoll],
 	};
@@ -729,6 +754,12 @@ const strip = (state: RunState, configId: string): RunState => {
 	};
 };
 
+/**
+ * A redo routes through the shop (ADR-034): the strips just landed, and KB is
+ * the comeback resource, so the shop sits between every failed window and its
+ * replay. `answeredThisGate` survives into the visit for the review screen;
+ * `finishReward` resets it on the way out, as it does after a clear.
+ */
 const resumeClimb = (state: RunState): RunState => {
 	if (state.stripsRemaining > 0) return state;
 	if (isBare(state.pipeline))
@@ -741,15 +772,22 @@ const resumeClimb = (state: RunState): RunState => {
 		...state,
 		window: freshWindow(state.polls, state.currentIndex),
 		manualDisabled: [],
-		faucetThisGateKb: 0,
 		gateRewardKb: 0,
-		gateBillKb: 0,
-		planDowngraded: false,
-		answeredThisGate: [],
-		status: "answering",
+		interestThisGateKb: 0,
+		extraPickThisGateKb: 0,
+		// Seeded off answers-so-far, so every redo's shop rolls fresh but a
+		// reloaded run re-rolls the same draft.
+		draftOptions: shopDraft(
+			state,
+			draftSeed(state.gatesCleared, (state.allAnswered ?? []).length)
+		),
+		rebuildsUsed: 0,
+		draftedThisGate: [],
+		redoGate: state.gatesCleared,
+		status: "rewarding",
 		log: withLog(
 			state,
-			`Climbing on with ${state.pipeline.configs.length} configs.`
+			`Gate ${state.gatesCleared} again — repair in the shop first.`
 		),
 	};
 };
@@ -770,22 +808,6 @@ const levelUp = (config: Config): Config => ({
 	...config,
 	level: (config.level ?? 1) + 1,
 });
-
-const autoWidenSlots = (
-	pipeline: Pipeline,
-	coverage: number
-): { pipeline: Pipeline; justUnlocked: readonly number[] } => {
-	let slots = pipeline.slots;
-	const justUnlocked: number[] = [];
-	while (canAddSlot(slots, coverage)) {
-		slots += 1;
-		justUnlocked.push(slots);
-	}
-	return {
-		pipeline: justUnlocked.length ? { ...pipeline, slots } : pipeline,
-		justUnlocked,
-	};
-};
 
 const draft = (state: RunState, configId: string): RunState => {
 	const chosen = state.draftOptions.find(
@@ -904,6 +926,7 @@ const finishReward = (state: RunState): RunState => {
 		gateRewardKb: 0,
 		gateBillKb: 0,
 		planDowngraded: false,
+		redoGate: undefined,
 		justUnlockedSlots: [],
 		storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
 		status: "answering",

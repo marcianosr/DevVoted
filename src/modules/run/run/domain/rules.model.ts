@@ -54,7 +54,7 @@ export const storageCreditRate = (
 	return Math.min(1, gatesCleared / GATE_COUNT);
 };
 
-export const WRONG_COVERAGE_LOSS = 0.5;
+export const WRONG_COVERAGE_LOSS = 0.25;
 
 const STREAK_COVERAGE_BONUS = 0.1;
 
@@ -63,6 +63,20 @@ export const streakMultiplier = (streak: number): number =>
 
 export const gateBaseMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;
+
+/**
+ * The gate's coverage demand (ADR-034): 80% of a perfect base pace
+ * (5·(g+1)(g+2)/2), rounded to friendly numbers — the rule is the contract,
+ * the rows live-tune here. Gate 0 rounds down so a 4-of-5 teaching window
+ * still passes. Priced on the raw base: streaks and config multipliers are
+ * headroom above the pace, never homework.
+ */
+const COVERAGE_DEMANDS = [
+	3, 12, 24, 40, 60, 85, 110, 145, 180, 220, 265, 310, 365,
+] as const;
+
+export const coverageDemandFor = (gatesCleared: number): number =>
+	COVERAGE_DEMANDS[Math.min(gatesCleared, COVERAGE_DEMANDS.length - 1)];
 
 const OPTION_COVERAGE_STEP = 0.1;
 const MULTIPLE_CHOICE_COVERAGE_BONUS = 0.5;
@@ -99,6 +113,17 @@ export const atMinimumWidth = (
 
 export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
+
+/**
+ * Configs a pipeline must hold to survive this gate: one more than a failure
+ * removes. Every death route reduces to this one comparison (ADR-021) — a strip
+ * quota that takes the last config, an emptied pipeline, and a width demand the
+ * shop cannot repair all end a run below the floor. Stated on the stake receipt
+ * before the gate and on the summary after it, so the rule that killed a run is
+ * the rule the player was shown.
+ */
+export const configFloorForGate = (gatesCleared: number): number =>
+	dropCount(gatesCleared) + 1;
 
 /** A failed gate is fatal when its strip quota takes the whole build. */
 export const isStakeFatal = (strips: number, configs: number): boolean =>

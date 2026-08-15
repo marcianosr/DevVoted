@@ -27,31 +27,41 @@ export type Pipeline = {
 export const BASE_SLOTS = 3;
 export const MAX_SLOTS = 14;
 
-const SLOT_COVERAGE_GATE: Readonly<Record<number, number>> = {
-	4: 8,
-	5: 16,
-	6: 28,
-	7: 45,
-	8: 70,
-	9: 100,
-	10: 140,
-	11: 190,
-	12: 250,
-	// Slots 13–14 continue the curve's own growth (deltas ~60 → ~75 → ~90).
-	// Untuned by playtesting, unlike the rungs above them. They buy width only —
-	// since ADR-019 no rung owes the climb a gate, so the ladder's length is free
-	// to differ from the gate count.
-	13: 325,
-	14: 415,
+/**
+ * Gates grant slots (ADR-034): clears 1–11 open slots 4–14, so width supply
+ * is deterministic and coverage — now the gate's own demand — is never priced
+ * on two ladders at once. Callers widening a live pipeline take the max with
+ * its current slots, so a run hydrated from the old coverage ladder never
+ * shrinks.
+ */
+export const slotsForGatesCleared = (gatesCleared: number): number =>
+	Math.min(MAX_SLOTS, BASE_SLOTS + Math.max(0, gatesCleared - 1));
+
+/** The gate whose clear opens the pipeline's next slot; null at the cap. */
+export const nextSlotGateFor = (currentSlots: number): number | null =>
+	currentSlots >= MAX_SLOTS ? null : currentSlots - 2;
+
+export type CoverageLap = {
+	readonly lap: number;
+	readonly name: "Line" | "Branch" | "Mutation" | "Fuzz";
+	readonly remainder: number;
 };
 
-/** Total coverage needed to add the next slot; Infinity once the cap is reached. */
-export const coverageToAddSlot = (currentSlots: number): number =>
-	SLOT_COVERAGE_GATE[currentSlots + 1] ?? Infinity;
+const LAP_NAMES = ["Line", "Branch", "Mutation", "Fuzz"] as const;
 
-/** A slot can be added only below the cap and once its coverage gate is met. */
-export const canAddSlot = (currentSlots: number, coverage: number): boolean =>
-	currentSlots < MAX_SLOTS && coverage >= coverageToAddSlot(currentSlots);
+/**
+ * Coverage reads in laps of 100% (ADR-034), each named a real rung of testing
+ * rigor: "Branch 70%" is 170% total. The last name holds past 400%, where no
+ * threshold reaches.
+ */
+export const coverageLapFor = (coverage: number): CoverageLap => {
+	const lap = Math.min(LAP_NAMES.length, Math.floor(coverage / 100) + 1);
+	return {
+		lap,
+		name: LAP_NAMES[lap - 1],
+		remainder: roundToOneDecimal(coverage - (lap - 1) * 100),
+	};
+};
 
 export const isBare = (pipeline: Pipeline): boolean =>
 	pipeline.configs.length === 0;

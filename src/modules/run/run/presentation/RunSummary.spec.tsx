@@ -68,6 +68,25 @@ describe(RunSummary, () => {
 		expect(screen.getByText("102KB lost")).toBeInTheDocument();
 	});
 
+	it("names the config floor the run ended below, in the stake receipt's terms", () => {
+		render(
+			<RunSummary
+				won={false}
+				gatesCleared={4}
+				victoryGate={VICTORY_GATE}
+				coverage={40}
+				storage={200}
+				configs={[CONFIGS.css, CONFIGS.js]}
+			/>
+		);
+		// Gate 4 strips 3 on a miss, so 4 configs survive it and 2 do not.
+		expect(
+			screen.getByText(
+				"Your pipeline held 2 configs — gate 4 ends a run below 4."
+			)
+		).toBeInTheDocument();
+	});
+
 	it("lists installed configs and offers a review of answered polls", () => {
 		render(
 			<RunSummary

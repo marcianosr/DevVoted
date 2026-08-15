@@ -12,7 +12,10 @@ import {
 	effectiveRequirement,
 	isBare,
 } from "~/modules/run/pipeline/domain/pipeline.model";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import {
+	coverageDemandFor,
+	SLICE_WINDOW,
+} from "~/modules/run/run/domain/rules.model";
 
 const passes = (state: CheckStatus["state"]): boolean =>
 	state === "success" || state === "skipped";
@@ -189,15 +192,22 @@ export const checkStatuses = (
  * "Get one right" is a config's check, not the gate's rule: AGENTS.md carries
  * it unconditionally, and duplicating it here would charge builds that never
  * bought it and add a demand with no checklist row for the player to read.
- * The checklist is the whole rulebook.
+ * The checklist is the whole rulebook — for what configs owe. The coverage
+ * total is the gate's own stake (ADR-034), surfaced on the GateStake beside
+ * the width demand rather than as a checklist row.
+ *
+ * `coverage` defaults to 0 for the same reason `storageKb` does: a caller
+ * that forgets it starves the coverage demand instead of passing it vacuously.
  */
 export const gatePassed = (
 	pipeline: Pipeline,
 	window: GateWindow,
 	gatesCleared: number,
-	storageKb = 0
+	storageKb = 0,
+	coverage = 0
 ): boolean =>
 	!isBare(pipeline) &&
+	coverage >= coverageDemandFor(gatesCleared) &&
 	checkStatuses(pipeline, window, gatesCleared, storageKb).every((check) =>
 		passes(check.state)
 	);

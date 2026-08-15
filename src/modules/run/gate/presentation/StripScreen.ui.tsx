@@ -5,6 +5,8 @@ import { gateRewardRows } from "~/modules/run/gate/domain/gateReward.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { GateRewardReport } from "~/modules/run/gate/presentation/GateRewardReport.ui";
+import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
+import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
 
 type StripScreenProps = {
 	stripsRemaining: number;
@@ -17,6 +19,12 @@ type StripScreenProps = {
 	billKb?: number;
 	/** True when the bill went unpaid and the plan dropped to the free tier. */
 	planDowngraded?: boolean;
+	/**
+	 * The same gate again, since a miss replays it (ADR-034). Its config floor is
+	 * the reason this screen is a decision: peel toward it and the redo is a
+	 * coin-flip on the run.
+	 */
+	retryStake?: GateStake;
 	onStrip: (configId: string) => void;
 };
 
@@ -34,6 +42,7 @@ export const StripScreen = ({
 	answered,
 	billKb,
 	planDowngraded,
+	retryStake,
 	onStrip,
 }: StripScreenProps) => {
 	const quotaMet = stripsRemaining === 0;
@@ -63,6 +72,15 @@ export const StripScreen = ({
 				<Paragraph size="sm" tone="cinnabar">
 					Storage bill unpaid — downgraded to the free tier.
 				</Paragraph>
+			) : null}
+			{/* Reads live against `configs`, so the floor updates as the player peels
+			    — the warning arrives while the choice is still open. */}
+			{retryStake ? (
+				<GateStakeReceipt
+					stake={retryStake}
+					configCount={configs.length}
+					lead="Retry"
+				/>
 			) : null}
 		</div>
 	);

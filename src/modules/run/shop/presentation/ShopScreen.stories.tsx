@@ -93,8 +93,7 @@ export const Default: Story = {
 		canRebuild: true,
 		onRebuild: () => {},
 		slots: 3,
-		coverage: 25,
-		slotCoverageRequired: 20,
+		nextSlotGate: 1,
 		justUnlockedSlots: [],
 		onUpgrade: () => {},
 		onSell: () => {},
@@ -131,41 +130,32 @@ export const OfferOwned: Story = {
 	},
 };
 
-export const SlotLocked: Story = {
-	args: {
-		...Default.args,
-		coverage: 12,
-		slotCoverageRequired: 20,
-	},
-};
-
-// Width claims itself automatically the instant coverage affords it (ADR-025) —
-// this is the shop's one-time acknowledgment for the gate that crossed the rung.
+// Gates grant slots on the clear (ADR-034) — this is the shop's one-time
+// acknowledgment for the gate that granted one.
 export const SlotJustUnlocked: Story = {
 	args: {
 		...Default.args,
 		slots: 4,
+		nextSlotGate: 2,
 		justUnlockedSlots: [4],
 	},
 };
 
-// The last slot on the ladder — it opens the summit and wears the legendary ring.
+// The last slot on the ladder, held by the deepest slot-granting gate.
 export const EliteFourNext: Story = {
 	args: {
 		...Default.args,
 		slots: 13,
-		coverage: 400,
-		slotCoverageRequired: 415,
+		nextSlotGate: 11,
 	},
 };
 
-// Every slot unlocked — the swatch row retires.
+// Every slot unlocked — the preview row retires.
 export const AtSlotCap: Story = {
 	args: {
 		...Default.args,
 		slots: 14,
-		coverage: 430,
-		slotCoverageRequired: Infinity,
+		nextSlotGate: null,
 	},
 };
 

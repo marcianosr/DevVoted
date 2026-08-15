@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted 2026-07-22. **Amends [ADR-006](006-session-run-mechanics.md) Decision 11**: coverage now scales with the gate number on both the gain and the loss side; ADR-006's "loss is deliberately not gate-scaled" clause is superseded (⚠ marker inline there). Depends on ADR-005/006. Live-tuned numbers live in `src/modules/run/rules.model.ts`; this ADR records the decision and rationale, not the values.
+Accepted 2026-07-22. **Amends [ADR-006](006-session-run-mechanics.md) Decision 11**: coverage now scales with the gate number on both the gain and the loss side; ADR-006's "loss is deliberately not gate-scaled" clause is superseded (⚠ marker inline there). Depends on ADR-005/006. Live-tuned numbers live in `src/modules/run/rules.model.ts`; this ADR records the decision and rationale, not the values. **Decision 2's ratio amended by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): the lockstep stands, `WRONG_COVERAGE_LOSS` halves to 0.25.
 
 ## Context
 
@@ -20,6 +20,11 @@ Playtesting the ported engine surfaced two feel problems:
 `gateBaseMultiplier(gatesCleared) = gatesCleared + 1` (gate 1 ×1, gate 2 ×2, …). It multiplies the correctness **share** before config adds/mults and the streak bonus compose on top, so the whole earn scales, not just a flat term. The reveal chip equation (`base + streak + configs = total`) reflects the scaled base automatically — the multiplier is applied at the single scoring site (`answer()` in `run.model.ts`), so nothing downstream recomputes it.
 
 ### 2. The loss scales by the same factor
+
+> ⚠ Ratio amended by [ADR-034](034-the-gate-is-a-ci-run.md) (2026-08-15):
+> `WRONG_COVERAGE_LOSS` halves to 0.25 (break-even base accuracy 33% to 20%)
+> because a miss now also costs progress toward the gate's coverage demand.
+> The lockstep gate-scaling below stands.
 
 A miss bleeds `WRONG_COVERAGE_LOSS × rewardMultiplier × gateBaseMultiplier`. Reward and risk now grow in lockstep: a miss at gate 5 costs ×5 the base loss, exactly as a hit there pays ×5. This **reverses ADR-006 Decision 11's flat-loss rule**.
 

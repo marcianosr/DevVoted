@@ -150,16 +150,33 @@ describe("gatePassed", () => {
 			gatePassed(
 				pipelineWith([CONFIGS.coverageGain]),
 				win({ correct: 5, answered: 5, coverageGained: 5 }),
-				0
+				0,
+				0,
+				50
 			)
 		).toBe(true);
 		expect(
 			gatePassed(
 				pipelineWith([CONFIGS.coverageGain]),
 				win({ correct: 5, answered: 5, coverageGained: 0.5 }),
-				0
+				0,
+				0,
+				50
 			)
 		).toBe(false);
+	});
+
+	it("fails a checks-passing window whose run total sits under the gate's demand (ADR-034)", () => {
+		const pipeline = pipelineWith([CONFIGS.coverageGain]);
+		const window = win({ correct: 5, answered: 5, coverageGained: 5 });
+		expect(gatePassed(pipeline, window, 0, 0, 2.9)).toBe(false);
+		expect(gatePassed(pipeline, window, 0, 0, 3)).toBe(true);
+	});
+
+	it("starves a caller that forgets the run total, like the storage floor", () => {
+		const pipeline = pipelineWith([CONFIGS.coverageGain]);
+		const window = win({ correct: 5, answered: 5, coverageGained: 5 });
+		expect(gatePassed(pipeline, window, 0)).toBe(false);
 	});
 
 	it("fails the gate when the linter's categories were drawn and none was answered right", () => {
@@ -171,7 +188,9 @@ describe("gatePassed", () => {
 					answered: 5,
 					byCategory: { js: { seen: 1, correct: 0 } },
 				}),
-				0
+				0,
+				0,
+				50
 			)
 		).toBe(false);
 	});
@@ -180,7 +199,7 @@ describe("gatePassed", () => {
 	// pass vacuously and a stripped-bare run could never die.
 	it("never passes a bare pipeline — nothing installed, nothing ships", () => {
 		expect(
-			gatePassed(pipelineWith([]), win({ correct: 5, answered: 5 }), 0)
+			gatePassed(pipelineWith([]), win({ correct: 5, answered: 5 }), 0, 0, 50)
 		).toBe(false);
 	});
 });
@@ -230,20 +249,20 @@ describe("Moore's Law's storage floor", () => {
 	});
 
 	it("fails the gate when the balance falls short", () => {
-		expect(gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0, 31)).toBe(
-			false
-		);
-		expect(gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0, 32)).toBe(
-			true
-		);
+		expect(
+			gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0, 31, 50)
+		).toBe(false);
+		expect(
+			gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0, 32, 50)
+		).toBe(true);
 	});
 
 	it("fails closed when no balance is supplied", () => {
 		// A caller that forgets the balance starves the check rather than passing
 		// it vacuously — the hole ADR-022's roster type exists to prevent.
-		expect(gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0)).toBe(
-			false
-		);
+		expect(
+			gatePassed(pipelineWith([CONFIGS.mooresLaw]), closed, 0, undefined, 50)
+		).toBe(false);
 	});
 });
 
@@ -305,10 +324,10 @@ describe(".length's pick budget", () => {
 	it("fails the gate on a misspend and clears it on the exact number", () => {
 		const pipeline = pipelineWith([CONFIGS.length]);
 		expect(
-			gatePassed(pipeline, win({ answered: 5, picks: 6, budget: 7 }), 0)
+			gatePassed(pipeline, win({ answered: 5, picks: 6, budget: 7 }), 0, 0, 50)
 		).toBe(false);
 		expect(
-			gatePassed(pipeline, win({ answered: 5, picks: 7, budget: 7 }), 0)
+			gatePassed(pipeline, win({ answered: 5, picks: 7, budget: 7 }), 0, 0, 50)
 		).toBe(true);
 	});
 });
@@ -357,8 +376,10 @@ describe("Telemetry's peek demand", () => {
 
 	it("fails the gate on an unpeeked window and clears it on the first peek", () => {
 		const pipeline = pipelineWith([CONFIGS.telemetry]);
-		expect(gatePassed(pipeline, win({ answered: 5 }), 0)).toBe(false);
-		expect(gatePassed(pipeline, win({ answered: 5, peeked: 1 }), 0)).toBe(true);
+		expect(gatePassed(pipeline, win({ answered: 5 }), 0, 0, 50)).toBe(false);
+		expect(
+			gatePassed(pipeline, win({ answered: 5, peeked: 1 }), 0, 0, 50)
+		).toBe(true);
 	});
 });
 
@@ -386,7 +407,7 @@ describe("Volkswagen CI", () => {
 	it("reports the single failing check as passing when 3 others passed", () => {
 		const window = win(closed);
 		expect(rowFor(covered, window, "Coverage")?.state).toBe("skipped");
-		expect(gatePassed(pipelineWith(covered), window, 0)).toBe(true);
+		expect(gatePassed(pipelineWith(covered), window, 0, 0, 50)).toBe(true);
 	});
 
 	it("names the check it hid, and leaves that check's real tally readable", () => {
@@ -415,7 +436,7 @@ describe("Volkswagen CI", () => {
 			current: 2,
 			target: 3,
 		});
-		expect(gatePassed(pipelineWith(thin), window, 0)).toBe(false);
+		expect(gatePassed(pipelineWith(thin), window, 0, 0, 50)).toBe(false);
 	});
 
 	it("hides nothing when two checks failed at once", () => {
@@ -425,7 +446,7 @@ describe("Volkswagen CI", () => {
 			state: "failed",
 			progress: { kind: "checksFailing", count: 2 },
 		});
-		expect(gatePassed(pipelineWith(configs), window, 0)).toBe(false);
+		expect(gatePassed(pipelineWith(configs), window, 0, 0, 50)).toBe(false);
 	});
 
 	it("stays dormant with nothing to hide", () => {
@@ -440,7 +461,7 @@ describe("Volkswagen CI", () => {
 			state: "skipped",
 			progress: undefined,
 		});
-		expect(gatePassed(pipelineWith(clean), window, 0)).toBe(true);
+		expect(gatePassed(pipelineWith(clean), window, 0, 0, 50)).toBe(true);
 	});
 
 	// Both regressions guard the same hole: a build that cannot fail.
@@ -448,7 +469,7 @@ describe("Volkswagen CI", () => {
 		const narrow = [CONFIGS.unitTests, CONFIGS.volkswagenCi];
 		const window = win({ correct: 0, answered: 5 });
 		expect(rowFor(narrow, window, "Correct")?.state).toBe("failed");
-		expect(gatePassed(pipelineWith(narrow), window, 0)).toBe(false);
+		expect(gatePassed(pipelineWith(narrow), window, 0, 0, 50)).toBe(false);
 	});
 
 	it("counts only checks that ran — skipped Focus configs are not cover", () => {
@@ -466,7 +487,7 @@ describe("Volkswagen CI", () => {
 			current: 0,
 			target: 3,
 		});
-		expect(gatePassed(pipelineWith(padded), window, 0)).toBe(false);
+		expect(gatePassed(pipelineWith(padded), window, 0, 0, 50)).toBe(false);
 	});
 });
 
@@ -475,13 +496,16 @@ describe("the checklist is the whole rulebook (ADR-022)", () => {
 	// floor to gatePassed directly. It worked, but it could fail a gate while
 	// every visible row read "skipped", leaving the player no way to see why.
 	// Keeping every reason on the checklist is what makes the report readable.
+	// The one carve-out is the gate's own coverage stake (ADR-034): it is not a
+	// config's row, so it lives on the GateStake receipt instead — met here so
+	// check failures stay this invariant's subject.
 	const everyRoster = Object.values(CONFIGS);
 
 	it("never fails a stocked gate without a failed row to point at", () => {
 		const closed = win({ correct: 0, answered: 5, maxMissStreak: 2 });
 		for (const config of everyRoster) {
 			const pipeline = pipelineWith([config]);
-			if (gatePassed(pipeline, closed, 0)) continue;
+			if (gatePassed(pipeline, closed, 0, 0, 50)) continue;
 			const rows = checkStatuses(pipeline, closed, 0);
 			expect(
 				rows.some((row) => row.state === "failed"),

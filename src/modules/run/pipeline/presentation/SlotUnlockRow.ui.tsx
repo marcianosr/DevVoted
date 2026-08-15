@@ -1,37 +1,20 @@
 import type { ReactNode } from "react";
-import { clsx } from "clsx";
-import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
-import { GainBar } from "~/ui/GainBar.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { SlotNumberCell } from "~/modules/run/pipeline/presentation/PipelineTable.ui";
 
 type NextSlotArgs = {
 	slots: number;
-	coverage?: number;
-	slotCoverageRequired?: number;
+	/** The gate whose clear opens the next slot; null/undefined at the cap. */
+	nextSlotGate?: number | null;
 };
 
-type NextSlot = { slot: number; unlockAtPct: number; coveragePct: number };
+type NextSlot = { slot: number; unlockAtGate: number };
 
 /** The next slot's numbers, narrowed from optional run state — or nothing at
  * the slot cap, the one guard every caller needs. */
-const nextSlot = ({
-	slots,
-	coverage,
-	slotCoverageRequired,
-}: NextSlotArgs): NextSlot | null => {
-	if (
-		slots >= MAX_SLOTS ||
-		coverage === undefined ||
-		slotCoverageRequired === undefined ||
-		!Number.isFinite(slotCoverageRequired)
-	)
-		return null;
-	return {
-		slot: slots + 1,
-		unlockAtPct: slotCoverageRequired,
-		coveragePct: coverage,
-	};
+const nextSlot = ({ slots, nextSlotGate }: NextSlotArgs): NextSlot | null => {
+	if (nextSlotGate === undefined || nextSlotGate === null) return null;
+	return { slot: slots + 1, unlockAtGate: nextSlotGate };
 };
 
 const ORDINAL_SUFFIX: Readonly<Record<Intl.LDMLPluralRule, string>> = {
@@ -53,69 +36,33 @@ const joinOrdinals = (slots: readonly number[]): string => {
 };
 
 type SlotUnlockRowProps = {
-	/** The slot this row buys — the next one up from the current width. */
+	/** The slot this row previews — the next one up from the current width. */
 	slot: number;
-	unlockAtPct: number;
-	coveragePct: number;
+	unlockAtGate: number;
 };
-
-const lockPill = (unlocked: boolean) => (
-	<Paragraph
-		as="span"
-		size="xs"
-		tone={unlocked ? "celadon" : "muted"}
-		className={clsx(
-			"shrink-0 rounded border px-2 py-0.5",
-			unlocked ? "border-celadon" : "border-edge-strong"
-		)}
-	>
-		{unlocked ? "unlocked" : "locked"}
-	</Paragraph>
-);
 
 /**
- * The next slot coverage is paying for, with live progress toward its rung —
- * a read-only preview, since width claims itself automatically the instant
- * coverage affords it (ADR-025) and needs no purchase step.
+ * The next slot a gate is holding — a read-only preview, since gates grant
+ * slots on the clear (ADR-034) and width claims itself with no purchase step
+ * (ADR-025). No progress bar: the grant is a clear, not an accrual.
  *
- * Carries no swatch: badges are awarded by gates, not bought with coverage
+ * Carries no swatch: badges are awarded by gates, not owed to slots
  * (ADR-019), so width's reward is the width itself.
  */
-export const SlotUnlockRow = ({
-	slot,
-	unlockAtPct,
-	coveragePct,
-}: SlotUnlockRowProps) => {
-	const unlocked = coveragePct >= unlockAtPct;
-	return (
-		<>
-			<SlotNumberCell slot={slot} />
-			<div className="col-start-2 col-span-3 flex items-center gap-4 rounded-lg border border-dashed border-edge-strong px-4 py-3">
-				<div className="flex min-w-0 flex-1 flex-col gap-1">
-					{/* The table's gutter already numbers this slot, so the row leads with
-					    what it costs rather than repeating "Slot 4". */}
-					<Paragraph as="span" size="sm" tone="muted">
-						Opens at{" "}
-						<span className="font-bold text-zinc-100">{unlockAtPct}%</span>{" "}
-						coverage
-					</Paragraph>
-					<Paragraph as="span" size="xs" tone="muted">
-						<span className={clsx("font-bold", unlocked && "text-viridian")}>
-							{coveragePct}% reached
-						</span>
-					</Paragraph>
-					<GainBar
-						from={0}
-						to={coveragePct}
-						cap={unlockAtPct}
-						label={`coverage toward slot ${slot}`}
-					/>
-				</div>
-				{lockPill(unlocked)}
-			</div>
-		</>
-	);
-};
+export const SlotUnlockRow = ({ slot, unlockAtGate }: SlotUnlockRowProps) => (
+	<>
+		<SlotNumberCell slot={slot} />
+		<div className="col-start-2 col-span-3 flex items-center gap-4 rounded-lg border border-dashed border-edge-strong px-4 py-3">
+			{/* The table's gutter already numbers this slot, so the row leads with
+			    what opens it rather than repeating "Slot 4". */}
+			<Paragraph as="span" size="sm" tone="muted" className="min-w-0 flex-1">
+				Opens when{" "}
+				<span className="font-bold text-zinc-100">Gate {unlockAtGate}</span>{" "}
+				clears
+			</Paragraph>
+		</div>
+	</>
+);
 
 /**
  * The shop's one-time acknowledgment for a slot (or slots) auto-widened since
@@ -139,10 +86,10 @@ const UnlockedSlotRow = ({ slots }: { slots: readonly number[] }) => (
 
 /**
  * The pipeline list's trailing row(s): a one-time acknowledgment for any slot
- * that auto-widened since the last shop visit (ADR-025), followed by live
- * progress toward the actual next slot — the two are independent facts and
+ * granted since the last shop visit (ADR-025/034), followed by the actual
+ * next slot and the gate that opens it — the two are independent facts and
  * both can be true at once, so neither hides the other. `effectiveSlots`
- * folds `justUnlocked` into the width so the progress row always numbers the
+ * folds `justUnlocked` into the width so the preview row always numbers the
  * slot genuinely beyond every slot already shown, even if a caller's `slots`
  * hasn't caught up yet. Nothing renders once every slot up to the cap has
  * both widened and been acknowledged.
@@ -162,57 +109,8 @@ export const nextSlotRow = ({
 		<>
 			{unlockedNotice}
 			{next ? (
-				<SlotUnlockRow
-					slot={next.slot}
-					unlockAtPct={next.unlockAtPct}
-					coveragePct={next.coveragePct}
-				/>
+				<SlotUnlockRow slot={next.slot} unlockAtGate={next.unlockAtGate} />
 			) : null}
 		</>
 	);
-};
-
-/**
- * The next slot's progress as its own bullet — a small bar plus how much
- * coverage it still needs, muted until met and gradient-green once it is.
- * For contexts that only report the rung (the gate reward payout) rather
- * than sell it (the shop's `nextSlotRow`, with its lock pill).
- */
-const SlotProgressLine = ({ slot, unlockAtPct, coveragePct }: NextSlot) => {
-	const unlocked = coveragePct >= unlockAtPct;
-	return (
-		// The marker needs a plain list-item box on the `<li>` itself — flex would
-		// suppress it — so the row's own layout lives on a nested div instead.
-		<li>
-			<div className="flex items-center justify-between gap-4">
-				<Paragraph as="span" size="sm">
-					slot {slot} progress
-				</Paragraph>
-				<div className="flex items-center gap-4">
-					<span className="w-24 shrink-0">
-						<GainBar
-							from={0}
-							to={coveragePct}
-							cap={unlockAtPct}
-							label={`coverage toward slot ${slot}`}
-						/>
-					</span>
-					<Paragraph
-						as="span"
-						size="sm"
-						tone={unlocked ? "gradient" : "muted"}
-						className={unlocked ? "font-bold" : undefined}
-					>
-						{coveragePct}% of {unlockAtPct}%
-					</Paragraph>
-				</div>
-			</div>
-		</li>
-	);
-};
-
-export const nextSlotProgress = (args: NextSlotArgs): ReactNode => {
-	const next = nextSlot(args);
-	if (!next) return null;
-	return <SlotProgressLine {...next} />;
 };

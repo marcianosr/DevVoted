@@ -42,14 +42,15 @@ import {
 	type PerAnswerPreview,
 	type PipelineModifiers,
 	budgeterFor,
-	coverageToAddSlot,
 	linterFor,
+	nextSlotGateFor,
 	peekerFor,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
 	atMinimumWidth,
+	coverageDemandFor,
 	dropCount,
 	isStoragePlanUnlocked,
 	minConfigsForGate,
@@ -90,6 +91,11 @@ export type GateStake = {
 	readonly pollsPerGate: number;
 	readonly stripsOnFailure: number;
 	readonly minConfigs: number;
+	/** Total run coverage the gate demands to pass (ADR-034), and the total the
+	 * run holds — paired here so every stake surface can grade the demand
+	 * without threading run state beside the stake. */
+	readonly coverageDemand: number;
+	readonly coverageHeld: number;
 	readonly billKb: number;
 	readonly modifiers: PipelineModifiers;
 	readonly perAnswer: PerAnswerPreview;
@@ -175,7 +181,8 @@ export type RunView = {
 	readonly extendAvailable: boolean;
 	readonly extendCost: number;
 	readonly canExtend: boolean;
-	readonly slotCoverageRequired: number;
+	/** The gate whose clear opens the next slot (ADR-034); null at the cap. */
+	readonly nextSlotGate: number | null;
 
 	readonly justUnlockedSlots: readonly number[];
 	readonly checks: readonly CheckStatus[];
@@ -200,6 +207,9 @@ export type RunView = {
 	readonly gateTheme?: SwatchTheme;
 
 	readonly clearedGateNumber: number;
+	/** The failed gate this shop/prep visit is a redo of (ADR-034); null after
+	 * a clear. */
+	readonly redoingGate: number | null;
 	readonly victoryGate: number;
 
 	readonly stripsOnFailure: number;
@@ -393,7 +403,7 @@ export const toRunView = (state: RunState): RunView => {
 		extendAvailable: extendAvailable(state),
 		extendCost: nextExtendCost,
 		canExtend: canExtend(state),
-		slotCoverageRequired: coverageToAddSlot(state.pipeline.slots),
+		nextSlotGate: nextSlotGateFor(state.pipeline.slots),
 		justUnlockedSlots: state.justUnlockedSlots ?? [],
 		linter:
 			current === undefined
@@ -414,6 +424,8 @@ export const toRunView = (state: RunState): RunView => {
 			pollsPerGate: SLICE_WINDOW,
 			stripsOnFailure: dropCount(state.gatesCleared),
 			minConfigs,
+			coverageDemand: coverageDemandFor(state.gatesCleared),
+			coverageHeld: state.coverage,
 			billKb: plan.billKb,
 			modifiers,
 			perAnswer,
@@ -427,6 +439,7 @@ export const toRunView = (state: RunState): RunView => {
 		gatesCleared: state.gatesCleared,
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
 		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
+		redoingGate: state.redoGate ?? null,
 		victoryGate: VICTORY_GATE,
 		stripsOnFailure: dropCount(state.gatesCleared),
 		minConfigs,

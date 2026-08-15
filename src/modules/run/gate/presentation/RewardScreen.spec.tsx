@@ -4,6 +4,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
 const answered: AnsweredPoll[] = [
 	{
@@ -41,6 +42,35 @@ describe(RewardScreen, () => {
 					element.textContent === "Boulder gate · cleared"
 			)
 		).toBeInTheDocument();
+	});
+
+	it("previews the gate the clear opens onto, so the shop has a target", () => {
+		render(
+			<RewardScreen
+				{...base}
+				nextStake={createMockGateStake({ gateNumber: 2 })}
+			/>
+		);
+		expect(screen.getByText("Next up")).toBeInTheDocument();
+		expect(screen.getByText("Cascade gate")).toBeInTheDocument();
+		expect(screen.getByText("Correct answer")).toBeInTheDocument();
+	});
+
+	it("skips the next gate's demand and game-over rules — a clear pays out, it doesn't threaten", () => {
+		render(
+			<RewardScreen
+				{...base}
+				nextStake={createMockGateStake({ gateNumber: 2 })}
+			/>
+		);
+		expect(screen.queryByText("Clear the gate")).not.toBeInTheDocument();
+		expect(screen.queryByText("Game over")).not.toBeInTheDocument();
+		expect(screen.queryByText("To start")).not.toBeInTheDocument();
+	});
+
+	it("stays a payout screen when no next gate is handed to it", () => {
+		render(<RewardScreen {...base} />);
+		expect(screen.queryByTestId("gate-stake-receipt")).not.toBeInTheDocument();
 	});
 
 	it("lands the whole storage payout as one number", () => {

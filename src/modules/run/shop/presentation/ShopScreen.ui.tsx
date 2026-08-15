@@ -61,8 +61,8 @@ type ShopScreenProps = {
 	extendCost: number;
 	canExtend: boolean;
 	onExtend: () => void;
-	coverage: number;
-	slotCoverageRequired: number;
+	/** The gate whose clear opens the next slot (ADR-034); null at the cap. */
+	nextSlotGate: number | null;
 	justUnlockedSlots: readonly number[];
 	onUpgrade: (configId: string) => void;
 	onSell: (configId: string) => void;
@@ -203,8 +203,7 @@ export const ShopScreen = ({
 	extendCost,
 	canExtend,
 	onExtend,
-	coverage,
-	slotCoverageRequired,
+	nextSlotGate,
 	justUnlockedSlots,
 	onUpgrade,
 	onSell,
@@ -555,8 +554,7 @@ export const ShopScreen = ({
 							}
 							trailing={nextSlotRow({
 								slots,
-								coverage,
-								slotCoverageRequired,
+								nextSlotGate,
 								justUnlocked: justUnlockedSlots,
 							})}
 						/>

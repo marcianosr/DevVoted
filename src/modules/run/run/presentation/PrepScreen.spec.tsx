@@ -52,9 +52,61 @@ describe(PrepScreen, () => {
 
 	it("shows the gate's storage reward, not a trivial coverage multiplier", () => {
 		render(<PrepScreen {...base} />);
-		expect(screen.getByText("Succeed your build:")).toBeInTheDocument();
+		expect(screen.getByText("Gate cleared")).toBeInTheDocument();
 		expect(screen.getByText("+32KB")).toHaveClass("text-gradient-green");
 		expect(screen.queryByText("×1")).not.toBeInTheDocument();
+	});
+
+	it("previews the gate's own swatch, unearned until the gate hands it over", () => {
+		render(<PrepScreen {...base} />);
+		expect(screen.getByText("Swatch earned")).toBeInTheDocument();
+		expect(screen.getByText("Boulder Swatch")).toHaveClass("text-pewter");
+	});
+
+	it("lists the window and the coverage total as the two things a clear takes", () => {
+		render(<PrepScreen {...base} stake={stakeWith({ pollsPerGate: 5 })} />);
+		const requirements = screen.getAllByRole("listitem");
+		expect(requirements[0]).toHaveTextContent("Answer all 5 polls");
+		expect(requirements[1]).toHaveTextContent("Reach 3% total coverage");
+	});
+
+	it("grades the coverage demand against the total the run holds", () => {
+		render(
+			<PrepScreen
+				{...base}
+				stake={stakeWith({ coverageDemand: 12, coverageHeld: 4 })}
+			/>
+		);
+		expect(screen.getByText("12% total coverage")).toBeInTheDocument();
+		expect(screen.getByText("4% / 12%")).toHaveClass("text-cinnabar");
+	});
+
+	it("rails the coverage held against the demand, so the gap is legible at a glance", () => {
+		render(
+			<PrepScreen
+				{...base}
+				stake={stakeWith({
+					gateNumber: 1,
+					coverageDemand: 12,
+					coverageHeld: 6,
+				})}
+			/>
+		);
+		const rail = screen.getByRole("progressbar", {
+			name: "coverage toward gate 1",
+		});
+		expect(rail).toHaveAttribute("aria-valuenow", "6");
+		expect(rail).toHaveAttribute("aria-valuemax", "12");
+	});
+
+	it("turns the coverage progress green once the demand is met", () => {
+		render(
+			<PrepScreen
+				{...base}
+				stake={stakeWith({ coverageDemand: 12, coverageHeld: 12 })}
+			/>
+		);
+		expect(screen.getByText("12% / 12%")).toHaveClass("text-viridian");
 	});
 
 	it("captions the gate with its coverage multiplier", () => {
@@ -83,12 +135,18 @@ describe(PrepScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("states the stake as a plain count when it is not fatal", () => {
+	it("states the miss cost and the retry in one line", () => {
 		render(<PrepScreen {...base} stake={stakeWith({ stripsOnFailure: 1 })} />);
-		expect(screen.getByText("Remove 1 config")).toHaveClass("text-cinnabar");
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.textContent ===
+					"Miss the target: remove 1 config, then retry this gate"
+			)
+		).toBeInTheDocument();
 	});
 
-	it("pluralizes the stake for more than one config", () => {
+	it("pluralizes the miss cost for more than one config", () => {
 		render(
 			<PrepScreen
 				{...base}
@@ -96,7 +154,30 @@ describe(PrepScreen, () => {
 				configs={[CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]}
 			/>
 		);
-		expect(screen.getByText("Remove 2 configs")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.textContent ===
+					"Miss the target: remove 2 configs, then retry this gate"
+			)
+		).toBeInTheDocument();
+	});
+
+	it("names the config floor the run ends below", () => {
+		render(
+			<PrepScreen
+				{...base}
+				stake={stakeWith({ stripsOnFailure: 1 })}
+				configs={[CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]}
+			/>
+		);
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.textContent ===
+					"Your run ends if your pipeline holds fewer than 2 configs — you hold 3."
+			)
+		).toBeInTheDocument();
 	});
 
 	it("warns the run is over once the stake would take the whole build", () => {
@@ -108,21 +189,22 @@ describe(PrepScreen, () => {
 			/>
 		);
 		expect(
-			screen.getByText("All configs disabled — run over")
-		).toBeInTheDocument();
+			screen.getByText(
+				"Your pipeline holds 2 configs — missing this gate removes 2 and ends the run."
+			)
+		).toHaveClass("text-cinnabar");
 	});
 
 	it("names the storage plan's bill on a paid tier", () => {
 		render(<PrepScreen {...base} stake={stakeWith({ billKb: 8 })} />);
+		expect(screen.getByText("Storage bill")).toBeInTheDocument();
 		expect(screen.getByText("−8KB")).toHaveClass("text-cinnabar");
-		expect(screen.getByText(/storage bill — pass or fail/)).toBeInTheDocument();
+		expect(screen.getByText(/pass or fail/)).toBeInTheDocument();
 	});
 
 	it("keeps the free tier's receipt bill-free", () => {
 		render(<PrepScreen {...base} />);
-		expect(
-			screen.queryByText(/storage bill — pass or fail/)
-		).not.toBeInTheDocument();
+		expect(screen.queryByText("Storage bill")).not.toBeInTheDocument();
 	});
 
 	it("marks the gate name with its swatch colour", () => {

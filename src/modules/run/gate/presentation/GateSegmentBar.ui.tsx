@@ -5,7 +5,11 @@ import {
 	hasThemeColor,
 	themeColorOf,
 } from "~/modules/run/gate/domain/swatch.model";
-import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
+import {
+	coverageDemandFor,
+	minConfigsForGate,
+	roundToOneDecimal,
+} from "~/modules/run/run/domain/rules.model";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Tooltip } from "~/ui/Tooltip.component";
@@ -40,6 +44,18 @@ const SPOKEN: Record<PipStanding, string> = {
 
 const spokenName = (swatch: GateSwatch, standing: PipStanding): string =>
 	`gate ${swatch.gate}, ${swatch.name}, ${SPOKEN[standing]}`;
+
+/**
+ * What that gate asks for, read straight off the rules rather than off the run:
+ * the pip previews gates the player has not reached, where there is no live
+ * stake to hand it. The config half is dropped where the gate demands none.
+ */
+const gateDemand = (gate: number): string => {
+	const minConfigs = minConfigsForGate(gate);
+	const coverage = `Needs ${coverageDemandFor(gate)}% total coverage`;
+	if (minConfigs < 1) return coverage;
+	return `${coverage} · ${minConfigs} config${minConfigs === 1 ? "" : "s"}`;
+};
 
 const PipDetail = ({
 	swatch,
@@ -85,6 +101,12 @@ const PipDetail = ({
 				Clear gate {swatch.gate} to earn it
 			</Paragraph>
 		) : null}
+		{/* An earned gate's demand is history — the pip's job there is the badge. */}
+		{standing !== "earned" ? (
+			<Paragraph as="span" size="xs" tone="muted">
+				{gateDemand(swatch.gate)}
+			</Paragraph>
+		) : null}
 	</span>
 );
 
@@ -96,8 +118,11 @@ const PipDetail = ({
  * hover names that gate's badge, and a tap holds the name open, since a 12px dot
  * is unreadable without it and a touch screen has no hover to offer.
  *
- * Deliberately carries no coverage: since ADR-019 coverage buys width, not depth,
- * and the shop's unlock row is where that progress belongs.
+ * Each pip also names what its gate asks for, which it could not do while
+ * coverage bought width rather than depth (ADR-019). Under ADR-034 the gate
+ * demands the coverage itself, so the bar is the one surface that can show the
+ * whole ladder of demands at once — the stake receipt only ever speaks for the
+ * gate in front of you.
  */
 export const GateSegmentBar = ({
 	swatches,

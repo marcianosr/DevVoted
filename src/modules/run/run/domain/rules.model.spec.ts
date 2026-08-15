@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
 	atMinimumWidth,
+	configFloorForGate,
+	coverageDemandFor,
 	dropCount,
 	gateBaseMultiplier,
 	isStakeFatal,
@@ -12,9 +14,38 @@ import {
 	storagePlanLadder,
 	GATE_COUNT,
 	GATE_REWARD_KB,
+	SLICE_WINDOW,
 	STORAGE_PLANS,
 	VICTORY_GATE,
+	WRONG_COVERAGE_LOSS,
 } from "~/modules/run/run/domain/rules.model";
+
+describe("the gate's coverage demand (ADR-034)", () => {
+	it("prices every gate near 80% of a perfect base pace", () => {
+		for (let gate = 0; gate <= VICTORY_GATE; gate++) {
+			const perfectPace = (SLICE_WINDOW * (gate + 1) * (gate + 2)) / 2;
+			expect(coverageDemandFor(gate)).toBeLessThanOrEqual(
+				0.8 * perfectPace + 5
+			);
+			expect(coverageDemandFor(gate)).toBeGreaterThanOrEqual(0.6 * perfectPace);
+		}
+	});
+
+	it("rises with every gate and holds past the summit", () => {
+		for (let gate = 1; gate <= VICTORY_GATE; gate++)
+			expect(coverageDemandFor(gate)).toBeGreaterThan(
+				coverageDemandFor(gate - 1)
+			);
+		expect(coverageDemandFor(VICTORY_GATE + 5)).toBe(
+			coverageDemandFor(VICTORY_GATE)
+		);
+	});
+
+	it("keeps the wrong-answer bleed at a quarter of the base gain", () => {
+		// Break-even base accuracy 20% at every depth (ADR-034).
+		expect(WRONG_COVERAGE_LOSS).toBe(0.25);
+	});
+});
 
 describe("the storage-plan ladder (ADR-030)", () => {
 	it("climbs to a 3MB cap", () => {
@@ -164,5 +195,21 @@ describe("isStakeFatal", () => {
 
 	it("is fatal when the peel quota exceeds the build", () => {
 		expect(isStakeFatal(4, 3)).toBe(true);
+	});
+});
+
+describe("configFloorForGate", () => {
+	it("sits one config above the gate's strip quota", () => {
+		expect(configFloorForGate(0)).toBe(2);
+		expect(configFloorForGate(4)).toBe(4);
+		expect(configFloorForGate(VICTORY_GATE)).toBe(8);
+	});
+
+	it("names the exact count below which a failed gate kills the run", () => {
+		for (let gate = 0; gate < GATE_COUNT; gate++) {
+			const floor = configFloorForGate(gate);
+			expect(isStakeFatal(dropCount(gate), floor)).toBe(false);
+			expect(isStakeFatal(dropCount(gate), floor - 1)).toBe(true);
+		}
 	});
 });

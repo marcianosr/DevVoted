@@ -158,8 +158,10 @@ alike; only bought levels move it (see [4.4 Upgrades](#44-upgrades)).
 
 **Gates count from 0**, and **passing the checks is the whole price of depth**
 (ADR-019). A run opens on gate 0 and every clear advances one gate, up to the summit
-at gate 12. Width is bought separately with coverage and gates nothing, so a run can
-sit at gate 5 on its starting three slots. What makes depth expensive is *risk*: the
+at gate 12. The gate is a CI run (ADR-034): passing demands the run's **total
+coverage** meet the gate's threshold alongside the build's checks, and each clear
+from gate 1 **grants a slot** — width comes with depth, never the other way around
+(width still opens no gates). What makes depth expensive is *risk*: the
 strip quota grows as you climb, so a pipeline too narrow to absorb it fails and
 dies rather than stalling. Clearing a gate also awards that gate's **swatch**
 ([6.4 Swatches](#64-swatches)).
@@ -177,12 +179,14 @@ nothing is decided before that:
 
 | | condition | outcome |
 | --- | --- | --- |
-| **Advance** | every check passed *or* skipped | paid, gate's swatch earned, `gatesCleared + 1`, shop opens |
-| **Don't advance** | a check failed, and the build holds more configs than the peel quota | peel `dropCount` configs, then replay the **same** gate on a fresh 5 polls |
-| **Run over** | a check failed, and the peel quota takes every config the build holds | dead (ADR-021) |
+| **Advance** | every check passed *or* skipped, **and** total coverage meets the gate's demand ([2.10](#210-what-unlocks-when)) | paid, gate's swatch earned, `gatesCleared + 1` (slot granted from gate 1), shop opens |
+| **Don't advance** | a check failed *or* the total sat under the demand, and the build holds more configs than the peel quota | peel `dropCount` configs, then **the shop opens** (ADR-034) and the **same** gate replays on a fresh 5 polls |
+| **Run over** | the gate failed, and the peel quota takes every config the build holds | dead (ADR-021) |
 
-There is no other way to not advance. Since ADR-019 removed the width freeze, the
-failure path is the only one, and it always costs configs.
+There is no other way to not advance. The failure path always costs configs, and
+its shop visit is where KB becomes the comeback resource: the storage bill still
+collects on every closed window (ADR-023) and only the passing attempt pays the
+gate reward, so camping a gate is priced without any extra rule.
 
 **Failure trades difficulty for fragility.** The quota grows with depth
 (`dropCount = 1 + floor(gate / 2)`), and **stripping takes configs, never slots**,
@@ -212,8 +216,9 @@ Cascade, 3 at Thunder, then one over the strip quota up to **8 at the summit**.
 The early ramp keeps the opening gates farmable and lets a broke post-strip run
 recover. The shop and prep screen refuse to sell or drop below the coming gate's
 demand (the last config never sells, whatever the demand), so only a strip can
-sink a build under it — the replay of the failed gate is exempt, but the *next*
-gate turns an unrepaired build away. Turning away is a **blocked shop exit**,
+sink a build under it — and since a shop now sits between every strip and its
+replay (ADR-034), the door grades the replay like any other attempt: an
+unrepaired build is turned away. Turning away is a **blocked shop exit**,
 not a death (ADR-031): while the shop can still repair the width (a free slot
 plus an affordable offer, or a rebuild worth hoping for) the exit stays
 disabled with the shortfall named. Only a provably stuck build — broke or
@@ -415,33 +420,37 @@ authoritative.
 
 ### 2.10 What Unlocks When
 
-One sheet for everything the climb stages in, because the rules arrive on three
+One sheet for everything the climb stages in, because the rules arrive on two
 different axes and it is easy to lose track of which is which:
 
-- **Gate number** stages the *stakes* and the *shop's controls*. Gate depth is
-  bought with clears alone (ADR-019).
-- **Total coverage** stages *width* — the slot ladder, and nothing else
-  ([3.1](#31-slots--expansion)). It never gates depth.
+- **Gate number** stages the *stakes*, the *shop's controls*, the *coverage
+  demanded* to pass, and **width**: each clear from gate 1 grants a slot
+  (ADR-034; [3.1](#31-slots--expansion)).
 - **Category coverage** stages *Focus upgrades* ([4.4](#44-upgrades)).
 
-| Gate | Swatch | Configs demanded | Strips on fail | Unlocks at this gate |
-| --- | --- | --- | --- | --- |
-| 0 | Pallet | 0 | 1 | Shop, **Rebuild offers**, the 512KB free plan and the 640KB rung |
-| 1 | Boulder | 1 | 1 | — |
-| 2 | Cascade | 2 | 2 | **Lock an offer**, 768KB rung |
-| 3 | Thunder | 3 | 2 | **Extend offers** |
-| 4 | Lavender | 4 | 3 | 1MB rung |
-| 5 | Rainbow | 4 | 3 | — |
-| 6 | Soul | 5 | 4 | 1.5MB rung |
-| 7 | Marsh | 5 | 4 | — |
-| 8 | Seafoam | 6 | 5 | 2MB rung |
-| 9 | Volcano | 6 | 5 | — |
-| 10 | Earth | 7 | 6 | 3MB rung (top of the ladder) |
-| 11 | Elite | 7 | 6 | — |
-| 12 | Champion | 8 | 7 | Summit — clearing it wins the run |
+| Gate | Swatch | Configs demanded | Coverage to pass | Strips on fail | Unlocks at this gate |
+| --- | --- | --- | --- | --- | --- |
+| 0 | Pallet | 0 | 3% | 1 | Shop, **Rebuild offers**, the 512KB free plan and the 640KB rung |
+| 1 | Boulder | 1 | 12% | 1 | Slot 4 |
+| 2 | Cascade | 2 | 24% | 2 | **Lock an offer**, 768KB rung, slot 5 |
+| 3 | Thunder | 3 | 40% | 2 | **Extend offers**, slot 6 |
+| 4 | Lavender | 4 | 60% | 3 | 1MB rung, slot 7 |
+| 5 | Rainbow | 4 | 85% | 3 | Slot 8 |
+| 6 | Soul | 5 | 110% | 4 | 1.5MB rung, slot 9 |
+| 7 | Marsh | 5 | 145% | 4 | Slot 10 |
+| 8 | Seafoam | 6 | 180% | 5 | 2MB rung, slot 11 |
+| 9 | Volcano | 6 | 220% | 5 | Slot 12 |
+| 10 | Earth | 7 | 265% | 6 | 3MB rung (top of the ladder), slot 13 |
+| 11 | Elite | 7 | 310% | 6 | Slot 14 (the width cap) |
+| 12 | Champion | 8 | 365% | 7 | Summit — clearing it wins the run |
+
+The coverage column follows one rule (ADR-034): **80% of a perfect base pace**,
+so streaks and config multipliers are headroom above it, never homework. Gate 0
+is rounded down so a 4-of-5 teaching window still passes.
 
 Sources, all authoritative over this table: `minConfigsForGate`, `dropCount`,
-`STORAGE_PLANS` (`rules.model.ts`),
+`coverageDemandFor`, `STORAGE_PLANS` (`rules.model.ts`),
+`slotsForGatesCleared` (`pipeline.model.ts`),
 `LOCK_FROM_GATE`/`EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
 (`swatch.model.ts`).
 
@@ -449,7 +458,6 @@ Sources, all authoritative over this table: `minConfigsForGate`, `dropCount`,
 
 | Track | Staged by | Where |
 | --- | --- | --- |
-| Pipeline slots 4–14 | total coverage % | [3.1](#31-slots--expansion) |
 | Focus config levels | that category's coverage % | [4.4](#44-upgrades) |
 | Unit Tests levels | storage (32KB × level bought) | [4.4](#44-upgrades) |
 | Lint fee | uses within the current poll | [4.5](#45-paid-actions-lint-and-peek) |
@@ -464,25 +472,23 @@ Sources, all authoritative over this table: `minConfigsForGate`, `dropCount`,
 ### 3.1 Slots & Expansion
 
 Your pipeline holds every installed config, one per **slot**. You start with **3
-slots** and can grow to **14**. Adding a slot costs no storage; it is gated by total
-coverage instead (*breadth earns width*). Width buys room for another config and
-nothing else — it opens no gates (ADR-019), so the ladder's length is free to differ
-from the gate count:
+slots** and can grow to **14**. Slots are granted by gates (ADR-034): clearing
+gate 1 opens slot 4, and every clear after it opens the next, up to slot 14 at
+gate 11 — the one table in [2.10](#210-what-unlocks-when) has every row. Width
+still opens no gates; it only ever arrives with them. Width claims itself
+automatically on the clear (ADR-025): there is no purchase step, and no coverage
+rung to reach — the coverage you earn is the gate's own demand now, never
+width's price.
 
-| Target slot | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Total coverage required | 8% | 16% | 28% | 45% | 70% | 100% | 140% | 190% | 250% | 325% | 415% |
+The shop shows the next slot as a full-width dashed row in the pipeline list,
+numbered like every other slot — "Opens when Gate 2 clears". A slot granted
+since your last visit shows as a green "Unlocked Nth slot" row in the same spot
+instead. It carries no swatch: badges come from clearing gates
+([6.4 Swatches](#64-swatches)).
 
-The first three slots come with the run. Slots 13–14 (325%/415%) are extrapolated
-rather than playtested. These thresholds are live-tuned in `pipeline.model.ts`
-(ADR-008); that file is the source of truth if this table drifts.
-
-The shop shows the next rung as a full-width row in the pipeline list, numbered like
-every other slot — the coverage it wants against what you have and a live progress
-bar. Width claims itself automatically the instant coverage affords it (ADR-025) —
-there is no purchase step. The shop marks whichever slot(s) auto-widened since your
-last visit with a green "Unlocked Nth slot" row in the same spot instead. It carries
-no swatch: badges come from clearing gates ([6.4 Swatches](#64-swatches)).
+> ⚠ Until ADR-034 (2026-08-15) slots were bought with total coverage on their
+> own ladder (8%…415%, ADR-008/019/025). The gate's coverage demand replaced
+> that ladder: one axis, one ladder, priced once.
 
 ### 3.2 Managing Configs
 
@@ -1193,14 +1199,15 @@ The game leans hard into its CI metaphor:
   Elite plate's finish, which read as an active gate eleven gates early. **Every pip
   is its own control**: hover or tap one and it names that gate's badge and its
   standing — earned, running now with the window count, or "clear gate 7 to earn
-  it". It deliberately carries no coverage: coverage buys width, not depth.
-- **Slot unlock row**: the next coverage-gated slot closes both the configure and
-  shop pipelines as a dashed row, numbered in the list's gutter like every other
-  slot — "Opens at 8% coverage", "9.9% reached", a live progress bar, and a
-  locked/unlocked pill. Width claims itself automatically the instant coverage
-  affords it (ADR-025) — there is no unlock button anywhere. The shop replaces this
-  row with a green "Unlocked Nth slot" acknowledgment for whichever slot(s)
-  auto-widened since the last visit. It carries no swatch, and retires at the slot cap.
+  it". It deliberately carries no coverage: the total is the gate's own stake,
+  shown on the Build Summary's "To pass" line (ADR-034).
+- **Slot unlock row**: the next slot closes both the configure and shop pipelines
+  as a dashed row, numbered in the list's gutter like every other slot — "Opens
+  when Gate 2 clears". Gates grant slots on the clear (ADR-034) and width claims
+  itself automatically (ADR-025) — there is no unlock button anywhere. The shop
+  replaces this row with a green "Unlocked Nth slot" acknowledgment for whichever
+  slot(s) arrived since the last visit. It carries no swatch, and retires at the
+  slot cap.
 - **Reward Report**: gate results styled as a CI build log: one passed/failed/skipped
   row per config, a steps summary, and a winnings footer — "you won +KB · +%"
   over a storage bar drawn from pre-gate storage to the new total (toward the
@@ -1276,7 +1283,9 @@ code, and this table follows it.
 | Debt cards per failed gate | 1 per failed check | Planted on the failing config; does not stack. |
 | Debt pay-off cost | Doubles per debt paid off | Per run. Base cost undefined. |
 | Gate multiplier | `gatesCleared + 1` | Scales coverage **gains** and the gate reward base (×1 … ×12). Frozen while a gate is replayed at the width wall. |
-| `WRONG_COVERAGE_LOSS` | 0.5 | Flat coverage bleed per miss, floored at 0. |
+| `WRONG_COVERAGE_LOSS` | 0.25 | Coverage bleed per miss (× reward and gate multipliers), floored at 0. A quarter of the base gain: break-even base accuracy 20% at every depth (ADR-034). |
+| Coverage demand | 3 / 12 / 24 / 40 / 60 / 85 / 110 / 145 / 180 / 220 / 265 / 310 / 365 | Run-total % a gate demands to pass (ADR-034): 80% of a perfect base pace. Live-tuned in `rules.model.ts` (`coverageDemandFor`). |
+| Coverage laps | Line / Branch / Mutation / Fuzz | The HUD reads coverage in laps of 100%: "Branch 70%" is 170% total (`coverageLapFor`). |
 | `STREAK_COVERAGE_BONUS` | 0.1 | Streak multiplier step (`1 + 0.1 × streak`). |
 | Difficulty bonus | +0.1 / option > 3, +0.5 multi | Gains-only multiplier, never below ×1. |
 | `GATE_REWARD_KB` | 32 | Gate-1 base storage per clear (× gate multiplier × reward multipliers × correct ÷ 5). |
@@ -1284,8 +1293,8 @@ code, and this table follows it.
 | `STORAGE_CAP_KB` | 512 | The free tier's storage cap; the clamp waits for *Climb on* (DVTD-0h4n). |
 | `STORAGE_PLANS` | 512/0 · 640/8 · 768/16 · 1MB/32 · 1.5MB/48 · 2MB/72 · 3MB/112 | Cap / bill-per-gate by tier (ADR-023). Billed on every closed window, pass or fail; unpaid → auto-downgrade to free. Gate-staged from 0/0/2/4/6/8/10 (ADR-030) — see [2.10](#210-what-unlocks-when). |
 | Archived-storage credit rate | 1 / `gates ÷ GATE_COUNT` / 0 | Victory / death / abandon share of leftovers. Divisor is 13. |
-| `BASE_SLOTS` → `MAX_SLOTS` | 3 → 14 | Pipeline width, bought with coverage. Independent of the gate count (ADR-019). |
-| Slot coverage ladder | 8 / 16 / 28 / 45 / 70 / 100 / 140 / 190 / 250 / 325 / 415 | Total-coverage % to reach slots 4–14. Live-tuned in `pipeline.model.ts` (ADR-008); the last two rungs are untuned. |
+| `BASE_SLOTS` → `MAX_SLOTS` | 3 → 14 | Pipeline width. Granted by gate clears (ADR-034), never bought. |
+| Slot grants | gates 1–11 → slots 4–14 | One slot per clear from gate 1 (`slotsForGatesCleared`, `pipeline.model.ts`); gate 0 teaches on the starting three. |
 | Gate swatches | Pallet … Champion | Thirteen — one per gate, earned by clearing it. Permanent and account-wide (`users.owned_swatch_ids`). |
 | `DRAFT_SIZE` | 5 | Configs offered per shop draft, before any Extend. |
 | Draft cost | 32 / 64 / 128 / 256 KB | By rarity: common → legendary. |

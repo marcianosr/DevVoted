@@ -22,6 +22,7 @@ import {
 	MAX_EXTENSIONS,
 } from "~/modules/run/shop/domain/draft.model";
 import {
+	coverageDemandFor,
 	dropCount,
 	minConfigsForGate,
 	SLICE_WINDOW,
@@ -88,8 +89,8 @@ describe("toRunView", () => {
 		expect(view.lintCost).toBeGreaterThan(0);
 		expect(view.rebuildCost).toBeGreaterThan(0);
 		expect(view.canRebuild).toBe(false); // fresh run starts at 0 KB
-		expect(view.slotCoverageRequired).toBeGreaterThan(0);
-		expect(view.justUnlockedSlots).toEqual([]); // no coverage earned yet
+		expect(view.nextSlotGate).toBe(1); // slot 4 opens when gate 1 clears
+		expect(view.justUnlockedSlots).toEqual([]); // no gate cleared yet
 	});
 
 	it("prices the peek and marks the poll once it is bought", () => {
@@ -379,10 +380,10 @@ describe("latestAnswerScore", () => {
 		});
 		expect(latestAnswerScore(toRunView(state))).toEqual({
 			isCorrect: false,
-			baseCoverage: -0.5,
+			baseCoverage: -0.3,
 			streakBonus: 0,
 			configBonuses: [],
-			earnedCoverage: -0.5,
+			earnedCoverage: -0.3,
 		});
 	});
 
@@ -495,6 +496,8 @@ describe("the gate stake travels as one object", () => {
 			pollsPerGate: SLICE_WINDOW,
 			stripsOnFailure: dropCount(4),
 			minConfigs: minConfigsForGate(4),
+			coverageDemand: coverageDemandFor(4),
+			coverageHeld: state.coverage,
 			billKb: storagePlanFor(state.storagePlan).billKb,
 			modifiers: view.modifiers,
 			perAnswer: view.perAnswer,

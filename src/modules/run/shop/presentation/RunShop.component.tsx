@@ -58,8 +58,7 @@ export const RunShop = () => {
 				canExtend={view.canExtend && !busy}
 				onExtend={() => send({ type: "extend-offers" })}
 				slots={view.slots}
-				coverage={view.coverage}
-				slotCoverageRequired={view.slotCoverageRequired}
+				nextSlotGate={view.nextSlotGate}
 				justUnlockedSlots={view.justUnlockedSlots}
 				onUpgrade={(id) => send({ type: "upgrade", configId: id })}
 				onSell={(id) => send({ type: "sell", configId: id })}

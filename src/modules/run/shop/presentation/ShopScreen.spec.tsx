@@ -86,8 +86,7 @@ const base = {
 	canExtend: true,
 	onExtend: vi.fn(),
 	slots: 3,
-	coverage: 25,
-	slotCoverageRequired: 20,
+	nextSlotGate: 1,
 	justUnlockedSlots: [],
 	onUpgrade: vi.fn(),
 	onSell: vi.fn(),
@@ -678,42 +677,30 @@ describe(ShopScreen, () => {
 		).toHaveClass("text-cinnabar");
 	});
 
-	it("shows the next slot locked with live progress — no unlock button anywhere", () => {
-		render(<ShopScreen {...base} coverage={12} slotCoverageRequired={20} />);
-		// Badges belong to gates now, so this row prices width and nothing else.
-		expect(screen.queryByText(/Swatch/)).not.toBeInTheDocument();
-		expect(screen.getByText("12% reached")).toBeInTheDocument();
-		expect(
-			screen.getByRole("progressbar", { name: "coverage toward slot 4" })
-		).toHaveAttribute("aria-valuenow", "12");
-		// Width claims itself automatically (ADR-025) — there is no purchase step.
+	it("names the gate that opens the next slot — no unlock button anywhere", () => {
+		render(<ShopScreen {...base} />);
+		// Badges belong to gates now, so this row prices width and nothing else —
+		// scoped to the row, since the stake receipt does name the gate's swatch.
+		const slotRow = screen.getByText(/Opens when/);
+		expect(slotRow).toHaveTextContent("Gate 1");
+		expect(slotRow).not.toHaveTextContent(/Swatch/);
+		// Gates grant slots on the clear (ADR-034) — there is no purchase step.
 		expect(
 			screen.queryByRole("button", { name: "Unlock slot" })
 		).not.toBeInTheDocument();
 	});
 
-	it("acknowledges a slot auto-widened since the last visit, alongside progress toward the next one", () => {
-		render(<ShopScreen {...base} justUnlockedSlots={[4]} />);
+	it("acknowledges a slot granted since the last visit, alongside the gate holding the next one", () => {
+		render(<ShopScreen {...base} justUnlockedSlots={[4]} nextSlotGate={2} />);
 		expect(screen.getByText("Unlocked 4th slot")).toBeInTheDocument();
 		// The acknowledgment names slot 4 — it must not also relabel it as the
-		// still-locked next slot. Progress resumes one slot further on.
-		expect(
-			screen.getByRole("progressbar", { name: "coverage toward slot 5" })
-		).toBeInTheDocument();
-	});
-
-	it("advances the row to the next slot as the pipeline widens", () => {
-		render(<ShopScreen {...base} slots={4} />);
-		expect(
-			screen.getByRole("progressbar", { name: "coverage toward slot 5" })
-		).toBeInTheDocument();
+		// still-held next slot. The preview resumes one slot further on.
+		expect(screen.getByText("Gate 2")).toBeInTheDocument();
 	});
 
 	it("retires the unlock row at the slot cap", () => {
-		render(
-			<ShopScreen {...base} slots={MAX_SLOTS} slotCoverageRequired={Infinity} />
-		);
-		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
+		render(<ShopScreen {...base} slots={MAX_SLOTS} nextSlotGate={null} />);
+		expect(screen.queryByText(/Opens when/)).not.toBeInTheDocument();
 	});
 
 	it("lists the storage-plan ladder with the current rung marked", () => {

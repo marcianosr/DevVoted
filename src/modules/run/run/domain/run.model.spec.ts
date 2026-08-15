@@ -14,7 +14,6 @@ import {
 import { checkStatuses } from "~/modules/run/gate/domain/gate.model";
 import {
 	BASE_SLOTS,
-	coverageToAddSlot,
 	MAX_SLOTS,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
@@ -85,6 +84,12 @@ const answerWith = (state: RunState, correct: boolean): RunState => {
 		type: "answer",
 		optionIds: [option.id],
 	});
+};
+
+const clearGate = (state: RunState): RunState => {
+	let next = state;
+	for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, true);
+	return next;
 };
 
 // The climb only starts on a full pipeline, so the helper pads the requested
@@ -507,30 +512,43 @@ describe("dropping from the gate-prep screen", () => {
 	});
 });
 
-describe("automatic slot widening (ADR-025)", () => {
-	it("does not widen below the coverage threshold", () => {
-		let state = { ...started(["js"]), coverage: 2 };
-		state = answerWith(state, false); // a miss only ever loses coverage
+describe("gates grant slots (ADR-034)", () => {
+	it("keeps width fixed mid-window — no coverage total widens the pipeline", () => {
+		let state = { ...started(["js"]), coverage: 1000 };
+		state = answerWith(state, true);
 		expect(state.pipeline.slots).toBe(BASE_SLOTS);
 		expect(state.justUnlockedSlots).toEqual([]);
 	});
 
-	it("widens automatically once total coverage meets the threshold", () => {
-		let state = { ...started(["js"]), coverage: coverageToAddSlot(BASE_SLOTS) };
-		state = answerWith(state, true); // a hit never loses coverage
+	it("grants no slot for the teaching gate, then one per clear", () => {
+		let state = clearGate(started(["js"], 2 * SLICE_WINDOW));
+		expect(state.pipeline.slots).toBe(BASE_SLOTS);
+		expect(state.justUnlockedSlots).toEqual([]);
+		state = runReducer(state, { type: "finish-reward" });
+		state = clearGate(state);
 		expect(state.pipeline.slots).toBe(BASE_SLOTS + 1);
 		expect(state.justUnlockedSlots).toEqual([BASE_SLOTS + 1]);
 	});
 
-	it("holds the hard cap even with abundant coverage", () => {
-		const base = started(["js"]);
-		let state = {
-			...base,
-			coverage: 1000,
-			pipeline: { ...base.pipeline, slots: MAX_SLOTS },
-		};
-		state = answerWith(state, true);
+	it("never shrinks a pipeline already wider than the grant", () => {
+		const base = started(["js"], 2 * SLICE_WINDOW);
+		let state = { ...base, pipeline: { ...base.pipeline, slots: MAX_SLOTS } };
+		state = clearGate(state);
+		state = runReducer(state, { type: "finish-reward" });
+		state = clearGate(state);
 		expect(state.pipeline.slots).toBe(MAX_SLOTS);
+		expect(state.justUnlockedSlots).toEqual([]);
+	});
+});
+
+describe("the gate's coverage total (ADR-034)", () => {
+	it("fails a checks-passing window that sits under the coverage demand", () => {
+		// Gate 3 demands 40% and a from-zero perfect window at ×3 banks ~19.5%,
+		// so every check passes and the total still falls short.
+		let state = { ...started(["js"]), gatesCleared: 2 };
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.log.at(-1)).toContain("coverage");
 	});
 });
 
@@ -912,7 +930,8 @@ describe("no build owes the gate nothing (ADR-022)", () => {
 	it("clears on the single correct answer AGENTS.md asks for", () => {
 		// A legendary's 256KB draft price is most of what it costs, so its check
 		// is light. Light is not free: it is never excused by the draw.
-		let state = freeloader(SLICE_WINDOW);
+		// Coverage stake met up front (ADR-034) — the check is the subject here.
+		let state = { ...freeloader(SLICE_WINDOW), coverage: 50 };
 		state = answerWith(state, true);
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, false);
 		expect(state.clearedGate).toBe(0);
@@ -924,7 +943,9 @@ describe("no build owes the gate nothing (ADR-022)", () => {
 		// is excused and the gate demands nothing — which is the honest reading of
 		// "the gate demands only what your build demands". Not exploitable: the
 		// draw cannot be chosen, so this cannot be chained into a climb.
-		let state = started(["ts", "css", "js"]);
+		// The gate's own stake is coverage, not correctness (ADR-034): banked
+		// coverage meets it, so no correct answer is owed this window.
+		let state = { ...started(["ts", "css", "js"]), coverage: 50 };
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		expect(state.clearedGate).toBe(0);
 	});
@@ -944,16 +965,21 @@ describe("failure model", () => {
 		expect(state.stripsRemaining).toBe(1);
 	});
 
-	it("holds after the drop quota is peeled until the player climbs on", () => {
+	it("routes the repaired build through the shop before the replay (ADR-034)", () => {
 		let state = started(["unit-tests", "eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		state = runReducer(state, { type: "strip", configId: "eslint" });
 		expect(state.status).toBe("awaiting-strip");
 		expect(state.stripsRemaining).toBe(0);
 		state = runReducer(state, { type: "resume-climb" });
-		expect(state.status).toBe("answering");
+		expect(state.status).toBe("rewarding");
+		expect(state.redoGate).toBe(0);
 		expect(configIds(state)).not.toContain("eslint");
 		expect(state.pipeline.configs).toHaveLength(2);
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.status).toBe("answering");
+		expect(state.redoGate).toBeUndefined();
+		expect(state.gatesCleared).toBe(0); // the same gate again, not the next
 	});
 
 	it("ignores a strip once the quota is met", () => {
@@ -1127,7 +1153,7 @@ describe("the gate's width demand (ADR-027) and the shop exit it blocks (ADR-031
 		expect(blocked).toBe(state);
 	});
 
-	it("exempts the replay: a strip may sink the build under the demand, the next shop holds it", () => {
+	it("retires the replay exemption: a stripped-under-demand build is held by the redo shop (ADR-034)", () => {
 		let state = widenedTo(shopBeforeGate4(), 4); // js, ts, css, coverage-gain
 		state = runReducer(state, { type: "finish-reward" });
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
@@ -1136,14 +1162,11 @@ describe("the gate's width demand (ADR-027) and the shop exit it blocks (ADR-031
 		for (const configId of ["js", "ts", "css"])
 			state = runReducer(state, { type: "strip", configId });
 		state = runReducer(state, { type: "resume-climb" });
-		expect(state.status).toBe("answering"); // 1 config replays gate 4 legally
+		expect(state.status).toBe("rewarding"); // the redo goes through the shop
 
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.status).toBe("rewarding"); // the replay cleared
-
-		// The cheese DVTD-kokk stays closed, without the trap: the unrepaired
-		// 1-config build cannot cruise past gate 5 on a one-line checklist —
-		// its exit is blocked until the shop gets it back to the demand.
+		// A shop now sits between the strip and its replay, so the cheese
+		// DVTD-kokk stays closed at the door: with 1000KB the shop can repair
+		// the width, and the exit refuses to start the replay until it does.
 		const held = { ...state, storage: 1000 };
 		expect(runReducer(held, { type: "finish-reward" })).toBe(held);
 	});
@@ -1189,12 +1212,14 @@ describe("the daily gate lock", () => {
 		expect(isAwaitingTomorrow(state)).toBe(true);
 	});
 
-	it("locks after the strip repair when the day ends on a failed gate", () => {
+	it("locks after the redo shop when the day ends on a failed gate", () => {
 		let state = started(["unit-tests"], SLICE_WINDOW);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		expect(state.status).toBe("awaiting-strip");
 		state = runReducer(state, { type: "strip", configId: "unit-tests" });
 		state = runReducer(state, { type: "resume-climb" });
+		expect(state.status).toBe("rewarding"); // the redo shop opens first
+		state = runReducer(state, { type: "finish-reward" });
 		expect(state.status).toBe("answering");
 		expect(isAwaitingTomorrow(state)).toBe(true);
 	});
@@ -1260,18 +1285,6 @@ describe("the summit", () => {
 });
 
 describe("depth and width are independent (ADR-019)", () => {
-	const clearGate = (state: RunState): RunState => {
-		let next = state;
-		for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, true);
-		return next;
-	};
-
-	// Coverage far past every rung, so add-slot is never the blocker.
-	const funded = (state: RunState): RunState => ({
-		...state,
-		coverage: 10_000,
-	});
-
 	it("advances the gate on a clear the starting three slots paid for", () => {
 		const state = clearGate(started(["js"]));
 
@@ -1308,22 +1321,6 @@ describe("depth and width are independent (ADR-019)", () => {
 		state = clearGate(state);
 
 		expect(state.gateRewardKb).toBeGreaterThan(firstGate ?? 0);
-	});
-
-	it("widens automatically as width only, leaving the gate where it was", () => {
-		let state = funded(started(["js"]));
-		const before = state.gatesCleared;
-		state = answerWith(state, true);
-
-		// Coverage this abundant clears every rung on the ladder in one go.
-		expect(state.pipeline.slots).toBe(MAX_SLOTS);
-		expect(state.gatesCleared).toBe(before); // buying width buys no depth
-	});
-
-	it("leaves the slot ladder free to outlast the gate ladder", () => {
-		// Nothing ties the two any more, so the ladder ends where tuning says.
-		expect(coverageToAddSlot(MAX_SLOTS - 1)).toBeLessThan(Infinity);
-		expect(coverageToAddSlot(MAX_SLOTS)).toBe(Infinity);
 	});
 });
 
@@ -1427,9 +1424,9 @@ describe("gate base multiplier", () => {
 	});
 
 	it("scales a wrong answer's loss by the gate too — risk cuts deeper as you climb", () => {
-		expect(baseAt(0, false)).toBe(-0.5); // gate 1: -0.5 × 1
-		expect(baseAt(1, false)).toBe(-1); // gate 2: -0.5 × 2
-		expect(baseAt(4, false)).toBe(-2.5); // gate 5: -0.5 × 5
+		expect(baseAt(0, false)).toBe(-0.3); // gate 1: -0.25 × 1, rounded
+		expect(baseAt(1, false)).toBe(-0.5); // gate 2: -0.25 × 2
+		expect(baseAt(4, false)).toBe(-1.3); // gate 5: -0.25 × 5, rounded
 	});
 });
 
@@ -1697,7 +1694,7 @@ describe("coverage scoring", () => {
 		const afterOneCorrect = answerWith(started(["js"]), true);
 		expect(afterOneCorrect.coverage).toBe(1.1); // base 1 × streak-1 factor 1.1
 		// Base pipeline multiplier is 1 → loss is the raw WRONG_COVERAGE_LOSS.
-		expect(answerWith(afterOneCorrect, false).coverage).toBe(0.6); // 1.1 − 0.5
+		expect(answerWith(afterOneCorrect, false).coverage).toBe(0.8); // 1.1 − 0.3
 	});
 
 	it("never drags coverage below zero", () => {
@@ -1721,8 +1718,8 @@ describe("coverage scoring", () => {
 	});
 
 	it("keeps the total equal to the sum of the categories after a loss", () => {
-		const afterOneCorrect = answerWith(started(["js"]), true); // react 1
-		const thenWrong = answerWith(afterOneCorrect, false); // react 1 → 0.5
+		const afterOneCorrect = answerWith(started(["js"]), true); // react 1.1
+		const thenWrong = answerWith(afterOneCorrect, false); // react 1.1 → 0.8
 		expect(thenWrong.coverage).toBe(
 			Object.values(thenWrong.coverageByCategory).reduce(
 				(sum, pct) => sum + pct,
@@ -1737,7 +1734,7 @@ describe("coverage scoring", () => {
 		const afterOneCorrect = answerWith(started(["js"]), true);
 		const thenWrong = answerWith(afterOneCorrect, false);
 		expect(thenWrong.window.coverageGained).toBe(1.1); // streak-1 earn, gains only
-		expect(thenWrong.coverage).toBe(0.6); // 1.1 − 0.5 loss
+		expect(thenWrong.coverage).toBe(0.8); // 1.1 − 0.3 loss
 	});
 });
 
@@ -1838,7 +1835,7 @@ describe("storage plan", () => {
 		expect(storagePlanFor(state.storagePlan).tier).toBe(1);
 	});
 
-	it("clears the bill report fields when the climb resumes after a strip", () => {
+	it("keeps the failed window's bill visible through the redo shop, clearing it at the door", () => {
 		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		state = runReducer(state, { type: "change-plan", tier: 2 });
@@ -1846,6 +1843,8 @@ describe("storage plan", () => {
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		state = runReducer(state, { type: "strip", configId: "unit-tests" });
 		state = runReducer(state, { type: "resume-climb" });
+		expect(state.gateBillKb).toBe(8); // the redo shop still reports the charge
+		state = runReducer(state, { type: "finish-reward" });
 		expect(state.gateBillKb).toBe(0);
 		expect(state.planDowngraded).toBe(false);
 	});

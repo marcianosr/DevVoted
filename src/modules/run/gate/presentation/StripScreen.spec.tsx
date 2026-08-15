@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
 const checks: CheckStatus[] = [
 	{
@@ -43,6 +44,34 @@ describe(StripScreen, () => {
 		expect(screen.getByText("FAIL")).toBeInTheDocument();
 		expect(
 			screen.getByText("Remove 2 configs to continue")
+		).toBeInTheDocument();
+	});
+
+	it("states the redo's demand and reads its config floor against the build left standing", () => {
+		render(
+			<StripScreen
+				stripsRemaining={1}
+				gateNumber={2}
+				configs={[CONFIGS.js, CONFIGS.agentsMd]}
+				checks={checks}
+				answered={[]}
+				retryStake={createMockGateStake({
+					gateNumber: 2,
+					coverageDemand: 24,
+					coverageHeld: 20,
+					stripsOnFailure: 2,
+				})}
+				onStrip={() => {}}
+			/>
+		);
+		expect(screen.getByText("Retry")).toBeInTheDocument();
+		expect(screen.getByText("20% / 24%")).toHaveClass("text-cinnabar");
+		// Two configs against a two-config peel: the redo is already fatal, and
+		// the screen says so while the player still chooses what to give up.
+		expect(
+			screen.getByText(
+				"Your pipeline holds 2 configs — missing this gate removes 2 and ends the run."
+			)
 		).toBeInTheDocument();
 	});
 

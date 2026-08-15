@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
+import { createMockGateStake } from "~/test/runView.factory";
 
 const meta: Meta<typeof StripScreen> = {
 	component: StripScreen,
@@ -48,6 +49,12 @@ export const Default: Story = {
 				picked: ['"object"'],
 			},
 		],
+		retryStake: createMockGateStake({
+			gateNumber: 1,
+			coverageDemand: 12,
+			coverageHeld: 9,
+			stripsOnFailure: 2,
+		}),
 		onStrip: () => {},
 	},
 };

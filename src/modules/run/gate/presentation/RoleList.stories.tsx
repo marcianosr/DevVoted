@@ -96,9 +96,7 @@ export const ShopLoadout: Story = {
 		],
 		trailing: nextSlotRow({
 			slots: 4,
-			coverage: 18.2,
-			slotCoverageRequired: 16,
-			claim: { ready: true, onClaim: () => {} },
+			nextSlotGate: 2,
 		}),
 	},
 };

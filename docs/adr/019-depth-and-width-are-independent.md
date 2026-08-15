@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-08-06, Marciano). **Supersedes [ADR-018](018-gate-slot-coupling-and-slot-swatches.md)** (same day).
+Accepted (2026-08-06, Marciano). **Supersedes [ADR-018](018-gate-slot-coupling-and-slot-swatches.md)** (same day). **Decision 2 reversed by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): gates grant slots; the direction differs from ADR-018's, see the marker at Decision 2.
 
 ## Context
 
@@ -19,6 +19,10 @@ enforced replay of the same gate — the farming ADR-017 §2 already prices out.
    `slotsRequiredForGate` and `gateFitsPipeline` are deleted.
 2. **Slots buy width only.** The coverage ladder is unchanged and its length is
    now free to differ from the gate count (`MAX_SLOTS` 14, 13 gates).
+   > ⚠ Reversed by [ADR-034](034-the-gate-is-a-ci-run.md) (2026-08-15): the
+   > coverage ladder is deleted and gate clears grant slots. The direction is
+   > the opposite of ADR-018's (gates grant width; width still never opens a
+   > gate), so this ADR's farming and stall objections do not reapply.
 3. **Swatches are gate badges,** keyed by gate and awarded server-side on the
    clear — you beat the leader, you get the badge; backpack space earns nothing.
    `VICTORY_GATE` becomes a content decision (12, so 13 gates and 13 badges) and

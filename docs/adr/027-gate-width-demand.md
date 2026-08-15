@@ -7,7 +7,9 @@ Accepted (2026-08-10, Marciano). **Amends [ADR-017](017-no-baseline-check.md) §
 [ADR-021](021-death-at-the-gate-that-empties-the-build.md) §3 (the shop's
 last-config guard generalizes to the demand), and qualifies
 [ADR-019](019-depth-and-width-are-independent.md)'s "width never gates the
-climb".**
+climb".** **Decision 2's replay exemption retired by
+[ADR-034](034-the-gate-is-a-ci-run.md)** (a shop now sits between a strip and
+its replay).
 
 ## Context
 
@@ -50,6 +52,10 @@ failing check could be shed mid-window before the gate closed.
    > the door no longer kills — it refuses (blocked exit) while the shop can
    > repair the width, and ends the run only via an explicit cinnabar click
    > once the build is provably stuck.
+   >
+   > ⚠ Replay exemption retired by [ADR-034](034-the-gate-is-a-ci-run.md)
+   > (2026-08-15): a redo now routes through the shop, so a shop *does* sit
+   > between a strip and its replay, and the door grades every attempt.
 
    `finishReward` ends the run
    (`dead`) when the build is under the coming gate's demand, with the gate

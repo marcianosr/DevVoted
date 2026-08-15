@@ -158,6 +158,9 @@ describe("applyActionToRun", () => {
 		// Width is irrelevant to depth (ADR-019), so the starting slots suffice.
 		const summitReady = answeringState({
 			storage: 100,
+			// The summit's coverage demand is banked (ADR-034) — the swatch write
+			// path is the subject here, not the stake.
+			coverage: 400,
 			pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
 			window: {
@@ -211,6 +214,9 @@ describe("applyActionToRun", () => {
 		// One correct answer from closing gate 0's window, so this dispatch clears
 		// it and the Pallet Swatch lands on the account.
 		const closing = answeringState({
+			// Gate 0's coverage demand is banked (ADR-034) — the swatch write path
+			// is the subject here, not the stake.
+			coverage: 10,
 			pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [CONFIGS.js] },
 			window: {
 				correct: 4,
