@@ -21,6 +21,8 @@ export const RunReward = () => {
 				storage={view.storage}
 				capKb={view.storageCap}
 				faucetThisGateKb={view.faucetThisGateKb}
+				interestThisGateKb={view.interestThisGateKb}
+				extraPickThisGateKb={view.extraPickThisGateKb}
 				billKb={view.gateBillPaidKb}
 				planDowngraded={view.planDowngraded}
 				onReviewAnswers={() => navigate({ to: "/run/review" })}

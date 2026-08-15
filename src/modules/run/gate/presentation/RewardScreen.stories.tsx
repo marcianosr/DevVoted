@@ -44,8 +44,27 @@ export const Default: Story = {
 export const WithFaucetAndBill: Story = {
 	args: {
 		...Default.args,
+		configs: [CONFIGS.css, CONFIGS.unitTests, CONFIGS.indexedDb],
 		faucetThisGateKb: 24,
 		billKb: 8,
+	},
+};
+
+/** Every storage source at once — the ledger's widest shape. */
+export const EveryPayout: Story = {
+	args: {
+		...Default.args,
+		configs: [
+			CONFIGS.css,
+			CONFIGS.unitTests,
+			CONFIGS.indexedDb,
+			CONFIGS.mooresLaw,
+			CONFIGS.length,
+		],
+		gateReward: 152,
+		faucetThisGateKb: 24,
+		interestThisGateKb: 12,
+		extraPickThisGateKb: 32,
 	},
 };
 

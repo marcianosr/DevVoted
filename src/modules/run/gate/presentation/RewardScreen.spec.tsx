@@ -49,11 +49,6 @@ describe(RewardScreen, () => {
 		expect(screen.getByText("storage earned")).toBeInTheDocument();
 	});
 
-	it("folds faucet income into the payout instead of itemizing it", () => {
-		render(<RewardScreen {...base} faucetThisGateKb={16} />);
-		expect(screen.getByText("+96KB")).toBeInTheDocument();
-	});
-
 	it("teaches what storage is for in one line", () => {
 		render(<RewardScreen {...base} />);
 		expect(
@@ -61,15 +56,80 @@ describe(RewardScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("names the swatch this clear unlocked", () => {
+	it("names the swatch this clear unlocked, and that it is only a cosmetic", () => {
 		render(<RewardScreen {...base} />);
-		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.tagName === "P" &&
-					element.textContent === "Boulder Swatch unlocked"
-			)
-		).toBeInTheDocument();
+		expect(screen.getByText("unlocked")).toBeInTheDocument();
+		expect(screen.getByText("Boulder Swatch")).toBeInTheDocument();
+		expect(screen.getByText("cosmetic")).toBeInTheDocument();
+	});
+
+	it("itemizes the clear payout into a base and the configs that added to it", () => {
+		render(<RewardScreen {...base} />);
+		expect(screen.getByText("base reward")).toBeInTheDocument();
+		// 80KB paid, 32 of it Unit Tests' flat on-clear payout.
+		expect(screen.getByText("48KB")).toBeInTheDocument();
+		expect(screen.getByText("Unit Tests")).toBeInTheDocument();
+		expect(screen.getByText("+32KB")).toBeInTheDocument();
+	});
+
+	it("credits a faucet config with the whole gate's income, not its per-answer rate", () => {
+		render(
+			<RewardScreen
+				{...base}
+				configs={[CONFIGS.unitTests, CONFIGS.indexedDb]}
+				faucetThisGateKb={24}
+			/>
+		);
+		expect(screen.getByText("IndexedDB")).toBeInTheDocument();
+		expect(screen.getByText("+24KB")).toBeInTheDocument();
+		expect(screen.queryByText("+8KB")).not.toBeInTheDocument();
+	});
+
+	it("totals the ledger to the same figure as the headline", () => {
+		render(
+			<RewardScreen
+				{...base}
+				configs={[CONFIGS.unitTests, CONFIGS.indexedDb]}
+				faucetThisGateKb={24}
+			/>
+		);
+		expect(screen.getByText("+104KB")).toBeInTheDocument();
+		const total = screen.getByText("total").nextElementSibling;
+		expect(total).toHaveTextContent("104KB");
+	});
+
+	// The chip is the whole point of carrying the Config rather than its label:
+	// level and description ride along for free, so a config reads the same here
+	// as it does in the shop and the pipeline.
+	it("wears the config's level badge and description, as the shop's chips do", () => {
+		render(
+			<RewardScreen
+				{...base}
+				configs={[{ ...CONFIGS.mooresLaw, level: 2 }]}
+				interestThisGateKb={12}
+			/>
+		);
+		expect(screen.getByText("L2")).toBeInTheDocument();
+		// L2 doubles both halves of the roster line: 2% → 4%, 32KB → 64KB.
+		expect(screen.getByRole("tooltip")).toHaveTextContent(
+			"+4% of held storage on gate clear — hold 64KB when the gate resolves."
+		);
+	});
+
+	it("leaves out configs that paid no storage this gate", () => {
+		render(
+			<RewardScreen {...base} configs={[CONFIGS.unitTests, CONFIGS.css]} />
+		);
+		expect(screen.queryByText(CONFIGS.css.label)).not.toBeInTheDocument();
+	});
+
+	it("banks storage the equipped configs cannot account for in the base", () => {
+		// No faucet config equipped, so the 16KB has nowhere to be attributed —
+		// it belongs in the base rather than dropping out of a total the player
+		// can check against the headline.
+		render(<RewardScreen {...base} faucetThisGateKb={16} />);
+		expect(screen.getByText("64KB")).toBeInTheDocument();
+		expect(screen.getByText("+96KB")).toBeInTheDocument();
 	});
 
 	it("shows the running storage total against the cap", () => {
@@ -84,11 +144,13 @@ describe(RewardScreen, () => {
 		expect(screen.getAllByTestId("swatch")).toHaveLength(2);
 	});
 
-	// The payoff replaced the per-config report (ADR-026) — attribution lives on
-	// in the failed gate's report, where knowing what fell short matters.
-	it("drops the per-config reward report from the clear", () => {
+	// The clear itemizes storage and nothing else (ADR-026 §3, amended): the
+	// pipeline report — statuses, roles, coverage — stays on the failed gate's
+	// screen, where knowing what fell short is the point.
+	it("keeps the pipeline report off the clear even though the ledger is back", () => {
 		render(<RewardScreen {...base} />);
 		expect(screen.queryByText("Gate rewards")).not.toBeInTheDocument();
+		expect(screen.queryByText("Your pipeline")).not.toBeInTheDocument();
 		expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
 		expect(screen.queryByText(/Coverage by category/)).not.toBeInTheDocument();
 	});

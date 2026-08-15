@@ -223,6 +223,9 @@ export type RunState = {
 	/** The interest slice of `gateRewardKb`, kept so the gate report can attribute
 	 * it to the config that earned it (as `faucetThisGateKb` does). */
 	readonly interestThisGateKb?: number;
+	/** The `.length` slice of `gateRewardKb`, kept for the same reason — it prices
+	 * off the window that was drawn, so the loadout alone cannot recover it. */
+	readonly extraPickThisGateKb?: number;
 	readonly storagePlan?: number;
 	readonly gateBillKb?: number;
 	readonly planDowngraded?: boolean;
@@ -487,6 +490,7 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		storage: addStorage(state.storage, reward),
 		gateRewardKb: reward,
 		interestThisGateKb: interest,
+		extraPickThisGateKb: extraPickKb,
 		currentIndex: nextIndex,
 	};
 

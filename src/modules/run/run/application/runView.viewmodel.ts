@@ -190,6 +190,11 @@ export type RunView = {
 	readonly isOver: boolean;
 	readonly gateRewardPaidKb: number;
 	readonly faucetThisGateKb: number;
+	/** The two slices of `gateRewardPaidKb` the loadout alone cannot re-derive —
+	 * both price off the balance or the window, so the reward ledger reads them
+	 * from the reducer rather than recomputing them. */
+	readonly interestThisGateKb: number;
+	readonly extraPickThisGateKb: number;
 	readonly gatesCleared: number;
 
 	readonly gateTheme?: SwatchTheme;
@@ -417,6 +422,8 @@ export const toRunView = (state: RunState): RunView => {
 		isOver: isRunOver(state.status),
 		gateRewardPaidKb: state.gateRewardKb ?? 0,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
+		interestThisGateKb: state.interestThisGateKb ?? 0,
+		extraPickThisGateKb: state.extraPickThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
 		clearedGateNumber: state.clearedGate ?? state.gatesCleared,

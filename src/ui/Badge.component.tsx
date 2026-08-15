@@ -2,7 +2,13 @@ import type { ReactNode } from "react";
 
 import { cva } from "class-variance-authority";
 
-type BadgeTone = "neutral" | "positive" | "price";
+/**
+ * `muted` classifies rather than announces — a tag saying what kind of thing
+ * something is ("cosmetic"), sitting beside the thing it labels without
+ * competing with it. The other three all raise their voice; this one lowers it,
+ * which is why it wears a fill instead of `neutral`'s 2px stroke.
+ */
+type BadgeTone = "neutral" | "muted" | "positive" | "price";
 
 type BadgeSize = "default" | "corner" | "pill";
 
@@ -10,6 +16,7 @@ const badge = cva("font-bold", {
 	variants: {
 		tone: {
 			neutral: "border-2 border-pewter bg-black text-pewter",
+			muted: "bg-surface-raised text-pewter",
 			positive: "bg-celadon text-black",
 			price: "bg-saffron text-black",
 		} satisfies Record<BadgeTone, string>,

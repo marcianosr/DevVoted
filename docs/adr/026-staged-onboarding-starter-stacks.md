@@ -69,6 +69,27 @@ Guiding principles:
    when present — that is news. The per-config attribution report lives on in
    the failed gate's screen (`GateRewardReport`), where knowing what fell
    short matters.
+   - **Amendment (2026-08-14): the payoff itemizes its own storage.** A
+     `StorageLedger` panel sits under the headline figure — base reward, one
+     `+` row per config that paid KB this gate, and a ruled total that is the
+     headline number again. The original decision threw out the whole report,
+     including the arithmetic; playtesting the number alone left "is this
+     config earning its slot?" unanswerable at the one moment the player has
+     the evidence and is about to spend against it. What stays rejected is the
+     *pipeline* report — per-config statuses, roles, coverage, checks. Storage
+     is the currency the next screen charges in, so its breakdown is part of
+     the payoff rather than a second screen's worth of reading.
+   - A config's row is its **whole gate's** income, not its rate: IndexedDB
+     reads `+24KB`, never `+8KB per correct`. The rate is a shop-time question;
+     the clear answers what it actually paid.
+   - The base is **derived by subtraction** (`total − Σ rows`), not recomputed
+     from `gateClearPayout`. Two implementations of the payout math on one
+     screen could disagree with the balance; subtracting cannot, and any
+     source not yet itemized lands in the base instead of vanishing from a
+     total the player checks against the figure above it. This is why
+     `interestThisGateKb` and `extraPickThisGateKb` are now carried on
+     `RunView`: both price off the balance or the drawn window, so the loadout
+     alone cannot recover them.
 4. **Bench drafting remains a first-class mode.** `ConfiguringScreen` without
    `stacks` renders the classic bench-and-pipeline screen unchanged — same
    `preRunRoleRows` fix applies there too (no live counter pre-run), but its

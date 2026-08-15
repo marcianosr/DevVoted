@@ -5,6 +5,7 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import {
 	gateRewardRows,
+	gateStorageBreakdown,
 	gateStorageGained,
 } from "~/modules/run/gate/domain/gateReward.model";
 
@@ -258,5 +259,105 @@ describe(gateStorageGained, () => {
 
 	it("uses the exact capped faucet income when provided", () => {
 		expect(gateStorageGained(input.configs, answered, 120, 12)).toBe(132);
+	});
+});
+
+describe(gateStorageBreakdown, () => {
+	const breakdownInput = {
+		answered,
+		configs: input.configs,
+		gateReward: 120,
+	};
+
+	it("gives each paying config a row and leaves the rest out", () => {
+		const { rows } = gateStorageBreakdown(breakdownInput);
+		expect(rows.map(({ key, kb }) => ({ key, kb }))).toEqual([
+			// 2 correct × 8KB, the faucet's own income for the gate.
+			{ key: "indexed-db", kb: 16 },
+			{ key: "unit-tests", kb: 32 },
+		]);
+	});
+
+	it("carries the config itself, so the ledger can chip it by rarity", () => {
+		const [faucet] = gateStorageBreakdown(breakdownInput).rows;
+		expect(faucet?.config).toBe(CONFIGS.indexedDb);
+	});
+
+	it("leaves the gate's own payout in the base once the configs are attributed", () => {
+		// 136 gained − 16 faucet − 32 on-clear.
+		expect(gateStorageBreakdown(breakdownInput).baseKb).toBe(88);
+	});
+
+	it("totals to the figure the clear screen headlines", () => {
+		const { baseKb, rows, totalKb } = gateStorageBreakdown(breakdownInput);
+		expect(totalKb).toBe(gateStorageGained(input.configs, answered, 120));
+		expect(baseKb + rows.reduce((sum, row) => sum + row.kb, 0)).toBe(totalKb);
+	});
+
+	it("credits the faucet with the capped income rather than the uncapped rate", () => {
+		const { rows, baseKb } = gateStorageBreakdown({
+			...breakdownInput,
+			faucetThisGateKb: 4,
+		});
+		expect(rows).toContainEqual({
+			key: "indexed-db",
+			config: CONFIGS.indexedDb,
+			kb: 4,
+		});
+		expect(baseKb).toBe(88);
+	});
+
+	it("scales a flat on-clear payout with the config's level", () => {
+		const { rows } = gateStorageBreakdown({
+			...breakdownInput,
+			configs: [{ ...CONFIGS.unitTests, level: 3 }],
+		});
+		expect(rows.map(({ key, kb }) => ({ key, kb }))).toEqual([
+			{ key: "unit-tests", kb: 96 },
+		]);
+	});
+
+	it("attributes interest and extra-pick payouts to the configs that earned them", () => {
+		const { rows } = gateStorageBreakdown({
+			...breakdownInput,
+			configs: [CONFIGS.mooresLaw, CONFIGS.length],
+			interestThisGateKb: 12,
+			extraPickThisGateKb: 32,
+		});
+		expect(rows.map(({ key, kb }) => ({ key, kb }))).toEqual([
+			{ key: "moores-law", kb: 12 },
+			{ key: "length", kb: 32 },
+		]);
+	});
+
+	it("banks storage no equipped config can account for in the base", () => {
+		// The pots are slices of the clear payout, not money on top of it. With no
+		// interest config equipped the 20KB has no row to sit on, so it stays in
+		// the base — the total never moves and no phantom row appears.
+		const { baseKb, rows, totalKb } = gateStorageBreakdown({
+			...breakdownInput,
+			interestThisGateKb: 20,
+		});
+		expect(rows).toEqual(gateStorageBreakdown(breakdownInput).rows);
+		expect(baseKb).toBe(88);
+		expect(totalKb).toBe(136);
+	});
+
+	it("splits one pot across every config drawing on it", () => {
+		const { rows } = gateStorageBreakdown({
+			...breakdownInput,
+			configs: [
+				CONFIGS.indexedDb,
+				{
+					...CONFIGS.indexedDb,
+					id: "ssd",
+					label: "SSD",
+					storagePerCorrect: 24,
+				},
+			],
+			faucetThisGateKb: 64,
+		});
+		// 8:24 rates split the capped 64KB one-quarter / three-quarters.
+		expect(rows.map((row) => row.kb)).toEqual([16, 48]);
 	});
 });

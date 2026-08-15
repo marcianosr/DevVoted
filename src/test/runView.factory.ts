@@ -119,6 +119,8 @@ const createRunView = createMockDataFactory<RunView>({
 	isOver: false,
 	gateRewardPaidKb: 0,
 	faucetThisGateKb: 0,
+	interestThisGateKb: 0,
+	extraPickThisGateKb: 0,
 	gatesCleared: 0,
 	gateTheme: "pallet",
 	clearedGateNumber: 0,
