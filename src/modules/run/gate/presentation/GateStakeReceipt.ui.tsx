@@ -21,7 +21,6 @@ import { SwatchMark, swatchNameTone } from "~/ui/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
-import { coverageValue } from "~/modules/run/gate/presentation/GateModifierStrip.ui";
 import { SwatchChip } from "~/modules/run/gate/presentation/SwatchChips.ui";
 
 type GateStakeReceiptProps = {
@@ -263,11 +262,7 @@ const RewardsList = ({
 }) => {
 	const { gateNumber, billKb, modifiers, perAnswer } = stake;
 	const swatch = swatchForGate(gateNumber);
-	const showsCoverage =
-		modifiers.coverageMultiplier !== 1 ||
-		modifiers.coverageAdd > 0 ||
-		(preview !== undefined &&
-			coverageValue(preview) !== coverageValue(modifiers));
+
 	const showsStorageKbPerAnswer =
 		perAnswer.storageKbPerCorrect > 0 ||
 		(previewPerAnswer !== undefined &&
@@ -300,17 +295,6 @@ const RewardsList = ({
 					current={`+${modifiers.gateReward}KB`}
 					preview={preview && `+${preview.gateReward}KB`}
 				/>
-				{showsCoverage ? (
-					<>
-						{" · "}
-						<MetricValue
-							current={`${coverageValue(modifiers)} coverage this gate`}
-							preview={
-								preview && `${coverageValue(preview)} coverage this gate`
-							}
-						/>
-					</>
-				) : null}
 			</RewardRow>
 			{/* Dashed, uncoloured: the badge is the gate's, and the gate has not
 			    handed it over yet — the same locked chip the collection shows. */}
