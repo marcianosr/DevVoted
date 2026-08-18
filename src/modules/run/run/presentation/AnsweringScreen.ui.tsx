@@ -4,10 +4,11 @@ import type {
 	AnswerType,
 } from "~/modules/run/run/domain/run.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
-import { isStakeFatal } from "~/modules/run/run/domain/rules.model";
-import type { AnswerScore } from "~/modules/run/run/application/runView.viewmodel";
+import type {
+	AnswerScore,
+	AuditView,
+} from "~/modules/run/run/application/runView.viewmodel";
 import { Button } from "~/ui/Button.component";
 import {
 	ScoreEquationChips,
@@ -27,6 +28,7 @@ import {
 	type PollSplitView,
 } from "~/modules/run/poll/presentation/PollCard.ui";
 import { PollOutcomeBar } from "~/modules/run/run/presentation/PollOutcomeBar.ui";
+import { PollClock } from "~/modules/run/run/presentation/PollClock.ui";
 
 /** Chips begin after the option badges have popped in (~620ms of pops). */
 const REVEAL_SCORE_START_MS = 500;
@@ -56,37 +58,21 @@ const scoreBonusRows = (
 	return rows;
 };
 
-/**
- * What a failed gate would cost, inline in the pipeline subtitle rather than as a
- * callout: the strip quota grows with depth (`dropCount`), so from around gate 4 a
- * three-config build owes more than it holds and one bad window strips it bare —
- * which is death (ADR-017). Reading red is the only warning a player gets that
- * today's window is sudden death, so it has to sit where the stakes are read.
- */
-const StakeOnFailure = ({
-	strips,
-	configs,
-}: {
-	strips: number;
-	configs: number;
-}) => {
-	const fatal = isStakeFatal(strips, configs);
-	return (
-		<Paragraph as="span" size="xs" tone={fatal ? "cinnabar" : "saffron"}>
-			{fatal
-				? `a fail peels all ${configs} — run over`
-				: `a fail peels ${strips}`}
-		</Paragraph>
-	);
-};
-
 type AnsweringScreenProps = {
 	configs: readonly Config[];
-	checks: readonly CheckStatus[];
+	/** The gate's live audits — their cues stay on screen the whole window,
+	 * because a rule like the mirror changes how every poll should be played. */
+	audits?: readonly AuditView[];
+	/** Configs an audit has taken offline for this poll (ADR-038). */
+	offlineConfigs?: readonly Config[];
+	/** The gate mirrors its polls: the card asks for the incorrect options. */
+	mirroredPolls?: boolean;
+	/** A Timeout audit's clock: what it allows, and what is left of it. Both or
+	 * neither — a rail with no cap cannot be drawn. */
+	timeLimitMs?: number;
+	remainingMs?: number;
 	/** Total pipeline slots — shown in the pipeline header when provided. */
 	slots?: number;
-	/** Configs a failed gate would peel at this depth — omitted, no warning shown. */
-	stripsOnFailure?: number;
 	category: CategoryCode;
 	question: string;
 	codeBlock?: string;
@@ -117,8 +103,8 @@ type AnsweringScreenProps = {
 	peekCost?: number;
 	/** The bought split for this poll — absent until the peek is paid for. */
 	split?: PollSplitView;
-	/** Picks the gate's budget still has (.length) — absent when nothing counts. */
-	pickBudgetLeft?: number;
+	/** Correct answers this gate's polls hold (.length) — absent when nothing counts. */
+	correctAnswersThisGate?: number;
 	canSubmit: boolean;
 	onSelect: (optionId: string) => void;
 	onSubmit: () => void;
@@ -130,9 +116,12 @@ type AnsweringScreenProps = {
 
 export const AnsweringScreen = ({
 	configs,
-	checks,
+	audits = [],
+	offlineConfigs = [],
+	mirroredPolls = false,
+	timeLimitMs,
+	remainingMs,
 	slots,
-	stripsOnFailure,
 	category,
 	question,
 	codeBlock,
@@ -155,7 +144,7 @@ export const AnsweringScreen = ({
 	peeker,
 	peekCost,
 	split,
-	pickBudgetLeft,
+	correctAnswersThisGate,
 	canSubmit,
 	onSelect,
 	onSubmit,
@@ -173,6 +162,13 @@ export const AnsweringScreen = ({
 		return undefined;
 	};
 
+	// A suppressed audit is not in force, so its cue would be a lie the defeat
+	// device already paid to remove.
+	const cues = audits.filter(
+		(audit) => audit.answerCue !== undefined && !audit.suppressed
+	);
+	const offlineNames = offlineConfigs.map((config) => config.label).join(", ");
+
 	return (
 		<div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start lg:gap-10">
 			<div className="flex min-w-0 flex-col gap-6 lg:order-2">
@@ -182,6 +178,31 @@ export const AnsweringScreen = ({
 						{pollOutcomes.length} of {pollsPerGate} polls
 					</Paragraph>
 				</span>
+				{cues.length > 0 || offlineConfigs.length > 0 ? (
+					<div className="flex items-start justify-between gap-3 rounded-lg border border-saffron/40 px-3 py-2">
+						<span className="flex min-w-0 flex-col gap-1">
+							{cues.map((audit) => (
+								<Paragraph key={audit.id} as="span" size="sm" tone="saffron">
+									{audit.answerCue}
+								</Paragraph>
+							))}
+							{/* Named, not just announced: the cue says a dependency is down,
+							    and the only useful next thought is *which* one. Re-read every
+							    poll, since a flake and a rolling outage move. */}
+							{offlineConfigs.length > 0 ? (
+								<Paragraph as="span" size="sm" tone="muted">
+									Offline right now:{" "}
+									<Paragraph as="span" tone="cinnabar" className="font-bold">
+										{offlineNames}
+									</Paragraph>
+								</Paragraph>
+							) : null}
+						</span>
+						{remainingMs !== undefined && timeLimitMs !== undefined ? (
+							<PollClock remainingMs={remainingMs} limitMs={timeLimitMs} />
+						) : null}
+					</div>
+				) : null}
 				<PollCard
 					category={category}
 					question={question}
@@ -194,7 +215,8 @@ export const AnsweringScreen = ({
 					correctOptionIds={correctOptionIds}
 					chosenOptionIds={chosenOptionIds}
 					split={split}
-					pickBudgetLeft={pickBudgetLeft}
+					correctAnswersThisGate={correctAnswersThisGate}
+					mirrored={mirroredPolls}
 					onSelect={onSelect}
 				/>
 				{revealScore ? (
@@ -233,21 +255,13 @@ export const AnsweringScreen = ({
 					{slots ? (
 						<Subtitle>
 							{configs.length} of {slots} slots used
-							{stripsOnFailure === undefined ? null : (
-								<>
-									{" · "}
-									<StakeOnFailure
-										strips={stripsOnFailure}
-										configs={configs.length}
-									/>
-								</>
-							)}
 						</Subtitle>
 					) : null}
 				</header>
 				<RoleList
-					rows={roleRows(configs, checks)}
+					rows={roleRows(configs)}
 					getUseAction={useActionFor}
+					offlineConfigIds={offlineConfigs.map((config) => config.id)}
 					foldIdleRows
 				/>
 			</div>

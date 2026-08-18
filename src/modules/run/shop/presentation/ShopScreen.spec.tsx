@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
-import { draftCost } from "~/modules/run/config/domain/config.model";
+import {
+	draftCost,
+	upgradeStorageCost,
+} from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
@@ -38,7 +41,6 @@ const refusalOn = (badge: HTMLElement): HTMLElement => {
 
 const stake = createMockGateStake({
 	gateNumber: 2,
-	minConfigs: 1,
 	modifiers: {
 		gateReward: 180,
 		rewardMultiplier: 1.5,
@@ -48,6 +50,7 @@ const stake = createMockGateStake({
 	perAnswer: {
 		coveragePerCorrect: 3,
 		storageKbPerCorrect: 0,
+		streakStepMultiplier: 1.1,
 	},
 });
 
@@ -60,15 +63,6 @@ const base = {
 	storage: 440,
 	coverageByCategory: {},
 	stake,
-	checks: [
-		{
-			label: "Correct",
-			progress: { kind: "answers" as const, current: 0, target: 1 },
-			current: 0,
-			target: 1,
-			state: "running" as const,
-		},
-	],
 	configs: [],
 	atMinimumWidth: false,
 	newConfigIds: [],
@@ -85,6 +79,11 @@ const base = {
 	extendCost: 48,
 	canExtend: true,
 	onExtend: vi.fn(),
+	pinAvailable: false,
+	pinCost: 512,
+	canPin: false,
+	pinnedAtGate: null,
+	onPlantPin: vi.fn(),
 	slots: 3,
 	nextSlotGate: 1,
 	justUnlockedSlots: [],
@@ -526,18 +525,16 @@ describe(ShopScreen, () => {
 				coverageByCategory={{ js: 10 }}
 			/>
 		);
-		expect(screen.getByRole("button", { name: "Upgrade" })).toBeEnabled();
+		expect(screen.getByRole("button", { name: /Upgrade/ })).toBeEnabled();
 		expect(
-			screen.getByText(
-				"L2: JavaScript polls earn 1.5× coverage — but if JavaScript shows, you must get 2 right."
-			)
+			screen.getByText("L2: JavaScript polls earn 1.5× coverage.")
 		).toBeInTheDocument();
 		// The upgrade's own gate line is gone; "Opens at" may still appear in the
 		// slot unlock row, so the check pins the upgrade's 5% threshold.
 		expect(screen.queryByText(/Unlocks at 5%/)).not.toBeInTheDocument();
 	});
 
-	it("unlocks a met upgrade — prismatic ring, no coverage price on the button", () => {
+	it("unlocks a met upgrade — prismatic ring, price on the button", () => {
 		const onUpgrade = vi.fn();
 		render(
 			<ShopScreen
@@ -547,11 +544,40 @@ describe(ShopScreen, () => {
 				onUpgrade={onUpgrade}
 			/>
 		);
-		const upgrade = screen.getByRole("button", { name: "Upgrade" });
+		const upgrade = screen.getByRole("button", { name: /Upgrade/ });
 		expect(upgrade).toBeEnabled();
 		expect(upgrade).toHaveClass("legendary-ring");
+		// Every upgrade is priced, Focus included, so the KB is on the face.
+		expect(upgrade).toHaveTextContent(`${upgradeStorageCost(1)}KB`);
 		fireEvent.click(upgrade);
 		expect(onUpgrade).toHaveBeenCalledWith("js");
+	});
+
+	// Earned is not the same as affordable (ADR-039): a Focus config past its
+	// coverage bar still has to be paid for, and the tooltip says which one is
+	// missing.
+	it("refuses an earned Focus upgrade the balance cannot cover", () => {
+		render(
+			<ShopScreen
+				{...base}
+				storage={0}
+				configs={[CONFIGS.js]}
+				coverageByCategory={{ js: 10 }}
+			/>
+		);
+		expect(screen.getByRole("button", { name: /Upgrade/ })).toBeDisabled();
+		// Read off the tooltip itself: the sentence is assembled from text nodes,
+		// so a string matcher would miss it and a textContent matcher would also
+		// match every ancestor.
+		const tooltips = screen
+			.getAllByRole("tooltip")
+			.map((element) => element.textContent ?? "");
+		expect(tooltips).toContainEqual(
+			expect.stringContaining(
+				`Costs ${upgradeStorageCost(1)}KB — you have 0KB.`
+			)
+		);
+		expect(tooltips.join(" ")).not.toContain("Unlocks at 5%");
 	});
 
 	it("keeps the ring off a gated upgrade button", () => {
@@ -578,9 +604,6 @@ describe(ShopScreen, () => {
 		);
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
 		expect(receipt.getByText("+240KB")).toBeInTheDocument();
-		expect(
-			receipt.getByText("×2 +0.5% coverage this gate")
-		).toBeInTheDocument();
 	});
 
 	// Row order follows the config's gate role, not the prop order, so this asserts
@@ -601,35 +624,8 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	// The gate ahead only admits a build over its width demand (ADR-027), so
-	// the shop refuses to sell below it — a run only dies at a gate it failed
-	// (ADR-021).
-	it("locks every deinstall once the build sits at the gate's width demand", () => {
-		const onSell = vi.fn();
-		render(
-			<ShopScreen
-				{...base}
-				configs={[CONFIGS.indexedDb, CONFIGS.rb]}
-				stake={stakeWith({ minConfigs: 2 })}
-				atMinimumWidth
-				onSell={onSell}
-			/>
-		);
-		const deinstalls = screen.getAllByRole("button", { name: /Uninstall/ });
-		for (const button of deinstalls) {
-			expect(button).toBeDisabled();
-			fireEvent.click(button);
-		}
-		expect(onSell).not.toHaveBeenCalled();
-		expect(
-			screen.getAllByText(
-				/Gate 2 demands 2 configs — uninstalling would sink the build below it/i
-			)
-		).toHaveLength(deinstalls.length);
-	});
-
-	// The early gates demand less than one config, so ADR-021's last-config
-	// rule stays the hard bottom with its own plain wording.
+	// The last config is the hard bottom (ADR-035): a bare build could never
+	// clear a gate, so the shop refuses the final uninstall.
 	it("locks the deinstall button on the only installed config", () => {
 		const onSell = vi.fn();
 		render(
@@ -649,32 +645,10 @@ describe(ShopScreen, () => {
 		expect(onSell).not.toHaveBeenCalled();
 	});
 
-	it("mentions the coming gate's width demand in the build summary", () => {
-		render(
-			<ShopScreen
-				{...base}
-				configs={[CONFIGS.indexedDb, CONFIGS.rb]}
-				stake={stakeWith({ minConfigs: 2 })}
-			/>
-		);
+	it("carries no width demand in the build summary — only the meter judges (ADR-035)", () => {
+		render(<ShopScreen {...base} configs={[CONFIGS.indexedDb, CONFIGS.rb]} />);
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
-		expect(receipt.getByText(/2\+ configs/)).toBeInTheDocument();
-	});
-
-	it("names the shortfall in the build summary when the build is under the gate's demand", () => {
-		render(
-			<ShopScreen
-				{...base}
-				configs={[CONFIGS.indexedDb]}
-				stake={stakeWith({ minConfigs: 4 })}
-			/>
-		);
-		const receipt = within(screen.getByTestId("gate-stake-receipt"));
-		expect(
-			receipt.getByText(
-				"Demands 4 configs — the build holds 1. Install 3 more to climb on."
-			)
-		).toHaveClass("text-cinnabar");
+		expect(receipt.queryByText(/configs/)).not.toBeInTheDocument();
 	});
 
 	it("names the gate that opens the next slot — no unlock button anywhere", () => {
@@ -765,32 +739,70 @@ describe(ShopScreen, () => {
 	});
 });
 
-describe("the shop door's wording (DVTD-52f2)", () => {
-	it("points at the coming gate while the build meets the demand", () => {
-		const action = shopExitAction({ state: "open", gate: 4 });
+describe("the shop door's wording", () => {
+	it("always opens toward the coming gate — nothing grades the exit (ADR-035)", () => {
+		const action = shopExitAction(4);
 		expect(action.label).toBe("Continue to gate 4 →");
 		expect(action.disabled).toBe(false);
-		expect(action.hint).toBeUndefined();
+	});
+});
+
+// ADR-038: a Read-only gate shuts the till, and the screen has to say so once
+// rather than refusing seven times.
+describe("a shop shut by Read-only", () => {
+	const locked = {
+		...base,
+		locked: true,
+		configs: [CONFIGS.js, CONFIGS.eslint],
+	};
+
+	it("states the rule and names the gate that closed it", () => {
+		render(<ShopScreen {...locked} />);
+		expect(
+			screen.getByText(/Read-only: gate \d+ audits the build/)
+		).toBeInTheDocument();
 	});
 
-	it("keeps the same label but disables it and says what is missing", () => {
-		const action = shopExitAction({
-			state: "blocked",
-			gate: 4,
-			demand: 4,
-			shortfall: 3,
-		});
-		expect(action.label).toBe("Continue to gate 4 →");
-		expect(action.disabled).toBe(true);
-		expect(action.hint).toBe(
-			"Gate 4 demands 4 configs — install 3 more before you can climb on."
+	it("refuses the install behind the offer's own press", () => {
+		const onDraft = vi.fn();
+		render(<ShopScreen {...locked} onDraft={onDraft} />);
+		const offers = within(
+			screen.getByRole("group", { name: /Install configs/ })
 		);
+		fireEvent.click(offers.getByRole("button", { name: "ESLint" }));
+		const install = screen.getByRole("button", { name: /Install ESLint/ });
+		// The offer badge refuses through aria-disabled, not the attribute — it
+		// stays focusable so a screen reader can still read the price it names.
+		expect(install).toHaveAttribute("aria-disabled", "true");
+		fireEvent.click(install);
+		expect(onDraft).not.toHaveBeenCalled();
 	});
 
-	it("renames the door and turns it dangerous once the build is stuck", () => {
-		const action = shopExitAction({ state: "stuck", gate: 4, demand: 4 });
-		expect(action.label).toBe("End run — gate 4 demands 4 configs →");
-		expect(action.variant).toBe("danger");
-		expect(action.disabled).toBe(false);
+	it("refuses the shop's controls", () => {
+		render(<ShopScreen {...locked} />);
+		expect(
+			screen.getByRole("button", { name: /Rebuild offers/ })
+		).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: /Extend offers/ })
+		).toBeDisabled();
+	});
+
+	it("refuses the plan switch too", () => {
+		render(<ShopScreen {...locked} />);
+		for (const row of screen.getAllByRole("button", {
+			name: /Switch to .* storage plan/,
+		}))
+			expect(row).toBeDisabled();
+	});
+
+	it("leaves the offers legible — the next gate still has to be planned", () => {
+		render(<ShopScreen {...locked} />);
+		expect(screen.getAllByText("ESLint").length).toBeGreaterThan(0);
+	});
+
+	it("says nothing about Read-only at an open shop", () => {
+		render(<ShopScreen {...base} />);
+		expect(screen.queryByText(/Read-only/)).not.toBeInTheDocument();
 	});
 });

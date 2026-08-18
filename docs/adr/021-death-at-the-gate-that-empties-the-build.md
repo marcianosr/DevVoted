@@ -6,6 +6,8 @@ Accepted (2026-08-07, Marciano). **Supersedes the death rule of
 [ADR-006](006-session-run-mechanics.md) Decision 6 and
 [ADR-014](014-daily-gate-lock.md) §3.**
 
+> ⚠ Superseded by [ADR-035](035-gates-are-auditors.md) (2026-08-17): an ordinary failed gate is a free redo. Death survives only where a strip audit's quota takes the whole build, plus the bare-legacy-snapshot guard.
+
 ## Context
 
 ADR-006 §6 set the loss model: fail a gate, peel `dropCount` configs, replay the

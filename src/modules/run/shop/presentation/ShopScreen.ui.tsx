@@ -8,11 +8,9 @@ import {
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
-import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import type {
 	GateStake,
 	OfferRefusal,
-	ShopExit,
 	ShopOffer,
 	StoragePlanOption,
 } from "~/modules/run/run/application/runView.viewmodel";
@@ -41,11 +39,13 @@ import { nextSlotRow } from "~/modules/run/pipeline/presentation/SlotUnlockRow.u
 type ShopScreenProps = {
 	storage: number;
 	coverageByCategory: Readonly<Record<string, number>>;
-	checks: readonly CheckStatus[];
 	stake: GateStake;
 	configs: readonly Config[];
 	/** The build is on its width floor, so every uninstall is refused. */
 	atMinimumWidth: boolean;
+	/** Read-only (ADR-038) has shut this shop: everything is browsable, nothing
+	 * is buyable, and the banner says which gate did it. */
+	locked?: boolean;
 	slots: number;
 	newConfigIds: readonly string[];
 	offers: readonly ShopOffer[];
@@ -61,6 +61,13 @@ type ShopScreenProps = {
 	extendCost: number;
 	canExtend: boolean;
 	onExtend: () => void;
+	/** The git tag (ADR-036): a once-per-run checkpoint purchase, priced by the
+	 * gate it would mark. */
+	pinAvailable: boolean;
+	pinCost: number;
+	canPin: boolean;
+	pinnedAtGate: number | null;
+	onPlantPin: () => void;
 	/** The gate whose clear opens the next slot (ADR-034); null at the cap. */
 	nextSlotGate: number | null;
 	justUnlockedSlots: readonly number[];
@@ -70,34 +77,13 @@ type ShopScreenProps = {
 	onChangePlan: (tier: number) => void;
 };
 
-type ShopExitAction = {
-	readonly label: string;
-	readonly disabled: boolean;
-	readonly hint?: string;
-	readonly variant?: "danger";
-};
-
-/**
- * The shop door's wording, for the three verdicts `shopExitFor` grades. Lives
- * here rather than in the viewmodel so every phrasing is reachable from a story
- * instead of only from an engine state that produces it.
- */
-export const shopExitAction = (exit: ShopExit): ShopExitAction => {
-	if (exit.state === "open")
-		return { label: `Continue to gate ${exit.gate} →`, disabled: false };
-	if (exit.state === "blocked")
-		return {
-			label: `Continue to gate ${exit.gate} →`,
-			disabled: true,
-			hint: `Gate ${exit.gate} demands ${exit.demand} configs — install ${exit.shortfall} more before you can climb on.`,
-		};
-	return {
-		label: `End run — gate ${exit.gate} demands ${exit.demand} configs →`,
-		disabled: false,
-		variant: "danger",
-		hint: "The shop can no longer get the build to the demand. Leaving walks into the gate and ends the run.",
-	};
-};
+/** The shop door is always open (ADR-035): no gate grades the exit anymore. */
+export const shopExitAction = (
+	gate: number
+): { readonly label: string; readonly disabled: boolean } => ({
+	label: `Continue to gate ${gate} →`,
+	disabled: false,
+});
 
 /**
  * An offer's install refusal, in the shop's own words. Same split as
@@ -184,10 +170,10 @@ const PanelHeading = ({ title, subtitle }: PanelHeadingProps) => (
 export const ShopScreen = ({
 	storage,
 	coverageByCategory,
-	checks,
 	stake,
 	configs,
 	atMinimumWidth,
+	locked = false,
 	slots,
 	newConfigIds,
 	offers,
@@ -203,6 +189,11 @@ export const ShopScreen = ({
 	extendCost,
 	canExtend,
 	onExtend,
+	pinAvailable,
+	pinCost,
+	canPin,
+	pinnedAtGate,
+	onPlantPin,
 	nextSlotGate,
 	justUnlockedSlots,
 	onUpgrade,
@@ -210,17 +201,38 @@ export const ShopScreen = ({
 	storagePlans,
 	onChangePlan,
 }: ShopScreenProps) => {
-	const { gateNumber, minConfigs } = stake;
+	const { gateNumber } = stake;
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const nextGate = swatchForGate(gateNumber);
 
-	const canUpgrade = (config: Config): boolean => {
-		if (!config.focusCategory)
-			return storage >= upgradeStorageCost(config.level ?? 1);
+	// Two independent gates, asked separately so the tooltip can name whichever
+	// one is in the way — a Focus config can be earned but unaffordable, or
+	// affordable but unearned.
+	const upgradeAffordable = (config: Config): boolean =>
+		storage >= upgradeStorageCost(config.level ?? 1);
+
+	const upgradeEarned = (config: Config): boolean =>
+		config.focusCategory === undefined ||
+		(coverageByCategory[config.focusCategory] ?? 0) >=
+			upgradeCoverageRequired(config.level ?? 1);
+
+	const canUpgrade = (config: Config): boolean =>
+		upgradeAffordable(config) && upgradeEarned(config);
+
+	const coverageShortfall = (config: Config): ReactNode => {
+		if (config.focusCategory === undefined) return null;
+		const required = upgradeCoverageRequired(config.level ?? 1);
+		const have = coverageByCategory[config.focusCategory] ?? 0;
 		return (
-			(coverageByCategory[config.focusCategory] ?? 0) >=
-			upgradeCoverageRequired(config.level ?? 1)
+			<>
+				{" "}
+				Unlocks at {required}%{" "}
+				<span className="font-bold">
+					{getCategoryMetadata(config.focusCategory).name}
+				</span>{" "}
+				coverage — you have {have}%.
+			</>
 		);
 	};
 
@@ -228,19 +240,17 @@ export const ShopScreen = ({
 		const nextLevel = (config.level ?? 1) + 1;
 		const preview = `L${nextLevel}: ${describeConfig({ ...config, level: nextLevel })}`;
 		if (canUpgrade(config)) return preview;
-		if (!config.focusCategory) {
-			const cost = upgradeStorageCost(config.level ?? 1);
-			return `${preview} Costs ${cost}KB — you have ${storage}KB.`;
-		}
-		const required = upgradeCoverageRequired(config.level ?? 1);
-		const have = coverageByCategory[config.focusCategory] ?? 0;
+		const cost = upgradeStorageCost(config.level ?? 1);
 		return (
 			<>
-				{preview} Unlocks at {required}%{" "}
-				<span className="font-bold">
-					{getCategoryMetadata(config.focusCategory).name}
-				</span>{" "}
-				coverage — you have {have}%.
+				{preview}
+				{upgradeAffordable(config) ? null : (
+					<>
+						{" "}
+						Costs {cost}KB — you have {storage}KB.
+					</>
+				)}
+				{upgradeEarned(config) ? null : coverageShortfall(config)}
 			</>
 		);
 	};
@@ -250,18 +260,18 @@ export const ShopScreen = ({
 			label: "Uninstall",
 			price: `+${sellRefund(config)}KB`,
 			onClick: () => onSell(config.id),
-			disabled: atMinimumWidth,
+			disabled: atMinimumWidth || locked,
 			pill: true,
 		});
 		const upgradeButton = isUpgradable(config)
 			? actionButton({
 					label: "Upgrade",
-					price: config.focusCategory
-						? undefined
-						: `${upgradeStorageCost(config.level ?? 1)}KB`,
+					// Every upgrade is priced now, Focus included, so the price belongs on
+					// the button face like every other spend in the shop.
+					price: `${upgradeStorageCost(config.level ?? 1)}KB`,
 					onClick: () => onUpgrade(config.id),
-					disabled: !canUpgrade(config),
-					prismatic: canUpgrade(config),
+					disabled: !canUpgrade(config) || locked,
+					prismatic: canUpgrade(config) && !locked,
 				})
 			: null;
 		return (
@@ -270,9 +280,7 @@ export const ShopScreen = ({
 					<Tooltip content={upgradeTooltip(config)}>{upgradeButton}</Tooltip>
 				) : null}
 				{atMinimumWidth ? (
-					<Tooltip
-						content={widthRefusal(gateNumber, minConfigs, "uninstalling")}
-					>
+					<Tooltip content={widthRefusal("uninstalling")}>
 						{deinstallButton}
 					</Tooltip>
 				) : (
@@ -325,7 +333,7 @@ export const ShopScreen = ({
 				tone={installTone}
 				size="corner"
 				onClick={() => install(config.id)}
-				disabled={refusal !== null}
+				disabled={refusal !== null || locked}
 				ariaLabel={`Install ${config.label} for ${priceKb}KB`}
 			>
 				install
@@ -337,7 +345,7 @@ export const ShopScreen = ({
 					tone="price"
 					size="corner"
 					onClick={() => onLock(config.id)}
-					disabled={!canLock}
+					disabled={!canLock || locked}
 					ariaLabel={`Lock ${config.label} for ${lockCost}KB`}
 				>
 					Lock config
@@ -403,6 +411,19 @@ export const ShopScreen = ({
 				<Subtitle>Expand your pipeline or make it stricter!</Subtitle>
 			</header>
 
+			{/* One statement at the top rather than a refusal on every control: with
+			    the whole shop shut, seven tooltips would each explain the same rule.
+			    The offers stay visible, because knowing what you cannot buy is how
+			    the gate after this one gets planned. */}
+			{locked ? (
+				<div className="rounded-lg border border-cinnabar/50 px-3 py-2">
+					<Paragraph size="sm" tone="cinnabar">
+						Read-only: gate {gateNumber} audits the build you already have.
+						Nothing can be bought, sold or switched before it.
+					</Paragraph>
+				</div>
+			) : null}
+
 			<Columns
 				aside={
 					<TerminalPanel title="Shop · Install configs">
@@ -429,7 +450,7 @@ export const ShopScreen = ({
 										label: "↻ Rebuild offers",
 										price: `${rebuildCost}KB`,
 										onClick: onRebuild,
-										disabled: !canRebuild,
+										disabled: !canRebuild || locked,
 									})}
 								</Tooltip>
 								{extendAvailable ? (
@@ -438,9 +459,25 @@ export const ShopScreen = ({
 											label: "+ Extend offers",
 											price: `${extendCost}KB`,
 											onClick: onExtend,
-											disabled: !canExtend,
+											disabled: !canExtend || locked,
 										})}
 									</Tooltip>
+								) : null}
+								{pinAvailable ? (
+									<Tooltip content="Plant a checkpoint at this gate: after a death, your next run checks out here instead of gate 1. The price rises with every gate, and the last one sold is gate 10. One per run, spent by the run it rescues — after that you buy another.">
+										{actionButton({
+											label: "🏷 git tag",
+											price: `${pinCost}KB`,
+											onClick: onPlantPin,
+											disabled: !canPin || locked,
+										})}
+									</Tooltip>
+								) : null}
+								{pinnedAtGate !== null ? (
+									<Paragraph as="span" size="xs" tone="viridian">
+										git tag planted at gate {pinnedAtGate} — your next run
+										checks out there
+									</Paragraph>
 								) : null}
 							</div>
 						</TerminalSection>
@@ -489,13 +526,16 @@ export const ShopScreen = ({
 									const switchButton = (
 										<button
 											type="button"
+											disabled={locked}
 											onClick={() => onChangePlan(plan.tier)}
 											aria-label={`Switch to ${formatKb(plan.capKb)} storage plan${
 												plan.billKb > 0 ? `, ${plan.billKb}KB per gate` : ""
 											}`}
 											className={clsx(
 												rowBox,
-												"cursor-pointer transition hover:bg-surface-raised/60"
+												locked
+													? "cursor-not-allowed opacity-60"
+													: "cursor-pointer transition hover:bg-surface-raised/60"
 											)}
 										>
 											{planRow}
@@ -539,7 +579,7 @@ export const ShopScreen = ({
 							subtitle={`${configs.length} of ${slots} slots used`}
 						/>
 						<RoleList
-							rows={roleRows(configs, checks)}
+							rows={roleRows(configs)}
 							slots={slots}
 							trailingFor={loadoutActions}
 							newConfigIds={newConfigIds}
@@ -560,7 +600,6 @@ export const ShopScreen = ({
 						/>
 						<GateStakeReceipt
 							stake={stake}
-							configCount={configs.length}
 							preview={next}
 							previewPerAnswer={nextPerAnswer}
 						/>

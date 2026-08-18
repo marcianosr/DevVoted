@@ -29,7 +29,7 @@ Because DevVoted is in active development, every article carries a status tag:
   - [2.4 Categories](#24-categories)
   - [2.5 Coverage (Scoring)](#25-coverage-scoring)
   - [2.6 Technical Debt](#26-technical-debt)
-  - [2.7 Pipeline Build Failure](#27-pipeline-build-failure)
+  - [2.7 Failing a Gate](#27-failing-a-gate)
   - [2.8 Victory & Run End](#28-victory--run-end)
   - [2.9 A Typical Run](#29-a-typical-run)
   - [2.10 What Unlocks When](#210-what-unlocks-when)
@@ -37,7 +37,7 @@ Because DevVoted is in active development, every article carries a status tag:
   - [3.1 Slots & Expansion](#31-slots--expansion)
   - [3.2 Managing Configs](#32-managing-configs)
 - [4. Configs](#4-configs)
-  - [4.1 The Config Rule](#41-the-config-rule)
+  - [4.1 Configs Are Pure Enhancements](#41-configs-are-pure-enhancements)
   - [4.2 Rarity](#42-rarity)
   - [4.3 Config Roster](#43-config-roster)
   - [4.4 Upgrades](#44-upgrades)
@@ -79,12 +79,13 @@ each correct answer pays.
 
 **Is it a roguelite?** Not literally — it borrows from the genre rather than belonging
 to it. What it takes: run-based structure, builds assembled from collectible items,
-escalating stakes, strip-on-fail, and meta-progression that outlives a single run.
-What it leaves behind: procedural generation (polls are hand-written and the daily
-seed is shared by every player, so no two runs differ by dice), session-length play
-(a run spans real calendar days, one gate per day, and can sit half-finished
-overnight), and permadeath as the default state (dying takes a gate whose peel
-quota is bigger than your build, which is slow to arrive). Think of the roguelite parts as the skeleton, not the
+escalating stakes, gates with teeth, and meta-progression that outlives a single
+run. What it leaves behind: procedural generation (polls are hand-written and the
+daily seed is shared by every player, so no two runs differ by dice),
+session-length play (a run spans real calendar days, one gate per day, and can
+sit half-finished overnight), and permadeath as the default state (an ordinary
+missed gate costs you a config and hands the run back, so only a build that
+runs out of configs dies, ADR-037). Think of the roguelite parts as the skeleton, not the
 point: the point is a daily learning ritual that happens to keep score.
 
 Beneath the mechanics sits the creator's own philosophy, learned from experience
@@ -127,8 +128,8 @@ click away for more customizing, the community board a nudge, and the
 start-gate button wearing the countdown until midnight. Runs persist across days and never expire;
 partially answered gates simply fill up across day boundaries. Unplayed polls from
 yesterday are dropped, not failed. A flawless summit takes 12 calendar days; every
-failed gate adds a day, and so does every gate replayed while waiting on the
-coverage to widen — which can happen as early as day 2 ([2.2 Gates](#22-gates)).
+failed gate adds a day — the retry waits on tomorrow's polls
+([2.2 Gates](#22-gates)).
 
 You can **abandon** a run and start fresh the same day. The new run only serves
 polls you haven't answered yet, and abandoning banks nothing (see
@@ -139,96 +140,75 @@ designed monetization lever; the cost curve is undefined.
 
 ### 2.2 Gates
 
-A gate evaluates a window of 5 polls as a **composed checklist**. Every config you
-install contributes one check to that window, and the gate passes only if **every**
-check passes. Checks come **only from configs** (ADR-017) — there is no built-in
-baseline demand; a bare pipeline, however, never clears (nothing installed, nothing
-ships), which keeps death reachable. The UI shows the checklist live
-(`✓ Correct 3/3 · ○ Coverage 2%/4%`).
+A gate deals a window of 5 polls and audits the score you earn inside it
+(ADR-035). The gate's one demand is its **coverage meter**: the window's
+coverage, net of wrong-answer losses and floored at 0, must meet the gate's own
+threshold ([2.10](#210-what-unlocks-when)). Every gate is a fresh score — the
+run's career total never counts, and the meter resets with every attempt.
+Configs demand nothing: they are pure enhancements ([4.1](#41-configs-are-pure-enhancements)),
+so the friction lives on the gate, not on the build. A bare pipeline never
+clears (nothing installed, nothing ships), which is why sell and drop refuse
+the last config.
 
-**Farming is priced out, not forbidden**: a build whose checks all skip can climb,
-but the gate payout scales with window correctness (`32 KB × gate number ×
-correct ÷ 5`), so a 0/5 clear banks nothing. The design motto: *your build is as hard as you make it*.
-Every extra config is opt-in risk for opt-in reward.
+**Farming is priced out, not forbidden**: the gate payout scales with window
+correctness (`32 KB × gate number × correct ÷ 5`), so a low-effort clear banks
+little — and a low-effort attempt rarely meets the meter at all.
 
-**The demand is what you bought** (ADR-033): Unit Tests' "N correct answers"
-check is `checkAmount + level - 1`, clamped to the window. Gate depth does not
-raise it, so an L1 Unit Tests demands 1 correct answer at gate 0 and at gate 12
-alike; only bought levels move it (see [4.4 Upgrades](#44-upgrades)).
+**Gates count from 0.** A run opens on gate 0 and every clear advances one
+gate, up to the summit at gate 12. Each clear from gate 1 **grants a slot**
+(ADR-034) — width comes with depth, never the other way around — and awards
+that gate's **swatch** ([6.4 Swatches](#64-swatches)).
 
-**Gates count from 0**, and **passing the checks is the whole price of depth**
-(ADR-019). A run opens on gate 0 and every clear advances one gate, up to the summit
-at gate 12. The gate is a CI run (ADR-034): passing demands the run's **total
-coverage** meet the gate's threshold alongside the build's checks, and each clear
-from gate 1 **grants a slot** — width comes with depth, never the other way around
-(width still opens no gates). What makes depth expensive is *risk*: the
-strip quota grows as you climb, so a pipeline too narrow to absorb it fails and
-dies rather than stalling. Clearing a gate also awards that gate's **swatch**
-([6.4 Swatches](#64-swatches)).
-
-> ⚠ ADR-018 briefly made gate N require slot N, with a "cleared, still gate 3"
-> replay when coverage lagged. ADR-019 reversed it the next day: the gate number was
-> redundant with the slot count, and the enforced replay *was* the farming ADR-017
-> already prices out. The "a narrow build coasts deep" risk it opened (DVTD-ziss)
-> was closed by ADR-027's width demand, which stops a build staying narrow at all.
-> ADR-033 later removed depth escalation from the correct-answer check; the width
-> demand is what prices depth now.
-
-**Exactly one of three things happens when the window's 5th poll is answered** —
+**Exactly one of two things happens when the window's 5th poll is answered** —
 nothing is decided before that:
 
 | | condition | outcome |
 | --- | --- | --- |
-| **Advance** | every check passed *or* skipped, **and** total coverage meets the gate's demand ([2.10](#210-what-unlocks-when)) | paid, gate's swatch earned, `gatesCleared + 1` (slot granted from gate 1), shop opens |
-| **Don't advance** | a check failed *or* the total sat under the demand, and the build holds more configs than the peel quota | peel `dropCount` configs, then **the shop opens** (ADR-034) and the **same** gate replays on a fresh 5 polls |
-| **Run over** | the gate failed, and the peel quota takes every config the build holds | dead (ADR-021) |
+| **Advance** | the window meter meets the gate's demand | paid, gate's swatch earned, `gatesCleared + 1` (slot granted from gate 1), shop opens |
+| **Miss** | the meter fell short | the gate **peels configs** (you pick which), then the loop runs again at the same gate: strip → review → shop → prep → 5 fresh polls |
 
-There is no other way to not advance. The failure path always costs configs, and
-its shop visit is where KB becomes the comeback resource: the storage bill still
-collects on every closed window (ADR-023) and only the passing attempt pays the
-gate reward, so camping a gate is priced without any extra rule.
+A miss pays nothing, and its peel is the whole death clock: keep missing and the
+pipeline keeps shrinking, until a miss holding your last config ends the run
+(ADR-037). The other costs ride along — the storage bill collects on every closed
+window (ADR-023), pass or fail, and every attempt drains the day's finite polls.
+Routing the retry through the shop is the point: the KB you earned inside the
+failed window is what buys a *different* attempt instead of a repeat of the one
+that just failed.
 
-**Failure trades difficulty for fragility.** The quota grows with depth
-(`dropCount = 1 + floor(gate / 2)`), and **stripping takes configs, never slots**,
-so a deep failure leaves a wide, half-empty pipeline. Measured at gate 10 with ten
-configs: the quota is 6, the player chooses which 6 to peel, and the gate's demands
-fall from **10 to 4** — the retried gate is genuinely easier. What it costs is the
-gate's payout, six configs' worth of storage, every multiplier they carried, and a
-day. Clearing the retry pays and opens the shop, and the empty slots refill from
-drafts over the next two or three gates (three offers per gate), so recovery is a
-slow rebuild out of storage rather than a reset.
+**Audits are the gate's personality** (ADR-035, roster in ADR-038). An audit is
+a fixed rule a gate carries, stated on the stake receipt before you walk in.
+**The count escalates**: gates 0–2 are clean, one audit runs from gate 3, two
+from gate 8, three from gate 11 — the same shape the peel curve has, so depth
+reads as one escalation rather than two. The seven rules:
 
-While thin, the next failure is fatal: from **gate 4** a three-config build owes at
-least as many strips as it holds, and a fail it cannot pay for ends the run on the
-spot (ADR-021). Nothing else empties a pipeline: the shop will not let you deinstall
-your last config, so the peel is always survivable and death always belongs to a
-gate you failed. Width is therefore the run's hit-point pool: a narrow build owes
-fewer checks but has no margin, a wide one owes more and survives mistakes. The
-answering screen names the stake inline ("a fail peels 3", red once it would take
-everything).
+| Audit | What it does |
+| --- | --- |
+| **Cost Overrun** | Every paid action costs ×2 — linting and peeking both. |
+| **Dependency Outage** | One config in your pipeline is offline for the whole attempt. Which one is fixed for the attempt and re-rolls on the next. |
+| **Flaky Build** | One config fails to trigger on every poll — a fresh roll each time, so it can flake the same one twice. |
+| **Rolling Outage** | The outage rolls: a different config is down for each poll of the window. |
+| **Deprecated** | Your highest-level config is switched off for the whole attempt — the one you invested in most, or a random one among those tied for it. |
+| **Read-only** | The shop *before* this gate is shut: nothing bought, sold or switched. You climb it with what you already built. |
+| **Feature Freeze** | No paid actions at all — the linter and the peek are gone. |
+| **Mirror** | Every poll asks for the **incorrect** options instead, and wants all of them — a single-answer poll with four options becomes a three-option select-all. Graded normally after that, so streaks and partials work and the gate charges full price. Naming every wrong option proves the same knowledge as naming the right one, and the community board counts it that way ([7.2](#72-the-community-board)). |
+| **Timeout** | The window's first polls are on a clock; an answer over the limit scores as a miss whatever you picked. |
+| **Memory Leak** | Storage leaks every poll: −16KB, −32KB on a miss. |
 
-**A gate only admits a build that can survive its stake** (ADR-027). Because
-checks come only from configs, a stripped-thin build owed a one-line checklist —
-failure made the retry easier, and a one-config build could cruise to the summit.
-Each gate now carries a width demand, graded at its door:
-`minConfigs = min(gate, dropCount + 1)` — nothing at Pallet, 1 at Boulder, 2 at
-Cascade, 3 at Thunder, then one over the strip quota up to **8 at the summit**.
-The early ramp keeps the opening gates farmable and lets a broke post-strip run
-recover. The shop and prep screen refuse to sell or drop below the coming gate's
-demand (the last config never sells, whatever the demand), so only a strip can
-sink a build under it — and since a shop now sits between every strip and its
-replay (ADR-034), the door grades the replay like any other attempt: an
-unrepaired build is turned away. Turning away is a **blocked shop exit**,
-not a death (ADR-031): while the shop can still repair the width (a free slot
-plus an affordable offer, or a rebuild worth hoping for) the exit stays
-disabled with the shortfall named. Only a provably stuck build — broke or
-slot-capped — gets a door: an explicit cinnabar **End run** click. The Build
-Summary names the demand (muted while met, cinnabar with the install count
-once under it), and mid-window drops are gone — the gate grades the build it
-admitted.
+The four offline audits differ only in which config they take and for how long. Three roll at random (seeded, so a reload never re-rolls one); Deprecated is the one that aims, taking whatever you levelled furthest. Every pick is stable for as long as it should last. Whatever is down is marked on the pipeline rail while you answer — dimmed, badged `offline`, its effect struck through, and its paid action gone — but only there: the shop and prep sit before the gate, so naming a casualty you have not reached yet would be a spoiler.
 
-**Boss gates** (every 5th gate, two requirements AND-ed, no reroll) are parked, along
-with ~14 extra gate types (streak gates, economy gates, double-window gates).
+Where they sit: **Marsh (7)** is the mirror; **Volcano (9)** leaks storage;
+**Elite (11)** and **Champion (12)** carry **strip audits**, which deepen the
+base peel — Elite takes 5 configs on a miss where the depth alone would take 4,
+Champion 6 — and both stack two more rules on top. Every audit is named on the
+stake receipt beside the peel it costs, so nothing about a death arrives
+unannounced. Full schedule in [2.10](#210-what-unlocks-when).
+
+One rule about where audits may sit, learned by building them: **Read-only only
+lands on odd gates**, because the storage rungs unlock on even ones and a rung
+you can see but not buy reads as a bug.
+
+**Boss gates** (every 5th gate, two requirements AND-ed, no reroll) are parked;
+a second pass over the roster collects in DVTD-6moy.
 
 ### 2.3 Polls
 
@@ -262,7 +242,11 @@ draw weights that configs can skew are also planned.
 
 ### 2.5 Coverage (Scoring)
 
-**Coverage** is the score: a percentage per category plus a run total.
+**Coverage** is the score, kept on two ledgers (ADR-035): the **gate meter** —
+the window's net coverage, reset with every attempt, the only number a gate
+judges — and the **career totals** (a percentage per category plus a run
+total), which keep accumulating for the leaderboard and Focus upgrades and
+never gate anything.
 
 **A correct answer earns:**
 
@@ -278,11 +262,12 @@ draw weights that configs can skew are also planned.
 | `difficulty` | `1 + 0.1 × (options − 3)`, plus `0.5` if multiple-choice. Never below ×1. |
 
 **Multi-answer share:** `(correct picks − wrong picks) ÷ total correct`, clamped to
-0..1. Shotgunning every option earns nothing. Only coverage reads this share; gate
-checks, streak, and storage stay binary on the exact-set rule.
+0..1. Shotgunning every option earns nothing. Only coverage reads this share;
+streak and storage stay binary on the exact-set rule.
 
-**A wrong answer bleeds 0.5%** from the poll's category, floored at 0. Losses stay
-flat — configs and gate depth amplify gains only.
+**A wrong answer bleeds** `0.25 × build multiplier × gate multiplier` from the
+poll's category, the gate meter, and the run total alike, each floored at 0
+(ADR-013, retuned by ADR-034/035).
 
 **Example.** Gate 2, CSS poll, 5 options, single-answer, `.css` installed, one
 correct answer already this gate.
@@ -300,159 +285,121 @@ correct answer already this gate.
 The post-answer **equation reveal** breaks the earn into Balatro-style chips: base,
 one chip per contributing config, streak bonus.
 
-Coverage past 100% rolls over into **levels**: 110% in JavaScript reads as "L2",
-then "L3". Mastery keeps counting instead of capping.
+Category coverage past 100% rolls over into **levels**: 110% in JavaScript reads
+as "L2", then "L3". Mastery keeps counting instead of capping. (The run-total
+"laps" display died with the cumulative demand, ADR-035.)
 
 ### 2.6 Technical Debt
 
-Fail a gate and you take a **debt card** for each failed check, planted on the
-config that failed.
+Scrapped (DVTD-eguq, 2026-08-17). Debt cards were designed as an alternative to
+strip-on-fail, and strip-on-fail is what ADR-037 kept: a missed gate peels a
+config. The debt idea (a failed gate disables an effect until a condition is
+worked off) could return as a gate audit if a gate wants that personality.
 
-- The config **keeps its slot** and its **check stays live**. Only its **effect** is
-  disabled. Debt is the obligation without the payoff.
-- Each card carries a **resolve condition**, spanning several polls or gates rather
-  than a single window.
-- Debt can also be **paid off with storage**. The price doubles for each debt paid
-  off in the same run, so buying your way clear is a short ladder by design. The
-  condition is the intended route.
-- **Debt does not stack.** A config already carrying a card takes no second card if
-  its check fails again.
-- The run ends when **every slot holds debt**: nothing in the pipeline is live, so
-  no gate can be cleared.
+### 2.7 Failing a Gate
 
-Copilot carries no check, so it can never be debted.
-
-#### Debt cards
-
-Debt cards are drawn from a shared pool, not derived from the config they land on.
-Every card does the same thing — **disables its host config's effect** — and cards
-differ only in what it takes to resolve them.
-
-| Name | Description | Resolves on |
-| --- | --- | --- |
-| Flaky suite | Tests that pass and fail without a code change. | 5 correct answers |
-| Dead code | Unreachable code nobody dares delete. | 3 correct answers in a row |
-| Visual regression | The UI shifted and nobody noticed. | +10% total coverage |
-| Type errors | Suppressed once and forgotten since. | 5 correct answers in one category |
-| Merge conflict | Resolved badly, committed anyway. | Selling 2 configs |
-| Stale dependencies | Versions pinned years ago. | Clearing 2 gates |
-| Untested path | A branch no test has ever reached. | 3 correct answers |
-| Cache invalidation | Stale data served with confidence. | +15% total coverage |
-| Race condition | Works locally, fails in CI. | 5 correct answers in a row |
-| Deprecation warning | A console full of things due to break. | Coverage in 3 categories in one gate |
-| Legacy module | Written by someone who left. | Clearing a gate without a miss |
-| Memory leak | Slower every day, nobody profiles it. | 8 correct answers |
-
-Two card names are also config names in the agreed roster (DVTD-72d9): **Memory
-Leak** and **Race Condition**. One of each pair has to be renamed before either
-ships, or the gate report will show the same words meaning two different things.
-
-Resolve conditions span four shapes: **correctness** (answer N polls correctly, or N
-in a row), **coverage thresholds** (reach a total or category level), **breadth**
-(gain coverage across N categories), and **build actions** (sell N configs, clear N
-gates).
-
-### 2.7 Pipeline Build Failure
-
-A failed gate costs you three ways at once.
+Missing a gate's coverage demand **peels a config** and hands the run back to
+the same gate (ADR-037). You choose which config goes on the strip screen, then
+the normal post-gate loop runs: the answers to review, the shop, the prep hub,
+and the gate again on 5 fresh polls. The meter starts over; coverage and storage
+survive.
 
 | Cost | Detail |
 | --- | --- |
-| **Your effects go dark** | Every failed check plants a card. A wide build failing badly loses several effects at once, so damage scales with the risk you were carrying rather than with a formula. |
-| **No shop** | The shop only opens on a cleared gate. A failed gate pays no reward and offers no draft, so storage sits idle while the pipeline sits disabled. |
-| **A real day** | One gate per calendar day, so every retry costs 24 hours. A flawless summit takes 5 days; two failures at gate 4 turn the run into a week. |
+| **Configs** | 1 at the first gates, rising to 4 by the summit ([2.10](#210-what-unlocks-when)), +1 at Elite and +2 at Champion. Your pick, so a miss is also a chance to shed the config that was not earning its slot. |
+| **The payout** | A failed attempt pays no gate reward, no interest, no extra-pick KB. The faucet KB earned inside the window is the retry's budget. |
+| **The storage bill** | A paid plan bills on every closed window, pass or fail (ADR-023). |
+| **The day's polls** | Every attempt burns 5 of the day's finite sequence — a retry is real time. |
+| **Audit damage** | The gate's audits charge again on the retry: Volcano leaks storage every attempt, a Timeout re-clocks its polls, an outage re-rolls which config goes down. |
 
-Tomorrow you face the same gate at the same demand — the demand is set by your build
-cleared, so it never rewinds — but with fewer live effects.
+The peel **escalates with depth** because width does: a clear grants a slot, so
+one config is a third of an opening build and a fourteenth of a summit build.
+The rows sit at roughly a quarter of the pipeline the gate expects you to have
+built, which keeps a run three or four misses from death the whole way up
+instead of thirteen at the top.
 
-**What survives keeps recovery possible.** Coverage is untouched, storage is
-untouched, and you never lose a config outright. A debted pipeline is repairable,
-and the repair is knowledge. Because debt doesn't stack, the run only ends once
-failure has spread across *different* configs; a single stubborn weak spot can be
-worked off rather than compounding.
+**Death is the peel running out of configs**: a miss whose peel is as big as
+your build ends the run there. Both facts are on the stake receipt before you
+answer, the fatal one in red.
 
 ### 2.8 Victory & Run End
 
 Clear all **13** gates — numbered **0 through 12** — to win; `VICTORY_GATE` is the
 summit's number (12) and `GATE_COUNT` is how many there are (13). How long the climb
-runs is a content decision, one gate per badge in the roster, and no longer derived
-from the slot ladder (ADR-019) — a narrow pipeline that keeps passing its checks can
-summit. A continue-past-victory option is
-confirmed but unbuilt (DVTD-g1p0); the victory *reward* is still undecided, with
-one constraint set by ADR-017: it must not be claimable by a zero-coverage farm run.
+runs is a content decision, one gate per badge in the roster — a narrow pipeline
+that keeps meeting the meters can summit. A run ends three ways (ADR-037): **the
+summit** (victory), **a missed gate whose peel takes the whole build**
+([2.7](#27-failing-a-gate)), or **abandoning**. A continue-past-victory option is confirmed but unbuilt (DVTD-g1p0);
+the victory *reward* is still undecided, with one constraint: it must not be
+claimable by a zero-effort farm run.
 
 When a run ends, leftover storage is credited to your persistent archived storage
 proportionally to how far you climbed: **victory banks 100%**, **death banks
 gatesCleared ÷ GATE_COUNT** (die having cleared 6 of 13, keep 46%), **abandoning
-banks nothing**; walking away can never be a cash-out.
+banks nothing**; walking away can never be a cash-out. A tag-rescued run
+(ADR-036, [5.2](#52-the-shop)) banks only the gates it actually climbed — the
+checkpoint is a head start, never a cash-out either.
 
 ### 2.9 A Typical Run
 
 An illustrative baseline for balance sanity-checks, computed from the shipped
-constants. Assume a solid player: 4 of 5 polls correct each gate with one mid-window
-miss, plain 3-option single-answer polls (difficulty ×1), a lean build with no
-coverage configs, one draft per shop. Per-gate coverage is then roughly
-`4.2 × gate multiplier, minus 0.5` for the miss.
+constants. Assume a solid player: 4 of 5 polls correct each gate with one
+mid-window miss, plain 3-option single-answer polls (difficulty ×1), a lean
+build with no coverage configs. That player's gate meter lands around
+`4.4 × gate multiplier` per window.
 
-> Reward deltas below follow the 2026-08-05 schema (`32 × gate × correct ÷ 5`, so
-> the 4-of-5 player earns 26 / 51 / 77 / 102 / 128); the draft-path milestones and
-> running totals still await a rebalance pass — a common draft (32 KB) is no longer
-> affordable from gate 1's payout alone. Coverage columns are unaffected.
+| Gate | Meter (lean 4-of-5) | Demand | Verdict |
+| --- | --- | --- | --- |
+| 0 | ~4.4% | 3% | clears — the teaching gate forgives a lean build |
+| 1 | ~8.7% | 10% | just misses — the first gate that demands *something* extra |
+| 2 | ~13% | 25% | misses — coverage configs are homework from here |
+| 4 | ~22% | 60% | needs roughly a ×2.5 build or a hot streak |
 
-| After gate | Coverage gained | Total coverage | Storage (after shopping) | Milestone |
-| --- | --- | --- | --- | --- |
-| 1 | ~3.7% | ~4% | +26 | Boulder Swatch earned; slot 4 in reach (8%) |
-| 2 | ~7.9% | ~12% | +51, drafted a common | Cascade Swatch; slot 5 (16%) |
-| 3 | ~12.1% | ~24% | +77, drafted an uncommon | Thunder Swatch; slot 6 (28%) |
-| 4 | ~16.3% | ~40% | +102 | Rainbow Swatch; slot 7 (45%) |
-| 5 | ~20.5% | ~61% | +128 | Soul Swatch; slot 8 (70%) |
-
-Rule of thumb: **by gate 3 a solid player sits around 20–25% total coverage and
-~150 KB earned gross**. Coverage configs like Copilot roughly double the coverage
-column, and a miss-heavy run falls behind the ladder instead.
-
-The run no longer ends at gate 5 — the summit is gate 12. The swatch column is the
-badge each clear awards; the slot column is a *separate* track the same coverage
-pays for, so falling behind the ladder costs you width and power, never depth. The
-full ladder is in [3.1](#31-slots--expansion); its numbers are live-tuned in
-`pipeline.model.ts`, so treat this table's thresholds as illustrative and the code as
-authoritative.
+This deliberately reverses ADR-034's 80%-of-base-pace pricing (ADR-035), which
+was priced when a miss was free. A miss now costs a config (ADR-037), so these
+rows are the first thing to loosen if the early gates read as punishing. They
+live in `rules.model.ts`; the reward schema is `32 × gate × correct ÷ 5`
+per clear, unchanged.
 
 ### 2.10 What Unlocks When
 
 One sheet for everything the climb stages in, because the rules arrive on two
 different axes and it is easy to lose track of which is which:
 
-- **Gate number** stages the *stakes*, the *shop's controls*, the *coverage
-  demanded* to pass, and **width**: each clear from gate 1 grants a slot
+- **Gate number** stages the *coverage demanded* to pass, the *audits*, the
+  *shop's controls*, and **width**: each clear from gate 1 grants a slot
   (ADR-034; [3.1](#31-slots--expansion)).
 - **Category coverage** stages *Focus upgrades* ([4.4](#44-upgrades)).
 
-| Gate | Swatch | Configs demanded | Coverage to pass | Strips on fail | Unlocks at this gate |
+| Gate | Swatch | Coverage in its window | A miss peels | Audit | Unlocks at this gate |
 | --- | --- | --- | --- | --- | --- |
-| 0 | Pallet | 0 | 3% | 1 | Shop, **Rebuild offers**, the 512KB free plan and the 640KB rung |
-| 1 | Boulder | 1 | 12% | 1 | Slot 4 |
-| 2 | Cascade | 2 | 24% | 2 | **Lock an offer**, 768KB rung, slot 5 |
-| 3 | Thunder | 3 | 40% | 2 | **Extend offers**, slot 6 |
-| 4 | Lavender | 4 | 60% | 3 | 1MB rung, slot 7 |
-| 5 | Rainbow | 4 | 85% | 3 | Slot 8 |
-| 6 | Soul | 5 | 110% | 4 | 1.5MB rung, slot 9 |
-| 7 | Marsh | 5 | 145% | 4 | Slot 10 |
-| 8 | Seafoam | 6 | 180% | 5 | 2MB rung, slot 11 |
-| 9 | Volcano | 6 | 220% | 5 | Slot 12 |
-| 10 | Earth | 7 | 265% | 6 | 3MB rung (top of the ladder), slot 13 |
-| 11 | Elite | 7 | 310% | 6 | Slot 14 (the width cap) |
-| 12 | Champion | 8 | 365% | 7 | Summit — clearing it wins the run |
+| 0 | Pallet | 3% | 1 | — | Shop, **Rebuild offers**, the 512KB free plan and the 640KB rung |
+| 1 | Boulder | 10% | 1 | — | Slot 4 |
+| 2 | Cascade | 25% | 1 | — | **Lock an offer**, 768KB rung, slot 5 |
+| 3 | Thunder | 40% | 2 | **Cost Overrun** | **Extend offers**, slot 6 |
+| 4 | Lavender | 60% | 2 | **Dependency Outage** | 1MB rung, slot 7 |
+| 5 | Rainbow | 85% | 2 | **Read-only** | Slot 8 |
+| 6 | Soul | 110% | 2 | **Feature Freeze** | 1.5MB rung, slot 9 |
+| 7 | Marsh | 140% | 3 | **Mirror** | Slot 10 |
+| 8 | Seafoam | 175% | 3 | **Timeout** (3 polls, 30s) + **Flaky Build** | 2MB rung, slot 11 |
+| 9 | Volcano | 210% | 3 | **Memory Leak** + **Rolling Outage** | Slot 12 |
+| 10 | Earth | 250% | 3 | **Deprecated** + **Timeout** (4 polls, 25s) | 3MB rung (top of the ladder), slot 13 |
+| 11 | Elite | 290% | **5** | **Strip** + **Mirror** + **Flaky Build** | Slot 14 (the width cap) |
+| 12 | Champion | 340% | **6** | **Memory Leak** + **Strip** + **Timeout** (5 polls, 20s) | Summit — clearing it wins the run |
 
-The coverage column follows one rule (ADR-034): **80% of a perfect base pace**,
-so streaks and config multipliers are headroom above it, never homework. Gate 0
-is rounded down so a 4-of-5 teaching window still passes.
+The coverage column is per-gate and fresh (ADR-035): the meter resets every
+attempt, so each row is a score to hit inside 5 polls, not a running total. The
+peel column is what a miss takes (ADR-037), audits included — it tracks the slot
+column, since a peel is only a threat in proportion to the build it hits.
+Every row is the full price now: the Mirror stopped discounting Marsh when it
+started flipping the poll instead of the score. Gates 0–2 carry no audit by
+design, and the count is the escalation: one from gate 3, two from 8, three
+from 11 (ADR-038).
 
-Sources, all authoritative over this table: `minConfigsForGate`, `dropCount`,
-`coverageDemandFor`, `STORAGE_PLANS` (`rules.model.ts`),
-`slotsForGatesCleared` (`pipeline.model.ts`),
-`LOCK_FROM_GATE`/`EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
-(`swatch.model.ts`).
+Sources, all authoritative over this table: `coverageDemandFor`,
+`STORAGE_PLANS` (`rules.model.ts`), `slotsForGatesCleared`
+(`pipeline.model.ts`), `LOCK_FROM_GATE`/`EXTEND_FROM_GATE` (`draft.model.ts`),
+`GATE_SWATCHES` (`swatch.model.ts`), `GATE_AUDITS` (`audit.model.ts`).
 
 **Not on this axis** (so they are deliberately absent above):
 
@@ -493,10 +440,9 @@ instead. It carries no swatch: badges come from clearing gates
 ### 3.2 Managing Configs
 
 Click any config chip for its action popover: **Install**, **Sell** (refunds half
-the draft cost), or **Upgrade**. Any config can be sold except your last one:
-selling your way out of every check just sells your income with it (payouts scale
-with correctness), and a pipeline is never allowed to reach zero configs in the shop
-(ADR-021). At run start, the **Configuring** screen offers **starter stacks**
+the draft cost), or **Upgrade**. Any config can be sold except your last one: a
+bare pipeline never clears a gate, so the shop refuses the final uninstall
+(ADR-035). At run start, the **Configuring** screen offers **starter stacks**
 (ADR-026): curated three-config pipelines picked with one click — the stack's
 one-liner carries the choice, and the picked row expands into a trimmed
 preview (each config's demand and payoff, always visible; a linter's fee sits
@@ -511,75 +457,32 @@ draw is planned (DVTD-30k6).
 
 ## 4. Configs
 
-### 4.1 The Config Rule
+### 4.1 Configs Are Pure Enhancements
 
-Every config represents a real CI configuration, and every config has the same two
-parts:
+Every config represents a real CI configuration, and every config is one thing
+(ADR-035): an **effect with a price**. The price is the draft cost and the
+slot; the effect is coverage multipliers, flat adds, storage payouts, or an
+on-demand action. Nothing a config does demands anything of the player — the
+demands belong to the gate ([2.2](#22-gates)): its coverage meter and its
+audits.
 
-- **Effect** — the benefit it provides.
-- **Check** — the requirement it adds to your build.
+This retires the Config Rule (ADR-016/017/022/033): every check, the mastery
+demands, the escalating correct-answer count, and the roster's type-level
+"every config owes the gate something" enforcement are gone. The friction they
+carried moved onto the gates, where it reads as personality instead of
+homework.
 
-A gate fails if **any** active check fails.
+**Fees still price actions** (2026-08-13). An on-demand *action* (the lint
+cross-out, Telemetry's peek) meters each use with an escalating fee, because
+the player chooses every activation. Passives carry no fee — the draft price
+is the whole cost.
 
-Some configs don't touch polls at all — their effect is simply a flat payout on gate
-clear. Unit Tests is the clearest case: +32 KB for carrying the game's only
-correct-answer check.
-
-**No baseline** (ADR-017). The gate demands no *answers* of its own — install Unit
-Tests and you owe correct answers; skip it and no
-check asks for them, but the correctness-scaled payout means wrong answers earn
-nothing. The gate's one structural demand is width (ADR-027, §2.2): it only admits
-a build wide enough to survive its strip quota. Nothing in the pipeline is locked:
-every config, Unit Tests included, can be sold or stripped — down to that demand.
-
-Checks are not only about answering correctly. A check can key off storage level,
-answer speed, build composition, duration, streaks, coverage breadth, or other
-players.
-
-**Why take on a check?** Because the check *is* the price of the effect. There is no
-separate fee: a config's power and its risk are the same transaction. Coverage
-doubles your gains and asks you to gain something; Cold Start doubles your opener
-and asks you to land it. Add a condition you trust yourself to hit, and get paid for
-the confidence. Your build is as hard as you make it, and exactly as rich.
-
-**Fees price actions, checks price passives** (2026-08-13). A passive effect
-(a multiplier, a payout) is priced only by its check — never a fee. An on-demand
-*action* (the lint cross-out, Telemetry's peek) may meter each use with an
-escalating fee, because the player chooses every activation. This is the line
-that makes the lint ladder and a fee-charging Telemetry consistent with the
-no-separate-fee rule above.
-
-**Every config owes the gate something** (ADR-022), by one of three routes: an
-authored check, a Focus category, or the categories it lints. The roster type
-refuses anything else, so a config that owes nothing is a compile error rather than
-a bug to find later. It was a bug once: a build of AGENTS.md (then Copilot) plus two
-linters carried an entirely skippable checklist, so it summited on zero correct
-answers and collected all 13 swatches.
-
-**A linter owes competence, never proof it was used.** ESLint asks you to get one
-JS/TS poll right if either appears; Stylelint asks the same of CSS. It is the same
-mechanic as a Focus config, excused by an unlucky draw and by nothing you choose.
-Using the effect is always optional: an earlier design failed the gate when you
-declined to lint, which turned a window you could not afford into a death you never
-chose. A lint you get wrong now costs the fee and nothing more.
-
-**The legendary exception.** Legendaries no longer skip the check. What legendary
-buys instead is a check that barely asks for anything, because the 256 KB draft price
-is most of what the config costs. AGENTS.md doubles all coverage and asks for one
-correct answer, unconditionally: light is not free.
-
-**Volkswagen CI is the real exception** (ADR-028). It is the only config that reads
-the checklist rather than adding to it: when exactly one check has failed, and at
-least 3 others *ran and passed*, it reports the failing one as passing. It therefore
-never fails a gate on its own, which is the one place the Config Rule is genuinely
-waived. Its price is its 384 KB and the slot, plus a hidden width demand — covering
-takes 3 passing rows plus the row it hides, so the fraud does not work below slot 5.
-Checks that were skipped rather than passed count for nothing: a test that never ran
-proves nothing.
-
-Resolved (DVTD-bojz): configs are **not** split into two species. Every config is
-Effect + Check, so a "perks-only build" does not exist — a build carrying few checks
-is simply one that took little risk and earns least. DVTD-9r8p closed.
+**Volkswagen CI reads the audits** (ADR-028, repurposed). The defeat device is
+the one config aimed at the gate's own rules: installed, it reports the gate's
+**first** audit as passing, struck through on the stake receipt — visible fraud,
+never silent. Which one that is grows into a real decision as gates stack three:
+at Elite it cancels the deepened peel and leaves the mirror standing, at the
+Champion it stops the leak and leaves the strip.
 
 ### 4.2 Rarity
 
@@ -590,36 +493,39 @@ rates on hover are planned; today the draft cycles deterministically through the
 
 ### 4.3 Config Roster
 
-One table, every config. Each entry reads **Effect / Check**.
+One table, every config. Shipped (🟢) entries are pure effects (ADR-035).
+Parked/planned (🟡) rows still carry the check ideas they were designed with —
+each needs a redesign pass (bounded condition, fee, or gate audit) before it
+can ship, since checks no longer exist.
 
-| Config | Rarity | Effect | Check | Status |
+| Config | Rarity | Effect | Check (🟡 legacy design only) | Status |
 | --- | --- | --- | --- | --- |
-| Unit Tests | common | +32 KB × level storage on gate clear | `level` correct answers (see §4.4) | 🟢 |
-| `.js` | common | JavaScript polls reward ×1.25 | If a JavaScript poll appears, answer at least one correctly | 🟢 |
-| `.ts` | common | TypeScript polls reward ×1.25 | If a TypeScript poll appears, answer at least one correctly | 🟢 |
-| `.css` | common | CSS polls reward ×1.25 | If a CSS poll appears, answer at least one correctly | 🟢 |
-| `.jsx` | common | React polls reward ×1.25 | If a React poll appears, answer at least one correctly | 🟢 |
-| `.html` | common | HTML polls reward ×1.25 | If an HTML poll appears, answer at least one correctly | 🟢 |
-| `.git` | common | Git polls reward ×1.25 | If a Git poll appears, answer at least one correctly | 🟢 |
-| `.java` | common | Java polls reward ×1.25 | If a Java poll appears, answer at least one correctly | 🟢 |
-| `.py` | common | Python polls reward ×1.25 | If a Python poll appears, answer at least one correctly | 🟢 |
-| `.rb` | common | Ruby polls reward ×1.25 | If a Ruby poll appears, answer at least one correctly | 🟢 |
-| `package.json` | common | General Frontend polls reward ×1.25 | If a General Frontend poll appears, answer at least one correctly | 🟢 |
-| ESLint | common | Cross out one wrong answer on JS/TS polls, for an escalating price (from 8 KB) | If a JS or TS poll appears, answer at least one correctly | 🟢 |
-| Stylelint | common | Cross out one wrong answer on CSS polls, for an escalating price (from 8 KB) | If a CSS poll appears, answer at least one correctly | 🟢 |
-| Cold Start | uncommon | First answer rewards ×2 | First answer must be correct | 🟢 |
-| Coverage | uncommon | Coverage gains ×2 | Gain at least 1% coverage this gate | 🟢 |
-| IndexedDB | uncommon | +8 KB storage per correct answer; caps at 320 KB | Answer at least 3 polls correctly | 🟢 |
-| Code Coverage | uncommon | +0.5% flat coverage per correct answer | Don't miss two polls in a row | 🟢 |
-| Intellisense | rare | All coverage ×1.5 | Gain coverage in at least 2 categories this gate | 🟢 |
-| AGENTS.md | legendary | All coverage ×2 | Answer at least one poll correctly | 🟢 |
-| Volkswagen CI | legendary | Reports one failing check as passing; costs 384 KB to draft | 3 other checks must run and pass (see [4.1](#41-the-config-rule)) | 🟢 |
+| Unit Tests | common | +32 KB × level storage on gate clear | — | 🟢 |
+| `.js` | common | JavaScript polls reward ×1.25 | — | 🟢 |
+| `.ts` | common | TypeScript polls reward ×1.25 | — | 🟢 |
+| `.css` | common | CSS polls reward ×1.25 | — | 🟢 |
+| `.jsx` | common | React polls reward ×1.25 | — | 🟢 |
+| `.html` | common | HTML polls reward ×1.25 | — | 🟢 |
+| `.git` | common | Git polls reward ×1.25 | — | 🟢 |
+| `.java` | common | Java polls reward ×1.25 | — | 🟢 |
+| `.py` | common | Python polls reward ×1.25 | — | 🟢 |
+| `.rb` | common | Ruby polls reward ×1.25 | — | 🟢 |
+| `package.json` | common | General Frontend polls reward ×1.25 | — | 🟢 |
+| ESLint | common | Cross out one wrong answer on JS/TS polls, for an escalating price (from 8 KB) | — | 🟢 |
+| Stylelint | common | Cross out one wrong answer on CSS polls, for an escalating price (from 8 KB) | — | 🟢 |
+| Cold Start | uncommon | First answer rewards ×2 | — | 🟢 |
+| Coverage | uncommon | Coverage gains ×2 | — | 🟢 |
+| IndexedDB | uncommon | +8 KB storage per correct answer; caps at 320 KB | — | 🟢 |
+| Code Coverage | uncommon | +0.5% flat coverage per correct answer | — | 🟢 |
+| Intellisense | rare | All coverage ×1.5 | — | 🟢 |
+| AGENTS.md | legendary | All coverage ×2 | — | 🟢 |
+| Volkswagen CI | legendary | Reports the gate's first audit as passing; costs 384 KB to draft | — | 🟢 |
 | Vite config | common | +3% coverage on JS/TS polls answered under 35 s | At least one poll answered under 35 s | 🟡 |
 | `.every()` | common | +1% when a category you've 5-streaked appears | Don't break your streak this gate | 🟡 |
 | Semver | common | Coverage ×1.2 for each Focus config at L2 or higher | No Focus config may sit at L1 | 🟡 |
 | Rate limiter | common | Wrong answers don't bleed coverage | No single poll may earn more than 3% coverage | 🟡 |
-| Telemetry | uncommon | Pay per use (32 → 64 → 128 KB, doubling, resets each gate) to see how everyone who ever answered this poll voted. L1 shows percentages only; L2 adds the sample size (see [4.4](#44-upgrades)) | Peek at least once each gate | 🟢 |
-| `.length` | uncommon | Shows how many correct answers the gate's 5 polls hold between them, and pays +16 KB per answer beyond one per poll | Spend exactly that many picks | 🟢 |
+| Telemetry | uncommon | Pay per use (32 → 64 → 128 KB, doubling, resets each gate) to see how everyone who ever answered this poll voted. L1 shows percentages only; L2 adds the sample size (see [4.4](#44-upgrades)) | — | 🟢 |
+| `.length` | uncommon | Shows how many correct answers the gate's 5 polls hold between them, and pays +16 KB per answer beyond one per poll | — | 🟢 |
 | Benchmark | uncommon | See your paired ghost's answer before you commit (formerly named Telemetry) | Your gate coverage must beat that ghost's | 🟡 |
 | Cold cache | uncommon | The gate's first poll pays nothing; every poll after pays ×1.5 | You must answer all 5 polls — skipping breaks the warm-up | 🟡 |
 | Dependabot | uncommon | Each gate, one random config of yours upgrades a level for free | You may not sell configs | 🟡 |
@@ -637,7 +543,7 @@ One table, every config. Each entry reads **Effect / Check**.
 | `--save-exact` | uncommon | Every future draft costs 20% less | Configs can never be sold; peel on failure still works | 🟡 |
 | WTFPL | legendary | The shop offers the entire roster: draft whatever you want | No warranty: sell refund is 0 on everything you own (authored check still open) | 🟡 |
 | Weekend Project | common | Saturday and Sunday gates pay +50% storage | Those gates demand +1 correct answer | 🟡 |
-| Moore's Law | common | On each gate clear, +2% × level of held storage | Hold 32 KB × level when the gate resolves (see [4.4](#44-upgrades)) | 🟢 |
+| Moore's Law | common | On each gate clear, +2% × level of held storage | — | 🟢 |
 
 **Bundle Analyzer and Rebase are a deliberate pair.** Analyzer reveals categories in
 the *shop*, so it informs what you draft; Rebase reveals and reorders inside the
@@ -662,37 +568,15 @@ solo; `.vue` is secretly the quad (SFC = template + script + style) and an
 upgrade candidate. Ship `.tsx` and `Node.js` first, pool the rest: nine configs
 for one mechanic is waste.
 
-**Moore's Law and the cap** (built 2026-08-13). Interest is the only benefit that reads
-your balance instead of the window, which gives it three properties nothing else
-on the roster has.
-
-It **ramps instead of gating**: a 32 KB common paying 2% against a 32 KB floor is
-nearly free at L1 and deliberately near-worthless (2% of 128 KB is 2 KB), because
-interest is only worth anything once the balance is large, and the balance is only
-large late. Both halves rise per level, reaching 10% against 160 KB at L5, so the
-config grows with the economy rather than waiting on it. It upgrades for **storage**
-like Unit Tests, which is its own tension: the upgrade spends the principal the
-next gate demands.
-
-The floor is read **after** the gate's storage bill, so a subscription you can
-barely cover can be the thing that drops you under it. And because the plan cap
-burns the surplus when the shop closes ([5.2](#52-the-shop)), interest at the free
-512 KB tier is *shop budget*, not principal: compounding requires buying cap room,
-which bills you every gate, which pressures the floor again.
-
-**Balance checks and failure.** A balance check is the only kind whose difficulty
-does not reset each window: every other check gets a fresh 5 polls, while this one
-carries your economic position forward, and the only way to improve it is to
-succeed. Today that is survivable, because the free tier bills 0 (a failed gate
-costs no storage and there is no shop to drain it, so a met floor stays met), a
-paid plan's bleed auto-downgrades and stops itself, and the peel is always an
-escape: shed the config and its check leaves with it. It stops being survivable
-the moment [debt cards](#debt-cards) ship, since a card disables the effect and
-keeps the check live, leaving a floor you can never earn toward. Rule to write
-before then: **a balance check is skipped on any gate you could not shop for.**
-Precedented (the draw excuses focus and lint checks) and it covers every future
-balance check, not just this one. Hotfix, if it ships, dissolves the problem
-instead.
+**Moore's Law and the cap** (built 2026-08-13; floor removed by ADR-035).
+Interest is the only benefit that reads your balance instead of the window. It
+**ramps instead of gating**: 2% of a small balance is near-worthless, because
+interest is only worth anything once the balance is large, and the balance is
+only large late. It rises per level to 10% at L5, upgrading for **storage**
+like Unit Tests — the upgrade spends the principal it then earns against.
+Because the plan cap burns the surplus when the shop closes
+([5.2](#52-the-shop)), interest at the free 512 KB tier is *shop budget*, not
+principal: compounding requires buying cap room, which bills you every gate.
 
 Known dial collisions among the 🟡 rows: Hotfix and Try/Catch share
 "next gate must clear" (Hotfix preferred — Try/Catch cancels a loss, Hotfix makes
@@ -701,11 +585,8 @@ ships as-is). Garbage Collector (+32 KB per peeled config, check: leave one poll
 unanswered) died for lack of a skip mechanic; its payout lives on inside Hotfix.
 Cold cache's check is vacuous for the same reason until a skip mechanic exists.
 
-Each Focus level raises both halves: the payout (`1 + 0.25 × level`) and the check
-(`level` correct answers owed in that category, **clamped to how many actually
-appear** in the window — an L3 with one JS poll owes that one, an L5 owes every
-appearance, never an impossible count). General Backend has no Focus config
-yet.
+Each Focus level raises the payout (`1 + 0.25 × level`) — nothing else, since
+checks are gone (ADR-035). General Backend has no Focus config yet.
 
 Coverage is still slated for a rename (collides with coverage-the-score);
 "SonarQube" is the leading candidate.
@@ -713,37 +594,19 @@ Coverage is still slated for a rename (collides with coverage-the-score);
 Diagnostic: if two configs share a check dial, one of them probably has a boring
 effect.
 
-**`.length` is the roster's one non-outcome check** (DVTD-cz6c). Every other check
-grades what happened: answers, coverage, streaks, the balance. This one grades a
-*decision* — the gate names how many correct answers its five polls hold between
-them, and you must submit exactly that many picks. It never asks whether any of
-them was right, so a 0/5 window with the exact spend passes it and a 5/5 window a
-pick short does not.
+**`.length` sells information and pays on shape** (DVTD-cz6c, exact-spend rule
+removed by ADR-035). It names how many correct answers the gate's five polls
+hold between them — the poll card carries the count — and pays 16 KB per
+correct answer the window held beyond one per poll. The payout is deliberately
+**not** a coverage multiplier (four configs already sell coverage magnitude):
+it pays most in multi-answer-heavy windows and nothing at all in a window of
+five single-answer polls, a dead spot stated on the row rather than hidden in
+the rules.
 
-The mechanic it exists to bite is hedging. A partial answer on a multi-answer poll
-pays proportional coverage, dodges the wrong-answer penalty entirely (`share > 0`
-skips it) and holds the streak, so under-picking was a free lunch with no config
-pricing it. `.length` prices it: save a pick early and you must overspend later,
-and overspending fails immediately and permanently because picks only accumulate.
-Underspending stays live until the window closes, since a later poll can always
-take more.
-
-The payout is deliberately **not** a coverage multiplier — four configs already
-sell coverage magnitude. It pays 16 KB per correct answer the window held beyond
-one per poll, so it pays most in exactly the windows whose budget was hardest to
-hit, and nothing at all in a window of five single-answer polls. That dead spot is
-the honest version of an activation threshold: it is on the row, not hidden in the
-rules. The budget line on the poll card counts the *tentative* selection, which is
-the only way the number can inform the decision being made; the pipeline row can
-only report picks already spent.
-
-A window that spans a day boundary re-reads its budget (DVTD-6nkn). Gates ignore
-day boundaries (ADR-011 §3), but the rollover drops the unplayed tail and appends
-today's segment, so the polls the window will serve change while it is open. The
-budget is therefore recomputed on every load rather than stored when the window
-opened — picks already spent still count, and the number the player sees always
-describes the polls actually in front of them. A slow player's budget can move
-overnight; a stale one would have priced deleted polls.
+A window that spans a day boundary re-reads its count (DVTD-6nkn). Gates ignore
+day boundaries (ADR-011 §3), but the rollover drops the unplayed tail and
+appends today's segment, so the number is recomputed on every load and always
+describes the polls actually in front of the player.
 
 ### 4.4 Upgrades
 
@@ -751,25 +614,31 @@ Every upgrade caps at **level 5** (`maxLevel` on the config, default 5 — the
 5-poll window is the natural demand ceiling). Telemetry is the exception at
 `maxLevel: 2`, below.
 
-**Focus configs** upgrade free of storage but are **coverage-gated**: level
-N → N+1 requires 5% × N coverage in that category. Each level raises the payout
-(`1 + 0.25 × level`: L1 = 1.25×, L2 = 1.5×…) *and* the check (you must get `level`
-polls of that category right when it shows, clamped to appearances). The shop's
-Upgrade button previews the next level's effect on hover; while gated, the tooltip
-also names the coverage requirement. Row copy (demand/payoff) derives from the
+The **stake receipt states what rides on top of the base**: a Focus config's
+multiplier when the poll matches its category, and the streak step, which every
+correct answer takes — including the first, since one correct answer is already
+a streak of one. The base on its own is a figure no answer ever pays, so quoting
+it alone made a correct answer look like a scoring bug.
+
+**Focus configs** answer to two gates (ADR-039): level N → N+1 requires 5% × N
+career coverage in that category **and** the storage every upgrade costs.
+Coverage is permission, KB is the price, and neither stands in for the other — an
+earned level can be unaffordable and a funded one unearned. Each level raises the
+payout (`1 + 0.25 × level`: L1 = 1.25×, L2 = 1.5×…) — the mastery check it used
+to raise is gone (ADR-035). The shop's Upgrade button carries the price and
+previews the next level's effect on hover; while gated, the tooltip names
+whichever requirement is in the way. Row copy (demand/payoff) derives from the
 config's current level, so an upgraded config reads its real numbers everywhere.
 
-**Moore's Law upgrades for storage** on the same curve as Unit Tests, and each level
-buys both halves: +2% interest and +32 KB of floor. Buying a level therefore
-spends the very principal the next gate's floor demands, which is the decision the
-config is built around.
+**Moore's Law upgrades for storage** on the same curve as Unit Tests: +2%
+interest per level. Buying a level spends the very principal the interest then
+earns against, which is the decision the config is built around (the 32 KB
+floor per level died with the checks, ADR-035).
 
 **Unit Tests upgrades for storage** (32 KB × the level bought: L2 costs 64,
-L5 costs 160 — no coverage gate). Each level buys both halves: +32 KB payout per
-level on clear, and +1 to the correct-answer demand. Nothing else moves it
-(ADR-033): gate depth does not raise the demand, so an un-upgraded Unit Tests
-owes 1 correct answer at every gate. The total clamps to the window, so only
-bought levels can demand a perfect 5/5.
+L5 costs 160 — no coverage gate). Each level buys +32 KB payout per level on
+clear; the correct-answer demand it used to raise is gone (ADR-035 retired
+ADR-033 with it).
 
 **Telemetry upgrades once, and buys honesty rather than power** (64 KB, storage,
 `maxLevel: 2`). L1 hands over the percentages with no denominator attached, so
@@ -794,39 +663,22 @@ config's own pipeline row, so a build's powers are all read in one place.
 appears: pay to gray out one wrong option. Linted polls never reveal their correct
 answer in community views; they may reappear in a later seed. The cost doubles with
 each use within a poll (8 → 16 → 32 → 64 → 128 → 256 KB, capped) and resets each
-poll, to stop lint-spam. The linter's check asks for competence in its categories,
-never proof that the fee was paid — forcing an action makes an unaffordable window
-fatal (ADR-031).
+poll, to stop lint-spam. Using it is always a choice — the fee is the whole price
+(ADR-035).
 
 **Peek** (Telemetry, DVTD-fpf9). Pay to see how the community voted on the poll in
 front of you, drawn as a gray bar per option. The pool is every answer that poll
 has ever taken, both loops — not today's climbers, who on a quiet morning are
-nobody. The fee doubles per use and resets **each gate** rather than each poll
+nobody — **minus anyone who answered it at a Mirror gate**, since they were asked
+for the incorrect options and their picks would invert the very signal you are
+buying (ADR-038). The fee doubles per use and resets **each gate** rather than each poll
 (32 → 64 → 128 → 256 → 512 KB, capped): a peek buys the whole poll where a lint
 buys one option, so the second peek of a window has to hurt. One peek per poll —
 the split arrives complete.
 
-Unlike the lint, the peek's check *is* the action: **you must peek at least once
-each gate** (`checkAmount`, so the count is a dial). Carrying Telemetry therefore
-owes the gate the ladder's first rung, **32 KB a window, every window**, and an
-unpeeked window fails. It is the only check on the roster priced in KB rather than
-in play, and the only one that cannot be dodged by declining to use the config.
-
-**This deliberately breaks the lint rule directly above it** (Marciano's call,
-2026-08-14). The linter refuses to demand proof of purchase because an
-unaffordable window then becomes a death the player never chose — ADR-031's trap
-rule. Telemetry accepts a narrow version of that trap: enter a window under 32 KB
-and the gate is lost before the first poll. Four things make it survivable rather
-than punishing: one rung is the cheapest the ladder gets and a cleared gate pays it
-straight back (32 KB × gate number), it is never handed at run start (so gate 0 can
-never be lost to it), the loss is one gate rather than a spiral, and the peel is
-the escape — shedding it takes the demand with it. What it buys in exchange is a
-config that forces you to *hear the room* once a window whether you want to or not,
-which at L1 is an opinion you cannot calibrate.
-
-The count was two peeks (96 KB a window) for a day, and was cut to one on
-2026-08-14: two rungs outran the gate payout until gate 2, which made an early
-draft a bill the run could not pay rather than a tension.
+The peek demand ("you must peek at least once each gate") shipped 2026-08-14 and
+died with every other check three days later (ADR-035): peeking is now as
+optional as linting, and the fee ladder is the whole price.
 
 Correctness never travels with a peek. The server hands over option ids and
 percentages for polls the run has already paid on, and nothing else — a peek is a
@@ -834,10 +686,12 @@ hint, not an answer.
 
 ### 4.6 Parked & Planned Configs
 
-Spec'd and shelved (post-2.0 backlog): **Speed Check** (gate needs N answers under
-4 s, pays 2×), **Mirrored Check** (gate needs N *wrong* answers, an inverted
-brain-bender, pays 2×), **yarn.lock** (immunity to requirement raises), **rm -rf**
-(strip-all with 2× refund), **localStorage** (storage burst).
+Spec'd and shelved (post-2.0 backlog): **yarn.lock** (immunity to requirement
+raises), **rm -rf** (strip-all with 2× refund), **localStorage** (storage burst).
+Two left this list by becoming gate audits instead of configs: **Mirrored Check**
+is the Marsh gate's mirror (ADR-035, was DVTD-5o4d), and **Speed Check** is the
+Timeout audit (ADR-038) — a clock is something a gate does to you, not something
+you buy.
 
 **Cap extension** — raising the 512 KB storage cap — was parked here too, but it
 isn't a config: see [5.2 The Shop](#52-the-shop) for its resolved shape as a
@@ -898,9 +752,9 @@ a rung the run has not reached, because the wire only carries a tier number. Not
 cliff scales with the rung: an unpayable bill at 3MB drops you to the free tier, and
 everything above 512KB burns at *Climb on*.
 
-The split behind it: anything that *earns* storage is a pipeline config under
-the Config Rule (IndexedDB); a slot-free purchase may only change the
-container's rules — cap size today — never multiply power. Numbers live in
+The split behind it: anything that *earns* storage is a pipeline config
+(IndexedDB); a slot-free purchase may only change the container's rules — cap
+size today — never multiply power. Numbers live in
 `rules.model.ts` (`STORAGE_PLANS`).
 
 **Overflow is spend-it-or-lose-it, not discarded on arrival** 🟢. A gate reward can
@@ -914,13 +768,13 @@ instead of a silent tax on the reward you just earned.
 ### 5.2 The Shop
 
 Clearing a non-final gate opens a Balatro-style **multi-buy shop** bounded only by
-storage. Take as many actions as you can afford, in any order. The exit leads to
+storage — and so does missing one, once its peel is paid (ADR-037): the retry
+shops with what it has, which is the only thing that makes the second attempt
+different from the first. Take as many actions as you can afford, in any order. The exit leads to
 the **prep page** (ADR-032), and the shop stays open behind it until the next
 gate actually starts — so shop → prep → community → back to the shop is a legal
-loop while waiting on tomorrow's polls. The exit is graded against the coming
-gate's width demand (ADR-031): blocked, with the shortfall named, while the
-build is under it and repairable; an explicit cinnabar **End run** click once
-no repair exists.
+loop while waiting on tomorrow's polls. The exit is always open (ADR-035):
+nothing grades it, and the End-run click is gone.
 
 - **Draft** one of 5 offered configs (new configs only; owned ones upgrade instead).
   Buying is two taps 🟢 (ADR-029), and the offer's corner badge is the second one:
@@ -937,10 +791,18 @@ no repair exists.
 - **Extend** the offer 🟢 (ADR-029): one more config on the table, in this shop and
   every shop after it. A small fixed supply per run, escalating price. Staged in
   from gate 3.
+- **git tag** 🟢 (ADR-036): plant a cross-run checkpoint at the current gate —
+  after a death, your next run checks out there instead of gate 1. The price is
+  the gate it marks: 128 KB at gate 4, +64 KB per gate, 512 KB at gate 10, which
+  is the last gate that sells one (deeper, a rescue resumes a starter build into
+  stacked audits and a 4-config peel). One per run, and the rescued run consumes
+  it (burn on use) — after that you buy another.
+  A rescued run starts at the pinned gate with the width its clears would have
+  granted, a 32 KB-per-gate stipend, and everything else fresh; its death
+  credit counts only the gates it actually climbed.
 - **Sell** a config for half its draft cost.
-- **Upgrade** a Focus config (free, coverage-gated) or Unit Tests (32 KB × the
-  level bought).
-- **Add a slot**: free, coverage-gated (see [3.1 Slots & Expansion](#31-slots--expansion)).
+- **Upgrade** any upgradable config for 32 KB × the level bought; a Focus config
+  also has to have earned it on coverage (ADR-039).
 - **Change storage plan** 🟢: switch tiers on the plan ladder
   ([5.1](#51-storage-kb)), both directions, switching itself free. The paid
   rungs price their recurring bill on the button ("8 KB / gate"); a downgrade
@@ -1033,8 +895,8 @@ earned through mastery. That is a separate collection from the gate swatches abo
 and reuses the name deliberately.
 
 Resolved: the old third meaning of "Swatch" (DVTD-1sb7, a config installing an
-extra core check alongside Unit Tests) is retired. Under the Config Rule every
-config already adds a check, so the concept was redundant.
+extra core check alongside Unit Tests) is retired — twice over, now that checks
+themselves are gone (ADR-035).
 
 ### 6.5 Borders
 
@@ -1060,9 +922,8 @@ ritual DevVoted grew from.
 
 ### 7.2 The Community Board
 
-After every shop visit *and* every failed-gate strip (whose "Community →" sits on
-the answer review that follows it, `/run/strip` → `/run/review`), the climb detours
-through `/run/community`; a run locked for the day also lands here (the
+After every shop visit the climb detours through `/run/community`; a run locked
+for the day also lands here (the
 lock stops progression, and the board is its waiting room — "Back to your run →"
 is disabled until local midnight, with the countdown standing beside it in the
 footer as a permanent `Screen` note, since "when do new polls land" is worth
@@ -1101,7 +962,12 @@ the whole card. Geometry lives in
 unit: polls, counted `gate * 5 + pollsIntoGate`. Builds, configs and storage are
 still not shown (the rest of DVTD-6l80).
 
-Below it, **today's polls**. Each row is a native `<details>` whose summary is the
+Below it, **today's polls**. A mirrored answer counts as right here when it named
+every wrong option: it proves the same knowledge, so the board mixes it freely
+with plain answers (ADR-038) — the board counts knowledge, where the paid split
+reports opinion and cannot mix the two. The option rows still mark the poll's own
+truth, since the mirror changes what was asked of one player, never what is true.
+Each row is a native `<details>` whose summary is the
 question, a faint "multi" sub-line on multiple-answer polls, and the share of
 players who got it right — always in view, open or shut, and coloured in the same
 three tones as the test-runner badge (celadon ≥60%, saffron ≥40%, vermillion
@@ -1239,28 +1105,27 @@ The game leans hard into its CI metaphor:
 | Term | Meaning |
 | --- | --- |
 | **Run / Climb** | One playthrough, spanning multiple real days. |
-| **Gate** | A checkpoint judging a 5-poll window as a composed checklist. |
+| **Gate** | A checkpoint auditing a 5-poll window: its coverage demand plus its audits (ADR-035). |
+| **Audit** | A gate's fixed rule (the mirror, a leak, a clock, a shut shop, a config knocked offline). Stated on the stake receipt beside the peel it costs; the count grows with depth. |
+| **Gate meter** | The window's net coverage — the only score a gate judges. Resets every attempt. |
 | **Pipeline** | Your build: the stack of config slots. |
-| **Slot** | One pipeline position (3 → 14, coverage-gated). Buys room for a config; opens no gates. |
+| **Slot** | One pipeline position (3 → 14, granted by gate clears). Buys room for a config; opens no gates. |
 | **Gate number** | Counts from 0: a run opens on gate 0 and summits on gate 12. |
-| **Config** | An installable dev-tool item. Every config has an **Effect** and a **Check**. |
+| **Config** | An installable dev-tool item: an effect with a price, demanding nothing (ADR-035). |
 | **Effect** | The benefit a config provides. |
-| **Check** | The requirement a config adds to the gate window. The gate fails if any active check fails. |
-| **Check dial** | What a check keys off: correctness, storage, speed, build composition, duration, streaks, breadth, or other players. |
-| **Demand** | What a check requires ("Requires 3 correct answers"). Set by the build, not by gate depth. |
-| **Coverage** | The score: a percentage per category plus a run total. Full in-fiction name: **knowledge coverage**. |
+| **Demand** | What a gate requires: its coverage row in [2.10](#210-what-unlocks-when). |
+| **Coverage** | The score: a percentage per category plus a run total (career), and the gate meter (per attempt). Full in-fiction name: **knowledge coverage**. |
 | **Storage** | The in-run currency, in KB, capped by the storage plan (512 free / 640 / 768). Overflow above the cap forfeits only at *Climb on*, not when it's earned 🟡 (DVTD-0h4n). |
 | **Storage plan** | The subscription setting the storage cap (ADR-023): free 512 KB, or a bigger cap for a per-gate bill collected pass or fail. Unpaid bills auto-downgrade to free. |
 | **Archived storage** | Persistent cross-run storage (bytes): the meta-progression currency, spendable on cosmetics, run injections, and more. |
 | **Faucet** | Any per-correct-answer storage income (e.g. IndexedDB). |
 | **Draft / Rebuild** | Buying a shop config / re-rolling the offer (doubling cost). |
-| **Technical debt** | A card planted on a failed config: effect disabled, check still live, until its resolve condition is met. |
-| **Resolve condition** | The multi-poll or multi-gate objective that clears a debt card. |
-| **Fully debted** | A pipeline where every slot holds debt; the only state that ends a run. |
+| **Peel** | What a missed gate takes: a config of your choosing, before the loop runs again at the same gate (ADR-037). |
+| **git tag** | A shop-bought cross-run checkpoint (ADR-036): priced by the gate it marks (128 KB at gate 4 → 512 KB at gate 10, the last one sold), one per run, burnt by the run it rescues. |
+| **Strip audit** | An audit that deepens the peel: Elite takes 5 configs on a miss, Champion 6. |
 | **Seed** | The shared per-day poll sequence every player climbs. |
 | **Segment** | One day's 5-poll chunk appended to a persistent run. |
 | **Lint** | Paying an escalating fee (from 8 KB) to disable one wrong option (needs a linter config). |
-| **Escalation** | Unit Tests' rising demand: +1 correct answer per 2 gates cleared, capped at +3. |
 | **The Dex** | The collection screen (Polls + Configs + Swatches tabs). |
 | **Kanto colors** | The game's palette (saffron, cerulean, viridian, …), keyed to gates via their swatches — not to categories (ADR-020). |
 | **Swatch** | A gate's collectible badge (Pallet … Champion), earned by clearing it and kept across runs. Its color also themes the whole app while that gate is played. |
@@ -1279,13 +1144,14 @@ code, and this table follows it.
 | `VICTORY_GATE` | 12 | The summit's gate *number* — gates count from 0. A content decision, one gate per badge; no longer derived from the slot ladder (ADR-019). |
 | `GATE_COUNT` | 13 | How many gates a run holds (gates 0…12). The divisor for archived-storage credit and the reward multiplier cap. |
 | Max config level | 5 | `maxLevel`, default for every upgradable config (window ceiling). |
-| Unit Tests upgrade cost | 32 KB × level bought | Storage-priced, no coverage gate (focus upgrades stay free + coverage-gated). |
-| Debt cards per failed gate | 1 per failed check | Planted on the failing config; does not stack. |
-| Debt pay-off cost | Doubles per debt paid off | Per run. Base cost undefined. |
-| Gate multiplier | `gatesCleared + 1` | Scales coverage **gains** and the gate reward base (×1 … ×12). Frozen while a gate is replayed at the width wall. |
-| `WRONG_COVERAGE_LOSS` | 0.25 | Coverage bleed per miss (× reward and gate multipliers), floored at 0. A quarter of the base gain: break-even base accuracy 20% at every depth (ADR-034). |
-| Coverage demand | 3 / 12 / 24 / 40 / 60 / 85 / 110 / 145 / 180 / 220 / 265 / 310 / 365 | Run-total % a gate demands to pass (ADR-034): 80% of a perfect base pace. Live-tuned in `rules.model.ts` (`coverageDemandFor`). |
-| Coverage laps | Line / Branch / Mutation / Fuzz | The HUD reads coverage in laps of 100%: "Branch 70%" is 170% total (`coverageLapFor`). |
+| Upgrade cost | 32 KB × (level + 1) | Every upgrade, Focus included (ADR-039). A Focus config also needs 5% × level career coverage in its category. |
+| Gate multiplier | `gatesCleared + 1` | Scales coverage **gains** and the gate reward base (×1 … ×12). Frozen while a gate is redone. |
+| `WRONG_COVERAGE_LOSS` | 0.25 | Coverage bleed per miss (× reward and gate multipliers), hits the gate meter and the career totals alike, each floored at 0. |
+| Coverage demand | 3 / 10 / 25 / 40 / 60 / 85 / 110 / 140 / 175 / 210 / 250 / 290 / 340 | Per-gate % the window meter must reach (ADR-035) — fresh every attempt, never cumulative. Live-tuned in `rules.model.ts` (`coverageDemandFor`). |
+| Gate audits | 1 from gate 3 · 2 from gate 8 · 3 from gate 11 | Nine rules, fixed per gate, gates 0–2 clean; full schedule in [2.10](#210-what-unlocks-when) (ADR-035/038; `audit.model.ts`). |
+| Audit numbers | Cost Overrun ×2 · Memory Leak 16/32KB · Timeout 30s/25s/20s | The live-tuned half of the roster (`audit.model.ts`). |
+| Peel on a miss | 1 / 1 / 1 / 2 / 2 / 2 / 2 / 3 / 3 / 3 / 3 / 4 / 4 | Configs a missed gate takes, per gate; strip audits add to the row (ADR-037; `failStripsFor` in `rules.model.ts`). |
+| git tag | 128 KB at gate 4, +64 KB per gate, 512 KB at gate 10 (last sold) · stipend 32 KB × gate | Cross-run checkpoint, burn on use (ADR-036; `pinCostFor`/`PIN_*` in `rules.model.ts`). |
 | `STREAK_COVERAGE_BONUS` | 0.1 | Streak multiplier step (`1 + 0.1 × streak`). |
 | Difficulty bonus | +0.1 / option > 3, +0.5 multi | Gains-only multiplier, never below ×1. |
 | `GATE_REWARD_KB` | 32 | Gate-1 base storage per clear (× gate multiplier × reward multipliers × correct ÷ 5). |
@@ -1311,5 +1177,5 @@ code, and this table follows it.
 
 ---
 
-*Sources: the `.beans/` story corpus, ADR-005…017, `docs/brainstorm/`, the Notion
+*Sources: the `.beans/` story corpus, ADR-005…035, `docs/brainstorm/`, the Notion
 Concept doc, and the `src/modules/run/` model files (canonical for all numbers).*

@@ -14,7 +14,6 @@ type Story = StoryObj<typeof PrepScreen>;
 
 const stake = createMockGateStake({
 	gateNumber: 1,
-	minConfigs: 1,
 	modifiers: {
 		gateReward: 32,
 		rewardMultiplier: 1,
@@ -46,13 +45,6 @@ export const ShopClosed: Story = {
 	},
 };
 
-export const Fatal: Story = {
-	args: {
-		...Default.args,
-		stake: { ...stake, stripsOnFailure: 3 },
-	},
-};
-
 export const PaidStoragePlan: Story = {
 	args: {
 		...Default.args,
@@ -60,17 +52,74 @@ export const PaidStoragePlan: Story = {
 	},
 };
 
-export const UnderWidthDemand: Story = {
-	args: {
-		...Default.args,
-		stake: { ...stake, gateNumber: 4, stripsOnFailure: 3, minConfigs: 4 },
-		configs: [CONFIGS.js, CONFIGS.eslint],
-	},
-};
-
 export const AwaitingTomorrowsPolls: Story = {
 	args: {
 		...Default.args,
 		startLock: "New polls in 7h 23m",
+	},
+};
+
+/** The audit reveal — the moment gate personality lands on the receipt. */
+export const MarshAudit: Story = {
+	args: {
+		...Default.args,
+		stake: createMockGateStake({
+			gateNumber: 7,
+			coverageDemand: 140,
+			coverageHeld: 0,
+			audits: [
+				{
+					id: "mirrored",
+					name: "Mirror",
+					description:
+						"Every poll asks for the INCORRECT options instead — pick all of them.",
+					suppressed: false,
+				},
+			],
+			modifiers: stake.modifiers,
+			perAnswer: stake.perAnswer,
+		}),
+	},
+};
+
+/** Stacked audits, one reported passing by Volkswagen CI — visible fraud. */
+export const ChampionSuppressed: Story = {
+	args: {
+		...Default.args,
+		stake: createMockGateStake({
+			gateNumber: 12,
+			coverageDemand: 340,
+			coverageHeld: 12,
+			audits: [
+				{
+					id: "burn",
+					name: "The Burn",
+					description: "Storage burns on every poll: −16KB, −48KB on a miss.",
+					suppressed: true,
+				},
+				{
+					id: "strip-2",
+					name: "Strip",
+					description:
+						"Failing this gate peels 3 configs instead of 1 — a build it can empty ends the run here.",
+					suppressed: false,
+				},
+			],
+			stripsOnFailure: 3,
+			modifiers: stake.modifiers,
+			perAnswer: stake.perAnswer,
+		}),
+	},
+};
+
+/**
+ * The one warning a player gets that this gate can end the run: the peel has
+ * nothing left to take after their last config (ADR-037).
+ */
+export const LastConfigStanding: Story = {
+	args: {
+		...Default.args,
+		configs: [CONFIGS.js],
+		stake: { ...stake, missIsFatal: true },
 	},
 };

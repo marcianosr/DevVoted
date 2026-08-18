@@ -6,7 +6,7 @@ import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
-/** Tier 2: the gate-failed repair step — remove pipelines to climb on. */
+/** Tier 2: the missed gate's peel — drop the quota, then run the loop again. */
 export const RunStrip = () => {
 	const { view } = useTodaysRun();
 	const { send } = useRunActions();
@@ -28,14 +28,13 @@ export const RunStrip = () => {
 				disabled: !quotaMet,
 				hint: quotaMet
 					? undefined
-					: `Remove ${view.stripsRemaining} pipeline(s) to continue`,
+					: `Peel ${view.stripsRemaining} more config${view.stripsRemaining === 1 ? "" : "s"} to continue`,
 			}}
 		>
 			<StripScreen
 				stripsRemaining={view.stripsRemaining}
 				gateNumber={view.gatesCleared}
 				configs={view.configs}
-				checks={view.checks}
 				answered={view.answeredThisGate}
 				billKb={view.gateBillPaidKb}
 				planDowngraded={view.planDowngraded}

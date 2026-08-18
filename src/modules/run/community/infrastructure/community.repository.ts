@@ -110,6 +110,9 @@ export type SessionAnswerRow = {
 	categoryCode: string | null;
 	answeredAt: Date | null;
 	answerTimeMs: number | null;
+	/** Answered at a Mirror gate, so the picks are the poll's WRONG options on
+	 * purpose (ADR-038) — the board grades them against that expectation. */
+	mirrored: boolean;
 };
 
 /**
@@ -132,6 +135,7 @@ export const fetchSessionAnswersForDay = async (
 			categoryCode: pollsTable.category_code,
 			answeredAt: pollResponsesTable.created_at,
 			answerTimeMs: pollResponsesTable.answer_time_ms,
+			mirrored: pollResponsesTable.mirrored,
 		})
 		.from(pollResponsesTable)
 		.leftJoin(usersTable, eq(pollResponsesTable.user_id, usersTable.id))
@@ -162,14 +166,25 @@ export type PollSplitRecord = {
  *
  * Returns pick counts only. Correctness never joins this query: the caller hands
  * the numbers to a player who has not answered yet.
+ *
+ * Mirrored answers are excluded (ADR-038). The split reports what the room thinks
+ * the answer is, and a player at a Mirror gate was asked for the incorrect
+ * options — their picks would invert the very signal being sold. A smaller honest
+ * sample beats a larger misleading one, and Telemetry's L2 upgrade shows that
+ * sample size for exactly this reason.
  */
 export const fetchPollSplit = async (
 	pollId: number
 ): Promise<PollSplitRecord> => {
+	const honest = and(
+		eq(pollResponsesTable.poll_id, pollId),
+		eq(pollResponsesTable.mirrored, false)
+	);
+
 	const [totals] = await db
 		.select({ answeredCount: sql<number>`count(*)::int` })
 		.from(pollResponsesTable)
-		.where(eq(pollResponsesTable.poll_id, pollId));
+		.where(honest);
 
 	const picks = await db
 		.select({
@@ -181,7 +196,7 @@ export const fetchPollSplit = async (
 			pollResponsesTable,
 			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
 		)
-		.where(eq(pollResponsesTable.poll_id, pollId))
+		.where(honest)
 		.groupBy(pollResponseOptionsTable.option_id);
 
 	return {

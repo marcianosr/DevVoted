@@ -4,18 +4,13 @@ import {
 	describeConfig,
 	draftCost,
 	focusCoverageMultiplier,
-	focusDemand,
 	givesOf,
 	isUpgradable,
-	needsOf,
 	rarityOf,
 	sellRefund,
 	showsSampleSize,
 } from "~/modules/run/config/domain/config.model";
-import {
-	CONFIG_LIST,
-	CONFIGS,
-} from "~/modules/run/config/domain/configRoster.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
 describe("draftCost", () => {
 	it("prices a config from its rarity", () => {
@@ -23,12 +18,8 @@ describe("draftCost", () => {
 		expect(draftCost(CONFIGS.agentsMd)).toBe(256);
 	});
 
-	it("prefers an authored price over the rarity's", () => {
-		expect(draftCost(CONFIGS.volkswagenCi)).toBe(384);
-	});
-
-	it("refunds half the authored price on a sell", () => {
-		expect(sellRefund(CONFIGS.volkswagenCi)).toBe(192);
+	it("refunds half the price on a sell", () => {
+		expect(sellRefund(CONFIGS.agentsMd)).toBe(128);
 	});
 });
 
@@ -51,20 +42,13 @@ describe("focusCoverageMultiplier", () => {
 	});
 });
 
-describe("focusDemand", () => {
-	it("demands `level` correct answers (default 1)", () => {
-		expect(focusDemand(CONFIGS.js)).toBe(1);
-		expect(focusDemand({ ...CONFIGS.js, level: 3 })).toBe(3);
-	});
-});
-
 describe("isUpgradable", () => {
 	it("allows focus configs", () => {
 		expect(isUpgradable(CONFIGS.js)).toBe(true);
 		expect(isUpgradable(CONFIGS.css)).toBe(true);
 	});
 
-	it("allows Unit Tests until its level cap", () => {
+	it("allows Unit Tests until its level cap — its clear payout scales", () => {
 		expect(isUpgradable(CONFIGS.unitTests)).toBe(true);
 		expect(isUpgradable({ ...CONFIGS.unitTests, level: 5 })).toBe(false);
 	});
@@ -73,7 +57,7 @@ describe("isUpgradable", () => {
 		expect(isUpgradable({ ...CONFIGS.js, level: 5 })).toBe(false);
 	});
 
-	it("refuses non-focus configs without a correct check", () => {
+	it("refuses configs with nothing that scales per level", () => {
 		expect(isUpgradable(CONFIGS.agentsMd)).toBe(false);
 		expect(isUpgradable(CONFIGS.coverageGain)).toBe(false);
 		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
@@ -93,42 +77,47 @@ describe("showsSampleSize", () => {
 });
 
 describe("describeConfig", () => {
-	it("derives Unit Tests' copy from its level — payout and demand together", () => {
+	it("derives Unit Tests' copy from its level — pure payout, no demand (ADR-035)", () => {
 		expect(describeConfig(CONFIGS.unitTests)).toBe(
-			"+32KB storage on gate clear — demands 1 correct answer, rising as you climb."
+			"+32KB storage on gate clear."
 		);
 		expect(describeConfig({ ...CONFIGS.unitTests, level: 2 })).toBe(
-			"+64KB storage on gate clear — demands 2 correct answers, rising as you climb."
+			"+64KB storage on gate clear."
 		);
 	});
 
-	it("describes a focus config with its level-scaled payout and demand", () => {
+	it("describes a focus config with its level-scaled payout alone", () => {
 		expect(describeConfig({ ...CONFIGS.js, level: 2 })).toBe(
-			"JavaScript polls earn 1.5× coverage — but if JavaScript shows, you must get 2 right."
+			"JavaScript polls earn 1.5× coverage."
+		);
+	});
+
+	it("describes Moore's Law without a balance floor", () => {
+		expect(describeConfig(CONFIGS.mooresLaw)).toBe(
+			"+2% of held storage on gate clear."
+		);
+	});
+
+	it("describes Telemetry without a peek demand", () => {
+		expect(describeConfig(CONFIGS.telemetry)).toBe(
+			"Pay a doubling fee to see how the community answered this poll."
 		);
 	});
 });
 
-describe("givesOf / needsOf", () => {
+describe("givesOf", () => {
 	it("derives a focus config's L1 copy — base multiplier", () => {
 		expect(givesOf(CONFIGS.js)).toBe("JavaScript polls reward ×1.25 coverage");
-		expect(needsOf(CONFIGS.js)).toBe(
-			"Answer JavaScript polls correct when they show"
-		);
 	});
 
 	it("scales the reward with the config's level after an upgrade", () => {
 		expect(givesOf({ ...CONFIGS.js, level: 2 })).toBe(
 			"JavaScript polls reward ×1.5 coverage"
 		);
-		expect(needsOf({ ...CONFIGS.js, level: 2 })).toBe(
-			"Answer JavaScript polls correct when they show"
-		);
 	});
 
 	it("passes a non-focus config's authored copy through untouched", () => {
 		expect(givesOf(CONFIGS.eslint)).toBe(CONFIGS.eslint.gives);
-		expect(needsOf(CONFIGS.eslint)).toBe(CONFIGS.eslint.needs);
 	});
 
 	it("derives Unit Tests' gives from its level", () => {
@@ -143,36 +132,5 @@ describe("givesOf / needsOf", () => {
 		expect(givesOf({ ...CONFIGS.telemetry, level: 2 })).toBe(
 			"See how the community answered, and how many answered"
 		);
-	});
-
-	it("keeps Telemetry's demand level-independent — the upgrade buys the reading, not the price", () => {
-		expect(needsOf(CONFIGS.telemetry)).toBe("Peek at least once each gate");
-		expect(needsOf({ ...CONFIGS.telemetry, level: 2 })).toBe(
-			"Peek at least once each gate"
-		);
-	});
-
-	it("reads Telemetry's demand off checkAmount rather than hardcoding one", () => {
-		expect(needsOf({ ...CONFIGS.telemetry, checkAmount: 3 })).toBe(
-			"Peek at least 3× each gate"
-		);
-	});
-});
-
-describe("roster copy", () => {
-	// The pipeline detail prints "No condition" when `needs` is missing — a
-	// false claim for any config that actually backs a check. Every check
-	// authors its demand on the roster, except the escalating "correct" check,
-	// which reads its live text from the gate (DVTD-7wy6), and focus configs,
-	// whose demand derives from their level (needsOf, DVTD-a6yf).
-	it("authors a needs sentence on every config whose check demands one", () => {
-		for (const config of CONFIG_LIST) {
-			if (!config.check && !config.focusCategory) continue;
-			if (config.check === "correct") continue;
-			expect(
-				needsOf(config),
-				`${config.id} backs a check but has no needs copy`
-			).toBeDefined();
-		}
 	});
 });

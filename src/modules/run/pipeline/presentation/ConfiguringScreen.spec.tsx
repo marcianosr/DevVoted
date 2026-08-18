@@ -14,7 +14,6 @@ const base = {
 	// This screen only renders on a fresh run (`configuring` is set in createRun
 	// alone), so the gate is always 0 — which demands no width.
 	stake: createMockGateStake({
-		minConfigs: 0,
 		modifiers: {
 			gateReward: 80,
 			rewardMultiplier: 1,
@@ -24,22 +23,12 @@ const base = {
 		perAnswer: {
 			coveragePerCorrect: 1,
 			storageKbPerCorrect: 0,
+			streakStepMultiplier: 1.1,
 		},
 	}),
 	configs: [CONFIGS.unitTests, CONFIGS.js],
 	slots: 3,
 	bench: [CONFIGS.eslint, CONFIGS.agentsMd],
-	checks: [
-		{
-			label: "Correct",
-			progress: { kind: "answers" as const, current: 0, target: 1 },
-			current: 0,
-			target: 1,
-			state: "running" as const,
-			sourceConfigId: "unit-tests",
-			description: "1 correct answer",
-		},
-	],
 	onSlot: vi.fn(),
 	onUnslot: vi.fn(),
 	startAction: { label: "Start run →", onClick: vi.fn() },
@@ -58,30 +47,8 @@ describe(ConfiguringScreen, () => {
 		expect(screen.getByText("+80KB")).toHaveClass("text-gradient-green");
 		expect(screen.queryByText("×1")).not.toBeInTheDocument();
 		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.textContent ===
-					"Miss the target: remove 1 config, then retry this gate"
-			)
+			screen.getByText(/Miss the target: the gate peels/)
 		).toBeInTheDocument();
-	});
-
-	it("captions the gate with its coverage multiplier", () => {
-		render(
-			<ConfiguringScreen
-				{...base}
-				stake={createMockGateStake({
-					modifiers: {
-						...base.stake.modifiers,
-						coverageMultiplier: 2,
-						coverageAdd: 5,
-					},
-				})}
-			/>
-		);
-		expect(screen.getByText("×2 +5% coverage this gate")).toHaveClass(
-			"text-gradient-green"
-		);
 	});
 
 	it("keeps the stake in plain language, no pipeline jargon", () => {
@@ -92,19 +59,12 @@ describe(ConfiguringScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("names the stake fatal once a fail would take the whole build", () => {
-		render(
-			<ConfiguringScreen
-				{...base}
-				stake={createMockGateStake({ stripsOnFailure: 2 })}
-				configs={base.configs}
-			/>
-		);
+	it("states the peel as the miss cost, with no game over behind it (ADR-037)", () => {
+		render(<ConfiguringScreen {...base} configs={base.configs} />);
 		expect(
-			screen.getByText(
-				"Your pipeline holds 2 configs — missing this gate removes 2 and ends the run."
-			)
-		).toBeInTheDocument();
+			screen.getByText(/Miss the target: the gate peels/)
+		).toHaveTextContent("peels 1 config, then you shop and run it again");
+		expect(screen.queryByText(/ends the run/)).not.toBeInTheDocument();
 	});
 
 	it("previews the clear reward a hovered bench config would add, old to new", () => {
@@ -157,7 +117,7 @@ describe(ConfiguringScreen, () => {
 	it("promises more slots instead of showing an unclaimable unlock rung", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByText("More slots will unlock when you gain coverage!")
+			screen.getByText("More slots will unlock as you clear gates!")
 		).toBeInTheDocument();
 		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
 		// The one rail on screen is the gate's coverage demand, not a slot rung.
@@ -195,35 +155,42 @@ describe(ConfiguringScreen, () => {
 	const foldedDetailFor = (text: string) =>
 		screen.getByText(text).parentElement?.parentElement?.parentElement;
 
-	it("opens each row's demand and effect by default, above the fold breakpoint", () => {
-		render(<ConfiguringScreen {...base} />);
-		expect(foldedDetailFor("1 correct answer")).toHaveClass(
-			"hidden",
-			"sm:flex"
-		);
-		expect(screen.getByText("+32KB")).toBeInTheDocument();
+	// ESLint's gives line has no number token, so it survives emphasizeNumbers
+	// as one text node — the fold tests read their target off it.
+	const foldable = {
+		...base,
+		configs: [CONFIGS.eslint, CONFIGS.js],
+		bench: [CONFIGS.agentsMd],
+	};
+	const ESLINT_GIVES = "Cross out a wrong answer on JS/TS polls";
+
+	it("opens each row's effect by default, above the fold breakpoint", () => {
+		render(<ConfiguringScreen {...foldable} />);
+		expect(foldedDetailFor(ESLINT_GIVES)).toHaveClass("hidden", "sm:flex");
 	});
 
 	it("folds a row to one line when its name is tapped", () => {
-		render(<ConfiguringScreen {...base} />);
-		fireEvent.click(screen.getByRole("button", { name: "Unit Tests" }));
-		const detail = foldedDetailFor("1 correct answer");
+		render(<ConfiguringScreen {...foldable} />);
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		const detail = foldedDetailFor(ESLINT_GIVES);
 		expect(detail).toHaveClass("hidden");
 		expect(detail).not.toHaveClass("sm:flex");
 	});
 
 	it("folds a tapped-shut row back open on the next tap", () => {
-		render(<ConfiguringScreen {...base} />);
-		const name = screen.getByRole("button", { name: "Unit Tests" });
+		render(<ConfiguringScreen {...foldable} />);
+		const name = screen.getByRole("button", { name: "ESLint" });
 		fireEvent.click(name);
 		fireEvent.click(name);
-		expect(foldedDetailFor("1 correct answer")).toHaveClass("flex");
-		expect(foldedDetailFor("1 correct answer")).not.toHaveClass("hidden");
+		expect(foldedDetailFor(ESLINT_GIVES)).toHaveClass("flex");
+		expect(foldedDetailFor(ESLINT_GIVES)).not.toHaveClass("hidden");
 	});
 
-	it("marks pipeline rows with a state dot instead of a status badge", () => {
+	it("marks pipeline rows with a neutral dot instead of a status badge", () => {
 		render(<ConfiguringScreen {...base} />);
-		expect(screen.getByRole("img", { name: "running" })).toBeInTheDocument();
+		expect(
+			screen.getAllByRole("img", { name: "skipped" }).length
+		).toBeGreaterThan(0);
 		expect(screen.queryByText("RUN")).not.toBeInTheDocument();
 	});
 
@@ -237,12 +204,9 @@ describe(ConfiguringScreen, () => {
 		expect(screen.queryByText("Gate modifiers")).not.toBeInTheDocument();
 	});
 
-	it("labels a pipeline row's check and reward, red and green", () => {
+	it("labels a pipeline row's reward in green, with no demand mark left (ADR-035)", () => {
 		render(<ConfiguringScreen {...base} />);
-		// The fact rows mark a demand with "!" and a payoff with "v" — both
-		// installed configs carry a demand, so the mark itself is not unique.
-		expect(screen.getAllByText("!").length).toBeGreaterThan(0);
-		expect(screen.getByText("1 correct answer")).toHaveClass("text-cinnabar");
+		expect(screen.queryByText("!")).not.toBeInTheDocument();
 		expect(screen.getAllByText("v").length).toBeGreaterThan(0);
 		// "+32KB" is itself wrapped in a bold highlight span (emphasizeNumbers) —
 		// the tone class lives on its enclosing paragraph.
@@ -377,11 +341,7 @@ describe("stack mode (ADR-026)", () => {
 		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
 		expect(screen.getByText("Gate cleared")).toBeInTheDocument();
 		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.textContent ===
-					"Miss the target: remove 1 config, then retry this gate"
-			)
+			screen.getByText(/Miss the target: the gate peels/)
 		).toBeInTheDocument();
 	});
 
@@ -398,16 +358,10 @@ describe("stack mode (ADR-026)", () => {
 		expect(onClick).toHaveBeenCalledTimes(1);
 	});
 
-	it("reads the stake against the build the stack will become, not an empty one", () => {
-		// An unpicked screen holds zero configs — the stake must not open on the
-		// fatal wording before the player has done anything.
+	it("carries no fatal wording — the opening build cannot be emptied by one peel", () => {
 		render(<ConfiguringScreen {...stackBase} />);
 		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.textContent ===
-					"Miss the target: remove 1 config, then retry this gate"
-			)
+			screen.getByText(/Miss the target: the gate peels/)
 		).toBeInTheDocument();
 		expect(screen.queryByText(/ends the run/)).not.toBeInTheDocument();
 	});
@@ -420,16 +374,12 @@ describe("stack mode (ADR-026)", () => {
 		).toBeInTheDocument();
 	});
 
-	it("expands the picked stack into its trimmed preview — demand, payoff, and live state", () => {
+	it("expands the picked stack into its trimmed preview — payoff and dot", () => {
 		const testEverything = starterStackFor("test-everything");
 		if (!testEverything) throw new Error("test-everything stack missing");
 		render(
 			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
 		);
-		// Demand ("!") and payoff ("v") are always visible — the preset view.
-		expect(
-			screen.getByText("Answer JavaScript polls correct when they show")
-		).toBeInTheDocument();
 		// The gives text bolds its number in a nested span (emphasizeNumbers), so
 		// a plain string match won't see across the element boundary — match on
 		// the full concatenated text instead.
@@ -452,9 +402,6 @@ describe("stack mode (ADR-026)", () => {
 		render(
 			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
 		);
-		expect(
-			screen.getByText("Get one JS/TS poll right if either appears")
-		).toBeInTheDocument();
 		expect(
 			screen.queryByText("The fee doubles each use")
 		).not.toBeInTheDocument();

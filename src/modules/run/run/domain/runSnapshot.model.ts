@@ -2,6 +2,10 @@ import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import type { RunPoll, RunState } from "~/modules/run/run/domain/run.model";
 import {
+	liveAuditsFor,
+	mirrorsPolls,
+} from "~/modules/run/gate/domain/audit.model";
+import {
 	pickBudgetFor,
 	windowStartIndex,
 } from "~/modules/run/run/domain/run.model";
@@ -58,7 +62,13 @@ export const hydrateRunState = (
 	draftOptions: refreshConfigs(snapshot.draftOptions),
 	window: {
 		...snapshot.window,
-		budget: pickBudgetFor(polls, windowStartIndex(snapshot)),
+		budget: pickBudgetFor(
+			polls,
+			windowStartIndex(snapshot),
+			mirrorsPolls(
+				liveAuditsFor(snapshot.pipeline.configs, snapshot.gatesCleared)
+			)
+		),
 	},
 	polls,
 });

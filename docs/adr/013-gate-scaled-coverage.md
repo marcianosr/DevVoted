@@ -4,6 +4,8 @@
 
 Accepted 2026-07-22. **Amends [ADR-006](006-session-run-mechanics.md) Decision 11**: coverage now scales with the gate number on both the gain and the loss side; ADR-006's "loss is deliberately not gate-scaled" clause is superseded (⚠ marker inline there). Depends on ADR-005/006. Live-tuned numbers live in `src/modules/run/rules.model.ts`; this ADR records the decision and rationale, not the values. **Decision 2's ratio amended by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): the lockstep stands, `WRONG_COVERAGE_LOSS` halves to 0.25.
 
+> ⚠ Amended by [ADR-035](035-gates-are-auditors.md) (2026-08-17): the gain/loss lockstep stands, but both now score a per-gate window meter — the demand table reprices per gate, not cumulatively.
+
 ## Context
 
 ADR-006 settled the raw coverage rules: a correct answer earns a base of 1 (before config/streak amplifiers), a miss bleeds `WRONG_COVERAGE_LOSS × rewardMultiplier`, and the loss was **deliberately flat across gates** — the reasoning being that escalating *requirements* already punish late mistakes, so a second growing penalty would be a death spiral.

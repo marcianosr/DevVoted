@@ -36,6 +36,7 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	bareActionSchema("rebuild-draft"),
 	configActionSchema("lock-offer"),
 	bareActionSchema("extend-offers"),
+	bareActionSchema("plant-pin"),
 	bareActionSchema("finish-reward"),
 	configActionSchema("sell"),
 	configActionSchema("drop"),

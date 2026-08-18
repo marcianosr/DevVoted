@@ -17,14 +17,10 @@ type StackPreviewListProps = {
 
 /**
  * The picked stack's rows, trimmed to what matters for choosing (ADR-026):
- * each config's demand and payoff, always visible, its check and reward
- * stacked as two plain lines rather than side by side (Marciano, 2026-08-11)
- * — and its live state dot restored, the same one RoleList shows, since
- * `preRunRoleRows` never actually stripped `state` (only `status`/`note`).
- * Secondary mechanics (a linter's escalating fee) still wait until asked for.
- * "Preset view = what matters for choosing; expanded config = precise
- * mechanics" (Marciano, 2026-08-10) — the full RoleList detail is one tap
- * away via `costs`.
+ * each config's payoff on its own plain line. Secondary mechanics (a linter's
+ * escalating fee) still wait until asked for. "Preset view = what matters for
+ * choosing; expanded config = precise mechanics" (Marciano, 2026-08-10) — the
+ * full RoleList detail is one tap away via `costs`.
  */
 export const StackPreviewList = ({ rows }: StackPreviewListProps) => (
 	<ol className="flex flex-col gap-3">
@@ -65,7 +61,6 @@ const CompactFact = ({
 
 const StackPreviewRow = ({ index, row }: { index: number; row: RoleRow }) => {
 	const [detailsOpen, setDetailsOpen] = useState(false);
-	const hasFacts = Boolean(row.needs || row.gives);
 
 	return (
 		<li className="flex flex-col gap-1">
@@ -81,21 +76,9 @@ const StackPreviewRow = ({ index, row }: { index: number; row: RoleRow }) => {
 				<StatusDot variant={roleBadge(row)} />
 				<ConfigChip config={row.config} noTooltip />
 			</div>
-			{/* Check and reward each get their own line (Marciano, 2026-08-11) —
-			    stacked reads closer to how the full RoleList row lays them out,
-			    unlike the prior side-by-side wrap. */}
 			<div className="flex flex-col gap-0.5 pl-6">
-				{hasFacts ? (
-					<>
-						{row.needs ? (
-							<CompactFact icon="!" cinnabar>
-								{row.needs}
-							</CompactFact>
-						) : null}
-						{row.gives ? (
-							<CompactFact icon="v">{emphasizeNumbers(row.gives)}</CompactFact>
-						) : null}
-					</>
+				{row.gives ? (
+					<CompactFact icon="v">{emphasizeNumbers(row.gives)}</CompactFact>
 				) : (
 					<Paragraph size="xs" tone="muted">
 						{describeRow(row.config, row.reason)}

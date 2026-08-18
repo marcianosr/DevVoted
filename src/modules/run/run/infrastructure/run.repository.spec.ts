@@ -153,21 +153,18 @@ describe("applyActionToRun", () => {
 	it("finishes the run and credits leftover storage on victory", async () => {
 		// One answer from the summit: the final gate's window is 4/5 with every
 		// answer correct, so this correct answer closes it and clears the summit.
-		// A bare pipeline can never clear (ADR-017), so the summit build carries
-		// its .js config — the window's 4/4 JS record passes its mastery check.
-		// Width is irrelevant to depth (ADR-019), so the starting slots suffice.
+		// A bare pipeline can never clear, so the summit build carries its .js
+		// config. The window meter already meets the summit's demand (ADR-035) —
+		// the swatch write path is the subject here, not the stake.
 		const summitReady = answeringState({
 			storage: 100,
-			// The summit's coverage demand is banked (ADR-034) — the swatch write
-			// path is the subject here, not the stake.
 			coverage: 400,
 			pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
 			window: {
 				correct: 4,
 				answered: 4,
-				coverageGained: 4,
-				leadingCorrect: 4,
+				coverageGained: 340,
 				byCategory: { js: { seen: 4, correct: 4 } },
 			},
 		});
@@ -222,7 +219,6 @@ describe("applyActionToRun", () => {
 				correct: 4,
 				answered: 4,
 				coverageGained: 4,
-				leadingCorrect: 4,
 				byCategory: { js: { seen: 4, correct: 4 } },
 			},
 		});
@@ -290,11 +286,28 @@ describe("applyActionToRun", () => {
 			run_id: 64,
 			mode: "session",
 			answer_date: TEST_DATES.birthday,
+			mirrored: false,
 		});
 		expect(mock.insertTables).toContain(pollResponseOptionsTable);
 		expect(mock.valuesCalls[1]).toEqual([
 			{ response_id: 900, option_id: Number(correctOptionId(1)) },
 		]);
+	});
+
+	// ADR-038: the picks alone cannot say which question was asked, so the row
+	// carries it. Every reader downstream branches on this one flag.
+	it("records an answer given at a Mirror gate as mirrored", async () => {
+		mock.results.push([
+			stateRow(answeringState({ gatesCleared: 7 })), // Marsh mirrors its polls
+		]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.valuesCalls[0]).toMatchObject({ mirrored: true });
 	});
 
 	it("drops unknown option ids instead of failing the dispatch", async () => {
@@ -326,7 +339,6 @@ describe("applyActionToRun", () => {
 				correct: 1,
 				answered: 1,
 				coverageGained: 0,
-				leadingCorrect: 1,
 				byCategory: { js: { seen: 1, correct: 1 } },
 			},
 		});
@@ -400,7 +412,6 @@ describe("applyActionToRun", () => {
 				correct: 0,
 				answered: 4,
 				coverageGained: 0,
-				leadingCorrect: 0,
 				byCategory: { js: { seen: 4, correct: 0 } },
 			},
 		};

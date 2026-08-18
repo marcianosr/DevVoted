@@ -77,6 +77,9 @@ export type CommunityAnswer = {
 	categoryCode: string | null;
 	answeredAt: Date | null;
 	elapsedMs: number | null;
+	/** Given at a Mirror gate, so the picks answer the inverted poll (ADR-038).
+	 * Whoever grades this answer has to invert with it. */
+	mirrored: boolean;
 };
 
 /**
@@ -86,7 +89,9 @@ export type CommunityAnswer = {
  */
 export type CorrectnessCheck = (
 	pollId: number,
-	optionIds: ReadonlySet<number>
+	optionIds: ReadonlySet<number>,
+	/** Graded against the mirrored poll when true (ADR-038). */
+	mirrored: boolean
 ) => boolean;
 
 /** A live run's standing. `outcomes` is its answer history, oldest first. */
@@ -210,7 +215,9 @@ const firstGood = ({
 	const first = earliest(
 		answers
 			.filter(isDated)
-			.filter((answer) => isCorrect(answer.pollId, answer.optionIds))
+			.filter((answer) =>
+				isCorrect(answer.pollId, answer.optionIds, answer.mirrored)
+			)
 	);
 	if (!first) return null;
 	return award(
@@ -285,7 +292,7 @@ const onlyOneRight = ({
 			const winners = answers.filter(
 				(answer) =>
 					answer.pollId === poll.id &&
-					isCorrect(answer.pollId, answer.optionIds)
+					isCorrect(answer.pollId, answer.optionIds, answer.mirrored)
 			);
 			return winners.length === 1 ? { poll, winner: winners[0] } : null;
 		})

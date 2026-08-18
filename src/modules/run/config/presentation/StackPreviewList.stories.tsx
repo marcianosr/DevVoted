@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { preRunRoleRows } from "~/modules/run/gate/domain/configRole.model";
+import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import { StackPreviewList } from "~/modules/run/config/presentation/StackPreviewList.ui";
 
 const meta: Meta<typeof StackPreviewList> = {
@@ -14,12 +14,12 @@ type Story = StoryObj<typeof StackPreviewList>;
 
 export const TestEverything: Story = {
 	args: {
-		rows: preRunRoleRows([CONFIGS.js, CONFIGS.ts, CONFIGS.eslint], []),
+		rows: roleRows([CONFIGS.js, CONFIGS.ts, CONFIGS.eslint]),
 	},
 };
 
 export const ShipIt: Story = {
 	args: {
-		rows: preRunRoleRows([CONFIGS.js, CONFIGS.jsx, CONFIGS.codeCoverage], []),
+		rows: roleRows([CONFIGS.js, CONFIGS.jsx, CONFIGS.codeCoverage]),
 	},
 };

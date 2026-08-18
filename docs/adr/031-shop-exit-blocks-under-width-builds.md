@@ -8,6 +8,8 @@ option "blocking the shop exit while the repair is affordable".**
 [ADR-021](021-death-at-the-gate-that-empties-the-build.md)'s "death belongs
 to a gate" survives — as an explicit click, never a surprise. (DVTD-jnlj)
 
+> ⚠ Superseded by [ADR-035](035-gates-are-auditors.md) (2026-08-17): the shop exit is always open — nothing grades it and the End-run click is gone.
+
 ## Context
 
 ADR-027 grades the width demand at the gate's door: leaving the shop under

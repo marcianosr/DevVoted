@@ -13,6 +13,8 @@ and their specs. This file records what those citations point at, including the
 two designs that were tried and rejected on the way, because both are the kind
 of idea that looks obviously correct on a second pass.
 
+> ⚠ Superseded by [ADR-035](035-gates-are-auditors.md) (2026-08-17): no config owes the gate anything — the friction moved onto the gate's own demand and audits.
+
 ## Context
 
 ADR-017 removed the synthesized baseline check on the motto *the gate should

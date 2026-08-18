@@ -16,6 +16,7 @@ import {
 	SLICE_WINDOW,
 	gateBaseMultiplier,
 	roundToOneDecimal,
+	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
 
 export type Pipeline = {
@@ -41,43 +42,10 @@ export const slotsForGatesCleared = (gatesCleared: number): number =>
 export const nextSlotGateFor = (currentSlots: number): number | null =>
 	currentSlots >= MAX_SLOTS ? null : currentSlots - 2;
 
-export type CoverageLap = {
-	readonly lap: number;
-	readonly name: "Line" | "Branch" | "Mutation" | "Fuzz";
-	readonly remainder: number;
-};
-
-const LAP_NAMES = ["Line", "Branch", "Mutation", "Fuzz"] as const;
-
-/**
- * Coverage reads in laps of 100% (ADR-034), each named a real rung of testing
- * rigor: "Branch 70%" is 170% total. The last name holds past 400%, where no
- * threshold reaches.
- */
-export const coverageLapFor = (coverage: number): CoverageLap => {
-	const lap = Math.min(LAP_NAMES.length, Math.floor(coverage / 100) + 1);
-	return {
-		lap,
-		name: LAP_NAMES[lap - 1],
-		remainder: roundToOneDecimal(coverage - (lap - 1) * 100),
-	};
-};
-
 export const isBare = (pipeline: Pipeline): boolean =>
 	pipeline.configs.length === 0;
 
 const effects = (configs: readonly Config[]) => configs.map(effectOf);
-
-export const effectiveRequirement = (
-	pipeline: Pipeline,
-	base: number
-): number => {
-	const raised = effects(pipeline.configs).reduce(
-		(total, effect) => total + (effect.requirementDelta ?? 0),
-		0
-	);
-	return Math.max(1, base + raised);
-};
 
 // The modifier fns take bare configs, not a Pipeline: the configure screen
 // prices a *previewed* loadout (equipped configs + hovered candidate) that has
@@ -123,9 +91,6 @@ export const storageInterestFor = (
  * that was drawn. A window of five single-answer polls has no extra picks and
  * pays nothing, which is the config's honest dead spot; a multi-heavy window
  * pays well and was the hard one to count.
- *
- * No pass check needed: the reducer only calls this on a clear, and a clear
- * means every check passed, including `.length`'s own budget.
  */
 export const extraPickPayoutFor = (
 	configs: readonly Config[],
@@ -160,9 +125,16 @@ export type PipelineModifiers = {
  * Every surface that prices a loadout — the run viewmodel, the gate-clear
  * payout, and the configure screen's preview strip — derives from this one fn,
  * so a previewed pipeline is guaranteed to price exactly like an equipped one.
+ *
+ * `gatesCleared` is here because `gateReward` is not a property of the loadout
+ * alone: the clear payout rides the `gatesCleared + 1` curve, so a preview that
+ * left it out understated the reward by the whole multiplier — 32KB shown where
+ * Cascade actually pays 96KB. It prices a full window, the same thing the gate's
+ * coverage demand assumes; a part-correct clear pays its share of this.
  */
 export const pipelineModifiersFor = (
-	configs: readonly Config[]
+	configs: readonly Config[],
+	gatesCleared: number
 ): PipelineModifiers => {
 	const rewardMultiplier = rewardMultiplierFor(configs);
 	const coverage = coverageProfileFor(configs);
@@ -170,9 +142,7 @@ export const pipelineModifiersFor = (
 		rewardMultiplier,
 		coverageMultiplier: coverage.mult,
 		coverageAdd: coverage.add,
-		gateReward:
-			Math.round(GATE_REWARD_KB * rewardMultiplier) +
-			storageOnClearFor(configs),
+		gateReward: gateClearPayout(configs, SLICE_WINDOW, gatesCleared),
 	};
 };
 
@@ -182,6 +152,10 @@ export type PerAnswerPreview = {
 	/** The best Focus bonus in the build, called out separately since it only
 	 * lands when a poll's category matches — absent with no Focus config equipped. */
 	readonly matchingConfigMultiplier?: number;
+	/** What one step of streak multiplies the answer by. Carried here so the
+	 * receipt can state it: it rides on every correct answer including the first,
+	 * so `coveragePerCorrect` alone is a number the player never actually sees. */
+	readonly streakStepMultiplier: number;
 };
 
 /**
@@ -208,6 +182,7 @@ export const perAnswerPreviewFor = (
 		storageKbPerCorrect: faucetKbPerCorrect(configs),
 		matchingConfigMultiplier:
 			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
+		streakStepMultiplier: streakMultiplier(1),
 	};
 };
 
@@ -357,9 +332,9 @@ export const canLint = (
 export const peekerFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.peeksCommunitySplit === true);
 
-/** The equipped config counting the window's picks, if any (`.length`). */
+/** The equipped config counting the window's correct answers, if any (`.length`). */
 export const budgeterFor = (configs: readonly Config[]): Config | undefined =>
-	configs.find((config) => config.check === "pick-budget");
+	configs.find((config) => config.storagePerExtraPick !== undefined);
 
 export const stripConfig = (
 	pipeline: Pipeline,

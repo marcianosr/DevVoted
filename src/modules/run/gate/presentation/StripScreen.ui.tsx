@@ -1,6 +1,5 @@
 import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import { gateRewardRows } from "~/modules/run/gate/domain/gateReward.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
@@ -12,7 +11,6 @@ type StripScreenProps = {
 	stripsRemaining: number;
 	gateNumber: number;
 	configs: readonly Config[];
-	checks: readonly CheckStatus[];
 	/** Feeds the report's per-config rows — the answers themselves live on /run/review. */
 	answered: readonly AnsweredPoll[];
 	/** What the storage plan billed when the failed window closed — 0/omitted on the free tier. */
@@ -20,25 +18,23 @@ type StripScreenProps = {
 	/** True when the bill went unpaid and the plan dropped to the free tier. */
 	planDowngraded?: boolean;
 	/**
-	 * The same gate again, since a miss replays it (ADR-034). Its config floor is
-	 * the reason this screen is a decision: peel toward it and the redo is a
-	 * coin-flip on the run.
+	 * The same gate again, since a miss replays it. Peeling toward a bare build
+	 * is the reason this screen is a decision: the last config is the run.
 	 */
 	retryStake?: GateStake;
 	onStrip: (configId: string) => void;
 };
 
 /**
- * The gate-failed repair step: what broke, and which configs to peel. It asks
- * the player for one decision, so it shows only what that decision needs — the
+ * A missed gate's report and its price (ADR-037): what the build did over the
+ * five polls, and which configs to peel before the loop opens again. It asks the
+ * player for one decision, so it shows only what that decision needs — the
  * answers moved to the review page, the same way they left the reward screen.
- * Reading five questions is study; choosing what to sacrifice is not.
  */
 export const StripScreen = ({
 	stripsRemaining,
 	gateNumber,
 	configs,
-	checks,
 	answered,
 	billKb,
 	planDowngraded,
@@ -56,7 +52,7 @@ export const StripScreen = ({
 				// Names the failure after the gate too ("Thunder gate failed!"); the
 				// red FAIL badge stays, since a failure needs no colour of its own.
 				swatch={swatchForGate(gateNumber)}
-				rows={gateRewardRows({ answered, configs, checks })}
+				rows={gateRewardRows({ answered, configs })}
 				removableConfigIds={removableConfigIds}
 				onRemoveConfig={onStrip}
 				stripsRemaining={stripsRemaining}
@@ -75,13 +71,7 @@ export const StripScreen = ({
 			) : null}
 			{/* Reads live against `configs`, so the floor updates as the player peels
 			    — the warning arrives while the choice is still open. */}
-			{retryStake ? (
-				<GateStakeReceipt
-					stake={retryStake}
-					configCount={configs.length}
-					lead="Retry"
-				/>
-			) : null}
+			{retryStake ? <GateStakeReceipt stake={retryStake} lead="Retry" /> : null}
 		</div>
 	);
 };

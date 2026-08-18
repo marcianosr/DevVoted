@@ -28,15 +28,11 @@ type PipelineChipsProps = Pick<
 	PrepScreenProps,
 	"configs" | "atMinimumWidth" | "onDropConfig"
 > & {
-	gateNumber: number;
-	minConfigs: number;
 	shopIsOpen: boolean;
 };
 
 const PipelineChips = ({
 	configs,
-	gateNumber,
-	minConfigs,
 	atMinimumWidth,
 	shopIsOpen,
 	onDropConfig,
@@ -45,7 +41,7 @@ const PipelineChips = ({
 
 	const blockedReason = (
 		<Paragraph as="span" size="sm">
-			{widthRefusal(gateNumber, minConfigs, "dropping")}
+			{widthRefusal("dropping")}
 		</Paragraph>
 	);
 
@@ -107,23 +103,17 @@ export const PrepScreen = ({
 	onStartGate,
 	onDropConfig,
 }: PrepScreenProps) => {
-	const { gateNumber, minConfigs } = stake;
+	const { gateNumber } = stake;
 	const gateName = swatchForGate(gateNumber)?.gateName ?? `Gate ${gateNumber}`;
 	return (
 		<div className="flex flex-col gap-6">
 			<PipelineChips
 				configs={configs}
-				gateNumber={gateNumber}
-				minConfigs={minConfigs}
 				atMinimumWidth={atMinimumWidth}
 				shopIsOpen={shopAction !== undefined}
 				onDropConfig={onDropConfig}
 			/>
-			<GateStakeReceipt
-				stake={stake}
-				configCount={configs.length}
-				shopAction={shopAction}
-			/>
+			<GateStakeReceipt stake={stake} shopAction={shopAction} />
 			<div className="flex flex-col gap-3 sm:flex-row">
 				<Button
 					className="flex-1"

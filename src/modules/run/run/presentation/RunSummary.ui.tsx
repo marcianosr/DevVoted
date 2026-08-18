@@ -6,10 +6,7 @@ import {
 	type GateOutcomeStatus,
 } from "~/modules/run/gate/domain/gateLadder.model";
 import { swatchesEarnedAt } from "~/modules/run/gate/domain/swatch.model";
-import {
-	configFloorForGate,
-	storageCreditRate,
-} from "~/modules/run/run/domain/rules.model";
+import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 import { MetaStorageBar } from "~/modules/run/run/presentation/MetaStorageBar.ui";
 import { StatusLine } from "~/ui/StatusLine.ui";
 import { type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
@@ -46,13 +43,11 @@ const STATUS_TONE: Record<GateOutcomeStatus, TextTone> = {
 	skip: "muted",
 };
 
-/**
- * The rule that ended the run, in the words the stake receipt used before the
- * gate. Every death route lands under the same floor (ADR-021), so the summary
- * names the floor rather than guessing which route got there.
- */
+/** The one death left (ADR-037): a missed gate's peel had nothing left to take. */
 const breakLine = (gatesCleared: number, configsHeld: number): string =>
-	`Your pipeline held ${configsHeld} config${configsHeld === 1 ? "" : "s"} — gate ${gatesCleared} ends a run below ${configFloorForGate(gatesCleared)}.`;
+	configsHeld === 0
+		? `Gate ${gatesCleared} peeled your pipeline bare — nothing left to climb with.`
+		: `Your run ended at gate ${gatesCleared} holding ${configsHeld} config${configsHeld === 1 ? "" : "s"}.`;
 
 const gateLabel = ({ gate, status }: GateOutcome): string => {
 	if (status === "pass") return `Gate ${gate} cleared`;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
 	type AnswerScore,
@@ -9,6 +9,7 @@ import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
 import { Screen } from "~/ui/Screen.ui";
 
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
+import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import { usePollSplit } from "~/modules/run/community/application/usePollSplit.hook";
 import {
 	type RunActionSuccess,
@@ -32,14 +33,16 @@ export const RunAnswer = () => {
 	const { send, sendWith, commit, busy, abandon } = useRunActions();
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
-	// The answer clock starts when the poll reaches the screen and stops at
-	// submit — the "fastest answer" standout reads this (DVTD-smye).
-	// performance.now() over Date.now(): monotonic, so an NTP sync or manual
-	// clock change mid-poll can't produce a negative or absurd duration.
-	const pollShownAt = useRef(performance.now());
+	// One clock per poll, owned by the hook: it feeds the "fastest answer"
+	// standout (DVTD-smye) and, at a Timeout gate, the countdown the player
+	// watches — the same start for both, so the display can never disagree with
+	// the reading the gate grades.
+	const clock = usePollClock(
+		view?.poll?.id ?? null,
+		view?.pollTimeLimitMs ?? null
+	);
 	useEffect(() => {
 		setSelected([]);
-		pollShownAt.current = performance.now();
 	}, [view?.poll?.id]);
 
 	const [reveal, setReveal] = useState<RevealState | null>(null);
@@ -63,10 +66,7 @@ export const RunAnswer = () => {
 			{
 				type: "answer",
 				optionIds: [...selected],
-				elapsedMs: Math.min(
-					Math.round(performance.now() - pollShownAt.current),
-					600_000
-				),
+				elapsedMs: Math.min(clock.elapsedMs(), 600_000),
 			},
 			(result) => {
 				if (!result.success) return;
@@ -106,7 +106,14 @@ export const RunAnswer = () => {
 		>
 			<AnsweringScreen
 				configs={view.configs}
-				checks={view.checks}
+				audits={view.audits}
+				offlineConfigs={view.offlineConfigs}
+				mirroredPolls={view.mirroredPolls}
+				timeLimitMs={view.pollTimeLimitMs ?? undefined}
+				// The clock stops mattering the moment the answer is in: the reveal
+				// is not the poll, and a ticking rail there would read as pressure to
+				// hurry through the explanation.
+				remainingMs={reveal ? undefined : (clock.remainingMs ?? undefined)}
 				category={poll.category}
 				question={poll.question}
 				codeBlock={poll.codeBlock}
@@ -121,7 +128,6 @@ export const RunAnswer = () => {
 				chosenOptionIds={reveal ? selected : undefined}
 				revealScore={reveal?.score ?? undefined}
 				slots={view.slots}
-				stripsOnFailure={view.stripsOnFailure}
 				canLint={view.canLint}
 				lintReady={view.lintReady && !busy && !reveal}
 				linter={view.linter ?? undefined}
@@ -131,7 +137,7 @@ export const RunAnswer = () => {
 				peeker={view.peeker ?? undefined}
 				peekCost={view.peekCost}
 				split={split ?? undefined}
-				pickBudgetLeft={view.pickBudgetLeft ?? undefined}
+				correctAnswersThisGate={view.correctAnswersThisGate ?? undefined}
 				canSubmit={canSubmit}
 				onSelect={onSelect}
 				onSubmit={submitAnswer}

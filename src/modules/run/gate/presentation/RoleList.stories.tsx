@@ -100,3 +100,12 @@ export const ShopLoadout: Story = {
 		}),
 	},
 };
+
+/**
+ * A config an audit has switched off (ADR-038). It keeps its slot and its place
+ * in the build — the pipeline is unchanged, the effect just does nothing — so the
+ * row dims and strikes its own promise rather than disappearing.
+ */
+export const OfflineConfig: Story = {
+	args: { rows, offlineConfigIds: [CONFIGS.agentsMd.id] },
+};

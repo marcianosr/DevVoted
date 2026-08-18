@@ -92,6 +92,7 @@ const answerRow = (
 	answeredAt: minutesAfterDrop(30),
 	answerTimeMs: null,
 	photoUrl: null,
+	mirrored: false,
 	...over,
 });
 
@@ -672,5 +673,69 @@ describe("getRunCommunityService climb map", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		expect(result.data.climb).toBeNull();
+	});
+});
+
+/**
+ * ADR-038: a mirrored answer is a correct answer to a different question. The
+ * board counts demonstrated knowledge, so it grades against the question the
+ * player was asked — the paid split is the surface that cannot mix the two, and
+ * it excludes mirrored rows instead.
+ */
+describe("a board that mixes mirrored and plain answers", () => {
+	// Poll 10 holds one right option and two wrong ones, so a mirrored Red has to
+	// name BOTH wrong ones — the mirror asks for every incorrect option, and half
+	// of them is a partial exactly as it would be off the mirror.
+	const mirrorRedsAnswer = (optionIds: readonly number[]) => {
+		arrange();
+		const others = answerRows.filter(
+			(row) => !(row.userId === RED && row.pollId === 10)
+		);
+		const red = answerRows.find(
+			(row) => row.userId === RED && row.pollId === 10
+		);
+		if (!red) throw new Error("fixture lost Red's answer to poll 10");
+		vi.mocked(communityQueries.fetchSessionAnswersForDay).mockResolvedValue([
+			...optionIds.map((optionId) => ({ ...red, optionId, mirrored: true })),
+			...others,
+		]);
+	};
+
+	it("credits a mirrored answer that named every wrong option", async () => {
+		mirrorRedsAnswer([102, 103]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const [first] = result.data.polls;
+		expect(first.outcome).toBe("correct");
+		expect(first.detail?.youGotItRight).toBe(true);
+		// Green still counts off their own plain answer, so both kinds add up.
+		expect(first.detail?.gotItRightCount).toBe(2);
+	});
+
+	it("grades half the wrong options as a partial, mirror or not", async () => {
+		mirrorRedsAnswer([102]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.polls[0].outcome).toBe("partial");
+		expect(result.data.polls[0].detail?.youGotItRight).toBe(false);
+	});
+
+	it("keeps the option rows the poll's own truth", async () => {
+		mirrorRedsAnswer([102, 103]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		// "isRight" is a fact about the poll, not about the viewer's gate: the
+		// mirror changes what was asked of one player, never what is true.
+		const rows = result.data.polls[0].detail?.options ?? [];
+		expect(rows.map((row) => row.isRight)).toEqual([true, false, false]);
 	});
 });

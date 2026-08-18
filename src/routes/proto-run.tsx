@@ -25,6 +25,7 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import { rebuildCost } from "~/modules/run/shop/domain/draft.model";
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
+import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui";
 import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
 import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";
@@ -39,10 +40,7 @@ import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";
 import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";
 import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.ui";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import {
-	shopExitFor,
-	toRunView,
-} from "~/modules/run/run/application/runView.viewmodel";
+import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -441,6 +439,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	}, [state.status]);
 
 	const view = toRunView(state);
+	const pollClock = usePollClock(view.poll?.id ?? null, view.pollTimeLimitMs);
 	const community = simulateCommunityBoard(view.answeredThisGate, state.polls, {
 		gatesCleared: view.gatesCleared,
 		coverage: view.coverage,
@@ -448,10 +447,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	});
 	const disabled = state.manualDisabled;
 	const cost = rebuildCost(state.rebuildsUsed);
-	const shopExit = shopExitFor(view);
 
+	// The rig submits the real clock too, so a Timeout gate can actually bite in
+	// a playtest; the fast-forward buttons below stay untimed on purpose.
 	const answer = (optionIds: readonly string[]) =>
-		dispatch({ type: "answer", optionIds });
+		dispatch({ type: "answer", optionIds, elapsedMs: pollClock.elapsedMs() });
 	const answerCurrent = (outcome: RigOutcome) => {
 		const poll = state.polls[state.currentIndex];
 		if (poll) answer(rigOptionIds(poll, outcome));
@@ -497,7 +497,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
 						pollsPerGate={view.pollsPerGate}
-						coverage={view.coverage}
+						gateCoverage={view.gateStake.coverageHeld}
+						gateCoverageDemand={view.gateStake.coverageDemand}
 						coverageByCategory={view.coverageByCategory}
 					/>
 				</div>
@@ -509,7 +510,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						slots={view.slots}
 						stake={view.gateStake}
 						bench={view.available}
-						checks={view.checks}
 						onSlot={(id) => dispatch({ type: "slot", configId: id })}
 						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
 						stacks={STARTER_STACKS}
@@ -531,7 +531,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				<Screen gateTheme={view.gateTheme}>
 					<AnsweringScreen
 						configs={view.configs}
-						checks={view.checks}
+						audits={view.audits}
+						offlineConfigs={view.offlineConfigs}
+						mirroredPolls={view.mirroredPolls}
+						timeLimitMs={view.pollTimeLimitMs ?? undefined}
+						remainingMs={pollClock.remainingMs ?? undefined}
 						category={view.poll.category}
 						question={view.poll.question}
 						answerType={view.poll.answerType}
@@ -541,7 +545,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 						pollsPerGate={view.pollsPerGate}
 						slots={view.slots}
-						stripsOnFailure={view.stripsOnFailure}
 						canLint={view.canLint}
 						lintReady={view.lintReady}
 						linter={view.linter ?? undefined}
@@ -558,7 +561,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 									)
 								: undefined
 						}
-						pickBudgetLeft={view.pickBudgetLeft ?? undefined}
+						correctAnswersThisGate={view.correctAnswersThisGate ?? undefined}
 						canSubmit={canSubmit}
 						onSelect={onSelect}
 						onSubmit={() => answer(selected)}
@@ -617,19 +620,16 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							: undefined
 					}
 					rightAction={{
-						...shopExitAction(shopExit),
-						onClick:
-							shopExit.state === "stuck"
-								? () => dispatch({ type: "finish-reward" })
-								: () => setRewardStep("prep"),
+						...shopExitAction(view.gatesCleared),
+						onClick: () => setRewardStep("prep"),
 					}}
 				>
 					<ShopScreen
 						storage={view.storage}
 						stake={view.gateStake}
 						atMinimumWidth={view.atMinimumWidth}
+						locked={view.shopLocked}
 						coverageByCategory={view.coverageByCategory}
-						checks={view.checks}
 						configs={view.configs}
 						newConfigIds={view.newConfigIds}
 						offers={view.offers}
@@ -645,6 +645,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						extendCost={view.extendCost}
 						canExtend={view.canExtend}
 						onExtend={() => dispatch({ type: "extend-offers" })}
+						pinAvailable={view.pinAvailable}
+						pinCost={view.pinCost}
+						canPin={view.canPin}
+						pinnedAtGate={view.pinnedAtGate}
+						onPlantPin={() => dispatch({ type: "plant-pin" })}
 						slots={view.slots}
 						nextSlotGate={view.nextSlotGate}
 						justUnlockedSlots={view.justUnlockedSlots}
@@ -717,7 +722,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						gateNumber={view.gatesCleared}
 						stripsRemaining={view.stripsRemaining}
 						configs={view.configs}
-						checks={view.checks}
 						answered={view.answeredThisGate}
 						billKb={view.gateBillPaidKb}
 						planDowngraded={view.planDowngraded}

@@ -4,6 +4,8 @@
 
 Accepted (2026-08-05, Marciano). Amends ADR-016 §1–2 (⚠ markers inline there) and the ADR-014 death path's trigger.
 
+> ⚠ Superseded by [ADR-035](035-gates-are-auditors.md) (2026-08-17): checks are gone entirely; gate-level rules return as audits. Decision 3's bare-pipeline guard survives.
+
 ## Context
 
 Since ADR-016 the gate synthesized a "Correct N" baseline check that every build

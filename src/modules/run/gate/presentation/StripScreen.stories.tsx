@@ -14,25 +14,8 @@ type Story = StoryObj<typeof StripScreen>;
 
 export const Default: Story = {
 	args: {
-		stripsRemaining: 2,
+		stripsRemaining: 1,
 		configs: [CONFIGS.js, CONFIGS.agentsMd, CONFIGS.coverageGain],
-		checks: [
-			{
-				label: "Correct",
-				progress: { kind: "answers", current: 1, target: 2 },
-				current: 1,
-				target: 2,
-				state: "failed",
-			},
-			{
-				label: "Coverage",
-				progress: { kind: "coverage", current: 2, target: 4 },
-				current: 2,
-				target: 4,
-				state: "failed",
-				sourceConfigId: "coverage-gain",
-			},
-		],
 		answered: [
 			{
 				id: "css1",
@@ -51,10 +34,27 @@ export const Default: Story = {
 		],
 		retryStake: createMockGateStake({
 			gateNumber: 1,
-			coverageDemand: 12,
+			coverageDemand: 10,
 			coverageHeld: 9,
-			stripsOnFailure: 2,
 		}),
 		onStrip: () => {},
+	},
+};
+
+/**
+ * Elite's audit peels two, so a three-config build walks out of this screen one
+ * config away from a fatal retry — the decision the deep gates are built around.
+ */
+export const EliteDeepPeel: Story = {
+	args: {
+		...Default.args,
+		stripsRemaining: 2,
+		retryStake: createMockGateStake({
+			gateNumber: 11,
+			coverageDemand: 250,
+			coverageHeld: 180,
+			stripsOnFailure: 2,
+			missIsFatal: true,
+		}),
 	},
 };

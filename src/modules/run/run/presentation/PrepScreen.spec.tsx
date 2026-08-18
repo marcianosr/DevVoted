@@ -8,7 +8,6 @@ import { createMockGateStake } from "~/test/runView.factory";
 
 const stake = createMockGateStake({
 	gateNumber: 1,
-	minConfigs: 1,
 	modifiers: {
 		gateReward: 32,
 		rewardMultiplier: 1,
@@ -18,6 +17,7 @@ const stake = createMockGateStake({
 	perAnswer: {
 		coveragePerCorrect: 1,
 		storageKbPerCorrect: 0,
+		streakStepMultiplier: 1.1,
 	},
 });
 
@@ -57,31 +57,61 @@ describe(PrepScreen, () => {
 		expect(screen.queryByText("×1")).not.toBeInTheDocument();
 	});
 
+	// The row used to promise "+1% coverage" while a build with a Focus config and
+	// a streak actually paid 1.4% on the first answer (ADR-040). The base alone is
+	// a number nobody ever sees, so both multipliers are stated beside it.
+	it("names the multipliers that ride on a correct answer", () => {
+		render(
+			<PrepScreen
+				{...base}
+				stake={stakeWith({
+					perAnswer: {
+						coveragePerCorrect: 1,
+						storageKbPerCorrect: 0,
+						matchingConfigMultiplier: 1.25,
+						streakStepMultiplier: 1.1,
+					},
+				})}
+			/>
+		);
+		expect(screen.getByText(/on a matching poll/)).toHaveTextContent(
+			"×1.25 on a matching poll · ×1.1 per streak step"
+		);
+	});
+
+	it("still states the streak step with no Focus config in the build", () => {
+		render(<PrepScreen {...base} />);
+		expect(screen.getByText(/per streak step/)).toHaveTextContent(
+			"×1.1 per streak step"
+		);
+		expect(screen.queryByText(/matching poll/)).not.toBeInTheDocument();
+	});
+
 	it("previews the gate's own swatch, unearned until the gate hands it over", () => {
 		render(<PrepScreen {...base} />);
 		expect(screen.getByText("Swatch earned")).toBeInTheDocument();
 		expect(screen.getByText("Boulder Swatch")).toHaveClass("text-pewter");
 	});
 
-	it("lists the window and the coverage total as the two things a clear takes", () => {
+	it("lists the window and the gate's own coverage demand as the two things a clear takes", () => {
 		render(<PrepScreen {...base} stake={stakeWith({ pollsPerGate: 5 })} />);
 		const requirements = screen.getAllByRole("listitem");
 		expect(requirements[0]).toHaveTextContent("Answer all 5 polls");
-		expect(requirements[1]).toHaveTextContent("Reach 3% total coverage");
+		expect(requirements[1]).toHaveTextContent("Earn 3% coverage this gate");
 	});
 
-	it("grades the coverage demand against the total the run holds", () => {
+	it("grades the demand against the attempt's own meter", () => {
 		render(
 			<PrepScreen
 				{...base}
 				stake={stakeWith({ coverageDemand: 12, coverageHeld: 4 })}
 			/>
 		);
-		expect(screen.getByText("12% total coverage")).toBeInTheDocument();
+		expect(screen.getByText("12% coverage this gate")).toBeInTheDocument();
 		expect(screen.getByText("4% / 12%")).toHaveClass("text-cinnabar");
 	});
 
-	it("rails the coverage held against the demand, so the gap is legible at a glance", () => {
+	it("rails the meter against the demand, so the gap is legible at a glance", () => {
 		render(
 			<PrepScreen
 				{...base}
@@ -109,24 +139,6 @@ describe(PrepScreen, () => {
 		expect(screen.getByText("12% / 12%")).toHaveClass("text-viridian");
 	});
 
-	it("captions the gate with its coverage multiplier", () => {
-		render(
-			<PrepScreen
-				{...base}
-				stake={stakeWith({
-					modifiers: {
-						...stake.modifiers,
-						coverageMultiplier: 2,
-						coverageAdd: 5,
-					},
-				})}
-			/>
-		);
-		expect(screen.getByText("×2 +5% coverage this gate")).toHaveClass(
-			"text-gradient-green"
-		);
-	});
-
 	it("keeps the stake in plain language, no pipeline jargon", () => {
 		render(<PrepScreen {...base} />);
 		expect(screen.queryByText(/Clear your pipeline/)).not.toBeInTheDocument();
@@ -135,64 +147,31 @@ describe(PrepScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("states the miss cost and the retry in one line", () => {
-		render(<PrepScreen {...base} stake={stakeWith({ stripsOnFailure: 1 })} />);
-		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.textContent ===
-					"Miss the target: remove 1 config, then retry this gate"
-			)
-		).toBeInTheDocument();
-	});
-
-	it("pluralizes the miss cost for more than one config", () => {
+	it("states the peel and the loop it drops you into as the miss cost (ADR-037)", () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ stripsOnFailure: 2 })}
-				configs={[CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]}
+				stake={stakeWith({ pollsPerGate: 5, stripsOnFailure: 1 })}
 			/>
 		);
 		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.textContent ===
-					"Miss the target: remove 2 configs, then retry this gate"
-			)
-		).toBeInTheDocument();
+			screen.getByText(/Miss the target: the gate peels/)
+		).toHaveTextContent(
+			"the gate peels 1 config, then you shop and run it again on 5 fresh polls"
+		);
+		expect(screen.queryByText(/ends the run/)).not.toBeInTheDocument();
 	});
 
-	it("names the config floor the run ends below", () => {
+	it("warns that a miss ends the run once the peel takes the whole build", () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ stripsOnFailure: 1 })}
-				configs={[CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]}
+				stake={stakeWith({ stripsOnFailure: 1, missIsFatal: true })}
 			/>
 		);
 		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.textContent ===
-					"Your run ends if your pipeline holds fewer than 2 configs — you hold 3."
-			)
-		).toBeInTheDocument();
-	});
-
-	it("warns the run is over once the stake would take the whole build", () => {
-		render(
-			<PrepScreen
-				{...base}
-				stake={stakeWith({ stripsOnFailure: 2 })}
-				configs={base.configs}
-			/>
-		);
-		expect(
-			screen.getByText(
-				"Your pipeline holds 2 configs — missing this gate removes 2 and ends the run."
-			)
-		).toHaveClass("text-cinnabar");
+			screen.getByText(/That peel takes your whole pipeline/)
+		).toHaveTextContent("a miss here ends the run");
 	});
 
 	it("names the storage plan's bill on a paid tier", () => {
@@ -218,7 +197,7 @@ describe(PrepScreen, () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	describe("the doorstep drop (ADR-027)", () => {
+	describe("the doorstep drop", () => {
 		const droppable = { ...base, configs: [CONFIGS.js, CONFIGS.eslint] };
 
 		it("drops the config the player confirms, naming it on the button", () => {
@@ -257,33 +236,8 @@ describe(PrepScreen, () => {
 			).toBeInTheDocument();
 		});
 
-		it("refuses every drop at the gate's width demand, naming the demand", () => {
-			render(
-				<PrepScreen
-					{...droppable}
-					stake={stakeWith({ minConfigs: 2, gateNumber: 4 })}
-					atMinimumWidth
-				/>
-			);
-			expect(
-				screen.queryByRole("button", { name: /^\.js/ })
-			).not.toBeInTheDocument();
-			expect(
-				screen.getAllByText(
-					"Gate 4 demands 2 configs — dropping would sink the build below it."
-				)
-			).toHaveLength(droppable.configs.length);
-		});
-
-		it("refuses the drop of a last config even where the gate demands none", () => {
-			render(
-				<PrepScreen
-					{...base}
-					stake={stakeWith({ minConfigs: 0 })}
-					configs={[CONFIGS.js]}
-					atMinimumWidth
-				/>
-			);
+		it("refuses the drop of a last config — a pipeline never goes bare", () => {
+			render(<PrepScreen {...base} configs={[CONFIGS.js]} atMinimumWidth />);
 			expect(
 				screen.queryByRole("button", { name: /^\.js/ })
 			).not.toBeInTheDocument();
@@ -293,20 +247,6 @@ describe(PrepScreen, () => {
 				)
 			).toBeInTheDocument();
 		});
-	});
-
-	it("mentions the gate's width demand in the build summary", () => {
-		render(<PrepScreen {...base} stake={stakeWith({ minConfigs: 2 })} />);
-		expect(screen.getByText(/2\+ configs/)).toBeInTheDocument();
-	});
-
-	it("names the shortfall in cinnabar while the build sits under the demand", () => {
-		render(<PrepScreen {...base} stake={stakeWith({ minConfigs: 3 })} />);
-		expect(
-			screen.getByText(
-				"Demands 3 configs — the build holds 2. Install 1 more to climb on."
-			)
-		).toHaveClass("text-cinnabar");
 	});
 
 	it("names the start action after the gate and fires onStartGate when clicked", () => {
@@ -323,19 +263,13 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ minConfigs: 2 })}
+				configs={[]}
+				stake={stakeWith({ gateNumber: 4 })}
 				shopAction={{ label: "← Back to shop", onClick }}
 			/>
 		);
 		fireEvent.click(screen.getByRole("button", { name: "← Back to shop" }));
 		expect(onClick).toHaveBeenCalledTimes(1);
-	});
-
-	it("leaves the shortcut out when no shop sits behind prep", () => {
-		render(<PrepScreen {...base} stake={stakeWith({ minConfigs: 2 })} />);
-		expect(
-			screen.queryByRole("button", { name: "← Back to shop" })
-		).not.toBeInTheDocument();
 	});
 
 	it("locks the start button behind the wait copy until the next polls open", () => {

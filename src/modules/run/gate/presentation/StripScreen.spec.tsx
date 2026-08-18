@@ -2,28 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
 import { createMockGateStake } from "~/test/runView.factory";
-
-const checks: CheckStatus[] = [
-	{
-		label: "Correct",
-		progress: { kind: "answers", current: 1, target: 2 },
-		current: 1,
-		target: 2,
-		state: "failed",
-		sourceConfigId: "unit-tests",
-	},
-	{
-		label: "Coverage",
-		progress: { kind: "coverage", current: 2, target: 4 },
-		current: 2,
-		target: 4,
-		state: "success",
-		sourceConfigId: "coverage-gain",
-	},
-];
 
 describe(StripScreen, () => {
 	it("tells the player how many configs to peel", () => {
@@ -32,7 +12,6 @@ describe(StripScreen, () => {
 				stripsRemaining={2}
 				gateNumber={2}
 				configs={[CONFIGS.js, CONFIGS.agentsMd]}
-				checks={checks}
 				answered={[]}
 				onStrip={() => {}}
 			/>
@@ -47,32 +26,23 @@ describe(StripScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("states the redo's demand and reads its config floor against the build left standing", () => {
+	it("states the redo's demand against the attempt's own meter", () => {
 		render(
 			<StripScreen
 				stripsRemaining={1}
 				gateNumber={2}
 				configs={[CONFIGS.js, CONFIGS.agentsMd]}
-				checks={checks}
 				answered={[]}
 				retryStake={createMockGateStake({
 					gateNumber: 2,
-					coverageDemand: 24,
+					coverageDemand: 25,
 					coverageHeld: 20,
-					stripsOnFailure: 2,
 				})}
 				onStrip={() => {}}
 			/>
 		);
 		expect(screen.getByText("Retry")).toBeInTheDocument();
-		expect(screen.getByText("20% / 24%")).toHaveClass("text-cinnabar");
-		// Two configs against a two-config peel: the redo is already fatal, and
-		// the screen says so while the player still chooses what to give up.
-		expect(
-			screen.getByText(
-				"Your pipeline holds 2 configs — missing this gate removes 2 and ends the run."
-			)
-		).toBeInTheDocument();
+		expect(screen.getByText("20% / 25%")).toHaveClass("text-cinnabar");
 	});
 
 	it("keeps the gate's questions off the repair screen", () => {
@@ -81,7 +51,6 @@ describe(StripScreen, () => {
 				stripsRemaining={1}
 				gateNumber={2}
 				configs={[CONFIGS.js]}
-				checks={checks}
 				answered={[
 					{
 						id: "js1",
@@ -109,7 +78,6 @@ describe(StripScreen, () => {
 				stripsRemaining={1}
 				gateNumber={2}
 				configs={[CONFIGS.unitTests, CONFIGS.js]}
-				checks={checks}
 				answered={[]}
 				onStrip={() => {}}
 			/>
@@ -122,21 +90,6 @@ describe(StripScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	it("shows which check broke the gate as a failed row", () => {
-		render(
-			<StripScreen
-				stripsRemaining={1}
-				gateNumber={2}
-				configs={[CONFIGS.unitTests, CONFIGS.js]}
-				checks={checks}
-				answered={[]}
-				onStrip={() => {}}
-			/>
-		);
-		// The failed Unit Tests check surfaces its unmet progress in the report.
-		expect(screen.getByText("1/2")).toBeInTheDocument();
-	});
-
 	it("peels the chosen config via its remove button", () => {
 		const onStrip = vi.fn();
 		render(
@@ -144,7 +97,6 @@ describe(StripScreen, () => {
 				stripsRemaining={1}
 				gateNumber={2}
 				configs={[CONFIGS.js, CONFIGS.agentsMd]}
-				checks={checks}
 				answered={[]}
 				onStrip={onStrip}
 			/>
@@ -160,7 +112,6 @@ describe(StripScreen, () => {
 				stripsRemaining={0}
 				gateNumber={2}
 				configs={[CONFIGS.js]}
-				checks={checks}
 				answered={[]}
 				onStrip={onStrip}
 			/>

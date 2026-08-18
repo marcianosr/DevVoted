@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { clsx } from "clsx";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import {
 	stackMatching,
 	type StarterStack,
 } from "~/modules/run/config/domain/stack.model";
-import { preRunRoleRows } from "~/modules/run/gate/domain/configRole.model";
+import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	MAX_SLOTS,
@@ -31,7 +30,6 @@ type ConfiguringScreenProps = {
 	slots: number;
 	stake: GateStake;
 	bench: readonly Config[];
-	checks: readonly CheckStatus[];
 	onSlot: (configId: string) => void;
 	onUnslot: (configId: string) => void;
 	/**
@@ -75,7 +73,6 @@ export const ConfiguringScreen = ({
 	slots,
 	stake,
 	bench,
-	checks,
 	onSlot,
 	onUnslot,
 	stacks,
@@ -86,10 +83,7 @@ export const ConfiguringScreen = ({
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const [customBuild, setCustomBuild] = useState(false);
 	const full = configs.length >= slots;
-	// No window has been played yet on this screen — the counter these rows would
-	// otherwise show ("0/1") is truthful but meaningless before there's a run to
-	// judge (Marciano, 2026-08-10). Only Answering/Shop/gate reports show it live.
-	const rows = preRunRoleRows(configs, checks);
+	const rows = roleRows(configs);
 	const stackMode = stacks !== undefined && onPickStack !== undefined;
 
 	if (stackMode && !customBuild) {
@@ -110,7 +104,6 @@ export const ConfiguringScreen = ({
 				</section>
 				<GateStakeReceipt
 					stake={stake}
-					configCount={slots}
 					configsToInstall={slots - configs.length}
 					action={startAction}
 				/>
@@ -122,7 +115,7 @@ export const ConfiguringScreen = ({
 		? undefined
 		: bench.find((config) => config.id === previewId);
 	const next = previewConfig
-		? pipelineModifiersFor([...configs, previewConfig])
+		? pipelineModifiersFor([...configs, previewConfig], stake.gateNumber)
 		: undefined;
 	const nextPerAnswer = previewConfig
 		? perAnswerPreviewFor([...configs, previewConfig], gateNumber)
@@ -202,12 +195,11 @@ export const ConfiguringScreen = ({
 						/>
 						{slots < MAX_SLOTS ? (
 							<Paragraph size="xs" tone="muted">
-								More slots will unlock when you gain coverage!
+								More slots will unlock as you clear gates!
 							</Paragraph>
 						) : null}
 						<GateStakeReceipt
 							stake={stake}
-							configCount={configs.length}
 							preview={next}
 							previewPerAnswer={nextPerAnswer}
 							action={startAction}

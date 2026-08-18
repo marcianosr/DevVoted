@@ -6,18 +6,22 @@ import {
 	canBuyPeek,
 	canExtend,
 	canLock,
+	canPlantPin,
 	canRebuild,
-	canRepairWidthDemand,
 	canRunLinter,
 	canStart,
+	pinAvailable,
 	extendAvailable,
 	lockAvailable,
 	isAwaitingTomorrow,
 	isRunOver,
+	isShopLocked,
 	lintApplies,
-	lintCost,
+	lintFeeFor,
 	peekApplies,
-	peekCost,
+	mirrorPoll,
+	offlineConfigsOf,
+	peekFeeFor,
 	type RunPoll,
 	type RunState,
 	type RunStatus,
@@ -26,13 +30,22 @@ import {
 	type Config,
 	draftCost,
 } from "~/modules/run/config/domain/config.model";
-import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import {
 	extendCost,
 	LOCK_COST_KB,
 	rebuildCost,
 } from "~/modules/run/shop/domain/draft.model";
-import { checkStatuses } from "~/modules/run/gate/domain/gate.model";
+import {
+	failStripQuotaFor,
+	gateDemandFor,
+} from "~/modules/run/gate/domain/gate.model";
+import {
+	auditsForGate,
+	auditTimeLimitMs,
+	liveAuditsFor,
+	mirrorsPolls,
+	suppressedAuditFor,
+} from "~/modules/run/gate/domain/audit.model";
 import {
 	swatchForGate,
 	type SwatchTheme,
@@ -50,10 +63,9 @@ import {
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
 	atMinimumWidth,
-	coverageDemandFor,
-	dropCount,
+	isStakeFatal,
 	isStoragePlanUnlocked,
-	minConfigsForGate,
+	pinCostFor,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -78,6 +90,16 @@ export type StoragePlanOption = {
 	readonly locked: boolean;
 };
 
+/** A gate audit as the screens render it (ADR-035). */
+export type AuditView = {
+	readonly id: string;
+	readonly name: string;
+	readonly description: string;
+	readonly answerCue?: string;
+	/** Volkswagen CI is reporting this one as passing — struck through. */
+	readonly suppressed: boolean;
+};
+
 /**
  * What the coming gate demands and what it pays — the subject of
  * `GateStakeReceipt`, which Prep, Configuring and Shop all render.
@@ -89,13 +111,18 @@ export type StoragePlanOption = {
 export type GateStake = {
 	readonly gateNumber: number;
 	readonly pollsPerGate: number;
-	readonly stripsOnFailure: number;
-	readonly minConfigs: number;
-	/** Total run coverage the gate demands to pass (ADR-034), and the total the
-	 * run holds — paired here so every stake surface can grade the demand
-	 * without threading run state beside the stake. */
+	/** Coverage the gate demands within its own window (ADR-035), and the meter
+	 * the current attempt holds — paired here so every stake surface can grade
+	 * the demand without threading run state beside the stake. */
 	readonly coverageDemand: number;
 	readonly coverageHeld: number;
+	/** The gate's personality rules, suppressed ones included — the receipt's
+	 * Audit section. */
+	readonly audits: readonly AuditView[];
+	/** What a miss peels from this build (ADR-037), and whether that peel takes
+	 * the whole of it — the receipt states both before the player commits. */
+	readonly stripsOnFailure: number;
+	readonly missIsFatal: boolean;
 	readonly billKb: number;
 	readonly modifiers: PipelineModifiers;
 	readonly perAnswer: PerAnswerPreview;
@@ -165,12 +192,21 @@ export type RunView = {
 	readonly peekReady: boolean;
 	readonly peekCost: number;
 	readonly peeker: Config | null;
+	/** Configs an audit has taken offline for the poll on screen (ADR-038) —
+	 * empty when nothing is down. Their effects are already out of `modifiers`
+	 * and `perAnswer`; this is only how the screen says so. */
+	readonly offlineConfigs: readonly Config[];
+	/** This gate mirrors its polls, so the question asks for the incorrect
+	 * options and the poll's own type has already been flipped. */
+	readonly mirroredPolls: boolean;
+	/** The clock on the poll on screen, in ms; null when it runs free. */
+	readonly pollTimeLimitMs: number | null;
 	/** Whether this poll's split is already paid for — the screen shows the bars
 	 * off this, and the split query refuses to answer until it is true. */
 	readonly currentPollPeeked: boolean;
-	/** Picks the gate's budget still has, before the current poll's selection.
-	 * Null when no config is counting, which is what hides the line. */
-	readonly pickBudgetLeft: number | null;
+	/** Correct answers this gate's polls hold (`.length`'s reveal). Null when no
+	 * config is counting, which is what hides the line. */
+	readonly correctAnswersThisGate: number | null;
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;
 
@@ -181,11 +217,21 @@ export type RunView = {
 	readonly extendAvailable: boolean;
 	readonly extendCost: number;
 	readonly canExtend: boolean;
+	/** Read-only (ADR-038) has shut the coming gate's shop: every buy, sell and
+	 * plan change refuses, and the screen says so instead of the buttons. */
+	readonly shopLocked: boolean;
+	/** The git tag (ADR-036): sold from gate 4, once per run, burn on use. */
+	readonly pinAvailable: boolean;
+	readonly pinCost: number;
+	readonly canPin: boolean;
+	/** The gate this run's tag sits at; null while none is planted. */
+	readonly pinnedAtGate: number | null;
 	/** The gate whose clear opens the next slot (ADR-034); null at the cap. */
 	readonly nextSlotGate: number | null;
 
 	readonly justUnlockedSlots: readonly number[];
-	readonly checks: readonly CheckStatus[];
+	/** The live audits' answering-screen cues (suppressed ones excluded). */
+	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered: readonly AnsweredPoll[];
 	/** Kept whole rather than flattened: every screen that shows pricing wants all
@@ -207,20 +253,13 @@ export type RunView = {
 	readonly gateTheme?: SwatchTheme;
 
 	readonly clearedGateNumber: number;
-	/** The failed gate this shop/prep visit is a redo of (ADR-034); null after
-	 * a clear. */
+	/** The gate being replayed after a fail (ADR-035); null otherwise. */
 	readonly redoingGate: number | null;
 	readonly victoryGate: number;
 
-	readonly stripsOnFailure: number;
-
-	readonly minConfigs: number;
-	readonly underMinConfigs: boolean;
-	/** Distinct from `underMinConfigs`: this build still meets the demand, but
-	 * only just, so sell and drop are refused. */
+	/** One config left — sell and drop refuse, a pipeline never goes bare. */
 	readonly atMinimumWidth: boolean;
 
-	readonly widthRepairable: boolean;
 	readonly pollsAnswered: number;
 	readonly pollsPerGate: number;
 	readonly streak: number;
@@ -333,7 +372,7 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 			locked: locked.includes(config.id),
 			installable: !owned && refusal === null,
 			refusal,
-			preview: pipelineModifiersFor(withIt),
+			preview: pipelineModifiersFor(withIt, state.gatesCleared),
 			previewPerAnswer: perAnswerPreviewFor(withIt, state.gatesCleared),
 		};
 	});
@@ -352,20 +391,40 @@ const redactPoll = (poll: RunPoll): PollView => ({
 	})),
 });
 
+const auditViewsFor = (state: RunState): readonly AuditView[] => {
+	const suppressed = suppressedAuditFor(
+		state.pipeline.configs,
+		state.gatesCleared
+	);
+	return auditsForGate(state.gatesCleared).map((audit) => ({
+		id: audit.id,
+		name: audit.name,
+		description: audit.description,
+		answerCue: audit.answerCue,
+		suppressed: audit.id === suppressed?.id,
+	}));
+};
+
 export const toRunView = (state: RunState): RunView => {
 	const current = state.polls[state.currentIndex];
 	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
-	const nextLintCost = lintCost(state.manualDisabled.length);
+	const nextLintCost = lintFeeFor(state);
 	const plan = storagePlanFor(state.storagePlan);
 	const locked = state.lockedOfferIds ?? [];
 	const extensions = state.extensionsBought ?? 0;
 	const nextExtendCost = extendCost(extensions);
-	const modifiers = pipelineModifiersFor(state.pipeline.configs);
+	const modifiers = pipelineModifiersFor(
+		state.pipeline.configs,
+		state.gatesCleared
+	);
 	const perAnswer = perAnswerPreviewFor(
 		state.pipeline.configs,
 		state.gatesCleared
 	);
-	const minConfigs = minConfigsForGate(state.gatesCleared);
+	const strips = failStripQuotaFor(state.pipeline.configs, state.gatesCleared);
+	const liveAudits = liveAuditsFor(state.pipeline.configs, state.gatesCleared);
+	const offline = offlineConfigsOf(state);
+	const mirrored = mirrorsPolls(liveAudits);
 
 	return {
 		status: state.status,
@@ -376,7 +435,10 @@ export const toRunView = (state: RunState): RunView => {
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
 		stripsRemaining: state.stripsRemaining,
-		poll: state.status === "answering" && current ? redactPoll(current) : null,
+		poll:
+			state.status === "answering" && current
+				? redactPoll(mirrored ? mirrorPoll(current) : current)
+				: null,
 		awaitingTomorrow: isAwaitingTomorrow(state),
 		pollsExhausted: state.currentIndex >= state.polls.length,
 		// Only options the player paid to lint off — no automatic masking.
@@ -386,14 +448,18 @@ export const toRunView = (state: RunState): RunView => {
 		lintCost: nextLintCost,
 		canPeek: peekApplies(state),
 		peekReady: canBuyPeek(state),
-		peekCost: peekCost(state.window.peeked ?? 0),
+		peekCost: peekFeeFor(state),
 		peeker: peekerFor(state.pipeline.configs) ?? null,
+		offlineConfigs: offline,
+		mirroredPolls: mirrored,
+		pollTimeLimitMs:
+			auditTimeLimitMs(liveAudits, state.window.answered) ?? null,
 		currentPollPeeked:
 			current !== undefined && (state.peekedPollIds ?? []).includes(current.id),
-		pickBudgetLeft:
+		correctAnswersThisGate:
 			budgeterFor(state.pipeline.configs) === undefined
 				? null
-				: (state.window.budget ?? 0) - (state.window.picks ?? 0),
+				: (state.window.budget ?? null),
 		rebuildCost: nextRebuildCost,
 		canRebuild: canRebuild(state),
 		lockAvailable: lockAvailable(state),
@@ -403,18 +469,18 @@ export const toRunView = (state: RunState): RunView => {
 		extendAvailable: extendAvailable(state),
 		extendCost: nextExtendCost,
 		canExtend: canExtend(state),
+		shopLocked: isShopLocked(state),
+		pinAvailable: pinAvailable(state),
+		pinCost: pinCostFor(state.gatesCleared),
+		canPin: canPlantPin(state),
+		pinnedAtGate: state.pinPlantedAtGate ?? null,
 		nextSlotGate: nextSlotGateFor(state.pipeline.slots),
 		justUnlockedSlots: state.justUnlockedSlots ?? [],
+		audits: auditViewsFor(state),
 		linter:
 			current === undefined
 				? null
 				: (linterFor(state.pipeline.configs, current.category) ?? null),
-		checks: checkStatuses(
-			state.pipeline,
-			state.window,
-			state.gatesCleared,
-			state.storage
-		),
 		answeredThisGate: state.answeredThisGate,
 		allAnswered: state.allAnswered ?? [],
 		modifiers,
@@ -422,10 +488,11 @@ export const toRunView = (state: RunState): RunView => {
 		gateStake: {
 			gateNumber: state.gatesCleared,
 			pollsPerGate: SLICE_WINDOW,
-			stripsOnFailure: dropCount(state.gatesCleared),
-			minConfigs,
-			coverageDemand: coverageDemandFor(state.gatesCleared),
-			coverageHeld: state.coverage,
+			coverageDemand: gateDemandFor(state.pipeline.configs, state.gatesCleared),
+			coverageHeld: state.window.coverageGained,
+			audits: auditViewsFor(state),
+			stripsOnFailure: strips,
+			missIsFatal: isStakeFatal(strips, state.pipeline.configs.length),
 			billKb: plan.billKb,
 			modifiers,
 			perAnswer,
@@ -441,11 +508,7 @@ export const toRunView = (state: RunState): RunView => {
 		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
 		redoingGate: state.redoGate ?? null,
 		victoryGate: VICTORY_GATE,
-		stripsOnFailure: dropCount(state.gatesCleared),
-		minConfigs,
-		underMinConfigs: state.pipeline.configs.length < minConfigs,
-		atMinimumWidth: atMinimumWidth(state.pipeline.configs.length, minConfigs),
-		widthRepairable: canRepairWidthDemand(state),
+		atMinimumWidth: atMinimumWidth(state.pipeline.configs.length),
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,
 		streak: state.streak,
@@ -466,53 +529,5 @@ export const toRunView = (state: RunState): RunView => {
 			locked: !isStoragePlanUnlocked(option, state.gatesCleared),
 		})),
 		log: state.log,
-	};
-};
-
-/** `stuck` is the explicit dead-end: leaving walks into the gate and ends the
- * run (ADR-031). */
-export type ShopExit =
-	| { readonly state: "open"; readonly gate: number }
-	| {
-			readonly state: "blocked";
-			readonly gate: number;
-			readonly demand: number;
-			readonly shortfall: number;
-	  }
-	| { readonly state: "stuck"; readonly gate: number; readonly demand: number };
-
-/**
- * The shop's one exit, graded against the coming gate's width demand
- * (ADR-031). Open while the build meets it; blocked — with the shortfall
- * measured — while the shop can still repair it; and once the run is provably
- * stuck (no affordable offer, no rebuild worth hoping for, or no free slot),
- * an explicit end-run click.
- *
- * The verdict carries numbers, not a label: the door reads the same everywhere
- * because every surface formats this one shape, and the wording is reachable
- * from a story rather than only from an engine state that produces it.
- */
-export const shopExitFor = (
-	view: Pick<
-		RunView,
-		| "gatesCleared"
-		| "minConfigs"
-		| "underMinConfigs"
-		| "widthRepairable"
-		| "configs"
-	>
-): ShopExit => {
-	if (!view.underMinConfigs) return { state: "open", gate: view.gatesCleared };
-	if (view.widthRepairable)
-		return {
-			state: "blocked",
-			gate: view.gatesCleared,
-			demand: view.minConfigs,
-			shortfall: view.minConfigs - view.configs.length,
-		};
-	return {
-		state: "stuck",
-		gate: view.gatesCleared,
-		demand: view.minConfigs,
 	};
 };

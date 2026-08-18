@@ -65,14 +65,16 @@ export const gateBaseMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;
 
 /**
- * The gate's coverage demand (ADR-034): 80% of a perfect base pace
- * (5·(g+1)(g+2)/2), rounded to friendly numbers — the rule is the contract,
- * the rows live-tune here. Gate 0 rounds down so a 4-of-5 teaching window
- * still passes. Priced on the raw base: streaks and config multipliers are
- * headroom above the pace, never homework.
+ * Coverage each gate demands within its own window (ADR-035): the meter resets
+ * per attempt, so every row is a fresh score to hit, not a running total.
+ * Per-answer earn scales with `gateBaseMultiplier` (g+1), so a linear table
+ * would be constant difficulty — the demand-to-base-pace ratio (strict base =
+ * 5·(g+1) per perfect window) is the real ramp and THE tuning knob. Tune the
+ * rows first, then WRONG_COVERAGE_LOSS; never gateBaseMultiplier, which
+ * reprices every config.
  */
 const COVERAGE_DEMANDS = [
-	3, 12, 24, 40, 60, 85, 110, 145, 180, 220, 265, 310, 365,
+	3, 10, 25, 40, 60, 85, 110, 140, 175, 210, 250, 290, 340,
 ] as const;
 
 export const coverageDemandFor = (gatesCleared: number): number =>
@@ -91,40 +93,65 @@ export const pollDifficultyMultiplier = (
 		Math.max(0, optionCount - DIFFICULTY_BASELINE_OPTIONS) +
 	(isMultiple ? MULTIPLE_CHOICE_COVERAGE_BONUS : 0);
 
-export const dropCount = (gatesCleared: number): number =>
-	1 + Math.floor(gatesCleared / 2);
-
-export const minConfigsForGate = (gatesCleared: number): number =>
-	Math.min(gatesCleared, dropCount(gatesCleared) + 1);
-
 /**
- * A build sitting on its width floor cannot give up another config: the next
- * removal would sink it under the coming gate's demand (ADR-027). The floor of
- * 1 holds even where the gate demands none, so no route empties a pipeline —
- * a run dies at a gate it failed, never at a shop counter (ADR-021).
+ * The one width rule left (ADR-035): a pipeline never goes bare. No gate
+ * demands a width anymore, but a build with nothing in it fails every attempt
+ * forever, so sell and drop refuse the last config — only a missed gate may
+ * take it, and taking it ends the run.
  *
  * Exported so the sell and drop buttons ask the rule rather than restating it;
  * the reducer refuses either way.
  */
-export const atMinimumWidth = (
-	configCount: number,
-	minConfigs: number
-): boolean => configCount <= Math.max(1, minConfigs);
+export const atMinimumWidth = (configCount: number): boolean =>
+	configCount <= 1;
+
+/**
+ * What a missed gate peels from the pipeline (ADR-037), one row per gate. It
+ * escalates because width does: a clear grants a slot, so one config is a third
+ * of an opening build and a fourteenth of a summit build. The rows hold roughly
+ * a quarter of `slotsForGatesCleared` at that depth, which keeps the death clock
+ * at three or four misses the whole way up instead of thirteen at the top.
+ *
+ * Strip audits (Elite, Champion) add to the row rather than replacing it. THE
+ * tuning knob for how forgiving a retry feels: a row of 0 makes that gate's miss
+ * free, and the last two rows plus their audits are the harshest numbers in the
+ * game.
+ */
+const GATE_FAIL_STRIPS = [1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4] as const;
+
+export const failStripsFor = (gatesCleared: number): number =>
+	GATE_FAIL_STRIPS[Math.min(gatesCleared, GATE_FAIL_STRIPS.length - 1)];
 
 export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
 
-/**
- * Configs a pipeline must hold to survive this gate: one more than a failure
- * removes. Every death route reduces to this one comparison (ADR-021) — a strip
- * quota that takes the last config, an emptied pipeline, and a width demand the
- * shop cannot repair all end a run below the floor. Stated on the stake receipt
- * before the gate and on the summary after it, so the rule that killed a run is
- * the rule the player was shown.
- */
-export const configFloorForGate = (gatesCleared: number): number =>
-	dropCount(gatesCleared) + 1;
-
-/** A failed gate is fatal when its strip quota takes the whole build. */
+/** A missed gate is fatal when its strip quota takes the whole build. */
 export const isStakeFatal = (strips: number, configs: number): boolean =>
 	strips >= configs;
+
+/**
+ * The git tag (ADR-036): a once-per-run shop purchase that plants a cross-run
+ * checkpoint, burnt by the run it rescues.
+ *
+ * The price climbs with the gate it marks, because that is exactly how much the
+ * tag is worth — a checkpoint at gate 9 saves a week of climbing where one at
+ * gate 4 saves an evening. Flat pricing made the shallow tag a bad deal and the
+ * deep one a steal.
+ */
+/** Selling a checkpoint before the audits exist is selling nothing. */
+export const PIN_FROM_GATE = 4;
+
+const PIN_COST_STEP_KB = 64;
+
+export const pinCostFor = (gatesCleared: number): number =>
+	PIN_COST_STEP_KB * (gatesCleared - PIN_FROM_GATE + 2);
+
+/**
+ * The last gate that sells one. Past it a rescue is worse than no rescue: the
+ * run would resume on three starter configs against a 4-config peel and stacked
+ * audits, so the tag would cost a fortune to buy a death. The ceiling also keeps
+ * the deepest price at the free tier's whole cap (512KB at gate 10).
+ */
+export const PIN_UNTIL_GATE = 10;
+/** A pinned run starts with a stipend so a deep-but-fresh build can shop. */
+export const PIN_START_KB_PER_GATE = 32;

@@ -35,6 +35,7 @@ const answer = (
 		categoryCode: "css",
 		answeredAt: minutesAfterDrop(5),
 		elapsedMs: 20_000,
+		mirrored: false,
 		...rest,
 		pollId: over.pollId,
 	};

@@ -12,6 +12,7 @@ import {
 import {
 	abandonSessionRun,
 	applyActionToRun,
+	consumePinnedGate,
 	createSessionRunWithState,
 	ensureTodaysSegment,
 	fetchAnsweredPollIdsForDay,
@@ -110,7 +111,11 @@ export const startRunService = async ({
 			throw new Error("No polls left for a run today");
 		}
 
-		const state = createRun(polls, HANDED_CONFIGS);
+		// A planted git tag rescues this run (ADR-036): it starts at the pinned
+		// gate and the tag burns on use — consuming before creating means a
+		// crash between the two costs the tag, never duplicates it.
+		const pinnedGate = await consumePinnedGate(userId);
+		const state = createRun(polls, HANDED_CONFIGS, pinnedGate);
 		await createSessionRunWithState(userId, date, state);
 		return toRunView(state);
 	});

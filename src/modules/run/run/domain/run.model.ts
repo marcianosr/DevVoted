@@ -17,7 +17,6 @@ import {
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
-	CHEAPEST_DRAFT_COST_KB,
 	Config,
 	draftCost,
 	faucetKbPerCorrect,
@@ -45,19 +44,33 @@ import {
 	rollDraft,
 } from "~/modules/run/shop/domain/draft.model";
 import {
-	checkStatuses,
+	failStripQuotaFor,
+	gateDemandFor,
 	gatePassed,
 } from "~/modules/run/gate/domain/gate.model";
+import {
+	type Audit,
+	auditBurnKb,
+	auditFeeMultiplier,
+	auditScoreShare,
+	auditsCloseShop,
+	auditsFreezeManualEffects,
+	auditTimeLimitMs,
+	liveAuditsFor,
+	mirrorsPolls,
+	offlineConfigsFor,
+} from "~/modules/run/gate/domain/audit.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	atMinimumWidth,
-	coverageDemandFor,
-	dropCount,
 	FAUCET_CAP_KB,
-	gateBaseMultiplier,
 	isStakeFatal,
+	PIN_FROM_GATE,
+	PIN_START_KB_PER_GATE,
+	pinCostFor,
+	PIN_UNTIL_GATE,
+	gateBaseMultiplier,
 	isStoragePlanUnlocked,
-	minConfigsForGate,
 	pollDifficultyMultiplier,
 	roundToOneDecimal,
 	SLICE_WINDOW,
@@ -161,16 +174,59 @@ export const answerOutcome = <Id>(
 	return pickedACorrectOption ? "partial" : "wrong";
 };
 
+/**
+ * The Mirror's poll (ADR-038): every option's correctness flips, so the question
+ * becomes "pick every incorrect option". It turns multi-answer whenever more
+ * than one option was wrong, which is most of them — a single-answer poll with
+ * four options mirrors into a three-option select-all.
+ *
+ * A poll with no wrong options is left alone: there would be nothing to pick,
+ * and an unanswerable poll is a soft-lock rather than a debuff.
+ */
+export const mirrorPoll = (poll: RunPoll): RunPoll => {
+	const wrongCount = poll.options.filter((option) => !option.correct).length;
+	if (wrongCount === 0) return poll;
+	return {
+		...poll,
+		answerType: mirroredAnswerType(wrongCount),
+		options: poll.options.map((option) => ({
+			...option,
+			correct: !option.correct,
+		})),
+	};
+};
+
+/**
+ * Mirrored, a poll wants *every* wrong option, so it turns select-all as soon as
+ * more than one option was wrong. The subtle half of the mirror, shared by the
+ * engine's own transform above and the community board's grading — the flip
+ * itself is a `!` and needs no home.
+ */
+export const mirroredAnswerType = (wrongCount: number): AnswerType =>
+	wrongCount > 1 ? "multiple" : "single";
+
+/**
+ * The mirror as the grader sees it: just enough of a poll for `answerOutcome`,
+ * with ids preserved and labels dropped. Kept separate from `mirrorPoll` because
+ * a community poll's ids are numeric and its options carry different fields —
+ * only the grading shape is common.
+ */
+export const mirrorGrading = <Id>(poll: GradedPoll<Id>): GradedPoll<Id> => {
+	const wrong = poll.options.filter((option) => !option.correct);
+	if (wrong.length === 0) return poll;
+	return {
+		answerType: mirroredAnswerType(wrong.length),
+		options: poll.options.map((option) => ({
+			id: option.id,
+			correct: !option.correct,
+		})),
+	};
+};
+
 /** A correct extends the streak, a wrong breaks it, a partial holds it. */
 export const nextStreak = (current: number, outcome: AnswerOutcome): number => {
 	if (outcome === "correct") return current + 1;
 	if (outcome === "wrong") return 0;
-	return current;
-};
-
-const nextMissStreak = (current: number, outcome: AnswerOutcome): number => {
-	if (outcome === "wrong") return current + 1;
-	if (outcome === "correct") return 0;
 	return current;
 };
 
@@ -191,6 +247,9 @@ export type AnsweredPoll = {
 	readonly coverageEarned?: number;
 	readonly coverageBreakdown?: CoverageBreakdown;
 	readonly elapsedMs?: number;
+	/** Answered past a Timeout audit's clock, so it was scored as a miss whatever
+	 * was picked (ADR-038). */
+	readonly timedOut?: boolean;
 };
 
 export type RunState = {
@@ -231,10 +290,17 @@ export type RunState = {
 	readonly gateBillKb?: number;
 	readonly planDowngraded?: boolean;
 	readonly clearedGate?: number;
-	/** Set while the shop/prep visit is a redo of this failed gate (ADR-034),
-	 * so the screens can tell it from a post-clear visit — `clearedGate` still
-	 * holds the previous clear and cannot. */
+	/** Set while this gate is being replayed after a miss (ADR-037), so the
+	 * screens can say "again" and the route sync can skip the clear's payout
+	 * screen — `clearedGate` still holds the previous clear and cannot. Cleared
+	 * when the retry starts. */
 	readonly redoGate?: number;
+	/** The git tag (ADR-036): the gate this run planted its checkpoint at.
+	 * Doubles as the once-per-run flag. */
+	readonly pinPlantedAtGate?: number;
+	/** Where this run began — 0 unless a tag rescued it. Keeps the death
+	 * storage-credit honest: only gates actually climbed count. */
+	readonly startedAtGate?: number;
 	readonly justUnlockedSlots?: readonly number[];
 	readonly log: readonly string[];
 };
@@ -258,6 +324,7 @@ export type RunAction =
 	| { readonly type: "rebuild-draft" }
 	| { readonly type: "lock-offer"; readonly configId: string }
 	| { readonly type: "extend-offers" }
+	| { readonly type: "plant-pin" }
 	| { readonly type: "finish-reward" }
 	| { readonly type: "sell"; readonly configId: string }
 	| { readonly type: "drop"; readonly configId: string }
@@ -271,14 +338,26 @@ const correctOptionCount = (poll: RunPoll): number =>
  * the already-answered ones included. Recomputed at each hydration rather than
  * stored at open, because a day rollover (ADR-011) swaps the window's unplayed
  * polls for tomorrow's.
+ *
+ * `mirrored` counts the wrong options instead, because at a Mirror gate those
+ * are the picks the window actually demands — `.length` reveals a number the
+ * player is about to spend, so it has to be the mirrored one.
  */
 export const pickBudgetFor = (
 	polls: readonly RunPoll[],
-	fromIndex: number
+	fromIndex: number,
+	mirrored = false
 ): number =>
 	polls
 		.slice(fromIndex, fromIndex + SLICE_WINDOW)
-		.reduce((total, poll) => total + correctOptionCount(poll), 0);
+		.reduce(
+			(total, poll) =>
+				total +
+				(mirrored
+					? poll.options.length - correctOptionCount(poll)
+					: correctOptionCount(poll)),
+			0
+		);
 
 /** Where the open window began: `answered` and `currentIndex` advance one per
  * answer and reset together, so their difference is the window's first poll. */
@@ -286,20 +365,41 @@ export const windowStartIndex = (
 	state: Pick<RunState, "currentIndex" | "window">
 ): number => state.currentIndex - state.window.answered;
 
+/**
+ * A window belongs to a gate, so it is opened with that gate's number: the
+ * budget it reveals depends on whether the gate mirrors its polls, and the gate
+ * being opened is not always the one just played (a clear opens the next).
+ */
 const freshWindow = (
 	polls: readonly RunPoll[],
-	fromIndex: number
+	fromIndex: number,
+	configs: readonly Config[],
+	gate: number
 ): GateWindow => ({
 	...EMPTY_WINDOW,
-	budget: pickBudgetFor(polls, fromIndex),
+	budget: pickBudgetFor(
+		polls,
+		fromIndex,
+		mirrorsPolls(liveAuditsFor(configs, gate))
+	),
 });
 
+/**
+ * `startAtGate` is the git tag's rescue (ADR-036): the run opens on that gate
+ * with the width its clears would have granted and a stipend to shop with —
+ * everything else (configs, coverage, plan) starts fresh.
+ */
 export const createRun = (
 	polls: readonly RunPoll[],
-	handed: readonly Config[]
+	handed: readonly Config[],
+	startAtGate = 0
 ): RunState => ({
 	status: "configuring",
-	pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [] },
+	pipeline: {
+		id: "pipeline",
+		slots: Math.max(BASE_SLOTS, slotsForGatesCleared(startAtGate)),
+		configs: [],
+	},
 	available: handed,
 	draftOptions: [],
 	rebuildsUsed: 0,
@@ -311,14 +411,15 @@ export const createRun = (
 	stripsRemaining: 0,
 	polls,
 	currentIndex: 0,
-	window: freshWindow(polls, 0),
+	window: freshWindow(polls, 0, [], startAtGate),
 	manualDisabled: [],
 	peekedPollIds: [],
-	gatesCleared: 0,
+	gatesCleared: startAtGate,
+	startedAtGate: startAtGate,
 	streak: 0,
 	coverage: 0,
 	coverageByCategory: {},
-	storage: 0,
+	storage: PIN_START_KB_PER_GATE * startAtGate,
 	faucetEarnedKb: 0,
 	faucetThisGateKb: 0,
 	gateRewardKb: 0,
@@ -338,34 +439,6 @@ const clearLine = (gateNumber: number, reward: number): string => {
 	const swatch = swatchForGate(gateNumber);
 	const earned = swatch ? `, ${swatch.name} earned` : "";
 	return `Gate ${gateNumber} cleared! +${reward}KB${earned}.`;
-};
-
-const failedChecks = (state: RunState): readonly string[] =>
-	checkStatuses(state.pipeline, state.window, state.gatesCleared, state.storage)
-		.filter((check) => check.state === "failed")
-		.map((check) => check.label);
-
-const coverageShortfall = (state: RunState): readonly string[] => {
-	const demanded = coverageDemandFor(state.gatesCleared);
-	return state.coverage < demanded
-		? [`coverage ${state.coverage}% of ${demanded}%`]
-		: [];
-};
-
-const failureCause = (state: RunState): string => {
-	const failed = [...failedChecks(state), ...coverageShortfall(state)];
-	return failed.length > 0 ? `: ${failed.join(", ")}` : "";
-};
-
-const fatalPeelLine = (
-	state: RunState,
-	gateNumber: number,
-	installed: number
-): string => {
-	if (installed === 0)
-		return `Gate ${gateNumber} broke a bare build — run over.`;
-	const plural = installed > 1 ? "s" : "";
-	return `Gate ${gateNumber} failed${failureCause(state)}. The peel takes all ${installed} config${plural} — run over.`;
 };
 
 export const isAwaitingTomorrow = (state: RunState): boolean =>
@@ -451,28 +524,28 @@ const shopDraft = (state: RunState, seed: number): readonly Config[] =>
 	);
 
 const closeWindow = (closing: RunState, nextIndex: number): RunState => {
+	// The bill charges before the verdict, pass or fail — every attempt at a gate
+	// pays the subscription, the failed ones included (ADR-035).
 	const state = chargeStorageBill(closing);
 	const gateNumber = state.gatesCleared;
 
-	// Post-bill on purpose: the plan is charged first (`chargeStorageBill`), so a
-	// subscription that eats into the balance can drop a storage floor below it.
-	if (
-		!gatePassed(
-			state.pipeline,
-			state.window,
-			state.gatesCleared,
-			state.storage,
-			state.coverage
-		)
-	) {
-		const quota = dropCount(state.gatesCleared);
+	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
+		// A miss peels (ADR-037): the base rule plus the gate's strip audits. The
+		// run does not end at the gate — it ends when the peel has nothing left to
+		// take, which the receipt says at the door.
+		const quota = failStripQuotaFor(state.pipeline.configs, gateNumber);
 		const installed = state.pipeline.configs.length;
+		const demand = gateDemandFor(state.pipeline.configs, state.gatesCleared);
+		const missed = `Gate ${gateNumber} failed: ${state.window.coverageGained}% of ${demand}% this gate.`;
 		if (isStakeFatal(quota, installed))
 			return {
 				...state,
 				currentIndex: nextIndex,
 				status: "dead",
-				log: withLog(state, fatalPeelLine(state, gateNumber, installed)),
+				log: withLog(
+					state,
+					`${missed} It peels ${quota} — the build holds ${installed}. Run over.`
+				),
 			};
 		return {
 			...state,
@@ -481,7 +554,7 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 			stripsRemaining: quota,
 			log: withLog(
 				state,
-				`Gate ${gateNumber} failed${failureCause(state)}. Peel ${quota} config${quota > 1 ? "s" : ""}.`
+				`${missed} Peel ${quota} config${quota > 1 ? "s" : ""} and run it again.`
 			),
 		};
 	}
@@ -508,7 +581,12 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	const grantedSlot = slots > state.pipeline.slots;
 	const cleared: RunState = {
 		...state,
-		window: freshWindow(state.polls, nextIndex),
+		window: freshWindow(
+			state.polls,
+			nextIndex,
+			state.pipeline.configs,
+			state.gatesCleared + 1
+		),
 		manualDisabled: [],
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
@@ -553,17 +631,36 @@ const answer = (
 	const poll = state.polls[state.currentIndex];
 	if (!poll) return state;
 
-	const configs = state.pipeline.configs;
-	const outcome = answerOutcome(poll, optionIds);
+	// The audits read the *installed* pipeline while scoring reads the live one:
+	// Dependency Outage takes a config down for the attempt, and the defeat
+	// device's fraud was filed at the door, so an outage inside the window cannot
+	// retroactively un-suppress what the receipt already showed as passing.
+	const audits = auditsOf(state);
+	const configs = liveConfigsOf(state);
+	// The mirror flips the poll, so everything downstream — outcome, share,
+	// streak, the answers the review shows as correct — grades the question the
+	// player was actually asked.
+	const graded = mirrorsPolls(audits) ? mirrorPoll(poll) : poll;
+	const answeredOutcome = answerOutcome(graded, optionIds);
+	// Over the clock is a miss whatever was picked, and it short-circuits the
+	// mirror rather than feeding it: a timeout must never be the way to score.
+	const limitMs = auditTimeLimitMs(audits, state.window.answered);
+	const timedOut =
+		limitMs !== undefined && elapsedMs !== undefined && elapsedMs > limitMs;
+	const outcome: AnswerOutcome = timedOut ? "wrong" : answeredOutcome;
 	const correct = outcome === "correct";
-	const openingClean = state.window.leadingCorrect === state.window.answered;
-	const share = coverageShare(poll, optionIds);
+	// The audits transform the raw share before any multiplier (the mirror flips
+	// it), so scoring — earn AND bleed — follows the audited share while streaks
+	// and the faucet stay keyed to true correctness.
+	const auditedShare = timedOut
+		? 0
+		: auditScoreShare(audits, coverageShare(graded, optionIds));
 	const gateMultiplier = gateBaseMultiplier(state.gatesCleared);
 	const difficultyMultiplier = pollDifficultyMultiplier(
-		poll.options.length,
-		poll.answerType === "multiple"
+		graded.options.length,
+		graded.answerType === "multiple"
 	);
-	const scoredShare = share * gateMultiplier * difficultyMultiplier;
+	const scoredShare = auditedShare * gateMultiplier * difficultyMultiplier;
 	const streak = nextStreak(state.streak, outcome);
 	const answerContext: AnswerContext = {
 		category: poll.category,
@@ -576,12 +673,10 @@ const answer = (
 		streakMultiplier(streak)
 	);
 	const coverageLoss =
-		share > 0
+		auditedShare > 0
 			? 0
 			: roundToOneDecimal(
-					WRONG_COVERAGE_LOSS *
-						rewardMultiplierFor(state.pipeline.configs) *
-						gateMultiplier
+					WRONG_COVERAGE_LOSS * rewardMultiplierFor(configs) * gateMultiplier
 				);
 	const coverageBreakdown = coverageBreakdownForAnswer(
 		configs,
@@ -600,7 +695,12 @@ const answer = (
 		rawFaucet,
 		Math.max(0, FAUCET_CAP_KB - faucetEarnedBefore)
 	);
-	const missStreak = nextMissStreak(state.window.missStreak ?? 0, outcome);
+	// The burn audit's per-poll tax; floors the balance at 0 — insolvency stays
+	// non-lethal (ADR-023's downgrade is the storage cliff, never death).
+	const burnKb = Math.min(
+		auditBurnKb(audits, outcome === "wrong"),
+		Math.max(0, state.storage + faucet)
+	);
 	const tally = state.window.byCategory[poll.category] ?? {
 		seen: 0,
 		correct: 0,
@@ -610,23 +710,19 @@ const answer = (
 	const window: GateWindow = {
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
-		coverageGained: roundToOneDecimal(state.window.coverageGained + earned),
-		leadingCorrect:
-			openingClean && correct
-				? state.window.leadingCorrect + 1
-				: state.window.leadingCorrect,
+		// The gate's score meter: net of losses and floored, so a bad opening
+		// can be climbed out of but never banks a negative (ADR-035).
+		coverageGained: roundToOneDecimal(
+			Math.max(0, state.window.coverageGained + earned - coverageLoss)
+		),
 		byCategory: {
 			...state.window.byCategory,
 			[poll.category]: {
 				seen: tally.seen + 1,
 				correct: tally.correct + (correct ? 1 : 0),
-				gained: roundToOneDecimal((tally.gained ?? 0) + earned),
 			},
 		},
-		picks: (state.window.picks ?? 0) + optionIds.length,
 		budget: state.window.budget,
-		missStreak,
-		maxMissStreak: Math.max(state.window.maxMissStreak ?? 0, missStreak),
 		peeked: state.window.peeked ?? 0,
 	};
 
@@ -635,19 +731,25 @@ const answer = (
 		question: poll.question,
 		category: poll.category,
 		outcome,
-		picked: poll.options
+		picked: graded.options
 			.filter((option) => optionIds.includes(option.id))
 			.map((option) => option.label),
-		correct: poll.options
+		// The mirrored expectation, not the poll's own answer: the reveal marks
+		// what this gate asked for, and the review has to agree with the score.
+		correct: graded.options
 			.filter((option) => option.correct)
 			.map((option) => option.label),
 		codeBlock: poll.codeBlock,
 		explanation: poll.explanation,
 		options: poll.options.map((option) => option.label),
-		answerType: poll.answerType,
+		answerType: graded.answerType,
 		coverageEarned: earned,
 		coverageBreakdown,
 		elapsedMs,
+		// The outcome above already reads "wrong" for a late answer, so the review
+		// needs this to tell a genuine miss from a right answer that ran out of
+		// clock — the tallies stay honest, and so does the player's memory.
+		timedOut: timedOut ? true : undefined,
 	};
 
 	const coverage = roundToOneDecimal(
@@ -659,7 +761,7 @@ const answer = (
 		window,
 		manualDisabled: [],
 		streak,
-		storage: addStorage(state.storage, faucet),
+		storage: addStorage(state.storage, faucet) - burnKb,
 		faucetEarnedKb: faucetEarnedBefore + faucet,
 		faucetThisGateKb: (state.faucetThisGateKb ?? 0) + faucet,
 		coverage,
@@ -669,6 +771,8 @@ const answer = (
 		},
 		answeredThisGate: [...state.answeredThisGate, answeredPoll],
 		allAnswered: [...(state.allAnswered ?? []), answeredPoll],
+		log:
+			burnKb > 0 ? withLog(state, `Storage leaked -${burnKb}KB.`) : state.log,
 	};
 
 	if (window.answered >= SLICE_WINDOW) return closeWindow(answered, nextIndex);
@@ -687,18 +791,61 @@ const wrongStillOn = (state: RunState) => {
 	);
 };
 
+/**
+ * The audits in force on the gate this run is standing at — every rule that
+ * reads the pipeline asks this rather than rebuilding the pair of arguments.
+ */
+const auditsOf = (state: RunState): readonly Audit[] =>
+	liveAuditsFor(state.pipeline.configs, state.gatesCleared);
+
+/** Configs an audit has switched off for the poll on deck (ADR-038). */
+export const offlineConfigsOf = (state: RunState): readonly Config[] =>
+	offlineConfigsFor(
+		state.pipeline.configs,
+		auditsOf(state),
+		windowStartIndex(state),
+		state.window.answered
+	);
+
+/**
+ * The build as it actually plays this poll: installed, minus whatever an audit
+ * has taken offline. Everything that reads a power off the pipeline goes through
+ * here, so a switched-off config cannot sell an action it can no longer perform.
+ */
+export const liveConfigsOf = (state: RunState): readonly Config[] => {
+	const offline = offlineConfigsOf(state);
+	if (offline.length === 0) return state.pipeline.configs;
+	return state.pipeline.configs.filter(
+		(config) => !offline.some((down) => down.id === config.id)
+	);
+};
+
+/**
+ * What the paid actions charge here: the fee ladder, times whatever Cost Overrun
+ * is doing to it (ADR-038). Exported so the buttons print the same number the
+ * reducer takes.
+ */
+export const lintFeeFor = (state: RunState): number =>
+	lintCost(state.manualDisabled.length) * auditFeeMultiplier(auditsOf(state));
+
+export const peekFeeFor = (state: RunState): number =>
+	peekCost(state.window.peeked ?? 0) * auditFeeMultiplier(auditsOf(state));
+
 export const lintApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
-	if (!poll || !canLint(state.pipeline.configs, poll.category)) return false;
+	if (!poll || !canLint(liveConfigsOf(state), poll.category)) return false;
+	// Feature Freeze removes the action rather than pricing it: a frozen linter
+	// has no button to explain itself, and the receipt already said why.
+	if (auditsFreezeManualEffects(auditsOf(state))) return false;
 	return wrongStillOn(state).length > 1;
 };
 
 export const canRunLinter = (state: RunState): boolean =>
-	lintApplies(state) && state.storage >= lintCost(state.manualDisabled.length);
+	lintApplies(state) && state.storage >= lintFeeFor(state);
 
 const spendLint = (state: RunState): RunState => {
 	if (!canRunLinter(state)) return state;
-	const cost = lintCost(state.manualDisabled.length);
+	const cost = lintFeeFor(state);
 	return {
 		...state,
 		storage: state.storage - cost,
@@ -714,17 +861,18 @@ const spendLint = (state: RunState): RunState => {
  */
 export const peekApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
-	if (!poll || !peekerFor(state.pipeline.configs)) return false;
+	if (!poll || !peekerFor(liveConfigsOf(state))) return false;
+	if (auditsFreezeManualEffects(auditsOf(state))) return false;
 	return !(state.peekedPollIds ?? []).includes(poll.id);
 };
 
 export const canBuyPeek = (state: RunState): boolean =>
-	peekApplies(state) && state.storage >= peekCost(state.window.peeked ?? 0);
+	peekApplies(state) && state.storage >= peekFeeFor(state);
 
 const spendPeek = (state: RunState): RunState => {
 	if (!canBuyPeek(state)) return state;
 	const poll = state.polls[state.currentIndex];
-	const cost = peekCost(state.window.peeked ?? 0);
+	const cost = peekFeeFor(state);
 	return {
 		...state,
 		storage: state.storage - cost,
@@ -749,16 +897,17 @@ const strip = (state: RunState, configId: string): RunState => {
 			state,
 			remaining > 0
 				? `Peeled a config. ${remaining} more to drop.`
-				: `Build repaired — climb on when ready.`
+				: `Peel paid — rebuild in the shop.`
 		),
 	};
 };
 
 /**
- * A redo routes through the shop (ADR-034): the strips just landed, and KB is
- * the comeback resource, so the shop sits between every failed window and its
- * replay. `answeredThisGate` survives into the visit for the review screen;
- * `finishReward` resets it on the way out, as it does after a clear.
+ * The way out of a missed gate (ADR-037): the peel is paid, so the run rejoins
+ * the normal post-gate loop — shop, prep, then the same gate again. Routing
+ * through the shop is the point: KB is the comeback resource, and a rebuilt
+ * pipeline is the only thing that makes the retry different from the attempt
+ * that just failed.
  */
 const resumeClimb = (state: RunState): RunState => {
 	if (state.stripsRemaining > 0) return state;
@@ -770,7 +919,12 @@ const resumeClimb = (state: RunState): RunState => {
 		};
 	return {
 		...state,
-		window: freshWindow(state.polls, state.currentIndex),
+		window: freshWindow(
+			state.polls,
+			state.currentIndex,
+			state.pipeline.configs,
+			state.gatesCleared
+		),
 		manualDisabled: [],
 		gateRewardKb: 0,
 		interestThisGateKb: 0,
@@ -787,7 +941,7 @@ const resumeClimb = (state: RunState): RunState => {
 		status: "rewarding",
 		log: withLog(
 			state,
-			`Gate ${state.gatesCleared} again — repair in the shop first.`
+			`Gate ${state.gatesCleared} again — rebuild in the shop first.`
 		),
 	};
 };
@@ -851,15 +1005,12 @@ const upgrade = (state: RunState, configId: string): RunState => {
 			config.id === configId ? levelUp(config) : config
 		)
 	);
+	// A Focus config is gated twice: its category's coverage says you have earned
+	// the level, and the storage every upgrade costs says you can pay for it.
+	// Mastery is permission, KB is the price — one never stands in for the other.
 	if (owned.focusCategory) {
 		const have = state.coverageByCategory[owned.focusCategory] ?? 0;
 		if (have < upgradeCoverageRequired(level)) return state;
-		return stayReward(
-			state,
-			levelled,
-			state.draftOptions,
-			`Upgraded ${owned.label} to L${level + 1}.`
-		);
 	}
 	const cost = upgradeStorageCost(level);
 	if (state.storage < cost) return state;
@@ -890,32 +1041,47 @@ const changePlan = (state: RunState, tier: number): RunState => {
 	};
 };
 
-export const canRepairWidthDemand = (state: RunState): boolean => {
-	if (state.pipeline.configs.length >= state.pipeline.slots) return false;
-	const ownedIds = new Set(state.pipeline.configs.map((config) => config.id));
-	const affordableOffer = state.draftOptions.some(
-		(offer) => !ownedIds.has(offer.id) && draftCost(offer) <= state.storage
-	);
-	return (
-		affordableOffer ||
-		state.storage >= rebuildCost(state.rebuildsUsed) + CHEAPEST_DRAFT_COST_KB
-	);
+/**
+ * The window the shop sells a tag in (ADR-036): from gate 4, and never past gate
+ * 10 — a rescue deeper than that resumes a starter build into stacked audits and
+ * a 4-config peel, so it would be a fortune spent on a death.
+ */
+const pinSoldAt = (gatesCleared: number): boolean =>
+	gatesCleared >= PIN_FROM_GATE && gatesCleared <= PIN_UNTIL_GATE;
+
+/**
+ * The git tag (ADR-036): one per run, priced by the gate it marks, burnt by the
+ * run it rescues. The tag itself persists on the account (run.repository mirrors
+ * it), so it outlives this run's death — and a rescued run that wants another
+ * has to buy it again.
+ */
+const plantPin = (state: RunState): RunState => {
+	if (state.pinPlantedAtGate !== undefined) return state;
+	if (!pinSoldAt(state.gatesCleared)) return state;
+	const cost = pinCostFor(state.gatesCleared);
+	if (state.storage < cost) return state;
+	return {
+		...state,
+		storage: state.storage - cost,
+		pinPlantedAtGate: state.gatesCleared,
+		log: withLog(
+			state,
+			`git tag planted at gate ${state.gatesCleared} (-${cost}KB) — your next run checks out here.`
+		),
+	};
 };
 
+/** Exported so the shop button asks the rule; the reducer refuses either way. */
+export const canPlantPin = (state: RunState): boolean =>
+	state.pinPlantedAtGate === undefined &&
+	pinSoldAt(state.gatesCleared) &&
+	state.storage >= pinCostFor(state.gatesCleared);
+
+/** Whether this depth of climb sells the tag at all (same split as ADR-029). */
+export const pinAvailable = (state: RunState): boolean =>
+	state.pinPlantedAtGate === undefined && pinSoldAt(state.gatesCleared);
+
 const finishReward = (state: RunState): RunState => {
-	const demanded = minConfigsForGate(state.gatesCleared);
-	const installed = state.pipeline.configs.length;
-	if (installed < demanded) {
-		if (canRepairWidthDemand(state)) return state;
-		return {
-			...state,
-			status: "dead",
-			log: withLog(
-				state,
-				`Gate ${state.gatesCleared} demands ${demanded} configs — the build holds ${installed} and the shop can't get it there. Run over.`
-			),
-		};
-	}
 	return {
 		...state,
 		draftOptions: [],
@@ -1015,10 +1181,7 @@ const extendOffers = (state: RunState): RunState => {
 };
 
 const pipelineAtMinimumWidth = (state: RunState): boolean =>
-	atMinimumWidth(
-		state.pipeline.configs.length,
-		minConfigsForGate(state.gatesCleared)
-	);
+	atMinimumWidth(state.pipeline.configs.length);
 
 const sell = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
@@ -1049,10 +1212,11 @@ const drop = (state: RunState, configId: string): RunState => {
 	};
 };
 
-/** The climb only begins on a full pipeline. Exported so the Start button asks
- * the rule rather than restating it; the reducer refuses either way. */
+/** The climb begins on a full starting hand — a tag-rescued run opens wider
+ * than the bench can fill, so the demand clamps to the base three (ADR-036).
+ * Exported so the Start button asks the rule; the reducer refuses either way. */
 export const canStart = (pipeline: Pipeline): boolean =>
-	pipeline.configs.length >= pipeline.slots;
+	pipeline.configs.length >= Math.min(pipeline.slots, BASE_SLOTS);
 
 /** Won and dead are both terminal; nearly every caller wants "is it finished"
  * rather than which of the two, and spelling out the pair invites missing one. */
@@ -1064,7 +1228,28 @@ const start = (state: RunState): RunState => {
 	return { ...state, status: "answering" };
 };
 
+/**
+ * Everything the shop writes. Read-only (ADR-038) refuses the lot before the
+ * gate it guards; `drop` is deliberately not here — it belongs to the gate door,
+ * not the till, and `atMinimumWidth` already governs it.
+ */
+const SHOP_WRITES: readonly RunAction["type"][] = [
+	"draft",
+	"upgrade",
+	"rebuild-draft",
+	"lock-offer",
+	"extend-offers",
+	"plant-pin",
+	"change-plan",
+	"sell",
+];
+
+/** Whether the coming gate's audits have shut the shop (ADR-038). */
+export const isShopLocked = (state: RunState): boolean =>
+	auditsCloseShop(auditsOf(state));
+
 export const runReducer = (state: RunState, action: RunAction): RunState => {
+	if (SHOP_WRITES.includes(action.type) && isShopLocked(state)) return state;
 	if (action.type === "slot" && state.status === "configuring")
 		return slotConfig(state, action.configId);
 	if (action.type === "unslot" && state.status === "configuring")
@@ -1093,6 +1278,8 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return lockOffer(state, action.configId);
 	if (action.type === "extend-offers" && state.status === "rewarding")
 		return extendOffers(state);
+	if (action.type === "plant-pin" && state.status === "rewarding")
+		return plantPin(state);
 	if (action.type === "finish-reward" && state.status === "rewarding")
 		return finishReward(state);
 	if (action.type === "change-plan" && state.status === "rewarding")

@@ -8,6 +8,8 @@ coverage slot ladder**, **amends [ADR-013](013-gate-scaled-coverage.md)** (loss
 ratio 0.5 → 0.25) and **[ADR-027](027-gate-width-demand.md) Decision 2** (a shop
 now sits between a strip and its replay). Work tracked in DVTD-wlte.
 
+> ⚠ Amended by [ADR-035](035-gates-are-auditors.md) (2026-08-17): Decisions 1, 3 and 6 reversed — the demand is per-gate and fresh, the table reprices, the laps display is gone. Decision 2's strip-shop-replay loop narrows to strip audits; Decision 5 (gates grant slots) stands.
+
 ## Context
 
 Coverage was the score, but no gate ever asked for it. A build could ignore

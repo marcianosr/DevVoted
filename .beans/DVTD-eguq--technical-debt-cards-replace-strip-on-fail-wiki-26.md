@@ -1,11 +1,11 @@
 ---
 # DVTD-eguq
 title: 'Technical debt cards: replace strip-on-fail (wiki §2.6)'
-status: todo
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-07-31T11:02:26Z
-updated_at: 2026-08-12T10:25:05Z
+updated_at: 2026-08-17T09:52:08Z
 ---
 
 The wiki's failure model (§2.6) is unimplemented: a failed check plants a **debt card** on the failing config — effect disabled, check stays live — drawn from a shared 12-card pool, each with its own resolve condition (correctness / coverage thresholds / breadth / build actions). Debt doesn't stack; storage pay-off doubles per run; the run ends only when every slot holds debt.
@@ -22,3 +22,7 @@ Scoped out of DVTD-77ke (the Config Rule) on 2026-07-31; the Config Rule's per-c
 - [ ] Storage pay-off with per-run doubling price
 - [ ] Fully-debted run end; retire strip-on-fail + StripScreen
 - [ ] Persistence (snapshot fields; reconcile DVTD-civm)
+
+## Reasons for Scrapping
+
+Debt cards were an alternative to strip-on-fail; ADR-035 deleted strip-on-fail (ordinary fails redo free, strips are audit-owned). The debt idea could return as a gate audit if wanted.

@@ -14,24 +14,6 @@ type Story = StoryObj<typeof AnsweringScreen>;
 export const Default: Story = {
 	args: {
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
-		checks: [
-			{
-				label: "Correct",
-				progress: { kind: "answers", current: 1, target: 2 },
-				current: 1,
-				target: 2,
-				state: "running",
-				sourceConfigId: "unit-tests",
-			},
-			{
-				label: "Coverage",
-				progress: { kind: "coverage", current: 2, target: 4 },
-				current: 2,
-				target: 4,
-				state: "running",
-				sourceConfigId: "coverage-gain",
-			},
-		],
 		category: "react",
 		question: "What is the correct key to give list items in React?",
 		answerType: "single",
@@ -78,5 +60,92 @@ export const Revealed: Story = {
 			],
 			earnedCoverage: 3.6,
 		},
+	},
+};
+
+/**
+ * The mirror rewrites the question (ADR-038): the instruction sits on the card
+ * with the options, and a single-answer poll has become a select-all.
+ */
+export const MirroredGate: Story = {
+	args: {
+		...Default.args,
+		answerType: "multiple",
+		audits: [
+			{
+				id: "mirrored",
+				name: "Mirror",
+				description:
+					"Every poll asks for the INCORRECT options instead — pick all of them.",
+				answerCue:
+					"Mirrored: pick every WRONG option. A single-answer poll usually has several.",
+				suppressed: false,
+			},
+		],
+		mirroredPolls: true,
+	},
+};
+
+/** A dependency down: the cue announces it, the line beneath names it. */
+export const OutageGate: Story = {
+	args: {
+		...Default.args,
+		audits: [
+			{
+				id: "dependency-outage",
+				name: "Dependency Outage",
+				description:
+					"One config in your pipeline goes offline for the whole attempt — its effect does nothing.",
+				answerCue:
+					"A dependency is down: one of your configs is offline this gate.",
+				suppressed: false,
+			},
+		],
+		offlineConfigs: [CONFIGS.eslint],
+	},
+};
+
+/** The clock, mid-poll: pressure as a chip beside the cue, never a headline. */
+export const TimedGate: Story = {
+	args: {
+		...Default.args,
+		audits: [
+			{
+				id: "timeout-3",
+				name: "Timeout",
+				description:
+					"The first 3 polls are on a 30s clock — an answer over the limit scores as a miss.",
+				answerCue: "On the clock: 30s to answer, or it counts as a miss.",
+				suppressed: false,
+			},
+		],
+		timeLimitMs: 30_000,
+		remainingMs: 21_000,
+	},
+};
+
+/** The last seconds, where the clock is the loudest thing on the screen. */
+export const TimeRunningOut: Story = {
+	args: {
+		...TimedGate.args,
+		remainingMs: 4_000,
+	},
+};
+
+/** Two audits down two configs at once — the line reads as one list. */
+export const RollingOutageGate: Story = {
+	args: {
+		...Default.args,
+		audits: [
+			{
+				id: "rolling-outage",
+				name: "Rolling Outage",
+				description:
+					"The outage rolls through your pipeline: a different config is down for each poll of the window.",
+				answerCue: "Rolling outage: the config that is down moves every poll.",
+				suppressed: false,
+			},
+		],
+		offlineConfigs: [CONFIGS.coverageGain],
 	},
 };

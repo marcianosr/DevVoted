@@ -3,19 +3,14 @@ import type { Config } from "~/modules/run/config/domain/config.model";
 import {
 	describeConfig,
 	givesOf,
-	needsOf,
 } from "~/modules/run/config/domain/config.model";
-import type { CheckState } from "~/modules/run/config/domain/effect.model";
 import type { RoleRow } from "~/modules/run/gate/domain/configRole.model";
 import { Badge } from "~/ui/Badge.component";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-import type { TextTone } from "~/ui/typography/textTone";
 import type { ChipAction } from "~/modules/run/config/presentation/ConfigActions.ui";
 import {
-	describeCheckProgress,
 	describeRow,
-	isCounterProgress,
 	PipelineReportRow,
 } from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
 import {
@@ -23,37 +18,9 @@ import {
 	SlotNumberCell,
 } from "~/modules/run/pipeline/presentation/PipelineTable.ui";
 
-const STATE_BADGE: Record<CheckState, StatusBadgeVariant> = {
-	running: "run",
-	skipped: "skip",
-	success: "pass",
-	failed: "fail",
-};
-
-const STATE_VALUE_TONE: Record<CheckState, TextTone> = {
-	running: "saffron",
-	skipped: "muted",
-	success: "viridian",
-	failed: "cinnabar",
-};
-
-export const roleBadge = (row: RoleRow): StatusBadgeVariant =>
-	row.state ? STATE_BADGE[row.state] : "skip";
-
-const roleValueTone = (row: RoleRow): TextTone =>
-	row.state ? STATE_VALUE_TONE[row.state] : "muted";
-
-const rowValue = (row: RoleRow): string | undefined => {
-	if (row.progress && isCounterProgress(row.progress))
-		return describeCheckProgress(row.progress);
-	return row.state ? undefined : "passive";
-};
-
-/** Prose progress drops under the description; a counter has the value column. */
-const rowNote = (row: RoleRow): string | undefined =>
-	row.progress && !isCounterProgress(row.progress)
-		? describeCheckProgress(row.progress)
-		: undefined;
+/** Configs demand nothing (ADR-035): every row is a neutral bullet. Kept as a
+ * fn so the one place the dot semantics change is here. */
+export const roleBadge = (_row: RoleRow): StatusBadgeVariant => "skip";
 
 export type RowUseAction = {
 	readonly cost?: number;
@@ -102,6 +69,10 @@ type RoleListProps = {
 	getUseAction?: (config: Config) => RowUseAction | undefined;
 	trailingFor?: (config: Config) => ReactNode;
 	newConfigIds?: readonly string[];
+	/** Configs an audit has switched off right now (ADR-038). Only the answering
+	 * screen passes them: before the gate there is nothing down yet, and showing
+	 * a roll the player has not reached would be a spoiler. */
+	offlineConfigIds?: readonly string[];
 	preview?: SlotPreview;
 	trailing?: ReactNode;
 	foldIdleRows?: boolean;
@@ -126,6 +97,7 @@ export const RoleList = ({
 	getUseAction,
 	trailingFor,
 	newConfigIds,
+	offlineConfigIds,
 	preview,
 	trailing,
 	foldIdleRows = false,
@@ -133,10 +105,17 @@ export const RoleList = ({
 	const emptySlots = slots
 		? Math.max(0, slots - rows.length - (preview ? 1 : 0))
 		: 0;
-	const newBadge = (config: Config): ReactNode =>
-		newConfigIds?.includes(config.id) ? (
+	const isOffline = (config: Config): boolean =>
+		offlineConfigIds?.includes(config.id) ?? false;
+
+	// One badge slot, and offline wins it: a config that is switched off has
+	// nothing to celebrate about being new.
+	const chipBadge = (config: Config): ReactNode => {
+		if (isOffline(config)) return <Badge tone="neutral">offline</Badge>;
+		return newConfigIds?.includes(config.id) ? (
 			<Badge tone="positive">new</Badge>
 		) : undefined;
+	};
 
 	const previewSlot = rows.length + 1;
 	const firstEmptySlot = previewSlot + (preview ? 1 : 0);
@@ -144,7 +123,11 @@ export const RoleList = ({
 	return (
 		<PipelineTable numbered>
 			{rows.map((row, index) => {
-				const action = getUseAction?.(row.config);
+				// A switched-off config sells nothing: its "use" press would charge the
+				// fee for an effect the audit has already taken away.
+				const action = isOffline(row.config)
+					? undefined
+					: getUseAction?.(row.config);
 				return (
 					<PipelineReportRow
 						key={row.config.id}
@@ -153,16 +136,16 @@ export const RoleList = ({
 						layout="table"
 						config={row.config}
 						description={describeRow(row.config, row.reason)}
-						descriptionTone={row.state === "failed" ? "cinnabar" : "muted"}
 						gives={row.gives}
-						needs={row.needs}
 						costs={row.costs}
-						note={rowNote(row)}
-						value={action ? undefined : rowValue(row)}
-						valueTone={roleValueTone(row)}
 						chipActions={actionsFor?.(row.config)}
-						chipBadge={newBadge(row.config)}
-						defaultOpen={foldIdleRows ? row.state === "running" : undefined}
+						chipBadge={chipBadge(row.config)}
+						offline={isOffline(row.config)}
+						// An offline row opens by itself: the struck-through effect is the
+						// point, and it is worth nothing folded away.
+						defaultOpen={
+							isOffline(row.config) ? true : foldIdleRows ? false : undefined
+						}
 						trailing={
 							trailingFor?.(row.config) ??
 							(action
@@ -183,7 +166,6 @@ export const RoleList = ({
 					config={preview.config}
 					description={describeConfig(preview.config)}
 					gives={givesOf(preview.config)}
-					needs={needsOf(preview.config)}
 					costs={preview.config.costs}
 					trailing={preview.hint}
 					activateLabel={`Add ${preview.config.label} to your pipeline`}

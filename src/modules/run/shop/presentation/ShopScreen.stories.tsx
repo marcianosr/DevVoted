@@ -16,7 +16,6 @@ const GATES_CLEARED = 2;
 
 const stake = createMockGateStake({
 	gateNumber: 3,
-	minConfigs: 1,
 	modifiers: {
 		gateReward: 240,
 		rewardMultiplier: 2,
@@ -64,25 +63,6 @@ export const Default: Story = {
 		storage: 440,
 		coverageByCategory: { css: 8 },
 		stake,
-		checks: [
-			{
-				label: "Correct",
-				progress: { kind: "answers", current: 0, target: 2 },
-				current: 0,
-				target: 2,
-				state: "running",
-				description: "2 correct answers",
-			},
-			{
-				label: ".js mastery",
-				progress: { kind: "notSeen" },
-				current: 0,
-				target: 1,
-				state: "skipped",
-				sourceConfigId: "js",
-				description: "get one right if js appears",
-			},
-		],
 		configs: [CONFIGS.js, CONFIGS.coverageGain],
 		newConfigIds: ["coverage-gain"],
 		offers: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coldStart].map(
@@ -169,14 +149,22 @@ export const PaidStoragePlan: Story = {
 	},
 };
 
-// A strip sank the build under the coming gate's width demand (ADR-027): the
-// build summary warns that climbing on ends the run, and every uninstall locks —
-// the moment that decides whether death at the gate's door reads as fair.
-export const UnderWidthDemand: Story = {
+// The last config is the hard bottom (ADR-035): its uninstall locks so the
+// pipeline can never go bare.
+export const LastConfig: Story = {
 	args: {
 		...Default.args,
 		configs: [CONFIGS.js],
 		newConfigIds: [],
-		stake: { ...stake, stripsOnFailure: 3, minConfigs: 4 },
+		atMinimumWidth: true,
+	},
+};
+
+// Read-only (ADR-038): the offers stay legible so the next gate can be planned,
+// but every control refuses and one banner says why.
+export const ReadOnlyGate: Story = {
+	args: {
+		...Default.args,
+		locked: true,
 	},
 };

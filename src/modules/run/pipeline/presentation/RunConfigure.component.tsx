@@ -20,7 +20,6 @@ export const RunConfigure = () => {
 				slots={view.slots}
 				stake={view.gateStake}
 				bench={view.available}
-				checks={view.checks}
 				onSlot={(id) => send({ type: "slot", configId: id })}
 				onUnslot={(id) => send({ type: "unslot", configId: id })}
 				stacks={STARTER_STACKS}

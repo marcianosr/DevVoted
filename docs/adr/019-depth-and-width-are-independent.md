@@ -4,6 +4,8 @@
 
 Accepted (2026-08-06, Marciano). **Supersedes [ADR-018](018-gate-slot-coupling-and-slot-swatches.md)** (same day). **Decision 2 reversed by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): gates grant slots; the direction differs from ADR-018's, see the marker at Decision 2.
 
+> ⚠ Amended by [ADR-035](035-gates-are-auditors.md) (2026-08-17): Decision 1's "depth is paid for in checks" is void — depth is paid for in per-gate coverage; Decision 4's "dying is the wall" narrows to strip-audit gates.
+
 ## Context
 
 ADR-018 made gate N require slot N, so unlocking a slot was what advanced the

@@ -5,9 +5,7 @@ import {
 	describeConfig,
 	rarityOf,
 } from "~/modules/run/config/domain/config.model";
-import type { CheckProgress } from "~/modules/run/config/domain/effect.model";
 import type { GateRowReason } from "~/modules/run/gate/domain/configRole.model";
-import { formatKb } from "~/shared/lib/storage";
 import { FoldableRow, type Fold } from "~/ui/FoldableRow.ui";
 import { RARITY_COLORS } from "~/ui/rarityColors";
 import { StatusLine, type StatusLineSpacing } from "~/ui/StatusLine.ui";
@@ -30,60 +28,10 @@ export type PipelineRowLayout = "chip" | "table";
  * cannot drift into different phrasings of the same fact.
  */
 export const describeRow = (config: Config, reason: GateRowReason): string => {
-	if (reason.kind === "gateRequirement")
-		return `Requires ${reason.requirement} to pass the gate.`;
 	if (reason.kind === "noPollInCategory")
 		return `no ${reason.category} poll in this gate`;
-	if (reason.kind === "focusMissed")
-		return `needs ${reason.needed} correct ${reason.category}, got ${reason.got}`;
 	return describeConfig(config);
 };
-
-/**
- * The words for a check's live tally, written once for the same reason
- * `describeRow` is: the role list and the gate report show the same check and
- * must not phrase it two ways.
- */
-export const describeCheckProgress = (progress: CheckProgress): string => {
-	switch (progress.kind) {
-		case "answers":
-			return `${progress.current}/${progress.target}`;
-		case "coverage":
-			return `${progress.current}%/${progress.target}%`;
-		case "categories":
-			return `${progress.current}/${progress.target} categories`;
-		case "storage":
-			return `${formatKb(progress.current)}/${formatKb(progress.target)}`;
-		case "cover":
-			return `${progress.current}/${progress.target} passed`;
-		case "notSeen":
-			return "not seen";
-		// A worse streak than two still reads "2 in a row": two is the number that
-		// fails the check, and the run ended there.
-		case "missStreak":
-			return progress.missed >= 2
-				? "missed 2 in a row"
-				: "1 miss — the next one fails";
-		case "hidCheck":
-			return `hid ${progress.label}`;
-		case "checksFailing":
-			return `${progress.count} checks failing`;
-		case "reportedPassing":
-			return progress.actual
-				? `${describeCheckProgress(progress.actual)} (reported passing)`
-				: "reported passing";
-	}
-};
-
-/**
- * Whether the tally reads at a glance, and so belongs in the row's value column
- * rather than as a note under the description. "2/3" does; "3/5 categories" and
- * "not seen" are prose and need the room.
- */
-export const isCounterProgress = (progress: CheckProgress): boolean =>
-	progress.kind === "answers" ||
-	progress.kind === "coverage" ||
-	progress.kind === "storage";
 
 const NUMBER_TOKEN = /(×[\d.]+|[+−-][\d.]+(?:%|KB)?)/;
 
@@ -125,7 +73,6 @@ type PipelineReportRowProps = {
 	description: ReactNode;
 	descriptionTone?: TextTone;
 	gives?: string;
-	needs?: string;
 	costs?: string;
 	note?: ReactNode;
 	value?: ReactNode;
@@ -137,6 +84,10 @@ type PipelineReportRowProps = {
 	removable?: boolean;
 	mark?: StatusDotVariant;
 	dimmed?: boolean;
+	/** An audit has this config switched off for now (ADR-038): the row dims, the
+	 * effect strikes through, and a badge names the state. One prop rather than
+	 * three, so the caller states the fact and the row owns the treatment. */
+	offline?: boolean;
 	onActivate?: () => void;
 	activateLabel?: string;
 	ghost?: boolean;
@@ -152,7 +103,6 @@ export const PipelineReportRow = ({
 	description,
 	descriptionTone = "muted",
 	gives,
-	needs,
 	costs,
 	note,
 	value,
@@ -164,6 +114,7 @@ export const PipelineReportRow = ({
 	removable = false,
 	mark,
 	dimmed = false,
+	offline = false,
 	onActivate,
 	activateLabel,
 	ghost = false,
@@ -283,17 +234,20 @@ export const PipelineReportRow = ({
 			)}
 		>
 			<div className="flex flex-col divide-y divide-dashed divide-edge">
-				{needs ? (
-					<FactRow icon="!" tone="cinnabar" value={needs} />
-				) : gives || costs ? (
-					<Paragraph as="span" size="xs" tone="muted">
-						No condition
-					</Paragraph>
-				) : null}
 				{gives ? (
-					<FactRow icon="v" tone="celadon" value={emphasizeNumbers(gives)} />
+					<FactRow
+						icon="v"
+						tone={offline ? "muted" : "celadon"}
+						value={
+							offline ? (
+								<span className="line-through">{emphasizeNumbers(gives)}</span>
+							) : (
+								emphasizeNumbers(gives)
+							)
+						}
+					/>
 				) : null}
-				{(value != null || note) && (needs || gives) ? (
+				{(value != null || note) && gives ? (
 					<FactRow
 						icon="○"
 						tone={value != null ? valueTone : "muted"}
@@ -306,12 +260,12 @@ export const PipelineReportRow = ({
 					{costs}
 				</Paragraph>
 			) : null}
-			{!gives && !needs && !costs ? (
+			{!gives && !costs ? (
 				<Paragraph as="span" size="xs" tone={descriptionTone}>
 					{description}
 				</Paragraph>
 			) : null}
-			{needs || gives ? null : noteBlock}
+			{gives ? null : noteBlock}
 		</span>
 	);
 
@@ -332,7 +286,7 @@ export const PipelineReportRow = ({
 				activateLabel={activateLabel}
 				foldable={!chipActions}
 				defaultOpen={defaultOpen}
-				className={clsx(ghost && ghostBox, dimmed && "opacity-50")}
+				className={clsx(ghost && ghostBox, (dimmed || offline) && "opacity-50")}
 				placement={
 					slotNumber === undefined ? undefined : "col-start-2 col-span-3"
 				}

@@ -142,7 +142,7 @@ describe(RewardScreen, () => {
 		expect(screen.getByText("L2")).toBeInTheDocument();
 		// L2 doubles both halves of the roster line: 2% → 4%, 32KB → 64KB.
 		expect(screen.getByRole("tooltip")).toHaveTextContent(
-			"+4% of held storage on gate clear — hold 64KB when the gate resolves."
+			"+4% of held storage on gate clear."
 		);
 	});
 

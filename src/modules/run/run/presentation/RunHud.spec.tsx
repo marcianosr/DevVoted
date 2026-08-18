@@ -13,7 +13,8 @@ describe(RunHud, () => {
 				victoryGate={11}
 				pollsAnswered={3}
 				pollsPerGate={5}
-				coverage={0}
+				gateCoverage={0}
+				gateCoverageDemand={3}
 				coverageByCategory={{}}
 			/>
 		);
@@ -38,14 +39,15 @@ describe(RunHud, () => {
 				victoryGate={11}
 				pollsAnswered={3}
 				pollsPerGate={5}
-				coverage={0}
+				gateCoverage={0}
+				gateCoverageDemand={3}
 				coverageByCategory={{}}
 			/>
 		);
 		const hint = screen.getByRole("button", { name: "How gates work" });
 		expect(hint).toHaveTextContent("ⓘ");
-		expect(screen.getByText(/Each gate contains 5 polls/)).toHaveTextContent(
-			"Clearing the gate earns you gate rewards"
+		expect(screen.getByText(/Each gate deals 5 polls/)).toHaveTextContent(
+			"miss it and the gate peels a config, then you shop and run the same gate again"
 		);
 	});
 
@@ -58,7 +60,8 @@ describe(RunHud, () => {
 				victoryGate={11}
 				pollsAnswered={3}
 				pollsPerGate={5}
-				coverage={0}
+				gateCoverage={0}
+				gateCoverageDemand={3}
 				coverageByCategory={{}}
 			/>
 		);
@@ -78,7 +81,8 @@ describe(RunHud, () => {
 				victoryGate={11}
 				pollsAnswered={3}
 				pollsPerGate={5}
-				coverage={0}
+				gateCoverage={0}
+				gateCoverageDemand={3}
 				coverageByCategory={{}}
 			/>
 		);
@@ -96,14 +100,15 @@ describe(RunHud, () => {
 				victoryGate={11}
 				pollsAnswered={1}
 				pollsPerGate={5}
-				coverage={7.5}
+				gateCoverage={7.5}
+				gateCoverageDemand={10}
 				coverageByCategory={{ css: 3, js: 4.5, git: 0 }}
 			/>
 		);
-		// Collapsed: the summary counts only categories with coverage. Scoped to the
-		// control, since the gate pips also quote the run's coverage.
+		// Collapsed: the label reads the gate meter against its demand (ADR-035);
+		// the summary counts only categories with career coverage.
 		const coverage = screen.getByRole("button", { name: /^Coverage/ });
-		expect(coverage).toHaveTextContent("7.5%");
+		expect(coverage).toHaveTextContent("7.5% / 10% this gate");
 		expect(coverage).toHaveTextContent("across 2 categories");
 		expect(screen.queryByText("CSS")).not.toBeInTheDocument();
 		// Expanded: every category shows — including Git at 0%.

@@ -23,7 +23,7 @@ const COMMUNITY_ROUTE = "/run/community";
 type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
 
 const routesForStatus = (
-	view: Pick<RunView, "status" | "gatesCleared"> | null
+	view: Pick<RunView, "status" | "gatesCleared" | "redoingGate"> | null
 ): readonly [RunRoutePath, ...RunRoutePath[]] => {
 	if (!view) return [RUN_ROUTES.start];
 	switch (view.status) {
@@ -34,12 +34,18 @@ const routesForStatus = (
 				? [RUN_ROUTES.prep, RUN_ROUTES.answer]
 				: [RUN_ROUTES.answer];
 		case "rewarding":
-			return [
-				RUN_ROUTES.reward,
-				RUN_ROUTES.review,
-				RUN_ROUTES.shop,
-				RUN_ROUTES.prep,
-			];
+			// A retry shares the clear's status but not its payout screen: the
+			// reward screen is a "+KB, gate cleared" celebration, and the gate it
+			// would name is the one just missed (ADR-037). The failure's own report
+			// was the strip screen; from here the loop is shop, prep, same gate.
+			return view.redoingGate !== null
+				? [RUN_ROUTES.shop, RUN_ROUTES.prep, RUN_ROUTES.review]
+				: [
+						RUN_ROUTES.reward,
+						RUN_ROUTES.review,
+						RUN_ROUTES.shop,
+						RUN_ROUTES.prep,
+					];
 		case "awaiting-strip":
 			return [RUN_ROUTES.strip, RUN_ROUTES.review];
 		case "won":
@@ -58,7 +64,10 @@ const RUN_SCREEN_PATHS: readonly string[] = Object.values(RUN_ROUTES);
  */
 export const syncTarget = (
 	pathname: string,
-	view: Pick<RunView, "status" | "awaitingTomorrow" | "gatesCleared"> | null,
+	view: Pick<
+		RunView,
+		"status" | "awaitingTomorrow" | "gatesCleared" | "redoingGate"
+	> | null,
 	statusUnknown: boolean
 ): SyncTargetPath | null => {
 	if (statusUnknown) return null;

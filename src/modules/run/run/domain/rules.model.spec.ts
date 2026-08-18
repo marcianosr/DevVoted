@@ -2,13 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
 	atMinimumWidth,
-	configFloorForGate,
 	coverageDemandFor,
-	dropCount,
+	failStripsFor,
 	gateBaseMultiplier,
 	isStakeFatal,
 	isStoragePlanUnlocked,
-	minConfigsForGate,
 	pollDifficultyMultiplier,
 	storageCreditRate,
 	storagePlanLadder,
@@ -20,15 +18,19 @@ import {
 	WRONG_COVERAGE_LOSS,
 } from "~/modules/run/run/domain/rules.model";
 
-describe("the gate's coverage demand (ADR-034)", () => {
-	it("prices every gate near 80% of a perfect base pace", () => {
-		for (let gate = 0; gate <= VICTORY_GATE; gate++) {
-			const perfectPace = (SLICE_WINDOW * (gate + 1) * (gate + 2)) / 2;
-			expect(coverageDemandFor(gate)).toBeLessThanOrEqual(
-				0.8 * perfectPace + 5
-			);
-			expect(coverageDemandFor(gate)).toBeGreaterThanOrEqual(0.6 * perfectPace);
-		}
+describe("the gate's per-window coverage demand (ADR-035)", () => {
+	it("anchors the opening gates at 3, 10 and 25", () => {
+		expect(coverageDemandFor(0)).toBe(3);
+		expect(coverageDemandFor(1)).toBe(10);
+		expect(coverageDemandFor(2)).toBe(25);
+	});
+
+	it("ramps the demand-to-base-pace ratio — the (g+1) earn scaling is free, the ratio is the difficulty", () => {
+		// Strict base pace: 5 perfect answers at gateBaseMultiplier, no configs.
+		const ratioAt = (gate: number): number =>
+			coverageDemandFor(gate) / (SLICE_WINDOW * gateBaseMultiplier(gate));
+		for (let gate = 1; gate < VICTORY_GATE; gate++)
+			expect(ratioAt(gate + 1)).toBeGreaterThan(ratioAt(gate));
 	});
 
 	it("rises with every gate and holds past the summit", () => {
@@ -42,7 +44,6 @@ describe("the gate's coverage demand (ADR-034)", () => {
 	});
 
 	it("keeps the wrong-answer bleed at a quarter of the base gain", () => {
-		// Break-even base accuracy 20% at every depth (ADR-034).
 		expect(WRONG_COVERAGE_LOSS).toBe(0.25);
 	});
 });
@@ -143,73 +144,48 @@ describe("pollDifficultyMultiplier", () => {
 	});
 });
 
-describe("minConfigsForGate", () => {
-	it("ramps with the early gates so the opening climb farms freely", () => {
-		expect(minConfigsForGate(0)).toBe(0); // Pallet demands nothing
-		expect(minConfigsForGate(1)).toBe(1); // Boulder
-		expect(minConfigsForGate(2)).toBe(2); // Cascade
-		expect(minConfigsForGate(3)).toBe(3); // Thunder
+// The peel tracks the slot ladder (3 slots at the start, 14 at the summit), so a
+// miss keeps costing roughly the same fraction of a build all the way up.
+describe("the peel a missed gate takes (ADR-037)", () => {
+	it("takes one config while the pipeline is still narrow", () => {
+		expect(failStripsFor(0)).toBe(1);
+		expect(failStripsFor(2)).toBe(1);
 	});
 
-	it("follows one-over-the-strip-quota from gate 4 to the summit's 8", () => {
-		for (let gate = 4; gate < GATE_COUNT; gate++)
-			expect(minConfigsForGate(gate)).toBe(dropCount(gate) + 1);
-		expect(minConfigsForGate(4)).toBe(4);
-		expect(minConfigsForGate(VICTORY_GATE)).toBe(8);
+	it("escalates with depth", () => {
+		expect(failStripsFor(5)).toBe(2);
+		expect(failStripsFor(8)).toBe(3);
+		expect(failStripsFor(12)).toBe(4);
 	});
 
-	it("admits only stake-survivable builds from Thunder on — meeting the demand is never fatal there", () => {
-		// Before gate 3 the demand sits under the quota on purpose: the early
-		// glass cannon is farmable, and ADR-021's fatal rule prices it honestly.
-		for (let gate = 3; gate < GATE_COUNT; gate++)
-			expect(isStakeFatal(dropCount(gate), minConfigsForGate(gate))).toBe(
-				false
-			);
+	it("never eases off deeper into the climb", () => {
+		const rows = Array.from({ length: GATE_COUNT }, (_, gate) =>
+			failStripsFor(gate)
+		);
+		expect(rows).toEqual([...rows].sort((a, b) => a - b));
+	});
+
+	it("holds the summit row past the last gate — endless runs keep a rule", () => {
+		expect(failStripsFor(VICTORY_GATE + 5)).toBe(failStripsFor(VICTORY_GATE));
 	});
 });
 
 describe("atMinimumWidth", () => {
-	it("refuses the removal that would sink the build under the demand", () => {
-		expect(atMinimumWidth(3, 2)).toBe(false); // one to spare
-		expect(atMinimumWidth(2, 2)).toBe(true); // removing one breaches it
-		expect(atMinimumWidth(1, 2)).toBe(true); // already under
-	});
-
-	it("keeps a floor of one even where the gate demands none", () => {
-		// Pallet asks for nothing, but emptying the pipeline would make a
-		// stripped-bare run unkillable (ADR-021), so the last config never goes.
-		expect(minConfigsForGate(0)).toBe(0);
-		expect(atMinimumWidth(1, 0)).toBe(true);
-		expect(atMinimumWidth(2, 0)).toBe(false);
+	it("refuses removing the last config — a pipeline never goes bare", () => {
+		// Only a missed gate may take the last config, and that ends the run.
+		expect(atMinimumWidth(1)).toBe(true);
+		expect(atMinimumWidth(2)).toBe(false);
+		expect(atMinimumWidth(3)).toBe(false);
 	});
 });
 
 describe("isStakeFatal", () => {
-	it("is not fatal when the peel quota is smaller than the build", () => {
+	it("is not fatal when the peel is smaller than the build", () => {
 		expect(isStakeFatal(1, 3)).toBe(false);
 	});
 
-	it("is fatal once the peel quota matches the whole build", () => {
+	it("is fatal once the peel matches or exceeds the whole build", () => {
 		expect(isStakeFatal(3, 3)).toBe(true);
-	});
-
-	it("is fatal when the peel quota exceeds the build", () => {
 		expect(isStakeFatal(4, 3)).toBe(true);
-	});
-});
-
-describe("configFloorForGate", () => {
-	it("sits one config above the gate's strip quota", () => {
-		expect(configFloorForGate(0)).toBe(2);
-		expect(configFloorForGate(4)).toBe(4);
-		expect(configFloorForGate(VICTORY_GATE)).toBe(8);
-	});
-
-	it("names the exact count below which a failed gate kills the run", () => {
-		for (let gate = 0; gate < GATE_COUNT; gate++) {
-			const floor = configFloorForGate(gate);
-			expect(isStakeFatal(dropCount(gate), floor)).toBe(false);
-			expect(isStakeFatal(dropCount(gate), floor - 1)).toBe(true);
-		}
 	});
 });

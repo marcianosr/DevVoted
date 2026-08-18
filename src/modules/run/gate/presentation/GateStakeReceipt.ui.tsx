@@ -8,11 +8,10 @@ import type {
 	PerAnswerPreview,
 	PipelineModifiers,
 } from "~/modules/run/pipeline/domain/pipeline.model";
-import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
-import {
-	configFloorForGate,
-	isStakeFatal,
-} from "~/modules/run/run/domain/rules.model";
+import type {
+	AuditView,
+	GateStake,
+} from "~/modules/run/run/application/runView.viewmodel";
 import { Button } from "~/ui/Button.component";
 import { Meter } from "~/ui/Meter.ui";
 import { Popover } from "~/ui/Popover.component";
@@ -25,7 +24,6 @@ import { SwatchChip } from "~/modules/run/gate/presentation/SwatchChips.ui";
 
 type GateStakeReceiptProps = {
 	stake: GateStake;
-	configCount: number;
 	/**
 	 * How this gate relates to the screen showing it — "Next up" after a clear,
 	 * "Retry" after a miss. The screens that sit *on* the gate omit it: there the
@@ -39,44 +37,13 @@ type GateStakeReceiptProps = {
 	shopAction?: ScreenAction;
 };
 
-const configWord = (count: number): string =>
-	`${count} config${count === 1 ? "" : "s"}`;
-
 /**
  * Why a removal is refused, for the two surfaces that offer one. The verb is
  * theirs — you uninstall in the shop and drop at the gate door — but the rule
  * behind it is `atMinimumWidth`, so the sentence is written once.
  */
-export const widthRefusal = (
-	gateNumber: number,
-	minConfigs: number,
-	verb: "uninstalling" | "dropping"
-): string =>
-	minConfigs >= 2
-		? `Gate ${gateNumber} demands ${minConfigs} configs — ${verb} would sink the build below it.`
-		: `Your only config — ${verb} it would leave nothing to clear a gate with.`;
-
-const WidthDemand = ({
-	minConfigs,
-	configCount,
-}: {
-	minConfigs: number;
-	configCount: number;
-}) => {
-	if (minConfigs < 2) return null;
-	if (configCount < minConfigs)
-		return (
-			<Paragraph as="span" tone="cinnabar" className="font-bold">
-				Demands {minConfigs} configs — the build holds {configCount}. Install{" "}
-				{minConfigs - configCount} more to climb on.
-			</Paragraph>
-		);
-	return (
-		<Paragraph as="span" tone="muted">
-			Demands <Paragraph as="span">{minConfigs}+ configs</Paragraph> installed
-		</Paragraph>
-	);
-};
+export const widthRefusal = (verb: "uninstalling" | "dropping"): string =>
+	`Your only config — ${verb} it would leave nothing to clear a gate with.`;
 
 /**
  * The gate's name and badge, with an optional lead ("Next up", "Retry") naming
@@ -135,11 +102,11 @@ const Requirement = ({
 );
 
 /**
- * The gate's own stake on the score (ADR-034): the target sentence, a rail, and
- * the numbers, all one line. The rail is what makes 6.5% against 12% legible at
- * a glance; the numbers beside it carry the verdict colour, since only they can
- * say "this would fail". Kept narrow (w-24) so it reads as a detail beside the
- * sentence rather than a second headline competing with it.
+ * The gate's own stake on the score (ADR-035): the target sentence, a rail, and
+ * the numbers, all one line. The meter reads the attempt's own window — every
+ * gate is a fresh score, never a running total. Kept narrow (w-24) so it reads
+ * as a detail beside the sentence rather than a second headline competing with
+ * it.
  */
 const CoverageDemand = ({
 	demand,
@@ -155,7 +122,7 @@ const CoverageDemand = ({
 		<Requirement>
 			<span className="flex flex-wrap items-center gap-2">
 				<Paragraph as="span" tone="muted">
-					Reach <Paragraph as="span">{demand}% total coverage</Paragraph>
+					Earn <Paragraph as="span">{demand}% coverage this gate</Paragraph>
 				</Paragraph>
 				<span className="w-24 shrink-0">
 					<Meter
@@ -182,6 +149,88 @@ const CoverageDemand = ({
 	);
 };
 
+/**
+ * What a miss costs (ADR-037), said before the player commits: the peel, the
+ * loop it drops them into, and — when the peel would take the whole build — the
+ * run ending. The fatal line is the only place the receipt shouts, because it is
+ * the only line the player cannot undo afterwards.
+ */
+const MissCost = ({
+	strips,
+	fatal,
+	pollsPerGate,
+}: {
+	strips: number;
+	fatal: boolean;
+	pollsPerGate: number;
+}) => (
+	<div className="flex flex-col gap-0.5">
+		<Paragraph as="span" tone="muted">
+			Miss the target: the gate peels{" "}
+			<Paragraph as="span">
+				{strips} config{strips === 1 ? "" : "s"}
+			</Paragraph>
+			, then you shop and run it again on {pollsPerGate} fresh polls
+		</Paragraph>
+		{fatal ? (
+			<Paragraph as="span" tone="cinnabar" className="font-bold">
+				That peel takes your whole pipeline — a miss here ends the run.
+			</Paragraph>
+		) : null}
+	</div>
+);
+
+/**
+ * The gate's personality (ADR-035), one row per audit: the name carries the
+ * warning tone, the sentence the rule. A suppressed audit stays on the receipt
+ * struck through with the device's verdict — the fraud is visible, never
+ * silent (ADR-028's principle against the new rulebook).
+ */
+const AuditRows = ({ audits }: { audits: readonly AuditView[] }) => (
+	<ul className="flex flex-col gap-2">
+		{audits.map((audit) => (
+			<Requirement key={audit.id}>
+				{audit.suppressed ? (
+					<Paragraph as="span" tone="muted">
+						<span className="line-through">
+							{audit.name} — {audit.description}
+						</span>{" "}
+						<Paragraph as="span" tone="viridian" className="font-bold">
+							reported passing
+						</Paragraph>
+					</Paragraph>
+				) : (
+					<Paragraph as="span" tone="muted">
+						<Paragraph as="span" tone="saffron" className="font-bold">
+							{audit.name}
+						</Paragraph>{" "}
+						— {audit.description}
+					</Paragraph>
+				)}
+			</Requirement>
+		))}
+	</ul>
+);
+
+/**
+ * What multiplies a correct answer beyond its base: a Focus config when the poll
+ * matches its category, and one step of streak — which every correct answer
+ * takes, the first one included. Muted and inline, because they qualify the
+ * number beside them rather than being figures of their own.
+ */
+const CoverageMultipliers = ({
+	perAnswer,
+}: {
+	perAnswer: PerAnswerPreview;
+}) => (
+	<Paragraph as="span" size="xs" tone="muted" className="block">
+		{perAnswer.matchingConfigMultiplier === undefined ? null : (
+			<>×{perAnswer.matchingConfigMultiplier} on a matching poll · </>
+		)}
+		×{perAnswer.streakStepMultiplier} per streak step
+	</Paragraph>
+);
+
 /** One payout: label left, number right, so the column of rewards reads as a ledger. */
 const RewardRow = ({
 	label,
@@ -197,36 +246,6 @@ const RewardRow = ({
 		<Paragraph as="span">{children}</Paragraph>
 	</Requirement>
 );
-
-/**
- * The one death rule, stated before the gate that could apply it (ADR-021). It
- * reads as a floor rather than as a strip outcome because that is the shape the
- * summary repeats when a run actually ends.
- */
-const GameOverRule = ({
-	strips,
-	configCount,
-	configFloor,
-}: {
-	strips: number;
-	configCount: number;
-	configFloor: number;
-}) => {
-	if (isStakeFatal(strips, configCount))
-		return (
-			<Paragraph as="span" tone="cinnabar" className="font-bold">
-				Your pipeline holds {configWord(configCount)} — missing this gate
-				removes {strips} and ends the run.
-			</Paragraph>
-		);
-	return (
-		<Paragraph as="span" tone="muted">
-			Your run ends if your pipeline holds fewer than{" "}
-			<Paragraph as="span">{configWord(configFloor)}</Paragraph> — you hold{" "}
-			{configCount}.
-		</Paragraph>
-	);
-};
 
 const MetricValue = ({
 	current,
@@ -289,6 +308,10 @@ const RewardsList = ({
 						/>
 					</>
 				) : null}
+				{/* The multipliers that ride on top of the base, named where the base
+				    is: without them the row promises a number no correct answer ever
+				    actually pays, since even the first one carries a streak. */}
+				<CoverageMultipliers perAnswer={perAnswer} />
 			</RewardRow>
 			<RewardRow label="Gate cleared">
 				<MetricValue
@@ -320,7 +343,6 @@ const RewardsList = ({
 
 export const GateStakeReceipt = ({
 	stake,
-	configCount,
 	lead,
 	preview,
 	previewPerAnswer,
@@ -328,21 +350,13 @@ export const GateStakeReceipt = ({
 	action,
 	shopAction,
 }: GateStakeReceiptProps) => {
-	const {
-		gateNumber,
-		pollsPerGate,
-		stripsOnFailure,
-		minConfigs,
-		coverageDemand,
-		coverageHeld,
-	} = stake;
-	const hasStartRequirement =
-		(configsToInstall !== undefined && configsToInstall > 0) || minConfigs >= 2;
+	const { gateNumber, pollsPerGate, coverageDemand, coverageHeld } = stake;
+	const needsInstalls = configsToInstall !== undefined && configsToInstall > 0;
 	return (
 		<section className="rounded-lg border border-edge-strong p-4">
 			<div data-testid="gate-stake-receipt" className="flex flex-col gap-3">
 				<GateTitle gateNumber={gateNumber} lead={lead} />
-				{hasStartRequirement ? (
+				{needsInstalls || shopAction ? (
 					<>
 						<hr className="border-t border-edge" />
 						<div className="flex flex-col gap-1">
@@ -359,7 +373,7 @@ export const GateStakeReceipt = ({
 									</Button>
 								) : null}
 							</div>
-							{configsToInstall !== undefined && configsToInstall > 0 ? (
+							{needsInstalls ? (
 								<Paragraph as="span" tone="muted">
 									Needs at least{" "}
 									<Paragraph as="span" className="font-bold">
@@ -368,12 +382,6 @@ export const GateStakeReceipt = ({
 									</Paragraph>{" "}
 									in your pipeline
 								</Paragraph>
-							) : null}
-							{minConfigs >= 2 ? (
-								<WidthDemand
-									minConfigs={minConfigs}
-									configCount={configCount}
-								/>
 							) : null}
 						</div>
 					</>
@@ -395,14 +403,21 @@ export const GateStakeReceipt = ({
 							gateNumber={gateNumber}
 						/>
 					</ul>
-					<Paragraph as="span">
-						Miss the target: remove{" "}
-						<Paragraph as="span" tone="cinnabar" className="mx-2">
-							{configWord(stripsOnFailure)}
-						</Paragraph>
-						, then retry this gate
-					</Paragraph>
+					<MissCost
+						strips={stake.stripsOnFailure}
+						fatal={stake.missIsFatal}
+						pollsPerGate={pollsPerGate}
+					/>
 				</div>
+				{stake.audits.length > 0 ? (
+					<>
+						<hr className="border-t border-edge" />
+						<div className="flex flex-col gap-1">
+							<Paragraph size="xs">Audit</Paragraph>
+							<AuditRows audits={stake.audits} />
+						</div>
+					</>
+				) : null}
 				<hr className="border-t border-edge" />
 				<div className="flex flex-col gap-1">
 					<Paragraph size="xs">Rewards</Paragraph>
@@ -410,15 +425,6 @@ export const GateStakeReceipt = ({
 						stake={stake}
 						preview={preview}
 						previewPerAnswer={previewPerAnswer}
-					/>
-				</div>
-				<hr className="border-t border-edge" />
-				<div className="flex flex-col gap-1">
-					<Paragraph size="xs">Game over</Paragraph>
-					<GameOverRule
-						strips={stripsOnFailure}
-						configCount={configCount}
-						configFloor={configFloorForGate(gateNumber)}
 					/>
 				</div>
 				{action ? (
@@ -469,6 +475,15 @@ export const GateStakeRewards = ({ stake, lead }: GateStakeRewardsProps) => (
 	<section className="rounded-lg border border-edge-strong p-4">
 		<div className="flex flex-col gap-3">
 			<GateTitle gateNumber={stake.gateNumber} lead={lead} />
+			{stake.audits.length > 0 ? (
+				<>
+					<hr className="border-t border-edge" />
+					<div className="flex flex-col gap-1">
+						<Paragraph size="xs">Audit</Paragraph>
+						<AuditRows audits={stake.audits} />
+					</div>
+				</>
+			) : null}
 			<hr className="border-t border-edge" />
 			<div className="flex flex-col gap-1">
 				<Paragraph size="xs">Rewards</Paragraph>

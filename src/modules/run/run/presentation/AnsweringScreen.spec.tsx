@@ -6,16 +6,6 @@ import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.
 
 const base = {
 	configs: [CONFIGS.unitTests, CONFIGS.js],
-	checks: [
-		{
-			label: "Correct",
-			progress: { kind: "answers" as const, current: 1, target: 2 },
-			current: 1,
-			target: 2,
-			state: "running" as const,
-			sourceConfigId: "unit-tests",
-		},
-	],
 	category: "react" as const,
 	question: "Which key?",
 	answerType: "single" as const,
@@ -112,16 +102,6 @@ describe(AnsweringScreen, () => {
 			<AnsweringScreen
 				{...base}
 				configs={[CONFIGS.eslint]}
-				checks={[
-					{
-						label: "ESLint mastery",
-						progress: { kind: "answers", current: 0, target: 0 },
-						current: 0,
-						target: 0,
-						state: "skipped",
-						sourceConfigId: "eslint",
-					},
-				]}
 				canLint
 				lintReady
 				linter={CONFIGS.eslint}
@@ -267,23 +247,107 @@ describe(AnsweringScreen, () => {
 		expect(screen.getAllByText(".js")).not.toHaveLength(0);
 		expect(screen.getByText("+1.6%")).toBeInTheDocument();
 	});
-	it("warns what a failed gate would peel at this depth", () => {
-		// base holds 2 configs; a shallow gate peels 1, so there is margin.
-		render(<AnsweringScreen {...base} slots={4} stripsOnFailure={1} />);
-		expect(screen.getByText("a fail peels 1")).toBeInTheDocument();
-	});
-
-	it("reads the warning as fatal once the quota meets the build's size", () => {
-		// From around gate 4 the quota outgrows a narrow pipeline: one bad window
-		// strips it bare, and a bare build cannot clear (ADR-017) — that is death.
-		render(<AnsweringScreen {...base} slots={4} stripsOnFailure={2} />);
-		const warning = screen.getByText("a fail peels all 2 — run over");
-		expect(warning).toBeInTheDocument();
-		expect(warning).toHaveClass("text-cinnabar");
-	});
-
-	it("shows no stake warning when the depth is not supplied", () => {
+	it("shows no strip warning — a miss redoes the gate, it never peels (ADR-035)", () => {
 		render(<AnsweringScreen {...base} slots={4} />);
 		expect(screen.queryByText(/a fail peels/)).not.toBeInTheDocument();
+	});
+});
+
+// ADR-038: the banner is where a gate's rules live while the polls are being
+// played, so every audit that changes the next click has to reach it.
+describe("the audit banner", () => {
+	const audit = (
+		id: string,
+		answerCue: string
+	): {
+		id: string;
+		name: string;
+		description: string;
+		answerCue: string;
+		suppressed: boolean;
+	} => ({
+		id,
+		name: id,
+		description: `${id} description`,
+		answerCue,
+		suppressed: false,
+	});
+
+	it("keeps every live cue on screen", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				audits={[audit("mirrored", "Answer WRONG to score.")]}
+			/>
+		);
+		expect(screen.getByText("Answer WRONG to score.")).toBeInTheDocument();
+	});
+
+	it("drops a cue the defeat device is reporting as passing", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				audits={[
+					{ ...audit("mirrored", "Answer WRONG to score."), suppressed: true },
+				]}
+			/>
+		);
+		expect(
+			screen.queryByText("Answer WRONG to score.")
+		).not.toBeInTheDocument();
+	});
+
+	it("names every config that is offline right now", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				audits={[audit("dependency-outage", "A dependency is down.")]}
+				offlineConfigs={[CONFIGS.eslint, CONFIGS.agentsMd]}
+			/>
+		);
+		expect(screen.getByText("ESLint, AGENTS.md")).toBeInTheDocument();
+		expect(screen.getByText(/Offline right now/)).toBeInTheDocument();
+	});
+
+	// The mirror rewrites the question itself (ADR-038), so the instruction sits
+	// on the card with the options rather than only in the banner.
+	it("tells the poll card to ask for the incorrect options", () => {
+		render(<AnsweringScreen {...base} mirroredPolls />);
+		expect(
+			screen.getByText(/pick every INCORRECT option/i)
+		).toBeInTheDocument();
+	});
+
+	it("leaves the card alone off a mirrored gate", () => {
+		render(<AnsweringScreen {...base} />);
+		expect(
+			screen.queryByText(/pick every INCORRECT option/i)
+		).not.toBeInTheDocument();
+	});
+
+	it("counts the clock down on a timed poll", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				audits={[audit("timeout-3", "On the clock: 30s.")]}
+				timeLimitMs={30_000}
+				remainingMs={12_400}
+			/>
+		);
+		// Rounded up: a clock reading 0 while the answer still counts reads broken.
+		expect(screen.getByText("13s")).toBeInTheDocument();
+	});
+
+	it("says the clock has run out rather than pretending the poll is over", () => {
+		render(
+			<AnsweringScreen
+				{...base}
+				audits={[audit("timeout-3", "On the clock: 30s.")]}
+				timeLimitMs={30_000}
+				remainingMs={0}
+			/>
+		);
+		expect(screen.getByText("out of time")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /submit/i })).toBeEnabled();
 	});
 });

@@ -1,7 +1,6 @@
 import { clsx } from "clsx";
 
 import { getCategories } from "~/shared/lib/categories";
-import { coverageLapFor } from "~/modules/run/pipeline/domain/pipeline.model";
 import { Popover } from "~/ui/Popover.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import {
@@ -22,20 +21,25 @@ type RunHudProps = {
 	victoryGate: number;
 	pollsAnswered: number;
 	pollsPerGate: number;
-	coverage: number;
+	/** The gate's score meter (ADR-035): coverage earned this attempt. */
+	gateCoverage: number;
+	/** What this gate demands of the meter. */
+	gateCoverageDemand: number;
 	coverageByCategory: Readonly<Record<string, number>>;
 };
 
-/** Plain % on the first lap; the rigor name carries the wrap after that. */
-const lapLabel = (coverage: number): string => {
-	const { lap, name, remainder } = coverageLapFor(coverage);
-	return lap === 1 ? `${remainder}%` : `${name} ${remainder}%`;
-};
+/** The gate meter against its demand — every gate is a fresh score (ADR-035). */
+const gateMeterLabel = (held: number, demand: number): string =>
+	`${held}% / ${demand}% this gate`;
 
 const CoverageSummary = ({
-	coverage,
+	gateCoverage,
+	gateCoverageDemand,
 	coverageByCategory,
-}: Pick<RunHudProps, "coverage" | "coverageByCategory">) => {
+}: Pick<
+	RunHudProps,
+	"gateCoverage" | "gateCoverageDemand" | "coverageByCategory"
+>) => {
 	const all = getCategories().map(({ code, name }) => ({
 		code,
 		name,
@@ -50,7 +54,7 @@ const CoverageSummary = ({
 					Coverage
 				</Paragraph>
 				<Paragraph as="span" size="xs" tone="theme">
-					{lapLabel(coverage)}
+					{gateMeterLabel(gateCoverage, gateCoverageDemand)}
 				</Paragraph>
 			</span>
 		);
@@ -64,7 +68,7 @@ const CoverageSummary = ({
 							Coverage
 						</Paragraph>
 						<Paragraph as="span" size="xs" tone="theme">
-							{lapLabel(coverage)}
+							{gateMeterLabel(gateCoverage, gateCoverageDemand)}
 						</Paragraph>
 					</span>
 					<Paragraph as="span" size="xs" tone="muted">
@@ -133,7 +137,8 @@ export const RunHud = ({
 	victoryGate,
 	pollsAnswered,
 	pollsPerGate,
-	coverage,
+	gateCoverage,
+	gateCoverageDemand,
 	coverageByCategory,
 }: RunHudProps) => (
 	<div className="border-b border-edge pb-3 text-sm">
@@ -172,14 +177,15 @@ export const RunHud = ({
 					/>
 				</span>
 				<HudHint label="How gates work">
-					Each gate contains 5 polls and runs checks on the pipeline. Clearing
-					the gate earns you gate rewards and unlocks the next gate. Failing the
-					gate applies penalties to your pipeline.
+					Each gate deals 5 polls and demands a coverage total earned inside
+					them. Clear it for rewards and a wider pipeline; miss it and the gate
+					peels a config, then you shop and run the same gate again.
 				</HudHint>
 			</span>
 			<div className="ml-auto flex shrink-0 items-center gap-6">
 				<CoverageSummary
-					coverage={coverage}
+					gateCoverage={gateCoverage}
+					gateCoverageDemand={gateCoverageDemand}
 					coverageByCategory={coverageByCategory}
 				/>
 			</div>

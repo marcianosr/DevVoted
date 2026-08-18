@@ -111,6 +111,10 @@ export const usersTable = pgTable("users", {
 		.array()
 		.notNull()
 		.default(sql`'{}'::text[]`),
+	// The git tag (ADR-036): a shop-bought checkpoint. The next run after a
+	// death starts at this gate, and starting consumes it (burn on use) — null
+	// means no tag is planted.
+	pinned_gate: integer("pinned_gate"),
 });
 
 /**
@@ -275,6 +279,13 @@ export const pollResponsesTable = pgTable(
 			.$type<"calendar" | "session">(), // Which loop wrote this row (ADR-005): discriminates the two partial unique indexes below
 		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows, null for session rows — scoring lives in run_states)
 		answer_time_ms: integer("answer_time_ms"), // Client-measured reveal→submit ms (null: legacy rows, untimed clients). Award-grade data only — spoofable, never gameplay-relevant.
+		// Answered under the Mirror audit (ADR-038), where the poll asks for the
+		// INCORRECT options. The picks are a correct answer to a different
+		// question, so readers must not mix the two: the community split excludes
+		// these rows (they express no opinion about the real answer) while the
+		// board grades them against the mirrored expectation (they still prove
+		// knowledge).
+		mirrored: boolean("mirrored").notNull().default(false),
 		score_breakdown:
 			json("score_breakdown").$type<
 				import("~/domains/runs/services/score.service").ScoreCalculation

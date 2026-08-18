@@ -33,23 +33,6 @@ export const Default: Story = {
 		slots: 3,
 		stake,
 		bench: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coverageGain],
-		checks: [
-			{
-				label: "Correct",
-				progress: { kind: "answers", current: 0, target: 1 },
-				current: 0,
-				target: 1,
-				state: "running",
-			},
-			{
-				label: ".js mastery",
-				progress: { kind: "notSeen" },
-				current: 0,
-				target: 1,
-				state: "skipped",
-				sourceConfigId: "js",
-			},
-		],
 		onSlot: () => {},
 		onUnslot: () => {},
 		startAction: { label: "Start run →", onClick: () => {} },

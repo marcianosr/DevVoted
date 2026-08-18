@@ -6,6 +6,8 @@ Accepted, 2026-08-12. Reverses the escalation half of
 [ADR-017](017-no-baseline-check.md). ADR-017's Decision 1 (checks come only from
 configs) still stands.
 
+> ⚠ Superseded by [ADR-035](035-gates-are-auditors.md) (2026-08-17): the correct-answer demand is deleted with every other check; Unit Tests keeps only its payout.
+
 ## Context
 
 Unit Tests' check demanded `checkAmount + (level - 1) + escalation(gatesCleared)`,

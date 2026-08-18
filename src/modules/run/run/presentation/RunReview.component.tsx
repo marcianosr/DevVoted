@@ -15,9 +15,10 @@ import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
  * a page turn rather than a state change.
  *
  * Both ends of a gate land here, and the way out differs because what follows
- * does: a cleared gate goes shopping, a failed one has already paid its price
- * on the strip screen and only needs the climb resumed. The status decides,
- * since it is the same thing the route sync is policing.
+ * does: a cleared gate is already in the shopping half of the loop, a failed one
+ * has to be let back into it — the strip screen took the peel, and resuming is
+ * what opens the shop (ADR-037). The status decides, since it is the same thing
+ * the route sync is policing.
  */
 export const RunReview = () => {
 	const { view } = useTodaysRun();
@@ -28,14 +29,14 @@ export const RunReview = () => {
 
 	const afterFailedGate = view.status === "awaiting-strip";
 
-	// The failure path takes the same community detour as the shop: commit the
-	// resume, then step outside the layout. The climb restarts from the community
-	// page ("Climb on →").
-	const resumeToCommunity = () =>
+	// Resuming is what turns the failed gate back into the normal loop, so the
+	// click that commits it lands where that loop starts: the shop, with the KB
+	// that has to buy a different attempt.
+	const resumeToShop = () =>
 		sendWith({ type: "resume-climb" }, (result) => {
 			if (!result.success) return;
 			commit(result);
-			navigate({ to: "/run/community" });
+			navigate({ to: "/run/shop" });
 		});
 
 	return (
@@ -49,8 +50,8 @@ export const RunReview = () => {
 			rightAction={
 				afterFailedGate
 					? {
-							label: "Community →",
-							onClick: resumeToCommunity,
+							label: "To the shop →",
+							onClick: resumeToShop,
 							disabled: busy,
 						}
 					: {

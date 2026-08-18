@@ -6,6 +6,8 @@
 [ADR-022](022-every-config-owes-the-gate-a-check.md) rule: the checklist is the
 whole rulebook, and every config owes the gate something.
 
+> ⚠ Amended by [ADR-035](035-gates-are-auditors.md) (2026-08-17): the checklist it read is gone — the device returns as the audit suppressor (reports the gate's first audit as passing).
+
 ## Context
 
 "Volkswagen CI" is the developer joke for a pipeline that is green because it

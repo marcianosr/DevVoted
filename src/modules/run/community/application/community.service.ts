@@ -14,6 +14,7 @@ import {
 	answerOutcome,
 	type AnswerOutcome,
 	type AnswerType,
+	mirrorGrading,
 } from "~/modules/run/run/domain/run.model";
 import {
 	fetchActiveClimbers,
@@ -137,6 +138,7 @@ const groupAnswers = (rows: SessionAnswerRow[]): CommunityAnswer[] => {
 			categoryCode: row.categoryCode,
 			answeredAt: row.answeredAt,
 			elapsedMs: row.answerTimeMs,
+			mirrored: row.mirrored,
 		};
 		if (row.optionId !== null) answer.optionIds.add(row.optionId);
 		byResponse.set(row.responseId, answer);
@@ -155,8 +157,17 @@ const buildPollDetail = (
 	viewerAnswer: CommunityAnswer,
 	pollAnswers: CommunityAnswer[]
 ): RunCommunityPollDetail => {
+	// Knowledge, not opinion (ADR-038): a mirrored answer proves the player knows
+	// which options are wrong, so it is graded against the question they were
+	// actually asked. The count mixes mirrored and plain answers on purpose —
+	// both demonstrate the same knowledge, which is what "got it right" means
+	// here. (The paid split cannot mix them and excludes mirrored rows instead.)
 	const gotItRight = pollAnswers.filter(
-		(answer) => answerOutcome(poll, answer.optionIds) === "correct"
+		(answer) =>
+			answerOutcome(
+				answer.mirrored ? mirrorGrading(poll) : poll,
+				answer.optionIds
+			) === "correct"
 	);
 
 	return {
@@ -198,7 +209,11 @@ const topPercentFor = (
 	for (const answer of answers) {
 		const poll = pollsById.get(answer.pollId);
 		if (!poll) continue;
-		const isCorrect = answerOutcome(poll, answer.optionIds) === "correct";
+		const isCorrect =
+			answerOutcome(
+				answer.mirrored ? mirrorGrading(poll) : poll,
+				answer.optionIds
+			) === "correct";
 		correctByUser.set(
 			answer.user.id,
 			(correctByUser.get(answer.user.id) ?? 0) + (isCorrect ? 1 : 0)
@@ -252,9 +267,11 @@ const buildStandouts = async ({
 			const poll = pollsById.get(entry.poll_id);
 			return poll ? [{ id: poll.id, question: poll.question }] : [];
 		}),
-		isCorrect: (pollId, optionIds) => {
+		isCorrect: (pollId, optionIds, mirrored) => {
 			const poll = pollsById.get(pollId);
-			return poll ? answerOutcome(poll, optionIds) === "correct" : false;
+			if (!poll) return false;
+			const graded = mirrored ? mirrorGrading(poll) : poll;
+			return answerOutcome(graded, optionIds) === "correct";
 		},
 		seedCreatedAt,
 		runStats: runStats.map((row) => ({
@@ -415,7 +432,10 @@ export const getRunCommunityService = async ({
 				index,
 				question: poll.question,
 				category: isCategoryCode(poll.categoryCode) ? poll.categoryCode : null,
-				outcome: answerOutcome(poll, viewerAnswer.optionIds),
+				outcome: answerOutcome(
+					viewerAnswer.mirrored ? mirrorGrading(poll) : poll,
+					viewerAnswer.optionIds
+				),
 				detail: buildPollDetail(poll, viewerAnswer, pollAnswers),
 			};
 		});

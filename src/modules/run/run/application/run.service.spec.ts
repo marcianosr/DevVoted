@@ -22,6 +22,7 @@ import * as pollQueries from "~/modules/run/run/infrastructure/runPolls.reposito
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	abandonSessionRun: vi.fn(),
 	applyActionToRun: vi.fn(),
+	consumePinnedGate: vi.fn().mockResolvedValue(0),
 	createSessionRunWithState: vi.fn(),
 	ensureTodaysSegment: vi.fn(),
 	fetchAnsweredPollIdsForDay: vi.fn(),

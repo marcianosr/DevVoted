@@ -32,11 +32,7 @@ export const Subtitle_: Story = {
 
 export const Paragraph_: Story = {
 	name: "Paragraph",
-	render: () => (
-		<Paragraph>
-			CSS polls earn 1.5× coverage — but if CSS shows, you must get one right.
-		</Paragraph>
-	),
+	render: () => <Paragraph>CSS polls earn 1.5× coverage.</Paragraph>,
 };
 
 /** Title tinted to the surrounding category theme (here: CSS → cerulean). */

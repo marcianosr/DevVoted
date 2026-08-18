@@ -25,15 +25,15 @@ const GAME_LOOP_STEPS: Step[] = [
 	},
 	{
 		icon: "3.",
-		title: "Survive CI Pipelines",
+		title: "Clear the Gates",
 		description:
-			"Every few polls your pipeline is evaluated. All checks must pass — fail one and the run ends.",
+			"Every 5 polls a gate audits your score. Earn its coverage demand to clear it — miss it and the gate peels a config before you try again.",
 	},
 	{
 		icon: "4.",
 		title: "Upgrade Your Pipeline",
 		description:
-			"Pass a pipeline to pick an upgrade card: add a new check or raise the difficulty for a higher storage reward.",
+			"Clear a gate to earn storage and a wider pipeline, then spend it on configs that boost your coverage.",
 	},
 	{
 		icon: "5.",

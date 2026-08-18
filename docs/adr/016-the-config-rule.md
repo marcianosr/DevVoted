@@ -4,6 +4,8 @@
 
 Accepted (2026-07-31). Amends/supersedes ADR-006 Decisions 3, 4, and 5 (⚠ markers inline there). Implements the resolution recorded in the wiki (§4.1, via DVTD-bojz): configs are **not** split into gates vs perks.
 
+> ⚠ Superseded by [ADR-035](035-gates-are-auditors.md) (2026-08-17): the Effect+Check duality is retired — configs are pure enhancements.
+
 ## Context
 
 The roster had drifted into two de-facto species: configs that judged you (Unit Tests, Coverage, Cold Start) and configs that only helped you (ESLint, IndexedDB, Code Coverage, Intellisense). DVTD-bojz originally proposed formalizing that split; the design discussion resolved the opposite way — **every config carries both an Effect (the benefit) and a Check (the requirement)**, so the check is the price of the effect and a "perks-only build" cannot exist. The gate stays a composed checklist: it fails if **any** active check fails.

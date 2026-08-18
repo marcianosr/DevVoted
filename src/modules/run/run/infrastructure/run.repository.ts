@@ -24,6 +24,10 @@ import {
 	type RunSnapshot,
 	toRunSnapshot,
 } from "~/modules/run/run/domain/runSnapshot.model";
+import {
+	liveAuditsFor,
+	mirrorsPolls,
+} from "~/modules/run/gate/domain/audit.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	fetchRunPollsForRun,
@@ -207,7 +211,8 @@ const recordSessionAnswer = async (
 	args: { runId: number; userId: string; today: string },
 	poll: RunPoll,
 	optionIds: readonly string[],
-	elapsedMs?: number
+	elapsedMs?: number,
+	mirrored = false
 ): Promise<void> => {
 	const [response] = await tx
 		.insert(pollResponsesTable)
@@ -218,6 +223,7 @@ const recordSessionAnswer = async (
 			mode: "session",
 			answer_date: args.today,
 			answer_time_ms: elapsedMs ?? null,
+			mirrored,
 		})
 		.returning({ response_id: pollResponsesTable.response_id });
 
@@ -255,11 +261,13 @@ const finishSessionRun = async (
 
 	// Economy bridge: leftover run storage becomes persistent meta-currency,
 	// at a rate proportional to how far the climb got (storageCreditRate).
-	// Engine storage is KB; archived_storage is bytes.
+	// Only gates actually climbed count — a tag-rescued run banks nothing for
+	// the gates its checkpoint skipped (ADR-036). Engine storage is KB;
+	// archived_storage is bytes.
 	const creditBytes = Math.round(
 		state.storage *
 			STORAGE_UNITS.KB *
-			storageCreditRate(reason, state.gatesCleared)
+			storageCreditRate(reason, state.gatesCleared - (state.startedAtGate ?? 0))
 	);
 	if (creditBytes > 0) {
 		await tx
@@ -314,6 +322,38 @@ export const abandonSessionRun = async (
 				})
 				.where(eq(usersTable.id, userId));
 		}
+	});
+
+/**
+ * The git tag's persistence (ADR-036). Planting writes the account column so
+ * the tag outlives the run that bought it; starting the rescued run consumes
+ * it atomically (UPDATE … RETURNING) — burn on use, one rescue per tag.
+ */
+const persistPinnedGate = async (
+	tx: Pick<typeof db, "update">,
+	userId: string,
+	pinnedGate: number
+): Promise<void> => {
+	await tx
+		.update(usersTable)
+		.set({ pinned_gate: pinnedGate })
+		.where(eq(usersTable.id, userId));
+};
+
+export const consumePinnedGate = async (userId: string): Promise<number> =>
+	db.transaction(async (tx) => {
+		const [row] = await tx
+			.select({ pinnedGate: usersTable.pinned_gate })
+			.from(usersTable)
+			.where(eq(usersTable.id, userId))
+			.for("update");
+		const pinnedGate = row?.pinnedGate ?? null;
+		if (pinnedGate === null) return 0;
+		await tx
+			.update(usersTable)
+			.set({ pinned_gate: null })
+			.where(eq(usersTable.id, userId));
+		return pinnedGate;
 	});
 
 /** Swatch ids the player has earned across every run — the collection surface. */
@@ -387,7 +427,11 @@ export const applyActionToRun = async (args: {
 				args,
 				state.polls[state.currentIndex],
 				args.action.optionIds,
-				args.action.elapsedMs
+				args.action.elapsedMs,
+				// Which question was asked, recorded beside the answer: the picks
+				// alone cannot say, and every reader downstream needs to know
+				// (ADR-038).
+				mirrorsPolls(liveAuditsFor(state.pipeline.configs, state.gatesCleared))
 			);
 		}
 
@@ -398,6 +442,14 @@ export const applyActionToRun = async (args: {
 			next.clearedGate !== undefined
 		)
 			await awardGateSwatch(tx, args.userId, next.clearedGate);
+
+		// A freshly planted tag mirrors onto the account, where it outlives the
+		// run (ADR-036).
+		if (
+			next.pinPlantedAtGate !== undefined &&
+			next.pinPlantedAtGate !== state.pinPlantedAtGate
+		)
+			await persistPinnedGate(tx, args.userId, next.pinPlantedAtGate);
 
 		await tx
 			.update(runStatesTable)

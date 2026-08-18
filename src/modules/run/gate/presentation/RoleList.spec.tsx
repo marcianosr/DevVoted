@@ -2,28 +2,8 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import type { CheckStatus } from "~/modules/run/config/domain/effect.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
-
-const checks: CheckStatus[] = [
-	{
-		label: "Correct",
-		progress: { kind: "answers", current: 0, target: 1 },
-		current: 0,
-		target: 1,
-		state: "running",
-		sourceConfigId: "unit-tests",
-	},
-	{
-		label: "Coverage",
-		progress: { kind: "coverage", current: 2, target: 1 },
-		current: 2,
-		target: 1,
-		state: "success",
-		sourceConfigId: "coverage-gain",
-	},
-];
 
 const configs = [CONFIGS.unitTests, CONFIGS.coverageGain];
 
@@ -39,75 +19,63 @@ const detailFor = (label: string) => {
 
 describe(RoleList, () => {
 	it("leaves every row's fold to the breakpoint by default", () => {
-		render(<RoleList rows={roleRows(configs, checks)} />);
+		render(<RoleList rows={roleRows(configs)} />);
 		expect(detailFor("Unit Tests")).toHaveClass("hidden", "sm:flex");
 		expect(detailFor("Coverage")).toHaveClass("hidden", "sm:flex");
 	});
 
-	it("opens only the running check when idle rows are folded", () => {
-		render(<RoleList rows={roleRows(configs, checks)} foldIdleRows />);
-		// Unit Tests is the check the gate is judging right now: open, at any width.
-		expect(detailFor("Unit Tests")).toHaveClass("flex");
-		expect(detailFor("Unit Tests")).not.toHaveClass("hidden");
-		// The satisfied one has nothing left to watch: shut.
+	it("shuts every row when idle rows are folded — nothing is live anymore (ADR-035)", () => {
+		render(<RoleList rows={roleRows(configs)} foldIdleRows />);
+		expect(detailFor("Unit Tests")).toHaveClass("hidden");
 		expect(detailFor("Coverage")).toHaveClass("hidden");
-		expect(detailFor("Coverage")).not.toHaveClass("sm:flex");
 	});
 
-	it("shuts a config with no check at all, since nothing about it is live", () => {
-		render(<RoleList rows={roleRows([CONFIGS.agentsMd], [])} foldIdleRows />);
-		expect(detailFor("AGENTS.md")).toHaveClass("hidden");
+	it("renders each config's gives line in its detail", () => {
+		render(<RoleList rows={roleRows([CONFIGS.coverageGain])} />);
+		expect(detailFor("Coverage").textContent).toContain("Coverage gains earn");
+	});
+});
+
+// ADR-038: four audits switch a config off mid-attempt, and two of them move it
+// every poll — so the rail has to say which one is dead right now, not merely
+// that something is.
+describe("a config an audit has switched off", () => {
+	const offline = { offlineConfigIds: ["unit-tests"] };
+
+	it("badges the offline config and leaves the rest alone", () => {
+		render(<RoleList rows={roleRows(configs)} {...offline} />);
+		expect(screen.getByText("offline")).toBeInTheDocument();
 	});
 
-	// Which column a tally reads in, per DVTD-c0d0. A counter is short enough to
-	// scan in the value column; prose needs the width of the note under it.
-	const valueOf = (label: string) =>
-		screen.getByText(label).closest("div.grid")?.querySelector(".tabular-nums")
-			?.textContent;
-
-	it("puts a bare counter in the value column", () => {
-		const counting: CheckStatus[] = [
-			{
-				label: "Correct",
-				progress: { kind: "answers", current: 1, target: 2 },
-				current: 1,
-				target: 2,
-				state: "running",
-				sourceConfigId: "unit-tests",
-			},
-		];
-		render(<RoleList rows={roleRows([CONFIGS.unitTests], counting)} />);
-		expect(valueOf("Unit Tests")).toBe("1/2");
+	it("opens the offline row, since the struck-out effect is the point", () => {
+		render(<RoleList rows={roleRows(configs)} foldIdleRows {...offline} />);
+		expect(detailFor("Unit Tests")).not.toHaveClass("hidden");
+		expect(detailFor("Coverage")).toHaveClass("hidden");
 	});
 
-	it("reads a storage floor as KB in the value column", () => {
-		const floor: CheckStatus[] = [
-			{
-				label: "Moore's Law",
-				progress: { kind: "storage", current: 96, target: 128 },
-				current: 96,
-				target: 128,
-				state: "running",
-				sourceConfigId: "moores-law",
-			},
-		];
-		render(<RoleList rows={roleRows([CONFIGS.mooresLaw], floor)} />);
-		expect(valueOf("Moore's Law")).toBe("96KB/128KB");
+	it("strikes the effect it can no longer deliver", () => {
+		render(<RoleList rows={roleRows(configs)} {...offline} />);
+		const struck = detailFor("Unit Tests").querySelector(".line-through");
+		expect(struck).not.toBeNull();
 	});
 
-	it("drops a wordy tally under the description instead of the value column", () => {
-		const breadth: CheckStatus[] = [
-			{
-				label: "Breadth",
-				progress: { kind: "categories", current: 0, target: 2 },
-				current: 0,
-				target: 2,
-				state: "running",
-				sourceConfigId: "unit-tests",
-			},
-		];
-		render(<RoleList rows={roleRows([CONFIGS.unitTests], breadth)} />);
-		expect(screen.getByText("0/2 categories")).toBeInTheDocument();
-		expect(valueOf("Unit Tests")).toBeUndefined();
+	it("takes away the paid action — a dead config sells nothing", () => {
+		const onUse = () => {
+			throw new Error("an offline config must not be usable");
+		};
+		render(
+			<RoleList
+				rows={roleRows(configs)}
+				{...offline}
+				getUseAction={() => ({ cost: 8, ready: true, onUse })}
+			/>
+		);
+		// One "use" press left: Coverage's, not the offline Unit Tests'.
+		expect(screen.getAllByRole("button", { name: /use/ })).toHaveLength(1);
+	});
+
+	it("says nothing when nothing is offline", () => {
+		render(<RoleList rows={roleRows(configs)} />);
+		expect(screen.queryByText("offline")).not.toBeInTheDocument();
 	});
 });

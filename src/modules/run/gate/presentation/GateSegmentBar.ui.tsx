@@ -7,7 +7,6 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 import {
 	coverageDemandFor,
-	minConfigsForGate,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
@@ -48,14 +47,10 @@ const spokenName = (swatch: GateSwatch, standing: PipStanding): string =>
 /**
  * What that gate asks for, read straight off the rules rather than off the run:
  * the pip previews gates the player has not reached, where there is no live
- * stake to hand it. The config half is dropped where the gate demands none.
+ * stake to hand it.
  */
-const gateDemand = (gate: number): string => {
-	const minConfigs = minConfigsForGate(gate);
-	const coverage = `Needs ${coverageDemandFor(gate)}% total coverage`;
-	if (minConfigs < 1) return coverage;
-	return `${coverage} · ${minConfigs} config${minConfigs === 1 ? "" : "s"}`;
-};
+const gateDemand = (gate: number): string =>
+	`Needs ${coverageDemandFor(gate)}% coverage in its window`;
 
 const PipDetail = ({
 	swatch,
@@ -118,11 +113,10 @@ const PipDetail = ({
  * hover names that gate's badge, and a tap holds the name open, since a 12px dot
  * is unreadable without it and a touch screen has no hover to offer.
  *
- * Each pip also names what its gate asks for, which it could not do while
- * coverage bought width rather than depth (ADR-019). Under ADR-034 the gate
- * demands the coverage itself, so the bar is the one surface that can show the
- * whole ladder of demands at once — the stake receipt only ever speaks for the
- * gate in front of you.
+ * Each pip also names what its gate asks for. Under ADR-035 every gate demands
+ * a fresh coverage total earned in its own window, so the bar is the one
+ * surface that can show the whole ladder of demands at once — the stake
+ * receipt only ever speaks for the gate in front of you.
  */
 export const GateSegmentBar = ({
 	swatches,

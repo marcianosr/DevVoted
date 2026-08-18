@@ -11,6 +11,8 @@ climb".** **Decision 2's replay exemption retired by
 [ADR-034](034-the-gate-is-a-ci-run.md)** (a shop now sits between a strip and
 its replay).
 
+> ⚠ Superseded by [ADR-035](035-gates-are-auditors.md) (2026-08-17): the width demand is deleted; the only width rule left is the never-go-bare floor of one config.
+
 ## Context
 
 Checks come only from configs (ADR-017), so a thin build owes a short

@@ -4,6 +4,8 @@
 
 Accepted (design capture). Decisions 1, 7, and 10 are amended or superseded by [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md); Decisions 3, 4, and 5 are amended or superseded by [ADR-016](016-the-config-rule.md) (the Config Rule) — see the ⚠ markers inline. Validated in the throwaway prototype (`src/domains/runs/prototype/`, multiple playtests: "still fun"); this ADR records the *decisions* the prototype settled so the production port has a north star. Depends on ADR-005 (session-run container).
 
+> ⚠ Amended by [ADR-035](035-gates-are-auditors.md) (2026-08-17): Decision 2's checks-as-configs model is superseded — configs demand nothing, the gate's own coverage meter judges; §4's parked mirrored check shipped as the Marsh gate audit.
+
 ## Context
 
 ADR-005 established *where* a session run lives (a `mode: "session"` row on `runsTable`, played at poll-speed). It did not specify *what the player does* inside one. The prototype's job was to answer that: is building a loadout, facing escalating gates, and surviving strip-on-fail actually fun at session speed? Multiple playthroughs say yes.

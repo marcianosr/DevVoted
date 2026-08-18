@@ -39,10 +39,8 @@ export const Default: Story = {
 		capKb: 512,
 		nextStake: createMockGateStake({
 			gateNumber: 2,
-			coverageDemand: 24,
+			coverageDemand: 25,
 			coverageHeld: 14,
-			stripsOnFailure: 2,
-			minConfigs: 2,
 			modifiers: {
 				rewardMultiplier: 1,
 				coverageMultiplier: 1,

@@ -1,6 +1,7 @@
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import {
 	isStoragePlanUnlocked,
+	pinCostFor,
 	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
 import {
@@ -51,17 +52,22 @@ export const createMockShopOffer = (
 		coverageAdd: 0,
 		gateReward: 32,
 	},
-	previewPerAnswer: { coveragePerCorrect: 2, storageKbPerCorrect: 0 },
+	previewPerAnswer: {
+		coveragePerCorrect: 2,
+		storageKbPerCorrect: 0,
+		streakStepMultiplier: 1.1,
+	},
 	...overrides,
 });
 
 export const createMockGateStake = createMockDataFactory<GateStake>({
 	gateNumber: 0,
 	pollsPerGate: 5,
-	stripsOnFailure: 1,
-	minConfigs: 2,
 	coverageDemand: 3,
 	coverageHeld: 0,
+	audits: [],
+	stripsOnFailure: 1,
+	missIsFatal: false,
 	billKb: 0,
 	modifiers: {
 		rewardMultiplier: 1,
@@ -69,7 +75,11 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 		coverageAdd: 0,
 		gateReward: 32,
 	},
-	perAnswer: { coveragePerCorrect: 2, storageKbPerCorrect: 0 },
+	perAnswer: {
+		coveragePerCorrect: 2,
+		storageKbPerCorrect: 0,
+		streakStepMultiplier: 1.1,
+	},
 });
 
 const createRunView = createMockDataFactory<RunView>({
@@ -93,8 +103,11 @@ const createRunView = createMockDataFactory<RunView>({
 	peekReady: false,
 	peekCost: 32,
 	peeker: null,
+	offlineConfigs: [],
+	mirroredPolls: false,
+	pollTimeLimitMs: null,
 	currentPollPeeked: false,
-	pickBudgetLeft: null,
+	correctAnswersThisGate: null,
 	rebuildCost: 0,
 	canRebuild: false,
 	lockAvailable: false,
@@ -104,9 +117,14 @@ const createRunView = createMockDataFactory<RunView>({
 	extendAvailable: false,
 	extendCost: 48,
 	canExtend: false,
+	shopLocked: false,
+	pinAvailable: false,
+	pinCost: pinCostFor(0),
+	canPin: false,
+	pinnedAtGate: null,
 	nextSlotGate: 1,
 	justUnlockedSlots: [],
-	checks: [],
+	audits: [],
 	answeredThisGate: [],
 	allAnswered: [],
 	modifiers: {
@@ -115,7 +133,11 @@ const createRunView = createMockDataFactory<RunView>({
 		coverageAdd: 0,
 		gateReward: 32,
 	},
-	perAnswer: { coveragePerCorrect: 2, storageKbPerCorrect: 0 },
+	perAnswer: {
+		coveragePerCorrect: 2,
+		storageKbPerCorrect: 0,
+		streakStepMultiplier: 1.1,
+	},
 	gateStake: createMockGateStake(),
 	canStart: false,
 	isOver: false,
@@ -128,11 +150,7 @@ const createRunView = createMockDataFactory<RunView>({
 	clearedGateNumber: 0,
 	redoingGate: null,
 	victoryGate: 12,
-	stripsOnFailure: 1,
-	minConfigs: 2,
-	underMinConfigs: false,
 	atMinimumWidth: false,
-	widthRepairable: true,
 	pollsAnswered: 0,
 	pollsPerGate: 5,
 	streak: 0,

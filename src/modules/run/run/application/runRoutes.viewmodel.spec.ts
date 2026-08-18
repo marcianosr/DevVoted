@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { syncTarget } from "~/modules/run/run/application/runRoutes.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 
-const climbing = (status: Pick<RunView, "status" | "gatesCleared">) => ({
+const climbing = (
+	status: Pick<RunView, "status" | "gatesCleared"> &
+		Partial<Pick<RunView, "redoingGate">>
+) => ({
+	redoingGate: null,
 	...status,
 	awaitingTomorrow: false,
 });
@@ -83,6 +87,27 @@ describe("syncTarget", () => {
 				false
 			)
 		).toBeNull();
+	});
+
+	// A retry shares the clear's status, so the sync is the only thing keeping the
+	// player off a payout screen that would name the gate they just missed and
+	// pay 0KB for it (ADR-037).
+	describe("while a missed gate is being replayed", () => {
+		const redoing = climbing({
+			status: "rewarding",
+			gatesCleared: 3,
+			redoingGate: 3,
+		});
+
+		it("sends the reward page to the shop", () => {
+			expect(syncTarget("/run/reward", redoing, false)).toBe("/run/shop");
+		});
+
+		it("stays put on the shop, the prep hub and the review", () => {
+			expect(syncTarget("/run/shop", redoing, false)).toBeNull();
+			expect(syncTarget("/run/prep", redoing, false)).toBeNull();
+			expect(syncTarget("/run/review", redoing, false)).toBeNull();
+		});
 	});
 
 	// The failed gate closes on its answers too: strip → review, with the
@@ -231,6 +256,7 @@ describe("syncTarget", () => {
 		const locked = {
 			status: "answering",
 			gatesCleared: 1,
+			redoingGate: null,
 			awaitingTomorrow: true,
 		} as const;
 

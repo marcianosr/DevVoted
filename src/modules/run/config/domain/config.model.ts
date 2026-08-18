@@ -1,21 +1,7 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import { formatKb } from "~/shared/lib/storage";
 
-export type ConfigFamily =
-	"focus" | "defense" | "risk" | "amplify" | "economy" | "check";
-
-export type CheckKind =
-	| "correct"
-	| "coverage-gain"
-	| "cold-start"
-	| "min-correct"
-	| "no-double-miss"
-	| "breadth"
-	| "storage-floor"
-	| "peek-count"
-	| "pick-budget"
-	| "defeat-device";
+export type ConfigFamily = "focus" | "defense" | "risk" | "amplify" | "economy";
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";
 
@@ -26,9 +12,7 @@ export type Config = {
 	readonly rarity?: Rarity;
 	readonly description: string;
 	readonly gives?: string;
-	readonly needs?: string;
 	readonly costs?: string;
-	readonly requirementDelta: number;
 	readonly rewardMultiplier: number;
 	readonly focusCategory?: CategoryCode;
 	readonly eliminatesWrongOptionsFor?: readonly CategoryCode[];
@@ -49,10 +33,11 @@ export type Config = {
 	readonly peeksCommunitySplit?: boolean;
 	/** KB paid on clear per correct answer the window held beyond one per poll, so
 	 * the payout is a function of the window's shape rather than the loadout — it
-	 * pays most in exactly the windows whose pick budget was hardest to hit. */
+	 * pays most in exactly the windows with the most multi-answer polls. */
 	readonly storagePerExtraPick?: number;
-	readonly check?: CheckKind;
-	readonly checkAmount?: number;
+	/** Reports the gate's first audit as passing (Volkswagen CI, ADR-028/035) —
+	 * the one benefit aimed at the gate's own rules rather than the window. */
+	readonly suppressesAudit?: boolean;
 	readonly draftCost?: number;
 };
 
@@ -60,8 +45,6 @@ export const rarityOf = (config: Config): Rarity => config.rarity ?? "common";
 
 export const focusCoverageMultiplier = (level: number): number =>
 	1 + 0.25 * level;
-
-export const focusDemand = (config: Config): number => config.level ?? 1;
 
 export const upgradeCoverageRequired = (currentLevel: number): number =>
 	currentLevel * 5;
@@ -94,7 +77,7 @@ export const maxLevelOf = (config: Config): number =>
 export const isUpgradable = (config: Config): boolean => {
 	const upgradable =
 		config.focusCategory !== undefined ||
-		config.check === "correct" ||
+		config.storageOnClear !== undefined ||
 		config.storageInterestPct !== undefined ||
 		config.peeksCommunitySplit === true;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
@@ -111,35 +94,24 @@ const SAMPLE_SIZE_LEVEL = 2;
 export const showsSampleSize = (config: Config): boolean =>
 	(config.level ?? 1) >= SAMPLE_SIZE_LEVEL;
 
-const DEFAULT_PEEK_DEMAND = 1;
-
-const peekDemandPhrase = (config: Config): string => {
-	const target = config.checkAmount ?? DEFAULT_PEEK_DEMAND;
-	return target === 1 ? "once each gate" : `${target}× each gate`;
-};
-
 export const interestPctOf = (config: Config): number =>
 	(config.storageInterestPct ?? 0) * (config.level ?? 1);
-
-export const interestFloorKbOf = (config: Config): number =>
-	(config.checkAmount ?? 0) * (config.level ?? 1);
 
 export const describeConfig = (config: Config): string => {
 	if (config.peeksCommunitySplit)
 		return showsSampleSize(config)
-			? `Pay a doubling fee to see how the community answered this poll, and how many answered — but you must peek at least ${peekDemandPhrase(config)}.`
-			: `Pay a doubling fee to see how the community answered this poll — but you must peek at least ${peekDemandPhrase(config)}.`;
+			? "Pay a doubling fee to see how the community answered this poll, and how many answered."
+			: "Pay a doubling fee to see how the community answered this poll.";
 	if (config.storageInterestPct !== undefined)
-		return `+${interestPctOf(config)}% of held storage on gate clear — hold ${formatKb(interestFloorKbOf(config))} when the gate resolves.`;
-	if (config.check === "correct") {
-		const level = config.level ?? 1;
-		const payout = (config.storageOnClear ?? 0) * level;
-		return `+${payout}KB storage on gate clear — demands ${level} correct answer${level === 1 ? "" : "s"}, rising as you climb.`;
+		return `+${interestPctOf(config)}% of held storage on gate clear.`;
+	if (config.storageOnClear !== undefined) {
+		const payout = config.storageOnClear * (config.level ?? 1);
+		return `+${payout}KB storage on gate clear.`;
 	}
 	if (!config.focusCategory) return config.description;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	const level = config.level ?? 1;
-	return `${name} polls earn ${focusCoverageMultiplier(level)}× coverage — but if ${name} shows, you must get ${level} right.`;
+	return `${name} polls earn ${focusCoverageMultiplier(level)}× coverage.`;
 };
 
 export const givesOf = (config: Config): string | undefined => {
@@ -149,24 +121,14 @@ export const givesOf = (config: Config): string | undefined => {
 			: "See how the community answered this poll";
 	if (config.storageInterestPct !== undefined)
 		return `+${interestPctOf(config)}% of held storage on clear`;
-	if (config.check === "correct") {
-		const payout = (config.storageOnClear ?? 0) * (config.level ?? 1);
+	if (config.storageOnClear !== undefined) {
+		const payout = config.storageOnClear * (config.level ?? 1);
 		return `+${payout}KB on clear`;
 	}
 	if (!config.focusCategory) return config.gives;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	const multiplier = focusCoverageMultiplier(config.level ?? 1);
 	return `${name} polls reward ×${multiplier} coverage`;
-};
-
-export const needsOf = (config: Config): string | undefined => {
-	if (config.peeksCommunitySplit)
-		return `Peek at least ${peekDemandPhrase(config)}`;
-	if (config.storageInterestPct !== undefined)
-		return `Hold ${formatKb(interestFloorKbOf(config))} when the gate resolves`;
-	if (!config.focusCategory) return config.needs;
-	const name = getCategoryMetadata(config.focusCategory).name;
-	return `Answer ${name} polls correct when they show`;
 };
 
 /** The faucet: KB a build pays out per correct answer. */

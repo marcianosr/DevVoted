@@ -46,7 +46,6 @@ const stateVariants: Record<string, RunState> = {
 			correct: 2,
 			answered: 2,
 			coverageGained: 2.4,
-			leadingCorrect: 2,
 			byCategory: { js: { seen: 2, correct: 2 } },
 			// Three single-answer polls from index 0: what hydration will recompute.
 			budget: 3,

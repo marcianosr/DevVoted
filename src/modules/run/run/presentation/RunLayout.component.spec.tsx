@@ -316,16 +316,11 @@ describe("run route sync", () => {
 		);
 	});
 
-	it("a dead-end shop exit ends the run and lands on the run-over screen", async () => {
+	it("the shop exit always opens toward prep — no gate grades it (ADR-035)", async () => {
 		const user = userEvent.setup();
-		// Under the demand with no repair left (ADR-031): the exit is the
-		// explicit end-run click, and the reducer's verdict routes to /run/over.
-		let serverView = createMockRunView({
+		const serverView = createMockRunView({
 			status: "rewarding",
 			gatesCleared: 4,
-			minConfigs: 4,
-			underMinConfigs: true,
-			widthRepairable: false,
 			configs: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
 			poll: null,
 		});
@@ -333,25 +328,14 @@ describe("run route sync", () => {
 			success: true,
 			data: serverView,
 		}));
-		vi.mocked(dispatchRunAction).mockImplementation(async () => {
-			serverView = createMockRunView({ status: "dead", poll: null });
-			return { success: true, data: serverView };
-		});
 
 		const router = renderRunRoutes("/run/shop");
 		await user.click(
-			await screen.findByRole("button", {
-				name: "End run — gate 4 demands 4 configs →",
-			})
+			await screen.findByRole("button", { name: "Continue to gate 4 →" })
 		);
 
 		await waitFor(() =>
-			expect(vi.mocked(dispatchRunAction)).toHaveBeenCalledWith({
-				data: { action: { type: "finish-reward" } },
-			})
-		);
-		await waitFor(() =>
-			expect(router.state.location.pathname).toBe("/run/over")
+			expect(router.state.location.pathname).toBe("/run/prep")
 		);
 	});
 

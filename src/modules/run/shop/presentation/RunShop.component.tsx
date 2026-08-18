@@ -1,6 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { shopExitFor } from "~/modules/run/run/application/runView.viewmodel";
 import { Screen } from "~/ui/Screen.ui";
 
 import {
@@ -17,8 +16,7 @@ export const RunShop = () => {
 
 	if (!view) return null;
 
-	const exit = shopExitFor(view);
-	const action = shopExitAction(exit);
+	const action = shopExitAction(view.gatesCleared);
 
 	return (
 		<Screen
@@ -29,20 +27,17 @@ export const RunShop = () => {
 			}}
 			rightAction={{
 				...action,
-				disabled: action.disabled || busy,
-				onClick:
-					exit.state === "stuck"
-						? () => send({ type: "finish-reward" })
-						: () => navigate({ to: "/run/prep" }),
+				disabled: busy,
+				onClick: () => navigate({ to: "/run/prep" }),
 			}}
 		>
 			<ShopScreen
 				storage={view.storage}
 				coverageByCategory={view.coverageByCategory}
-				checks={view.checks}
 				stake={view.gateStake}
 				configs={view.configs}
 				atMinimumWidth={view.atMinimumWidth}
+				locked={view.shopLocked}
 				newConfigIds={view.newConfigIds}
 				offers={view.offers}
 				onDraft={(id) => send({ type: "draft", configId: id })}
@@ -57,6 +52,11 @@ export const RunShop = () => {
 				extendCost={view.extendCost}
 				canExtend={view.canExtend && !busy}
 				onExtend={() => send({ type: "extend-offers" })}
+				pinAvailable={view.pinAvailable}
+				pinCost={view.pinCost}
+				canPin={view.canPin && !busy}
+				pinnedAtGate={view.pinnedAtGate}
+				onPlantPin={() => send({ type: "plant-pin" })}
 				slots={view.slots}
 				nextSlotGate={view.nextSlotGate}
 				justUnlockedSlots={view.justUnlockedSlots}

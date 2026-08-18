@@ -24,7 +24,6 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import type { TextTone } from "~/ui/typography/textTone";
 import { Title } from "~/ui/typography/Title.component";
 import {
-	describeCheckProgress,
 	describeRow,
 	PipelineReportRow,
 } from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
@@ -37,12 +36,10 @@ const STATUS_VARIANT: Record<GateRewardStatus, StatusBadgeVariant> = {
 	skipped: "skip",
 };
 
-// Coverage reads green, storage amber, checks green — overridden to red when the
-// step failed, muted when skipped.
+// Coverage reads green, storage amber — muted when the row never woke.
 const KIND_TONE: Record<GateRewardKind, TextTone> = {
 	coverage: "viridian",
 	storage: "saffron",
-	check: "viridian",
 };
 
 const valueTone = (row: GateRewardRow): TextTone => {
@@ -54,8 +51,6 @@ const valueTone = (row: GateRewardRow): TextTone => {
 const formatValue = (value: GateRewardValue): string => {
 	if (value.unit === "percent") return formatPercent(value);
 	if (value.unit === "kb") return formatKbGain(value);
-	if (value.unit === "checkProgress")
-		return describeCheckProgress(value.progress);
 	return NOTHING_SHOWN;
 };
 

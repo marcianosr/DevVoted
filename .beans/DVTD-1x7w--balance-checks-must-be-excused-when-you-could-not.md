@@ -1,11 +1,11 @@
 ---
 # DVTD-1x7w
 title: Balance checks must be excused when you could not shop
-status: todo
+status: scrapped
 type: task
 priority: high
 created_at: 2026-08-14T09:07:11Z
-updated_at: 2026-08-14T09:07:11Z
+updated_at: 2026-08-17T09:52:08Z
 parent: DVTD-d0fw
 ---
 
@@ -33,3 +33,7 @@ It stops being survivable the moment **debt cards** ship. A card disables the ho
 ## Note
 
 **Hotfix** (DVTD-72d9 Phase 3: a failed gate still opens the shop) dissolves this problem instead — with a shop after failure there is always a route back over the floor. If Hotfix ships first, close this as unnecessary rather than implementing both.
+
+## Reasons for Scrapping
+
+ADR-035 removes checks from configs entirely; there are no balance checks left to excuse.

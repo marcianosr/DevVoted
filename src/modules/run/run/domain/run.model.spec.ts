@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { CategoryCode } from "~/shared/lib/categories";
 
+import { upgradeStorageCost } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
+import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	EXTEND_FROM_GATE,
 	extendCost,
@@ -11,27 +14,32 @@ import {
 	MAX_EXTENSIONS,
 	offerCount,
 } from "~/modules/run/shop/domain/draft.model";
-import { checkStatuses } from "~/modules/run/gate/domain/gate.model";
 import {
 	BASE_SLOTS,
 	MAX_SLOTS,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
+	coverageDemandFor,
 	FAUCET_CAP_KB,
+	PIN_FROM_GATE,
+	PIN_UNTIL_GATE,
+	pinCostFor,
 	GATE_COUNT,
-	isStakeFatal,
-	minConfigsForGate,
+	failStripsFor,
 	SLICE_WINDOW,
 	STORAGE_CAP_KB,
 	STORAGE_PLANS,
 	storagePlanFor,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
-import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	answerOutcome,
 	canBuyPeek,
 	createRun,
+	pinAvailable,
+	isShopLocked,
+	lintApplies,
+	lintFeeFor,
 	isAwaitingTomorrow,
 	pickBudgetFor,
 	runReducer,
@@ -92,6 +100,44 @@ const clearGate = (state: RunState): RunState => {
 	return next;
 };
 
+/**
+ * A run parked at `gate` holding `configCount` configs. Deep gates peel several
+ * configs at once (ADR-037), so the three a start hands out cannot stand in for a
+ * summit build; the roster is sliced rather than slotted, since the pipeline's
+ * own slot rule is not what these tests are about.
+ */
+const atGateWithBuild = (gate: number, configCount: number): RunState => {
+	const base = started(["js"]);
+	const roster = Object.values(CONFIGS).slice(0, configCount);
+	return {
+		...base,
+		gatesCleared: gate,
+		pipeline: { ...base.pipeline, slots: configCount, configs: roster },
+	};
+};
+
+/** A window answered wrong all the way through — the gate's verdict is a miss. */
+const failGate = (state: RunState): RunState => {
+	let next = state;
+	for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, false);
+	return next;
+};
+
+/**
+ * The peel a missed gate owes, paid off the front of the pipeline, then the
+ * resume that reopens the shop (ADR-037) — how a retry actually reaches the
+ * polls again.
+ */
+const payPeel = (state: RunState): RunState => {
+	let next = state;
+	while (next.stripsRemaining > 0)
+		next = runReducer(next, {
+			type: "strip",
+			configId: next.pipeline.configs[0].id,
+		});
+	return runReducer(next, { type: "resume-climb" });
+};
+
 // The climb only starts on a full pipeline, so the helper pads the requested
 // configs with inert fillers: focus categories the react-only pool never
 // serves and a linter that is never used — their checks skip, never judge.
@@ -103,31 +149,6 @@ const started = (slotIds: string[], size = 60): RunState => {
 	for (const configId of [...slotIds, ...fillers].slice(0, BASE_SLOTS))
 		state = runReducer(state, { type: "slot", configId });
 	return runReducer(state, { type: "start" });
-};
-
-// Meets a gate's width demand (ADR-027) by padding the build with reserves
-// whose checks all pass on an all-correct react-only pool.
-const RESERVES = [
-	CONFIGS.coverageGain,
-	CONFIGS.coldStart,
-	CONFIGS.indexedDb,
-	CONFIGS.codeCoverage,
-	CONFIGS.agentsMd,
-];
-
-const widenedTo = (state: RunState, width: number): RunState => {
-	const installedIds = new Set(configIds(state));
-	const extras = RESERVES.filter(
-		(config) => !installedIds.has(config.id)
-	).slice(0, width - state.pipeline.configs.length);
-	return {
-		...state,
-		pipeline: {
-			...state.pipeline,
-			slots: Math.max(state.pipeline.slots, width),
-			configs: [...state.pipeline.configs, ...extras],
-		},
-	};
 };
 
 describe("configuring", () => {
@@ -243,18 +264,26 @@ describe("gates and rewards", () => {
 		expect(state.status).toBe("answering");
 	});
 
-	it("gates a Focus upgrade on category coverage (not KB)", () => {
+	// A Focus upgrade answers to both gates (ADR-039): coverage says it is earned,
+	// KB says it is affordable, and neither stands in for the other.
+	it("gates a Focus upgrade on category coverage AND its storage price", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true); // react polls → no JS coverage
 		expect(state.status).toBe("rewarding");
+		expect(state.storage).toBe(32); // the gate's reward, and the price is 64
 
 		state = runReducer(state, { type: "upgrade", configId: "js" }); // needs 5% JS coverage
-		expect(state.pipeline.configs[0].level ?? 1).toBe(1); // blocked
+		expect(state.pipeline.configs[0].level ?? 1).toBe(1); // unearned
 
-		state = { ...state, coverageByCategory: { js: 100 } };
-		state = runReducer(state, { type: "upgrade", configId: "js" });
-		expect(state.pipeline.configs[0].level).toBe(2); // now allowed, no KB spent
-		expect(state.storage).toBe(32); // gate reward untouched by a free upgrade
+		const earned = { ...state, coverageByCategory: { js: 100 } };
+		expect(runReducer(earned, { type: "upgrade", configId: "js" })).toBe(
+			earned
+		); // earned, still unaffordable
+
+		const funded = { ...earned, storage: upgradeStorageCost(1) };
+		const upgraded = runReducer(funded, { type: "upgrade", configId: "js" });
+		expect(upgraded.pipeline.configs[0].level).toBe(2);
+		expect(upgraded.storage).toBe(0); // the price was actually taken
 	});
 
 	it("upgrades Unit Tests for storage — the next level costs 32KB × level", () => {
@@ -336,10 +365,12 @@ describe("shop controls (DVTD-5lt6)", () => {
 	// A shop visit with storage to spend, at a gate deep enough for every control
 	// to be staged in. `gatesCleared` is set directly because the controls read
 	// the gate number, not the route that reached it.
+	// The streak is pumped so `clearNextGate` outruns any gate's meter demand —
+	// these tests are about the shop controls, not the score.
 	const shopping = (gatesCleared = 3, storage = 512): RunState => {
 		let state = started(["eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		return { ...state, gatesCleared, storage };
+		return { ...state, gatesCleared, storage, streak: 50 };
 	};
 
 	const offerIds = (state: RunState): string[] =>
@@ -541,47 +572,71 @@ describe("gates grant slots (ADR-034)", () => {
 	});
 });
 
-describe("the gate's coverage total (ADR-034)", () => {
-	it("fails a checks-passing window that sits under the coverage demand", () => {
-		// Gate 3 demands 40% and a from-zero perfect window at ×3 banks ~19.5%,
-		// so every check passes and the total still falls short.
+describe("the gate's window meter (ADR-035)", () => {
+	it("fails a perfect window whose meter sits under the gate's own demand", () => {
+		// Gate 2 demands 25% and a from-zero perfect window at ×3 banks ~19.5%
+		// — every gate is a fresh score, the run's career total never counts.
+		const state = clearGate({
+			...started(["js"]),
+			gatesCleared: 2,
+			coverage: 500,
+		});
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.gatesCleared).toBe(2);
+		expect(state.log.at(-1)).toContain("Gate 2 failed");
+	});
+
+	it("resets the meter for the retry, keeping its answers for the review", () => {
+		let state = clearGate({ ...started(["js"]), gatesCleared: 2 });
+		expect(state.answeredThisGate).toHaveLength(SLICE_WINDOW);
+		state = payPeel(state);
+		expect(state.window.coverageGained).toBe(0);
+		expect(state.window.answered).toBe(0);
+		// The retry's own start is what clears the failed attempt's answers.
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.answeredThisGate).toEqual([]);
+	});
+
+	it("keeps the career coverage earned inside a failed attempt", () => {
 		let state = { ...started(["js"]), gatesCleared: 2 };
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.status).toBe("awaiting-strip");
-		expect(state.log.at(-1)).toContain("coverage");
+		expect(state.coverage).toBeGreaterThan(0);
+	});
+
+	it("bleeds the meter on a wrong answer but floors it at 0", () => {
+		let state = started(["js"]);
+		state = answerWith(state, false);
+		expect(state.window.coverageGained).toBe(0);
+		state = answerWith(state, true);
+		state = answerWith(state, false);
+		// 1 correct at streak 1.1 = 1.1, minus the 0.25 bleed (rounded to 0.3).
+		expect(state.window.coverageGained).toBeCloseTo(0.8);
+	});
+
+	it("never advances a build that answers nothing — it peels until the run ends", () => {
+		let state = started(["js"]);
+		for (let attempt = 0; attempt < 10 && state.status !== "dead"; attempt++)
+			state = runReducer(payPeel(failGate(state)), { type: "finish-reward" });
+		expect(state.status).toBe("dead");
+		expect(state.gatesCleared).toBe(0);
+	});
+
+	it("grades each attempt against its own gate's row of the demand table", () => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		// A perfect teaching window banks ~6% against gate 0's 3% — cleared.
+		expect(state.clearedGate).toBe(0);
+		expect(coverageDemandFor(0)).toBe(3);
 	});
 });
 
-describe("check-configs on one pipeline", () => {
-	it("fails when IndexedDB's 3-correct demand is unmet even though Correct passes", () => {
-		let state = started(["indexed-db"]);
-		for (let i = 0; i < 2; i++) state = answerWith(state, true); // Correct met (2 ≥ 1)
-		for (let i = 0; i < 3; i++) state = answerWith(state, false); // 2 < 3 for IndexedDB
-		expect(state.status).toBe("awaiting-strip");
-	});
-
-	it("passes a Cold Start check when the first answer is correct", () => {
-		let state = started(["cold-start"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.clearedGate).toBe(0);
-	});
-
+describe("enhancement configs on one pipeline", () => {
 	it("doubles the opening answer's coverage with Cold Start", () => {
 		let state = started(["cold-start"]);
 		state = answerWith(state, true);
 		expect(state.coverage).toBe(2.2); // 1 × opener ×2 × streak 1.1
 		state = answerWith(state, true);
 		expect(state.coverage).toBe(3.4); // +1.2 — the doubling was opener-only
-	});
-
-	it("fails the gate on two consecutive misses with Code Coverage installed", () => {
-		let state = started(["code-coverage"]);
-		state = answerWith(state, true);
-		state = answerWith(state, false);
-		state = answerWith(state, false); // the double miss — unrecoverable
-		state = answerWith(state, true);
-		state = answerWith(state, true); // Correct met (3 ≥ 1), check still failed
-		expect(state.status).toBe("awaiting-strip");
 	});
 
 	it("stops the IndexedDB faucet at the per-run cap", () => {
@@ -595,7 +650,7 @@ describe("check-configs on one pipeline", () => {
 	});
 });
 
-describe("linter mastery checks", () => {
+describe("the lint fee", () => {
 	// Three options so the lint action applies (it needs >1 wrong option left).
 	const lintablePoll = (id: string, correct: boolean): RunPoll => ({
 		id,
@@ -616,19 +671,28 @@ describe("linter mastery checks", () => {
 			),
 			handed
 		);
-		// ts/css masteries skip on the js-only pool — only ESLint's check judges.
 		for (const configId of ["eslint", "ts", "css"])
 			state = runReducer(state, { type: "slot", configId });
 		state = runReducer(state, { type: "start" });
 		return { ...state, storage: 100 };
 	};
 
-	it("clears a window that never linted, so the fee is never forced", () => {
-		// ADR-022: forcing the lint makes an unaffordable window fatal, which is
-		// the trap ADR-031 reversed. Competence is owed; spending is not.
+	it("clears a window that never linted — the fee is a choice, never owed", () => {
 		let state = lintableRun();
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
+	});
+
+	it("doubles the fee at a Cost Overrun gate (ADR-038)", () => {
+		const overrun: RunState = { ...lintableRun(), gatesCleared: 3 };
+		expect(lintFeeFor(overrun)).toBe(16); // the 8KB rung, doubled
+		expect(runReducer(overrun, { type: "lint-poll" }).storage).toBe(84);
+	});
+
+	it("takes the action away entirely at a Feature Freeze gate (ADR-038)", () => {
+		const frozen: RunState = { ...lintableRun(), gatesCleared: 6 };
+		expect(lintApplies(frozen)).toBe(false);
+		expect(runReducer(frozen, { type: "lint-poll" })).toBe(frozen);
 	});
 
 	it("charges the fee for a lint but demands nothing back for it", () => {
@@ -637,32 +701,7 @@ describe("linter mastery checks", () => {
 		expect(state.storage).toBe(92); // -8KB lint fee
 		state = answerWith(state, false); // the linted poll still missed
 		for (let i = 0; i < 4; i++) state = answerWith(state, true);
-		expect(state.clearedGate).toBe(0); // 4 correct js answers satisfy mastery
-	});
-
-	it("fails the gate when its category was drawn and nothing was answered right", () => {
-		let state = lintableRun();
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("awaiting-strip");
-	});
-
-	it("excuses the linter when no poll of its category turns up", () => {
-		// The react-only pool never draws JS/TS, so ESLint's check is dormant
-		// rather than dodged and a good window still clears. An unlucky draw must
-		// never cost a gate; a decision must.
-		let state = started(["eslint"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
-	});
-
-	it("reads mastery, not lint usage, on the checklist row", () => {
-		let state = lintableRun();
-		state = answerWith(state, true);
-		const row = checkStatuses(state.pipeline, state.window, 0).find(
-			(check) => check.sourceConfigId === "eslint"
-		);
-		expect(row?.label).toBe("ESLint mastery");
-		expect(row?.progress).toEqual({ kind: "answers", current: 1, target: 1 });
 	});
 });
 
@@ -707,15 +746,8 @@ describe(".length's pick budget", () => {
 		expect(pickBudgetFor(mixedPool(), 0)).toBe(6);
 	});
 
-	it("tallies every option submitted, not every poll answered", () => {
-		const state = spendAll(counting());
-		expect(state.window.picks).toBe(2);
-		expect(state.window.answered).toBe(1);
-	});
-
 	// The same build with .length swapped for a linter the react-only pool never
-	// serves: its check skips and it pays nothing, so any difference in the clear
-	// payout is .length's alone.
+	// serves, so any difference in the clear payout is .length's alone.
 	const uncounted = (polls: RunPoll[] = mixedPool()): RunState => {
 		let state = createRun(polls, handed);
 		for (const configId of ["eslint", "ts", "css"])
@@ -723,11 +755,9 @@ describe(".length's pick budget", () => {
 		return runReducer(state, { type: "start" });
 	};
 
-	it("clears the gate on the exact spend and pays 16KB for the extra pick", () => {
+	it("pays 16KB on clear per correct answer beyond one per poll", () => {
 		let state = spendAll(counting());
-		for (let i = 0; i < SLICE_WINDOW - 2; i++) state = answerWith(state, true);
-		expect(state.window.picks).toBe(5); // one poll left, one pick still owed
-		state = answerWith(state, true);
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
 
 		let bare = spendAll(uncounted());
@@ -736,33 +766,10 @@ describe(".length's pick budget", () => {
 		expect(state.gateRewardKb).toBe((bare.gateRewardKb ?? 0) + 16);
 	});
 
-	it("fails the gate when the window closes a pick short", () => {
-		// Hedging the multi-answer poll banks partial coverage and loses the gate:
-		// the pick you saved is one the budget still expects.
+	it("still clears when the multi-answer poll was hedged — no spend is owed (ADR-035)", () => {
 		let state = answerIds(counting(), ["celadon-a"]);
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
-		expect(state.window.picks).toBe(5);
-		expect(state.status).toBe("awaiting-strip");
-	});
-
-	it("fails while the window is still open once the spend goes over", () => {
-		// Both options on three single-answer polls is 6 picks against a budget of
-		// 5, and there is no way back down.
-		let state = counting(pool(60));
-		expect(state.window.budget).toBe(5);
-		for (let i = 0; i < 3; i++) {
-			const current = state.polls[state.currentIndex];
-			state = answerIds(
-				state,
-				current.options.map((option) => option.id)
-			);
-		}
-		expect(state.status).toBe("answering");
-		const check = checkStatuses(state.pipeline, state.window, 0).find(
-			(entry) => entry.label === ".length"
-		);
-		expect(check?.state).toBe("failed");
-		expect(check?.progress).toEqual({ kind: "answers", current: 6, target: 5 });
+		expect(state.clearedGate).toBe(0);
 	});
 
 	it("pays nothing on a window of single-answer polls, the config's dead spot", () => {
@@ -782,7 +789,6 @@ describe(".length's pick budget", () => {
 		expect(state.clearedGate).toBe(0);
 		// The second window is all single-answer, so its budget is one per poll.
 		expect(state.window.budget).toBe(5);
-		expect(state.window.picks).toBe(0);
 	});
 });
 
@@ -826,18 +832,11 @@ describe("Telemetry peeks", () => {
 		expect(peek(broke)).toBe(broke);
 	});
 
-	it("clears the gate once the window has bought its peek", () => {
-		let state = peek(peekingRun());
+	it("clears a window that never peeked — the fee is a choice, never owed (ADR-035)", () => {
+		let state = peekingRun();
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
 		expect(state.status).toBe("rewarding");
-	});
-
-	it("fails a perfect window that never peeked at all", () => {
-		// The demand is the fee, not the answers: 5/5 does not pay it.
-		let state = peekingRun();
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.status).toBe("awaiting-strip");
 	});
 
 	it("does not care how a peeked poll was answered", () => {
@@ -856,14 +855,9 @@ describe("Telemetry peeks", () => {
 		expect(state.window.peeked).toBe(0);
 	});
 
-	it("cannot pay the demand on a balance under 32KB, which is a lost gate", () => {
-		// The trap this check accepts by design (ADR-031's rule points the other
-		// way): one rung is all it asks, and a balance under it loses the window
-		// before it starts.
-		let state = { ...peekingRun(), storage: 31 };
+	it("refuses a peek on a balance under the first rung", () => {
+		const state = { ...peekingRun(), storage: 31 };
 		expect(canBuyPeek(state)).toBe(false);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.status).toBe("awaiting-strip");
 	});
 
 	it("keeps peeked polls for the whole run, so the split survives a later gate", () => {
@@ -877,298 +871,531 @@ describe("Telemetry peeks", () => {
 	});
 });
 
-describe("no build owes the gate nothing (ADR-022)", () => {
-	// AGENTS.md used to carry no check at all, and on a react-only pool the two
-	// linters are never offered a poll of their category. That build's checklist
-	// was empty, so it passed vacuously and summited on 0/5 with every swatch.
-	const freeloader = (size = GATE_COUNT * SLICE_WINDOW): RunState => {
-		let state = createRun(pool(size), [
-			CONFIGS.agentsMd,
-			CONFIGS.eslint,
-			CONFIGS.stylelint,
-		]);
-		for (const configId of ["agents-md", "eslint", "stylelint"])
-			state = runReducer(state, { type: "slot", configId });
-		return runReducer(state, { type: "start" });
-	};
-
-	it("refuses the clear when the build's one unconditional check is unmet", () => {
-		let state = freeloader();
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		// The linters are excused by the draw; AGENTS.md is the row that judges.
-		expect(
-			checkStatuses(state.pipeline, state.window, 0).map((check) => [
-				check.label,
-				check.state,
-			])
-		).toEqual([
-			["AGENTS.md", "failed"],
-			["ESLint mastery", "skipped"],
-			["Stylelint mastery", "skipped"],
-		]);
+describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
+	it("owes the base peel at the gate it missed", () => {
+		const state = failGate(started(["unit-tests"]));
 		expect(state.status).toBe("awaiting-strip");
-	});
-
-	it("names the failed check in the log rather than just the gate", () => {
-		let state = freeloader();
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.log.at(-1)).toContain("Gate 0 failed: AGENTS.md");
-	});
-
-	it("never summits a build that answers nothing", () => {
-		let state = freeloader();
-		for (let gate = 0; gate < GATE_COUNT; gate++) {
-			for (let i = 0; i < SLICE_WINDOW && state.status === "answering"; i++)
-				state = answerWith(state, false);
-			if (state.status === "rewarding")
-				state = runReducer(state, { type: "finish-reward" });
-		}
-		expect(state.status).not.toBe("won");
+		expect(state.stripsRemaining).toBe(failStripsFor(0));
 		expect(state.gatesCleared).toBe(0);
+		// Which config goes is the player's decision, so nothing is taken yet.
+		expect(state.pipeline.configs).toHaveLength(3);
 	});
 
-	it("clears on the single correct answer AGENTS.md asks for", () => {
-		// A legendary's 256KB draft price is most of what it costs, so its check
-		// is light. Light is not free: it is never excused by the draw.
-		// Coverage stake met up front (ADR-034) — the check is the subject here.
-		let state = { ...freeloader(SLICE_WINDOW), coverage: 50 };
-		state = answerWith(state, true);
-		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, false);
+	it("sends the paid peel to the shop instead of straight back to the polls", () => {
+		const state = payPeel(failGate(started(["unit-tests"])));
+		expect(state.status).toBe("rewarding");
+		expect(state.redoGate).toBe(0);
+		expect(state.pipeline.configs).toHaveLength(2);
+		expect(state.draftOptions.length).toBeGreaterThan(0);
+	});
+
+	it("pays nothing for the attempt it failed", () => {
+		const state = payPeel(failGate(started(["indexed-db"])));
+		expect(state.gateRewardKb).toBe(0);
+		expect(state.interestThisGateKb).toBe(0);
+	});
+
+	it("holds the retry on the same gate", () => {
+		let state = payPeel(failGate({ ...started(["js"]), gatesCleared: 4 }));
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.status).toBe("answering");
+		expect(state.gatesCleared).toBe(4);
+		expect(state.redoGate).toBeUndefined();
+	});
+
+	it("deals fresh polls to the retry instead of replaying the same five", () => {
+		const failed = failGate(started(["js"]));
+		const firstAttemptIds = failed.polls
+			.slice(0, SLICE_WINDOW)
+			.map((entry) => entry.id);
+		const state = payPeel(failed);
+		expect(firstAttemptIds).not.toContain(state.polls[state.currentIndex].id);
+	});
+
+	it("peels deeper at a strip-audit gate", () => {
+		const state = failGate(atGateWithBuild(11, 8));
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.stripsRemaining).toBe(failStripsFor(11) + 1);
+	});
+
+	it("peels more of a deep build than a shallow one", () => {
+		expect(failGate(atGateWithBuild(1, 8)).stripsRemaining).toBe(1);
+		expect(failGate(atGateWithBuild(8, 8)).stripsRemaining).toBe(3);
+	});
+
+	it("ends the run when the peel takes the whole build", () => {
+		const base = started(["unit-tests", "eslint"]);
+		const state = failGate({
+			...base,
+			pipeline: {
+				...base.pipeline,
+				configs: base.pipeline.configs.slice(0, 1),
+			},
+		});
+		expect(state.status).toBe("dead");
+		expect(state.log.at(-1)).toContain("the build holds 1");
+	});
+
+	it("clears the redo flag on the clear that follows", () => {
+		let state = payPeel(failGate(started(["js"])));
+		expect(state.redoGate).toBe(0);
+		state = clearGate(runReducer(state, { type: "finish-reward" }));
 		expect(state.clearedGate).toBe(0);
+		expect(state.redoGate).toBeUndefined();
 	});
 
-	it("carries no gate-level correctness floor", () => {
-		// Rejected in ADR-022: "get one right" is a config's check, not the gate's
-		// rule. Three focus configs, none of their categories drawn, so every row
-		// is excused and the gate demands nothing — which is the honest reading of
-		// "the gate demands only what your build demands". Not exploitable: the
-		// draw cannot be chosen, so this cannot be chained into a climb.
-		// The gate's own stake is coverage, not correctness (ADR-034): banked
-		// coverage meets it, so no correct answer is owed this window.
-		let state = { ...started(["ts", "css", "js"]), coverage: 50 };
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.clearedGate).toBe(0);
+	it("ends the run when a bare pipeline misses — a bare retry would loop forever", () => {
+		// Bareness is unreachable through play (the sell/drop floor holds at 1);
+		// this guards legacy snapshots that resume with an emptied pipeline.
+		let state = started(["js"]);
+		state = { ...state, pipeline: { ...state.pipeline, configs: [] } };
+		expect(failGate(state).status).toBe("dead");
 	});
 
-	it("leaves an unlucky focus build alone when it answered well", () => {
-		let state = started(["ts", "css", "js"]);
+	it("refuses the sell that would empty the pipeline", () => {
+		let state = started(["eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.clearedGate).toBe(0);
+		const oneConfig = {
+			...state,
+			pipeline: { ...state.pipeline, configs: [CONFIGS.eslint] },
+		};
+		expect(runReducer(oneConfig, { type: "sell", configId: "eslint" })).toBe(
+			oneConfig
+		);
 	});
 });
 
-describe("failure model", () => {
-	it("demands a strip when a stocked pipeline misses", () => {
-		let state = started(["unit-tests"]); // misses Unit Tests' correct demand
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("awaiting-strip");
-		expect(state.stripsRemaining).toBe(1);
+describe("the gate audits (ADR-035)", () => {
+	// Marsh (gate 7) mirrors scoring; the streak stays keyed to true correctness.
+	const atMarsh = (): RunState => ({ ...started(["js"]), gatesCleared: 7 });
+
+	// The mirror flips the question, not the score (ADR-038): the two-option
+	// polls this spec serves mirror into "pick the one wrong option", so the
+	// wrong option IS the answer and everything downstream grades normally.
+	it("pays the wrong option at the mirror, streak and all", () => {
+		let state = answerWith(atMarsh(), false);
+		// share 1 × gate ×8 × difficulty 1 × streak 1.1.
+		expect(state.window.coverageGained).toBe(8.8);
+		expect(state.streak).toBe(1);
+		state = answerWith(state, false);
+		expect(state.streak).toBe(2); // streaks build under the mirror now
 	});
 
-	it("routes the repaired build through the shop before the replay (ADR-034)", () => {
+	it("bleeds the meter on the poll's own correct option", () => {
+		let state: RunState = {
+			...atMarsh(),
+			coverage: 100,
+			coverageByCategory: { react: 100 },
+		};
+		state = answerWith(state, true);
+		// Mirrored, that pick is the wrong one: no earn, and the bleed fires
+		// (0.25 × ×8 = 2).
+		expect(state.window.coverageGained).toBe(0);
+		expect(state.coverage).toBe(98);
+		expect(state.streak).toBe(0);
+	});
+
+	it("asks for every wrong option once a poll has more than one", () => {
+		const base = started(["js"]);
+		const poll: RunPoll = {
+			id: "multi",
+			category: "react",
+			question: "Which are hooks?",
+			answerType: "single",
+			options: [
+				{ id: "a", label: "useState", correct: true },
+				{ id: "b", label: "componentDidMount", correct: false },
+				{ id: "c", label: "render", correct: false },
+			],
+		};
+		const state: RunState = {
+			...base,
+			gatesCleared: 7,
+			polls: [poll, ...base.polls.slice(1)],
+			currentIndex: 0,
+		};
+		const both = runReducer(state, {
+			type: "answer",
+			optionIds: ["b", "c"],
+		});
+		const half = runReducer(state, { type: "answer", optionIds: ["b"] });
+		expect(both.answeredThisGate.at(-1)?.outcome).toBe("correct");
+		// Half the wrong options is a partial, exactly as a half-answered
+		// multi-answer poll would be off the mirror.
+		expect(half.answeredThisGate.at(-1)?.outcome).toBe("partial");
+		expect(both.window.coverageGained).toBeGreaterThan(
+			half.window.coverageGained
+		);
+	});
+
+	it("marks the mirrored expectation as the answer to beat", () => {
+		const state = answerWith(atMarsh(), false);
+		const answered = state.answeredThisGate.at(-1);
+		// "No" is this pool's wrong option — mirrored, it is what the gate wanted.
+		expect(answered?.correct).toEqual(["No"]);
+	});
+
+	it("leaks storage every poll at the volcano, more on a miss", () => {
+		let state = { ...started(["js"]), gatesCleared: 9, storage: 100 };
+		state = answerWith(state, true);
+		expect(state.storage).toBe(84); // -16 a poll
+		state = answerWith(state, false);
+		expect(state.storage).toBe(52); // -32 on the miss
+	});
+
+	it("floors the leak at 0 — insolvency stays non-lethal (ADR-023)", () => {
+		let state = { ...started(["js"]), gatesCleared: 9, storage: 10 };
+		state = answerWith(state, true);
+		expect(state.storage).toBe(0);
+		expect(state.status).toBe("answering");
+	});
+
+	it("ends an Elite run whose build cannot pay the deepened peel", () => {
+		const quota = failStripsFor(11) + 1;
+		const state = failGate(atGateWithBuild(11, quota - 1));
+		expect(state.status).toBe("dead");
+		expect(state.log.at(-1)).toContain(`It peels ${quota}`);
+	});
+
+	it("refuses every shop write at a Read-only gate, and none elsewhere", () => {
+		const base = started(["js"]);
+		const shopping = (gatesCleared: number): RunState => ({
+			...base,
+			status: "rewarding",
+			gatesCleared,
+			storage: 1000,
+			pipeline: { ...base.pipeline, slots: 4 },
+			draftOptions: [CONFIGS.indexedDb],
+		});
+		const readOnly = shopping(5);
+		expect(isShopLocked(readOnly)).toBe(true);
+		expect(
+			runReducer(readOnly, { type: "draft", configId: "indexed-db" })
+		).toBe(readOnly);
+		expect(runReducer(readOnly, { type: "change-plan", tier: 2 })).toBe(
+			readOnly
+		);
+		expect(runReducer(readOnly, { type: "rebuild-draft" })).toBe(readOnly);
+
+		const open = shopping(4);
+		expect(isShopLocked(open)).toBe(false);
+		expect(
+			runReducer(open, { type: "draft", configId: "indexed-db" }).pipeline
+				.configs
+		).toHaveLength(4);
+	});
+
+	// Read-only shuts the till, not the door: the gate still has to be started,
+	// and a build that needs shrinking to fit still can be.
+	it("lets a Read-only run start its gate and drop a config", () => {
+		const readOnly: RunState = {
+			...started(["js"]),
+			status: "rewarding",
+			gatesCleared: 5,
+		};
+		expect(runReducer(readOnly, { type: "finish-reward" }).status).toBe(
+			"answering"
+		);
+		expect(
+			runReducer(readOnly, { type: "drop", configId: "js" }).pipeline.configs
+		).toHaveLength(2);
+	});
+
+	it("takes one config offline at a Dependency Outage gate", () => {
+		const outage = { ...started(["js"]), gatesCleared: 4 };
+		const view = toRunView(outage);
+		expect(view.offlineConfigs).toHaveLength(1);
+		expect(outage.pipeline.configs).toContain(view.offlineConfigs[0]);
+	});
+
+	it("moves the flake from poll to poll at a Flaky Build gate", () => {
+		let state: RunState = { ...started(["js"]), gatesCleared: 8 };
+		const seen = new Set<string>();
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) {
+			seen.add(toRunView(state).offlineConfigs[0]?.id ?? "");
+			state = answerWith(state, true);
+		}
+		expect(seen.size).toBeGreaterThan(1);
+	});
+
+	it("switches off the most-upgraded config at a Deprecated gate", () => {
+		const base = started(["js"]);
+		const levelled: RunState = {
+			...base,
+			gatesCleared: 10,
+			pipeline: {
+				...base.pipeline,
+				configs: base.pipeline.configs.map((config, index) =>
+					index === 1 ? { ...config, level: 4 } : config
+				),
+			},
+		};
+		expect(toRunView(levelled).offlineConfigs[0]?.id).toBe(
+			levelled.pipeline.configs[1].id
+		);
+	});
+
+	it("keeps an offline config out of the answer it would have scored", () => {
+		const base = started(["js"]);
+		const build: RunState = {
+			...base,
+			gatesCleared: 4, // Dependency Outage
+			pipeline: {
+				...base.pipeline,
+				slots: 5,
+				configs: [
+					...base.pipeline.configs,
+					CONFIGS.agentsMd,
+					CONFIGS.coverageGain,
+				],
+			},
+		};
+		const offlineId = toRunView(build).offlineConfigs[0]?.id;
+		const bonuses = answerWith(build, true)
+			.answeredThisGate.at(-1)
+			?.coverageBreakdown?.configBonuses.map((bonus) => bonus.configId);
+		expect(offlineId).toBeDefined();
+		expect(bonuses).not.toContain(offlineId);
+		// The rest of the build still pays, so this is a config going quiet
+		// rather than the whole pipeline switching off.
+		expect(bonuses?.length).toBeGreaterThan(0);
+	});
+
+	it("scores an answer past the clock as a miss, whatever was picked", () => {
+		const timed = { ...started(["js"]), gatesCleared: 8 };
+		const poll = timed.polls[timed.currentIndex];
+		const rightOption = poll.options.find((option) => option.correct);
+		const late = runReducer(timed, {
+			type: "answer",
+			optionIds: [rightOption?.id ?? ""],
+			elapsedMs: 31_000,
+		});
+		expect(late.window.coverageGained).toBe(0);
+		expect(late.window.correct).toBe(0);
+		expect(late.streak).toBe(0);
+		// The review still knows the answer was right, so "wrong" never reads as a
+		// lie about what was picked.
+		expect(late.answeredThisGate.at(-1)?.timedOut).toBe(true);
+	});
+
+	it("leaves an answer inside the clock alone", () => {
+		const timed = { ...started(["js"]), gatesCleared: 8 };
+		const poll = timed.polls[timed.currentIndex];
+		const rightOption = poll.options.find((option) => option.correct);
+		const inTime = runReducer(timed, {
+			type: "answer",
+			optionIds: [rightOption?.id ?? ""],
+			elapsedMs: 29_000,
+		});
+		expect(inTime.window.coverageGained).toBeGreaterThan(0);
+		expect(inTime.answeredThisGate.at(-1)?.timedOut).toBeUndefined();
+	});
+
+	it("frees the polls past the clocked ones", () => {
+		let state: RunState = { ...started(["js"]), gatesCleared: 8 };
+		for (let i = 0; i < 3; i++) state = answerWith(state, true);
+		expect(toRunView(state).pollTimeLimitMs).toBeNull();
+	});
+
+	it("charges Marsh its full demand — the mirror no longer discounts it", () => {
+		expect(toRunView(atMarsh()).gateStake.coverageDemand).toBe(
+			coverageDemandFor(7)
+		);
+	});
+
+	// `.length` reveals a number the player is about to spend, so at a mirrored
+	// gate it has to count the wrong options — those are the picks being asked
+	// for (ADR-038).
+	it("counts the picks a mirrored window actually wants", () => {
+		const threeOption = (id: string): RunPoll => ({
+			id,
+			category: "react",
+			question: `${id}?`,
+			answerType: "single",
+			options: [
+				{ id: `${id}-a`, label: "A", correct: true },
+				{ id: `${id}-b`, label: "B", correct: false },
+				{ id: `${id}-c`, label: "C", correct: false },
+			],
+		});
+		const polls = Array.from({ length: 20 }, (_, index) =>
+			threeOption(`three-${index}`)
+		);
+		let base = createRun(polls, [...handed, CONFIGS.length]);
+		for (const configId of ["length", "js", "eslint"])
+			base = runReducer(base, { type: "slot", configId });
+		base = runReducer(base, { type: "start" });
+
+		// One correct option per poll off the mirror, two wrong ones on it.
+		expect(toRunView(base).correctAnswersThisGate).toBe(SLICE_WINDOW);
+		expect(pickBudgetFor(polls, 0, true)).toBe(SLICE_WINDOW * 2);
+
+		// A window belongs to the gate that opened it, so the mirrored count
+		// arrives with the window — here, the one a missed mirror gate reopens.
+		const reopened = runReducer(
+			{
+				...base,
+				gatesCleared: 7,
+				status: "awaiting-strip" as const,
+				stripsRemaining: 0,
+			},
+			{ type: "resume-climb" }
+		);
+		expect(toRunView(reopened).correctAnswersThisGate).toBe(SLICE_WINDOW * 2);
+	});
+
+	it("Volkswagen CI suppresses the mirror — normal scoring, full demand", () => {
+		const base = started(["js"]);
+		let state: RunState = {
+			...base,
+			gatesCleared: 7,
+			pipeline: {
+				...base.pipeline,
+				configs: [...base.pipeline.configs, CONFIGS.volkswagenCi],
+			},
+		};
+		const view = toRunView(state);
+		expect(view.gateStake.coverageDemand).toBe(coverageDemandFor(7));
+		expect(view.gateStake.audits).toEqual([
+			expect.objectContaining({ id: "mirrored", suppressed: true }),
+		]);
+		state = answerWith(state, true);
+		expect(state.window.coverageGained).toBeGreaterThan(0); // no mirror
+	});
+});
+
+describe("the git tag (ADR-036)", () => {
+	const shopAt = (gatesCleared: number, storage = 1000): RunState => ({
+		...started(["js"]),
+		status: "rewarding",
+		gatesCleared,
+		storage,
+	});
+
+	it("plants the tag at the current gate and charges that gate's price", () => {
+		const state = runReducer(shopAt(4), { type: "plant-pin" });
+		expect(state.pinPlantedAtGate).toBe(4);
+		expect(state.storage).toBe(1000 - pinCostFor(4));
+		expect(state.log.at(-1)).toContain("git tag planted at gate 4");
+	});
+
+	// The price is the tag's worth: a checkpoint at gate 9 saves a week of
+	// climbing where one at gate 4 saves an evening.
+	it("charges more for a deeper checkpoint", () => {
+		expect(pinCostFor(PIN_UNTIL_GATE)).toBeGreaterThan(
+			pinCostFor(PIN_FROM_GATE)
+		);
+		const rows = [4, 5, 6, 7, 8, 9, 10].map(pinCostFor);
+		expect(rows).toEqual([...rows].sort((a, b) => a - b));
+		expect(runReducer(shopAt(9), { type: "plant-pin" }).storage).toBe(
+			1000 - pinCostFor(9)
+		);
+	});
+
+	it("sells no tag before gate 4", () => {
+		const early = shopAt(3);
+		expect(runReducer(early, { type: "plant-pin" })).toBe(early);
+	});
+
+	// Past gate 10 a rescue resumes a starter build into stacked audits and a
+	// 4-config peel — a fortune spent on a death.
+	it("stops selling past gate 10", () => {
+		const deep = shopAt(PIN_UNTIL_GATE + 1);
+		expect(runReducer(deep, { type: "plant-pin" })).toBe(deep);
+		expect(pinAvailable(deep)).toBe(false);
+		expect(pinAvailable(shopAt(PIN_UNTIL_GATE))).toBe(true);
+	});
+
+	it("refuses a tag the balance cannot cover", () => {
+		const broke = shopAt(4, pinCostFor(4) - 1);
+		expect(runReducer(broke, { type: "plant-pin" })).toBe(broke);
+	});
+
+	it("plants at most one tag per run", () => {
+		const once = runReducer(shopAt(4), { type: "plant-pin" });
+		const deeper = { ...once, gatesCleared: 6 };
+		const again = runReducer(deeper, { type: "plant-pin" });
+		expect(again).toBe(deeper); // refused — the tag stays where it was
+		expect(again.pinPlantedAtGate).toBe(4);
+	});
+
+	it("starts a rescued run at the pinned gate, wider and with a stipend", () => {
+		const state = createRun(pool(20), handed, 7);
+		expect(state.gatesCleared).toBe(7);
+		expect(state.startedAtGate).toBe(7);
+		expect(state.pipeline.slots).toBe(BASE_SLOTS + 6); // slotsForGatesCleared(7)
+		expect(state.storage).toBe(32 * 7);
+		expect(state.coverage).toBe(0);
+	});
+
+	it("lets a rescued run start on the base three configs, not a full nine", () => {
+		let state = createRun(pool(20), handed, 7);
+		for (const configId of ["js", "ts", "css"])
+			state = runReducer(state, { type: "slot", configId });
+		state = runReducer(state, { type: "start" });
+		expect(state.status).toBe("answering");
+	});
+
+	// One use per purchase: the tag is consumed on the start it rescues (see
+	// consumePinnedGate), so the rescued run's shop sells it again from scratch.
+	it("sells a rescued run another tag, at its own gate's price", () => {
+		const rescued: RunState = {
+			...createRun(pool(20), handed, 7),
+			status: "rewarding",
+			storage: 1000,
+		};
+		expect(rescued.pinPlantedAtGate).toBeUndefined();
+		expect(pinAvailable(rescued)).toBe(true);
+		const planted = runReducer(rescued, { type: "plant-pin" });
+		expect(planted.pinPlantedAtGate).toBe(7);
+		expect(planted.storage).toBe(1000 - pinCostFor(7));
+	});
+
+	it("changes nothing about an unpinned start", () => {
+		const state = createRun(pool(20), handed);
+		expect(state.gatesCleared).toBe(0);
+		expect(state.startedAtGate).toBe(0);
+		expect(state.storage).toBe(0);
+		expect(state.pipeline.slots).toBe(BASE_SLOTS);
+	});
+});
+
+describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
+	const awaitingStrip = (quota: number): RunState => {
 		let state = started(["unit-tests", "eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		return {
+			...state,
+			status: "awaiting-strip",
+			stripsRemaining: quota,
+		};
+	};
+
+	it("routes the peeled build through the shop before the replay", () => {
+		let state = awaitingStrip(1);
 		state = runReducer(state, { type: "strip", configId: "eslint" });
-		expect(state.status).toBe("awaiting-strip");
 		expect(state.stripsRemaining).toBe(0);
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("rewarding");
 		expect(state.redoGate).toBe(0);
 		expect(configIds(state)).not.toContain("eslint");
-		expect(state.pipeline.configs).toHaveLength(2);
 		state = runReducer(state, { type: "finish-reward" });
 		expect(state.status).toBe("answering");
-		expect(state.redoGate).toBeUndefined();
 		expect(state.gatesCleared).toBe(0); // the same gate again, not the next
 	});
 
 	it("ignores a strip once the quota is met", () => {
-		let state = started(["unit-tests", "eslint"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("awaiting-strip");
+		let state = awaitingStrip(1);
 		state = runReducer(state, { type: "strip", configId: "eslint" });
-		const afterQuota = runReducer(state, {
-			type: "strip",
-			configId: "ts",
-		});
+		const afterQuota = runReducer(state, { type: "strip", configId: "ts" });
 		expect(afterQuota).toBe(state);
 	});
 
-	it("ends the run when the peel quota takes the whole build", () => {
-		// Gate 4 owes 3 peels (dropCount) and the starting build holds exactly 3.
-		let state = { ...started(["unit-tests"]), gatesCleared: 4 };
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("dead");
-		expect(state.pipeline.configs).toHaveLength(3); // the run ends instead of peeling
-	});
-
-	it("leaves a config standing whenever the build outholds the quota", () => {
-		let state = started(["unit-tests"]);
-		state = {
-			...state,
-			gatesCleared: 4, // owes 3 peels
-			pipeline: {
-				...state.pipeline,
-				slots: 4,
-				configs: [...state.pipeline.configs, CONFIGS.coverageGain],
-			},
-		};
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("awaiting-strip");
-		expect(state.stripsRemaining).toBe(3);
-		expect(state.stripsRemaining).toBeLessThan(state.pipeline.configs.length);
-	});
-
 	it("ends the run when a peel emptied the build instead of climbing on", () => {
-		// Reachable only from a pre-ADR-021 snapshot, whose quota was capped at
-		// what the build held; the guard keeps a bare build from ever climbing.
-		let state = started(["unit-tests", "eslint"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("awaiting-strip");
-		// The post-peel state a legacy quota left behind: nothing owed, nothing held.
-		state = {
-			...state,
-			stripsRemaining: 0,
-			pipeline: { ...state.pipeline, configs: [] },
-		};
-		state = runReducer(state, { type: "resume-climb" });
-		expect(state.status).toBe("dead");
-	});
-
-	// The receipt is the only warning a player gets before sudden death
-	// (ADR-017), so what it predicts and what closeWindow does must not drift.
-	it.each([0, 2, 4, 6, 8])(
-		"kills the run at gate %i exactly when the receipt predicted it",
-		(gate) => {
-			const before = { ...started(["unit-tests"]), gatesCleared: gate };
-			const view = toRunView(before);
-			const receiptSaysFatal = isStakeFatal(
-				view.stripsOnFailure,
-				view.configs.length
-			);
-
-			let after = before;
-			for (let i = 0; i < SLICE_WINDOW; i++) after = answerWith(after, false);
-
-			expect(after.status === "dead").toBe(receiptSaysFatal);
-		}
-	);
-
-	it("ends the run when a bare pipeline misses", () => {
-		// Bareness is unreachable since ADR-021 — this guards runs snapshotted
-		// before it, which can still resume with an emptied pipeline.
-		let state = started(["js"]);
+		let state = awaitingStrip(0);
 		state = { ...state, pipeline: { ...state.pipeline, configs: [] } };
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("dead");
-	});
-});
-
-describe("the gate's width demand (ADR-027) and the shop exit it blocks (ADR-031)", () => {
-	// A shop standing before gate 4 (demand: 4 configs) on the starting three —
-	// one config short, the state only a strip can produce for real.
-	const shopBeforeGate4 = (): RunState => {
-		let state = started(["js"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		return { ...state, gatesCleared: 4 };
-	};
-
-	// The same shop with a free slot to install into — the repairable shape.
-	const repairableShop = (): RunState => {
-		const state = shopBeforeGate4();
-		return { ...state, pipeline: { ...state.pipeline, slots: 4 } };
-	};
-
-	it("blocks the exit while an offer on the table is affordable", () => {
-		const state = { ...repairableShop(), storage: 1000 };
-		const blocked = runReducer(state, { type: "finish-reward" });
-		expect(blocked).toBe(state);
-	});
-
-	it("blocks the exit while a rebuild could still surface an affordable offer", () => {
-		const expensive = { ...CONFIGS.coverageGain, draftCost: 999 };
-		const state = {
-			...repairableShop(),
-			storage: 36, // rebuildCost(0) 4KB + the cheapest possible draft 32KB
-			draftOptions: [expensive],
-		};
-		const blocked = runReducer(state, { type: "finish-reward" });
-		expect(blocked).toBe(state);
-	});
-
-	it("ends the run on the dead-end click once no repair can exist", () => {
-		const expensive = { ...CONFIGS.coverageGain, draftCost: 999 };
-		const state = {
-			...repairableShop(),
-			storage: 35, // one under the rebuild-plus-cheapest-draft bound
-			draftOptions: [expensive],
-		};
-		const dead = runReducer(state, { type: "finish-reward" });
-		expect(dead.status).toBe("dead");
-		expect(dead.log.at(-1)).toBe(
-			"Gate 4 demands 4 configs — the build holds 3 and the shop can't get it there. Run over."
-		);
-	});
-
-	it("ends the run on the dead-end click when the demand outgrows the slots", () => {
-		// 3 slots, 3 configs, demand 4: no storage can buy a slot, so the shop
-		// cannot repair this build no matter how rich the run is.
-		const state = { ...shopBeforeGate4(), storage: 1000 };
-		const dead = runReducer(state, { type: "finish-reward" });
-		expect(dead.status).toBe("dead");
-	});
-
-	it("admits a build that meets the demand exactly", () => {
-		const state = runReducer(widenedTo(shopBeforeGate4(), 4), {
-			type: "finish-reward",
-		});
-		expect(state.status).toBe("answering");
-	});
-
-	it("refuses the sell that would sink the build under the coming gate's demand", () => {
-		const atDemand = widenedTo(shopBeforeGate4(), 4);
-		const blocked = runReducer(atDemand, { type: "sell", configId: "js" });
-		expect(blocked).toBe(atDemand);
-	});
-
-	it("still sells while the build is wider than the demand", () => {
-		const above = widenedTo(shopBeforeGate4(), 5);
-		const sold = runReducer(above, { type: "sell", configId: "js" });
-		expect(sold.pipeline.configs).toHaveLength(4);
-	});
-
-	it("refuses the doorstep drop that would sink the build under the gate's demand", () => {
-		let state = widenedTo(shopBeforeGate4(), 4);
-		state = runReducer(state, { type: "finish-reward" });
-		expect(state.status).toBe("answering");
-		const blocked = runReducer(state, { type: "drop", configId: "js" });
-		expect(blocked).toBe(state);
-	});
-
-	it("refuses any drop once the window has opened — a failing check cannot be shed mid-gate", () => {
-		let state = widenedTo(shopBeforeGate4(), 5);
-		state = runReducer(state, { type: "finish-reward" });
-		state = answerWith(state, true);
-		const blocked = runReducer(state, { type: "drop", configId: "js" });
-		expect(blocked).toBe(state);
-	});
-
-	it("retires the replay exemption: a stripped-under-demand build is held by the redo shop (ADR-034)", () => {
-		let state = widenedTo(shopBeforeGate4(), 4); // js, ts, css, coverage-gain
-		state = runReducer(state, { type: "finish-reward" });
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		expect(state.status).toBe("awaiting-strip"); // quota 3 < 4 installed
-
-		for (const configId of ["js", "ts", "css"])
-			state = runReducer(state, { type: "strip", configId });
 		state = runReducer(state, { type: "resume-climb" });
-		expect(state.status).toBe("rewarding"); // the redo goes through the shop
-
-		// A shop now sits between the strip and its replay, so the cheese
-		// DVTD-kokk stays closed at the door: with 1000KB the shop can repair
-		// the width, and the exit refuses to start the replay until it does.
-		const held = { ...state, storage: 1000 };
-		expect(runReducer(held, { type: "finish-reward" })).toBe(held);
+		expect(state.status).toBe("dead");
 	});
 });
 
@@ -1212,15 +1439,11 @@ describe("the daily gate lock", () => {
 		expect(isAwaitingTomorrow(state)).toBe(true);
 	});
 
-	it("locks after the redo shop when the day ends on a failed gate", () => {
-		let state = started(["unit-tests"], SLICE_WINDOW);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+	it("locks the retry behind tomorrow when the day ends on a failed gate", () => {
+		let state = failGate(started(["unit-tests"], SLICE_WINDOW));
+		// The peel and the shop still happen today — only the polls have to wait.
 		expect(state.status).toBe("awaiting-strip");
-		state = runReducer(state, { type: "strip", configId: "unit-tests" });
-		state = runReducer(state, { type: "resume-climb" });
-		expect(state.status).toBe("rewarding"); // the redo shop opens first
-		state = runReducer(state, { type: "finish-reward" });
-		expect(state.status).toBe("answering");
+		state = runReducer(payPeel(state), { type: "finish-reward" });
 		expect(isAwaitingTomorrow(state)).toBe(true);
 	});
 });
@@ -1266,17 +1489,35 @@ describe("a two-polls-a-day player (ADR-014)", () => {
 });
 
 describe("the summit", () => {
-	it("wins by clearing every gate, widening to meet each gate's demand", () => {
-		// Depth is still paid for in checks (ADR-019), but a gate only admits a
-		// build wide enough to survive its own stake (ADR-027) — the summit
-		// demands 8 configs, so the starting three cannot carry a whole climb.
-		let state = started(["js"], GATE_COUNT * SLICE_WINDOW);
+	it("wins by clearing every gate — playing the mirror wrong on purpose", () => {
+		const base = started(["js"], GATE_COUNT * SLICE_WINDOW);
+		// The mirror pays no streak, so Marsh and Elite demand a real multiplier
+		// build: AGENTS.md ×2 with Coverage ×2 carries a perfect mirror window,
+		// and enough width that Dependency Outage cannot take both.
+		let state: RunState = {
+			...base,
+			pipeline: {
+				...base.pipeline,
+				slots: 6,
+				configs: [
+					...base.pipeline.configs,
+					CONFIGS.agentsMd,
+					CONFIGS.coverageGain,
+					// Elite's mirror forces five wrong answers, so the Champion opens
+					// on a cold streak: 340% off streakless multipliers alone lands two
+					// points short, and this is what covers the gap.
+					CONFIGS.codeCoverage,
+				],
+			},
+		};
 		for (let gate = 0; gate < GATE_COUNT; gate++) {
-			for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-			if (state.status === "rewarding") {
-				state = widenedTo(state, minConfigsForGate(state.gatesCleared));
+			const mirrored = auditsForGate(gate).some(
+				(audit) => audit.id === "mirrored"
+			);
+			for (let i = 0; i < SLICE_WINDOW; i++)
+				state = answerWith(state, !mirrored);
+			if (state.status === "rewarding")
 				state = runReducer(state, { type: "finish-reward" });
-			}
 		}
 		expect(state.status).toBe("won");
 		expect(state.clearedGate).toBe(VICTORY_GATE); // the last gate's number
@@ -1728,13 +1969,13 @@ describe("coverage scoring", () => {
 		);
 	});
 
-	it("keeps the gate's coverage-gained tally gains-only", () => {
-		// The coverage-gain check judges what you earned; the loss hits the
-		// run's totals, not the gate window — no double punishment.
+	it("bleeds the gate meter and the career total in step (ADR-035)", () => {
+		// The meter is the gate's score, so the loss hits it too — a bad answer
+		// costs the attempt exactly what it costs the run.
 		const afterOneCorrect = answerWith(started(["js"]), true);
 		const thenWrong = answerWith(afterOneCorrect, false);
-		expect(thenWrong.window.coverageGained).toBe(1.1); // streak-1 earn, gains only
-		expect(thenWrong.coverage).toBe(0.8); // 1.1 − 0.3 loss
+		expect(thenWrong.window.coverageGained).toBe(0.8); // 1.1 − 0.3 loss
+		expect(thenWrong.coverage).toBe(0.8);
 	});
 });
 
@@ -1805,12 +2046,11 @@ describe("storage plan", () => {
 		expect(state.gateBillKb).toBe(8);
 	});
 
-	it("bills a failed window too — the subscription has teeth", () => {
-		let state = started(["unit-tests", "js"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+	it("bills a failed window too — a missed gate pays the subscription anyway", () => {
+		let state = clearGate(started(["unit-tests", "js"]));
 		state = runReducer(state, { type: "change-plan", tier: 2 });
 		state = runReducer(state, { type: "finish-reward" }); // storage 64
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		state = failGate(state);
 		expect(state.status).toBe("awaiting-strip");
 		expect(state.storage).toBe(64 - 8);
 		expect(state.gateBillKb).toBe(8);
@@ -1835,18 +2075,14 @@ describe("storage plan", () => {
 		expect(storagePlanFor(state.storagePlan).tier).toBe(1);
 	});
 
-	it("keeps the failed window's bill visible through the redo shop, clearing it at the door", () => {
-		let state = started(["unit-tests", "js"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+	it("keeps billing every retry attempt of the same gate", () => {
+		let state = clearGate(started(["unit-tests", "js"]));
 		state = runReducer(state, { type: "change-plan", tier: 2 });
-		state = runReducer(state, { type: "finish-reward" });
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
-		state = runReducer(state, { type: "strip", configId: "unit-tests" });
-		state = runReducer(state, { type: "resume-climb" });
-		expect(state.gateBillKb).toBe(8); // the redo shop still reports the charge
-		state = runReducer(state, { type: "finish-reward" });
-		expect(state.gateBillKb).toBe(0);
-		expect(state.planDowngraded).toBe(false);
+		state = runReducer(state, { type: "finish-reward" }); // storage 64
+		state = failGate(state);
+		expect(state.storage).toBe(64 - 8);
+		state = failGate(runReducer(payPeel(state), { type: "finish-reward" }));
+		expect(state.storage).toBe(64 - 16); // the second attempt billed too
 	});
 });
 
@@ -1951,11 +2187,11 @@ describe("Moore's Law", () => {
 		expect(state.interestThisGateKb).toBe(51); // 10% at L5
 	});
 
-	it("fails the gate one KB under the floor, however clean the window", () => {
+	it("pays interest on any balance — the floor left with the checks (ADR-035)", () => {
 		const state = answerWholeWindow(held(started(["moores-law"]), 31));
 
-		expect(state.status).toBe("awaiting-strip");
-		expect(state.log.at(-1)).toContain("Moore's Law");
+		expect(state.status).toBe("rewarding");
+		expect(state.interestThisGateKb).toBe(0); // 2% of 31 floors to 0KB
 	});
 
 	it("upgrades for storage, spending the principal it then demands", () => {

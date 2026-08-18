@@ -18,7 +18,7 @@ describe(ConfigdexPanel, () => {
 		const tooltips = screen.getAllByRole("tooltip");
 		expect(
 			tooltips.some((node) =>
-				node.textContent?.includes("All coverage ×2 — get one answer right")
+				node.textContent?.includes("All coverage earns ×2")
 			)
 		).toBe(true);
 	});

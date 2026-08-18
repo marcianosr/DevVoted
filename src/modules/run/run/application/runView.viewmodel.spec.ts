@@ -23,19 +23,15 @@ import {
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	coverageDemandFor,
-	dropCount,
-	minConfigsForGate,
+	failStripsFor,
 	SLICE_WINDOW,
 	storagePlanFor,
 	STORAGE_PLANS,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
-import { createMockRunView } from "~/test/runView.factory";
 import {
 	correctOptionIdsFor,
 	latestAnswerScore,
-	type RunView,
-	shopExitFor,
 	toRunView,
 } from "~/modules/run/run/application/runView.viewmodel";
 
@@ -123,85 +119,17 @@ describe("toRunView", () => {
 		expect(broke.peekReady).toBe(false);
 	});
 
-	it("surfaces the gate checks and stats a screen needs", () => {
+	it("surfaces the gate stats a screen needs", () => {
 		const view = toRunView(answeringWith([CONFIGS.js]));
-		// The .js build owes only its own check — no baseline row (ADR-017).
-		expect(view.checks.map((check) => check.label)).toEqual([".js mastery"]);
 		expect(view.pollsPerGate).toBe(5);
 		expect(view.victoryGate).toBeGreaterThan(0);
 	});
 
-	it("surfaces the gate's width demand and flags a build under it (ADR-027)", () => {
-		// The demand ramps with the gate: Pallet asks nothing, so the early
-		// climb farms freely; deeper gates demand one config over their quota.
-		expect(toRunView(answeringWith([CONFIGS.js])).minConfigs).toBe(0);
-
-		const thin = toRunView({
-			...answeringWith([CONFIGS.js]),
-			gatesCleared: 4,
-		});
-		expect(thin.minConfigs).toBe(4);
-		expect(thin.underMinConfigs).toBe(true);
-
-		const met = toRunView({
-			...answeringWith([CONFIGS.js, CONFIGS.eslint]),
-			gatesCleared: 2,
-		});
-		expect(met.underMinConfigs).toBe(false);
-	});
-
-	describe("the shop exit (ADR-031)", () => {
-		const shopView = (overrides: Partial<RunView>): RunView =>
-			createMockRunView({ gatesCleared: 4, minConfigs: 4, ...overrides });
-
-		it("opens toward the gate while the build meets the demand", () => {
-			const exit = shopExitFor(shopView({ underMinConfigs: false }));
-			expect(exit).toEqual({ state: "open", gate: 4 });
-		});
-
-		it("blocks and measures the shortfall while the shop can repair it", () => {
-			const exit = shopExitFor(
-				shopView({
-					underMinConfigs: true,
-					widthRepairable: true,
-					configs: [CONFIGS.js],
-				})
-			);
-			expect(exit).toEqual({
-				state: "blocked",
-				gate: 4,
-				demand: 4,
-				shortfall: 3,
-			});
-		});
-
-		it("turns into the explicit end-run verdict once the build is stuck", () => {
-			const exit = shopExitFor(
-				shopView({ underMinConfigs: true, widthRepairable: false })
-			);
-			expect(exit).toEqual({ state: "stuck", gate: 4, demand: 4 });
-		});
-	});
-
-	it("tells a repairable width shortfall from a provably stuck one (ADR-031)", () => {
-		const thin = {
-			...answeringWith([CONFIGS.js]),
-			gatesCleared: 4,
-			draftOptions: [CONFIGS.eslint],
-		};
-
-		const funded = toRunView({ ...thin, storage: 1000 });
-		expect(funded.widthRepairable).toBe(true);
-
-		const broke = toRunView({ ...thin, storage: 0 });
-		expect(broke.widthRepairable).toBe(false);
-
-		const slotCapped = toRunView({
-			...thin,
-			storage: 1000,
-			pipeline: { ...thin.pipeline, slots: thin.pipeline.configs.length },
-		});
-		expect(slotCapped.widthRepairable).toBe(false);
+	it("flags a one-config build so sell and drop refuse (ADR-035)", () => {
+		expect(toRunView(answeringWith([CONFIGS.js])).atMinimumWidth).toBe(true);
+		expect(
+			toRunView(answeringWith([CONFIGS.js, CONFIGS.eslint])).atMinimumWidth
+		).toBe(false);
 	});
 
 	it("keeps awaitingTomorrow off while a poll is on deck", () => {
@@ -472,7 +400,10 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 	it("hands modifiers over as one object rather than four loose fields", () => {
 		const view = toRunView(answeringWith([CONFIGS.js]));
 		expect(view.modifiers).toEqual(
-			pipelineModifiersFor(answeringWith([CONFIGS.js]).pipeline.configs)
+			pipelineModifiersFor(
+				answeringWith([CONFIGS.js]).pipeline.configs,
+				answeringWith([CONFIGS.js]).gatesCleared
+			)
 		);
 	});
 
@@ -488,16 +419,25 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 // the seven fields as props purely to hand them on (DVTD-gf7h).
 describe("the gate stake travels as one object", () => {
 	it("collects what the coming gate demands and pays", () => {
-		const state = { ...answeringWith([CONFIGS.js]), gatesCleared: 4 };
+		// Three configs against gate 4's two-config peel, so the stake reads as an
+		// ordinary gate rather than a fatal one. Gate 4 carries one audit, which is
+		// how the stake proves it hands the receipt every rule in force.
+		const state = {
+			...answeringWith([CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]),
+			gatesCleared: 4,
+		};
 		const view = toRunView(state);
 
 		expect(view.gateStake).toEqual({
 			gateNumber: 4,
 			pollsPerGate: SLICE_WINDOW,
-			stripsOnFailure: dropCount(4),
-			minConfigs: minConfigsForGate(4),
 			coverageDemand: coverageDemandFor(4),
-			coverageHeld: state.coverage,
+			coverageHeld: state.window.coverageGained,
+			audits: [
+				expect.objectContaining({ id: "dependency-outage", suppressed: false }),
+			],
+			stripsOnFailure: failStripsFor(4),
+			missIsFatal: false,
 			billKb: storagePlanFor(state.storagePlan).billKb,
 			modifiers: view.modifiers,
 			perAnswer: view.perAnswer,
@@ -507,9 +447,37 @@ describe("the gate stake travels as one object", () => {
 	it("agrees with the flat fields the other screens still read", () => {
 		const view = toRunView({ ...answeringWith([CONFIGS.js]), gatesCleared: 4 });
 		expect(view.gateStake.gateNumber).toBe(view.gatesCleared);
-		expect(view.gateStake.minConfigs).toBe(view.minConfigs);
-		expect(view.gateStake.stripsOnFailure).toBe(view.stripsOnFailure);
 		expect(view.gateStake.billKb).toBe(view.storageBillKb);
+	});
+
+	it("reads the window meter, not the career total, as coverageHeld (ADR-035)", () => {
+		const state = {
+			...answeringWith([CONFIGS.js]),
+			coverage: 300,
+			window: {
+				...answeringWith([CONFIGS.js]).window,
+				coverageGained: 7.5,
+			},
+		};
+		expect(toRunView(state).gateStake.coverageHeld).toBe(7.5);
+	});
+
+	// The stake is where the peel is priced, so a player never learns what a miss
+	// costs from the peel itself (ADR-037).
+	it("prices the peel deeper at a strip-audit gate", () => {
+		const deep = { ...answeringWith([CONFIGS.js]), gatesCleared: 11 };
+		expect(toRunView(deep).gateStake.stripsOnFailure).toBe(
+			failStripsFor(11) + 1
+		);
+	});
+
+	it("marks the miss fatal once the peel would take the whole build", () => {
+		const lastConfig = answeringWith([CONFIGS.js]);
+		expect(toRunView(lastConfig).gateStake.missIsFatal).toBe(true);
+		expect(
+			toRunView(answeringWith([CONFIGS.js, CONFIGS.eslint])).gateStake
+				.missIsFatal
+		).toBe(false);
 	});
 });
 
@@ -578,9 +546,9 @@ describe("the shop's controls answer to the reducer", () => {
 	});
 
 	it("flags the width floor exactly where the reducer refuses to shrink", () => {
-		// Gate 2 demands 2, so a two-config build is on its floor.
+		// One config is the floor (ADR-035): a pipeline never goes bare.
 		const onFloor: RunState = {
-			...answeringWith([CONFIGS.js, CONFIGS.ts]),
+			...answeringWith([CONFIGS.js]),
 			status: "rewarding",
 			gatesCleared: 2,
 		};
@@ -589,10 +557,10 @@ describe("the shop's controls answer to the reducer", () => {
 		expect(toRunView(onFloor).atMinimumWidth).toBe(true);
 		expect(
 			runReducer(onFloor, { type: "sell", configId: target }).pipeline.configs
-		).toHaveLength(2);
+		).toHaveLength(1);
 		expect(
 			runReducer(onFloor, { type: "drop", configId: target }).pipeline.configs
-		).toHaveLength(2);
+		).toHaveLength(1);
 	});
 });
 
@@ -656,7 +624,7 @@ describe("the view prices the shop's offers", () => {
 		const state = shopping();
 		const offer = only(state);
 		const withIt = [...state.pipeline.configs, CONFIGS.eslint];
-		expect(offer.preview).toEqual(pipelineModifiersFor(withIt));
+		expect(offer.preview).toEqual(pipelineModifiersFor(withIt, 0));
 		expect(offer.previewPerAnswer).toEqual(
 			perAnswerPreviewFor(withIt, state.gatesCleared)
 		);

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import {
+	SLICE_WINDOW,
+	streakMultiplier,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
 import { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { AnswerContext } from "~/modules/run/config/domain/effect.model";
@@ -10,8 +14,6 @@ import {
 	MAX_SLOTS,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
-	coverageLapFor,
-	effectiveRequirement,
 	gateClearPayout,
 	canLint,
 	extraPickPayoutFor,
@@ -41,30 +43,6 @@ describe("gates grant slots (ADR-034)", () => {
 	});
 });
 
-describe("coverage laps (ADR-034)", () => {
-	it("reads lap 1 plainly and later laps by their rigor name", () => {
-		expect(coverageLapFor(45)).toEqual({ lap: 1, name: "Line", remainder: 45 });
-		expect(coverageLapFor(170)).toEqual({
-			lap: 2,
-			name: "Branch",
-			remainder: 70,
-		});
-		expect(coverageLapFor(365)).toEqual({
-			lap: 4,
-			name: "Fuzz",
-			remainder: 65,
-		});
-	});
-
-	it("holds the last name past 400%, where no threshold reaches", () => {
-		expect(coverageLapFor(450)).toEqual({
-			lap: 4,
-			name: "Fuzz",
-			remainder: 150,
-		});
-	});
-});
-
 const pipelineWith = (configs: Config[]): Pipeline => ({
 	id: "hyrule-ci",
 	slots: 3,
@@ -76,18 +54,8 @@ const at = (
 	answeredBefore = 1
 ): AnswerContext => ({ category, answeredBefore });
 
-describe("effectiveRequirement", () => {
-	it("returns the base for a bare pipeline", () => {
-		expect(effectiveRequirement(pipelineWith([]), 1)).toBe(1);
-	});
-
-	it("floors at 1", () => {
-		expect(effectiveRequirement(pipelineWith([]), 0)).toBe(1);
-	});
-});
-
 describe("rewardMultiplierFor", () => {
-	it("is 1 across the whole shipped roster — the check is the price of the effect, not a storage payout", () => {
+	it("is 1 across the whole shipped roster — configs pay in coverage or KB, never in a storage multiplier", () => {
 		expect(
 			rewardMultiplierFor([
 				{ ...CONFIGS.unitTests, level: 2 },
@@ -104,8 +72,8 @@ describe("rewardMultiplierFor", () => {
 });
 
 describe("pipelineModifiersFor", () => {
-	it("prices a bare pipeline at the base gate reward with identity multipliers", () => {
-		expect(pipelineModifiersFor([])).toEqual({
+	it("prices a bare pipeline at the opening gate's reward with identity multipliers", () => {
+		expect(pipelineModifiersFor([], 0)).toEqual({
 			gateReward: 32,
 			rewardMultiplier: 1,
 			coverageMultiplier: 1,
@@ -113,22 +81,38 @@ describe("pipelineModifiersFor", () => {
 		});
 	});
 
+	// The clear payout rides the `gatesCleared + 1` curve, so a preview that
+	// ignored the gate understated it by the whole multiplier — the receipt read
+	// 32KB at Cascade where the clear actually pays 96KB.
+	it("prices the clear against the gate being previewed, not the base", () => {
+		expect(pipelineModifiersFor([], 1).gateReward).toBe(64);
+		expect(pipelineModifiersFor([], 2).gateReward).toBe(96);
+	});
+
+	it("agrees with what a full window actually pays", () => {
+		const configs = [CONFIGS.unitTests, CONFIGS.agentsMd];
+		for (const gate of [0, 1, 5, 12])
+			expect(pipelineModifiersFor(configs, gate).gateReward).toBe(
+				gateClearPayout(configs, SLICE_WINDOW, gate)
+			);
+	});
+
 	it("folds flat clear payouts and coverage boosts into one modifier set", () => {
 		// Unit Tests pays +32 on clear, AGENTS.md doubles coverage — the same
 		// numbers the configure preview shows before the config is slotted.
-		expect(pipelineModifiersFor([CONFIGS.unitTests, CONFIGS.agentsMd])).toEqual(
-			{
-				gateReward: 64,
-				rewardMultiplier: 1,
-				coverageMultiplier: 2,
-				coverageAdd: 0,
-			}
-		);
+		expect(
+			pipelineModifiersFor([CONFIGS.unitTests, CONFIGS.agentsMd], 0)
+		).toEqual({
+			gateReward: 64,
+			rewardMultiplier: 1,
+			coverageMultiplier: 2,
+			coverageAdd: 0,
+		});
 	});
 
 	it("multiplies coverage mults across the build instead of summing them", () => {
 		expect(
-			pipelineModifiersFor([CONFIGS.intellisense, CONFIGS.coverageGain])
+			pipelineModifiersFor([CONFIGS.intellisense, CONFIGS.coverageGain], 0)
 				.coverageMultiplier
 		).toBe(3); // 1.5 × 2
 	});
@@ -140,7 +124,14 @@ describe("perAnswerPreviewFor", () => {
 			coveragePerCorrect: 1,
 			storageKbPerCorrect: 0,
 			matchingConfigMultiplier: undefined,
+			streakStepMultiplier: streakMultiplier(1),
 		});
+	});
+
+	// The base is a number no correct answer ever pays: the first one already
+	// carries a streak step, so the receipt has to state it (ADR-040).
+	it("carries the streak step, since even the first correct answer rides one", () => {
+		expect(perAnswerPreviewFor([], 0).streakStepMultiplier).toBe(1.1);
 	});
 
 	it("scales coverage with gate depth, riding the same curve as gateClearPayout", () => {

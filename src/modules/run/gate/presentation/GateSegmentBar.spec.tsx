@@ -133,10 +133,10 @@ describe(GateSegmentBar, () => {
 	it("names what each gate ahead demands, so the ladder is readable from gate 0", () => {
 		render(midClimb);
 		expect(screen.getAllByRole("tooltip")[4]).toHaveTextContent(
-			"Needs 60% total coverage · 4 configs"
+			"Needs 60% coverage in its window"
 		);
 		expect(screen.getAllByRole("tooltip")[2]).toHaveTextContent(
-			"Needs 24% total coverage · 2 configs"
+			"Needs 25% coverage in its window"
 		);
 	});
 
@@ -145,7 +145,7 @@ describe(GateSegmentBar, () => {
 		expect(screen.getAllByRole("tooltip")[1]).not.toHaveTextContent(/Needs/);
 	});
 
-	it("drops the config half where the teaching gate demands none", () => {
+	it("states only the coverage demand — gates ask no width (ADR-035)", () => {
 		render(
 			<GateSegmentBar
 				swatches={ALL_SWATCHES}
@@ -156,7 +156,7 @@ describe(GateSegmentBar, () => {
 			/>
 		);
 		const detail = screen.getAllByRole("tooltip")[0];
-		expect(detail).toHaveTextContent("Needs 3% total coverage");
+		expect(detail).toHaveTextContent("Needs 3% coverage in its window");
 		expect(detail).not.toHaveTextContent(/config/);
 	});
 
