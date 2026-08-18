@@ -177,7 +177,7 @@ const ShopContainer = ({
 					) : (
 						<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
 							{activeConfigs.map((config) => (
-								<li key={config.id} className="shrink-0 snap-start">
+								<li key={config.id} className="flex items-stretch snap-start">
 									<ActiveCard
 										config={config}
 										size="small"
