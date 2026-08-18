@@ -37,7 +37,7 @@ export const ConfigCard = ({
 		return (
 			<article
 				className={clsx(
-					"border p-2",
+					"border p-2 flex-1",
 					showDetails ? "w-56" : "min-w-40",
 					color.border,
 					color.bg,
