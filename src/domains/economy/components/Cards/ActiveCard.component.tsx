@@ -27,7 +27,7 @@ const ActiveCard = ({
 	);
 	return (
 		<div
-			className={clsx("flex flex-col gap-2", size === "large" && largeStyles)}
+			className={clsx("flex flex-1 flex-col gap-2", size === "large" && largeStyles)}
 		>
 			<ConfigCard
 				config={config}
