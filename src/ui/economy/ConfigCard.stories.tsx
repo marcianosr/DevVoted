@@ -18,6 +18,18 @@ export const Small: Story = {
 	},
 };
 
+export const SmallWithDetails: Story = {
+	args: {
+		name: ".includes",
+		rarity: "rare",
+		size: "small",
+		showDetails: true,
+		costLabel: "128 KB",
+		refundLabel: "64 KB",
+		description: "Reveals how many correct answers you have selected.",
+	},
+};
+
 export const Large: Story = {
 	args: {
 		name: "Prettier",
