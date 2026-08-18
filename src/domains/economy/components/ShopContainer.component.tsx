@@ -181,6 +181,7 @@ const ShopContainer = ({
 									<ActiveCard
 										config={config}
 										size="small"
+										showDetails
 										onDeinstall={onDeinstallConfig}
 										disabled={!isOpen || deinstallConfigMutation.isPending}
 									/>

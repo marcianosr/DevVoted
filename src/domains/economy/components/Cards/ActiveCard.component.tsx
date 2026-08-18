@@ -11,6 +11,7 @@ type ActiveCardProps = {
 	disabled?: boolean;
 	onDeinstall?: (config: Config) => void;
 	size?: "small" | "large";
+	showDetails?: boolean;
 };
 
 const ActiveCard = ({
@@ -18,6 +19,7 @@ const ActiveCard = ({
 	disabled,
 	onDeinstall,
 	size = "large",
+	showDetails,
 }: ActiveCardProps) => {
 	const disabledStyles = clsx(disabled && "opacity-50 cursor-not-allowed");
 	const largeStyles = clsx(
@@ -27,7 +29,12 @@ const ActiveCard = ({
 		<div
 			className={clsx("flex flex-col gap-2", size === "large" && largeStyles)}
 		>
-			<ConfigCard config={config} disabled={disabled} size={size} />
+			<ConfigCard
+				config={config}
+				disabled={disabled}
+				size={size}
+				showDetails={showDetails}
+			/>
 			{onDeinstall && (
 				<button
 					onClick={() => !disabled && onDeinstall(config)}

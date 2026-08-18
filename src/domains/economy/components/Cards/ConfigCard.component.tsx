@@ -7,9 +7,15 @@ type ConfigProps = {
 	config: Config;
 	disabled?: boolean;
 	size?: "small" | "large";
+	showDetails?: boolean;
 };
 
-const ConfigCard = ({ config, disabled, size = "large" }: ConfigProps) => (
+const ConfigCard = ({
+	config,
+	disabled,
+	size = "large",
+	showDetails,
+}: ConfigProps) => (
 	<ConfigCardUI
 		name={config.name}
 		rarity={config.rarity}
@@ -18,6 +24,7 @@ const ConfigCard = ({ config, disabled, size = "large" }: ConfigProps) => (
 		costLabel={formatStorage(config.cost)}
 		refundLabel={formatStorage(calculateRefund(config.cost))}
 		description={config.description}
+		showDetails={showDetails}
 	/>
 );
 
