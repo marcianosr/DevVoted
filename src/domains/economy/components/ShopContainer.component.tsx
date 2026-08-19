@@ -119,7 +119,7 @@ const ShopContainer = ({
 			<div className="flex flex-col gap-4">
 				<ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
 					{offeredConfigs.map((config) => (
-						<li key={config.id} className="shrink-0 snap-start">
+						<li key={config.id} className="flex items-stretch snap-start">
 							<ShopCard
 								config={config}
 								disabled={config.cost > storageAvailable || !isOpen}
