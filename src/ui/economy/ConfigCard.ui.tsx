@@ -63,7 +63,7 @@ export const ConfigCard = ({
 	return (
 		<article
 			className={clsx(
-				"border p-4 w-52 min-h-52",
+				"border p-4 w-52 flex-1 min-h-52",
 				color.border,
 				color.bg,
 				disabled && "opacity-50 cursor-not-allowed"
