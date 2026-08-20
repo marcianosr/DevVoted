@@ -34,6 +34,9 @@ type RewardScreenProps = {
 	extraPickThisGateKb?: number;
 	billKb?: number;
 	planDowngraded?: boolean;
+	/** The config Dependabot bumped at this clear — announced here because the
+	 * run log never shows in the live game. */
+	autoUpgraded?: Config;
 	/** The gate this clear opens onto, so the shop that follows has a target. */
 	nextStake?: GateStake;
 	onReviewAnswers?: () => void;
@@ -134,6 +137,7 @@ export const RewardScreen = ({
 	extraPickThisGateKb,
 	billKb,
 	planDowngraded,
+	autoUpgraded,
 	nextStake,
 	onReviewAnswers,
 	onContinue,
@@ -191,6 +195,22 @@ export const RewardScreen = ({
 					<Badge tone="muted" size="pill">
 						cosmetic
 					</Badge>
+				</div>
+			) : null}
+
+			{autoUpgraded ? (
+				<div className="flex flex-wrap items-center justify-center gap-2">
+					<ConfigChip
+						config={autoUpgraded}
+						badge={
+							<Badge tone="legendary" size="corner" pulse>
+								upgraded
+							</Badge>
+						}
+					/>
+					<Paragraph as="span" size="sm" tone="muted">
+						Dependabot merged this upgrade — free.
+					</Paragraph>
 				</div>
 			) : null}
 

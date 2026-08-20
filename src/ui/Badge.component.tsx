@@ -7,8 +7,10 @@ import { cva } from "class-variance-authority";
  * something is ("cosmetic"), sitting beside the thing it labels without
  * competing with it. The other three all raise their voice; this one lowers it,
  * which is why it wears a fill instead of `neutral`'s 2px stroke.
+ * `legendary` wears the rarity tier's own colours (the gradient ring stays on
+ * chips and swatches, where it means the tier — here it would say too much).
  */
-type BadgeTone = "neutral" | "muted" | "positive" | "price";
+type BadgeTone = "neutral" | "muted" | "positive" | "price" | "legendary";
 
 type BadgeSize = "default" | "corner" | "pill";
 
@@ -19,6 +21,7 @@ const badge = cva("font-bold", {
 			muted: "bg-surface-raised text-pewter",
 			positive: "bg-celadon text-black",
 			price: "bg-saffron text-black",
+			legendary: "bg-lavender/20 text-fuchsia",
 		} satisfies Record<BadgeTone, string>,
 		size: {
 			default: "rounded px-1.5 py-0.5 text-sm",
@@ -32,6 +35,9 @@ type BadgeProps = {
 	children: ReactNode;
 	tone?: BadgeTone;
 	size?: BadgeSize;
+	/** One-shot news ("upgraded"): pulses to catch the eye, so reserve it for
+	 * badges that appear once and clear — a permanent pulse is just noise. */
+	pulse?: boolean;
 	onClick?: () => void;
 	disabled?: boolean;
 	ariaLabel?: string;
@@ -41,11 +47,12 @@ export const Badge = ({
 	children,
 	tone = "neutral",
 	size = "default",
+	pulse = false,
 	onClick,
 	disabled = false,
 	ariaLabel,
 }: BadgeProps) => {
-	const style = badge({ tone, size });
+	const style = `${badge({ tone, size })}${pulse ? " animate-pulse" : ""}`;
 	if (!onClick) return <span className={style}>{children}</span>;
 	return (
 		<button

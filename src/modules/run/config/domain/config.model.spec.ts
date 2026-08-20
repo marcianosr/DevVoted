@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	autoUpgradeOneInOf,
 	describeConfig,
 	draftCost,
 	focusCoverageMultiplier,
@@ -67,6 +68,22 @@ describe("isUpgradable", () => {
 		expect(isUpgradable(CONFIGS.telemetry)).toBe(true);
 		expect(isUpgradable({ ...CONFIGS.telemetry, level: 2 })).toBe(false);
 	});
+
+	it("allows Dependabot exactly one upgrade — the odds are its only lever", () => {
+		expect(isUpgradable(CONFIGS.dependabot)).toBe(true);
+		expect(isUpgradable({ ...CONFIGS.dependabot, level: 2 })).toBe(false);
+	});
+});
+
+describe("autoUpgradeOneInOf", () => {
+	it("shortens the odds one step per level: 1-in-3 at L1, 1-in-2 at L2", () => {
+		expect(autoUpgradeOneInOf(CONFIGS.dependabot)).toBe(3);
+		expect(autoUpgradeOneInOf({ ...CONFIGS.dependabot, level: 2 })).toBe(2);
+	});
+
+	it("stays undefined for configs without the axis", () => {
+		expect(autoUpgradeOneInOf(CONFIGS.js)).toBeUndefined();
+	});
 });
 
 describe("showsSampleSize", () => {
@@ -101,6 +118,15 @@ describe("describeConfig", () => {
 	it("describes Telemetry without a peek demand", () => {
 		expect(describeConfig(CONFIGS.telemetry)).toBe(
 			"Pay a doubling fee to see how the community answered this poll."
+		);
+	});
+
+	it("derives Dependabot's odds from its level", () => {
+		expect(describeConfig(CONFIGS.dependabot)).toBe(
+			"1 in 3 gate clears: a random config in your pipeline upgrades, free."
+		);
+		expect(describeConfig({ ...CONFIGS.dependabot, level: 2 })).toBe(
+			"1 in 2 gate clears: a random config in your pipeline upgrades, free."
 		);
 	});
 });

@@ -44,6 +44,21 @@ describe(RewardScreen, () => {
 		).toBeInTheDocument();
 	});
 
+	it("announces the config Dependabot merged, since the run log never shows", () => {
+		render(
+			<RewardScreen {...base} autoUpgraded={{ ...CONFIGS.js, level: 2 }} />
+		);
+		expect(screen.getByText("upgraded")).toBeInTheDocument();
+		expect(
+			screen.getByText("Dependabot merged this upgrade — free.")
+		).toBeInTheDocument();
+	});
+
+	it("keeps the merge announcement off a clear without one", () => {
+		render(<RewardScreen {...base} />);
+		expect(screen.queryByText("upgraded")).not.toBeInTheDocument();
+	});
+
 	it("previews the gate the clear opens onto, so the shop has a target", () => {
 		render(
 			<RewardScreen

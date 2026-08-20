@@ -341,7 +341,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Twenty-four configs, all pure effects.
+**🟢 Shipped.** Twenty-five configs, all pure effects.
 
 | Config | Rarity | Effect |
 | --- | --- | --- |
@@ -360,6 +360,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 | Intellisense | rare | All coverage ×1.5 |
 | AGENTS.md | legendary | All coverage ×2 |
 | Volkswagen CI | legendary | Reports the gate's first audit as passing; costs 384 KB to draft |
+| Dependabot | legendary | 1 in 3 gate clears (1 in 2 at L2): a random pipeline config upgrades, free |
 
 `.length` deliberately pays on *shape* rather than magnitude, since four configs
 already sell coverage magnitude: it pays most in multi-answer-heavy windows and nothing
@@ -381,7 +382,6 @@ ship; the original check designs stay in the beans.
 | Weekend Project | common | Saturday and Sunday gates pay +50% storage |
 | Benchmark | uncommon | See your paired ghost's answer before you commit |
 | Cold cache | uncommon | The gate's first poll pays nothing; every poll after pays ×1.5 |
-| Dependabot | uncommon | Each gate, one random config upgrades a level for free |
 | `.tsx` | uncommon | TypeScript and React polls reward ×1.25 |
 | git stash | uncommon | Once per window, stash the current poll; it returns last |
 | Garbage Collection | uncommon | A peeled config pays you its sell value |

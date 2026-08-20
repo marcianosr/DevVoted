@@ -2239,3 +2239,22 @@ describe("Moore's Law", () => {
 		expect(state.interestThisGateKb).toBeGreaterThan(first);
 	});
 });
+
+// Dependabot's merge is announced through `autoUpgradedConfigId` — the run log
+// never shows in the live game (roll + pick behaviour lives in
+// autoUpgrade.model.spec; here only the announcement's lifetime).
+describe("Dependabot's merge announcement", () => {
+	it("stays unset when nothing in the pipeline carries the axis", () => {
+		const state = clearGate(started(["js"]));
+		expect(state.autoUpgradedConfigId).toBeUndefined();
+	});
+
+	it("clears when the climb resumes, like the slot celebration", () => {
+		const announced: RunState = {
+			...clearGate(started(["js"])),
+			autoUpgradedConfigId: "js",
+		};
+		const state = runReducer(announced, { type: "finish-reward" });
+		expect(state.autoUpgradedConfigId).toBeUndefined();
+	});
+});

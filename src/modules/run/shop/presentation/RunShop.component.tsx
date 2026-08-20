@@ -60,6 +60,7 @@ export const RunShop = () => {
 				slots={view.slots}
 				nextSlotGate={view.nextSlotGate}
 				justUnlockedSlots={view.justUnlockedSlots}
+				upgradedConfigId={view.autoUpgradedConfig?.id}
 				onUpgrade={(id) => send({ type: "upgrade", configId: id })}
 				onSell={(id) => send({ type: "sell", configId: id })}
 				storagePlans={view.storagePlans}

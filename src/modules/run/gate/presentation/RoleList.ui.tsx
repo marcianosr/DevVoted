@@ -6,6 +6,7 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import type { RoleRow } from "~/modules/run/gate/domain/configRole.model";
 import { Badge } from "~/ui/Badge.component";
+import { Tooltip } from "~/ui/Tooltip.component";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import type { ChipAction } from "~/modules/run/config/presentation/ConfigActions.ui";
@@ -69,6 +70,9 @@ type RoleListProps = {
 	getUseAction?: (config: Config) => RowUseAction | undefined;
 	trailingFor?: (config: Config) => ReactNode;
 	newConfigIds?: readonly string[];
+	/** The config Dependabot bumped at the last clear — the log never shows in
+	 * the live game, so the badge is how the player learns their build changed. */
+	upgradedConfigId?: string;
 	/** Configs an audit has switched off right now (ADR-038). Only the answering
 	 * screen passes them: before the gate there is nothing down yet, and showing
 	 * a roll the player has not reached would be a spoiler. */
@@ -97,6 +101,7 @@ export const RoleList = ({
 	getUseAction,
 	trailingFor,
 	newConfigIds,
+	upgradedConfigId,
 	offlineConfigIds,
 	preview,
 	trailing,
@@ -109,9 +114,18 @@ export const RoleList = ({
 		offlineConfigIds?.includes(config.id) ?? false;
 
 	// One badge slot, and offline wins it: a config that is switched off has
-	// nothing to celebrate about being new.
+	// nothing to celebrate about being new or bumped. Upgraded and new never
+	// collide — a bump lands on a config owned before this gate's drafting.
 	const chipBadge = (config: Config): ReactNode => {
 		if (isOffline(config)) return <Badge tone="neutral">offline</Badge>;
+		if (config.id === upgradedConfigId)
+			return (
+				<Tooltip compact nested content="Upgraded! Dependabot merged it, free.">
+					<Badge tone="legendary" pulse>
+						upgraded
+					</Badge>
+				</Tooltip>
+			);
 		return newConfigIds?.includes(config.id) ? (
 			<Badge tone="positive">new</Badge>
 		) : undefined;

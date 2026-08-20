@@ -25,6 +25,7 @@ export const RunReward = () => {
 				extraPickThisGateKb={view.extraPickThisGateKb}
 				billKb={view.gateBillPaidKb}
 				planDowngraded={view.planDowngraded}
+				autoUpgraded={view.autoUpgradedConfig ?? undefined}
 				nextStake={view.gateStake}
 				onReviewAnswers={() => navigate({ to: "/run/review" })}
 				onContinue={() => navigate({ to: "/run/shop" })}

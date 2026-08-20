@@ -71,6 +71,8 @@ type ShopScreenProps = {
 	/** The gate whose clear opens the next slot (ADR-034); null at the cap. */
 	nextSlotGate: number | null;
 	justUnlockedSlots: readonly number[];
+	/** The config Dependabot bumped at the clear that opened this shop. */
+	upgradedConfigId?: string;
 	onUpgrade: (configId: string) => void;
 	onSell: (configId: string) => void;
 	storagePlans: readonly StoragePlanOption[];
@@ -196,6 +198,7 @@ export const ShopScreen = ({
 	onPlantPin,
 	nextSlotGate,
 	justUnlockedSlots,
+	upgradedConfigId,
 	onUpgrade,
 	onSell,
 	storagePlans,
@@ -583,6 +586,7 @@ export const ShopScreen = ({
 							slots={slots}
 							trailingFor={loadoutActions}
 							newConfigIds={newConfigIds}
+							upgradedConfigId={upgradedConfigId}
 							preview={
 								previewOffer
 									? {

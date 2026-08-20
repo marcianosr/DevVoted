@@ -43,6 +43,26 @@ export const Removable: Story = {
 	args: { rows, onRemove: () => {} },
 };
 
+// Dependabot's merge announcement: the run log never shows in the live game,
+// so this pulsing badge is how the player learns their build changed.
+export const JustUpgraded: Story = {
+	args: {
+		rows: [
+			{
+				config: { ...CONFIGS.js, level: 2 },
+				role: "conditional",
+				reason: { kind: "config" as const },
+			},
+			{
+				config: CONFIGS.unitTests,
+				role: "requirement",
+				reason: { kind: "config" as const },
+			},
+		],
+		upgradedConfigId: CONFIGS.js.id,
+	},
+};
+
 export const FailedRequirement: Story = {
 	args: {
 		rows: [

@@ -21,10 +21,12 @@ import {
 	draftCost,
 	faucetKbPerCorrect,
 	isUpgradable,
+	levelUp,
 	sellRefund,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
+import { autoUpgradeOnClear } from "~/modules/run/config/domain/autoUpgrade.model";
 import {
 	type AnswerContext,
 	EMPTY_WINDOW,
@@ -295,6 +297,10 @@ export type RunState = {
 	 * screen — `clearedGate` still holds the previous clear and cannot. Cleared
 	 * when the retry starts. */
 	readonly redoGate?: number;
+	/** The config Dependabot bumped at the last clear, so the reward screen and
+	 * the shop can flag it — the run log is not shown in the live game. Cleared
+	 * when the climb resumes, like `justUnlockedSlots`. */
+	readonly autoUpgradedConfigId?: string;
 	/** The git tag (ADR-036): the gate this run planted its checkpoint at.
 	 * Doubles as the once-per-run flag. */
 	readonly pinPlantedAtGate?: number;
@@ -609,15 +615,31 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 			log: withLog(state, `${clearLine(gateNumber, reward)} You summited!`),
 		};
 
+	// Seeded off the run's own trail (answers so far, KB in hand), so two runs
+	// at the same gate roll differently but a replayed clear replays its merge.
+	const merged = autoUpgradeOnClear(
+		cleared.pipeline.configs,
+		`dependabot-${gateNumber}-${(state.allAnswered ?? []).length}-${state.storage}`
+	);
+
 	return {
 		...cleared,
+		pipeline: merged.bumped
+			? withPipeline(cleared.pipeline, merged.configs)
+			: cleared.pipeline,
+		autoUpgradedConfigId: merged.bumped?.id,
 		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
 		rebuildsUsed: 0,
 		draftedThisGate: [],
 		status: "rewarding",
 		log: withLog(
 			state,
-			`${clearLine(gateNumber, reward)} Spend it in the shop.`
+			`${clearLine(gateNumber, reward)} Spend it in the shop.`,
+			...(merged.bumped
+				? [
+						`Dependabot bumped ${merged.bumped.label} to L${merged.bumped.level ?? 1} — merged without review.`,
+					]
+				: [])
 		),
 	};
 };
@@ -958,11 +980,6 @@ const stayReward = (
 	log: withLog(state, line),
 });
 
-const levelUp = (config: Config): Config => ({
-	...config,
-	level: (config.level ?? 1) + 1,
-});
-
 const draft = (state: RunState, configId: string): RunState => {
 	const chosen = state.draftOptions.find(
 		(candidate) => candidate.id === configId
@@ -1094,6 +1111,7 @@ const finishReward = (state: RunState): RunState => {
 		planDowngraded: false,
 		redoGate: undefined,
 		justUnlockedSlots: [],
+		autoUpgradedConfigId: undefined,
 		storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
 		status: "answering",
 		log: withLog(state, "Climbing on."),

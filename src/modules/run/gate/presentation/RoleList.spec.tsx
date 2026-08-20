@@ -36,6 +36,27 @@ describe(RoleList, () => {
 	});
 });
 
+// Dependabot's merge lands in the reducer, and the run log never shows in the
+// live game — the badge is how the player learns their build changed.
+describe("a config Dependabot just bumped", () => {
+	it("badges the upgraded config", () => {
+		render(<RoleList rows={roleRows(configs)} upgradedConfigId="unit-tests" />);
+		expect(screen.getByText("upgraded")).toBeInTheDocument();
+	});
+
+	it("lets offline win the badge slot — a dead config has nothing to celebrate", () => {
+		render(
+			<RoleList
+				rows={roleRows(configs)}
+				upgradedConfigId="unit-tests"
+				offlineConfigIds={["unit-tests"]}
+			/>
+		);
+		expect(screen.getByText("offline")).toBeInTheDocument();
+		expect(screen.queryByText("upgraded")).not.toBeInTheDocument();
+	});
+});
+
 // ADR-038: four audits switch a config off mid-attempt, and two of them move it
 // every poll — so the rail has to say which one is dead right now, not merely
 // that something is.

@@ -230,6 +230,8 @@ export type RunView = {
 	readonly nextSlotGate: number | null;
 
 	readonly justUnlockedSlots: readonly number[];
+	/** The config Dependabot bumped at the last clear; null when nothing was. */
+	readonly autoUpgradedConfig: Config | null;
 	/** The live audits' answering-screen cues (suppressed ones excluded). */
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
@@ -476,6 +478,10 @@ export const toRunView = (state: RunState): RunView => {
 		pinnedAtGate: state.pinPlantedAtGate ?? null,
 		nextSlotGate: nextSlotGateFor(state.pipeline.slots),
 		justUnlockedSlots: state.justUnlockedSlots ?? [],
+		autoUpgradedConfig:
+			state.pipeline.configs.find(
+				(config) => config.id === state.autoUpgradedConfigId
+			) ?? null,
 		audits: auditViewsFor(state),
 		linter:
 			current === undefined

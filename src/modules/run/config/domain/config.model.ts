@@ -38,6 +38,10 @@ export type Config = {
 	/** Reports the gate's first audit as passing (Volkswagen CI, ADR-028/035) —
 	 * the one benefit aimed at the gate's own rules rather than the window. */
 	readonly suppressesAudit?: boolean;
+	/** One-in-N odds that each gate clear levels up a random pipeline config,
+	 * free (Dependabot) — the one benefit that pays in levels. The denominator
+	 * shortens by one per level, so L2 turns 1-in-3 into 1-in-2. */
+	readonly autoUpgradeOneIn?: number;
 	readonly draftCost?: number;
 };
 
@@ -79,9 +83,20 @@ export const isUpgradable = (config: Config): boolean => {
 		config.focusCategory !== undefined ||
 		config.storageOnClear !== undefined ||
 		config.storageInterestPct !== undefined ||
-		config.peeksCommunitySplit === true;
+		config.peeksCommunitySplit === true ||
+		config.autoUpgradeOneIn !== undefined;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
 };
+
+export const levelUp = (config: Config): Config => ({
+	...config,
+	level: (config.level ?? 1) + 1,
+});
+
+export const autoUpgradeOneInOf = (config: Config): number | undefined =>
+	config.autoUpgradeOneIn === undefined
+		? undefined
+		: config.autoUpgradeOneIn - ((config.level ?? 1) - 1);
 
 const SAMPLE_SIZE_LEVEL = 2;
 
@@ -98,6 +113,8 @@ export const interestPctOf = (config: Config): number =>
 	(config.storageInterestPct ?? 0) * (config.level ?? 1);
 
 export const describeConfig = (config: Config): string => {
+	if (config.autoUpgradeOneIn !== undefined)
+		return `1 in ${autoUpgradeOneInOf(config)} gate clears: a random config in your pipeline upgrades, free.`;
 	if (config.peeksCommunitySplit)
 		return showsSampleSize(config)
 			? "Pay a doubling fee to see how the community answered this poll, and how many answered."
@@ -115,6 +132,8 @@ export const describeConfig = (config: Config): string => {
 };
 
 export const givesOf = (config: Config): string | undefined => {
+	if (config.autoUpgradeOneIn !== undefined)
+		return `A free random config upgrade on 1 in ${autoUpgradeOneInOf(config)} gate clears`;
 	if (config.peeksCommunitySplit)
 		return showsSampleSize(config)
 			? "See how the community answered, and how many answered"

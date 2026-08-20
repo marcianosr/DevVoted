@@ -253,6 +253,24 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		suppressesAudit: true,
 	},
+	// The reward is a level — an axis nothing else pays in (the roster's other
+	// payouts are coverage, KB, and information). The roll is seeded like the
+	// audits' offline picks, and the unpredictability is the identity: an
+	// auto-merged version bump you never reviewed and cannot decline. Two
+	// levels only, because the odds are the whole product and 1-in-2 is as
+	// short as they can get before the merge is the rule rather than the event.
+	dependabot: {
+		id: "dependabot",
+		label: "Dependabot",
+		family: "economy",
+		rarity: "legendary",
+		maxLevel: 2,
+		description:
+			"1 in 3 gate clears: a random config in your pipeline upgrades, free.",
+		gives: "A free random config upgrade on 1 in 3 gate clears",
+		rewardMultiplier: 1,
+		autoUpgradeOneIn: 3,
+	},
 } as const satisfies Record<string, Config>;
 
 export const CONFIG_LIST: readonly Config[] = Object.values(CONFIGS);

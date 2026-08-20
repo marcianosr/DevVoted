@@ -53,6 +53,16 @@ export const Default: Story = {
 	},
 };
 
+// Dependabot's merge lands at the clear, and the run log never shows in the
+// live game — this line is the player's first sight of the free upgrade.
+export const DependabotMerged: Story = {
+	args: {
+		...Default.args,
+		configs: [{ ...CONFIGS.css, level: 2 }, CONFIGS.dependabot],
+		autoUpgraded: { ...CONFIGS.css, level: 2 },
+	},
+};
+
 export const WithFaucetAndBill: Story = {
 	args: {
 		...Default.args,
