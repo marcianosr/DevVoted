@@ -1,44 +1,22 @@
 ---
 # DVTD-yuwi
 title: 'Meta progression: unlock configs, starter configs, borders'
-status: todo
+status: scrapped
 type: feature
 priority: normal
+tags:
+    - meta-progress
 created_at: 2026-07-22T12:38:06Z
-updated_at: 2026-07-27T14:16:47Z
+updated_at: 2026-08-20T09:20:51Z
 parent: DVTD-z2r2
 ---
 
-Allow players to unlock new configurations, additional starter configs, and custom borders through meta-progression between runs
+Merged into DVTD-2try.
 
-## Features to Implement
+## Reasons for Scrapping
 
-### Unlockable Configs
-- [ ] Design unlock progression system (by runs completed, coverage thresholds, wins, etc.)
-- [ ] Add tracking for which configs are unlocked per player
-- [ ] Show locked configs in shop with unlock criteria
-- [ ] Animate/celebrate config unlocks
+Duplicate scope. This bean and DVTD-2try both proposed account-wide config unlocking, differing only in the trigger: lifetime stats here, gates and coverage thresholds there. Two beans cannot answer the same question.
 
-### Starter Config Slots
-- [ ] Add multiple starter config slot unlock tiers
-- [ ] Display slot unlock progress
-- [ ] Show which slots are available vs locked
-- [ ] Update loadout UI to show available slots
+DVTD-2try survives because it is the design bean that frames the trigger as the decision to make. Its starter-slot and border scope came from here and is now on DVTD-2try.
 
-### Custom Borders
-- [ ] Design border variants (rarity-based or unlockable)
-- [ ] Add border selection UI in loadout
-- [ ] Store border preference per player
-- [ ] Display selected border on run screens
-
-## Data Model Updates
-- [ ] User progression tracking table
-- [ ] Config unlock status
-- [ ] Starter slot availability
-- [ ] Border preference storage
-
-## UI Components Needed
-- [ ] UnlockProgress component
-- [ ] LockedConfigCard component
-- [ ] BorderSelector component
-- [ ] Progression display in hub/community screens
+The status difference was cosmetic: this bean was `todo` but its first task was "design unlock progression system", so it was a draft in all but label.

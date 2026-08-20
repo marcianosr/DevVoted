@@ -1,10 +1,11 @@
 ---
 # DVTD-h8sz
 title: Title's className can't override tracking — TerminalPanel's 0.3em letter-spacing never applies
-status: todo
+status: scrapped
 type: bug
+priority: normal
 created_at: 2026-08-13T19:56:30Z
-updated_at: 2026-08-13T19:56:30Z
+updated_at: 2026-08-20T09:03:03Z
 parent: DVTD-82c4
 ---
 

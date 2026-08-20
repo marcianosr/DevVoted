@@ -1,10 +1,11 @@
 ---
 # DVTD-dxw8
 title: Ensure copilot can fail runs
-status: todo
+status: scrapped
 type: feature
+priority: normal
 created_at: 2026-07-31T14:04:23Z
-updated_at: 2026-07-31T14:04:23Z
+updated_at: 2026-08-18T20:19:58Z
 parent: DVTD-kulw
 ---
 

@@ -4,8 +4,10 @@ title: Add defensive and interesting config families
 status: scrapped
 type: feature
 priority: normal
+tags:
+    - meta-progress
 created_at: 2026-07-31T14:02:57Z
-updated_at: 2026-08-04T16:13:18Z
+updated_at: 2026-08-20T09:20:51Z
 parent: DVTD-z2r2
 ---
 

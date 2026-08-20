@@ -4,8 +4,10 @@ title: 'Poll Dex: unlocked configs + per-category polls-answered stats'
 status: completed
 type: feature
 priority: normal
+tags:
+    - meta-progress
 created_at: 2026-07-16T20:30:19Z
-updated_at: 2026-07-27T14:16:47Z
+updated_at: 2026-08-20T09:20:51Z
 parent: DVTD-z2r2
 ---
 

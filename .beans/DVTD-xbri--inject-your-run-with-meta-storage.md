@@ -1,11 +1,13 @@
 ---
 # DVTD-xbri
 title: Inject your run with meta storage
-status: todo
+status: scrapped
 type: feature
 priority: normal
+tags:
+    - meta-progress
 created_at: 2026-07-24T12:18:12Z
-updated_at: 2026-07-27T14:16:47Z
+updated_at: 2026-08-20T09:25:20Z
 parent: DVTD-z2r2
 ---
 

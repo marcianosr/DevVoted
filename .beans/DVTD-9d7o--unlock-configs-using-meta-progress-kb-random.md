@@ -4,56 +4,18 @@ title: Unlock configs using meta-progress KB (random)
 status: todo
 type: feature
 priority: normal
+tags:
+    - meta-progress
 created_at: 2026-07-23T13:37:05Z
-updated_at: 2026-07-27T14:16:47Z
+updated_at: 2026-08-20T09:20:51Z
 parent: DVTD-z2r2
 ---
 
-Allow players to spend accumulated vault KB to unlock random configs between runs, creating a progression loop
+Spend vault KB between runs to unlock a random config you do not own yet. Rival trigger to DVTD-2try (gates/coverage) and DVTD-yuwi (lifetime stats).
 
-## Mechanics
+- Cost by rarity: common 50KB, uncommon 150KB, rare 300KB, legendary 500KB
+- Only unowned configs offered, weighted by rarity, odds shown
+- Pity: guaranteed legendary after N pulls
+- Needs vault KB balance, owned-config list, pull history
 
-### Unlock System
-- [ ] Players can spend KB from vault to unlock a random config
-- [ ] Cost scales by config rarity (common = 50KB, uncommon = 150KB, rare = 300KB, legendary = 500KB)
-- [ ] Cost may increase if config already rolled multiple times (pity system)
-- [ ] Show cost clearly before unlock attempt
-
-### Randomization
-- [ ] Only offer configs not yet unlocked to player
-- [ ] Weight probability by rarity (common more likely, legendary rare)
-- [ ] Optional: seasonal/rotating config pools
-- [ ] Display odds/probabilities to player
-
-### Progression Loop
-- [ ] Runs earn vault KB → stored in user vault
-- [ ] Hub screen shows "Unlock a Config" button
-- [ ] Spending KB unlocks config → available in next run's loadout
-- [ ] Celebrate unlock with animation/feedback
-
-### Pity/Safety Mechanics
-- [ ] Guarantee legendary unlock after N pulls (e.g., 10 pulls)
-- [ ] Prevent duplicate spends (button disabled if insufficient KB)
-- [ ] Show path to next guaranteed legendary
-
-## Data Model
-- [ ] User vault KB balance
-- [ ] Unlocked configs per player (with unlock date/method)
-- [ ] Unlock attempt history (for pity tracking)
-- [ ] Config rarity/cost tier mapping
-
-## UI/UX
-- [ ] Vault KB display in hub/loadout
-- [ ] "Unlock Config" dialog with cost and odds
-- [ ] Spinning/reveal animation on unlock
-- [ ] Unlock history/collection view
-- [ ] Show "X more pulls to guaranteed legendary" progress
-
-## Future Ideas
-- Seasonal config unlock events
-- Weekly free unlock token
-- Trade/merge duplicate configs (post-launch)
-
-## Mechanics decisions (2026-07-25)
-
-Cap/grant edge cases resolved in [ADR-015](../docs/adr/015-storage-cap-policy-grant-and-cap-extender-configs.md): one-shot grant configs are strip fodder (no item class), grants clip at cap with the clip shown in the shop, cap-extenders use a soft over-cap on removal (excess persists, gains freeze), and no-selling is recorded as deliberate.
+Cap and grant edge cases are settled in ADR-015: one-shot grant configs are strip fodder, grants clip at the cap (clip shown in the shop), cap-extenders use a soft over-cap on removal, and not selling is recorded as deliberate.

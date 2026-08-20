@@ -3,10 +3,10 @@
 title: Randomly drawn configs at run start (RNG)
 status: draft
 type: feature
-priority: normal
+priority: critical
 created_at: 2026-07-16T20:30:06Z
-updated_at: 2026-07-27T14:16:47Z
-parent: DVTD-d0fw
+updated_at: 2026-08-20T09:04:59Z
+parent: DVTD-kulw
 blocked_by:
     - DVTD-2try
 ---

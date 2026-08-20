@@ -1,11 +1,11 @@
 ---
 # DVTD-n0oy
 title: Require a shop pick before continuing
-status: todo
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-07-13T08:24:10Z
-updated_at: 2026-07-27T14:16:47Z
+updated_at: 2026-08-18T20:20:09Z
 parent: DVTD-kulw
 ---
 

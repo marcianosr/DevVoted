@@ -3,9 +3,9 @@
 title: Handle over 100% coverage visuals
 status: todo
 type: feature
-priority: normal
+priority: high
 created_at: 2026-08-07T11:57:21Z
-updated_at: 2026-08-13T19:44:50Z
+updated_at: 2026-08-20T09:04:24Z
 parent: DVTD-u35m
 ---
 

@@ -1,23 +1,38 @@
 ---
 # DVTD-2try
-title: Config unlock system (gates reached / coverage thresholds)
+title: 'Unlock system: configs, starter slots, borders'
 status: draft
 type: feature
 priority: normal
+tags:
+    - meta-progress
 created_at: 2026-07-16T20:29:52Z
-updated_at: 2026-07-27T14:16:47Z
+updated_at: 2026-08-20T09:20:51Z
 parent: DVTD-z2r2
 ---
 
-Idea captured, mechanics still TBD.
+Every config in CONFIG_LIST is available from run one; there is no progression gate. Three things should unlock permanently per account: configs, extra starter config slots, and cosmetic borders. Only unlocked configs feed the start-of-run draw and mid-run drafts.
 
-Right now every config in CONFIG_LIST (src/modules/session-run/configs/configRoster.model.ts, 17 configs) is available from run one — both the fixed starting `HANDED` array (src/routes/proto-session-run.tsx:115) and the mid-run `rollDraft` pool (src/modules/session-run/draft/draft.model.ts) draw from the same fully-unlocked roster. There's no progression gate.
+Merged with DVTD-yuwi (scrapped), which carried the starter-slot and border scope.
 
-Rough direction: configs unlock permanently (account-wide, not per-run) as the player hits milestones, then only unlocked configs are eligible for the start-of-run draw and mid-run drafts.
+## The trigger is undecided, and it blocks everything else
 
-Open questions:
-- What unlocks a config — clearing a specific gate number (ADR-006's gate/climb structure), reaching a coverage threshold in the config's own category (ties into `run_category_coverage.current_coverage` / `final_coverage`), or something else (drawing it once for free, then it's "known")?
-- Is unlock per-config (curated: "clear gate 3 to unlock Copilot") or rule-based by rarity (e.g. legendary configs need N total gates cleared, lifetime)?
-- Persistence: needs a durable, cross-run store of "configs this user has unlocked" — no such table exists yet (the CLAUDE.md-documented `polls_user_performance` table doesn't actually exist in src/database/schema.ts; only `run_category_coverage` — per-run — and `polls_responses` do). Likely needs a new table or a JSON column on usersTable.
-- Does an unlocked-but-not-yet-drawn config show up as a locked/silhouetted teaser anywhere (shop, dev card) to signal "this exists, go earn it," similar to a Pokédex "seen but not caught" state?
-- Relates to DVTD-g8ty (Collect Swatches) — that's a per-category color-collectible tied to mastery; this is per-config. Worth deciding if they share one underlying "unlock ledger" or stay separate systems.
+- clear gate N, or hit a coverage threshold in the config's own category
+- lifetime stats: runs completed, wins (came from DVTD-yuwi)
+- DVTD-9d7o: spend vault KB on a random pull
+
+## Open
+
+- Curated per config ("clear gate 3 unlocks Copilot") or rule-based by rarity?
+- Persistence: no cross-run unlock store exists (only run_category_coverage, per-run). Needs a new table or a column on usersTable.
+- Do locked configs show as silhouettes somewhere (Pokedex "seen but not caught")?
+- Slots: in-run slot unlocks already ship (DVTD-ein1, gate swatches). Do account-level starter slots ride the same ledger?
+- Shares that ledger with DVTD-g8ty (swatches), or stays separate?
+- Borders are cosmetic and depend on no trigger. Split them back out if this bean gets too big to start.
+
+## Work, once the trigger is picked
+
+- [ ] Unlock-state persistence (configs, starter slots, border preference)
+- [ ] Starter slots: tiers, unlock criteria, loadout UI showing available vs locked
+- [ ] Borders: variants, selection UI, shown on run screens
+- [ ] Locked configs visible in the shop with their unlock criteria
