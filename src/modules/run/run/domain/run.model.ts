@@ -27,6 +27,7 @@ import {
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import { autoUpgradeOnClear } from "~/modules/run/config/domain/autoUpgrade.model";
+import { decayOnClear } from "~/modules/run/config/domain/decay.model";
 import {
 	type AnswerContext,
 	EMPTY_WINDOW,
@@ -301,6 +302,10 @@ export type RunState = {
 	 * the shop can flag it — the run log is not shown in the live game. Cleared
 	 * when the climb resumes, like `justUnlockedSlots`. */
 	readonly autoUpgradedConfigId?: string;
+	/** Configs that faded to ×1 at the last clear and deleted themselves
+	 * (Deprecated). Whole configs, not ids: they are gone from the pipeline, so
+	 * an id would have nothing to resolve against. Cleared like the above. */
+	readonly deletedConfigs?: readonly Config[];
 	/** The git tag (ADR-036): the gate this run planted its checkpoint at.
 	 * Doubles as the once-per-run flag. */
 	readonly pinPlantedAtGate?: number;
@@ -621,13 +626,18 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		cleared.pipeline.configs,
 		`dependabot-${gateNumber}-${(state.allAnswered ?? []).length}-${state.storage}`
 	);
+	// Decay ticks after the merge on the merged configs, so one clear settles
+	// the pipeline once. The gate just cleared scored at the pre-fade multiplier.
+	const settled = decayOnClear(merged.configs);
 
 	return {
 		...cleared,
-		pipeline: merged.bumped
-			? withPipeline(cleared.pipeline, merged.configs)
-			: cleared.pipeline,
+		pipeline:
+			settled.configs === cleared.pipeline.configs
+				? cleared.pipeline
+				: withPipeline(cleared.pipeline, settled.configs),
 		autoUpgradedConfigId: merged.bumped?.id,
+		deletedConfigs: settled.deleted.length > 0 ? settled.deleted : undefined,
 		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
 		rebuildsUsed: 0,
 		draftedThisGate: [],
@@ -639,7 +649,10 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 				? [
 						`Dependabot bumped ${merged.bumped.label} to L${merged.bumped.level ?? 1} — merged without review.`,
 					]
-				: [])
+				: []),
+			...settled.deleted.map(
+				(config) => `${config.label} faded to ×1 — deleted from the pipeline.`
+			)
 		),
 	};
 };
@@ -1112,6 +1125,7 @@ const finishReward = (state: RunState): RunState => {
 		redoGate: undefined,
 		justUnlockedSlots: [],
 		autoUpgradedConfigId: undefined,
+		deletedConfigs: undefined,
 		storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
 		status: "answering",
 		log: withLog(state, "Climbing on."),

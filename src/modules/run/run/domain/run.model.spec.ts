@@ -1118,7 +1118,7 @@ describe("the gate audits (ADR-035)", () => {
 		expect(seen.size).toBeGreaterThan(1);
 	});
 
-	it("switches off the most-upgraded config at a Deprecated gate", () => {
+	it("switches off the most-upgraded config at a Breaking Change gate", () => {
 		const base = started(["js"]);
 		const levelled: RunState = {
 			...base,
@@ -2256,5 +2256,51 @@ describe("Dependabot's merge announcement", () => {
 		};
 		const state = runReducer(announced, { type: "finish-reward" });
 		expect(state.autoUpgradedConfigId).toBeUndefined();
+	});
+});
+
+describe("Deprecated's decay", () => {
+	const holdingDeprecated = (multiplier: number): RunState => {
+		const base = started(["js"]);
+		return {
+			...base,
+			pipeline: {
+				...base.pipeline,
+				slots: base.pipeline.configs.length + 1,
+				configs: [
+					...base.pipeline.configs,
+					{ ...CONFIGS.deprecated, coverageMultiplier: multiplier },
+				],
+			},
+		};
+	};
+
+	const deprecatedIn = (state: RunState) =>
+		state.pipeline.configs.find((config) => config.id === "deprecated");
+
+	it("fades ×3 to ×2.5 at the clear — the cleared gate scored at the full ×3", () => {
+		const state = clearGate(holdingDeprecated(3));
+		expect(deprecatedIn(state)?.coverageMultiplier).toBe(2.5);
+		expect(state.deletedConfigs).toBeUndefined();
+	});
+
+	it("deletes it at ×1 and announces the deletion — the config is gone, only state can say so", () => {
+		const state = clearGate(holdingDeprecated(1.5));
+		expect(deprecatedIn(state)).toBeUndefined();
+		expect(state.deletedConfigs).toEqual([
+			{ ...CONFIGS.deprecated, coverageMultiplier: 1 },
+		]);
+	});
+
+	it("does not fade on a failed gate — the redo already charges a peel", () => {
+		const state = failGate(holdingDeprecated(3));
+		expect(state.status).toBe("awaiting-strip");
+		expect(deprecatedIn(state)?.coverageMultiplier).toBe(3);
+	});
+
+	it("clears the announcement when the climb resumes", () => {
+		const announced = clearGate(holdingDeprecated(1.5));
+		const state = runReducer(announced, { type: "finish-reward" });
+		expect(state.deletedConfigs).toBeUndefined();
 	});
 });

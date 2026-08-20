@@ -59,8 +59,8 @@ export type OfflinePick =
 	| "random-per-poll"
 	/** Steps through the pipeline, a different config every poll (Rolling Outage). */
 	| "rotating-per-poll"
-	/** The one you invested most in (Deprecated). No roll: it is a punishment for
-	 * having a favourite. */
+	/** The one you invested most in (Breaking Change). No roll: it is a
+	 * punishment for having a favourite. */
 	| "highest-level";
 
 const MIRROR: Audit = {
@@ -142,12 +142,16 @@ const ROLLING_OUTAGE: Audit = {
 	disablesConfig: "rotating-per-poll",
 };
 
-const DEPRECATED: Audit = {
-	id: "deprecated",
-	name: "Deprecated",
+// Renamed from "Deprecated" (2026-08-20): that name now belongs to the config
+// whose mechanic actually is deprecation — works, fades, removed. This audit
+// is a breakage, and it hits the config at the highest version on purpose.
+const BREAKING_CHANGE: Audit = {
+	id: "breaking-change",
+	name: "Breaking Change",
 	description:
-		"Your highest-level config is deprecated for the whole attempt — the one you upgraded most does nothing.",
-	answerCue: "Deprecated: your most-upgraded config is switched off this gate.",
+		"Your highest-level config takes a breaking change for the whole attempt — the one you upgraded most does nothing.",
+	answerCue:
+		"Breaking change: your most-upgraded config is switched off this gate.",
 	disablesConfig: "highest-level",
 };
 
@@ -184,7 +188,7 @@ export const GATE_AUDITS: Readonly<Record<number, readonly Audit[]>> = {
 	7: [MIRROR], // Marsh
 	8: [timeoutAudit(3, 30), FLAKY_BUILD], // Seafoam
 	9: [MEMORY_LEAK, ROLLING_OUTAGE], // Volcano
-	10: [DEPRECATED, timeoutAudit(4, 25)], // Earth
+	10: [BREAKING_CHANGE, timeoutAudit(4, 25)], // Earth
 	11: [stripAudit(11, 1), MIRROR, FLAKY_BUILD], // Elite
 	12: [MEMORY_LEAK, stripAudit(12, 2), timeoutAudit(5, 20)], // Champion
 };
@@ -316,10 +320,11 @@ const pickOffline = (
 };
 
 /**
- * Deprecated's pick: the config levelled furthest, and a seeded random among the
- * ones tied for it. Ties are the common case — most builds have nothing upgraded
- * — and taking "the first" there would quietly always mean the same config,
- * which is a preference the receipt never stated and the player cannot see.
+ * Breaking Change's pick: the config levelled furthest, and a seeded random
+ * among the ones tied for it. Ties are the common case — most builds have
+ * nothing upgraded — and taking "the first" there would quietly always mean
+ * the same config, which is a preference the receipt never stated and the
+ * player cannot see.
  */
 const highestLevel = (
 	sorted: readonly Config[],
@@ -331,6 +336,6 @@ const highestLevel = (
 	);
 	const tied = sorted.filter((config) => (config.level ?? 1) === top);
 	return (
-		selectSeededRandom([...tied], `deprecated-${windowStart}`) ?? undefined
+		selectSeededRandom([...tied], `breaking-change-${windowStart}`) ?? undefined
 	);
 };

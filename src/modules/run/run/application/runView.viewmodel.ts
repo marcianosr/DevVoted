@@ -232,6 +232,8 @@ export type RunView = {
 	readonly justUnlockedSlots: readonly number[];
 	/** The config Dependabot bumped at the last clear; null when nothing was. */
 	readonly autoUpgradedConfig: Config | null;
+	/** Configs that faded to ×1 at the last clear and deleted themselves. */
+	readonly deletedConfigs: readonly Config[];
 	/** The live audits' answering-screen cues (suppressed ones excluded). */
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
@@ -482,6 +484,7 @@ export const toRunView = (state: RunState): RunView => {
 			state.pipeline.configs.find(
 				(config) => config.id === state.autoUpgradedConfigId
 			) ?? null,
+		deletedConfigs: state.deletedConfigs ?? [],
 		audits: auditViewsFor(state),
 		linter:
 			current === undefined

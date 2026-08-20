@@ -213,8 +213,8 @@ describe("the configs an audit takes offline", () => {
 		});
 	});
 
-	describe("Deprecated — the one you upgraded", () => {
-		const deprecated = auditsForGate(10);
+	describe("Breaking Change — the one you upgraded", () => {
+		const breaking = auditsForGate(10);
 		const levelled = [
 			CONFIGS.js,
 			{ ...CONFIGS.unitTests, level: 3 },
@@ -222,7 +222,7 @@ describe("the configs an audit takes offline", () => {
 		];
 
 		it("takes the highest-level config, roll or no roll", () => {
-			expect(offlineConfigsFor(levelled, deprecated, window, 0)[0]?.id).toBe(
+			expect(offlineConfigsFor(levelled, breaking, window, 0)[0]?.id).toBe(
 				"unit-tests"
 			);
 		});
@@ -230,7 +230,7 @@ describe("the configs an audit takes offline", () => {
 		it("holds it for the whole window", () => {
 			const ids = [0, 1, 2].map(
 				(answered) =>
-					offlineConfigsFor(levelled, deprecated, window, answered)[0]?.id
+					offlineConfigsFor(levelled, breaking, window, answered)[0]?.id
 			);
 			expect(new Set(ids).size).toBe(1);
 		});
@@ -239,7 +239,7 @@ describe("the configs an audit takes offline", () => {
 		// the same config in an un-upgraded build.
 		it("picks at random among configs tied at the top level", () => {
 			const picks = [0, 5, 10, 15, 20, 25].map(
-				(start) => offlineConfigsFor(build, deprecated, start, 0)[0]?.id
+				(start) => offlineConfigsFor(build, breaking, start, 0)[0]?.id
 			);
 			expect(new Set(picks).size).toBeGreaterThan(1);
 			for (const pick of picks)
@@ -248,7 +248,7 @@ describe("the configs an audit takes offline", () => {
 
 		it("still ignores the roll when one config stands above the rest", () => {
 			const picks = [0, 5, 10, 15].map(
-				(start) => offlineConfigsFor(levelled, deprecated, start, 0)[0]?.id
+				(start) => offlineConfigsFor(levelled, breaking, start, 0)[0]?.id
 			);
 			expect(new Set(picks)).toEqual(new Set(["unit-tests"]));
 		});

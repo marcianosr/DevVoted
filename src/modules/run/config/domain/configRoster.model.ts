@@ -259,6 +259,25 @@ export const CONFIGS = {
 	// auto-merged version bump you never reviewed and cannot decline. Two
 	// levels only, because the odds are the whole product and 1-in-2 is as
 	// short as they can get before the merge is the rule rather than the event.
+	// A ×3 with a lifespan: the deprecated API still works, just worse every
+	// release, until the release that removes it. It out-multiplies AGENTS.md's
+	// permanent ×2 (256KB) yet drafts uncommon (64KB), because it dies in four
+	// gates — 3, 2.5, 2, 1.5, deleted. The live decision is the exit: ride it
+	// to deletion, or sell the fading half back at 32KB while a fresh draft
+	// can still replace it.
+	deprecated: {
+		id: "deprecated",
+		label: "Deprecated",
+		family: "amplify",
+		rarity: "uncommon",
+		description:
+			"All coverage earns ×3, fading ×0.5 each gate clear. Deleted at ×1.",
+		gives: "All coverage earns ×3, fading ×0.5 per clear",
+		costs: "Deleted when it fades to ×1",
+		rewardMultiplier: 1,
+		coverageMultiplier: 3,
+		coverageDecayPerClear: 0.5,
+	},
 	dependabot: {
 		id: "dependabot",
 		label: "Dependabot",

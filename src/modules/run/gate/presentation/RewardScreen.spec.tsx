@@ -59,6 +59,25 @@ describe(RewardScreen, () => {
 		expect(screen.queryByText("upgraded")).not.toBeInTheDocument();
 	});
 
+	it("announces a config Deprecated's fade deleted — no chip elsewhere can carry it", () => {
+		render(
+			<RewardScreen
+				{...base}
+				deletedConfigs={[{ ...CONFIGS.deprecated, coverageMultiplier: 1 }]}
+			/>
+		);
+		expect(screen.getByText("deleted")).toBeInTheDocument();
+		expect(screen.getByText("Deprecated")).toBeInTheDocument();
+		expect(
+			screen.getByText("Faded to ×1 — deleted from the pipeline.")
+		).toBeInTheDocument();
+	});
+
+	it("keeps the deletion announcement off a clear without one", () => {
+		render(<RewardScreen {...base} />);
+		expect(screen.queryByText("deleted")).not.toBeInTheDocument();
+	});
+
 	it("previews the gate the clear opens onto, so the shop has a target", () => {
 		render(
 			<RewardScreen

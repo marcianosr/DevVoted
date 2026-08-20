@@ -42,6 +42,10 @@ export type Config = {
 	 * free (Dependabot) — the one benefit that pays in levels. The denominator
 	 * shortens by one per level, so L2 turns 1-in-3 into 1-in-2. */
 	readonly autoUpgradeOneIn?: number;
+	/** What `coverageMultiplier` loses at each gate clear (Deprecated) — the one
+	 * config with a lifespan: it deletes itself when the multiplier fades to ×1,
+	 * so the drawback is the countdown, not a fee. */
+	readonly coverageDecayPerClear?: number;
 	readonly draftCost?: number;
 };
 
@@ -113,6 +117,9 @@ export const interestPctOf = (config: Config): number =>
 	(config.storageInterestPct ?? 0) * (config.level ?? 1);
 
 export const describeConfig = (config: Config): string => {
+	// Reads the live multiplier, not the roster's: the chip must fade with it.
+	if (config.coverageDecayPerClear !== undefined)
+		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. Deleted at ×1.`;
 	if (config.autoUpgradeOneIn !== undefined)
 		return `1 in ${autoUpgradeOneInOf(config)} gate clears: a random config in your pipeline upgrades, free.`;
 	if (config.peeksCommunitySplit)
@@ -132,6 +139,8 @@ export const describeConfig = (config: Config): string => {
 };
 
 export const givesOf = (config: Config): string | undefined => {
+	if (config.coverageDecayPerClear !== undefined)
+		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} per clear`;
 	if (config.autoUpgradeOneIn !== undefined)
 		return `A free random config upgrade on 1 in ${autoUpgradeOneInOf(config)} gate clears`;
 	if (config.peeksCommunitySplit)

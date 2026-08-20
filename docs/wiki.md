@@ -133,11 +133,11 @@ in. **The count is the escalation**: gates 0 to 2 are clean, one audit runs from
 | **Dependency Outage** | One config is offline for the whole attempt. |
 | **Flaky Build** | One config fails to trigger on every poll, rolled fresh each time. |
 | **Rolling Outage** | A different config is down for each poll of the window. |
-| **Deprecated** | Your highest-level config is switched off for the attempt. |
+| **Breaking Change** | Your highest-level config is switched off for the attempt. |
 | **Strip** | Deepens the peel: Elite takes 5 configs on a miss, Champion 6. |
 
 The four offline audits differ only in which config they take and for how long. Three
-roll at random (seeded, so a reload never re-rolls one); Deprecated aims at whatever
+roll at random (seeded, so a reload never re-rolls one); Breaking Change aims at whatever
 you levelled furthest. Whatever is down is marked on the pipeline rail while you
 answer (dimmed, badged `offline`, effect struck through) and nowhere else, since shop
 and prep sit before the gate and naming a casualty early would be a spoiler.
@@ -262,7 +262,7 @@ upgrades ([4.4](#44-upgrades)).
 | 7 | Marsh | 140% | 3 | Mirror | Slot 10 |
 | 8 | Seafoam | 175% | 3 | Timeout (3 polls, 30 s) + Flaky Build | 2 MB rung, slot 11 |
 | 9 | Volcano | 210% | 3 | Memory Leak + Rolling Outage | Slot 12 |
-| 10 | Earth | 250% | 3 | Deprecated + Timeout (4 polls, 25 s) | 3 MB rung (top), slot 13 |
+| 10 | Earth | 250% | 3 | Breaking Change + Timeout (4 polls, 25 s) | 3 MB rung (top), slot 13 |
 | 11 | Elite | 290% | **5** | Strip + Mirror + Flaky Build | Slot 14 (width cap) |
 | 12 | Champion | 340% | **6** | Memory Leak + Strip + Timeout (5 polls, 20 s) | Clearing it wins the run |
 
@@ -341,7 +341,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Twenty-five configs, all pure effects.
+**🟢 Shipped.** Twenty-six configs, all pure effects.
 
 | Config | Rarity | Effect |
 | --- | --- | --- |
@@ -357,6 +357,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 | IndexedDB | uncommon | +8 KB storage per correct answer, capped at 320 KB |
 | Telemetry | uncommon | Paid peek at how everyone ever answered this poll ([4.5](#45-paid-actions-lint-and-peek)) |
 | `.length` | uncommon | Names how many correct answers the gate's 5 polls hold, and pays +16 KB per correct answer beyond one per poll |
+| Deprecated | uncommon | All coverage ×3, fading ×0.5 each gate clear; deleted from the pipeline at ×1 |
 | Intellisense | rare | All coverage ×1.5 |
 | AGENTS.md | legendary | All coverage ×2 |
 | Volkswagen CI | legendary | Reports the gate's first audit as passing; costs 384 KB to draft |

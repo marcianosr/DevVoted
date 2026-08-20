@@ -62,6 +62,8 @@ describe("isUpgradable", () => {
 		expect(isUpgradable(CONFIGS.agentsMd)).toBe(false);
 		expect(isUpgradable(CONFIGS.coverageGain)).toBe(false);
 		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
+		// Decay only runs down — a level axis would fight the countdown.
+		expect(isUpgradable(CONFIGS.deprecated)).toBe(false);
 	});
 
 	it("allows Telemetry exactly one upgrade — its own cap, not the shared 5", () => {
@@ -127,6 +129,17 @@ describe("describeConfig", () => {
 		);
 		expect(describeConfig({ ...CONFIGS.dependabot, level: 2 })).toBe(
 			"1 in 2 gate clears: a random config in your pipeline upgrades, free."
+		);
+	});
+
+	it("reads Deprecated's live multiplier, so the chip fades with the config", () => {
+		expect(describeConfig(CONFIGS.deprecated)).toBe(
+			"All coverage earns ×3, fading ×0.5 each gate clear. Deleted at ×1."
+		);
+		expect(
+			describeConfig({ ...CONFIGS.deprecated, coverageMultiplier: 2.5 })
+		).toBe(
+			"All coverage earns ×2.5, fading ×0.5 each gate clear. Deleted at ×1."
 		);
 	});
 });

@@ -37,6 +37,10 @@ type RewardScreenProps = {
 	/** The config Dependabot bumped at this clear — announced here because the
 	 * run log never shows in the live game. */
 	autoUpgraded?: Config;
+	/** Configs that faded to ×1 at this clear and deleted themselves
+	 * (Deprecated) — announced here for the same reason, and nowhere else: they
+	 * are gone from the pipeline, so no chip elsewhere can carry the news. */
+	deletedConfigs?: readonly Config[];
 	/** The gate this clear opens onto, so the shop that follows has a target. */
 	nextStake?: GateStake;
 	onReviewAnswers?: () => void;
@@ -138,6 +142,7 @@ export const RewardScreen = ({
 	billKb,
 	planDowngraded,
 	autoUpgraded,
+	deletedConfigs,
 	nextStake,
 	onReviewAnswers,
 	onContinue,
@@ -213,6 +218,25 @@ export const RewardScreen = ({
 					</Paragraph>
 				</div>
 			) : null}
+
+			{deletedConfigs?.map((config) => (
+				<div
+					key={config.id}
+					className="flex flex-wrap items-center justify-center gap-2"
+				>
+					<ConfigChip
+						config={config}
+						badge={
+							<Badge tone="neutral" size="corner">
+								deleted
+							</Badge>
+						}
+					/>
+					<Paragraph as="span" size="sm" tone="muted">
+						Faded to ×1 — deleted from the pipeline.
+					</Paragraph>
+				</div>
+			))}
 
 			<StorageGauge usedKb={storage} capKb={capKb} layout="wide" />
 
