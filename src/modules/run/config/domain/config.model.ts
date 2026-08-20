@@ -26,6 +26,11 @@ export type Config = {
 	 * the balance rather than the window, so it compounds. */
 	readonly storageInterestPct?: number;
 	readonly openerCoverageMultiplier?: number;
+	/** What every answer after the window's opener earns (Overclock) — the
+	 * opener multiplier's counterpart and the one benefit priced below ×1: the
+	 * config front-loads the gate rather than growing it. Rides the window's
+	 * answered count, so each gate cools off at the clear. */
+	readonly throttleCoverageMultiplier?: number;
 	/** Sells a look at how everyone else answered the current poll, for a fee that
 	 * doubles per use. The only benefit that pays in information rather than in
 	 * coverage or KB, so it is a flag: what it hands over is a whole screen, not a

@@ -168,6 +168,17 @@ describe("perAnswerPreviewFor", () => {
 			perAnswerPreviewFor([CONFIGS.agentsMd], 0).matchingConfigMultiplier
 		).toBeUndefined();
 	});
+
+	it("folds Overclock's throttle into the floor — the opener bonus stays out", () => {
+		// Four of five answers earn the throttled rate, so ×0.5 IS the guarantee.
+		expect(perAnswerPreviewFor([CONFIGS.overclock], 0).coveragePerCorrect).toBe(
+			0.5
+		);
+		// Cold Start's opener is conditional upside and never lifted the floor.
+		expect(perAnswerPreviewFor([CONFIGS.coldStart], 0).coveragePerCorrect).toBe(
+			1
+		);
+	});
 });
 
 describe("gateClearPayout", () => {
@@ -291,6 +302,19 @@ describe("coverageForAnswer", () => {
 		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 0), 1)).toBe(2);
 		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 1), 1)).toBe(1);
 	});
+
+	it("front-loads the window with Overclock: ×4 opener, ×0.5 for the rest", () => {
+		expect(coverageForAnswer([CONFIGS.overclock], at("js", 0), 1)).toBe(4);
+		expect(coverageForAnswer([CONFIGS.overclock], at("js", 1), 1)).toBe(0.5);
+		expect(coverageForAnswer([CONFIGS.overclock], at("js", 4), 1)).toBe(0.5);
+	});
+
+	it("stacks Overclock and Cold Start multiplicatively on the opener", () => {
+		const build = [CONFIGS.overclock, CONFIGS.coldStart];
+		expect(coverageForAnswer(build, at("js", 0), 1)).toBe(8);
+		// Cold Start covers at ×1 off the opener, so only the throttle remains.
+		expect(coverageForAnswer(build, at("js", 1), 1)).toBe(0.5);
+	});
 });
 
 describe("coverageBreakdownForAnswer", () => {
@@ -335,6 +359,24 @@ describe("coverageBreakdownForAnswer", () => {
 		expect(
 			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 1), 1, 1, 0)
 		).toEqual({ base: 1, streakBonus: 0, configBonuses: [] });
+	});
+
+	it("chips Overclock's throttle as a negative bonus off the opener", () => {
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.overclock], at("js", 0), 1, 1, 0)
+		).toEqual({
+			base: 1,
+			streakBonus: 0,
+			configBonuses: [{ configId: "overclock", value: 3 }],
+		});
+		// ×0.5 on a base of 1: the chip carries the half it burned, in cinnabar.
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.overclock], at("js", 1), 1, 1, 0)
+		).toEqual({
+			base: 1,
+			streakBonus: 0,
+			configBonuses: [{ configId: "overclock", value: -0.5 }],
+		});
 	});
 
 	it("pulls the streak factor into its own bonus over base + configs", () => {

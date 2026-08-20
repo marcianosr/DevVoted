@@ -158,6 +158,16 @@ export type PerAnswerPreview = {
 	readonly streakStepMultiplier: number;
 };
 
+/** Product of the build's throttle multipliers — what a non-opener answer is
+ * guaranteed to earn (Overclock). Conditional like the opener bonus, but it
+ * lowers the floor instead of raising the ceiling, so unlike the opener it
+ * belongs in the receipt's guarantee. */
+const throttleFor = (configs: readonly Config[]): number =>
+	configs.reduce(
+		(product, config) => product * (config.throttleCoverageMultiplier ?? 1),
+		1
+	);
+
 /**
  * What one correct, average-difficulty answer is worth right now — the stake
  * receipt's "Per answer" line. `coverageProfileFor` deliberately excludes Focus
@@ -165,7 +175,9 @@ export type PerAnswerPreview = {
  * is the guaranteed floor; `matchingConfigMultiplier` is surfaced separately as
  * the best-case bonus a Focus config in the build can add. Only one category
  * can match a given poll, so the highest level stands in rather than summing
- * every Focus config's multiplier.
+ * every Focus config's multiplier. Throttles fold INTO the floor: with
+ * Overclock equipped, four of five answers earn the throttled rate, and a
+ * floor that ignored it would overstate the guarantee.
  */
 export const perAnswerPreviewFor = (
 	configs: readonly Config[],
@@ -177,7 +189,7 @@ export const perAnswerPreviewFor = (
 		.map((config) => focusCoverageMultiplier(config.level ?? 1));
 	return {
 		coveragePerCorrect: roundToOneDecimal(
-			gateBaseMultiplier(gatesCleared) * (1 + add) * mult
+			gateBaseMultiplier(gatesCleared) * (1 + add) * mult * throttleFor(configs)
 		),
 		storageKbPerCorrect: faucetKbPerCorrect(configs),
 		matchingConfigMultiplier:
@@ -212,7 +224,8 @@ export const gateClearPayout = (
  * multiplier last (config mults AND streak), so a ×2 amplifies the adds too and
  * all multipliers compose identically. `share` is the answer's correctness in
  * [0, 1]: 1 fully correct, fractional for a partial multi-pick, 0 for a miss.
- * Configs amplify gains only — they never touch losses.
+ * Configs scale gains only (Overclock's throttle scales them down) — they
+ * never touch losses.
  */
 export const coverageForAnswer = (
 	configs: readonly Config[],

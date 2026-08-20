@@ -316,6 +316,28 @@ export const CONFIGS = {
 		coverageMultiplier: 3,
 		coverageDecayPerClear: 0.5,
 	},
+	// Overclocked chips run hot and thermal-throttle: ×4 on the gate's opener,
+	// ×0.5 on everything after, cooling off at the clear. The average is a
+	// deliberately modest ×1.2 (4 + 4×0.5 over 5 baseline) priced under
+	// Intellisense's ×1.5 — what the 128KB buys is variance, and a missed
+	// opener nearly kills the gate. The real effect is on play, not numbers:
+	// with the gate's value stacked on one poll, the paid tools (ESLint's
+	// cross-out, Telemetry's peek) migrate to the opener. Second member of the
+	// risk family, and the drawback follows Deprecated's pattern — a condition
+	// on the config's own effect, never a fee on the player's stock.
+	overclock: {
+		id: "overclock",
+		label: "Overclock",
+		family: "risk",
+		rarity: "rare",
+		description:
+			"The gate's first answer earns ×4 coverage. Everything after runs hot: ×0.5. Cools off each gate clear.",
+		gives: "The gate's first answer earns ×4 coverage",
+		costs: "Every later answer runs hot at ×0.5 until the clear",
+		rewardMultiplier: 1,
+		openerCoverageMultiplier: 4,
+		throttleCoverageMultiplier: 0.5,
+	},
 	dependabot: {
 		id: "dependabot",
 		label: "Dependabot",

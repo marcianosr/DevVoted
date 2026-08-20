@@ -57,7 +57,8 @@ export const touchesCoverage = (config: Config): boolean =>
 	config.focusCategory !== undefined ||
 	config.coverageMultiplier !== undefined ||
 	config.coverageAdd !== undefined ||
-	config.openerCoverageMultiplier !== undefined;
+	config.openerCoverageMultiplier !== undefined ||
+	config.throttleCoverageMultiplier !== undefined;
 
 const coverageOf = (config: Config): Effect["coverage"] => {
 	if (!touchesCoverage(config)) return undefined;
@@ -66,7 +67,9 @@ const coverageOf = (config: Config): Effect["coverage"] => {
 		mult:
 			(config.focusCategory === category ? focusCoverageMultiplier(level) : 1) *
 			(config.coverageMultiplier ?? 1) *
-			(answeredBefore === 0 ? (config.openerCoverageMultiplier ?? 1) : 1),
+			(answeredBefore === 0
+				? (config.openerCoverageMultiplier ?? 1)
+				: (config.throttleCoverageMultiplier ?? 1)),
 		add: config.coverageAdd ?? 0,
 	});
 };

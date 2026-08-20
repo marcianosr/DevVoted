@@ -341,7 +341,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Twenty-eight configs, all pure effects.
+**🟢 Shipped.** Twenty-nine configs, all pure effects.
 
 | Config | Rarity | Effect |
 | --- | --- | --- |
@@ -360,6 +360,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 | Intellisense | rare | All coverage ×1.5 |
 | Deprecated | rare | All coverage ×3, fading ×0.5 each gate clear; deleted from the pipeline at ×1 |
 | Prefetch | rare | Shows the category of every poll left this gate and all of the next gate's. Asking for polls not yet dealt rolls tomorrow's shared seed a day early — categories only, the questions stay sealed |
+| Overclock | rare | The gate's first answer earns ×4 coverage; every answer after it runs hot at ×0.5, cooling off at the clear. Miss the opener and the gate is nearly dead — the buy is variance, not magnitude (×1.2 average, honestly under Intellisense) |
 | AGENTS.md | legendary | All coverage ×2 |
 | Volkswagen CI | legendary | Reports the gate's first audit as passing; costs 384 KB to draft |
 | Dependabot | legendary | 1 in 3 gate clears (1 in 2 at L2): a random pipeline config upgrades, free |

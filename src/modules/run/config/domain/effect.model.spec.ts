@@ -69,6 +69,22 @@ describe("effectOf — Cold Start", () => {
 	});
 });
 
+describe("effectOf — Overclock", () => {
+	it("quadruples the window's opener and throttles every answer after it", () => {
+		const effect = effectOf(CONFIGS.overclock);
+		expect(effect.coverage?.(answering("js", 0))).toEqual({ mult: 4, add: 0 });
+		expect(effect.coverage?.(answering("js", 1))).toEqual({
+			mult: 0.5,
+			add: 0,
+		});
+		expect(effect.coverage?.(answering("js", 4))).toEqual({
+			mult: 0.5,
+			add: 0,
+		});
+		expect(effect.rewardMultiplier).toBeUndefined();
+	});
+});
+
 describe("effectOf — storage benefits", () => {
 	it("IndexedDB faucets 8KB per correct answer", () => {
 		expect(faucetKbPerCorrect([CONFIGS.indexedDb])).toBe(8);
