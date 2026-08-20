@@ -52,6 +52,9 @@ type ShopScreenProps = {
 	onDraft: (configId: string) => void;
 	rebuildCost: number;
 	canRebuild: boolean;
+	/** Hidden, not disabled, while WTFPL lays out the whole catalog — a reroll
+	 * of everything is not a thing this shop sells. */
+	rebuildAvailable?: boolean;
 	onRebuild: () => void;
 	lockAvailable: boolean;
 	lockCost: number;
@@ -182,6 +185,7 @@ export const ShopScreen = ({
 	onDraft,
 	rebuildCost,
 	canRebuild,
+	rebuildAvailable = true,
 	onRebuild,
 	lockAvailable,
 	lockCost,
@@ -448,14 +452,16 @@ export const ShopScreen = ({
 						</div>
 						<TerminalSection label="Shop controls">
 							<div className="flex flex-wrap items-center gap-2">
-								<Tooltip content="Swap these offers for a new set — the price doubles each rebuild, resets next shop">
-									{actionButton({
-										label: "↻ Rebuild offers",
-										price: `${rebuildCost}KB`,
-										onClick: onRebuild,
-										disabled: !canRebuild || locked,
-									})}
-								</Tooltip>
+								{rebuildAvailable ? (
+									<Tooltip content="Swap these offers for a new set — the price doubles each rebuild, resets next shop">
+										{actionButton({
+											label: "↻ Rebuild offers",
+											price: `${rebuildCost}KB`,
+											onClick: onRebuild,
+											disabled: !canRebuild || locked,
+										})}
+									</Tooltip>
+								) : null}
 								{extendAvailable ? (
 									<Tooltip content="One more offer, in this shop and every shop after it">
 										{actionButton({

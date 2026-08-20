@@ -110,6 +110,7 @@ const createRunView = createMockDataFactory<RunView>({
 	correctAnswersThisGate: null,
 	rebuildCost: 0,
 	canRebuild: false,
+	rebuildAvailable: true,
 	lockAvailable: false,
 	lockCost: 16,
 	canLock: false,

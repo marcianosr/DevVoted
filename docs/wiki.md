@@ -341,7 +341,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Twenty-six configs, all pure effects.
+**🟢 Shipped.** Twenty-seven configs, all pure effects.
 
 | Config | Rarity | Effect |
 | --- | --- | --- |
@@ -357,11 +357,12 @@ hover are planned; today the draft cycles deterministically through the pool.
 | IndexedDB | uncommon | +8 KB storage per correct answer, capped at 320 KB |
 | Telemetry | uncommon | Paid peek at how everyone ever answered this poll ([4.5](#45-paid-actions-lint-and-peek)) |
 | `.length` | uncommon | Names how many correct answers the gate's 5 polls hold, and pays +16 KB per correct answer beyond one per poll |
-| Deprecated | uncommon | All coverage ×3, fading ×0.5 each gate clear; deleted from the pipeline at ×1 |
 | Intellisense | rare | All coverage ×1.5 |
+| Deprecated | rare | All coverage ×3, fading ×0.5 each gate clear; deleted from the pipeline at ×1 |
 | AGENTS.md | legendary | All coverage ×2 |
 | Volkswagen CI | legendary | Reports the gate's first audit as passing; costs 384 KB to draft |
 | Dependabot | legendary | 1 in 3 gate clears (1 in 2 at L2): a random pipeline config upgrades, free |
+| WTFPL | legendary | Every shop offers the entire roster; costs 512 KB, sells back for 0 KB, and Rebuild/Lock/Extend retire while it is installed |
 
 `.length` deliberately pays on *shape* rather than magnitude, since four configs
 already sell coverage magnitude: it pays most in multi-answer-heavy windows and nothing
@@ -395,7 +396,6 @@ ship; the original check designs stay in the beans.
 | Hotfix | rare | A failed gate still opens the shop |
 | Replication | rare | All storage gains ×2, locked to the free plan while installed |
 | Continuous Deployment | rare | +64 KB every gate clear, but you never enter the shop again |
-| WTFPL | legendary | The shop offers the entire roster |
 
 Bundle Analyzer and Rebase are a deliberate pair: Analyzer reveals categories in the
 *shop*, so it informs what you draft; Rebase reveals and reorders inside the *gate*, so

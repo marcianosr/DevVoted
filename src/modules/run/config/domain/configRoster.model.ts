@@ -253,6 +253,26 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		suppressesAudit: true,
 	},
+	// The license, taken literally: do what you want — the shop stops dealing
+	// five and lays out the whole catalog for the rest of the run. The 512KB
+	// draftCost is the drawback (Volkswagen CI precedent: the price and the
+	// slot are the whole cost), and `sellRefundKb: 0` is the no-warranty
+	// clause — total freedom, no take-backs. Rebuild, Lock and Extend retire
+	// while it is installed, because they sell slices of this freedom.
+	wtfpl: {
+		id: "wtfpl",
+		label: "WTFPL",
+		family: "economy",
+		rarity: "legendary",
+		draftCost: 512,
+		sellRefundKb: 0,
+		description:
+			"Every shop offers the entire roster. No warranty: sells back for 0KB.",
+		gives: "Every shop offers the entire roster",
+		costs: "No warranty — sells back for 0KB",
+		rewardMultiplier: 1,
+		offersFullRoster: true,
+	},
 	// The reward is a level — an axis nothing else pays in (the roster's other
 	// payouts are coverage, KB, and information). The roll is seeded like the
 	// audits' offline picks, and the unpredictability is the identity: an
@@ -261,15 +281,15 @@ export const CONFIGS = {
 	// short as they can get before the merge is the rule rather than the event.
 	// A ×3 with a lifespan: the deprecated API still works, just worse every
 	// release, until the release that removes it. It out-multiplies AGENTS.md's
-	// permanent ×2 (256KB) yet drafts uncommon (64KB), because it dies in four
-	// gates — 3, 2.5, 2, 1.5, deleted. The live decision is the exit: ride it
-	// to deletion, or sell the fading half back at 32KB while a fresh draft
-	// can still replace it.
+	// permanent ×2 (256KB) yet drafts at half its price, because it dies in
+	// four gates — 3, 2.5, 2, 1.5, deleted. The live decision is the exit:
+	// ride it to deletion, or sell the fading half back at 64KB while a fresh
+	// draft can still replace it.
 	deprecated: {
 		id: "deprecated",
 		label: "Deprecated",
 		family: "amplify",
-		rarity: "uncommon",
+		rarity: "rare",
 		description:
 			"All coverage earns ×3, fading ×0.5 each gate clear. Deleted at ×1.",
 		gives: "All coverage earns ×3, fading ×0.5 per clear",

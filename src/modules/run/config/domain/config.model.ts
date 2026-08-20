@@ -46,6 +46,14 @@ export type Config = {
 	 * config with a lifespan: it deletes itself when the multiplier fades to ×1,
 	 * so the drawback is the countdown, not a fee. */
 	readonly coverageDecayPerClear?: number;
+	/** Every shop lays out the entire remaining roster instead of a rolled five
+	 * (WTFPL) — the one benefit that pays in shop agency (ADR-029's axis). The
+	 * three paid shop controls retire while it is installed: they sell slices
+	 * of the freedom this already grants. */
+	readonly offersFullRoster?: boolean;
+	/** Overrides the sell price — the default is half the draft cost. WTFPL
+	 * sets 0: the no-warranty clause. */
+	readonly sellRefundKb?: number;
 	readonly draftCost?: number;
 };
 
@@ -75,7 +83,7 @@ export const draftCost = (config: Config): number =>
 export const CHEAPEST_DRAFT_COST_KB = Math.min(...Object.values(DRAFT_COST));
 
 export const sellRefund = (config: Config): number =>
-	Math.floor(draftCost(config) / 2);
+	config.sellRefundKb ?? Math.floor(draftCost(config) / 2);
 
 const DEFAULT_MAX_LEVEL = 5;
 

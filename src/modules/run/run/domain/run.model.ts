@@ -45,6 +45,7 @@ import {
 	offerCount,
 	rebuildCost,
 	rollDraft,
+	shopOffersFullRoster,
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	failStripQuotaFor,
@@ -1008,11 +1009,22 @@ const draft = (state: RunState, configId: string): RunState => {
 		state.storage < cost
 	)
 		return state;
+	const drafted = withPipeline(state.pipeline, [
+		...state.pipeline.configs,
+		chosen,
+	]);
 	return {
 		...stayReward(
 			state,
-			withPipeline(state.pipeline, [...state.pipeline.configs, chosen]),
-			state.draftOptions,
+			drafted,
+			// The license takes effect at the counter: drafting WTFPL reopens this
+			// visit's table as the whole catalog, not the next shop's.
+			chosen.offersFullRoster
+				? shopDraft(
+						{ ...state, pipeline: drafted },
+						draftSeed(state.gatesCleared, state.rebuildsUsed)
+					)
+				: state.draftOptions,
 			`Drafted ${chosen.label} (-${cost}KB).`
 		),
 		storage: state.storage - cost,
@@ -1143,22 +1155,29 @@ const finishReward = (state: RunState): RunState => {
 export const canRebuild = (state: RunState): boolean =>
 	state.storage >= rebuildCost(state.rebuildsUsed);
 
+/** WTFPL retires all three controls: rerolling, holding or widening a table
+ * that already shows everything would sell the player nothing for real KB. */
+export const rebuildAvailable = (state: RunState): boolean =>
+	!shopOffersFullRoster(state.pipeline.configs);
+
 export const lockAvailable = (state: RunState): boolean =>
 	state.gatesCleared >= LOCK_FROM_GATE &&
-	(state.lockedOfferIds ?? []).length < MAX_LOCKED_OFFERS;
+	(state.lockedOfferIds ?? []).length < MAX_LOCKED_OFFERS &&
+	!shopOffersFullRoster(state.pipeline.configs);
 
 export const canLock = (state: RunState): boolean =>
 	state.storage >= LOCK_COST_KB;
 
 export const extendAvailable = (state: RunState): boolean =>
 	state.gatesCleared >= EXTEND_FROM_GATE &&
-	(state.extensionsBought ?? 0) < MAX_EXTENSIONS;
+	(state.extensionsBought ?? 0) < MAX_EXTENSIONS &&
+	!shopOffersFullRoster(state.pipeline.configs);
 
 export const canExtend = (state: RunState): boolean =>
 	state.storage >= extendCost(state.extensionsBought ?? 0);
 
 const rebuildDraft = (state: RunState): RunState => {
-	if (!canRebuild(state)) return state;
+	if (!rebuildAvailable(state) || !canRebuild(state)) return state;
 	const cost = rebuildCost(state.rebuildsUsed);
 	const nextRebuilds = state.rebuildsUsed + 1;
 	return {

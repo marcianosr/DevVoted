@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import { upgradeStorageCost } from "~/modules/run/config/domain/config.model";
-import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import {
+	CONFIGS,
+	CONFIG_LIST,
+} from "~/modules/run/config/domain/configRoster.model";
 import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
@@ -2256,6 +2259,52 @@ describe("Dependabot's merge announcement", () => {
 		};
 		const state = runReducer(announced, { type: "finish-reward" });
 		expect(state.autoUpgradedConfigId).toBeUndefined();
+	});
+});
+
+describe("WTFPL's open shop", () => {
+	// A shop with the license on the table, a slot to install into, and enough
+	// KB for it plus one paid control — so a refused control is refused by the
+	// license, never by the balance. Gate 4 stages lock and extend in.
+	const licensed = (): RunState => {
+		let state = started(["eslint"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		return {
+			...state,
+			gatesCleared: 4,
+			storage: 600,
+			pipeline: { ...state.pipeline, slots: state.pipeline.slots + 1 },
+			draftOptions: [CONFIGS.wtfpl, ...state.draftOptions],
+		};
+	};
+
+	const holding = (): RunState =>
+		runReducer(licensed(), { type: "draft", configId: "wtfpl" });
+
+	it("opens this visit's table to the whole catalog the moment it is drafted", () => {
+		const state = holding();
+		expect(state.storage).toBe(600 - 512);
+		expect(state.draftOptions).toHaveLength(
+			CONFIG_LIST.length - state.pipeline.configs.length
+		);
+	});
+
+	it("sells back for nothing — the sale removes it and refunds 0KB", () => {
+		const sold = runReducer(holding(), { type: "sell", configId: "wtfpl" });
+		expect(configIds(sold)).not.toContain("wtfpl");
+		expect(sold.storage).toBe(600 - 512);
+	});
+
+	it("retires the paid shop controls — they sell slices of what the license grants", () => {
+		const state = holding();
+		expect(runReducer(state, { type: "rebuild-draft" })).toBe(state);
+		expect(
+			runReducer(state, {
+				type: "lock-offer",
+				configId: state.draftOptions[0].id,
+			})
+		).toBe(state);
+		expect(runReducer(state, { type: "extend-offers" })).toBe(state);
 	});
 });
 

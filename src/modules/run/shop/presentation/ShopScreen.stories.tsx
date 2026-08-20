@@ -80,6 +80,23 @@ export const Default: Story = {
 	},
 };
 
+// WTFPL's whole point is a shop transformed: the rolled five becomes the full
+// catalog, and Rebuild/Lock/Extend leave the controls row — the moment has to
+// read as "everything is for sale now", not as a longer list.
+export const WTFPLOpenCatalog: Story = {
+	args: {
+		...Default.args,
+		configs: [CONFIGS.js, CONFIGS.wtfpl],
+		storage: 88,
+		offers: Object.values(CONFIGS)
+			.filter((config) => config.id !== "js" && config.id !== "wtfpl")
+			.map((config) => createMockShopOffer(config)),
+		rebuildAvailable: false,
+		lockAvailable: false,
+		extendAvailable: false,
+	},
+};
+
 /**
  * A held offer (DVTD-5lt6): the padlock corner marks what 16KB is reserving, and
  * the run's one lock being spent takes the padlock off the other offers.

@@ -7,7 +7,7 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-15T13:55:10Z
-updated_at: 2026-08-20T11:53:54Z
+updated_at: 2026-08-20T12:13:00Z
 parent: DVTD-72d9
 ---
 
@@ -28,3 +28,5 @@ Shipped as specced: x2 coverage, loses x0.25 per gate clear, deletes itself at x
 ## Retune (same day)
 
 Marciano upped it to x3. At x3 the original x0.25/clear decay would live 8 gates and outclass AGENTS.md, so decay steepened to x0.5/clear (his pick from three options): four gates of 3 / 2.5 / 2 / 1.5, then deleted. Still uncommon 64KB. Name stays Deprecated; cadence stays per gate clear, not per poll.
+
+## Retune 2 (same day): rarity uncommon -> rare (128KB). Standard rare price instead of a draftCost override, so the tier reads honestly on the chip.

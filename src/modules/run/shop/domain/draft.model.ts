@@ -47,6 +47,11 @@ const lockedConfigs = (lockedIds: readonly string[]): readonly Config[] =>
 		.map((id) => CONFIG_LIST.find((config) => config.id === id))
 		.filter((config): config is Config => config !== undefined);
 
+/** Whether the build holds the license (WTFPL) that opens every draft to the
+ * whole catalog and retires the paid shop controls. */
+export const shopOffersFullRoster = (configs: readonly Config[]): boolean =>
+	configs.some((config) => config.offersFullRoster === true);
+
 export const rollDraft = (
 	seed: number,
 	equipped: readonly Config[],
@@ -63,6 +68,9 @@ export const rollDraft = (
 			(config) => !owned.has(config.id) && !pinned.has(config.id)
 		),
 	];
+	// The license, honored literally: the whole catalog in roster order — a
+	// rolled subset would be withholding exactly what was paid for.
+	if (shopOffersFullRoster(equipped)) return [...held, ...pool];
 	const nextRandom = randomFrom(seed);
 	const size = Math.min(Math.max(0, offers - held.length), pool.length);
 

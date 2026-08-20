@@ -367,6 +367,15 @@ describe(ShopScreen, () => {
 		expect(onRebuild).toHaveBeenCalled();
 	});
 
+	// WTFPL shows the whole catalog: a reroll is not a thing this shop sells,
+	// so the control leaves the row instead of sitting there disabled.
+	it("hides the rebuild control when the run's shop is not selling rerolls", () => {
+		render(<ShopScreen {...base} rebuildAvailable={false} />);
+		expect(
+			screen.queryByRole("button", { name: /Rebuild offers/ })
+		).not.toBeInTheDocument();
+	});
+
 	it("locks the selected offer when its Lock config button is pressed", () => {
 		const onLock = vi.fn();
 		render(<ShopScreen {...base} onLock={onLock} />);

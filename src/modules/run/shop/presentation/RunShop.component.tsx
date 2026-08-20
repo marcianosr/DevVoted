@@ -43,6 +43,7 @@ export const RunShop = () => {
 				onDraft={(id) => send({ type: "draft", configId: id })}
 				rebuildCost={view.rebuildCost}
 				canRebuild={view.canRebuild && !busy}
+				rebuildAvailable={view.rebuildAvailable}
 				onRebuild={() => send({ type: "rebuild-draft" })}
 				lockAvailable={view.lockAvailable}
 				lockCost={view.lockCost}

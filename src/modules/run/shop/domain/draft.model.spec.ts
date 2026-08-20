@@ -141,6 +141,31 @@ describe("rollDraft with shop controls", () => {
 	});
 });
 
+describe("rollDraft under WTFPL", () => {
+	it("lays out the entire remaining roster instead of a rolled five", () => {
+		const offered = ids(rollDraft(0, [CONFIGS.wtfpl]));
+		expect(offered).toHaveLength(CONFIG_LIST.length - 1);
+		expect(offered).not.toContain("wtfpl");
+	});
+
+	it("offers the catalog in roster order, the same on every seed — a reroll sells nothing", () => {
+		expect(ids(rollDraft(0, [CONFIGS.wtfpl]))).toEqual(
+			ids(rollDraft(99, [CONFIGS.wtfpl]))
+		);
+	});
+
+	it("still excludes everything the pipeline owns", () => {
+		const offered = ids(rollDraft(0, [CONFIGS.wtfpl, CONFIGS.js, CONFIGS.ts]));
+		expect(offered).not.toContain("js");
+		expect(offered).not.toContain("ts");
+		expect(offered).toHaveLength(CONFIG_LIST.length - 3);
+	});
+
+	it("keeps a previously held offer at the front of the catalog", () => {
+		expect(ids(rollDraft(0, [CONFIGS.wtfpl], ["eslint"]))[0]).toBe("eslint");
+	});
+});
+
 describe("draftSeed", () => {
 	it("is stable for the same gate and rebuild count", () => {
 		expect(draftSeed(3, 2)).toBe(draftSeed(3, 2));

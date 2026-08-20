@@ -13,6 +13,7 @@ import {
 	pinAvailable,
 	extendAvailable,
 	lockAvailable,
+	rebuildAvailable,
 	isAwaitingTomorrow,
 	isRunOver,
 	isShopLocked,
@@ -209,6 +210,8 @@ export type RunView = {
 	readonly correctAnswersThisGate: number | null;
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;
+	/** False while WTFPL shows the whole catalog — a reroll would sell nothing. */
+	readonly rebuildAvailable: boolean;
 
 	readonly lockAvailable: boolean;
 	readonly lockCost: number;
@@ -466,6 +469,7 @@ export const toRunView = (state: RunState): RunView => {
 				: (state.window.budget ?? null),
 		rebuildCost: nextRebuildCost,
 		canRebuild: canRebuild(state),
+		rebuildAvailable: rebuildAvailable(state),
 		lockAvailable: lockAvailable(state),
 		lockCost: LOCK_COST_KB,
 		canLock: canLock(state),
