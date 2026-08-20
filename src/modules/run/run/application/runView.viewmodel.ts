@@ -59,6 +59,7 @@ import {
 	linterFor,
 	nextSlotGateFor,
 	peekerFor,
+	prefetcherFor,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
@@ -208,6 +209,14 @@ export type RunView = {
 	/** Correct answers this gate's polls hold (`.length`'s reveal). Null when no
 	 * config is counting, which is what hides the line. */
 	readonly correctAnswersThisGate: number | null;
+	/** Categories of this gate's unanswered polls, in play order — Prefetch's
+	 * reveal. Null when no installed config reads the draw, which is what
+	 * hides it. */
+	readonly upcomingCategories: readonly CategoryCode[] | null;
+	/** Categories of the next window's polls, as far as the engine has been
+	 * dealt them — empty in the live game, where tomorrow's five come from the
+	 * server instead; the pool-fed prototype fills it locally. */
+	readonly nextGateCategories: readonly CategoryCode[] | null;
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;
 	/** False while WTFPL shows the whole catalog — a reroll would sell nothing. */
@@ -467,6 +476,26 @@ export const toRunView = (state: RunState): RunView => {
 			budgeterFor(state.pipeline.configs) === undefined
 				? null
 				: (state.window.budget ?? null),
+		// Both halves stop at window edges: the prototype's state holds the whole
+		// pool, and an uncapped slice would read the entire run's future.
+		upcomingCategories:
+			prefetcherFor(state.pipeline.configs) === undefined
+				? null
+				: state.polls
+						.slice(
+							state.currentIndex,
+							state.currentIndex - state.window.answered + SLICE_WINDOW
+						)
+						.map((poll) => poll.category),
+		nextGateCategories:
+			prefetcherFor(state.pipeline.configs) === undefined
+				? null
+				: state.polls
+						.slice(
+							state.currentIndex - state.window.answered + SLICE_WINDOW,
+							state.currentIndex - state.window.answered + 2 * SLICE_WINDOW
+						)
+						.map((poll) => poll.category),
 		rebuildCost: nextRebuildCost,
 		canRebuild: canRebuild(state),
 		rebuildAvailable: rebuildAvailable(state),

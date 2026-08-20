@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getTodayDateString } from "~/shared/lib/dateUtils";
 import { withAuthenticatedUser } from "~/shared/utils/authorization";
 
+import { getUpcomingCategoriesService } from "~/modules/run/run/application/prefetch.service";
 import { runActionSchema } from "~/modules/run/run/application/run.validation";
 import {
 	abandonRunService,
@@ -48,6 +49,12 @@ export const dispatchRunAction = createServerFn({ method: "POST" })
 			})
 		)
 	);
+
+/** Tomorrow's poll categories — Prefetch's product; refused without the config. */
+export const getUpcomingCategories = createServerFn({ method: "GET" }).handler(
+	async () =>
+		withAuthenticatedUser((userId) => getUpcomingCategoriesService({ userId }))
+);
 
 /**
  * The viewer's swatch collection. userId comes from the session, never the

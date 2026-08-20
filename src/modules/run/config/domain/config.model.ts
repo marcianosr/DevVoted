@@ -51,9 +51,12 @@ export type Config = {
 	 * three paid shop controls retire while it is installed: they sell slices
 	 * of the freedom this already grants. */
 	readonly offersFullRoster?: boolean;
-	/** Overrides the sell price — the default is half the draft cost. WTFPL
-	 * sets 0: the no-warranty clause. */
-	readonly sellRefundKb?: number;
+	/** Shows the category of every poll left this gate and all of the next
+	 * gate's (Prefetch) — information about the draw itself, which no other
+	 * config reads. Asking for polls not yet dealt rolls tomorrow's shared
+	 * seed a day early; the reveal is category-only, the questions stay
+	 * sealed. */
+	readonly revealsUpcomingCategories?: boolean;
 	readonly draftCost?: number;
 };
 
@@ -83,7 +86,7 @@ export const draftCost = (config: Config): number =>
 export const CHEAPEST_DRAFT_COST_KB = Math.min(...Object.values(DRAFT_COST));
 
 export const sellRefund = (config: Config): number =>
-	config.sellRefundKb ?? Math.floor(draftCost(config) / 2);
+	Math.floor(draftCost(config) / 2);
 
 const DEFAULT_MAX_LEVEL = 5;
 

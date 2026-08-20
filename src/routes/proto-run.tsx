@@ -448,6 +448,16 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const disabled = state.manualDisabled;
 	const cost = rebuildCost(state.rebuildsUsed);
 
+	// The rig's pool is dealt whole, so both of Prefetch's halves come straight
+	// off the view — no server, unlike the routed flow's tomorrow query.
+	const upcoming =
+		view.upcomingCategories === null
+			? undefined
+			: {
+					thisGate: view.upcomingCategories,
+					nextGate: view.nextGateCategories ?? [],
+				};
+
 	// The rig submits the real clock too, so a Timeout gate can actually bite in
 	// a playtest; the fast-forward buttons below stay untimed on purpose.
 	const answer = (optionIds: readonly string[]) =>
@@ -534,6 +544,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						audits={view.audits}
 						offlineConfigs={view.offlineConfigs}
 						mirroredPolls={view.mirroredPolls}
+						upcoming={upcoming}
 						timeLimitMs={view.pollTimeLimitMs ?? undefined}
 						remainingMs={pollClock.remainingMs ?? undefined}
 						category={view.poll.category}
@@ -633,9 +644,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						configs={view.configs}
 						newConfigIds={view.newConfigIds}
 						offers={view.offers}
+						upcoming={upcoming}
 						onDraft={(id) => dispatch({ type: "draft", configId: id })}
 						rebuildCost={cost}
 						canRebuild={state.storage >= cost}
+						rebuildAvailable={view.rebuildAvailable}
 						onRebuild={() => dispatch({ type: "rebuild-draft" })}
 						lockAvailable={view.lockAvailable}
 						lockCost={view.lockCost}
@@ -677,6 +690,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						stake={view.gateStake}
 						configs={view.configs}
 						atMinimumWidth={view.atMinimumWidth}
+						upcoming={upcoming}
 						shopAction={{
 							label: "← Back to shop",
 							onClick: () => setRewardStep("shop"),

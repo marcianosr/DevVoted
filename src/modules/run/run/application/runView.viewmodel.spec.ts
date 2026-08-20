@@ -73,6 +73,33 @@ describe("toRunView", () => {
 		expect(toRunView(answering()).poll?.id).toBe("q0");
 	});
 
+	// The one sanctioned crack in the rule above, and it is category-only:
+	// Prefetch's product is the schedule, never the questions.
+	it("reveals the dealt polls' categories only to a build holding Prefetch", () => {
+		expect(toRunView(answering()).upcomingCategories).toBeNull();
+		expect(toRunView(answering()).nextGateCategories).toBeNull();
+		expect(
+			toRunView(answeringWith([CONFIGS.prefetch])).upcomingCategories
+		).toEqual(["react", "react"]);
+	});
+
+	// The prototype's state is dealt the whole pool at once, so the reveal must
+	// stop at window edges — an uncapped slice would read the entire run.
+	it("caps Prefetch's reveal at this window and the next", () => {
+		const pool = Array.from({ length: 12 }, (_, index) => poll(`q${index}`));
+		const state = {
+			...createRun(pool, [CONFIGS.prefetch]),
+			status: "answering" as const,
+			pipeline: {
+				...createRun(pool, [CONFIGS.prefetch]).pipeline,
+				configs: [CONFIGS.prefetch],
+			},
+		};
+		const view = toRunView(state);
+		expect(view.upcomingCategories).toHaveLength(5);
+		expect(view.nextGateCategories).toHaveLength(5);
+	});
+
 	it("hides the poll when not answering", () => {
 		const view = toRunView(createRun([poll("q0")], [CONFIGS.js]));
 		expect(view.status).toBe("configuring");

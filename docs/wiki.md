@@ -341,7 +341,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Twenty-seven configs, all pure effects.
+**🟢 Shipped.** Twenty-eight configs, all pure effects.
 
 | Config | Rarity | Effect |
 | --- | --- | --- |
@@ -359,10 +359,11 @@ hover are planned; today the draft cycles deterministically through the pool.
 | `.length` | uncommon | Names how many correct answers the gate's 5 polls hold, and pays +16 KB per correct answer beyond one per poll |
 | Intellisense | rare | All coverage ×1.5 |
 | Deprecated | rare | All coverage ×3, fading ×0.5 each gate clear; deleted from the pipeline at ×1 |
+| Prefetch | rare | Shows the category of every poll left this gate and all of the next gate's. Asking for polls not yet dealt rolls tomorrow's shared seed a day early — categories only, the questions stay sealed |
 | AGENTS.md | legendary | All coverage ×2 |
 | Volkswagen CI | legendary | Reports the gate's first audit as passing; costs 384 KB to draft |
 | Dependabot | legendary | 1 in 3 gate clears (1 in 2 at L2): a random pipeline config upgrades, free |
-| WTFPL | legendary | Every shop offers the entire roster; costs 512 KB, sells back for 0 KB, and Rebuild/Lock/Extend retire while it is installed |
+| WTFPL | legendary | Every shop offers the entire roster; costs 512 KB, every sell refunds 0 KB while it is installed (its own included), and Rebuild/Lock/Extend retire |
 
 `.length` deliberately pays on *shape* rather than magnitude, since four configs
 already sell coverage magnitude: it pays most in multi-answer-heavy windows and nothing
@@ -391,17 +392,16 @@ ship; the original check designs stay in the beans.
 | `--save-exact` | uncommon | Every future draft costs 20% less |
 | Overclock | rare | 4× coverage on one poll, then −128 KB across the next two |
 | Snapshot Testing | rare | Polls you have already seen reward ×2 |
-| Bundle Analyzer | rare | In the shop, see the category mix of the next gate's 5 polls |
 | Rebase | rare | See the gate's remaining polls and reorder them |
 | Hotfix | rare | A failed gate still opens the shop |
 | Replication | rare | All storage gains ×2, locked to the free plan while installed |
 | Continuous Deployment | rare | +64 KB every gate clear, but you never enter the shop again |
 
-Bundle Analyzer and Rebase are a deliberate pair: Analyzer reveals categories in the
-*shop*, so it informs what you draft; Rebase reveals and reorders inside the *gate*, so
-it informs how you answer. Rebase stays local to your own run, since reordering a shared
-seed would break other players' position-based configs; the social version belongs in
-[7.4 Interference](#74-interference).
+Bundle Analyzer (see the next gate's category mix in the shop) is gone from this list:
+the shipped **Prefetch** covers it and more. Rebase reveals and reorders inside the
+*gate*, so it informs how you answer; it stays local to your own run, since reordering a
+shared seed would break other players' position-based configs, and the social version
+belongs in [7.4 Interference](#74-interference).
 
 🟡 **Dual-focus configs** replace the old hidden synergy table: one slot focusing two
 categories is the themed-build bonus turned into a visible, draftable item, and only

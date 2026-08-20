@@ -253,11 +253,30 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		suppressesAudit: true,
 	},
+	// Information about the draw itself: .length counts answers, Telemetry
+	// reads the room, this reads the schedule — categories only, never the
+	// questions (withhold, never falsify). The name is the mechanic: asking
+	// for tomorrow literally rolls tomorrow's shared seed a day early, the way
+	// rel=prefetch fetches the next page before you navigate. Rare: ten
+	// categories of foresight price a whole build's drafting, where
+	// Telemetry's one-poll peek prices a single answer.
+	prefetch: {
+		id: "prefetch",
+		label: "Prefetch",
+		family: "defense",
+		rarity: "rare",
+		description:
+			"Shows the category of every poll left this gate, and all of the next gate's.",
+		gives: "The categories of this gate's remaining polls and the next gate's",
+		rewardMultiplier: 1,
+		revealsUpcomingCategories: true,
+	},
 	// The license, taken literally: do what you want — the shop stops dealing
 	// five and lays out the whole catalog for the rest of the run. The 512KB
 	// draftCost is the drawback (Volkswagen CI precedent: the price and the
-	// slot are the whole cost), and `sellRefundKb: 0` is the no-warranty
-	// clause — total freedom, no take-backs. Rebuild, Lock and Extend retire
+	// slot are the whole cost), and the no-warranty clause zeroes EVERY sale
+	// while it is installed (`sellRefundIn`, Marciano 2026-08-20) — total
+	// freedom, no take-backs, on anything. Rebuild, Lock and Extend retire
 	// while it is installed, because they sell slices of this freedom.
 	wtfpl: {
 		id: "wtfpl",
@@ -265,11 +284,10 @@ export const CONFIGS = {
 		family: "economy",
 		rarity: "legendary",
 		draftCost: 512,
-		sellRefundKb: 0,
 		description:
-			"Every shop offers the entire roster. No warranty: sells back for 0KB.",
+			"Every shop offers the entire roster. No warranty: while installed, nothing sells back for anything.",
 		gives: "Every shop offers the entire roster",
-		costs: "No warranty — sells back for 0KB",
+		costs: "No warranty — every config sells for 0KB while it's installed",
 		rewardMultiplier: 1,
 		offersFullRoster: true,
 	},

@@ -4,10 +4,10 @@ import {
 	Config,
 	describeConfig,
 	isUpgradable,
-	sellRefund,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
+import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import type {
 	GateStake,
 	OfferRefusal,
@@ -35,6 +35,10 @@ import {
 } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
 import { nextSlotRow } from "~/modules/run/pipeline/presentation/SlotUnlockRow.ui";
+import {
+	UpcomingCategories,
+	type UpcomingCategoriesProps,
+} from "~/modules/run/run/presentation/UpcomingCategories.ui";
 
 type ShopScreenProps = {
 	storage: number;
@@ -49,6 +53,8 @@ type ShopScreenProps = {
 	slots: number;
 	newConfigIds: readonly string[];
 	offers: readonly ShopOffer[];
+	/** Prefetch's reveal; absent when no installed config reads the draw. */
+	upcoming?: UpcomingCategoriesProps;
 	onDraft: (configId: string) => void;
 	rebuildCost: number;
 	canRebuild: boolean;
@@ -182,6 +188,7 @@ export const ShopScreen = ({
 	slots,
 	newConfigIds,
 	offers,
+	upcoming,
 	onDraft,
 	rebuildCost,
 	canRebuild,
@@ -265,7 +272,7 @@ export const ShopScreen = ({
 	const loadoutActions = (config: Config): ReactNode => {
 		const deinstallButton = actionButton({
 			label: "Uninstall",
-			price: `+${sellRefund(config)}KB`,
+			price: `+${sellRefundIn(configs, config)}KB`,
 			onClick: () => onSell(config.id),
 			disabled: atMinimumWidth || locked,
 			pill: true,
@@ -450,6 +457,9 @@ export const ShopScreen = ({
 								</span>
 							))}
 						</div>
+						{/* Between the offers and the controls: what's coming is drafting
+						    information, read in the same glance as what's for sale. */}
+						{upcoming ? <UpcomingCategories {...upcoming} /> : null}
 						<TerminalSection label="Shop controls">
 							<div className="flex flex-wrap items-center gap-2">
 								{rebuildAvailable ? (

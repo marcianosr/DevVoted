@@ -7,7 +7,7 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-15T13:55:06Z
-updated_at: 2026-08-20T12:21:45Z
+updated_at: 2026-08-20T13:33:28Z
 parent: DVTD-72d9
 ---
 
@@ -29,3 +29,7 @@ Shipped as specced plus Marciano's pricing (legendary, draftCost 512KB override,
 - Selling WTFPL mid-shop leaves that visit's open table in place (harmless: 512KB spent, 0 back); the next shop rolls five again.
 - Story `Shop/WTFPLOpenCatalog`; 9 new specs across draft/config/run/ShopScreen. Wiki: moved from designed-not-built to shipped roster (27 configs). Changelog entry added.
 - Verified: 1638 tests pass (123 files), oxlint + dependency-cruiser clean, tsc clean.
+
+## Playtest reversal (same day)
+
+Marciano overruled the narrow no-warranty reading: while WTFPL is installed, EVERY sale refunds 0KB, its own included. Implemented as sellRefundIn(configs, config) in draft.model (build-aware); the sellRefundKb axis was deleted as fully shadowed (WTFPL can only be sold while its own aura is active). Reducer, shop Uninstall prices, copy, wiki and changelog updated.

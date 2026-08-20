@@ -13,6 +13,7 @@ import {
 	offerCount,
 	rebuildCost,
 	rollDraft,
+	sellRefundIn,
 } from "~/modules/run/shop/domain/draft.model";
 
 const ids = (configs: readonly Config[]): string[] =>
@@ -138,6 +139,20 @@ describe("rollDraft with shop controls", () => {
 
 	it("offers as many configs as the extensions bought allow", () => {
 		expect(rollDraft(0, [], [], offerCount(2))).toHaveLength(DRAFT_SIZE + 2);
+	});
+});
+
+describe("sellRefundIn", () => {
+	it("refunds half the draft cost in an ordinary build", () => {
+		expect(sellRefundIn([CONFIGS.js, CONFIGS.agentsMd], CONFIGS.agentsMd)).toBe(
+			128
+		);
+	});
+
+	it("zeroes every sale while WTFPL is installed — no warranty on anything", () => {
+		const build = [CONFIGS.wtfpl, CONFIGS.agentsMd];
+		expect(sellRefundIn(build, CONFIGS.agentsMd)).toBe(0);
+		expect(sellRefundIn(build, CONFIGS.wtfpl)).toBe(0);
 	});
 });
 

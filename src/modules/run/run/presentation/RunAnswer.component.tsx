@@ -16,6 +16,7 @@ import {
 	useRunActions,
 } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
+import { useUpcomingCategories } from "~/modules/run/run/application/useUpcomingCategories.hook";
 
 // Post-submit reveal beat: the answered poll stays on screen with its options
 // painted ✓/✕ and the coverage score, while the server result waits here. The
@@ -31,6 +32,7 @@ type RevealState = {
 export const RunAnswer = () => {
 	const { view } = useTodaysRun();
 	const { send, sendWith, commit, busy, abandon } = useRunActions();
+	const upcoming = useUpcomingCategories(view);
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	// One clock per poll, owned by the hook: it feeds the "fastest answer"
@@ -138,6 +140,7 @@ export const RunAnswer = () => {
 				peekCost={view.peekCost}
 				split={split ?? undefined}
 				correctAnswersThisGate={view.correctAnswersThisGate ?? undefined}
+				upcoming={upcoming}
 				canSubmit={canSubmit}
 				onSelect={onSelect}
 				onSubmit={submitAnswer}

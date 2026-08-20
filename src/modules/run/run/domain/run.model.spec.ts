@@ -2295,6 +2295,12 @@ describe("WTFPL's open shop", () => {
 		expect(sold.storage).toBe(600 - 512);
 	});
 
+	it("zeroes every other sale too while installed — no warranty on anything", () => {
+		const sold = runReducer(holding(), { type: "sell", configId: "eslint" });
+		expect(configIds(sold)).not.toContain("eslint");
+		expect(sold.storage).toBe(600 - 512);
+	});
+
 	it("retires the paid shop controls — they sell slices of what the license grants", () => {
 		const state = holding();
 		expect(runReducer(state, { type: "rebuild-draft" })).toBe(state);

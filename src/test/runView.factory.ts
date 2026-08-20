@@ -108,6 +108,8 @@ const createRunView = createMockDataFactory<RunView>({
 	pollTimeLimitMs: null,
 	currentPollPeeked: false,
 	correctAnswersThisGate: null,
+	upcomingCategories: null,
+	nextGateCategories: null,
 	rebuildCost: 0,
 	canRebuild: false,
 	rebuildAvailable: true,

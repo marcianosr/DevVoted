@@ -29,6 +29,10 @@ import {
 } from "~/modules/run/poll/presentation/PollCard.ui";
 import { PollOutcomeBar } from "~/modules/run/run/presentation/PollOutcomeBar.ui";
 import { PollClock } from "~/modules/run/run/presentation/PollClock.ui";
+import {
+	UpcomingCategories,
+	type UpcomingCategoriesProps,
+} from "~/modules/run/run/presentation/UpcomingCategories.ui";
 
 /** Chips begin after the option badges have popped in (~620ms of pops). */
 const REVEAL_SCORE_START_MS = 500;
@@ -105,6 +109,10 @@ type AnsweringScreenProps = {
 	split?: PollSplitView;
 	/** Correct answers this gate's polls hold (.length) — absent when nothing counts. */
 	correctAnswersThisGate?: number;
+	/** Prefetch's reveal; absent when no installed config reads the draw.
+	 * "this gate" includes the poll on screen: it states what is left, not
+	 * what is next. */
+	upcoming?: UpcomingCategoriesProps;
 	canSubmit: boolean;
 	onSelect: (optionId: string) => void;
 	onSubmit: () => void;
@@ -145,6 +153,7 @@ export const AnsweringScreen = ({
 	peekCost,
 	split,
 	correctAnswersThisGate,
+	upcoming,
 	canSubmit,
 	onSelect,
 	onSubmit,
@@ -178,6 +187,7 @@ export const AnsweringScreen = ({
 						{pollOutcomes.length} of {pollsPerGate} polls
 					</Paragraph>
 				</span>
+				{upcoming ? <UpcomingCategories {...upcoming} /> : null}
 				{cues.length > 0 || offlineConfigs.length > 0 ? (
 					<div className="flex items-start justify-between gap-3 rounded-lg border border-saffron/40 px-3 py-2">
 						<span className="flex min-w-0 flex-col gap-1">

@@ -1,6 +1,9 @@
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 
 export const getTodayDateString = () => format(new Date(), "yyyy-MM-dd");
+
+export const getTomorrowDateString = () =>
+	format(addDays(new Date(), 1), "yyyy-MM-dd");
 
 /**
  * Milliseconds from `now` until the next daily poll opens.

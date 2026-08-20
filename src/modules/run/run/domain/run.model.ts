@@ -22,7 +22,6 @@ import {
 	faucetKbPerCorrect,
 	isUpgradable,
 	levelUp,
-	sellRefund,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
@@ -45,6 +44,7 @@ import {
 	offerCount,
 	rebuildCost,
 	rollDraft,
+	sellRefundIn,
 	shopOffersFullRoster,
 } from "~/modules/run/shop/domain/draft.model";
 import {
@@ -1239,7 +1239,7 @@ const sell = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!target || pipelineAtMinimumWidth(state)) return state;
-	const refund = sellRefund(target);
+	const refund = sellRefundIn(state.pipeline.configs, target);
 	return {
 		...state,
 		pipeline: stripConfig(state.pipeline, configId),

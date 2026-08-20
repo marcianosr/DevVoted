@@ -201,6 +201,26 @@ export const fetchRunPollsForDate = async (
 };
 
 /**
+ * The categories of a date's shared sequence, materializing the seed first —
+ * Prefetch's product (DVTD-ekbz). Called with tomorrow's date this IS the
+ * early roll: the set freezes now, so polls published later today cannot
+ * enter it. Categories only — the questions stay sealed until the day deals
+ * them, and correctness never touches this path.
+ */
+export const fetchSeedCategoriesForDate = async (
+	date: string
+): Promise<CategoryCode[]> => {
+	await getOrCreateDailyRunSeed(date);
+	const rows = await db
+		.select({ categoryCode: pollsTable.category_code })
+		.from(dailyRunPollsTable)
+		.innerJoin(pollsTable, eq(dailyRunPollsTable.poll_id, pollsTable.id))
+		.where(eq(dailyRunPollsTable.date, date))
+		.orderBy(asc(dailyRunPollsTable.position));
+	return rows.map((row) => toCategory(row.categoryCode));
+};
+
+/**
  * The run's own materialized sequence (ADR-011) — the engine's poll list.
  * Ordered by position; may span multiple daily segments.
  */

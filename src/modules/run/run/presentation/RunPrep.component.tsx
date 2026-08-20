@@ -6,12 +6,14 @@ import { useNextPollsCountdown } from "~/modules/run/community/presentation/useN
 import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
+import { useUpcomingCategories } from "~/modules/run/run/application/useUpcomingCategories.hook";
 
 export const RunPrep = () => {
 	const { view } = useTodaysRun();
 	const { send, sendWith, commit, busy } = useRunActions();
 	const navigate = useNavigate();
 	const countdown = useNextPollsCountdown();
+	const upcoming = useUpcomingCategories(view);
 
 	if (!view) return null;
 
@@ -52,6 +54,7 @@ export const RunPrep = () => {
 				stake={view.gateStake}
 				configs={view.configs}
 				atMinimumWidth={view.atMinimumWidth}
+				upcoming={upcoming}
 				startLock={gateLocked ? countdown.label : undefined}
 				shopAction={backToShop}
 				onStartGate={startGate}

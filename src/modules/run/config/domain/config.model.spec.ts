@@ -23,9 +23,8 @@ describe("draftCost", () => {
 		expect(sellRefund(CONFIGS.agentsMd)).toBe(128);
 	});
 
-	it("prices WTFPL's exit at nothing — the no-warranty clause", () => {
+	it("prices WTFPL above the legendary tier by its own tag", () => {
 		expect(draftCost(CONFIGS.wtfpl)).toBe(512);
-		expect(sellRefund(CONFIGS.wtfpl)).toBe(0);
 	});
 });
 

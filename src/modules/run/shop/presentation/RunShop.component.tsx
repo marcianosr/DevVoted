@@ -8,11 +8,13 @@ import {
 } from "~/modules/run/shop/presentation/ShopScreen.ui";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
+import { useUpcomingCategories } from "~/modules/run/run/application/useUpcomingCategories.hook";
 
 export const RunShop = () => {
 	const { view } = useTodaysRun();
 	const { send, busy } = useRunActions();
 	const navigate = useNavigate();
+	const upcoming = useUpcomingCategories(view);
 
 	if (!view) return null;
 
@@ -40,6 +42,7 @@ export const RunShop = () => {
 				locked={view.shopLocked}
 				newConfigIds={view.newConfigIds}
 				offers={view.offers}
+				upcoming={upcoming}
 				onDraft={(id) => send({ type: "draft", configId: id })}
 				rebuildCost={view.rebuildCost}
 				canRebuild={view.canRebuild && !busy}

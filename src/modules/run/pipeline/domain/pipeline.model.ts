@@ -336,6 +336,10 @@ export const peekerFor = (configs: readonly Config[]): Config | undefined =>
 export const budgeterFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.storagePerExtraPick !== undefined);
 
+/** The equipped config reading the upcoming draw, if any (Prefetch). */
+export const prefetcherFor = (configs: readonly Config[]): Config | undefined =>
+	configs.find((config) => config.revealsUpcomingCategories === true);
+
 export const stripConfig = (
 	pipeline: Pipeline,
 	configId: string

@@ -1,4 +1,4 @@
-import { Config } from "~/modules/run/config/domain/config.model";
+import { Config, sellRefund } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 
 export const DRAFT_SIZE = 5;
@@ -51,6 +51,16 @@ const lockedConfigs = (lockedIds: readonly string[]): readonly Config[] =>
  * whole catalog and retires the paid shop controls. */
 export const shopOffersFullRoster = (configs: readonly Config[]): boolean =>
 	configs.some((config) => config.offersFullRoster === true);
+
+/**
+ * What selling `config` out of this build refunds. WTFPL's no-warranty clause
+ * zeroes every sale while it is installed — its own included, so the license
+ * cannot be flipped for half its price after opening the catalog.
+ */
+export const sellRefundIn = (
+	configs: readonly Config[],
+	config: Config
+): number => (shopOffersFullRoster(configs) ? 0 : sellRefund(config));
 
 export const rollDraft = (
 	seed: number,

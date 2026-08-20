@@ -12,12 +12,18 @@ import {
 	GateStakeReceipt,
 	widthRefusal,
 } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
+import {
+	UpcomingCategories,
+	type UpcomingCategoriesProps,
+} from "~/modules/run/run/presentation/UpcomingCategories.ui";
 
 type PrepScreenProps = {
 	stake: GateStake;
 	configs: readonly Config[];
 	/** The build is on its width floor, so every drop is refused. */
 	atMinimumWidth: boolean;
+	/** Prefetch's reveal; absent when no installed config reads the draw. */
+	upcoming?: UpcomingCategoriesProps;
 	startLock?: string;
 	shopAction?: ScreenAction;
 	onStartGate: () => void;
@@ -98,6 +104,7 @@ export const PrepScreen = ({
 	stake,
 	configs,
 	atMinimumWidth,
+	upcoming,
 	startLock,
 	shopAction,
 	onStartGate,
@@ -113,6 +120,7 @@ export const PrepScreen = ({
 				shopIsOpen={shopAction !== undefined}
 				onDropConfig={onDropConfig}
 			/>
+			{upcoming ? <UpcomingCategories {...upcoming} /> : null}
 			<GateStakeReceipt stake={stake} shopAction={shopAction} />
 			<div className="flex flex-col gap-3 sm:flex-row">
 				<Button
