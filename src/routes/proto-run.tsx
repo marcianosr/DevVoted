@@ -593,8 +593,14 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						storage={view.storage}
 						capKb={view.storageCap}
 						faucetThisGateKb={view.faucetThisGateKb}
+						interestThisGateKb={view.interestThisGateKb}
+						extraPickThisGateKb={view.extraPickThisGateKb}
 						billKb={view.gateBillPaidKb}
 						planDowngraded={view.planDowngraded}
+						autoUpgraded={view.autoUpgradedConfig ?? undefined}
+						deletedConfigs={view.deletedConfigs}
+						lapsedConfigs={view.lapsedConfigs}
+						subscriptionBillKb={view.subscriptionBillKb}
 						nextStake={view.gateStake}
 						onReviewAnswers={() => setRewardStep("review")}
 						onContinue={() => setRewardStep("shop")}

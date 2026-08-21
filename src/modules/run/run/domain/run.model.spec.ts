@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { CategoryCode } from "~/shared/lib/categories";
 
-import { upgradeStorageCost } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	upgradeStorageCost,
+} from "~/modules/run/config/domain/config.model";
 import {
 	CONFIGS,
 	CONFIG_LIST,
@@ -2357,5 +2360,83 @@ describe("Deprecated's decay", () => {
 		const announced = clearGate(holdingDeprecated(1.5));
 		const state = runReducer(announced, { type: "finish-reward" });
 		expect(state.deletedConfigs).toBeUndefined();
+	});
+});
+
+describe("Freemium's subscription", () => {
+	// The opening gate, the only depth a three-config build clears outright — the
+	// bill's own ladder is priced in subscription.model.spec.ts, so these tests
+	// vary the plan's price rather than the gate, and read the wiring.
+	/** A plan no opening clear can cover, so insolvency is reachable at gate 0. */
+	const unaffordablePlan: Config = { ...CONFIGS.freemium, subscriptionKb: 512 };
+
+	const subscribed = (
+		storage: number,
+		plan: Config = CONFIGS.freemium
+	): RunState => {
+		const base = started(["js"]);
+		return {
+			...base,
+			storage,
+			pipeline: {
+				...base.pipeline,
+				slots: base.pipeline.configs.length + 1,
+				configs: [...base.pipeline.configs, plan],
+			},
+		};
+	};
+
+	const freemiumIn = (state: RunState) =>
+		state.pipeline.configs.find((config) => config.id === "freemium");
+
+	it("bills 8KB at the first clear and keeps the plan installed", () => {
+		const state = clearGate(subscribed(128));
+		expect(state.subscriptionBillKb).toBe(8);
+		expect(freemiumIn(state)).toBeDefined();
+		expect(state.lapsedConfigs).toBeUndefined();
+	});
+
+	it("bills after the gate pays, so the clear itself can cover the plan", () => {
+		// Nothing in hand walking in: a bill charged before the reward was credited
+		// would lapse a plan this very clear paid for.
+		const state = clearGate(subscribed(0));
+		expect(state.subscriptionBillKb).toBe(8);
+		expect(freemiumIn(state)).toBeDefined();
+	});
+
+	it("lapses the plan when the clear cannot cover the bill, and frees the slot", () => {
+		const state = clearGate(subscribed(0, unaffordablePlan));
+		expect(freemiumIn(state)).toBeUndefined();
+		expect(state.lapsedConfigs).toHaveLength(1);
+		expect(state.subscriptionBillKb).toBe(0);
+		expect(state.pipeline.configs).toHaveLength(3);
+	});
+
+	it("does not bill a failed gate — the redo already charges a peel", () => {
+		const state = failGate(subscribed(256));
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.storage).toBe(256);
+		expect(freemiumIn(state)).toBeDefined();
+	});
+
+	it("clears the bill and the lapse notice when the climb resumes", () => {
+		const announced = clearGate(subscribed(0, unaffordablePlan));
+		const state = runReducer(announced, { type: "finish-reward" });
+		expect(state.lapsedConfigs).toBeUndefined();
+		expect(state.subscriptionBillKb).toBe(0);
+	});
+
+	it("charges half price at the counter while it is installed", () => {
+		const cleared = clearGate(subscribed(300));
+		const shopping: RunState = {
+			...cleared,
+			draftOptions: [CONFIGS.agentsMd],
+			pipeline: { ...cleared.pipeline, slots: 8 },
+		};
+		const drafted = runReducer(shopping, {
+			type: "draft",
+			configId: "agents-md",
+		});
+		expect(drafted.storage).toBe(shopping.storage - 128);
 	});
 });

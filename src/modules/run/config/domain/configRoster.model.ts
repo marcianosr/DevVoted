@@ -291,6 +291,33 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		offersFullRoster: true,
 	},
+	// The business model, taken literally: free to install, and then the bill.
+	// It is the roster's first *recurring* price — every other config is bought
+	// once and free forever — so `draftCost: 0` is the point rather than a
+	// discount: the whole cost is the subscription, and a legendary ring on a
+	// free shelf item is the hook the real thing uses. The bill is metered on
+	// the run's depth (8, 16, 32, 64, 128, 256KB from gate 0), which is what
+	// usage-based pricing actually does: the further you ship, the more they
+	// charge. That makes it an opening-game item you are meant to cancel around
+	// gate 4, and cancelling is the whole decision — dropping it is free, but
+	// re-drafting later pays the deep price with no tenure to reset. Its own
+	// sale refunds nothing, because a free plan has nothing to refund.
+	freemium: {
+		id: "freemium",
+		label: "Freemium",
+		family: "economy",
+		rarity: "legendary",
+		draftCost: 0,
+		description:
+			"Free to install. Every config drafts at half price, and each gate you clear bills you double the last.",
+		gives: "Every config drafts at half price",
+		costs:
+			"Bills 8KB at your first clear, doubling every gate — it lapses when you cannot pay",
+		rewardMultiplier: 1,
+		draftCostFactor: 0.5,
+		subscriptionKb: 8,
+		subscriptionGrowthPerGate: 2,
+	},
 	// The reward is a level — an axis nothing else pays in (the roster's other
 	// payouts are coverage, KB, and information). The roll is seeded like the
 	// audits' offline picks, and the unpredictability is the identity: an

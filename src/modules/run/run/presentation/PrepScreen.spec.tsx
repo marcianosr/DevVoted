@@ -175,8 +175,28 @@ describe(PrepScreen, () => {
 	});
 
 	it("names the storage plan's bill on a paid tier", () => {
-		render(<PrepScreen {...base} stake={stakeWith({ billKb: 8 })} />);
-		expect(screen.getByText("Storage bill")).toBeInTheDocument();
+		render(
+			<PrepScreen
+				{...base}
+				stake={stakeWith({
+					billKb: 8,
+					subscriptions: {
+						lines: [
+							{
+								id: "storage-plan",
+								label: "Storage plan, tier 2",
+								kb: 8,
+								billedOnMiss: true,
+							},
+						],
+						totalKb: 8,
+						onMissKb: 8,
+						shortfallKb: 0,
+					},
+				})}
+			/>
+		);
+		expect(screen.getByText("Storage plan, tier 2")).toBeInTheDocument();
 		expect(screen.getByText("−8KB")).toHaveClass("text-cinnabar");
 		expect(screen.getByText(/pass or fail/)).toBeInTheDocument();
 	});
@@ -286,5 +306,64 @@ describe(PrepScreen, () => {
 		expect(
 			screen.queryByRole("button", { name: /Start .* gate/ })
 		).not.toBeInTheDocument();
+	});
+
+	describe("subscriptions section", () => {
+		const ledgerStake = stakeWith({
+			subscriptions: {
+				lines: [
+					{
+						id: "storage-plan",
+						label: "Storage plan, tier 3",
+						kb: 16,
+						billedOnMiss: true,
+					},
+					{ id: "freemium", label: "Freemium", kb: 32, billedOnMiss: false },
+				],
+				totalKb: 48,
+				onMissKb: 16,
+				shortfallKb: 0,
+			},
+		});
+
+		it("lists the storage plan and every subscribed config as one bill", () => {
+			render(<PrepScreen {...base} stake={ledgerStake} />);
+			expect(screen.getByText("Storage plan, tier 3")).toBeInTheDocument();
+			expect(screen.getByText("Freemium")).toBeInTheDocument();
+			expect(screen.getByText("Total this gate")).toBeInTheDocument();
+		});
+
+		it("marks the plan as billed pass or fail and a config as billed on clear", () => {
+			render(<PrepScreen {...base} stake={ledgerStake} />);
+			expect(screen.getByText(/pass or fail/)).toBeInTheDocument();
+			expect(screen.getByText(/on clear/)).toBeInTheDocument();
+		});
+
+		it("quotes the miss total separately, since configs do not bill on a miss", () => {
+			render(<PrepScreen {...base} stake={ledgerStake} />);
+			expect(screen.getByText(/−16KB on a miss/)).toBeInTheDocument();
+		});
+
+		it("warns what cannot be paid will lapse when the balance falls short", () => {
+			render(
+				<PrepScreen
+					{...base}
+					stake={stakeWith({
+						subscriptions: {
+							...ledgerStake.subscriptions,
+							shortfallKb: 180,
+						},
+					})}
+				/>
+			);
+			expect(
+				screen.getByText("180KB short — what you cannot pay lapses.")
+			).toBeInTheDocument();
+		});
+
+		it("omits the section entirely for a build that owes nothing", () => {
+			render(<PrepScreen {...base} />);
+			expect(screen.queryByText("Subscriptions")).not.toBeInTheDocument();
+		});
 	});
 });

@@ -8,6 +8,7 @@ import type {
 	PerAnswerPreview,
 	PipelineModifiers,
 } from "~/modules/run/pipeline/domain/pipeline.model";
+import type { BillLedger } from "~/modules/run/config/domain/subscription.model";
 import type {
 	AuditView,
 	GateStake,
@@ -279,7 +280,7 @@ const RewardsList = ({
 	preview?: PipelineModifiers;
 	previewPerAnswer?: PerAnswerPreview;
 }) => {
-	const { gateNumber, billKb, modifiers, perAnswer } = stake;
+	const { gateNumber, modifiers, perAnswer } = stake;
 	const swatch = swatchForGate(gateNumber);
 
 	const showsStorageKbPerAnswer =
@@ -326,20 +327,49 @@ const RewardsList = ({
 					<SwatchChip swatch={swatch} owned={false} />
 				</RewardRow>
 			) : null}
-			{billKb > 0 ? (
-				<RewardRow label="Storage bill">
-					<Paragraph as="span" tone="cinnabar" className="font-bold">
-						−{billKb}KB
-					</Paragraph>
-					<Paragraph as="span" tone="muted">
-						{" "}
-						pass or fail
-					</Paragraph>
-				</RewardRow>
-			) : null}
 		</ul>
 	);
 };
+
+/**
+ * Every recurring KB cost in one place: the storage plan's tier and each
+ * subscribed config, priced at this gate. The two systems bill on different
+ * triggers, so each row says which — flattening them would tell the player a
+ * miss costs more than it does.
+ */
+const SubscriptionRows = ({ ledger }: { ledger: BillLedger }) => (
+	<ul className="flex flex-col gap-2">
+		{ledger.lines.map((line) => (
+			<RewardRow key={line.id} label={line.label}>
+				<Paragraph as="span" tone="cinnabar" className="font-bold">
+					−{line.kb}KB
+				</Paragraph>
+				<Paragraph as="span" tone="muted">
+					{" "}
+					{line.billedOnMiss ? "pass or fail" : "on clear"}
+				</Paragraph>
+			</RewardRow>
+		))}
+		{ledger.lines.length > 1 ? (
+			<RewardRow label="Total this gate">
+				<Paragraph as="span" tone="cinnabar" className="font-bold">
+					−{ledger.totalKb}KB
+				</Paragraph>
+				<Paragraph as="span" tone="muted">
+					{" "}
+					· −{ledger.onMissKb}KB on a miss
+				</Paragraph>
+			</RewardRow>
+		) : null}
+		{ledger.shortfallKb > 0 ? (
+			<Requirement>
+				<Paragraph as="span" tone="cinnabar" className="font-bold">
+					{ledger.shortfallKb}KB short — what you cannot pay lapses.
+				</Paragraph>
+			</Requirement>
+		) : null}
+	</ul>
+);
 
 export const GateStakeReceipt = ({
 	stake,
@@ -427,6 +457,15 @@ export const GateStakeReceipt = ({
 						previewPerAnswer={previewPerAnswer}
 					/>
 				</div>
+				{stake.subscriptions.lines.length > 0 ? (
+					<>
+						<hr className="border-t border-edge" />
+						<div className="flex flex-col gap-1">
+							<Paragraph size="xs">Subscriptions</Paragraph>
+							<SubscriptionRows ledger={stake.subscriptions} />
+						</div>
+					</>
+				) : null}
 				{action ? (
 					<div className="pt-1">
 						{action.hint ? (
@@ -489,6 +528,15 @@ export const GateStakeRewards = ({ stake, lead }: GateStakeRewardsProps) => (
 				<Paragraph size="xs">Rewards</Paragraph>
 				<RewardsList stake={stake} />
 			</div>
+			{stake.subscriptions.lines.length > 0 ? (
+				<>
+					<hr className="border-t border-edge" />
+					<div className="flex flex-col gap-1">
+						<Paragraph size="xs">Subscriptions</Paragraph>
+						<SubscriptionRows ledger={stake.subscriptions} />
+					</div>
+				</>
+			) : null}
 		</div>
 	</section>
 );

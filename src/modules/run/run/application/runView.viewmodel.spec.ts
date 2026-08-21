@@ -11,6 +11,7 @@ import {
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { billLedger } from "~/modules/run/config/domain/subscription.model";
 import {
 	type Config,
 	draftCost,
@@ -466,9 +467,32 @@ describe("the gate stake travels as one object", () => {
 			stripsOnFailure: failStripsFor(4),
 			missIsFatal: false,
 			billKb: storagePlanFor(state.storagePlan).billKb,
+			subscriptions: billLedger({
+				configs: state.pipeline.configs,
+				gate: 4,
+				storageKb: state.storage,
+				planBillKb: storagePlanFor(state.storagePlan).billKb,
+				planTier: storagePlanFor(state.storagePlan).tier,
+			}),
 			modifiers: view.modifiers,
 			perAnswer: view.perAnswer,
 		});
+	});
+
+	it("bills the plan and every subscribed config into one ledger", () => {
+		const state = {
+			...answeringWith([CONFIGS.js, CONFIGS.freemium]),
+			gatesCleared: 2,
+			storagePlan: 3,
+		};
+		const { subscriptions } = toRunView(state).gateStake;
+
+		expect(subscriptions.lines.map((line) => [line.id, line.kb])).toEqual([
+			["storage-plan", 16],
+			["freemium", 32],
+		]);
+		// Only the plan survives a miss: config subscriptions bill on clears.
+		expect(subscriptions.onMissKb).toBe(16);
 	});
 
 	it("agrees with the flat fields the other screens still read", () => {

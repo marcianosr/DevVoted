@@ -69,6 +69,7 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 	stripsOnFailure: 1,
 	missIsFatal: false,
 	billKb: 0,
+	subscriptions: { lines: [], totalKb: 0, onMissKb: 0, shortfallKb: 0 },
 	modifiers: {
 		rewardMultiplier: 1,
 		coverageMultiplier: 1,
@@ -129,6 +130,8 @@ const createRunView = createMockDataFactory<RunView>({
 	justUnlockedSlots: [],
 	autoUpgradedConfig: null,
 	deletedConfigs: [],
+	lapsedConfigs: [],
+	subscriptionBillKb: 0,
 	audits: [],
 	answeredThisGate: [],
 	allAnswered: [],

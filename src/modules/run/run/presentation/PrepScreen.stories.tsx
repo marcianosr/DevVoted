@@ -48,7 +48,76 @@ export const ShopClosed: Story = {
 export const PaidStoragePlan: Story = {
 	args: {
 		...Default.args,
-		stake: { ...stake, billKb: 16 },
+		stake: {
+			...stake,
+			billKb: 16,
+			subscriptions: {
+				lines: [
+					{
+						id: "storage-plan",
+						label: "Storage plan, tier 3",
+						kb: 16,
+						billedOnMiss: true,
+					},
+				],
+				totalKb: 16,
+				onMissKb: 16,
+				shortfallKb: 0,
+			},
+		},
+	},
+};
+
+/** Both billing systems at once, each row naming its own trigger: the plan
+ * charges pass or fail, Freemium only on a clear. */
+export const PlanAndConfigSubscriptions: Story = {
+	args: {
+		...Default.args,
+		configs: [CONFIGS.js, CONFIGS.freemium],
+		stake: {
+			...stake,
+			billKb: 16,
+			subscriptions: {
+				lines: [
+					{
+						id: "storage-plan",
+						label: "Storage plan, tier 3",
+						kb: 16,
+						billedOnMiss: true,
+					},
+					{ id: "freemium", label: "Freemium", kb: 32, billedOnMiss: false },
+				],
+				totalKb: 48,
+				onMissKb: 16,
+				shortfallKb: 0,
+			},
+		},
+	},
+};
+
+/** Freemium's bill has outgrown the balance — the warning that something will
+ * lapse, said before the gate rather than after it settles. */
+export const SubscriptionsUnaffordable: Story = {
+	args: {
+		...PlanAndConfigSubscriptions.args,
+		stake: {
+			...stake,
+			billKb: 16,
+			subscriptions: {
+				lines: [
+					{
+						id: "storage-plan",
+						label: "Storage plan, tier 3",
+						kb: 16,
+						billedOnMiss: true,
+					},
+					{ id: "freemium", label: "Freemium", kb: 256, billedOnMiss: false },
+				],
+				totalKb: 272,
+				onMissKb: 16,
+				shortfallKb: 180,
+			},
+		},
 	},
 };
 
