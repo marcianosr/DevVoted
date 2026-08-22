@@ -15,6 +15,12 @@ describe("Subtitle", () => {
 	it("lifts out of muted when asked", () => {
 		render(<Subtitle tone="default">4 firing</Subtitle>);
 
-		expect(screen.getByText("4 firing")).toHaveClass("text-zinc-300");
+		expect(screen.getByText("4 firing")).toHaveClass("text-zinc-100");
+	});
+
+	it("carries an accent tone", () => {
+		render(<Subtitle tone="saffron">32 KB</Subtitle>);
+
+		expect(screen.getByText("32 KB")).toHaveClass("text-saffron");
 	});
 });

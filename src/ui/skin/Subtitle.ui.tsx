@@ -3,20 +3,15 @@ import type { ReactNode } from "react";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
-type SubtitleTone = "muted" | "default";
+import { SKIN_TONE, type SkinTone } from "./tones";
 
-const subtitle = cva("text-xs tracking-tight", {
-	variants: {
-		tone: {
-			muted: "text-pewter",
-			default: "text-zinc-300",
-		} satisfies Record<SubtitleTone, string>,
-	},
-});
+const SUBTITLE = "text-xs tracking-tight";
+
+const subtitleVariants = cva(SUBTITLE, { variants: { tone: SKIN_TONE } });
 
 export type SubtitleProps = {
 	children: ReactNode;
-	tone?: SubtitleTone;
+	tone?: SkinTone;
 	as?: "span" | "p";
 	className?: string;
 };
@@ -27,5 +22,5 @@ export const Subtitle = ({
 	as: Tag = "span",
 	className,
 }: SubtitleProps) => (
-	<Tag className={clsx(subtitle({ tone }), className)}>{children}</Tag>
+	<Tag className={clsx(subtitleVariants({ tone }), className)}>{children}</Tag>
 );

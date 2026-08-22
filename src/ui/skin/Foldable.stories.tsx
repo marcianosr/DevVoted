@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Foldable, type FoldableItem } from "./Foldable.ui";
+import { Row } from "./Row.ui";
 
+// Game-design reason: the pipeline is the run's one persistent readout. Folding
+// it behind a single summary line is what lets a player check the whole run's
+// state without scrolling past every config on the way.
 const meta: Meta<typeof Foldable> = {
 	component: Foldable,
 	title: "Skin/Foldable",
@@ -17,6 +21,7 @@ export default meta;
 
 type Story = StoryObj<typeof Foldable>;
 
+// Bare rows: what the container looks like before an item variant is chosen.
 const configs: FoldableItem[] = [
 	".ts",
 	"Intellisense",
@@ -25,7 +30,7 @@ const configs: FoldableItem[] = [
 	"IndexedDB",
 	"Unit Tests",
 	"Freemium",
-].map((name) => ({ id: name, content: name }));
+].map((name) => ({ id: name, content: <Row>{name}</Row> }));
 
 export const Default: Story = {
 	args: {
