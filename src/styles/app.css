@@ -136,6 +136,11 @@
 	   shade at the call site: brightening on hover is a behaviour, not a role. */
 	--color-control-edge: var(--color-zinc-600);
 
+	/* One step below text-xs, for the supporting line under a row's name where
+	   text-xs already competes with the name itself. */
+	--text-xxs: 0.625rem;
+	--text-xxs--line-height: 0.875rem;
+
 	--font-display: "Pixter Display", sans-serif;
 	--font-granular: "Pixter Granular", sans-serif;
 }
@@ -387,8 +392,19 @@ body[data-screen-theme] {
 @utility bg-theme-soft {
 	background-color: oklch(from var(--theme-color) l c h / 0.15);
 }
+/* The tinted ground a themed screen sits on — the same crush as
+   body[data-gate-theme], as a utility, so a screen can carry it without owning
+   <body> (Storybook has no themed body to inherit from). */
+@utility bg-theme-faint {
+	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
+}
 @utility border-theme {
 	border-color: var(--theme-color);
+}
+/* Outline rather than ring for the "you are here" square: outline-offset leaves
+   the gap transparent, so the cue survives any surface it sits on. */
+@utility outline-theme {
+	outline-color: var(--theme-color);
 }
 /* Focus rings follow the gate the screen is themed for, so a ring never has to
    fall back to a hardcoded zinc. */

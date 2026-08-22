@@ -5,7 +5,6 @@ import { clsx } from "clsx";
 import { CURSOR_BLOCKED, CURSOR_PICKABLE } from "./cursors";
 import { Dot } from "./Dot.ui";
 import type { MarkVariant } from "./Mark.ui";
-import { Subtitle } from "./Subtitle.ui";
 import type { SkinTone } from "./tones";
 
 const CRUMB = "inline-flex items-center gap-1.5 rounded px-1.5 py-0.5";
