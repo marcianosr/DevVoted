@@ -187,6 +187,12 @@ describe("Ledger", () => {
 		);
 	});
 
+	it("sinks the total to the foot of the column so two columns line up", () => {
+		render(<Ledger title="storage" unit="KB" entries={STORAGE} showDetail />);
+
+		expect(screen.getByText("total").parentElement).toHaveClass("mt-auto");
+	});
+
 	it("prints a footer that is not the sum when one is given", () => {
 		render(
 			<Ledger

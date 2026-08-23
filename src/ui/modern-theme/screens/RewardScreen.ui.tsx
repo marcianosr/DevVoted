@@ -1,5 +1,4 @@
 import { Action } from "../Action.ui";
-import { Caret } from "../Caret.ui";
 import { Chip } from "../Chip.ui";
 import {
 	Ledger,
@@ -19,16 +18,13 @@ const NAMING = "flex flex-col items-center gap-1";
 const FIGURES = "flex flex-wrap items-center justify-center gap-3 pt-2";
 
 const REPORT = "border-t border-edge";
-
-const DISCLOSURE = "flex px-5 pt-4";
-const TOGGLE =
-	"group/fold inline-flex items-center gap-1.5 rounded text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean";
+const CONTAINER = "max-w-4xl mx-auto flex flex-col";
 
 const LEDGERS =
-	"flex flex-col divide-y divide-edge lg:flex-row lg:items-stretch lg:divide-x lg:divide-y-0 max-w-4xl mx-auto";
+	"flex flex-col divide-y divide-edge lg:flex-row lg:items-stretch lg:divide-x lg:divide-y-0";
 const FOOTER =
 	"flex flex-wrap items-center justify-between gap-4 border-t border-edge px-5 py-4";
-const ONWARD = "flex flex-wrap items-center gap-4";
+const ONWARD = "ml-auto flex flex-wrap items-center gap-4";
 
 type Verdict =
 	| {
@@ -37,7 +33,7 @@ type Verdict =
 			spendableKb: number;
 			onContinue?: () => void;
 	  }
-	| { outcome: "held"; peelCount: number; onChoosePeel?: () => void };
+	| { outcome: "held"; removeCount: number; onChooseRemoval?: () => void };
 
 export type RewardScreenProps = {
 	gateName: string;
@@ -61,7 +57,6 @@ export const RewardScreen = (props: RewardScreenProps) => {
 		storage,
 		outcomes,
 		detailShown,
-		onToggleDetail,
 		onReviewAnswers,
 		theme,
 	} = props;
@@ -82,7 +77,7 @@ export const RewardScreen = (props: RewardScreenProps) => {
 					</Text>
 					{cleared ? (
 						<Text as="p" size="meta" tone="muted">
-							gate {props.clearedGate} cleared · yours across every run
+							{gateName} gate cleared!
 						</Text>
 					) : (
 						<Text as="p" size="meta" tone="cinnabar">
@@ -113,56 +108,50 @@ export const RewardScreen = (props: RewardScreenProps) => {
 			</div>
 
 			<div className={REPORT}>
-				<div className={DISCLOSURE}>
-					<button
-						type="button"
-						aria-expanded={detailShown}
-						onClick={onToggleDetail}
-						className={TOGGLE}
-					>
-						<Caret />
-						<Text size="body" tone="inherit">
-							{detailShown ? "Collapse details" : "Expand details"}
-						</Text>
-					</button>
-				</div>
-
-				<div className={LEDGERS}>
-					<Ledger
-						title="coverage"
-						unit="%"
-						entries={coverage}
-						showDetail={detailShown}
-						footer={
-							cleared
-								? undefined
-								: {
-										label: "short by",
-										value: `${Math.round((requiredCoverage - covered) * 10) / 10}%`,
-										tone: "cinnabar",
-									}
-						}
-					/>
-					<Ledger
-						title="storage"
-						unit="KB"
-						entries={storage}
-						showDetail={detailShown}
-						footer={
-							cleared
-								? undefined
-								: {
-										label: "kept",
-										value: ledgerTotalLabel(storage, "KB"),
-									}
-						}
-					/>
+				<div className={CONTAINER}>
+					<div className={LEDGERS}>
+						<Ledger
+							title="Coverage"
+							unit="%"
+							entries={coverage}
+							showDetail={detailShown}
+							footer={
+								cleared
+									? undefined
+									: {
+											label: "Short by",
+											value: `${Math.round((requiredCoverage - covered) * 10) / 10}%`,
+											tone: "cinnabar",
+										}
+							}
+						/>
+						<Ledger
+							title="Storage"
+							unit="KB"
+							entries={storage}
+							showDetail={detailShown}
+							footer={
+								cleared
+									? undefined
+									: {
+											label: "Kept",
+											value: ledgerTotalLabel(storage, "KB"),
+										}
+							}
+						/>
+					</div>
 				</div>
 
 				<div className={FOOTER}>
+					{onReviewAnswers ? (
+						<Action label="Review answers" onUse={onReviewAnswers} />
+					) : null}
 					<div className={ONWARD}>
 						{cleared ? (
 							<>
+								<Text size="body" tone="muted">
+									{props.spendableKb} KB to spend
+								</Text>
 								{props.onContinue ? (
 									<Action
 										label="Enter shop →"
@@ -171,30 +160,20 @@ export const RewardScreen = (props: RewardScreenProps) => {
 										onUse={props.onContinue}
 									/>
 								) : null}
-								<Text size="body" tone="muted">
-									{props.spendableKb} KB to spend
-								</Text>
 							</>
 						) : (
 							<>
-								{props.onChoosePeel ? (
+								{props.onChooseRemoval ? (
 									<Action
-										label={`Choose ${props.peelCount} to peel →`}
+										label={`Choose ${props.removeCount} to remove →`}
 										size="lg"
 										emphasis="danger"
-										onUse={props.onChoosePeel}
+										onUse={props.onChooseRemoval}
 									/>
 								) : null}
-								<Text size="body" tone="muted">
-									You pick which configs go. Then the shop opens and {gateName}{" "}
-									runs again on {outcomes.length} fresh polls.
-								</Text>
 							</>
 						)}
 					</div>
-					{onReviewAnswers ? (
-						<Action label="Review answers" onUse={onReviewAnswers} />
-					) : null}
 				</div>
 			</div>
 		</article>

@@ -17,7 +17,7 @@ const NAME = "min-w-32 shrink-0";
 const NOTES = "flex w-44 shrink-0 flex-wrap items-center gap-1.5";
 
 const TOTAL =
-	"flex items-center justify-between gap-6 border-t border-edge pt-3";
+	"mt-auto flex items-center justify-between gap-6 border-t border-edge pt-3";
 
 const VALUE = "ml-auto shrink-0 tabular-nums";
 

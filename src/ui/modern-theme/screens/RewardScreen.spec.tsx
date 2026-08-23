@@ -56,7 +56,7 @@ const props: RewardScreenProps = {
 const held: RewardScreenProps = {
 	...shared,
 	outcome: "held",
-	peelCount: 2,
+	removeCount: 2,
 };
 
 describe("RewardScreen", () => {
@@ -190,6 +190,22 @@ describe("RewardScreen", () => {
 		expect(onReviewAnswers).toHaveBeenCalledOnce();
 	});
 
+	it("ends the footer on the way forward, with the way back first", () => {
+		render(
+			<RewardScreen
+				{...props}
+				onContinue={() => {}}
+				onReviewAnswers={() => {}}
+			/>
+		);
+
+		const labels = screen
+			.getAllByRole("button")
+			.map((button) => button.textContent);
+
+		expect(labels).toEqual(["Review answers", "Enter shop →"]);
+	});
+
 	it("holds the swatch back and says so when the gate was not cleared", () => {
 		render(<RewardScreen {...held} />);
 
@@ -216,15 +232,15 @@ describe("RewardScreen", () => {
 		expect(screen.queryByText("total")).not.toBeInTheDocument();
 	});
 
-	it("offers the peel rather than the shop, and names the price in configs", async () => {
-		const onChoosePeel = vi.fn();
-		render(<RewardScreen {...held} onChoosePeel={onChoosePeel} />);
+	it("offers the removal rather than the shop, and names the price in configs", async () => {
+		const onChooseRemoval = vi.fn();
+		render(<RewardScreen {...held} onChooseRemoval={onChooseRemoval} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "Choose 2 to peel →" })
+			screen.getByRole("button", { name: "Choose 2 to remove →" })
 		);
 
-		expect(onChoosePeel).toHaveBeenCalledOnce();
+		expect(onChooseRemoval).toHaveBeenCalledOnce();
 		expect(
 			screen.queryByRole("button", { name: /Enter shop/ })
 		).not.toBeInTheDocument();

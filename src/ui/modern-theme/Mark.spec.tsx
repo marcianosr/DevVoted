@@ -51,6 +51,22 @@ describe("Mark", () => {
 		expect(disc.firstChild).toHaveClass("rounded-full");
 	});
 
+	it("explains its state on hover once a hint is given", () => {
+		render(<Mark variant="pass" hint="This ran successfully" />);
+
+		expect(
+			screen.getByRole("button", { name: "This ran successfully" })
+		).toBeInTheDocument();
+	});
+
+	it("gives a blank mark a voice, since its hint is the only thing it says", () => {
+		render(<Mark variant="blank" shape="box" hint="This didn't run" />);
+
+		expect(
+			screen.getByRole("button", { name: "This didn't run" })
+		).toBeInTheDocument();
+	});
+
 	it("stays silent when blank, having nothing to announce", () => {
 		const { container } = render(<Mark variant="blank" shape="box" />);
 
