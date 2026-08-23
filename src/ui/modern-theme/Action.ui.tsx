@@ -14,8 +14,6 @@ const SIZE = {
 	lg: "px-6 py-3",
 } satisfies Record<ActionSize, string>;
 
-// Stretches to its column instead of hugging its label. A boolean rather
-// than a className passthrough, which would open the button to any restyling.
 const FULL = "w-full justify-center";
 
 export type ActionEmphasis = "quiet" | "loud" | "prismatic" | "danger";
@@ -37,6 +35,7 @@ type ActionBase = {
 	full?: boolean;
 	onUse: () => void;
 	disabled?: boolean;
+	expanded?: boolean;
 };
 
 export type ActionProps = ActionBase &
@@ -51,6 +50,7 @@ export const Action = (props: ActionProps) => {
 		full = false,
 		onUse,
 		disabled = false,
+		expanded,
 		cost,
 	} = props;
 	const label = "label" in props ? props.label : undefined;
@@ -60,12 +60,8 @@ export const Action = (props: ActionProps) => {
 		<button
 			type="button"
 			disabled={disabled}
-			// Name computation runs the spans together, and "Use16 KB" is not what
-			// anyone reads.
+			aria-expanded={expanded}
 			aria-label={[label, on, cost].filter(Boolean).join(" ")}
-			// A nested button is the click's activation target, so a <summary> around
-			// it never toggles on its own. stopPropagation is for row handlers that
-			// are not summaries.
 			onClick={(event) => {
 				event.stopPropagation();
 				onUse();

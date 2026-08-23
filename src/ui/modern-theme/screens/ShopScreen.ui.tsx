@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
 
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+import { Screen } from "../Screen.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
 import { ShopHeader, type ShopHeaderProps } from "../ShopHeader.ui";
+import { StoragePlan, type StoragePlanProps } from "../StoragePlan.ui";
 import { Text } from "../Text.ui";
-
-const SCREEN = "flex flex-col bg-theme-faint";
 
 const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const COLUMN = "flex min-w-0 flex-1 flex-col px-2 py-4";
@@ -19,9 +21,10 @@ export type ShopScreenProps = {
 	draftAction?: ReactNode;
 	draftNote?: ReactNode;
 	controls?: ReactNode;
+	storagePlans?: StoragePlanProps;
 	pipeline: readonly FoldItem[];
 	slots: ReactNode;
-	theme?: string;
+	theme?: SwatchTheme;
 };
 
 export const ShopScreen = ({
@@ -31,11 +34,12 @@ export const ShopScreen = ({
 	draftAction,
 	draftNote,
 	controls,
+	storagePlans,
 	pipeline,
 	slots,
 	theme,
 }: ShopScreenProps) => (
-	<article data-gate-theme={theme} className={SCREEN}>
+	<Screen theme={theme}>
 		<ShopHeader {...gate} />
 
 		<div className={BODY}>
@@ -51,6 +55,8 @@ export const ShopScreen = ({
 					note={draftNote}
 					items={offers}
 				/>
+				{storagePlans ? <StoragePlan {...storagePlans} /> : null}
+
 				{controls ? <div className={CONTROLS}>{controls}</div> : null}
 			</section>
 
@@ -66,5 +72,5 @@ export const ShopScreen = ({
 				/>
 			</section>
 		</div>
-	</article>
+	</Screen>
 );

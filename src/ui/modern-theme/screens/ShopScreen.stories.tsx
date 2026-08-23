@@ -2,7 +2,10 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { storagePlanFor } from "~/modules/run/run/domain/rules.model";
+
 import { Action } from "../Action.ui";
+import { planLadderAt } from "../Plan.stories";
 import { Control } from "../Control.ui";
 import { Delta } from "../Delta.ui";
 import { Glyph } from "../Glyph.ui";
@@ -103,8 +106,12 @@ const slotRows = (open: readonly number[], nextGate: number): FoldItem[] => [
 	{ id: "slot-next", content: <Slot gate={nextGate} /> },
 ];
 
+const GATES_CLEARED = 4;
+const USED_KB = 216;
+
 const Shelf = (overrides: Partial<ShopScreenProps>) => {
 	const [held, setHeld] = useState<string | null>("Freemium");
+	const [tier, setTier] = useState(1);
 
 	const offers: FoldItem[] = OFFERS.map((offer) => ({
 		id: offer.id,
@@ -203,6 +210,12 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 			}}
 			offers={offers}
 			offerCount="5 offers"
+			storagePlans={{
+				plans: planLadderAt(GATES_CLEARED, tier, USED_KB, (id) =>
+					setTier(Number(id.replace("tier-", "")))
+				),
+				nextBillKb: storagePlanFor(tier).billKb,
+			}}
 			draftAction={
 				<Action
 					label="rebuild"

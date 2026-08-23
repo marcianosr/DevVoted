@@ -2,10 +2,11 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+
 import type { LedgerEntry } from "../Ledger.ui";
 import { Mark, type MarkVariant } from "../Mark.ui";
 import { Swatch } from "../Swatch.ui";
-import type { SwatchTrackItem } from "../SwatchTrack.ui";
 import type { CrumbVerdict } from "../Trail.ui";
 import { RewardScreen, type RewardScreenProps } from "./RewardScreen.ui";
 
@@ -19,29 +20,6 @@ export default meta;
 type Story = StoryObj<typeof RewardScreen>;
 
 const noop = () => {};
-
-const LADDER = [
-	"pallet",
-	"boulder",
-	"cascade",
-	"thunder",
-	"lavender",
-	"rainbow",
-	"soul",
-	"marsh",
-	"seafoam",
-	"volcano",
-	"earth",
-	"elite",
-	"champion",
-] as const;
-
-const collected = (cleared: number): SwatchTrackItem[] =>
-	LADDER.map((theme, gate) =>
-		gate < cleared
-			? { gate, state: "earned", theme }
-			: { gate, state: "locked" }
-	);
 
 const ANSWERED = {
 	pass: "Every poll in this category was correct",
@@ -155,7 +133,7 @@ export const FirstClear: Story = {
 			clearedGate={0}
 			spendableKb={102}
 			requiredCoverage={3}
-			track={collected(1)}
+			track={{ gates: ALL_SWATCHES, cleared: 1 }}
 			coverage={COVERAGE}
 			storage={STORAGE}
 			outcomes={OUTCOMES}
@@ -170,17 +148,17 @@ export const ShortOfDemand: Story = {
 	render: () => (
 		<Clear
 			outcome="cleared"
-			gateName="Saffron"
+			gateName="Lavender"
 			clearedGate={4}
 			spendableKb={34}
 			requiredCoverage={12}
-			track={collected(5)}
+			track={{ gates: ALL_SWATCHES, cleared: 5 }}
 			coverage={COVERAGE}
 			storage={STORAGE}
 			outcomes={["correct", "wrong", "partial", "wrong", "correct"]}
 			onReviewAnswers={noop}
 			onContinue={noop}
-			theme="saffron"
+			theme="lavender"
 		/>
 	),
 };
@@ -241,11 +219,6 @@ const HELD_STORAGE: readonly LedgerEntry[] = [
 	},
 ];
 
-const HELD_TRACK: SwatchTrackItem[] = LADDER.map((theme, gate) => {
-	if (gate < 4) return { gate, state: "earned", theme };
-	return gate === 4 ? { gate, state: "pending" } : { gate, state: "locked" };
-});
-
 export const NotEarned: Story = {
 	render: () => (
 		<Clear
@@ -253,7 +226,7 @@ export const NotEarned: Story = {
 			gateName="Elite"
 			removeCount={2}
 			requiredCoverage={12}
-			track={HELD_TRACK}
+			track={{ gates: ALL_SWATCHES, cleared: 11, atCleared: "pending" }}
 			coverage={HELD_COVERAGE}
 			storage={HELD_STORAGE}
 			outcomes={["correct", "wrong", "correct", "wrong", "wrong"]}

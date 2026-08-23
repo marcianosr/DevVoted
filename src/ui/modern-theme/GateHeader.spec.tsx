@@ -66,11 +66,14 @@ describe("GateHeader", () => {
 		render(
 			<GateHeader
 				title="Gate 4 · Lavender"
-				track={[
-					{ gate: 0, state: "earned", theme: "pallet" },
-					{ gate: 1, state: "current", theme: "lavender" },
-					{ gate: 2, state: "locked" },
-				]}
+				track={{
+					gates: [
+						{ gate: 0, theme: "pallet" },
+						{ gate: 1, theme: "lavender" },
+						{ gate: 2, theme: "cascade" },
+					],
+					cleared: 1,
+				}}
 			/>
 		);
 

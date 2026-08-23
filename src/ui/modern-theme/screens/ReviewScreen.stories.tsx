@@ -103,7 +103,7 @@ const polls: readonly ReviewPoll[] = [
 const base = {
 	gateName: "Lavender",
 	gate: 4,
-	theme: "lavender",
+	theme: "lavender" as const,
 	polls,
 };
 

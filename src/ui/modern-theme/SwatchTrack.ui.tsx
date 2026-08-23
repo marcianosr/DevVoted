@@ -1,6 +1,11 @@
 import { clsx } from "clsx";
 
-import { Swatch } from "./Swatch.ui";
+import type {
+	SwatchFinish,
+	SwatchTheme,
+} from "~/modules/run/gate/domain/swatch.model";
+
+import { Swatch, type SwatchState } from "./Swatch.ui";
 import { Text } from "./Text.ui";
 
 export type SwatchTrackLayout = "inline" | "stacked";
@@ -16,48 +21,78 @@ const LAYOUT = {
 
 const CELLS = "flex flex-wrap items-center justify-center gap-1.5";
 
-export type SwatchTrackItem = { gate: number } & (
-	| { state: "earned" | "current"; theme: string }
-	| { state: "locked" | "pending"; theme?: never }
-);
+export type SwatchTrackGate = {
+	gate: number;
+	theme: SwatchTheme;
+	finish?: SwatchFinish;
+};
+
+export type SwatchTrackAtCleared = Extract<
+	SwatchState,
+	"current" | "pending" | "locked"
+>;
 
 export type SwatchTrackProps = {
-	items: readonly SwatchTrackItem[];
+	gates: readonly SwatchTrackGate[];
+	cleared: number;
+	atCleared?: SwatchTrackAtCleared;
 	layout?: SwatchTrackLayout;
 	counting?: SwatchTrackCounting;
 };
 
-const earnedCount = (items: readonly SwatchTrackItem[]) =>
-	items.filter(({ state }) => state === "earned").length;
+const stateFor = (
+	gate: number,
+	cleared: number,
+	atCleared: SwatchTrackAtCleared
+): SwatchState => {
+	if (gate < cleared) return "earned";
+	return gate === cleared ? atCleared : "locked";
+};
+
+const showsTheme = (state: SwatchState) =>
+	state === "earned" || state === "current";
 
 const describe = (
-	items: readonly SwatchTrackItem[],
+	gates: readonly SwatchTrackGate[],
+	cleared: number,
+	atCleared: SwatchTrackAtCleared,
 	counting: SwatchTrackCounting
 ) => {
-	if (counting === "swatches")
-		return `${earnedCount(items)} of ${items.length} collected`;
+	if (counting === "swatches") return `${cleared} of ${gates.length} collected`;
 
-	const current = items.find(({ state }) => state === "current");
-	// Gates count from 0, so this reads against the last gate's number, not the
-	// number of squares drawn.
-	if (current) return `gate ${current.gate} / ${items[items.length - 1].gate}`;
+	const current = gates[cleared];
+	if (atCleared === "current" && current)
+		return `gate ${current.gate} / ${gates[gates.length - 1].gate}`;
 
-	return `${earnedCount(items)} / ${items.length} gates cleared`;
+	return `${cleared} / ${gates.length} gates cleared`;
 };
 
 export const SwatchTrack = ({
-	items,
+	gates,
+	cleared,
+	atCleared = "current",
 	layout = "inline",
 	counting = "gates",
 }: SwatchTrackProps) => (
 	<div className={clsx(TRACK, LAYOUT[layout])}>
 		<span className={CELLS} aria-hidden="true">
-			{items.map(({ gate, state, theme }) => (
-				<Swatch key={gate} size="pip" state={state} theme={theme} />
-			))}
+			{gates.map(({ gate, theme, finish }) => {
+				const state = stateFor(gate, cleared, atCleared);
+				const shown = showsTheme(state);
+
+				return (
+					<Swatch
+						key={gate}
+						size="pip"
+						state={state}
+						theme={shown ? theme : undefined}
+						finish={shown ? finish : undefined}
+					/>
+				);
+			})}
 		</span>
 		<Text size="meta" tone="muted">
-			{describe(items, counting)}
+			{describe(gates, cleared, atCleared, counting)}
 		</Text>
 	</div>
 );

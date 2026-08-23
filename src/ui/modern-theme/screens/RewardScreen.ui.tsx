@@ -1,3 +1,6 @@
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { Chip } from "../Chip.ui";
 import {
@@ -7,11 +10,9 @@ import {
 	ledgerTotalLabel,
 } from "../Ledger.ui";
 import { Swatch } from "../Swatch.ui";
-import { SwatchTrack, type SwatchTrackItem } from "../SwatchTrack.ui";
+import { SwatchTrack, type SwatchTrackProps } from "../SwatchTrack.ui";
 import { Text } from "../Text.ui";
 import type { CrumbVerdict } from "../Trail.ui";
-
-const SCREEN = "flex flex-col bg-theme-faint";
 
 const HERO = "flex flex-col items-center gap-5 px-5 py-10 text-center";
 const NAMING = "flex flex-col items-center gap-1";
@@ -19,6 +20,10 @@ const FIGURES = "flex flex-wrap items-center justify-center gap-3 pt-2";
 
 const REPORT = "border-t border-edge";
 const CONTAINER = "max-w-4xl mx-auto flex flex-col";
+
+// One control for both columns, so the two can never disagree about whether
+// attribution is showing. Not a <details>: it governs two sibling subtrees.
+const DETAIL = "flex justify-end px-5 pt-4";
 
 const LEDGERS =
 	"flex flex-col divide-y divide-edge lg:flex-row lg:items-stretch lg:divide-x lg:divide-y-0";
@@ -38,14 +43,14 @@ type Verdict =
 export type RewardScreenProps = {
 	gateName: string;
 	requiredCoverage: number;
-	track: readonly SwatchTrackItem[];
+	track: SwatchTrackProps;
 	coverage: readonly LedgerEntry[];
 	storage: readonly LedgerEntry[];
 	outcomes: readonly CrumbVerdict[];
 	detailShown: boolean;
 	onToggleDetail: () => void;
 	onReviewAnswers?: () => void;
-	theme?: string;
+	theme?: SwatchTheme;
 } & Verdict;
 
 export const RewardScreen = (props: RewardScreenProps) => {
@@ -57,6 +62,7 @@ export const RewardScreen = (props: RewardScreenProps) => {
 		storage,
 		outcomes,
 		detailShown,
+		onToggleDetail,
 		onReviewAnswers,
 		theme,
 	} = props;
@@ -67,7 +73,7 @@ export const RewardScreen = (props: RewardScreenProps) => {
 	const cleared = props.outcome === "cleared";
 
 	return (
-		<article data-gate-theme={theme} className={SCREEN}>
+		<Screen theme={theme}>
 			<div className={HERO}>
 				<Swatch size="award" state={cleared ? "earned" : "pending"} />
 
@@ -86,7 +92,7 @@ export const RewardScreen = (props: RewardScreenProps) => {
 					)}
 				</div>
 
-				<SwatchTrack items={track} layout="stacked" counting="swatches" />
+				<SwatchTrack {...track} layout="stacked" counting="swatches" />
 
 				<div className={FIGURES}>
 					<Chip tone={met ? "raised" : "cinnabar"} size="lg">
@@ -109,6 +115,13 @@ export const RewardScreen = (props: RewardScreenProps) => {
 
 			<div className={REPORT}>
 				<div className={CONTAINER}>
+					<div className={DETAIL}>
+						<Action
+							label={detailShown ? "Collapse details" : "Expand details"}
+							expanded={detailShown}
+							onUse={onToggleDetail}
+						/>
+					</div>
 					<div className={LEDGERS}>
 						<Ledger
 							title="Coverage"
@@ -176,6 +189,6 @@ export const RewardScreen = (props: RewardScreenProps) => {
 					</div>
 				</div>
 			</div>
-		</article>
+		</Screen>
 	);
 };

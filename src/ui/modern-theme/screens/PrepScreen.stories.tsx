@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+
 import { Chip } from "../Chip.ui";
 import { Delta } from "../Delta.ui";
-import type { SwatchTrackItem } from "../SwatchTrack.ui";
 import { PrepScreen, type PrepScreenProps } from "./PrepScreen.ui";
 
 const meta: Meta<typeof PrepScreen> = {
@@ -12,29 +13,6 @@ const meta: Meta<typeof PrepScreen> = {
 export default meta;
 
 type Story = StoryObj<typeof PrepScreen>;
-
-const LADDER = [
-	"pallet",
-	"boulder",
-	"cascade",
-	"thunder",
-	"lavender",
-	"rainbow",
-	"soul",
-	"marsh",
-	"seafoam",
-	"volcano",
-	"earth",
-	"elite",
-	"champion",
-] as const;
-
-const ladderAt = (current: number): SwatchTrackItem[] =>
-	LADDER.map((theme, gate) => {
-		if (gate < current) return { gate, state: "earned", theme };
-		if (gate === current) return { gate, state: "current", theme };
-		return { gate, state: "locked" };
-	});
 
 const configs = [
 	{
@@ -67,7 +45,7 @@ const base: PrepScreenProps = {
 		title: "Gate 4 · Lavender",
 		audits: ["dependency-outage"],
 		storage: { plan: "Standard plan", used: 184, cap: 640 },
-		track: ladderAt(4),
+		track: { gates: ALL_SWATCHES, cleared: 4 },
 	},
 	pollCount: 5,
 	coverageDemand: 60,
@@ -150,7 +128,7 @@ export const Lean: Story = {
 			gate={{
 				title: "Gate 1 · Boulder",
 				storage: { plan: "Free tier", used: 48, cap: 512 },
-				track: ladderAt(1),
+				track: { gates: ALL_SWATCHES, cleared: 1 },
 			}}
 			theme="boulder"
 			coverageDemand={20}
@@ -180,7 +158,7 @@ export const Elite: Story = {
 				title: "Gate 11 · Elite",
 				audits: ["cost-overrun", "breaking-change"],
 				storage: { plan: "Pro plan", used: 612, cap: 768 },
-				track: ladderAt(11),
+				track: { gates: ALL_SWATCHES, cleared: 11 },
 			}}
 			coverageDemand={85}
 			removeOnMiss={3}

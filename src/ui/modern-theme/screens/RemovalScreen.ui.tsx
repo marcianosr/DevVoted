@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { plural } from "../format";
 import { Pick } from "../Pick.ui";
 import { Text } from "../Text.ui";
 import { Tooltip } from "../Tooltip.ui";
-
-const SCREEN = "flex flex-col bg-theme-faint";
 
 const HEADER =
 	"flex flex-wrap items-start justify-between gap-4 border-b border-edge px-5 py-4";
@@ -32,7 +33,7 @@ export type RemovalScreenProps = {
 	selectedIds: readonly string[];
 	onToggle: (id: string) => void;
 	onRemove: () => void;
-	theme?: string;
+	theme?: SwatchTheme;
 };
 
 const instruct = (shortfall: number) => {
@@ -56,7 +57,7 @@ export const RemovalScreen = ({
 	const ready = shortfall === 0;
 
 	return (
-		<article data-gate-theme={theme} className={SCREEN}>
+		<Screen theme={theme}>
 			<header className={HEADER}>
 				<div className={NAMING}>
 					<Text as="h2" size="title">
@@ -101,6 +102,6 @@ export const RemovalScreen = ({
 					/>
 				</Tooltip>
 			</div>
-		</article>
+		</Screen>
 	);
 };

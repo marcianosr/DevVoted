@@ -3,15 +3,20 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { LedgerEntry } from "../Ledger.ui";
-import type { SwatchTrackItem } from "../SwatchTrack.ui";
 import type { CrumbVerdict } from "../Trail.ui";
 import { RewardScreen, type RewardScreenProps } from "./RewardScreen.ui";
 
-const track: SwatchTrackItem[] = Array.from({ length: 13 }, (_, gate) =>
-	gate === 0
-		? { gate, state: "earned", theme: "pallet" }
-		: { gate, state: "locked" }
-);
+// A stand-in ladder: the screen only forwards it, so the real roster would add
+// coupling without adding coverage. SwatchTrack's own spec owns the mapping.
+const track = {
+	gates: [
+		{ gate: 0, theme: "pallet" },
+		{ gate: 1, theme: "cascade" },
+		{ gate: 2, theme: "lavender" },
+	],
+	cleared: 1,
+	atCleared: "locked",
+} as const;
 
 const coverage: readonly LedgerEntry[] = [
 	{ id: "javascript", name: "javascript", value: 2.3 },
@@ -43,7 +48,7 @@ const shared = {
 	outcomes,
 	detailShown: false,
 	onToggleDetail: () => {},
-	theme: "pallet",
+	theme: "pallet" as const,
 };
 
 const props: RewardScreenProps = {
@@ -74,7 +79,7 @@ describe("RewardScreen", () => {
 	it("counts the collection rather than pointing at a rung", () => {
 		render(<RewardScreen {...props} />);
 
-		expect(screen.getByText("1 of 13 collected")).toBeInTheDocument();
+		expect(screen.getByText("1 of 3 collected")).toBeInTheDocument();
 	});
 
 	it("reads its headline figures off the ledgers below them", () => {
@@ -203,7 +208,8 @@ describe("RewardScreen", () => {
 			.getAllByRole("button")
 			.map((button) => button.textContent);
 
-		expect(labels).toEqual(["Review answers", "Enter shop →"]);
+		// The last two: the detail toggle sits above the report, not in the footer.
+		expect(labels.slice(-2)).toEqual(["Review answers", "Enter shop →"]);
 	});
 
 	it("holds the swatch back and says so when the gate was not cleared", () => {

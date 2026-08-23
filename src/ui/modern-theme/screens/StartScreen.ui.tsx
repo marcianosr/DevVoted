@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { Chip } from "../Chip.ui";
 import { Delta } from "../Delta.ui";
@@ -16,8 +19,6 @@ import { Text } from "../Text.ui";
 import type { ModernTone } from "../tones";
 import { Tooltip } from "../Tooltip.ui";
 import { plural } from "../format";
-
-const SCREEN = "flex flex-col bg-theme-faint";
 
 const HEADER =
 	"flex flex-wrap items-center justify-between gap-4 border-b border-edge px-5 py-4";
@@ -98,7 +99,7 @@ export type StartScreenProps = {
 	removeOnMiss: number;
 	reward: StartReward;
 	onStart?: () => void;
-	theme?: string;
+	theme?: SwatchTheme;
 };
 
 const Combo = ({
@@ -234,7 +235,7 @@ export const StartScreen = ({
 	) : null;
 
 	return (
-		<article data-gate-theme={theme} className={SCREEN}>
+		<Screen theme={theme}>
 			<header className={HEADER}>
 				<div className={NAMING}>
 					<Swatch size="badge" />
@@ -392,6 +393,6 @@ export const StartScreen = ({
 					<div className={FOOT}>{startButton}</div>
 				</section>
 			</div>
-		</article>
+		</Screen>
 	);
 };

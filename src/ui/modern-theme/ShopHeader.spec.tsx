@@ -40,4 +40,16 @@ describe("ShopHeader", () => {
 
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 	});
+
+	it("wears the gate's swatch beside its name, the way a gate header does", () => {
+		const { container } = render(
+			<ShopHeader
+				title="Lavender shop"
+				nextGate="gate 4"
+				storage={{ plan: "Free tier", used: 216, cap: 512 }}
+			/>
+		);
+
+		expect(container.querySelector(".bg-theme")).toBeInTheDocument();
+	});
 });

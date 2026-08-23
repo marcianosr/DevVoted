@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { PrepScreen, type PrepScreenProps } from "./PrepScreen.ui";
@@ -60,7 +60,9 @@ describe("PrepScreen", () => {
 		expect(
 			screen.getByRole("heading", { name: "Gate 4 · Lavender" })
 		).toBeInTheDocument();
-		expect(screen.getByText("1 audit · Dependency Outage")).toBeInTheDocument();
+		// The header composes its audit line from ids, so the count is its own
+		// node. GateHeader's spec owns the names that follow it.
+		expect(screen.getByText("1 audit")).toBeInTheDocument();
 	});
 
 	it("counts the build against the width the gate grants", () => {
@@ -185,7 +187,14 @@ describe("PrepScreen", () => {
 			/>
 		);
 
-		expect(screen.getByText("Dependency Outage")).toHaveClass("line-through");
+		// Scoped to the fold: the gate header names the same audit, so an
+		// unscoped query matches twice.
+		const fold = screen.getByText("Audit").closest("details");
+		if (!fold) throw new Error("No Audit fold rendered");
+
+		expect(within(fold).getByText("Dependency Outage")).toHaveClass(
+			"line-through"
+		);
 		expect(screen.getByText("reported passing")).toBeInTheDocument();
 	});
 

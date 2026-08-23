@@ -87,4 +87,28 @@ describe("ShopScreen", () => {
 
 		expect(screen.getByText("next rebuild 8 KB")).toBeInTheDocument();
 	});
+
+	it("carries the storage ladder in the draft column", () => {
+		render(
+			<ShopScreen
+				{...props}
+				storagePlans={{
+					plans: [
+						{ id: "tier-5", locked: true, opensAt: "opens when gate 6 clears" },
+					],
+					nextBillKb: 16,
+				}}
+			/>
+		);
+
+		expect(screen.getByText("Storage plan")).toBeInTheDocument();
+		expect(screen.getByText("next gate bills")).toBeInTheDocument();
+	});
+
+	it("leaves the ladder out entirely when no plans are given", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(screen.queryByText("Storage plan")).not.toBeInTheDocument();
+		expect(screen.queryByText("next gate bills")).not.toBeInTheDocument();
+	});
 });

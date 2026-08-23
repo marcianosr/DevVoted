@@ -4,7 +4,7 @@ import { AUDIT, type AuditId } from "./audits";
 import { Glyph } from "./Glyph.ui";
 import { Storage, type StorageProps } from "./Storage.ui";
 import { Swatch } from "./Swatch.ui";
-import { SwatchTrack, type SwatchTrackItem } from "./SwatchTrack.ui";
+import { SwatchTrack, type SwatchTrackProps } from "./SwatchTrack.ui";
 import { Text } from "./Text.ui";
 import { plural } from "./format";
 
@@ -25,7 +25,7 @@ export type GateHeaderProps = {
 	 * written beside it, where the two could disagree. */
 	audits?: readonly AuditId[];
 	storage?: StorageProps;
-	track?: readonly SwatchTrackItem[];
+	track?: SwatchTrackProps;
 };
 
 const Audits = ({ audits }: { audits: readonly AuditId[] }) => (
@@ -68,6 +68,6 @@ export const GateHeader = ({
 			</div>
 			{storage ? <Storage {...storage} /> : null}
 		</div>
-		{track ? <SwatchTrack items={track} /> : null}
+		{track ? <SwatchTrack {...track} /> : null}
 	</header>
 );

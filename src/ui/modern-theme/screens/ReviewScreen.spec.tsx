@@ -28,7 +28,12 @@ const polls: readonly ReviewPoll[] = [
 	},
 ];
 
-const props = { gateName: "Lavender", gate: 4, polls, theme: "lavender" };
+const props = {
+	gateName: "Lavender",
+	gate: 4,
+	polls,
+	theme: "lavender" as const,
+};
 
 describe("ReviewScreen", () => {
 	it("names the gate whose polls are under review", () => {

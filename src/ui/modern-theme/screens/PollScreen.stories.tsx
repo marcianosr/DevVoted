@@ -2,6 +2,11 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+import {
+	ALL_SWATCHES,
+	GATE_SWATCHES,
+} from "~/modules/run/gate/domain/swatch.model";
+
 import { Token } from "../Code.ui";
 import { Coverage } from "../Coverage.ui";
 import { Delta } from "../Delta.ui";
@@ -9,7 +14,7 @@ import { Entry } from "../Entry.ui";
 import { Family, type ConfigFamily } from "../Family.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
 import type { MarkVerdict } from "../Mark.ui";
-import type { SwatchTrackItem } from "../SwatchTrack.ui";
+
 import { Text } from "../Text.ui";
 import type { ModernTone } from "../tones";
 import {
@@ -227,36 +232,13 @@ const answers = [
 	{ id: "at", label: "arr.at(-2)", blocked: false },
 ];
 
-const LADDER = [
-	"pallet",
-	"boulder",
-	"cascade",
-	"thunder",
-	"lavender",
-	"rainbow",
-	"soul",
-	"marsh",
-	"seafoam",
-	"volcano",
-	"earth",
-	"elite",
-	"champion",
-] as const;
-
-const ladderAt = (current: number): SwatchTrackItem[] =>
-	LADDER.map((theme, gate) => {
-		if (gate < current) return { gate, state: "earned", theme };
-		if (gate === current) return { gate, state: "current", theme };
-		return { gate, state: "locked" };
-	});
-
 const base: Omit<PollScreenProps, "options"> = {
 	theme: "lavender",
 	gate: {
 		title: "Gate 4 · Lavender",
 		audits: ["dependency-outage"],
 		storage: { plan: "Free tier", used: 184, cap: 512 },
-		track: ladderAt(4),
+		track: { gates: ALL_SWATCHES, cleared: 4 },
 	},
 	trail: [
 		{ id: "1", label: "1", state: "done", verdict: "correct" },
@@ -290,35 +272,41 @@ const InteractivePoll = (overrides: Partial<PollScreenProps>) => {
 	return <PollScreen {...base} options={options} {...overrides} />;
 };
 
-const gateStory = (gate: number, name: string, theme: string): Story => ({
-	name,
-	render: () => (
-		<InteractivePoll
-			theme={theme}
-			gate={{
-				title: `Gate ${gate} · ${name}`,
-				audits: ["dependency-outage"],
-				storage: { plan: "Free tier", used: 184, cap: 512 },
-				track: ladderAt(gate),
-			}}
-		/>
-	),
-});
+// The gate's name and colour come off the roster, so a story cannot title
+// itself one gate and wear another's theme.
+const gateStory = (gate: number): Story => {
+	const { gateName, theme } = GATE_SWATCHES[gate];
 
-export const Lavender = gateStory(4, "Lavender", "lavender");
+	return {
+		name: gateName,
+		render: () => (
+			<InteractivePoll
+				theme={theme}
+				gate={{
+					title: `Gate ${gate} · ${gateName}`,
+					audits: ["dependency-outage"],
+					storage: { plan: "Free tier", used: 184, cap: 512 },
+					track: { gates: ALL_SWATCHES, cleared: gate },
+				}}
+			/>
+		),
+	};
+};
 
-export const Pallet = gateStory(0, "Pallet", "pallet");
-export const Boulder = gateStory(1, "Boulder", "boulder");
-export const Cascade = gateStory(2, "Cascade", "cascade");
-export const Thunder = gateStory(3, "Thunder", "thunder");
-export const Rainbow = gateStory(5, "Rainbow", "rainbow");
-export const Soul = gateStory(6, "Soul", "soul");
-export const Marsh = gateStory(7, "Marsh", "marsh");
-export const Seafoam = gateStory(8, "Seafoam", "seafoam");
-export const Volcano = gateStory(9, "Volcano", "volcano");
-export const Earth = gateStory(10, "Earth", "earth");
-export const Elite = gateStory(11, "Elite", "elite");
-export const Champion = gateStory(12, "Champion", "champion");
+export const Lavender = gateStory(4);
+
+export const Pallet = gateStory(0);
+export const Boulder = gateStory(1);
+export const Cascade = gateStory(2);
+export const Thunder = gateStory(3);
+export const Rainbow = gateStory(5);
+export const Soul = gateStory(6);
+export const Marsh = gateStory(7);
+export const Seafoam = gateStory(8);
+export const Volcano = gateStory(9);
+export const Earth = gateStory(10);
+export const Elite = gateStory(11);
+export const Champion = gateStory(12);
 
 export const WithoutCode: Story = {
 	render: () => (

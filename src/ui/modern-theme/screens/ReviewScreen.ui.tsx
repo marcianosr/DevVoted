@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { GateHeader } from "../GateHeader.ui";
 import { Text } from "../Text.ui";
 import { Verdict, type VerdictProps } from "../Verdict.ui";
-
-const SCREEN = "flex flex-col bg-theme-faint";
 
 const LIST = "flex flex-col divide-y divide-edge";
 
@@ -20,7 +21,7 @@ export type ReviewScreenProps = {
 	polls: readonly ReviewPoll[];
 	back?: { label: string; onUse: () => void };
 	note?: ReactNode;
-	theme?: string;
+	theme?: SwatchTheme;
 };
 
 export const ReviewScreen = ({
@@ -31,7 +32,7 @@ export const ReviewScreen = ({
 	note,
 	theme,
 }: ReviewScreenProps) => (
-	<article data-gate-theme={theme} className={SCREEN}>
+	<Screen theme={theme}>
 		<GateHeader title={`Review · ${gateName} gate ${gate}`} />
 
 		<ul className={LIST}>
@@ -50,5 +51,5 @@ export const ReviewScreen = ({
 				</Text>
 			) : null}
 		</div>
-	</article>
+	</Screen>
 );

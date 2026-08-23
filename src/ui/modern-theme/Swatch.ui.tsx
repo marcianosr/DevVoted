@@ -1,12 +1,12 @@
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
+import type { SwatchFinish } from "~/modules/run/gate/domain/swatch.model";
+
 export type SwatchSize = "pip" | "badge" | "award";
 export type SwatchState = "earned" | "current" | "locked" | "pending";
 
-/** The domain's own word for it (swatch.model.ts): Champion is a "fill", the one
- * swatch app.css gives no --theme-color because it wears the Kanto gradient. */
-export type SwatchFinish = "flat" | "fill";
+export type { SwatchFinish };
 
 const SWATCH = "inline-block shrink-0";
 
@@ -23,10 +23,9 @@ const STATE = {
 	pending: "border-2 border-dashed border-zinc-600",
 } satisfies Record<SwatchState, string>;
 
-// bg-legendary is a background-image, so it paints over the state's background
-// colour without either having to know about the other.
 const FINISH = {
 	flat: "",
+	plate: "ring-1 ring-pewter",
 	fill: "bg-legendary",
 } satisfies Record<SwatchFinish, string>;
 

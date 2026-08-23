@@ -1,5 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { GATE_AUDITS } from "~/modules/run/gate/domain/audit.model";
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+import {
+	coverageDemandFor,
+	failStripsFor,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
+
 import { GatesPanel, type DexGate, type DexGateState } from "./GatesPanel.ui";
 
 const meta: Meta<typeof GatesPanel> = {
@@ -14,137 +22,54 @@ export default meta;
 
 type Story = StoryObj<typeof GatesPanel>;
 
-/** Transcribed from the game, not invented: coverage is COVERAGE_DEMANDS, peels is
- * GATE_FAIL_STRIPS plus the Strip audits at 11 and 12, audits is GATE_AUDITS, and
- * the unlocks are wiki §2.8 plus PIN_FROM_GATE (which that table omits). */
-type GateFacts = Omit<DexGate, "state">;
-
-const LADDER: readonly GateFacts[] = [
-	{
-		number: 0,
-		name: "Pallet",
-		theme: "pallet",
-		coverage: 3,
-		peels: 1,
-		audits: [],
-		unlocks: ["shop", "rebuild", "640 KB plan"],
-	},
-	{
-		number: 1,
-		name: "Boulder",
-		theme: "boulder",
-		coverage: 10,
-		peels: 1,
-		audits: [],
-		unlocks: ["slot 4"],
-	},
-	{
-		number: 2,
-		name: "Cascade",
-		theme: "cascade",
-		coverage: 25,
-		peels: 1,
-		audits: [],
-		unlocks: ["lock", "slot 5", "768 KB plan"],
-	},
-	{
-		number: 3,
-		name: "Thunder",
-		theme: "thunder",
-		coverage: 40,
-		peels: 2,
-		audits: ["Cost Overrun"],
-		unlocks: ["extend", "slot 6"],
-	},
-	{
-		number: 4,
-		name: "Lavender",
-		theme: "lavender",
-		coverage: 60,
-		peels: 2,
+/** Only the columns the domain does not own. The audits are display labels for
+ * now: GATE_AUDITS emits timeout-3/4/5 and strip-1/2 because the numbers differ
+ * per gate, where audits.ts collapses each to the one entry a player sees. The
+ * unlocks are wiki §2.8 plus PIN_FROM_GATE, which that table omits. */
+const EXTRAS: Readonly<Record<number, Pick<DexGate, "audits" | "unlocks">>> = {
+	0: { audits: [], unlocks: ["shop", "rebuild", "640 KB plan"] },
+	1: { audits: [], unlocks: ["slot 4"] },
+	2: { audits: [], unlocks: ["lock", "slot 5", "768 KB plan"] },
+	3: { audits: ["Cost Overrun"], unlocks: ["extend", "slot 6"] },
+	4: {
 		audits: ["Dependency Outage"],
 		unlocks: ["git tag", "slot 7", "1 MB plan"],
 	},
-	{
-		number: 5,
-		name: "Rainbow",
-		theme: "rainbow",
-		coverage: 85,
-		peels: 2,
-		audits: ["Read-only"],
-		unlocks: ["slot 8"],
-	},
-	{
-		number: 6,
-		name: "Soul",
-		theme: "soul",
-		coverage: 110,
-		peels: 2,
-		audits: ["Feature Freeze"],
-		unlocks: ["slot 9", "1.5 MB plan"],
-	},
-	{
-		number: 7,
-		name: "Marsh",
-		theme: "marsh",
-		coverage: 140,
-		peels: 3,
-		audits: ["Mirror"],
-		unlocks: ["slot 10"],
-	},
-	{
-		number: 8,
-		name: "Seafoam",
-		theme: "seafoam",
-		coverage: 175,
-		peels: 3,
-		audits: ["Timeout", "Flaky Build"],
-		unlocks: ["slot 11", "2 MB plan"],
-	},
-	{
-		number: 9,
-		name: "Volcano",
-		theme: "volcano",
-		coverage: 210,
-		peels: 3,
-		audits: ["Memory Leak", "Rolling Outage"],
-		unlocks: ["slot 12"],
-	},
-	{
-		number: 10,
-		name: "Earth",
-		theme: "earth",
-		coverage: 250,
-		peels: 3,
+	5: { audits: ["Read-only"], unlocks: ["slot 8"] },
+	6: { audits: ["Feature Freeze"], unlocks: ["slot 9", "1.5 MB plan"] },
+	7: { audits: ["Mirror"], unlocks: ["slot 10"] },
+	8: { audits: ["Timeout", "Flaky Build"], unlocks: ["slot 11", "2 MB plan"] },
+	9: { audits: ["Memory Leak", "Rolling Outage"], unlocks: ["slot 12"] },
+	10: {
 		audits: ["Breaking Change", "Timeout"],
 		unlocks: ["slot 13", "3 MB plan"],
 	},
-	{
-		number: 11,
-		name: "Elite",
-		theme: "elite",
-		coverage: 290,
-		peels: 5,
-		peelsAudited: true,
-		audits: ["Strip", "Mirror", "Flaky Build"],
-		unlocks: ["slot 14"],
-	},
-	{
-		number: 12,
-		name: "Champion",
-		theme: "champion",
-		finish: "fill",
-		coverage: 340,
-		peels: 6,
-		peelsAudited: true,
-		audits: ["Memory Leak", "Strip", "Timeout"],
-		unlocks: [],
-		wins: true,
-	},
-];
+	11: { audits: ["Strip", "Mirror", "Flaky Build"], unlocks: ["slot 14"] },
+	12: { audits: ["Memory Leak", "Strip", "Timeout"], unlocks: [] },
+};
 
-/** One cleared count drives all thirteen states, so no story can draw a ladder
- * with a gap in it. */
+/** A Strip audit adds to the gate's own quota rather than replacing it
+ * (audit.model.ts), which is why the last two rows read higher than the table. */
+const peelsFor = (gate: number) =>
+	(GATE_AUDITS[gate] ?? []).reduce(
+		(strips, audit) => strips + (audit.stripQuotaOnFail ?? 0),
+		failStripsFor(gate)
+	);
+
+type GateFacts = Omit<DexGate, "state">;
+
+const LADDER: readonly GateFacts[] = ALL_SWATCHES.map((swatch) => ({
+	number: swatch.gate,
+	name: swatch.gateName,
+	theme: swatch.theme,
+	finish: swatch.finish,
+	coverage: coverageDemandFor(swatch.gate),
+	peels: peelsFor(swatch.gate),
+	peelsAudited: peelsFor(swatch.gate) > failStripsFor(swatch.gate),
+	wins: swatch.gate === VICTORY_GATE,
+	...EXTRAS[swatch.gate],
+}));
+
 export const gatesClearedTo = (cleared: number): readonly DexGate[] =>
 	LADDER.map((gate) => {
 		const state: DexGateState = (() => {

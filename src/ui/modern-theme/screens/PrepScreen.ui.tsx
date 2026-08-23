@@ -1,5 +1,8 @@
 import { Fragment, type ReactNode } from "react";
 
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { AUDIT, type AuditId } from "../audits";
 import { Chip } from "../Chip.ui";
@@ -14,8 +17,6 @@ import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
 import { Tooltip } from "../Tooltip.ui";
 import { plural, signed } from "../format";
-
-const SCREEN = "flex flex-col bg-theme-faint";
 
 // Copied from ShopScreen: prep and the shop are one place the player walks
 // between, so the two bodies should not sit differently on the page.
@@ -93,7 +94,7 @@ export type PrepScreenProps = {
 	onBackToShop?: () => void;
 	onCommunity?: () => void;
 	onStart?: () => void;
-	theme?: string;
+	theme?: SwatchTheme;
 };
 
 const multipliersOn = (reward: PrepReward) => {
@@ -315,7 +316,7 @@ export const PrepScreen = ({
 	) : null;
 
 	return (
-		<article data-gate-theme={theme} className={SCREEN}>
+		<Screen theme={theme}>
 			<GateHeader {...gate} />
 
 			<div className={BODY}>
@@ -451,6 +452,6 @@ export const PrepScreen = ({
 					)}
 				</div>
 			</div>
-		</article>
+		</Screen>
 	);
 };

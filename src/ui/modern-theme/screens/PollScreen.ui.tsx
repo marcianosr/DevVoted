@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+import { Screen } from "../Screen.ui";
 import { Choice, type ChoiceProps } from "../Choice.ui";
 import { Byline, type BylineProps } from "../Byline.ui";
 import { Code } from "../Code.ui";
@@ -7,8 +10,6 @@ import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
 import { optionLetter } from "../format";
 import { Question, type QuestionCategory } from "../Question.ui";
 import { Trail, type TrailItem } from "../Trail.ui";
-
-const SCREEN = "flex flex-col bg-theme-faint";
 
 const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const MAIN = "flex min-w-0 flex-1 flex-col gap-6 px-5 py-6 lg:px-8";
@@ -33,7 +34,7 @@ export type PollScreenProps = {
 	code?: readonly ReactNode[];
 	options: readonly PollOption[];
 	rail?: ReactNode;
-	theme?: string;
+	theme?: SwatchTheme;
 };
 
 export const PollScreen = ({
@@ -49,7 +50,7 @@ export const PollScreen = ({
 	rail,
 	theme,
 }: PollScreenProps) => (
-	<article data-gate-theme={theme} className={SCREEN}>
+	<Screen theme={theme}>
 		<GateHeader {...gate} />
 
 		<div className={BODY}>
@@ -75,5 +76,5 @@ export const PollScreen = ({
 
 			{rail ? <aside className={RAIL}>{rail}</aside> : null}
 		</div>
-	</article>
+	</Screen>
 );

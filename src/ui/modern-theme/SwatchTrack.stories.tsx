@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { SwatchTrack, type SwatchTrackItem } from "./SwatchTrack.ui";
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+
+import { SwatchTrack } from "./SwatchTrack.ui";
 
 const meta: Meta<typeof SwatchTrack> = {
 	component: SwatchTrack,
@@ -17,39 +19,17 @@ export default meta;
 
 type Story = StoryObj<typeof SwatchTrack>;
 
-const LADDER = [
-	"pallet",
-	"boulder",
-	"cascade",
-	"thunder",
-	"lavender",
-	"rainbow",
-	"soul",
-	"marsh",
-	"seafoam",
-	"volcano",
-	"earth",
-	"elite",
-	"champion",
-] as const;
+export const MidRun: Story = { args: { gates: ALL_SWATCHES, cleared: 4 } };
 
-export const ladderAt = (current: number): SwatchTrackItem[] =>
-	LADDER.map((theme, gate) => {
-		if (gate < current) return { gate, state: "earned", theme };
-		if (gate === current) return { gate, state: "current", theme };
-		return { gate, state: "locked" };
-	});
+export const FirstGate: Story = { args: { gates: ALL_SWATCHES, cleared: 0 } };
 
-export const MidRun: Story = { args: { items: ladderAt(4) } };
-
-export const FirstGate: Story = { args: { items: ladderAt(0) } };
-
-export const Champion: Story = { args: { items: ladderAt(12) } };
+export const Champion: Story = { args: { gates: ALL_SWATCHES, cleared: 12 } };
 
 export const RunOver: Story = {
-	args: {
-		items: LADDER.map((theme, gate) =>
-			gate < 5 ? { gate, state: "earned", theme } : { gate, state: "locked" }
-		),
-	},
+	args: { gates: ALL_SWATCHES, cleared: 5, atCleared: "locked" },
+};
+
+/** A finished climb: past the last gate, so no cell is current. */
+export const Won: Story = {
+	args: { gates: ALL_SWATCHES, cleared: 13, atCleared: "locked" },
 };

@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+
 import { GateHeader } from "./GateHeader.ui";
-import type { SwatchTrackItem } from "./SwatchTrack.ui";
 
 const meta: Meta<typeof GateHeader> = {
 	component: GateHeader,
@@ -18,49 +19,26 @@ export default meta;
 
 type Story = StoryObj<typeof GateHeader>;
 
-const LADDER = [
-	"pallet",
-	"boulder",
-	"cascade",
-	"thunder",
-	"lavender",
-	"rainbow",
-	"soul",
-	"marsh",
-	"seafoam",
-	"volcano",
-	"earth",
-	"elite",
-	"champion",
-] as const;
-
-const ladderAt = (current: number): SwatchTrackItem[] =>
-	LADDER.map((theme, gate) => {
-		if (gate < current) return { gate, state: "earned", theme };
-		if (gate === current) return { gate, state: "current", theme };
-		return { gate, state: "locked" };
-	});
-
 export const MidRun: Story = {
 	args: {
 		title: "Gate 4 · Lavender",
-		audit: "1 audit · Dependency Outage",
+		audits: ["dependency-outage"],
 		storage: { plan: "Free tier", used: 184, cap: 512 },
-		track: ladderAt(4),
+		track: { gates: ALL_SWATCHES, cleared: 4 },
 	},
 };
 
 export const NoAudit: Story = {
 	args: {
 		title: "Gate 4 · Lavender",
-		track: ladderAt(4),
+		track: { gates: ALL_SWATCHES, cleared: 4 },
 	},
 };
 
 export const FirstGate: Story = {
 	args: {
 		title: "Gate 0 · Pallet",
-		track: ladderAt(0),
+		track: { gates: ALL_SWATCHES, cleared: 0 },
 	},
 };
 
