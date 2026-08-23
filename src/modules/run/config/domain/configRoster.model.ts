@@ -127,7 +127,9 @@ export const CONFIGS = {
 	intellisense: {
 		id: "intellisense",
 		label: "Intellisense",
-		family: "economy",
+		// A pure coverage multiplier, so it belongs beside AGENTS.md and Coverage,
+		// not with the configs that earn KB.
+		family: "amplify",
 		rarity: "rare",
 		description: "All coverage earns ×1.5.",
 		gives: "All coverage earns ×1.5",

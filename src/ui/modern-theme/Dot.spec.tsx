@@ -17,4 +17,13 @@ describe("Dot", () => {
 		expect(common.firstChild).toHaveClass("bg-celadon");
 		expect(legendary.firstChild).toHaveClass("bg-legendary");
 	});
+
+	it("is round unless asked for a box, which keys a chip", () => {
+		const { container: disc } = render(<Dot tone="saffron" />);
+		const { container: box } = render(<Dot tone="saffron" shape="box" />);
+
+		expect(disc.firstChild).toHaveClass("rounded-full");
+		expect(box.firstChild).toHaveClass("rounded-xs");
+		expect(box.firstChild).not.toHaveClass("rounded-full");
+	});
 });

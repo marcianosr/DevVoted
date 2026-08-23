@@ -102,4 +102,9 @@ describe("Action", () => {
 		render(<Action label="Enter shop" size="lg" onUse={vi.fn()} />);
 		expect(screen.getByRole("button")).toHaveClass("px-6", "py-3");
 	});
+	it("stretches to its column when the caller asks for the width", () => {
+		render(<Action label="Pick 3 to start" full onUse={() => {}} />);
+
+		expect(screen.getByRole("button")).toHaveClass("w-full", "justify-center");
+	});
 });

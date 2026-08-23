@@ -15,4 +15,11 @@ describe("Caret", () => {
 
 		expect(screen.getByText("›")).toHaveClass("group-open/fold:rotate-90");
 	});
+
+	it("watches its own scope, so a nested caret ignores the outer fold", () => {
+		render(<Caret scope="row" />);
+
+		expect(screen.getByText("›")).toHaveClass("group-open/row:rotate-90");
+		expect(screen.getByText("›")).not.toHaveClass("group-open/fold:rotate-90");
+	});
 });

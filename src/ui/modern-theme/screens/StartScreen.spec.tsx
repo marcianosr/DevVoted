@@ -1,0 +1,388 @@
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import { Delta } from "../Delta.ui";
+import {
+	StartScreen,
+	type DealtConfig,
+	type StartScreenProps,
+} from "./StartScreen.ui";
+
+const dealt: readonly DealtConfig[] = [
+	{
+		id: "ts",
+		label: ".ts",
+		family: "category",
+		summary: "Common · focus: typescript",
+		explainer: "TypeScript polls pay 1.25× coverage.",
+		note: <Delta multiplier={1.25} />,
+	},
+	{
+		id: "intellisense",
+		label: "Intellisense",
+		family: "multiplier",
+		summary: "Rare · all coverage",
+		explainer: "All coverage earns ×1.5.",
+	},
+	{
+		id: "eslint",
+		label: "ESLint",
+		family: "tool",
+		summary: "Common · JS/TS polls",
+		explainer: "Strikes out one wrong answer per gate.",
+	},
+];
+
+const props: StartScreenProps = {
+	theme: "pallet",
+	seed: "2026-08-23",
+	archive: "1.2 MB",
+	dealt,
+	dealtFrom: 30,
+	pickedIds: [],
+	onToggle: () => {},
+	slots: [
+		{ id: "slot-1" },
+		{ id: "slot-2" },
+		{ id: "slot-3" },
+		{ id: "slot-4", gate: 1 },
+	],
+	gateName: "Pallet",
+	gateNumber: 0,
+	gateCount: 12,
+	pollCount: 5,
+	coverageDemand: 3,
+	auditCount: 0,
+	removeOnMiss: 1,
+	reward: { coveragePerCorrect: 1, gateRewardKb: 32, slotOpens: 4 },
+};
+
+describe("StartScreen", () => {
+	it("titles the screen by the job, not by the number of picks", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("Configure your pipeline")).toBeInTheDocument();
+		expect(screen.queryByText(/to go/)).not.toBeInTheDocument();
+	});
+
+	it("names the run by its seed and states what the archive holds", () => {
+		render(<StartScreen {...props} />);
+
+		expect(
+			screen.getByRole("heading", { name: "New run" })
+		).toBeInTheDocument();
+		expect(screen.getByText("seed 2026-08-23")).toBeInTheDocument();
+		expect(screen.getByText("1.2 MB")).toBeInTheDocument();
+	});
+
+	it("says how wide the draw was, so seven of thirty reads as a sample", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText(/3 dealt from 30/)).toBeInTheDocument();
+	});
+
+	it("counts the picks still owed on the button", () => {
+		render(<StartScreen {...props} onStart={() => {}} />);
+
+		expect(
+			screen.getByRole("button", { name: "Pick 3 to start" })
+		).toBeDisabled();
+	});
+
+	it("counts down as picks land", () => {
+		render(
+			<StartScreen {...props} pickedIds={["ts", "eslint"]} onStart={() => {}} />
+		);
+
+		expect(
+			screen.getByRole("button", { name: "Pick 1 to start" })
+		).toBeInTheDocument();
+	});
+
+	it("turns the button live once the last pick lands", () => {
+		render(
+			<StartScreen
+				{...props}
+				pickedIds={["ts", "intellisense", "eslint"]}
+				onStart={() => {}}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: "Start the run →" })
+		).toBeEnabled();
+	});
+
+	it("stretches the start button across its column", () => {
+		render(<StartScreen {...props} onStart={() => {}} />);
+
+		expect(screen.getByRole("button", { name: /to start/ })).toHaveClass(
+			"w-full"
+		);
+	});
+
+	it("reports which config was ticked", async () => {
+		const onToggle = vi.fn();
+		render(<StartScreen {...props} onToggle={onToggle} />);
+
+		await userEvent.click(screen.getByText("Intellisense"));
+
+		expect(onToggle).toHaveBeenCalledWith("intellisense");
+	});
+
+	it("ticks a draft without striking it, since picking is not a sentence", () => {
+		render(<StartScreen {...props} pickedIds={["ts"]} />);
+
+		// Twice over: once on the deal, once in the pipeline it just filled.
+		screen
+			.getAllByText(".ts")
+			.forEach((node) => expect(node).not.toHaveClass("line-through"));
+	});
+
+	it("keeps the line to the name, its family and its figure", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("×1.25")).toBeInTheDocument();
+		expect(screen.getAllByText("category")).toHaveLength(2);
+	});
+
+	it("folds the rarity and the full sentence under each config", () => {
+		const { container } = render(<StartScreen {...props} />);
+		const row = Array.from(
+			container.querySelectorAll('details[class~="group/row"]')
+		).find((node) =>
+			node.textContent?.includes("TypeScript polls pay 1.25× coverage.")
+		);
+
+		expect(row).not.toHaveAttribute("open");
+		expect(screen.getByText("Common · focus: typescript")).toBeInTheDocument();
+	});
+
+	it("ticks a config without folding it, and folds without ticking", async () => {
+		const onToggle = vi.fn();
+		const { container } = render(
+			<StartScreen {...props} onToggle={onToggle} />
+		);
+		const row = Array.from(
+			container.querySelectorAll('details[class~="group/row"]')
+		).find((node) =>
+			node.textContent?.includes("TypeScript polls pay 1.25× coverage.")
+		) as HTMLDetailsElement;
+
+		await userEvent.click(screen.getByText(".ts"));
+
+		expect(onToggle).toHaveBeenCalledWith("ts");
+		expect(row.open).toBe(false);
+	});
+
+	it("tags every dealt config with the family it belongs to", () => {
+		render(<StartScreen {...props} />);
+
+		// Twice each: once on the row, once in the legend below the deal.
+		expect(screen.getAllByText("category")).toHaveLength(2);
+		expect(screen.getAllByText("multiplier")).toHaveLength(2);
+		expect(screen.getAllByText("tool")).toHaveLength(2);
+	});
+
+	it("lists every family in the legend, dealt or not", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("storage")).toBeInTheDocument();
+		expect(screen.getByText("gamble")).toBeInTheDocument();
+	});
+
+	it("keeps the family legend closed, since the tags are the reminder", () => {
+		const { container } = render(<StartScreen {...props} />);
+		const legend = Array.from(container.querySelectorAll("details")).find(
+			(node) => node.textContent?.includes("What the families mean")
+		);
+
+		expect(legend).not.toHaveAttribute("open");
+		expect(
+			screen.getByText("something you press mid-poll")
+		).toBeInTheDocument();
+		expect(screen.getByText("big upside, real cost")).toBeInTheDocument();
+	});
+
+	it("shows the combo's shape in the words the deal is tagged with", () => {
+		render(
+			<StartScreen
+				{...props}
+				combo={{
+					ids: ["ts", "intellisense", "eslint"],
+					blurb: "stack on typescript, with a lint to save you once",
+					onTake: () => {},
+				}}
+			/>
+		);
+
+		// Row, legend, and now the combo's shape line.
+		expect(screen.getAllByText("category")).toHaveLength(3);
+		expect(screen.getAllByText("multiplier")).toHaveLength(3);
+		expect(screen.getAllByText("tool")).toHaveLength(3);
+	});
+
+	it("names only configs the deal is actually offering", () => {
+		render(
+			<StartScreen
+				{...props}
+				combo={{
+					ids: ["ts", "not-dealt"],
+					blurb: "half a combo",
+					onTake: () => {},
+				}}
+			/>
+		);
+
+		const panel = screen.getByText("half a combo").closest("div");
+
+		expect(panel).toHaveTextContent(".ts");
+		expect(panel).not.toHaveTextContent("not-dealt");
+	});
+
+	it("offers the curated stack as one press rather than three", async () => {
+		const onTake = vi.fn();
+		render(
+			<StartScreen
+				{...props}
+				combo={{
+					ids: ["ts", "intellisense", "eslint"],
+					blurb: "stack on typescript, with a lint to save you once",
+					onTake,
+				}}
+			/>
+		);
+
+		expect(screen.getByText(".ts + Intellisense + ESLint")).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: "take these" }));
+
+		expect(onTake).toHaveBeenCalledOnce();
+	});
+
+	it("rerolls the deal, saying on the button where the money comes from", async () => {
+		const onUse = vi.fn();
+		render(<StartScreen {...props} rebuild={{ cost: "24 KB", onUse }} />);
+
+		expect(
+			screen.getByText("Paid from your archive, not from this run's storage.")
+		).toBeInTheDocument();
+		await userEvent.click(
+			screen.getByRole("button", { name: "rebuild 24 KB" })
+		);
+
+		expect(onUse).toHaveBeenCalledOnce();
+	});
+
+	it("hangs a padlock on every dealt config once locking is priced", () => {
+		render(
+			<StartScreen {...props} lock={{ cost: "8 KB", onToggle: () => {} }} />
+		);
+
+		expect(
+			screen.getByRole("button", { name: "Lock .ts for 8 KB" })
+		).toBeInTheDocument();
+	});
+
+	it("releases a config that is already held", async () => {
+		const onToggle = vi.fn();
+		render(
+			<StartScreen
+				{...props}
+				dealt={dealt.map((config) =>
+					config.id === "ts" ? { ...config, locked: true } : config
+				)}
+				lock={{ cost: "8 KB", onToggle }}
+			/>
+		);
+
+		await userEvent.click(screen.getByRole("button", { name: "Release .ts" }));
+
+		expect(onToggle).toHaveBeenCalledWith("ts");
+	});
+
+	it("shows no padlocks and no reroll when neither is on offer", () => {
+		render(<StartScreen {...props} />);
+
+		expect(
+			screen.queryByRole("button", { name: /Lock/ })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /rebuild/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("stands the pipeline's slots empty until the picks land", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("0 of 3")).toBeInTheDocument();
+		expect(screen.getAllByText("empty")).toHaveLength(3);
+		expect(screen.getByText("opens at gate 1")).toBeInTheDocument();
+	});
+
+	it("fills a slot with each config picked, leaving the rest empty", () => {
+		render(<StartScreen {...props} pickedIds={["ts", "eslint"]} />);
+
+		expect(screen.getByText("2 of 3")).toBeInTheDocument();
+		expect(screen.getAllByText("empty")).toHaveLength(1);
+		expect(screen.getAllByText(".ts")).toHaveLength(2);
+		expect(screen.getAllByText("ESLint")).toHaveLength(2);
+	});
+
+	it("takes the number of picks from the slots, not from a second count", () => {
+		render(
+			<StartScreen
+				{...props}
+				slots={[{ id: "only" }, { id: "later", gate: 1 }]}
+			/>
+		);
+
+		expect(screen.getByText("0 of 1")).toBeInTheDocument();
+	});
+
+	it("states the gate's ask, calling no audits none rather than zero", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("Pallet gate")).toBeInTheDocument();
+		expect(screen.getByText("coverage from 5 polls")).toBeInTheDocument();
+		expect(screen.getByText("none")).toBeInTheDocument();
+		expect(screen.getByText("1 config")).toBeInTheDocument();
+	});
+
+	it("counts the audits when the gate has any", () => {
+		render(<StartScreen {...props} auditCount={2} />);
+
+		expect(screen.getByText("2")).toHaveClass("text-saffron");
+	});
+
+	it("badges what a clear pays, the way every other figure is badged", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("+1").parentElement).toHaveClass("bg-celadon/15");
+		expect(screen.getByText("+32 KB").parentElement).toHaveClass(
+			"bg-celadon/15"
+		);
+		expect(screen.getByText("opens").parentElement).toHaveClass(
+			"bg-celadon/15"
+		);
+	});
+
+	it("leaves the swatch dashed, since the gate has not handed it over", () => {
+		render(<StartScreen {...props} />);
+
+		const row = screen.getByText("Pallet Swatch").parentElement as HTMLElement;
+
+		expect(row.querySelector(".border-dashed")).toBeInTheDocument();
+	});
+
+	it("drops the slot reward on a gate that opens none", () => {
+		render(
+			<StartScreen
+				{...props}
+				reward={{ coveragePerCorrect: 1, gateRewardKb: 32 }}
+			/>
+		);
+
+		expect(screen.queryByText("opens")).not.toBeInTheDocument();
+	});
+});

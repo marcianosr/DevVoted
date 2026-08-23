@@ -23,3 +23,12 @@ export const EveryTier: Story = {
 		</div>
 	),
 };
+
+export const Boxed: Story = {
+	render: () => (
+		<div className="flex items-center gap-3">
+			<Dot shape="box" tone="saffron" />
+			<Dot shape="box" tone="muted" />
+		</div>
+	),
+};

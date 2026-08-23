@@ -33,3 +33,7 @@ export const EveryGate: Story = {
 		</div>
 	),
 };
+
+export const Champion: Story = {
+	args: { size: "badge", theme: "champion", finish: "fill" },
+};

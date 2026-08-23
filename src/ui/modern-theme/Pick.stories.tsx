@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Chip } from "./Chip.ui";
 import { Delta } from "./Delta.ui";
+import { Lock } from "./Lock.ui";
 import { Pick } from "./Pick.ui";
 
 const meta: Meta<typeof Pick> = {
@@ -37,6 +38,27 @@ const Tickable = ({ start = false }: { start?: boolean }) => {
 export const Unpicked: Story = { render: () => <Tickable /> };
 
 export const Picked: Story = { render: () => <Tickable start /> };
+
+const Drafting = ({ start = false }: { start?: boolean }) => {
+	const [checked, setChecked] = useState(start);
+
+	return (
+		<Pick
+			variant="draft"
+			label=".ts"
+			checked={checked}
+			onToggle={setChecked}
+			notes={<Delta multiplier={1.25} />}
+			trailing={
+				<Lock on=".ts" state="unlocked" cost="8 KB" onToggle={() => {}} />
+			}
+		/>
+	);
+};
+
+export const Draft: Story = { render: () => <Drafting /> };
+
+export const Drafted: Story = { render: () => <Drafting start /> };
 
 export const Bare: Story = {
 	args: { label: ".ts", checked: false, onToggle: () => {} },

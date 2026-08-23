@@ -6,6 +6,7 @@ import { Token } from "../Code.ui";
 import { Coverage } from "../Coverage.ui";
 import { Delta } from "../Delta.ui";
 import { Entry } from "../Entry.ui";
+import { Family, type ConfigFamily } from "../Family.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
 import type { MarkVerdict } from "../Mark.ui";
 import type { SwatchTrackItem } from "../SwatchTrack.ui";
@@ -34,6 +35,7 @@ const NONE = (
 type PipelineConfig = {
 	id: string;
 	label: string;
+	family: ConfigFamily;
 	mark: MarkVerdict;
 	multiplier?: number;
 	kb?: number;
@@ -49,6 +51,7 @@ const configs: readonly PipelineConfig[] = [
 	{
 		id: ".ts",
 		label: ".ts",
+		family: "category",
 		mark: "idle",
 		dimmed: true,
 		offline: true,
@@ -59,6 +62,7 @@ const configs: readonly PipelineConfig[] = [
 	{
 		id: "Intellisense",
 		label: "Intellisense",
+		family: "multiplier",
 		mark: "pass",
 		multiplier: 1.5,
 		summary: "Uncommon · firing on 2 answers",
@@ -67,6 +71,7 @@ const configs: readonly PipelineConfig[] = [
 	{
 		id: "AGENTS.md",
 		label: "AGENTS.md",
+		family: "multiplier",
 		mark: "pass",
 		multiplier: 2,
 		summary: "Rare · firing on 2 answers",
@@ -75,6 +80,7 @@ const configs: readonly PipelineConfig[] = [
 	{
 		id: "ESLint",
 		label: "ESLint",
+		family: "tool",
 		mark: "warn",
 		costKb: 16,
 		summary: "Common · blocking 1 option on poll 3",
@@ -85,6 +91,7 @@ const configs: readonly PipelineConfig[] = [
 	{
 		id: "IndexedDB",
 		label: "IndexedDB",
+		family: "storage",
 		mark: "pass",
 		kb: 16,
 		summary: "Common · 2 correct so far",
@@ -93,6 +100,7 @@ const configs: readonly PipelineConfig[] = [
 	{
 		id: "Freemium",
 		label: "Freemium",
+		family: "storage",
 		mark: "fail",
 		kb: -128,
 		summary: "Legendary · bills when this gate clears",
@@ -107,6 +115,7 @@ const pipeline: FoldItem[] = configs.map((config) => ({
 		<Entry
 			label={config.label}
 			mark={config.mark}
+			notes={<Family family={config.family} />}
 			dimmed={config.dimmed}
 			{...(config.costKb === undefined
 				? {

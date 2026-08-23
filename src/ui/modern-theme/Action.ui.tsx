@@ -14,6 +14,10 @@ const SIZE = {
 	lg: "px-6 py-3",
 } satisfies Record<ActionSize, string>;
 
+// Stretches to its column instead of hugging its label. A boolean rather
+// than a className passthrough, which would open the button to any restyling.
+const FULL = "w-full justify-center";
+
 export type ActionEmphasis = "quiet" | "loud" | "prismatic" | "danger";
 
 const EMPHASIS = {
@@ -30,6 +34,7 @@ type ActionBase = {
 	icon?: ReactNode;
 	emphasis?: ActionEmphasis;
 	size?: ActionSize;
+	full?: boolean;
 	onUse: () => void;
 	disabled?: boolean;
 };
@@ -43,6 +48,7 @@ export const Action = (props: ActionProps) => {
 		icon,
 		emphasis = "quiet",
 		size = "sm",
+		full = false,
 		onUse,
 		disabled = false,
 		cost,
@@ -64,7 +70,7 @@ export const Action = (props: ActionProps) => {
 				event.stopPropagation();
 				onUse();
 			}}
-			className={clsx(ACTION, SIZE[size], EMPHASIS[emphasis])}
+			className={clsx(ACTION, SIZE[size], EMPHASIS[emphasis], full && FULL)}
 		>
 			{icon}
 			{label ? (

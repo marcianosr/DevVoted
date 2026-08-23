@@ -44,4 +44,14 @@ describe("Swatch", () => {
 		expect(pip.firstChild).not.toHaveClass("glow-theme");
 		expect(award.firstChild).toHaveClass("size-24", "glow-theme");
 	});
+
+	it("takes the Kanto gradient for the one swatch app.css gives no colour", () => {
+		const { container: flat } = render(<Swatch theme="volcano" />);
+		const { container: fill } = render(
+			<Swatch theme="champion" finish="fill" />
+		);
+
+		expect(flat.firstChild).not.toHaveClass("bg-legendary");
+		expect(fill.firstChild).toHaveClass("bg-legendary");
+	});
 });
