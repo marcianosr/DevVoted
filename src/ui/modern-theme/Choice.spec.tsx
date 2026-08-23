@@ -6,18 +6,26 @@ import { Choice } from "./Choice.ui";
 
 const props = {
 	name: "answer",
+	letter: "A",
 	label: "arr.slice(-2)",
 	checked: false,
 	onChange: () => {},
 };
 
 describe("Choice", () => {
-	it("renders a radio named after the answer", () => {
+	it("names the radio by its letter and its answer, the way a player reads it out", () => {
 		render(<Choice {...props} />);
 
 		expect(
-			screen.getByRole("radio", { name: "arr.slice(-2)" })
+			screen.getByRole("radio", { name: "A arr.slice(-2)" })
 		).toBeInTheDocument();
+	});
+
+	it("keeps the radio in the accessibility tree while the letter stands in for it", () => {
+		render(<Choice {...props} />);
+
+		expect(screen.getByRole("radio")).toHaveClass("sr-only", "peer");
+		expect(screen.getByText("A")).toBeInTheDocument();
 	});
 
 	it("reports the new state when the card is clicked", async () => {

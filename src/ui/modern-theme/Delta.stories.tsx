@@ -13,7 +13,7 @@ type Story = StoryObj<typeof Delta>;
 export const Gain: Story = { args: { kb: 16 } };
 export const Cost: Story = { args: { kb: -128 } };
 export const Flat: Story = { args: { kb: 0 } };
-export const WithoutUnit: Story = { args: { kb: -128, unit: false } };
+export const Coverage: Story = { args: { coverage: 2.6 } };
 export const Multiplier: Story = { args: { multiplier: 1.5 } };
 
 export const Together: Story = {
@@ -23,7 +23,8 @@ export const Together: Story = {
 			<Delta multiplier={2} />
 			<Delta kb={-16} />
 			<Delta kb={16} />
-			<Delta kb={-128} unit={false} />
+			<Delta coverage={2.6} />
+			<Delta coverage={-1.4} />
 		</div>
 	),
 };

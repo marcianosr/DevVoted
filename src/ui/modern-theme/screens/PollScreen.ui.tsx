@@ -4,6 +4,7 @@ import { Choice, type ChoiceProps } from "../Choice.ui";
 import { Byline, type BylineProps } from "../Byline.ui";
 import { Code } from "../Code.ui";
 import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
+import { optionLetter } from "../format";
 import { Question, type QuestionCategory } from "../Question.ui";
 import { Trail, type TrailItem } from "../Trail.ui";
 
@@ -16,7 +17,10 @@ const RAIL =
 
 const OPTIONS = "flex flex-col gap-2";
 
-export type PollOption = ChoiceProps & { id: string };
+// The letter comes off the position, never off the caller: the review screen
+// refers back to it, and a hand-written letter could disagree with the order the
+// player actually saw.
+export type PollOption = Omit<ChoiceProps, "letter"> & { id: string };
 
 export type PollScreenProps = {
 	gate: GateHeaderProps;
@@ -59,9 +63,9 @@ export const PollScreen = ({
 				{code?.length ? <Code lines={code} /> : null}
 
 				<ul className={OPTIONS}>
-					{options.map(({ id, ...option }) => (
+					{options.map(({ id, ...option }, index) => (
 						<li key={id}>
-							<Choice {...option} />
+							<Choice {...option} letter={optionLetter(index)} />
 						</li>
 					))}
 				</ul>

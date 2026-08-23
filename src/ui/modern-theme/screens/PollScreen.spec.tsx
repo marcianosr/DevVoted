@@ -79,11 +79,18 @@ describe("PollScreen", () => {
 		expect(screen.getAllByRole("radio")).toHaveLength(2);
 	});
 
+	it("letters the options in the order they are offered", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("A")).toBeInTheDocument();
+		expect(screen.getByText("B")).toBeInTheDocument();
+	});
+
 	it("strikes out and disables the answer a config blocked", () => {
 		render(<PollScreen {...props} />);
 
 		expect(
-			screen.getByRole("radio", { name: "arr.splice(2) blocked · ESLint" })
+			screen.getByRole("radio", { name: "B arr.splice(2) blocked · ESLint" })
 		).toBeDisabled();
 		expect(screen.getByText("arr.splice(2)")).toHaveClass("line-through");
 		expect(screen.getByText("blocked · ESLint")).toBeInTheDocument();

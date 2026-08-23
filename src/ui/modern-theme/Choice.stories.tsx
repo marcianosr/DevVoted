@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Choice } from "./Choice.ui";
+import { optionLetter } from "./format";
 
 const meta: Meta<typeof Choice> = {
 	component: Choice,
@@ -16,6 +17,7 @@ const meta: Meta<typeof Choice> = {
 	],
 	args: {
 		name: "answer",
+		letter: "A",
 		label: "arr.slice(-2)",
 		checked: false,
 		onChange: () => {},
@@ -30,7 +32,12 @@ export const Unpicked: Story = {};
 export const Picked: Story = { args: { checked: true } };
 
 export const Blocked: Story = {
-	args: { label: "arr.slice(2)", blocked: true, note: "blocked · ESLint" },
+	args: {
+		letter: "C",
+		label: "arr.slice(2)",
+		blocked: true,
+		note: "blocked · ESLint",
+	},
 };
 
 const AnswerList = () => {
@@ -44,10 +51,11 @@ const AnswerList = () => {
 
 	return (
 		<ul className="flex flex-col gap-3">
-			{options.map((option) => (
+			{options.map((option, index) => (
 				<li key={option.id}>
 					<Choice
 						name="answer"
+						letter={optionLetter(index)}
 						label={option.label}
 						checked={picked === option.id}
 						blocked={option.blocked}

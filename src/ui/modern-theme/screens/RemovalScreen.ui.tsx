@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Action } from "../Action.ui";
+import { plural } from "../format";
 import { Pick } from "../Pick.ui";
 import { Text } from "../Text.ui";
 import { Tooltip } from "../Tooltip.ui";
@@ -33,9 +34,6 @@ export type RemovalScreenProps = {
 	onRemove: () => void;
 	theme?: string;
 };
-
-const plural = (count: number, noun: string) =>
-	`${count} ${noun}${count === 1 ? "" : "s"}`;
 
 const instruct = (shortfall: number) => {
 	if (shortfall > 0)

@@ -24,11 +24,17 @@ describe("Delta", () => {
 		expect(badgeAround("+0 KB")).toHaveClass("bg-zinc-100/10");
 	});
 
-	it("drops the unit only where a caller asks it to", () => {
-		const { container } = render(<Delta kb={-128} unit={false} />);
+	it("states a coverage figure bare, since KB is not what it measures", () => {
+		const { container } = render(<Delta coverage={2.6} />);
 
-		expect(container).toHaveTextContent("\u2212128");
+		expect(badgeAround("+2.6")).toHaveClass("bg-celadon/15");
 		expect(container).not.toHaveTextContent("KB");
+	});
+
+	it("reddens a coverage figure the poll lost", () => {
+		render(<Delta coverage={-1.4} />);
+
+		expect(badgeAround("\u22121.4")).toHaveClass("bg-cinnabar/15");
 	});
 
 	it("badges a multiplier as the gain it is, not as neutral trivia", () => {

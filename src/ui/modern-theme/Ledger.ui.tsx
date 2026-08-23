@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { Chip } from "./Chip.ui";
+import { signed, valueTone } from "./format";
 import { Text } from "./Text.ui";
 import type { ModernTone } from "./tones";
 
@@ -49,13 +50,6 @@ export type LedgerProps = {
 export const ledgerTotal = (entries: readonly LedgerEntry[]): number =>
 	Math.round(entries.reduce((sum, entry) => sum + entry.value, 0) * 10) / 10;
 
-const toneFor = (value: number): ModernTone => {
-	if (value === 0) return "muted";
-	return value < 0 ? "cinnabar" : "celadon";
-};
-
-const signed = (value: number) => `${value < 0 ? "−" : "+"}${Math.abs(value)}`;
-
 const entryLabel = (value: number, unit: LedgerUnit) =>
 	unit === "KB" ? `${signed(value)} KB` : signed(value);
 
@@ -94,7 +88,7 @@ export const Ledger = ({
 								</Chip>
 							))}
 						</span>
-						<Text size="body" tone={toneFor(value)} className={VALUE}>
+						<Text size="body" tone={valueTone(value)} className={VALUE}>
 							{entryLabel(value, unit)}
 						</Text>
 					</li>
