@@ -3,8 +3,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { GateHeader } from "./GateHeader.ui";
 import type { SwatchTrackItem } from "./SwatchTrack.ui";
 
-// Game-design reason: the header is the run's identity strip — which gate is
-// being played, what condition it runs under, and how far up the ladder you are.
 const meta: Meta<typeof GateHeader> = {
 	component: GateHeader,
 	title: "Modern/GateHeader",
@@ -20,8 +18,6 @@ export default meta;
 
 type Story = StoryObj<typeof GateHeader>;
 
-// Tracks GATE_SWATCHES in swatch.model.ts: gates count from 0, so Pallet is
-// gate 0 and Champion is gate 12.
 const LADDER = [
 	"pallet",
 	"boulder",

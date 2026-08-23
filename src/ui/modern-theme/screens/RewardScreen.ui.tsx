@@ -18,28 +18,18 @@ const HERO = "flex flex-col items-center gap-5 px-5 py-10 text-center";
 const NAMING = "flex flex-col items-center gap-1";
 const FIGURES = "flex flex-wrap items-center justify-center gap-3 pt-2";
 
-// Edge to edge, like the shop: the report is the second half of the screen, not
-// a card sitting on it. Its only chrome is the rule that separates it from the
-// payoff above.
 const REPORT = "border-t border-edge";
 
-// One control for both columns, centred above them: two toggles that could
-// disagree about whether the panel is expanded is two states for one question.
 const DISCLOSURE = "flex px-5 pt-4";
 const TOGGLE =
 	"group/fold inline-flex items-center gap-1.5 rounded text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean";
 
-// divide rather than a border on the first column: the rule has to run between
-// the two whichever way they are stacked, and only between them. lg is the shop's
-// own breakpoint for going two-up.
 const LEDGERS =
 	"flex flex-col divide-y divide-edge lg:flex-row lg:items-stretch lg:divide-x lg:divide-y-0 max-w-4xl mx-auto";
 const FOOTER =
 	"flex flex-wrap items-center justify-between gap-4 border-t border-edge px-5 py-4";
 const ONWARD = "flex flex-wrap items-center gap-4";
 
-/** One screen, two verdicts. Everything above the footer is the same report;
- * what differs is whether the swatch was awarded and what happens next. */
 type Verdict =
 	| {
 			outcome: "cleared";
@@ -50,7 +40,6 @@ type Verdict =
 	| { outcome: "held"; peelCount: number; onChoosePeel?: () => void };
 
 export type RewardScreenProps = {
-	/** "Lavender" — the swatch name is built from it the way swatch.model does. */
 	gateName: string;
 	requiredCoverage: number;
 	track: readonly SwatchTrackItem[];
@@ -105,8 +94,6 @@ export const RewardScreen = (props: RewardScreenProps) => {
 				<SwatchTrack items={track} layout="stacked" counting="swatches" />
 
 				<div className={FIGURES}>
-					{/* The demand decides the chip, not the verdict: a clear can still
-					    fall short of the next rung, and it should say so the same way. */}
 					<Chip tone={met ? "raised" : "cinnabar"} size="lg">
 						<Text size="body" tone={met ? "celadon" : "cinnabar"}>
 							{covered}%
@@ -151,8 +138,6 @@ export const RewardScreen = (props: RewardScreenProps) => {
 								? undefined
 								: {
 										label: "short by",
-										// Derived here rather than in the column: only this
-										// screen holds both the demand and the sum.
 										value: `${Math.round((requiredCoverage - covered) * 10) / 10}%`,
 										tone: "cinnabar",
 									}

@@ -82,8 +82,6 @@ describe("RewardScreen", () => {
 
 		expect(screen.getByText("4.2%")).toBeInTheDocument();
 		expect(screen.getByText("4 of 5 correct")).toBeInTheDocument();
-		// Twice on purpose: the headline and the ledger it summarises print one
-		// number, so the two cannot contradict each other.
 		expect(screen.getAllByText("+90 KB")).toHaveLength(2);
 	});
 

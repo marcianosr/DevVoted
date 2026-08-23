@@ -4,8 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 import { PriceTag } from "./PriceTag.ui";
 
-// The tag reads its row's open state off the DOM, so the tests have to give it
-// the row it lives in.
+// The tag reads its row's open state off the DOM, so a test has to give it one.
 const inRow = (tag: React.ReactNode, open = false) => (
 	<details open={open} className="group/entry">
 		<summary>Deprecated{tag}</summary>

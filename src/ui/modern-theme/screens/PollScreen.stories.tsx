@@ -17,9 +17,6 @@ import {
 	type PollScreenProps,
 } from "./PollScreen.ui";
 
-// Game-design reason: this is the screen a player spends the whole run on. It has
-// to hold the question, the build that is answering it, and the cost of the gate
-// in one view, without the build shouting over the question.
 const meta: Meta<typeof PollScreen> = {
 	component: PollScreen,
 	title: "Modern/Screens/Poll",
@@ -142,12 +139,8 @@ const pipeline: FoldItem[] = configs.map((config) => ({
 	),
 }));
 
-// costKb is a price, not a balance: it only moves the total once it is spent.
 const netKb = configs.reduce((total, config) => total + (config.kb ?? 0), 0);
 
-// Shut, the fold is all a player sees of the build — so its colour reports the
-// worst mark in the pipeline, not the sign of the net KB. Red means something is
-// failing, which is the fact worth knowing without opening it.
 const SEVERITY = [
 	"fail",
 	"warn",
@@ -225,8 +218,6 @@ const answers = [
 	{ id: "at", label: "arr.at(-2)", blocked: false },
 ];
 
-// Tracks GATE_SWATCHES in swatch.model.ts: gates count from 0, so Pallet is
-// gate 0 and Champion is gate 12.
 const LADDER = [
 	"pallet",
 	"boulder",
@@ -290,11 +281,6 @@ const InteractivePoll = (overrides: Partial<PollScreenProps>) => {
 	return <PollScreen {...base} options={options} {...overrides} />;
 };
 
-// One story per gate so the whole ladder can be eyeballed in a row. Gate numbers
-// and names track GATE_SWATCHES in swatch.model.ts — gates count from 0, so
-// Pallet is gate 0 and Champion is gate 12. The theme name is the only thing
-// that changes: swatch, track, rail accents, a picked answer and the screen's
-// own tinted ground all read it off one data-gate-theme attribute.
 const gateStory = (gate: number, name: string, theme: string): Story => ({
 	name,
 	render: () => (
@@ -310,8 +296,6 @@ const gateStory = (gate: number, name: string, theme: string): Story => ({
 	),
 });
 
-/** Narrow the browser past `lg` and the rail drops below the answers, so the
- * question is still the first thing on screen. */
 export const Lavender = gateStory(4, "Lavender", "lavender");
 
 export const Pallet = gateStory(0, "Pallet", "pallet");

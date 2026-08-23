@@ -10,7 +10,6 @@ export default meta;
 
 type Story = StoryObj<typeof Glyph>;
 
-/** The three the shop draws. Hand-written rather than an icon package. */
 export const All: Story = {
 	render: () => (
 		<div className="flex gap-4 text-zinc-300">

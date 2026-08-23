@@ -6,8 +6,8 @@ import { Caret } from "./Caret.ui";
 import { Glyph, type GlyphName } from "./Glyph.ui";
 import { Text } from "./Text.ui";
 
-// Two group names on one element: `entry` is what a PriceTag inside watches for
-// its two-tap, `fold` is what the Caret watches to rotate. It is both.
+// Both group names: `entry` is what a PriceTag inside watches, `fold` is what
+// the Caret watches.
 const CONTROL = "group/entry group/fold rounded-lg border";
 
 const FRAME = {
@@ -25,7 +25,6 @@ const BARE = "mt-0.5 text-zinc-500";
 
 const BODY = "flex min-w-0 flex-1 flex-col gap-1";
 
-// Clears the caret and the glyph, so the folded text hangs under the title.
 const FACTS = "flex flex-col gap-1 px-3 pb-3 pl-12";
 const HEADING = "flex flex-wrap items-baseline gap-2";
 

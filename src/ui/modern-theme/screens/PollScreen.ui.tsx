@@ -9,8 +9,6 @@ import { Trail, type TrailItem } from "../Trail.ui";
 
 const SCREEN = "flex flex-col bg-theme-faint";
 
-// The rail sits after main in the DOM so a stacked screen reads question-first;
-// lg:order-first lifts it back to the left once there is width for two columns.
 const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const MAIN = "flex min-w-0 flex-1 flex-col gap-6 px-5 py-6 lg:px-8";
 const RAIL =
@@ -27,7 +25,6 @@ export type PollScreenProps = {
 	question: ReactNode;
 	category?: QuestionCategory;
 	meta?: readonly string[];
-	/** Whose poll it is — a credit, so it sits after the answers, not before. */
 	byline?: BylineProps;
 	code?: readonly ReactNode[];
 	options: readonly PollOption[];

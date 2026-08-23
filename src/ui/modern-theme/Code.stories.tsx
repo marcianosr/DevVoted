@@ -38,7 +38,6 @@ export const SingleLine: Story = {
 	args: { lines: ["const tail = arr.slice(-2);"] },
 };
 
-/** Long lines scroll inside the block instead of widening the screen. */
 export const Overflowing: Story = {
 	args: {
 		lines: [

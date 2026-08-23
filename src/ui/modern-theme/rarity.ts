@@ -7,12 +7,11 @@ export const RARITY_ORDER = [
 	"legendary",
 ] as const satisfies readonly Rarity[];
 
-// Legendary wears the Kanto gradient instead of one colour, so its border goes
-// transparent and app.css's masked ring paints over it.
 export const RARITY_BORDER = {
 	common: "border-celadon",
 	uncommon: "border-cerulean",
 	rare: "border-cinnabar",
+	// Transparent so app.css's masked gradient ring paints over it.
 	legendary: "border-transparent legendary-ring",
 } as const satisfies Record<Rarity, string>;
 

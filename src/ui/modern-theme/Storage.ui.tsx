@@ -1,8 +1,7 @@
 import { Meter } from "./Meter.ui";
 import { Text } from "./Text.ui";
 
-// Fixed width so the header's middle does not resize as the number grows: a
-// storage bar that jumps when you bank 8 KB reads as the layout breaking.
+// Fixed width so the header's middle does not resize as the number grows.
 const STORAGE = "flex w-44 shrink-0 flex-col gap-1";
 const AMOUNT = "flex items-baseline gap-1";
 

@@ -7,14 +7,10 @@ import { Text } from "./Text.ui";
 
 const CHIP = "inline-flex shrink-0 items-center";
 
-// A rarity chip is an outline round a config's name; a category chip is a tinted
-// label. Same pill, opposite jobs — the union keeps a caller from asking for both.
 const OUTLINE = "border";
 
 export type ChipSize = "sm" | "lg";
 
-// lg is a figure the eye is meant to land on rather than a label it reads in
-// passing, so it grows in both axes and softens its corner to match.
 const SIZE = {
 	sm: "rounded-md px-2 py-0.5",
 	lg: "rounded-lg px-4 py-2",
@@ -29,8 +25,6 @@ export type ChipTone =
 	| "muted"
 	| "raised";
 
-// raised is the one tone that carries no meaning: a surface for a figure that
-// states its own colour inside, the way a coverage total does.
 const TINT = {
 	theme: "bg-theme-soft text-theme",
 	cerulean: "bg-cerulean/15 text-cerulean",

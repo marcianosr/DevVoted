@@ -18,8 +18,6 @@ export default meta;
 
 type Story = StoryObj<typeof Question>;
 
-/** The identifier under test wears the gate colour, so the eye lands on it
- * before the sentence is read. */
 export const WithMeta: Story = {
 	args: {
 		children: (

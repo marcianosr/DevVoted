@@ -9,8 +9,6 @@ import type { SwatchTrackItem } from "../SwatchTrack.ui";
 import type { CrumbVerdict } from "../Trail.ui";
 import { RewardScreen, type RewardScreenProps } from "./RewardScreen.ui";
 
-// Game-design reason: the clear is the run's only pure payoff, and the swatch is
-// the one thing a run leaves behind on the account when it ends.
 const meta: Meta<typeof RewardScreen> = {
 	component: RewardScreen,
 	title: "Modern/Screens/Reward",
@@ -22,8 +20,6 @@ type Story = StoryObj<typeof RewardScreen>;
 
 const noop = () => {};
 
-// Tracks GATE_SWATCHES in swatch.model.ts: gates count from 0, so Pallet is
-// gate 0 and Champion is gate 12.
 const LADDER = [
 	"pallet",
 	"boulder",
@@ -40,8 +36,6 @@ const LADDER = [
 	"champion",
 ] as const;
 
-// No square is current: the gate is cleared and the next one has not opened, so
-// the track counts the collection rather than pointing at a rung.
 const collected = (cleared: number): SwatchTrackItem[] =>
 	LADDER.map((theme, gate) =>
 		gate < cleared
@@ -119,11 +113,8 @@ const OUTCOMES: readonly CrumbVerdict[] = [
 	"correct",
 ];
 
-// The disclosure is the screen's one piece of state, so a story owns it — a
-// .ui.tsx takes plain data and hands the decision back out.
-// Distributive: a plain Omit over a union collapses both branches into one
-// object and loses the discriminant, so `outcome: "held"` would then accept
-// `spendableKb`.
+// Distributive: a plain Omit over a union collapses both branches and loses the
+// discriminant, so `outcome: "held"` would then accept `spendableKb`.
 type Verdict<T> = T extends unknown
 	? Omit<T, "detailShown" | "onToggleDetail">
 	: never;
@@ -159,8 +150,6 @@ export const FirstClear: Story = {
 	),
 };
 
-/** Cleared on the gate's own terms but short of the coverage the next rung
- * wants: the headline figure turns red while the swatch is still awarded. */
 export const ShortOfDemand: Story = {
 	render: () => (
 		<Clear
@@ -180,8 +169,6 @@ export const ShortOfDemand: Story = {
 	),
 };
 
-// The gate held: nothing fired that needed a clear, so those lines report why
-// rather than what they paid, and the swatch square stays hollow on the track.
 const HELD_COVERAGE: readonly LedgerEntry[] = [
 	{
 		id: "css",
@@ -237,9 +224,6 @@ const HELD_TRACK: SwatchTrackItem[] = LADDER.map((theme, gate) => {
 	return gate === 4 ? { gate, state: "pending" } : { gate, state: "locked" };
 });
 
-/** The gate holds. The swatch is drawn as the outline of the one you were going
- * for, the storage that never paid still shows why, and the way out costs
- * configs rather than KB. */
 export const NotEarned: Story = {
 	render: () => (
 		<Clear

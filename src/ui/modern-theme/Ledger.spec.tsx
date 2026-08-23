@@ -160,8 +160,6 @@ describe("Ledger", () => {
 	it("leaves a category with no polls unmarked and silent", () => {
 		render(<Ledger title="coverage" unit="%" entries={COVERAGE} showDetail />);
 
-		// Five rows, four verdicts: the vue row has nothing to report, so it
-		// announces nothing rather than announcing an absence.
 		expect(screen.getByText("vue")).toBeInTheDocument();
 		expect(screen.queryAllByRole("img")).toHaveLength(4);
 	});

@@ -2,8 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Slot } from "./Slot.ui";
 
-// Game-design reason: pipeline width is what a build is planned around, so the
-// slots you have not filled have to be as visible as the ones you have.
 const meta: Meta<typeof Slot> = {
 	component: Slot,
 	title: "Modern/Slot",

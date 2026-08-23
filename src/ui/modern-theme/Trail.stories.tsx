@@ -2,8 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Trail } from "./Trail.ui";
 
-// Game-design reason: the window is five polls long, so the trail is the only
-// place a player sees how much of this gate is already spent.
 const meta: Meta<typeof Trail> = {
 	component: Trail,
 	title: "Modern/Trail",
@@ -51,9 +49,6 @@ export const LastPoll: Story = {
 	},
 };
 
-/** Every verdict a finished poll can carry: celadon correct, saffron partial,
- * cinnabar wrong. The live crumb is bold as well as theme-dotted, so it stays
- * distinct even on a gate whose accent is saffron. */
 export const EveryVerdict: Story = {
 	args: {
 		label: "Polls in this gate",

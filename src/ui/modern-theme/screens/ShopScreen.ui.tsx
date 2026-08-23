@@ -6,8 +6,6 @@ import { Text } from "../Text.ui";
 
 const SCREEN = "flex flex-col bg-theme-faint";
 
-// The draft comes first in the DOM so a stacked phone reads what is for sale
-// before what is already owned; lg turns the stack into two columns.
 const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const COLUMN = "flex min-w-0 flex-1 flex-col px-2 py-4";
 const DRAFT = "border-b border-edge lg:border-b-0 lg:border-r";

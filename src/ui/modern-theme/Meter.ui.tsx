@@ -1,8 +1,6 @@
 const TRACK = "flex h-2 w-full overflow-hidden rounded-full bg-zinc-800";
 const HELD = "h-full bg-theme";
 
-// The projected slice is the same colour at reduced opacity rather than a second
-// token: it has to read as "more of this", not as a different quantity.
 const PROJECTED = "h-full bg-theme opacity-40";
 
 export type MeterProps = {

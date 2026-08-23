@@ -32,7 +32,6 @@ export const Meta_: Story = {
 	args: { size: "meta", tone: "muted", children: "lift-the-final-two" },
 };
 
-/** The whole ramp at once — the theme carries hierarchy on size and tone alone. */
 export const Scale: Story = {
 	render: () => (
 		<div className="flex flex-col gap-3">

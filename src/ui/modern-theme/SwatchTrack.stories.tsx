@@ -2,8 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { SwatchTrack, type SwatchTrackItem } from "./SwatchTrack.ui";
 
-// Game-design reason: the track is the only place a run's whole shape is visible
-// at once — how far up you are, and how much ladder is left to lose.
 const meta: Meta<typeof SwatchTrack> = {
 	component: SwatchTrack,
 	title: "Modern/SwatchTrack",
@@ -19,8 +17,6 @@ export default meta;
 
 type Story = StoryObj<typeof SwatchTrack>;
 
-// Tracks GATE_SWATCHES in swatch.model.ts: gates count from 0, so Pallet is
-// gate 0 and Champion is gate 12.
 const LADDER = [
 	"pallet",
 	"boulder",
@@ -50,8 +46,6 @@ export const FirstGate: Story = { args: { items: ladderAt(0) } };
 
 export const Champion: Story = { args: { items: ladderAt(12) } };
 
-// No current square: the run is over, so the label counts what was banked
-// rather than naming a gate you are no longer standing on.
 export const RunOver: Story = {
 	args: {
 		items: LADDER.map((theme, gate) =>

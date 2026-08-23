@@ -9,12 +9,8 @@ const HEADER = "flex flex-col gap-4 border-b border-edge px-5 py-4";
 const IDENTITY = "flex flex-wrap items-start justify-between gap-4";
 const NAME = "flex min-w-0 items-start gap-3";
 
-// Title and audit share a column so the audit line hangs off the title rather
-// than the swatch; the indent falls out of the layout instead of a padding.
 const NAMING = "flex min-w-0 flex-col gap-0.5";
 
-// Optically centres the square on the title's first line, which items-start
-// alone cannot do once a second line exists below it.
 const BADGE = "mt-1";
 
 export type GateHeaderProps = {

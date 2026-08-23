@@ -4,9 +4,6 @@ import { Delta } from "./Delta.ui";
 import { Entry } from "./Entry.ui";
 import { Text } from "./Text.ui";
 
-// Game-design reason: a config has to say what it is doing to THIS poll, not just
-// that it is installed — which is why the row carries a verdict, a price and a
-// sentence the player can open.
 const meta: Meta<typeof Entry> = {
 	component: Entry,
 	title: "Modern/Entry",
@@ -43,7 +40,6 @@ export const Offline: Story = {
 	},
 };
 
-/** A config with something to explain opens; one without stays a plain row. */
 export const Expanded: Story = {
 	args: {
 		label: "ESLint",
@@ -68,8 +64,6 @@ export const Failing: Story = {
 	},
 };
 
-// A config you spend rather than one that reports: the trailing slot is a
-// button priced in storage, not a number the run already owns.
 export const Spendable: Story = {
 	args: {
 		label: "ESLint",
@@ -82,7 +76,6 @@ export const Spendable: Story = {
 	},
 };
 
-/** Nothing banked to pay with, so the price stays readable but unpressable. */
 export const Unaffordable: Story = {
 	args: {
 		label: "ESLint",

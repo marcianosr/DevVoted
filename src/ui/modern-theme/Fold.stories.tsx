@@ -8,8 +8,6 @@ import { Mark, type MarkVariant } from "./Mark.ui";
 import { Row } from "./Row.ui";
 import { Text } from "./Text.ui";
 
-// Game-design reason: the pipeline is the run's one persistent readout, and a
-// player needs its bottom line — what this build costs — without unfolding it.
 const meta: Meta<typeof Fold> = {
 	component: Fold,
 	title: "Modern/Fold",

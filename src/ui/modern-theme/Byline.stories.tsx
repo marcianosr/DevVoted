@@ -2,9 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Byline } from "./Byline.ui";
 
-// Game-design reason: a daily poll written by a name reads as authored rather
-// than generated, which is what makes a bad question feel like someone's opinion
-// instead of a bug.
 const meta: Meta<typeof Byline> = {
 	component: Byline,
 	title: "Modern/Byline",

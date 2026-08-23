@@ -16,7 +16,6 @@ export const Flat: Story = { args: { kb: 0 } };
 export const WithoutUnit: Story = { args: { kb: -128, unit: false } };
 export const Multiplier: Story = { args: { multiplier: 1.5 } };
 
-/** Sign decides colour; a multiplier is not a gain or a loss, so it stays muted. */
 export const Together: Story = {
 	render: () => (
 		<div className="flex flex-col items-end gap-1">

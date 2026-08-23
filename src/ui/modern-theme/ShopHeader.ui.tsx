@@ -9,12 +9,9 @@ const NAMING = "flex min-w-0 flex-col gap-0.5";
 const LEDGER = "flex flex-col items-end gap-1";
 
 export type ShopHeaderProps = {
-	/** The shop is the gate's, so it wears the gate's name: "Lavender shop". */
 	title: ReactNode;
-	/** Where the exit leads, e.g. "gate 4". */
 	nextGate: ReactNode;
 	storage: StorageProps;
-	/** What happens to storage held past the cap, when there is such a warning. */
 	capNote?: ReactNode;
 };
 

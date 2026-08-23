@@ -2,8 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Lock } from "./Lock.ui";
 
-// Game-design reason: a lock is the only way to carry an offer past a rebuild,
-// so it has to read as pressable before a player has ever paid for one.
 const meta: Meta<typeof Lock> = {
 	component: Lock,
 	title: "Modern/Lock",

@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 
 import { Delta } from "./Delta.ui";
 
-// The tint sits on the badge, one element out from the text node it wraps.
 const badgeAround = (text: string) => screen.getByText(text).parentElement;
 
 describe("Delta", () => {

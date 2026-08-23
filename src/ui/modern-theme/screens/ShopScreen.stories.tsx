@@ -15,9 +15,6 @@ import { Slot } from "../Slot.ui";
 import { Text } from "../Text.ui";
 import { ShopScreen, type ShopScreenProps } from "./ShopScreen.ui";
 
-// Game-design reason: the shop is where a run is actually built, and the whole
-// decision is one number — spendable storage — read against a shelf of prices.
-// Prices and rules track shop/domain/draft.model.ts and wiki §5.2.
 const meta: Meta<typeof ShopScreen> = {
 	component: ShopScreen,
 	title: "Modern/Screens/Shop",
@@ -101,15 +98,12 @@ const installed = [
 	{ id: ".java", label: ".java", needs: "needs 64 KB" },
 ];
 
-// The empty slots a build still has room for, then the next one it does not own.
 const slotRows = (open: readonly number[], nextGate: number): FoldItem[] => [
 	...open.map((slot) => ({ id: `slot-${slot}`, content: <Slot /> })),
 	{ id: "slot-next", content: <Slot gate={nextGate} /> },
 ];
 
 const Shelf = (overrides: Partial<ShopScreenProps>) => {
-	// MAX_LOCKED_OFFERS is 1, so holding one releases the other rather than
-	// stacking — the story enforces the rule instead of describing it.
 	const [held, setHeld] = useState<string | null>("Freemium");
 
 	const offers: FoldItem[] = OFFERS.map((offer) => ({
@@ -122,8 +116,6 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 				summary={offer.summary}
 				explainer={offer.explainer}
 				leading={
-					// An owned offer has nothing left to hold, so its lock gives way to
-					// the same verdict mark the pipeline uses.
 					offer.owned ? (
 						<Mark variant="pass" />
 					) : offer.lockable ? (
@@ -199,7 +191,6 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 		),
 	}));
 
-	// Three installed, three owned-but-empty, and the seventh two gates away.
 	const withSlots: FoldItem[] = [...pipeline, ...slotRows([4, 5, 6], 4)];
 
 	return (
@@ -268,10 +259,8 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 	);
 };
 
-/** Narrow the browser past `lg` and the two columns stack, draft first. */
 export const MidRun: Story = { render: () => <Shelf /> };
 
-/** Nothing spendable: every price is out of reach and the shelf is browsing only. */
 export const Broke: Story = {
 	render: () => (
 		<Shelf
@@ -284,8 +273,6 @@ export const Broke: Story = {
 	),
 };
 
-/** A fresh build: nothing installed, so the pipeline is all empty rows and the
- * width the run is planning around is visible without counting a sentence. */
 export const EmptyPipeline: Story = {
 	render: () => (
 		<Shelf pipeline={slotRows([1, 2, 3, 4, 5, 6], 4)} slots="0 of 6 slots" />

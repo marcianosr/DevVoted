@@ -4,9 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Choice } from "./Choice.ui";
 
-// Game-design reason: the answer card is where a config's effect becomes visible
-// at the moment of choosing — a blocked option has to read as blocked before the
-// player commits, not after.
 const meta: Meta<typeof Choice> = {
 	component: Choice,
 	title: "Modern/Choice",

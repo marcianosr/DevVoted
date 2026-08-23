@@ -4,9 +4,6 @@ import { Control } from "./Control.ui";
 import { PriceTag } from "./PriceTag.ui";
 import { Text } from "./Text.ui";
 
-// Game-design reason: extend and git tag change the shape of the run rather
-// than its contents, so they have to read as terms being offered, not as two
-// more things on the shelf.
 const meta: Meta<typeof Control> = {
 	component: Control,
 	title: "Modern/Control",
@@ -39,7 +36,6 @@ export const Extend: Story = {
 	},
 };
 
-/** Folded by default. The terms are worth reading once, not every visit. */
 export const GitTag: Story = {
 	args: {
 		icon: "tag",
@@ -60,7 +56,6 @@ export const GitTag: Story = {
 	},
 };
 
-/** Open, so the terms can be checked against the mock. */
 export const GitTagOpen: Story = {
 	args: { ...GitTag.args, defaultOpen: true },
 };

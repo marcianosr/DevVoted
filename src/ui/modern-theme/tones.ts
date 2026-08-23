@@ -1,9 +1,8 @@
 export type ModernTone =
 	| "default"
 	| "muted"
-	/** Take the colour from whatever set it above: a tinted Chip, a coloured
-	 * Action, a Crumb wearing the gate. Without it those wrappers paint a colour
-	 * their own label then overrides. */
+	/** Takes the colour a tinted wrapper already set, which a real tone would
+	 * override. */
 	| "inherit"
 	| "theme"
 	| "celadon"

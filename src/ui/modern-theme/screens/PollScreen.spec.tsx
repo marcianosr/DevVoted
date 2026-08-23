@@ -47,8 +47,6 @@ const props: PollScreenProps = {
 	rail: <Fold title="Pipeline" value="−128 KB" />,
 };
 
-// The question is split across elements by the highlighted token, so a plain
-// string matcher would miss it.
 const wholeQuestion = (_: string, element: Element | null) =>
 	element?.textContent === "which line lifts the final two from arr?";
 
@@ -81,8 +79,6 @@ describe("PollScreen", () => {
 		expect(screen.getAllByRole("radio")).toHaveLength(2);
 	});
 
-	// The refusal is part of the label, so it lands in the radio's accessible
-	// name too — a blocked answer says why it is blocked, not just that it is.
 	it("strikes out and disables the answer a config blocked", () => {
 		render(<PollScreen {...props} />);
 

@@ -21,7 +21,6 @@ const STATE = {
 export type PriceTagProps = {
 	kb: number;
 	on: string;
-	/** The verb the open row offers, e.g. "install". */
 	label?: string;
 	state?: PriceTagState;
 	onUse: () => void;

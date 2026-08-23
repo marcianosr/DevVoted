@@ -4,8 +4,6 @@ import { Ledger, type LedgerEntry } from "./Ledger.ui";
 import { Mark } from "./Mark.ui";
 import { Swatch } from "./Swatch.ui";
 
-// Game-design reason: a player who cannot tell whether a config is earning its
-// slot gets the answer here, per config, in the currency they spend.
 const meta: Meta<typeof Ledger> = {
 	component: Ledger,
 	title: "Modern/Ledger",
@@ -91,14 +89,10 @@ export const Storage: Story = {
 	args: { title: "storage", unit: "KB", entries: STORAGE, showDetail: true },
 };
 
-/** Folded shut: the total is the answer, so it stays. The attribution is for the
- * player who wants to know which config earned it, and only then. */
 export const Folded: Story = {
 	args: { title: "storage", unit: "KB", entries: STORAGE, showDetail: false },
 };
 
-/** A gate that took more than it paid: the total is the one line that can go
- * negative, and it says so in the same red the losing rows wear. */
 export const NetLoss: Story = {
 	args: {
 		title: "storage",

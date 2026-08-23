@@ -21,8 +21,6 @@ export type QuestionProps = {
 export const Question = ({ children, category, meta }: QuestionProps) => (
 	<div className={QUESTION}>
 		{(category ?? meta?.length) ? (
-			// Above the verse, not below it: these are the terms you read the
-			// question under, and by the time you have read it they are too late.
 			<p className={META}>
 				{category ? (
 					<Chip tone={category.tone ?? "theme"}>{category.label}</Chip>

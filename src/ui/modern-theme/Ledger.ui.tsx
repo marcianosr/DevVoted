@@ -12,20 +12,13 @@ const ROWS = "flex flex-col";
 const ROW = "flex items-center gap-3 py-1";
 const SPENT = "opacity-50";
 
-// The mark and the name are fixed so the notes start on one gridline down the
-// whole column; the notes are fixed and small so a wordy row cannot push the
-// figure off its own. Everything left over falls between notes and figure.
 const LEAD = "flex size-4 shrink-0 items-center justify-center";
 const NAME = "min-w-32 shrink-0";
 const NOTES = "flex w-44 shrink-0 flex-wrap items-center gap-1.5";
 
-// Indented past the mark column so it starts on the same gridline as the names
-// it is summing, not on the gridline of the marks.
 const TOTAL =
 	"flex items-center justify-between gap-6 border-t border-edge pt-3";
 
-// Right-aligned figures in a column have to hold their gridline as digits
-// change, or the eye reads the ragged edge before it reads the numbers.
 const VALUE = "ml-auto shrink-0 tabular-nums";
 
 export type LedgerUnit = "%" | "KB";
@@ -39,8 +32,6 @@ export type LedgerEntry = {
 	dimmed?: boolean;
 };
 
-/** Overrides the computed total where the bottom line is not the column's sum —
- * a shortfall is measured against a demand the column knows nothing about. */
 export type LedgerFooter = {
 	label: string;
 	value: string;

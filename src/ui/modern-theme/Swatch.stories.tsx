@@ -20,7 +20,6 @@ type Story = StoryObj<typeof Swatch>;
 export const Badge: Story = { args: { size: "badge" } };
 export const Pip: Story = { args: { size: "pip" } };
 
-/** `theme` overrides the ambient gate colour for this square only. */
 export const Overridden: Story = { args: { size: "badge", theme: "volcano" } };
 
 export const EveryGate: Story = {

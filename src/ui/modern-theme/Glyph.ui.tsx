@@ -2,8 +2,6 @@ import { clsx } from "clsx";
 
 export type GlyphName = "rebuild" | "extend" | "tag";
 
-// Hand-drawn rather than an icon package: three shapes do not earn a dependency,
-// and the padlock in Lock.ui.tsx already set the precedent.
 const PATHS = {
 	rebuild: (
 		<>

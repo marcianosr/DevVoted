@@ -2,9 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { PriceTag } from "./PriceTag.ui";
 
-// Game-design reason: the shop's two-tap purchase is the one guard against
-// misbuying, so the price and the confirm have to be the same object changing
-// state rather than two controls in a row.
 const meta: Meta<typeof PriceTag> = {
 	component: PriceTag,
 	title: "Modern/PriceTag",
@@ -31,8 +28,6 @@ export const Unaffordable: Story = {
 	args: { kb: 512, on: "WTFPL", state: "unaffordable" },
 };
 
-/** Inside an open row, where the tag becomes the confirm. Click the summary to
- * watch it flip. */
 export const InsideARow: Story = {
 	render: (args) => (
 		<details open className="group/entry w-96">
