@@ -27,7 +27,6 @@ export type RemovalConfig = {
 export type RemovalScreenProps = {
 	gateName: string;
 	required: number;
-	pollCount: number;
 	configs: readonly RemovalConfig[];
 	selectedIds: readonly string[];
 	onToggle: (id: string) => void;
@@ -48,7 +47,6 @@ const instruct = (shortfall: number) => {
 export const RemovalScreen = ({
 	gateName,
 	required,
-	pollCount,
 	configs,
 	selectedIds,
 	onToggle,

@@ -20,7 +20,6 @@ const configs: readonly RemovalConfig[] = [
 const props: RemovalScreenProps = {
 	gateName: "Lavender",
 	required: 2,
-	pollCount: 5,
 	configs,
 	selectedIds: [],
 	onToggle: () => {},
@@ -35,21 +34,17 @@ describe("RemovalScreen", () => {
 		render(<RemovalScreen {...props} />);
 
 		expect(
-			screen.getByRole("heading", { name: "Lavender holds · remove 2 configs" })
+			screen.getByRole("heading", { name: "Lavender gate · remove 2 configs" })
 		).toBeInTheDocument();
 	});
 
-	it("counts the picks against the quota", () => {
-		render(<RemovalScreen {...props} selectedIds={["ESLint"]} />);
+	it("lists the pipeline open, with nothing to collapse it behind", () => {
+		const { container } = render(<RemovalScreen {...props} />);
 
-		expect(screen.getByText("1 / 2")).toBeInTheDocument();
-	});
-
-	it("lists the pipeline under a bare heading, with no tally beside it", () => {
-		render(<RemovalScreen {...props} />);
-
-		expect(screen.getByText("Pipeline")).toBeInTheDocument();
-		expect(screen.queryByText(/configs →/)).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Pipeline" })
+		).toBeInTheDocument();
+		expect(container.querySelector("details")).toBeNull();
 	});
 
 	it("shows what each config gives beside its name", () => {
@@ -131,7 +126,7 @@ describe("RemovalScreen", () => {
 	it("ends the footer on the button, after the consequence it commits to", () => {
 		render(<RemovalScreen {...props} />);
 
-		const sentence = screen.getByText(/Then the shop opens/);
+		const sentence = screen.getByText(/without deinstall refund/);
 		const button = screen.getByRole("button", { name: CONTINUE });
 
 		expect(
@@ -140,12 +135,12 @@ describe("RemovalScreen", () => {
 		).toBeTruthy();
 	});
 
-	it("says what follows the removal, since the run does not end here", () => {
+	it("says the removal is forced and unpaid, not a trade", () => {
 		render(<RemovalScreen {...props} />);
 
 		expect(
 			screen.getByText(
-				"2 configs leave the run. Then the shop opens and Lavender runs again on 5 fresh polls."
+				"You are forced to remove 2 configs from this run without deinstall refund!"
 			)
 		).toBeInTheDocument();
 	});

@@ -68,7 +68,6 @@ const Picking = ({ start = [], ...overrides }: Preset) => {
 		<RemovalScreen
 			gateName="Lavender"
 			required={2}
-			pollCount={5}
 			configs={PIPELINE}
 			selectedIds={selectedIds}
 			onToggle={toggle}
