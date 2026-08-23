@@ -13,6 +13,12 @@ describe("Entry", () => {
 		expect(screen.getByText("+16")).toBeInTheDocument();
 	});
 
+	it("reads under the fold heading it sits below, never level with it", () => {
+		render(<Entry label="IndexedDB" mark="pass" />);
+
+		expect(screen.getByText("IndexedDB")).toHaveClass("text-xs");
+	});
+
 	it("stays a plain row when the config has nothing to explain", () => {
 		const { container } = render(<Entry label=".ts" mark="idle" />);
 

@@ -69,7 +69,7 @@ export const Entry = ({
 			}
 			className={expandable ? SUMMARY : undefined}
 		>
-			<Text size="body">{label}</Text>
+			<Text size="meta">{label}</Text>
 			{notes ? <span className={NOTES}>{notes}</span> : null}
 		</Row>
 	);
