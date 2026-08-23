@@ -9,7 +9,7 @@ const props: PrepScreenProps = {
 	gateName: "Lavender",
 	gate: {
 		title: "Gate 4 · Lavender",
-		audit: "1 audit · Dependency Outage",
+		audits: ["dependency-outage"],
 		storage: { plan: "Standard plan", used: 184, cap: 640 },
 	},
 	pollCount: 5,
@@ -25,8 +25,7 @@ const props: PrepScreenProps = {
 	slots: [{ id: "slot-4", gate: 6 }],
 	audits: [
 		{
-			id: "outage",
-			name: "Dependency Outage",
+			id: "dependency-outage",
 			description: "One config goes offline for this gate.",
 		},
 	],

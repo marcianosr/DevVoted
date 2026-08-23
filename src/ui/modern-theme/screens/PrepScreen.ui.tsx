@@ -1,12 +1,14 @@
 import { Fragment, type ReactNode } from "react";
 
 import { Action } from "../Action.ui";
+import { AUDIT, type AuditId } from "../audits";
 import { Chip } from "../Chip.ui";
 import { Delta } from "../Delta.ui";
 import { Dot } from "../Dot.ui";
 import { Entry } from "../Entry.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
 import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
+import { Glyph } from "../Glyph.ui";
 import { Slot } from "../Slot.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
@@ -49,8 +51,10 @@ export type PrepConfig = {
 export type PrepSlot = { id: string; gate?: number };
 
 export type PrepAudit = {
-	id: string;
-	name: string;
+	/** The name and the icon come off the id, so an audit cannot be called one
+	 * thing here and another in the Dex. The wording of its effect stays local:
+	 * prep says what it does to THIS gate, the Dex states the general rule. */
+	id: AuditId;
 	description: string;
 	suppressed?: boolean;
 };
@@ -352,13 +356,20 @@ export const PrepScreen = ({
 								id: audit.id,
 								content: (
 									<Entry
-										mark="warn"
+										leading={
+											<Glyph
+												name={AUDIT[audit.id].glyph}
+												className={
+													audit.suppressed ? "text-zinc-500" : "text-saffron"
+												}
+											/>
+										}
 										dimmed={audit.suppressed}
 										label={
 											audit.suppressed ? (
-												<span className={STRUCK}>{audit.name}</span>
+												<span className={STRUCK}>{AUDIT[audit.id].label}</span>
 											) : (
-												audit.name
+												AUDIT[audit.id].label
 											)
 										}
 										notes={

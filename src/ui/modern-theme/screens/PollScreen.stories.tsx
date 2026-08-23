@@ -254,7 +254,7 @@ const base: Omit<PollScreenProps, "options"> = {
 	theme: "lavender",
 	gate: {
 		title: "Gate 4 · Lavender",
-		audit: "1 audit · Dependency Outage",
+		audits: ["dependency-outage"],
 		storage: { plan: "Free tier", used: 184, cap: 512 },
 		track: ladderAt(4),
 	},
@@ -297,7 +297,7 @@ const gateStory = (gate: number, name: string, theme: string): Story => ({
 			theme={theme}
 			gate={{
 				title: `Gate ${gate} · ${name}`,
-				audit: "1 audit · Dependency Outage",
+				audits: ["dependency-outage"],
 				storage: { plan: "Free tier", used: 184, cap: 512 },
 				track: ladderAt(gate),
 			}}

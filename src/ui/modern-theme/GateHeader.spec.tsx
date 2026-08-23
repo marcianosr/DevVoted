@@ -35,15 +35,25 @@ describe("GateHeader", () => {
 
 	it("shows the audit condition the gate runs under", () => {
 		render(
+			<GateHeader title="Gate 4 · Lavender" audits={["dependency-outage"]} />
+		);
+
+		expect(screen.getByText("1 audit")).toHaveClass("text-saffron");
+		expect(screen.getByText("Dependency Outage")).toHaveClass("text-saffron");
+	});
+
+	// The count comes off the list, so it cannot be written wrong.
+	it("counts the audits it was given rather than being told a number", () => {
+		render(
 			<GateHeader
-				title="Gate 4 · Lavender"
-				audit="1 audit · Dependency Outage"
+				title="Gate 10 · Earth"
+				audits={["breaking-change", "timeout"]}
 			/>
 		);
 
-		expect(screen.getByText("1 audit · Dependency Outage")).toHaveClass(
-			"text-saffron"
-		);
+		expect(screen.getByText("2 audits")).toBeInTheDocument();
+		expect(screen.getByText("Breaking Change")).toBeInTheDocument();
+		expect(screen.getByText("Timeout")).toBeInTheDocument();
 	});
 
 	it("says nothing about audits when the gate runs clean", () => {

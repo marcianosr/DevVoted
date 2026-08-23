@@ -65,7 +65,7 @@ const base: PrepScreenProps = {
 	gateName: "Lavender",
 	gate: {
 		title: "Gate 4 · Lavender",
-		audit: "1 audit · Dependency Outage",
+		audits: ["dependency-outage"],
 		storage: { plan: "Standard plan", used: 184, cap: 640 },
 		track: ladderAt(4),
 	},
@@ -78,8 +78,7 @@ const base: PrepScreenProps = {
 	slots: [{ id: "slot-4", gate: 6 }],
 	audits: [
 		{
-			id: "outage",
-			name: "Dependency Outage",
+			id: "dependency-outage",
 			description: "One config goes offline for this gate.",
 		},
 	],
@@ -134,8 +133,7 @@ export const Suppressed: Story = {
 			{...base}
 			audits={[
 				{
-					id: "outage",
-					name: "Dependency Outage",
+					id: "dependency-outage",
 					description: "One config goes offline for this gate.",
 					suppressed: true,
 				},
@@ -180,7 +178,7 @@ export const Elite: Story = {
 			theme="elite"
 			gate={{
 				title: "Gate 11 · Elite",
-				audit: "2 audits · Cost Overrun, Breaking Change",
+				audits: ["cost-overrun", "breaking-change"],
 				storage: { plan: "Pro plan", used: 612, cap: 768 },
 				track: ladderAt(11),
 			}}
@@ -188,13 +186,11 @@ export const Elite: Story = {
 			removeOnMiss={3}
 			audits={[
 				{
-					id: "overrun",
-					name: "Cost Overrun",
+					id: "cost-overrun",
 					description: "Every draft this gate costs double.",
 				},
 				{
-					id: "breaking",
-					name: "Breaking Change",
+					id: "breaking-change",
 					description: "Your highest-level config goes offline.",
 				},
 			]}

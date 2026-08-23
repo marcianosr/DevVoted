@@ -6,8 +6,6 @@ import { AuditsPanel, type DexAudit } from "./AuditsPanel.ui";
 const COST_OVERRUN: DexAudit = {
 	id: "cost-overrun",
 	tier: "faced",
-	name: "Cost Overrun",
-	glyph: "overrun",
 	gates: [3],
 	rule: "Every paid action costs double, linting and peeking both.",
 };
@@ -15,8 +13,6 @@ const COST_OVERRUN: DexAudit = {
 const MIRROR: DexAudit = {
 	id: "mirrored",
 	tier: "unlocked",
-	name: "Mirror",
-	glyph: "mirror",
 	gates: [7, 11],
 	rule: "Every poll asks for the incorrect options, and wants all of them.",
 };

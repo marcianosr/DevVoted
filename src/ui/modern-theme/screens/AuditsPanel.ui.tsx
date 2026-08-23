@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 
-import { Glyph, type GlyphName } from "../Glyph.ui";
+import { AUDIT, type AuditId } from "../audits";
+import { Glyph } from "../Glyph.ui";
 import { Mark } from "../Mark.ui";
 import { Text } from "../Text.ui";
 
@@ -32,14 +33,14 @@ export type AuditTier = "faced" | "unlocked" | "unseen";
  * earned yet. */
 export type DexAudit =
 	| {
-			id: string;
+			id: AuditId;
 			tier: "faced" | "unlocked";
-			name: string;
-			glyph: GlyphName;
 			gates: readonly number[];
 			rule: string;
 	  }
-	| { id: string; tier: "unseen"; name?: never };
+	/** An opaque id, deliberately not an AuditId: the row is a placeholder, and
+	 * a real one would name the audit in the React tree it is hiding. */
+	| { id: string; tier: "unseen"; gates?: never };
 
 export type AuditsPanelProps = { audits: readonly DexAudit[] };
 
@@ -69,12 +70,12 @@ const AuditRow = ({ audit }: { audit: DexAudit }) => {
 			{/* Saffron is the audit colour everywhere in this kit — the gate chips,
 			    the gate header's audit line — so a met audit wears it here too. */}
 			<Glyph
-				name={audit.glyph}
+				name={AUDIT[audit.id].glyph}
 				className={clsx(ICON, faced ? "text-saffron" : "text-zinc-500")}
 			/>
 			<span className={HEAD}>
 				<Text size="body" className={NAME}>
-					{audit.name}
+					{AUDIT[audit.id].label}
 				</Text>
 				<Text size="meta" tone="muted">
 					{gateLabel(audit.gates)}
