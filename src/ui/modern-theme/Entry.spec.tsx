@@ -81,7 +81,7 @@ describe("Entry", () => {
 			/>
 		);
 
-		expect(screen.getByText(/blocking 1 option/)).toHaveClass("text-zinc-500");
+		expect(screen.getByText(/blocking 1 option/)).toHaveClass("text-zinc-400");
 		const explainer = screen.getByText(/Strikes out one wrong/);
 		expect(explainer).toHaveClass("text-zinc-100");
 		expect(explainer).toHaveClass("text-xs");

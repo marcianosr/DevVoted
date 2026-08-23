@@ -39,6 +39,23 @@ describe("Mark", () => {
 		});
 
 		expect(idle).toHaveClass("border", "text-zinc-600");
-		expect(idle).not.toHaveClass("bg-viridian");
+		expect(idle).not.toHaveClass("bg-celadon");
+	});
+
+	it("boxes a poll category and discs a config verdict", () => {
+		const { container: box } = render(<Mark variant="fail" shape="box" />);
+		const { container: disc } = render(<Mark variant="fail" />);
+
+		expect(box.firstChild).toHaveClass("rounded");
+		expect(box.firstChild).not.toHaveClass("rounded-full");
+		expect(disc.firstChild).toHaveClass("rounded-full");
+	});
+
+	it("stays silent when blank, having nothing to announce", () => {
+		const { container } = render(<Mark variant="blank" shape="box" />);
+
+		expect(container.firstChild).toHaveAttribute("aria-hidden");
+		expect(container.firstChild).toBeEmptyDOMElement();
+		expect(screen.queryByRole("img")).not.toBeInTheDocument();
 	});
 });

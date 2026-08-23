@@ -1,10 +1,12 @@
 export type ModernTone =
 	| "default"
 	| "muted"
-	| "dim"
+	/** Take the colour from whatever set it above: a tinted Chip, a coloured
+	 * Action, a Crumb wearing the gate. Without it those wrappers paint a colour
+	 * their own label then overrides. */
 	| "inherit"
 	| "theme"
-	| "viridian"
+	| "celadon"
 	| "saffron"
 	| "vermillion"
 	| "cinnabar"
@@ -12,11 +14,10 @@ export type ModernTone =
 
 export const MODERN_TONE = {
 	default: "text-zinc-100",
-	muted: "text-zinc-500",
-	dim: "text-zinc-400",
+	muted: "text-zinc-400",
 	inherit: "",
 	theme: "text-theme",
-	viridian: "text-viridian",
+	celadon: "text-celadon",
 	saffron: "text-saffron",
 	vermillion: "text-vermillion",
 	cinnabar: "text-cinnabar",

@@ -4,6 +4,11 @@
 @import "@fontsource/jetbrains-mono/500.css";
 @import "@fontsource/jetbrains-mono/700.css";
 @import "@fontsource/jetbrains-mono/800.css";
+/* Candidate typeface, under evaluation against JetBrains Mono. Self-hosted like
+   the rest — no Google Fonts request. Toggled from Storybook's toolbar; nothing
+   in the app opts into it yet. */
+@import "@fontsource/space-mono/400.css";
+@import "@fontsource/space-mono/700.css";
 
 /* Dark-only (Marciano, 2026-08-13). The light halves that used to sit in here
    were unreachable — `__root.tsx`'s `<body class="bg-black text-white">` is a
@@ -27,7 +32,9 @@
 		-moz-osx-font-smoothing: grayscale;
 		text-rendering: optimizeLegibility;
 		line-height: 1.5; /* 1.4-1.6 for body text */
-		letter-spacing: 0.01em; /* Slight spacing helps readability */
+		/* Tailwind's tracking-tight, picked against the wider mono faces. The old
+		   0.01em was set for a narrower one and let every label run loose. */
+		letter-spacing: var(--tracking-tight);
 		word-spacing: 0.05em;
 	}
 
@@ -398,6 +405,13 @@ body[data-screen-theme] {
 @utility bg-theme-faint {
 	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
 }
+/* Two layers because one blur alone reads as a soft edge rather than a glow: a
+   tight opaque-ish ring holds the shape, the wide bloom carries the light. */
+@utility glow-theme {
+	box-shadow:
+		0 0 0 0.75rem oklch(from var(--theme-color) l c h / 0.12),
+		0 0 3rem 0.5rem oklch(from var(--theme-color) l c h / 0.22);
+}
 @utility border-theme {
 	border-color: var(--theme-color);
 }
@@ -448,6 +462,33 @@ body {
 	/* Pin bold to preserve the app's look now that a real 400 face is registered —
 	   without this the default weight would silently flip to regular everywhere. */
 	font-weight: bold;
+}
+
+/* Attribute rather than a class so it can sit on any wrapper and beat the body
+   rule by specificity. Storybook's Font toolbar is the only thing that sets it. */
+[data-font="space-mono"] {
+	font-family: "Space Mono", ui-monospace, monospace;
+}
+[data-font="jetbrains-mono"] {
+	font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Tracking under evaluation against the base rule's 0.01em, which was set for a
+   narrower face than Space Mono. The em values are Tailwind's own tracking-tight
+   and tracking-tighter, so whichever wins is a utility and not a magic number;
+   the px value is the one asked for, kept separate because it does not scale
+   with the size — at text-xxs it bites twice as hard as it does at text-ask. */
+[data-tracking="tight"] {
+	letter-spacing: -0.025em;
+}
+[data-tracking="tighter"] {
+	letter-spacing: -0.05em;
+}
+[data-tracking="half-pixel"] {
+	letter-spacing: -0.5px;
+}
+[data-tracking="loose"] {
+	letter-spacing: 0.01em;
 }
 
 meter {

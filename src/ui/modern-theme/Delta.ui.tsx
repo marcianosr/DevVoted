@@ -5,7 +5,7 @@ export type DeltaProps =
 
 const toneForKb = (kb: number): ChipTone => {
 	if (kb === 0) return "muted";
-	return kb < 0 ? "cinnabar" : "viridian";
+	return kb < 0 ? "cinnabar" : "celadon";
 };
 
 const signKb = (kb: number) => `${kb < 0 ? "−" : "+"}${Math.abs(kb)}`;
@@ -15,7 +15,7 @@ export const Delta = (props: DeltaProps) => {
 	// column of six configs the tint is what makes the earning ones countable
 	// without reading a single word.
 	if ("multiplier" in props) {
-		return <Chip tone="viridian">×{props.multiplier}</Chip>;
+		return <Chip tone="celadon">×{props.multiplier}</Chip>;
 	}
 
 	// KB is the run's currency, so a bare number is the exception: `unit={false}`

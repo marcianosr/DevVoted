@@ -7,10 +7,10 @@ import { Delta } from "./Delta.ui";
 const badgeAround = (text: string) => screen.getByText(text).parentElement;
 
 describe("Delta", () => {
-	it("badges a gain viridian and signs it", () => {
+	it("badges a gain celadon and signs it", () => {
 		render(<Delta kb={16} />);
 
-		expect(badgeAround("+16 KB")).toHaveClass("bg-viridian/15");
+		expect(badgeAround("+16 KB")).toHaveClass("bg-celadon/15");
 	});
 
 	it("badges a debt cinnabar and signs it with a minus", () => {
@@ -35,6 +35,6 @@ describe("Delta", () => {
 	it("badges a multiplier as the gain it is, not as neutral trivia", () => {
 		render(<Delta multiplier={1.5} />);
 
-		expect(badgeAround("\u00d71.5")).toHaveClass("bg-viridian/15");
+		expect(badgeAround("\u00d71.5")).toHaveClass("bg-celadon/15");
 	});
 });

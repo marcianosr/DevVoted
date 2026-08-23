@@ -32,7 +32,7 @@ describe("Control", () => {
 
 		expect(screen.getByText("git tag")).toBeInTheDocument();
 		expect(screen.getByText("for your next run · one per run")).toHaveClass(
-			"text-zinc-500"
+			"text-zinc-400"
 		);
 		expect(screen.getByText("Price rises 64 KB per gate.")).toHaveClass(
 			"text-xxs"

@@ -6,7 +6,9 @@ import { Caret } from "./Caret.ui";
 import { Glyph, type GlyphName } from "./Glyph.ui";
 import { Text } from "./Text.ui";
 
-const CONTROL = "group/entry rounded-lg border";
+// Two group names on one element: `entry` is what a PriceTag inside watches for
+// its two-tap, `fold` is what the Caret watches to rotate. It is both.
+const CONTROL = "group/entry group/fold rounded-lg border";
 
 const FRAME = {
 	dashed: "border-dashed border-zinc-700",
@@ -64,7 +66,7 @@ export const Control = ({
 			<div className={clsx(CONTROL, FRAME[frame], ROW)}>
 				{glyph}
 				<div className={BODY}>
-					<Text as="p" size="meta" tone="dim">
+					<Text as="p" size="meta" tone="muted">
 						{children}
 					</Text>
 				</div>
@@ -89,7 +91,7 @@ export const Control = ({
 				{action}
 			</summary>
 			<div className={FACTS}>
-				<Text as="p" size="meta" tone="dim">
+				<Text as="p" size="meta" tone="muted">
 					{children}
 				</Text>
 				{footnote ? (

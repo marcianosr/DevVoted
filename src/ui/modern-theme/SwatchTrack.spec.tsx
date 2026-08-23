@@ -35,6 +35,27 @@ describe("SwatchTrack", () => {
 		expect(screen.getByText("4 / 13 gates cleared")).toBeInTheDocument();
 	});
 
+	it("counts the collection rather than the climb when asked for swatches", () => {
+		const items = ladder(4).map((item) =>
+			item.state === "current"
+				? ({ gate: item.gate, state: "locked" } satisfies SwatchTrackItem)
+				: item
+		);
+
+		render(<SwatchTrack items={items} counting="swatches" />);
+
+		expect(screen.getByText("4 of 13 collected")).toBeInTheDocument();
+	});
+
+	it("stacks the label under the squares instead of beside them", () => {
+		const { container } = render(
+			<SwatchTrack items={ladder(4)} layout="stacked" />
+		);
+
+		expect(container.firstChild).toHaveClass("flex-col");
+		expect(container.firstChild).not.toHaveClass("flex-wrap");
+	});
+
 	it("outlines only the gate being played", () => {
 		const { container } = render(<SwatchTrack items={ladder(4)} />);
 

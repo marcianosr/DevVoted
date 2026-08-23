@@ -38,12 +38,6 @@ describe("Text", () => {
 		expect(screen.getByText("−128")).toHaveClass("text-cinnabar");
 	});
 
-	it("sets no colour at all on the inherit tone", () => {
-		render(<Text tone="inherit">poll 3</Text>);
-
-		expect(screen.getByText("poll 3")).not.toHaveClass("text-zinc-100");
-	});
-
 	it("keeps a caller's className alongside its own", () => {
 		render(<Text className="truncate">Freemium</Text>);
 

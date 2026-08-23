@@ -27,3 +27,15 @@ export const AllVariants: Story = {
 		</div>
 	),
 };
+
+/** Boxes mark a poll category rather than a config, so a reward ledger can tell
+ * the two apart down one column without reading either label. */
+export const Boxes: Story = {
+	render: () => (
+		<div className="flex gap-4">
+			<Mark variant="blank" shape="box" />
+			<Mark variant="fail" shape="box" />
+			<Mark variant="pass" shape="box" />
+		</div>
+	),
+};

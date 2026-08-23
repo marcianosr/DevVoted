@@ -27,7 +27,7 @@ describe("PriceTag", () => {
 		render(<PriceTag kb={0} on="Freemium" onUse={vi.fn()} />);
 
 		expect(screen.getByText("free")).toBeInTheDocument();
-		expect(screen.getByRole("button")).toHaveClass("text-viridian");
+		expect(screen.getByRole("button")).toHaveClass("text-celadon");
 	});
 
 	it("carries the install verb for its row's open state to reveal", () => {

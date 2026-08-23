@@ -69,7 +69,7 @@ describe("Action", () => {
 	it("wears the gain colour when it is the action the shelf wants taken", () => {
 		render(<Action label="install" emphasis="loud" onUse={vi.fn()} />);
 
-		expect(screen.getByRole("button")).toHaveClass("border-viridian");
+		expect(screen.getByRole("button")).toHaveClass("border-celadon");
 	});
 
 	it("wears the legendary ring when a requirement is already met", () => {
@@ -92,5 +92,14 @@ describe("Action", () => {
 			"border-cinnabar",
 			"text-cinnabar"
 		);
+	});
+
+	it("pads a screen's one way forward harder than a shelf button", () => {
+		const { unmount } = render(<Action label="Use" onUse={vi.fn()} />);
+		expect(screen.getByRole("button")).toHaveClass("px-3", "py-1.5");
+		unmount();
+
+		render(<Action label="Enter shop" size="lg" onUse={vi.fn()} />);
+		expect(screen.getByRole("button")).toHaveClass("px-6", "py-3");
 	});
 });

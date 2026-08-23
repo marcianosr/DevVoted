@@ -7,7 +7,7 @@ import { Coverage } from "../Coverage.ui";
 import { Delta } from "../Delta.ui";
 import { Entry } from "../Entry.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
-import type { MarkVariant } from "../Mark.ui";
+import type { MarkVerdict } from "../Mark.ui";
 import type { SwatchTrackItem } from "../SwatchTrack.ui";
 import { Text } from "../Text.ui";
 import type { ModernTone } from "../tones";
@@ -37,7 +37,7 @@ const NONE = (
 type PipelineConfig = {
 	id: string;
 	label: string;
-	mark: MarkVariant;
+	mark: MarkVerdict;
 	multiplier?: number;
 	kb?: number;
 	costKb?: number;
@@ -153,14 +153,14 @@ const SEVERITY = [
 	"warn",
 	"pass",
 	"idle",
-] as const satisfies readonly MarkVariant[];
+] as const satisfies readonly MarkVerdict[];
 
 const STATUS_TONE = {
 	fail: "cinnabar",
 	warn: "saffron",
-	pass: "viridian",
+	pass: "celadon",
 	idle: "muted",
-} as const satisfies Record<MarkVariant, ModernTone>;
+} as const satisfies Record<MarkVerdict, ModernTone>;
 
 const worstMark =
 	SEVERITY.find((mark) => configs.some((config) => config.mark === mark)) ??

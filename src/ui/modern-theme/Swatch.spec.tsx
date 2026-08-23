@@ -27,4 +27,21 @@ describe("Swatch", () => {
 		expect(pip.firstChild).toHaveClass("size-4");
 		expect(badge.firstChild).toHaveClass("size-5", "rounded-md");
 	});
+
+	it("hollows a gate reached but not won, and fills one that is yours", () => {
+		const { container: pending } = render(<Swatch state="pending" />);
+		const { container: earned } = render(<Swatch state="earned" />);
+
+		expect(pending.firstChild).toHaveClass("border-dashed");
+		expect(pending.firstChild).not.toHaveClass("bg-theme");
+		expect(earned.firstChild).toHaveClass("bg-theme");
+	});
+
+	it("glows only at award size, where the square is big enough to carry it", () => {
+		const { container: pip } = render(<Swatch size="pip" />);
+		const { container: award } = render(<Swatch size="award" />);
+
+		expect(pip.firstChild).not.toHaveClass("glow-theme");
+		expect(award.firstChild).toHaveClass("size-24", "glow-theme");
+	});
 });

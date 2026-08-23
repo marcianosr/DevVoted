@@ -9,7 +9,7 @@ const HOLE = "size-1 shrink-0 rounded-full bg-current opacity-60";
 
 export type PriceTagState = "buyable" | "ready" | "owned" | "unaffordable";
 
-const READY = "group-open/entry:bg-viridian group-open/entry:text-black";
+const READY = "group-open/entry:bg-celadon group-open/entry:text-black";
 
 const STATE = {
 	buyable: `bg-surface-raised text-zinc-100 ${READY}`,
@@ -58,11 +58,7 @@ export const PriceTag = ({
 				event.stopPropagation();
 				onUse();
 			}}
-			className={clsx(
-				TAG,
-				STATE[state],
-				kb === 0 && buyable && "text-viridian"
-			)}
+			className={clsx(TAG, STATE[state], kb === 0 && buyable && "text-celadon")}
 		>
 			<span aria-hidden className={HOLE} />
 			<Text size="meta" tone="inherit">
