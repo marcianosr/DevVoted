@@ -53,8 +53,6 @@ export const Default: Story = {
 	},
 };
 
-// Dependabot's merge lands at the clear, and the run log never shows in the
-// live game — this line is the player's first sight of the free upgrade.
 export const DependabotMerged: Story = {
 	args: {
 		...Default.args,
@@ -63,13 +61,27 @@ export const DependabotMerged: Story = {
 	},
 };
 
-// Deprecated's countdown lands: the config the player has been riding is gone
-// from the build, and this row is the only place that can say so — a deleted
-// config has no chip left anywhere else.
 export const DeprecatedDeleted: Story = {
 	args: {
 		...Default.args,
 		deletedConfigs: [{ ...CONFIGS.deprecated, coverageMultiplier: 1 }],
+	},
+};
+
+export const FreemiumLapsed: Story = {
+	args: {
+		...Default.args,
+		configs: [CONFIGS.css, CONFIGS.unitTests],
+		lapsedConfigs: [CONFIGS.freemium],
+	},
+};
+
+export const SubscriptionsBilled: Story = {
+	args: {
+		...Default.args,
+		configs: [CONFIGS.css, CONFIGS.freemium],
+		billKb: 8,
+		subscriptionBillKb: 64,
 	},
 };
 

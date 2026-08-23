@@ -7,6 +7,7 @@ import {
 } from "~/modules/run/config/domain/configRoster.model";
 import {
 	DRAFT_SIZE,
+	draftCostIn,
 	draftSeed,
 	extendCost,
 	MAX_EXTENSIONS,
@@ -153,6 +154,38 @@ describe("sellRefundIn", () => {
 		const build = [CONFIGS.wtfpl, CONFIGS.agentsMd];
 		expect(sellRefundIn(build, CONFIGS.agentsMd)).toBe(0);
 		expect(sellRefundIn(build, CONFIGS.wtfpl)).toBe(0);
+	});
+
+	it("refunds half of what Freemium's shelf charged, not half of list", () => {
+		// AGENTS.md lists at 256 and drafts at 128 under Freemium. A list-priced
+		// refund would return the whole 128 and make churn free.
+		const build = [CONFIGS.freemium, CONFIGS.agentsMd];
+		expect(draftCostIn(build, CONFIGS.agentsMd)).toBe(128);
+		expect(sellRefundIn(build, CONFIGS.agentsMd)).toBe(64);
+	});
+
+	it("keeps WTFPL's zero ahead of Freemium's discount", () => {
+		const build = [CONFIGS.wtfpl, CONFIGS.freemium, CONFIGS.agentsMd];
+		expect(sellRefundIn(build, CONFIGS.agentsMd)).toBe(0);
+	});
+});
+
+describe("draftCostIn", () => {
+	it("charges list price in an ordinary build", () => {
+		expect(draftCostIn([CONFIGS.js], CONFIGS.agentsMd)).toBe(256);
+		expect(draftCostIn([CONFIGS.js], CONFIGS.intellisense)).toBe(128);
+	});
+
+	it("halves every price on the shelf while Freemium is installed", () => {
+		const build = [CONFIGS.freemium];
+		expect(draftCostIn(build, CONFIGS.agentsMd)).toBe(128);
+		expect(draftCostIn(build, CONFIGS.intellisense)).toBe(64);
+		expect(draftCostIn(build, CONFIGS.unitTests)).toBe(16);
+	});
+
+	it("costs nothing to draft Freemium itself — the bill is the whole price", () => {
+		expect(draftCostIn([], CONFIGS.freemium)).toBe(0);
+		expect(sellRefundIn([CONFIGS.freemium], CONFIGS.freemium)).toBe(0);
 	});
 });
 

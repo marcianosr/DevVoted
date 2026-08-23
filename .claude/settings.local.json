@@ -1,4 +1,18 @@
 {
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude-work/hooks/lint-on-edit.sh",
+						"statusMessage": "Linting"
+					}
+				]
+			}
+		]
+	},
 	"permissions": {
 		"allow": [
 			"Bash",

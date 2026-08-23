@@ -27,11 +27,13 @@ import {
 	type RunState,
 	type RunStatus,
 } from "~/modules/run/run/domain/run.model";
+import { type Config } from "~/modules/run/config/domain/config.model";
 import {
-	type Config,
-	draftCost,
-} from "~/modules/run/config/domain/config.model";
+	billLedger,
+	type BillLedger,
+} from "~/modules/run/config/domain/subscription.model";
 import {
+	draftCostIn,
 	extendCost,
 	LOCK_COST_KB,
 	rebuildCost,
@@ -126,6 +128,9 @@ export type GateStake = {
 	readonly stripsOnFailure: number;
 	readonly missIsFatal: boolean;
 	readonly billKb: number;
+	/** Every recurring KB cost the build carries into this gate — the plan and
+	 * each subscribed config, priced at this gate. */
+	readonly subscriptions: BillLedger;
 	readonly modifiers: PipelineModifiers;
 	readonly perAnswer: PerAnswerPreview;
 };
@@ -246,6 +251,10 @@ export type RunView = {
 	readonly autoUpgradedConfig: Config | null;
 	/** Configs that faded to ×1 at the last clear and deleted themselves. */
 	readonly deletedConfigs: readonly Config[];
+	/** Configs whose subscription went unpaid at the last clear and lapsed. */
+	readonly lapsedConfigs: readonly Config[];
+	/** KB the build's subscriptions took at the last clear. */
+	readonly subscriptionBillKb: number;
 	/** The live audits' answering-screen cues (suppressed ones excluded). */
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
@@ -366,7 +375,7 @@ const offerRefusal = (
 	isFull: boolean
 ): OfferRefusal | null => {
 	if (isFull) return { reason: "no-slot" };
-	const priceKb = draftCost(config);
+	const priceKb = draftCostIn(state.pipeline.configs, config);
 	if (state.storage < priceKb)
 		return { reason: "too-expensive", priceKb, storageKb: state.storage };
 	return null;
@@ -383,7 +392,7 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 		const withIt = [...installed, config];
 		return {
 			config,
-			priceKb: draftCost(config),
+			priceKb: draftCostIn(installed, config),
 			owned,
 			locked: locked.includes(config.id),
 			installable: !owned && refusal === null,
@@ -518,6 +527,8 @@ export const toRunView = (state: RunState): RunView => {
 				(config) => config.id === state.autoUpgradedConfigId
 			) ?? null,
 		deletedConfigs: state.deletedConfigs ?? [],
+		lapsedConfigs: state.lapsedConfigs ?? [],
+		subscriptionBillKb: state.subscriptionBillKb ?? 0,
 		audits: auditViewsFor(state),
 		linter:
 			current === undefined
@@ -536,6 +547,13 @@ export const toRunView = (state: RunState): RunView => {
 			stripsOnFailure: strips,
 			missIsFatal: isStakeFatal(strips, state.pipeline.configs.length),
 			billKb: plan.billKb,
+			subscriptions: billLedger({
+				configs: state.pipeline.configs,
+				gate: state.gatesCleared,
+				storageKb: state.storage,
+				planBillKb: plan.billKb,
+				planTier: plan.tier,
+			}),
 			modifiers,
 			perAnswer,
 		},

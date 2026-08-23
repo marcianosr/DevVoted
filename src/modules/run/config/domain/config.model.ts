@@ -22,46 +22,19 @@ export type Config = {
 	readonly maxLevel?: number;
 	readonly storagePerCorrect?: number;
 	readonly storageOnClear?: number;
-	/** Percent of held storage paid on gate clear — the only benefit that reads
-	 * the balance rather than the window, so it compounds. */
 	readonly storageInterestPct?: number;
 	readonly openerCoverageMultiplier?: number;
-	/** What every answer after the window's opener earns (Overclock) — the
-	 * opener multiplier's counterpart and the one benefit priced below ×1: the
-	 * config front-loads the gate rather than growing it. Rides the window's
-	 * answered count, so each gate cools off at the clear. */
 	readonly throttleCoverageMultiplier?: number;
-	/** Sells a look at how everyone else answered the current poll, for a fee that
-	 * doubles per use. The only benefit that pays in information rather than in
-	 * coverage or KB, so it is a flag: what it hands over is a whole screen, not a
-	 * number the pipeline can multiply. */
 	readonly peeksCommunitySplit?: boolean;
-	/** KB paid on clear per correct answer the window held beyond one per poll, so
-	 * the payout is a function of the window's shape rather than the loadout — it
-	 * pays most in exactly the windows with the most multi-answer polls. */
 	readonly storagePerExtraPick?: number;
-	/** Reports the gate's first audit as passing (Volkswagen CI, ADR-028/035) —
-	 * the one benefit aimed at the gate's own rules rather than the window. */
 	readonly suppressesAudit?: boolean;
-	/** One-in-N odds that each gate clear levels up a random pipeline config,
-	 * free (Dependabot) — the one benefit that pays in levels. The denominator
-	 * shortens by one per level, so L2 turns 1-in-3 into 1-in-2. */
 	readonly autoUpgradeOneIn?: number;
-	/** What `coverageMultiplier` loses at each gate clear (Deprecated) — the one
-	 * config with a lifespan: it deletes itself when the multiplier fades to ×1,
-	 * so the drawback is the countdown, not a fee. */
 	readonly coverageDecayPerClear?: number;
-	/** Every shop lays out the entire remaining roster instead of a rolled five
-	 * (WTFPL) — the one benefit that pays in shop agency (ADR-029's axis). The
-	 * three paid shop controls retire while it is installed: they sell slices
-	 * of the freedom this already grants. */
 	readonly offersFullRoster?: boolean;
-	/** Shows the category of every poll left this gate and all of the next
-	 * gate's (Prefetch) — information about the draw itself, which no other
-	 * config reads. Asking for polls not yet dealt rolls tomorrow's shared
-	 * seed a day early; the reveal is category-only, the questions stay
-	 * sealed. */
 	readonly revealsUpcomingCategories?: boolean;
+	readonly draftCostFactor?: number;
+	readonly subscriptionKb?: number;
+	readonly subscriptionGrowthPerGate?: number;
 	readonly draftCost?: number;
 };
 
@@ -120,12 +93,6 @@ export const autoUpgradeOneInOf = (config: Config): number | undefined =>
 
 const SAMPLE_SIZE_LEVEL = 2;
 
-/**
- * Whether a peek comes with the number of answers behind it. L1 sells the
- * percentages alone, so 100% of two players and 100% of a hundred read
- * identically — the upgrade buys the one line that tells them apart, which is
- * the whole product of level 2 (see the roster entry).
- */
 export const showsSampleSize = (config: Config): boolean =>
 	(config.level ?? 1) >= SAMPLE_SIZE_LEVEL;
 
@@ -175,6 +142,6 @@ export const givesOf = (config: Config): string | undefined => {
 	return `${name} polls reward ×${multiplier} coverage`;
 };
 
-/** The faucet: KB a build pays out per correct answer. */
-export const faucetKbPerCorrect = (configs: readonly Config[]): number =>
-	configs.reduce((sum, config) => sum + (config.storagePerCorrect ?? 0), 0);
+/** The faucet: KB a build pays out per correct answer. */ export const faucetKbPerCorrect =
+	(configs: readonly Config[]): number =>
+		configs.reduce((sum, config) => sum + (config.storagePerCorrect ?? 0), 0);

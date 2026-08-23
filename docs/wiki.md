@@ -341,7 +341,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Twenty-nine configs, all pure effects.
+**🟢 Shipped.** Thirty configs, all pure effects.
 
 | Config | Rarity | Effect |
 | --- | --- | --- |
@@ -365,6 +365,7 @@ hover are planned; today the draft cycles deterministically through the pool.
 | Volkswagen CI | legendary | Reports the gate's first audit as passing; costs 384 KB to draft |
 | Dependabot | legendary | 1 in 3 gate clears (1 in 2 at L2): a random pipeline config upgrades, free |
 | WTFPL | legendary | Every shop offers the entire roster; costs 512 KB, every sell refunds 0 KB while it is installed (its own included), and Rebuild/Lock/Extend retire |
+| Freemium | legendary | **Free to draft.** Every config drafts at half price while it is installed, and refunds drop to half of that discounted price. Each gate cleared bills 8 KB × 2^gate (8, 16, 32, 64, 128, 256…), charged after the clear pays; a bill the balance cannot cover lapses the config and frees its slot |
 
 `.length` deliberately pays on *shape* rather than magnitude, since four configs
 already sell coverage magnitude: it pays most in multi-answer-heavy windows and nothing
@@ -372,6 +373,13 @@ at all in a window of five single-answer polls, a dead spot stated on the row ra
 than hidden in the rules. **Moore's Law** ramps instead of gating, because 2% of a small
 balance is worthless and the balance is only large late; on the free tier its interest is
 shop budget rather than principal, since the cap burns the surplus at *Climb on*.
+
+**Freemium is the roster's one recurring price** — everything else is bought once and
+then free — and it is metered on the run's *depth* rather than on how long it has been
+held, so dropping it and re-drafting later pays the deep rate instead of restarting the
+ladder. It bills on clears only, like Deprecated's fade: a failed attempt already costs
+a peel. Practically it is an opening-game plan you cancel around gate 4, when the bill
+starts eating a whole gate's reward.
 
 🟡 **Designed, not built.** These were written when configs still carried checks, so
 each needs a redesign pass (a bounded condition, a fee, or a gate audit) before it can
@@ -502,6 +510,14 @@ The ladder is gate-staged (ADR-030) because a clear pays roughly `32 KB × gate`
 at gate 0, a 3 MB cap is a bill against storage the run cannot yet earn. The shop draws
 the rungs you have plus the next one, greyed. The cliff scales with the rung: an
 unpayable bill at 3 MB drops you to free, and everything above 512 KB burns.
+
+**The Subscriptions section** lists every recurring KB cost in one place on the gate
+receipt, so the whole bill is readable before you commit to a gate rather than only
+after it settles. It carries the storage plan's tier and every subscribed config
+(Freemium), each priced at the gate ahead. The two bill on different triggers and the
+rows say so: the plan charges **pass or fail**, a config charges **on clear** only, so
+the section quotes a separate total for a miss. When the balance cannot cover the whole
+bill it names the shortfall and warns that what you cannot pay lapses.
 
 **Overflow is spend-it-or-lose-it.** A gate reward can push storage past the cap, and
 that overflow rides uncapped into the shop that follows, so a rich gate buys a genuine

@@ -41,6 +41,12 @@ type RewardScreenProps = {
 	 * (Deprecated) — announced here for the same reason, and nowhere else: they
 	 * are gone from the pipeline, so no chip elsewhere can carry the news. */
 	deletedConfigs?: readonly Config[];
+	/** Configs whose subscription this clear could not cover (Freemium). Their own
+	 * announcement rather than a line in `deletedConfigs`: the player's next move
+	 * differs — a faded config is spent, a lapsed one is still worth re-drafting. */
+	lapsedConfigs?: readonly Config[];
+	/** KB the build's subscriptions took at this clear. */
+	subscriptionBillKb?: number;
 	/** The gate this clear opens onto, so the shop that follows has a target. */
 	nextStake?: GateStake;
 	onReviewAnswers?: () => void;
@@ -143,6 +149,8 @@ export const RewardScreen = ({
 	planDowngraded,
 	autoUpgraded,
 	deletedConfigs,
+	lapsedConfigs,
+	subscriptionBillKb,
 	nextStake,
 	onReviewAnswers,
 	onContinue,
@@ -238,6 +246,25 @@ export const RewardScreen = ({
 				</div>
 			))}
 
+			{lapsedConfigs?.map((config) => (
+				<div
+					key={config.id}
+					className="flex flex-wrap items-center justify-center gap-2"
+				>
+					<ConfigChip
+						config={config}
+						badge={
+							<Badge tone="neutral" size="corner">
+								lapsed
+							</Badge>
+						}
+					/>
+					<Paragraph as="span" size="sm" tone="muted">
+						Bill unpaid — the plan lapsed and freed its slot.
+					</Paragraph>
+				</div>
+			))}
+
 			<StorageGauge usedKb={storage} capKb={capKb} layout="wide" />
 
 			<Paragraph tone="muted">
@@ -247,6 +274,11 @@ export const RewardScreen = ({
 			{billKb !== undefined && billKb > 0 ? (
 				<Paragraph size="sm" tone="muted">
 					Storage plan billed −{billKb}KB this window.
+				</Paragraph>
+			) : null}
+			{subscriptionBillKb !== undefined && subscriptionBillKb > 0 ? (
+				<Paragraph size="sm" tone="muted">
+					Subscriptions billed −{subscriptionBillKb}KB this gate.
 				</Paragraph>
 			) : null}
 			{planDowngraded ? (

@@ -18,7 +18,6 @@ import {
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
 	Config,
-	draftCost,
 	faucetKbPerCorrect,
 	isUpgradable,
 	levelUp,
@@ -27,6 +26,7 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import { autoUpgradeOnClear } from "~/modules/run/config/domain/autoUpgrade.model";
 import { decayOnClear } from "~/modules/run/config/domain/decay.model";
+import { billSubscriptionsOnClear } from "~/modules/run/config/domain/subscription.model";
 import {
 	type AnswerContext,
 	EMPTY_WINDOW,
@@ -34,6 +34,7 @@ import {
 } from "~/modules/run/config/domain/effect.model";
 import { starterStackFor } from "~/modules/run/config/domain/stack.model";
 import {
+	draftCostIn,
 	draftSeed,
 	EXTEND_FROM_GATE,
 	extendCost,
@@ -307,6 +308,14 @@ export type RunState = {
 	 * (Deprecated). Whole configs, not ids: they are gone from the pipeline, so
 	 * an id would have nothing to resolve against. Cleared like the above. */
 	readonly deletedConfigs?: readonly Config[];
+	/** Configs whose subscription went unpaid at the last clear and lapsed
+	 * (Freemium). Separate from `deletedConfigs` because the two exits read
+	 * differently to the player — one ran out of effect, one ran out of money —
+	 * and the reward screen says which. Cleared like the above. */
+	readonly lapsedConfigs?: readonly Config[];
+	/** KB the build's subscriptions took at the last clear, for the reward
+	 * screen's deduction line beside the storage plan's. */
+	readonly subscriptionBillKb?: number;
 	/** The git tag (ADR-036): the gate this run planted its checkpoint at.
 	 * Doubles as the once-per-run flag. */
 	readonly pinPlantedAtGate?: number;
@@ -630,15 +639,25 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	// Decay ticks after the merge on the merged configs, so one clear settles
 	// the pipeline once. The gate just cleared scored at the pre-fade multiplier.
 	const settled = decayOnClear(merged.configs);
+	// The gate pays, and then the subscription collects (Freemium): billing the
+	// pre-reward balance would lapse a plan this very clear was about to cover.
+	const billed = billSubscriptionsOnClear(
+		settled.configs,
+		cleared.storage,
+		gateNumber
+	);
 
 	return {
 		...cleared,
 		pipeline:
-			settled.configs === cleared.pipeline.configs
+			billed.configs === cleared.pipeline.configs
 				? cleared.pipeline
-				: withPipeline(cleared.pipeline, settled.configs),
+				: withPipeline(cleared.pipeline, billed.configs),
+		storage: cleared.storage - billed.paidKb,
+		subscriptionBillKb: billed.paidKb,
 		autoUpgradedConfigId: merged.bumped?.id,
 		deletedConfigs: settled.deleted.length > 0 ? settled.deleted : undefined,
+		lapsedConfigs: billed.lapsed.length > 0 ? billed.lapsed : undefined,
 		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
 		rebuildsUsed: 0,
 		draftedThisGate: [],
@@ -653,6 +672,12 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 				: []),
 			...settled.deleted.map(
 				(config) => `${config.label} faded to ×1 — deleted from the pipeline.`
+			),
+			...(billed.paidKb > 0
+				? [`Subscriptions billed (-${billed.paidKb}KB).`]
+				: []),
+			...billed.lapsed.map(
+				(config) => `${config.label} went unpaid — the plan lapsed.`
 			)
 		),
 	};
@@ -1002,7 +1027,7 @@ const draft = (state: RunState, configId: string): RunState => {
 	const alreadyOwned = state.pipeline.configs.some(
 		(candidate) => candidate.id === configId
 	);
-	const cost = draftCost(chosen);
+	const cost = draftCostIn(state.pipeline.configs, chosen);
 	if (
 		alreadyOwned ||
 		state.pipeline.configs.length >= state.pipeline.slots ||
@@ -1138,6 +1163,8 @@ const finishReward = (state: RunState): RunState => {
 		justUnlockedSlots: [],
 		autoUpgradedConfigId: undefined,
 		deletedConfigs: undefined,
+		lapsedConfigs: undefined,
+		subscriptionBillKb: 0,
 		storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
 		status: "answering",
 		log: withLog(state, "Climbing on."),

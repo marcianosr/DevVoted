@@ -27,6 +27,8 @@ export const RunReward = () => {
 				planDowngraded={view.planDowngraded}
 				autoUpgraded={view.autoUpgradedConfig ?? undefined}
 				deletedConfigs={view.deletedConfigs}
+				lapsedConfigs={view.lapsedConfigs}
+				subscriptionBillKb={view.subscriptionBillKb}
 				nextStake={view.gateStake}
 				onReviewAnswers={() => navigate({ to: "/run/review" })}
 				onContinue={() => navigate({ to: "/run/shop" })}

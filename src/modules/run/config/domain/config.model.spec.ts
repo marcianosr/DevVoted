@@ -26,6 +26,12 @@ describe("draftCost", () => {
 	it("prices WTFPL above the legendary tier by its own tag", () => {
 		expect(draftCost(CONFIGS.wtfpl)).toBe(512);
 	});
+
+	it("prices Freemium at nothing — a legendary whose whole cost is the bill", () => {
+		expect(rarityOf(CONFIGS.freemium)).toBe("legendary");
+		expect(draftCost(CONFIGS.freemium)).toBe(0);
+		expect(sellRefund(CONFIGS.freemium)).toBe(0);
+	});
 });
 
 describe("rarityOf", () => {
