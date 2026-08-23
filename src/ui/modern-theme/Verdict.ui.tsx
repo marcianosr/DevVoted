@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { Caret } from "./Caret.ui";
+import { Disclosure, DISCLOSURE_SUMMARY } from "./Disclosure.ui";
 import { Chip, type ChipTone } from "./Chip.ui";
 import { Code } from "./Code.ui";
 import { Delta } from "./Delta.ui";
@@ -16,16 +17,12 @@ const VERDICT = "flex flex-col gap-3 px-5 py-4";
 const HEAD = "flex items-baseline gap-3";
 const ASK = "min-w-0 flex-1";
 
-// One grid for the whole body, so the label column and the answers line up down
-// every row of it.
 const DETAIL = "grid grid-cols-[7rem_1fr] items-center gap-x-3 gap-y-2";
 const FULL = "col-span-2";
 const SECOND = "col-start-2";
 const PICKS = "flex flex-wrap items-center gap-2";
 
-const MORE = "group/fold";
-const MORE_SUMMARY =
-	"inline-flex cursor-pointer list-none items-center gap-1.5 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean [&::-webkit-details-marker]:hidden";
+const MORE_SUMMARY = `${DISCLOSURE_SUMMARY} inline-flex items-center gap-1.5 rounded`;
 const MORE_LIST = "flex flex-col gap-2 pt-2";
 
 const ANSWER = "inline-flex items-center gap-2";
@@ -99,8 +96,6 @@ export const Verdict = ({
 	code,
 	explainer,
 }: VerdictProps) => {
-	// The letter is fixed to the option's place in the poll, so it survives the
-	// filtering below and still points at what the player saw.
 	const lettered = options.map((option, index) => ({
 		...option,
 		letter: optionLetter(index),
@@ -204,7 +199,7 @@ export const Verdict = ({
 									))
 								: null}
 							{others.length ? (
-								<details className={MORE}>
+								<Disclosure>
 									<summary className={MORE_SUMMARY}>
 										<Caret />
 										<Text size="meta" tone="muted">
@@ -222,7 +217,7 @@ export const Verdict = ({
 											</li>
 										))}
 									</ul>
-								</details>
+								</Disclosure>
 							) : null}
 						</div>
 					) : null}

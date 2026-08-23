@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-08-23T19:19:23Z
-updated_at: 2026-08-23T20:08:28Z
+updated_at: 2026-08-23T20:19:24Z
 ---
 
 An architecture sweep of `src/ui/modern-theme/` on 2026-08-23 found six deepening
@@ -48,3 +48,12 @@ hardcodes a plural at :190 and uses `plural()` at :334.
 **Candidate 4 done** (2026-08-23). New `Screen.ui.tsx` owns the shell; all seven in-run screens dropped their private `SCREEN` const and their inlined `data-gate-theme`. `theme?: string` became `theme?: SwatchTheme` (type-only import, allowed in `.ui.tsx`), which immediately caught three widened fixtures in specs and stories. `PollScreen.stories` `gateStory` collapsed from `(gate, name, theme)` to `(gate)`, reading name and colour off `GATE_SWATCHES`, so 13 call sites lost their restated strings.
 
 Still open: 2 (tone vocabulary), 3 (five disclosures), 5 (uncalled primitives), 6 (formatted-string seam).
+
+
+**Candidate 3 done** (2026-08-23). New `Disclosure.ui.tsx` exports `Disclosure` (the <details> plus exactly one group name), `DISCLOSURE_SUMMARY` (the 6-token reset all five shared verbatim), `DisclosureBody` (the summary/explainer block Entry and Pick had byte-identical) and `isExpandable`. Fold, Control, Entry, Pick and Verdict all converted; each keeps its own rounding and hover, which is the only part they ever actually disagreed on, so nothing moved visually.
+
+Control dropped its second group name: it declared `group/entry group/fold` only so its own Caret could watch it. Caret gained an `entry` scope, so Control now declares one name like everything else, and a Control nested inside a Fold can no longer shadow that Fold group.
+
+Verified the emitted CSS still carries group/fold, group/entry, group/row and every group-open variant including the new group-open/entry:rotate-90.
+
+Still open: 2 (tone vocabulary), 5 (uncalled primitives), 6 (formatted-string seam).

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { Caret } from "./Caret.ui";
+import { Disclosure, DISCLOSURE_SUMMARY } from "./Disclosure.ui";
 import { Row } from "./Row.ui";
 import { Text } from "./Text.ui";
 
@@ -11,9 +12,8 @@ export type FoldItem = {
 	content: ReactNode;
 };
 
-const FOLD = "group/fold border-b border-edge";
-const SUMMARY =
-	"cursor-pointer list-none rounded-lg hover:bg-zinc-100/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean [&::-webkit-details-marker]:hidden";
+const FOLD = "border-b border-edge";
+const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-lg hover:bg-zinc-100/5`;
 const LIST = "flex flex-col";
 const BODY = "px-3 pb-2";
 const TRAILING = "flex items-center gap-3";
@@ -40,7 +40,7 @@ export const Fold = ({
 	defaultOpen = true,
 	className,
 }: FoldProps) => (
-	<details open={defaultOpen} className={clsx(FOLD, className)}>
+	<Disclosure defaultOpen={defaultOpen} className={clsx(FOLD, className)}>
 		<Row
 			as="summary"
 			spacing="compact"
@@ -66,5 +66,5 @@ export const Fold = ({
 			</ul>
 		) : null}
 		{children ? <div className={BODY}>{children}</div> : null}
-	</details>
+	</Disclosure>
 );

@@ -3,12 +3,11 @@ import type { ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { Caret } from "./Caret.ui";
+import { Disclosure, DISCLOSURE_SUMMARY } from "./Disclosure.ui";
 import { Glyph, type GlyphName } from "./Glyph.ui";
 import { Text } from "./Text.ui";
 
-// Both group names: `entry` is what a PriceTag inside watches, `fold` is what
-// the Caret watches.
-const CONTROL = "group/entry group/fold rounded-lg border";
+const CONTROL = "rounded-lg border";
 
 const FRAME = {
 	dashed: "border-dashed border-zinc-700",
@@ -16,8 +15,7 @@ const FRAME = {
 };
 
 const ROW = "flex items-start gap-3 p-3";
-const SUMMARY =
-	"cursor-pointer list-none rounded-lg transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean [&::-webkit-details-marker]:hidden";
+const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-lg transition-colors hover:bg-surface-raised`;
 
 const DISC =
 	"inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-700 text-zinc-500";
@@ -75,9 +73,13 @@ export const Control = ({
 	}
 
 	return (
-		<details open={defaultOpen} className={clsx(CONTROL, FRAME[frame])}>
+		<Disclosure
+			scope="entry"
+			defaultOpen={defaultOpen}
+			className={clsx(CONTROL, FRAME[frame])}
+		>
 			<summary className={clsx(ROW, SUMMARY)}>
-				<Caret />
+				<Caret scope="entry" />
 				{glyph}
 				<span className={clsx(BODY, HEADING)}>
 					<Text size="body">{title}</Text>
@@ -99,6 +101,6 @@ export const Control = ({
 					</Text>
 				) : null}
 			</div>
-		</details>
+		</Disclosure>
 	);
 };
