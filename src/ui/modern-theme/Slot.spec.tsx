@@ -13,7 +13,7 @@ describe("Slot", () => {
 	it("names the gate that would open a slot the run does not own yet", () => {
 		render(<Slot gate={4} />);
 
-		expect(screen.getByText("opens at gate 4")).toBeInTheDocument();
+		expect(screen.getByText("opens when gate 4 clears")).toBeInTheDocument();
 	});
 
 	it("dims a slot that cannot be filled yet, and does not dim one that can", () => {

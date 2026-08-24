@@ -26,4 +26,13 @@ describe("Dot", () => {
 		expect(box.firstChild).toHaveClass("rounded-xs");
 		expect(box.firstChild).not.toHaveClass("rounded-full");
 	});
+
+	// The size lives in the variant, not the base: two width utilities on one
+	// element leaves the winner to Tailwind's source order.
+	it("stands as a rail when asked, keying the row shape rather than a chip", () => {
+		const { container } = render(<Dot rarity="rare" shape="bar" />);
+
+		expect(container.firstChild).toHaveClass("h-4", "w-1", "bg-cinnabar");
+		expect(container.firstChild).not.toHaveClass("size-1.5");
+	});
 });

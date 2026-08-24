@@ -82,4 +82,20 @@ describe("Plan", () => {
 		expect(container.querySelector("input")).toBeNull();
 		expect(container.firstChild).toHaveClass("opacity-50");
 	});
+	// Row owns the padding, so a rung sits at the same rhythm as every other list
+	// item in the kit rather than at its own.
+	it("stands at the kit's tight rhythm", () => {
+		const { container } = render(
+			<Plan
+				id="tier-1"
+				name="storage-plan"
+				cap="512 KB"
+				terms="free"
+				selected
+				onSelect={() => {}}
+			/>
+		);
+
+		expect(container.firstElementChild).toHaveClass("px-2", "py-1");
+	});
 });

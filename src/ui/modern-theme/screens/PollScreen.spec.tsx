@@ -127,4 +127,38 @@ describe("PollScreen", () => {
 
 		expect(container.firstElementChild).toHaveClass("bg-theme-faint");
 	});
+
+	it("offers no way to answer until a handler says the poll is live", () => {
+		render(<PollScreen {...props} />);
+
+		expect(
+			screen.queryByRole("button", { name: /Submit/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("sends the answer from the footer", async () => {
+		const onSubmit = vi.fn();
+		render(<PollScreen {...props} onSubmit={onSubmit} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Submit answer →" })
+		);
+
+		expect(onSubmit).toHaveBeenCalledOnce();
+	});
+
+	// A disabled button with no explanation reads as broken, so the reason takes
+	// the label's place rather than sitting beside it.
+	it("wears the reason it cannot be sent as the button's own label", () => {
+		render(
+			<PollScreen {...props} onSubmit={() => {}} submitLock="Pick an answer" />
+		);
+
+		expect(
+			screen.getByRole("button", { name: "Pick an answer" })
+		).toBeDisabled();
+		expect(
+			screen.queryByRole("button", { name: /Submit answer/ })
+		).not.toBeInTheDocument();
+	});
 });

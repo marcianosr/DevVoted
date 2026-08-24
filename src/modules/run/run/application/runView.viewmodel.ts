@@ -278,6 +278,9 @@ export type RunView = {
 	readonly gateTheme?: SwatchTheme;
 
 	readonly clearedGateNumber: number;
+	/** What `clearedGateNumber` demanded. `gateStake` always describes the gate
+	 * ahead, which on a clear is already the next one. */
+	readonly clearedGateDemand: number;
 	/** The gate being replayed after a fail (ADR-035); null otherwise. */
 	readonly redoingGate: number | null;
 	readonly victoryGate: number;
@@ -447,6 +450,7 @@ export const toRunView = (state: RunState): RunView => {
 		state.gatesCleared
 	);
 	const strips = failStripQuotaFor(state.pipeline.configs, state.gatesCleared);
+	const reportedGate = state.clearedGate ?? state.gatesCleared;
 	const liveAudits = liveAuditsFor(state.pipeline.configs, state.gatesCleared);
 	const offline = offlineConfigsOf(state);
 	const mirrored = mirrorsPolls(liveAudits);
@@ -565,7 +569,8 @@ export const toRunView = (state: RunState): RunView => {
 		extraPickThisGateKb: state.extraPickThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
-		clearedGateNumber: state.clearedGate ?? state.gatesCleared,
+		clearedGateNumber: reportedGate,
+		clearedGateDemand: gateDemandFor(state.pipeline.configs, reportedGate),
 		redoingGate: state.redoGate ?? null,
 		victoryGate: VICTORY_GATE,
 		atMinimumWidth: atMinimumWidth(state.pipeline.configs.length),

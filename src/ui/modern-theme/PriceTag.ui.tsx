@@ -1,9 +1,10 @@
 import { clsx } from "clsx";
 
 import { Text } from "./Text.ui";
+import { Tooltip } from "./Tooltip.ui";
 
 const TAG =
-	"inline-flex shrink-0 items-center gap-1.5 py-1.5 pr-3 pl-5 [clip-path:polygon(0_50%,0.875rem_0,100%_0,100%_100%,0.875rem_100%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean";
+	"inline-flex shrink-0 cursor-pointer items-center gap-1.5 py-1.5 pr-3 pl-5 [clip-path:polygon(0_50%,0.875rem_0,100%_0,100%_100%,0.875rem_100%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean disabled:cursor-not-allowed disabled:opacity-50";
 
 const HOLE = "size-1 shrink-0 rounded-full bg-current opacity-60";
 
@@ -23,6 +24,9 @@ export type PriceTagProps = {
 	on: string;
 	label?: string;
 	state?: PriceTagState;
+	/** Why the tag refuses — the price alone cannot say whether it is the money
+	 * or the pipeline that is short. */
+	hint?: string;
 	onUse: () => void;
 };
 
@@ -33,18 +37,19 @@ export const PriceTag = ({
 	on,
 	label = "install",
 	state = "buyable",
+	hint,
 	onUse,
 }: PriceTagProps) => {
 	const buyable = state === "buyable";
-	const verb = kb === 0 ? label : `${label} · ${kb}`;
+	const verb = kb === 0 ? label : `${label} · ${priceOf(kb)}`;
 
-	return (
+	const tag = (
 		<button
 			type="button"
 			disabled={state === "owned" || state === "unaffordable"}
 			aria-label={
 				state === "owned" || state === "unaffordable"
-					? `${on} ${priceOf(kb)}`
+					? [`${on} ${priceOf(kb)}`, hint].filter(Boolean).join(", ")
 					: `${label} ${on} for ${priceOf(kb)}`
 			}
 			onClick={(event) => {
@@ -76,4 +81,6 @@ export const PriceTag = ({
 			</Text>
 		</button>
 	);
+
+	return hint ? <Tooltip hint={hint}>{tag}</Tooltip> : tag;
 };

@@ -65,11 +65,24 @@ describe("PrepScreen", () => {
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
 	});
 
-	it("counts the build against the width the gate grants", () => {
+	// A build filling every slot it holds reads full, and the row for the slot a
+	// later gate grants is a preview beside it rather than width already owned.
+	it("counts the build against the width it holds, not the width to come", () => {
 		render(<PrepScreen {...props} />);
 
+		expect(screen.getByText("3 / 3")).toBeInTheDocument();
+		expect(screen.getByText("opens when gate 6 clears")).toBeInTheDocument();
+	});
+
+	it("counts an empty slot the build could still fill", () => {
+		render(
+			<PrepScreen
+				{...props}
+				slots={[{ id: "slot-4" }, { id: "slot-5", gate: 6 }]}
+			/>
+		);
+
 		expect(screen.getByText("3 / 4")).toBeInTheDocument();
-		expect(screen.getByText("opens at gate 6")).toBeInTheDocument();
 	});
 
 	it("states both things the gate asks for", () => {

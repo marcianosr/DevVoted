@@ -26,7 +26,7 @@ export const PriceOnly: Story = {
 };
 
 export const VerbOnly: Story = {
-	args: { label: "deinstall", on: ".vue", onUse: () => {} },
+	args: { label: "Uninstall", on: ".vue", onUse: () => {} },
 };
 
 export const Loud: Story = {
@@ -38,7 +38,7 @@ export const Prismatic: Story = {
 };
 
 export const Danger: Story = {
-	args: { label: "deinstall", on: ".vue", emphasis: "danger", onUse: () => {} },
+	args: { label: "Uninstall", on: ".vue", emphasis: "danger", onUse: () => {} },
 };
 
 export const Unaffordable: Story = {

@@ -250,32 +250,40 @@ The climb stages rules on two axes: **gate number** stages the coverage demanded
 audits, the shop's controls and the width; **category coverage** stages Focus
 upgrades ([4.4](#44-upgrades)).
 
-| Gate | Swatch | Coverage in its window | A miss peels | Audit | Also unlocks |
-| --- | --- | --- | --- | --- | --- |
-| 0 | Pallet | 3% | 1 | (clean) | Shop, **Rebuild**, the free 512 KB plan and the 640 KB rung |
-| 1 | Boulder | 10% | 1 | (clean) | Slot 4 |
-| 2 | Cascade | 25% | 1 | (clean) | **Lock**, 768 KB rung, slot 5 |
-| 3 | Thunder | 40% | 2 | Cost Overrun | **Extend**, slot 6 |
-| 4 | Lavender | 60% | 2 | Dependency Outage | 1 MB rung, slot 7 |
-| 5 | Rainbow | 85% | 2 | Read-only | Slot 8 |
-| 6 | Soul | 110% | 2 | Feature Freeze | 1.5 MB rung, slot 9 |
-| 7 | Marsh | 140% | 3 | Mirror | Slot 10 |
-| 8 | Seafoam | 175% | 3 | Timeout (3 polls, 30 s) + Flaky Build | 2 MB rung, slot 11 |
-| 9 | Volcano | 210% | 3 | Memory Leak + Rolling Outage | Slot 12 |
-| 10 | Earth | 250% | 3 | Breaking Change + Timeout (4 polls, 25 s) | 3 MB rung (top), slot 13 |
-| 11 | Elite | 290% | **5** | Strip + Mirror + Flaky Build | Slot 14 (width cap) |
-| 12 | Champion | 340% | **6** | Memory Leak + Strip + Timeout (5 polls, 20 s) | Clearing it wins the run |
+Every row states what you hold **while facing that gate** — which is also what the
+shop before it sells, since a shop runs on the clear that precedes its gate.
+
+| Gate | Swatch | Coverage in its window | A clear pays | A miss peels | Audit | Also unlocks |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | Pallet | 3% | 32 KB | 1 | (clean) | Shop, **Rebuild**, the free 512 KB plan and the 640 KB rung |
+| 1 | Boulder | 10% | 64 KB | 1 | (clean) | — |
+| 2 | Cascade | 25% | 96 KB | 1 | (clean) | **Lock**, 768 KB rung, slot 4 |
+| 3 | Thunder | 40% | 128 KB | 2 | Cost Overrun | **Extend**, slot 5 |
+| 4 | Lavender | 60% | 160 KB | 2 | Dependency Outage | 1 MB rung, slot 6 |
+| 5 | Rainbow | 85% | 192 KB | 2 | Read-only | Slot 7 |
+| 6 | Soul | 110% | 224 KB | 2 | Feature Freeze | 1.5 MB rung, slot 8 |
+| 7 | Marsh | 140% | 256 KB | 3 | Mirror | Slot 9 |
+| 8 | Seafoam | 175% | 288 KB | 3 | Timeout (3 polls, 30 s) + Flaky Build | 2 MB rung, slot 10 |
+| 9 | Volcano | 210% | 320 KB | 3 | Memory Leak + Rolling Outage | Slot 11 |
+| 10 | Earth | 250% | 352 KB | 3 | Breaking Change + Timeout (4 polls, 25 s) | 3 MB rung (top), slot 12 |
+| 11 | Elite | 290% | 384 KB | **5** | Strip + Mirror + Flaky Build | Slot 13 |
+| 12 | Champion | 340% | 416 KB | **6** | Memory Leak + Strip + Timeout (5 polls, 20 s) | Slot 14 (width cap); clearing it wins the run |
 
 The coverage column is per-gate and fresh: each row is a score to hit inside 5 polls,
 never a running total. The peel column tracks the slot column, since a peel only
 threatens in proportion to the build it hits.
+
+The payout column is `GATE_REWARD_KB × (gate + 1)` for a **bare build on a perfect
+window**. It scales with correctness, so a 3-of-5 clear pays 60% of the row and a
+0-of-5 clear pays nothing at all — an all-skip build can climb without banking a byte.
+Reward multipliers and flat clear payouts (Unit Tests' +32) apply on top.
 
 Deliberately **not** on this axis: Focus levels (staged by category coverage), Unit
 Tests and Moore's Law levels (storage), lint and peek fees (uses), rebuild price
 (rebuilds this shop), and everything account-level (swatches, Dex, borders).
 
 Authoritative over this table: `coverageDemandFor`, `STORAGE_PLANS`, `failStripsFor`
-(`rules.model.ts`), `slotsForGatesCleared` (`pipeline.model.ts`),
+(`rules.model.ts`), `gateClearPayout` and `slotsForGatesCleared` (`pipeline.model.ts`),
 `LOCK_FROM_GATE`/`EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
 (`swatch.model.ts`), `GATE_AUDITS` (`audit.model.ts`).
 
@@ -811,6 +819,7 @@ applies. `rules.model.ts` holds most of it.
 | Constant | Value |
 | --- | --- |
 | `GATE_REWARD_KB` / `GATE_REWARD_MULTIPLIER_CAP` | 32 KB base / stops scaling past ×12 |
+| `gateClearPayout` | `32 × (gate + 1) × reward mults × (correct ÷ 5)`, plus flat clear payouts |
 | `STORAGE_CAP_KB` | 512, clamped at *Climb on* |
 | `STORAGE_PLANS` | 512/0 · 640/8 · 768/16 · 1MB/32 · 1.5MB/48 · 2MB/72 · 3MB/112, staged 0/0/2/4/6/8/10 |
 | `FAUCET_CAP_KB` | 320 per run |
@@ -820,7 +829,7 @@ applies. `rules.model.ts` holds most of it.
 
 | Constant | Value |
 | --- | --- |
-| `BASE_SLOTS` to `MAX_SLOTS` | 3 to 14, `slotsForGatesCleared` grants slots 4 to 14 at gates 1 to 11 |
+| `BASE_SLOTS` to `MAX_SLOTS` | 3 to 14, `slotsForGatesCleared` grants slots 4 to 14 on the clears of gates 1 to 11 |
 | `DRAFT_SIZE` / draft cost / sell refund | 5 offers / 32-64-128-256 KB by rarity / `floor(cost ÷ 2)` |
 | Rebuild / `LOCK_COST_KB` / Extend | 4…512 KB doubling / 16 flat / 48 then 96 |
 | Control staging | Lock from gate 2, Extend from gate 3 (`draft.model.ts`) |

@@ -94,3 +94,37 @@ export const EveryNote: Story = {
 		</div>
 	),
 };
+
+/** The four rarities down one deal, and what picking one does to its tint. */
+export const Rarities: Story = {
+	render: () => (
+		<div className="flex w-96 flex-col gap-1">
+			<Pick label=".ts" rarity="common" checked={false} onToggle={() => {}} />
+			<Pick
+				label="IndexedDB"
+				rarity="uncommon"
+				checked={false}
+				onToggle={() => {}}
+			/>
+			<Pick
+				label="Intellisense"
+				rarity="rare"
+				checked={false}
+				onToggle={() => {}}
+			/>
+			<Pick
+				label="Dependabot"
+				rarity="legendary"
+				checked={false}
+				onToggle={() => {}}
+			/>
+			<Pick
+				label="Overclock"
+				rarity="rare"
+				variant="draft"
+				checked
+				onToggle={() => {}}
+			/>
+		</div>
+	),
+};

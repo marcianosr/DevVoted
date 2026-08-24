@@ -59,10 +59,10 @@ describe("Action", () => {
 	});
 
 	it("stands on a verb alone, where the action carries no price", () => {
-		render(<Action label="deinstall" on=".vue" onUse={vi.fn()} />);
+		render(<Action label="Uninstall" on=".vue" onUse={vi.fn()} />);
 
 		expect(
-			screen.getByRole("button", { name: "deinstall .vue" })
+			screen.getByRole("button", { name: "Uninstall .vue" })
 		).toBeInTheDocument();
 	});
 
@@ -86,7 +86,7 @@ describe("Action", () => {
 	});
 
 	it("turns a whole button red where the action takes something back out", () => {
-		render(<Action label="deinstall" emphasis="danger" onUse={vi.fn()} />);
+		render(<Action label="Uninstall" emphasis="danger" onUse={vi.fn()} />);
 
 		expect(screen.getByRole("button")).toHaveClass(
 			"border-cinnabar",
@@ -106,5 +106,15 @@ describe("Action", () => {
 		render(<Action label="Pick 3 to start" full onUse={() => {}} />);
 
 		expect(screen.getByRole("button")).toHaveClass("w-full", "justify-center");
+	});
+
+	it("invites the press it can accept, and refuses the one it cannot", () => {
+		const { rerender } = render(<Action label="rebuild" onUse={() => {}} />);
+		expect(screen.getByRole("button")).toHaveClass("cursor-pointer");
+
+		rerender(<Action label="rebuild" disabled onUse={() => {}} />);
+		expect(screen.getByRole("button")).toHaveClass(
+			"disabled:cursor-not-allowed"
+		);
 	});
 });

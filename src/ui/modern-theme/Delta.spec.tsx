@@ -42,4 +42,12 @@ describe("Delta", () => {
 
 		expect(badgeAround("\u00d71.5")).toHaveClass("bg-celadon/15");
 	});
+
+	// Coverage drops its suffix; a percentage cannot, or the two read alike in a
+	// column where one is coverage and the other a share of held storage.
+	it("keeps the percent sign, so it cannot be mistaken for coverage", () => {
+		render(<Delta percent={2} />);
+
+		expect(badgeAround("+2%")).toHaveClass("bg-celadon/15");
+	});
 });

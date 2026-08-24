@@ -12,15 +12,22 @@ export type FoldItem = {
 	content: ReactNode;
 };
 
-const FOLD = "border-b border-edge";
+// The rule separates one fold from the next, so the last has none to draw.
+const FOLD = "border-b border-edge last:border-b-0";
 const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-lg hover:bg-zinc-100/5`;
-const LIST = "flex flex-col";
+// Gapped, so tinted rows read as separate cards rather than one striped block.
+const LIST = "flex flex-col gap-1";
 const BODY = "px-3 pb-2";
 const TRAILING = "flex items-center gap-3";
+const LEADING = "flex shrink-0 items-center gap-3";
 const NOTE = "px-3 pb-2";
 
 export type FoldProps = {
 	title: ReactNode;
+	/** The scope the section's figures are true for — "this shop", "this run".
+	 * A column of folds otherwise reads as one list with headings in it. */
+	subtitle?: ReactNode;
+	icon?: ReactNode;
 	value?: ReactNode;
 	action?: ReactNode;
 	note?: ReactNode;
@@ -32,6 +39,8 @@ export type FoldProps = {
 
 export const Fold = ({
 	title,
+	subtitle,
+	icon,
 	value,
 	action,
 	note,
@@ -45,7 +54,16 @@ export const Fold = ({
 			as="summary"
 			spacing="compact"
 			className={SUMMARY}
-			leading={<Caret />}
+			leading={
+				icon ? (
+					<span className={LEADING}>
+						<Caret />
+						{icon}
+					</span>
+				) : (
+					<Caret />
+				)
+			}
 			trailing={
 				value || action ? (
 					<span className={TRAILING}>
@@ -56,6 +74,11 @@ export const Fold = ({
 			}
 		>
 			<Text size="body">{title}</Text>
+			{subtitle ? (
+				<Text size="meta" tone="muted">
+					{subtitle}
+				</Text>
+			) : null}
 		</Row>
 		{note ? <div className={NOTE}>{note}</div> : null}
 		{items?.length ? (

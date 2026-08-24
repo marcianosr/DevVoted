@@ -139,4 +139,29 @@ describe("Pick", () => {
 
 		expect(screen.getByText("+8 / correct")).toBeInTheDocument();
 	});
+
+	it("rails a row in its rarity", () => {
+		const { container } = render(
+			<Pick label=".ts" rarity="rare" checked={false} onToggle={() => {}} />
+		);
+
+		expect(container.firstElementChild).toHaveClass("relative");
+		expect(container.querySelector(".bg-cinnabar")).toBeInTheDocument();
+	});
+
+	// The rail is the grade and never moves; the wash is the pick's own answer.
+	it("keeps the rail when the row is picked, and swaps the fill", () => {
+		const { container } = render(
+			<Pick
+				label=".ts"
+				rarity="rare"
+				variant="draft"
+				checked
+				onToggle={() => {}}
+			/>
+		);
+
+		expect(container.querySelector(".bg-cinnabar")).toBeInTheDocument();
+		expect(container.firstElementChild).toHaveClass("bg-theme-soft");
+	});
 });

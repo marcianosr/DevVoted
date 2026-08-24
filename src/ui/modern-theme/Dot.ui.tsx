@@ -2,18 +2,22 @@ import { clsx } from "clsx";
 
 import { RARITY_FILL, type Rarity } from "./rarity";
 
-const DOT = "inline-block size-1.5 shrink-0";
+const DOT = "inline-block shrink-0";
 
 export type DotTone = "theme" | "celadon" | "saffron" | "cinnabar" | "muted";
 
-/** Same two words Mark uses for the same distinction, declared here rather than
- * imported so the two primitives stay uncoupled. A legend keying chips wants the
- * chip's shape; a legend keying rarity wants the dot's. */
-export type DotShape = "disc" | "box";
+/** Mark's two words for the same distinction, declared here rather than imported
+ * so the two primitives stay uncoupled, plus `bar` — the shape a config row
+ * wears its rarity in, so a legend can key the rows in their own marker.
+ *
+ * The size sits in the variant, not the base: two width utilities on one element
+ * leaves the winner to Tailwind's source order. */
+export type DotShape = "disc" | "box" | "bar";
 
 const SHAPE = {
-	disc: "rounded-full",
-	box: "rounded-xs",
+	disc: "size-1.5 rounded-full",
+	box: "size-1.5 rounded-xs",
+	bar: "h-4 w-1 rounded-full",
 } satisfies Record<DotShape, string>;
 
 const TONE_FILL = {

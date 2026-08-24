@@ -7,14 +7,15 @@ import {
 	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
 
+import { capLabel, planOpensAt } from "./format";
 import { Plan, type PlanProps } from "./Plan.ui";
 
 const meta: Meta<typeof Plan> = {
 	component: Plan,
 	title: "Modern/Plan",
-	// Storybook reads every named export as a story; these two are helpers the
+	// Storybook reads every named export as a story; this one is a helper the
 	// shop story imports, not something to render.
-	excludeStories: ["planLadderAt", "capLabel"],
+	excludeStories: ["planLadderAt"],
 	decorators: [
 		(Story) => (
 			<div data-gate-theme="rainbow" className="max-w-md p-4">
@@ -26,10 +27,6 @@ const meta: Meta<typeof Plan> = {
 export default meta;
 
 type Story = StoryObj<typeof Plan>;
-
-/** The ladder crosses out of KB at 1024, and the shop says "1 MB", not "1024 KB". */
-export const capLabel = (kb: number) =>
-	kb >= 1024 ? `${kb / 1024} MB` : `${kb} KB`;
 
 /**
  * The rungs a run can see: `storagePlanLadder` returns every unlocked plan plus
@@ -50,7 +47,7 @@ export const planLadderAt = (
 			? {
 					id: `tier-${plan.tier}`,
 					locked: true,
-					opensAt: `opens when gate ${plan.fromGate} clears`,
+					opensAt: planOpensAt(plan.fromGate),
 				}
 			: {
 					id: `tier-${plan.tier}`,

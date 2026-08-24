@@ -5,6 +5,7 @@ export type GlyphName =
 	| "extend"
 	| "tag"
 	| "suggest"
+	| "uninstall"
 	// The audit roster. Named for the audit, not the shape, the way the four
 	// above are named for what pressing them does.
 	| "overrun"
@@ -36,6 +37,15 @@ const PATHS = {
 		<>
 			<path d="M5.5 1.8 6.5 4.6 9.3 5.6 6.5 6.6 5.5 9.4 4.5 6.6 1.7 5.6 4.5 4.6Z" />
 			<path d="M10.4 8 10.9 9.4 12.3 9.9 10.9 10.4 10.4 11.8 9.9 10.4 8.5 9.9 9.9 9.4Z" />
+		</>
+	),
+	// An arrow leaving the tray, not a bin: uninstalling hands storage back, and a
+	// bin would promise the config is destroyed for nothing.
+	uninstall: (
+		<>
+			<path d="M7 9V2.2" />
+			<path d="M4.4 4.8 7 2.2l2.6 2.6" />
+			<path d="M2.4 8.4v2.4a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1V8.4" />
 		</>
 	),
 	tag: (
@@ -108,9 +118,18 @@ const PATHS = {
 	),
 } satisfies Record<GlyphName, React.ReactNode>;
 
-export type GlyphProps = { name: GlyphName; className?: string };
+const FRAMED =
+	"inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-700 text-zinc-500";
 
-export const Glyph = ({ name, className }: GlyphProps) => (
+export type GlyphProps = {
+	name: GlyphName;
+	/** Rings the glyph in a dashed disc — the marker for something offered but
+	 * not yet taken, which is why it sits where a taken row's mark would. */
+	framed?: boolean;
+	className?: string;
+};
+
+const svgOf = (name: GlyphName, className?: string) => (
 	<svg
 		viewBox="0 0 14 14"
 		aria-hidden
@@ -124,3 +143,10 @@ export const Glyph = ({ name, className }: GlyphProps) => (
 		{PATHS[name]}
 	</svg>
 );
+
+export const Glyph = ({ name, framed, className }: GlyphProps) =>
+	framed ? (
+		<span className={FRAMED}>{svgOf(name, "size-3")}</span>
+	) : (
+		svgOf(name, className)
+	);

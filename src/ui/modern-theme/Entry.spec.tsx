@@ -125,4 +125,45 @@ describe("Entry", () => {
 		expect(onUse).toHaveBeenCalledOnce();
 		expect(screen.getByRole("group")).not.toHaveAttribute("open");
 	});
+
+	// On the whole card, not the summary strip: an open row keeps its rarity
+	// rather than losing it the moment the explainer appears.
+	it("rails an expandable row with its rarity, body included", () => {
+		render(
+			<Entry label=".ts" mark="pass" rarity="uncommon" explainer="TS polls." />
+		);
+
+		const card = screen.getByRole("group");
+		expect(card).toHaveClass("relative");
+		expect(card.querySelector(".bg-cerulean")).toBeInTheDocument();
+	});
+
+	it("rails a row that has nothing to expand", () => {
+		const { container } = render(
+			<Entry label=".ts" mark="pass" rarity="common" />
+		);
+
+		expect(container.firstElementChild).toHaveClass("relative");
+		expect(container.querySelector(".bg-celadon")).toBeInTheDocument();
+	});
+
+	// Only the legendary earns a fill: eight tinted rows in a column read as
+	// eight statuses rather than as a grade.
+	it("washes the row for a legendary and for nothing else", () => {
+		const { container: rare } = render(
+			<Entry label="Intellisense" mark="pass" rarity="rare" />
+		);
+		expect(rare.firstElementChild).not.toHaveClass("legendary-shimmer");
+
+		const { container: legendary } = render(
+			<Entry label="WTFPL" mark="pass" rarity="legendary" />
+		);
+		expect(legendary.firstElementChild).toHaveClass("legendary-shimmer");
+	});
+
+	it("leaves a row with no rarity unrailed", () => {
+		const { container } = render(<Entry label="empty" mark="idle" />);
+
+		expect(container.querySelector(".rounded-full.w-1")).toBeNull();
+	});
 });

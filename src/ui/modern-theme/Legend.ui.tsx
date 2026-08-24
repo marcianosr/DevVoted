@@ -13,10 +13,12 @@ export type LegendItem = { id: string; marker?: ReactNode; label: string };
 
 export type LegendProps = { items: readonly LegendItem[] };
 
+/** Keyed in the rail the rows themselves wear, not in a dot: a legend that shows
+ * a different marker from the thing it explains is one more thing to decode. */
 export const RARITY_LEGEND: readonly LegendItem[] = RARITY_ORDER.map(
 	(rarity) => ({
 		id: rarity,
-		marker: <Dot rarity={rarity} />,
+		marker: <Dot rarity={rarity} shape="bar" />,
 		label: rarity,
 	})
 );

@@ -15,7 +15,7 @@ export const Slot = ({ gate }: SlotProps) => (
 		leading={<span aria-hidden className={DISC} />}
 	>
 		<Text size="meta" tone="muted">
-			{gate === undefined ? "empty" : `opens at gate ${gate}`}
+			{gate === undefined ? "empty" : `opens when gate ${gate} clears`}
 		</Text>
 	</Row>
 );

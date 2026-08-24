@@ -269,7 +269,15 @@ const InteractivePoll = (overrides: Partial<PollScreenProps>) => {
 		onChange: () => setPicked(answer.id),
 	}));
 
-	return <PollScreen {...base} options={options} {...overrides} />;
+	return (
+		<PollScreen
+			{...base}
+			options={options}
+			onSubmit={() => {}}
+			submitLock={picked ? undefined : "Pick an answer"}
+			{...overrides}
+		/>
+	);
 };
 
 // The gate's name and colour come off the roster, so a story cannot title

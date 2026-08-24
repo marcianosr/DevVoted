@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 const LOCK =
 	"relative inline-flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors before:absolute before:-inset-1.5 before:content-['']";
 const PRESSABLE =
-	"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean";
+	"cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean";
 
 export type LockState = "unlocked" | "locked" | "unavailable";
 

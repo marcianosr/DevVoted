@@ -22,20 +22,15 @@ import { longestCorrectStreak } from "~/modules/run/community/domain/standouts.m
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { showsSampleSize } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
-import { rebuildCost } from "~/modules/run/shop/domain/draft.model";
-import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui";
-import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
-import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";
-import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
-import {
-	ShopScreen,
-	shopExitAction,
-} from "~/modules/run/shop/presentation/ShopScreen.ui";
-import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
-import { ReviewAnswers } from "~/modules/run/run/presentation/ReviewAnswers.ui";
+import { StartView } from "~/modules/run/pipeline/presentation/StartView.component";
+import { PollView } from "~/modules/run/run/presentation/PollView.component";
+import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
+import { ReviewView } from "~/modules/run/run/presentation/ReviewView.component";
+import { RemovalView } from "~/modules/run/gate/presentation/RemovalView.component";
+import { RewardView } from "~/modules/run/gate/presentation/RewardView.component";
+import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";
 import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";
 import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.ui";
@@ -433,9 +428,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
-	const [stripStep, setStripStep] = useState<"strip" | "review">("strip");
+	// The reward screen now fronts a held gate too, so the peel is a step further
+	// in: summary states what was earned and kept, removal takes the price.
+	const [stripStep, setStripStep] = useState<"summary" | "removal" | "review">(
+		"summary"
+	);
 	useEffect(() => {
-		setStripStep("strip");
+		setStripStep("summary");
 	}, [state.status]);
 
 	const view = toRunView(state);
@@ -445,19 +444,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		coverage: view.coverage,
 		configCount: view.configs.length,
 	});
-	const disabled = state.manualDisabled;
-	const cost = rebuildCost(state.rebuildsUsed);
-
-	// The rig's pool is dealt whole, so both of Prefetch's halves come straight
-	// off the view — no server, unlike the routed flow's tomorrow query.
-	const upcoming =
-		view.upcomingCategories === null
-			? undefined
-			: {
-					thisGate: view.upcomingCategories,
-					nextGate: view.nextGateCategories ?? [],
-				};
-
 	// The rig submits the real clock too, so a Timeout gate can actually bite in
 	// a playtest; the fast-forward buttons below stay untimed on purpose.
 	const answer = (optionIds: readonly string[]) =>
@@ -487,18 +473,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				: [...current, optionId]
 		);
 	};
-	const canSubmit = selected.length > 0;
-	const canStart = view.configs.length >= view.slots;
 
-	const quotaMet = view.stripsRemaining === 0;
-
-	const runOver = state.status === "won" || state.status === "dead";
-	const hidesHud =
-		runOver || (state.status === "rewarding" && rewardStep === "summary");
+	// The reskinned screens carry their own header — storage, swatch track and
+	// audit strip — so the HUD would only repeat them. Community is the one
+	// surface left with no header of its own.
+	const showsHud = state.status === "rewarding" && rewardStep === "community";
 
 	return (
 		<>
-			{hidesHud ? null : (
+			{showsHud ? (
 				<div className="mx-auto w-full max-w-6xl p-2">
 					<RunHud
 						storage={view.storage}
@@ -512,199 +495,85 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						coverageByCategory={view.coverageByCategory}
 					/>
 				</div>
-			)}
+			) : null}
 			{state.status === "configuring" && (
-				<Screen gateTheme={view.gateTheme}>
-					<ConfiguringScreen
-						configs={view.configs}
-						slots={view.slots}
-						stake={view.gateStake}
-						bench={view.available}
-						onSlot={(id) => dispatch({ type: "slot", configId: id })}
-						onUnslot={(id) => dispatch({ type: "unslot", configId: id })}
-						stacks={STARTER_STACKS}
-						onPickStack={(stackId) => dispatch({ type: "pick-stack", stackId })}
-						startAction={{
-							label: "Start run →",
-							onClick: () => {
-								setScreenNavDirection("forward");
-								dispatch({ type: "start" });
-							},
-							disabled: !canStart,
-							hint: canStart ? undefined : "Pick a stack to start",
-						}}
-					/>
-				</Screen>
+				<StartView
+					view={view}
+					onToggle={(id) =>
+						dispatch({
+							type: view.configs.some((config) => config.id === id)
+								? "unslot"
+								: "slot",
+							configId: id,
+						})
+					}
+					onPickStack={(stackId) => dispatch({ type: "pick-stack", stackId })}
+					onStart={() => {
+						setScreenNavDirection("forward");
+						dispatch({ type: "start" });
+					}}
+				/>
 			)}
 
 			{state.status === "answering" && view.poll && (
-				<Screen gateTheme={view.gateTheme}>
-					<AnsweringScreen
-						configs={view.configs}
-						audits={view.audits}
-						offlineConfigs={view.offlineConfigs}
-						mirroredPolls={view.mirroredPolls}
-						upcoming={upcoming}
-						timeLimitMs={view.pollTimeLimitMs ?? undefined}
-						remainingMs={pollClock.remainingMs ?? undefined}
-						category={view.poll.category}
-						question={view.poll.question}
-						answerType={view.poll.answerType}
-						options={view.poll.options}
-						selectedOptionIds={selected}
-						disabledOptionIds={disabled}
-						pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
-						pollsPerGate={view.pollsPerGate}
-						slots={view.slots}
-						canLint={view.canLint}
-						lintReady={view.lintReady}
-						linter={view.linter ?? undefined}
-						lintCost={view.lintCost}
-						canPeek={view.canPeek}
-						peekReady={view.peekReady}
-						peeker={view.peeker ?? undefined}
-						peekCost={view.peekCost}
-						split={
-							view.currentPollPeeked && view.peeker
-								? simulatePollSplit(
-										state.polls[state.currentIndex],
-										view.peeker
-									)
-								: undefined
-						}
-						correctAnswersThisGate={view.correctAnswersThisGate ?? undefined}
-						canSubmit={canSubmit}
-						onSelect={onSelect}
-						onSubmit={() => answer(selected)}
-						onNext={() => {}}
-						onLint={() => dispatch({ type: "lint-poll" })}
-						onPeek={() => dispatch({ type: "peek-poll" })}
-					/>
-				</Screen>
+				<PollView
+					view={view}
+					poll={view.poll}
+					selectedOptionIds={selected}
+					splitByOptionId={
+						view.currentPollPeeked && view.peeker
+							? simulatePollSplit(state.polls[state.currentIndex], view.peeker)
+									.percentByOptionId
+							: undefined
+					}
+					onSelect={onSelect}
+					onSubmit={() => answer(selected)}
+					onLint={() => dispatch({ type: "lint-poll" })}
+					onPeek={() => dispatch({ type: "peek-poll" })}
+				/>
 			)}
 
 			{state.status === "rewarding" && rewardStep === "summary" && (
-				<Screen theme="celadon">
-					<RewardScreen
-						clearedGate={view.clearedGateNumber}
-						gateReward={view.gateRewardPaidKb}
-						answered={view.answeredThisGate}
-						configs={view.configs}
-						storage={view.storage}
-						capKb={view.storageCap}
-						faucetThisGateKb={view.faucetThisGateKb}
-						interestThisGateKb={view.interestThisGateKb}
-						extraPickThisGateKb={view.extraPickThisGateKb}
-						billKb={view.gateBillPaidKb}
-						planDowngraded={view.planDowngraded}
-						autoUpgraded={view.autoUpgradedConfig ?? undefined}
-						deletedConfigs={view.deletedConfigs}
-						lapsedConfigs={view.lapsedConfigs}
-						subscriptionBillKb={view.subscriptionBillKb}
-						nextStake={view.gateStake}
-						onReviewAnswers={() => setRewardStep("review")}
-						onContinue={() => setRewardStep("shop")}
-					/>
-				</Screen>
+				<RewardView
+					view={view}
+					outcome="cleared"
+					onReviewAnswers={() => setRewardStep("review")}
+					onContinue={() => setRewardStep("shop")}
+				/>
 			)}
 
 			{state.status === "rewarding" && rewardStep === "review" && (
-				<Screen
-					theme="celadon"
-					leftAction={{
-						label: "← Back to rewards",
-						onClick: () => setRewardStep("summary"),
+				<ReviewView
+					view={view}
+					back={{
+						label: "\u2190 Back to rewards",
+						onUse: () => setRewardStep("summary"),
 					}}
-					rightAction={{
-						label: "Continue to shop →",
-						onClick: () => setRewardStep("shop"),
-					}}
-				>
-					<ReviewAnswers answered={view.answeredThisGate} />
-				</Screen>
+				/>
 			)}
 
 			{state.status === "rewarding" && rewardStep === "shop" && (
-				<Screen
-					gateTheme={view.gateTheme}
-					leftAction={
-						// A redo has no clear behind it, so there is no summary to back into.
-						view.redoingGate === null
-							? {
-									label: "← Back",
-									onClick: () => setRewardStep("summary"),
-								}
-							: undefined
-					}
-					rightAction={{
-						...shopExitAction(view.gatesCleared),
-						onClick: () => setRewardStep("prep"),
-					}}
-				>
-					<ShopScreen
-						storage={view.storage}
-						stake={view.gateStake}
-						atMinimumWidth={view.atMinimumWidth}
-						locked={view.shopLocked}
-						coverageByCategory={view.coverageByCategory}
-						configs={view.configs}
-						newConfigIds={view.newConfigIds}
-						offers={view.offers}
-						upcoming={upcoming}
-						onDraft={(id) => dispatch({ type: "draft", configId: id })}
-						rebuildCost={cost}
-						canRebuild={state.storage >= cost}
-						rebuildAvailable={view.rebuildAvailable}
-						onRebuild={() => dispatch({ type: "rebuild-draft" })}
-						lockAvailable={view.lockAvailable}
-						lockCost={view.lockCost}
-						canLock={view.canLock}
-						onLock={(id) => dispatch({ type: "lock-offer", configId: id })}
-						extendAvailable={view.extendAvailable}
-						extendCost={view.extendCost}
-						canExtend={view.canExtend}
-						onExtend={() => dispatch({ type: "extend-offers" })}
-						pinAvailable={view.pinAvailable}
-						pinCost={view.pinCost}
-						canPin={view.canPin}
-						pinnedAtGate={view.pinnedAtGate}
-						onPlantPin={() => dispatch({ type: "plant-pin" })}
-						slots={view.slots}
-						nextSlotGate={view.nextSlotGate}
-						justUnlockedSlots={view.justUnlockedSlots}
-						onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
-						onSell={(id) => dispatch({ type: "sell", configId: id })}
-						storagePlans={view.storagePlans}
-						onChangePlan={(tier) => dispatch({ type: "change-plan", tier })}
-					/>
-				</Screen>
+				<ShopView
+					view={view}
+					onDraft={(id) => dispatch({ type: "draft", configId: id })}
+					onSell={(id) => dispatch({ type: "sell", configId: id })}
+					onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
+					onLock={(id) => dispatch({ type: "lock-offer", configId: id })}
+					onRebuild={() => dispatch({ type: "rebuild-draft" })}
+					onExtend={() => dispatch({ type: "extend-offers" })}
+					onPlantPin={() => dispatch({ type: "plant-pin" })}
+					onChangePlan={(tier) => dispatch({ type: "change-plan", tier })}
+					onContinue={() => setRewardStep("prep")}
+				/>
 			)}
 
 			{state.status === "rewarding" && rewardStep === "prep" && (
-				<Screen
-					gateTheme={view.gateTheme}
-					leftAction={{
-						label: "← Back to shop",
-						onClick: () => setRewardStep("shop"),
-					}}
-					rightAction={{
-						label: "Community →",
-						onClick: () => setRewardStep("community"),
-					}}
-				>
-					<PrepScreen
-						stake={view.gateStake}
-						configs={view.configs}
-						atMinimumWidth={view.atMinimumWidth}
-						upcoming={upcoming}
-						shopAction={{
-							label: "← Back to shop",
-							onClick: () => setRewardStep("shop"),
-						}}
-						onStartGate={() => dispatch({ type: "finish-reward" })}
-						onDropConfig={(id) => dispatch({ type: "drop", configId: id })}
-					/>
-				</Screen>
+				<PrepView
+					view={view}
+					onStart={() => dispatch({ type: "finish-reward" })}
+					onBackToShop={() => setRewardStep("shop")}
+					onCommunity={() => setRewardStep("community")}
+				/>
 			)}
 
 			{state.status === "rewarding" && rewardStep === "community" && (
@@ -726,48 +595,44 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</Screen>
 			)}
 
-			{state.status === "awaiting-strip" && stripStep === "strip" && (
-				<Screen
-					theme="cinnabar"
-					rightAction={{
-						label: "Review answers →",
-						onClick: () => setStripStep("review"),
-						disabled: !quotaMet,
-						hint: quotaMet
-							? undefined
-							: `Peel ${view.stripsRemaining} more to continue`,
+			{state.status === "awaiting-strip" && stripStep === "summary" && (
+				<RewardView
+					view={view}
+					outcome="held"
+					onReviewAnswers={() => setStripStep("review")}
+					onChooseRemoval={() => setStripStep("removal")}
+				/>
+			)}
+
+			{state.status === "awaiting-strip" && stripStep === "removal" && (
+				<RemovalView
+					view={view}
+					onRemove={(configIds) => {
+						// The peel and the resume land in one update: a half-peeled build is
+						// not a state the screens should ever be asked to draw.
+						setRewardStep("shop");
+						setState((current) =>
+							runReducer(
+								configIds.reduce(
+									(next, configId) =>
+										runReducer(next, { type: "strip", configId }),
+									current
+								),
+								{ type: "resume-climb" }
+							)
+						);
 					}}
-				>
-					<StripScreen
-						gateNumber={view.gatesCleared}
-						stripsRemaining={view.stripsRemaining}
-						configs={view.configs}
-						answered={view.answeredThisGate}
-						billKb={view.gateBillPaidKb}
-						planDowngraded={view.planDowngraded}
-						retryStake={view.gateStake}
-						onStrip={(id) => dispatch({ type: "strip", configId: id })}
-					/>
-				</Screen>
+				/>
 			)}
 
 			{state.status === "awaiting-strip" && stripStep === "review" && (
-				<Screen
-					theme="cinnabar"
-					leftAction={{
-						label: "← Back to the gate",
-						onClick: () => setStripStep("strip"),
+				<ReviewView
+					view={view}
+					back={{
+						label: "\u2190 Back to the gate",
+						onUse: () => setStripStep("summary"),
 					}}
-					rightAction={{
-						label: "To the shop →",
-						onClick: () => {
-							setRewardStep("shop");
-							dispatch({ type: "resume-climb" });
-						},
-					}}
-				>
-					<ReviewAnswers answered={view.answeredThisGate} />
-				</Screen>
+				/>
 			)}
 
 			{(state.status === "won" || state.status === "dead") && (

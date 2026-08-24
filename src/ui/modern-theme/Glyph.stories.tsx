@@ -10,7 +10,13 @@ export default meta;
 
 type Story = StoryObj<typeof Glyph>;
 
-const SHOP: readonly GlyphName[] = ["rebuild", "extend", "tag", "suggest"];
+const SHOP: readonly GlyphName[] = [
+	"rebuild",
+	"extend",
+	"tag",
+	"suggest",
+	"uninstall",
+];
 
 const AUDITS: readonly GlyphName[] = [
 	"overrun",

@@ -649,6 +649,33 @@ meter::-webkit-meter-optimum-value {
 	);
 }
 
+/*
+ * A legendary's row fill: the same Kanto stops as .legendary-ring, mixed down to
+ * a tint so the row reads through it, and drifting. The ring itself stays static
+ * (Marciano, 2026-08-04) — at 12% the motion is a sheen, not an animation
+ * competing with the figure beside it. Six stops, first repeated last, so the
+ * loop has no seam.
+ */
+.legendary-shimmer {
+	background-image: linear-gradient(
+		90deg,
+		color-mix(in oklch, var(--color-saffron) 12%, transparent),
+		color-mix(in oklch, var(--color-fuchsia) 12%, transparent),
+		color-mix(in oklch, var(--color-lavender) 12%, transparent),
+		color-mix(in oklch, var(--color-cerulean) 12%, transparent),
+		color-mix(in oklch, var(--color-celadon) 12%, transparent),
+		color-mix(in oklch, var(--color-saffron) 12%, transparent)
+	);
+	background-size: 200% 100%;
+	animation: gradient-flow 12s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.legendary-shimmer {
+		animation: none;
+	}
+}
+
 /* Flowing celadon→viridian gradient clipped to the text glyphs. */
 @keyframes gradient-flow {
 	0% {

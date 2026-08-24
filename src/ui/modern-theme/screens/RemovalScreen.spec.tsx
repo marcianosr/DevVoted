@@ -126,7 +126,7 @@ describe("RemovalScreen", () => {
 	it("ends the footer on the button, after the consequence it commits to", () => {
 		render(<RemovalScreen {...props} />);
 
-		const sentence = screen.getByText(/without deinstall refund/);
+		const sentence = screen.getByText(/without the uninstall refund/);
 		const button = screen.getByRole("button", { name: CONTINUE });
 
 		expect(
@@ -140,7 +140,7 @@ describe("RemovalScreen", () => {
 
 		expect(
 			screen.getByText(
-				"You are forced to remove 2 configs from this run without deinstall refund!"
+				"You are forced to remove 2 configs from this run without the uninstall refund!"
 			)
 		).toBeInTheDocument();
 	});

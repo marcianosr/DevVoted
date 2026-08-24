@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 import { Text } from "./Text.ui";
 
 const ACTION =
-	"inline-flex shrink-0 items-center gap-1.5 rounded-md border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean disabled:cursor-not-allowed disabled:border-edge disabled:opacity-40 disabled:hover:bg-transparent";
+	"inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean disabled:cursor-not-allowed disabled:border-edge disabled:opacity-40 disabled:hover:bg-transparent";
 
 export type ActionSize = "sm" | "lg";
 
@@ -19,8 +19,10 @@ const FULL = "w-full justify-center";
 export type ActionEmphasis = "quiet" | "loud" | "prismatic" | "danger";
 
 const EMPHASIS = {
+	// Filled, not outlined: quiet is the default, so it lands in rows where every
+	// neighbour is a label and an outline alone did not read as pressable.
 	quiet:
-		"border-control-edge text-zinc-100 hover:border-theme hover:bg-theme-soft",
+		"border-control-edge bg-surface-raised text-zinc-100 hover:border-theme hover:bg-theme-soft",
 	loud: "border-celadon bg-celadon/10 text-celadon hover:bg-celadon/20",
 	prismatic:
 		"border-transparent legendary-ring text-zinc-100 hover:brightness-125",

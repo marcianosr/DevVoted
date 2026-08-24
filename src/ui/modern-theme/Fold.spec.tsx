@@ -79,4 +79,25 @@ describe("Fold", () => {
 
 		expect(container.querySelector("details")).not.toHaveAttribute("open");
 	});
+
+	// Three folds in a column otherwise read as one list with headings in it.
+	it("names the horizon its figures are true for", () => {
+		render(<Fold title="Draft" subtitle="this shop" />);
+
+		expect(screen.getByText("this shop")).toBeInTheDocument();
+	});
+
+	it("carries a glyph beside the title, after the caret", () => {
+		render(<Fold title="git tag" icon={<svg data-testid="tag" />} />);
+
+		expect(screen.getByTestId("tag")).toBeInTheDocument();
+	});
+
+	// jsdom resolves no variants, so this asserts the declaration rather than the
+	// painted rule: a column that ends on one reads as a section cut off mid-way.
+	it("declares away its rule for the last section in a column", () => {
+		const { container } = render(<Fold title="Your pipeline" />);
+
+		expect(container.firstElementChild).toHaveClass("last:border-b-0");
+	});
 });

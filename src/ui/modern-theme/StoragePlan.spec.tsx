@@ -50,10 +50,30 @@ describe("StoragePlan", () => {
 	it("says the bill lands whether the gate clears or not", () => {
 		render(<StoragePlan plans={PLANS} nextBillKb={0} />);
 
-		expect(
-			screen.getByText("billed every window, pass or fail")
-		).toBeInTheDocument();
 		expect(screen.getByText(/Switching is free/)).toBeInTheDocument();
+	});
+
+	// A shut section still has to say which plan the run is on; the terms below
+	// only matter once you are shopping for a different one.
+	it("names the rung in force in its header", () => {
+		render(<StoragePlan plans={PLANS} nextBillKb={0} />);
+
+		expect(screen.getByText("512 KB · free tier")).toBeInTheDocument();
+	});
+
+	it("states a paid rung by its terms rather than calling it free", () => {
+		const paid = PLANS.map((plan) =>
+			plan.locked
+				? plan
+				: {
+						...plan,
+						selected: plan.id === "tier-2",
+						free: plan.id !== "tier-2",
+					}
+		);
+		render(<StoragePlan plans={paid} nextBillKb={8} />);
+
+		expect(screen.getByText("640 KB · 8 KB / gate")).toBeInTheDocument();
 	});
 
 	it("states what the coming gate charges", () => {

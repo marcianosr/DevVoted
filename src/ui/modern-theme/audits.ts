@@ -47,3 +47,16 @@ export const AUDIT_ORDER = [
 	"breaking-change",
 	"strip",
 ] as const satisfies readonly AuditId[];
+
+const isAuditId = (id: string): id is AuditId =>
+	AUDIT_ORDER.some((known) => known === id);
+
+/** The model's id for an audit, narrowed to the one the kit draws. `timeout-3`
+ * and `strip-1` carry the per-gate number the model needs; the player sees one
+ * Timeout and one Strip, so the suffix comes off. Null rather than a fallback
+ * for an id with no entry: a missing icon should be missing, not wrong. */
+export const toAuditId = (id: string): AuditId | null => {
+	if (isAuditId(id)) return id;
+	const collapsed = id.replace(/-\d+$/, "");
+	return isAuditId(collapsed) ? collapsed : null;
+};

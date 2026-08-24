@@ -61,4 +61,22 @@ describe("Lock", () => {
 
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 	});
+
+	it("invites the press on the states that have one", () => {
+		const { rerender } = render(
+			<Lock on="Stylelint" state="unlocked" cost="16 KB" onToggle={() => {}} />
+		);
+		expect(screen.getByRole("button")).toHaveClass("cursor-pointer");
+
+		rerender(<Lock on="Stylelint" state="locked" onToggle={() => {}} />);
+		expect(screen.getByRole("button")).toHaveClass("cursor-pointer");
+	});
+
+	// Unavailable renders a bare span — there is nothing to press, so nothing
+	// should suggest there is.
+	it("offers no cursor where it offers no button", () => {
+		const { container } = render(<Lock on="WTFPL" state="unavailable" />);
+
+		expect(container.firstChild).not.toHaveClass("cursor-pointer");
+	});
 });

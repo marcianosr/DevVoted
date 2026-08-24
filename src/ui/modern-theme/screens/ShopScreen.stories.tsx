@@ -6,11 +6,10 @@ import { storagePlanFor } from "~/modules/run/run/domain/rules.model";
 
 import { Action } from "../Action.ui";
 import { planLadderAt } from "../Plan.stories";
-import { Control } from "../Control.ui";
 import { Delta } from "../Delta.ui";
 import { Glyph } from "../Glyph.ui";
 import { Entry } from "../Entry.ui";
-import type { FoldItem } from "../Fold.ui";
+import { Fold, type FoldItem } from "../Fold.ui";
 import { Lock } from "../Lock.ui";
 import { Mark } from "../Mark.ui";
 import { PriceTag, type PriceTagState } from "../PriceTag.ui";
@@ -38,7 +37,6 @@ type Offer = {
 	gives?: number;
 	multiplier?: number;
 	tag?: PriceTagState;
-	dimmed?: boolean;
 	summary?: string;
 	explainer?: string;
 	defaultOpen?: boolean;
@@ -73,7 +71,6 @@ const OFFERS: readonly Offer[] = [
 		lockable: false,
 		kb: 512,
 		tag: "unaffordable",
-		dimmed: true,
 	},
 ];
 
@@ -119,7 +116,6 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 			<Entry
 				label={offer.label}
 				defaultOpen={offer.defaultOpen}
-				dimmed={offer.dimmed}
 				summary={offer.summary}
 				explainer={offer.explainer}
 				leading={
@@ -188,8 +184,10 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 							]
 						: []),
 					{
-						label: "deinstall",
+						label: "Uninstall",
 						on: config.label,
+						icon: <Glyph name="uninstall" />,
+						cost: "+16 KB",
 						emphasis: "danger" as const,
 						onUse: noop,
 					},
@@ -208,8 +206,32 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 				nextGate: "gate 4",
 				storage: { plan: "Free tier", used: 216, cap: 512 },
 			}}
-			offers={offers}
-			offerCount="5 offers"
+			offers={[
+				...offers,
+				{
+					id: "extend",
+					content: (
+						<Entry
+							leading={<Glyph name="extend" framed />}
+							label={
+								<Text size="meta" tone="muted">
+									one more offer, here and every shop after · 2 left
+								</Text>
+							}
+							value={
+								<PriceTag
+									kb={48}
+									on="a sixth offer"
+									label="extend"
+									state="ready"
+									onUse={noop}
+								/>
+							}
+						/>
+					),
+				},
+			]}
+			offerCount="5 offers · 1 locked"
 			storagePlans={{
 				plans: planLadderAt(GATES_CLEARED, tier, USED_KB, (id) =>
 					setTier(Number(id.replace("tier-", "")))
@@ -230,49 +252,43 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 				</Text>
 			}
 			controls={
-				<>
-					<Control
-						icon="extend"
-						frame="dashed"
-						action={
-							<PriceTag
-								kb={48}
-								on="a sixth offer"
-								label="extend"
-								state="ready"
-								onUse={noop}
-							/>
-						}
-					>
-						a 6th offer, this shop and every shop after · 2 per run
-					</Control>
-
-					<Control
-						icon="tag"
-						title="git tag"
-						note="for your next run · one per run"
-						footnote="Price rises 64 KB per gate. Last sold at gate 10."
-						action={
-							<PriceTag kb={128} on="a git tag" label="buy" onUse={noop} />
-						}
-					>
-						If this run dies, the next one checks out at{" "}
-						<Text size="meta" tone="theme">
-							gate 4
-						</Text>{" "}
-						instead of gate 1, with a 128 KB stipend and the slots those clears
-						would have granted.
-					</Control>
-				</>
+				<Fold
+					title="git tag"
+					subtitle="next run"
+					icon={<Glyph name="tag" />}
+					defaultOpen={false}
+					value={
+						<Text size="meta" tone="muted">
+							not tagged · 128 KB
+						</Text>
+					}
+				>
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<Text as="p" size="meta" tone="muted">
+							If this run dies, the next one checks out at{" "}
+							<Text size="meta" tone="theme">
+								gate 4
+							</Text>{" "}
+							instead of gate 1. One per run.
+						</Text>
+						<PriceTag kb={128} on="a git tag" label="buy" onUse={noop} />
+					</div>
+				</Fold>
 			}
 			pipeline={withSlots}
 			slots="3 of 6 slots"
+			onContinue={noop}
 			{...overrides}
 		/>
 	);
 };
 
 export const MidRun: Story = { render: () => <Shelf /> };
+
+/** ADR-027: a build under the coming gate's width is turned away at the door. */
+export const UnderWidth: Story = {
+	render: () => <Shelf exitLock="Fill 4 slots to continue" />,
+};
 
 export const Broke: Story = {
 	render: () => (

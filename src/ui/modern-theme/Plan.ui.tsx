@@ -1,9 +1,11 @@
 import { clsx } from "clsx";
 
+import { Row } from "./Row.ui";
 import { Text } from "./Text.ui";
 
-const PLAN =
-	"flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors";
+// Padding and layout come from Row, so a rung sits at the same rhythm as every
+// other list item in the kit. Only the frame is the plan's own.
+const PLAN = "rounded-lg border transition-colors";
 const PICKABLE = "cursor-pointer";
 const IDLE = "border-edge-strong hover:border-control-edge";
 const ON = "border-theme bg-theme-soft";
@@ -38,29 +40,50 @@ export type PlanProps =
 export const Plan = (props: PlanProps) => {
 	if (props.locked)
 		return (
-			<div className={clsx(PLAN, LOCKED)}>
-				<span aria-hidden className={SEALED} />
-				<Text size="body" tone="muted" className={CAP}>
+			<Row
+				spacing="tight"
+				className={clsx(PLAN, LOCKED)}
+				leading={<span aria-hidden className={SEALED} />}
+			>
+				<Text size="meta" tone="muted" className={CAP}>
 					{REDACTED}
 				</Text>
 				<Text size="meta" tone="muted" className={TERMS}>
 					{props.opensAt}
 				</Text>
-			</div>
+			</Row>
 		);
 
 	return (
-		<label className={clsx(PLAN, PICKABLE, props.selected ? ON : IDLE)}>
-			<input
-				type="radio"
-				name={props.name}
-				checked={props.selected}
-				onChange={() => props.onSelect(props.id)}
-				className={CONTROL}
-			/>
-			<Text size="body" className={CAP}>
+		<Row
+			as="label"
+			spacing="tight"
+			className={clsx(PLAN, PICKABLE, props.selected ? ON : IDLE)}
+			leading={
+				<input
+					type="radio"
+					name={props.name}
+					checked={props.selected}
+					// Stated rather than gathered off the label: the three figures sit in
+					// separate spans, so the computed name ran them together.
+					aria-label={[props.cap, props.terms, props.figure]
+						.filter(Boolean)
+						.join(" ")}
+					onChange={() => props.onSelect(props.id)}
+					className={CONTROL}
+				/>
+			}
+			trailing={
+				props.figure ? (
+					<Text size="meta" tone="muted" className={FIGURE}>
+						{props.figure}
+					</Text>
+				) : null
+			}
+		>
+			<Text size="meta" className={CAP}>
 				{props.cap}
-			</Text>{" "}
+			</Text>
 			<Text
 				size="meta"
 				tone={props.free ? "celadon" : "muted"}
@@ -68,14 +91,6 @@ export const Plan = (props: PlanProps) => {
 			>
 				{props.terms}
 			</Text>
-			{props.figure ? (
-				<>
-					{" "}
-					<Text size="meta" tone="muted" className={FIGURE}>
-						{props.figure}
-					</Text>
-				</>
-			) : null}
-		</label>
+		</Row>
 	);
 };

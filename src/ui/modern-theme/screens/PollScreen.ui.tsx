@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Screen } from "../Screen.ui";
+import { Action } from "../Action.ui";
 import { Choice, type ChoiceProps } from "../Choice.ui";
 import { Byline, type BylineProps } from "../Byline.ui";
 import { Code } from "../Code.ui";
@@ -18,9 +19,9 @@ const RAIL =
 
 const OPTIONS = "flex flex-col gap-2";
 
-// The letter comes off the position, never off the caller: the review screen
-// refers back to it, and a hand-written letter could disagree with the order the
-// player actually saw.
+const FOOTER =
+	"flex flex-wrap items-center justify-end gap-4 border-t border-edge px-5 py-4";
+
 export type PollOption = Omit<ChoiceProps, "letter"> & { id: string };
 
 export type PollScreenProps = {
@@ -34,6 +35,8 @@ export type PollScreenProps = {
 	code?: readonly ReactNode[];
 	options: readonly PollOption[];
 	rail?: ReactNode;
+	onSubmit?: () => void;
+	submitLock?: string;
 	theme?: SwatchTheme;
 };
 
@@ -48,6 +51,8 @@ export const PollScreen = ({
 	code,
 	options,
 	rail,
+	onSubmit,
+	submitLock,
 	theme,
 }: PollScreenProps) => (
 	<Screen theme={theme}>
@@ -76,5 +81,17 @@ export const PollScreen = ({
 
 			{rail ? <aside className={RAIL}>{rail}</aside> : null}
 		</div>
+
+		{onSubmit ? (
+			<div className={FOOTER}>
+				<Action
+					label={submitLock ?? "Submit answer →"}
+					size="lg"
+					emphasis="loud"
+					disabled={submitLock !== undefined}
+					onUse={onSubmit}
+				/>
+			</div>
+		) : null}
 	</Screen>
 );

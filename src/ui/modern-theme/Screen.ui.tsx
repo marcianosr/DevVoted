@@ -2,7 +2,11 @@ import type { ReactNode } from "react";
 
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
-const SCREEN = "flex flex-col bg-theme-faint";
+// Two elements, because the tint and the reading width want opposite things:
+// the gate's colour is atmosphere and reaches both edges, while a row with its
+// label at one edge and its figure at the other stops reading as one row.
+const GLOW = "w-full bg-theme-faint";
+const BODY = "mx-auto flex w-full max-w-6xl flex-col";
 
 export type ScreenProps = {
 	/** The gate whose colour the page wears (ADR-020). A closed union, not a
@@ -13,7 +17,7 @@ export type ScreenProps = {
 };
 
 export const Screen = ({ theme, children }: ScreenProps) => (
-	<article data-gate-theme={theme} className={SCREEN}>
-		{children}
+	<article data-gate-theme={theme} className={GLOW}>
+		<div className={BODY}>{children}</div>
 	</article>
 );

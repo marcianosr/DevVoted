@@ -32,7 +32,7 @@ describe("PriceTag", () => {
 	it("carries the install verb for its row's open state to reveal", () => {
 		render(<PriceTag kb={128} on="Deprecated" onUse={vi.fn()} />);
 
-		expect(screen.getByText("install · 128")).toBeInTheDocument();
+		expect(screen.getByText("install · 128 KB")).toBeInTheDocument();
 	});
 
 	it("leaves the first tap to the row, so nothing is bought by opening it", async () => {
@@ -98,7 +98,7 @@ describe("PriceTag", () => {
 			name: "extend a sixth offer for 48 KB",
 		});
 		expect(tag).toBeEnabled();
-		expect(screen.getByText("extend · 48")).toBeInTheDocument();
+		expect(screen.getByText("extend · 48 KB")).toBeInTheDocument();
 	});
 
 	it("spends on a single tap when it is already showing the verb", async () => {
@@ -117,5 +117,54 @@ describe("PriceTag", () => {
 		await user.click(screen.getByRole("button"));
 
 		expect(onUse).toHaveBeenCalledOnce();
+	});
+
+	it("invites the press it can accept", () => {
+		render(<PriceTag kb={32} on="Stylelint" onUse={() => {}} />);
+
+		expect(screen.getByRole("button")).toHaveClass("cursor-pointer");
+	});
+
+	// The dimming lives on the tag, not on the row: a price the run cannot meet
+	// should not cost the config its name.
+	it("dims itself and refuses the pointer when the price cannot be met", () => {
+		render(
+			<PriceTag kb={512} on="WTFPL" state="unaffordable" onUse={() => {}} />
+		);
+
+		const tag = screen.getByRole("button");
+		expect(tag).toBeDisabled();
+		expect(tag).toHaveClass(
+			"disabled:cursor-not-allowed",
+			"disabled:opacity-50"
+		);
+	});
+
+	// A greyed price with no reason beside it reads as a bug rather than a rule.
+	it("says why it refuses, on hover and to a screen reader", () => {
+		render(
+			<PriceTag
+				kb={32}
+				on=".ts"
+				state="unaffordable"
+				hint="Can't install, no free slot"
+				onUse={() => {}}
+			/>
+		);
+
+		expect(screen.getByText("Can't install, no free slot")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", {
+				name: ".ts 32 KB, Can't install, no free slot",
+			})
+		).toBeInTheDocument();
+	});
+
+	it("stays a bare tag when it has nothing to explain", () => {
+		const { container } = render(
+			<PriceTag kb={32} on=".ts" onUse={() => {}} />
+		);
+
+		expect(container.firstElementChild?.tagName).toBe("BUTTON");
 	});
 });

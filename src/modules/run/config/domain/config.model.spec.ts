@@ -6,6 +6,7 @@ import {
 	draftCost,
 	focusCoverageMultiplier,
 	givesOf,
+	headlineFigureOf,
 	isUpgradable,
 	rarityOf,
 	sellRefund,
@@ -181,5 +182,47 @@ describe("givesOf", () => {
 		expect(givesOf({ ...CONFIGS.telemetry, level: 2 })).toBe(
 			"See how the community answered, and how many answered"
 		);
+	});
+});
+
+describe("headlineFigureOf", () => {
+	// A focus config's multiplier rides its level, so the badge has to read it
+	// off the level rather than off the roster's fixed copy.
+	it("prices a focus config by the level it has reached", () => {
+		expect(headlineFigureOf(CONFIGS.jsx)).toEqual({
+			kind: "multiplier",
+			value: 1.25,
+		});
+		expect(headlineFigureOf({ ...CONFIGS.jsx, level: 2 })).toEqual({
+			kind: "multiplier",
+			value: 1.5,
+		});
+	});
+
+	it("reads a flat coverage adder as coverage, not as a multiplier", () => {
+		expect(headlineFigureOf(CONFIGS.codeCoverage)).toEqual({
+			kind: "coverage",
+			value: 0.5,
+		});
+	});
+
+	it("reads a per-answer storage payout in KB", () => {
+		expect(headlineFigureOf(CONFIGS.indexedDb)).toEqual({
+			kind: "kb",
+			value: 8,
+		});
+	});
+
+	it("scales a clear payout by level, the way describeOf states it", () => {
+		expect(headlineFigureOf({ ...CONFIGS.unitTests, level: 2 })).toEqual({
+			kind: "kb",
+			value: 64,
+		});
+	});
+
+	// A doubling fee is not a figure a signed badge can state, and guessing one
+	// would be worse than showing none.
+	it("withholds a figure where the config prices in something else", () => {
+		expect(headlineFigureOf(CONFIGS.eslint)).toBeUndefined();
 	});
 });

@@ -2,7 +2,10 @@ import { Chip } from "./Chip.ui";
 import { signed, valueTone } from "./format";
 
 export type DeltaProps =
-	{ kb: number } | { multiplier: number } | { coverage: number };
+	| { kb: number }
+	| { multiplier: number }
+	| { coverage: number }
+	| { percent: number };
 
 export const Delta = (props: DeltaProps) => {
 	if ("multiplier" in props) {
@@ -14,6 +17,14 @@ export const Delta = (props: DeltaProps) => {
 	if ("coverage" in props) {
 		return (
 			<Chip tone={valueTone(props.coverage)}>{signed(props.coverage)}</Chip>
+		);
+	}
+
+	// Suffixed where coverage is not: a bare figure in a config row would read as
+	// coverage, and a percentage of held storage is a different axis entirely.
+	if ("percent" in props) {
+		return (
+			<Chip tone={valueTone(props.percent)}>{signed(props.percent)}%</Chip>
 		);
 	}
 

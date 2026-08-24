@@ -17,8 +17,6 @@ const FRAME = {
 const ROW = "flex items-start gap-3 p-3";
 const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-lg transition-colors hover:bg-surface-raised`;
 
-const DISC =
-	"inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-700 text-zinc-500";
 const BARE = "mt-0.5 text-zinc-500";
 
 const BODY = "flex min-w-0 flex-1 flex-col gap-1";
@@ -51,9 +49,7 @@ export const Control = ({
 }: ControlProps) => {
 	const glyph =
 		frame === "dashed" ? (
-			<span className={DISC}>
-				<Glyph name={icon} className="size-3" />
-			</span>
+			<Glyph name={icon} framed />
 		) : (
 			<Glyph name={icon} className={BARE} />
 		);

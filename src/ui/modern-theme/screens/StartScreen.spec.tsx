@@ -209,11 +209,15 @@ describe("StartScreen", () => {
 		render(
 			<StartScreen
 				{...props}
-				combo={{
-					ids: ["ts", "intellisense", "eslint"],
-					blurb: "stack on typescript, with a lint to save you once",
-					onTake: () => {},
-				}}
+				combos={[
+					{
+						id: "typescript",
+						name: "TypeScript",
+						ids: ["ts", "intellisense", "eslint"],
+						blurb: "stack on typescript, with a lint to save you once",
+						onTake: () => {},
+					},
+				]}
 			/>
 		);
 
@@ -227,11 +231,15 @@ describe("StartScreen", () => {
 		render(
 			<StartScreen
 				{...props}
-				combo={{
-					ids: ["ts", "not-dealt"],
-					blurb: "half a combo",
-					onTake: () => {},
-				}}
+				combos={[
+					{
+						id: "partial",
+						name: "Partial",
+						ids: ["ts", "not-dealt"],
+						blurb: "half a combo",
+						onTake: () => {},
+					},
+				]}
 			/>
 		);
 
@@ -246,11 +254,15 @@ describe("StartScreen", () => {
 		render(
 			<StartScreen
 				{...props}
-				combo={{
-					ids: ["ts", "intellisense", "eslint"],
-					blurb: "stack on typescript, with a lint to save you once",
-					onTake,
-				}}
+				combos={[
+					{
+						id: "typescript",
+						name: "TypeScript",
+						ids: ["ts", "intellisense", "eslint"],
+						blurb: "stack on typescript, with a lint to save you once",
+						onTake,
+					},
+				]}
 			/>
 		);
 
@@ -317,7 +329,7 @@ describe("StartScreen", () => {
 
 		expect(screen.getByText("0 of 3")).toBeInTheDocument();
 		expect(screen.getAllByText("empty")).toHaveLength(3);
-		expect(screen.getByText("opens at gate 1")).toBeInTheDocument();
+		expect(screen.getByText("opens when gate 1 clears")).toBeInTheDocument();
 	});
 
 	it("fills a slot with each config picked, leaving the rest empty", () => {
@@ -346,7 +358,18 @@ describe("StartScreen", () => {
 		expect(screen.getByText("Pallet gate")).toBeInTheDocument();
 		expect(screen.getByText("coverage from 5 polls")).toBeInTheDocument();
 		expect(screen.getByText("none")).toBeInTheDocument();
-		expect(screen.getByText("1 config")).toBeInTheDocument();
+	});
+
+	// The peel is the one cost on this panel that is a loss, so it wears the
+	// losing colour rather than sitting in the same grey as the demands.
+	it("badges the peel in red, and names the thing that triggers it", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("Failing the gate")).toBeInTheDocument();
+		// Chip tints the wrapper, not the Text it nests inside.
+		expect(screen.getByText(/remove 1 config/).parentElement).toHaveClass(
+			"text-cinnabar"
+		);
 	});
 
 	it("counts the audits when the gate has any", () => {
@@ -384,5 +407,106 @@ describe("StartScreen", () => {
 		);
 
 		expect(screen.queryByText("opens")).not.toBeInTheDocument();
+	});
+
+	// The engine offers three openings, and the name is what a player picks
+	// between — reducing them to one nameless suggestion threw both away.
+	it("offers every curated opening, each by its own name", () => {
+		render(
+			<StartScreen
+				{...props}
+				combos={[
+					{
+						id: "react",
+						name: "React",
+						ids: ["ts"],
+						blurb: "Fast but risky.",
+						onTake: () => {},
+					},
+					{
+						id: "typescript",
+						name: "TypeScript",
+						ids: ["ts", "eslint"],
+						blurb: "Safer JS/TS focus.",
+						recommended: true,
+						onTake: () => {},
+					},
+				]}
+			/>
+		);
+
+		expect(screen.getByText("React")).toBeInTheDocument();
+		expect(screen.getByText("TypeScript")).toBeInTheDocument();
+		expect(screen.getAllByRole("button", { name: "take these" })).toHaveLength(
+			2
+		);
+	});
+
+	it("flags the opening a first run should take", () => {
+		render(
+			<StartScreen
+				{...props}
+				combos={[
+					{
+						id: "react",
+						name: "React",
+						ids: ["ts"],
+						blurb: "Fast but risky.",
+						onTake: () => {},
+					},
+					{
+						id: "typescript",
+						name: "TypeScript",
+						ids: ["ts"],
+						blurb: "Safer JS/TS focus.",
+						recommended: true,
+						onTake: () => {},
+					},
+				]}
+			/>
+		);
+
+		expect(screen.getAllByText("Recommended")).toHaveLength(1);
+	});
+
+	it("takes the opening the player pressed, not the first one", async () => {
+		const onTakeSecond = vi.fn();
+		render(
+			<StartScreen
+				{...props}
+				combos={[
+					{
+						id: "react",
+						name: "React",
+						ids: ["ts"],
+						blurb: "Fast but risky.",
+						onTake: () => {},
+					},
+					{
+						id: "typescript",
+						name: "TypeScript",
+						ids: ["ts"],
+						blurb: "Safer JS/TS focus.",
+						onTake: onTakeSecond,
+					},
+				]}
+			/>
+		);
+
+		const [, second] = screen.getAllByRole("button", { name: "take these" });
+		await userEvent.click(second);
+
+		expect(onTakeSecond).toHaveBeenCalledOnce();
+	});
+
+	// A run with no seed and nothing banked should say less, not make numbers up.
+	it("drops the seed and the archive when the run has neither", () => {
+		render(<StartScreen {...props} seed={undefined} archive={undefined} />);
+
+		expect(screen.queryByText(/^seed/)).not.toBeInTheDocument();
+		expect(screen.queryByText("archive")).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "New run" })
+		).toBeInTheDocument();
 	});
 });

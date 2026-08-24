@@ -121,6 +121,54 @@ export const describeConfig = (config: Config): string => {
 	return `${name} polls earn ${focusCoverageMultiplier(level)}× coverage.`;
 };
 
+/**
+ * The one figure a config leads with, as data rather than prose. `describeOf`
+ * already states it in a sentence; a badge needs the number on its own, and
+ * parsing it back out of the sentence would drift the first time the copy
+ * changed. Order follows what the description leads with.
+ */
+export type ConfigFigure =
+	| { readonly kind: "multiplier"; readonly value: number }
+	| { readonly kind: "coverage"; readonly value: number }
+	| { readonly kind: "kb"; readonly value: number }
+	/** A percentage of something the config holds, never of coverage. */
+	| { readonly kind: "percent"; readonly value: number }
+	| { readonly kind: "chance"; readonly oneIn: number };
+
+export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
+	if (config.focusCategory)
+		return {
+			kind: "multiplier",
+			value: focusCoverageMultiplier(config.level ?? 1),
+		};
+	if (config.coverageMultiplier !== undefined)
+		return { kind: "multiplier", value: config.coverageMultiplier };
+	if (config.coverageAdd !== undefined)
+		return { kind: "coverage", value: config.coverageAdd };
+	if (config.storagePerCorrect !== undefined)
+		return { kind: "kb", value: config.storagePerCorrect };
+	if (config.storageOnClear !== undefined)
+		return { kind: "kb", value: config.storageOnClear * (config.level ?? 1) };
+
+	// Below here the figure is real but conditional, so it ranks under any flat
+	// rate above: a config holding both leads with the rate it always pays.
+	if (config.openerCoverageMultiplier !== undefined)
+		return { kind: "multiplier", value: config.openerCoverageMultiplier };
+	if (config.storagePerExtraPick !== undefined)
+		return { kind: "kb", value: config.storagePerExtraPick };
+	if (config.storageInterestPct !== undefined)
+		return { kind: "percent", value: interestPctOf(config) };
+	if (config.draftCostFactor !== undefined)
+		return { kind: "multiplier", value: config.draftCostFactor };
+
+	const oneIn = autoUpgradeOneInOf(config);
+	if (oneIn !== undefined) return { kind: "chance", oneIn };
+
+	// What is left is a switch, not a rate: crossing out an option, reading the
+	// split, suppressing an audit. There is no number to withhold.
+	return undefined;
+};
+
 export const givesOf = (config: Config): string | undefined => {
 	if (config.coverageDecayPerClear !== undefined)
 		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} per clear`;

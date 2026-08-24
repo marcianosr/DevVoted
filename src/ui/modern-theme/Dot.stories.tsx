@@ -13,6 +13,7 @@ type Story = StoryObj<typeof Dot>;
 
 export const Common: Story = { args: { rarity: "common" } };
 export const Legendary: Story = { args: { rarity: "legendary" } };
+export const Bar: Story = { args: { rarity: "rare", shape: "bar" } };
 
 export const EveryTier: Story = {
 	render: () => (

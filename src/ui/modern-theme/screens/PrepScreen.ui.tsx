@@ -10,6 +10,7 @@ import { Delta } from "../Delta.ui";
 import { Dot } from "../Dot.ui";
 import { Entry } from "../Entry.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
+import type { Rarity } from "../rarity";
 import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
 import { Glyph } from "../Glyph.ui";
 import { Slot } from "../Slot.ui";
@@ -44,6 +45,7 @@ const BULLET = <Dot tone="muted" />;
 export type PrepConfig = {
 	id: string;
 	label: string;
+	rarity?: Rarity;
 	note?: ReactNode;
 	summary?: string;
 	explainer?: string;
@@ -176,7 +178,10 @@ export const PrepScreen = ({
 	onStart,
 	theme,
 }: PrepScreenProps) => {
-	const width = configs.length + slots.length;
+	// A gated row is a preview of width to come, not width held — counting it read
+	// a full 3-slot build as "3 / 4".
+	const width =
+		configs.length + slots.filter((slot) => slot.gate === undefined).length;
 	const billedKb = bills.reduce((total, bill) => total + bill.kb, 0);
 	const onMissKb = bills
 		.filter((bill) => bill.billedOnMiss)
@@ -293,6 +298,7 @@ export const PrepScreen = ({
 				<Entry
 					mark="idle"
 					label={config.label}
+					rarity={config.rarity}
 					value={config.note}
 					summary={config.summary}
 					explainer={config.explainer}

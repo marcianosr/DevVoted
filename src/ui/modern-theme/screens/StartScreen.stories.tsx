@@ -21,6 +21,7 @@ type Story = StoryObj<typeof StartScreen>;
 const dealt: readonly DealtConfig[] = [
 	{
 		id: "ts",
+		rarity: "common",
 		label: ".ts",
 		family: "category",
 		summary: "Common · focus: typescript",
@@ -29,6 +30,7 @@ const dealt: readonly DealtConfig[] = [
 	},
 	{
 		id: "intellisense",
+		rarity: "rare",
 		label: "Intellisense",
 		family: "multiplier",
 		summary: "Rare · all coverage",
@@ -37,6 +39,7 @@ const dealt: readonly DealtConfig[] = [
 	},
 	{
 		id: "eslint",
+		rarity: "common",
 		label: "ESLint",
 		family: "tool",
 		summary: "Common · JS/TS polls",
@@ -46,6 +49,7 @@ const dealt: readonly DealtConfig[] = [
 	},
 	{
 		id: "indexeddb",
+		rarity: "uncommon",
 		label: "IndexedDB",
 		family: "storage",
 		summary: "Uncommon · every correct answer",
@@ -54,6 +58,7 @@ const dealt: readonly DealtConfig[] = [
 	},
 	{
 		id: "rb",
+		rarity: "common",
 		label: ".rb",
 		family: "category",
 		summary: "Common · focus: ruby",
@@ -62,6 +67,7 @@ const dealt: readonly DealtConfig[] = [
 	},
 	{
 		id: "coldstart",
+		rarity: "uncommon",
 		label: "Cold Start",
 		family: "multiplier",
 		summary: "Uncommon · the gate's opener",
@@ -70,12 +76,23 @@ const dealt: readonly DealtConfig[] = [
 	},
 	{
 		id: "overclock",
+		rarity: "rare",
 		label: "Overclock",
 		family: "gamble",
 		summary: "Rare · the gate's opener",
 		explainer:
 			"The gate's first answer earns ×4 coverage. Everything after runs hot at ×0.5, cooling off each clear.",
 		note: <Delta multiplier={4} />,
+	},
+	{
+		id: "dependabot",
+		rarity: "legendary",
+		label: "Dependabot",
+		family: "storage",
+		summary: "Legendary · on a gate clear",
+		explainer:
+			"1 in 3 gate clears: a random config in your pipeline upgrades, free.",
+		note: <Chip tone="muted">1 in 3</Chip>,
 	},
 ];
 
@@ -87,11 +104,23 @@ const base: Omit<StartScreenProps, "pickedIds" | "onToggle"> = {
 	dealtFrom: 30,
 	lock: { cost: "8 KB", onToggle: () => {} },
 	rebuild: { cost: "24 KB", onUse: () => {} },
-	combo: {
-		ids: ["ts", "intellisense", "eslint"],
-		blurb: "stack on typescript, with a lint to save you once",
-		onTake: () => {},
-	},
+	combos: [
+		{
+			id: "typescript",
+			name: "TypeScript",
+			ids: ["ts", "intellisense", "eslint"],
+			blurb: "stack on typescript, with a lint to save you once",
+			recommended: true,
+			onTake: () => {},
+		},
+		{
+			id: "reckless",
+			name: "Ruby",
+			ids: ["rb", "coldstart", "overclock"],
+			blurb: "fast, and nothing to catch you",
+			onTake: () => {},
+		},
+	],
 	slots: [
 		{ id: "slot-1" },
 		{ id: "slot-2" },
@@ -154,11 +183,11 @@ export const Ready: Story = {
 	),
 };
 
-export const NoCombo: Story = { render: () => <Drafting combo={undefined} /> };
+export const NoCombo: Story = { render: () => <Drafting combos={undefined} /> };
 
 export const Stripped: Story = {
 	render: () => (
-		<Drafting combo={undefined} rebuild={undefined} lock={undefined} />
+		<Drafting combos={undefined} rebuild={undefined} lock={undefined} />
 	),
 };
 

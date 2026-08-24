@@ -17,3 +17,15 @@ export const plural = (count: number, noun: string) =>
 
 export const optionLetter = (index: number) =>
 	String.fromCharCode(65 + (index % 26));
+
+/** The storage ladder crosses out of KB at 1024, and the shop says "1 MB". */
+export const capLabel = (kb: number) =>
+	kb >= 1024 ? `${kb / 1024} MB` : `${kb} KB`;
+
+/**
+ * A plan's `fromGate` is the gate it is sold FOR, and the shop that sells it
+ * runs one clear earlier — `gatesCleared` reaches 2 the moment gate 1 clears.
+ * Both callers had the off-by-one, so the arithmetic lives here once.
+ */
+export const planOpensAt = (fromGate: number) =>
+	`opens when gate ${fromGate - 1} clears`;

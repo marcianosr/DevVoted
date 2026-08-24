@@ -9,9 +9,11 @@ import { Delta } from "../Delta.ui";
 import { Entry } from "../Entry.ui";
 import { FAMILY, FAMILY_ORDER, Family, type ConfigFamily } from "../Family.ui";
 import { Fold } from "../Fold.ui";
+import { Legend, RARITY_LEGEND } from "../Legend.ui";
 import { Glyph } from "../Glyph.ui";
 import { Lock } from "../Lock.ui";
 import { Pick } from "../Pick.ui";
+import type { Rarity } from "../rarity";
 import { Row } from "../Row.ui";
 import { Slot } from "../Slot.ui";
 import { Swatch } from "../Swatch.ui";
@@ -38,6 +40,9 @@ const TAGS = "flex flex-wrap items-center gap-3";
 const COMBO =
 	"flex flex-wrap items-center gap-3 rounded-lg border border-celadon/30 bg-celadon/5 px-4 py-3";
 const COMBO_BODY = "flex min-w-0 flex-1 flex-col gap-1";
+const COMBO_HEAD = "flex flex-wrap items-center gap-2";
+const COMBOS = "flex flex-col gap-2";
+const KEY = "px-3 pt-4";
 const SPARK = "text-celadon";
 
 const GATE = "flex flex-col gap-1 px-3 py-2";
@@ -53,19 +58,19 @@ export type DealtConfig = {
 	id: string;
 	label: string;
 	family: ConfigFamily;
-	/** Rarity and what it applies to — never a live counter, since no window has
-	 * been played yet (ADR-026). */
+	rarity?: Rarity;
 	summary: string;
 	explainer: string;
 	note?: ReactNode;
 	locked?: boolean;
 };
 
-/** Config ids, not labels: the combo can then never name something the deal is
- * not offering, and its family line is read off the same rows. */
 export type StartCombo = {
+	id: string;
+	name: string;
 	ids: readonly string[];
 	blurb: string;
+	recommended?: boolean;
 	onTake: () => void;
 };
 
@@ -78,17 +83,15 @@ export type StartReward = {
 };
 
 export type StartScreenProps = {
-	seed: string;
-	/** A formatted figure, not a meter: the archive has no cap to fill. */
-	archive: string;
+	seed?: string;
+	archive?: string;
 	dealt: readonly DealtConfig[];
 	dealtFrom: number;
 	pickedIds: readonly string[];
 	onToggle: (id: string) => void;
-	/** One object, so a lock handler can never arrive without its price. */
 	lock?: { cost: string; onToggle: (id: string) => void };
 	rebuild?: { cost: string; onUse: () => void };
-	combo?: StartCombo;
+	combos?: readonly StartCombo[];
 	slots: readonly StartSlot[];
 	gateName: string;
 	gateNumber: number;
@@ -103,30 +106,36 @@ export type StartScreenProps = {
 };
 
 const Combo = ({
+	name,
 	configs,
 	blurb,
+	recommended,
 	onTake,
 }: {
+	name: string;
 	configs: readonly DealtConfig[];
 	blurb: string;
+	recommended?: boolean;
 	onTake: () => void;
 }) => (
 	<div className={COMBO}>
 		<Glyph name="suggest" className={SPARK} />
 		<span className={COMBO_BODY}>
-			<Text size="body">
+			<span className={COMBO_HEAD}>
+				<Text size="body">{name}</Text>
+				{recommended ? <Chip tone="celadon">Recommended</Chip> : null}
+				<Text size="meta" tone="muted">
+					{blurb}
+				</Text>
+			</span>
+			<Text size="meta" tone="muted">
 				{configs.map((config) => config.label).join(" + ")}
 			</Text>
-			{/* The shape of the build, in the same words the deal is tagged with:
-			    one glance says what kind of three these are. */}
 			<span className={TAGS}>
 				{configs.map((config) => (
 					<Family key={config.id} family={config.family} />
 				))}
 			</span>
-			<Text size="meta" tone="muted">
-				{blurb}
-			</Text>
 		</span>
 		<Action label="take these" emphasis="loud" onUse={onTake} />
 	</div>
@@ -160,7 +169,7 @@ export const StartScreen = ({
 	onToggle,
 	lock,
 	rebuild,
-	combo,
+	combos,
 	slots,
 	gateName,
 	gateNumber,
@@ -174,25 +183,29 @@ export const StartScreen = ({
 	theme,
 }: StartScreenProps) => {
 	const picked = pickedIds.length;
-	// You pick as many configs as you have slots open, so the count comes off the
-	// slots rather than sitting beside them as a number that could disagree.
 	const openSlots = slots.filter((slot) => slot.gate === undefined);
 	const picksRequired = openSlots.length;
 	const toGo = picksRequired - picked;
 	const ready = toGo === 0;
 
-	const comboConfigs = combo
-		? combo.ids
-				.map((id) => dealt.find((config) => config.id === id))
-				.filter((config) => config !== undefined)
-		: [];
+	const configsIn = (ids: readonly string[]) =>
+		ids
+			.map((id) => dealt.find((config) => config.id === id))
+			.filter((config) => config !== undefined);
 
 	const pipeline = [
 		...dealt
 			.filter((config) => pickedIds.includes(config.id))
 			.map((config) => ({
 				id: config.id,
-				content: <Entry mark="idle" label={config.label} value={config.note} />,
+				content: (
+					<Entry
+						mark="idle"
+						label={config.label}
+						rarity={config.rarity}
+						value={config.note}
+					/>
+				),
 			})),
 		...openSlots.slice(picked).map((slot) => ({
 			id: slot.id,
@@ -242,16 +255,20 @@ export const StartScreen = ({
 					<Text as="h2" size="title">
 						New run
 					</Text>
-					<Text size="meta" tone="muted">
-						seed {seed}
-					</Text>
+					{seed ? (
+						<Text size="meta" tone="muted">
+							seed {seed}
+						</Text>
+					) : null}
 				</div>
-				<p>
-					<Text size="meta" tone="muted">
-						archive{" "}
-					</Text>
-					<Text size="meta">{archive}</Text>
-				</p>
+				{archive ? (
+					<p>
+						<Text size="meta" tone="muted">
+							archive{" "}
+						</Text>
+						<Text size="meta">{archive}</Text>
+					</p>
+				) : null}
 			</header>
 
 			<div className={BODY}>
@@ -275,12 +292,19 @@ export const StartScreen = ({
 								<Text as="p" size="meta" tone="muted">
 									{dealt.length} dealt from {dealtFrom}
 								</Text>
-								{combo ? (
-									<Combo
-										configs={comboConfigs}
-										blurb={combo.blurb}
-										onTake={combo.onTake}
-									/>
+								{combos?.length ? (
+									<div className={COMBOS}>
+										{combos.map((combo) => (
+											<Combo
+												key={combo.id}
+												name={combo.name}
+												configs={configsIn(combo.ids)}
+												blurb={combo.blurb}
+												recommended={combo.recommended}
+												onTake={combo.onTake}
+											/>
+										))}
+									</div>
 								) : null}
 							</div>
 						}
@@ -290,6 +314,7 @@ export const StartScreen = ({
 								<Pick
 									variant="draft"
 									label={config.label}
+									rarity={config.rarity}
 									checked={pickedIds.includes(config.id)}
 									onToggle={() => onToggle(config.id)}
 									notes={
@@ -305,8 +330,6 @@ export const StartScreen = ({
 							),
 						}))}
 					/>
-					{/* Closed: a returning player already knows these, and the tags on
-					    the rows are the reminder. */}
 					<Fold
 						title="What the families mean"
 						defaultOpen={false}
@@ -324,6 +347,10 @@ export const StartScreen = ({
 							),
 						}))}
 					/>
+
+					<div className={KEY}>
+						<Legend items={RARITY_LEGEND} />
+					</div>
 				</section>
 
 				<section className={`${COLUMN} ${ASIDE}`}>
@@ -359,8 +386,12 @@ export const StartScreen = ({
 							tone={auditCount === 0 ? "muted" : "saffron"}
 						/>
 						<Fact
-							label="a miss removes"
-							value={plural(removeOnMiss, "config")}
+							label="Failing the gate"
+							value={
+								<Chip tone="cinnabar">
+									remove {plural(removeOnMiss, "config")}
+								</Chip>
+							}
 						/>
 
 						<hr className={RULE} />
@@ -388,8 +419,6 @@ export const StartScreen = ({
 						/>
 					</div>
 
-					{/* No tooltip on the disabled state: the button's own label is
-					    already the instruction. */}
 					<div className={FOOT}>{startButton}</div>
 				</section>
 			</div>
