@@ -2,7 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import type { PaidActions } from "~/modules/run/run/application/paidActions.viewmodel";
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
+import { createMockPaidActions } from "~/test/runView.factory";
+
+const lintWith = (overrides: Partial<PaidActions>) =>
+	createMockPaidActions({ canLint: true, lintReady: true, ...overrides });
+
+const peekWith = (overrides: Partial<PaidActions>) =>
+	createMockPaidActions({ canPeek: true, peekReady: true, ...overrides });
 
 const base = {
 	configs: [CONFIGS.unitTests, CONFIGS.js],
@@ -84,10 +92,7 @@ describe(AnsweringScreen, () => {
 			<AnsweringScreen
 				{...base}
 				configs={[CONFIGS.unitTests, CONFIGS.eslint]}
-				canLint
-				lintReady
-				linter={CONFIGS.eslint}
-				lintCost={8}
+				paidActions={lintWith({ linter: CONFIGS.eslint, lintCost: 8 })}
 				onLint={onLint}
 			/>
 		);
@@ -102,10 +107,7 @@ describe(AnsweringScreen, () => {
 			<AnsweringScreen
 				{...base}
 				configs={[CONFIGS.eslint]}
-				canLint
-				lintReady
-				linter={CONFIGS.eslint}
-				lintCost={8}
+				paidActions={lintWith({ linter: CONFIGS.eslint, lintCost: 8 })}
 				onLint={vi.fn()}
 			/>
 		);
@@ -122,10 +124,7 @@ describe(AnsweringScreen, () => {
 			<AnsweringScreen
 				{...base}
 				configs={[CONFIGS.unitTests, CONFIGS.telemetry]}
-				canPeek
-				peekReady
-				peeker={CONFIGS.telemetry}
-				peekCost={32}
+				paidActions={peekWith({ peeker: CONFIGS.telemetry, peekCost: 32 })}
 				onPeek={onPeek}
 			/>
 		);
@@ -138,10 +137,11 @@ describe(AnsweringScreen, () => {
 			<AnsweringScreen
 				{...base}
 				configs={[CONFIGS.telemetry]}
-				canPeek
-				peekReady={false}
-				peeker={CONFIGS.telemetry}
-				peekCost={64}
+				paidActions={peekWith({
+					peeker: CONFIGS.telemetry,
+					peekCost: 64,
+					peekReady: false,
+				})}
 				onPeek={vi.fn()}
 			/>
 		);

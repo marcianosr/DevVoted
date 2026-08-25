@@ -8,6 +8,7 @@ import {
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
+import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
 import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
 import {
 	ShopScreen,
@@ -15,6 +16,7 @@ import {
 } from "~/modules/run/shop/presentation/ShopScreen.ui";
 import {
 	createMockGateStake,
+	createMockShopControls,
 	createMockShopOffer,
 } from "~/test/runView.factory";
 
@@ -61,6 +63,22 @@ const stakeWith = (overrides: Partial<GateStake>): GateStake => ({
 	...overrides,
 });
 
+/** An open shop with rebuild, lock and extend all affordable; each test names
+ * only the control it is about. */
+const controls = (overrides: Partial<ShopControls> = {}) =>
+	createMockShopControls({
+		rebuildCost: 1,
+		canRebuild: true,
+		lockAvailable: true,
+		lockCost: 16,
+		canLock: true,
+		extendAvailable: true,
+		extendCost: 48,
+		canExtend: true,
+		pinCost: 512,
+		...overrides,
+	});
+
 const base = {
 	storage: 440,
 	coverageByCategory: {},
@@ -70,21 +88,10 @@ const base = {
 	newConfigIds: [],
 	offers: [CONFIGS.eslint, CONFIGS.agentsMd].map((c) => createMockShopOffer(c)),
 	onDraft: vi.fn(),
-	rebuildCost: 1,
-	canRebuild: true,
+	controls: controls(),
 	onRebuild: vi.fn(),
-	lockAvailable: true,
-	lockCost: 16,
-	canLock: true,
 	onLock: vi.fn(),
-	extendAvailable: true,
-	extendCost: 48,
-	canExtend: true,
 	onExtend: vi.fn(),
-	pinAvailable: false,
-	pinCost: 512,
-	canPin: false,
-	pinnedAtGate: null,
 	onPlantPin: vi.fn(),
 	slots: 3,
 	nextSlotUnlock: { slot: 4, gate: 1 },
@@ -372,7 +379,9 @@ describe(ShopScreen, () => {
 	// WTFPL shows the whole catalog: a reroll is not a thing this shop sells,
 	// so the control leaves the row instead of sitting there disabled.
 	it("hides the rebuild control when the run's shop is not selling rerolls", () => {
-		render(<ShopScreen {...base} rebuildAvailable={false} />);
+		render(
+			<ShopScreen {...base} controls={controls({ rebuildAvailable: false })} />
+		);
 		expect(
 			screen.queryByRole("button", { name: /Rebuild offers/ })
 		).not.toBeInTheDocument();
@@ -383,7 +392,9 @@ describe(ShopScreen, () => {
 		render(<ShopScreen {...base} onLock={onLock} />);
 		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
 		fireEvent.click(
-			screen.getByRole("button", { name: `Lock ESLint for ${base.lockCost}KB` })
+			screen.getByRole("button", {
+				name: `Lock ESLint for ${base.controls.lockCost}KB`,
+			})
 		);
 		expect(onLock).toHaveBeenCalledWith("eslint");
 	});
@@ -391,14 +402,14 @@ describe(ShopScreen, () => {
 	// The price still shows on a lock the run cannot afford — a control the player
 	// never sees is a control they never learn.
 	it("prices the lock's refusal when the lock is unaffordable", () => {
-		render(<ShopScreen {...base} canLock={false} />);
+		render(<ShopScreen {...base} controls={controls({ canLock: false })} />);
 		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
 		const lock = screen.getByRole("button", {
-			name: `Lock ESLint for ${base.lockCost}KB`,
+			name: `Lock ESLint for ${base.controls.lockCost}KB`,
 		});
 		expect(lock).toHaveAttribute("aria-disabled", "true");
 		expect(refusalOn(lock)).toHaveTextContent(
-			`Holding costs ${base.lockCost}KB`
+			`Holding costs ${base.controls.lockCost}KB`
 		);
 	});
 
@@ -410,7 +421,7 @@ describe(ShopScreen, () => {
 					createMockShopOffer(CONFIGS.eslint, { locked: true }),
 					createMockShopOffer(CONFIGS.agentsMd),
 				]}
-				lockAvailable={false}
+				controls={controls({ lockAvailable: false })}
 			/>
 		);
 		expect(screen.getByText("Locked")).toBeInTheDocument();
@@ -425,7 +436,9 @@ describe(ShopScreen, () => {
 	});
 
 	it("offers no lock at all before the lock's gate", () => {
-		render(<ShopScreen {...base} lockAvailable={false} />);
+		render(
+			<ShopScreen {...base} controls={controls({ lockAvailable: false })} />
+		);
 		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
 		expect(
 			screen.getByRole("button", { name: /^Install ESLint/ })
@@ -443,7 +456,9 @@ describe(ShopScreen, () => {
 	});
 
 	it("hides the extend control before its gate", () => {
-		render(<ShopScreen {...base} extendAvailable={false} />);
+		render(
+			<ShopScreen {...base} controls={controls({ extendAvailable: false })} />
+		);
 		expect(
 			screen.queryByRole("button", { name: /Extend offers/ })
 		).not.toBeInTheDocument();
@@ -769,7 +784,7 @@ describe("the shop door's wording", () => {
 describe("a shop shut by Read-only", () => {
 	const locked = {
 		...base,
-		locked: true,
+		controls: controls({ shopLocked: true }),
 		configs: [CONFIGS.js, CONFIGS.eslint],
 	};
 

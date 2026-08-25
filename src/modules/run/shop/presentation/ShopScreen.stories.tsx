@@ -6,8 +6,10 @@ import {
 	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
 import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
+import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
 import {
 	createMockGateStake,
+	createMockShopControls,
 	createMockShopOffer,
 } from "~/test/runView.factory";
 
@@ -24,8 +26,11 @@ const stake = createMockGateStake({
 	},
 	perAnswer: {
 		coveragePerCorrect: 8,
+		coveragePerWrong: -0.8,
 		storageKbPerCorrect: 0,
 		matchingConfigMultiplier: 1.25,
+		streakStepMultiplier: 1.1,
+		streakCapMultiplier: 2,
 	},
 });
 
@@ -38,19 +43,28 @@ const plansOn = (currentTier: number, storage = 0) =>
 		locked: !isStoragePlanUnlocked(plan, GATES_CLEARED),
 	}));
 
+/** An open shop at this depth; each story names only the control it varies. */
+const controls = (overrides: Partial<ShopControls> = {}) =>
+	createMockShopControls({
+		rebuildCost: 4,
+		canRebuild: true,
+		lockAvailable: true,
+		lockCost: 16,
+		canLock: true,
+		extendAvailable: true,
+		extendCost: 48,
+		canExtend: true,
+		...overrides,
+	});
+
 const meta: Meta<typeof ShopScreen> = {
 	component: ShopScreen,
 	title: "Run/Screens/Shop",
 	args: {
 		storagePlans: plansOn(1),
 		onChangePlan: () => {},
-		lockAvailable: true,
-		lockCost: 16,
-		canLock: true,
+		controls: controls(),
 		onLock: () => {},
-		extendAvailable: true,
-		extendCost: 48,
-		canExtend: true,
 		onExtend: () => {},
 	},
 };
@@ -69,8 +83,6 @@ export const Default: Story = {
 			(config) => createMockShopOffer(config)
 		),
 		onDraft: () => {},
-		rebuildCost: 4,
-		canRebuild: true,
 		onRebuild: () => {},
 		slots: 3,
 		nextSlotUnlock: { slot: 4, gate: 1 },
@@ -91,9 +103,11 @@ export const WTFPLOpenCatalog: Story = {
 		offers: Object.values(CONFIGS)
 			.filter((config) => config.id !== "js" && config.id !== "wtfpl")
 			.map((config) => createMockShopOffer(config)),
-		rebuildAvailable: false,
-		lockAvailable: false,
-		extendAvailable: false,
+		controls: controls({
+			rebuildAvailable: false,
+			lockAvailable: false,
+			extendAvailable: false,
+		}),
 	},
 };
 
@@ -108,7 +122,7 @@ export const OfferLocked: Story = {
 			(config) =>
 				createMockShopOffer(config, { locked: config.id === "cold-start" })
 		),
-		lockAvailable: false,
+		controls: controls({ lockAvailable: false }),
 	},
 };
 
@@ -182,6 +196,6 @@ export const LastConfig: Story = {
 export const ReadOnlyGate: Story = {
 	args: {
 		...Default.args,
-		locked: true,
+		controls: controls({ shopLocked: true }),
 	},
 };

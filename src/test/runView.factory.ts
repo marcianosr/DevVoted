@@ -16,6 +16,7 @@ import type {
 import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
 import type { GatePayout } from "~/modules/run/run/application/gatePayout.viewmodel";
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
+import type { PaidActions } from "~/modules/run/run/application/paidActions.viewmodel";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 
 import { createMockDataFactory } from "./createMockDataFactory";
@@ -98,6 +99,17 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	planDowngraded: false,
 });
 
+export const createMockPaidActions = createMockDataFactory<PaidActions>({
+	canLint: false,
+	lintReady: false,
+	lintCost: 0,
+	linter: null,
+	canPeek: false,
+	peekReady: false,
+	peekCost: 32,
+	peeker: null,
+});
+
 export const createMockGateStake = createMockDataFactory<GateStake>({
 	gateNumber: 0,
 	pollsPerGate: 5,
@@ -135,16 +147,7 @@ const createRunView = createMockDataFactory<RunView>({
 	awaitingTomorrow: false,
 	pollsExhausted: false,
 	disabledOptionIds: [],
-	paidActions: {
-		canLint: false,
-		lintReady: false,
-		lintCost: 0,
-		linter: null,
-		canPeek: false,
-		peekReady: false,
-		peekCost: 32,
-		peeker: null,
-	},
+	paidActions: createMockPaidActions(),
 	offlineConfigs: [],
 	mirroredPolls: false,
 	pollTimeLimitMs: null,

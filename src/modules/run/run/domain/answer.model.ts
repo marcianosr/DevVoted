@@ -1,4 +1,7 @@
-import { faucetKbPerCorrect } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	faucetKbPerCorrect,
+} from "~/modules/run/config/domain/config.model";
 import { autoUpgradeOnClear } from "~/modules/run/config/domain/autoUpgrade.model";
 import { decayOnClear } from "~/modules/run/config/domain/decay.model";
 import { billSubscriptionsOnClear } from "~/modules/run/config/domain/subscription.model";
@@ -7,6 +10,7 @@ import {
 	type GateWindow,
 } from "~/modules/run/config/domain/effect.model";
 import {
+	type CoverageBreakdown,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
 	coverageLossFor,
@@ -22,6 +26,7 @@ import {
 	gatePassed,
 } from "~/modules/run/gate/domain/gate.model";
 import {
+	type Audit,
 	auditBurnKb,
 	auditScoreShare,
 	auditTimeLimitMs,
@@ -44,6 +49,7 @@ import {
 import {
 	type AnsweredPoll,
 	type AnswerOutcome,
+	type RunPoll,
 	answerOutcome,
 	coverageShare,
 	mirrorPoll,
@@ -229,15 +235,23 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	};
 };
 
-export const answer = (
+type AnswerGrade = {
+	readonly audits: readonly Audit[];
+	readonly configs: readonly Config[];
+	readonly graded: RunPoll;
+	readonly outcome: AnswerOutcome;
+	readonly timedOut: boolean;
+	readonly auditedShare: number;
+	readonly scoredShare: number;
+	readonly streak: number;
+};
+
+const gradeAnswer = (
 	state: RunState,
+	poll: RunPoll,
 	optionIds: readonly string[],
 	elapsedMs?: number
-): RunState => {
-	if (optionIds.length === 0) return state;
-	const poll = state.polls[state.currentIndex];
-	if (!poll) return state;
-
+): AnswerGrade => {
 	// Audits read the installed pipeline, scoring the live one: an outage inside the window cannot un-suppress what the receipt already passed.
 	const audits = auditsOf(state);
 	const configs = liveConfigsOf(state);
@@ -249,7 +263,6 @@ export const answer = (
 	const timedOut =
 		limitMs !== undefined && elapsedMs !== undefined && elapsedMs > limitMs;
 	const outcome: AnswerOutcome = timedOut ? "wrong" : answeredOutcome;
-	const correct = outcome === "correct";
 	// Scoring follows the audited share; streaks and the faucet stay keyed to true correctness.
 	const auditedShare = timedOut
 		? 0
@@ -259,52 +272,128 @@ export const answer = (
 		graded.options.length,
 		graded.answerType === "multiple"
 	);
-	const scoredShare = auditedShare * gateMultiplier * difficultyMultiplier;
-	const streak = nextStreak(state.streak, outcome);
-	const streakBonus = streakMultiplier(streak, streakCapStepsFor(configs));
+	return {
+		audits,
+		configs,
+		graded,
+		outcome,
+		timedOut,
+		auditedShare,
+		scoredShare: auditedShare * gateMultiplier * difficultyMultiplier,
+		streak: nextStreak(state.streak, outcome),
+	};
+};
+
+type AnswerLedger = {
+	readonly earnedCoverage: number;
+	readonly coverageLoss: number;
+	readonly breakdown: CoverageBreakdown;
+	readonly faucetKb: number;
+	readonly burnKb: number;
+};
+
+const scoreAnswer = (
+	state: RunState,
+	poll: RunPoll,
+	grade: AnswerGrade
+): AnswerLedger => {
+	const { audits, configs, auditedShare, scoredShare } = grade;
 	const answerContext: AnswerContext = {
 		category: poll.category,
 		answeredBefore: state.window.answered,
 	};
-	const earned = coverageForAnswer(
-		configs,
-		answerContext,
-		scoredShare,
-		streakBonus
+	const streakBonus = streakMultiplier(
+		grade.streak,
+		streakCapStepsFor(configs)
 	);
 	const coverageLoss =
 		auditedShare > 0 ? 0 : coverageLossFor(configs, state.gatesCleared);
-	const coverageBreakdown = coverageBreakdownForAnswer(
-		configs,
-		answerContext,
-		scoredShare,
-		streakBonus,
-		coverageLoss
+	const rawFaucet =
+		grade.outcome === "correct" ? faucetKbPerCorrect(configs) : 0;
+	const faucetKb = Math.min(
+		rawFaucet,
+		faucetRemainingKb(state.faucetEarnedKb ?? 0)
 	);
+	return {
+		earnedCoverage: coverageForAnswer(
+			configs,
+			answerContext,
+			scoredShare,
+			streakBonus
+		),
+		coverageLoss,
+		breakdown: coverageBreakdownForAnswer(
+			configs,
+			answerContext,
+			scoredShare,
+			streakBonus,
+			coverageLoss
+		),
+		faucetKb,
+		// Floors at 0: insolvency stays non-lethal (ADR-023).
+		burnKb: Math.min(
+			auditBurnKb(audits, grade.outcome === "wrong"),
+			Math.max(0, state.storage + faucetKb)
+		),
+	};
+};
+
+const answeredPollFrom = (
+	poll: RunPoll,
+	optionIds: readonly string[],
+	grade: AnswerGrade,
+	ledger: AnswerLedger,
+	elapsedMs?: number
+): AnsweredPoll => ({
+	id: poll.id,
+	question: poll.question,
+	category: poll.category,
+	outcome: grade.outcome,
+	picked: grade.graded.options
+		.filter((option) => optionIds.includes(option.id))
+		.map((option) => option.label),
+	// The mirrored expectation, so the review agrees with the score.
+	correct: grade.graded.options
+		.filter((option) => option.correct)
+		.map((option) => option.label),
+	codeBlock: poll.codeBlock,
+	explanation: poll.explanation,
+	options: poll.options.map((option) => option.label),
+	answerType: grade.graded.answerType,
+	coverageEarned: ledger.earnedCoverage,
+	coverageBreakdown: ledger.breakdown,
+	elapsedMs,
+	timedOut: grade.timedOut ? true : undefined,
+});
+
+const applyAnswer = (
+	state: RunState,
+	poll: RunPoll,
+	grade: AnswerGrade,
+	ledger: AnswerLedger,
+	answered: AnsweredPoll
+): RunState => {
+	const correct = grade.outcome === "correct";
 	const categoryBefore = state.coverageByCategory[poll.category] ?? 0;
 	const categoryAfter = roundToOneDecimal(
-		Math.max(0, categoryBefore + earned - coverageLoss)
-	);
-	const rawFaucet = correct ? faucetKbPerCorrect(configs) : 0;
-	const faucetEarnedBefore = state.faucetEarnedKb ?? 0;
-	const faucet = Math.min(rawFaucet, faucetRemainingKb(faucetEarnedBefore));
-	// Floors at 0: insolvency stays non-lethal (ADR-023).
-	const burnKb = Math.min(
-		auditBurnKb(audits, outcome === "wrong"),
-		Math.max(0, state.storage + faucet)
+		Math.max(0, categoryBefore + ledger.earnedCoverage - ledger.coverageLoss)
 	);
 	const tally = state.window.byCategory[poll.category] ?? {
 		seen: 0,
 		correct: 0,
 	};
-	const nextIndex = state.currentIndex + 1;
 
 	const window: GateWindow = {
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
 		// Floored, so a bad opening can be climbed out of but never banks a negative (ADR-035).
 		coverageGained: roundToOneDecimal(
-			Math.max(0, state.window.coverageGained + earned - coverageLoss)
+			Math.max(
+				0,
+				state.window.coverageGained +
+					ledger.earnedCoverage -
+					ledger.coverageLoss
+			)
 		),
 		byCategory: {
 			...state.window.byCategory,
@@ -317,55 +406,46 @@ export const answer = (
 		peeked: state.window.peeked ?? 0,
 	};
 
-	const answeredPoll: AnsweredPoll = {
-		id: poll.id,
-		question: poll.question,
-		category: poll.category,
-		outcome,
-		picked: graded.options
-			.filter((option) => optionIds.includes(option.id))
-			.map((option) => option.label),
-		// The mirrored expectation, so the review agrees with the score.
-		correct: graded.options
-			.filter((option) => option.correct)
-			.map((option) => option.label),
-		codeBlock: poll.codeBlock,
-		explanation: poll.explanation,
-		options: poll.options.map((option) => option.label),
-		answerType: graded.answerType,
-		coverageEarned: earned,
-		coverageBreakdown,
-		elapsedMs,
-		timedOut: timedOut ? true : undefined,
-	};
-
-	const coverage = roundToOneDecimal(
-		Math.max(0, state.coverage + categoryAfter - categoryBefore)
-	);
-
-	const answered: RunState = widened({
+	return widened({
 		...state,
 		window,
 		manualDisabled: [],
-		streak,
-		storage: addStorage(state.storage, faucet) - burnKb,
-		faucetEarnedKb: faucetEarnedBefore + faucet,
-		faucetThisGateKb: (state.faucetThisGateKb ?? 0) + faucet,
-		coverage,
+		streak: grade.streak,
+		storage: addStorage(state.storage, ledger.faucetKb) - ledger.burnKb,
+		faucetEarnedKb: (state.faucetEarnedKb ?? 0) + ledger.faucetKb,
+		faucetThisGateKb: (state.faucetThisGateKb ?? 0) + ledger.faucetKb,
+		coverage: roundToOneDecimal(
+			Math.max(0, state.coverage + categoryAfter - categoryBefore)
+		),
 		coverageByCategory: {
 			...state.coverageByCategory,
 			[poll.category]: categoryAfter,
 		},
-		answeredThisGate: [...state.answeredThisGate, answeredPoll],
-		allAnswered: [...(state.allAnswered ?? []), answeredPoll],
+		answeredThisGate: [...state.answeredThisGate, answered],
+		allAnswered: [...(state.allAnswered ?? []), answered],
 		log:
-			burnKb > 0 ? withLog(state, `Storage leaked -${burnKb}KB.`) : state.log,
+			ledger.burnKb > 0
+				? withLog(state, `Storage leaked -${ledger.burnKb}KB.`)
+				: state.log,
 	});
+};
 
-	if (window.answered >= SLICE_WINDOW) return closeWindow(answered, nextIndex);
-	return {
-		...answered,
-		currentIndex: nextIndex,
-		status: "answering",
-	};
+export const answer = (
+	state: RunState,
+	optionIds: readonly string[],
+	elapsedMs?: number
+): RunState => {
+	if (optionIds.length === 0) return state;
+	const poll = state.polls[state.currentIndex];
+	if (!poll) return state;
+
+	const grade = gradeAnswer(state, poll, optionIds, elapsedMs);
+	const ledger = scoreAnswer(state, poll, grade);
+	const answered = answeredPollFrom(poll, optionIds, grade, ledger, elapsedMs);
+	const applied = applyAnswer(state, poll, grade, ledger, answered);
+
+	const nextIndex = state.currentIndex + 1;
+	if (applied.window.answered >= SLICE_WINDOW)
+		return closeWindow(applied, nextIndex);
+	return { ...applied, currentIndex: nextIndex, status: "answering" };
 };

@@ -7,6 +7,7 @@ import type { Config } from "~/modules/run/config/domain/config.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { AnswerScore } from "~/modules/run/run/application/answerScore.viewmodel";
+import type { PaidActions } from "~/modules/run/run/application/paidActions.viewmodel";
 import { Button } from "~/ui/Button.component";
 import {
 	ScoreEquationChips,
@@ -95,14 +96,11 @@ type AnsweringScreenProps = {
 	chosenOptionIds?: readonly string[];
 	/** The just-answered poll's coverage breakdown — shown as the reveal's chip equation. */
 	revealScore?: AnswerScore;
-	canLint?: boolean;
-	lintReady?: boolean;
-	linter?: Config;
-	lintCost?: number;
-	canPeek?: boolean;
-	peekReady?: boolean;
-	peeker?: Config;
-	peekCost?: number;
+	/** Lint and peek, whole: both hang off the row of the config that sells them. */
+	paidActions?: PaidActions;
+	/** False while the run is mid-request or sitting on the reveal — a paid action
+	 * the engine would refuse must not offer itself. */
+	interactive?: boolean;
 	/** The bought split for this poll — absent until the peek is paid for. */
 	split?: PollSplitView;
 	/** Correct answers this gate's polls hold (.length) — absent when nothing counts. */
@@ -141,14 +139,8 @@ export const AnsweringScreen = ({
 	correctOptionIds,
 	chosenOptionIds,
 	revealScore,
-	canLint,
-	lintReady,
-	linter,
-	lintCost,
-	canPeek,
-	peekReady,
-	peeker,
-	peekCost,
+	paidActions,
+	interactive = true,
 	split,
 	correctAnswersThisGate,
 	upcoming,
@@ -162,10 +154,13 @@ export const AnsweringScreen = ({
 	// Both paid actions hang off the row of the config that sells them, so the
 	// pipeline stays the one place a build's powers are read from.
 	const useActionFor = (config: Config): RowUseAction | undefined => {
+		if (!paidActions) return undefined;
+		const { canLint, lintReady, linter, lintCost } = paidActions;
 		if (canLint && linter && onLint && config.id === linter.id)
-			return { cost: lintCost, ready: lintReady ?? true, onUse: onLint };
+			return { cost: lintCost, ready: lintReady && interactive, onUse: onLint };
+		const { canPeek, peekReady, peeker, peekCost } = paidActions;
 		if (canPeek && peeker && onPeek && config.id === peeker.id)
-			return { cost: peekCost, ready: peekReady ?? true, onUse: onPeek };
+			return { cost: peekCost, ready: peekReady && interactive, onUse: onPeek };
 		return undefined;
 	};
 

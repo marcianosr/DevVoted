@@ -39,27 +39,15 @@ export const RunShop = () => {
 				stake={view.gateStake}
 				configs={view.configs}
 				atMinimumWidth={view.atMinimumWidth}
-				locked={view.shopControls.shopLocked}
+				controls={view.shopControls}
+				busy={busy}
 				newConfigIds={view.newConfigIds}
 				offers={view.offers}
 				upcoming={upcoming}
 				onDraft={(id) => send({ type: "draft", configId: id })}
-				rebuildCost={view.shopControls.rebuildCost}
-				canRebuild={view.shopControls.canRebuild && !busy}
-				rebuildAvailable={view.shopControls.rebuildAvailable}
 				onRebuild={() => send({ type: "rebuild-draft" })}
-				lockAvailable={view.shopControls.lockAvailable}
-				lockCost={view.shopControls.lockCost}
-				canLock={view.shopControls.canLock && !busy}
 				onLock={(id) => send({ type: "lock-offer", configId: id })}
-				extendAvailable={view.shopControls.extendAvailable}
-				extendCost={view.shopControls.extendCost}
-				canExtend={view.shopControls.canExtend && !busy}
 				onExtend={() => send({ type: "extend-offers" })}
-				pinAvailable={view.shopControls.pinAvailable}
-				pinCost={view.shopControls.pinCost}
-				canPin={view.shopControls.canPin && !busy}
-				pinnedAtGate={view.shopControls.pinnedAtGate}
 				onPlantPin={() => send({ type: "plant-pin" })}
 				slots={view.slots}
 				nextSlotUnlock={view.nextSlotUnlock}

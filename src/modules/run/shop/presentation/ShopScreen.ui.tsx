@@ -15,6 +15,7 @@ import type {
 	StoragePlanOption,
 } from "~/modules/run/run/application/runView.viewmodel";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
+import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { formatKb } from "~/shared/lib/storage";
 import { Badge } from "~/ui/Badge.component";
@@ -48,35 +49,23 @@ type ShopScreenProps = {
 	configs: readonly Config[];
 	/** The build is on its width floor, so every uninstall is refused. */
 	atMinimumWidth: boolean;
-	/** Read-only (ADR-038) has shut this shop: everything is browsable, nothing
-	 * is buyable, and the banner says which gate did it. */
-	locked?: boolean;
+	/** ADR-029's three horizons plus the git tag, whole. Includes `shopLocked`:
+	 * read-only (ADR-038) leaves everything browsable and nothing buyable, and
+	 * the banner says which gate did it. */
+	controls: ShopControls;
+	/** A request is in flight, so every purchase disables until it lands. Kept
+	 * apart from `controls`, which says what the run can afford, not what it is
+	 * mid-way through doing. */
+	busy?: boolean;
 	slots: number;
 	newConfigIds: readonly string[];
 	offers: readonly ShopOffer[];
 	/** Prefetch's reveal; absent when no installed config reads the draw. */
 	upcoming?: UpcomingCategoriesProps;
 	onDraft: (configId: string) => void;
-	rebuildCost: number;
-	canRebuild: boolean;
-	/** Hidden, not disabled, while WTFPL lays out the whole catalog — a reroll
-	 * of everything is not a thing this shop sells. */
-	rebuildAvailable?: boolean;
 	onRebuild: () => void;
-	lockAvailable: boolean;
-	lockCost: number;
-	canLock: boolean;
 	onLock: (configId: string) => void;
-	extendAvailable: boolean;
-	extendCost: number;
-	canExtend: boolean;
 	onExtend: () => void;
-	/** The git tag (ADR-036): a once-per-run checkpoint purchase, priced by the
-	 * gate it would mark. */
-	pinAvailable: boolean;
-	pinCost: number;
-	canPin: boolean;
-	pinnedAtGate: number | null;
 	onPlantPin: () => void;
 	/** What opens the next slot — a gate, a coverage total, or either
 	 * (ADR-041); null at the cap. */
@@ -186,28 +175,16 @@ export const ShopScreen = ({
 	stake,
 	configs,
 	atMinimumWidth,
-	locked = false,
+	controls,
+	busy = false,
 	slots,
 	newConfigIds,
 	offers,
 	upcoming,
 	onDraft,
-	rebuildCost,
-	canRebuild,
-	rebuildAvailable = true,
 	onRebuild,
-	lockAvailable,
-	lockCost,
-	canLock,
 	onLock,
-	extendAvailable,
-	extendCost,
-	canExtend,
 	onExtend,
-	pinAvailable,
-	pinCost,
-	canPin,
-	pinnedAtGate,
 	onPlantPin,
 	nextSlotUnlock,
 	justUnlockedSlots,
@@ -218,6 +195,23 @@ export const ShopScreen = ({
 	onChangePlan,
 }: ShopScreenProps) => {
 	const { gateNumber } = stake;
+	const {
+		shopLocked: locked,
+		rebuildCost,
+		rebuildAvailable,
+		lockAvailable,
+		lockCost,
+		extendAvailable,
+		extendCost,
+		pinAvailable,
+		pinCost,
+		pinnedAtGate,
+	} = controls;
+	// `can*` says the run can afford it; an in-flight request disables it anyway.
+	const canRebuild = controls.canRebuild && !busy;
+	const canLock = controls.canLock && !busy;
+	const canExtend = controls.canExtend && !busy;
+	const canPin = controls.canPin && !busy;
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const nextGate = swatchForGate(gateNumber);

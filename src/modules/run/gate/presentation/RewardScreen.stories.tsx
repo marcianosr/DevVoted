@@ -2,7 +2,11 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
-import { createMockGateStake } from "~/test/runView.factory";
+import type { GatePayout } from "~/modules/run/run/application/gatePayout.viewmodel";
+import {
+	createMockGatePayout,
+	createMockGateStake,
+} from "~/test/runView.factory";
 
 const meta: Meta<typeof RewardScreen> = {
 	component: RewardScreen,
@@ -29,10 +33,17 @@ const answered = [
 	},
 ];
 
+/** The cleared gate every story starts from; each names only what it varies. */
+const payout = (overrides: Partial<GatePayout> = {}) =>
+	createMockGatePayout({
+		clearedGateNumber: 1,
+		gateRewardPaidKb: 88,
+		...overrides,
+	});
+
 export const Default: Story = {
 	args: {
-		clearedGate: 1,
-		gateReward: 88,
+		payout: payout(),
 		answered,
 		configs: [CONFIGS.css, CONFIGS.unitTests],
 		storage: 168,
@@ -57,14 +68,16 @@ export const DependabotMerged: Story = {
 	args: {
 		...Default.args,
 		configs: [{ ...CONFIGS.css, level: 2 }, CONFIGS.dependabot],
-		autoUpgraded: { ...CONFIGS.css, level: 2 },
+		payout: payout({ autoUpgradedConfig: { ...CONFIGS.css, level: 2 } }),
 	},
 };
 
 export const DeprecatedDeleted: Story = {
 	args: {
 		...Default.args,
-		deletedConfigs: [{ ...CONFIGS.deprecated, coverageMultiplier: 1 }],
+		payout: payout({
+			deletedConfigs: [{ ...CONFIGS.deprecated, coverageMultiplier: 1 }],
+		}),
 	},
 };
 
@@ -72,7 +85,7 @@ export const FreemiumLapsed: Story = {
 	args: {
 		...Default.args,
 		configs: [CONFIGS.css, CONFIGS.unitTests],
-		lapsedConfigs: [CONFIGS.freemium],
+		payout: payout({ lapsedConfigs: [CONFIGS.freemium] }),
 	},
 };
 
@@ -80,8 +93,7 @@ export const SubscriptionsBilled: Story = {
 	args: {
 		...Default.args,
 		configs: [CONFIGS.css, CONFIGS.freemium],
-		billKb: 8,
-		subscriptionBillKb: 64,
+		payout: payout({ gateBillPaidKb: 8, subscriptionBillKb: 64 }),
 	},
 };
 
@@ -89,8 +101,7 @@ export const WithFaucetAndBill: Story = {
 	args: {
 		...Default.args,
 		configs: [CONFIGS.css, CONFIGS.unitTests, CONFIGS.indexedDb],
-		faucetThisGateKb: 24,
-		billKb: 8,
+		payout: payout({ faucetThisGateKb: 24, gateBillPaidKb: 8 }),
 	},
 };
 
@@ -105,16 +116,18 @@ export const EveryPayout: Story = {
 			CONFIGS.mooresLaw,
 			CONFIGS.length,
 		],
-		gateReward: 152,
-		faucetThisGateKb: 24,
-		interestThisGateKb: 12,
-		extraPickThisGateKb: 32,
+		payout: payout({
+			gateRewardPaidKb: 152,
+			faucetThisGateKb: 24,
+			interestThisGateKb: 12,
+			extraPickThisGateKb: 32,
+		}),
 	},
 };
 
 export const Downgraded: Story = {
 	args: {
 		...Default.args,
-		planDowngraded: true,
+		payout: payout({ planDowngraded: true }),
 	},
 };

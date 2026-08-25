@@ -130,14 +130,8 @@ export const RunAnswer = () => {
 				chosenOptionIds={reveal ? selected : undefined}
 				revealScore={reveal?.score ?? undefined}
 				slots={view.slots}
-				canLint={view.paidActions.canLint}
-				lintReady={view.paidActions.lintReady && !busy && !reveal}
-				linter={view.paidActions.linter ?? undefined}
-				lintCost={view.paidActions.lintCost}
-				canPeek={view.paidActions.canPeek}
-				peekReady={view.paidActions.peekReady && !busy && !reveal}
-				peeker={view.paidActions.peeker ?? undefined}
-				peekCost={view.paidActions.peekCost}
+				paidActions={view.paidActions}
+				interactive={!busy && reveal === null}
 				split={split ?? undefined}
 				correctAnswersThisGate={view.correctAnswersThisGate ?? undefined}
 				upcoming={upcoming}

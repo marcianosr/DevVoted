@@ -21,32 +21,16 @@ import { SwatchLabel } from "~/modules/run/gate/presentation/SwatchLabel.ui";
 import { GateStakeRewards } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { StorageGauge } from "~/modules/run/run/presentation/StorageGauge.ui";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
+import type { GatePayout } from "~/modules/run/run/application/gatePayout.viewmodel";
 
 type RewardScreenProps = {
-	clearedGate: number;
-	gateReward: number;
+	/** What the clear paid and took back, whole: this screen is the payout's one
+	 * report, so it reads every field but two. */
+	payout: GatePayout;
 	answered: readonly AnsweredPoll[];
 	configs: readonly Config[];
 	storage: number;
 	capKb: number;
-	faucetThisGateKb?: number;
-	interestThisGateKb?: number;
-	extraPickThisGateKb?: number;
-	billKb?: number;
-	planDowngraded?: boolean;
-	/** The config Dependabot bumped at this clear — announced here because the
-	 * run log never shows in the live game. */
-	autoUpgraded?: Config;
-	/** Configs that faded to ×1 at this clear and deleted themselves
-	 * (Deprecated) — announced here for the same reason, and nowhere else: they
-	 * are gone from the pipeline, so no chip elsewhere can carry the news. */
-	deletedConfigs?: readonly Config[];
-	/** Configs whose subscription this clear could not cover (Freemium). Their own
-	 * announcement rather than a line in `deletedConfigs`: the player's next move
-	 * differs — a faded config is spent, a lapsed one is still worth re-drafting. */
-	lapsedConfigs?: readonly Config[];
-	/** KB the build's subscriptions took at this clear. */
-	subscriptionBillKb?: number;
 	/** The gate this clear opens onto, so the shop that follows has a target. */
 	nextStake?: GateStake;
 	onReviewAnswers?: () => void;
@@ -136,32 +120,23 @@ const StorageLedger = ({
  * than replacing it with a table.
  */
 export const RewardScreen = ({
-	clearedGate,
-	gateReward,
+	payout,
 	answered,
 	configs,
 	storage,
 	capKb,
-	faucetThisGateKb,
-	interestThisGateKb,
-	extraPickThisGateKb,
-	billKb,
-	planDowngraded,
-	autoUpgraded,
-	deletedConfigs,
-	lapsedConfigs,
-	subscriptionBillKb,
 	nextStake,
 	onReviewAnswers,
 	onContinue,
 }: RewardScreenProps) => {
+	const clearedGate = payout.clearedGateNumber;
 	const breakdown = gateStorageBreakdown({
 		configs,
 		answered,
-		gateReward,
-		faucetThisGateKb,
-		interestThisGateKb,
-		extraPickThisGateKb,
+		gateReward: payout.gateRewardPaidKb,
+		faucetThisGateKb: payout.faucetThisGateKb,
+		interestThisGateKb: payout.interestThisGateKb,
+		extraPickThisGateKb: payout.extraPickThisGateKb,
 	});
 	const swatch = swatchForGate(clearedGate);
 
@@ -211,10 +186,10 @@ export const RewardScreen = ({
 				</div>
 			) : null}
 
-			{autoUpgraded ? (
+			{payout.autoUpgradedConfig ? (
 				<div className="flex flex-wrap items-center justify-center gap-2">
 					<ConfigChip
-						config={autoUpgraded}
+						config={payout.autoUpgradedConfig}
 						badge={
 							<Badge tone="legendary" size="corner" pulse>
 								upgraded
@@ -227,7 +202,7 @@ export const RewardScreen = ({
 				</div>
 			) : null}
 
-			{deletedConfigs?.map((config) => (
+			{payout.deletedConfigs.map((config) => (
 				<div
 					key={config.id}
 					className="flex flex-wrap items-center justify-center gap-2"
@@ -246,7 +221,7 @@ export const RewardScreen = ({
 				</div>
 			))}
 
-			{lapsedConfigs?.map((config) => (
+			{payout.lapsedConfigs.map((config) => (
 				<div
 					key={config.id}
 					className="flex flex-wrap items-center justify-center gap-2"
@@ -271,17 +246,17 @@ export const RewardScreen = ({
 				Spend storage on configs, upgrades, and patches.
 			</Paragraph>
 
-			{billKb !== undefined && billKb > 0 ? (
+			{payout.gateBillPaidKb > 0 ? (
 				<Paragraph size="sm" tone="muted">
-					Storage plan billed −{billKb}KB this window.
+					Storage plan billed −{payout.gateBillPaidKb}KB this window.
 				</Paragraph>
 			) : null}
-			{subscriptionBillKb !== undefined && subscriptionBillKb > 0 ? (
+			{payout.subscriptionBillKb > 0 ? (
 				<Paragraph size="sm" tone="muted">
-					Subscriptions billed −{subscriptionBillKb}KB this gate.
+					Subscriptions billed −{payout.subscriptionBillKb}KB this gate.
 				</Paragraph>
 			) : null}
-			{planDowngraded ? (
+			{payout.planDowngraded ? (
 				<Paragraph size="sm" tone="cinnabar">
 					Storage bill unpaid — downgraded to the free tier.
 				</Paragraph>

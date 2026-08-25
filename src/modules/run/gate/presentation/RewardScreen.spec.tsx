@@ -2,9 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+import type { GatePayout } from "~/modules/run/run/application/gatePayout.viewmodel";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
-import { createMockGateStake } from "~/test/runView.factory";
+import {
+	createMockGatePayout,
+	createMockGateStake,
+} from "~/test/runView.factory";
 
 const answered: AnsweredPoll[] = [
 	{
@@ -23,9 +27,16 @@ const answered: AnsweredPoll[] = [
 	},
 ];
 
+/** The cleared gate every test starts from; each names only the field it is about. */
+const payout = (overrides: Partial<GatePayout> = {}) =>
+	createMockGatePayout({
+		clearedGateNumber: 1,
+		gateRewardPaidKb: 80,
+		...overrides,
+	});
+
 const base = {
-	clearedGate: 1,
-	gateReward: 80,
+	payout: payout(),
 	answered,
 	configs: [CONFIGS.unitTests],
 	storage: 96,
@@ -46,7 +57,10 @@ describe(RewardScreen, () => {
 
 	it("announces the config Dependabot merged, since the run log never shows", () => {
 		render(
-			<RewardScreen {...base} autoUpgraded={{ ...CONFIGS.js, level: 2 }} />
+			<RewardScreen
+				{...base}
+				payout={payout({ autoUpgradedConfig: { ...CONFIGS.js, level: 2 } })}
+			/>
 		);
 		expect(screen.getByText("upgraded")).toBeInTheDocument();
 		expect(
@@ -63,7 +77,9 @@ describe(RewardScreen, () => {
 		render(
 			<RewardScreen
 				{...base}
-				deletedConfigs={[{ ...CONFIGS.deprecated, coverageMultiplier: 1 }]}
+				payout={payout({
+					deletedConfigs: [{ ...CONFIGS.deprecated, coverageMultiplier: 1 }],
+				})}
 			/>
 		);
 		expect(screen.getByText("deleted")).toBeInTheDocument();
@@ -141,7 +157,7 @@ describe(RewardScreen, () => {
 			<RewardScreen
 				{...base}
 				configs={[CONFIGS.unitTests, CONFIGS.indexedDb]}
-				faucetThisGateKb={24}
+				payout={payout({ faucetThisGateKb: 24 })}
 			/>
 		);
 		expect(screen.getByText("IndexedDB")).toBeInTheDocument();
@@ -154,7 +170,7 @@ describe(RewardScreen, () => {
 			<RewardScreen
 				{...base}
 				configs={[CONFIGS.unitTests, CONFIGS.indexedDb]}
-				faucetThisGateKb={24}
+				payout={payout({ faucetThisGateKb: 24 })}
 			/>
 		);
 		expect(screen.getByText("+104KB")).toBeInTheDocument();
@@ -170,7 +186,7 @@ describe(RewardScreen, () => {
 			<RewardScreen
 				{...base}
 				configs={[{ ...CONFIGS.mooresLaw, level: 2 }]}
-				interestThisGateKb={12}
+				payout={payout({ interestThisGateKb: 12 })}
 			/>
 		);
 		expect(screen.getByText("L2")).toBeInTheDocument();
@@ -191,7 +207,9 @@ describe(RewardScreen, () => {
 		// No faucet config equipped, so the 16KB has nowhere to be attributed —
 		// it belongs in the base rather than dropping out of a total the player
 		// can check against the headline.
-		render(<RewardScreen {...base} faucetThisGateKb={16} />);
+		render(
+			<RewardScreen {...base} payout={payout({ faucetThisGateKb: 16 })} />
+		);
 		expect(screen.getByText("64KB")).toBeInTheDocument();
 		expect(screen.getByText("+96KB")).toBeInTheDocument();
 	});
@@ -249,19 +267,21 @@ describe(RewardScreen, () => {
 	});
 
 	it("names the window's bill when the plan collected one", () => {
-		render(<RewardScreen {...base} billKb={8} />);
+		render(<RewardScreen {...base} payout={payout({ gateBillPaidKb: 8 })} />);
 		expect(
 			screen.getByText("Storage plan billed −8KB this window.")
 		).toBeInTheDocument();
 	});
 
 	it("stays quiet about the bill on the free tier", () => {
-		render(<RewardScreen {...base} billKb={0} />);
+		render(<RewardScreen {...base} payout={payout({ gateBillPaidKb: 0 })} />);
 		expect(screen.queryByText(/Storage plan billed/)).not.toBeInTheDocument();
 	});
 
 	it("calls out an unpaid bill's downgrade — that news outranks the payout", () => {
-		render(<RewardScreen {...base} planDowngraded />);
+		render(
+			<RewardScreen {...base} payout={payout({ planDowngraded: true })} />
+		);
 		expect(
 			screen.getByText("Storage bill unpaid — downgraded to the free tier.")
 		).toBeInTheDocument();
