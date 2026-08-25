@@ -38,9 +38,15 @@ const slotRows = (view: RunView): readonly PrepSlot[] => {
 			id: `slot-${view.configs.length + index}`,
 		}));
 
-	return view.nextSlotGate === null
+	return view.nextSlotUnlock === null
 		? []
-		: [{ id: "slot-next", gate: view.nextSlotGate }];
+		: [
+				{
+					id: "slot-next",
+					gate: view.nextSlotUnlock.gate,
+					coverage: view.nextSlotUnlock.coverage,
+				},
+			];
 };
 
 const auditRows = (view: RunView): readonly PrepAudit[] =>

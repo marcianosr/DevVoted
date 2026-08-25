@@ -52,10 +52,28 @@ const slotRows = (view: RunView): readonly StartSlot[] => [
 	...Array.from({ length: view.slots }, (_, index) => ({
 		id: `slot-${index}`,
 	})),
-	...(view.nextSlotGate === null
+	...(view.nextSlotUnlock === null
 		? []
-		: [{ id: "slot-next", gate: view.nextSlotGate }]),
+		: [
+				{
+					id: "slot-next",
+					gate: view.nextSlotUnlock.gate,
+					coverage: view.nextSlotUnlock.coverage,
+				},
+			]),
 ];
+
+/**
+ * The slot number this gate's clear would open, for the clear-rewards list —
+ * nothing when the next slot is waiting on coverage instead (ADR-041), since
+ * that one is not a reward for clearing. Numbered from the live width, not
+ * from the ladder row: the two diverge as soon as a grant lands out of order.
+ */
+const slotOpenedByClearing = (
+	view: RunView,
+	gate: number
+): number | undefined =>
+	view.nextSlotUnlock?.gate === gate ? view.slots + 1 : undefined;
 
 export type StartViewProps = {
 	view: RunView;
@@ -95,7 +113,7 @@ export const StartView = ({
 			reward={{
 				coveragePerCorrect: view.gateStake.perAnswer.coveragePerCorrect,
 				gateRewardKb: view.gateStake.modifiers.gateReward,
-				slotOpens: view.nextSlotGate ?? undefined,
+				slotOpens: slotOpenedByClearing(view, gate),
 			}}
 			onStart={onStart}
 		/>

@@ -1,20 +1,21 @@
 import type { ReactNode } from "react";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
+import type { SlotUnlock } from "~/modules/run/pipeline/domain/pipeline.model";
 import { SlotNumberCell } from "~/modules/run/pipeline/presentation/PipelineTable.ui";
 
 type NextSlotArgs = {
 	slots: number;
-	/** The gate whose clear opens the next slot; null/undefined at the cap. */
-	nextSlotGate?: number | null;
+	/** What opens the next slot; null/undefined at the cap. */
+	nextSlotUnlock?: SlotUnlock | null;
 };
 
-type NextSlot = { slot: number; unlockAtGate: number };
+type NextSlot = { slot: number; unlock: SlotUnlock };
 
 /** The next slot's numbers, narrowed from optional run state — or nothing at
  * the slot cap, the one guard every caller needs. */
-const nextSlot = ({ slots, nextSlotGate }: NextSlotArgs): NextSlot | null => {
-	if (nextSlotGate === undefined || nextSlotGate === null) return null;
-	return { slot: slots + 1, unlockAtGate: nextSlotGate };
+const nextSlot = ({ slots, nextSlotUnlock }: NextSlotArgs): NextSlot | null => {
+	if (nextSlotUnlock === undefined || nextSlotUnlock === null) return null;
+	return { slot: slots + 1, unlock: nextSlotUnlock };
 };
 
 const ORDINAL_SUFFIX: Readonly<Record<Intl.LDMLPluralRule, string>> = {
@@ -38,27 +39,43 @@ const joinOrdinals = (slots: readonly number[]): string => {
 type SlotUnlockRowProps = {
 	/** The slot this row previews — the next one up from the current width. */
 	slot: number;
-	unlockAtGate: number;
+	unlock: SlotUnlock;
+};
+
+const STRONG = "font-bold text-zinc-100";
+
+/** Gate, coverage, or both (ADR-041) — the "or" row names the cheaper route
+ * first only by ladder order, since which one lands first is the build's call. */
+const OpensOn = ({ gate, coverage }: SlotUnlock) => {
+	const gatePart = <span className={STRONG}>Gate {gate}</span>;
+	const coveragePart = <span className={STRONG}>{coverage}%</span>;
+	if (gate !== undefined && coverage !== undefined)
+		return (
+			<>
+				Opens when {gatePart} clears, or at {coveragePart} coverage
+			</>
+		);
+	if (gate !== undefined) return <>Opens when {gatePart} clears</>;
+	return <>Opens at {coveragePart} coverage</>;
 };
 
 /**
- * The next slot a gate is holding — a read-only preview, since gates grant
- * slots on the clear (ADR-034) and width claims itself with no purchase step
- * (ADR-025). No progress bar: the grant is a clear, not an accrual.
+ * What the next slot is waiting on — a read-only preview, since width claims
+ * itself with no purchase step (ADR-025). No progress bar even for the
+ * coverage routes: the pipeline rail already counts coverage, and a second
+ * meter for the same number would read as a second score.
  *
  * Carries no swatch: badges are awarded by gates, not owed to slots
  * (ADR-019), so width's reward is the width itself.
  */
-export const SlotUnlockRow = ({ slot, unlockAtGate }: SlotUnlockRowProps) => (
+export const SlotUnlockRow = ({ slot, unlock }: SlotUnlockRowProps) => (
 	<>
 		<SlotNumberCell slot={slot} />
 		<div className="col-start-2 col-span-3 flex items-center gap-4 rounded-lg border border-dashed border-edge-strong px-4 py-3">
 			{/* The table's gutter already numbers this slot, so the row leads with
 			    what opens it rather than repeating "Slot 4". */}
 			<Paragraph as="span" size="sm" tone="muted" className="min-w-0 flex-1">
-				Opens when{" "}
-				<span className="font-bold text-zinc-100">Gate {unlockAtGate}</span>{" "}
-				clears
+				<OpensOn {...unlock} />
 			</Paragraph>
 		</div>
 	</>
@@ -108,9 +125,7 @@ export const nextSlotRow = ({
 	return (
 		<>
 			{unlockedNotice}
-			{next ? (
-				<SlotUnlockRow slot={next.slot} unlockAtGate={next.unlockAtGate} />
-			) : null}
+			{next ? <SlotUnlockRow slot={next.slot} unlock={next.unlock} /> : null}
 		</>
 	);
 };

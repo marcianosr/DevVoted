@@ -549,15 +549,29 @@ describe("dropping from the gate-prep screen", () => {
 	});
 });
 
-describe("gates grant slots (ADR-034)", () => {
-	it("keeps width fixed mid-window — no coverage total widens the pipeline", () => {
+describe("slots open on gates and coverage (ADR-041)", () => {
+	it("widens on the answer that crosses a coverage threshold, mid-window", () => {
 		let state = { ...started(["js"]), coverage: 1000 };
 		state = answerWith(state, true);
-		expect(state.pipeline.slots).toBe(BASE_SLOTS);
-		expect(state.justUnlockedSlots).toEqual([]);
+		// Every coverage row at once: 60, 140, 240, 300 and 380.
+		expect(state.pipeline.slots).toBe(BASE_SLOTS + 5);
+		expect(state.justUnlockedSlots).toEqual([4, 5, 6, 7, 8]);
 	});
 
-	it("grants no slot for the teaching gate, then one per clear", () => {
+	it("keeps a coverage-earned slot through the gate that then fails", () => {
+		// The career total opens slots; the gate reads its own fresh meter and
+		// fails this attempt anyway. Width earned on the way is not taken back.
+		const state = clearGate({
+			...started(["js"]),
+			gatesCleared: 2,
+			coverage: 500,
+		});
+
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.pipeline.slots).toBeGreaterThan(BASE_SLOTS);
+	});
+
+	it("grants no slot for the teaching gate, then one for clearing gate 1", () => {
 		let state = clearGate(started(["js"], 2 * SLICE_WINDOW));
 		expect(state.pipeline.slots).toBe(BASE_SLOTS);
 		expect(state.justUnlockedSlots).toEqual([]);
@@ -1322,7 +1336,8 @@ describe("the git tag (ADR-036)", () => {
 		const state = createRun(pool(20), handed, 7);
 		expect(state.gatesCleared).toBe(7);
 		expect(state.startedAtGate).toBe(7);
-		expect(state.pipeline.slots).toBe(BASE_SLOTS + 6); // slotsForGatesCleared(7)
+		// Gate grants only: a rescued run starts on zero coverage (ADR-041).
+		expect(state.pipeline.slots).toBe(BASE_SLOTS + 3);
 		expect(state.storage).toBe(32 * 7);
 		expect(state.coverage).toBe(0);
 	});

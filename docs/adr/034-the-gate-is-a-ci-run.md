@@ -8,7 +8,8 @@ coverage slot ladder**, **amends [ADR-013](013-gate-scaled-coverage.md)** (loss
 ratio 0.5 → 0.25) and **[ADR-027](027-gate-width-demand.md) Decision 2** (a shop
 now sits between a strip and its replay). Work tracked in DVTD-wlte.
 
-> ⚠ Amended by [ADR-035](035-gates-are-auditors.md) (2026-08-17): Decisions 1, 3 and 6 reversed — the demand is per-gate and fresh, the table reprices, the laps display is gone. Decision 2's strip-shop-replay loop narrows to strip audits; Decision 5 (gates grant slots) stands.
+> ⚠ Amended by [ADR-035](035-gates-are-auditors.md) (2026-08-17): Decisions 1, 3 and 6 reversed — the demand is per-gate and fresh, the table reprices, the laps display is gone. Decision 2's strip-shop-replay loop narrows to strip audits.
+> ⚠ Decision 5 reversed by [ADR-041](041-slots-open-on-gates-coverage-or-either.md) (2026-08-25): gates open three of eleven slots, coverage opens the rest.
 
 ## Context
 
@@ -56,6 +57,11 @@ always grinds toward the threshold while strips and bills price the attempts.
 Death stays with the build (ADR-021), never with the score.
 
 ### 5. Gates grant slots
+
+> ⚠ Reversed by [ADR-041](041-slots-open-on-gates-coverage-or-either.md) (2026-08-25):
+> gates open three of eleven slots, coverage opens the rest. The "second coverage
+> ladder prices the same thing twice" argument fell with ADR-035, which split the
+> gate's per-attempt meter from the run's lifetime total.
 
 Clearing gates 1–11 grants slots 4–14; gate 0 teaches on the starting three.
 The coverage slot ladder (`SLOT_COVERAGE_GATE`) is deleted; ADR-025's

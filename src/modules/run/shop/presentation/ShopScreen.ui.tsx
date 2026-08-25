@@ -8,6 +8,7 @@ import {
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
+import type { SlotUnlock } from "~/modules/run/pipeline/domain/pipeline.model";
 import type {
 	GateStake,
 	OfferRefusal,
@@ -77,8 +78,9 @@ type ShopScreenProps = {
 	canPin: boolean;
 	pinnedAtGate: number | null;
 	onPlantPin: () => void;
-	/** The gate whose clear opens the next slot (ADR-034); null at the cap. */
-	nextSlotGate: number | null;
+	/** What opens the next slot — a gate, a coverage total, or either
+	 * (ADR-041); null at the cap. */
+	nextSlotUnlock: SlotUnlock | null;
 	justUnlockedSlots: readonly number[];
 	/** The config Dependabot bumped at the clear that opened this shop. */
 	upgradedConfigId?: string;
@@ -207,7 +209,7 @@ export const ShopScreen = ({
 	canPin,
 	pinnedAtGate,
 	onPlantPin,
-	nextSlotGate,
+	nextSlotUnlock,
 	justUnlockedSlots,
 	upgradedConfigId,
 	onUpgrade,
@@ -614,7 +616,7 @@ export const ShopScreen = ({
 							}
 							trailing={nextSlotRow({
 								slots,
-								nextSlotGate,
+								nextSlotUnlock,
 								justUnlocked: justUnlockedSlots,
 							})}
 						/>

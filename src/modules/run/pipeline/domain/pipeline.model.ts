@@ -27,21 +27,90 @@ export type Pipeline = {
 };
 
 export const BASE_SLOTS = 3;
-export const MAX_SLOTS = 14;
+export const MAX_SLOTS = 11;
 
 /**
- * Gates grant slots (ADR-034): clears 1–11 open slots 4–14, so width supply
- * is deterministic and coverage — now the gate's own demand — is never priced
- * on two ladders at once. Callers widening a live pipeline take the max with
- * its current slots, so a run hydrated from the old coverage ladder never
- * shrinks.
+ * A width grant and what opens it (ADR-041). `gate` is the gate whose clear
+ * opens it; `coverage` is the run's lifetime total, which ADR-035 split from
+ * the gate's per-attempt meter — two different numbers, which is what makes the
+ * second ladder ADR-034 deleted legal again. A grant carrying both opens on
+ * whichever lands first.
  */
-export const slotsForGatesCleared = (gatesCleared: number): number =>
-	Math.min(MAX_SLOTS, BASE_SLOTS + Math.max(0, gatesCleared - 1));
+export type SlotUnlock = {
+	readonly slot: number;
+	readonly gate?: number;
+	readonly coverage?: number;
+};
 
-/** The gate whose clear opens the pipeline's next slot; null at the cap. */
-export const nextSlotGateFor = (currentSlots: number): number | null =>
-	currentSlots >= MAX_SLOTS ? null : currentSlots - 2;
+/**
+ * Eight grants over a thirteen-gate run: three on gates alone, three on
+ * coverage alone, two on either. Depth alone no longer buys the pipeline out:
+ * a build that clears on checks and ignores coverage stalls at seven slots,
+ * and a coverage-heavy build widens through a gate it keeps missing.
+ *
+ * THE tuning knob for how wide a run gets and when. `slot` numbers the grant in
+ * its expected order of arrival, not the width it guarantees — the width itself
+ * is a count (see `slotsFor`).
+ */
+export const SLOT_UNLOCKS: readonly SlotUnlock[] = [
+	{ slot: 4, gate: 1 },
+	{ slot: 5, gate: 3 },
+	{ slot: 6, coverage: 60 },
+	{ slot: 7, gate: 6 },
+	{ slot: 8, coverage: 140 },
+	{ slot: 9, coverage: 240 },
+	{ slot: 10, gate: 10, coverage: 300 },
+	// Gate 11, not the summit: clearing gate 12 wins the run, so a slot behind
+	// it could never be filled.
+	{ slot: 11, gate: 11, coverage: 380 },
+];
+
+/** What the ladder reads: gates already cleared, and the run's total coverage. */
+export type SlotProgress = {
+	readonly gatesCleared: number;
+	readonly coverage: number;
+};
+
+/** `gatesCleared` counts gates passed and gates number from 0, so "gate `g`
+ * cleared" is `gatesCleared > g`. */
+export const isSlotUnlocked = (
+	unlock: SlotUnlock,
+	{ gatesCleared, coverage }: SlotProgress
+): boolean =>
+	(unlock.gate !== undefined && gatesCleared > unlock.gate) ||
+	(unlock.coverage !== undefined && coverage >= unlock.coverage);
+
+/**
+ * Width counts the grants earned rather than naming the highest one reached: a
+ * grant earned out of order has to pay out when it lands, or a coverage build
+ * would watch a slot it opened sit behind a gate it has not cleared.
+ *
+ * Coverage falls on a wrong answer, so callers widening a live pipeline take
+ * the max with its current slots — width is never taken back.
+ */
+export const slotsFor = (progress: SlotProgress): number =>
+	Math.min(
+		MAX_SLOTS,
+		BASE_SLOTS +
+			SLOT_UNLOCKS.filter((unlock) => isSlotUnlocked(unlock, progress)).length
+	);
+
+/**
+ * What opens the next slot, in the ladder's own order; null once the width in
+ * hand covers every grant. Skips as many unmet grants as the pipeline is wide
+ * beyond what the progress alone earns, so a coverage dip below a threshold
+ * already banked does not re-advertise a slot the player is standing in.
+ */
+export const nextSlotUnlockFor = (
+	progress: SlotProgress,
+	currentSlots: number
+): SlotUnlock | null => {
+	const unmet = SLOT_UNLOCKS.filter(
+		(unlock) => !isSlotUnlocked(unlock, progress)
+	);
+	const banked = Math.max(0, currentSlots - slotsFor(progress));
+	return unmet[banked] ?? null;
+};
 
 export const isBare = (pipeline: Pipeline): boolean =>
 	pipeline.configs.length === 0;

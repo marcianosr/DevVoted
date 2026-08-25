@@ -24,12 +24,12 @@ describe("Coverage", () => {
 		expect(screen.getByText("60% required")).toBeInTheDocument();
 	});
 
-	it("scales the bar against the full hundred, not against the demand", () => {
-		render(<Coverage held={38.6} projected={23.1} required={60} />);
+	it("scales the bar against the demand, so a small goal still fills the track", () => {
+		render(<Coverage held={0} projected={1} required={3} />);
 
 		expect(screen.getByRole("progressbar")).toHaveAttribute(
 			"aria-valuemax",
-			"100"
+			"3"
 		);
 	});
 

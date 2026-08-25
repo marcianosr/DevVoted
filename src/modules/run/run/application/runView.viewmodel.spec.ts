@@ -113,7 +113,7 @@ describe("toRunView", () => {
 		expect(view.lintCost).toBeGreaterThan(0);
 		expect(view.rebuildCost).toBeGreaterThan(0);
 		expect(view.canRebuild).toBe(false); // fresh run starts at 0 KB
-		expect(view.nextSlotGate).toBe(1); // slot 4 opens when gate 1 clears
+		expect(view.nextSlotUnlock).toEqual({ slot: 4, gate: 1 });
 		expect(view.justUnlockedSlots).toEqual([]); // no gate cleared yet
 	});
 

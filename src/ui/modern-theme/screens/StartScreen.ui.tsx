@@ -78,7 +78,9 @@ export type StartCombo = {
 	onTake: () => void;
 };
 
-export type StartSlot = { id: string; gate?: number };
+/** A slot the run does not own yet names what opens it: a gate, a coverage
+ * total, or either (ADR-041). An owned slot names neither. */
+export type StartSlot = { id: string; gate?: number; coverage?: number };
 
 export type StartStake = {
 	removeOnMiss: number;
@@ -218,8 +220,11 @@ export const StartScreen = ({
 			content: <Slot />,
 		})),
 		...slots
-			.filter((slot) => slot.gate !== undefined)
-			.map((slot) => ({ id: slot.id, content: <Slot gate={slot.gate} /> })),
+			.filter((slot) => slot.gate !== undefined || slot.coverage !== undefined)
+			.map((slot) => ({
+				id: slot.id,
+				content: <Slot gate={slot.gate} coverage={slot.coverage} />,
+			})),
 	];
 
 	const lockFor = (config: DealtConfig) => {

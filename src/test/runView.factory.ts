@@ -129,7 +129,7 @@ const createRunView = createMockDataFactory<RunView>({
 	pinCost: pinCostFor(0),
 	canPin: false,
 	pinnedAtGate: null,
-	nextSlotGate: 1,
+	nextSlotUnlock: { slot: 4, gate: 1 },
 	justUnlockedSlots: [],
 	autoUpgradedConfig: null,
 	deletedConfigs: [],

@@ -86,7 +86,7 @@ const base = {
 	pinnedAtGate: null,
 	onPlantPin: vi.fn(),
 	slots: 3,
-	nextSlotGate: 1,
+	nextSlotUnlock: { slot: 4, gate: 1 },
 	justUnlockedSlots: [],
 	onUpgrade: vi.fn(),
 	onSell: vi.fn(),
@@ -675,15 +675,21 @@ describe(ShopScreen, () => {
 	});
 
 	it("acknowledges a slot granted since the last visit, alongside the gate holding the next one", () => {
-		render(<ShopScreen {...base} justUnlockedSlots={[4]} nextSlotGate={2} />);
+		render(
+			<ShopScreen
+				{...base}
+				justUnlockedSlots={[4]}
+				nextSlotUnlock={{ slot: 5, gate: 3 }}
+			/>
+		);
 		expect(screen.getByText("Unlocked 4th slot")).toBeInTheDocument();
 		// The acknowledgment names slot 4 — it must not also relabel it as the
 		// still-held next slot. The preview resumes one slot further on.
-		expect(screen.getByText("Gate 2")).toBeInTheDocument();
+		expect(screen.getByText("Gate 3")).toBeInTheDocument();
 	});
 
 	it("retires the unlock row at the slot cap", () => {
-		render(<ShopScreen {...base} slots={MAX_SLOTS} nextSlotGate={null} />);
+		render(<ShopScreen {...base} slots={MAX_SLOTS} nextSlotUnlock={null} />);
 		expect(screen.queryByText(/Opens when/)).not.toBeInTheDocument();
 	});
 

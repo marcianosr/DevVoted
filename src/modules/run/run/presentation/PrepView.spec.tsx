@@ -11,7 +11,7 @@ const view = createMockRunView({
 	gatesCleared: 4,
 	configs: [CONFIGS.js, CONFIGS.ts],
 	slots: 4,
-	nextSlotGate: 6,
+	nextSlotUnlock: { slot: 7, gate: 6 },
 	storage: 184,
 	gateStake: createMockGateStake({ gateNumber: 4, coverageDemand: 60 }),
 });
@@ -61,7 +61,7 @@ describe("PrepView", () => {
 
 	it("stops promising slots at the cap, where none are left to grant", () => {
 		render_({
-			view: createMockRunView({ ...view, slots: 2, nextSlotGate: null }),
+			view: createMockRunView({ ...view, slots: 2, nextSlotUnlock: null }),
 		});
 
 		expect(screen.getByText("2 / 2")).toBeInTheDocument();

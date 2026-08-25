@@ -20,28 +20,69 @@ import {
 	canLint,
 	extraPickPayoutFor,
 	isBare,
-	nextSlotGateFor,
+	isSlotUnlocked,
+	nextSlotUnlockFor,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 	rewardMultiplierFor,
-	slotsForGatesCleared,
+	SLOT_UNLOCKS,
+	slotsFor,
 	storageInterestFor,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 
-describe("gates grant slots (ADR-034)", () => {
-	it("opens slots 4–14 on clears 1–11, holding the cap past them", () => {
-		expect(slotsForGatesCleared(0)).toBe(BASE_SLOTS);
-		expect(slotsForGatesCleared(1)).toBe(BASE_SLOTS); // gate 0 teaches
-		expect(slotsForGatesCleared(2)).toBe(4); // gate 1 grants slot 4
-		expect(slotsForGatesCleared(12)).toBe(MAX_SLOTS); // gate 11 tops it out
-		expect(slotsForGatesCleared(13)).toBe(MAX_SLOTS);
+describe("slots open on gates, coverage, or either (ADR-041)", () => {
+	const bare = { gatesCleared: 0, coverage: 0 };
+
+	it("starts at three and holds there until the first grant lands", () => {
+		expect(slotsFor(bare)).toBe(BASE_SLOTS);
+		expect(slotsFor({ gatesCleared: 1, coverage: 0 })).toBe(BASE_SLOTS);
 	});
 
-	it("names the gate holding the next slot, and none at the cap", () => {
-		expect(nextSlotGateFor(BASE_SLOTS)).toBe(1);
-		expect(nextSlotGateFor(13)).toBe(11);
-		expect(nextSlotGateFor(MAX_SLOTS)).toBeNull();
+	it("grants a slot for clearing gate 1, the first gate that pays width", () => {
+		expect(slotsFor({ gatesCleared: 2, coverage: 0 })).toBe(4);
+	});
+
+	it("grants a slot on coverage alone, with no gate cleared for it", () => {
+		expect(slotsFor({ gatesCleared: 0, coverage: 60 })).toBe(4);
+		expect(slotsFor({ gatesCleared: 0, coverage: 240 })).toBe(6);
+	});
+
+	it("counts a grant earned out of order as width now, not width owed", () => {
+		// Coverage 60 is slot 6's row, but only two grants are in hand.
+		expect(slotsFor({ gatesCleared: 2, coverage: 60 })).toBe(5);
+	});
+
+	it("opens an either-or grant from whichever route arrives", () => {
+		const [either] = SLOT_UNLOCKS.filter((unlock) => unlock.slot === 10);
+
+		expect(isSlotUnlocked(either, { gatesCleared: 11, coverage: 0 })).toBe(
+			true
+		);
+		expect(isSlotUnlocked(either, { gatesCleared: 0, coverage: 300 })).toBe(
+			true
+		);
+		expect(isSlotUnlocked(either, { gatesCleared: 10, coverage: 299 })).toBe(
+			false
+		);
+	});
+
+	it("caps a run that clears everything and covers everything", () => {
+		expect(slotsFor({ gatesCleared: 13, coverage: 400 })).toBe(MAX_SLOTS);
+	});
+
+	it("names what opens the next slot, and nothing at the cap", () => {
+		expect(nextSlotUnlockFor(bare, BASE_SLOTS)).toEqual({ slot: 4, gate: 1 });
+		expect(
+			nextSlotUnlockFor({ gatesCleared: 13, coverage: 400 }, MAX_SLOTS)
+		).toBeNull();
+	});
+
+	it("skips a grant the width already covers, so a coverage dip re-advertises nothing", () => {
+		// 60% banked slot 6, then a miss dropped coverage back under it.
+		const dipped = { gatesCleared: 0, coverage: 58 };
+
+		expect(nextSlotUnlockFor(dipped, 4)).toEqual({ slot: 5, gate: 3 });
 	});
 });
 

@@ -42,6 +42,7 @@
 | [038](038-the-audit-roster.md) | The audit roster: nine rules, staged by count | Accepted — fills out 035 Decision 4 (every gate from 3 carries one, three by the summit); replaces 035's score-inverting Mirror with a poll-inverting one (DVTD-60he, DVTD-lhao) |
 | [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage, Focus included | Accepted — amends 006's upgrade economy; retires the free coverage-gated Focus upgrade and the no-price-on-the-button convention (DVTD-yx92) |
 | [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline — never passing or failing | Accepted — cleans up presentation left behind by 035 Decision 1; reads 038's offline state (DVTD-8pgn) |
+| [041](041-slots-open-on-gates-coverage-or-either.md) | Slots open on gates, coverage, or either | Accepted — reverses 034 Decision 5 (gates grant every slot) and drops the cap to 11; restores a coverage axis of 008's kind (DVTD-tk21) |
 
 ## Conventions
 

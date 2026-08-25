@@ -13,7 +13,7 @@ import {
 	storageInterestFor,
 	isBare,
 	coverageLossFor,
-	slotsForGatesCleared,
+	slotsFor,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
@@ -419,7 +419,7 @@ export const createRun = (
 	status: "configuring",
 	pipeline: {
 		id: "pipeline",
-		slots: Math.max(BASE_SLOTS, slotsForGatesCleared(startAtGate)),
+		slots: slotsFor({ gatesCleared: startAtGate, coverage: 0 }),
 		configs: [],
 	},
 	available: handed,
@@ -545,6 +545,36 @@ const shopDraft = (state: RunState, seed: number): readonly Config[] =>
 		offerCount(state.extensionsBought ?? 0)
 	);
 
+/**
+ * Claims whatever width the run has now earned (ADR-025/041). Called on the two
+ * events that can earn it — an answer moves coverage, a clear moves gates —
+ * rather than on the clear alone, so a coverage grant lands on the answer that
+ * crosses it even when the gate it was answering goes on to fail.
+ *
+ * Takes the max with the live width because coverage falls on a miss: a slot,
+ * once open, is never taken back. Every step in between is announced, since one
+ * answer can cross two thresholds at once.
+ */
+const widened = (
+	state: RunState,
+	gatesCleared: number = state.gatesCleared
+): RunState => {
+	const slots = Math.max(
+		state.pipeline.slots,
+		slotsFor({ gatesCleared, coverage: state.coverage })
+	);
+	if (slots === state.pipeline.slots) return state;
+	const granted = Array.from(
+		{ length: slots - state.pipeline.slots },
+		(_, step) => state.pipeline.slots + 1 + step
+	);
+	return {
+		...state,
+		pipeline: { ...state.pipeline, slots },
+		justUnlockedSlots: [...(state.justUnlockedSlots ?? []), ...granted],
+	};
+};
+
 const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	// The bill charges before the verdict, pass or fail — every attempt at a gate
 	// pays the subscription, the failed ones included (ADR-035).
@@ -594,15 +624,8 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		) +
 		interest +
 		extraPickKb;
-	// Max with the live width, so a run hydrated from the retired coverage
-	// ladder (pre-ADR-034) never shrinks below what it already earned.
-	const slots = Math.max(
-		state.pipeline.slots,
-		slotsForGatesCleared(state.gatesCleared + 1)
-	);
-	const grantedSlot = slots > state.pipeline.slots;
 	const cleared: RunState = {
-		...state,
+		...widened(state, state.gatesCleared + 1),
 		window: freshWindow(
 			state.polls,
 			nextIndex,
@@ -613,10 +636,6 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
 		redoGate: undefined,
-		pipeline: grantedSlot ? { ...state.pipeline, slots } : state.pipeline,
-		justUnlockedSlots: grantedSlot
-			? [...(state.justUnlockedSlots ?? []), slots]
-			: state.justUnlockedSlots,
 		storage: addStorage(state.storage, reward),
 		gateRewardKb: reward,
 		interestThisGateKb: interest,
@@ -811,7 +830,7 @@ const answer = (
 		Math.max(0, state.coverage + categoryAfter - categoryBefore)
 	);
 
-	const answered: RunState = {
+	const answered: RunState = widened({
 		...state,
 		window,
 		manualDisabled: [],
@@ -828,7 +847,7 @@ const answer = (
 		allAnswered: [...(state.allAnswered ?? []), answeredPoll],
 		log:
 			burnKb > 0 ? withLog(state, `Storage leaked -${burnKb}KB.`) : state.log,
-	};
+	});
 
 	if (window.answered >= SLICE_WINDOW) return closeWindow(answered, nextIndex);
 	return {

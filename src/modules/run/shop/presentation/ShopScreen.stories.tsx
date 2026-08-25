@@ -73,7 +73,7 @@ export const Default: Story = {
 		canRebuild: true,
 		onRebuild: () => {},
 		slots: 3,
-		nextSlotGate: 1,
+		nextSlotUnlock: { slot: 4, gate: 1 },
 		justUnlockedSlots: [],
 		onUpgrade: () => {},
 		onSell: () => {},
@@ -133,7 +133,7 @@ export const SlotJustUnlocked: Story = {
 	args: {
 		...Default.args,
 		slots: 4,
-		nextSlotGate: 2,
+		nextSlotUnlock: { slot: 5, gate: 3 },
 		justUnlockedSlots: [4],
 	},
 };
@@ -143,7 +143,7 @@ export const EliteFourNext: Story = {
 	args: {
 		...Default.args,
 		slots: 13,
-		nextSlotGate: 11,
+		nextSlotUnlock: { slot: 11, gate: 11, coverage: 380 },
 	},
 };
 
@@ -152,7 +152,7 @@ export const AtSlotCap: Story = {
 	args: {
 		...Default.args,
 		slots: 14,
-		nextSlotGate: null,
+		nextSlotUnlock: null,
 	},
 };
 

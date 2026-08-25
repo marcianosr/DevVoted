@@ -50,7 +50,7 @@ export type PrepConfig = {
 	explainer?: string;
 };
 
-export type PrepSlot = { id: string; gate?: number };
+export type PrepSlot = { id: string; gate?: number; coverage?: number };
 
 /** Prep's audit rows are the kit's audit rows; the alias keeps the screen's own
  * prop names reading as a set. */
@@ -79,7 +79,6 @@ export type PrepScreenProps = {
 	coverageHeld: number;
 	removeOnMiss: number;
 	missIsFatal: boolean;
-	/** Signed, so it pairs with the Rewards fold's per-correct figure. */
 	coveragePerWrong: number;
 	configs: readonly PrepConfig[];
 	slots: readonly PrepSlot[];
@@ -305,7 +304,7 @@ export const PrepScreen = ({
 		})),
 		...slots.map((slot) => ({
 			id: slot.id,
-			content: <Slot gate={slot.gate} />,
+			content: <Slot gate={slot.gate} coverage={slot.coverage} />,
 		})),
 	];
 

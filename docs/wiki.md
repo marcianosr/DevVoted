@@ -98,16 +98,16 @@ attempt, and the run's career total never counts.
 Configs demand nothing ([4.1](#41-what-a-config-is)): all friction lives on the gate.
 A bare pipeline never clears, which is why sell and drop refuse your last config.
 
-**Gates count from 0.** A run opens on gate 0 and summits at gate 12. Each clear from
-gate 1 grants a **slot** (ADR-034), so width arrives with depth and never before it,
-and each clear awards that gate's **swatch** ([6.3](#63-swatches)).
+**Gates count from 0.** A run opens on gate 0 and summits at gate 12. Four clears
+grant a **slot** (ADR-041, [3](#3-the-pipeline)); every clear awards that gate's
+**swatch** ([6.3](#63-swatches)).
 
 Exactly one of two things happens when the window's 5th poll is answered; nothing is
 decided before that:
 
 | | Condition | Outcome |
 | --- | --- | --- |
-| **Advance** | the meter meets the demand | paid, swatch earned, `gatesCleared + 1` (slot from gate 1), shop opens |
+| **Advance** | the meter meets the demand | paid, swatch earned, `gatesCleared + 1` (a slot on four of the clears), shop opens |
 | **Miss** | the meter fell short | the gate **peels configs** (you pick), then the same gate runs again: strip, review, shop, prep, 5 fresh polls |
 
 **Farming is priced out, not forbidden.** The payout scales with window correctness
@@ -173,8 +173,9 @@ Angular and Next.js, Backend frameworks), and category draw weights that configs
 
 **Coverage** is the score, kept on two ledgers: the **gate meter** (the window's net
 coverage, reset every attempt, the only number a gate judges) and the **career
-totals** (a percentage per category plus a run total, which feed the leaderboard and
-Focus upgrades and gate nothing).
+totals** (a percentage per category plus a run total). The career totals feed the
+leaderboard, Focus upgrades, and the coverage-staged slots
+([3](#3-the-pipeline)) — they gate no gate.
 
 A correct answer earns `share × (1 + adds) × mults × streak × gate × difficulty`:
 
@@ -261,20 +262,22 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 | 0 | Pallet | 3% | 32 KB | 1 | (clean) | Shop, **Rebuild**, the free 512 KB plan and the 640 KB rung |
 | 1 | Boulder | 10% | 64 KB | 1 | (clean) | — |
 | 2 | Cascade | 25% | 96 KB | 1 | (clean) | **Lock**, 768 KB rung, slot 4 |
-| 3 | Thunder | 40% | 128 KB | 2 | Cost Overrun | **Extend**, slot 5 |
-| 4 | Lavender | 60% | 160 KB | 2 | Dependency Outage | 1 MB rung, slot 6 |
-| 5 | Rainbow | 85% | 192 KB | 2 | Read-only | Slot 7 |
-| 6 | Soul | 110% | 224 KB | 2 | Feature Freeze | 1.5 MB rung, slot 8 |
-| 7 | Marsh | 140% | 256 KB | 3 | Mirror | Slot 9 |
-| 8 | Seafoam | 175% | 288 KB | 3 | Timeout (3 polls, 30 s) + Flaky Build | 2 MB rung, slot 10 |
-| 9 | Volcano | 210% | 320 KB | 3 | Memory Leak + Rolling Outage | Slot 11 |
-| 10 | Earth | 250% | 352 KB | 3 | Breaking Change + Timeout (4 polls, 25 s) | 3 MB rung (top), slot 12 |
-| 11 | Elite | 290% | 384 KB | **5** | Strip + Mirror + Flaky Build | Slot 13 |
-| 12 | Champion | 340% | 416 KB | **6** | Memory Leak + Strip + Timeout (5 polls, 20 s) | Slot 14 (width cap); clearing it wins the run |
+| 3 | Thunder | 40% | 128 KB | 2 | Cost Overrun | **Extend** |
+| 4 | Lavender | 60% | 160 KB | 2 | Dependency Outage | 1 MB rung, slot 5 |
+| 5 | Rainbow | 85% | 192 KB | 2 | Read-only | — |
+| 6 | Soul | 110% | 224 KB | 2 | Feature Freeze | 1.5 MB rung |
+| 7 | Marsh | 140% | 256 KB | 3 | Mirror | Slot 7 |
+| 8 | Seafoam | 175% | 288 KB | 3 | Timeout (3 polls, 30 s) + Flaky Build | 2 MB rung |
+| 9 | Volcano | 210% | 320 KB | 3 | Memory Leak + Rolling Outage | — |
+| 10 | Earth | 250% | 352 KB | 3 | Breaking Change + Timeout (4 polls, 25 s) | 3 MB rung (top) |
+| 11 | Elite | 290% | 384 KB | **5** | Strip + Mirror + Flaky Build | Slot 10 (or 300% coverage) |
+| 12 | Champion | 340% | 416 KB | **6** | Memory Leak + Strip + Timeout (5 polls, 20 s) | Slot 11 (or 380% coverage), the width cap; clearing it wins the run |
 
 The coverage column is per-gate and fresh: each row is a score to hit inside 5 polls,
-never a running total. The peel column tracks the slot column, since a peel only
-threatens in proportion to the build it hits.
+never a running total. Slots 6, 8 and 9 are missing from this axis on purpose: they
+open on your **lifetime** coverage, not on a gate ([3](#3-the-pipeline)). The peel
+column rises with the width the ladder hands out, since a peel only threatens in
+proportion to the build it hits.
 
 The payout column is `GATE_REWARD_KB × (gate + 1)` for a **bare build on a perfect
 window**. It scales with correctness, so a 3-of-5 clear pays 60% of the row and a
@@ -286,7 +289,7 @@ Tests and Moore's Law levels (storage), lint and peek fees (uses), rebuild price
 (rebuilds this shop), and everything account-level (swatches, Dex, borders).
 
 Authoritative over this table: `coverageDemandFor`, `STORAGE_PLANS`, `failStripsFor`
-(`rules.model.ts`), `gateClearPayout` and `slotsForGatesCleared` (`pipeline.model.ts`),
+(`rules.model.ts`), `gateClearPayout` and `SLOT_UNLOCKS` (`pipeline.model.ts`),
 `LOCK_FROM_GATE`/`EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
 (`swatch.model.ts`), `GATE_AUDITS` (`audit.model.ts`).
 
@@ -295,14 +298,32 @@ Authoritative over this table: `coverageDemandFor`, `STORAGE_PLANS`, `failStrips
 ## 3. The pipeline
 
 Your pipeline holds every installed config, one per **slot**. You start with **3** and
-can reach **14**. Slots are granted by gate clears and claim themselves automatically
-(ADR-025/034): there is no purchase step and no coverage price. Width opens no gates;
-it only ever arrives with them.
+can reach **11**. The eight in between are grants, and they claim themselves
+automatically (ADR-025/041): there is no purchase step. Half arrive with depth, half
+with score, and the last two with whichever comes first:
+
+| Slot | Opens on |
+| --- | --- |
+| 4 | gate 1 cleared |
+| 5 | gate 3 cleared |
+| 6 | 60% coverage |
+| 7 | gate 6 cleared |
+| 8 | 140% coverage |
+| 9 | 240% coverage |
+| 10 | gate 10 cleared **or** 300% coverage |
+| 11 | gate 11 cleared **or** 380% coverage |
+
+The coverage figures are your run's **lifetime** total, the number the pipeline rail
+counts up, not the gate's own window meter, which resets every attempt
+([2.5](#25-coverage-scoring)). So a coverage grant can land on an answer inside an attempt
+that goes on to fail, and it keeps it. A grant is never taken back, even when a wrong
+answer drops you back under the threshold. Width opens no gates; a build that ignores
+coverage entirely stalls at 7 slots.
 
 The shop draws the next slot as a full-width dashed row, numbered like every other
-slot ("Opens when Gate 2 clears"), replaced by a green "Unlocked Nth slot" row for
-whichever slots arrived since your last visit. It carries no swatch: badges come from
-clearing gates.
+slot ("Opens when Gate 3 clears", "Unlocks at 60% coverage"), replaced by a green
+"Unlocked Nth slot" row for whichever slots arrived since your last visit. It carries
+no swatch: badges come from clearing gates.
 
 **Managing configs.** Click any config chip for its popover: **Install**, **Sell**
 (refunds half the draft cost), or **Upgrade**. Anything can be sold except your last
@@ -775,7 +796,7 @@ The game leans hard into its CI metaphor.
 | **Strip audit** | An audit that deepens the peel: Elite takes 5 configs on a miss, Champion 6. |
 | **Peel** | What a missed gate takes: configs of your choosing, before the same gate runs again. |
 | **Pipeline** | Your build: the stack of config slots. |
-| **Slot** | One pipeline position (3 to 14, granted by gate clears). Opens no gates. |
+| **Slot** | One pipeline position (3 to 11, granted by gate clears and by lifetime coverage). Opens no gates. |
 | **Config** | An installable dev-tool item: an effect with a price, demanding nothing. |
 | **Coverage** | The score: a percentage per category plus a run total (career), and the gate meter (per attempt). In fiction: **knowledge coverage**. |
 | **Storage** | The in-run currency, in KB, capped by the storage plan. Overflow forfeits at *Climb on*, not when earned. |
@@ -836,7 +857,7 @@ applies. `rules.model.ts` holds most of it.
 
 | Constant | Value |
 | --- | --- |
-| `BASE_SLOTS` to `MAX_SLOTS` | 3 to 14, `slotsForGatesCleared` grants slots 4 to 14 on the clears of gates 1 to 11 |
+| `BASE_SLOTS` to `MAX_SLOTS` | 3 to 11, `SLOT_UNLOCKS` grants the eight in between on gate clears, lifetime coverage, or either |
 | `DRAFT_SIZE` / draft cost / sell refund | 5 offers / 32-64-128-256 KB by rarity / `floor(cost ÷ 2)` |
 | Rebuild / `LOCK_COST_KB` / Extend | 4…512 KB doubling / 16 flat / 48 then 96 |
 | Control staging | Lock from gate 2, Extend from gate 3 (`draft.model.ts`) |

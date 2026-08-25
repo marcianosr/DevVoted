@@ -195,7 +195,8 @@ export const ConfiguringScreen = ({
 						/>
 						{slots < MAX_SLOTS ? (
 							<Paragraph size="xs" tone="muted">
-								More slots will unlock as you clear gates!
+								More slots unlock as you clear gates and as your coverage
+								climbs.
 							</Paragraph>
 						) : null}
 						<GateStakeReceipt

@@ -6,16 +6,27 @@ const DISC =
 
 export type SlotProps = {
 	gate?: number;
+	coverage?: number;
 };
 
-export const Slot = ({ gate }: SlotProps) => (
-	<Row
-		spacing="compact"
-		dimmed={gate !== undefined}
-		leading={<span aria-hidden className={DISC} />}
-	>
-		<Text size="meta" tone="muted">
-			{gate === undefined ? "empty" : `opens when gate ${gate} clears`}
-		</Text>
-	</Row>
-);
+const opensLabel = ({ gate, coverage }: SlotProps): string => {
+	if (gate !== undefined && coverage !== undefined)
+		return `Unlocks at gate ${gate} or ${coverage}% coverage`;
+	if (gate !== undefined) return `opens when gate ${gate} clears`;
+	return `Unlocks at ${coverage}% coverage`;
+};
+
+export const Slot = ({ gate, coverage }: SlotProps) => {
+	const locked = gate !== undefined || coverage !== undefined;
+	return (
+		<Row
+			spacing="compact"
+			dimmed={locked}
+			leading={<span aria-hidden className={DISC} />}
+		>
+			<Text size="meta" tone="muted">
+				{locked ? opensLabel({ gate, coverage }) : "Not filled yet"}
+			</Text>
+		</Row>
+	);
+};

@@ -289,12 +289,17 @@ const pipelineRows = (
 			content: <Slot />,
 		})
 	),
-	...(view.nextSlotGate === null
+	...(view.nextSlotUnlock === null
 		? []
 		: [
 				{
 					id: "slot-next",
-					content: <Slot gate={view.nextSlotGate} />,
+					content: (
+						<Slot
+							gate={view.nextSlotUnlock.gate}
+							coverage={view.nextSlotUnlock.coverage}
+						/>
+					),
 				},
 			]),
 ];

@@ -57,9 +57,10 @@ import {
 	type CoverageConfigBonus,
 	type PerAnswerPreview,
 	type PipelineModifiers,
+	type SlotUnlock,
 	budgeterFor,
 	linterFor,
-	nextSlotGateFor,
+	nextSlotUnlockFor,
 	peekerFor,
 	prefetcherFor,
 	perAnswerPreviewFor,
@@ -252,8 +253,9 @@ export type RunView = {
 	readonly canPin: boolean;
 	/** The gate this run's tag sits at; null while none is planted. */
 	readonly pinnedAtGate: number | null;
-	/** The gate whose clear opens the next slot (ADR-034); null at the cap. */
-	readonly nextSlotGate: number | null;
+	/** What opens the next slot — a gate, a coverage total, or either
+	 * (ADR-041); null at the cap. */
+	readonly nextSlotUnlock: SlotUnlock | null;
 
 	readonly justUnlockedSlots: readonly number[];
 	/** The config Dependabot bumped at the last clear; null when nothing was. */
@@ -540,7 +542,10 @@ export const toRunView = (state: RunState): RunView => {
 		pinCost: pinCostFor(state.gatesCleared),
 		canPin: canPlantPin(state),
 		pinnedAtGate: state.pinPlantedAtGate ?? null,
-		nextSlotGate: nextSlotGateFor(state.pipeline.slots),
+		nextSlotUnlock: nextSlotUnlockFor(
+			{ gatesCleared: state.gatesCleared, coverage: state.coverage },
+			state.pipeline.slots
+		),
 		justUnlockedSlots: state.justUnlockedSlots ?? [],
 		autoUpgradedConfig:
 			state.pipeline.configs.find(

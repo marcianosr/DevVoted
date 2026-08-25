@@ -118,7 +118,9 @@ describe(ConfiguringScreen, () => {
 	it("promises more slots instead of showing an unclaimable unlock rung", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByText("More slots will unlock as you clear gates!")
+			screen.getByText(
+				"More slots unlock as you clear gates and as your coverage climbs."
+			)
 		).toBeInTheDocument();
 		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
 		// The one rail on screen is the gate's coverage demand, not a slot rung.
@@ -143,9 +145,7 @@ describe(ConfiguringScreen, () => {
 
 	it("drops the slot promise at the slot cap", () => {
 		render(<ConfiguringScreen {...base} slots={MAX_SLOTS} />);
-		expect(
-			screen.queryByText(/More slots will unlock/)
-		).not.toBeInTheDocument();
+		expect(screen.queryByText(/More slots unlock/)).not.toBeInTheDocument();
 	});
 
 	// Wide screens open every row; a phone shuts them all and shows the caret.

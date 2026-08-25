@@ -12,7 +12,7 @@ const view = createMockRunView({
 	gatesCleared: 0,
 	configs: [],
 	slots: 3,
-	nextSlotGate: 2,
+	nextSlotUnlock: { slot: 5, gate: 3 },
 	available: Object.values(CONFIGS),
 	gateStake: createMockGateStake({ gateNumber: 0, coverageDemand: 3 }),
 });
@@ -118,10 +118,45 @@ describe("StartView", () => {
 		expect(onStart).toHaveBeenCalledOnce();
 	});
 
-	it("shows the gate that grants the fourth slot", () => {
+	it("shows the gate that grants the next slot", () => {
 		render_();
 
-		expect(screen.getByText("opens when gate 2 clears")).toBeInTheDocument();
+		expect(screen.getByText("opens when gate 3 clears")).toBeInTheDocument();
+	});
+
+	it("shows the coverage total that grants the next slot", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				nextSlotUnlock: { slot: 6, coverage: 60 },
+			}),
+		});
+
+		expect(screen.getByText("Unlocks at 60% coverage")).toBeInTheDocument();
+	});
+
+	it("counts the slot as a clear reward when this gate is what opens it", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				nextSlotUnlock: { slot: 4, gate: 0 },
+			}),
+		});
+
+		// Numbered from the width in hand, not from the ladder row: the two part
+		// company as soon as a grant lands out of order.
+		expect(screen.getByText("slot 4")).toBeInTheDocument();
+	});
+
+	it("keeps a coverage-staged slot out of the clear rewards", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				nextSlotUnlock: { slot: 6, coverage: 60 },
+			}),
+		});
+
+		expect(screen.queryByText(/^slot \d/)).not.toBeInTheDocument();
 	});
 
 	// No seed and nothing banked in the rig — say less rather than invent a figure.

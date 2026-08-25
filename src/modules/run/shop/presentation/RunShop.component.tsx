@@ -62,7 +62,7 @@ export const RunShop = () => {
 				pinnedAtGate={view.pinnedAtGate}
 				onPlantPin={() => send({ type: "plant-pin" })}
 				slots={view.slots}
-				nextSlotGate={view.nextSlotGate}
+				nextSlotUnlock={view.nextSlotUnlock}
 				justUnlockedSlots={view.justUnlockedSlots}
 				upgradedConfigId={view.autoUpgradedConfig?.id}
 				onUpgrade={(id) => send({ type: "upgrade", configId: id })}

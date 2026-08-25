@@ -3,13 +3,12 @@ import { Meter } from "./Meter.ui";
 import { Text } from "./Text.ui";
 
 const BODY = "flex flex-col gap-4 pt-1";
-const NOTES = "flex flex-col";
+const NOTES = "flex gap-2";
 
 export type CoverageProps = {
 	held: number;
 	projected: number;
 	required: number;
-	max?: number;
 	defaultOpen?: boolean;
 };
 
@@ -17,7 +16,6 @@ export const Coverage = ({
 	held,
 	projected,
 	required,
-	max = 100,
 	defaultOpen = true,
 }: CoverageProps) => (
 	<Fold
@@ -33,7 +31,7 @@ export const Coverage = ({
 			<Meter
 				held={held}
 				projected={projected}
-				max={max}
+				max={required}
 				label={`${held} percent covered of ${required} required`}
 			/>
 			<div className={NOTES}>

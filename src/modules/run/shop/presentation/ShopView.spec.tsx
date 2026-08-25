@@ -16,7 +16,7 @@ const view = createMockRunView({
 	gatesCleared: 4,
 	configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
 	slots: 4,
-	nextSlotGate: 6,
+	nextSlotUnlock: { slot: 7, gate: 6 },
 	storage: 216,
 	offers: [
 		createMockShopOffer(CONFIGS.stylelint),

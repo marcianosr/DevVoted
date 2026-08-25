@@ -116,7 +116,7 @@ export const ShopLoadout: Story = {
 		],
 		trailing: nextSlotRow({
 			slots: 4,
-			nextSlotGate: 2,
+			nextSlotUnlock: { slot: 5, gate: 3 },
 		}),
 	},
 };

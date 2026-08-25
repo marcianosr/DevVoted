@@ -274,7 +274,7 @@ describe("StartScreen", () => {
 		render(<StartScreen {...props} />);
 
 		expect(screen.getByText("0 of 3")).toBeInTheDocument();
-		expect(screen.getAllByText("empty")).toHaveLength(3);
+		expect(screen.getAllByText("Not filled yet")).toHaveLength(3);
 		expect(screen.getByText("opens when gate 1 clears")).toBeInTheDocument();
 	});
 
@@ -282,7 +282,7 @@ describe("StartScreen", () => {
 		render(<StartScreen {...props} pickedIds={["ts", "eslint"]} />);
 
 		expect(screen.getByText("2 of 3")).toBeInTheDocument();
-		expect(screen.getAllByText("empty")).toHaveLength(1);
+		expect(screen.getAllByText("Not filled yet")).toHaveLength(1);
 		expect(screen.getAllByText(".ts")).toHaveLength(2);
 		expect(screen.getAllByText("ESLint")).toHaveLength(2);
 	});
