@@ -1,5 +1,6 @@
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import {
+	FAUCET_CAP_KB,
 	isStoragePlanUnlocked,
 	pinCostFor,
 	storagePlanLadder,
@@ -54,6 +55,7 @@ export const createMockShopOffer = (
 	},
 	previewPerAnswer: {
 		coveragePerCorrect: 2,
+		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
 	},
@@ -78,6 +80,7 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 	},
 	perAnswer: {
 		coveragePerCorrect: 2,
+		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
 	},
@@ -143,6 +146,7 @@ const createRunView = createMockDataFactory<RunView>({
 	},
 	perAnswer: {
 		coveragePerCorrect: 2,
+		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
 	},
@@ -151,6 +155,7 @@ const createRunView = createMockDataFactory<RunView>({
 	isOver: false,
 	gateRewardPaidKb: 0,
 	faucetThisGateKb: 0,
+	faucetRemainingKb: FAUCET_CAP_KB,
 	interestThisGateKb: 0,
 	extraPickThisGateKb: 0,
 	gatesCleared: 0,

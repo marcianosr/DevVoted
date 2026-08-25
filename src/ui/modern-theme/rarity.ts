@@ -29,6 +29,15 @@ export const RARITY_WASH = {
 	legendary: "legendary-shimmer",
 } as const satisfies Record<Rarity, string>;
 
+/** The rarity's name, in its own colour. The legendary takes the gradient
+ * clipped to its glyphs, since it has no single colour to be set in. */
+export const RARITY_TEXT = {
+	common: "text-celadon",
+	uncommon: "text-cerulean",
+	rare: "text-cinnabar",
+	legendary: "text-legendary",
+} as const satisfies Record<Rarity, string>;
+
 export const RARITY_FILL = {
 	common: "bg-celadon",
 	uncommon: "bg-cerulean",

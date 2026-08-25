@@ -1,6 +1,5 @@
 import {
 	type Config,
-	type ConfigFamily,
 	headlineFigureOf,
 	rarityOf,
 } from "~/modules/run/config/domain/config.model";
@@ -14,28 +13,14 @@ import {
 	type StartCombo,
 	type StartSlot,
 } from "~/ui/modern-theme/screens/StartScreen.ui";
-import type { ConfigFamily as DealtFamily } from "~/ui/modern-theme/Family.ui";
 import { Figure } from "~/ui/modern-theme/Figure.ui";
 
-const FAMILY: Record<ConfigFamily, DealtFamily> = {
-	focus: "category",
-	amplify: "multiplier",
-	economy: "storage",
-	defense: "tool",
-	risk: "gamble",
-};
-
-const rarityWord = (config: Config) => {
-	const rarity = rarityOf(config);
-	return `${rarity.charAt(0).toUpperCase()}${rarity.slice(1)}`;
-};
-
+// No summary: the rarity was the only thing it ever carried here, and the row
+// now states that in its own colours beside the Dot.
 const toDealt = (config: Config): DealtConfig => ({
 	id: config.id,
 	label: config.label,
-	family: FAMILY[config.family],
 	rarity: rarityOf(config),
-	summary: rarityWord(config),
 	explainer: config.description,
 	note: <Figure figure={headlineFigureOf(config)} />,
 });
@@ -58,7 +43,6 @@ const combosFor = (
 	STARTER_STACKS.map((stack) => ({
 		id: stack.id,
 		name: stack.name,
-		ids: stack.configs.map((config) => config.id),
 		blurb: stack.blurb,
 		recommended: stack.recommended,
 		onTake: () => onPickStack(stack.id),
@@ -104,7 +88,10 @@ export const StartView = ({
 			pollCount={view.gateStake.pollsPerGate}
 			coverageDemand={view.gateStake.coverageDemand}
 			auditCount={view.gateStake.audits.length}
-			removeOnMiss={view.gateStake.stripsOnFailure}
+			stake={{
+				removeOnMiss: view.gateStake.stripsOnFailure,
+				coveragePerWrong: view.gateStake.perAnswer.coveragePerWrong,
+			}}
 			reward={{
 				coveragePerCorrect: view.gateStake.perAnswer.coveragePerCorrect,
 				gateRewardKb: view.gateStake.modifiers.gateReward,

@@ -21,7 +21,7 @@ import {
 	lintFeeFor,
 	peekApplies,
 	mirrorPoll,
-	offlineConfigsOf,
+	offlinePairsOf,
 	peekFeeFor,
 	type RunPoll,
 	type RunState,
@@ -67,6 +67,7 @@ import {
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
 	atMinimumWidth,
+	faucetRemainingKb,
 	isStakeFatal,
 	isStoragePlanUnlocked,
 	pinCostFor,
@@ -102,6 +103,12 @@ export type AuditView = {
 	readonly answerCue?: string;
 	/** Volkswagen CI is reporting this one as passing — struck through. */
 	readonly suppressed: boolean;
+};
+
+/** A config an audit is holding down, and the audit's name to blame for it. */
+export type OfflineConfig = {
+	readonly config: Config;
+	readonly audit: string;
 };
 
 /**
@@ -199,10 +206,12 @@ export type RunView = {
 	readonly peekReady: boolean;
 	readonly peekCost: number;
 	readonly peeker: Config | null;
-	/** Configs an audit has taken offline for the poll on screen (ADR-038) —
-	 * empty when nothing is down. Their effects are already out of `modifiers`
-	 * and `perAnswer`; this is only how the screen says so. */
-	readonly offlineConfigs: readonly Config[];
+	/** Configs an audit has taken offline for the poll on screen (ADR-038), each
+	 * with the audit to blame — empty when nothing is down. Their effects are
+	 * already out of `modifiers` and `perAnswer`; this is only how the screen says
+	 * so. Paired rather than split in two, so no surface can show a dead row it
+	 * cannot explain. */
+	readonly offlineConfigs: readonly OfflineConfig[];
 	/** This gate mirrors its polls, so the question asks for the incorrect
 	 * options and the poll's own type has already been flipped. */
 	readonly mirroredPolls: boolean;
@@ -268,6 +277,10 @@ export type RunView = {
 	readonly isOver: boolean;
 	readonly gateRewardPaidKb: number;
 	readonly faucetThisGateKb: number;
+	/** What the run's storage faucet may still pay out. The rail counts it down
+	 * beside the config earning it, because a rate with no budget left is a
+	 * promise the poll cannot keep. */
+	readonly faucetRemainingKb: number;
 	/** The two slices of `gateRewardPaidKb` the loadout alone cannot re-derive —
 	 * both price off the balance or the window, so the reward ledger reads them
 	 * from the reducer rather than recomputing them. */
@@ -452,7 +465,10 @@ export const toRunView = (state: RunState): RunView => {
 	const strips = failStripQuotaFor(state.pipeline.configs, state.gatesCleared);
 	const reportedGate = state.clearedGate ?? state.gatesCleared;
 	const liveAudits = liveAuditsFor(state.pipeline.configs, state.gatesCleared);
-	const offline = offlineConfigsOf(state);
+	const offline = offlinePairsOf(state).map((pair): OfflineConfig => ({
+		config: pair.config,
+		audit: pair.audit.name,
+	}));
 	const mirrored = mirrorsPolls(liveAudits);
 
 	return {
@@ -565,6 +581,7 @@ export const toRunView = (state: RunState): RunView => {
 		isOver: isRunOver(state.status),
 		gateRewardPaidKb: state.gateRewardKb ?? 0,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
+		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
 		interestThisGateKb: state.interestThisGateKb ?? 0,
 		extraPickThisGateKb: state.extraPickThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,

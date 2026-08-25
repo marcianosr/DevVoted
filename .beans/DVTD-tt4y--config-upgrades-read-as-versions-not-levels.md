@@ -3,8 +3,9 @@
 title: Config upgrades read as versions, not levels
 status: todo
 type: task
+priority: normal
 created_at: 2026-08-20T11:09:50Z
-updated_at: 2026-08-20T11:09:50Z
+updated_at: 2026-08-25T11:50:23Z
 parent: DVTD-d0fw
 ---
 
@@ -59,3 +60,30 @@ Legacy `src/domains/`: `runs/prototype/sessionSlice.ts`, `runs/prototype/session
 ## Open
 
 Whether behaviour-changing bumps should read as major and payout-only bumps as minor (`v1.2` vs `v2.0`), which would mark Telemetry's calibration bump as different in kind from Unit Tests buying payout. Deferred: only one config would use it today, and it widens the corner badge to a wrapping string. Revisit if the roster grows more of them.
+
+## Player-facing copy done ahead of the rename (2026-08-25)
+
+Playtest feedback landed on the shop's Upgrade affordance, so the four
+display strings on the modern-theme surfaces were flipped without waiting
+for the field rename:
+
+| File | Was | Now |
+| --- | --- | --- |
+| `shop/presentation/ShopView.component.tsx` | `level {n}` row summary | `v{n}` |
+| same, `upgradeHint` | `L{n}: …` preview | `v{n}: …` |
+| `run/presentation/PollView.component.tsx` | `level {n}` rail note | `v{n}` |
+| `run/presentation/PrepView.component.tsx` | `level {n}` row summary | `v{n}` |
+| `ui/modern-theme/screens/ShopScreen.stories.tsx` | `Common · level 1` fixture | `Common · v1` |
+
+Pinned by a new `ShopView.spec.tsx` case; no spec asserted the copy before,
+which is how the RPG word survived the vocabulary decision.
+
+Everything in the Scope list above still stands — the `level` field,
+`levelUp`, `maxLevel`, the `highest-level` audit strategy, the legacy
+`ConfigChip` badge, wiki and CHANGELOG are all untouched.
+
+Noticed while doing it: `level` is only ever set by `levelUp`, so a config
+that has never been bumped has no version to state and the summary is
+absent rather than reading `v1`. Consistent with ConfigChip's `level > 1`
+guard, but worth a deliberate decision when the rename lands — a roster
+that stamped `version: 1` would make every row state its version.

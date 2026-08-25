@@ -212,20 +212,19 @@ export const CONFIGS = {
 		peeksCommunitySplit: true,
 	},
 	// The reward axis here is deliberately not a coverage multiplier: four configs
-	// already sell coverage magnitude, and a fifth would be a reskin. This one pays
-	// in KB, scaled by how many extra picks the window demanded — most in exactly
-	// the windows with the most multi-answer polls, nothing in a window of five
-	// single-answer polls. That dead spot is visible on the row, not hidden.
+	// Information, not economy: the count tells you how many multi-answer polls
+	// are still coming, which is the whole read. It used to pay KB per extra pick
+	// as well, which made a config that sells knowledge earn its keep on the
+	// ledger instead — and left the reveal itself unbuilt on every live screen.
 	length: {
 		id: "length",
 		label: ".length",
-		family: "economy",
+		family: "defense",
 		rarity: "uncommon",
-		description:
-			"Shows how many correct answers this gate holds, and pays +16KB per answer beyond one per poll.",
-		gives: "+16KB per correct answer beyond one per poll",
+		description: "Shows how many correct answers this gate holds.",
+		gives: "The count of correct answers waiting in this gate",
 		rewardMultiplier: 1,
-		storagePerExtraPick: 16,
+		revealsCorrectCount: true,
 	},
 	coldStart: {
 		id: "cold-start",

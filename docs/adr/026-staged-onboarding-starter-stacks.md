@@ -124,6 +124,16 @@ Guiding principles:
    categories picked to fill three slots. Net effect: zero category overlap
    between the three curated stacks, and every name is honest about what's
    inside before a player reads a single chip.
+
+   **Reversed for the name, kept for the contents (Marciano, 2026-08-24.)**
+   The card stopped listing its configs at all — the deal below it is where a
+   config gets read, and three contents lines made the card the tallest thing
+   on the screen. Once the contents were gone, a category name told a player
+   nothing about how the run would go: "'TypeScript' doesn't say anything."
+   Stacks now name the playstyle: **Gamble** (`.js`/`.jsx`/Code Coverage),
+   **Safe start** (`.js`/`.ts`/ESLint), **Category spread**
+   (`.vue`/`.java`/`.git`). The rule for the *contents* stands: a stack is
+   still a real, recognizable combo, not three categories filling slots.
 7. **Playtest pass after all three stacks were live** (Marciano, 2026-08-10,
    "the preset approach solves most of the choice-stress problem"):
    - **Each config's demand and payoff share one row.** `StackPreviewList`
@@ -136,8 +146,8 @@ Guiding principles:
      selected or not, so picking doesn't restyle the whole picker into a
      different metaphor.
    - **Blurbs describe playstyle on one consistent axis** (risk/pace, not a
-     mechanics dump): "Fast but risky" (React), "Safer JS/TS focus"
-     (TypeScript), "Balanced across categories" (Full stack).
+     mechanics dump): "Fast but risky" (Gamble), "Safer JS/TS focus" (Safe
+     start), "Balanced across categories" (Category spread).
    - **One stack is flagged `recommended`** for a first-time pick —
      TypeScript, the only stack with a genuine defense (ESLint's cross-out),
      rather than the aggressive or the breadth option. Rendered as a small

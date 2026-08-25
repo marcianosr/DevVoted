@@ -6,6 +6,7 @@ export type GlyphName =
 	| "tag"
 	| "suggest"
 	| "uninstall"
+	| "fold"
 	// The audit roster. Named for the audit, not the shape, the way the four
 	// above are named for what pressing them does.
 	| "overrun"
@@ -46,6 +47,13 @@ const PATHS = {
 			<path d="M7 9V2.2" />
 			<path d="M4.4 4.8 7 2.2l2.6 2.6" />
 			<path d="M2.4 8.4v2.4a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1V8.4" />
+		</>
+	),
+	fold: (
+		<>
+			<path d="M3 4.5h8" />
+			<path d="M3 7h8" />
+			<path d="M3 9.5h8" />
 		</>
 	),
 	tag: (

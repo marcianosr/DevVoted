@@ -6,8 +6,12 @@ const TOOLTIP = "group/tip relative inline-flex";
 
 // Hover is read off this wrapper, not off the child, so a disabled button —
 // which fires no mouse events of its own — still shows its hint.
+//
+// focus-visible, not focus-within: a clicked button keeps focus, and the panel
+// used to stay open over the page until something else took it. Keyboard focus
+// still shows the hint, which is the reason the focus rule exists.
 const PANEL =
-	"pointer-events-none absolute top-full left-0 z-50 mt-2 hidden w-max max-w-56 rounded-lg border border-edge-strong bg-surface-raised px-2 py-1 shadow-lg group-hover/tip:block group-focus-within/tip:block";
+	"pointer-events-none absolute top-full left-0 z-50 mt-2 hidden w-max max-w-56 rounded-lg border border-edge-strong bg-surface-raised px-2 py-1 shadow-lg group-hover/tip:block group-has-[:focus-visible]/tip:block";
 
 export type TooltipProps = {
 	hint: string;

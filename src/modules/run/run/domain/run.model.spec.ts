@@ -615,8 +615,8 @@ describe("the gate's window meter (ADR-035)", () => {
 		expect(state.window.coverageGained).toBe(0);
 		state = answerWith(state, true);
 		state = answerWith(state, false);
-		// 1 correct at streak 1.1 = 1.1, minus the 0.25 bleed (rounded to 0.3).
-		expect(state.window.coverageGained).toBeCloseTo(0.8);
+		// 1 correct at streak 1.1 = 1.1, minus a bleed of half an answer (0.5).
+		expect(state.window.coverageGained).toBeCloseTo(0.6);
 	});
 
 	it("never advances a build that answers nothing — it peels until the run ends", () => {
@@ -761,7 +761,10 @@ describe(".length's pick budget", () => {
 		return runReducer(state, { type: "start" });
 	};
 
-	it("pays 16KB on clear per correct answer beyond one per poll", () => {
+	// `.length` sells knowledge, not KB. It used to pay per extra pick as well,
+	// which made a config bought for its reveal earn its keep on the ledger — and
+	// left the reveal itself unbuilt on the screens that were meant to carry it.
+	it("pays nothing for the count it reveals, even where extra picks are owed", () => {
 		let state = spendAll(counting());
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
@@ -769,24 +772,13 @@ describe(".length's pick budget", () => {
 		let bare = spendAll(uncounted());
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) bare = answerWith(bare, true);
 		expect(bare.clearedGate).toBe(0);
-		expect(state.gateRewardKb).toBe((bare.gateRewardKb ?? 0) + 16);
+		expect(state.gateRewardKb).toBe(bare.gateRewardKb);
 	});
 
 	it("still clears when the multi-answer poll was hedged — no spend is owed (ADR-035)", () => {
 		let state = answerIds(counting(), ["celadon-a"]);
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
-	});
-
-	it("pays nothing on a window of single-answer polls, the config's dead spot", () => {
-		let withConfig = counting(pool(60));
-		let bare = uncounted(pool(60));
-		for (let i = 0; i < SLICE_WINDOW; i++) {
-			withConfig = answerWith(withConfig, true);
-			bare = answerWith(bare, true);
-		}
-		expect(withConfig.clearedGate).toBe(0);
-		expect(withConfig.gateRewardKb).toBe(bare.gateRewardKb);
 	});
 
 	it("refreshes the budget for the next gate off the polls it will serve", () => {
@@ -994,10 +986,10 @@ describe("the gate audits (ADR-035)", () => {
 			coverageByCategory: { react: 100 },
 		};
 		state = answerWith(state, true);
-		// Mirrored, that pick is the wrong one: no earn, and the bleed fires
-		// (0.25 × ×8 = 2).
+		// Mirrored, that pick is the wrong one: no earn, and the bleed fires —
+		// half of what this gate pays per answer (0.5 × 8 = 4).
 		expect(state.window.coverageGained).toBe(0);
-		expect(state.coverage).toBe(98);
+		expect(state.coverage).toBe(96);
 		expect(state.streak).toBe(0);
 	});
 
@@ -1111,14 +1103,15 @@ describe("the gate audits (ADR-035)", () => {
 		const outage = { ...started(["js"]), gatesCleared: 4 };
 		const view = toRunView(outage);
 		expect(view.offlineConfigs).toHaveLength(1);
-		expect(outage.pipeline.configs).toContain(view.offlineConfigs[0]);
+		expect(outage.pipeline.configs).toContain(view.offlineConfigs[0].config);
+		expect(view.offlineConfigs[0].audit).toBe("Dependency Outage");
 	});
 
 	it("moves the flake from poll to poll at a Flaky Build gate", () => {
 		let state: RunState = { ...started(["js"]), gatesCleared: 8 };
 		const seen = new Set<string>();
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) {
-			seen.add(toRunView(state).offlineConfigs[0]?.id ?? "");
+			seen.add(toRunView(state).offlineConfigs[0]?.config.id ?? "");
 			state = answerWith(state, true);
 		}
 		expect(seen.size).toBeGreaterThan(1);
@@ -1136,7 +1129,7 @@ describe("the gate audits (ADR-035)", () => {
 				),
 			},
 		};
-		expect(toRunView(levelled).offlineConfigs[0]?.id).toBe(
+		expect(toRunView(levelled).offlineConfigs[0]?.config.id).toBe(
 			levelled.pipeline.configs[1].id
 		);
 	});
@@ -1156,7 +1149,7 @@ describe("the gate audits (ADR-035)", () => {
 				],
 			},
 		};
-		const offlineId = toRunView(build).offlineConfigs[0]?.id;
+		const offlineId = toRunView(build).offlineConfigs[0]?.config.id;
 		const bonuses = answerWith(build, true)
 			.answeredThisGate.at(-1)
 			?.coverageBreakdown?.configBonuses.map((bonus) => bonus.configId);
@@ -1671,9 +1664,9 @@ describe("gate base multiplier", () => {
 	});
 
 	it("scales a wrong answer's loss by the gate too — risk cuts deeper as you climb", () => {
-		expect(baseAt(0, false)).toBe(-0.3); // gate 1: -0.25 × 1, rounded
-		expect(baseAt(1, false)).toBe(-0.5); // gate 2: -0.25 × 2
-		expect(baseAt(4, false)).toBe(-1.3); // gate 5: -0.25 × 5, rounded
+		expect(baseAt(0, false)).toBe(-0.5); // gate 1: half of the 1 it pays
+		expect(baseAt(1, false)).toBe(-1); // gate 2: half of 2
+		expect(baseAt(4, false)).toBe(-2.5); // gate 5: half of 5
 	});
 });
 
@@ -1937,11 +1930,14 @@ describe("answer judging", () => {
 });
 
 describe("coverage scoring", () => {
-	it("bleeds coverage on a wrong answer, scaled by the reward multiplier", () => {
+	// Priced off what a correct answer pays on THIS build, so stacking coverage
+	// multipliers can no longer buy near-immunity to being wrong.
+	it("bleeds coverage on a wrong answer, at half of what a right one pays", () => {
 		const afterOneCorrect = answerWith(started(["js"]), true);
 		expect(afterOneCorrect.coverage).toBe(1.1); // base 1 × streak-1 factor 1.1
-		// Base pipeline multiplier is 1 → loss is the raw WRONG_COVERAGE_LOSS.
-		expect(answerWith(afterOneCorrect, false).coverage).toBe(0.8); // 1.1 − 0.3
+		// .js multiplies nothing build-wide, so a correct answer pays 1 and a
+		// wrong one costs 0.5.
+		expect(answerWith(afterOneCorrect, false).coverage).toBe(0.6); // 1.1 − 0.5
 	});
 
 	it("never drags coverage below zero", () => {
@@ -1980,8 +1976,8 @@ describe("coverage scoring", () => {
 		// costs the attempt exactly what it costs the run.
 		const afterOneCorrect = answerWith(started(["js"]), true);
 		const thenWrong = answerWith(afterOneCorrect, false);
-		expect(thenWrong.window.coverageGained).toBe(0.8); // 1.1 − 0.3 loss
-		expect(thenWrong.coverage).toBe(0.8);
+		expect(thenWrong.window.coverageGained).toBe(0.6); // 1.1 − 0.5 loss
+		expect(thenWrong.coverage).toBe(0.6);
 	});
 });
 

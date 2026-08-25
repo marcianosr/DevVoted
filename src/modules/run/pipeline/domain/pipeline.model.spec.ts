@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
 	SLICE_WINDOW,
+	roundToOneDecimal,
 	streakMultiplier,
 	VICTORY_GATE,
+	WRONG_COVERAGE_LOSS,
 } from "~/modules/run/run/domain/rules.model";
 import { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
@@ -122,6 +124,7 @@ describe("perAnswerPreviewFor", () => {
 	it("prices a bare pipeline at gate 0: 1 coverage, no storage, no matching-config bonus", () => {
 		expect(perAnswerPreviewFor([], 0)).toEqual({
 			coveragePerCorrect: 1,
+			coveragePerWrong: -0.5,
 			storageKbPerCorrect: 0,
 			matchingConfigMultiplier: undefined,
 			streakStepMultiplier: streakMultiplier(1),
@@ -144,6 +147,43 @@ describe("perAnswerPreviewFor", () => {
 			perAnswerPreviewFor([CONFIGS.agentsMd, CONFIGS.codeCoverage], 0)
 				.coveragePerCorrect
 		).toBe(3);
+	});
+
+	// The whole point of pricing the bleed off the earn: a miss costs the same
+	// fraction of an answer whatever the build, so stacking multipliers can no
+	// longer buy near-immunity to being wrong.
+	it("takes a fixed share of what a correct answer pays, on any build", () => {
+		for (const configs of [
+			[],
+			[CONFIGS.codeCoverage],
+			[CONFIGS.agentsMd],
+			[CONFIGS.agentsMd, CONFIGS.codeCoverage],
+		]) {
+			const { coveragePerCorrect, coveragePerWrong } = perAnswerPreviewFor(
+				configs,
+				4
+			);
+
+			expect(-coveragePerWrong).toBe(
+				roundToOneDecimal(WRONG_COVERAGE_LOSS * coveragePerCorrect)
+			);
+		}
+	});
+
+	it("scales the bleed with the gate, as the earn does", () => {
+		// Gate 4 pays ×5, so it bleeds ×5 too.
+		expect(perAnswerPreviewFor([], 0).coveragePerWrong).toBe(-0.5);
+		expect(perAnswerPreviewFor([], 4).coveragePerWrong).toBe(-2.5);
+	});
+
+	// Flat adds lift the earn, so they lift the bleed with it — the old formula
+	// read a multiplier field that is 1 on every config in the roster.
+	it("follows a config that only adds flat coverage, rather than ignoring it", () => {
+		// Code Coverage adds +0.5, so a correct answer pays 1.5 and a wrong one
+		// costs half of that.
+		expect(
+			perAnswerPreviewFor([CONFIGS.codeCoverage], 0).coveragePerWrong
+		).toBe(-0.8);
 	});
 
 	it("sums storagePerCorrect across the build", () => {
@@ -240,23 +280,36 @@ describe("storageInterestFor", () => {
 	});
 });
 
+// No config on the roster pays per extra pick any more — `.length` is pure
+// information now — so the axis is exercised by a config built for it. If it
+// gains no owner, the axis and these tests should go together.
+const PER_EXTRA_PICK: Config = {
+	id: "per-extra-pick",
+	label: "Per extra pick",
+	family: "economy",
+	description: "Pays per correct answer beyond one per poll.",
+	rewardMultiplier: 1,
+	storagePerExtraPick: 16,
+};
+
 describe("extraPickPayoutFor", () => {
-	it("pays nothing without .length, however many extra picks the window held", () => {
+	it("pays nothing to a build with no config on the axis", () => {
 		expect(extraPickPayoutFor([], 3)).toBe(0);
 		expect(extraPickPayoutFor([CONFIGS.unitTests], 3)).toBe(0);
+		expect(extraPickPayoutFor([CONFIGS.length], 3)).toBe(0);
 	});
 
-	it("pays 16KB per correct answer beyond one per poll", () => {
-		expect(extraPickPayoutFor([CONFIGS.length], 3)).toBe(48);
-		expect(extraPickPayoutFor([CONFIGS.length], 1)).toBe(16);
+	it("pays its rate per correct answer beyond one per poll", () => {
+		expect(extraPickPayoutFor([PER_EXTRA_PICK], 3)).toBe(48);
+		expect(extraPickPayoutFor([PER_EXTRA_PICK], 1)).toBe(16);
 	});
 
-	it("pays nothing on a window of single-answer polls, the config's dead spot", () => {
-		expect(extraPickPayoutFor([CONFIGS.length], 0)).toBe(0);
+	it("pays nothing on a window of single-answer polls, the axis's dead spot", () => {
+		expect(extraPickPayoutFor([PER_EXTRA_PICK], 0)).toBe(0);
 	});
 
 	it("never pays negative on a short final window", () => {
-		expect(extraPickPayoutFor([CONFIGS.length], -2)).toBe(0);
+		expect(extraPickPayoutFor([PER_EXTRA_PICK], -2)).toBe(0);
 	});
 });
 

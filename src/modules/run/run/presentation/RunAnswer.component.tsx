@@ -109,7 +109,7 @@ export const RunAnswer = () => {
 			<AnsweringScreen
 				configs={view.configs}
 				audits={view.audits}
-				offlineConfigs={view.offlineConfigs}
+				offlineConfigs={view.offlineConfigs.map((offline) => offline.config)}
 				mirroredPolls={view.mirroredPolls}
 				timeLimitMs={view.pollTimeLimitMs ?? undefined}
 				// The clock stops mattering the moment the answer is in: the reveal

@@ -329,7 +329,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<head>
 				<HeadContent />
 			</head>
-			<body className="bg-black text-white min-h-dvh">
+			<body className="bg-black text-white min-h-dvh flex flex-col">
 				{children}
 				<TanStackRouterDevtools position="bottom-right" />
 				<Scripts />

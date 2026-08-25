@@ -49,6 +49,7 @@ const stake = createMockGateStake({
 	},
 	perAnswer: {
 		coveragePerCorrect: 3,
+		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
 	},

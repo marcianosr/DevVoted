@@ -14,6 +14,7 @@ import {
 	GATE_REWARD_KB,
 	GATE_REWARD_MULTIPLIER_CAP,
 	SLICE_WINDOW,
+	WRONG_COVERAGE_LOSS,
 	gateBaseMultiplier,
 	roundToOneDecimal,
 	streakMultiplier,
@@ -148,6 +149,9 @@ export const pipelineModifiersFor = (
 
 export type PerAnswerPreview = {
 	readonly coveragePerCorrect: number;
+	/** Signed like its sibling, so the pair reads as one ledger: what an answer
+	 * does to your coverage, positive right and negative wrong. */
+	readonly coveragePerWrong: number;
 	readonly storageKbPerCorrect: number;
 	/** The best Focus bonus in the build, called out separately since it only
 	 * lands when a poll's category matches — absent with no Focus config equipped. */
@@ -179,18 +183,44 @@ const throttleFor = (configs: readonly Config[]): number =>
  * Overclock equipped, four of five answers earn the throttled rate, and a
  * floor that ignored it would overstate the guarantee.
  */
+/** The build's guaranteed coverage for one correct answer, unrounded — the
+ * figure both the earn and the bleed are quoted from. */
+const coveragePerCorrectRaw = (
+	configs: readonly Config[],
+	gatesCleared: number
+): number => {
+	const { mult, add } = coverageProfileFor(configs);
+	return (
+		gateBaseMultiplier(gatesCleared) * (1 + add) * mult * throttleFor(configs)
+	);
+};
+
+/**
+ * What a wrong answer takes. Priced off what a right one pays rather than off
+ * the gate alone, so a miss always costs the same FRACTION of an answer whatever
+ * the build: stacking multipliers used to buy near-immunity, since the earn rode
+ * them and the bleed did not.
+ */
+export const coverageLossFor = (
+	configs: readonly Config[],
+	gatesCleared: number
+): number =>
+	roundToOneDecimal(
+		WRONG_COVERAGE_LOSS * coveragePerCorrectRaw(configs, gatesCleared)
+	);
+
 export const perAnswerPreviewFor = (
 	configs: readonly Config[],
 	gatesCleared: number
 ): PerAnswerPreview => {
-	const { mult, add } = coverageProfileFor(configs);
 	const focusMultipliers = configs
 		.filter((config) => config.focusCategory !== undefined)
 		.map((config) => focusCoverageMultiplier(config.level ?? 1));
 	return {
 		coveragePerCorrect: roundToOneDecimal(
-			gateBaseMultiplier(gatesCleared) * (1 + add) * mult * throttleFor(configs)
+			coveragePerCorrectRaw(configs, gatesCleared)
 		),
+		coveragePerWrong: -coverageLossFor(configs, gatesCleared),
 		storageKbPerCorrect: faucetKbPerCorrect(configs),
 		matchingConfigMultiplier:
 			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
@@ -347,7 +377,7 @@ export const peekerFor = (configs: readonly Config[]): Config | undefined =>
 
 /** The equipped config counting the window's correct answers, if any (`.length`). */
 export const budgeterFor = (configs: readonly Config[]): Config | undefined =>
-	configs.find((config) => config.storagePerExtraPick !== undefined);
+	configs.find((config) => config.revealsCorrectCount === true);
 
 /** The equipped config reading the upcoming draw, if any (Prefetch). */
 export const prefetcherFor = (configs: readonly Config[]): Config | undefined =>

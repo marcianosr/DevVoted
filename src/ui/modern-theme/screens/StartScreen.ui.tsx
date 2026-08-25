@@ -6,16 +6,18 @@ import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { Chip } from "../Chip.ui";
 import { Delta } from "../Delta.ui";
+import { Dot } from "../Dot.ui";
 import { Entry } from "../Entry.ui";
-import { FAMILY, FAMILY_ORDER, Family, type ConfigFamily } from "../Family.ui";
 import { Fold } from "../Fold.ui";
 import { Legend, RARITY_LEGEND } from "../Legend.ui";
 import { Glyph } from "../Glyph.ui";
 import { Lock } from "../Lock.ui";
 import { Pick } from "../Pick.ui";
 import type { Rarity } from "../rarity";
+import { RarityWord } from "../RarityWord.ui";
 import { Row } from "../Row.ui";
 import { Slot } from "../Slot.ui";
+import { Stake } from "../Stake.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
 import type { ModernTone } from "../tones";
@@ -29,37 +31,40 @@ const NAMING = "flex min-w-0 flex-wrap items-center gap-3";
 const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const COLUMN = "flex min-w-0 flex-col px-2 py-4";
 const DEAL = "flex-1 border-b border-edge lg:border-b-0 lg:border-r";
-const ASIDE = "gap-4 lg:w-80 lg:shrink-0";
+const ASIDE = "gap-4 lg:w-96 lg:shrink-0";
 
 const NOTE = "flex flex-col gap-3";
 
 // Fixed width so the figures line up in a column down the deal.
 const ROW_TAG = "w-20 shrink-0";
-const TAGS = "flex flex-wrap items-center gap-3";
 
 const COMBO =
-	"flex flex-wrap items-center gap-3 rounded-lg border border-celadon/30 bg-celadon/5 px-4 py-3";
-const COMBO_BODY = "flex min-w-0 flex-1 flex-col gap-1";
+	"flex flex-col gap-2 rounded-lg border border-celadon/30 bg-celadon/5 px-4 py-3";
 const COMBO_HEAD = "flex flex-wrap items-center gap-2";
-const COMBOS = "flex flex-col gap-2";
+// Pushed to the card's floor so the three presses line up whatever the blurbs
+// wrap to.
+const COMBO_PRESS = "mt-auto pt-1";
+// Three abreast: stacked, each card was a full-width row holding six words, and
+// the openings are meant to be compared rather than read in order.
+const COMBOS = "grid gap-2 sm:grid-cols-3";
 const KEY = "px-3 pt-4";
 const SPARK = "text-celadon";
 
-const GATE = "flex flex-col gap-1 px-3 py-2";
-const GATE_NAME = "flex items-center gap-2 pb-2";
+const GATE_NAME = "flex items-center gap-2 px-3 py-2";
 const GROW = "min-w-0 flex-1";
-const FACT = "flex items-baseline justify-between gap-6 py-1";
-const RULE = "my-2 border-t border-edge";
-const SUBHEAD = "pb-1";
+// Same bullet, same row, same gap as the Stake below it: the gate's demands, its
+// rewards and its cost are three readings of one thing, so they read as one list.
+const LIST = "flex flex-col gap-1";
+const SECTION = "border-b border-edge last:border-b-0";
+const BULLET = <Dot tone="muted" />;
 
 const FOOT = "px-3 pt-2";
 
 export type DealtConfig = {
 	id: string;
 	label: string;
-	family: ConfigFamily;
 	rarity?: Rarity;
-	summary: string;
+	summary?: string;
 	explainer: string;
 	note?: ReactNode;
 	locked?: boolean;
@@ -68,13 +73,19 @@ export type DealtConfig = {
 export type StartCombo = {
 	id: string;
 	name: string;
-	ids: readonly string[];
 	blurb: string;
 	recommended?: boolean;
 	onTake: () => void;
 };
 
 export type StartSlot = { id: string; gate?: number };
+
+export type StartStake = {
+	removeOnMiss: number;
+	/** Signed: what a wrong answer does to coverage, so it pairs with the
+	 * reward's per-correct figure instead of asking the reader to flip it. */
+	coveragePerWrong: number;
+};
 
 export type StartReward = {
 	coveragePerCorrect: number;
@@ -99,65 +110,65 @@ export type StartScreenProps = {
 	pollCount: number;
 	coverageDemand: number;
 	auditCount: number;
-	removeOnMiss: number;
+	stake: StartStake;
 	reward: StartReward;
 	onStart?: () => void;
 	theme?: SwatchTheme;
 };
 
+// Name, one line of playstyle, and the press. The contents are not listed: the
+// deal below is where a config is read, and a combo that has to be audited
+// before it can be taken is not doing its job (ADR-026).
 const Combo = ({
 	name,
-	configs,
 	blurb,
 	recommended,
 	onTake,
 }: {
 	name: string;
-	configs: readonly DealtConfig[];
 	blurb: string;
 	recommended?: boolean;
 	onTake: () => void;
 }) => (
 	<div className={COMBO}>
-		<Glyph name="suggest" className={SPARK} />
-		<span className={COMBO_BODY}>
-			<span className={COMBO_HEAD}>
-				<Text size="body">{name}</Text>
-				{recommended ? <Chip tone="celadon">Recommended</Chip> : null}
-				<Text size="meta" tone="muted">
-					{blurb}
-				</Text>
-			</span>
-			<Text size="meta" tone="muted">
-				{configs.map((config) => config.label).join(" + ")}
-			</Text>
-			<span className={TAGS}>
-				{configs.map((config) => (
-					<Family key={config.id} family={config.family} />
-				))}
-			</span>
+		<span className={COMBO_HEAD}>
+			<Glyph name="suggest" className={SPARK} />
+			<Text size="body">{name}</Text>
+			{recommended ? <Chip tone="celadon">Recommended</Chip> : null}
 		</span>
-		<Action label="take these" emphasis="loud" onUse={onTake} />
+		<Text size="meta" tone="muted">
+			{blurb}
+		</Text>
+		<span className={COMBO_PRESS}>
+			<Action label="take these" emphasis="loud" full onUse={onTake} />
+		</span>
 	</div>
 );
 
 const Fact = ({
 	label,
 	value,
-	tone = "default",
+	tone,
 }: {
 	label: string;
 	value: ReactNode;
 	tone?: ModernTone;
 }) => (
-	<p className={FACT}>
-		<Text size="meta" tone="muted">
-			{label}
-		</Text>
-		<Text size="meta" tone={tone}>
-			{value}
-		</Text>
-	</p>
+	<li>
+		<Entry
+			leading={BULLET}
+			label={label}
+			value={
+				tone ? (
+					<Text size="meta" tone={tone}>
+						{value}
+					</Text>
+				) : (
+					value
+				)
+			}
+		/>
+	</li>
 );
 
 export const StartScreen = ({
@@ -177,7 +188,7 @@ export const StartScreen = ({
 	pollCount,
 	coverageDemand,
 	auditCount,
-	removeOnMiss,
+	stake,
 	reward,
 	onStart,
 	theme,
@@ -188,11 +199,6 @@ export const StartScreen = ({
 	const toGo = picksRequired - picked;
 	const ready = toGo === 0;
 
-	const configsIn = (ids: readonly string[]) =>
-		ids
-			.map((id) => dealt.find((config) => config.id === id))
-			.filter((config) => config !== undefined);
-
 	const pipeline = [
 		...dealt
 			.filter((config) => pickedIds.includes(config.id))
@@ -200,9 +206,9 @@ export const StartScreen = ({
 				id: config.id,
 				content: (
 					<Entry
-						mark="idle"
 						label={config.label}
 						rarity={config.rarity}
+						notes={config.rarity ? <RarityWord rarity={config.rarity} /> : null}
 						value={config.note}
 					/>
 				),
@@ -298,7 +304,6 @@ export const StartScreen = ({
 											<Combo
 												key={combo.id}
 												name={combo.name}
-												configs={configsIn(combo.ids)}
 												blurb={combo.blurb}
 												recommended={combo.recommended}
 												onTake={combo.onTake}
@@ -319,7 +324,12 @@ export const StartScreen = ({
 									onToggle={() => onToggle(config.id)}
 									notes={
 										<>
-											<Family family={config.family} className={ROW_TAG} />
+											{config.rarity ? (
+												<RarityWord
+													rarity={config.rarity}
+													className={ROW_TAG}
+												/>
+											) : null}
 											{config.note}
 										</>
 									}
@@ -330,24 +340,6 @@ export const StartScreen = ({
 							),
 						}))}
 					/>
-					<Fold
-						title="What the families mean"
-						defaultOpen={false}
-						items={FAMILY_ORDER.map((family) => ({
-							id: family,
-							content: (
-								<Row
-									spacing="compact"
-									leading={<Family family={family} className={ROW_TAG} />}
-								>
-									<Text size="meta" tone="muted">
-										{FAMILY[family].gloss}
-									</Text>
-								</Row>
-							),
-						}))}
-					/>
-
 					<div className={KEY}>
 						<Legend items={RARITY_LEGEND} />
 					</div>
@@ -365,7 +357,7 @@ export const StartScreen = ({
 					/>
 
 					{/* Flat, never folded: this panel is the reason to pick anything. */}
-					<div className={GATE}>
+					<section className={SECTION}>
 						<div className={GATE_NAME}>
 							<Swatch size="pip" />
 							<Text size="label" className={GROW}>
@@ -375,49 +367,46 @@ export const StartScreen = ({
 								{gateNumber} / {gateCount}
 							</Text>
 						</div>
-
-						<Fact
-							label={`coverage from ${plural(pollCount, "poll")}`}
-							value={`${coverageDemand}%`}
-						/>
-						<Fact
-							label="audits"
-							value={auditCount === 0 ? "none" : String(auditCount)}
-							tone={auditCount === 0 ? "muted" : "saffron"}
-						/>
-						<Fact
-							label="Failing the gate"
-							value={
-								<Chip tone="cinnabar">
-									remove {plural(removeOnMiss, "config")}
-								</Chip>
-							}
-						/>
-
-						<hr className={RULE} />
-
-						<Text as="h3" size="label" className={SUBHEAD}>
-							Clear rewards
-						</Text>
-						<Fact
-							label="per correct answer"
-							value={<Delta coverage={reward.coveragePerCorrect} />}
-						/>
-						<Fact
-							label="gate cleared"
-							value={<Delta kb={reward.gateRewardKb} />}
-						/>
-						{reward.slotOpens === undefined ? null : (
+						<ul className={LIST}>
 							<Fact
-								label={`slot ${reward.slotOpens}`}
-								value={<Chip tone="celadon">opens</Chip>}
+								label={`coverage from ${plural(pollCount, "poll")}`}
+								value={`${coverageDemand}%`}
 							/>
-						)}
-						<Fact
-							label={`${gateName} Swatch`}
-							value={<Swatch size="pip" state="pending" />}
-						/>
-					</div>
+							<Fact
+								label="audits"
+								value={auditCount === 0 ? "none" : String(auditCount)}
+								tone={auditCount === 0 ? "muted" : "saffron"}
+							/>
+						</ul>
+					</section>
+
+					<section className={SECTION}>
+						<Row spacing="compact">
+							<Text size="body">Clear rewards</Text>
+						</Row>
+						<ul className={LIST}>
+							<Fact
+								label="per correct answer"
+								value={<Delta coverage={reward.coveragePerCorrect} />}
+							/>
+							<Fact
+								label="gate cleared"
+								value={<Delta kb={reward.gateRewardKb} />}
+							/>
+							{reward.slotOpens === undefined ? null : (
+								<Fact
+									label={`slot ${reward.slotOpens}`}
+									value={<Chip tone="celadon">opens</Chip>}
+								/>
+							)}
+							<Fact
+								label={`${gateName} Swatch`}
+								value={<Swatch size="pip" state="pending" />}
+							/>
+						</ul>
+					</section>
+
+					<Stake {...stake} />
 
 					<div className={FOOT}>{startButton}</div>
 				</section>

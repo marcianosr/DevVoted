@@ -97,3 +97,111 @@ export const effectOf = (config: Config): Effect => ({
 	rewardMultiplier:
 		config.rewardMultiplier === 1 ? undefined : config.rewardMultiplier,
 });
+
+/**
+ * Where a config stands on the poll on deck. Configs stopped passing and failing
+ * when ADR-035 deleted their checks; these are the three states one can actually
+ * be in, and the rail says them in these words.
+ */
+export type ConfigStatus =
+	| { readonly kind: "online" }
+	| { readonly kind: "skipped"; readonly why: SkipReason }
+	| { readonly kind: "offline"; readonly audit: string };
+
+/** Why a skipped config sits this poll out, reduced to the fact it is built from
+ * rather than a sentence — the row writes the copy, as with `GateRowReason`. */
+export type SkipReason =
+	| {
+			readonly kind: "otherCategories";
+			readonly categories: readonly CategoryCode[];
+	  }
+	| { readonly kind: "openerOnly" }
+	| { readonly kind: "paysAtGateClear" }
+	| { readonly kind: "billsAtGateClear" }
+	| { readonly kind: "inShop" }
+	| { readonly kind: "noAuditToSuppress" }
+	| { readonly kind: "runCapReached" }
+	| { readonly kind: "notThisPoll" };
+
+export type PollStatusContext = AnswerContext & {
+	/** Volkswagen CI suppresses nothing at the clean gates, so whether it is
+	 * working is a fact about the gate rather than about the config. */
+	readonly suppressingAudit: boolean;
+	/** The audit holding this config down, when one is. */
+	readonly offlineAudit?: string;
+	/** What the run's storage faucet may still pay. A faucet with nothing left
+	 * is not paying on this answer, whatever its rate says. */
+	readonly faucetRemainingKb: number;
+};
+
+const changesCoverage = (
+	config: Config,
+	context: PollStatusContext
+): boolean => {
+	const coverage = effectOf(config).coverage?.(context);
+	return coverage !== undefined && (coverage.mult !== 1 || coverage.add !== 0);
+};
+
+const paysOnThisAnswer = (
+	config: Config,
+	context: PollStatusContext
+): boolean =>
+	(config.storagePerCorrect !== undefined && context.faucetRemainingKb > 0) ||
+	config.storagePerExtraPick !== undefined;
+
+const sellsSomethingHere = (config: Config, category: CategoryCode): boolean =>
+	config.peeksCommunitySplit === true ||
+	effectOf(config).maskWrongOn?.(category) === true;
+
+/** Reading the run ahead is live work, even though the number it moves is not on
+ * this poll: the reveal is on screen while the player answers. */
+const readsAhead = (config: Config): boolean =>
+	config.revealsUpcomingCategories === true ||
+	config.revealsCorrectCount === true;
+
+const isOnline = (config: Config, context: PollStatusContext): boolean =>
+	changesCoverage(config, context) ||
+	paysOnThisAnswer(config, context) ||
+	sellsSomethingHere(config, context.category) ||
+	readsAhead(config) ||
+	(config.suppressesAudit === true && context.suppressingAudit);
+
+const skipReasonFor = (
+	config: Config,
+	context: PollStatusContext
+): SkipReason => {
+	if (config.eliminatesWrongOptionsFor)
+		return {
+			kind: "otherCategories",
+			categories: config.eliminatesWrongOptionsFor,
+		};
+	if (config.focusCategory)
+		return { kind: "otherCategories", categories: [config.focusCategory] };
+	if (config.openerCoverageMultiplier !== undefined)
+		return { kind: "openerOnly" };
+	// Before the shop reason: Freemium discounts drafts and bills at the clear,
+	// and the bill is the half a player forgets.
+	if (config.subscriptionKb !== undefined) return { kind: "billsAtGateClear" };
+	if (config.offersFullRoster === true || config.draftCostFactor !== undefined)
+		return { kind: "inShop" };
+	if (config.suppressesAudit === true) return { kind: "noAuditToSuppress" };
+	if (
+		config.storageOnClear !== undefined ||
+		config.storageInterestPct !== undefined ||
+		config.autoUpgradeOneIn !== undefined
+	)
+		return { kind: "paysAtGateClear" };
+	if (config.storagePerCorrect !== undefined && context.faucetRemainingKb === 0)
+		return { kind: "runCapReached" };
+	return { kind: "notThisPoll" };
+};
+
+export const configStatusFor = (
+	config: Config,
+	context: PollStatusContext
+): ConfigStatus => {
+	if (context.offlineAudit !== undefined)
+		return { kind: "offline", audit: context.offlineAudit };
+	if (isOnline(config, context)) return { kind: "online" };
+	return { kind: "skipped", why: skipReasonFor(config, context) };
+};

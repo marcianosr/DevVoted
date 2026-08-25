@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
@@ -5,6 +7,10 @@ import {
 	headlineFigureOf,
 	rarityOf,
 } from "~/modules/run/config/domain/config.model";
+import {
+	configStatusFor,
+	type PollStatusContext,
+} from "~/modules/run/config/domain/effect.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	ALL_SWATCHES,
@@ -16,12 +22,10 @@ import {
 	type PollOption,
 } from "~/ui/modern-theme/screens/PollScreen.ui";
 import { toAuditId } from "~/ui/modern-theme/audits";
+import { Audits, type AuditRow } from "~/ui/modern-theme/Audits.ui";
 import { Coverage } from "~/ui/modern-theme/Coverage.ui";
-import { Figure } from "~/ui/modern-theme/Figure.ui";
-import { Dot } from "~/ui/modern-theme/Dot.ui";
-import { Entry } from "~/ui/modern-theme/Entry.ui";
-import { Fold, type FoldItem } from "~/ui/modern-theme/Fold.ui";
-import { Text } from "~/ui/modern-theme/Text.ui";
+import { Pipeline, type PipelineRow } from "~/ui/modern-theme/Pipeline.ui";
+import { Stake } from "~/ui/modern-theme/Stake.ui";
 import type { TrailItem } from "~/ui/modern-theme/Trail.ui";
 import { plural } from "~/ui/modern-theme/format";
 
@@ -37,17 +41,34 @@ const trailFor = (view: RunView): readonly TrailItem[] =>
 			: { id: label, label, state: "todo" };
 	});
 
-const rarityWord = (config: Config) => {
-	const rarity = rarityOf(config);
-	return `${rarity.charAt(0).toUpperCase()}${rarity.slice(1)}`;
+/**
+ * A tool that applies but is not ready has exactly one reason: the fee. Both
+ * readiness rules are `applies && storage >= fee`, so the row can name the
+ * shortfall instead of greying a button out in silence. Same sentence the shop
+ * gives a refused offer, since it is the same refusal.
+ */
+const shortfall = (costKb: number, storageKb: number): string =>
+	`Costs ${costKb}KB — you have ${storageKb}KB`;
+
+// The rarity is stated in the row's own colours beside the Dot, so repeating it
+// here would only push the version further from the eye that came looking for it.
+//
+// The shortfall rides here too rather than only in the button's tooltip: a
+// disabled button takes no taps, so on a phone the row's own body is the only
+// place the reason is reachable.
+const summaryFor = (
+	config: Config,
+	tool: Tool | undefined,
+	storageKb: number
+): string | undefined => {
+	const lines = [
+		...(config.level === undefined ? [] : [`v${config.level}`]),
+		...(tool === undefined || tool.ready
+			? []
+			: [shortfall(tool.costKb, storageKb)]),
+	];
+	return lines.length === 0 ? undefined : lines.join(" · ");
 };
-
-const summaryFor = (config: Config) =>
-	config.level === undefined
-		? rarityWord(config)
-		: `${rarityWord(config)} · level ${config.level}`;
-
-const OFFLINE = "offline";
 
 type Tool = {
 	readonly configId: string;
@@ -82,64 +103,83 @@ const toolsFor = (view: RunView, handlers: PollTools): readonly Tool[] => [
 		: []),
 ];
 
-const pipelineRows = (
-	configs: readonly Config[],
-	offlineIds: ReadonlySet<string>,
-	tools: readonly Tool[]
-): readonly FoldItem[] =>
-	configs.map((config) => {
-		const offline = offlineIds.has(config.id);
-		const tool = offline
-			? undefined
-			: tools.find((candidate) => candidate.configId === config.id);
+const statusContextFor = (
+	view: RunView,
+	poll: NonNullable<RunView["poll"]>,
+	config: Config
+): PollStatusContext => ({
+	category: poll.category,
+	answeredBefore: view.answeredThisGate.length,
+	suppressingAudit: view.audits.some((audit) => audit.suppressed),
+	offlineAudit: view.offlineConfigs.find(
+		(offline) => offline.config.id === config.id
+	)?.audit,
+	faucetRemainingKb: view.faucetRemainingKb,
+});
 
-		const trailing = tool
-			? {
-					actions: [
-						{
+const pipelineRows = (
+	view: RunView,
+	poll: NonNullable<RunView["poll"]>,
+	tools: readonly Tool[]
+): readonly PipelineRow[] =>
+	view.configs.map((config): PipelineRow => {
+		const status = configStatusFor(
+			config,
+			statusContextFor(view, poll, config)
+		);
+		// A config that is not in effect cannot sell what it can no longer do.
+		const tool =
+			status.kind === "online"
+				? tools.find((candidate) => candidate.configId === config.id)
+				: undefined;
+
+		return {
+			id: config.id,
+			label: config.label,
+			rarity: rarityOf(config),
+			status,
+			figure: headlineFigureOf(config),
+			remainingKb:
+				config.storagePerCorrect === undefined
+					? undefined
+					: view.faucetRemainingKb,
+			summary: summaryFor(config, tool, view.storage),
+			explainer: config.description,
+			action:
+				tool === undefined
+					? undefined
+					: {
 							label: tool.label,
 							on: config.label,
 							cost: `${tool.costKb} KB`,
 							disabled: !tool.ready,
+							// Hover on a pointer, and folded into the button's own
+							// accessible name; `Tooltip` reads hover off its wrapper so a
+							// disabled button still answers for itself.
+							hint: tool.ready
+								? undefined
+								: shortfall(tool.costKb, view.storage),
 							onUse: tool.onUse,
 						},
-					],
-				}
-			: {
-					value: offline ? (
-						<Text size="meta" tone="muted">
-							{OFFLINE}
-						</Text>
-					) : (
-						<Figure figure={headlineFigureOf(config)} />
-					),
-				};
-
-		return {
-			id: config.id,
-			content: (
-				<Entry
-					label={config.label}
-					rarity={rarityOf(config)}
-					mark={offline ? "fail" : "pass"}
-					notes={<Dot rarity={rarityOf(config)} />}
-					{...trailing}
-					summary={summaryFor(config)}
-					explainer={config.description}
-				/>
-			),
 		};
 	});
 
-const stakeSentence = (view: RunView) => {
-	const { stripsOnFailure, missIsFatal } = view.gateStake;
-	if (missIsFatal)
-		return `A miss removes ${plural(stripsOnFailure, "config")}, which is your whole pipeline. It ends the run.`;
-	return `A miss removes ${plural(stripsOnFailure, "config")} and re-runs this gate.`;
-};
+// The gate's live rules belong beside the poll they are bending, not only on the
+// prep screen the player left two clicks ago.
+const auditRows = (view: RunView): readonly AuditRow[] =>
+	view.audits.flatMap((audit): readonly AuditRow[] => {
+		const id = toAuditId(audit.id);
+		return id === null
+			? []
+			: [{ id, description: audit.description, suppressed: audit.suppressed }];
+	});
 
-const railFor = (view: RunView, handlers: PollTools) => {
-	const offlineIds = new Set(view.offlineConfigs.map((config) => config.id));
+const railFor = (
+	view: RunView,
+	poll: NonNullable<RunView["poll"]>,
+	handlers: PollTools
+) => {
+	const audits = auditRows(view);
 	const { coverageHeld, coverageDemand, stripsOnFailure, missIsFatal } =
 		view.gateStake;
 
@@ -151,33 +191,30 @@ const railFor = (view: RunView, handlers: PollTools) => {
 				required={coverageDemand}
 				defaultOpen={false}
 			/>
-			<Fold
-				title="Pipeline"
-				value={
-					<Text size="meta" tone="muted">
-						{view.configs.length} / {view.slots}
-					</Text>
-				}
-				items={pipelineRows(view.configs, offlineIds, toolsFor(view, handlers))}
+			<Pipeline configs={pipelineRows(view, poll, toolsFor(view, handlers))} />
+			{audits.length ? <Audits audits={audits} defaultOpen /> : null}
+			<Stake
+				removeOnMiss={stripsOnFailure}
+				coveragePerWrong={view.gateStake.perAnswer.coveragePerWrong}
+				missIsFatal={missIsFatal}
 			/>
-			<Fold
-				title="Stake"
-				defaultOpen={false}
-				value={
-					<Text size="meta" tone={missIsFatal ? "cinnabar" : "muted"}>
-						{plural(stripsOnFailure, "config")} on a miss
-					</Text>
-				}
-			>
-				<Text size="meta" tone={missIsFatal ? "cinnabar" : "muted"}>
-					{stakeSentence(view)}
-				</Text>
-			</Fold>
 		</>
 	);
 };
 
-const metaFor = (poll: NonNullable<RunView["poll"]>) => {
+/** `.length`'s whole effect. Under the Mirror the gate wants the incorrect
+ * options, so the count it reveals is a count of those. */
+const revealFor = (view: RunView): readonly string[] =>
+	view.correctAnswersThisGate === null
+		? []
+		: [
+				`this gate holds ${plural(
+					view.correctAnswersThisGate,
+					view.mirroredPolls ? "incorrect answer" : "correct answer"
+				)}`,
+			];
+
+const metaFor = (view: RunView, poll: NonNullable<RunView["poll"]>) => {
 	const multiplier = pollDifficultyMultiplier(
 		poll.options.length,
 		poll.answerType === "multiple"
@@ -187,6 +224,7 @@ const metaFor = (poll: NonNullable<RunView["poll"]>) => {
 		`scores ×${Math.round(multiplier * 100) / 100}`,
 		plural(poll.options.length, "option"),
 		...(poll.answerType === "multiple" ? ["pick every correct one"] : []),
+		...revealFor(view),
 	];
 };
 
@@ -220,6 +258,9 @@ export const PollView = ({
 }: PollViewProps) => {
 	const gate = view.gateStake.gateNumber;
 	const blocked = new Set(view.disabledOptionIds);
+	// Held here rather than in the run state: folding the rail is a reading
+	// preference, not a move, and nothing in the engine should replay it.
+	const [railOpen, setRailOpen] = useState(true);
 
 	const noteFor = (optionId: string) => {
 		if (blocked.has(optionId)) return "crossed out";
@@ -264,10 +305,12 @@ export const PollView = ({
 					: poll.question
 			}
 			category={categoryFor(poll.category)}
-			meta={metaFor(poll)}
+			meta={metaFor(view, poll)}
 			code={poll.codeBlock?.split("\n")}
 			options={options}
-			rail={railFor(view, { onLint, onPeek })}
+			rail={railFor(view, poll, { onLint, onPeek })}
+			railOpen={railOpen}
+			onToggleRail={() => setRailOpen((open) => !open)}
 			onSubmit={onSubmit}
 			submitLock={selectedOptionIds.length === 0 ? "Pick an answer" : undefined}
 		/>

@@ -45,6 +45,12 @@ export const storagePlanLadder = (
 
 export const FAUCET_CAP_KB = 320;
 
+/** What is left of the run's faucet allowance. The reducer clamps each payout
+ * against it and the pipeline rail counts it down, so the arithmetic lives in
+ * one place rather than being re-derived by whichever surface asks. */
+export const faucetRemainingKb = (earnedKb: number): number =>
+	Math.max(0, FAUCET_CAP_KB - earnedKb);
+
 export const storageCreditRate = (
 	reason: "victory" | "dead" | "abandoned",
 	gatesCleared: number
@@ -54,12 +60,23 @@ export const storageCreditRate = (
 	return Math.min(1, gatesCleared / GATE_COUNT);
 };
 
-export const WRONG_COVERAGE_LOSS = 0.25;
+/** A miss costs the answer you did not get, plus this fraction of one on top —
+ * so it is 1.5 answers whatever the build and whatever the gate. */
+export const WRONG_COVERAGE_LOSS = 0.5;
 
 const STREAK_COVERAGE_BONUS = 0.1;
 
+/**
+ * The streak survives a gate clear, so an uncapped bonus reached ×7.5 on a
+ * flawless run — a bigger multiplier than any config in the roster sells, handed
+ * out for free. Capped rather than reset: a player who never misses keeps the
+ * bonus for the whole run, it just stops compounding into a number the demand
+ * table cannot be tuned against.
+ */
+const MAX_STREAK_STEPS = 10;
+
 export const streakMultiplier = (streak: number): number =>
-	1 + STREAK_COVERAGE_BONUS * streak;
+	1 + STREAK_COVERAGE_BONUS * Math.min(streak, MAX_STREAK_STEPS);
 
 export const gateBaseMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;

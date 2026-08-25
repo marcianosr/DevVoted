@@ -39,7 +39,7 @@ describe("STARTER_STACKS", () => {
 
 describe(starterStackFor, () => {
 	it("resolves a stack by id", () => {
-		expect(starterStackFor("ship-it")?.name).toBe("React");
+		expect(starterStackFor("ship-it")?.name).toBe("Gamble");
 	});
 
 	it("returns undefined for an unknown id", () => {

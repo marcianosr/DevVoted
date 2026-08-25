@@ -1,13 +1,17 @@
 import {
 	type Config,
+	describeConfig,
 	headlineFigureOf,
+	isUpgradable,
 	rarityOf,
+	upgradeCoverageRequired,
+	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
+import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
 	storagePlanFor,
 	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
-import { BASE_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import type {
 	RunView,
@@ -18,9 +22,9 @@ import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { offerRefusalText } from "~/modules/run/shop/presentation/ShopScreen.ui";
 import { ShopScreen } from "~/ui/modern-theme/screens/ShopScreen.ui";
 import { Action } from "~/ui/modern-theme/Action.ui";
+import { Chip } from "~/ui/modern-theme/Chip.ui";
 import { Delta } from "~/ui/modern-theme/Delta.ui";
 import { Figure } from "~/ui/modern-theme/Figure.ui";
-import { Dot } from "~/ui/modern-theme/Dot.ui";
 import { Entry } from "~/ui/modern-theme/Entry.ui";
 import { Fold, type FoldItem } from "~/ui/modern-theme/Fold.ui";
 import { Glyph } from "~/ui/modern-theme/Glyph.ui";
@@ -28,23 +32,23 @@ import { Lock } from "~/ui/modern-theme/Lock.ui";
 import { Mark } from "~/ui/modern-theme/Mark.ui";
 import type { PlanProps } from "~/ui/modern-theme/Plan.ui";
 import { PriceTag, type PriceTagState } from "~/ui/modern-theme/PriceTag.ui";
+import { RarityWord } from "~/ui/modern-theme/RarityWord.ui";
 import { Slot } from "~/ui/modern-theme/Slot.ui";
 import { Text } from "~/ui/modern-theme/Text.ui";
 import { capLabel, planOpensAt, plural } from "~/ui/modern-theme/format";
 
-const rarityWord = (config: Config) => {
-	const rarity = rarityOf(config);
-	return `${rarity.charAt(0).toUpperCase()}${rarity.slice(1)}`;
-};
-
+// The rarity is stated in the row's own colours beside the Dot, so repeating it
+// here would only push the version further from the eye that came looking for it.
 const summaryFor = (config: Config) =>
-	config.level === undefined
-		? rarityWord(config)
-		: `${rarityWord(config)} · level ${config.level}`;
+	config.level === undefined ? undefined : `v${config.level}`;
 
+// The two refusals are fixed by different things — sell something, or clear a
+// slot — so they cannot share a colour. Red is "you are short"; grey is "there
+// is nowhere to put it".
 const tagStateFor = (offer: ShopOffer): PriceTagState => {
 	if (offer.owned) return "owned";
-	return offer.refusal ? "unaffordable" : "buyable";
+	if (!offer.refusal) return "buyable";
+	return offer.refusal.reason === "no-slot" ? "unavailable" : "unaffordable";
 };
 
 const notEnoughData = (verb: string) => `Can't ${verb}, not enough data`;
@@ -97,7 +101,7 @@ const previewNotes = (view: RunView, offer: ShopOffer) => {
 
 	return (
 		<>
-			<Dot rarity={rarityOf(offer.config)} />
+			<RarityWord rarity={rarityOf(offer.config)} />
 			{coverageDelta !== 0 ? <Delta coverage={coverageDelta} /> : null}
 			{storageDelta !== 0 ? <Delta kb={storageDelta} /> : null}
 		</>
@@ -178,54 +182,106 @@ const offerRows = (
 		),
 	}));
 
+/**
+ * Both gates on one upgrade, as sentences. Storage and category coverage are
+ * independent — a Focus config can be earned but unaffordable, or affordable
+ * but unearned — and the emptiness of this list is what makes the button live,
+ * so the press and the hint can never disagree about why it is refused.
+ */
+const upgradeShortfalls = (
+	view: RunView,
+	config: Config
+): readonly string[] => {
+	const level = config.level ?? 1;
+	const category = config.focusCategory;
+	const cost = upgradeStorageCost(level);
+	const required = upgradeCoverageRequired(level);
+	const held = category ? (view.coverageByCategory[category] ?? 0) : 0;
+
+	return [
+		...(view.storage >= cost
+			? []
+			: [`Costs ${cost} KB, you have ${view.storage} KB.`]),
+		...(category === undefined || held >= required
+			? []
+			: [
+					`Unlocks at ${required}% ${getCategoryMetadata(category).name} coverage, you have ${held}%.`,
+				]),
+	];
+};
+
+const upgradeHint = (view: RunView, config: Config): string => {
+	const nextVersion = (config.level ?? 1) + 1;
+	const preview = `v${nextVersion}: ${describeConfig({ ...config, level: nextVersion })}`;
+
+	return [preview, ...upgradeShortfalls(view, config)].join(" ");
+};
+
+const upgradeAction = (
+	view: RunView,
+	config: Config,
+	onUpgrade: (configId: string) => void
+) => {
+	const ready = upgradeShortfalls(view, config).length === 0;
+
+	return {
+		label: "Upgrade",
+		on: config.label,
+		cost: `${upgradeStorageCost(config.level ?? 1)} KB`,
+		hint: upgradeHint(view, config),
+		disabled: !ready,
+		// The legendary ring is the reward for having met both gates, so it is
+		// never worn by a button that would refuse the press.
+		emphasis: ready ? ("prismatic" as const) : ("quiet" as const),
+		onUse: () => onUpgrade(config.id),
+	};
+};
+
 const pipelineRows = (
 	view: RunView,
 	onUpgrade: (configId: string) => void,
 	onSell: (configId: string) => void
 ): readonly FoldItem[] => [
-	...view.configs.map((config) => ({
-		id: config.id,
-		content: (
-			<Entry
-				label={config.label}
-				rarity={rarityOf(config)}
-				mark={view.newConfigIds.includes(config.id) ? "warn" : "pass"}
-				notes={
-					<>
-						<Dot rarity={rarityOf(config)} />
-						{<Figure figure={headlineFigureOf(config)} />}
-					</>
-				}
-				actions={[
-					...(config.maxLevel !== undefined &&
-					(config.level ?? 1) < config.maxLevel
-						? [
-								{
-									label: "Upgrade",
-									on: config.label,
-									emphasis: "prismatic" as const,
-									onUse: () => onUpgrade(config.id),
-								},
-							]
-						: []),
-					...(view.atMinimumWidth
-						? []
-						: [
-								{
-									label: "Uninstall",
-									on: config.label,
-									icon: <Glyph name="uninstall" />,
-									cost: `+${sellRefundIn(view.configs, config)} KB`,
-									emphasis: "danger" as const,
-									onUse: () => onSell(config.id),
-								},
-							]),
-				]}
-				summary={summaryFor(config)}
-				explainer={config.description}
-			/>
-		),
-	})),
+	...view.configs.map((config) => {
+		const refundKb = sellRefundIn(view.configs, config);
+
+		return {
+			id: config.id,
+			content: (
+				<Entry
+					label={config.label}
+					rarity={rarityOf(config)}
+					mark={view.newConfigIds.includes(config.id) ? "warn" : "pass"}
+					notes={
+						<>
+							<RarityWord rarity={rarityOf(config)} />
+							<Figure figure={headlineFigureOf(config)} />
+							<Chip tone="celadon">worth {refundKb} KB</Chip>
+						</>
+					}
+					actions={[
+						...(isUpgradable(config)
+							? [upgradeAction(view, config, onUpgrade)]
+							: []),
+						...(view.atMinimumWidth
+							? []
+							: [
+									{
+										label: "Uninstall",
+										on: config.label,
+										icon: <Glyph name="uninstall" />,
+										hint: `Refunds ${refundKb} KB`,
+										emphasis: "danger" as const,
+										onUse: () => onSell(config.id),
+									},
+								]),
+					]}
+					summary={summaryFor(config)}
+					explainer={config.description}
+				/>
+			),
+		};
+	}),
 	...Array.from(
 		{ length: Math.max(0, view.slots - view.configs.length) },
 		(_, index) => ({
@@ -281,12 +337,6 @@ const offerCountFor = (view: RunView): string => {
 	return locked === 0 ? offers : `${offers} · ${locked} locked`;
 };
 
-const exitLockFor = (view: RunView): string | undefined => {
-	if (view.canStart) return undefined;
-	const needed = Math.min(view.slots, BASE_SLOTS);
-	return `Fill ${plural(needed, "slot")} to continue`;
-};
-
 export type ShopViewProps = {
 	view: RunView;
 	onDraft: (configId: string) => void;
@@ -334,10 +384,12 @@ export const ShopView = ({
 					used: view.storage,
 					cap: view.storageCap,
 				},
-				capNote: view.shopLocked
-					? "Read-only: this shop is shut for the coming gate."
-					: undefined,
 			}}
+			notice={
+				view.shopLocked
+					? `Shop closed. Read-only audits the build you already have, so nothing can be bought, sold or switched before gate ${nextGate}.`
+					: undefined
+			}
 			offers={[
 				...offerRows(view, onDraft, onLock),
 				...extendRow(view, onExtend),
@@ -401,7 +453,6 @@ export const ShopView = ({
 			pipeline={pipelineRows(view, onUpgrade, onSell)}
 			slots={`${view.configs.length} of ${view.slots} slots`}
 			onContinue={onContinue}
-			exitLock={exitLockFor(view)}
 		/>
 	);
 };

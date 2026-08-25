@@ -52,10 +52,10 @@ boundary, so this table is the map an architecture review reads first.
 | Swatch | `gate/domain` | `GateSwatch`, `SwatchTheme`, `swatchForGate` (`swatch.model.ts`); app theming via `src/ui/theme/swatchTheme.ts` |
 | Config role | `gate/domain` | `roleOf`, `roleRows` (`configRole.model.ts`); how a config reads on a gate report |
 | Gate screens | `gate/presentation` | `RewardScreen`, `StripScreen`, `GateRewardReport`, `GateStakeReceipt`, `RoleList`, `SwatchChips`, `GateSegmentBar` |
-| Config | `config/domain` | `Config`, `ConfigFamily`, `CheckKind`, `Rarity` (`config.model.ts`) |
+| Config | `config/domain` | `Config`, `ConfigFamily`, `Rarity` (`config.model.ts`) |
 | Config roster | `config/domain` | `CONFIG_ROSTER` (`configRoster.model.ts`); the content catalogue |
 | Effect | `config/domain` | `Effect`, `effectOf` (`effect.model.ts`); the benefit half of a config |
-| Check | `config/domain` | `CheckKind` (`config.model.ts`), `CheckStatus` / `checkState` (`effect.model.ts`); the requirement half |
+| Config status | `config/domain` | `ConfigStatus`, `SkipReason`, `configStatusFor` (`effect.model.ts`); online / skipped / offline on the poll on deck (ADR-040) |
 | Gate window | `config/domain` | `GateWindow`, `EMPTY_WINDOW` (`effect.model.ts`); the 5-answer tally a gate judges |
 | Stack | `config/domain` | `STARTER_STACKS`, `starterStackFor` (`stack.model.ts`); the staged opening loadouts |
 | Config visuals | `config/presentation` | `ConfigChip`, `ConfigActions`, `StackPicker`, `StackPreviewList` |

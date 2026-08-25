@@ -10,6 +10,7 @@ import {
 	pollDifficultyMultiplier,
 	storageCreditRate,
 	storagePlanLadder,
+	streakMultiplier,
 	GATE_COUNT,
 	GATE_REWARD_KB,
 	SLICE_WINDOW,
@@ -43,8 +44,30 @@ describe("the gate's per-window coverage demand (ADR-035)", () => {
 		);
 	});
 
-	it("keeps the wrong-answer bleed at a quarter of the base gain", () => {
-		expect(WRONG_COVERAGE_LOSS).toBe(0.25);
+	// Priced in answers, not points: a miss costs the answer you did not get plus
+	// half of one on top, so it is 1.5 answers at every gate and on every build.
+	it("prices a miss at one and a half answers", () => {
+		expect(WRONG_COVERAGE_LOSS).toBe(0.5);
+	});
+
+	// The streak survives a gate clear, so uncapped it reached ×7.5 on a flawless
+	// run — free, and larger than anything the shop sells. Both starting stacks
+	// then cleared all 13 gates without buying a single config.
+	it("stops the streak bonus compounding past ×2", () => {
+		expect(streakMultiplier(5)).toBe(1.5);
+		expect(streakMultiplier(10)).toBe(2);
+		expect(streakMultiplier(11)).toBe(2);
+		expect(streakMultiplier(65)).toBe(2);
+	});
+
+	// Capped, never reset: a player who never misses keeps the bonus for the whole
+	// run. Taking it back at a gate would punish the perfect play it rewards.
+	it("never takes the bonus back once it is earned", () => {
+		const steps = Array.from({ length: 40 }, (_, i) => streakMultiplier(i));
+
+		steps.forEach((step, index) => {
+			if (index > 0) expect(step).toBeGreaterThanOrEqual(steps[index - 1]);
+		});
 	});
 });
 

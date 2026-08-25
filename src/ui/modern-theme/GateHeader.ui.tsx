@@ -58,7 +58,7 @@ export const GateHeader = ({
 	<header className={HEADER}>
 		<div className={IDENTITY}>
 			<div className={NAME}>
-				<Swatch size="badge" className={BADGE} />
+				<Swatch size="badge" state="pending" className={BADGE} />
 				<div className={NAMING}>
 					<Text as="h2" size="title">
 						{title}

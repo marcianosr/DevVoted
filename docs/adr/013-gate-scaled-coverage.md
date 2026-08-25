@@ -28,13 +28,22 @@ Playtesting the ported engine surfaced two feel problems:
 > because a miss now also costs progress toward the gate's coverage demand.
 > The lockstep gate-scaling below stands.
 
-A miss bleeds `WRONG_COVERAGE_LOSS × rewardMultiplier × gateBaseMultiplier`. Reward and risk now grow in lockstep: a miss at gate 5 costs ×5 the base loss, exactly as a hit there pays ×5. This **reverses ADR-006 Decision 11's flat-loss rule**.
+A miss bleeds `WRONG_COVERAGE_LOSS × the build's per-correct coverage`. Reward and risk grow in lockstep: a miss costs a fixed fraction of what a hit pays, at every gate and on every build. This **reverses ADR-006 Decision 11's flat-loss rule**.
+
+> ⚠ Formula corrected 2026-08-24, intent unchanged. The rule read
+> `× rewardMultiplier ×  gateBaseMultiplier`, but `rewardMultiplier` is `1` on
+> all 30 configs — the earn rides `coverageMultiplier` and `coverageAdd`
+> instead. So the lockstep this decision claimed only ever held on the gate
+> axis: a ×3 build earned triple and bled the same, making a miss cost 1.06
+> answers instead of 1.25. Pricing the loss off `coveragePerCorrect` delivers
+> what the decision always said. `WRONG_COVERAGE_LOSS` also raised 0.25 → 0.5,
+> so a miss costs 1.5 answers.
 
 ### 3. The 0-floor resolves the death-spiral concern
 
 ADR-006 rejected loss-scaling as a death spiral. That concern is answered by the pre-existing floor: coverage per category (and therefore the total) is clamped at 0 (`Math.max(0, …)` in `answer()`). A growing penalty can drain what you have faster, but it can never push you negative or compound below zero — there is no runaway. The symmetry (gain and loss scale identically) is the point: risk stays proportional to reward at every depth, so a greedy deep-gate answer is a real gamble, not a formality.
 
-Config effects still amplify **gains only** (ADR-006 §11 clause 2 stands) — the gate factor is a raw-rules multiplier, not a config effect, and applies to the loss precisely because it is not a config.
+ADR-006 §11 clause 2 ("config effects amplify gains only") is **superseded** as of 2026-08-24: the loss is now quoted as a share of what the build earns, so config multipliers reach it by construction. That is the only way the lockstep can hold — a rule that scales the gain but not the loss makes accuracy matter less the stronger you get, which is what shipped for nine months under a formula that read an always-1 field.
 
 ## Consequences
 

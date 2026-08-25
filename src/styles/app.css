@@ -268,6 +268,15 @@
    value is nearest, so bg-theme/text-theme render everywhere. */
 :root {
 	--theme-color: var(--color-cerulean);
+	/*
+	 * How much of the theme colour's chroma survives into the ground a themed
+	 * screen sits on. A single factor cannot serve every hue: at 0.25 the high
+	 * chroma Kanto reds and blues wash the whole page, while the pale ones
+	 * (pallet, pewter, seafoam) would go grey if the factor dropped for all.
+	 * Overridden per theme below, keyed to the colour rather than the gate so
+	 * two gates sharing a colour cannot sit on different grounds.
+	 */
+	--theme-ground-chroma: 0.25;
 }
 
 /* Gate swatches, colored by their home Kanto location (gate/swatch.model.ts):
@@ -326,27 +335,34 @@
 }
 [data-gate-theme="cascade"] {
 	--theme-color: var(--color-cerulean);
+	--theme-ground-chroma: 0.12;
 }
 [data-gate-theme="thunder"] {
 	--theme-color: var(--color-vermillion);
+	--theme-ground-chroma: 0.12;
 }
 [data-gate-theme="rainbow"] {
 	--theme-color: var(--color-celadon);
+	--theme-ground-chroma: 0.18;
 }
 [data-gate-theme="soul"] {
 	--theme-color: var(--color-fuchsia);
+	--theme-ground-chroma: 0.18;
 }
 [data-gate-theme="marsh"] {
 	--theme-color: var(--color-saffron);
 }
 [data-gate-theme="volcano"] {
 	--theme-color: var(--color-cinnabar);
+	--theme-ground-chroma: 0.12;
 }
 [data-gate-theme="earth"] {
 	--theme-color: var(--color-viridian);
+	--theme-ground-chroma: 0.18;
 }
 [data-gate-theme="lavender"] {
 	--theme-color: var(--color-lavender);
+	--theme-ground-chroma: 0.18;
 }
 [data-gate-theme="seafoam"] {
 	--theme-color: var(--color-seafoam);
@@ -356,6 +372,7 @@
 }
 [data-gate-theme="champion"] {
 	--theme-color: var(--color-fuchsia);
+	--theme-ground-chroma: 0.18;
 }
 
 /* Semantic screen mood — pass/fail feedback, not gate identity. Declared after
@@ -379,7 +396,9 @@ body:has(dialog:modal) {
 	overflow: hidden;
 }
 body[data-gate-theme] {
-	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
+	background-color: oklch(
+		from var(--theme-color) 0.16 calc(c * var(--theme-ground-chroma)) h
+	);
 }
 /* Mood screens glow softer than gate screens: chroma crushed further and
    lightness pulled closer to black. Stays after the gate rule so mood wins. */
@@ -403,7 +422,15 @@ body[data-screen-theme] {
    body[data-gate-theme], as a utility, so a screen can carry it without owning
    <body> (Storybook has no themed body to inherit from). */
 @utility bg-theme-faint {
-	background-color: oklch(from var(--theme-color) 0.16 calc(c * 0.25) h);
+	background-color: oklch(
+		from var(--theme-color) 0.16 calc(c * var(--theme-ground-chroma)) h
+	);
+}
+/* One rung above bg-theme-soft, for the hover of a surface that already wears
+   the soft fill at rest — the primary action. Same ladder: faint, soft, strong,
+   solid. */
+@utility bg-theme-strong {
+	background-color: oklch(from var(--theme-color) l c h / 0.28);
 }
 /* Two layers because one blur alone reads as a soft edge rather than a glow: a
    tight opaque-ish ring holds the shape, the wide bloom carries the light. */
@@ -674,6 +701,23 @@ meter::-webkit-meter-optimum-value {
 	.legendary-shimmer {
 		animation: none;
 	}
+}
+
+/* The Kanto gradient clipped to the glyphs — a legendary's name has no single
+   colour to take, and a flat fallback would rank it below rare. Static, like
+   .legendary-ring. */
+.text-legendary {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-saffron),
+		var(--color-fuchsia),
+		var(--color-lavender),
+		var(--color-cerulean),
+		var(--color-celadon)
+	);
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
 }
 
 /* Flowing celadon→viridian gradient clipped to the text glyphs. */

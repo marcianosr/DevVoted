@@ -77,7 +77,7 @@ describe("PrepView", () => {
 	});
 
 	// The plan bills on every attempt; a config subscription waits for a clear.
-	it("separates the bill that lands pass or fail from the one that waits", () => {
+	it("qualifies the bill that waits for the clear, and only that one", () => {
 		render_({
 			view: createMockRunView({
 				...view,
@@ -106,8 +106,8 @@ describe("PrepView", () => {
 			}),
 		});
 
-		expect(screen.getByText("pass or fail")).toBeInTheDocument();
 		expect(screen.getByText("on clear")).toBeInTheDocument();
+		expect(screen.queryByText("pass or fail")).not.toBeInTheDocument();
 		expect(screen.getByText("−8 KB on a miss")).toBeInTheDocument();
 	});
 
@@ -157,7 +157,7 @@ describe("PrepView", () => {
 			}),
 		});
 
-		const fold = screen.getByText("Audit").closest("details");
+		const fold = screen.getByText("Audits").closest("details");
 		if (!fold) throw new Error("No Audit fold rendered");
 
 		expect(within(fold).getByText("Timeout")).toHaveClass("line-through");
@@ -213,7 +213,7 @@ describe("PrepView", () => {
 	it("badges each installed config's headline figure", () => {
 		render_();
 
-		// .js and .ts are both focus configs at level 1.
+		// .js and .ts are both focus configs at v1.
 		expect(screen.getAllByText("×1.25")).toHaveLength(2);
 	});
 });

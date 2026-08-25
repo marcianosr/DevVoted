@@ -40,8 +40,6 @@ const ACTIONS = "flex items-center gap-2";
 
 type EntryBase = {
 	label: ReactNode;
-	/** Tints the whole row with the config's rarity. The Dot states it exactly;
-	 * this is what makes a build's spread readable without counting dots. */
 	rarity?: Rarity;
 	notes?: ReactNode;
 	summary?: ReactNode;
@@ -50,10 +48,12 @@ type EntryBase = {
 	dimmed?: boolean;
 };
 
+/** A row may lead with a verdict, with something of its own, or with nothing:
+ * the rails that only list what the player owns have no status to claim. */
 export type EntryProps = EntryBase &
 	(
 		| { mark: MarkVariant; leading?: never }
-		| { leading: ReactNode; mark?: never }
+		| { leading?: ReactNode; mark?: never }
 	) &
 	(
 		| { value?: ReactNode; actions?: never }

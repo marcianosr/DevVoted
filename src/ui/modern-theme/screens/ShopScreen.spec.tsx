@@ -36,7 +36,7 @@ describe("ShopScreen", () => {
 		expect(
 			screen.getByRole("heading", { name: "Lavender shop" })
 		).toBeInTheDocument();
-		expect(screen.getByText("Draft")).toBeInTheDocument();
+		expect(screen.getByText("New configs")).toBeInTheDocument();
 		expect(screen.getByText("Your pipeline")).toBeInTheDocument();
 	});
 
@@ -51,7 +51,9 @@ describe("ShopScreen", () => {
 		const { container } = render(<ShopScreen {...props} />);
 
 		const [first] = Array.from(container.querySelectorAll("section"));
-		expect(within(first as HTMLElement).getByText("Draft")).toBeInTheDocument();
+		expect(
+			within(first as HTMLElement).getByText("New configs")
+		).toBeInTheDocument();
 	});
 
 	it("divides the columns at lg and stacks them below it", () => {
@@ -88,7 +90,7 @@ describe("ShopScreen", () => {
 			/>
 		);
 
-		const draft = screen.getByText("Draft");
+		const draft = screen.getByText("New configs");
 		const plan = screen.getByText("Storage plan");
 		const tag = screen.getByRole("button", { name: "git tag" });
 
@@ -100,12 +102,12 @@ describe("ShopScreen", () => {
 		);
 	});
 
-	// The rebuild press acts on the draft, so it sits under the draft's own
-	// header rather than in the header's trailing corner beside the count.
-	it("puts the rebuild press beside what it will cost next", () => {
+	// The offers are what you read first; the reroll is what you do about them.
+	it("puts the rebuild press below the shelf it replaces, beside its next price", () => {
 		render(
 			<ShopScreen
 				{...props}
+				offers={[{ id: "stylelint", content: <span>Stylelint</span> }]}
 				draftAction={<button>rebuild</button>}
 				draftNote={<span>next 8 KB</span>}
 			/>
@@ -113,6 +115,9 @@ describe("ShopScreen", () => {
 
 		const rebuild = screen.getByRole("button", { name: "rebuild" });
 		expect(rebuild.parentElement).toHaveTextContent("next 8 KB");
+		expect(screen.getByText("Stylelint").compareDocumentPosition(rebuild)).toBe(
+			Node.DOCUMENT_POSITION_FOLLOWING
+		);
 	});
 
 	it("carries the shelf's own rebuild beside the offer count", () => {
@@ -141,7 +146,7 @@ describe("ShopScreen", () => {
 		);
 
 		expect(screen.getByText("Storage plan")).toBeInTheDocument();
-		expect(screen.getByText("next gate bills")).toBeInTheDocument();
+		expect(screen.getByText("Cost per gate")).toBeInTheDocument();
 	});
 
 	it("leaves the ladder out entirely when no plans are given", () => {
@@ -166,6 +171,25 @@ describe("ShopScreen", () => {
 		await userEvent.click(screen.getByRole("button", { name: "Continue →" }));
 
 		expect(onContinue).toHaveBeenCalledOnce();
+	});
+
+	// One band across the top instead of a refusal on every press: a shut shop
+	// refuses all seven, and seven tooltips would each state the same rule.
+	it("states across the whole screen why nothing on it can be acted on", () => {
+		render(
+			<ShopScreen
+				{...props}
+				notice="Shop closed. Read-only audits the build you already have."
+			/>
+		);
+
+		expect(screen.getByText(/^Shop closed\./)).toBeInTheDocument();
+	});
+
+	it("says nothing at a shop that can be shopped", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(screen.queryByText(/Shop closed/)).not.toBeInTheDocument();
 	});
 
 	// ADR-027 turns an under-width build away at the door, and the door has to

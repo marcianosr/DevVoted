@@ -19,21 +19,15 @@ import {
 import { toAuditId } from "~/ui/modern-theme/audits";
 import { Figure } from "~/ui/modern-theme/Figure.ui";
 
-const rarityWord = (config: Config) => {
-	const rarity = rarityOf(config);
-	return `${rarity.charAt(0).toUpperCase()}${rarity.slice(1)}`;
-};
-
 const configRows = (configs: readonly Config[]): readonly PrepConfig[] =>
 	configs.map((config) => ({
 		id: config.id,
 		label: config.label,
 		rarity: rarityOf(config),
 		note: <Figure figure={headlineFigureOf(config)} />,
-		summary:
-			config.level === undefined
-				? rarityWord(config)
-				: `${rarityWord(config)} · level ${config.level}`,
+		// The rarity is stated in the row's own colours beside the Dot, so
+		// repeating it here would only bury the version.
+		summary: config.level === undefined ? undefined : `v${config.level}`,
 		explainer: config.description,
 	}));
 
@@ -117,6 +111,7 @@ export const PrepView = ({
 			coverageHeld={view.gateStake.coverageHeld}
 			removeOnMiss={view.gateStake.stripsOnFailure}
 			missIsFatal={view.gateStake.missIsFatal}
+			coveragePerWrong={view.gateStake.perAnswer.coveragePerWrong}
 			configs={configRows(view.configs)}
 			slots={slotRows(view)}
 			audits={auditRows(view)}

@@ -14,7 +14,7 @@ describe("Tooltip", () => {
 		expect(screen.getAllByRole("button")).toHaveLength(1);
 	});
 
-	it("keeps the panel hidden until the trigger is hovered or focused", () => {
+	it("keeps the panel hidden until the trigger is hovered or keyboard-focused", () => {
 		render(
 			<Tooltip hint="This didn't run">
 				<span />
@@ -22,11 +22,12 @@ describe("Tooltip", () => {
 		);
 
 		// jsdom loads no stylesheet, so the reveal is asserted on the classes that
-		// carry it rather than by hovering.
+		// carry it rather than by hovering. focus-visible rather than focus-within:
+		// a mouse click leaves focus on the trigger, and the panel used to stay up.
 		expect(screen.getByText("This didn't run").parentElement).toHaveClass(
 			"hidden",
 			"group-hover/tip:block",
-			"group-focus-within/tip:block"
+			"group-has-[:focus-visible]/tip:block"
 		);
 	});
 

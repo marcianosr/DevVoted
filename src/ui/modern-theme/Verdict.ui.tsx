@@ -12,12 +12,11 @@ import { Text } from "./Text.ui";
 import type { CrumbVerdict } from "./Trail.ui";
 import { optionLetter, plural } from "./format";
 
-const VERDICT = "flex flex-col gap-3 px-5 py-4";
-
-const HEAD = "flex items-baseline gap-3";
+const HEAD = `${DISCLOSURE_SUMMARY} flex items-baseline gap-3 px-5 py-4 hover:bg-zinc-100/5`;
 const ASK = "min-w-0 flex-1";
 
-const DETAIL = "grid grid-cols-[7rem_1fr] items-center gap-x-3 gap-y-2";
+const DETAIL =
+	"grid grid-cols-[7rem_1fr] items-center gap-x-3 gap-y-2 px-5 pb-4";
 const FULL = "col-span-2";
 const SECOND = "col-start-2";
 const PICKS = "flex flex-wrap items-center gap-2";
@@ -130,8 +129,12 @@ export const Verdict = ({
 	const settled = outcome === "correct";
 
 	return (
-		<div className={VERDICT}>
-			<div className={HEAD}>
+		// Every poll opens, including the ones you passed: the explanation is the
+		// reason to come here, and a right answer for the wrong reason still wants
+		// reading. Only the default differs — a miss is what you came back for.
+		<Disclosure scope="row" defaultOpen={!settled}>
+			<summary className={HEAD}>
+				<Caret scope="row" />
 				<Chip tone={badge.tone}>{badge.label}</Chip>
 				<Text size="body" tone={settled ? "muted" : "default"} className={ASK}>
 					{question}
@@ -142,93 +145,90 @@ export const Verdict = ({
 					</Text>
 				) : null}
 				<Delta coverage={score} />
-			</div>
+			</summary>
 
-			{/* A poll you got right has nothing to review. */}
-			{settled ? null : (
-				<div className={DETAIL}>
-					{code?.length ? (
-						<div className={FULL}>
-							<Code lines={code} />
-						</div>
-					) : null}
+			<div className={DETAIL}>
+				{code?.length ? (
+					<div className={FULL}>
+						<Code lines={code} />
+					</div>
+				) : null}
 
-					<Text size="meta" tone="muted">
-						Expected
-					</Text>
-					<span className={PICKS}>
-						{expected.map((option) => (
+				<Text size="meta" tone="muted">
+					Expected
+				</Text>
+				<span className={PICKS}>
+					{expected.map((option) => (
+						<Answer
+							key={option.id}
+							letter={option.letter}
+							label={option.label}
+							tone="celadon"
+							shape={shape}
+						/>
+					))}
+				</span>
+
+				<Text size="meta" tone="muted">
+					Received
+				</Text>
+				<span className={PICKS}>
+					{received.length ? (
+						received.map((option) => (
 							<Answer
 								key={option.id}
 								letter={option.letter}
 								label={option.label}
-								tone="celadon"
+								tone={toneFor(option)}
 								shape={shape}
 							/>
-						))}
-					</span>
-
-					<Text size="meta" tone="muted">
-						Received
-					</Text>
-					<span className={PICKS}>
-						{received.length ? (
-							received.map((option) => (
-								<Answer
-									key={option.id}
-									letter={option.letter}
-									label={option.label}
-									tone={toneFor(option)}
-									shape={shape}
-								/>
-							))
-						) : (
-							<Text size="body" tone="muted">
-								— nothing picked
-							</Text>
-						)}
-					</span>
-
-					{scored.length || others.length ? (
-						<div className={clsx(SECOND, PICKS)}>
-							{multi
-								? scored.map((part) => (
-										<Text key={part.text} size="meta" tone={part.tone}>
-											{part.text}
-										</Text>
-									))
-								: null}
-							{others.length ? (
-								<Disclosure>
-									<summary className={MORE_SUMMARY}>
-										<Caret />
-										<Text size="meta" tone="muted">
-											{plural(others.length, "other option")}
-										</Text>
-									</summary>
-									<ul className={MORE_LIST}>
-										{others.map((option) => (
-											<li key={option.id}>
-												<Answer
-													letter={option.letter}
-													label={option.label}
-													shape={shape}
-												/>
-											</li>
-										))}
-									</ul>
-								</Disclosure>
-							) : null}
-						</div>
-					) : null}
-
-					{explainer ? (
-						<Text as="p" size="meta" className={FULL}>
-							{explainer}
+						))
+					) : (
+						<Text size="body" tone="muted">
+							— nothing picked
 						</Text>
-					) : null}
-				</div>
-			)}
-		</div>
+					)}
+				</span>
+
+				{scored.length || others.length ? (
+					<div className={clsx(SECOND, PICKS)}>
+						{multi
+							? scored.map((part) => (
+									<Text key={part.text} size="meta" tone={part.tone}>
+										{part.text}
+									</Text>
+								))
+							: null}
+						{others.length ? (
+							<Disclosure>
+								<summary className={MORE_SUMMARY}>
+									<Caret />
+									<Text size="meta" tone="muted">
+										{plural(others.length, "other option")}
+									</Text>
+								</summary>
+								<ul className={MORE_LIST}>
+									{others.map((option) => (
+										<li key={option.id}>
+											<Answer
+												letter={option.letter}
+												label={option.label}
+												shape={shape}
+											/>
+										</li>
+									))}
+								</ul>
+							</Disclosure>
+						) : null}
+					</div>
+				) : null}
+
+				{explainer ? (
+					<Text as="p" size="meta" className={FULL}>
+						{explainer}
+					</Text>
+				) : null}
+			</div>
+		</Disclosure>
 	);
 };

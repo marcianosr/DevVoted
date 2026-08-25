@@ -653,7 +653,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			)}
 
 			{state.status === "answering" && (
-				<div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
+				<div className="mx-auto mt-4 flex w-full max-w-6xl shrink-0 flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
 					<span className="font-semibold uppercase tracking-wide">Dev rig</span>
 					<button
 						type="button"
@@ -687,7 +687,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			)}
 
 			{state.log.length > 0 && (
-				<div className="mx-auto mt-4 max-w-5xl rounded-lg bg-zinc-900 p-4 text-xs text-pewter">
+				<div className="mx-auto mt-4 w-full max-w-6xl shrink-0 rounded-lg bg-zinc-900 p-4 text-xs text-pewter">
 					{state.log.slice(-4).map((line, index) => (
 						<p key={index}>▸ {line}</p>
 					))}
@@ -699,8 +699,12 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 function RouteComponent() {
 	const [seed, setSeed] = useState(0);
+	// The rig and the log are page furniture stacked under the screen, so the page
+	// owns the viewport height and the screen takes what is left of it
+	// (--screen-floor, Screen.ui) — otherwise a screen shorter than the viewport
+	// still measures a full one and pushes the rig below the fold.
 	return (
-		<div className="min-h-screen text-white">
+		<div className="flex flex-1 flex-col text-white [--screen-floor:0px]">
 			<RunGame key={seed} onRestart={() => setSeed((current) => current + 1)} />
 		</div>
 	);

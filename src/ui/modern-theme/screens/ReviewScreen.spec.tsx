@@ -52,20 +52,28 @@ describe("ReviewScreen", () => {
 	});
 
 	it("lists every poll of the gate, passes included", () => {
-		render(<ReviewScreen {...props} />);
+		const { container } = render(<ReviewScreen {...props} />);
+		// The rows' own option folds are lists too, so only the review list's direct
+		// children answer "how many polls".
+		const list = container.querySelector("ul");
 
-		expect(screen.getAllByRole("listitem")).toHaveLength(polls.length);
+		expect(list?.children).toHaveLength(polls.length);
 		expect(screen.getByText("PASS")).toBeInTheDocument();
 		expect(screen.getByText("FAIL")).toBeInTheDocument();
 	});
 
-	it("explains only the poll that was missed", () => {
-		render(<ReviewScreen {...props} />);
+	// The detail is there for every poll — a lucky guess is worth reading back —
+	// but only a miss is worth pushing in front of the player unasked.
+	it("opens the missed poll and leaves the passed one folded", () => {
+		const { container } = render(<ReviewScreen {...props} />);
+		const [passed, missed] = container.querySelectorAll("li > details");
 
+		expect(passed).not.toHaveAttribute("open");
+		expect(missed).toHaveAttribute("open");
 		expect(
 			screen.getByText("zip() pairs items from several iterables into tuples.")
 		).toBeInTheDocument();
-		expect(screen.getAllByText("Expected")).toHaveLength(1);
+		expect(screen.getAllByText("Expected")).toHaveLength(polls.length);
 	});
 
 	it("offers no way back until one is wired", () => {

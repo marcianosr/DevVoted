@@ -65,8 +65,8 @@ export const RemovalScreen = ({
 					<Text as="h2" size="title">
 						{gateName} gate · remove {plural(required, "config")}
 					</Text>
-					<Text as="p" size="meta" tone="muted">
-						Retry this gate
+					<Text as="p" size="meta" tone="cinnabar">
+						Uh-oh, your build didn&apos;t meet the coverage goal for this gate!
 					</Text>
 				</div>
 			</header>

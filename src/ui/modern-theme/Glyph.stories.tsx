@@ -32,6 +32,9 @@ const AUDITS: readonly GlyphName[] = [
 	"strip",
 ];
 
+/** Screen furniture rather than a move you make in the run. */
+const CONTROLS: readonly GlyphName[] = ["fold"];
+
 const Sheet = ({ names }: { names: readonly GlyphName[] }) => (
 	<div className="flex flex-wrap gap-4 text-zinc-300">
 		{names.map((name) => (
@@ -46,3 +49,5 @@ const Sheet = ({ names }: { names: readonly GlyphName[] }) => (
 export const Shop: Story = { render: () => <Sheet names={SHOP} /> };
 
 export const Audits: Story = { render: () => <Sheet names={AUDITS} /> };
+
+export const Controls: Story = { render: () => <Sheet names={CONTROLS} /> };

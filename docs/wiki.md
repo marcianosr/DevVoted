@@ -138,8 +138,8 @@ in. **The count is the escalation**: gates 0 to 2 are clean, one audit runs from
 
 The four offline audits differ only in which config they take and for how long. Three
 roll at random (seeded, so a reload never re-rolls one); Breaking Change aims at whatever
-you levelled furthest. Whatever is down is marked on the pipeline rail while you
-answer (dimmed, badged `offline`, effect struck through) and nowhere else, since shop
+you levelled furthest. Whatever is down reads `offline` on the pipeline rail while you
+answer, struck through and blamed on the audit by name, and nowhere else, since shop
 and prep sit before the gate and naming a casualty early would be a spoiler.
 
 Schedule in [2.8](#28-what-unlocks-when), roster in `audit.model.ts`, reasoning in
@@ -183,7 +183,7 @@ A correct answer earns `share × (1 + adds) × mults × streak × gate × diffic
 | `share` | The poll's coverage weight. 1 for a single-answer poll answered correctly. |
 | `adds` | Flat additions (Code Coverage: +0.5% per correct). |
 | `mults` | Product of config multipliers (AGENTS.md ×2, Intellisense ×1.5, Focus ×1.25 at L1). |
-| `streak` | `1 + 0.1 × streak` of consecutive correct answers. |
+| `streak` | `1 + 0.1 × streak` of consecutive correct answers, capped at ×2 (10 steps). The streak survives a gate clear, so uncapped it reached ×7.5 on a flawless run and both starting stacks won all 13 gates without buying a config. Capped, never reset: perfect play keeps the bonus, it just stops compounding. |
 | `gate` | `gatesCleared + 1`. Gate 1 pays ×1, gate 5 pays ×5. |
 | `difficulty` | `1 + 0.1 × (options − 3)`, plus `0.5` if multiple-choice. Never below ×1. |
 
@@ -191,8 +191,11 @@ A correct answer earns `share × (1 + adds) × mults × streak × gate × diffic
 0..1, so shotgunning every option earns nothing. Only coverage reads this share;
 streak and storage stay binary on the exact-set rule.
 
-**A wrong answer bleeds** `0.25 × build multiplier × gate multiplier` from the poll's
-category, the gate meter and the run total alike, each floored at 0.
+**A wrong answer bleeds** half of what a correct one pays on the same build
+(`0.5 × per-correct coverage`), from the poll's category, the gate meter and the run
+total alike, each floored at 0. Priced off the earn rather than off the gate alone, so
+a miss costs 1.5 answers at every gate and on every build; the old formula read a
+multiplier field that is 1 on every config, which let stacked builds shrug off a miss.
 
 Example, gate 2, a 5-option single-answer CSS poll with `.css` installed and one
 correct answer already banked: `1.0 × 1.25 mults × 1.1 streak × 2 gate × 1.2
@@ -732,7 +735,11 @@ The game leans hard into its CI metaphor.
   standing ("clear gate 7 to earn it"). It carries no coverage; the total is the gate's
   own stake, on the Build Summary's "To pass" line.
 - **Pipeline rail**: configs hang off a rail on every pipeline surface, carrying each
-  config's paid actions and its `offline` badge during an audit. The next slot closes
+  config's paid actions and, while you answer, its standing on the poll on deck: a
+  filled dot for `online`, a hollow one for `skipped` (installed, doing nothing here,
+  with the reason beside it), a red one for `offline`. Counted in the fold's header
+  ("3 online · 2 skipped · 1 offline"). Shop and prep list the same configs with no dot,
+  since a status needs a poll to be true of. The next slot closes
   the list as a dashed row numbered in the gutter ("Opens when Gate 2 clears"), replaced
   by a green "Unlocked Nth slot" acknowledgment in the shop, retired at the slot cap.
   There is no unlock button anywhere.
@@ -809,8 +816,8 @@ applies. `rules.model.ts` holds most of it.
 | Constant | Value |
 | --- | --- |
 | Gate multiplier | `gatesCleared + 1` (×1 to ×12), frozen while a gate is redone |
-| `WRONG_COVERAGE_LOSS` | 0.25, floored at 0 on every ledger |
-| `STREAK_COVERAGE_BONUS` | 0.1 per consecutive correct answer |
+| `WRONG_COVERAGE_LOSS` | 0.5 × the build's per-correct coverage, floored at 0 on every ledger |
+| `STREAK_COVERAGE_BONUS` | 0.1 per consecutive correct answer, capped at 10 steps (×2) |
 | Difficulty bonus | +0.1 per option beyond 3, +0.5 multi, never below ×1 |
 | Focus payout / upgrade gate | `1 + 0.25 × level` / `5% × level` career coverage |
 

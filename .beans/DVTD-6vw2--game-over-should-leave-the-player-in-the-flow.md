@@ -3,13 +3,27 @@
 title: Game over should leave the player in the flow
 status: draft
 type: feature
+priority: normal
 created_at: 2026-08-24T12:48:34Z
-updated_at: 2026-08-24T12:48:34Z
+updated_at: 2026-08-25T11:45:24Z
 parent: DVTD-kulw
 ---
 
 A dead run currently ends on a screen with one way out. Game over should hand the
 player their next thing to do, not a summary and a door.
+
+## Decided (2026-08-25, Marciano)
+
+- The screen gets a **redesign**, not just an extra exit.
+- **Game over routes to the community page.** That is the answer to "what next" for a
+  finished run, so the options below collapse to one primary action plus whatever else
+  survives the redesign.
+- The start screen needs its own community entry point too, tracked separately.
+
+Scope note: `src/ui/modern-theme/screens/` has Start, Poll, Prep, Shop, Review, Reward,
+Removal and Dex, and **no run-over screen**. The end of the run is the one surface the
+reskin never reached, which is part of why it reads as an afterthought. The redesign is
+that missing screen (see DVTD-9dn0, wiring modern-theme screens into the run).
 
 ## Where it stands today
 
@@ -62,7 +76,9 @@ Not mutually exclusive; the decision is which one is the primary action.
 
 ## Todo
 
-- [ ] Pick the primary next action for a dead run, and for a won run (they may differ)
+- [x] Pick the primary next action: the community page
+- [ ] Build the missing modern-theme run-over screen as part of the redesign
+- [ ] Decide whether a won run exits the same way a dead one does
 - [ ] Define the exhausted-window variant so no player ever lands on a raw error string
 - [ ] Decide whether `routesForStatus` should allow more than one route for a finished run
 - [ ] Amend ADR-026 Decision 3 to cover run end, or write the sibling decision

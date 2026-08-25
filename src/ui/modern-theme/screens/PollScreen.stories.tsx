@@ -8,6 +8,7 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 
 import { Token } from "../Code.ui";
+import { Audits } from "../Audits.ui";
 import { Coverage } from "../Coverage.ui";
 import { Delta } from "../Delta.ui";
 import { Entry } from "../Entry.ui";
@@ -15,6 +16,7 @@ import { Family, type ConfigFamily } from "../Family.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
 import type { MarkVerdict } from "../Mark.ui";
 
+import { Stake } from "../Stake.ui";
 import { Text } from "../Text.ui";
 import type { ModernTone } from "../tones";
 import {
@@ -186,19 +188,16 @@ const rail = (
 			}
 			items={pipeline}
 		/>
-		<Fold
-			title="Stake"
-			value={
-				<Text size="meta" tone="cinnabar">
-					2 left
-				</Text>
-			}
-			defaultOpen={false}
-		>
-			<Text size="meta" tone="muted">
-				A miss peels one config and re-runs this gate.
-			</Text>
-		</Fold>
+		<Audits
+			audits={[
+				{
+					id: "dependency-outage",
+					description: ".ts is offline for this gate",
+				},
+			]}
+			defaultOpen
+		/>
+		<Stake removeOnMiss={1} coveragePerWrong={-0.3} />
 	</>
 );
 
@@ -256,8 +255,12 @@ const base: Omit<PollScreenProps, "options"> = {
 	rail,
 };
 
-const InteractivePoll = (overrides: Partial<PollScreenProps>) => {
+const InteractivePoll = ({
+	railStartsOpen = true,
+	...overrides
+}: Partial<PollScreenProps> & { railStartsOpen?: boolean }) => {
 	const [picked, setPicked] = useState<string | null>(null);
+	const [railOpen, setRailOpen] = useState(railStartsOpen);
 
 	const options: PollOption[] = answers.map((answer) => ({
 		id: answer.id,
@@ -273,6 +276,8 @@ const InteractivePoll = (overrides: Partial<PollScreenProps>) => {
 		<PollScreen
 			{...base}
 			options={options}
+			railOpen={railOpen}
+			onToggleRail={() => setRailOpen((open) => !open)}
 			onSubmit={() => {}}
 			submitLock={picked ? undefined : "Pick an answer"}
 			{...overrides}
@@ -327,4 +332,10 @@ export const WithoutCode: Story = {
 
 export const WithoutRail: Story = {
 	render: () => <InteractivePoll rail={undefined} />,
+};
+
+/** The rail folded away: the run's own figures are worth a glance between polls,
+ * not a column beside every question. */
+export const RailFolded: Story = {
+	render: () => <InteractivePoll railStartsOpen={false} />,
 };

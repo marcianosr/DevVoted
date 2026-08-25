@@ -28,12 +28,23 @@ const TONE_FILL = {
 	muted: "bg-zinc-700",
 } satisfies Record<DotTone, string>;
 
+const TONE_RING = {
+	theme: "border border-theme",
+	celadon: "border border-celadon",
+	saffron: "border border-saffron",
+	cinnabar: "border border-cinnabar",
+	muted: "border border-zinc-600",
+} satisfies Record<DotTone, string>;
+
 export type DotProps = { shape?: DotShape } & (
-	{ rarity: Rarity; tone?: never } | { tone: DotTone; rarity?: never }
+	| { rarity: Rarity; tone?: never; hollow?: never }
+	| { tone: DotTone; rarity?: never; hollow?: boolean }
 );
 
-const fill = (props: DotProps) =>
-	props.rarity ? RARITY_FILL[props.rarity] : TONE_FILL[props.tone];
+const fill = (props: DotProps) => {
+	if (props.rarity) return RARITY_FILL[props.rarity];
+	return props.hollow ? TONE_RING[props.tone] : TONE_FILL[props.tone];
+};
 
 // Props stay whole rather than destructured: a rest spread off a discriminated
 // union drops the discriminant, and `fill` needs it.

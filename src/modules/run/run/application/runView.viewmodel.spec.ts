@@ -336,10 +336,10 @@ describe("latestAnswerScore", () => {
 		});
 		expect(latestAnswerScore(toRunView(state))).toEqual({
 			isCorrect: false,
-			baseCoverage: -0.3,
+			baseCoverage: -0.5,
 			streakBonus: 0,
 			configBonuses: [],
-			earnedCoverage: -0.3,
+			earnedCoverage: -0.5,
 		});
 	});
 

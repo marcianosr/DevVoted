@@ -3,20 +3,24 @@ import { clsx } from "clsx";
 import { Text } from "./Text.ui";
 import { Tooltip } from "./Tooltip.ui";
 
+// pl clears the clip-path nose: shrink one and the other follows, or the figure
+// sits on the point.
 const TAG =
-	"inline-flex shrink-0 cursor-pointer items-center gap-1.5 py-1.5 pr-3 pl-5 [clip-path:polygon(0_50%,0.875rem_0,100%_0,100%_100%,0.875rem_100%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean disabled:cursor-not-allowed disabled:opacity-50";
+	"inline-flex shrink-0 cursor-pointer items-center gap-1 py-1 pr-2.5 pl-4 [clip-path:polygon(0_50%,0.625rem_0,100%_0,100%_100%,0.625rem_100%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean disabled:cursor-not-allowed disabled:opacity-50";
 
 const HOLE = "size-1 shrink-0 rounded-full bg-current opacity-60";
 
-export type PriceTagState = "buyable" | "ready" | "owned" | "unaffordable";
+export type PriceTagState =
+	"buyable" | "ready" | "owned" | "unaffordable" | "unavailable";
 
 const READY = "group-open/entry:bg-celadon group-open/entry:text-black";
 
 const STATE = {
-	buyable: `bg-surface-raised text-zinc-100 ${READY}`,
+	buyable: `bg-celadon/15 text-celadon ${READY}`,
 	ready: "bg-surface-raised text-zinc-100",
 	owned: "bg-surface-raised text-zinc-600 line-through",
-	unaffordable: "bg-surface-raised text-cinnabar",
+	unaffordable: "bg-cinnabar/15 text-cinnabar",
+	unavailable: "bg-zinc-100/10 text-zinc-500",
 } satisfies Record<PriceTagState, string>;
 
 export type PriceTagProps = {
@@ -24,13 +28,17 @@ export type PriceTagProps = {
 	on: string;
 	label?: string;
 	state?: PriceTagState;
-	/** Why the tag refuses — the price alone cannot say whether it is the money
-	 * or the pipeline that is short. */
 	hint?: string;
 	onUse: () => void;
 };
 
 const priceOf = (kb: number) => (kb === 0 ? "free" : `${kb} KB`);
+
+const REFUSED: readonly PriceTagState[] = [
+	"owned",
+	"unaffordable",
+	"unavailable",
+];
 
 export const PriceTag = ({
 	kb,
@@ -46,9 +54,9 @@ export const PriceTag = ({
 	const tag = (
 		<button
 			type="button"
-			disabled={state === "owned" || state === "unaffordable"}
+			disabled={REFUSED.includes(state)}
 			aria-label={
-				state === "owned" || state === "unaffordable"
+				REFUSED.includes(state)
 					? [`${on} ${priceOf(kb)}`, hint].filter(Boolean).join(", ")
 					: `${label} ${on} for ${priceOf(kb)}`
 			}

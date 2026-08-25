@@ -51,6 +51,7 @@ const base: PrepScreenProps = {
 	coverageDemand: 60,
 	coverageHeld: 0,
 	removeOnMiss: 2,
+	coveragePerWrong: -1.3,
 	missIsFatal: false,
 	configs,
 	slots: [{ id: "slot-4", gate: 6 }],

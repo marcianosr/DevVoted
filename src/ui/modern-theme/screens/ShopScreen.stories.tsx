@@ -86,7 +86,7 @@ const installed = [
 		needs: "needs 5% Vue",
 		summary: (
 			<>
-				Common · level 1 ·{" "}
+				Common · v1 ·{" "}
 				<Text size="xxs" tone="saffron">
 					L2 needs 5% Vue coverage, you have 3.2%
 				</Text>
@@ -299,6 +299,15 @@ export const Broke: Story = {
 				storage: { plan: "Free tier", used: 512, cap: 512 },
 			}}
 		/>
+	),
+};
+
+/** ADR-038: Read-only shuts the till for the coming gate. The shelves stay
+ * legible on purpose — what you cannot buy today is how the gate after this one
+ * gets planned — so the band is the only thing saying the presses are dead. */
+export const ShutByReadOnly: Story = {
+	render: () => (
+		<Shelf notice="Shop closed. Read-only audits the build you already have, so nothing can be bought, sold or switched before gate 5." />
 	),
 };
 

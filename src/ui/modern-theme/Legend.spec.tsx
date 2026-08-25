@@ -19,6 +19,21 @@ describe("Legend", () => {
 		).toEqual(["common", "uncommon", "rare", "legendary"]);
 	});
 
+	it("sets each tier's name in that tier's own colour", () => {
+		render(<Legend items={RARITY_LEGEND} />);
+
+		expect(screen.getByText("common")).toHaveClass("text-celadon");
+		expect(screen.getByText("uncommon")).toHaveClass("text-cerulean");
+		expect(screen.getByText("rare")).toHaveClass("text-cinnabar");
+		expect(screen.getByText("legendary")).toHaveClass("text-legendary");
+	});
+
+	it("leaves a label with no colour of its own uncoloured", () => {
+		render(<Legend items={[{ id: "audit", label: "audit" }]} />);
+
+		expect(screen.getByText("audit")).not.toHaveAttribute("class");
+	});
+
 	it("keys a column with its name alone, since a column has no swatch", () => {
 		render(
 			<Legend

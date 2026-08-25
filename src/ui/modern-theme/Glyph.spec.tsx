@@ -8,6 +8,7 @@ const NAMES = [
 	"extend",
 	"tag",
 	"uninstall",
+	"fold",
 ] as const satisfies readonly GlyphName[];
 
 describe("Glyph", () => {

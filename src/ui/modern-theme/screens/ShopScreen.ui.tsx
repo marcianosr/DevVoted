@@ -13,15 +13,24 @@ const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const COLUMN = "flex min-w-0 flex-1 flex-col px-2 py-4";
 const DRAFT = "border-b border-edge lg:border-b-0 lg:border-r";
 
-// The rebuild press sits beside what it costs next time, under the header it
-// acts on rather than in the header's own trailing corner.
-const REBUILD = "flex flex-wrap items-center gap-3";
+// The rebuild press sits beside what it costs next time, and under the shelf it
+// replaces — the offers are what you read first, and the reroll is what you do
+// about them.
+const REBUILD = "flex flex-wrap items-center gap-3 pt-2 pb-3";
+
+// A shut shop refuses every press in it, so one statement across the top beats
+// seven tooltips each explaining the same rule. It sits between the header and
+// the shelves because the shelves stay legible on purpose (ADR-038): what you
+// cannot buy today is how the gate after this one gets planned.
+const NOTICE = "border-b border-cinnabar/40 bg-cinnabar/10 px-5 py-3";
 
 const FOOTER =
 	"flex flex-wrap items-center justify-end gap-4 border-t border-edge px-5 py-4";
 
 export type ShopScreenProps = {
 	gate: ShopHeaderProps;
+	/** Why nothing on this screen can be acted on, when nothing can. */
+	notice?: ReactNode;
 	offers: readonly FoldItem[];
 	offerCount: ReactNode;
 	draftAction?: ReactNode;
@@ -37,6 +46,7 @@ export type ShopScreenProps = {
 
 export const ShopScreen = ({
 	gate,
+	notice,
 	offers,
 	offerCount,
 	draftAction,
@@ -52,26 +62,30 @@ export const ShopScreen = ({
 	<Screen theme={theme}>
 		<ShopHeader {...gate} />
 
+		{notice ? (
+			<div className={NOTICE}>
+				<Text tone="cinnabar">{notice}</Text>
+			</div>
+		) : null}
+
 		<div className={BODY}>
 			<section className={`${COLUMN} ${DRAFT}`}>
 				<Fold
-					title="Draft"
-					subtitle="this shop"
+					title="New configs"
 					value={
 						<Text size="meta" tone="muted">
 							{offerCount}
 						</Text>
 					}
-					note={
-						draftAction || draftNote ? (
-							<div className={REBUILD}>
-								{draftAction}
-								{draftNote}
-							</div>
-						) : null
-					}
 					items={offers}
-				/>
+				>
+					{draftAction || draftNote ? (
+						<div className={REBUILD}>
+							{draftAction}
+							{draftNote}
+						</div>
+					) : null}
+				</Fold>
 
 				{storagePlans ? <StoragePlan {...storagePlans} /> : null}
 

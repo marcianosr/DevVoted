@@ -85,12 +85,12 @@ describe("StartView", () => {
 		expect(onToggle).toHaveBeenCalledWith(CONFIGS.eslint.id);
 	});
 
-	// The kit names families for effect, the domain for kind; the map is 1:1.
-	it("tags each config with what it does to a run", () => {
+	// Rarity replaced the family tag as the row's one-word read: a family named
+	// the mechanic, which the row's own sentence already does.
+	it("marks each dealt config with the rarity it was drawn at", () => {
 		render_();
 
-		expect(screen.getAllByText("category").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("tool").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("common").length).toBeGreaterThan(0);
 	});
 
 	it("holds the run shut until the build is wide enough to start", () => {

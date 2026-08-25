@@ -12,10 +12,14 @@ describe("GateHeader", () => {
 		).toBeInTheDocument();
 	});
 
-	it("wears the gate's swatch beside the name", () => {
+	// Every screen wearing this header sits before the gate is cleared, so the
+	// badge is the shape of the swatch on offer, never a filled one the player
+	// has not been handed.
+	it("leaves the gate's swatch empty until the gate is cleared", () => {
 		const { container } = render(<GateHeader title="Gate 4 · Lavender" />);
 
-		expect(container.querySelector(".bg-theme")).toBeInTheDocument();
+		expect(container.querySelector(".border-dashed")).toBeInTheDocument();
+		expect(container.querySelector(".bg-theme")).not.toBeInTheDocument();
 	});
 
 	it("carries the storage bar between the gate and its stats", () => {

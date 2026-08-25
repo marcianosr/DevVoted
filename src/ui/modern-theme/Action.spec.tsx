@@ -66,10 +66,35 @@ describe("Action", () => {
 		).toBeInTheDocument();
 	});
 
-	it("wears the gain colour when it is the action the shelf wants taken", () => {
-		render(<Action label="install" emphasis="loud" onUse={vi.fn()} />);
+	// A hint is the half of the deal the button has no room for. It goes in the
+	// accessible name as well as the tooltip, since the panel is aria-hidden.
+	it("carries a hint on hover and in the name, without displacing the verb", () => {
+		render(
+			<Action
+				label="Uninstall"
+				on="ESLint"
+				hint="Refunds 16 KB"
+				onUse={vi.fn()}
+			/>
+		);
 
-		expect(screen.getByRole("button")).toHaveClass("border-celadon");
+		expect(
+			screen.getByRole("button", { name: "Uninstall ESLint, Refunds 16 KB" })
+		).toBeInTheDocument();
+		expect(screen.getByText("Refunds 16 KB")).toBeInTheDocument();
+		expect(screen.getByText("Uninstall")).toBeInTheDocument();
+	});
+
+	// The action that carries the run forward wears the run's own colour, so a
+	// themed page has one accent rather than a green one arguing with it.
+	it("wears the gate's colour when it is the action that moves the run on", () => {
+		render(<Action label="Submit answer" emphasis="loud" onUse={vi.fn()} />);
+
+		expect(screen.getByRole("button")).toHaveClass(
+			"border-theme",
+			"bg-theme-soft",
+			"text-theme"
+		);
 	});
 
 	it("wears the legendary ring when a requirement is already met", () => {

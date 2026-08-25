@@ -29,19 +29,30 @@ describe("Screen", () => {
 	it("caps and centres its content, rather than running the full page", () => {
 		const { container } = render(<Screen>body</Screen>);
 
-		expect(container.firstChild?.firstChild).toHaveClass(
-			"max-w-6xl",
-			"mx-auto",
-			"w-full"
-		);
+		expect(container.firstChild?.firstChild).toHaveClass("max-w-6xl", "w-full");
 	});
 
-	// The tint is the page's atmosphere, so it reaches both edges while the
-	// content it sits behind stays capped.
-	it("spreads the gate's tint the full width of the page", () => {
+	// The tint is the page's atmosphere, so it fills the page while the content it
+	// sits behind stays capped and centred in it.
+	it("fills the page with the gate's tint and centres the content in it", () => {
 		const { container } = render(<Screen theme="volcano">body</Screen>);
 
-		expect(container.firstChild).toHaveClass("w-full", "bg-theme-faint");
+		expect(container.firstChild).toHaveClass(
+			"min-h-[var(--screen-floor,100vh)]",
+			"w-full",
+			"items-center",
+			"justify-center",
+			"bg-theme-faint"
+		);
 		expect(container.firstChild).not.toHaveClass("max-w-6xl");
+	});
+
+	// The viewport is not always the screen's alone: /proto-run stacks a dev rig
+	// under it. A page that does sets --screen-floor to 0, and flex-1 is what
+	// hands the screen the rest of the height instead.
+	it("takes the height its page leaves it, rather than always a full viewport", () => {
+		const { container } = render(<Screen>body</Screen>);
+
+		expect(container.firstChild).toHaveClass("flex-1");
 	});
 });

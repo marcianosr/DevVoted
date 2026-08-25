@@ -135,6 +135,22 @@ describe("RemovalScreen", () => {
 		).toBeTruthy();
 	});
 
+	// The screen opened on the forfeit and never named the cause, so a peeled
+	// build read as arbitrary rather than as the consequence of a missed demand.
+	it("names the missed coverage before it asks for the configs", () => {
+		render(<RemovalScreen {...props} />);
+
+		const cause = screen.getByText(
+			"Uh-oh, your build didn't meet the coverage goal for this gate!"
+		);
+		const list = screen.getByText("Pipeline");
+
+		expect(cause).toHaveClass("text-cinnabar");
+		expect(
+			cause.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
+	});
+
 	it("says the removal is forced and unpaid, not a trade", () => {
 		render(<RemovalScreen {...props} />);
 

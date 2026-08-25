@@ -3,8 +3,9 @@
 title: Wrong answers leave a backlog on polls
 status: draft
 type: feature
+priority: normal
 created_at: 2026-08-24T12:49:22Z
-updated_at: 2026-08-24T12:49:22Z
+updated_at: 2026-08-25T10:54:23Z
 parent: DVTD-z2r2
 ---
 
@@ -14,7 +15,7 @@ Shape still to be designed.
 
 ## Where it stands today
 
-- A wrong answer costs coverage (`WRONG_COVERAGE_LOSS`, 0.25) and then leaves no trace
+- A wrong answer costs coverage (`WRONG_COVERAGE_LOSS`) and then leaves no trace
   the player can act on. The only record is the fold-out review at run end
   (`ReviewAnswers`) and lifetime stats in the Polldex.
 - The Polldex already carries the data a backlog needs, per poll:

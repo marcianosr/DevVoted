@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { Answer, Verdict, type AnswerOption } from "./Verdict.ui";
 
@@ -52,14 +53,36 @@ describe("Verdict", () => {
 		expect(screen.getByText("PART")).toBeInTheDocument();
 	});
 
-	it("leaves a passed poll on one line, with nothing to review", () => {
-		render(<Verdict {...props} outcome="correct" score={2.6} />);
+	// jsdom applies no UA stylesheet, so a shut <details> still hands its children
+	// to RTL. Whether a row is folded is only readable off the `open` attribute.
+	it("folds a passed poll away, since the misses are what the player came back for", () => {
+		const { container } = render(
+			<Verdict {...props} outcome="correct" score={2.6} />
+		);
 
 		expect(screen.getByText("PASS")).toBeInTheDocument();
-		expect(screen.queryByText("Expected")).not.toBeInTheDocument();
+		expect(container.querySelector("details")).not.toHaveAttribute("open");
 		expect(
 			screen.getByText("Which array method returns a shallow copy?")
 		).toHaveClass("text-zinc-400");
+	});
+
+	it("opens a failed poll on arrival, so the reason needs no click", () => {
+		const { container } = render(<Verdict {...props} outcome="wrong" />);
+
+		expect(container.querySelector("details")).toHaveAttribute("open");
+	});
+
+	// A right answer for the wrong reason still wants reading, so PASS is folded
+	// rather than gone.
+	it("opens a passed poll on click, revealing the same detail a miss shows", async () => {
+		const { container } = render(
+			<Verdict {...props} outcome="correct" score={2.6} />
+		);
+
+		await userEvent.click(screen.getByText("PASS"));
+
+		expect(container.querySelector("details")).toHaveAttribute("open");
 	});
 
 	it("badges the score, signed and coloured by direction", () => {
@@ -139,16 +162,21 @@ describe("Verdict", () => {
 		expect(screen.queryByText("0 wrong picks")).not.toBeInTheDocument();
 	});
 
+	// The verdict row is itself a <details> now, so the "other options" fold is the
+	// nested one. Querying for the first `details` would answer for the row.
+	const otherOptions = (container: HTMLElement) =>
+		container.querySelector("details details");
+
 	it("holds the untouched options behind a closed fold", () => {
 		const { container } = render(<Verdict {...props} />);
 
 		expect(screen.getByText("2 other options")).toBeInTheDocument();
-		expect(container.querySelector("details")).not.toHaveAttribute("open");
+		expect(otherOptions(container)).not.toHaveAttribute("open");
 	});
 
 	it("letters the untouched options by their place in the poll, not in the fold", () => {
 		const { container } = render(<Verdict {...props} />);
-		const fold = container.querySelector("details");
+		const fold = otherOptions(container);
 
 		expect(within(fold as HTMLElement).getByText("C")).toBeInTheDocument();
 		expect(within(fold as HTMLElement).getByText("D")).toBeInTheDocument();
@@ -165,7 +193,7 @@ describe("Verdict", () => {
 			/>
 		);
 
-		expect(container.querySelector("details")).toBeNull();
+		expect(otherOptions(container)).toBeNull();
 	});
 
 	it("says nothing was picked rather than leaving the row blank", () => {

@@ -148,19 +148,120 @@ describe("PollView", () => {
 		});
 
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
-		expect(screen.getByText("Timeout")).toBeInTheDocument();
+		// Twice on purpose: the header names what is running, the rail says what
+		// it does to this poll.
+		expect(screen.getAllByText("Timeout")).toHaveLength(2);
+		expect(screen.getByText("On the clock.")).toBeInTheDocument();
 	});
 
-	// The mark and the word carry the state; dimming the row would have cost the
+	it("counts the gate's live audits on the rail", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				audits: [
+					{
+						id: "strip-1",
+						name: "Strip",
+						description: "A miss peels 5.",
+						suppressed: false,
+					},
+					{
+						id: "mirrored",
+						name: "Mirror",
+						description: "Pick every wrong option.",
+						suppressed: false,
+					},
+				],
+			}),
+		});
+
+		expect(screen.getByText("2 running")).toBeInTheDocument();
+	});
+
+	// The dot and the word carry the state; dimming the row would have cost the
 	// config its name, which is the thing the player is looking for.
 	it("keeps an offline config on the rail, named and readable", () => {
 		const { container } = render_({
-			view: createMockRunView({ ...view, offlineConfigs: [CONFIGS.ts] }),
+			view: createMockRunView({
+				...view,
+				offlineConfigs: [{ config: CONFIGS.ts, audit: "Dependency Outage" }],
+			}),
 		});
 
-		expect(screen.getByText("offline")).toBeInTheDocument();
-		expect(screen.getByText(".ts")).toBeInTheDocument();
+		expect(screen.getByText(".ts")).toHaveClass("line-through");
 		expect(container.querySelector(".opacity-50")).not.toBeInTheDocument();
+	});
+
+	it("blames the audit by name rather than reporting a dead row", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				offlineConfigs: [{ config: CONFIGS.ts, audit: "Dependency Outage" }],
+			}),
+		});
+
+		expect(screen.getByText("offline · Dependency Outage")).toBeInTheDocument();
+	});
+
+	// The faucet's rate never moves, so the run's remaining allowance is the only
+	// number on the row that answers "how much of this is left".
+	it("counts the run's faucet allowance down on the config earning it", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.indexedDb],
+				faucetRemainingKb: 216,
+			}),
+		});
+
+		expect(screen.getByText("216 KB left")).toBeInTheDocument();
+	});
+
+	it("sits the faucet out once the run's allowance is spent", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.indexedDb],
+				faucetRemainingKb: 0,
+			}),
+		});
+
+		expect(
+			screen.getByText("skipped · the run's storage cap is spent")
+		).toBeInTheDocument();
+		expect(screen.queryByText("+8 KB")).not.toBeInTheDocument();
+	});
+
+	// `.length`'s whole effect, and it had none: the count reached the view and no
+	// modern screen read it.
+	it("states the gate's answer count beside the poll when a config counts them", () => {
+		render_({
+			view: createMockRunView({ ...view, correctAnswersThisGate: 7 }),
+		});
+
+		expect(
+			screen.getByText(/this gate holds 7 correct answers/)
+		).toBeInTheDocument();
+	});
+
+	it("counts the incorrect ones instead where the gate mirrors its polls", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				correctAnswersThisGate: 1,
+				mirroredPolls: true,
+			}),
+		});
+
+		expect(
+			screen.getByText(/this gate holds 1 incorrect answer/)
+		).toBeInTheDocument();
+	});
+
+	it("says nothing about the count when no config is counting", () => {
+		render_();
+
+		expect(screen.queryByText(/this gate holds/)).not.toBeInTheDocument();
 	});
 
 	it("warns on the stake when a miss would take the whole build", () => {
@@ -175,7 +276,9 @@ describe("PollView", () => {
 			}),
 		});
 
-		expect(screen.getByText(/It ends the run\./)).toBeInTheDocument();
+		expect(
+			screen.getByText("your whole pipeline — the run ends here")
+		).toBeInTheDocument();
 	});
 
 	it("says the gate mirrors its polls, since the question reads inverted", () => {
@@ -208,7 +311,11 @@ describe("PollView tools", () => {
 		expect(onLint).toHaveBeenCalledOnce();
 	});
 
-	it("shows the fee but refuses the press once the effect is spent", () => {
+	// `canLint` already means the tool applies to this poll — the config is
+	// installed, the category matches, the audit has not frozen it and there is
+	// still an option to cross out. So the pair "applies but not ready" can only
+	// ever mean the run is short of KB, and the row says which.
+	it("shows the fee, refuses the press, and names the shortfall on the button", () => {
 		render_({
 			view: createMockRunView({
 				...view,
@@ -217,12 +324,54 @@ describe("PollView tools", () => {
 				lintReady: false,
 				lintCost: 16,
 				linter: CONFIGS.eslint,
+				storage: 8,
 			}),
 		});
 
 		expect(
-			screen.getByRole("button", { name: "cross out ESLint 16 KB" })
+			screen.getByRole("button", {
+				name: "cross out ESLint 16 KB, Costs 16KB — you have 8KB",
+			})
 		).toBeDisabled();
+	});
+
+	// A disabled button takes no taps at all, so a phone can never reach the
+	// button's own tooltip: the row's body carries the same sentence.
+	it("repeats the shortfall in the row body, which a tap can open", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.eslint],
+				canLint: true,
+				lintReady: false,
+				lintCost: 16,
+				linter: CONFIGS.eslint,
+				storage: 8,
+			}),
+		});
+
+		// Twice on purpose: the button's tooltip panel and the row's own body. The
+		// body is the paragraph, which is the copy a tap can reach.
+		const mentions = screen.getAllByText("Costs 16KB — you have 8KB");
+
+		expect(mentions).toHaveLength(2);
+		expect(mentions.some((node) => node.tagName === "P")).toBe(true);
+	});
+
+	it("leaves an affordable tool unqualified", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.eslint],
+				canLint: true,
+				lintReady: true,
+				lintCost: 8,
+				linter: CONFIGS.eslint,
+				storage: 64,
+			}),
+		});
+
+		expect(screen.queryByText(/^Costs/)).not.toBeInTheDocument();
 	});
 
 	it("offers no tool on a build that sells none", () => {
@@ -245,14 +394,16 @@ describe("PollView tools", () => {
 				lintReady: true,
 				lintCost: 8,
 				linter: CONFIGS.eslint,
-				offlineConfigs: [CONFIGS.eslint],
+				offlineConfigs: [
+					{ config: CONFIGS.eslint, audit: "Dependency Outage" },
+				],
 			}),
 		});
 
 		expect(
 			screen.queryByRole("button", { name: /cross out/ })
 		).not.toBeInTheDocument();
-		expect(screen.getByText("offline")).toBeInTheDocument();
+		expect(screen.getByText("offline · Dependency Outage")).toBeInTheDocument();
 	});
 
 	it("reads the bought split onto the options it describes", () => {
@@ -271,5 +422,25 @@ describe("PollView tools", () => {
 
 		expect(screen.getByText("crossed out")).toBeInTheDocument();
 		expect(screen.queryByText("29% picked this")).not.toBeInTheDocument();
+	});
+
+	// The fold is the adapter's to remember: the screen only reports the press,
+	// and the run state has no business carrying a reading preference.
+	it("folds the rail away and back on the toggle", async () => {
+		render_();
+
+		expect(screen.getByText("Pipeline")).toBeInTheDocument();
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Fold run info" })
+		);
+
+		expect(screen.queryByText("Pipeline")).not.toBeInTheDocument();
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Unfold run info" })
+		);
+
+		expect(screen.getByText("Pipeline")).toBeInTheDocument();
 	});
 });

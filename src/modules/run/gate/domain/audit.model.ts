@@ -282,18 +282,42 @@ export const offlineConfigsFor = (
 	windowStart: number,
 	answeredThisWindow: number
 ): readonly Config[] => {
-	const picks = audits
-		.map((audit) => audit.disablesConfig)
-		.filter((pick): pick is OfflinePick => pick !== undefined);
-	if (picks.length === 0 || configs.length === 0) return [];
-	const sorted = [...configs].sort((a, b) => a.id.localeCompare(b.id));
-	const offline = picks.map((pick) =>
-		pickOffline(pick, sorted, windowStart, answeredThisWindow)
+	const down = offlinePairsFor(
+		configs,
+		audits,
+		windowStart,
+		answeredThisWindow
 	);
 	// Two audits can land on the same config; the set is what scoring subtracts.
-	return sorted.filter((config) =>
-		offline.some((down) => down?.id === config.id)
+	return sortedById(configs).filter((config) =>
+		down.some((pair) => pair.config.id === config.id)
 	);
+};
+
+const sortedById = (configs: readonly Config[]): readonly Config[] =>
+	[...configs].sort((a, b) => a.id.localeCompare(b.id));
+
+export type OfflinePair = { readonly config: Config; readonly audit: Audit };
+
+/**
+ * The same switch-off, read as which audit threw it: scoring only needs the
+ * configs, but a rail that cannot name the culprit shows the player a dead row
+ * and no reason for it. One derivation, two readings — never two derivations.
+ */
+export const offlinePairsFor = (
+	configs: readonly Config[],
+	audits: readonly Audit[],
+	windowStart: number,
+	answeredThisWindow: number
+): readonly OfflinePair[] => {
+	if (configs.length === 0) return [];
+	const sorted = sortedById(configs);
+	return audits.flatMap((audit): readonly OfflinePair[] => {
+		const pick = audit.disablesConfig;
+		if (pick === undefined) return [];
+		const config = pickOffline(pick, sorted, windowStart, answeredThisWindow);
+		return config === undefined ? [] : [{ config, audit }];
+	});
 };
 
 const pickOffline = (

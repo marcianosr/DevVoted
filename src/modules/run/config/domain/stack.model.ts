@@ -2,9 +2,10 @@ import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
 /**
- * A curated starting loadout (ADR-026). The stack's one-liner carries the
- * choice — a flavor decision, not a math decision. If reading the chips is
- * required to pick, the stack has failed its job.
+ * A curated starting loadout (ADR-026). The name states the playstyle and the
+ * blurb states the risk; neither names the configs, which the deal below the
+ * card already lists. If reading the contents is required to pick, the stack
+ * has failed its job.
  */
 export type StarterStack = {
 	readonly id: string;
@@ -21,10 +22,13 @@ export type StarterStack = {
 export const STARTER_STACKS: readonly StarterStack[] = [
 	{
 		id: "ship-it",
-		// Named for its actual headline category (react, via .jsx), not a vibe
-		// phrase — "React Rush" tested as noise, not information (Marciano,
-		// 2026-08-10). The blurb still carries the identity/risk framing.
-		name: "React",
+		// Names the play, not the contents (Marciano, 2026-08-24, reversing the
+		// 2026-08-10 "name the headline category" call). "React" told a player
+		// which languages were in the box but nothing about how the run would
+		// go, and the box is listed in the deal underneath anyway. Two narrow,
+		// overlapping categories with a multiplier that punishes consecutive
+		// misses is the riskiest of the three openings.
+		name: "Gamble",
 		// All three configs here multiply COVERAGE, never storage — "payout"
 		// implied the storage/KB currency this game deliberately keeps separate
 		// from coverage (wiki: coverage is score, storage is reward). Naming the
@@ -45,9 +49,9 @@ export const STARTER_STACKS: readonly StarterStack[] = [
 	},
 	{
 		id: "test-everything",
-		// Same naming fix as "React": name states the real headline category
-		// (typescript) instead of a vibe phrase (Marciano, 2026-08-10).
-		name: "TypeScript",
+		// The only stack that can undo a mistake mid-poll, which is what a first
+		// run needs the name to say.
+		name: "Safe start",
 		// ESLint's cross-out only fires on JS/TS polls (config.eliminatesWrongOptionsFor),
 		// so it earns its slot here by covering the exact two categories .js/.ts force
 		// you to get right — a real combo, not three configs that happen to share a slot.
@@ -59,13 +63,14 @@ export const STARTER_STACKS: readonly StarterStack[] = [
 	},
 	{
 		id: "full-stack",
-		name: "Full stack",
-		// Originally css/html/package.json — entirely front-end, the opposite
-		// of what the name claims (Marciano, 2026-08-10). Vue + Java + Git is a
-		// real, recognizable full-stack combo — a distinct frontend framework
-		// (not React/TS, already spoken for by the other two stacks), an actual
-		// backend language, and the one tool every stack ships through — rather
-		// than three categories picked just to fill three slots.
+		// Three unrelated categories rather than two adjacent ones: nothing
+		// spikes, but few polls pay nothing.
+		name: "Category spread",
+		// Originally css/html/package.json — entirely front-end, so it spread
+		// across nothing (Marciano, 2026-08-10). Vue + Java + Git spans a
+		// frontend framework (not React/TS, already spoken for by the other two
+		// stacks), a backend language, and the one tool every stack ships
+		// through — three categories that genuinely miss each other.
 		blurb: "Balanced across categories.",
 		configs: [CONFIGS.vue, CONFIGS.java, CONFIGS.git],
 	},

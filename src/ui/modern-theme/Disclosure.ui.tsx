@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { clsx } from "clsx";
 
+import { chipFigures } from "./Chip.ui";
 import { Text } from "./Text.ui";
 
 export type DisclosureScope = "fold" | "entry" | "row";
@@ -59,7 +60,7 @@ export const DisclosureBody = ({
 		) : null}
 		{explainer ? (
 			<Text as="p" size="meta">
-				{explainer}
+				{typeof explainer === "string" ? chipFigures(explainer) : explainer}
 			</Text>
 		) : null}
 	</div>

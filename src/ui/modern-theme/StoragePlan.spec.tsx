@@ -76,17 +76,23 @@ describe("StoragePlan", () => {
 		expect(screen.getByText("640 KB · 8 KB / gate")).toBeInTheDocument();
 	});
 
-	it("states what the coming gate charges", () => {
+	it("states what every gate charges on the plan in force", () => {
 		render(<StoragePlan plans={PLANS} nextBillKb={16} />);
 
-		expect(screen.getByText("next gate bills")).toBeInTheDocument();
-		expect(screen.getByText("16 KB")).toBeInTheDocument();
+		expect(screen.getByText("Cost per gate")).toBeInTheDocument();
+		expect(screen.getByText("16 KB").parentElement).toHaveClass(
+			"bg-vermillion/15"
+		);
 	});
 
-	// A free plan bills nothing, and nothing is not news.
-	it("mutes a bill of zero", () => {
+	// A free plan bills nothing, and "0 KB" states an amount where there is none.
+	it("says a free plan is free rather than charging it zero", () => {
 		render(<StoragePlan plans={PLANS} nextBillKb={0} />);
 
-		expect(screen.getByText("0 KB")).toHaveClass("text-zinc-400");
+		// Scoped to the bill row: the free rung's own terms also read "free".
+		expect(screen.getByText("Cost per gate").parentElement).toHaveTextContent(
+			"free"
+		);
+		expect(screen.queryByText("0 KB")).not.toBeInTheDocument();
 	});
 });

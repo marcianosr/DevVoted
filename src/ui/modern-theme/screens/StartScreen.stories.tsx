@@ -23,7 +23,6 @@ const dealt: readonly DealtConfig[] = [
 		id: "ts",
 		rarity: "common",
 		label: ".ts",
-		family: "category",
 		summary: "Common · focus: typescript",
 		explainer: "TypeScript polls pay 1.25× coverage.",
 		note: <Delta multiplier={1.25} />,
@@ -32,7 +31,6 @@ const dealt: readonly DealtConfig[] = [
 		id: "intellisense",
 		rarity: "rare",
 		label: "Intellisense",
-		family: "multiplier",
 		summary: "Rare · all coverage",
 		explainer: "All coverage earns ×1.5.",
 		note: <Delta multiplier={1.5} />,
@@ -41,7 +39,6 @@ const dealt: readonly DealtConfig[] = [
 		id: "eslint",
 		rarity: "common",
 		label: "ESLint",
-		family: "tool",
 		summary: "Common · JS/TS polls",
 		explainer:
 			"Strikes out one wrong answer per gate and charges a doubling fee for the hint.",
@@ -51,7 +48,6 @@ const dealt: readonly DealtConfig[] = [
 		id: "indexeddb",
 		rarity: "uncommon",
 		label: "IndexedDB",
-		family: "storage",
 		summary: "Uncommon · every correct answer",
 		explainer: "+8 KB storage per correct answer, up to 320 KB a run.",
 		note: <Delta kb={8} />,
@@ -60,7 +56,6 @@ const dealt: readonly DealtConfig[] = [
 		id: "rb",
 		rarity: "common",
 		label: ".rb",
-		family: "category",
 		summary: "Common · focus: ruby",
 		explainer: "Ruby polls pay 1.25× coverage.",
 		note: <Delta multiplier={1.25} />,
@@ -69,7 +64,6 @@ const dealt: readonly DealtConfig[] = [
 		id: "coldstart",
 		rarity: "uncommon",
 		label: "Cold Start",
-		family: "multiplier",
 		summary: "Uncommon · the gate's opener",
 		explainer: "Each gate's first answer earns ×2 coverage.",
 		note: <Delta multiplier={2} />,
@@ -78,7 +72,6 @@ const dealt: readonly DealtConfig[] = [
 		id: "overclock",
 		rarity: "rare",
 		label: "Overclock",
-		family: "gamble",
 		summary: "Rare · the gate's opener",
 		explainer:
 			"The gate's first answer earns ×4 coverage. Everything after runs hot at ×0.5, cooling off each clear.",
@@ -88,7 +81,6 @@ const dealt: readonly DealtConfig[] = [
 		id: "dependabot",
 		rarity: "legendary",
 		label: "Dependabot",
-		family: "storage",
 		summary: "Legendary · on a gate clear",
 		explainer:
 			"1 in 3 gate clears: a random config in your pipeline upgrades, free.",
@@ -107,16 +99,14 @@ const base: Omit<StartScreenProps, "pickedIds" | "onToggle"> = {
 	combos: [
 		{
 			id: "typescript",
-			name: "TypeScript",
-			ids: ["ts", "intellisense", "eslint"],
+			name: "Safe start",
 			blurb: "stack on typescript, with a lint to save you once",
 			recommended: true,
 			onTake: () => {},
 		},
 		{
 			id: "reckless",
-			name: "Ruby",
-			ids: ["rb", "coldstart", "overclock"],
+			name: "Gamble",
 			blurb: "fast, and nothing to catch you",
 			onTake: () => {},
 		},
@@ -133,7 +123,7 @@ const base: Omit<StartScreenProps, "pickedIds" | "onToggle"> = {
 	pollCount: 5,
 	coverageDemand: 3,
 	auditCount: 0,
-	removeOnMiss: 1,
+	stake: { removeOnMiss: 1, coveragePerWrong: -0.3 },
 	reward: { coveragePerCorrect: 1, gateRewardKb: 32, slotOpens: 4 },
 	onStart: () => {},
 };
@@ -199,7 +189,7 @@ export const Elite: Story = {
 			gateNumber={11}
 			coverageDemand={85}
 			auditCount={2}
-			removeOnMiss={3}
+			stake={{ removeOnMiss: 3, coveragePerWrong: -0.9 }}
 			reward={{ coveragePerCorrect: 6.4, gateRewardKb: 416 }}
 			slots={[{ id: "slot-1" }, { id: "slot-2" }, { id: "slot-3" }]}
 		/>

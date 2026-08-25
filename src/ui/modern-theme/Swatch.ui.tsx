@@ -16,9 +16,12 @@ const SIZE = {
 	award: "size-24 rounded-3xl glow-theme",
 } satisfies Record<SwatchSize, string>;
 
+// Only `earned` is filled. Standing on a gate is not clearing it, so `current`
+// is the outline of the swatch on offer — its colour, ringed to mark the place,
+// and hollow until the gate hands it over.
 const STATE = {
 	earned: "bg-theme",
-	current: "bg-theme outline-2 outline-offset-2 outline-theme",
+	current: "outline-2 outline-offset-2 outline-theme",
 	locked: "bg-zinc-800",
 	pending: "border-2 border-dashed border-zinc-600",
 } satisfies Record<SwatchState, string>;

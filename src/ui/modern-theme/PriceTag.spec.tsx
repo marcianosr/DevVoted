@@ -75,6 +75,26 @@ describe("PriceTag", () => {
 		expect(tag).toHaveClass("text-cinnabar");
 	});
 
+	// A shelf of red tags reads as "you are broke". Half of it meaning "you are
+	// full" is a different problem with a different fix, so it gets a different
+	// colour.
+	it("greys a price the pipeline has no room for, rather than reddening it", () => {
+		render(
+			<PriceTag kb={32} on="Stylelint" state="unavailable" onUse={vi.fn()} />
+		);
+
+		const tag = screen.getByRole("button");
+		expect(tag).toBeDisabled();
+		expect(tag).toHaveClass("text-zinc-500");
+		expect(tag).not.toHaveClass("text-cinnabar");
+	});
+
+	it("greens a price that can actually be paid", () => {
+		render(<PriceTag kb={32} on="Stylelint" onUse={vi.fn()} />);
+
+		expect(screen.getByRole("button")).toHaveClass("text-celadon");
+	});
+
 	it("never offers the install verb on a row that cannot be bought", () => {
 		render(
 			<PriceTag kb={512} on="WTFPL" state="unaffordable" onUse={vi.fn()} />

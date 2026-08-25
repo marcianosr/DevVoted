@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	gateRewardRows,
@@ -211,16 +212,28 @@ describe(gateStorageBreakdown, () => {
 		]);
 	});
 
+	// No config on the roster draws on the extra-pick pot any more — `.length` is
+	// pure information now — so the ledger's fourth source is exercised by a
+	// config built for it. If it gains no owner, the pot and this test go too.
+	const PER_EXTRA_PICK: Config = {
+		id: "per-extra-pick",
+		label: "Per extra pick",
+		family: "economy",
+		description: "Pays per correct answer beyond one per poll.",
+		rewardMultiplier: 1,
+		storagePerExtraPick: 16,
+	};
+
 	it("attributes interest and extra-pick payouts to the configs that earned them", () => {
 		const { rows } = gateStorageBreakdown({
 			...breakdownInput,
-			configs: [CONFIGS.mooresLaw, CONFIGS.length],
+			configs: [CONFIGS.mooresLaw, PER_EXTRA_PICK],
 			interestThisGateKb: 12,
 			extraPickThisGateKb: 32,
 		});
 		expect(rows.map(({ key, kb }) => ({ key, kb }))).toEqual([
 			{ key: "moores-law", kb: 12 },
-			{ key: "length", kb: 32 },
+			{ key: "per-extra-pick", kb: 32 },
 		]);
 	});
 

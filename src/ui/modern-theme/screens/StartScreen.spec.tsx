@@ -13,7 +13,6 @@ const dealt: readonly DealtConfig[] = [
 	{
 		id: "ts",
 		label: ".ts",
-		family: "category",
 		summary: "Common · focus: typescript",
 		explainer: "TypeScript polls pay 1.25× coverage.",
 		note: <Delta multiplier={1.25} />,
@@ -21,14 +20,12 @@ const dealt: readonly DealtConfig[] = [
 	{
 		id: "intellisense",
 		label: "Intellisense",
-		family: "multiplier",
 		summary: "Rare · all coverage",
 		explainer: "All coverage earns ×1.5.",
 	},
 	{
 		id: "eslint",
 		label: "ESLint",
-		family: "tool",
 		summary: "Common · JS/TS polls",
 		explainer: "Strikes out one wrong answer per gate.",
 	},
@@ -54,7 +51,7 @@ const props: StartScreenProps = {
 	pollCount: 5,
 	coverageDemand: 3,
 	auditCount: 0,
-	removeOnMiss: 1,
+	stake: { removeOnMiss: 1, coveragePerWrong: -0.3 },
 	reward: { coveragePerCorrect: 1, gateRewardKb: 32, slotOpens: 4 },
 };
 
@@ -140,11 +137,11 @@ describe("StartScreen", () => {
 			.forEach((node) => expect(node).not.toHaveClass("line-through"));
 	});
 
-	it("keeps the line to the name, its family and its figure", () => {
+	it("keeps the line to the name, its rarity and its figure", () => {
 		render(<StartScreen {...props} />);
 
 		expect(screen.getByText("×1.25")).toBeInTheDocument();
-		expect(screen.getAllByText("category")).toHaveLength(2);
+		expect(screen.getAllByText("common").length).toBeGreaterThan(0);
 	});
 
 	it("folds the rarity and the full sentence under each config", () => {
@@ -176,44 +173,17 @@ describe("StartScreen", () => {
 		expect(row.open).toBe(false);
 	});
 
-	it("tags every dealt config with the family it belongs to", () => {
-		render(<StartScreen {...props} />);
-
-		// Twice each: once on the row, once in the legend below the deal.
-		expect(screen.getAllByText("category")).toHaveLength(2);
-		expect(screen.getAllByText("multiplier")).toHaveLength(2);
-		expect(screen.getAllByText("tool")).toHaveLength(2);
-	});
-
-	it("lists every family in the legend, dealt or not", () => {
-		render(<StartScreen {...props} />);
-
-		expect(screen.getByText("storage")).toBeInTheDocument();
-		expect(screen.getByText("gamble")).toBeInTheDocument();
-	});
-
-	it("keeps the family legend closed, since the tags are the reminder", () => {
-		const { container } = render(<StartScreen {...props} />);
-		const legend = Array.from(container.querySelectorAll("details")).find(
-			(node) => node.textContent?.includes("What the families mean")
-		);
-
-		expect(legend).not.toHaveAttribute("open");
-		expect(
-			screen.getByText("something you press mid-poll")
-		).toBeInTheDocument();
-		expect(screen.getByText("big upside, real cost")).toBeInTheDocument();
-	});
-
-	it("shows the combo's shape in the words the deal is tagged with", () => {
+	// The card sells a playstyle, not a bill of materials: the deal underneath is
+	// where a config gets read, and listing three of them made the card the
+	// tallest thing on the screen.
+	it("sells a combo on its name and its playstyle, never on its contents", () => {
 		render(
 			<StartScreen
 				{...props}
 				combos={[
 					{
 						id: "typescript",
-						name: "TypeScript",
-						ids: ["ts", "intellisense", "eslint"],
+						name: "Safe start",
 						blurb: "stack on typescript, with a lint to save you once",
 						onTake: () => {},
 					},
@@ -221,32 +191,10 @@ describe("StartScreen", () => {
 			/>
 		);
 
-		// Row, legend, and now the combo's shape line.
-		expect(screen.getAllByText("category")).toHaveLength(3);
-		expect(screen.getAllByText("multiplier")).toHaveLength(3);
-		expect(screen.getAllByText("tool")).toHaveLength(3);
-	});
+		const card = screen.getByText("Safe start").closest("div");
 
-	it("names only configs the deal is actually offering", () => {
-		render(
-			<StartScreen
-				{...props}
-				combos={[
-					{
-						id: "partial",
-						name: "Partial",
-						ids: ["ts", "not-dealt"],
-						blurb: "half a combo",
-						onTake: () => {},
-					},
-				]}
-			/>
-		);
-
-		const panel = screen.getByText("half a combo").closest("div");
-
-		expect(panel).toHaveTextContent(".ts");
-		expect(panel).not.toHaveTextContent("not-dealt");
+		expect(card).toHaveTextContent("with a lint to save you once");
+		expect(card).not.toHaveTextContent("Intellisense");
 	});
 
 	it("offers the curated stack as one press rather than three", async () => {
@@ -257,8 +205,7 @@ describe("StartScreen", () => {
 				combos={[
 					{
 						id: "typescript",
-						name: "TypeScript",
-						ids: ["ts", "intellisense", "eslint"],
+						name: "Safe start",
 						blurb: "stack on typescript, with a lint to save you once",
 						onTake,
 					},
@@ -266,7 +213,6 @@ describe("StartScreen", () => {
 			/>
 		);
 
-		expect(screen.getByText(".ts + Intellisense + ESLint")).toBeInTheDocument();
 		await userEvent.click(screen.getByRole("button", { name: "take these" }));
 
 		expect(onTake).toHaveBeenCalledOnce();
@@ -362,14 +308,28 @@ describe("StartScreen", () => {
 
 	// The peel is the one cost on this panel that is a loss, so it wears the
 	// losing colour rather than sitting in the same grey as the demands.
-	it("badges the peel in red, and names the thing that triggers it", () => {
-		render(<StartScreen {...props} />);
+	// The build is chosen against this panel, so it is the one section here that
+	// cannot be folded away.
+	it("badges the peel in red, on a stake that cannot be folded away", () => {
+		const { container } = render(<StartScreen {...props} />);
+		const folded = Array.from(container.querySelectorAll("details")).find(
+			(node) => node.textContent?.includes("Stake")
+		);
 
-		expect(screen.getByText("Failing the gate")).toBeInTheDocument();
+		expect(folded).toBeUndefined();
 		// Chip tints the wrapper, not the Text it nests inside.
 		expect(screen.getByText(/remove 1 config/).parentElement).toHaveClass(
 			"text-cinnabar"
 		);
+	});
+
+	// The rewards panel prices a correct answer and said nothing about a wrong
+	// one, so the only number a player could plan against was the upside.
+	it("prices a wrong answer, which the rewards panel never states", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("Wrong answer")).toBeInTheDocument();
+		expect(screen.getByText("−0.3")).toBeInTheDocument();
 	});
 
 	it("counts the audits when the gate has any", () => {
@@ -393,9 +353,11 @@ describe("StartScreen", () => {
 	it("leaves the swatch dashed, since the gate has not handed it over", () => {
 		render(<StartScreen {...props} />);
 
-		const row = screen.getByText("Pallet Swatch").parentElement as HTMLElement;
+		// The label and the badge are siblings under the row, not parent and child,
+		// so the assertion has to climb to the list item that holds both.
+		const row = screen.getByText("Pallet Swatch").closest("li");
 
-		expect(row.querySelector(".border-dashed")).toBeInTheDocument();
+		expect(row?.querySelector(".border-dashed")).toBeInTheDocument();
 	});
 
 	it("drops the slot reward on a gate that opens none", () => {
@@ -418,15 +380,13 @@ describe("StartScreen", () => {
 				combos={[
 					{
 						id: "react",
-						name: "React",
-						ids: ["ts"],
+						name: "Gamble",
 						blurb: "Fast but risky.",
 						onTake: () => {},
 					},
 					{
 						id: "typescript",
-						name: "TypeScript",
-						ids: ["ts", "eslint"],
+						name: "Safe start",
 						blurb: "Safer JS/TS focus.",
 						recommended: true,
 						onTake: () => {},
@@ -435,8 +395,8 @@ describe("StartScreen", () => {
 			/>
 		);
 
-		expect(screen.getByText("React")).toBeInTheDocument();
-		expect(screen.getByText("TypeScript")).toBeInTheDocument();
+		expect(screen.getByText("Gamble")).toBeInTheDocument();
+		expect(screen.getByText("Safe start")).toBeInTheDocument();
 		expect(screen.getAllByRole("button", { name: "take these" })).toHaveLength(
 			2
 		);
@@ -449,15 +409,13 @@ describe("StartScreen", () => {
 				combos={[
 					{
 						id: "react",
-						name: "React",
-						ids: ["ts"],
+						name: "Gamble",
 						blurb: "Fast but risky.",
 						onTake: () => {},
 					},
 					{
 						id: "typescript",
-						name: "TypeScript",
-						ids: ["ts"],
+						name: "Safe start",
 						blurb: "Safer JS/TS focus.",
 						recommended: true,
 						onTake: () => {},
@@ -477,15 +435,13 @@ describe("StartScreen", () => {
 				combos={[
 					{
 						id: "react",
-						name: "React",
-						ids: ["ts"],
+						name: "Gamble",
 						blurb: "Fast but risky.",
 						onTake: () => {},
 					},
 					{
 						id: "typescript",
-						name: "TypeScript",
-						ids: ["ts"],
+						name: "Safe start",
 						blurb: "Safer JS/TS focus.",
 						onTake: onTakeSecond,
 					},

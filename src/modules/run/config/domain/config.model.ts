@@ -32,6 +32,9 @@ export type Config = {
 	readonly coverageDecayPerClear?: number;
 	readonly offersFullRoster?: boolean;
 	readonly revealsUpcomingCategories?: boolean;
+	/** `.length`: states how many correct answers the gate's polls hold. Pure
+	 * information — it moves no coverage and pays no KB. */
+	readonly revealsCorrectCount?: boolean;
 	readonly draftCostFactor?: number;
 	readonly subscriptionKb?: number;
 	readonly subscriptionGrowthPerGate?: number;

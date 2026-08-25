@@ -4,20 +4,21 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
-import { AUDIT, type AuditId } from "../audits";
+import { Audits, type AuditRow } from "../Audits.ui";
 import { Chip } from "../Chip.ui";
 import { Delta } from "../Delta.ui";
 import { Dot } from "../Dot.ui";
 import { Entry } from "../Entry.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
+import { Stake } from "../Stake.ui";
 import type { Rarity } from "../rarity";
+import { RarityWord } from "../RarityWord.ui";
 import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
-import { Glyph } from "../Glyph.ui";
 import { Slot } from "../Slot.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
 import { Tooltip } from "../Tooltip.ui";
-import { plural, signed } from "../format";
+import { signed } from "../format";
 
 // Copied from ShopScreen: prep and the shop are one place the player walks
 // between, so the two bodies should not sit differently on the page.
@@ -25,10 +26,8 @@ const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const COLUMN = "flex min-w-0 flex-1 flex-col px-2 py-4";
 const STAKE = "border-b border-edge lg:border-b-0 lg:border-r";
 
-const PROSE = "flex flex-col gap-1";
-const FIGURES = "flex items-center gap-2";
-const STACKED = "flex flex-col gap-0.5";
-const STRUCK = "line-through";
+// Fixed width and right-aligned, so the names line up however far the build runs.
+const ORDINAL = "w-4 shrink-0 text-right tabular-nums";
 
 const MULTIPLIERS = "flex flex-wrap items-center gap-1.5";
 const SEPARATOR = "text-xs text-zinc-700";
@@ -53,14 +52,9 @@ export type PrepConfig = {
 
 export type PrepSlot = { id: string; gate?: number };
 
-export type PrepAudit = {
-	/** The name and the icon come off the id, so an audit cannot be called one
-	 * thing here and another in the Dex. The wording of its effect stays local:
-	 * prep says what it does to THIS gate, the Dex states the general rule. */
-	id: AuditId;
-	description: string;
-	suppressed?: boolean;
-};
+/** Prep's audit rows are the kit's audit rows; the alias keeps the screen's own
+ * prop names reading as a set. */
+export type PrepAudit = AuditRow;
 
 export type PrepReward = {
 	coveragePerCorrect: number;
@@ -85,6 +79,8 @@ export type PrepScreenProps = {
 	coverageHeld: number;
 	removeOnMiss: number;
 	missIsFatal: boolean;
+	/** Signed, so it pairs with the Rewards fold's per-correct figure. */
+	coveragePerWrong: number;
 	configs: readonly PrepConfig[];
 	slots: readonly PrepSlot[];
 	audits: readonly PrepAudit[];
@@ -165,6 +161,7 @@ export const PrepScreen = ({
 	coverageHeld,
 	removeOnMiss,
 	missIsFatal,
+	coveragePerWrong,
 	configs,
 	slots,
 	audits,
@@ -213,19 +210,15 @@ export const PrepScreen = ({
 			content: (
 				<Entry
 					leading={BULLET}
-					label={
-						<span className={STACKED}>
-							<Text size="meta">Correct answer</Text>
-							<Multipliers reward={reward} />
-						</span>
-					}
-					value={
-						<span className={FIGURES}>
+					label="Correct answer"
+					notes={
+						<>
 							<Delta coverage={reward.coveragePerCorrect} />
 							{reward.storageKbPerCorrect > 0 ? (
 								<Delta kb={reward.storageKbPerCorrect} />
 							) : null}
-						</span>
+							<Multipliers reward={reward} />
+						</>
 					}
 				/>
 			),
@@ -236,7 +229,7 @@ export const PrepScreen = ({
 				<Entry
 					leading={BULLET}
 					label="Gate cleared"
-					value={<Delta kb={reward.gateRewardKb} />}
+					notes={<Delta kb={reward.gateRewardKb} />}
 				/>
 			),
 		},
@@ -246,9 +239,7 @@ export const PrepScreen = ({
 				<Entry
 					leading={BULLET}
 					label="Swatch earned"
-					// Dashed and uncoloured: the badge is the gate's, and the gate has
-					// not handed it over yet.
-					value={<Swatch size="pip" state="pending" />}
+					notes={<Swatch size="pip" state="pending" />}
 				/>
 			),
 		},
@@ -260,13 +251,15 @@ export const PrepScreen = ({
 			<Entry
 				leading={BULLET}
 				label={bill.label}
-				value={
-					<span className={FIGURES}>
+				notes={
+					<>
 						<Delta kb={bill.kb} />
-						<Text size="meta" tone="muted">
-							{bill.billedOnMiss ? "pass or fail" : "on clear"}
-						</Text>
-					</span>
+						{bill.billedOnMiss ? null : (
+							<Text size="meta" tone="muted">
+								on clear
+							</Text>
+						)}
+					</>
 				}
 			/>
 		),
@@ -279,26 +272,31 @@ export const PrepScreen = ({
 				<Entry
 					leading={BULLET}
 					label="Total this gate"
-					value={
-						<span className={FIGURES}>
+					notes={
+						<>
 							<Delta kb={billedKb} />
 							<Text size="meta" tone="muted">
 								{signed(onMissKb)} KB on a miss
 							</Text>
-						</span>
+						</>
 					}
 				/>
 			),
 		});
 
 	const pipeline: FoldItem[] = [
-		...configs.map((config) => ({
+		...configs.map((config, index) => ({
 			id: config.id,
 			content: (
 				<Entry
-					mark="idle"
+					leading={
+						<Text size="meta" tone="muted" className={ORDINAL}>
+							{index + 1}
+						</Text>
+					}
 					label={config.label}
 					rarity={config.rarity}
+					notes={config.rarity ? <RarityWord rarity={config.rarity} /> : null}
 					value={config.note}
 					summary={config.summary}
 					explainer={config.explainer}
@@ -335,74 +333,21 @@ export const PrepScreen = ({
 							</Text>
 						}
 						items={demands}
-					>
-						<div className={PROSE}>
-							<Text as="p" size="meta" tone="muted">
-								A miss removes {plural(removeOnMiss, "config")}, then you shop
-								and run it again on {plural(pollCount, "fresh poll")}.
-							</Text>
-							{missIsFatal ? (
-								<Text as="p" size="meta" tone="cinnabar">
-									That removal takes your whole pipeline. A miss here ends the
-									run.
-								</Text>
-							) : null}
-						</div>
-					</Fold>
+					/>
 
-					{audits.length ? (
-						<Fold
-							title="Audit"
-							defaultOpen={false}
-							value={
-								<Text size="meta" tone="saffron">
-									{audits.length}
-								</Text>
-							}
-							items={audits.map((audit) => ({
-								id: audit.id,
-								content: (
-									<Entry
-										leading={
-											<Glyph
-												name={AUDIT[audit.id].glyph}
-												className={
-													audit.suppressed ? "text-zinc-500" : "text-saffron"
-												}
-											/>
-										}
-										dimmed={audit.suppressed}
-										label={
-											audit.suppressed ? (
-												<span className={STRUCK}>{AUDIT[audit.id].label}</span>
-											) : (
-												AUDIT[audit.id].label
-											)
-										}
-										notes={
-											<>
-												<Text size="meta" tone="muted">
-													{audit.description}
-												</Text>
-												{/* Suppressed, never hidden: the fraud stays on the
-												    receipt (ADR-028). */}
-												{audit.suppressed ? (
-													<Chip tone="celadon">reported passing</Chip>
-												) : null}
-											</>
-										}
-									/>
-								),
-							}))}
-						/>
-					) : null}
+					{audits.length ? <Audits audits={audits} defaultOpen /> : null}
 
 					<Fold title="Rewards" items={rewards} />
+
+					<Stake
+						removeOnMiss={removeOnMiss}
+						coveragePerWrong={coveragePerWrong}
+						missIsFatal={missIsFatal}
+					/>
 
 					{bills.length ? (
 						<Fold
 							title="Subscriptions"
-							defaultOpen={false}
 							value={<Delta kb={billedKb} />}
 							items={subscriptions}
 						>
@@ -425,9 +370,9 @@ export const PrepScreen = ({
 						}
 						items={pipeline}
 					>
-						<Text as="p" size="meta" tone="muted">
-							Change your build in the shop.
-						</Text>
+						{onBackToShop ? (
+							<Action label="Change build in shop" onUse={onBackToShop} />
+						) : null}
 					</Fold>
 
 					{prefetch ? (

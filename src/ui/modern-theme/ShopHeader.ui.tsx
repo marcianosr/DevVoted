@@ -15,15 +15,9 @@ export type ShopHeaderProps = {
 	title: ReactNode;
 	nextGate: ReactNode;
 	storage: StorageProps;
-	capNote?: ReactNode;
 };
 
-export const ShopHeader = ({
-	title,
-	nextGate,
-	storage,
-	capNote,
-}: ShopHeaderProps) => (
+export const ShopHeader = ({ title, nextGate, storage }: ShopHeaderProps) => (
 	<header className={HEADER}>
 		<div className={NAME}>
 			<Swatch size="badge" className={BADGE} />
@@ -44,11 +38,6 @@ export const ShopHeader = ({
 
 		<div className={LEDGER}>
 			<Storage {...storage} />
-			{capNote ? (
-				<Text size="meta" tone="saffron">
-					{capNote}
-				</Text>
-			) : null}
 		</div>
 	</header>
 );

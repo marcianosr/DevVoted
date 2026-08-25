@@ -16,6 +16,7 @@ const stake = createMockGateStake({
 	},
 	perAnswer: {
 		coveragePerCorrect: 1,
+		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
 	},
@@ -67,6 +68,7 @@ describe(PrepScreen, () => {
 				stake={stakeWith({
 					perAnswer: {
 						coveragePerCorrect: 1,
+						coveragePerWrong: -0.3,
 						storageKbPerCorrect: 0,
 						matchingConfigMultiplier: 1.25,
 						streakStepMultiplier: 1.1,

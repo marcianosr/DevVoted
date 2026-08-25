@@ -22,6 +22,7 @@ const base = {
 		},
 		perAnswer: {
 			coveragePerCorrect: 1,
+			coveragePerWrong: -0.3,
 			storageKbPerCorrect: 0,
 			streakStepMultiplier: 1.1,
 		},
@@ -315,7 +316,7 @@ describe("stack mode (ADR-026)", () => {
 	it("picks a stack when its row is clicked", () => {
 		const onPickStack = vi.fn();
 		render(<ConfiguringScreen {...stackBase} onPickStack={onPickStack} />);
-		fireEvent.click(screen.getByRole("radio", { name: /React/ }));
+		fireEvent.click(screen.getByRole("radio", { name: /Gamble/ }));
 		expect(onPickStack).toHaveBeenCalledWith("ship-it");
 	});
 
@@ -323,8 +324,8 @@ describe("stack mode (ADR-026)", () => {
 		const shipIt = starterStackFor("ship-it");
 		if (!shipIt) throw new Error("ship-it stack missing");
 		render(<ConfiguringScreen {...stackBase} configs={shipIt.configs} />);
-		expect(screen.getByRole("radio", { name: /React/ })).toBeChecked();
-		expect(screen.getByRole("radio", { name: /TypeScript/ })).not.toBeChecked();
+		expect(screen.getByRole("radio", { name: /Gamble/ })).toBeChecked();
+		expect(screen.getByRole("radio", { name: /Safe start/ })).not.toBeChecked();
 	});
 
 	it("replaces the bench and pipeline with the one stack decision", () => {

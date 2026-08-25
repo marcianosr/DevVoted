@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { levelUp, rarityOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	createMockGateStake,
@@ -179,19 +180,156 @@ describe("ShopView", () => {
 		const onSell = vi.fn();
 		render_({ onSell });
 
+		// The refund rides in the accessible name because it is the whole decision:
+		// the chip beside the row states it too, but the press is where it is spent.
 		await userEvent.click(
-			screen.getByRole("button", { name: "Uninstall ESLint +16 KB" })
+			screen.getByRole("button", {
+				name: /^Uninstall ESLint, Refunds \d+ KB$/,
+			})
 		);
 
 		expect(onSell).toHaveBeenCalledWith(CONFIGS.eslint.id);
 	});
 
-	it("marks the shop shut when read-only has closed it", () => {
+	// A note tucked under the storage meter read as a footnote about the meter.
+	// The shut shop is the screen's whole state, so it leads with what is shut
+	// before it names the audit that shut it.
+	it("leads with the shop being closed when read-only has closed it", () => {
+		render_({ view: createMockRunView({ ...view, shopLocked: true }) });
+
+		expect(screen.getByText(/^Shop closed\./)).toBeInTheDocument();
+	});
+
+	it("names the audit and the gate the closure lasts until", () => {
 		render_({ view: createMockRunView({ ...view, shopLocked: true }) });
 
 		expect(
-			screen.getByText("Read-only: this shop is shut for the coming gate.")
+			screen.getByText(/Read-only audits the build you already have/)
 		).toBeInTheDocument();
+		expect(
+			screen.getByText(/bought, sold or switched before gate 5\./)
+		).toBeInTheDocument();
+	});
+
+	// The button was gated on `config.maxLevel !== undefined`, which is optional
+	// and defaults to 5 — so every Focus config in a real build silently lost its
+	// Upgrade. `isUpgradable` is the domain's own answer to the same question.
+	it("offers an upgrade on a config that can be bumped, and none on one that cannot", () => {
+		render_();
+
+		expect(
+			screen.getByRole("button", { name: /Upgrade \.js/ })
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /Upgrade ESLint/ })
+		).not.toBeInTheDocument();
+	});
+
+	// Storage and category coverage refuse independently, and the fix differs, so
+	// the hint names whichever one is actually in the way.
+	it("names the category coverage an upgrade still owes", () => {
+		render_();
+
+		expect(
+			screen.getByRole("button", { name: /Upgrade \.js/ })
+		).toHaveAccessibleName(/Unlocks at 5% JavaScript coverage, you have 0%/);
+	});
+
+	it("names the storage shortfall when the balance is what refuses it", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				storage: 8,
+				coverageByCategory: { js: 40 },
+			}),
+		});
+
+		expect(
+			screen.getByRole("button", { name: /Upgrade \.js/ })
+		).toHaveAccessibleName(/Costs 64 KB, you have 8 KB/);
+	});
+
+	it("rings an upgrade that both gates allow, and fires it", async () => {
+		const onUpgrade = vi.fn();
+		render_({
+			onUpgrade,
+			view: createMockRunView({
+				...view,
+				storage: 216,
+				coverageByCategory: { js: 40 },
+			}),
+		});
+
+		const upgrade = screen.getByRole("button", { name: /Upgrade \.js/ });
+		expect(upgrade).toHaveClass("legendary-ring");
+		expect(upgrade).toBeEnabled();
+
+		await userEvent.click(upgrade);
+
+		expect(onUpgrade).toHaveBeenCalledWith(CONFIGS.js.id);
+	});
+
+	// A bump is a version, the way a dependency bump reads, so nothing on this
+	// surface says "level" (DVTD-tt4y). Nothing asserted the copy before, which
+	// is how the RPG word survived here after the vocabulary moved on.
+	it("states a bumped config's version, and previews the one it would buy", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [levelUp(CONFIGS.js), CONFIGS.ts, CONFIGS.eslint],
+			}),
+		});
+
+		expect(screen.getByText("v2")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Upgrade \.js/ })
+		).toHaveAccessibleName(/v3: JavaScript polls earn 1\.75× coverage/);
+	});
+
+	it("refuses the press, and drops the ring, while a gate is unmet", () => {
+		render_();
+
+		expect(screen.getByRole("button", { name: /Upgrade \.js/ })).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: /Upgrade \.js/ })
+		).not.toHaveClass("legendary-ring");
+	});
+
+	// Sell something, or clear a slot: two different fixes, so two different
+	// colours. One red shelf said "you are broke" for both.
+	it("greys an offer with nowhere to go and reddens one it cannot pay for", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				offers: [
+					createMockShopOffer(CONFIGS.stylelint, {
+						installable: false,
+						refusal: { reason: "no-slot" },
+					}),
+					createMockShopOffer(CONFIGS.unitTests, {
+						installable: false,
+						refusal: {
+							reason: "too-expensive",
+							priceKb: 512,
+							storageKb: 216,
+						},
+					}),
+				],
+			}),
+		});
+
+		expect(screen.getByRole("button", { name: /Stylelint/ })).toHaveClass(
+			"text-zinc-500"
+		);
+		expect(screen.getByRole("button", { name: /Unit Tests/ })).toHaveClass(
+			"text-cinnabar"
+		);
+	});
+
+	it("says nothing about a closure at an open shop", () => {
+		render_();
+
+		expect(screen.queryByText(/Shop closed/)).not.toBeInTheDocument();
 	});
 
 	// tier 5 is sold from gate 6, and the shop that first sells it is the one
@@ -221,15 +359,27 @@ describe("ShopView", () => {
 		expect(onContinue).toHaveBeenCalledOnce();
 	});
 
-	// ADR-027: an under-width build is turned away at the door, and told why.
-	it("blocks the exit of a build that cannot start the gate", () => {
+	// ADR-035 deleted the width demand and the graded exit: a peeled build walks
+	// to the gate and dies there if the next peel outruns it. Blocking the door
+	// soft-locked a run that had been stripped to one config and could not afford
+	// a replacement — there was no other way out of the shop.
+	it("lets a stripped, insolvent build leave for the gate anyway", async () => {
+		const onContinue = vi.fn();
 		render_({
-			view: createMockRunView({ ...view, canStart: false, slots: 4 }),
+			onContinue,
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.js],
+				canStart: false,
+				storage: 0,
+			}),
 		});
 
-		expect(
-			screen.getByRole("button", { name: "Fill 3 slots to continue" })
-		).toBeDisabled();
+		const exit = screen.getByRole("button", { name: "Continue →" });
+
+		expect(exit).toBeEnabled();
+		await userEvent.click(exit);
+		expect(onContinue).toHaveBeenCalledOnce();
 	});
 });
 
@@ -280,5 +430,16 @@ describe("ShopView readability", () => {
 		});
 
 		expect(screen.getByText("Can't install, no free slot")).toBeInTheDocument();
+	});
+
+	// The dot is scannable down a column; the word is what a new player can read.
+	it("names the rarity beside its dot, in the rarity's own colour", () => {
+		render_();
+
+		// Offers and the pipeline column both mark rarity, and all of them alike.
+		const words = screen.getAllByText(rarityOf(CONFIGS.stylelint));
+		expect(words.length).toBeGreaterThan(0);
+		for (const word of words)
+			expect(word).toHaveClass("font-bold", "text-celadon");
 	});
 });

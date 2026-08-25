@@ -16,6 +16,7 @@ const props: PrepScreenProps = {
 	coverageDemand: 60,
 	coverageHeld: 0,
 	removeOnMiss: 2,
+	coveragePerWrong: -1.3,
 	missIsFatal: false,
 	configs: [
 		{ id: "ts", label: ".ts" },
@@ -95,14 +96,16 @@ describe("PrepScreen", () => {
 		expect(screen.getByText("0 / 60%")).toBeInTheDocument();
 	});
 
-	it("prices a miss in configs and in the polls it costs to try again", () => {
+	// The peel moved into the shared Stake fold, which every gate surface now
+	// composes, so prep states it in the same words the poll rail does.
+	it("prices a miss in the Stake fold rather than in prose of its own", () => {
 		render(<PrepScreen {...props} />);
 
-		expect(
-			screen.getByText(
-				"A miss removes 2 configs, then you shop and run it again on 5 fresh polls."
-			)
-		).toBeInTheDocument();
+		expect(screen.getByText("Stake")).toBeInTheDocument();
+		expect(screen.getByText("Gate missed")).toBeInTheDocument();
+		expect(screen.getByText("remove 2 configs")).toBeInTheDocument();
+		expect(screen.getByText("Wrong answer")).toBeInTheDocument();
+		expect(screen.getByText("−1.3")).toBeInTheDocument();
 	});
 
 	it("stays quiet about the run ending while the build can survive a miss", () => {
@@ -115,10 +118,9 @@ describe("PrepScreen", () => {
 		render(<PrepScreen {...props} removeOnMiss={3} missIsFatal />);
 
 		expect(
-			screen.getByText(
-				"That removal takes your whole pipeline. A miss here ends the run."
-			)
+			screen.getByText("your whole pipeline — the run ends here")
 		).toHaveClass("text-cinnabar");
+		expect(screen.getByText("remove 3 configs")).toBeInTheDocument();
 	});
 
 	it("badges the multipliers beside the base they ride on", () => {
@@ -171,11 +173,13 @@ describe("PrepScreen", () => {
 		expect(screen.getByText("−32 KB on a miss")).toBeInTheDocument();
 	});
 
-	it("separates the bill that lands pass or fail from the one that waits", () => {
+	// Only the bill that waits is qualified. A bill charged either way is just
+	// the bill, and saying so on every line made the two read as equally special.
+	it("qualifies the bill that waits for the clear, and only that one", () => {
 		render(<PrepScreen {...props} />);
 
-		expect(screen.getByText("pass or fail")).toBeInTheDocument();
 		expect(screen.getByText("on clear")).toBeInTheDocument();
+		expect(screen.queryByText("pass or fail")).not.toBeInTheDocument();
 	});
 
 	it("keeps a single bill off the total row, which would only repeat it", () => {
@@ -202,7 +206,7 @@ describe("PrepScreen", () => {
 
 		// Scoped to the fold: the gate header names the same audit, so an
 		// unscoped query matches twice.
-		const fold = screen.getByText("Audit").closest("details");
+		const fold = screen.getByText("Audits").closest("details");
 		if (!fold) throw new Error("No Audit fold rendered");
 
 		expect(within(fold).getByText("Dependency Outage")).toHaveClass(
@@ -211,20 +215,64 @@ describe("PrepScreen", () => {
 		expect(screen.getByText("reported passing")).toBeInTheDocument();
 	});
 
-	it("marks the pipeline idle, since nothing has run against this gate yet", () => {
+	// Online, skipped and offline are all facts about a poll on deck, and prep has
+	// none: a marker here would state something this screen cannot know.
+	it("claims no status for the configs it lists", () => {
 		render(<PrepScreen {...props} />);
 
-		expect(screen.getAllByRole("img", { name: "idle" })).toHaveLength(3);
+		expect(screen.queryAllByRole("img", { name: "idle" })).toHaveLength(0);
 	});
 
-	it("points at the shop rather than offering a drop at the door", () => {
+	// The build cannot be changed here, so the pipeline offers the trip rather
+	// than a sentence describing it.
+	it("sends the player to the shop from the pipeline it cannot edit", async () => {
+		const onBackToShop = vi.fn();
+		render(<PrepScreen {...props} onBackToShop={onBackToShop} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Change build in shop" })
+		);
+
+		expect(onBackToShop).toHaveBeenCalledOnce();
+		expect(
+			screen.queryByRole("button", { name: /Drop/ })
+		).not.toBeInTheDocument();
+	});
+
+	// Pushed to the far edge, a figure sat a gutter away from the thing it
+	// priced and read as a column. Row.CONTENT is the flex-1 half of the row,
+	// so landing inside it is what "on the label's own line" means structurally.
+	it("sets a reward's figure on the label's line, not across the row", () => {
+		render(<PrepScreen {...props} />);
+
+		expect(screen.getByText("+96 KB").closest(".flex-1")).not.toBeNull();
+	});
+
+	// The build is a pipeline, and a pipeline runs in order. Without the numbers
+	// the column read as an unordered inventory.
+	it("numbers the build in the order it runs", () => {
+		render(<PrepScreen {...props} />);
+
+		const pipeline = screen.getByText("Your pipeline").closest("details");
+		const rows = within(pipeline as HTMLElement).getAllByRole("listitem");
+
+		expect(rows[0]).toHaveTextContent("1");
+		expect(rows[1]).toHaveTextContent("2");
+	});
+
+	// What the gate is about to do to the build is not a thing to put away, and
+	// a folded Audits section hid the one row that changes how a gate is played.
+	it("opens every section, audits included", () => {
+		const { container } = render(<PrepScreen {...props} />);
+
+		expect(container.querySelectorAll("details:not([open])")).toHaveLength(0);
+	});
+
+	it("offers no trip to a shop the caller cannot open", () => {
 		render(<PrepScreen {...props} />);
 
 		expect(
-			screen.getByText("Change your build in the shop.")
-		).toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /Drop/ })
+			screen.queryByRole("button", { name: "Change build in shop" })
 		).not.toBeInTheDocument();
 	});
 
@@ -238,7 +286,7 @@ describe("PrepScreen", () => {
 	it("omits the sections a lean gate has nothing to put in", () => {
 		render(<PrepScreen {...bare} />);
 
-		expect(screen.queryByText("Audit")).not.toBeInTheDocument();
+		expect(screen.queryByText("Audits")).not.toBeInTheDocument();
 		expect(screen.queryByText("Subscriptions")).not.toBeInTheDocument();
 		expect(screen.queryByText("Prefetch")).not.toBeInTheDocument();
 	});

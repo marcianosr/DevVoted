@@ -9,6 +9,9 @@ export type TextSize = "xxs" | "meta" | "body" | "label" | "title" | "ask";
 
 const SIZE = {
 	xxs: "text-xxs",
+	// No weight: a size token carrying one silently beat every `font-bold` an
+	// ancestor set, on equal specificity, decided by Tailwind's source order.
+	// That is the trap RarityWord's comment describes, one level up.
 	meta: "text-xs",
 	body: "text-sm",
 	label: "text-base",

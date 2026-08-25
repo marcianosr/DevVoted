@@ -12,7 +12,7 @@ import {
 	gateClearPayout,
 	storageInterestFor,
 	isBare,
-	rewardMultiplierFor,
+	coverageLossFor,
 	slotsForGatesCleared,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
@@ -64,11 +64,13 @@ import {
 	liveAuditsFor,
 	mirrorsPolls,
 	offlineConfigsFor,
+	type OfflinePair,
+	offlinePairsFor,
 } from "~/modules/run/gate/domain/audit.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	atMinimumWidth,
-	FAUCET_CAP_KB,
+	faucetRemainingKb,
 	isStakeFatal,
 	PIN_FROM_GATE,
 	PIN_START_KB_PER_GATE,
@@ -83,7 +85,6 @@ import {
 	storagePlanFor,
 	streakMultiplier,
 	VICTORY_GATE,
-	WRONG_COVERAGE_LOSS,
 } from "~/modules/run/run/domain/rules.model";
 
 const LINT_COSTS = [8, 16, 32, 64, 128, 256];
@@ -734,11 +735,7 @@ const answer = (
 		streakMultiplier(streak)
 	);
 	const coverageLoss =
-		auditedShare > 0
-			? 0
-			: roundToOneDecimal(
-					WRONG_COVERAGE_LOSS * rewardMultiplierFor(configs) * gateMultiplier
-				);
+		auditedShare > 0 ? 0 : coverageLossFor(configs, state.gatesCleared);
 	const coverageBreakdown = coverageBreakdownForAnswer(
 		configs,
 		answerContext,
@@ -752,10 +749,7 @@ const answer = (
 	);
 	const rawFaucet = correct ? faucetKbPerCorrect(configs) : 0;
 	const faucetEarnedBefore = state.faucetEarnedKb ?? 0;
-	const faucet = Math.min(
-		rawFaucet,
-		Math.max(0, FAUCET_CAP_KB - faucetEarnedBefore)
-	);
+	const faucet = Math.min(rawFaucet, faucetRemainingKb(faucetEarnedBefore));
 	// The burn audit's per-poll tax; floors the balance at 0 — insolvency stays
 	// non-lethal (ADR-023's downgrade is the storage cliff, never death).
 	const burnKb = Math.min(
@@ -862,6 +856,15 @@ const auditsOf = (state: RunState): readonly Audit[] =>
 /** Configs an audit has switched off for the poll on deck (ADR-038). */
 export const offlineConfigsOf = (state: RunState): readonly Config[] =>
 	offlineConfigsFor(
+		state.pipeline.configs,
+		auditsOf(state),
+		windowStartIndex(state),
+		state.window.answered
+	);
+
+/** The same switch-off, paired with the audit that threw it — the rail names it. */
+export const offlinePairsOf = (state: RunState): readonly OfflinePair[] =>
+	offlinePairsFor(
 		state.pipeline.configs,
 		auditsOf(state),
 		windowStartIndex(state),

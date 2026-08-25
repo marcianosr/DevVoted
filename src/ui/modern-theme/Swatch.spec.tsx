@@ -20,6 +20,21 @@ describe("Swatch", () => {
 		);
 	});
 
+	// Standing on a gate is not clearing it, so the one square the player is on
+	// shows the shape and the colour of what it would pay, and no fill.
+	it("rings the current gate without filling it", () => {
+		const { container } = render(<Swatch state="current" />);
+
+		expect(container.firstChild).toHaveClass("outline-theme");
+		expect(container.firstChild).not.toHaveClass("bg-theme");
+	});
+
+	it("fills only the swatch a gate has actually handed over", () => {
+		const { container } = render(<Swatch state="earned" />);
+
+		expect(container.firstChild).toHaveClass("bg-theme");
+	});
+
 	it("draws a pip smaller and less rounded than a badge", () => {
 		const { container: pip } = render(<Swatch size="pip" />);
 		const { container: badge } = render(<Swatch size="badge" />);
