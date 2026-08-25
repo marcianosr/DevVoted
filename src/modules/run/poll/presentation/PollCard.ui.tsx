@@ -1,5 +1,5 @@
 import { CategoryCode, getCategoryMetadata } from "~/shared/lib/categories";
-import type { AnswerType } from "~/modules/run/run/domain/run.model";
+import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import { PollCodeSandbox } from "~/modules/run/poll/presentation/PollCodeSandbox.ui";
 import {
 	CodeBlockMarkdown,

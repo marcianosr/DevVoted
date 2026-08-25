@@ -1,4 +1,4 @@
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
 	deriveGateLadder,

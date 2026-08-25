@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";
 

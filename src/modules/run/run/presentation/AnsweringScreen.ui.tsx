@@ -2,7 +2,7 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import type {
 	AnswerOutcome,
 	AnswerType,
-} from "~/modules/run/run/domain/run.model";
+} from "~/modules/run/run/domain/runPoll.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import type {

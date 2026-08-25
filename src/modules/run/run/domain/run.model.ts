@@ -1,11 +1,18 @@
-import type { CategoryCode } from "~/shared/lib/categories";
+import {
+	type AnsweredPoll,
+	type AnswerOutcome,
+	answerOutcome,
+	coverageShare,
+	mirrorPoll,
+	nextStreak,
+	type RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 
 import {
 	Pipeline,
 	BASE_SLOTS,
 	canLint,
 	peekerFor,
-	type CoverageBreakdown,
 	coverageBreakdownForAnswer,
 	coverageForAnswer,
 	extraPickPayoutFor,
@@ -92,9 +99,6 @@ const LINT_COSTS = [8, 16, 32, 64, 128, 256];
 export const lintCost = (usesThisPoll: number): number =>
 	LINT_COSTS[usesThisPoll] ?? LINT_COSTS[LINT_COSTS.length - 1];
 
-// One rung above the lint ladder, and it resets per GATE rather than per poll:
-// a peek buys information about the whole poll where a lint buys one crossed-out
-// option, so the second peek of a window has to hurt.
 const PEEK_COSTS = [32, 64, 128, 256, 512];
 
 export const peekCost = (usesThisGate: number): number =>
@@ -103,160 +107,8 @@ export const peekCost = (usesThisGate: number): number =>
 const addStorage = (current: number, income: number): number =>
 	current + income;
 
-export type RunOption = {
-	readonly id: string;
-	readonly label: string;
-	readonly correct: boolean;
-};
-export type AnswerType = "single" | "multiple";
-
-export type RunPoll = {
-	readonly id: string;
-	readonly category: CategoryCode;
-	readonly question: string;
-	readonly codeBlock?: string;
-	readonly codeSandboxUrl?: string;
-	readonly answerType: AnswerType;
-	readonly options: readonly RunOption[];
-	readonly explanation?: string;
-};
-
-/**
- * The grading rule reads ids only for equality, so it is generic over their
- * type: the engine grades string ids, the community board numeric DB ids.
- */
-type GradedPoll<Id> = {
-	readonly answerType: AnswerType;
-	readonly options: readonly { readonly id: Id; readonly correct: boolean }[];
-};
-
-const isCorrect = <Id>(
-	poll: GradedPoll<Id>,
-	picked: ReadonlySet<Id>
-): boolean => {
-	const correctIds = poll.options
-		.filter((option) => option.correct)
-		.map((option) => option.id);
-	if (poll.answerType === "single")
-		return picked.size === 1 && correctIds.some((id) => picked.has(id));
-	return (
-		correctIds.length === picked.size &&
-		correctIds.every((id) => picked.has(id))
-	);
-};
-
-export type AnswerOutcome = "correct" | "partial" | "wrong";
-
-const coverageShare = (poll: RunPoll, optionIds: readonly string[]): number => {
-	const picked = new Set(optionIds);
-	if (isCorrect(poll, picked)) return 1;
-	if (poll.answerType === "single") return 0;
-	const correctIds = poll.options
-		.filter((option) => option.correct)
-		.map((option) => option.id);
-	if (correctIds.length === 0) return 0;
-	const correctPicked = correctIds.filter((id) => picked.has(id)).length;
-	const wrongPicked = picked.size - correctPicked;
-	return Math.max(
-		0,
-		Math.min(1, (correctPicked - wrongPicked) / correctIds.length)
-	);
-};
-
-/**
- * The one grading rule. A partial exists only on multi-answer polls, where the
- * player caught at least one correct option but not the whole set.
- */
-export const answerOutcome = <Id>(
-	poll: GradedPoll<Id>,
-	optionIds: Iterable<Id>
-): AnswerOutcome => {
-	const picked = new Set(optionIds);
-	if (isCorrect(poll, picked)) return "correct";
-	if (poll.answerType === "single") return "wrong";
-	const pickedACorrectOption = poll.options.some(
-		(option) => option.correct && picked.has(option.id)
-	);
-	return pickedACorrectOption ? "partial" : "wrong";
-};
-
-/**
- * The Mirror's poll (ADR-038): every option's correctness flips, so the question
- * becomes "pick every incorrect option". It turns multi-answer whenever more
- * than one option was wrong, which is most of them — a single-answer poll with
- * four options mirrors into a three-option select-all.
- *
- * A poll with no wrong options is left alone: there would be nothing to pick,
- * and an unanswerable poll is a soft-lock rather than a debuff.
- */
-export const mirrorPoll = (poll: RunPoll): RunPoll => {
-	const wrongCount = poll.options.filter((option) => !option.correct).length;
-	if (wrongCount === 0) return poll;
-	return {
-		...poll,
-		answerType: mirroredAnswerType(wrongCount),
-		options: poll.options.map((option) => ({
-			...option,
-			correct: !option.correct,
-		})),
-	};
-};
-
-/**
- * Mirrored, a poll wants *every* wrong option, so it turns select-all as soon as
- * more than one option was wrong. The subtle half of the mirror, shared by the
- * engine's own transform above and the community board's grading — the flip
- * itself is a `!` and needs no home.
- */
-export const mirroredAnswerType = (wrongCount: number): AnswerType =>
-	wrongCount > 1 ? "multiple" : "single";
-
-/**
- * The mirror as the grader sees it: just enough of a poll for `answerOutcome`,
- * with ids preserved and labels dropped. Kept separate from `mirrorPoll` because
- * a community poll's ids are numeric and its options carry different fields —
- * only the grading shape is common.
- */
-export const mirrorGrading = <Id>(poll: GradedPoll<Id>): GradedPoll<Id> => {
-	const wrong = poll.options.filter((option) => !option.correct);
-	if (wrong.length === 0) return poll;
-	return {
-		answerType: mirroredAnswerType(wrong.length),
-		options: poll.options.map((option) => ({
-			id: option.id,
-			correct: !option.correct,
-		})),
-	};
-};
-
-/** A correct extends the streak, a wrong breaks it, a partial holds it. */
-export const nextStreak = (current: number, outcome: AnswerOutcome): number => {
-	if (outcome === "correct") return current + 1;
-	if (outcome === "wrong") return 0;
-	return current;
-};
-
 export type RunStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
-
-export type AnsweredPoll = {
-	readonly id: string;
-	readonly question: string;
-	readonly category: CategoryCode;
-	readonly outcome: AnswerOutcome;
-	readonly picked: readonly string[];
-	readonly correct?: readonly string[];
-	readonly codeBlock?: string;
-	readonly explanation?: string;
-	readonly options?: readonly string[];
-	readonly answerType?: AnswerType;
-	readonly coverageEarned?: number;
-	readonly coverageBreakdown?: CoverageBreakdown;
-	readonly elapsedMs?: number;
-	/** Answered past a Timeout audit's clock, so it was scored as a miss whatever
-	 * was picked (ADR-038). */
-	readonly timedOut?: boolean;
-};
 
 export type RunState = {
 	readonly status: RunStatus;
@@ -274,9 +126,7 @@ export type RunState = {
 	readonly currentIndex: number;
 	readonly window: GateWindow;
 	readonly manualDisabled: readonly string[];
-	/** Polls whose community split has been bought, for the whole run rather than
-	 * the window: the split screen has to survive a reload, and the server reads
-	 * this list to decide whether it may hand the numbers over at all. */
+	/** Run-wide rather than per window: the split screen survives a reload, and the server gates on this list. */
 	readonly peekedPollIds?: readonly string[];
 	readonly gatesCleared: number;
 	readonly streak: number;
@@ -286,42 +136,26 @@ export type RunState = {
 	readonly faucetEarnedKb?: number;
 	readonly faucetThisGateKb?: number;
 	readonly gateRewardKb?: number;
-	/** The interest slice of `gateRewardKb`, kept so the gate report can attribute
-	 * it to the config that earned it (as `faucetThisGateKb` does). */
+	/** Split out of `gateRewardKb` so the gate report can attribute it. */
 	readonly interestThisGateKb?: number;
-	/** The `.length` slice of `gateRewardKb`, kept for the same reason — it prices
-	 * off the window that was drawn, so the loadout alone cannot recover it. */
+	/** Same, for the `.length` slice: the loadout alone cannot reprice it. */
 	readonly extraPickThisGateKb?: number;
 	readonly storagePlan?: number;
 	readonly gateBillKb?: number;
 	readonly planDowngraded?: boolean;
 	readonly clearedGate?: number;
-	/** Set while this gate is being replayed after a miss (ADR-037), so the
-	 * screens can say "again" and the route sync can skip the clear's payout
-	 * screen — `clearedGate` still holds the previous clear and cannot. Cleared
-	 * when the retry starts. */
+	/** Set while a missed gate is replayed (ADR-037); `clearedGate` still holds the previous clear. */
 	readonly redoGate?: number;
-	/** The config Dependabot bumped at the last clear, so the reward screen and
-	 * the shop can flag it — the run log is not shown in the live game. Cleared
-	 * when the climb resumes, like `justUnlockedSlots`. */
+	/** Dependabot's bump at the last clear. Cleared when the climb resumes. */
 	readonly autoUpgradedConfigId?: string;
-	/** Configs that faded to ×1 at the last clear and deleted themselves
-	 * (Deprecated). Whole configs, not ids: they are gone from the pipeline, so
-	 * an id would have nothing to resolve against. Cleared like the above. */
+	/** Deprecated's exits. Whole configs, not ids: they are gone from the pipeline. */
 	readonly deletedConfigs?: readonly Config[];
-	/** Configs whose subscription went unpaid at the last clear and lapsed
-	 * (Freemium). Separate from `deletedConfigs` because the two exits read
-	 * differently to the player — one ran out of effect, one ran out of money —
-	 * and the reward screen says which. Cleared like the above. */
+	/** Freemium's exits. Separate from `deletedConfigs` because the reward screen says which. */
 	readonly lapsedConfigs?: readonly Config[];
-	/** KB the build's subscriptions took at the last clear, for the reward
-	 * screen's deduction line beside the storage plan's. */
 	readonly subscriptionBillKb?: number;
-	/** The git tag (ADR-036): the gate this run planted its checkpoint at.
-	 * Doubles as the once-per-run flag. */
+	/** ADR-036. Doubles as the once-per-run flag. */
 	readonly pinPlantedAtGate?: number;
-	/** Where this run began — 0 unless a tag rescued it. Keeps the death
-	 * storage-credit honest: only gates actually climbed count. */
+	/** 0 unless a tag rescued the run: only gates actually climbed earn death credit. */
 	readonly startedAtGate?: number;
 	readonly justUnlockedSlots?: readonly number[];
 	readonly log: readonly string[];
@@ -355,16 +189,7 @@ export type RunAction =
 const correctOptionCount = (poll: RunPoll): number =>
 	poll.options.filter((option) => option.correct).length;
 
-/**
- * The window's pick budget: every correct option across the polls it serves,
- * the already-answered ones included. Recomputed at each hydration rather than
- * stored at open, because a day rollover (ADR-011) swaps the window's unplayed
- * polls for tomorrow's.
- *
- * `mirrored` counts the wrong options instead, because at a Mirror gate those
- * are the picks the window actually demands — `.length` reveals a number the
- * player is about to spend, so it has to be the mirrored one.
- */
+/** Recomputed at hydration, never stored: a day rollover (ADR-011) swaps the window's unplayed polls. */
 export const pickBudgetFor = (
 	polls: readonly RunPoll[],
 	fromIndex: number,
@@ -381,17 +206,12 @@ export const pickBudgetFor = (
 			0
 		);
 
-/** Where the open window began: `answered` and `currentIndex` advance one per
- * answer and reset together, so their difference is the window's first poll. */
+/** `answered` and `currentIndex` advance and reset together, so their difference is the window's first poll. */
 export const windowStartIndex = (
 	state: Pick<RunState, "currentIndex" | "window">
 ): number => state.currentIndex - state.window.answered;
 
-/**
- * A window belongs to a gate, so it is opened with that gate's number: the
- * budget it reveals depends on whether the gate mirrors its polls, and the gate
- * being opened is not always the one just played (a clear opens the next).
- */
+/** Opened with a gate number: the budget depends on whether that gate mirrors, and a clear opens the next. */
 const freshWindow = (
 	polls: readonly RunPoll[],
 	fromIndex: number,
@@ -406,11 +226,7 @@ const freshWindow = (
 	),
 });
 
-/**
- * `startAtGate` is the git tag's rescue (ADR-036): the run opens on that gate
- * with the width its clears would have granted and a stipend to shop with —
- * everything else (configs, coverage, plan) starts fresh.
- */
+/** `startAtGate` is the git tag's rescue (ADR-036): width and a stipend carry over, nothing else. */
 export const createRun = (
 	polls: readonly RunPoll[],
 	handed: readonly Config[],
@@ -545,16 +361,7 @@ const shopDraft = (state: RunState, seed: number): readonly Config[] =>
 		offerCount(state.extensionsBought ?? 0)
 	);
 
-/**
- * Claims whatever width the run has now earned (ADR-025/041). Called on the two
- * events that can earn it — an answer moves coverage, a clear moves gates —
- * rather than on the clear alone, so a coverage grant lands on the answer that
- * crosses it even when the gate it was answering goes on to fail.
- *
- * Takes the max with the live width because coverage falls on a miss: a slot,
- * once open, is never taken back. Every step in between is announced, since one
- * answer can cross two thresholds at once.
- */
+/** Claims width earned so far (ADR-025/041). Takes the max because coverage falls on a miss but a slot never closes. */
 const widened = (
 	state: RunState,
 	gatesCleared: number = state.gatesCleared
@@ -576,15 +383,12 @@ const widened = (
 };
 
 const closeWindow = (closing: RunState, nextIndex: number): RunState => {
-	// The bill charges before the verdict, pass or fail — every attempt at a gate
-	// pays the subscription, the failed ones included (ADR-035).
+	// Every attempt pays, the failed ones included (ADR-035).
 	const state = chargeStorageBill(closing);
 	const gateNumber = state.gatesCleared;
 
 	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
-		// A miss peels (ADR-037): the base rule plus the gate's strip audits. The
-		// run does not end at the gate — it ends when the peel has nothing left to
-		// take, which the receipt says at the door.
+		// A miss peels (ADR-037); the run ends only when the peel has nothing left to take.
 		const quota = failStripQuotaFor(state.pipeline.configs, gateNumber);
 		const installed = state.pipeline.configs.length;
 		const demand = gateDemandFor(state.pipeline.configs, state.gatesCleared);
@@ -612,8 +416,7 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 	}
 
 	const interest = storageInterestFor(state.pipeline.configs, state.storage);
-	// Picks the window demanded beyond one per poll: what `.length` counted, and
-	// the only part of the clear payout the loadout alone cannot price.
+	// What `.length` counted: the only part of the payout the loadout alone cannot price.
 	const extraPicks = (state.window.budget ?? 0) - state.window.answered;
 	const extraPickKb = extraPickPayoutFor(state.pipeline.configs, extraPicks);
 	const reward =
@@ -650,17 +453,14 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 			log: withLog(state, `${clearLine(gateNumber, reward)} You summited!`),
 		};
 
-	// Seeded off the run's own trail (answers so far, KB in hand), so two runs
-	// at the same gate roll differently but a replayed clear replays its merge.
+	// Seeded off the run's own trail, so a replayed clear replays its merge.
 	const merged = autoUpgradeOnClear(
 		cleared.pipeline.configs,
 		`dependabot-${gateNumber}-${(state.allAnswered ?? []).length}-${state.storage}`
 	);
-	// Decay ticks after the merge on the merged configs, so one clear settles
-	// the pipeline once. The gate just cleared scored at the pre-fade multiplier.
+	// After the merge, so one clear settles the pipeline once.
 	const settled = decayOnClear(merged.configs);
-	// The gate pays, and then the subscription collects (Freemium): billing the
-	// pre-reward balance would lapse a plan this very clear was about to cover.
+	// After the reward: billing the pre-reward balance would lapse a plan this clear just covered.
 	const billed = billSubscriptionsOnClear(
 		settled.configs,
 		cleared.storage,
@@ -712,27 +512,19 @@ const answer = (
 	const poll = state.polls[state.currentIndex];
 	if (!poll) return state;
 
-	// The audits read the *installed* pipeline while scoring reads the live one:
-	// Dependency Outage takes a config down for the attempt, and the defeat
-	// device's fraud was filed at the door, so an outage inside the window cannot
-	// retroactively un-suppress what the receipt already showed as passing.
+	// Audits read the installed pipeline, scoring the live one: an outage inside the window cannot un-suppress what the receipt already passed.
 	const audits = auditsOf(state);
 	const configs = liveConfigsOf(state);
-	// The mirror flips the poll, so everything downstream — outcome, share,
-	// streak, the answers the review shows as correct — grades the question the
-	// player was actually asked.
+	// Grade the question actually asked, so outcome, share, streak and review all agree.
 	const graded = mirrorsPolls(audits) ? mirrorPoll(poll) : poll;
 	const answeredOutcome = answerOutcome(graded, optionIds);
-	// Over the clock is a miss whatever was picked, and it short-circuits the
-	// mirror rather than feeding it: a timeout must never be the way to score.
+	// Short-circuits the mirror: a timeout must never be the way to score.
 	const limitMs = auditTimeLimitMs(audits, state.window.answered);
 	const timedOut =
 		limitMs !== undefined && elapsedMs !== undefined && elapsedMs > limitMs;
 	const outcome: AnswerOutcome = timedOut ? "wrong" : answeredOutcome;
 	const correct = outcome === "correct";
-	// The audits transform the raw share before any multiplier (the mirror flips
-	// it), so scoring — earn AND bleed — follows the audited share while streaks
-	// and the faucet stay keyed to true correctness.
+	// Scoring follows the audited share; streaks and the faucet stay keyed to true correctness.
 	const auditedShare = timedOut
 		? 0
 		: auditScoreShare(audits, coverageShare(graded, optionIds));
@@ -769,8 +561,7 @@ const answer = (
 	const rawFaucet = correct ? faucetKbPerCorrect(configs) : 0;
 	const faucetEarnedBefore = state.faucetEarnedKb ?? 0;
 	const faucet = Math.min(rawFaucet, faucetRemainingKb(faucetEarnedBefore));
-	// The burn audit's per-poll tax; floors the balance at 0 — insolvency stays
-	// non-lethal (ADR-023's downgrade is the storage cliff, never death).
+	// Floors at 0: insolvency stays non-lethal (ADR-023).
 	const burnKb = Math.min(
 		auditBurnKb(audits, outcome === "wrong"),
 		Math.max(0, state.storage + faucet)
@@ -784,8 +575,7 @@ const answer = (
 	const window: GateWindow = {
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
-		// The gate's score meter: net of losses and floored, so a bad opening
-		// can be climbed out of but never banks a negative (ADR-035).
+		// Floored, so a bad opening can be climbed out of but never banks a negative (ADR-035).
 		coverageGained: roundToOneDecimal(
 			Math.max(0, state.window.coverageGained + earned - coverageLoss)
 		),
@@ -808,8 +598,7 @@ const answer = (
 		picked: graded.options
 			.filter((option) => optionIds.includes(option.id))
 			.map((option) => option.label),
-		// The mirrored expectation, not the poll's own answer: the reveal marks
-		// what this gate asked for, and the review has to agree with the score.
+		// The mirrored expectation, so the review agrees with the score.
 		correct: graded.options
 			.filter((option) => option.correct)
 			.map((option) => option.label),
@@ -820,9 +609,6 @@ const answer = (
 		coverageEarned: earned,
 		coverageBreakdown,
 		elapsedMs,
-		// The outcome above already reads "wrong" for a late answer, so the review
-		// needs this to tell a genuine miss from a right answer that ran out of
-		// clock — the tallies stay honest, and so does the player's memory.
 		timedOut: timedOut ? true : undefined,
 	};
 
@@ -865,10 +651,6 @@ const wrongStillOn = (state: RunState) => {
 	);
 };
 
-/**
- * The audits in force on the gate this run is standing at — every rule that
- * reads the pipeline asks this rather than rebuilding the pair of arguments.
- */
 const auditsOf = (state: RunState): readonly Audit[] =>
 	liveAuditsFor(state.pipeline.configs, state.gatesCleared);
 
@@ -890,11 +672,7 @@ export const offlinePairsOf = (state: RunState): readonly OfflinePair[] =>
 		state.window.answered
 	);
 
-/**
- * The build as it actually plays this poll: installed, minus whatever an audit
- * has taken offline. Everything that reads a power off the pipeline goes through
- * here, so a switched-off config cannot sell an action it can no longer perform.
- */
+/** The build as it actually plays this poll, so a switched-off config cannot sell an action it cannot perform. */
 export const liveConfigsOf = (state: RunState): readonly Config[] => {
 	const offline = offlineConfigsOf(state);
 	if (offline.length === 0) return state.pipeline.configs;
@@ -903,11 +681,7 @@ export const liveConfigsOf = (state: RunState): readonly Config[] => {
 	);
 };
 
-/**
- * What the paid actions charge here: the fee ladder, times whatever Cost Overrun
- * is doing to it (ADR-038). Exported so the buttons print the same number the
- * reducer takes.
- */
+/** The fee ladder times Cost Overrun (ADR-038). Exported so buttons print what the reducer takes. */
 export const lintFeeFor = (state: RunState): number =>
 	lintCost(state.manualDisabled.length) * auditFeeMultiplier(auditsOf(state));
 
@@ -917,8 +691,7 @@ export const peekFeeFor = (state: RunState): number =>
 export const lintApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !canLint(liveConfigsOf(state), poll.category)) return false;
-	// Feature Freeze removes the action rather than pricing it: a frozen linter
-	// has no button to explain itself, and the receipt already said why.
+	// Feature Freeze removes the action rather than pricing it.
 	if (auditsFreezeManualEffects(auditsOf(state))) return false;
 	return wrongStillOn(state).length > 1;
 };
@@ -937,11 +710,7 @@ const spendLint = (state: RunState): RunState => {
 	};
 };
 
-/**
- * A peek is available on any poll, in any category — the split exists for all of
- * them. Once per poll: the whole split comes over at once, so a second look on
- * the same poll would be a charge for nothing.
- */
+/** Once per poll: the whole split arrives at once, so a second look would charge for nothing. */
 export const peekApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !peekerFor(liveConfigsOf(state))) return false;
@@ -985,13 +754,7 @@ const strip = (state: RunState, configId: string): RunState => {
 	};
 };
 
-/**
- * The way out of a missed gate (ADR-037): the peel is paid, so the run rejoins
- * the normal post-gate loop — shop, prep, then the same gate again. Routing
- * through the shop is the point: KB is the comeback resource, and a rebuilt
- * pipeline is the only thing that makes the retry different from the attempt
- * that just failed.
- */
+/** ADR-037. Routes through the shop deliberately: KB is the comeback resource. */
 const resumeClimb = (state: RunState): RunState => {
 	if (state.stripsRemaining > 0) return state;
 	if (isBare(state.pipeline))
@@ -1012,8 +775,7 @@ const resumeClimb = (state: RunState): RunState => {
 		gateRewardKb: 0,
 		interestThisGateKb: 0,
 		extraPickThisGateKb: 0,
-		// Seeded off answers-so-far, so every redo's shop rolls fresh but a
-		// reloaded run re-rolls the same draft.
+		// Seeded off answers-so-far: fresh per redo, stable across a reload.
 		draftOptions: shopDraft(
 			state,
 			draftSeed(state.gatesCleared, (state.allAnswered ?? []).length)
@@ -1064,8 +826,7 @@ const draft = (state: RunState, configId: string): RunState => {
 		...stayReward(
 			state,
 			drafted,
-			// The license takes effect at the counter: drafting WTFPL reopens this
-			// visit's table as the whole catalog, not the next shop's.
+			// WTFPL takes effect at the counter, reopening this visit's table.
 			chosen.offersFullRoster
 				? shopDraft(
 						{ ...state, pipeline: drafted },
@@ -1094,9 +855,7 @@ const upgrade = (state: RunState, configId: string): RunState => {
 			config.id === configId ? levelUp(config) : config
 		)
 	);
-	// A Focus config is gated twice: its category's coverage says you have earned
-	// the level, and the storage every upgrade costs says you can pay for it.
-	// Mastery is permission, KB is the price — one never stands in for the other.
+	// Gated twice: coverage is permission, KB is the price. Neither stands in for the other.
 	if (owned.focusCategory) {
 		const have = state.coverageByCategory[owned.focusCategory] ?? 0;
 		if (have < upgradeCoverageRequired(level)) return state;
@@ -1130,20 +889,11 @@ const changePlan = (state: RunState, tier: number): RunState => {
 	};
 };
 
-/**
- * The window the shop sells a tag in (ADR-036): from gate 4, and never past gate
- * 10 — a rescue deeper than that resumes a starter build into stacked audits and
- * a 4-config peel, so it would be a fortune spent on a death.
- */
+/** ADR-036. Past gate 10 a rescue resumes a starter build into stacked audits, so it is not sold. */
 const pinSoldAt = (gatesCleared: number): boolean =>
 	gatesCleared >= PIN_FROM_GATE && gatesCleared <= PIN_UNTIL_GATE;
 
-/**
- * The git tag (ADR-036): one per run, priced by the gate it marks, burnt by the
- * run it rescues. The tag itself persists on the account (run.repository mirrors
- * it), so it outlives this run's death — and a rescued run that wants another
- * has to buy it again.
- */
+/** ADR-036. One per run; the tag persists on the account and outlives this run's death. */
 const plantPin = (state: RunState): RunState => {
 	if (state.pinPlantedAtGate !== undefined) return state;
 	if (!pinSoldAt(state.gatesCleared)) return state;
@@ -1193,19 +943,11 @@ const finishReward = (state: RunState): RunState => {
 	};
 };
 
-/**
- * The shop's three controls (ADR-029), each asked once. Every one splits the
- * same way: `{name}Available` is whether this depth of climb sells it at all,
- * `can{Name}` whether the run can pay for it right now — the shop hides an
- * unavailable control and disables an unaffordable one, so the two cannot be
- * one flag. Exported so the buttons ask the rule; the reducer refuses either
- * way.
- */
+/** ADR-029. `{name}Available` is whether this depth sells it, `can{Name}` whether the run can pay: the shop hides one and disables the other. */
 export const canRebuild = (state: RunState): boolean =>
 	state.storage >= rebuildCost(state.rebuildsUsed);
 
-/** WTFPL retires all three controls: rerolling, holding or widening a table
- * that already shows everything would sell the player nothing for real KB. */
+/** WTFPL retires all three: rerolling a table that already shows everything sells nothing. */
 export const rebuildAvailable = (state: RunState): boolean =>
 	!shopOffersFullRoster(state.pipeline.configs);
 
@@ -1312,14 +1054,11 @@ const drop = (state: RunState, configId: string): RunState => {
 	};
 };
 
-/** The climb begins on a full starting hand — a tag-rescued run opens wider
- * than the bench can fill, so the demand clamps to the base three (ADR-036).
- * Exported so the Start button asks the rule; the reducer refuses either way. */
+/** A tag-rescued run opens wider than the bench can fill, so the demand clamps to the base three (ADR-036). */
 export const canStart = (pipeline: Pipeline): boolean =>
 	pipeline.configs.length >= Math.min(pipeline.slots, BASE_SLOTS);
 
-/** Won and dead are both terminal; nearly every caller wants "is it finished"
- * rather than which of the two, and spelling out the pair invites missing one. */
+/** Won and dead are both terminal, and spelling out the pair invites missing one. */
 export const isRunOver = (status: RunStatus): boolean =>
 	status === "won" || status === "dead";
 
@@ -1328,11 +1067,7 @@ const start = (state: RunState): RunState => {
 	return { ...state, status: "answering" };
 };
 
-/**
- * Everything the shop writes. Read-only (ADR-038) refuses the lot before the
- * gate it guards; `drop` is deliberately not here — it belongs to the gate door,
- * not the till, and `atMinimumWidth` already governs it.
- */
+/** Read-only (ADR-038) refuses these. `drop` is absent deliberately: it belongs to the gate door, and `atMinimumWidth` governs it. */
 const SHOP_WRITES: readonly RunAction["type"][] = [
 	"draft",
 	"upgrade",

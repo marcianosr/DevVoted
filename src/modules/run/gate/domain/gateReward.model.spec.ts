@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {

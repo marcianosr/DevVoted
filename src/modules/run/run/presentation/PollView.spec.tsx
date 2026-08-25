@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { createMockPollView, createMockRunView } from "~/test/runView.factory";
 
 import { PollView, type PollViewProps } from "./PollView.component";

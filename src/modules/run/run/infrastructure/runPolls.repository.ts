@@ -11,7 +11,7 @@ import {
 } from "~/database/schema";
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
 
-import type { RunPoll } from "~/modules/run/run/domain/run.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import { rollDailySeedSequence } from "~/modules/run/run/domain/seed.model";
 
 /**

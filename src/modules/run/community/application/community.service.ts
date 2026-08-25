@@ -15,7 +15,7 @@ import {
 	type AnswerOutcome,
 	type AnswerType,
 	mirrorGrading,
-} from "~/modules/run/run/domain/run.model";
+} from "~/modules/run/run/domain/runPoll.model";
 import {
 	fetchActiveClimbers,
 	fetchActiveRunStats,

@@ -2,12 +2,14 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import {
-	type AnsweredPoll,
 	createRun,
 	runReducer,
 	RunAction,
-	RunPoll,
 } from "~/modules/run/run/domain/run.model";
+import {
+	type AnsweredPoll,
+	RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 import type {
 	CommunityOptionResult,
 	CommunityStandout,

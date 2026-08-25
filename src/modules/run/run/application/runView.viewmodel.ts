@@ -1,8 +1,5 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 import {
-	type AnsweredPoll,
-	type AnswerOutcome,
-	type AnswerType,
 	canBuyPeek,
 	canExtend,
 	canLock,
@@ -20,13 +17,18 @@ import {
 	lintApplies,
 	lintFeeFor,
 	peekApplies,
-	mirrorPoll,
 	offlinePairsOf,
 	peekFeeFor,
-	type RunPoll,
 	type RunState,
 	type RunStatus,
 } from "~/modules/run/run/domain/run.model";
+import {
+	type AnsweredPoll,
+	type AnswerOutcome,
+	type AnswerType,
+	mirrorPoll,
+	type RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 import { type Config } from "~/modules/run/config/domain/config.model";
 import {
 	billLedger,

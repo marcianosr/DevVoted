@@ -1,6 +1,6 @@
 import { cva } from "class-variance-authority";
 
-import type { AnswerType } from "~/modules/run/run/domain/run.model";
+import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import { revealDelayMs } from "~/modules/run/poll/presentation/revealTiming";
 
 export type PollOption = { readonly id: string; readonly label: string };

@@ -7,7 +7,7 @@ import {
 	percent,
 	type Percent,
 } from "~/shared/lib/displayValue";
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	Config,
 	faucetKbPerCorrect,

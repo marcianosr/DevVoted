@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { gateStorageBreakdown } from "~/modules/run/gate/domain/gateReward.model";
 import {

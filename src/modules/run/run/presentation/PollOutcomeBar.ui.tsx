@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import type { AnswerOutcome } from "~/modules/run/run/domain/run.model";
+import type { AnswerOutcome } from "~/modules/run/run/domain/runPoll.model";
 
 type PollOutcomeBarProps = {
 	/** This gate's answers so far, in the order they were given. */

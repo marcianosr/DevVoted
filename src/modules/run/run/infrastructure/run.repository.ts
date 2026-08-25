@@ -15,10 +15,10 @@ import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 import {
 	isRunOver,
 	type RunAction,
-	type RunPoll,
 	type RunState,
 	runReducer,
 } from "~/modules/run/run/domain/run.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	hydrateRunState,
 	type RunSnapshot,

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
 import { createMockGateStake } from "~/test/runView.factory";

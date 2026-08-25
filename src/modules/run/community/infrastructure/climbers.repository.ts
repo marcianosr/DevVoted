@@ -6,7 +6,7 @@ import { runStatesTable, runsTable, usersTable } from "~/database/schema";
 import type {
 	AnsweredPoll,
 	AnswerOutcome,
-} from "~/modules/run/run/domain/run.model";
+} from "~/modules/run/run/domain/runPoll.model";
 import type { GateWindow } from "~/modules/run/config/domain/effect.model";
 import type { Pipeline } from "~/modules/run/pipeline/domain/pipeline.model";
 import type { RunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";

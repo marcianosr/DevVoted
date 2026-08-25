@@ -11,7 +11,7 @@ import {
 import {
 	type AnswerOutcome,
 	nextStreak,
-} from "~/modules/run/run/domain/run.model";
+} from "~/modules/run/run/domain/runPoll.model";
 import {
 	type SwatchFinish,
 	swatchForGate,

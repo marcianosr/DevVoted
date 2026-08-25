@@ -4,9 +4,9 @@ import { createMockRunRecord } from "~/domains/runs/models/run.mock";
 import { TEST_DATES } from "~/test/kanto";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { createRun } from "~/modules/run/run/domain/run.model";
+import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import type { RunPoll, RunState } from "~/modules/run/run/domain/run.model";
 import { getPollSplitService } from "~/modules/run/community/application/pollSplit.service";
 import * as communityQueries from "~/modules/run/community/infrastructure/community.repository";
 import * as runQueries from "~/modules/run/run/infrastructure/run.repository";

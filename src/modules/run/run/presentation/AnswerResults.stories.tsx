@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { AnswerResults } from "~/modules/run/run/presentation/AnswerResults.ui";
 
 const answered: AnsweredPoll[] = [

@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 import type {
 	AnswerOutcome,
 	AnsweredPoll,
-} from "~/modules/run/run/domain/run.model";
+} from "~/modules/run/run/domain/runPoll.model";
 import { correctCount } from "~/modules/run/gate/domain/gateReward.model";
 import { Disclosure } from "~/ui/Disclosure.ui";
 import { FoldCaret } from "~/ui/FoldCaret.ui";

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";

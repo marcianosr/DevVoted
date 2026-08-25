@@ -3,11 +3,8 @@ import { describe, expect, it } from "vitest";
 import { KANTO_QUIZ, KANTO_TOWNS } from "~/test/kanto";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import {
-	createRun,
-	type RunPoll,
-	type RunState,
-} from "~/modules/run/run/domain/run.model";
+import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	hydrateRunState,
 	toRunSnapshot,

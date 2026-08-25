@@ -3,11 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockRunRecord } from "~/domains/runs/models/run.mock";
 import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 
-import {
-	createRun,
-	type RunPoll,
-	type RunState,
-} from "~/modules/run/run/domain/run.model";
+import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {

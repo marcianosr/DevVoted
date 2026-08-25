@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
 	createRun,
 	runReducer,
-	RunPoll,
 	type RunState,
 } from "~/modules/run/run/domain/run.model";
+import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	perAnswerPreviewFor,
 	pipelineModifiersFor,

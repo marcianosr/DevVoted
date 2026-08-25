@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { AnswerOutcome } from "~/modules/run/run/domain/run.model";
+import type { AnswerOutcome } from "~/modules/run/run/domain/runPoll.model";
 import {
 	type ActiveRunStats,
 	type CommunityAnswer,

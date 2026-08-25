@@ -10,8 +10,8 @@ import {
 	usersTable,
 } from "@/src/database/schema";
 import { getOrCreateDailyRunSeed } from "~/modules/run/run/infrastructure/runPolls.repository";
-import type { AnsweredPoll } from "~/modules/run/run/domain/run.model";
 import { createRun } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
