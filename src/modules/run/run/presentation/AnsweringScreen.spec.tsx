@@ -4,7 +4,10 @@ import { render, screen, fireEvent, within } from "@testing-library/react";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { PaidActions } from "~/modules/run/run/application/paidActions.viewmodel";
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
-import { createMockPaidActions } from "~/test/runView.factory";
+import {
+	createMockPaidActions,
+	createMockPollView,
+} from "~/test/runView.factory";
 
 const lintWith = (overrides: Partial<PaidActions>) =>
 	createMockPaidActions({ canLint: true, lintReady: true, ...overrides });
@@ -14,13 +17,14 @@ const peekWith = (overrides: Partial<PaidActions>) =>
 
 const base = {
 	configs: [CONFIGS.unitTests, CONFIGS.js],
-	category: "react" as const,
-	question: "Which key?",
-	answerType: "single" as const,
-	options: [
-		{ id: "a", label: "A stable unique id" },
-		{ id: "b", label: "The array index" },
-	],
+	poll: createMockPollView({
+		category: "react",
+		question: "Which key?",
+		options: [
+			{ id: "a", label: "A stable unique id" },
+			{ id: "b", label: "The array index" },
+		],
+	}),
 	pollOutcomes: [],
 	pollsPerGate: 5,
 	canSubmit: true,
@@ -209,14 +213,16 @@ describe(AnsweringScreen, () => {
 		render(
 			<AnsweringScreen
 				{...base}
-				correctOptionIds={["a"]}
-				chosenOptionIds={["b"]}
-				revealScore={{
-					isCorrect: true,
-					baseCoverage: 1,
-					streakBonus: 0.1,
-					configBonuses: [{ configId: "js", value: 0.5 }],
-					earnedCoverage: 1.6,
+				reveal={{
+					correctOptionIds: ["a"],
+					chosenOptionIds: ["b"],
+					score: {
+						isCorrect: true,
+						baseCoverage: 1,
+						streakBonus: 0.1,
+						configBonuses: [{ configId: "js", value: 0.5 }],
+						earnedCoverage: 1.6,
+					},
 				}}
 				onNext={onNext}
 			/>
@@ -232,14 +238,16 @@ describe(AnsweringScreen, () => {
 		render(
 			<AnsweringScreen
 				{...base}
-				correctOptionIds={["a"]}
-				chosenOptionIds={["a"]}
-				revealScore={{
-					isCorrect: true,
-					baseCoverage: 1,
-					streakBonus: 0.1,
-					configBonuses: [{ configId: "js", value: 0.5 }],
-					earnedCoverage: 1.6,
+				reveal={{
+					correctOptionIds: ["a"],
+					chosenOptionIds: ["a"],
+					score: {
+						isCorrect: true,
+						baseCoverage: 1,
+						streakBonus: 0.1,
+						configBonuses: [{ configId: "js", value: 0.5 }],
+						earnedCoverage: 1.6,
+					},
 				}}
 			/>
 		);
@@ -330,8 +338,7 @@ describe("the audit banner", () => {
 			<AnsweringScreen
 				{...base}
 				audits={[audit("timeout-3", "On the clock: 30s.")]}
-				timeLimitMs={30_000}
-				remainingMs={12_400}
+				clock={{ limitMs: 30_000, remainingMs: 12_400 }}
 			/>
 		);
 		// Rounded up: a clock reading 0 while the answer still counts reads broken.
@@ -343,8 +350,7 @@ describe("the audit banner", () => {
 			<AnsweringScreen
 				{...base}
 				audits={[audit("timeout-3", "On the clock: 30s.")]}
-				timeLimitMs={30_000}
-				remainingMs={0}
+				clock={{ limitMs: 30_000, remainingMs: 0 }}
 			/>
 		);
 		expect(screen.getByText("out of time")).toBeInTheDocument();

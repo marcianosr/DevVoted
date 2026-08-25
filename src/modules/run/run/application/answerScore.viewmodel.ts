@@ -49,6 +49,15 @@ const answerDifficulty = (
 	return { multiplier, optionCount, isMultiple };
 };
 
+/** The post-submit beat: the answered poll stays on screen with its options
+ * painted and the score beside them. One object because the three arrive
+ * together — a reveal with only some of them is not a state the run can be in. */
+export type AnswerReveal = {
+	readonly correctOptionIds: readonly string[];
+	readonly chosenOptionIds: readonly string[];
+	readonly score?: AnswerScore;
+};
+
 export const latestAnswerScore = (view: RunView): AnswerScore | null => {
 	const answered = view.answeredThisGate.at(-1);
 	const breakdown = answered?.coverageBreakdown;

@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
+import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
 import { PollCard } from "~/modules/run/poll/presentation/PollCard.ui";
+import { createMockPollView } from "~/test/runView.factory";
 
 const options = [
 	{ id: "a", label: "Alpha" },
@@ -9,14 +11,18 @@ const options = [
 	{ id: "c", label: "Gamma" },
 ];
 
+/** Three lettered options on a single-answer poll; each test names only what it varies. */
+const poll = (overrides: Partial<PollView> = {}) =>
+	createMockPollView({ options, ...overrides });
+
 describe(PollCard, () => {
 	it("renders the category name, question, and options", () => {
 		render(
 			<PollCard
-				category="react"
-				question="Which key?"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "react",
+					question: "Which key?",
+				})}
 				onSelect={() => {}}
 			/>
 		);
@@ -28,11 +34,11 @@ describe(PollCard, () => {
 	it("renders the poll's code_block as a highlighted code block", () => {
 		const { container } = render(
 			<PollCard
-				category="react"
-				question="Why won't this render?"
-				codeBlock={"const App = () => {\n  <div>Hi</div>;\n};"}
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "react",
+					question: "Why won't this render?",
+					codeBlock: "const App = () => {\n  <div>Hi</div>;\n};",
+				})}
 				onSelect={() => {}}
 			/>
 		);
@@ -46,11 +52,11 @@ describe(PollCard, () => {
 	it("embeds a CodeSandbox frame when the poll carries a sandbox url", () => {
 		render(
 			<PollCard
-				category="html"
-				question="See the sandbox below — which tags fit?"
-				codeSandboxUrl="https://codesandbox.io/embed/example"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "html",
+					question: "See the sandbox below — which tags fit?",
+					codeSandboxUrl: "https://codesandbox.io/embed/example",
+				})}
 				onSelect={() => {}}
 			/>
 		);
@@ -64,10 +70,10 @@ describe(PollCard, () => {
 	it("omits the code block when the poll has no code_block", () => {
 		const { container } = render(
 			<PollCard
-				category="react"
-				question="Which key?"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "react",
+					question: "Which key?",
+				})}
 				onSelect={() => {}}
 			/>
 		);
@@ -78,10 +84,10 @@ describe(PollCard, () => {
 		const onSelect = vi.fn();
 		render(
 			<PollCard
-				category="js"
-				question="Q"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "js",
+					question: "Q",
+				})}
 				onSelect={onSelect}
 			/>
 		);
@@ -96,10 +102,10 @@ describe(PollCard, () => {
 	it("does not answer a disabled (linted) option", () => {
 		render(
 			<PollCard
-				category="js"
-				question="Q"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "js",
+					question: "Q",
+				})}
 				disabledOptionIds={["c"]}
 				onSelect={() => {}}
 			/>
@@ -110,10 +116,10 @@ describe(PollCard, () => {
 	it("badges options as radios for single-answer polls and checkboxes for multiple", () => {
 		const { container, rerender } = render(
 			<PollCard
-				category="js"
-				question="Q"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "js",
+					question: "Q",
+				})}
 				onSelect={() => {}}
 			/>
 		);
@@ -122,10 +128,11 @@ describe(PollCard, () => {
 		);
 		rerender(
 			<PollCard
-				category="js"
-				question="Q"
-				answerType="multiple"
-				options={options}
+				poll={poll({
+					category: "js",
+					question: "Q",
+					answerType: "multiple",
+				})}
 				onSelect={() => {}}
 			/>
 		);
@@ -137,10 +144,10 @@ describe(PollCard, () => {
 	it("labels each option with a letter badge", () => {
 		render(
 			<PollCard
-				category="css"
-				question="Q"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "css",
+					question: "Q",
+				})}
 				onSelect={() => {}}
 			/>
 		);
@@ -155,13 +162,12 @@ describe(PollCard, () => {
 	it("swaps the letter for a ✓/✕ mark on revealed correct and chosen-wrong options", () => {
 		render(
 			<PollCard
-				category="css"
-				question="Q"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "css",
+					question: "Q",
+				})}
+				reveal={{ correctOptionIds: ["a"], chosenOptionIds: ["b"] }}
 				onSelect={() => {}}
-				correctOptionIds={["a"]}
-				chosenOptionIds={["b"]}
 			/>
 		);
 		expect(
@@ -178,13 +184,13 @@ describe(PollCard, () => {
 	it("distinguishes a correct answer you chose from one you missed", () => {
 		render(
 			<PollCard
-				category="css"
-				question="Q"
-				answerType="multiple"
-				options={options}
+				poll={poll({
+					category: "css",
+					question: "Q",
+					answerType: "multiple",
+				})}
+				reveal={{ correctOptionIds: ["a", "c"], chosenOptionIds: ["a", "b"] }}
 				onSelect={() => {}}
-				correctOptionIds={["a", "c"]}
-				chosenOptionIds={["a", "b"]}
 			/>
 		);
 		const statusOf = (label: RegExp) =>
@@ -202,10 +208,11 @@ describe(PollCard, () => {
 		const withCount = (correctAnswersThisGate: number) =>
 			render(
 				<PollCard
-					category="react"
-					question="Which are Kanto towns?"
-					answerType="multiple"
-					options={options}
+					poll={poll({
+						category: "react",
+						question: "Which are Kanto towns?",
+						answerType: "multiple",
+					})}
 					correctAnswersThisGate={correctAnswersThisGate}
 					onSelect={() => {}}
 				/>
@@ -214,10 +221,11 @@ describe(PollCard, () => {
 		it("stays hidden when no config is counting", () => {
 			render(
 				<PollCard
-					category="react"
-					question="Q"
-					answerType="multiple"
-					options={options}
+					poll={poll({
+						category: "react",
+						question: "Q",
+						answerType: "multiple",
+					})}
 					onSelect={() => {}}
 				/>
 			);
@@ -242,13 +250,12 @@ describe(PollCard, () => {
 	it("locks the options once the result is revealed", () => {
 		render(
 			<PollCard
-				category="js"
-				question="Q"
-				answerType="single"
-				options={options}
+				poll={poll({
+					category: "js",
+					question: "Q",
+				})}
+				reveal={{ correctOptionIds: ["a"], chosenOptionIds: ["b"] }}
 				onSelect={() => {}}
-				correctOptionIds={["a"]}
-				chosenOptionIds={["b"]}
 			/>
 		);
 		expect(screen.getByRole("button", { name: /Alpha/ })).toBeDisabled();

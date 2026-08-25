@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
+import { createMockPollView } from "~/test/runView.factory";
 
 const meta: Meta<typeof AnsweringScreen> = {
 	component: AnsweringScreen,
@@ -11,17 +13,23 @@ export default meta;
 
 type Story = StoryObj<typeof AnsweringScreen>;
 
-export const Default: Story = {
-	args: {
-		configs: [CONFIGS.js, CONFIGS.coverageGain],
+/** Each story names only what it varies from this React single-answer poll. */
+const poll = (overrides: Partial<PollView> = {}) =>
+	createMockPollView({
 		category: "react",
 		question: "What is the correct key to give list items in React?",
-		answerType: "single",
 		options: [
 			{ id: "a", label: "A stable unique id" },
 			{ id: "b", label: "The array index, always" },
 			{ id: "c", label: "Math.random()" },
 		],
+		...overrides,
+	});
+
+export const Default: Story = {
+	args: {
+		configs: [CONFIGS.js, CONFIGS.coverageGain],
+		poll: poll(),
 		pollOutcomes: ["correct", "wrong"],
 		pollsPerGate: 5,
 		canSubmit: true,
@@ -37,28 +45,32 @@ export const Revealed: Story = {
 	args: {
 		...Default.args,
 		configs: [CONFIGS.js, CONFIGS.agentsMd],
-		category: "js",
-		question: "Which of these are valid ways to make a fetch cancellable?",
-		answerType: "multiple",
-		options: [
-			{ id: "a", label: "AbortController + signal" },
-			{ id: "b", label: "Ignoring the response if a newer request started" },
-			{ id: "c", label: "Setting fetch's timeout: property" },
-		],
-		correctOptionIds: ["a", "b"],
-		chosenOptionIds: ["a", "c"],
-		canSubmit: false,
-		// Multipliers-last: AGENTS.md ×2 amplifies base + the .js boost, so its chip
-		// is +1.5 (not +1.0). (1 + 0.5 .js) × 2 × 1.2 streak = 3.6.
-		revealScore: {
-			isCorrect: true,
-			baseCoverage: 1,
-			streakBonus: 0.6,
-			configBonuses: [
-				{ configId: "js", value: 0.5 },
-				{ configId: "agents-md", value: 1.5 },
+		poll: poll({
+			category: "js",
+			question: "Which of these are valid ways to make a fetch cancellable?",
+			answerType: "multiple",
+			options: [
+				{ id: "a", label: "AbortController + signal" },
+				{ id: "b", label: "Ignoring the response if a newer request started" },
+				{ id: "c", label: "Setting fetch's timeout: property" },
 			],
-			earnedCoverage: 3.6,
+		}),
+		canSubmit: false,
+		reveal: {
+			correctOptionIds: ["a", "b"],
+			chosenOptionIds: ["a", "c"],
+			// Multipliers-last: AGENTS.md ×2 amplifies base + the .js boost, so its
+			// chip is +1.5 (not +1.0). (1 + 0.5 .js) × 2 × 1.2 streak = 3.6.
+			score: {
+				isCorrect: true,
+				baseCoverage: 1,
+				streakBonus: 0.6,
+				configBonuses: [
+					{ configId: "js", value: 0.5 },
+					{ configId: "agents-md", value: 1.5 },
+				],
+				earnedCoverage: 3.6,
+			},
 		},
 	},
 };
@@ -70,7 +82,7 @@ export const Revealed: Story = {
 export const MirroredGate: Story = {
 	args: {
 		...Default.args,
-		answerType: "multiple",
+		poll: poll({ answerType: "multiple" }),
 		audits: [
 			{
 				id: "mirrored",
@@ -119,8 +131,7 @@ export const TimedGate: Story = {
 				suppressed: false,
 			},
 		],
-		timeLimitMs: 30_000,
-		remainingMs: 21_000,
+		clock: { limitMs: 30_000, remainingMs: 21_000 },
 	},
 };
 
@@ -128,7 +139,7 @@ export const TimedGate: Story = {
 export const TimeRunningOut: Story = {
 	args: {
 		...TimedGate.args,
-		remainingMs: 4_000,
+		clock: { limitMs: 30_000, remainingMs: 4_000 },
 	},
 };
 

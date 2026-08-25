@@ -1,7 +1,7 @@
 import { Meter } from "~/ui/Meter.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
-type PollClockProps = {
+export type PollClockProps = {
 	/** Milliseconds left on this poll's clock; 0 once it has run out. */
 	remainingMs: number;
 	/** What the audit allowed, so the rail knows what full looks like. */

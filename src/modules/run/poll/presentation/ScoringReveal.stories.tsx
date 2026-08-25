@@ -5,6 +5,7 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { ScoreEquationChips } from "~/modules/run/run/presentation/ScoreEquationChips.ui";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { PollCard } from "~/modules/run/poll/presentation/PollCard.ui";
+import { createMockPollView } from "~/test/runView.factory";
 import {
 	RevealScore,
 	type RevealStep,
@@ -100,12 +101,13 @@ const RevealStage = ({
 };
 
 const pollProps = {
-	category: CATEGORY,
-	question: QUESTION,
-	answerType: "multiple" as const,
-	options: OPTIONS,
-	correctOptionIds: CORRECT,
-	chosenOptionIds: CHOSEN,
+	poll: createMockPollView({
+		category: CATEGORY,
+		question: QUESTION,
+		answerType: "multiple",
+		options: OPTIONS,
+	}),
+	reveal: { correctOptionIds: CORRECT, chosenOptionIds: CHOSEN },
 	onSelect: () => {},
 };
 

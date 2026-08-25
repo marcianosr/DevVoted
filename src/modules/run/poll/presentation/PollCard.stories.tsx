@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
 import { PollCard } from "~/modules/run/poll/presentation/PollCard.ui";
+import { createMockPollView } from "~/test/runView.factory";
 
 const meta: Meta<typeof PollCard> = {
 	component: PollCard,
@@ -16,22 +18,27 @@ const options = [
 	{ id: "c", label: "Math.random()" },
 ];
 
+/** Each story names only the fields it varies from these three React options. */
+const poll = (overrides: Partial<PollView> = {}) =>
+	createMockPollView({ options, ...overrides });
+
 export const SingleChoice: Story = {
 	args: {
-		category: "react",
-		question: "What is the correct key to give list items in React?",
-		answerType: "single",
-		options,
+		poll: poll({
+			category: "react",
+			question: "What is the correct key to give list items in React?",
+		}),
 		onSelect: () => {},
 	},
 };
 
 export const MultipleChoice: Story = {
 	args: {
-		category: "ts",
-		question: "Which of these are TypeScript utility types?",
-		answerType: "multiple",
-		options,
+		poll: poll({
+			category: "ts",
+			question: "Which of these are TypeScript utility types?",
+			answerType: "multiple",
+		}),
 		selectedOptionIds: ["a"],
 		onSelect: () => {},
 	},
@@ -41,10 +48,10 @@ export const MultipleChoice: Story = {
 // card only shows its outcome: the crossed-out option.
 export const WithLintedOption: Story = {
 	args: {
-		category: "js",
-		question: "Which coerces to true?",
-		answerType: "single",
-		options,
+		poll: poll({
+			category: "js",
+			question: "Which coerces to true?",
+		}),
 		disabledOptionIds: ["c"],
 		onSelect: () => {},
 	},
@@ -58,10 +65,10 @@ export const WithLintedOption: Story = {
  */
 export const WithCommunitySplit: Story = {
 	args: {
-		category: "js",
-		question: "Which coerces to true?",
-		answerType: "single",
-		options,
+		poll: poll({
+			category: "js",
+			question: "Which coerces to true?",
+		}),
 		split: { percentByOptionId: { a: 71, b: 22, c: 7 } },
 		onSelect: () => {},
 	},
@@ -74,10 +81,10 @@ export const WithCommunitySplit: Story = {
  */
 export const WithCommunitySplitAndSampleSize: Story = {
 	args: {
-		category: "js",
-		question: "Which coerces to true?",
-		answerType: "single",
-		options,
+		poll: poll({
+			category: "js",
+			question: "Which coerces to true?",
+		}),
 		split: { percentByOptionId: { a: 71, b: 22, c: 7 }, answeredCount: 127 },
 		onSelect: () => {},
 	},
@@ -90,10 +97,11 @@ export const WithCommunitySplitAndSampleSize: Story = {
  */
 export const WithAnswerCount: Story = {
 	args: {
-		category: "js",
-		question: "Which of these are falsy?",
-		answerType: "multiple",
-		options,
+		poll: poll({
+			category: "js",
+			question: "Which of these are falsy?",
+			answerType: "multiple",
+		}),
 		selectedOptionIds: ["a"],
 		correctAnswersThisGate: 6,
 		onSelect: () => {},
@@ -102,15 +110,16 @@ export const WithAnswerCount: Story = {
 
 export const WithCodeExample: Story = {
 	args: {
-		category: "js",
-		question:
-			"What does this log?\n\n```js\nconst nums = [1, 2, 3];\nconsole.log(nums.map((n) => n * 2));\n```",
-		answerType: "single",
-		options: [
-			{ id: "a", label: "[2, 4, 6]" },
-			{ id: "b", label: "[1, 2, 3]" },
-			{ id: "c", label: "undefined" },
-		],
+		poll: poll({
+			category: "js",
+			question:
+				"What does this log?\n\n```js\nconst nums = [1, 2, 3];\nconsole.log(nums.map((n) => n * 2));\n```",
+			options: [
+				{ id: "a", label: "[2, 4, 6]" },
+				{ id: "b", label: "[1, 2, 3]" },
+				{ id: "c", label: "undefined" },
+			],
+		}),
 		onSelect: () => {},
 	},
 };
@@ -122,32 +131,38 @@ export const WithCodeExample: Story = {
  */
 export const WithCodeBlock: Story = {
 	args: {
-		category: "react",
-		question:
-			"In React, the following code can be seen, why will it not render anything on the screen?",
-		codeBlock: "const App = () => {\n  <div>Hello world</div>;\n};",
-		answerType: "single",
-		options: [
-			{ id: "a", label: "It doesn't render, you need the `return` statement" },
-			{ id: "b", label: "It does render, this is implicit return" },
-			{
-				id: "c",
-				label: "It doesn't render because a render function is required",
-			},
-		],
+		poll: poll({
+			category: "react",
+			question:
+				"In React, the following code can be seen, why will it not render anything on the screen?",
+			codeBlock: "const App = () => {\n  <div>Hello world</div>;\n};",
+			options: [
+				{
+					id: "a",
+					label: "It doesn't render, you need the `return` statement",
+				},
+				{ id: "b", label: "It does render, this is implicit return" },
+				{
+					id: "c",
+					label: "It doesn't render because a render function is required",
+				},
+			],
+		}),
 		onSelect: () => {},
 	},
 };
 
 export const Revealed: Story = {
 	args: {
-		category: "react",
-		question: "What is the correct key to give list items in React?",
-		answerType: "single",
-		options,
+		poll: poll({
+			category: "react",
+			question: "What is the correct key to give list items in React?",
+		}),
 		onSelect: () => {},
-		correctOptionIds: ["a"],
-		chosenOptionIds: ["b"],
+		reveal: {
+			correctOptionIds: ["a"],
+			chosenOptionIds: ["b"],
+		},
 	},
 };
 
@@ -158,18 +173,22 @@ export const Revealed: Story = {
  */
 export const RevealedMultiple: Story = {
 	args: {
-		category: "js",
-		question: "Which of these are valid ways to make a fetch cancellable?",
-		answerType: "multiple",
-		options: [
-			{ id: "a", label: "AbortController + signal" },
-			{ id: "b", label: "Cancel via a race with a timeout promise" },
-			{ id: "c", label: "Setting fetch's timeout: property" },
-			{ id: "d", label: "Ignoring the response if a newer request started" },
-			{ id: "e", label: "Wrapping fetch in a cancellable promise library" },
-		],
+		poll: poll({
+			category: "js",
+			question: "Which of these are valid ways to make a fetch cancellable?",
+			answerType: "multiple",
+			options: [
+				{ id: "a", label: "AbortController + signal" },
+				{ id: "b", label: "Cancel via a race with a timeout promise" },
+				{ id: "c", label: "Setting fetch's timeout: property" },
+				{ id: "d", label: "Ignoring the response if a newer request started" },
+				{ id: "e", label: "Wrapping fetch in a cancellable promise library" },
+			],
+		}),
+		reveal: {
+			correctOptionIds: ["a", "b", "d", "e"],
+			chosenOptionIds: ["a", "c", "d"],
+		},
 		onSelect: () => {},
-		correctOptionIds: ["a", "b", "d", "e"],
-		chosenOptionIds: ["a", "c", "d"],
 	},
 };

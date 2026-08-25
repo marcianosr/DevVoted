@@ -1,12 +1,13 @@
-import type { CategoryCode } from "~/shared/lib/categories";
-import type {
-	AnswerOutcome,
-	AnswerType,
-} from "~/modules/run/run/domain/runPoll.model";
+import type { AnswerOutcome } from "~/modules/run/run/domain/runPoll.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
-import type { AnswerScore } from "~/modules/run/run/application/answerScore.viewmodel";
+import type {
+	AnswerReveal,
+	AnswerScore,
+} from "~/modules/run/run/application/answerScore.viewmodel";
+import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
+import type { PollClockProps } from "~/modules/run/run/presentation/PollClock.ui";
 import type { PaidActions } from "~/modules/run/run/application/paidActions.viewmodel";
 import { Button } from "~/ui/Button.component";
 import {
@@ -23,7 +24,6 @@ import {
 } from "~/modules/run/gate/presentation/RoleList.ui";
 import {
 	PollCard,
-	PollOption,
 	type PollSplitView,
 } from "~/modules/run/poll/presentation/PollCard.ui";
 import { PollOutcomeBar } from "~/modules/run/run/presentation/PollOutcomeBar.ui";
@@ -70,18 +70,12 @@ type AnsweringScreenProps = {
 	offlineConfigs?: readonly Config[];
 	/** The gate mirrors its polls: the card asks for the incorrect options. */
 	mirroredPolls?: boolean;
-	/** A Timeout audit's clock: what it allows, and what is left of it. Both or
-	 * neither — a rail with no cap cannot be drawn. */
-	timeLimitMs?: number;
-	remainingMs?: number;
+	/** A Timeout audit's clock. One object because a rail with no cap cannot be
+	 * drawn, so the pair is all-or-nothing. */
+	clock?: PollClockProps;
 	/** Total pipeline slots — shown in the pipeline header when provided. */
 	slots?: number;
-	category: CategoryCode;
-	question: string;
-	codeBlock?: string;
-	codeSandboxUrl?: string;
-	answerType: AnswerType;
-	options: readonly PollOption[];
+	poll: PollView;
 	/**
 	 * This gate's answers so far — the poll bar's colours. Required, not optional
 	 * with an empty default: a screen missing them renders five grey dashes, which
@@ -91,11 +85,9 @@ type AnsweringScreenProps = {
 	pollsPerGate: number;
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
-	/** When set, the poll is in its post-submit reveal: options go inert and show ✓/✕. */
-	correctOptionIds?: readonly string[];
-	chosenOptionIds?: readonly string[];
-	/** The just-answered poll's coverage breakdown — shown as the reveal's chip equation. */
-	revealScore?: AnswerScore;
+	/** Set once the answer is in: the options go inert, and the score reads out
+	 * below them as the chip equation. */
+	reveal?: AnswerReveal;
 	/** Lint and peek, whole: both hang off the row of the config that sells them. */
 	paidActions?: PaidActions;
 	/** False while the run is mid-request or sitting on the reveal — a paid action
@@ -123,22 +115,14 @@ export const AnsweringScreen = ({
 	audits = [],
 	offlineConfigs = [],
 	mirroredPolls = false,
-	timeLimitMs,
-	remainingMs,
+	clock,
 	slots,
-	category,
-	question,
-	codeBlock,
-	codeSandboxUrl,
-	answerType,
-	options,
+	poll,
 	pollOutcomes,
 	pollsPerGate,
 	selectedOptionIds,
 	disabledOptionIds,
-	correctOptionIds,
-	chosenOptionIds,
-	revealScore,
+	reveal,
 	paidActions,
 	interactive = true,
 	split,
@@ -201,43 +185,35 @@ export const AnsweringScreen = ({
 								</Paragraph>
 							) : null}
 						</span>
-						{remainingMs !== undefined && timeLimitMs !== undefined ? (
-							<PollClock remainingMs={remainingMs} limitMs={timeLimitMs} />
-						) : null}
+						{clock ? <PollClock {...clock} /> : null}
 					</div>
 				) : null}
 				<PollCard
-					category={category}
-					question={question}
-					codeBlock={codeBlock}
-					codeSandboxUrl={codeSandboxUrl}
-					answerType={answerType}
-					options={options}
+					poll={poll}
 					selectedOptionIds={selectedOptionIds}
 					disabledOptionIds={disabledOptionIds}
-					correctOptionIds={correctOptionIds}
-					chosenOptionIds={chosenOptionIds}
+					reveal={reveal}
 					split={split}
 					correctAnswersThisGate={correctAnswersThisGate}
 					mirrored={mirroredPolls}
 					onSelect={onSelect}
 				/>
-				{revealScore ? (
+				{reveal?.score ? (
 					<div className="flex flex-col gap-4">
 						<hr className="border-theme border-t" />
 						<ScoreEquationChips
-							isCorrect={revealScore.isCorrect}
-							baseCoverage={revealScore.baseCoverage}
-							bonuses={scoreBonusRows(revealScore, configs)}
-							earnedCoverage={revealScore.earnedCoverage}
-							difficulty={revealScore.difficulty}
+							isCorrect={reveal.score.isCorrect}
+							baseCoverage={reveal.score.baseCoverage}
+							bonuses={scoreBonusRows(reveal.score, configs)}
+							earnedCoverage={reveal.score.earnedCoverage}
+							difficulty={reveal.score.difficulty}
 							animated
 							startDelayMs={REVEAL_SCORE_START_MS}
 						/>
 					</div>
 				) : null}
 				<div className="flex justify-end">
-					{correctOptionIds !== undefined ? (
+					{reveal ? (
 						<Button className="rounded-lg" onClick={onNext}>
 							Next →
 						</Button>

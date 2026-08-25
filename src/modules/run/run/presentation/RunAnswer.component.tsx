@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import {
+	type AnswerReveal,
 	type AnswerScore,
 	correctOptionIdsFor,
 	latestAnswerScore,
@@ -88,6 +89,20 @@ export const RunAnswer = () => {
 
 	const canSubmit = selected.length > 0 && !busy && reveal === null;
 
+	const limitMs = view.pollTimeLimitMs;
+	const pollClock =
+		limitMs !== null && !reveal && clock.remainingMs !== null
+			? { limitMs, remainingMs: clock.remainingMs }
+			: undefined;
+
+	const answerReveal: AnswerReveal | undefined = reveal
+		? {
+				correctOptionIds: reveal.correctOptionIds,
+				chosenOptionIds: selected,
+				score: reveal.score ?? undefined,
+			}
+		: undefined;
+
 	const onSelect = (optionId: string) => {
 		if (poll.answerType === "single") return setSelected([optionId]);
 		setSelected((current) =>
@@ -111,24 +126,16 @@ export const RunAnswer = () => {
 				audits={view.audits}
 				offlineConfigs={view.offlineConfigs.map((offline) => offline.config)}
 				mirroredPolls={view.mirroredPolls}
-				timeLimitMs={view.pollTimeLimitMs ?? undefined}
-				// The clock stops mattering the moment the answer is in: the reveal
-				// is not the poll, and a ticking rail there would read as pressure to
-				// hurry through the explanation.
-				remainingMs={reveal ? undefined : (clock.remainingMs ?? undefined)}
-				category={poll.category}
-				question={poll.question}
-				codeBlock={poll.codeBlock}
-				codeSandboxUrl={poll.codeSandboxUrl}
-				answerType={poll.answerType}
-				options={poll.options}
+				// Both or neither, and neither once the answer is in: the reveal is not
+				// the poll, and a ticking rail there would read as pressure to hurry
+				// through the explanation.
+				clock={pollClock}
+				poll={poll}
 				selectedOptionIds={selected}
 				disabledOptionIds={view.disabledOptionIds}
 				pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 				pollsPerGate={view.pollsPerGate}
-				correctOptionIds={reveal?.correctOptionIds}
-				chosenOptionIds={reveal ? selected : undefined}
-				revealScore={reveal?.score ?? undefined}
+				reveal={answerReveal}
 				slots={view.slots}
 				paidActions={view.paidActions}
 				interactive={!busy && reveal === null}

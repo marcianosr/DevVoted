@@ -1,5 +1,7 @@
-import { CategoryCode, getCategoryMetadata } from "~/shared/lib/categories";
+import { getCategoryMetadata } from "~/shared/lib/categories";
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
+import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
+import type { AnswerReveal } from "~/modules/run/run/application/answerScore.viewmodel";
 import { PollCodeSandbox } from "~/modules/run/poll/presentation/PollCodeSandbox.ui";
 import {
 	CodeBlockMarkdown,
@@ -23,17 +25,13 @@ export type PollSplitView = {
 	readonly answeredCount?: number;
 };
 
-type PollCardProps = {
-	category: CategoryCode;
-	question: string;
-	codeBlock?: string;
-	codeSandboxUrl?: string;
-	answerType: AnswerType;
-	options: readonly PollOption[];
+export type PollCardProps = {
+	/** The redacted poll as the run serves it — no `correct` flags reach here. */
+	poll: PollView;
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
-	correctOptionIds?: readonly string[];
-	chosenOptionIds?: readonly string[];
+	/** Set once the answer is in: the options go inert and show ✓/✕. */
+	reveal?: AnswerReveal;
 	split?: PollSplitView;
 	/** Correct answers this gate's polls hold (`.length`'s reveal). Absent when
 	 * no config is counting. */
@@ -51,21 +49,17 @@ export const ANSWER_TYPE_HINT: Record<AnswerType, string> = {
 };
 
 export const PollCard = ({
-	category,
-	question,
-	codeBlock,
-	codeSandboxUrl,
-	answerType,
-	options,
+	poll,
 	selectedOptionIds = [],
 	disabledOptionIds = [],
-	correctOptionIds,
-	chosenOptionIds = [],
+	reveal,
 	split,
 	correctAnswersThisGate,
 	mirrored = false,
 	onSelect,
 }: PollCardProps) => {
+	const { category, question, codeBlock, codeSandboxUrl, answerType, options } =
+		poll;
 	return (
 		<div className="flex flex-col gap-2">
 			<Paragraph as="h1" size="sm" tone="theme" className="font-bold">
@@ -97,8 +91,8 @@ export const PollCard = ({
 				options={options}
 				selectedOptionIds={selectedOptionIds}
 				disabledOptionIds={disabledOptionIds}
-				correctOptionIds={correctOptionIds}
-				chosenOptionIds={chosenOptionIds}
+				correctOptionIds={reveal?.correctOptionIds}
+				chosenOptionIds={reveal?.chosenOptionIds ?? []}
 				splitPercentByOptionId={split?.percentByOptionId}
 				onSelect={onSelect}
 			/>
