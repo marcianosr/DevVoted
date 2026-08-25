@@ -14,21 +14,21 @@ export const RunReward = () => {
 	return (
 		<Screen theme="celadon">
 			<RewardScreen
-				clearedGate={view.clearedGateNumber}
-				gateReward={view.gateRewardPaidKb}
+				clearedGate={view.gatePayout.clearedGateNumber}
+				gateReward={view.gatePayout.gateRewardPaidKb}
 				answered={view.answeredThisGate}
 				configs={view.configs}
 				storage={view.storage}
 				capKb={view.storageCap}
-				faucetThisGateKb={view.faucetThisGateKb}
-				interestThisGateKb={view.interestThisGateKb}
-				extraPickThisGateKb={view.extraPickThisGateKb}
-				billKb={view.gateBillPaidKb}
-				planDowngraded={view.planDowngraded}
-				autoUpgraded={view.autoUpgradedConfig ?? undefined}
-				deletedConfigs={view.deletedConfigs}
-				lapsedConfigs={view.lapsedConfigs}
-				subscriptionBillKb={view.subscriptionBillKb}
+				faucetThisGateKb={view.gatePayout.faucetThisGateKb}
+				interestThisGateKb={view.gatePayout.interestThisGateKb}
+				extraPickThisGateKb={view.gatePayout.extraPickThisGateKb}
+				billKb={view.gatePayout.gateBillPaidKb}
+				planDowngraded={view.gatePayout.planDowngraded}
+				autoUpgraded={view.gatePayout.autoUpgradedConfig ?? undefined}
+				deletedConfigs={view.gatePayout.deletedConfigs}
+				lapsedConfigs={view.gatePayout.lapsedConfigs}
+				subscriptionBillKb={view.gatePayout.subscriptionBillKb}
 				nextStake={view.gateStake}
 				onReviewAnswers={() => navigate({ to: "/run/review" })}
 				onContinue={() => navigate({ to: "/run/shop" })}

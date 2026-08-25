@@ -10,6 +10,7 @@ import {
 	pollDifficultyMultiplier,
 	storageCreditRate,
 	storagePlanLadder,
+	streakCapMultiplier,
 	streakMultiplier,
 	GATE_COUNT,
 	GATE_REWARD_KB,
@@ -58,6 +59,12 @@ describe("the gate's per-window coverage demand (ADR-035)", () => {
 		expect(streakMultiplier(10)).toBe(2);
 		expect(streakMultiplier(11)).toBe(2);
 		expect(streakMultiplier(65)).toBe(2);
+	});
+
+	it("lifts the ceiling when the build is paid for more steps", () => {
+		expect(streakMultiplier(15, 20)).toBe(2.5);
+		expect(streakMultiplier(25, 20)).toBe(3);
+		expect(streakCapMultiplier(20)).toBe(3);
 	});
 
 	// Capped, never reset: a player who never misses keeps the bonus for the whole

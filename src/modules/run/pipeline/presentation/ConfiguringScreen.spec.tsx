@@ -25,6 +25,7 @@ const base = {
 			coveragePerWrong: -0.3,
 			storageKbPerCorrect: 0,
 			streakStepMultiplier: 1.1,
+			streakCapMultiplier: 2,
 		},
 	}),
 	configs: [CONFIGS.unitTests, CONFIGS.js],

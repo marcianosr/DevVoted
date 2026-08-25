@@ -1,4 +1,29 @@
 import type { CategoryCode } from "~/shared/lib/categories";
+
+import {
+	type ShopControls,
+	shopControlsFor,
+} from "~/modules/run/run/application/shopControls.viewmodel";
+
+import {
+	type GatePayout,
+	gatePayoutFor,
+} from "~/modules/run/run/application/gatePayout.viewmodel";
+
+import {
+	type PaidActions,
+	paidActionsFor,
+} from "~/modules/run/run/application/paidActions.viewmodel";
+
+import {
+	type AuditView,
+	auditViewsFor,
+	type GateStake,
+} from "~/modules/run/run/application/gateStake.viewmodel";
+import {
+	type PollView,
+	redactPoll,
+} from "~/modules/run/run/application/pollView.viewmodel";
 import {
 	canStart,
 	isAwaitingTomorrow,
@@ -8,66 +33,31 @@ import {
 	type RunStatus,
 } from "~/modules/run/run/domain/run.model";
 import {
-	canExtend,
-	canLock,
-	canPlantPin,
-	canRebuild,
-	pinAvailable,
-	extendAvailable,
-	lockAvailable,
-	rebuildAvailable,
-} from "~/modules/run/run/domain/shopAction.model";
-import {
-	canBuyPeek,
-	canRunLinter,
-	lintApplies,
-	lintFeeFor,
-	peekApplies,
-	peekFeeFor,
-} from "~/modules/run/run/domain/paidAction.model";
-import { isShopLocked } from "~/modules/run/run/domain/runAction.model";
-import {
 	type AnsweredPoll,
-	type AnswerOutcome,
-	type AnswerType,
 	mirrorPoll,
-	type RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 import { type Config } from "~/modules/run/config/domain/config.model";
-import {
-	billLedger,
-	type BillLedger,
-} from "~/modules/run/config/domain/subscription.model";
-import {
-	draftCostIn,
-	extendCost,
-	LOCK_COST_KB,
-	rebuildCost,
-} from "~/modules/run/shop/domain/draft.model";
+import { billLedger } from "~/modules/run/config/domain/subscription.model";
+import { draftCostIn } from "~/modules/run/shop/domain/draft.model";
 import {
 	failStripQuotaFor,
 	gateDemandFor,
 } from "~/modules/run/gate/domain/gate.model";
 import {
-	auditsForGate,
 	auditTimeLimitMs,
 	liveAuditsFor,
 	mirrorsPolls,
-	suppressedAuditFor,
 } from "~/modules/run/gate/domain/audit.model";
 import {
 	swatchForGate,
 	type SwatchTheme,
 } from "~/modules/run/gate/domain/swatch.model";
 import {
-	type CoverageConfigBonus,
 	type PerAnswerPreview,
 	type PipelineModifiers,
 	type SlotUnlock,
 	budgeterFor,
-	linterFor,
 	nextSlotUnlockFor,
-	peekerFor,
 	prefetcherFor,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
@@ -77,18 +67,12 @@ import {
 	faucetRemainingKb,
 	isStakeFatal,
 	isStoragePlanUnlocked,
-	pinCostFor,
-	pollDifficultyMultiplier,
-	roundToOneDecimal,
 	SLICE_WINDOW,
 	storagePlanFor,
 	storagePlanLadder,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 
-type PollOptionView = { readonly id: string; readonly label: string };
-
-/** One rung of the storage-plan ladder, as the shop row renders it. */
 export type StoragePlanOption = {
 	readonly tier: number;
 	readonly capKb: number;
@@ -102,59 +86,12 @@ export type StoragePlanOption = {
 	readonly locked: boolean;
 };
 
-/** A gate audit as the screens render it (ADR-035). */
-export type AuditView = {
-	readonly id: string;
-	readonly name: string;
-	readonly description: string;
-	readonly answerCue?: string;
-	/** Volkswagen CI is reporting this one as passing — struck through. */
-	readonly suppressed: boolean;
-};
-
-/** A config an audit is holding down, and the audit's name to blame for it. */
 export type OfflineConfig = {
 	readonly config: Config;
 	readonly audit: string;
 };
 
-/**
- * What the coming gate demands and what it pays — the subject of
- * `GateStakeReceipt`, which Prep, Configuring and Shop all render.
- *
- * Clustered rather than flattened for the same reason as `modifiers`: the three
- * screens were each carrying the seven fields as props only to hand them on, so
- * every added field cost four edits and none of them a decision.
- */
-export type GateStake = {
-	readonly gateNumber: number;
-	readonly pollsPerGate: number;
-	/** Coverage the gate demands within its own window (ADR-035), and the meter
-	 * the current attempt holds — paired here so every stake surface can grade
-	 * the demand without threading run state beside the stake. */
-	readonly coverageDemand: number;
-	readonly coverageHeld: number;
-	/** The gate's personality rules, suppressed ones included — the receipt's
-	 * Audit section. */
-	readonly audits: readonly AuditView[];
-	/** What a miss peels from this build (ADR-037), and whether that peel takes
-	 * the whole of it — the receipt states both before the player commits. */
-	readonly stripsOnFailure: number;
-	readonly missIsFatal: boolean;
-	readonly billKb: number;
-	/** Every recurring KB cost the build carries into this gate — the plan and
-	 * each subscribed config, priced at this gate. */
-	readonly subscriptions: BillLedger;
-	readonly modifiers: PipelineModifiers;
-	readonly perAnswer: PerAnswerPreview;
-};
-
-/**
- * Why the shop will not install an offer. Carries the numbers, not the
- * sentence: the wording lives beside `shopExitAction` in the shop screen, so
- * every phrasing stays reachable from a story rather than only from the engine
- * state that produces it.
- */
+/** Carries the numbers, not the sentence: the wording lives with the shop screen so every phrasing stays reachable from a story. */
 export type OfferRefusal =
 	| { readonly reason: "no-slot" }
 	| {
@@ -163,11 +100,7 @@ export type OfferRefusal =
 			readonly storageKb: number;
 	  };
 
-/**
- * One draft option, priced against the run looking at it. The shop used to
- * answer all of this itself from raw roster configs, which put the offer
- * economics behind `render()` and out of reach of the viewmodel's own spec.
- */
+/** One draft option, priced against the run looking at it. */
 export type ShopOffer = {
 	readonly config: Config;
 	readonly priceKb: number;
@@ -180,23 +113,11 @@ export type ShopOffer = {
 	readonly previewPerAnswer: PerAnswerPreview;
 };
 
-export type PollView = {
-	readonly id: string;
-	readonly category: CategoryCode;
-	readonly question: string;
-	readonly codeBlock?: string;
-	readonly codeSandboxUrl?: string;
-	readonly answerType: AnswerType;
-	readonly options: readonly PollOptionView[];
-};
-
 export type RunView = {
 	readonly status: RunStatus;
 	readonly slots: number;
 	readonly configs: readonly Config[];
 	readonly available: readonly Config[];
-	readonly draftOptions: readonly Config[];
-	/** `draftOptions` with the run's own answer attached to each. */
 	readonly offers: readonly ShopOffer[];
 	readonly newConfigIds: readonly string[];
 	readonly stripsRemaining: number;
@@ -205,103 +126,42 @@ export type RunView = {
 
 	readonly pollsExhausted: boolean;
 	readonly disabledOptionIds: readonly string[];
-	readonly canLint: boolean;
-	readonly lintReady: boolean;
-	readonly lintCost: number;
-	readonly linter: Config | null;
-	readonly canPeek: boolean;
-	readonly peekReady: boolean;
-	readonly peekCost: number;
-	readonly peeker: Config | null;
-	/** Configs an audit has taken offline for the poll on screen (ADR-038), each
-	 * with the audit to blame — empty when nothing is down. Their effects are
-	 * already out of `modifiers` and `perAnswer`; this is only how the screen says
-	 * so. Paired rather than split in two, so no surface can show a dead row it
-	 * cannot explain. */
+	readonly paidActions: PaidActions;
+	/** Paired with the audit to blame, so no surface shows a dead row it cannot explain. Their effects are already out of `perAnswer`. */
 	readonly offlineConfigs: readonly OfflineConfig[];
-	/** This gate mirrors its polls, so the question asks for the incorrect
-	 * options and the poll's own type has already been flipped. */
+	/** The gate mirrors its polls, so the poll's own type has already been flipped. */
 	readonly mirroredPolls: boolean;
 	/** The clock on the poll on screen, in ms; null when it runs free. */
 	readonly pollTimeLimitMs: number | null;
-	/** Whether this poll's split is already paid for — the screen shows the bars
-	 * off this, and the split query refuses to answer until it is true. */
+	/** The split query refuses to answer until this is true. */
 	readonly currentPollPeeked: boolean;
-	/** Correct answers this gate's polls hold (`.length`'s reveal). Null when no
-	 * config is counting, which is what hides the line. */
+	/** Null when no config is counting, which is what hides the line. */
 	readonly correctAnswersThisGate: number | null;
-	/** Categories of this gate's unanswered polls, in play order — Prefetch's
-	 * reveal. Null when no installed config reads the draw, which is what
-	 * hides it. */
+	/** Prefetch's reveal. Null when no installed config reads the draw. */
 	readonly upcomingCategories: readonly CategoryCode[] | null;
-	/** Categories of the next window's polls, as far as the engine has been
-	 * dealt them — empty in the live game, where tomorrow's five come from the
-	 * server instead; the pool-fed prototype fills it locally. */
+	/** Empty in the live game, where tomorrow's five come from the server; the pool-fed prototype fills it locally. */
 	readonly nextGateCategories: readonly CategoryCode[] | null;
-	readonly rebuildCost: number;
-	readonly canRebuild: boolean;
-	/** False while WTFPL shows the whole catalog — a reroll would sell nothing. */
-	readonly rebuildAvailable: boolean;
-
-	readonly lockAvailable: boolean;
-	readonly lockCost: number;
-	readonly canLock: boolean;
-	readonly lockedOfferIds: readonly string[];
-	readonly extendAvailable: boolean;
-	readonly extendCost: number;
-	readonly canExtend: boolean;
-	/** Read-only (ADR-038) has shut the coming gate's shop: every buy, sell and
-	 * plan change refuses, and the screen says so instead of the buttons. */
-	readonly shopLocked: boolean;
-	/** The git tag (ADR-036): sold from gate 4, once per run, burn on use. */
-	readonly pinAvailable: boolean;
-	readonly pinCost: number;
-	readonly canPin: boolean;
-	/** The gate this run's tag sits at; null while none is planted. */
-	readonly pinnedAtGate: number | null;
-	/** What opens the next slot — a gate, a coverage total, or either
-	 * (ADR-041); null at the cap. */
+	readonly shopControls: ShopControls;
+	/** A gate, a coverage total, or either (ADR-041); null at the cap. */
 	readonly nextSlotUnlock: SlotUnlock | null;
 
 	readonly justUnlockedSlots: readonly number[];
-	/** The config Dependabot bumped at the last clear; null when nothing was. */
-	readonly autoUpgradedConfig: Config | null;
-	/** Configs that faded to ×1 at the last clear and deleted themselves. */
-	readonly deletedConfigs: readonly Config[];
-	/** Configs whose subscription went unpaid at the last clear and lapsed. */
-	readonly lapsedConfigs: readonly Config[];
-	/** KB the build's subscriptions took at the last clear. */
-	readonly subscriptionBillKb: number;
+	readonly gatePayout: GatePayout;
 	/** The live audits' answering-screen cues (suppressed ones excluded). */
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered: readonly AnsweredPoll[];
-	/** Kept whole rather than flattened: every screen that shows pricing wants all
-	 * four at once, and a spread here means each one reassembles them by hand. */
-	readonly modifiers: PipelineModifiers;
+	/** Kept whole: every screen showing pricing wants all four, and a spread means each reassembles them by hand. */
 	readonly perAnswer: PerAnswerPreview;
 	readonly gateStake: GateStake;
 	readonly canStart: boolean;
 	readonly isOver: boolean;
-	readonly gateRewardPaidKb: number;
-	readonly faucetThisGateKb: number;
-	/** What the run's storage faucet may still pay out. The rail counts it down
-	 * beside the config earning it, because a rate with no budget left is a
-	 * promise the poll cannot keep. */
+	/** The rail counts it down beside the config earning it: a rate with no budget left is a promise the poll cannot keep. */
 	readonly faucetRemainingKb: number;
-	/** The two slices of `gateRewardPaidKb` the loadout alone cannot re-derive —
-	 * both price off the balance or the window, so the reward ledger reads them
-	 * from the reducer rather than recomputing them. */
-	readonly interestThisGateKb: number;
-	readonly extraPickThisGateKb: number;
 	readonly gatesCleared: number;
 
 	readonly gateTheme?: SwatchTheme;
 
-	readonly clearedGateNumber: number;
-	/** What `clearedGateNumber` demanded. `gateStake` always describes the gate
-	 * ahead, which on a clear is already the next one. */
-	readonly clearedGateDemand: number;
 	/** The gate being replayed after a fail (ADR-035); null otherwise. */
 	readonly redoingGate: number | null;
 	readonly victoryGate: number;
@@ -311,86 +171,12 @@ export type RunView = {
 
 	readonly pollsAnswered: number;
 	readonly pollsPerGate: number;
-	readonly streak: number;
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly storageCap: number;
 	readonly storageBillKb: number;
-	readonly gateBillPaidKb: number;
-	readonly planDowngraded: boolean;
 	readonly storagePlans: readonly StoragePlanOption[];
-	readonly log: readonly string[];
-};
-
-type AnswerVerdict = {
-	readonly outcome: AnswerOutcome;
-	readonly correctAnswers: readonly string[];
-};
-
-const latestAnswerVerdict = (view: RunView): AnswerVerdict | null => {
-	const last = view.answeredThisGate.at(-1);
-	if (!last) return null;
-	return { outcome: last.outcome, correctAnswers: last.correct ?? [] };
-};
-
-type AnswerDifficulty = {
-	readonly multiplier: number;
-	readonly optionCount: number;
-	readonly isMultiple: boolean;
-};
-
-export type AnswerScore = {
-	readonly isCorrect: boolean;
-	readonly baseCoverage: number;
-	readonly streakBonus: number;
-	readonly configBonuses: readonly CoverageConfigBonus[];
-	readonly earnedCoverage: number;
-	readonly difficulty?: AnswerDifficulty;
-};
-
-const answerDifficulty = (
-	answered: AnsweredPoll
-): AnswerDifficulty | undefined => {
-	const optionCount = answered.options?.length;
-	if (optionCount === undefined) return undefined;
-	const isMultiple = answered.answerType === "multiple";
-	const multiplier = roundToOneDecimal(
-		pollDifficultyMultiplier(optionCount, isMultiple)
-	);
-	if (multiplier <= 1) return undefined;
-	return { multiplier, optionCount, isMultiple };
-};
-
-export const latestAnswerScore = (view: RunView): AnswerScore | null => {
-	const answered = view.answeredThisGate.at(-1);
-	const breakdown = answered?.coverageBreakdown;
-	if (!answered || !breakdown) return null;
-	const { base, streakBonus, configBonuses } = breakdown;
-	const earnedCoverage = roundToOneDecimal(
-		base +
-			streakBonus +
-			configBonuses.reduce((sum, bonus) => sum + bonus.value, 0)
-	);
-	return {
-		isCorrect: base >= 0,
-		baseCoverage: base,
-		streakBonus,
-		configBonuses,
-		earnedCoverage,
-		difficulty: answerDifficulty(answered),
-	};
-};
-
-export const correctOptionIdsFor = (
-	poll: PollView,
-	answered: RunView
-): readonly string[] => {
-	const verdict = latestAnswerVerdict(answered);
-	if (!verdict) return [];
-	return poll.options
-		.filter((option) => verdict.correctAnswers.includes(option.label))
-		.map((option) => option.id);
 };
 
 const offerRefusal = (
@@ -427,41 +213,9 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 	});
 };
 
-const redactPoll = (poll: RunPoll): PollView => ({
-	id: poll.id,
-	category: poll.category,
-	question: poll.question,
-	codeBlock: poll.codeBlock,
-	codeSandboxUrl: poll.codeSandboxUrl,
-	answerType: poll.answerType,
-	options: poll.options.map((option) => ({
-		id: option.id,
-		label: option.label,
-	})),
-});
-
-const auditViewsFor = (state: RunState): readonly AuditView[] => {
-	const suppressed = suppressedAuditFor(
-		state.pipeline.configs,
-		state.gatesCleared
-	);
-	return auditsForGate(state.gatesCleared).map((audit) => ({
-		id: audit.id,
-		name: audit.name,
-		description: audit.description,
-		answerCue: audit.answerCue,
-		suppressed: audit.id === suppressed?.id,
-	}));
-};
-
 export const toRunView = (state: RunState): RunView => {
 	const current = state.polls[state.currentIndex];
-	const nextRebuildCost = rebuildCost(state.rebuildsUsed);
-	const nextLintCost = lintFeeFor(state);
 	const plan = storagePlanFor(state.storagePlan);
-	const locked = state.lockedOfferIds ?? [];
-	const extensions = state.extensionsBought ?? 0;
-	const nextExtendCost = extendCost(extensions);
 	const modifiers = pipelineModifiersFor(
 		state.pipeline.configs,
 		state.gatesCleared
@@ -471,20 +225,19 @@ export const toRunView = (state: RunState): RunView => {
 		state.gatesCleared
 	);
 	const strips = failStripQuotaFor(state.pipeline.configs, state.gatesCleared);
-	const reportedGate = state.clearedGate ?? state.gatesCleared;
 	const liveAudits = liveAuditsFor(state.pipeline.configs, state.gatesCleared);
 	const offline = offlinePairsOf(state).map((pair): OfflineConfig => ({
 		config: pair.config,
 		audit: pair.audit.name,
 	}));
 	const mirrored = mirrorsPolls(liveAudits);
+	const audits = auditViewsFor(state);
 
 	return {
 		status: state.status,
 		slots: state.pipeline.slots,
 		configs: state.pipeline.configs,
 		available: state.available,
-		draftOptions: state.draftOptions,
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
 		stripsRemaining: state.stripsRemaining,
@@ -496,13 +249,7 @@ export const toRunView = (state: RunState): RunView => {
 		pollsExhausted: state.currentIndex >= state.polls.length,
 		// Only options the player paid to lint off — no automatic masking.
 		disabledOptionIds: state.manualDisabled,
-		canLint: lintApplies(state),
-		lintReady: canRunLinter(state),
-		lintCost: nextLintCost,
-		canPeek: peekApplies(state),
-		peekReady: canBuyPeek(state),
-		peekCost: peekFeeFor(state),
-		peeker: peekerFor(state.pipeline.configs) ?? null,
+		paidActions: paidActionsFor(state),
 		offlineConfigs: offline,
 		mirroredPolls: mirrored,
 		pollTimeLimitMs:
@@ -513,8 +260,7 @@ export const toRunView = (state: RunState): RunView => {
 			budgeterFor(state.pipeline.configs) === undefined
 				? null
 				: (state.window.budget ?? null),
-		// Both halves stop at window edges: the prototype's state holds the whole
-		// pool, and an uncapped slice would read the entire run's future.
+		// Capped at the window edge; the prototype's state holds the whole pool.
 		upcomingCategories:
 			prefetcherFor(state.pipeline.configs) === undefined
 				? null
@@ -533,48 +279,23 @@ export const toRunView = (state: RunState): RunView => {
 							state.currentIndex - state.window.answered + 2 * SLICE_WINDOW
 						)
 						.map((poll) => poll.category),
-		rebuildCost: nextRebuildCost,
-		canRebuild: canRebuild(state),
-		rebuildAvailable: rebuildAvailable(state),
-		lockAvailable: lockAvailable(state),
-		lockCost: LOCK_COST_KB,
-		canLock: canLock(state),
-		lockedOfferIds: locked,
-		extendAvailable: extendAvailable(state),
-		extendCost: nextExtendCost,
-		canExtend: canExtend(state),
-		shopLocked: isShopLocked(state),
-		pinAvailable: pinAvailable(state),
-		pinCost: pinCostFor(state.gatesCleared),
-		canPin: canPlantPin(state),
-		pinnedAtGate: state.pinPlantedAtGate ?? null,
+		shopControls: shopControlsFor(state),
 		nextSlotUnlock: nextSlotUnlockFor(
 			{ gatesCleared: state.gatesCleared, coverage: state.coverage },
 			state.pipeline.slots
 		),
 		justUnlockedSlots: state.justUnlockedSlots ?? [],
-		autoUpgradedConfig:
-			state.pipeline.configs.find(
-				(config) => config.id === state.autoUpgradedConfigId
-			) ?? null,
-		deletedConfigs: state.deletedConfigs ?? [],
-		lapsedConfigs: state.lapsedConfigs ?? [],
-		subscriptionBillKb: state.subscriptionBillKb ?? 0,
-		audits: auditViewsFor(state),
-		linter:
-			current === undefined
-				? null
-				: (linterFor(state.pipeline.configs, current.category) ?? null),
+		gatePayout: gatePayoutFor(state),
+		audits,
 		answeredThisGate: state.answeredThisGate,
 		allAnswered: state.allAnswered ?? [],
-		modifiers,
 		perAnswer,
 		gateStake: {
 			gateNumber: state.gatesCleared,
 			pollsPerGate: SLICE_WINDOW,
 			coverageDemand: gateDemandFor(state.pipeline.configs, state.gatesCleared),
 			coverageHeld: state.window.coverageGained,
-			audits: auditViewsFor(state),
+			audits,
 			stripsOnFailure: strips,
 			missIsFatal: isStakeFatal(strips, state.pipeline.configs.length),
 			billKb: plan.billKb,
@@ -590,28 +311,19 @@ export const toRunView = (state: RunState): RunView => {
 		},
 		canStart: canStart(state.pipeline),
 		isOver: isRunOver(state.status),
-		gateRewardPaidKb: state.gateRewardKb ?? 0,
-		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
-		interestThisGateKb: state.interestThisGateKb ?? 0,
-		extraPickThisGateKb: state.extraPickThisGateKb ?? 0,
 		gatesCleared: state.gatesCleared,
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
-		clearedGateNumber: reportedGate,
-		clearedGateDemand: gateDemandFor(state.pipeline.configs, reportedGate),
 		redoingGate: state.redoGate ?? null,
 		victoryGate: VICTORY_GATE,
 		atMinimumWidth: atMinimumWidth(state.pipeline.configs.length),
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,
-		streak: state.streak,
 		coverage: state.coverage,
 		coverageByCategory: state.coverageByCategory,
 		storage: state.storage,
 		storageCap: plan.capKb,
 		storageBillKb: plan.billKb,
-		gateBillPaidKb: state.gateBillKb ?? 0,
-		planDowngraded: state.planDowngraded ?? false,
 		storagePlans: storagePlanLadder(state.gatesCleared).map((option) => ({
 			tier: option.tier,
 			capKb: option.capKb,
@@ -621,6 +333,5 @@ export const toRunView = (state: RunState): RunView => {
 			fromGate: option.fromGate,
 			locked: !isStoragePlanUnlocked(option, state.gatesCleared),
 		})),
-		log: state.log,
 	};
 };

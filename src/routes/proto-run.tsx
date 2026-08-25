@@ -523,9 +523,11 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					poll={view.poll}
 					selectedOptionIds={selected}
 					splitByOptionId={
-						view.currentPollPeeked && view.peeker
-							? simulatePollSplit(state.polls[state.currentIndex], view.peeker)
-									.percentByOptionId
+						view.currentPollPeeked && view.paidActions.peeker
+							? simulatePollSplit(
+									state.polls[state.currentIndex],
+									view.paidActions.peeker
+								).percentByOptionId
 							: undefined
 					}
 					onSelect={onSelect}

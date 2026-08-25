@@ -6,7 +6,7 @@ import {
 	type StarterStack,
 } from "~/modules/run/config/domain/stack.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
-import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
+import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	MAX_SLOTS,
 	perAnswerPreviewFor,

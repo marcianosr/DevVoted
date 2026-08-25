@@ -184,7 +184,7 @@ A correct answer earns `share × (1 + adds) × mults × streak × gate × diffic
 | `share` | The poll's coverage weight. 1 for a single-answer poll answered correctly. |
 | `adds` | Flat additions (Code Coverage: +0.5% per correct). |
 | `mults` | Product of config multipliers (AGENTS.md ×2, Intellisense ×1.5, Focus ×1.25 at L1). |
-| `streak` | `1 + 0.1 × streak` of consecutive correct answers, capped at ×2 (10 steps). The streak survives a gate clear, so uncapped it reached ×7.5 on a flawless run and both starting stacks won all 13 gates without buying a config. Capped, never reset: perfect play keeps the bonus, it just stops compounding. |
+| `streak` | `1 + 0.1 × streak` of consecutive correct answers, capped at ×2 (10 steps, `streakCapStepsFor`, and a config's `streakCapSteps` adds to it; the run-start gate panel states the ceiling). The streak survives a gate clear, so uncapped it reached ×7.5 on a flawless run and both starting stacks won all 13 gates without buying a config. Capped, never reset: perfect play keeps the bonus, it just stops compounding. |
 | `gate` | `gatesCleared + 1`. Gate 1 pays ×1, gate 5 pays ×5. |
 | `difficulty` | `1 + 0.1 × (options − 3)`, plus `0.5` if multiple-choice. Never below ×1. |
 

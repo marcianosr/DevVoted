@@ -5,10 +5,8 @@ import type {
 } from "~/modules/run/run/domain/runPoll.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
-import type {
-	AnswerScore,
-	AuditView,
-} from "~/modules/run/run/application/runView.viewmodel";
+import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
+import type { AnswerScore } from "~/modules/run/run/application/answerScore.viewmodel";
 import { Button } from "~/ui/Button.component";
 import {
 	ScoreEquationChips,

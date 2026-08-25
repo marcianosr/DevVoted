@@ -42,8 +42,13 @@ boundary, so this table is the map an architecture review reads first.
 | Run snapshot | `run/domain` | `RunSnapshot`, `toRunSnapshot`, `hydrateRunState` (`runSnapshot.model.ts`); what persists to `run_states.state` |
 | Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `STORAGE_PLANS`, `dropCount`, `isStakeFatal`, `atMinimumWidth` (`rules.model.ts`) |
 | Seed / Segment | `run/domain` | `rollDailySeedSequence` (`seed.model.ts`); pure, so it is a model not a service |
-| Run view | `run/application` | `RunView`, `toRunView` (`runView.viewmodel.ts`); the single projection every screen reads |
-| Gate stake | `run/application` | `GateStake` (`runView.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
+| Run view | `run/application` | `RunView`, `toRunView` (`runView.viewmodel.ts`); the single projection every screen reads, composed from the slices below. Also the trust boundary (DVTD-ay5e): the client receives this and never `RunState` |
+| Gate stake | `run/application` | `GateStake`, `AuditView`, `auditViewsFor` (`gateStake.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
+| Poll view | `run/application` | `PollView`, `redactPoll` (`pollView.viewmodel.ts`); the redaction that strips `correct` flags before a poll reaches the client |
+| Paid actions | `run/application` | `PaidActions`, `paidActionsFor` (`paidActions.viewmodel.ts`); lint and peek as the answering screen sees them |
+| Shop controls | `run/application` | `ShopControls`, `shopControlsFor` (`shopControls.viewmodel.ts`); ADR-029's rebuild / lock / extend plus the git tag |
+| Gate payout | `run/application` | `GatePayout`, `gatePayoutFor` (`gatePayout.viewmodel.ts`); what the cleared gate paid and took back |
+| Answer score | `run/application` | `AnswerScore`, `latestAnswerScore`, `correctOptionIdsFor` (`answerScore.viewmodel.ts`); selectors over a built `RunView`, not part of `toRunView` |
 | Run orchestration | `run/application` | `run.service.ts` (was `handlers.ts`), `run.serverfn.ts` (was `api/run.ts`), `run.validation.ts` |
 | Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, one write. Never split across aggregates |
 | Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |

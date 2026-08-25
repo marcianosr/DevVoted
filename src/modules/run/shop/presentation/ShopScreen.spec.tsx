@@ -7,7 +7,7 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
-import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
+import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
 import {
 	ShopScreen,
@@ -52,6 +52,7 @@ const stake = createMockGateStake({
 		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
+		streakCapMultiplier: 2,
 	},
 });
 

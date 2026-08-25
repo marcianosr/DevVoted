@@ -27,11 +27,11 @@ import {
 	STORAGE_PLANS,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
+import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	correctOptionIdsFor,
 	latestAnswerScore,
-	toRunView,
-} from "~/modules/run/run/application/runView.viewmodel";
+} from "~/modules/run/run/application/answerScore.viewmodel";
 
 const poll = (id: string): RunPoll => ({
 	id,
@@ -107,9 +107,9 @@ describe("toRunView", () => {
 	it("derives everything the wired client needs without touching RunState", () => {
 		const view = toRunView(answering());
 		expect(view.disabledOptionIds).toEqual([]);
-		expect(view.lintCost).toBeGreaterThan(0);
-		expect(view.rebuildCost).toBeGreaterThan(0);
-		expect(view.canRebuild).toBe(false); // fresh run starts at 0 KB
+		expect(view.paidActions.lintCost).toBeGreaterThan(0);
+		expect(view.shopControls.rebuildCost).toBeGreaterThan(0);
+		expect(view.shopControls.canRebuild).toBe(false); // fresh run starts at 0 KB
 		expect(view.nextSlotUnlock).toEqual({ slot: 4, gate: 1 });
 		expect(view.justUnlockedSlots).toEqual([]); // no gate cleared yet
 	});
@@ -120,28 +120,28 @@ describe("toRunView", () => {
 			storage: 200,
 		};
 		const offered = toRunView(installed);
-		expect(offered.canPeek).toBe(true);
-		expect(offered.peekReady).toBe(true);
-		expect(offered.peekCost).toBe(32);
-		expect(offered.peeker?.id).toBe("telemetry");
+		expect(offered.paidActions.canPeek).toBe(true);
+		expect(offered.paidActions.peekReady).toBe(true);
+		expect(offered.paidActions.peekCost).toBe(32);
+		expect(offered.paidActions.peeker?.id).toBe("telemetry");
 		expect(offered.currentPollPeeked).toBe(false);
 
 		const bought = toRunView(runReducer(installed, { type: "peek-poll" }));
 		expect(bought.currentPollPeeked).toBe(true);
-		expect(bought.canPeek).toBe(false); // one look per poll
-		expect(bought.peekCost).toBe(64); // the ladder has moved
+		expect(bought.paidActions.canPeek).toBe(false); // one look per poll
+		expect(bought.paidActions.peekCost).toBe(64); // the ladder has moved
 	});
 
 	it("offers no peek to a build without the config, and none it cannot afford", () => {
 		const without = toRunView(answeringWith([CONFIGS.js]));
-		expect(without.canPeek).toBe(false);
-		expect(without.peeker).toBeNull();
+		expect(without.paidActions.canPeek).toBe(false);
+		expect(without.paidActions.peeker).toBeNull();
 
 		// canPeek says the action exists, peekReady says it is affordable — the
 		// row shows a greyed-out price rather than vanishing.
 		const broke = toRunView(answeringWith([CONFIGS.telemetry]));
-		expect(broke.canPeek).toBe(true);
-		expect(broke.peekReady).toBe(false);
+		expect(broke.paidActions.canPeek).toBe(true);
+		expect(broke.paidActions.peekReady).toBe(false);
 	});
 
 	it("surfaces the gate stats a screen needs", () => {
@@ -175,12 +175,13 @@ describe("toRunView", () => {
 
 	it("names the gate a clear beat, one behind the count it advanced", () => {
 		const cleared = { ...answering(), gatesCleared: 3, clearedGate: 2 };
-		expect(toRunView(cleared).clearedGateNumber).toBe(2);
+		expect(toRunView(cleared).gatePayout.clearedGateNumber).toBe(2);
 	});
 
 	it("falls back to gatesCleared for snapshots without clearedGate", () => {
 		expect(
-			toRunView({ ...answering(), gatesCleared: 2 }).clearedGateNumber
+			toRunView({ ...answering(), gatesCleared: 2 }).gatePayout
+				.clearedGateNumber
 		).toBe(2);
 	});
 
@@ -215,26 +216,28 @@ describe("shop controls (DVTD-5lt6)", () => {
 
 	it("hides both new controls in the opening shop", () => {
 		const view = toRunView(shopping(1, 512));
-		expect(view.lockAvailable).toBe(false);
-		expect(view.extendAvailable).toBe(false);
+		expect(view.shopControls.lockAvailable).toBe(false);
+		expect(view.shopControls.extendAvailable).toBe(false);
 	});
 
 	it("stages the lock in a gate before the extension", () => {
-		expect(toRunView(shopping(LOCK_FROM_GATE, 512)).lockAvailable).toBe(true);
-		expect(toRunView(shopping(LOCK_FROM_GATE, 512)).extendAvailable).toBe(
-			false
-		);
-		expect(toRunView(shopping(EXTEND_FROM_GATE, 512)).extendAvailable).toBe(
-			true
-		);
+		expect(
+			toRunView(shopping(LOCK_FROM_GATE, 512)).shopControls.lockAvailable
+		).toBe(true);
+		expect(
+			toRunView(shopping(LOCK_FROM_GATE, 512)).shopControls.extendAvailable
+		).toBe(false);
+		expect(
+			toRunView(shopping(EXTEND_FROM_GATE, 512)).shopControls.extendAvailable
+		).toBe(true);
 	});
 
 	it("keeps showing a control the run cannot afford, unpressable", () => {
 		const view = toRunView(shopping(EXTEND_FROM_GATE, 0));
-		expect(view.lockAvailable).toBe(true);
-		expect(view.canLock).toBe(false);
-		expect(view.extendAvailable).toBe(true);
-		expect(view.canExtend).toBe(false);
+		expect(view.shopControls.lockAvailable).toBe(true);
+		expect(view.shopControls.canLock).toBe(false);
+		expect(view.shopControls.extendAvailable).toBe(true);
+		expect(view.shopControls.canExtend).toBe(false);
 	});
 
 	it("takes the lock off the table while one is held", () => {
@@ -242,8 +245,8 @@ describe("shop controls (DVTD-5lt6)", () => {
 			...shopping(EXTEND_FROM_GATE, 512),
 			lockedOfferIds: ["eslint"],
 		});
-		expect(view.lockAvailable).toBe(false);
-		expect(view.lockedOfferIds).toEqual(["eslint"]);
+		expect(view.shopControls.lockAvailable).toBe(false);
+		expect(view.shopControls.lockedOfferIds).toEqual(["eslint"]);
 	});
 
 	it("prices the next extension against the ones already bought", () => {
@@ -251,7 +254,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 			...shopping(EXTEND_FROM_GATE, 512),
 			extensionsBought: 1,
 		});
-		expect(view.extendCost).toBe(extendCost(1));
+		expect(view.shopControls.extendCost).toBe(extendCost(1));
 	});
 
 	it("stops offering extensions once the run holds them all", () => {
@@ -259,7 +262,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 			...shopping(EXTEND_FROM_GATE, 512),
 			extensionsBought: MAX_EXTENSIONS,
 		});
-		expect(view.extendAvailable).toBe(false);
+		expect(view.shopControls.extendAvailable).toBe(false);
 	});
 });
 
@@ -424,7 +427,7 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 
 	it("hands modifiers over as one object rather than four loose fields", () => {
 		const view = toRunView(answeringWith([CONFIGS.js]));
-		expect(view.modifiers).toEqual(
+		expect(view.gateStake.modifiers).toEqual(
 			pipelineModifiersFor(
 				answeringWith([CONFIGS.js]).pipeline.configs,
 				answeringWith([CONFIGS.js]).gatesCleared
@@ -471,8 +474,8 @@ describe("the gate stake travels as one object", () => {
 				planBillKb: storagePlanFor(state.storagePlan).billKb,
 				planTier: storagePlanFor(state.storagePlan).tier,
 			}),
-			modifiers: view.modifiers,
-			perAnswer: view.perAnswer,
+			modifiers: pipelineModifiersFor(state.pipeline.configs, 4),
+			perAnswer: perAnswerPreviewFor(state.pipeline.configs, 4),
 		});
 	});
 
@@ -545,10 +548,10 @@ describe("the shop's controls answer to the reducer", () => {
 		const rich = shopWith(answering(), 512);
 		const broke = shopWith(answering(), 0);
 
-		expect(toRunView(rich).canRebuild).toBe(true);
+		expect(toRunView(rich).shopControls.canRebuild).toBe(true);
 		expect(runReducer(rich, { type: "rebuild-draft" }).rebuildsUsed).toBe(1);
 
-		expect(toRunView(broke).canRebuild).toBe(false);
+		expect(toRunView(broke).shopControls.canRebuild).toBe(false);
 		expect(runReducer(broke, { type: "rebuild-draft" }).rebuildsUsed).toBe(0);
 	});
 
@@ -559,13 +562,16 @@ describe("the shop's controls answer to the reducer", () => {
 		const broke = shopWith({ ...onOffer, gatesCleared: LOCK_FROM_GATE }, 0);
 		const lock = { type: "lock-offer", configId: CONFIGS.eslint.id } as const;
 
-		expect(toRunView(deep).lockAvailable && toRunView(deep).canLock).toBe(true);
+		expect(
+			toRunView(deep).shopControls.lockAvailable &&
+				toRunView(deep).shopControls.canLock
+		).toBe(true);
 		expect(runReducer(deep, lock).lockedOfferIds).toEqual([CONFIGS.eslint.id]);
 
-		expect(toRunView(shallow).lockAvailable).toBe(false);
+		expect(toRunView(shallow).shopControls.lockAvailable).toBe(false);
 		expect(runReducer(shallow, lock).lockedOfferIds).toEqual([]);
 
-		expect(toRunView(broke).canLock).toBe(false);
+		expect(toRunView(broke).shopControls.canLock).toBe(false);
 		expect(runReducer(broke, lock).lockedOfferIds).toEqual([]);
 	});
 
@@ -581,15 +587,16 @@ describe("the shop's controls answer to the reducer", () => {
 		);
 		const extend = { type: "extend-offers" } as const;
 
-		expect(toRunView(deep).extendAvailable && toRunView(deep).canExtend).toBe(
-			true
-		);
+		expect(
+			toRunView(deep).shopControls.extendAvailable &&
+				toRunView(deep).shopControls.canExtend
+		).toBe(true);
 		expect(runReducer(deep, extend).extensionsBought).toBe(1);
 
-		expect(toRunView(maxed).extendAvailable).toBe(false);
+		expect(toRunView(maxed).shopControls.extendAvailable).toBe(false);
 		expect(runReducer(maxed, extend).extensionsBought).toBe(MAX_EXTENSIONS);
 
-		expect(toRunView(broke).canExtend).toBe(false);
+		expect(toRunView(broke).shopControls.canExtend).toBe(false);
 		expect(runReducer(broke, extend).extensionsBought).toBe(0);
 	});
 

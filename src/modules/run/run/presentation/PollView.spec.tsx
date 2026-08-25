@@ -296,10 +296,13 @@ describe("PollView tools", () => {
 			view: createMockRunView({
 				...view,
 				configs: [CONFIGS.eslint],
-				canLint: true,
-				lintReady: true,
-				lintCost: 8,
-				linter: CONFIGS.eslint,
+				paidActions: {
+					...view.paidActions,
+					canLint: true,
+					lintReady: true,
+					lintCost: 8,
+					linter: CONFIGS.eslint,
+				},
 			}),
 			onLint,
 		});
@@ -320,10 +323,13 @@ describe("PollView tools", () => {
 			view: createMockRunView({
 				...view,
 				configs: [CONFIGS.eslint],
-				canLint: true,
-				lintReady: false,
-				lintCost: 16,
-				linter: CONFIGS.eslint,
+				paidActions: {
+					...view.paidActions,
+					canLint: true,
+					lintReady: false,
+					lintCost: 16,
+					linter: CONFIGS.eslint,
+				},
 				storage: 8,
 			}),
 		});
@@ -342,10 +348,13 @@ describe("PollView tools", () => {
 			view: createMockRunView({
 				...view,
 				configs: [CONFIGS.eslint],
-				canLint: true,
-				lintReady: false,
-				lintCost: 16,
-				linter: CONFIGS.eslint,
+				paidActions: {
+					...view.paidActions,
+					canLint: true,
+					lintReady: false,
+					lintCost: 16,
+					linter: CONFIGS.eslint,
+				},
 				storage: 8,
 			}),
 		});
@@ -363,10 +372,13 @@ describe("PollView tools", () => {
 			view: createMockRunView({
 				...view,
 				configs: [CONFIGS.eslint],
-				canLint: true,
-				lintReady: true,
-				lintCost: 8,
-				linter: CONFIGS.eslint,
+				paidActions: {
+					...view.paidActions,
+					canLint: true,
+					lintReady: true,
+					lintCost: 8,
+					linter: CONFIGS.eslint,
+				},
 				storage: 64,
 			}),
 		});
@@ -390,10 +402,13 @@ describe("PollView tools", () => {
 			view: createMockRunView({
 				...view,
 				configs: [CONFIGS.eslint],
-				canLint: true,
-				lintReady: true,
-				lintCost: 8,
-				linter: CONFIGS.eslint,
+				paidActions: {
+					...view.paidActions,
+					canLint: true,
+					lintReady: true,
+					lintCost: 8,
+					linter: CONFIGS.eslint,
+				},
 				offlineConfigs: [
 					{ config: CONFIGS.eslint, audit: "Dependency Outage" },
 				],

@@ -68,8 +68,9 @@ const lockFor = (
 	onLock: (configId: string) => void
 ) => {
 	const label = offer.config.label;
-	if (!view.lockAvailable) return <Lock on={label} state="unavailable" />;
-	if (view.lockedOfferIds.includes(offer.config.id))
+	if (!view.shopControls.lockAvailable)
+		return <Lock on={label} state="unavailable" />;
+	if (view.shopControls.lockedOfferIds.includes(offer.config.id))
 		return (
 			<Lock
 				on={label}
@@ -77,12 +78,13 @@ const lockFor = (
 				onToggle={() => onLock(offer.config.id)}
 			/>
 		);
-	if (!view.canLock) return <Lock on={label} state="unavailable" />;
+	if (!view.shopControls.canLock)
+		return <Lock on={label} state="unavailable" />;
 	return (
 		<Lock
 			on={label}
 			state="unlocked"
-			cost={`${view.lockCost} KB`}
+			cost={`${view.shopControls.lockCost} KB`}
 			onToggle={() => onLock(offer.config.id)}
 		/>
 	);
@@ -116,7 +118,7 @@ const PIN = "flex flex-wrap items-center justify-between gap-3";
  * an empty place on this shelf, priced.
  */
 const extendRow = (view: RunView, onExtend: () => void): readonly FoldItem[] =>
-	view.extendAvailable
+	view.shopControls.extendAvailable
 		? [
 				{
 					id: "extend",
@@ -130,11 +132,15 @@ const extendRow = (view: RunView, onExtend: () => void): readonly FoldItem[] =>
 							}
 							value={
 								<PriceTag
-									kb={view.extendCost}
+									kb={view.shopControls.extendCost}
 									on="another offer"
 									label="extend"
-									state={view.canExtend ? "ready" : "unaffordable"}
-									hint={view.canExtend ? undefined : notEnoughData("buy")}
+									state={view.shopControls.canExtend ? "ready" : "unaffordable"}
+									hint={
+										view.shopControls.canExtend
+											? undefined
+											: notEnoughData("buy")
+									}
 									onUse={onExtend}
 								/>
 							}
@@ -337,7 +343,7 @@ const planRows = (
 };
 
 const offerCountFor = (view: RunView): string => {
-	const locked = view.lockedOfferIds.length;
+	const locked = view.shopControls.lockedOfferIds.length;
 	const offers = plural(view.offers.length, "offer");
 	return locked === 0 ? offers : `${offers} · ${locked} locked`;
 };
@@ -369,7 +375,7 @@ export const ShopView = ({
 }: ShopViewProps) => {
 	const nextGate = view.gateStake.gateNumber;
 	const gateName = swatchForGate(nextGate)?.gateName ?? "";
-	const held = view.lockedOfferIds
+	const held = view.shopControls.lockedOfferIds
 		.map(
 			(id) => view.offers.find((offer) => offer.config.id === id)?.config.label
 		)
@@ -391,7 +397,7 @@ export const ShopView = ({
 				},
 			}}
 			notice={
-				view.shopLocked
+				view.shopControls.shopLocked
 					? `Shop closed. Read-only audits the build you already have, so nothing can be bought, sold or switched before gate ${nextGate}.`
 					: undefined
 			}
@@ -401,12 +407,12 @@ export const ShopView = ({
 			]}
 			offerCount={offerCountFor(view)}
 			draftAction={
-				view.rebuildAvailable ? (
+				view.shopControls.rebuildAvailable ? (
 					<Action
 						label="rebuild"
-						cost={`${view.rebuildCost} KB`}
+						cost={`${view.shopControls.rebuildCost} KB`}
 						icon={<Glyph name="rebuild" />}
-						disabled={!view.canRebuild}
+						disabled={!view.shopControls.canRebuild}
 						onUse={onRebuild}
 					/>
 				) : undefined
@@ -419,7 +425,7 @@ export const ShopView = ({
 				) : undefined
 			}
 			controls={
-				view.pinAvailable ? (
+				view.shopControls.pinAvailable ? (
 					<Fold
 						title="git tag"
 						subtitle="next run"
@@ -427,7 +433,7 @@ export const ShopView = ({
 						defaultOpen={false}
 						value={
 							<Text size="meta" tone="muted">
-								not tagged · {view.pinCost} KB
+								not tagged · {view.shopControls.pinCost} KB
 							</Text>
 						}
 					>
@@ -440,11 +446,13 @@ export const ShopView = ({
 								instead of gate 0. One per run.
 							</Text>
 							<PriceTag
-								kb={view.pinCost}
+								kb={view.shopControls.pinCost}
 								on="a git tag"
 								label="buy"
-								state={view.canPin ? "buyable" : "unaffordable"}
-								hint={view.canPin ? undefined : notEnoughData("buy")}
+								state={view.shopControls.canPin ? "buyable" : "unaffordable"}
+								hint={
+									view.shopControls.canPin ? undefined : notEnoughData("buy")
+								}
 								onUse={onPlantPin}
 							/>
 						</div>

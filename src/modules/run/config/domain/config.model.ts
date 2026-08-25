@@ -18,6 +18,9 @@ export type Config = {
 	readonly eliminatesWrongOptionsFor?: readonly CategoryCode[];
 	readonly coverageMultiplier?: number;
 	readonly coverageAdd?: number;
+	/** Extra steps of streak headroom, on top of the base ten. Raises the
+	 * ceiling; the per-step bonus itself is a rule, not a config's to sell. */
+	readonly streakCapSteps?: number;
 	readonly level?: number;
 	readonly maxLevel?: number;
 	readonly storagePerCorrect?: number;

@@ -11,12 +11,14 @@ import {
 	effectOf,
 } from "~/modules/run/config/domain/effect.model";
 import {
+	BASE_STREAK_STEPS,
 	GATE_REWARD_KB,
 	GATE_REWARD_MULTIPLIER_CAP,
 	SLICE_WINDOW,
 	WRONG_COVERAGE_LOSS,
 	gateBaseMultiplier,
 	roundToOneDecimal,
+	streakCapMultiplier,
 	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
 
@@ -229,7 +231,23 @@ export type PerAnswerPreview = {
 	 * receipt can state it: it rides on every correct answer including the first,
 	 * so `coveragePerCorrect` alone is a number the player never actually sees. */
 	readonly streakStepMultiplier: number;
+	/** Where the streak stops paying. A build number rather than a rule, so the
+	 * gate panel can show what this pipeline's ceiling is. */
+	readonly streakCapMultiplier: number;
 };
+
+/**
+ * How many steps of streak this build is paid for. The base ten is the rule
+ * (`BASE_STREAK_STEPS`); configs add headroom on top. Every caller that prices a
+ * streak reads this rather than the constant, so a headroom config takes effect
+ * everywhere at once.
+ */
+export const streakCapStepsFor = (configs: readonly Config[]): number =>
+	BASE_STREAK_STEPS +
+	effects(configs).reduce(
+		(steps, effect) => steps + (effect.streakCapSteps ?? 0),
+		0
+	);
 
 /** Product of the build's throttle multipliers — what a non-opener answer is
  * guaranteed to earn (Overclock). Conditional like the opener bonus, but it
@@ -294,6 +312,7 @@ export const perAnswerPreviewFor = (
 		matchingConfigMultiplier:
 			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
 		streakStepMultiplier: streakMultiplier(1),
+		streakCapMultiplier: streakCapMultiplier(streakCapStepsFor(configs)),
 	};
 };
 

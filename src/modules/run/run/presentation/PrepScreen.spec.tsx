@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
+import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";
 import { createMockGateStake } from "~/test/runView.factory";
 
@@ -19,6 +19,7 @@ const stake = createMockGateStake({
 		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
+		streakCapMultiplier: 2,
 	},
 });
 
@@ -72,6 +73,7 @@ describe(PrepScreen, () => {
 						storageKbPerCorrect: 0,
 						matchingConfigMultiplier: 1.25,
 						streakStepMultiplier: 1.1,
+						streakCapMultiplier: 2,
 					},
 				})}
 			/>

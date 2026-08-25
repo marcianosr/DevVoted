@@ -51,6 +51,7 @@ const props: StartScreenProps = {
 	pollCount: 5,
 	coverageDemand: 3,
 	auditCount: 0,
+	streakCap: 2,
 	stake: { removeOnMiss: 1, coveragePerWrong: -0.3 },
 	reward: { coveragePerCorrect: 1, gateRewardKb: 32, slotOpens: 4 },
 };
@@ -330,6 +331,13 @@ describe("StartScreen", () => {
 
 		expect(screen.getByText("Wrong answer")).toBeInTheDocument();
 		expect(screen.getByText("−0.3")).toBeInTheDocument();
+	});
+
+	it("states where this build's streak stops paying", () => {
+		render(<StartScreen {...props} streakCap={2.5} />);
+
+		expect(screen.getByText("streak cap")).toBeInTheDocument();
+		expect(screen.getByText("×2.5")).toBeInTheDocument();
 	});
 
 	it("counts the audits when the gate has any", () => {

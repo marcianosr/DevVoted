@@ -36,8 +36,8 @@ export const RunStrip = () => {
 				gateNumber={view.gatesCleared}
 				configs={view.configs}
 				answered={view.answeredThisGate}
-				billKb={view.gateBillPaidKb}
-				planDowngraded={view.planDowngraded}
+				billKb={view.gatePayout.gateBillPaidKb}
+				planDowngraded={view.gatePayout.planDowngraded}
 				retryStake={view.gateStake}
 				onStrip={(id) => send({ type: "strip", configId: id })}
 			/>

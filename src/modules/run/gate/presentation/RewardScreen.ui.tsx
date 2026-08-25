@@ -20,7 +20,7 @@ import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { SwatchLabel } from "~/modules/run/gate/presentation/SwatchLabel.ui";
 import { GateStakeRewards } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { StorageGauge } from "~/modules/run/run/presentation/StorageGauge.ui";
-import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
+import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 
 type RewardScreenProps = {
 	clearedGate: number;

@@ -5,7 +5,7 @@ import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { GateRewardReport } from "~/modules/run/gate/presentation/GateRewardReport.ui";
 import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
-import type { GateStake } from "~/modules/run/run/application/runView.viewmodel";
+import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 
 type StripScreenProps = {
 	stripsRemaining: number;

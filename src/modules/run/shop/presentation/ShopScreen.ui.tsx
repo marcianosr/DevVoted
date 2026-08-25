@@ -10,11 +10,11 @@ import {
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import type { SlotUnlock } from "~/modules/run/pipeline/domain/pipeline.model";
 import type {
-	GateStake,
 	OfferRefusal,
 	ShopOffer,
 	StoragePlanOption,
 } from "~/modules/run/run/application/runView.viewmodel";
+import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { formatKb } from "~/shared/lib/storage";
 import { Badge } from "~/ui/Badge.component";

@@ -106,6 +106,7 @@ export const StartView = ({
 			pollCount={view.gateStake.pollsPerGate}
 			coverageDemand={view.gateStake.coverageDemand}
 			auditCount={view.gateStake.audits.length}
+			streakCap={view.gateStake.perAnswer.streakCapMultiplier}
 			stake={{
 				removeOnMiss: view.gateStake.stripsOnFailure,
 				coveragePerWrong: view.gateStake.perAnswer.coveragePerWrong,

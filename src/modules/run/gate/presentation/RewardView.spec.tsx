@@ -4,7 +4,11 @@ import userEvent from "@testing-library/user-event";
 
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
+import {
+	createMockGatePayout,
+	createMockGateStake,
+	createMockRunView,
+} from "~/test/runView.factory";
 
 import { RewardView } from "./RewardView.component";
 
@@ -27,14 +31,16 @@ const answered: readonly AnsweredPoll[] = [
 
 const cleared = createMockRunView({
 	gatesCleared: 5,
-	clearedGateNumber: 4,
-	clearedGateDemand: 4,
 	gateTheme: "rainbow",
 	gateStake: createMockGateStake({ gateNumber: 5, coverageDemand: 40 }),
 	answeredThisGate: answered,
 	configs: [CONFIGS.js],
 	storage: 240,
-	gateRewardPaidKb: 96,
+	gatePayout: createMockGatePayout({
+		clearedGateNumber: 4,
+		clearedGateDemand: 4,
+		gateRewardPaidKb: 96,
+	}),
 });
 
 describe("RewardView on a clear", () => {
@@ -161,8 +167,11 @@ describe("RewardView on a clear", () => {
 			<RewardView
 				view={createMockRunView({
 					...cleared,
-					gateBillPaidKb: 32,
-					subscriptionBillKb: 16,
+					gatePayout: {
+						...cleared.gatePayout,
+						gateBillPaidKb: 32,
+						subscriptionBillKb: 16,
+					},
 				})}
 				outcome="cleared"
 				onReviewAnswers={() => {}}

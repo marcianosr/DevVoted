@@ -61,25 +61,27 @@ const storageLedger = (view: RunView): readonly LedgerEntry[] => {
 	const { baseKb, rows } = gateStorageBreakdown({
 		configs: view.configs,
 		answered: view.answeredThisGate,
-		gateReward: view.gateRewardPaidKb,
-		faucetThisGateKb: view.faucetThisGateKb,
-		interestThisGateKb: view.interestThisGateKb,
-		extraPickThisGateKb: view.extraPickThisGateKb,
+		gateReward: view.gatePayout.gateRewardPaidKb,
+		faucetThisGateKb: view.gatePayout.faucetThisGateKb,
+		interestThisGateKb: view.gatePayout.interestThisGateKb,
+		extraPickThisGateKb: view.gatePayout.extraPickThisGateKb,
 	});
 
 	const bills: readonly LedgerEntry[] = [
 		{
 			id: "storage-plan",
 			name: "storage plan",
-			notes: view.planDowngraded ? ["unpaid · downgraded"] : ["pass or fail"],
-			value: -view.gateBillPaidKb,
+			notes: view.gatePayout.planDowngraded
+				? ["unpaid · downgraded"]
+				: ["pass or fail"],
+			value: -view.gatePayout.gateBillPaidKb,
 			dimmed: true,
 		},
 		{
 			id: "subscriptions",
 			name: "subscriptions",
 			notes: ["this gate"],
-			value: -view.subscriptionBillKb,
+			value: -view.gatePayout.subscriptionBillKb,
 			dimmed: true,
 		},
 	];
@@ -115,7 +117,9 @@ export const RewardView = (props: RewardViewProps) => {
 	const [detailShown, setDetailShown] = useState(true);
 
 	const cleared = props.outcome === "cleared";
-	const gate = cleared ? view.clearedGateNumber : view.gateStake.gateNumber;
+	const gate = cleared
+		? view.gatePayout.clearedGateNumber
+		: view.gateStake.gateNumber;
 	const swatch = swatchForGate(gate);
 
 	// `view.gateTheme` and `gateStake` describe the gate ahead; this screen
@@ -124,7 +128,7 @@ export const RewardView = (props: RewardViewProps) => {
 		theme: swatch?.theme,
 		gateName: swatch?.gateName ?? "",
 		requiredCoverage: cleared
-			? view.clearedGateDemand
+			? view.gatePayout.clearedGateDemand
 			: view.gateStake.coverageDemand,
 		track: {
 			gates: ALL_SWATCHES,

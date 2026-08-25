@@ -112,6 +112,8 @@ export type StartScreenProps = {
 	pollCount: number;
 	coverageDemand: number;
 	auditCount: number;
+	/** Where this build's streak stops paying, as the multiplier itself. */
+	streakCap: number;
 	stake: StartStake;
 	reward: StartReward;
 	onStart?: () => void;
@@ -190,6 +192,7 @@ export const StartScreen = ({
 	pollCount,
 	coverageDemand,
 	auditCount,
+	streakCap,
 	stake,
 	reward,
 	onStart,
@@ -382,6 +385,10 @@ export const StartScreen = ({
 								value={auditCount === 0 ? "none" : String(auditCount)}
 								tone={auditCount === 0 ? "muted" : "saffron"}
 							/>
+							{/* A build number, not a rule of the gate: it sits here because
+							    it bounds what the polls below can pay, and configs will
+							    raise it. */}
+							<Fact label="streak cap" value={`×${streakCap}`} />
 						</ul>
 					</section>
 

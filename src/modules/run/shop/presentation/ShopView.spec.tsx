@@ -97,7 +97,12 @@ describe("ShopView", () => {
 	});
 
 	it("offers no lock while the run has not unlocked it", () => {
-		render_({ view: createMockRunView({ ...view, lockAvailable: false }) });
+		render_({
+			view: createMockRunView({
+				...view,
+				shopControls: { ...view.shopControls, lockAvailable: false },
+			}),
+		});
 
 		expect(
 			screen.queryByRole("button", { name: /^Lock / })
@@ -109,10 +114,13 @@ describe("ShopView", () => {
 		render_({
 			view: createMockRunView({
 				...view,
-				lockAvailable: true,
-				canLock: true,
-				lockCost: 16,
-				lockedOfferIds: [CONFIGS.unitTests.id],
+				shopControls: {
+					...view.shopControls,
+					lockAvailable: true,
+					canLock: true,
+					lockCost: 16,
+					lockedOfferIds: [CONFIGS.unitTests.id],
+				},
 			}),
 			onLock,
 		});
@@ -132,8 +140,11 @@ describe("ShopView", () => {
 		render_({
 			view: createMockRunView({
 				...view,
-				lockAvailable: true,
-				lockedOfferIds: [CONFIGS.unitTests.id],
+				shopControls: {
+					...view.shopControls,
+					lockAvailable: true,
+					lockedOfferIds: [CONFIGS.unitTests.id],
+				},
 			}),
 		});
 
@@ -144,7 +155,12 @@ describe("ShopView", () => {
 
 	// WTFPL lays out the whole catalog, so there is nothing left to reroll.
 	it("hides the rebuild rather than disabling it when a reroll would sell nothing", () => {
-		render_({ view: createMockRunView({ ...view, rebuildAvailable: false }) });
+		render_({
+			view: createMockRunView({
+				...view,
+				shopControls: { ...view.shopControls, rebuildAvailable: false },
+			}),
+		});
 
 		expect(
 			screen.queryByRole("button", { name: /rebuild/ })
@@ -156,9 +172,12 @@ describe("ShopView", () => {
 		render_({
 			view: createMockRunView({
 				...view,
-				rebuildAvailable: true,
-				canRebuild: true,
-				rebuildCost: 8,
+				shopControls: {
+					...view.shopControls,
+					rebuildAvailable: true,
+					canRebuild: true,
+					rebuildCost: 8,
+				},
 			}),
 			onRebuild,
 		});
@@ -195,13 +214,23 @@ describe("ShopView", () => {
 	// The shut shop is the screen's whole state, so it leads with what is shut
 	// before it names the audit that shut it.
 	it("leads with the shop being closed when read-only has closed it", () => {
-		render_({ view: createMockRunView({ ...view, shopLocked: true }) });
+		render_({
+			view: createMockRunView({
+				...view,
+				shopControls: { ...view.shopControls, shopLocked: true },
+			}),
+		});
 
 		expect(screen.getByText(/^Shop closed\./)).toBeInTheDocument();
 	});
 
 	it("names the audit and the gate the closure lasts until", () => {
-		render_({ view: createMockRunView({ ...view, shopLocked: true }) });
+		render_({
+			view: createMockRunView({
+				...view,
+				shopControls: { ...view.shopControls, shopLocked: true },
+			}),
+		});
 
 		expect(
 			screen.getByText(/Read-only audits the build you already have/)

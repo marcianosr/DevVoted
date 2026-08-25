@@ -47,6 +47,7 @@ export type AnswerContext = {
 
 export type Effect = {
 	rewardMultiplier?: number;
+	streakCapSteps?: number;
 	storageOnClear?: number;
 	storageInterestPct?: number;
 	coverage?: (context: AnswerContext) => Coverage;
@@ -96,6 +97,10 @@ export const effectOf = (config: Config): Effect => ({
 			: config.storageInterestPct * (config.level ?? 1),
 	rewardMultiplier:
 		config.rewardMultiplier === 1 ? undefined : config.rewardMultiplier,
+	// Flat, unlike the payout fields: levelling a headroom config would compound
+	// with the streak it uncaps, and two multipliers on one number is how the
+	// uncapped streak got to ×7.5 in the first place.
+	streakCapSteps: config.streakCapSteps,
 });
 
 /**

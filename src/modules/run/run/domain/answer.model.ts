@@ -13,6 +13,7 @@ import {
 	extraPickPayoutFor,
 	gateClearPayout,
 	slotsFor,
+	streakCapStepsFor,
 	storageInterestFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
@@ -260,6 +261,7 @@ export const answer = (
 	);
 	const scoredShare = auditedShare * gateMultiplier * difficultyMultiplier;
 	const streak = nextStreak(state.streak, outcome);
+	const streakBonus = streakMultiplier(streak, streakCapStepsFor(configs));
 	const answerContext: AnswerContext = {
 		category: poll.category,
 		answeredBefore: state.window.answered,
@@ -268,7 +270,7 @@ export const answer = (
 		configs,
 		answerContext,
 		scoredShare,
-		streakMultiplier(streak)
+		streakBonus
 	);
 	const coverageLoss =
 		auditedShare > 0 ? 0 : coverageLossFor(configs, state.gatesCleared);
@@ -276,7 +278,7 @@ export const answer = (
 		configs,
 		answerContext,
 		scoredShare,
-		streakMultiplier(streak),
+		streakBonus,
 		coverageLoss
 	);
 	const categoryBefore = state.coverageByCategory[poll.category] ?? 0;

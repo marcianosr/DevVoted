@@ -123,6 +123,7 @@ const base: Omit<StartScreenProps, "pickedIds" | "onToggle"> = {
 	pollCount: 5,
 	coverageDemand: 3,
 	auditCount: 0,
+	streakCap: 2,
 	stake: { removeOnMiss: 1, coveragePerWrong: -0.3 },
 	reward: { coveragePerCorrect: 1, gateRewardKb: 32, slotOpens: 4 },
 	onStart: () => {},

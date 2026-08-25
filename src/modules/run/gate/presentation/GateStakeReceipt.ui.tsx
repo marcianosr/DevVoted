@@ -12,7 +12,7 @@ import type { BillLedger } from "~/modules/run/config/domain/subscription.model"
 import type {
 	AuditView,
 	GateStake,
-} from "~/modules/run/run/application/runView.viewmodel";
+} from "~/modules/run/run/application/gateStake.viewmodel";
 import { Button } from "~/ui/Button.component";
 import { Meter } from "~/ui/Meter.ui";
 import { Popover } from "~/ui/Popover.component";

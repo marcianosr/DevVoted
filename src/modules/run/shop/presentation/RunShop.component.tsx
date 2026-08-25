@@ -39,32 +39,32 @@ export const RunShop = () => {
 				stake={view.gateStake}
 				configs={view.configs}
 				atMinimumWidth={view.atMinimumWidth}
-				locked={view.shopLocked}
+				locked={view.shopControls.shopLocked}
 				newConfigIds={view.newConfigIds}
 				offers={view.offers}
 				upcoming={upcoming}
 				onDraft={(id) => send({ type: "draft", configId: id })}
-				rebuildCost={view.rebuildCost}
-				canRebuild={view.canRebuild && !busy}
-				rebuildAvailable={view.rebuildAvailable}
+				rebuildCost={view.shopControls.rebuildCost}
+				canRebuild={view.shopControls.canRebuild && !busy}
+				rebuildAvailable={view.shopControls.rebuildAvailable}
 				onRebuild={() => send({ type: "rebuild-draft" })}
-				lockAvailable={view.lockAvailable}
-				lockCost={view.lockCost}
-				canLock={view.canLock && !busy}
+				lockAvailable={view.shopControls.lockAvailable}
+				lockCost={view.shopControls.lockCost}
+				canLock={view.shopControls.canLock && !busy}
 				onLock={(id) => send({ type: "lock-offer", configId: id })}
-				extendAvailable={view.extendAvailable}
-				extendCost={view.extendCost}
-				canExtend={view.canExtend && !busy}
+				extendAvailable={view.shopControls.extendAvailable}
+				extendCost={view.shopControls.extendCost}
+				canExtend={view.shopControls.canExtend && !busy}
 				onExtend={() => send({ type: "extend-offers" })}
-				pinAvailable={view.pinAvailable}
-				pinCost={view.pinCost}
-				canPin={view.canPin && !busy}
-				pinnedAtGate={view.pinnedAtGate}
+				pinAvailable={view.shopControls.pinAvailable}
+				pinCost={view.shopControls.pinCost}
+				canPin={view.shopControls.canPin && !busy}
+				pinnedAtGate={view.shopControls.pinnedAtGate}
 				onPlantPin={() => send({ type: "plant-pin" })}
 				slots={view.slots}
 				nextSlotUnlock={view.nextSlotUnlock}
 				justUnlockedSlots={view.justUnlockedSlots}
-				upgradedConfigId={view.autoUpgradedConfig?.id}
+				upgradedConfigId={view.gatePayout.autoUpgradedConfig?.id}
 				onUpgrade={(id) => send({ type: "upgrade", configId: id })}
 				onSell={(id) => send({ type: "sell", configId: id })}
 				storagePlans={view.storagePlans}

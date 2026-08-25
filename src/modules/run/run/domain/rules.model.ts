@@ -73,10 +73,19 @@ const STREAK_COVERAGE_BONUS = 0.1;
  * bonus for the whole run, it just stops compounding into a number the demand
  * table cannot be tuned against.
  */
-const MAX_STREAK_STEPS = 10;
+export const BASE_STREAK_STEPS = 10;
 
-export const streakMultiplier = (streak: number): number =>
-	1 + STREAK_COVERAGE_BONUS * Math.min(streak, MAX_STREAK_STEPS);
+/** The cap is a build number, not a constant: `capSteps` comes from the
+ * pipeline (`streakCapStepsFor`) so a config can sell more headroom. Defaulted
+ * for callers pricing the bare rule rather than a specific build. */
+export const streakMultiplier = (
+	streak: number,
+	capSteps: number = BASE_STREAK_STEPS
+): number => 1 + STREAK_COVERAGE_BONUS * Math.min(streak, capSteps);
+
+/** What a streak tops out at, for the receipt that has to state the ceiling. */
+export const streakCapMultiplier = (capSteps: number): number =>
+	1 + STREAK_COVERAGE_BONUS * capSteps;
 
 export const gateBaseMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;

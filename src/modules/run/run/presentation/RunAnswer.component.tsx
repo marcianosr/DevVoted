@@ -4,7 +4,7 @@ import {
 	type AnswerScore,
 	correctOptionIdsFor,
 	latestAnswerScore,
-} from "~/modules/run/run/application/runView.viewmodel";
+} from "~/modules/run/run/application/answerScore.viewmodel";
 import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
 import { Screen } from "~/ui/Screen.ui";
 
@@ -130,14 +130,14 @@ export const RunAnswer = () => {
 				chosenOptionIds={reveal ? selected : undefined}
 				revealScore={reveal?.score ?? undefined}
 				slots={view.slots}
-				canLint={view.canLint}
-				lintReady={view.lintReady && !busy && !reveal}
-				linter={view.linter ?? undefined}
-				lintCost={view.lintCost}
-				canPeek={view.canPeek}
-				peekReady={view.peekReady && !busy && !reveal}
-				peeker={view.peeker ?? undefined}
-				peekCost={view.peekCost}
+				canLint={view.paidActions.canLint}
+				lintReady={view.paidActions.lintReady && !busy && !reveal}
+				linter={view.paidActions.linter ?? undefined}
+				lintCost={view.paidActions.lintCost}
+				canPeek={view.paidActions.canPeek}
+				peekReady={view.paidActions.peekReady && !busy && !reveal}
+				peeker={view.paidActions.peeker ?? undefined}
+				peekCost={view.paidActions.peekCost}
 				split={split ?? undefined}
 				correctAnswersThisGate={view.correctAnswersThisGate ?? undefined}
 				upcoming={upcoming}

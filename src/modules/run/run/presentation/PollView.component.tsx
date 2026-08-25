@@ -79,24 +79,24 @@ type Tool = {
 };
 
 const toolsFor = (view: RunView, handlers: PollTools): readonly Tool[] => [
-	...(view.canLint && view.linter
+	...(view.paidActions.canLint && view.paidActions.linter
 		? [
 				{
-					configId: view.linter.id,
+					configId: view.paidActions.linter.id,
 					label: "cross out",
-					costKb: view.lintCost,
-					ready: view.lintReady,
+					costKb: view.paidActions.lintCost,
+					ready: view.paidActions.lintReady,
 					onUse: handlers.onLint,
 				},
 			]
 		: []),
-	...(view.canPeek && view.peeker
+	...(view.paidActions.canPeek && view.paidActions.peeker
 		? [
 				{
-					configId: view.peeker.id,
+					configId: view.paidActions.peeker.id,
 					label: "peek",
-					costKb: view.peekCost,
-					ready: view.peekReady,
+					costKb: view.paidActions.peekCost,
+					ready: view.paidActions.peekReady,
 					onUse: handlers.onPeek,
 				},
 			]

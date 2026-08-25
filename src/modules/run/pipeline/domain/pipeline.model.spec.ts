@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	BASE_STREAK_STEPS,
 	SLICE_WINDOW,
 	roundToOneDecimal,
 	streakMultiplier,
@@ -27,6 +28,7 @@ import {
 	rewardMultiplierFor,
 	SLOT_UNLOCKS,
 	slotsFor,
+	streakCapStepsFor,
 	storageInterestFor,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
@@ -169,7 +171,20 @@ describe("perAnswerPreviewFor", () => {
 			storageKbPerCorrect: 0,
 			matchingConfigMultiplier: undefined,
 			streakStepMultiplier: streakMultiplier(1),
+			streakCapMultiplier: 2,
 		});
+	});
+
+	it("caps the streak at the base ten steps on a build that sells no headroom", () => {
+		expect(streakCapStepsFor([])).toBe(BASE_STREAK_STEPS);
+		expect(perAnswerPreviewFor([], 0).streakCapMultiplier).toBe(2);
+	});
+
+	it("adds a headroom config's steps to the cap, so the ceiling moves with the build", () => {
+		const headroom = { ...CONFIGS.js, id: "flow", streakCapSteps: 5 };
+
+		expect(streakCapStepsFor([headroom])).toBe(BASE_STREAK_STEPS + 5);
+		expect(perAnswerPreviewFor([headroom], 0).streakCapMultiplier).toBe(2.5);
 	});
 
 	// The base is a number no correct answer ever pays: the first one already
