@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-	createRun,
-	runReducer,
-	type RunState,
-} from "~/modules/run/run/domain/run.model";
+import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	perAnswerPreviewFor,

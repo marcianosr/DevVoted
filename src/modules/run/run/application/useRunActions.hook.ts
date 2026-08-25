@@ -5,7 +5,7 @@ import {
 	dispatchRunAction,
 	startRun,
 } from "~/modules/run/run/application/run.serverfn";
-import type { RunAction } from "~/modules/run/run/domain/run.model";
+import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import { userQueryKeys } from "~/shared/queryKeys";
 
 import { runCommunityQueryKey } from "~/modules/run/community/application/useRunCommunity.hook";

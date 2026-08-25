@@ -12,12 +12,11 @@ import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 
+import { isRunOver, type RunState } from "~/modules/run/run/domain/run.model";
 import {
-	isRunOver,
 	type RunAction,
-	type RunState,
 	runReducer,
-} from "~/modules/run/run/domain/run.model";
+} from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	hydrateRunState,

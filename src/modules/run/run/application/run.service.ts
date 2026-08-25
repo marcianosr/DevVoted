@@ -3,7 +3,8 @@ import {
 	handleApiOperation,
 } from "~/shared/utils/errorHandling";
 
-import { createRun, type RunAction } from "~/modules/run/run/domain/run.model";
+import { createRun } from "~/modules/run/run/domain/run.model";
+import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	type RunView,

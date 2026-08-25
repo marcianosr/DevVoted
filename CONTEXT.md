@@ -30,7 +30,13 @@ boundary, so this table is the map an architecture review reads first.
 
 | Concept | Lives in | Key symbols |
 |---|---|---|
-| Run / Climb | `run/domain` | `RunState`, `RunAction`, `runReducer`, `createRun` (`run.model.ts`) |
+| Run / Climb | `run/domain` | `RunState`, `RunStatus`, `createRun`, and the primitives every transition edits state through: `withLog`, `withPipeline`, `addStorage`, `freshWindow`, `shopDraft`, plus the audit lens `auditsOf` / `liveConfigsOf` / `offlineConfigsOf` / `offlinePairsOf` (`run.model.ts`). Holds no transitions and no reducer: it is the bottom of the run-domain graph |
+| Run action | `run/domain` | `RunAction`, `runReducer`, `isShopLocked`, and the configuring transitions `slot` / `unslot` / `pick-stack` / `start` (`runAction.model.ts`); the top of the graph, so it is the one file that may import every other |
+| Answer / Scoring | `run/domain` | `answer`, `closeWindow` (`answer.model.ts`); one poll scored, and the gate verdict, payout and settle when the window fills |
+| Shop action | `run/domain` | `draft`, `upgrade`, `sell`, `drop`, `changePlan`, `plantPin`, `finishReward`, the ADR-029 controls `rebuildDraft` / `lockOffer` / `extendOffers` and their `can*` / `*Available` predicates (`shopAction.model.ts`); pricing and rolling stay in `shop/domain/draft.model.ts` |
+| Paid action | `run/domain` | lint and peek: `lintFeeFor`, `peekFeeFor`, `lintApplies`, `canRunLinter`, `spendLint`, `peekApplies`, `canBuyPeek`, `spendPeek` (`paidAction.model.ts`) |
+| Strip / Peel | `run/domain` | `strip`, `resumeClimb` (`strip.model.ts`); the ADR-037 way out of a missed gate |
+| Run fixtures | `run/domain` | `started`, `answerWith`, `clearGate`, `failGate`, `payPeel`, `handed`, `poll`, `pool` (`run.factory.ts`); the shared spec fixtures for the run engine |
 | Run status | `run/domain` | `RunStatus` = `configuring \| answering \| awaiting-strip \| rewarding \| won \| dead` |
 | Run poll / Grading | `run/domain` | `RunPoll`, `RunOption`, `AnswerType`, `AnswerOutcome`, `AnsweredPoll`, `answerOutcome`, `coverageShare`, `mirrorPoll`, `mirrorGrading`, `nextStreak` (`runPoll.model.ts`); the run's own projection of a poll plus the one grading rule, shared with the community board. The authored `Poll` stays with the `polls` context (ADR-002 §2) |
 | Run snapshot | `run/domain` | `RunSnapshot`, `toRunSnapshot`, `hydrateRunState` (`runSnapshot.model.ts`); what persists to `run_states.state` |
@@ -45,7 +51,7 @@ boundary, so this table is the map an architecture review reads first.
 | Pipeline | `pipeline/domain` | `Pipeline` = `{ id, slots, configs }` (`pipeline.model.ts`) |
 | Slot | `pipeline/domain` | `BASE_SLOTS` (3), `MAX_SLOTS` (14), `coverageToAddSlot`, `canAddSlot` |
 | Coverage | `pipeline/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
-| Lint | `pipeline/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/run.model.ts` |
+| Lint | `pipeline/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/paidAction.model.ts` |
 | Build screen | `pipeline/presentation` | `ConfiguringScreen`, `PipelineTable`, `PipelineReportRow`, `SlotUnlockRow`, `CoverageByCategory` |
 | Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed` (`gate.model.ts`) |
 | Gate reward | `gate/domain` | `gateRewardRows`, `gateStorageGained` (`gateReward.model.ts`) |

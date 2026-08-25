@@ -1,10 +1,11 @@
 ---
 # DVTD-s5e9
 title: 'Split run.model.ts step 2: move the reducer out (the pivot)'
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-08-25T13:27:18Z
-updated_at: 2026-08-25T13:27:18Z
+updated_at: 2026-08-25T15:08:31Z
 ---
 
 Follow-up to DVTD-hg7v. Blocked on nothing, but it is the gating step for every remaining extraction.
@@ -43,3 +44,50 @@ Cost to name up front: ~7 previously-private helpers become module-public. There
 - `shopVisit` is a new vocabulary word and needs a CONTEXT.md entry, or a better name. `answer`, `paidAction`, `strip`, `shopControl` are all already blessed vocabulary.
 - CONTEXT.md:47 has a stale pointer to fix when paidAction lands: "Lint | pipeline/domain | ... the fee is lintCost in run/domain/run.model.ts".
 - Do the whole sequence on one branch: run.model.spec.ts is a merge-conflict magnet.
+
+## Summary of Changes
+
+The inversion landed. `run.model.ts` 1131 -> 229 lines; it now holds `RunState`, `createRun`, the shared primitives and the audit lens, and no transitions or reducer at all.
+
+### New files in run/run/domain
+
+| file | lines |
+|---|---|
+| answer.model.ts | 369 |
+| shopAction.model.ts | 305 |
+| runAction.model.ts | 163 |
+| paidAction.model.ts | 85 |
+| strip.model.ts | 68 |
+| run.factory.ts | 115 |
+
+Spec split to match: run.model.spec.ts (2386) -> runAction.model.spec.ts 499, answer 880, shopAction 605, strip 151, paidAction 150, run 91.
+
+### Rank order (acyclicity proof)
+
+```
+0  rules.model, pipeline, config/*, gate/*, shop/draft
+1  runPoll.model
+2  run.model                     the bottom
+3  answer, shopAction, paidAction, strip   (never import each other)
+4  runAction.model               the top
+```
+
+Verified both invariants: no rank-3 file imports another rank-3 file, and every moved symbol is declared exactly once.
+
+### Verification
+
+- `npm run lint`: clean, `lint:arch` 757 modules / 3066 dependencies, no violations.
+- `npm run build`: clean, 0 tsc errors.
+- `npm test`: 2333 total, 2322 passed, unchanged from before the refactor. The 3 failures in `src/ui/modern-theme/screens/RewardScreen.spec.tsx` are pre-existing (reproduced on HEAD in a worktree during step 1).
+
+### Incident during the spec split
+
+The write loop created the new small `run.model.spec.ts` BEFORE `git mv run.model.spec.ts runAction.model.spec.ts`, clobbering the file that still held the six describe blocks meant to stay behind. 35 tests vanished (2333 -> 2298) and the test run stayed green, because a deleted test does not fail.
+
+Caught by comparing the total against the recorded 2333, not by any tooling. Recovered the six blocks verbatim from `git show HEAD:` (their bodies were untouched by steps 1 and 2) and confirmed 191 `it(` and 32 describes restored.
+
+Lesson for the next split: assert the test total after every step, and never write a file whose name is also a `git mv` source in the same pass.
+
+### CONTEXT.md
+
+Rewrote the Run / Climb row and added rows for Run action, Answer / Scoring, Shop action, Paid action, Strip / Peel and Run fixtures. Fixed the stale Lint row, which pointed `lintCost` at `run.model.ts`.

@@ -1,11 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { createRun } from "~/modules/run/run/domain/run.model";
 import {
-	createRun,
 	runReducer,
 	RunAction,
-} from "~/modules/run/run/domain/run.model";
+} from "~/modules/run/run/domain/runAction.model";
 import {
 	type AnsweredPoll,
 	RunPoll,

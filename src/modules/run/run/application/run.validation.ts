@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { RunAction } from "~/modules/run/run/domain/run.model";
+import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 
 const configActionSchema = <T extends string>(type: T) =>
 	z
