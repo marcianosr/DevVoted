@@ -5,7 +5,10 @@ import {
 
 import { createRun } from "~/modules/run/run/domain/run.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
-import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import {
+	startingHand,
+	STARTER_POOL,
+} from "~/modules/run/config/domain/hand.model";
 import {
 	type RunView,
 	toRunView,
@@ -25,23 +28,6 @@ import {
 	type SessionRunRecord,
 } from "~/modules/run/run/infrastructure/run.repository";
 import { fetchRunPollsForDate } from "~/modules/run/run/infrastructure/runPolls.repository";
-
-/**
- * The starting loadout, mirroring proto-run.tsx. Interim until config
- * unlocks land (DVTD-2try) — then this becomes a per-user query.
- */
-const HANDED_CONFIGS = [
-	CONFIGS.unitTests,
-	CONFIGS.js,
-	CONFIGS.ts,
-	CONFIGS.css,
-	CONFIGS.eslint,
-	CONFIGS.agentsMd,
-	CONFIGS.codeCoverage,
-	CONFIGS.indexedDb,
-	CONFIGS.coverageGain,
-	CONFIGS.coldStart,
-];
 
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> =>
 	toRunView(await loadRunState(run.id));
@@ -116,7 +102,17 @@ export const startRunService = async ({
 		// gate and the tag burns on use — consuming before creating means a
 		// crash between the two costs the tag, never duplicates it.
 		const pinnedGate = await consumePinnedGate(userId);
-		const state = createRun(polls, HANDED_CONFIGS, pinnedGate);
+		// Per player and per day: the poll sequence is the thing everyone shares
+		// (ADR-009), while the hand is what you personally opened with. The draw
+		// is stored in the run, so the seed only has to be stable long enough to
+		// deal once — it is the persisted hand a reload comes back to.
+		// STARTER_POOL becomes the account's own pool once configs unlock
+		// (DVTD-2try).
+		const state = createRun(
+			polls,
+			startingHand(STARTER_POOL, `${userId}:${date}`),
+			pinnedGate
+		);
 		await createSessionRunWithState(userId, date, state);
 		return toRunView(state);
 	});

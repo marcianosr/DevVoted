@@ -479,6 +479,15 @@ describe("the gate stake travels as one object", () => {
 		});
 	});
 
+	it("foreshadows the first audit while the gate runs clean", () => {
+		const view = toRunView(answeringWith([CONFIGS.js]));
+		expect(view.gateStake.upcomingAudit).toEqual({
+			gateNumber: 3,
+			name: "Cost Overrun",
+			description: expect.stringContaining("paid action"),
+		});
+	});
+
 	it("bills the plan and every subscribed config into one ledger", () => {
 		const state = {
 			...answeringWith([CONFIGS.js, CONFIGS.freemium]),

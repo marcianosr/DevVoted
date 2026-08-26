@@ -19,6 +19,7 @@ import {
 	type AuditView,
 	auditViewsFor,
 	type GateStake,
+	upcomingAuditFor,
 } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	type PollView,
@@ -296,6 +297,7 @@ export const toRunView = (state: RunState): RunView => {
 			coverageDemand: gateDemandFor(state.pipeline.configs, state.gatesCleared),
 			coverageHeld: state.window.coverageGained,
 			audits,
+			upcomingAudit: upcomingAuditFor(state.gatesCleared),
 			stripsOnFailure: strips,
 			missIsFatal: isStakeFatal(strips, state.pipeline.configs.length),
 			billKb: plan.billKb,

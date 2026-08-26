@@ -41,7 +41,8 @@ describe("configuring", () => {
 
 describe("starter stacks (ADR-026)", () => {
 	// The spec's handed pool holds every "test-everything" member but lacks
-	// "ship-it"'s .jsx — one stack to apply, one to refuse.
+	// "ship-it"'s .jsx, which is what makes it the case worth testing: a stack is
+	// granted whole, so the hand it was dealt has no say in it.
 	const pickStack = (state: RunState, stackId: string): RunState =>
 		runReducer(state, { type: "pick-stack", stackId });
 
@@ -62,10 +63,15 @@ describe("starter stacks (ADR-026)", () => {
 		expect(state.available.map((config) => config.id)).toContain("css");
 	});
 
-	it("refuses the whole stack when a member was never handed to the run", () => {
-		const before = createRun(pool(60), handed);
-		const after = pickStack(before, "ship-it");
-		expect(after).toBe(before);
+	// The stack is the curated pre-run path and the hand is the drawn one, so a
+	// stack may not depend on the draw: with six cards off a ten-config pool, the
+	// three stacks' nine members would almost never all turn up, and the button
+	// would go quietly dead.
+	it("grants a stack whose members the hand never held", () => {
+		const state = pickStack(createRun(pool(60), handed), "ship-it");
+
+		expect(configIds(state)).toEqual(["js", "jsx", "code-coverage"]);
+		expect(state.available.map((config) => config.id)).not.toContain("jsx");
 	});
 
 	it("ignores an unknown stack id", () => {

@@ -14,6 +14,7 @@ import {
 	GATE_AUDITS,
 	liveAuditsFor,
 	mirrorsPolls,
+	nextAuditedGateFrom,
 	offlineConfigsFor,
 	suppressedAuditFor,
 } from "~/modules/run/gate/domain/audit.model";
@@ -297,5 +298,21 @@ describe("the defeat device (ADR-028, repurposed)", () => {
 	it("suppresses nothing without the device installed", () => {
 		expect(suppressedAuditFor([CONFIGS.js], 7)).toBeUndefined();
 		expect(liveAuditsFor([CONFIGS.js], 7)).toEqual(auditsForGate(7));
+	});
+});
+
+describe("nextAuditedGateFrom", () => {
+	it("finds gate 3's Cost Overrun from the clean opening gates", () => {
+		const next = nextAuditedGateFrom(0);
+		expect(next?.gate).toBe(3);
+		expect(next?.audit.id).toBe("cost-overrun");
+	});
+
+	it("returns the gate itself when it runs audits", () => {
+		expect(nextAuditedGateFrom(7)?.gate).toBe(7);
+	});
+
+	it("finds nothing past the last audited gate", () => {
+		expect(nextAuditedGateFrom(GATE_COUNT)).toBeUndefined();
 	});
 });

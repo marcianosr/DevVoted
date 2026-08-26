@@ -96,3 +96,20 @@ export const selectWeightedSeededRandom = <T>(
 	// Fallback for floating-point edge cases
 	return selected?.item ?? items[0].item;
 };
+
+/**
+ * Deterministic Fisher-Yates: the same seed and the same input always produce
+ * the same order. Returns a new array, so callers may hand it a frozen roster.
+ */
+export const shuffleSeeded = <T>(items: readonly T[], seed: string): T[] => {
+	const rng = new SeededRandom(seed);
+	const shuffled = [...items];
+	for (let index = shuffled.length - 1; index > 0; index--) {
+		const swapWith = rng.nextInt(0, index + 1);
+		[shuffled[index], shuffled[swapWith]] = [
+			shuffled[swapWith],
+			shuffled[index],
+		];
+	}
+	return shuffled;
+};

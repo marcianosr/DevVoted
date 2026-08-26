@@ -24,7 +24,6 @@ import {
 	upgrade,
 } from "~/modules/run/run/domain/shopAction.model";
 import { resumeClimb, strip } from "~/modules/run/run/domain/strip.model";
-import {} from "~/modules/run/run/domain/paidAction.model";
 
 export type RunAction =
 	| { readonly type: "slot"; readonly configId: string }
@@ -62,20 +61,25 @@ const slotConfig = (state: RunState, configId: string): RunState => {
 	};
 };
 
+/**
+ * A stack is granted whole, not assembled out of the hand. It used to require
+ * every member to be sitting in `available` and to no-op silently otherwise —
+ * survivable while the hand was a fixed list holding all of them, fatal once the
+ * hand became a draw of six (the three stacks want nine configs between them).
+ *
+ * The two pre-run paths are meant to be different offers: the stack is the
+ * curated one, the draw is the found one.
+ */
 const pickStack = (state: RunState, stackId: string): RunState => {
 	const stack = starterStackFor(stackId);
 	if (!stack || stack.configs.length > state.pipeline.slots) return state;
-	const pool = [...state.pipeline.configs, ...state.available];
-	const members = stack.configs.flatMap((member) => {
-		const handed = pool.find((config) => config.id === member.id);
-		return handed ? [handed] : [];
-	});
-	if (members.length < stack.configs.length) return state;
-	const memberIds = new Set(members.map((config) => config.id));
+	const memberIds = new Set(stack.configs.map((config) => config.id));
 	return {
 		...state,
-		pipeline: withPipeline(state.pipeline, members),
-		available: pool.filter((config) => !memberIds.has(config.id)),
+		pipeline: withPipeline(state.pipeline, [...stack.configs]),
+		available: [...state.pipeline.configs, ...state.available].filter(
+			(config) => !memberIds.has(config.id)
+		),
 	};
 };
 

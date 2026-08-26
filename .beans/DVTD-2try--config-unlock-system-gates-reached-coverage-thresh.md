@@ -7,7 +7,7 @@ priority: normal
 tags:
     - meta-progress
 created_at: 2026-07-16T20:29:52Z
-updated_at: 2026-08-26T14:05:19Z
+updated_at: 2026-08-26T16:07:33Z
 parent: DVTD-z2r2
 ---
 
@@ -57,7 +57,7 @@ should: this is complexity staging inside a run. Not this bean's scope.
 | column | written | read by the game |
 |---|---|---|
 | `owned_swatch_ids` | every gate clear, idempotently | nothing — Dex only |
-| `archived_storage` | credited at run end | nothing — no sink exists |
+| `archived_storage` | credited at run end | yes, the border shop (`src/domains/economy/`) spends it |
 | `pinned_gate` | git tag, burnt on use | yes |
 | `owned_border_ids` / `equipped_border_id` | — | — |
 
@@ -88,13 +88,11 @@ one-expression predicate that did not exist before), `faucetEarnedKb`, `streak`,
 Storage: one new column, `unlocked_config_ids text[]`, written at the same hook and
 with the same `NOT (... @> ARRAY[...])` idempotence guard as `awardGateSwatch`.
 
-### Two filter points, which must agree
+### ~~Two filter points~~ ONE filter point
 
-A config visible in one and not the other is the bug this design most invites.
-
-- `run.service.ts` `HANDED_CONFIGS` → a per-user query (its own comment already says
-  "Interim until config unlocks land (DVTD-2try)")
-- `draft.model.ts` shop pool, which currently pools the entire `CONFIG_LIST`
+SUPERSEDED 2026-08-26 (see "Grant gates the hand, never the shelf" below). Only
+`run.service.ts` `HANDED_CONFIGS` gets filtered; `draft.model.ts` keeps pooling the
+entire `CONFIG_LIST` deliberately.
 
 ### Locked presentation (decided)
 
@@ -118,3 +116,114 @@ there.
 
 - Which configs take depth vs a challenge, and the actual gate numbers.
 - Whether starter slots and borders ride the same ledger, or split back out.
+
+---
+
+## The framework (2026-08-26): Reveal / Grant / Stage
+
+"Unlock" was doing three jobs at once, which is why the scope kept sliding.
+
+| | what it does | scope | balance impact |
+|---|---|---|---|
+| **Reveal** | you learn it exists | account | none |
+| **Grant** | you own it, you bring it | account | high |
+| **Stage** | when it appears inside a run | run | pacing only |
+
+**The rule: Grant is only for things you carry into a run. Stage stays per-run,
+always. Reveal is free, and everything can have it.**
+
+Slots are found during a run, never carried into one, so they never get Grant. The
+"someone plays 10 slots at gate 1" worry is not an exception to handle, it is the
+rule working: no mechanism exists that could do it.
+
+### The grid
+
+| content | Stage | Grant | Reveal |
+|---|---|---|---|
+| Configs (~30) | no | yes: `unlocksAtGate` / `unlocksBy` | Configdex silhouettes |
+| Starter stacks (3) | no | **yes** (decided below) | yes |
+| Slots (11) | gates + coverage | **never** | shipping, Dex Gates tab |
+| Rebuild / Lock / Extend / git tag | gates 0/2/3/4 | **no** | **new: Dex tools tab, ??? until met** |
+| Storage plans (7 tiers) | `fromGate` | no | **new: same ??? treatment** |
+| Audits (13 gates) | per gate | no | shipping, Dex Audits tab |
+| Borders | no | yes, already built in `src/domains/economy/` | already built |
+
+### Decisions (Marciano, 2026-08-26)
+
+**Shop tools get Reveal only, not Grant.** They are verbs, and Lock/Extend/git tag
+are already staged at gates 2/3/4. Account-gating on top would mean the player who
+keeps dying at gate 3 never meets Extend, and that is exactly the player who needs
+it. The Dex gains a tools tab where an unmet tool reads `???` until you first reach
+its gate. Zero balance change. Storage plans ride the same tab treatment.
+
+**Starter stacks get Grant, and are the onboarding lever.** Everyone starts on
+Safe start (already the first-run recommendation, stack.model.ts). Gamble and
+Category spread are earned. This is the single choice made *before* a run, so
+granting one changes how a run opens without touching any in-run number, and it
+gives the 3-stack picker a reason to grow.
+
+**Config unlocks are achievement-only, no currency.** Meet the requirement (gate
+depth or challenge) and nothing else. `archived_storage` stays the cosmetics
+currency it already is, so unlocks stay earned rather than farmed and the two
+economies do not compete for one pool.
+
+### Follow-up work this implies
+
+- [ ] Dex tools tab: Rebuild / Lock / Extend / git tag as `???` until first met (Reveal)
+- [ ] Dex storage-plan rows, same treatment
+- [ ] Starter stack grants + the ledger read on the pre-run picker
+
+---
+
+## Grant gates the hand, never the shelf (2026-08-26)
+
+### The shop roll is not random, it is depth in disguise
+
+`draftSeed` takes only `gatesCleared`, `rebuildsUsed` and `extensionsBought`. No user
+id, no date, no RNG source anywhere in the chain (`shopAction.model.ts`,
+`strip.model.ts`, `answer.model.ts`). **Every player at gate 3 with zero rebuilds
+sees the same five configs**, minus what they already own.
+
+So "configs you have met" is already "how deep you have got", with a hash in
+between. Adopting met-as-unlock would give the depth curve for free but with no dial:
+which config lands at which gate is whatever the hash says. Hence the split below —
+meeting a config is Reveal, an authored requirement is Grant.
+
+### Decisions
+
+**Grant controls the STARTING HAND ONLY.** The shop keeps offering the entire roster
+at every gate. Rationale: it is the Reveal/Grant/Stage rule applied honestly — Grant
+is for what you carry in, the shop is what you find during a run. Consequences worth
+keeping in mind:
+
+- A brand-new account still meets the whole roster, so Reveal fills in from run one.
+- A struggling run is never made worse by a thin shelf.
+- `draft.model.ts` stays untouched. This reverses the "two filter points" note above.
+
+**The custom-build hand is a draw, not a list.** Draw ~6 from the unlocked pool, pick
+3 into slots (`BASE_SLOTS`), **guaranteeing at least one focus config**. Rationale:
+showing the whole pool means a player settles on a best three and every run opens
+identically. The focus guarantee is not politeness — the sim work found aim swings
+win rate ~5x while width self-cancels, so a hand with no category multiplier is
+broken rather than merely varied.
+
+This gives the two paths already in `StackPicker.ui.tsx` distinct jobs for the first
+time: **stacks** are curated, deterministic, one click (new-player path and unlock
+reward), **Custom build** is the draw.
+
+**Unlocks must skew rare or the draw stops feeling like progression.** A bigger pool
+only means better hands if what enters it is stronger. The five legendaries
+(AGENTS.md, WTFPL, Freemium, Volkswagen CI, Dependabot) are the natural late grants.
+
+**"Met" = seen in a shop roll**, bought or not (Pokedex "seen"). Fills in fast, needs
+no authoring, and pairs naturally with depth since the roll is seeded on gates
+cleared.
+
+### Revised work
+
+- [ ] `unlocksAtGate` / `unlocksBy` on `Config`; `HANDED_CONFIGS` becomes a per-user query
+- [ ] Hand draw: ~6 from the unlocked pool, one focus guaranteed
+- [ ] Reveal ledger: record configs seen in a shop roll
+- [ ] Configdex owned/total + silhouettes for unmet rows
+- [ ] Starter stack grants
+- [ ] Dex tools + storage-plan rows as `???` (Reveal)

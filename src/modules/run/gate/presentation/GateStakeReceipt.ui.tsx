@@ -12,6 +12,7 @@ import type { BillLedger } from "~/modules/run/config/domain/subscription.model"
 import type {
 	AuditView,
 	GateStake,
+	UpcomingAuditView,
 } from "~/modules/run/run/application/gateStake.viewmodel";
 import { Button } from "~/ui/Button.component";
 import { Meter } from "~/ui/Meter.ui";
@@ -212,6 +213,53 @@ const AuditRows = ({ audits }: { audits: readonly AuditView[] }) => (
 		))}
 	</ul>
 );
+
+/**
+ * A clean gate's audit line: names the first audited gate ahead, so the system
+ * introduces itself before it ever charges. Muted throughout — saffron warns
+ * about this gate, and this is not this gate's warning.
+ */
+const UpcomingAuditNote = ({ upcoming }: { upcoming: UpcomingAuditView }) => (
+	<ul className="flex flex-col gap-2">
+		<Requirement>
+			<Paragraph as="span" tone="muted">
+				None scheduled. The first audit waits at gate{" "}
+				<Paragraph as="span">{upcoming.gateNumber}</Paragraph>:{" "}
+				<Paragraph as="span" className="font-bold">
+					{upcoming.name}
+				</Paragraph>{" "}
+				— {upcoming.description}
+			</Paragraph>
+		</Requirement>
+	</ul>
+);
+
+/**
+ * The receipt's Audit section, shared by the full receipt and the rewards-only
+ * preview. It never goes silent: a clean gate foreshadows the first audit ahead
+ * instead, so the section disappears only past the last audited gate.
+ */
+const AuditSection = ({
+	audits,
+	upcoming,
+}: {
+	audits: readonly AuditView[];
+	upcoming?: UpcomingAuditView;
+}) => {
+	if (audits.length === 0 && upcoming === undefined) return null;
+	return (
+		<>
+			<hr className="border-t border-edge" />
+			<div className="flex flex-col gap-1">
+				<Paragraph size="xs">Audit</Paragraph>
+				{audits.length > 0 ? <AuditRows audits={audits} /> : null}
+				{audits.length === 0 && upcoming !== undefined ? (
+					<UpcomingAuditNote upcoming={upcoming} />
+				) : null}
+			</div>
+		</>
+	);
+};
 
 /**
  * What multiplies a correct answer beyond its base: a Focus config when the poll
@@ -439,15 +487,7 @@ export const GateStakeReceipt = ({
 						pollsPerGate={pollsPerGate}
 					/>
 				</div>
-				{stake.audits.length > 0 ? (
-					<>
-						<hr className="border-t border-edge" />
-						<div className="flex flex-col gap-1">
-							<Paragraph size="xs">Audit</Paragraph>
-							<AuditRows audits={stake.audits} />
-						</div>
-					</>
-				) : null}
+				<AuditSection audits={stake.audits} upcoming={stake.upcomingAudit} />
 				<hr className="border-t border-edge" />
 				<div className="flex flex-col gap-1">
 					<Paragraph size="xs">Rewards</Paragraph>
@@ -514,15 +554,7 @@ export const GateStakeRewards = ({ stake, lead }: GateStakeRewardsProps) => (
 	<section className="rounded-lg border border-edge-strong p-4">
 		<div className="flex flex-col gap-3">
 			<GateTitle gateNumber={stake.gateNumber} lead={lead} />
-			{stake.audits.length > 0 ? (
-				<>
-					<hr className="border-t border-edge" />
-					<div className="flex flex-col gap-1">
-						<Paragraph size="xs">Audit</Paragraph>
-						<AuditRows audits={stake.audits} />
-					</div>
-				</>
-			) : null}
+			<AuditSection audits={stake.audits} upcoming={stake.upcomingAudit} />
 			<hr className="border-t border-edge" />
 			<div className="flex flex-col gap-1">
 				<Paragraph size="xs">Rewards</Paragraph>

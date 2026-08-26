@@ -204,6 +204,22 @@ export const GATE_AUDITS: Readonly<Record<number, readonly Audit[]>> = {
 export const auditsForGate = (gate: number): readonly Audit[] =>
 	GATE_AUDITS[gate] ?? [];
 
+/**
+ * The first audited gate at or beyond `gate`, with its leading audit — what a
+ * clean gate's receipt foreshadows instead of going silent.
+ */
+export const nextAuditedGateFrom = (
+	gate: number
+): { readonly gate: number; readonly audit: Audit } | undefined => {
+	const next = Object.keys(GATE_AUDITS)
+		.map(Number)
+		.filter((auditedGate) => auditedGate >= gate)
+		.sort((a, b) => a - b)[0];
+	const audit = next === undefined ? undefined : GATE_AUDITS[next]?.[0];
+	if (next === undefined || audit === undefined) return undefined;
+	return { gate: next, audit };
+};
+
 const suppressorOf = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.suppressesAudit === true);
 

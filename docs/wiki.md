@@ -120,7 +120,9 @@ low-effort attempt rarely meets the meter at all.
 
 An audit is a fixed rule a gate carries, stated on the stake receipt before you walk
 in. **The count is the escalation**: gates 0 to 2 are clean, one audit runs from gate
-3, two from gate 8, three from gate 11, the same shape the peel curve has.
+3, two from gate 8, three from gate 11, the same shape the peel curve has. A clean
+gate's receipt says so instead of going silent: it names the first audit waiting
+ahead, so the system introduces itself before it ever charges.
 
 | Audit | What it does |
 | --- | --- |
