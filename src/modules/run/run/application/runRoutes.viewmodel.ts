@@ -61,29 +61,14 @@ export type CommunityReturn = {
 	readonly label: string;
 };
 
-/**
- * The screen a run picks up on — the hub's Resume press and the community
- * board's way back are the same question. Rewarding is the one status whose
- * first allowed screen is the wrong place to land: that is the payout
- * celebration, already spent, and prep is the hub the shop feeds into
- * (ADR-032).
- */
 export const resumeTarget = (
 	view: Pick<RunView, "status" | "gatesCleared" | "redoingGate">
 ): RunRoutePath =>
 	view.status === "rewarding" ? RUN_ROUTES.prep : routesForStatus(view)[0];
 
-/**
- * Where the community page's forward action goes, and what it should say. Not a
- * sync verdict — community is never policed — but it names a screen outright
- * rather than bouncing through `/run`, which since becoming a hub no longer
- * forwards anyone.
- */
 export const returnFromCommunity = (
 	view: Pick<RunView, "status" | "gatesCleared" | "redoingGate"> | null
 ): CommunityReturn => {
-	// No run today: the button leads to the screen that starts one, so it may
-	// not claim there is a run to go back to.
 	if (!view) return { path: RUN_ROUTES.start, label: "Today’s climb →" };
 
 	return { path: resumeTarget(view), label: "Back to your run →" };
@@ -91,12 +76,6 @@ export const returnFromCommunity = (
 
 const RUN_SCREEN_PATHS: readonly string[] = Object.values(RUN_ROUTES);
 
-/**
- * `statusUnknown` covers both ways the run status can be un-askable: still
- * loading, or failed to load. A null `view` is otherwise a real answer ("no run
- * today"), so acting on it while the read is unresolved would move the player
- * off their screen on the strength of data that never arrived (DVTD-cmqj).
- */
 export const syncTarget = (
 	pathname: string,
 	view: Pick<

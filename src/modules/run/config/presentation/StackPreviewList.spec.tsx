@@ -23,11 +23,9 @@ describe(StackPreviewList, () => {
 	it("hides a config's fee until its details are tapped open", () => {
 		const rows = roleRows([CONFIGS.eslint]);
 		render(<StackPreviewList rows={rows} />);
-		expect(
-			screen.queryByText("The fee doubles each use")
-		).not.toBeInTheDocument();
+		expect(screen.queryByText(CONFIGS.eslint.costs)).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: /more details/ }));
-		expect(screen.getByText("The fee doubles each use")).toBeInTheDocument();
+		expect(screen.getByText(CONFIGS.eslint.costs)).toBeInTheDocument();
 	});
 
 	it("closes the fee again on a second tap", () => {
@@ -38,9 +36,7 @@ describe(StackPreviewList, () => {
 		fireEvent.click(
 			screen.getByRole("button", { name: /hide the fine print/ })
 		);
-		expect(
-			screen.queryByText("The fee doubles each use")
-		).not.toBeInTheDocument();
+		expect(screen.queryByText(CONFIGS.eslint.costs)).not.toBeInTheDocument();
 	});
 
 	it("skips the details tap entirely for a config with no fee", () => {

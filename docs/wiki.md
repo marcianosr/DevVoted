@@ -381,8 +381,8 @@ hover are planned; today the draft cycles deterministically through the pool.
 | `package.json` | common | General Frontend polls reward ×1.25 (Focus, upgradable) |
 | Unit Tests | common | +32 KB × level storage on gate clear |
 | Moore's Law | common | On each gate clear, +2% × level of held storage |
-| ESLint | common | Cross out one wrong answer on JS/TS polls, escalating fee from 8 KB |
-| Stylelint | common | Cross out one wrong answer on CSS polls, escalating fee from 8 KB |
+| ESLint | common | Cross out one wrong answer on JS/TS polls, fee doubling from 8 KB per gate |
+| Stylelint | common | Cross out one wrong answer on CSS polls, fee doubling from 8 KB per gate |
 | Cold Start | uncommon | First answer of the gate rewards ×2 |
 | Coverage | uncommon | Coverage gains ×2 |
 | Code Coverage | uncommon | +0.5% flat coverage per correct answer |
@@ -494,9 +494,10 @@ fee. Both hang off the selling config's own pipeline row, so a build's powers re
 one place.
 
 **Lint.** With a linter covering the poll's category equipped, pay to gray out one
-wrong option: 8, 16, 32, 64, 128, 256 KB, doubling per use within a poll and resetting
-each poll, which stops lint-spam. Linted polls never reveal their correct answer in
-community views and may reappear in a later seed.
+wrong option: 8, 16, 32, 64, 128, 256 KB. Run it as often as the poll's options allow;
+the ladder is the only thing metering it, and it climbs across the whole gate,
+resetting at the clear. Linted polls never reveal their correct answer in community
+views and may reappear in a later seed.
 
 **Peek** (Telemetry). Pay to see how the community voted on the poll in front of you,
 drawn as a gray bar per option: 32, 64, 128, 256, 512 KB, doubling per use and
@@ -804,7 +805,7 @@ The game leans hard into its CI metaphor.
 | **Archived storage** | Persistent cross-run storage: the meta-progression currency. |
 | **Faucet** | Any per-correct-answer storage income (for example IndexedDB). |
 | **Draft / Rebuild** | Buying a shop config / re-rolling the offer at a doubling cost. |
-| **Lint** | Paying an escalating fee to disable one wrong option (needs a linter config). |
+| **Lint** | Paying a fee that doubles across the gate to disable one wrong option (needs a linter config). |
 | **Peek** | Paying an escalating fee to see how the community voted (needs Telemetry). |
 | **git tag** | A shop-bought cross-run checkpoint, priced by the gate it marks, burnt by the run it rescues. |
 | **Seed** | The shared per-day poll sequence every player climbs. |

@@ -110,7 +110,7 @@ export const CONFIGS = {
 		description:
 			"Cross out a wrong answer on JS/TS polls for an escalating fee.",
 		gives: "Cross out a wrong answer on JS/TS polls",
-		costs: "The fee doubles each use",
+		costs: "The fee doubles each use, and resets each gate",
 		rewardMultiplier: 1,
 		eliminatesWrongOptionsFor: ["js", "ts"],
 	},
@@ -120,7 +120,7 @@ export const CONFIGS = {
 		family: "defense",
 		description: "Cross out a wrong answer on CSS polls for an escalating fee.",
 		gives: "Cross out a wrong answer on CSS polls",
-		costs: "The fee doubles each use",
+		costs: "The fee doubles each use, and resets each gate",
 		rewardMultiplier: 1,
 		eliminatesWrongOptionsFor: ["css"],
 	},

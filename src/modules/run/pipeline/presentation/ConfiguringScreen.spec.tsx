@@ -404,11 +404,9 @@ describe("stack mode (ADR-026)", () => {
 		render(
 			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
 		);
-		expect(
-			screen.queryByText("The fee doubles each use")
-		).not.toBeInTheDocument();
+		expect(screen.queryByText(CONFIGS.eslint.costs)).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: /more details/ }));
-		expect(screen.getByText("The fee doubles each use")).toBeInTheDocument();
+		expect(screen.getByText(CONFIGS.eslint.costs)).toBeInTheDocument();
 	});
 
 	it("keeps unpicked stacks as plain chips — no pipeline to show yet", () => {

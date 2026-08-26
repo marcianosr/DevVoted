@@ -11,6 +11,7 @@ import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerWith,
+	failGate,
 	handed,
 	started,
 } from "~/modules/run/run/domain/run.factory";
@@ -67,6 +68,44 @@ describe("the lint fee", () => {
 		state = answerWith(state, false); // the linted poll still missed
 		for (let i = 0; i < 4; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
+	});
+
+	// The cross-out is unlimited and the ladder is the only thing metering it.
+	// Its position used to live on `manualDisabled`, which every answer clears,
+	// so the fee reset per poll and a whole gate linted at 8KB a go.
+	it("climbs the ladder across the gate, so a later poll's cross-out costs double", () => {
+		let state = lintableRun();
+		expect(lintFeeFor(state)).toBe(8);
+		state = runReducer(state, { type: "lint-poll" });
+		state = answerWith(state, true);
+		expect(lintFeeFor(state)).toBe(16);
+		expect(runReducer(state, { type: "lint-poll" }).storage).toBe(76);
+	});
+
+	it("resets the ladder at the next gate, so the linter never gets permanently expensive", () => {
+		let state = runReducer(lintableRun(), { type: "lint-poll" });
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+		expect(state.window.linted).toBe(0);
+		expect(lintFeeFor(state)).toBe(8);
+	});
+
+	// A redo replays the gate from scratch (ADR-037) on a fresh window, so the fee
+	// it was climbing comes back down with it.
+	it("resets the ladder for a redo, not only for a clear", () => {
+		let state = failGate(lintableRun());
+		while (state.stripsRemaining > 0)
+			state = runReducer(state, {
+				type: "strip",
+				// Never the linter: peeling it would answer a different question.
+				configId: state.pipeline.configs[state.pipeline.configs.length - 1].id,
+			});
+		state = runReducer(
+			{ ...state, window: { ...state.window, linted: 3 } },
+			{ type: "resume-climb" }
+		);
+		expect(state.window.linted).toBe(0);
+		expect(lintFeeFor(state)).toBe(8);
 	});
 });
 
