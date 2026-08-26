@@ -16,6 +16,10 @@ export type Audit = {
 	readonly name: string;
 	/** The stake receipt's sentence — what this gate does differently. */
 	readonly description: string;
+	/** The catalogue's sentence, for the audits whose numbers change from gate to
+	 * gate. Timeout and Strip state this gate's figures in `description`, which
+	 * reads as a lie in a Dex row that covers three gates at once. */
+	readonly dexRule?: string;
 	/** The answering screen's persistent banner; present when the rule changes
 	 * how a poll should be played, not just what it costs. */
 	readonly answerCue?: string;
@@ -160,6 +164,8 @@ const timeoutAudit = (count: number, seconds: number): Audit => ({
 	id: `timeout-${count}`,
 	name: "Timeout",
 	description: `The first ${count} polls are on a ${seconds}s clock — an answer over the limit scores as a miss.`,
+	dexRule:
+		"The window's first polls run on a clock, tighter and longer the deeper the gate. A late answer scores as a miss.",
 	answerCue: `On the clock: ${seconds}s to answer, or it counts as a miss.`,
 	timedPolls: { count, limitMs: seconds * 1000 },
 });
@@ -169,6 +175,8 @@ const stripAudit = (gate: number, extra: number): Audit => ({
 	id: `strip-${extra}`,
 	name: "Strip",
 	description: `Failing this gate peels ${failStripsFor(gate) + extra} configs instead of ${failStripsFor(gate)} — a build it can empty ends the run here.`,
+	dexRule:
+		"Failing this gate peels extra configs on top of its own row. A build it can empty ends the run there.",
 	stripQuotaOnFail: extra,
 });
 

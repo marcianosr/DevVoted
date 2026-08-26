@@ -42,13 +42,29 @@ export type DexGate = {
 	 * read in cinnabar and the rest are muted. */
 	peelsAudited?: boolean;
 	audits: readonly string[];
+	/** Audits on this gate the player has not reached, as a count rather than as
+	 * names. Same redaction AuditsPanel uses and for the same reason: a hidden
+	 * audit has no name to hand over, so no caller can leak one into the markup
+	 * and trust the panel to cover it. The row still says how many rules the
+	 * gate carries, which its coverage and peel figures already imply. */
+	auditsHidden?: number;
 	unlocks: readonly string[];
+	/** Same, for the width and storage grants. Counted, so a locked gate that
+	 * opens nothing still reads differently from one that opens something you
+	 * have not earned the right to see. */
+	unlocksHidden?: number;
 	/** The last gate opens nothing; clearing it ends the run. */
 	wins?: boolean;
 	state: DexGateState;
 };
 
 export type GatesPanelProps = { gates: readonly DexGate[] };
+
+/** Same three characters the Audits tab and the Polls table redact with. */
+const REDACTED = "???";
+
+const redactions = (family: string, count = 0): readonly string[] =>
+	Array.from({ length: count }, (_, index) => `${family}-${index}`);
 
 const SWATCH_STATE = {
 	cleared: "earned",
@@ -96,9 +112,21 @@ const GateRow = ({ gate }: { gate: DexGate }) => (
 					{audit}
 				</Chip>
 			))}
+			{/* A redaction keeps its family's colour, so the legend below reads a
+			    hidden audit and a hidden unlock apart without naming either. */}
+			{redactions("audit", gate.auditsHidden).map((key) => (
+				<Chip key={key} tone="saffron">
+					{REDACTED}
+				</Chip>
+			))}
 			{gate.unlocks.map((unlock) => (
 				<Chip key={unlock} tone="muted">
 					{unlock}
+				</Chip>
+			))}
+			{redactions("unlock", gate.unlocksHidden).map((key) => (
+				<Chip key={key} tone="muted">
+					{REDACTED}
 				</Chip>
 			))}
 			{gate.wins ? <Chip tone="celadon">wins the run</Chip> : null}

@@ -22,11 +22,23 @@ export type PolldexCategoryFilter = CategoryCode | "all";
 
 /**
  * The second filter axis. Category asks "what is this poll about"; this one asks
- * "have I met it" — the question a collection screen is actually opened with,
- * whether that is "show me what I still have to find" or "let me re-read the
- * ones I know".
+ * how well you know it — the question a collection screen is actually opened
+ * with, whether that is "show me the whole roster" or "let me re-read the ones
+ * I keep getting wrong".
+ *
+ * `all` is the only band that admits a poll you have never been served: the
+ * others are all statements about answers you have given.
  */
-export type PolldexSeenFilter = "all" | "seen" | "unseen";
+export type PolldexFilter = "all" | "seen" | "mastered" | "fumbled";
+
+/**
+ * Where an accuracy stops being a fumble and starts being mastery. The same two
+ * numbers colour the accuracy column in the kit, which cannot import them: a
+ * band a player can filter on and a band they can see must agree, so changing
+ * one here means changing `accuracyTone` in `PollsPanel.ui.tsx` too.
+ */
+export const MASTERED_ACCURACY = 70;
+export const FUMBLED_ACCURACY = 40;
 
 export type PolldexCoverage = {
 	seen: number;
@@ -39,24 +51,53 @@ const matchesCategory = (
 	category: PolldexCategoryFilter
 ): boolean => category === "all" || entry.categoryCode === category;
 
-const matchesSeen = (entry: PolldexEntry, seen: PolldexSeenFilter): boolean => {
-	if (seen === "all") return true;
-	return seen === "seen" ? entry.seen : !entry.seen;
+/** Both bands read `accuracy`, not `seen`: a poll served but never answered has
+ * no record to judge, so it is neither mastered nor fumbled. */
+const isMastered = (entry: PolldexEntry): boolean =>
+	entry.accuracy !== null && entry.accuracy >= MASTERED_ACCURACY;
+
+const isFumbled = (entry: PolldexEntry): boolean =>
+	entry.accuracy !== null && entry.accuracy < FUMBLED_ACCURACY;
+
+const matchesKnowledge = (
+	entry: PolldexEntry,
+	filter: PolldexFilter
+): boolean => {
+	if (filter === "all") return true;
+	if (!entry.seen) return false;
+	if (filter === "seen") return true;
+	return filter === "mastered" ? isMastered(entry) : isFumbled(entry);
 };
 
 /**
  * The two axes are independent and both narrow, so they are applied together
- * rather than as separate passes — "CSS polls I haven't met" is the query the
- * screen exists to answer.
+ * rather than as separate passes — "the CSS polls I keep fumbling" is the query
+ * the screen exists to answer.
  */
 export const filterPolldexEntries = (
 	entries: PolldexEntry[],
 	category: PolldexCategoryFilter,
-	seen: PolldexSeenFilter = "all"
+	filter: PolldexFilter = "all"
 ): PolldexEntry[] =>
 	entries.filter(
-		(entry) => matchesCategory(entry, category) && matchesSeen(entry, seen)
+		(entry) =>
+			matchesCategory(entry, category) && matchesKnowledge(entry, filter)
 	);
+
+/** How many entries each band holds, for the filter pills. Counted over the set
+ * the caller hands in, so the pills answer "within this category" once one is
+ * chosen rather than quietly reporting the whole roster. */
+export const polldexTallies = (
+	entries: PolldexEntry[]
+): Record<PolldexFilter, number> => ({
+	all: entries.length,
+	seen: entries.filter((entry) => entry.seen).length,
+	mastered: entries.filter(isMastered).length,
+	fumbled: entries.filter(isFumbled).length,
+});
+
+export const unmetCount = (entries: PolldexEntry[]): number =>
+	entries.filter((entry) => !entry.seen).length;
 
 export const polldexCoverage = (entries: PolldexEntry[]): PolldexCoverage => {
 	const total = entries.length;

@@ -1,10 +1,11 @@
 ---
 # DVTD-wis4
 title: 'Poll meta on answer screen: who added this poll'
-status: todo
+status: completed
 type: feature
+priority: normal
 created_at: 2026-08-04T16:35:15Z
-updated_at: 2026-08-04T16:35:15Z
+updated_at: 2026-08-25T20:41:32Z
 parent: DVTD-cb52
 ---
 

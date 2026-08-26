@@ -1,10 +1,11 @@
 ---
 # DVTD-73tr
 title: 'IndexedDB counter: drains from faucet cap to 0'
-status: todo
+status: completed
 type: feature
+priority: normal
 created_at: 2026-08-04T16:37:17Z
-updated_at: 2026-08-04T16:37:17Z
+updated_at: 2026-08-25T19:01:51Z
 parent: DVTD-cb52
 ---
 

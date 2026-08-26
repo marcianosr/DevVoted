@@ -1,11 +1,11 @@
 ---
 # DVTD-kulw
 title: Core run loop
-status: todo
+status: completed
 type: epic
 priority: high
 created_at: 2026-07-27T14:16:26Z
-updated_at: 2026-08-04T16:35:05Z
+updated_at: 2026-08-25T20:34:26Z
 parent: DVTD-u35m
 ---
 

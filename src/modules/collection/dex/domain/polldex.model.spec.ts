@@ -5,9 +5,13 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	filterPolldexEntries,
 	formatDexNumber,
+	FUMBLED_ACCURACY,
+	MASTERED_ACCURACY,
 	polldexCoverage,
+	polldexTallies,
 	presentCategories,
 	sortByDexNumber,
+	unmetCount,
 	type PolldexEntry,
 } from "~/modules/collection/dex/domain/polldex.model";
 
@@ -65,30 +69,93 @@ describe("filterPolldexEntries", () => {
 		expect(filterPolldexEntries([met, unmet], "all", "seen")).toEqual([met]);
 	});
 
-	it("keeps only the polls still to find under 'unseen'", () => {
-		const met = entry({ id: 1 });
-		const unmet = unseen({ id: 2 });
+	it("keeps only entries at or above the mastery band under 'mastered'", () => {
+		const mastered = entry({ id: 1, accuracy: MASTERED_ACCURACY });
+		const middling = entry({ id: 2, accuracy: MASTERED_ACCURACY - 1 });
 
-		expect(filterPolldexEntries([met, unmet], "all", "unseen")).toEqual([
-			unmet,
+		expect(
+			filterPolldexEntries([mastered, middling], "all", "mastered")
+		).toEqual([mastered]);
+	});
+
+	it("keeps only entries below the fumble band under 'fumbled'", () => {
+		const fumbled = entry({ id: 1, accuracy: FUMBLED_ACCURACY - 1 });
+		const middling = entry({ id: 2, accuracy: FUMBLED_ACCURACY });
+
+		expect(filterPolldexEntries([fumbled, middling], "all", "fumbled")).toEqual(
+			[fumbled]
+		);
+	});
+
+	it("counts a poll served but never answered as neither mastered nor fumbled", () => {
+		const unanswered = entry({ id: 1, answeredCount: 0, accuracy: null });
+
+		expect(filterPolldexEntries([unanswered], "all", "mastered")).toEqual([]);
+		expect(filterPolldexEntries([unanswered], "all", "fumbled")).toEqual([]);
+		expect(filterPolldexEntries([unanswered], "all", "seen")).toEqual([
+			unanswered,
 		]);
 	});
 
-	it("narrows on both axes at once — 'the CSS polls I haven't met'", () => {
-		const cssSeen = entry({ id: 1, categoryCode: "css" });
-		const cssUnseen = unseen({ id: 2, categoryCode: "css" });
-		const jsUnseen = unseen({ id: 3, categoryCode: "js" });
+	it("narrows on both axes at once — 'the CSS polls I keep fumbling'", () => {
+		const cssFumbled = entry({ id: 1, categoryCode: "css", accuracy: 0 });
+		const cssMastered = entry({ id: 2, categoryCode: "css", accuracy: 100 });
+		const jsFumbled = entry({ id: 3, categoryCode: "js", accuracy: 0 });
 
 		expect(
-			filterPolldexEntries([cssSeen, cssUnseen, jsUnseen], "css", "unseen")
-		).toEqual([cssUnseen]);
+			filterPolldexEntries(
+				[cssFumbled, cssMastered, jsFumbled],
+				"css",
+				"fumbled"
+			)
+		).toEqual([cssFumbled]);
 	});
 
-	it("defaults to every poll when no seen filter is given", () => {
+	it("defaults to every poll when no knowledge filter is given", () => {
 		const met = entry({ id: 1 });
 		const unmet = unseen({ id: 2 });
 
 		expect(filterPolldexEntries([met, unmet], "all")).toHaveLength(2);
+	});
+});
+
+describe("polldexTallies", () => {
+	it("counts each band, with the roster total under 'all'", () => {
+		const entries = [
+			entry({ id: 1, accuracy: 100 }),
+			entry({ id: 2, accuracy: 10 }),
+			entry({ id: 3, accuracy: 55 }),
+			unseen({ id: 4 }),
+		];
+
+		expect(polldexTallies(entries)).toEqual({
+			all: 4,
+			seen: 3,
+			mastered: 1,
+			fumbled: 1,
+		});
+	});
+
+	it("tallies the set it is handed, so a chosen category narrows the pills", () => {
+		const entries = [
+			entry({ id: 1, categoryCode: "css", accuracy: 100 }),
+			entry({ id: 2, categoryCode: "css", accuracy: 0 }),
+		];
+
+		expect(polldexTallies(filterPolldexEntries(entries, "css"))).toEqual({
+			all: 2,
+			seen: 2,
+			mastered: 1,
+			fumbled: 1,
+		});
+	});
+});
+
+describe("unmetCount", () => {
+	it("counts the polls never served, which are the rows the reveal uncovers", () => {
+		expect(
+			unmetCount([entry({ id: 1 }), unseen({ id: 2 }), unseen({ id: 3 })])
+		).toBe(2);
 	});
 });
 

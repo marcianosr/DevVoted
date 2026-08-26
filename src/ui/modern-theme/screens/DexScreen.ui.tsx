@@ -3,7 +3,11 @@ import type { ReactNode } from "react";
 import { Tabs, type TabItem } from "../Tabs.ui";
 import { Text } from "../Text.ui";
 
-const SCREEN = "flex flex-col gap-4 px-5 py-4";
+// The same reading width Screen gives every in-run page, without Screen itself:
+// that wrapper's job is the gate's colour wash, and the Dex has no gate. A
+// thirteen-column gate row and a five-column poll table both stop reading as
+// rows once they run the full width of a desktop monitor.
+const SCREEN = "mx-auto flex w-full max-w-6xl flex-col gap-4 px-5 py-4";
 
 export type DexScreenProps = {
 	tabs: readonly TabItem[];

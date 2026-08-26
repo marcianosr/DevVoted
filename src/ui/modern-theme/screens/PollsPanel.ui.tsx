@@ -28,7 +28,9 @@ const UNANSWERED = "—";
 const ACCURACY_HIGH = 70;
 const ACCURACY_MID = 40;
 
-/** The game's own thresholds (polldexColumns.ui.tsx), in this kit's tones. */
+/** The game's own bands (MASTERED_ACCURACY / FUMBLED_ACCURACY in
+ * polldex.model.ts), in this kit's tones. Restated rather than imported: the kit
+ * takes no runtime value from a module, so the two have to be changed together. */
 const accuracyTone = (accuracy: number): ModernTone => {
 	if (accuracy >= ACCURACY_HIGH) return "celadon";
 	return accuracy >= ACCURACY_MID ? "saffron" : "cinnabar";
