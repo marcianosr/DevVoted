@@ -19,7 +19,9 @@ export type GlyphName =
 	| "leak"
 	| "rolling"
 	| "breaking"
-	| "strip";
+	| "strip"
+	| "calendar"
+	| "players";
 
 const PATHS = {
 	rebuild: (
@@ -122,6 +124,19 @@ const PATHS = {
 			<rect x="1.8" y="7.4" width="9.4" height="5" rx="1.2" />
 			<path d="M3.4 5h8.8" />
 			<path d="M5 2.6h8.5" />
+		</>
+	),
+	calendar: (
+		<>
+			<rect x="1.8" y="2.8" width="10.4" height="9.4" rx="1.4" />
+			<path d="M1.8 5.8h10.4M4.6 1.6v2.2M9.4 1.6v2.2" />
+		</>
+	),
+	players: (
+		<>
+			<circle cx="5.2" cy="4.8" r="2" />
+			<path d="M1.6 12.1a3.6 3.6 0 0 1 7.2 0" />
+			<path d="M9.4 3.1a2 2 0 0 1 0 3.6M10.4 8.9a3.6 3.6 0 0 1 2 3.2" />
 		</>
 	),
 } satisfies Record<GlyphName, React.ReactNode>;

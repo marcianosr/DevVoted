@@ -126,44 +126,48 @@ describe("Entry", () => {
 		expect(screen.getByRole("group")).not.toHaveAttribute("open");
 	});
 
-	// On the whole card, not the summary strip: an open row keeps its rarity
-	// rather than losing it the moment the explainer appears.
-	it("rails an expandable row with its rarity, body included", () => {
+	// On the whole card, strip included: half a tinted row reads as a rendering
+	// fault rather than as a grade. A column of shut rows stays flat.
+	it("tints an opened row with its rarity, summary strip and panel alike", () => {
 		render(
 			<Entry label=".ts" mark="pass" rarity="uncommon" explainer="TS polls." />
 		);
 
 		const card = screen.getByRole("group");
-		expect(card).toHaveClass("relative");
-		expect(card.querySelector(".bg-cerulean")).toBeInTheDocument();
+		expect(card).toHaveClass("open:bg-cerulean/10");
+		expect(card).toContainElement(screen.getByText(".ts"));
+		expect(card).toContainElement(screen.getByText("TS polls."));
 	});
 
-	it("rails a row that has nothing to expand", () => {
-		const { container } = render(
+	// The one rarity that shows whether open or shut: met once a run, so it
+	// reads as an event rather than as a disclosure state.
+	it("keeps the legendary shimmering where the others wait to be opened", () => {
+		render(<Entry label="WTFPL" mark="pass" rarity="legendary" />);
+
+		expect(
+			screen.getByText("WTFPL").closest(".legendary-shimmer")
+		).toBeInTheDocument();
+	});
+
+	// The spine that used to run down every row's left edge: eight of them in a
+	// column read as eight statuses rather than as a grade.
+	it("runs no rail down a row, expandable or not", () => {
+		const { container: flat } = render(
 			<Entry label=".ts" mark="pass" rarity="common" />
 		);
+		expect(flat.querySelector(".w-1.rounded-full")).toBeNull();
 
-		expect(container.firstElementChild).toHaveClass("relative");
-		expect(container.querySelector(".bg-celadon")).toBeInTheDocument();
+		const { container: open } = render(
+			<Entry label=".ts" mark="pass" rarity="rare" explainer="Rare polls." />
+		);
+		expect(open.querySelector(".w-1.rounded-full")).toBeNull();
 	});
 
-	// Only the legendary earns a fill: eight tinted rows in a column read as
-	// eight statuses rather than as a grade.
-	it("washes the row for a legendary and for nothing else", () => {
-		const { container: rare } = render(
-			<Entry label="Intellisense" mark="pass" rarity="rare" />
+	it("leaves a row with no rarity untinted", () => {
+		render(<Entry label="empty" mark="idle" explainer="Nothing here." />);
+
+		expect(screen.getByRole("group").className).not.toMatch(
+			/bg-(celadon|cerulean|cinnabar)/
 		);
-		expect(rare.firstElementChild).not.toHaveClass("legendary-shimmer");
-
-		const { container: legendary } = render(
-			<Entry label="WTFPL" mark="pass" rarity="legendary" />
-		);
-		expect(legendary.firstElementChild).toHaveClass("legendary-shimmer");
-	});
-
-	it("leaves a row with no rarity unrailed", () => {
-		const { container } = render(<Entry label="empty" mark="idle" />);
-
-		expect(container.querySelector(".rounded-full.w-1")).toBeNull();
 	});
 });

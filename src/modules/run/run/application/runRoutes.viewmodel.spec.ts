@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { syncTarget } from "~/modules/run/run/application/runRoutes.viewmodel";
+import {
+	returnFromCommunity,
+	syncTarget,
+} from "~/modules/run/run/application/runRoutes.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 
 const climbing = (
@@ -169,17 +172,20 @@ describe("syncTarget", () => {
 		).toBe("/run/prep");
 	});
 
-	// The community board's "back to your run" always lands on plain `/run`,
-	// so this is the real trigger that shows prep before every gate past the
-	// first one.
-	it("sends a bare /run into a gate in progress to the prep screen", () => {
+	// /run is the day's hub, not a step in the climb: it reports what your run
+	// is doing and offers a press back into it, so pulling a live run off it
+	// would make its own Resume row unreachable.
+	it("leaves a live run standing on the hub", () => {
 		expect(
 			syncTarget(
 				"/run",
 				climbing({ status: "answering", gatesCleared: 1 }),
 				false
 			)
-		).toBe("/run/prep");
+		).toBeNull();
+		expect(
+			syncTarget("/run", climbing({ status: "dead", gatesCleared: 3 }), false)
+		).toBeNull();
 	});
 
 	// Gate 0 has no prep route at all (Configure already covers it), so a deep
@@ -218,18 +224,11 @@ describe("syncTarget", () => {
 		).toBe("/run/over");
 	});
 
-	it("sends a day without a run back to the start screen", () => {
+	// The hub stays put once you are on it, but it is still where a run with
+	// nowhere else to go gets sent: the exemption is about the path you are ON,
+	// never about the target.
+	it("sends a day without a run back to the hub", () => {
 		expect(syncTarget("/run/configure", null, false)).toBe("/run");
-	});
-
-	it("pulls the start screen forward into a live run", () => {
-		expect(
-			syncTarget(
-				"/run",
-				climbing({ status: "configuring", gatesCleared: 0 }),
-				false
-			)
-		).toBe("/run/configure");
 	});
 
 	it("stands down on paths that are not run screens", () => {
@@ -265,8 +264,15 @@ describe("syncTarget", () => {
 		});
 
 		it("sends every other run screen to the community board too", () => {
-			expect(syncTarget("/run", locked, false)).toBe("/run/community");
 			expect(syncTarget("/run/shop", locked, false)).toBe("/run/community");
+			expect(syncTarget("/run/prep", locked, false)).toBe("/run/community");
+		});
+
+		// The hub is the one screen with something to say about the wait: its
+		// Resume press carries the countdown, so it is not a blank page to be
+		// redirected off.
+		it("leaves the hub alone, countdown and all", () => {
+			expect(syncTarget("/run", locked, false)).toBeNull();
 		});
 
 		it("stays put once on the community board", () => {
@@ -276,5 +282,68 @@ describe("syncTarget", () => {
 		it("holds position while the run is still loading", () => {
 			expect(syncTarget("/run/answer", locked, true)).toBeNull();
 		});
+	});
+});
+
+describe("returnFromCommunity", () => {
+	it("offers the start screen, not a run, to a player who has not begun one", () => {
+		expect(returnFromCommunity(null)).toEqual({
+			path: "/run",
+			label: "Today’s climb →",
+		});
+	});
+
+	it("names the screen a live gate is actually played on", () => {
+		expect(
+			returnFromCommunity(climbing({ status: "answering", gatesCleared: 0 }))
+				.path
+		).toBe("/run/answer");
+		expect(
+			returnFromCommunity(climbing({ status: "answering", gatesCleared: 2 }))
+				.path
+		).toBe("/run/prep");
+	});
+
+	it("returns a paid-out gate to prep rather than replaying its celebration", () => {
+		expect(
+			returnFromCommunity(climbing({ status: "rewarding", gatesCleared: 1 }))
+				.path
+		).toBe("/run/prep");
+	});
+
+	it("returns a replayed gate to prep too, not to the shop the sync would pick", () => {
+		expect(
+			returnFromCommunity(
+				climbing({ status: "rewarding", gatesCleared: 1, redoingGate: 1 })
+			).path
+		).toBe("/run/prep");
+	});
+
+	it("sends a finished run straight to its ending, won or dead", () => {
+		expect(
+			returnFromCommunity(climbing({ status: "won", gatesCleared: 13 })).path
+		).toBe("/run/over");
+		expect(
+			returnFromCommunity(climbing({ status: "dead", gatesCleared: 4 })).path
+		).toBe("/run/over");
+	});
+
+	it("lands somewhere the sync would leave alone, so no status flashes a screen", () => {
+		const views = [
+			climbing({ status: "configuring", gatesCleared: 0 }),
+			climbing({ status: "answering", gatesCleared: 0 }),
+			climbing({ status: "answering", gatesCleared: 3 }),
+			climbing({ status: "rewarding", gatesCleared: 1 }),
+			climbing({ status: "awaiting-strip", gatesCleared: 2 }),
+			climbing({ status: "won", gatesCleared: 13 }),
+			climbing({ status: "dead", gatesCleared: 4 }),
+		];
+
+		views.forEach((view) => {
+			expect(
+				syncTarget(returnFromCommunity(view).path, view, false)
+			).toBeNull();
+		});
+		expect(syncTarget(returnFromCommunity(null).path, null, false)).toBeNull();
 	});
 });

@@ -1,11 +1,11 @@
 ---
 # DVTD-elno
 title: 'Prep screen: allow dropping configs directly'
-status: todo
+status: scrapped
 type: feature
 priority: high
 created_at: 2026-08-13T10:52:49Z
-updated_at: 2026-08-13T10:52:49Z
+updated_at: 2026-08-26T12:52:22Z
 parent: DVTD-u35m
 ---
 

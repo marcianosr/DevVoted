@@ -257,7 +257,9 @@ const pipelineRows = (
 				<Entry
 					label={config.label}
 					rarity={rarityOf(config)}
-					mark={view.newConfigIds.includes(config.id) ? "warn" : "pass"}
+					{...(view.newConfigIds.includes(config.id)
+						? { mark: "warn" as const }
+						: {})}
 					notes={
 						<>
 							<RarityWord rarity={rarityOf(config)} />
@@ -275,7 +277,6 @@ const pipelineRows = (
 									{
 										label: "Uninstall",
 										on: config.label,
-										icon: <Glyph name="uninstall" />,
 										hint: `Refunds ${refundKb} KB`,
 										emphasis: "danger" as const,
 										onUse: () => onSell(config.id),

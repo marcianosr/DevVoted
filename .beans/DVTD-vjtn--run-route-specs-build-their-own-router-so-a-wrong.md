@@ -1,11 +1,11 @@
 ---
 # DVTD-vjtn
 title: Run route specs build their own router, so a wrong route file passes
-status: todo
+status: scrapped
 type: bug
 priority: normal
 created_at: 2026-08-12T10:29:56Z
-updated_at: 2026-08-12T10:29:56Z
+updated_at: 2026-08-26T12:54:17Z
 parent: DVTD-82c4
 ---
 

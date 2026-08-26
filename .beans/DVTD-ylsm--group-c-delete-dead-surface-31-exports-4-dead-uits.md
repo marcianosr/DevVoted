@@ -1,11 +1,11 @@
 ---
 # DVTD-ylsm
 title: 'Group C: Delete dead surface (31 exports, 4 dead .ui.tsx, session-run orphan)'
-status: in-progress
+status: completed
 type: task
 priority: low
 created_at: 2026-08-12T09:12:53Z
-updated_at: 2026-08-12T14:48:12Z
+updated_at: 2026-08-26T12:53:49Z
 parent: DVTD-82c4
 ---
 

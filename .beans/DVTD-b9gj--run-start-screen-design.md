@@ -1,11 +1,11 @@
 ---
 # DVTD-b9gj
 title: Run start screen design
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-19T07:44:48Z
-updated_at: 2026-07-27T14:17:00Z
+updated_at: 2026-08-26T12:51:24Z
 parent: DVTD-cb52
 ---
 

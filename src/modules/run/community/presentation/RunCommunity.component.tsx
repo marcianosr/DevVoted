@@ -6,6 +6,7 @@ import { Stack } from "~/ui/Stack.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Title } from "~/ui/typography/Title.component";
 
+import { returnFromCommunity } from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { ClimbToday } from "~/modules/run/community/presentation/ClimbToday.ui";
 import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.ui";
@@ -21,10 +22,10 @@ export const RunCommunity = () => {
 
 	const waitingForTomorrow =
 		run?.awaitingTomorrow === true && !countdown.isOpen;
-	const backTarget = run?.status === "rewarding" ? "/run/prep" : "/run";
+	const back = returnFromCommunity(run ?? null);
 	const climbOn = {
-		label: "Back to your run →",
-		onClick: () => navigate({ to: backTarget }),
+		label: back.label,
+		onClick: () => navigate({ to: back.path }),
 		disabled: waitingForTomorrow,
 		hint: waitingForTomorrow
 			? "Today’s polls are spent. Your run picks up when the next segment drops at midnight."

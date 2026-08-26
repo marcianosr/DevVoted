@@ -20,6 +20,8 @@ type RunRoutePath = (typeof RUN_ROUTES)[keyof typeof RUN_ROUTES];
  */
 const COMMUNITY_ROUTE = "/run/community";
 
+const isHub = (pathname: string) => pathname === RUN_ROUTES.start;
+
 type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
 
 const routesForStatus = (
@@ -54,6 +56,39 @@ const routesForStatus = (
 	}
 };
 
+export type CommunityReturn = {
+	readonly path: RunRoutePath;
+	readonly label: string;
+};
+
+/**
+ * The screen a run picks up on — the hub's Resume press and the community
+ * board's way back are the same question. Rewarding is the one status whose
+ * first allowed screen is the wrong place to land: that is the payout
+ * celebration, already spent, and prep is the hub the shop feeds into
+ * (ADR-032).
+ */
+export const resumeTarget = (
+	view: Pick<RunView, "status" | "gatesCleared" | "redoingGate">
+): RunRoutePath =>
+	view.status === "rewarding" ? RUN_ROUTES.prep : routesForStatus(view)[0];
+
+/**
+ * Where the community page's forward action goes, and what it should say. Not a
+ * sync verdict — community is never policed — but it names a screen outright
+ * rather than bouncing through `/run`, which since becoming a hub no longer
+ * forwards anyone.
+ */
+export const returnFromCommunity = (
+	view: Pick<RunView, "status" | "gatesCleared" | "redoingGate"> | null
+): CommunityReturn => {
+	// No run today: the button leads to the screen that starts one, so it may
+	// not claim there is a run to go back to.
+	if (!view) return { path: RUN_ROUTES.start, label: "Today’s climb →" };
+
+	return { path: resumeTarget(view), label: "Back to your run →" };
+};
+
 const RUN_SCREEN_PATHS: readonly string[] = Object.values(RUN_ROUTES);
 
 /**
@@ -72,6 +107,7 @@ export const syncTarget = (
 ): SyncTargetPath | null => {
 	if (statusUnknown) return null;
 	if (!RUN_SCREEN_PATHS.includes(pathname)) return null;
+	if (isHub(pathname)) return null;
 	if (view?.awaitingTomorrow) return COMMUNITY_ROUTE;
 	const allowed = routesForStatus(view);
 	const isOnAllowedScreen = allowed.some((path) => path === pathname);

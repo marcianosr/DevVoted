@@ -404,6 +404,7 @@ const applyAnswer = (
 		},
 		budget: state.window.budget,
 		peeked: state.window.peeked ?? 0,
+		linted: state.window.linted ?? 0,
 	};
 
 	return widened({

@@ -15,8 +15,8 @@ import {
 
 const LINT_COSTS = [8, 16, 32, 64, 128, 256];
 
-export const lintCost = (usesThisPoll: number): number =>
-	LINT_COSTS[usesThisPoll] ?? LINT_COSTS[LINT_COSTS.length - 1];
+export const lintCost = (usesThisGate: number): number =>
+	LINT_COSTS[usesThisGate] ?? LINT_COSTS[LINT_COSTS.length - 1];
 
 const PEEK_COSTS = [32, 64, 128, 256, 512];
 
@@ -31,9 +31,8 @@ const wrongStillOn = (state: RunState) => {
 	);
 };
 
-/** The fee ladder times Cost Overrun (ADR-038). Exported so buttons print what the reducer takes. */
 export const lintFeeFor = (state: RunState): number =>
-	lintCost(state.manualDisabled.length) * auditFeeMultiplier(auditsOf(state));
+	lintCost(state.window.linted ?? 0) * auditFeeMultiplier(auditsOf(state));
 
 export const peekFeeFor = (state: RunState): number =>
 	peekCost(state.window.peeked ?? 0) * auditFeeMultiplier(auditsOf(state));
@@ -56,6 +55,7 @@ export const spendLint = (state: RunState): RunState => {
 		...state,
 		storage: state.storage - cost,
 		manualDisabled: [...state.manualDisabled, wrongStillOn(state)[0].id],
+		window: { ...state.window, linted: (state.window.linted ?? 0) + 1 },
 		log: withLog(state, `Ran the linter (-${cost}KB).`),
 	};
 };

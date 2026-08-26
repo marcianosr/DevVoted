@@ -1,11 +1,11 @@
 ---
 # DVTD-td0v
 title: Split up proto-run and create game routes
-status: in-progress
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-07-24T15:06:29Z
-updated_at: 2026-07-27T14:17:00Z
+updated_at: 2026-08-26T12:53:45Z
 parent: DVTD-82c4
 ---
 

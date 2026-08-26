@@ -9,14 +9,13 @@ import {
 	DISCLOSURE_SUMMARY,
 	isExpandable,
 } from "./Disclosure.ui";
-import { RARITY_FILL, RARITY_WASH, type Rarity } from "./rarity";
+import { RARITY_WASH, type Rarity } from "./rarity";
 import { Row } from "./Row.ui";
 import { Text } from "./Text.ui";
 
 export type PickVariant = "remove" | "draft";
 
-const PICK = "relative cursor-pointer rounded-md transition-colors";
-// Translucent, so a rarity tint underneath survives the hover.
+const PICK = "cursor-pointer rounded-md transition-colors";
 const IDLE = "hover:bg-zinc-100/5";
 
 const WASH = {
@@ -32,21 +31,16 @@ const BOX = {
 	draft: "rounded-full checked:border-theme checked:bg-theme",
 } satisfies Record<PickVariant, string>;
 
-// Absolute rather than a left border: the legendary's rail is a gradient, and no
-// border can hold one.
-const RAIL = "pointer-events-none absolute inset-y-1 left-0 w-1 rounded-full";
-
 const STRUCK = "line-through";
 const NOTES = "flex flex-wrap items-center gap-2";
 
 const EXPANDABLE = "relative rounded-md transition-colors";
 const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-md transition-colors`;
 const PICKER = "flex shrink-0 cursor-pointer items-center gap-3";
-const FACTS = "flex flex-col gap-1 py-2 pl-14";
+const FACTS = "flex flex-col gap-1 py-2 pr-3 pl-14";
 
 export type PickProps = {
 	label: ReactNode;
-	/** Tints the row until it is picked, when the pick's own wash takes over. */
 	rarity?: Rarity;
 	checked: boolean;
 	onToggle: (checked: boolean) => void;
@@ -71,14 +65,9 @@ export const Pick = ({
 	defaultOpen = false,
 }: PickProps) => {
 	const expandable = isExpandable(summary, explainer);
-	// The rail stays whatever the rarity is; only the fill answers to the pick.
 	const wash = checked
 		? WASH[variant]
-		: clsx(rarity && RARITY_WASH[rarity], IDLE);
-
-	const rail = rarity ? (
-		<span aria-hidden className={`${RAIL} ${RARITY_FILL[rarity]}`} />
-	) : null;
+		: clsx(IDLE, rarity && RARITY_WASH[rarity]);
 
 	const control = (
 		<input
@@ -109,7 +98,6 @@ export const Pick = ({
 				leading={control}
 				trailing={trailing}
 			>
-				{rail}
 				{name}
 				{marks}
 			</Row>
@@ -121,7 +109,6 @@ export const Pick = ({
 			defaultOpen={defaultOpen}
 			className={clsx(EXPANDABLE, wash)}
 		>
-			{rail}
 			<Row
 				as="summary"
 				spacing="compact"

@@ -1,11 +1,11 @@
 ---
 # DVTD-g1cx
 title: 'Build summary: display coverage loss on incorrect answers'
-status: todo
+status: scrapped
 type: feature
 priority: high
 created_at: 2026-08-13T10:52:52Z
-updated_at: 2026-08-13T10:52:52Z
+updated_at: 2026-08-26T12:52:01Z
 parent: DVTD-u35m
 ---
 

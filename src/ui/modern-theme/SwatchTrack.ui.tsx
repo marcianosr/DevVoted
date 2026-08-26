@@ -10,7 +10,9 @@ import { Text } from "./Text.ui";
 
 export type SwatchTrackLayout = "inline" | "stacked";
 
-export type SwatchTrackCounting = "gates" | "swatches";
+/** "none" for a caller whose own row already states the count — the cells still
+ * carry the ladder's shape, which is the half a sentence cannot say. */
+export type SwatchTrackCounting = "gates" | "swatches" | "none";
 
 const TRACK = "flex items-center";
 
@@ -58,6 +60,7 @@ const describe = (
 	atCleared: SwatchTrackAtCleared,
 	counting: SwatchTrackCounting
 ) => {
+	if (counting === "none") return null;
 	if (counting === "swatches") return `${cleared} of ${gates.length} collected`;
 
 	const current = gates[cleared];
@@ -91,8 +94,10 @@ export const SwatchTrack = ({
 				);
 			})}
 		</span>
-		<Text size="meta" tone="muted">
-			{describe(gates, cleared, atCleared, counting)}
-		</Text>
+		{counting === "none" ? null : (
+			<Text size="meta" tone="muted">
+				{describe(gates, cleared, atCleared, counting)}
+			</Text>
+		)}
 	</div>
 );

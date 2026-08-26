@@ -10,30 +10,18 @@ import {
 	isExpandable,
 } from "./Disclosure.ui";
 import { Mark, type MarkVariant } from "./Mark.ui";
-import { RARITY_FILL, RARITY_WASH, type Rarity } from "./rarity";
+import { RARITY_WASH, type Rarity } from "./rarity";
 import { Row } from "./Row.ui";
 import { Text } from "./Text.ui";
 
-// Translucent rather than the opaque surface it used to raise to, so a rarity
-// tint underneath survives the hover instead of blinking out of it.
-const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-md transition-colors hover:bg-zinc-100/5 group-open/entry:bg-zinc-100/5`;
+const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-md transition-colors hover:bg-zinc-100/5`;
 
-const FRAMED = "relative rounded-md";
+const FRAMED = "rounded-md";
 
-const railedBy = (rarity?: Rarity) =>
-	rarity ? `${FRAMED} ${RARITY_WASH[rarity]}` : FRAMED;
+const washedBy = (rarity?: Rarity) =>
+	clsx(FRAMED, rarity && RARITY_WASH[rarity]);
 
-// Absolute rather than a left border, because the legendary's rail is a gradient
-// and no border can hold one. Inset so it reads as a spine on the row, not as a
-// rule between rows.
-const RAIL = "pointer-events-none absolute inset-y-1 left-0 w-1 rounded-full";
-
-const railOf = (rarity?: Rarity) =>
-	rarity ? (
-		<span aria-hidden className={`${RAIL} ${RARITY_FILL[rarity]}`} />
-	) : null;
-
-const FACTS = "flex flex-col gap-2 py-2 pl-10";
+const FACTS = "flex flex-col gap-2 py-2 pr-3 pl-10";
 
 const NOTES = "flex flex-wrap items-center gap-2";
 const ACTIONS = "flex items-center gap-2";
@@ -92,12 +80,8 @@ export const Entry = ({
 					value
 				)
 			}
-			className={clsx(
-				expandable ? SUMMARY : undefined,
-				!expandable && railedBy(rarity)
-			)}
+			className={expandable ? SUMMARY : washedBy(rarity)}
 		>
-			{expandable ? null : railOf(rarity)}
 			<Text size="meta">{label}</Text>
 			{notes ? <span className={NOTES}>{notes}</span> : null}
 		</Row>
@@ -109,9 +93,8 @@ export const Entry = ({
 		<Disclosure
 			scope="entry"
 			defaultOpen={defaultOpen}
-			className={railedBy(rarity)}
+			className={washedBy(rarity)}
 		>
-			{railOf(rarity)}
 			{row}
 			<DisclosureBody
 				className={FACTS}

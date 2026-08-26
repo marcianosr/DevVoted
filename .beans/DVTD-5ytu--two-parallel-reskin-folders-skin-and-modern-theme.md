@@ -1,11 +1,11 @@
 ---
 # DVTD-5ytu
 title: 'Two parallel reskin folders: skin/ and modern-theme/'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-08-22T08:50:58Z
-updated_at: 2026-08-22T08:50:58Z
+updated_at: 2026-08-26T12:50:44Z
 ---
 
 `src/ui/skin/` (23 .ui.tsx, Storybook group Skin/*) and `src/ui/modern-theme/` (19 .ui.tsx, group Modern/*) are two independent reskins of the same surfaces, built in parallel sessions on 2026-08-21/22. DVTD-vg2q's summary states `skin/` was reference only.

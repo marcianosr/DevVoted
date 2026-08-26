@@ -1,10 +1,11 @@
 ---
 # DVTD-yc0m
 title: Community page reachable from the run start screen
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-08-25T11:45:44Z
-updated_at: 2026-08-25T11:45:44Z
+updated_at: 2026-08-25T20:47:26Z
 parent: DVTD-cb52
 ---
 
@@ -44,7 +45,27 @@ The community page should be reachable from the run start screen.
 
 ## Todo
 
-- [ ] Add the entry point to the start screen
-- [ ] Pick the label and its weight relative to Start run
-- [ ] Verify the return path for a not-yet-started run and a finished run
-- [ ] Keep community out of `RUN_ROUTES` (target only, never policed)
+- [x] Add the entry point to the start screen
+- [x] Pick the label and its weight relative to Start run
+- [x] Verify the return path for a not-yet-started run and a finished run
+- [x] Keep community out of `RUN_ROUTES` (target only, never policed)
+
+## Summary of Changes
+
+**Entry point.** `RunStart.component.tsx` gained a `leftAction`: `← Community`. Quiet by construction — the legacy `Screen` puts `leftAction` in the footer's left slot, so it cannot compete with `Start today's climb →` on the right. Same left/right grammar the prep screen already uses (`← Back to shop` / `Community →`).
+
+**Label: "Community", not "Climb today".** Two reasons. Prep already says Community, and coining a second word for one destination is the thing to avoid. And `RunStart`'s own `<Title>` is literally "Today's climb" — a button on that screen reading "Climb today" that navigates away would be actively misleading.
+
+**Return path — one real defect found, one flash removed.** `RunCommunity` hardcoded `label: "Back to your run →"` and `backTarget = status === "rewarding" ? "/run/prep" : "/run"`.
+- With no run started, that button claimed a run that does not exist. It now reads `Today's climb →`.
+- A finished run went to `/run`, which `syncTarget` then bounced to `/run/over` — the start screen flashed on the way. Same for `answering`, which bounced to prep or answer.
+
+Both are fixed by `returnFromCommunity(view)` in `runRoutes.viewmodel.ts`, which returns `{ path, label }` off the same status table `syncTarget` reads, so the two cannot disagree. `rewarding` keeps its override to prep: the first allowed screen there is the payout celebration, already spent.
+
+A spec asserts the invariant directly — for every status, `syncTarget(returnFromCommunity(view).path, view, false)` is null, i.e. the page it sends you to is one the sync would leave alone.
+
+Community stays out of `RUN_ROUTES`; nothing about the sync changed.
+
+**Not done here:** the game-over entry point, which this bean assigns to DVTD-6vw2.
+
+Verification: tsc clean, lint + dependency-cruiser clean, 2384 tests pass (6 new). The 3 `RewardScreen.spec.tsx` failures are pre-existing on this branch.

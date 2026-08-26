@@ -13,19 +13,10 @@ export type CategoryTally = {
 export type GateWindow = {
 	readonly correct: number;
 	readonly answered: number;
-	/** The gate's score meter (ADR-035): coverage earned minus losses this
-	 * attempt, floored at 0. Resets with the window, so every attempt at a gate
-	 * is graded fresh. */
 	readonly coverageGained: number;
 	readonly byCategory: Readonly<Record<string, CategoryTally>>;
-	/** Peeks bought this window. Doubles as the fee ladder's position, which is why
-	 * the ladder resets with the window. Optional: legacy snapshots. */
 	readonly peeked?: number;
-	/** Correct options across this window's polls, recomputed on load because a day
-	 * rollover (ADR-011) swaps the window's unplayed polls for tomorrow's. Prices
-	 * `.length`'s clear payout and its "this gate holds N answers" line. Absent on
-	 * legacy snapshots, and 0 is impossible for a real window (every poll has at
-	 * least one correct option), so a falsy budget means "unknown". */
+	readonly linted?: number;
 	readonly budget?: number;
 };
 
@@ -35,13 +26,13 @@ export const EMPTY_WINDOW: GateWindow = {
 	coverageGained: 0,
 	byCategory: {},
 	peeked: 0,
+	linted: 0,
 };
 
 export type Coverage = { readonly mult: number; readonly add: number };
 
 export type AnswerContext = {
 	readonly category: CategoryCode;
-	/** Polls already answered in this window — 0 marks the window's opener. */
 	readonly answeredBefore: number;
 };
 
@@ -81,8 +72,6 @@ const maskOf = (config: Config): Effect["maskWrongOn"] => {
 	return (category) => categories.includes(category);
 };
 
-// Configs are pure enhancements (ADR-035): an effect is derived from the
-// benefit fields alone. The gate's friction lives on the gate itself.
 export const effectOf = (config: Config): Effect => ({
 	coverage: coverageOf(config),
 	maskWrongOn: maskOf(config),
@@ -97,24 +86,14 @@ export const effectOf = (config: Config): Effect => ({
 			: config.storageInterestPct * (config.level ?? 1),
 	rewardMultiplier:
 		config.rewardMultiplier === 1 ? undefined : config.rewardMultiplier,
-	// Flat, unlike the payout fields: levelling a headroom config would compound
-	// with the streak it uncaps, and two multipliers on one number is how the
-	// uncapped streak got to ×7.5 in the first place.
 	streakCapSteps: config.streakCapSteps,
 });
 
-/**
- * Where a config stands on the poll on deck. Configs stopped passing and failing
- * when ADR-035 deleted their checks; these are the three states one can actually
- * be in, and the rail says them in these words.
- */
 export type ConfigStatus =
 	| { readonly kind: "online" }
 	| { readonly kind: "skipped"; readonly why: SkipReason }
 	| { readonly kind: "offline"; readonly audit: string };
 
-/** Why a skipped config sits this poll out, reduced to the fact it is built from
- * rather than a sentence — the row writes the copy, as with `GateRowReason`. */
 export type SkipReason =
 	| {
 			readonly kind: "otherCategories";
@@ -129,13 +108,8 @@ export type SkipReason =
 	| { readonly kind: "notThisPoll" };
 
 export type PollStatusContext = AnswerContext & {
-	/** Volkswagen CI suppresses nothing at the clean gates, so whether it is
-	 * working is a fact about the gate rather than about the config. */
 	readonly suppressingAudit: boolean;
-	/** The audit holding this config down, when one is. */
 	readonly offlineAudit?: string;
-	/** What the run's storage faucet may still pay. A faucet with nothing left
-	 * is not paying on this answer, whatever its rate says. */
 	readonly faucetRemainingKb: number;
 };
 
@@ -158,8 +132,6 @@ const sellsSomethingHere = (config: Config, category: CategoryCode): boolean =>
 	config.peeksCommunitySplit === true ||
 	effectOf(config).maskWrongOn?.(category) === true;
 
-/** Reading the run ahead is live work, even though the number it moves is not on
- * this poll: the reveal is on screen while the player answers. */
 const readsAhead = (config: Config): boolean =>
 	config.revealsUpcomingCategories === true ||
 	config.revealsCorrectCount === true;
@@ -184,8 +156,6 @@ const skipReasonFor = (
 		return { kind: "otherCategories", categories: [config.focusCategory] };
 	if (config.openerCoverageMultiplier !== undefined)
 		return { kind: "openerOnly" };
-	// Before the shop reason: Freemium discounts drafts and bills at the clear,
-	// and the bill is the half a player forgets.
 	if (config.subscriptionKb !== undefined) return { kind: "billsAtGateClear" };
 	if (config.offersFullRoster === true || config.draftCostFactor !== undefined)
 		return { kind: "inShop" };

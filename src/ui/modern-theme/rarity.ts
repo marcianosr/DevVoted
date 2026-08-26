@@ -16,16 +16,24 @@ export const RARITY_BORDER = {
 } as const satisfies Record<Rarity, string>;
 
 /**
- * A config row wears its rarity as a rail at its left edge (RARITY_FILL, at full
- * strength — it is 4px wide and needs to carry) plus, for the legendary alone, a
- * wash. Only the legendary gets a fill because eight tinted rows in a column
- * read as eight statuses rather than as a grade, and because a rarity you meet
- * once a run should look like an event.
+ * The tint an opened row wears, strip and panel together.
+ *
+ * This replaces the rail that used to run down every config row's left edge. A
+ * column of eight rails read as eight statuses rather than as a grade — the
+ * rarity is already stated in words beside the name — so it shows on the one
+ * row you opened and nowhere else.
+ *
+ * Goes on the <details> itself, so `open:` is part of the token rather than
+ * something a caller composes: Tailwind scans source text, and a class built at
+ * runtime is never emitted. The legendary is the exception twice over — it
+ * shimmers whether open or shut, because a rarity you meet once a run should
+ * look like an event, and `legendary-shimmer` is an app.css class that Tailwind
+ * would generate no `open:` variant for anyway.
  */
 export const RARITY_WASH = {
-	common: "",
-	uncommon: "",
-	rare: "",
+	common: "open:bg-celadon/10",
+	uncommon: "open:bg-cerulean/10",
+	rare: "open:bg-cinnabar/10",
 	legendary: "legendary-shimmer",
 } as const satisfies Record<Rarity, string>;
 

@@ -140,17 +140,37 @@ describe("Pick", () => {
 		expect(screen.getByText("+8 / correct")).toBeInTheDocument();
 	});
 
-	it("rails a row in its rarity", () => {
+	// The spine that used to run down the row's left edge, in the rarity's
+	// colour, is gone: a shelf of them read as statuses rather than as grades.
+	it("runs no rail down a row, and states no rarity while shut", () => {
 		const { container } = render(
 			<Pick label=".ts" rarity="rare" checked={false} onToggle={() => {}} />
 		);
 
-		expect(container.firstElementChild).toHaveClass("relative");
-		expect(container.querySelector(".bg-cinnabar")).toBeInTheDocument();
+		expect(container.querySelector(".w-1.rounded-full")).toBeNull();
+		// Only the open: form, so a shut row paints nothing.
+		expect(container.firstElementChild).not.toHaveClass("bg-cinnabar/10");
 	});
 
-	// The rail is the grade and never moves; the wash is the pick's own answer.
-	it("keeps the rail when the row is picked, and swaps the fill", () => {
+	it("tints an opened row with its rarity, summary strip and panel alike", () => {
+		const { container } = render(
+			<Pick
+				label=".ts"
+				rarity="rare"
+				checked={false}
+				onToggle={() => {}}
+				explainer="Rare polls."
+			/>
+		);
+
+		const card = container.firstElementChild;
+		expect(card).toHaveClass("open:bg-cinnabar/10");
+		expect(card).toContainElement(screen.getByText(".ts"));
+		expect(card).toContainElement(screen.getByText("Rare polls."));
+	});
+
+	// The pick's own answer still owns the strip, and now owns it alone.
+	it("washes a picked row in the pick's colour, not the rarity's", () => {
 		const { container } = render(
 			<Pick
 				label=".ts"
@@ -161,7 +181,6 @@ describe("Pick", () => {
 			/>
 		);
 
-		expect(container.querySelector(".bg-cinnabar")).toBeInTheDocument();
 		expect(container.firstElementChild).toHaveClass("bg-theme-soft");
 	});
 });
