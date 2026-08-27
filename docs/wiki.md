@@ -84,9 +84,6 @@ midnight.
 You can **abandon** a run and start fresh the same day. The new run serves only polls
 you have not answered yet, and abandoning banks nothing.
 
-🟡 Spending storage to keep climbing past the daily lock is a designed monetization
-lever; the cost curve is undefined.
-
 ### 2.2 Gates
 
 A gate deals a window of 5 polls and audits the score earned inside it (ADR-035). Its
@@ -202,8 +199,15 @@ multiplier field that is 1 on every config, which let stacked builds shrug off a
 
 Example, gate 2, a 5-option single-answer CSS poll with `.css` installed and one
 correct answer already banked: `1.0 × 1.25 mults × 1.1 streak × 2 gate × 1.2
-difficulty` = **+3.3% CSS coverage**. The post-answer **equation reveal** breaks that
-into Balatro-style chips: base, one per contributing config, streak bonus.
+difficulty` = **+3.3% CSS coverage**. The post-answer **equation reveal** states that
+as the arithmetic it is — `(correct + flat adds) × streak × <each multiplying config>`,
+every config chip keyed by its rarity stripe and every flat add quoting the coverage it
+contributed rather than the factor it works out to, then "this answer paid +x%" — while
+the pipeline rail speaks a chip grammar: outlined gray is what a config
+*would* pay (`×1.25`), a filled badge is what it *did* (`paid +0.5`, red for losses,
+KB for faucet payouts), the header promising "will apply" live and reporting
+"applied" once settled. A miss keeps the rail silent: configs never touch losses, so
+the loss reads once, on the paid line.
 
 Category coverage past 100% rolls over into **levels**: 110% in JavaScript reads as
 "L2". Mastery keeps counting instead of capping.
@@ -758,12 +762,20 @@ The game leans hard into its CI metaphor.
   nothing else. Every pip is a control: hover or tap it to name that gate's badge and
   standing ("clear gate 7 to earn it"). It carries no coverage; the total is the gate's
   own stake, on the Build Summary's "To pass" line.
+- **Rarity**: a coloured **stripe** against the config's name, on every surface that
+  lists configs (deal, shop, rail, prep) and on the reveal's config chips. The round dot
+  on a row means status, the stripe means grade, and no config row states its rarity in
+  words any more; the deal and the shop shelf each key the four colours in a legend.
+- **An opened config**: the description, then one facts line — grade (in its colour),
+  level, rate, and what it sells for in this build. Shared by every surface that lists
+  configs, ruled and indented under the row it belongs to. A config with no upgrade path
+  states no level; the deal states no refund, since nothing has been bought yet.
 - **Pipeline rail**: configs hang off a rail on every pipeline surface, carrying each
   config's paid actions and, while you answer, its standing on the poll on deck: a
   filled dot for `online`, a hollow one for `skipped` (installed, doing nothing here,
-  with the reason beside it), a red one for `offline`. Counted in the fold's header
-  ("3 online · 2 skipped · 1 offline"). Shop and prep list the same configs with no dot,
-  since a status needs a poll to be true of. The next slot closes
+  with the reason beside it), a red one for `offline`. The header promises before the
+  answer ("2 will apply") and reports after it ("2 applied · 1 skipped"). Shop and prep
+  list the same configs with no dot, since a status needs a poll to be true of. The next slot closes
   the list as a dashed row numbered in the gutter ("Opens when Gate 2 clears"), replaced
   by a green "Unlocked Nth slot" acknowledgment in the shop, retired at the slot cap.
   There is no unlock button anywhere.

@@ -29,6 +29,7 @@ import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui"
 import { StartView } from "~/modules/run/pipeline/presentation/StartView.component";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
 import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
+import { RevealView } from "~/modules/run/run/presentation/RevealView.component";
 import { ReviewView } from "~/modules/run/run/presentation/ReviewView.component";
 import { RemovalView } from "~/modules/run/gate/presentation/RemovalView.component";
 import { RewardView } from "~/modules/run/gate/presentation/RewardView.component";
@@ -424,6 +425,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setSelected([]);
 	}, [state.currentIndex]);
+	// Local, not run state: the reveal is a reading beat, not a move — a refresh
+	// mid-reveal skips it and loses nothing (the answer is already scored).
+	const [revealing, setRevealing] = useState(false);
 	const [rewardStep, setRewardStep] = useState<
 		"summary" | "review" | "shop" | "prep" | "community"
 	>("summary");
@@ -440,7 +444,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	}, [state.status]);
 
 	const view = toRunView(state);
-	const pollClock = usePollClock(view.poll?.id ?? null, view.pollTimeLimitMs);
+	const reveal = revealing ? view.answeredThisGate.at(-1) : undefined;
+	// The next poll's clock holds while the reveal is up — a Timeout audit may
+	// not bill reading time to an answer the player hasn't seen yet.
+	const pollClock = usePollClock(
+		reveal ? null : (view.poll?.id ?? null),
+		view.pollTimeLimitMs
+	);
 	const community = simulateCommunityBoard(view.answeredThisGate, state.polls, {
 		gatesCleared: view.gatesCleared,
 		coverage: view.coverage,
@@ -448,8 +458,10 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	});
 	// The rig submits the real clock too, so a Timeout gate can actually bite in
 	// a playtest; the fast-forward buttons below stay untimed on purpose.
-	const answer = (optionIds: readonly string[]) =>
+	const answer = (optionIds: readonly string[]) => {
 		dispatch({ type: "answer", optionIds, elapsedMs: pollClock.elapsedMs() });
+		setRevealing(true);
+	};
 	const answerCurrent = (outcome: RigOutcome) => {
 		const poll = state.polls[state.currentIndex];
 		if (poll) answer(rigOptionIds(poll, outcome));
@@ -517,7 +529,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				/>
 			)}
 
-			{state.status === "answering" && view.poll && (
+			{reveal && (
+				<RevealView
+					view={view}
+					answered={reveal}
+					onNext={() => setRevealing(false)}
+				/>
+			)}
+
+			{!reveal && state.status === "answering" && view.poll && (
 				<PollView
 					view={view}
 					poll={view.poll}
@@ -537,7 +557,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				/>
 			)}
 
-			{state.status === "rewarding" && rewardStep === "summary" && (
+			{!reveal && state.status === "rewarding" && rewardStep === "summary" && (
 				<RewardView
 					view={view}
 					outcome="cleared"
@@ -599,14 +619,16 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</Screen>
 			)}
 
-			{state.status === "awaiting-strip" && stripStep === "summary" && (
-				<RewardView
-					view={view}
-					outcome="held"
-					onReviewAnswers={() => setStripStep("review")}
-					onChooseRemoval={() => setStripStep("removal")}
-				/>
-			)}
+			{!reveal &&
+				state.status === "awaiting-strip" &&
+				stripStep === "summary" && (
+					<RewardView
+						view={view}
+						outcome="held"
+						onReviewAnswers={() => setStripStep("review")}
+						onChooseRemoval={() => setStripStep("removal")}
+					/>
+				)}
 
 			{state.status === "awaiting-strip" && stripStep === "removal" && (
 				<RemovalView
@@ -639,7 +661,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				/>
 			)}
 
-			{(state.status === "won" || state.status === "dead") && (
+			{!reveal && (state.status === "won" || state.status === "dead") && (
 				<Screen
 					width="narrow"
 					rightAction={{ label: "Play again →", onClick: onRestart }}
@@ -656,7 +678,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</Screen>
 			)}
 
-			{state.status === "answering" && (
+			{!reveal && state.status === "answering" && (
 				<div className="mx-auto mt-4 flex w-full max-w-6xl shrink-0 flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
 					<span className="font-semibold uppercase tracking-wide">Dev rig</span>
 					<button

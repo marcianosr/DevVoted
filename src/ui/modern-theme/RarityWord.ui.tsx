@@ -1,20 +1,21 @@
 import { clsx } from "clsx";
 
 import { RARITY_TEXT, type Rarity } from "./rarity";
-import { Text } from "./Text.ui";
 
-/** The rarity is the word now, not a dot: dots read as status on the pipeline
- * rail, and a second dot vocabulary beside them was a coin toss over which
- * meaning the player took. A middot separates, the colour and the weight carry
- * the grade.
+/**
+ * The tier as a word in its own colour. A config row states its rarity in the
+ * stripe against its name; this is the spelled-out form, which lives in the
+ * opened row's facts line beside the level, the rate and the refund.
  *
- * Both sit on a span of their own rather than on the `Text`: a colour and a
- * weight utility competing with the ones `Text`'s own variants emit leave the
+ * It carries no separator of its own: it sits inside a dot-separated list the
+ * caller punctuates, and a word that brings its own middot cannot.
+ *
+ * The colour and the weight sit on a span of their own rather than on the
+ * `Text`: utilities competing with the ones `Text`'s variants emit leave the
  * winner to Tailwind's source order, which is what quietly greyed and unbolded
- * this word. */
+ * this word.
+ */
 const WORD = "font-bold";
-
-const SEPARATOR = "·";
 
 export type RarityWordProps = {
 	rarity: Rarity;
@@ -22,8 +23,5 @@ export type RarityWordProps = {
 };
 
 export const RarityWord = ({ rarity, className }: RarityWordProps) => (
-	<Text size="meta" tone="muted">
-		<span aria-hidden>{SEPARATOR} </span>
-		<span className={clsx(WORD, RARITY_TEXT[rarity], className)}>{rarity}</span>
-	</Text>
+	<span className={clsx(WORD, RARITY_TEXT[rarity], className)}>{rarity}</span>
 );

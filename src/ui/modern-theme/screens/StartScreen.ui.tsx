@@ -14,7 +14,6 @@ import { Glyph } from "../Glyph.ui";
 import { Lock } from "../Lock.ui";
 import { Pick } from "../Pick.ui";
 import type { Rarity } from "../rarity";
-import { RarityWord } from "../RarityWord.ui";
 import { Row } from "../Row.ui";
 import { Slot } from "../Slot.ui";
 import { Stake } from "../Stake.ui";
@@ -34,9 +33,6 @@ const DEAL = "flex-1 border-b border-edge lg:border-b-0 lg:border-r";
 const ASIDE = "gap-4 lg:w-96 lg:shrink-0";
 
 const NOTE = "flex flex-col gap-3";
-
-// Fixed width so the figures line up in a column down the deal.
-const ROW_TAG = "w-20 shrink-0";
 
 const COMBO =
 	"flex flex-col gap-2 rounded-lg border border-celadon/30 bg-celadon/5 px-4 py-3";
@@ -64,7 +60,8 @@ export type DealtConfig = {
 	id: string;
 	label: string;
 	rarity?: Rarity;
-	summary?: string;
+	/** The facts line under the name — a node, since the grade in it is coloured. */
+	summary?: ReactNode;
 	explainer: string;
 	note?: ReactNode;
 	locked?: boolean;
@@ -213,7 +210,6 @@ export const StartScreen = ({
 					<Entry
 						label={config.label}
 						rarity={config.rarity}
-						notes={config.rarity ? <RarityWord rarity={config.rarity} /> : null}
 						value={config.note}
 					/>
 				),
@@ -330,17 +326,7 @@ export const StartScreen = ({
 									rarity={config.rarity}
 									checked={pickedIds.includes(config.id)}
 									onToggle={() => onToggle(config.id)}
-									notes={
-										<>
-											{config.rarity ? (
-												<RarityWord
-													rarity={config.rarity}
-													className={ROW_TAG}
-												/>
-											) : null}
-											{config.note}
-										</>
-									}
+									value={config.note}
 									summary={config.summary}
 									explainer={config.explainer}
 									trailing={lockFor(config)}

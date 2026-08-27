@@ -174,8 +174,9 @@ describe("StartView", () => {
 
 		// .ts, .js, .jsx, .vue, .java, .git all sit at ×1.25 on level 1.
 		expect(screen.getAllByText("×1.25").length).toBeGreaterThan(1);
-		// Code Coverage adds flat coverage rather than multiplying it.
-		expect(screen.getByText("+0.5")).toBeInTheDocument();
+		// Code Coverage adds flat coverage rather than multiplying it. Twice over:
+		// the column every row shares, and the config's own facts line.
+		expect(screen.getAllByText("+0.5").length).toBeGreaterThan(0);
 	});
 
 	it("badges nothing for a config that prices in something else", () => {

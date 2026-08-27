@@ -5,12 +5,14 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
+import { Legend, RARITY_LEGEND } from "../Legend.ui";
 import { ShopHeader, type ShopHeaderProps } from "../ShopHeader.ui";
 import { StoragePlan, type StoragePlanProps } from "../StoragePlan.ui";
 import { Text } from "../Text.ui";
 
 const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const COLUMN = "flex min-w-0 flex-1 flex-col px-2 py-4";
+const KEY = "px-3 pt-4";
 const DRAFT = "border-b border-edge lg:border-b-0 lg:border-r";
 
 // The rebuild press sits beside what it costs next time, and under the shelf it
@@ -86,6 +88,13 @@ export const ShopScreen = ({
 						</div>
 					) : null}
 				</Fold>
+
+				{/* The shelf is the other place a config is chosen, so it carries the
+				    same key the deal does: rarity reads as a stripe on the row, and a
+				    colour with no word to it is only learnable from a legend. */}
+				<div className={KEY}>
+					<Legend items={RARITY_LEGEND} />
+				</div>
 
 				{storagePlans ? <StoragePlan {...storagePlans} /> : null}
 

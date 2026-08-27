@@ -32,15 +32,21 @@ import { Lock } from "~/ui/modern-theme/Lock.ui";
 import { Mark } from "~/ui/modern-theme/Mark.ui";
 import type { PlanProps } from "~/ui/modern-theme/Plan.ui";
 import { PriceTag, type PriceTagState } from "~/ui/modern-theme/PriceTag.ui";
-import { RarityWord } from "~/ui/modern-theme/RarityWord.ui";
 import { Slot } from "~/ui/modern-theme/Slot.ui";
+import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import { Text } from "~/ui/modern-theme/Text.ui";
 import { capLabel, planOpensAt, plural } from "~/ui/modern-theme/format";
 
-// The rarity is stated in the row's own colours beside the Dot, so repeating it
-// here would only push the version further from the eye that came looking for it.
-const summaryFor = (config: Config) =>
-	config.level === undefined ? undefined : `v${config.level}`;
+/**
+ * An offer quotes no refund: it is not owned yet, and its price is already on
+ * the row's own tag. An installed config quotes what this build would be paid
+ * for it, which is the number the Uninstall press honours.
+ */
+const offerFacts = (config: Config) => <ConfigFacts config={config} />;
+
+const ownedFacts = (configs: readonly Config[], config: Config) => (
+	<ConfigFacts config={config} refundKb={sellRefundIn(configs, config)} />
+);
 
 // The two refusals are fixed by different things — sell something, or clear a
 // slot — so they cannot share a colour. Red is "you are short"; grey is "there
@@ -103,7 +109,6 @@ const previewNotes = (view: RunView, offer: ShopOffer) => {
 
 	return (
 		<>
-			<RarityWord rarity={rarityOf(offer.config)} />
 			{coverageDelta !== 0 ? <Delta coverage={coverageDelta} /> : null}
 			{storageDelta !== 0 ? <Delta kb={storageDelta} /> : null}
 		</>
@@ -178,7 +183,7 @@ const offerRows = (
 						onUse={() => onDraft(offer.config.id)}
 					/>
 				}
-				summary={summaryFor(offer.config)}
+				summary={offerFacts(offer.config)}
 				explainer={
 					offer.refusal
 						? offerRefusalText(offer.refusal)
@@ -262,7 +267,6 @@ const pipelineRows = (
 						: {})}
 					notes={
 						<>
-							<RarityWord rarity={rarityOf(config)} />
 							<Figure figure={headlineFigureOf(config)} />
 							<Chip tone="celadon">worth {refundKb} KB</Chip>
 						</>
@@ -283,7 +287,7 @@ const pipelineRows = (
 									},
 								]),
 					]}
-					summary={summaryFor(config)}
+					summary={ownedFacts(view.configs, config)}
 					explainer={config.description}
 				/>
 			),

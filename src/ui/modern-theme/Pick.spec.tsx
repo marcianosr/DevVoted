@@ -142,14 +142,42 @@ describe("Pick", () => {
 
 	// The spine that used to run down the row's left edge, in the rarity's
 	// colour, is gone: a shelf of them read as statuses rather than as grades.
-	it("runs no rail down a row, and states no rarity while shut", () => {
+	// The stripe is how a shut row states its grade now: a bar, never the status
+	// dot's shape, so the two readings on one row stay distinguishable.
+	it("leads the name with its rarity stripe, and names the tier for a reader", () => {
 		const { container } = render(
 			<Pick label=".ts" rarity="rare" checked={false} onToggle={() => {}} />
 		);
 
-		expect(container.querySelector(".w-1.rounded-full")).toBeNull();
+		expect(container.querySelector(".w-1.rounded-full")).toHaveClass(
+			"bg-cinnabar"
+		);
+		expect(screen.getByText("rare")).toHaveClass("sr-only");
+	});
+
+	it("keeps the rarity tint to the opened row, so a shut column stays flat", () => {
+		const { container } = render(
+			<Pick label=".ts" rarity="rare" checked={false} onToggle={() => {}} />
+		);
+
 		// Only the open: form, so a shut row paints nothing.
 		expect(container.firstElementChild).not.toHaveClass("bg-cinnabar/10");
+	});
+
+	it("carries a figure in a column of its own, clear of the trailing press", () => {
+		render(
+			<Pick
+				label=".ts"
+				rarity="rare"
+				checked={false}
+				onToggle={() => {}}
+				value="×1.25"
+				trailing={<button type="button">lock</button>}
+			/>
+		);
+
+		expect(screen.getByText("×1.25")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "lock" })).toBeInTheDocument();
 	});
 
 	it("tints an opened row with its rarity, summary strip and panel alike", () => {

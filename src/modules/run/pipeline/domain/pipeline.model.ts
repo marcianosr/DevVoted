@@ -365,6 +365,36 @@ export type CoverageConfigBonus = {
 	readonly value: number;
 };
 
+/**
+ * The answer's earn as the multiplication it actually is: `correct × build ×
+ * streak = earned`. `correct` is the scored share (correctness with the gate
+ * and difficulty multipliers folded in — the same number the stake receipt
+ * scales by); `build` is everything the loadout added, `(1 + adds) × mults`.
+ * Recorded at scoring time because the additive breakdown rounds per chip and
+ * cannot give the factors back.
+ */
+export type CoverageFactors = {
+	readonly correct: number;
+	readonly build: number;
+	readonly streak: number;
+};
+
+/** A miss has no factors: nothing multiplied, the loss is priced elsewhere. */
+export const coverageFactorsForAnswer = (
+	configs: readonly Config[],
+	context: AnswerContext,
+	share: number,
+	streakFactor = 1
+): CoverageFactors | undefined => {
+	if (share <= 0) return undefined;
+	const covers = configs
+		.map((config) => effectOf(config).coverage?.(context))
+		.filter((cover): cover is Coverage => cover !== undefined);
+	const mult = covers.reduce((product, cover) => product * cover.mult, 1);
+	const add = covers.reduce((sum, cover) => sum + cover.add, 0);
+	return { correct: share, build: (1 + add) * mult, streak: streakFactor };
+};
+
 export type CoverageBreakdown = {
 	readonly base: number;
 	readonly streakBonus: number;

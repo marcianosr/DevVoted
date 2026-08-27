@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { Chip } from "./Chip.ui";
 import { Choice } from "./Choice.ui";
 import { optionLetter } from "./format";
 
@@ -69,3 +70,36 @@ const AnswerList = () => {
 };
 
 export const Interactive: Story = { render: () => <AnswerList /> };
+
+// The reveal's settled options: inert, verdict wash on the card, badges at the
+// row's end — celadon for what the gate expected, cinnabar for a wrong pick.
+export const SettledExpectedAndPicked: Story = {
+	args: {
+		label: "arr.slice(-2)",
+		checked: true,
+		settled: true,
+		letterTone: "celadon",
+		trailing: (
+			<>
+				<Chip tone="celadon">expected</Chip>
+				<Chip tone="celadon">you picked</Chip>
+			</>
+		),
+	},
+};
+
+export const SettledWrongPick: Story = {
+	args: {
+		letter: "B",
+		label: "arr.splice(-2)",
+		checked: true,
+		settled: true,
+		letterTone: "cinnabar",
+		trailing: <Chip tone="cinnabar">you picked</Chip>,
+	},
+};
+
+// A settled option that was neither expected nor picked steps back.
+export const SettledBystander: Story = {
+	args: { letter: "C", label: "arr.at(-2)", settled: true },
+};

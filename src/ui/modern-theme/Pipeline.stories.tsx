@@ -134,3 +134,35 @@ export const WithAPaidAction: Story = {
 };
 
 export const Shut: Story = { args: { configs: BUILD, defaultOpen: false } };
+
+// The reveal's delivery beat: applied rows trade their outlined would-do rate
+// for a filled "paid" badge, online rows that paid nothing read "unused", and
+// the header counts delivery rather than promise.
+export const Settled: Story = {
+	args: {
+		settled: true,
+		configs: BUILD.map((row) =>
+			row.status.kind === "online" && row.figure
+				? { ...row, fired: row.figure.value === 2 ? 1.3 : 0.7 }
+				: row
+		),
+	},
+};
+
+export const SettledWithFaucet: Story = {
+	args: {
+		settled: true,
+		configs: [
+			{
+				id: "indexed-db",
+				label: "IndexedDB",
+				rarity: "uncommon",
+				status: { kind: "online" },
+				remainingKb: 288,
+				firedKb: 8,
+				explainer: "+8KB storage per correct answer.",
+			},
+			...BUILD,
+		],
+	},
+};

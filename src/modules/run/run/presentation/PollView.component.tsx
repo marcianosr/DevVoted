@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
@@ -7,10 +7,12 @@ import {
 	headlineFigureOf,
 	rarityOf,
 } from "~/modules/run/config/domain/config.model";
+import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import {
 	configStatusFor,
 	type PollStatusContext,
 } from "~/modules/run/config/domain/effect.model";
+import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	ALL_SWATCHES,
@@ -29,7 +31,7 @@ import { Stake } from "~/ui/modern-theme/Stake.ui";
 import type { TrailItem } from "~/ui/modern-theme/Trail.ui";
 import { plural } from "~/ui/modern-theme/format";
 
-const trailFor = (view: RunView): readonly TrailItem[] =>
+export const trailFor = (view: RunView): readonly TrailItem[] =>
 	Array.from({ length: view.pollsPerGate }, (_, index): TrailItem => {
 		const label = `${index + 1}`;
 		const answered = view.answeredThisGate[index];
@@ -50,25 +52,31 @@ const trailFor = (view: RunView): readonly TrailItem[] =>
 const shortfall = (costKb: number, storageKb: number): string =>
 	`Costs ${costKb}KB — you have ${storageKb}KB`;
 
-// The rarity is stated in the row's own colours beside the Dot, so repeating it
-// here would only push the version further from the eye that came looking for it.
-//
-// The shortfall rides here too rather than only in the button's tooltip: a
-// disabled button takes no taps, so on a phone the row's own body is the only
-// place the reason is reachable.
-const summaryFor = (
+/**
+ * The rail's reading of the shared facts line. The refund is the build's own,
+ * not the list price: Freemium's discount and WTFPL's no-warranty clause both
+ * move it, and a rail quoting list would be quoting a number the shop will not
+ * honour.
+ *
+ * The shortfall rides here too rather than only in the button's tooltip: a
+ * disabled button takes no taps, so on a phone the row's own body is the only
+ * place the reason is reachable.
+ */
+const factsFor = (
+	view: RunView,
 	config: Config,
-	tool: Tool | undefined,
-	storageKb: number
-): string | undefined => {
-	const lines = [
-		...(config.level === undefined ? [] : [`v${config.level}`]),
-		...(tool === undefined || tool.ready
-			? []
-			: [shortfall(tool.costKb, storageKb)]),
-	];
-	return lines.length === 0 ? undefined : lines.join(" · ");
-};
+	tool: Tool | undefined
+): ReactNode => (
+	<ConfigFacts
+		config={config}
+		refundKb={sellRefundIn(view.configs, config)}
+		note={
+			tool === undefined || tool.ready
+				? undefined
+				: shortfall(tool.costKb, view.storage)
+		}
+	/>
+);
 
 type Tool = {
 	readonly configId: string;
@@ -103,13 +111,24 @@ const toolsFor = (view: RunView, handlers: PollTools): readonly Tool[] => [
 		: []),
 ];
 
+/**
+ * The slice of a poll the rail statuses read. The reveal passes the answered
+ * poll's facts (its category, and the count *before* it landed, so an
+ * opener-only config still reads online on the first poll's reveal); the live
+ * poll passes its own.
+ */
+export type PollFacts = {
+	readonly category: CategoryCode;
+	readonly answeredBefore: number;
+};
+
 const statusContextFor = (
 	view: RunView,
-	poll: NonNullable<RunView["poll"]>,
+	poll: PollFacts,
 	config: Config
 ): PollStatusContext => ({
 	category: poll.category,
-	answeredBefore: view.answeredThisGate.length,
+	answeredBefore: poll.answeredBefore,
 	suppressingAudit: view.audits.some((audit) => audit.suppressed),
 	offlineAudit: view.offlineConfigs.find(
 		(offline) => offline.config.id === config.id
@@ -117,9 +136,9 @@ const statusContextFor = (
 	faucetRemainingKb: view.faucetRemainingKb,
 });
 
-const pipelineRows = (
+export const pipelineRows = (
 	view: RunView,
-	poll: NonNullable<RunView["poll"]>,
+	poll: PollFacts,
 	tools: readonly Tool[]
 ): readonly PipelineRow[] =>
 	view.configs.map((config): PipelineRow => {
@@ -143,7 +162,7 @@ const pipelineRows = (
 				config.storagePerCorrect === undefined
 					? undefined
 					: view.faucetRemainingKb,
-			summary: summaryFor(config, tool, view.storage),
+			summary: factsFor(view, config, tool),
 			explainer: config.description,
 			action:
 				tool === undefined
@@ -174,10 +193,10 @@ const auditRows = (view: RunView): readonly AuditRow[] =>
 			: [{ id, description: audit.description, suppressed: audit.suppressed }];
 	});
 
-const railFor = (
+export const railFor = (
 	view: RunView,
-	poll: NonNullable<RunView["poll"]>,
-	handlers: PollTools
+	rows: readonly PipelineRow[],
+	settled = false
 ) => {
 	const audits = auditRows(view);
 	const { coverageHeld, coverageDemand, stripsOnFailure, missIsFatal } =
@@ -191,7 +210,7 @@ const railFor = (
 				required={coverageDemand}
 				defaultOpen={false}
 			/>
-			<Pipeline configs={pipelineRows(view, poll, toolsFor(view, handlers))} />
+			<Pipeline configs={rows} settled={settled} />
 			{audits.length ? <Audits audits={audits} defaultOpen /> : null}
 			<Stake
 				removeOnMiss={stripsOnFailure}
@@ -228,9 +247,33 @@ const metaFor = (view: RunView, poll: NonNullable<RunView["poll"]>) => {
 	];
 };
 
-const categoryFor = (category: CategoryCode) => ({
+export const categoryFor = (category: CategoryCode) => ({
 	label: getCategoryMetadata(category).name,
 });
+
+export const questionFor = (view: RunView, question: string): string =>
+	view.mirroredPolls
+		? `Mirrored — pick every INCORRECT option. ${question}`
+		: question;
+
+export const gateHeaderFor = (view: RunView) => {
+	const gate = view.gateStake.gateNumber;
+	return {
+		title: `Gate ${gate} · ${swatchForGate(gate)?.gateName ?? ""}`,
+		audits: view.audits
+			.map((audit) => toAuditId(audit.id))
+			.filter((id): id is NonNullable<typeof id> => id !== null),
+		storage: {
+			plan:
+				view.storageBillKb === 0
+					? "Free tier"
+					: `${view.storageBillKb} KB / gate`,
+			used: view.storage,
+			cap: view.storageCap,
+		},
+		track: { gates: ALL_SWATCHES, cleared: view.gatesCleared },
+	};
+};
 
 export type PollTools = {
 	onLint: () => void;
@@ -256,7 +299,6 @@ export const PollView = ({
 	onLint,
 	onPeek,
 }: PollViewProps) => {
-	const gate = view.gateStake.gateNumber;
 	const blocked = new Set(view.disabledOptionIds);
 	// Held here rather than in the run state: folding the rail is a reading
 	// preference, not a move, and nothing in the engine should replay it.
@@ -279,36 +321,24 @@ export const PollView = ({
 		onChange: () => onSelect(option.id),
 	}));
 
+	const rows = pipelineRows(
+		view,
+		{ category: poll.category, answeredBefore: view.answeredThisGate.length },
+		toolsFor(view, { onLint, onPeek })
+	);
+
 	return (
 		<PollScreen
 			theme={view.gateTheme}
-			gate={{
-				title: `Gate ${gate} · ${swatchForGate(gate)?.gateName ?? ""}`,
-				audits: view.audits
-					.map((audit) => toAuditId(audit.id))
-					.filter((id): id is NonNullable<typeof id> => id !== null),
-				storage: {
-					plan:
-						view.storageBillKb === 0
-							? "Free tier"
-							: `${view.storageBillKb} KB / gate`,
-					used: view.storage,
-					cap: view.storageCap,
-				},
-				track: { gates: ALL_SWATCHES, cleared: view.gatesCleared },
-			}}
+			gate={gateHeaderFor(view)}
 			trail={trailFor(view)}
 			trailLabel="Polls in this gate"
-			question={
-				view.mirroredPolls
-					? `Mirrored — pick every INCORRECT option. ${poll.question}`
-					: poll.question
-			}
+			question={questionFor(view, poll.question)}
 			category={categoryFor(poll.category)}
 			meta={metaFor(view, poll)}
 			code={poll.codeBlock?.split("\n")}
 			options={options}
-			rail={railFor(view, poll, { onLint, onPeek })}
+			rail={railFor(view, rows)}
 			railOpen={railOpen}
 			onToggleRail={() => setRailOpen((open) => !open)}
 			onSubmit={onSubmit}

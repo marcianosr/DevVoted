@@ -22,8 +22,8 @@ describe("Legend", () => {
 	it("sets each tier's name in that tier's own colour", () => {
 		render(<Legend items={RARITY_LEGEND} />);
 
-		expect(screen.getByText("common")).toHaveClass("text-celadon");
-		expect(screen.getByText("uncommon")).toHaveClass("text-cerulean");
+		expect(screen.getByText("common")).toHaveClass("text-cerulean");
+		expect(screen.getByText("uncommon")).toHaveClass("text-viridian");
 		expect(screen.getByText("rare")).toHaveClass("text-cinnabar");
 		expect(screen.getByText("legendary")).toHaveClass("text-legendary");
 	});

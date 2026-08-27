@@ -7,9 +7,13 @@ export const RARITY_ORDER = [
 	"legendary",
 ] as const satisfies readonly Rarity[];
 
+// One rarity palette for the whole game, matching `~/ui/rarityColors` (the
+// collection wears it): common cerulean, uncommon viridian, rare cinnabar.
+// Celadon stays out of rarity entirely — on the rail it means online/paid,
+// and a common config in that green read as a payout.
 export const RARITY_BORDER = {
-	common: "border-celadon",
-	uncommon: "border-cerulean",
+	common: "border-cerulean",
+	uncommon: "border-viridian",
 	rare: "border-cinnabar",
 	// Transparent so app.css's masked gradient ring paints over it.
 	legendary: "border-transparent legendary-ring",
@@ -31,8 +35,8 @@ export const RARITY_BORDER = {
  * would generate no `open:` variant for anyway.
  */
 export const RARITY_WASH = {
-	common: "open:bg-celadon/10",
-	uncommon: "open:bg-cerulean/10",
+	common: "open:bg-cerulean/10",
+	uncommon: "open:bg-viridian/10",
 	rare: "open:bg-cinnabar/10",
 	legendary: "legendary-shimmer",
 } as const satisfies Record<Rarity, string>;
@@ -40,15 +44,15 @@ export const RARITY_WASH = {
 /** The rarity's name, in its own colour. The legendary takes the gradient
  * clipped to its glyphs, since it has no single colour to be set in. */
 export const RARITY_TEXT = {
-	common: "text-celadon",
-	uncommon: "text-cerulean",
+	common: "text-cerulean",
+	uncommon: "text-viridian",
 	rare: "text-cinnabar",
 	legendary: "text-legendary",
 } as const satisfies Record<Rarity, string>;
 
 export const RARITY_FILL = {
-	common: "bg-celadon",
-	uncommon: "bg-cerulean",
+	common: "bg-cerulean",
+	uncommon: "bg-viridian",
 	rare: "bg-cinnabar",
 	legendary: "bg-legendary",
 } as const satisfies Record<Rarity, string>;

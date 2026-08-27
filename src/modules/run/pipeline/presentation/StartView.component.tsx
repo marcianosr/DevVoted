@@ -13,16 +13,18 @@ import {
 	type StartCombo,
 	type StartSlot,
 } from "~/ui/modern-theme/screens/StartScreen.ui";
+import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import { Figure } from "~/ui/modern-theme/Figure.ui";
 
-// No summary: the rarity was the only thing it ever carried here, and the row
-// now states that in its own colours beside the Dot.
+// No refund in the facts: nothing has been bought yet, so a config in the deal
+// has no sale behind it to quote.
 const toDealt = (config: Config): DealtConfig => ({
 	id: config.id,
 	label: config.label,
 	rarity: rarityOf(config),
+	summary: <ConfigFacts config={config} />,
 	explainer: config.description,
-	note: <Figure figure={headlineFigureOf(config)} />,
+	note: <Figure figure={headlineFigureOf(config)} plain />,
 });
 
 const dealtFromStacks = (): readonly Config[] => {

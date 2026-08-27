@@ -14,7 +14,7 @@ describe("Dot", () => {
 		const { container: common } = render(<Dot rarity="common" />);
 		const { container: legendary } = render(<Dot rarity="legendary" />);
 
-		expect(common.firstChild).toHaveClass("bg-celadon");
+		expect(common.firstChild).toHaveClass("bg-cerulean");
 		expect(legendary.firstChild).toHaveClass("bg-legendary");
 	});
 

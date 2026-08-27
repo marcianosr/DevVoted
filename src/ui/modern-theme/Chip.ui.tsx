@@ -2,10 +2,13 @@ import type { ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import { RARITY_BORDER, type Rarity } from "./rarity";
+import { type Rarity } from "./rarity";
+import { RarityStripe } from "./RarityStripe.ui";
 import { Text } from "./Text.ui";
 
 const CHIP = "inline-flex shrink-0 items-center";
+// The stripe grades the name it precedes, the way it does on a row.
+const KEYED = "gap-2";
 
 /** A badge is a figure, and a figure is read before the prose around it. */
 const FIGURE = "font-bold";
@@ -40,9 +43,22 @@ const TINT = {
 	raised: "bg-surface-raised text-zinc-100",
 } satisfies Record<ChipTone, string>;
 
+/** The rail's chip grammar: an outlined chip is what a thing WOULD do, a
+ * filled one is what it DID. Same tones, no fill. */
+const OUTLINE_TINT = {
+	theme: "border-theme/50 text-theme",
+	cerulean: "border-cerulean/50 text-cerulean",
+	celadon: "border-celadon/50 text-celadon",
+	saffron: "border-saffron/50 text-saffron",
+	vermillion: "border-vermillion/50 text-vermillion",
+	cinnabar: "border-cinnabar/50 text-cinnabar",
+	muted: "border-edge-strong text-zinc-400",
+	raised: "border-control-edge text-zinc-100",
+} satisfies Record<ChipTone, string>;
+
 export type ChipProps = { children: ReactNode } & (
-	| { rarity: Rarity; tone?: never; size?: never }
-	| { tone: ChipTone; size?: ChipSize; rarity?: never }
+	| { rarity: Rarity; size?: ChipSize; tone?: never; outline?: never }
+	| { tone: ChipTone; size?: ChipSize; outline?: boolean; rarity?: never }
 );
 
 export const Chip = (props: ChipProps) => {
@@ -50,7 +66,15 @@ export const Chip = (props: ChipProps) => {
 		const { size = "sm" } = props;
 
 		return (
-			<span className={clsx(CHIP, SIZE[size], TINT[props.tone])}>
+			<span
+				className={clsx(
+					CHIP,
+					SIZE[size],
+					props.outline
+						? clsx(OUTLINE, OUTLINE_TINT[props.tone])
+						: TINT[props.tone]
+				)}
+			>
 				<Text
 					size={size === "lg" ? "body" : "meta"}
 					tone="inherit"
@@ -62,9 +86,15 @@ export const Chip = (props: ChipProps) => {
 		);
 	}
 
+	// A config's chip is the same filled chip as its plain siblings, keyed by
+	// the rarity stripe rather than by a coloured ring: in the equation the
+	// chips read as one row of factors, and the stripe is the only thing
+	// tying a factor back to the rail row it came from.
+	const { size = "sm" } = props;
 	return (
-		<span className={clsx(CHIP, SIZE.sm, OUTLINE, RARITY_BORDER[props.rarity])}>
-			<Text size="body" className={FIGURE}>
+		<span className={clsx(CHIP, KEYED, SIZE[size], TINT.raised)}>
+			<RarityStripe rarity={props.rarity} />
+			<Text size={size === "lg" ? "body" : "meta"} className={FIGURE}>
 				{props.children}
 			</Text>
 		</span>

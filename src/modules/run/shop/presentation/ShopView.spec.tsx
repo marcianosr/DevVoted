@@ -309,7 +309,9 @@ describe("ShopView", () => {
 			}),
 		});
 
-		expect(screen.getByText("v2")).toBeInTheDocument();
+		// The facts line spells the ladder out; the upgrade press still previews
+		// the next version in the roster's own `v` shorthand.
+		expect(screen.getByText(/level 2/)).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: /Upgrade \.js/ })
 		).toHaveAccessibleName(/v3: JavaScript polls earn 1\.75× coverage/);
@@ -462,13 +464,19 @@ describe("ShopView readability", () => {
 	});
 
 	// The dot is scannable down a column; the word is what a new player can read.
-	it("names the rarity beside its dot, in the rarity's own colour", () => {
+	// Rarity is the stripe leading the name now, on the shelf and in the pipeline
+	// column alike; the tier still reads as text for anyone listening.
+	it("grades every config row with its rarity stripe, tier named for a reader", () => {
 		render_();
 
-		// Offers and the pipeline column both mark rarity, and all of them alike.
-		const words = screen.getAllByText(rarityOf(CONFIGS.stylelint));
-		expect(words.length).toBeGreaterThan(0);
-		for (const word of words)
-			expect(word).toHaveClass("font-bold", "text-celadon");
+		// The legend spells the four tiers out in words; a row states its own in
+		// the stripe, with the tier riding along as text beside the bar.
+		const spoken = screen
+			.getAllByText(rarityOf(CONFIGS.stylelint))
+			.filter((tier) => tier.className.includes("sr-only"));
+		expect(spoken.length).toBeGreaterThan(0);
+		expect(
+			spoken[0]?.parentElement?.querySelector(".w-1.rounded-full")
+		).not.toBeNull();
 	});
 });

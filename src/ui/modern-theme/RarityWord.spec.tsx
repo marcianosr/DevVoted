@@ -25,17 +25,16 @@ describe("RarityWord", () => {
 			</>
 		);
 
-		expect(screen.getByText("common")).toHaveClass("text-celadon");
-		expect(screen.getByText("uncommon")).toHaveClass("text-cerulean");
+		expect(screen.getByText("common")).toHaveClass("text-cerulean");
+		expect(screen.getByText("uncommon")).toHaveClass("text-viridian");
 		expect(screen.getByText("rare")).toHaveClass("text-cinnabar");
 	});
 
-	// The middot separates the label from the grade; read aloud it would be noise
-	// on every config row on the screen.
-	it("keeps its separator out of the accessible name", () => {
-		render(<RarityWord rarity="rare" />);
+	// It sits inside a dot-separated facts line the caller punctuates, so a
+	// separator of its own would double up with the caller's.
+	it("brings no separator of its own", () => {
+		const { container } = render(<RarityWord rarity="rare" />);
 
-		expect(screen.getByText("rare")).toBeInTheDocument();
-		expect(screen.getByText("·")).toHaveAttribute("aria-hidden", "true");
+		expect(container.textContent).toBe("rare");
 	});
 });

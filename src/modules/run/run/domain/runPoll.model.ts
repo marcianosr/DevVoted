@@ -1,4 +1,7 @@
-import type { CoverageBreakdown } from "~/modules/run/pipeline/domain/pipeline.model";
+import type {
+	CoverageBreakdown,
+	CoverageFactors,
+} from "~/modules/run/pipeline/domain/pipeline.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 export type RunOption = {
@@ -123,6 +126,10 @@ export type AnsweredPoll = {
 	readonly answerType?: AnswerType;
 	readonly coverageEarned?: number;
 	readonly coverageBreakdown?: CoverageBreakdown;
+	/** The earn as its multiplication, for the reveal's factor chips. */
+	readonly coverageFactors?: CoverageFactors;
+	/** KB the faucet paid on this answer (IndexedDB), clamp already applied. */
+	readonly faucetKb?: number;
 	readonly elapsedMs?: number;
 	/** Scored as a miss whatever was picked, so the review can tell it from a genuine wrong. */
 	readonly timedOut?: boolean;

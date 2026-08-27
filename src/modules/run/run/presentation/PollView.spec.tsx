@@ -227,7 +227,7 @@ describe("PollView", () => {
 		});
 
 		expect(
-			screen.getByText("skipped · the run's storage cap is spent")
+			screen.getByText("the run's storage cap is spent")
 		).toBeInTheDocument();
 		expect(screen.queryByText("+8 KB")).not.toBeInTheDocument();
 	});
@@ -285,6 +285,49 @@ describe("PollView", () => {
 		render_({ view: createMockRunView({ ...view, mirroredPolls: true }) });
 
 		expect(screen.getByText(/pick every INCORRECT option/)).toBeInTheDocument();
+	});
+
+	// The row wears the stripe; only the opened facts line can spell the grade
+	// out, so it leads with it and then states level, rate and refund.
+	it("states the grade, the level, the rate and the refund under a config", () => {
+		render_();
+
+		// Both equipped configs are common `.js`/`.ts` Focus configs, so every
+		// facts line on the rail reads alike; the first stands for them.
+		const facts = screen.getAllByText(/sells for/)[0];
+
+		expect(facts?.textContent).toBe(
+			"common · level 1 · ×1.25 · sells for 16 KB"
+		);
+		// The stripe on the row says "common" too, for a reader; the facts line's
+		// copy is the visible one, and it wears the tier's colour.
+		const word = screen
+			.getAllByText("common")
+			.find((node) => !node.className.includes("sr-only"));
+		expect(word).toHaveClass("text-cerulean");
+	});
+
+	// "level 1" implies a level 2, so a config with no ladder does not claim one.
+	it("leaves the level off a config that cannot be upgraded", () => {
+		render_({
+			view: createMockRunView({ ...view, configs: [CONFIGS.eslint] }),
+		});
+
+		const facts = screen.getAllByText(/sells for/)[0];
+
+		expect(facts?.textContent).not.toContain("level");
+	});
+
+	it("quotes the refund this build would actually be paid, not list price", () => {
+		// WTFPL's no-warranty clause zeroes every sale while it is installed.
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.js, CONFIGS.wtfpl],
+			}),
+		});
+
+		expect(screen.getAllByText(/sells for 0 KB/).length).toBeGreaterThan(0);
 	});
 });
 
@@ -360,11 +403,13 @@ describe("PollView tools", () => {
 		});
 
 		// Twice on purpose: the button's tooltip panel and the row's own body. The
-		// body is the paragraph, which is the copy a tap can reach.
-		const mentions = screen.getAllByText("Costs 16KB — you have 8KB");
+		// body is the facts line, which is the copy a tap can reach — the refusal
+		// closes it, after the grade, the level, the rate and the refund.
+		expect(screen.getByText("Costs 16KB — you have 8KB")).toBeInTheDocument();
 
-		expect(mentions).toHaveLength(2);
-		expect(mentions.some((node) => node.tagName === "P")).toBe(true);
+		const facts = screen.getByText(/sells for/);
+		expect(facts.tagName).toBe("P");
+		expect(facts.textContent).toContain("Costs 16KB — you have 8KB");
 	});
 
 	it("leaves an affordable tool unqualified", () => {

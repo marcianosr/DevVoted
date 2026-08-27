@@ -11,7 +11,9 @@ import {
 } from "~/modules/run/config/domain/effect.model";
 import {
 	type CoverageBreakdown,
+	type CoverageFactors,
 	coverageBreakdownForAnswer,
+	coverageFactorsForAnswer,
 	coverageForAnswer,
 	coverageLossFor,
 	extraPickPayoutFor,
@@ -288,6 +290,7 @@ type AnswerLedger = {
 	readonly earnedCoverage: number;
 	readonly coverageLoss: number;
 	readonly breakdown: CoverageBreakdown;
+	readonly factors?: CoverageFactors;
 	readonly faucetKb: number;
 	readonly burnKb: number;
 };
@@ -329,6 +332,12 @@ const scoreAnswer = (
 			streakBonus,
 			coverageLoss
 		),
+		factors: coverageFactorsForAnswer(
+			configs,
+			answerContext,
+			scoredShare,
+			streakBonus
+		),
 		faucetKb,
 		// Floors at 0: insolvency stays non-lethal (ADR-023).
 		burnKb: Math.min(
@@ -362,6 +371,8 @@ const answeredPollFrom = (
 	answerType: grade.graded.answerType,
 	coverageEarned: ledger.earnedCoverage,
 	coverageBreakdown: ledger.breakdown,
+	coverageFactors: ledger.factors,
+	faucetKb: ledger.faucetKb > 0 ? ledger.faucetKb : undefined,
 	elapsedMs,
 	timedOut: grade.timedOut ? true : undefined,
 });

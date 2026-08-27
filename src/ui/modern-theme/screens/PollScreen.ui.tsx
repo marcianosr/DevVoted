@@ -13,6 +13,7 @@ import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
 import { Glyph } from "../Glyph.ui";
 import { optionLetter } from "../format";
 import { Question, type QuestionCategory } from "../Question.ui";
+import { Text } from "../Text.ui";
 import { Tooltip } from "../Tooltip.ui";
 import { Trail, type TrailItem } from "../Trail.ui";
 
@@ -52,13 +53,20 @@ export type PollScreenProps = {
 	byline?: BylineProps;
 	code?: readonly ReactNode[];
 	options: readonly PollOption[];
+	/** The answered beat: score ledger and explanation, rendered under the
+	 * settled options. Composed by the caller from other modern-theme parts. */
+	reveal?: ReactNode;
 	rail?: ReactNode;
 	/** Folding is offered only where a caller can hold the answer — the same
 	 * pairing as onSubmit/submitLock below. */
 	onToggleRail?: () => void;
 	railOpen?: boolean;
 	onSubmit?: () => void;
+	submitLabel?: string;
 	submitLock?: string;
+	/** The stakes beside the button: how much window is left and where the
+	 * gate's demand stands ("2 to go · 0.1% short of clearing Pallet"). */
+	submitNote?: string;
 	theme?: SwatchTheme;
 };
 
@@ -72,11 +80,14 @@ export const PollScreen = ({
 	byline,
 	code,
 	options,
+	reveal,
 	rail,
 	onToggleRail,
 	railOpen = true,
 	onSubmit,
+	submitLabel = "Submit answer →",
 	submitLock,
+	submitNote,
 	theme,
 }: PollScreenProps) => {
 	// A rail with no toggle cannot be unfolded again, so it never folds.
@@ -103,6 +114,8 @@ export const PollScreen = ({
 							</li>
 						))}
 					</ul>
+
+					{reveal}
 
 					{byline ? <Byline {...byline} /> : null}
 				</div>
@@ -133,8 +146,13 @@ export const PollScreen = ({
 
 			{onSubmit ? (
 				<div className={FOOTER}>
+					{submitNote ? (
+						<Text size="meta" tone="muted">
+							{submitNote}
+						</Text>
+					) : null}
 					<Action
-						label={submitLock ?? "Submit answer →"}
+						label={submitLock ?? submitLabel}
 						size="lg"
 						emphasis="loud"
 						disabled={submitLock !== undefined}

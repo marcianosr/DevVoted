@@ -134,7 +134,7 @@ describe("Entry", () => {
 		);
 
 		const card = screen.getByRole("group");
-		expect(card).toHaveClass("open:bg-cerulean/10");
+		expect(card).toHaveClass("open:bg-viridian/10");
 		expect(card).toContainElement(screen.getByText(".ts"));
 		expect(card).toContainElement(screen.getByText("TS polls."));
 	});
@@ -149,25 +149,33 @@ describe("Entry", () => {
 		).toBeInTheDocument();
 	});
 
-	// The spine that used to run down every row's left edge: eight of them in a
-	// column read as eight statuses rather than as a grade.
-	it("runs no rail down a row, expandable or not", () => {
+	// The stripe leads the name on every row, expandable or not: it grades the
+	// config, so it cannot depend on whether the row happens to open. It sits
+	// against the name rather than down the row's left edge, which is what made
+	// a column of them read as statuses instead of grades.
+	it("leads the name with its rarity stripe, expandable or not", () => {
 		const { container: flat } = render(
 			<Entry label=".ts" mark="pass" rarity="common" />
 		);
-		expect(flat.querySelector(".w-1.rounded-full")).toBeNull();
+		expect(flat.querySelector(".w-1.rounded-full")).toHaveClass("bg-cerulean");
 
 		const { container: open } = render(
 			<Entry label=".ts" mark="pass" rarity="rare" explainer="Rare polls." />
 		);
-		expect(open.querySelector(".w-1.rounded-full")).toBeNull();
+		expect(open.querySelector(".w-1.rounded-full")).toHaveClass("bg-cinnabar");
+	});
+
+	it("runs no stripe where there is no rarity to state", () => {
+		const { container } = render(<Entry label="empty" mark="idle" />);
+
+		expect(container.querySelector(".w-1.rounded-full")).toBeNull();
 	});
 
 	it("leaves a row with no rarity untinted", () => {
 		render(<Entry label="empty" mark="idle" explainer="Nothing here." />);
 
 		expect(screen.getByRole("group").className).not.toMatch(
-			/bg-(celadon|cerulean|cinnabar)/
+			/bg-(cerulean|viridian|cinnabar)/
 		);
 	});
 });

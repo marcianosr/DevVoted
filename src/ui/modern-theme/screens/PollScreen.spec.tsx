@@ -215,4 +215,22 @@ describe("PollScreen", () => {
 			screen.queryByRole("button", { name: /Submit answer/ })
 		).not.toBeInTheDocument();
 	});
+
+	it("states the stakes beside the button when the caller passes them", () => {
+		render(
+			<PollScreen
+				{...props}
+				onSubmit={() => {}}
+				submitLabel="Next poll →"
+				submitNote="2 to go · 0.1% short of clearing Pallet"
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: "Next poll →" })
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("2 to go · 0.1% short of clearing Pallet")
+		).toBeInTheDocument();
+	});
 });

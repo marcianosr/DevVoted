@@ -37,6 +37,42 @@ describe("Choice", () => {
 		expect(onChange).toHaveBeenCalledWith(true);
 	});
 
+	it("goes inert once settled, without blocked's crossed-out treatment", () => {
+		const onChange = vi.fn();
+		render(<Choice {...props} settled onChange={onChange} />);
+
+		expect(screen.getByRole("radio")).toBeDisabled();
+		expect(screen.getByText("arr.slice(-2)")).not.toHaveClass("line-through");
+	});
+
+	it("wears the verdict tone on its letter once settled", () => {
+		render(<Choice {...props} settled letterTone="celadon" />);
+
+		expect(screen.getByText("A")).toHaveClass("text-celadon");
+	});
+
+	it("washes the settled card in its verdict's colour", () => {
+		render(<Choice {...props} settled letterTone="celadon" />);
+
+		expect(screen.getByText("arr.slice(-2)").closest("label")).toHaveClass(
+			"border-celadon/50"
+		);
+	});
+
+	it("steps a settled option with no verdict back", () => {
+		render(<Choice {...props} settled />);
+
+		expect(screen.getByText("arr.slice(-2)").closest("label")).toHaveClass(
+			"opacity-50"
+		);
+	});
+
+	it("renders the verdict badges at the row's end", () => {
+		render(<Choice {...props} settled trailing={<span>expected</span>} />);
+
+		expect(screen.getByText("expected")).toBeInTheDocument();
+	});
+
 	it("strikes out a blocked answer and names what blocked it", () => {
 		render(
 			<Choice {...props} label="arr.slice(2)" blocked note="blocked · ESLint" />

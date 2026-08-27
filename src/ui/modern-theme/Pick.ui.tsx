@@ -10,6 +10,7 @@ import {
 	isExpandable,
 } from "./Disclosure.ui";
 import { RARITY_WASH, type Rarity } from "./rarity";
+import { RarityStripe } from "./RarityStripe.ui";
 import { Row } from "./Row.ui";
 import { Text } from "./Text.ui";
 
@@ -33,11 +34,17 @@ const BOX = {
 
 const STRUCK = "line-through";
 const NOTES = "flex flex-wrap items-center gap-2";
+// Right-aligned inside the row's own content, so every figure down a deal sits
+// in one column while the trailing slot stays free for a press.
+const VALUE = "ml-auto shrink-0 tabular-nums";
 
 const EXPANDABLE = "relative rounded-md transition-colors";
 const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-md transition-colors`;
 const PICKER = "flex shrink-0 cursor-pointer items-center gap-3";
-const FACTS = "flex flex-col gap-1 py-2 pr-3 pl-14";
+// Ruled and indented under the name, the same way an Entry's facts are: a
+// column of open rows would otherwise run together.
+const FACTS =
+	"ml-13 flex flex-col gap-1 border-l border-edge-strong py-1 pr-3 pl-3";
 
 export type PickProps = {
 	label: ReactNode;
@@ -45,6 +52,8 @@ export type PickProps = {
 	checked: boolean;
 	onToggle: (checked: boolean) => void;
 	notes?: ReactNode;
+	/** The row's figure, right-aligned in a column shared down the list. */
+	value?: ReactNode;
 	trailing?: ReactNode;
 	variant?: PickVariant;
 	summary?: ReactNode;
@@ -58,6 +67,7 @@ export const Pick = ({
 	checked,
 	onToggle,
 	notes,
+	value,
 	trailing,
 	variant = "remove",
 	summary,
@@ -88,6 +98,8 @@ export const Pick = ({
 	);
 
 	const marks = notes ? <span className={NOTES}>{notes}</span> : null;
+	const figure = value == null ? null : <span className={VALUE}>{value}</span>;
+	const stripe = rarity ? <RarityStripe rarity={rarity} /> : null;
 
 	if (!expandable)
 		return (
@@ -98,8 +110,10 @@ export const Pick = ({
 				leading={control}
 				trailing={trailing}
 			>
+				{stripe}
 				{name}
 				{marks}
+				{figure}
 			</Row>
 		);
 
@@ -118,9 +132,11 @@ export const Pick = ({
 			>
 				<label className={PICKER} onClick={(event) => event.stopPropagation()}>
 					{control}
+					{stripe}
 					{name}
 				</label>
 				{marks}
+				{figure}
 			</Row>
 			<DisclosureBody
 				className={FACTS}

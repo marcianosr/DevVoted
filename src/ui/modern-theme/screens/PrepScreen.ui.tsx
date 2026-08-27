@@ -12,7 +12,6 @@ import { Entry } from "../Entry.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
 import { Stake } from "../Stake.ui";
 import type { Rarity } from "../rarity";
-import { RarityWord } from "../RarityWord.ui";
 import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
 import { Slot } from "../Slot.ui";
 import { Swatch } from "../Swatch.ui";
@@ -46,7 +45,8 @@ export type PrepConfig = {
 	label: string;
 	rarity?: Rarity;
 	note?: ReactNode;
-	summary?: string;
+	/** The facts line under the name — a node, since the grade in it is coloured. */
+	summary?: ReactNode;
 	explainer?: string;
 };
 
@@ -295,7 +295,6 @@ export const PrepScreen = ({
 					}
 					label={config.label}
 					rarity={config.rarity}
-					notes={config.rarity ? <RarityWord rarity={config.rarity} /> : null}
 					value={config.note}
 					summary={config.summary}
 					explainer={config.explainer}

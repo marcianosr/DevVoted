@@ -43,6 +43,7 @@
 | [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage, Focus included | Accepted — amends 006's upgrade economy; retires the free coverage-gated Focus upgrade and the no-price-on-the-button convention (DVTD-yx92) |
 | [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline — never passing or failing | Accepted — cleans up presentation left behind by 035 Decision 1; reads 038's offline state (DVTD-8pgn) |
 | [041](041-slots-open-on-gates-coverage-or-either.md) | Slots open on gates, coverage, or either | Accepted — reverses 034 Decision 5 (gates grant every slot) and drops the cap to 11; restores a coverage axis of 008's kind (DVTD-tk21) |
+| [042](042-design-pillars-and-anti-pillars.md) | Design pillars and anti-pillars | Accepted — adds the tiebreaker lens for every later ADR; deletes wiki §2.1's pay-past-the-daily-lock note (DVTD-4bk5) |
 
 ## Conventions
 

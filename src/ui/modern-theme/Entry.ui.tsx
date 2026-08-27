@@ -11,6 +11,7 @@ import {
 } from "./Disclosure.ui";
 import { Mark, type MarkVariant } from "./Mark.ui";
 import { RARITY_WASH, type Rarity } from "./rarity";
+import { RarityStripe } from "./RarityStripe.ui";
 import { Row } from "./Row.ui";
 import { Text } from "./Text.ui";
 
@@ -21,7 +22,14 @@ const FRAMED = "rounded-md";
 const washedBy = (rarity?: Rarity) =>
 	clsx(FRAMED, rarity && RARITY_WASH[rarity]);
 
-const FACTS = "flex flex-col gap-2 py-2 pr-3 pl-10";
+// Ruled and indented under the name it belongs to: the rule ties the detail to
+// its own row where a column of open rows would otherwise run together.
+const FACTS =
+	"ml-9 flex flex-col gap-1 border-l border-edge-strong py-1 pr-3 pl-3";
+
+// Tighter than the Row's own gap: the stripe grades the name it sits against,
+// so it reads as part of it rather than as a third column.
+const NAMING = "flex min-w-0 items-center gap-2";
 
 const NOTES = "flex flex-wrap items-center gap-2";
 const ACTIONS = "flex items-center gap-2";
@@ -82,7 +90,10 @@ export const Entry = ({
 			}
 			className={expandable ? SUMMARY : washedBy(rarity)}
 		>
-			<Text size="meta">{label}</Text>
+			<span className={NAMING}>
+				{rarity ? <RarityStripe rarity={rarity} /> : null}
+				<Text size="meta">{label}</Text>
+			</span>
 			{notes ? <span className={NOTES}>{notes}</span> : null}
 		</Row>
 	);

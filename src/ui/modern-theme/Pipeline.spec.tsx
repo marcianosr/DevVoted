@@ -42,9 +42,10 @@ describe("Pipeline", () => {
 	it("counts the build by status rather than against its slots", () => {
 		render(<Pipeline configs={[ONLINE, SKIPPED, OFFLINE]} />);
 
-		expect(screen.getByText("1 online")).toBeInTheDocument();
-		expect(screen.getByText("1 skipped")).toBeInTheDocument();
+		expect(screen.getByText("1 will apply")).toBeInTheDocument();
 		expect(screen.getByText("1 offline")).toBeInTheDocument();
+		// Skipped rows keep to their hollow dots; the live header only promises.
+		expect(screen.queryByText("1 skipped")).not.toBeInTheDocument();
 	});
 
 	// A zero is not a state the build is in, and three counters with two zeroes
@@ -52,7 +53,7 @@ describe("Pipeline", () => {
 	it("leaves out a status nothing is in", () => {
 		render(<Pipeline configs={[ONLINE]} />);
 
-		expect(screen.getByText("1 online")).toBeInTheDocument();
+		expect(screen.getByText("1 will apply")).toBeInTheDocument();
 		expect(screen.queryByText("0 skipped")).not.toBeInTheDocument();
 		expect(screen.queryByText("0 offline")).not.toBeInTheDocument();
 	});
@@ -67,7 +68,7 @@ describe("Pipeline", () => {
 	it("says which categories a skipped config was waiting for", () => {
 		render(<Pipeline configs={[SKIPPED]} />);
 
-		expect(screen.getByText("skipped · js and ts only")).toBeInTheDocument();
+		expect(screen.getByText("js and ts only")).toBeInTheDocument();
 	});
 
 	it("states the timing when a config pays somewhere other than this poll", () => {
@@ -84,9 +85,7 @@ describe("Pipeline", () => {
 			/>
 		);
 
-		expect(
-			screen.getByText("skipped · bills at the gate clear")
-		).toBeInTheDocument();
+		expect(screen.getByText("bills at the gate clear")).toBeInTheDocument();
 	});
 
 	// Struck through and blamed, never dimmed: the name is what the player came
@@ -148,7 +147,7 @@ describe("Pipeline", () => {
 		);
 
 		expect(
-			screen.getByText("skipped · the run's storage cap is spent")
+			screen.getByText("the run's storage cap is spent")
 		).toBeInTheDocument();
 		expect(screen.queryByText("+8 KB")).not.toBeInTheDocument();
 	});
@@ -174,5 +173,61 @@ describe("Pipeline", () => {
 		expect(
 			screen.getByRole("button", { name: /cross out/ })
 		).toBeInTheDocument();
+	});
+});
+
+// The reveal's delivery reading (settled): rows that paid are "applied", and
+// their outlined would-do rate gives way to a filled did badge.
+describe("a settled pipeline", () => {
+	it("trades the rate for a filled badge naming what was paid", () => {
+		render(<Pipeline settled configs={[{ ...ONLINE, fired: 0.5 }, SKIPPED]} />);
+
+		expect(screen.getByText("paid +0.5")).toBeInTheDocument();
+		expect(screen.queryByText("×1.5")).not.toBeInTheDocument();
+	});
+
+	it("badges the KB a faucet config just paid", () => {
+		render(<Pipeline settled configs={[{ ...ONLINE, firedKb: 8 }]} />);
+
+		expect(screen.getByText("paid +8 KB")).toBeInTheDocument();
+	});
+
+	it("badges a loss in its own colour rather than hiding it", () => {
+		render(<Pipeline settled configs={[{ ...ONLINE, fired: -0.5 }]} />);
+
+		expect(screen.getByText("paid −0.5")).toBeInTheDocument();
+	});
+
+	it("counts delivery, not promise: applied against skipped", () => {
+		render(
+			<Pipeline
+				settled
+				configs={[{ ...ONLINE, fired: 0.5 }, SKIPPED, { ...ONLINE, id: "x" }]}
+			/>
+		);
+
+		expect(screen.getByText("1 applied")).toBeInTheDocument();
+		expect(screen.getByText("2 skipped")).toBeInTheDocument();
+	});
+
+	it("owns up for an online row that paid nothing — it reads unused", () => {
+		render(<Pipeline settled configs={[ONLINE]} />);
+
+		expect(screen.getByText("unused")).toBeInTheDocument();
+		expect(screen.queryByText("×1.5")).not.toBeInTheDocument();
+	});
+
+	it("drops the skipped prefix — the hollow dot already says it", () => {
+		render(<Pipeline settled configs={[SKIPPED]} />);
+
+		expect(screen.getByText("js and ts only")).toBeInTheDocument();
+		expect(screen.queryByText(/skipped ·/)).not.toBeInTheDocument();
+	});
+
+	it("keeps an offline row exactly as the audit left it", () => {
+		render(<Pipeline settled configs={[OFFLINE]} />);
+
+		expect(screen.getByText(/offline · Dependency Outage/)).toBeInTheDocument();
+		expect(screen.getByText("1 offline")).toBeInTheDocument();
 	});
 });

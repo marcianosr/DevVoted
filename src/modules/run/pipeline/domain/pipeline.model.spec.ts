@@ -16,6 +16,7 @@ import {
 	BASE_SLOTS,
 	MAX_SLOTS,
 	coverageBreakdownForAnswer,
+	coverageFactorsForAnswer,
 	coverageForAnswer,
 	gateClearPayout,
 	canLint,
@@ -583,5 +584,45 @@ describe("stripConfig and isBare", () => {
 			"eslint"
 		);
 		expect(stripped.configs.map((config) => config.id)).toEqual(["js"]);
+	});
+});
+
+// The reveal's factor chips: the same earn as the breakdown, read as the
+// multiplication it actually is. Recorded at scoring time because the additive
+// chips round and cannot give the factors back.
+describe("coverageFactorsForAnswer", () => {
+	it("hands back the share, the build's combined factor, and the streak", () => {
+		// .js on a js poll: (1 + 0 adds) × 1.25 = the build factor.
+		expect(coverageFactorsForAnswer([CONFIGS.js], at("js"), 1, 1.1)).toEqual({
+			correct: 1,
+			build: 1.25,
+			streak: 1.1,
+		});
+	});
+
+	it("folds adds and multipliers into one build factor, adds first", () => {
+		// Code Coverage's +0.5 add with AGENTS.md's ×2: (1 + 0.5) × 2 = 3.
+		expect(
+			coverageFactorsForAnswer(
+				[CONFIGS.codeCoverage, CONFIGS.agentsMd],
+				at("js"),
+				1,
+				1
+			)
+		).toEqual({ correct: 1, build: 3, streak: 1 });
+	});
+
+	it("reads a bare build as ×1 rather than pretending it contributed", () => {
+		expect(coverageFactorsForAnswer([], at("js"), 2, 1)).toEqual({
+			correct: 2,
+			build: 1,
+			streak: 1,
+		});
+	});
+
+	it("has no factors for a miss — nothing multiplied", () => {
+		expect(coverageFactorsForAnswer([CONFIGS.js], at("js"), 0, 1)).toBe(
+			undefined
+		);
 	});
 });

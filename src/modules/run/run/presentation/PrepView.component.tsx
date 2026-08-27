@@ -17,6 +17,8 @@ import {
 	type PrepSlot,
 } from "~/ui/modern-theme/screens/PrepScreen.ui";
 import { toAuditId } from "~/ui/modern-theme/audits";
+import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
+import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import { Figure } from "~/ui/modern-theme/Figure.ui";
 
 const configRows = (configs: readonly Config[]): readonly PrepConfig[] =>
@@ -24,10 +26,10 @@ const configRows = (configs: readonly Config[]): readonly PrepConfig[] =>
 		id: config.id,
 		label: config.label,
 		rarity: rarityOf(config),
-		note: <Figure figure={headlineFigureOf(config)} />,
-		// The rarity is stated in the row's own colours beside the Dot, so
-		// repeating it here would only bury the version.
-		summary: config.level === undefined ? undefined : `v${config.level}`,
+		note: <Figure figure={headlineFigureOf(config)} plain />,
+		summary: (
+			<ConfigFacts config={config} refundKb={sellRefundIn(configs, config)} />
+		),
 		explainer: config.description,
 	}));
 
