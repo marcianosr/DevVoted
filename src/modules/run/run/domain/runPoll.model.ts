@@ -22,7 +22,6 @@ export type RunPoll = {
 	readonly explanation?: string;
 };
 
-/** Generic over id: the engine grades string ids, the community board numeric DB ones. */
 type GradedPoll<Id> = {
 	readonly answerType: AnswerType;
 	readonly options: readonly { readonly id: Id; readonly correct: boolean }[];
@@ -77,7 +76,6 @@ export const answerOutcome = <Id>(
 	return pickedACorrectOption ? "partial" : "wrong";
 };
 
-/** ADR-038. A poll with no wrong options is left alone: mirrored it would be unanswerable. */
 export const mirrorPoll = (poll: RunPoll): RunPoll => {
 	const wrongCount = poll.options.filter((option) => !option.correct).length;
 	if (wrongCount === 0) return poll;
@@ -94,7 +92,6 @@ export const mirrorPoll = (poll: RunPoll): RunPoll => {
 export const mirroredAnswerType = (wrongCount: number): AnswerType =>
 	wrongCount > 1 ? "multiple" : "single";
 
-/** Separate from `mirrorPoll` because the board's options carry different fields; only the grading shape is common. */
 export const mirrorGrading = <Id>(poll: GradedPoll<Id>): GradedPoll<Id> => {
 	const wrong = poll.options.filter((option) => !option.correct);
 	if (wrong.length === 0) return poll;
@@ -126,11 +123,8 @@ export type AnsweredPoll = {
 	readonly answerType?: AnswerType;
 	readonly coverageEarned?: number;
 	readonly coverageBreakdown?: CoverageBreakdown;
-	/** The earn as its multiplication, for the reveal's factor chips. */
 	readonly coverageFactors?: CoverageFactors;
-	/** KB the faucet paid on this answer (IndexedDB), clamp already applied. */
 	readonly faucetKb?: number;
 	readonly elapsedMs?: number;
-	/** Scored as a miss whatever was picked, so the review can tell it from a genuine wrong. */
 	readonly timedOut?: boolean;
 };

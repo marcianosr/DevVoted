@@ -6,7 +6,7 @@ import { ShopHeader } from "./ShopHeader.ui";
 const props = {
 	title: "Lavender shop",
 	nextGate: "gate 4",
-	storage: { plan: "Free tier", used: 216, cap: 512 },
+	storage: { balanceKb: 216 },
 };
 
 describe("ShopHeader", () => {
@@ -19,20 +19,19 @@ describe("ShopHeader", () => {
 		expect(screen.getByText("gate 4")).toHaveClass("text-theme");
 	});
 
-	it("carries the storage plan and its bar, not a hand-written total", () => {
+	it("carries the balance, and no bar to fill", () => {
 		render(<ShopHeader {...props} />);
 
-		expect(screen.getByText("Free tier")).toBeInTheDocument();
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
-			"aria-valuemax",
-			"512"
-		);
+		expect(screen.getByText("216 KB")).toBeInTheDocument();
+		expect(screen.getByText("balance")).toBeInTheDocument();
+		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 	});
 
-	it("says nothing about the cap when there is no overflow to lose", () => {
+	it("names no plan and no cap beside it", () => {
 		render(<ShopHeader {...props} />);
 
-		expect(screen.queryByText(/clamps/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/tier/i)).not.toBeInTheDocument();
+		expect(screen.queryByText(/cap/i)).not.toBeInTheDocument();
 	});
 
 	it("offers no controls of its own — the header only reports", () => {
@@ -46,7 +45,7 @@ describe("ShopHeader", () => {
 			<ShopHeader
 				title="Lavender shop"
 				nextGate="gate 4"
-				storage={{ plan: "Free tier", used: 216, cap: 512 }}
+				storage={{ balanceKb: 216 }}
 			/>
 		);
 

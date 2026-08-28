@@ -15,7 +15,7 @@ import { gatePassed } from "~/modules/run/gate/domain/gate.model";
 
 const pipelineWith = (configs: Config[]): Pipeline => ({
 	id: "pipeline",
-	slots: 5,
+	spots: 5,
 	configs,
 });
 const win = (partial: Partial<GateWindow>): GateWindow => ({

@@ -12,7 +12,7 @@ import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { BASE_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
+import { BASE_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import {
 	type DrizzleMockState,
@@ -73,7 +73,6 @@ const stateRow = (state: RunState) => ({
 	polls_answered: state.currentIndex,
 });
 
-/** Newest run_polls segment row: same-day by default, so no rollover runs. */
 const segmentRow = (segment_date: string = TEST_DATES.birthday) => [
 	{ segment_date },
 ];
@@ -84,9 +83,6 @@ describe("applyActionToRun", () => {
 		resetDrizzleMock(mock);
 	});
 
-	// applyActionToRun materializes today's shared sequence before it takes the
-	// run lock, so every dispatch answers that lookup first: a non-empty result
-	// short-circuits the seed and leaves the queue aligned with the transaction.
 	const dispatch = (
 		action: Parameters<typeof applyActionToRun>[0]["action"]
 	) => {
@@ -151,15 +147,10 @@ describe("applyActionToRun", () => {
 	});
 
 	it("finishes the run and credits leftover storage on victory", async () => {
-		// One answer from the summit: the final gate's window is 4/5 with every
-		// answer correct, so this correct answer closes it and clears the summit.
-		// A bare pipeline can never clear, so the summit build carries its .js
-		// config. The window meter already meets the summit's demand (ADR-035) —
-		// the swatch write path is the subject here, not the stake.
 		const summitReady = answeringState({
 			storage: 100,
 			coverage: 400,
-			pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [CONFIGS.js] },
+			pipeline: { id: "pipeline", spots: BASE_SPOTS, configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
 			window: {
 				correct: 4,
@@ -180,7 +171,6 @@ describe("applyActionToRun", () => {
 		});
 
 		expect(next.status).toBe("won");
-		// The summit's own clear awards the Champion first, then the state row.
 		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
 		expect(mock.setCalls[1]).toMatchObject({ engine_status: "won" });
 		expect(mock.setCalls[2]).toMatchObject({
@@ -188,15 +178,14 @@ describe("applyActionToRun", () => {
 			completion_reason: "victory",
 		});
 		expect(mock.setCalls[2].victory_achieved_at).toBeInstanceOf(Date);
-		// 100 KB leftover → bytes credit on users.archived_storage
 		expect(mock.setCalls[3]).toHaveProperty("archived_storage");
 		expect(db.update).toHaveBeenCalledTimes(4);
 	});
 
 	it("hands out no swatch at run start — Pallet is gate 0's reward", async () => {
-		mock.results.push([{ id: 64 }]); // runs insert
-		mock.results.push(undefined); // run_states insert
-		mock.results.push(undefined); // run_polls insert
+		mock.results.push([{ id: 64 }]);
+		mock.results.push(undefined);
+		mock.results.push(undefined);
 
 		await createSessionRunWithState(
 			"red-from-pallet-town",
@@ -208,13 +197,9 @@ describe("applyActionToRun", () => {
 	});
 
 	it("earns the cleared gate's swatch, written before the state row", async () => {
-		// One correct answer from closing gate 0's window, so this dispatch clears
-		// it and the Pallet Swatch lands on the account.
 		const closing = answeringState({
-			// Gate 0's coverage demand is banked (ADR-034) — the swatch write path
-			// is the subject here, not the stake.
 			coverage: 10,
-			pipeline: { id: "pipeline", slots: BASE_SLOTS, configs: [CONFIGS.js] },
+			pipeline: { id: "pipeline", spots: BASE_SPOTS, configs: [CONFIGS.js] },
 			window: {
 				correct: 4,
 				answered: 4,
@@ -251,8 +236,6 @@ describe("applyActionToRun", () => {
 	});
 
 	it("keeps the run active when the day's polls run out mid-window (ADR-014)", async () => {
-		// Single-poll segment answered mid-window: the old engine called this a
-		// win (and cashed out); now the run just waits for tomorrow's polls.
 		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
@@ -266,7 +249,6 @@ describe("applyActionToRun", () => {
 
 		expect(next.status).toBe("answering");
 		expect(mock.setCalls[0]).toMatchObject({ engine_status: "answering" });
-		// One update only (the state row): no run finish, no storage credit.
 		expect(db.update).toHaveBeenCalledTimes(1);
 	});
 
@@ -294,12 +276,8 @@ describe("applyActionToRun", () => {
 		]);
 	});
 
-	// ADR-038: the picks alone cannot say which question was asked, so the row
-	// carries it. Every reader downstream branches on this one flag.
 	it("records an answer given at a Mirror gate as mirrored", async () => {
-		mock.results.push([
-			stateRow(answeringState({ gatesCleared: 7 })), // Marsh mirrors its polls
-		]);
+		mock.results.push([stateRow(answeringState({ gatesCleared: 7 }))]);
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
@@ -311,8 +289,6 @@ describe("applyActionToRun", () => {
 	});
 
 	it("drops unknown option ids instead of failing the dispatch", async () => {
-		// The engine tolerates tampered ids (counts them as a wrong pick), so
-		// persistence must not veto an answer the engine already accepted.
 		mock.results.push([stateRow(answeringState({}))]);
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
@@ -330,9 +306,6 @@ describe("applyActionToRun", () => {
 	});
 
 	it("rolls the run over to today's segment when its newest segment is stale", async () => {
-		// One poll answered on Christmas Eve; the player returns on the birthday.
-		// Rollover drops the unplayed tail and appends today's sequence minus
-		// the already-answered poll 1, then the dispatch answers as normal.
 		const state = answeringState({
 			currentIndex: 1,
 			window: {
@@ -344,10 +317,10 @@ describe("applyActionToRun", () => {
 		});
 		mock.results.push([stateRow(state)]);
 		mock.results.push(segmentRow(TEST_DATES.christmasEve));
-		mock.results.push([{ poll_id: 1 }]); // answered in this run
-		mock.results.push(undefined); // delete unplayed tail
-		mock.results.push([{ poll_id: 1 }, { poll_id: 2 }, { poll_id: 3 }]); // today's seed
-		mock.results.push(undefined); // insert appended segment
+		mock.results.push([{ poll_id: 1 }]);
+		mock.results.push(undefined);
+		mock.results.push([{ poll_id: 1 }, { poll_id: 2 }, { poll_id: 3 }]);
+		mock.results.push(undefined);
 		mock.results.push([dbPoll(1), dbPoll(2), dbPoll(3)]);
 		mock.results.push([1, 2, 3].flatMap(dbOptions));
 		mock.results.push([{ response_id: 900 }]);
@@ -382,7 +355,6 @@ describe("applyActionToRun", () => {
 
 	it("writes no response row for advancing non-answer actions", async () => {
 		const base = createRun([], [CONFIGS.js]);
-		// Start only fires on a full pipeline, so the fixture fills every slot.
 		const configuring = {
 			...base,
 			pipeline: {
@@ -431,7 +403,6 @@ describe("applyActionToRun", () => {
 			status: "finished",
 			completion_reason: "dead",
 		});
-		// storage is 0 — no archived_storage credit, so only run_states + runs updates
 		expect(db.update).toHaveBeenCalledTimes(2);
 	});
 });
@@ -446,7 +417,7 @@ describe("abandonSessionRun", () => {
 		mock.results.push([
 			{ state: toRunSnapshot(answeringState({ storage: 229 })) },
 		]);
-		mock.results.push([{ id: 64 }]); // runs update matched an active row
+		mock.results.push([{ id: 64 }]);
 
 		await abandonSessionRun(64, "red-from-pallet-town");
 
@@ -454,13 +425,12 @@ describe("abandonSessionRun", () => {
 			status: "finished",
 			completion_reason: "abandoned",
 		});
-		// 229 KB leftover, all forfeited — abandoning is never a cash-out
 		expect(db.update).toHaveBeenCalledTimes(1);
 	});
 
 	it("throws when the run is already finished", async () => {
 		mock.results.push([{ state: toRunSnapshot(answeringState({})) }]);
-		mock.results.push([]); // no active row matched the guarded update
+		mock.results.push([]);
 
 		await expect(abandonSessionRun(64, "red-from-pallet-town")).rejects.toThrow(
 			"Run is already over"
@@ -468,12 +438,12 @@ describe("abandonSessionRun", () => {
 	});
 
 	it("abandons a corrupt run (no state row) with zero credit", async () => {
-		mock.results.push([]); // state row missing
+		mock.results.push([]);
 		mock.results.push([{ id: 64 }]);
 
 		await abandonSessionRun(64, "red-from-pallet-town");
 
 		expect(mock.setCalls[0]).toMatchObject({ completion_reason: "abandoned" });
-		expect(db.update).toHaveBeenCalledTimes(1); // no archived_storage credit
+		expect(db.update).toHaveBeenCalledTimes(1);
 	});
 });

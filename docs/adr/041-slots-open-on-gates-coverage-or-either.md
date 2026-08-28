@@ -1,5 +1,7 @@
 # ADR-041: Slots open on gates, coverage, or either
 
+> ⚠ **Superseded by [ADR-044](044-capacity-is-spots-money-is-kb.md)** (2026-08-27): slots are spots, the ladder is three gate rungs, and the coverage axis is deleted — coverage is score, and score buying width closes a loop with no brake.
+
 ## Status
 
 Accepted — 2026-08-25 (Marciano, DVTD-tk21). **Reverses

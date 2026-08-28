@@ -56,10 +56,16 @@ describe("Lock", () => {
 		expect(screen.getByRole("group")).not.toHaveAttribute("open");
 	});
 
-	it("offers no control at all where there is no lock to sell", () => {
+	it("offers no press where the lock cannot be paid for", () => {
 		render(<Lock on="WTFPL" state="unavailable" />);
 
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+	});
+
+	it("keeps the padlock in the dim state, so the ring is never empty", () => {
+		const { container } = render(<Lock on="WTFPL" state="unavailable" />);
+
+		expect(container.querySelector("svg rect")).not.toBeNull();
 	});
 
 	it("invites the press on the states that have one", () => {
@@ -72,8 +78,6 @@ describe("Lock", () => {
 		expect(screen.getByRole("button")).toHaveClass("cursor-pointer");
 	});
 
-	// Unavailable renders a bare span — there is nothing to press, so nothing
-	// should suggest there is.
 	it("offers no cursor where it offers no button", () => {
 		const { container } = render(<Lock on="WTFPL" state="unavailable" />);
 

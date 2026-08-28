@@ -2,6 +2,14 @@
 
 ## Status
 
+> ⚠ **Largely superseded by [ADR-045](045-spots-come-from-gates-kb-rents-more-on-top.md)
+> (2026-08-28)**: the ladder is still gate-staged, and Decision 3's tuning rule and
+> Decision 5's draw-one-ahead rule both survive in that form. Everything about the
+> *subscription* is gone — no per-gate bill, no cap, no insolvency downgrade — and
+> a rung now arrives free on its gate, with KB buying only an early arrival.
+> Decision 4's anti-cheat point survives with a simpler wire: `unlock-rung` carries
+> no payload at all.
+
 Accepted (2026-08-11, Marciano). **Amends [ADR-023](023-storage-capacity-is-a-subscription.md)
 Decision 1** — the subscription mechanic itself (bill on every closed window,
 insolvency auto-downgrade, shop-only switching, the engines-vs-infra split) is
@@ -28,11 +36,18 @@ turns a three-row shop section into a wall.
 
 1. **Seven rungs, to a 3MB cap**: 512KB free, 640KB/8, 768KB/16, 1MB/32,
    1.5MB/48, 2MB/72, 3MB/112 (all bills per closed window).
+   > ⚠ Superseded twice over. ADR-044 made a rung sell a pipeline **width**; then
+   > ADR-045 deleted the cap and the bill outright. Five rungs of 4, 8, 12, 16, 24
+   > spots, handed over by gate clears, with a one-time price to arrive early.
 2. **Each rung carries a `fromGate`** and is not sold before it:
    0, 0, 2, 4, 6, 8, 10. The free tier and the first paid rung are available from
    the opening shop, so the mechanic is still taught immediately.
+   > ⚠ Staging survives, the numbers do not: `fromGate` now reads 0, 2, 5, 8, 11,
+   > and `fromGate` is the clear that *hands the rung over* rather than the gate
+   > that puts it on sale (ADR-045).
 3. **A rung's bill runs roughly a fifth to a third of a perfect clear at the gate
-   that opens it.** That ratio is the tuning rule, not the individual numbers —
+   that opens it.** (ADR-045 keeps the shape of this rule for the one-time early
+   price, at a different ratio: about one whole clear at the gate below.) That ratio is the tuning rule, not the individual numbers —
    `rules.model.spec.ts` asserts the ceiling rather than the exact prices, so the
    ladder can be retuned without rewriting the test.
 4. **The reducer enforces the staging, not the shop's rendering.** The wire
@@ -45,6 +60,9 @@ turns a three-row shop section into a wall.
 6. **Rows read `512KB · Free` / `640KB · 8KB / gate`** (Marciano's format), with
    caps above 1023KB written in MB (`formatKb`, `src/lib/storage.ts`). "Free" is a
    price in the same column as the others, not an aside about the tier.
+   > ⚠ Dead as written. There is no bill and no cap to put in a row (ADR-045): a
+   > rung reads `8 spots`, and only the rung still ahead adds anything — the gate
+   > it arrives on, and what it costs to have it now.
 
 Rejected: unlocking rungs with *storage earned* rather than gate depth. It reads
 as the same axis twice (you buy capacity by having had capacity) and it would let

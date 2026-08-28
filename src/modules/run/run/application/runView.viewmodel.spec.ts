@@ -4,10 +4,16 @@ import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
+	BASE_SPOTS,
+	occupiedSpots,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import {
+	failPeelQuotaFor,
+	peelShareFor,
+} from "~/modules/run/gate/domain/gate.model";
 import { billLedger } from "~/modules/run/config/domain/subscription.model";
 import {
 	type Config,
@@ -21,10 +27,7 @@ import {
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	coverageDemandFor,
-	failStripsFor,
 	SLICE_WINDOW,
-	storagePlanFor,
-	STORAGE_PLANS,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -44,15 +47,17 @@ const poll = (id: string): RunPoll => ({
 	],
 });
 
-// View specs bypass the full-pipeline start rule: the status is forced so the
-// pipeline holds exactly the configs under test, nothing more.
 const answering = () => ({
 	...createRun([poll("q0"), poll("q1")], [CONFIGS.js]),
 	status: "answering" as const,
 });
 
 const answeringWith = (configs: Config[]) => {
-	let state = createRun([poll("q0"), poll("q1")], configs);
+	const created = createRun([poll("q0"), poll("q1")], configs);
+	let state: RunState = {
+		...created,
+		pipeline: { ...created.pipeline, spots: occupiedSpots(configs) },
+	};
 	for (const config of configs)
 		state = runReducer(state, { type: "slot", configId: config.id });
 	return { ...state, status: "answering" as const };
@@ -71,8 +76,6 @@ describe("toRunView", () => {
 		expect(toRunView(answering()).poll?.id).toBe("q0");
 	});
 
-	// The one sanctioned crack in the rule above, and it is category-only:
-	// Prefetch's product is the schedule, never the questions.
 	it("reveals the dealt polls' categories only to a build holding Prefetch", () => {
 		expect(toRunView(answering()).upcomingCategories).toBeNull();
 		expect(toRunView(answering()).nextGateCategories).toBeNull();
@@ -81,8 +84,6 @@ describe("toRunView", () => {
 		).toEqual(["react", "react"]);
 	});
 
-	// The prototype's state is dealt the whole pool at once, so the reveal must
-	// stop at window edges — an uncapped slice would read the entire run.
 	it("caps Prefetch's reveal at this window and the next", () => {
 		const pool = Array.from({ length: 12 }, (_, index) => poll(`q${index}`));
 		const state = {
@@ -109,9 +110,7 @@ describe("toRunView", () => {
 		expect(view.disabledOptionIds).toEqual([]);
 		expect(view.paidActions.lintCost).toBeGreaterThan(0);
 		expect(view.shopControls.rebuildCost).toBeGreaterThan(0);
-		expect(view.shopControls.canRebuild).toBe(false); // fresh run starts at 0 KB
-		expect(view.nextSlotUnlock).toEqual({ slot: 4, gate: 1 });
-		expect(view.justUnlockedSlots).toEqual([]); // no gate cleared yet
+		expect(view.shopControls.canRebuild).toBe(false);
 	});
 
 	it("prices the peek and marks the poll once it is bought", () => {
@@ -128,8 +127,8 @@ describe("toRunView", () => {
 
 		const bought = toRunView(runReducer(installed, { type: "peek-poll" }));
 		expect(bought.currentPollPeeked).toBe(true);
-		expect(bought.paidActions.canPeek).toBe(false); // one look per poll
-		expect(bought.paidActions.peekCost).toBe(64); // the ladder has moved
+		expect(bought.paidActions.canPeek).toBe(false);
+		expect(bought.paidActions.peekCost).toBe(64);
 	});
 
 	it("offers no peek to a build without the config, and none it cannot afford", () => {
@@ -137,8 +136,6 @@ describe("toRunView", () => {
 		expect(without.paidActions.canPeek).toBe(false);
 		expect(without.paidActions.peeker).toBeNull();
 
-		// canPeek says the action exists, peekReady says it is affordable — the
-		// row shows a greyed-out price rather than vanishing.
 		const broke = toRunView(answeringWith([CONFIGS.telemetry]));
 		expect(broke.paidActions.canPeek).toBe(true);
 		expect(broke.paidActions.peekReady).toBe(false);
@@ -185,9 +182,6 @@ describe("toRunView", () => {
 		).toBe(2);
 	});
 
-	// The ambient theme follows the gate being played (ADR-020): the fresh run
-	// wears Pallet, the summit pair keep their own themes, and past the last
-	// gate there is nothing left to wear — the :root default takes over.
 	it("themes the run after the gate being played", () => {
 		expect(toRunView(answering()).gateTheme).toBe("pallet");
 		expect(toRunView({ ...answering(), gatesCleared: 11 }).gateTheme).toBe(
@@ -205,8 +199,6 @@ describe("toRunView", () => {
 	});
 });
 
-// Staged exposure is the viewmodel's call: the reducer refuses an early control
-// anyway, but only this decides whether the shop draws it at all.
 describe("shop controls (DVTD-5lt6)", () => {
 	const shopping = (gatesCleared: number, storage: number) => ({
 		...answering(),
@@ -266,32 +258,77 @@ describe("shop controls (DVTD-5lt6)", () => {
 	});
 });
 
-describe("the storage-plan ladder in the shop (ADR-030)", () => {
-	const atGate = (gatesCleared: number) =>
-		toRunView({ ...answering(), gatesCleared, storage: 0 }).storagePlans;
+describe("extra spots in the shop (ADR-045)", () => {
+	const atGate = (gatesCleared: number, storage = 0, extraSpots?: number) =>
+		toRunView({ ...answering(), gatesCleared, storage, extraSpots });
 
-	it("draws only the rungs a shallow run has reached, plus the next one", () => {
-		const rungs = atGate(0);
-		expect(rungs.filter((rung) => !rung.locked)).toHaveLength(2);
-		expect(rungs.filter((rung) => rung.locked)).toHaveLength(1);
+	it("draws every step, locked ones included", () => {
+		const { options } = atGate(0).extraSpots;
+		expect(options.map((step) => step.spots)).toEqual([0, 1, 2, 3, 4]);
 	});
 
-	it("unlocks the drawn rung once the run clears its gate", () => {
-		const locked = atGate(0).find((rung) => rung.locked);
-		const later = atGate(locked?.fromGate ?? 0).find(
-			(rung) => rung.tier === locked?.tier
+	it("stands on none before anything is rented", () => {
+		const { options, renting, perGateKb } = atGate(0).extraSpots;
+		expect(options[0].held).toBe(true);
+		expect(options[0].rentKb).toBe(0);
+		expect(renting).toBe(0);
+		expect(perGateKb).toBe(0);
+	});
+
+	it("states the width each step makes, on top of the free four", () => {
+		expect(atGate(0).extraSpots.options.map((step) => step.makes)).toEqual([
+			4, 5, 6, 7, 8,
+		]);
+	});
+
+	it("restates them against a wider free rung", () => {
+		expect(atGate(5).extraSpots.options.map((step) => step.makes)).toEqual([
+			12, 13, 14, 15, 16,
+		]);
+	});
+
+	it("prices every step at the same rate per spot", () => {
+		expect(
+			atGate(9, 500).extraSpots.options.map((step) => step.rentKb)
+		).toEqual([0, 8, 16, 24, 32]);
+	});
+
+	it("names the clear that opens a step this depth does not sell", () => {
+		const { options } = atGate(0, 500).extraSpots;
+		expect(options[1].fromGate).toBeUndefined();
+		expect(options[2].fromGate).toBe(3);
+		expect(options[4].fromGate).toBe(9);
+	});
+
+	it("opens the deeper steps as the clears come in", () => {
+		expect(atGate(3, 500).extraSpots.options[2].fromGate).toBeUndefined();
+		expect(atGate(9, 500).extraSpots.options[4].fromGate).toBeUndefined();
+	});
+
+	it("flags a rent the balance cannot cover", () => {
+		expect(atGate(0, 0).extraSpots.options[1].rentTooDear).toBe(true);
+		expect(atGate(0, 500).extraSpots.options[1].rentTooDear).toBe(false);
+	});
+
+	it("reads the standing rent off the step the run is on", () => {
+		const { renting, perGateKb } = atGate(9, 500, 4).extraSpots;
+		expect(renting).toBe(4);
+		expect(perGateKb).toBe(32);
+	});
+
+	it("keeps selling every step at the last gate", () => {
+		const { options } = atGate(VICTORY_GATE, 5000).extraSpots;
+		expect(options.map((step) => step.makes)).toEqual([24, 25, 26, 27, 28]);
+		expect(options.every((step) => step.fromGate === undefined)).toBe(true);
+	});
+
+	it("puts the rent on the recurring bill", () => {
+		const line = atGate(9, 500, 2).gateStake.subscriptions.lines.find(
+			(entry) => entry.id === "spot-rent"
 		);
-		expect(later?.locked).toBe(false);
-	});
-
-	it("offers the whole ladder to a run at the summit", () => {
-		expect(atGate(VICTORY_GATE)).toHaveLength(STORAGE_PLANS.length);
-		expect(atGate(VICTORY_GATE).every((rung) => !rung.locked)).toBe(true);
-	});
-
-	it("marks the plan the run is actually on", () => {
-		const view = toRunView({ ...answering(), gatesCleared: 4, storagePlan: 3 });
-		expect(view.storagePlans.find((rung) => rung.current)?.tier).toBe(3);
+		expect(line?.label).toBe("2 rented spots");
+		expect(line?.kb).toBe(16);
+		expect(line?.billedOnMiss).toBe(false);
 	});
 });
 
@@ -305,7 +342,6 @@ describe("latestAnswerScore", () => {
 			type: "answer",
 			optionIds: ["q0-a"],
 		});
-		// .js Focus is a no-op on a react poll, so no config chip; streak 1 → +0.1.
 		expect(latestAnswerScore(toRunView(state))).toEqual({
 			isCorrect: true,
 			baseCoverage: 1,
@@ -401,18 +437,16 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 		return state;
 	};
 
-	// These pin canStart to the reducer rather than to a hard-coded slot count:
-	// if the engine's start rule moves, a view that disagrees fails here.
-	it("offers canStart only when the reducer would actually start the run", () => {
-		const partial = configuringWith([CONFIGS.js, CONFIGS.ts]);
-		expect(toRunView(partial).canStart).toBe(false);
-		expect(runReducer(partial, { type: "start" }).status).toBe("configuring");
+	it("refuses canStart on a bare pipeline, and the reducer agrees", () => {
+		const bare = configuringWith([]);
+		expect(toRunView(bare).canStart).toBe(false);
+		expect(runReducer(bare, { type: "start" }).status).toBe("configuring");
 	});
 
-	it("offers canStart once the pipeline is full, and the reducer agrees", () => {
-		const full = configuringWith([CONFIGS.js, CONFIGS.ts, CONFIGS.css]);
-		expect(toRunView(full).canStart).toBe(true);
-		expect(runReducer(full, { type: "start" }).status).toBe("answering");
+	it("offers canStart with spots to spare, and the reducer agrees", () => {
+		const partial = configuringWith([CONFIGS.js, CONFIGS.ts]);
+		expect(toRunView(partial).canStart).toBe(true);
+		expect(runReducer(partial, { type: "start" }).status).toBe("answering");
 	});
 
 	it("reports isOver for both terminal statuses and no others", () => {
@@ -443,13 +477,8 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 	});
 });
 
-// Prep, Configuring and Shop all render GateStakeReceipt, and each used to carry
-// the seven fields as props purely to hand them on (DVTD-gf7h).
 describe("the gate stake travels as one object", () => {
 	it("collects what the coming gate demands and pays", () => {
-		// Three configs against gate 4's two-config peel, so the stake reads as an
-		// ordinary gate rather than a fatal one. Gate 4 carries one audit, which is
-		// how the stake proves it hands the receipt every rule in force.
 		const state = {
 			...answeringWith([CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]),
 			gatesCleared: 4,
@@ -464,15 +493,13 @@ describe("the gate stake travels as one object", () => {
 			audits: [
 				expect.objectContaining({ id: "dependency-outage", suppressed: false }),
 			],
-			stripsOnFailure: failStripsFor(4),
+			peelSpotsOnFailure: failPeelQuotaFor(state.pipeline.configs, 4),
+			peelShareOnFailure: peelShareFor(state.pipeline.configs, 4),
 			missIsFatal: false,
-			billKb: storagePlanFor(state.storagePlan).billKb,
 			subscriptions: billLedger({
 				configs: state.pipeline.configs,
 				gate: 4,
 				storageKb: state.storage,
-				planBillKb: storagePlanFor(state.storagePlan).billKb,
-				planTier: storagePlanFor(state.storagePlan).tier,
 			}),
 			modifiers: pipelineModifiersFor(state.pipeline.configs, 4),
 			perAnswer: perAnswerPreviewFor(state.pipeline.configs, 4),
@@ -488,26 +515,22 @@ describe("the gate stake travels as one object", () => {
 		});
 	});
 
-	it("bills the plan and every subscribed config into one ledger", () => {
+	it("bills every subscribed config into one ledger, and no plan", () => {
 		const state = {
 			...answeringWith([CONFIGS.js, CONFIGS.freemium]),
 			gatesCleared: 2,
-			storagePlan: 3,
 		};
 		const { subscriptions } = toRunView(state).gateStake;
 
 		expect(subscriptions.lines.map((line) => [line.id, line.kb])).toEqual([
-			["storage-plan", 16],
 			["freemium", 32],
 		]);
-		// Only the plan survives a miss: config subscriptions bill on clears.
-		expect(subscriptions.onMissKb).toBe(16);
+		expect(subscriptions.onMissKb).toBe(0);
 	});
 
 	it("agrees with the flat fields the other screens still read", () => {
 		const view = toRunView({ ...answeringWith([CONFIGS.js]), gatesCleared: 4 });
 		expect(view.gateStake.gateNumber).toBe(view.gatesCleared);
-		expect(view.gateStake.billKb).toBe(view.storageBillKb);
 	});
 
 	it("reads the window meter, not the career total, as coverageHeld (ADR-035)", () => {
@@ -522,12 +545,12 @@ describe("the gate stake travels as one object", () => {
 		expect(toRunView(state).gateStake.coverageHeld).toBe(7.5);
 	});
 
-	// The stake is where the peel is priced, so a player never learns what a miss
-	// costs from the peel itself (ADR-037).
 	it("prices the peel deeper at a strip-audit gate", () => {
-		const deep = { ...answeringWith([CONFIGS.js]), gatesCleared: 11 };
-		expect(toRunView(deep).gateStake.stripsOnFailure).toBe(
-			failStripsFor(11) + 1
+		const build = [CONFIGS.js, CONFIGS.indexedDb, CONFIGS.eslint];
+		const audited = { ...answeringWith(build), gatesCleared: 11 };
+		const clean = { ...answeringWith(build), gatesCleared: 10 };
+		expect(toRunView(audited).gateStake.peelShareOnFailure).toBeGreaterThan(
+			toRunView(clean).gateStake.peelShareOnFailure
 		);
 	});
 
@@ -541,12 +564,7 @@ describe("the gate stake travels as one object", () => {
 	});
 });
 
-// Each shop control used to be graded twice — once as a reducer guard, once as
-// a view flag built from the same constants (DVTD-xg62). These drive both off
-// the one predicate, so a button can never offer what the reducer refuses.
 describe("the shop's controls answer to the reducer", () => {
-	// The shop's controls only answer in `rewarding` — that status gate is the
-	// reducer's, and these tests are about the predicates behind it.
 	const shopWith = (state: RunState, storage: number): RunState => ({
 		...state,
 		status: "rewarding",
@@ -610,7 +628,6 @@ describe("the shop's controls answer to the reducer", () => {
 	});
 
 	it("flags the width floor exactly where the reducer refuses to shrink", () => {
-		// One config is the floor (ADR-035): a pipeline never goes bare.
 		const onFloor: RunState = {
 			...answeringWith([CONFIGS.js]),
 			status: "rewarding",
@@ -628,11 +645,14 @@ describe("the shop's controls answer to the reducer", () => {
 	});
 });
 
-// The shop used to answer all of this itself from raw roster configs, which put
-// offer pricing behind render() and out of reach of this spec (DVTD-od1l).
 describe("the view prices the shop's offers", () => {
+	const roomy = (): RunState => {
+		const base = answeringWith([CONFIGS.js]);
+		return { ...base, pipeline: { ...base.pipeline, spots: BASE_SPOTS } };
+	};
+
 	const shopping = (overrides: Partial<RunState> = {}): RunState => ({
-		...answeringWith([CONFIGS.js]),
+		...roomy(),
 		status: "rewarding",
 		storage: 512,
 		draftOptions: [CONFIGS.eslint],
@@ -659,17 +679,21 @@ describe("the view prices the shop's offers", () => {
 		});
 	});
 
-	it("refuses every offer once the pipeline has no free slot", () => {
+	it("refuses an offer that will not fit, naming both numbers", () => {
 		const full = answeringWith([CONFIGS.js]);
 		const offer = only(
 			shopping({
 				...full,
 				status: "rewarding",
-				pipeline: { ...full.pipeline, slots: full.pipeline.configs.length },
-				draftOptions: [CONFIGS.eslint],
+				pipeline: { ...full.pipeline, spots: 1 },
+				draftOptions: [CONFIGS.indexedDb],
 			})
 		);
-		expect(offer.refusal).toEqual({ reason: "no-slot" });
+		expect(offer.refusal).toEqual({
+			reason: "no-room",
+			spots: 2,
+			freeSpots: 0,
+		});
 	});
 
 	it("marks an offer already installed as owned and unbuyable", () => {

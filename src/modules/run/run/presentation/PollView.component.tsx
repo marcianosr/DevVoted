@@ -43,25 +43,9 @@ export const trailFor = (view: RunView): readonly TrailItem[] =>
 			: { id: label, label, state: "todo" };
 	});
 
-/**
- * A tool that applies but is not ready has exactly one reason: the fee. Both
- * readiness rules are `applies && storage >= fee`, so the row can name the
- * shortfall instead of greying a button out in silence. Same sentence the shop
- * gives a refused offer, since it is the same refusal.
- */
 const shortfall = (costKb: number, storageKb: number): string =>
 	`Costs ${costKb}KB — you have ${storageKb}KB`;
 
-/**
- * The rail's reading of the shared facts line. The refund is the build's own,
- * not the list price: Freemium's discount and WTFPL's no-warranty clause both
- * move it, and a rail quoting list would be quoting a number the shop will not
- * honour.
- *
- * The shortfall rides here too rather than only in the button's tooltip: a
- * disabled button takes no taps, so on a phone the row's own body is the only
- * place the reason is reachable.
- */
 const factsFor = (
 	view: RunView,
 	config: Config,
@@ -111,12 +95,6 @@ const toolsFor = (view: RunView, handlers: PollTools): readonly Tool[] => [
 		: []),
 ];
 
-/**
- * The slice of a poll the rail statuses read. The reveal passes the answered
- * poll's facts (its category, and the count *before* it landed, so an
- * opener-only config still reads online on the first poll's reveal); the live
- * poll passes its own.
- */
 export type PollFacts = {
 	readonly category: CategoryCode;
 	readonly answeredBefore: number;
@@ -146,7 +124,6 @@ export const pipelineRows = (
 			config,
 			statusContextFor(view, poll, config)
 		);
-		// A config that is not in effect cannot sell what it can no longer do.
 		const tool =
 			status.kind === "online"
 				? tools.find((candidate) => candidate.configId === config.id)
@@ -172,9 +149,6 @@ export const pipelineRows = (
 							on: config.label,
 							cost: `${tool.costKb} KB`,
 							disabled: !tool.ready,
-							// Hover on a pointer, and folded into the button's own
-							// accessible name; `Tooltip` reads hover off its wrapper so a
-							// disabled button still answers for itself.
 							hint: tool.ready
 								? undefined
 								: shortfall(tool.costKb, view.storage),
@@ -183,8 +157,6 @@ export const pipelineRows = (
 		};
 	});
 
-// The gate's live rules belong beside the poll they are bending, not only on the
-// prep screen the player left two clicks ago.
 const auditRows = (view: RunView): readonly AuditRow[] =>
 	view.audits.flatMap((audit): readonly AuditRow[] => {
 		const id = toAuditId(audit.id);
@@ -199,7 +171,7 @@ export const railFor = (
 	settled = false
 ) => {
 	const audits = auditRows(view);
-	const { coverageHeld, coverageDemand, stripsOnFailure, missIsFatal } =
+	const { coverageHeld, coverageDemand, peelSpotsOnFailure, missIsFatal } =
 		view.gateStake;
 
 	return (
@@ -213,7 +185,7 @@ export const railFor = (
 			<Pipeline configs={rows} settled={settled} />
 			{audits.length ? <Audits audits={audits} defaultOpen /> : null}
 			<Stake
-				removeOnMiss={stripsOnFailure}
+				removeOnMiss={peelSpotsOnFailure}
 				coveragePerWrong={view.gateStake.perAnswer.coveragePerWrong}
 				missIsFatal={missIsFatal}
 			/>
@@ -221,8 +193,6 @@ export const railFor = (
 	);
 };
 
-/** `.length`'s whole effect. Under the Mirror the gate wants the incorrect
- * options, so the count it reveals is a count of those. */
 const revealFor = (view: RunView): readonly string[] =>
 	view.correctAnswersThisGate === null
 		? []
@@ -263,14 +233,7 @@ export const gateHeaderFor = (view: RunView) => {
 		audits: view.audits
 			.map((audit) => toAuditId(audit.id))
 			.filter((id): id is NonNullable<typeof id> => id !== null),
-		storage: {
-			plan:
-				view.storageBillKb === 0
-					? "Free tier"
-					: `${view.storageBillKb} KB / gate`,
-			used: view.storage,
-			cap: view.storageCap,
-		},
+		storage: { balanceKb: view.storage },
 		track: { gates: ALL_SWATCHES, cleared: view.gatesCleared },
 	};
 };
@@ -300,8 +263,6 @@ export const PollView = ({
 	onPeek,
 }: PollViewProps) => {
 	const blocked = new Set(view.disabledOptionIds);
-	// Held here rather than in the run state: folding the rail is a reading
-	// preference, not a move, and nothing in the engine should replay it.
 	const [railOpen, setRailOpen] = useState(true);
 
 	const noteFor = (optionId: string) => {

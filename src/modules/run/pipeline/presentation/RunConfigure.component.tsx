@@ -6,7 +6,6 @@ import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/Configuri
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
-/** Tier 2: build the loadout before the climb starts. */
 export const RunConfigure = () => {
 	const { view } = useTodaysRun();
 	const { send, busy } = useRunActions();
@@ -17,7 +16,10 @@ export const RunConfigure = () => {
 		<Screen gateTheme={view.gateTheme}>
 			<ConfiguringScreen
 				configs={view.configs}
-				slots={view.slots}
+				spots={view.spots}
+				spotsUsed={view.spotsUsed}
+				spotsFree={view.spotsFree}
+				overflowSpots={view.overflowSpots}
 				stake={view.gateStake}
 				bench={view.available}
 				onSlot={(id) => send({ type: "slot", configId: id })}
@@ -27,9 +29,6 @@ export const RunConfigure = () => {
 				startAction={{
 					label: "Start run →",
 					onClick: () => {
-						// The receipt carries this CTA itself now (moved inside "Build
-						// Summary", Marciano 2026-08-11), so it — not Screen's own footer —
-						// is what fires the forward transition for the next screen.
 						setScreenNavDirection("forward");
 						send({ type: "start" });
 					},

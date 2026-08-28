@@ -56,8 +56,6 @@ export type BillLine = {
 	readonly id: string;
 	readonly label: string;
 	readonly kb: number;
-	/** The plan bills on every attempt (ADR-035); a config subscription bills on
-	 * clears only, so a redo is free for it. */
 	readonly billedOnMiss: boolean;
 };
 
@@ -72,39 +70,34 @@ type BillLedgerInput = {
 	readonly configs: readonly Config[];
 	readonly gate: number;
 	readonly storageKb: number;
-	readonly planBillKb: number;
-	readonly planTier: number;
+	readonly rentedSpots?: number;
+	readonly spotRentKb?: number;
 };
 
-/** Takes the plan as primitives rather than the run aggregate's `StoragePlan`,
- * so the config aggregate keeps no upward dependency. */
 export const billLedger = ({
 	configs,
 	gate,
 	storageKb,
-	planBillKb,
-	planTier,
+	rentedSpots = 0,
+	spotRentKb = 0,
 }: BillLedgerInput): BillLedger => {
-	const planLines: readonly BillLine[] =
-		planBillKb > 0
-			? [
-					{
-						id: "storage-plan",
-						label: `Storage plan, tier ${planTier}`,
-						kb: planBillKb,
-						billedOnMiss: true,
-					},
-				]
-			: [];
-
 	const lines = [
-		...planLines,
 		...configs.filter(isSubscription).map((config) => ({
 			id: config.id,
 			label: config.label,
 			kb: subscriptionBillFor(config, gate),
 			billedOnMiss: false,
 		})),
+		...(rentedSpots > 0
+			? [
+					{
+						id: "spot-rent",
+						label: `${rentedSpots} rented spot${rentedSpots === 1 ? "" : "s"}`,
+						kb: spotRentKb,
+						billedOnMiss: false,
+					},
+				]
+			: []),
 	];
 	const totalKb = lines.reduce((sum, line) => sum + line.kb, 0);
 

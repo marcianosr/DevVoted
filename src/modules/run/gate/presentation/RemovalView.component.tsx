@@ -24,7 +24,7 @@ export const RemovalView = ({ view, onRemove }: RemovalViewProps) => {
 		<RemovalScreen
 			theme={view.gateTheme}
 			gateName={swatchForGate(view.gateStake.gateNumber)?.gateName ?? ""}
-			required={view.stripsRemaining}
+			required={view.peelSpotsRemaining}
 			configs={view.configs.map((config) => ({
 				id: config.id,
 				label: config.label,

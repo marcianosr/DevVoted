@@ -37,12 +37,18 @@ import {
 	type AnsweredPoll,
 	mirrorPoll,
 } from "~/modules/run/run/domain/runPoll.model";
-import { type Config } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	canMinify,
+	minifySavingSpots,
+	spotsOf,
+} from "~/modules/run/config/domain/config.model";
 import { billLedger } from "~/modules/run/config/domain/subscription.model";
 import { draftCostIn } from "~/modules/run/shop/domain/draft.model";
 import {
-	failStripQuotaFor,
+	failPeelQuotaFor,
 	gateDemandFor,
+	peelShareFor,
 } from "~/modules/run/gate/domain/gate.model";
 import {
 	auditTimeLimitMs,
@@ -56,9 +62,10 @@ import {
 import {
 	type PerAnswerPreview,
 	type PipelineModifiers,
-	type SlotUnlock,
 	budgeterFor,
-	nextSlotUnlockFor,
+	freeSpots,
+	occupiedSpots,
+	overflowSpots,
 	prefetcherFor,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
@@ -66,25 +73,28 @@ import {
 import {
 	atMinimumWidth,
 	faucetRemainingKb,
-	isStakeFatal,
-	isStoragePlanUnlocked,
+	EXTRA_SPOT_TIERS,
+	extraRentKb,
+	extraSpotsUnlocked,
+	isPeelFatal,
+	scheduledSpots,
 	SLICE_WINDOW,
-	storagePlanFor,
-	storagePlanLadder,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 
-export type StoragePlanOption = {
-	readonly tier: number;
-	readonly capKb: number;
-	readonly billKb: number;
-	readonly current: boolean;
-	/** KB sitting above this plan's cap that switching to it would burn on the spot. */
-	readonly burnKb: number;
-	/** Gates the run must clear before this rung is sold (ADR-030). */
-	readonly fromGate: number;
-	/** The one rung shown ahead of the run — visible, priced, not yet buyable. */
-	readonly locked: boolean;
+export type ExtraSpotOption = {
+	readonly spots: number;
+	readonly makes: number;
+	readonly rentKb: number;
+	readonly held: boolean;
+	readonly fromGate?: number;
+	readonly rentTooDear?: boolean;
+};
+
+export type ExtraSpotsView = {
+	readonly renting: number;
+	readonly perGateKb: number;
+	readonly options: readonly ExtraSpotOption[];
 };
 
 export type OfflineConfig = {
@@ -92,82 +102,79 @@ export type OfflineConfig = {
 	readonly audit: string;
 };
 
-/** Carries the numbers, not the sentence: the wording lives with the shop screen so every phrasing stays reachable from a story. */
 export type OfferRefusal =
-	| { readonly reason: "no-slot" }
+	| {
+			readonly reason: "no-room";
+			readonly spots: number;
+			readonly freeSpots: number;
+	  }
 	| {
 			readonly reason: "too-expensive";
 			readonly priceKb: number;
 			readonly storageKb: number;
 	  };
 
-/** One draft option, priced against the run looking at it. */
+export type InstalledConfig = {
+	readonly config: Config;
+	readonly spots: number;
+	readonly canMinify: boolean;
+	readonly minifySavingSpots: number;
+};
+
 export type ShopOffer = {
 	readonly config: Config;
 	readonly priceKb: number;
+	readonly spots: number;
 	readonly owned: boolean;
 	readonly locked: boolean;
 	readonly installable: boolean;
 	readonly refusal: OfferRefusal | null;
-	/** What the build's payouts become with this installed — the hover preview. */
 	readonly preview: PipelineModifiers;
 	readonly previewPerAnswer: PerAnswerPreview;
 };
 
 export type RunView = {
 	readonly status: RunStatus;
-	readonly slots: number;
+	readonly spots: number;
+	readonly spotsUsed: number;
+	readonly spotsFree: number;
+	readonly overflowSpots: number;
 	readonly configs: readonly Config[];
+	readonly installed: readonly InstalledConfig[];
 	readonly available: readonly Config[];
 	readonly offers: readonly ShopOffer[];
 	readonly newConfigIds: readonly string[];
-	readonly stripsRemaining: number;
+	readonly peelSpotsRemaining: number;
 	readonly poll: PollView | null;
 	readonly awaitingTomorrow: boolean;
 
 	readonly pollsExhausted: boolean;
 	readonly disabledOptionIds: readonly string[];
 	readonly paidActions: PaidActions;
-	/** Paired with the audit to blame, so no surface shows a dead row it cannot explain. Their effects are already out of `perAnswer`. */
 	readonly offlineConfigs: readonly OfflineConfig[];
-	/** The gate mirrors its polls, so the poll's own type has already been flipped. */
 	readonly mirroredPolls: boolean;
-	/** The clock on the poll on screen, in ms; null when it runs free. */
 	readonly pollTimeLimitMs: number | null;
-	/** The split query refuses to answer until this is true. */
 	readonly currentPollPeeked: boolean;
-	/** Null when no config is counting, which is what hides the line. */
 	readonly correctAnswersThisGate: number | null;
-	/** Prefetch's reveal. Null when no installed config reads the draw. */
 	readonly upcomingCategories: readonly CategoryCode[] | null;
-	/** Empty in the live game, where tomorrow's five come from the server; the pool-fed prototype fills it locally. */
 	readonly nextGateCategories: readonly CategoryCode[] | null;
 	readonly shopControls: ShopControls;
-	/** A gate, a coverage total, or either (ADR-041); null at the cap. */
-	readonly nextSlotUnlock: SlotUnlock | null;
-
-	readonly justUnlockedSlots: readonly number[];
 	readonly gatePayout: GatePayout;
-	/** The live audits' answering-screen cues (suppressed ones excluded). */
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered: readonly AnsweredPoll[];
-	/** Kept whole: every screen showing pricing wants all four, and a spread means each reassembles them by hand. */
 	readonly perAnswer: PerAnswerPreview;
 	readonly gateStake: GateStake;
 	readonly canStart: boolean;
 	readonly isOver: boolean;
-	/** The rail counts it down beside the config earning it: a rate with no budget left is a promise the poll cannot keep. */
 	readonly faucetRemainingKb: number;
 	readonly gatesCleared: number;
 
 	readonly gateTheme?: SwatchTheme;
 
-	/** The gate being replayed after a fail (ADR-035); null otherwise. */
 	readonly redoingGate: number | null;
 	readonly victoryGate: number;
 
-	/** One config left — sell and drop refuse, a pipeline never goes bare. */
 	readonly atMinimumWidth: boolean;
 
 	readonly pollsAnswered: number;
@@ -175,17 +182,16 @@ export type RunView = {
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
-	readonly storageCap: number;
-	readonly storageBillKb: number;
-	readonly storagePlans: readonly StoragePlanOption[];
+	readonly extraSpots: ExtraSpotsView;
 };
 
 const offerRefusal = (
 	state: RunState,
 	config: Config,
-	isFull: boolean
+	free: number
 ): OfferRefusal | null => {
-	if (isFull) return { reason: "no-slot" };
+	const spots = spotsOf(config);
+	if (spots > free) return { reason: "no-room", spots, freeSpots: free };
 	const priceKb = draftCostIn(state.pipeline.configs, config);
 	if (state.storage < priceKb)
 		return { reason: "too-expensive", priceKb, storageKb: state.storage };
@@ -194,16 +200,17 @@ const offerRefusal = (
 
 const offersFor = (state: RunState): readonly ShopOffer[] => {
 	const installed = state.pipeline.configs;
-	const isFull = installed.length >= state.pipeline.slots;
+	const free = freeSpots(state.pipeline);
 	const locked = state.lockedOfferIds ?? [];
 
 	return state.draftOptions.map((config) => {
 		const owned = installed.some((slotted) => slotted.id === config.id);
-		const refusal = offerRefusal(state, config, isFull);
+		const refusal = offerRefusal(state, config, free);
 		const withIt = [...installed, config];
 		return {
 			config,
 			priceKb: draftCostIn(installed, config),
+			spots: spotsOf(config),
 			owned,
 			locked: locked.includes(config.id),
 			installable: !owned && refusal === null,
@@ -214,9 +221,37 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 	});
 };
 
+const extraSpotsViewFor = (state: RunState): ExtraSpotsView => {
+	const held = state.extraSpots ?? 0;
+	const unlocked = extraSpotsUnlocked(state.gatesCleared);
+	const free = scheduledSpots(state.gatesCleared);
+
+	const step = (spots: number, fromGate?: number): ExtraSpotOption => {
+		const locked = fromGate !== undefined && spots > unlocked;
+		const rentKb = extraRentKb(spots);
+		return {
+			spots,
+			makes: free + spots,
+			rentKb,
+			held: spots === held,
+			...(locked && fromGate !== undefined ? { fromGate } : {}),
+			...(locked ? {} : { rentTooDear: state.storage < rentKb }),
+		};
+	};
+
+	return {
+		renting: held,
+		perGateKb: extraRentKb(held),
+		options: [
+			step(0),
+			...EXTRA_SPOT_TIERS.map((tier) => step(tier.spots, tier.fromGate)),
+		],
+	};
+};
+
 export const toRunView = (state: RunState): RunView => {
 	const current = state.polls[state.currentIndex];
-	const plan = storagePlanFor(state.storagePlan);
+	const extraHeld = state.extraSpots ?? 0;
 	const modifiers = pipelineModifiersFor(
 		state.pipeline.configs,
 		state.gatesCleared
@@ -225,7 +260,10 @@ export const toRunView = (state: RunState): RunView => {
 		state.pipeline.configs,
 		state.gatesCleared
 	);
-	const strips = failStripQuotaFor(state.pipeline.configs, state.gatesCleared);
+	const peelSpots = failPeelQuotaFor(
+		state.pipeline.configs,
+		state.gatesCleared
+	);
 	const liveAudits = liveAuditsFor(state.pipeline.configs, state.gatesCleared);
 	const offline = offlinePairsOf(state).map((pair): OfflineConfig => ({
 		config: pair.config,
@@ -236,19 +274,27 @@ export const toRunView = (state: RunState): RunView => {
 
 	return {
 		status: state.status,
-		slots: state.pipeline.slots,
+		spots: state.pipeline.spots,
+		spotsUsed: occupiedSpots(state.pipeline.configs),
+		spotsFree: freeSpots(state.pipeline),
+		overflowSpots: overflowSpots(state.pipeline),
 		configs: state.pipeline.configs,
+		installed: state.pipeline.configs.map((config) => ({
+			config,
+			spots: spotsOf(config),
+			canMinify: canMinify(config),
+			minifySavingSpots: minifySavingSpots(config),
+		})),
 		available: state.available,
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
-		stripsRemaining: state.stripsRemaining,
+		peelSpotsRemaining: state.peelSpotsRemaining,
 		poll:
 			state.status === "answering" && current
 				? redactPoll(mirrored ? mirrorPoll(current) : current)
 				: null,
 		awaitingTomorrow: isAwaitingTomorrow(state),
 		pollsExhausted: state.currentIndex >= state.polls.length,
-		// Only options the player paid to lint off — no automatic masking.
 		disabledOptionIds: state.manualDisabled,
 		paidActions: paidActionsFor(state),
 		offlineConfigs: offline,
@@ -261,7 +307,6 @@ export const toRunView = (state: RunState): RunView => {
 			budgeterFor(state.pipeline.configs) === undefined
 				? null
 				: (state.window.budget ?? null),
-		// Capped at the window edge; the prototype's state holds the whole pool.
 		upcomingCategories:
 			prefetcherFor(state.pipeline.configs) === undefined
 				? null
@@ -281,11 +326,6 @@ export const toRunView = (state: RunState): RunView => {
 						)
 						.map((poll) => poll.category),
 		shopControls: shopControlsFor(state),
-		nextSlotUnlock: nextSlotUnlockFor(
-			{ gatesCleared: state.gatesCleared, coverage: state.coverage },
-			state.pipeline.slots
-		),
-		justUnlockedSlots: state.justUnlockedSlots ?? [],
 		gatePayout: gatePayoutFor(state),
 		audits,
 		answeredThisGate: state.answeredThisGate,
@@ -298,15 +338,21 @@ export const toRunView = (state: RunState): RunView => {
 			coverageHeld: state.window.coverageGained,
 			audits,
 			upcomingAudit: upcomingAuditFor(state.gatesCleared),
-			stripsOnFailure: strips,
-			missIsFatal: isStakeFatal(strips, state.pipeline.configs.length),
-			billKb: plan.billKb,
+			peelSpotsOnFailure: peelSpots,
+			peelShareOnFailure: peelShareFor(
+				state.pipeline.configs,
+				state.gatesCleared
+			),
+			missIsFatal: isPeelFatal(
+				peelSpots,
+				occupiedSpots(state.pipeline.configs)
+			),
 			subscriptions: billLedger({
 				configs: state.pipeline.configs,
 				gate: state.gatesCleared,
 				storageKb: state.storage,
-				planBillKb: plan.billKb,
-				planTier: plan.tier,
+				rentedSpots: extraHeld,
+				spotRentKb: extraRentKb(extraHeld),
 			}),
 			modifiers,
 			perAnswer,
@@ -324,16 +370,6 @@ export const toRunView = (state: RunState): RunView => {
 		coverage: state.coverage,
 		coverageByCategory: state.coverageByCategory,
 		storage: state.storage,
-		storageCap: plan.capKb,
-		storageBillKb: plan.billKb,
-		storagePlans: storagePlanLadder(state.gatesCleared).map((option) => ({
-			tier: option.tier,
-			capKb: option.capKb,
-			billKb: option.billKb,
-			current: option.tier === plan.tier,
-			burnKb: Math.max(0, state.storage - option.capKb),
-			fromGate: option.fromGate,
-			locked: !isStoragePlanUnlocked(option, state.gatesCleared),
-		})),
+		extraSpots: extraSpotsViewFor(state),
 	};
 };

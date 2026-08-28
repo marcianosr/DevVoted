@@ -99,13 +99,13 @@ describe("Pick", () => {
 				checked={false}
 				onToggle={() => {}}
 				variant="draft"
-				summary="Common · focus: typescript"
+				summary="focus: typescript · ×1.25"
 				explainer="TypeScript polls pay 1.25× coverage."
 			/>
 		);
 
 		expect(container.querySelector("details")).not.toHaveAttribute("open");
-		expect(screen.getByText("Common · focus: typescript")).toBeInTheDocument();
+		expect(screen.getByText("focus: typescript · ×1.25")).toBeInTheDocument();
 	});
 
 	it("keeps ticking and unfolding on separate targets", async () => {
@@ -116,7 +116,7 @@ describe("Pick", () => {
 				checked={false}
 				onToggle={onToggle}
 				variant="draft"
-				summary="Common · focus: typescript"
+				summary="focus: typescript · ×1.25"
 			/>
 		);
 		const fold = container.querySelector("details") as HTMLDetailsElement;
@@ -140,35 +140,30 @@ describe("Pick", () => {
 		expect(screen.getByText("+8 / correct")).toBeInTheDocument();
 	});
 
-	// The spine that used to run down the row's left edge, in the rarity's
-	// colour, is gone: a shelf of them read as statuses rather than as grades.
-	// The stripe is how a shut row states its grade now: a bar, never the status
-	// dot's shape, so the two readings on one row stay distinguishable.
-	it("leads the name with its rarity stripe, and names the tier for a reader", () => {
+	it("leads the name with its grade glyph, and names the grade for a reader", () => {
 		const { container } = render(
-			<Pick label=".ts" rarity="rare" checked={false} onToggle={() => {}} />
+			<Pick label=".ts" rarity="nibble" checked={false} onToggle={() => {}} />
 		);
 
-		expect(container.querySelector(".w-1.rounded-full")).toHaveClass(
-			"bg-cinnabar"
-		);
-		expect(screen.getByText("rare")).toHaveClass("sr-only");
+		expect(container.querySelectorAll("svg rect")).toHaveLength(4);
+		expect(screen.getByText("nibble")).toHaveClass("sr-only");
 	});
 
-	it("keeps the rarity tint to the opened row, so a shut column stays flat", () => {
+	it("leaves a shut row flat, having no grade colour to tint with", () => {
 		const { container } = render(
-			<Pick label=".ts" rarity="rare" checked={false} onToggle={() => {}} />
+			<Pick label=".ts" rarity="nibble" checked={false} onToggle={() => {}} />
 		);
 
-		// Only the open: form, so a shut row paints nothing.
-		expect(container.firstElementChild).not.toHaveClass("bg-cinnabar/10");
+		expect((container.firstElementChild as HTMLElement).className).not.toMatch(
+			/cinnabar|cerulean|viridian|legendary/
+		);
 	});
 
 	it("carries a figure in a column of its own, clear of the trailing press", () => {
 		render(
 			<Pick
 				label=".ts"
-				rarity="rare"
+				rarity="nibble"
 				checked={false}
 				onToggle={() => {}}
 				value="×1.25"
@@ -180,29 +175,27 @@ describe("Pick", () => {
 		expect(screen.getByRole("button", { name: "lock" })).toBeInTheDocument();
 	});
 
-	it("tints an opened row with its rarity, summary strip and panel alike", () => {
+	it("opens without taking on a grade colour", () => {
 		const { container } = render(
 			<Pick
 				label=".ts"
-				rarity="rare"
+				rarity="nibble"
 				checked={false}
 				onToggle={() => {}}
-				explainer="Rare polls."
+				explainer="TS polls."
 			/>
 		);
 
-		const card = container.firstElementChild;
-		expect(card).toHaveClass("open:bg-cinnabar/10");
-		expect(card).toContainElement(screen.getByText(".ts"));
-		expect(card).toContainElement(screen.getByText("Rare polls."));
+		const card = container.firstElementChild as HTMLElement;
+		expect(card.className).not.toMatch(/cinnabar|cerulean|viridian/);
+		expect(card).toContainElement(screen.getByText("TS polls."));
 	});
 
-	// The pick's own answer still owns the strip, and now owns it alone.
-	it("washes a picked row in the pick's colour, not the rarity's", () => {
+	it("washes a picked row in the pick's colour", () => {
 		const { container } = render(
 			<Pick
 				label=".ts"
-				rarity="rare"
+				rarity="nibble"
 				variant="draft"
 				checked
 				onToggle={() => {}}
@@ -210,5 +203,52 @@ describe("Pick", () => {
 		);
 
 		expect(container.firstElementChild).toHaveClass("bg-theme-soft");
+	});
+
+	it("stops a disabled row from being picked, and dims it", () => {
+		render(
+			<Pick
+				label="AGENTS.md"
+				rarity="byte"
+				variant="draft"
+				checked={false}
+				disabled
+				onToggle={() => {}}
+			/>
+		);
+
+		expect(screen.getByRole("checkbox")).toBeDisabled();
+	});
+
+	it("drops the hover wash on a disabled row", () => {
+		const { container } = render(
+			<Pick
+				label="AGENTS.md"
+				variant="draft"
+				checked={false}
+				disabled
+				onToggle={() => {}}
+			/>
+		);
+
+		expect(container.firstElementChild?.className).not.toContain("hover:");
+	});
+
+	it("still opens a disabled row's detail", async () => {
+		const { container } = render(
+			<Pick
+				label="AGENTS.md"
+				variant="draft"
+				checked={false}
+				disabled
+				onToggle={() => {}}
+				value="8 spots"
+				explainer="Every poll pays double."
+			/>
+		);
+
+		await userEvent.click(screen.getByText("8 spots"));
+
+		expect(container.querySelector("details")).toHaveAttribute("open");
 	});
 });

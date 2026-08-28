@@ -9,7 +9,7 @@ import { RemovalView } from "./RemovalView.component";
 
 const view = createMockRunView({
 	gatesCleared: 4,
-	stripsRemaining: 2,
+	peelSpotsRemaining: 2,
 	configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
 });
 

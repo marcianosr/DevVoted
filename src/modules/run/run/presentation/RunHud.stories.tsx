@@ -13,8 +13,6 @@ type Story = StoryObj<typeof RunHud>;
 export const WithCoverage: Story = {
 	args: {
 		storage: 120,
-		capKb: 512,
-		storageBillKb: 0,
 		gatesCleared: 1,
 		victoryGate: 12,
 		pollsAnswered: 2,
@@ -27,8 +25,6 @@ export const WithCoverage: Story = {
 export const EarlyRun: Story = {
 	args: {
 		storage: 80,
-		capKb: 512,
-		storageBillKb: 0,
 		gatesCleared: 1,
 		victoryGate: 12,
 		pollsAnswered: 0,
@@ -41,8 +37,6 @@ export const EarlyRun: Story = {
 export const StorageNearCap: Story = {
 	args: {
 		storage: 980,
-		capKb: 1024,
-		storageBillKb: 0,
 		gatesCleared: 1,
 		victoryGate: 12,
 		pollsAnswered: 2,
@@ -52,11 +46,9 @@ export const StorageNearCap: Story = {
 	},
 };
 
-/** On a paid storage plan: the info icon names the bill (DVTD-rf5c). */
-export const PaidStoragePlan: Story = {
+export const Rich: Story = {
 	args: {
 		...WithCoverage.args,
-		capKb: 640,
-		storageBillKb: 8,
+		storage: 2048,
 	},
 };

@@ -1,14 +1,16 @@
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import {
+	EXTRA_SPOT_TIERS,
+	extraRentKb,
 	FAUCET_CAP_KB,
-	isStoragePlanUnlocked,
 	pinCostFor,
-	storagePlanLadder,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	type Config,
 	draftCost,
+	spotsOf,
 } from "~/modules/run/config/domain/config.model";
+import { BASE_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import type {
 	RunView,
 	ShopOffer,
@@ -35,17 +37,13 @@ export const createMockPollView = createMockDataFactory<PollView>({
 	})),
 });
 
-/**
- * A priced draft offer. Pass `config` for the one under test; the verdicts
- * default to "installable, affordable, not owned" so a spec only states the
- * one it is about.
- */
 export const createMockShopOffer = (
 	config: Config,
 	overrides: Partial<Omit<ShopOffer, "config">> = {}
 ): ShopOffer => ({
 	config,
 	priceKb: draftCost(config),
+	spots: spotsOf(config),
 	owned: false,
 	locked: false,
 	installable: true,
@@ -89,14 +87,14 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	deletedConfigs: [],
 	lapsedConfigs: [],
 	subscriptionBillKb: 0,
+	spotRentKb: 0,
+	rentDefaulted: false,
 	gateRewardPaidKb: 0,
 	faucetThisGateKb: 0,
 	interestThisGateKb: 0,
 	extraPickThisGateKb: 0,
 	clearedGateNumber: 0,
 	clearedGateDemand: 3,
-	gateBillPaidKb: 0,
-	planDowngraded: false,
 });
 
 export const createMockPaidActions = createMockDataFactory<PaidActions>({
@@ -116,9 +114,9 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 	coverageDemand: 3,
 	coverageHeld: 0,
 	audits: [],
-	stripsOnFailure: 1,
+	peelSpotsOnFailure: 1,
+	peelShareOnFailure: 0.2,
 	missIsFatal: false,
-	billKb: 0,
 	subscriptions: { lines: [], totalKb: 0, onMissKb: 0, shortfallKb: 0 },
 	modifiers: {
 		rewardMultiplier: 1,
@@ -137,12 +135,16 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 
 const createRunView = createMockDataFactory<RunView>({
 	status: "answering",
-	slots: 3,
+	spots: BASE_SPOTS,
+	spotsUsed: 0,
+	spotsFree: BASE_SPOTS,
+	overflowSpots: 0,
 	configs: [],
+	installed: [],
 	available: [],
 	offers: [],
 	newConfigIds: [],
-	stripsRemaining: 0,
+	peelSpotsRemaining: 0,
 	poll: createMockPollView(),
 	awaitingTomorrow: false,
 	pollsExhausted: false,
@@ -156,8 +158,6 @@ const createRunView = createMockDataFactory<RunView>({
 	upcomingCategories: null,
 	nextGateCategories: null,
 	shopControls: createMockShopControls(),
-	nextSlotUnlock: { slot: 4, gate: 1 },
-	justUnlockedSlots: [],
 	gatePayout: createMockGatePayout(),
 	audits: [],
 	answeredThisGate: [],
@@ -183,22 +183,24 @@ const createRunView = createMockDataFactory<RunView>({
 	coverage: 0,
 	coverageByCategory: {},
 	storage: 64,
-	storageCap: 512,
-	storageBillKb: 0,
-	storagePlans: storagePlanLadder(0).map((plan, index) => ({
-		...plan,
-		current: index === 0,
-		burnKb: 0,
-		locked: !isStoragePlanUnlocked(plan, 0),
-	})),
+	extraSpots: {
+		renting: 0,
+		perGateKb: 0,
+		options: [
+			{ spots: 0, makes: 4, rentKb: 0, held: true, rentTooDear: false },
+			...EXTRA_SPOT_TIERS.map((tier) => ({
+				spots: tier.spots,
+				makes: 4 + tier.spots,
+				rentKb: extraRentKb(tier.spots),
+				held: false,
+				...(tier.fromGate > 0
+					? { fromGate: tier.fromGate }
+					: { rentTooDear: false }),
+			})),
+		],
+	},
 });
 
-/**
- * `gatesCleared` and `gateStake.gateNumber` are the same fact, so a test that
- * moves the run to a deeper gate gets a stake that agrees with it — otherwise
- * the screens read gate 0 while the view claims gate 4. A test that passes its
- * own `gateStake` keeps it verbatim.
- */
 export const createMockRunView = (
 	overrides: Partial<RunView> = {}
 ): RunView => {

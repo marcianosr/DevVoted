@@ -1,11 +1,16 @@
 import {
+	canMinify,
 	type Config,
 	isUpgradable,
 	levelUp,
+	minify as minified,
+	minifySavingSpots,
+	spotsOf,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import {
+	hasRoomFor,
 	type Pipeline,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
@@ -26,12 +31,12 @@ import {
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	atMinimumWidth,
-	isStoragePlanUnlocked,
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 	pinCostFor,
-	STORAGE_PLANS,
-	storagePlanFor,
+	extraRentKb,
+	extraSpotsUnlocked,
+	spotsHeldWith,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	addStorage,
@@ -64,7 +69,7 @@ export const draft = (state: RunState, configId: string): RunState => {
 	const cost = draftCostIn(state.pipeline.configs, chosen);
 	if (
 		alreadyOwned ||
-		state.pipeline.configs.length >= state.pipeline.slots ||
+		!hasRoomFor(state.pipeline, spotsOf(chosen)) ||
 		state.storage < cost
 	)
 		return state;
@@ -76,7 +81,6 @@ export const draft = (state: RunState, configId: string): RunState => {
 		...stayReward(
 			state,
 			drafted,
-			// WTFPL takes effect at the counter, reopening this visit's table.
 			chosen.offersFullRoster
 				? shopDraft(
 						{ ...state, pipeline: drafted },
@@ -105,7 +109,6 @@ export const upgrade = (state: RunState, configId: string): RunState => {
 			config.id === configId ? levelUp(config) : config
 		)
 	);
-	// Gated twice: coverage is permission, KB is the price. Neither stands in for the other.
 	if (owned.focusCategory) {
 		const have = state.coverageByCategory[owned.focusCategory] ?? 0;
 		if (have < upgradeCoverageRequired(level)) return state;
@@ -120,30 +123,52 @@ export const upgrade = (state: RunState, configId: string): RunState => {
 	);
 };
 
-export const changePlan = (state: RunState, tier: number): RunState => {
-	const current = storagePlanFor(state.storagePlan);
-	const next = STORAGE_PLANS.find((plan) => plan.tier === tier);
-	if (!next || next.tier === current.tier) return state;
-	if (!isStoragePlanUnlocked(next, state.gatesCleared)) return state;
-	const clamped = Math.min(state.storage, next.capKb);
-	const burned = state.storage - clamped;
-	const upgradeLine = `Storage plan upgraded: ${next.capKb}KB cap for ${next.billKb}KB per gate.`;
-	const downgradeLine = `Storage plan downgraded to a ${next.capKb}KB cap${
-		burned > 0 ? ` — ${burned}KB over it burned` : ""
-	}.`;
+export const extraSpotsAvailable = (state: RunState): number =>
+	extraSpotsUnlocked(state.gatesCleared);
+
+export const canRentExtraSpots = (state: RunState, spots: number): boolean =>
+	spots >= 0 &&
+	spots <= extraSpotsAvailable(state) &&
+	state.storage >= extraRentKb(spots);
+
+export const setExtraSpots = (state: RunState, spots: number): RunState => {
+	if (!canRentExtraSpots(state, spots)) return state;
+	const wide = spotsHeldWith(state.gatesCleared, spots);
 	return {
 		...state,
-		storagePlan: next.tier,
-		storage: clamped,
-		log: withLog(state, next.tier > current.tier ? upgradeLine : downgradeLine),
+		extraSpots: spots,
+		pipeline: { ...state.pipeline, spots: wide },
+		log: withLog(
+			state,
+			spots === 0
+				? `Dropped the extra-spot rent — back to ${wide} spots.`
+				: `Renting ${spots} extra spot${spots === 1 ? "" : "s"} — ${wide} wide, ${extraRentKb(spots)}KB a gate.`
+		),
 	};
 };
 
-/** ADR-036. Past gate 10 a rescue resumes a starter build into stacked audits, so it is not sold. */
+export const minifyConfig = (state: RunState, configId: string): RunState => {
+	const target = state.pipeline.configs.find(
+		(candidate) => candidate.id === configId
+	);
+	if (!target || !canMinify(target)) return state;
+	const freed = minifySavingSpots(target);
+	return stayReward(
+		state,
+		withPipeline(
+			state.pipeline,
+			state.pipeline.configs.map((config) =>
+				config.id === configId ? minified(config) : config
+			)
+		),
+		state.draftOptions,
+		`Minified ${target.label} — ${freed} spot${freed > 1 ? "s" : ""} freed, half the bonus gone.`
+	);
+};
+
 const pinSoldAt = (gatesCleared: number): boolean =>
 	gatesCleared >= PIN_FROM_GATE && gatesCleared <= PIN_UNTIL_GATE;
 
-/** ADR-036. One per run; the tag persists on the account and outlives this run's death. */
 export const plantPin = (state: RunState): RunState => {
 	if (state.pinPlantedAtGate !== undefined) return state;
 	if (!pinSoldAt(state.gatesCleared)) return state;
@@ -160,13 +185,11 @@ export const plantPin = (state: RunState): RunState => {
 	};
 };
 
-/** Exported so the shop button asks the rule; the reducer refuses either way. */
 export const canPlantPin = (state: RunState): boolean =>
 	state.pinPlantedAtGate === undefined &&
 	pinSoldAt(state.gatesCleared) &&
 	state.storage >= pinCostFor(state.gatesCleared);
 
-/** Whether this depth of climb sells the tag at all (same split as ADR-029). */
 export const pinAvailable = (state: RunState): boolean =>
 	state.pinPlantedAtGate === undefined && pinSoldAt(state.gatesCleared);
 
@@ -179,25 +202,21 @@ export const finishReward = (state: RunState): RunState => {
 		answeredThisGate: [],
 		faucetThisGateKb: 0,
 		gateRewardKb: 0,
-		gateBillKb: 0,
-		planDowngraded: false,
 		redoGate: undefined,
-		justUnlockedSlots: [],
 		autoUpgradedConfigId: undefined,
 		deletedConfigs: undefined,
 		lapsedConfigs: undefined,
 		subscriptionBillKb: 0,
-		storage: Math.min(state.storage, storagePlanFor(state.storagePlan).capKb),
+		spotRentKb: 0,
+		rentDefaulted: undefined,
 		status: "answering",
 		log: withLog(state, "Climbing on."),
 	};
 };
 
-/** ADR-029. `{name}Available` is whether this depth sells it, `can{Name}` whether the run can pay: the shop hides one and disables the other. */
 export const canRebuild = (state: RunState): boolean =>
 	state.storage >= rebuildCost(state.rebuildsUsed);
 
-/** WTFPL retires all three: rerolling a table that already shows everything sells nothing. */
 export const rebuildAvailable = (state: RunState): boolean =>
 	!shopOffersFullRoster(state.pipeline.configs);
 
@@ -236,7 +255,6 @@ export const lockOffer = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	const locked = state.lockedOfferIds ?? [];
-	// Per-offer, so it stays here: the view answers it from lockedOfferIds.
 	if (!offer || locked.includes(configId)) return state;
 	return {
 		...state,

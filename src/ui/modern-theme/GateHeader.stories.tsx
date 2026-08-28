@@ -23,7 +23,7 @@ export const MidRun: Story = {
 	args: {
 		title: "Gate 4 · Lavender",
 		audits: ["dependency-outage"],
-		storage: { plan: "Free tier", used: 184, cap: 512 },
+		storage: { balanceKb: 184 },
 		track: { gates: ALL_SWATCHES, cleared: 4 },
 	},
 };

@@ -116,8 +116,6 @@ describe("PollScreen", () => {
 		expect(container.querySelector("aside")).not.toBeInTheDocument();
 	});
 
-	// The pairing mirrors onSubmit/submitLock: the screen offers the control only
-	// where a caller can hold the answer to it.
 	it("offers no fold until a handler can remember the rail is folded", () => {
 		render(<PollScreen {...props} />);
 
@@ -147,8 +145,6 @@ describe("PollScreen", () => {
 		expect(screen.queryByText("Pipeline")).not.toBeInTheDocument();
 	});
 
-	// Inside the rail the disc landed on the first row's figure. On the divider it
-	// belongs to neither column, which is what it acts on.
 	it("centres the fold on the divider rather than inside the rail", () => {
 		render(<PollScreen {...props} onToggleRail={() => {}} />);
 
@@ -157,7 +153,6 @@ describe("PollScreen", () => {
 		expect(fold.closest("div")).toHaveClass("lg:-mr-6");
 	});
 
-	// A folded rail that still reserved its column would have folded nothing.
 	it("gives the question the rail's width back when it folds", () => {
 		const { container: open } = render(
 			<PollScreen {...props} onToggleRail={() => {}} />
@@ -201,8 +196,6 @@ describe("PollScreen", () => {
 		expect(onSubmit).toHaveBeenCalledOnce();
 	});
 
-	// A disabled button with no explanation reads as broken, so the reason takes
-	// the label's place rather than sitting beside it.
 	it("wears the reason it cannot be sent as the button's own label", () => {
 		render(
 			<PollScreen {...props} onSubmit={() => {}} submitLock="Pick an answer" />

@@ -66,8 +66,6 @@ describe("Action", () => {
 		).toBeInTheDocument();
 	});
 
-	// A hint is the half of the deal the button has no room for. It goes in the
-	// accessible name as well as the tooltip, since the panel is aria-hidden.
 	it("carries a hint on hover and in the name, without displacing the verb", () => {
 		render(
 			<Action
@@ -85,8 +83,30 @@ describe("Action", () => {
 		expect(screen.getByText("Uninstall")).toBeInTheDocument();
 	});
 
-	// The action that carries the run forward wears the run's own colour, so a
-	// themed page has one accent rather than a green one arguing with it.
+	it("opens a footer button's hint upward, off its right edge", () => {
+		render(
+			<Action
+				label="Continue →"
+				size="lg"
+				hint="Over capacity by 4 spots"
+				onUse={vi.fn()}
+			/>
+		);
+
+		expect(
+			screen.getByText("Over capacity by 4 spots").parentElement
+		).toHaveClass("bottom-full", "right-0");
+	});
+
+	it("keeps a row button's hint under it, where the next row gives way", () => {
+		render(<Action label="Uninstall" hint="Refunds 16 KB" onUse={vi.fn()} />);
+
+		expect(screen.getByText("Refunds 16 KB").parentElement).toHaveClass(
+			"top-full",
+			"left-0"
+		);
+	});
+
 	it("wears the gate's colour when it is the action that moves the run on", () => {
 		render(<Action label="Submit answer" emphasis="loud" onUse={vi.fn()} />);
 

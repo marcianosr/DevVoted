@@ -4,7 +4,7 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	auditBurnKb,
 	auditDemandFactor,
-	auditExtraStrips,
+	auditExtraPeelShare,
 	auditFeeMultiplier,
 	auditsCloseShop,
 	auditsForGate,
@@ -18,13 +18,8 @@ import {
 	offlineConfigsFor,
 	suppressedAuditFor,
 } from "~/modules/run/gate/domain/audit.model";
-import {
-	GATE_COUNT,
-	STORAGE_PLANS,
-} from "~/modules/run/run/domain/rules.model";
+import { GATE_COUNT } from "~/modules/run/run/domain/rules.model";
 
-// The count is the escalation (ADR-038), and it is the one property of the
-// roster worth asserting as a rule rather than as content.
 describe("the audit schedule", () => {
 	const countAt = (gate: number) => auditsForGate(gate).length;
 
@@ -58,17 +53,15 @@ describe("the audit schedule", () => {
 		for (const audits of Object.values(GATE_AUDITS))
 			for (const audit of audits) {
 				expect(audit.description.length).toBeGreaterThan(0);
-				// Read-only and Strip are settled before the polls start; everything
-				// else changes how a poll is played, so it owes the banner a line.
 				const settledAtTheDoor =
-					audit.closesShop === true || audit.stripQuotaOnFail !== undefined;
+					audit.closesShop === true || audit.peelShareOnFail !== undefined;
 				expect(audit.answerCue === undefined).toBe(settledAtTheDoor);
 			}
 	});
 
 	it("deepens the peel on Elite and Champion only", () => {
 		const stripGates = Object.entries(GATE_AUDITS)
-			.filter(([, audits]) => auditExtraStrips(audits) > 0)
+			.filter(([, audits]) => auditExtraPeelShare(audits) > 0)
 			.map(([gate]) => Number(gate));
 		expect(stripGates).toEqual([11, 12]);
 	});
@@ -121,13 +114,6 @@ describe("read-only", () => {
 		expect(auditsCloseShop(auditsForGate(5))).toBe(true);
 		expect(auditsCloseShop(auditsForGate(6))).toBe(false);
 	});
-
-	// A rung the player can see but not buy reads as a bug, so Read-only stays
-	// off the gates the storage ladder unlocks on (ADR-030).
-	it("never shuts the shop on the gate a storage rung unlocks", () => {
-		for (const plan of STORAGE_PLANS)
-			expect(auditsCloseShop(auditsForGate(plan.fromGate))).toBe(false);
-	});
 });
 
 describe("the timeout", () => {
@@ -147,9 +133,6 @@ describe("the timeout", () => {
 	});
 });
 
-// Four audits take configs offline and differ only in the pick (ADR-038), so
-// each one is tested by what its pick is loyal to: the attempt, the poll, the
-// rotation, or the upgrade.
 describe("the configs an audit takes offline", () => {
 	const build = [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd];
 	const window = 15;
@@ -236,8 +219,6 @@ describe("the configs an audit takes offline", () => {
 			expect(new Set(ids).size).toBe(1);
 		});
 
-		// Ties are the common case, so "the deepest level" alone would always mean
-		// the same config in an un-upgraded build.
 		it("picks at random among configs tied at the top level", () => {
 			const picks = [0, 5, 10, 15, 20, 25].map(
 				(start) => offlineConfigsFor(build, breaking, start, 0)[0]?.id
@@ -286,7 +267,7 @@ describe("the defeat device (ADR-028, repurposed)", () => {
 
 	it("leaves the Champion's later audits in force", () => {
 		expect(liveAuditsFor(device, 12).map((audit) => audit.id)).toEqual([
-			"strip-2",
+			"strip-15",
 			"timeout-5",
 		]);
 	});

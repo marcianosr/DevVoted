@@ -53,7 +53,7 @@ const stateVariants: Record<string, RunState> = {
 	"awaiting-strip with strips remaining": {
 		...baseState,
 		status: "awaiting-strip",
-		stripsRemaining: 2,
+		peelSpotsRemaining: 2,
 		gatesCleared: 3,
 	},
 	"rewarding with draft options": {

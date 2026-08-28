@@ -13,19 +13,16 @@ import { Fold, type FoldItem } from "../Fold.ui";
 import { Stake } from "../Stake.ui";
 import type { Rarity } from "../rarity";
 import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
-import { Slot } from "../Slot.ui";
+import { SpotTrack } from "../SpotTrack.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
 import { Tooltip } from "../Tooltip.ui";
 import { signed } from "../format";
 
-// Copied from ShopScreen: prep and the shop are one place the player walks
-// between, so the two bodies should not sit differently on the page.
 const BODY = "flex flex-col lg:flex-row lg:items-stretch";
 const COLUMN = "flex min-w-0 flex-1 flex-col px-2 py-4";
 const STAKE = "border-b border-edge lg:border-b-0 lg:border-r";
 
-// Fixed width and right-aligned, so the names line up however far the build runs.
 const ORDINAL = "w-4 shrink-0 text-right tabular-nums";
 
 const MULTIPLIERS = "flex flex-wrap items-center gap-1.5";
@@ -44,16 +41,13 @@ export type PrepConfig = {
 	id: string;
 	label: string;
 	rarity?: Rarity;
+	spots: number;
+	minified?: boolean;
 	note?: ReactNode;
-	/** The facts line under the name — a node, since the grade in it is coloured. */
 	summary?: ReactNode;
 	explainer?: string;
 };
 
-export type PrepSlot = { id: string; gate?: number; coverage?: number };
-
-/** Prep's audit rows are the kit's audit rows; the alias keeps the screen's own
- * prop names reading as a set. */
 export type PrepAudit = AuditRow;
 
 export type PrepReward = {
@@ -81,7 +75,9 @@ export type PrepScreenProps = {
 	missIsFatal: boolean;
 	coveragePerWrong: number;
 	configs: readonly PrepConfig[];
-	slots: readonly PrepSlot[];
+	spots: number;
+	maxSpots?: number;
+	fits?: Rarity | null;
 	audits: readonly PrepAudit[];
 	reward: PrepReward;
 	bills: readonly PrepBill[];
@@ -162,7 +158,9 @@ export const PrepScreen = ({
 	missIsFatal,
 	coveragePerWrong,
 	configs,
-	slots,
+	spots,
+	maxSpots,
+	fits,
 	audits,
 	reward,
 	bills,
@@ -174,10 +172,7 @@ export const PrepScreen = ({
 	onStart,
 	theme,
 }: PrepScreenProps) => {
-	// A gated row is a preview of width to come, not width held — counting it read
-	// a full 3-slot build as "3 / 4".
-	const width =
-		configs.length + slots.filter((slot) => slot.gate === undefined).length;
+	const spotsUsed = configs.reduce((total, config) => total + config.spots, 0);
 	const billedKb = bills.reduce((total, bill) => total + bill.kb, 0);
 	const onMissKb = bills
 		.filter((bill) => bill.billedOnMiss)
@@ -301,10 +296,6 @@ export const PrepScreen = ({
 				/>
 			),
 		})),
-		...slots.map((slot) => ({
-			id: slot.id,
-			content: <Slot gate={slot.gate} coverage={slot.coverage} />,
-		})),
 	];
 
 	const startButton = onStart ? (
@@ -363,8 +354,16 @@ export const PrepScreen = ({
 						title="Your pipeline"
 						value={
 							<Text size="meta" tone="muted">
-								{configs.length} / {width}
+								{spotsUsed} of {spots} spots
 							</Text>
+						}
+						note={
+							<SpotTrack
+								configs={configs}
+								spots={spots}
+								maxSpots={maxSpots}
+								fits={fits}
+							/>
 						}
 						items={pipeline}
 					>

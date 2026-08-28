@@ -27,7 +27,6 @@ const answered: AnsweredPoll[] = [
 	},
 ];
 
-/** The cleared gate every test starts from; each names only the field it is about. */
 const payout = (overrides: Partial<GatePayout> = {}) =>
 	createMockGatePayout({
 		clearedGateNumber: 1,
@@ -146,7 +145,6 @@ describe(RewardScreen, () => {
 	it("itemizes the clear payout into a base and the configs that added to it", () => {
 		render(<RewardScreen {...base} />);
 		expect(screen.getByText("base reward")).toBeInTheDocument();
-		// 80KB paid, 32 of it Unit Tests' flat on-clear payout.
 		expect(screen.getByText("48KB")).toBeInTheDocument();
 		expect(screen.getByText("Unit Tests")).toBeInTheDocument();
 		expect(screen.getByText("+32KB")).toBeInTheDocument();
@@ -178,9 +176,6 @@ describe(RewardScreen, () => {
 		expect(total).toHaveTextContent("104KB");
 	});
 
-	// The chip is the whole point of carrying the Config rather than its label:
-	// level and description ride along for free, so a config reads the same here
-	// as it does in the shop and the pipeline.
 	it("wears the config's level badge and description, as the shop's chips do", () => {
 		render(
 			<RewardScreen
@@ -190,7 +185,6 @@ describe(RewardScreen, () => {
 			/>
 		);
 		expect(screen.getByText("L2")).toBeInTheDocument();
-		// L2 doubles both halves of the roster line: 2% → 4%, 32KB → 64KB.
 		expect(screen.getByRole("tooltip")).toHaveTextContent(
 			"+4% of held storage on gate clear."
 		);
@@ -204,9 +198,6 @@ describe(RewardScreen, () => {
 	});
 
 	it("banks storage the equipped configs cannot account for in the base", () => {
-		// No faucet config equipped, so the 16KB has nowhere to be attributed —
-		// it belongs in the base rather than dropping out of a total the player
-		// can check against the headline.
 		render(
 			<RewardScreen {...base} payout={payout({ faucetThisGateKb: 16 })} />
 		);
@@ -214,11 +205,11 @@ describe(RewardScreen, () => {
 		expect(screen.getByText("+96KB")).toBeInTheDocument();
 	});
 
-	it("shows the running storage total against the cap", () => {
+	it("shows the running balance, with no ceiling to meter it against", () => {
 		render(<RewardScreen {...base} />);
-		const bar = screen.getByRole("progressbar", { name: "storage used" });
-		expect(bar).toHaveAttribute("aria-valuenow", "96");
-		expect(bar).toHaveAttribute("aria-valuemax", "512");
+
+		expect(screen.getByText("96 KB")).toBeInTheDocument();
+		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 	});
 
 	it("shows the cleared gate's swatch chip beside its name and its unlock line", () => {
@@ -226,9 +217,6 @@ describe(RewardScreen, () => {
 		expect(screen.getAllByTestId("swatch")).toHaveLength(2);
 	});
 
-	// The clear itemizes storage and nothing else (ADR-026 §3, amended): the
-	// pipeline report — statuses, roles, coverage — stays on the failed gate's
-	// screen, where knowing what fell short is the point.
 	it("keeps the pipeline report off the clear even though the ledger is back", () => {
 		render(<RewardScreen {...base} />);
 		expect(screen.queryByText("Gate rewards")).not.toBeInTheDocument();
@@ -266,24 +254,22 @@ describe(RewardScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("names the window's bill when the plan collected one", () => {
-		render(<RewardScreen {...base} payout={payout({ gateBillPaidKb: 8 })} />);
-		expect(
-			screen.getByText("Storage plan billed −8KB this window.")
-		).toBeInTheDocument();
-	});
-
-	it("stays quiet about the bill on the free tier", () => {
-		render(<RewardScreen {...base} payout={payout({ gateBillPaidKb: 0 })} />);
-		expect(screen.queryByText(/Storage plan billed/)).not.toBeInTheDocument();
-	});
-
-	it("calls out an unpaid bill's downgrade — that news outranks the payout", () => {
+	it("names a subscription's bill when one collected", () => {
 		render(
-			<RewardScreen {...base} payout={payout({ planDowngraded: true })} />
+			<RewardScreen {...base} payout={payout({ subscriptionBillKb: 8 })} />
 		);
+
 		expect(
-			screen.getByText("Storage bill unpaid — downgraded to the free tier.")
+			screen.getByText("Subscriptions billed −8KB this gate.")
 		).toBeInTheDocument();
+	});
+
+	it("stays quiet with nothing subscribed", () => {
+		render(
+			<RewardScreen {...base} payout={payout({ subscriptionBillKb: 0 })} />
+		);
+
+		expect(screen.queryByText(/Subscriptions billed/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/Storage plan/)).not.toBeInTheDocument();
 	});
 });

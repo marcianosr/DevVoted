@@ -8,7 +8,6 @@ describe(RunHud, () => {
 		render(
 			<RunHud
 				storage={120}
-				capKb={512}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -18,15 +17,10 @@ describe(RunHud, () => {
 				coverageByCategory={{}}
 			/>
 		);
-		// Both layouts render the gauge, so its text shows up twice.
-		expect(screen.getAllByText("120 / 512 KB stored")).toHaveLength(2);
-		// Gates count from 0, so one banked means you are standing on gate 1. Both
-		// layouts render the bar, so both copies show up here.
+		expect(screen.getAllByText("120 KB")).toHaveLength(2);
 		expect(screen.getAllByRole("group", { name: /gate 1 of 11/ })).toHaveLength(
 			2
 		);
-		// ...and gate 1 is the Boulder gate: the HUD names it, since that is what the
-		// shop, the reward report and the swatch on offer all call it.
 		expect(screen.getByText("Boulder")).toBeInTheDocument();
 	});
 
@@ -34,7 +28,6 @@ describe(RunHud, () => {
 		render(
 			<RunHud
 				storage={120}
-				capKb={512}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -51,32 +44,10 @@ describe(RunHud, () => {
 		);
 	});
 
-	it("explains the storage cap behind the storage info icon", () => {
+	it("explains storage as money rather than as a ceiling", () => {
 		render(
 			<RunHud
 				storage={120}
-				capKb={512}
-				gatesCleared={1}
-				victoryGate={11}
-				pollsAnswered={3}
-				pollsPerGate={5}
-				gateCoverage={0}
-				gateCoverageDemand={3}
-				coverageByCategory={{}}
-			/>
-		);
-		const hint = screen.getByRole("button", { name: "How storage works" });
-		expect(hint).toHaveTextContent("ⓘ");
-		expect(
-			screen.getByText(/Current storage caps at 512KB/)
-		).toBeInTheDocument();
-	});
-
-	it("reads the cap in the storage explanation from the run, not a hardcoded blurb", () => {
-		render(
-			<RunHud
-				storage={120}
-				capKb={640}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={3}
@@ -87,15 +58,15 @@ describe(RunHud, () => {
 			/>
 		);
 		expect(
-			screen.getByText(/Current storage caps at 640KB/)
+			screen.getByText(/Nothing caps what you can hold/)
 		).toBeInTheDocument();
+		expect(screen.queryByText(/caps at/)).not.toBeInTheDocument();
 	});
 
 	it("summarizes covered categories, and reveals every category on expand", () => {
 		render(
 			<RunHud
 				storage={120}
-				capKb={512}
 				gatesCleared={1}
 				victoryGate={11}
 				pollsAnswered={1}
@@ -105,13 +76,10 @@ describe(RunHud, () => {
 				coverageByCategory={{ css: 3, js: 4.5, git: 0 }}
 			/>
 		);
-		// Collapsed: the label reads the gate meter against its demand (ADR-035);
-		// the summary counts only categories with career coverage.
 		const coverage = screen.getByRole("button", { name: /^Coverage/ });
 		expect(coverage).toHaveTextContent("7.5% / 10% this gate");
 		expect(coverage).toHaveTextContent("across 2 categories");
 		expect(screen.queryByText("CSS")).not.toBeInTheDocument();
-		// Expanded: every category shows — including Git at 0%.
 		fireEvent.click(coverage);
 		expect(screen.getByText("CSS")).toBeInTheDocument();
 		expect(screen.getByText("JavaScript")).toBeInTheDocument();

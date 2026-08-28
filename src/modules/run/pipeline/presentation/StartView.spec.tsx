@@ -11,8 +11,9 @@ import { StartView, type StartViewProps } from "./StartView.component";
 const view = createMockRunView({
 	gatesCleared: 0,
 	configs: [],
-	slots: 3,
-	nextSlotUnlock: { slot: 5, gate: 3 },
+	spots: 4,
+	spotsUsed: 0,
+	spotsFree: 4,
 	available: Object.values(CONFIGS),
 	gateStake: createMockGateStake({ gateNumber: 0, coverageDemand: 3 }),
 });
@@ -38,7 +39,6 @@ describe("StartView", () => {
 		expect(screen.getByText("Pallet gate")).toBeInTheDocument();
 	});
 
-	// ADR-026: three openings, each a flavour decision the name carries.
 	it("offers every starter stack by name, with its own blurb", () => {
 		render_();
 
@@ -64,13 +64,9 @@ describe("StartView", () => {
 		expect(onPickStack).toHaveBeenCalledWith(STARTER_STACKS[0].id);
 	});
 
-	// `.js` is in two stacks, so the deal is what they are built from, deduped —
-	// not nine rows with a repeat.
 	it("deals the stacks' configs once each", () => {
 		render_();
 
-		// Exact text, not /\.js/ — that regex also catches .jsx, which is a
-		// different config in a different stack.
 		expect(screen.getAllByText(".js")).toHaveLength(1);
 		expect(screen.getAllByText(".jsx")).toHaveLength(1);
 		expect(screen.getByText(/dealt from/)).toBeInTheDocument();
@@ -85,28 +81,29 @@ describe("StartView", () => {
 		expect(onToggle).toHaveBeenCalledWith(CONFIGS.eslint.id);
 	});
 
-	// Rarity replaced the family tag as the row's one-word read: a family named
-	// the mechanic, which the row's own sentence already does.
-	it("marks each dealt config with the rarity it was drawn at", () => {
+	it("draws each dealt config's grade as a run of cells", () => {
 		render_();
 
-		expect(screen.getAllByText("common").length).toBeGreaterThan(0);
+		const row = screen.getByText(".js").closest("li");
+		expect(row?.querySelectorAll('span[class*="size-1.5"]')).toHaveLength(1);
+		expect(screen.queryByText("common")).not.toBeInTheDocument();
 	});
 
-	it("holds the run shut until the build is wide enough to start", () => {
-		render_();
+	it("holds the run shut while the pipeline is bare", () => {
+		render_({ view: createMockRunView({ ...view, canStart: false }) });
 
 		expect(
-			screen.getByRole("button", { name: "Pick 3 to start" })
+			screen.getByRole("button", { name: "Pick a config to start" })
 		).toBeDisabled();
 	});
 
-	it("starts once the slots are filled", async () => {
+	it("starts with spots to spare, once the engine says it can", async () => {
 		const onStart = vi.fn();
 		render_({
 			view: createMockRunView({
 				...view,
-				configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
+				configs: [CONFIGS.js, CONFIGS.ts],
+				canStart: true,
 			}),
 			onStart,
 		});
@@ -118,48 +115,6 @@ describe("StartView", () => {
 		expect(onStart).toHaveBeenCalledOnce();
 	});
 
-	it("shows the gate that grants the next slot", () => {
-		render_();
-
-		expect(screen.getByText("opens when gate 3 clears")).toBeInTheDocument();
-	});
-
-	it("shows the coverage total that grants the next slot", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				nextSlotUnlock: { slot: 6, coverage: 60 },
-			}),
-		});
-
-		expect(screen.getByText("Unlocks at 60% coverage")).toBeInTheDocument();
-	});
-
-	it("counts the slot as a clear reward when this gate is what opens it", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				nextSlotUnlock: { slot: 4, gate: 0 },
-			}),
-		});
-
-		// Numbered from the width in hand, not from the ladder row: the two part
-		// company as soon as a grant lands out of order.
-		expect(screen.getByText("slot 4")).toBeInTheDocument();
-	});
-
-	it("keeps a coverage-staged slot out of the clear rewards", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				nextSlotUnlock: { slot: 6, coverage: 60 },
-			}),
-		});
-
-		expect(screen.queryByText(/^slot \d/)).not.toBeInTheDocument();
-	});
-
-	// No seed and nothing banked in the rig — say less rather than invent a figure.
 	it("names no seed and no archive, having neither", () => {
 		render_();
 
@@ -167,22 +122,16 @@ describe("StartView", () => {
 		expect(screen.queryByText("archive")).not.toBeInTheDocument();
 	});
 
-	// The figure is in the explainer's prose too, but a sentence is not something
-	// you compare three rows on.
 	it("badges each config's headline figure beside its name", () => {
 		render_();
 
-		// .ts, .js, .jsx, .vue, .java, .git all sit at ×1.25 on level 1.
 		expect(screen.getAllByText("×1.25").length).toBeGreaterThan(1);
-		// Code Coverage adds flat coverage rather than multiplying it. Twice over:
-		// the column every row shares, and the config's own facts line.
 		expect(screen.getAllByText("+0.5").length).toBeGreaterThan(0);
 	});
 
 	it("badges nothing for a config that prices in something else", () => {
 		render_();
 
-		// ESLint charges a doubling fee — there is no one figure to state.
 		const row = screen.getByText("ESLint").closest("li");
 		if (!row) throw new Error("No ESLint row rendered");
 

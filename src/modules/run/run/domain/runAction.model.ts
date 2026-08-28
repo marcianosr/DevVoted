@@ -1,5 +1,10 @@
+import { spotsOf } from "~/modules/run/config/domain/config.model";
 import { starterStackFor } from "~/modules/run/config/domain/stack.model";
 import { auditsCloseShop } from "~/modules/run/gate/domain/audit.model";
+import {
+	hasRoomFor,
+	occupiedSpots,
+} from "~/modules/run/pipeline/domain/pipeline.model";
 import {
 	spendLint,
 	spendPeek,
@@ -12,18 +17,23 @@ import {
 } from "~/modules/run/run/domain/run.model";
 import { answer } from "~/modules/run/run/domain/answer.model";
 import {
-	changePlan,
+	setExtraSpots,
 	draft,
 	drop,
 	extendOffers,
 	finishReward,
 	lockOffer,
+	minifyConfig,
 	plantPin,
 	rebuildDraft,
 	sell,
 	upgrade,
 } from "~/modules/run/run/domain/shopAction.model";
-import { resumeClimb, strip } from "~/modules/run/run/domain/strip.model";
+import {
+	minifyForPeel,
+	resumeClimb,
+	strip,
+} from "~/modules/run/run/domain/strip.model";
 
 export type RunAction =
 	| { readonly type: "slot"; readonly configId: string }
@@ -48,12 +58,12 @@ export type RunAction =
 	| { readonly type: "finish-reward" }
 	| { readonly type: "sell"; readonly configId: string }
 	| { readonly type: "drop"; readonly configId: string }
-	| { readonly type: "change-plan"; readonly tier: number };
+	| { readonly type: "minify"; readonly configId: string }
+	| { readonly type: "set-extra-spots"; readonly spots: number };
 
 const slotConfig = (state: RunState, configId: string): RunState => {
 	const config = state.available.find((candidate) => candidate.id === configId);
-	if (!config || state.pipeline.configs.length >= state.pipeline.slots)
-		return state;
+	if (!config || !hasRoomFor(state.pipeline, spotsOf(config))) return state;
 	return {
 		...state,
 		available: state.available.filter((candidate) => candidate.id !== configId),
@@ -61,18 +71,10 @@ const slotConfig = (state: RunState, configId: string): RunState => {
 	};
 };
 
-/**
- * A stack is granted whole, not assembled out of the hand. It used to require
- * every member to be sitting in `available` and to no-op silently otherwise —
- * survivable while the hand was a fixed list holding all of them, fatal once the
- * hand became a draw of six (the three stacks want nine configs between them).
- *
- * The two pre-run paths are meant to be different offers: the stack is the
- * curated one, the draw is the found one.
- */
 const pickStack = (state: RunState, stackId: string): RunState => {
 	const stack = starterStackFor(stackId);
-	if (!stack || stack.configs.length > state.pipeline.slots) return state;
+	if (!stack || occupiedSpots(stack.configs) > state.pipeline.spots)
+		return state;
 	const memberIds = new Set(stack.configs.map((config) => config.id));
 	return {
 		...state,
@@ -103,7 +105,6 @@ const start = (state: RunState): RunState => {
 	return { ...state, status: "answering" };
 };
 
-/** Read-only (ADR-038) refuses these. `drop` is absent deliberately: it belongs to the gate door, and `atMinimumWidth` governs it. */
 const SHOP_WRITES: readonly RunAction["type"][] = [
 	"draft",
 	"upgrade",
@@ -111,11 +112,10 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 	"lock-offer",
 	"extend-offers",
 	"plant-pin",
-	"change-plan",
+	"set-extra-spots",
 	"sell",
 ];
 
-/** Whether the coming gate's audits have shut the shop (ADR-038). */
 export const isShopLocked = (state: RunState): boolean =>
 	auditsCloseShop(auditsOf(state));
 
@@ -137,6 +137,8 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return spendPeek(state);
 	if (action.type === "strip" && state.status === "awaiting-strip")
 		return strip(state, action.configId);
+	if (action.type === "minify" && state.status === "awaiting-strip")
+		return minifyForPeel(state, action.configId);
 	if (action.type === "resume-climb" && state.status === "awaiting-strip")
 		return resumeClimb(state);
 	if (action.type === "draft" && state.status === "rewarding")
@@ -153,10 +155,12 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return plantPin(state);
 	if (action.type === "finish-reward" && state.status === "rewarding")
 		return finishReward(state);
-	if (action.type === "change-plan" && state.status === "rewarding")
-		return changePlan(state, action.tier);
+	if (action.type === "set-extra-spots" && state.status === "rewarding")
+		return setExtraSpots(state, action.spots);
 	if (action.type === "sell" && state.status === "rewarding")
 		return sell(state, action.configId);
+	if (action.type === "minify" && state.status === "rewarding")
+		return minifyConfig(state, action.configId);
 	if (
 		action.type === "drop" &&
 		(state.status === "rewarding" ||

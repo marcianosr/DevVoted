@@ -2,6 +2,14 @@
 
 ## Status
 
+> ⚠ **Superseded by [ADR-045](045-spots-come-from-gates-kb-rents-more-on-top.md)
+> (2026-08-28)**: the subscription is gone. The KB cap it rented is deleted rather
+> than moved — at the balances a run actually reaches it was never binding — and
+> the width it had been re-aimed at by ADR-044 now comes from a fixed gate
+> schedule, with KB buying only an early arrival. Nothing below is live. What
+> survives is the Context: a flat one-time cap purchase converges every run, which
+> is why the answer was never a voucher.
+
 Accepted (2026-08-09, Marciano, DVTD-rf5c). **Supersedes the cap-extension
 voucher direction** ([ADR-015](015-storage-cap-policy-grant-and-cap-extender-configs.md)
 Decision 3 as re-decided by DVTD-0h4n): the cap is no longer raised by a
@@ -35,6 +43,10 @@ converge instead of varying.
    > ⚠ Amended by [ADR-030](030-gate-staged-storage-plans.md) (2026-08-11): the
    > ladder now runs to seven rungs (3MB cap) and each rung is gate-staged. The
    > subscription mechanic below is unchanged.
+   > ⚠ Amended again by [ADR-044](044-capacity-is-spots-money-is-kb.md)
+   > (2026-08-28): a rung now sells the pipeline's **width** in spots and the KB
+   > cap rides along, five rungs at 4/8/12/16/24 spots. Still a subscription,
+   > still billed pass or fail, still auto-downgrading — only the product changed.
 2. **The bill collects on every closed window, pass or fail**
    (`chargeStorageBill`, first thing in `closeWindow`, before the clear
    payout). A failed gate pays nothing and still bills: the subscription is a

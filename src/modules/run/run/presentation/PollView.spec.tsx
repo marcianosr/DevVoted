@@ -60,8 +60,6 @@ describe("PollView", () => {
 		).toBeInTheDocument();
 	});
 
-	// The trail is built from the window's size, so an early gate cannot look
-	// shorter than it is.
 	it("draws one crumb per poll in the window, whatever has been answered", () => {
 		const { container } = render_();
 		const trail = container.querySelector("nav");
@@ -75,7 +73,6 @@ describe("PollView", () => {
 		const trail = container.querySelector("nav");
 		if (!trail) throw new Error("No trail rendered");
 
-		// The verdict is announced, not drawn — the dot carries the colour.
 		expect(within(trail).getByText(/— correct/)).toBeInTheDocument();
 		expect(within(trail).getByText(/— wrong/)).toBeInTheDocument();
 		expect(trail.querySelector('[aria-current="step"]')).toHaveTextContent("3");
@@ -122,7 +119,6 @@ describe("PollView", () => {
 		expect(onSubmit).toHaveBeenCalledOnce();
 	});
 
-	// A lint cross-out is information, so the option stays visible and says why.
 	it("crosses an eliminated option out rather than removing it", () => {
 		render_({
 			view: createMockRunView({ ...view, disabledOptionIds: ["option-2"] }),
@@ -148,8 +144,6 @@ describe("PollView", () => {
 		});
 
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
-		// Twice on purpose: the header names what is running, the rail says what
-		// it does to this poll.
 		expect(screen.getAllByText("Timeout")).toHaveLength(2);
 		expect(screen.getByText("On the clock.")).toBeInTheDocument();
 	});
@@ -178,8 +172,6 @@ describe("PollView", () => {
 		expect(screen.getByText("2 running")).toBeInTheDocument();
 	});
 
-	// The dot and the word carry the state; dimming the row would have cost the
-	// config its name, which is the thing the player is looking for.
 	it("keeps an offline config on the rail, named and readable", () => {
 		const { container } = render_({
 			view: createMockRunView({
@@ -203,8 +195,6 @@ describe("PollView", () => {
 		expect(screen.getByText("offline · Dependency Outage")).toBeInTheDocument();
 	});
 
-	// The faucet's rate never moves, so the run's remaining allowance is the only
-	// number on the row that answers "how much of this is left".
 	it("counts the run's faucet allowance down on the config earning it", () => {
 		render_({
 			view: createMockRunView({
@@ -232,8 +222,6 @@ describe("PollView", () => {
 		expect(screen.queryByText("+8 KB")).not.toBeInTheDocument();
 	});
 
-	// `.length`'s whole effect, and it had none: the count reached the view and no
-	// modern screen read it.
 	it("states the gate's answer count beside the poll when a config counts them", () => {
 		render_({
 			view: createMockRunView({ ...view, correctAnswersThisGate: 7 }),
@@ -270,7 +258,7 @@ describe("PollView", () => {
 				...view,
 				gateStake: {
 					...view.gateStake,
-					stripsOnFailure: 2,
+					peelSpotsOnFailure: 2,
 					missIsFatal: true,
 				},
 			}),
@@ -287,27 +275,14 @@ describe("PollView", () => {
 		expect(screen.getByText(/pick every INCORRECT option/)).toBeInTheDocument();
 	});
 
-	// The row wears the stripe; only the opened facts line can spell the grade
-	// out, so it leads with it and then states level, rate and refund.
-	it("states the grade, the level, the rate and the refund under a config", () => {
+	it("states the level, the rate and the refund under a config", () => {
 		render_();
 
-		// Both equipped configs are common `.js`/`.ts` Focus configs, so every
-		// facts line on the rail reads alike; the first stands for them.
 		const facts = screen.getAllByText(/sells for/)[0];
 
-		expect(facts?.textContent).toBe(
-			"common · level 1 · ×1.25 · sells for 16 KB"
-		);
-		// The stripe on the row says "common" too, for a reader; the facts line's
-		// copy is the visible one, and it wears the tier's colour.
-		const word = screen
-			.getAllByText("common")
-			.find((node) => !node.className.includes("sr-only"));
-		expect(word).toHaveClass("text-cerulean");
+		expect(facts?.textContent).toBe("level 1 · ×1.25 · sells for 16 KB");
 	});
 
-	// "level 1" implies a level 2, so a config with no ladder does not claim one.
 	it("leaves the level off a config that cannot be upgraded", () => {
 		render_({
 			view: createMockRunView({ ...view, configs: [CONFIGS.eslint] }),
@@ -319,7 +294,6 @@ describe("PollView", () => {
 	});
 
 	it("quotes the refund this build would actually be paid, not list price", () => {
-		// WTFPL's no-warranty clause zeroes every sale while it is installed.
 		render_({
 			view: createMockRunView({
 				...view,
@@ -332,7 +306,6 @@ describe("PollView", () => {
 });
 
 describe("PollView tools", () => {
-	// A paid effect hangs off the config that sells it, so the row names it.
 	it("sells the cross-out from the linter's own row", async () => {
 		const onLint = vi.fn();
 		render_({
@@ -357,10 +330,6 @@ describe("PollView tools", () => {
 		expect(onLint).toHaveBeenCalledOnce();
 	});
 
-	// `canLint` already means the tool applies to this poll — the config is
-	// installed, the category matches, the audit has not frozen it and there is
-	// still an option to cross out. So the pair "applies but not ready" can only
-	// ever mean the run is short of KB, and the row says which.
 	it("shows the fee, refuses the press, and names the shortfall on the button", () => {
 		render_({
 			view: createMockRunView({
@@ -384,8 +353,6 @@ describe("PollView tools", () => {
 		).toBeDisabled();
 	});
 
-	// A disabled button takes no taps at all, so a phone can never reach the
-	// button's own tooltip: the row's body carries the same sentence.
 	it("repeats the shortfall in the row body, which a tap can open", () => {
 		render_({
 			view: createMockRunView({
@@ -402,9 +369,6 @@ describe("PollView tools", () => {
 			}),
 		});
 
-		// Twice on purpose: the button's tooltip panel and the row's own body. The
-		// body is the facts line, which is the copy a tap can reach — the refusal
-		// closes it, after the grade, the level, the rate and the refund.
 		expect(screen.getByText("Costs 16KB — you have 8KB")).toBeInTheDocument();
 
 		const facts = screen.getByText(/sells for/);
@@ -473,7 +437,6 @@ describe("PollView tools", () => {
 		expect(screen.getByText("29% picked this")).toBeInTheDocument();
 	});
 
-	// A crossed-out option is a rule, not a statistic; the rule has to survive.
 	it("keeps the cross-out on an option the split also covers", () => {
 		render_({
 			view: createMockRunView({ ...view, disabledOptionIds: ["option-2"] }),
@@ -484,8 +447,6 @@ describe("PollView tools", () => {
 		expect(screen.queryByText("29% picked this")).not.toBeInTheDocument();
 	});
 
-	// The fold is the adapter's to remember: the screen only reports the press,
-	// and the run state has no business carrying a reading preference.
 	it("folds the rail away and back on the toggle", async () => {
 		render_();
 

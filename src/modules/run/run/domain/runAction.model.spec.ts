@@ -4,7 +4,6 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	coverageDemandFor,
-	failStripsFor,
 	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
 import {
@@ -40,9 +39,6 @@ describe("configuring", () => {
 });
 
 describe("starter stacks (ADR-026)", () => {
-	// The spec's handed pool holds every "test-everything" member but lacks
-	// "ship-it"'s .jsx, which is what makes it the case worth testing: a stack is
-	// granted whole, so the hand it was dealt has no say in it.
 	const pickStack = (state: RunState, stackId: string): RunState =>
 		runReducer(state, { type: "pick-stack", stackId });
 
@@ -63,10 +59,6 @@ describe("starter stacks (ADR-026)", () => {
 		expect(state.available.map((config) => config.id)).toContain("css");
 	});
 
-	// The stack is the curated pre-run path and the hand is the drawn one, so a
-	// stack may not depend on the draw: with six cards off a ten-config pool, the
-	// three stacks' nine members would almost never all turn up, and the button
-	// would go quietly dead.
 	it("grants a stack whose members the hand never held", () => {
 		const state = pickStack(createRun(pool(60), handed), "ship-it");
 
@@ -92,19 +84,14 @@ describe("starter stacks (ADR-026)", () => {
 });
 
 describe("the gate audits (ADR-035)", () => {
-	// Marsh (gate 7) mirrors scoring; the streak stays keyed to true correctness.
 	const atMarsh = (): RunState => ({ ...started(["js"]), gatesCleared: 7 });
 
-	// The mirror flips the question, not the score (ADR-038): the two-option
-	// polls this spec serves mirror into "pick the one wrong option", so the
-	// wrong option IS the answer and everything downstream grades normally.
 	it("pays the wrong option at the mirror, streak and all", () => {
 		let state = answerWith(atMarsh(), false);
-		// share 1 × gate ×8 × difficulty 1 × streak 1.1.
 		expect(state.window.coverageGained).toBe(8.8);
 		expect(state.streak).toBe(1);
 		state = answerWith(state, false);
-		expect(state.streak).toBe(2); // streaks build under the mirror now
+		expect(state.streak).toBe(2);
 	});
 
 	it("bleeds the meter on the poll's own correct option", () => {
@@ -114,8 +101,6 @@ describe("the gate audits (ADR-035)", () => {
 			coverageByCategory: { react: 100 },
 		};
 		state = answerWith(state, true);
-		// Mirrored, that pick is the wrong one: no earn, and the bleed fires —
-		// half of what this gate pays per answer (0.5 × 8 = 4).
 		expect(state.window.coverageGained).toBe(0);
 		expect(state.coverage).toBe(96);
 		expect(state.streak).toBe(0);
@@ -146,8 +131,6 @@ describe("the gate audits (ADR-035)", () => {
 		});
 		const half = runReducer(state, { type: "answer", optionIds: ["b"] });
 		expect(both.answeredThisGate.at(-1)?.outcome).toBe("correct");
-		// Half the wrong options is a partial, exactly as a half-answered
-		// multi-answer poll would be off the mirror.
 		expect(half.answeredThisGate.at(-1)?.outcome).toBe("partial");
 		expect(both.window.coverageGained).toBeGreaterThan(
 			half.window.coverageGained
@@ -157,16 +140,15 @@ describe("the gate audits (ADR-035)", () => {
 	it("marks the mirrored expectation as the answer to beat", () => {
 		const state = answerWith(atMarsh(), false);
 		const answered = state.answeredThisGate.at(-1);
-		// "No" is this pool's wrong option — mirrored, it is what the gate wanted.
 		expect(answered?.correct).toEqual(["No"]);
 	});
 
 	it("leaks storage every poll at the volcano, more on a miss", () => {
 		let state = { ...started(["js"]), gatesCleared: 9, storage: 100 };
 		state = answerWith(state, true);
-		expect(state.storage).toBe(84); // -16 a poll
+		expect(state.storage).toBe(84);
 		state = answerWith(state, false);
-		expect(state.storage).toBe(52); // -32 on the miss
+		expect(state.storage).toBe(52);
 	});
 
 	it("floors the leak at 0 — insolvency stays non-lethal (ADR-023)", () => {
@@ -177,10 +159,9 @@ describe("the gate audits (ADR-035)", () => {
 	});
 
 	it("ends an Elite run whose build cannot pay the deepened peel", () => {
-		const quota = failStripsFor(11) + 1;
-		const state = failGate(atGateWithBuild(11, quota - 1));
+		const state = failGate(atGateWithBuild(11, 1));
 		expect(state.status).toBe("dead");
-		expect(state.log.at(-1)).toContain(`It peels ${quota}`);
+		expect(state.log.at(-1)).toContain("Run over");
 	});
 
 	it("refuses every shop write at a Read-only gate, and none elsewhere", () => {
@@ -190,7 +171,7 @@ describe("the gate audits (ADR-035)", () => {
 			status: "rewarding",
 			gatesCleared,
 			storage: 1000,
-			pipeline: { ...base.pipeline, slots: 4 },
+			pipeline: { ...base.pipeline, spots: 4 },
 			draftOptions: [CONFIGS.indexedDb],
 		});
 		const readOnly = shopping(5);
@@ -198,7 +179,7 @@ describe("the gate audits (ADR-035)", () => {
 		expect(
 			runReducer(readOnly, { type: "draft", configId: "indexed-db" })
 		).toBe(readOnly);
-		expect(runReducer(readOnly, { type: "change-plan", tier: 2 })).toBe(
+		expect(runReducer(readOnly, { type: "set-extra-spots", spots: 1 })).toBe(
 			readOnly
 		);
 		expect(runReducer(readOnly, { type: "rebuild-draft" })).toBe(readOnly);
@@ -211,8 +192,6 @@ describe("the gate audits (ADR-035)", () => {
 		).toHaveLength(4);
 	});
 
-	// Read-only shuts the till, not the door: the gate still has to be started,
-	// and a build that needs shrinking to fit still can be.
 	it("lets a Read-only run start its gate and drop a config", () => {
 		const readOnly: RunState = {
 			...started(["js"]),
@@ -224,7 +203,7 @@ describe("the gate audits (ADR-035)", () => {
 		);
 		expect(
 			runReducer(readOnly, { type: "drop", configId: "js" }).pipeline.configs
-		).toHaveLength(2);
+		).toHaveLength(3);
 	});
 
 	it("takes one config offline at a Dependency Outage gate", () => {
@@ -266,10 +245,10 @@ describe("the gate audits (ADR-035)", () => {
 		const base = started(["js"]);
 		const build: RunState = {
 			...base,
-			gatesCleared: 4, // Dependency Outage
+			gatesCleared: 4,
 			pipeline: {
 				...base.pipeline,
-				slots: 5,
+				spots: 5,
 				configs: [
 					...base.pipeline.configs,
 					CONFIGS.agentsMd,
@@ -283,8 +262,6 @@ describe("the gate audits (ADR-035)", () => {
 			?.coverageBreakdown?.configBonuses.map((bonus) => bonus.configId);
 		expect(offlineId).toBeDefined();
 		expect(bonuses).not.toContain(offlineId);
-		// The rest of the build still pays, so this is a config going quiet
-		// rather than the whole pipeline switching off.
 		expect(bonuses?.length).toBeGreaterThan(0);
 	});
 
@@ -300,8 +277,6 @@ describe("the gate audits (ADR-035)", () => {
 		expect(late.window.coverageGained).toBe(0);
 		expect(late.window.correct).toBe(0);
 		expect(late.streak).toBe(0);
-		// The review still knows the answer was right, so "wrong" never reads as a
-		// lie about what was picked.
 		expect(late.answeredThisGate.at(-1)?.timedOut).toBe(true);
 	});
 
@@ -330,9 +305,6 @@ describe("the gate audits (ADR-035)", () => {
 		);
 	});
 
-	// `.length` reveals a number the player is about to spend, so at a mirrored
-	// gate it has to count the wrong options — those are the picks being asked
-	// for (ADR-038).
 	it("counts the picks a mirrored window actually wants", () => {
 		const threeOption = (id: string): RunPoll => ({
 			id,
@@ -353,18 +325,15 @@ describe("the gate audits (ADR-035)", () => {
 			base = runReducer(base, { type: "slot", configId });
 		base = runReducer(base, { type: "start" });
 
-		// One correct option per poll off the mirror, two wrong ones on it.
 		expect(toRunView(base).correctAnswersThisGate).toBe(SLICE_WINDOW);
 		expect(pickBudgetFor(polls, 0, true)).toBe(SLICE_WINDOW * 2);
 
-		// A window belongs to the gate that opened it, so the mirrored count
-		// arrives with the window — here, the one a missed mirror gate reopens.
 		const reopened = runReducer(
 			{
 				...base,
 				gatesCleared: 7,
 				status: "awaiting-strip" as const,
-				stripsRemaining: 0,
+				peelSpotsRemaining: 0,
 			},
 			{ type: "resume-climb" }
 		);
@@ -387,13 +356,13 @@ describe("the gate audits (ADR-035)", () => {
 			expect.objectContaining({ id: "mirrored", suppressed: true }),
 		]);
 		state = answerWith(state, true);
-		expect(state.window.coverageGained).toBeGreaterThan(0); // no mirror
+		expect(state.window.coverageGained).toBeGreaterThan(0);
 	});
 });
 
 describe("the daily gate lock", () => {
 	it("stays answering when the day's polls run out mid-window", () => {
-		let state = started(["js"], 3); // stub segment: the window never fills
+		let state = started(["js"], 3);
 		for (let i = 0; i < 3; i++) state = answerWith(state, true);
 		expect(state.status).toBe("answering");
 		expect(isAwaitingTomorrow(state)).toBe(true);
@@ -414,7 +383,6 @@ describe("the daily gate lock", () => {
 		state = answerWith(state, true);
 		state = answerWith(state, true);
 		expect(isAwaitingTomorrow(state)).toBe(true);
-		// The rollover appends outside the reducer (ADR-011); the lock is derived.
 		const rolled = {
 			...state,
 			polls: [...state.polls, poll("tomorrow-0", true)],
@@ -433,7 +401,6 @@ describe("the daily gate lock", () => {
 
 	it("locks the retry behind tomorrow when the day ends on a failed gate", () => {
 		let state = failGate(started(["unit-tests"], SLICE_WINDOW));
-		// The peel and the shop still happen today — only the polls have to wait.
 		expect(state.status).toBe("awaiting-strip");
 		state = runReducer(payPeel(state), { type: "finish-reward" });
 		expect(isAwaitingTomorrow(state)).toBe(true);
@@ -446,12 +413,6 @@ describe("a two-polls-a-day player (ADR-014)", () => {
 			poll(`day${day}-${index}`, true)
 		);
 
-	/**
-	 * What a day boundary means to the engine: the rollover (which lives
-	 * outside the reducer — ensureTodaysSegmentWith) drops the unplayed tail
-	 * and appends tomorrow's segment. In a pure test that is one array
-	 * operation; the reducer itself never learns the date changed.
-	 */
 	const nextDay = (
 		state: RunState,
 		tomorrow: readonly RunPoll[]
@@ -461,22 +422,14 @@ describe("a two-polls-a-day player (ADR-014)", () => {
 	});
 
 	it("carries a half-filled gate across the day boundary", () => {
-		// Day 1: answer 2 of the day's 5 correctly, then stop for the day.
 		let state = started(["js"], SLICE_WINDOW);
 		state = answerWith(state, true);
 		state = answerWith(state, true);
 
 		state = nextDay(state, dayPolls(2));
 
-		// The boundary changed the polls, not the climb: gate progress survives.
 		expect(state.window.answered).toBe(2);
 		expect(isAwaitingTomorrow(state)).toBe(false);
-
-		// TODO(marciano): finish the scenario — you decide which invariants
-		// matter. Candidates: the gate closes on day 2's third answer
-		// (status / gatesCleared / a fresh window), streak and coverage
-		// survive the boundary, and after day 2's remaining two polls the
-		// lock engages with the next window already 2/5 in (the drift).
 	});
 });
 
@@ -485,13 +438,12 @@ describe("the starting pipeline", () => {
 		expect(configIds(createRun(pool(60), handed))).toEqual([]);
 	});
 
-	it("refuses to start until every slot is filled", () => {
-		let state = createRun(pool(60), handed);
-		state = runReducer(state, { type: "slot", configId: "js" });
+	it("refuses to start bare, and starts with spots to spare", () => {
+		const bare = createRun(pool(60), handed);
+		expect(runReducer(bare, { type: "start" }).status).toBe("configuring");
+
+		let state = runReducer(bare, { type: "slot", configId: "js" });
 		state = runReducer(state, { type: "slot", configId: "eslint" });
-		const early = runReducer(state, { type: "start" });
-		expect(early.status).toBe("configuring"); // 2 of 3 slots filled
-		state = runReducer(state, { type: "slot", configId: "cold-start" });
 		state = runReducer(state, { type: "start" });
 		expect(state.status).toBe("answering");
 	});

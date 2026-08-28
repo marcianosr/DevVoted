@@ -137,7 +137,7 @@ type GateRewardReportProps = {
 	breakdown?: ReactNode;
 	removableConfigIds?: readonly string[];
 	onRemoveConfig?: (configId: string) => void;
-	stripsRemaining?: number;
+	peelSpotsRemaining?: number;
 };
 
 /**
@@ -283,7 +283,7 @@ export const GateRewardReport = ({
 	breakdown,
 	removableConfigIds = [],
 	onRemoveConfig,
-	stripsRemaining,
+	peelSpotsRemaining,
 }: GateRewardReportProps) => {
 	const storageFigures = meterFigures(
 		storageBar?.toKb,
@@ -335,12 +335,14 @@ export const GateRewardReport = ({
 				</div>
 			) : null}
 
-			{!cleared && stripsRemaining !== undefined && stripsRemaining > 0 && (
-				<Paragraph size="sm" tone="muted">
-					Remove {stripsRemaining} config{stripsRemaining === 1 ? "" : "s"} to
-					continue
-				</Paragraph>
-			)}
+			{!cleared &&
+				peelSpotsRemaining !== undefined &&
+				peelSpotsRemaining > 0 && (
+					<Paragraph size="sm" tone="muted">
+						Remove {peelSpotsRemaining} config
+						{peelSpotsRemaining === 1 ? "" : "s"} to continue
+					</Paragraph>
+				)}
 
 			{totals ? (
 				// Only the cleared path passes totals. The pipeline steps and the

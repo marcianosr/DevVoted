@@ -1,18 +1,24 @@
-import { clsx } from "clsx";
-
-import { rarityOf } from "~/modules/run/config/domain/config.model";
+import {
+	spotsOf,
+	RARITY_ODDS,
+	rarityOf,
+	type Rarity,
+} from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
-import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
+import { RarityGlyph } from "~/ui/modern-theme/RarityGlyph.ui";
 import { Stack } from "~/ui/Stack.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
-// Rarest first, matching the loadout draft's ordering.
-const RARITY_ORDER: Rarity[] = ["legendary", "rare", "uncommon", "common"];
+const RARITY_ORDER: Rarity[] = ["byte", "nibble", "crumb", "bit"];
+
+const HEADER = "flex items-center gap-3";
+const NAME = "text-xs font-bold uppercase tracking-wide text-zinc-200";
+const FIGURES = "flex items-center gap-3 text-xs text-zinc-500";
+const COUNT = "ml-auto text-xs tabular-nums text-zinc-500";
 
 export const ConfigdexPanel = () => {
 	const configs = Object.values(CONFIGS);
-	// No unlock system yet — every config counts as owned, so owned == total.
 	const total = configs.length;
 
 	return (
@@ -22,22 +28,24 @@ export const ConfigdexPanel = () => {
 			</Paragraph>
 			{RARITY_ORDER.map((rarity) => {
 				const group = configs.filter((config) => rarityOf(config) === rarity);
-				if (group.length === 0) return null;
+				const [first] = group;
+				if (!first) return null;
 
 				return (
 					<div key={rarity} className="flex flex-col gap-3">
-						<p
-							className={clsx(
-								"text-xs font-bold uppercase tracking-wide",
-								RARITY_COLORS[rarity].text
-							)}
-						>
-							{rarity} · {group.length}/{group.length}
-						</p>
-						{/* Chips only, no card: a collection is read as a grid of things
-						    you have, and printing every effect made four rows of prose
-						    you have to scan past to see the shape of the set. The chip's
-						    own tooltip still names the rarity and what it does. */}
+						<header className={HEADER}>
+							<RarityGlyph rarity={rarity} size="header" />
+							<p className={NAME}>{rarity}</p>
+							<span className={FIGURES}>
+								<span>{RARITY_ODDS[rarity]}</span>
+								<span>
+									{spotsOf(first)} spot{spotsOf(first) > 1 ? "s" : ""}
+								</span>
+							</span>
+							<p className={COUNT}>
+								{group.length}/{group.length}
+							</p>
+						</header>
 						<div className="flex flex-wrap gap-2">
 							{group.map((config) => (
 								<ConfigChip key={config.id} config={config} />

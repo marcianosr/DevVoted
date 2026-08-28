@@ -3,13 +3,16 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Entry } from "../Entry.ui";
+import type { ExtraSpotsProps } from "../ExtraSpots.ui";
 import { ShopScreen, type ShopScreenProps } from "./ShopScreen.ui";
+
+const NO_EXTRAS: ExtraSpotsProps = { steps: [], renting: 0, perGateKb: 0 };
 
 const props: ShopScreenProps = {
 	gate: {
 		title: "Lavender shop",
 		nextGate: "gate 4",
-		storage: { plan: "Free tier", used: 216, cap: 512 },
+		storage: { balanceKb: 216 },
 	},
 	offers: [
 		{
@@ -25,7 +28,7 @@ const props: ShopScreenProps = {
 	],
 	offerCount: "5 offers",
 	pipeline: [{ id: ".git", content: <Entry mark="pass" label=".git" /> }],
-	slots: "3 of 6 slots",
+	slots: "3 of 6 spots",
 	theme: "lavender",
 };
 
@@ -44,7 +47,20 @@ describe("ShopScreen", () => {
 		render(<ShopScreen {...props} />);
 
 		expect(screen.getByText("5 offers")).toBeInTheDocument();
-		expect(screen.getByText("3 of 6 slots")).toBeInTheDocument();
+		expect(screen.getByText("3 of 6 spots")).toBeInTheDocument();
+	});
+
+	it("draws the pipeline's room under its heading", () => {
+		render(<ShopScreen {...props} track={<span>the track</span>} />);
+
+		expect(screen.getByText("the track")).toBeInTheDocument();
+	});
+
+	it("gives the offer and pipeline headings no way to collapse the list", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(screen.getByText("New configs").closest("summary")).toBeNull();
+		expect(screen.getByText("Your pipeline").closest("summary")).toBeNull();
 	});
 
 	it("orders the draft before the pipeline, so a stacked screen reads what is for sale first", () => {
@@ -79,30 +95,27 @@ describe("ShopScreen", () => {
 		expect(screen.getByRole("button", { name: "rebuild" })).toBeInTheDocument();
 	});
 
-	// Draft, then the plan, then the run-level controls: each section's figures
-	// are true for a longer horizon than the one above it.
 	it("orders the column from this shop outwards", () => {
 		render(
 			<ShopScreen
 				{...props}
-				storagePlans={{ plans: [], nextBillKb: 0 }}
+				extraSpots={NO_EXTRAS}
 				controls={<button>git tag</button>}
 			/>
 		);
 
 		const draft = screen.getByText("New configs");
-		const plan = screen.getByText("Storage plan");
+		const capacity = screen.getByText("Extra spots");
 		const tag = screen.getByRole("button", { name: "git tag" });
 
-		expect(draft.compareDocumentPosition(plan)).toBe(
+		expect(draft.compareDocumentPosition(capacity)).toBe(
 			Node.DOCUMENT_POSITION_FOLLOWING
 		);
-		expect(plan.compareDocumentPosition(tag)).toBe(
+		expect(capacity.compareDocumentPosition(tag)).toBe(
 			Node.DOCUMENT_POSITION_FOLLOWING
 		);
 	});
 
-	// The offers are what you read first; the reroll is what you do about them.
 	it("puts the rebuild press below the shelf it replaces, beside its next price", () => {
 		render(
 			<ShopScreen
@@ -132,28 +145,34 @@ describe("ShopScreen", () => {
 		expect(screen.getByText("next rebuild 8 KB")).toBeInTheDocument();
 	});
 
-	it("carries the storage ladder in the draft column", () => {
+	it("carries the extra-spot ladder in the draft column", () => {
 		render(
 			<ShopScreen
 				{...props}
-				storagePlans={{
-					plans: [
-						{ id: "tier-5", locked: true, opensAt: "opens when gate 6 clears" },
+				extraSpots={{
+					...NO_EXTRAS,
+					steps: [
+						{
+							id: "extra-0",
+							label: "none",
+							makes: "makes 4",
+							terms: "free",
+							held: true,
+							pick: { onUse: () => {} },
+						},
 					],
-					nextBillKb: 16,
 				}}
 			/>
 		);
 
-		expect(screen.getByText("Storage plan")).toBeInTheDocument();
-		expect(screen.getByText("Cost per gate")).toBeInTheDocument();
+		expect(screen.getByText("Extra spots")).toBeInTheDocument();
+		expect(screen.getByText("makes 4")).toBeInTheDocument();
 	});
 
-	it("leaves the ladder out entirely when no plans are given", () => {
+	it("leaves the ladder out entirely when no capacity is given", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(screen.queryByText("Storage plan")).not.toBeInTheDocument();
-		expect(screen.queryByText("next gate bills")).not.toBeInTheDocument();
+		expect(screen.queryByText("Extra spots")).not.toBeInTheDocument();
 	});
 
 	it("offers no way out until a handler says where out is", () => {
@@ -173,8 +192,6 @@ describe("ShopScreen", () => {
 		expect(onContinue).toHaveBeenCalledOnce();
 	});
 
-	// One band across the top instead of a refusal on every press: a shut shop
-	// refuses all seven, and seven tooltips would each state the same rule.
 	it("states across the whole screen why nothing on it can be acted on", () => {
 		render(
 			<ShopScreen
@@ -192,22 +209,26 @@ describe("ShopScreen", () => {
 		expect(screen.queryByText(/Shop closed/)).not.toBeInTheDocument();
 	});
 
-	// ADR-027 turns an under-width build away at the door, and the door has to
-	// say so — the button is the only thing the player is looking at.
-	it("wears the refusal as the button's own label", () => {
+	it("shuts the exit without taking the verb off it", () => {
 		render(
 			<ShopScreen
 				{...props}
 				onContinue={() => {}}
-				exitLock="Fill 4 slots to continue"
+				exitLock="Over capacity by 4 spots. Minify, uninstall, or rent more room."
 			/>
 		);
 
 		expect(
-			screen.getByRole("button", { name: "Fill 4 slots to continue" })
+			screen.getByRole("button", {
+				name: "Continue →, Over capacity by 4 spots. Minify, uninstall, or rent more room.",
+			})
 		).toBeDisabled();
-		expect(
-			screen.queryByRole("button", { name: "Continue →" })
-		).not.toBeInTheDocument();
+		expect(screen.getByText("Continue →")).toBeInTheDocument();
+	});
+
+	it("leaves the exit live and unexplained when the build can climb", () => {
+		render(<ShopScreen {...props} onContinue={() => {}} />);
+
+		expect(screen.getByRole("button", { name: "Continue →" })).toBeEnabled();
 	});
 });

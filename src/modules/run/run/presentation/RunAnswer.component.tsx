@@ -19,27 +19,18 @@ import {
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { useUpcomingCategories } from "~/modules/run/run/application/useUpcomingCategories.hook";
 
-// Post-submit reveal beat: the answered poll stays on screen with its options
-// painted ✓/✕ and the coverage score, while the server result waits here. The
-// player advances it themselves (the "Next →" action) so they can read their
-// answer and score — nothing auto-commits.
 type RevealState = {
 	readonly result: RunActionSuccess;
 	readonly correctOptionIds: readonly string[];
 	readonly score: AnswerScore | null;
 };
 
-/** Tier 2: the answering screen, including the reveal beat and abandoning. */
 export const RunAnswer = () => {
 	const { view } = useTodaysRun();
 	const { send, sendWith, commit, busy, abandon } = useRunActions();
 	const upcoming = useUpcomingCategories(view);
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
-	// One clock per poll, owned by the hook: it feeds the "fastest answer"
-	// standout (DVTD-smye) and, at a Timeout gate, the countdown the player
-	// watches — the same start for both, so the display can never disagree with
-	// the reading the gate grades.
 	const clock = usePollClock(
 		view?.poll?.id ?? null,
 		view?.pollTimeLimitMs ?? null
@@ -50,15 +41,11 @@ export const RunAnswer = () => {
 
 	const [reveal, setReveal] = useState<RevealState | null>(null);
 
-	// Above the early return, so the hook count never moves. The engine decides
-	// whether this poll is paid for; the query only asks once it says so.
 	const { split } = usePollSplit({
 		pollId: view?.poll?.id ?? null,
 		paid: view?.currentPollPeeked ?? false,
 	});
 
-	// Abandoning is destructive (all leftover storage forfeits), so the button
-	// opens a confirm dialog instead of firing directly.
 	const [confirmingAbandon, setConfirmingAbandon] = useState(false);
 
 	if (!view?.poll) return null;
@@ -126,9 +113,6 @@ export const RunAnswer = () => {
 				audits={view.audits}
 				offlineConfigs={view.offlineConfigs.map((offline) => offline.config)}
 				mirroredPolls={view.mirroredPolls}
-				// Both or neither, and neither once the answer is in: the reveal is not
-				// the poll, and a ticking rail there would read as pressure to hurry
-				// through the explanation.
 				clock={pollClock}
 				poll={poll}
 				selectedOptionIds={selected}
@@ -136,7 +120,7 @@ export const RunAnswer = () => {
 				pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 				pollsPerGate={view.pollsPerGate}
 				reveal={answerReveal}
-				slots={view.slots}
+				slots={view.spots}
 				paidActions={view.paidActions}
 				interactive={!busy && reveal === null}
 				split={split ?? undefined}

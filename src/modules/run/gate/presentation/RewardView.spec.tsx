@@ -59,9 +59,6 @@ describe("RewardView on a clear", () => {
 		).toBeInTheDocument();
 	});
 
-	// `gateTheme` and `gateStake` both describe the gate ahead, which by now is
-	// gate 5 — grading this window against Rainbow's threshold would fail a
-	// window that actually cleared.
 	it("grades the window against the cleared gate's demand, not the next one's", () => {
 		render(
 			<RewardView
@@ -91,7 +88,6 @@ describe("RewardView on a clear", () => {
 		);
 	});
 
-	// One row per category asked, not per poll — two js polls are one line.
 	it("groups the window's coverage by category, worst outcome winning the mark", () => {
 		render(
 			<RewardView
@@ -162,14 +158,13 @@ describe("RewardView on a clear", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("puts the bills on the ledger as negatives, so the column totals the balance", () => {
+	it("puts the bill on the ledger as a negative, so the column totals the balance", () => {
 		render(
 			<RewardView
 				view={createMockRunView({
 					...cleared,
 					gatePayout: {
 						...cleared.gatePayout,
-						gateBillPaidKb: 32,
 						subscriptionBillKb: 16,
 					},
 				})}
@@ -179,8 +174,7 @@ describe("RewardView on a clear", () => {
 			/>
 		);
 
-		expect(screen.getByText("storage plan")).toBeInTheDocument();
-		expect(screen.getByText("−32 KB")).toBeInTheDocument();
+		expect(screen.queryByText("storage plan")).not.toBeInTheDocument();
 		expect(screen.getByText("subscriptions")).toBeInTheDocument();
 		expect(screen.getByText("−16 KB")).toBeInTheDocument();
 	});
@@ -204,7 +198,7 @@ describe("RewardView on a held gate", () => {
 		gatesCleared: 4,
 		answeredThisGate: answered,
 		configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
-		stripsRemaining: 2,
+		peelSpotsRemaining: 2,
 	});
 
 	it("says the swatch was not earned rather than announcing a clear", () => {

@@ -5,7 +5,7 @@ import { Storage } from "./Storage.ui";
 const meta: Meta<typeof Storage> = {
 	component: Storage,
 	title: "Modern/Storage",
-	args: { plan: "Free tier", used: 0, cap: 512 },
+	args: { balanceKb: 0 },
 	decorators: [
 		(Story) => (
 			<div data-gate-theme="lavender" className="bg-surface p-4">
@@ -20,6 +20,6 @@ type Story = StoryObj<typeof Storage>;
 
 export const Empty: Story = {};
 
-export const PartlyFull: Story = { args: { used: 184, cap: 768 } };
+export const MidRun: Story = { args: { balanceKb: 320 } };
 
-export const Full: Story = { args: { plan: "Pro tier", used: 768, cap: 768 } };
+export const Rich: Story = { args: { balanceKb: 2048 } };

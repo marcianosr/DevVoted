@@ -16,19 +16,15 @@ import { SummaryDropdown } from "~/modules/run/run/presentation/SummaryDropdown.
 
 type RunHudProps = {
 	storage: number;
-	capKb: number;
 	gatesCleared: number;
 	victoryGate: number;
 	pollsAnswered: number;
 	pollsPerGate: number;
-	/** The gate's score meter (ADR-035): coverage earned this attempt. */
 	gateCoverage: number;
-	/** What this gate demands of the meter. */
 	gateCoverageDemand: number;
 	coverageByCategory: Readonly<Record<string, number>>;
 };
 
-/** The gate meter against its demand — every gate is a fresh score (ADR-035). */
 const gateMeterLabel = (held: number, demand: number): string =>
 	`${held}% / ${demand}% this gate`;
 
@@ -92,7 +88,6 @@ const CoverageSummary = ({
 	);
 };
 
-/** The ⓘ that sits beside a HUD number, opening its explanation on hover or tap. */
 const HudHint = ({
 	label,
 	children,
@@ -132,7 +127,6 @@ const GateName = ({ gate }: { gate: number }) => {
 
 export const RunHud = ({
 	storage,
-	capKb,
 	gatesCleared,
 	victoryGate,
 	pollsAnswered,
@@ -143,7 +137,7 @@ export const RunHud = ({
 }: RunHudProps) => (
 	<div className="border-b border-edge pb-3 text-sm">
 		<div className="flex flex-col gap-2 sm:hidden">
-			<StorageGauge usedKb={storage} capKb={capKb} />
+			<StorageGauge usedKb={storage} />
 			<span className="flex flex-col gap-1">
 				<GateSegmentBar
 					swatches={ALL_SWATCHES}
@@ -156,10 +150,11 @@ export const RunHud = ({
 		</div>
 		<div className="hidden items-center gap-6 sm:flex">
 			<span className="flex shrink-0 items-start gap-1.5">
-				<StorageGauge usedKb={storage} capKb={capKb} />
+				<StorageGauge usedKb={storage} />
 				<HudHint label="How storage works">
-					Current storage caps at {capKb}KB. You can upgrade storage tiers in
-					the shop to increase your cap and earn more KB per gate.
+					Storage is money: gate clears pay it, and the shop spends it on
+					configs, upgrades and bringing pipeline width forward. Nothing caps
+					what you can hold.
 				</HudHint>
 			</span>
 			<span className="flex shrink-0 items-start gap-1.5">

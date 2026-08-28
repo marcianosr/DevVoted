@@ -2,10 +2,9 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { storagePlanFor } from "~/modules/run/run/domain/rules.model";
-
 import { Action } from "../Action.ui";
-import { planLadderAt } from "../Plan.stories";
+import { extraSpotLabel } from "../ExtraSpots.ui";
+import { extraRentKb } from "~/modules/run/run/domain/rules.model";
 import { Delta } from "../Delta.ui";
 import { Glyph } from "../Glyph.ui";
 import { Entry } from "../Entry.ui";
@@ -13,7 +12,7 @@ import { Fold, type FoldItem } from "../Fold.ui";
 import { Lock } from "../Lock.ui";
 import { Mark } from "../Mark.ui";
 import { PriceTag, type PriceTagState } from "../PriceTag.ui";
-import { Slot } from "../Slot.ui";
+import { SpotTrack } from "../SpotTrack.ui";
 import { Text } from "../Text.ui";
 import { ShopScreen, type ShopScreenProps } from "./ShopScreen.ui";
 
@@ -98,17 +97,14 @@ const installed = [
 	{ id: ".java", label: ".java", needs: "needs 64 KB" },
 ];
 
-const slotRows = (open: readonly number[], nextGate: number): FoldItem[] => [
-	...open.map((slot) => ({ id: `slot-${slot}`, content: <Slot /> })),
-	{ id: "slot-next", content: <Slot gate={nextGate} /> },
+const PIPELINE_BARS = [
+	{ id: ".git", label: ".git", spots: 1 },
+	{ id: ".vue", label: ".vue", spots: 1 },
+	{ id: "Prefetch", label: "Prefetch", spots: 4 },
 ];
-
-const GATES_CLEARED = 4;
-const USED_KB = 216;
 
 const Shelf = (overrides: Partial<ShopScreenProps>) => {
 	const [held, setHeld] = useState<string | null>("Freemium");
-	const [tier, setTier] = useState(1);
 
 	const offers: FoldItem[] = OFFERS.map((offer) => ({
 		id: offer.id,
@@ -131,9 +127,7 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 								setHeld((current) => (current === offer.id ? null : offer.id))
 							}
 						/>
-					) : (
-						<Lock on={offer.label} state="unavailable" />
-					)
+					) : undefined
 				}
 				notes={
 					<>
@@ -196,7 +190,7 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 		),
 	}));
 
-	const withSlots: FoldItem[] = [...pipeline, ...slotRows([4, 5, 6], 4)];
+	const withSlots: FoldItem[] = pipeline;
 
 	return (
 		<ShopScreen
@@ -204,7 +198,7 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 			gate={{
 				title: "Lavender shop",
 				nextGate: "gate 4",
-				storage: { plan: "Free tier", used: 216, cap: 512 },
+				storage: { balanceKb: 216 },
 			}}
 			offers={[
 				...offers,
@@ -232,11 +226,36 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 				},
 			]}
 			offerCount="5 offers · 1 locked"
-			storagePlans={{
-				plans: planLadderAt(GATES_CLEARED, tier, USED_KB, (id) =>
-					setTier(Number(id.replace("tier-", "")))
-				),
-				nextBillKb: storagePlanFor(tier).billKb,
+			extraSpots={{
+				renting: 1,
+				perGateKb: extraRentKb(1),
+				steps: [
+					{
+						id: "extra-0",
+						label: extraSpotLabel(0),
+						makes: "makes 12",
+						terms: "free",
+						settled: true,
+						held: false,
+						pick: { onUse: () => {} },
+					},
+					{
+						id: "extra-1",
+						label: extraSpotLabel(1),
+						makes: "makes 13",
+						terms: `${extraRentKb(1)} KB a gate`,
+						held: true,
+						pick: { onUse: () => {} },
+					},
+					{
+						id: "extra-2",
+						label: extraSpotLabel(2),
+						makes: "makes 14",
+						terms: `${extraRentKb(2)} KB a gate`,
+						held: false,
+						opensAt: "opens at gate 5",
+					},
+				],
 			}}
 			draftAction={
 				<Action
@@ -276,7 +295,8 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 				</Fold>
 			}
 			pipeline={withSlots}
-			slots="3 of 6 slots"
+			slots="3 of 6 spots"
+			track={<SpotTrack configs={PIPELINE_BARS} spots={6} fits="crumb" />}
 			onContinue={noop}
 			{...overrides}
 		/>
@@ -285,9 +305,13 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 
 export const MidRun: Story = { render: () => <Shelf /> };
 
-/** ADR-027: a build under the coming gate's width is turned away at the door. */
-export const UnderWidth: Story = {
-	render: () => <Shelf exitLock="Fill 4 slots to continue" />,
+export const OutOfRoom: Story = {
+	render: () => (
+		<Shelf
+			slots="6 of 6 spots"
+			track={<SpotTrack configs={PIPELINE_BARS} spots={3} fits={null} />}
+		/>
+	),
 };
 
 export const Broke: Story = {
@@ -296,15 +320,22 @@ export const Broke: Story = {
 			gate={{
 				title: "Lavender shop",
 				nextGate: "gate 4",
-				storage: { plan: "Free tier", used: 512, cap: 512 },
+				storage: { balanceKb: 512 },
 			}}
 		/>
 	),
 };
 
-/** ADR-038: Read-only shuts the till for the coming gate. The shelves stay
- * legible on purpose — what you cannot buy today is how the gate after this one
- * gets planned — so the band is the only thing saying the presses are dead. */
+export const OverCapacity: Story = {
+	render: () => (
+		<Shelf
+			slots="6 of 4 spots"
+			track={<SpotTrack configs={PIPELINE_BARS} spots={4} />}
+			exitLock="Over capacity by 2 spots. Minify, uninstall, or rent more room."
+		/>
+	),
+};
+
 export const ShutByReadOnly: Story = {
 	render: () => (
 		<Shelf notice="Shop closed. Read-only audits the build you already have, so nothing can be bought, sold or switched before gate 5." />
@@ -313,6 +344,10 @@ export const ShutByReadOnly: Story = {
 
 export const EmptyPipeline: Story = {
 	render: () => (
-		<Shelf pipeline={slotRows([1, 2, 3, 4, 5, 6], 4)} slots="0 of 6 slots" />
+		<Shelf
+			pipeline={[]}
+			slots="0 of 6 spots"
+			track={<SpotTrack configs={[]} spots={6} fits="byte" />}
+		/>
 	),
 };

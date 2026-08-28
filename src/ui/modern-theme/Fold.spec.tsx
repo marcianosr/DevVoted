@@ -100,4 +100,21 @@ describe("Fold", () => {
 
 		expect(container.firstElementChild).toHaveClass("last:border-b-0");
 	});
+
+	// A long list you scan down reads tighter ruled than spaced, and the rule is
+	// what the columns line up against.
+	it("rules a divided list's rows apart instead of spacing them", () => {
+		const { container } = render(
+			<Fold
+				title="Configure your pipeline"
+				divided
+				items={[
+					{ id: "a", content: <span>.js</span> },
+					{ id: "b", content: <span>.ts</span> },
+				]}
+			/>
+		);
+
+		expect(container.querySelector("ul")).toHaveClass("divide-y");
+	});
 });

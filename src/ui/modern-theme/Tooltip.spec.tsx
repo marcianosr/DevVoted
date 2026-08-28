@@ -21,14 +21,35 @@ describe("Tooltip", () => {
 			</Tooltip>
 		);
 
-		// jsdom loads no stylesheet, so the reveal is asserted on the classes that
-		// carry it rather than by hovering. focus-visible rather than focus-within:
-		// a mouse click leaves focus on the trigger, and the panel used to stay up.
 		expect(screen.getByText("This didn't run").parentElement).toHaveClass(
 			"hidden",
 			"group-hover/tip:block",
 			"group-has-[:focus-visible]/tip:block"
 		);
+	});
+
+	it("opens below the trigger by default", () => {
+		render(
+			<Tooltip hint="Refunds 16 KB">
+				<span />
+			</Tooltip>
+		);
+
+		expect(screen.getByText("Refunds 16 KB").parentElement).toHaveClass(
+			"top-full"
+		);
+	});
+
+	it("opens above the trigger when asked", () => {
+		render(
+			<Tooltip hint="Over capacity by 4 spots" side="above">
+				<span />
+			</Tooltip>
+		);
+
+		const panel = screen.getByText("Over capacity by 4 spots").parentElement;
+		expect(panel).toHaveClass("bottom-full");
+		expect(panel).not.toHaveClass("top-full");
 	});
 
 	it("hangs the hover off its own wrapper, so a disabled trigger still explains itself", () => {

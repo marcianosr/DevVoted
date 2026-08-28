@@ -6,10 +6,14 @@ import {
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
-import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
+import {
+	EXTRA_SPOT_TIERS,
+	extraRentKb,
+	extraSpotsUnlocked,
+	scheduledSpots,
+} from "~/modules/run/run/domain/rules.model";
 import {
 	ShopScreen,
 	shopExitAction,
@@ -20,20 +24,39 @@ import {
 	createMockShopOffer,
 } from "~/test/runView.factory";
 
-/** Every rung unlocked, as a deep run sees the ladder. */
-const plansOn = (currentTier: number, storage = 0) =>
-	STORAGE_PLANS.map((plan) => ({
-		...plan,
-		current: plan.tier === currentTier,
-		burnKb: Math.max(0, storage - plan.capKb),
-		locked: false,
-	}));
+const extraSpotsAt = (
+	gatesCleared: number,
+	{ held = 0, storage = 500 } = {}
+) => {
+	const free = scheduledSpots(gatesCleared);
+	const unlocked = extraSpotsUnlocked(gatesCleared);
+	return {
+		renting: held,
+		perGateKb: extraRentKb(held),
+		options: [
+			{
+				spots: 0,
+				makes: free,
+				rentKb: 0,
+				held: held === 0,
+				rentTooDear: false,
+			},
+			...EXTRA_SPOT_TIERS.map((tier) => {
+				const locked = tier.spots > unlocked;
+				return {
+					spots: tier.spots,
+					makes: free + tier.spots,
+					rentKb: extraRentKb(tier.spots),
+					held: tier.spots === held,
+					...(locked
+						? { fromGate: tier.fromGate }
+						: { rentTooDear: storage < extraRentKb(tier.spots) }),
+				};
+			}),
+		],
+	};
+};
 
-/**
- * The refusal panel belonging to one badge, not the offer panel it sits inside.
- * Keyed on the nested tooltip's own named group — the scoping that stops it
- * opening whenever the chip is hovered.
- */
 const refusalOn = (badge: HTMLElement): HTMLElement => {
 	const scope = badge.closest('[class~="group/nested"]');
 	if (!(scope instanceof HTMLElement))
@@ -63,8 +86,6 @@ const stakeWith = (overrides: Partial<GateStake>): GateStake => ({
 	...overrides,
 });
 
-/** An open shop with rebuild, lock and extend all affordable; each test names
- * only the control it is about. */
 const controls = (overrides: Partial<ShopControls> = {}) =>
 	createMockShopControls({
 		rebuildCost: 1,
@@ -93,13 +114,13 @@ const base = {
 	onLock: vi.fn(),
 	onExtend: vi.fn(),
 	onPlantPin: vi.fn(),
-	slots: 3,
-	nextSlotUnlock: { slot: 4, gate: 1 },
-	justUnlockedSlots: [],
+	spots: 4,
+	spotsUsed: 0,
+	spotsFree: 4,
 	onUpgrade: vi.fn(),
 	onSell: vi.fn(),
-	storagePlans: plansOn(1),
-	onChangePlan: vi.fn(),
+	extraSpots: extraSpotsAt(3),
+	onRentExtraSpots: vi.fn(),
 };
 
 describe(ShopScreen, () => {
@@ -111,8 +132,6 @@ describe(ShopScreen, () => {
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	// The shop sits between gates: what you are building for is the gate ahead,
-	// named after the badge clearing it awards.
 	it("names the gate ahead by its badge, not by its number alone", () => {
 		render(<ShopScreen {...base} />);
 		expect(
@@ -122,8 +141,6 @@ describe(ShopScreen, () => {
 		).toBeInTheDocument();
 	});
 
-	// Two taps, not one: a chip is a big target next to other big targets, and on
-	// a phone brushing one used to spend up to 384KB with no way back.
 	it("spends nothing when an offer chip is tapped", () => {
 		const onDraft = vi.fn();
 		const onLock = vi.fn();
@@ -145,24 +162,17 @@ describe(ShopScreen, () => {
 		expect(onDraft).toHaveBeenCalledWith("eslint");
 	});
 
-	// The badge carries all three states in one spot: price → install → owned.
-	// Scoped to the offers panel, since the pipeline beside it draws its own chips
-	// (and the ghost row repeats the price the offer stopped showing).
 	it("shows install button in tooltip when config is selected", () => {
 		render(<ShopScreen {...base} />);
 		const offers = () =>
 			within(screen.getByRole("group", { name: /Install configs/ }));
-		// Price badge visible by default
 		expect(
 			offers().getByText(`${draftCost(CONFIGS.eslint)}KB`)
 		).toBeInTheDocument();
-		// Clicking the chip makes the tooltip appear
 		fireEvent.click(offers().getByRole("button", { name: "ESLint" }));
-		// Tooltip contains the install button
 		expect(
 			screen.getByRole("button", { name: /Install ESLint/ })
 		).toBeInTheDocument();
-		// Price badge stays visible (not replaced)
 		expect(
 			offers().getByText(`${draftCost(CONFIGS.eslint)}KB`)
 		).toBeInTheDocument();
@@ -192,8 +202,6 @@ describe(ShopScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	// Hover only hints — the buttons stay behind the click that selects the chip,
-	// so a pointer sweeping the shelf never crosses live spend controls.
 	it("hints on hover and keeps the install button behind the click", () => {
 		render(<ShopScreen {...base} />);
 		expect(screen.getAllByText("Click to install").length).toBeGreaterThan(0);
@@ -226,23 +234,20 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	// The badge refuses via aria-disabled, not the disabled attribute: a disabled
-	// button fires no pointer events, so it could neither be tapped for its own
-	// explanation nor hovered for one.
 	it("refuses to install into a full pipeline and explains on the badge", () => {
 		render(
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
-				slots={3}
+				spotsFree={0}
 				offers={[
 					createMockShopOffer(CONFIGS.eslint, {
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					}),
 					createMockShopOffer(CONFIGS.agentsMd, {
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					}),
 				]}
 			/>
@@ -251,27 +256,24 @@ describe(ShopScreen, () => {
 		const install = screen.getByRole("button", { name: /^Install ESLint/ });
 		expect(install).toHaveAttribute("aria-disabled", "true");
 		expect(refusalOn(install)).toHaveTextContent(
-			"No free slot — uninstall a config first"
+			"Needs 1 spots — 0 free. Minify or uninstall something"
 		);
 	});
 
-	// The refusal used to share the chip's unnamed hover group, so it opened over
-	// the shop the instant the chip was hovered, next to an offer it had not
-	// refused. It reveals on its own badge or not at all.
 	it("reveals the refusal on its own badge, not with the chip's tooltip", () => {
 		render(
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
-				slots={3}
+				spotsFree={0}
 				offers={[
 					createMockShopOffer(CONFIGS.eslint, {
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					}),
 					createMockShopOffer(CONFIGS.agentsMd, {
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					}),
 				]}
 			/>
@@ -307,8 +309,6 @@ describe(ShopScreen, () => {
 		expect(onDraft).not.toHaveBeenCalled();
 	});
 
-	// An offer you cannot afford stays readable — a chip that refuses the tap can't
-	// be inspected either.
 	it("keeps an unaffordable offer selectable and prices the refusal", () => {
 		render(
 			<ShopScreen
@@ -357,14 +357,11 @@ describe(ShopScreen, () => {
 		);
 		const chip = screen.getByRole("button", { name: "ESLint" });
 		fireEvent.click(chip);
-		// Selecting shows description and install button in tooltip
 		expect(screen.queryAllByText(/Cross out a wrong answer/)).not.toHaveLength(
 			0
 		);
-		// Install button appears (disabled due to storage)
 		const installBtn = screen.getByRole("button", { name: /Install ESLint/ });
 		expect(installBtn).toHaveAttribute("aria-disabled", "true");
-		// Clicking the disabled button reveals the refusal message
 		fireEvent.click(installBtn);
 		expect(screen.getByText(/Costs 32KB/)).toBeInTheDocument();
 	});
@@ -376,8 +373,6 @@ describe(ShopScreen, () => {
 		expect(onRebuild).toHaveBeenCalled();
 	});
 
-	// WTFPL shows the whole catalog: a reroll is not a thing this shop sells,
-	// so the control leaves the row instead of sitting there disabled.
 	it("hides the rebuild control when the run's shop is not selling rerolls", () => {
 		render(
 			<ShopScreen {...base} controls={controls({ rebuildAvailable: false })} />
@@ -399,8 +394,6 @@ describe(ShopScreen, () => {
 		expect(onLock).toHaveBeenCalledWith("eslint");
 	});
 
-	// The price still shows on a lock the run cannot afford — a control the player
-	// never sees is a control they never learn.
 	it("prices the lock's refusal when the lock is unaffordable", () => {
 		render(<ShopScreen {...base} controls={controls({ canLock: false })} />);
 		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
@@ -425,7 +418,6 @@ describe(ShopScreen, () => {
 			/>
 		);
 		expect(screen.getByText("Locked")).toBeInTheDocument();
-		// Selecting the other offer must not turn up a second lock to buy.
 		fireEvent.click(screen.getByRole("button", { name: "AGENTS.md" }));
 		expect(
 			screen.getByRole("button", { name: /^Install AGENTS/ })
@@ -469,11 +461,9 @@ describe(ShopScreen, () => {
 		const chip = screen.getByRole("button", { name: "ESLint" });
 		fireEvent.mouseEnter(chip.parentElement as HTMLElement);
 
-		// Description appears on hover, carried by the pipeline's ghost row
 		expect(screen.queryAllByText(/Cross out a wrong answer/)).not.toHaveLength(
 			0
 		);
-		// Preview row appears in the pipeline
 		expect(
 			screen.getByRole("button", { name: "Add ESLint to your pipeline" })
 		).toBeInTheDocument();
@@ -487,24 +477,22 @@ describe(ShopScreen, () => {
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
-				slots={3}
+				spotsFree={0}
 				offers={[
 					createMockShopOffer(CONFIGS.eslint, {
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					}),
 					createMockShopOffer(CONFIGS.agentsMd, {
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					}),
 				]}
 			/>
 		);
 		const chip = screen.getByRole("button", { name: "ESLint" });
 		fireEvent.click(chip);
-		// Description appears in the pinned tooltip; a full pipeline draws no ghost row
 		expect(screen.queryByText(/Cross out a wrong answer/)).toBeInTheDocument();
-		// But preview row doesn't appear when pipeline is full
 		expect(
 			screen.queryByRole("button", { name: /^Add .+ to your pipeline$/ })
 		).not.toBeInTheDocument();
@@ -513,7 +501,7 @@ describe(ShopScreen, () => {
 	it("prices Unit Tests' upgrade in storage, unlike free focus upgrades", () => {
 		render(<ShopScreen {...base} configs={[CONFIGS.unitTests]} />);
 		const upgrade = screen.getByRole("button", { name: /Upgrade/ });
-		expect(upgrade).toBeEnabled(); // base storage 440 covers the 64KB
+		expect(upgrade).toBeEnabled();
 		expect(upgrade).toHaveTextContent("64KB");
 		expect(
 			screen.getByRole("button", { name: /Uninstall/ })
@@ -555,8 +543,6 @@ describe(ShopScreen, () => {
 		expect(
 			screen.getByText("L2: JavaScript polls earn 1.5× coverage.")
 		).toBeInTheDocument();
-		// The upgrade's own gate line is gone; "Opens at" may still appear in the
-		// slot unlock row, so the check pins the upgrade's 5% threshold.
 		expect(screen.queryByText(/Unlocks at 5%/)).not.toBeInTheDocument();
 	});
 
@@ -573,15 +559,11 @@ describe(ShopScreen, () => {
 		const upgrade = screen.getByRole("button", { name: /Upgrade/ });
 		expect(upgrade).toBeEnabled();
 		expect(upgrade).toHaveClass("legendary-ring");
-		// Every upgrade is priced, Focus included, so the KB is on the face.
 		expect(upgrade).toHaveTextContent(`${upgradeStorageCost(1)}KB`);
 		fireEvent.click(upgrade);
 		expect(onUpgrade).toHaveBeenCalledWith("js");
 	});
 
-	// Earned is not the same as affordable (ADR-039): a Focus config past its
-	// coverage bar still has to be paid for, and the tooltip says which one is
-	// missing.
 	it("refuses an earned Focus upgrade the balance cannot cover", () => {
 		render(
 			<ShopScreen
@@ -592,9 +574,6 @@ describe(ShopScreen, () => {
 			/>
 		);
 		expect(screen.getByRole("button", { name: /Upgrade/ })).toBeDisabled();
-		// Read off the tooltip itself: the sentence is assembled from text nodes,
-		// so a string matcher would miss it and a textContent matcher would also
-		// match every ancestor.
 		const tooltips = screen
 			.getAllByRole("tooltip")
 			.map((element) => element.textContent ?? "");
@@ -632,8 +611,6 @@ describe(ShopScreen, () => {
 		expect(receipt.getByText("+240KB")).toBeInTheDocument();
 	});
 
-	// Row order follows the config's gate role, not the prop order, so this asserts
-	// every row sells its own config rather than indexing into the rendered list.
 	it("sells a config from its row's deinstall button", () => {
 		const onSell = vi.fn();
 		render(
@@ -650,8 +627,6 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	// The last config is the hard bottom (ADR-035): a bare build could never
-	// clear a gate, so the shop refuses the final uninstall.
 	it("locks the deinstall button on the only installed config", () => {
 		const onSell = vi.fn();
 		render(
@@ -677,110 +652,96 @@ describe(ShopScreen, () => {
 		expect(receipt.queryByText(/configs/)).not.toBeInTheDocument();
 	});
 
-	it("names the gate that opens the next slot — no unlock button anywhere", () => {
+	it("promises no widening beside the build", () => {
 		render(<ShopScreen {...base} />);
-		// Badges belong to gates now, so this row prices width and nothing else —
-		// scoped to the row, since the stake receipt does name the gate's swatch.
-		const slotRow = screen.getByText(/Opens when/);
-		expect(slotRow).toHaveTextContent("Gate 1");
-		expect(slotRow).not.toHaveTextContent(/Swatch/);
-		// Gates grant slots on the clear (ADR-034) — there is no purchase step.
+		expect(screen.queryByText(/Widens to/)).not.toBeInTheDocument();
 		expect(
 			screen.queryByRole("button", { name: "Unlock slot" })
 		).not.toBeInTheDocument();
 	});
 
-	it("acknowledges a slot granted since the last visit, alongside the gate holding the next one", () => {
-		render(
-			<ShopScreen
-				{...base}
-				justUnlockedSlots={[4]}
-				nextSlotUnlock={{ slot: 5, gate: 3 }}
-			/>
-		);
-		expect(screen.getByText("Unlocked 4th slot")).toBeInTheDocument();
-		// The acknowledgment names slot 4 — it must not also relabel it as the
-		// still-held next slot. The preview resumes one slot further on.
-		expect(screen.getByText("Gate 3")).toBeInTheDocument();
-	});
-
-	it("retires the unlock row at the slot cap", () => {
-		render(<ShopScreen {...base} slots={MAX_SLOTS} nextSlotUnlock={null} />);
-		expect(screen.queryByText(/Opens when/)).not.toBeInTheDocument();
-	});
-
-	it("lists the storage-plan ladder with the current rung marked", () => {
+	it("lists every step of the ladder, locked ones included", () => {
 		render(<ShopScreen {...base} />);
-		expect(screen.getByText("Free")).toBeInTheDocument();
-		expect(screen.getByText("512KB")).toBeInTheDocument();
-		expect(screen.getByText("640KB")).toBeInTheDocument();
-		// Only the current (512KB) rung is plain text — the others are switch buttons.
+		const ladder = screen
+			.getByText("Extra spots")
+			.parentElement?.querySelector("ul");
+		if (!ladder) throw new Error("No extra-spot ladder rendered");
+
+		expect(within(ladder).getByText("none")).toBeInTheDocument();
+		expect(within(ladder).getByText("+1 spot")).toBeInTheDocument();
+		expect(within(ladder).getByText("+4 spots")).toBeInTheDocument();
+	});
+
+	it("says gates give the spots and rent adds more on top", () => {
+		render(<ShopScreen {...base} />);
 		expect(
-			screen.queryByRole("button", { name: /512KB storage plan/ })
-		).not.toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: /640KB storage plan/ })
+			screen.getByText(
+				"Gates unlock spots for free. Rent adds more on top, by the gate."
+			)
 		).toBeInTheDocument();
 	});
 
-	it("prices every paid rung per gate", () => {
+	it("states the width every step makes", () => {
 		render(<ShopScreen {...base} />);
-		expect(screen.getByText("8KB / gate")).toBeInTheDocument();
-		expect(screen.getByText("16KB / gate")).toBeInTheDocument();
+		expect(screen.getByText("makes 8")).toBeInTheDocument();
+		expect(screen.getByText("makes 12")).toBeInTheDocument();
 	});
 
-	it("writes the deep rungs in MB", () => {
+	it("prices the free width at nothing and every step by the gate", () => {
 		render(<ShopScreen {...base} />);
-		expect(screen.getByText("1MB")).toBeInTheDocument();
-		expect(screen.getByText("1.5MB")).toBeInTheDocument();
-		expect(screen.getByText("3MB")).toBeInTheDocument();
+		expect(screen.getByText("free")).toBeInTheDocument();
+		expect(screen.getByText("8KB a gate")).toBeInTheDocument();
+		expect(screen.getByText("32KB a gate")).toBeInTheDocument();
 	});
 
-	// The rung ahead is shown so the ladder reads as going somewhere, but it is a
-	// row, not a button — and it says what opens it.
-	it("shows the next rung as unbuyable, naming the gate that opens it", () => {
-		const staged = plansOn(1).map((plan) => ({
-			...plan,
-			locked: plan.tier === 3,
-		}));
-		render(<ShopScreen {...base} storagePlans={staged} />);
-		expect(screen.getByText("Opens after gate 2")).toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /768KB storage plan/ })
-		).not.toBeInTheDocument();
+	it("names the clear that opens a step this depth does not sell", () => {
+		render(<ShopScreen {...base} />);
+		expect(screen.getByText("opens at gate 5")).toBeInTheDocument();
+		expect(screen.getByText("opens at gate 8")).toBeInTheDocument();
 	});
 
-	it("switches the storage plan when a rung's row is clicked", () => {
-		const onChangePlan = vi.fn();
-		render(<ShopScreen {...base} onChangePlan={onChangePlan} />);
-		fireEvent.click(screen.getByRole("button", { name: /640KB storage plan/ }));
-		expect(onChangePlan).toHaveBeenCalledWith(2);
+	it("rents a step when its press is clicked", () => {
+		const onRentExtraSpots = vi.fn();
+		render(<ShopScreen {...base} onRentExtraSpots={onRentExtraSpots} />);
+
+		fireEvent.click(screen.getAllByRole("button", { name: "rent" })[0]);
+		expect(onRentExtraSpots).toHaveBeenCalledWith(1);
 	});
 
-	it("names the burn a downgrade would cost on hover", () => {
+	it("refuses the presses when the balance cannot cover the rent", () => {
 		render(
-			<ShopScreen {...base} storage={700} storagePlans={plansOn(3, 700)} />
+			<ShopScreen {...base} extraSpots={extraSpotsAt(3, { storage: 0 })} />
 		);
-		const toFreeTier = screen.getByRole("button", {
-			name: /512KB storage plan/,
-		});
-		fireEvent.mouseEnter(toFreeTier);
-		expect(
-			screen.getByText("Switching burns the 188KB sitting above this cap.")
-		).toBeInTheDocument();
+		screen
+			.getAllByRole("button", { name: "rent" })
+			.forEach((press) => expect(press).toBeDisabled());
 	});
 });
 
-describe("the shop door's wording", () => {
-	it("always opens toward the coming gate — nothing grades the exit (ADR-035)", () => {
-		const action = shopExitAction(4);
+describe("the shop door", () => {
+	it("always opens toward the coming gate — nothing grades the build (ADR-035)", () => {
+		const action = shopExitAction(4, 0);
 		expect(action.label).toBe("Continue to gate 4 →");
 		expect(action.disabled).toBe(false);
+		expect(action.hint).toBeUndefined();
+	});
+
+	it("holds shut while the build sits over capacity, and says which ways out exist", () => {
+		const action = shopExitAction(4, 2);
+		expect(action.label).toBe("Continue to gate 4 →");
+		expect(action.disabled).toBe(true);
+		expect(action.hint).toBe(
+			"Over capacity by 2 spots. Minify, uninstall, or rent more room."
+		);
+	});
+
+	it("counts a single spot of overflow in the singular", () => {
+		expect(shopExitAction(4, 1).hint).toBe(
+			"Over capacity by 1 spot. Minify, uninstall, or rent more room."
+		);
 	});
 });
 
-// ADR-038: a Read-only gate shuts the till, and the screen has to say so once
-// rather than refusing seven times.
 describe("a shop shut by Read-only", () => {
 	const locked = {
 		...base,
@@ -803,8 +764,6 @@ describe("a shop shut by Read-only", () => {
 		);
 		fireEvent.click(offers.getByRole("button", { name: "ESLint" }));
 		const install = screen.getByRole("button", { name: /Install ESLint/ });
-		// The offer badge refuses through aria-disabled, not the attribute — it
-		// stays focusable so a screen reader can still read the price it names.
 		expect(install).toHaveAttribute("aria-disabled", "true");
 		fireEvent.click(install);
 		expect(onDraft).not.toHaveBeenCalled();
@@ -820,12 +779,11 @@ describe("a shop shut by Read-only", () => {
 		).toBeDisabled();
 	});
 
-	it("refuses the plan switch too", () => {
+	it("refuses renting extra spots too", () => {
 		render(<ShopScreen {...locked} />);
-		for (const row of screen.getAllByRole("button", {
-			name: /Switch to .* storage plan/,
-		}))
-			expect(row).toBeDisabled();
+		screen
+			.getAllByRole("button", { name: "rent" })
+			.forEach((press) => expect(press).toBeDisabled());
 	});
 
 	it("leaves the offers legible — the next gate still has to be planned", () => {
@@ -836,5 +794,58 @@ describe("a shop shut by Read-only", () => {
 	it("says nothing about Read-only at an open shop", () => {
 		render(<ShopScreen {...base} />);
 		expect(screen.queryByText(/Read-only/)).not.toBeInTheDocument();
+	});
+});
+
+describe("ShopScreen room", () => {
+	const cramped = {
+		...base,
+		configs: [CONFIGS.intellisense, CONFIGS.js, CONFIGS.ts],
+		spots: 8,
+		spotsUsed: 6,
+		spotsFree: 2,
+		offers: [
+			createMockShopOffer(CONFIGS.agentsMd, {
+				installable: false,
+				refusal: { reason: "no-room" as const, spots: 8, freeSpots: 2 },
+			}),
+		],
+	};
+
+	it("badges an offer with no room by its grade instead of its price", () => {
+		render(<ShopScreen {...cramped} />);
+
+		expect(screen.getByText("needs a byte")).toBeInTheDocument();
+		expect(
+			screen.queryByText(`${draftCost(CONFIGS.agentsMd)}KB`)
+		).not.toBeInTheDocument();
+	});
+
+	it("keeps badging the price when price is what is short", () => {
+		render(
+			<ShopScreen
+				{...base}
+				offers={[
+					createMockShopOffer(CONFIGS.agentsMd, {
+						installable: false,
+						refusal: {
+							reason: "too-expensive" as const,
+							priceKb: 256,
+							storageKb: 8,
+						},
+					}),
+				]}
+			/>
+		);
+
+		expect(screen.getByText("256KB")).toBeInTheDocument();
+		expect(screen.queryByText(/needs a/)).not.toBeInTheDocument();
+	});
+
+	it("keeps the shortfall on the offer that is refused, not beside the build", () => {
+		render(<ShopScreen {...cramped} />);
+
+		expect(screen.queryByText(/·\s*minify /)).not.toBeInTheDocument();
+		expect(screen.queryByText(/move to a bigger plan/)).not.toBeInTheDocument();
 	});
 });

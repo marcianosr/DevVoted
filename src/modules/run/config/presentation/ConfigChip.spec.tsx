@@ -29,21 +29,25 @@ describe(ConfigChip, () => {
 		expect(onClick).not.toHaveBeenCalled();
 	});
 
-	it("keeps the label white and carries rarity on the border (common → cerulean)", () => {
-		render(<ConfigChip config={CONFIGS.js} />);
+	it("outlines every chip the same, whatever its grade", () => {
+		const { container: bit } = render(<ConfigChip config={CONFIGS.js} />);
+		const { container: byte } = render(
+			<ConfigChip config={CONFIGS.agentsMd} />
+		);
+
 		expect(screen.getByText(".js")).toHaveClass(
 			"text-zinc-100",
-			"border-cerulean"
+			"border-edge-strong"
+		);
+		expect(bit.firstElementChild?.className).toBe(
+			byte.firstElementChild?.className
 		);
 	});
 
-	it("wears the static Kanto gradient ring (legendary), label stays white", () => {
+	it("gives the byte no ring of its own", () => {
 		render(<ConfigChip config={CONFIGS.agentsMd} />);
-		expect(screen.getByText("AGENTS.md")).toHaveClass(
-			"legendary-ring",
-			"border-transparent",
-			"text-zinc-100"
-		);
+
+		expect(screen.getByText("AGENTS.md")).not.toHaveClass("legendary-ring");
 	});
 
 	it("shows the level once upgraded", () => {

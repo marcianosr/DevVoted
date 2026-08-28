@@ -10,7 +10,7 @@ const props: PrepScreenProps = {
 	gate: {
 		title: "Gate 4 · Lavender",
 		audits: ["dependency-outage"],
-		storage: { plan: "Standard plan", used: 184, cap: 640 },
+		storage: { balanceKb: 184 },
 	},
 	pollCount: 5,
 	coverageDemand: 60,
@@ -19,11 +19,12 @@ const props: PrepScreenProps = {
 	coveragePerWrong: -1.3,
 	missIsFatal: false,
 	configs: [
-		{ id: "ts", label: ".ts" },
-		{ id: "intellisense", label: "Intellisense" },
-		{ id: "indexeddb", label: "IndexedDB" },
+		{ id: "ts", label: ".ts", spots: 1 },
+		{ id: "intellisense", label: "Intellisense", spots: 4 },
+		{ id: "indexeddb", label: "IndexedDB", spots: 1 },
 	],
-	slots: [{ id: "slot-4", gate: 6 }],
+	spots: 6,
+	fits: null,
 	audits: [
 		{
 			id: "dependency-outage",
@@ -61,29 +62,29 @@ describe("PrepScreen", () => {
 		expect(
 			screen.getByRole("heading", { name: "Gate 4 · Lavender" })
 		).toBeInTheDocument();
-		// The header composes its audit line from ids, so the count is its own
-		// node. GateHeader's spec owns the names that follow it.
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
 	});
 
-	// A build filling every slot it holds reads full, and the row for the slot a
-	// later gate grants is a preview beside it rather than width already owned.
-	it("counts the build against the width it holds, not the width to come", () => {
+	it("counts the build in spots against the width it holds", () => {
 		render(<PrepScreen {...props} />);
 
-		expect(screen.getByText("3 / 3")).toBeInTheDocument();
-		expect(screen.getByText("opens when gate 6 clears")).toBeInTheDocument();
+		expect(screen.getByText("6 of 6 spots")).toBeInTheDocument();
 	});
 
-	it("counts an empty slot the build could still fill", () => {
-		render(
-			<PrepScreen
-				{...props}
-				slots={[{ id: "slot-4" }, { id: "slot-5", gate: 6 }]}
-			/>
-		);
+	it("draws the room the build has not filled without listing it", () => {
+		render(<PrepScreen {...props} spots={8} fits="crumb" />);
 
-		expect(screen.getByText("3 / 4")).toBeInTheDocument();
+		expect(screen.getByText("6 of 8 spots")).toBeInTheDocument();
+		expect(screen.queryByText("Not filled yet")).not.toBeInTheDocument();
+		expect(screen.getByRole("meter")).toHaveAttribute("aria-valuemax", "8");
+	});
+
+	it("draws the pipeline as room and names it full when nothing fits", () => {
+		render(<PrepScreen {...props} />);
+
+		expect(
+			screen.getByText("full · minify or uninstall to make room")
+		).toBeInTheDocument();
 	});
 
 	it("states both things the gate asks for", () => {
@@ -96,8 +97,6 @@ describe("PrepScreen", () => {
 		expect(screen.getByText("0 / 60%")).toBeInTheDocument();
 	});
 
-	// The peel moved into the shared Stake fold, which every gate surface now
-	// composes, so prep states it in the same words the poll rail does.
 	it("prices a miss in the Stake fold rather than in prose of its own", () => {
 		render(<PrepScreen {...props} />);
 
@@ -173,8 +172,6 @@ describe("PrepScreen", () => {
 		expect(screen.getByText("−32 KB on a miss")).toBeInTheDocument();
 	});
 
-	// Only the bill that waits is qualified. A bill charged either way is just
-	// the bill, and saying so on every line made the two read as equally special.
 	it("qualifies the bill that waits for the clear, and only that one", () => {
 		render(<PrepScreen {...props} />);
 
@@ -204,8 +201,6 @@ describe("PrepScreen", () => {
 			/>
 		);
 
-		// Scoped to the fold: the gate header names the same audit, so an
-		// unscoped query matches twice.
 		const fold = screen.getByText("Audits").closest("details");
 		if (!fold) throw new Error("No Audit fold rendered");
 
@@ -215,16 +210,12 @@ describe("PrepScreen", () => {
 		expect(screen.getByText("reported passing")).toBeInTheDocument();
 	});
 
-	// Online, skipped and offline are all facts about a poll on deck, and prep has
-	// none: a marker here would state something this screen cannot know.
 	it("claims no status for the configs it lists", () => {
 		render(<PrepScreen {...props} />);
 
 		expect(screen.queryAllByRole("img", { name: "idle" })).toHaveLength(0);
 	});
 
-	// The build cannot be changed here, so the pipeline offers the trip rather
-	// than a sentence describing it.
 	it("sends the player to the shop from the pipeline it cannot edit", async () => {
 		const onBackToShop = vi.fn();
 		render(<PrepScreen {...props} onBackToShop={onBackToShop} />);
@@ -239,17 +230,12 @@ describe("PrepScreen", () => {
 		).not.toBeInTheDocument();
 	});
 
-	// Pushed to the far edge, a figure sat a gutter away from the thing it
-	// priced and read as a column. Row.CONTENT is the flex-1 half of the row,
-	// so landing inside it is what "on the label's own line" means structurally.
 	it("sets a reward's figure on the label's line, not across the row", () => {
 		render(<PrepScreen {...props} />);
 
 		expect(screen.getByText("+96 KB").closest(".flex-1")).not.toBeNull();
 	});
 
-	// The build is a pipeline, and a pipeline runs in order. Without the numbers
-	// the column read as an unordered inventory.
 	it("numbers the build in the order it runs", () => {
 		render(<PrepScreen {...props} />);
 
@@ -260,8 +246,6 @@ describe("PrepScreen", () => {
 		expect(rows[1]).toHaveTextContent("2");
 	});
 
-	// What the gate is about to do to the build is not a thing to put away, and
-	// a folded Audits section hid the one row that changes how a gate is played.
 	it("opens every section, audits included", () => {
 		const { container } = render(<PrepScreen {...props} />);
 

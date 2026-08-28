@@ -107,8 +107,6 @@ const OUTCOMES: readonly CrumbVerdict[] = [
 	"correct",
 ];
 
-// Distributive: a plain Omit over a union collapses both branches and loses the
-// discriminant, so `outcome: "held"` would then accept `spendableKb`.
 type Verdict<T> = T extends unknown
 	? Omit<T, "detailShown" | "onToggleDetail">
 	: never;

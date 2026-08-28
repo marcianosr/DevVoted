@@ -38,10 +38,10 @@ describe("Equation", () => {
 		expect(screen.getByLabelText("−0.8%")).toHaveClass("text-cinnabar");
 	});
 
-	it("dresses a config's chip in its rarity instead of a tone", () => {
+	it("dresses a config's chip in its grade instead of a tone", () => {
 		render(
 			<Equation
-				factors={[{ label: "AGENTS.md", value: 2, rarity: "rare" }]}
+				factors={[{ label: "AGENTS.md", value: 2, rarity: "nibble" }]}
 				paid={2}
 			/>
 		);
@@ -49,8 +49,6 @@ describe("Equation", () => {
 		expect(screen.getByText("AGENTS.md 2.0")).toBeInTheDocument();
 	});
 
-	// A flat-add config has no multiplier to quote, so it joins with a + and
-	// carries the coverage it contributed — the figure its rail row badges.
 	it("adds a flat contributor in rather than converting it to a factor", () => {
 		render(
 			<Equation
@@ -83,7 +81,6 @@ describe("Equation", () => {
 		expect(screen.getByText(")")).toBeInTheDocument();
 	});
 
-	// Nothing scales the sum, so the brackets would only be furniture.
 	it("leaves the brackets off when the row is all adds", () => {
 		render(
 			<Equation

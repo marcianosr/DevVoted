@@ -29,13 +29,9 @@ import {
 	trailFor,
 } from "~/modules/run/run/presentation/PollView.component";
 
-/** Older answers carry no option list; the picks and the key still name every
- * option worth showing (same fallback the review uses). */
 const optionsOf = (poll: AnsweredPoll): readonly string[] =>
 	poll.options ?? [...new Set([...poll.picked, ...(poll.correct ?? [])])];
 
-// "Expected", not "correct": under the Mirror the gate wants the incorrect
-// options, and the review already speaks this language.
 const settledOptions = (poll: AnsweredPoll): readonly PollOption[] => {
 	const expected = new Set(poll.correct ?? []);
 	const picked = new Set(poll.picked);
@@ -67,20 +63,6 @@ const settledOptions = (poll: AnsweredPoll): readonly PollOption[] => {
 	});
 };
 
-/**
- * The build's half of the arithmetic, one chip per contributing config, each
- * wearing its rarity. Only configs the breakdown says fired are read (an
- * audit's outage is invisible to a recompute over the installed pipeline), and
- * their covers are pure functions of the answered context, so which operator a
- * config joins with is a lookup, not arithmetic.
- *
- * A multiplier chip carries the multiplier itself; a flat-add chip carries the
- * coverage it actually contributed, taken straight from the breakdown — the
- * same figure its rail row badges, so one config never reads two ways on one
- * screen. That figure is `share × add` rather than the raw add, which is what
- * lets the adds sit in a bracket with the base: `(share + share × add)` is
- * exactly `share × (1 + add)`.
- */
 const buildFactors = (
 	view: RunView,
 	answered: AnsweredPoll
@@ -116,11 +98,6 @@ const buildFactors = (
 		});
 };
 
-/**
- * The mock's reading order: correct × streak × each contributing config.
- * Factors sitting at 1 stay out — a chip that multiplies by nothing is noise —
- * but the base always shows, since it names the outcome.
- */
 const equationFactors = (
 	view: RunView,
 	answered: AnsweredPoll
@@ -141,9 +118,6 @@ const firedByConfig = (
 ): ReadonlyMap<string, number> =>
 	new Map(bonuses.map((bonus) => [bonus.configId, bonus.value]));
 
-/** The faucet clamp applies to the total, so the recorded KB is handed back
- * out in config order until it runs dry — exact for the single faucet config
- * the roster holds, and never over-credits with more. */
 const faucetKbByConfig = (
 	view: RunView,
 	answered: AnsweredPoll
@@ -166,11 +140,6 @@ export type RevealViewProps = {
 	onNext: () => void;
 };
 
-/**
- * The stakes beside the Next button: window left, and where the meter stands
- * against the gate's demand. Silent after the window's 5th answer — the gate
- * has already decided, and the click should reveal it, not spoil it.
- */
 const nextNote = (view: RunView): string | undefined => {
 	const pollsLeft = view.pollsPerGate - view.answeredThisGate.length;
 	if (pollsLeft <= 0) return undefined;
@@ -184,13 +153,6 @@ const nextNote = (view: RunView): string | undefined => {
 	return `${pollsLeft} to go · ${demand}`;
 };
 
-/**
- * The post-answer beat: the answered poll settles in place, the equation reads
- * out under it, and the rail shows what each config just delivered. The rail's
- * statuses are re-read for the answered poll (its category, the count before
- * it landed); the one drift is an audit's offline roll, which the reducer has
- * already advanced to the next poll by the time the reveal renders.
- */
 export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 	const fired = firedByConfig(answered.coverageBreakdown?.configBonuses ?? []);
 	const faucet = faucetKbByConfig(view, answered);
@@ -200,8 +162,6 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 			category: answered.category,
 			answeredBefore: view.answeredThisGate.length - 1,
 		},
-		// No tools on a settled poll: lint and peek act on a decision, and this
-		// one is made.
 		[]
 	).map((row) => ({
 		...row,

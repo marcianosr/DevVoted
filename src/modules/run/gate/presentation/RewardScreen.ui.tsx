@@ -24,24 +24,15 @@ import type { GateStake } from "~/modules/run/run/application/gateStake.viewmode
 import type { GatePayout } from "~/modules/run/run/application/gatePayout.viewmodel";
 
 type RewardScreenProps = {
-	/** What the clear paid and took back, whole: this screen is the payout's one
-	 * report, so it reads every field but two. */
 	payout: GatePayout;
 	answered: readonly AnsweredPoll[];
 	configs: readonly Config[];
 	storage: number;
-	capKb: number;
-	/** The gate this clear opens onto, so the shop that follows has a target. */
 	nextStake?: GateStake;
 	onReviewAnswers?: () => void;
 	onContinue?: () => void;
 };
 
-/**
- * The screen's one label treatment: letter-spaced caps, stepped back from the
- * figure it introduces. Three of them appear here at two sizes, which is what
- * makes it a component rather than a repeated className.
- */
 const Eyebrow = ({
 	children,
 	size = "xs",
@@ -56,12 +47,6 @@ const Eyebrow = ({
 	</Paragraph>
 );
 
-/**
- * A name and the KB beside it. The name is a `ReactNode` because a config row
- * puts a whole `ConfigChip` there — same object the shop and the pipeline show,
- * carrying its own rarity colour, so a config is recognisable here by the shape
- * it already has rather than by a second styling of its label.
- */
 const LedgerRow = ({
 	name,
 	value,
@@ -85,15 +70,6 @@ const LedgerRow = ({
 	</div>
 );
 
-/**
- * The KB math behind the headline: what the gate paid by itself, what each
- * config added on top, and a total that is the same number again. The total is
- * the point of the panel — a player who cannot tell whether a config is earning
- * its slot gets the answer here, per config, in the currency they spend.
- *
- * ADR-026 §3 kept the clear free of the per-config *pipeline* report (statuses,
- * roles, coverage) and that still holds; this is only the storage arithmetic.
- */
 const StorageLedger = ({
 	baseKb,
 	rows,
@@ -113,18 +89,11 @@ const StorageLedger = ({
 	</dl>
 );
 
-/**
- * The clear is a payoff, not a report (ADR-026): the gate's name, the storage it
- * paid, and a route straight into spending it. The ledger under the figure is
- * the one piece of attribution the payoff keeps — it explains the number rather
- * than replacing it with a table.
- */
 export const RewardScreen = ({
 	payout,
 	answered,
 	configs,
 	storage,
-	capKb,
 	nextStake,
 	onReviewAnswers,
 	onContinue,
@@ -170,9 +139,6 @@ export const RewardScreen = ({
 
 			{swatch ? (
 				<div className="flex flex-wrap items-center justify-center gap-2">
-					{/* Decorative: the sentence beside it already says "unlocked". The
-					    design system's StatusDot is a *check* verdict, which this is
-					    not, so it would speak "passed" to a screen reader. */}
 					<span aria-hidden className="text-viridian">
 						✓
 					</span>
@@ -240,31 +206,24 @@ export const RewardScreen = ({
 				</div>
 			))}
 
-			<StorageGauge usedKb={storage} capKb={capKb} layout="wide" />
+			<StorageGauge usedKb={storage} layout="wide" />
 
 			<Paragraph tone="muted">
 				Spend storage on configs, upgrades, and patches.
 			</Paragraph>
 
-			{payout.gateBillPaidKb > 0 ? (
-				<Paragraph size="sm" tone="muted">
-					Storage plan billed −{payout.gateBillPaidKb}KB this window.
-				</Paragraph>
-			) : null}
 			{payout.subscriptionBillKb > 0 ? (
 				<Paragraph size="sm" tone="muted">
 					Subscriptions billed −{payout.subscriptionBillKb}KB this gate.
 				</Paragraph>
 			) : null}
-			{payout.planDowngraded ? (
+
+			{payout.rentDefaulted ? (
 				<Paragraph size="sm" tone="cinnabar">
-					Storage bill unpaid — downgraded to the free tier.
+					Spot rent went unpaid — every rented spot went back.
 				</Paragraph>
 			) : null}
 
-			{/* Left-aligned inside a centred screen: the ledger reads the same here
-			    as it will in the shop this button opens. Only the payout shows — the
-			    demand and game-over rules belong to the gate ahead, not this clear. */}
 			{nextStake ? (
 				<div className="w-full text-left">
 					<GateStakeRewards stake={nextStake} lead="Next up" />

@@ -40,7 +40,7 @@ boundary, so this table is the map an architecture review reads first.
 | Run status | `run/domain` | `RunStatus` = `configuring \| answering \| awaiting-strip \| rewarding \| won \| dead` |
 | Run poll / Grading | `run/domain` | `RunPoll`, `RunOption`, `AnswerType`, `AnswerOutcome`, `AnsweredPoll`, `answerOutcome`, `coverageShare`, `mirrorPoll`, `mirrorGrading`, `nextStreak` (`runPoll.model.ts`); the run's own projection of a poll plus the one grading rule, shared with the community board. The authored `Poll` stays with the `polls` context (ADR-002 §2) |
 | Run snapshot | `run/domain` | `RunSnapshot`, `toRunSnapshot`, `hydrateRunState` (`runSnapshot.model.ts`); what persists to `run_states.state` |
-| Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `STORAGE_PLANS`, `dropCount`, `isStakeFatal`, `atMinimumWidth` (`rules.model.ts`) |
+| Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `STORAGE_PLANS`, `failPeelShareFor`, `peelQuotaSpotsFor`, `isPeelFatal`, `atMinimumWidth` (`rules.model.ts`) |
 | Seed / Segment | `run/domain` | `rollDailySeedSequence` (`seed.model.ts`); pure, so it is a model not a service |
 | Run view | `run/application` | `RunView`, `toRunView` (`runView.viewmodel.ts`); the single projection every screen reads, composed from the slices below. Also the trust boundary (DVTD-ay5e): the client receives this and never `RunState` |
 | Gate stake | `run/application` | `GateStake`, `AuditView`, `auditViewsFor` (`gateStake.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
@@ -54,10 +54,10 @@ boundary, so this table is the map an architecture review reads first.
 | Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |
 | Run screens and HUD | `run/presentation` | Prep / Answering / GameOver screens, `RunLayout`, `RunHud`, `StorageGauge`, `RunSummary` |
 | Pipeline | `pipeline/domain` | `Pipeline` = `{ id, slots, configs }` (`pipeline.model.ts`) |
-| Slot | `pipeline/domain` | `BASE_SLOTS` (3), `MAX_SLOTS` (14), `coverageToAddSlot`, `canAddSlot` |
+| Spot | `pipeline/domain` | `BASE_SPOTS` (4), `OWNED_SPOTS_CAP` (8), `ownedSpotsFor`, `nextSpotGrantFor`, `occupiedSpots`, `freeSpots`, `hasRoomFor`, `overflowSpots` (`pipeline.model.ts`); `spotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
 | Coverage | `pipeline/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
 | Lint | `pipeline/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/paidAction.model.ts` |
-| Build screen | `pipeline/presentation` | `ConfiguringScreen`, `PipelineTable`, `PipelineReportRow`, `SlotUnlockRow`, `CoverageByCategory` |
+| Build screen | `pipeline/presentation` | `ConfiguringScreen`, `PipelineTable`, `PipelineReportRow`, `SpotGrantRow`, `CoverageByCategory` |
 | Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed` (`gate.model.ts`) |
 | Gate reward | `gate/domain` | `gateRewardRows`, `gateStorageGained` (`gateReward.model.ts`) |
 | Gate ladder | `gate/domain` | `gateLadder.model.ts`; what unlocks at which gate |
@@ -128,7 +128,7 @@ Where the two differ, use the code name in code and the player name in copy.
 | Demand | `minConfigsForGate`, `focusDemand`, `Effect.demand` |
 | Strip | `RunAction` `strip`, `RunState.stripsRemaining` |
 | Faucet | `Config.storagePerCorrect`, `RunState.faucetEarnedKb`, `FAUCET_CAP_KB` |
-| Storage plan | `StoragePlan`, `STORAGE_PLANS`, `storagePlanFor` |
+| Storage plan | `StoragePlan`, `STORAGE_PLANS`, `storagePlanFor` — a rung rents spots AND a KB cap (ADR-044) |
 
 ---
 

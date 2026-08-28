@@ -2,7 +2,11 @@ import type { CategoryCode } from "~/shared/lib/categories";
 
 import {
 	Config,
-	focusCoverageMultiplier,
+	focusMultiplierOf,
+	interestPctOf,
+	minifiedAmount,
+	minifiedMultiplier,
+	storageOnClearOf,
 } from "~/modules/run/config/domain/config.model";
 
 export type CategoryTally = {
@@ -54,15 +58,14 @@ export const touchesCoverage = (config: Config): boolean =>
 
 const coverageOf = (config: Config): Effect["coverage"] => {
 	if (!touchesCoverage(config)) return undefined;
-	const level = config.level ?? 1;
 	return ({ category, answeredBefore }) => ({
 		mult:
-			(config.focusCategory === category ? focusCoverageMultiplier(level) : 1) *
-			(config.coverageMultiplier ?? 1) *
+			(config.focusCategory === category ? focusMultiplierOf(config) : 1) *
+			minifiedMultiplier(config, config.coverageMultiplier ?? 1) *
 			(answeredBefore === 0
-				? (config.openerCoverageMultiplier ?? 1)
+				? minifiedMultiplier(config, config.openerCoverageMultiplier ?? 1)
 				: (config.throttleCoverageMultiplier ?? 1)),
-		add: config.coverageAdd ?? 0,
+		add: minifiedAmount(config, config.coverageAdd ?? 0),
 	});
 };
 
@@ -75,18 +78,17 @@ const maskOf = (config: Config): Effect["maskWrongOn"] => {
 export const effectOf = (config: Config): Effect => ({
 	coverage: coverageOf(config),
 	maskWrongOn: maskOf(config),
-	// Flat clear payouts scale with level: Unit Tests pays +32KB × level.
-	storageOnClear:
-		config.storageOnClear === undefined
-			? undefined
-			: config.storageOnClear * (config.level ?? 1),
+	storageOnClear: storageOnClearOf(config),
 	storageInterestPct:
-		config.storageInterestPct === undefined
-			? undefined
-			: config.storageInterestPct * (config.level ?? 1),
+		config.storageInterestPct === undefined ? undefined : interestPctOf(config),
 	rewardMultiplier:
-		config.rewardMultiplier === 1 ? undefined : config.rewardMultiplier,
-	streakCapSteps: config.streakCapSteps,
+		config.rewardMultiplier === 1
+			? undefined
+			: minifiedMultiplier(config, config.rewardMultiplier),
+	streakCapSteps:
+		config.streakCapSteps === undefined
+			? undefined
+			: minifiedAmount(config, config.streakCapSteps),
 });
 
 export type ConfigStatus =

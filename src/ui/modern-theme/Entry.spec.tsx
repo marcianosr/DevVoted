@@ -126,56 +126,41 @@ describe("Entry", () => {
 		expect(screen.getByRole("group")).not.toHaveAttribute("open");
 	});
 
-	// On the whole card, strip included: half a tinted row reads as a rendering
-	// fault rather than as a grade. A column of shut rows stays flat.
-	it("tints an opened row with its rarity, summary strip and panel alike", () => {
-		render(
-			<Entry label=".ts" mark="pass" rarity="uncommon" explainer="TS polls." />
-		);
-
-		const card = screen.getByRole("group");
-		expect(card).toHaveClass("open:bg-viridian/10");
-		expect(card).toContainElement(screen.getByText(".ts"));
-		expect(card).toContainElement(screen.getByText("TS polls."));
-	});
-
-	// The one rarity that shows whether open or shut: met once a run, so it
-	// reads as an event rather than as a disclosure state.
-	it("keeps the legendary shimmering where the others wait to be opened", () => {
-		render(<Entry label="WTFPL" mark="pass" rarity="legendary" />);
-
-		expect(
-			screen.getByText("WTFPL").closest(".legendary-shimmer")
-		).toBeInTheDocument();
-	});
-
-	// The stripe leads the name on every row, expandable or not: it grades the
-	// config, so it cannot depend on whether the row happens to open. It sits
-	// against the name rather than down the row's left edge, which is what made
-	// a column of them read as statuses instead of grades.
-	it("leads the name with its rarity stripe, expandable or not", () => {
+	it("leads the name with its grade glyph, expandable or not", () => {
 		const { container: flat } = render(
-			<Entry label=".ts" mark="pass" rarity="common" />
+			<Entry label=".ts" mark="pass" rarity="bit" />
 		);
-		expect(flat.querySelector(".w-1.rounded-full")).toHaveClass("bg-cerulean");
+		expect(flat.querySelectorAll("svg rect")).toHaveLength(1);
 
 		const { container: open } = render(
-			<Entry label=".ts" mark="pass" rarity="rare" explainer="Rare polls." />
+			<Entry
+				label="AGENTS.md"
+				mark="pass"
+				rarity="byte"
+				explainer="All coverage ×2."
+			/>
 		);
-		expect(open.querySelector(".w-1.rounded-full")).toHaveClass("bg-cinnabar");
+		expect(open.querySelectorAll("svg rect")).toHaveLength(8);
 	});
 
-	it("runs no stripe where there is no rarity to state", () => {
+	it("draws no glyph where there is no grade to state", () => {
 		const { container } = render(<Entry label="empty" mark="idle" />);
 
-		expect(container.querySelector(".w-1.rounded-full")).toBeNull();
+		expect(container.querySelector("svg rect")).toBeNull();
 	});
 
-	it("leaves a row with no rarity untinted", () => {
-		render(<Entry label="empty" mark="idle" explainer="Nothing here." />);
+	it("tints an opened row in no grade colour at all", () => {
+		render(
+			<Entry
+				label="WTFPL"
+				mark="pass"
+				rarity="byte"
+				explainer="Buy the shop."
+			/>
+		);
 
 		expect(screen.getByRole("group").className).not.toMatch(
-			/bg-(cerulean|viridian|cinnabar)/
+			/bg-(cerulean|viridian|cinnabar)|legendary/
 		);
 	});
 });

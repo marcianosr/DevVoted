@@ -33,7 +33,6 @@ const answered = [
 	},
 ];
 
-/** The cleared gate every story starts from; each names only what it varies. */
 const payout = (overrides: Partial<GatePayout> = {}) =>
 	createMockGatePayout({
 		clearedGateNumber: 1,
@@ -47,7 +46,6 @@ export const Default: Story = {
 		answered,
 		configs: [CONFIGS.css, CONFIGS.unitTests],
 		storage: 168,
-		capKb: 512,
 		nextStake: createMockGateStake({
 			gateNumber: 2,
 			coverageDemand: 25,
@@ -93,7 +91,7 @@ export const SubscriptionsBilled: Story = {
 	args: {
 		...Default.args,
 		configs: [CONFIGS.css, CONFIGS.freemium],
-		payout: payout({ gateBillPaidKb: 8, subscriptionBillKb: 64 }),
+		payout: payout({ subscriptionBillKb: 64 }),
 	},
 };
 
@@ -101,11 +99,10 @@ export const WithFaucetAndBill: Story = {
 	args: {
 		...Default.args,
 		configs: [CONFIGS.css, CONFIGS.unitTests, CONFIGS.indexedDb],
-		payout: payout({ faucetThisGateKb: 24, gateBillPaidKb: 8 }),
+		payout: payout({ faucetThisGateKb: 24, subscriptionBillKb: 8 }),
 	},
 };
 
-/** Every storage source at once — the ledger's widest shape. */
 export const EveryPayout: Story = {
 	args: {
 		...Default.args,
@@ -128,6 +125,6 @@ export const EveryPayout: Story = {
 export const Downgraded: Story = {
 	args: {
 		...Default.args,
-		payout: payout({ planDowngraded: true }),
+		payout: payout({ subscriptionBillKb: 24 }),
 	},
 };

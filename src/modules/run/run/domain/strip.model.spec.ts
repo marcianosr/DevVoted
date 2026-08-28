@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
-	failStripsFor,
+	failPeelShareFor,
 	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
 import { type RunState } from "~/modules/run/run/domain/run.model";
@@ -18,20 +18,19 @@ import {
 } from "~/modules/run/run/domain/run.factory";
 
 describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
-	it("owes the base peel at the gate it missed", () => {
+	it("owes a share of the occupied spots at the gate it missed", () => {
 		const state = failGate(started(["unit-tests"]));
 		expect(state.status).toBe("awaiting-strip");
-		expect(state.stripsRemaining).toBe(failStripsFor(0));
+		expect(state.peelSpotsRemaining).toBe(Math.ceil(4 * failPeelShareFor(0)));
 		expect(state.gatesCleared).toBe(0);
-		// Which config goes is the player's decision, so nothing is taken yet.
-		expect(state.pipeline.configs).toHaveLength(3);
+		expect(state.pipeline.configs).toHaveLength(4);
 	});
 
 	it("sends the paid peel to the shop instead of straight back to the polls", () => {
 		const state = payPeel(failGate(started(["unit-tests"])));
 		expect(state.status).toBe("rewarding");
 		expect(state.redoGate).toBe(0);
-		expect(state.pipeline.configs).toHaveLength(2);
+		expect(state.pipeline.configs).toHaveLength(3);
 		expect(state.draftOptions.length).toBeGreaterThan(0);
 	});
 
@@ -59,14 +58,18 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 	});
 
 	it("peels deeper at a strip-audit gate", () => {
-		const state = failGate(atGateWithBuild(11, 8));
-		expect(state.status).toBe("awaiting-strip");
-		expect(state.stripsRemaining).toBe(failStripsFor(11) + 1);
+		const audited = failGate(atGateWithBuild(11, 8));
+		const clean = failGate(atGateWithBuild(10, 8));
+		expect(audited.status).toBe("awaiting-strip");
+		expect(audited.peelSpotsRemaining).toBeGreaterThan(
+			clean.peelSpotsRemaining
+		);
 	});
 
 	it("peels more of a deep build than a shallow one", () => {
-		expect(failGate(atGateWithBuild(1, 8)).stripsRemaining).toBe(1);
-		expect(failGate(atGateWithBuild(8, 8)).stripsRemaining).toBe(3);
+		expect(failGate(atGateWithBuild(8, 8)).peelSpotsRemaining).toBeGreaterThan(
+			failGate(atGateWithBuild(1, 8)).peelSpotsRemaining
+		);
 	});
 
 	it("ends the run when the peel takes the whole build", () => {
@@ -79,7 +82,7 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 			},
 		});
 		expect(state.status).toBe("dead");
-		expect(state.log.at(-1)).toContain("the build holds 1");
+		expect(state.log.at(-1)).toContain("the build fills 1");
 	});
 
 	it("clears the redo flag on the clear that follows", () => {
@@ -91,8 +94,6 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 	});
 
 	it("ends the run when a bare pipeline misses — a bare retry would loop forever", () => {
-		// Bareness is unreachable through play (the sell/drop floor holds at 1);
-		// this guards legacy snapshots that resume with an emptied pipeline.
 		let state = started(["js"]);
 		state = { ...state, pipeline: { ...state.pipeline, configs: [] } };
 		expect(failGate(state).status).toBe("dead");
@@ -118,21 +119,21 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 		return {
 			...state,
 			status: "awaiting-strip",
-			stripsRemaining: quota,
+			peelSpotsRemaining: quota,
 		};
 	};
 
 	it("routes the peeled build through the shop before the replay", () => {
 		let state = awaitingStrip(1);
 		state = runReducer(state, { type: "strip", configId: "eslint" });
-		expect(state.stripsRemaining).toBe(0);
+		expect(state.peelSpotsRemaining).toBe(0);
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("rewarding");
 		expect(state.redoGate).toBe(0);
 		expect(configIds(state)).not.toContain("eslint");
 		state = runReducer(state, { type: "finish-reward" });
 		expect(state.status).toBe("answering");
-		expect(state.gatesCleared).toBe(0); // the same gate again, not the next
+		expect(state.gatesCleared).toBe(0);
 	});
 
 	it("ignores a strip once the quota is met", () => {

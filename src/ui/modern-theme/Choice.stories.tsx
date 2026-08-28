@@ -71,8 +71,6 @@ const AnswerList = () => {
 
 export const Interactive: Story = { render: () => <AnswerList /> };
 
-// The reveal's settled options: inert, verdict wash on the card, badges at the
-// row's end — celadon for what the gate expected, cinnabar for a wrong pick.
 export const SettledExpectedAndPicked: Story = {
 	args: {
 		label: "arr.slice(-2)",
@@ -99,7 +97,6 @@ export const SettledWrongPick: Story = {
 	},
 };
 
-// A settled option that was neither expected nor picked steps back.
 export const SettledBystander: Story = {
 	args: { letter: "C", label: "arr.at(-2)", settled: true },
 };

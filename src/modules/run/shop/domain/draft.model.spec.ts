@@ -56,9 +56,6 @@ describe("rollDraft", () => {
 		}
 	});
 
-	// The old implementation returned pool[(seed + offset) % length], so every
-	// draft was a contiguous run of the roster and rebuilding just paged forward.
-	// Learning CONFIG_LIST's order told you exactly what came next.
 	it("does not offer a contiguous slice of the roster", () => {
 		const rosterIndex = (id: string) =>
 			CONFIG_LIST.findIndex((config) => config.id === id);
@@ -112,7 +109,6 @@ describe("rollDraft with shop controls", () => {
 		expect(offered).toHaveLength(DRAFT_SIZE);
 	});
 
-	// The whole point of paying to lock: rerolling is supposed to lose offers.
 	it("holds the locked offer across every reroll", () => {
 		const held = Array.from({ length: 20 }, (_, seed) =>
 			ids(rollDraft(seed, [], ["cold-start"]))
@@ -131,7 +127,6 @@ describe("rollDraft with shop controls", () => {
 		expect(offered.filter((id) => id === "eslint")).toHaveLength(1);
 	});
 
-	// A lock is spent by installing the config; a stale id must not eat a slot.
 	it("drops a locked id the player has since installed", () => {
 		const offered = ids(rollDraft(3, [CONFIGS.eslint], ["eslint"]));
 		expect(offered).not.toContain("eslint");
@@ -157,8 +152,6 @@ describe("sellRefundIn", () => {
 	});
 
 	it("refunds half of what Freemium's shelf charged, not half of list", () => {
-		// AGENTS.md lists at 256 and drafts at 128 under Freemium. A list-priced
-		// refund would return the whole 128 and make churn free.
 		const build = [CONFIGS.freemium, CONFIGS.agentsMd];
 		expect(draftCostIn(build, CONFIGS.agentsMd)).toBe(128);
 		expect(sellRefundIn(build, CONFIGS.agentsMd)).toBe(64);
@@ -219,8 +212,6 @@ describe("draftSeed", () => {
 		expect(draftSeed(3, 2)).toBe(draftSeed(3, 2));
 	});
 
-	// A plain sum would make gate 1's opening draft identical to gate 0's first
-	// rebuild, handing back offers the player just paid to replace.
 	it("does not collide across gate and rebuild combinations", () => {
 		const seeds = new Set<number>();
 		for (let gate = 0; gate < 12; gate++) {

@@ -37,7 +37,6 @@ export const Default: Story = {
 	},
 };
 
-/** Past the shop door: the drop panel loses its "sell it instead" way out. */
 export const ShopClosed: Story = {
 	args: {
 		...Default.args,
@@ -50,7 +49,6 @@ export const PaidStoragePlan: Story = {
 		...Default.args,
 		stake: {
 			...stake,
-			billKb: 16,
 			subscriptions: {
 				lines: [
 					{
@@ -68,15 +66,12 @@ export const PaidStoragePlan: Story = {
 	},
 };
 
-/** Both billing systems at once, each row naming its own trigger: the plan
- * charges pass or fail, Freemium only on a clear. */
 export const PlanAndConfigSubscriptions: Story = {
 	args: {
 		...Default.args,
 		configs: [CONFIGS.js, CONFIGS.freemium],
 		stake: {
 			...stake,
-			billKb: 16,
 			subscriptions: {
 				lines: [
 					{
@@ -95,14 +90,11 @@ export const PlanAndConfigSubscriptions: Story = {
 	},
 };
 
-/** Freemium's bill has outgrown the balance — the warning that something will
- * lapse, said before the gate rather than after it settles. */
 export const SubscriptionsUnaffordable: Story = {
 	args: {
 		...PlanAndConfigSubscriptions.args,
 		stake: {
 			...stake,
-			billKb: 16,
 			subscriptions: {
 				lines: [
 					{
@@ -128,7 +120,6 @@ export const AwaitingTomorrowsPolls: Story = {
 	},
 };
 
-/** The audit reveal — the moment gate personality lands on the receipt. */
 export const MarshAudit: Story = {
 	args: {
 		...Default.args,
@@ -151,7 +142,6 @@ export const MarshAudit: Story = {
 	},
 };
 
-/** Stacked audits, one reported passing by Volkswagen CI — visible fraud. */
 export const ChampionSuppressed: Story = {
 	args: {
 		...Default.args,
@@ -181,10 +171,6 @@ export const ChampionSuppressed: Story = {
 	},
 };
 
-/**
- * The one warning a player gets that this gate can end the run: the peel has
- * nothing left to take after their last config (ADR-037).
- */
 export const LastConfigStanding: Story = {
 	args: {
 		...Default.args,

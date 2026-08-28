@@ -5,42 +5,43 @@ import { Chip, chipFigures } from "./Chip.ui";
 
 describe("Chip", () => {
 	it("names the config", () => {
-		render(<Chip rarity="common">ESLint</Chip>);
+		render(<Chip rarity="bit">ESLint</Chip>);
 
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
-	// Keyed by the stripe, not by a ring: a config chip beside plain factor chips
-	// in the equation has to read as one of them.
-	it("keys each tier with its own stripe, on the same fill as its siblings", () => {
-		const { container: uncommon } = render(
-			<Chip rarity="uncommon">Intellisense</Chip>
-		);
-		const { container: rare } = render(<Chip rarity="rare">AGENTS.md</Chip>);
+	it("puts a graded chip on the same fill as its tone siblings", () => {
+		const { container } = render(<Chip rarity="crumb">Intellisense</Chip>);
 
-		expect(uncommon.querySelector(".w-1.rounded-full")).toHaveClass(
-			"bg-viridian"
-		);
-		expect(rare.querySelector(".w-1.rounded-full")).toHaveClass("bg-cinnabar");
-		expect(uncommon.firstChild).toHaveClass("bg-surface-raised");
+		expect(container.firstChild).toHaveClass("bg-surface-raised");
 	});
 
-	it("sizes a rarity chip like its tone siblings, not a step up", () => {
-		render(<Chip rarity="common">.js 1.25</Chip>);
+	it("sizes a graded chip like its tone siblings, not a step up", () => {
+		render(<Chip rarity="bit">.js 1.25</Chip>);
 
 		expect(screen.getByText(".js 1.25")).toHaveClass("text-xs");
 	});
 
-	it("gives legendary the gradient in its stripe, having no single colour", () => {
-		const { container } = render(<Chip rarity="legendary">Freemium</Chip>);
+	it("draws the grade glyph on a large chip and not on a small one", () => {
+		const { container: small } = render(<Chip rarity="byte">Freemium</Chip>);
+		const { container: large } = render(
+			<Chip rarity="byte" size="lg">
+				Freemium
+			</Chip>
+		);
 
-		expect(container.querySelector(".w-1.rounded-full")).toHaveClass(
-			"bg-legendary"
+		expect(small.querySelector("svg")).toBeNull();
+		expect(large.querySelectorAll("svg rect")).toHaveLength(8);
+	});
+
+	it("carries no grade colour, so a chip cannot be mistaken for a gate", () => {
+		const { container } = render(<Chip rarity="nibble">Prefetch</Chip>);
+
+		expect((container.firstChild as HTMLElement).className).not.toMatch(
+			/cerulean|viridian|cinnabar|legendary/
 		);
 	});
 
-	// The rail's chip grammar: outlined is what a thing WOULD do, filled is
-	// what it DID.
 	it("outlines a chip instead of filling it when asked to speak in woulds", () => {
 		const { container } = render(
 			<Chip tone="muted" outline>
@@ -108,8 +109,6 @@ describe(chipFigures, () => {
 		expect(screen.getByText("+32KB")).toBeInTheDocument();
 	});
 
-	// Odds are two numbers making one fact; badging the first would read as a
-	// figure the config pays out.
 	it("leaves a bare integer as prose", () => {
 		const { container } = render(
 			<p>

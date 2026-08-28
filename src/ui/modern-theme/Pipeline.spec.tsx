@@ -6,7 +6,7 @@ import { Pipeline, type PipelineRow } from "./Pipeline.ui";
 const ONLINE: PipelineRow = {
 	id: "intellisense",
 	label: "Intellisense",
-	rarity: "rare",
+	rarity: "nibble",
 	status: { kind: "online" },
 	figure: { kind: "multiplier", value: 1.5 },
 };
@@ -14,7 +14,7 @@ const ONLINE: PipelineRow = {
 const SKIPPED: PipelineRow = {
 	id: "eslint",
 	label: "ESLint",
-	rarity: "common",
+	rarity: "bit",
 	status: {
 		kind: "skipped",
 		why: { kind: "otherCategories", categories: ["js", "ts"] },
@@ -25,7 +25,7 @@ const SKIPPED: PipelineRow = {
 const OFFLINE: PipelineRow = {
 	id: "ts",
 	label: ".ts",
-	rarity: "common",
+	rarity: "bit",
 	status: { kind: "offline", audit: "Dependency Outage" },
 	figure: { kind: "multiplier", value: 1.25 },
 };
@@ -44,12 +44,9 @@ describe("Pipeline", () => {
 
 		expect(screen.getByText("1 will apply")).toBeInTheDocument();
 		expect(screen.getByText("1 offline")).toBeInTheDocument();
-		// Skipped rows keep to their hollow dots; the live header only promises.
 		expect(screen.queryByText("1 skipped")).not.toBeInTheDocument();
 	});
 
-	// A zero is not a state the build is in, and three counters with two zeroes
-	// read as a legend for the dots instead of a reading of the pipeline.
 	it("leaves out a status nothing is in", () => {
 		render(<Pipeline configs={[ONLINE]} />);
 
@@ -88,8 +85,6 @@ describe("Pipeline", () => {
 		expect(screen.getByText("bills at the gate clear")).toBeInTheDocument();
 	});
 
-	// Struck through and blamed, never dimmed: the name is what the player came
-	// to the rail to read.
 	it("strikes an offline config through and names the audit holding it", () => {
 		const { container } = render(<Pipeline configs={[OFFLINE]} />);
 
@@ -104,8 +99,6 @@ describe("Pipeline", () => {
 		expect(screen.getByText("online")).toBeInTheDocument();
 	});
 
-	// The rate is a fact about the config; the budget is a fact about the run.
-	// Showing only the rate reads as a faucet that never runs dry.
 	it("counts down the budget a figure is drawn from, beside the figure", () => {
 		render(
 			<Pipeline
@@ -176,8 +169,6 @@ describe("Pipeline", () => {
 	});
 });
 
-// The reveal's delivery reading (settled): rows that paid are "applied", and
-// their outlined would-do rate gives way to a filled did badge.
 describe("a settled pipeline", () => {
 	it("trades the rate for a filled badge naming what was paid", () => {
 		render(<Pipeline settled configs={[{ ...ONLINE, fired: 0.5 }, SKIPPED]} />);

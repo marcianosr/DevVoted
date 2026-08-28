@@ -46,11 +46,6 @@ export type DisclosureBodyProps = {
 	className?: string;
 };
 
-/**
- * What the config does, then the facts about it: the sentence is the reason the
- * row was opened, and the dot-separated facts under it are a caption on that
- * sentence rather than a preamble to it.
- */
 export const DisclosureBody = ({
 	summary,
 	explainer,

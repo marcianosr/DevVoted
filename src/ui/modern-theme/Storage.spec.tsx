@@ -4,32 +4,28 @@ import { render, screen } from "@testing-library/react";
 import { Storage } from "./Storage.ui";
 
 describe("Storage", () => {
-	it("names the plan the cap comes from", () => {
-		render(<Storage plan="Free tier" used={0} cap={512} />);
+	it("reads the balance in the unit every price is quoted in", () => {
+		render(<Storage balanceKb={320} />);
 
-		expect(screen.getByText("Free tier")).toBeInTheDocument();
+		expect(screen.getByText("320 KB")).toBeInTheDocument();
+		expect(screen.getByText("balance")).toBeInTheDocument();
 	});
 
-	it("states what is stored against what the plan allows", () => {
-		render(<Storage plan="Free tier" used={184} cap={768} />);
+	it("draws no meter, because there is no ceiling to fill", () => {
+		render(<Storage balanceKb={320} />);
 
-		expect(screen.getByText("184 / 768 KB")).toBeInTheDocument();
+		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 	});
 
-	it("meters the fill against the cap, not against a fixed hundred", () => {
-		render(<Storage plan="Pro" used={184} cap={768} />);
+	it("prints a balance the old cap would have burned", () => {
+		render(<Storage balanceKb={2048} />);
 
-		const meter = screen.getByRole("progressbar");
-		expect(meter).toHaveAttribute("aria-valuenow", "184");
-		expect(meter).toHaveAttribute("aria-valuemax", "768");
+		expect(screen.getByText("2048 KB")).toBeInTheDocument();
 	});
 
-	it("reads empty at nothing stored", () => {
-		render(<Storage plan="Free tier" used={0} cap={512} />);
+	it("reads zero on a spent-out run", () => {
+		render(<Storage balanceKb={0} />);
 
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
-			"aria-valuenow",
-			"0"
-		);
+		expect(screen.getByText("0 KB")).toBeInTheDocument();
 	});
 });

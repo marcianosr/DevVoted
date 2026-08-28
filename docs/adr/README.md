@@ -24,7 +24,7 @@
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no color | Accepted — retires the per-category palette (wiki §2.4, DVTD-sthm) |
 | [021](021-death-at-the-gate-that-empties-the-build.md) | A run dies at the gate that empties its build | Superseded by 035 — death narrowed to strip audits (and the bare-legacy guard) |
 | [022](022-every-config-owes-the-gate-a-check.md) | Every config owes the gate a check; the checklist is the whole rulebook | Superseded by 035 — no config owes anything; the friction moved onto the gate |
-| [023](023-storage-capacity-is-a-subscription.md) | Storage capacity is a subscription — the plan ladder | Accepted — supersedes the cap-extension voucher (015 Decision 3 via DVTD-0h4n); DVTD-rf5c |
+| [023](023-storage-capacity-is-a-subscription.md) | Storage capacity is a subscription — the plan ladder | **Superseded by 045** — the subscription, the per-gate bill and the KB cap are all deleted; it superseded the cap-extension voucher (015 Decision 3 via DVTD-0h4n) on the way in (DVTD-rf5c) |
 | 024 | *(reserved: shop-router — one shop per gate, locks the other until the next rung)* | Unwritten — not implemented on the live route |
 | [025](025-automatic-width-claiming.md) | Width claims itself automatically — no more Unlock slot button | Accepted — amends 008 Decision 2; the ladder it claims from replaced by 034 (gate clears) |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: starter stacks, plain-language receipt, payoff-first gate clear | Accepted — account-level unlock flags are follow-up work |
@@ -42,8 +42,11 @@
 | [038](038-the-audit-roster.md) | The audit roster: nine rules, staged by count | Accepted — fills out 035 Decision 4 (every gate from 3 carries one, three by the summit); replaces 035's score-inverting Mirror with a poll-inverting one (DVTD-60he, DVTD-lhao) |
 | [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage, Focus included | Accepted — amends 006's upgrade economy; retires the free coverage-gated Focus upgrade and the no-price-on-the-button convention (DVTD-yx92) |
 | [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline — never passing or failing | Accepted — cleans up presentation left behind by 035 Decision 1; reads 038's offline state (DVTD-8pgn) |
-| [041](041-slots-open-on-gates-coverage-or-either.md) | Slots open on gates, coverage, or either | Accepted — reverses 034 Decision 5 (gates grant every slot) and drops the cap to 11; restores a coverage axis of 008's kind (DVTD-tk21) |
+| [041](041-slots-open-on-gates-coverage-or-either.md) | Slots open on gates, coverage, or either | **Superseded by 044** — slots became spots, and the coverage axis is deleted: score may not buy width |
 | [042](042-design-pillars-and-anti-pillars.md) | Design pillars and anti-pillars | Accepted — adds the tiebreaker lens for every later ADR; deletes wiki §2.1's pay-past-the-daily-lock note (DVTD-4bk5) |
+| [043](043-rarity-is-a-shape-not-a-hue.md) | Rarity is a shape, not a hue | Accepted — supersedes 006 Decision 9; renames the grades to `bit/crumb/nibble/byte`, deletes every rarity hue and legend, splits level onto its own mark; Decision 6's price-is-size doubling reversed by 044 (DVTD-ym11) |
+| [044](044-capacity-is-spots-money-is-kb.md) | Capacity is spots, money is KB | Accepted — the grade's bit count is now the pipeline's price; supersedes 041 (the slot ladder), reverses 043 Decision 6, amends 023/030 (the plan rents spots), 025 (a different ladder) and 037 (the peel is a share of spots); records the one-meter model as tried and rejected (DVTD-29cm) |
+| [045](045-spots-come-from-gates-kb-rents-more-on-top.md) | Spots come from gates, KB rents more on top | Accepted — **supersedes 023** (the plan and the KB cap are both deleted); amends 044 Decision 2 (gates hand width over free, extra spots stack on top) and 030 (still gate-staged); four extra-spot steps, staged by depth and rented per gate (a buy-out was built and pulled), ceiling 28 (DVTD-yu7z, DVTD-lxla) |
 
 ## Conventions
 

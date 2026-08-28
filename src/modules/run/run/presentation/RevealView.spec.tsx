@@ -79,9 +79,6 @@ describe("RevealView", () => {
 		expect(screen.getByLabelText("+1.6%")).toBeInTheDocument();
 	});
 
-	// The rail badges Code Coverage "paid +0.5"; the panel has to say +0.5 too.
-	// It used to fold the add into the factor it multiplies out to (1.5), which
-	// read as a different number for the same config.
 	it("adds a flat config in, quoting the coverage it actually contributed", () => {
 		render_(
 			{
@@ -99,9 +96,6 @@ describe("RevealView", () => {
 		expect(screen.getByText("+")).toBeInTheDocument();
 	});
 
-	// On a partial answer the contribution is share × add, so the two figures
-	// part company: Code Coverage adds 0.5 but paid 0.3 here. The chip has to
-	// say what was paid, which is also what the rail badges.
 	it("quotes what the add paid on this answer, not the config's own rate", () => {
 		render_(
 			{
@@ -122,8 +116,6 @@ describe("RevealView", () => {
 		expect(screen.queryByText("Code Coverage +0.5")).not.toBeInTheDocument();
 	});
 
-	// (base + adds) × multipliers — without the brackets the row reads as
-	// base + (add × mult) and stops matching the total underneath it.
 	it("brackets the base and its adds when multipliers scale their sum", () => {
 		render_(
 			{
@@ -165,7 +157,6 @@ describe("RevealView", () => {
 	});
 
 	it("badges the KB the faucet just paid, clamp and all — not its list rate", () => {
-		// The run cap left 4KB of the faucet's 8: the badge says what was paid.
 		render_({ ...answered, faucetKb: 4 }, [CONFIGS.js, CONFIGS.indexedDb]);
 
 		expect(screen.getByText("paid +4 KB")).toBeInTheDocument();
@@ -174,8 +165,6 @@ describe("RevealView", () => {
 	it("keeps the rail silent on a miss — configs never touch losses", () => {
 		render_(missed);
 
-		// The loss reads once, on the paid line; no rail row carries a delta and
-		// no factor chips pretend something multiplied.
 		expect(screen.getByLabelText("−0.8%")).toBeInTheDocument();
 		expect(screen.queryByText(/^paid /)).not.toBeInTheDocument();
 		expect(screen.queryByText("1 applied")).not.toBeInTheDocument();

@@ -2,30 +2,32 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { Dot } from "./Dot.ui";
-import { Legend, RARITY_LEGEND } from "./Legend.ui";
+import { Legend } from "./Legend.ui";
 
 describe("Legend", () => {
-	it("names every tier a config can be", () => {
-		render(<Legend items={RARITY_LEGEND} />);
+	it("lists an item per key it was given", () => {
+		render(
+			<Legend
+				items={[
+					{ id: "configs", label: "configs 224 KB" },
+					{ id: "free", label: "free 272 KB" },
+				]}
+			/>
+		);
 
-		expect(screen.getAllByRole("listitem")).toHaveLength(4);
+		expect(screen.getAllByRole("listitem")).toHaveLength(2);
 	});
 
-	it("lists the tiers cheapest first", () => {
-		render(<Legend items={RARITY_LEGEND} />);
+	it("colours a label when the key's name is the colour it explains", () => {
+		render(
+			<Legend
+				items={[
+					{ id: "leak", label: "leaking", labelClassName: "text-cinnabar" },
+				]}
+			/>
+		);
 
-		expect(
-			screen.getAllByRole("listitem").map((item) => item.textContent)
-		).toEqual(["common", "uncommon", "rare", "legendary"]);
-	});
-
-	it("sets each tier's name in that tier's own colour", () => {
-		render(<Legend items={RARITY_LEGEND} />);
-
-		expect(screen.getByText("common")).toHaveClass("text-cerulean");
-		expect(screen.getByText("uncommon")).toHaveClass("text-viridian");
-		expect(screen.getByText("rare")).toHaveClass("text-cinnabar");
-		expect(screen.getByText("legendary")).toHaveClass("text-legendary");
+		expect(screen.getByText("leaking")).toHaveClass("text-cinnabar");
 	});
 
 	it("leaves a label with no colour of its own uncoloured", () => {

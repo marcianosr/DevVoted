@@ -9,7 +9,7 @@ describe(StripScreen, () => {
 	it("tells the player how many configs to peel", () => {
 		render(
 			<StripScreen
-				stripsRemaining={2}
+				peelSpotsRemaining={2}
 				gateNumber={2}
 				configs={[CONFIGS.js, CONFIGS.agentsMd]}
 				answered={[]}
@@ -29,7 +29,7 @@ describe(StripScreen, () => {
 	it("states the redo's demand against the attempt's own meter", () => {
 		render(
 			<StripScreen
-				stripsRemaining={1}
+				peelSpotsRemaining={1}
 				gateNumber={2}
 				configs={[CONFIGS.js, CONFIGS.agentsMd]}
 				answered={[]}
@@ -48,7 +48,7 @@ describe(StripScreen, () => {
 	it("keeps the gate's questions off the repair screen", () => {
 		render(
 			<StripScreen
-				stripsRemaining={1}
+				peelSpotsRemaining={1}
 				gateNumber={2}
 				configs={[CONFIGS.js]}
 				answered={[
@@ -75,7 +75,7 @@ describe(StripScreen, () => {
 	it("offers every config for removal — Unit Tests included", () => {
 		render(
 			<StripScreen
-				stripsRemaining={1}
+				peelSpotsRemaining={1}
 				gateNumber={2}
 				configs={[CONFIGS.unitTests, CONFIGS.js]}
 				answered={[]}
@@ -94,7 +94,7 @@ describe(StripScreen, () => {
 		const onStrip = vi.fn();
 		render(
 			<StripScreen
-				stripsRemaining={1}
+				peelSpotsRemaining={1}
 				gateNumber={2}
 				configs={[CONFIGS.js, CONFIGS.agentsMd]}
 				answered={[]}
@@ -109,7 +109,7 @@ describe(StripScreen, () => {
 		const onStrip = vi.fn();
 		render(
 			<StripScreen
-				stripsRemaining={0}
+				peelSpotsRemaining={0}
 				gateNumber={2}
 				configs={[CONFIGS.js]}
 				answered={[]}

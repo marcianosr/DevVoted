@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { BASE_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
+import {
+	BASE_SPOTS,
+	occupiedSpots,
+} from "~/modules/run/pipeline/domain/pipeline.model";
 import {
 	CONFIG_LIST,
 	CONFIGS,
@@ -12,9 +15,11 @@ import {
 } from "~/modules/run/config/domain/stack.model";
 
 describe("STARTER_STACKS", () => {
-	it("fills every starting slot — a stack is a complete pipeline, not a head start", () => {
-		for (const stack of STARTER_STACKS)
-			expect(stack.configs).toHaveLength(BASE_SLOTS);
+	it("fits the opening pipeline, with room left to draft into", () => {
+		for (const stack of STARTER_STACKS) {
+			expect(occupiedSpots(stack.configs)).toBeLessThanOrEqual(BASE_SPOTS);
+			expect(stack.configs.length).toBeGreaterThan(0);
+		}
 	});
 
 	it("only bundles roster configs, so every member exists in the handed pool", () => {

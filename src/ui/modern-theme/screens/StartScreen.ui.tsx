@@ -9,13 +9,13 @@ import { Delta } from "../Delta.ui";
 import { Dot } from "../Dot.ui";
 import { Entry } from "../Entry.ui";
 import { Fold } from "../Fold.ui";
-import { Legend, RARITY_LEGEND } from "../Legend.ui";
 import { Glyph } from "../Glyph.ui";
 import { Lock } from "../Lock.ui";
 import { Pick } from "../Pick.ui";
+import { RowFigures } from "../RowFigures.ui";
 import type { Rarity } from "../rarity";
 import { Row } from "../Row.ui";
-import { Slot } from "../Slot.ui";
+import { SpotTrack } from "../SpotTrack.ui";
 import { Stake } from "../Stake.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
@@ -37,19 +37,13 @@ const NOTE = "flex flex-col gap-3";
 const COMBO =
 	"flex flex-col gap-2 rounded-lg border border-celadon/30 bg-celadon/5 px-4 py-3";
 const COMBO_HEAD = "flex flex-wrap items-center gap-2";
-// Pushed to the card's floor so the three presses line up whatever the blurbs
-// wrap to.
 const COMBO_PRESS = "mt-auto pt-1";
-// Three abreast: stacked, each card was a full-width row holding six words, and
-// the openings are meant to be compared rather than read in order.
 const COMBOS = "grid gap-2 sm:grid-cols-3";
-const KEY = "px-3 pt-4";
 const SPARK = "text-celadon";
+const SHAPE = "tabular-nums";
 
 const GATE_NAME = "flex items-center gap-2 px-3 py-2";
 const GROW = "min-w-0 flex-1";
-// Same bullet, same row, same gap as the Stake below it: the gate's demands, its
-// rewards and its cost are three readings of one thing, so they read as one list.
 const LIST = "flex flex-col gap-1";
 const SECTION = "border-b border-edge last:border-b-0";
 const BULLET = <Dot tone="muted" />;
@@ -60,7 +54,7 @@ export type DealtConfig = {
 	id: string;
 	label: string;
 	rarity?: Rarity;
-	/** The facts line under the name — a node, since the grade in it is coloured. */
+	spots: number;
 	summary?: ReactNode;
 	explainer: string;
 	note?: ReactNode;
@@ -71,25 +65,19 @@ export type StartCombo = {
 	id: string;
 	name: string;
 	blurb: string;
+	shape?: string;
 	recommended?: boolean;
 	onTake: () => void;
 };
 
-/** A slot the run does not own yet names what opens it: a gate, a coverage
- * total, or either (ADR-041). An owned slot names neither. */
-export type StartSlot = { id: string; gate?: number; coverage?: number };
-
 export type StartStake = {
 	removeOnMiss: number;
-	/** Signed: what a wrong answer does to coverage, so it pairs with the
-	 * reward's per-correct figure instead of asking the reader to flip it. */
 	coveragePerWrong: number;
 };
 
 export type StartReward = {
 	coveragePerCorrect: number;
 	gateRewardKb: number;
-	slotOpens?: number;
 };
 
 export type StartScreenProps = {
@@ -102,32 +90,31 @@ export type StartScreenProps = {
 	lock?: { cost: string; onToggle: (id: string) => void };
 	rebuild?: { cost: string; onUse: () => void };
 	combos?: readonly StartCombo[];
-	slots: readonly StartSlot[];
+	spots: number;
+	maxSpots?: number;
+	fits?: Rarity | null;
 	gateName: string;
-	gateNumber: number;
-	gateCount: number;
 	pollCount: number;
 	coverageDemand: number;
 	auditCount: number;
-	/** Where this build's streak stops paying, as the multiplier itself. */
 	streakCap: number;
 	stake: StartStake;
 	reward: StartReward;
 	onStart?: () => void;
+	canStart?: boolean;
 	theme?: SwatchTheme;
 };
 
-// Name, one line of playstyle, and the press. The contents are not listed: the
-// deal below is where a config is read, and a combo that has to be audited
-// before it can be taken is not doing its job (ADR-026).
 const Combo = ({
 	name,
 	blurb,
+	shape,
 	recommended,
 	onTake,
 }: {
 	name: string;
 	blurb: string;
+	shape?: string;
 	recommended?: boolean;
 	onTake: () => void;
 }) => (
@@ -140,6 +127,11 @@ const Combo = ({
 		<Text size="meta" tone="muted">
 			{blurb}
 		</Text>
+		{shape ? (
+			<Text size="meta" tone="muted" className={SHAPE}>
+				{shape}
+			</Text>
+		) : null}
 		<span className={COMBO_PRESS}>
 			<Action label="take these" emphasis="loud" full onUse={onTake} />
 		</span>
@@ -182,10 +174,10 @@ export const StartScreen = ({
 	lock,
 	rebuild,
 	combos,
-	slots,
+	spots,
+	maxSpots,
+	fits,
 	gateName,
-	gateNumber,
-	gateCount,
 	pollCount,
 	coverageDemand,
 	auditCount,
@@ -193,38 +185,13 @@ export const StartScreen = ({
 	stake,
 	reward,
 	onStart,
+	canStart,
 	theme,
 }: StartScreenProps) => {
-	const picked = pickedIds.length;
-	const openSlots = slots.filter((slot) => slot.gate === undefined);
-	const picksRequired = openSlots.length;
-	const toGo = picksRequired - picked;
-	const ready = toGo === 0;
-
-	const pipeline = [
-		...dealt
-			.filter((config) => pickedIds.includes(config.id))
-			.map((config) => ({
-				id: config.id,
-				content: (
-					<Entry
-						label={config.label}
-						rarity={config.rarity}
-						value={config.note}
-					/>
-				),
-			})),
-		...openSlots.slice(picked).map((slot) => ({
-			id: slot.id,
-			content: <Slot />,
-		})),
-		...slots
-			.filter((slot) => slot.gate !== undefined || slot.coverage !== undefined)
-			.map((slot) => ({
-				id: slot.id,
-				content: <Slot gate={slot.gate} coverage={slot.coverage} />,
-			})),
-	];
+	const picked = dealt.filter((config) => pickedIds.includes(config.id));
+	const spotsUsed = picked.reduce((total, config) => total + config.spots, 0);
+	const spotsFree = Math.max(0, spots - spotsUsed);
+	const ready = canStart ?? spotsUsed > 0;
 
 	const lockFor = (config: DealtConfig) => {
 		if (!lock) return undefined;
@@ -246,9 +213,36 @@ export const StartScreen = ({
 		);
 	};
 
+	const dealRow = (config: DealtConfig) => {
+		const isPicked = pickedIds.includes(config.id);
+		const wontFit = !isPicked && config.spots > spotsFree;
+
+		return {
+			id: config.id,
+			content: (
+				<Pick
+					variant="draft"
+					label={config.label}
+					rarity={config.rarity}
+					gradeAs="cells"
+					gradeHint={`takes ${config.spots} of ${spots} spots`}
+					checked={isPicked}
+					disabled={wontFit}
+					onToggle={() => onToggle(config.id)}
+					value={
+						<RowFigures grade={config.rarity ?? "bit"} figure={config.note} />
+					}
+					summary={config.summary}
+					explainer={config.explainer}
+					trailing={lockFor(config)}
+				/>
+			),
+		};
+	};
+
 	const startButton = onStart ? (
 		<Action
-			label={ready ? "Start the run →" : `Pick ${toGo} to start`}
+			label={ready ? "Start the run →" : "Pick a config to start"}
 			size="lg"
 			emphasis="loud"
 			full
@@ -309,6 +303,7 @@ export const StartScreen = ({
 												key={combo.id}
 												name={combo.name}
 												blurb={combo.blurb}
+												shape={combo.shape}
 												recommended={combo.recommended}
 												onTake={combo.onTake}
 											/>
@@ -317,26 +312,9 @@ export const StartScreen = ({
 								) : null}
 							</div>
 						}
-						items={dealt.map((config) => ({
-							id: config.id,
-							content: (
-								<Pick
-									variant="draft"
-									label={config.label}
-									rarity={config.rarity}
-									checked={pickedIds.includes(config.id)}
-									onToggle={() => onToggle(config.id)}
-									value={config.note}
-									summary={config.summary}
-									explainer={config.explainer}
-									trailing={lockFor(config)}
-								/>
-							),
-						}))}
+						divided
+						items={dealt.map(dealRow)}
 					/>
-					<div className={KEY}>
-						<Legend items={RARITY_LEGEND} />
-					</div>
 				</section>
 
 				<section className={`${COLUMN} ${ASIDE}`}>
@@ -344,21 +322,24 @@ export const StartScreen = ({
 						title="Your pipeline"
 						value={
 							<Text size="meta" tone="muted">
-								{picked} of {picksRequired}
+								{spotsUsed} of {spots} spots
 							</Text>
 						}
-						items={pipeline}
+						note={
+							<SpotTrack
+								configs={picked}
+								spots={spots}
+								maxSpots={maxSpots}
+								fits={fits}
+							/>
+						}
 					/>
 
-					{/* Flat, never folded: this panel is the reason to pick anything. */}
 					<section className={SECTION}>
 						<div className={GATE_NAME}>
 							<Swatch size="pip" />
 							<Text size="label" className={GROW}>
 								{gateName} gate
-							</Text>
-							<Text size="meta" tone="muted">
-								{gateNumber} / {gateCount}
 							</Text>
 						</div>
 						<ul className={LIST}>
@@ -371,9 +352,6 @@ export const StartScreen = ({
 								value={auditCount === 0 ? "none" : String(auditCount)}
 								tone={auditCount === 0 ? "muted" : "saffron"}
 							/>
-							{/* A build number, not a rule of the gate: it sits here because
-							    it bounds what the polls below can pay, and configs will
-							    raise it. */}
 							<Fact label="streak cap" value={`×${streakCap}`} />
 						</ul>
 					</section>
@@ -391,12 +369,6 @@ export const StartScreen = ({
 								label="gate cleared"
 								value={<Delta kb={reward.gateRewardKb} />}
 							/>
-							{reward.slotOpens === undefined ? null : (
-								<Fact
-									label={`slot ${reward.slotOpens}`}
-									value={<Chip tone="celadon">opens</Chip>}
-								/>
-							)}
 							<Fact
 								label={`${gateName} Swatch`}
 								value={<Swatch size="pip" state="pending" />}

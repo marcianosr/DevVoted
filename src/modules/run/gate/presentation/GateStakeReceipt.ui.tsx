@@ -26,32 +26,17 @@ import { SwatchChip } from "~/modules/run/gate/presentation/SwatchChips.ui";
 
 type GateStakeReceiptProps = {
 	stake: GateStake;
-	/**
-	 * How this gate relates to the screen showing it — "Next up" after a clear,
-	 * "Retry" after a miss. The screens that sit *on* the gate omit it: there the
-	 * receipt needs no relationship, it is the gate you are about to climb.
-	 */
 	lead?: string;
 	preview?: PipelineModifiers;
 	previewPerAnswer?: PerAnswerPreview;
-	configsToInstall?: number;
+	overflowSpots?: number;
 	action?: ScreenAction;
 	shopAction?: ScreenAction;
 };
 
-/**
- * Why a removal is refused, for the two surfaces that offer one. The verb is
- * theirs — you uninstall in the shop and drop at the gate door — but the rule
- * behind it is `atMinimumWidth`, so the sentence is written once.
- */
 export const widthRefusal = (verb: "uninstalling" | "dropping"): string =>
 	`Your only config — ${verb} it would leave nothing to clear a gate with.`;
 
-/**
- * The gate's name and badge, with an optional lead ("Next up", "Retry") naming
- * how it relates to the screen showing it. Shared by the full receipt and the
- * rewards-only preview, so a gate's identity always reads the same way.
- */
 const GateTitle = ({
 	gateNumber,
 	lead,
@@ -79,13 +64,6 @@ const GateTitle = ({
 	);
 };
 
-/**
- * One thing the gate asks for or pays out, its own list item beside a bullet
- * mark — the one shell both "Clear the gate" and "Rewards" build their rows
- * from, so the two lists read as one visual language. `contentClassName` picks
- * the layout: a requirement stacks (a sentence, then its meter), a reward pays
- * in one row (label left, number right).
- */
 const Requirement = ({
 	children,
 	contentClassName = "flex-col gap-1",
@@ -103,13 +81,6 @@ const Requirement = ({
 	</li>
 );
 
-/**
- * The gate's own stake on the score (ADR-035): the target sentence, a rail, and
- * the numbers, all one line. The meter reads the attempt's own window — every
- * gate is a fresh score, never a running total. Kept narrow (w-24) so it reads
- * as a detail beside the sentence rather than a second headline competing with
- * it.
- */
 const CoverageDemand = ({
 	demand,
 	held,
@@ -151,12 +122,6 @@ const CoverageDemand = ({
 	);
 };
 
-/**
- * What a miss costs (ADR-037), said before the player commits: the peel, the
- * loop it drops them into, and — when the peel would take the whole build — the
- * run ending. The fatal line is the only place the receipt shouts, because it is
- * the only line the player cannot undo afterwards.
- */
 const MissCost = ({
 	strips,
 	fatal,
@@ -182,12 +147,6 @@ const MissCost = ({
 	</div>
 );
 
-/**
- * The gate's personality (ADR-035), one row per audit: the name carries the
- * warning tone, the sentence the rule. A suppressed audit stays on the receipt
- * struck through with the device's verdict — the fraud is visible, never
- * silent (ADR-028's principle against the new rulebook).
- */
 const AuditRows = ({ audits }: { audits: readonly AuditView[] }) => (
 	<ul className="flex flex-col gap-2">
 		{audits.map((audit) => (
@@ -214,11 +173,6 @@ const AuditRows = ({ audits }: { audits: readonly AuditView[] }) => (
 	</ul>
 );
 
-/**
- * A clean gate's audit line: names the first audited gate ahead, so the system
- * introduces itself before it ever charges. Muted throughout — saffron warns
- * about this gate, and this is not this gate's warning.
- */
 const UpcomingAuditNote = ({ upcoming }: { upcoming: UpcomingAuditView }) => (
 	<ul className="flex flex-col gap-2">
 		<Requirement>
@@ -234,11 +188,6 @@ const UpcomingAuditNote = ({ upcoming }: { upcoming: UpcomingAuditView }) => (
 	</ul>
 );
 
-/**
- * The receipt's Audit section, shared by the full receipt and the rewards-only
- * preview. It never goes silent: a clean gate foreshadows the first audit ahead
- * instead, so the section disappears only past the last audited gate.
- */
 const AuditSection = ({
 	audits,
 	upcoming,
@@ -261,12 +210,6 @@ const AuditSection = ({
 	);
 };
 
-/**
- * What multiplies a correct answer beyond its base: a Focus config when the poll
- * matches its category, and one step of streak — which every correct answer
- * takes, the first one included. Muted and inline, because they qualify the
- * number beside them rather than being figures of their own.
- */
 const CoverageMultipliers = ({
 	perAnswer,
 }: {
@@ -280,7 +223,6 @@ const CoverageMultipliers = ({
 	</Paragraph>
 );
 
-/** One payout: label left, number right, so the column of rewards reads as a ledger. */
 const RewardRow = ({
 	label,
 	children,
@@ -313,12 +255,6 @@ const MetricValue = ({
 	return <span className="text-gradient-green">{current}</span>;
 };
 
-/**
- * What clearing this gate pays — the same ledger the full receipt's "Rewards"
- * section builds, pulled out so a screen that only wants the payout (the
- * reward screen's "Next up" preview) can render it without also carrying the
- * demand and game-over sections that belong to a gate still ahead.
- */
 const RewardsList = ({
 	stake,
 	preview,
@@ -357,9 +293,6 @@ const RewardsList = ({
 						/>
 					</>
 				) : null}
-				{/* The multipliers that ride on top of the base, named where the base
-				    is: without them the row promises a number no correct answer ever
-				    actually pays, since even the first one carries a streak. */}
 				<CoverageMultipliers perAnswer={perAnswer} />
 			</RewardRow>
 			<RewardRow label="Gate cleared">
@@ -368,8 +301,6 @@ const RewardsList = ({
 					preview={preview && `+${preview.gateReward}KB`}
 				/>
 			</RewardRow>
-			{/* Dashed, uncoloured: the badge is the gate's, and the gate has not
-			    handed it over yet — the same locked chip the collection shows. */}
 			{swatch ? (
 				<RewardRow label="Swatch earned">
 					<SwatchChip swatch={swatch} owned={false} />
@@ -379,12 +310,6 @@ const RewardsList = ({
 	);
 };
 
-/**
- * Every recurring KB cost in one place: the storage plan's tier and each
- * subscribed config, priced at this gate. The two systems bill on different
- * triggers, so each row says which — flattening them would tell the player a
- * miss costs more than it does.
- */
 const SubscriptionRows = ({ ledger }: { ledger: BillLedger }) => (
 	<ul className="flex flex-col gap-2">
 		{ledger.lines.map((line) => (
@@ -403,10 +328,12 @@ const SubscriptionRows = ({ ledger }: { ledger: BillLedger }) => (
 				<Paragraph as="span" tone="cinnabar" className="font-bold">
 					−{ledger.totalKb}KB
 				</Paragraph>
-				<Paragraph as="span" tone="muted">
-					{" "}
-					· −{ledger.onMissKb}KB on a miss
-				</Paragraph>
+				{ledger.onMissKb > 0 ? (
+					<Paragraph as="span" tone="muted">
+						{" "}
+						· −{ledger.onMissKb}KB on a miss
+					</Paragraph>
+				) : null}
 			</RewardRow>
 		) : null}
 		{ledger.shortfallKb > 0 ? (
@@ -424,17 +351,17 @@ export const GateStakeReceipt = ({
 	lead,
 	preview,
 	previewPerAnswer,
-	configsToInstall,
+	overflowSpots,
 	action,
 	shopAction,
 }: GateStakeReceiptProps) => {
 	const { gateNumber, pollsPerGate, coverageDemand, coverageHeld } = stake;
-	const needsInstalls = configsToInstall !== undefined && configsToInstall > 0;
+	const isOverCapacity = overflowSpots !== undefined && overflowSpots > 0;
 	return (
 		<section className="rounded-lg border border-edge-strong p-4">
 			<div data-testid="gate-stake-receipt" className="flex flex-col gap-3">
 				<GateTitle gateNumber={gateNumber} lead={lead} />
-				{needsInstalls || shopAction ? (
+				{isOverCapacity || shopAction ? (
 					<>
 						<hr className="border-t border-edge" />
 						<div className="flex flex-col gap-1">
@@ -451,14 +378,13 @@ export const GateStakeReceipt = ({
 									</Button>
 								) : null}
 							</div>
-							{needsInstalls ? (
+							{isOverCapacity ? (
 								<Paragraph as="span" tone="muted">
-									Needs at least{" "}
+									Over capacity by{" "}
 									<Paragraph as="span" className="font-bold">
-										{configsToInstall} config
-										{configsToInstall === 1 ? "" : "s"}
+										{overflowSpots} spot{overflowSpots === 1 ? "" : "s"}
 									</Paragraph>{" "}
-									in your pipeline
+									— minify, uninstall, or rent more room
 								</Paragraph>
 							) : null}
 						</div>
@@ -468,8 +394,6 @@ export const GateStakeReceipt = ({
 				<div className="flex flex-col gap-1">
 					<Paragraph size="xs">Clear the gate</Paragraph>
 					<ul className="flex flex-col gap-2">
-						{/* The window is a requirement, not a caption: the gate judges a
-						    full window, so leaving it half-answered fails it. */}
 						<Requirement>
 							<Paragraph as="span" tone="muted">
 								Answer all <Paragraph as="span">{pollsPerGate} polls</Paragraph>
@@ -482,7 +406,7 @@ export const GateStakeReceipt = ({
 						/>
 					</ul>
 					<MissCost
-						strips={stake.stripsOnFailure}
+						strips={stake.peelSpotsOnFailure}
 						fatal={stake.missIsFatal}
 						pollsPerGate={pollsPerGate}
 					/>
@@ -544,12 +468,6 @@ type GateStakeRewardsProps = {
 	lead?: string;
 };
 
-/**
- * The next gate's payout, on its own — what the reward screen shows right
- * after a clear. The full receipt's "To start"/"Clear the gate"/"Game over"
- * sections describe a gate still ahead of the player; here the player just
- * cleared one, so only the rewards half is relevant.
- */
 export const GateStakeRewards = ({ stake, lead }: GateStakeRewardsProps) => (
 	<section className="rounded-lg border border-edge-strong p-4">
 		<div className="flex flex-col gap-3">

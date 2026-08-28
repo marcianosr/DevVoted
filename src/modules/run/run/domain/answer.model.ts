@@ -18,12 +18,12 @@ import {
 	coverageLossFor,
 	extraPickPayoutFor,
 	gateClearPayout,
-	slotsFor,
+	occupiedSpots,
 	streakCapStepsFor,
 	storageInterestFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import {
-	failStripQuotaFor,
+	failPeelQuotaFor,
 	gateDemandFor,
 	gatePassed,
 } from "~/modules/run/gate/domain/gate.model";
@@ -39,12 +39,12 @@ import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
 	faucetRemainingKb,
 	gateBaseMultiplier,
-	isStakeFatal,
+	isPeelFatal,
 	pollDifficultyMultiplier,
+	extraRentKb,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	storagePlanFor,
-	STORAGE_PLANS,
+	spotsHeldWith,
 	streakMultiplier,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
@@ -74,83 +74,58 @@ const clearLine = (gateNumber: number, reward: number): string => {
 	return `Gate ${gateNumber} cleared! +${reward}KB${earned}.`;
 };
 
-const chargeStorageBill = (state: RunState): RunState => {
-	const plan = storagePlanFor(state.storagePlan);
-	if (plan.billKb === 0)
-		return { ...state, gateBillKb: 0, planDowngraded: false };
-	if (state.storage < plan.billKb)
-		return {
-			...state,
-			storagePlan: STORAGE_PLANS[0].tier,
-			gateBillKb: 0,
-			planDowngraded: true,
-			log: withLog(state, "Storage bill unpaid — downgraded to the free tier."),
-		};
-	return {
-		...state,
-		storage: state.storage - plan.billKb,
-		gateBillKb: plan.billKb,
-		planDowngraded: false,
-		log: withLog(state, `Storage bill paid (-${plan.billKb}KB).`),
-	};
+const recapacitied = (state: RunState): RunState => {
+	const spots = spotsHeldWith(state.gatesCleared, state.extraSpots);
+	if (spots === state.pipeline.spots) return state;
+	return { ...state, pipeline: { ...state.pipeline, spots } };
 };
 
-/** Claims width earned so far (ADR-025/041). Takes the max because coverage falls on a miss but a slot never closes. */
-const widened = (
-	state: RunState,
-	gatesCleared: number = state.gatesCleared
-): RunState => {
-	const slots = Math.max(
-		state.pipeline.slots,
-		slotsFor({ gatesCleared, coverage: state.coverage })
-	);
-	if (slots === state.pipeline.slots) return state;
-	const granted = Array.from(
-		{ length: slots - state.pipeline.slots },
-		(_, step) => state.pipeline.slots + 1 + step
-	);
-	return {
-		...state,
-		pipeline: { ...state.pipeline, slots },
-		justUnlockedSlots: [...(state.justUnlockedSlots ?? []), ...granted],
-	};
+type RentSettlement = {
+	readonly paidKb: number;
+	readonly extraSpots: number;
+	readonly defaulted: boolean;
 };
 
-const closeWindow = (closing: RunState, nextIndex: number): RunState => {
-	// Every attempt pays, the failed ones included (ADR-035).
-	const state = chargeStorageBill(closing);
+const settleSpotRent = (state: RunState, balanceKb: number): RentSettlement => {
+	const rented = state.extraSpots ?? 0;
+	if (rented === 0) return { paidKb: 0, extraSpots: 0, defaulted: false };
+	const owed = extraRentKb(rented);
+	if (balanceKb < owed)
+		return { paidKb: balanceKb, extraSpots: 0, defaulted: true };
+	return { paidKb: owed, extraSpots: rented, defaulted: false };
+};
+
+const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const gateNumber = state.gatesCleared;
 
 	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
-		// A miss peels (ADR-037); the run ends only when the peel has nothing left to take.
-		const quota = failStripQuotaFor(state.pipeline.configs, gateNumber);
-		const installed = state.pipeline.configs.length;
+		const quota = failPeelQuotaFor(state.pipeline.configs, gateNumber);
+		const occupied = occupiedSpots(state.pipeline.configs);
 		const demand = gateDemandFor(state.pipeline.configs, state.gatesCleared);
 		const missed = `Gate ${gateNumber} failed: ${state.window.coverageGained}% of ${demand}% this gate.`;
-		if (isStakeFatal(quota, installed))
+		if (isPeelFatal(quota, occupied))
 			return {
 				...state,
 				currentIndex: nextIndex,
 				status: "dead",
 				log: withLog(
 					state,
-					`${missed} It peels ${quota} — the build holds ${installed}. Run over.`
+					`${missed} It peels ${quota} — the build fills ${occupied}. Run over.`
 				),
 			};
 		return {
 			...state,
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
-			stripsRemaining: quota,
+			peelSpotsRemaining: quota,
 			log: withLog(
 				state,
-				`${missed} Peel ${quota} config${quota > 1 ? "s" : ""} and run it again.`
+				`${missed} Free up ${quota} spot${quota > 1 ? "s" : ""} and run it again.`
 			),
 		};
 	}
 
 	const interest = storageInterestFor(state.pipeline.configs, state.storage);
-	// What `.length` counted: the only part of the payout the loadout alone cannot price.
 	const extraPicks = (state.window.budget ?? 0) - state.window.answered;
 	const extraPickKb = extraPickPayoutFor(state.pipeline.configs, extraPicks);
 	const reward =
@@ -161,8 +136,9 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		) +
 		interest +
 		extraPickKb;
-	const cleared: RunState = {
-		...widened(state, state.gatesCleared + 1),
+	const rent = settleSpotRent(state, addStorage(state.storage, reward));
+	const cleared: RunState = recapacitied({
+		...state,
 		window: freshWindow(
 			state.polls,
 			nextIndex,
@@ -173,12 +149,15 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
 		redoGate: undefined,
-		storage: addStorage(state.storage, reward),
+		storage: addStorage(state.storage, reward) - rent.paidKb,
+		extraSpots: rent.extraSpots,
+		spotRentKb: rent.paidKb,
+		rentDefaulted: rent.defaulted ? true : undefined,
 		gateRewardKb: reward,
 		interestThisGateKb: interest,
 		extraPickThisGateKb: extraPickKb,
 		currentIndex: nextIndex,
-	};
+	});
 
 	if (gateNumber >= VICTORY_GATE)
 		return {
@@ -187,14 +166,11 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 			log: withLog(state, `${clearLine(gateNumber, reward)} You summited!`),
 		};
 
-	// Seeded off the run's own trail, so a replayed clear replays its merge.
 	const merged = autoUpgradeOnClear(
 		cleared.pipeline.configs,
 		`dependabot-${gateNumber}-${(state.allAnswered ?? []).length}-${state.storage}`
 	);
-	// After the merge, so one clear settles the pipeline once.
 	const settled = decayOnClear(merged.configs);
-	// After the reward: billing the pre-reward balance would lapse a plan this clear just covered.
 	const billed = billSubscriptionsOnClear(
 		settled.configs,
 		cleared.storage,
@@ -227,6 +203,10 @@ const closeWindow = (closing: RunState, nextIndex: number): RunState => {
 			...settled.deleted.map(
 				(config) => `${config.label} faded to ×1 — deleted from the pipeline.`
 			),
+			...(rent.paidKb > 0 ? [`Spot rent billed (-${rent.paidKb}KB).`] : []),
+			...(rent.defaulted
+				? ["Rent went unpaid — the rented spots went back."]
+				: []),
 			...(billed.paidKb > 0
 				? [`Subscriptions billed (-${billed.paidKb}KB).`]
 				: []),
@@ -254,18 +234,14 @@ const gradeAnswer = (
 	optionIds: readonly string[],
 	elapsedMs?: number
 ): AnswerGrade => {
-	// Audits read the installed pipeline, scoring the live one: an outage inside the window cannot un-suppress what the receipt already passed.
 	const audits = auditsOf(state);
 	const configs = liveConfigsOf(state);
-	// Grade the question actually asked, so outcome, share, streak and review all agree.
 	const graded = mirrorsPolls(audits) ? mirrorPoll(poll) : poll;
 	const answeredOutcome = answerOutcome(graded, optionIds);
-	// Short-circuits the mirror: a timeout must never be the way to score.
 	const limitMs = auditTimeLimitMs(audits, state.window.answered);
 	const timedOut =
 		limitMs !== undefined && elapsedMs !== undefined && elapsedMs > limitMs;
 	const outcome: AnswerOutcome = timedOut ? "wrong" : answeredOutcome;
-	// Scoring follows the audited share; streaks and the faucet stay keyed to true correctness.
 	const auditedShare = timedOut
 		? 0
 		: auditScoreShare(audits, coverageShare(graded, optionIds));
@@ -339,7 +315,6 @@ const scoreAnswer = (
 			streakBonus
 		),
 		faucetKb,
-		// Floors at 0: insolvency stays non-lethal (ADR-023).
 		burnKb: Math.min(
 			auditBurnKb(audits, grade.outcome === "wrong"),
 			Math.max(0, state.storage + faucetKb)
@@ -361,7 +336,6 @@ const answeredPollFrom = (
 	picked: grade.graded.options
 		.filter((option) => optionIds.includes(option.id))
 		.map((option) => option.label),
-	// The mirrored expectation, so the review agrees with the score.
 	correct: grade.graded.options
 		.filter((option) => option.correct)
 		.map((option) => option.label),
@@ -397,7 +371,6 @@ const applyAnswer = (
 	const window: GateWindow = {
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
-		// Floored, so a bad opening can be climbed out of but never banks a negative (ADR-035).
 		coverageGained: roundToOneDecimal(
 			Math.max(
 				0,
@@ -418,7 +391,7 @@ const applyAnswer = (
 		linted: state.window.linted ?? 0,
 	};
 
-	return widened({
+	return {
 		...state,
 		window,
 		manualDisabled: [],
@@ -439,7 +412,7 @@ const applyAnswer = (
 			ledger.burnKb > 0
 				? withLog(state, `Storage leaked -${ledger.burnKb}KB.`)
 				: state.log,
-	});
+	};
 };
 
 export const answer = (

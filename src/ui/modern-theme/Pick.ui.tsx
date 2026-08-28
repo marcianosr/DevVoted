@@ -9,10 +9,11 @@ import {
 	DISCLOSURE_SUMMARY,
 	isExpandable,
 } from "./Disclosure.ui";
-import { RARITY_WASH, type Rarity } from "./rarity";
-import { RarityStripe } from "./RarityStripe.ui";
+import { type Rarity } from "./rarity";
+import { RarityCells, RarityGlyph } from "./RarityGlyph.ui";
 import { Row } from "./Row.ui";
 import { Text } from "./Text.ui";
+import { Tooltip } from "./Tooltip.ui";
 
 export type PickVariant = "remove" | "draft";
 
@@ -33,16 +34,13 @@ const BOX = {
 } satisfies Record<PickVariant, string>;
 
 const STRUCK = "line-through";
+const DISABLED_CONTROL = "cursor-not-allowed opacity-50";
 const NOTES = "flex flex-wrap items-center gap-2";
-// Right-aligned inside the row's own content, so every figure down a deal sits
-// in one column while the trailing slot stays free for a press.
 const VALUE = "ml-auto shrink-0 tabular-nums";
 
 const EXPANDABLE = "relative rounded-md transition-colors";
 const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-md transition-colors`;
 const PICKER = "flex shrink-0 cursor-pointer items-center gap-3";
-// Ruled and indented under the name, the same way an Entry's facts are: a
-// column of open rows would otherwise run together.
 const FACTS =
 	"ml-13 flex flex-col gap-1 border-l border-edge-strong py-1 pr-3 pl-3";
 
@@ -52,13 +50,39 @@ export type PickProps = {
 	checked: boolean;
 	onToggle: (checked: boolean) => void;
 	notes?: ReactNode;
-	/** The row's figure, right-aligned in a column shared down the list. */
 	value?: ReactNode;
 	trailing?: ReactNode;
 	variant?: PickVariant;
 	summary?: ReactNode;
 	explainer?: ReactNode;
 	defaultOpen?: boolean;
+	gradeAs?: "glyph" | "cells";
+	gradeHint?: string;
+	disabled?: boolean;
+};
+
+const gradeFor = (
+	rarity: Rarity | undefined,
+	gradeAs: "glyph" | "cells",
+	hint: string | undefined
+): ReactNode => {
+	if (!rarity) return null;
+	const mark =
+		gradeAs === "cells" ? (
+			<RarityCells rarity={rarity} />
+		) : (
+			<RarityGlyph rarity={rarity} />
+		);
+	return hint === undefined ? mark : <Tooltip hint={hint}>{mark}</Tooltip>;
+};
+
+const washFor = (
+	checked: boolean,
+	variant: PickVariant,
+	disabled: boolean
+): string => {
+	if (checked) return WASH[variant];
+	return disabled ? "" : IDLE;
 };
 
 export const Pick = ({
@@ -73,18 +97,20 @@ export const Pick = ({
 	summary,
 	explainer,
 	defaultOpen = false,
+	disabled = false,
+	gradeAs = "glyph",
+	gradeHint,
 }: PickProps) => {
 	const expandable = isExpandable(summary, explainer);
-	const wash = checked
-		? WASH[variant]
-		: clsx(IDLE, rarity && RARITY_WASH[rarity]);
+	const wash = washFor(checked, variant, disabled);
 
 	const control = (
 		<input
 			type="checkbox"
 			checked={checked}
+			disabled={disabled}
 			onChange={(event) => onToggle(event.target.checked)}
-			className={clsx(CONTROL, BOX[variant])}
+			className={clsx(CONTROL, BOX[variant], disabled && DISABLED_CONTROL)}
 		/>
 	);
 
@@ -99,7 +125,7 @@ export const Pick = ({
 
 	const marks = notes ? <span className={NOTES}>{notes}</span> : null;
 	const figure = value == null ? null : <span className={VALUE}>{value}</span>;
-	const stripe = rarity ? <RarityStripe rarity={rarity} /> : null;
+	const grade = gradeFor(rarity, gradeAs, gradeHint);
 
 	if (!expandable)
 		return (
@@ -107,10 +133,11 @@ export const Pick = ({
 				as="label"
 				spacing="compact"
 				className={clsx(PICK, wash)}
+				dimmed={disabled}
 				leading={control}
 				trailing={trailing}
 			>
-				{stripe}
+				{grade}
 				{name}
 				{marks}
 				{figure}
@@ -127,12 +154,13 @@ export const Pick = ({
 				as="summary"
 				spacing="compact"
 				className={SUMMARY}
+				dimmed={disabled}
 				leading={<Caret scope="row" />}
 				trailing={trailing}
 			>
 				<label className={PICKER} onClick={(event) => event.stopPropagation()}>
 					{control}
-					{stripe}
+					{grade}
 					{name}
 				</label>
 				{marks}

@@ -1,29 +1,46 @@
 import type { ReactNode } from "react";
 
+import { clsx } from "clsx";
+
 import { Text } from "./Text.ui";
 
 const TOOLTIP = "group/tip relative inline-flex";
 
-// Hover is read off this wrapper, not off the child, so a disabled button —
-// which fires no mouse events of its own — still shows its hint.
-//
-// focus-visible, not focus-within: a clicked button keeps focus, and the panel
-// used to stay open over the page until something else took it. Keyboard focus
-// still shows the hint, which is the reason the focus rule exists.
 const PANEL =
-	"pointer-events-none absolute top-full left-0 z-50 mt-2 hidden w-max max-w-56 rounded-lg border border-edge-strong bg-surface-raised px-2 py-1 shadow-lg group-hover/tip:block group-has-[:focus-visible]/tip:block";
+	"pointer-events-none absolute z-50 hidden w-max max-w-56 rounded-lg border border-edge-strong bg-surface-raised px-2 py-1 shadow-lg group-hover/tip:block group-has-[:focus-visible]/tip:block";
+
+export type TooltipAlign = "left" | "right";
+
+const ALIGN = {
+	left: "left-0",
+	right: "right-0",
+} as const satisfies Record<TooltipAlign, string>;
+
+export type TooltipSide = "below" | "above";
+
+const SIDE = {
+	below: "top-full mt-2",
+	above: "bottom-full mb-2",
+} as const satisfies Record<TooltipSide, string>;
 
 export type TooltipProps = {
 	hint: string;
 	children: ReactNode;
+	className?: string;
+	align?: TooltipAlign;
+	side?: TooltipSide;
 };
 
-export const Tooltip = ({ hint, children }: TooltipProps) => (
-	<span className={TOOLTIP}>
+export const Tooltip = ({
+	hint,
+	children,
+	className,
+	align = "left",
+	side = "below",
+}: TooltipProps) => (
+	<span className={clsx(TOOLTIP, className)}>
 		{children}
-		{/* Hidden from assistive tech: the trigger the caller supplies carries the
-		    same words as its label, and a floating copy would be read twice. */}
-		<span aria-hidden className={PANEL}>
+		<span aria-hidden className={clsx(PANEL, SIDE[side], ALIGN[align])}>
 			<Text size="meta" tone="muted">
 				{hint}
 			</Text>

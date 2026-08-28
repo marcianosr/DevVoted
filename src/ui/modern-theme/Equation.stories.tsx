@@ -17,15 +17,13 @@ export default meta;
 
 type Story = StoryObj<typeof Equation>;
 
-// The reveal's multiplication: the base names the outcome, and every
-// contributing config gets its own chip, dressed in its rarity.
 export const Correct: Story = {
 	args: {
 		factors: [
 			{ label: "correct", value: 1 },
 			{ label: "streak", value: 1.2 },
-			{ label: ".ts", value: 1.25, rarity: "common" },
-			{ label: "AGENTS.md", value: 2, rarity: "rare" },
+			{ label: ".ts", value: 1.25, rarity: "bit" },
+			{ label: "AGENTS.md", value: 2, rarity: "nibble" },
 		],
 		paid: 2.9,
 	},
@@ -36,14 +34,13 @@ export const DeepGate: Story = {
 		factors: [
 			{ label: "correct", value: 6 },
 			{ label: "streak", value: 1.5 },
-			{ label: "Intellisense", value: 1.5, rarity: "rare" },
-			{ label: "Code Coverage", value: 1.5, rarity: "uncommon" },
+			{ label: "Intellisense", value: 1.5, rarity: "nibble" },
+			{ label: "Code Coverage", value: 1.5, rarity: "crumb" },
 		],
 		paid: 20.3,
 	},
 };
 
-// A miss multiplies nothing: the paid line carries the loss alone.
 export const Miss: Story = {
 	args: { factors: [], paid: -0.8 },
 };
@@ -52,21 +49,18 @@ export const Partial: Story = {
 	args: {
 		factors: [
 			{ label: "partial", value: 0.67 },
-			{ label: ".js", value: 1.25, rarity: "common" },
+			{ label: ".js", value: 1.25, rarity: "bit" },
 		],
 		paid: 0.8,
 	},
 };
 
-// A flat-add config joins with a +, carrying what it contributed rather than
-// the factor it multiplies out to; the brackets say the multipliers scale the
-// sum, not the base alone.
 export const WithAFlatAdd: Story = {
 	args: {
 		factors: [
 			{ label: "correct", value: 1 },
-			{ label: "Code Coverage", value: 0.5, op: "plus", rarity: "uncommon" },
-			{ label: ".js", value: 1.25, rarity: "common" },
+			{ label: "Code Coverage", value: 0.5, op: "plus", rarity: "crumb" },
+			{ label: ".js", value: 1.25, rarity: "bit" },
 			{ label: "streak", value: 1.1 },
 		],
 		paid: 2.1,

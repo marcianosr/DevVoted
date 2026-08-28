@@ -3,26 +3,27 @@ import {
 	describeConfig,
 	headlineFigureOf,
 	isUpgradable,
+	largestGradeFitting,
 	rarityOf,
+	spotsOf,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import {
-	storagePlanFor,
-	storagePlanLadder,
-} from "~/modules/run/run/domain/rules.model";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import type {
+	ExtraSpotOption,
 	RunView,
 	ShopOffer,
-	StoragePlanOption,
 } from "~/modules/run/run/application/runView.viewmodel";
+import { MAX_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import { offerRefusalText } from "~/modules/run/shop/presentation/ShopScreen.ui";
+import {
+	offerRefusalText,
+	shopExitLock,
+} from "~/modules/run/shop/presentation/ShopScreen.ui";
 import { ShopScreen } from "~/ui/modern-theme/screens/ShopScreen.ui";
 import { Action } from "~/ui/modern-theme/Action.ui";
-import { Chip } from "~/ui/modern-theme/Chip.ui";
 import { Delta } from "~/ui/modern-theme/Delta.ui";
 import { Figure } from "~/ui/modern-theme/Figure.ui";
 import { Entry } from "~/ui/modern-theme/Entry.ui";
@@ -30,41 +31,36 @@ import { Fold, type FoldItem } from "~/ui/modern-theme/Fold.ui";
 import { Glyph } from "~/ui/modern-theme/Glyph.ui";
 import { Lock } from "~/ui/modern-theme/Lock.ui";
 import { Mark } from "~/ui/modern-theme/Mark.ui";
-import type { PlanProps } from "~/ui/modern-theme/Plan.ui";
+import {
+	extraSpotLabel,
+	type ExtraSpotStep,
+} from "~/ui/modern-theme/ExtraSpots.ui";
 import { PriceTag, type PriceTagState } from "~/ui/modern-theme/PriceTag.ui";
-import { Slot } from "~/ui/modern-theme/Slot.ui";
+import { RowFigures } from "~/ui/modern-theme/RowFigures.ui";
+import { SpotTrack } from "~/ui/modern-theme/SpotTrack.ui";
 import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import { Text } from "~/ui/modern-theme/Text.ui";
-import { capLabel, planOpensAt, plural } from "~/ui/modern-theme/format";
+import { plural, gateFloorLabel } from "~/ui/modern-theme/format";
 
-/**
- * An offer quotes no refund: it is not owned yet, and its price is already on
- * the row's own tag. An installed config quotes what this build would be paid
- * for it, which is the number the Uninstall press honours.
- */
 const offerFacts = (config: Config) => <ConfigFacts config={config} />;
 
 const ownedFacts = (configs: readonly Config[], config: Config) => (
 	<ConfigFacts config={config} refundKb={sellRefundIn(configs, config)} />
 );
 
-// The two refusals are fixed by different things — sell something, or clear a
-// slot — so they cannot share a colour. Red is "you are short"; grey is "there
-// is nowhere to put it".
 const tagStateFor = (offer: ShopOffer): PriceTagState => {
 	if (offer.owned) return "owned";
 	if (!offer.refusal) return "buyable";
-	return offer.refusal.reason === "no-slot" ? "unavailable" : "unaffordable";
+	return offer.refusal.reason === "no-room" ? "unavailable" : "unaffordable";
 };
 
 const notEnoughData = (verb: string) => `Can't ${verb}, not enough data`;
 
-// The row's explainer says this at length, but only once the row is open.
 const refusalHintFor = (offer: ShopOffer): string | undefined => {
 	if (offer.owned) return "Already installed";
 	if (!offer.refusal) return undefined;
-	return offer.refusal.reason === "no-slot"
-		? "Can't install, no free slot"
+	return offer.refusal.reason === "no-room"
+		? `Needs ${offer.refusal.spots} spots, ${offer.refusal.freeSpots} free`
 		: notEnoughData("install");
 };
 
@@ -74,8 +70,7 @@ const lockFor = (
 	onLock: (configId: string) => void
 ) => {
 	const label = offer.config.label;
-	if (!view.shopControls.lockAvailable)
-		return <Lock on={label} state="unavailable" />;
+	if (!view.shopControls.lockAvailable) return undefined;
 	if (view.shopControls.lockedOfferIds.includes(offer.config.id))
 		return (
 			<Lock
@@ -117,11 +112,6 @@ const previewNotes = (view: RunView, offer: ShopOffer) => {
 
 const PIN = "flex flex-wrap items-center justify-between gap-3";
 
-/**
- * The slot Extend buys, drawn as the shelf's own next row. As a panel below the
- * list it read as a separate purchase; as a row it reads as the offer it is —
- * an empty place on this shelf, priced.
- */
 const extendRow = (view: RunView, onExtend: () => void): readonly FoldItem[] =>
 	view.shopControls.extendAvailable
 		? [
@@ -155,6 +145,15 @@ const extendRow = (view: RunView, onExtend: () => void): readonly FoldItem[] =>
 			]
 		: [];
 
+const trackBars = (configs: readonly Config[]) =>
+	configs.map((config) => ({
+		id: config.id,
+		label: config.label,
+		spots: spotsOf(config),
+		minified: config.minified,
+		rarity: rarityOf(config),
+	}));
+
 const offerRows = (
 	view: RunView,
 	onDraft: (configId: string) => void,
@@ -166,6 +165,7 @@ const offerRows = (
 			<Entry
 				label={offer.config.label}
 				rarity={rarityOf(offer.config)}
+				gradeHint={`takes ${spotsOf(offer.config)} of ${view.spots} spots`}
 				leading={
 					offer.owned ? (
 						<Mark variant="pass" hint="Already installed" />
@@ -175,12 +175,16 @@ const offerRows = (
 				}
 				notes={previewNotes(view, offer)}
 				value={
-					<PriceTag
-						kb={offer.priceKb}
-						on={offer.config.label}
-						state={tagStateFor(offer)}
-						hint={refusalHintFor(offer)}
-						onUse={() => onDraft(offer.config.id)}
+					<RowFigures
+						figure={
+							<PriceTag
+								kb={offer.priceKb}
+								on={offer.config.label}
+								state={tagStateFor(offer)}
+								hint={refusalHintFor(offer)}
+								onUse={() => onDraft(offer.config.id)}
+							/>
+						}
 					/>
 				}
 				summary={offerFacts(offer.config)}
@@ -193,12 +197,6 @@ const offerRows = (
 		),
 	}));
 
-/**
- * Both gates on one upgrade, as sentences. Storage and category coverage are
- * independent — a Focus config can be earned but unaffordable, or affordable
- * but unearned — and the emptiness of this list is what makes the button live,
- * so the press and the hint can never disagree about why it is refused.
- */
 const upgradeShortfalls = (
 	view: RunView,
 	config: Config
@@ -241,8 +239,6 @@ const upgradeAction = (
 		cost: `${upgradeStorageCost(config.level ?? 1)} KB`,
 		hint: upgradeHint(view, config),
 		disabled: !ready,
-		// The legendary ring is the reward for having met both gates, so it is
-		// never worn by a button that would refuse the press.
 		emphasis: ready ? ("prismatic" as const) : ("quiet" as const),
 		onUse: () => onUpgrade(config.id),
 	};
@@ -262,15 +258,11 @@ const pipelineRows = (
 				<Entry
 					label={config.label}
 					rarity={rarityOf(config)}
+					gradeHint={`takes ${spotsOf(config)} of ${view.spots} spots`}
 					{...(view.newConfigIds.includes(config.id)
 						? { mark: "warn" as const }
 						: {})}
-					notes={
-						<>
-							<Figure figure={headlineFigureOf(config)} />
-							<Chip tone="celadon">worth {refundKb} KB</Chip>
-						</>
-					}
+					notes={<Figure figure={headlineFigureOf(config)} />}
 					actions={[
 						...(isUpgradable(config)
 							? [upgradeAction(view, config, onUpgrade)]
@@ -293,59 +285,31 @@ const pipelineRows = (
 			),
 		};
 	}),
-	...Array.from(
-		{ length: Math.max(0, view.slots - view.configs.length) },
-		(_, index) => ({
-			id: `slot-${view.configs.length + index}`,
-			content: <Slot />,
-		})
-	),
-	...(view.nextSlotUnlock === null
-		? []
-		: [
-				{
-					id: "slot-next",
-					content: (
-						<Slot
-							gate={view.nextSlotUnlock.gate}
-							coverage={view.nextSlotUnlock.coverage}
-						/>
-					),
-				},
-			]),
 ];
 
-const currentTier = (plans: readonly StoragePlanOption[]): number =>
-	plans.find((plan) => plan.current)?.tier ?? 1;
+const extraSpotTerms = (option: ExtraSpotOption): string =>
+	option.spots === 0 ? "free" : `${option.rentKb} KB a gate`;
 
-const planRows = (
+const extraSpotSteps = (
 	view: RunView,
-	onChangePlan: (tier: number) => void
-): readonly PlanProps[] => {
-	const held = storagePlanFor(currentTier(view.storagePlans));
-
-	return storagePlanLadder(view.gatesCleared).map((plan) =>
-		plan.fromGate > view.gatesCleared
+	onRent: (spots: number) => void
+): readonly ExtraSpotStep[] =>
+	view.extraSpots.options.map((option) => ({
+		id: `extra-${option.spots}`,
+		label: extraSpotLabel(option.spots),
+		makes: `makes ${option.makes}`,
+		terms: extraSpotTerms(option),
+		settled: option.spots === 0,
+		held: option.held,
+		...(option.fromGate === undefined
 			? {
-					id: `tier-${plan.tier}`,
-					locked: true,
-					opensAt: planOpensAt(plan.fromGate),
+					pick: {
+						disabled: option.rentTooDear,
+						onUse: () => onRent(option.spots),
+					},
 				}
-			: {
-					id: `tier-${plan.tier}`,
-					name: "storage-plan",
-					cap: capLabel(plan.capKb),
-					terms: plan.billKb === 0 ? "free" : `${plan.billKb} KB / gate`,
-					free: plan.billKb === 0,
-					figure:
-						plan.capKb === held.capKb
-							? `${plan.capKb - view.storage} free now`
-							: `+${plan.capKb - held.capKb}`,
-					selected: plan.capKb === held.capKb,
-					onSelect: () => onChangePlan(plan.tier),
-				}
-	);
-};
+			: { opensAt: `opens at ${gateFloorLabel(option.fromGate)}` }),
+	}));
 
 const offerCountFor = (view: RunView): string => {
 	const locked = view.shopControls.lockedOfferIds.length;
@@ -362,7 +326,7 @@ export type ShopViewProps = {
 	onRebuild: () => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
-	onChangePlan: (tier: number) => void;
+	onRentExtraSpots: (spots: number) => void;
 	onContinue: () => void;
 };
 
@@ -375,7 +339,7 @@ export const ShopView = ({
 	onRebuild,
 	onExtend,
 	onPlantPin,
-	onChangePlan,
+	onRentExtraSpots,
 	onContinue,
 }: ShopViewProps) => {
 	const nextGate = view.gateStake.gateNumber;
@@ -392,14 +356,7 @@ export const ShopView = ({
 			gate={{
 				title: `${gateName} shop`,
 				nextGate: `gate ${nextGate}`,
-				storage: {
-					plan:
-						view.storageBillKb === 0
-							? "Free tier"
-							: `${view.storageBillKb} KB / gate`,
-					used: view.storage,
-					cap: view.storageCap,
-				},
+				storage: { balanceKb: view.storage },
 			}}
 			notice={
 				view.shopControls.shopLocked
@@ -464,13 +421,23 @@ export const ShopView = ({
 					</Fold>
 				) : undefined
 			}
-			storagePlans={{
-				plans: planRows(view, onChangePlan),
-				nextBillKb: view.storageBillKb,
+			extraSpots={{
+				steps: extraSpotSteps(view, onRentExtraSpots),
+				renting: view.extraSpots.renting,
+				perGateKb: view.extraSpots.perGateKb,
 			}}
 			pipeline={pipelineRows(view, onUpgrade, onSell)}
-			slots={`${view.configs.length} of ${view.slots} slots`}
+			slots={`${view.spotsUsed} of ${view.spots} spots`}
+			track={
+				<SpotTrack
+					configs={trackBars(view.configs)}
+					spots={view.spots}
+					maxSpots={MAX_SPOTS}
+					fits={largestGradeFitting(view.spotsFree)}
+				/>
+			}
 			onContinue={onContinue}
+			exitLock={shopExitLock(view.overflowSpots)}
 		/>
 	);
 };

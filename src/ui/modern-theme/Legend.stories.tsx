@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Dot } from "./Dot.ui";
-import { Legend, RARITY_LEGEND } from "./Legend.ui";
+import { Legend } from "./Legend.ui";
 
 const meta: Meta<typeof Legend> = {
 	component: Legend,
@@ -18,7 +18,27 @@ export default meta;
 
 type Story = StoryObj<typeof Legend>;
 
-export const FourTiers: Story = { args: { items: RARITY_LEGEND } };
+export const KeyingSegments: Story = {
+	args: {
+		items: [
+			{
+				id: "configs",
+				marker: <Dot shape="box" tone="theme" />,
+				label: "configs 224 KB",
+			},
+			{
+				id: "leftovers",
+				marker: <Dot shape="box" tone="saffron" />,
+				label: "rebuild leftovers 16 KB",
+			},
+			{
+				id: "free",
+				marker: <Dot shape="box" tone="muted" />,
+				label: "free 272 KB",
+			},
+		],
+	},
+};
 
 export const KeyingColumns: Story = {
 	args: {

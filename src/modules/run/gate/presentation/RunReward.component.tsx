@@ -18,7 +18,6 @@ export const RunReward = () => {
 				answered={view.answeredThisGate}
 				configs={view.configs}
 				storage={view.storage}
-				capKb={view.storageCap}
 				nextStake={view.gateStake}
 				onReviewAnswers={() => navigate({ to: "/run/review" })}
 				onContinue={() => navigate({ to: "/run/shop" })}

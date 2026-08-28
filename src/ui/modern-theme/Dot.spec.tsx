@@ -4,18 +4,25 @@ import { render } from "@testing-library/react";
 import { Dot } from "./Dot.ui";
 
 describe("Dot", () => {
-	it("is hidden from assistive tech, since the legend spells the tier out", () => {
-		const { container } = render(<Dot rarity="common" />);
+	it("is hidden from assistive tech, the row's own words carrying the state", () => {
+		const { container } = render(<Dot tone="celadon" />);
 
 		expect(container.firstChild).toHaveAttribute("aria-hidden");
 	});
 
-	it("fills each tier in its own colour", () => {
-		const { container: common } = render(<Dot rarity="common" />);
-		const { container: legendary } = render(<Dot rarity="legendary" />);
+	it("fills in the tone it was asked for", () => {
+		const { container: online } = render(<Dot tone="celadon" />);
+		const { container: offline } = render(<Dot tone="cinnabar" />);
 
-		expect(common.firstChild).toHaveClass("bg-cerulean");
-		expect(legendary.firstChild).toHaveClass("bg-legendary");
+		expect(online.firstChild).toHaveClass("bg-celadon");
+		expect(offline.firstChild).toHaveClass("bg-cinnabar");
+	});
+
+	it("rings instead of filling when the state is only installed", () => {
+		const { container } = render(<Dot tone="muted" hollow />);
+
+		expect(container.firstChild).toHaveClass("border", "border-zinc-600");
+		expect(container.firstChild).not.toHaveClass("bg-zinc-700");
 	});
 
 	it("is round unless asked for a box, which keys a chip", () => {
@@ -27,12 +34,12 @@ describe("Dot", () => {
 		expect(box.firstChild).not.toHaveClass("rounded-full");
 	});
 
-	// The size lives in the variant, not the base: two width utilities on one
-	// element leaves the winner to Tailwind's source order.
-	it("stands as a rail when asked, keying the row shape rather than a chip", () => {
-		const { container } = render(<Dot rarity="rare" shape="bar" />);
+	it("speaks only in status tones, never in a grade", () => {
+		const { container } = render(<Dot tone="theme" />);
 
-		expect(container.firstChild).toHaveClass("h-4", "w-1", "bg-cinnabar");
-		expect(container.firstChild).not.toHaveClass("size-1.5");
+		expect(container.firstChild?.textContent).toBe("");
+		expect((container.firstChild as HTMLElement).className).not.toMatch(
+			/cerulean|viridian|legendary/
+		);
 	});
 });

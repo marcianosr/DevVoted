@@ -12,9 +12,6 @@ describe("GateHeader", () => {
 		).toBeInTheDocument();
 	});
 
-	// Every screen wearing this header sits before the gate is cleared, so the
-	// badge is the shape of the swatch on offer, never a filled one the player
-	// has not been handed.
 	it("leaves the gate's swatch empty until the gate is cleared", () => {
 		const { container } = render(<GateHeader title="Gate 4 · Lavender" />);
 
@@ -22,19 +19,13 @@ describe("GateHeader", () => {
 		expect(container.querySelector(".bg-theme")).not.toBeInTheDocument();
 	});
 
-	it("carries the storage bar between the gate and its stats", () => {
+	it("carries the balance between the gate and its stats", () => {
 		render(
-			<GateHeader
-				title="Gate 4 · Lavender"
-				storage={{ plan: "Free tier", used: 184, cap: 512 }}
-			/>
+			<GateHeader title="Gate 4 · Lavender" storage={{ balanceKb: 184 }} />
 		);
 
-		expect(screen.getByText("Free tier")).toBeInTheDocument();
-		expect(screen.getByRole("progressbar")).toHaveAttribute(
-			"aria-valuemax",
-			"512"
-		);
+		expect(screen.getByText("184 KB")).toBeInTheDocument();
+		expect(screen.getByText("balance")).toBeInTheDocument();
 	});
 
 	it("shows the audit condition the gate runs under", () => {
@@ -46,7 +37,6 @@ describe("GateHeader", () => {
 		expect(screen.getByText("Dependency Outage")).toHaveClass("text-saffron");
 	});
 
-	// The count comes off the list, so it cannot be written wrong.
 	it("counts the audits it was given rather than being told a number", () => {
 		render(
 			<GateHeader

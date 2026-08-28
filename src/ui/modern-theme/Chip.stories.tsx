@@ -11,14 +11,16 @@ export default meta;
 
 type Story = StoryObj<typeof Chip>;
 
-export const Common: Story = { args: { rarity: "common", children: "ESLint" } };
+export const Common: Story = { args: { rarity: "bit", children: "ESLint" } };
 export const Uncommon: Story = {
-	args: { rarity: "uncommon", children: "Intellisense" },
+	args: { rarity: "crumb", children: "Intellisense" },
 };
-export const Rare: Story = { args: { rarity: "rare", children: "AGENTS.md" } };
+export const Rare: Story = {
+	args: { rarity: "nibble", children: "AGENTS.md" },
+};
 
 export const Legendary: Story = {
-	args: { rarity: "legendary", children: "Freemium" },
+	args: { rarity: "byte", children: "Freemium" },
 };
 
 export const EveryTier: Story = {
@@ -48,7 +50,6 @@ const TONES = [
 	"raised",
 ] as const satisfies readonly ChipTone[];
 
-/** Every tone against a themed ground, so `theme` reads beside the fixed ones. */
 export const Tones: Story = {
 	render: () => (
 		<div data-gate-theme="cascade" className="flex flex-wrap gap-3">
@@ -61,9 +62,6 @@ export const Tones: Story = {
 	),
 };
 
-/** A config's own sentence, with the figures in it chipped: the number in the
- * prose and the badge at the end of its row are the same fact, so they read as
- * the same thing. */
 export const FiguresInASentence: Story = {
 	render: () => (
 		<div className="flex max-w-md flex-col gap-2">

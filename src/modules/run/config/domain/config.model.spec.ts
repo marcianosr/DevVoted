@@ -8,15 +8,25 @@ import {
 	givesOf,
 	headlineFigureOf,
 	isUpgradable,
+	RARITY_ODDS,
+	RARITY_WEIGHT,
 	rarityOf,
 	sellRefund,
+	shapeOf,
 	showsSampleSize,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
 describe("draftCost", () => {
-	it("prices a config from its rarity", () => {
+	it("prices a config from its grade", () => {
 		expect(draftCost(CONFIGS.js)).toBe(32);
+		expect(draftCost(CONFIGS.agentsMd)).toBe(256);
+	});
+
+	it("doubles from each grade to the next, the way the bit count does", () => {
+		expect(draftCost(CONFIGS.js)).toBe(32);
+		expect(draftCost(CONFIGS.coverageGain)).toBe(64);
+		expect(draftCost(CONFIGS.intellisense)).toBe(128);
 		expect(draftCost(CONFIGS.agentsMd)).toBe(256);
 	});
 
@@ -24,25 +34,44 @@ describe("draftCost", () => {
 		expect(sellRefund(CONFIGS.agentsMd)).toBe(128);
 	});
 
-	it("prices WTFPL above the legendary tier by its own tag", () => {
+	it("prices WTFPL at its own tag rather than its grade", () => {
 		expect(draftCost(CONFIGS.wtfpl)).toBe(512);
 	});
 
-	it("prices Freemium at nothing — a legendary whose whole cost is the bill", () => {
-		expect(rarityOf(CONFIGS.freemium)).toBe("legendary");
+	it("prices Freemium at nothing — a byte whose whole cost is the bill", () => {
+		expect(rarityOf(CONFIGS.freemium)).toBe("byte");
 		expect(draftCost(CONFIGS.freemium)).toBe(0);
 		expect(sellRefund(CONFIGS.freemium)).toBe(0);
 	});
 });
 
 describe("rarityOf", () => {
-	it("defaults an unset rarity to common", () => {
-		expect(rarityOf(CONFIGS.js)).toBe("common");
+	it("defaults an unset grade to a bit", () => {
+		expect(rarityOf(CONFIGS.js)).toBe("bit");
 	});
 
-	it("reads an explicit rarity", () => {
-		expect(rarityOf(CONFIGS.agentsMd)).toBe("legendary");
-		expect(rarityOf(CONFIGS.coverageGain)).toBe("uncommon");
+	it("reads an explicit grade", () => {
+		expect(rarityOf(CONFIGS.agentsMd)).toBe("byte");
+		expect(rarityOf(CONFIGS.coverageGain)).toBe("crumb");
+	});
+});
+
+describe("RARITY_ODDS", () => {
+	it("quotes each grade's odds as the reciprocal of its weight", () => {
+		const total = Object.values(RARITY_WEIGHT).reduce((sum, w) => sum + w, 0);
+
+		for (const [rarity, odds] of Object.entries(RARITY_ODDS)) {
+			const quoted = Number(odds.replace("1 in ", ""));
+			const actual =
+				total / RARITY_WEIGHT[rarity as keyof typeof RARITY_WEIGHT];
+
+			expect(Math.round(actual)).toBe(quoted);
+		}
+	});
+
+	it("keeps one notation, so no grade reads as a percentage", () => {
+		for (const odds of Object.values(RARITY_ODDS))
+			expect(odds).toMatch(/^1 in \d+$/);
 	});
 });
 
@@ -73,7 +102,6 @@ describe("isUpgradable", () => {
 		expect(isUpgradable(CONFIGS.agentsMd)).toBe(false);
 		expect(isUpgradable(CONFIGS.coverageGain)).toBe(false);
 		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
-		// Decay only runs down — a level axis would fight the countdown.
 		expect(isUpgradable(CONFIGS.deprecated)).toBe(false);
 	});
 
@@ -186,8 +214,6 @@ describe("givesOf", () => {
 });
 
 describe("headlineFigureOf", () => {
-	// A focus config's multiplier rides its level, so the badge has to read it
-	// off the level rather than off the roster's fixed copy.
 	it("prices a focus config by the level it has reached", () => {
 		expect(headlineFigureOf(CONFIGS.jsx)).toEqual({
 			kind: "multiplier",
@@ -220,9 +246,33 @@ describe("headlineFigureOf", () => {
 		});
 	});
 
-	// A doubling fee is not a figure a signed badge can state, and guessing one
-	// would be worse than showing none.
 	it("withholds a figure where the config prices in something else", () => {
 		expect(headlineFigureOf(CONFIGS.eslint)).toBeUndefined();
+	});
+});
+
+describe("shapeOf", () => {
+	it("names a build of one grade by its count", () => {
+		expect(shapeOf([CONFIGS.js, CONFIGS.ts, CONFIGS.eslint])).toBe(
+			"three bits"
+		);
+	});
+
+	it("names a single config with an article rather than a count", () => {
+		expect(shapeOf([CONFIGS.js])).toBe("a bit");
+	});
+
+	it("lists grades biggest first and joins the last with and", () => {
+		expect(shapeOf([CONFIGS.js, CONFIGS.freemium, CONFIGS.ts])).toBe(
+			"a byte and two bits"
+		);
+	});
+
+	it("keeps a minified config at its own grade, since that is what it is", () => {
+		expect(shapeOf([{ ...CONFIGS.freemium, minified: true }])).toBe("a byte");
+	});
+
+	it("calls an empty build nothing rather than returning an empty string", () => {
+		expect(shapeOf([])).toBe("nothing");
 	});
 });

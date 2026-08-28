@@ -2,8 +2,11 @@ import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
 	type Config,
 	headlineFigureOf,
+	largestGradeFitting,
 	rarityOf,
+	spotsOf,
 } from "~/modules/run/config/domain/config.model";
+import { MAX_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	ALL_SWATCHES,
@@ -14,7 +17,6 @@ import {
 	type PrepAudit,
 	type PrepBill,
 	type PrepConfig,
-	type PrepSlot,
 } from "~/ui/modern-theme/screens/PrepScreen.ui";
 import { toAuditId } from "~/ui/modern-theme/audits";
 import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
@@ -26,30 +28,14 @@ const configRows = (configs: readonly Config[]): readonly PrepConfig[] =>
 		id: config.id,
 		label: config.label,
 		rarity: rarityOf(config),
+		spots: spotsOf(config),
+		minified: config.minified,
 		note: <Figure figure={headlineFigureOf(config)} plain />,
 		summary: (
 			<ConfigFacts config={config} refundKb={sellRefundIn(configs, config)} />
 		),
 		explainer: config.description,
 	}));
-
-const slotRows = (view: RunView): readonly PrepSlot[] => {
-	const empty = Math.max(0, view.slots - view.configs.length);
-	if (empty > 0)
-		return Array.from({ length: empty }, (_, index) => ({
-			id: `slot-${view.configs.length + index}`,
-		}));
-
-	return view.nextSlotUnlock === null
-		? []
-		: [
-				{
-					id: "slot-next",
-					gate: view.nextSlotUnlock.gate,
-					coverage: view.nextSlotUnlock.coverage,
-				},
-			];
-};
 
 const auditRows = (view: RunView): readonly PrepAudit[] =>
 	view.gateStake.audits.flatMap((audit): readonly PrepAudit[] => {
@@ -103,25 +89,20 @@ export const PrepView = ({
 			gate={{
 				title: `Gate ${gate} · ${gateName}`,
 				audits: auditRows(view).map((audit) => audit.id),
-				storage: {
-					plan:
-						view.storageBillKb === 0
-							? "Free tier"
-							: `${view.storageBillKb} KB / gate`,
-					used: view.storage,
-					cap: view.storageCap,
-				},
+				storage: { balanceKb: view.storage },
 				track: { gates: ALL_SWATCHES, cleared: view.gatesCleared },
 			}}
 			gateName={gateName}
 			pollCount={view.gateStake.pollsPerGate}
 			coverageDemand={view.gateStake.coverageDemand}
 			coverageHeld={view.gateStake.coverageHeld}
-			removeOnMiss={view.gateStake.stripsOnFailure}
+			removeOnMiss={view.gateStake.peelSpotsOnFailure}
 			missIsFatal={view.gateStake.missIsFatal}
 			coveragePerWrong={view.gateStake.perAnswer.coveragePerWrong}
 			configs={configRows(view.configs)}
-			slots={slotRows(view)}
+			spots={view.spots}
+			maxSpots={MAX_SPOTS}
+			fits={largestGradeFitting(view.spotsFree)}
 			audits={auditRows(view)}
 			reward={{
 				coveragePerCorrect: perAnswer.coveragePerCorrect,

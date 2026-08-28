@@ -12,15 +12,17 @@ import {
 	MAX_EXTENSIONS,
 	offerCount,
 } from "~/modules/run/shop/domain/draft.model";
-import { BASE_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
+import {
+	BASE_SPOTS,
+	occupiedSpots,
+} from "~/modules/run/pipeline/domain/pipeline.model";
 import {
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 	pinCostFor,
+	extraRentKb,
 	SLICE_WINDOW,
-	STORAGE_CAP_KB,
-	STORAGE_PLANS,
-	storagePlanFor,
+	spotsHeldWith,
 } from "~/modules/run/run/domain/rules.model";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { pinAvailable } from "~/modules/run/run/domain/shopAction.model";
@@ -32,7 +34,6 @@ import {
 	configIds,
 	failGate,
 	handed,
-	payPeel,
 	pool,
 	started,
 } from "~/modules/run/run/domain/run.factory";
@@ -48,7 +49,7 @@ describe("selling in the shop", () => {
 		let state = { ...rewardingWith("eslint"), storage: 0 };
 		state = runReducer(state, { type: "sell", configId: "eslint" });
 		expect(configIds(state)).not.toContain("eslint");
-		expect(state.storage).toBe(16); // common draft cost 32 → half
+		expect(state.storage).toBe(16);
 	});
 
 	it("refuses to deinstall the only installed config", () => {
@@ -61,7 +62,7 @@ describe("selling in the shop", () => {
 			pipeline: { ...state.pipeline, configs: [CONFIGS.eslint] },
 		};
 		const blocked = runReducer(oneConfig, { type: "sell", configId: "eslint" });
-		expect(blocked).toBe(oneConfig); // a bare build could never clear a gate
+		expect(blocked).toBe(oneConfig);
 	});
 
 	it("sells Unit Tests like any other config — nothing is locked anymore", () => {
@@ -70,16 +71,11 @@ describe("selling in the shop", () => {
 		state = { ...state, storage: 0 };
 		state = runReducer(state, { type: "sell", configId: "unit-tests" });
 		expect(configIds(state)).not.toContain("unit-tests");
-		expect(state.storage).toBe(16); // common draft cost 32 → half
+		expect(state.storage).toBe(16);
 	});
 });
 
 describe("shop controls (DVTD-5lt6)", () => {
-	// A shop visit with storage to spend, at a gate deep enough for every control
-	// to be staged in. `gatesCleared` is set directly because the controls read
-	// the gate number, not the route that reached it.
-	// The streak is pumped so `clearNextGate` outruns any gate's meter demand —
-	// these tests are about the shop controls, not the score.
 	const shopping = (gatesCleared = 3, storage = 512): RunState => {
 		let state = started(["eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
@@ -117,8 +113,6 @@ describe("shop controls (DVTD-5lt6)", () => {
 			expect(offerIds(rebuilt)[0]).toBe(held);
 		});
 
-		// The reason the lock costs anything: it reaches the next shop, where the
-		// gate's payout has made the config affordable.
 		it("still offers the held config at the next gate's shop", () => {
 			const state = lockFirstOffer(shopping());
 			const held = state.lockedOfferIds?.[0];
@@ -130,11 +124,9 @@ describe("shop controls (DVTD-5lt6)", () => {
 
 		it("spends the lock when the held config is installed", () => {
 			const shop = lockFirstOffer(shopping());
-			// Room to install into: the starting three slots are already full, and
-			// `draft` refuses an offer with nowhere to go.
 			const state = {
 				...shop,
-				pipeline: { ...shop.pipeline, slots: shop.pipeline.slots + 1 },
+				pipeline: { ...shop.pipeline, spots: shop.pipeline.spots + 1 },
 			};
 			const held = state.lockedOfferIds?.[0] ?? "";
 			const installed = runReducer(state, {
@@ -159,7 +151,6 @@ describe("shop controls (DVTD-5lt6)", () => {
 			expect(lockFirstOffer(broke)).toBe(broke);
 		});
 
-		// Staged exposure: the opening shop teaches offers and upgrades only.
 		it("is not offered before its gate", () => {
 			const early = shopping(LOCK_FROM_GATE - 1);
 			expect(lockFirstOffer(early)).toBe(early);
@@ -215,8 +206,6 @@ describe("shop controls (DVTD-5lt6)", () => {
 		});
 	});
 
-	// Rebuilds are the one control priced per visit, so its counter is the one
-	// thing the walk to the next gate resets.
 	it("resets rebuilds at the next shop but keeps locks and extensions", () => {
 		let state = lockFirstOffer(shopping());
 		state = runReducer(state, { type: "extend-offers" });
@@ -235,7 +224,7 @@ describe("dropping from the gate-prep screen", () => {
 		let state = { ...started(["eslint", "js"]), storage: 0 };
 		state = runReducer(state, { type: "drop", configId: "eslint" });
 		expect(configIds(state)).not.toContain("eslint");
-		expect(state.storage).toBe(0); // drop() never refunds, unlike sell()
+		expect(state.storage).toBe(0);
 	});
 
 	it("refuses to drop the only installed config while answering", () => {
@@ -245,7 +234,7 @@ describe("dropping from the gate-prep screen", () => {
 			pipeline: { ...state.pipeline, configs: [CONFIGS.eslint] },
 		};
 		const blocked = runReducer(oneConfig, { type: "drop", configId: "eslint" });
-		expect(blocked).toBe(oneConfig); // a bare build could never clear a gate
+		expect(blocked).toBe(oneConfig);
 	});
 
 	it("ignores drop before the climb starts", () => {
@@ -271,8 +260,6 @@ describe("the git tag (ADR-036)", () => {
 		expect(state.log.at(-1)).toContain("git tag planted at gate 4");
 	});
 
-	// The price is the tag's worth: a checkpoint at gate 9 saves a week of
-	// climbing where one at gate 4 saves an evening.
 	it("charges more for a deeper checkpoint", () => {
 		expect(pinCostFor(PIN_UNTIL_GATE)).toBeGreaterThan(
 			pinCostFor(PIN_FROM_GATE)
@@ -289,8 +276,6 @@ describe("the git tag (ADR-036)", () => {
 		expect(runReducer(early, { type: "plant-pin" })).toBe(early);
 	});
 
-	// Past gate 10 a rescue resumes a starter build into stacked audits and a
-	// 4-config peel — a fortune spent on a death.
 	it("stops selling past gate 10", () => {
 		const deep = shopAt(PIN_UNTIL_GATE + 1);
 		expect(runReducer(deep, { type: "plant-pin" })).toBe(deep);
@@ -307,21 +292,20 @@ describe("the git tag (ADR-036)", () => {
 		const once = runReducer(shopAt(4), { type: "plant-pin" });
 		const deeper = { ...once, gatesCleared: 6 };
 		const again = runReducer(deeper, { type: "plant-pin" });
-		expect(again).toBe(deeper); // refused — the tag stays where it was
+		expect(again).toBe(deeper);
 		expect(again.pinPlantedAtGate).toBe(4);
 	});
 
-	it("starts a rescued run at the pinned gate, wider and with a stipend", () => {
+	it("starts a rescued run at the pinned gate with a stipend, on the free rung", () => {
 		const state = createRun(pool(20), handed, 7);
 		expect(state.gatesCleared).toBe(7);
 		expect(state.startedAtGate).toBe(7);
-		// Gate grants only: a rescued run starts on zero coverage (ADR-041).
-		expect(state.pipeline.slots).toBe(BASE_SLOTS + 3);
+		expect(state.pipeline.spots).toBe(spotsHeldWith(7));
 		expect(state.storage).toBe(32 * 7);
 		expect(state.coverage).toBe(0);
 	});
 
-	it("lets a rescued run start on the base three configs, not a full nine", () => {
+	it("lets a rescued run start without filling every spot it opened with", () => {
 		let state = createRun(pool(20), handed, 7);
 		for (const configId of ["js", "ts", "css"])
 			state = runReducer(state, { type: "slot", configId });
@@ -329,8 +313,6 @@ describe("the git tag (ADR-036)", () => {
 		expect(state.status).toBe("answering");
 	});
 
-	// One use per purchase: the tag is consumed on the start it rescues (see
-	// consumePinnedGate), so the rescued run's shop sells it again from scratch.
 	it("sells a rescued run another tag, at its own gate's price", () => {
 		const rescued: RunState = {
 			...createRun(pool(20), handed, 7),
@@ -349,7 +331,7 @@ describe("the git tag (ADR-036)", () => {
 		expect(state.gatesCleared).toBe(0);
 		expect(state.startedAtGate).toBe(0);
 		expect(state.storage).toBe(0);
-		expect(state.pipeline.slots).toBe(BASE_SLOTS);
+		expect(state.pipeline.spots).toBe(BASE_SPOTS);
 	});
 });
 
@@ -362,25 +344,16 @@ describe("economy", () => {
 		expect(state.storage).toBe(8);
 	});
 
-	it("lets a gate reward ride over the cap into the shop, forfeiting at climb-on", () => {
-		// Overflow is spend-it-or-lose-it (DVTD-0h4n): the clamp waits for
-		// "Climb on", so a rich gate buys a shopping spree above the ceiling.
-		let state = { ...started(["js"]), storage: STORAGE_CAP_KB - 10 };
+	it("keeps every KB a gate pays, however rich the run gets", () => {
+		let state = { ...started(["js"]), storage: 2000 };
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.clearedGate).toBe(0);
-		expect(state.storage).toBe(STORAGE_CAP_KB + 22); // 502 + 32, uncapped
-		state = runReducer(state, { type: "finish-reward" });
-		expect(state.storage).toBe(STORAGE_CAP_KB);
-	});
+		expect(state.storage).toBe(2032);
 
-	it("lets faucet income ride over the cap until climb-on", () => {
-		let state = { ...started(["indexed-db"]), storage: STORAGE_CAP_KB - 3 };
-		state = answerWith(state, true); // faucet pays the full 8KB, uncapped
-		expect(state.storage).toBe(STORAGE_CAP_KB + 5);
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.storage).toBe(2032);
 	});
 
 	it("gates the lint action behind a linter config", () => {
-		// JS poll: ESLint covers JS/TS, so the lint action is unlocked; two wrong options remain for the manual lint.
 		const triPoll: RunPoll = {
 			id: "tri",
 			category: "js",
@@ -397,24 +370,23 @@ describe("economy", () => {
 			...createRun([triPoll], handed),
 			status: "answering",
 			storage: 100,
-			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.eslint] },
+			pipeline: { id: "pipeline", spots: 3, configs: [CONFIGS.eslint] },
 		};
 		const linted = runReducer(withLinter, { type: "lint-poll" });
-		expect(linted.storage).toBe(92); // first lint this poll costs 8KB
+		expect(linted.storage).toBe(92);
 		expect(linted.manualDisabled).toHaveLength(1);
 
 		const noLinter: RunState = {
 			...createRun([triPoll], handed),
 			status: "answering",
 			storage: 100,
-			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.js] },
+			pipeline: { id: "pipeline", spots: 3, configs: [CONFIGS.js] },
 		};
 		const unchanged = runReducer(noLinter, { type: "lint-poll" });
 		expect(unchanged.storage).toBe(100);
 	});
 
 	it("doubles the lint cost with each use in the same poll", () => {
-		// Four options (one correct) leave three wrong, so two lints apply in a row.
 		const quadPoll: RunPoll = {
 			id: "quad",
 			category: "js",
@@ -431,131 +403,143 @@ describe("economy", () => {
 			...createRun([quadPoll], handed),
 			status: "answering",
 			storage: 100,
-			pipeline: { id: "pipeline", slots: 3, configs: [CONFIGS.eslint] },
+			pipeline: { id: "pipeline", spots: 3, configs: [CONFIGS.eslint] },
 		};
 
 		const once = runReducer(state, { type: "lint-poll" });
-		expect(once.storage).toBe(92); // -8KB
+		expect(once.storage).toBe(92);
 		expect(once.log.at(-1)).toContain("-8KB");
 
 		const twice = runReducer(once, { type: "lint-poll" });
-		expect(twice.storage).toBe(76); // -16KB, the escalated price
+		expect(twice.storage).toBe(76);
 		expect(twice.log.at(-1)).toContain("-16KB");
 		expect(twice.manualDisabled).toHaveLength(2);
 	});
 });
 
-describe("storage plan", () => {
-	// Gate 0 cleared on the starting build: the shop is open, storage is 32.
-	const inShop = (): RunState => {
-		let state = started(["js"]);
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		return state;
+describe("extra spots in the shop (ADR-045)", () => {
+	const inShop = (): RunState => clearGate(started(["js"], 12 * SLICE_WINDOW));
+
+	const afterTwoClears = (): RunState => {
+		let state = inShop();
+		state = runReducer(state, { type: "finish-reward" });
+		return clearGate(state);
 	};
 
-	it("starts every run on the free tier", () => {
+	const afterThreeClears = (): RunState => {
+		let state = afterTwoClears();
+		state = runReducer(state, { type: "finish-reward" });
+		return clearGate(state);
+	};
+
+	it("opens every run on four spots, before it clears anything", () => {
 		const state = createRun(pool(10), handed);
-		expect(storagePlanFor(state.storagePlan)).toEqual(STORAGE_PLANS[0]);
+		expect(state.pipeline.spots).toBe(4);
+		expect(state.extraSpots).toBeUndefined();
 	});
 
-	it("reads a pre-plan snapshot as the free tier", () => {
-		expect(storagePlanFor(undefined)).toEqual(STORAGE_PLANS[0]);
+	it("widens on the clear that crosses a rung's gate, paying nothing", () => {
+		const state = clearGate(started(["js"], 4 * SLICE_WINDOW));
+		expect(state.gatesCleared).toBe(1);
+		expect(state.pipeline.spots).toBe(4);
+
+		const wider = clearGate(runReducer(state, { type: "finish-reward" }));
+		expect(wider.gatesCleared).toBe(2);
+		expect(wider.pipeline.spots).toBe(8);
 	});
 
-	it("switches plans in the shop and clamps to the new cap at climb-on", () => {
-		let state = runReducer(inShop(), { type: "change-plan", tier: 2 });
-		state = { ...state, storage: 700 };
-		state = runReducer(state, { type: "finish-reward" });
-		expect(state.storage).toBe(640);
+	it("rents a step on top of the free width, charging nothing at the counter", () => {
+		const state = { ...inShop(), storage: 200 };
+		const rented = runReducer(state, { type: "set-extra-spots", spots: 1 });
+
+		expect(rented.pipeline.spots).toBe(5);
+		expect(rented.extraSpots).toBe(1);
+		expect(rented.storage).toBe(200);
 	});
 
-	it("refuses a plan change outside the shop", () => {
-		const answering = started(["js"]);
-		expect(runReducer(answering, { type: "change-plan", tier: 2 })).toBe(
-			answering
+	it("refuses a step this depth does not sell yet", () => {
+		const state = { ...inShop(), storage: 5000 };
+		expect(runReducer(state, { type: "set-extra-spots", spots: 2 })).toEqual(
+			state
+		);
+		expect(runReducer(state, { type: "set-extra-spots", spots: 4 })).toEqual(
+			state
 		);
 	});
 
-	it("refuses an unknown tier", () => {
-		const shopping = inShop();
-		expect(runReducer(shopping, { type: "change-plan", tier: 99 })).toBe(
-			shopping
+	it("sells the deeper steps once the clears are in", () => {
+		const state = { ...afterThreeClears(), gatesCleared: 6, storage: 500 };
+		const rented = runReducer(state, { type: "set-extra-spots", spots: 3 });
+
+		expect(rented.extraSpots).toBe(3);
+		expect(extraRentKb(3)).toBe(24);
+	});
+
+	it("refuses a step whose rent the balance cannot cover", () => {
+		const state = { ...inShop(), storage: 7 };
+		expect(runReducer(state, { type: "set-extra-spots", spots: 1 })).toEqual(
+			state
 		);
 	});
 
-	// The wire carries a bare tier, so the ladder's gate staging (ADR-030) has to
-	// hold in the reducer — the shop not drawing the row is not a rule.
-	it("refuses a rung the run has not climbed to yet", () => {
-		const shopping = inShop(); // one gate cleared
-		const deepRung = STORAGE_PLANS.find((plan) => plan.fromGate > 1);
-		expect(
-			runReducer(shopping, { type: "change-plan", tier: deepRung?.tier ?? 0 })
-		).toBe(shopping);
+	it("drops back to none, cancelling the rent", () => {
+		let state: RunState = { ...inShop(), storage: 200 };
+		state = runReducer(state, { type: "set-extra-spots", spots: 1 });
+		state = runReducer(state, { type: "set-extra-spots", spots: 0 });
+
+		expect(state.extraSpots).toBe(0);
+		expect(state.pipeline.spots).toBe(4);
 	});
 
-	it("sells that same rung once the run is deep enough", () => {
-		const deepRung = STORAGE_PLANS[STORAGE_PLANS.length - 1];
-		const deep = { ...inShop(), gatesCleared: deepRung.fromGate };
-		const switched = runReducer(deep, {
-			type: "change-plan",
-			tier: deepRung.tier,
-		});
-		expect(storagePlanFor(switched.storagePlan).capKb).toBe(deepRung.capKb);
-	});
-
-	it("bills a paid plan when a cleared window closes, before the payout lands", () => {
-		let state = runReducer(inShop(), { type: "change-plan", tier: 2 });
+	it("bills the rent at the next clear, and again at the one after", () => {
+		let state: RunState = { ...inShop(), storage: 200 };
+		state = runReducer(state, { type: "set-extra-spots", spots: 1 });
 		state = runReducer(state, { type: "finish-reward" });
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		// Gate 1 pays 32 × 2; the 8KB bill collects from the 32 carried in.
-		expect(state.storage).toBe(32 - 8 + 64);
-		expect(state.gateBillKb).toBe(8);
+		const cleared = clearGate(state);
+
+		expect(cleared.spotRentKb).toBe(8);
+		expect(cleared.extraSpots).toBe(1);
+		expect(cleared.rentDefaulted).toBeUndefined();
+
+		expect(cleared.pipeline.spots).toBe(9);
+		const again = clearGate(runReducer(cleared, { type: "finish-reward" }));
+		expect(again.spotRentKb).toBe(8);
 	});
 
-	it("bills a failed window too — a missed gate pays the subscription anyway", () => {
-		let state = clearGate(started(["unit-tests", "js"]));
-		state = runReducer(state, { type: "change-plan", tier: 2 });
-		state = runReducer(state, { type: "finish-reward" }); // storage 64
-		state = failGate(state);
-		expect(state.status).toBe("awaiting-strip");
-		expect(state.storage).toBe(64 - 8);
-		expect(state.gateBillKb).toBe(8);
+	it("reaches the top step once the ladder is fully open", () => {
+		let state: RunState = {
+			...afterTwoClears(),
+			gatesCleared: 9,
+			storage: 500,
+		};
+		state = runReducer(state, { type: "set-extra-spots", spots: 4 });
+
+		expect(state.pipeline.spots).toBe(20);
+		expect(extraRentKb(4)).toBe(32);
 	});
 
-	it("auto-downgrades to the free tier when the bill can't be paid", () => {
-		let state = runReducer(inShop(), { type: "change-plan", tier: 2 });
+	it("bills the whole step it stands on, and keeps billing it", () => {
+		let state: RunState = { ...afterThreeClears(), storage: 500 };
+		state = runReducer(state, { type: "set-extra-spots", spots: 2 });
 		state = runReducer(state, { type: "finish-reward" });
-		state = { ...state, storage: 5 };
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(storagePlanFor(state.storagePlan).tier).toBe(1);
-		expect(state.planDowngraded).toBe(true);
-		// An unpayable bill is never partially collected: 5 rides into the payout.
-		expect(state.storage).toBe(5 + 64);
+
+		const cleared = clearGate(state);
+
+		expect(cleared.spotRentKb).toBe(extraRentKb(2));
+		expect(cleared.extraSpots).toBe(2);
 	});
 
-	it("burns storage above the new cap on a voluntary downgrade", () => {
-		let state = runReducer(inShop(), { type: "change-plan", tier: 2 });
-		state = { ...state, storage: 700 };
-		state = runReducer(state, { type: "change-plan", tier: 1 });
-		expect(state.storage).toBe(STORAGE_CAP_KB);
-		expect(storagePlanFor(state.storagePlan).tier).toBe(1);
-	});
-
-	it("keeps billing every retry attempt of the same gate", () => {
-		let state = clearGate(started(["unit-tests", "js"]));
-		state = runReducer(state, { type: "change-plan", tier: 2 });
-		state = runReducer(state, { type: "finish-reward" }); // storage 64
+	it("keeps its scheduled width through a miss with an empty balance", () => {
+		let state = { ...afterTwoClears(), storage: 0 };
+		state = runReducer(state, { type: "finish-reward" });
 		state = failGate(state);
-		expect(state.storage).toBe(64 - 8);
-		state = failGate(runReducer(payPeel(state), { type: "finish-reward" }));
-		expect(state.storage).toBe(64 - 16); // the second attempt billed too
+
+		expect(state.pipeline.spots).toBe(8);
+		expect(state.storage).toBe(0);
 	});
 });
 
 describe("WTFPL's open shop", () => {
-	// A shop with the license on the table, a slot to install into, and enough
-	// KB for it plus one paid control — so a refused control is refused by the
-	// license, never by the balance. Gate 4 stages lock and extend in.
 	const licensed = (): RunState => {
 		let state = started(["eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
@@ -563,7 +547,10 @@ describe("WTFPL's open shop", () => {
 			...state,
 			gatesCleared: 4,
 			storage: 600,
-			pipeline: { ...state.pipeline, slots: state.pipeline.slots + 1 },
+			pipeline: {
+				...state.pipeline,
+				spots: occupiedSpots(state.pipeline.configs) + 8,
+			},
 			draftOptions: [CONFIGS.wtfpl, ...state.draftOptions],
 		};
 	};

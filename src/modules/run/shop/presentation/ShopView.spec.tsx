@@ -15,8 +15,9 @@ import { ShopView, type ShopViewProps } from "./ShopView.component";
 const view = createMockRunView({
 	gatesCleared: 4,
 	configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
-	slots: 4,
-	nextSlotUnlock: { slot: 7, gate: 6 },
+	spots: 4,
+	spotsUsed: 3,
+	spotsFree: 1,
 	storage: 216,
 	offers: [
 		createMockShopOffer(CONFIGS.stylelint),
@@ -34,7 +35,7 @@ const handlers = {
 	onRebuild: () => {},
 	onExtend: () => {},
 	onPlantPin: () => {},
-	onChangePlan: () => {},
+	onRentExtraSpots: () => {},
 	onContinue: () => {},
 };
 
@@ -55,11 +56,9 @@ describe("ShopView", () => {
 		render_();
 
 		expect(screen.getByText("2 offers")).toBeInTheDocument();
-		expect(screen.getByText("3 of 4 slots")).toBeInTheDocument();
+		expect(screen.getByText("3 of 4 spots")).toBeInTheDocument();
 	});
 
-	// PriceTag opens a closed row on the first click and buys on the second, so
-	// a price can never be paid without having been read.
 	it("buys an offer at its own price, once the row is open", async () => {
 		const onDraft = vi.fn();
 		render_({ onDraft });
@@ -75,8 +74,6 @@ describe("ShopView", () => {
 		expect(onDraft).toHaveBeenCalledWith(CONFIGS.stylelint.id);
 	});
 
-	// The refusal is the reason, so it goes where the row's explanation goes
-	// rather than vanishing with the button.
 	it("says why an offer cannot be installed instead of hiding it", () => {
 		render_({
 			view: createMockRunView({
@@ -85,14 +82,14 @@ describe("ShopView", () => {
 					{
 						...createMockShopOffer(CONFIGS.stylelint),
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					},
 				],
 			}),
 		});
 
 		expect(
-			screen.getByText("No free slot — uninstall a config first")
+			screen.getByText("Needs 1 spots — 0 free. Minify or uninstall something")
 		).toBeInTheDocument();
 	});
 
@@ -107,6 +104,19 @@ describe("ShopView", () => {
 		expect(
 			screen.queryByRole("button", { name: /^Lock / })
 		).not.toBeInTheDocument();
+	});
+
+	it("leaves the row's front empty rather than ringing it", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				shopControls: { ...view.shopControls, lockAvailable: false },
+			}),
+		});
+
+		const shelf = screen.getByText("New configs").closest("section");
+
+		expect(shelf?.querySelectorAll(".rounded-full.border")).toHaveLength(0);
 	});
 
 	it("holds an offer over, and releases the one already held", async () => {
@@ -153,7 +163,6 @@ describe("ShopView", () => {
 		).toBeInTheDocument();
 	});
 
-	// WTFPL lays out the whole catalog, so there is nothing left to reroll.
 	it("hides the rebuild rather than disabling it when a reroll would sell nothing", () => {
 		render_({
 			view: createMockRunView({
@@ -199,8 +208,6 @@ describe("ShopView", () => {
 		const onSell = vi.fn();
 		render_({ onSell });
 
-		// The refund rides in the accessible name because it is the whole decision:
-		// the chip beside the row states it too, but the press is where it is spent.
 		await userEvent.click(
 			screen.getByRole("button", {
 				name: /^Uninstall ESLint, Refunds \d+ KB$/,
@@ -210,9 +217,6 @@ describe("ShopView", () => {
 		expect(onSell).toHaveBeenCalledWith(CONFIGS.eslint.id);
 	});
 
-	// A note tucked under the storage meter read as a footnote about the meter.
-	// The shut shop is the screen's whole state, so it leads with what is shut
-	// before it names the audit that shut it.
 	it("leads with the shop being closed when read-only has closed it", () => {
 		render_({
 			view: createMockRunView({
@@ -240,9 +244,6 @@ describe("ShopView", () => {
 		).toBeInTheDocument();
 	});
 
-	// The button was gated on `config.maxLevel !== undefined`, which is optional
-	// and defaults to 5 — so every Focus config in a real build silently lost its
-	// Upgrade. `isUpgradable` is the domain's own answer to the same question.
 	it("offers an upgrade on a config that can be bumped, and none on one that cannot", () => {
 		render_();
 
@@ -254,8 +255,6 @@ describe("ShopView", () => {
 		).not.toBeInTheDocument();
 	});
 
-	// Storage and category coverage refuse independently, and the fix differs, so
-	// the hint names whichever one is actually in the way.
 	it("names the category coverage an upgrade still owes", () => {
 		render_();
 
@@ -298,9 +297,6 @@ describe("ShopView", () => {
 		expect(onUpgrade).toHaveBeenCalledWith(CONFIGS.js.id);
 	});
 
-	// A bump is a version, the way a dependency bump reads, so nothing on this
-	// surface says "level" (DVTD-tt4y). Nothing asserted the copy before, which
-	// is how the RPG word survived here after the vocabulary moved on.
 	it("states a bumped config's version, and previews the one it would buy", () => {
 		render_({
 			view: createMockRunView({
@@ -309,8 +305,6 @@ describe("ShopView", () => {
 			}),
 		});
 
-		// The facts line spells the ladder out; the upgrade press still previews
-		// the next version in the roster's own `v` shorthand.
 		expect(screen.getByText(/level 2/)).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: /Upgrade \.js/ })
@@ -326,8 +320,6 @@ describe("ShopView", () => {
 		).not.toHaveClass("legendary-ring");
 	});
 
-	// Sell something, or clear a slot: two different fixes, so two different
-	// colours. One red shelf said "you are broke" for both.
 	it("greys an offer with nowhere to go and reddens one it cannot pay for", () => {
 		render_({
 			view: createMockRunView({
@@ -335,7 +327,7 @@ describe("ShopView", () => {
 				offers: [
 					createMockShopOffer(CONFIGS.stylelint, {
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					}),
 					createMockShopOffer(CONFIGS.unitTests, {
 						installable: false,
@@ -363,22 +355,38 @@ describe("ShopView", () => {
 		expect(screen.queryByText(/Shop closed/)).not.toBeInTheDocument();
 	});
 
-	// tier 5 is sold from gate 6, and the shop that first sells it is the one
-	// after gate 5 — naming gate 6 put the rung a whole gate out of reach.
-	it("dates the sealed rung by the clear that opens it, not by its own gate", () => {
+	it("dates a step this depth does not sell yet", () => {
 		render_();
 
-		expect(screen.getByText("Storage plan")).toBeInTheDocument();
-		expect(screen.getByText("opens when gate 5 clears")).toBeInTheDocument();
+		expect(screen.getByText("Extra spots")).toBeInTheDocument();
+		expect(screen.getByText("opens at gate 2")).toBeInTheDocument();
 	});
 
-	it("switches plan from its rung", async () => {
-		const onChangePlan = vi.fn();
-		render_({ onChangePlan });
+	it("offers the ladder as a picker, `none` included", () => {
+		render_();
 
-		await userEvent.click(screen.getByRole("radio", { name: /640 KB/ }));
+		expect(screen.getAllByRole("radio").length).toBeGreaterThanOrEqual(2);
+		expect(screen.getByText("none")).toBeInTheDocument();
+		expect(screen.getByText("+1 spot")).toBeInTheDocument();
+	});
 
-		expect(onChangePlan).toHaveBeenCalledWith(2);
+	it("rents a step from its own radio", async () => {
+		const onRentExtraSpots = vi.fn();
+		render_({ onRentExtraSpots });
+
+		await userEvent.click(
+			screen.getByRole("radio", { name: /\+1 spot makes 5 8 KB a gate/ })
+		);
+
+		expect(onRentExtraSpots).toHaveBeenCalledWith(1);
+	});
+
+	it("sells the steps by radio alone, with nothing to press", () => {
+		render_();
+
+		expect(
+			screen.queryByRole("button", { name: /buy/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("leaves the shop for the gate", async () => {
@@ -390,20 +398,11 @@ describe("ShopView", () => {
 		expect(onContinue).toHaveBeenCalledOnce();
 	});
 
-	// ADR-035 deleted the width demand and the graded exit: a peeled build walks
-	// to the gate and dies there if the next peel outruns it. Blocking the door
-	// soft-locked a run that had been stripped to one config and could not afford
-	// a replacement — there was no other way out of the shop.
-	it("lets a stripped, insolvent build leave for the gate anyway", async () => {
+	it("lets a build with nothing left to spend leave for the gate anyway", async () => {
 		const onContinue = vi.fn();
 		render_({
 			onContinue,
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.js],
-				canStart: false,
-				storage: 0,
-			}),
+			view: createMockRunView({ ...view, configs: [CONFIGS.js], storage: 0 }),
 		});
 
 		const exit = screen.getByRole("button", { name: "Continue →" });
@@ -412,11 +411,31 @@ describe("ShopView", () => {
 		await userEvent.click(exit);
 		expect(onContinue).toHaveBeenCalledOnce();
 	});
+
+	it("shuts the exit while the build is over capacity, and names the ways out", () => {
+		render_({
+			view: createMockRunView({ ...view, spots: 4, overflowSpots: 4 }),
+		});
+
+		expect(
+			screen.getByRole("button", {
+				name: "Continue →, Over capacity by 4 spots. Minify, uninstall, or rent more room.",
+			})
+		).toBeDisabled();
+	});
+
+	it("counts the overflow in the reason rather than rounding it to 'too wide'", () => {
+		render_({
+			view: createMockRunView({ ...view, spots: 4, overflowSpots: 1 }),
+		});
+
+		expect(
+			screen.getByRole("button", { name: /Over capacity by 1 spot\./ })
+		).toBeDisabled();
+	});
 });
 
 describe("ShopView readability", () => {
-	// The PriceTag dims itself. Dimming the row put the config's own name below
-	// readable, which is the one thing the shelf exists to show.
 	it("leaves an unaffordable offer's row at full contrast", () => {
 		render_({
 			view: createMockRunView({
@@ -431,8 +450,6 @@ describe("ShopView readability", () => {
 			}),
 		});
 
-		// Scoped to the offer's own row: the ladder's sealed `???` rung is dimmed
-		// on purpose, and an unscoped query catches it instead.
 		const row = screen.getByText("Stylelint").closest("summary, div");
 		if (!row) throw new Error("No offer row rendered");
 
@@ -444,8 +461,6 @@ describe("ShopView readability", () => {
 		).toHaveClass("disabled:opacity-50");
 	});
 
-	// The row's explainer says the same thing, but only once the row is open. A
-	// greyed price with no reason beside it reads as a bug.
 	it("names the refusal on the tag itself, without opening the row", () => {
 		render_({
 			view: createMockRunView({
@@ -454,29 +469,96 @@ describe("ShopView readability", () => {
 					{
 						...createMockShopOffer(CONFIGS.stylelint),
 						installable: false,
-						refusal: { reason: "no-slot" },
+						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
 					},
 				],
 			}),
 		});
 
-		expect(screen.getByText("Can't install, no free slot")).toBeInTheDocument();
+		expect(screen.getByText("Needs 1 spots, 0 free")).toBeInTheDocument();
 	});
 
-	// The dot is scannable down a column; the word is what a new player can read.
-	// Rarity is the stripe leading the name now, on the shelf and in the pipeline
-	// column alike; the tier still reads as text for anyone listening.
-	it("grades every config row with its rarity stripe, tier named for a reader", () => {
+	it("grades every config row with its glyph, the grade named for a reader", () => {
 		render_();
 
-		// The legend spells the four tiers out in words; a row states its own in
-		// the stripe, with the tier riding along as text beside the bar.
 		const spoken = screen
 			.getAllByText(rarityOf(CONFIGS.stylelint))
-			.filter((tier) => tier.className.includes("sr-only"));
+			.filter((grade) => grade.className.includes("sr-only"));
 		expect(spoken.length).toBeGreaterThan(0);
+		expect(spoken[0]?.parentElement?.querySelector("svg rect")).not.toBeNull();
+	});
+});
+
+describe("ShopView room", () => {
+	it("draws the pipeline as room, with the build's shape beside its capacity", () => {
+		render_();
+
+		expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "3");
+		expect(screen.getByText("3 of 4 spots")).toBeInTheDocument();
+		expect(screen.getByText("1 spot free · a bit fits")).toBeInTheDocument();
+	});
+
+	it("leaves the grade to the glyph rather than spelling it out beside the price", () => {
+		render_();
+
+		const spelled = screen
+			.queryAllByText("bit")
+			.filter((node) => !node.className.includes("sr-only"));
+
+		expect(spelled).toEqual([]);
+	});
+
+	it("hangs a refused offer's shortfall off its price, not across the row", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				spotsFree: 0,
+				offers: [
+					createMockShopOffer(CONFIGS.agentsMd, {
+						installable: false,
+						refusal: { reason: "no-room", spots: 8, freeSpots: 0 },
+					}),
+				],
+			}),
+		});
+
+		expect(screen.queryByText("needs a byte")).not.toBeInTheDocument();
 		expect(
-			spoken[0]?.parentElement?.querySelector(".w-1.rounded-full")
-		).not.toBeNull();
+			screen.getByRole("button", { name: /Needs 8 spots, 0 free/ })
+		).toBeDisabled();
+	});
+
+	it("keeps the install press on an offer with no room", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				spotsFree: 0,
+				offers: [
+					createMockShopOffer(CONFIGS.agentsMd, {
+						installable: false,
+						refusal: { reason: "no-room", spots: 8, freeSpots: 0 },
+					}),
+				],
+			}),
+		});
+
+		expect(
+			screen.getByRole("button", { name: /AGENTS\.md/ })
+		).toBeInTheDocument();
+	});
+
+	it("states the width each step makes, and what it costs a gate", () => {
+		render_();
+
+		expect(screen.getByText("makes 5")).toBeInTheDocument();
+		expect(screen.getByText("8 KB a gate")).toBeInTheDocument();
+		expect(screen.getByText("free")).toBeInTheDocument();
+		expect(screen.queryByText(/KB cap/)).not.toBeInTheDocument();
+	});
+
+	it("says what the rent already costs in the section's own header", () => {
+		render_();
+
+		expect(screen.getByText("renting nothing")).toBeInTheDocument();
 	});
 });

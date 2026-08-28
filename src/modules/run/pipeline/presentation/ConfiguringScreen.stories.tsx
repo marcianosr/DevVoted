@@ -30,7 +30,9 @@ const stake = createMockGateStake({
 export const Default: Story = {
 	args: {
 		configs: [CONFIGS.js],
-		slots: 3,
+		spots: 4,
+		spotsUsed: 1,
+		spotsFree: 3,
 		stake,
 		bench: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coverageGain],
 		onSlot: () => {},

@@ -15,27 +15,19 @@ export type AuditView = {
 	readonly name: string;
 	readonly description: string;
 	readonly answerCue?: string;
-	/** Volkswagen CI is reporting this one as passing — struck through. */
 	readonly suppressed: boolean;
 };
 
-/** What the coming gate demands and what it pays. Clustered because Prep, Configuring and Shop were each carrying seven props only to hand them on. */
 export type GateStake = {
 	readonly gateNumber: number;
 	readonly pollsPerGate: number;
-	/** Paired so every stake surface can grade the demand without threading run state beside the stake. */
 	readonly coverageDemand: number;
 	readonly coverageHeld: number;
-	/** Suppressed ones included: the receipt lists them struck through. */
 	readonly audits: readonly AuditView[];
-	/** Set only when this gate runs clean: the first audited gate ahead, so the
-	 * receipt's Audit section foreshadows instead of vanishing. */
 	readonly upcomingAudit?: UpcomingAuditView;
-	/** ADR-037, and whether that peel takes the whole build. */
-	readonly stripsOnFailure: number;
+	readonly peelSpotsOnFailure: number;
+	readonly peelShareOnFailure: number;
 	readonly missIsFatal: boolean;
-	readonly billKb: number;
-	/** The plan and each subscribed config, priced at this gate. */
 	readonly subscriptions: BillLedger;
 	readonly modifiers: PipelineModifiers;
 	readonly perAnswer: PerAnswerPreview;
@@ -47,11 +39,6 @@ export type UpcomingAuditView = {
 	readonly description: string;
 };
 
-/**
- * Only for a clean gate: the first audited gate ahead. Gates 0–2 are the only
- * clean ones, so this is how the audit system introduces itself before it ever
- * charges — otherwise its first impression is gate 3's fee.
- */
 export const upcomingAuditFor = (
 	gate: number
 ): UpcomingAuditView | undefined => {

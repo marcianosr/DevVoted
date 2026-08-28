@@ -3,22 +3,31 @@ import { describe, expect, it } from "vitest";
 import {
 	atMinimumWidth,
 	coverageDemandFor,
-	failStripsFor,
+	failPeelShareFor,
+	peelQuotaSpotsFor,
 	gateBaseMultiplier,
-	isStakeFatal,
-	isStoragePlanUnlocked,
+	isPeelFatal,
 	pollDifficultyMultiplier,
+	extraRentKb,
+	extraSpotsUnlocked,
+	scheduledRung,
+	spotLadderTo,
+	spotsHeldWith,
 	storageCreditRate,
-	storagePlanLadder,
 	streakCapMultiplier,
 	streakMultiplier,
+	EXTRA_SPOT_RENT_KB,
+	EXTRA_SPOT_TIERS,
 	GATE_COUNT,
 	GATE_REWARD_KB,
+	MAX_EXTRA_SPOTS,
 	SLICE_WINDOW,
-	STORAGE_PLANS,
+	SPOT_RUNGS,
+	TOP_RUNG,
 	VICTORY_GATE,
 	WRONG_COVERAGE_LOSS,
 } from "~/modules/run/run/domain/rules.model";
+import { BASE_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 
 describe("the gate's per-window coverage demand (ADR-035)", () => {
 	it("anchors the opening gates at 3, 10 and 25", () => {
@@ -28,7 +37,6 @@ describe("the gate's per-window coverage demand (ADR-035)", () => {
 	});
 
 	it("ramps the demand-to-base-pace ratio — the (g+1) earn scaling is free, the ratio is the difficulty", () => {
-		// Strict base pace: 5 perfect answers at gateBaseMultiplier, no configs.
 		const ratioAt = (gate: number): number =>
 			coverageDemandFor(gate) / (SLICE_WINDOW * gateBaseMultiplier(gate));
 		for (let gate = 1; gate < VICTORY_GATE; gate++)
@@ -45,15 +53,10 @@ describe("the gate's per-window coverage demand (ADR-035)", () => {
 		);
 	});
 
-	// Priced in answers, not points: a miss costs the answer you did not get plus
-	// half of one on top, so it is 1.5 answers at every gate and on every build.
 	it("prices a miss at one and a half answers", () => {
 		expect(WRONG_COVERAGE_LOSS).toBe(0.5);
 	});
 
-	// The streak survives a gate clear, so uncapped it reached ×7.5 on a flawless
-	// run — free, and larger than anything the shop sells. Both starting stacks
-	// then cleared all 13 gates without buying a single config.
 	it("stops the streak bonus compounding past ×2", () => {
 		expect(streakMultiplier(5)).toBe(1.5);
 		expect(streakMultiplier(10)).toBe(2);
@@ -67,8 +70,6 @@ describe("the gate's per-window coverage demand (ADR-035)", () => {
 		expect(streakCapMultiplier(20)).toBe(3);
 	});
 
-	// Capped, never reset: a player who never misses keeps the bonus for the whole
-	// run. Taking it back at a gate would punish the perfect play it rewards.
 	it("never takes the bonus back once it is earned", () => {
 		const steps = Array.from({ length: 40 }, (_, i) => streakMultiplier(i));
 
@@ -78,54 +79,102 @@ describe("the gate's per-window coverage demand (ADR-035)", () => {
 	});
 });
 
-describe("the storage-plan ladder (ADR-030)", () => {
-	it("climbs to a 3MB cap", () => {
-		expect(STORAGE_PLANS.at(-1)?.capKb).toBe(3072);
+describe("the width ladder (ADR-045)", () => {
+	it("gives every run four spots before it clears anything", () => {
+		expect(SPOT_RUNGS[0].spots).toBe(BASE_SPOTS);
+		expect(SPOT_RUNGS[0].fromGate).toBe(0);
 	});
 
-	it("never sells a bigger cap for a smaller bill", () => {
-		const rungs = [...STORAGE_PLANS];
-		rungs.forEach((rung, index) => {
-			const previous = rungs[index - 1];
+	it("climbs 4, 8, 12, 16, 24 and stops there", () => {
+		expect(SPOT_RUNGS.map((rung) => rung.spots)).toEqual([4, 8, 12, 16, 24]);
+		expect(TOP_RUNG.spots).toBe(24);
+	});
+
+	it("never hands over less room later", () => {
+		SPOT_RUNGS.forEach((rung, index) => {
+			const previous = SPOT_RUNGS[index - 1];
 			if (!previous) return;
-			expect(rung.capKb).toBeGreaterThan(previous.capKb);
-			expect(rung.billKb).toBeGreaterThan(previous.billKb);
-			expect(rung.fromGate).toBeGreaterThanOrEqual(previous.fromGate);
+			expect(rung.spots).toBeGreaterThan(previous.spots);
+			expect(rung.fromGate).toBeGreaterThan(previous.fromGate);
 		});
 	});
 
-	// A cap is only worth its bill once a clear can fill it, and the bill lands
-	// pass or fail — so no rung may cost more than the gate that unlocks it pays.
-	it("prices every rung under a perfect clear at the gate that opens it", () => {
-		STORAGE_PLANS.filter((plan) => plan.billKb > 0).forEach((plan) => {
-			const clearAtUnlock =
-				GATE_REWARD_KB * gateBaseMultiplier(Math.max(1, plan.fromGate));
-			expect(plan.billKb).toBeLessThan(clearAtUnlock / 2);
+	it("keeps the whole ladder inside the run — every rung arrives by the last gate", () => {
+		expect(TOP_RUNG.fromGate).toBeLessThan(VICTORY_GATE);
+	});
+
+	describe("scheduledRung", () => {
+		it("hands a rung over the moment its gate falls", () => {
+			expect(scheduledRung(1).spots).toBe(4);
+			expect(scheduledRung(2).spots).toBe(8);
+			expect(scheduledRung(5).spots).toBe(12);
+			expect(scheduledRung(11).spots).toBe(24);
+		});
+
+		it("holds at the ceiling past the last rung's gate", () => {
+			expect(scheduledRung(VICTORY_GATE + 5).spots).toBe(TOP_RUNG.spots);
 		});
 	});
 
-	it("opens the free tier and one paid rung from the very first shop", () => {
-		expect(
-			storagePlanLadder(0).filter((plan) => isStoragePlanUnlocked(plan, 0))
-		).toEqual([STORAGE_PLANS[0], STORAGE_PLANS[1]]);
+	describe("spotLadderTo", () => {
+		it("draws the rungs reached plus exactly one ahead", () => {
+			expect(spotLadderTo(1).map((rung) => rung.spots)).toEqual([4, 8]);
+			expect(spotLadderTo(3).map((rung) => rung.spots)).toEqual([4, 8, 12, 16]);
+		});
+
+		it("adds nothing ahead once the ceiling is scheduled", () => {
+			expect(spotLadderTo(TOP_RUNG.tier)).toHaveLength(SPOT_RUNGS.length);
+		});
+	});
+});
+
+describe("extra spots (ADR-045)", () => {
+	it("sells four steps, one spot apart", () => {
+		expect(EXTRA_SPOT_TIERS.map((tier) => tier.spots)).toEqual([1, 2, 3, 4]);
+		expect(MAX_EXTRA_SPOTS).toBe(4);
 	});
 
-	// Showing the whole tail would turn a three-row section into seven rows of
-	// things the run cannot buy.
-	it("draws the unlocked rungs plus exactly one still out of reach", () => {
-		const ladder = storagePlanLadder(0);
-		expect(
-			ladder.filter((plan) => !isStoragePlanUnlocked(plan, 0))
-		).toHaveLength(1);
-		expect(ladder).toHaveLength(3);
+	it("stages the deeper steps behind clears, so a lucky balance cannot buy the summit width at gate 1", () => {
+		expect(extraSpotsUnlocked(0)).toBe(1);
+		expect(extraSpotsUnlocked(3)).toBe(2);
+		expect(extraSpotsUnlocked(6)).toBe(3);
+		expect(extraSpotsUnlocked(9)).toBe(4);
+		expect(extraSpotsUnlocked(VICTORY_GATE)).toBe(MAX_EXTRA_SPOTS);
 	});
 
-	it("widens as the run climbs, and stops adding a locked rung at the top", () => {
-		expect(storagePlanLadder(4).length).toBeGreaterThan(
-			storagePlanLadder(0).length
+	it("never opens a step later than the run's last gate", () => {
+		EXTRA_SPOT_TIERS.forEach((tier) =>
+			expect(tier.fromGate).toBeLessThan(VICTORY_GATE)
 		);
-		const summit = storagePlanLadder(STORAGE_PLANS.at(-1)?.fromGate ?? 0);
-		expect(summit).toHaveLength(STORAGE_PLANS.length);
+	});
+
+	describe("the rent", () => {
+		it("charges nothing while the run takes its width on schedule", () => {
+			expect(extraRentKb(0)).toBe(0);
+		});
+
+		it("prices the first extra spot at a quarter of gate 0's perfect clear", () => {
+			expect(extraRentKb(1)).toBe(EXTRA_SPOT_RENT_KB);
+			expect(EXTRA_SPOT_RENT_KB * 4).toBe(GATE_REWARD_KB);
+		});
+
+		it("charges the same for every spot, so a step is its number times the rate", () => {
+			expect(extraRentKb(2)).toBe(16);
+			expect(extraRentKb(3)).toBe(24);
+			expect(extraRentKb(4)).toBe(32);
+		});
+	});
+
+	describe("spotsHeldWith", () => {
+		it("adds the extra spots on top of the schedule", () => {
+			expect(spotsHeldWith(0)).toBe(4);
+			expect(spotsHeldWith(0, 3)).toBe(7);
+			expect(spotsHeldWith(5, 2)).toBe(14);
+		});
+
+		it("never counts more extras than the ladder sells", () => {
+			expect(spotsHeldWith(11, 40)).toBe(TOP_RUNG.spots + MAX_EXTRA_SPOTS);
+		});
 	});
 });
 
@@ -140,7 +189,6 @@ describe("storageCreditRate", () => {
 	});
 
 	it("scales a death linearly with gates cleared", () => {
-		// gatesCleared is a count, so the share divides by how many gates a run has.
 		expect(storageCreditRate("dead", 0)).toBe(0);
 		expect(storageCreditRate("dead", GATE_COUNT / 2)).toBeCloseTo(0.5);
 		expect(storageCreditRate("dead", GATE_COUNT - 1)).toBeCloseTo(
@@ -174,48 +222,64 @@ describe("pollDifficultyMultiplier", () => {
 	});
 });
 
-// The peel tracks the slot ladder (3 slots at the start, 14 at the summit), so a
-// miss keeps costing roughly the same fraction of a build all the way up.
-describe("the peel a missed gate takes (ADR-037)", () => {
-	it("takes one config while the pipeline is still narrow", () => {
-		expect(failStripsFor(0)).toBe(1);
-		expect(failStripsFor(2)).toBe(1);
+describe("the peel a missed gate takes (ADR-037/044)", () => {
+	it("takes a fifth of the pipeline while the climb is shallow", () => {
+		expect(failPeelShareFor(0)).toBe(0.2);
+		expect(failPeelShareFor(2)).toBe(0.2);
 	});
 
 	it("escalates with depth", () => {
-		expect(failStripsFor(5)).toBe(2);
-		expect(failStripsFor(8)).toBe(3);
-		expect(failStripsFor(12)).toBe(4);
+		expect(failPeelShareFor(5)).toBe(0.25);
+		expect(failPeelShareFor(8)).toBe(0.3);
+		expect(failPeelShareFor(12)).toBe(0.35);
 	});
 
 	it("never eases off deeper into the climb", () => {
 		const rows = Array.from({ length: GATE_COUNT }, (_, gate) =>
-			failStripsFor(gate)
+			failPeelShareFor(gate)
 		);
 		expect(rows).toEqual([...rows].sort((a, b) => a - b));
 	});
 
 	it("holds the summit row past the last gate — endless runs keep a rule", () => {
-		expect(failStripsFor(VICTORY_GATE + 5)).toBe(failStripsFor(VICTORY_GATE));
+		expect(failPeelShareFor(VICTORY_GATE + 5)).toBe(
+			failPeelShareFor(VICTORY_GATE)
+		);
+	});
+
+	it("rounds a quota up — a peel that rounds to nothing is a free miss", () => {
+		expect(peelQuotaSpotsFor(4, 0.2, 0)).toBe(1);
+		expect(peelQuotaSpotsFor(1, 0.2, 0)).toBe(1);
+	});
+
+	it("never takes more than half the build before gate 3", () => {
+		for (const gate of [0, 1, 2])
+			for (const occupied of [1, 2, 4, 8])
+				expect(peelQuotaSpotsFor(occupied, 0.9, gate)).toBeLessThanOrEqual(
+					Math.ceil(occupied / 2)
+				);
+	});
+
+	it("lets a deep gate past the half-build cap", () => {
+		expect(peelQuotaSpotsFor(8, 0.9, 8)).toBeGreaterThan(4);
 	});
 });
 
 describe("atMinimumWidth", () => {
 	it("refuses removing the last config — a pipeline never goes bare", () => {
-		// Only a missed gate may take the last config, and that ends the run.
 		expect(atMinimumWidth(1)).toBe(true);
 		expect(atMinimumWidth(2)).toBe(false);
 		expect(atMinimumWidth(3)).toBe(false);
 	});
 });
 
-describe("isStakeFatal", () => {
-	it("is not fatal when the peel is smaller than the build", () => {
-		expect(isStakeFatal(1, 3)).toBe(false);
+describe("isPeelFatal", () => {
+	it("is not fatal when the peel leaves spots behind", () => {
+		expect(isPeelFatal(1, 4)).toBe(false);
 	});
 
-	it("is fatal once the peel matches or exceeds the whole build", () => {
-		expect(isStakeFatal(3, 3)).toBe(true);
-		expect(isStakeFatal(4, 3)).toBe(true);
+	it("is fatal once the peel takes every occupied spot", () => {
+		expect(isPeelFatal(4, 4)).toBe(true);
+		expect(isPeelFatal(5, 4)).toBe(true);
 	});
 });

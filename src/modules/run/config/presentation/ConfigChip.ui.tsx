@@ -1,4 +1,3 @@
-import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import type { ReactNode } from "react";
 import {
@@ -6,44 +5,13 @@ import {
 	describeConfig,
 } from "~/modules/run/config/domain/config.model";
 import { Badge } from "~/ui/Badge.component";
-import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
-const RARITY_KEYS = Object.keys(RARITY_COLORS) as Rarity[];
+const CHIP_SURFACE =
+	"inline-flex shrink-0 items-center rounded-sm align-middle border-1 border-edge-strong bg-surface-raised p-1 text-xs text-zinc-100";
 
-const rarityVariant = (
-	pick: (colors: (typeof RARITY_COLORS)[Rarity]) => string
-): Record<Rarity, string> =>
-	Object.fromEntries(
-		RARITY_KEYS.map((rarity) => [rarity, pick(RARITY_COLORS[rarity])])
-	) as Record<Rarity, string>;
-
-// Labels read white on every chip — rarity speaks through the border + tint.
-const chipSurface = cva(
-	"inline-flex shrink-0 items-center rounded-sm align-middle border-1 p-1 text-xs text-zinc-100",
-	{
-		variants: {
-			rarity: rarityVariant((colors) => colors.border),
-		},
-		compoundVariants: RARITY_KEYS.map((rarity) => ({
-			rarity,
-			class: RARITY_COLORS[rarity].bg,
-		})),
-	}
-);
-
-const tooltipSurface = cva("bg-surface", {
-	variants: {
-		rarity: rarityVariant((colors) => colors.border),
-	},
-});
-
-const rarityLabel = cva("text-xs font-bold uppercase tracking-wide", {
-	variants: {
-		rarity: rarityVariant((colors) => colors.text),
-	},
-});
+const TOOLTIP_SURFACE = "bg-surface border-edge-strong";
 
 type ConfigChipProps = {
 	config: Config;
@@ -51,13 +19,7 @@ type ConfigChipProps = {
 	price?: number;
 	badge?: ReactNode;
 	tooltip?: ReactNode;
-	/** The tooltip panel carries its own buttons, so the pointer must reach it. */
 	interactiveTooltip?: boolean;
-	/**
-	 * Compact hover caption ("Click to install") shown INSTEAD of the panel until
-	 * the chip is clicked. Requires the parent to drive `tooltipPinned` from its
-	 * own click handler — the hint itself never opens the panel.
-	 */
 	tooltipHint?: ReactNode;
 	tooltipPinned?: boolean;
 	onTooltipDismiss?: () => void;
@@ -80,22 +42,15 @@ const ChipLabel = ({
 );
 
 const ChipSurface = ({
-	config,
 	disabled,
 	dimmed,
 	onClick,
 	ariaExpanded,
 	children,
-}: Pick<
-	ConfigChipProps,
-	"config" | "disabled" | "dimmed" | "onClick" | "ariaExpanded"
-> & {
+}: Pick<ConfigChipProps, "disabled" | "dimmed" | "onClick" | "ariaExpanded"> & {
 	children: ReactNode;
 }) => {
-	const style = clsx(
-		chipSurface({ rarity: config.rarity ?? "common" }),
-		dimmed && "opacity-40"
-	);
+	const style = clsx(CHIP_SURFACE, dimmed && "opacity-40");
 
 	return onClick ? (
 		<button
@@ -142,7 +97,6 @@ export const ConfigChip = ({
 	].filter(Boolean);
 	const surface = (
 		<ChipSurface
-			config={config}
 			disabled={disabled}
 			dimmed={dimmed}
 			onClick={onClick}
@@ -163,9 +117,6 @@ export const ConfigChip = ({
 			surface
 		);
 	if (noTooltip) return chip;
-	const rarity = config.rarity ?? "common";
-	// `pinned={false}` keeps the hint controlled-shut: a touch tap must not pin
-	// the caption itself, because the chip's click is what swaps in the panel.
 	if (tooltipHint !== undefined && !tooltipPinned)
 		return (
 			<Tooltip compact pinned={false} content={tooltipHint}>
@@ -174,13 +125,12 @@ export const ConfigChip = ({
 		);
 	return (
 		<Tooltip
-			surfaceClassName={tooltipSurface({ rarity })}
+			surfaceClassName={TOOLTIP_SURFACE}
 			interactive={interactiveTooltip}
 			pinned={tooltipHint !== undefined ? tooltipPinned : undefined}
 			onDismiss={onTooltipDismiss}
 			content={
 				<span className="flex flex-col gap-1">
-					<span className={rarityLabel({ rarity })}>{rarity}</span>
 					{tooltip ?? (
 						<Paragraph className="text-sm">{describeConfig(config)}</Paragraph>
 					)}

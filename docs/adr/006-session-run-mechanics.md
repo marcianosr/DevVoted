@@ -91,6 +91,8 @@ The on-demand "cross out a wrong answer" action is only available when a **linte
 
 ### 9. Rarity is a loot tier shown as glow, never fill
 
+> ⚠ **Superseded by [ADR-043](043-rarity-is-a-shape-not-a-hue.md)**: the grades are `bit / crumb / nibble / byte`, drawn as an achromatic cell cluster. Every rarity hue is deleted, because each one already belonged to a gate swatch.
+
 Configs carry a rarity — **common / uncommon / rare / legendary**. It rides the **border + glow** (loot ramp: gray → green → blue → gold + spark), never the fill. Fill color means *category* on Focus configs (`.js` = JS-yellow) and is a neutral slate on everything else. Two visual channels, two jobs: fill = "what/where", glow = "how scarce".
 
 Rarity is **cosmetic only for now** — it does not yet affect draw odds or power.

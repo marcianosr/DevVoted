@@ -59,9 +59,6 @@ describe(PrepScreen, () => {
 		expect(screen.queryByText("×1")).not.toBeInTheDocument();
 	});
 
-	// The row used to promise "+1% coverage" while a build with a Focus config and
-	// a streak actually paid 1.4% on the first answer (ADR-040). The base alone is
-	// a number nobody ever sees, so both multipliers are stated beside it.
 	it("names the multipliers that ride on a correct answer", () => {
 		render(
 			<PrepScreen
@@ -155,7 +152,7 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ pollsPerGate: 5, stripsOnFailure: 1 })}
+				stake={stakeWith({ pollsPerGate: 5, peelSpotsOnFailure: 1 })}
 			/>
 		);
 		expect(
@@ -170,7 +167,7 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ stripsOnFailure: 1, missIsFatal: true })}
+				stake={stakeWith({ peelSpotsOnFailure: 1, missIsFatal: true })}
 			/>
 		);
 		expect(
@@ -178,36 +175,30 @@ describe(PrepScreen, () => {
 		).toHaveTextContent("a miss here ends the run");
 	});
 
-	it("names the storage plan's bill on a paid tier", () => {
+	it("names a subscribed config's bill", () => {
 		render(
 			<PrepScreen
 				{...base}
 				stake={stakeWith({
-					billKb: 8,
 					subscriptions: {
 						lines: [
-							{
-								id: "storage-plan",
-								label: "Storage plan, tier 2",
-								kb: 8,
-								billedOnMiss: true,
-							},
+							{ id: "freemium", label: "Freemium", kb: 8, billedOnMiss: false },
 						],
 						totalKb: 8,
-						onMissKb: 8,
+						onMissKb: 0,
 						shortfallKb: 0,
 					},
 				})}
 			/>
 		);
-		expect(screen.getByText("Storage plan, tier 2")).toBeInTheDocument();
+		expect(screen.getByText("Freemium")).toBeInTheDocument();
 		expect(screen.getByText("−8KB")).toHaveClass("text-cinnabar");
-		expect(screen.getByText(/pass or fail/)).toBeInTheDocument();
 	});
 
-	it("keeps the free tier's receipt bill-free", () => {
+	it("keeps a subscription-free receipt bill-free", () => {
 		render(<PrepScreen {...base} />);
 		expect(screen.queryByText("Storage bill")).not.toBeInTheDocument();
+		expect(screen.queryByText(/Storage plan/)).not.toBeInTheDocument();
 	});
 
 	it("marks the gate name with its swatch colour", () => {

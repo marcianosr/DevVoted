@@ -236,7 +236,7 @@ const base: Omit<PollScreenProps, "options"> = {
 	gate: {
 		title: "Gate 4 · Lavender",
 		audits: ["dependency-outage"],
-		storage: { plan: "Free tier", used: 184, cap: 512 },
+		storage: { balanceKb: 184 },
 		track: { gates: ALL_SWATCHES, cleared: 4 },
 	},
 	trail: [
@@ -285,8 +285,6 @@ const InteractivePoll = ({
 	);
 };
 
-// The gate's name and colour come off the roster, so a story cannot title
-// itself one gate and wear another's theme.
 const gateStory = (gate: number): Story => {
 	const { gateName, theme } = GATE_SWATCHES[gate];
 
@@ -298,7 +296,7 @@ const gateStory = (gate: number): Story => {
 				gate={{
 					title: `Gate ${gate} · ${gateName}`,
 					audits: ["dependency-outage"],
-					storage: { plan: "Free tier", used: 184, cap: 512 },
+					storage: { balanceKb: 184 },
 					track: { gates: ALL_SWATCHES, cleared: gate },
 				}}
 			/>
@@ -334,8 +332,6 @@ export const WithoutRail: Story = {
 	render: () => <InteractivePoll rail={undefined} />,
 };
 
-/** The rail folded away: the run's own figures are worth a glance between polls,
- * not a column beside every question. */
 export const RailFolded: Story = {
 	render: () => <InteractivePoll railStartsOpen={false} />,
 };

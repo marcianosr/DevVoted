@@ -18,15 +18,12 @@ const rowFor = (gate: number, owned: readonly string[] = []) => {
 	return entry;
 };
 
-/** One flat label per unlock, so a row's grants can be asserted as strings
- * without the Dex's own copy leaking into the domain's tests. */
 const unlockLabelsOf = (
 	entry: ReturnType<typeof gatedex>[number]
 ): readonly string[] =>
-	entry.unlocks.map((unlock) => {
-		if (unlock.kind === "slot") return `slot ${unlock.slot}`;
-		return unlock.kind === "plan" ? `plan ${unlock.capKb}` : unlock.action;
-	});
+	entry.unlocks.map((unlock) =>
+		unlock.kind === "rung" ? `rung ${unlock.spots}` : unlock.action
+	);
 
 const unlockLabels = (gate: number): readonly string[] =>
 	unlockLabelsOf(rowFor(gate));
@@ -81,9 +78,8 @@ describe("gatedex", () => {
 	});
 
 	it("adds an audit's extra peels to the gate's own row and says so", () => {
-		// Gate 11 carries Strip, which peels one config on top of the base row.
 		expect(rowFor(11).peelsAudited).toBe(true);
-		expect(rowFor(11).peels).toBeGreaterThan(rowFor(10).peels);
+		expect(rowFor(11).peelShare).toBeGreaterThan(rowFor(10).peelShare);
 	});
 
 	it("leaves peelsAudited false where the gate's own row is the whole story", () => {
@@ -95,26 +91,26 @@ describe("gatedex", () => {
 		expect(rowFor(8).audits).toEqual(["Timeout", "Flaky Build"]);
 	});
 
-	it("hangs a slot on the gate whose clear grants it", () => {
-		expect(unlockLabels(1)).toContain("slot 4");
-		expect(unlockLabels(3)).toContain("slot 5");
+	it("names the width a clear hands over", () => {
+		expect(unlockLabels(1)).toContain("rung 8");
+		expect(unlockLabels(4)).toContain("rung 12");
+		expect(unlockLabels(10)).toContain("rung 24");
 	});
 
-	it("hangs a coverage-only slot on no gate at all", () => {
-		// Slot 6 opens on lifetime coverage, so no row may claim it.
-		expect(everyUnlockLabel()).not.toContain("slot 6");
+	it("names no rung on a gate that opens none", () => {
+		expect(unlockLabels(3)).not.toContain("rung 12");
+		expect(unlockLabels(5)).not.toContain("rung 12");
 	});
 
 	it("hangs a shop action one gate below its gatesCleared floor", () => {
-		// LOCK_FROM_GATE is 2, and gatesCleared reaches 2 when gate 1 falls.
 		expect(unlockLabels(1)).toContain("lock");
 		expect(unlockLabels(2)).toContain("extend");
 		expect(unlockLabels(3)).toContain("pin");
 	});
 
-	it("hangs a storage plan one gate below its fromGate, and the opening two on none", () => {
-		expect(unlockLabels(1)).toContain("plan 768");
-		expect(unlockLabels(3)).toContain("plan 1024");
-		expect(everyUnlockLabel()).not.toContain("plan 640");
+	it("hangs a rung one gate below its floor, and the opening width on none", () => {
+		expect(unlockLabels(1)).toContain("rung 8");
+		expect(unlockLabels(4)).toContain("rung 12");
+		expect(everyUnlockLabel()).not.toContain("rung 4");
 	});
 });

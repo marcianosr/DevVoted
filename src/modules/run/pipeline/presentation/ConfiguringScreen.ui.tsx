@@ -1,6 +1,10 @@
 import { useState } from "react";
-import { clsx } from "clsx";
-import type { Config } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	largestGradeFitting,
+	rarityOf,
+	spotsOf,
+} from "~/modules/run/config/domain/config.model";
 import {
 	stackMatching,
 	type StarterStack,
@@ -8,13 +12,13 @@ import {
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
-	MAX_SLOTS,
+	MAX_SPOTS,
 	perAnswerPreviewFor,
 	pipelineModifiersFor,
 } from "~/modules/run/pipeline/domain/pipeline.model";
 import { Button } from "~/ui/Button.component";
+import { SpotTrack } from "~/ui/modern-theme/SpotTrack.ui";
 import { Columns } from "~/ui/Columns.ui";
-import { RARITY_COLORS, type Rarity } from "~/ui/rarityColors";
 import type { ScreenAction } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
@@ -27,39 +31,34 @@ import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
 
 type ConfiguringScreenProps = {
 	configs: readonly Config[];
-	slots: number;
+	spots: number;
+	spotsUsed: number;
+	spotsFree: number;
+	overflowSpots: number;
 	stake: GateStake;
 	bench: readonly Config[];
 	onSlot: (configId: string) => void;
 	onUnslot: (configId: string) => void;
-	/**
-	 * Stack mode (ADR-026): when stacks are offered, the free bench is replaced by
-	 * one flavor decision and the receipt trims to its intro variant. Omit both
-	 * to get the classic bench-and-pipeline drafting screen.
-	 */
 	stacks?: readonly StarterStack[];
 	onPickStack?: (stackId: string) => void;
-	/** The receipt carries its own CTA now, rather than the screen footer. */
 	startAction: ScreenAction;
 };
 
-// TODO(marciano): with the family headers gone, the bench needs an order.
-// Chips color by rarity (not family), so the options read differently:
-// roster order (stable), rarity-clustered (colors group), family-clustered
-// (old grouping, minus headers). Implement your pick here.
 const benchOrder = (bench: readonly Config[]): readonly Config[] => bench;
-
-const RARITY_LEGEND: readonly Rarity[] = [
-	"common",
-	"uncommon",
-	"rare",
-	"legendary",
-];
 
 type PanelHeadingProps = {
 	title: string;
 	subtitle: string;
 };
+
+const trackBars = (configs: readonly Config[]) =>
+	configs.map((config) => ({
+		id: config.id,
+		label: config.label,
+		spots: spotsOf(config),
+		minified: config.minified,
+		rarity: rarityOf(config),
+	}));
 
 const PanelHeading = ({ title, subtitle }: PanelHeadingProps) => (
 	<header>
@@ -70,7 +69,10 @@ const PanelHeading = ({ title, subtitle }: PanelHeadingProps) => (
 
 export const ConfiguringScreen = ({
 	configs,
-	slots,
+	spots,
+	spotsUsed,
+	spotsFree,
+	overflowSpots,
 	stake,
 	bench,
 	onSlot,
@@ -82,7 +84,7 @@ export const ConfiguringScreen = ({
 	const { gateNumber } = stake;
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const [customBuild, setCustomBuild] = useState(false);
-	const full = configs.length >= slots;
+	const full = spotsFree === 0;
 	const rows = roleRows(configs);
 	const stackMode = stacks !== undefined && onPickStack !== undefined;
 
@@ -104,7 +106,7 @@ export const ConfiguringScreen = ({
 				</section>
 				<GateStakeReceipt
 					stake={stake}
-					configsToInstall={slots - configs.length}
+					overflowSpots={overflowSpots}
 					action={startAction}
 				/>
 			</div>
@@ -152,16 +154,6 @@ export const ConfiguringScreen = ({
 								</span>
 							))}
 						</div>
-						<div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
-							{RARITY_LEGEND.map((rarity) => (
-								<span
-									key={rarity}
-									className={clsx("text-xs", RARITY_COLORS[rarity].text)}
-								>
-									{rarity}
-								</span>
-							))}
-						</div>
 						{stackMode ? (
 							<Button
 								variant="neutral"
@@ -178,12 +170,18 @@ export const ConfiguringScreen = ({
 					<section className="flex flex-col gap-4">
 						<PanelHeading
 							title="Your pipeline"
-							subtitle={`${configs.length} of ${slots} slots used`}
+							subtitle={`${spotsUsed} of ${spots} spots used`}
+						/>
+						<SpotTrack
+							configs={trackBars(configs)}
+							spots={spots}
+							maxSpots={MAX_SPOTS}
+							fits={largestGradeFitting(spotsFree)}
 						/>
 						<RoleList
 							rows={rows}
 							onRemove={onUnslot}
-							slots={slots}
+							freeSpots={spotsFree}
 							preview={
 								previewConfig
 									? {
@@ -193,10 +191,10 @@ export const ConfiguringScreen = ({
 									: undefined
 							}
 						/>
-						{slots < MAX_SLOTS ? (
+						{spots < MAX_SPOTS ? (
 							<Paragraph size="xs" tone="muted">
-								More slots unlock as you clear gates and as your coverage
-								climbs.
+								Clearing gates widens the pipeline, and the shop rents spots on
+								top, up to {MAX_SPOTS} spots.
 							</Paragraph>
 						) : null}
 						<GateStakeReceipt

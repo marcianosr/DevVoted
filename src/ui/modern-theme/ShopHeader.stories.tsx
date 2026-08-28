@@ -15,7 +15,7 @@ const meta: Meta<typeof ShopHeader> = {
 	args: {
 		title: "Lavender shop",
 		nextGate: "gate 4",
-		storage: { plan: "Free tier", used: 216, cap: 512 },
+		storage: { balanceKb: 216 },
 	},
 };
 export default meta;
@@ -26,10 +26,10 @@ export const Solvent: Story = {};
 
 export const OverCap: Story = {
 	args: {
-		storage: { plan: "Free tier", used: 560, cap: 512 },
+		storage: { balanceKb: 560 },
 	},
 };
 
 export const Broke: Story = {
-	args: { storage: { plan: "Free tier", used: 512, cap: 512 } },
+	args: { storage: { balanceKb: 512 } },
 };

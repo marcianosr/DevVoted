@@ -6,13 +6,11 @@ import {
 	STARTER_STACKS,
 	starterStackFor,
 } from "~/modules/run/config/domain/stack.model";
-import { MAX_SLOTS } from "~/modules/run/pipeline/domain/pipeline.model";
+import { MAX_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import { ConfiguringScreen } from "~/modules/run/pipeline/presentation/ConfiguringScreen.ui";
 import { createMockGateStake } from "~/test/runView.factory";
 
 const base = {
-	// This screen only renders on a fresh run (`configuring` is set in createRun
-	// alone), so the gate is always 0 — which demands no width.
 	stake: createMockGateStake({
 		modifiers: {
 			gateReward: 80,
@@ -29,7 +27,10 @@ const base = {
 		},
 	}),
 	configs: [CONFIGS.unitTests, CONFIGS.js],
-	slots: 3,
+	spots: 4,
+	spotsUsed: 2,
+	spotsFree: 2,
+	overflowSpots: 0,
 	bench: [CONFIGS.eslint, CONFIGS.agentsMd],
 	onSlot: vi.fn(),
 	onUnslot: vi.fn(),
@@ -81,18 +82,13 @@ describe(ConfiguringScreen, () => {
 			/>
 		);
 		fireEvent.mouseOver(screen.getByRole("button", { name: "Unit Tests" }));
-		// Scoped to the receipt — Unit Tests' own previewed pipeline row also
-		// prints "+32KB" (its gives text), which would otherwise collide.
 		const receipt = within(screen.getByTestId("gate-stake-receipt"));
-		// Unit Tests' +32KB storageOnClear stacks onto the base 32KB reward.
 		expect(receipt.getByText("+32KB")).toHaveClass("text-pewter");
 		expect(receipt.getByText("→ +64KB")).toHaveClass("text-celadon");
 	});
 
 	it("renders the bench and pipeline columns side by side", () => {
 		render(<ConfiguringScreen {...base} />);
-		// The bench aside carries no heading anymore — its instruction line is
-		// what identifies it.
 		expect(
 			screen.getByText("Click a config to add it to your pipeline")
 		).toBeInTheDocument();
@@ -107,6 +103,8 @@ describe(ConfiguringScreen, () => {
 			<ConfiguringScreen
 				{...base}
 				configs={[CONFIGS.unitTests, CONFIGS.js, CONFIGS.css]}
+				spotsUsed={4}
+				spotsFree={0}
 				onSlot={onSlot}
 			/>
 		);
@@ -116,49 +114,40 @@ describe(ConfiguringScreen, () => {
 		expect(onSlot).not.toHaveBeenCalled();
 	});
 
-	it("promises more slots instead of showing an unclaimable unlock rung", () => {
+	it("names both sources of width instead of showing an unclaimable rung", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
 			screen.getByText(
-				"More slots unlock as you clear gates and as your coverage climbs."
+				(_, element) =>
+					element?.textContent ===
+					`Clearing gates widens the pipeline, and the shop rents spots on top, up to ${MAX_SPOTS} spots.`
 			)
 		).toBeInTheDocument();
 		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
-		// The one rail on screen is the gate's coverage demand, not a slot rung.
 		expect(screen.getByRole("progressbar")).toHaveAccessibleName(
 			"coverage toward gate 0"
 		);
 	});
 
-	it("numbers only the slots the pipeline actually has", () => {
+	it("numbers only the spots the pipeline actually has", () => {
 		render(<ConfiguringScreen {...base} />);
-		// base fills two of three slots, so: 1-2 filled, 3 empty, and no fourth row.
-		// Scoped to the row numbering itself — the stake block above also shows a
-		// bare number, and can collide with a slot digit.
-		for (const slot of ["1", "2", "3"])
+		for (const spot of ["1", "2", "3", "4"])
 			expect(
-				screen.getByText(slot, { selector: ".tabular-nums" })
+				screen.getByText(spot, { selector: ".tabular-nums" })
 			).toBeInTheDocument();
 		expect(
-			screen.queryByText("4", { selector: ".tabular-nums" })
+			screen.queryByText("5", { selector: ".tabular-nums" })
 		).not.toBeInTheDocument();
 	});
 
-	it("drops the slot promise at the slot cap", () => {
-		render(<ConfiguringScreen {...base} slots={MAX_SLOTS} />);
-		expect(screen.queryByText(/More slots unlock/)).not.toBeInTheDocument();
+	it("drops the width promise once the pipeline is on the top rung", () => {
+		render(<ConfiguringScreen {...base} spots={MAX_SPOTS} />);
+		expect(screen.queryByText(/widens the pipeline/)).not.toBeInTheDocument();
 	});
 
-	// Wide screens open every row; a phone shuts them all and shows the caret.
-	// The detail stays mounted either way, so the fold is a class, not a mount.
-	// The FactRow wraps each fact in its own label+value line, so the
-	// fold-controlled ancestor sits three levels up: value → FactRow → the
-	// requirement/effect/progress group → the detail span itself.
 	const foldedDetailFor = (text: string) =>
 		screen.getByText(text).parentElement?.parentElement?.parentElement;
 
-	// ESLint's gives line has no number token, so it survives emphasizeNumbers
-	// as one text node — the fold tests read their target off it.
 	const foldable = {
 		...base,
 		configs: [CONFIGS.eslint, CONFIGS.js],
@@ -196,9 +185,9 @@ describe(ConfiguringScreen, () => {
 		expect(screen.queryByText("RUN")).not.toBeInTheDocument();
 	});
 
-	it("counts the used slots in the pipeline subtitle", () => {
+	it("counts the used spots in the pipeline subtitle", () => {
 		render(<ConfiguringScreen {...base} />);
-		expect(screen.getByText("2 of 3 slots used")).toBeInTheDocument();
+		expect(screen.getByText("2 of 4 spots used")).toBeInTheDocument();
 	});
 
 	it("leaves Gate modifiers out — the pipeline rows carry the rewards", () => {
@@ -210,8 +199,6 @@ describe(ConfiguringScreen, () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(screen.queryByText("!")).not.toBeInTheDocument();
 		expect(screen.getAllByText("v").length).toBeGreaterThan(0);
-		// "+32KB" is itself wrapped in a bold highlight span (emphasizeNumbers) —
-		// the tone class lives on its enclosing paragraph.
 		expect(screen.getByText("+32KB").parentElement).toHaveClass("text-celadon");
 	});
 
@@ -235,22 +222,17 @@ describe(ConfiguringScreen, () => {
 	});
 
 	it("previews a hovered bench config in the next open slot", () => {
-		render(<ConfiguringScreen {...base} />);
+		render(<ConfiguringScreen {...base} spotsUsed={3} spotsFree={1} />);
 		expect(screen.getByText("empty slot")).toBeInTheDocument();
 		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
-		// The row itself is the affordance — no "click to add" text inside the
-		// pipeline, which read as if the config were already installed.
 		expect(
 			screen.getByRole("button", { name: "Add AGENTS.md to your pipeline" })
 		).toBeInTheDocument();
 		expect(screen.queryByText("click to add")).not.toBeInTheDocument();
-		// The preview occupies the would-be slot, so no open slot remains.
 		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
 	});
 
 	it("keeps the preview alive while the pointer travels from chip to row", () => {
-		// Clearing on mouseleave would unmount the row before it can be
-		// clicked — the preview only yields to another hover or a commit.
 		const onSlot = vi.fn();
 		render(<ConfiguringScreen {...base} onSlot={onSlot} />);
 		const chip = screen.getByRole("button", { name: /AGENTS.md/ });
@@ -274,7 +256,6 @@ describe(ConfiguringScreen, () => {
 
 	it("drops the preview once its config is committed", () => {
 		render(<ConfiguringScreen {...base} />);
-		// Grab the chip before hovering — the preview row also answers to /AGENTS.md/.
 		const chip = screen.getByRole("button", { name: /AGENTS.md/ });
 		fireEvent.mouseOver(chip);
 		fireEvent.click(chip);
@@ -293,11 +274,12 @@ describe(ConfiguringScreen, () => {
 		expect(onSlot).toHaveBeenCalledWith("agents-md");
 	});
 
-	it("keeps rarity to the bench legend — the rows carry it in their border", () => {
+	it("keys no grade at all, on the rows or under them", () => {
 		render(<ConfiguringScreen {...base} />);
 		fireEvent.mouseOver(screen.getByRole("button", { name: /AGENTS.md/ }));
-		// The word appears once, in the legend: naming it per row added nothing.
-		expect(screen.getAllByText("legendary")).toHaveLength(1);
+
+		expect(screen.queryByText("byte")).not.toBeInTheDocument();
+		expect(screen.queryByText("bit")).not.toBeInTheDocument();
 	});
 });
 
@@ -382,18 +364,12 @@ describe("stack mode (ADR-026)", () => {
 		render(
 			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
 		);
-		// The gives text bolds its number in a nested span (emphasizeNumbers), so
-		// a plain string match won't see across the element boundary — match on
-		// the full concatenated text instead.
 		expect(
 			screen.getByText(
 				(_, element) =>
 					element?.textContent === "JavaScript polls reward ×1.25 coverage"
 			)
 		).toBeInTheDocument();
-		// No window has been played on this screen — the live counter is absent,
-		// not just hidden (Marciano, 2026-08-10) — but each config's status dot
-		// is back, the same one RoleList shows (Marciano, 2026-08-11).
 		expect(screen.queryByText("0/1")).not.toBeInTheDocument();
 		expect(screen.getAllByRole("img").length).toBeGreaterThan(0);
 	});
@@ -417,7 +393,7 @@ describe("stack mode (ADR-026)", () => {
 	it("opens the full bench from the Customize row", () => {
 		render(<ConfiguringScreen {...stackBase} />);
 		fireEvent.click(
-			screen.getByRole("button", { name: /Customize all 3 slots/ })
+			screen.getByRole("button", { name: /Customize all 4 spots/ })
 		);
 		expect(
 			screen.getByText("Click a config to add it to your pipeline")
@@ -428,7 +404,7 @@ describe("stack mode (ADR-026)", () => {
 	it("walks back from the bench to the stacks", () => {
 		render(<ConfiguringScreen {...stackBase} />);
 		fireEvent.click(
-			screen.getByRole("button", { name: /Customize all 3 slots/ })
+			screen.getByRole("button", { name: /Customize all 4 spots/ })
 		);
 		fireEvent.click(screen.getByRole("button", { name: /Back to stacks/ }));
 		expect(screen.getByText("Pick your build")).toBeInTheDocument();
@@ -442,25 +418,21 @@ describe("stack mode (ADR-026)", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("shows how many configs the pipeline still needs before any stack is picked", () => {
+	it("says nothing about width while the build simply has room left", () => {
 		render(<ConfiguringScreen {...stackBase} />);
+		expect(screen.queryByText("To start")).not.toBeInTheDocument();
+	});
+
+	it("names the overflow when a repossessed rung leaves the build too wide", () => {
+		render(<ConfiguringScreen {...stackBase} overflowSpots={3} />);
 		expect(screen.getByText("To start")).toBeInTheDocument();
-		// The count sits in its own bold span, so match on the concatenated text —
-		// scoped to the span itself, since its parent section shares the same text.
 		expect(
 			screen.getByText(
 				(_, element) =>
 					element?.tagName === "SPAN" &&
-					element.textContent === "Needs at least 3 configs in your pipeline"
+					element.textContent ===
+						"Over capacity by 3 spots — minify, uninstall, or rent more room"
 			)
 		).toBeInTheDocument();
-	});
-
-	it("drops the install count once a picked stack fills every slot", () => {
-		const shipIt = starterStackFor("ship-it");
-		if (!shipIt) throw new Error("ship-it stack missing");
-		render(<ConfiguringScreen {...stackBase} configs={shipIt.configs} />);
-		expect(screen.queryByText("To start")).not.toBeInTheDocument();
-		expect(screen.queryByText(/in your pipeline/)).not.toBeInTheDocument();
 	});
 });

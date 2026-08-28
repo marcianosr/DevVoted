@@ -1,10 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { SPOTS_PER_GRADE } from "~/modules/run/config/domain/config.model";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 
 import { Chip } from "../Chip.ui";
 import { Delta } from "../Delta.ui";
-import { PrepScreen, type PrepScreenProps } from "./PrepScreen.ui";
+import type { Rarity } from "../rarity";
+import {
+	PrepScreen,
+	type PrepConfig,
+	type PrepScreenProps,
+} from "./PrepScreen.ui";
 
 const meta: Meta<typeof PrepScreen> = {
 	component: PrepScreen,
@@ -14,29 +20,38 @@ export default meta;
 
 type Story = StoryObj<typeof PrepScreen>;
 
-const configs = [
-	{
-		id: ".ts",
-		label: ".ts",
-		note: <Delta multiplier={1.25} />,
-		summary: "Common · Focus: typescript",
-		explainer: "TypeScript polls pay 1.25× coverage.",
-	},
-	{
-		id: "Intellisense",
-		label: "Intellisense",
-		note: <Delta multiplier={1.5} />,
-		summary: "Uncommon",
-		explainer: "All coverage earns ×1.5.",
-	},
-	{
-		id: "IndexedDB",
-		label: "IndexedDB",
-		note: <Chip tone="celadon">+8 / correct</Chip>,
-		summary: "Common",
-		explainer: "+8 KB storage per correct answer, up to 320 KB a run.",
-	},
-];
+const graded = (
+	config: Omit<PrepConfig, "spots"> & { rarity: Rarity }
+): PrepConfig => ({ ...config, spots: SPOTS_PER_GRADE[config.rarity] });
+
+const configs = (
+	[
+		{
+			id: ".ts",
+			label: ".ts",
+			rarity: "bit",
+			note: <Delta multiplier={1.25} />,
+			summary: "bit · Focus: typescript",
+			explainer: "TypeScript polls pay 1.25× coverage.",
+		},
+		{
+			id: "Intellisense",
+			label: "Intellisense",
+			rarity: "nibble",
+			note: <Delta multiplier={1.5} />,
+			summary: "nibble",
+			explainer: "All coverage earns ×1.5.",
+		},
+		{
+			id: "IndexedDB",
+			label: "IndexedDB",
+			rarity: "bit",
+			note: <Chip tone="celadon">+8 / correct</Chip>,
+			summary: "bit",
+			explainer: "+8 KB storage per correct answer, up to 320 KB a run.",
+		},
+	] satisfies readonly (Omit<PrepConfig, "spots"> & { rarity: Rarity })[]
+).map(graded);
 
 const base: PrepScreenProps = {
 	theme: "lavender",
@@ -44,7 +59,7 @@ const base: PrepScreenProps = {
 	gate: {
 		title: "Gate 4 · Lavender",
 		audits: ["dependency-outage"],
-		storage: { plan: "Standard plan", used: 184, cap: 640 },
+		storage: { balanceKb: 184 },
 		track: { gates: ALL_SWATCHES, cleared: 4 },
 	},
 	pollCount: 5,
@@ -54,7 +69,8 @@ const base: PrepScreenProps = {
 	coveragePerWrong: -1.3,
 	missIsFatal: false,
 	configs,
-	slots: [{ id: "slot-4", gate: 6 }],
+	spots: 6,
+	fits: null,
 	audits: [
 		{
 			id: "dependency-outage",
@@ -99,7 +115,7 @@ export const Shortfall: Story = {
 			{...base}
 			gate={{
 				...base.gate,
-				storage: { plan: "Standard plan", used: 104, cap: 640 },
+				storage: { balanceKb: 104 },
 			}}
 			shortfallKb={56}
 		/>
@@ -128,13 +144,14 @@ export const Lean: Story = {
 			gateName="Boulder"
 			gate={{
 				title: "Gate 1 · Boulder",
-				storage: { plan: "Free tier", used: 48, cap: 512 },
+				storage: { balanceKb: 48 },
 				track: { gates: ALL_SWATCHES, cleared: 1 },
 			}}
 			theme="boulder"
 			coverageDemand={20}
 			configs={configs.slice(0, 1)}
-			slots={[{ id: "slot-1" }]}
+			spots={4}
+			fits="crumb"
 			audits={[]}
 			bills={[]}
 			prefetch={undefined}
@@ -158,7 +175,7 @@ export const Elite: Story = {
 			gate={{
 				title: "Gate 11 · Elite",
 				audits: ["cost-overrun", "breaking-change"],
-				storage: { plan: "Pro plan", used: 612, cap: 768 },
+				storage: { balanceKb: 612 },
 				track: { gates: ALL_SWATCHES, cleared: 11 },
 			}}
 			coverageDemand={85}

@@ -13,20 +13,26 @@ const dealt: readonly DealtConfig[] = [
 	{
 		id: "ts",
 		label: ".ts",
-		summary: "Common · focus: typescript",
+		rarity: "bit",
+		spots: 1,
+		summary: "bit · focus: typescript",
 		explainer: "TypeScript polls pay 1.25× coverage.",
 		note: <Delta multiplier={1.25} />,
 	},
 	{
 		id: "intellisense",
 		label: "Intellisense",
-		summary: "Rare · all coverage",
+		rarity: "nibble",
+		spots: 4,
+		summary: "nibble · all coverage",
 		explainer: "All coverage earns ×1.5.",
 	},
 	{
 		id: "eslint",
 		label: "ESLint",
-		summary: "Common · JS/TS polls",
+		rarity: "bit",
+		spots: 1,
+		summary: "bit · JS/TS polls",
 		explainer: "Strikes out one wrong answer per gate.",
 	},
 ];
@@ -39,21 +45,15 @@ const props: StartScreenProps = {
 	dealtFrom: 30,
 	pickedIds: [],
 	onToggle: () => {},
-	slots: [
-		{ id: "slot-1" },
-		{ id: "slot-2" },
-		{ id: "slot-3" },
-		{ id: "slot-4", gate: 1 },
-	],
+	spots: 4,
+	fits: "nibble",
 	gateName: "Pallet",
-	gateNumber: 0,
-	gateCount: 12,
 	pollCount: 5,
 	coverageDemand: 3,
 	auditCount: 0,
 	streakCap: 2,
 	stake: { removeOnMiss: 1, coveragePerWrong: -0.3 },
-	reward: { coveragePerCorrect: 1, gateRewardKb: 32, slotOpens: 4 },
+	reward: { coveragePerCorrect: 1, gateRewardKb: 32 },
 };
 
 describe("StartScreen", () => {
@@ -80,22 +80,22 @@ describe("StartScreen", () => {
 		expect(screen.getByText(/3 dealt from 30/)).toBeInTheDocument();
 	});
 
-	it("counts the picks still owed on the button", () => {
-		render(<StartScreen {...props} onStart={() => {}} />);
+	it("asks for a pick while the pipeline is bare", () => {
+		render(<StartScreen {...props} onStart={() => {}} canStart={false} />);
 
 		expect(
-			screen.getByRole("button", { name: "Pick 3 to start" })
+			screen.getByRole("button", { name: "Pick a config to start" })
 		).toBeDisabled();
 	});
 
-	it("counts down as picks land", () => {
+	it("offers the start once the engine allows it, spots to spare or not", () => {
 		render(
-			<StartScreen {...props} pickedIds={["ts", "eslint"]} onStart={() => {}} />
+			<StartScreen {...props} pickedIds={["ts"]} onStart={() => {}} canStart />
 		);
 
 		expect(
-			screen.getByRole("button", { name: "Pick 1 to start" })
-		).toBeInTheDocument();
+			screen.getByRole("button", { name: "Start the run →" })
+		).toBeEnabled();
 	});
 
 	it("turns the button live once the last pick lands", () => {
@@ -132,20 +132,19 @@ describe("StartScreen", () => {
 	it("ticks a draft without striking it, since picking is not a sentence", () => {
 		render(<StartScreen {...props} pickedIds={["ts"]} />);
 
-		// Twice over: once on the deal, once in the pipeline it just filled.
 		screen
 			.getAllByText(".ts")
 			.forEach((node) => expect(node).not.toHaveClass("line-through"));
 	});
 
-	it("keeps the line to the name, its rarity and its figure", () => {
+	it("keeps the line to the name, its grade and its figure", () => {
 		render(<StartScreen {...props} />);
 
 		expect(screen.getByText("×1.25")).toBeInTheDocument();
-		expect(screen.getAllByText("common").length).toBeGreaterThan(0);
+		expect(screen.queryByText("common")).not.toBeInTheDocument();
 	});
 
-	it("folds the rarity and the full sentence under each config", () => {
+	it("folds the facts and the full sentence under each config", () => {
 		const { container } = render(<StartScreen {...props} />);
 		const row = Array.from(
 			container.querySelectorAll('details[class~="group/row"]')
@@ -154,10 +153,10 @@ describe("StartScreen", () => {
 		);
 
 		expect(row).not.toHaveAttribute("open");
-		expect(screen.getByText("Common · focus: typescript")).toBeInTheDocument();
+		expect(screen.getByText("bit · focus: typescript")).toBeInTheDocument();
 	});
 
-	it("ticks a config without folding it, and folds without ticking", async () => {
+	it("ticks a config without folding it", async () => {
 		const onToggle = vi.fn();
 		const { container } = render(
 			<StartScreen {...props} onToggle={onToggle} />
@@ -174,9 +173,6 @@ describe("StartScreen", () => {
 		expect(row.open).toBe(false);
 	});
 
-	// The card sells a playstyle, not a bill of materials: the deal underneath is
-	// where a config gets read, and listing three of them made the card the
-	// tallest thing on the screen.
 	it("sells a combo on its name and its playstyle, never on its contents", () => {
 		render(
 			<StartScreen
@@ -271,32 +267,85 @@ describe("StartScreen", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("stands the pipeline's slots empty until the picks land", () => {
-		render(<StartScreen {...props} />);
-
-		expect(screen.getByText("0 of 3")).toBeInTheDocument();
-		expect(screen.getAllByText("Not filled yet")).toHaveLength(3);
-		expect(screen.getByText("opens when gate 1 clears")).toBeInTheDocument();
-	});
-
-	it("fills a slot with each config picked, leaving the rest empty", () => {
+	it("draws the pipeline as room rather than listing it twice", () => {
 		render(<StartScreen {...props} pickedIds={["ts", "eslint"]} />);
 
-		expect(screen.getByText("2 of 3")).toBeInTheDocument();
-		expect(screen.getAllByText("Not filled yet")).toHaveLength(1);
+		expect(screen.getByText("2 of 4 spots")).toBeInTheDocument();
+		expect(screen.queryByText("Not filled yet")).not.toBeInTheDocument();
 		expect(screen.getAllByText(".ts")).toHaveLength(2);
 		expect(screen.getAllByText("ESLint")).toHaveLength(2);
 	});
 
-	it("takes the number of picks from the slots, not from a second count", () => {
+	it("charges a pick its spots, not one cell each", () => {
+		render(<StartScreen {...props} pickedIds={["intellisense"]} />);
+
+		expect(screen.getByText("4 of 4 spots")).toBeInTheDocument();
+		expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "4");
+	});
+
+	it("takes the width from the capacity it is given, not from a row count", () => {
+		render(<StartScreen {...props} spots={1} fits="bit" />);
+
+		expect(screen.getByText("0 of 1 spots")).toBeInTheDocument();
+	});
+
+	it("refuses a config the pipeline has no room for", () => {
+		render(
+			<StartScreen {...props} pickedIds={["ts", "eslint"]} fits="crumb" />
+		);
+
+		expect(
+			screen.getByRole("checkbox", { name: /Intellisense/ })
+		).toBeDisabled();
+		expect(screen.queryByText(/needs a/)).not.toBeInTheDocument();
+	});
+
+	it("leaves a config that still fits tickable", () => {
+		render(<StartScreen {...props} />);
+
+		expect(
+			screen.getByRole("checkbox", { name: /Intellisense/ })
+		).not.toBeDisabled();
+	});
+
+	it("draws each grade as a run of cells, and names it", () => {
+		render(<StartScreen {...props} />);
+
+		const nibble = screen.getByText("Intellisense").closest("li");
+		const bit = screen.getByText(".ts").closest("li");
+
+		expect(nibble?.querySelectorAll('span[class*="size-1.5"]')).toHaveLength(4);
+		expect(bit?.querySelectorAll('span[class*="size-1.5"]')).toHaveLength(1);
+		expect(screen.getAllByText("bit")).toHaveLength(2);
+		expect(screen.getByText("nibble")).toBeInTheDocument();
+	});
+
+	it("states the shape a starter stack would make", () => {
 		render(
 			<StartScreen
 				{...props}
-				slots={[{ id: "only" }, { id: "later", gate: 1 }]}
+				combos={[
+					{
+						id: "safe",
+						name: "Safe start",
+						blurb: "Safer JS/TS focus.",
+						shape: "three bits · 1 spare",
+						onTake: () => {},
+					},
+				]}
 			/>
 		);
 
-		expect(screen.getByText("0 of 1")).toBeInTheDocument();
+		expect(screen.getByText("three bits · 1 spare")).toBeInTheDocument();
+	});
+
+	it("draws the pipeline as room and names what still fits", () => {
+		render(<StartScreen {...props} pickedIds={["ts"]} />);
+
+		expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "1");
+		expect(
+			screen.getByText("3 spots free · a nibble fits")
+		).toBeInTheDocument();
 	});
 
 	it("states the gate's ask, calling no audits none rather than zero", () => {
@@ -307,10 +356,19 @@ describe("StartScreen", () => {
 		expect(screen.getByText("none")).toBeInTheDocument();
 	});
 
-	// The peel is the one cost on this panel that is a loss, so it wears the
-	// losing colour rather than sitting in the same grey as the demands.
-	// The build is chosen against this panel, so it is the one section here that
-	// cannot be folded away.
+	it("names the gate without placing it in the run", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.queryByText(/^\d+ \/ \d+$/)).not.toBeInTheDocument();
+	});
+
+	it("states what a grade costs against the current width, on hover", () => {
+		render(<StartScreen {...props} />);
+
+		expect(screen.getByText("takes 4 of 4 spots")).toBeInTheDocument();
+		expect(screen.getAllByText("takes 1 of 4 spots")).toHaveLength(2);
+	});
+
 	it("badges the peel in red, on a stake that cannot be folded away", () => {
 		const { container } = render(<StartScreen {...props} />);
 		const folded = Array.from(container.querySelectorAll("details")).find(
@@ -318,14 +376,11 @@ describe("StartScreen", () => {
 		);
 
 		expect(folded).toBeUndefined();
-		// Chip tints the wrapper, not the Text it nests inside.
 		expect(screen.getByText(/remove 1 config/).parentElement).toHaveClass(
 			"text-cinnabar"
 		);
 	});
 
-	// The rewards panel prices a correct answer and said nothing about a wrong
-	// one, so the only number a player could plan against was the upside.
 	it("prices a wrong answer, which the rewards panel never states", () => {
 		render(<StartScreen {...props} />);
 
@@ -353,34 +408,22 @@ describe("StartScreen", () => {
 		expect(screen.getByText("+32 KB").parentElement).toHaveClass(
 			"bg-celadon/15"
 		);
-		expect(screen.getByText("opens").parentElement).toHaveClass(
-			"bg-celadon/15"
-		);
 	});
 
 	it("leaves the swatch dashed, since the gate has not handed it over", () => {
 		render(<StartScreen {...props} />);
 
-		// The label and the badge are siblings under the row, not parent and child,
-		// so the assertion has to climb to the list item that holds both.
 		const row = screen.getByText("Pallet Swatch").closest("li");
 
 		expect(row?.querySelector(".border-dashed")).toBeInTheDocument();
 	});
 
-	it("drops the slot reward on a gate that opens none", () => {
-		render(
-			<StartScreen
-				{...props}
-				reward={{ coveragePerCorrect: 1, gateRewardKb: 32 }}
-			/>
-		);
+	it("promises no widening among the clear rewards", () => {
+		render(<StartScreen {...props} />);
 
-		expect(screen.queryByText("opens")).not.toBeInTheDocument();
+		expect(screen.queryByText(/pipeline widens/)).not.toBeInTheDocument();
 	});
 
-	// The engine offers three openings, and the name is what a player picks
-	// between — reducing them to one nameless suggestion threw both away.
 	it("offers every curated opening, each by its own name", () => {
 		render(
 			<StartScreen
@@ -463,7 +506,6 @@ describe("StartScreen", () => {
 		expect(onTakeSecond).toHaveBeenCalledOnce();
 	});
 
-	// A run with no seed and nothing banked should say less, not make numbers up.
 	it("drops the seed and the archive when the run has neither", () => {
 		render(<StartScreen {...props} seed={undefined} archive={undefined} />);
 

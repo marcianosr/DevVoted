@@ -3,14 +3,12 @@ import type { ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { type Rarity } from "./rarity";
-import { RarityStripe } from "./RarityStripe.ui";
+import { RarityGlyph } from "./RarityGlyph.ui";
 import { Text } from "./Text.ui";
 
 const CHIP = "inline-flex shrink-0 items-center";
-// The stripe grades the name it precedes, the way it does on a row.
-const KEYED = "gap-2";
+const KEYED = "gap-1";
 
-/** A badge is a figure, and a figure is read before the prose around it. */
 const FIGURE = "font-bold";
 
 const OUTLINE = "border";
@@ -43,8 +41,6 @@ const TINT = {
 	raised: "bg-surface-raised text-zinc-100",
 } satisfies Record<ChipTone, string>;
 
-/** The rail's chip grammar: an outlined chip is what a thing WOULD do, a
- * filled one is what it DID. Same tones, no fill. */
 const OUTLINE_TINT = {
 	theme: "border-theme/50 text-theme",
 	cerulean: "border-cerulean/50 text-cerulean",
@@ -86,14 +82,10 @@ export const Chip = (props: ChipProps) => {
 		);
 	}
 
-	// A config's chip is the same filled chip as its plain siblings, keyed by
-	// the rarity stripe rather than by a coloured ring: in the equation the
-	// chips read as one row of factors, and the stripe is the only thing
-	// tying a factor back to the rail row it came from.
 	const { size = "sm" } = props;
 	return (
 		<span className={clsx(CHIP, KEYED, SIZE[size], TINT.raised)}>
-			<RarityStripe rarity={props.rarity} />
+			{size === "lg" ? <RarityGlyph rarity={props.rarity} /> : null}
 			<Text size={size === "lg" ? "body" : "meta"} className={FIGURE}>
 				{props.children}
 			</Text>
@@ -101,20 +93,12 @@ export const Chip = (props: ChipProps) => {
 	);
 };
 
-/** Signs and multipliers only. A bare integer stays prose: "1 in 4 gate clears"
- * counts gates, and chipping the 1 would badge the wrong half of the odds. */
 const FIGURE_TOKEN =
 	/(\d+(?:\.\d+)?×|×\d+(?:\.\d+)?|[+−-]\d+(?:\.\d+)?(?:%|\s?KB)?)/;
 
 const figureTone = (token: string): ChipTone =>
 	token.startsWith("−") || token.startsWith("-") ? "cinnabar" : "celadon";
 
-/**
- * A sentence with its figures chipped, so the number in the prose and the badge
- * at the end of the row are recognisably the same fact. Colour follows Delta's
- * rule rather than a second one: a multiplier is celadon, a signed figure takes
- * the colour of its sign.
- */
 export const chipFigures = (text: string): ReactNode =>
 	text.split(FIGURE_TOKEN).map((part, index) =>
 		index % 2 === 0 ? (

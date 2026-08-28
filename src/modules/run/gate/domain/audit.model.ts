@@ -1,71 +1,29 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { failStripsFor } from "~/modules/run/run/domain/rules.model";
+import { failPeelShareFor } from "~/modules/run/run/domain/rules.model";
+
+const asPercent = (share: number): string => `${Math.round(share * 100)}%`;
 import { selectSeededRandom } from "~/shared/lib/seededRandom";
 
-/**
- * An audit is a gate's fixed rule (ADR-035, roster in ADR-038): stated on the
- * stake receipt, applied by the reducer, never rolled. Gates 0–2 are always
- * clean, one audit runs from gate 3, two from gate 8, three from gate 11 — the
- * count is the escalation, and it steps where the peel's does.
- *
- * Every field is data, folded by the helpers below, so a new audit is a roster
- * entry rather than a branch in the reducer.
- */
 export type Audit = {
 	readonly id: string;
 	readonly name: string;
-	/** The stake receipt's sentence — what this gate does differently. */
 	readonly description: string;
-	/** The catalogue's sentence, for the audits whose numbers change from gate to
-	 * gate. Timeout and Strip state this gate's figures in `description`, which
-	 * reads as a lie in a Dex row that covers three gates at once. */
 	readonly dexRule?: string;
-	/** The answering screen's persistent banner; present when the rule changes
-	 * how a poll should be played, not just what it costs. */
 	readonly answerCue?: string;
-	/** Transforms the answer's raw share before multipliers, which inverts the
-	 * bleed for free: a share of 0 scores nothing and bleeds. */
 	readonly scoreShare?: (share: number) => number;
-	/** Flips the poll itself: every option's correctness inverts, so the question
-	 * becomes "pick every INCORRECT option" (ADR-038). Graded normally after
-	 * that, which is why it needs no `scoreShare` and no demand discount. */
 	readonly mirrorsPolls?: boolean;
-	/** KB burned as each poll resolves; `wrong` lands on a full miss. */
 	readonly burnKb?: { readonly base: number; readonly wrong: number };
-	/** Configs stripped on top of the gate's own peel row when its attempt fails
-	 * (ADR-037) — how a deep gate bites harder than the table already does. */
-	readonly stripQuotaOnFail?: number;
-	/** Scales the gate's demand where the audit suppresses normal earning
-	 * (mirrored answers forfeit their streak bonuses). */
+	readonly peelShareOnFail?: number;
 	readonly demandFactor?: number;
-	/** Multiplies what the paid actions charge (lint, peek) inside this gate. */
 	readonly feeMultiplier?: number;
-	/** Takes the paid actions away entirely — the buttons stop existing. */
 	readonly freezesManualEffects?: boolean;
-	/** Shuts the shop that precedes this gate: nothing may be bought or sold. */
 	readonly closesShop?: boolean;
-	/** How this audit takes configs offline — the four flavours differ only in
-	 * which config they pick and how often (`offlineConfigsFor`). */
 	readonly disablesConfig?: OfflinePick;
-	/** The window's first `count` polls must be answered inside `limitMs`. */
 	readonly timedPolls?: { readonly count: number; readonly limitMs: number };
 };
 
-/**
- * Which config an audit takes offline, and for how long. Same effect at the
- * scoring end — the config contributes nothing — so the whole family is one
- * fold; only the pick differs, and that is the entire personality of each.
- */
 export type OfflinePick =
-	/** One config, chosen once, down for the whole attempt (Dependency Outage). */
-	| "one-per-attempt"
-	/** A fresh roll every poll — it can hit the same config twice (Flaky Build). */
-	| "random-per-poll"
-	/** Steps through the pipeline, a different config every poll (Rolling Outage). */
-	| "rotating-per-poll"
-	/** The one you invested most in (Breaking Change). No roll: it is a
-	 * punishment for having a favourite. */
-	| "highest-level";
+	"one-per-attempt" | "random-per-poll" | "rotating-per-poll" | "highest-level";
 
 const MIRROR: Audit = {
 	id: "mirrored",
@@ -74,10 +32,6 @@ const MIRROR: Audit = {
 		"Every poll asks for the INCORRECT options instead — pick all of them.",
 	answerCue:
 		"Mirrored: pick every WRONG option. A single-answer poll usually has several.",
-	// The poll is flipped rather than the score, so a mirrored answer is graded
-	// like any other: streaks build, partials pay, and the gate charges its full
-	// demand. The old score-inverting mirror needed a 0.5 discount because
-	// streakless play could not reach the row; this one does not.
 	mirrorsPolls: true,
 };
 
@@ -146,9 +100,6 @@ const ROLLING_OUTAGE: Audit = {
 	disablesConfig: "rotating-per-poll",
 };
 
-// Renamed from "Deprecated" (2026-08-20): that name now belongs to the config
-// whose mechanic actually is deprecation — works, fades, removed. This audit
-// is a breakage, and it hits the config at the highest version on purpose.
 const BREAKING_CHANGE: Audit = {
 	id: "breaking-change",
 	name: "Breaking Change",
@@ -159,7 +110,6 @@ const BREAKING_CHANGE: Audit = {
 	disablesConfig: "highest-level",
 };
 
-/** Seconds, not milliseconds, in the copy the player reads. */
 const timeoutAudit = (count: number, seconds: number): Audit => ({
 	id: `timeout-${count}`,
 	name: "Timeout",
@@ -170,44 +120,31 @@ const timeoutAudit = (count: number, seconds: number): Audit => ({
 	timedPolls: { count, limitMs: seconds * 1000 },
 });
 
-/** Takes its own gate so the receipt can state the total, not the surcharge. */
 const stripAudit = (gate: number, extra: number): Audit => ({
-	id: `strip-${extra}`,
+	id: `strip-${Math.round(extra * 100)}`,
 	name: "Strip",
-	description: `Failing this gate peels ${failStripsFor(gate) + extra} configs instead of ${failStripsFor(gate)} — a build it can empty ends the run here.`,
+	description: `Failing this gate peels ${asPercent(failPeelShareFor(gate) + extra)} of your pipeline instead of ${asPercent(failPeelShareFor(gate))} — a build it can empty ends the run here.`,
 	dexRule:
-		"Failing this gate peels extra configs on top of its own row. A build it can empty ends the run there.",
-	stripQuotaOnFail: extra,
+		"Failing this gate peels a bigger share of the pipeline than its own row. A build it can empty ends the run there.",
+	peelShareOnFail: extra,
 });
 
-/**
- * The roster (ADR-038). Order matters twice: the receipt reads top to bottom,
- * and Volkswagen CI reports the first one as passing — so the entry a player
- * would most want suppressed leads at the gates where that choice is the point.
- */
 export const GATE_AUDITS: Readonly<Record<number, readonly Audit[]>> = {
-	3: [COST_OVERRUN], // Thunder
-	4: [DEPENDENCY_OUTAGE], // Lavender
-	// Read-only only ever sits on an odd gate: the storage rungs unlock on even
-	// ones (ADR-030), and shutting the shop the gate a rung arrives at would
-	// unlock something the player cannot buy until the gate after it.
-	5: [READ_ONLY], // Rainbow
-	6: [FEATURE_FREEZE], // Soul
-	7: [MIRROR], // Marsh
-	8: [timeoutAudit(3, 30), FLAKY_BUILD], // Seafoam
-	9: [MEMORY_LEAK, ROLLING_OUTAGE], // Volcano
-	10: [BREAKING_CHANGE, timeoutAudit(4, 25)], // Earth
-	11: [stripAudit(11, 1), MIRROR, FLAKY_BUILD], // Elite
-	12: [MEMORY_LEAK, stripAudit(12, 2), timeoutAudit(5, 20)], // Champion
+	3: [COST_OVERRUN],
+	4: [DEPENDENCY_OUTAGE],
+	5: [READ_ONLY],
+	6: [FEATURE_FREEZE],
+	7: [MIRROR],
+	8: [timeoutAudit(3, 30), FLAKY_BUILD],
+	9: [MEMORY_LEAK, ROLLING_OUTAGE],
+	10: [BREAKING_CHANGE, timeoutAudit(4, 25)],
+	11: [stripAudit(11, 0.1), MIRROR, FLAKY_BUILD],
+	12: [MEMORY_LEAK, stripAudit(12, 0.15), timeoutAudit(5, 20)],
 };
 
 export const auditsForGate = (gate: number): readonly Audit[] =>
 	GATE_AUDITS[gate] ?? [];
 
-/**
- * The first audited gate at or beyond `gate`, with its leading audit — what a
- * clean gate's receipt foreshadows instead of going silent.
- */
 export const nextAuditedGateFrom = (
 	gate: number
 ): { readonly gate: number; readonly audit: Audit } | undefined => {
@@ -223,18 +160,12 @@ export const nextAuditedGateFrom = (
 const suppressorOf = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.suppressesAudit === true);
 
-/** The audit Volkswagen CI reports as passing — always the gate's first. */
 export const suppressedAuditFor = (
 	configs: readonly Config[],
 	gate: number
 ): Audit | undefined =>
 	suppressorOf(configs) ? auditsForGate(gate)[0] : undefined;
 
-/**
- * The audits actually in force: the defeat device drops the gate's first one
- * (ADR-028 repurposed). Dropping MIRROR also drops its demand discount —
- * cheating the mirror means paying the full demand.
- */
 export const liveAuditsFor = (
 	configs: readonly Config[],
 	gate: number
@@ -258,14 +189,12 @@ export const auditBurnKb = (audits: readonly Audit[], wrong: boolean): number =>
 		0
 	);
 
-/** What the audits add to the base peel — `failStripQuotaFor` owns the total. */
-export const auditExtraStrips = (audits: readonly Audit[]): number =>
-	audits.reduce((sum, audit) => sum + (audit.stripQuotaOnFail ?? 0), 0);
+export const auditExtraPeelShare = (audits: readonly Audit[]): number =>
+	audits.reduce((sum, audit) => sum + (audit.peelShareOnFail ?? 0), 0);
 
 export const auditDemandFactor = (audits: readonly Audit[]): number =>
 	audits.reduce((factor, audit) => factor * (audit.demandFactor ?? 1), 1);
 
-/** Stacked overruns multiply, so a future ×2 and ×3 gate would charge ×6. */
 export const auditFeeMultiplier = (audits: readonly Audit[]): number =>
 	audits.reduce((factor, audit) => factor * (audit.feeMultiplier ?? 1), 1);
 
@@ -275,11 +204,6 @@ export const auditsFreezeManualEffects = (audits: readonly Audit[]): boolean =>
 export const auditsCloseShop = (audits: readonly Audit[]): boolean =>
 	audits.some((audit) => audit.closesShop === true);
 
-/**
- * The clock on the poll at `answeredBefore`, or undefined when it runs free.
- * Stacked timeouts take the tightest of each half rather than the first one
- * found, so adding a second can only ever make a gate stricter.
- */
 export const auditTimeLimitMs = (
 	audits: readonly Audit[],
 	answeredBefore: number
@@ -290,16 +214,6 @@ export const auditTimeLimitMs = (
 		return limit === undefined ? timed.limitMs : Math.min(limit, timed.limitMs);
 	}, undefined);
 
-/**
- * Every config an audit has taken offline for the poll about to be answered
- * (ADR-038). Derived, never stored: the seeds are the window's own start index
- * and the poll's place in it, so a pick is stable for as long as it should last,
- * different on the next attempt, and identical after a reload — with no
- * migration and no chance of drifting from a rehydrated window.
- *
- * Sorted by id first, so every flavour answers to which configs are installed
- * rather than to the order they were bought in.
- */
 export const offlineConfigsFor = (
 	configs: readonly Config[],
 	audits: readonly Audit[],
@@ -312,7 +226,6 @@ export const offlineConfigsFor = (
 		windowStart,
 		answeredThisWindow
 	);
-	// Two audits can land on the same config; the set is what scoring subtracts.
 	return sortedById(configs).filter((config) =>
 		down.some((pair) => pair.config.id === config.id)
 	);
@@ -323,11 +236,6 @@ const sortedById = (configs: readonly Config[]): readonly Config[] =>
 
 export type OfflinePair = { readonly config: Config; readonly audit: Audit };
 
-/**
- * The same switch-off, read as which audit threw it: scoring only needs the
- * configs, but a rail that cannot name the culprit shows the player a dead row
- * and no reason for it. One derivation, two readings — never two derivations.
- */
 export const offlinePairsFor = (
 	configs: readonly Config[],
 	audits: readonly Audit[],
@@ -362,18 +270,10 @@ const pickOffline = (
 			) ?? undefined
 		);
 	if (pick === "rotating-per-poll")
-		// Offset by the window, so a retry does not replay the same rotation.
 		return sorted[(windowStart + answeredThisWindow) % sorted.length];
 	return highestLevel(sorted, windowStart);
 };
 
-/**
- * Breaking Change's pick: the config levelled furthest, and a seeded random
- * among the ones tied for it. Ties are the common case — most builds have
- * nothing upgraded — and taking "the first" there would quietly always mean
- * the same config, which is a preference the receipt never stated and the
- * player cannot see.
- */
 const highestLevel = (
 	sorted: readonly Config[],
 	windowStart: number

@@ -10,8 +10,9 @@ import { PrepView, type PrepViewProps } from "./PrepView.component";
 const view = createMockRunView({
 	gatesCleared: 4,
 	configs: [CONFIGS.js, CONFIGS.ts],
-	slots: 4,
-	nextSlotUnlock: { slot: 7, gate: 6 },
+	spots: 4,
+	spotsUsed: 2,
+	spotsFree: 2,
 	storage: 184,
 	gateStake: createMockGateStake({ gateNumber: 4, coverageDemand: 60 }),
 });
@@ -36,36 +37,25 @@ describe("PrepView", () => {
 		).toBeInTheDocument();
 	});
 
-	// PrepScreen reads the width off configs + slots, so the rows have to be
-	// exactly what the run holds or the header overstates the build.
-	it("counts the build against the width the gate grants", () => {
+	it("counts the build in spots against the width the gate grants", () => {
 		render_();
 
-		expect(screen.getByText("2 / 4")).toBeInTheDocument();
+		expect(screen.getByText("2 of 4 spots")).toBeInTheDocument();
 	});
 
-	it("shows room to fill rather than the next gate while there is any", () => {
+	it("lists no empty rows beside the build", () => {
 		render_();
 
-		expect(screen.queryByText(/opens when gate/)).not.toBeInTheDocument();
+		expect(screen.queryByText("Not filled yet")).not.toBeInTheDocument();
 	});
 
-	// The promised slot sits beside the count, never inside it: a build at its cap
-	// reads full, and the gate that widens it is the note next to that.
-	it("points at the next slot once the build is at the granted cap", () => {
-		render_({ view: createMockRunView({ ...view, slots: 2 }) });
+	it("names the ways out once the build fills every spot", () => {
+		render_({ view: createMockRunView({ ...view, spots: 2, spotsFree: 0 }) });
 
-		expect(screen.getByText("2 / 2")).toBeInTheDocument();
-		expect(screen.getByText("opens when gate 6 clears")).toBeInTheDocument();
-	});
-
-	it("stops promising slots at the cap, where none are left to grant", () => {
-		render_({
-			view: createMockRunView({ ...view, slots: 2, nextSlotUnlock: null }),
-		});
-
-		expect(screen.getByText("2 / 2")).toBeInTheDocument();
-		expect(screen.queryByText(/opens when gate/)).not.toBeInTheDocument();
+		expect(screen.getByText("2 of 2 spots")).toBeInTheDocument();
+		expect(
+			screen.getByText("full · minify or uninstall to make room")
+		).toBeInTheDocument();
 	});
 
 	it("states what the gate asks of the attempt", () => {
@@ -76,7 +66,6 @@ describe("PrepView", () => {
 		).toBeInTheDocument();
 	});
 
-	// The plan bills on every attempt; a config subscription waits for a clear.
 	it("qualifies the bill that waits for the clear, and only that one", () => {
 		render_({
 			view: createMockRunView({
@@ -201,7 +190,6 @@ describe("PrepView", () => {
 		expect(onCommunity).toHaveBeenCalledOnce();
 	});
 
-	// Today's polls are spent, so the gate cannot be attempted until tomorrow.
 	it("shuts the gate behind the window when the polls run out", () => {
 		render_({ view: createMockRunView({ ...view, pollsExhausted: true }) });
 
@@ -213,7 +201,6 @@ describe("PrepView", () => {
 	it("badges each installed config's headline figure", () => {
 		render_();
 
-		// .js and .ts are both focus configs at v1.
 		expect(screen.getAllByText("×1.25")).toHaveLength(2);
 	});
 });

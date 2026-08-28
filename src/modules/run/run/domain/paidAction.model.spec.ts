@@ -94,7 +94,7 @@ describe("the lint fee", () => {
 	// it was climbing comes back down with it.
 	it("resets the ladder for a redo, not only for a clear", () => {
 		let state = failGate(lintableRun());
-		while (state.stripsRemaining > 0)
+		while (state.peelSpotsRemaining > 0)
 			state = runReducer(state, {
 				type: "strip",
 				// Never the linter: peeling it would answer a different question.

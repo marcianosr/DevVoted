@@ -3,7 +3,7 @@ import { getCategoryMetadata } from "~/shared/lib/categories";
 
 export type ConfigFamily = "focus" | "defense" | "risk" | "amplify" | "economy";
 
-export type Rarity = "common" | "uncommon" | "rare" | "legendary";
+export type Rarity = "bit" | "crumb" | "nibble" | "byte";
 
 export type Config = {
 	readonly id: string;
@@ -18,8 +18,6 @@ export type Config = {
 	readonly eliminatesWrongOptionsFor?: readonly CategoryCode[];
 	readonly coverageMultiplier?: number;
 	readonly coverageAdd?: number;
-	/** Extra steps of streak headroom, on top of the base ten. Raises the
-	 * ceiling; the per-step bonus itself is a rule, not a config's to sell. */
 	readonly streakCapSteps?: number;
 	readonly level?: number;
 	readonly maxLevel?: number;
@@ -35,19 +33,29 @@ export type Config = {
 	readonly coverageDecayPerClear?: number;
 	readonly offersFullRoster?: boolean;
 	readonly revealsUpcomingCategories?: boolean;
-	/** `.length`: states how many correct answers the gate's polls hold. Pure
-	 * information — it moves no coverage and pays no KB. */
 	readonly revealsCorrectCount?: boolean;
 	readonly draftCostFactor?: number;
 	readonly subscriptionKb?: number;
 	readonly subscriptionGrowthPerGate?: number;
 	readonly draftCost?: number;
+	readonly minified?: boolean;
 };
 
-export const rarityOf = (config: Config): Rarity => config.rarity ?? "common";
+export const rarityOf = (config: Config): Rarity => config.rarity ?? "bit";
+
+export const minifiedMultiplier = (
+	config: Config,
+	multiplier: number
+): number => (config.minified === true ? 1 + (multiplier - 1) / 2 : multiplier);
+
+export const minifiedAmount = (config: Config, amount: number): number =>
+	config.minified === true ? Math.floor(amount / 2) : amount;
 
 export const focusCoverageMultiplier = (level: number): number =>
 	1 + 0.25 * level;
+
+export const focusMultiplierOf = (config: Config): number =>
+	minifiedMultiplier(config, focusCoverageMultiplier(config.level ?? 1));
 
 export const upgradeCoverageRequired = (currentLevel: number): number =>
 	currentLevel * 5;
@@ -57,11 +65,94 @@ const UPGRADE_STORAGE_STEP_KB = 32;
 export const upgradeStorageCost = (currentLevel: number): number =>
 	UPGRADE_STORAGE_STEP_KB * (currentLevel + 1);
 
+export const RARITY_WEIGHT: Record<Rarity, number> = {
+	bit: 60,
+	crumb: 25,
+	nibble: 12,
+	byte: 3,
+};
+
+export const RARITY_ODDS: Record<Rarity, string> = {
+	bit: "1 in 2",
+	crumb: "1 in 4",
+	nibble: "1 in 8",
+	byte: "1 in 33",
+};
+
+export const SPOTS_PER_GRADE: Record<Rarity, number> = {
+	bit: 1,
+	crumb: 2,
+	nibble: 4,
+	byte: 8,
+};
+
+export const baseSpotsOf = (config: Config): number =>
+	SPOTS_PER_GRADE[rarityOf(config)];
+
+const COUNT_WORDS = [
+	"no",
+	"one",
+	"two",
+	"three",
+	"four",
+	"five",
+	"six",
+	"seven",
+	"eight",
+] as const;
+
+const countWord = (count: number): string =>
+	count < COUNT_WORDS.length ? COUNT_WORDS[count] : String(count);
+
+const gradeGroupName = (grade: Rarity, count: number): string =>
+	count === 1 ? `a ${grade}` : `${countWord(count)} ${grade}s`;
+
+export const shapeOf = (configs: readonly Config[]): string => {
+	const groups = GRADES_BY_SIZE.map((grade) => ({
+		grade,
+		count: configs.filter((config) => rarityOf(config) === grade).length,
+	})).filter((group) => group.count > 0);
+
+	if (groups.length === 0) return "nothing";
+
+	const named = groups.map((group) => gradeGroupName(group.grade, group.count));
+	const last = named[named.length - 1];
+	return named.length === 1
+		? last
+		: `${named.slice(0, -1).join(", ")} and ${last}`;
+};
+
+export const spotsOf = (config: Config): number =>
+	config.minified === true
+		? Math.floor(baseSpotsOf(config) / 2)
+		: baseSpotsOf(config);
+
+export const canMinify = (config: Config): boolean =>
+	config.minified !== true && baseSpotsOf(config) >= 2;
+
+export const minify = (config: Config): Config => ({
+	...config,
+	minified: true,
+});
+
+export const minifySavingSpots = (config: Config): number =>
+	canMinify(config) ? spotsOf(config) - Math.floor(spotsOf(config) / 2) : 0;
+
+export const largestGradeFitting = (spots: number): Rarity | null =>
+	[...GRADES_BY_SIZE].find((grade) => SPOTS_PER_GRADE[grade] <= spots) ?? null;
+
+const GRADES_BY_SIZE = [
+	"byte",
+	"nibble",
+	"crumb",
+	"bit",
+] as const satisfies readonly Rarity[];
+
 const DRAFT_COST: Record<Rarity, number> = {
-	common: 32,
-	uncommon: 64,
-	rare: 128,
-	legendary: 256,
+	bit: 32,
+	crumb: 64,
+	nibble: 128,
+	byte: 256,
 };
 
 export const draftCost = (config: Config): number =>
@@ -103,10 +194,17 @@ export const showsSampleSize = (config: Config): boolean =>
 	(config.level ?? 1) >= SAMPLE_SIZE_LEVEL;
 
 export const interestPctOf = (config: Config): number =>
-	(config.storageInterestPct ?? 0) * (config.level ?? 1);
+	minifiedAmount(
+		config,
+		(config.storageInterestPct ?? 0) * (config.level ?? 1)
+	);
+
+export const storageOnClearOf = (config: Config): number | undefined =>
+	config.storageOnClear === undefined
+		? undefined
+		: minifiedAmount(config, config.storageOnClear * (config.level ?? 1));
 
 export const describeConfig = (config: Config): string => {
-	// Reads the live multiplier, not the roster's: the chip must fade with it.
 	if (config.coverageDecayPerClear !== undefined)
 		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. Deleted at ×1.`;
 	if (config.autoUpgradeOneIn !== undefined)
@@ -117,61 +215,57 @@ export const describeConfig = (config: Config): string => {
 			: "Pay a doubling fee to see how the community answered this poll.";
 	if (config.storageInterestPct !== undefined)
 		return `+${interestPctOf(config)}% of held storage on gate clear.`;
-	if (config.storageOnClear !== undefined) {
-		const payout = config.storageOnClear * (config.level ?? 1);
-		return `+${payout}KB storage on gate clear.`;
-	}
+	if (config.storageOnClear !== undefined)
+		return `+${storageOnClearOf(config)}KB storage on gate clear.`;
 	if (!config.focusCategory) return config.description;
 	const name = getCategoryMetadata(config.focusCategory).name;
-	const level = config.level ?? 1;
-	return `${name} polls earn ${focusCoverageMultiplier(level)}× coverage.`;
+	return `${name} polls earn ${focusMultiplierOf(config)}× coverage.`;
 };
 
-/**
- * The one figure a config leads with, as data rather than prose. `describeOf`
- * already states it in a sentence; a badge needs the number on its own, and
- * parsing it back out of the sentence would drift the first time the copy
- * changed. Order follows what the description leads with.
- */
 export type ConfigFigure =
 	| { readonly kind: "multiplier"; readonly value: number }
 	| { readonly kind: "coverage"; readonly value: number }
 	| { readonly kind: "kb"; readonly value: number }
-	/** A percentage of something the config holds, never of coverage. */
 	| { readonly kind: "percent"; readonly value: number }
 	| { readonly kind: "chance"; readonly oneIn: number };
 
 export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
 	if (config.focusCategory)
+		return { kind: "multiplier", value: focusMultiplierOf(config) };
+	if (config.coverageMultiplier !== undefined)
 		return {
 			kind: "multiplier",
-			value: focusCoverageMultiplier(config.level ?? 1),
+			value: minifiedMultiplier(config, config.coverageMultiplier),
 		};
-	if (config.coverageMultiplier !== undefined)
-		return { kind: "multiplier", value: config.coverageMultiplier };
 	if (config.coverageAdd !== undefined)
-		return { kind: "coverage", value: config.coverageAdd };
+		return {
+			kind: "coverage",
+			value: minifiedAmount(config, config.coverageAdd),
+		};
 	if (config.storagePerCorrect !== undefined)
-		return { kind: "kb", value: config.storagePerCorrect };
-	if (config.storageOnClear !== undefined)
-		return { kind: "kb", value: config.storageOnClear * (config.level ?? 1) };
+		return {
+			kind: "kb",
+			value: minifiedAmount(config, config.storagePerCorrect),
+		};
+	const onClear = storageOnClearOf(config);
+	if (onClear !== undefined) return { kind: "kb", value: onClear };
 
-	// Below here the figure is real but conditional, so it ranks under any flat
-	// rate above: a config holding both leads with the rate it always pays.
 	if (config.openerCoverageMultiplier !== undefined)
-		return { kind: "multiplier", value: config.openerCoverageMultiplier };
+		return {
+			kind: "multiplier",
+			value: minifiedMultiplier(config, config.openerCoverageMultiplier),
+		};
 	if (config.storagePerExtraPick !== undefined)
-		return { kind: "kb", value: config.storagePerExtraPick };
+		return {
+			kind: "kb",
+			value: minifiedAmount(config, config.storagePerExtraPick),
+		};
 	if (config.storageInterestPct !== undefined)
 		return { kind: "percent", value: interestPctOf(config) };
-	if (config.draftCostFactor !== undefined)
-		return { kind: "multiplier", value: config.draftCostFactor };
 
 	const oneIn = autoUpgradeOneInOf(config);
 	if (oneIn !== undefined) return { kind: "chance", oneIn };
 
-	// What is left is a switch, not a rate: crossing out an option, reading the
-	// split, suppressing an audit. There is no number to withhold.
 	return undefined;
 };
 
@@ -186,16 +280,16 @@ export const givesOf = (config: Config): string | undefined => {
 			: "See how the community answered this poll";
 	if (config.storageInterestPct !== undefined)
 		return `+${interestPctOf(config)}% of held storage on clear`;
-	if (config.storageOnClear !== undefined) {
-		const payout = config.storageOnClear * (config.level ?? 1);
-		return `+${payout}KB on clear`;
-	}
+	if (config.storageOnClear !== undefined)
+		return `+${storageOnClearOf(config)}KB on clear`;
 	if (!config.focusCategory) return config.gives;
 	const name = getCategoryMetadata(config.focusCategory).name;
-	const multiplier = focusCoverageMultiplier(config.level ?? 1);
-	return `${name} polls reward ×${multiplier} coverage`;
+	return `${name} polls reward ×${focusMultiplierOf(config)} coverage`;
 };
 
-/** The faucet: KB a build pays out per correct answer. */ export const faucetKbPerCorrect =
-	(configs: readonly Config[]): number =>
-		configs.reduce((sum, config) => sum + (config.storagePerCorrect ?? 0), 0);
+export const faucetKbPerCorrect = (configs: readonly Config[]): number =>
+	configs.reduce(
+		(sum, config) =>
+			sum + minifiedAmount(config, config.storagePerCorrect ?? 0),
+		0
+	);

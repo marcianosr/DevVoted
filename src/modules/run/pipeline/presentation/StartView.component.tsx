@@ -1,27 +1,28 @@
 import {
 	type Config,
 	headlineFigureOf,
+	largestGradeFitting,
 	rarityOf,
+	shapeOf,
+	spotsOf,
 } from "~/modules/run/config/domain/config.model";
+import { MAX_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import { GATE_COUNT } from "~/modules/run/run/domain/rules.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	StartScreen,
 	type DealtConfig,
 	type StartCombo,
-	type StartSlot,
 } from "~/ui/modern-theme/screens/StartScreen.ui";
 import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import { Figure } from "~/ui/modern-theme/Figure.ui";
 
-// No refund in the facts: nothing has been bought yet, so a config in the deal
-// has no sale behind it to quote.
 const toDealt = (config: Config): DealtConfig => ({
 	id: config.id,
 	label: config.label,
 	rarity: rarityOf(config),
+	spots: spotsOf(config),
 	summary: <ConfigFacts config={config} />,
 	explainer: config.description,
 	note: <Figure figure={headlineFigureOf(config)} plain />,
@@ -39,43 +40,28 @@ const dealtFromStacks = (): readonly Config[] => {
 	);
 };
 
+const shapeNoteFor = (
+	configs: readonly Config[],
+	spots: number
+): string | undefined => {
+	if (configs.length === 0) return undefined;
+	const spare = spots - configs.reduce((total, c) => total + spotsOf(c), 0);
+	const shape = shapeOf(configs);
+	return spare <= 0 ? `${shape} · fills it` : `${shape} · ${spare} spare`;
+};
+
 const combosFor = (
-	onPickStack: (stackId: string) => void
+	onPickStack: (stackId: string) => void,
+	spots: number
 ): readonly StartCombo[] =>
 	STARTER_STACKS.map((stack) => ({
 		id: stack.id,
 		name: stack.name,
 		blurb: stack.blurb,
+		shape: shapeNoteFor(stack.configs, spots),
 		recommended: stack.recommended,
 		onTake: () => onPickStack(stack.id),
 	}));
-
-const slotRows = (view: RunView): readonly StartSlot[] => [
-	...Array.from({ length: view.slots }, (_, index) => ({
-		id: `slot-${index}`,
-	})),
-	...(view.nextSlotUnlock === null
-		? []
-		: [
-				{
-					id: "slot-next",
-					gate: view.nextSlotUnlock.gate,
-					coverage: view.nextSlotUnlock.coverage,
-				},
-			]),
-];
-
-/**
- * The slot number this gate's clear would open, for the clear-rewards list —
- * nothing when the next slot is waiting on coverage instead (ADR-041), since
- * that one is not a reward for clearing. Numbered from the live width, not
- * from the ladder row: the two diverge as soon as a grant lands out of order.
- */
-const slotOpenedByClearing = (
-	view: RunView,
-	gate: number
-): number | undefined =>
-	view.nextSlotUnlock?.gate === gate ? view.slots + 1 : undefined;
 
 export type StartViewProps = {
 	view: RunView;
@@ -100,25 +86,25 @@ export const StartView = ({
 			dealtFrom={view.available.length + view.configs.length}
 			pickedIds={view.configs.map((config) => config.id)}
 			onToggle={onToggle}
-			combos={combosFor(onPickStack)}
-			slots={slotRows(view)}
+			combos={combosFor(onPickStack, view.spots)}
+			spots={view.spots}
+			maxSpots={MAX_SPOTS}
+			fits={largestGradeFitting(view.spotsFree)}
 			gateName={swatchForGate(gate)?.gateName ?? ""}
-			gateNumber={gate}
-			gateCount={GATE_COUNT}
 			pollCount={view.gateStake.pollsPerGate}
 			coverageDemand={view.gateStake.coverageDemand}
 			auditCount={view.gateStake.audits.length}
 			streakCap={view.gateStake.perAnswer.streakCapMultiplier}
 			stake={{
-				removeOnMiss: view.gateStake.stripsOnFailure,
+				removeOnMiss: view.gateStake.peelSpotsOnFailure,
 				coveragePerWrong: view.gateStake.perAnswer.coveragePerWrong,
 			}}
 			reward={{
 				coveragePerCorrect: view.gateStake.perAnswer.coveragePerCorrect,
 				gateRewardKb: view.gateStake.modifiers.gateReward,
-				slotOpens: slotOpenedByClearing(view, gate),
 			}}
 			onStart={onStart}
+			canStart={view.canStart}
 		/>
 	);
 };

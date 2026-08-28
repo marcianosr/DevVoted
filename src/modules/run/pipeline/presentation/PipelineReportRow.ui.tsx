@@ -1,13 +1,9 @@
 import type { ReactNode } from "react";
 import { clsx } from "clsx";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import {
-	describeConfig,
-	rarityOf,
-} from "~/modules/run/config/domain/config.model";
+import { describeConfig } from "~/modules/run/config/domain/config.model";
 import type { GateRowReason } from "~/modules/run/gate/domain/configRole.model";
 import { FoldableRow, type Fold } from "~/ui/FoldableRow.ui";
-import { RARITY_COLORS } from "~/ui/rarityColors";
 import { StatusLine, type StatusLineSpacing } from "~/ui/StatusLine.ui";
 import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { StatusDot, type StatusDotVariant } from "~/ui/StatusDot.ui";
@@ -22,11 +18,6 @@ import { SlotNumberCell } from "~/modules/run/pipeline/presentation/PipelineTabl
 
 export type PipelineRowLayout = "chip" | "table";
 
-/**
- * The one place a config row's line is written. Both the gate report and the
- * role list feed it the same `GateRowReason`, so a passed row and a failed one
- * cannot drift into different phrasings of the same fact.
- */
 export const describeRow = (config: Config, reason: GateRowReason): string => {
 	if (reason.kind === "noPollInCategory")
 		return `no ${reason.category} poll in this gate`;
@@ -84,9 +75,6 @@ type PipelineReportRowProps = {
 	removable?: boolean;
 	mark?: StatusDotVariant;
 	dimmed?: boolean;
-	/** An audit has this config switched off for now (ADR-038): the row dims, the
-	 * effect strikes through, and a badge names the state. One prop rather than
-	 * three, so the caller states the fact and the row owns the treatment. */
 	offline?: boolean;
 	onActivate?: () => void;
 	activateLabel?: string;
@@ -188,8 +176,6 @@ export const PipelineReportRow = ({
 		);
 	}
 
-	const rarity = rarityOf(config);
-
 	const summaryCells = ({
 		expanded,
 		toggle,
@@ -269,12 +255,7 @@ export const PipelineReportRow = ({
 		</span>
 	);
 
-	const ghostBox = clsx(
-		"rounded-lg px-3",
-		rarity === "legendary"
-			? `border-1 ${RARITY_COLORS.legendary.border}`
-			: `border-1 border-dashed ${RARITY_COLORS[rarity].border}`
-	);
+	const ghostBox = "rounded-lg border-1 border-dashed border-edge-strong px-3";
 
 	return (
 		<>

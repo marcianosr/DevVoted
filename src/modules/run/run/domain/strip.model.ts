@@ -1,4 +1,10 @@
 import {
+	canMinify,
+	minify as minified,
+	minifySavingSpots,
+	spotsOf,
+} from "~/modules/run/config/domain/config.model";
+import {
 	isBare,
 	stripConfig,
 } from "~/modules/run/pipeline/domain/pipeline.model";
@@ -8,31 +14,64 @@ import {
 	type RunState,
 	shopDraft,
 	withLog,
+	withPipeline,
 } from "~/modules/run/run/domain/run.model";
+
+const paid = (
+	state: RunState,
+	pipeline: RunState["pipeline"],
+	freed: number,
+	line: string
+): RunState => {
+	const remaining = Math.max(0, state.peelSpotsRemaining - freed);
+	return {
+		...state,
+		pipeline,
+		peelSpotsRemaining: remaining,
+		log: withLog(
+			state,
+			remaining > 0
+				? `${line} ${remaining} more spot${remaining > 1 ? "s" : ""} to free.`
+				: `${line} Peel paid — rebuild in the shop.`
+		),
+	};
+};
 
 export const strip = (state: RunState, configId: string): RunState => {
 	const target = state.pipeline.configs.find(
 		(config) => config.id === configId
 	);
-	if (!target || state.stripsRemaining <= 0) return state;
-	const pipeline = stripConfig(state.pipeline, configId);
-	const remaining = state.stripsRemaining - 1;
-	return {
-		...state,
-		pipeline,
-		stripsRemaining: remaining,
-		log: withLog(
-			state,
-			remaining > 0
-				? `Peeled a config. ${remaining} more to drop.`
-				: `Peel paid — rebuild in the shop.`
-		),
-	};
+	if (!target || state.peelSpotsRemaining <= 0) return state;
+	return paid(
+		state,
+		stripConfig(state.pipeline, configId),
+		spotsOf(target),
+		`Dropped ${target.label}, freeing ${spotsOf(target)}.`
+	);
 };
 
-/** ADR-037. Routes through the shop deliberately: KB is the comeback resource. */
+export const minifyForPeel = (state: RunState, configId: string): RunState => {
+	const target = state.pipeline.configs.find(
+		(config) => config.id === configId
+	);
+	if (!target || state.peelSpotsRemaining <= 0 || !canMinify(target))
+		return state;
+	const freed = minifySavingSpots(target);
+	return paid(
+		state,
+		withPipeline(
+			state.pipeline,
+			state.pipeline.configs.map((config) =>
+				config.id === configId ? minified(config) : config
+			)
+		),
+		freed,
+		`Minified ${target.label}, freeing ${freed}.`
+	);
+};
+
 export const resumeClimb = (state: RunState): RunState => {
-	if (state.stripsRemaining > 0) return state;
+	if (state.peelSpotsRemaining > 0) return state;
 	if (isBare(state.pipeline))
 		return {
 			...state,
@@ -51,7 +90,6 @@ export const resumeClimb = (state: RunState): RunState => {
 		gateRewardKb: 0,
 		interestThisGateKb: 0,
 		extraPickThisGateKb: 0,
-		// Seeded off answers-so-far: fresh per redo, stable across a reload.
 		draftOptions: shopDraft(
 			state,
 			draftSeed(state.gatesCleared, (state.allAnswered ?? []).length)

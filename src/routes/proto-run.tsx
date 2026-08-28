@@ -180,15 +180,6 @@ const simulatedPickLabels = (poll: RunPoll, trainer: SimTrainer): string[] => {
 const sameLabelSet = (a: readonly string[], b: readonly string[]): boolean =>
 	a.length === b.length && a.every((label) => b.includes(label));
 
-/**
- * Telemetry's peek, off the same seven simulated trainers the community board
- * uses — so the split you pay for mid-poll and the board you read afterwards
- * agree. The real screen buys this from the server; the prototype has no run to
- * authorize against, so it fakes the data and keeps the mechanic honest instead.
- *
- * Keyed by option id (the answering screen's shape), not by label like the board.
- * The denominator is the trainers alone: you have not answered yet.
- */
 const simulatePollSplit = (poll: RunPoll, peeker: Config): PollSplitView => {
 	const percentByOptionId = Object.fromEntries(
 		poll.options.map((option) => [
@@ -425,8 +416,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setSelected([]);
 	}, [state.currentIndex]);
-	// Local, not run state: the reveal is a reading beat, not a move — a refresh
-	// mid-reveal skips it and loses nothing (the answer is already scored).
 	const [revealing, setRevealing] = useState(false);
 	const [rewardStep, setRewardStep] = useState<
 		"summary" | "review" | "shop" | "prep" | "community"
@@ -434,8 +423,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
-	// The reward screen now fronts a held gate too, so the peel is a step further
-	// in: summary states what was earned and kept, removal takes the price.
 	const [stripStep, setStripStep] = useState<"summary" | "removal" | "review">(
 		"summary"
 	);
@@ -445,8 +432,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 	const view = toRunView(state);
 	const reveal = revealing ? view.answeredThisGate.at(-1) : undefined;
-	// The next poll's clock holds while the reveal is up — a Timeout audit may
-	// not bill reading time to an answer the player hasn't seen yet.
 	const pollClock = usePollClock(
 		reveal ? null : (view.poll?.id ?? null),
 		view.pollTimeLimitMs
@@ -456,8 +441,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		coverage: view.coverage,
 		configCount: view.configs.length,
 	});
-	// The rig submits the real clock too, so a Timeout gate can actually bite in
-	// a playtest; the fast-forward buttons below stay untimed on purpose.
 	const answer = (optionIds: readonly string[]) => {
 		dispatch({ type: "answer", optionIds, elapsedMs: pollClock.elapsedMs() });
 		setRevealing(true);
@@ -488,9 +471,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		);
 	};
 
-	// The reskinned screens carry their own header — storage, swatch track and
-	// audit strip — so the HUD would only repeat them. Community is the one
-	// surface left with no header of its own.
 	const showsHud = state.status === "rewarding" && rewardStep === "community";
 
 	return (
@@ -499,7 +479,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				<div className="mx-auto w-full max-w-6xl p-2">
 					<RunHud
 						storage={view.storage}
-						capKb={view.storageCap}
 						gatesCleared={view.gatesCleared}
 						victoryGate={view.victoryGate}
 						pollsAnswered={view.pollsAnswered}
@@ -586,7 +565,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
-					onChangePlan={(tier) => dispatch({ type: "change-plan", tier })}
+					onRentExtraSpots={(spots) =>
+						dispatch({ type: "set-extra-spots", spots })
+					}
 					onContinue={() => setRewardStep("prep")}
 				/>
 			)}
@@ -634,8 +615,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				<RemovalView
 					view={view}
 					onRemove={(configIds) => {
-						// The peel and the resume land in one update: a half-peeled build is
-						// not a state the screens should ever be asked to draw.
 						setRewardStep("shop");
 						setState((current) =>
 							runReducer(
@@ -725,10 +704,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 function RouteComponent() {
 	const [seed, setSeed] = useState(0);
-	// The rig and the log are page furniture stacked under the screen, so the page
-	// owns the viewport height and the screen takes what is left of it
-	// (--screen-floor, Screen.ui) — otherwise a screen shorter than the viewport
-	// still measures a full one and pushes the rig below the fold.
 	return (
 		<div className="flex flex-1 flex-col text-white [--screen-floor:0px]">
 			<RunGame key={seed} onRestart={() => setSeed((current) => current + 1)} />

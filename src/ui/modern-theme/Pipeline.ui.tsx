@@ -65,23 +65,16 @@ export type PipelineRow = {
 	status: ConfigStatus;
 	figure?: ConfigFigure;
 	remainingKb?: number;
-	/** The opened row's facts line — a node, since the rarity in it is coloured. */
 	summary?: ReactNode;
 	explainer?: string;
 	action?: ActionProps;
-	/** Coverage this config just contributed to the revealed answer — the
-	 * delivery half of the online promise. Only the reveal sets it. */
 	fired?: number;
-	/** KB the config just paid on the revealed answer (IndexedDB's faucet). */
 	firedKb?: number;
 };
 
 export type PipelineProps = {
 	configs: readonly PipelineRow[];
 	defaultOpen?: boolean;
-	/** The reveal's reading: rows that paid are "applied" and wear their share
-	 * as a badge, online rows that paid nothing read "unused", and the header
-	 * counts delivery rather than promise. */
 	settled?: boolean;
 };
 
@@ -108,7 +101,6 @@ const SettledDot = ({ row }: { row: PipelineRow }) => {
 	);
 };
 
-/** What it just paid, as filled badges — the "did" half of the chip grammar. */
 const paidOf = (row: PipelineRow) => (
 	<span className={VALUE}>
 		{row.remainingKb === undefined ? null : (
@@ -127,8 +119,6 @@ const paidOf = (row: PipelineRow) => (
 	</span>
 );
 
-// The hollow dot already says "skipped", so every skipped row reads its
-// reason bare, live and settled alike.
 const trailingOf = (row: PipelineRow, settled: boolean) => {
 	if (row.status.kind === "offline")
 		return (
@@ -144,7 +134,6 @@ const trailingOf = (row: PipelineRow, settled: boolean) => {
 		);
 	if (settled) {
 		if (isApplied(row)) return paidOf(row);
-		// An online row that paid nothing owns up to it.
 		return (
 			<Text size="meta" tone="muted">
 				unused
@@ -175,9 +164,6 @@ type StatusCount = {
 	total: number;
 };
 
-// A zero is not a state the build is in; the fold would read as a legend.
-// Live, the header promises ("2 will apply") and leaves the skipped to their
-// hollow dots; settled, it reports what actually happened.
 const countsOf = (
 	configs: readonly PipelineRow[],
 	settled: boolean

@@ -2,8 +2,10 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
-	isStoragePlanUnlocked,
-	storagePlanLadder,
+	EXTRA_SPOT_TIERS,
+	extraRentKb,
+	extraSpotsUnlocked,
+	scheduledSpots,
 } from "~/modules/run/run/domain/rules.model";
 import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
@@ -13,7 +15,6 @@ import {
 	createMockShopOffer,
 } from "~/test/runView.factory";
 
-/** Gate 3, the depth every story below sits at — so tier 3 is already on offer. */
 const GATES_CLEARED = 2;
 
 const stake = createMockGateStake({
@@ -34,16 +35,34 @@ const stake = createMockGateStake({
 	},
 });
 
-/** The ladder as a run at this depth sees it: unlocked rungs plus the next, locked. */
-const plansOn = (currentTier: number, storage = 0) =>
-	storagePlanLadder(GATES_CLEARED).map((plan) => ({
-		...plan,
-		current: plan.tier === currentTier,
-		burnKb: Math.max(0, storage - plan.capKb),
-		locked: !isStoragePlanUnlocked(plan, GATES_CLEARED),
-	}));
+const extraSpotsOn = ({ held = 0 } = {}) => {
+	const free = scheduledSpots(GATES_CLEARED);
+	const unlocked = extraSpotsUnlocked(GATES_CLEARED);
+	return {
+		renting: held,
+		perGateKb: extraRentKb(held),
+		options: [
+			{
+				spots: 0,
+				makes: free,
+				rentKb: 0,
+				held: held === 0,
+				rentTooDear: false,
+			},
+			...EXTRA_SPOT_TIERS.map((tier) => {
+				const locked = tier.spots > unlocked;
+				return {
+					spots: tier.spots,
+					makes: free + tier.spots,
+					rentKb: extraRentKb(tier.spots),
+					held: tier.spots === held,
+					...(locked ? { fromGate: tier.fromGate } : { rentTooDear: false }),
+				};
+			}),
+		],
+	};
+};
 
-/** An open shop at this depth; each story names only the control it varies. */
 const controls = (overrides: Partial<ShopControls> = {}) =>
 	createMockShopControls({
 		rebuildCost: 4,
@@ -61,8 +80,8 @@ const meta: Meta<typeof ShopScreen> = {
 	component: ShopScreen,
 	title: "Run/Screens/Shop",
 	args: {
-		storagePlans: plansOn(1),
-		onChangePlan: () => {},
+		extraSpots: extraSpotsOn(),
+		onRentExtraSpots: () => {},
 		controls: controls(),
 		onLock: () => {},
 		onExtend: () => {},
@@ -84,17 +103,14 @@ export const Default: Story = {
 		),
 		onDraft: () => {},
 		onRebuild: () => {},
-		slots: 3,
-		nextSlotUnlock: { slot: 4, gate: 1 },
-		justUnlockedSlots: [],
+		spots: 4,
+		spotsUsed: 3,
+		spotsFree: 1,
 		onUpgrade: () => {},
 		onSell: () => {},
 	},
 };
 
-// WTFPL's whole point is a shop transformed: the rolled five becomes the full
-// catalog, and Rebuild/Lock/Extend leave the controls row — the moment has to
-// read as "everything is for sale now", not as a longer list.
 export const WTFPLOpenCatalog: Story = {
 	args: {
 		...Default.args,
@@ -111,10 +127,6 @@ export const WTFPLOpenCatalog: Story = {
 	},
 };
 
-/**
- * A held offer (DVTD-5lt6): the padlock corner marks what 16KB is reserving, and
- * the run's one lock being spent takes the padlock off the other offers.
- */
 export const OfferLocked: Story = {
 	args: {
 		...Default.args,
@@ -126,10 +138,6 @@ export const OfferLocked: Story = {
 	},
 };
 
-/**
- * The badge's third state (ADR-029): a bought offer stays on the table reading
- * "owned" rather than vanishing from under the finger that tapped it.
- */
 export const OfferOwned: Story = {
 	args: {
 		...Default.args,
@@ -141,47 +149,23 @@ export const OfferOwned: Story = {
 	},
 };
 
-// Gates grant slots on the clear (ADR-034) — this is the shop's one-time
-// acknowledgment for the gate that granted one.
-export const SlotJustUnlocked: Story = {
+export const PastTheFreeFour: Story = {
 	args: {
 		...Default.args,
-		slots: 4,
-		nextSlotUnlock: { slot: 5, gate: 3 },
-		justUnlockedSlots: [4],
+		spots: 12,
+		spotsUsed: 3,
+		spotsFree: 9,
 	},
 };
 
-// The last slot on the ladder, held by the deepest slot-granting gate.
-export const EliteFourNext: Story = {
-	args: {
-		...Default.args,
-		slots: 13,
-		nextSlotUnlock: { slot: 11, gate: 11, coverage: 380 },
-	},
-};
-
-// Every slot unlocked — the preview row retires.
-export const AtSlotCap: Story = {
-	args: {
-		...Default.args,
-		slots: 14,
-		nextSlotUnlock: null,
-	},
-};
-
-// On tier 3 with overflow riding: switching to the free-tier rung would burn
-// the 188KB sitting above its cap, and the tooltip names it before the click.
-export const PaidStoragePlan: Story = {
+export const RentingSpots: Story = {
 	args: {
 		...Default.args,
 		storage: 700,
-		storagePlans: plansOn(3, 700),
+		extraSpots: extraSpotsOn({ held: 2 }),
 	},
 };
 
-// The last config is the hard bottom (ADR-035): its uninstall locks so the
-// pipeline can never go bare.
 export const LastConfig: Story = {
 	args: {
 		...Default.args,
@@ -191,8 +175,6 @@ export const LastConfig: Story = {
 	},
 };
 
-// Read-only (ADR-038): the offers stay legible so the next gate can be planned,
-// but every control refuses and one banner says why.
 export const ReadOnlyGate: Story = {
 	args: {
 		...Default.args,

@@ -11,7 +11,7 @@ const STATE = {
 	unlocked:
 		"border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300",
 	locked: "border-saffron text-saffron hover:bg-saffron/10",
-	unavailable: "border-zinc-800 text-zinc-800",
+	unavailable: "border-zinc-800 text-zinc-700",
 } satisfies Record<LockState, string>;
 
 const Padlock = () => (
@@ -38,7 +38,11 @@ export type LockProps = { on: string } & (
 
 export const Lock = (props: LockProps) => {
 	if (props.state === "unavailable") {
-		return <span aria-hidden className={clsx(LOCK, STATE.unavailable)} />;
+		return (
+			<span aria-hidden className={clsx(LOCK, STATE.unavailable)}>
+				<Padlock />
+			</span>
+		);
 	}
 
 	const label =

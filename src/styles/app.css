@@ -630,6 +630,20 @@ meter::-webkit-meter-optimum-value {
 }
 
 /*
+ * Room that exists but is not yours: the spots above the rung you rent. Hatched
+ * rather than dashed, because a dashed cell means an empty spot you can fill
+ * right now and these cannot be filled at any price you have already paid. A
+ * utility, so the pipeline track can put a hover on it.
+ */
+@utility bg-hatched {
+	background-image: repeating-linear-gradient(
+		135deg,
+		transparent 0 3px,
+		var(--color-edge-strong) 3px 4px
+	);
+}
+
+/*
  * A legendary's static Kanto-gradient border ring (no animation — Marciano,
  * 2026-08-04). Painted on a masked ::before instead of border-image (which
  * drops border-radius) or a wrapper div (which needs an opaque fill the

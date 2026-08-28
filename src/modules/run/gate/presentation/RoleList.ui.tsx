@@ -19,8 +19,6 @@ import {
 	SlotNumberCell,
 } from "~/modules/run/pipeline/presentation/PipelineTable.ui";
 
-/** Configs demand nothing (ADR-035): every row is a neutral bullet. Kept as a
- * fn so the one place the dot semantics change is here. */
 export const roleBadge = (_row: RoleRow): StatusBadgeVariant => "skip";
 
 export type RowUseAction = {
@@ -65,17 +63,12 @@ const EmptySlotRow = ({ slot }: { slot: number }) => (
 type RoleListProps = {
 	rows: readonly RoleRow[];
 	onRemove?: (configId: string) => void;
-	slots?: number;
+	freeSpots?: number;
 	actionsFor?: (config: Config) => readonly ChipAction[];
 	getUseAction?: (config: Config) => RowUseAction | undefined;
 	trailingFor?: (config: Config) => ReactNode;
 	newConfigIds?: readonly string[];
-	/** The config Dependabot bumped at the last clear — the log never shows in
-	 * the live game, so the badge is how the player learns their build changed. */
 	upgradedConfigId?: string;
-	/** Configs an audit has switched off right now (ADR-038). Only the answering
-	 * screen passes them: before the gate there is nothing down yet, and showing
-	 * a roll the player has not reached would be a spoiler. */
 	offlineConfigIds?: readonly string[];
 	preview?: SlotPreview;
 	trailing?: ReactNode;
@@ -96,7 +89,7 @@ const removeButton = (row: RoleRow, onRemove: (configId: string) => void) => (
 export const RoleList = ({
 	rows,
 	onRemove,
-	slots,
+	freeSpots,
 	actionsFor,
 	getUseAction,
 	trailingFor,
@@ -107,15 +100,10 @@ export const RoleList = ({
 	trailing,
 	foldIdleRows = false,
 }: RoleListProps) => {
-	const emptySlots = slots
-		? Math.max(0, slots - rows.length - (preview ? 1 : 0))
-		: 0;
+	const emptySlots = Math.max(0, (freeSpots ?? 0) - (preview ? 1 : 0));
 	const isOffline = (config: Config): boolean =>
 		offlineConfigIds?.includes(config.id) ?? false;
 
-	// One badge slot, and offline wins it: a config that is switched off has
-	// nothing to celebrate about being new or bumped. Upgraded and new never
-	// collide — a bump lands on a config owned before this gate's drafting.
 	const chipBadge = (config: Config): ReactNode => {
 		if (isOffline(config)) return <Badge tone="neutral">offline</Badge>;
 		if (config.id === upgradedConfigId)
@@ -137,8 +125,6 @@ export const RoleList = ({
 	return (
 		<PipelineTable numbered>
 			{rows.map((row, index) => {
-				// A switched-off config sells nothing: its "use" press would charge the
-				// fee for an effect the audit has already taken away.
 				const action = isOffline(row.config)
 					? undefined
 					: getUseAction?.(row.config);
@@ -155,8 +141,6 @@ export const RoleList = ({
 						chipActions={actionsFor?.(row.config)}
 						chipBadge={chipBadge(row.config)}
 						offline={isOffline(row.config)}
-						// An offline row opens by itself: the struck-through effect is the
-						// point, and it is worth nothing folded away.
 						defaultOpen={
 							isOffline(row.config) ? true : foldIdleRows ? false : undefined
 						}

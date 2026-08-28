@@ -18,8 +18,6 @@ describe("subscriptionBillFor", () => {
 	});
 
 	it("prices a deep re-draft at the deep rate, so dropping it resets nothing", () => {
-		// The bill reads the run's depth, never how long the config was held: the
-		// escalation cannot be laundered by dropping and re-drafting at gate 5.
 		expect(subscriptionBillFor(CONFIGS.freemium, 5)).toBe(256);
 	});
 
@@ -46,8 +44,6 @@ describe("billSubscriptionsOnClear", () => {
 	});
 
 	it("lapses the config when the balance cannot cover the bill", () => {
-		// Gate 4 bills 128KB against 100KB held: the plan lapses instead of
-		// overdrawing, and nothing is charged for it.
 		const billed = billSubscriptionsOnClear(
 			[CONFIGS.freemium, CONFIGS.js],
 			100,
@@ -68,8 +64,6 @@ describe("billSubscriptionsOnClear", () => {
 	});
 
 	it("pays what the balance covers and lapses only the rest", () => {
-		// Two subscriptions at 32KB each against 40KB: the first is paid, the
-		// second lapses — a build does not lose both plans over one shortfall.
 		const second: Config = { ...CONFIGS.freemium, id: "freemium-2" };
 		const billed = billSubscriptionsOnClear([CONFIGS.freemium, second], 40, 2);
 		expect(billed.paidKb).toBe(32);
@@ -80,49 +74,35 @@ describe("billSubscriptionsOnClear", () => {
 
 describe("billLedger", () => {
 	const atGate = (gate: number, configs: readonly Config[], storageKb = 512) =>
-		billLedger({ configs, gate, storageKb, planBillKb: 16, planTier: 3 });
+		billLedger({ configs, gate, storageKb });
 
-	it("lists the storage plan and every subscribed config as one bill", () => {
+	it("lists every subscribed config and nothing else", () => {
 		const ledger = atGate(2, [CONFIGS.freemium, CONFIGS.agentsMd]);
 		expect(ledger.lines.map((line) => [line.id, line.kb])).toEqual([
-			["storage-plan", 16],
 			["freemium", 32],
 		]);
-		expect(ledger.totalKb).toBe(48);
+		expect(ledger.totalKb).toBe(32);
 	});
 
-	it("omits the plan line on the free tier", () => {
-		const ledger = billLedger({
-			configs: [CONFIGS.freemium],
-			gate: 0,
-			storageKb: 512,
-			planBillKb: 0,
-			planTier: 1,
-		});
-		expect(ledger.lines.map((line) => line.id)).toEqual(["freemium"]);
-	});
-
-	it("counts only the plan toward a missed attempt, since configs bill on clears", () => {
+	it("charges nothing toward a missed attempt", () => {
 		const ledger = atGate(2, [CONFIGS.freemium]);
-		expect(ledger.totalKb).toBe(48);
-		expect(ledger.onMissKb).toBe(16);
+		expect(ledger.totalKb).toBe(32);
+		expect(ledger.onMissKb).toBe(0);
 	});
 
 	it("reports the shortfall when the balance cannot cover the bill", () => {
-		expect(atGate(4, [CONFIGS.freemium], 100).shortfallKb).toBe(44);
+		expect(atGate(4, [CONFIGS.freemium], 100).shortfallKb).toBe(28);
 	});
 
 	it("reports no shortfall when the balance covers the bill exactly", () => {
-		expect(atGate(2, [CONFIGS.freemium], 48).shortfallKb).toBe(0);
+		expect(atGate(2, [CONFIGS.freemium], 32).shortfallKb).toBe(0);
 	});
 
-	it("bills nothing for a build with no subscription on the free tier", () => {
+	it("bills nothing for a build with no subscription at all", () => {
 		const ledger = billLedger({
 			configs: [CONFIGS.agentsMd],
 			gate: 5,
 			storageKb: 0,
-			planBillKb: 0,
-			planTier: 1,
 		});
 		expect(ledger.lines).toEqual([]);
 		expect(ledger.totalKb).toBe(0);

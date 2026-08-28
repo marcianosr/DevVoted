@@ -22,18 +22,9 @@ const PAID_TONE = {
 	muted: "text-pewter",
 } as const;
 
-/** Factors are read, not summed: "1.25", never "+1.25". Two decimals at most,
- * and a whole factor keeps one so "correct 1.0" still reads as a figure. */
 const factorFigure = (value: number): string =>
 	(Math.round(value * 100) / 100).toFixed(2).replace(/0$/, "");
 
-/**
- * How a factor joins the chain. `plus` is for a config that adds a flat amount
- * rather than multiplying: it carries the coverage it actually contributed —
- * the same figure its rail row badges — so the two surfaces never quote one
- * config two ways. Adds land before the multipliers, grouped, because that is
- * the order the earn is computed in: `(base + adds) × multipliers`.
- */
 export type FactorOp = "times" | "plus";
 
 export type EquationFactor = {
@@ -41,15 +32,11 @@ export type EquationFactor = {
 	value: number;
 	op?: FactorOp;
 	tone?: ChipTone;
-	/** A config's chip wears its rarity instead of a tone. */
 	rarity?: Rarity;
 };
 
 export type EquationProps = {
-	/** The earn's arithmetic, base first. Empty on a miss: nothing was
-	 * multiplied, and the paid line carries the loss alone. */
 	factors: readonly EquationFactor[];
-	/** Signed coverage the answer paid. */
 	paid: number;
 };
 
@@ -58,9 +45,6 @@ const OPERATOR = { times: "×", plus: "+" } as const satisfies Record<
 	string
 >;
 
-// An add is quoted verbatim, never re-rounded: the figure arrives already
-// rounded from the same breakdown the rail badges, and rounding it twice is how
-// the two surfaces would drift apart by a tenth.
 const figureOf = (factor: EquationFactor): string =>
 	factor.op === "plus" ? signed(factor.value) : factorFigure(factor.value);
 
@@ -76,11 +60,6 @@ const Operator = ({ op }: { op: FactorOp }) => (
 	</Text>
 );
 
-/**
- * The base and its adds are bracketed whenever multipliers follow, because the
- * multipliers scale their sum rather than the base alone — without the brackets
- * the row would read as `base + (add × mult)` and stop matching the total.
- */
 const BRACKET = "text-zinc-600";
 
 export const Equation = ({ factors, paid }: EquationProps) => {
@@ -122,8 +101,6 @@ export const Equation = ({ factors, paid }: EquationProps) => {
 				<Text size="body" tone="muted">
 					this answer paid
 				</Text>
-				{/* aria-label carries the whole figure, since the subscript % splits
-			    the text node. */}
 				<span
 					aria-label={`${signed(paid)}%`}
 					className={clsx(PAID, PAID_TONE[valueTone(paid)])}

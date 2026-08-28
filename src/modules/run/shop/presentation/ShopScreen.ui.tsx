@@ -4,27 +4,30 @@ import {
 	Config,
 	describeConfig,
 	isUpgradable,
+	largestGradeFitting,
+	rarityOf,
+	spotsOf,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
-import type { SlotUnlock } from "~/modules/run/pipeline/domain/pipeline.model";
 import type {
+	ExtraSpotsView,
 	OfferRefusal,
 	ShopOffer,
-	StoragePlanOption,
 } from "~/modules/run/run/application/runView.viewmodel";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import { formatKb } from "~/shared/lib/storage";
 import { Badge } from "~/ui/Badge.component";
+import { MAX_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
+import { SpotTrack } from "~/ui/modern-theme/SpotTrack.ui";
+import { plural, gateFloorLabel } from "~/ui/modern-theme/format";
 import { Columns } from "~/ui/Columns.ui";
 import { RadioDot } from "~/ui/RadioDot.ui";
 import { TerminalPanel, TerminalSection } from "~/ui/TerminalPanel.ui";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
-import type { TextTone } from "~/ui/typography/textTone";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
@@ -36,7 +39,6 @@ import {
 	widthRefusal,
 } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
-import { nextSlotRow } from "~/modules/run/pipeline/presentation/SlotUnlockRow.ui";
 import {
 	UpcomingCategories,
 	type UpcomingCategoriesProps,
@@ -47,54 +49,55 @@ type ShopScreenProps = {
 	coverageByCategory: Readonly<Record<string, number>>;
 	stake: GateStake;
 	configs: readonly Config[];
-	/** The build is on its width floor, so every uninstall is refused. */
 	atMinimumWidth: boolean;
-	/** ADR-029's three horizons plus the git tag, whole. Includes `shopLocked`:
-	 * read-only (ADR-038) leaves everything browsable and nothing buyable, and
-	 * the banner says which gate did it. */
 	controls: ShopControls;
-	/** A request is in flight, so every purchase disables until it lands. Kept
-	 * apart from `controls`, which says what the run can afford, not what it is
-	 * mid-way through doing. */
 	busy?: boolean;
-	slots: number;
+	spots: number;
+	spotsUsed: number;
+	spotsFree: number;
 	newConfigIds: readonly string[];
 	offers: readonly ShopOffer[];
-	/** Prefetch's reveal; absent when no installed config reads the draw. */
 	upcoming?: UpcomingCategoriesProps;
 	onDraft: (configId: string) => void;
 	onRebuild: () => void;
 	onLock: (configId: string) => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
-	/** What opens the next slot — a gate, a coverage total, or either
-	 * (ADR-041); null at the cap. */
-	nextSlotUnlock: SlotUnlock | null;
-	justUnlockedSlots: readonly number[];
-	/** The config Dependabot bumped at the clear that opened this shop. */
 	upgradedConfigId?: string;
 	onUpgrade: (configId: string) => void;
 	onSell: (configId: string) => void;
-	storagePlans: readonly StoragePlanOption[];
-	onChangePlan: (tier: number) => void;
+	extraSpots: ExtraSpotsView;
+	onRentExtraSpots: (spots: number) => void;
 };
 
-/** The shop door is always open (ADR-035): no gate grades the exit anymore. */
-export const shopExitAction = (
-	gate: number
-): { readonly label: string; readonly disabled: boolean } => ({
-	label: `Continue to gate ${gate} →`,
-	disabled: false,
-});
+export const shopExitLock = (overflowSpots: number): string | undefined =>
+	overflowSpots === 0
+		? undefined
+		: `Over capacity by ${plural(overflowSpots, "spot")}. Minify, uninstall, or rent more room.`;
 
-/**
- * An offer's install refusal, in the shop's own words. Same split as
- * `shopExitAction` above: the viewmodel grades, this formats — so both
- * phrasings are reachable from a story.
- */
+export const shopExitAction = (
+	gate: number,
+	overflowSpots: number
+): {
+	readonly label: string;
+	readonly disabled: boolean;
+	readonly hint?: string;
+} => {
+	const lock = shopExitLock(overflowSpots);
+	return {
+		label: `Continue to gate ${gate} →`,
+		disabled: lock !== undefined,
+		hint: lock,
+	};
+};
+
+export const extraSpotTerms = (
+	option: ExtraSpotsView["options"][number]
+): string => (option.spots === 0 ? "free" : `${option.rentKb}KB a gate`);
+
 export const offerRefusalText = (refusal: OfferRefusal): string =>
-	refusal.reason === "no-slot"
-		? "No free slot — uninstall a config first"
+	refusal.reason === "no-room"
+		? `Needs ${refusal.spots} spots — ${refusal.freeSpots} free. Minify or uninstall something`
 		: `Costs ${refusal.priceKb}KB — you have ${refusal.storageKb}KB`;
 
 const actionTone = ({
@@ -147,15 +150,14 @@ const actionButton = ({
 	</button>
 );
 
-const planBill = (plan: StoragePlanOption): string => {
-	if (plan.locked) return `Opens after gate ${plan.fromGate}`;
-	return plan.billKb === 0 ? "Free" : `${plan.billKb}KB / gate`;
-};
-
-// A locked rung reads dim through its row's own opacity, so it needs no third
-// tone of its own — only the plan you are on is at full strength.
-const planLabelTone = (plan: StoragePlanOption): TextTone | undefined =>
-	plan.current ? undefined : "muted";
+const trackBars = (configs: readonly Config[]) =>
+	configs.map((config) => ({
+		id: config.id,
+		label: config.label,
+		spots: spotsOf(config),
+		minified: config.minified,
+		rarity: rarityOf(config),
+	}));
 
 type PanelHeadingProps = {
 	title: ReactNode;
@@ -177,7 +179,9 @@ export const ShopScreen = ({
 	atMinimumWidth,
 	controls,
 	busy = false,
-	slots,
+	spots,
+	spotsUsed,
+	spotsFree,
 	newConfigIds,
 	offers,
 	upcoming,
@@ -186,13 +190,11 @@ export const ShopScreen = ({
 	onLock,
 	onExtend,
 	onPlantPin,
-	nextSlotUnlock,
-	justUnlockedSlots,
 	upgradedConfigId,
 	onUpgrade,
 	onSell,
-	storagePlans,
-	onChangePlan,
+	extraSpots,
+	onRentExtraSpots,
 }: ShopScreenProps) => {
 	const { gateNumber } = stake;
 	const {
@@ -207,7 +209,6 @@ export const ShopScreen = ({
 		pinCost,
 		pinnedAtGate,
 	} = controls;
-	// `can*` says the run can afford it; an in-flight request disables it anyway.
 	const canRebuild = controls.canRebuild && !busy;
 	const canLock = controls.canLock && !busy;
 	const canExtend = controls.canExtend && !busy;
@@ -216,9 +217,6 @@ export const ShopScreen = ({
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const nextGate = swatchForGate(gateNumber);
 
-	// Two independent gates, asked separately so the tooltip can name whichever
-	// one is in the way — a Focus config can be earned but unaffordable, or
-	// affordable but unearned.
 	const upgradeAffordable = (config: Config): boolean =>
 		storage >= upgradeStorageCost(config.level ?? 1);
 
@@ -276,8 +274,6 @@ export const ShopScreen = ({
 		const upgradeButton = isUpgradable(config)
 			? actionButton({
 					label: "Upgrade",
-					// Every upgrade is priced now, Focus included, so the price belongs on
-					// the button face like every other spend in the shop.
 					price: `${upgradeStorageCost(config.level ?? 1)}KB`,
 					onClick: () => onUpgrade(config.id),
 					disabled: !canUpgrade(config) || locked,
@@ -319,11 +315,22 @@ export const ShopScreen = ({
 		</Paragraph>
 	);
 
-	const offerBadge = ({ owned, priceKb }: ShopOffer): ReactNode => {
+	const offerBadge = ({
+		config,
+		owned,
+		priceKb,
+		refusal,
+	}: ShopOffer): ReactNode => {
 		if (owned)
 			return (
 				<Badge size="corner">
 					<span aria-hidden="true">✓ </span>owned
+				</Badge>
+			);
+		if (refusal?.reason === "no-room")
+			return (
+				<Badge tone="muted" size="corner">
+					needs a {rarityOf(config)}
 				</Badge>
 			);
 		return (
@@ -421,10 +428,6 @@ export const ShopScreen = ({
 				<Subtitle>Expand your pipeline or make it stricter!</Subtitle>
 			</header>
 
-			{/* One statement at the top rather than a refusal on every control: with
-			    the whole shop shut, seven tooltips would each explain the same rule.
-			    The offers stay visible, because knowing what you cannot buy is how
-			    the gate after this one gets planned. */}
 			{locked ? (
 				<div className="rounded-lg border border-cinnabar/50 px-3 py-2">
 					<Paragraph size="sm" tone="cinnabar">
@@ -453,8 +456,6 @@ export const ShopScreen = ({
 								</span>
 							))}
 						</div>
-						{/* Between the offers and the controls: what's coming is drafting
-						    information, read in the same glance as what's for sale. */}
 						{upcoming ? <UpcomingCategories {...upcoming} /> : null}
 						<TerminalSection label="Shop controls">
 							<div className="flex flex-wrap items-center gap-2">
@@ -499,77 +500,51 @@ export const ShopScreen = ({
 
 						<hr className="border-t border-edge" />
 
-						<TerminalSection label="Storage upgrades">
+						<TerminalSection label="Extra spots">
+							<Paragraph as="p" size="xs" tone="muted">
+								Gates unlock spots for free. Rent adds more on top, by the gate.
+							</Paragraph>
 							<ul className="flex flex-col">
-								{storagePlans.map((plan) => {
-									const planRow = (
-										<span className="flex items-center justify-between gap-3">
-											<span className="flex items-center gap-2">
-												<RadioDot checked={plan.current} />
-												<Paragraph
-													as="span"
-													size="sm"
-													tone={planLabelTone(plan)}
-												>
-													{formatKb(plan.capKb)}
-												</Paragraph>
-											</span>
+								{extraSpots.options.map((option) => (
+									<li
+										key={option.spots}
+										className="flex items-center justify-between gap-3 px-1 py-1"
+									>
+										<span className="flex items-center gap-2">
+											<RadioDot checked={option.held} />
+											<Paragraph
+												as="span"
+												size="sm"
+												tone={option.held ? undefined : "muted"}
+											>
+												{option.spots === 0
+													? "none"
+													: `+${plural(option.spots, "spot")}`}
+											</Paragraph>
 											<Paragraph as="span" size="sm" tone="muted">
-												{planBill(plan)}
+												makes {option.makes}
 											</Paragraph>
 										</span>
-									);
-									const rowBox = "block w-full rounded-lg px-1 py-1 text-left";
-									if (plan.locked)
-										return (
-											<li key={plan.tier}>
-												<Tooltip
-													content={`A ${formatKb(plan.capKb)} cap is only worth its bill once a gate pays enough to fill it — this rung opens after gate ${plan.fromGate}.`}
-												>
-													<span className={clsx(rowBox, "opacity-60")}>
-														{planRow}
-													</span>
-												</Tooltip>
-											</li>
-										);
-									if (plan.current)
-										return (
-											<li key={plan.tier}>
-												<span className={rowBox}>{planRow}</span>
-											</li>
-										);
-									const switchButton = (
-										<button
-											type="button"
-											disabled={locked}
-											onClick={() => onChangePlan(plan.tier)}
-											aria-label={`Switch to ${formatKb(plan.capKb)} storage plan${
-												plan.billKb > 0 ? `, ${plan.billKb}KB per gate` : ""
-											}`}
-											className={clsx(
-												rowBox,
-												locked
-													? "cursor-not-allowed opacity-60"
-													: "cursor-pointer transition hover:bg-surface-raised/60"
+										<span className="flex items-center gap-3">
+											<Paragraph as="span" size="sm" tone="muted">
+												{extraSpotTerms(option)}
+											</Paragraph>
+											{option.fromGate === undefined
+												? actionButton({
+														label: option.held ? "renting" : "rent",
+														onClick: () => onRentExtraSpots(option.spots),
+														disabled:
+															option.held || option.rentTooDear || locked,
+													})
+												: null}
+											{option.fromGate === undefined ? null : (
+												<Paragraph as="span" size="sm" tone="muted">
+													opens at {gateFloorLabel(option.fromGate)}
+												</Paragraph>
 											)}
-										>
-											{planRow}
-										</button>
-									);
-									return (
-										<li key={plan.tier}>
-											{plan.burnKb > 0 ? (
-												<Tooltip
-													content={`Switching burns the ${plan.burnKb}KB sitting above this cap.`}
-												>
-													{switchButton}
-												</Tooltip>
-											) : (
-												switchButton
-											)}
-										</li>
-									);
-								})}
+										</span>
+									</li>
+								))}
 							</ul>
 						</TerminalSection>
 					</TerminalPanel>
@@ -591,11 +566,17 @@ export const ShopScreen = ({
 									`Your pipeline for gate ${gateNumber}`
 								)
 							}
-							subtitle={`${configs.length} of ${slots} slots used`}
+							subtitle={`${spotsUsed} of ${spots} spots used`}
+						/>
+						<SpotTrack
+							configs={trackBars(configs)}
+							spots={spots}
+							maxSpots={MAX_SPOTS}
+							fits={largestGradeFitting(spotsFree)}
 						/>
 						<RoleList
 							rows={roleRows(configs)}
-							slots={slots}
+							freeSpots={spotsFree}
 							trailingFor={loadoutActions}
 							newConfigIds={newConfigIds}
 							upgradedConfigId={upgradedConfigId}
@@ -608,11 +589,6 @@ export const ShopScreen = ({
 										}
 									: undefined
 							}
-							trailing={nextSlotRow({
-								slots,
-								nextSlotUnlock,
-								justUnlocked: justUnlockedSlots,
-							})}
 						/>
 						<GateStakeReceipt
 							stake={stake}

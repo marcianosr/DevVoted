@@ -30,6 +30,6 @@ export const Held: Story = {
 	args: { on: "Freemium", state: "locked", onToggle: () => {} },
 };
 
-export const Unavailable: Story = {
+export const Unaffordable: Story = {
 	args: { on: "WTFPL", state: "unavailable" },
 };

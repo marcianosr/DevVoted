@@ -3,7 +3,10 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	Config,
 	faucetKbPerCorrect,
-	focusCoverageMultiplier,
+	focusMultiplierOf,
+	minifiedAmount,
+	minifiedMultiplier,
+	spotsOf,
 } from "~/modules/run/config/domain/config.model";
 import {
 	AnswerContext,
@@ -15,6 +18,9 @@ import {
 	GATE_REWARD_KB,
 	GATE_REWARD_MULTIPLIER_CAP,
 	SLICE_WINDOW,
+	FIRST_RUNG,
+	MAX_EXTRA_SPOTS,
+	TOP_RUNG,
 	WRONG_COVERAGE_LOSS,
 	gateBaseMultiplier,
 	roundToOneDecimal,
@@ -24,125 +30,46 @@ import {
 
 export type Pipeline = {
 	readonly id: string;
-	readonly slots: number;
+	readonly spots: number;
 	readonly configs: readonly Config[];
 };
 
-export const BASE_SLOTS = 3;
-export const MAX_SLOTS = 11;
+export const BASE_SPOTS = FIRST_RUNG.spots;
+export const FREE_SPOTS_CEILING = TOP_RUNG.spots;
+export const MAX_SPOTS = TOP_RUNG.spots + MAX_EXTRA_SPOTS;
 
-/**
- * A width grant and what opens it (ADR-041). `gate` is the gate whose clear
- * opens it; `coverage` is the run's lifetime total, which ADR-035 split from
- * the gate's per-attempt meter — two different numbers, which is what makes the
- * second ladder ADR-034 deleted legal again. A grant carrying both opens on
- * whichever lands first.
- */
-export type SlotUnlock = {
-	readonly slot: number;
-	readonly gate?: number;
-	readonly coverage?: number;
-};
+export const occupiedSpots = (configs: readonly Config[]): number =>
+	configs.reduce((total, config) => total + spotsOf(config), 0);
 
-/**
- * Eight grants over a thirteen-gate run: three on gates alone, three on
- * coverage alone, two on either. Depth alone no longer buys the pipeline out:
- * a build that clears on checks and ignores coverage stalls at seven slots,
- * and a coverage-heavy build widens through a gate it keeps missing.
- *
- * THE tuning knob for how wide a run gets and when. `slot` numbers the grant in
- * its expected order of arrival, not the width it guarantees — the width itself
- * is a count (see `slotsFor`).
- */
-export const SLOT_UNLOCKS: readonly SlotUnlock[] = [
-	{ slot: 4, gate: 1 },
-	{ slot: 5, gate: 3 },
-	{ slot: 6, coverage: 60 },
-	{ slot: 7, gate: 6 },
-	{ slot: 8, coverage: 140 },
-	{ slot: 9, coverage: 240 },
-	{ slot: 10, gate: 10, coverage: 300 },
-	// Gate 11, not the summit: clearing gate 12 wins the run, so a slot behind
-	// it could never be filled.
-	{ slot: 11, gate: 11, coverage: 380 },
-];
+export const freeSpots = (pipeline: Pipeline): number =>
+	Math.max(0, pipeline.spots - occupiedSpots(pipeline.configs));
 
-/** What the ladder reads: gates already cleared, and the run's total coverage. */
-export type SlotProgress = {
-	readonly gatesCleared: number;
-	readonly coverage: number;
-};
+export const hasRoomFor = (pipeline: Pipeline, spots: number): boolean =>
+	occupiedSpots(pipeline.configs) + spots <= pipeline.spots;
 
-/** `gatesCleared` counts gates passed and gates number from 0, so "gate `g`
- * cleared" is `gatesCleared > g`. */
-export const isSlotUnlocked = (
-	unlock: SlotUnlock,
-	{ gatesCleared, coverage }: SlotProgress
-): boolean =>
-	(unlock.gate !== undefined && gatesCleared > unlock.gate) ||
-	(unlock.coverage !== undefined && coverage >= unlock.coverage);
+export const overflowSpots = (pipeline: Pipeline): number =>
+	Math.max(0, occupiedSpots(pipeline.configs) - pipeline.spots);
 
-/**
- * Width counts the grants earned rather than naming the highest one reached: a
- * grant earned out of order has to pay out when it lands, or a coverage build
- * would watch a slot it opened sit behind a gate it has not cleared.
- *
- * Coverage falls on a wrong answer, so callers widening a live pipeline take
- * the max with its current slots — width is never taken back.
- */
-export const slotsFor = (progress: SlotProgress): number =>
-	Math.min(
-		MAX_SLOTS,
-		BASE_SLOTS +
-			SLOT_UNLOCKS.filter((unlock) => isSlotUnlocked(unlock, progress)).length
-	);
-
-/**
- * What opens the next slot, in the ladder's own order; null once the width in
- * hand covers every grant. Skips as many unmet grants as the pipeline is wide
- * beyond what the progress alone earns, so a coverage dip below a threshold
- * already banked does not re-advertise a slot the player is standing in.
- */
-export const nextSlotUnlockFor = (
-	progress: SlotProgress,
-	currentSlots: number
-): SlotUnlock | null => {
-	const unmet = SLOT_UNLOCKS.filter(
-		(unlock) => !isSlotUnlocked(unlock, progress)
-	);
-	const banked = Math.max(0, currentSlots - slotsFor(progress));
-	return unmet[banked] ?? null;
-};
+export const isOverCapacity = (pipeline: Pipeline): boolean =>
+	overflowSpots(pipeline) > 0;
 
 export const isBare = (pipeline: Pipeline): boolean =>
 	pipeline.configs.length === 0;
 
 const effects = (configs: readonly Config[]) => configs.map(effectOf);
 
-// The modifier fns take bare configs, not a Pipeline: the configure screen
-// prices a *previewed* loadout (equipped configs + hovered candidate) that has
-// no Pipeline identity yet, and none of them ever read slots or id.
 export const rewardMultiplierFor = (configs: readonly Config[]): number =>
 	effects(configs).reduce(
 		(product, effect) => product * (effect.rewardMultiplier ?? 1),
 		1
 	);
 
-/** Flat KB paid on top of the gate reward when the gate clears (Unit Tests' +32). */
 const storageOnClearFor = (configs: readonly Config[]): number =>
 	effects(configs).reduce(
 		(total, effect) => total + (effect.storageOnClear ?? 0),
 		0
 	);
 
-/**
- * Interest a cleared gate pays on the balance you are already holding — the one
- * payout that is not a function of the loadout alone, which is why it stays out
- * of `pipelineModifiersFor` (a previewed loadout has no balance) and is applied
- * beside `gateClearPayout` by the reducer, the only place that knows the
- * post-bill balance. Rounded down: KB are whole, and the player should never
- * see interest they cannot spend.
- */
 export const storageInterestFor = (
 	configs: readonly Config[],
 	heldKb: number
@@ -156,32 +83,27 @@ export const storageInterestFor = (
 			100
 	);
 
-/**
- * `.length`'s clear payout: KB per correct answer the window held beyond one per
- * poll. Out of `pipelineModifiersFor` for the same reason interest is — the
- * loadout alone cannot price it, since the amount is a fact about the window
- * that was drawn. A window of five single-answer polls has no extra picks and
- * pays nothing, which is the config's honest dead spot; a multi-heavy window
- * pays well and was the hard one to count.
- */
 export const extraPickPayoutFor = (
 	configs: readonly Config[],
 	extraPicks: number
 ): number =>
 	configs.reduce(
 		(total, config) =>
-			total + (config.storagePerExtraPick ?? 0) * Math.max(0, extraPicks),
+			total +
+			minifiedAmount(config, config.storagePerExtraPick ?? 0) *
+				Math.max(0, extraPicks),
 		0
 	);
 
-/** Build-wide coverage boost applied to every correct answer (Focus category bonuses excluded). */
 const coverageProfileFor = (
 	configs: readonly Config[]
 ): { readonly mult: number; readonly add: number } =>
 	configs.reduce(
 		(profile, config) => ({
-			mult: profile.mult * (config.coverageMultiplier ?? 1),
-			add: profile.add + (config.coverageAdd ?? 0),
+			mult:
+				profile.mult *
+				minifiedMultiplier(config, config.coverageMultiplier ?? 1),
+			add: profile.add + minifiedAmount(config, config.coverageAdd ?? 0),
 		}),
 		{ mult: 1, add: 0 }
 	);
@@ -193,17 +115,6 @@ export type PipelineModifiers = {
 	readonly coverageAdd: number;
 };
 
-/**
- * Every surface that prices a loadout — the run viewmodel, the gate-clear
- * payout, and the configure screen's preview strip — derives from this one fn,
- * so a previewed pipeline is guaranteed to price exactly like an equipped one.
- *
- * `gatesCleared` is here because `gateReward` is not a property of the loadout
- * alone: the clear payout rides the `gatesCleared + 1` curve, so a preview that
- * left it out understated the reward by the whole multiplier — 32KB shown where
- * Cascade actually pays 96KB. It prices a full window, the same thing the gate's
- * coverage demand assumes; a part-correct clear pays its share of this.
- */
 export const pipelineModifiersFor = (
 	configs: readonly Config[],
 	gatesCleared: number
@@ -220,28 +131,13 @@ export const pipelineModifiersFor = (
 
 export type PerAnswerPreview = {
 	readonly coveragePerCorrect: number;
-	/** Signed like its sibling, so the pair reads as one ledger: what an answer
-	 * does to your coverage, positive right and negative wrong. */
 	readonly coveragePerWrong: number;
 	readonly storageKbPerCorrect: number;
-	/** The best Focus bonus in the build, called out separately since it only
-	 * lands when a poll's category matches — absent with no Focus config equipped. */
 	readonly matchingConfigMultiplier?: number;
-	/** What one step of streak multiplies the answer by. Carried here so the
-	 * receipt can state it: it rides on every correct answer including the first,
-	 * so `coveragePerCorrect` alone is a number the player never actually sees. */
 	readonly streakStepMultiplier: number;
-	/** Where the streak stops paying. A build number rather than a rule, so the
-	 * gate panel can show what this pipeline's ceiling is. */
 	readonly streakCapMultiplier: number;
 };
 
-/**
- * How many steps of streak this build is paid for. The base ten is the rule
- * (`BASE_STREAK_STEPS`); configs add headroom on top. Every caller that prices a
- * streak reads this rather than the constant, so a headroom config takes effect
- * everywhere at once.
- */
 export const streakCapStepsFor = (configs: readonly Config[]): number =>
 	BASE_STREAK_STEPS +
 	effects(configs).reduce(
@@ -249,29 +145,24 @@ export const streakCapStepsFor = (configs: readonly Config[]): number =>
 		0
 	);
 
-/** Product of the build's throttle multipliers — what a non-opener answer is
- * guaranteed to earn (Overclock). Conditional like the opener bonus, but it
- * lowers the floor instead of raising the ceiling, so unlike the opener it
- * belongs in the receipt's guarantee. */
 const throttleFor = (configs: readonly Config[]): number =>
 	configs.reduce(
 		(product, config) => product * (config.throttleCoverageMultiplier ?? 1),
 		1
 	);
 
-/**
- * What one correct, average-difficulty answer is worth right now — the stake
- * receipt's "Per answer" line. `coverageProfileFor` deliberately excludes Focus
- * bonuses (they're conditional on the poll's category), so `coveragePerCorrect`
- * is the guaranteed floor; `matchingConfigMultiplier` is surfaced separately as
- * the best-case bonus a Focus config in the build can add. Only one category
- * can match a given poll, so the highest level stands in rather than summing
- * every Focus config's multiplier. Throttles fold INTO the floor: with
- * Overclock equipped, four of five answers earn the throttled rate, and a
- * floor that ignored it would overstate the guarantee.
- */
-/** The build's guaranteed coverage for one correct answer, unrounded — the
- * figure both the earn and the bleed are quoted from. */
+export const gateClearPayout = (
+	configs: readonly Config[],
+	correct: number,
+	gatesCleared: number
+): number =>
+	Math.round(
+		GATE_REWARD_KB *
+			Math.min(gateBaseMultiplier(gatesCleared), GATE_REWARD_MULTIPLIER_CAP) *
+			rewardMultiplierFor(configs) *
+			(correct / SLICE_WINDOW)
+	) + storageOnClearFor(configs);
+
 const coveragePerCorrectRaw = (
 	configs: readonly Config[],
 	gatesCleared: number
@@ -282,12 +173,6 @@ const coveragePerCorrectRaw = (
 	);
 };
 
-/**
- * What a wrong answer takes. Priced off what a right one pays rather than off
- * the gate alone, so a miss always costs the same FRACTION of an answer whatever
- * the build: stacking multipliers used to buy near-immunity, since the earn rode
- * them and the bleed did not.
- */
 export const coverageLossFor = (
 	configs: readonly Config[],
 	gatesCleared: number
@@ -302,7 +187,7 @@ export const perAnswerPreviewFor = (
 ): PerAnswerPreview => {
 	const focusMultipliers = configs
 		.filter((config) => config.focusCategory !== undefined)
-		.map((config) => focusCoverageMultiplier(config.level ?? 1));
+		.map(focusMultiplierOf);
 	return {
 		coveragePerCorrect: roundToOneDecimal(
 			coveragePerCorrectRaw(configs, gatesCleared)
@@ -316,35 +201,6 @@ export const perAnswerPreviewFor = (
 	};
 };
 
-/**
- * Storage a cleared gate actually pays. The 32KB base rides the same
- * `gatesCleared + 1` curve as coverage (gate 1 tops out at 32, gate 5 at
- * 160) and scales with window correctness — a 0/5 clear pays nothing, so an
- * all-skip build climbs without earning anything to bank (ADR-017). Flat
- * clear payouts (Unit Tests' +32) stay whole: they ride on that config's
- * own passed check.
- */
-export const gateClearPayout = (
-	configs: readonly Config[],
-	correct: number,
-	gatesCleared: number
-): number =>
-	Math.round(
-		GATE_REWARD_KB *
-			Math.min(gateBaseMultiplier(gatesCleared), GATE_REWARD_MULTIPLIER_CAP) *
-			rewardMultiplierFor(configs) *
-			(correct / SLICE_WINDOW)
-	) + storageOnClearFor(configs);
-
-/**
- * Coverage a single answer earns: `share × (1 + adds) × mults × streak`. The
- * base correctness is `1`; flat config adds are applied first, then every
- * multiplier last (config mults AND streak), so a ×2 amplifies the adds too and
- * all multipliers compose identically. `share` is the answer's correctness in
- * [0, 1]: 1 fully correct, fractional for a partial multi-pick, 0 for a miss.
- * Configs scale gains only (Overclock's throttle scales them down) — they
- * never touch losses.
- */
 export const coverageForAnswer = (
 	configs: readonly Config[],
 	context: AnswerContext,
@@ -365,21 +221,12 @@ export type CoverageConfigBonus = {
 	readonly value: number;
 };
 
-/**
- * The answer's earn as the multiplication it actually is: `correct × build ×
- * streak = earned`. `correct` is the scored share (correctness with the gate
- * and difficulty multipliers folded in — the same number the stake receipt
- * scales by); `build` is everything the loadout added, `(1 + adds) × mults`.
- * Recorded at scoring time because the additive breakdown rounds per chip and
- * cannot give the factors back.
- */
 export type CoverageFactors = {
 	readonly correct: number;
 	readonly build: number;
 	readonly streak: number;
 };
 
-/** A miss has no factors: nothing multiplied, the loss is priced elsewhere. */
 export const coverageFactorsForAnswer = (
 	configs: readonly Config[],
 	context: AnswerContext,
@@ -401,15 +248,6 @@ export type CoverageBreakdown = {
 	readonly configBonuses: readonly CoverageConfigBonus[];
 };
 
-/**
- * Splits a single answer's coverage into the chips the reveal shows: the
- * correctness base, the streak bonus, and each coverage-affecting config's
- * contribution. Mirrors the multipliers-last formula — flat adds show their
- * face value; each multiplier absorbs the amplification it applies to the
- * running subtotal (base + adds + earlier multipliers). `base` is the remainder
- * so the parts always sum to `coverageForAnswer`. A miss carries the loss as a
- * negative base with no bonuses — configs never amplify losses.
- */
 export const coverageBreakdownForAnswer = (
 	configs: readonly Config[],
 	context: AnswerContext,
@@ -440,17 +278,10 @@ export const coverageBreakdownForAnswer = (
 		);
 
 	const totalAdd = covered.reduce((sum, entry) => sum + entry.cover.add, 0);
-	// Render flat-add chips first, then multiplier chips, so the equation reads
-	// left-to-right the way the math composes: adds, then multipliers last. Adds
-	// are already folded into the subtotal below, so this reorder changes only
-	// display order — every chip value and the total stay identical.
 	const orderedCovered = [
 		...covered.filter((entry) => entry.cover.mult === 1),
 		...covered.filter((entry) => entry.cover.mult !== 1),
 	];
-	// Subtotal the multipliers amplify: the base plus every flat add. Each
-	// multiplier grows it in turn (mults compose last), so its chip reflects the
-	// gain it produced over everything earned so far.
 	let subtotal = share * (1 + totalAdd);
 	const configBonuses = orderedCovered
 		.map(({ config, cover }) => {
@@ -472,32 +303,23 @@ export const coverageBreakdownForAnswer = (
 	return { base, streakBonus, configBonuses };
 };
 
-/** The equipped linter that covers this poll's category, if any (ESLint → JS/TS, Stylelint → CSS). */
 export const linterFor = (
 	configs: readonly Config[],
 	category: CategoryCode
 ): Config | undefined =>
 	configs.find((config) => effectOf(config).maskWrongOn?.(category) === true);
 
-/** A linter can be run only on a poll in a category it covers. */
 export const canLint = (
 	configs: readonly Config[],
 	category: CategoryCode
 ): boolean => linterFor(configs, category) !== undefined;
 
-/**
- * The equipped config that sells community splits, if any. Category-blind, which
- * is what separates it from `linterFor`: the split exists for every poll, so the
- * draw can never excuse the check it comes with.
- */
 export const peekerFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.peeksCommunitySplit === true);
 
-/** The equipped config counting the window's correct answers, if any (`.length`). */
 export const budgeterFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.revealsCorrectCount === true);
 
-/** The equipped config reading the upcoming draw, if any (Prefetch). */
 export const prefetcherFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.revealsUpcomingCategories === true);
 

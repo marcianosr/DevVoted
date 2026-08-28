@@ -95,35 +95,52 @@ export const EveryNote: Story = {
 	),
 };
 
-/** The four rarities down one deal, and what picking one does to its tint. */
 export const Rarities: Story = {
 	render: () => (
 		<div className="flex w-96 flex-col gap-1">
-			<Pick label=".ts" rarity="common" checked={false} onToggle={() => {}} />
+			<Pick label=".ts" rarity="bit" checked={false} onToggle={() => {}} />
 			<Pick
 				label="IndexedDB"
-				rarity="uncommon"
+				rarity="crumb"
 				checked={false}
 				onToggle={() => {}}
 			/>
 			<Pick
 				label="Intellisense"
-				rarity="rare"
+				rarity="nibble"
 				checked={false}
 				onToggle={() => {}}
 			/>
 			<Pick
 				label="Dependabot"
-				rarity="legendary"
+				rarity="byte"
 				checked={false}
 				onToggle={() => {}}
 			/>
 			<Pick
 				label="Overclock"
-				rarity="rare"
+				rarity="nibble"
 				variant="draft"
 				checked
 				onToggle={() => {}}
+			/>
+		</div>
+	),
+};
+
+export const Disabled: Story = {
+	render: () => (
+		<div className="w-96">
+			<Pick
+				label="AGENTS.md"
+				rarity="byte"
+				variant="draft"
+				checked={false}
+				disabled
+				onToggle={() => {}}
+				value="8 spots"
+				summary="byte · all coverage"
+				explainer="Every poll pays double, for the whole pipeline's room."
 			/>
 		</div>
 	),

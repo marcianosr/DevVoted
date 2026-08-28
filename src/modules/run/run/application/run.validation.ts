@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { MAX_EXTRA_SPOTS } from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 
 const configActionSchema = <T extends string>(type: T) =>
@@ -12,6 +13,14 @@ const configActionSchema = <T extends string>(type: T) =>
 
 const bareActionSchema = <T extends string>(type: T) =>
 	z.object({ type: z.literal(type) }).strict();
+
+const extraSpotActionSchema = <T extends string>(type: T) =>
+	z
+		.object({
+			type: z.literal(type),
+			spots: z.number().int().min(0).max(MAX_EXTRA_SPOTS),
+		})
+		.strict();
 
 export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("slot"),
@@ -40,15 +49,13 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	bareActionSchema("finish-reward"),
 	configActionSchema("sell"),
 	configActionSchema("drop"),
-	z
-		.object({ type: z.literal("change-plan"), tier: z.number().int().min(1) })
-		.strict(),
+	configActionSchema("minify"),
+	extraSpotActionSchema("set-extra-spots"),
 ]);
 
 type SchemaAction = z.infer<typeof runActionSchema>;
 type Assert<T extends true> = T;
 
-/** The engine owns the action contract. These stop compiling if the schema drifts from it. */
 export type SchemaCoversEveryAction = Assert<
 	[RunAction["type"]] extends [SchemaAction["type"]] ? true : false
 >;

@@ -69,19 +69,19 @@ const storageLedger = (view: RunView): readonly LedgerEntry[] => {
 
 	const bills: readonly LedgerEntry[] = [
 		{
-			id: "storage-plan",
-			name: "storage plan",
-			notes: view.gatePayout.planDowngraded
-				? ["unpaid · downgraded"]
-				: ["pass or fail"],
-			value: -view.gatePayout.gateBillPaidKb,
-			dimmed: true,
-		},
-		{
 			id: "subscriptions",
 			name: "subscriptions",
 			notes: ["this gate"],
 			value: -view.gatePayout.subscriptionBillKb,
+			dimmed: true,
+		},
+		{
+			id: "spot-rent",
+			name: "spot rent",
+			notes: [
+				view.gatePayout.rentDefaulted ? "unpaid, spots returned" : "this gate",
+			],
+			value: -view.gatePayout.spotRentKb,
 			dimmed: true,
 		},
 	];
@@ -122,8 +122,6 @@ export const RewardView = (props: RewardViewProps) => {
 		: view.gateStake.gateNumber;
 	const swatch = swatchForGate(gate);
 
-	// `view.gateTheme` and `gateStake` describe the gate ahead; this screen
-	// reports on the one just played.
 	const shared = {
 		theme: swatch?.theme,
 		gateName: swatch?.gateName ?? "",
@@ -148,7 +146,7 @@ export const RewardView = (props: RewardViewProps) => {
 			<RewardScreen
 				{...shared}
 				outcome="held"
-				removeCount={view.stripsRemaining}
+				removeCount={view.peelSpotsRemaining}
 				onChooseRemoval={props.onChooseRemoval}
 			/>
 		);
