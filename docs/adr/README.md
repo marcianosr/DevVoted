@@ -31,7 +31,7 @@
 | [027](027-gate-width-demand.md) | A gate only admits a build that can survive its own stake (width demand) | Superseded by 035 — the width demand is deleted; only the never-go-bare floor remains |
 | [028](028-the-defeat-device.md) | Volkswagen CI: a legendary that reports one failing check as passing | Accepted — amended by 035: the device now reports the gate's first audit as passing |
 | [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons: Rebuild (visit), Lock (next shop), Extend (run) | Accepted — extends 008's shop; rejects account-level rerolls (DVTD-5lt6) |
-| [030](030-gate-staged-storage-plans.md) | The storage-plan ladder is gate-staged, and climbs to 3MB | Accepted — amends 023 Decision 1 (ladder shape only); wiki §2.10 collects every gate-staged unlock |
+| [030](030-gate-staged-storage-plans.md) | The storage-plan ladder is gate-staged, and climbs to 3MB | Accepted — amends 023 Decision 1 (ladder shape only); wiki §2.8 collects every gate-staged unlock |
 | [031](031-shop-exit-blocks-under-width-builds.md) | The shop exit blocks an under-width build; death is an explicit dead-end click | Superseded by 035 — the exit is always open |
 | [033](033-demand-is-what-you-bought.md) | The correct-answer demand is what you bought | Superseded by 035 — the demand is deleted with every other check |
 | [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub — the gate starts from prep, the shop stays open until it does | Accepted — moves finish-reward to prep's start button; community stays the mid-gate wait (DVTD-f7hs) |
@@ -51,6 +51,7 @@
 | [047](047-a-configs-size-is-a-number.md) | A config's size is a number | Accepted — **supersedes 043**; amends 044 Decisions 1 and 7. Grades are deleted; a config carries `slots` of 1/2/4/8/12/16 and costs 32 KB a slot (DVTD-811d) |
 | [048](048-the-pipeline-is-your-build.md) | The pipeline is Your Build | Accepted — reverses 044's `slots → spots` rename and retires "pipeline" as the container's name. Storage / Build / Slots / Configs, one job each; `slot`/`unslot` actions become `install`/`uninstall` (DVTD-811d) |
 | [049](049-the-archive-opens-a-run-wider.md) | The archive opens a run wider | Accepted — amends 046 Decisions 1 and 2. Archived storage buys slots on the start screen at double the rung, uncapped, counting on the same ladder; refundable at cost until Start, and shut off once the run begins (DVTD-dcpq) |
+| [050](050-config-exposure-is-reveal-grant-stage.md) | Config exposure is Reveal / Grant / Stage | Accepted — records DVTD-2try's framework and settles the assignment: Grant gates the starting hand only (the shelf is never filtered), 9 configs free, 15 on a depth ladder read from swatches, 6 on challenges; rejects the archived-storage pull (DVTD-9d7o); Configdex shows ???/met/granted with every requirement named (DVTD-2try) |
 
 ## Conventions
 

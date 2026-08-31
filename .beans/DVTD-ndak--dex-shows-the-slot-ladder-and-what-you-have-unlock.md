@@ -3,9 +3,9 @@
 title: Dex shows the slot ladder, and what you have unlocked
 status: todo
 type: feature
-priority: normal
+priority: critical
 created_at: 2026-08-25T12:48:33Z
-updated_at: 2026-08-25T12:48:33Z
+updated_at: 2026-08-31T09:05:03Z
 ---
 
 ADR-041 split slot unlocks over two axes: gates 1/3/6 open slots 4/5/7, lifetime
@@ -58,3 +58,12 @@ if the coverage rungs should tick independently.
 - [ ] Answer the "unlocked means what" question
 - [ ] Slots panel (mock + story) reading SLOT_UNLOCKS
 - [ ] Wire it when the Dex route is reskinned
+
+## Stale (noted 2026-08-31)
+
+This bean is written against ADR-041's two-axis slot ladder, which was superseded
+twice: ADR-044 deleted the coverage axis, and ADR-046 made every slot above the
+free four **bought** — `SLOT_UNLOCKS` no longer exists (`rules.model.ts` now has
+`SLOT_PRICES_KB` / `BASE_SLOTS` / `MAX_SLOTS`). There is no slot unlock ladder for
+a Dex panel to show any more. Either scrap this, or rescope it to the slot *price*
+ladder if that ever earns a Dex surface.

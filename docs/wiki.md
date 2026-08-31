@@ -668,19 +668,23 @@ unmet coverage are different problems and read differently.
 
 Leftover run storage converts into persistent **archived storage** at the outcome rate
 (100% victory, proportional on death, 0% on abandon). It is the meta-progression
-currency: buy cosmetics, open your next run wider ([5.1](#51-storage-kb)), inject it
-into that run, or fund config unlocks. 🟡 More
-spending options are planned, including mid-run coverage, config, cap and streak
-injections (DVTD-xbri).
+currency: buy cosmetics, open your next run wider ([5.1](#51-storage-kb)), or inject
+it into that run. It never buys a config unlock (ADR-050: unlocks are achievement
+only). 🟡 More spending options are planned, including mid-run coverage, config, cap
+and streak injections (DVTD-xbri).
 
 ### 6.2 Unlocks
 
-🟡 Two unlock systems are designed and not yet reconciled: **milestone unlocks** (clear
-gate N or hit a category coverage threshold, and a config unlocks permanently
-account-wide; DVTD-2try) and **archived-storage pulls** (spend 50 to 500 KB by grade
-on a random unlock, with pity; DVTD-9d7o). Today every shipped config is simply
-available. Also planned: unlockable starting-width tiers, and bonus awards for
-re-answering mastered polls correctly.
+🟡 Designed, not yet built (ADR-050, DVTD-2try): configs are exposed on the
+**Reveal / Grant / Stage** model. Grant gates the starting hand only — the shop
+shelf always offers the whole roster, which is also what fills the Configdex in
+(**Reveal**: a config seen on a shelf is "met"). Nine configs are granted at signup,
+fifteen arrive on a depth ladder read from the swatch ledger (deepest-ever gate),
+and six standouts are earned by challenges that teach their own mechanic; ADR-050
+carries the tables. Unlocks are achievement-only — no currency buys one (the
+archived-storage pull, DVTD-9d7o, is rejected). Today every shipped config is
+simply available. Also planned: bonus awards for re-answering mastered polls
+correctly.
 
 ### 6.3 Swatches
 
@@ -707,21 +711,21 @@ the celadon/cinnabar pass-fail moods still override the gate theme on reward and
 screens.
 
 Swatches surface in the run log's clear line, the Configuring stat row, the end-of-run
-summary, and the Dex's Swatches tab.
+summary, and the Dex's Gates tab.
 
 🟡 **Collect Swatches** (DVTD-g8ty): a *per-category* cosmetic chip earned through
 mastery, a separate collection that reuses the name deliberately.
 
 ### 6.4 The Dex
 
-The Pokédex of DevVoted, at `/dex`. The **Polls** tab tracks every poll you have seen
-with lifetime accuracy (unseen polls redact to `???`); **Configs** catalogs the roster
-grouped by grade, and is where the ladder is taught in full — each section header
-carries the glyph, the grade's name, its odds, its size and the count; **Swatches**
-shows the gate swatches collected across every run,
-unearned ones redacted. 🟡 Planned: upgrade levels, collection stats, per-poll
-community success rates, and named collection states (**???**, **Encountered**,
-**Mastered**).
+The Pokédex of DevVoted, at `/dex`, with four tabs. **Polls** tracks every poll you
+have seen with lifetime accuracy (unseen polls redact to `???`); **Configs** catalogs
+the roster grouped by size and prints what each size costs (ADR-047); **Audits**
+lists every audit as faced, unlocked or unseen (`???` until met); **Gates** shows
+every gate with its swatch, audits and unlocks, locked gates redacting names to
+`???` counts. 🟡 Planned: upgrade levels, collection stats, per-poll community
+success rates, and the Configs tab's three collection states with their requirements
+(`???` / met / granted, ADR-050).
 
 ### 6.5 Borders and seasons
 

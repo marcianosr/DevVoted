@@ -1,13 +1,13 @@
 ---
 # DVTD-2try
 title: 'Unlock system: configs, starter slots, borders'
-status: draft
+status: todo
 type: feature
-priority: normal
+priority: critical
 tags:
     - meta-progress
 created_at: 2026-07-16T20:29:52Z
-updated_at: 2026-08-26T16:07:33Z
+updated_at: 2026-08-31T09:04:48Z
 parent: DVTD-z2r2
 ---
 
@@ -227,3 +227,28 @@ cleared.
 - [ ] Configdex owned/total + silhouettes for unmet rows
 - [ ] Starter stack grants
 - [ ] Dex tools + storage-plan rows as `???` (Reveal)
+
+## Assignment decided (2026-08-31): ADR-050 is the design of record
+
+The two "Still open" items above are closed:
+
+**Which configs take depth vs a challenge, and the numbers** — decided in
+[ADR-050](../docs/adr/050-config-exposure-is-reveal-grant-stage.md): 9 free at
+signup (js, ts, css, eslint, unitTests, codeCoverage, indexedDb, coverageGain,
+coldStart), 15 on the depth ladder at gates 1–7 (stack grants ride along: Gamble
+at gate 1, Category spread at gate 5), 6 challenge grants (Overclock, AGENTS.md,
+Dependabot, Volkswagen CI, WTFPL, Freemium). Only WTFPL needs a new counter
+(sells per shop). Consequence: `agentsMd` leaves `STARTER_POOL` in hand.model.ts
+— legendaries are late grants, the shipped pool predates the decision.
+
+**Starter slots and borders** — starter slots are dead as account unlocks: slots
+are bought (ADR-046) and the archive already widens the start screen (ADR-049);
+the framework's "slots never get Grant" holds. Borders stay in
+`src/domains/economy/`, out of this bean.
+
+Also decided: every Configdex row carries its requirement — `???` rows name the
+requirement (never the config), met rows are dimmed named chips, granted rows read
+as provenance. Tooltip-first, not tooltip-only: tooltips are invisible on touch
+(DVTD-aiyp), so silhouette rows carry a visible caption too.
+
+Status → todo: implementation is unblocked once the DVTD-811d rename settles.
