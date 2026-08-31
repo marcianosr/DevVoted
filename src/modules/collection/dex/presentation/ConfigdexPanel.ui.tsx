@@ -1,16 +1,15 @@
 import {
-	spotsOf,
-	RARITY_ODDS,
-	rarityOf,
-	type Rarity,
+	baseSlotsOf,
+	CONFIG_SIZES,
+	DRAFT_COST_PER_SLOT_KB,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
-import { RarityGlyph } from "~/ui/modern-theme/RarityGlyph.ui";
+import { plural } from "~/ui/modern-theme/format";
 import { Stack } from "~/ui/Stack.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
-const RARITY_ORDER: Rarity[] = ["byte", "nibble", "crumb", "bit"];
+const SIZES_LARGEST_FIRST = [...CONFIG_SIZES].reverse();
 
 const HEADER = "flex items-center gap-3";
 const NAME = "text-xs font-bold uppercase tracking-wide text-zinc-200";
@@ -26,21 +25,16 @@ export const ConfigdexPanel = () => {
 			<Paragraph tone="muted">
 				{total}/{total} collected
 			</Paragraph>
-			{RARITY_ORDER.map((rarity) => {
-				const group = configs.filter((config) => rarityOf(config) === rarity);
-				const [first] = group;
-				if (!first) return null;
+			{SIZES_LARGEST_FIRST.map((size) => {
+				const group = configs.filter((config) => baseSlotsOf(config) === size);
+				if (group.length === 0) return null;
 
 				return (
-					<div key={rarity} className="flex flex-col gap-3">
+					<div key={size} className="flex flex-col gap-3">
 						<header className={HEADER}>
-							<RarityGlyph rarity={rarity} size="header" />
-							<p className={NAME}>{rarity}</p>
+							<p className={NAME}>{plural(size, "slot")}</p>
 							<span className={FIGURES}>
-								<span>{RARITY_ODDS[rarity]}</span>
-								<span>
-									{spotsOf(first)} spot{spotsOf(first) > 1 ? "s" : ""}
-								</span>
+								<span>{DRAFT_COST_PER_SLOT_KB * size} KB</span>
 							</span>
 							<p className={COUNT}>
 								{group.length}/{group.length}

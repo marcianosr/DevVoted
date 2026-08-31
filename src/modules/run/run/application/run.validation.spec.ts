@@ -5,8 +5,8 @@ import { runActionSchema } from "~/modules/run/run/application/run.validation";
 describe("runActionSchema", () => {
 	it("accepts every engine action shape", () => {
 		const actions = [
-			{ type: "slot", configId: "js" },
-			{ type: "unslot", configId: "js" },
+			{ type: "install", configId: "js" },
+			{ type: "uninstall", configId: "js" },
 			{ type: "pick-stack", stackId: "ship-it" },
 			{ type: "start" },
 			{ type: "answer", optionIds: ["64"] },

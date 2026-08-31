@@ -45,10 +45,10 @@ export const OnADisabledAction: Story = {
 export const AlignedToEitherEdge: Story = {
 	render: () => (
 		<div className="flex w-64 justify-between border border-edge p-2">
-			<Tooltip hint="Rent a wider plan for more spots">
+			<Tooltip hint="Rent a wider plan for more slots">
 				<Text size="meta">left</Text>
 			</Tooltip>
-			<Tooltip hint="Rent a wider plan for more spots" align="right">
+			<Tooltip hint="Rent a wider plan for more slots" align="right">
 				<Text size="meta">right</Text>
 			</Tooltip>
 		</div>
@@ -58,11 +58,11 @@ export const AlignedToEitherEdge: Story = {
 export const OpeningEitherWay: Story = {
 	render: () => (
 		<div className="flex items-center justify-between border border-edge p-8">
-			<Tooltip hint="Over capacity by 4 spots. Minify, uninstall, or rent more room.">
+			<Tooltip hint="Over capacity by 4 slots. Minify, uninstall, or rent more room.">
 				<Text size="meta">below</Text>
 			</Tooltip>
 			<Tooltip
-				hint="Over capacity by 4 spots. Minify, uninstall, or rent more room."
+				hint="Over capacity by 4 slots. Minify, uninstall, or rent more room."
 				side="above"
 				align="right"
 			>

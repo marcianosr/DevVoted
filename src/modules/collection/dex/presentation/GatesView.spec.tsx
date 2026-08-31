@@ -25,11 +25,10 @@ const row = (label: string) => {
 const redactionsIn = (label: string) => row(label).queryAllByText("???");
 
 describe("GatesView", () => {
-	it("hangs each grant on the gate whose clear actually opens it", () => {
+	it("hangs each unlock on the gate whose clear actually opens it", () => {
 		renderLadder(0);
 
 		expect(row("1 Boulder").getByText("lock")).toBeInTheDocument();
-		expect(row("1 Boulder").getByText("8 spots")).toBeInTheDocument();
 	});
 
 	it("says git tag, the word the shop sells a pin under", () => {
@@ -38,25 +37,11 @@ describe("GatesView", () => {
 		expect(row("3 Thunder").getByText("git tag")).toBeInTheDocument();
 	});
 
-	it("names the width a clear hands over, in spots", () => {
+	it("promises no width, because slots are bought and never handed over", () => {
 		renderLadder(12);
 
-		expect(row("4 Lavender").getByText("12 spots")).toBeInTheDocument();
-		expect(row("10 Earth").getByText("24 spots")).toBeInTheDocument();
-		expect(screen.queryByText(/spot plan/)).toBeNull();
+		expect(screen.queryByText(/\d+ slots?$/)).toBeNull();
 		expect(screen.queryByText(/MB/)).toBeNull();
-	});
-
-	it("claims no gate for the width every run opens with", () => {
-		renderLadder(12);
-
-		expect(screen.queryByText("4 spots")).not.toBeInTheDocument();
-	});
-
-	it("withholds the width a locked gate hands over", () => {
-		renderLadder(0);
-
-		expect(row("4 Lavender").queryByText("12 spots")).not.toBeInTheDocument();
 	});
 
 	it("keeps naming the shop actions, which the shop advertises anyway", () => {
@@ -69,7 +54,7 @@ describe("GatesView", () => {
 		renderLadder(0);
 
 		expect(row("4 Lavender").queryByText("Dependency Outage")).toBeNull();
-		expect(redactionsIn("4 Lavender")).toHaveLength(2);
+		expect(redactionsIn("4 Lavender")).toHaveLength(1);
 	});
 
 	it("counts each withheld chip, so an empty gate still reads as empty", () => {

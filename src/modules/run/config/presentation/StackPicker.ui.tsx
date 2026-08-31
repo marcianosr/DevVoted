@@ -101,7 +101,7 @@ export const StackPicker = ({
 					tone="muted"
 					className="underline underline-offset-4"
 				>
-					Customize all 4 spots →
+					Customize all 4 slots →
 				</Paragraph>
 			</button>
 		) : null}

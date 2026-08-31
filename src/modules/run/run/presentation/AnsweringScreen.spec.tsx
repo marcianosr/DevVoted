@@ -37,7 +37,7 @@ describe(AnsweringScreen, () => {
 	it("renders the poll question and the gate checklist", () => {
 		render(<AnsweringScreen {...base} />);
 		expect(screen.getByText("Which key?")).toBeInTheDocument();
-		// The pipeline strip and its role row both name the config now.
+		// The build strip and its role row both name the config now.
 		expect(screen.getAllByText("Unit Tests")).not.toHaveLength(0);
 	});
 
@@ -90,7 +90,7 @@ describe(AnsweringScreen, () => {
 		).toBeDisabled();
 	});
 
-	it("runs the linter from its pipeline row", () => {
+	it("runs the linter from its build row", () => {
 		const onLint = vi.fn();
 		render(
 			<AnsweringScreen
@@ -122,7 +122,7 @@ describe(AnsweringScreen, () => {
 		expect(screen.getByRole("img", { name: "skipped" })).toBeInTheDocument();
 	});
 
-	it("buys a peek from Telemetry's pipeline row", () => {
+	it("buys a peek from Telemetry's build row", () => {
 		const onPeek = vi.fn();
 		render(
 			<AnsweringScreen
@@ -200,10 +200,10 @@ describe(AnsweringScreen, () => {
 		expect(screen.queryByText(/%$/)).not.toBeInTheDocument();
 	});
 
-	it("heads the pipeline section like the configure screen, slots counted", () => {
+	it("heads the build section like the configure screen, slots counted", () => {
 		render(<AnsweringScreen {...base} slots={4} />);
 		expect(
-			screen.getByRole("heading", { name: "Your pipeline" })
+			screen.getByRole("heading", { name: "Your build" })
 		).toBeInTheDocument();
 		expect(screen.getByText("2 of 4 slots used")).toBeInTheDocument();
 	});

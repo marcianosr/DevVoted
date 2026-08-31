@@ -44,7 +44,7 @@ export const MultipleChoice: Story = {
 	},
 };
 
-// The lint action itself lives on the linter's pipeline row (RoleList) — the
+// The lint action itself lives on the linter's build row (RoleList) — the
 // card only shows its outcome: the crossed-out option.
 export const WithLintedOption: Story = {
 	args: {
@@ -93,7 +93,7 @@ export const WithCommunitySplitAndSampleSize: Story = {
 /**
  * `.length`'s budget line (DVTD-cz6c). It counts the *tentative* selection, so it
  * moves as the player toggles options: this is the number the commit decision is
- * made against, and the pipeline row can only report picks already spent.
+ * made against, and the build row can only report picks already spent.
  */
 export const WithAnswerCount: Story = {
 	args: {

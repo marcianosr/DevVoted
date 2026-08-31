@@ -24,7 +24,7 @@ const VIEWER = "misty";
 
 const runWith = (configs: readonly Config[]): RunState => {
 	const base = createRun([], []);
-	return { ...base, pipeline: { ...base.pipeline, configs } };
+	return { ...base, build: { ...base.build, configs } };
 };
 
 beforeEach(() => {

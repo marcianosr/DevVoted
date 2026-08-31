@@ -56,9 +56,7 @@ describe(RunSummary, () => {
 			screen.getByRole("heading", { name: /Build broke/ })
 		).toBeInTheDocument();
 		expect(screen.getByText(/stalled at gate 2/)).toBeInTheDocument();
-		expect(
-			screen.getByText("Gate 2 — pipeline broke here")
-		).toBeInTheDocument();
+		expect(screen.getByText("Gate 2 — build broke here")).toBeInTheDocument();
 		expect(screen.getByText("Gate 3 — not reached")).toBeInTheDocument();
 		// Coverage is the run score, shown separately from the storage reward.
 		expect(screen.getByText("9%")).toBeInTheDocument();

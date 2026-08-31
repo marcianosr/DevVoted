@@ -30,17 +30,17 @@ boundary, so this table is the map an architecture review reads first.
 
 | Concept | Lives in | Key symbols |
 |---|---|---|
-| Run / Climb | `run/domain` | `RunState`, `RunStatus`, `createRun`, and the primitives every transition edits state through: `withLog`, `withPipeline`, `addStorage`, `freshWindow`, `shopDraft`, plus the audit lens `auditsOf` / `liveConfigsOf` / `offlineConfigsOf` / `offlinePairsOf` (`run.model.ts`). Holds no transitions and no reducer: it is the bottom of the run-domain graph |
-| Run action | `run/domain` | `RunAction`, `runReducer`, `isShopLocked`, and the configuring transitions `slot` / `unslot` / `pick-stack` / `start` (`runAction.model.ts`); the top of the graph, so it is the one file that may import every other |
+| Run / Climb | `run/domain` | `RunState`, `RunStatus`, `createRun`, and the primitives every transition edits state through: `withLog`, `withBuild`, `addStorage`, `freshWindow`, `shopDraft`, plus the audit lens `auditsOf` / `liveConfigsOf` / `offlineConfigsOf` / `offlinePairsOf` (`run.model.ts`). Holds no transitions and no reducer: it is the bottom of the run-domain graph |
+| Run action | `run/domain` | `RunAction`, `runReducer`, `isShopLocked`, and the configuring transitions `install` / `uninstall` / `pick-stack` / `start` (`runAction.model.ts`); the top of the graph, so it is the one file that may import every other |
 | Answer / Scoring | `run/domain` | `answer`, `closeWindow` (`answer.model.ts`); one poll scored, and the gate verdict, payout and settle when the window fills |
-| Shop action | `run/domain` | `draft`, `upgrade`, `sell`, `drop`, `changePlan`, `plantPin`, `finishReward`, the ADR-029 controls `rebuildDraft` / `lockOffer` / `extendOffers` and their `can*` / `*Available` predicates (`shopAction.model.ts`); pricing and rolling stay in `shop/domain/draft.model.ts` |
+| Shop action | `run/domain` | `draft`, `upgrade`, `sell`, `drop`, `buySlot`, `cashSlot`, `setStoragePlan`, `plantPin`, `finishReward`, the ADR-029 controls `rebuildDraft` / `lockOffer` / `extendOffers` and their `can*` / `*Available` predicates (`shopAction.model.ts`); pricing and rolling stay in `shop/domain/draft.model.ts` |
 | Paid action | `run/domain` | lint and peek: `lintFeeFor`, `peekFeeFor`, `lintApplies`, `canRunLinter`, `spendLint`, `peekApplies`, `canBuyPeek`, `spendPeek` (`paidAction.model.ts`) |
 | Strip / Peel | `run/domain` | `strip`, `resumeClimb` (`strip.model.ts`); the ADR-037 way out of a missed gate |
 | Run fixtures | `run/domain` | `started`, `answerWith`, `clearGate`, `failGate`, `payPeel`, `handed`, `poll`, `pool` (`run.factory.ts`); the shared spec fixtures for the run engine |
 | Run status | `run/domain` | `RunStatus` = `configuring \| answering \| awaiting-strip \| rewarding \| won \| dead` |
 | Run poll / Grading | `run/domain` | `RunPoll`, `RunOption`, `AnswerType`, `AnswerOutcome`, `AnsweredPoll`, `answerOutcome`, `coverageShare`, `mirrorPoll`, `mirrorGrading`, `nextStreak` (`runPoll.model.ts`); the run's own projection of a poll plus the one grading rule, shared with the community board. The authored `Poll` stays with the `polls` context (ADR-002 §2) |
 | Run snapshot | `run/domain` | `RunSnapshot`, `toRunSnapshot`, `hydrateRunState` (`runSnapshot.model.ts`); what persists to `run_states.state` |
-| Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `STORAGE_PLANS`, `failPeelShareFor`, `peelQuotaSpotsFor`, `isPeelFatal`, `atMinimumWidth` (`rules.model.ts`) |
+| Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `BASE_SLOTS`, `MAX_SLOTS`, `SLOT_PRICES_KB`, `STORAGE_PLANS`, `cappedStorage`, `failPeelShareFor`, `peelQuotaSlotsFor`, `isPeelFatal`, `atMinimumWidth` (`rules.model.ts`) |
 | Seed / Segment | `run/domain` | `rollDailySeedSequence` (`seed.model.ts`); pure, so it is a model not a service |
 | Run view | `run/application` | `RunView`, `toRunView` (`runView.viewmodel.ts`); the single projection every screen reads, composed from the slices below. Also the trust boundary (DVTD-ay5e): the client receives this and never `RunState` |
 | Gate stake | `run/application` | `GateStake`, `AuditView`, `auditViewsFor` (`gateStake.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
@@ -53,18 +53,18 @@ boundary, so this table is the map an architecture review reads first.
 | Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, one write. Never split across aggregates |
 | Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |
 | Run screens and HUD | `run/presentation` | Prep / Answering / GameOver screens, `RunLayout`, `RunHud`, `StorageGauge`, `RunSummary` |
-| Pipeline | `pipeline/domain` | `Pipeline` = `{ id, slots, configs }` (`pipeline.model.ts`) |
-| Spot | `pipeline/domain` | `BASE_SPOTS` (4), `OWNED_SPOTS_CAP` (8), `ownedSpotsFor`, `nextSpotGrantFor`, `occupiedSpots`, `freeSpots`, `hasRoomFor`, `overflowSpots` (`pipeline.model.ts`); `spotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
-| Coverage | `pipeline/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
-| Lint | `pipeline/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/paidAction.model.ts` |
-| Build screen | `pipeline/presentation` | `ConfiguringScreen`, `PipelineTable`, `PipelineReportRow`, `SpotGrantRow`, `CoverageByCategory` |
+| Build | `build/domain` | `Build` = `{ id, slots, configs }` (`build.model.ts`) |
+| Slot | `build/domain` | `occupiedSlots`, `freeSlots`, `hasRoomFor`, `overflowSlots`, `isOverCapacity` (`build.model.ts`); the ladder and the cap live in `run/domain/rules.model.ts`; `slotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
+| Coverage | `build/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
+| Lint | `build/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/paidAction.model.ts` |
+| Build screen | `build/presentation` | `ConfiguringScreen`, `BuildTable`, `BuildReportRow`, `CoverageByCategory` |
 | Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed` (`gate.model.ts`) |
 | Gate reward | `gate/domain` | `gateRewardRows`, `gateStorageGained` (`gateReward.model.ts`) |
 | Gate ladder | `gate/domain` | `gateLadder.model.ts`; what unlocks at which gate |
 | Swatch | `gate/domain` | `GateSwatch`, `SwatchTheme`, `swatchForGate` (`swatch.model.ts`); app theming via `src/ui/theme/swatchTheme.ts` |
 | Config role | `gate/domain` | `roleOf`, `roleRows` (`configRole.model.ts`); how a config reads on a gate report |
 | Gate screens | `gate/presentation` | `RewardScreen`, `StripScreen`, `GateRewardReport`, `GateStakeReceipt`, `RoleList`, `SwatchChips`, `GateSegmentBar` |
-| Config | `config/domain` | `Config`, `ConfigFamily`, `Rarity` (`config.model.ts`) |
+| Config | `config/domain` | `Config`, `ConfigFamily`, `ConfigSize`, `CONFIG_SIZES` (`config.model.ts`) |
 | Config roster | `config/domain` | `CONFIG_ROSTER` (`configRoster.model.ts`); the content catalogue |
 | Effect | `config/domain` | `Effect`, `effectOf` (`effect.model.ts`); the benefit half of a config |
 | Config status | `config/domain` | `ConfigStatus`, `SkipReason`, `configStatusFor` (`effect.model.ts`); online / skipped / offline on the poll on deck (ADR-040) |
@@ -128,7 +128,8 @@ Where the two differ, use the code name in code and the player name in copy.
 | Demand | `minConfigsForGate`, `focusDemand`, `Effect.demand` |
 | Strip | `RunAction` `strip`, `RunState.stripsRemaining` |
 | Faucet | `Config.storagePerCorrect`, `RunState.faucetEarnedKb`, `FAUCET_CAP_KB` |
-| Storage plan | `StoragePlan`, `STORAGE_PLANS`, `storagePlanFor` — a rung rents spots AND a KB cap (ADR-044) |
+| Storage plan | `StoragePlan`, `STORAGE_PLANS`, `storagePlanFor` — a rung rents the KB cap and nothing else (ADR-046) |
+| Slot ladder | `SLOT_PRICES_KB`, `nextSlotPriceKb`, `slotCashOutKb`, `RunState.slotsBought` — width is bought, never handed over (ADR-046) |
 
 ---
 
@@ -139,8 +140,10 @@ meant two things at once.
 
 | Retired | Why | Use instead |
 |---|---|---|
-| CI Pipeline (as "the evaluator") | `Pipeline` means the player's build of config slots, not the thing that judges it | **Pipeline** for the build; **Gate** for the judgement |
-| Board | Never the container word | **Pipeline** |
+| Pipeline | Retired as the container word (ADR-048): it read as the thing judging you, which is the gate | **Build** for the player's setup; **Gate** for the judgement |
+| Board | Never the container word | **Build** |
+| Spot | ADR-044 renamed slots to spots to keep width clear of money; ADR-048 reversed it | **Slot** |
+| Rarity / bit / crumb / nibble / byte | ADR-047 deleted the grade ladder; a config carries a plain size | **Slots** (`Config.slots`, one of 1/2/4/8/12/16) |
 | Package Manager | Legacy in-fiction name for the shop; survives only in one `GameLoopExplainer` string | **Shop** |
 | Turn | No such symbol in `src/modules/`; `turn.service.ts` is legacy `src/domains/runs/` | **Answer** (`RunAction` `answer`, `AnsweredPoll`) |
 | Score / ScoreBlock | No score system and no such component; scoring *is* coverage | **Coverage** |

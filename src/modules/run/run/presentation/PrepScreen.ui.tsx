@@ -30,19 +30,19 @@ type PrepScreenProps = {
 	onDropConfig: (configId: string) => void;
 };
 
-type PipelineChipsProps = Pick<
+type BuildChipsProps = Pick<
 	PrepScreenProps,
 	"configs" | "atMinimumWidth" | "onDropConfig"
 > & {
 	shopIsOpen: boolean;
 };
 
-const PipelineChips = ({
+const BuildChips = ({
 	configs,
 	atMinimumWidth,
 	shopIsOpen,
 	onDropConfig,
-}: PipelineChipsProps) => {
+}: BuildChipsProps) => {
 	const [pinnedId, setPinnedId] = useState<string | null>(null);
 
 	const blockedReason = (
@@ -94,7 +94,7 @@ const PipelineChips = ({
 
 	return (
 		<section className="flex flex-col gap-3 rounded border border-edge px-4 py-3">
-			<Title as="h3">Your pipeline</Title>
+			<Title as="h3">Your build</Title>
 			<div className="flex flex-wrap gap-2">{configs.map(chipFor)}</div>
 		</section>
 	);
@@ -114,7 +114,7 @@ export const PrepScreen = ({
 	const gateName = swatchForGate(gateNumber)?.gateName ?? `Gate ${gateNumber}`;
 	return (
 		<div className="flex flex-col gap-6">
-			<PipelineChips
+			<BuildChips
 				configs={configs}
 				atMinimumWidth={atMinimumWidth}
 				shopIsOpen={shopAction !== undefined}

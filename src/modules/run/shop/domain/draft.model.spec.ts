@@ -195,7 +195,7 @@ describe("rollDraft under WTFPL", () => {
 		);
 	});
 
-	it("still excludes everything the pipeline owns", () => {
+	it("still excludes everything the build owns", () => {
 		const offered = ids(rollDraft(0, [CONFIGS.wtfpl, CONFIGS.js, CONFIGS.ts]));
 		expect(offered).not.toContain("js");
 		expect(offered).not.toContain("ts");

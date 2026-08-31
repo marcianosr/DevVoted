@@ -2,8 +2,7 @@ import type { ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import { type Rarity } from "./rarity";
-import { RarityGlyph } from "./RarityGlyph.ui";
+import { plural } from "./format";
 import { Text } from "./Text.ui";
 
 const CHIP = "inline-flex shrink-0 items-center";
@@ -53,8 +52,8 @@ const OUTLINE_TINT = {
 } satisfies Record<ChipTone, string>;
 
 export type ChipProps = { children: ReactNode } & (
-	| { rarity: Rarity; size?: ChipSize; tone?: never; outline?: never }
-	| { tone: ChipTone; size?: ChipSize; outline?: boolean; rarity?: never }
+	| { slots: number; size?: ChipSize; tone?: never; outline?: never }
+	| { tone: ChipTone; size?: ChipSize; outline?: boolean; slots?: never }
 );
 
 export const Chip = (props: ChipProps) => {
@@ -85,7 +84,11 @@ export const Chip = (props: ChipProps) => {
 	const { size = "sm" } = props;
 	return (
 		<span className={clsx(CHIP, KEYED, SIZE[size], TINT.raised)}>
-			{size === "lg" ? <RarityGlyph rarity={props.rarity} /> : null}
+			{size === "lg" ? (
+				<Text size="meta" tone="muted">
+					{plural(props.slots, "slot")}
+				</Text>
+			) : null}
 			<Text size={size === "lg" ? "body" : "meta"} className={FIGURE}>
 				{props.children}
 			</Text>

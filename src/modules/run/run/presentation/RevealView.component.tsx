@@ -1,17 +1,14 @@
 import {
 	type Config,
 	faucetKbPerCorrect,
-	rarityOf,
 } from "~/modules/run/config/domain/config.model";
 import {
 	type AnswerContext,
 	type Coverage,
 	effectOf,
 } from "~/modules/run/config/domain/effect.model";
-import type { CoverageConfigBonus } from "~/modules/run/pipeline/domain/pipeline.model";
+import type { CoverageConfigBonus } from "~/modules/run/build/domain/build.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
-import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
-import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { Chip } from "~/ui/modern-theme/Chip.ui";
 import { Equation, type EquationFactor } from "~/ui/modern-theme/Equation.ui";
@@ -23,9 +20,10 @@ import {
 import {
 	categoryFor,
 	gateHeaderFor,
-	pipelineRows,
+	buildRows,
 	questionFor,
-	railFor,
+	noticesFor,
+	trackFor,
 	trailFor,
 } from "~/modules/run/run/presentation/PollView.component";
 
@@ -86,14 +84,13 @@ const buildFactors = (
 				entry.cover !== undefined
 		)
 		.map(({ config, cover }): EquationFactor => {
-			const rarity = rarityOf(config);
 			if (cover.mult !== 1)
-				return { label: config.label, value: cover.mult, rarity };
+				return { label: config.label, value: cover.mult, chosen: true };
 			return {
 				label: config.label,
 				value: paidBy.get(config.id) ?? 0,
 				op: "plus",
-				rarity,
+				chosen: true,
 			};
 		});
 };
@@ -140,23 +137,20 @@ export type RevealViewProps = {
 	onNext: () => void;
 };
 
-const nextNote = (view: RunView): string | undefined => {
-	const pollsLeft = view.pollsPerGate - view.answeredThisGate.length;
-	if (pollsLeft <= 0) return undefined;
-	const { coverageHeld, coverageDemand, gateNumber } = view.gateStake;
-	const gateName = swatchForGate(gateNumber)?.gateName ?? `gate ${gateNumber}`;
-	const shortBy = roundToOneDecimal(Math.max(0, coverageDemand - coverageHeld));
-	const demand =
-		shortBy > 0
-			? `${shortBy}% short of clearing ${gateName}`
-			: `${gateName}'s demand met`;
-	return `${pollsLeft} to go · ${demand}`;
-};
+const hasPollsLeft = (view: RunView): boolean =>
+	view.pollsPerGate - view.answeredThisGate.length > 0;
+
+// Only `wrong` resets the streak (`nextStreak`), and only a streak that was paying
+// is worth mourning.
+const streakNote = (answered: AnsweredPoll): string | undefined =>
+	answered.outcome === "wrong" && (answered.coverageFactors?.streak ?? 1) > 1
+		? "streak lost · your next correct answer starts at ×1.0"
+		: undefined;
 
 export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 	const fired = firedByConfig(answered.coverageBreakdown?.configBonuses ?? []);
 	const faucet = faucetKbByConfig(view, answered);
-	const rows = pipelineRows(
+	const rows = buildRows(
 		view,
 		{
 			category: answered.category,
@@ -168,8 +162,6 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 		fired: fired.get(row.id),
 		firedKb: faucet.get(row.id),
 	}));
-	const note = nextNote(view);
-
 	return (
 		<PollScreen
 			theme={view.gateTheme}
@@ -185,6 +177,7 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 					<Equation
 						factors={equationFactors(view, answered)}
 						paid={answered.coverageEarned ?? 0}
+						note={streakNote(answered)}
 					/>
 					{answered.explanation ? (
 						<Text as="p" size="meta" tone="muted">
@@ -193,10 +186,10 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 					) : null}
 				</>
 			}
-			rail={railFor(view, rows, true)}
+			build={trackFor(view, rows, undefined, true)}
+			notices={noticesFor(view)}
 			onSubmit={onNext}
-			submitLabel={note === undefined ? "Next →" : "Next poll →"}
-			submitNote={note}
+			submitLabel={hasPollsLeft(view) ? "Next poll →" : "Next →"}
 		/>
 	);
 };

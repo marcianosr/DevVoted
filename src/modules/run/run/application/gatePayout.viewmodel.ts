@@ -8,8 +8,8 @@ export type GatePayout = {
 	readonly extraPickThisGateKb: number;
 	readonly faucetThisGateKb: number;
 	readonly subscriptionBillKb: number;
-	readonly spotRentKb: number;
-	readonly rentDefaulted: boolean;
+	readonly planBilledKb: number;
+	readonly planDowngraded: boolean;
 	readonly autoUpgradedConfig: Config | null;
 	readonly deletedConfigs: readonly Config[];
 	readonly lapsedConfigs: readonly Config[];
@@ -25,15 +25,15 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 		extraPickThisGateKb: state.extraPickThisGateKb ?? 0,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		subscriptionBillKb: state.subscriptionBillKb ?? 0,
-		spotRentKb: state.spotRentKb ?? 0,
-		rentDefaulted: state.rentDefaulted ?? false,
+		planBilledKb: state.planBilledKb ?? 0,
+		planDowngraded: state.planDowngraded ?? false,
 		autoUpgradedConfig:
-			state.pipeline.configs.find(
+			state.build.configs.find(
 				(config) => config.id === state.autoUpgradedConfigId
 			) ?? null,
 		deletedConfigs: state.deletedConfigs ?? [],
 		lapsedConfigs: state.lapsedConfigs ?? [],
 		clearedGateNumber: reportedGate,
-		clearedGateDemand: gateDemandFor(state.pipeline.configs, reportedGate),
+		clearedGateDemand: gateDemandFor(state.build.configs, reportedGate),
 	};
 };

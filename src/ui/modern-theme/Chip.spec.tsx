@@ -5,37 +5,37 @@ import { Chip, chipFigures } from "./Chip.ui";
 
 describe("Chip", () => {
 	it("names the config", () => {
-		render(<Chip rarity="bit">ESLint</Chip>);
+		render(<Chip slots={1}>ESLint</Chip>);
 
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
 
 	it("puts a graded chip on the same fill as its tone siblings", () => {
-		const { container } = render(<Chip rarity="crumb">Intellisense</Chip>);
+		const { container } = render(<Chip slots={2}>Intellisense</Chip>);
 
 		expect(container.firstChild).toHaveClass("bg-surface-raised");
 	});
 
 	it("sizes a graded chip like its tone siblings, not a step up", () => {
-		render(<Chip rarity="bit">.js 1.25</Chip>);
+		render(<Chip slots={1}>.js 1.25</Chip>);
 
 		expect(screen.getByText(".js 1.25")).toHaveClass("text-xs");
 	});
 
-	it("draws the grade glyph on a large chip and not on a small one", () => {
-		const { container: small } = render(<Chip rarity="byte">Freemium</Chip>);
-		const { container: large } = render(
-			<Chip rarity="byte" size="lg">
+	it("states the size on a large chip and not on a small one", () => {
+		const { container: small } = render(<Chip slots={8}>Freemium</Chip>);
+		render(
+			<Chip slots={8} size="lg">
 				Freemium
 			</Chip>
 		);
 
-		expect(small.querySelector("svg")).toBeNull();
-		expect(large.querySelectorAll("svg rect")).toHaveLength(8);
+		expect(small.textContent).toBe("Freemium");
+		expect(screen.getByText("8 slots")).toBeInTheDocument();
 	});
 
-	it("carries no grade colour, so a chip cannot be mistaken for a gate", () => {
-		const { container } = render(<Chip rarity="nibble">Prefetch</Chip>);
+	it("carries no size colour, so a chip cannot be mistaken for a gate", () => {
+		const { container } = render(<Chip slots={4}>Prefetch</Chip>);
 
 		expect((container.firstChild as HTMLElement).className).not.toMatch(
 			/cerulean|viridian|cinnabar|legendary/

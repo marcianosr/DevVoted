@@ -387,11 +387,11 @@ const mostCoverage = (input: StandoutInput): CommunityStandout | null =>
 		)
 	);
 
-const widestPipeline = (input: StandoutInput): CommunityStandout | null =>
+const widestBuild = (input: StandoutInput): CommunityStandout | null =>
 	justTheAward(
 		runAward(
 			input,
-			"widest pipeline",
+			"widest build",
 			(stats) => stats.configCount,
 			(stats) => ({ unit: "configs", amount: stats.configCount })
 		)
@@ -413,7 +413,7 @@ const AWARDS = [
 	deepestGate,
 	longestStreak,
 	mostCoverage,
-	widestPipeline,
+	widestBuild,
 ] as const;
 
 export const standoutsFor = (input: StandoutInput): CommunityStandout[] =>

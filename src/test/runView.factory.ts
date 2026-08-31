@@ -1,16 +1,17 @@
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import {
-	EXTRA_SPOT_TIERS,
-	extraRentKb,
+	BASE_SLOTS,
 	FAUCET_CAP_KB,
+	MAX_SLOTS,
 	pinCostFor,
+	SLOT_PRICES_KB,
+	STORAGE_PLANS,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	type Config,
 	draftCost,
-	spotsOf,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
-import { BASE_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
 import type {
 	RunView,
 	ShopOffer,
@@ -43,7 +44,7 @@ export const createMockShopOffer = (
 ): ShopOffer => ({
 	config,
 	priceKb: draftCost(config),
-	spots: spotsOf(config),
+	slots: slotsOf(config),
 	owned: false,
 	locked: false,
 	installable: true,
@@ -87,8 +88,8 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	deletedConfigs: [],
 	lapsedConfigs: [],
 	subscriptionBillKb: 0,
-	spotRentKb: 0,
-	rentDefaulted: false,
+	planBilledKb: 0,
+	planDowngraded: false,
 	gateRewardPaidKb: 0,
 	faucetThisGateKb: 0,
 	interestThisGateKb: 0,
@@ -114,7 +115,7 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 	coverageDemand: 3,
 	coverageHeld: 0,
 	audits: [],
-	peelSpotsOnFailure: 1,
+	peelSlotsOnFailure: 1,
 	peelShareOnFailure: 0.2,
 	missIsFatal: false,
 	subscriptions: { lines: [], totalKb: 0, onMissKb: 0, shortfallKb: 0 },
@@ -135,16 +136,16 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 
 const createRunView = createMockDataFactory<RunView>({
 	status: "answering",
-	spots: BASE_SPOTS,
-	spotsUsed: 0,
-	spotsFree: BASE_SPOTS,
-	overflowSpots: 0,
+	slots: BASE_SLOTS,
+	slotsUsed: 0,
+	slotsFree: BASE_SLOTS,
+	overflowSlots: 0,
 	configs: [],
 	installed: [],
 	available: [],
 	offers: [],
 	newConfigIds: [],
-	peelSpotsRemaining: 0,
+	peelSlotsRemaining: 0,
 	poll: createMockPollView(),
 	awaitingTomorrow: false,
 	pollsExhausted: false,
@@ -183,21 +184,22 @@ const createRunView = createMockDataFactory<RunView>({
 	coverage: 0,
 	coverageByCategory: {},
 	storage: 64,
-	extraSpots: {
-		renting: 0,
-		perGateKb: 0,
-		options: [
-			{ spots: 0, makes: 4, rentKb: 0, held: true, rentTooDear: false },
-			...EXTRA_SPOT_TIERS.map((tier) => ({
-				spots: tier.spots,
-				makes: 4 + tier.spots,
-				rentKb: extraRentKb(tier.spots),
-				held: false,
-				...(tier.fromGate > 0
-					? { fromGate: tier.fromGate }
-					: { rentTooDear: false }),
-			})),
-		],
+	slotDeals: {
+		slots: BASE_SLOTS,
+		maxSlots: MAX_SLOTS,
+		buy: { costKb: SLOT_PRICES_KB[0], makes: BASE_SLOTS + 1 },
+		cash: { refusal: "Nothing to cash — the first four slots are free." },
+	},
+	storagePlan: {
+		capKb: STORAGE_PLANS[0].capKb,
+		perGateKb: STORAGE_PLANS[0].perGateKb,
+		options: STORAGE_PLANS.map((plan) => ({
+			tier: plan.tier,
+			capKb: plan.capKb,
+			perGateKb: plan.perGateKb,
+			held: plan.tier === 0,
+			burnsKb: 0,
+		})),
 	},
 });
 

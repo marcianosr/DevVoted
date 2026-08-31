@@ -183,7 +183,7 @@ describe("the configs an audit takes offline", () => {
 	describe("Rolling Outage — a different config each poll", () => {
 		const rolling = auditsForGate(9);
 
-		it("never repeats inside one lap of the pipeline", () => {
+		it("never repeats inside one lap of the build", () => {
 			const lap = [0, 1, 2].map(
 				(answered) => offlineConfigsFor(build, rolling, window, answered)[0]?.id
 			);

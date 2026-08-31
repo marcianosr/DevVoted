@@ -12,12 +12,12 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import type { ChipAction } from "~/modules/run/config/presentation/ConfigActions.ui";
 import {
 	describeRow,
-	PipelineReportRow,
-} from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
+	BuildReportRow,
+} from "~/modules/run/build/presentation/BuildReportRow.ui";
 import {
-	PipelineTable,
+	BuildTable,
 	SlotNumberCell,
-} from "~/modules/run/pipeline/presentation/PipelineTable.ui";
+} from "~/modules/run/build/presentation/BuildTable.ui";
 
 export const roleBadge = (_row: RoleRow): StatusBadgeVariant => "skip";
 
@@ -63,7 +63,7 @@ const EmptySlotRow = ({ slot }: { slot: number }) => (
 type RoleListProps = {
 	rows: readonly RoleRow[];
 	onRemove?: (configId: string) => void;
-	freeSpots?: number;
+	freeSlots?: number;
 	actionsFor?: (config: Config) => readonly ChipAction[];
 	getUseAction?: (config: Config) => RowUseAction | undefined;
 	trailingFor?: (config: Config) => ReactNode;
@@ -89,7 +89,7 @@ const removeButton = (row: RoleRow, onRemove: (configId: string) => void) => (
 export const RoleList = ({
 	rows,
 	onRemove,
-	freeSpots,
+	freeSlots,
 	actionsFor,
 	getUseAction,
 	trailingFor,
@@ -100,7 +100,7 @@ export const RoleList = ({
 	trailing,
 	foldIdleRows = false,
 }: RoleListProps) => {
-	const emptySlots = Math.max(0, (freeSpots ?? 0) - (preview ? 1 : 0));
+	const emptySlots = Math.max(0, (freeSlots ?? 0) - (preview ? 1 : 0));
 	const isOffline = (config: Config): boolean =>
 		offlineConfigIds?.includes(config.id) ?? false;
 
@@ -123,13 +123,13 @@ export const RoleList = ({
 	const firstEmptySlot = previewSlot + (preview ? 1 : 0);
 
 	return (
-		<PipelineTable numbered>
+		<BuildTable numbered>
 			{rows.map((row, index) => {
 				const action = isOffline(row.config)
 					? undefined
 					: getUseAction?.(row.config);
 				return (
-					<PipelineReportRow
+					<BuildReportRow
 						key={row.config.id}
 						slotNumber={index + 1}
 						badge={roleBadge(row)}
@@ -156,7 +156,7 @@ export const RoleList = ({
 				);
 			})}
 			{preview ? (
-				<PipelineReportRow
+				<BuildReportRow
 					slotNumber={previewSlot}
 					badge="skip"
 					layout="table"
@@ -166,7 +166,7 @@ export const RoleList = ({
 					gives={givesOf(preview.config)}
 					costs={preview.config.costs}
 					trailing={preview.hint}
-					activateLabel={`Add ${preview.config.label} to your pipeline`}
+					activateLabel={`Add ${preview.config.label} to your build`}
 					onActivate={preview.onAdd}
 				/>
 			) : null}
@@ -174,6 +174,6 @@ export const RoleList = ({
 				<EmptySlotRow key={`empty-${index}`} slot={firstEmptySlot + index} />
 			))}
 			{trailing}
-		</PipelineTable>
+		</BuildTable>
 	);
 };

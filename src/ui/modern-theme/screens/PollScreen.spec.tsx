@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Token } from "../Code.ui";
-import { Fold } from "../Fold.ui";
+import { Text } from "../Text.ui";
 import { PollScreen, type PollScreenProps } from "./PollScreen.ui";
 
 const onChange = vi.fn();
@@ -24,7 +24,7 @@ const props: PollScreenProps = {
 			which line lifts the final two from <Token tone="theme">arr</Token>?
 		</>
 	),
-	meta: ["lift-the-final-two", "typescript"],
+	meta: [{ label: "lift-the-final-two" }, { label: "typescript" }],
 	code: ["const arr = [];"],
 	options: [
 		{
@@ -44,7 +44,7 @@ const props: PollScreenProps = {
 			onChange,
 		},
 	],
-	rail: <Fold title="Pipeline" value="−128 KB" />,
+	build: <Text size="title">Build</Text>,
 };
 
 const wholeQuestion = (_: string, element: Element | null) =>
@@ -60,7 +60,7 @@ describe("PollScreen", () => {
 		expect(screen.getAllByText(wholeQuestion).length).toBeGreaterThan(0);
 	});
 
-	it("puts the gate, the trail and the rail on one screen with the question", () => {
+	it("puts the gate, the trail and the build on one screen with the question", () => {
 		render(<PollScreen {...props} />);
 
 		expect(
@@ -69,7 +69,7 @@ describe("PollScreen", () => {
 		expect(
 			screen.getByRole("navigation", { name: "Polls in this gate" })
 		).toBeInTheDocument();
-		expect(screen.getByText("Pipeline")).toBeInTheDocument();
+		expect(screen.getByText("Build")).toBeInTheDocument();
 		expect(screen.getByText("const arr = [];")).toBeInTheDocument();
 	});
 
@@ -110,65 +110,26 @@ describe("PollScreen", () => {
 		expect(container.firstChild).toHaveAttribute("data-gate-theme", "lavender");
 	});
 
-	it("drops the rail entirely when the run has nothing to show beside the poll", () => {
-		const { container } = render(<PollScreen {...props} rail={undefined} />);
+	it("keeps the poll in one column — nothing is parked in a sidebar", () => {
+		const { container } = render(<PollScreen {...props} />);
 
 		expect(container.querySelector("aside")).not.toBeInTheDocument();
 	});
 
-	it("offers no fold until a handler can remember the rail is folded", () => {
-		render(<PollScreen {...props} />);
+	it("drops the strip entirely when a run has no build and no audits to state", () => {
+		render(<PollScreen {...props} build={undefined} notices={undefined} />);
 
-		expect(
-			screen.queryByRole("button", { name: /run info/ })
-		).not.toBeInTheDocument();
+		expect(screen.queryByText("Build")).not.toBeInTheDocument();
 	});
 
-	it("folds the rail on request, naming what pressing it does", async () => {
-		const onToggleRail = vi.fn();
-		render(<PollScreen {...props} onToggleRail={onToggleRail} />);
-
-		const fold = screen.getByRole("button", { name: "Fold run info" });
-		expect(fold).toHaveAttribute("aria-expanded", "true");
-
-		await userEvent.click(fold);
-
-		expect(onToggleRail).toHaveBeenCalledOnce();
-	});
-
-	it("keeps the toggle when the rail is folded, and nothing else", () => {
-		render(<PollScreen {...props} onToggleRail={() => {}} railOpen={false} />);
-
-		expect(
-			screen.getByRole("button", { name: "Unfold run info" })
-		).toHaveAttribute("aria-expanded", "false");
-		expect(screen.queryByText("Pipeline")).not.toBeInTheDocument();
-	});
-
-	it("centres the fold on the divider rather than inside the rail", () => {
-		render(<PollScreen {...props} onToggleRail={() => {}} />);
-
-		const fold = screen.getByRole("button", { name: "Fold run info" });
-
-		expect(fold.closest("div")).toHaveClass("lg:-mr-6");
-	});
-
-	it("gives the question the rail's width back when it folds", () => {
-		const { container: open } = render(
-			<PollScreen {...props} onToggleRail={() => {}} />
-		);
-		const { container: folded } = render(
-			<PollScreen {...props} onToggleRail={() => {}} railOpen={false} />
+	it("puts the audits under the build they are acting on", () => {
+		render(
+			<PollScreen {...props} notices={<Text size="meta">Cost Overrun</Text>} />
 		);
 
-		expect(open.querySelector("aside")).toHaveClass("lg:w-80");
-		expect(folded.querySelector("aside")).toHaveClass("lg:w-auto");
-	});
+		const strip = screen.getByText("Build").parentElement;
 
-	it("orders the rail after the question in the DOM, so a narrow screen reads question-first", () => {
-		const { container } = render(<PollScreen {...props} />);
-
-		expect(container.querySelector("aside")).toHaveClass("lg:order-first");
+		expect(strip).toHaveTextContent("Cost Overrun");
 	});
 
 	it("sits on ground tinted by the gate it belongs to", () => {

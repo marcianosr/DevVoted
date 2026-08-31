@@ -3,10 +3,22 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Entry } from "../Entry.ui";
-import type { ExtraSpotsProps } from "../ExtraSpots.ui";
+import type { StoragePlanProps } from "../StoragePlan.ui";
 import { ShopScreen, type ShopScreenProps } from "./ShopScreen.ui";
 
-const NO_EXTRAS: ExtraSpotsProps = { steps: [], renting: 0, perGateKb: 0 };
+const STORAGE_PLAN: StoragePlanProps = {
+	cap: "1 MB",
+	terms: "32 KB a gate",
+	rows: [
+		{
+			id: "plan-2",
+			label: "1 MB",
+			terms: "32 KB a gate",
+			held: true,
+			pick: { onUse: () => {} },
+		},
+	],
+};
 
 const props: ShopScreenProps = {
 	gate: {
@@ -27,8 +39,8 @@ const props: ShopScreenProps = {
 		},
 	],
 	offerCount: "5 offers",
-	pipeline: [{ id: ".git", content: <Entry mark="pass" label=".git" /> }],
-	slots: "3 of 6 spots",
+	build: [{ id: ".git", content: <Entry mark="pass" label=".git" /> }],
+	slots: "3 of 6 slots",
 	theme: "lavender",
 };
 
@@ -40,30 +52,30 @@ describe("ShopScreen", () => {
 			screen.getByRole("heading", { name: "Lavender shop" })
 		).toBeInTheDocument();
 		expect(screen.getByText("New configs")).toBeInTheDocument();
-		expect(screen.getByText("Your pipeline")).toBeInTheDocument();
+		expect(screen.getByText("Your build")).toBeInTheDocument();
 	});
 
 	it("counts the shelf and the slots beside their own headings", () => {
 		render(<ShopScreen {...props} />);
 
 		expect(screen.getByText("5 offers")).toBeInTheDocument();
-		expect(screen.getByText("3 of 6 spots")).toBeInTheDocument();
+		expect(screen.getByText("3 of 6 slots")).toBeInTheDocument();
 	});
 
-	it("draws the pipeline's room under its heading", () => {
+	it("draws the build's room under its heading", () => {
 		render(<ShopScreen {...props} track={<span>the track</span>} />);
 
 		expect(screen.getByText("the track")).toBeInTheDocument();
 	});
 
-	it("gives the offer and pipeline headings no way to collapse the list", () => {
+	it("gives the offer and build headings no way to collapse the list", () => {
 		render(<ShopScreen {...props} />);
 
 		expect(screen.getByText("New configs").closest("summary")).toBeNull();
-		expect(screen.getByText("Your pipeline").closest("summary")).toBeNull();
+		expect(screen.getByText("Your build").closest("summary")).toBeNull();
 	});
 
-	it("orders the draft before the pipeline, so a stacked screen reads what is for sale first", () => {
+	it("orders the draft before the build, so a stacked screen reads what is for sale first", () => {
 		const { container } = render(<ShopScreen {...props} />);
 
 		const [first] = Array.from(container.querySelectorAll("section"));
@@ -99,19 +111,19 @@ describe("ShopScreen", () => {
 		render(
 			<ShopScreen
 				{...props}
-				extraSpots={NO_EXTRAS}
+				storagePlan={STORAGE_PLAN}
 				controls={<button>git tag</button>}
 			/>
 		);
 
 		const draft = screen.getByText("New configs");
-		const capacity = screen.getByText("Extra spots");
+		const plan = screen.getByText("Storage plan");
 		const tag = screen.getByRole("button", { name: "git tag" });
 
-		expect(draft.compareDocumentPosition(capacity)).toBe(
+		expect(draft.compareDocumentPosition(plan)).toBe(
 			Node.DOCUMENT_POSITION_FOLLOWING
 		);
-		expect(capacity.compareDocumentPosition(tag)).toBe(
+		expect(plan.compareDocumentPosition(tag)).toBe(
 			Node.DOCUMENT_POSITION_FOLLOWING
 		);
 	});
@@ -145,34 +157,10 @@ describe("ShopScreen", () => {
 		expect(screen.getByText("next rebuild 8 KB")).toBeInTheDocument();
 	});
 
-	it("carries the extra-spot ladder in the draft column", () => {
-		render(
-			<ShopScreen
-				{...props}
-				extraSpots={{
-					...NO_EXTRAS,
-					steps: [
-						{
-							id: "extra-0",
-							label: "none",
-							makes: "makes 4",
-							terms: "free",
-							held: true,
-							pick: { onUse: () => {} },
-						},
-					],
-				}}
-			/>
-		);
-
-		expect(screen.getByText("Extra spots")).toBeInTheDocument();
-		expect(screen.getByText("makes 4")).toBeInTheDocument();
-	});
-
-	it("leaves the ladder out entirely when no capacity is given", () => {
+	it("leaves the storage plan out entirely when no plan is given", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(screen.queryByText("Extra spots")).not.toBeInTheDocument();
+		expect(screen.queryByText("Storage plan")).not.toBeInTheDocument();
 	});
 
 	it("offers no way out until a handler says where out is", () => {
@@ -214,13 +202,13 @@ describe("ShopScreen", () => {
 			<ShopScreen
 				{...props}
 				onContinue={() => {}}
-				exitLock="Over capacity by 4 spots. Minify, uninstall, or rent more room."
+				exitLock="Over capacity by 4 slots. Minify, uninstall, or rent more room."
 			/>
 		);
 
 		expect(
 			screen.getByRole("button", {
-				name: "Continue →, Over capacity by 4 spots. Minify, uninstall, or rent more room.",
+				name: "Continue →, Over capacity by 4 slots. Minify, uninstall, or rent more room.",
 			})
 		).toBeDisabled();
 		expect(screen.getByText("Continue →")).toBeInTheDocument();

@@ -43,7 +43,7 @@ const items: FoldItem[] = configs.map(([label, variant, value]) => ({
 
 export const Open: Story = {
 	args: {
-		title: "Pipeline",
+		title: "Build",
 		value: <Delta kb={-128} />,
 		items,
 	},

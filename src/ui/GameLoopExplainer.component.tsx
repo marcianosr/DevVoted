@@ -31,9 +31,9 @@ const GAME_LOOP_STEPS: Step[] = [
 	},
 	{
 		icon: "4.",
-		title: "Upgrade Your Pipeline",
+		title: "Upgrade Your Build",
 		description:
-			"Clear a gate to earn storage and a wider pipeline, then spend it on configs that boost your coverage.",
+			"Clear a gate to earn storage and a wider build, then spend it on configs that boost your coverage.",
 	},
 	{
 		icon: "5.",

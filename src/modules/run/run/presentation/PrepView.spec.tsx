@@ -10,9 +10,9 @@ import { PrepView, type PrepViewProps } from "./PrepView.component";
 const view = createMockRunView({
 	gatesCleared: 4,
 	configs: [CONFIGS.js, CONFIGS.ts],
-	spots: 4,
-	spotsUsed: 2,
-	spotsFree: 2,
+	slots: 4,
+	slotsUsed: 2,
+	slotsFree: 2,
 	storage: 184,
 	gateStake: createMockGateStake({ gateNumber: 4, coverageDemand: 60 }),
 });
@@ -37,10 +37,10 @@ describe("PrepView", () => {
 		).toBeInTheDocument();
 	});
 
-	it("counts the build in spots against the width the gate grants", () => {
+	it("counts the build in slots against the width the gate grants", () => {
 		render_();
 
-		expect(screen.getByText("2 of 4 spots")).toBeInTheDocument();
+		expect(screen.getByText("2 of 4 slots")).toBeInTheDocument();
 	});
 
 	it("lists no empty rows beside the build", () => {
@@ -49,10 +49,10 @@ describe("PrepView", () => {
 		expect(screen.queryByText("Not filled yet")).not.toBeInTheDocument();
 	});
 
-	it("names the ways out once the build fills every spot", () => {
-		render_({ view: createMockRunView({ ...view, spots: 2, spotsFree: 0 }) });
+	it("names the ways out once the build fills every slot", () => {
+		render_({ view: createMockRunView({ ...view, slots: 2, slotsFree: 0 }) });
 
-		expect(screen.getByText("2 of 2 spots")).toBeInTheDocument();
+		expect(screen.getByText("2 of 2 slots")).toBeInTheDocument();
 		expect(
 			screen.getByText("full · minify or uninstall to make room")
 		).toBeInTheDocument();

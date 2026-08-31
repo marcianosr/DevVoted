@@ -12,8 +12,7 @@ import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { BASE_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
-import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import { BASE_SLOTS, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import {
 	type DrizzleMockState,
 	resetDrizzleMock,
@@ -150,7 +149,7 @@ describe("applyActionToRun", () => {
 		const summitReady = answeringState({
 			storage: 100,
 			coverage: 400,
-			pipeline: { id: "pipeline", spots: BASE_SPOTS, configs: [CONFIGS.js] },
+			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
 			window: {
 				correct: 4,
@@ -199,7 +198,7 @@ describe("applyActionToRun", () => {
 	it("earns the cleared gate's swatch, written before the state row", async () => {
 		const closing = answeringState({
 			coverage: 10,
-			pipeline: { id: "pipeline", spots: BASE_SPOTS, configs: [CONFIGS.js] },
+			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
 			window: {
 				correct: 4,
 				answered: 4,
@@ -357,8 +356,8 @@ describe("applyActionToRun", () => {
 		const base = createRun([], [CONFIGS.js]);
 		const configuring = {
 			...base,
-			pipeline: {
-				...base.pipeline,
+			build: {
+				...base.build,
 				configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.css],
 			},
 			status: "configuring" as const,

@@ -19,11 +19,11 @@ const props: PrepScreenProps = {
 	coveragePerWrong: -1.3,
 	missIsFatal: false,
 	configs: [
-		{ id: "ts", label: ".ts", spots: 1 },
-		{ id: "intellisense", label: "Intellisense", spots: 4 },
-		{ id: "indexeddb", label: "IndexedDB", spots: 1 },
+		{ id: "ts", label: ".ts", slots: 1 },
+		{ id: "intellisense", label: "Intellisense", slots: 4 },
+		{ id: "indexeddb", label: "IndexedDB", slots: 1 },
 	],
-	spots: 6,
+	slots: 6,
 	fits: null,
 	audits: [
 		{
@@ -65,21 +65,21 @@ describe("PrepScreen", () => {
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
 	});
 
-	it("counts the build in spots against the width it holds", () => {
+	it("counts the build in slots against the width it holds", () => {
 		render(<PrepScreen {...props} />);
 
-		expect(screen.getByText("6 of 6 spots")).toBeInTheDocument();
+		expect(screen.getByText("6 of 6 slots")).toBeInTheDocument();
 	});
 
 	it("draws the room the build has not filled without listing it", () => {
-		render(<PrepScreen {...props} spots={8} fits="crumb" />);
+		render(<PrepScreen {...props} slots={8} fits={2} />);
 
-		expect(screen.getByText("6 of 8 spots")).toBeInTheDocument();
+		expect(screen.getByText("6 of 8 slots")).toBeInTheDocument();
 		expect(screen.queryByText("Not filled yet")).not.toBeInTheDocument();
 		expect(screen.getByRole("meter")).toHaveAttribute("aria-valuemax", "8");
 	});
 
-	it("draws the pipeline as room and names it full when nothing fits", () => {
+	it("draws the build as room and names it full when nothing fits", () => {
 		render(<PrepScreen {...props} />);
 
 		expect(
@@ -117,7 +117,7 @@ describe("PrepScreen", () => {
 		render(<PrepScreen {...props} removeOnMiss={3} missIsFatal />);
 
 		expect(
-			screen.getByText("your whole pipeline — the run ends here")
+			screen.getByText("your whole build — the run ends here")
 		).toHaveClass("text-cinnabar");
 		expect(screen.getByText("remove 3 configs")).toBeInTheDocument();
 	});
@@ -216,7 +216,7 @@ describe("PrepScreen", () => {
 		expect(screen.queryAllByRole("img", { name: "idle" })).toHaveLength(0);
 	});
 
-	it("sends the player to the shop from the pipeline it cannot edit", async () => {
+	it("sends the player to the shop from the build it cannot edit", async () => {
 		const onBackToShop = vi.fn();
 		render(<PrepScreen {...props} onBackToShop={onBackToShop} />);
 
@@ -239,8 +239,8 @@ describe("PrepScreen", () => {
 	it("numbers the build in the order it runs", () => {
 		render(<PrepScreen {...props} />);
 
-		const pipeline = screen.getByText("Your pipeline").closest("details");
-		const rows = within(pipeline as HTMLElement).getAllByRole("listitem");
+		const build = screen.getByText("Your build").closest("details");
+		const rows = within(build as HTMLElement).getAllByRole("listitem");
 
 		expect(rows[0]).toHaveTextContent("1");
 		expect(rows[1]).toHaveTextContent("2");

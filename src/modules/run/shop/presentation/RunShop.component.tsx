@@ -18,7 +18,7 @@ export const RunShop = () => {
 
 	if (!view) return null;
 
-	const action = shopExitAction(view.gatesCleared, view.overflowSpots);
+	const action = shopExitAction(view.gatesCleared, view.overflowSlots);
 
 	return (
 		<Screen
@@ -49,14 +49,17 @@ export const RunShop = () => {
 				onLock={(id) => send({ type: "lock-offer", configId: id })}
 				onExtend={() => send({ type: "extend-offers" })}
 				onPlantPin={() => send({ type: "plant-pin" })}
-				spots={view.spots}
-				spotsUsed={view.spotsUsed}
-				spotsFree={view.spotsFree}
+				slots={view.slots}
+				slotsUsed={view.slotsUsed}
+				slotsFree={view.slotsFree}
 				upgradedConfigId={view.gatePayout.autoUpgradedConfig?.id}
 				onUpgrade={(id) => send({ type: "upgrade", configId: id })}
 				onSell={(id) => send({ type: "sell", configId: id })}
-				extraSpots={view.extraSpots}
-				onRentExtraSpots={(spots) => send({ type: "set-extra-spots", spots })}
+				slotDeals={view.slotDeals}
+				storagePlan={view.storagePlan}
+				onBuySlot={() => send({ type: "buy-slot" })}
+				onCashSlot={() => send({ type: "cash-slot" })}
+				onSetStoragePlan={(tier) => send({ type: "set-storage-plan", tier })}
 			/>
 		</Screen>
 	);

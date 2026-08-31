@@ -2,10 +2,10 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
-	EXTRA_SPOT_TIERS,
-	extraRentKb,
-	extraSpotsUnlocked,
-	scheduledSpots,
+	BASE_SLOTS,
+	MAX_SLOTS,
+	SLOT_PRICES_KB,
+	STORAGE_PLANS,
 } from "~/modules/run/run/domain/rules.model";
 import { ShopScreen } from "~/modules/run/shop/presentation/ShopScreen.ui";
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
@@ -14,8 +14,6 @@ import {
 	createMockShopControls,
 	createMockShopOffer,
 } from "~/test/runView.factory";
-
-const GATES_CLEARED = 2;
 
 const stake = createMockGateStake({
 	gateNumber: 3,
@@ -35,33 +33,30 @@ const stake = createMockGateStake({
 	},
 });
 
-const extraSpotsOn = ({ held = 0 } = {}) => {
-	const free = scheduledSpots(GATES_CLEARED);
-	const unlocked = extraSpotsUnlocked(GATES_CLEARED);
+const slotDealsOn = (slots = BASE_SLOTS) => {
+	const bought = slots - BASE_SLOTS;
 	return {
-		renting: held,
-		perGateKb: extraRentKb(held),
-		options: [
-			{
-				spots: 0,
-				makes: free,
-				rentKb: 0,
-				held: held === 0,
-				rentTooDear: false,
-			},
-			...EXTRA_SPOT_TIERS.map((tier) => {
-				const locked = tier.spots > unlocked;
-				return {
-					spots: tier.spots,
-					makes: free + tier.spots,
-					rentKb: extraRentKb(tier.spots),
-					held: tier.spots === held,
-					...(locked ? { fromGate: tier.fromGate } : { rentTooDear: false }),
-				};
-			}),
-		],
+		slots,
+		maxSlots: MAX_SLOTS,
+		buy: { costKb: SLOT_PRICES_KB[bought], makes: slots + 1 },
+		cash:
+			bought > 0
+				? { costKb: SLOT_PRICES_KB[bought - 1], makes: slots - 1 }
+				: { refusal: "Nothing to cash — the first four slots are free." },
 	};
 };
+
+const storagePlanOn = (tier = 0, storage = 0) => ({
+	capKb: STORAGE_PLANS[tier].capKb,
+	perGateKb: STORAGE_PLANS[tier].perGateKb,
+	options: STORAGE_PLANS.map((plan) => ({
+		tier: plan.tier,
+		capKb: plan.capKb,
+		perGateKb: plan.perGateKb,
+		held: plan.tier === tier,
+		burnsKb: Math.max(0, storage - plan.capKb),
+	})),
+});
 
 const controls = (overrides: Partial<ShopControls> = {}) =>
 	createMockShopControls({
@@ -80,8 +75,11 @@ const meta: Meta<typeof ShopScreen> = {
 	component: ShopScreen,
 	title: "Run/Screens/Shop",
 	args: {
-		extraSpots: extraSpotsOn(),
-		onRentExtraSpots: () => {},
+		slotDeals: slotDealsOn(),
+		storagePlan: storagePlanOn(),
+		onBuySlot: () => {},
+		onCashSlot: () => {},
+		onSetStoragePlan: () => {},
 		controls: controls(),
 		onLock: () => {},
 		onExtend: () => {},
@@ -103,9 +101,9 @@ export const Default: Story = {
 		),
 		onDraft: () => {},
 		onRebuild: () => {},
-		spots: 4,
-		spotsUsed: 3,
-		spotsFree: 1,
+		slots: 4,
+		slotsUsed: 3,
+		slotsFree: 1,
 		onUpgrade: () => {},
 		onSell: () => {},
 	},
@@ -152,17 +150,18 @@ export const OfferOwned: Story = {
 export const PastTheFreeFour: Story = {
 	args: {
 		...Default.args,
-		spots: 12,
-		spotsUsed: 3,
-		spotsFree: 9,
+		slots: 12,
+		slotsUsed: 3,
+		slotsFree: 9,
 	},
 };
 
-export const RentingSpots: Story = {
+export const SlotsBought: Story = {
 	args: {
 		...Default.args,
 		storage: 700,
-		extraSpots: extraSpotsOn({ held: 2 }),
+		slotDeals: slotDealsOn(BASE_SLOTS + 2),
+		storagePlan: storagePlanOn(1, 700),
 	},
 };
 

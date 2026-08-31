@@ -13,7 +13,7 @@ export const RunStrip = () => {
 
 	if (!view) return null;
 
-	const quotaMet = view.peelSpotsRemaining === 0;
+	const quotaMet = view.peelSlotsRemaining === 0;
 
 	return (
 		<Screen
@@ -24,11 +24,11 @@ export const RunStrip = () => {
 				disabled: !quotaMet,
 				hint: quotaMet
 					? undefined
-					: `Peel ${view.peelSpotsRemaining} more config${view.peelSpotsRemaining === 1 ? "" : "s"} to continue`,
+					: `Peel ${view.peelSlotsRemaining} more config${view.peelSlotsRemaining === 1 ? "" : "s"} to continue`,
 			}}
 		>
 			<StripScreen
-				peelSpotsRemaining={view.peelSpotsRemaining}
+				peelSlotsRemaining={view.peelSlotsRemaining}
 				gateNumber={view.gatesCleared}
 				configs={view.configs}
 				answered={view.answeredThisGate}

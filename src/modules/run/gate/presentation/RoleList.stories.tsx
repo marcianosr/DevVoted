@@ -68,22 +68,22 @@ export const ConditionalOnly: Story = {
 	},
 };
 
-export const WithEmptySpots: Story = {
-	args: { rows, freeSpots: 2 },
+export const WithEmptySlots: Story = {
+	args: { rows, freeSlots: 2 },
 };
 
-export const WithSpotPreview: Story = {
+export const WithSlotPreview: Story = {
 	args: {
 		rows,
-		freeSpots: 2,
+		freeSlots: 2,
 		preview: { config: CONFIGS.eslint, onAdd: () => {} },
 	},
 };
 
-export const WithLegendarySpotPreview: Story = {
+export const WithLegendarySlotPreview: Story = {
 	args: {
 		rows: rows.slice(0, 2),
-		freeSpots: 2,
+		freeSlots: 2,
 		preview: { config: CONFIGS.agentsMd, onAdd: () => {} },
 	},
 };
@@ -91,7 +91,7 @@ export const WithLegendarySpotPreview: Story = {
 export const ShopLoadout: Story = {
 	args: {
 		rows,
-		freeSpots: 1,
+		freeSlots: 1,
 		newConfigIds: [CONFIGS.js.id],
 		actionsFor: () => [
 			{ label: "Upgrade (5% cov)", onClick: () => {} },

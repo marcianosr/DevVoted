@@ -26,7 +26,7 @@ import { showsSampleSize } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui";
-import { StartView } from "~/modules/run/pipeline/presentation/StartView.component";
+import { StartView } from "~/modules/run/build/presentation/StartView.component";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
 import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
 import { RevealView } from "~/modules/run/run/presentation/RevealView.component";
@@ -387,7 +387,7 @@ const simulateCommunityBoard = (
 					},
 					{
 						voter: trainerVoter(trainerBy(`wide:${gateKey}`)),
-						title: "widest pipeline",
+						title: "widest build",
 						value: { unit: "configs" as const, amount: run.configCount },
 					},
 				];
@@ -495,8 +495,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onToggle={(id) =>
 						dispatch({
 							type: view.configs.some((config) => config.id === id)
-								? "unslot"
-								: "slot",
+								? "uninstall"
+								: "install",
 							configId: id,
 						})
 					}
@@ -565,8 +565,10 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
-					onRentExtraSpots={(spots) =>
-						dispatch({ type: "set-extra-spots", spots })
+					onBuySlot={() => dispatch({ type: "buy-slot" })}
+					onCashSlot={() => dispatch({ type: "cash-slot" })}
+					onSetStoragePlan={(tier) =>
+						dispatch({ type: "set-storage-plan", tier })
 					}
 					onContinue={() => setRewardStep("prep")}
 				/>

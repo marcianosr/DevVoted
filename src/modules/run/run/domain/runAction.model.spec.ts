@@ -30,11 +30,11 @@ import {
 } from "~/modules/run/run/domain/run.factory";
 
 describe("configuring", () => {
-	it("refuses to slot beyond the pipeline's slots", () => {
+	it("refuses to slot beyond the build's slots", () => {
 		let state = createRun(pool(60), handed);
 		for (const id of ["js", "eslint", "coverage-gain", "cold-start"])
-			state = runReducer(state, { type: "slot", configId: id });
-		expect(state.pipeline.configs).toHaveLength(3);
+			state = runReducer(state, { type: "install", configId: id });
+		expect(state.build.configs).toHaveLength(3);
 	});
 });
 
@@ -42,7 +42,7 @@ describe("starter stacks (ADR-026)", () => {
 	const pickStack = (state: RunState, stackId: string): RunState =>
 		runReducer(state, { type: "pick-stack", stackId });
 
-	it("fills the whole pipeline with the stack and pulls its members from the pool", () => {
+	it("fills the whole build with the stack and pulls its members from the pool", () => {
 		const state = pickStack(createRun(pool(60), handed), "test-everything");
 		expect(configIds(state)).toEqual(["js", "ts", "eslint"]);
 		const availableIds = state.available.map((config) => config.id);
@@ -53,7 +53,7 @@ describe("starter stacks (ADR-026)", () => {
 
 	it("replaces hand-slotted configs instead of stacking on top of them", () => {
 		let state = createRun(pool(60), handed);
-		state = runReducer(state, { type: "slot", configId: "css" });
+		state = runReducer(state, { type: "install", configId: "css" });
 		state = pickStack(state, "test-everything");
 		expect(configIds(state)).toEqual(["js", "ts", "eslint"]);
 		expect(state.available.map((config) => config.id)).toContain("css");
@@ -171,7 +171,7 @@ describe("the gate audits (ADR-035)", () => {
 			status: "rewarding",
 			gatesCleared,
 			storage: 1000,
-			pipeline: { ...base.pipeline, spots: 4 },
+			build: { ...base.build, slots: 4 },
 			draftOptions: [CONFIGS.indexedDb],
 		});
 		const readOnly = shopping(5);
@@ -179,16 +179,13 @@ describe("the gate audits (ADR-035)", () => {
 		expect(
 			runReducer(readOnly, { type: "draft", configId: "indexed-db" })
 		).toBe(readOnly);
-		expect(runReducer(readOnly, { type: "set-extra-spots", spots: 1 })).toBe(
-			readOnly
-		);
+		expect(runReducer(readOnly, { type: "buy-slot" })).toBe(readOnly);
 		expect(runReducer(readOnly, { type: "rebuild-draft" })).toBe(readOnly);
 
 		const open = shopping(4);
 		expect(isShopLocked(open)).toBe(false);
 		expect(
-			runReducer(open, { type: "draft", configId: "indexed-db" }).pipeline
-				.configs
+			runReducer(open, { type: "draft", configId: "indexed-db" }).build.configs
 		).toHaveLength(4);
 	});
 
@@ -202,7 +199,7 @@ describe("the gate audits (ADR-035)", () => {
 			"answering"
 		);
 		expect(
-			runReducer(readOnly, { type: "drop", configId: "js" }).pipeline.configs
+			runReducer(readOnly, { type: "drop", configId: "js" }).build.configs
 		).toHaveLength(3);
 	});
 
@@ -210,7 +207,7 @@ describe("the gate audits (ADR-035)", () => {
 		const outage = { ...started(["js"]), gatesCleared: 4 };
 		const view = toRunView(outage);
 		expect(view.offlineConfigs).toHaveLength(1);
-		expect(outage.pipeline.configs).toContain(view.offlineConfigs[0].config);
+		expect(outage.build.configs).toContain(view.offlineConfigs[0].config);
 		expect(view.offlineConfigs[0].audit).toBe("Dependency Outage");
 	});
 
@@ -229,15 +226,15 @@ describe("the gate audits (ADR-035)", () => {
 		const levelled: RunState = {
 			...base,
 			gatesCleared: 10,
-			pipeline: {
-				...base.pipeline,
-				configs: base.pipeline.configs.map((config, index) =>
+			build: {
+				...base.build,
+				configs: base.build.configs.map((config, index) =>
 					index === 1 ? { ...config, level: 4 } : config
 				),
 			},
 		};
 		expect(toRunView(levelled).offlineConfigs[0]?.config.id).toBe(
-			levelled.pipeline.configs[1].id
+			levelled.build.configs[1].id
 		);
 	});
 
@@ -246,11 +243,11 @@ describe("the gate audits (ADR-035)", () => {
 		const build: RunState = {
 			...base,
 			gatesCleared: 4,
-			pipeline: {
-				...base.pipeline,
-				spots: 5,
+			build: {
+				...base.build,
+				slots: 5,
 				configs: [
-					...base.pipeline.configs,
+					...base.build.configs,
 					CONFIGS.agentsMd,
 					CONFIGS.coverageGain,
 				],
@@ -322,7 +319,7 @@ describe("the gate audits (ADR-035)", () => {
 		);
 		let base = createRun(polls, [...handed, CONFIGS.length]);
 		for (const configId of ["length", "js", "eslint"])
-			base = runReducer(base, { type: "slot", configId });
+			base = runReducer(base, { type: "install", configId });
 		base = runReducer(base, { type: "start" });
 
 		expect(toRunView(base).correctAnswersThisGate).toBe(SLICE_WINDOW);
@@ -333,7 +330,7 @@ describe("the gate audits (ADR-035)", () => {
 				...base,
 				gatesCleared: 7,
 				status: "awaiting-strip" as const,
-				peelSpotsRemaining: 0,
+				peelSlotsRemaining: 0,
 			},
 			{ type: "resume-climb" }
 		);
@@ -345,9 +342,9 @@ describe("the gate audits (ADR-035)", () => {
 		let state: RunState = {
 			...base,
 			gatesCleared: 7,
-			pipeline: {
-				...base.pipeline,
-				configs: [...base.pipeline.configs, CONFIGS.volkswagenCi],
+			build: {
+				...base.build,
+				configs: [...base.build.configs, CONFIGS.volkswagenCi],
 			},
 		};
 		const view = toRunView(state);
@@ -433,25 +430,25 @@ describe("a two-polls-a-day player (ADR-014)", () => {
 	});
 });
 
-describe("the starting pipeline", () => {
+describe("the starting build", () => {
 	it("starts with empty slots — nothing is pre-installed", () => {
 		expect(configIds(createRun(pool(60), handed))).toEqual([]);
 	});
 
-	it("refuses to start bare, and starts with spots to spare", () => {
+	it("refuses to start bare, and starts with slots to spare", () => {
 		const bare = createRun(pool(60), handed);
 		expect(runReducer(bare, { type: "start" }).status).toBe("configuring");
 
-		let state = runReducer(bare, { type: "slot", configId: "js" });
-		state = runReducer(state, { type: "slot", configId: "eslint" });
+		let state = runReducer(bare, { type: "install", configId: "js" });
+		state = runReducer(state, { type: "install", configId: "eslint" });
 		state = runReducer(state, { type: "start" });
 		expect(state.status).toBe("answering");
 	});
 
 	it("unslots any config while configuring — Unit Tests included", () => {
 		let state = createRun(pool(60), handed);
-		state = runReducer(state, { type: "slot", configId: "unit-tests" });
-		state = runReducer(state, { type: "unslot", configId: "unit-tests" });
+		state = runReducer(state, { type: "install", configId: "unit-tests" });
+		state = runReducer(state, { type: "uninstall", configId: "unit-tests" });
 		expect(configIds(state)).toEqual([]);
 	});
 });

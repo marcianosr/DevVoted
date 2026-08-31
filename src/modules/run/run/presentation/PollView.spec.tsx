@@ -51,6 +51,14 @@ const render_ = (overrides: Partial<PollViewProps> = {}) =>
 		/>
 	);
 
+const factsLine = () => screen.getByText("scores").closest("p");
+
+const scoreChip = () => {
+	const line = factsLine();
+	if (!line) throw new Error("No facts line rendered");
+	return within(line).getByText(/^×/);
+};
+
 describe("PollView", () => {
 	it("wears the gate it is being played at", () => {
 		render_();
@@ -82,7 +90,8 @@ describe("PollView", () => {
 		render_();
 
 		expect(screen.getByText("3 options")).toBeInTheDocument();
-		expect(screen.getByText(/scores ×/)).toBeInTheDocument();
+		expect(screen.getByText("scores")).toBeInTheDocument();
+		expect(scoreChip()).toHaveTextContent(/^×/);
 	});
 
 	it("says a multi-answer poll takes more than one pick", () => {
@@ -148,7 +157,7 @@ describe("PollView", () => {
 		expect(screen.getByText("On the clock.")).toBeInTheDocument();
 	});
 
-	it("counts the gate's live audits on the rail", () => {
+	it("gives every live audit its own alert under the build", () => {
 		render_({
 			view: createMockRunView({
 				...view,
@@ -169,7 +178,8 @@ describe("PollView", () => {
 			}),
 		});
 
-		expect(screen.getByText("2 running")).toBeInTheDocument();
+		expect(screen.getByText("A miss peels 5.")).toBeInTheDocument();
+		expect(screen.getByText("Pick every wrong option.")).toBeInTheDocument();
 	});
 
 	it("keeps an offline config on the rail, named and readable", () => {
@@ -192,7 +202,9 @@ describe("PollView", () => {
 			}),
 		});
 
-		expect(screen.getByText("offline · Dependency Outage")).toBeInTheDocument();
+		expect(
+			screen.getByText(/\.ts · offline · Dependency Outage/)
+		).toBeInTheDocument();
 	});
 
 	it("counts the run's faucet allowance down on the config earning it", () => {
@@ -204,7 +216,7 @@ describe("PollView", () => {
 			}),
 		});
 
-		expect(screen.getByText("216 KB left")).toBeInTheDocument();
+		expect(screen.getByText(/216 KB left/)).toBeInTheDocument();
 	});
 
 	it("sits the faucet out once the run's allowance is spent", () => {
@@ -252,21 +264,57 @@ describe("PollView", () => {
 		expect(screen.queryByText(/this gate holds/)).not.toBeInTheDocument();
 	});
 
-	it("warns on the stake when a miss would take the whole build", () => {
+	it("prices a wrong answer and a missed gate on the poll's own facts line", () => {
 		render_({
 			view: createMockRunView({
 				...view,
 				gateStake: {
 					...view.gateStake,
-					peelSpotsOnFailure: 2,
+					peelSlotsOnFailure: 1,
+					perAnswer: { ...view.gateStake.perAnswer, coveragePerWrong: -0.5 },
+				},
+			}),
+		});
+
+		expect(screen.getByText("wrong costs")).toBeInTheDocument();
+		expect(screen.getByText("0.5")).toBeInTheDocument();
+		expect(screen.getByText("Gate retry cost:")).toBeInTheDocument();
+		expect(screen.getByText("Remove 1 config")).toBeInTheDocument();
+	});
+
+	it("badges a cost in the losing colour and the score in the winning one", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				gateStake: {
+					...view.gateStake,
+					peelSlotsOnFailure: 1,
+					perAnswer: { ...view.gateStake.perAnswer, coveragePerWrong: -0.5 },
+				},
+			}),
+		});
+
+		expect(screen.getByText("0.5").parentElement).toHaveClass("bg-cinnabar/15");
+		expect(screen.getByText("Remove 1 config").parentElement).toHaveClass(
+			"bg-cinnabar/15"
+		);
+		expect(scoreChip().parentElement).toHaveClass("bg-celadon/15");
+	});
+
+	it("names the whole run as the cost once a miss is fatal", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				gateStake: {
+					...view.gateStake,
+					peelSlotsOnFailure: 2,
 					missIsFatal: true,
 				},
 			}),
 		});
 
-		expect(
-			screen.getByText("your whole pipeline — the run ends here")
-		).toBeInTheDocument();
+		expect(screen.getByText("The run ends here")).toBeInTheDocument();
+		expect(screen.queryByText(/Remove/)).not.toBeInTheDocument();
 	});
 
 	it("says the gate mirrors its polls, since the question reads inverted", () => {
@@ -275,33 +323,13 @@ describe("PollView", () => {
 		expect(screen.getByText(/pick every INCORRECT option/)).toBeInTheDocument();
 	});
 
-	it("states the level, the rate and the refund under a config", () => {
+	it("says what a config does without a shop's sell price, which cannot be taken here", () => {
 		render_();
 
-		const facts = screen.getAllByText(/sells for/)[0];
-
-		expect(facts?.textContent).toBe("level 1 · ×1.25 · sells for 16 KB");
-	});
-
-	it("leaves the level off a config that cannot be upgraded", () => {
-		render_({
-			view: createMockRunView({ ...view, configs: [CONFIGS.eslint] }),
-		});
-
-		const facts = screen.getAllByText(/sells for/)[0];
-
-		expect(facts?.textContent).not.toContain("level");
-	});
-
-	it("quotes the refund this build would actually be paid, not list price", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.js, CONFIGS.wtfpl],
-			}),
-		});
-
-		expect(screen.getAllByText(/sells for 0 KB/).length).toBeGreaterThan(0);
+		expect(screen.queryByText(/sells for/)).not.toBeInTheDocument();
+		expect(
+			screen.getByText(/TS polls pay 1.25× coverage./)
+		).toBeInTheDocument();
 	});
 });
 
@@ -353,7 +381,7 @@ describe("PollView tools", () => {
 		).toBeDisabled();
 	});
 
-	it("repeats the shortfall in the row body, which a tap can open", () => {
+	it("repeats the shortfall where a hover can read it, not only on the press", () => {
 		render_({
 			view: createMockRunView({
 				...view,
@@ -369,11 +397,9 @@ describe("PollView tools", () => {
 			}),
 		});
 
-		expect(screen.getByText("Costs 16KB — you have 8KB")).toBeInTheDocument();
-
-		const facts = screen.getByText(/sells for/);
-		expect(facts.tagName).toBe("P");
-		expect(facts.textContent).toContain("Costs 16KB — you have 8KB");
+		expect(
+			screen.getByText(/ESLint · cross out 16 KB · Costs 16KB — you have 8KB/)
+		).toBeInTheDocument();
 	});
 
 	it("leaves an affordable tool unqualified", () => {
@@ -427,7 +453,9 @@ describe("PollView tools", () => {
 		expect(
 			screen.queryByRole("button", { name: /cross out/ })
 		).not.toBeInTheDocument();
-		expect(screen.getByText("offline · Dependency Outage")).toBeInTheDocument();
+		expect(
+			screen.getByText(/ESLint · offline · Dependency Outage/)
+		).toBeInTheDocument();
 	});
 
 	it("reads the bought split onto the options it describes", () => {
@@ -447,21 +475,31 @@ describe("PollView tools", () => {
 		expect(screen.queryByText("29% picked this")).not.toBeInTheDocument();
 	});
 
-	it("folds the rail away and back on the toggle", async () => {
+	it("opens on a folded track, since a narrow screen owes the question its height", () => {
 		render_();
 
-		expect(screen.getByText("Pipeline")).toBeInTheDocument();
-
-		await userEvent.click(
-			screen.getByRole("button", { name: "Fold run info" })
+		expect(screen.getByRole("button", { name: /build/i })).toHaveAttribute(
+			"aria-expanded",
+			"false"
 		);
+	});
 
-		expect(screen.queryByText("Pipeline")).not.toBeInTheDocument();
+	it("unfolds the track and folds it back on the press", async () => {
+		render_();
 
-		await userEvent.click(
-			screen.getByRole("button", { name: "Unfold run info" })
-		);
+		const press = screen.getByRole("button", { name: /build/i });
 
-		expect(screen.getByText("Pipeline")).toBeInTheDocument();
+		await userEvent.click(press);
+		expect(press).toHaveAttribute("aria-expanded", "true");
+
+		await userEvent.click(press);
+		expect(press).toHaveAttribute("aria-expanded", "false");
+	});
+
+	it("states the gate's coverage in the header, where no fold can take it away", () => {
+		render_();
+
+		expect(screen.getByRole("progressbar")).toBeInTheDocument();
+		expect(screen.getByText("Coverage")).toBeInTheDocument();
 	});
 });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { MAX_EXTRA_SPOTS } from "~/modules/run/run/domain/rules.model";
+import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 
 const configActionSchema = <T extends string>(type: T) =>
@@ -14,17 +14,21 @@ const configActionSchema = <T extends string>(type: T) =>
 const bareActionSchema = <T extends string>(type: T) =>
 	z.object({ type: z.literal(type) }).strict();
 
-const extraSpotActionSchema = <T extends string>(type: T) =>
+const storagePlanActionSchema = <T extends string>(type: T) =>
 	z
 		.object({
 			type: z.literal(type),
-			spots: z.number().int().min(0).max(MAX_EXTRA_SPOTS),
+			tier: z
+				.number()
+				.int()
+				.min(0)
+				.max(STORAGE_PLANS.length - 1),
 		})
 		.strict();
 
 export const runActionSchema = z.discriminatedUnion("type", [
-	configActionSchema("slot"),
-	configActionSchema("unslot"),
+	configActionSchema("install"),
+	configActionSchema("uninstall"),
 	z
 		.object({ type: z.literal("pick-stack"), stackId: z.string().min(1) })
 		.strict(),
@@ -50,7 +54,9 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("sell"),
 	configActionSchema("drop"),
 	configActionSchema("minify"),
-	extraSpotActionSchema("set-extra-spots"),
+	bareActionSchema("buy-slot"),
+	bareActionSchema("cash-slot"),
+	storagePlanActionSchema("set-storage-plan"),
 ]);
 
 type SchemaAction = z.infer<typeof runActionSchema>;

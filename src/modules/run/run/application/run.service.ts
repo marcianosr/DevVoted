@@ -152,7 +152,7 @@ export const dispatchRunActionService = async ({
 		return toRunView(next);
 	});
 
-/** The viewer's permanent swatch collection, earned by widening pipelines. */
+/** The viewer's permanent swatch collection, earned by widening builds. */
 export const getOwnedSwatchesService = async ({
 	userId,
 }: {

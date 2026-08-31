@@ -14,7 +14,7 @@ type Story = StoryObj<typeof StripScreen>;
 
 export const Default: Story = {
 	args: {
-		peelSpotsRemaining: 1,
+		peelSlotsRemaining: 1,
 		configs: [CONFIGS.js, CONFIGS.agentsMd, CONFIGS.coverageGain],
 		answered: [
 			{
@@ -48,7 +48,7 @@ export const Default: Story = {
 export const EliteDeepPeel: Story = {
 	args: {
 		...Default.args,
-		peelSpotsRemaining: 2,
+		peelSlotsRemaining: 2,
 		retryStake: createMockGateStake({
 			gateNumber: 11,
 			coverageDemand: 250,

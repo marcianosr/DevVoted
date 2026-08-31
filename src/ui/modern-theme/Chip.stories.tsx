@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Chip, chipFigures, type ChipTone } from "./Chip.ui";
-import { RARITY_ORDER } from "./rarity";
+import { CONFIG_SIZES } from "~/modules/run/config/domain/config.model";
 
 const meta: Meta<typeof Chip> = {
 	component: Chip,
@@ -11,24 +11,24 @@ export default meta;
 
 type Story = StoryObj<typeof Chip>;
 
-export const Common: Story = { args: { rarity: "bit", children: "ESLint" } };
-export const Uncommon: Story = {
-	args: { rarity: "crumb", children: "Intellisense" },
+export const OneSlot: Story = { args: { slots: 1, children: "ESLint" } };
+export const TwoSlots: Story = {
+	args: { slots: 2, children: "Intellisense" },
 };
-export const Rare: Story = {
-	args: { rarity: "nibble", children: "AGENTS.md" },
-};
-
-export const Legendary: Story = {
-	args: { rarity: "byte", children: "Freemium" },
+export const FourSlots: Story = {
+	args: { slots: 4, children: "AGENTS.md" },
 };
 
-export const EveryTier: Story = {
+export const EightSlots: Story = {
+	args: { slots: 8, children: "Freemium" },
+};
+
+export const EverySize: Story = {
 	render: () => (
 		<div className="flex flex-wrap gap-3">
-			{RARITY_ORDER.map((rarity) => (
-				<Chip key={rarity} rarity={rarity}>
-					{rarity}
+			{CONFIG_SIZES.map((slots) => (
+				<Chip key={slots} slots={slots} size="lg">
+					{`a ${slots}-slot config`}
 				</Chip>
 			))}
 		</div>

@@ -98,28 +98,18 @@ export const EveryNote: Story = {
 export const Rarities: Story = {
 	render: () => (
 		<div className="flex w-96 flex-col gap-1">
-			<Pick label=".ts" rarity="bit" checked={false} onToggle={() => {}} />
-			<Pick
-				label="IndexedDB"
-				rarity="crumb"
-				checked={false}
-				onToggle={() => {}}
-			/>
+			<Pick label=".ts" slots={1} checked={false} onToggle={() => {}} />
+			<Pick label="IndexedDB" slots={2} checked={false} onToggle={() => {}} />
 			<Pick
 				label="Intellisense"
-				rarity="nibble"
+				slots={4}
 				checked={false}
 				onToggle={() => {}}
 			/>
-			<Pick
-				label="Dependabot"
-				rarity="byte"
-				checked={false}
-				onToggle={() => {}}
-			/>
+			<Pick label="Dependabot" slots={8} checked={false} onToggle={() => {}} />
 			<Pick
 				label="Overclock"
-				rarity="nibble"
+				slots={4}
 				variant="draft"
 				checked
 				onToggle={() => {}}
@@ -133,14 +123,14 @@ export const Disabled: Story = {
 		<div className="w-96">
 			<Pick
 				label="AGENTS.md"
-				rarity="byte"
+				slots={8}
 				variant="draft"
 				checked={false}
 				disabled
 				onToggle={() => {}}
-				value="8 spots"
+				value="8 slots"
 				summary="byte · all coverage"
-				explainer="Every poll pays double, for the whole pipeline's room."
+				explainer="Every poll pays double, for the whole build's room."
 			/>
 		</div>
 	),

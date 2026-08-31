@@ -1,67 +1,60 @@
 import {
 	canMinify,
 	minify as minified,
-	minifySavingSpots,
-	spotsOf,
+	minifySavingSlots,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
-import {
-	isBare,
-	stripConfig,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+import { isBare, stripConfig } from "~/modules/run/build/domain/build.model";
 import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
 	freshWindow,
 	type RunState,
 	shopDraft,
 	withLog,
-	withPipeline,
+	withBuild,
 } from "~/modules/run/run/domain/run.model";
 
 const paid = (
 	state: RunState,
-	pipeline: RunState["pipeline"],
+	build: RunState["build"],
 	freed: number,
 	line: string
 ): RunState => {
-	const remaining = Math.max(0, state.peelSpotsRemaining - freed);
+	const remaining = Math.max(0, state.peelSlotsRemaining - freed);
 	return {
 		...state,
-		pipeline,
-		peelSpotsRemaining: remaining,
+		build,
+		peelSlotsRemaining: remaining,
 		log: withLog(
 			state,
 			remaining > 0
-				? `${line} ${remaining} more spot${remaining > 1 ? "s" : ""} to free.`
+				? `${line} ${remaining} more slot${remaining > 1 ? "s" : ""} to free.`
 				: `${line} Peel paid — rebuild in the shop.`
 		),
 	};
 };
 
 export const strip = (state: RunState, configId: string): RunState => {
-	const target = state.pipeline.configs.find(
-		(config) => config.id === configId
-	);
-	if (!target || state.peelSpotsRemaining <= 0) return state;
+	const target = state.build.configs.find((config) => config.id === configId);
+	if (!target || state.peelSlotsRemaining <= 0) return state;
 	return paid(
 		state,
-		stripConfig(state.pipeline, configId),
-		spotsOf(target),
-		`Dropped ${target.label}, freeing ${spotsOf(target)}.`
+		stripConfig(state.build, configId),
+		slotsOf(target),
+		`Dropped ${target.label}, freeing ${slotsOf(target)}.`
 	);
 };
 
 export const minifyForPeel = (state: RunState, configId: string): RunState => {
-	const target = state.pipeline.configs.find(
-		(config) => config.id === configId
-	);
-	if (!target || state.peelSpotsRemaining <= 0 || !canMinify(target))
+	const target = state.build.configs.find((config) => config.id === configId);
+	if (!target || state.peelSlotsRemaining <= 0 || !canMinify(target))
 		return state;
-	const freed = minifySavingSpots(target);
+	const freed = minifySavingSlots(target);
 	return paid(
 		state,
-		withPipeline(
-			state.pipeline,
-			state.pipeline.configs.map((config) =>
+		withBuild(
+			state.build,
+			state.build.configs.map((config) =>
 				config.id === configId ? minified(config) : config
 			)
 		),
@@ -71,19 +64,19 @@ export const minifyForPeel = (state: RunState, configId: string): RunState => {
 };
 
 export const resumeClimb = (state: RunState): RunState => {
-	if (state.peelSpotsRemaining > 0) return state;
-	if (isBare(state.pipeline))
+	if (state.peelSlotsRemaining > 0) return state;
+	if (isBare(state.build))
 		return {
 			...state,
 			status: "dead",
-			log: withLog(state, "Nothing left in the pipeline — run over."),
+			log: withLog(state, "Nothing left in the build — run over."),
 		};
 	return {
 		...state,
 		window: freshWindow(
 			state.polls,
 			state.currentIndex,
-			state.pipeline.configs,
+			state.build.configs,
 			state.gatesCleared
 		),
 		manualDisabled: [],

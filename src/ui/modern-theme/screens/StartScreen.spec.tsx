@@ -13,8 +13,7 @@ const dealt: readonly DealtConfig[] = [
 	{
 		id: "ts",
 		label: ".ts",
-		rarity: "bit",
-		spots: 1,
+		slots: 1,
 		summary: "bit · focus: typescript",
 		explainer: "TypeScript polls pay 1.25× coverage.",
 		note: <Delta multiplier={1.25} />,
@@ -22,16 +21,14 @@ const dealt: readonly DealtConfig[] = [
 	{
 		id: "intellisense",
 		label: "Intellisense",
-		rarity: "nibble",
-		spots: 4,
+		slots: 4,
 		summary: "nibble · all coverage",
 		explainer: "All coverage earns ×1.5.",
 	},
 	{
 		id: "eslint",
 		label: "ESLint",
-		rarity: "bit",
-		spots: 1,
+		slots: 1,
 		summary: "bit · JS/TS polls",
 		explainer: "Strikes out one wrong answer per gate.",
 	},
@@ -45,8 +42,8 @@ const props: StartScreenProps = {
 	dealtFrom: 30,
 	pickedIds: [],
 	onToggle: () => {},
-	spots: 4,
-	fits: "nibble",
+	slots: 4,
+	fits: 4,
 	gateName: "Pallet",
 	pollCount: 5,
 	coverageDemand: 3,
@@ -60,7 +57,7 @@ describe("StartScreen", () => {
 	it("titles the screen by the job, not by the number of picks", () => {
 		render(<StartScreen {...props} />);
 
-		expect(screen.getByText("Configure your pipeline")).toBeInTheDocument();
+		expect(screen.getByText("Configure your build")).toBeInTheDocument();
 		expect(screen.queryByText(/to go/)).not.toBeInTheDocument();
 	});
 
@@ -80,7 +77,7 @@ describe("StartScreen", () => {
 		expect(screen.getByText(/3 dealt from 30/)).toBeInTheDocument();
 	});
 
-	it("asks for a pick while the pipeline is bare", () => {
+	it("asks for a pick while the build is bare", () => {
 		render(<StartScreen {...props} onStart={() => {}} canStart={false} />);
 
 		expect(
@@ -88,7 +85,7 @@ describe("StartScreen", () => {
 		).toBeDisabled();
 	});
 
-	it("offers the start once the engine allows it, spots to spare or not", () => {
+	it("offers the start once the engine allows it, slots to spare or not", () => {
 		render(
 			<StartScreen {...props} pickedIds={["ts"]} onStart={() => {}} canStart />
 		);
@@ -267,32 +264,30 @@ describe("StartScreen", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("draws the pipeline as room rather than listing it twice", () => {
+	it("draws the build as room rather than listing it twice", () => {
 		render(<StartScreen {...props} pickedIds={["ts", "eslint"]} />);
 
-		expect(screen.getByText("2 of 4 spots")).toBeInTheDocument();
+		expect(screen.getByText("2 of 4 slots")).toBeInTheDocument();
 		expect(screen.queryByText("Not filled yet")).not.toBeInTheDocument();
 		expect(screen.getAllByText(".ts")).toHaveLength(2);
 		expect(screen.getAllByText("ESLint")).toHaveLength(2);
 	});
 
-	it("charges a pick its spots, not one cell each", () => {
+	it("charges a pick its slots, not one cell each", () => {
 		render(<StartScreen {...props} pickedIds={["intellisense"]} />);
 
-		expect(screen.getByText("4 of 4 spots")).toBeInTheDocument();
+		expect(screen.getByText("4 of 4 slots")).toBeInTheDocument();
 		expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "4");
 	});
 
 	it("takes the width from the capacity it is given, not from a row count", () => {
-		render(<StartScreen {...props} spots={1} fits="bit" />);
+		render(<StartScreen {...props} slots={1} fits={1} />);
 
-		expect(screen.getByText("0 of 1 spots")).toBeInTheDocument();
+		expect(screen.getByText("0 of 1 slots")).toBeInTheDocument();
 	});
 
-	it("refuses a config the pipeline has no room for", () => {
-		render(
-			<StartScreen {...props} pickedIds={["ts", "eslint"]} fits="crumb" />
-		);
+	it("refuses a config the build has no room for", () => {
+		render(<StartScreen {...props} pickedIds={["ts", "eslint"]} fits={2} />);
 
 		expect(
 			screen.getByRole("checkbox", { name: /Intellisense/ })
@@ -308,16 +303,15 @@ describe("StartScreen", () => {
 		).not.toBeDisabled();
 	});
 
-	it("draws each grade as a run of cells, and names it", () => {
+	it("states each dealt config's size in slots", () => {
 		render(<StartScreen {...props} />);
 
-		const nibble = screen.getByText("Intellisense").closest("li");
-		const bit = screen.getByText(".ts").closest("li");
+		const fourSlot = screen.getByText("Intellisense").closest("li");
+		const oneSlot = screen.getByText(".ts").closest("li");
 
-		expect(nibble?.querySelectorAll('span[class*="size-1.5"]')).toHaveLength(4);
-		expect(bit?.querySelectorAll('span[class*="size-1.5"]')).toHaveLength(1);
-		expect(screen.getAllByText("bit")).toHaveLength(2);
-		expect(screen.getByText("nibble")).toBeInTheDocument();
+		expect(fourSlot?.textContent).toContain("4 slots");
+		expect(oneSlot?.textContent).toContain("1 slot");
+		expect(screen.queryByText("nibble")).not.toBeInTheDocument();
 	});
 
 	it("states the shape a starter stack would make", () => {
@@ -339,13 +333,11 @@ describe("StartScreen", () => {
 		expect(screen.getByText("three bits · 1 spare")).toBeInTheDocument();
 	});
 
-	it("draws the pipeline as room and names what still fits", () => {
+	it("draws the build as room and names what still fits", () => {
 		render(<StartScreen {...props} pickedIds={["ts"]} />);
 
 		expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "1");
-		expect(
-			screen.getByText("3 spots free · a nibble fits")
-		).toBeInTheDocument();
+		expect(screen.getByText("3 slots free · fits up to 4")).toBeInTheDocument();
 	});
 
 	it("states the gate's ask, calling no audits none rather than zero", () => {
@@ -365,8 +357,8 @@ describe("StartScreen", () => {
 	it("states what a grade costs against the current width, on hover", () => {
 		render(<StartScreen {...props} />);
 
-		expect(screen.getByText("takes 4 of 4 spots")).toBeInTheDocument();
-		expect(screen.getAllByText("takes 1 of 4 spots")).toHaveLength(2);
+		expect(screen.getByText("takes 4 of 4 slots")).toBeInTheDocument();
+		expect(screen.getAllByText("takes 1 of 4 slots")).toHaveLength(2);
 	});
 
 	it("badges the peel in red, on a stake that cannot be folded away", () => {
@@ -421,7 +413,7 @@ describe("StartScreen", () => {
 	it("promises no widening among the clear rewards", () => {
 		render(<StartScreen {...props} />);
 
-		expect(screen.queryByText(/pipeline widens/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/build widens/)).not.toBeInTheDocument();
 	});
 
 	it("offers every curated opening, each by its own name", () => {

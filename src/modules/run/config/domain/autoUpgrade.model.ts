@@ -6,7 +6,7 @@ import {
 	levelUp,
 } from "~/modules/run/config/domain/config.model";
 
-/** A clear's auto-upgrade outcome: the pipeline after it, and the config it
+/** A clear's auto-upgrade outcome: the build after it, and the config it
  * bumped (already at its new level) when the roll hit. */
 export type AutoUpgrade = {
 	readonly configs: readonly Config[];

@@ -37,6 +37,6 @@ describe("GameLoopExplainer", () => {
 	it("dot navigation jumps to a specific step", async () => {
 		render(<GameLoopExplainer />);
 		await userEvent.click(screen.getByRole("button", { name: "Go to step 4" }));
-		expect(screen.getByText("Upgrade Your Pipeline")).toBeInTheDocument();
+		expect(screen.getByText("Upgrade Your Build")).toBeInTheDocument();
 	});
 });

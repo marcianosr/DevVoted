@@ -181,7 +181,7 @@ export const CollapsibleSummary: Story = {
 };
 
 // The whole row becomes a keyboard-activatable button (Enter/Space) via onActivate —
-// the shop/pipeline's click-to-remove row.
+// the shop/build's click-to-remove row.
 export const Removable: Story = {
 	args: {
 		badge: "pass",

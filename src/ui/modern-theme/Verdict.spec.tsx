@@ -47,7 +47,7 @@ describe("Answer", () => {
 });
 
 describe("Verdict", () => {
-	it("badges the outcome in the words a pipeline uses", () => {
+	it("badges the outcome in the words a build uses", () => {
 		render(<Verdict {...props} outcome="partial" options={multi} />);
 
 		expect(screen.getByText("PART")).toBeInTheDocument();

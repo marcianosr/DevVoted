@@ -1,14 +1,14 @@
 import type { GateWindow } from "~/modules/run/config/domain/effect.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
-	Pipeline,
+	Build,
 	isBare,
-	occupiedSpots,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+	occupiedSlots,
+} from "~/modules/run/build/domain/build.model";
 import {
 	coverageDemandFor,
 	failPeelShareFor,
-	peelQuotaSpotsFor,
+	peelQuotaSlotsFor,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	auditDemandFactor,
@@ -36,16 +36,16 @@ export const failPeelQuotaFor = (
 	configs: readonly Config[],
 	gatesCleared: number
 ): number =>
-	peelQuotaSpotsFor(
-		occupiedSpots(configs),
+	peelQuotaSlotsFor(
+		occupiedSlots(configs),
 		peelShareFor(configs, gatesCleared),
 		gatesCleared
 	);
 
 export const gatePassed = (
-	pipeline: Pipeline,
+	build: Build,
 	window: GateWindow,
 	gatesCleared: number
 ): boolean =>
-	!isBare(pipeline) &&
-	window.coverageGained >= gateDemandFor(pipeline.configs, gatesCleared);
+	!isBare(build) &&
+	window.coverageGained >= gateDemandFor(build.configs, gatesCleared);

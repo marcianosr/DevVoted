@@ -39,7 +39,7 @@ const REVEAL_SCORE_START_MS = 500;
 /**
  * Turns the reveal's coverage breakdown into equation chips: the streak bonus as
  * a plain chip, then each contributing config as its real ConfigChip (resolved
- * from the equipped pipeline). Base and total are handled by ScoreEquationChips.
+ * from the equipped build). Base and total are handled by ScoreEquationChips.
  */
 const scoreBonusRows = (
 	score: AnswerScore,
@@ -73,7 +73,7 @@ type AnsweringScreenProps = {
 	/** A Timeout audit's clock. One object because a rail with no cap cannot be
 	 * drawn, so the pair is all-or-nothing. */
 	clock?: PollClockProps;
-	/** Total pipeline slots — shown in the pipeline header when provided. */
+	/** Total build slots — shown in the build header when provided. */
 	slots?: number;
 	poll: PollView;
 	/**
@@ -136,7 +136,7 @@ export const AnsweringScreen = ({
 	onPeek,
 }: AnsweringScreenProps) => {
 	// Both paid actions hang off the row of the config that sells them, so the
-	// pipeline stays the one place a build's powers are read from.
+	// build stays the one place a build's powers are read from.
 	const useActionFor = (config: Config): RowUseAction | undefined => {
 		if (!paidActions) return undefined;
 		const { canLint, lintReady, linter, lintCost } = paidActions;
@@ -230,7 +230,7 @@ export const AnsweringScreen = ({
 			</div>
 			<div className="space-y-2 border-t border-edge pt-4 lg:order-1 lg:border-t-0 lg:border-r lg:pt-0 lg:pr-8">
 				<header>
-					<Title as="h3">Your pipeline</Title>
+					<Title as="h3">Your build</Title>
 					{slots ? (
 						<Subtitle>
 							{configs.length} of {slots} slots used

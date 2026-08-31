@@ -18,14 +18,14 @@ export const WithSubtitle: Story = {
 	args: {
 		step: 1,
 		title: "Draft your configs",
-		subtitle: "Pick the pieces your pipeline runs at every gate",
+		subtitle: "Pick the pieces your build runs at every gate",
 	},
 };
 
 export const ViridianTone: Story = {
 	args: {
 		step: 2,
-		title: "Assemble the pipeline",
+		title: "Assemble the build",
 		subtitle: "Order matters — checks run top to bottom",
 		tone: "viridian",
 	},

@@ -77,7 +77,7 @@ const DEPENDENCY_OUTAGE: Audit = {
 	id: "dependency-outage",
 	name: "Dependency Outage",
 	description:
-		"One config in your pipeline goes offline for the whole attempt — its effect does nothing.",
+		"One config in your build goes offline for the whole attempt — its effect does nothing.",
 	answerCue: "A dependency is down: one of your configs is offline this gate.",
 	disablesConfig: "one-per-attempt",
 };
@@ -95,7 +95,7 @@ const ROLLING_OUTAGE: Audit = {
 	id: "rolling-outage",
 	name: "Rolling Outage",
 	description:
-		"The outage rolls through your pipeline: a different config is down for each poll of the window.",
+		"The outage rolls through your build: a different config is down for each poll of the window.",
 	answerCue: "Rolling outage: the config that is down moves every poll.",
 	disablesConfig: "rotating-per-poll",
 };
@@ -123,9 +123,9 @@ const timeoutAudit = (count: number, seconds: number): Audit => ({
 const stripAudit = (gate: number, extra: number): Audit => ({
 	id: `strip-${Math.round(extra * 100)}`,
 	name: "Strip",
-	description: `Failing this gate peels ${asPercent(failPeelShareFor(gate) + extra)} of your pipeline instead of ${asPercent(failPeelShareFor(gate))} — a build it can empty ends the run here.`,
+	description: `Failing this gate peels ${asPercent(failPeelShareFor(gate) + extra)} of your build instead of ${asPercent(failPeelShareFor(gate))} — a build it can empty ends the run here.`,
 	dexRule:
-		"Failing this gate peels a bigger share of the pipeline than its own row. A build it can empty ends the run there.",
+		"Failing this gate peels a bigger share of the build than its own row. A build it can empty ends the run there.",
 	peelShareOnFail: extra,
 });
 

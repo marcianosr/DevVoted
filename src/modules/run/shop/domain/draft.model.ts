@@ -64,7 +64,7 @@ const draftDiscountIn = (configs: readonly Config[]): number =>
 
 /**
  * What drafting `config` costs this build. The price lives here rather than on
- * the config because a discount is a property of the pipeline holding it, the
+ * the config because a discount is a property of the build holding it, the
  * same reason `sellRefundIn` exists — and every surface that quotes a price
  * (the shop, the refusal copy, the reducer's charge) must read the same one.
  */

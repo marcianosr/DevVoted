@@ -107,7 +107,7 @@ export const OutageGate: Story = {
 				id: "dependency-outage",
 				name: "Dependency Outage",
 				description:
-					"One config in your pipeline goes offline for the whole attempt — its effect does nothing.",
+					"One config in your build goes offline for the whole attempt — its effect does nothing.",
 				answerCue:
 					"A dependency is down: one of your configs is offline this gate.",
 				suppressed: false,
@@ -152,7 +152,7 @@ export const RollingOutageGate: Story = {
 				id: "rolling-outage",
 				name: "Rolling Outage",
 				description:
-					"The outage rolls through your pipeline: a different config is down for each poll of the window.",
+					"The outage rolls through your build: a different config is down for each poll of the window.",
 				answerCue: "Rolling outage: the config that is down moves every poll.",
 				suppressed: false,
 			},

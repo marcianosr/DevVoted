@@ -4,11 +4,10 @@ import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
-	BASE_SPOTS,
-	occupiedSpots,
+	occupiedSlots,
 	perAnswerPreviewFor,
-	pipelineModifiersFor,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+	buildModifiersFor,
+} from "~/modules/run/build/domain/build.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	failPeelQuotaFor,
@@ -26,9 +25,10 @@ import {
 	MAX_EXTENSIONS,
 } from "~/modules/run/shop/domain/draft.model";
 import {
-	coverageDemandFor,
+	BASE_SLOTS,
+	MAX_SLOTS,
 	SLICE_WINDOW,
-	VICTORY_GATE,
+	coverageDemandFor,
 } from "~/modules/run/run/domain/rules.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
@@ -56,10 +56,10 @@ const answeringWith = (configs: Config[]) => {
 	const created = createRun([poll("q0"), poll("q1")], configs);
 	let state: RunState = {
 		...created,
-		pipeline: { ...created.pipeline, spots: occupiedSpots(configs) },
+		build: { ...created.build, slots: occupiedSlots(configs) },
 	};
 	for (const config of configs)
-		state = runReducer(state, { type: "slot", configId: config.id });
+		state = runReducer(state, { type: "install", configId: config.id });
 	return { ...state, status: "answering" as const };
 };
 
@@ -89,8 +89,8 @@ describe("toRunView", () => {
 		const state = {
 			...createRun(pool, [CONFIGS.prefetch]),
 			status: "answering" as const,
-			pipeline: {
-				...createRun(pool, [CONFIGS.prefetch]).pipeline,
+			build: {
+				...createRun(pool, [CONFIGS.prefetch]).build,
 				configs: [CONFIGS.prefetch],
 			},
 		};
@@ -258,77 +258,113 @@ describe("shop controls (DVTD-5lt6)", () => {
 	});
 });
 
-describe("extra spots in the shop (ADR-045)", () => {
-	const atGate = (gatesCleared: number, storage = 0, extraSpots?: number) =>
-		toRunView({ ...answering(), gatesCleared, storage, extraSpots });
+describe("the slot deals in the shop (ADR-046)", () => {
+	const shopping = (
+		slots = BASE_SLOTS,
+		storage = 0,
+		slotsBought = slots - BASE_SLOTS
+	) =>
+		toRunView({
+			...answering(),
+			storage,
+			slotsBought,
+			build: { ...answering().build, slots },
+		});
 
-	it("draws every step, locked ones included", () => {
-		const { options } = atGate(0).extraSpots;
-		expect(options.map((step) => step.spots)).toEqual([0, 1, 2, 3, 4]);
+	it("quotes the opening slot at the ladder's first rung", () => {
+		const { buy } = shopping(BASE_SLOTS, 500).slotDeals;
+		expect(buy.costKb).toBe(16);
+		expect(buy.makes).toBe(5);
+		expect(buy.refusal).toBeUndefined();
 	});
 
-	it("stands on none before anything is rented", () => {
-		const { options, renting, perGateKb } = atGate(0).extraSpots;
-		expect(options[0].held).toBe(true);
-		expect(options[0].rentKb).toBe(0);
-		expect(renting).toBe(0);
+	it("quotes the next rung up once a slot is bought", () => {
+		expect(shopping(BASE_SLOTS + 1, 500).slotDeals.buy.costKb).toBe(32);
+		expect(shopping(BASE_SLOTS + 3, 500).slotDeals.buy.costKb).toBe(128);
+	});
+
+	it("names the shortfall rather than the price when the balance is short", () => {
+		const { buy } = shopping(BASE_SLOTS, 10).slotDeals;
+		expect(buy.refusal).toBe("Costs 16 KB, you have 10.");
+		expect(buy.makes).toBeUndefined();
+	});
+
+	it("says the ladder is spent at the ceiling", () => {
+		const { buy } = shopping(MAX_SLOTS, 100_000).slotDeals;
+		expect(buy.costKb).toBeUndefined();
+		expect(buy.refusal).toBe("Sold out — 24 slots is the ceiling.");
+	});
+
+	it("refuses to cash while the run is on the free four", () => {
+		const { cash } = shopping(BASE_SLOTS, 500).slotDeals;
+		expect(cash.costKb).toBeUndefined();
+		expect(cash.refusal).toBe(
+			"Nothing to cash — the first four slots are free."
+		);
+	});
+
+	it("quotes the cash-out at the price of the slot still held", () => {
+		const { cash } = shopping(BASE_SLOTS + 2, 500).slotDeals;
+		expect(cash.costKb).toBe(32);
+		expect(cash.makes).toBe(5);
+	});
+
+	it("refuses to cash a slot a config is standing in", () => {
+		const packed = answeringWith([CONFIGS.agentsMd]);
+		const view = toRunView({ ...packed, slotsBought: 4, storage: 500 });
+
+		expect(view.slots).toBe(8);
+		expect(view.slotsFree).toBe(0);
+		expect(view.slotDeals.cash.refusal).toBe(
+			"Every slot is filled — uninstall or minify first."
+		);
+	});
+});
+
+describe("the storage plan in the shop (ADR-046)", () => {
+	const onPlan = (storagePlan: number, storage = 0) =>
+		toRunView({ ...answering(), storagePlan, storage });
+
+	it("draws every plan, the free one included", () => {
+		const { options } = onPlan(0).storagePlan;
+		expect(options.map((plan) => plan.capKb)).toEqual([
+			512, 768, 1024, 1536, 2560, 5120, 10240,
+		]);
+	});
+
+	it("stands on the free cap before anything is bought", () => {
+		const { capKb, perGateKb, options } = onPlan(0).storagePlan;
+		expect(capKb).toBe(512);
 		expect(perGateKb).toBe(0);
+		expect(options[0].held).toBe(true);
 	});
 
-	it("states the width each step makes, on top of the free four", () => {
-		expect(atGate(0).extraSpots.options.map((step) => step.makes)).toEqual([
-			4, 5, 6, 7, 8,
-		]);
-	});
-
-	it("restates them against a wider free rung", () => {
-		expect(atGate(5).extraSpots.options.map((step) => step.makes)).toEqual([
-			12, 13, 14, 15, 16,
-		]);
-	});
-
-	it("prices every step at the same rate per spot", () => {
-		expect(
-			atGate(9, 500).extraSpots.options.map((step) => step.rentKb)
-		).toEqual([0, 8, 16, 24, 32]);
-	});
-
-	it("names the clear that opens a step this depth does not sell", () => {
-		const { options } = atGate(0, 500).extraSpots;
-		expect(options[1].fromGate).toBeUndefined();
-		expect(options[2].fromGate).toBe(3);
-		expect(options[4].fromGate).toBe(9);
-	});
-
-	it("opens the deeper steps as the clears come in", () => {
-		expect(atGate(3, 500).extraSpots.options[2].fromGate).toBeUndefined();
-		expect(atGate(9, 500).extraSpots.options[4].fromGate).toBeUndefined();
-	});
-
-	it("flags a rent the balance cannot cover", () => {
-		expect(atGate(0, 0).extraSpots.options[1].rentTooDear).toBe(true);
-		expect(atGate(0, 500).extraSpots.options[1].rentTooDear).toBe(false);
-	});
-
-	it("reads the standing rent off the step the run is on", () => {
-		const { renting, perGateKb } = atGate(9, 500, 4).extraSpots;
-		expect(renting).toBe(4);
+	it("reads the standing cap and bill off the plan the run is on", () => {
+		const { capKb, perGateKb } = onPlan(2).storagePlan;
+		expect(capKb).toBe(1024);
 		expect(perGateKb).toBe(32);
 	});
 
-	it("keeps selling every step at the last gate", () => {
-		const { options } = atGate(VICTORY_GATE, 5000).extraSpots;
-		expect(options.map((step) => step.makes)).toEqual([24, 25, 26, 27, 28]);
-		expect(options.every((step) => step.fromGate === undefined)).toBe(true);
+	it("warns what a downgrade burns, and nothing on the plans that would hold it", () => {
+		const { options } = onPlan(4, 900).storagePlan;
+		expect(options[0].burnsKb).toBe(900 - 512);
+		expect(options[1].burnsKb).toBe(900 - 768);
+		expect(options[2].burnsKb).toBe(0);
 	});
 
-	it("puts the rent on the recurring bill", () => {
-		const line = atGate(9, 500, 2).gateStake.subscriptions.lines.find(
-			(entry) => entry.id === "spot-rent"
+	it("puts the plan on the recurring bill", () => {
+		const line = onPlan(2, 500).gateStake.subscriptions.lines.find(
+			(entry) => entry.id === "storage-plan"
 		);
-		expect(line?.label).toBe("2 rented spots");
-		expect(line?.kb).toBe(16);
+		expect(line?.label).toBe("1024KB storage plan");
+		expect(line?.kb).toBe(32);
 		expect(line?.billedOnMiss).toBe(false);
+	});
+
+	it("keeps the free plan off the bill entirely", () => {
+		expect(
+			onPlan(0, 500).gateStake.subscriptions.lines.map((entry) => entry.id)
+		).not.toContain("storage-plan");
 	});
 });
 
@@ -433,17 +469,17 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 	const configuringWith = (configs: Config[]) => {
 		let state = createRun([poll("q0"), poll("q1")], configs);
 		for (const config of configs)
-			state = runReducer(state, { type: "slot", configId: config.id });
+			state = runReducer(state, { type: "install", configId: config.id });
 		return state;
 	};
 
-	it("refuses canStart on a bare pipeline, and the reducer agrees", () => {
+	it("refuses canStart on a bare build, and the reducer agrees", () => {
 		const bare = configuringWith([]);
 		expect(toRunView(bare).canStart).toBe(false);
 		expect(runReducer(bare, { type: "start" }).status).toBe("configuring");
 	});
 
-	it("offers canStart with spots to spare, and the reducer agrees", () => {
+	it("offers canStart with slots to spare, and the reducer agrees", () => {
 		const partial = configuringWith([CONFIGS.js, CONFIGS.ts]);
 		expect(toRunView(partial).canStart).toBe(true);
 		expect(runReducer(partial, { type: "start" }).status).toBe("answering");
@@ -462,8 +498,8 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 	it("hands modifiers over as one object rather than four loose fields", () => {
 		const view = toRunView(answeringWith([CONFIGS.js]));
 		expect(view.gateStake.modifiers).toEqual(
-			pipelineModifiersFor(
-				answeringWith([CONFIGS.js]).pipeline.configs,
+			buildModifiersFor(
+				answeringWith([CONFIGS.js]).build.configs,
 				answeringWith([CONFIGS.js]).gatesCleared
 			)
 		);
@@ -472,7 +508,7 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 	it("prices one answer so screens do not call the domain themselves", () => {
 		const state = answeringWith([CONFIGS.js]);
 		expect(toRunView(state).perAnswer).toEqual(
-			perAnswerPreviewFor(state.pipeline.configs, state.gatesCleared)
+			perAnswerPreviewFor(state.build.configs, state.gatesCleared)
 		);
 	});
 });
@@ -493,16 +529,16 @@ describe("the gate stake travels as one object", () => {
 			audits: [
 				expect.objectContaining({ id: "dependency-outage", suppressed: false }),
 			],
-			peelSpotsOnFailure: failPeelQuotaFor(state.pipeline.configs, 4),
-			peelShareOnFailure: peelShareFor(state.pipeline.configs, 4),
+			peelSlotsOnFailure: failPeelQuotaFor(state.build.configs, 4),
+			peelShareOnFailure: peelShareFor(state.build.configs, 4),
 			missIsFatal: false,
 			subscriptions: billLedger({
-				configs: state.pipeline.configs,
+				configs: state.build.configs,
 				gate: 4,
 				storageKb: state.storage,
 			}),
-			modifiers: pipelineModifiersFor(state.pipeline.configs, 4),
-			perAnswer: perAnswerPreviewFor(state.pipeline.configs, 4),
+			modifiers: buildModifiersFor(state.build.configs, 4),
+			perAnswer: perAnswerPreviewFor(state.build.configs, 4),
 		});
 	});
 
@@ -633,14 +669,14 @@ describe("the shop's controls answer to the reducer", () => {
 			status: "rewarding",
 			gatesCleared: 2,
 		};
-		const target = onFloor.pipeline.configs[0].id;
+		const target = onFloor.build.configs[0].id;
 
 		expect(toRunView(onFloor).atMinimumWidth).toBe(true);
 		expect(
-			runReducer(onFloor, { type: "sell", configId: target }).pipeline.configs
+			runReducer(onFloor, { type: "sell", configId: target }).build.configs
 		).toHaveLength(1);
 		expect(
-			runReducer(onFloor, { type: "drop", configId: target }).pipeline.configs
+			runReducer(onFloor, { type: "drop", configId: target }).build.configs
 		).toHaveLength(1);
 	});
 });
@@ -648,7 +684,7 @@ describe("the shop's controls answer to the reducer", () => {
 describe("the view prices the shop's offers", () => {
 	const roomy = (): RunState => {
 		const base = answeringWith([CONFIGS.js]);
-		return { ...base, pipeline: { ...base.pipeline, spots: BASE_SPOTS } };
+		return { ...base, build: { ...base.build, slots: BASE_SLOTS } };
 	};
 
 	const shopping = (overrides: Partial<RunState> = {}): RunState => ({
@@ -685,14 +721,14 @@ describe("the view prices the shop's offers", () => {
 			shopping({
 				...full,
 				status: "rewarding",
-				pipeline: { ...full.pipeline, spots: 1 },
+				build: { ...full.build, slots: 1 },
 				draftOptions: [CONFIGS.indexedDb],
 			})
 		);
 		expect(offer.refusal).toEqual({
 			reason: "no-room",
-			spots: 2,
-			freeSpots: 0,
+			slots: 2,
+			freeSlots: 0,
 		});
 	});
 
@@ -711,8 +747,8 @@ describe("the view prices the shop's offers", () => {
 	it("previews what installing the offer would do to the build's payouts", () => {
 		const state = shopping();
 		const offer = only(state);
-		const withIt = [...state.pipeline.configs, CONFIGS.eslint];
-		expect(offer.preview).toEqual(pipelineModifiersFor(withIt, 0));
+		const withIt = [...state.build.configs, CONFIGS.eslint];
+		expect(offer.preview).toEqual(buildModifiersFor(withIt, 0));
 		expect(offer.previewPerAnswer).toEqual(
 			perAnswerPreviewFor(withIt, state.gatesCleared)
 		);

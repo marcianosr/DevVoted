@@ -4,7 +4,7 @@ import {
 } from "~/shared/utils/errorHandling";
 
 import { showsSampleSize } from "~/modules/run/config/domain/config.model";
-import { peekerFor } from "~/modules/run/pipeline/domain/pipeline.model";
+import { peekerFor } from "~/modules/run/build/domain/build.model";
 import {
 	type PollSplit,
 	toPollSplit,
@@ -40,7 +40,7 @@ export const getPollSplitService = async ({
 		if (!(state.peekedPollIds ?? []).includes(String(pollId)))
 			throw new Error("Nothing paid for on this poll");
 
-		const peeker = peekerFor(state.pipeline.configs);
+		const peeker = peekerFor(state.build.configs);
 		// Peeled after paying: the peek is spent, but the config that reads the
 		// numbers is gone, so there is nothing installed to show them.
 		if (!peeker) throw new Error("No installed config reads the community");

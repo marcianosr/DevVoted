@@ -25,6 +25,15 @@ export const MidRun: Story = {
 		audits: ["dependency-outage"],
 		storage: { balanceKb: 184 },
 		track: { gates: ALL_SWATCHES, cleared: 4 },
+		coverage: { held: 12, projected: 4, required: 40 },
+	},
+};
+
+/** The header carries the run's score, so no fold can put it away. */
+export const CoverageOnly: Story = {
+	args: {
+		title: "Gate 4 · Lavender",
+		coverage: { held: 38.6, projected: 23.1, required: 60 },
 	},
 };
 

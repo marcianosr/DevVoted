@@ -21,7 +21,7 @@ describe("SwatchTrack", () => {
 	it("renders one square per gate on the ladder", () => {
 		const { container } = render(<SwatchTrack gates={GATES} cleared={2} />);
 
-		expect(container.querySelectorAll("span.size-4")).toHaveLength(5);
+		expect(container.querySelectorAll("span.size-3")).toHaveLength(5);
 	});
 
 	it("labels the gate by its own number, not its position in the row", () => {

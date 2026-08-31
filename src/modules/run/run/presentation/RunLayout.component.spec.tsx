@@ -21,7 +21,7 @@ import { TEST_DATES } from "~/test/kanto";
 import { createMockRunView } from "~/test/runView.factory";
 
 import { RunAnswer } from "~/modules/run/run/presentation/RunAnswer.component";
-import { RunConfigure } from "~/modules/run/pipeline/presentation/RunConfigure.component";
+import { RunConfigure } from "~/modules/run/build/presentation/RunConfigure.component";
 import { RunLayout } from "~/modules/run/run/presentation/RunLayout.component";
 import { RunOver } from "~/modules/run/run/presentation/RunOver.component";
 import { RunPrep } from "~/modules/run/run/presentation/RunPrep.component";

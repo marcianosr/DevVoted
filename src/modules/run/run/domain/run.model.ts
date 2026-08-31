@@ -6,8 +6,8 @@ import {
 import {
 	isBare,
 	isOverCapacity,
-	Pipeline,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+	Build,
+} from "~/modules/run/build/domain/build.model";
 import { Config } from "~/modules/run/config/domain/config.model";
 import {
 	EMPTY_WINDOW,
@@ -23,20 +23,24 @@ import {
 	offlinePairsFor,
 } from "~/modules/run/gate/domain/audit.model";
 import {
+	BASE_SLOTS,
+	cappedStorage,
 	PIN_START_KB_PER_GATE,
 	SLICE_WINDOW,
-	spotsHeldWith,
 } from "~/modules/run/run/domain/rules.model";
 
-export const addStorage = (current: number, income: number): number =>
-	current + income;
+export const addStorage = (
+	current: number,
+	income: number,
+	planTier: number
+): number => cappedStorage(current + income, planTier);
 
 export type RunStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
 
 export type RunState = {
 	readonly status: RunStatus;
-	readonly pipeline: Pipeline;
+	readonly build: Build;
 	readonly available: readonly Config[];
 	readonly draftOptions: readonly Config[];
 	readonly rebuildsUsed: number;
@@ -45,7 +49,7 @@ export type RunState = {
 	readonly draftedThisGate: readonly string[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered?: readonly AnsweredPoll[];
-	readonly peelSpotsRemaining: number;
+	readonly peelSlotsRemaining: number;
 	readonly polls: readonly RunPoll[];
 	readonly currentIndex: number;
 	readonly window: GateWindow;
@@ -61,9 +65,10 @@ export type RunState = {
 	readonly gateRewardKb?: number;
 	readonly interestThisGateKb?: number;
 	readonly extraPickThisGateKb?: number;
-	readonly extraSpots?: number;
-	readonly spotRentKb?: number;
-	readonly rentDefaulted?: boolean;
+	readonly slotsBought?: number;
+	readonly storagePlan?: number;
+	readonly planBilledKb?: number;
+	readonly planDowngraded?: boolean;
 	readonly clearedGate?: number;
 	readonly redoGate?: number;
 	readonly autoUpgradedConfigId?: string;
@@ -118,9 +123,9 @@ export const createRun = (
 	startAtGate = 0
 ): RunState => ({
 	status: "configuring",
-	pipeline: {
-		id: "pipeline",
-		spots: spotsHeldWith(startAtGate),
+	build: {
+		id: "build",
+		slots: BASE_SLOTS,
 		configs: [],
 	},
 	available: handed,
@@ -131,7 +136,7 @@ export const createRun = (
 	draftedThisGate: [],
 	answeredThisGate: [],
 	allAnswered: [],
-	peelSpotsRemaining: 0,
+	peelSlotsRemaining: 0,
 	polls,
 	currentIndex: 0,
 	window: freshWindow(polls, 0, [], startAtGate),
@@ -156,28 +161,25 @@ export const withLog = (
 
 export const isAwaitingTomorrow = (state: RunState): boolean =>
 	state.status === "answering" && state.currentIndex >= state.polls.length;
-export const withPipeline = (
-	pipeline: Pipeline,
-	configs: readonly Config[]
-): Pipeline => ({
-	...pipeline,
+export const withBuild = (build: Build, configs: readonly Config[]): Build => ({
+	...build,
 	configs,
 });
 
 export const shopDraft = (state: RunState, seed: number): readonly Config[] =>
 	rollDraft(
 		seed,
-		state.pipeline.configs,
+		state.build.configs,
 		state.lockedOfferIds ?? [],
 		offerCount(state.extensionsBought ?? 0)
 	);
 
 export const auditsOf = (state: RunState): readonly Audit[] =>
-	liveAuditsFor(state.pipeline.configs, state.gatesCleared);
+	liveAuditsFor(state.build.configs, state.gatesCleared);
 
 export const offlineConfigsOf = (state: RunState): readonly Config[] =>
 	offlineConfigsFor(
-		state.pipeline.configs,
+		state.build.configs,
 		auditsOf(state),
 		windowStartIndex(state),
 		state.window.answered
@@ -185,7 +187,7 @@ export const offlineConfigsOf = (state: RunState): readonly Config[] =>
 
 export const offlinePairsOf = (state: RunState): readonly OfflinePair[] =>
 	offlinePairsFor(
-		state.pipeline.configs,
+		state.build.configs,
 		auditsOf(state),
 		windowStartIndex(state),
 		state.window.answered
@@ -193,14 +195,14 @@ export const offlinePairsOf = (state: RunState): readonly OfflinePair[] =>
 
 export const liveConfigsOf = (state: RunState): readonly Config[] => {
 	const offline = offlineConfigsOf(state);
-	if (offline.length === 0) return state.pipeline.configs;
-	return state.pipeline.configs.filter(
+	if (offline.length === 0) return state.build.configs;
+	return state.build.configs.filter(
 		(config) => !offline.some((down) => down.id === config.id)
 	);
 };
 
-export const canStart = (pipeline: Pipeline): boolean =>
-	!isBare(pipeline) && !isOverCapacity(pipeline);
+export const canStart = (build: Build): boolean =>
+	!isBare(build) && !isOverCapacity(build);
 
 export const isRunOver = (status: RunStatus): boolean =>
 	status === "won" || status === "dead";

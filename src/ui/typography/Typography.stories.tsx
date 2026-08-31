@@ -20,7 +20,7 @@ type Story = StoryObj;
 
 export const Title_: Story = {
 	name: "Title",
-	render: () => <Title>Upgrade your pipeline</Title>,
+	render: () => <Title>Upgrade your build</Title>,
 };
 
 export const Subtitle_: Story = {
@@ -37,7 +37,7 @@ export const Paragraph_: Story = {
 
 /** Title tinted to the surrounding category theme (here: CSS → cerulean). */
 export const ThemedTitle: Story = {
-	render: () => <Title tone="cerulean">Configure your pipeline</Title>,
+	render: () => <Title tone="cerulean">Configure your build</Title>,
 };
 
 /** The three roles together, as they stack on a real screen header. */
@@ -46,7 +46,7 @@ export const Composition: Story = {
 		<div className="flex flex-col gap-3">
 			<header>
 				<Title>Your load-out</Title>
-				<Subtitle>Your configured pipeline checks and effects</Subtitle>
+				<Subtitle>Your configured build checks and effects</Subtitle>
 			</header>
 			<Paragraph>
 				Requires 1 correct answer to pass the gate. Deeper gates cost more.

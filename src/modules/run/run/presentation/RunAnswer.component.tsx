@@ -120,7 +120,7 @@ export const RunAnswer = () => {
 				pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 				pollsPerGate={view.pollsPerGate}
 				reveal={answerReveal}
-				slots={view.spots}
+				slots={view.slots}
 				paidActions={view.paidActions}
 				interactive={!busy && reveal === null}
 				split={split ?? undefined}

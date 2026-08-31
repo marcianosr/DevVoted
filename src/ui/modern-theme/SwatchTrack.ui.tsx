@@ -10,8 +10,6 @@ import { Text } from "./Text.ui";
 
 export type SwatchTrackLayout = "inline" | "stacked";
 
-/** "none" for a caller whose own row already states the count — the cells still
- * carry the ladder's shape, which is the half a sentence cannot say. */
 export type SwatchTrackCounting = "gates" | "swatches" | "none";
 
 const TRACK = "flex items-center";
@@ -21,7 +19,7 @@ const LAYOUT = {
 	stacked: "flex-col gap-2",
 } satisfies Record<SwatchTrackLayout, string>;
 
-const CELLS = "flex flex-wrap items-center justify-center gap-1.5";
+const CELLS = "flex flex-wrap items-center justify-center gap-1";
 
 export type SwatchTrackGate = {
 	gate: number;

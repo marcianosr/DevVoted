@@ -29,7 +29,30 @@ export const WithMeta: Story = {
 				}
 			</>
 		),
-		meta: ["lift-the-final-two", "typescript", "×1.1", "@matthijsgroen"],
+		meta: [
+			{ label: "lift-the-final-two" },
+			{ label: "typescript" },
+			{ label: "scores", figure: "×1.1", tone: "celadon" },
+			{ label: "@matthijsgroen" },
+		],
+	},
+};
+
+/** The facts line as a gate states it: what the poll pays, then what it costs. */
+export const WithTheStake: Story = {
+	args: {
+		children: "typeof null === ?",
+		category: { label: "JavaScript" },
+		meta: [
+			{ label: "scores", figure: "×1", tone: "celadon" },
+			{ label: "3 options" },
+			{ label: "wrong costs", figure: "0.5", tone: "cinnabar" },
+			{
+				label: "Gate retry cost:",
+				figure: "Remove 1 config",
+				tone: "cinnabar",
+			},
+		],
 	},
 };
 

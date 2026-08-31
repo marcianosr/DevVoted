@@ -55,9 +55,9 @@ export const hydrateRunState = (
 	polls: readonly RunPoll[]
 ): RunState => ({
 	...snapshot,
-	pipeline: {
-		...snapshot.pipeline,
-		configs: refreshConfigs(snapshot.pipeline.configs),
+	build: {
+		...snapshot.build,
+		configs: refreshConfigs(snapshot.build.configs),
 	},
 	available: refreshConfigs(snapshot.available),
 	draftOptions: refreshConfigs(snapshot.draftOptions),
@@ -66,9 +66,7 @@ export const hydrateRunState = (
 		budget: pickBudgetFor(
 			polls,
 			windowStartIndex(snapshot),
-			mirrorsPolls(
-				liveAuditsFor(snapshot.pipeline.configs, snapshot.gatesCleared)
-			)
+			mirrorsPolls(liveAuditsFor(snapshot.build.configs, snapshot.gatesCleared))
 		),
 	},
 	polls,

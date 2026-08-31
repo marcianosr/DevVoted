@@ -140,7 +140,7 @@ const ClimberPin = ({ group, percent }: ClimberPinProps) => {
  * Your own ghost: the deepest a finished run of yours reached. Dashed and faded
  * so it reads as a memory of a climb rather than someone standing there, and
  * floated half an avatar above the living so it stays legible when a climber is
- * standing on the exact spot — which is the interesting case, not a rare one.
+ * standing on the exact slot — which is the interesting case, not a rare one.
  *
  * Unlabelled: the legend already says what a dashed avatar is, and there is only
  * ever one of these on the map.

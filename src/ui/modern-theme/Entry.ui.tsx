@@ -8,11 +8,9 @@ import {
 	isExpandable,
 } from "./Disclosure.ui";
 import { Mark, type MarkVariant } from "./Mark.ui";
-import { type Rarity } from "./rarity";
-import { RarityGlyph } from "./RarityGlyph.ui";
 import { Row } from "./Row.ui";
+import { SlotMark } from "./SlotMark.ui";
 import { Text } from "./Text.ui";
-import { Tooltip } from "./Tooltip.ui";
 
 const SUMMARY = `${DISCLOSURE_SUMMARY} rounded-md transition-colors hover:bg-zinc-100/5`;
 
@@ -26,19 +24,16 @@ const NAMING = "flex min-w-0 items-center gap-1";
 const NOTES = "flex flex-wrap items-center gap-2";
 const ACTIONS = "flex items-center gap-2";
 
-const gradeAndHint = (
-	rarity: Rarity | undefined,
+const sizeMark = (
+	slots: number | undefined,
 	hint: string | undefined
-): ReactNode => {
-	if (!rarity) return null;
-	const glyph = <RarityGlyph rarity={rarity} />;
-	return hint === undefined ? glyph : <Tooltip hint={hint}>{glyph}</Tooltip>;
-};
+): ReactNode =>
+	slots === undefined ? null : <SlotMark slots={slots} hint={hint} />;
 
 type EntryBase = {
 	label: ReactNode;
-	rarity?: Rarity;
-	gradeHint?: string;
+	slots?: number;
+	sizeHint?: string;
 	notes?: ReactNode;
 	summary?: ReactNode;
 	explainer?: ReactNode;
@@ -58,8 +53,8 @@ export type EntryProps = EntryBase &
 
 export const Entry = ({
 	label,
-	rarity,
-	gradeHint,
+	slots,
+	sizeHint,
 	mark,
 	leading,
 	notes,
@@ -92,7 +87,7 @@ export const Entry = ({
 			className={expandable ? SUMMARY : FRAMED}
 		>
 			<span className={NAMING}>
-				{gradeAndHint(rarity, gradeHint)}
+				{sizeMark(slots, sizeHint)}
 				<Text size="meta">{label}</Text>
 			</span>
 			{notes ? <span className={NOTES}>{notes}</span> : null}

@@ -6,7 +6,7 @@ import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { Section, type SectionItem } from "../Section.ui";
 import { ShopHeader, type ShopHeaderProps } from "../ShopHeader.ui";
-import { ExtraSpots, type ExtraSpotsProps } from "../ExtraSpots.ui";
+import { StoragePlan, type StoragePlanProps } from "../StoragePlan.ui";
 import { Text } from "../Text.ui";
 
 const BODY = "flex flex-col lg:flex-row lg:items-stretch";
@@ -28,8 +28,8 @@ export type ShopScreenProps = {
 	draftAction?: ReactNode;
 	draftNote?: ReactNode;
 	controls?: ReactNode;
-	extraSpots?: ExtraSpotsProps;
-	pipeline: readonly SectionItem[];
+	storagePlan?: StoragePlanProps;
+	build: readonly SectionItem[];
 	slots: ReactNode;
 	track?: ReactNode;
 	onContinue?: () => void;
@@ -45,8 +45,8 @@ export const ShopScreen = ({
 	draftAction,
 	draftNote,
 	controls,
-	extraSpots,
-	pipeline,
+	storagePlan,
+	build,
 	slots,
 	track,
 	onContinue,
@@ -81,21 +81,21 @@ export const ShopScreen = ({
 					) : null}
 				</Section>
 
-				{extraSpots ? <ExtraSpots {...extraSpots} /> : null}
+				{storagePlan ? <StoragePlan {...storagePlan} /> : null}
 
 				{controls}
 			</section>
 
 			<section className={COLUMN}>
 				<Section
-					title="Your pipeline"
+					title="Your build"
 					value={
 						<Text size="meta" tone="muted">
 							{slots}
 						</Text>
 					}
 					note={track}
-					items={pipeline}
+					items={build}
 				/>
 			</section>
 		</div>

@@ -11,20 +11,15 @@ const items: FoldItem[] = [
 describe("Fold", () => {
 	it("shows its bottom line in the summary, so a closed fold still reports", () => {
 		render(
-			<Fold
-				title="Pipeline"
-				value="−128 KB"
-				items={items}
-				defaultOpen={false}
-			/>
+			<Fold title="Build" value="−128 KB" items={items} defaultOpen={false} />
 		);
 
-		expect(screen.getByText("Pipeline")).toBeInTheDocument();
+		expect(screen.getByText("Build")).toBeInTheDocument();
 		expect(screen.getByText("−128 KB")).toBeInTheDocument();
 	});
 
 	it("opens by default", () => {
-		const { container } = render(<Fold title="Pipeline" items={items} />);
+		const { container } = render(<Fold title="Build" items={items} />);
 
 		expect(container.querySelector("details")).toHaveAttribute("open");
 	});
@@ -38,7 +33,7 @@ describe("Fold", () => {
 	});
 
 	it("renders one list item per config", () => {
-		render(<Fold title="Pipeline" items={items} />);
+		render(<Fold title="Build" items={items} />);
 
 		expect(screen.getAllByRole("listitem")).toHaveLength(2);
 	});
@@ -55,7 +50,7 @@ describe("Fold", () => {
 	});
 
 	it("closes with a line so stacked folds read as separate sections", () => {
-		const { container } = render(<Fold title="Pipeline" />);
+		const { container } = render(<Fold title="Build" />);
 
 		expect(container.firstElementChild).toHaveClass("border-b");
 	});
@@ -96,7 +91,7 @@ describe("Fold", () => {
 	// jsdom resolves no variants, so this asserts the declaration rather than the
 	// painted rule: a column that ends on one reads as a section cut off mid-way.
 	it("declares away its rule for the last section in a column", () => {
-		const { container } = render(<Fold title="Your pipeline" />);
+		const { container } = render(<Fold title="Your build" />);
 
 		expect(container.firstElementChild).toHaveClass("last:border-b-0");
 	});
@@ -106,7 +101,7 @@ describe("Fold", () => {
 	it("rules a divided list's rows apart instead of spacing them", () => {
 		const { container } = render(
 			<Fold
-				title="Configure your pipeline"
+				title="Configure your build"
 				divided
 				items={[
 					{ id: "a", content: <span>.js</span> },

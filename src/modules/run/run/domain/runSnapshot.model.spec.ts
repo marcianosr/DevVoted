@@ -53,7 +53,7 @@ const stateVariants: Record<string, RunState> = {
 	"awaiting-strip with strips remaining": {
 		...baseState,
 		status: "awaiting-strip",
-		peelSpotsRemaining: 2,
+		peelSlotsRemaining: 2,
 		gatesCleared: 3,
 	},
 	"rewarding with draft options": {
@@ -95,10 +95,10 @@ describe("hydrateRunState — the roster is authoritative", () => {
 		};
 		const state: RunState = {
 			...baseState,
-			pipeline: { ...baseState.pipeline, configs: [staleEslint] },
+			build: { ...baseState.build, configs: [staleEslint] },
 		};
 		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
-		expect(rehydrated.pipeline.configs[0]).toEqual(CONFIGS.eslint);
+		expect(rehydrated.build.configs[0]).toEqual(CONFIGS.eslint);
 	});
 
 	it("keeps the player's earned level while refreshing everything else", () => {

@@ -16,7 +16,7 @@ export const Default: Story = {
 
 export const AsSectionHeading: Story = {
 	args: {
-		children: "Your pipeline",
+		children: "Your build",
 		as: "h2",
 	},
 };
@@ -25,8 +25,8 @@ export const AsSectionHeading: Story = {
 export const Levels: Story = {
 	render: () => (
 		<div className="flex flex-col gap-2">
-			<Title as="h1">Upgrade your pipeline</Title>
-			<Title as="h2">Your pipeline</Title>
+			<Title as="h1">Upgrade your build</Title>
+			<Title as="h2">Your build</Title>
 			<Title as="h3">Gate modifiers</Title>
 		</div>
 	),

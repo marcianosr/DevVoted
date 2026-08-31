@@ -20,10 +20,7 @@ const rowFor = (gate: number, owned: readonly string[] = []) => {
 
 const unlockLabelsOf = (
 	entry: ReturnType<typeof gatedex>[number]
-): readonly string[] =>
-	entry.unlocks.map((unlock) =>
-		unlock.kind === "rung" ? `rung ${unlock.spots}` : unlock.action
-	);
+): readonly string[] => entry.unlocks.map((unlock) => unlock.action);
 
 const unlockLabels = (gate: number): readonly string[] =>
 	unlockLabelsOf(rowFor(gate));
@@ -91,26 +88,16 @@ describe("gatedex", () => {
 		expect(rowFor(8).audits).toEqual(["Timeout", "Flaky Build"]);
 	});
 
-	it("names the width a clear hands over", () => {
-		expect(unlockLabels(1)).toContain("rung 8");
-		expect(unlockLabels(4)).toContain("rung 12");
-		expect(unlockLabels(10)).toContain("rung 24");
-	});
-
-	it("names no rung on a gate that opens none", () => {
-		expect(unlockLabels(3)).not.toContain("rung 12");
-		expect(unlockLabels(5)).not.toContain("rung 12");
+	it("promises no width, because slots are bought and never handed over", () => {
+		expect(everyUnlockLabel()).toEqual(
+			expect.arrayContaining(["lock", "extend", "pin"])
+		);
+		expect(everyUnlockLabel()).toHaveLength(3);
 	});
 
 	it("hangs a shop action one gate below its gatesCleared floor", () => {
 		expect(unlockLabels(1)).toContain("lock");
 		expect(unlockLabels(2)).toContain("extend");
 		expect(unlockLabels(3)).toContain("pin");
-	});
-
-	it("hangs a rung one gate below its floor, and the opening width on none", () => {
-		expect(unlockLabels(1)).toContain("rung 8");
-		expect(unlockLabels(4)).toContain("rung 12");
-		expect(everyUnlockLabel()).not.toContain("rung 4");
 	});
 });

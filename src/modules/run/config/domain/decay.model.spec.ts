@@ -14,9 +14,9 @@ describe("decayOnClear", () => {
 	});
 
 	it("returns the very same array when nothing on it decays", () => {
-		const pipeline = [CONFIGS.js, CONFIGS.agentsMd];
-		const { configs, deleted } = decayOnClear(pipeline);
-		expect(configs).toBe(pipeline);
+		const build = [CONFIGS.js, CONFIGS.agentsMd];
+		const { configs, deleted } = decayOnClear(build);
+		expect(configs).toBe(build);
 		expect(deleted).toEqual([]);
 	});
 
@@ -34,10 +34,10 @@ describe("decayOnClear", () => {
 
 	it("serves exactly four gates from a fresh ×3: 3, 2.5, 2, 1.5, gone", () => {
 		const ladder: number[] = [];
-		let pipeline: readonly Config[] = [CONFIGS.deprecated];
-		while (pipeline.length > 0) {
-			ladder.push(pipeline[0].coverageMultiplier ?? 0);
-			pipeline = decayOnClear(pipeline).configs;
+		let build: readonly Config[] = [CONFIGS.deprecated];
+		while (build.length > 0) {
+			ladder.push(build[0].coverageMultiplier ?? 0);
+			build = decayOnClear(build).configs;
 		}
 		expect(ladder).toEqual([3, 2.5, 2, 1.5]);
 	});

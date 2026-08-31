@@ -3,20 +3,19 @@ import {
 	describeConfig,
 	headlineFigureOf,
 	isUpgradable,
-	largestGradeFitting,
-	rarityOf,
-	spotsOf,
+	largestSizeFitting,
+	slotsOf,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import type {
-	ExtraSpotOption,
 	RunView,
 	ShopOffer,
+	StoragePlanOption,
 } from "~/modules/run/run/application/runView.viewmodel";
-import { MAX_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
+import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	offerRefusalText,
@@ -31,16 +30,13 @@ import { Fold, type FoldItem } from "~/ui/modern-theme/Fold.ui";
 import { Glyph } from "~/ui/modern-theme/Glyph.ui";
 import { Lock } from "~/ui/modern-theme/Lock.ui";
 import { Mark } from "~/ui/modern-theme/Mark.ui";
-import {
-	extraSpotLabel,
-	type ExtraSpotStep,
-} from "~/ui/modern-theme/ExtraSpots.ui";
+import type { StoragePlanRow } from "~/ui/modern-theme/StoragePlan.ui";
 import { PriceTag, type PriceTagState } from "~/ui/modern-theme/PriceTag.ui";
 import { RowFigures } from "~/ui/modern-theme/RowFigures.ui";
-import { SpotTrack } from "~/ui/modern-theme/SpotTrack.ui";
+import { SlotTrack } from "~/ui/modern-theme/SlotTrack.ui";
 import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import { Text } from "~/ui/modern-theme/Text.ui";
-import { plural, gateFloorLabel } from "~/ui/modern-theme/format";
+import { capLabel, plural } from "~/ui/modern-theme/format";
 
 const offerFacts = (config: Config) => <ConfigFacts config={config} />;
 
@@ -60,7 +56,7 @@ const refusalHintFor = (offer: ShopOffer): string | undefined => {
 	if (offer.owned) return "Already installed";
 	if (!offer.refusal) return undefined;
 	return offer.refusal.reason === "no-room"
-		? `Needs ${offer.refusal.spots} spots, ${offer.refusal.freeSpots} free`
+		? `Needs ${offer.refusal.slots} slots, ${offer.refusal.freeSlots} free`
 		: notEnoughData("install");
 };
 
@@ -149,9 +145,8 @@ const trackBars = (configs: readonly Config[]) =>
 	configs.map((config) => ({
 		id: config.id,
 		label: config.label,
-		spots: spotsOf(config),
+		slots: slotsOf(config),
 		minified: config.minified,
-		rarity: rarityOf(config),
 	}));
 
 const offerRows = (
@@ -164,8 +159,8 @@ const offerRows = (
 		content: (
 			<Entry
 				label={offer.config.label}
-				rarity={rarityOf(offer.config)}
-				gradeHint={`takes ${spotsOf(offer.config)} of ${view.spots} spots`}
+				slots={slotsOf(offer.config)}
+				sizeHint={`takes ${slotsOf(offer.config)} of ${view.slots} slots`}
 				leading={
 					offer.owned ? (
 						<Mark variant="pass" hint="Already installed" />
@@ -244,7 +239,7 @@ const upgradeAction = (
 	};
 };
 
-const pipelineRows = (
+const buildRows = (
 	view: RunView,
 	onUpgrade: (configId: string) => void,
 	onSell: (configId: string) => void
@@ -257,8 +252,8 @@ const pipelineRows = (
 			content: (
 				<Entry
 					label={config.label}
-					rarity={rarityOf(config)}
-					gradeHint={`takes ${spotsOf(config)} of ${view.spots} spots`}
+					slots={slotsOf(config)}
+					sizeHint={`takes ${slotsOf(config)} of ${view.slots} slots`}
 					{...(view.newConfigIds.includes(config.id)
 						? { mark: "warn" as const }
 						: {})}
@@ -287,28 +282,21 @@ const pipelineRows = (
 	}),
 ];
 
-const extraSpotTerms = (option: ExtraSpotOption): string =>
-	option.spots === 0 ? "free" : `${option.rentKb} KB a gate`;
+const planTerms = (option: StoragePlanOption): string =>
+	option.perGateKb === 0 ? "free" : `${option.perGateKb} KB a gate`;
 
-const extraSpotSteps = (
+const planRows = (
 	view: RunView,
-	onRent: (spots: number) => void
-): readonly ExtraSpotStep[] =>
-	view.extraSpots.options.map((option) => ({
-		id: `extra-${option.spots}`,
-		label: extraSpotLabel(option.spots),
-		makes: `makes ${option.makes}`,
-		terms: extraSpotTerms(option),
-		settled: option.spots === 0,
+	onSetPlan: (tier: number) => void
+): readonly StoragePlanRow[] =>
+	view.storagePlan.options.map((option) => ({
+		id: `plan-${option.tier}`,
+		label: capLabel(option.capKb),
+		terms: planTerms(option),
+		free: option.perGateKb === 0,
 		held: option.held,
-		...(option.fromGate === undefined
-			? {
-					pick: {
-						disabled: option.rentTooDear,
-						onUse: () => onRent(option.spots),
-					},
-				}
-			: { opensAt: `opens at ${gateFloorLabel(option.fromGate)}` }),
+		...(option.burnsKb > 0 ? { warns: `burns ${option.burnsKb} KB` } : {}),
+		pick: { onUse: () => onSetPlan(option.tier) },
 	}));
 
 const offerCountFor = (view: RunView): string => {
@@ -326,7 +314,9 @@ export type ShopViewProps = {
 	onRebuild: () => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
-	onRentExtraSpots: (spots: number) => void;
+	onBuySlot: () => void;
+	onCashSlot: () => void;
+	onSetStoragePlan: (tier: number) => void;
 	onContinue: () => void;
 };
 
@@ -339,7 +329,9 @@ export const ShopView = ({
 	onRebuild,
 	onExtend,
 	onPlantPin,
-	onRentExtraSpots,
+	onBuySlot,
+	onCashSlot,
+	onSetStoragePlan,
 	onContinue,
 }: ShopViewProps) => {
 	const nextGate = view.gateStake.gateNumber;
@@ -421,23 +413,28 @@ export const ShopView = ({
 					</Fold>
 				) : undefined
 			}
-			extraSpots={{
-				steps: extraSpotSteps(view, onRentExtraSpots),
-				renting: view.extraSpots.renting,
-				perGateKb: view.extraSpots.perGateKb,
+			storagePlan={{
+				rows: planRows(view, onSetStoragePlan),
+				cap: capLabel(view.storagePlan.capKb),
+				terms:
+					view.storagePlan.perGateKb === 0
+						? "free"
+						: `${view.storagePlan.perGateKb} KB a gate`,
 			}}
-			pipeline={pipelineRows(view, onUpgrade, onSell)}
-			slots={`${view.spotsUsed} of ${view.spots} spots`}
+			build={buildRows(view, onUpgrade, onSell)}
+			slots={`${view.slotsUsed} of ${view.slots} slots`}
 			track={
-				<SpotTrack
+				<SlotTrack
 					configs={trackBars(view.configs)}
-					spots={view.spots}
-					maxSpots={MAX_SPOTS}
-					fits={largestGradeFitting(view.spotsFree)}
+					slots={view.slots}
+					maxSlots={MAX_SLOTS}
+					fits={largestSizeFitting(view.slotsFree)}
+					buy={{ ...view.slotDeals.buy, onUse: onBuySlot }}
+					cash={{ ...view.slotDeals.cash, onUse: onCashSlot }}
 				/>
 			}
 			onContinue={onContinue}
-			exitLock={shopExitLock(view.overflowSpots)}
+			exitLock={shopExitLock(view.overflowSlots)}
 		/>
 	);
 };

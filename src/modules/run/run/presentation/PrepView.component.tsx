@@ -2,11 +2,10 @@ import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
 	type Config,
 	headlineFigureOf,
-	largestGradeFitting,
-	rarityOf,
-	spotsOf,
+	largestSizeFitting,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
-import { MAX_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
+import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	ALL_SWATCHES,
@@ -27,8 +26,7 @@ const configRows = (configs: readonly Config[]): readonly PrepConfig[] =>
 	configs.map((config) => ({
 		id: config.id,
 		label: config.label,
-		rarity: rarityOf(config),
-		spots: spotsOf(config),
+		slots: slotsOf(config),
 		minified: config.minified,
 		note: <Figure figure={headlineFigureOf(config)} plain />,
 		summary: (
@@ -96,13 +94,13 @@ export const PrepView = ({
 			pollCount={view.gateStake.pollsPerGate}
 			coverageDemand={view.gateStake.coverageDemand}
 			coverageHeld={view.gateStake.coverageHeld}
-			removeOnMiss={view.gateStake.peelSpotsOnFailure}
+			removeOnMiss={view.gateStake.peelSlotsOnFailure}
 			missIsFatal={view.gateStake.missIsFatal}
 			coveragePerWrong={view.gateStake.perAnswer.coveragePerWrong}
 			configs={configRows(view.configs)}
-			spots={view.spots}
-			maxSpots={MAX_SPOTS}
-			fits={largestGradeFitting(view.spotsFree)}
+			slots={view.slots}
+			maxSlots={MAX_SLOTS}
+			fits={largestSizeFitting(view.slotsFree)}
 			audits={auditRows(view)}
 			reward={{
 				coveragePerCorrect: perAnswer.coveragePerCorrect,

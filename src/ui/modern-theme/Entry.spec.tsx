@@ -126,37 +126,32 @@ describe("Entry", () => {
 		expect(screen.getByRole("group")).not.toHaveAttribute("open");
 	});
 
-	it("leads the name with its grade glyph, expandable or not", () => {
+	it("leads the name with its size, expandable or not", () => {
 		const { container: flat } = render(
-			<Entry label=".ts" mark="pass" rarity="bit" />
+			<Entry label=".ts" mark="pass" slots={1} />
 		);
-		expect(flat.querySelectorAll("svg rect")).toHaveLength(1);
+		expect(flat.textContent).toContain("1 slot");
 
 		const { container: open } = render(
 			<Entry
 				label="AGENTS.md"
 				mark="pass"
-				rarity="byte"
+				slots={8}
 				explainer="All coverage ×2."
 			/>
 		);
-		expect(open.querySelectorAll("svg rect")).toHaveLength(8);
+		expect(open.textContent).toContain("8 slots");
 	});
 
-	it("draws no glyph where there is no grade to state", () => {
-		const { container } = render(<Entry label="empty" mark="idle" />);
+	it("states no size where there is none to state", () => {
+		render(<Entry label="empty" mark="idle" />);
 
-		expect(container.querySelector("svg rect")).toBeNull();
+		expect(screen.queryByText(/slot/)).not.toBeInTheDocument();
 	});
 
-	it("tints an opened row in no grade colour at all", () => {
+	it("tints an opened row in no size colour at all", () => {
 		render(
-			<Entry
-				label="WTFPL"
-				mark="pass"
-				rarity="byte"
-				explainer="Buy the shop."
-			/>
+			<Entry label="WTFPL" mark="pass" slots={8} explainer="Buy the shop." />
 		);
 
 		expect(screen.getByRole("group").className).not.toMatch(

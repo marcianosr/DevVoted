@@ -153,8 +153,8 @@ export const RunHud = ({
 				<StorageGauge usedKb={storage} />
 				<HudHint label="How storage works">
 					Storage is money: gate clears pay it, and the shop spends it on
-					configs, upgrades and bringing pipeline width forward. Nothing caps
-					what you can hold.
+					configs, upgrades and bringing build width forward. Nothing caps what
+					you can hold.
 				</HudHint>
 			</span>
 			<span className="flex shrink-0 items-start gap-1.5">
@@ -173,7 +173,7 @@ export const RunHud = ({
 				</span>
 				<HudHint label="How gates work">
 					Each gate deals 5 polls and demands a coverage total earned inside
-					them. Clear it for rewards and a wider pipeline; miss it and the gate
+					them. Clear it for rewards and a wider build; miss it and the gate
 					peels a config, then you shop and run the same gate again.
 				</HudHint>
 			</span>

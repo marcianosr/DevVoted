@@ -2,6 +2,10 @@
 
 ## Status
 
+> ⚠ **Superseded by [ADR-046](046-slots-are-bought-storage-is-capped-again.md)**
+> (2026-08-30): the gate schedule and the extra-slot rent are both deleted. Slots are
+> bought outright, and the KB cap this ADR removed is back as a seven-rung plan.
+
 Accepted (2026-08-28, Marciano, DVTD-yu7z, revised the same day by DVTD-lxla).
 **Supersedes [ADR-023](023-storage-capacity-is-a-subscription.md)** — the plan is
 gone, and with it the KB cap it existed to rent. Amends

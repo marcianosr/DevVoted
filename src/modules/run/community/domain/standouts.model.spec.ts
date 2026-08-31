@@ -334,7 +334,7 @@ describe("standoutsFor — run-scoped awards", () => {
 		});
 	});
 
-	it("counts the widest pipeline in configs", () => {
+	it("counts the widest build in configs", () => {
 		const result = standoutsFor(
 			input({
 				runStats: [
@@ -344,7 +344,7 @@ describe("standoutsFor — run-scoped awards", () => {
 			})
 		);
 
-		expect(find(result, "widest pipeline")).toMatchObject({
+		expect(find(result, "widest build")).toMatchObject({
 			value: { unit: "configs", amount: 7 },
 			voter: { id: BLUE },
 		});
@@ -355,7 +355,7 @@ describe("standoutsFor — run-scoped awards", () => {
 			input({ runStats: [runStats(RED, { configCount: 1 })] })
 		);
 
-		expect(find(result, "widest pipeline")?.value).toEqual({
+		expect(find(result, "widest build")?.value).toEqual({
 			unit: "configs",
 			amount: 1,
 		});

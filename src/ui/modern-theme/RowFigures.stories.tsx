@@ -19,15 +19,15 @@ export default meta;
 
 type Story = StoryObj<typeof RowFigures>;
 
-export const ABit: Story = {
-	args: { grade: "bit", figure: <Delta multiplier={1.25} /> },
+export const OneSlot: Story = {
+	args: { slots: 1, figure: <Delta multiplier={1.25} /> },
 };
 
-export const AByte: Story = {
-	args: { grade: "byte", figure: <Delta multiplier={2} /> },
+export const EightSlots: Story = {
+	args: { slots: 8, figure: <Delta multiplier={2} /> },
 };
 
-export const GradeOnly: Story = { args: { grade: "crumb" } };
+export const SizeOnly: Story = { args: { slots: 1 } };
 
 export const FigureOnly: Story = {
 	render: () => (
@@ -44,10 +44,10 @@ export const FigureOnly: Story = {
 export const Stacked: Story = {
 	render: () => (
 		<div className="flex flex-col gap-2">
-			<RowFigures grade="bit" figure={<Delta multiplier={1.25} />} />
-			<RowFigures grade="crumb" figure={<Delta coverage={0.5} />} />
-			<RowFigures grade="nibble" figure={<Delta multiplier={1.6} />} />
-			<RowFigures grade="byte" figure={<Delta multiplier={3.4} />} />
+			<RowFigures slots={1} figure={<Delta multiplier={1.25} />} />
+			<RowFigures slots={2} figure={<Delta coverage={0.5} />} />
+			<RowFigures slots={4} figure={<Delta multiplier={1.6} />} />
+			<RowFigures slots={8} figure={<Delta multiplier={3.4} />} />
 		</div>
 	),
 };

@@ -6,8 +6,8 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 import type {
 	PerAnswerPreview,
-	PipelineModifiers,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+	BuildModifiers,
+} from "~/modules/run/build/domain/build.model";
 import type { BillLedger } from "~/modules/run/config/domain/subscription.model";
 import type {
 	AuditView,
@@ -27,9 +27,9 @@ import { SwatchChip } from "~/modules/run/gate/presentation/SwatchChips.ui";
 type GateStakeReceiptProps = {
 	stake: GateStake;
 	lead?: string;
-	preview?: PipelineModifiers;
+	preview?: BuildModifiers;
 	previewPerAnswer?: PerAnswerPreview;
-	overflowSpots?: number;
+	overflowSlots?: number;
 	action?: ScreenAction;
 	shopAction?: ScreenAction;
 };
@@ -141,7 +141,7 @@ const MissCost = ({
 		</Paragraph>
 		{fatal ? (
 			<Paragraph as="span" tone="cinnabar" className="font-bold">
-				That peel takes your whole pipeline — a miss here ends the run.
+				That peel takes your whole build — a miss here ends the run.
 			</Paragraph>
 		) : null}
 	</div>
@@ -261,7 +261,7 @@ const RewardsList = ({
 	previewPerAnswer,
 }: {
 	stake: GateStake;
-	preview?: PipelineModifiers;
+	preview?: BuildModifiers;
 	previewPerAnswer?: PerAnswerPreview;
 }) => {
 	const { gateNumber, modifiers, perAnswer } = stake;
@@ -351,12 +351,12 @@ export const GateStakeReceipt = ({
 	lead,
 	preview,
 	previewPerAnswer,
-	overflowSpots,
+	overflowSlots,
 	action,
 	shopAction,
 }: GateStakeReceiptProps) => {
 	const { gateNumber, pollsPerGate, coverageDemand, coverageHeld } = stake;
-	const isOverCapacity = overflowSpots !== undefined && overflowSpots > 0;
+	const isOverCapacity = overflowSlots !== undefined && overflowSlots > 0;
 	return (
 		<section className="rounded-lg border border-edge-strong p-4">
 			<div data-testid="gate-stake-receipt" className="flex flex-col gap-3">
@@ -382,7 +382,7 @@ export const GateStakeReceipt = ({
 								<Paragraph as="span" tone="muted">
 									Over capacity by{" "}
 									<Paragraph as="span" className="font-bold">
-										{overflowSpots} spot{overflowSpots === 1 ? "" : "s"}
+										{overflowSlots} slot{overflowSlots === 1 ? "" : "s"}
 									</Paragraph>{" "}
 									— minify, uninstall, or rent more room
 								</Paragraph>
@@ -406,7 +406,7 @@ export const GateStakeReceipt = ({
 						/>
 					</ul>
 					<MissCost
-						strips={stake.peelSpotsOnFailure}
+						strips={stake.peelSlotsOnFailure}
 						fatal={stake.missIsFatal}
 						pollsPerGate={pollsPerGate}
 					/>

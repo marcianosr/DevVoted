@@ -1,10 +1,10 @@
-import { spotsOf } from "~/modules/run/config/domain/config.model";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { starterStackFor } from "~/modules/run/config/domain/stack.model";
 import { auditsCloseShop } from "~/modules/run/gate/domain/audit.model";
 import {
 	hasRoomFor,
-	occupiedSpots,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+	occupiedSlots,
+} from "~/modules/run/build/domain/build.model";
 import {
 	spendLint,
 	spendPeek,
@@ -13,11 +13,13 @@ import {
 	auditsOf,
 	canStart,
 	type RunState,
-	withPipeline,
+	withBuild,
 } from "~/modules/run/run/domain/run.model";
 import { answer } from "~/modules/run/run/domain/answer.model";
 import {
-	setExtraSpots,
+	buySlot,
+	cashSlot,
+	setStoragePlan,
 	draft,
 	drop,
 	extendOffers,
@@ -36,8 +38,8 @@ import {
 } from "~/modules/run/run/domain/strip.model";
 
 export type RunAction =
-	| { readonly type: "slot"; readonly configId: string }
-	| { readonly type: "unslot"; readonly configId: string }
+	| { readonly type: "install"; readonly configId: string }
+	| { readonly type: "uninstall"; readonly configId: string }
 	| { readonly type: "pick-stack"; readonly stackId: string }
 	| { readonly type: "start" }
 	| {
@@ -59,49 +61,50 @@ export type RunAction =
 	| { readonly type: "sell"; readonly configId: string }
 	| { readonly type: "drop"; readonly configId: string }
 	| { readonly type: "minify"; readonly configId: string }
-	| { readonly type: "set-extra-spots"; readonly spots: number };
+	| { readonly type: "buy-slot" }
+	| { readonly type: "cash-slot" }
+	| { readonly type: "set-storage-plan"; readonly tier: number };
 
-const slotConfig = (state: RunState, configId: string): RunState => {
+const installConfig = (state: RunState, configId: string): RunState => {
 	const config = state.available.find((candidate) => candidate.id === configId);
-	if (!config || !hasRoomFor(state.pipeline, spotsOf(config))) return state;
+	if (!config || !hasRoomFor(state.build, slotsOf(config))) return state;
 	return {
 		...state,
 		available: state.available.filter((candidate) => candidate.id !== configId),
-		pipeline: withPipeline(state.pipeline, [...state.pipeline.configs, config]),
+		build: withBuild(state.build, [...state.build.configs, config]),
 	};
 };
 
 const pickStack = (state: RunState, stackId: string): RunState => {
 	const stack = starterStackFor(stackId);
-	if (!stack || occupiedSpots(stack.configs) > state.pipeline.spots)
-		return state;
+	if (!stack || occupiedSlots(stack.configs) > state.build.slots) return state;
 	const memberIds = new Set(stack.configs.map((config) => config.id));
 	return {
 		...state,
-		pipeline: withPipeline(state.pipeline, [...stack.configs]),
-		available: [...state.pipeline.configs, ...state.available].filter(
+		build: withBuild(state.build, [...stack.configs]),
+		available: [...state.build.configs, ...state.available].filter(
 			(config) => !memberIds.has(config.id)
 		),
 	};
 };
 
-const unslotConfig = (state: RunState, configId: string): RunState => {
-	const config = state.pipeline.configs.find(
+const uninstallConfig = (state: RunState, configId: string): RunState => {
+	const config = state.build.configs.find(
 		(candidate) => candidate.id === configId
 	);
 	if (!config) return state;
 	return {
 		...state,
 		available: [...state.available, config],
-		pipeline: withPipeline(
-			state.pipeline,
-			state.pipeline.configs.filter((candidate) => candidate.id !== configId)
+		build: withBuild(
+			state.build,
+			state.build.configs.filter((candidate) => candidate.id !== configId)
 		),
 	};
 };
 
 const start = (state: RunState): RunState => {
-	if (!canStart(state.pipeline)) return state;
+	if (!canStart(state.build)) return state;
 	return { ...state, status: "answering" };
 };
 
@@ -112,7 +115,9 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 	"lock-offer",
 	"extend-offers",
 	"plant-pin",
-	"set-extra-spots",
+	"buy-slot",
+	"cash-slot",
+	"set-storage-plan",
 	"sell",
 ];
 
@@ -121,10 +126,10 @@ export const isShopLocked = (state: RunState): boolean =>
 
 export const runReducer = (state: RunState, action: RunAction): RunState => {
 	if (SHOP_WRITES.includes(action.type) && isShopLocked(state)) return state;
-	if (action.type === "slot" && state.status === "configuring")
-		return slotConfig(state, action.configId);
-	if (action.type === "unslot" && state.status === "configuring")
-		return unslotConfig(state, action.configId);
+	if (action.type === "install" && state.status === "configuring")
+		return installConfig(state, action.configId);
+	if (action.type === "uninstall" && state.status === "configuring")
+		return uninstallConfig(state, action.configId);
 	if (action.type === "pick-stack" && state.status === "configuring")
 		return pickStack(state, action.stackId);
 	if (action.type === "start" && state.status === "configuring")
@@ -155,8 +160,12 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return plantPin(state);
 	if (action.type === "finish-reward" && state.status === "rewarding")
 		return finishReward(state);
-	if (action.type === "set-extra-spots" && state.status === "rewarding")
-		return setExtraSpots(state, action.spots);
+	if (action.type === "buy-slot" && state.status === "rewarding")
+		return buySlot(state);
+	if (action.type === "cash-slot" && state.status === "rewarding")
+		return cashSlot(state);
+	if (action.type === "set-storage-plan" && state.status === "rewarding")
+		return setStoragePlan(state, action.tier);
 	if (action.type === "sell" && state.status === "rewarding")
 		return sell(state, action.configId);
 	if (action.type === "minify" && state.status === "rewarding")

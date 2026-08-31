@@ -398,7 +398,7 @@ describe("getRunCommunityService", () => {
 			"deepest gate",
 			"longest streak",
 			"most coverage",
-			"widest pipeline",
+			"widest build",
 		]);
 	});
 
@@ -476,7 +476,7 @@ describe("getRunCommunityService", () => {
 			unit: "percent",
 			amount: 21.4,
 		});
-		expect(byTitle.get("widest pipeline")?.value).toEqual({
+		expect(byTitle.get("widest build")?.value).toEqual({
 			unit: "configs",
 			amount: 7,
 		});

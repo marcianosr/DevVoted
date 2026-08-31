@@ -38,7 +38,7 @@ describe("the lint fee", () => {
 			handed
 		);
 		for (const configId of ["eslint", "ts", "css"])
-			state = runReducer(state, { type: "slot", configId });
+			state = runReducer(state, { type: "install", configId });
 		state = runReducer(state, { type: "start" });
 		return { ...state, storage: 100 };
 	};
@@ -94,11 +94,11 @@ describe("the lint fee", () => {
 	// it was climbing comes back down with it.
 	it("resets the ladder for a redo, not only for a clear", () => {
 		let state = failGate(lintableRun());
-		while (state.peelSpotsRemaining > 0)
+		while (state.peelSlotsRemaining > 0)
 			state = runReducer(state, {
 				type: "strip",
 				// Never the linter: peeling it would answer a different question.
-				configId: state.pipeline.configs[state.pipeline.configs.length - 1].id,
+				configId: state.build.configs[state.build.configs.length - 1].id,
 			});
 		state = runReducer(
 			{ ...state, window: { ...state.window, linted: 3 } },

@@ -1,0 +1,223 @@
+import { clsx } from "clsx";
+
+import { plural } from "./format";
+import { occupancyOf, type Occupancy } from "./slots";
+import { Text } from "./Text.ui";
+import type { ModernTone } from "./tones";
+import { Tooltip } from "./Tooltip.ui";
+
+const TRACK = "flex h-7 w-full items-stretch gap-1";
+
+const SEGMENT =
+	"flex min-w-0 items-center justify-center overflow-hidden rounded border px-1";
+const INSTALLED = "border-current bg-zinc-800/80";
+const MINIFIED = "border-dotted border-current bg-zinc-800/40";
+const NEUTRAL = "text-zinc-400";
+const FREE = "border-dashed border-zinc-700";
+const UNBOUGHT = "border-edge bg-hatched";
+const IDLE = "transition-colors hover:border-edge-strong";
+const PRESSABLE =
+	"cursor-pointer transition-colors hover:border-theme hover:bg-theme-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean disabled:cursor-not-allowed disabled:opacity-40";
+const OVERFLOW = "border-cinnabar bg-cinnabar/15 text-cinnabar";
+
+const BUY_HINT = "Buy a slot in the shop for more room";
+const INSTALL = "Install a new slot";
+const CASH = "Cash an empty slot";
+const STUB = "flex min-w-0";
+const FILL = "size-full";
+
+const NAME = "truncate text-xxs";
+const TRUNCATE = "truncate";
+
+export type SlotTrackConfig = {
+	readonly id: string;
+	readonly label: string;
+	readonly slots: number;
+	readonly minified?: boolean;
+};
+
+export type SlotDeal = {
+	readonly costKb?: number;
+	readonly makes?: number;
+	readonly refusal?: string;
+	readonly onUse: () => void;
+};
+
+export type SlotTrackProps = {
+	configs: readonly SlotTrackConfig[];
+	slots: number;
+	maxSlots?: number;
+	fits?: number | null;
+	buy?: SlotDeal;
+	cash?: SlotDeal;
+};
+
+const captionFor = (
+	fits: number | null | undefined,
+	{ free, overflow }: Occupancy
+): string => {
+	if (overflow > 0)
+		return `over capacity by ${overflow} · minify, uninstall, or buy a slot`;
+	if (free === 0) return "full · minify or uninstall to make room";
+
+	const room = `${plural(free, "slot")} free`;
+	if (fits === undefined) return room;
+	return fits === null
+		? `${room} · nothing fits`
+		: `${room} · fits up to ${fits}`;
+};
+
+type Press = {
+	readonly cost: string;
+	readonly tone: ModernTone;
+	readonly hint: string;
+	readonly name: string;
+	readonly disabled: boolean;
+	readonly onUse: () => void;
+};
+
+type Cell = {
+	readonly key: string;
+	readonly slots: number;
+	readonly tone: string;
+	readonly label?: string;
+	readonly hint?: string;
+	readonly press?: Press;
+};
+
+const barTone = (config: SlotTrackConfig, isExcess: boolean): string => {
+	if (isExcess) return OVERFLOW;
+	return clsx(config.minified === true ? MINIFIED : INSTALLED, NEUTRAL);
+};
+
+const pressFor = (verb: string, deal: SlotDeal, cost: string): Press => {
+	const quote = [
+		verb,
+		deal.makes === undefined ? undefined : `makes ${deal.makes}`,
+		cost,
+	]
+		.filter(Boolean)
+		.join(" · ");
+
+	return {
+		cost,
+		tone: deal.refusal === undefined ? "celadon" : "muted",
+		hint: deal.refusal ?? quote,
+		name: [quote, deal.refusal].filter(Boolean).join(", "),
+		disabled: deal.refusal !== undefined,
+		onUse: deal.onUse,
+	};
+};
+
+const buyPress = (buy: SlotDeal): Press =>
+	pressFor(
+		INSTALL,
+		buy,
+		buy.costKb === undefined ? "sold out" : `${buy.costKb} KB`
+	);
+
+const freeCells = (free: number, cash?: SlotDeal): readonly Cell[] =>
+	Array.from({ length: free }, (_, index) => ({
+		key: `free-${index}`,
+		slots: 1,
+		tone: FREE,
+		...(cash !== undefined && cash.costKb !== undefined && index === free - 1
+			? { press: pressFor(CASH, cash, `+${cash.costKb} KB`) }
+			: {}),
+	}));
+
+const stubCell = (buy?: SlotDeal): Cell =>
+	buy === undefined
+		? { key: "unbought", slots: 1, tone: clsx(UNBOUGHT, IDLE), hint: BUY_HINT }
+		: { key: "unbought", slots: 1, tone: UNBOUGHT, press: buyPress(buy) };
+
+const cellsFor = (
+	configs: readonly SlotTrackConfig[],
+	{ free, overflow, unbought }: Occupancy,
+	deals: Pick<SlotTrackProps, "buy" | "cash">
+): readonly Cell[] => [
+	...configs.map((config, index) => ({
+		key: config.id,
+		slots: config.slots,
+		tone: barTone(config, overflow > 0 && index === configs.length - 1),
+		label: config.label,
+	})),
+	...freeCells(free, deals.cash),
+	...(unbought > 0 ? [stubCell(deals.buy)] : []),
+];
+
+const Segment = ({ cell, width }: { cell: Cell; width: number }) => {
+	const style = { width: `${(cell.slots / width) * 100}%` };
+	const { press } = cell;
+
+	if (press !== undefined)
+		return (
+			<span style={style} className={STUB}>
+				<Tooltip hint={press.hint} className={FILL} align="right">
+					<button
+						type="button"
+						disabled={press.disabled}
+						aria-label={press.name}
+						onClick={(event) => {
+							event.stopPropagation();
+							press.onUse();
+						}}
+						className={clsx(SEGMENT, cell.tone, PRESSABLE, FILL)}
+					>
+						<Text size="xxs" tone={press.tone} className={TRUNCATE}>
+							{press.cost}
+						</Text>
+					</button>
+				</Tooltip>
+			</span>
+		);
+
+	if (cell.hint === undefined)
+		return (
+			<span style={style} className={clsx(SEGMENT, cell.tone)}>
+				{cell.label ? <span className={NAME}>{cell.label}</span> : null}
+			</span>
+		);
+
+	return (
+		<span style={style} className={STUB}>
+			<Tooltip hint={cell.hint} className={FILL} align="right">
+				<span aria-hidden className={clsx(SEGMENT, cell.tone, FILL)} />
+				<span className="sr-only">{cell.hint}</span>
+			</Tooltip>
+		</span>
+	);
+};
+
+export const SlotTrack = ({
+	configs,
+	slots,
+	maxSlots = slots,
+	fits,
+	buy,
+	cash,
+}: SlotTrackProps) => {
+	const occupancy = occupancyOf(configs, slots, maxSlots);
+	const cells = cellsFor(configs, occupancy, { buy, cash });
+	const width = cells.reduce((total, cell) => total + cell.slots, 0) || 1;
+
+	return (
+		<div className="flex flex-col gap-1">
+			<div
+				className={TRACK}
+				role="meter"
+				aria-label={`${occupancy.used} of ${slots} slots used`}
+				aria-valuenow={occupancy.used}
+				aria-valuemin={0}
+				aria-valuemax={slots}
+			>
+				{cells.map((cell) => (
+					<Segment key={cell.key} cell={cell} width={width} />
+				))}
+			</div>
+			<Text size="xxs" tone={occupancy.overflow > 0 ? "cinnabar" : "muted"}>
+				{captionFor(fits, occupancy)}
+			</Text>
+		</div>
+	);
+};

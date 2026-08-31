@@ -2,38 +2,27 @@ import type { ReactNode } from "react";
 
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
-import { clsx } from "clsx";
-
 import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { Choice, type ChoiceProps } from "../Choice.ui";
 import { Byline, type BylineProps } from "../Byline.ui";
 import { Code } from "../Code.ui";
 import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
-import { Glyph } from "../Glyph.ui";
 import { optionLetter } from "../format";
-import { Question, type QuestionCategory } from "../Question.ui";
+import {
+	Question,
+	type QuestionCategory,
+	type QuestionFact,
+} from "../Question.ui";
 import { Text } from "../Text.ui";
-import { Tooltip } from "../Tooltip.ui";
 import { Trail, type TrailItem } from "../Trail.ui";
 
-const BODY = "flex flex-col lg:flex-row lg:items-stretch";
-const MAIN = "flex min-w-0 flex-1 flex-col gap-6 px-5 py-6 lg:px-8";
-const RAIL =
-	"flex flex-col gap-1 border-t border-edge px-2 py-4 lg:order-first lg:shrink-0 lg:border-t-0 lg:border-r";
-const RAIL_WIDTH = { open: "lg:w-80", folded: "lg:w-auto" };
-
-const TOGGLE_ROW = "flex justify-end lg:-mr-6";
-const TOGGLE =
-	"inline-flex size-8 cursor-pointer items-center justify-center rounded-full border border-control-edge bg-surface-raised text-zinc-400 transition-colors hover:border-theme hover:bg-theme-soft hover:text-theme focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean";
-
-const foldLabel = (railOpen: boolean) =>
-	railOpen ? "Fold run info" : "Unfold run info";
+const TRACK = "flex flex-col gap-3 border-b border-edge px-5 py-3 lg:px-8";
+const MAIN = "flex w-full min-w-0 flex-1 flex-col gap-6 px-5 py-6 lg:px-8";
 
 const OPTIONS = "flex flex-col gap-2";
 
-const FOOTER =
-	"flex flex-wrap items-center justify-end gap-4 border-t border-edge px-5 py-4";
+const FOOTER = "flex flex-col items-center gap-2";
 
 export type PollOption = Omit<ChoiceProps, "letter"> & { id: string };
 
@@ -43,14 +32,13 @@ export type PollScreenProps = {
 	trailLabel: string;
 	question: ReactNode;
 	category?: QuestionCategory;
-	meta?: readonly string[];
+	meta?: readonly QuestionFact[];
 	byline?: BylineProps;
 	code?: readonly ReactNode[];
 	options: readonly PollOption[];
 	reveal?: ReactNode;
-	rail?: ReactNode;
-	onToggleRail?: () => void;
-	railOpen?: boolean;
+	build?: ReactNode;
+	notices?: ReactNode;
 	onSubmit?: () => void;
 	submitLabel?: string;
 	submitLock?: string;
@@ -69,84 +57,62 @@ export const PollScreen = ({
 	code,
 	options,
 	reveal,
-	rail,
-	onToggleRail,
-	railOpen = true,
+	build,
+	notices,
 	onSubmit,
 	submitLabel = "Submit answer →",
 	submitLock,
 	submitNote,
 	theme,
-}: PollScreenProps) => {
-	const railFolded = Boolean(onToggleRail) && !railOpen;
+}: PollScreenProps) => (
+	<Screen theme={theme} size="3xl">
+		<GateHeader {...gate} />
 
-	return (
-		<Screen theme={theme}>
-			<GateHeader {...gate} />
-
-			<div className={BODY}>
-				<div className={MAIN}>
-					<Trail items={trail} label={trailLabel} />
-
-					<Question category={category} meta={meta}>
-						{question}
-					</Question>
-
-					{code?.length ? <Code lines={code} /> : null}
-
-					<ul className={OPTIONS}>
-						{options.map(({ id, ...option }, index) => (
-							<li key={id}>
-								<Choice {...option} letter={optionLetter(index)} />
-							</li>
-						))}
-					</ul>
-
-					{reveal}
-
-					{byline ? <Byline {...byline} /> : null}
-				</div>
-
-				{rail ? (
-					<aside
-						className={clsx(RAIL, RAIL_WIDTH[railFolded ? "folded" : "open"])}
-					>
-						{onToggleRail ? (
-							<div className={TOGGLE_ROW}>
-								<Tooltip hint={foldLabel(railOpen)}>
-									<button
-										type="button"
-										className={TOGGLE}
-										aria-expanded={railOpen}
-										aria-label={foldLabel(railOpen)}
-										onClick={onToggleRail}
-									>
-										<Glyph name="fold" />
-									</button>
-								</Tooltip>
-							</div>
-						) : null}
-						{railFolded ? null : rail}
-					</aside>
-				) : null}
+		{build || notices ? (
+			<div className={TRACK}>
+				{build}
+				{notices}
 			</div>
+		) : null}
+
+		<div className={MAIN}>
+			<Trail items={trail} label={trailLabel} />
+
+			<Question category={category} meta={meta}>
+				{question}
+			</Question>
+
+			{code?.length ? <Code lines={code} /> : null}
+
+			<ul className={OPTIONS}>
+				{options.map(({ id, ...option }, index) => (
+					<li key={id}>
+						<Choice {...option} letter={optionLetter(index)} />
+					</li>
+				))}
+			</ul>
+
+			{reveal}
 
 			{onSubmit ? (
 				<div className={FOOTER}>
+					<Action
+						label={submitLock ?? submitLabel}
+						size="lg"
+						emphasis="loud"
+						full
+						disabled={submitLock !== undefined}
+						onUse={onSubmit}
+					/>
 					{submitNote ? (
 						<Text size="meta" tone="muted">
 							{submitNote}
 						</Text>
 					) : null}
-					<Action
-						label={submitLock ?? submitLabel}
-						size="lg"
-						emphasis="loud"
-						disabled={submitLock !== undefined}
-						onUse={onSubmit}
-					/>
 				</div>
 			) : null}
-		</Screen>
-	);
-};
+
+			{byline ? <Byline {...byline} /> : null}
+		</div>
+	</Screen>
+);

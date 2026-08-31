@@ -25,9 +25,9 @@ import type { TextTone } from "~/ui/typography/textTone";
 import { Title } from "~/ui/typography/Title.component";
 import {
 	describeRow,
-	PipelineReportRow,
-} from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
-import { PipelineTable } from "~/modules/run/pipeline/presentation/PipelineTable.ui";
+	BuildReportRow,
+} from "~/modules/run/build/presentation/BuildReportRow.ui";
+import { BuildTable } from "~/modules/run/build/presentation/BuildTable.ui";
 import { SwatchChip } from "~/modules/run/gate/presentation/SwatchChips.ui";
 
 const STATUS_VARIANT: Record<GateRewardStatus, StatusBadgeVariant> = {
@@ -63,7 +63,7 @@ const ReportRow = ({
 	removable?: boolean;
 	onRemove?: (configId: string) => void;
 }) => (
-	<PipelineReportRow
+	<BuildReportRow
 		badge={STATUS_VARIANT[row.status]}
 		layout="table"
 		config={row.config}
@@ -137,7 +137,7 @@ type GateRewardReportProps = {
 	breakdown?: ReactNode;
 	removableConfigIds?: readonly string[];
 	onRemoveConfig?: (configId: string) => void;
-	peelSpotsRemaining?: number;
+	peelSlotsRemaining?: number;
 };
 
 /**
@@ -283,7 +283,7 @@ export const GateRewardReport = ({
 	breakdown,
 	removableConfigIds = [],
 	onRemoveConfig,
-	peelSpotsRemaining,
+	peelSlotsRemaining,
 }: GateRewardReportProps) => {
 	const storageFigures = meterFigures(
 		storageBar?.toKb,
@@ -298,11 +298,11 @@ export const GateRewardReport = ({
 		"coverage"
 	);
 
-	const pipelineSection = (
+	const buildSection = (
 		<section className="flex flex-col gap-2">
-			<Title>Your pipeline</Title>
+			<Title>Your build</Title>
 			<StepsSummary rows={rows} />
-			<PipelineTable>
+			<BuildTable>
 				{[...rows]
 					.sort((a: GateRewardRow, b: GateRewardRow) => {
 						const aRemovable = removableConfigIds.includes(a.config.id);
@@ -318,7 +318,7 @@ export const GateRewardReport = ({
 							onRemove={onRemoveConfig}
 						/>
 					))}
-			</PipelineTable>
+			</BuildTable>
 		</section>
 	);
 
@@ -336,21 +336,21 @@ export const GateRewardReport = ({
 			) : null}
 
 			{!cleared &&
-				peelSpotsRemaining !== undefined &&
-				peelSpotsRemaining > 0 && (
+				peelSlotsRemaining !== undefined &&
+				peelSlotsRemaining > 0 && (
 					<Paragraph size="sm" tone="muted">
-						Remove {peelSpotsRemaining} config
-						{peelSpotsRemaining === 1 ? "" : "s"} to continue
+						Remove {peelSlotsRemaining} config
+						{peelSlotsRemaining === 1 ? "" : "s"} to continue
 					</Paragraph>
 				)}
 
 			{totals ? (
-				// Only the cleared path passes totals. The pipeline steps and the
+				// Only the cleared path passes totals. The build steps and the
 				// payout are two halves of the same report — what the run just did,
 				// and what it won for doing it — so they sit side by side rather than
 				// one after the other.
 				<div className="grid gap-x-12 gap-y-6 pt-6 sm:grid-cols-2">
-					{pipelineSection}
+					{buildSection}
 					<section className="flex flex-col gap-2">
 						<Title>Gate rewards</Title>
 						<ul className="flex flex-col gap-1 list-disc pl-4 marker:text-zinc-500">
@@ -397,7 +397,7 @@ export const GateRewardReport = ({
 					</section>
 				</div>
 			) : (
-				pipelineSection
+				buildSection
 			)}
 
 			{totals && breakdown ? (

@@ -42,12 +42,12 @@ describe("Tooltip", () => {
 
 	it("opens above the trigger when asked", () => {
 		render(
-			<Tooltip hint="Over capacity by 4 spots" side="above">
+			<Tooltip hint="Over capacity by 4 slots" side="above">
 				<span />
 			</Tooltip>
 		);
 
-		const panel = screen.getByText("Over capacity by 4 spots").parentElement;
+		const panel = screen.getByText("Over capacity by 4 slots").parentElement;
 		expect(panel).toHaveClass("bottom-full");
 		expect(panel).not.toHaveClass("top-full");
 	});

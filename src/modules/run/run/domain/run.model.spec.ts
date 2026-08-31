@@ -37,7 +37,7 @@ describe(".length's pick budget", () => {
 	const counting = (polls: RunPoll[] = mixedPool()): RunState => {
 		let state = createRun(polls, [...handed, CONFIGS.length]);
 		for (const configId of ["length", "ts", "css"])
-			state = runReducer(state, { type: "slot", configId });
+			state = runReducer(state, { type: "install", configId });
 		return runReducer(state, { type: "start" });
 	};
 
@@ -57,7 +57,7 @@ describe(".length's pick budget", () => {
 	const uncounted = (polls: RunPoll[] = mixedPool()): RunState => {
 		let state = createRun(polls, handed);
 		for (const configId of ["eslint", "ts", "css"])
-			state = runReducer(state, { type: "slot", configId });
+			state = runReducer(state, { type: "install", configId });
 		return runReducer(state, { type: "start" });
 	};
 

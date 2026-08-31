@@ -28,7 +28,7 @@ describe("Subtitle", () => {
 	});
 
 	it("takes a tone from the shared vocabulary when the caption carries meaning", () => {
-		render(<Subtitle tone="cinnabar">Pipeline broke</Subtitle>);
-		expect(screen.getByText("Pipeline broke")).toHaveClass("text-cinnabar");
+		render(<Subtitle tone="cinnabar">Build broke</Subtitle>);
+		expect(screen.getByText("Build broke")).toHaveClass("text-cinnabar");
 	});
 });

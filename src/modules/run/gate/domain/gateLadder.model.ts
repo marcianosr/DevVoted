@@ -10,7 +10,7 @@ export type GateOutcome = {
 /**
  * The full gate ladder for the end-of-run screen: one entry per gate, gate 0
  * through `finalGate`. `gatesCleared` gates passed; on a lost run the gate the player was
- * standing on is where the pipeline broke (fail); everything beyond was never
+ * standing on is where the build broke (fail); everything beyond was never
  * reached (skip). A won run clears the whole ladder, so no fail/skip rows appear.
  */
 export const deriveGateLadder = (

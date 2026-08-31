@@ -40,8 +40,8 @@ import {
 import {
 	type Config,
 	canMinify,
-	minifySavingSpots,
-	spotsOf,
+	minifySavingSlots,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { billLedger } from "~/modules/run/config/domain/subscription.model";
 import { draftCostIn } from "~/modules/run/shop/domain/draft.model";
@@ -61,40 +61,58 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 import {
 	type PerAnswerPreview,
-	type PipelineModifiers,
+	type BuildModifiers,
 	budgeterFor,
-	freeSpots,
-	occupiedSpots,
-	overflowSpots,
+	freeSlots,
+	occupiedSlots,
+	overflowSlots,
 	prefetcherFor,
 	perAnswerPreviewFor,
-	pipelineModifiersFor,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+	buildModifiersFor,
+} from "~/modules/run/build/domain/build.model";
 import {
 	atMinimumWidth,
 	faucetRemainingKb,
-	EXTRA_SPOT_TIERS,
-	extraRentKb,
-	extraSpotsUnlocked,
 	isPeelFatal,
-	scheduledSpots,
+	MAX_SLOTS,
+	planBillKb,
 	SLICE_WINDOW,
+	storageCapFor,
+	STORAGE_PLANS,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
+import {
+	canBuySlot,
+	canCashSlot,
+	slotCashOutFor,
+	slotPriceFor,
+} from "~/modules/run/run/domain/shopAction.model";
 
-export type ExtraSpotOption = {
-	readonly spots: number;
-	readonly makes: number;
-	readonly rentKb: number;
-	readonly held: boolean;
-	readonly fromGate?: number;
-	readonly rentTooDear?: boolean;
+export type SlotDealView = {
+	readonly costKb?: number;
+	readonly makes?: number;
+	readonly refusal?: string;
 };
 
-export type ExtraSpotsView = {
-	readonly renting: number;
+export type SlotsView = {
+	readonly slots: number;
+	readonly maxSlots: number;
+	readonly buy: SlotDealView;
+	readonly cash: SlotDealView;
+};
+
+export type StoragePlanOption = {
+	readonly tier: number;
+	readonly capKb: number;
 	readonly perGateKb: number;
-	readonly options: readonly ExtraSpotOption[];
+	readonly held: boolean;
+	readonly burnsKb: number;
+};
+
+export type StoragePlanView = {
+	readonly capKb: number;
+	readonly perGateKb: number;
+	readonly options: readonly StoragePlanOption[];
 };
 
 export type OfflineConfig = {
@@ -105,8 +123,8 @@ export type OfflineConfig = {
 export type OfferRefusal =
 	| {
 			readonly reason: "no-room";
-			readonly spots: number;
-			readonly freeSpots: number;
+			readonly slots: number;
+			readonly freeSlots: number;
 	  }
 	| {
 			readonly reason: "too-expensive";
@@ -116,35 +134,35 @@ export type OfferRefusal =
 
 export type InstalledConfig = {
 	readonly config: Config;
-	readonly spots: number;
+	readonly slots: number;
 	readonly canMinify: boolean;
-	readonly minifySavingSpots: number;
+	readonly minifySavingSlots: number;
 };
 
 export type ShopOffer = {
 	readonly config: Config;
 	readonly priceKb: number;
-	readonly spots: number;
+	readonly slots: number;
 	readonly owned: boolean;
 	readonly locked: boolean;
 	readonly installable: boolean;
 	readonly refusal: OfferRefusal | null;
-	readonly preview: PipelineModifiers;
+	readonly preview: BuildModifiers;
 	readonly previewPerAnswer: PerAnswerPreview;
 };
 
 export type RunView = {
 	readonly status: RunStatus;
-	readonly spots: number;
-	readonly spotsUsed: number;
-	readonly spotsFree: number;
-	readonly overflowSpots: number;
+	readonly slots: number;
+	readonly slotsUsed: number;
+	readonly slotsFree: number;
+	readonly overflowSlots: number;
 	readonly configs: readonly Config[];
 	readonly installed: readonly InstalledConfig[];
 	readonly available: readonly Config[];
 	readonly offers: readonly ShopOffer[];
 	readonly newConfigIds: readonly string[];
-	readonly peelSpotsRemaining: number;
+	readonly peelSlotsRemaining: number;
 	readonly poll: PollView | null;
 	readonly awaitingTomorrow: boolean;
 
@@ -182,7 +200,8 @@ export type RunView = {
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
-	readonly extraSpots: ExtraSpotsView;
+	readonly slotDeals: SlotsView;
+	readonly storagePlan: StoragePlanView;
 };
 
 const offerRefusal = (
@@ -190,17 +209,17 @@ const offerRefusal = (
 	config: Config,
 	free: number
 ): OfferRefusal | null => {
-	const spots = spotsOf(config);
-	if (spots > free) return { reason: "no-room", spots, freeSpots: free };
-	const priceKb = draftCostIn(state.pipeline.configs, config);
+	const slots = slotsOf(config);
+	if (slots > free) return { reason: "no-room", slots, freeSlots: free };
+	const priceKb = draftCostIn(state.build.configs, config);
 	if (state.storage < priceKb)
 		return { reason: "too-expensive", priceKb, storageKb: state.storage };
 	return null;
 };
 
 const offersFor = (state: RunState): readonly ShopOffer[] => {
-	const installed = state.pipeline.configs;
-	const free = freeSpots(state.pipeline);
+	const installed = state.build.configs;
+	const free = freeSlots(state.build);
 	const locked = state.lockedOfferIds ?? [];
 
 	return state.draftOptions.map((config) => {
@@ -210,61 +229,83 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 		return {
 			config,
 			priceKb: draftCostIn(installed, config),
-			spots: spotsOf(config),
+			slots: slotsOf(config),
 			owned,
 			locked: locked.includes(config.id),
 			installable: !owned && refusal === null,
 			refusal,
-			preview: pipelineModifiersFor(withIt, state.gatesCleared),
+			preview: buildModifiersFor(withIt, state.gatesCleared),
 			previewPerAnswer: perAnswerPreviewFor(withIt, state.gatesCleared),
 		};
 	});
 };
 
-const extraSpotsViewFor = (state: RunState): ExtraSpotsView => {
-	const held = state.extraSpots ?? 0;
-	const unlocked = extraSpotsUnlocked(state.gatesCleared);
-	const free = scheduledSpots(state.gatesCleared);
+const buyRefusalFor = (state: RunState): string | undefined => {
+	const price = slotPriceFor(state);
+	if (price === undefined || state.build.slots >= MAX_SLOTS)
+		return `Sold out — ${MAX_SLOTS} slots is the ceiling.`;
+	if (state.storage < price)
+		return `Costs ${price} KB, you have ${state.storage}.`;
+	return undefined;
+};
 
-	const step = (spots: number, fromGate?: number): ExtraSpotOption => {
-		const locked = fromGate !== undefined && spots > unlocked;
-		const rentKb = extraRentKb(spots);
-		return {
-			spots,
-			makes: free + spots,
-			rentKb,
-			held: spots === held,
-			...(locked && fromGate !== undefined ? { fromGate } : {}),
-			...(locked ? {} : { rentTooDear: state.storage < rentKb }),
-		};
-	};
+const cashRefusalFor = (state: RunState): string | undefined => {
+	if (slotCashOutFor(state) === undefined)
+		return "Nothing to cash — the first four slots are free.";
+	if (freeSlots(state.build) === 0)
+		return "Every slot is filled — uninstall or minify first.";
+	return undefined;
+};
+
+const slotsViewFor = (state: RunState): SlotsView => {
+	const price = slotPriceFor(state);
+	const refund = slotCashOutFor(state);
 
 	return {
-		renting: held,
-		perGateKb: extraRentKb(held),
-		options: [
-			step(0),
-			...EXTRA_SPOT_TIERS.map((tier) => step(tier.spots, tier.fromGate)),
-		],
+		slots: state.build.slots,
+		maxSlots: MAX_SLOTS,
+		buy: {
+			...(price === undefined ? {} : { costKb: price }),
+			...(canBuySlot(state) ? { makes: state.build.slots + 1 } : {}),
+			...(buyRefusalFor(state) === undefined
+				? {}
+				: { refusal: buyRefusalFor(state) }),
+		},
+		cash: {
+			...(refund === undefined ? {} : { costKb: refund }),
+			...(canCashSlot(state) ? { makes: state.build.slots - 1 } : {}),
+			...(cashRefusalFor(state) === undefined
+				? {}
+				: { refusal: cashRefusalFor(state) }),
+		},
+	};
+};
+
+const storagePlanViewFor = (state: RunState): StoragePlanView => {
+	const tier = state.storagePlan ?? 0;
+
+	return {
+		capKb: storageCapFor(tier),
+		perGateKb: planBillKb(tier),
+		options: STORAGE_PLANS.map((plan) => ({
+			tier: plan.tier,
+			capKb: plan.capKb,
+			perGateKb: plan.perGateKb,
+			held: plan.tier === tier,
+			burnsKb: Math.max(0, state.storage - plan.capKb),
+		})),
 	};
 };
 
 export const toRunView = (state: RunState): RunView => {
 	const current = state.polls[state.currentIndex];
-	const extraHeld = state.extraSpots ?? 0;
-	const modifiers = pipelineModifiersFor(
-		state.pipeline.configs,
-		state.gatesCleared
-	);
+	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
 	const perAnswer = perAnswerPreviewFor(
-		state.pipeline.configs,
+		state.build.configs,
 		state.gatesCleared
 	);
-	const peelSpots = failPeelQuotaFor(
-		state.pipeline.configs,
-		state.gatesCleared
-	);
-	const liveAudits = liveAuditsFor(state.pipeline.configs, state.gatesCleared);
+	const peelSlots = failPeelQuotaFor(state.build.configs, state.gatesCleared);
+	const liveAudits = liveAuditsFor(state.build.configs, state.gatesCleared);
 	const offline = offlinePairsOf(state).map((pair): OfflineConfig => ({
 		config: pair.config,
 		audit: pair.audit.name,
@@ -274,21 +315,21 @@ export const toRunView = (state: RunState): RunView => {
 
 	return {
 		status: state.status,
-		spots: state.pipeline.spots,
-		spotsUsed: occupiedSpots(state.pipeline.configs),
-		spotsFree: freeSpots(state.pipeline),
-		overflowSpots: overflowSpots(state.pipeline),
-		configs: state.pipeline.configs,
-		installed: state.pipeline.configs.map((config) => ({
+		slots: state.build.slots,
+		slotsUsed: occupiedSlots(state.build.configs),
+		slotsFree: freeSlots(state.build),
+		overflowSlots: overflowSlots(state.build),
+		configs: state.build.configs,
+		installed: state.build.configs.map((config) => ({
 			config,
-			spots: spotsOf(config),
+			slots: slotsOf(config),
 			canMinify: canMinify(config),
-			minifySavingSpots: minifySavingSpots(config),
+			minifySavingSlots: minifySavingSlots(config),
 		})),
 		available: state.available,
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
-		peelSpotsRemaining: state.peelSpotsRemaining,
+		peelSlotsRemaining: state.peelSlotsRemaining,
 		poll:
 			state.status === "answering" && current
 				? redactPoll(mirrored ? mirrorPoll(current) : current)
@@ -304,11 +345,11 @@ export const toRunView = (state: RunState): RunView => {
 		currentPollPeeked:
 			current !== undefined && (state.peekedPollIds ?? []).includes(current.id),
 		correctAnswersThisGate:
-			budgeterFor(state.pipeline.configs) === undefined
+			budgeterFor(state.build.configs) === undefined
 				? null
 				: (state.window.budget ?? null),
 		upcomingCategories:
-			prefetcherFor(state.pipeline.configs) === undefined
+			prefetcherFor(state.build.configs) === undefined
 				? null
 				: state.polls
 						.slice(
@@ -317,7 +358,7 @@ export const toRunView = (state: RunState): RunView => {
 						)
 						.map((poll) => poll.category),
 		nextGateCategories:
-			prefetcherFor(state.pipeline.configs) === undefined
+			prefetcherFor(state.build.configs) === undefined
 				? null
 				: state.polls
 						.slice(
@@ -334,42 +375,37 @@ export const toRunView = (state: RunState): RunView => {
 		gateStake: {
 			gateNumber: state.gatesCleared,
 			pollsPerGate: SLICE_WINDOW,
-			coverageDemand: gateDemandFor(state.pipeline.configs, state.gatesCleared),
+			coverageDemand: gateDemandFor(state.build.configs, state.gatesCleared),
 			coverageHeld: state.window.coverageGained,
 			audits,
 			upcomingAudit: upcomingAuditFor(state.gatesCleared),
-			peelSpotsOnFailure: peelSpots,
-			peelShareOnFailure: peelShareFor(
-				state.pipeline.configs,
-				state.gatesCleared
-			),
-			missIsFatal: isPeelFatal(
-				peelSpots,
-				occupiedSpots(state.pipeline.configs)
-			),
+			peelSlotsOnFailure: peelSlots,
+			peelShareOnFailure: peelShareFor(state.build.configs, state.gatesCleared),
+			missIsFatal: isPeelFatal(peelSlots, occupiedSlots(state.build.configs)),
 			subscriptions: billLedger({
-				configs: state.pipeline.configs,
+				configs: state.build.configs,
 				gate: state.gatesCleared,
 				storageKb: state.storage,
-				rentedSpots: extraHeld,
-				spotRentKb: extraRentKb(extraHeld),
+				planCapKb: storageCapFor(state.storagePlan ?? 0),
+				planBillKb: planBillKb(state.storagePlan ?? 0),
 			}),
 			modifiers,
 			perAnswer,
 		},
-		canStart: canStart(state.pipeline),
+		canStart: canStart(state.build),
 		isOver: isRunOver(state.status),
 		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
 		gatesCleared: state.gatesCleared,
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
 		redoingGate: state.redoGate ?? null,
 		victoryGate: VICTORY_GATE,
-		atMinimumWidth: atMinimumWidth(state.pipeline.configs.length),
+		atMinimumWidth: atMinimumWidth(state.build.configs.length),
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,
 		coverage: state.coverage,
 		coverageByCategory: state.coverageByCategory,
 		storage: state.storage,
-		extraSpots: extraSpotsViewFor(state),
+		slotDeals: slotsViewFor(state),
+		storagePlan: storagePlanViewFor(state),
 	};
 };

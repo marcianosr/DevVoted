@@ -45,7 +45,7 @@ export const WidePanel: Story = {
 		panelClassName: "w-72",
 		children: (
 			<p className="text-sm text-pewter">
-				Free slots host drafted configs; the pipeline runs them at every gate.
+				Free slots host drafted configs; the build runs them at every gate.
 			</p>
 		),
 	},

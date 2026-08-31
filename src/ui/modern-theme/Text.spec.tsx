@@ -5,9 +5,9 @@ import { Text } from "./Text.ui";
 
 describe("Text", () => {
 	it("renders a span by default", () => {
-		render(<Text>Pipeline</Text>);
+		render(<Text>Build</Text>);
 
-		expect(screen.getByText("Pipeline").tagName).toBe("SPAN");
+		expect(screen.getByText("Build").tagName).toBe("SPAN");
 	});
 
 	it("renders the tag it is given", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
@@ -51,6 +51,18 @@ const render_ = (
 	return onNext;
 };
 
+// Scoped: a config names itself on the track too, and the trail speaks the word
+// "correct" for screen readers.
+const equation = () => {
+	const panel = screen.getByText(/^coverage (earned|lost)$/).closest("section");
+	if (!panel) throw new Error("No equation rendered");
+	return panel;
+};
+
+// A factor sets its figure over its name, so neither is findable on its own.
+const factorOf = (label: string) =>
+	within(equation()).getByText(label).parentElement?.textContent;
+
 describe("RevealView", () => {
 	it("keeps the answered poll on screen with its options settled", () => {
 		render_();
@@ -73,9 +85,9 @@ describe("RevealView", () => {
 	it("reads the earn as its multiplication, every contributing config named", () => {
 		render_();
 
-		expect(screen.getByText("correct 1.0")).toBeInTheDocument();
-		expect(screen.getByText("streak 1.1")).toBeInTheDocument();
-		expect(screen.getByText(".js 1.25")).toBeInTheDocument();
+		expect(factorOf("correct")).toBe("1.0correct");
+		expect(factorOf("streak")).toBe("1.1streak");
+		expect(factorOf(".js")).toBe("1.25.js");
 		expect(screen.getByLabelText("+1.6%")).toBeInTheDocument();
 	});
 
@@ -92,7 +104,7 @@ describe("RevealView", () => {
 			[CONFIGS.codeCoverage]
 		);
 
-		expect(screen.getByText("Code Coverage +0.5")).toBeInTheDocument();
+		expect(factorOf("Code Coverage")).toBe("+0.5Code Coverage");
 		expect(screen.getByText("+")).toBeInTheDocument();
 	});
 
@@ -112,8 +124,7 @@ describe("RevealView", () => {
 			[CONFIGS.codeCoverage]
 		);
 
-		expect(screen.getByText("Code Coverage +0.3")).toBeInTheDocument();
-		expect(screen.queryByText("Code Coverage +0.5")).not.toBeInTheDocument();
+		expect(factorOf("Code Coverage")).toBe("+0.3Code Coverage");
 	});
 
 	it("brackets the base and its adds when multipliers scale their sum", () => {
@@ -134,26 +145,24 @@ describe("RevealView", () => {
 
 		expect(screen.getByText("(")).toBeInTheDocument();
 		expect(screen.getByText(")")).toBeInTheDocument();
-		expect(screen.getByText("Code Coverage +0.5")).toBeInTheDocument();
-		expect(screen.getByText(".js 1.25")).toBeInTheDocument();
+		expect(factorOf("Code Coverage")).toBe("+0.5Code Coverage");
+		expect(factorOf(".js")).toBe("1.25.js");
 	});
 
-	it("states the stakes beside the button: window left, demand still owed", () => {
+	it("names the button for what comes next, and says nothing else beside it", () => {
 		render_();
 
-		expect(
-			screen.getByText("4 to go · 3% short of clearing Pallet")
-		).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: "Next poll →" })
 		).toBeInTheDocument();
+		expect(screen.queryByText(/to go/)).not.toBeInTheDocument();
 	});
 
-	it("badges the contributing config's share on its own rail row", () => {
+	it("badges the contributing config's share in its own track cell", () => {
 		render_();
 
 		expect(screen.getByText("paid +0.5")).toBeInTheDocument();
-		expect(screen.getByText("1 applied")).toBeInTheDocument();
+		expect(screen.getByText("ts only")).toBeInTheDocument();
 	});
 
 	it("badges the KB the faucet just paid, clamp and all — not its list rate", () => {

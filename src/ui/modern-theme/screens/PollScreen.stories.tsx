@@ -8,17 +8,8 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 
 import { Token } from "../Code.ui";
-import { Audits } from "../Audits.ui";
-import { Coverage } from "../Coverage.ui";
-import { Delta } from "../Delta.ui";
-import { Entry } from "../Entry.ui";
-import { Family, type ConfigFamily } from "../Family.ui";
-import { Fold, type FoldItem } from "../Fold.ui";
-import type { MarkVerdict } from "../Mark.ui";
-
-import { Stake } from "../Stake.ui";
-import { Text } from "../Text.ui";
-import type { ModernTone } from "../tones";
+import { AuditAlerts } from "../Audits.ui";
+import { BuildTrack } from "../BuildTrack.ui";
 import {
 	PollScreen,
 	type PollOption,
@@ -33,172 +24,51 @@ export default meta;
 
 type Story = StoryObj<typeof PollScreen>;
 
-const NONE = (
-	<Text size="meta" tone="muted">
-		—
-	</Text>
+const track = (open: boolean, onToggle: () => void) => (
+	<BuildTrack
+		slots={7}
+		maxSlots={24}
+		open={open}
+		onToggle={onToggle}
+		configs={[
+			{
+				id: "ts",
+				label: ".ts",
+				slots: 1,
+				status: { kind: "offline", audit: "Dependency Outage" },
+			},
+			{
+				id: "intellisense",
+				label: "Intellisense",
+				slots: 4,
+				status: { kind: "online" },
+				figure: { kind: "multiplier", value: 1.5 },
+			},
+			{
+				id: "eslint",
+				label: "ESLint",
+				slots: 1,
+				status: { kind: "online" },
+				action: {
+					label: "cross out",
+					on: "ESLint",
+					cost: "8 KB",
+					onUse: () => {},
+				},
+			},
+		]}
+	/>
 );
 
-type PipelineConfig = {
-	id: string;
-	label: string;
-	family: ConfigFamily;
-	mark: MarkVerdict;
-	multiplier?: number;
-	kb?: number;
-	costKb?: number;
-	dimmed?: boolean;
-	offline?: boolean;
-	summary: string;
-	explainer: string;
-	defaultOpen?: boolean;
-};
-
-const configs: readonly PipelineConfig[] = [
-	{
-		id: ".ts",
-		label: ".ts",
-		family: "category",
-		mark: "idle",
-		dimmed: true,
-		offline: true,
-		summary: "Common · offline this gate",
-		explainer:
-			"TS polls pay 1.25× coverage. An audit has it switched off until the gate clears.",
-	},
-	{
-		id: "Intellisense",
-		label: "Intellisense",
-		family: "multiplier",
-		mark: "pass",
-		multiplier: 1.5,
-		summary: "Uncommon · firing on 2 answers",
-		explainer: "All coverage earns ×1.5.",
-	},
-	{
-		id: "AGENTS.md",
-		label: "AGENTS.md",
-		family: "multiplier",
-		mark: "pass",
-		multiplier: 2,
-		summary: "Rare · firing on 2 answers",
-		explainer: "All coverage earns ×2.",
-	},
-	{
-		id: "ESLint",
-		label: "ESLint",
-		family: "tool",
-		mark: "warn",
-		costKb: 16,
-		summary: "Common · blocking 1 option on poll 3",
-		explainer:
-			"Strikes out one wrong answer per gate and charges 16 KB for the hint.",
-		defaultOpen: true,
-	},
-	{
-		id: "IndexedDB",
-		label: "IndexedDB",
-		family: "storage",
-		mark: "pass",
-		kb: 16,
-		summary: "Common · 2 correct so far",
-		explainer: "+8 KB storage per correct answer, up to 320 KB a run.",
-	},
-	{
-		id: "Freemium",
-		label: "Freemium",
-		family: "storage",
-		mark: "fail",
-		kb: -128,
-		summary: "Legendary · bills when this gate clears",
-		explainer:
-			"Every draft costs half price; each gate clear bills 8·2^gate KB.",
-	},
-];
-
-const pipeline: FoldItem[] = configs.map((config) => ({
-	id: config.id,
-	content: (
-		<Entry
-			label={config.label}
-			mark={config.mark}
-			notes={<Family family={config.family} />}
-			dimmed={config.dimmed}
-			{...(config.costKb === undefined
-				? {
-						value: config.offline ? (
-							<Text size="meta" tone="muted">
-								offline
-							</Text>
-						) : config.multiplier !== undefined ? (
-							<Delta multiplier={config.multiplier} />
-						) : config.kb === undefined ? (
-							NONE
-						) : (
-							<Delta kb={config.kb} />
-						),
-					}
-				: {
-						actions: [
-							{
-								label: "Use",
-								on: config.label,
-								cost: `${config.costKb} KB`,
-								onUse: () => {},
-							},
-						],
-					})}
-			summary={config.summary}
-			explainer={config.explainer}
-			defaultOpen={config.defaultOpen}
-		/>
-	),
-}));
-
-const netKb = configs.reduce((total, config) => total + (config.kb ?? 0), 0);
-
-const SEVERITY = [
-	"fail",
-	"warn",
-	"pass",
-	"idle",
-] as const satisfies readonly MarkVerdict[];
-
-const STATUS_TONE = {
-	fail: "cinnabar",
-	warn: "saffron",
-	pass: "celadon",
-	idle: "muted",
-} as const satisfies Record<MarkVerdict, ModernTone>;
-
-const worstMark =
-	SEVERITY.find((mark) => configs.some((config) => config.mark === mark)) ??
-	"idle";
-
-const rail = (
-	<>
-		<Coverage held={38.6} projected={23.1} required={60} defaultOpen={false} />
-		<Fold
-			title="Pipeline"
-			value={
-				<Text size="meta" tone={STATUS_TONE[worstMark]}>
-					{netKb < 0 ? "−" : "+"}
-					{Math.abs(netKb)} KB
-				</Text>
-			}
-			items={pipeline}
-		/>
-		<Audits
-			audits={[
-				{
-					id: "dependency-outage",
-					description: ".ts is offline for this gate",
-				},
-			]}
-			defaultOpen
-		/>
-		<Stake removeOnMiss={1} coveragePerWrong={-0.3} />
-	</>
+const notices = (
+	<AuditAlerts
+		audits={[
+			{
+				id: "dependency-outage",
+				description: ".ts is offline for this gate",
+			},
+		]}
+	/>
 );
 
 const question = (
@@ -238,6 +108,7 @@ const base: Omit<PollScreenProps, "options"> = {
 		audits: ["dependency-outage"],
 		storage: { balanceKb: 184 },
 		track: { gates: ALL_SWATCHES, cleared: 4 },
+		coverage: { held: 38.6, projected: 23.1, required: 60 },
 	},
 	trail: [
 		{ id: "1", label: "1", state: "done", verdict: "correct" },
@@ -249,18 +120,23 @@ const base: Omit<PollScreenProps, "options"> = {
 	trailLabel: "Polls in this gate",
 	question,
 	category: { label: "typescript" },
-	meta: ["scores ×1.1", "4 options"],
+	meta: [
+		{ label: "scores", figure: "×1.1", tone: "celadon" },
+		{ label: "4 options" },
+		{ label: "wrong costs", figure: "0.3", tone: "cinnabar" },
+		{ label: "Gate retry cost:", figure: "Remove 1 config", tone: "cinnabar" },
+	],
 	byline: { author: "matthijsgroen", role: "Frontend developer" },
 	code,
-	rail,
+	notices,
 };
 
 const InteractivePoll = ({
-	railStartsOpen = true,
+	trackStartsOpen = false,
 	...overrides
-}: Partial<PollScreenProps> & { railStartsOpen?: boolean }) => {
+}: Partial<PollScreenProps> & { trackStartsOpen?: boolean }) => {
 	const [picked, setPicked] = useState<string | null>(null);
-	const [railOpen, setRailOpen] = useState(railStartsOpen);
+	const [trackOpen, setTrackOpen] = useState(trackStartsOpen);
 
 	const options: PollOption[] = answers.map((answer) => ({
 		id: answer.id,
@@ -276,8 +152,7 @@ const InteractivePoll = ({
 		<PollScreen
 			{...base}
 			options={options}
-			railOpen={railOpen}
-			onToggleRail={() => setRailOpen((open) => !open)}
+			build={track(trackOpen, () => setTrackOpen((open) => !open))}
 			onSubmit={() => {}}
 			submitLock={picked ? undefined : "Pick an answer"}
 			{...overrides}
@@ -298,6 +173,7 @@ const gateStory = (gate: number): Story => {
 					audits: ["dependency-outage"],
 					storage: { balanceKb: 184 },
 					track: { gates: ALL_SWATCHES, cleared: gate },
+					coverage: { held: 38.6, projected: 23.1, required: 60 },
 				}}
 			/>
 		),
@@ -328,10 +204,10 @@ export const WithoutCode: Story = {
 	),
 };
 
-export const WithoutRail: Story = {
-	render: () => <InteractivePoll rail={undefined} />,
+export const WithoutBuild: Story = {
+	render: () => <InteractivePoll build={undefined} notices={undefined} />,
 };
 
-export const RailFolded: Story = {
-	render: () => <InteractivePoll railStartsOpen={false} />,
+export const TrackOpenOnNarrowScreens: Story = {
+	render: () => <InteractivePoll trackStartsOpen />,
 };

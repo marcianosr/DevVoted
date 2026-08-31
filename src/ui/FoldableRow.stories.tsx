@@ -2,14 +2,14 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { FoldableRow, type Fold } from "./FoldableRow.ui";
 
-// Game-design reason: the fold is how a pipeline row answers "what does this
+// Game-design reason: the fold is how a build row answers "what does this
 // config do?" without leaving the table — tap to a one-liner, tap back open.
 const meta: Meta<typeof FoldableRow> = {
 	component: FoldableRow,
 	title: "UI/FoldableRow",
 	decorators: [
-		// Rows are subgrids — they only lay out inside the pipeline's
-		// three-column parent grid (mirrors PipelineTable).
+		// Rows are subgrids — they only lay out inside the build's
+		// three-column parent grid (mirrors BuildTable).
 		(Story) => (
 			<div className="grid w-96 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-4">
 				<Story />

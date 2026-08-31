@@ -1,11 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { SPOTS_PER_GRADE } from "~/modules/run/config/domain/config.model";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 
 import { Chip } from "../Chip.ui";
 import { Delta } from "../Delta.ui";
-import type { Rarity } from "../rarity";
 import {
 	PrepScreen,
 	type PrepConfig,
@@ -20,38 +18,32 @@ export default meta;
 
 type Story = StoryObj<typeof PrepScreen>;
 
-const graded = (
-	config: Omit<PrepConfig, "spots"> & { rarity: Rarity }
-): PrepConfig => ({ ...config, spots: SPOTS_PER_GRADE[config.rarity] });
-
-const configs = (
-	[
-		{
-			id: ".ts",
-			label: ".ts",
-			rarity: "bit",
-			note: <Delta multiplier={1.25} />,
-			summary: "bit · Focus: typescript",
-			explainer: "TypeScript polls pay 1.25× coverage.",
-		},
-		{
-			id: "Intellisense",
-			label: "Intellisense",
-			rarity: "nibble",
-			note: <Delta multiplier={1.5} />,
-			summary: "nibble",
-			explainer: "All coverage earns ×1.5.",
-		},
-		{
-			id: "IndexedDB",
-			label: "IndexedDB",
-			rarity: "bit",
-			note: <Chip tone="celadon">+8 / correct</Chip>,
-			summary: "bit",
-			explainer: "+8 KB storage per correct answer, up to 320 KB a run.",
-		},
-	] satisfies readonly (Omit<PrepConfig, "spots"> & { rarity: Rarity })[]
-).map(graded);
+const configs = [
+	{
+		id: ".ts",
+		label: ".ts",
+		slots: 1,
+		note: <Delta multiplier={1.25} />,
+		summary: "Focus: typescript",
+		explainer: "TypeScript polls pay 1.25× coverage.",
+	},
+	{
+		id: "Intellisense",
+		label: "Intellisense",
+		slots: 4,
+		note: <Delta multiplier={1.5} />,
+		summary: "one config",
+		explainer: "All coverage earns ×1.5.",
+	},
+	{
+		id: "IndexedDB",
+		label: "IndexedDB",
+		slots: 1,
+		note: <Chip tone="celadon">+8 / correct</Chip>,
+		summary: "one config",
+		explainer: "+8 KB storage per correct answer, up to 320 KB a run.",
+	},
+] satisfies readonly PrepConfig[];
 
 const base: PrepScreenProps = {
 	theme: "lavender",
@@ -69,7 +61,7 @@ const base: PrepScreenProps = {
 	coveragePerWrong: -1.3,
 	missIsFatal: false,
 	configs,
-	spots: 6,
+	slots: 6,
 	fits: null,
 	audits: [
 		{
@@ -150,8 +142,8 @@ export const Lean: Story = {
 			theme="boulder"
 			coverageDemand={20}
 			configs={configs.slice(0, 1)}
-			spots={4}
-			fits="crumb"
+			slots={4}
+			fits={2}
 			audits={[]}
 			bills={[]}
 			prefetch={undefined}

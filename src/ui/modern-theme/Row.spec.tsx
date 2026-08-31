@@ -31,7 +31,7 @@ describe("Row", () => {
 	});
 
 	it("renders as the tag it is given, so a fold can use it as its summary", () => {
-		const { container } = render(<Row as="summary">Pipeline</Row>);
+		const { container } = render(<Row as="summary">Build</Row>);
 
 		expect(container.querySelector("summary")).toBeInTheDocument();
 	});

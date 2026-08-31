@@ -11,9 +11,8 @@ import { Dot } from "../Dot.ui";
 import { Entry } from "../Entry.ui";
 import { Fold, type FoldItem } from "../Fold.ui";
 import { Stake } from "../Stake.ui";
-import type { Rarity } from "../rarity";
 import { GateHeader, type GateHeaderProps } from "../GateHeader.ui";
-import { SpotTrack } from "../SpotTrack.ui";
+import { SlotTrack } from "../SlotTrack.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
 import { Tooltip } from "../Tooltip.ui";
@@ -40,8 +39,7 @@ const BULLET = <Dot tone="muted" />;
 export type PrepConfig = {
 	id: string;
 	label: string;
-	rarity?: Rarity;
-	spots: number;
+	slots: number;
 	minified?: boolean;
 	note?: ReactNode;
 	summary?: ReactNode;
@@ -75,9 +73,9 @@ export type PrepScreenProps = {
 	missIsFatal: boolean;
 	coveragePerWrong: number;
 	configs: readonly PrepConfig[];
-	spots: number;
-	maxSpots?: number;
-	fits?: Rarity | null;
+	slots: number;
+	maxSlots?: number;
+	fits?: number | null;
 	audits: readonly PrepAudit[];
 	reward: PrepReward;
 	bills: readonly PrepBill[];
@@ -158,8 +156,8 @@ export const PrepScreen = ({
 	missIsFatal,
 	coveragePerWrong,
 	configs,
-	spots,
-	maxSpots,
+	slots,
+	maxSlots,
 	fits,
 	audits,
 	reward,
@@ -172,7 +170,7 @@ export const PrepScreen = ({
 	onStart,
 	theme,
 }: PrepScreenProps) => {
-	const spotsUsed = configs.reduce((total, config) => total + config.spots, 0);
+	const slotsUsed = configs.reduce((total, config) => total + config.slots, 0);
 	const billedKb = bills.reduce((total, bill) => total + bill.kb, 0);
 	const onMissKb = bills
 		.filter((bill) => bill.billedOnMiss)
@@ -278,7 +276,7 @@ export const PrepScreen = ({
 			),
 		});
 
-	const pipeline: FoldItem[] = [
+	const build: FoldItem[] = [
 		...configs.map((config, index) => ({
 			id: config.id,
 			content: (
@@ -289,7 +287,7 @@ export const PrepScreen = ({
 						</Text>
 					}
 					label={config.label}
-					rarity={config.rarity}
+					slots={config.slots}
 					value={config.note}
 					summary={config.summary}
 					explainer={config.explainer}
@@ -351,21 +349,21 @@ export const PrepScreen = ({
 
 				<section className={COLUMN}>
 					<Fold
-						title="Your pipeline"
+						title="Your build"
 						value={
 							<Text size="meta" tone="muted">
-								{spotsUsed} of {spots} spots
+								{slotsUsed} of {slots} slots
 							</Text>
 						}
 						note={
-							<SpotTrack
+							<SlotTrack
 								configs={configs}
-								spots={spots}
-								maxSpots={maxSpots}
+								slots={slots}
+								maxSlots={maxSlots}
 								fits={fits}
 							/>
 						}
-						items={pipeline}
+						items={build}
 					>
 						{onBackToShop ? (
 							<Action label="Change build in shop" onUse={onBackToShop} />

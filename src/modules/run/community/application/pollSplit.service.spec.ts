@@ -44,7 +44,7 @@ const runWith = ({
 	const base = createRun([POLL], []);
 	return {
 		...base,
-		pipeline: { ...base.pipeline, configs },
+		build: { ...base.build, configs },
 		peekedPollIds,
 	};
 };

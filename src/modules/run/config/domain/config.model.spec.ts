@@ -8,22 +8,22 @@ import {
 	givesOf,
 	headlineFigureOf,
 	isUpgradable,
-	RARITY_ODDS,
-	RARITY_WEIGHT,
-	rarityOf,
+	baseSlotsOf,
+	CONFIG_SIZES,
+	DRAFT_COST_PER_SLOT_KB,
+	largestSizeFitting,
 	sellRefund,
-	shapeOf,
 	showsSampleSize,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
 describe("draftCost", () => {
-	it("prices a config from its grade", () => {
+	it("prices a config at 32 KB for every slot it fills", () => {
 		expect(draftCost(CONFIGS.js)).toBe(32);
 		expect(draftCost(CONFIGS.agentsMd)).toBe(256);
 	});
 
-	it("doubles from each grade to the next, the way the bit count does", () => {
+	it("charges the same rate at every size, so price reads straight off the size", () => {
 		expect(draftCost(CONFIGS.js)).toBe(32);
 		expect(draftCost(CONFIGS.coverageGain)).toBe(64);
 		expect(draftCost(CONFIGS.intellisense)).toBe(128);
@@ -38,40 +38,50 @@ describe("draftCost", () => {
 		expect(draftCost(CONFIGS.wtfpl)).toBe(512);
 	});
 
-	it("prices Freemium at nothing — a byte whose whole cost is the bill", () => {
-		expect(rarityOf(CONFIGS.freemium)).toBe("byte");
+	it("prices Freemium at nothing — eight slots whose whole cost is the bill", () => {
+		expect(baseSlotsOf(CONFIGS.freemium)).toBe(8);
 		expect(draftCost(CONFIGS.freemium)).toBe(0);
 		expect(sellRefund(CONFIGS.freemium)).toBe(0);
 	});
 });
 
-describe("rarityOf", () => {
-	it("defaults an unset grade to a bit", () => {
-		expect(rarityOf(CONFIGS.js)).toBe("bit");
+describe("baseSlotsOf", () => {
+	it("defaults an unsized config to one slot", () => {
+		expect(baseSlotsOf(CONFIGS.js)).toBe(1);
 	});
 
-	it("reads an explicit grade", () => {
-		expect(rarityOf(CONFIGS.agentsMd)).toBe("byte");
-		expect(rarityOf(CONFIGS.coverageGain)).toBe("crumb");
+	it("reads an explicit size", () => {
+		expect(baseSlotsOf(CONFIGS.agentsMd)).toBe(8);
+		expect(baseSlotsOf(CONFIGS.coverageGain)).toBe(2);
+	});
+
+	it("sizes every roster config on the ladder, so none is unpriceable", () => {
+		for (const config of Object.values(CONFIGS))
+			expect(CONFIG_SIZES).toContain(baseSlotsOf(config));
 	});
 });
 
-describe("RARITY_ODDS", () => {
-	it("quotes each grade's odds as the reciprocal of its weight", () => {
-		const total = Object.values(RARITY_WEIGHT).reduce((sum, w) => sum + w, 0);
-
-		for (const [rarity, odds] of Object.entries(RARITY_ODDS)) {
-			const quoted = Number(odds.replace("1 in ", ""));
-			const actual =
-				total / RARITY_WEIGHT[rarity as keyof typeof RARITY_WEIGHT];
-
-			expect(Math.round(actual)).toBe(quoted);
-		}
+describe("largestSizeFitting", () => {
+	it("names the biggest size that still fits the room left", () => {
+		expect(largestSizeFitting(4)).toBe(4);
+		expect(largestSizeFitting(7)).toBe(4);
+		expect(largestSizeFitting(16)).toBe(16);
 	});
 
-	it("keeps one notation, so no grade reads as a percentage", () => {
-		for (const odds of Object.values(RARITY_ODDS))
-			expect(odds).toMatch(/^1 in \d+$/);
+	it("names nothing when there is no room at all", () => {
+		expect(largestSizeFitting(0)).toBeNull();
+	});
+});
+
+describe("CONFIG_SIZES", () => {
+	it("runs 1 to 16, smallest first", () => {
+		expect(CONFIG_SIZES).toEqual([1, 2, 4, 8, 12, 16]);
+	});
+
+	it("prices its largest size at 512 KB, the same tag WTFPL carries", () => {
+		expect(DRAFT_COST_PER_SLOT_KB * CONFIG_SIZES[CONFIG_SIZES.length - 1]).toBe(
+			512
+		);
 	});
 });
 
@@ -164,10 +174,10 @@ describe("describeConfig", () => {
 
 	it("derives Dependabot's odds from its level", () => {
 		expect(describeConfig(CONFIGS.dependabot)).toBe(
-			"1 in 3 gate clears: a random config in your pipeline upgrades, free."
+			"1 in 3 gate clears: a random config in your build upgrades, free."
 		);
 		expect(describeConfig({ ...CONFIGS.dependabot, level: 2 })).toBe(
-			"1 in 2 gate clears: a random config in your pipeline upgrades, free."
+			"1 in 2 gate clears: a random config in your build upgrades, free."
 		);
 	});
 
@@ -248,31 +258,5 @@ describe("headlineFigureOf", () => {
 
 	it("withholds a figure where the config prices in something else", () => {
 		expect(headlineFigureOf(CONFIGS.eslint)).toBeUndefined();
-	});
-});
-
-describe("shapeOf", () => {
-	it("names a build of one grade by its count", () => {
-		expect(shapeOf([CONFIGS.js, CONFIGS.ts, CONFIGS.eslint])).toBe(
-			"three bits"
-		);
-	});
-
-	it("names a single config with an article rather than a count", () => {
-		expect(shapeOf([CONFIGS.js])).toBe("a bit");
-	});
-
-	it("lists grades biggest first and joins the last with and", () => {
-		expect(shapeOf([CONFIGS.js, CONFIGS.freemium, CONFIGS.ts])).toBe(
-			"a byte and two bits"
-		);
-	});
-
-	it("keeps a minified config at its own grade, since that is what it is", () => {
-		expect(shapeOf([{ ...CONFIGS.freemium, minified: true }])).toBe("a byte");
-	});
-
-	it("calls an empty build nothing rather than returning an empty string", () => {
-		expect(shapeOf([])).toBe("nothing");
 	});
 });

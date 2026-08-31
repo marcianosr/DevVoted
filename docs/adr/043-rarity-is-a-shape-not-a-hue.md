@@ -2,6 +2,9 @@
 
 ## Status
 
+> ⚠ **Superseded by [ADR-047](047-a-configs-size-is-a-number.md)** (2026-08-30):
+> the grade ladder is deleted. A config carries a plain `slots` number instead.
+
 Accepted — 2026-08-27 (Marciano, DVTD-ym11). Supersedes [ADR-006](006-session-run-mechanics.md)
 Decision 9 ("Rarity is a loot tier shown as glow, never fill"). Renames the four
 grades in data, copy and UI, and doubles the draft-cost ladder. Cites pillar 4 of

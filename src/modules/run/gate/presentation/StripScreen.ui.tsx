@@ -7,7 +7,7 @@ import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeRecei
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 
 type StripScreenProps = {
-	peelSpotsRemaining: number;
+	peelSlotsRemaining: number;
 	gateNumber: number;
 	configs: readonly Config[];
 	answered: readonly AnsweredPoll[];
@@ -16,14 +16,14 @@ type StripScreenProps = {
 };
 
 export const StripScreen = ({
-	peelSpotsRemaining,
+	peelSlotsRemaining,
 	gateNumber,
 	configs,
 	answered,
 	retryStake,
 	onStrip,
 }: StripScreenProps) => {
-	const quotaMet = peelSpotsRemaining === 0;
+	const quotaMet = peelSlotsRemaining === 0;
 	const removableConfigIds = quotaMet ? [] : configs.map((config) => config.id);
 
 	return (
@@ -35,7 +35,7 @@ export const StripScreen = ({
 				rows={gateRewardRows({ answered, configs })}
 				removableConfigIds={removableConfigIds}
 				onRemoveConfig={onStrip}
-				peelSpotsRemaining={peelSpotsRemaining}
+				peelSlotsRemaining={peelSlotsRemaining}
 			/>
 			{retryStake ? <GateStakeReceipt stake={retryStake} lead="Retry" /> : null}
 		</div>

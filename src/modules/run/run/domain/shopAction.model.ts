@@ -4,16 +4,17 @@ import {
 	isUpgradable,
 	levelUp,
 	minify as minified,
-	minifySavingSpots,
-	spotsOf,
+	minifySavingSlots,
+	slotsOf,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import {
+	freeSlots,
 	hasRoomFor,
-	type Pipeline,
+	type Build,
 	stripConfig,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+} from "~/modules/run/build/domain/build.model";
 import {
 	draftCostIn,
 	draftSeed,
@@ -34,26 +35,29 @@ import {
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 	pinCostFor,
-	extraRentKb,
-	extraSpotsUnlocked,
-	spotsHeldWith,
+	BASE_SLOTS,
+	MAX_SLOTS,
+	nextSlotPriceKb,
+	slotCashOutKb,
+	STORAGE_PLANS,
+	storagePlanFor,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	addStorage,
 	type RunState,
 	shopDraft,
 	withLog,
-	withPipeline,
+	withBuild,
 } from "~/modules/run/run/domain/run.model";
 
 const stayReward = (
 	state: RunState,
-	pipeline: Pipeline,
+	build: Build,
 	draftOptions: readonly Config[],
 	line: string
 ): RunState => ({
 	...state,
-	pipeline,
+	build,
 	draftOptions,
 	log: withLog(state, line),
 });
@@ -63,27 +67,24 @@ export const draft = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!chosen) return state;
-	const alreadyOwned = state.pipeline.configs.some(
+	const alreadyOwned = state.build.configs.some(
 		(candidate) => candidate.id === configId
 	);
-	const cost = draftCostIn(state.pipeline.configs, chosen);
+	const cost = draftCostIn(state.build.configs, chosen);
 	if (
 		alreadyOwned ||
-		!hasRoomFor(state.pipeline, spotsOf(chosen)) ||
+		!hasRoomFor(state.build, slotsOf(chosen)) ||
 		state.storage < cost
 	)
 		return state;
-	const drafted = withPipeline(state.pipeline, [
-		...state.pipeline.configs,
-		chosen,
-	]);
+	const drafted = withBuild(state.build, [...state.build.configs, chosen]);
 	return {
 		...stayReward(
 			state,
 			drafted,
 			chosen.offersFullRoster
 				? shopDraft(
-						{ ...state, pipeline: drafted },
+						{ ...state, build: drafted },
 						draftSeed(state.gatesCleared, state.rebuildsUsed)
 					)
 				: state.draftOptions,
@@ -98,14 +99,14 @@ export const draft = (state: RunState, configId: string): RunState => {
 };
 
 export const upgrade = (state: RunState, configId: string): RunState => {
-	const owned = state.pipeline.configs.find(
+	const owned = state.build.configs.find(
 		(candidate) => candidate.id === configId
 	);
 	if (!owned || !isUpgradable(owned)) return state;
 	const level = owned.level ?? 1;
-	const levelled = withPipeline(
-		state.pipeline,
-		state.pipeline.configs.map((config) =>
+	const levelled = withBuild(
+		state.build,
+		state.build.configs.map((config) =>
 			config.id === configId ? levelUp(config) : config
 		)
 	);
@@ -123,46 +124,84 @@ export const upgrade = (state: RunState, configId: string): RunState => {
 	);
 };
 
-export const extraSpotsAvailable = (state: RunState): number =>
-	extraSpotsUnlocked(state.gatesCleared);
+export const slotPriceFor = (state: RunState): number | undefined =>
+	nextSlotPriceKb(state.slotsBought ?? 0);
 
-export const canRentExtraSpots = (state: RunState, spots: number): boolean =>
-	spots >= 0 &&
-	spots <= extraSpotsAvailable(state) &&
-	state.storage >= extraRentKb(spots);
+export const canBuySlot = (state: RunState): boolean => {
+	const price = slotPriceFor(state);
+	return (
+		price !== undefined &&
+		state.build.slots < MAX_SLOTS &&
+		state.storage >= price
+	);
+};
 
-export const setExtraSpots = (state: RunState, spots: number): RunState => {
-	if (!canRentExtraSpots(state, spots)) return state;
-	const wide = spotsHeldWith(state.gatesCleared, spots);
+export const buySlot = (state: RunState): RunState => {
+	const price = slotPriceFor(state);
+	if (price === undefined || !canBuySlot(state)) return state;
+	const slots = state.build.slots + 1;
 	return {
 		...state,
-		extraSpots: spots,
-		pipeline: { ...state.pipeline, spots: wide },
+		slotsBought: (state.slotsBought ?? 0) + 1,
+		storage: state.storage - price,
+		build: { ...state.build, slots },
+		log: withLog(state, `Bought a slot for ${price}KB — ${slots} wide.`),
+	};
+};
+
+export const slotCashOutFor = (state: RunState): number | undefined =>
+	state.build.slots > BASE_SLOTS ? slotCashOutKb(state.build.slots) : undefined;
+
+export const canCashSlot = (state: RunState): boolean =>
+	slotCashOutFor(state) !== undefined && freeSlots(state.build) > 0;
+
+export const cashSlot = (state: RunState): RunState => {
+	const refund = slotCashOutFor(state);
+	if (refund === undefined || !canCashSlot(state)) return state;
+	const slots = state.build.slots - 1;
+	return {
+		...state,
+		storage: addStorage(state.storage, refund, state.storagePlan ?? 0),
+		build: { ...state.build, slots },
+		log: withLog(state, `Cashed a slot for ${refund}KB — ${slots} wide.`),
+	};
+};
+
+export const canSetStoragePlan = (tier: number): boolean =>
+	tier >= 0 && tier < STORAGE_PLANS.length;
+
+export const setStoragePlan = (state: RunState, tier: number): RunState => {
+	if (!canSetStoragePlan(tier)) return state;
+	const plan = storagePlanFor(tier);
+	return {
+		...state,
+		storagePlan: tier,
+		storage: Math.min(state.storage, plan.capKb),
 		log: withLog(
 			state,
-			spots === 0
-				? `Dropped the extra-spot rent — back to ${wide} spots.`
-				: `Renting ${spots} extra spot${spots === 1 ? "" : "s"} — ${wide} wide, ${extraRentKb(spots)}KB a gate.`
+			plan.perGateKb === 0
+				? `Back on the free plan — ${plan.capKb}KB cap.`
+				: `On the ${plan.capKb}KB plan — ${plan.perGateKb}KB a gate.`
 		),
 	};
 };
 
 export const minifyConfig = (state: RunState, configId: string): RunState => {
-	const target = state.pipeline.configs.find(
+	const target = state.build.configs.find(
 		(candidate) => candidate.id === configId
 	);
 	if (!target || !canMinify(target)) return state;
-	const freed = minifySavingSpots(target);
+	const freed = minifySavingSlots(target);
 	return stayReward(
 		state,
-		withPipeline(
-			state.pipeline,
-			state.pipeline.configs.map((config) =>
+		withBuild(
+			state.build,
+			state.build.configs.map((config) =>
 				config.id === configId ? minified(config) : config
 			)
 		),
 		state.draftOptions,
-		`Minified ${target.label} — ${freed} spot${freed > 1 ? "s" : ""} freed, half the bonus gone.`
+		`Minified ${target.label} — ${freed} slot${freed > 1 ? "s" : ""} freed, half the bonus gone.`
 	);
 };
 
@@ -207,8 +246,8 @@ export const finishReward = (state: RunState): RunState => {
 		deletedConfigs: undefined,
 		lapsedConfigs: undefined,
 		subscriptionBillKb: 0,
-		spotRentKb: 0,
-		rentDefaulted: undefined,
+		planBilledKb: 0,
+		planDowngraded: undefined,
 		status: "answering",
 		log: withLog(state, "Climbing on."),
 	};
@@ -218,12 +257,12 @@ export const canRebuild = (state: RunState): boolean =>
 	state.storage >= rebuildCost(state.rebuildsUsed);
 
 export const rebuildAvailable = (state: RunState): boolean =>
-	!shopOffersFullRoster(state.pipeline.configs);
+	!shopOffersFullRoster(state.build.configs);
 
 export const lockAvailable = (state: RunState): boolean =>
 	state.gatesCleared >= LOCK_FROM_GATE &&
 	(state.lockedOfferIds ?? []).length < MAX_LOCKED_OFFERS &&
-	!shopOffersFullRoster(state.pipeline.configs);
+	!shopOffersFullRoster(state.build.configs);
 
 export const canLock = (state: RunState): boolean =>
 	state.storage >= LOCK_COST_KB;
@@ -231,7 +270,7 @@ export const canLock = (state: RunState): boolean =>
 export const extendAvailable = (state: RunState): boolean =>
 	state.gatesCleared >= EXTEND_FROM_GATE &&
 	(state.extensionsBought ?? 0) < MAX_EXTENSIONS &&
-	!shopOffersFullRoster(state.pipeline.configs);
+	!shopOffersFullRoster(state.build.configs);
 
 export const canExtend = (state: RunState): boolean =>
 	state.storage >= extendCost(state.extensionsBought ?? 0);
@@ -274,7 +313,7 @@ export const extendOffers = (state: RunState): RunState => {
 	const extensions = bought + 1;
 	const [drawn] = rollDraft(
 		draftSeed(state.gatesCleared, state.rebuildsUsed, extensions),
-		[...state.pipeline.configs, ...state.draftOptions],
+		[...state.build.configs, ...state.draftOptions],
 		[],
 		1
 	);
@@ -290,33 +329,33 @@ export const extendOffers = (state: RunState): RunState => {
 	};
 };
 
-const pipelineAtMinimumWidth = (state: RunState): boolean =>
-	atMinimumWidth(state.pipeline.configs.length);
+const buildAtMinimumWidth = (state: RunState): boolean =>
+	atMinimumWidth(state.build.configs.length);
 
 export const sell = (state: RunState, configId: string): RunState => {
-	const target = state.pipeline.configs.find(
+	const target = state.build.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target || pipelineAtMinimumWidth(state)) return state;
-	const refund = sellRefundIn(state.pipeline.configs, target);
+	if (!target || buildAtMinimumWidth(state)) return state;
+	const refund = sellRefundIn(state.build.configs, target);
 	return {
 		...state,
-		pipeline: stripConfig(state.pipeline, configId),
-		storage: addStorage(state.storage, refund),
+		build: stripConfig(state.build, configId),
+		storage: addStorage(state.storage, refund, state.storagePlan ?? 0),
 		log: withLog(state, `Sold ${target.label} (+${refund}KB).`),
 	};
 };
 
 export const drop = (state: RunState, configId: string): RunState => {
-	const target = state.pipeline.configs.find(
+	const target = state.build.configs.find(
 		(candidate) => candidate.id === configId
 	);
-	if (!target || pipelineAtMinimumWidth(state)) return state;
+	if (!target || buildAtMinimumWidth(state)) return state;
 	return {
 		...state,
-		pipeline: withPipeline(
-			state.pipeline,
-			state.pipeline.configs.filter((candidate) => candidate.id !== configId)
+		build: withBuild(
+			state.build,
+			state.build.configs.filter((candidate) => candidate.id !== configId)
 		),
 		log: withLog(state, "Dropped a config to make room."),
 	};

@@ -1,8 +1,8 @@
 import type { BillLedger } from "~/modules/run/config/domain/subscription.model";
 import type {
 	PerAnswerPreview,
-	PipelineModifiers,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+	BuildModifiers,
+} from "~/modules/run/build/domain/build.model";
 import {
 	auditsForGate,
 	nextAuditedGateFrom,
@@ -25,11 +25,11 @@ export type GateStake = {
 	readonly coverageHeld: number;
 	readonly audits: readonly AuditView[];
 	readonly upcomingAudit?: UpcomingAuditView;
-	readonly peelSpotsOnFailure: number;
+	readonly peelSlotsOnFailure: number;
 	readonly peelShareOnFailure: number;
 	readonly missIsFatal: boolean;
 	readonly subscriptions: BillLedger;
-	readonly modifiers: PipelineModifiers;
+	readonly modifiers: BuildModifiers;
 	readonly perAnswer: PerAnswerPreview;
 };
 
@@ -54,7 +54,7 @@ export const upcomingAuditFor = (
 
 export const auditViewsFor = (state: RunState): readonly AuditView[] => {
 	const suppressed = suppressedAuditFor(
-		state.pipeline.configs,
+		state.build.configs,
 		state.gatesCleared
 	);
 	return auditsForGate(state.gatesCleared).map((audit) => ({

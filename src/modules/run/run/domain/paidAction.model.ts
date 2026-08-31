@@ -1,7 +1,4 @@
-import {
-	canLint,
-	peekerFor,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+import { canLint, peekerFor } from "~/modules/run/build/domain/build.model";
 import {
 	auditFeeMultiplier,
 	auditsFreezeManualEffects,

@@ -1,33 +1,34 @@
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
 	type Config,
 	headlineFigureOf,
-	rarityOf,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
-import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import {
 	configStatusFor,
 	type PollStatusContext,
 } from "~/modules/run/config/domain/effect.model";
-import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	ALL_SWATCHES,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
-import { pollDifficultyMultiplier } from "~/modules/run/run/domain/rules.model";
+import {
+	MAX_SLOTS,
+	pollDifficultyMultiplier,
+} from "~/modules/run/run/domain/rules.model";
 import {
 	PollScreen,
 	type PollOption,
 } from "~/ui/modern-theme/screens/PollScreen.ui";
 import { toAuditId } from "~/ui/modern-theme/audits";
-import { Audits, type AuditRow } from "~/ui/modern-theme/Audits.ui";
-import { Coverage } from "~/ui/modern-theme/Coverage.ui";
-import { Pipeline, type PipelineRow } from "~/ui/modern-theme/Pipeline.ui";
-import { Stake } from "~/ui/modern-theme/Stake.ui";
+import { AuditAlerts, type AuditRow } from "~/ui/modern-theme/Audits.ui";
+import type { BuildRow } from "~/ui/modern-theme/Build.ui";
+import { BuildTrack } from "~/ui/modern-theme/BuildTrack.ui";
+import type { QuestionFact } from "~/ui/modern-theme/Question.ui";
 import type { TrailItem } from "~/ui/modern-theme/Trail.ui";
 import { plural } from "~/ui/modern-theme/format";
 
@@ -45,22 +46,6 @@ export const trailFor = (view: RunView): readonly TrailItem[] =>
 
 const shortfall = (costKb: number, storageKb: number): string =>
 	`Costs ${costKb}KB — you have ${storageKb}KB`;
-
-const factsFor = (
-	view: RunView,
-	config: Config,
-	tool: Tool | undefined
-): ReactNode => (
-	<ConfigFacts
-		config={config}
-		refundKb={sellRefundIn(view.configs, config)}
-		note={
-			tool === undefined || tool.ready
-				? undefined
-				: shortfall(tool.costKb, view.storage)
-		}
-	/>
-);
 
 type Tool = {
 	readonly configId: string;
@@ -114,12 +99,12 @@ const statusContextFor = (
 	faucetRemainingKb: view.faucetRemainingKb,
 });
 
-export const pipelineRows = (
+export const buildRows = (
 	view: RunView,
 	poll: PollFacts,
 	tools: readonly Tool[]
-): readonly PipelineRow[] =>
-	view.configs.map((config): PipelineRow => {
+): readonly BuildRow[] =>
+	view.configs.map((config): BuildRow => {
 		const status = configStatusFor(
 			config,
 			statusContextFor(view, poll, config)
@@ -132,14 +117,13 @@ export const pipelineRows = (
 		return {
 			id: config.id,
 			label: config.label,
-			rarity: rarityOf(config),
+			slots: slotsOf(config),
 			status,
 			figure: headlineFigureOf(config),
 			remainingKb:
 				config.storagePerCorrect === undefined
 					? undefined
 					: view.faucetRemainingKb,
-			summary: factsFor(view, config, tool),
 			explainer: config.description,
 			action:
 				tool === undefined
@@ -165,55 +149,95 @@ const auditRows = (view: RunView): readonly AuditRow[] =>
 			: [{ id, description: audit.description, suppressed: audit.suppressed }];
 	});
 
-export const railFor = (
-	view: RunView,
-	rows: readonly PipelineRow[],
-	settled = false
-) => {
-	const audits = auditRows(view);
-	const { coverageHeld, coverageDemand, peelSpotsOnFailure, missIsFatal } =
-		view.gateStake;
+export type TrackFold = { open: boolean; onToggle: () => void };
 
-	return (
-		<>
-			<Coverage
-				held={coverageHeld}
-				projected={view.perAnswer.coveragePerCorrect}
-				required={coverageDemand}
-				defaultOpen={false}
-			/>
-			<Pipeline configs={rows} settled={settled} />
-			{audits.length ? <Audits audits={audits} defaultOpen /> : null}
-			<Stake
-				removeOnMiss={peelSpotsOnFailure}
-				coveragePerWrong={view.gateStake.perAnswer.coveragePerWrong}
-				missIsFatal={missIsFatal}
-			/>
-		</>
-	);
+export const trackFor = (
+	view: RunView,
+	rows: readonly BuildRow[],
+	fold?: TrackFold,
+	settled = false
+) => (
+	<BuildTrack
+		configs={rows}
+		slots={view.slots}
+		maxSlots={MAX_SLOTS}
+		settled={settled}
+		open={fold?.open}
+		onToggle={fold?.onToggle}
+	/>
+);
+
+export const noticesFor = (view: RunView) => (
+	<AuditAlerts audits={auditRows(view)} />
+);
+
+const missCost = (view: RunView): readonly QuestionFact[] => {
+	const { peelSlotsOnFailure, missIsFatal } = view.gateStake;
+	const figure = missIsFatal
+		? "The run ends here"
+		: `Remove ${plural(peelSlotsOnFailure, "config")}`;
+
+	return !missIsFatal && peelSlotsOnFailure === 0
+		? []
+		: [{ label: "Gate retry cost:", figure, tone: "cinnabar" }];
 };
 
-const revealFor = (view: RunView): readonly string[] =>
+export const stakeFacts = (view: RunView): readonly QuestionFact[] => {
+	const wrong = view.gateStake.perAnswer.coveragePerWrong;
+
+	return [
+		...(wrong === 0
+			? []
+			: [
+					{
+						label: "wrong costs",
+						figure: String(Math.abs(wrong)),
+						tone: "cinnabar" as const,
+					},
+				]),
+		...missCost(view),
+	];
+};
+
+export const coverageFor = (view: RunView) => ({
+	held: view.gateStake.coverageHeld,
+	projected: view.perAnswer.coveragePerCorrect,
+	required: view.gateStake.coverageDemand,
+});
+
+const revealFor = (view: RunView): readonly QuestionFact[] =>
 	view.correctAnswersThisGate === null
 		? []
 		: [
-				`this gate holds ${plural(
-					view.correctAnswersThisGate,
-					view.mirroredPolls ? "incorrect answer" : "correct answer"
-				)}`,
+				{
+					label: `this gate holds ${plural(
+						view.correctAnswersThisGate,
+						view.mirroredPolls ? "incorrect answer" : "correct answer"
+					)}`,
+				},
 			];
 
-const metaFor = (view: RunView, poll: NonNullable<RunView["poll"]>) => {
+const metaFor = (
+	view: RunView,
+	poll: NonNullable<RunView["poll"]>
+): readonly QuestionFact[] => {
 	const multiplier = pollDifficultyMultiplier(
 		poll.options.length,
 		poll.answerType === "multiple"
 	);
 
 	return [
-		`scores ×${Math.round(multiplier * 100) / 100}`,
-		plural(poll.options.length, "option"),
-		...(poll.answerType === "multiple" ? ["pick every correct one"] : []),
+		{
+			label: "scores",
+			figure: `×${Math.round(multiplier * 100) / 100}`,
+			tone: "celadon",
+		},
+		{ label: plural(poll.options.length, "option") },
+		...(poll.answerType === "multiple"
+			? [{ label: "pick every correct one" }]
+			: []),
 		...revealFor(view),
+		...stakeFacts(view),
 	];
 };
 
@@ -235,6 +259,7 @@ export const gateHeaderFor = (view: RunView) => {
 			.filter((id): id is NonNullable<typeof id> => id !== null),
 		storage: { balanceKb: view.storage },
 		track: { gates: ALL_SWATCHES, cleared: view.gatesCleared },
+		coverage: coverageFor(view),
 	};
 };
 
@@ -263,7 +288,7 @@ export const PollView = ({
 	onPeek,
 }: PollViewProps) => {
 	const blocked = new Set(view.disabledOptionIds);
-	const [railOpen, setRailOpen] = useState(true);
+	const [trackOpen, setTrackOpen] = useState(false);
 
 	const noteFor = (optionId: string) => {
 		if (blocked.has(optionId)) return "crossed out";
@@ -282,7 +307,7 @@ export const PollView = ({
 		onChange: () => onSelect(option.id),
 	}));
 
-	const rows = pipelineRows(
+	const rows = buildRows(
 		view,
 		{ category: poll.category, answeredBefore: view.answeredThisGate.length },
 		toolsFor(view, { onLint, onPeek })
@@ -299,9 +324,11 @@ export const PollView = ({
 			meta={metaFor(view, poll)}
 			code={poll.codeBlock?.split("\n")}
 			options={options}
-			rail={railFor(view, rows)}
-			railOpen={railOpen}
-			onToggleRail={() => setRailOpen((open) => !open)}
+			build={trackFor(view, rows, {
+				open: trackOpen,
+				onToggle: () => setTrackOpen((open) => !open),
+			})}
+			notices={noticesFor(view)}
 			onSubmit={onSubmit}
 			submitLock={selectedOptionIds.length === 0 ? "Pick an answer" : undefined}
 		/>

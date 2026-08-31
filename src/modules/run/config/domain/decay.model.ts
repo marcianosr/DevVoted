@@ -1,6 +1,6 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 
-/** A clear's decay outcome: the pipeline after it, and the configs that faded
+/** A clear's decay outcome: the build after it, and the configs that faded
  * to ×1 and deleted themselves. */
 export type Decay = {
 	readonly configs: readonly Config[];
@@ -30,7 +30,7 @@ const isSpent = (config: Config): boolean =>
  * player never holds one. Ticks only on clears, never on a failed gate: a
  * redo already costs a peel, and draining the fuse on top would charge the
  * same gate twice. Returns the input untouched when nothing decays, so the
- * reducer can keep the pipeline's identity.
+ * reducer can keep the build's identity.
  */
 export const decayOnClear = (configs: readonly Config[]): Decay => {
 	if (!configs.some(isDecaying)) return { configs, deleted: [] };

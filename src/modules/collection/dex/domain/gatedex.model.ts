@@ -10,7 +10,6 @@ import {
 	coverageDemandFor,
 	failPeelShareFor,
 	PIN_FROM_GATE,
-	SPOT_RUNGS,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 import {
@@ -22,9 +21,10 @@ export type GatedexState = "cleared" | "next" | "locked";
 
 export type GateAction = "lock" | "extend" | "pin";
 
-export type GateUnlock =
-	| { readonly kind: "rung"; readonly spots: number }
-	| { readonly kind: "action"; readonly action: GateAction };
+export type GateUnlock = {
+	readonly kind: "action";
+	readonly action: GateAction;
+};
 
 export type GatedexEntry = {
 	readonly gate: number;
@@ -47,20 +47,13 @@ const ACTION_UNLOCKS = [
 	{ action: "pin", fromGate: PIN_FROM_GATE },
 ] as const satisfies readonly { action: GateAction; fromGate: number }[];
 
-const rungsOpenedBy = (gate: number): readonly GateUnlock[] =>
-	SPOT_RUNGS.filter((rung) => grantedByClearing(rung.fromGate) === gate).map(
-		(rung) => ({ kind: "rung", spots: rung.spots })
-	);
-
 const actionsOpenedBy = (gate: number): readonly GateUnlock[] =>
 	ACTION_UNLOCKS.filter(
 		(unlock) => grantedByClearing(unlock.fromGate) === gate
 	).map((unlock) => ({ kind: "action", action: unlock.action }));
 
-const unlocksOpenedBy = (gate: number): readonly GateUnlock[] => [
-	...rungsOpenedBy(gate),
-	...actionsOpenedBy(gate),
-];
+const unlocksOpenedBy = (gate: number): readonly GateUnlock[] =>
+	actionsOpenedBy(gate);
 
 const stateOf = (
 	swatch: GateSwatch,

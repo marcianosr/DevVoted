@@ -66,7 +66,7 @@ const ROSTER: readonly AuditFacts[] = [
 	{
 		id: "rolling-outage",
 		gates: [9],
-		rule: "The outage rolls through your pipeline, a different config down each poll.",
+		rule: "The outage rolls through your build, a different config down each poll.",
 	},
 	{
 		id: "breaking-change",

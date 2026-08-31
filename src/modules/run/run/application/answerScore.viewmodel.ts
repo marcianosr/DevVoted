@@ -1,4 +1,4 @@
-import type { CoverageConfigBonus } from "~/modules/run/pipeline/domain/pipeline.model";
+import type { CoverageConfigBonus } from "~/modules/run/build/domain/build.model";
 import {
 	pollDifficultyMultiplier,
 	roundToOneDecimal,

@@ -182,7 +182,7 @@ export const RewardScreen = ({
 						}
 					/>
 					<Paragraph as="span" size="sm" tone="muted">
-						Faded to ×1 — deleted from the pipeline.
+						Faded to ×1 — deleted from the build.
 					</Paragraph>
 				</div>
 			))}
@@ -218,9 +218,9 @@ export const RewardScreen = ({
 				</Paragraph>
 			) : null}
 
-			{payout.rentDefaulted ? (
+			{payout.planDowngraded ? (
 				<Paragraph size="sm" tone="cinnabar">
-					Spot rent went unpaid — every rented spot went back.
+					Slot rent went unpaid — every rented slot went back.
 				</Paragraph>
 			) : null}
 

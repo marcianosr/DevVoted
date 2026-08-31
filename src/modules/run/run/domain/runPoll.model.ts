@@ -1,7 +1,7 @@
 import type {
 	CoverageBreakdown,
 	CoverageFactors,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+} from "~/modules/run/build/domain/build.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 export type RunOption = {

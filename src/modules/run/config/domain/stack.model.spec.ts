@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-	BASE_SPOTS,
-	occupiedSpots,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import {
 	CONFIG_LIST,
 	CONFIGS,
@@ -13,11 +10,12 @@ import {
 	STARTER_STACKS,
 	starterStackFor,
 } from "~/modules/run/config/domain/stack.model";
+import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
 
 describe("STARTER_STACKS", () => {
-	it("fits the opening pipeline, with room left to draft into", () => {
+	it("fits the opening build, with room left to draft into", () => {
 		for (const stack of STARTER_STACKS) {
-			expect(occupiedSpots(stack.configs)).toBeLessThanOrEqual(BASE_SPOTS);
+			expect(occupiedSlots(stack.configs)).toBeLessThanOrEqual(BASE_SLOTS);
 			expect(stack.configs.length).toBeGreaterThan(0);
 		}
 	});
@@ -53,21 +51,21 @@ describe(starterStackFor, () => {
 });
 
 describe(stackMatching, () => {
-	it("recognizes a pipeline holding exactly a stack's contents, order-blind", () => {
+	it("recognizes a build holding exactly a stack's contents, order-blind", () => {
 		const shipIt = starterStackFor("ship-it");
 		if (!shipIt) throw new Error("ship-it stack missing");
 		const reversed = [...shipIt.configs].reverse();
 		expect(stackMatching(reversed)?.id).toBe("ship-it");
 	});
 
-	it("stops matching once the pipeline deviates from the stack", () => {
+	it("stops matching once the build deviates from the stack", () => {
 		const shipIt = starterStackFor("ship-it");
 		if (!shipIt) throw new Error("ship-it stack missing");
 		const edited = [...shipIt.configs.slice(0, -1), CONFIGS.agentsMd];
 		expect(stackMatching(edited)).toBeUndefined();
 	});
 
-	it("matches nothing on an empty pipeline", () => {
+	it("matches nothing on an empty build", () => {
 		expect(stackMatching([])).toBeUndefined();
 	});
 });

@@ -13,9 +13,8 @@ import { Glyph } from "../Glyph.ui";
 import { Lock } from "../Lock.ui";
 import { Pick } from "../Pick.ui";
 import { RowFigures } from "../RowFigures.ui";
-import type { Rarity } from "../rarity";
 import { Row } from "../Row.ui";
-import { SpotTrack } from "../SpotTrack.ui";
+import { SlotTrack } from "../SlotTrack.ui";
 import { Stake } from "../Stake.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
@@ -53,8 +52,7 @@ const FOOT = "px-3 pt-2";
 export type DealtConfig = {
 	id: string;
 	label: string;
-	rarity?: Rarity;
-	spots: number;
+	slots: number;
 	summary?: ReactNode;
 	explainer: string;
 	note?: ReactNode;
@@ -90,9 +88,9 @@ export type StartScreenProps = {
 	lock?: { cost: string; onToggle: (id: string) => void };
 	rebuild?: { cost: string; onUse: () => void };
 	combos?: readonly StartCombo[];
-	spots: number;
-	maxSpots?: number;
-	fits?: Rarity | null;
+	slots: number;
+	maxSlots?: number;
+	fits?: number | null;
 	gateName: string;
 	pollCount: number;
 	coverageDemand: number;
@@ -174,8 +172,8 @@ export const StartScreen = ({
 	lock,
 	rebuild,
 	combos,
-	spots,
-	maxSpots,
+	slots,
+	maxSlots,
 	fits,
 	gateName,
 	pollCount,
@@ -189,9 +187,9 @@ export const StartScreen = ({
 	theme,
 }: StartScreenProps) => {
 	const picked = dealt.filter((config) => pickedIds.includes(config.id));
-	const spotsUsed = picked.reduce((total, config) => total + config.spots, 0);
-	const spotsFree = Math.max(0, spots - spotsUsed);
-	const ready = canStart ?? spotsUsed > 0;
+	const slotsUsed = picked.reduce((total, config) => total + config.slots, 0);
+	const slotsFree = Math.max(0, slots - slotsUsed);
+	const ready = canStart ?? slotsUsed > 0;
 
 	const lockFor = (config: DealtConfig) => {
 		if (!lock) return undefined;
@@ -215,7 +213,7 @@ export const StartScreen = ({
 
 	const dealRow = (config: DealtConfig) => {
 		const isPicked = pickedIds.includes(config.id);
-		const wontFit = !isPicked && config.spots > spotsFree;
+		const wontFit = !isPicked && config.slots > slotsFree;
 
 		return {
 			id: config.id,
@@ -223,15 +221,12 @@ export const StartScreen = ({
 				<Pick
 					variant="draft"
 					label={config.label}
-					rarity={config.rarity}
-					gradeAs="cells"
-					gradeHint={`takes ${config.spots} of ${spots} spots`}
+					slots={config.slots}
+					sizeHint={`takes ${config.slots} of ${slots} slots`}
 					checked={isPicked}
 					disabled={wontFit}
 					onToggle={() => onToggle(config.id)}
-					value={
-						<RowFigures grade={config.rarity ?? "bit"} figure={config.note} />
-					}
+					value={<RowFigures slots={config.slots} figure={config.note} />}
 					summary={config.summary}
 					explainer={config.explainer}
 					trailing={lockFor(config)}
@@ -278,7 +273,7 @@ export const StartScreen = ({
 			<div className={BODY}>
 				<section className={`${COLUMN} ${DEAL}`}>
 					<Fold
-						title="Configure your pipeline"
+						title="Configure your build"
 						action={
 							rebuild ? (
 								<Tooltip hint="Paid from your archive, not from this run's storage.">
@@ -319,17 +314,17 @@ export const StartScreen = ({
 
 				<section className={`${COLUMN} ${ASIDE}`}>
 					<Fold
-						title="Your pipeline"
+						title="Your build"
 						value={
 							<Text size="meta" tone="muted">
-								{spotsUsed} of {spots} spots
+								{slotsUsed} of {slots} slots
 							</Text>
 						}
 						note={
-							<SpotTrack
+							<SlotTrack
 								configs={picked}
-								spots={spots}
-								maxSpots={maxSpots}
+								slots={slots}
+								maxSlots={maxSlots}
 								fits={fits}
 							/>
 						}

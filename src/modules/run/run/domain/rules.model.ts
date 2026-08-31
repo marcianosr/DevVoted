@@ -5,60 +5,51 @@ export const GATE_COUNT = VICTORY_GATE + 1;
 export const GATE_REWARD_KB = 32;
 export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 
-export type SpotRung = {
+export const BASE_SLOTS = 4;
+
+export const SLOT_PRICES_KB: readonly number[] = [
+	16, 32, 64, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 6144,
+	8192, 12288, 16384, 24576, 32768,
+];
+
+export const MAX_SLOTS = BASE_SLOTS + SLOT_PRICES_KB.length;
+
+export const nextSlotPriceKb = (slotsBought: number): number | undefined =>
+	SLOT_PRICES_KB[slotsBought];
+
+export const slotCashOutKb = (slots: number): number | undefined =>
+	SLOT_PRICES_KB[slots - BASE_SLOTS - 1];
+
+export type StoragePlan = {
 	readonly tier: number;
-	readonly spots: number;
-	readonly fromGate: number;
+	readonly capKb: number;
+	readonly perGateKb: number;
 };
 
-export const SPOT_RUNGS: readonly SpotRung[] = [
-	{ tier: 1, spots: 4, fromGate: 0 },
-	{ tier: 2, spots: 8, fromGate: 2 },
-	{ tier: 3, spots: 12, fromGate: 5 },
-	{ tier: 4, spots: 16, fromGate: 8 },
-	{ tier: 5, spots: 24, fromGate: 11 },
+export const STORAGE_PLANS: readonly StoragePlan[] = [
+	{ tier: 0, capKb: 512, perGateKb: 0 },
+	{ tier: 1, capKb: 768, perGateKb: 16 },
+	{ tier: 2, capKb: 1024, perGateKb: 32 },
+	{ tier: 3, capKb: 1536, perGateKb: 64 },
+	{ tier: 4, capKb: 2560, perGateKb: 128 },
+	{ tier: 5, capKb: 5120, perGateKb: 384 },
+	{ tier: 6, capKb: 10240, perGateKb: 768 },
 ];
 
-export const FIRST_RUNG = SPOT_RUNGS[0];
-export const TOP_RUNG = SPOT_RUNGS[SPOT_RUNGS.length - 1];
+export const FREE_PLAN = STORAGE_PLANS[0];
+export const TOP_PLAN = STORAGE_PLANS[STORAGE_PLANS.length - 1];
 
-export const scheduledRung = (gatesCleared: number): SpotRung =>
-	SPOT_RUNGS.filter((rung) => gatesCleared >= rung.fromGate).at(-1) ??
-	FIRST_RUNG;
+export const storagePlanFor = (tier: number): StoragePlan =>
+	STORAGE_PLANS[Math.min(Math.max(0, tier), STORAGE_PLANS.length - 1)];
 
-export const scheduledSpots = (gatesCleared: number): number =>
-	scheduledRung(gatesCleared).spots;
+export const storageCapFor = (tier: number): number =>
+	storagePlanFor(tier).capKb;
 
-export const spotLadderTo = (scheduledTier: number): readonly SpotRung[] =>
-	SPOT_RUNGS.filter((rung) => rung.tier <= scheduledTier + 1);
+export const planBillKb = (tier: number): number =>
+	storagePlanFor(tier).perGateKb;
 
-export const EXTRA_SPOT_RENT_KB = 8;
-
-export type ExtraSpotTier = {
-	readonly spots: number;
-	readonly fromGate: number;
-};
-
-export const EXTRA_SPOT_TIERS: readonly ExtraSpotTier[] = [
-	{ spots: 1, fromGate: 0 },
-	{ spots: 2, fromGate: 3 },
-	{ spots: 3, fromGate: 6 },
-	{ spots: 4, fromGate: 9 },
-];
-
-export const MAX_EXTRA_SPOTS =
-	EXTRA_SPOT_TIERS[EXTRA_SPOT_TIERS.length - 1].spots;
-
-export const extraRentKb = (extraSpots: number): number =>
-	EXTRA_SPOT_RENT_KB * Math.max(0, extraSpots);
-
-export const extraSpotsUnlocked = (gatesCleared: number): number =>
-	EXTRA_SPOT_TIERS.filter((tier) => gatesCleared >= tier.fromGate).at(-1)
-		?.spots ?? 0;
-
-export const spotsHeldWith = (gatesCleared: number, extraSpots = 0): number =>
-	scheduledSpots(gatesCleared) +
-	Math.min(Math.max(0, extraSpots), MAX_EXTRA_SPOTS);
+export const cappedStorage = (kb: number, tier: number): number =>
+	Math.min(Math.max(0, kb), storageCapFor(tier));
 
 export const FAUCET_CAP_KB = 320;
 
@@ -124,13 +115,13 @@ export const failPeelShareFor = (gatesCleared: number): number =>
 const EARLY_PEEL_GATES = 3;
 const EARLY_PEEL_MAX_SHARE = 0.5;
 
-export const peelQuotaSpotsFor = (
-	occupiedSpots: number,
+export const peelQuotaSlotsFor = (
+	occupiedSlots: number,
 	share: number,
 	gatesCleared: number
 ): number =>
 	Math.ceil(
-		occupiedSpots *
+		occupiedSlots *
 			(gatesCleared < EARLY_PEEL_GATES
 				? Math.min(share, EARLY_PEEL_MAX_SHARE)
 				: share)
@@ -140,9 +131,9 @@ export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
 
 export const isPeelFatal = (
-	quotaSpots: number,
-	occupiedSpots: number
-): boolean => quotaSpots >= occupiedSpots;
+	quotaSlots: number,
+	occupiedSlots: number
+): boolean => quotaSlots >= occupiedSlots;
 
 export const PIN_FROM_GATE = 4;
 

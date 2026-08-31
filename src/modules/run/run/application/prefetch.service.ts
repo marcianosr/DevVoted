@@ -5,7 +5,7 @@ import {
 	handleApiOperation,
 } from "~/shared/utils/errorHandling";
 
-import { prefetcherFor } from "~/modules/run/pipeline/domain/pipeline.model";
+import { prefetcherFor } from "~/modules/run/build/domain/build.model";
 import {
 	findActiveSessionRun,
 	loadRunState,
@@ -30,7 +30,7 @@ export const getUpcomingCategoriesService = async ({
 		if (!run) throw new Error("No active run");
 
 		const state = await loadRunState(run.id);
-		if (!prefetcherFor(state.pipeline.configs))
+		if (!prefetcherFor(state.build.configs))
 			throw new Error("No installed config reads the upcoming draw");
 
 		return fetchSeedCategoriesForDate(getTomorrowDateString());

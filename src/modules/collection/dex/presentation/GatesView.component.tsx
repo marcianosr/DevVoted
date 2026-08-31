@@ -15,10 +15,7 @@ const ACTION_LABEL = {
 	pin: "git tag",
 } as const;
 
-const unlockLabel = (unlock: GateUnlock): string =>
-	unlock.kind === "rung"
-		? `${unlock.spots} spots`
-		: ACTION_LABEL[unlock.action];
+const unlockLabel = (unlock: GateUnlock): string => ACTION_LABEL[unlock.action];
 
 type Split = { readonly shown: readonly string[]; readonly hidden: number };
 

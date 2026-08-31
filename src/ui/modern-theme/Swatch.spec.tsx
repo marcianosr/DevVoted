@@ -39,7 +39,7 @@ describe("Swatch", () => {
 		const { container: pip } = render(<Swatch size="pip" />);
 		const { container: badge } = render(<Swatch size="badge" />);
 
-		expect(pip.firstChild).toHaveClass("size-4");
+		expect(pip.firstChild).toHaveClass("size-3");
 		expect(badge.firstChild).toHaveClass("size-5", "rounded-md");
 	});
 

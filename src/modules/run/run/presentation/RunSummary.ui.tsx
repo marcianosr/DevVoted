@@ -24,7 +24,7 @@ type RunSummaryProps = {
 	victoryGate: number;
 	coverage: number;
 	storage: number;
-	/** Configs the run ended with, shown beside the pipeline ladder. */
+	/** Configs the run ended with, shown beside the build ladder. */
 	configs?: readonly Config[];
 	/** Every poll answered across the run, for the fold-out review. */
 	answered?: readonly AnsweredPoll[];
@@ -46,12 +46,12 @@ const STATUS_TONE: Record<GateOutcomeStatus, TextTone> = {
 /** The one death left (ADR-037): a missed gate's peel had nothing left to take. */
 const breakLine = (gatesCleared: number, configsHeld: number): string =>
 	configsHeld === 0
-		? `Gate ${gatesCleared} peeled your pipeline bare — nothing left to climb with.`
+		? `Gate ${gatesCleared} peeled your build bare — nothing left to climb with.`
 		: `Your run ended at gate ${gatesCleared} holding ${configsHeld} config${configsHeld === 1 ? "" : "s"}.`;
 
 const gateLabel = ({ gate, status }: GateOutcome): string => {
 	if (status === "pass") return `Gate ${gate} cleared`;
-	if (status === "fail") return `Gate ${gate} — pipeline broke here`;
+	if (status === "fail") return `Gate ${gate} — build broke here`;
 	return `Gate ${gate} — not reached`;
 };
 
@@ -87,7 +87,7 @@ export const RunSummary = ({
 
 			<section className="flex flex-col">
 				<Title>Results</Title>
-				<Subtitle>Pipeline run</Subtitle>
+				<Subtitle>Build run</Subtitle>
 				<Paragraph as="div" size="sm" className="flex gap-2">
 					<Paragraph as="span" size="sm" tone="viridian">
 						{gatesCleared} cleared

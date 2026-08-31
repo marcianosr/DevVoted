@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { levelUp, rarityOf } from "~/modules/run/config/domain/config.model";
+import { levelUp, slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	createMockGateStake,
@@ -15,9 +15,9 @@ import { ShopView, type ShopViewProps } from "./ShopView.component";
 const view = createMockRunView({
 	gatesCleared: 4,
 	configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
-	spots: 4,
-	spotsUsed: 3,
-	spotsFree: 1,
+	slots: 4,
+	slotsUsed: 3,
+	slotsFree: 1,
 	storage: 216,
 	offers: [
 		createMockShopOffer(CONFIGS.stylelint),
@@ -35,7 +35,9 @@ const handlers = {
 	onRebuild: () => {},
 	onExtend: () => {},
 	onPlantPin: () => {},
-	onRentExtraSpots: () => {},
+	onBuySlot: () => {},
+	onCashSlot: () => {},
+	onSetStoragePlan: () => {},
 	onContinue: () => {},
 };
 
@@ -56,7 +58,7 @@ describe("ShopView", () => {
 		render_();
 
 		expect(screen.getByText("2 offers")).toBeInTheDocument();
-		expect(screen.getByText("3 of 4 spots")).toBeInTheDocument();
+		expect(screen.getByText("3 of 4 slots")).toBeInTheDocument();
 	});
 
 	it("buys an offer at its own price, once the row is open", async () => {
@@ -82,14 +84,14 @@ describe("ShopView", () => {
 					{
 						...createMockShopOffer(CONFIGS.stylelint),
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					},
 				],
 			}),
 		});
 
 		expect(
-			screen.getByText("Needs 1 spots — 0 free. Minify or uninstall something")
+			screen.getByText("Needs 1 slots — 0 free. Minify or uninstall something")
 		).toBeInTheDocument();
 	});
 
@@ -327,7 +329,7 @@ describe("ShopView", () => {
 				offers: [
 					createMockShopOffer(CONFIGS.stylelint, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					}),
 					createMockShopOffer(CONFIGS.unitTests, {
 						installable: false,
@@ -355,38 +357,69 @@ describe("ShopView", () => {
 		expect(screen.queryByText(/Shop closed/)).not.toBeInTheDocument();
 	});
 
-	it("dates a step this depth does not sell yet", () => {
+	it("sells the next slot off the track's hatching, with no section of its own", () => {
 		render_();
 
-		expect(screen.getByText("Extra spots")).toBeInTheDocument();
-		expect(screen.getByText("opens at gate 2")).toBeInTheDocument();
+		expect(screen.queryByText("Slots")).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Install a new slot/ })
+		).toBeInTheDocument();
 	});
 
-	it("offers the ladder as a picker, `none` included", () => {
-		render_();
-
-		expect(screen.getAllByRole("radio").length).toBeGreaterThanOrEqual(2);
-		expect(screen.getByText("none")).toBeInTheDocument();
-		expect(screen.getByText("+1 spot")).toBeInTheDocument();
-	});
-
-	it("rents a step from its own radio", async () => {
-		const onRentExtraSpots = vi.fn();
-		render_({ onRentExtraSpots });
+	it("buys the slot from the hatching press", async () => {
+		const onBuySlot = vi.fn();
+		render_({ onBuySlot });
 
 		await userEvent.click(
-			screen.getByRole("radio", { name: /\+1 spot makes 5 8 KB a gate/ })
+			screen.getByRole("button", { name: /Install a new slot/ })
 		);
 
-		expect(onRentExtraSpots).toHaveBeenCalledWith(1);
+		expect(onBuySlot).toHaveBeenCalledOnce();
 	});
 
-	it("sells the steps by radio alone, with nothing to press", () => {
+	it("cashes an empty slot from the track once the run holds more than the free four", async () => {
+		const onCashSlot = vi.fn();
+		render_({
+			onCashSlot,
+			view: createMockRunView({
+				...view,
+				slots: 6,
+				slotsFree: 3,
+				slotDeals: {
+					...view.slotDeals,
+					slots: 6,
+					cash: { costKb: 32, makes: 5 },
+				},
+			}),
+		});
+
+		await userEvent.click(
+			screen.getByRole("button", {
+				name: /Cash an empty slot · makes 5 · \+32 KB/,
+			})
+		);
+
+		expect(onCashSlot).toHaveBeenCalledOnce();
+	});
+
+	it("offers the storage plans as a picker, the free cap included", () => {
 		render_();
 
-		expect(
-			screen.queryByRole("button", { name: /buy/ })
-		).not.toBeInTheDocument();
+		expect(screen.getByText("Storage plan")).toBeInTheDocument();
+		expect(screen.getAllByRole("radio").length).toBeGreaterThanOrEqual(2);
+		expect(screen.getByText("512 KB")).toBeInTheDocument();
+		expect(screen.getByText("10 MB")).toBeInTheDocument();
+	});
+
+	it("switches plan from its own radio", async () => {
+		const onSetStoragePlan = vi.fn();
+		render_({ onSetStoragePlan });
+
+		await userEvent.click(
+			screen.getByRole("radio", { name: /768 KB 16 KB a gate/ })
+		);
+
+		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
 	});
 
 	it("leaves the shop for the gate", async () => {
@@ -414,23 +447,23 @@ describe("ShopView", () => {
 
 	it("shuts the exit while the build is over capacity, and names the ways out", () => {
 		render_({
-			view: createMockRunView({ ...view, spots: 4, overflowSpots: 4 }),
+			view: createMockRunView({ ...view, slots: 4, overflowSlots: 4 }),
 		});
 
 		expect(
 			screen.getByRole("button", {
-				name: "Continue →, Over capacity by 4 spots. Minify, uninstall, or rent more room.",
+				name: "Continue →, Over capacity by 4 slots. Minify, uninstall, or rent more room.",
 			})
 		).toBeDisabled();
 	});
 
 	it("counts the overflow in the reason rather than rounding it to 'too wide'", () => {
 		render_({
-			view: createMockRunView({ ...view, spots: 4, overflowSpots: 1 }),
+			view: createMockRunView({ ...view, slots: 4, overflowSlots: 1 }),
 		});
 
 		expect(
-			screen.getByRole("button", { name: /Over capacity by 1 spot\./ })
+			screen.getByRole("button", { name: /Over capacity by 1 slot\./ })
 		).toBeDisabled();
 	});
 });
@@ -469,62 +502,58 @@ describe("ShopView readability", () => {
 					{
 						...createMockShopOffer(CONFIGS.stylelint),
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					},
 				],
 			}),
 		});
 
-		expect(screen.getByText("Needs 1 spots, 0 free")).toBeInTheDocument();
+		expect(screen.getByText("Needs 1 slots, 0 free")).toBeInTheDocument();
 	});
 
-	it("grades every config row with its glyph, the grade named for a reader", () => {
+	it("states every config row's size, so a price reads without a legend", () => {
 		render_();
 
-		const spoken = screen
-			.getAllByText(rarityOf(CONFIGS.stylelint))
-			.filter((grade) => grade.className.includes("sr-only"));
-		expect(spoken.length).toBeGreaterThan(0);
-		expect(spoken[0]?.parentElement?.querySelector("svg rect")).not.toBeNull();
+		expect(
+			screen.getAllByText(`${slotsOf(CONFIGS.stylelint)} slot`).length
+		).toBeGreaterThan(0);
 	});
 });
 
 describe("ShopView room", () => {
-	it("draws the pipeline as room, with the build's shape beside its capacity", () => {
+	it("draws the build as room, with the build's shape beside its capacity", () => {
 		render_();
 
 		expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "3");
-		expect(screen.getByText("3 of 4 spots")).toBeInTheDocument();
-		expect(screen.getByText("1 spot free · a bit fits")).toBeInTheDocument();
+		expect(screen.getByText("3 of 4 slots")).toBeInTheDocument();
+		expect(screen.getByText("1 slot free · fits up to 1")).toBeInTheDocument();
 	});
 
-	it("leaves the grade to the glyph rather than spelling it out beside the price", () => {
+	it("names no grade anywhere, since a config's price is its size", () => {
 		render_();
 
-		const spelled = screen
-			.queryAllByText("bit")
-			.filter((node) => !node.className.includes("sr-only"));
-
-		expect(spelled).toEqual([]);
+		for (const grade of ["bit", "crumb", "nibble", "byte"])
+			expect(screen.queryByText(grade)).not.toBeInTheDocument();
 	});
 
 	it("hangs a refused offer's shortfall off its price, not across the row", () => {
 		render_({
 			view: createMockRunView({
 				...view,
-				spotsFree: 0,
+				slotsFree: 0,
 				offers: [
 					createMockShopOffer(CONFIGS.agentsMd, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 8, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 8, freeSlots: 0 },
 					}),
 				],
 			}),
 		});
 
 		expect(screen.queryByText("needs a byte")).not.toBeInTheDocument();
+		expect(screen.queryByText("8 slots free")).not.toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /Needs 8 spots, 0 free/ })
+			screen.getByRole("button", { name: /Needs 8 slots, 0 free/ })
 		).toBeDisabled();
 	});
 
@@ -532,11 +561,11 @@ describe("ShopView room", () => {
 		render_({
 			view: createMockRunView({
 				...view,
-				spotsFree: 0,
+				slotsFree: 0,
 				offers: [
 					createMockShopOffer(CONFIGS.agentsMd, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 8, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 8, freeSlots: 0 },
 					}),
 				],
 			}),
@@ -547,18 +576,21 @@ describe("ShopView room", () => {
 		).toBeInTheDocument();
 	});
 
-	it("states the width each step makes, and what it costs a gate", () => {
+	it("states the width the next slot makes, and what each plan bills a gate", () => {
 		render_();
 
-		expect(screen.getByText("makes 5")).toBeInTheDocument();
-		expect(screen.getByText("8 KB a gate")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", {
+				name: /Install a new slot · makes 5 · 16 KB/,
+			})
+		).toBeInTheDocument();
+		expect(screen.getByText("16 KB a gate")).toBeInTheDocument();
 		expect(screen.getByText("free")).toBeInTheDocument();
-		expect(screen.queryByText(/KB cap/)).not.toBeInTheDocument();
 	});
 
-	it("says what the rent already costs in the section's own header", () => {
+	it("says which cap the run is on in the plan section's own header", () => {
 		render_();
 
-		expect(screen.getByText("renting nothing")).toBeInTheDocument();
+		expect(screen.getByText("512 KB cap · free")).toBeInTheDocument();
 	});
 });

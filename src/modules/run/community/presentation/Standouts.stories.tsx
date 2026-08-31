@@ -60,7 +60,7 @@ export const FullDay: Story = {
 			},
 			award("longest streak", count(14), "lance", "Lance"),
 			award("most coverage", percent(21.4), "erika", "Erika Rainbow"),
-			award("widest pipeline", configs(7), "sabrina", "Sabrina"),
+			award("widest build", configs(7), "sabrina", "Sabrina"),
 		],
 	},
 };
@@ -88,7 +88,7 @@ export const NoneOfYours: Story = {
 				...award("deepest gate", text("Marsh"), "lance", "Lance"),
 				swatch: { theme: "marsh", finish: "flat" },
 			},
-			award("widest pipeline", configs(5), "misty", "Misty Cascade"),
+			award("widest build", configs(5), "misty", "Misty Cascade"),
 		],
 	},
 };
@@ -105,8 +105,8 @@ export const CleanSweep: Story = {
 };
 
 /** A single config reads "1 config", not "1 configs" — the plural is the UI's job now. */
-export const SingleConfigPipeline: Story = {
+export const SingleConfigBuild: Story = {
 	args: {
-		standouts: [award("widest pipeline", configs(1), ...YOU)],
+		standouts: [award("widest build", configs(1), ...YOU)],
 	},
 };

@@ -38,12 +38,10 @@ describe("RemovalScreen", () => {
 		).toBeInTheDocument();
 	});
 
-	it("lists the pipeline open, with nothing to collapse it behind", () => {
+	it("lists the build open, with nothing to collapse it behind", () => {
 		const { container } = render(<RemovalScreen {...props} />);
 
-		expect(
-			screen.getByRole("heading", { name: "Pipeline" })
-		).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Build" })).toBeInTheDocument();
 		expect(container.querySelector("details")).toBeNull();
 	});
 
@@ -143,7 +141,7 @@ describe("RemovalScreen", () => {
 		const cause = screen.getByText(
 			"Uh-oh, your build didn't meet the coverage goal for this gate!"
 		);
-		const list = screen.getByText("Pipeline");
+		const list = screen.getByText("Build");
 
 		expect(cause).toHaveClass("text-cinnabar");
 		expect(

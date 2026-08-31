@@ -7,14 +7,14 @@ describe("Section", () => {
 	it("heads its list with the title and the figure beside it", () => {
 		render(
 			<Section
-				title="Your pipeline"
-				value="4 of 12 spots"
+				title="Your build"
+				value="4 of 12 slots"
 				items={[{ id: "js", content: <span>.js</span> }]}
 			/>
 		);
 
-		expect(screen.getByText("Your pipeline")).toBeInTheDocument();
-		expect(screen.getByText("4 of 12 spots")).toBeInTheDocument();
+		expect(screen.getByText("Your build")).toBeInTheDocument();
+		expect(screen.getByText("4 of 12 slots")).toBeInTheDocument();
 		expect(screen.getByRole("listitem")).toHaveTextContent(".js");
 	});
 
@@ -30,7 +30,7 @@ describe("Section", () => {
 	it("puts the note above the list, where it describes what follows", () => {
 		render(
 			<Section
-				title="Your pipeline"
+				title="Your build"
 				note={<span>the track</span>}
 				items={[{ id: "js", content: <span>.js</span> }]}
 			/>

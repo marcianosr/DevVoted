@@ -3,13 +3,13 @@ import { getCategoryMetadata } from "~/shared/lib/categories";
 
 export type ConfigFamily = "focus" | "defense" | "risk" | "amplify" | "economy";
 
-export type Rarity = "bit" | "crumb" | "nibble" | "byte";
+export type ConfigSize = 1 | 2 | 4 | 8 | 12 | 16;
 
 export type Config = {
 	readonly id: string;
 	readonly label: string;
 	readonly family: ConfigFamily;
-	readonly rarity?: Rarity;
+	readonly slots?: ConfigSize;
 	readonly description: string;
 	readonly gives?: string;
 	readonly costs?: string;
@@ -41,8 +41,6 @@ export type Config = {
 	readonly minified?: boolean;
 };
 
-export const rarityOf = (config: Config): Rarity => config.rarity ?? "bit";
-
 export const minifiedMultiplier = (
 	config: Config,
 	multiplier: number
@@ -65,100 +63,37 @@ const UPGRADE_STORAGE_STEP_KB = 32;
 export const upgradeStorageCost = (currentLevel: number): number =>
 	UPGRADE_STORAGE_STEP_KB * (currentLevel + 1);
 
-export const RARITY_WEIGHT: Record<Rarity, number> = {
-	bit: 60,
-	crumb: 25,
-	nibble: 12,
-	byte: 3,
-};
+export const CONFIG_SIZES = [
+	1, 2, 4, 8, 12, 16,
+] as const satisfies readonly ConfigSize[];
 
-export const RARITY_ODDS: Record<Rarity, string> = {
-	bit: "1 in 2",
-	crumb: "1 in 4",
-	nibble: "1 in 8",
-	byte: "1 in 33",
-};
+export const baseSlotsOf = (config: Config): number => config.slots ?? 1;
 
-export const SPOTS_PER_GRADE: Record<Rarity, number> = {
-	bit: 1,
-	crumb: 2,
-	nibble: 4,
-	byte: 8,
-};
-
-export const baseSpotsOf = (config: Config): number =>
-	SPOTS_PER_GRADE[rarityOf(config)];
-
-const COUNT_WORDS = [
-	"no",
-	"one",
-	"two",
-	"three",
-	"four",
-	"five",
-	"six",
-	"seven",
-	"eight",
-] as const;
-
-const countWord = (count: number): string =>
-	count < COUNT_WORDS.length ? COUNT_WORDS[count] : String(count);
-
-const gradeGroupName = (grade: Rarity, count: number): string =>
-	count === 1 ? `a ${grade}` : `${countWord(count)} ${grade}s`;
-
-export const shapeOf = (configs: readonly Config[]): string => {
-	const groups = GRADES_BY_SIZE.map((grade) => ({
-		grade,
-		count: configs.filter((config) => rarityOf(config) === grade).length,
-	})).filter((group) => group.count > 0);
-
-	if (groups.length === 0) return "nothing";
-
-	const named = groups.map((group) => gradeGroupName(group.grade, group.count));
-	const last = named[named.length - 1];
-	return named.length === 1
-		? last
-		: `${named.slice(0, -1).join(", ")} and ${last}`;
-};
-
-export const spotsOf = (config: Config): number =>
+export const slotsOf = (config: Config): number =>
 	config.minified === true
-		? Math.floor(baseSpotsOf(config) / 2)
-		: baseSpotsOf(config);
+		? Math.floor(baseSlotsOf(config) / 2)
+		: baseSlotsOf(config);
 
 export const canMinify = (config: Config): boolean =>
-	config.minified !== true && baseSpotsOf(config) >= 2;
+	config.minified !== true && baseSlotsOf(config) >= 2;
 
 export const minify = (config: Config): Config => ({
 	...config,
 	minified: true,
 });
 
-export const minifySavingSpots = (config: Config): number =>
-	canMinify(config) ? spotsOf(config) - Math.floor(spotsOf(config) / 2) : 0;
+export const minifySavingSlots = (config: Config): number =>
+	canMinify(config) ? slotsOf(config) - Math.floor(slotsOf(config) / 2) : 0;
 
-export const largestGradeFitting = (spots: number): Rarity | null =>
-	[...GRADES_BY_SIZE].find((grade) => SPOTS_PER_GRADE[grade] <= spots) ?? null;
+export const largestSizeFitting = (slots: number): ConfigSize | null =>
+	[...CONFIG_SIZES].reverse().find((size) => size <= slots) ?? null;
 
-const GRADES_BY_SIZE = [
-	"byte",
-	"nibble",
-	"crumb",
-	"bit",
-] as const satisfies readonly Rarity[];
-
-const DRAFT_COST: Record<Rarity, number> = {
-	bit: 32,
-	crumb: 64,
-	nibble: 128,
-	byte: 256,
-};
+export const DRAFT_COST_PER_SLOT_KB = 32;
 
 export const draftCost = (config: Config): number =>
-	config.draftCost ?? DRAFT_COST[rarityOf(config)];
+	config.draftCost ?? DRAFT_COST_PER_SLOT_KB * baseSlotsOf(config);
 
-export const CHEAPEST_DRAFT_COST_KB = Math.min(...Object.values(DRAFT_COST));
+export const CHEAPEST_DRAFT_COST_KB = DRAFT_COST_PER_SLOT_KB * CONFIG_SIZES[0];
 
 export const sellRefund = (config: Config): number =>
 	Math.floor(draftCost(config) / 2);
@@ -208,7 +143,7 @@ export const describeConfig = (config: Config): string => {
 	if (config.coverageDecayPerClear !== undefined)
 		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. Deleted at ×1.`;
 	if (config.autoUpgradeOneIn !== undefined)
-		return `1 in ${autoUpgradeOneInOf(config)} gate clears: a random config in your pipeline upgrades, free.`;
+		return `1 in ${autoUpgradeOneInOf(config)} gate clears: a random config in your build upgrades, free.`;
 	if (config.peeksCommunitySplit)
 		return showsSampleSize(config)
 			? "Pay a doubling fee to see how the community answered this poll, and how many answered."

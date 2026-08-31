@@ -213,8 +213,8 @@ const seedTrainerRuns = async (today: string): Promise<void> => {
 				coverage,
 				currentIndex: answeredCount,
 				allAnswered: history,
-				pipeline: {
-					...blank.pipeline,
+				build: {
+					...blank.build,
 					configs: CONFIG_LIST.slice(0, configs),
 				},
 				window: {

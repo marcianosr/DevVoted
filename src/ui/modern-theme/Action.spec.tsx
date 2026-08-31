@@ -88,13 +88,13 @@ describe("Action", () => {
 			<Action
 				label="Continue →"
 				size="lg"
-				hint="Over capacity by 4 spots"
+				hint="Over capacity by 4 slots"
 				onUse={vi.fn()}
 			/>
 		);
 
 		expect(
-			screen.getByText("Over capacity by 4 spots").parentElement
+			screen.getByText("Over capacity by 4 slots").parentElement
 		).toHaveClass("bottom-full", "right-0");
 	});
 

@@ -9,10 +9,10 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
 import {
-	EXTRA_SPOT_TIERS,
-	extraRentKb,
-	extraSpotsUnlocked,
-	scheduledSpots,
+	BASE_SLOTS,
+	MAX_SLOTS,
+	SLOT_PRICES_KB,
+	STORAGE_PLANS,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	ShopScreen,
@@ -24,38 +24,36 @@ import {
 	createMockShopOffer,
 } from "~/test/runView.factory";
 
-const extraSpotsAt = (
-	gatesCleared: number,
-	{ held = 0, storage = 500 } = {}
-) => {
-	const free = scheduledSpots(gatesCleared);
-	const unlocked = extraSpotsUnlocked(gatesCleared);
+const slotDealsAt = (slots = BASE_SLOTS, { storage = 500 } = {}) => {
+	const bought = slots - BASE_SLOTS;
+	const price = SLOT_PRICES_KB[bought];
 	return {
-		renting: held,
-		perGateKb: extraRentKb(held),
-		options: [
-			{
-				spots: 0,
-				makes: free,
-				rentKb: 0,
-				held: held === 0,
-				rentTooDear: false,
-			},
-			...EXTRA_SPOT_TIERS.map((tier) => {
-				const locked = tier.spots > unlocked;
-				return {
-					spots: tier.spots,
-					makes: free + tier.spots,
-					rentKb: extraRentKb(tier.spots),
-					held: tier.spots === held,
-					...(locked
-						? { fromGate: tier.fromGate }
-						: { rentTooDear: storage < extraRentKb(tier.spots) }),
-				};
-			}),
-		],
+		slots,
+		maxSlots: MAX_SLOTS,
+		buy: {
+			...(price === undefined ? {} : { costKb: price }),
+			...(price !== undefined && storage >= price
+				? { makes: slots + 1 }
+				: { refusal: `Costs ${price} KB, you have ${storage}.` }),
+		},
+		cash:
+			bought > 0
+				? { costKb: SLOT_PRICES_KB[bought - 1], makes: slots - 1 }
+				: { refusal: "Nothing to cash — the first four slots are free." },
 	};
 };
+
+const storagePlanAt = (tier = 0, storage = 500) => ({
+	capKb: STORAGE_PLANS[tier].capKb,
+	perGateKb: STORAGE_PLANS[tier].perGateKb,
+	options: STORAGE_PLANS.map((plan) => ({
+		tier: plan.tier,
+		capKb: plan.capKb,
+		perGateKb: plan.perGateKb,
+		held: plan.tier === tier,
+		burnsKb: Math.max(0, storage - plan.capKb),
+	})),
+});
 
 const refusalOn = (badge: HTMLElement): HTMLElement => {
 	const scope = badge.closest('[class~="group/nested"]');
@@ -114,20 +112,23 @@ const base = {
 	onLock: vi.fn(),
 	onExtend: vi.fn(),
 	onPlantPin: vi.fn(),
-	spots: 4,
-	spotsUsed: 0,
-	spotsFree: 4,
+	slots: 4,
+	slotsUsed: 0,
+	slotsFree: 4,
 	onUpgrade: vi.fn(),
 	onSell: vi.fn(),
-	extraSpots: extraSpotsAt(3),
-	onRentExtraSpots: vi.fn(),
+	slotDeals: slotDealsAt(),
+	storagePlan: storagePlanAt(),
+	onBuySlot: vi.fn(),
+	onCashSlot: vi.fn(),
+	onSetStoragePlan: vi.fn(),
 };
 
 describe(ShopScreen, () => {
 	it("renders the upgrade heading and draft options", () => {
 		render(<ShopScreen {...base} />);
 		expect(
-			screen.getByRole("heading", { name: /Upgrade your pipeline/ })
+			screen.getByRole("heading", { name: /Upgrade your build/ })
 		).toBeInTheDocument();
 		expect(screen.getByText("ESLint")).toBeInTheDocument();
 	});
@@ -136,7 +137,7 @@ describe(ShopScreen, () => {
 		render(<ShopScreen {...base} />);
 		expect(
 			screen.getByRole("heading", {
-				name: "Your pipeline for Cascade gate 2",
+				name: "Your build for Cascade gate 2",
 			})
 		).toBeInTheDocument();
 	});
@@ -234,20 +235,20 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	it("refuses to install into a full pipeline and explains on the badge", () => {
+	it("refuses to install into a full build and explains on the badge", () => {
 		render(
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
-				spotsFree={0}
+				slotsFree={0}
 				offers={[
 					createMockShopOffer(CONFIGS.eslint, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					}),
 					createMockShopOffer(CONFIGS.agentsMd, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					}),
 				]}
 			/>
@@ -256,7 +257,7 @@ describe(ShopScreen, () => {
 		const install = screen.getByRole("button", { name: /^Install ESLint/ });
 		expect(install).toHaveAttribute("aria-disabled", "true");
 		expect(refusalOn(install)).toHaveTextContent(
-			"Needs 1 spots — 0 free. Minify or uninstall something"
+			"Needs 1 slots — 0 free. Minify or uninstall something"
 		);
 	});
 
@@ -265,15 +266,15 @@ describe(ShopScreen, () => {
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
-				spotsFree={0}
+				slotsFree={0}
 				offers={[
 					createMockShopOffer(CONFIGS.eslint, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					}),
 					createMockShopOffer(CONFIGS.agentsMd, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					}),
 				]}
 			/>
@@ -456,7 +457,7 @@ describe(ShopScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("previews an installable offer inside the pipeline, with its effect and price", () => {
+	it("previews an installable offer inside the build, with its effect and price", () => {
 		render(<ShopScreen {...base} />);
 		const chip = screen.getByRole("button", { name: "ESLint" });
 		fireEvent.mouseEnter(chip.parentElement as HTMLElement);
@@ -465,27 +466,27 @@ describe(ShopScreen, () => {
 			0
 		);
 		expect(
-			screen.getByRole("button", { name: "Add ESLint to your pipeline" })
+			screen.getByRole("button", { name: "Add ESLint to your build" })
 		).toBeInTheDocument();
 		expect(
 			screen.getAllByText(`${draftCost(CONFIGS.eslint)}KB`).length
 		).toBeGreaterThan(0);
 	});
 
-	it("shows description on click but no preview when pipeline is full", () => {
+	it("shows description on click but no preview when build is full", () => {
 		render(
 			<ShopScreen
 				{...base}
 				configs={[CONFIGS.js, CONFIGS.css, CONFIGS.rb]}
-				spotsFree={0}
+				slotsFree={0}
 				offers={[
 					createMockShopOffer(CONFIGS.eslint, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					}),
 					createMockShopOffer(CONFIGS.agentsMd, {
 						installable: false,
-						refusal: { reason: "no-room", spots: 1, freeSpots: 0 },
+						refusal: { reason: "no-room", slots: 1, freeSlots: 0 },
 					}),
 				]}
 			/>
@@ -494,7 +495,7 @@ describe(ShopScreen, () => {
 		fireEvent.click(chip);
 		expect(screen.queryByText(/Cross out a wrong answer/)).toBeInTheDocument();
 		expect(
-			screen.queryByRole("button", { name: /^Add .+ to your pipeline$/ })
+			screen.queryByRole("button", { name: /^Add .+ to your build$/ })
 		).not.toBeInTheDocument();
 	});
 
@@ -660,61 +661,75 @@ describe(ShopScreen, () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("lists every step of the ladder, locked ones included", () => {
+	it("prices the next slot and quotes the cash-out as income", () => {
 		render(<ShopScreen {...base} />);
-		const ladder = screen
-			.getByText("Extra spots")
-			.parentElement?.querySelector("ul");
-		if (!ladder) throw new Error("No extra-spot ladder rendered");
 
-		expect(within(ladder).getByText("none")).toBeInTheDocument();
-		expect(within(ladder).getByText("+1 spot")).toBeInTheDocument();
-		expect(within(ladder).getByText("+4 spots")).toBeInTheDocument();
-	});
-
-	it("says gates give the spots and rent adds more on top", () => {
-		render(<ShopScreen {...base} />);
+		expect(screen.getByText("Slots")).toBeInTheDocument();
 		expect(
-			screen.getByText(
-				"Gates unlock spots for free. Rent adds more on top, by the gate."
-			)
+			screen.getByRole("button", { name: /buy a slot · 16KB/ })
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /nothing to cash/ })
 		).toBeInTheDocument();
 	});
 
-	it("states the width every step makes", () => {
-		render(<ShopScreen {...base} />);
-		expect(screen.getByText("makes 8")).toBeInTheDocument();
-		expect(screen.getByText("makes 12")).toBeInTheDocument();
+	it("buys a slot when its press is clicked", () => {
+		const onBuySlot = vi.fn();
+		render(<ShopScreen {...base} onBuySlot={onBuySlot} />);
+
+		fireEvent.click(screen.getByRole("button", { name: /buy a slot/ }));
+		expect(onBuySlot).toHaveBeenCalledOnce();
 	});
 
-	it("prices the free width at nothing and every step by the gate", () => {
+	it("cashes a slot back once one has been bought", () => {
+		const onCashSlot = vi.fn();
+		render(
+			<ShopScreen
+				{...base}
+				slotDeals={slotDealsAt(BASE_SLOTS + 2)}
+				onCashSlot={onCashSlot}
+			/>
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: /cash a slot/ }));
+		expect(onCashSlot).toHaveBeenCalledOnce();
+	});
+
+	it("refuses the buy when the balance cannot cover the price", () => {
+		render(
+			<ShopScreen
+				{...base}
+				slotDeals={slotDealsAt(BASE_SLOTS, { storage: 0 })}
+			/>
+		);
+
+		expect(screen.getByRole("button", { name: /buy a slot/ })).toBeDisabled();
+	});
+
+	it("lists every storage plan, the free cap included", () => {
+		render(<ShopScreen {...base} />);
+		const ladder = screen
+			.getByText("Storage plan")
+			.parentElement?.querySelector("ul");
+		if (!ladder) throw new Error("No storage-plan ladder rendered");
+
+		expect(within(ladder).getByText("512 KB")).toBeInTheDocument();
+		expect(within(ladder).getByText("10 MB")).toBeInTheDocument();
+	});
+
+	it("prices the free cap at nothing and every plan by the gate", () => {
 		render(<ShopScreen {...base} />);
 		expect(screen.getByText("free")).toBeInTheDocument();
-		expect(screen.getByText("8KB a gate")).toBeInTheDocument();
-		expect(screen.getByText("32KB a gate")).toBeInTheDocument();
+		expect(screen.getByText("16KB a gate")).toBeInTheDocument();
+		expect(screen.getByText("768KB a gate")).toBeInTheDocument();
 	});
 
-	it("names the clear that opens a step this depth does not sell", () => {
-		render(<ShopScreen {...base} />);
-		expect(screen.getByText("opens at gate 5")).toBeInTheDocument();
-		expect(screen.getByText("opens at gate 8")).toBeInTheDocument();
-	});
+	it("switches plan when its press is clicked", () => {
+		const onSetStoragePlan = vi.fn();
+		render(<ShopScreen {...base} onSetStoragePlan={onSetStoragePlan} />);
 
-	it("rents a step when its press is clicked", () => {
-		const onRentExtraSpots = vi.fn();
-		render(<ShopScreen {...base} onRentExtraSpots={onRentExtraSpots} />);
-
-		fireEvent.click(screen.getAllByRole("button", { name: "rent" })[0]);
-		expect(onRentExtraSpots).toHaveBeenCalledWith(1);
-	});
-
-	it("refuses the presses when the balance cannot cover the rent", () => {
-		render(
-			<ShopScreen {...base} extraSpots={extraSpotsAt(3, { storage: 0 })} />
-		);
-		screen
-			.getAllByRole("button", { name: "rent" })
-			.forEach((press) => expect(press).toBeDisabled());
+		fireEvent.click(screen.getAllByRole("button", { name: "switch" })[0]);
+		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
 	});
 });
 
@@ -731,13 +746,13 @@ describe("the shop door", () => {
 		expect(action.label).toBe("Continue to gate 4 →");
 		expect(action.disabled).toBe(true);
 		expect(action.hint).toBe(
-			"Over capacity by 2 spots. Minify, uninstall, or rent more room."
+			"Over capacity by 2 slots. Minify, uninstall, or rent more room."
 		);
 	});
 
-	it("counts a single spot of overflow in the singular", () => {
+	it("counts a single slot of overflow in the singular", () => {
 		expect(shopExitAction(4, 1).hint).toBe(
-			"Over capacity by 1 spot. Minify, uninstall, or rent more room."
+			"Over capacity by 1 slot. Minify, uninstall, or rent more room."
 		);
 	});
 });
@@ -779,10 +794,12 @@ describe("a shop shut by Read-only", () => {
 		).toBeDisabled();
 	});
 
-	it("refuses renting extra spots too", () => {
+	it("refuses buying and cashing slots too", () => {
 		render(<ShopScreen {...locked} />);
+
+		expect(screen.getByRole("button", { name: /buy a slot/ })).toBeDisabled();
 		screen
-			.getAllByRole("button", { name: "rent" })
+			.getAllByRole("button", { name: "switch" })
 			.forEach((press) => expect(press).toBeDisabled());
 	});
 
@@ -801,21 +818,21 @@ describe("ShopScreen room", () => {
 	const cramped = {
 		...base,
 		configs: [CONFIGS.intellisense, CONFIGS.js, CONFIGS.ts],
-		spots: 8,
-		spotsUsed: 6,
-		spotsFree: 2,
+		slots: 8,
+		slotsUsed: 6,
+		slotsFree: 2,
 		offers: [
 			createMockShopOffer(CONFIGS.agentsMd, {
 				installable: false,
-				refusal: { reason: "no-room" as const, spots: 8, freeSpots: 2 },
+				refusal: { reason: "no-room" as const, slots: 8, freeSlots: 2 },
 			}),
 		],
 	};
 
-	it("badges an offer with no room by its grade instead of its price", () => {
+	it("badges an offer with no room by its size instead of its price", () => {
 		render(<ShopScreen {...cramped} />);
 
-		expect(screen.getByText("needs a byte")).toBeInTheDocument();
+		expect(screen.getByText("needs 8 slots")).toBeInTheDocument();
 		expect(
 			screen.queryByText(`${draftCost(CONFIGS.agentsMd)}KB`)
 		).not.toBeInTheDocument();

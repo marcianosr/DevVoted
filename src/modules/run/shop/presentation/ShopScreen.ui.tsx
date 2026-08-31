@@ -4,15 +4,15 @@ import {
 	Config,
 	describeConfig,
 	isUpgradable,
-	largestGradeFitting,
-	rarityOf,
-	spotsOf,
+	largestSizeFitting,
+	slotsOf,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import type {
-	ExtraSpotsView,
+	SlotsView,
+	StoragePlanView,
 	OfferRefusal,
 	ShopOffer,
 } from "~/modules/run/run/application/runView.viewmodel";
@@ -20,9 +20,9 @@ import type { GateStake } from "~/modules/run/run/application/gateStake.viewmode
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { Badge } from "~/ui/Badge.component";
-import { MAX_SPOTS } from "~/modules/run/pipeline/domain/pipeline.model";
-import { SpotTrack } from "~/ui/modern-theme/SpotTrack.ui";
-import { plural, gateFloorLabel } from "~/ui/modern-theme/format";
+import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
+import { SlotTrack } from "~/ui/modern-theme/SlotTrack.ui";
+import { capLabel, plural } from "~/ui/modern-theme/format";
 import { Columns } from "~/ui/Columns.ui";
 import { RadioDot } from "~/ui/RadioDot.ui";
 import { TerminalPanel, TerminalSection } from "~/ui/TerminalPanel.ui";
@@ -52,9 +52,9 @@ type ShopScreenProps = {
 	atMinimumWidth: boolean;
 	controls: ShopControls;
 	busy?: boolean;
-	spots: number;
-	spotsUsed: number;
-	spotsFree: number;
+	slots: number;
+	slotsUsed: number;
+	slotsFree: number;
 	newConfigIds: readonly string[];
 	offers: readonly ShopOffer[];
 	upcoming?: UpcomingCategoriesProps;
@@ -66,24 +66,27 @@ type ShopScreenProps = {
 	upgradedConfigId?: string;
 	onUpgrade: (configId: string) => void;
 	onSell: (configId: string) => void;
-	extraSpots: ExtraSpotsView;
-	onRentExtraSpots: (spots: number) => void;
+	slotDeals: SlotsView;
+	storagePlan: StoragePlanView;
+	onBuySlot: () => void;
+	onCashSlot: () => void;
+	onSetStoragePlan: (tier: number) => void;
 };
 
-export const shopExitLock = (overflowSpots: number): string | undefined =>
-	overflowSpots === 0
+export const shopExitLock = (overflowSlots: number): string | undefined =>
+	overflowSlots === 0
 		? undefined
-		: `Over capacity by ${plural(overflowSpots, "spot")}. Minify, uninstall, or rent more room.`;
+		: `Over capacity by ${plural(overflowSlots, "slot")}. Minify, uninstall, or rent more room.`;
 
 export const shopExitAction = (
 	gate: number,
-	overflowSpots: number
+	overflowSlots: number
 ): {
 	readonly label: string;
 	readonly disabled: boolean;
 	readonly hint?: string;
 } => {
-	const lock = shopExitLock(overflowSpots);
+	const lock = shopExitLock(overflowSlots);
 	return {
 		label: `Continue to gate ${gate} →`,
 		disabled: lock !== undefined,
@@ -91,13 +94,13 @@ export const shopExitAction = (
 	};
 };
 
-export const extraSpotTerms = (
-	option: ExtraSpotsView["options"][number]
-): string => (option.spots === 0 ? "free" : `${option.rentKb}KB a gate`);
+export const storagePlanTerms = (
+	option: StoragePlanView["options"][number]
+): string => (option.perGateKb === 0 ? "free" : `${option.perGateKb}KB a gate`);
 
 export const offerRefusalText = (refusal: OfferRefusal): string =>
 	refusal.reason === "no-room"
-		? `Needs ${refusal.spots} spots — ${refusal.freeSpots} free. Minify or uninstall something`
+		? `Needs ${refusal.slots} slots — ${refusal.freeSlots} free. Minify or uninstall something`
 		: `Costs ${refusal.priceKb}KB — you have ${refusal.storageKb}KB`;
 
 const actionTone = ({
@@ -154,9 +157,8 @@ const trackBars = (configs: readonly Config[]) =>
 	configs.map((config) => ({
 		id: config.id,
 		label: config.label,
-		spots: spotsOf(config),
+		slots: slotsOf(config),
 		minified: config.minified,
-		rarity: rarityOf(config),
 	}));
 
 type PanelHeadingProps = {
@@ -179,9 +181,9 @@ export const ShopScreen = ({
 	atMinimumWidth,
 	controls,
 	busy = false,
-	spots,
-	spotsUsed,
-	spotsFree,
+	slots,
+	slotsUsed,
+	slotsFree,
 	newConfigIds,
 	offers,
 	upcoming,
@@ -193,8 +195,11 @@ export const ShopScreen = ({
 	upgradedConfigId,
 	onUpgrade,
 	onSell,
-	extraSpots,
-	onRentExtraSpots,
+	slotDeals,
+	storagePlan,
+	onBuySlot,
+	onCashSlot,
+	onSetStoragePlan,
 }: ShopScreenProps) => {
 	const { gateNumber } = stake;
 	const {
@@ -330,7 +335,7 @@ export const ShopScreen = ({
 		if (refusal?.reason === "no-room")
 			return (
 				<Badge tone="muted" size="corner">
-					needs a {rarityOf(config)}
+					needs {plural(slotsOf(config), "slot")}
 				</Badge>
 			);
 		return (
@@ -424,8 +429,8 @@ export const ShopScreen = ({
 	return (
 		<div className="flex flex-col gap-6">
 			<header>
-				<Title>Upgrade your pipeline</Title>
-				<Subtitle>Expand your pipeline or make it stricter!</Subtitle>
+				<Title>Upgrade your build</Title>
+				<Subtitle>Expand your build or make it stricter!</Subtitle>
 			</header>
 
 			{locked ? (
@@ -500,14 +505,46 @@ export const ShopScreen = ({
 
 						<hr className="border-t border-edge" />
 
-						<TerminalSection label="Extra spots">
+						<TerminalSection label="Slots">
 							<Paragraph as="p" size="xs" tone="muted">
-								Gates unlock spots for free. Rent adds more on top, by the gate.
+								Room for configs, bought outright. Cashing an empty one refunds
+								what that slot cost.
+							</Paragraph>
+							<div className="flex flex-wrap items-center gap-2 px-1 py-1">
+								{actionButton({
+									label:
+										slotDeals.buy.costKb === undefined
+											? "sold out"
+											: `buy a slot · ${slotDeals.buy.costKb}KB`,
+									onClick: onBuySlot,
+									disabled: slotDeals.buy.refusal !== undefined || locked,
+								})}
+								{actionButton({
+									label:
+										slotDeals.cash.costKb === undefined
+											? "nothing to cash"
+											: `cash a slot · +${slotDeals.cash.costKb}KB`,
+									onClick: onCashSlot,
+									disabled: slotDeals.cash.refusal !== undefined || locked,
+								})}
+							</div>
+							{slotDeals.buy.refusal === undefined ? null : (
+								<Paragraph as="p" size="xs" tone="muted">
+									{slotDeals.buy.refusal}
+								</Paragraph>
+							)}
+						</TerminalSection>
+
+						<hr className="border-t border-edge" />
+
+						<TerminalSection label="Storage plan">
+							<Paragraph as="p" size="xs" tone="muted">
+								The cap is what you can hold. A bigger one bills every gate.
 							</Paragraph>
 							<ul className="flex flex-col">
-								{extraSpots.options.map((option) => (
+								{storagePlan.options.map((option) => (
 									<li
-										key={option.spots}
+										key={option.tier}
 										className="flex items-center justify-between gap-3 px-1 py-1"
 									>
 										<span className="flex items-center gap-2">
@@ -517,31 +554,23 @@ export const ShopScreen = ({
 												size="sm"
 												tone={option.held ? undefined : "muted"}
 											>
-												{option.spots === 0
-													? "none"
-													: `+${plural(option.spots, "spot")}`}
-											</Paragraph>
-											<Paragraph as="span" size="sm" tone="muted">
-												makes {option.makes}
+												{capLabel(option.capKb)}
 											</Paragraph>
 										</span>
 										<span className="flex items-center gap-3">
 											<Paragraph as="span" size="sm" tone="muted">
-												{extraSpotTerms(option)}
+												{storagePlanTerms(option)}
 											</Paragraph>
-											{option.fromGate === undefined
-												? actionButton({
-														label: option.held ? "renting" : "rent",
-														onClick: () => onRentExtraSpots(option.spots),
-														disabled:
-															option.held || option.rentTooDear || locked,
-													})
-												: null}
-											{option.fromGate === undefined ? null : (
-												<Paragraph as="span" size="sm" tone="muted">
-													opens at {gateFloorLabel(option.fromGate)}
+											{option.burnsKb > 0 ? (
+												<Paragraph as="span" size="sm" tone="cinnabar">
+													burns {option.burnsKb}KB
 												</Paragraph>
-											)}
+											) : null}
+											{actionButton({
+												label: option.held ? "on it" : "switch",
+												onClick: () => onSetStoragePlan(option.tier),
+												disabled: option.held || locked,
+											})}
 										</span>
 									</li>
 								))}
@@ -555,7 +584,7 @@ export const ShopScreen = ({
 							title={
 								nextGate ? (
 									<>
-										Your pipeline for{" "}
+										Your build for{" "}
 										<SwatchLabel
 											swatch={nextGate}
 											label={`${nextGate.gateName} gate ${gateNumber}`}
@@ -563,20 +592,20 @@ export const ShopScreen = ({
 										/>
 									</>
 								) : (
-									`Your pipeline for gate ${gateNumber}`
+									`Your build for gate ${gateNumber}`
 								)
 							}
-							subtitle={`${spotsUsed} of ${spots} spots used`}
+							subtitle={`${slotsUsed} of ${slots} slots used`}
 						/>
-						<SpotTrack
+						<SlotTrack
 							configs={trackBars(configs)}
-							spots={spots}
-							maxSpots={MAX_SPOTS}
-							fits={largestGradeFitting(spotsFree)}
+							slots={slots}
+							maxSlots={MAX_SLOTS}
+							fits={largestSizeFitting(slotsFree)}
 						/>
 						<RoleList
 							rows={roleRows(configs)}
-							freeSpots={spotsFree}
+							freeSlots={slotsFree}
 							trailingFor={loadoutActions}
 							newConfigIds={newConfigIds}
 							upgradedConfigId={upgradedConfigId}

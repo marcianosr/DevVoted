@@ -6,7 +6,6 @@ import { Screen } from "../Screen.ui";
 import { Action } from "../Action.ui";
 import { plural } from "../format";
 import { Pick } from "../Pick.ui";
-import type { Rarity } from "../rarity";
 import { Text } from "../Text.ui";
 import { Tooltip } from "../Tooltip.ui";
 
@@ -24,7 +23,7 @@ const FOOTER =
 export type RemovalConfig = {
 	id: string;
 	label: string;
-	rarity?: Rarity;
+	slots?: number;
 	notes?: ReactNode;
 };
 
@@ -73,14 +72,14 @@ export const RemovalScreen = ({
 
 			<section className={BODY}>
 				<Text as="h3" size="body" className={HEADING}>
-					Pipeline
+					Build
 				</Text>
 				<ul className={LIST}>
 					{configs.map((config) => (
 						<li key={config.id}>
 							<Pick
 								label={config.label}
-								rarity={config.rarity}
+								slots={config.slots}
 								checked={selectedIds.includes(config.id)}
 								onToggle={() => onToggle(config.id)}
 								notes={config.notes}

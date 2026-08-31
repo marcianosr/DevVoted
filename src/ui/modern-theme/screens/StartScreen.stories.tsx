@@ -2,11 +2,8 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { SPOTS_PER_GRADE } from "~/modules/run/config/domain/config.model";
-
 import { Chip } from "../Chip.ui";
 import { Delta } from "../Delta.ui";
-import type { Rarity } from "../rarity";
 import {
 	StartScreen,
 	type DealtConfig,
@@ -21,83 +18,75 @@ export default meta;
 
 type Story = StoryObj<typeof StartScreen>;
 
-const graded = (
-	config: Omit<DealtConfig, "spots"> & { rarity: Rarity }
-): DealtConfig => ({ ...config, spots: SPOTS_PER_GRADE[config.rarity] });
-
-type Graded = Omit<DealtConfig, "spots"> & { rarity: Rarity };
-
-const dealt: readonly DealtConfig[] = (
-	[
-		{
-			id: "ts",
-			rarity: "bit",
-			label: ".ts",
-			summary: "bit · focus: typescript",
-			explainer: "TypeScript polls pay 1.25× coverage.",
-			note: <Delta multiplier={1.25} />,
-		},
-		{
-			id: "intellisense",
-			rarity: "nibble",
-			label: "Intellisense",
-			summary: "nibble · all coverage",
-			explainer: "All coverage earns ×1.5.",
-			note: <Delta multiplier={1.5} />,
-		},
-		{
-			id: "eslint",
-			rarity: "bit",
-			label: "ESLint",
-			summary: "bit · JS/TS polls",
-			explainer:
-				"Strikes out one wrong answer per gate and charges a doubling fee for the hint.",
-			note: <Chip tone="muted">8 KB a use</Chip>,
-		},
-		{
-			id: "indexeddb",
-			rarity: "crumb",
-			label: "IndexedDB",
-			summary: "crumb · every correct answer",
-			explainer: "+8 KB storage per correct answer, up to 320 KB a run.",
-			note: <Delta kb={8} />,
-		},
-		{
-			id: "rb",
-			rarity: "bit",
-			label: ".rb",
-			summary: "bit · focus: ruby",
-			explainer: "Ruby polls pay 1.25× coverage.",
-			note: <Delta multiplier={1.25} />,
-		},
-		{
-			id: "coldstart",
-			rarity: "crumb",
-			label: "Cold Start",
-			summary: "crumb · the gate's opener",
-			explainer: "Each gate's first answer earns ×2 coverage.",
-			note: <Delta multiplier={2} />,
-		},
-		{
-			id: "overclock",
-			rarity: "nibble",
-			label: "Overclock",
-			summary: "nibble · the gate's opener",
-			explainer:
-				"The gate's first answer earns ×4 coverage. Everything after runs hot at ×0.5, cooling off each clear.",
-			note: <Delta multiplier={4} />,
-		},
-		{
-			id: "dependabot",
-			rarity: "byte",
-			label: "Dependabot",
-			summary: "byte · on a gate clear",
-			explainer:
-				"1 in 3 gate clears: a random config in your pipeline upgrades, free.",
-			note: <Chip tone="muted">1 in 3</Chip>,
-		},
-	] satisfies readonly Graded[]
-).map(graded);
+const dealt: readonly DealtConfig[] = [
+	{
+		id: "ts",
+		slots: 1,
+		label: ".ts",
+		summary: "focus: typescript",
+		explainer: "TypeScript polls pay 1.25× coverage.",
+		note: <Delta multiplier={1.25} />,
+	},
+	{
+		id: "intellisense",
+		slots: 4,
+		label: "Intellisense",
+		summary: "all coverage",
+		explainer: "All coverage earns ×1.5.",
+		note: <Delta multiplier={1.5} />,
+	},
+	{
+		id: "eslint",
+		slots: 1,
+		label: "ESLint",
+		summary: "JS/TS polls",
+		explainer:
+			"Strikes out one wrong answer per gate and charges a doubling fee for the hint.",
+		note: <Chip tone="muted">8 KB a use</Chip>,
+	},
+	{
+		id: "indexeddb",
+		slots: 2,
+		label: "IndexedDB",
+		summary: "every correct answer",
+		explainer: "+8 KB storage per correct answer, up to 320 KB a run.",
+		note: <Delta kb={8} />,
+	},
+	{
+		id: "rb",
+		slots: 1,
+		label: ".rb",
+		summary: "focus: ruby",
+		explainer: "Ruby polls pay 1.25× coverage.",
+		note: <Delta multiplier={1.25} />,
+	},
+	{
+		id: "coldstart",
+		slots: 2,
+		label: "Cold Start",
+		summary: "the gate's opener",
+		explainer: "Each gate's first answer earns ×2 coverage.",
+		note: <Delta multiplier={2} />,
+	},
+	{
+		id: "overclock",
+		slots: 4,
+		label: "Overclock",
+		summary: "the gate's opener",
+		explainer:
+			"The gate's first answer earns ×4 coverage. Everything after runs hot at ×0.5, cooling off each clear.",
+		note: <Delta multiplier={4} />,
+	},
+	{
+		id: "dependabot",
+		slots: 8,
+		label: "Dependabot",
+		summary: "on a gate clear",
+		explainer:
+			"1 in 3 gate clears: a random config in your build upgrades, free.",
+		note: <Chip tone="muted">1 in 3</Chip>,
+	},
+];
 
 const base: Omit<StartScreenProps, "pickedIds" | "onToggle"> = {
 	theme: "pallet",
@@ -122,8 +111,8 @@ const base: Omit<StartScreenProps, "pickedIds" | "onToggle"> = {
 			onTake: () => {},
 		},
 	],
-	spots: 4,
-	fits: "nibble",
+	slots: 4,
+	fits: 4,
 	gateName: "Pallet",
 	pollCount: 5,
 	coverageDemand: 3,
@@ -196,8 +185,8 @@ export const Elite: Story = {
 			auditCount={2}
 			stake={{ removeOnMiss: 3, coveragePerWrong: -0.9 }}
 			reward={{ coveragePerCorrect: 6.4, gateRewardKb: 416 }}
-			spots={8}
-			fits="byte"
+			slots={8}
+			fits={8}
 		/>
 	),
 };
@@ -207,7 +196,7 @@ export const RoomRunningOut: Story = {
 		<StartScreen
 			{...base}
 			pickedIds={["ts", "eslint", "rb"]}
-			fits="bit"
+			fits={1}
 			onToggle={() => {}}
 		/>
 	),

@@ -86,8 +86,8 @@ const idKey = (configs: readonly Config[]): string =>
 		.join(",");
 
 /**
- * The stack whose exact contents the pipeline holds, if any. Selection is
- * derived rather than stored: the pipeline is the source of truth, so a stack
+ * The stack whose exact contents the build holds, if any. Selection is
+ * derived rather than stored: the build is the source of truth, so a stack
  * edited config-by-config later simply stops reading as that stack.
  */
 export const stackMatching = (

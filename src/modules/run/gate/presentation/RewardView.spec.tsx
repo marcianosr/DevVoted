@@ -198,7 +198,7 @@ describe("RewardView on a held gate", () => {
 		gatesCleared: 4,
 		answeredThisGate: answered,
 		configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
-		peelSpotsRemaining: 2,
+		peelSlotsRemaining: 2,
 	});
 
 	it("says the swatch was not earned rather than announcing a clear", () => {

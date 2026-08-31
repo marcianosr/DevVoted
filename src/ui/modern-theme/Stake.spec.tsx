@@ -50,7 +50,7 @@ describe("Stake", () => {
 
 		expect(screen.getByText("remove 3 configs")).toBeInTheDocument();
 		expect(
-			screen.getByText("your whole pipeline — the run ends here")
+			screen.getByText("your whole build — the run ends here")
 		).toHaveClass("text-cinnabar");
 	});
 });

@@ -84,7 +84,7 @@ describe(RewardScreen, () => {
 		expect(screen.getByText("deleted")).toBeInTheDocument();
 		expect(screen.getByText("Deprecated")).toBeInTheDocument();
 		expect(
-			screen.getByText("Faded to ×1 — deleted from the pipeline.")
+			screen.getByText("Faded to ×1 — deleted from the build.")
 		).toBeInTheDocument();
 	});
 
@@ -217,10 +217,10 @@ describe(RewardScreen, () => {
 		expect(screen.getAllByTestId("swatch")).toHaveLength(2);
 	});
 
-	it("keeps the pipeline report off the clear even though the ledger is back", () => {
+	it("keeps the build report off the clear even though the ledger is back", () => {
 		render(<RewardScreen {...base} />);
 		expect(screen.queryByText("Gate rewards")).not.toBeInTheDocument();
-		expect(screen.queryByText("Your pipeline")).not.toBeInTheDocument();
+		expect(screen.queryByText("Your build")).not.toBeInTheDocument();
 		expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
 		expect(screen.queryByText(/Coverage by category/)).not.toBeInTheDocument();
 	});

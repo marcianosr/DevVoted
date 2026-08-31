@@ -25,7 +25,7 @@ export const Title: Story = {
 	args: { size: "title", children: "Gate 4 · Lavender" },
 };
 
-export const Label: Story = { args: { size: "label", children: "Pipeline" } };
+export const Label: Story = { args: { size: "label", children: "Build" } };
 
 export const Meta_: Story = {
 	name: "Meta",

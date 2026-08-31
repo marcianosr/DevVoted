@@ -85,4 +85,36 @@ describe("GateHeader", () => {
 
 		expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 	});
+
+	it("scores the run against the gate's demand under the ladder", () => {
+		render(
+			<GateHeader
+				title="Gate 4 · Lavender"
+				coverage={{ held: 12, projected: 4, required: 40 }}
+			/>
+		);
+
+		expect(screen.getByText("Coverage")).toBeInTheDocument();
+		expect(
+			screen.getByText((_, node) => node?.textContent === "12 / 40%")
+		).toBeTruthy();
+		expect(screen.getByRole("progressbar")).toHaveAttribute(
+			"aria-valuemax",
+			"40"
+		);
+	});
+
+	it("scales the bar against the demand, so a small goal still fills the track", () => {
+		render(
+			<GateHeader
+				title="Gate 1 · Pallet"
+				coverage={{ held: 0, projected: 1, required: 3 }}
+			/>
+		);
+
+		expect(screen.getByRole("progressbar")).toHaveAttribute(
+			"aria-valuemax",
+			"3"
+		);
+	});
 });

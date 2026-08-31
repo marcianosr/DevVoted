@@ -18,10 +18,10 @@ import {
 	coverageLossFor,
 	extraPickPayoutFor,
 	gateClearPayout,
-	occupiedSpots,
+	occupiedSlots,
 	streakCapStepsFor,
 	storageInterestFor,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+} from "~/modules/run/build/domain/build.model";
 import {
 	failPeelQuotaFor,
 	gateDemandFor,
@@ -41,10 +41,11 @@ import {
 	gateBaseMultiplier,
 	isPeelFatal,
 	pollDifficultyMultiplier,
-	extraRentKb,
+	cappedStorage,
+	FREE_PLAN,
+	planBillKb,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	spotsHeldWith,
 	streakMultiplier,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
@@ -65,7 +66,7 @@ import {
 	type RunState,
 	shopDraft,
 	withLog,
-	withPipeline,
+	withBuild,
 } from "~/modules/run/run/domain/run.model";
 
 const clearLine = (gateNumber: number, reward: number): string => {
@@ -74,34 +75,28 @@ const clearLine = (gateNumber: number, reward: number): string => {
 	return `Gate ${gateNumber} cleared! +${reward}KB${earned}.`;
 };
 
-const recapacitied = (state: RunState): RunState => {
-	const spots = spotsHeldWith(state.gatesCleared, state.extraSpots);
-	if (spots === state.pipeline.spots) return state;
-	return { ...state, pipeline: { ...state.pipeline, spots } };
-};
-
-type RentSettlement = {
+type PlanSettlement = {
 	readonly paidKb: number;
-	readonly extraSpots: number;
-	readonly defaulted: boolean;
+	readonly tier: number;
+	readonly downgraded: boolean;
 };
 
-const settleSpotRent = (state: RunState, balanceKb: number): RentSettlement => {
-	const rented = state.extraSpots ?? 0;
-	if (rented === 0) return { paidKb: 0, extraSpots: 0, defaulted: false };
-	const owed = extraRentKb(rented);
+const settlePlanBill = (state: RunState, balanceKb: number): PlanSettlement => {
+	const tier = state.storagePlan ?? 0;
+	const owed = planBillKb(tier);
+	if (owed === 0) return { paidKb: 0, tier, downgraded: false };
 	if (balanceKb < owed)
-		return { paidKb: balanceKb, extraSpots: 0, defaulted: true };
-	return { paidKb: owed, extraSpots: rented, defaulted: false };
+		return { paidKb: balanceKb, tier: FREE_PLAN.tier, downgraded: true };
+	return { paidKb: owed, tier, downgraded: false };
 };
 
 const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const gateNumber = state.gatesCleared;
 
-	if (!gatePassed(state.pipeline, state.window, state.gatesCleared)) {
-		const quota = failPeelQuotaFor(state.pipeline.configs, gateNumber);
-		const occupied = occupiedSpots(state.pipeline.configs);
-		const demand = gateDemandFor(state.pipeline.configs, state.gatesCleared);
+	if (!gatePassed(state.build, state.window, state.gatesCleared)) {
+		const quota = failPeelQuotaFor(state.build.configs, gateNumber);
+		const occupied = occupiedSlots(state.build.configs);
+		const demand = gateDemandFor(state.build.configs, state.gatesCleared);
 		const missed = `Gate ${gateNumber} failed: ${state.window.coverageGained}% of ${demand}% this gate.`;
 		if (isPeelFatal(quota, occupied))
 			return {
@@ -117,47 +112,49 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			...state,
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
-			peelSpotsRemaining: quota,
+			peelSlotsRemaining: quota,
 			log: withLog(
 				state,
-				`${missed} Free up ${quota} spot${quota > 1 ? "s" : ""} and run it again.`
+				`${missed} Free up ${quota} slot${quota > 1 ? "s" : ""} and run it again.`
 			),
 		};
 	}
 
-	const interest = storageInterestFor(state.pipeline.configs, state.storage);
+	const interest = storageInterestFor(state.build.configs, state.storage);
 	const extraPicks = (state.window.budget ?? 0) - state.window.answered;
-	const extraPickKb = extraPickPayoutFor(state.pipeline.configs, extraPicks);
+	const extraPickKb = extraPickPayoutFor(state.build.configs, extraPicks);
 	const reward =
 		gateClearPayout(
-			state.pipeline.configs,
+			state.build.configs,
 			state.window.correct,
 			state.gatesCleared
 		) +
 		interest +
 		extraPickKb;
-	const rent = settleSpotRent(state, addStorage(state.storage, reward));
-	const cleared: RunState = recapacitied({
+	const planTier = state.storagePlan ?? 0;
+	const rewarded = addStorage(state.storage, reward, planTier);
+	const bill = settlePlanBill(state, rewarded);
+	const cleared: RunState = {
 		...state,
 		window: freshWindow(
 			state.polls,
 			nextIndex,
-			state.pipeline.configs,
+			state.build.configs,
 			state.gatesCleared + 1
 		),
 		manualDisabled: [],
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
 		redoGate: undefined,
-		storage: addStorage(state.storage, reward) - rent.paidKb,
-		extraSpots: rent.extraSpots,
-		spotRentKb: rent.paidKb,
-		rentDefaulted: rent.defaulted ? true : undefined,
+		storage: cappedStorage(rewarded - bill.paidKb, bill.tier),
+		storagePlan: bill.tier,
+		planBilledKb: bill.paidKb,
+		planDowngraded: bill.downgraded ? true : undefined,
 		gateRewardKb: reward,
 		interestThisGateKb: interest,
 		extraPickThisGateKb: extraPickKb,
 		currentIndex: nextIndex,
-	});
+	};
 
 	if (gateNumber >= VICTORY_GATE)
 		return {
@@ -167,7 +164,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		};
 
 	const merged = autoUpgradeOnClear(
-		cleared.pipeline.configs,
+		cleared.build.configs,
 		`dependabot-${gateNumber}-${(state.allAnswered ?? []).length}-${state.storage}`
 	);
 	const settled = decayOnClear(merged.configs);
@@ -179,10 +176,10 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 
 	return {
 		...cleared,
-		pipeline:
-			billed.configs === cleared.pipeline.configs
-				? cleared.pipeline
-				: withPipeline(cleared.pipeline, billed.configs),
+		build:
+			billed.configs === cleared.build.configs
+				? cleared.build
+				: withBuild(cleared.build, billed.configs),
 		storage: cleared.storage - billed.paidKb,
 		subscriptionBillKb: billed.paidKb,
 		autoUpgradedConfigId: merged.bumped?.id,
@@ -201,11 +198,11 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 					]
 				: []),
 			...settled.deleted.map(
-				(config) => `${config.label} faded to ×1 — deleted from the pipeline.`
+				(config) => `${config.label} faded to ×1 — deleted from the build.`
 			),
-			...(rent.paidKb > 0 ? [`Spot rent billed (-${rent.paidKb}KB).`] : []),
-			...(rent.defaulted
-				? ["Rent went unpaid — the rented spots went back."]
+			...(bill.paidKb > 0 ? [`Storage plan billed (-${bill.paidKb}KB).`] : []),
+			...(bill.downgraded
+				? ["The plan went unpaid — dropped to the free cap."]
 				: []),
 			...(billed.paidKb > 0
 				? [`Subscriptions billed (-${billed.paidKb}KB).`]
@@ -396,7 +393,11 @@ const applyAnswer = (
 		window,
 		manualDisabled: [],
 		streak: grade.streak,
-		storage: addStorage(state.storage, ledger.faucetKb) - ledger.burnKb,
+		storage: cappedStorage(
+			addStorage(state.storage, ledger.faucetKb, state.storagePlan ?? 0) -
+				ledger.burnKb,
+			state.storagePlan ?? 0
+		),
 		faucetEarnedKb: (state.faucetEarnedKb ?? 0) + ledger.faucetKb,
 		faucetThisGateKb: (state.faucetThisGateKb ?? 0) + ledger.faucetKb,
 		coverage: roundToOneDecimal(

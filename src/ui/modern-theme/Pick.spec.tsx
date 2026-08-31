@@ -92,7 +92,7 @@ describe("Pick", () => {
 		expect(container.querySelector("details")).toBeNull();
 	});
 
-	it("folds the rarity and the sentence away, the way a pipeline row does", () => {
+	it("folds the rarity and the sentence away, the way a build row does", () => {
 		const { container } = render(
 			<Pick
 				label=".ts"
@@ -140,18 +140,15 @@ describe("Pick", () => {
 		expect(screen.getByText("+8 / correct")).toBeInTheDocument();
 	});
 
-	it("leads the name with its grade glyph, and names the grade for a reader", () => {
-		const { container } = render(
-			<Pick label=".ts" rarity="nibble" checked={false} onToggle={() => {}} />
-		);
+	it("leads the name with the slots it takes", () => {
+		render(<Pick label=".ts" slots={4} checked={false} onToggle={() => {}} />);
 
-		expect(container.querySelectorAll("svg rect")).toHaveLength(4);
-		expect(screen.getByText("nibble")).toHaveClass("sr-only");
+		expect(screen.getByText("4 slots")).toBeInTheDocument();
 	});
 
-	it("leaves a shut row flat, having no grade colour to tint with", () => {
+	it("leaves a shut row flat, having no size colour to tint with", () => {
 		const { container } = render(
-			<Pick label=".ts" rarity="nibble" checked={false} onToggle={() => {}} />
+			<Pick label=".ts" slots={4} checked={false} onToggle={() => {}} />
 		);
 
 		expect((container.firstElementChild as HTMLElement).className).not.toMatch(
@@ -163,7 +160,7 @@ describe("Pick", () => {
 		render(
 			<Pick
 				label=".ts"
-				rarity="nibble"
+				slots={4}
 				checked={false}
 				onToggle={() => {}}
 				value="×1.25"
@@ -179,7 +176,7 @@ describe("Pick", () => {
 		const { container } = render(
 			<Pick
 				label=".ts"
-				rarity="nibble"
+				slots={4}
 				checked={false}
 				onToggle={() => {}}
 				explainer="TS polls."
@@ -193,13 +190,7 @@ describe("Pick", () => {
 
 	it("washes a picked row in the pick's colour", () => {
 		const { container } = render(
-			<Pick
-				label=".ts"
-				rarity="nibble"
-				variant="draft"
-				checked
-				onToggle={() => {}}
-			/>
+			<Pick label=".ts" slots={4} variant="draft" checked onToggle={() => {}} />
 		);
 
 		expect(container.firstElementChild).toHaveClass("bg-theme-soft");
@@ -209,7 +200,7 @@ describe("Pick", () => {
 		render(
 			<Pick
 				label="AGENTS.md"
-				rarity="byte"
+				slots={8}
 				variant="draft"
 				checked={false}
 				disabled
@@ -242,12 +233,12 @@ describe("Pick", () => {
 				checked={false}
 				disabled
 				onToggle={() => {}}
-				value="8 spots"
+				value="8 slots"
 				explainer="Every poll pays double."
 			/>
 		);
 
-		await userEvent.click(screen.getByText("8 spots"));
+		await userEvent.click(screen.getByText("8 slots"));
 
 		expect(container.querySelector("details")).toHaveAttribute("open");
 	});

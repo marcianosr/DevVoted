@@ -3,8 +3,6 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Action } from "../Action.ui";
-import { extraSpotLabel } from "../ExtraSpots.ui";
-import { extraRentKb } from "~/modules/run/run/domain/rules.model";
 import { Delta } from "../Delta.ui";
 import { Glyph } from "../Glyph.ui";
 import { Entry } from "../Entry.ui";
@@ -12,7 +10,7 @@ import { Fold, type FoldItem } from "../Fold.ui";
 import { Lock } from "../Lock.ui";
 import { Mark } from "../Mark.ui";
 import { PriceTag, type PriceTagState } from "../PriceTag.ui";
-import { SpotTrack } from "../SpotTrack.ui";
+import { SlotTrack } from "../SlotTrack.ui";
 import { Text } from "../Text.ui";
 import { ShopScreen, type ShopScreenProps } from "./ShopScreen.ui";
 
@@ -97,10 +95,10 @@ const installed = [
 	{ id: ".java", label: ".java", needs: "needs 64 KB" },
 ];
 
-const PIPELINE_BARS = [
-	{ id: ".git", label: ".git", spots: 1 },
-	{ id: ".vue", label: ".vue", spots: 1 },
-	{ id: "Prefetch", label: "Prefetch", spots: 4 },
+const BUILD_BARS = [
+	{ id: ".git", label: ".git", slots: 1 },
+	{ id: ".vue", label: ".vue", slots: 1 },
+	{ id: "Prefetch", label: "Prefetch", slots: 4 },
 ];
 
 const Shelf = (overrides: Partial<ShopScreenProps>) => {
@@ -147,7 +145,7 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 		),
 	}));
 
-	const pipeline: FoldItem[] = installed.map((config) => ({
+	const build: FoldItem[] = installed.map((config) => ({
 		id: config.id,
 		content: (
 			<Entry
@@ -190,7 +188,7 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 		),
 	}));
 
-	const withSlots: FoldItem[] = pipeline;
+	const withSlots: FoldItem[] = build;
 
 	return (
 		<ShopScreen
@@ -226,34 +224,32 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 				},
 			]}
 			offerCount="5 offers · 1 locked"
-			extraSpots={{
-				renting: 1,
-				perGateKb: extraRentKb(1),
-				steps: [
+			storagePlan={{
+				cap: "1 MB",
+				terms: "32 KB a gate",
+				rows: [
 					{
-						id: "extra-0",
-						label: extraSpotLabel(0),
-						makes: "makes 12",
+						id: "plan-0",
+						label: "512 KB",
 						terms: "free",
-						settled: true,
+						free: true,
 						held: false,
+						warns: "burns 210 KB",
 						pick: { onUse: () => {} },
 					},
 					{
-						id: "extra-1",
-						label: extraSpotLabel(1),
-						makes: "makes 13",
-						terms: `${extraRentKb(1)} KB a gate`,
+						id: "plan-2",
+						label: "1 MB",
+						terms: "32 KB a gate",
 						held: true,
 						pick: { onUse: () => {} },
 					},
 					{
-						id: "extra-2",
-						label: extraSpotLabel(2),
-						makes: "makes 14",
-						terms: `${extraRentKb(2)} KB a gate`,
+						id: "plan-3",
+						label: "1.5 MB",
+						terms: "64 KB a gate",
 						held: false,
-						opensAt: "opens at gate 5",
+						pick: { onUse: () => {} },
 					},
 				],
 			}}
@@ -294,9 +290,18 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 					</div>
 				</Fold>
 			}
-			pipeline={withSlots}
-			slots="3 of 6 spots"
-			track={<SpotTrack configs={PIPELINE_BARS} spots={6} fits="crumb" />}
+			build={withSlots}
+			slots="3 of 6 slots"
+			track={
+				<SlotTrack
+					configs={BUILD_BARS}
+					slots={6}
+					maxSlots={24}
+					fits={2}
+					buy={{ costKb: 384, makes: 7, onUse: noop }}
+					cash={{ costKb: 256, makes: 5, onUse: noop }}
+				/>
+			}
 			onContinue={noop}
 			{...overrides}
 		/>
@@ -308,8 +313,8 @@ export const MidRun: Story = { render: () => <Shelf /> };
 export const OutOfRoom: Story = {
 	render: () => (
 		<Shelf
-			slots="6 of 6 spots"
-			track={<SpotTrack configs={PIPELINE_BARS} spots={3} fits={null} />}
+			slots="6 of 6 slots"
+			track={<SlotTrack configs={BUILD_BARS} slots={3} fits={null} />}
 		/>
 	),
 };
@@ -329,9 +334,9 @@ export const Broke: Story = {
 export const OverCapacity: Story = {
 	render: () => (
 		<Shelf
-			slots="6 of 4 spots"
-			track={<SpotTrack configs={PIPELINE_BARS} spots={4} />}
-			exitLock="Over capacity by 2 spots. Minify, uninstall, or rent more room."
+			slots="6 of 4 slots"
+			track={<SlotTrack configs={BUILD_BARS} slots={4} />}
+			exitLock="Over capacity by 2 slots. Minify, uninstall, or rent more room."
 		/>
 	),
 };
@@ -342,12 +347,12 @@ export const ShutByReadOnly: Story = {
 	),
 };
 
-export const EmptyPipeline: Story = {
+export const EmptyBuild: Story = {
 	render: () => (
 		<Shelf
-			pipeline={[]}
-			slots="0 of 6 spots"
-			track={<SpotTrack configs={[]} spots={6} fits="byte" />}
+			build={[]}
+			slots="0 of 6 slots"
+			track={<SlotTrack configs={[]} slots={6} fits={8} />}
 		/>
 	),
 };

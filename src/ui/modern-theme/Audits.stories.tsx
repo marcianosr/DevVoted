@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { Audits, type AuditRow } from "./Audits.ui";
+import { AuditAlerts, Audits, type AuditRow } from "./Audits.ui";
 
 const meta: Meta<typeof Audits> = {
 	component: Audits,
@@ -23,15 +23,35 @@ const AUDITS: readonly AuditRow[] = [
 	{ id: "flaky-build", description: "AGENTS.md missed poll 2" },
 ];
 
-/** The summit's three, as the poll rail shows them. */
 export const Running: Story = { args: { audits: AUDITS, defaultOpen: true } };
 
 export const Shut: Story = { args: { audits: AUDITS } };
 
-/** Volkswagen CI reports the gate's first audit as passing. */
 export const Suppressed: Story = {
 	args: {
 		audits: [{ ...AUDITS[0], suppressed: true }, AUDITS[1], AUDITS[2]],
 		defaultOpen: true,
 	},
+};
+
+export const AsAlerts: Story = {
+	render: () => <AuditAlerts audits={AUDITS} />,
+};
+
+export const OneAlert: Story = {
+	render: () => (
+		<AuditAlerts
+			audits={[
+				{
+					id: "cost-overrun",
+					description:
+						"paid actions cost ×2 · ESLint is 16 KB this gate, not 8",
+				},
+			]}
+		/>
+	),
+};
+
+export const SuppressedAlert: Story = {
+	render: () => <AuditAlerts audits={[{ ...AUDITS[0], suppressed: true }]} />,
 };

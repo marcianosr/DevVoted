@@ -76,12 +76,12 @@ const storageLedger = (view: RunView): readonly LedgerEntry[] => {
 			dimmed: true,
 		},
 		{
-			id: "spot-rent",
-			name: "spot rent",
+			id: "slot-rent",
+			name: "slot rent",
 			notes: [
-				view.gatePayout.rentDefaulted ? "unpaid, spots returned" : "this gate",
+				view.gatePayout.planDowngraded ? "unpaid, slots returned" : "this gate",
 			],
-			value: -view.gatePayout.spotRentKb,
+			value: -view.gatePayout.planBilledKb,
 			dimmed: true,
 		},
 	];
@@ -146,7 +146,7 @@ export const RewardView = (props: RewardViewProps) => {
 			<RewardScreen
 				{...shared}
 				outcome="held"
-				removeCount={view.peelSpotsRemaining}
+				removeCount={view.peelSlotsRemaining}
 				onChooseRemoval={props.onChooseRemoval}
 			/>
 		);

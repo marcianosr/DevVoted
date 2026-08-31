@@ -140,9 +140,9 @@ describe(PrepScreen, () => {
 		expect(screen.getByText("12% / 12%")).toHaveClass("text-viridian");
 	});
 
-	it("keeps the stake in plain language, no pipeline jargon", () => {
+	it("keeps the stake in plain language, no build jargon", () => {
 		render(<PrepScreen {...base} />);
-		expect(screen.queryByText(/Clear your pipeline/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/Clear your build/)).not.toBeInTheDocument();
 		expect(
 			screen.queryByText(/satisfy your config checks/)
 		).not.toBeInTheDocument();
@@ -152,7 +152,7 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ pollsPerGate: 5, peelSpotsOnFailure: 1 })}
+				stake={stakeWith({ pollsPerGate: 5, peelSlotsOnFailure: 1 })}
 			/>
 		);
 		expect(
@@ -167,11 +167,11 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ peelSpotsOnFailure: 1, missIsFatal: true })}
+				stake={stakeWith({ peelSlotsOnFailure: 1, missIsFatal: true })}
 			/>
 		);
 		expect(
-			screen.getByText(/That peel takes your whole pipeline/)
+			screen.getByText(/That peel takes your whole build/)
 		).toHaveTextContent("a miss here ends the run");
 	});
 
@@ -251,7 +251,7 @@ describe(PrepScreen, () => {
 			).toBeInTheDocument();
 		});
 
-		it("refuses the drop of a last config — a pipeline never goes bare", () => {
+		it("refuses the drop of a last config — a build never goes bare", () => {
 			render(<PrepScreen {...base} configs={[CONFIGS.js]} atMinimumWidth />);
 			expect(
 				screen.queryByRole("button", { name: /^\.js/ })

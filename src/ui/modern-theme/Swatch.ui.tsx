@@ -11,19 +11,16 @@ export type { SwatchFinish };
 const SWATCH = "inline-block shrink-0";
 
 const SIZE = {
-	pip: "size-4 rounded",
+	pip: "size-3 rounded-sm",
 	badge: "size-5 rounded-md",
 	award: "size-24 rounded-3xl glow-theme",
 } satisfies Record<SwatchSize, string>;
 
-// Only `earned` is filled. Standing on a gate is not clearing it, so `current`
-// is the outline of the swatch on offer — its colour, ringed to mark the place,
-// and hollow until the gate hands it over.
 const STATE = {
 	earned: "bg-theme",
-	current: "outline-2 outline-offset-2 outline-theme",
+	current: "outline-1 outline-offset-1 outline-theme",
 	locked: "bg-zinc-800",
-	pending: "border-2 border-dashed border-zinc-600",
+	pending: "border-1 border-dashed border-zinc-600",
 } satisfies Record<SwatchState, string>;
 
 const FINISH = {

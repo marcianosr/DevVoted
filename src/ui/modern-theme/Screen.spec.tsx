@@ -32,6 +32,13 @@ describe("Screen", () => {
 		expect(container.firstChild?.firstChild).toHaveClass("max-w-6xl", "w-full");
 	});
 
+	it("takes a narrower cap for a screen that reads as one column", () => {
+		const { container } = render(<Screen size="3xl">body</Screen>);
+
+		expect(container.firstChild?.firstChild).toHaveClass("max-w-3xl");
+		expect(container.firstChild?.firstChild).not.toHaveClass("max-w-6xl");
+	});
+
 	// The tint is the page's atmosphere, so it fills the page while the content it
 	// sits behind stays capped and centred in it.
 	it("fills the page with the gate's tint and centres the content in it", () => {

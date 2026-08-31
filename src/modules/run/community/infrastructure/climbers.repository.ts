@@ -8,7 +8,7 @@ import type {
 	AnswerOutcome,
 } from "~/modules/run/run/domain/runPoll.model";
 import type { GateWindow } from "~/modules/run/config/domain/effect.model";
-import type { Pipeline } from "~/modules/run/pipeline/domain/pipeline.model";
+import type { Build } from "~/modules/run/build/domain/build.model";
 import type { RunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 
@@ -34,7 +34,7 @@ import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
  */
 const stateKey = <K extends keyof RunSnapshot>(key: K) => sql.raw(`'${key}'`);
 const windowKey = <K extends keyof GateWindow>(key: K) => sql.raw(`'${key}'`);
-const pipelineKey = <K extends keyof Pipeline>(key: K) => sql.raw(`'${key}'`);
+const buildKey = <K extends keyof Build>(key: K) => sql.raw(`'${key}'`);
 const answeredKey = <K extends keyof AnsweredPoll>(key: K) => sql.raw(`${key}`);
 
 const pollsIntoGate = sql<number>`coalesce((${runStatesTable.state}->${stateKey("window")}->>${windowKey("answered")})::int, 0)`;
@@ -113,7 +113,7 @@ export const fetchActiveRunStats = async (): Promise<ActiveRunStatsRow[]> =>
 			photoUrl: usersTable.photo_url,
 			gatesCleared: runStatesTable.gates_cleared,
 			coverage: runStatesTable.coverage,
-			configCount: sql<number>`coalesce(json_array_length(${runStatesTable.state}->${stateKey("pipeline")}->${pipelineKey("configs")}), 0)`,
+			configCount: sql<number>`coalesce(json_array_length(${runStatesTable.state}->${stateKey("build")}->${buildKey("configs")}), 0)`,
 			outcomes: sql<AnswerOutcome[]>`coalesce((
 				select json_agg(entry->>'${answeredKey("outcome")}' order by ord)
 				from json_array_elements(${runStatesTable.state}->${stateKey("allAnswered")})

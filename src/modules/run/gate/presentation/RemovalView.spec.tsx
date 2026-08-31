@@ -9,7 +9,7 @@ import { RemovalView } from "./RemovalView.component";
 
 const view = createMockRunView({
 	gatesCleared: 4,
-	peelSpotsRemaining: 2,
+	peelSlotsRemaining: 2,
 	configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
 });
 
@@ -22,7 +22,7 @@ describe("RemovalView", () => {
 		).toBeInTheDocument();
 	});
 
-	it("offers the whole pipeline, since any of it can be peeled", () => {
+	it("offers the whole build, since any of it can be peeled", () => {
 		render(<RemovalView view={view} onRemove={() => {}} />);
 
 		expect(screen.getAllByRole("checkbox")).toHaveLength(3);

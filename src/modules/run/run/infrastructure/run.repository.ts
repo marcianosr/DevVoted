@@ -430,7 +430,7 @@ export const applyActionToRun = async (args: {
 				// Which question was asked, recorded beside the answer: the picks
 				// alone cannot say, and every reader downstream needs to know
 				// (ADR-038).
-				mirrorsPolls(liveAuditsFor(state.pipeline.configs, state.gatesCleared))
+				mirrorsPolls(liveAuditsFor(state.build.configs, state.gatesCleared))
 			);
 		}
 

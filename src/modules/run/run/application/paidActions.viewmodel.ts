@@ -1,8 +1,5 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
-import {
-	linterFor,
-	peekerFor,
-} from "~/modules/run/pipeline/domain/pipeline.model";
+import { linterFor, peekerFor } from "~/modules/run/build/domain/build.model";
 import {
 	canBuyPeek,
 	canRunLinter,
@@ -34,10 +31,10 @@ export const paidActionsFor = (state: RunState): PaidActions => {
 		linter:
 			current === undefined
 				? null
-				: (linterFor(state.pipeline.configs, current.category) ?? null),
+				: (linterFor(state.build.configs, current.category) ?? null),
 		canPeek: peekApplies(state),
 		peekReady: canBuyPeek(state),
 		peekCost: peekFeeFor(state),
-		peeker: peekerFor(state.pipeline.configs) ?? null,
+		peeker: peekerFor(state.build.configs) ?? null,
 	};
 };

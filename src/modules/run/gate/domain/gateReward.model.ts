@@ -21,7 +21,7 @@ import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
 import type { GateRowReason } from "~/modules/run/gate/domain/configRole.model";
 
 /**
- * The gate screen reads like a CI run: one row per pipeline config, each with
+ * The gate screen reads like a CI run: one row per build config, each with
  * its roster description and the coverage or storage it produced this gate —
  * attributed from the run's own data. Configs demand nothing (ADR-035), so a
  * row is passed when its effect fired and skipped when the window gave it

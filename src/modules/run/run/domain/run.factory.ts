@@ -1,11 +1,8 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import {
-	BASE_SPOTS,
-	occupiedSpots,
-} from "~/modules/run/pipeline/domain/pipeline.model";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
+import { BASE_SLOTS, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -43,7 +40,7 @@ export const handed = [
 ];
 
 export const configIds = (state: RunState): string[] =>
-	state.pipeline.configs.map((config) => config.id);
+	state.build.configs.map((config) => config.id);
 
 export const answerWith = (state: RunState, correct: boolean): RunState => {
 	const current = state.polls[state.currentIndex];
@@ -72,9 +69,9 @@ export const atGateWithBuild = (
 	return {
 		...base,
 		gatesCleared: gate,
-		pipeline: {
-			...base.pipeline,
-			spots: occupiedSpots(roster),
+		build: {
+			...base.build,
+			slots: occupiedSlots(roster),
 			configs: roster,
 		},
 	};
@@ -88,10 +85,10 @@ export const failGate = (state: RunState): RunState => {
 
 export const payPeel = (state: RunState): RunState => {
 	let next = state;
-	while (next.peelSpotsRemaining > 0 && next.pipeline.configs.length > 0)
+	while (next.peelSlotsRemaining > 0 && next.build.configs.length > 0)
 		next = runReducer(next, {
 			type: "strip",
-			configId: next.pipeline.configs[0].id,
+			configId: next.build.configs[0].id,
 		});
 	return runReducer(next, { type: "resume-climb" });
 };
@@ -101,7 +98,7 @@ export const FILLER_IDS = ["ts", "css", "js", "eslint"];
 export const started = (slotIds: string[], size = 60): RunState => {
 	let state = createRun(pool(size), handed);
 	const fillers = FILLER_IDS.filter((id) => !slotIds.includes(id));
-	for (const configId of [...slotIds, ...fillers].slice(0, BASE_SPOTS))
-		state = runReducer(state, { type: "slot", configId });
+	for (const configId of [...slotIds, ...fillers].slice(0, BASE_SLOTS))
+		state = runReducer(state, { type: "install", configId });
 	return runReducer(state, { type: "start" });
 };

@@ -9,11 +9,9 @@ import {
 	DISCLOSURE_SUMMARY,
 	isExpandable,
 } from "./Disclosure.ui";
-import { type Rarity } from "./rarity";
-import { RarityCells, RarityGlyph } from "./RarityGlyph.ui";
 import { Row } from "./Row.ui";
+import { SlotMark } from "./SlotMark.ui";
 import { Text } from "./Text.ui";
-import { Tooltip } from "./Tooltip.ui";
 
 export type PickVariant = "remove" | "draft";
 
@@ -46,7 +44,7 @@ const FACTS =
 
 export type PickProps = {
 	label: ReactNode;
-	rarity?: Rarity;
+	slots?: number;
 	checked: boolean;
 	onToggle: (checked: boolean) => void;
 	notes?: ReactNode;
@@ -56,25 +54,15 @@ export type PickProps = {
 	summary?: ReactNode;
 	explainer?: ReactNode;
 	defaultOpen?: boolean;
-	gradeAs?: "glyph" | "cells";
-	gradeHint?: string;
+	sizeHint?: string;
 	disabled?: boolean;
 };
 
-const gradeFor = (
-	rarity: Rarity | undefined,
-	gradeAs: "glyph" | "cells",
+const sizeFor = (
+	slots: number | undefined,
 	hint: string | undefined
-): ReactNode => {
-	if (!rarity) return null;
-	const mark =
-		gradeAs === "cells" ? (
-			<RarityCells rarity={rarity} />
-		) : (
-			<RarityGlyph rarity={rarity} />
-		);
-	return hint === undefined ? mark : <Tooltip hint={hint}>{mark}</Tooltip>;
-};
+): ReactNode =>
+	slots === undefined ? null : <SlotMark slots={slots} hint={hint} />;
 
 const washFor = (
 	checked: boolean,
@@ -87,7 +75,7 @@ const washFor = (
 
 export const Pick = ({
 	label,
-	rarity,
+	slots,
 	checked,
 	onToggle,
 	notes,
@@ -98,8 +86,7 @@ export const Pick = ({
 	explainer,
 	defaultOpen = false,
 	disabled = false,
-	gradeAs = "glyph",
-	gradeHint,
+	sizeHint,
 }: PickProps) => {
 	const expandable = isExpandable(summary, explainer);
 	const wash = washFor(checked, variant, disabled);
@@ -125,7 +112,7 @@ export const Pick = ({
 
 	const marks = notes ? <span className={NOTES}>{notes}</span> : null;
 	const figure = value == null ? null : <span className={VALUE}>{value}</span>;
-	const grade = gradeFor(rarity, gradeAs, gradeHint);
+	const size = sizeFor(slots, sizeHint);
 
 	if (!expandable)
 		return (
@@ -137,7 +124,7 @@ export const Pick = ({
 				leading={control}
 				trailing={trailing}
 			>
-				{grade}
+				{size}
 				{name}
 				{marks}
 				{figure}
@@ -160,7 +147,7 @@ export const Pick = ({
 			>
 				<label className={PICKER} onClick={(event) => event.stopPropagation()}>
 					{control}
-					{grade}
+					{size}
 					{name}
 				</label>
 				{marks}

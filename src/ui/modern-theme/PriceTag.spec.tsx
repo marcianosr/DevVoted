@@ -78,7 +78,7 @@ describe("PriceTag", () => {
 	// A shelf of red tags reads as "you are broke". Half of it meaning "you are
 	// full" is a different problem with a different fix, so it gets a different
 	// colour.
-	it("greys a price the pipeline has no room for, rather than reddening it", () => {
+	it("greys a price the build has no room for, rather than reddening it", () => {
 		render(
 			<PriceTag kb={32} on="Stylelint" state="unavailable" onUse={vi.fn()} />
 		);

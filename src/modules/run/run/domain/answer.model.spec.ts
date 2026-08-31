@@ -6,16 +6,14 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
+import { isOverCapacity } from "~/modules/run/build/domain/build.model";
 import {
-	BASE_SPOTS,
-	isOverCapacity,
-} from "~/modules/run/pipeline/domain/pipeline.model";
-import {
-	coverageDemandFor,
+	BASE_SLOTS,
 	FAUCET_CAP_KB,
 	GATE_COUNT,
 	SLICE_WINDOW,
 	VICTORY_GATE,
+	coverageDemandFor,
 } from "~/modules/run/run/domain/rules.model";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
@@ -67,18 +65,16 @@ describe("gates and rewards", () => {
 			storage: 500,
 		};
 		state = runReducer(state, { type: "upgrade", configId: "js" });
-		expect(state.pipeline.configs[0].level).toBe(2);
+		expect(state.build.configs[0].level).toBe(2);
 		expect(state.status).toBe("rewarding");
 
-		state = { ...state, pipeline: { ...state.pipeline, spots: 16 } };
-		expect(state.pipeline.spots).toBe(16);
+		state = { ...state, build: { ...state.build, slots: 16 } };
+		expect(state.build.slots).toBe(16);
 		expect(state.status).toBe("rewarding");
 
 		const pick = state.draftOptions.find((config) => config.id !== "js")!;
 		state = runReducer(state, { type: "draft", configId: pick.id });
-		expect(state.pipeline.configs.map((config) => config.id)).toContain(
-			pick.id
-		);
+		expect(state.build.configs.map((config) => config.id)).toContain(pick.id);
 		expect(state.status).toBe("rewarding");
 
 		state = runReducer(state, { type: "finish-reward" });
@@ -92,7 +88,7 @@ describe("gates and rewards", () => {
 		expect(state.storage).toBe(32);
 
 		state = runReducer(state, { type: "upgrade", configId: "js" });
-		expect(state.pipeline.configs[0].level ?? 1).toBe(1);
+		expect(state.build.configs[0].level ?? 1).toBe(1);
 
 		const earned = { ...state, coverageByCategory: { js: 100 } };
 		expect(runReducer(earned, { type: "upgrade", configId: "js" })).toBe(
@@ -101,7 +97,7 @@ describe("gates and rewards", () => {
 
 		const funded = { ...earned, storage: upgradeStorageCost(1) };
 		const upgraded = runReducer(funded, { type: "upgrade", configId: "js" });
-		expect(upgraded.pipeline.configs[0].level).toBe(2);
+		expect(upgraded.build.configs[0].level).toBe(2);
 		expect(upgraded.storage).toBe(0);
 	});
 
@@ -112,7 +108,7 @@ describe("gates and rewards", () => {
 		expect(state.storage).toBe(64);
 
 		state = runReducer(state, { type: "upgrade", configId: "unit-tests" });
-		const unit = state.pipeline.configs.find((c) => c.id === "unit-tests")!;
+		const unit = state.build.configs.find((c) => c.id === "unit-tests")!;
 		expect(unit.level).toBe(2);
 		expect(state.storage).toBe(0);
 
@@ -130,7 +126,7 @@ describe("gates and rewards", () => {
 			...state,
 			storage: 500,
 			coverage: 100,
-			pipeline: { ...state.pipeline, spots: state.pipeline.spots + 1 },
+			build: { ...state.build, slots: state.build.slots + 1 },
 		};
 
 		const pick = state.draftOptions[0];
@@ -142,36 +138,38 @@ describe("gates and rewards", () => {
 	});
 });
 
-describe("capacity comes off the width ladder alone (ADR-044/045)", () => {
+describe("capacity is bought, never handed over (ADR-046)", () => {
 	it("widens on no answer, however much coverage it earns", () => {
 		let state = { ...started(["js"]), coverage: 1000 };
 		state = answerWith(state, true);
-		expect(state.pipeline.spots).toBe(BASE_SPOTS);
+		expect(state.build.slots).toBe(BASE_SLOTS);
 	});
 
-	it("widens on the clear that crosses a rung's gate, and on no other", () => {
+	it("stays the width it opened on however many gates it clears", () => {
 		let state = started(["js"], 6 * SLICE_WINDOW);
 		const widthAfterEachClear: number[] = [];
 		for (let gate = 0; gate < 4; gate++) {
 			state = clearGate(state);
-			widthAfterEachClear.push(state.pipeline.spots);
+			widthAfterEachClear.push(state.build.slots);
 			state = runReducer(state, { type: "finish-reward" });
 		}
 
-		expect(widthAfterEachClear).toEqual([4, 8, 8, 8]);
+		expect(widthAfterEachClear).toEqual([4, 4, 4, 4]);
 	});
 
-	it("hands a rung over on an empty balance, and bills nothing for it", () => {
-		const broke = {
+	it("keeps a bought slot through a clear on an empty balance", () => {
+		const broke: RunState = {
 			...started(["js"], 6 * SLICE_WINDOW),
 			gatesCleared: 1,
+			slotsBought: 1,
 			storage: 0,
+			build: { ...started(["js"], 6 * SLICE_WINDOW).build, slots: 5 },
 		};
 		const state = clearGate(broke);
 
-		expect(state.pipeline.spots).toBe(8);
+		expect(state.build.slots).toBe(5);
 		expect(state.storage).toBeGreaterThan(0);
-		expect(isOverCapacity(state.pipeline)).toBe(false);
+		expect(isOverCapacity(state.build)).toBe(false);
 	});
 });
 
@@ -228,7 +226,7 @@ describe("the gate's window meter (ADR-035)", () => {
 	});
 });
 
-describe("enhancement configs on one pipeline", () => {
+describe("enhancement configs on one build", () => {
 	it("doubles the opening answer's coverage with Cold Start", () => {
 		let state = started(["cold-start"]);
 		state = answerWith(state, true);
@@ -253,11 +251,11 @@ describe("the summit", () => {
 		const base = started(["js"], GATE_COUNT * SLICE_WINDOW);
 		let state: RunState = {
 			...base,
-			pipeline: {
-				...base.pipeline,
-				spots: 6,
+			build: {
+				...base.build,
+				slots: 6,
 				configs: [
-					...base.pipeline.configs,
+					...base.build.configs,
 					CONFIGS.agentsMd,
 					CONFIGS.coverageGain,
 					CONFIGS.codeCoverage,
@@ -280,7 +278,7 @@ describe("the summit", () => {
 });
 
 describe("depth and width are independent (ADR-019)", () => {
-	it("advances the gate on a clear the opening four spots paid for", () => {
+	it("advances the gate on a clear the opening four slots paid for", () => {
 		const state = clearGate(started(["js"]));
 
 		expect(state.status).toBe("rewarding");
@@ -304,7 +302,7 @@ describe("depth and width are independent (ADR-019)", () => {
 		}
 
 		expect(state.gatesCleared).toBe(3);
-		expect(state.pipeline.spots).toBeGreaterThanOrEqual(BASE_SPOTS);
+		expect(state.build.slots).toBeGreaterThanOrEqual(BASE_SLOTS);
 	});
 
 	it("pays a deeper gate more, so replaying shallow ones is never the ramp", () => {
@@ -610,9 +608,9 @@ describe("Moore's Law", () => {
 	});
 	const maxed = (state: RunState): RunState => ({
 		...state,
-		pipeline: {
-			...state.pipeline,
-			configs: state.pipeline.configs.map((config) =>
+		build: {
+			...state.build,
+			configs: state.build.configs.map((config) =>
 				config.id === "moores-law" ? { ...config, level: 5 } : config
 			),
 		},
@@ -657,14 +655,15 @@ describe("Moore's Law", () => {
 
 		expect(state.storage).toBe(200 - 64);
 		expect(
-			state.pipeline.configs.find((config) => config.id === "moores-law")?.level
+			state.build.configs.find((config) => config.id === "moores-law")?.level
 		).toBe(2);
 	});
 
-	it("compounds on a balance nothing clamps", () => {
-		const rich: RunState = maxed(
-			held(started(["moores-law"], 4 * SLICE_WINDOW), 512)
-		);
+	it("compounds while the plan is wide enough to hold the balance", () => {
+		const rich: RunState = {
+			...maxed(held(started(["moores-law"], 4 * SLICE_WINDOW), 512)),
+			storagePlan: 3,
+		};
 		let state = answerWholeWindow(rich);
 		const first = state.interestThisGateKb ?? 0;
 		state = runReducer(state, { type: "finish-reward" });
@@ -676,7 +675,7 @@ describe("Moore's Law", () => {
 });
 
 describe("Dependabot's merge announcement", () => {
-	it("stays unset when nothing in the pipeline carries the axis", () => {
+	it("stays unset when nothing in the build carries the axis", () => {
 		const state = clearGate(started(["js"]));
 		expect(state.autoUpgradedConfigId).toBeUndefined();
 	});
@@ -696,11 +695,11 @@ describe("Deprecated's decay", () => {
 		const base = started(["js"]);
 		return {
 			...base,
-			pipeline: {
-				...base.pipeline,
-				spots: base.pipeline.configs.length + 1,
+			build: {
+				...base.build,
+				slots: base.build.configs.length + 1,
 				configs: [
-					...base.pipeline.configs,
+					...base.build.configs,
 					{ ...CONFIGS.deprecated, coverageMultiplier: multiplier },
 				],
 			},
@@ -708,7 +707,7 @@ describe("Deprecated's decay", () => {
 	};
 
 	const deprecatedIn = (state: RunState) =>
-		state.pipeline.configs.find((config) => config.id === "deprecated");
+		state.build.configs.find((config) => config.id === "deprecated");
 
 	it("fades ×3 to ×2.5 at the clear — the cleared gate scored at the full ×3", () => {
 		const state = clearGate(holdingDeprecated(3));
@@ -748,16 +747,16 @@ describe("Freemium's subscription", () => {
 		return {
 			...base,
 			storage,
-			pipeline: {
-				...base.pipeline,
-				spots: base.pipeline.configs.length + 1,
-				configs: [...base.pipeline.configs, plan],
+			build: {
+				...base.build,
+				slots: base.build.configs.length + 1,
+				configs: [...base.build.configs, plan],
 			},
 		};
 	};
 
 	const freemiumIn = (state: RunState) =>
-		state.pipeline.configs.find((config) => config.id === "freemium");
+		state.build.configs.find((config) => config.id === "freemium");
 
 	it("bills 8KB at the first clear and keeps the plan installed", () => {
 		const state = clearGate(subscribed(128));
@@ -777,7 +776,7 @@ describe("Freemium's subscription", () => {
 		expect(freemiumIn(state)).toBeUndefined();
 		expect(state.lapsedConfigs).toHaveLength(1);
 		expect(state.subscriptionBillKb).toBe(0);
-		expect(state.pipeline.configs).toHaveLength(4);
+		expect(state.build.configs).toHaveLength(4);
 	});
 
 	it("does not bill a failed gate — the redo already charges a peel", () => {
@@ -799,7 +798,7 @@ describe("Freemium's subscription", () => {
 		const shopping: RunState = {
 			...cleared,
 			draftOptions: [CONFIGS.agentsMd],
-			pipeline: { ...cleared.pipeline, spots: 24 },
+			build: { ...cleared.build, slots: 24 },
 		};
 		const drafted = runReducer(shopping, {
 			type: "draft",

@@ -5,7 +5,7 @@ import type { RoleRow } from "~/modules/run/gate/domain/configRole.model";
 import {
 	describeRow,
 	emphasizeNumbers,
-} from "~/modules/run/pipeline/presentation/PipelineReportRow.ui";
+} from "~/modules/run/build/presentation/BuildReportRow.ui";
 import { roleBadge } from "~/modules/run/gate/presentation/RoleList.ui";
 import { StatusDot } from "~/ui/StatusDot.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";

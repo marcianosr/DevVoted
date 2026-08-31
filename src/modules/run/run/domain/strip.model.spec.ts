@@ -18,19 +18,19 @@ import {
 } from "~/modules/run/run/domain/run.factory";
 
 describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
-	it("owes a share of the occupied spots at the gate it missed", () => {
+	it("owes a share of the occupied slots at the gate it missed", () => {
 		const state = failGate(started(["unit-tests"]));
 		expect(state.status).toBe("awaiting-strip");
-		expect(state.peelSpotsRemaining).toBe(Math.ceil(4 * failPeelShareFor(0)));
+		expect(state.peelSlotsRemaining).toBe(Math.ceil(4 * failPeelShareFor(0)));
 		expect(state.gatesCleared).toBe(0);
-		expect(state.pipeline.configs).toHaveLength(4);
+		expect(state.build.configs).toHaveLength(4);
 	});
 
 	it("sends the paid peel to the shop instead of straight back to the polls", () => {
 		const state = payPeel(failGate(started(["unit-tests"])));
 		expect(state.status).toBe("rewarding");
 		expect(state.redoGate).toBe(0);
-		expect(state.pipeline.configs).toHaveLength(3);
+		expect(state.build.configs).toHaveLength(3);
 		expect(state.draftOptions.length).toBeGreaterThan(0);
 	});
 
@@ -61,14 +61,14 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		const audited = failGate(atGateWithBuild(11, 8));
 		const clean = failGate(atGateWithBuild(10, 8));
 		expect(audited.status).toBe("awaiting-strip");
-		expect(audited.peelSpotsRemaining).toBeGreaterThan(
-			clean.peelSpotsRemaining
+		expect(audited.peelSlotsRemaining).toBeGreaterThan(
+			clean.peelSlotsRemaining
 		);
 	});
 
 	it("peels more of a deep build than a shallow one", () => {
-		expect(failGate(atGateWithBuild(8, 8)).peelSpotsRemaining).toBeGreaterThan(
-			failGate(atGateWithBuild(1, 8)).peelSpotsRemaining
+		expect(failGate(atGateWithBuild(8, 8)).peelSlotsRemaining).toBeGreaterThan(
+			failGate(atGateWithBuild(1, 8)).peelSlotsRemaining
 		);
 	});
 
@@ -76,9 +76,9 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		const base = started(["unit-tests", "eslint"]);
 		const state = failGate({
 			...base,
-			pipeline: {
-				...base.pipeline,
-				configs: base.pipeline.configs.slice(0, 1),
+			build: {
+				...base.build,
+				configs: base.build.configs.slice(0, 1),
 			},
 		});
 		expect(state.status).toBe("dead");
@@ -93,18 +93,18 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		expect(state.redoGate).toBeUndefined();
 	});
 
-	it("ends the run when a bare pipeline misses — a bare retry would loop forever", () => {
+	it("ends the run when a bare build misses — a bare retry would loop forever", () => {
 		let state = started(["js"]);
-		state = { ...state, pipeline: { ...state.pipeline, configs: [] } };
+		state = { ...state, build: { ...state.build, configs: [] } };
 		expect(failGate(state).status).toBe("dead");
 	});
 
-	it("refuses the sell that would empty the pipeline", () => {
+	it("refuses the sell that would empty the build", () => {
 		let state = started(["eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		const oneConfig = {
 			...state,
-			pipeline: { ...state.pipeline, configs: [CONFIGS.eslint] },
+			build: { ...state.build, configs: [CONFIGS.eslint] },
 		};
 		expect(runReducer(oneConfig, { type: "sell", configId: "eslint" })).toBe(
 			oneConfig
@@ -119,14 +119,14 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 		return {
 			...state,
 			status: "awaiting-strip",
-			peelSpotsRemaining: quota,
+			peelSlotsRemaining: quota,
 		};
 	};
 
 	it("routes the peeled build through the shop before the replay", () => {
 		let state = awaitingStrip(1);
 		state = runReducer(state, { type: "strip", configId: "eslint" });
-		expect(state.peelSpotsRemaining).toBe(0);
+		expect(state.peelSlotsRemaining).toBe(0);
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("rewarding");
 		expect(state.redoGate).toBe(0);
@@ -145,7 +145,7 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 
 	it("ends the run when a peel emptied the build instead of climbing on", () => {
 		let state = awaitingStrip(0);
-		state = { ...state, pipeline: { ...state.pipeline, configs: [] } };
+		state = { ...state, build: { ...state.build, configs: [] } };
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("dead");
 	});

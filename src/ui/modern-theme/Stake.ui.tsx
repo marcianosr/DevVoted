@@ -18,7 +18,7 @@ export type StakeProps = {
 	removeOnMiss: number;
 	/** Signed, so the row reads like its opposite number under Rewards. */
 	coveragePerWrong: number;
-	/** The peel takes the whole pipeline, so the miss is the run. */
+	/** The peel takes the whole build, so the miss is the run. */
 	missIsFatal?: boolean;
 };
 
@@ -58,7 +58,7 @@ export const Stake = ({
 							</Chip>
 							{missIsFatal ? (
 								<Text size="meta" tone="cinnabar">
-									your whole pipeline — the run ends here
+									your whole build — the run ends here
 								</Text>
 							) : null}
 						</>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Pipeline } from "~/modules/run/pipeline/domain/pipeline.model";
+import { Build } from "~/modules/run/build/domain/build.model";
 import { Config } from "~/modules/run/config/domain/config.model";
 import {
 	CONFIG_LIST,
@@ -13,9 +13,9 @@ import {
 import { coverageDemandFor } from "~/modules/run/run/domain/rules.model";
 import { gatePassed } from "~/modules/run/gate/domain/gate.model";
 
-const pipelineWith = (configs: Config[]): Pipeline => ({
-	id: "pipeline",
-	spots: 5,
+const buildWith = (configs: Config[]): Build => ({
+	id: "build",
+	slots: 5,
 	configs,
 });
 const win = (partial: Partial<GateWindow>): GateWindow => ({
@@ -28,7 +28,7 @@ describe("gatePassed (ADR-035)", () => {
 		const demand = coverageDemandFor(0);
 		expect(
 			gatePassed(
-				pipelineWith([CONFIGS.js]),
+				buildWith([CONFIGS.js]),
 				win({ answered: 5, coverageGained: demand }),
 				0
 			)
@@ -39,7 +39,7 @@ describe("gatePassed (ADR-035)", () => {
 		const demand = coverageDemandFor(2);
 		expect(
 			gatePassed(
-				pipelineWith([CONFIGS.js]),
+				buildWith([CONFIGS.js]),
 				win({ answered: 5, coverageGained: demand - 0.1 }),
 				2
 			)
@@ -48,7 +48,7 @@ describe("gatePassed (ADR-035)", () => {
 
 	it("grades every gate against its own row of the table", () => {
 		const meter = coverageDemandFor(1);
-		const build = pipelineWith([CONFIGS.js]);
+		const build = buildWith([CONFIGS.js]);
 		expect(
 			gatePassed(build, win({ answered: 5, coverageGained: meter }), 1)
 		).toBe(true);
@@ -57,9 +57,9 @@ describe("gatePassed (ADR-035)", () => {
 		).toBe(false);
 	});
 
-	it("never clears a bare pipeline — free redo would soft-lock it forever", () => {
+	it("never clears a bare build — free redo would soft-lock it forever", () => {
 		expect(
-			gatePassed(pipelineWith([]), win({ answered: 5, coverageGained: 999 }), 0)
+			gatePassed(buildWith([]), win({ answered: 5, coverageGained: 999 }), 0)
 		).toBe(false);
 	});
 });
