@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
+import { SLOT_PRICES_KB } from "~/modules/run/run/domain/rules.model";
 import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
 
 import { StartView, type StartViewProps } from "./StartView.component";
@@ -24,10 +25,39 @@ const render_ = (overrides: Partial<StartViewProps> = {}) =>
 			view={view}
 			onToggle={() => {}}
 			onPickStack={() => {}}
+			onBuySlot={() => {}}
+			onRefundSlot={() => {}}
 			onStart={() => {}}
 			{...overrides}
 		/>
 	);
+
+const withArchive = (archiveKb: number, slots = 4, slotsBought = 0) =>
+	createMockRunView({
+		...view,
+		slots,
+		slotsFree: slots,
+		startSlotDeals: {
+			archiveKb,
+			buy:
+				archiveKb >= SLOT_PRICES_KB[slotsBought] * 2
+					? {
+							costKb: SLOT_PRICES_KB[slotsBought] * 2,
+							makes: slots + 1,
+						}
+					: {
+							costKb: SLOT_PRICES_KB[slotsBought] * 2,
+							refusal: `Costs ${SLOT_PRICES_KB[slotsBought] * 2} KB of archive, you have ${archiveKb}.`,
+						},
+			cash:
+				slotsBought === 0
+					? {}
+					: {
+							costKb: SLOT_PRICES_KB[slotsBought - 1] * 2,
+							makes: slots - 1,
+						},
+		},
+	});
 
 describe("StartView", () => {
 	it("opens on the first gate, named", () => {
@@ -115,11 +145,10 @@ describe("StartView", () => {
 		expect(onStart).toHaveBeenCalledOnce();
 	});
 
-	it("names no seed and no archive, having neither", () => {
+	it("names no seed, the prototype dealing an unseeded hand", () => {
 		render_();
 
 		expect(screen.queryByText(/^seed/)).not.toBeInTheDocument();
-		expect(screen.queryByText("archive")).not.toBeInTheDocument();
 	});
 
 	it("badges each config's headline figure beside its name", () => {
@@ -136,5 +165,65 @@ describe("StartView", () => {
 		if (!row) throw new Error("No ESLint row rendered");
 
 		expect(row.querySelector(".bg-celadon\\/15")).not.toBeInTheDocument();
+	});
+
+	it("says what the archive holds, the run having no storage of its own yet", () => {
+		render_({ view: withArchive(512) });
+
+		expect(screen.getByText("512 KB")).toBeInTheDocument();
+	});
+
+	it("sells width off the hatching at the archive's doubled rung", () => {
+		render_({ view: withArchive(512) });
+
+		expect(
+			screen.getByRole("button", {
+				name: /Install a new slot from the archive · makes 5 · 32 KB/,
+			})
+		).toBeInTheDocument();
+	});
+
+	it("arms before it spends, the archive being the only purse open here", async () => {
+		const onBuySlot = vi.fn();
+		render_({ view: withArchive(512), onBuySlot });
+
+		const stub = () => screen.getByRole("button", { name: /Install a new slot/ });
+
+		await userEvent.click(stub());
+		expect(onBuySlot).not.toHaveBeenCalled();
+
+		await userEvent.click(stub());
+		expect(onBuySlot).toHaveBeenCalledOnce();
+	});
+
+	it("refuses a rung the archive cannot cover, saying what it holds", () => {
+		render_({ view: withArchive(12) });
+
+		expect(
+			screen.getByRole("button", {
+				name: /Costs 32 KB of archive, you have 12\./,
+			})
+		).toBeDisabled();
+	});
+
+	it("hands a bought slot back for what it cost, the run not having started", async () => {
+		const onRefundSlot = vi.fn();
+		render_({ view: withArchive(480, 5, 1), onRefundSlot });
+
+		const back = () =>
+			screen.getByRole("button", {
+				name: /Refund the slot to the archive · makes 4 · \+32 KB/,
+			});
+
+		await userEvent.click(back());
+		await userEvent.click(back());
+
+		expect(onRefundSlot).toHaveBeenCalledOnce();
+	});
+
+	it("offers no refund before the archive has bought anything", () => {
+		render_({ view: withArchive(512) });
+
+		expect(screen.queryByRole("button", { name: /Refund/ })).not.toBeInTheDocument();
 	});
 });

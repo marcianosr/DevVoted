@@ -366,15 +366,34 @@ describe("ShopView", () => {
 		).toBeInTheDocument();
 	});
 
-	it("buys the slot from the hatching press", async () => {
+	it("arms the hatching on the first press and buys on the second", async () => {
+		const onBuySlot = vi.fn();
+		render_({ onBuySlot });
+
+		const stub = () =>
+			screen.getByRole("button", { name: /Install a new slot/ });
+
+		await userEvent.click(stub());
+		expect(onBuySlot).not.toHaveBeenCalled();
+		expect(
+			screen.getByText("Install a new slot · makes 5 · 16 KB · press again")
+		).toBeInTheDocument();
+
+		await userEvent.click(stub());
+		expect(onBuySlot).toHaveBeenCalledOnce();
+	});
+
+	it("drops the arming once focus moves on, so a stray press cannot spend", async () => {
 		const onBuySlot = vi.fn();
 		render_({ onBuySlot });
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /Install a new slot/ })
 		);
+		await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
 
-		expect(onBuySlot).toHaveBeenCalledOnce();
+		expect(screen.getByText("1 slot free · fits up to 1")).toBeInTheDocument();
+		expect(onBuySlot).not.toHaveBeenCalled();
 	});
 
 	it("cashes an empty slot from the track once the run holds more than the free four", async () => {
@@ -393,11 +412,13 @@ describe("ShopView", () => {
 			}),
 		});
 
-		await userEvent.click(
+		const cashOut = () =>
 			screen.getByRole("button", {
 				name: /Cash an empty slot · makes 5 · \+32 KB/,
-			})
-		);
+			});
+
+		await userEvent.click(cashOut());
+		await userEvent.click(cashOut());
 
 		expect(onCashSlot).toHaveBeenCalledOnce();
 	});

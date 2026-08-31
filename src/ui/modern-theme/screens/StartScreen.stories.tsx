@@ -191,6 +191,96 @@ export const Elite: Story = {
 	),
 };
 
+const ARCHIVE_DEALS = {
+	buy: {
+		costKb: 32,
+		makes: 5,
+		verb: "Install a new slot from the archive",
+		onUse: () => {},
+	},
+	cash: {
+		verb: "Refund the slot to the archive",
+		onUse: () => {},
+	},
+} satisfies NonNullable<StartScreenProps["slotDeals"]>;
+
+export const ArchiveSellsWidth: Story = {
+	render: () => (
+		<StartScreen
+			{...base}
+			pickedIds={["ts"]}
+			archive="512 KB"
+			maxSlots={24}
+			slotDeals={ARCHIVE_DEALS}
+			onToggle={() => {}}
+		/>
+	),
+};
+
+export const ArchiveArmedToBuy: Story = {
+	render: () => (
+		<StartScreen
+			{...base}
+			pickedIds={["ts"]}
+			archive="512 KB"
+			maxSlots={24}
+			slotDeals={{
+				...ARCHIVE_DEALS,
+				buy: { ...ARCHIVE_DEALS.buy, armed: true },
+			}}
+			onToggle={() => {}}
+		/>
+	),
+};
+
+export const ArchiveTooThin: Story = {
+	render: () => (
+		<StartScreen
+			{...base}
+			pickedIds={["ts"]}
+			archive="12 KB"
+			maxSlots={24}
+			slotDeals={{
+				...ARCHIVE_DEALS,
+				buy: {
+					costKb: 32,
+					verb: "Install a new slot from the archive",
+					refusal: "Costs 32 KB of archive, you have 12.",
+					onUse: () => {},
+				},
+			}}
+			onToggle={() => {}}
+		/>
+	),
+};
+
+export const ArchiveBoughtASlot: Story = {
+	render: () => (
+		<StartScreen
+			{...base}
+			pickedIds={["ts"]}
+			slots={5}
+			maxSlots={24}
+			archive="480 KB"
+			slotDeals={{
+				buy: {
+					costKb: 64,
+					makes: 6,
+					verb: "Install a new slot from the archive",
+					onUse: () => {},
+				},
+				cash: {
+					costKb: 32,
+					makes: 4,
+					verb: "Refund the slot to the archive",
+					onUse: () => {},
+				},
+			}}
+			onToggle={() => {}}
+		/>
+	),
+};
+
 export const RoomRunningOut: Story = {
 	render: () => (
 		<StartScreen

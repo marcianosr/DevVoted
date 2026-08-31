@@ -332,10 +332,11 @@ Every build surface draws the same track: a bar per config as wide as its slots,
 room the run has not bought. The two treatments are not interchangeable: a dash is a
 slot standing open that a config can go into now, hatching is room still for sale.
 Outside the shop the stub only says where room comes from ("Buy a slot in the shop for
-more room"); in the shop it carries the next slot's price and buys it on a press, and
-the empty box beside it carries the refund and cashes a slot back. Under the track, one
-line: "10 slots free · fits up to 8". Width carries no swatch: badges come from
-clearing gates.
+more room"); in the shop it carries the next slot's price, and the empty box beside it
+carries the refund. Both take **two presses**: the first arms the box and spells the
+deal out on the line under the track, the second spends. That line otherwise counts the
+room — "10 slots free · fits up to 8" — and is the only label a phone gets, there being
+no hover to read a price by. Width carries no swatch: badges come from clearing gates.
 
 **Managing configs.** Click any config chip for its popover: **Install**, **Sell**
 (refunds half the draft cost in KB), **Minify**, or **Upgrade**. Anything can be
@@ -572,6 +573,15 @@ twelve-gate climb earns (~2.8 MB), so a normal run reaches **8 to 13 slots** and
 endless-run territory. That price curve is the brake on width buying score buying
 width.
 
+**Opening wider** (ADR-049). The start screen sells the same ladder from **archived
+storage** at **double the rung** — 32 KB for the fifth slot, 64 for the sixth, 1024 for
+the twelfth — pressed on the same hatched stub, and a start purchase counts on the
+ladder, so the shop's next slot picks up where the archive left off. Nothing caps it
+but the price: eight slots costs 480 KB of archive, twelve costs 3.1 MB, more than a
+perfect climb banks. Until you press Start an empty slot hands back for exactly what it
+cost and the ladder rolls back with it; once the run begins the archive is shut out
+both ways.
+
 **Cashing a slot back.** An empty slot refunds **the price of the most expensive slot
 you still hold** — cash your ninth and you get 768 KB. The purchase ladder never rolls
 back, so the next slot you buy costs the rung above the last one you bought. Buying the
@@ -630,8 +640,9 @@ rather than a verdict.
 | **git tag** | 128 KB at gate 4, +64 KB per gate, 512 KB at gate 10 | A cross-run checkpoint: after a death, your next run checks out there instead of gate 1. One per run, burnt by the run it rescues. |
 | **Sell** | refunds half the draft cost | Never your last config. |
 | **Upgrade** | `32 KB × the level bought` | Focus configs also need the coverage ([4.4](#44-upgrades)). |
-| **Buy a slot** | 16 KB, doubling up the ladder | One more slot on the build, yours for the run. Up to 24 ([5.1](#51-storage-kb)). Pressed on the build track's hatched stub, which carries the price. |
-| **Cash a slot** | refunds that slot's own price | Only an empty one, never below the free four. The ladder does not roll back. Pressed on the empty box nearest the hatching, which carries the refund. |
+| **Buy a slot** | 16 KB, doubling up the ladder | One more slot on the build, yours for the run. Up to 24 ([5.1](#51-storage-kb)). Pressed twice on the build track's hatched stub: the first press arms and quotes the deal, the second buys. |
+| **Cash a slot** | refunds that slot's own price | Only an empty one, never below the free four. The ladder does not roll back. Pressed twice on the empty box nearest the hatching, same as buying. |
+| **Open a slot** (start screen) | double the rung, from archived storage | Same ladder, twice the price, paid from the archive rather than the run ([6.1](#61-archived-storage)). Refundable at cost until Start; shut once the run begins. |
 | **Storage plan** | free to 768 KB a gate | Raises the KB cap. Billed at every clear; fall behind and it drops to the free 512 KB ([5.1](#51-storage-kb)). |
 
 A tag-rescued run starts at the pinned gate with a 32 KB-per-gate stipend, everything
@@ -657,7 +668,8 @@ unmet coverage are different problems and read differently.
 
 Leftover run storage converts into persistent **archived storage** at the outcome rate
 (100% victory, proportional on death, 0% on abandon). It is the meta-progression
-currency: buy cosmetics, inject it into your next run, or fund config unlocks. 🟡 More
+currency: buy cosmetics, open your next run wider ([5.1](#51-storage-kb)), inject it
+into that run, or fund config unlocks. 🟡 More
 spending options are planned, including mid-run coverage, config, cap and streak
 injections (DVTD-xbri).
 

@@ -6,7 +6,11 @@ import {
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 
-import { SlotTrack, type SlotTrackConfig } from "./SlotTrack.ui";
+import {
+	SlotTrack,
+	type SlotTrackConfig,
+	type SlotTrackProps,
+} from "./SlotTrack.ui";
 import { BASE_SLOTS, MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
 
 type ConfigKey = keyof typeof CONFIGS;
@@ -97,6 +101,36 @@ export const OverCapacity: Story = {
 	args: {
 		configs: bars("freemium", "coldStart"),
 		slots: 8,
+	},
+};
+
+const SELLING = {
+	configs: bars("js", "jsx"),
+	slots: 5,
+	maxSlots: MAX_SLOTS,
+	fits: largestSizeFitting(3),
+	buy: { costKb: 32, makes: 6, onUse: () => {} },
+	cash: { costKb: 16, makes: 4, onUse: () => {} },
+} satisfies SlotTrackProps;
+
+export const SellingRoom: Story = { args: SELLING };
+
+export const ArmedToBuy: Story = {
+	args: { ...SELLING, buy: { ...SELLING.buy, armed: true } },
+};
+
+export const ArmedToCash: Story = {
+	args: { ...SELLING, cash: { ...SELLING.cash, armed: true } },
+};
+
+export const CannotAfford: Story = {
+	args: {
+		...SELLING,
+		buy: {
+			costKb: 32,
+			refusal: "Costs 32 KB, you have 12.",
+			onUse: () => {},
+		},
 	},
 };
 

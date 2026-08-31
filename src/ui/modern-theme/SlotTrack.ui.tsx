@@ -14,7 +14,9 @@ const INSTALLED = "border-current bg-zinc-800/80";
 const MINIFIED = "border-dotted border-current bg-zinc-800/40";
 const NEUTRAL = "text-zinc-400";
 const FREE = "border-dashed border-zinc-700";
+const FREE_ARMED = "border-dashed border-celadon";
 const UNBOUGHT = "border-edge bg-hatched";
+const UNBOUGHT_ARMED = "border-celadon bg-hatched";
 const IDLE = "transition-colors hover:border-edge-strong";
 const PRESSABLE =
 	"cursor-pointer transition-colors hover:border-theme hover:bg-theme-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean disabled:cursor-not-allowed disabled:opacity-40";
@@ -23,6 +25,7 @@ const OVERFLOW = "border-cinnabar bg-cinnabar/15 text-cinnabar";
 const BUY_HINT = "Buy a slot in the shop for more room";
 const INSTALL = "Install a new slot";
 const CASH = "Cash an empty slot";
+const CONFIRM = "press again";
 const STUB = "flex min-w-0";
 const FILL = "size-full";
 
@@ -40,7 +43,10 @@ export type SlotDeal = {
 	readonly costKb?: number;
 	readonly makes?: number;
 	readonly refusal?: string;
+	readonly verb?: string;
+	readonly armed?: boolean;
 	readonly onUse: () => void;
+	readonly onDismiss?: () => void;
 };
 
 export type SlotTrackProps = {
@@ -69,11 +75,14 @@ const captionFor = (
 
 type Press = {
 	readonly cost: string;
+	readonly quote: string;
 	readonly tone: ModernTone;
 	readonly hint: string;
 	readonly name: string;
+	readonly armed: boolean;
 	readonly disabled: boolean;
 	readonly onUse: () => void;
+	readonly onDismiss?: () => void;
 };
 
 type Cell = {
@@ -90,22 +99,29 @@ const barTone = (config: SlotTrackConfig, isExcess: boolean): string => {
 	return clsx(config.minified === true ? MINIFIED : INSTALLED, NEUTRAL);
 };
 
-const pressFor = (verb: string, deal: SlotDeal, cost: string): Press => {
+const pressFor = (fallback: string, deal: SlotDeal, cost: string): Press => {
 	const quote = [
-		verb,
+		deal.verb ?? fallback,
 		deal.makes === undefined ? undefined : `makes ${deal.makes}`,
 		cost,
 	]
 		.filter(Boolean)
 		.join(" · ");
 
+	const armed = deal.armed === true;
+
 	return {
 		cost,
+		quote,
+		armed,
 		tone: deal.refusal === undefined ? "celadon" : "muted",
 		hint: deal.refusal ?? quote,
-		name: [quote, deal.refusal].filter(Boolean).join(", "),
+		name: [quote, armed ? `${CONFIRM} to confirm` : undefined, deal.refusal]
+			.filter(Boolean)
+			.join(", "),
 		disabled: deal.refusal !== undefined,
 		onUse: deal.onUse,
+		onDismiss: deal.onDismiss,
 	};
 };
 
@@ -117,19 +133,55 @@ const buyPress = (buy: SlotDeal): Press =>
 	);
 
 const freeCells = (free: number, cash?: SlotDeal): readonly Cell[] =>
-	Array.from({ length: free }, (_, index) => ({
-		key: `free-${index}`,
-		slots: 1,
-		tone: FREE,
-		...(cash !== undefined && cash.costKb !== undefined && index === free - 1
-			? { press: pressFor(CASH, cash, `+${cash.costKb} KB`) }
-			: {}),
-	}));
+	Array.from({ length: free }, (_, index) => {
+		const key = `free-${index}`;
+		if (cash === undefined || cash.costKb === undefined || index < free - 1)
+			return { key, slots: 1, tone: FREE };
 
-const stubCell = (buy?: SlotDeal): Cell =>
-	buy === undefined
-		? { key: "unbought", slots: 1, tone: clsx(UNBOUGHT, IDLE), hint: BUY_HINT }
-		: { key: "unbought", slots: 1, tone: UNBOUGHT, press: buyPress(buy) };
+		return {
+			key,
+			slots: 1,
+			tone: cash.armed === true ? FREE_ARMED : FREE,
+			press: pressFor(CASH, cash, `+${cash.costKb} KB`),
+		};
+	});
+
+const stubCell = (buy?: SlotDeal): Cell => {
+	if (buy === undefined)
+		return {
+			key: "unbought",
+			slots: 1,
+			tone: clsx(UNBOUGHT, IDLE),
+			hint: BUY_HINT,
+		};
+
+	return {
+		key: "unbought",
+		slots: 1,
+		tone: buy.armed === true ? UNBOUGHT_ARMED : UNBOUGHT,
+		press: buyPress(buy),
+	};
+};
+
+const armedPress = (cells: readonly Cell[]): Press | undefined =>
+	cells.find((cell) => cell.press?.armed === true)?.press;
+
+type Caption = { readonly text: string; readonly tone: ModernTone };
+
+const captionOf = (
+	cells: readonly Cell[],
+	fits: number | null | undefined,
+	occupancy: Occupancy
+): Caption => {
+	const armed = armedPress(cells);
+	if (armed !== undefined)
+		return { text: `${armed.quote} · ${CONFIRM}`, tone: "celadon" };
+
+	return {
+		text: captionFor(fits, occupancy),
+		tone: occupancy.overflow > 0 ? "cinnabar" : "muted",
+	};
+};
 
 const cellsFor = (
 	configs: readonly SlotTrackConfig[],
@@ -161,6 +213,10 @@ const Segment = ({ cell, width }: { cell: Cell; width: number }) => {
 						onClick={(event) => {
 							event.stopPropagation();
 							press.onUse();
+						}}
+						onBlur={press.onDismiss}
+						onKeyDown={(event) => {
+							if (event.key === "Escape") press.onDismiss?.();
 						}}
 						className={clsx(SEGMENT, cell.tone, PRESSABLE, FILL)}
 					>
@@ -200,6 +256,7 @@ export const SlotTrack = ({
 	const occupancy = occupancyOf(configs, slots, maxSlots);
 	const cells = cellsFor(configs, occupancy, { buy, cash });
 	const width = cells.reduce((total, cell) => total + cell.slots, 0) || 1;
+	const caption = captionOf(cells, fits, occupancy);
 
 	return (
 		<div className="flex flex-col gap-1">
@@ -215,8 +272,8 @@ export const SlotTrack = ({
 					<Segment key={cell.key} cell={cell} width={width} />
 				))}
 			</div>
-			<Text size="xxs" tone={occupancy.overflow > 0 ? "cinnabar" : "muted"}>
-				{captionFor(fits, occupancy)}
+			<Text size="xxs" tone={caption.tone}>
+				{caption.text}
 			</Text>
 		</div>
 	);

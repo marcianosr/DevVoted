@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
 	type Config,
 	describeConfig,
@@ -305,6 +307,8 @@ const offerCountFor = (view: RunView): string => {
 	return locked === 0 ? offers : `${offers} · ${locked} locked`;
 };
 
+type SlotDealName = "buy" | "cash";
+
 export type ShopViewProps = {
 	view: RunView;
 	onDraft: (configId: string) => void;
@@ -334,6 +338,17 @@ export const ShopView = ({
 	onSetStoragePlan,
 	onContinue,
 }: ShopViewProps) => {
+	const [armedDeal, setArmedDeal] = useState<SlotDealName | null>(null);
+	const disarm = () => setArmedDeal(null);
+	const armThenUse = (deal: SlotDealName, use: () => void) => () => {
+		if (armedDeal !== deal) {
+			setArmedDeal(deal);
+			return;
+		}
+		disarm();
+		use();
+	};
+
 	const nextGate = view.gateStake.gateNumber;
 	const gateName = swatchForGate(nextGate)?.gateName ?? "";
 	const held = view.shopControls.lockedOfferIds
@@ -429,8 +444,18 @@ export const ShopView = ({
 					slots={view.slots}
 					maxSlots={MAX_SLOTS}
 					fits={largestSizeFitting(view.slotsFree)}
-					buy={{ ...view.slotDeals.buy, onUse: onBuySlot }}
-					cash={{ ...view.slotDeals.cash, onUse: onCashSlot }}
+					buy={{
+						...view.slotDeals.buy,
+						armed: armedDeal === "buy",
+						onUse: armThenUse("buy", onBuySlot),
+						onDismiss: disarm,
+					}}
+					cash={{
+						...view.slotDeals.cash,
+						armed: armedDeal === "cash",
+						onUse: armThenUse("cash", onCashSlot),
+						onDismiss: disarm,
+					}}
 				/>
 			}
 			onContinue={onContinue}

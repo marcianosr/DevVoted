@@ -14,7 +14,7 @@ import { Lock } from "../Lock.ui";
 import { Pick } from "../Pick.ui";
 import { RowFigures } from "../RowFigures.ui";
 import { Row } from "../Row.ui";
-import { SlotTrack } from "../SlotTrack.ui";
+import { SlotTrack, type SlotTrackProps } from "../SlotTrack.ui";
 import { Stake } from "../Stake.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
@@ -91,6 +91,7 @@ export type StartScreenProps = {
 	slots: number;
 	maxSlots?: number;
 	fits?: number | null;
+	slotDeals?: Pick<SlotTrackProps, "buy" | "cash">;
 	gateName: string;
 	pollCount: number;
 	coverageDemand: number;
@@ -175,6 +176,7 @@ export const StartScreen = ({
 	slots,
 	maxSlots,
 	fits,
+	slotDeals,
 	gateName,
 	pollCount,
 	coverageDemand,
@@ -326,6 +328,7 @@ export const StartScreen = ({
 								slots={slots}
 								maxSlots={maxSlots}
 								fits={fits}
+								{...slotDeals}
 							/>
 						}
 					/>

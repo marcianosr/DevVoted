@@ -1,7 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { createRun } from "~/modules/run/run/domain/run.model";
+import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import {
+	buyStartSlot,
+	refundStartSlot,
+	type ArchiveSpend,
+} from "~/modules/run/run/domain/startSlot.model";
 import {
 	runReducer,
 	RunAction,
@@ -408,8 +413,18 @@ const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 
 const HANDED = [...Object.values(CONFIGS)];
 
+const PROTO_ARCHIVE_KB = 512;
+
 const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const [state, setState] = useState(() => createRun(POOLS, HANDED));
+	const [archiveKb, setArchiveKb] = useState(PROTO_ARCHIVE_KB);
+	const spendArchive = (
+		spend: (state: RunState, kb: number) => ArchiveSpend
+	) => {
+		const settled = spend(state, archiveKb);
+		setState(settled.state);
+		setArchiveKb(settled.archiveKb);
+	};
 	const dispatch = (action: RunAction) =>
 		setState((current) => runReducer(current, action));
 	const [selected, setSelected] = useState<readonly string[]>([]);
@@ -430,7 +445,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		setStripStep("summary");
 	}, [state.status]);
 
-	const view = toRunView(state);
+	const view = toRunView(state, archiveKb);
 	const reveal = revealing ? view.answeredThisGate.at(-1) : undefined;
 	const pollClock = usePollClock(
 		reveal ? null : (view.poll?.id ?? null),
@@ -492,6 +507,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			{state.status === "configuring" && (
 				<StartView
 					view={view}
+					onBuySlot={() => spendArchive(buyStartSlot)}
+					onRefundSlot={() => spendArchive(refundStartSlot)}
 					onToggle={(id) =>
 						dispatch({
 							type: view.configs.some((config) => config.id === id)

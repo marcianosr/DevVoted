@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
 	type Config,
 	headlineFigureOf,
@@ -15,7 +17,10 @@ import {
 import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import { Figure } from "~/ui/modern-theme/Figure.ui";
 import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
-import { plural } from "~/ui/modern-theme/format";
+import { capLabel, plural } from "~/ui/modern-theme/format";
+
+const BUY_VERB = "Install a new slot from the archive";
+const REFUND_VERB = "Refund the slot to the archive";
 
 const toDealt = (config: Config): DealtConfig => ({
 	id: config.id,
@@ -62,10 +67,14 @@ const combosFor = (
 		onTake: () => onPickStack(stack.id),
 	}));
 
+type SlotDealName = "buy" | "cash";
+
 export type StartViewProps = {
 	view: RunView;
 	onToggle: (configId: string) => void;
 	onPickStack: (stackId: string) => void;
+	onBuySlot: () => void;
+	onRefundSlot: () => void;
 	onStart: () => void;
 };
 
@@ -73,13 +82,43 @@ export const StartView = ({
 	view,
 	onToggle,
 	onPickStack,
+	onBuySlot,
+	onRefundSlot,
 	onStart,
 }: StartViewProps) => {
+	const [armedDeal, setArmedDeal] = useState<SlotDealName | null>(null);
+	const disarm = () => setArmedDeal(null);
+	const armThenUse = (deal: SlotDealName, use: () => void) => () => {
+		if (armedDeal !== deal) {
+			setArmedDeal(deal);
+			return;
+		}
+		disarm();
+		use();
+	};
+
 	const gate = view.gateStake.gateNumber;
 	const dealt = dealtFromStacks();
 
 	return (
 		<StartScreen
+			archive={capLabel(view.startSlotDeals.archiveKb)}
+			slotDeals={{
+				buy: {
+					...view.startSlotDeals.buy,
+					verb: BUY_VERB,
+					armed: armedDeal === "buy",
+					onUse: armThenUse("buy", onBuySlot),
+					onDismiss: disarm,
+				},
+				cash: {
+					...view.startSlotDeals.cash,
+					verb: REFUND_VERB,
+					armed: armedDeal === "cash",
+					onUse: armThenUse("cash", onRefundSlot),
+					onDismiss: disarm,
+				},
+			}}
 			theme={view.gateTheme}
 			dealt={dealt.map(toDealt)}
 			dealtFrom={view.available.length + view.configs.length}

@@ -50,6 +50,7 @@
 | [046](046-slots-are-bought-storage-is-capped-again.md) | Slots are bought, storage is capped again | Accepted — **supersedes 045**; amends 044 Decision 2 and 030; revives 023's shape (a cap rented by the gate) without the width it sold alongside. 4 free slots, 20 bought on a doubling ladder to 24; an empty slot cashes back at its own price and the ladder never rolls back; seven cap rungs, 512 KB free to 10 MB, billed on clear (DVTD-811d) |
 | [047](047-a-configs-size-is-a-number.md) | A config's size is a number | Accepted — **supersedes 043**; amends 044 Decisions 1 and 7. Grades are deleted; a config carries `slots` of 1/2/4/8/12/16 and costs 32 KB a slot (DVTD-811d) |
 | [048](048-the-pipeline-is-your-build.md) | The pipeline is Your Build | Accepted — reverses 044's `slots → spots` rename and retires "pipeline" as the container's name. Storage / Build / Slots / Configs, one job each; `slot`/`unslot` actions become `install`/`uninstall` (DVTD-811d) |
+| [049](049-the-archive-opens-a-run-wider.md) | The archive opens a run wider | Accepted — amends 046 Decisions 1 and 2. Archived storage buys slots on the start screen at double the rung, uncapped, counting on the same ladder; refundable at cost until Start, and shut off once the run begins (DVTD-dcpq) |
 
 ## Conventions
 

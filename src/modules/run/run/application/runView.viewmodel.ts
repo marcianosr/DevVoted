@@ -87,6 +87,12 @@ import {
 	slotCashOutFor,
 	slotPriceFor,
 } from "~/modules/run/run/domain/shopAction.model";
+import {
+	canBuyStartSlot,
+	canRefundStartSlot,
+	startSlotPriceKb,
+	startSlotRefundKb,
+} from "~/modules/run/run/domain/startSlot.model";
 
 export type SlotDealView = {
 	readonly costKb?: number;
@@ -97,6 +103,12 @@ export type SlotDealView = {
 export type SlotsView = {
 	readonly slots: number;
 	readonly maxSlots: number;
+	readonly buy: SlotDealView;
+	readonly cash: SlotDealView;
+};
+
+export type StartSlotsView = {
+	readonly archiveKb: number;
 	readonly buy: SlotDealView;
 	readonly cash: SlotDealView;
 };
@@ -201,6 +213,7 @@ export type RunView = {
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly slotDeals: SlotsView;
+	readonly startSlotDeals: StartSlotsView;
 	readonly storagePlan: StoragePlanView;
 };
 
@@ -281,6 +294,42 @@ const slotsViewFor = (state: RunState): SlotsView => {
 	};
 };
 
+const startBuyRefusalFor = (
+	state: RunState,
+	archiveKb: number
+): string | undefined => {
+	const price = startSlotPriceKb(state);
+	if (price === undefined)
+		return `Sold out — ${MAX_SLOTS} slots is the ceiling.`;
+	if (archiveKb < price)
+		return `Costs ${price} KB of archive, you have ${archiveKb}.`;
+	return undefined;
+};
+
+const startSlotsViewFor = (
+	state: RunState,
+	archiveKb: number
+): StartSlotsView => {
+	const price = startSlotPriceKb(state);
+	const refund = startSlotRefundKb(state);
+	const refusal = startBuyRefusalFor(state, archiveKb);
+
+	return {
+		archiveKb,
+		buy: {
+			...(price === undefined ? {} : { costKb: price }),
+			...(canBuyStartSlot(state, archiveKb)
+				? { makes: state.build.slots + 1 }
+				: {}),
+			...(refusal === undefined ? {} : { refusal }),
+		},
+		cash:
+			refund === undefined || !canRefundStartSlot(state)
+				? {}
+				: { costKb: refund, makes: state.build.slots - 1 },
+	};
+};
+
 const storagePlanViewFor = (state: RunState): StoragePlanView => {
 	const tier = state.storagePlan ?? 0;
 
@@ -297,7 +346,7 @@ const storagePlanViewFor = (state: RunState): StoragePlanView => {
 	};
 };
 
-export const toRunView = (state: RunState): RunView => {
+export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 	const current = state.polls[state.currentIndex];
 	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
 	const perAnswer = perAnswerPreviewFor(
@@ -406,6 +455,7 @@ export const toRunView = (state: RunState): RunView => {
 		coverageByCategory: state.coverageByCategory,
 		storage: state.storage,
 		slotDeals: slotsViewFor(state),
+		startSlotDeals: startSlotsViewFor(state, archiveKb),
 		storagePlan: storagePlanViewFor(state),
 	};
 };

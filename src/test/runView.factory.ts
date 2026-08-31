@@ -190,6 +190,14 @@ const createRunView = createMockDataFactory<RunView>({
 		buy: { costKb: SLOT_PRICES_KB[0], makes: BASE_SLOTS + 1 },
 		cash: { refusal: "Nothing to cash — the first four slots are free." },
 	},
+	startSlotDeals: {
+		archiveKb: 0,
+		buy: {
+			costKb: SLOT_PRICES_KB[0] * 2,
+			refusal: `Costs ${SLOT_PRICES_KB[0] * 2} KB of archive, you have 0.`,
+		},
+		cash: {},
+	},
 	storagePlan: {
 		capKb: STORAGE_PLANS[0].capKb,
 		perGateKb: STORAGE_PLANS[0].perGateKb,

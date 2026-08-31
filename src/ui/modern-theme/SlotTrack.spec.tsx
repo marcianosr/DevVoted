@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { SlotTrack, type SlotTrackConfig } from "./SlotTrack.ui";
@@ -293,5 +293,114 @@ describe(SlotTrack, () => {
 		render(<SlotTrack configs={[js]} slots={4} maxSlots={24} />);
 
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+	});
+
+	it("lends the caption to an armed press, so the verb reads without a hover", () => {
+		render(
+			<SlotTrack
+				configs={[js]}
+				slots={4}
+				maxSlots={24}
+				buy={{ costKb: 16, makes: 5, armed: true, onUse: () => {} }}
+			/>
+		);
+
+		expect(
+			screen.getByText("Install a new slot · makes 5 · 16 KB · press again")
+		).toBeInTheDocument();
+		expect(screen.queryByText("3 slots free")).not.toBeInTheDocument();
+	});
+
+	it("marks an armed press on its edge, since the cell has no room to grow", () => {
+		const { rerender } = render(
+			<SlotTrack
+				configs={[js]}
+				slots={4}
+				maxSlots={24}
+				buy={{ costKb: 16, makes: 5, onUse: () => {} }}
+			/>
+		);
+		expect(screen.getByRole("button", { name: /Install/ })).toHaveClass(
+			"border-edge"
+		);
+
+		rerender(
+			<SlotTrack
+				configs={[js]}
+				slots={4}
+				maxSlots={24}
+				buy={{ costKb: 16, makes: 5, armed: true, onUse: () => {} }}
+			/>
+		);
+		expect(screen.getByRole("button", { name: /Install/ })).toHaveClass(
+			"border-celadon"
+		);
+	});
+
+	it("names the second step on the armed press itself, not only in the caption", () => {
+		render(
+			<SlotTrack
+				configs={[js]}
+				slots={4}
+				maxSlots={24}
+				buy={{ costKb: 16, makes: 5, armed: true, onUse: () => {} }}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", {
+				name: "Install a new slot · makes 5 · 16 KB, press again to confirm",
+			})
+		).toBeInTheDocument();
+	});
+
+	it("reports every press the same way, leaving arm-or-act to its owner", async () => {
+		const onUse = vi.fn();
+		render(
+			<SlotTrack
+				configs={[js]}
+				slots={4}
+				maxSlots={24}
+				buy={{ costKb: 16, makes: 5, armed: true, onUse }}
+			/>
+		);
+
+		await userEvent.click(screen.getByRole("button", { name: /Install/ }));
+
+		expect(onUse).toHaveBeenCalledOnce();
+	});
+
+	it("gives up the arming when the press loses focus", () => {
+		const onDismiss = vi.fn();
+		render(
+			<SlotTrack
+				configs={[js]}
+				slots={4}
+				maxSlots={24}
+				buy={{ costKb: 16, armed: true, onUse: () => {}, onDismiss }}
+			/>
+		);
+
+		fireEvent.blur(screen.getByRole("button", { name: /Install/ }));
+
+		expect(onDismiss).toHaveBeenCalledOnce();
+	});
+
+	it("gives up the arming on Escape, so a keyboard is never committed", () => {
+		const onDismiss = vi.fn();
+		render(
+			<SlotTrack
+				configs={[js]}
+				slots={4}
+				maxSlots={24}
+				buy={{ costKb: 16, armed: true, onUse: () => {}, onDismiss }}
+			/>
+		);
+
+		fireEvent.keyDown(screen.getByRole("button", { name: /Install/ }), {
+			key: "Escape",
+		});
+
+		expect(onDismiss).toHaveBeenCalledOnce();
 	});
 });
