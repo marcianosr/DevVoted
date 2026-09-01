@@ -22,12 +22,14 @@ const SEPARATOR = "·";
 
 const DOT_TONE = {
 	online: "celadon",
+	unknown: "muted",
 	skipped: "muted",
 	offline: "cinnabar",
 } as const satisfies Record<ConfigStatus["kind"], DotTone>;
 
 const COUNT_TONE = {
 	online: "celadon",
+	unknown: "muted",
 	skipped: "muted",
 	offline: "cinnabar",
 } as const;
@@ -57,7 +59,10 @@ const isApplied = (row: BuildRow): boolean =>
 
 const StatusDot = ({ status }: { status: ConfigStatus }) => (
 	<span className={LEAD}>
-		<Dot tone={DOT_TONE[status.kind]} hollow={status.kind === "skipped"} />
+		<Dot
+			tone={DOT_TONE[status.kind]}
+			hollow={status.kind === "skipped" || status.kind === "unknown"}
+		/>
 		{status.kind === "online" ? <span className="sr-only">online</span> : null}
 	</span>
 );

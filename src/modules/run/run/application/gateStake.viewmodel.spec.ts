@@ -7,7 +7,7 @@ describe("upcomingAuditFor", () => {
 		for (const gate of [0, 1, 2]) {
 			expect(upcomingAuditFor(gate)).toEqual({
 				gateNumber: 3,
-				name: "Cost Overrun",
+				name: "402 Payment Required",
 				description: expect.stringContaining("paid action"),
 			});
 		}

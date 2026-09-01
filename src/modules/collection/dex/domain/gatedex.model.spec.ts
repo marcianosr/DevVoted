@@ -84,8 +84,11 @@ describe("gatedex", () => {
 	});
 
 	it("names the audits a gate carries", () => {
-		expect(rowFor(3).audits).toEqual(["Cost Overrun"]);
-		expect(rowFor(8).audits).toEqual(["Timeout", "Flaky Build"]);
+		expect(rowFor(3).audits).toEqual(["402 Payment Required"]);
+		expect(rowFor(8).audits).toEqual([
+			"408 Request Timeout",
+			"502 Bad Gateway",
+		]);
 	});
 
 	it("promises no width, because slots are bought and never handed over", () => {

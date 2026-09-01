@@ -1,7 +1,7 @@
 import type { GlyphName } from "./Glyph.ui";
 
 /** Ids match audit.model.ts, except that Timeout and Strip collapse to one entry
- * each: the model emits timeout-3/4/5 and strip-1/2 because the numbers differ
+ * each: the model emits timeout-3/5 and strip-10/15 because the numbers differ
  * per gate, but they are one audit to a player. */
 export type AuditId =
 	| "cost-overrun"
@@ -14,45 +14,57 @@ export type AuditId =
 	| "memory-leak"
 	| "rolling-outage"
 	| "breaking-change"
-	| "strip";
+	| "strip"
+	| "not-found"
+	| "too-many-requests"
+	| "upgrade-required"
+	| "payload-too-large";
 
 /** The one place an audit's name and icon are paired. Three screens read it —
  * the Dex tab, the prep fold and the gate header — so a config that shows one
  * icon on the poll page and another in the Dex is not expressible. */
 export const AUDIT = {
-	"cost-overrun": { label: "Cost Overrun", glyph: "overrun" },
-	"dependency-outage": { label: "Dependency Outage", glyph: "outage" },
-	"read-only": { label: "Read-only", glyph: "readonly" },
-	"feature-freeze": { label: "Feature Freeze", glyph: "freeze" },
-	mirrored: { label: "Mirror", glyph: "mirror" },
-	timeout: { label: "Timeout", glyph: "timeout" },
-	"flaky-build": { label: "Flaky Build", glyph: "flake" },
-	"memory-leak": { label: "Memory Leak", glyph: "leak" },
-	"rolling-outage": { label: "Rolling Outage", glyph: "rolling" },
-	"breaking-change": { label: "Breaking Change", glyph: "breaking" },
-	strip: { label: "Strip", glyph: "strip" },
+	"cost-overrun": { label: "402 Payment Required", glyph: "overrun" },
+	"dependency-outage": { label: "424 Failed Dependency", glyph: "outage" },
+	"read-only": { label: "405 Method Not Allowed", glyph: "readonly" },
+	"feature-freeze": { label: "403 Forbidden", glyph: "freeze" },
+	mirrored: { label: "300 Multiple Choices", glyph: "mirror" },
+	timeout: { label: "408 Request Timeout", glyph: "timeout" },
+	"flaky-build": { label: "502 Bad Gateway", glyph: "flake" },
+	"memory-leak": { label: "507 Insufficient Storage", glyph: "leak" },
+	"rolling-outage": { label: "503 Service Unavailable", glyph: "rolling" },
+	"breaking-change": { label: "409 Conflict", glyph: "breaking" },
+	strip: { label: "410 Gone", glyph: "strip" },
+	"not-found": { label: "404 Not Found", glyph: "notfound" },
+	"too-many-requests": { label: "429 Too Many Requests", glyph: "ratelimit" },
+	"upgrade-required": { label: "426 Upgrade Required", glyph: "upgrade" },
+	"payload-too-large": { label: "413 Payload Too Large", glyph: "payload" },
 } as const satisfies Record<AuditId, { label: string; glyph: GlyphName }>;
 
 /** Roster order: the gate each first appears at (GATE_AUDITS). */
 export const AUDIT_ORDER = [
 	"cost-overrun",
 	"dependency-outage",
+	"not-found",
 	"read-only",
-	"feature-freeze",
 	"mirrored",
 	"timeout",
 	"flaky-build",
-	"memory-leak",
 	"rolling-outage",
+	"memory-leak",
 	"breaking-change",
+	"too-many-requests",
 	"strip",
+	"upgrade-required",
+	"feature-freeze",
+	"payload-too-large",
 ] as const satisfies readonly AuditId[];
 
 const isAuditId = (id: string): id is AuditId =>
 	AUDIT_ORDER.some((known) => known === id);
 
 /** The model's id for an audit, narrowed to the one the kit draws. `timeout-3`
- * and `strip-1` carry the per-gate number the model needs; the player sees one
+ * and `strip-10` carry the per-gate number the model needs; the player sees one
  * Timeout and one Strip, so the suffix comes off. Null rather than a fallback
  * for an id with no entry: a missing icon should be missing, not wrong. */
 export const toAuditId = (id: string): AuditId | null => {

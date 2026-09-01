@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Delta } from "./Delta.ui";
 import { Entry } from "./Entry.ui";
+import { PriceTag } from "./PriceTag.ui";
 import { Text } from "./Text.ui";
 
 const meta: Meta<typeof Entry> = {
@@ -54,6 +55,26 @@ export const Expanded: Story = {
 
 export const Collapsed: Story = {
 	args: { ...Expanded.args, defaultOpen: false },
+};
+
+export const Offer: Story = {
+	decorators: [
+		(Story) => (
+			<div className="w-[34rem]">
+				<Story />
+			</div>
+		),
+	],
+	args: {
+		label: "Deprecated",
+		slots: 4,
+		sizeHint: "takes 4 of 8 slots",
+		gives: "All coverage earns ×3, fading ×0.5 per clear",
+		notes: <Delta multiplier={3} />,
+		value: <PriceTag kb={128} on="Deprecated" onUse={() => {}} />,
+		summary: "level 1 · ×3",
+		explainer: "Deleted when it fades to ×1.",
+	},
 };
 
 export const Failing: Story = {

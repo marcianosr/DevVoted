@@ -93,6 +93,7 @@ const statusContextFor = (
 	category: poll.category,
 	answeredBefore: poll.answeredBefore,
 	suppressingAudit: view.audits.some((audit) => audit.suppressed),
+	categoryHidden: view.categoryHidden,
 	offlineAudit: view.offlineConfigs.find(
 		(offline) => offline.config.id === config.id
 	)?.audit,
@@ -110,9 +111,9 @@ export const buildRows = (
 			statusContextFor(view, poll, config)
 		);
 		const tool =
-			status.kind === "online"
-				? tools.find((candidate) => candidate.configId === config.id)
-				: undefined;
+			status.kind === "offline"
+				? undefined
+				: tools.find((candidate) => candidate.configId === config.id);
 
 		return {
 			id: config.id,
@@ -241,8 +242,10 @@ const metaFor = (
 	];
 };
 
-export const categoryFor = (category: CategoryCode) => ({
-	label: getCategoryMetadata(category).name,
+const HIDDEN_CATEGORY = "???";
+
+export const categoryFor = (category: CategoryCode, hidden = false) => ({
+	label: hidden ? HIDDEN_CATEGORY : getCategoryMetadata(category).name,
 });
 
 export const questionFor = (view: RunView, question: string): string =>
@@ -320,7 +323,7 @@ export const PollView = ({
 			trail={trailFor(view)}
 			trailLabel="Polls in this gate"
 			question={questionFor(view, poll.question)}
-			category={categoryFor(poll.category)}
+			category={categoryFor(poll.category, view.categoryHidden)}
 			meta={metaFor(view, poll)}
 			code={poll.codeBlock?.split("\n")}
 			options={options}

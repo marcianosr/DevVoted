@@ -1,6 +1,7 @@
 import { canLint, peekerFor } from "~/modules/run/build/domain/build.model";
 import {
 	auditFeeMultiplier,
+	auditPaidActionLimit,
 	auditsFreezeManualEffects,
 } from "~/modules/run/gate/domain/audit.model";
 import {
@@ -34,11 +35,20 @@ export const lintFeeFor = (state: RunState): number =>
 export const peekFeeFor = (state: RunState): number =>
 	peekCost(state.window.peeked ?? 0) * auditFeeMultiplier(auditsOf(state));
 
+const paidActionsUsed = (state: RunState): number =>
+	(state.window.linted ?? 0) + (state.window.peeked ?? 0);
+
+const rateLimited = (state: RunState): boolean => {
+	const limit = auditPaidActionLimit(auditsOf(state));
+	return limit !== undefined && paidActionsUsed(state) >= limit;
+};
+
 export const lintApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !canLint(liveConfigsOf(state), poll.category)) return false;
 	// Feature Freeze removes the action rather than pricing it.
 	if (auditsFreezeManualEffects(auditsOf(state))) return false;
+	if (rateLimited(state)) return false;
 	return wrongStillOn(state).length > 1;
 };
 
@@ -62,6 +72,7 @@ export const peekApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !peekerFor(liveConfigsOf(state))) return false;
 	if (auditsFreezeManualEffects(auditsOf(state))) return false;
+	if (rateLimited(state)) return false;
 	return !(state.peekedPollIds ?? []).includes(poll.id);
 };
 

@@ -192,6 +192,15 @@ describe("toRunView", () => {
 		);
 	});
 
+	it("hides the poll's category at the 404 gate and nowhere else", () => {
+		expect(toRunView({ ...answering(), gatesCleared: 5 }).categoryHidden).toBe(
+			true
+		);
+		expect(toRunView({ ...answering(), gatesCleared: 4 }).categoryHidden).toBe(
+			false
+		);
+	});
+
 	it("drops the gate theme once the last gate is beaten", () => {
 		expect(
 			toRunView({ ...answering(), gatesCleared: 13 }).gateTheme
@@ -546,7 +555,7 @@ describe("the gate stake travels as one object", () => {
 		const view = toRunView(answeringWith([CONFIGS.js]));
 		expect(view.gateStake.upcomingAudit).toEqual({
 			gateNumber: 3,
-			name: "Cost Overrun",
+			name: "402 Payment Required",
 			description: expect.stringContaining("paid action"),
 		});
 	});

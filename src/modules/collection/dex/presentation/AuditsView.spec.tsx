@@ -23,27 +23,29 @@ describe("AuditsView", () => {
 	it("names an audit whose gate has fallen, and says it was faced", () => {
 		renderRoster(3);
 
-		expect(screen.getByText("Cost Overrun")).toBeInTheDocument();
+		expect(screen.getByText("402 Payment Required")).toBeInTheDocument();
 		expect(screen.getByText("faced")).toBeInTheDocument();
 	});
 
 	it("names the next gate's audit without calling it faced", () => {
 		renderRoster(3);
 
-		expect(screen.getByText("Dependency Outage")).toBeInTheDocument();
+		expect(screen.getByText("424 Failed Dependency")).toBeInTheDocument();
 		expect(screen.getAllByText("faced")).toHaveLength(1);
 	});
 
 	it("hands over no name at all for an audit past the next gate", () => {
 		renderRoster(3);
 
-		expect(screen.queryByText("Read-only")).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("405 Method Not Allowed")
+		).not.toBeInTheDocument();
 	});
 
 	it("redacts the whole roster before a single gate has fallen", () => {
 		renderRoster(-1);
 
-		expect(screen.queryByText("Cost Overrun")).not.toBeInTheDocument();
+		expect(screen.queryByText("402 Payment Required")).not.toBeInTheDocument();
 	});
 
 	it("states a gate's rule where the gate is one you have reached", () => {

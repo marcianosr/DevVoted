@@ -34,7 +34,9 @@ describe("GateHeader", () => {
 		);
 
 		expect(screen.getByText("1 audit")).toHaveClass("text-saffron");
-		expect(screen.getByText("Dependency Outage")).toHaveClass("text-saffron");
+		expect(screen.getByText("424 Failed Dependency")).toHaveClass(
+			"text-saffron"
+		);
 	});
 
 	it("counts the audits it was given rather than being told a number", () => {
@@ -46,8 +48,8 @@ describe("GateHeader", () => {
 		);
 
 		expect(screen.getByText("2 audits")).toBeInTheDocument();
-		expect(screen.getByText("Breaking Change")).toBeInTheDocument();
-		expect(screen.getByText("Timeout")).toBeInTheDocument();
+		expect(screen.getByText("409 Conflict")).toBeInTheDocument();
+		expect(screen.getByText("408 Request Timeout")).toBeInTheDocument();
 	});
 
 	it("says nothing about audits when the gate runs clean", () => {

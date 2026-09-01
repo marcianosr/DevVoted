@@ -26,7 +26,7 @@ const OFFLINE: BuildRow = {
 	id: "ts",
 	label: ".ts",
 	slots: 1,
-	status: { kind: "offline", audit: "Dependency Outage" },
+	status: { kind: "offline", audit: "424 Failed Dependency" },
 	figure: { kind: "multiplier", value: 1.25 },
 };
 
@@ -88,7 +88,9 @@ describe("Build", () => {
 		const { container } = render(<Build configs={[OFFLINE]} />);
 
 		expect(screen.getByText(".ts")).toHaveClass("line-through");
-		expect(screen.getByText("offline · Dependency Outage")).toBeInTheDocument();
+		expect(
+			screen.getByText("offline · 424 Failed Dependency")
+		).toBeInTheDocument();
 		expect(container.querySelector(".opacity-50")).not.toBeInTheDocument();
 	});
 
@@ -217,7 +219,9 @@ describe("a settled build", () => {
 	it("keeps an offline row exactly as the audit left it", () => {
 		render(<Build settled configs={[OFFLINE]} />);
 
-		expect(screen.getByText(/offline · Dependency Outage/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/offline · 424 Failed Dependency/)
+		).toBeInTheDocument();
 		expect(screen.getByText("1 offline")).toBeInTheDocument();
 	});
 });

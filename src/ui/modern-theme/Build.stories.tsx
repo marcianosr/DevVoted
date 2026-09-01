@@ -22,7 +22,7 @@ const BUILD: readonly BuildRow[] = [
 		id: "ts",
 		label: ".ts",
 		slots: 1,
-		status: { kind: "offline", audit: "Dependency Outage" },
+		status: { kind: "offline", audit: "424 Failed Dependency" },
 		explainer: "TS polls pay 1.25× coverage.",
 	},
 	{

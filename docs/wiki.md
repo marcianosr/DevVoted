@@ -121,23 +121,30 @@ in. **The count is the escalation**: gates 0 to 2 are clean, one audit runs from
 gate's receipt says so instead of going silent: it names the first audit waiting
 ahead, so the system introduces itself before it ever charges.
 
+Every audit is named for the HTTP status it behaves like, and the class carries the
+signal: **4xx means the rules changed on you**, **5xx means your build is down**.
+
 | Audit | What it does |
 | --- | --- |
-| **Cost Overrun** | Every paid action costs ×2, linting and peeking both. |
-| **Feature Freeze** | No paid actions at all: the linter and the peek are gone. |
-| **Read-only** | The shop *before* this gate is shut: nothing bought, sold, upgraded or switched. |
-| **Memory Leak** | Storage leaks every poll: −16 KB, −32 KB on a miss. |
-| **Timeout** | The window's first polls are on a clock; an answer over the limit scores as a miss whatever you picked. |
-| **Mirror** | Every poll asks for the **incorrect** options and wants all of them, so a single-answer poll with four options becomes a three-option select-all. Graded normally after that, so streaks and partials work and the gate charges full price. |
-| **Dependency Outage** | One config is offline for the whole attempt. |
-| **Flaky Build** | One config fails to trigger on every poll, rolled fresh each time. |
-| **Rolling Outage** | A different config is down for each poll of the window. |
-| **Breaking Change** | Your highest-level config is switched off for the attempt. |
-| **Strip** | Deepens the peel: Elite takes 5 configs on a miss, Champion 6. |
+| **300 Multiple Choices** | Every poll asks for the **incorrect** options and wants all of them, so a single-answer poll with four options becomes a three-option select-all. Graded normally after that, so streaks and partials work and the gate charges full price. |
+| **402 Payment Required** | Every paid action costs ×2, linting and peeking both. |
+| **403 Forbidden** | No paid actions at all: the linter and the peek are gone. |
+| **404 Not Found** | No poll names its category, so which of your configs is about to pay is yours to work out. |
+| **405 Method Not Allowed** | The shop *before* this gate is read-only: nothing bought, sold, upgraded or switched. |
+| **408 Request Timeout** | The window's first polls are on a clock; an answer over the limit scores as a miss whatever you picked. |
+| **409 Conflict** | Your highest-level config takes a breaking change and is switched off for the attempt. |
+| **410 Gone** | Deepens the peel: Elite takes 5 configs on a miss, Champion 6. |
+| **413 Payload Too Large** | Every slot past the 12th leaks 8 KB a poll, so a wide build pays to carry itself. |
+| **424 Failed Dependency** | One config is offline for the whole attempt. |
+| **426 Upgrade Required** | Your lowest-level config goes out of date and sits the attempt out. |
+| **429 Too Many Requests** | One paid action for the whole window: the linter or the peek, not both. |
+| **502 Bad Gateway** | One config flakes on every poll, rolled fresh each time. |
+| **503 Service Unavailable** | A different config is down for each poll of the window. |
+| **507 Insufficient Storage** | Storage leaks every poll: −16 KB, −32 KB on a miss. |
 
-The four offline audits differ only in which config they take and for how long. Three
-roll at random (seeded, so a reload never re-rolls one); Breaking Change aims at whatever
-you levelled furthest. Whatever is down reads `offline` on the build track while you
+The five offline audits differ only in which config they take and for how long. Three
+roll at random (seeded, so a reload never re-rolls one); 409 aims at whatever
+you levelled furthest and 426 at whatever you levelled least. Whatever is down reads `offline` on the build track while you
 answer, struck through and blamed on the audit by name, and nowhere else, since shop
 and prep sit before the gate and naming a casualty early would be a spoiler.
 
@@ -227,7 +234,7 @@ which go, on the strip screen; then the normal post-gate loop runs (review, shop
 | **The payout** | Nothing: no gate reward, no interest, no extra-pick KB. The faucet KB earned inside the failed window is the retry's whole budget. |
 | **The recurring bills** | Nothing: the storage plan and subscribed configs bill on clear only, so a redo is free of them. |
 | **The day's polls** | Every attempt burns 5 of the day's finite sequence, so a retry costs real time. |
-| **Audit damage** | Audits charge again: Volcano leaks every attempt, a Timeout re-clocks, an outage re-rolls. |
+| **Audit damage** | Audits charge again: Volcano leaks every attempt, a 408 re-clocks, an outage re-rolls. |
 
 The peel escalates with depth because width does: one config is a third of an opening
 build and a fourteenth of a summit build. Each row sits at roughly a quarter of the
@@ -272,16 +279,16 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 | 0 | Pallet | 3% | 32 KB | 20% | (clean) | Shop, **Rebuild** |
 | 1 | Boulder | 10% | 64 KB | 20% | (clean) | **Lock** |
 | 2 | Cascade | 25% | 96 KB | 20% | (clean) | **Extend** |
-| 3 | Thunder | 40% | 128 KB | 25% | Cost Overrun | — |
-| 4 | Lavender | 60% | 160 KB | 25% | Dependency Outage | — |
-| 5 | Rainbow | 85% | 192 KB | 25% | Read-only | — |
-| 6 | Soul | 110% | 224 KB | 25% | Feature Freeze | — |
-| 7 | Marsh | 140% | 256 KB | 30% | Mirror | — |
-| 8 | Seafoam | 175% | 288 KB | 30% | Timeout (3 polls, 30 s) + Flaky Build | — |
-| 9 | Volcano | 210% | 320 KB | 30% | Memory Leak + Rolling Outage | — |
-| 10 | Earth | 250% | 352 KB | 30% | Breaking Change + Timeout (4 polls, 25 s) | — |
-| 11 | Elite | 290% | 384 KB | **40%** | Strip + Mirror + Flaky Build | — |
-| 12 | Champion | 340% | 416 KB | **50%** | Memory Leak + Strip + Timeout (5 polls, 20 s) | Clearing it wins the run |
+| 3 | Thunder | 40% | 128 KB | 25% | 402 Payment Required | — |
+| 4 | Lavender | 60% | 160 KB | 25% | 424 Failed Dependency | — |
+| 5 | Rainbow | 85% | 192 KB | 25% | 404 Not Found | — |
+| 6 | Soul | 110% | 224 KB | 25% | 405 Method Not Allowed | — |
+| 7 | Marsh | 140% | 256 KB | 30% | 300 Multiple Choices | — |
+| 8 | Seafoam | 175% | 288 KB | 30% | 408 Request Timeout (3 polls, 30 s) + 502 Bad Gateway | — |
+| 9 | Volcano | 210% | 320 KB | 30% | 503 Service Unavailable + 507 Insufficient Storage | — |
+| 10 | Earth | 250% | 352 KB | 30% | 409 Conflict + 429 Too Many Requests | — |
+| 11 | Elite | 290% | 384 KB | **40%** | 410 Gone + 426 Upgrade Required + 403 Forbidden | — |
+| 12 | Champion | 340% | 416 KB | **50%** | 408 Request Timeout (5 polls, 20 s) + 410 Gone + 413 Payload Too Large | Clearing it wins the run |
 
 The coverage column is per-gate and fresh: each row is a score to hit inside 5 polls,
 never a running total. The unlock column names no width at all: slots are bought, not
@@ -864,7 +871,7 @@ The game leans hard into its CI metaphor.
   rate before the answer, what it paid after ("paid +0.5", or "unused" for an online
   config that paid nothing), the reason it is sitting out, or its paid action, which
   makes the box itself the button. Whatever will not fit is on the hover. The band's
-  header counts only what is broken ("1 offline · Dependency Outage") and stays bare
+  header counts only what is broken ("1 offline · 424 Failed Dependency") and stays bare
   when nothing is. Narrow screens stack the same boxes into rows behind a caret,
   folded on arrival, since the question is what the screen is for.
 - **A gate's three standing facts**: a poll screen has no sidebar. What the run is
@@ -911,7 +918,7 @@ The game leans hard into its CI metaphor.
 | **Gate number** | Counts from 0: a run opens on gate 0 and summits on gate 12. |
 | **Gate meter** | The window's net coverage, the only score a gate judges. Resets every attempt. |
 | **Audit** | A gate's fixed rule (a mirror, a leak, a clock, a shut shop, a config knocked offline). Stated on the stake receipt; the count grows with depth. |
-| **Strip audit** | An audit that deepens the peel: Elite takes 5 configs on a miss, Champion 6. |
+| **410 Gone** | An audit that deepens the peel: Elite takes 5 configs on a miss, Champion 6. |
 | **Peel** | What a missed gate takes: configs of your choosing, before the same gate runs again. |
 | **Build** | Your active setup: the track of config slots. Shown as **Your Build**. |
 | **Slot** | One unit of room in the build. A config takes as many as its size says: 1, 2, 4, 8, 12 or 16. Four are free; the rest are bought from the shop on a rising ladder, up to 24. Opens no gates. |
@@ -949,8 +956,8 @@ applies. `rules.model.ts` holds most of it.
 | `VICTORY_GATE` / `GATE_COUNT` | 12 / 13 (gates 0 to 12) |
 | `coverageDemandFor` | 3 / 10 / 25 / 40 / 60 / 85 / 110 / 140 / 175 / 210 / 250 / 290 / 340 |
 | `failPeelShareFor` | 20% / 20% / 20% / 25% × 4 / 30% × 4 / 35% × 2 of the occupied slots, plus strip audits; capped at half the build before gate 3 |
-| `GATE_AUDITS` | Eleven rules: 1 audit from gate 3, 2 from gate 8, 3 from gate 11 |
-| Audit dials | Cost Overrun ×2 · Memory Leak 16/32 KB · Timeout 30/25/20 s |
+| `GATE_AUDITS` | Fifteen rules: 1 audit from gate 3, 2 from gate 8, 3 from gate 11 |
+| Audit dials | 402 ×2 · 507 16/32 KB · 408 30/20 s · 429 1 action · 413 8 KB a slot past 12 |
 
 **Scoring**
 

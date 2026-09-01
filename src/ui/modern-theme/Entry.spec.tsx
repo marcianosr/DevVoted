@@ -149,6 +149,37 @@ describe("Entry", () => {
 		expect(screen.queryByText(/slot/)).not.toBeInTheDocument();
 	});
 
+	it("leads with what the config does, and drops the size and price beneath it", () => {
+		render(
+			<Entry
+				label="Deprecated"
+				slots={4}
+				gives="All coverage earns ×3, fading ×0.5 per clear"
+				value="128 KB"
+			/>
+		);
+
+		expect(screen.getByText("Deprecated").closest("div")).toHaveTextContent(
+			/Deprecated.*fading ×0\.5 per clear.*4 slots.*128 KB/
+		);
+	});
+
+	it("keeps the effect on the shut row, so a shelf reads without clicking", () => {
+		const { container } = render(
+			<Entry
+				label="Deprecated"
+				slots={4}
+				gives="All coverage earns ×3, fading ×0.5 per clear"
+				explainer="Deleted at ×1."
+			/>
+		);
+
+		expect(container.querySelector("details")).not.toHaveAttribute("open");
+		expect(
+			screen.getByText("All coverage earns ×3, fading ×0.5 per clear")
+		).toBeInTheDocument();
+	});
+
 	it("tints an opened row in no size colour at all", () => {
 		render(
 			<Entry label="WTFPL" mark="pass" slots={8} explainer="Buy the shop." />

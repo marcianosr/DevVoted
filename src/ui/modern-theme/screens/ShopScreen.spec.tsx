@@ -184,7 +184,7 @@ describe("ShopScreen", () => {
 		render(
 			<ShopScreen
 				{...props}
-				notice="Shop closed. Read-only audits the build you already have."
+				notice="Shop closed. 405 Method Not Allowed audits the build you already have."
 			/>
 		);
 

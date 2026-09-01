@@ -55,8 +55,27 @@ describe("the lint fee", () => {
 		expect(runReducer(overrun, { type: "lint-poll" }).storage).toBe(84);
 	});
 
-	it("takes the action away entirely at a Feature Freeze gate (ADR-038)", () => {
-		const frozen: RunState = { ...lintableRun(), gatesCleared: 6 };
+	it("stops at one paid action a window at a 429 Too Many Requests gate", () => {
+		const limited: RunState = { ...lintableRun(), gatesCleared: 10 };
+		expect(lintApplies(limited)).toBe(true);
+
+		const spent = runReducer(limited, { type: "lint-poll" });
+		expect(spent.window.linted).toBe(1);
+		expect(lintApplies(spent)).toBe(false);
+		expect(canBuyPeek(spent)).toBe(false);
+	});
+
+	it("counts the peek against the same allowance as the linter", () => {
+		const limited: RunState = {
+			...lintableRun(),
+			gatesCleared: 10,
+			window: { ...lintableRun().window, peeked: 1 },
+		};
+		expect(lintApplies(limited)).toBe(false);
+	});
+
+	it("takes the action away entirely at a 403 Forbidden gate (ADR-038)", () => {
+		const frozen: RunState = { ...lintableRun(), gatesCleared: 11 };
 		expect(lintApplies(frozen)).toBe(false);
 		expect(runReducer(frozen, { type: "lint-poll" })).toBe(frozen);
 	});

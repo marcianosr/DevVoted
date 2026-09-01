@@ -4,6 +4,7 @@ import type {
 	BuildModifiers,
 } from "~/modules/run/build/domain/build.model";
 import {
+	auditLabel,
 	auditsForGate,
 	nextAuditedGateFrom,
 	suppressedAuditFor,
@@ -47,7 +48,7 @@ export const upcomingAuditFor = (
 	if (next === undefined) return undefined;
 	return {
 		gateNumber: next.gate,
-		name: next.audit.name,
+		name: auditLabel(next.audit),
 		description: next.audit.description,
 	};
 };
@@ -59,7 +60,7 @@ export const auditViewsFor = (state: RunState): readonly AuditView[] => {
 	);
 	return auditsForGate(state.gatesCleared).map((audit) => ({
 		id: audit.id,
-		name: audit.name,
+		name: auditLabel(audit),
 		description: audit.description,
 		answerCue: audit.answerCue,
 		suppressed: audit.id === suppressed?.id,

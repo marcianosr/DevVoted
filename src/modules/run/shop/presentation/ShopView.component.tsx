@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
 	type Config,
 	describeConfig,
+	givesOf,
 	headlineFigureOf,
 	isUpgradable,
 	largestSizeFitting,
@@ -34,7 +35,6 @@ import { Lock } from "~/ui/modern-theme/Lock.ui";
 import { Mark } from "~/ui/modern-theme/Mark.ui";
 import type { StoragePlanRow } from "~/ui/modern-theme/StoragePlan.ui";
 import { PriceTag, type PriceTagState } from "~/ui/modern-theme/PriceTag.ui";
-import { RowFigures } from "~/ui/modern-theme/RowFigures.ui";
 import { SlotTrack } from "~/ui/modern-theme/SlotTrack.ui";
 import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
 import { Text } from "~/ui/modern-theme/Text.ui";
@@ -170,18 +170,15 @@ const offerRows = (
 						lockFor(view, offer, onLock)
 					)
 				}
+				gives={givesOf(offer.config) ?? offer.config.description}
 				notes={previewNotes(view, offer)}
 				value={
-					<RowFigures
-						figure={
-							<PriceTag
-								kb={offer.priceKb}
-								on={offer.config.label}
-								state={tagStateFor(offer)}
-								hint={refusalHintFor(offer)}
-								onUse={() => onDraft(offer.config.id)}
-							/>
-						}
+					<PriceTag
+						kb={offer.priceKb}
+						on={offer.config.label}
+						state={tagStateFor(offer)}
+						hint={refusalHintFor(offer)}
+						onUse={() => onDraft(offer.config.id)}
 					/>
 				}
 				summary={offerFacts(offer.config)}
@@ -367,7 +364,7 @@ export const ShopView = ({
 			}}
 			notice={
 				view.shopControls.shopLocked
-					? `Shop closed. Read-only audits the build you already have, so nothing can be bought, sold or switched before gate ${nextGate}.`
+					? `Shop closed. 405 Method Not Allowed audits the build you already have, so nothing can be bought, sold or switched before gate ${nextGate}.`
 					: undefined
 			}
 			offers={[

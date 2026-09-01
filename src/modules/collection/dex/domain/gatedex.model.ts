@@ -1,5 +1,6 @@
 import {
 	auditExtraPeelShare,
+	auditLabel,
 	auditsForGate,
 } from "~/modules/run/gate/domain/audit.model";
 import {
@@ -82,7 +83,7 @@ export const gatedex = (
 			coverageDemand: coverageDemandFor(swatch.gate),
 			peelShare: failPeelShareFor(swatch.gate) + extraPeelShare,
 			peelsAudited: extraPeelShare > 0,
-			audits: audits.map((audit) => audit.name),
+			audits: audits.map(auditLabel),
 			unlocks: unlocksOpenedBy(swatch.gate),
 			winsTheRun: swatch.gate === VICTORY_GATE,
 			state: stateOf(swatch, ownedSwatchIds, nextGate),

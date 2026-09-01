@@ -6,9 +6,12 @@ import {
 	auditDemandFactor,
 	auditExtraPeelShare,
 	auditFeeMultiplier,
+	auditLabel,
+	auditPaidActionLimit,
 	auditsCloseShop,
 	auditsForGate,
 	auditsFreezeManualEffects,
+	auditsHideCategory,
 	auditScoreShare,
 	auditTimeLimitMs,
 	GATE_AUDITS,
@@ -67,6 +70,36 @@ describe("the audit schedule", () => {
 	});
 });
 
+describe("auditLabel", () => {
+	const everyAudit = Object.values(GATE_AUDITS).flat();
+
+	it("reads an audit as its status line", () => {
+		expect(auditLabel(auditsForGate(3)[0])).toBe("402 Payment Required");
+		expect(auditLabel(auditsForGate(8)[0])).toBe("408 Request Timeout");
+	});
+
+	it("pairs one code with one name, both ways", () => {
+		const byCode = new Map(everyAudit.map((audit) => [audit.code, audit.name]));
+		const byName = new Map(everyAudit.map((audit) => [audit.name, audit.code]));
+		expect(byCode.size).toBe(byName.size);
+		for (const audit of everyAudit) {
+			expect(byCode.get(audit.code)).toBe(audit.name);
+			expect(byName.get(audit.name)).toBe(audit.code);
+		}
+	});
+
+	it("gives the per-gate dials of one audit the same status", () => {
+		const timeouts = everyAudit.filter((audit) =>
+			audit.id.startsWith("timeout")
+		);
+		const strips = everyAudit.filter((audit) => audit.id.startsWith("strip"));
+		expect(timeouts.length).toBeGreaterThan(1);
+		expect(strips.length).toBeGreaterThan(1);
+		expect(new Set(timeouts.map(auditLabel)).size).toBe(1);
+		expect(new Set(strips.map(auditLabel)).size).toBe(1);
+	});
+});
+
 describe("auditScoreShare", () => {
 	it("leaves a share alone when no audit touches it", () => {
 		expect(auditScoreShare(auditsForGate(2), 0.5)).toBe(0.5);
@@ -74,7 +107,7 @@ describe("auditScoreShare", () => {
 	});
 });
 
-describe("the memory leak", () => {
+describe("507 Insufficient Storage", () => {
 	const volcano = auditsForGate(9);
 
 	it("taxes every poll, more on a miss", () => {
@@ -88,7 +121,7 @@ describe("the memory leak", () => {
 });
 
 describe("the paid-action audits", () => {
-	it("doubles every fee at Cost Overrun", () => {
+	it("doubles every fee at 402 Payment Required", () => {
 		expect(auditFeeMultiplier(auditsForGate(3))).toBe(2);
 	});
 
@@ -102,21 +135,21 @@ describe("the paid-action audits", () => {
 		expect(auditFeeMultiplier([...doubled, ...doubled])).toBe(4);
 	});
 
-	it("freezes the paid actions at Feature Freeze", () => {
-		expect(auditsFreezeManualEffects(auditsForGate(6))).toBe(true);
+	it("freezes the paid actions at 403 Forbidden", () => {
+		expect(auditsFreezeManualEffects(auditsForGate(11))).toBe(true);
 		expect(auditsFreezeManualEffects(auditsForGate(3))).toBe(false);
-		expect(auditsFreezeManualEffects(auditsForGate(10))).toBe(false);
+		expect(auditsFreezeManualEffects(auditsForGate(6))).toBe(false);
 	});
 });
 
-describe("read-only", () => {
+describe("405 Method Not Allowed", () => {
 	it("shuts the shop at its own gate only", () => {
-		expect(auditsCloseShop(auditsForGate(5))).toBe(true);
-		expect(auditsCloseShop(auditsForGate(6))).toBe(false);
+		expect(auditsCloseShop(auditsForGate(6))).toBe(true);
+		expect(auditsCloseShop(auditsForGate(5))).toBe(false);
 	});
 });
 
-describe("the timeout", () => {
+describe("408 Request Timeout", () => {
 	it("clocks the window's first polls and frees the rest", () => {
 		expect(auditTimeLimitMs(auditsForGate(8), 0)).toBe(30_000);
 		expect(auditTimeLimitMs(auditsForGate(8), 2)).toBe(30_000);
@@ -141,7 +174,7 @@ describe("the configs an audit takes offline", () => {
 			(answered) => offlineConfigsFor(build, audits, window, answered)[0]?.id
 		);
 
-	describe("Dependency Outage — one config, all attempt", () => {
+	describe("424 Failed Dependency — one config, all attempt", () => {
 		const outage = auditsForGate(4);
 
 		it("takes one installed config down", () => {
@@ -166,7 +199,7 @@ describe("the configs an audit takes offline", () => {
 		});
 	});
 
-	describe("Flaky Build — a fresh roll every poll", () => {
+	describe("502 Bad Gateway — a fresh roll every poll", () => {
 		const flaky = auditsForGate(8);
 
 		it("moves during the window", () => {
@@ -180,7 +213,7 @@ describe("the configs an audit takes offline", () => {
 		});
 	});
 
-	describe("Rolling Outage — a different config each poll", () => {
+	describe("503 Service Unavailable — a different config each poll", () => {
 		const rolling = auditsForGate(9);
 
 		it("never repeats inside one lap of the build", () => {
@@ -197,7 +230,7 @@ describe("the configs an audit takes offline", () => {
 		});
 	});
 
-	describe("Breaking Change — the one you upgraded", () => {
+	describe("409 Conflict — the one you upgraded", () => {
 		const breaking = auditsForGate(10);
 		const levelled = [
 			CONFIGS.js,
@@ -236,6 +269,33 @@ describe("the configs an audit takes offline", () => {
 		});
 	});
 
+	describe("426 Upgrade Required — the one you neglected", () => {
+		const stale = auditsForGate(11);
+		const levelled = [
+			{ ...CONFIGS.js, level: 3 },
+			{ ...CONFIGS.eslint, level: 2 },
+			CONFIGS.agentsMd,
+		];
+
+		it("takes the lowest-level config, the mirror of a breaking change", () => {
+			expect(offlineConfigsFor(levelled, stale, window, 0)).toEqual([
+				CONFIGS.agentsMd,
+			]);
+		});
+
+		it("holds it for the whole window", () => {
+			const ids = [0, 1, 2].map(
+				(answered) =>
+					offlineConfigsFor(levelled, stale, window, answered)[0]?.id
+			);
+			expect(new Set(ids).size).toBe(1);
+		});
+
+		it("takes one config, not the whole v1 build", () => {
+			expect(offlineConfigsFor(build, stale, window, 0)).toHaveLength(1);
+		});
+	});
+
 	it("takes nothing at a gate whose audits leave the build alone", () => {
 		expect(offlineConfigsFor(build, auditsForGate(5), window, 0)).toEqual([]);
 	});
@@ -245,10 +305,56 @@ describe("the configs an audit takes offline", () => {
 	});
 });
 
+describe("404 Not Found", () => {
+	it("hides the category at its own gate only", () => {
+		expect(auditsHideCategory(auditsForGate(5))).toBe(true);
+		expect(auditsHideCategory(auditsForGate(4))).toBe(false);
+		expect(auditsHideCategory(auditsForGate(7))).toBe(false);
+	});
+});
+
+describe("429 Too Many Requests", () => {
+	it("allows one paid action for the window", () => {
+		expect(auditPaidActionLimit(auditsForGate(10))).toBe(1);
+	});
+
+	it("leaves an unlimited gate unlimited", () => {
+		expect(auditPaidActionLimit(auditsForGate(3))).toBeUndefined();
+	});
+
+	it("takes the tighter limit when two would stack", () => {
+		const [rateLimited] = auditsForGate(10).filter(
+			(audit) => audit.paidActionLimit !== undefined
+		);
+		const stacked = [
+			...auditsForGate(10),
+			{ ...rateLimited, paidActionLimit: 3 },
+		];
+		expect(auditPaidActionLimit(stacked)).toBe(1);
+	});
+});
+
+describe("413 Payload Too Large", () => {
+	const champion = auditsForGate(12);
+
+	it("charges nothing for a build inside the free width", () => {
+		expect(auditBurnKb(champion, false, 12)).toBe(0);
+	});
+
+	it("charges every slot past the twelfth, on a right answer too", () => {
+		expect(auditBurnKb(champion, false, 15)).toBe(24);
+		expect(auditBurnKb(champion, true, 15)).toBe(24);
+	});
+
+	it("charges nothing at a gate without it", () => {
+		expect(auditBurnKb(auditsForGate(9), false, 24)).toBe(16);
+	});
+});
+
 describe("the mirror", () => {
 	it("marks its gates and only its gates", () => {
 		expect(mirrorsPolls(auditsForGate(7))).toBe(true);
-		expect(mirrorsPolls(auditsForGate(11))).toBe(true);
+		expect(mirrorsPolls(auditsForGate(11))).toBe(false);
 		expect(mirrorsPolls(auditsForGate(9))).toBe(false);
 	});
 
@@ -268,7 +374,7 @@ describe("the defeat device (ADR-028, repurposed)", () => {
 	it("leaves the Champion's later audits in force", () => {
 		expect(liveAuditsFor(device, 12).map((audit) => audit.id)).toEqual([
 			"strip-15",
-			"timeout-5",
+			"payload-too-large",
 		]);
 	});
 

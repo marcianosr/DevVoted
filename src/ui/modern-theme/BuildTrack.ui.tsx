@@ -4,6 +4,7 @@ import type { ConfigStatus } from "~/modules/run/config/domain/effect.model";
 
 import type { ActionProps } from "./Action.ui";
 import { Caret } from "./Caret.ui";
+import { Dot, type DotTone } from "./Dot.ui";
 import { figureLabel } from "./Figure.ui";
 import type { BuildRow } from "./Build.ui";
 import { occupancyOf } from "./slots";
@@ -11,21 +12,24 @@ import { skipCopy } from "./status";
 import { Text } from "./Text.ui";
 import { Tooltip } from "./Tooltip.ui";
 import type { ModernTone } from "./tones";
-import { capLabel, signed, valueTone } from "./format";
+import { capLabel, plural, signed, valueTone } from "./format";
 
 const HEAD = "flex w-full items-baseline justify-between gap-4 pb-2";
 const TOGGLE = `${HEAD} cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cerulean lg:pointer-events-none`;
 const NAMING = "flex items-baseline gap-2";
 const CARET = "lg:hidden";
 
-const TRACK = "flex w-full flex-col items-stretch gap-1 lg:flex-row";
+const TRACK =
+	"flex w-full flex-col items-stretch gap-1 rounded-md border border-edge p-1.5 lg:flex-row";
 const SHUT = "hidden lg:flex";
+const COUNTS = "flex items-center gap-2";
 
 const STUB = "flex min-w-full lg:min-w-0";
 const FILL = "size-full";
 
 const CELL =
-	"flex h-10 min-w-0 items-center justify-between gap-2 overflow-hidden rounded border px-2 py-1.5 text-left lg:flex-col lg:items-stretch lg:justify-between lg:gap-0";
+	"relative flex h-10 min-w-0 items-center justify-between gap-2 overflow-hidden rounded border py-1.5 pl-2 pr-5 text-left lg:flex-col lg:items-stretch lg:justify-between lg:gap-0";
+const CORNER = "absolute right-1.5 top-1.5";
 const VACANT =
 	"flex h-10 min-w-0 items-center justify-center overflow-hidden rounded border px-2";
 const PRESSABLE =
@@ -36,12 +40,21 @@ const STRUCK = "line-through";
 
 const SHAPE = {
 	online: "border-celadon bg-celadon/5",
-	skipped: "border-edge",
+	unknown: "border-edge",
+	skipped: "cursor-not-allowed border-edge opacity-40",
 	offline: "border-cinnabar bg-cinnabar/10",
 } as const satisfies Record<ConfigStatus["kind"], string>;
 
+const DOT_TONE = {
+	online: "saffron",
+	unknown: "muted",
+	skipped: "muted",
+	offline: "cinnabar",
+} as const satisfies Record<ConfigStatus["kind"], DotTone>;
+
 const NAME_TONE = {
 	online: "default",
+	unknown: "default",
 	skipped: "muted",
 	offline: "cinnabar",
 } as const satisfies Record<ConfigStatus["kind"], ModernTone>;
@@ -133,6 +146,9 @@ const Cell = ({ row, settled, width }: CellProps) => {
 
 	const body = (
 		<>
+			<span className={CORNER}>
+				<Dot tone={DOT_TONE[row.status.kind]} />
+			</span>
 			<Text
 				size="xxs"
 				tone={NAME_TONE[row.status.kind]}
@@ -208,6 +224,35 @@ const Headline = ({ configs }: { configs: readonly BuildRow[] }) => {
 	);
 };
 
+const runningCount = (configs: readonly BuildRow[]): number =>
+	configs.filter((row) => row.status.kind === "online").length;
+
+const tallyOf = (
+	configs: readonly BuildRow[],
+	used: number,
+	slots: number,
+	settled: boolean
+): string => {
+	const room = `${used} of ${plural(slots, "slot")}`;
+	return settled ? room : `${room} · ${runningCount(configs)} running`;
+};
+
+type TallyProps = {
+	configs: readonly BuildRow[];
+	text: string;
+	dotted: boolean;
+};
+
+const Tally = ({ configs, text, dotted }: TallyProps) => (
+	<span className={COUNTS}>
+		<Headline configs={configs} />
+		<Text size="meta" tone="muted">
+			{text}
+		</Text>
+		{dotted ? <Dot tone={DOT_TONE.online} /> : null}
+	</span>
+);
+
 export const BuildTrack = ({
 	configs,
 	slots,
@@ -218,6 +263,7 @@ export const BuildTrack = ({
 }: BuildTrackProps) => {
 	const { used, free, unbought } = occupancyOf(configs, slots, maxSlots);
 	const width = used + free + (unbought > 0 ? 1 : 0) || 1;
+	const tally = tallyOf(configs, used, slots, settled);
 
 	const naming = (
 		<span className={NAMING}>
@@ -241,12 +287,12 @@ export const BuildTrack = ({
 					onClick={onToggle}
 				>
 					{naming}
-					<Headline configs={configs} />
+					<Tally configs={configs} text={tally} dotted={!settled} />
 				</button>
 			) : (
 				<div className={HEAD}>
 					{naming}
-					<Headline configs={configs} />
+					<Tally configs={configs} text={tally} dotted={!settled} />
 				</div>
 			)}
 			<ul

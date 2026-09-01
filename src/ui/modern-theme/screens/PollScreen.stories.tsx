@@ -35,7 +35,7 @@ const track = (open: boolean, onToggle: () => void) => (
 				id: "ts",
 				label: ".ts",
 				slots: 1,
-				status: { kind: "offline", audit: "Dependency Outage" },
+				status: { kind: "offline", audit: "424 Failed Dependency" },
 			},
 			{
 				id: "intellisense",

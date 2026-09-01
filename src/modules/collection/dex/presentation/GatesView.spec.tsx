@@ -53,7 +53,7 @@ describe("GatesView", () => {
 	it("withholds the rules of a gate nobody has stood in front of", () => {
 		renderLadder(0);
 
-		expect(row("4 Lavender").queryByText("Dependency Outage")).toBeNull();
+		expect(row("4 Lavender").queryByText("424 Failed Dependency")).toBeNull();
 		expect(redactionsIn("4 Lavender")).toHaveLength(1);
 	});
 
@@ -65,11 +65,12 @@ describe("GatesView", () => {
 	});
 
 	it("keeps naming an audit already met at an earlier gate", () => {
-		renderLadder(7);
+		renderLadder(8);
 
-		expect(row("11 Elite").getByText("Mirror")).toBeInTheDocument();
-		expect(row("11 Elite").getByText("Flaky Build")).toBeInTheDocument();
-		expect(redactionsIn("11 Elite")).toHaveLength(1);
+		expect(
+			row("12 Champion").getByText("408 Request Timeout")
+		).toBeInTheDocument();
+		expect(redactionsIn("12 Champion")).toHaveLength(2);
 	});
 
 	it("names everything once the ladder is finished", () => {
@@ -81,8 +82,10 @@ describe("GatesView", () => {
 	it("names the audits a gate carries", () => {
 		renderLadder(12);
 
-		expect(row("8 Seafoam").getByText("Timeout")).toBeInTheDocument();
-		expect(row("8 Seafoam").getByText("Flaky Build")).toBeInTheDocument();
+		expect(
+			row("8 Seafoam").getByText("408 Request Timeout")
+		).toBeInTheDocument();
+		expect(row("8 Seafoam").getByText("502 Bad Gateway")).toBeInTheDocument();
 	});
 
 	it("marks the cleared gates and the one in front of them", () => {

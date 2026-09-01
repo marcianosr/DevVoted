@@ -153,6 +153,7 @@ const createRunView = createMockDataFactory<RunView>({
 	paidActions: createMockPaidActions(),
 	offlineConfigs: [],
 	mirroredPolls: false,
+	categoryHidden: false,
 	pollTimeLimitMs: null,
 	currentPollPeeked: false,
 	correctAnswersThisGate: null,

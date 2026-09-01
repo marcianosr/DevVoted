@@ -78,11 +78,13 @@ describe("GatesPanel", () => {
 	it("tells an audit from an unlock by colour, the way the key says", () => {
 		render(
 			<GatesPanel
-				gates={[gate({ audits: ["Mirror"], unlocks: ["slot 10"] })]}
+				gates={[
+					gate({ audits: ["300 Multiple Choices"], unlocks: ["slot 10"] }),
+				]}
 			/>
 		);
 
-		expect(screen.getByText("Mirror").parentElement).toHaveClass(
+		expect(screen.getByText("300 Multiple Choices").parentElement).toHaveClass(
 			"bg-saffron/15"
 		);
 		expect(screen.getByText("slot 10").parentElement).toHaveClass(

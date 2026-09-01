@@ -60,6 +60,13 @@ const scoreChip = () => {
 };
 
 describe("PollView", () => {
+	it("redacts the category under 404 rather than naming it", () => {
+		render_({ view: createMockRunView({ ...view, categoryHidden: true }) });
+
+		expect(screen.getByText("???")).toBeInTheDocument();
+		expect(screen.queryByText("TypeScript")).not.toBeInTheDocument();
+	});
+
 	it("wears the gate it is being played at", () => {
 		render_();
 
@@ -144,7 +151,7 @@ describe("PollView", () => {
 				audits: [
 					{
 						id: "timeout-4",
-						name: "Timeout",
+						name: "408 Request Timeout",
 						description: "On the clock.",
 						suppressed: false,
 					},
@@ -153,7 +160,7 @@ describe("PollView", () => {
 		});
 
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
-		expect(screen.getAllByText("Timeout")).toHaveLength(2);
+		expect(screen.getAllByText("408 Request Timeout")).toHaveLength(2);
 		expect(screen.getByText("On the clock.")).toBeInTheDocument();
 	});
 
@@ -164,13 +171,13 @@ describe("PollView", () => {
 				audits: [
 					{
 						id: "strip-1",
-						name: "Strip",
+						name: "410 Gone",
 						description: "A miss peels 5.",
 						suppressed: false,
 					},
 					{
 						id: "mirrored",
-						name: "Mirror",
+						name: "300 Multiple Choices",
 						description: "Pick every wrong option.",
 						suppressed: false,
 					},
@@ -186,7 +193,9 @@ describe("PollView", () => {
 		const { container } = render_({
 			view: createMockRunView({
 				...view,
-				offlineConfigs: [{ config: CONFIGS.ts, audit: "Dependency Outage" }],
+				offlineConfigs: [
+					{ config: CONFIGS.ts, audit: "424 Failed Dependency" },
+				],
 			}),
 		});
 
@@ -198,12 +207,14 @@ describe("PollView", () => {
 		render_({
 			view: createMockRunView({
 				...view,
-				offlineConfigs: [{ config: CONFIGS.ts, audit: "Dependency Outage" }],
+				offlineConfigs: [
+					{ config: CONFIGS.ts, audit: "424 Failed Dependency" },
+				],
 			}),
 		});
 
 		expect(
-			screen.getByText(/\.ts · offline · Dependency Outage/)
+			screen.getByText(/\.ts · offline · 424 Failed Dependency/)
 		).toBeInTheDocument();
 	});
 
@@ -445,7 +456,7 @@ describe("PollView tools", () => {
 					linter: CONFIGS.eslint,
 				},
 				offlineConfigs: [
-					{ config: CONFIGS.eslint, audit: "Dependency Outage" },
+					{ config: CONFIGS.eslint, audit: "424 Failed Dependency" },
 				],
 			}),
 		});
@@ -454,7 +465,7 @@ describe("PollView tools", () => {
 			screen.queryByRole("button", { name: /cross out/ })
 		).not.toBeInTheDocument();
 		expect(
-			screen.getByText(/ESLint · offline · Dependency Outage/)
+			screen.getByText(/ESLint · offline · 424 Failed Dependency/)
 		).toBeInTheDocument();
 	});
 

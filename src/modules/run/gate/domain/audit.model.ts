@@ -6,6 +6,7 @@ import { selectSeededRandom } from "~/shared/lib/seededRandom";
 
 export type Audit = {
 	readonly id: string;
+	readonly code: number;
 	readonly name: string;
 	readonly description: string;
 	readonly dexRule?: string;
@@ -17,17 +18,25 @@ export type Audit = {
 	readonly demandFactor?: number;
 	readonly feeMultiplier?: number;
 	readonly freezesManualEffects?: boolean;
+	readonly paidActionLimit?: number;
 	readonly closesShop?: boolean;
+	readonly hidesCategory?: boolean;
+	readonly overWidthBurn?: { readonly freeSlots: number; readonly kb: number };
 	readonly disablesConfig?: OfflinePick;
 	readonly timedPolls?: { readonly count: number; readonly limitMs: number };
 };
 
 export type OfflinePick =
-	"one-per-attempt" | "random-per-poll" | "rotating-per-poll" | "highest-level";
+	| "one-per-attempt"
+	| "random-per-poll"
+	| "rotating-per-poll"
+	| "highest-level"
+	| "lowest-level";
 
 const MIRROR: Audit = {
 	id: "mirrored",
-	name: "Mirror",
+	code: 300,
+	name: "Multiple Choices",
 	description:
 		"Every poll asks for the INCORRECT options instead — pick all of them.",
 	answerCue:
@@ -40,7 +49,8 @@ const LEAK_WRONG_KB = 32;
 
 const MEMORY_LEAK: Audit = {
 	id: "memory-leak",
-	name: "Memory Leak",
+	code: 507,
+	name: "Insufficient Storage",
 	description: `Storage leaks on every poll: −${LEAK_BASE_KB}KB, −${LEAK_WRONG_KB}KB on a miss.`,
 	answerCue: `Storage is leaking: −${LEAK_BASE_KB}KB a poll, −${LEAK_WRONG_KB}KB on a miss.`,
 	burnKb: { base: LEAK_BASE_KB, wrong: LEAK_WRONG_KB },
@@ -50,7 +60,8 @@ const FEE_OVERRUN_MULTIPLIER = 2;
 
 const COST_OVERRUN: Audit = {
 	id: "cost-overrun",
-	name: "Cost Overrun",
+	code: 402,
+	name: "Payment Required",
 	description: `Every paid action costs ×${FEE_OVERRUN_MULTIPLIER} — linting and peeking both.`,
 	answerCue: `Paid actions are running ×${FEE_OVERRUN_MULTIPLIER} over budget this gate.`,
 	feeMultiplier: FEE_OVERRUN_MULTIPLIER,
@@ -58,24 +69,27 @@ const COST_OVERRUN: Audit = {
 
 const FEATURE_FREEZE: Audit = {
 	id: "feature-freeze",
-	name: "Feature Freeze",
+	code: 403,
+	name: "Forbidden",
 	description:
 		"No paid actions at all: the linter and the community peek are frozen.",
-	answerCue: "Feature freeze — the linter and the peek are unavailable.",
+	answerCue: "Paid actions are forbidden — the linter and the peek are out.",
 	freezesManualEffects: true,
 };
 
 const READ_ONLY: Audit = {
 	id: "read-only",
-	name: "Read-only",
+	code: 405,
+	name: "Method Not Allowed",
 	description:
-		"The shop before this gate is closed: no drafting, upgrades, rebuilds or plan changes.",
+		"The shop before this gate is read-only: no drafting, upgrades, rebuilds or plan changes.",
 	closesShop: true,
 };
 
 const DEPENDENCY_OUTAGE: Audit = {
 	id: "dependency-outage",
-	name: "Dependency Outage",
+	code: 424,
+	name: "Failed Dependency",
 	description:
 		"One config in your build goes offline for the whole attempt — its effect does nothing.",
 	answerCue: "A dependency is down: one of your configs is offline this gate.",
@@ -84,16 +98,18 @@ const DEPENDENCY_OUTAGE: Audit = {
 
 const FLAKY_BUILD: Audit = {
 	id: "flaky-build",
-	name: "Flaky Build",
+	code: 502,
+	name: "Bad Gateway",
 	description:
 		"One config fails to trigger on every poll — a different one each time, and it can flake twice in a row.",
-	answerCue: "Flaky build: one config drops out on every poll.",
+	answerCue: "Flaking: one config drops out on every poll.",
 	disablesConfig: "random-per-poll",
 };
 
 const ROLLING_OUTAGE: Audit = {
 	id: "rolling-outage",
-	name: "Rolling Outage",
+	code: 503,
+	name: "Service Unavailable",
 	description:
 		"The outage rolls through your build: a different config is down for each poll of the window.",
 	answerCue: "Rolling outage: the config that is down moves every poll.",
@@ -102,7 +118,8 @@ const ROLLING_OUTAGE: Audit = {
 
 const BREAKING_CHANGE: Audit = {
 	id: "breaking-change",
-	name: "Breaking Change",
+	code: 409,
+	name: "Conflict",
 	description:
 		"Your highest-level config takes a breaking change for the whole attempt — the one you upgraded most does nothing.",
 	answerCue:
@@ -112,7 +129,8 @@ const BREAKING_CHANGE: Audit = {
 
 const timeoutAudit = (count: number, seconds: number): Audit => ({
 	id: `timeout-${count}`,
-	name: "Timeout",
+	code: 408,
+	name: "Request Timeout",
 	description: `The first ${count} polls are on a ${seconds}s clock — an answer over the limit scores as a miss.`,
 	dexRule:
 		"The window's first polls run on a clock, tighter and longer the deeper the gate. A late answer scores as a miss.",
@@ -120,9 +138,54 @@ const timeoutAudit = (count: number, seconds: number): Audit => ({
 	timedPolls: { count, limitMs: seconds * 1000 },
 });
 
+const NOT_FOUND: Audit = {
+	id: "not-found",
+	code: 404,
+	name: "Not Found",
+	description:
+		"No poll says which category it belongs to, so which of your configs is about to pay is yours to work out.",
+	answerCue: "Category hidden: you are answering blind on which configs pay.",
+	hidesCategory: true,
+};
+
+const PAID_ACTION_ALLOWANCE = 1;
+
+const TOO_MANY_REQUESTS: Audit = {
+	id: "too-many-requests",
+	code: 429,
+	name: "Too Many Requests",
+	description: `Rate limited to ${PAID_ACTION_ALLOWANCE} paid action for the whole window — the linter or the peek, not both.`,
+	answerCue: `Rate limited: ${PAID_ACTION_ALLOWANCE} paid action left for this gate.`,
+	paidActionLimit: PAID_ACTION_ALLOWANCE,
+};
+
+const UPGRADE_REQUIRED: Audit = {
+	id: "upgrade-required",
+	code: 426,
+	name: "Upgrade Required",
+	description:
+		"The config you neglected goes out of date: your lowest-level one sits the whole attempt out.",
+	answerCue:
+		"Upgrade required: your least-upgraded config is offline this gate.",
+	disablesConfig: "lowest-level",
+};
+
+const PAYLOAD_FREE_SLOTS = 12;
+const PAYLOAD_KB_PER_SLOT = 8;
+
+const PAYLOAD_TOO_LARGE: Audit = {
+	id: "payload-too-large",
+	code: 413,
+	name: "Payload Too Large",
+	description: `Every slot past the ${PAYLOAD_FREE_SLOTS}th leaks ${PAYLOAD_KB_PER_SLOT}KB a poll, so a wide build pays to carry itself.`,
+	answerCue: `Payload over ${PAYLOAD_FREE_SLOTS} slots: ${PAYLOAD_KB_PER_SLOT}KB a poll for each one past it.`,
+	overWidthBurn: { freeSlots: PAYLOAD_FREE_SLOTS, kb: PAYLOAD_KB_PER_SLOT },
+};
+
 const stripAudit = (gate: number, extra: number): Audit => ({
 	id: `strip-${Math.round(extra * 100)}`,
-	name: "Strip",
+	code: 410,
+	name: "Gone",
 	description: `Failing this gate peels ${asPercent(failPeelShareFor(gate) + extra)} of your build instead of ${asPercent(failPeelShareFor(gate))} — a build it can empty ends the run here.`,
 	dexRule:
 		"Failing this gate peels a bigger share of the build than its own row. A build it can empty ends the run there.",
@@ -132,18 +195,21 @@ const stripAudit = (gate: number, extra: number): Audit => ({
 export const GATE_AUDITS: Readonly<Record<number, readonly Audit[]>> = {
 	3: [COST_OVERRUN],
 	4: [DEPENDENCY_OUTAGE],
-	5: [READ_ONLY],
-	6: [FEATURE_FREEZE],
+	5: [NOT_FOUND],
+	6: [READ_ONLY],
 	7: [MIRROR],
 	8: [timeoutAudit(3, 30), FLAKY_BUILD],
-	9: [MEMORY_LEAK, ROLLING_OUTAGE],
-	10: [BREAKING_CHANGE, timeoutAudit(4, 25)],
-	11: [stripAudit(11, 0.1), MIRROR, FLAKY_BUILD],
-	12: [MEMORY_LEAK, stripAudit(12, 0.15), timeoutAudit(5, 20)],
+	9: [ROLLING_OUTAGE, MEMORY_LEAK],
+	10: [BREAKING_CHANGE, TOO_MANY_REQUESTS],
+	11: [stripAudit(11, 0.1), UPGRADE_REQUIRED, FEATURE_FREEZE],
+	12: [timeoutAudit(5, 20), stripAudit(12, 0.15), PAYLOAD_TOO_LARGE],
 };
 
 export const auditsForGate = (gate: number): readonly Audit[] =>
 	GATE_AUDITS[gate] ?? [];
+
+export const auditLabel = (audit: Audit): string =>
+	`${audit.code} ${audit.name}`;
 
 export const nextAuditedGateFrom = (
 	gate: number
@@ -182,12 +248,37 @@ export const auditScoreShare = (
 	share: number
 ): number => audits.reduce((s, audit) => audit.scoreShare?.(s) ?? s, share);
 
-export const auditBurnKb = (audits: readonly Audit[], wrong: boolean): number =>
+const overWidthKb = (audit: Audit, slotsHeld: number): number => {
+	const over = audit.overWidthBurn;
+	if (over === undefined) return 0;
+	return Math.max(0, slotsHeld - over.freeSlots) * over.kb;
+};
+
+export const auditBurnKb = (
+	audits: readonly Audit[],
+	wrong: boolean,
+	slotsHeld = 0
+): number =>
 	audits.reduce(
 		(sum, audit) =>
-			sum + (wrong ? (audit.burnKb?.wrong ?? 0) : (audit.burnKb?.base ?? 0)),
+			sum +
+			(wrong ? (audit.burnKb?.wrong ?? 0) : (audit.burnKb?.base ?? 0)) +
+			overWidthKb(audit, slotsHeld),
 		0
 	);
+
+export const auditsHideCategory = (audits: readonly Audit[]): boolean =>
+	audits.some((audit) => audit.hidesCategory === true);
+
+export const auditPaidActionLimit = (
+	audits: readonly Audit[]
+): number | undefined =>
+	audits.reduce<number | undefined>((limit, audit) => {
+		if (audit.paidActionLimit === undefined) return limit;
+		return limit === undefined
+			? audit.paidActionLimit
+			: Math.min(limit, audit.paidActionLimit);
+	}, undefined);
 
 export const auditExtraPeelShare = (audits: readonly Audit[]): number =>
 	audits.reduce((sum, audit) => sum + (audit.peelShareOnFail ?? 0), 0);
@@ -247,43 +338,54 @@ export const offlinePairsFor = (
 	return audits.flatMap((audit): readonly OfflinePair[] => {
 		const pick = audit.disablesConfig;
 		if (pick === undefined) return [];
-		const config = pickOffline(pick, sorted, windowStart, answeredThisWindow);
-		return config === undefined ? [] : [{ config, audit }];
+		return pickOffline(pick, sorted, windowStart, answeredThisWindow).map(
+			(config) => ({ config, audit })
+		);
 	});
 };
+
+const onlyFound = (config: Config | undefined | null): readonly Config[] =>
+	config ? [config] : [];
+
+const FIRST_VERSION = 1;
 
 const pickOffline = (
 	pick: OfflinePick,
 	sorted: readonly Config[],
 	windowStart: number,
 	answeredThisWindow: number
-): Config | undefined => {
+): readonly Config[] => {
 	if (pick === "one-per-attempt")
-		return (
-			selectSeededRandom([...sorted], `outage-${windowStart}`) ?? undefined
-		);
+		return onlyFound(selectSeededRandom([...sorted], `outage-${windowStart}`));
 	if (pick === "random-per-poll")
-		return (
+		return onlyFound(
 			selectSeededRandom(
 				[...sorted],
 				`flake-${windowStart}-${answeredThisWindow}`
-			) ?? undefined
+			)
 		);
 	if (pick === "rotating-per-poll")
-		return sorted[(windowStart + answeredThisWindow) % sorted.length];
-	return highestLevel(sorted, windowStart);
+		return onlyFound(
+			sorted[(windowStart + answeredThisWindow) % sorted.length]
+		);
+	if (pick === "lowest-level")
+		return onlyFound(atLevelEdge(sorted, windowStart, "lowest"));
+	return onlyFound(atLevelEdge(sorted, windowStart, "highest"));
 };
 
-const highestLevel = (
+const atLevelEdge = (
 	sorted: readonly Config[],
-	windowStart: number
+	windowStart: number,
+	edge: "highest" | "lowest"
 ): Config | undefined => {
-	const top = sorted.reduce(
-		(best, config) => Math.max(best, config.level ?? 1),
-		1
+	const levelOf = (config: Config) => config.level ?? FIRST_VERSION;
+	const pick = edge === "highest" ? Math.max : Math.min;
+	const edgeLevel = sorted.reduce(
+		(best, config) => pick(best, levelOf(config)),
+		edge === "highest" ? FIRST_VERSION : Number.POSITIVE_INFINITY
 	);
-	const tied = sorted.filter((config) => (config.level ?? 1) === top);
+	const tied = sorted.filter((config) => levelOf(config) === edgeLevel);
 	return (
-		selectSeededRandom([...tied], `breaking-change-${windowStart}`) ?? undefined
+		selectSeededRandom([...tied], `${edge}-level-${windowStart}`) ?? undefined
 	);
 };

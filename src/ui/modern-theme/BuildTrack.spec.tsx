@@ -36,7 +36,7 @@ const agents: BuildRow = {
 	id: "agents",
 	label: "AGENTS.md",
 	slots: 1,
-	status: { kind: "offline", audit: "Dependency Outage" },
+	status: { kind: "offline", audit: "424 Failed Dependency" },
 };
 
 const track = () => screen.getByRole("list", { name: /build/i });
@@ -83,7 +83,7 @@ describe("BuildTrack", () => {
 
 		expect(screen.getByText("AGENTS.md")).toHaveClass("line-through");
 		expect(
-			screen.getByText("AGENTS.md · offline · Dependency Outage")
+			screen.getByText("AGENTS.md · offline · 424 Failed Dependency")
 		).toBeInTheDocument();
 	});
 
@@ -97,15 +97,62 @@ describe("BuildTrack", () => {
 		);
 
 		expect(
-			screen.getByText("2 offline · Dependency Outage")
+			screen.getByText("2 offline · 424 Failed Dependency")
 		).toBeInTheDocument();
 	});
 
-	it("leaves the heading bare when the whole build is standing", () => {
+	it("drops the offline alarm when the whole build is standing", () => {
 		render(<BuildTrack configs={[ts, js]} slots={4} maxSlots={4} />);
 
 		expect(screen.queryByText(/offline/)).not.toBeInTheDocument();
 		expect(screen.getByText("Build")).toBeInTheDocument();
+	});
+
+	it("tallies the slots in use and the configs running on this poll", () => {
+		render(<BuildTrack configs={[ts, coverage, js]} slots={7} maxSlots={24} />);
+
+		expect(screen.getByText("4 of 7 slots · 2 running")).toBeInTheDocument();
+	});
+
+	it("keeps the slot tally but retires the running count once settled", () => {
+		render(
+			<BuildTrack settled configs={[ts, coverage]} slots={7} maxSlots={24} />
+		);
+
+		const tally = screen.getByText("3 of 7 slots");
+		expect(tally).toBeInTheDocument();
+		expect(screen.queryByText(/running/)).not.toBeInTheDocument();
+		expect(tally.parentElement?.querySelector(".bg-saffron")).toBeNull();
+	});
+
+	it("echoes the running dot beside the header tally", () => {
+		render(<BuildTrack configs={[ts, js]} slots={4} maxSlots={4} />);
+
+		const tally = screen.getByText("2 of 4 slots · 1 running");
+		expect(tally.parentElement?.querySelector(".bg-saffron")).not.toBeNull();
+	});
+
+	it("borders the rail itself and leaves the panel around it frameless", () => {
+		render(<BuildTrack configs={[ts]} slots={2} maxSlots={2} />);
+
+		expect(track()).toHaveClass("border");
+		expect(track().closest("section")).not.toHaveClass("border");
+	});
+
+	it("dims a skipped config to a barred cursor without shrinking it", () => {
+		render(<BuildTrack configs={[js]} slots={4} maxSlots={4} />);
+
+		const cell = screen.getByText("js only").closest(".h-10");
+		expect(cell).toHaveClass("opacity-40", "cursor-not-allowed");
+	});
+
+	it("dots a running config saffron and a sitting one gray", () => {
+		const { container } = render(
+			<BuildTrack configs={[ts, js]} slots={4} maxSlots={4} />
+		);
+
+		expect(track().querySelectorAll(".bg-saffron")).toHaveLength(1);
+		expect(container.querySelectorAll(".bg-zinc-700")).toHaveLength(1);
 	});
 
 	it("draws one dashed box per free slot, so vacancy is countable", () => {
@@ -190,7 +237,7 @@ describe("a track that folds on narrow screens", () => {
 
 		expect(
 			screen.getByRole("button", {
-				name: /1 offline · Dependency Outage/,
+				name: /1 offline · 424 Failed Dependency/,
 			})
 		).toBeInTheDocument();
 	});

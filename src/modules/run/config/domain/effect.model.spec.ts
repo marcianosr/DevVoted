@@ -140,9 +140,9 @@ describe("configStatusFor — offline", () => {
 		expect(
 			configStatusFor(
 				CONFIGS.intellisense,
-				onPoll("js", 1, { offlineAudit: "Dependency Outage" })
+				onPoll("js", 1, { offlineAudit: "424 Failed Dependency" })
 			)
-		).toEqual({ kind: "offline", audit: "Dependency Outage" });
+		).toEqual({ kind: "offline", audit: "424 Failed Dependency" });
 	});
 });
 

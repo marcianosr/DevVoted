@@ -204,7 +204,7 @@ describe("PrepScreen", () => {
 		const fold = screen.getByText("Audits").closest("details");
 		if (!fold) throw new Error("No Audit fold rendered");
 
-		expect(within(fold).getByText("Dependency Outage")).toHaveClass(
+		expect(within(fold).getByText("424 Failed Dependency")).toHaveClass(
 			"line-through"
 		);
 		expect(screen.getByText("reported passing")).toBeInTheDocument();

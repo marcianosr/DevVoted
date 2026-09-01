@@ -51,6 +51,8 @@ import {
 	peelShareFor,
 } from "~/modules/run/gate/domain/gate.model";
 import {
+	auditLabel,
+	auditsHideCategory,
 	auditTimeLimitMs,
 	liveAuditsFor,
 	mirrorsPolls,
@@ -183,6 +185,7 @@ export type RunView = {
 	readonly paidActions: PaidActions;
 	readonly offlineConfigs: readonly OfflineConfig[];
 	readonly mirroredPolls: boolean;
+	readonly categoryHidden: boolean;
 	readonly pollTimeLimitMs: number | null;
 	readonly currentPollPeeked: boolean;
 	readonly correctAnswersThisGate: number | null;
@@ -357,7 +360,7 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 	const liveAudits = liveAuditsFor(state.build.configs, state.gatesCleared);
 	const offline = offlinePairsOf(state).map((pair): OfflineConfig => ({
 		config: pair.config,
-		audit: pair.audit.name,
+		audit: auditLabel(pair.audit),
 	}));
 	const mirrored = mirrorsPolls(liveAudits);
 	const audits = auditViewsFor(state);
@@ -389,6 +392,7 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 		paidActions: paidActionsFor(state),
 		offlineConfigs: offline,
 		mirroredPolls: mirrored,
+		categoryHidden: auditsHideCategory(liveAudits),
 		pollTimeLimitMs:
 			auditTimeLimitMs(liveAudits, state.window.answered) ?? null,
 		currentPollPeeked:

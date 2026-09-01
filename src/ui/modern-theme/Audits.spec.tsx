@@ -13,10 +13,10 @@ describe("Audits", () => {
 	it("names every audit and what it does to this gate", () => {
 		render(<Audits audits={AUDITS} defaultOpen />);
 
-		expect(screen.getByText("Strip")).toBeInTheDocument();
+		expect(screen.getByText("410 Gone")).toBeInTheDocument();
 		expect(screen.getByText("a miss peels 5")).toBeInTheDocument();
-		expect(screen.getByText("Mirror")).toBeInTheDocument();
-		expect(screen.getByText("Flaky Build")).toBeInTheDocument();
+		expect(screen.getByText("300 Multiple Choices")).toBeInTheDocument();
+		expect(screen.getByText("502 Bad Gateway")).toBeInTheDocument();
 	});
 
 	it("counts the audits actually running", () => {
@@ -35,7 +35,7 @@ describe("Audits", () => {
 		);
 
 		expect(screen.getByText("1 running")).toBeInTheDocument();
-		expect(screen.getByText("Strip")).toBeInTheDocument();
+		expect(screen.getByText("410 Gone")).toBeInTheDocument();
 		expect(screen.getByText("reported passing")).toBeInTheDocument();
 	});
 });
@@ -45,7 +45,7 @@ describe("AuditAlerts", () => {
 		render(<AuditAlerts audits={AUDITS} />);
 
 		expect(screen.getAllByRole("listitem")).toHaveLength(3);
-		expect(screen.getByText("Strip")).toBeInTheDocument();
+		expect(screen.getByText("410 Gone")).toBeInTheDocument();
 		expect(screen.getByText("a miss peels 5")).toBeInTheDocument();
 	});
 
@@ -53,14 +53,14 @@ describe("AuditAlerts", () => {
 		render(<AuditAlerts audits={[AUDITS[0]]} />);
 
 		expect(screen.getByRole("listitem")).toHaveClass("border-saffron/40");
-		expect(screen.getByText("Strip")).toHaveClass("text-saffron");
+		expect(screen.getByText("410 Gone")).toHaveClass("text-saffron");
 	});
 
 	// Struck through, never hidden: the fraud stays on the receipt (ADR-028).
 	it("strikes a suppressed audit through rather than dropping its box", () => {
 		render(<AuditAlerts audits={[{ ...AUDITS[0], suppressed: true }]} />);
 
-		expect(screen.getByText("Strip")).toHaveClass("line-through");
+		expect(screen.getByText("410 Gone")).toHaveClass("line-through");
 		expect(screen.getByText("reported passing")).toBeInTheDocument();
 	});
 

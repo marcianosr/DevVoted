@@ -20,6 +20,10 @@ export type GlyphName =
 	| "rolling"
 	| "breaking"
 	| "strip"
+	| "notfound"
+	| "ratelimit"
+	| "upgrade"
+	| "payload"
 	| "calendar"
 	| "players";
 
@@ -124,6 +128,38 @@ const PATHS = {
 			<rect x="1.8" y="7.4" width="9.4" height="5" rx="1.2" />
 			<path d="M3.4 5h8.8" />
 			<path d="M5 2.6h8.5" />
+		</>
+	),
+	notfound: (
+		<>
+			<circle cx="6.2" cy="6.2" r="4" />
+			<path d="M9.2 9.2 12.4 12.4" />
+			<path d="M4.6 4.6 7.8 7.8" />
+			<path d="M7.8 4.6 4.6 7.8" />
+		</>
+	),
+	ratelimit: (
+		<>
+			<path d="M2 3.4h10" />
+			<path d="M2 7h6" />
+			<path d="M2 10.6h2.5" />
+			<path d="M9.4 9 12.2 11.8" />
+			<path d="M12.2 9 9.4 11.8" />
+		</>
+	),
+	upgrade: (
+		<>
+			<path d="M7 11.6V3.2" />
+			<path d="M3.6 6.6 7 3.2l3.4 3.4" />
+			<path d="M3.6 12.4h6.8" />
+		</>
+	),
+	payload: (
+		<>
+			<rect x="2" y="4.6" width="10" height="7.4" rx="1.2" />
+			<path d="M4.6 4.6V3.2h4.8v1.4" />
+			<path d="M5 8.3h4" />
+			<path d="M7 6.3v4" />
 		</>
 	),
 	calendar: (

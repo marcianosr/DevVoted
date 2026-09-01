@@ -164,7 +164,7 @@ describe("the gate audits (ADR-035)", () => {
 		expect(state.log.at(-1)).toContain("Run over");
 	});
 
-	it("refuses every shop write at a Read-only gate, and none elsewhere", () => {
+	it("refuses every shop write at a 405 Method Not Allowed gate, and none elsewhere", () => {
 		const base = started(["js"]);
 		const shopping = (gatesCleared: number): RunState => ({
 			...base,
@@ -174,7 +174,7 @@ describe("the gate audits (ADR-035)", () => {
 			build: { ...base.build, slots: 4 },
 			draftOptions: [CONFIGS.indexedDb],
 		});
-		const readOnly = shopping(5);
+		const readOnly = shopping(6);
 		expect(isShopLocked(readOnly)).toBe(true);
 		expect(
 			runReducer(readOnly, { type: "draft", configId: "indexed-db" })
@@ -208,7 +208,7 @@ describe("the gate audits (ADR-035)", () => {
 		const view = toRunView(outage);
 		expect(view.offlineConfigs).toHaveLength(1);
 		expect(outage.build.configs).toContain(view.offlineConfigs[0].config);
-		expect(view.offlineConfigs[0].audit).toBe("Dependency Outage");
+		expect(view.offlineConfigs[0].audit).toBe("424 Failed Dependency");
 	});
 
 	it("moves the flake from poll to poll at a Flaky Build gate", () => {

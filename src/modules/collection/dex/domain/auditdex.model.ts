@@ -1,5 +1,6 @@
 import {
 	type Audit,
+	auditLabel,
 	auditsForGate,
 } from "~/modules/run/gate/domain/audit.model";
 
@@ -9,12 +10,12 @@ import type {
 } from "~/modules/collection/dex/domain/gatedex.model";
 
 /**
- * The audit roster read as a collection: eleven rules, each with the gates it
+ * The audit roster read as a collection: fifteen rules, each with the gates it
  * sits on and how much of it the player has earned the right to read.
  *
- * Deduped on name, never on id — the run model emits `timeout-3/4/5` and
- * `strip-1/2` because the figures differ per gate, and counting ids would tell
- * a player their catalogue holds fourteen entries when it holds eleven.
+ * Deduped on name, never on id — the run model emits `timeout-3/5` and
+ * `strip-10/15` because the figures differ per gate, and counting ids would tell
+ * a player their catalogue holds seventeen entries when it holds fifteen.
  */
 export type AuditdexTier = "faced" | "unlocked" | "unseen";
 
@@ -33,7 +34,7 @@ type AuditFacts = Omit<AuditdexEntry, "tier">;
 
 const factsOf = (gate: number, audit: Audit): AuditFacts => ({
 	id: audit.id,
-	name: audit.name,
+	name: auditLabel(audit),
 	rule: audit.dexRule ?? audit.description,
 	gates: [gate],
 });
@@ -43,7 +44,7 @@ const withAppearance = (
 	gate: number,
 	audit: Audit
 ): readonly AuditFacts[] => {
-	const known = roster.find((entry) => entry.name === audit.name);
+	const known = roster.find((entry) => entry.name === auditLabel(audit));
 	if (!known) return [...roster, factsOf(gate, audit)];
 
 	return roster.map((entry) =>

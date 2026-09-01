@@ -1,11 +1,11 @@
 ---
 # DVTD-9dn0
 title: Wire modern-theme screens into /proto-run
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-08-23T20:35:40Z
-updated_at: 2026-08-25T11:50:27Z
+updated_at: 2026-08-31T10:24:19Z
 ---
 
 Connect the Storybook-only kit at src/ui/modern-theme/screens/ to the run loop, in the /proto-run dev rig first. The real _authed/run/* routes are the next pass and reuse the same adapters.

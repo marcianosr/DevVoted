@@ -1,11 +1,11 @@
 ---
 # DVTD-stiz
 title: 'Config: Grandfathered (storage plan bills one rung lower)'
-status: in-progress
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-08-26T19:25:04Z
-updated_at: 2026-08-26T19:25:04Z
+updated_at: 2026-08-31T10:21:27Z
 parent: DVTD-72d9
 ---
 

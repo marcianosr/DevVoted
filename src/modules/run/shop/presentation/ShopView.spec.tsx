@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { levelUp, slotsOf } from "~/modules/run/config/domain/config.model";
+import {
+	draftCost,
+	givesOf,
+	levelUp,
+	slotsOf,
+} from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	createMockGateStake,
@@ -239,7 +244,9 @@ describe("ShopView", () => {
 		});
 
 		expect(
-			screen.getByText(/Read-only audits the build you already have/)
+			screen.getByText(
+				/405 Method Not Allowed audits the build you already have/
+			)
 		).toBeInTheDocument();
 		expect(
 			screen.getByText(/bought, sold or switched before gate 5\./)
@@ -530,6 +537,19 @@ describe("ShopView readability", () => {
 		});
 
 		expect(screen.getByText("Needs 1 slots, 0 free")).toBeInTheDocument();
+	});
+
+	it("reads an offer's effect before its size and price", () => {
+		render_();
+
+		const row = screen.getByText("Stylelint").closest("summary, div");
+		if (!row) throw new Error("No offer row rendered");
+
+		expect(row).toHaveTextContent(
+			new RegExp(
+				`Stylelint.*${givesOf(CONFIGS.stylelint)}.*${slotsOf(CONFIGS.stylelint)} slot.*${draftCost(CONFIGS.stylelint)} KB`
+			)
+		);
 	});
 
 	it("states every config row's size, so a price reads without a legend", () => {

@@ -41,6 +41,11 @@
 	.using-mouse * {
 		outline: none !important;
 	}
+
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
 }
 
 @layer components {
@@ -439,8 +444,18 @@ body[data-screen-theme] {
 		0 0 0 0.75rem oklch(from var(--theme-color) l c h / 0.12),
 		0 0 3rem 0.5rem oklch(from var(--theme-color) l c h / 0.22);
 }
+/* glow-theme at swatch-pip scale: same two layers, quartered, so a row of
+   gap-1.5 pips glows without the halos washing into one band. */
+@utility glow-theme-soft {
+	box-shadow:
+		0 0 0 0.1875rem oklch(from var(--theme-color) l c h / 0.12),
+		0 0 0.875rem 0.1875rem oklch(from var(--theme-color) l c h / 0.22);
+}
 @utility border-theme {
 	border-color: var(--theme-color);
+}
+@utility border-theme-soft {
+	border-color: oklch(from var(--theme-color) l c h / 0.5);
 }
 /* Outline rather than ring for the "you are here" square: outline-offset leaves
    the gap transparent, so the cue survives any surface it sits on. */

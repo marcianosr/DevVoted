@@ -27,7 +27,7 @@ describe("AuditsPanel", () => {
 	it("names an audit you have not met yet, and still says what it does", () => {
 		render(<AuditsPanel audits={[MIRROR]} />);
 
-		expect(screen.getByText("Mirror")).toBeInTheDocument();
+		expect(screen.getByText("300 Multiple Choices")).toBeInTheDocument();
 		expect(
 			screen.getByText(
 				"Every poll asks for the incorrect options, and wants all of them."
@@ -58,7 +58,7 @@ describe("AuditsPanel", () => {
 		render(<AuditsPanel audits={[{ id: "strip", tier: "unseen" }]} />);
 
 		expect(screen.getAllByText("???")).toHaveLength(2);
-		expect(screen.queryByText("Strip")).toBeNull();
+		expect(screen.queryByText("410 Gone")).toBeNull();
 	});
 
 	// Scoped to the row: the panel's own blurb names gates 3, 8 and 11, so an

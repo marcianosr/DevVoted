@@ -23,29 +23,41 @@ export default meta;
 type Story = StoryObj<typeof GatesPanel>;
 
 /** Only the columns the domain does not own. The audits are display labels for
- * now: GATE_AUDITS emits timeout-3/4/5 and strip-1/2 because the numbers differ
+ * now: GATE_AUDITS emits timeout-3/5 and strip-10/15 because the numbers differ
  * per gate, where audits.ts collapses each to the one entry a player sees. The
  * unlocks are wiki §2.8 plus PIN_FROM_GATE, which that table omits. */
 const EXTRAS: Readonly<Record<number, Pick<DexGate, "audits" | "unlocks">>> = {
 	0: { audits: [], unlocks: ["shop", "rebuild", "640 KB plan"] },
 	1: { audits: [], unlocks: ["slot 4"] },
 	2: { audits: [], unlocks: ["lock", "slot 5", "768 KB plan"] },
-	3: { audits: ["Cost Overrun"], unlocks: ["extend", "slot 6"] },
+	3: { audits: ["402 Payment Required"], unlocks: ["extend", "slot 6"] },
 	4: {
-		audits: ["Dependency Outage"],
+		audits: ["424 Failed Dependency"],
 		unlocks: ["git tag", "slot 7", "1 MB plan"],
 	},
-	5: { audits: ["Read-only"], unlocks: ["slot 8"] },
-	6: { audits: ["Feature Freeze"], unlocks: ["slot 9", "1.5 MB plan"] },
-	7: { audits: ["Mirror"], unlocks: ["slot 10"] },
-	8: { audits: ["Timeout", "Flaky Build"], unlocks: ["slot 11", "2 MB plan"] },
-	9: { audits: ["Memory Leak", "Rolling Outage"], unlocks: ["slot 12"] },
+	5: { audits: ["404 Not Found"], unlocks: ["slot 8"] },
+	6: { audits: ["405 Method Not Allowed"], unlocks: ["slot 9", "1.5 MB plan"] },
+	7: { audits: ["300 Multiple Choices"], unlocks: ["slot 10"] },
+	8: {
+		audits: ["408 Request Timeout", "502 Bad Gateway"],
+		unlocks: ["slot 11", "2 MB plan"],
+	},
+	9: {
+		audits: ["503 Service Unavailable", "507 Insufficient Storage"],
+		unlocks: ["slot 12"],
+	},
 	10: {
-		audits: ["Breaking Change", "Timeout"],
+		audits: ["409 Conflict", "429 Too Many Requests"],
 		unlocks: ["slot 13", "3 MB plan"],
 	},
-	11: { audits: ["Strip", "Mirror", "Flaky Build"], unlocks: ["slot 14"] },
-	12: { audits: ["Memory Leak", "Strip", "Timeout"], unlocks: [] },
+	11: {
+		audits: ["410 Gone", "426 Upgrade Required", "403 Forbidden"],
+		unlocks: ["slot 14"],
+	},
+	12: {
+		audits: ["408 Request Timeout", "410 Gone", "413 Payload Too Large"],
+		unlocks: [],
+	},
 };
 
 /** A Strip audit adds to the gate's own quota rather than replacing it

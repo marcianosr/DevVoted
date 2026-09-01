@@ -29,9 +29,11 @@ type Offer = {
 	id: string;
 	label: string;
 	kb: number;
+	slots: number;
+	gives: string;
 	owned?: boolean;
 	lockable: boolean;
-	gives?: number;
+	perCorrectKb?: number;
 	multiplier?: number;
 	tag?: PriceTagState;
 	summary?: string;
@@ -40,25 +42,44 @@ type Offer = {
 };
 
 const OFFERS: readonly Offer[] = [
-	{ id: "Stylelint", label: "Stylelint", lockable: true, kb: 32 },
+	{
+		id: "Stylelint",
+		label: "Stylelint",
+		lockable: true,
+		kb: 32,
+		slots: 1,
+		gives: "Cross out a wrong answer on CSS polls",
+	},
 	{
 		id: "Deprecated",
 		label: "Deprecated",
 		lockable: true,
 		kb: 128,
+		slots: 4,
+		gives: "All coverage earns ×3, fading ×0.5 per clear",
 		multiplier: 3,
 		summary: "Rare",
 		explainer:
 			"All coverage earns ×3, fading ×0.5 each gate clear. Deletes itself at ×1.",
 		defaultOpen: true,
 	},
-	{ id: "Freemium", label: "Freemium", lockable: true, kb: 0, gives: -128 },
+	{
+		id: "Freemium",
+		label: "Freemium",
+		lockable: true,
+		kb: 0,
+		slots: 8,
+		gives: "Every config drafts at half price",
+		perCorrectKb: -128,
+	},
 	{
 		id: ".length",
 		label: ".length",
 		lockable: true,
 		kb: 64,
-		gives: 16,
+		slots: 2,
+		gives: "+16KB per correct answer",
+		perCorrectKb: 16,
 		owned: true,
 		tag: "owned",
 	},
@@ -67,6 +88,8 @@ const OFFERS: readonly Offer[] = [
 		label: "WTFPL",
 		lockable: false,
 		kb: 512,
+		slots: 16,
+		gives: "Every offer on the shelf, every shop",
 		tag: "unaffordable",
 	},
 ];
@@ -109,6 +132,8 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 		content: (
 			<Entry
 				label={offer.label}
+				slots={offer.slots}
+				gives={offer.gives}
 				defaultOpen={offer.defaultOpen}
 				summary={offer.summary}
 				explainer={offer.explainer}
@@ -130,7 +155,9 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 				notes={
 					<>
 						{offer.multiplier ? <Delta multiplier={offer.multiplier} /> : null}
-						{offer.gives !== undefined ? <Delta kb={offer.gives} /> : null}
+						{offer.perCorrectKb !== undefined ? (
+							<Delta kb={offer.perCorrectKb} />
+						) : null}
 					</>
 				}
 				value={
@@ -343,7 +370,7 @@ export const OverCapacity: Story = {
 
 export const ShutByReadOnly: Story = {
 	render: () => (
-		<Shelf notice="Shop closed. Read-only audits the build you already have, so nothing can be bought, sold or switched before gate 5." />
+		<Shelf notice="Shop closed. 405 Method Not Allowed audits the build you already have, so nothing can be bought, sold or switched before gate 5." />
 	),
 };
 

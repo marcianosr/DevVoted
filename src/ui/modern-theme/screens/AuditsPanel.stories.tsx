@@ -19,9 +19,9 @@ type AuditFacts = Omit<
 	"tier"
 >;
 
-/** The eleven of GATE_AUDITS, in order of the gate each first appears at. Timeout
+/** The fifteen of GATE_AUDITS, in order of the gate each first appears at. Timeout
  * and Strip are one entry apiece even though the model emits several ids for them
- * (timeout-3/4/5, strip-1/2) — counting ids would say fourteen. */
+ * (timeout-3/5, strip-10/15) — counting ids would say seventeen. */
 const ROSTER: readonly AuditFacts[] = [
 	{
 		id: "cost-overrun",
@@ -80,7 +80,7 @@ const ROSTER: readonly AuditFacts[] = [
 	},
 ];
 
-/** Two counts drive all eleven rows, so no story can show a rule for an audit it
+/** Two counts drive all fifteen rows, so no story can show a rule for an audit it
  * also calls unseen. */
 export const auditsSeen = (
 	faced: number,

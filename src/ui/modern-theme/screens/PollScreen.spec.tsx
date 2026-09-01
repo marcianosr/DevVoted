@@ -124,12 +124,15 @@ describe("PollScreen", () => {
 
 	it("puts the audits under the build they are acting on", () => {
 		render(
-			<PollScreen {...props} notices={<Text size="meta">Cost Overrun</Text>} />
+			<PollScreen
+				{...props}
+				notices={<Text size="meta">402 Payment Required</Text>}
+			/>
 		);
 
 		const strip = screen.getByText("Build").parentElement;
 
-		expect(strip).toHaveTextContent("Cost Overrun");
+		expect(strip).toHaveTextContent("402 Payment Required");
 	});
 
 	it("sits on ground tinted by the gate it belongs to", () => {

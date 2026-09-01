@@ -93,6 +93,7 @@ export const effectOf = (config: Config): Effect => ({
 
 export type ConfigStatus =
 	| { readonly kind: "online" }
+	| { readonly kind: "unknown" }
 	| { readonly kind: "skipped"; readonly why: SkipReason }
 	| { readonly kind: "offline"; readonly audit: string };
 
@@ -111,6 +112,7 @@ export type SkipReason =
 
 export type PollStatusContext = AnswerContext & {
 	readonly suppressingAudit: boolean;
+	readonly categoryHidden?: boolean;
 	readonly offlineAudit?: string;
 	readonly faucetRemainingKb: number;
 };
@@ -179,6 +181,7 @@ export const configStatusFor = (
 ): ConfigStatus => {
 	if (context.offlineAudit !== undefined)
 		return { kind: "offline", audit: context.offlineAudit };
+	if (context.categoryHidden === true) return { kind: "unknown" };
 	if (isOnline(config, context)) return { kind: "online" };
 	return { kind: "skipped", why: skipReasonFor(config, context) };
 };

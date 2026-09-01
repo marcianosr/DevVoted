@@ -137,7 +137,7 @@ describe("PrepView", () => {
 					audits: [
 						{
 							id: "timeout-4",
-							name: "Timeout",
+							name: "408 Request Timeout",
 							description: "On the clock.",
 							suppressed: true,
 						},
@@ -149,7 +149,9 @@ describe("PrepView", () => {
 		const fold = screen.getByText("Audits").closest("details");
 		if (!fold) throw new Error("No Audit fold rendered");
 
-		expect(within(fold).getByText("Timeout")).toHaveClass("line-through");
+		expect(within(fold).getByText("408 Request Timeout")).toHaveClass(
+			"line-through"
+		);
 	});
 
 	it("shows no prefetch fold when nothing in the build reads the draw", () => {

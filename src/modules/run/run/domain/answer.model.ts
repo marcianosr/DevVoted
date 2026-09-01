@@ -313,7 +313,11 @@ const scoreAnswer = (
 		),
 		faucetKb,
 		burnKb: Math.min(
-			auditBurnKb(audits, grade.outcome === "wrong"),
+			auditBurnKb(
+				audits,
+				grade.outcome === "wrong",
+				occupiedSlots(state.build.configs)
+			),
 			Math.max(0, state.storage + faucetKb)
 		),
 	};

@@ -47,7 +47,7 @@ const BUILD: readonly BuildRow[] = [
 		id: "agents-md",
 		label: "AGENTS.md",
 		slots: 1,
-		status: { kind: "offline", audit: "Dependency Outage" },
+		status: { kind: "offline", audit: "424 Failed Dependency" },
 	},
 ];
 
