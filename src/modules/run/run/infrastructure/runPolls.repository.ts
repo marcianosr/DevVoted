@@ -8,6 +8,7 @@ import {
 	pollResponsesTable,
 	pollsTable,
 	runPollsTable,
+	usersTable,
 } from "~/database/schema";
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
 
@@ -118,6 +119,7 @@ const ENGINE_POLL_COLUMNS = {
 	answerType: pollsTable.answer_type,
 	categoryCode: pollsTable.category_code,
 	explanation: pollsTable.explanation,
+	author: usersTable.github_username,
 };
 
 type EnginePollRow = {
@@ -128,6 +130,7 @@ type EnginePollRow = {
 	answerType: RunPoll["answerType"];
 	categoryCode: string;
 	explanation: string | null;
+	author: string | null;
 };
 
 /**
@@ -163,6 +166,7 @@ const withOptions = async (
 		codeSandboxUrl: poll.codeSandboxUrl ?? undefined,
 		answerType: poll.answerType,
 		explanation: poll.explanation ?? undefined,
+		author: poll.author === null ? undefined : `@${poll.author}`,
 		options: optionRows
 			.filter((option) => option.poll_id === poll.id)
 			.map((option) => ({
@@ -181,6 +185,7 @@ const fetchRunPollsWith = async (
 		.select(ENGINE_POLL_COLUMNS)
 		.from(dailyRunPollsTable)
 		.innerJoin(pollsTable, eq(dailyRunPollsTable.poll_id, pollsTable.id))
+		.leftJoin(usersTable, eq(pollsTable.created_by, usersTable.id))
 		.where(eq(dailyRunPollsTable.date, date))
 		.orderBy(asc(dailyRunPollsTable.position));
 	return withOptions(reader, pollRows);
@@ -232,6 +237,7 @@ export const fetchRunPollsForRun = async (
 		.select(ENGINE_POLL_COLUMNS)
 		.from(runPollsTable)
 		.innerJoin(pollsTable, eq(runPollsTable.poll_id, pollsTable.id))
+		.leftJoin(usersTable, eq(pollsTable.created_by, usersTable.id))
 		.where(eq(runPollsTable.run_id, runId))
 		.orderBy(asc(runPollsTable.position));
 	return withOptions(reader, pollRows);

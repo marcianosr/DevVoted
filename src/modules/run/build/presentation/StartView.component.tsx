@@ -1,36 +1,24 @@
-import { useState } from "react";
-
-import {
-	type Config,
-	headlineFigureOf,
-	largestSizeFitting,
-	slotsOf,
-} from "~/modules/run/config/domain/config.model";
+import type { Config } from "~/modules/run/config/domain/config.model";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
+import type { SlotDealView } from "~/modules/run/run/application/runView.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
-	StartScreen,
-	type DealtConfig,
+	NewRunScreen,
+	type DealtRow,
+	type NewRunBuildRow,
 	type StartCombo,
-} from "~/ui/modern-theme/screens/StartScreen.ui";
-import { ConfigFacts } from "~/modules/run/config/presentation/ConfigFacts.ui";
-import { Figure } from "~/ui/modern-theme/Figure.ui";
-import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
-import { capLabel, plural } from "~/ui/modern-theme/format";
+} from "~/ui/terminal-theme/screens/NewRunScreen.ui";
+import type { BuyLineProps } from "~/ui/terminal-theme/BuyLine.ui";
+import { plural } from "~/ui/terminal-theme/format";
 
-const BUY_VERB = "Install a new slot from the archive";
-const REFUND_VERB = "Refund the slot to the archive";
+const kb = (value: number) => `${value} KB`;
 
-const toDealt = (config: Config): DealtConfig => ({
-	id: config.id,
-	label: config.label,
-	slots: slotsOf(config),
-	summary: <ConfigFacts config={config} />,
-	explainer: config.description,
-	note: <Figure figure={headlineFigureOf(config)} plain />,
-});
+const versionOf = (config: Config) => `v${config.level ?? 1}`;
 
+// The deal is the distinct configs the three starter stacks are built from, so
+// a stack can be taken whole or mixed from the same rows.
 const dealtFromStacks = (): readonly Config[] => {
 	const seen = new Set<string>();
 
@@ -43,31 +31,31 @@ const dealtFromStacks = (): readonly Config[] => {
 	);
 };
 
-const shapeNoteFor = (
-	configs: readonly Config[],
-	slots: number
-): string | undefined => {
-	if (configs.length === 0) return undefined;
-	const used = configs.reduce((total, config) => total + slotsOf(config), 0);
-	const spare = slots - used;
-	const takes = plural(used, "slot");
-	return spare <= 0 ? `${takes} · fills it` : `${takes} · ${spare} spare`;
-};
-
 const combosFor = (
-	onPickStack: (stackId: string) => void,
-	slots: number
+	onPickStack: (stackId: string) => void
 ): readonly StartCombo[] =>
 	STARTER_STACKS.map((stack) => ({
 		id: stack.id,
 		name: stack.name,
 		blurb: stack.blurb,
-		shape: shapeNoteFor(stack.configs, slots),
 		recommended: stack.recommended,
+		takeLabel: "Take this stack",
 		onTake: () => onPickStack(stack.id),
 	}));
 
-type SlotDealName = "buy" | "cash";
+const slotLine = (
+	deal: SlotDealView,
+	label: string,
+	onUse: () => void
+): BuyLineProps | undefined => {
+	if (deal.costKb === undefined) return undefined;
+	return {
+		label,
+		detail: deal.refusal,
+		price: kb(deal.costKb),
+		onBuy: deal.refusal === undefined ? onUse : undefined,
+	};
+};
 
 export type StartViewProps = {
 	view: RunView;
@@ -86,63 +74,69 @@ export const StartView = ({
 	onRefundSlot,
 	onStart,
 }: StartViewProps) => {
-	const [armedDeal, setArmedDeal] = useState<SlotDealName | null>(null);
-	const disarm = () => setArmedDeal(null);
-	const armThenUse = (deal: SlotDealName, use: () => void) => () => {
-		if (armedDeal !== deal) {
-			setArmedDeal(deal);
-			return;
-		}
-		disarm();
-		use();
-	};
+	const { gateStake, startSlotDeals } = view;
+	const swatch = swatchForGate(gateStake.gateNumber);
+	const installed = new Set(view.configs.map((config) => config.id));
 
-	const gate = view.gateStake.gateNumber;
-	const dealt = dealtFromStacks();
+	const buildRows: readonly NewRunBuildRow[] = view.configs.map((config) => ({
+		family: config.family,
+		name: config.label,
+		detail: config.description,
+		slots: slotsOf(config),
+		version: versionOf(config),
+		remove: { label: `Uninstall ${config.label}`, onRemove: () => onToggle(config.id) },
+	}));
+
+	const dealt = dealtFromStacks().filter((config) => !installed.has(config.id));
+	const dealtRows: readonly DealtRow[] = dealt.map((config) => {
+		const fits = slotsOf(config) <= view.slotsFree;
+		return {
+			family: config.family,
+			name: config.label,
+			detail: config.description,
+			slots: slotsOf(config),
+			deployLabel: `Install ${config.label}`,
+			onDeploy: fits ? () => onToggle(config.id) : undefined,
+			locked: !fits,
+		};
+	});
 
 	return (
-		<StartScreen
-			archive={capLabel(view.startSlotDeals.archiveKb)}
-			slotDeals={{
-				buy: {
-					...view.startSlotDeals.buy,
-					verb: BUY_VERB,
-					armed: armedDeal === "buy",
-					onUse: armThenUse("buy", onBuySlot),
-					onDismiss: disarm,
-				},
-				cash: {
-					...view.startSlotDeals.cash,
-					verb: REFUND_VERB,
-					armed: armedDeal === "cash",
-					onUse: armThenUse("cash", onRefundSlot),
-					onDismiss: disarm,
-				},
-			}}
+		<NewRunScreen
 			theme={view.gateTheme}
-			dealt={dealt.map(toDealt)}
-			dealtFrom={view.available.length + view.configs.length}
-			pickedIds={view.configs.map((config) => config.id)}
-			onToggle={onToggle}
-			combos={combosFor(onPickStack, view.slots)}
-			slots={view.slots}
-			maxSlots={MAX_SLOTS}
-			fits={largestSizeFitting(view.slotsFree)}
-			gateName={swatchForGate(gate)?.gateName ?? ""}
-			pollCount={view.gateStake.pollsPerGate}
-			coverageDemand={view.gateStake.coverageDemand}
-			auditCount={view.gateStake.audits.length}
-			streakCap={view.gateStake.perAnswer.streakCapMultiplier}
-			stake={{
-				removeOnMiss: view.gateStake.peelSlotsOnFailure,
-				coveragePerWrong: view.gateStake.perAnswer.coveragePerWrong,
+			header={{
+				title: "New run",
+				subtitle: `${swatch?.gateName ?? "First gate"} · ${gateStake.coverageDemand}% coverage · miss removes ${plural(gateStake.peelSlotsOnFailure, "slot")}`,
+				swatch: swatch?.theme,
+				swatchState: "pending",
+				value: kb(startSlotDeals.archiveKb),
+				caption: "archive",
 			}}
-			reward={{
-				coveragePerCorrect: view.gateStake.perAnswer.coveragePerCorrect,
-				gateRewardKb: view.gateStake.modifiers.gateReward,
+			combos={{
+				meta: `${STARTER_STACKS.length}`,
+				rows: combosFor(onPickStack),
 			}}
-			onStart={onStart}
-			canStart={view.canStart}
+			storage={{
+				meta: `${view.slotsUsed} of ${plural(view.slots, "slot")}`,
+				slots: view.slots,
+			}}
+			build={{
+				meta: `${view.configs.length}`,
+				rows: buildRows,
+				buySlot: slotLine(
+					startSlotDeals.buy,
+					`Buy slot ${view.slots + 1}`,
+					onBuySlot
+				),
+				cashSlot: slotLine(
+					startSlotDeals.cash,
+					`Refund slot ${view.slots}`,
+					onRefundSlot
+				),
+			}}
+			dealt={{ meta: `${dealtRows.length}`, rows: dealtRows }}
+			startLabel={view.canStart ? "Start the run →" : "Fill every slot to start"}
+			onStart={view.canStart ? onStart : undefined}
 		/>
 	);
 };

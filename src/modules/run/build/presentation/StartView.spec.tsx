@@ -63,10 +63,8 @@ describe("StartView", () => {
 	it("opens on the first gate, named", () => {
 		render_();
 
-		expect(
-			screen.getByRole("heading", { name: "New run" })
-		).toBeInTheDocument();
-		expect(screen.getByText("Pallet gate")).toBeInTheDocument();
+		expect(screen.getByText("New run")).toBeInTheDocument();
+		expect(screen.getByText(/^Pallet · /)).toBeInTheDocument();
 	});
 
 	it("offers every starter stack by name, with its own blurb", () => {
@@ -81,14 +79,14 @@ describe("StartView", () => {
 	it("flags the one stack a first run should take", () => {
 		render_();
 
-		expect(screen.getAllByText("Recommended")).toHaveLength(1);
+		expect(screen.getAllByText("recommended")).toHaveLength(1);
 	});
 
 	it("takes a whole stack in one press", async () => {
 		const onPickStack = vi.fn();
 		render_({ onPickStack });
 
-		const [first] = screen.getAllByRole("button", { name: "take these" });
+		const [first] = screen.getAllByRole("button", { name: "Take this stack" });
 		await userEvent.click(first);
 
 		expect(onPickStack).toHaveBeenCalledWith(STARTER_STACKS[0].id);
@@ -99,35 +97,58 @@ describe("StartView", () => {
 
 		expect(screen.getAllByText(".js")).toHaveLength(1);
 		expect(screen.getAllByText(".jsx")).toHaveLength(1);
-		expect(screen.getByText(/dealt from/)).toBeInTheDocument();
 	});
 
 	it("lets a config be picked outside any stack", async () => {
 		const onToggle = vi.fn();
 		render_({ onToggle });
 
-		await userEvent.click(screen.getByRole("checkbox", { name: /ESLint/ }));
+		await userEvent.click(
+			screen.getByRole("button", { name: "Install ESLint" })
+		);
 
 		expect(onToggle).toHaveBeenCalledWith(CONFIGS.eslint.id);
 	});
 
-	it("states each dealt config's size in slots", () => {
-		render_();
+	// A dealt config already installed is in the build list instead, so offering
+	// it twice would let the same config be installed on top of itself.
+	it("moves an installed config out of the deal and into the build", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.js],
+				slotsUsed: 1,
+				slotsFree: 3,
+			}),
+		});
 
-		const row = screen.getByText(".js").closest("li");
-		expect(row?.textContent).toContain("1 slot");
-		expect(screen.queryByText("common")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "Install .js" })
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Uninstall .js" })
+		).toBeInTheDocument();
+	});
+
+	it("locks a dealt config too big for the room left", () => {
+		render_({
+			view: createMockRunView({ ...view, slotsFree: 0 }),
+		});
+
+		expect(
+			screen.getByRole("button", { name: "Install ESLint" })
+		).toBeDisabled();
 	});
 
 	it("holds the run shut while the build is bare", () => {
 		render_({ view: createMockRunView({ ...view, canStart: false }) });
 
 		expect(
-			screen.getByRole("button", { name: "Pick a config to start" })
+			screen.getByRole("button", { name: "Fill every slot to start" })
 		).toBeDisabled();
 	});
 
-	it("starts with slots to spare, once the engine says it can", async () => {
+	it("starts once the engine says it can", async () => {
 		const onStart = vi.fn();
 		render_({
 			view: createMockRunView({
@@ -145,78 +166,37 @@ describe("StartView", () => {
 		expect(onStart).toHaveBeenCalledOnce();
 	});
 
-	it("names no seed, the prototype dealing an unseeded hand", () => {
-		render_();
-
-		expect(screen.queryByText(/^seed/)).not.toBeInTheDocument();
-	});
-
-	it("badges each config's headline figure beside its name", () => {
-		render_();
-
-		expect(screen.getAllByText("×1.25").length).toBeGreaterThan(1);
-		expect(screen.getAllByText("+0.5").length).toBeGreaterThan(0);
-	});
-
-	it("badges nothing for a config that prices in something else", () => {
-		render_();
-
-		const row = screen.getByText("ESLint").closest("li");
-		if (!row) throw new Error("No ESLint row rendered");
-
-		expect(row.querySelector(".bg-celadon\\/15")).not.toBeInTheDocument();
-	});
-
 	it("says what the archive holds, the run having no storage of its own yet", () => {
 		render_({ view: withArchive(512) });
 
 		expect(screen.getByText("512 KB")).toBeInTheDocument();
 	});
 
-	it("sells width off the hatching at the archive's doubled rung", () => {
-		render_({ view: withArchive(512) });
-
-		expect(
-			screen.getByRole("button", {
-				name: /Install a new slot from the archive · makes 5 · 32 KB/,
-			})
-		).toBeInTheDocument();
-	});
-
-	it("arms before it spends, the archive being the only purse open here", async () => {
+	it("sells width off the archive at the doubled rung", async () => {
 		const onBuySlot = vi.fn();
 		render_({ view: withArchive(512), onBuySlot });
 
-		const stub = () => screen.getByRole("button", { name: /Install a new slot/ });
+		await userEvent.click(screen.getByRole("button", { name: /Buy slot 5/ }));
 
-		await userEvent.click(stub());
-		expect(onBuySlot).not.toHaveBeenCalled();
-
-		await userEvent.click(stub());
 		expect(onBuySlot).toHaveBeenCalledOnce();
 	});
 
 	it("refuses a rung the archive cannot cover, saying what it holds", () => {
 		render_({ view: withArchive(12) });
 
+		expect(screen.getByRole("button", { name: /Buy slot 5/ })).toBeDisabled();
 		expect(
-			screen.getByRole("button", {
-				name: /Costs 32 KB of archive, you have 12\./,
-			})
-		).toBeDisabled();
+			screen.getByText("Costs 32 KB of archive, you have 12.")
+		).toBeInTheDocument();
 	});
 
-	it("hands a bought slot back for what it cost, the run not having started", async () => {
+	it("hands a bought slot back, the run not having started", async () => {
 		const onRefundSlot = vi.fn();
 		render_({ view: withArchive(480, 5, 1), onRefundSlot });
 
-		const back = () =>
-			screen.getByRole("button", {
-				name: /Refund the slot to the archive · makes 4 · \+32 KB/,
-			});
-
-		await userEvent.click(back());
-		await userEvent.click(back());
+		await userEvent.click(
+			screen.getByRole("button", { name: /Refund slot 5/ })
+		);
 
 		expect(onRefundSlot).toHaveBeenCalledOnce();
 	});
@@ -224,6 +204,8 @@ describe("StartView", () => {
 	it("offers no refund before the archive has bought anything", () => {
 		render_({ view: withArchive(512) });
 
-		expect(screen.queryByRole("button", { name: /Refund/ })).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /Refund slot/ })
+		).not.toBeInTheDocument();
 	});
 });

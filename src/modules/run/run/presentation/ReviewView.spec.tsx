@@ -19,6 +19,22 @@ const answered: AnsweredPoll = {
 	explanation: "splice mutates in place.",
 };
 
+const correct: AnsweredPoll = {
+	...answered,
+	id: "poll-2",
+	outcome: "correct",
+	picked: ["slice", "at"],
+	coverageEarned: 6.5,
+};
+
+const wrong: AnsweredPoll = {
+	...answered,
+	id: "poll-3",
+	outcome: "wrong",
+	picked: ["splice"],
+	coverageEarned: 0,
+};
+
 const back = { label: "← Back", onUse: () => {} };
 
 describe("ReviewView", () => {
@@ -33,12 +49,25 @@ describe("ReviewView", () => {
 			/>
 		);
 
+		expect(screen.getByText("Review · Lavender")).toBeInTheDocument();
+	});
+
+	it("sorts a correct answer into passed and everything else into failed", () => {
+		render(
+			<ReviewView
+				view={createMockRunView({
+					answeredThisGate: [answered, correct, wrong],
+				})}
+				back={back}
+			/>
+		);
+
 		expect(
-			screen.getByRole("heading", { name: "Review · Lavender gate 4" })
+			screen.getByText("1 passed · 2 failed · 3 polls")
 		).toBeInTheDocument();
 	});
 
-	it("marks an option both expected and received when it was correct and picked", () => {
+	it("shows what was expected against what was picked on a miss", () => {
 		render(
 			<ReviewView
 				view={createMockRunView({ answeredThisGate: [answered] })}
@@ -46,18 +75,13 @@ describe("ReviewView", () => {
 			/>
 		);
 
-		// Verdict splits the flags into an Expected row and a Received row, so a
-		// label that is both lands twice. That doubling is the assertion: get it
-		// wrong and a caught answer reads as a miss.
-		expect(screen.getAllByText("slice")).toHaveLength(2);
-		expect(screen.getAllByText("at")).toHaveLength(1);
-		expect(screen.getAllByText("splice")).toHaveLength(1);
-		expect(screen.getByText("1 caught")).toBeInTheDocument();
-		expect(screen.getByText("1 missed")).toBeInTheDocument();
-		expect(screen.getByText("1 wrong pick")).toBeInTheDocument();
+		expect(screen.getByText("slice, at")).toBeInTheDocument();
+		expect(screen.getByText("slice, splice")).toBeInTheDocument();
 	});
 
-	it("carries the coverage the answer actually earned", () => {
+	// A partial earns coverage even though it did not pass. Reporting only the
+	// miss would tell the player they got nothing for it.
+	it("banks the coverage a partial answer still earned", () => {
 		render(
 			<ReviewView
 				view={createMockRunView({ answeredThisGate: [answered] })}
@@ -65,7 +89,31 @@ describe("ReviewView", () => {
 			/>
 		);
 
-		expect(screen.getByText("+4.2")).toBeInTheDocument();
+		expect(screen.getByText("banked")).toBeInTheDocument();
+		expect(screen.getByText("+4.2%")).toBeInTheDocument();
+	});
+
+	it("quotes the coverage a wrong answer cost, not a zero earn", () => {
+		render(
+			<ReviewView
+				view={createMockRunView({ answeredThisGate: [wrong] })}
+				back={back}
+			/>
+		);
+
+		expect(screen.getByText("cost")).toBeInTheDocument();
+		expect(screen.queryByText("banked")).not.toBeInTheDocument();
+	});
+
+	it("carries the explanation through so a miss teaches something", () => {
+		render(
+			<ReviewView
+				view={createMockRunView({ answeredThisGate: [answered] })}
+				back={back}
+			/>
+		);
+
+		expect(screen.getByText("splice mutates in place.")).toBeInTheDocument();
 	});
 
 	// The pool cycles, so poll-1 can be answered at gate 0 and again at gate 4.
@@ -73,7 +121,7 @@ describe("ReviewView", () => {
 		render(
 			<ReviewView
 				view={createMockRunView({
-					answeredThisGate: [answered, { ...answered, outcome: "correct" }],
+					answeredThisGate: [answered, { ...answered }],
 				})}
 				back={back}
 			/>

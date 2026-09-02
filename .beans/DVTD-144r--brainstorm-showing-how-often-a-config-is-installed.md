@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-27T11:32:06Z
-updated_at: 2026-08-27T11:32:06Z
+updated_at: 2026-09-01T20:26:20Z
 parent: DVTD-h175
 ---
 
@@ -64,3 +64,7 @@ A Configdex column, all-time, quorum-gated, retrospective. It answers "is this t
 - [ ] Spike the count off `run_states` JSON to see whether the figures are interesting enough to build a table for
 - [ ] Set the quorum floor and where it is enforced (server, not UI)
 - [ ] If the shop is ever to show it free, write the ADR that prices the information axis down on purpose
+
+## Spin-off
+
+The decision-time reveal this bean held back is now its own config bean: DVTD-wfkv (Analytics / npm downloads).

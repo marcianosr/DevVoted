@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
@@ -32,9 +32,7 @@ describe("PrepView", () => {
 	it("wears the gate it is about to run", () => {
 		render_();
 
-		expect(
-			screen.getByRole("heading", { name: "Gate 4 · Lavender" })
-		).toBeInTheDocument();
+		expect(screen.getByText("Gate 4 · Lavender")).toBeInTheDocument();
 	});
 
 	it("counts the build in slots against the width the gate grants", () => {
@@ -43,30 +41,13 @@ describe("PrepView", () => {
 		expect(screen.getByText("2 of 4 slots")).toBeInTheDocument();
 	});
 
-	it("lists no empty rows beside the build", () => {
-		render_();
-
-		expect(screen.queryByText("Not filled yet")).not.toBeInTheDocument();
-	});
-
-	it("names the ways out once the build fills every slot", () => {
-		render_({ view: createMockRunView({ ...view, slots: 2, slotsFree: 0 }) });
-
-		expect(screen.getByText("2 of 2 slots")).toBeInTheDocument();
-		expect(
-			screen.getByText("full · minify or uninstall to make room")
-		).toBeInTheDocument();
-	});
-
 	it("states what the gate asks of the attempt", () => {
 		render_();
 
-		expect(
-			screen.getByText("Earn 60% coverage in this window")
-		).toBeInTheDocument();
+		expect(screen.getByText("earn 60% in this window")).toBeInTheDocument();
 	});
 
-	it("qualifies the bill that waits for the clear, and only that one", () => {
+	it("lists the bill that waits for the clear", () => {
 		render_({
 			view: createMockRunView({
 				...view,
@@ -95,9 +76,13 @@ describe("PrepView", () => {
 			}),
 		});
 
-		expect(screen.getByText("on clear")).toBeInTheDocument();
-		expect(screen.queryByText("pass or fail")).not.toBeInTheDocument();
-		expect(screen.getByText("−8 KB on a miss")).toBeInTheDocument();
+		expect(screen.getByText("Storage plan, tier 2")).toBeInTheDocument();
+		expect(screen.getByText("billed pass or fail")).toBeInTheDocument();
+
+		// PriceTag spells the unit into its own span, so the figure is split
+		// across elements and only the row's textContent holds it whole.
+		const total = screen.getByText("Total this gate").closest("div");
+		expect(total?.textContent).toContain("−136 KB");
 	});
 
 	it("warns when the balance cannot cover what is owed", () => {
@@ -123,11 +108,17 @@ describe("PrepView", () => {
 			}),
 		});
 
-		expect(
-			screen.getByText("56 KB short. What you cannot pay lapses.")
-		).toHaveClass("text-cinnabar");
+		expect(screen.getByText("short by 56 KB")).toBeInTheDocument();
 	});
 
+	it("shows no bills section when the build owes nothing", () => {
+		render_();
+
+		expect(screen.queryByText("Bills")).not.toBeInTheDocument();
+	});
+
+	// A defeat device turning an audit off is worth seeing: it is what the
+	// config was bought for. Hiding the row hides the payoff.
 	it("keeps a suppressed audit on the receipt, struck rather than hidden", () => {
 		render_({
 			view: createMockRunView({
@@ -137,7 +128,8 @@ describe("PrepView", () => {
 					audits: [
 						{
 							id: "timeout-4",
-							name: "408 Request Timeout",
+							code: 408,
+							name: "Request Timeout",
 							description: "On the clock.",
 							suppressed: true,
 						},
@@ -146,15 +138,33 @@ describe("PrepView", () => {
 			}),
 		});
 
-		const fold = screen.getByText("Audits").closest("details");
-		if (!fold) throw new Error("No Audit fold rendered");
-
-		expect(within(fold).getByText("408 Request Timeout")).toHaveClass(
-			"line-through"
-		);
+		expect(screen.getByText("Request Timeout")).toHaveClass("line-through");
+		expect(screen.getByText("reported passing")).toBeInTheDocument();
 	});
 
-	it("shows no prefetch fold when nothing in the build reads the draw", () => {
+	it("leaves a suppressed audit out of the running count", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				gateStake: createMockGateStake({
+					gateNumber: 4,
+					audits: [
+						{
+							id: "timeout-4",
+							code: 408,
+							name: "Request Timeout",
+							description: "On the clock.",
+							suppressed: true,
+						},
+					],
+				}),
+			}),
+		});
+
+		expect(screen.getByText("none running")).toBeInTheDocument();
+	});
+
+	it("shows no prefetch section when nothing in the build reads the draw", () => {
 		render_();
 
 		expect(screen.queryByText("Prefetch")).not.toBeInTheDocument();
@@ -169,7 +179,7 @@ describe("PrepView", () => {
 			}),
 		});
 
-		expect(screen.getByText("TypeScript")).toBeInTheDocument();
+		expect(screen.getByText("TypeScript · JavaScript")).toBeInTheDocument();
 		expect(screen.getByText("Git")).toBeInTheDocument();
 	});
 
@@ -179,30 +189,36 @@ describe("PrepView", () => {
 		const onCommunity = vi.fn();
 		render_({ onStart, onBackToShop, onCommunity });
 
+		const starts = screen.getAllByRole("button", { name: "Start Lavender →" });
+		await userEvent.click(starts[0]);
 		await userEvent.click(
-			screen.getByRole("button", { name: "Start Lavender gate →" })
+			screen.getByRole("button", { name: "← change · 184 KB" })
 		);
-		await userEvent.click(
-			screen.getByRole("button", { name: "← Back to shop" })
-		);
-		await userEvent.click(screen.getByRole("button", { name: "Community →" }));
+		await userEvent.click(screen.getByRole("button", { name: "Community" }));
 
 		expect(onStart).toHaveBeenCalledOnce();
 		expect(onBackToShop).toHaveBeenCalledOnce();
 		expect(onCommunity).toHaveBeenCalledOnce();
 	});
 
-	it("shuts the gate behind the window when the polls run out", () => {
-		render_({ view: createMockRunView({ ...view, pollsExhausted: true }) });
+	it("shuts the gate behind the window when the polls run out", async () => {
+		const onStart = vi.fn();
+		render_({
+			view: createMockRunView({ ...view, pollsExhausted: true }),
+			onStart,
+		});
 
-		expect(
-			screen.getByRole("button", { name: "opens with the next window" })
-		).toBeDisabled();
+		const locked = screen.getAllByRole("button", {
+			name: "opens with the next window",
+		});
+		await userEvent.click(locked[0]);
+
+		expect(onStart).not.toHaveBeenCalled();
 	});
 
-	it("badges each installed config's headline figure", () => {
+	it("prices what a miss takes", () => {
 		render_();
 
-		expect(screen.getAllByText("×1.25")).toHaveLength(2);
+		expect(screen.getByText(/^remove \d+ slots?$/)).toBeInTheDocument();
 	});
 });

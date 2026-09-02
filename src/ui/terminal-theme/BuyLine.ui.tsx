@@ -32,6 +32,7 @@ export const BuyLine = ({
 				label={label}
 				icon={icon}
 				price={price}
+				disabled={onBuy === undefined}
 				className="ml-auto"
 				onUse={onBuy}
 			/>

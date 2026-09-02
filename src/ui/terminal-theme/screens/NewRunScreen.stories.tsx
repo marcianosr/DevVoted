@@ -113,6 +113,49 @@ export const Mobile: Story = {
 	],
 };
 
+const starterStacks = {
+	meta: "3",
+	rows: [
+		{
+			id: "ship-it",
+			name: "Gamble",
+			blurb: "Fast but risky.",
+			takeLabel: "Take this stack",
+			onTake: noop,
+		},
+		{
+			id: "test-everything",
+			name: "Safe start",
+			blurb: "Safer JS/TS focus.",
+			recommended: true,
+			takeLabel: "Take this stack",
+			onTake: noop,
+		},
+		{
+			id: "full-stack",
+			name: "Category spread",
+			blurb: "Balanced across categories.",
+			takeLabel: "Take this stack",
+			onTake: noop,
+		},
+	],
+} as const;
+
+export const WithStarterStacks: Story = {
+	args: { ...FreshDeal.args, combos: starterStacks },
+};
+
+export const WithStarterStacksMobile: Story = {
+	...WithStarterStacks,
+	decorators: [
+		(Story) => (
+			<div className="mx-auto w-full max-w-[390px]">
+				<Story />
+			</div>
+		),
+	],
+};
+
 export const TaggedAtSeafoam: Story = {
 	args: {
 		header: {

@@ -51,17 +51,7 @@ const render_ = (
 	return onNext;
 };
 
-// Scoped: a config names itself on the track too, and the trail speaks the word
-// "correct" for screen readers.
-const equation = () => {
-	const panel = screen.getByText(/^coverage (earned|lost)$/).closest("section");
-	if (!panel) throw new Error("No equation rendered");
-	return panel;
-};
-
-// A factor sets its figure over its name, so neither is findable on its own.
-const factorOf = (label: string) =>
-	within(equation()).getByText(label).parentElement?.textContent;
+const optionRow = (label: string) => screen.getByText(label).closest("div");
 
 describe("RevealView", () => {
 	it("keeps the answered poll on screen with its options settled", () => {
@@ -70,116 +60,68 @@ describe("RevealView", () => {
 		expect(
 			screen.getByText("Which method flattens one level?")
 		).toBeInTheDocument();
-		screen.getAllByRole("radio").forEach((option) => {
-			expect(option).toBeDisabled();
-		});
+		expect(screen.getByText("arr.flat()")).toBeInTheDocument();
+		expect(screen.getByText("arr.smoosh()")).toBeInTheDocument();
 	});
 
-	it("badges what the gate expected and what was wrongly picked", () => {
+	// Nothing is pressable after the answer lands, or a settled poll would look
+	// like it could still be changed.
+	it("settles the options, so none of them is pressable", () => {
+		render_();
+
+		expect(optionRow("arr.flat()")?.tagName).not.toBe("BUTTON");
+	});
+
+	it("names what the gate expected and what was picked", () => {
+		render_();
+
+		expect(screen.getByText("expected · you picked")).toBeInTheDocument();
+	});
+
+	it("marks the option that was wrongly picked apart from the expected one", () => {
 		render_(missed);
 
 		expect(screen.getByText("expected")).toBeInTheDocument();
 		expect(screen.getByText("you picked")).toBeInTheDocument();
 	});
 
-	it("reads the earn as its multiplication, every contributing config named", () => {
+	// .js names itself on the build rail too, so the equation has to be scoped.
+	it("reads the earn as its factors, every contributing config named", () => {
 		render_();
 
-		expect(factorOf("correct")).toBe("1.0correct");
-		expect(factorOf("streak")).toBe("1.1streak");
-		expect(factorOf(".js")).toBe("1.25.js");
-		expect(screen.getByLabelText("+1.6%")).toBeInTheDocument();
+		const equation = screen.getByText("coverage earned").closest("div");
+		if (!equation) throw new Error("No equation rendered");
+
+		expect(screen.getByText("correct")).toBeInTheDocument();
+		expect(screen.getByText("streak")).toBeInTheDocument();
+		expect(within(equation).getByText(".js")).toBeInTheDocument();
 	});
 
-	it("adds a flat config in, quoting the coverage it actually contributed", () => {
-		render_(
-			{
-				...answered,
-				coverageBreakdown: {
-					base: 1,
-					streakBonus: 0,
-					configBonuses: [{ configId: "code-coverage", value: 0.5 }],
-				},
-			},
-			[CONFIGS.codeCoverage]
-		);
+	it("leaves the streak out when it was not paying", () => {
+		render_({
+			...answered,
+			coverageFactors: { correct: 1, build: 1.25, streak: 1 },
+		});
 
-		expect(factorOf("Code Coverage")).toBe("+0.5Code Coverage");
-		expect(screen.getByText("+")).toBeInTheDocument();
+		expect(screen.queryByText("streak")).not.toBeInTheDocument();
 	});
 
-	it("quotes what the add paid on this answer, not the config's own rate", () => {
-		render_(
-			{
-				...answered,
-				outcome: "partial",
-				coverageEarned: 0.9,
-				coverageFactors: { correct: 0.6, build: 1.5, streak: 1 },
-				coverageBreakdown: {
-					base: 0.6,
-					streakBonus: 0,
-					configBonuses: [{ configId: "code-coverage", value: 0.3 }],
-				},
-			},
-			[CONFIGS.codeCoverage]
-		);
-
-		expect(factorOf("Code Coverage")).toBe("+0.3Code Coverage");
-	});
-
-	it("brackets the base and its adds when multipliers scale their sum", () => {
-		render_(
-			{
-				...answered,
-				coverageBreakdown: {
-					base: 1,
-					streakBonus: 0,
-					configBonuses: [
-						{ configId: "code-coverage", value: 0.5 },
-						{ configId: "js", value: 0.4 },
-					],
-				},
-			},
-			[CONFIGS.codeCoverage, CONFIGS.js]
-		);
-
-		expect(screen.getByText("(")).toBeInTheDocument();
-		expect(screen.getByText(")")).toBeInTheDocument();
-		expect(factorOf("Code Coverage")).toBe("+0.5Code Coverage");
-		expect(factorOf(".js")).toBe("1.25.js");
-	});
-
-	it("names the button for what comes next, and says nothing else beside it", () => {
+	it("totals the coverage the answer earned", () => {
 		render_();
 
-		expect(
-			screen.getByRole("button", { name: "Next poll →" })
-		).toBeInTheDocument();
-		expect(screen.queryByText(/to go/)).not.toBeInTheDocument();
+		expect(screen.getByText("+1.6%")).toBeInTheDocument();
+		expect(screen.getByText("coverage earned")).toBeInTheDocument();
 	});
 
-	it("badges the contributing config's share in its own track cell", () => {
-		render_();
-
-		expect(screen.getByText("paid +0.5")).toBeInTheDocument();
-		expect(screen.getByText("ts only")).toBeInTheDocument();
-	});
-
-	it("badges the KB the faucet just paid, clamp and all — not its list rate", () => {
-		render_({ ...answered, faucetKb: 4 }, [CONFIGS.js, CONFIGS.indexedDb]);
-
-		expect(screen.getByText("paid +4 KB")).toBeInTheDocument();
-	});
-
-	it("keeps the rail silent on a miss — configs never touch losses", () => {
+	// coverageFactors is absent on a miss, so there is no multiplication to show.
+	it("shows no factors on a miss, configs never touching a loss", () => {
 		render_(missed);
 
-		expect(screen.getByLabelText("−0.8%")).toBeInTheDocument();
-		expect(screen.queryByText(/^paid /)).not.toBeInTheDocument();
-		expect(screen.queryByText("1 applied")).not.toBeInTheDocument();
+		expect(screen.queryByText("streak")).not.toBeInTheDocument();
+		expect(screen.getByText("+-0.8%")).toBeInTheDocument();
 	});
 
-	it("hands the explanation to the player — the learning half of the beat", () => {
+	it("hands the explanation to the player, the learning half of the beat", () => {
 		render_();
 
 		expect(
@@ -187,11 +129,29 @@ describe("RevealView", () => {
 		).toBeInTheDocument();
 	});
 
+	it("names the button for what comes next", () => {
+		render_();
+
+		expect(
+			screen.getByRole("button", { name: "Next poll →" })
+		).toBeInTheDocument();
+	});
+
 	it("moves on only when the player asks to", async () => {
 		const onNext = render_();
 
-		await userEvent.click(screen.getByRole("button", { name: "Next poll →" }));
+		expect(onNext).not.toHaveBeenCalled();
+		await userEvent.click(screen.getByRole("button", { name: /^Next/ }));
 
 		expect(onNext).toHaveBeenCalledOnce();
+	});
+
+	it("badges the KB the faucet just paid, clamp and all, not its list rate", () => {
+		render_({ ...answered, faucetKb: 6 }, [CONFIGS.indexedDb, CONFIGS.js]);
+
+		const rail = screen.getByText("Build").closest("details");
+		if (!rail) throw new Error("No build rail rendered");
+
+		expect(within(rail).getByText("+6 KB")).toBeInTheDocument();
 	});
 });

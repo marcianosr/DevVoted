@@ -154,7 +154,7 @@ const AuditRows = ({ audits }: { audits: readonly AuditView[] }) => (
 				{audit.suppressed ? (
 					<Paragraph as="span" tone="muted">
 						<span className="line-through">
-							{audit.name} — {audit.description}
+							{audit.code} {audit.name} — {audit.description}
 						</span>{" "}
 						<Paragraph as="span" tone="viridian" className="font-bold">
 							reported passing
@@ -163,7 +163,7 @@ const AuditRows = ({ audits }: { audits: readonly AuditView[] }) => (
 				) : (
 					<Paragraph as="span" tone="muted">
 						<Paragraph as="span" tone="saffron" className="font-bold">
-							{audit.name}
+							{audit.code} {audit.name}
 						</Paragraph>{" "}
 						— {audit.description}
 					</Paragraph>

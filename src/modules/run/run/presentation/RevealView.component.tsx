@@ -7,59 +7,49 @@ import {
 	type Coverage,
 	effectOf,
 } from "~/modules/run/config/domain/effect.model";
-import type { CoverageConfigBonus } from "~/modules/run/build/domain/build.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import { Chip } from "~/ui/modern-theme/Chip.ui";
-import { Equation, type EquationFactor } from "~/ui/modern-theme/Equation.ui";
-import { Text } from "~/ui/modern-theme/Text.ui";
+import { RevealScreen } from "~/ui/terminal-theme/screens/RevealScreen.ui";
+import type { ChoiceState } from "~/ui/terminal-theme/Choice.ui";
+import type { EquationFactor } from "~/ui/terminal-theme/Equation.ui";
 import {
-	PollScreen,
-	type PollOption,
-} from "~/ui/modern-theme/screens/PollScreen.ui";
-import {
-	categoryFor,
-	gateHeaderFor,
+	auditNotes,
 	buildRows,
+	buildTotalFor,
+	categoryFor,
 	questionFor,
-	noticesFor,
-	trackFor,
-	trailFor,
+	runHeaderFor,
 } from "~/modules/run/run/presentation/PollView.component";
+
+const LETTERS = "ABCDEFGH";
 
 const optionsOf = (poll: AnsweredPoll): readonly string[] =>
 	poll.options ?? [...new Set([...poll.picked, ...(poll.correct ?? [])])];
 
-const settledOptions = (poll: AnsweredPoll): readonly PollOption[] => {
+const stateFor = (expected: boolean, picked: boolean): ChoiceState => {
+	if (expected) return "expected";
+	return picked ? "idle" : "dimmed";
+};
+
+const noteFor = (expected: boolean, picked: boolean): string | undefined => {
+	if (expected && picked) return "expected · you picked";
+	if (expected) return "expected";
+	return picked ? "you picked" : undefined;
+};
+
+const settledChoices = (poll: AnsweredPoll) => {
 	const expected = new Set(poll.correct ?? []);
 	const picked = new Set(poll.picked);
 
-	return optionsOf(poll).map((label): PollOption => {
-		const wrongPick = picked.has(label) && !expected.has(label);
-		return {
-			id: label,
-			name: poll.id,
-			label,
-			checked: picked.has(label),
-			settled: true,
-			letterTone: expected.has(label)
-				? "celadon"
-				: wrongPick
-					? "cinnabar"
-					: undefined,
-			trailing:
-				expected.has(label) || picked.has(label) ? (
-					<>
-						{expected.has(label) ? <Chip tone="celadon">expected</Chip> : null}
-						{picked.has(label) ? (
-							<Chip tone={wrongPick ? "cinnabar" : "celadon"}>you picked</Chip>
-						) : null}
-					</>
-				) : undefined,
-			onChange: () => {},
-		};
-	});
+	return optionsOf(poll).map((label, index) => ({
+		letter: LETTERS[index] ?? `${index + 1}`,
+		label,
+		state: stateFor(expected.has(label), picked.has(label)),
+		note: noteFor(expected.has(label), picked.has(label)),
+	}));
 };
+
+const round = (value: number) => Math.round(value * 100) / 100;
 
 const buildFactors = (
 	view: RunView,
@@ -85,12 +75,10 @@ const buildFactors = (
 		)
 		.map(({ config, cover }): EquationFactor => {
 			if (cover.mult !== 1)
-				return { label: config.label, value: cover.mult, chosen: true };
+				return { label: config.label, value: `×${round(cover.mult)}` };
 			return {
 				label: config.label,
-				value: paidBy.get(config.id) ?? 0,
-				op: "plus",
-				chosen: true,
+				value: `+${round(paidBy.get(config.id) ?? 0)}`,
 			};
 		});
 };
@@ -101,19 +89,19 @@ const equationFactors = (
 ): readonly EquationFactor[] => {
 	const factors = answered.coverageFactors;
 	if (!factors) return [];
+
 	return [
-		{ label: answered.outcome, value: factors.correct },
+		{
+			label: answered.outcome,
+			value: `${round(factors.correct)}`,
+			boxed: true,
+		},
 		...(factors.streak !== 1
-			? [{ label: "streak", value: factors.streak }]
+			? [{ label: "streak", value: `×${round(factors.streak)}` }]
 			: []),
 		...buildFactors(view, answered),
 	];
 };
-
-const firedByConfig = (
-	bonuses: readonly CoverageConfigBonus[]
-): ReadonlyMap<string, number> =>
-	new Map(bonuses.map((bonus) => [bonus.configId, bonus.value]));
 
 const faucetKbByConfig = (
 	view: RunView,
@@ -131,24 +119,16 @@ const faucetKbByConfig = (
 	return paid;
 };
 
+const hasPollsLeft = (view: RunView): boolean =>
+	view.pollsPerGate - view.answeredThisGate.length > 0;
+
 export type RevealViewProps = {
 	view: RunView;
 	answered: AnsweredPoll;
 	onNext: () => void;
 };
 
-const hasPollsLeft = (view: RunView): boolean =>
-	view.pollsPerGate - view.answeredThisGate.length > 0;
-
-// Only `wrong` resets the streak (`nextStreak`), and only a streak that was paying
-// is worth mourning.
-const streakNote = (answered: AnsweredPoll): string | undefined =>
-	answered.outcome === "wrong" && (answered.coverageFactors?.streak ?? 1) > 1
-		? "streak lost · your next correct answer starts at ×1.0"
-		: undefined;
-
 export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
-	const fired = firedByConfig(answered.coverageBreakdown?.configBonuses ?? []);
 	const faucet = faucetKbByConfig(view, answered);
 	const rows = buildRows(
 		view,
@@ -157,39 +137,32 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 			answeredBefore: view.answeredThisGate.length - 1,
 		},
 		[]
-	).map((row) => ({
-		...row,
-		fired: fired.get(row.id),
-		firedKb: faucet.get(row.id),
-	}));
+	).map((row, index) => {
+		const paid = faucet.get(view.configs[index]?.id ?? "");
+		return paid === undefined ? row : { ...row, figure: `+${paid} KB` };
+	});
+
 	return (
-		<PollScreen
+		<RevealScreen
 			theme={view.gateTheme}
-			gate={gateHeaderFor(view)}
-			trail={trailFor(view)}
-			trailLabel="Polls in this gate"
-			question={questionFor(view, answered.question)}
+			run={runHeaderFor(view)}
+			build={{
+				meta: `${view.configs.length}`,
+				rows,
+				total: buildTotalFor(view),
+			}}
+			audits={auditNotes(view)}
 			category={categoryFor(answered.category)}
-			code={answered.codeBlock?.split("\n")}
-			options={settledOptions(answered)}
-			reveal={
-				<>
-					<Equation
-						factors={equationFactors(view, answered)}
-						paid={answered.coverageEarned ?? 0}
-						note={streakNote(answered)}
-					/>
-					{answered.explanation ? (
-						<Text as="p" size="meta" tone="muted">
-							{answered.explanation}
-						</Text>
-					) : null}
-				</>
-			}
-			build={trackFor(view, rows, undefined, true)}
-			notices={noticesFor(view)}
-			onSubmit={onNext}
-			submitLabel={hasPollsLeft(view) ? "Next poll →" : "Next →"}
+			question={questionFor(view, answered.question)}
+			choices={settledChoices(answered)}
+			equation={{
+				factors: equationFactors(view, answered),
+				result: `+${round(answered.coverageEarned ?? 0)}%`,
+				resultLabel: "coverage earned",
+			}}
+			explainer={answered.explanation}
+			nextLabel={hasPollsLeft(view) ? "Next poll →" : "Next →"}
+			onNext={onNext}
 		/>
 	);
 };

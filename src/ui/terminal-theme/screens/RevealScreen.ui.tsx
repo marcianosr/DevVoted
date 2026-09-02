@@ -36,6 +36,7 @@ export type RevealScreenProps = {
 		note?: string;
 	}[];
 	equation: EquationProps;
+	explainer?: string;
 	nextLabel: string;
 	onNext?: () => void;
 };
@@ -49,6 +50,7 @@ export const RevealScreen = ({
 	question,
 	choices,
 	equation,
+	explainer,
 	nextLabel,
 	onNext,
 }: RevealScreenProps) => (
@@ -86,6 +88,12 @@ export const RevealScreen = ({
 				<div className="border-t border-edge pt-4">
 					<Equation {...equation} />
 				</div>
+
+				{explainer === undefined ? null : (
+					<Text as="p" tone="muted" size="caption" className="leading-relaxed">
+						{explainer}
+					</Text>
+				)}
 
 				<Button label={nextLabel} className="w-full" onUse={onNext} />
 			</div>

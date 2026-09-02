@@ -1,5 +1,7 @@
 import { clsx } from "clsx";
 
+import { Tooltip } from "./Tooltip.ui";
+
 export type IconButtonTone = "viridian" | "cinnabar" | "cerulean" | "legendary";
 
 const TONE = {
@@ -44,24 +46,25 @@ export const IconButton = ({
 	iconOnly = false,
 	onUse,
 }: IconButtonProps) => (
-	<button
-		type="button"
-		title={hint}
-		aria-label={hint ?? label}
-		aria-pressed={armed}
-		disabled={disabled}
-		onClick={onUse}
-		className={clsx(
-			BUTTON,
-			icon !== undefined && (iconOnly ? ROUND : COLLAPSES),
-			armed === true ? ARMED[tone] : TONE[tone]
-		)}
-	>
-		{icon === undefined ? null : <span aria-hidden>{icon}</span>}
-		{iconOnly && icon !== undefined ? null : (
-			<span aria-hidden className={icon === undefined ? undefined : LABEL}>
-				{label}
-			</span>
-		)}
-	</button>
+	<Tooltip hint={hint}>
+		<button
+			type="button"
+			aria-label={hint ?? label}
+			aria-pressed={armed}
+			disabled={disabled}
+			onClick={onUse}
+			className={clsx(
+				BUTTON,
+				icon !== undefined && (iconOnly ? ROUND : COLLAPSES),
+				armed === true ? ARMED[tone] : TONE[tone]
+			)}
+		>
+			{icon === undefined ? null : <span aria-hidden>{icon}</span>}
+			{iconOnly && icon !== undefined ? null : (
+				<span aria-hidden className={icon === undefined ? undefined : LABEL}>
+					{label}
+				</span>
+			)}
+		</button>
+	</Tooltip>
 );

@@ -34,12 +34,12 @@ export const RightAnswer: Story = {
 				...Array.from({ length: 8 }, () => ({ state: "locked" }) as const),
 			],
 			gateLabel: "gate 4 / 12",
-			coverage: { label: "coverage", reading: "31.1 / 60%", percent: 52 },
+			coverage: { label: "Coverage", reading: "31.1 / 60%", percent: 52 },
 		},
 		theme: "lavender",
 		build: {
 			meta: "3",
-			total: { label: "this answer", value: "×3.1" },
+			total: { label: "Total", value: "×3.1" },
 			rows: [
 				{
 					name: ".js",
@@ -130,12 +130,12 @@ export const EliteReveal: Story = {
 				{ state: "locked" },
 			],
 			gateLabel: "gate 12 / 12",
-			coverage: { label: "coverage", reading: "64.4 / 85%", percent: 76 },
+			coverage: { label: "Coverage", reading: "64.4 / 85%", percent: 76 },
 		},
 		theme: "elite",
 		build: {
 			meta: "8",
-			total: { label: "this answer", value: "×6.2" },
+			total: { label: "Total", value: "×6.2" },
 			rows: [
 				{
 					name: ".js",

@@ -6,6 +6,7 @@ import { createMockGateStake } from "~/test/runView.factory";
 
 const COST_OVERRUN_VIEW = {
 	id: "cost-overrun",
+	code: 402,
 	name: "Cost Overrun",
 	description: "Every paid action costs ×2 — linting and peeking both.",
 	suppressed: false,

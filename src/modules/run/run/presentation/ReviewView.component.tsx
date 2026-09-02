@@ -1,41 +1,56 @@
+import { CATEGORY_METADATA } from "~/shared/lib/categories";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	ReviewScreen,
-	type ReviewPoll,
-} from "~/ui/modern-theme/screens/ReviewScreen.ui";
-import type { AnswerOption } from "~/ui/modern-theme/Verdict.ui";
+	type ReviewRow,
+} from "~/ui/terminal-theme/screens/ReviewScreen.ui";
+import { plural } from "~/ui/terminal-theme/format";
 
-const optionsOf = (poll: AnsweredPoll): readonly string[] =>
-	poll.options ?? [...new Set([...poll.picked, ...(poll.correct ?? [])])];
+const percent = (value: number) => `${value.toFixed(1)}%`;
 
-const answersOf = (poll: AnsweredPoll): readonly AnswerOption[] => {
-	const expected = new Set(poll.correct ?? []);
-	const received = new Set(poll.picked);
+const signed = (value: number) =>
+	value > 0 ? `+${percent(value)}` : percent(value);
 
-	return optionsOf(poll).map((label) => ({
-		id: label,
-		label,
-		expected: expected.has(label),
-		received: received.has(label),
-	}));
+const joined = (labels: readonly string[] | undefined) =>
+	labels === undefined || labels.length === 0 ? undefined : labels.join(", ");
+
+const passed = (poll: AnsweredPoll) => poll.outcome === "correct";
+
+const rowFor = (
+	poll: AnsweredPoll,
+	index: number,
+	coveragePerWrong: number
+): ReviewRow => {
+	const shared = {
+		id: `${poll.id}-${index}`,
+		category: CATEGORY_METADATA[poll.category].name,
+		question: poll.question,
+		pollLabel: `poll ${index + 1}`,
+		explainer: poll.explanation,
+	};
+
+	if (passed(poll)) {
+		return { ...shared, gain: signed(poll.coverageEarned ?? 0) };
+	}
+
+	if (poll.outcome === "wrong") {
+		return {
+			...shared,
+			expected: joined(poll.correct),
+			picked: joined(poll.picked),
+			cost: signed(coveragePerWrong),
+		};
+	}
+
+	return {
+		...shared,
+		expected: joined(poll.correct),
+		picked: joined(poll.picked),
+		gain: signed(poll.coverageEarned ?? 0),
+	};
 };
-
-const codeLines = (block: string | undefined): readonly string[] | undefined =>
-	block?.split("\n");
-
-const toReviewPoll = (poll: AnsweredPoll, index: number): ReviewPoll => ({
-	// The engine reuses a poll id across gates when the pool cycles, so the
-	// position disambiguates what the id alone cannot.
-	id: `${poll.id}-${index}`,
-	outcome: poll.outcome,
-	question: poll.question,
-	score: poll.coverageEarned ?? 0,
-	options: answersOf(poll),
-	code: codeLines(poll.codeBlock),
-	explainer: poll.explanation,
-});
 
 export type ReviewViewProps = {
 	view: RunView;
@@ -43,15 +58,28 @@ export type ReviewViewProps = {
 };
 
 export const ReviewView = ({ view, back }: ReviewViewProps) => {
-	const gate = view.gateStake.gateNumber;
+	const answered = view.answeredThisGate;
+	const reviewed = answered.map((poll, index) => ({
+		poll,
+		row: rowFor(poll, index, view.perAnswer.coveragePerWrong),
+	}));
+	const passedRows = reviewed
+		.filter(({ poll }) => passed(poll))
+		.map(({ row }) => row);
+	const failedRows = reviewed
+		.filter(({ poll }) => !passed(poll))
+		.map(({ row }) => row);
+	const gateName = swatchForGate(view.gateStake.gateNumber)?.gateName ?? "";
 
 	return (
 		<ReviewScreen
 			theme={view.gateTheme}
-			gateName={swatchForGate(gate)?.gateName ?? ""}
-			gate={gate}
-			polls={view.answeredThisGate.map(toReviewPoll)}
-			back={back}
+			title={gateName === "" ? "Review" : `Review · ${gateName}`}
+			meta={`${passedRows.length} passed · ${failedRows.length} failed · ${plural(answered.length, "poll")}`}
+			failed={{ meta: `${failedRows.length}`, rows: failedRows }}
+			passed={{ meta: `${passedRows.length}`, rows: passedRows }}
+			backLabel={back.label}
+			onBack={back.onUse}
 		/>
 	);
 };

@@ -15,6 +15,7 @@ export type PollView = {
 	readonly codeSandboxUrl?: string;
 	readonly answerType: AnswerType;
 	readonly options: readonly PollOptionView[];
+	readonly author?: string;
 };
 
 export const redactPoll = (poll: RunPoll): PollView => ({
@@ -24,6 +25,7 @@ export const redactPoll = (poll: RunPoll): PollView => ({
 	codeBlock: poll.codeBlock,
 	codeSandboxUrl: poll.codeSandboxUrl,
 	answerType: poll.answerType,
+	author: poll.author,
 	options: poll.options.map((option) => ({
 		id: option.id,
 		label: option.label,

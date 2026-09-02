@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 
 import { Dot, type DotVariant } from "./Dot.ui";
+import { Figures } from "./Figures.ui";
 import { IconButton } from "./IconButton.ui";
 import { Meter } from "./Meter.ui";
 import { Text } from "./Text.ui";
@@ -47,6 +48,7 @@ const ActionRow = ({ row }: { row: BuildListRow }) => (
 				<IconButton
 					label={`${row.use.label} · ${row.use.price}`}
 					tone="cerulean"
+					disabled={row.use.onUse === undefined}
 					onUse={row.use.onUse}
 				/>
 			)}
@@ -125,9 +127,9 @@ export const BuildList = ({
 					<Text tone="muted" className={NAME}>
 						{total.label}
 					</Text>
-					<Text tone="viridian" className={clsx(FIGURE, "font-bold")}>
-						{total.value}
-					</Text>
+					<span className={FIGURE}>
+						<Figures text={total.value} />
+					</span>
 				</span>
 			)}
 		</div>

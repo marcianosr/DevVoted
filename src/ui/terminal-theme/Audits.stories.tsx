@@ -14,6 +14,24 @@ const meta: Meta<typeof Audits> = {
 	],
 };
 export default meta;
+
+export const Suppressed: StoryObj<typeof Audits> = {
+	args: {
+		rows: [
+			{
+				code: "408",
+				name: "Request Timeout",
+				cue: "on the clock",
+				suppressed: true,
+			},
+			{
+				code: "402",
+				name: "Payment Required",
+				cue: "paid actions cost double",
+			},
+		],
+	},
+};
 type Story = StoryObj<typeof Audits>;
 
 export const OneAudit: Story = {

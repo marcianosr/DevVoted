@@ -1,3 +1,5 @@
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
 import { Badge } from "../Badge.ui";
 import { Button } from "../Button.ui";
 import { Figures } from "../Figures.ui";
@@ -10,8 +12,10 @@ const HEAD_LINE = "flex items-center gap-3 @max-md:items-start";
 const FACTS = "ml-7 flex flex-col gap-1.5";
 const FACT = "flex items-center gap-3";
 const FACT_NAME = "w-24 shrink-0";
+const EXPLAINER = "ml-7 leading-relaxed";
 
 export type ReviewRow = {
+	id: string;
 	category: string;
 	question: string;
 	pollLabel?: string;
@@ -19,11 +23,13 @@ export type ReviewRow = {
 	picked?: string;
 	cost?: string;
 	gain?: string;
+	explainer?: string;
 };
 
 export type ReviewScreenProps = {
 	title: string;
 	meta: string;
+	theme?: SwatchTheme;
 	failed: {
 		meta: string;
 		rows: readonly ReviewRow[];
@@ -39,7 +45,8 @@ export type ReviewScreenProps = {
 const hasFacts = (row: ReviewRow) =>
 	row.expected !== undefined ||
 	row.picked !== undefined ||
-	row.cost !== undefined;
+	row.cost !== undefined ||
+	row.gain !== undefined;
 
 const FailedRow = ({ row }: { row: ReviewRow }) => (
 	<div className="flex flex-col gap-1.5 py-2">
@@ -83,8 +90,21 @@ const FailedRow = ({ row }: { row: ReviewRow }) => (
 						</Text>
 					</span>
 				)}
+				{row.gain === undefined ? null : (
+					<span className={FACT}>
+						<Text tone="muted" className={FACT_NAME}>
+							banked
+						</Text>
+						<Figures text={row.gain} />
+					</span>
+				)}
 			</div>
 		) : null}
+		{row.explainer === undefined ? null : (
+			<Text as="p" tone="muted" size="caption" className={EXPLAINER}>
+				{row.explainer}
+			</Text>
+		)}
 	</div>
 );
 
@@ -102,12 +122,13 @@ const PassedRow = ({ row }: { row: ReviewRow }) => (
 export const ReviewScreen = ({
 	title,
 	meta,
+	theme,
 	failed,
 	passed,
 	backLabel,
 	onBack,
 }: ReviewScreenProps) => (
-	<Panel>
+	<Panel theme={theme}>
 		<header className="flex items-center justify-between gap-4 border-b border-edge pb-3">
 			<Text size="title" className="font-bold">
 				{title}
@@ -117,13 +138,13 @@ export const ReviewScreen = ({
 
 		<Section label="Failed" meta={failed.meta} divided>
 			{failed.rows.map((row) => (
-				<FailedRow key={row.question} row={row} />
+				<FailedRow key={row.id} row={row} />
 			))}
 		</Section>
 
 		<Section label="Passed" meta={passed.meta} defaultOpen={false} divided>
 			{passed.rows.map((row) => (
-				<PassedRow key={row.question} row={row} />
+				<PassedRow key={row.id} row={row} />
 			))}
 		</Section>
 

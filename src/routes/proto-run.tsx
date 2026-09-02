@@ -40,7 +40,7 @@ import { RemovalView } from "~/modules/run/gate/presentation/RemovalView.compone
 import { RewardView } from "~/modules/run/gate/presentation/RewardView.component";
 import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";
-import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";
+import { GameOverView } from "~/modules/run/run/presentation/GameOverView.component";
 import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.ui";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -75,6 +75,7 @@ const single = (
 	category,
 	question,
 	answerType: "single",
+	author: "@matthijsgroen",
 	options: [
 		{ id: `${id}-r`, label: right, correct: true },
 		...wrongs.map((w, i) => ({ id: `${id}-${i}`, label: w, correct: false })),
@@ -438,11 +439,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
-	const [stripStep, setStripStep] = useState<"summary" | "removal" | "review">(
-		"summary"
-	);
+	const [stripStep, setStripStep] = useState<"removal" | "review">("removal");
 	useEffect(() => {
-		setStripStep("summary");
+		setStripStep("removal");
 	}, [state.status]);
 
 	const view = toRunView(state, archiveKb);
@@ -556,7 +555,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			{!reveal && state.status === "rewarding" && rewardStep === "summary" && (
 				<RewardView
 					view={view}
-					outcome="cleared"
 					onReviewAnswers={() => setRewardStep("review")}
 					onContinue={() => setRewardStep("shop")}
 				/>
@@ -621,59 +619,42 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 			{!reveal &&
 				state.status === "awaiting-strip" &&
-				stripStep === "summary" && (
-					<RewardView
+				stripStep === "removal" && (
+					<RemovalView
 						view={view}
-						outcome="held"
 						onReviewAnswers={() => setStripStep("review")}
-						onChooseRemoval={() => setStripStep("removal")}
+						onRemove={(configIds) => {
+							setRewardStep("shop");
+							setState((current) =>
+								runReducer(
+									configIds.reduce(
+										(next, configId) =>
+											runReducer(next, { type: "strip", configId }),
+										current
+									),
+									{ type: "resume-climb" }
+								)
+							);
+						}}
 					/>
 				)}
-
-			{state.status === "awaiting-strip" && stripStep === "removal" && (
-				<RemovalView
-					view={view}
-					onRemove={(configIds) => {
-						setRewardStep("shop");
-						setState((current) =>
-							runReducer(
-								configIds.reduce(
-									(next, configId) =>
-										runReducer(next, { type: "strip", configId }),
-									current
-								),
-								{ type: "resume-climb" }
-							)
-						);
-					}}
-				/>
-			)}
 
 			{state.status === "awaiting-strip" && stripStep === "review" && (
 				<ReviewView
 					view={view}
 					back={{
 						label: "\u2190 Back to the gate",
-						onUse: () => setStripStep("summary"),
+						onUse: () => setStripStep("removal"),
 					}}
 				/>
 			)}
 
 			{!reveal && (state.status === "won" || state.status === "dead") && (
-				<Screen
-					width="narrow"
-					rightAction={{ label: "Play again →", onClick: onRestart }}
-				>
-					<RunSummary
-						won={state.status === "won"}
-						gatesCleared={view.gatesCleared}
-						victoryGate={view.victoryGate}
-						coverage={view.coverage}
-						storage={view.storage}
-						configs={view.configs}
-						answered={view.allAnswered}
-					/>
-				</Screen>
+				<GameOverView
+					view={view}
+					won={state.status === "won"}
+					onNewRun={onRestart}
+				/>
 			)}
 
 			{!reveal && state.status === "answering" && (

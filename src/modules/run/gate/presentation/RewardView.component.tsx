@@ -1,34 +1,33 @@
-import { useState } from "react";
-
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
+import type { Config } from "~/modules/run/config/domain/config.model";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { gateStorageBreakdown } from "~/modules/run/gate/domain/gateReward.model";
 import {
 	ALL_SWATCHES,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
-import { RewardScreen } from "~/ui/modern-theme/screens/RewardScreen.ui";
-import type { LedgerEntry } from "~/ui/modern-theme/Ledger.ui";
-import { Mark, type MarkVariant } from "~/ui/modern-theme/Mark.ui";
-import { Swatch } from "~/ui/modern-theme/Swatch.ui";
-import { plural } from "~/ui/modern-theme/format";
-
-const ANSWERED_HINT = {
-	pass: "Every poll in this category was correct",
-	warn: "Partly right, so this scored less than a clean answer",
-	fail: "Every poll in this category was missed",
-	idle: "This category has not been polled yet",
-	blank: "No polls came up in this category",
-} as const satisfies Record<MarkVariant, string>;
-
-const markFor = (polls: readonly AnsweredPoll[]): MarkVariant => {
-	if (polls.some((poll) => poll.outcome === "wrong")) return "fail";
-	return polls.some((poll) => poll.outcome === "partial") ? "warn" : "pass";
-};
+import {
+	GateClearScreen,
+	type ChangedRow,
+	type CoverageRow,
+} from "~/ui/terminal-theme/screens/GateClearScreen.ui";
+import type { AuditNote } from "~/ui/terminal-theme/Audits.ui";
+import type { LedgerRow } from "~/ui/terminal-theme/Ledger.ui";
+import type { TrackSwatch } from "~/ui/terminal-theme/SwatchTrack.ui";
+import { plural } from "~/ui/terminal-theme/format";
 
 const round = (value: number) => Math.round(value * 10) / 10;
+
+const signed = (value: number) => (value < 0 ? `${value}` : `+${value}`);
+
+const kb = (value: number) => `${value} KB`;
+
+const signedKb = (value: number) =>
+	value < 0 ? `−${kb(-value)}` : `+${kb(value)}`;
 
 const byCategory = (
 	answered: readonly AnsweredPoll[]
@@ -38,126 +37,141 @@ const byCategory = (
 		return groups.set(poll.category, [...held, poll]);
 	}, new Map<CategoryCode, readonly AnsweredPoll[]>());
 
-const coverageLedger = (
-	answered: readonly AnsweredPoll[]
-): readonly LedgerEntry[] =>
-	[...byCategory(answered)].map(([category, polls]) => {
-		const mark = markFor(polls);
-
-		return {
-			id: category,
-			name: getCategoryMetadata(category).name,
-			lead: <Mark variant={mark} shape="box" hint={ANSWERED_HINT[mark]} />,
-			notes: [plural(polls.length, "poll")],
-			value: round(
-				polls.reduce((sum, poll) => sum + (poll.coverageEarned ?? 0), 0)
+const coverageFor = (answered: readonly AnsweredPoll[]) => {
+	const rows: readonly CoverageRow[] = [...byCategory(answered)].map(
+		([category, polls]) => ({
+			category: getCategoryMetadata(category).name,
+			polls: plural(polls.length, "poll"),
+			gain: signed(
+				round(polls.reduce((sum, poll) => sum + (poll.coverageEarned ?? 0), 0))
 			),
-		};
-	});
+		})
+	);
 
-const PAID_HINT = "This ran and paid out";
+	const total = round(
+		answered.reduce((sum, poll) => sum + (poll.coverageEarned ?? 0), 0)
+	);
 
-const storageLedger = (view: RunView): readonly LedgerEntry[] => {
+	return { rows, total: `${signed(total)}%` };
+};
+
+const rewardsFor = (view: RunView): readonly LedgerRow[] => {
+	const { gatePayout } = view;
 	const { baseKb, rows } = gateStorageBreakdown({
 		configs: view.configs,
 		answered: view.answeredThisGate,
-		gateReward: view.gatePayout.gateRewardPaidKb,
-		faucetThisGateKb: view.gatePayout.faucetThisGateKb,
-		interestThisGateKb: view.gatePayout.interestThisGateKb,
-		extraPickThisGateKb: view.gatePayout.extraPickThisGateKb,
+		gateReward: gatePayout.gateRewardPaidKb,
+		faucetThisGateKb: gatePayout.faucetThisGateKb,
+		interestThisGateKb: gatePayout.interestThisGateKb,
+		extraPickThisGateKb: gatePayout.extraPickThisGateKb,
 	});
-
-	const bills: readonly LedgerEntry[] = [
+	const bills = [
+		{ name: "subscriptions", charged: gatePayout.subscriptionBillKb },
 		{
-			id: "subscriptions",
-			name: "subscriptions",
-			notes: ["this gate"],
-			value: -view.gatePayout.subscriptionBillKb,
-			dimmed: true,
+			name: gatePayout.planDowngraded
+				? "slot rent · unpaid, slots returned"
+				: "slot rent",
+			charged: gatePayout.planBilledKb,
 		},
-		{
-			id: "slot-rent",
-			name: "slot rent",
-			notes: [
-				view.gatePayout.planDowngraded ? "unpaid, slots returned" : "this gate",
-			],
-			value: -view.gatePayout.planBilledKb,
-			dimmed: true,
-		},
-	];
+	].filter((bill) => bill.charged !== 0);
 
 	return [
-		{
-			id: "gate-clear",
-			name: "gate clear",
-			lead: <Swatch size="pip" />,
-			notes: [`${view.pollsPerGate} polls`],
-			value: baseKb,
-		},
+		{ name: "gate cleared", figure: signedKb(baseKb) },
 		...rows.map((row) => ({
-			id: row.config.id,
 			name: row.config.label,
-			lead: <Mark variant="pass" hint={PAID_HINT} />,
-			value: row.kb,
+			figure: signedKb(row.kb),
 		})),
-		...bills.filter((bill) => bill.value !== 0),
+		...bills.map((bill) => ({
+			name: bill.name,
+			figure: signedKb(-bill.charged),
+			muted: true,
+		})),
+		{ name: "balance", value: kb(view.storage) },
 	];
 };
+
+const changedRow = (
+	config: Config,
+	label: string,
+	tone: "saffron" | "cinnabar" | "viridian"
+): ChangedRow => ({
+	family: config.family,
+	name: config.label,
+	detail: config.description,
+	slots: slotsOf(config),
+	badge: { label, tone },
+});
+
+const changedFor = (view: RunView): readonly ChangedRow[] => {
+	const { autoUpgradedConfig, lapsedConfigs, deletedConfigs } = view.gatePayout;
+
+	return [
+		...(autoUpgradedConfig === null
+			? []
+			: [changedRow(autoUpgradedConfig, "upgraded", "viridian")]),
+		...lapsedConfigs.map((config) => changedRow(config, "faded", "saffron")),
+		...deletedConfigs.map((config) => changedRow(config, "gone", "cinnabar")),
+	];
+};
+
+const trackFor = (view: RunView): readonly TrackSwatch[] =>
+	ALL_SWATCHES.map((swatch) =>
+		swatch.gate < view.gatesCleared
+			? { theme: swatch.theme, state: "earned" as const }
+			: { state: "locked" as const }
+	);
+
+const auditNote = (audit: AuditView): AuditNote => ({
+	code: `${audit.code}`,
+	name: audit.name,
+	cue: audit.answerCue ?? audit.description,
+	suppressed: audit.suppressed,
+});
 
 export type RewardViewProps = {
 	view: RunView;
 	onReviewAnswers: () => void;
-} & (
-	| { outcome: "cleared"; onContinue: () => void; onChooseRemoval?: never }
-	| { outcome: "held"; onChooseRemoval: () => void; onContinue?: never }
-);
+	onContinue: () => void;
+};
 
-export const RewardView = (props: RewardViewProps) => {
-	const { view, onReviewAnswers } = props;
-	const [detailShown, setDetailShown] = useState(true);
-
-	const cleared = props.outcome === "cleared";
-	const gate = cleared
-		? view.gatePayout.clearedGateNumber
-		: view.gateStake.gateNumber;
-	const swatch = swatchForGate(gate);
-
-	const shared = {
-		theme: swatch?.theme,
-		gateName: swatch?.gateName ?? "",
-		requiredCoverage: cleared
-			? view.gatePayout.clearedGateDemand
-			: view.gateStake.coverageDemand,
-		track: {
-			gates: ALL_SWATCHES,
-			cleared: view.gatesCleared,
-			...(cleared ? {} : { atCleared: "pending" as const }),
-		},
-		coverage: coverageLedger(view.answeredThisGate),
-		storage: storageLedger(view),
-		outcomes: view.answeredThisGate.map((poll) => poll.outcome),
-		detailShown,
-		onToggleDetail: () => setDetailShown((shown) => !shown),
-		onReviewAnswers,
-	};
-
-	if (props.outcome === "held")
-		return (
-			<RewardScreen
-				{...shared}
-				outcome="held"
-				removeCount={view.peelSlotsRemaining}
-				onChooseRemoval={props.onChooseRemoval}
-			/>
-		);
+export const RewardView = ({
+	view,
+	onReviewAnswers,
+	onContinue,
+}: RewardViewProps) => {
+	const cleared = view.gatePayout.clearedGateNumber;
+	const swatch = swatchForGate(cleared);
+	const next = swatchForGate(view.gatesCleared);
+	const coverage = coverageFor(view.answeredThisGate);
+	const correct = view.answeredThisGate.filter(
+		(poll) => poll.outcome === "correct"
+	).length;
+	const changed = changedFor(view);
 
 	return (
-		<RewardScreen
-			{...shared}
-			outcome="cleared"
-			clearedGate={gate}
-			spendableKb={view.storage}
-			onContinue={props.onContinue}
+		<GateClearScreen
+			theme={swatch?.theme}
+			title={`${swatch?.gateName ?? "The gate"} cleared`}
+			subtitle={`gate ${cleared} of ${view.victoryGate}`}
+			nextUp={
+				next === undefined ? "the climb is done" : `next up · ${next.gateName}`
+			}
+			chips={[
+				{
+					label: `${coverage.total.replace("+", "")} of ${view.gatePayout.clearedGateDemand}% needed`,
+					tone: "viridian",
+				},
+				{ label: `${correct} of ${view.answeredThisGate.length} right` },
+			]}
+			swatches={trackFor(view)}
+			rewards={rewardsFor(view)}
+			coverage={coverage}
+			changed={{ meta: plural(changed.length, "config"), rows: changed }}
+			audits={view.audits.map(auditNote)}
+			reviewLabel="Review answers"
+			onReview={onReviewAnswers}
+			shopLabel="To the shop →"
+			onShop={onContinue}
 		/>
 	);
 };

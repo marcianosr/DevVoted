@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 
-const FRAME = "@container mx-auto w-full max-w-[800px]";
+const FRAME = "@container mx-auto w-full max-w-[1000px] py-8";
 const PANEL =
 	"flex flex-col gap-3 rounded-2xl border border-edge px-6 py-5 @max-md:px-4 @max-md:py-4";
 

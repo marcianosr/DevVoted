@@ -13,6 +13,7 @@ import type { RunState } from "~/modules/run/run/domain/run.model";
 
 export type AuditView = {
 	readonly id: string;
+	readonly code: number;
 	readonly name: string;
 	readonly description: string;
 	readonly answerCue?: string;
@@ -60,7 +61,8 @@ export const auditViewsFor = (state: RunState): readonly AuditView[] => {
 	);
 	return auditsForGate(state.gatesCleared).map((audit) => ({
 		id: audit.id,
-		name: auditLabel(audit),
+		code: audit.code,
+		name: audit.name,
 		description: audit.description,
 		answerCue: audit.answerCue,
 		suppressed: audit.id === suppressed?.id,

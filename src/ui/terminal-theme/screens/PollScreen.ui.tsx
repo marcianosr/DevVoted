@@ -1,10 +1,13 @@
+import type { ReactNode } from "react";
+
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Audits, type AuditNote } from "../Audits.ui";
-import { Badge } from "../Badge.ui";
+import { Badge, type BadgeTone } from "../Badge.ui";
 import { BuildList, type BuildListRow } from "../BuildList.ui";
+import { Byline, type BylineProps } from "../Byline.ui";
 import { Button } from "../Button.ui";
-import { Choice } from "../Choice.ui";
+import { Choice, type ChoiceState } from "../Choice.ui";
 import { Legend } from "../Legend.ui";
 import { Panel } from "../Panel.ui";
 import { RunHeader, type RunHeaderProps } from "../RunHeader.ui";
@@ -17,6 +20,26 @@ const COLUMNS =
 const QUESTION_COLUMN = "flex flex-col gap-3 py-1";
 const SIDEBAR =
 	"@container border-l border-edge pl-4 @max-md:border-l-0 @max-md:border-t @max-md:pt-3 @max-md:pl-0";
+const FACTS =
+	"flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg border border-edge bg-zinc-900/40 px-3 py-2";
+const FACT = "flex items-center gap-2";
+const SEPARATOR = "text-zinc-600";
+const CODE =
+	"overflow-x-auto rounded-lg border border-edge bg-zinc-900/60 px-3 py-2";
+
+export type PollFact = {
+	label?: string;
+	value?: string;
+	tone?: BadgeTone;
+};
+
+export type PollChoice = {
+	letter: string;
+	label: string;
+	selected?: boolean;
+	state?: ChoiceState;
+	note?: ReactNode;
+};
 
 export type PollScreenProps = {
 	run: RunHeaderProps;
@@ -30,9 +53,14 @@ export type PollScreenProps = {
 	trail: TrailProps;
 	category: string;
 	question: string;
-	choices: readonly { letter: string; label: string }[];
-	onPick?: (letter: string) => void;
-	pickLabel: string;
+	facts?: readonly PollFact[];
+	code?: readonly string[];
+	choices: readonly PollChoice[];
+	onToggle?: (letter: string) => void;
+	submitLabel: string;
+	submitLock?: string;
+	onSubmit?: () => void;
+	byline?: BylineProps;
 };
 
 export const PollScreen = ({
@@ -43,9 +71,14 @@ export const PollScreen = ({
 	trail,
 	category,
 	question,
+	facts = [],
+	code = [],
 	choices,
-	onPick,
-	pickLabel,
+	onToggle,
+	submitLabel,
+	submitLock,
+	onSubmit,
+	byline,
 }: PollScreenProps) => (
 	<Panel theme={theme}>
 		<RunHeader {...run} />
@@ -56,13 +89,43 @@ export const PollScreen = ({
 
 				<Audits rows={audits} />
 
-				<Badge tone="celadon" className="self-start">
-					{category}
-				</Badge>
+				<div className={FACTS}>
+					<Badge tone="lavender">{category}</Badge>
+					{facts.map((fact) => (
+						<span key={`${fact.label}-${fact.value}`} className={FACT}>
+							<span aria-hidden className={SEPARATOR}>
+								·
+							</span>
+							{fact.label === undefined ? null : (
+								<Text tone="muted" size="caption">
+									{fact.label}
+								</Text>
+							)}
+							{fact.value === undefined ? null : (
+								<Badge tone={fact.tone ?? "neutral"}>{fact.value}</Badge>
+							)}
+						</span>
+					))}
+				</div>
 
-				<Text as="p" size="score" className="leading-snug font-bold">
+				<Text as="p" size="hero" className="leading-snug font-bold">
 					{question}
 				</Text>
+
+				{code.length === 0 ? null : (
+					<pre className={CODE}>
+						{code.map((line, index) => (
+							<Text
+								key={`${index}-${line}`}
+								as="code"
+								size="caption"
+								className="block"
+							>
+								{line}
+							</Text>
+						))}
+					</pre>
+				)}
 
 				<div className="flex flex-col gap-2">
 					{choices.map((choice) => (
@@ -70,14 +133,27 @@ export const PollScreen = ({
 							key={choice.letter}
 							letter={choice.letter}
 							label={choice.label}
+							state={choice.state}
+							selected={choice.selected}
+							note={choice.note}
 							onPick={
-								onPick === undefined ? undefined : () => onPick(choice.letter)
+								onToggle === undefined
+									? undefined
+									: () => onToggle(choice.letter)
 							}
 						/>
 					))}
 				</div>
 
-				<Button label={pickLabel} disabled className="w-full" />
+				<Button
+					label={submitLock ?? submitLabel}
+					variant="primary"
+					disabled={submitLock !== undefined || onSubmit === undefined}
+					onUse={onSubmit}
+					className="w-full"
+				/>
+
+				{byline === undefined ? null : <Byline {...byline} />}
 			</div>
 
 			<div className={SIDEBAR}>

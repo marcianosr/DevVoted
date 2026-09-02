@@ -31,7 +31,10 @@ const MAXED = "shrink-0 whitespace-nowrap";
 const CONFIRM_ICON = "✓";
 const CANCEL_ICON = "✕";
 const BUY_ICON = "⤓";
+const LOCK_ICON = "⚑";
 const FREE_RATE = "free";
+const NOTICE =
+	"rounded-lg border border-saffron/30 bg-saffron/5 px-3 py-2 text-saffron";
 
 const EXTEND_ROW =
 	"flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-edge-strong px-3 py-2";
@@ -87,6 +90,12 @@ export type ExtendOffer = {
 	onExtend?: () => void;
 };
 
+export type OfferLock = {
+	pinned: boolean;
+	label: string;
+	onToggle?: () => void;
+};
+
 export type ShopOfferRow = {
 	family: ConfigFamily;
 	name: string;
@@ -95,7 +104,8 @@ export type ShopOfferRow = {
 	price?: string;
 	buyLabel: string;
 	onBuy?: () => void;
-	locked?: boolean;
+	refused?: boolean;
+	lock?: OfferLock;
 };
 
 const versionTag = (row: ShopBuildRow) => {
@@ -177,6 +187,7 @@ const UpgradeSlot = ({ row }: { row: ShopBuildRow }) => {
 			label={row.upgrade.label}
 			hint={priceHint(row.upgrade.label, row.upgrade.price)}
 			tone="legendary"
+			disabled={row.upgrade.onArm === undefined}
 			onUse={row.upgrade.onArm}
 		/>
 	);
@@ -199,6 +210,7 @@ const BuildTrailing = ({ row }: { row: ShopBuildRow }) => {
 						: priceHint(row.remove.label, row.remove.value)
 				}
 				tone="cinnabar"
+				disabled={row.remove.onArm === undefined}
 				onUse={row.remove.onArm}
 			/>
 		</>
@@ -224,6 +236,7 @@ export type PlanTier = {
 
 const REBUILD_ICON = "↻";
 const SLOT_ICON = "+";
+const CASH_SLOT_ICON = "−";
 
 const PlanRow = ({ tier }: { tier: PlanTier }) => {
 	const body = (
@@ -254,6 +267,7 @@ const PlanRow = ({ tier }: { tier: PlanTier }) => {
 	return (
 		<button
 			type="button"
+			aria-label={`Switch to the ${tier.cap} plan`}
 			onClick={tier.onPick}
 			className={clsx(
 				PLAN_ROW,
@@ -268,6 +282,7 @@ const PlanRow = ({ tier }: { tier: PlanTier }) => {
 export type ShopScreenProps = {
 	header: HeaderProps;
 	theme?: SwatchTheme;
+	notice?: string;
 	storage: {
 		meta: string;
 		slots: number;
@@ -276,6 +291,7 @@ export type ShopScreenProps = {
 		meta: string;
 		rows: readonly ShopBuildRow[];
 		buySlot?: BuyLineProps;
+		cashSlot?: BuyLineProps;
 	};
 	offers: {
 		meta: string;
@@ -290,22 +306,31 @@ export type ShopScreenProps = {
 	};
 	gitTag?: BuyLineProps;
 	continueLabel: string;
+	continueLock?: string;
 	onContinue?: () => void;
 };
 
 export const ShopScreen = ({
 	header,
 	theme,
+	notice,
 	storage,
 	build,
 	offers,
 	plan,
 	gitTag,
 	continueLabel,
+	continueLock,
 	onContinue,
 }: ShopScreenProps) => (
 	<Panel theme={theme}>
 		<Header {...header} />
+
+		{notice === undefined ? null : (
+			<Text as="p" size="caption" className={NOTICE}>
+				{notice}
+			</Text>
+		)}
 
 		<Section label="Build storage" meta={storage.meta}>
 			<SlotTrack
@@ -326,6 +351,9 @@ export const ShopScreen = ({
 					{build.buySlot === undefined ? null : (
 						<BuyLine icon={SLOT_ICON} {...build.buySlot} />
 					)}
+					{build.cashSlot === undefined ? null : (
+						<BuyLine icon={CASH_SLOT_ICON} {...build.cashSlot} />
+					)}
 				</Section>
 			</div>
 
@@ -337,19 +365,29 @@ export const ShopScreen = ({
 							name={row.name}
 							tag={<Slots family={row.family} slots={row.slots} />}
 							detail={row.detail}
-							dimmed={row.locked}
+							dimmed={row.refused}
 							trailing={
 								<>
 									{row.price === undefined ? null : (
 										<PriceTag
 											label={row.price}
-											variant={row.locked === true ? "short" : "pay"}
+											variant={row.refused === true ? "short" : "pay"}
+										/>
+									)}
+									{row.lock === undefined ? null : (
+										<IconButton
+											icon={LOCK_ICON}
+											label={row.lock.label}
+											tone="cerulean"
+											armed={row.lock.pinned}
+											disabled={row.lock.onToggle === undefined}
+											onUse={row.lock.onToggle}
 										/>
 									)}
 									<IconButton
 										icon={BUY_ICON}
 										label={row.buyLabel}
-										disabled={row.locked}
+										disabled={row.refused === true || row.onBuy === undefined}
 										onUse={row.onBuy}
 									/>
 								</>
@@ -398,8 +436,9 @@ export const ShopScreen = ({
 
 		<footer className={FOOTER}>
 			<Button
-				label={continueLabel}
+				label={continueLock ?? continueLabel}
 				variant="primary"
+				disabled={continueLock !== undefined || onContinue === undefined}
 				className="@max-md:flex-1"
 				onUse={onContinue}
 			/>

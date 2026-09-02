@@ -1,4 +1,5 @@
 import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Audits, type AuditNote } from "../Audits.ui";
 import { Badge, type BadgeTone } from "../Badge.ui";
@@ -27,6 +28,7 @@ export type RemoveRow = {
 };
 
 export type GateHoldScreenProps = {
+	theme?: SwatchTheme;
 	title: string;
 	subtitle: string;
 	retryNote: string;
@@ -44,6 +46,7 @@ export type GateHoldScreenProps = {
 };
 
 export const GateHoldScreen = ({
+	theme,
 	title,
 	subtitle,
 	retryNote,
@@ -56,7 +59,7 @@ export const GateHoldScreen = ({
 	removeLabel,
 	onRemove,
 }: GateHoldScreenProps) => (
-	<Panel>
+	<Panel theme={theme}>
 		<header className="flex items-start justify-between gap-4 @max-md:flex-col @max-md:gap-2">
 			<div className="flex items-center gap-3">
 				<Swatch state="pending" size="hero" />
@@ -116,6 +119,7 @@ export const GateHoldScreen = ({
 			<Button
 				label={removeLabel}
 				variant="danger"
+				disabled={onRemove === undefined}
 				className="@max-md:flex-1"
 				onUse={onRemove}
 			/>

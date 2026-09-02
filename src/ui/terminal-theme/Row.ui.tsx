@@ -8,7 +8,8 @@ import { Text } from "./Text.ui";
 // gap-y is its own, much smaller figure: once the row wraps, a shared gap-3
 // puts twelve pixels between a name and the detail directly under it, and a
 // list of those reads as eight blocks rather than eight rows.
-const ROW = "flex items-center gap-x-3 gap-y-0.5 py-1 @max-md:flex-wrap";
+const ROW =
+	"flex min-h-9 items-center gap-x-3 gap-y-0.5 py-1.5 @max-md:flex-wrap";
 const NAME = "flex shrink-0 items-center gap-1.5";
 // Wide enough for the longest name plus its version tag plus an eight-slot
 // mark, since the mark now sits inside this column.

@@ -20,6 +20,7 @@ export type RunPoll = {
 	readonly answerType: AnswerType;
 	readonly options: readonly RunOption[];
 	readonly explanation?: string;
+	readonly author?: string;
 };
 
 type GradedPoll<Id> = {

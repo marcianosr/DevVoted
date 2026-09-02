@@ -76,7 +76,6 @@ export type PrepScreenProps = {
 		note: string;
 		coverage: {
 			detail: string;
-			hint: string;
 		};
 	};
 	audits: {
@@ -87,6 +86,10 @@ export type PrepScreenProps = {
 		meta: string;
 		rows: readonly BillRow[];
 		total: BillRow;
+	};
+	prefetch?: {
+		thisGate: readonly string[];
+		nextGate: readonly string[];
 	};
 	onClear: {
 		reward: string;
@@ -112,6 +115,7 @@ export const PrepScreen = ({
 	required,
 	audits,
 	bills,
+	prefetch,
 	onClear,
 	footer,
 }: PrepScreenProps) => (
@@ -165,16 +169,31 @@ export const PrepScreen = ({
 
 				<Section label="Required" divided>
 					<Row name={required.note} />
-					<Row
-						name="Coverage"
-						detail={required.coverage.detail}
-						trailing={
-							<Text tone="muted" size="caption">
-								{required.coverage.hint}
-							</Text>
-						}
-					/>
+					<Row name="Coverage" detail={required.coverage.detail} />
 				</Section>
+
+				{prefetch === undefined ? null : (
+					<Section label="Prefetch" divided>
+						<Row
+							name="This gate"
+							trailing={
+								<Text tone="muted" size="caption">
+									{prefetch.thisGate.join(" · ")}
+								</Text>
+							}
+						/>
+						{prefetch.nextGate.length === 0 ? null : (
+							<Row
+								name="Next gate"
+								trailing={
+									<Text tone="muted" size="caption">
+										{prefetch.nextGate.join(" · ")}
+									</Text>
+								}
+							/>
+						)}
+					</Section>
+				)}
 
 				{bills === undefined ? null : (
 					<Section label="Bills" meta={bills.meta} divided>

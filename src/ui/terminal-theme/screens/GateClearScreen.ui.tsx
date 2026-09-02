@@ -4,6 +4,7 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { Audits, type AuditNote } from "../Audits.ui";
 import { Badge, type BadgeTone } from "../Badge.ui";
 import { Button } from "../Button.ui";
+import { Figures } from "../Figures.ui";
 import { Ledger, type LedgerRow } from "../Ledger.ui";
 import { Meter } from "../Meter.ui";
 import { Panel } from "../Panel.ui";
@@ -130,16 +131,14 @@ export const GateClearScreen = ({
 							trailing={
 								<>
 									<Badge tone="neutral">{row.polls}</Badge>
-									<Text tone="viridian" size="caption">
-										{row.gain}
-									</Text>
+									<Figures text={row.gain} />
 								</>
 							}
 						/>
 					))}
 					<Row
 						name={<Text tone="muted">total</Text>}
-						trailing={<Text className="font-bold">{coverage.total}</Text>}
+						trailing={<Figures text={coverage.total} />}
 					/>
 				</div>
 			</Section>

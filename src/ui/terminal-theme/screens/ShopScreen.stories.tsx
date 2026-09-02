@@ -126,7 +126,7 @@ const boulderShop: ShopScreenProps = {
 				detail: "All coverage ×3, −0.5 each clear, then gone",
 				price: "128 KB",
 				buyLabel: "Install",
-				locked: true,
+				refused: true,
 			},
 			{
 				family: "economy",
@@ -135,7 +135,7 @@ const boulderShop: ShopScreenProps = {
 				detail: "Half price configs · bills 8 KB, doubling",
 				price: "192 KB",
 				buyLabel: "Install",
-				locked: true,
+				refused: true,
 			},
 		],
 		rebuild: {
@@ -162,6 +162,38 @@ const boulderShop: ShopScreenProps = {
 };
 
 export const BoulderShop: Story = { args: boulderShop };
+
+export const OffersCanBeKept: Story = {
+	args: {
+		...boulderShop,
+		offers: {
+			...boulderShop.offers,
+			rows: boulderShop.offers.rows.map((row, index) => ({
+				...row,
+				lock: {
+					pinned: index === 0,
+					label: "Keep for next shop",
+					onToggle: noop,
+				},
+			})),
+		},
+	},
+};
+
+export const ShopClosed: Story = {
+	args: {
+		...boulderShop,
+		notice:
+			"Shop closed. Read-only audits the build you already have, so nothing can be bought, sold or switched before gate 3.",
+	},
+};
+
+export const ExitBlocked: Story = {
+	args: {
+		...boulderShop,
+		continueLock: "Over capacity, remove a config",
+	},
+};
 
 export const ThunderShopWithGitTag: Story = {
 	args: {
@@ -381,7 +413,7 @@ const seafoamShop: ShopScreenProps = {
 				detail: "Everything pays ×3 · every audit runs",
 				price: "256 KB",
 				buyLabel: "Install",
-				locked: true,
+				refused: true,
 			},
 			{
 				family: "economy",
@@ -390,7 +422,7 @@ const seafoamShop: ShopScreenProps = {
 				detail: "Coverage counts double at the gate check",
 				price: "384 KB",
 				buyLabel: "Install",
-				locked: true,
+				refused: true,
 			},
 		],
 		rebuild: {
@@ -701,7 +733,7 @@ const earthShop: ShopScreenProps = {
 				detail: "Every config upgrades one rung on a clean gate",
 				price: "384 KB",
 				buyLabel: "Install",
-				locked: true,
+				refused: true,
 			},
 			{
 				family: "economy",
@@ -710,7 +742,7 @@ const earthShop: ShopScreenProps = {
 				detail: "Half price configs · bills 8 KB, doubling",
 				price: "256 KB",
 				buyLabel: "Install",
-				locked: true,
+				refused: true,
 			},
 		],
 		extend: {

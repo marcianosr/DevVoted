@@ -43,240 +43,83 @@ const cleared = createMockRunView({
 	}),
 });
 
-describe("RewardView on a clear", () => {
-	it("names the gate just cleared, not the one the run now stands at", () => {
-		render(
-			<RewardView
-				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
+const noop = () => {};
 
-		expect(
-			screen.getByRole("heading", { name: "Lavender Swatch" })
-		).toBeInTheDocument();
+const renderCleared = (view = cleared) =>
+	render(<RewardView view={view} onReviewAnswers={noop} onContinue={noop} />);
+
+describe("RewardView", () => {
+	it("names the gate just cleared, not the one the run now stands at", () => {
+		renderCleared();
+
+		expect(screen.getByText("Lavender cleared")).toBeInTheDocument();
 	});
 
 	it("grades the window against the cleared gate's demand, not the next one's", () => {
-		render(
-			<RewardView
-				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
+		renderCleared();
 
-		expect(screen.getByText("of 4% needed")).toBeInTheDocument();
+		expect(screen.getByText(/of 4% needed/)).toBeInTheDocument();
 	});
 
 	it("wears the cleared gate's colour, not the colour of the gate ahead", () => {
-		const { container } = render(
-			<RewardView
-				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
+		const { container } = renderCleared();
 
-		expect(container.firstElementChild).toHaveAttribute(
-			"data-gate-theme",
+		expect(container.querySelector("[data-swatch-theme]")).toHaveAttribute(
+			"data-swatch-theme",
 			"lavender"
 		);
 	});
 
-	it("groups the window's coverage by category, worst outcome winning the mark", () => {
-		render(
-			<RewardView
-				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
+	it("names the gate coming up next", () => {
+		renderCleared();
+
+		expect(screen.getByText("next up · Rainbow")).toBeInTheDocument();
+	});
+
+	it("groups the window's coverage by category", () => {
+		renderCleared();
 
 		expect(screen.getByText("JavaScript")).toBeInTheDocument();
 		expect(screen.getByText("2 polls")).toBeInTheDocument();
 		expect(screen.getByText("+3.5")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", {
-				name: "Every poll in this category was missed",
-			})
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", {
-				name: "Partly right, so this scored less than a clean answer",
-			})
-		).toBeInTheDocument();
 	});
 
 	it("leaves out a category the window never asked about", () => {
-		render(
-			<RewardView
-				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
+		renderCleared();
 
 		expect(screen.queryByText("Ruby")).not.toBeInTheDocument();
 	});
 
-	it("states what the balance can buy and moves on to the shop", async () => {
+	it("totals the coverage the window earned", () => {
+		renderCleared();
+
+		expect(screen.getByText("+4.5%")).toBeInTheDocument();
+	});
+
+	it("moves on to the shop", async () => {
 		const onContinue = vi.fn();
 		render(
 			<RewardView
 				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
+				onReviewAnswers={noop}
 				onContinue={onContinue}
 			/>
 		);
 
-		expect(screen.getByText("240 KB to spend")).toBeInTheDocument();
-		await userEvent.click(screen.getByRole("button", { name: "Enter shop →" }));
+		await userEvent.click(
+			screen.getByRole("button", { name: "To the shop →" })
+		);
 
 		expect(onContinue).toHaveBeenCalledOnce();
 	});
 
-	it("offers no removal on a gate that was cleared", () => {
-		render(
-			<RewardView
-				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
-
-		expect(
-			screen.queryByRole("button", { name: /to remove/ })
-		).not.toBeInTheDocument();
-	});
-
-	it("puts the bill on the ledger as a negative, so the column totals the balance", () => {
-		render(
-			<RewardView
-				view={createMockRunView({
-					...cleared,
-					gatePayout: {
-						...cleared.gatePayout,
-						subscriptionBillKb: 16,
-					},
-				})}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
-
-		expect(screen.queryByText("storage plan")).not.toBeInTheDocument();
-		expect(screen.getByText("subscriptions")).toBeInTheDocument();
-		expect(screen.getByText("−16 KB")).toBeInTheDocument();
-	});
-
-	it("keeps a bill of zero off the ledger, which would only read as noise", () => {
-		render(
-			<RewardView
-				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
-
-		expect(screen.queryByText("subscriptions")).not.toBeInTheDocument();
-	});
-});
-
-describe("RewardView on a held gate", () => {
-	const held = createMockRunView({
-		gatesCleared: 4,
-		answeredThisGate: answered,
-		configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
-		peelSlotsRemaining: 2,
-	});
-
-	it("says the swatch was not earned rather than announcing a clear", () => {
-		render(
-			<RewardView
-				view={held}
-				outcome="held"
-				onReviewAnswers={() => {}}
-				onChooseRemoval={() => {}}
-			/>
-		);
-
-		expect(screen.getByText("not earned · the gate holds")).toBeInTheDocument();
-	});
-
-	it("prices the miss in configs and hands off to the removal screen", async () => {
-		const onChooseRemoval = vi.fn();
-		render(
-			<RewardView
-				view={held}
-				outcome="held"
-				onReviewAnswers={() => {}}
-				onChooseRemoval={onChooseRemoval}
-			/>
-		);
-
-		await userEvent.click(
-			screen.getByRole("button", { name: "Choose 2 to remove →" })
-		);
-
-		expect(onChooseRemoval).toHaveBeenCalledOnce();
-	});
-
-	it("offers no shop, since the gate has not been cleared", () => {
-		render(
-			<RewardView
-				view={held}
-				outcome="held"
-				onReviewAnswers={() => {}}
-				onChooseRemoval={() => {}}
-			/>
-		);
-
-		expect(
-			screen.queryByRole("button", { name: /Enter shop/ })
-		).not.toBeInTheDocument();
-	});
-});
-
-describe("RewardView details", () => {
-	it("opens with attribution showing, and closes on request", async () => {
-		render(
-			<RewardView
-				view={cleared}
-				outcome="cleared"
-				onReviewAnswers={() => {}}
-				onContinue={() => {}}
-			/>
-		);
-
-		const toggle = screen.getByRole("button", { name: "Collapse details" });
-		expect(toggle).toHaveAttribute("aria-expanded", "true");
-
-		await userEvent.click(toggle);
-
-		expect(
-			screen.getByRole("button", { name: "Expand details" })
-		).toHaveAttribute("aria-expanded", "false");
-	});
-
-	it("goes to the answer review", async () => {
+	it("reaches the answer review", async () => {
 		const onReviewAnswers = vi.fn();
 		render(
 			<RewardView
 				view={cleared}
-				outcome="cleared"
 				onReviewAnswers={onReviewAnswers}
-				onContinue={() => {}}
+				onContinue={noop}
 			/>
 		);
 
@@ -285,5 +128,59 @@ describe("RewardView details", () => {
 		);
 
 		expect(onReviewAnswers).toHaveBeenCalledOnce();
+	});
+
+	it("puts the bill on the ledger as a negative, so the column totals the balance", () => {
+		renderCleared(
+			createMockRunView({
+				...cleared,
+				gatePayout: { ...cleared.gatePayout, subscriptionBillKb: 16 },
+			})
+		);
+
+		expect(screen.getByText("subscriptions")).toBeInTheDocument();
+		expect(screen.getByText("−16 KB")).toBeInTheDocument();
+		expect(screen.queryByText("slot rent")).not.toBeInTheDocument();
+	});
+
+	it("keeps a bill of zero off the ledger, which would only read as noise", () => {
+		renderCleared();
+
+		expect(screen.queryByText("subscriptions")).not.toBeInTheDocument();
+		expect(screen.queryByText("slot rent")).not.toBeInTheDocument();
+	});
+
+	it("reports the balance the shop will spend", () => {
+		renderCleared();
+
+		expect(screen.getByText("240 KB")).toBeInTheDocument();
+	});
+});
+
+describe("RewardView changed configs", () => {
+	it("badges a config the gate upgraded, faded and deleted", () => {
+		renderCleared(
+			createMockRunView({
+				...cleared,
+				gatePayout: {
+					...cleared.gatePayout,
+					autoUpgradedConfig: CONFIGS.js,
+					lapsedConfigs: [CONFIGS.ts],
+					deletedConfigs: [CONFIGS.eslint],
+				},
+			})
+		);
+
+		expect(screen.getByText("upgraded")).toBeInTheDocument();
+		expect(screen.getByText("faded")).toBeInTheDocument();
+		expect(screen.getByText("gone")).toBeInTheDocument();
+		expect(screen.getByText("3 configs")).toBeInTheDocument();
+	});
+
+	// A quiet gate changed nothing; saying "0 configs" would still be true.
+	it("reports no changes when the gate left the build alone", () => {
+		renderCleared();
+
+		expect(screen.getByText("0 configs")).toBeInTheDocument();
 	});
 });

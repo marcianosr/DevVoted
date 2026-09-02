@@ -15,13 +15,23 @@ const STATE = {
 	dimmed: "border-edge opacity-50",
 } satisfies Record<ChoiceState, string>;
 
+const SELECTED = "border-theme bg-theme-soft";
+
 const LETTER =
-	"flex size-6 shrink-0 items-center justify-center rounded-full border border-zinc-500 text-xs text-zinc-400";
+	"flex size-6 shrink-0 items-center justify-center rounded-full border text-xs";
+const LETTER_IDLE = "border-zinc-500 text-zinc-400";
+const LETTER_SELECTED = "border-theme bg-theme-soft text-zinc-100";
+
+const frameFor = (state: ChoiceState, selected: boolean) => {
+	if (state !== "idle") return STATE[state];
+	return selected ? SELECTED : STATE.idle;
+};
 
 export type ChoiceProps = {
 	letter: string;
 	label: string;
 	state?: ChoiceState;
+	selected?: boolean;
 	note?: ReactNode;
 	onPick?: () => void;
 };
@@ -30,12 +40,21 @@ export const Choice = ({
 	letter,
 	label,
 	state = "idle",
+	selected = false,
 	note,
 	onPick,
 }: ChoiceProps) => {
+	const frame = frameFor(state, selected);
 	const body = (
 		<>
-			<span className={LETTER}>{letter}</span>
+			<span
+				className={clsx(
+					LETTER,
+					selected && state === "idle" ? LETTER_SELECTED : LETTER_IDLE
+				)}
+			>
+				{letter}
+			</span>
 			<Text className="min-w-0 truncate">{label}</Text>
 			{note === undefined ? null : (
 				<span className="ml-auto shrink-0">{note}</span>
@@ -44,17 +63,18 @@ export const Choice = ({
 	);
 
 	if (onPick === undefined) {
-		return <div className={clsx(CHOICE, STATE[state])}>{body}</div>;
+		return <div className={clsx(CHOICE, frame)}>{body}</div>;
 	}
 
 	return (
 		<button
 			type="button"
+			aria-pressed={selected}
 			onClick={onPick}
 			className={clsx(
 				CHOICE,
-				STATE[state],
-				"transition-colors hover:border-zinc-400"
+				frame,
+				"cursor-pointer transition-colors hover:border-zinc-400"
 			)}
 		>
 			{body}

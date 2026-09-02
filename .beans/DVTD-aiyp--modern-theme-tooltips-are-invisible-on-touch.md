@@ -1,11 +1,11 @@
 ---
 # DVTD-aiyp
 title: modern-theme tooltips are invisible on touch
-status: todo
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-08-31T08:29:08Z
-updated_at: 2026-08-31T08:29:08Z
+updated_at: 2026-09-01T20:22:19Z
 ---
 
 `src/ui/modern-theme/Tooltip.ui.tsx` reveals only through `group-hover/tip:block` and `group-has-[:focus-visible]/tip:block`. A touch tap fires neither, so every hint on the island is desktop-only.

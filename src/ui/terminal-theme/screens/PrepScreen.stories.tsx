@@ -72,7 +72,6 @@ export const BeforeLavender: Story = {
 			note: "Answer all 5 polls",
 			coverage: {
 				detail: "earn 60% in this window",
-				hint: "about 4 right answers",
 			},
 		},
 		audits: {
@@ -98,6 +97,27 @@ export const BeforeLavender: Story = {
 			onCommunity: noop,
 			startLabel: "Start Lavender →",
 			onStart: noop,
+		},
+	},
+};
+
+export const WithPrefetchAndSuppressedAudit: Story = {
+	args: {
+		...BeforeLavender.args,
+		audits: {
+			meta: "none running",
+			rows: [
+				{
+					code: "402",
+					name: "Payment Required",
+					cue: "paid actions cost double",
+					suppressed: true,
+				},
+			],
+		},
+		prefetch: {
+			thisGate: ["TypeScript", "JavaScript"],
+			nextGate: ["Git"],
 		},
 	},
 };
@@ -199,7 +219,6 @@ export const BeforeElite: Story = {
 			note: "Answer all 5 polls",
 			coverage: {
 				detail: "earn 85% in this window",
-				hint: "about 5 right answers",
 			},
 		},
 		audits: {

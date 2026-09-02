@@ -33,12 +33,12 @@ const secondPoll: PollScreenProps = {
 			...Array.from({ length: 8 }, () => ({ state: "locked" }) as const),
 		],
 		gateLabel: "gate 4 / 12",
-		coverage: { label: "coverage", reading: "28 / 60%", percent: 46 },
+		coverage: { label: "Coverage", reading: "28 / 60%", percent: 46 },
 	},
 	theme: "lavender",
 	build: {
 		meta: "4",
-		total: { label: "this answer", value: "×1.25" },
+		total: { label: "Total", value: "×1.25" },
 		rows: [
 			{
 				name: ".js",
@@ -70,23 +70,106 @@ const secondPoll: PollScreenProps = {
 	trail: { count: 5, current: 2 },
 	category: "JavaScript",
 	question: "Which method returns the last element of an array?",
+	facts: [
+		{ label: "scores", value: "×1.1", tone: "celadon" },
+		{ label: "3 options" },
+		{ label: "wrong costs", value: "0.3", tone: "cinnabar" },
+		{
+			label: "Gate retry cost:",
+			value: "Remove 1 slot",
+			tone: "cinnabar",
+		},
+	],
+	byline: { author: "@matthijsgroen" },
 	choices: [
 		{ letter: "A", label: "at(−1)" },
 		{ letter: "B", label: "pop()" },
 		{ letter: "C", label: "last()" },
 	],
-	onPick: noop,
-	pickLabel: "Pick an answer",
+	onToggle: noop,
+	submitLabel: "Submit answer",
+	submitLock: "Pick an answer",
 };
 
 export const SecondPoll: Story = { args: secondPoll };
+
+export const Picked: Story = {
+	args: {
+		...secondPoll,
+		choices: [
+			{ letter: "A", label: "at(−1)", selected: true },
+			{ letter: "B", label: "pop()" },
+			{ letter: "C", label: "last()" },
+		],
+		submitLock: undefined,
+		onSubmit: noop,
+	},
+};
+
+export const MultiplePicked: Story = {
+	args: {
+		...secondPoll,
+		question: "Which of these mutate the array they are called on?",
+		facts: [
+			{ label: "scores", value: "×1.4", tone: "celadon" },
+			{ label: "4 options" },
+			{ label: "pick every correct one" },
+		],
+		choices: [
+			{ letter: "A", label: "sort()", selected: true },
+			{ letter: "B", label: "map()" },
+			{ letter: "C", label: "splice()", selected: true },
+			{ letter: "D", label: "slice()" },
+		],
+		submitLock: undefined,
+		onSubmit: noop,
+	},
+};
+
+export const ToolsUsed: Story = {
+	args: {
+		...secondPoll,
+		facts: [
+			{ label: "scores", value: "×1.1", tone: "celadon" },
+			{ label: "3 options" },
+			{ label: "ESLint crossed one out" },
+		],
+		choices: [
+			{ letter: "A", label: "at(−1)", note: "62% picked this" },
+			{ letter: "B", label: "pop()", note: "31% picked this" },
+			{
+				letter: "C",
+				label: "last()",
+				state: "dimmed",
+				note: "crossed out",
+			},
+		],
+		submitLock: undefined,
+		onSubmit: noop,
+	},
+};
+
+export const CodePoll: Story = {
+	args: {
+		...secondPoll,
+		category: "TypeScript",
+		question: "What does this log?",
+		facts: [{ label: "scores", value: "×1.1", tone: "celadon" }],
+		code: ["const xs = [1, 2, 3] as const;", "", "console.log(xs.at(-1));", ""],
+		choices: [
+			{ letter: "A", label: "3" },
+			{ letter: "B", label: "undefined" },
+			{ letter: "C", label: "a type error" },
+		],
+	},
+};
 
 export const TenConfigBuild: Story = {
 	args: {
 		...secondPoll,
 		build: {
 			meta: "10",
-			total: { label: "this answer", value: "×3.1" },
+			total: { label: "Total", value: "×3.1" },
 			rows: [
 				{
 					name: ".js",
@@ -195,12 +278,12 @@ export const EliteGate: Story = {
 				{ state: "locked" },
 			],
 			gateLabel: "gate 12 / 12",
-			coverage: { label: "coverage", reading: "58.2 / 85%", percent: 68 },
+			coverage: { label: "Coverage", reading: "58.2 / 85%", percent: 68 },
 		},
 		theme: "elite",
 		build: {
 			meta: "10",
-			total: { label: "this answer", value: "×6.2" },
+			total: { label: "Total", value: "×6.2" },
 			rows: [
 				{
 					name: ".js",

@@ -1,3 +1,5 @@
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
 import { Button } from "../Button.ui";
 import { Panel } from "../Panel.ui";
 import { Row } from "../Row.ui";
@@ -10,6 +12,7 @@ const FOOTER =
 	"flex flex-wrap items-center justify-between gap-3 border-t border-edge pt-4";
 
 export type GameOverScreenProps = {
+	theme?: SwatchTheme;
 	earned: {
 		swatches: readonly TrackSwatch[];
 		title: string;
@@ -19,7 +22,7 @@ export type GameOverScreenProps = {
 		swatches: readonly TrackSwatch[];
 		note: string;
 	};
-	archive: SplitBarProps & { note: string };
+	archive?: SplitBarProps & { note: string };
 	lostBy: {
 		meta: string;
 		rows: readonly { name: string; detail: string; tag?: string }[];
@@ -36,6 +39,7 @@ export type GameOverScreenProps = {
 };
 
 export const GameOverScreen = ({
+	theme,
 	earned,
 	fell,
 	archive,
@@ -46,7 +50,7 @@ export const GameOverScreen = ({
 	newRunLabel,
 	onNewRun,
 }: GameOverScreenProps) => (
-	<Panel>
+	<Panel theme={theme}>
 		<header className="flex items-center gap-4 @max-md:flex-col @max-md:items-start @max-md:gap-2">
 			<SwatchTrack swatches={earned.swatches} size="tile" />
 			<div className="flex flex-col gap-0.5">
@@ -62,12 +66,14 @@ export const GameOverScreen = ({
 			<Text tone="muted">{fell.note}</Text>
 		</div>
 
-		<Section label="Archive" className="border-t border-edge pt-2">
-			<div className="flex flex-col gap-2">
-				<SplitBar kept={archive.kept} lost={archive.lost} />
-				<Text tone="muted">{archive.note}</Text>
-			</div>
-		</Section>
+		{archive === undefined ? null : (
+			<Section label="Archive" className="border-t border-edge pt-2">
+				<div className="flex flex-col gap-2">
+					<SplitBar kept={archive.kept} lost={archive.lost} />
+					<Text tone="muted">{archive.note}</Text>
+				</div>
+			</Section>
+		)}
 
 		<Section label="Where you lost it" meta={lostBy.meta} divided>
 			{lostBy.rows.map((row) => (
@@ -94,10 +100,15 @@ export const GameOverScreen = ({
 		</Section>
 
 		<footer className={FOOTER}>
-			<Button label={shareLabel} onUse={onShare} />
+			<Button
+				label={shareLabel}
+				disabled={onShare === undefined}
+				onUse={onShare}
+			/>
 			<Button
 				label={newRunLabel}
 				variant="primary"
+				disabled={onNewRun === undefined}
 				className="@max-md:flex-1"
 				onUse={onNewRun}
 			/>

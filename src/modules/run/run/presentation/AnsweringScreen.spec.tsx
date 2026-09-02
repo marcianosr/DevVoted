@@ -269,12 +269,14 @@ describe("the audit banner", () => {
 		answerCue: string
 	): {
 		id: string;
+		code: number;
 		name: string;
 		description: string;
 		answerCue: string;
 		suppressed: boolean;
 	} => ({
 		id,
+		code: 418,
 		name: id,
 		description: `${id} description`,
 		answerCue,

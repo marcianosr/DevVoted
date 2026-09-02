@@ -25,6 +25,7 @@ const CHAIN_METHODS = [
 	"orderBy",
 	"limit",
 	"innerJoin",
+	"leftJoin",
 	"returning",
 	"onConflictDoNothing",
 	"for",

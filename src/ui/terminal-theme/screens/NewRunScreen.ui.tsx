@@ -1,6 +1,7 @@
 import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
+import { Badge } from "../Badge.ui";
 import { Button } from "../Button.ui";
 import { BuyLine, type BuyLineProps } from "../BuyLine.ui";
 import { Callout } from "../Callout.ui";
@@ -13,14 +14,21 @@ import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
 import { SlotTrack, type SlotSegment } from "../SlotTrack.ui";
 import { Slots } from "../Slots.ui";
+import { Text } from "../Text.ui";
 import { Version } from "../Version.ui";
 
 const FOOTER = "flex items-center justify-end border-t border-edge pt-4";
 const COLUMNS =
 	"grid grid-cols-2 items-start gap-x-6 @max-md:grid-cols-1 @max-md:gap-y-2";
 const SLOT_ICON = "+";
+const CASH_ICON = "−";
 const DEPLOY_ICON = "+";
 const REMOVE_ICON = "✕";
+
+const COMBOS = "grid gap-2 pt-1 pb-2 @max-md:grid-cols-1 sm:grid-cols-3";
+const COMBO_CARD =
+	"flex flex-col gap-2 rounded-lg border border-edge-strong px-3 py-2.5";
+const COMBO_HEAD = "flex flex-wrap items-center gap-2";
 
 const segmentsOf = (
 	rows: readonly { family: ConfigFamily; slots: number }[]
@@ -49,12 +57,25 @@ export type DealtRow = {
 	locked?: boolean;
 };
 
+export type StartCombo = {
+	id: string;
+	name: string;
+	blurb: string;
+	recommended?: boolean;
+	takeLabel: string;
+	onTake?: () => void;
+};
+
 export type NewRunScreenProps = {
 	header: HeaderProps;
 	theme?: SwatchTheme;
 	gitTag?: {
 		title: string;
 		detail: string;
+	};
+	combos?: {
+		meta: string;
+		rows: readonly StartCombo[];
 	};
 	storage: {
 		meta: string;
@@ -64,6 +85,7 @@ export type NewRunScreenProps = {
 		meta: string;
 		rows: readonly NewRunBuildRow[];
 		buySlot?: BuyLineProps;
+		cashSlot?: BuyLineProps;
 	};
 	dealt: {
 		meta: string;
@@ -73,10 +95,30 @@ export type NewRunScreenProps = {
 	onStart?: () => void;
 };
 
+const ComboCard = ({ combo }: { combo: StartCombo }) => (
+	<div className={COMBO_CARD}>
+		<span className={COMBO_HEAD}>
+			<Text className="font-bold">{combo.name}</Text>
+			{combo.recommended === true ? (
+				<Badge tone="celadon">recommended</Badge>
+			) : null}
+		</span>
+		<Text as="p" tone="muted" size="caption" className="flex-1">
+			{combo.blurb}
+		</Text>
+		<Button
+			label={combo.takeLabel}
+			className="mt-auto w-full"
+			onUse={combo.onTake}
+		/>
+	</div>
+);
+
 export const NewRunScreen = ({
 	header,
 	theme,
 	gitTag,
+	combos,
 	storage,
 	build,
 	dealt,
@@ -92,6 +134,16 @@ export const NewRunScreen = ({
 				title={gitTag.title}
 				detail={gitTag.detail}
 			/>
+		)}
+
+		{combos === undefined ? null : (
+			<Section label="Starter stacks" meta={combos.meta}>
+				<div className={COMBOS}>
+					{combos.rows.map((combo) => (
+						<ComboCard key={combo.id} combo={combo} />
+					))}
+				</div>
+			</Section>
 		)}
 
 		<Section label="Build storage" meta={storage.meta}>
@@ -139,6 +191,9 @@ export const NewRunScreen = ({
 					{build.buySlot === undefined ? null : (
 						<BuyLine icon={SLOT_ICON} {...build.buySlot} />
 					)}
+					{build.cashSlot === undefined ? null : (
+						<BuyLine icon={CASH_ICON} {...build.cashSlot} />
+					)}
 				</Section>
 			</div>
 
@@ -158,6 +213,7 @@ export const NewRunScreen = ({
 											icon={DEPLOY_ICON}
 											label={row.deployLabel}
 											iconOnly
+											disabled={row.locked}
 											onUse={row.onDeploy}
 										/>
 									)}
@@ -173,6 +229,7 @@ export const NewRunScreen = ({
 			<Button
 				label={startLabel}
 				variant="primary"
+				disabled={onStart === undefined}
 				className="@max-md:w-full"
 				onUse={onStart}
 			/>

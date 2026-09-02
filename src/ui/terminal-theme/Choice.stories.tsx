@@ -10,7 +10,7 @@ const meta: Meta<typeof Choice> = {
 	title: "Terminal/Choice",
 	decorators: [
 		(Story) => (
-			<div className="w-[600px] p-4">
+			<div data-swatch-theme="lavender" className="w-[600px] p-4">
 				<Story />
 			</div>
 		),
@@ -21,6 +21,20 @@ type Story = StoryObj<typeof Choice>;
 
 export const Pickable: Story = {
 	args: { letter: "A", label: "at(−1)", onPick: noop },
+};
+
+export const Selected: Story = {
+	args: { letter: "A", label: "at(−1)", selected: true, onPick: noop },
+};
+
+export const SelectedWithNote: Story = {
+	args: {
+		letter: "A",
+		label: "at(−1)",
+		selected: true,
+		note: <Badge tone="celadon">62% picked this</Badge>,
+		onPick: noop,
+	},
 };
 
 export const Expected: Story = {
