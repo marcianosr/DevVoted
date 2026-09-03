@@ -18,7 +18,7 @@ type Story = StoryObj<typeof SlotTrack>;
 
 export const ShopBuild: Story = {
 	args: {
-		numbered: true,
+		reading: "4 of 6 slots",
 		slots: 6,
 		segments: [
 			{ family: "focus", slots: 1 },

@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-09-02T07:01:10Z
-updated_at: 2026-09-02T08:25:13Z
+updated_at: 2026-09-02T20:17:18Z
 parent: DVTD-tduu
 ---
 
@@ -104,3 +104,35 @@ repository specs went red on the new join until it was added.
 tsc 0; oxlint + dependency-cruiser clean (900 modules); 2632 passing / 3 failing
 (the same pre-existing modern-theme RewardScreen three); terminal-theme stories
 typecheck 0; /proto-run HTTP 200, no server errors.
+
+## Round 3 (2026-09-02)
+
+- [x] Poll/reveal build sidebar widened from 15rem to 18rem
+- [x] "sitting out" renamed to "skipped" (Dot label, so the legend follows)
+- [x] Skipped configs fold away behind "Skipped · N", closed by default, opening to name each one and why it sits out
+- [x] Dropped the now-redundant "skipped ·" prefix from a row's detail line
+
+## Round 4 (2026-09-02)
+
+- [x] Poll facts line lost its border, fill and padding
+- [x] Build row figures badge through Figures, like the total (blocked rows keep plain cinnabar prose)
+- [x] Shop action buttons read as bare verbs; the config name moved into the tooltip and accessible name
+- [x] Row wraps its detail onto its own line below 48rem instead of 28rem, so a half-width column stops crushing it
+- [x] Offer lock is icon-only with the label in its popover, and the flag glyph became a padlock (new LockIcon)
+
+## Round 5 (2026-09-02)
+
+- [x] Icon buttons gained padding (px-2.5 py-0.5 to px-3 py-1)
+- [x] Figures badges trailing multipliers too, so "1.25x coverage" in a config description reads like a figure
+- [x] Storage bar segments are solid family colours instead of a tinted fill behind a border
+- [x] Badges lost their border; tones carry a fill instead
+- [x] Every positive figure badges viridian; the celadon/viridian split between multipliers and flat gains is gone
+- [x] PriceTag "pay" and "armed" moved off green to saffron, matching Button's price, so green means money coming in
+
+## Round 6 (2026-09-02)
+
+- [x] Storage bar sized by slot count instead of stretching full width; free slots collapse to one dashed block; numbered row replaced by an inline reading, moved off the section header
+- [x] Slot marks are solid family colours (FAMILY_FILL deleted, it had no callers left)
+- [x] Offer lock buttons take the screen's swatch theme instead of cerulean (new IconButton tone "theme")
+- [x] Header coverage bar moved into the top row, between the title and the balance
+- [x] Icon button labels are white; the tone survives in the ring and the glyph

@@ -23,7 +23,7 @@ const MARK = {
 
 export const DOT_LABEL = {
 	on: "running",
-	off: "sitting out",
+	off: "skipped",
 	action: "usable",
 	blocked: "stopped",
 } as const satisfies Record<DotVariant, string>;

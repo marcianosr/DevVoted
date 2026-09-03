@@ -9,13 +9,13 @@ import { Text } from "./Text.ui";
 // puts twelve pixels between a name and the detail directly under it, and a
 // list of those reads as eight blocks rather than eight rows.
 const ROW =
-	"flex min-h-9 items-center gap-x-3 gap-y-0.5 py-1.5 @max-md:flex-wrap";
+	"flex min-h-9 items-center gap-x-3 gap-y-0.5 py-1.5 @max-3xl:flex-wrap";
 const NAME = "flex shrink-0 items-center gap-1.5";
 // Wide enough for the longest name plus its version tag plus an eight-slot
 // mark, since the mark now sits inside this column.
-const NAME_COLUMN = "w-48 @max-md:w-auto";
+const NAME_COLUMN = "w-48 @max-3xl:w-auto";
 const NAME_TEXT = "min-w-0 truncate whitespace-nowrap";
-const DETAIL = "min-w-0 flex-1 @max-md:order-last @max-md:basis-full";
+const DETAIL = "min-w-0 flex-1 @max-3xl:order-last @max-3xl:basis-full";
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
 const DIMMED = "cursor-not-allowed opacity-50";
 

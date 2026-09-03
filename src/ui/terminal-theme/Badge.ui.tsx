@@ -16,14 +16,14 @@ export type BadgeTone =
 export type BadgeSize = "sm" | "md";
 
 const TONE = {
-	neutral: "border-edge-strong text-zinc-200",
-	muted: "border-edge text-zinc-400",
-	viridian: "border-viridian/40 bg-viridian/10 text-viridian",
-	cinnabar: "border-cinnabar/40 bg-cinnabar/10 text-cinnabar",
-	saffron: "border-saffron/40 bg-saffron/10 text-saffron",
-	celadon: "border-celadon/40 bg-celadon/10 text-celadon",
-	cerulean: "border-cerulean/40 bg-cerulean/10 text-cerulean",
-	lavender: "border-lavender/40 bg-lavender/10 text-lavender",
+	neutral: "bg-zinc-100/10 text-zinc-200",
+	muted: "bg-zinc-100/5 text-zinc-400",
+	viridian: "bg-viridian/15 text-viridian",
+	cinnabar: "bg-cinnabar/15 text-cinnabar",
+	saffron: "bg-saffron/15 text-saffron",
+	celadon: "bg-celadon/15 text-celadon",
+	cerulean: "bg-cerulean/15 text-cerulean",
+	lavender: "bg-lavender/15 text-lavender",
 } satisfies Record<BadgeTone, string>;
 
 const SIZE = {
@@ -32,7 +32,7 @@ const SIZE = {
 } satisfies Record<BadgeSize, string>;
 
 const badgeVariants = cva(
-	"inline-flex items-center gap-1 rounded-md border tabular-nums whitespace-nowrap",
+	"inline-flex items-center gap-1 rounded-md tabular-nums whitespace-nowrap",
 	{ variants: { tone: TONE, size: SIZE } }
 );
 

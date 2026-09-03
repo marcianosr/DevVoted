@@ -746,13 +746,13 @@ describe("the shop door", () => {
 		expect(action.label).toBe("Continue to gate 4 →");
 		expect(action.disabled).toBe(true);
 		expect(action.hint).toBe(
-			"Over capacity by 2 slots. Minify, uninstall, or rent more room."
+			"Over capacity by 2 slots. Minify, uninstall, or buy a slot."
 		);
 	});
 
 	it("counts a single slot of overflow in the singular", () => {
 		expect(shopExitAction(4, 1).hint).toBe(
-			"Over capacity by 1 slot. Minify, uninstall, or rent more room."
+			"Over capacity by 1 slot. Minify, uninstall, or buy a slot."
 		);
 	});
 });

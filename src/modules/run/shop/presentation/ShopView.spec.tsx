@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
 import {
 	createMockGateStake,
 	createMockRunView,
@@ -60,7 +61,7 @@ describe("ShopView", () => {
 		render_();
 
 		expect(screen.getByText("2 offers")).toBeInTheDocument();
-		expect(screen.getByText("3 of 4 slots")).toBeInTheDocument();
+		expect(screen.getByText("3 of 4 · 1 free")).toBeInTheDocument();
 	});
 
 	it("buys an offer at its own price", async () => {
@@ -68,7 +69,7 @@ describe("ShopView", () => {
 		render_({ onDraft });
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /^Install Stylelint/ })
+			screen.getByRole("button", { name: /^Stylelint · Install/ })
 		);
 
 		expect(onDraft).toHaveBeenCalledWith(CONFIGS.stylelint.id);
@@ -88,7 +89,7 @@ describe("ShopView", () => {
 
 		expect(screen.getByText("Stylelint")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /^Install Stylelint/ })
+			screen.getByRole("button", { name: /^Stylelint · Install/ })
 		).toBeDisabled();
 	});
 
@@ -125,12 +126,12 @@ describe("ShopView build rows", () => {
 		render_({ onSell });
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /^Uninstall \.js/ })
+			screen.getByRole("button", { name: /^\.js · Uninstall/ })
 		);
 		expect(onSell).not.toHaveBeenCalled();
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /^Confirm uninstall of \.js/ })
+			screen.getByRole("button", { name: /^\.js · Confirm uninstall/ })
 		);
 		expect(onSell).toHaveBeenCalledWith(CONFIGS.js.id);
 	});
@@ -140,13 +141,13 @@ describe("ShopView build rows", () => {
 		render_({ onSell });
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /^Uninstall \.js/ })
+			screen.getByRole("button", { name: /^\.js · Uninstall/ })
 		);
-		await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+		await userEvent.click(screen.getByRole("button", { name: /· Cancel$/ }));
 
 		expect(onSell).not.toHaveBeenCalled();
 		expect(
-			screen.queryByRole("button", { name: /^Confirm uninstall of \.js/ })
+			screen.queryByRole("button", { name: /^\.js · Confirm uninstall/ })
 		).not.toBeInTheDocument();
 	});
 
@@ -154,7 +155,7 @@ describe("ShopView build rows", () => {
 		render_({ view: createMockRunView({ ...view, atMinimumWidth: true }) });
 
 		expect(
-			screen.getByRole("button", { name: /^Uninstall \.js/ })
+			screen.getByRole("button", { name: /^\.js · Uninstall/ })
 		).toBeDisabled();
 	});
 
@@ -176,10 +177,10 @@ describe("ShopView build rows", () => {
 		});
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /^Upgrade \.js/ })
+			screen.getByRole("button", { name: /^\.js · Upgrade/ })
 		);
 		await userEvent.click(
-			screen.getByRole("button", { name: /^Confirm upgrade of \.js/ })
+			screen.getByRole("button", { name: /^\.js · Confirm upgrade/ })
 		);
 
 		expect(onUpgrade).toHaveBeenCalledWith(CONFIGS.js.id);
@@ -191,7 +192,7 @@ describe("ShopView build rows", () => {
 		});
 
 		expect(
-			screen.getByRole("button", { name: /^Upgrade \.js/ })
+			screen.getByRole("button", { name: /^\.js · Upgrade/ })
 		).toBeDisabled();
 	});
 });
@@ -211,7 +212,7 @@ describe("ShopView offers", () => {
 		render_();
 
 		expect(
-			screen.queryByRole("button", { name: /Keep Stylelint/ })
+			screen.queryByRole("button", { name: /Stylelint · Keep/ })
 		).not.toBeInTheDocument();
 	});
 
@@ -220,7 +221,7 @@ describe("ShopView offers", () => {
 		render_({ view: lockable, onLock });
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /^Keep Stylelint/ })
+			screen.getByRole("button", { name: /^Stylelint · Keep/ })
 		);
 
 		expect(onLock).toHaveBeenCalledWith(CONFIGS.stylelint.id);
@@ -238,7 +239,7 @@ describe("ShopView offers", () => {
 		});
 
 		expect(
-			screen.getByRole("button", { name: /^Keep Stylelint/ })
+			screen.getByRole("button", { name: /^Stylelint · Keep/ })
 		).toHaveAttribute("aria-pressed", "true");
 		expect(screen.getByText("2 offers · 1 kept")).toBeInTheDocument();
 	});
@@ -279,23 +280,65 @@ describe("ShopView offers", () => {
 	});
 });
 
+const planAt = (tier: number) => ({
+	capKb: STORAGE_PLANS[tier].capKb,
+	perGateKb: STORAGE_PLANS[tier].perGateKb,
+	options: STORAGE_PLANS.map((plan) => ({
+		tier: plan.tier,
+		capKb: plan.capKb,
+		perGateKb: plan.perGateKb,
+		held: plan.tier === tier,
+		burnsKb: 0,
+	})),
+});
+
 describe("ShopView storage plan", () => {
-	it("offers the storage plans as a picker, saying which cap is held", () => {
+	it("meters the balance against the held cap and sizes the next rung", () => {
 		render_();
 
-		expect(screen.getByText(/^The /)).toBeInTheDocument();
-		expect(screen.getAllByText(/KB a gate|free/).length).toBeGreaterThan(0);
+		expect(
+			screen.getByRole("img", {
+				name: "216 KB held · 296 KB headroom to the 512 KB cap · next rung adds 256 KB",
+			})
+		).toBeInTheDocument();
+		expect(screen.getByText("… 5 more rungs to 10 MB")).toBeInTheDocument();
 	});
 
-	it("switches plan from its own row", async () => {
+	it("upgrades to the next rung from its press", async () => {
 		const onSetStoragePlan = vi.fn();
 		render_({ onSetStoragePlan });
 
-		const [plan] = screen.getAllByRole("button", { name: /^Switch to the / });
-		if (plan === undefined) throw new Error("No plan row rendered");
-		await userEvent.click(plan);
+		await userEvent.click(screen.getByRole("button", { name: "upgrade" }));
 
-		expect(onSetStoragePlan).toHaveBeenCalled();
+		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
+	});
+
+	it("offers no drop below the free rung", () => {
+		render_();
+
+		expect(
+			screen.queryByRole("button", { name: /^drop to / })
+		).not.toBeInTheDocument();
+	});
+
+	it("drops one rung down and says what the drop burns", async () => {
+		const onSetStoragePlan = vi.fn();
+		render_({
+			view: createMockRunView({
+				...view,
+				storagePlan: planAt(2),
+				storage: 812,
+			}),
+			onSetStoragePlan,
+		});
+
+		expect(screen.getByText(/burns 44 KB/)).toBeInTheDocument();
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "drop to 768 KB" })
+		);
+
+		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
 	});
 });
 
@@ -321,10 +364,10 @@ describe("ShopView when read-only has closed it", () => {
 		render_({ view: closed });
 
 		expect(
-			screen.getByRole("button", { name: /^Install Stylelint/ })
+			screen.getByRole("button", { name: /^Stylelint · Install/ })
 		).toBeDisabled();
 		expect(
-			screen.getByRole("button", { name: /^Uninstall \.js/ })
+			screen.getByRole("button", { name: /^\.js · Uninstall/ })
 		).toBeDisabled();
 		expect(
 			screen.getByRole("button", { name: /Rebuild offers/ })

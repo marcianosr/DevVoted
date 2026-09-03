@@ -1,13 +1,17 @@
+import type { ReactNode } from "react";
+
 import { clsx } from "clsx";
 
 import { Tooltip } from "./Tooltip.ui";
 
-export type IconButtonTone = "viridian" | "cinnabar" | "cerulean" | "legendary";
+export type IconButtonTone =
+	"viridian" | "cinnabar" | "cerulean" | "theme" | "legendary";
 
 const TONE = {
 	viridian: "border-viridian/40 text-viridian enabled:hover:bg-viridian/10",
 	cinnabar: "border-cinnabar/40 text-cinnabar enabled:hover:bg-cinnabar/10",
 	cerulean: "border-cerulean/40 text-cerulean enabled:hover:bg-cerulean/10",
+	theme: "border-theme text-theme enabled:hover:bg-theme-soft",
 	legendary:
 		"legendary-ring border-transparent text-zinc-100 enabled:hover:brightness-125",
 } satisfies Record<IconButtonTone, string>;
@@ -16,19 +20,20 @@ const ARMED = {
 	viridian: "border-viridian bg-viridian/15 text-viridian",
 	cinnabar: "border-cinnabar bg-cinnabar/15 text-cinnabar",
 	cerulean: "border-cerulean bg-cerulean/15 text-cerulean",
+	theme: "border-theme bg-theme-soft text-theme",
 	legendary: "legendary-ring border-transparent bg-zinc-100/10 text-zinc-100",
 } satisfies Record<IconButtonTone, string>;
 
 const BUTTON =
-	"inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+	"inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 const COLLAPSES = "@max-md:size-7 @max-md:justify-center @max-md:px-0";
-const LABEL = "@max-md:hidden";
+const LABEL = "text-zinc-100 @max-md:hidden";
 const ROUND = "size-7 justify-center px-0";
 
 export type IconButtonProps = {
 	label: string;
 	hint?: string;
-	icon?: string;
+	icon?: ReactNode;
 	tone?: IconButtonTone;
 	armed?: boolean;
 	disabled?: boolean;

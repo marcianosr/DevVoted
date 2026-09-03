@@ -1,18 +1,18 @@
 import { Badge, type BadgeTone } from "./Badge.ui";
 
-const FIGURE = /([×+−]\d+(?:\.\d+)?(?:\s?(?:KB|MB|%))?)/g;
+const FIGURE = /([×+−]\d+(?:\.\d+)?(?:\s?(?:KB|MB|%))?|\d+(?:\.\d+)?×)/g;
 
-const isFigure = (part: string) => /^[×+−]\d/.test(part);
+const isFigure = (part: string) => /^[×+−]\d/.test(part) || /\d×$/.test(part);
 
 // A multiplier under 1 is a penalty wearing a multiplier's sign: ×0.5 halves
 // what you earn, and reading it in the same green as ×4 sells a throttle as a
 // reward.
-const toneOf = (figure: string): BadgeTone => {
-	if (figure.startsWith("×"))
-		return parseFloat(figure.slice(1)) < 1 ? "cinnabar" : "celadon";
-	if (figure.startsWith("−")) return "cinnabar";
-	return "viridian";
-};
+const isThrottle = (figure: string) =>
+	(figure.startsWith("×") || figure.endsWith("×")) &&
+	parseFloat(figure.replace("×", "")) < 1;
+
+const toneOf = (figure: string): BadgeTone =>
+	isThrottle(figure) || figure.startsWith("−") ? "cinnabar" : "viridian";
 
 export type FiguresProps = {
 	text: string;

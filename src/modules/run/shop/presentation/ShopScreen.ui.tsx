@@ -76,7 +76,7 @@ type ShopScreenProps = {
 export const shopExitLock = (overflowSlots: number): string | undefined =>
 	overflowSlots === 0
 		? undefined
-		: `Over capacity by ${plural(overflowSlots, "slot")}. Minify, uninstall, or rent more room.`;
+		: `Over capacity by ${plural(overflowSlots, "slot")}. Minify, uninstall, or buy a slot.`;
 
 export const shopExitAction = (
 	gate: number,

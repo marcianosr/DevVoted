@@ -13,14 +13,6 @@ export const FAMILY_TEXT = {
 	amplify: "text-lavender",
 } as const satisfies Record<ConfigFamily, string>;
 
-export const FAMILY_FILL = {
-	focus: "border-celadon/30 bg-celadon/10",
-	defense: "border-cerulean/30 bg-cerulean/10",
-	economy: "border-saffron/30 bg-saffron/10",
-	risk: "border-vermillion/30 bg-vermillion/10",
-	amplify: "border-lavender/30 bg-lavender/10",
-} as const satisfies Record<ConfigFamily, string>;
-
 export const FAMILY_SOLID = {
 	focus: "bg-celadon",
 	defense: "bg-cerulean",

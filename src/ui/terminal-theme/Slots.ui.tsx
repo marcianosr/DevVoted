@@ -2,11 +2,11 @@ import { clsx } from "clsx";
 
 import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
 
-import { FAMILY_FILL, FAMILY_SOLID } from "./families";
+import { FAMILY_SOLID } from "./families";
 import { plural } from "./format";
 
 const MARK = "flex shrink-0 items-center gap-0.5";
-const BAR = "h-3.5 w-1.5 rounded-sm border";
+const BAR = "h-3.5 w-1.5 rounded-sm";
 const SOLID = "h-3.5 rounded-sm";
 const PLAIN = "bg-zinc-500";
 
@@ -62,7 +62,7 @@ export const Slots = ({ family, slots, solid, className }: SlotsProps) => {
 					key={index}
 					className={clsx(
 						BAR,
-						family === undefined ? PLAIN : FAMILY_FILL[family]
+						family === undefined ? PLAIN : FAMILY_SOLID[family]
 					)}
 				/>
 			))}

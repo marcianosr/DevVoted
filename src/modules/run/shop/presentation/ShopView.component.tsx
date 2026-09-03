@@ -12,7 +12,7 @@ import type {
 	RunView,
 	ShopOffer,
 	SlotDealView,
-	StoragePlanOption,
+	StoragePlanView,
 } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { coverageFor } from "~/modules/run/run/presentation/PollView.component";
@@ -21,17 +21,14 @@ import { offerRefusalText } from "~/modules/run/shop/presentation/ShopScreen.ui"
 import {
 	ShopScreen,
 	type ArmedAction,
-	type PlanTier,
 	type ShopBuildRow,
 	type ShopOfferRow,
 } from "~/ui/terminal-theme/screens/ShopScreen.ui";
+import type { StoragePlanProps } from "~/ui/terminal-theme/StoragePlan.ui";
 import type { BuyLineProps } from "~/ui/terminal-theme/BuyLine.ui";
 import { plural } from "~/ui/terminal-theme/format";
 
 const kb = (value: number) => `${value} KB`;
-
-const capLabel = (capKb: number) =>
-	capKb >= 1024 ? `${Math.round((capKb / 1024) * 10) / 10} MB` : kb(capKb);
 
 const versionOf = (config: Config) => `v${config.level ?? 1}`;
 
@@ -62,16 +59,39 @@ const upgradeShortfalls = (
 	];
 };
 
-const planTier = (
-	option: StoragePlanOption,
+const storagePlanProps = (
+	plan: StoragePlanView,
+	heldKb: number,
 	onSetPlan: (tier: number) => void,
 	locked: boolean
-): PlanTier => ({
-	cap: capLabel(option.capKb),
-	rate: option.perGateKb === 0 ? "free" : `${option.perGateKb} KB a gate`,
-	current: option.held,
-	onPick: option.held || locked ? undefined : () => onSetPlan(option.tier),
-});
+): StoragePlanProps => {
+	const heldIndex = Math.max(
+		0,
+		plan.options.findIndex((option) => option.held)
+	);
+	const next = plan.options.at(heldIndex + 1);
+	const previous = heldIndex > 0 ? plan.options.at(heldIndex - 1) : undefined;
+
+	return {
+		heldKb,
+		current: { capKb: plan.capKb, rentKb: plan.perGateKb },
+		next:
+			next === undefined
+				? undefined
+				: { capKb: next.capKb, rentKb: next.perGateKb },
+		drop:
+			previous === undefined
+				? undefined
+				: {
+						toKb: previous.capKb,
+						onDrop: locked ? undefined : () => onSetPlan(previous.tier),
+					},
+		moreRungs: Math.max(0, plan.options.length - heldIndex - 2),
+		topCapKb: plan.options.at(-1)?.capKb,
+		onUpgrade:
+			next === undefined || locked ? undefined : () => onSetPlan(next.tier),
+	};
+};
 
 const offerRefused = (offer: ShopOffer) =>
 	offer.owned || offer.refusal !== null;
@@ -137,9 +157,7 @@ export const ShopView = ({
 		return {
 			action: confirming,
 			confirmLabel:
-				confirming === "upgrade"
-					? `Confirm upgrade of ${config.label}`
-					: `Confirm uninstall of ${config.label}`,
+				confirming === "upgrade" ? "Confirm upgrade" : "Confirm uninstall",
 			cancelLabel: "Cancel",
 			note:
 				confirming === "upgrade"
@@ -170,12 +188,12 @@ export const ShopView = ({
 						version: `v${level + 1}`,
 						changes: [{ from: `v${level}`, to: `v${level + 1}` }],
 						price: kb(upgradeStorageCost(level)),
-						label: `Upgrade ${config.label}`,
+						label: "Upgrade",
 						onArm: ready && !locked ? arm(config.id, "upgrade") : undefined,
 					}
 				: undefined,
 			remove: {
-				label: `Uninstall ${config.label}`,
+				label: "Uninstall",
 				value: kb(sellRefundIn(view.configs, config)),
 				onArm:
 					view.atMinimumWidth || locked ? undefined : arm(config.id, "remove"),
@@ -193,9 +211,7 @@ export const ShopView = ({
 				: offerRefusalText(offer.refusal),
 		slots: slotsOf(offer.config),
 		price: kb(offer.priceKb),
-		buyLabel: offer.owned
-			? `${offer.config.label} is installed`
-			: `Install ${offer.config.label}`,
+		buyLabel: offer.owned ? "Installed" : "Install",
 		onBuy:
 			offerRefused(offer) || locked
 				? undefined
@@ -204,7 +220,7 @@ export const ShopView = ({
 		lock: shopControls.lockAvailable
 			? {
 					pinned: shopControls.lockedOfferIds.includes(offer.config.id),
-					label: `Keep ${offer.config.label} for the next shop`,
+					label: "Keep for the next shop",
 					onToggle:
 						shopControls.canLock && !locked
 							? () => onLock(offer.config.id)
@@ -231,8 +247,7 @@ export const ShopView = ({
 					: undefined
 			}
 			storage={{
-				meta: `${view.slotsUsed} of ${plural(view.slots, "slot")}`,
-				slots: view.slots,
+				meta: `${view.slotsUsed} of ${view.slots} · ${view.slots - view.slotsUsed} free`,
 			}}
 			build={{
 				meta: `${view.configs.length}`,
@@ -275,16 +290,12 @@ export const ShopView = ({
 							: undefined,
 				},
 			}}
-			plan={{
-				meta: capLabel(view.storagePlan.capKb),
-				note:
-					view.storagePlan.perGateKb === 0
-						? "The free rung costs nothing a gate."
-						: `The rung you hold bills ${view.storagePlan.perGateKb} KB a gate, pass or fail.`,
-				tiers: view.storagePlan.options.map((option) =>
-					planTier(option, onSetStoragePlan, locked)
-				),
-			}}
+			plan={storagePlanProps(
+				view.storagePlan,
+				view.storage,
+				onSetStoragePlan,
+				locked
+			)}
 			gitTag={
 				shopControls.pinAvailable
 					? {

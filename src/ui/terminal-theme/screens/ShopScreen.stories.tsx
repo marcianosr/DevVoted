@@ -44,8 +44,7 @@ const boulderShop: ShopScreenProps = {
 	},
 	theme: "boulder",
 	storage: {
-		meta: "4 of 6 slots",
-		slots: 6,
+		meta: "4 of 6 · 2 free",
 	},
 	build: {
 		meta: "3",
@@ -145,17 +144,12 @@ const boulderShop: ShopScreenProps = {
 		},
 	},
 	plan: {
-		meta: "512 KB cap · free",
-		note: "The cap is what you can hold, not what you can earn. A bigger one bills every gate, and dropping to a smaller one burns what will not fit.",
-		tiers: [
-			{ cap: "512 KB", rate: "free", current: true },
-			{ cap: "768 KB", rate: "16 KB a gate", onPick: noop },
-			{ cap: "1 MB", rate: "32 KB a gate", onPick: noop },
-			{ cap: "1.5 MB", rate: "64 KB a gate", onPick: noop },
-			{ cap: "2.5 MB", rate: "128 KB a gate", onPick: noop },
-			{ cap: "5 MB", rate: "384 KB a gate", onPick: noop },
-			{ cap: "10 MB", rate: "768 KB a gate", onPick: noop },
-		],
+		heldKb: 96,
+		current: { capKb: 512, rentKb: 0 },
+		next: { capKb: 768, rentKb: 16 },
+		moreRungs: 5,
+		topCapKb: 10240,
+		onUpgrade: noop,
 	},
 	continueLabel: "Continue →",
 	onContinue: noop,
@@ -191,7 +185,7 @@ export const ShopClosed: Story = {
 export const ExitBlocked: Story = {
 	args: {
 		...boulderShop,
-		continueLock: "Over capacity, remove a config",
+		continueLock: "Over capacity by 2 slots",
 	},
 };
 
@@ -216,17 +210,13 @@ export const ThunderShopWithGitTag: Story = {
 			},
 		},
 		plan: {
-			...boulderShop.plan,
-			meta: "768 KB cap · 16 KB a gate",
-			tiers: [
-				{ cap: "512 KB", rate: "free", onPick: noop },
-				{ cap: "768 KB", rate: "16 KB a gate", current: true },
-				{ cap: "1 MB", rate: "32 KB a gate", onPick: noop },
-				{ cap: "1.5 MB", rate: "64 KB a gate", onPick: noop },
-				{ cap: "2.5 MB", rate: "128 KB a gate", onPick: noop },
-				{ cap: "5 MB", rate: "384 KB a gate", onPick: noop },
-				{ cap: "10 MB", rate: "768 KB a gate", onPick: noop },
-			],
+			heldKb: 256,
+			current: { capKb: 768, rentKb: 16 },
+			next: { capKb: 1024, rentKb: 32 },
+			drop: { toKb: 512, onDrop: noop },
+			moreRungs: 4,
+			topCapKb: 10240,
+			onUpgrade: noop,
 		},
 		gitTag: {
 			label: "Git tag",
@@ -354,8 +344,7 @@ const seafoamShop: ShopScreenProps = {
 	},
 	theme: "seafoam",
 	storage: {
-		meta: "16 of 16 slots",
-		slots: 16,
+		meta: "16 of 16 · 0 free",
 	},
 	build: {
 		meta: "8",
@@ -432,17 +421,13 @@ const seafoamShop: ShopScreenProps = {
 		},
 	},
 	plan: {
-		meta: "2.5 MB cap · 128 KB a gate",
-		note: "The cap is what you can hold, not what you can earn. A bigger one bills every gate, and dropping to a smaller one burns what will not fit.",
-		tiers: [
-			{ cap: "512 KB", rate: "free", onPick: noop },
-			{ cap: "768 KB", rate: "16 KB a gate", onPick: noop },
-			{ cap: "1 MB", rate: "32 KB a gate", onPick: noop },
-			{ cap: "1.5 MB", rate: "64 KB a gate", onPick: noop },
-			{ cap: "2.5 MB", rate: "128 KB a gate", current: true },
-			{ cap: "5 MB", rate: "384 KB a gate", onPick: noop },
-			{ cap: "10 MB", rate: "768 KB a gate", onPick: noop },
-		],
+		heldKb: 1946,
+		current: { capKb: 2560, rentKb: 128 },
+		next: { capKb: 5120, rentKb: 384 },
+		drop: { toKb: 1536, onDrop: noop },
+		moreRungs: 1,
+		topCapKb: 10240,
+		onUpgrade: noop,
 	},
 	gitTag: {
 		label: "Git tag",
@@ -689,8 +674,7 @@ const earthShop: ShopScreenProps = {
 	},
 	theme: "earth",
 	storage: {
-		meta: "18 of 24 slots",
-		slots: 24,
+		meta: "18 of 24 · 6 free",
 	},
 	build: {
 		meta: "9",
@@ -758,17 +742,12 @@ const earthShop: ShopScreenProps = {
 		},
 	},
 	plan: {
-		meta: "5 MB cap · 384 KB a gate",
-		note: "The cap is what you can hold, not what you can earn. A bigger one bills every gate, and dropping to a smaller one burns what will not fit.",
-		tiers: [
-			{ cap: "512 KB", rate: "free", onPick: noop },
-			{ cap: "768 KB", rate: "16 KB a gate", onPick: noop },
-			{ cap: "1 MB", rate: "32 KB a gate", onPick: noop },
-			{ cap: "1.5 MB", rate: "64 KB a gate", onPick: noop },
-			{ cap: "2.5 MB", rate: "128 KB a gate", onPick: noop },
-			{ cap: "5 MB", rate: "384 KB a gate", current: true },
-			{ cap: "10 MB", rate: "768 KB a gate", onPick: noop },
-		],
+		heldKb: 2458,
+		current: { capKb: 5120, rentKb: 384 },
+		next: { capKb: 10240, rentKb: 768 },
+		drop: { toKb: 2560, onDrop: noop },
+		topCapKb: 10240,
+		onUpgrade: noop,
 	},
 	continueLabel: "Continue →",
 	onContinue: noop,

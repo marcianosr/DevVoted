@@ -4,9 +4,9 @@ export type PriceTagVariant =
 	"pay" | "short" | "armed" | "recurring" | "bill" | "receive";
 
 const VARIANT = {
-	pay: "bg-viridian/15 text-celadon",
+	pay: "bg-saffron/15 text-saffron",
 	short: "bg-zinc-100/5 text-zinc-500",
-	armed: "bg-viridian/30 text-pallet",
+	armed: "bg-saffron/30 text-pallet",
 	recurring: "bg-saffron/15 text-saffron",
 	bill: "bg-cinnabar/20 text-vermillion",
 	receive: "bg-viridian/15 text-celadon",

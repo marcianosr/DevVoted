@@ -5,11 +5,12 @@ import { Swatch, type SwatchState } from "./Swatch.ui";
 import { Text } from "./Text.ui";
 
 const HEADER = "flex flex-col gap-2 border-b border-edge pb-3";
-const TOP = "flex items-start justify-between gap-4";
+const TOP = "flex flex-wrap items-start justify-between gap-4";
 const NAMING = "flex min-w-0 items-start gap-3";
 const TITLES = "flex min-w-0 flex-col gap-0.5";
 const FIGURE = "flex shrink-0 flex-col items-end gap-0.5 text-right";
-const COVERAGE = "flex items-center gap-3 @max-md:w-full";
+const COVERAGE =
+	"flex min-w-0 flex-1 items-center gap-3 self-center @max-md:w-full";
 
 export type HeaderProps = {
 	title: string;
@@ -52,6 +53,19 @@ export const Header = ({
 					{subtitle === undefined ? null : <Text tone="muted">{subtitle}</Text>}
 				</div>
 			</div>
+			{coverage === undefined ? null : (
+				<span className={COVERAGE}>
+					<Text tone="muted">{coverage.label}</Text>
+					<Text className="font-bold whitespace-nowrap">
+						{coverage.reading}
+					</Text>
+					<Meter
+						percent={coverage.percent}
+						label={coverage.label}
+						className="flex-1"
+					/>
+				</span>
+			)}
 			{value === undefined ? null : (
 				<div className={FIGURE}>
 					<Text size="title" className="font-bold">
@@ -61,16 +75,5 @@ export const Header = ({
 				</div>
 			)}
 		</div>
-		{coverage === undefined ? null : (
-			<span className={COVERAGE}>
-				<Text tone="muted">{coverage.label}</Text>
-				<Text className="font-bold whitespace-nowrap">{coverage.reading}</Text>
-				<Meter
-					percent={coverage.percent}
-					label={coverage.label}
-					className="flex-1"
-				/>
-			</span>
-		)}
 	</header>
 );

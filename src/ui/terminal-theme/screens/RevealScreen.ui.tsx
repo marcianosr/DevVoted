@@ -13,7 +13,7 @@ import { Section } from "../Section.ui";
 import { Text } from "../Text.ui";
 
 const COLUMNS =
-	"grid grid-cols-[1fr_15rem] items-start gap-6 @max-md:grid-cols-1 @max-md:gap-4";
+	"grid grid-cols-[1fr_18rem] items-start gap-6 @max-md:grid-cols-1 @max-md:gap-4";
 const QUESTION_COLUMN = "flex flex-col gap-3 py-1";
 const SIDEBAR =
 	"@container border-l border-edge pl-4 @max-md:border-l-0 @max-md:border-t @max-md:pt-3 @max-md:pl-0";

@@ -6,14 +6,20 @@ import { IconButton } from "./IconButton.ui";
 import { Meter } from "./Meter.ui";
 import { Text } from "./Text.ui";
 
-const LIST = "flex flex-col gap-1.5";
+const LIST = "flex flex-col gap-3";
 const LINE = "flex items-center gap-2";
 const NAME = "min-w-0 flex-1 truncate";
 const FIGURE = "shrink-0";
 const ACTION_ROW = "flex flex-col gap-0.5 py-0.5";
 const DETAIL = "pl-5";
 const FOCUSED = "-mx-2 rounded-md bg-zinc-100/5 px-2";
-const SITTING_OUT = "flex items-center gap-2 pt-0.5";
+const SKIPPED = "group/skipped";
+const SKIPPED_SUMMARY =
+	"flex cursor-pointer list-none items-center gap-2 py-0.5 select-none [&::-webkit-details-marker]:hidden";
+const SKIPPED_CARET =
+	"inline-block text-zinc-500 transition-transform group-open/skipped:rotate-90";
+const SKIPPED_LIST = "flex flex-col gap-1.5 pt-1 pl-5";
+const SKIPPED_ROW = "flex flex-col gap-0.5";
 const TOTAL = "flex items-center gap-2 border-t border-edge pt-2";
 const FOCUS_NOTE =
 	"flex flex-col gap-0.5 border-t border-dashed border-edge pt-2";
@@ -35,7 +41,7 @@ export type BuildListRow = {
 export type BuildListProps = {
 	rows: readonly BuildListRow[];
 	total?: { label: string; value: string };
-	sittingOutLabel?: string;
+	skippedLabel?: string;
 	className?: string;
 };
 
@@ -65,12 +71,13 @@ const RunningRow = ({ row }: { row: BuildListRow }) => (
 			<Dot variant={row.dot} />
 			<Text className={NAME}>{row.name}</Text>
 			{row.figure === undefined ? null : (
-				<Text
-					tone={row.dot === "blocked" ? "cinnabar" : "muted"}
-					className={FIGURE}
-				>
-					{row.figure}
-				</Text>
+				<span className={FIGURE}>
+					{row.dot === "blocked" ? (
+						<Text tone="cinnabar">{row.figure}</Text>
+					) : (
+						<Figures text={row.figure} />
+					)}
+				</span>
 			)}
 		</span>
 		{row.meterPercent === undefined ? null : (
@@ -79,16 +86,45 @@ const RunningRow = ({ row }: { row: BuildListRow }) => (
 	</div>
 );
 
+const SkippedFold = ({
+	rows,
+	label,
+}: {
+	rows: readonly BuildListRow[];
+	label: string;
+}) => (
+	<details className={SKIPPED}>
+		<summary className={SKIPPED_SUMMARY}>
+			<span aria-hidden className={SKIPPED_CARET}>
+				›
+			</span>
+			<Dot variant="off" />
+			<Text tone="faint" size="caption" className={NAME}>
+				{label} · {rows.length}
+			</Text>
+		</summary>
+		<div className={SKIPPED_LIST}>
+			{rows.map((row) => (
+				<div key={row.name} className={SKIPPED_ROW}>
+					<Text tone="muted" size="caption" className={NAME}>
+						{row.name}
+					</Text>
+					<Text tone="faint" size="caption">
+						{row.detail}
+					</Text>
+				</div>
+			))}
+		</div>
+	</details>
+);
+
 const focusedOf = (rows: readonly BuildListRow[]) =>
 	rows.find((row) => row.focused === true);
-
-const namesOf = (rows: readonly BuildListRow[]) =>
-	rows.map((row) => row.name).join(", ");
 
 export const BuildList = ({
 	rows,
 	total,
-	sittingOutLabel = "sitting out",
+	skippedLabel = "Skipped",
 	className,
 }: BuildListProps) => {
 	const usable = rows.filter((row) => row.dot === "action");
@@ -107,12 +143,7 @@ export const BuildList = ({
 				<RunningRow key={row.name} row={row} />
 			))}
 			{out.length === 0 ? null : (
-				<span className={SITTING_OUT}>
-					<Dot variant="off" />
-					<Text tone="faint" size="caption" className={NAME}>
-						{out.length} {sittingOutLabel} · {namesOf(out)}
-					</Text>
-				</span>
+				<SkippedFold rows={out} label={skippedLabel} />
 			)}
 			{focused === undefined ? null : (
 				<div className={FOCUS_NOTE}>

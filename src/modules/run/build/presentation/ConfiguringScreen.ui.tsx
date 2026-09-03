@@ -193,8 +193,8 @@ export const ConfiguringScreen = ({
 						/>
 						{slots < MAX_SLOTS ? (
 							<Paragraph size="xs" tone="muted">
-								Clearing gates widens the build, and the shop rents slots on
-								top, up to {MAX_SLOTS} slots.
+								Buy slots in the shop to widen the build, up to {MAX_SLOTS}{" "}
+								slots.
 							</Paragraph>
 						) : null}
 						<GateStakeReceipt

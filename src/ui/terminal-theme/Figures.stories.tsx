@@ -21,6 +21,10 @@ type Story = StoryObj<typeof Figures>;
 
 export const Multiplier: Story = { args: { text: "JS polls ×1.25" } };
 
+export const TrailingMultiplier: Story = {
+	args: { text: "JS polls pay 1.25× coverage." },
+};
+
 export const Gain: Story = { args: { text: "+8 KB an answer · 96 of 320" } };
 
 export const Loss: Story = { args: { text: "−3.8% · streak lost" } };

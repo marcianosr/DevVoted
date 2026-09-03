@@ -146,11 +146,11 @@ export const NewRunScreen = ({
 			</Section>
 		)}
 
-		<Section label="Build storage" meta={storage.meta}>
+		<Section label="Build storage">
 			<SlotTrack
 				segments={segmentsOf(build.rows)}
 				slots={storage.slots}
-				numbered
+				reading={storage.meta}
 			/>
 		</Section>
 

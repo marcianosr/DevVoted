@@ -16,12 +16,11 @@ import { Text } from "../Text.ui";
 import { Trail, type TrailProps } from "../Trail.ui";
 
 const COLUMNS =
-	"grid grid-cols-[1fr_15rem] items-start gap-6 @max-md:grid-cols-1 @max-md:gap-4";
+	"grid grid-cols-[1fr_18rem] items-start gap-6 @max-md:grid-cols-1 @max-md:gap-4";
 const QUESTION_COLUMN = "flex flex-col gap-3 py-1";
 const SIDEBAR =
 	"@container border-l border-edge pl-4 @max-md:border-l-0 @max-md:border-t @max-md:pt-3 @max-md:pl-0";
-const FACTS =
-	"flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg border border-edge bg-zinc-900/40 px-3 py-2";
+const FACTS = "flex flex-wrap items-center gap-x-2 gap-y-1.5";
 const FACT = "flex items-center gap-2";
 const SEPARATOR = "text-zinc-600";
 const CODE =

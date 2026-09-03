@@ -131,11 +131,11 @@ export const PrepScreen = ({
 			/>
 		</div>
 
-		<Section label="Build storage" meta={build.meta}>
+		<Section label="Build storage">
 			<SlotTrack
 				segments={segmentsOf(build.rows)}
 				slots={build.slots}
-				numbered
+				reading={build.meta}
 			/>
 		</Section>
 

@@ -90,7 +90,7 @@ const statusNote = (status: ConfigStatus): string | undefined => {
 	if (status.kind === "online") return undefined;
 	if (status.kind === "unknown") return "category hidden";
 	if (status.kind === "offline") return `offline · ${status.audit}`;
-	return `skipped · ${skipNote(status.why)}`;
+	return skipNote(status.why);
 };
 
 const rowFigure = (

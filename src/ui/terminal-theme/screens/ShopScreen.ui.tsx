@@ -9,12 +9,13 @@ import { Change, type ChangeStep } from "../Change.ui";
 import { GitTagIcon } from "../GitTagIcon.ui";
 import { Header, type HeaderProps } from "../Header.ui";
 import { IconButton } from "../IconButton.ui";
+import { LockIcon } from "../LockIcon.ui";
 import { Panel } from "../Panel.ui";
 import { PriceTag } from "../PriceTag.ui";
 import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
-import { SlotTrack, type SlotSegment } from "../SlotTrack.ui";
 import { Slots } from "../Slots.ui";
+import { StoragePlan, type StoragePlanProps } from "../StoragePlan.ui";
 import { Text } from "../Text.ui";
 import { Version } from "../Version.ui";
 
@@ -31,8 +32,7 @@ const MAXED = "shrink-0 whitespace-nowrap";
 const CONFIRM_ICON = "✓";
 const CANCEL_ICON = "✕";
 const BUY_ICON = "⤓";
-const LOCK_ICON = "⚑";
-const FREE_RATE = "free";
+const LOCK_ICON = <LockIcon />;
 const NOTICE =
 	"rounded-lg border border-saffron/30 bg-saffron/5 px-3 py-2 text-saffron";
 
@@ -41,16 +41,6 @@ const EXTEND_ROW =
 const EXTEND_MARK =
 	"flex size-5 shrink-0 items-center justify-center rounded-full border border-dashed border-edge-strong text-zinc-500";
 const EXTEND_ICON = "+";
-
-const PLAN_ROW =
-	"flex w-full items-center gap-3 rounded-lg border px-3 py-1.5 text-left";
-const RADIO =
-	"flex size-4 shrink-0 items-center justify-center rounded-full border";
-
-const segmentsOf = (
-	rows: readonly { family: ConfigFamily; slots: number }[]
-): readonly SlotSegment[] =>
-	rows.map((row) => ({ family: row.family, slots: row.slots }));
 
 export type ArmedAction = {
 	action: "upgrade" | "remove";
@@ -125,7 +115,8 @@ const buildTag = (row: ShopBuildRow) => (
 	</>
 );
 
-const priceHint = (label: string, price: string) => `${label} for ${price}`;
+const actionHint = (name: string, label: string, price?: string) =>
+	[name, label, price].filter((part) => part !== undefined).join(" · ");
 
 const armedPrice = (row: ShopBuildRow, armed: ArmedAction) => {
 	if (armed.action === "upgrade") {
@@ -159,12 +150,14 @@ const ArmedTrailing = ({
 		<IconButton
 			icon={CONFIRM_ICON}
 			label={armed.confirmLabel}
+			hint={actionHint(row.name, armed.confirmLabel)}
 			armed
 			onUse={armed.onConfirm}
 		/>
 		<IconButton
 			icon={CANCEL_ICON}
 			label={armed.cancelLabel}
+			hint={actionHint(row.name, armed.cancelLabel)}
 			tone="cinnabar"
 			onUse={armed.onCancel}
 		/>
@@ -185,7 +178,7 @@ const UpgradeSlot = ({ row }: { row: ShopBuildRow }) => {
 		<IconButton
 			icon={UPGRADE_ICON}
 			label={row.upgrade.label}
-			hint={priceHint(row.upgrade.label, row.upgrade.price)}
+			hint={actionHint(row.name, row.upgrade.label, row.upgrade.price)}
 			tone="legendary"
 			disabled={row.upgrade.onArm === undefined}
 			onUse={row.upgrade.onArm}
@@ -204,11 +197,7 @@ const BuildTrailing = ({ row }: { row: ShopBuildRow }) => {
 			<IconButton
 				icon={REMOVE_ICON}
 				label={row.remove.label}
-				hint={
-					row.remove.value === undefined
-						? undefined
-						: priceHint(row.remove.label, row.remove.value)
-				}
+				hint={actionHint(row.name, row.remove.label, row.remove.value)}
 				tone="cinnabar"
 				disabled={row.remove.onArm === undefined}
 				onUse={row.remove.onArm}
@@ -227,57 +216,9 @@ const BuildRow = ({ row }: { row: ShopBuildRow }) => (
 	/>
 );
 
-export type PlanTier = {
-	cap: string;
-	rate: string;
-	current?: boolean;
-	onPick?: () => void;
-};
-
 const REBUILD_ICON = "↻";
 const SLOT_ICON = "+";
 const CASH_SLOT_ICON = "−";
-
-const PlanRow = ({ tier }: { tier: PlanTier }) => {
-	const body = (
-		<>
-			<span
-				className={clsx(
-					RADIO,
-					tier.current ? "border-zinc-300" : "border-zinc-600"
-				)}
-			>
-				{tier.current ? (
-					<span className="size-2 rounded-full bg-zinc-300" />
-				) : null}
-			</span>
-			<Text className="w-20 shrink-0 font-bold">{tier.cap}</Text>
-			{tier.rate === FREE_RATE ? (
-				<Text tone="viridian">{tier.rate}</Text>
-			) : (
-				<PriceTag label={tier.rate} variant="recurring" />
-			)}
-		</>
-	);
-
-	if (tier.onPick === undefined) {
-		return <div className={clsx(PLAN_ROW, "border-edge-strong")}>{body}</div>;
-	}
-
-	return (
-		<button
-			type="button"
-			aria-label={`Switch to the ${tier.cap} plan`}
-			onClick={tier.onPick}
-			className={clsx(
-				PLAN_ROW,
-				"border-edge transition-colors hover:border-zinc-500"
-			)}
-		>
-			{body}
-		</button>
-	);
-};
 
 export type ShopScreenProps = {
 	header: HeaderProps;
@@ -285,7 +226,6 @@ export type ShopScreenProps = {
 	notice?: string;
 	storage: {
 		meta: string;
-		slots: number;
 	};
 	build: {
 		meta: string;
@@ -299,11 +239,7 @@ export type ShopScreenProps = {
 		extend?: ExtendOffer;
 		rebuild: BuyLineProps;
 	};
-	plan: {
-		meta: string;
-		note: string;
-		tiers: readonly PlanTier[];
-	};
+	plan: StoragePlanProps;
 	gitTag?: BuyLineProps;
 	continueLabel: string;
 	continueLock?: string;
@@ -332,12 +268,12 @@ export const ShopScreen = ({
 			</Text>
 		)}
 
-		<Section label="Build storage" meta={storage.meta}>
-			<SlotTrack
-				segments={segmentsOf(build.rows)}
-				slots={storage.slots}
-				numbered
-			/>
+		{/* The storage plan below owns the only bar on this screen, so the slot
+		    band collapses to its reading. */}
+		<Section label="Build storage">
+			<Text as="p" tone="muted">
+				{storage.meta}
+			</Text>
 		</Section>
 
 		<div className={COLUMNS}>
@@ -378,7 +314,9 @@ export const ShopScreen = ({
 										<IconButton
 											icon={LOCK_ICON}
 											label={row.lock.label}
-											tone="cerulean"
+											hint={actionHint(row.name, row.lock.label)}
+											tone="theme"
+											iconOnly
 											armed={row.lock.pinned}
 											disabled={row.lock.onToggle === undefined}
 											onUse={row.lock.onToggle}
@@ -387,6 +325,7 @@ export const ShopScreen = ({
 									<IconButton
 										icon={BUY_ICON}
 										label={row.buyLabel}
+										hint={actionHint(row.name, row.buyLabel, row.price)}
 										disabled={row.refused === true || row.onBuy === undefined}
 										onUse={row.onBuy}
 									/>
@@ -415,17 +354,8 @@ export const ShopScreen = ({
 
 		{/* The plan is the one thing here that outlives the visit, so it gets a
 		    rule between it and the shelves you are picking from now. */}
-		<div className="border-t border-edge">
-			<Section label="Storage plan" meta={plan.meta} defaultOpen={false}>
-				<div className="flex flex-col gap-2 pt-1 pb-2">
-					<Text as="p" tone="muted">
-						{plan.note}
-					</Text>
-					{plan.tiers.map((tier) => (
-						<PlanRow key={tier.cap} tier={tier} />
-					))}
-				</div>
-			</Section>
+		<div className="border-t border-edge pt-4">
+			<StoragePlan {...plan} className="max-w-2xl" />
 		</div>
 
 		{gitTag === undefined ? null : (

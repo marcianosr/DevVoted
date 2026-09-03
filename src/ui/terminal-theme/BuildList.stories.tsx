@@ -11,7 +11,7 @@ const meta: Meta<typeof BuildList> = {
 	title: "Terminal/BuildList",
 	decorators: [
 		(Story) => (
-			<div className="@container w-60 rounded-xl bg-zinc-900 p-4">
+			<div className="@container w-72 rounded-xl bg-zinc-900 p-4">
 				<Story />
 			</div>
 		),
@@ -65,7 +65,7 @@ const tenConfigRows: readonly BuildListRow[] = [
 	{ name: "Cold Start", detail: "The gate's first answer ×2", dot: "off" },
 ];
 
-const total = { label: "this answer", value: "×3.1" };
+const total = { label: "Total", value: "×3.1" };
 
 export const InTheSection: Story = {
 	render: () => (
@@ -121,7 +121,7 @@ export const NothingUsable: Story = {
 		<Section label="Build" meta="4">
 			<BuildList
 				rows={tenConfigRows.filter((row) => row.dot === "on").slice(0, 4)}
-				total={{ label: "this answer", value: "×1.9" }}
+				total={{ label: "Total", value: "×1.9" }}
 			/>
 		</Section>
 	),

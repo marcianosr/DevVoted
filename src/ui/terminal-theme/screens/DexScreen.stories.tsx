@@ -12,6 +12,8 @@ import { GatesPanel } from "./GatesPanel.ui";
 import { dexGates } from "./GatesPanel.stories";
 import { PollsPanel } from "./PollsPanel.ui";
 import { dexCategories } from "./PollsPanel.stories";
+import { StoragePanel } from "./StoragePanel.ui";
+import { dexStorageRungs } from "./StoragePanel.stories";
 import { SwatchesPanel } from "./SwatchesPanel.ui";
 import { dexSwatches } from "./SwatchesPanel.stories";
 
@@ -25,7 +27,14 @@ const TABS: readonly TabItem[] = [
 	{ id: "audits", label: "Audits", count: "7/15" },
 	{ id: "gates", label: "Gates", count: "8/13" },
 	{ id: "swatches", label: "Swatches", count: "8/13" },
+	{ id: "storage", label: "Storage", count: "3/7" },
 ];
+
+/** The same account before its first shop: the tab exists so the roster reads
+ * as one shape, but the ladder behind it has not been reached yet. */
+const STORAGE_LOCKED_TABS: readonly TabItem[] = TABS.map((tab) =>
+	tab.id === "storage" ? { ...tab, redacted: true } : tab
+);
 
 const meta: Meta<typeof DexScreen> = {
 	component: DexScreen,
@@ -44,14 +53,22 @@ type Story = StoryObj<typeof DexScreen>;
 
 // Every bit of state lives here, so the screen and its five panels stay
 // hook-free per ADR-010.
-const Browsing = ({ start }: { start: string }) => {
+const Browsing = ({
+	start,
+	tabs = TABS,
+	storageLocked = false,
+}: {
+	start: string;
+	tabs?: readonly TabItem[];
+	storageLocked?: boolean;
+}) => {
 	const [activeId, setActiveId] = useState(start);
 	const [configView, setConfigView] = useState("slots");
 	const [configId, setConfigId] = useState<string | undefined>("overclock");
 	const [pollView, setPollView] = useState("category");
 
 	return (
-		<DexScreen tabs={TABS} activeId={activeId} onSelect={setActiveId}>
+		<DexScreen tabs={tabs} activeId={activeId} onSelect={setActiveId}>
 			{activeId === "polls" ? (
 				<PollsPanel
 					categories={dexCategories}
@@ -75,6 +92,9 @@ const Browsing = ({ start }: { start: string }) => {
 			{activeId === "swatches" ? (
 				<SwatchesPanel swatches={dexSwatches} />
 			) : null}
+			{activeId === "storage" ? (
+				<StoragePanel rungs={dexStorageRungs} locked={storageLocked} />
+			) : null}
 		</DexScreen>
 	);
 };
@@ -88,6 +108,14 @@ export const Audits: Story = { render: () => <Browsing start="audits" /> };
 export const Gates: Story = { render: () => <Browsing start="gates" /> };
 
 export const Swatches: Story = { render: () => <Browsing start="swatches" /> };
+
+export const Storage: Story = { render: () => <Browsing start="storage" /> };
+
+export const StorageLocked: Story = {
+	render: () => (
+		<Browsing start="storage" tabs={STORAGE_LOCKED_TABS} storageLocked />
+	),
+};
 
 export const Mobile: Story = {
 	...Configs,

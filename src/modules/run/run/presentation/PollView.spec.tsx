@@ -220,12 +220,21 @@ describe("PollView build rail", () => {
 		).toBeInTheDocument();
 	});
 
-	// The rail collapses everything sitting out into one line and names them;
-	// the reason each is out belongs to the prep screen, which has the room.
-	it("collapses the configs sitting this poll out into one named line", () => {
+	// The rail should read as what is actually working, so everything skipped
+	// folds away behind a count and only names itself when asked for.
+	it("folds the configs this poll skips behind a counted summary", () => {
 		render_();
 
-		expect(screen.getByText(/sitting out ·/)).toBeInTheDocument();
+		expect(screen.getByText("Skipped · 1")).toBeInTheDocument();
+		expect(screen.getByText(".js")).not.toBeVisible();
+	});
+
+	it("names a skipped config and why it sits out once unfolded", async () => {
+		render_();
+
+		await userEvent.click(screen.getByText("Skipped · 1"));
+
+		expect(screen.getByText(".js")).toBeVisible();
 	});
 
 	it("states the gate's coverage in the header", () => {

@@ -114,13 +114,13 @@ describe(ConfiguringScreen, () => {
 		expect(onInstall).not.toHaveBeenCalled();
 	});
 
-	it("names both sources of width instead of showing an unclaimable rung", () => {
+	it("names the shop as width's one source instead of showing an unclaimable rung", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
 			screen.getByText(
 				(_, element) =>
 					element?.textContent ===
-					`Clearing gates widens the build, and the shop rents slots on top, up to ${MAX_SLOTS} slots.`
+					`Buy slots in the shop to widen the build, up to ${MAX_SLOTS} slots.`
 			)
 		).toBeInTheDocument();
 		expect(screen.queryByText(/reached/)).not.toBeInTheDocument();
@@ -431,7 +431,7 @@ describe("stack mode (ADR-026)", () => {
 				(_, element) =>
 					element?.tagName === "SPAN" &&
 					element.textContent ===
-						"Over capacity by 3 slots — minify, uninstall, or rent more room"
+						"Over capacity by 3 slots — minify, uninstall, or buy a slot"
 			)
 		).toBeInTheDocument();
 	});

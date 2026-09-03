@@ -384,7 +384,7 @@ export const GateStakeReceipt = ({
 									<Paragraph as="span" className="font-bold">
 										{overflowSlots} slot{overflowSlots === 1 ? "" : "s"}
 									</Paragraph>{" "}
-									— minify, uninstall, or rent more room
+									— minify, uninstall, or buy a slot
 								</Paragraph>
 							) : null}
 						</div>
