@@ -13,7 +13,7 @@ import {
 const answering = (
 	category: AnswerContext["category"],
 	answeredBefore = 1
-): AnswerContext => ({ category, answeredBefore });
+): AnswerContext => ({ category, answeredBefore, cachedHits: 0 });
 
 describe("effectOf — Focus", () => {
 	it("pays its multiplier in-category and 1× outside it", () => {
@@ -60,6 +60,32 @@ describe("effectOf — coverage amplifiers", () => {
 			mult: 2,
 			add: 0,
 		});
+	});
+});
+
+describe("effectOf — Cache", () => {
+	const warm = (category: AnswerContext["category"], cachedHits: number) => ({
+		...answering(category),
+		cachedHits,
+	});
+
+	it("pays ×1 cold and one step more per cached hit", () => {
+		const effect = effectOf(CONFIGS.cache);
+		expect(effect.coverage?.(warm("js", 0))).toEqual({ mult: 1, add: 0 });
+		expect(effect.coverage?.(warm("js", 2))).toEqual({ mult: 1.5, add: 0 });
+	});
+
+	it("tops out at ×2 however warm the category runs", () => {
+		expect(effectOf(CONFIGS.cache).coverage?.(warm("js", 9))).toEqual({
+			mult: 2,
+			add: 0,
+		});
+	});
+
+	it("contributes no storage payout", () => {
+		const effect = effectOf(CONFIGS.cache);
+		expect(effect.rewardMultiplier).toBeUndefined();
+		expect(effect.storageOnClear).toBeUndefined();
 	});
 });
 
@@ -130,6 +156,7 @@ const onPoll = (
 ): PollStatusContext => ({
 	category,
 	answeredBefore,
+	cachedHits: 0,
 	suppressingAudit: false,
 	faucetRemainingKb: FAUCET_CAP_KB,
 	...extras,
@@ -154,6 +181,16 @@ describe("configStatusFor — online", () => {
 		expect(configStatusFor(CONFIGS.js, onPoll("css"))).toEqual({
 			kind: "skipped",
 			why: { kind: "otherCategories", categories: ["js"] },
+		});
+	});
+
+	it("puts Cache online once the category is warm and skips it cold", () => {
+		expect(
+			configStatusFor(CONFIGS.cache, onPoll("js", 1, { cachedHits: 1 }))
+		).toEqual({ kind: "online" });
+		expect(configStatusFor(CONFIGS.cache, onPoll("js"))).toEqual({
+			kind: "skipped",
+			why: { kind: "cacheCold" },
 		});
 	});
 

@@ -6,7 +6,10 @@ import { gatedex } from "~/modules/collection/dex/domain/gatedex.model";
 import { AuditsView } from "~/modules/collection/dex/presentation/AuditsView.component";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 
-const renderRoster = (clearedThrough: number) =>
+const renderRoster = (
+	clearedThrough: number,
+	runs: readonly { gatesCleared: number; finished: boolean }[] = []
+) =>
 	render(
 		<AuditsView
 			audits={auditdex(
@@ -14,7 +17,8 @@ const renderRoster = (clearedThrough: number) =>
 					ALL_SWATCHES.filter((swatch) => swatch.gate <= clearedThrough).map(
 						(swatch) => swatch.id
 					)
-				)
+				),
+				runs
 			)}
 		/>
 	);
@@ -46,6 +50,29 @@ describe("AuditsView", () => {
 		renderRoster(-1);
 
 		expect(screen.queryByText("402 Payment Required")).not.toBeInTheDocument();
+	});
+
+	it("quotes how many climbs beat an audit out of the climbs that faced it", () => {
+		renderRoster(3, [
+			{ gatesCleared: 3, finished: true },
+			{ gatesCleared: 4, finished: true },
+		]);
+
+		expect(screen.getByText("beaten 1 of 2")).toBeInTheDocument();
+	});
+
+	// The tally is the more useful reading of the same fact, so it replaces the
+	// bare "faced" rather than sitting next to it.
+	it("drops the bare faced chip once a tally can be quoted", () => {
+		renderRoster(3, [{ gatesCleared: 4, finished: true }]);
+
+		expect(screen.queryByText("faced")).not.toBeInTheDocument();
+	});
+
+	it("says nothing about an audit no climb has reached", () => {
+		renderRoster(3, [{ gatesCleared: 4, finished: true }]);
+
+		expect(screen.queryByText(/beaten 0 of 0/)).not.toBeInTheDocument();
 	});
 
 	it("states a gate's rule where the gate is one you have reached", () => {

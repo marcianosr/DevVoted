@@ -26,6 +26,7 @@ export type Config = {
 	readonly storageInterestPct?: number;
 	readonly openerCoverageMultiplier?: number;
 	readonly throttleCoverageMultiplier?: number;
+	readonly cacheHitStep?: number;
 	readonly peeksCommunitySplit?: boolean;
 	readonly storagePerExtraPick?: number;
 	readonly suppressesAudit?: boolean;
@@ -221,6 +222,22 @@ export const givesOf = (config: Config): string | undefined => {
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `${name} polls reward ×${focusMultiplierOf(config)} coverage`;
 };
+
+export const CACHE_HIT_CAP = 4;
+
+export const cacheHitMultiplier = (step: number, hits: number): number =>
+	1 + step * Math.min(hits, CACHE_HIT_CAP);
+
+export const cacheMultiplierFor = (
+	config: Config,
+	cachedHits: number
+): number =>
+	config.cacheHitStep === undefined || cachedHits <= 0
+		? 1
+		: minifiedMultiplier(
+				config,
+				cacheHitMultiplier(config.cacheHitStep, cachedHits)
+			);
 
 export const faucetKbPerCorrect = (configs: readonly Config[]): number =>
 	configs.reduce(

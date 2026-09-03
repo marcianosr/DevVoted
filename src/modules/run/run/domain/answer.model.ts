@@ -54,6 +54,7 @@ import {
 	type AnswerOutcome,
 	type RunPoll,
 	answerOutcome,
+	cachedHitsFor,
 	coverageShare,
 	mirrorPoll,
 	nextStreak,
@@ -277,6 +278,7 @@ const scoreAnswer = (
 	const answerContext: AnswerContext = {
 		category: poll.category,
 		answeredBefore: state.window.answered,
+		cachedHits: cachedHitsFor(state.allAnswered ?? [], poll.category),
 	};
 	const streakBonus = streakMultiplier(
 		grade.streak,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	autoUpgradeOneInOf,
+	cacheMultiplierFor,
 	describeConfig,
 	draftCost,
 	focusCoverageMultiplier,
@@ -9,9 +10,11 @@ import {
 	headlineFigureOf,
 	isUpgradable,
 	baseSlotsOf,
+	CACHE_HIT_CAP,
 	CONFIG_SIZES,
 	DRAFT_COST_PER_SLOT_KB,
 	largestSizeFitting,
+	minify,
 	sellRefund,
 	showsSampleSize,
 } from "~/modules/run/config/domain/config.model";
@@ -82,6 +85,30 @@ describe("CONFIG_SIZES", () => {
 		expect(DRAFT_COST_PER_SLOT_KB * CONFIG_SIZES[CONFIG_SIZES.length - 1]).toBe(
 			512
 		);
+	});
+});
+
+describe("cacheMultiplierFor", () => {
+	it("pays ×1 while the cache is cold", () => {
+		expect(cacheMultiplierFor(CONFIGS.cache, 0)).toBe(1);
+	});
+
+	it("adds one step per cached hit", () => {
+		expect(cacheMultiplierFor(CONFIGS.cache, 1)).toBe(1.25);
+		expect(cacheMultiplierFor(CONFIGS.cache, 3)).toBe(1.75);
+	});
+
+	it("tops out at the cap, so a deep run cannot snowball past ×2", () => {
+		expect(cacheMultiplierFor(CONFIGS.cache, CACHE_HIT_CAP)).toBe(2);
+		expect(cacheMultiplierFor(CONFIGS.cache, CACHE_HIT_CAP + 5)).toBe(2);
+	});
+
+	it("halves the bonus when minified", () => {
+		expect(cacheMultiplierFor(minify(CONFIGS.cache), CACHE_HIT_CAP)).toBe(1.5);
+	});
+
+	it("pays ×1 on a config without a cache step", () => {
+		expect(cacheMultiplierFor(CONFIGS.intellisense, 3)).toBe(1);
 	});
 });
 

@@ -18,6 +18,7 @@ import {
 	FAUCET_CAP_KB,
 	pollDifficultyMultiplier,
 } from "~/modules/run/run/domain/rules.model";
+import { cachedHitsFor } from "~/modules/run/run/domain/runPoll.model";
 import type {
 	PollChoice,
 	PollFact,
@@ -78,6 +79,7 @@ const skipNote = (why: SkipReason): string => {
 	if (why.kind === "otherCategories")
 		return `waits for ${why.categories.map((code) => getCategoryMetadata(code).name).join(", ")}`;
 	if (why.kind === "openerOnly") return "fired already";
+	if (why.kind === "cacheCold") return "cache is cold here";
 	if (why.kind === "paysAtGateClear") return "pays on clear";
 	if (why.kind === "billsAtGateClear") return "bills on clear";
 	if (why.kind === "inShop") return "works in the shop";
@@ -153,6 +155,7 @@ const toolsFor = (view: RunView, handlers: PollTools): readonly Tool[] => [
 export type PollFacts = {
 	readonly category: CategoryCode;
 	readonly answeredBefore: number;
+	readonly cachedHits: number;
 };
 
 const statusContextFor = (
@@ -162,6 +165,7 @@ const statusContextFor = (
 ): PollStatusContext => ({
 	category: poll.category,
 	answeredBefore: poll.answeredBefore,
+	cachedHits: poll.cachedHits,
 	suppressingAudit: view.audits.some((audit) => audit.suppressed),
 	categoryHidden: view.categoryHidden,
 	offlineAudit: view.offlineConfigs.find(
@@ -344,7 +348,11 @@ export const PollView = ({
 
 	const rows = buildRows(
 		view,
-		{ category: poll.category, answeredBefore: view.answeredThisGate.length },
+		{
+			category: poll.category,
+			answeredBefore: view.answeredThisGate.length,
+			cachedHits: cachedHitsFor(view.allAnswered, poll.category),
+		},
 		toolsFor(view, { onLint, onPeek })
 	);
 

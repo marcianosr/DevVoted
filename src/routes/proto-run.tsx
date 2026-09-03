@@ -28,7 +28,10 @@ import {
 import { longestCorrectStreak } from "~/modules/run/community/domain/standouts.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { showsSampleSize } from "~/modules/run/config/domain/config.model";
-import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import {
+	CONFIG_LIST,
+	CONFIGS,
+} from "~/modules/run/config/domain/configRoster.model";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui";
 import { StartView } from "~/modules/run/build/presentation/StartView.component";
@@ -416,6 +419,15 @@ const HANDED = [...Object.values(CONFIGS)];
 
 const PROTO_ARCHIVE_KB = 512;
 
+const withFullCatalog = (state: RunState): RunState => {
+	if (state.draftOptions.length === 0) return state;
+	const owned = new Set(state.build.configs.map((config) => config.id));
+	return {
+		...state,
+		draftOptions: CONFIG_LIST.filter((config) => !owned.has(config.id)),
+	};
+};
+
 const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const [state, setState] = useState(() => createRun(POOLS, HANDED));
 	const [archiveKb, setArchiveKb] = useState(PROTO_ARCHIVE_KB);
@@ -427,7 +439,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		setArchiveKb(settled.archiveKb);
 	};
 	const dispatch = (action: RunAction) =>
-		setState((current) => runReducer(current, action));
+		setState((current) => withFullCatalog(runReducer(current, action)));
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	useEffect(() => {
 		setSelected([]);
@@ -468,13 +480,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			let next = current;
 			while (next.status === "answering") {
 				const poll = next.polls[next.currentIndex];
-				if (!poll) return next;
+				if (!poll) break;
 				next = runReducer(next, {
 					type: "answer",
 					optionIds: rigOptionIds(poll, outcome),
 				});
 			}
-			return next;
+			return withFullCatalog(next);
 		});
 	const onSelect = (optionId: string) => {
 		if (view.poll?.answerType === "single") return setSelected([optionId]);
@@ -626,13 +638,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onRemove={(configIds) => {
 							setRewardStep("shop");
 							setState((current) =>
-								runReducer(
-									configIds.reduce(
-										(next, configId) =>
-											runReducer(next, { type: "strip", configId }),
-										current
-									),
-									{ type: "resume-climb" }
+								withFullCatalog(
+									runReducer(
+										configIds.reduce(
+											(next, configId) =>
+												runReducer(next, { type: "strip", configId }),
+											current
+										),
+										{ type: "resume-climb" }
+									)
 								)
 							);
 						}}

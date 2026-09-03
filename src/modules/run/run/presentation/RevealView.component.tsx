@@ -7,7 +7,10 @@ import {
 	type Coverage,
 	effectOf,
 } from "~/modules/run/config/domain/effect.model";
-import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+import {
+	type AnsweredPoll,
+	cachedHitsFor,
+} from "~/modules/run/run/domain/runPoll.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { RevealScreen } from "~/ui/terminal-theme/screens/RevealScreen.ui";
 import type { ChoiceState } from "~/ui/terminal-theme/Choice.ui";
@@ -51,6 +54,9 @@ const settledChoices = (poll: AnsweredPoll) => {
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
+const cachedHitsBefore = (view: RunView, answered: AnsweredPoll): number =>
+	cachedHitsFor(view.allAnswered.slice(0, -1), answered.category);
+
 const buildFactors = (
 	view: RunView,
 	answered: AnsweredPoll
@@ -64,6 +70,7 @@ const buildFactors = (
 	const context: AnswerContext = {
 		category: answered.category,
 		answeredBefore: view.answeredThisGate.length - 1,
+		cachedHits: cachedHitsBefore(view, answered),
 	};
 
 	return view.configs
@@ -135,6 +142,7 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 		{
 			category: answered.category,
 			answeredBefore: view.answeredThisGate.length - 1,
+			cachedHits: cachedHitsBefore(view, answered),
 		},
 		[]
 	).map((row, index) => {

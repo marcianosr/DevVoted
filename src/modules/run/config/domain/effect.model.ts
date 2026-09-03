@@ -2,6 +2,7 @@ import type { CategoryCode } from "~/shared/lib/categories";
 
 import {
 	Config,
+	cacheMultiplierFor,
 	focusMultiplierOf,
 	interestPctOf,
 	minifiedAmount,
@@ -38,6 +39,7 @@ export type Coverage = { readonly mult: number; readonly add: number };
 export type AnswerContext = {
 	readonly category: CategoryCode;
 	readonly answeredBefore: number;
+	readonly cachedHits: number;
 };
 
 export type Effect = {
@@ -54,14 +56,16 @@ export const touchesCoverage = (config: Config): boolean =>
 	config.coverageMultiplier !== undefined ||
 	config.coverageAdd !== undefined ||
 	config.openerCoverageMultiplier !== undefined ||
-	config.throttleCoverageMultiplier !== undefined;
+	config.throttleCoverageMultiplier !== undefined ||
+	config.cacheHitStep !== undefined;
 
 const coverageOf = (config: Config): Effect["coverage"] => {
 	if (!touchesCoverage(config)) return undefined;
-	return ({ category, answeredBefore }) => ({
+	return ({ category, answeredBefore, cachedHits }) => ({
 		mult:
 			(config.focusCategory === category ? focusMultiplierOf(config) : 1) *
 			minifiedMultiplier(config, config.coverageMultiplier ?? 1) *
+			cacheMultiplierFor(config, cachedHits) *
 			(answeredBefore === 0
 				? minifiedMultiplier(config, config.openerCoverageMultiplier ?? 1)
 				: (config.throttleCoverageMultiplier ?? 1)),
@@ -103,6 +107,7 @@ export type SkipReason =
 			readonly categories: readonly CategoryCode[];
 	  }
 	| { readonly kind: "openerOnly" }
+	| { readonly kind: "cacheCold" }
 	| { readonly kind: "paysAtGateClear" }
 	| { readonly kind: "billsAtGateClear" }
 	| { readonly kind: "inShop" }
@@ -160,6 +165,7 @@ const skipReasonFor = (
 		return { kind: "otherCategories", categories: [config.focusCategory] };
 	if (config.openerCoverageMultiplier !== undefined)
 		return { kind: "openerOnly" };
+	if (config.cacheHitStep !== undefined) return { kind: "cacheCold" };
 	if (config.subscriptionKb !== undefined) return { kind: "billsAtGateClear" };
 	if (config.offersFullRoster === true || config.draftCostFactor !== undefined)
 		return { kind: "inShop" };

@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-20T09:38:05Z
-updated_at: 2026-08-20T10:02:03Z
+updated_at: 2026-09-03T07:10:53Z
 parent: DVTD-z2r2
 ---
 
@@ -76,3 +76,12 @@ Marciano asked for buyable pipeline slots as an expensive unlockable. It ships a
 Not proposed: an in-run buy-a-slot action. That is ADR-034's deleted coverage ladder again and it breaks width-arrives-with-depth.
 
 Watch: slots and config drafts compete for the same archived KB, which is a real choice but can stall the Dex. Check the split when pricing.
+
+## Absorbed into ADR-051 (2026-09-03)
+
+The trigger half of this bean lives on: the event-triggers-over-run-count
+principle and the ???/Encountered/Mastered Dex framing shaped ADR-051's
+individual dual-path objectives (thematic objective OR polls-answered fallback,
+auto-tracked). The KB-paid between-run draft stays rejected (achievement-only,
+ADR-050/051). The unlock-notification and unseen-unlock-badge ideas feed
+DVTD-of79.

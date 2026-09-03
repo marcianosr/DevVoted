@@ -412,7 +412,7 @@ what each size costs.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Thirty configs, all pure effects.
+**🟢 Shipped.** Thirty-one configs, all pure effects.
 
 | Config | Slots | Effect |
 | --- | --- | --- |
@@ -430,6 +430,7 @@ what each size costs.
 | `.length` | 2 | Names how many correct answers the gate's 5 polls hold, and pays +16 KB per correct answer beyond one per poll |
 | Intellisense | 4 | All coverage ×1.5 |
 | Deprecated | 4 | All coverage ×3, fading ×0.5 each gate clear; deleted from the build at ×1 |
+| Cache | 4 | Correct answers warm their category for the rest of the run: each cached hit pays +25% coverage there, capped at ×2 (4 hits). A wrong answer in the category flushes it cold; a partial neither warms nor flushes |
 | Prefetch | 4 | Shows the category of every poll left this gate and all of the next gate's. Asking for polls not yet dealt rolls tomorrow's shared seed a day early — categories only, the questions stay sealed |
 | Overclock | 4 | The gate's first answer earns ×4 coverage; every answer after it runs hot at ×0.5, cooling off at the clear. Miss the opener and the gate is nearly dead — the buy is variance, not magnitude (×1.2 average, honestly under Intellisense) |
 | AGENTS.md | 8 | All coverage ×2 |
@@ -682,16 +683,19 @@ and streak injections (DVTD-xbri).
 
 ### 6.2 Unlocks
 
-🟡 Designed, not yet built (ADR-050, DVTD-2try): configs are exposed on the
+🟡 Designed, not yet built (ADR-051, DVTD-2try): configs are exposed on the
 **Reveal / Grant / Stage** model. Grant gates the starting hand only — the shop
 shelf always offers the whole roster, which is also what fills the Configdex in
-(**Reveal**: a config seen on a shelf is "met"). Nine configs are granted at signup,
-fifteen arrive on a depth ladder read from the swatch ledger (deepest-ever gate),
-and six standouts are earned by challenges that teach their own mechanic; ADR-050
-carries the tables. Unlocks are achievement-only — no currency buys one (the
-archived-storage pull, DVTD-9d7o, is rejected). Today every shipped config is
-simply available. Also planned: bonus awards for re-answering mastered polls
-correctly.
+(**Reveal**: a config seen on a shelf is "met"). Nine configs are granted at
+signup; the other 21 each unlock **individually**: a thematic objective that
+teaches the config's own mechanic ("Peek the community split 5 times") OR a
+lifetime polls-answered fallback, whichever is met first. Every objective tracks
+automatically (nothing is activated), and the Configdex shows each locked config
+as a checklist card with both paths and live progress; ADR-051 carries the table.
+Starter stacks arrive when every config they contain is granted. Unlocks are
+achievement-only — no currency buys one (the archived-storage pull, DVTD-9d7o,
+is rejected). Today every shipped config is simply available. Also planned:
+bonus awards for re-answering mastered polls correctly.
 
 ### 6.3 Swatches
 
@@ -731,8 +735,10 @@ the roster grouped by size and prints what each size costs (ADR-047); **Audits**
 lists every audit as faced, unlocked or unseen (`???` until met); **Gates** shows
 every gate with its swatch, audits and unlocks, locked gates redacting names to
 `???` counts. 🟡 Planned: upgrade levels, collection stats, per-poll community
-success rates, and the Configs tab's three collection states with their requirements
-(`???` / met / granted, ADR-050).
+success rates, and the Configs tab's three collection states (`???` / met /
+granted) where every locked row carries its two unlock paths as visible captions
+with live progress: "Answer 10 Java polls correctly · 6/10 / OR / Answer 225
+polls · 43/225" (ADR-051).
 
 ### 6.5 Borders and seasons
 

@@ -23,12 +23,18 @@ const REDACTED = "???";
 
 export type AuditTier = "faced" | "unlocked" | "unseen";
 
+export type AuditRecord = {
+	faced: number;
+	beaten: number;
+};
+
 export type DexAudit =
 	| {
 			id: AuditId;
 			tier: "faced" | "unlocked";
 			gates: readonly number[];
 			rule: string;
+			record?: AuditRecord;
 	  }
 	| { id: string; tier: "unseen"; gates?: never };
 
@@ -36,6 +42,27 @@ export type AuditsPanelProps = { audits: readonly DexAudit[] };
 
 const gateLabel = (gates: readonly number[]) =>
 	gates.length === 1 ? `gate ${gates[0]}` : `gates ${gates.join(", ")}`;
+
+const Status = ({
+	faced,
+	record,
+}: {
+	faced: boolean;
+	record: AuditRecord | undefined;
+}) => {
+	if (record !== undefined && record.faced > 0)
+		return (
+			<Text size="meta" tone={record.beaten > 0 ? "celadon" : "muted"}>
+				beaten {record.beaten} of {record.faced}
+			</Text>
+		);
+	if (!faced) return null;
+	return (
+		<Text size="meta" tone="celadon">
+			faced
+		</Text>
+	);
+};
 
 const AuditRow = ({ audit }: { audit: DexAudit }) => {
 	if (audit.tier === "unseen")
@@ -68,11 +95,9 @@ const AuditRow = ({ audit }: { audit: DexAudit }) => {
 				<Text size="meta" tone="muted">
 					{gateLabel(audit.gates)}
 				</Text>
-				{faced ? (
-					<Text size="meta" tone="celadon" className={STATUS}>
-						faced
-					</Text>
-				) : null}
+				<span className={STATUS}>
+					<Status faced={faced} record={audit.record} />
+				</span>
 			</span>
 			<Text as="p" size="meta" tone="muted" className={RULE}>
 				{audit.rule}

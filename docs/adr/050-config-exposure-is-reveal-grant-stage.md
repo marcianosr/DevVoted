@@ -6,9 +6,13 @@ Accepted (2026-08-31, Marciano, DVTD-2try). Records the framework decided in
 DVTD-2try (2026-08-26) and settles its open half: which config unlocks when.
 Rejects the archived-storage random pull (DVTD-9d7o), closing wiki §6.2's
 "two systems, unreconciled" note. Builds on ADR-047 (size is the power and price
-mark) and ADR-026 (starter stacks). The tables below are the design of record until
-`config.model.ts` carries `unlocksAtGate`/`unlocksBy`; from then on the code file
-is the source of truth.
+mark) and ADR-026 (starter stacks).
+
+Partially superseded by ADR-051 (2026-09-03): decision 3 (the depth ladder) is
+deleted and decision 4's six-only scope is generalised to individual dual-path
+objectives for all 21 non-free configs. Decisions 1, 2 and 5 stand. ADR-051's
+objective roster (`configUnlock.model.ts`) replaces the `unlocksAtGate`/
+`unlocksBy` fields this ADR anticipated.
 
 ## Context
 

@@ -201,6 +201,18 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		revealsCorrectCount: true,
 	},
+	cache: {
+		id: "cache",
+		label: "Cache",
+		family: "amplify",
+		slots: 4,
+		description:
+			"Correct answers cache their category — each cached hit pays +25% coverage there, up to ×2. A wrong answer flushes that category.",
+		gives: "+25% coverage per cached hit in a category, up to ×2",
+		costs: "A wrong answer flushes that category's cache",
+		rewardMultiplier: 1,
+		cacheHitStep: 0.25,
+	},
 	coldStart: {
 		id: "cold-start",
 		label: "Cold Start",

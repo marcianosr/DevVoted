@@ -28,9 +28,20 @@ export type AuditdexEntry = {
 	readonly rule: string;
 	readonly gates: readonly number[];
 	readonly tier: AuditdexTier;
+	/** Climbs that played a gate carrying this audit, and climbs that got past
+	 * it. Runs, not attempts: a gate re-run after a peel (ADR-035) is one climb,
+	 * and a climb still standing in front of the gate has not faced it yet. */
+	readonly runsFaced: number;
+	readonly runsBeaten: number;
 };
 
-type AuditFacts = Omit<AuditdexEntry, "tier">;
+/** One climb, as far as this tally needs to read it. */
+export type AuditdexRun = {
+	readonly gatesCleared: number;
+	readonly finished: boolean;
+};
+
+type AuditFacts = Omit<AuditdexEntry, "tier" | "runsFaced" | "runsBeaten">;
 
 const factsOf = (gate: number, audit: Audit): AuditFacts => ({
 	id: audit.id,
@@ -79,14 +90,31 @@ const tierFor = (
 		: "unseen";
 };
 
+/**
+ * Gates below this number were played in that climb. A finished climb played
+ * the gate it stopped at; a live one is still in front of it.
+ */
+const facedThrough = (run: AuditdexRun): number =>
+	run.finished ? run.gatesCleared + 1 : run.gatesCleared;
+
+const countRuns = (
+	runs: readonly AuditdexRun[],
+	reached: (run: AuditdexRun) => number,
+	gates: readonly number[]
+): number =>
+	runs.filter((run) => gates.some((gate) => gate < reached(run))).length;
+
 export const auditdex = (
-	gates: readonly GatedexEntry[]
+	gates: readonly GatedexEntry[],
+	runs: readonly AuditdexRun[] = []
 ): readonly AuditdexEntry[] => {
 	const stateByGate = new Map(gates.map((entry) => [entry.gate, entry.state]));
 
 	return rosterFor(gates).map((facts) => ({
 		...facts,
 		tier: tierFor(facts.gates, stateByGate),
+		runsFaced: countRuns(runs, facedThrough, facts.gates),
+		runsBeaten: countRuns(runs, (run) => run.gatesCleared, facts.gates),
 	}));
 };
 

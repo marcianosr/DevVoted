@@ -52,6 +52,7 @@ export const userQueryKeys = {
 	 */
 	swatchesAll: [...USERS, "swatches"] as const,
 	swatches: (userId: string) => [...userQueryKeys.swatchesAll, userId] as const,
+	gateRuns: (userId: string) => [...USERS, userId, "gate-runs"] as const,
 };
 
 export const archiveQueryKeys = {

@@ -85,7 +85,7 @@ const buildWith = (configs: Config[]): Build => ({
 const at = (
 	category: AnswerContext["category"],
 	answeredBefore = 1
-): AnswerContext => ({ category, answeredBefore });
+): AnswerContext => ({ category, answeredBefore, cachedHits: 0 });
 
 describe("rewardMultiplierFor", () => {
 	it("is 1 across the whole shipped roster — configs pay in coverage or KB, never in a storage multiplier", () => {

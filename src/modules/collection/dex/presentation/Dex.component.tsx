@@ -14,6 +14,7 @@ import {
 	polldexCoverage,
 	type PolldexEntry,
 } from "~/modules/collection/dex/domain/polldex.model";
+import { getGateRuns } from "~/modules/collection/dex/application/runHistory.serverfn";
 import { getPolldex } from "~/modules/collection/dex/application/polldex.serverfn";
 import { AuditsView } from "~/modules/collection/dex/presentation/AuditsView.component";
 import { ConfigdexPanel } from "~/modules/collection/dex/presentation/ConfigdexPanel.ui";
@@ -76,13 +77,20 @@ export const Dex = ({ userId }: DexProps) => {
 		queryFn: () => getOwnedSwatches(),
 	});
 
+	const gateRuns = useQuery({
+		queryKey: userQueryKeys.gateRuns(userId),
+		queryFn: () => getGateRuns(),
+	});
+
 	const entries = polldex.data?.success ? polldex.data.data.entries : null;
 	const ownedSwatchIds = swatches.data?.success
 		? swatches.data.data.ownedSwatchIds
 		: [];
 
+	const runs = gateRuns.data?.success ? gateRuns.data.data.runs : [];
+
 	const gates = gatedex(ownedSwatchIds);
-	const audits = auditdex(gates);
+	const audits = auditdex(gates, runs);
 	const coverage = polldexCoverage(entries ?? []);
 	const configCount = Object.keys(CONFIGS).length;
 

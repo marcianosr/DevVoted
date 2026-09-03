@@ -15,7 +15,13 @@ const toDexAudit = (entry: AuditdexEntry): DexAudit => {
 	if (id === null || entry.tier === "unseen")
 		return { id: entry.id, tier: "unseen" };
 
-	return { id, tier: entry.tier, gates: entry.gates, rule: entry.rule };
+	return {
+		id,
+		tier: entry.tier,
+		gates: entry.gates,
+		rule: entry.rule,
+		record: { faced: entry.runsFaced, beaten: entry.runsBeaten },
+	};
 };
 
 export type AuditsViewProps = { audits: readonly AuditdexEntry[] };

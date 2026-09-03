@@ -7,7 +7,7 @@ priority: critical
 tags:
     - meta-progress
 created_at: 2026-07-16T20:29:52Z
-updated_at: 2026-08-31T09:04:48Z
+updated_at: 2026-09-03T07:11:15Z
 parent: DVTD-z2r2
 ---
 
@@ -221,12 +221,12 @@ cleared.
 
 ### Revised work
 
-- [ ] `unlocksAtGate` / `unlocksBy` on `Config`; `HANDED_CONFIGS` becomes a per-user query
-- [ ] Hand draw: ~6 from the unlocked pool, one focus guaranteed
-- [ ] Reveal ledger: record configs seen in a shop roll
-- [ ] Configdex owned/total + silhouettes for unmet rows
-- [ ] Starter stack grants
-- [ ] Dex tools + storage-plan rows as `???` (Reveal)
+SUPERSEDED 2026-09-03: the work list lives in the ADR-051 follow-up beans:
+DVTD-clgs (objective ledger + grant seam), DVTD-g6k0 (Configdex checklist UI,
+incl. the Reveal seen-on-shelf ledger), DVTD-p9ah (hand + stacks read the
+granted pool), DVTD-b9vi (pin an objective), DVTD-of79 (unlock announcement).
+Still live here: Dex tools + storage-plan rows as `???` (Reveal), from the
+framework section above.
 
 ## Assignment decided (2026-08-31): ADR-050 is the design of record
 
@@ -252,3 +252,26 @@ as provenance. Tooltip-first, not tooltip-only: tooltips are invisible on touch
 (DVTD-aiyp), so silhouette rows carry a visible caption too.
 
 Status → todo: implementation is unblocked once the DVTD-811d rename settles.
+
+## Individual objectives (2026-09-03): ADR-051 supersedes the ladder
+
+Marciano killed the batch half of ADR-050: no configs arrive per gate. Each of
+the 21 non-free configs unlocks individually on the Melee model: a thematic
+objective that teaches the config's own mechanic (closed metric set, ADR-051
+Decision 4) OR a lifetime polls-answered fallback, whichever is met first.
+Presentation is the Kirby Air Ride checklist: locked Configdex rows are ? cards
+carrying both paths with live progress, tracked automatically, nothing
+activated; pinning is deferred (DVTD-b9vi).
+
+Kept from ADR-050: the free nine, Grant gates the hand only, achievement-only,
+proto-run fully unlocked, the three Dex states. Counting rules chosen in
+ADR-051: abandoned-run answers count, mirror-correct answers count toward
+category-correct, fallbacks count session polls in v1. Stacks arrive when every
+config they contain is granted (the gate-rung pairing is dead).
+
+Implementation shape: `user_objective_progress (user_id, metric, count)` +
+`users.unlocked_config_ids`, written in the `applyActionToRun` transaction with
+the `awardGateSwatch` idempotence pattern; one-shot challenges are target-1
+counters; the only new RunState field is `soldThisShop`; no grandfathering or
+historical backfill (pre-release, nobody has anything yet). Work split across
+DVTD-clgs / DVTD-g6k0 / DVTD-p9ah / DVTD-b9vi / DVTD-of79.

@@ -129,3 +129,15 @@ export type AnsweredPoll = {
 	readonly elapsedMs?: number;
 	readonly timedOut?: boolean;
 };
+
+export const cachedHitsFor = (
+	answered: readonly AnsweredPoll[],
+	category: CategoryCode
+): number =>
+	answered
+		.filter((poll) => poll.category === category)
+		.reduce((hits, poll) => {
+			if (poll.outcome === "correct") return hits + 1;
+			if (poll.outcome === "wrong") return 0;
+			return hits;
+		}, 0);

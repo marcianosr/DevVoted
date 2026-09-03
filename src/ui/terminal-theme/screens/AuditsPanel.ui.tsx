@@ -11,18 +11,20 @@ const CHIPS = "flex flex-wrap gap-2";
 // Four columns at width, and at narrow the rule drops to its own line under the
 // name rather than squeezing three readings into one row.
 const AUDIT_ROW =
-	"grid grid-cols-[3.5rem_11rem_1fr_2.5rem] items-baseline gap-x-3 gap-y-1 py-1.5 @max-md:grid-cols-[3.5rem_1fr_2.5rem]";
+	"grid grid-cols-[3.5rem_11rem_1fr_3.5rem] items-baseline gap-x-3 gap-y-1 py-1.5 @max-md:grid-cols-[3.5rem_1fr_3.5rem]";
 const CODE =
 	"justify-self-start rounded border border-zinc-700 px-1.5 py-0.5 text-xs tabular-nums text-zinc-300";
 const RULE = "@max-md:col-span-2 @max-md:col-start-2 @max-md:row-start-2";
-const FACED = "text-right @max-md:col-start-3 @max-md:row-start-1";
+const FACED =
+	"text-right whitespace-nowrap @max-md:col-start-3 @max-md:row-start-1";
 
 export type DexAudit = {
 	code: number;
 	name: string;
 	rule: string;
-	/** How many times you have been handed it. */
+	/** Climbs that played a gate carrying it, and climbs that got past it. */
 	faced: number;
+	beaten: number;
 };
 
 export type DexAuditClass = {
@@ -46,7 +48,7 @@ const AuditRow = ({ audit }: { audit: DexAudit }) => (
 			{audit.rule}
 		</Text>
 		<Text tone="faint" size="caption" className={FACED}>
-			×{audit.faced}
+			{audit.beaten} / {audit.faced}
 		</Text>
 	</div>
 );

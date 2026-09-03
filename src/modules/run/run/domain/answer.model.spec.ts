@@ -601,6 +601,48 @@ describe("coverage scoring", () => {
 	});
 });
 
+describe("Cache", () => {
+	const withCache = (state: RunState): RunState => ({
+		...state,
+		build: {
+			...state.build,
+			slots: state.build.slots + 4,
+			configs: [...state.build.configs, CONFIGS.cache],
+		},
+	});
+
+	const buildFactorOf = (state: RunState, index: number): number | undefined =>
+		state.answeredThisGate[index]?.coverageFactors?.build;
+
+	it("pays ×1 on a cold category and one step more per cached hit", () => {
+		let state = withCache(started(["js"]));
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+		expect(buildFactorOf(state, 0)).toBe(1);
+		expect(buildFactorOf(state, 1)).toBe(1.25);
+		expect(buildFactorOf(state, 2)).toBe(1.5);
+	});
+
+	it("flushes the category on a wrong answer and rebuilds from cold", () => {
+		let state = withCache(started(["js"]));
+		state = answerWith(state, true);
+		state = answerWith(state, false);
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+		expect(buildFactorOf(state, 2)).toBe(1);
+		expect(buildFactorOf(state, 3)).toBe(1.25);
+	});
+
+	it("keeps a category warm across a gate clear, capped at ×2", () => {
+		let state = withCache(started(["js"]));
+		state = clearGate(state);
+		state = runReducer(state, { type: "finish-reward" });
+		state = answerWith(state, true);
+		expect(buildFactorOf(state, 0)).toBe(2);
+	});
+});
+
 describe("Moore's Law", () => {
 	const held = (state: RunState, storage: number): RunState => ({
 		...state,

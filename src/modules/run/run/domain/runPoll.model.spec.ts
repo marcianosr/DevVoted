@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { answerOutcome } from "~/modules/run/run/domain/runPoll.model";
+import {
+	type AnsweredPoll,
+	type AnswerOutcome,
+	answerOutcome,
+	cachedHitsFor,
+} from "~/modules/run/run/domain/runPoll.model";
 
 describe("answerOutcome grades the community board and the engine alike", () => {
 	const enginePoll = {
@@ -63,5 +68,59 @@ describe("answerOutcome grades the community board and the engine alike", () => 
 			],
 		} as const;
 		expect(answerOutcome(single, ["b"])).toBe("wrong");
+	});
+});
+
+describe("cachedHitsFor counts a category's correct answers since its last wrong one", () => {
+	const answered = (
+		category: AnsweredPoll["category"],
+		outcome: AnswerOutcome
+	): AnsweredPoll => ({
+		id: `${category}-${outcome}`,
+		question: "",
+		category,
+		outcome,
+		picked: [],
+	});
+
+	it("starts cold with no answers", () => {
+		expect(cachedHitsFor([], "js")).toBe(0);
+	});
+
+	it("warms one hit per correct answer in the category", () => {
+		const history = [answered("js", "correct"), answered("js", "correct")];
+		expect(cachedHitsFor(history, "js")).toBe(2);
+	});
+
+	it("ignores other categories entirely", () => {
+		const history = [
+			answered("css", "correct"),
+			answered("js", "correct"),
+			answered("css", "wrong"),
+		];
+		expect(cachedHitsFor(history, "js")).toBe(1);
+	});
+
+	it("flushes to cold on a wrong answer in the category", () => {
+		const history = [
+			answered("js", "correct"),
+			answered("js", "correct"),
+			answered("js", "wrong"),
+		];
+		expect(cachedHitsFor(history, "js")).toBe(0);
+	});
+
+	it("rebuilds warmth after a flush", () => {
+		const history = [
+			answered("js", "correct"),
+			answered("js", "wrong"),
+			answered("js", "correct"),
+		];
+		expect(cachedHitsFor(history, "js")).toBe(1);
+	});
+
+	it("leaves warmth untouched on a partial answer", () => {
+		const history = [answered("js", "correct"), answered("js", "partial")];
+		expect(cachedHitsFor(history, "js")).toBe(1);
 	});
 });
